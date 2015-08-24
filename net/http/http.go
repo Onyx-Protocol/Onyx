@@ -50,6 +50,10 @@ func (mux PatServeMux) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 	}
 }
 
+func (mux PatServeMux) AddFunc(method, pattern string, f HandlerFunc) {
+	mux.Add(method, pattern, f)
+}
+
 // BackgroundHandler converts a Handler to an http.Handler
 // by adding a new request ID to the background context.
 type BackgroundHandler struct {

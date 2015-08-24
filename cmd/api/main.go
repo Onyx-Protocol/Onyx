@@ -20,12 +20,12 @@ var (
 
 func main() {
 	authAPI := chainhttp.PatServeMux{pat.New()}
-	authAPI.Add("POST", "/v3/applications/:applicationID/wallets", chainhttp.HandlerFunc(createWallet))
-	authAPI.Add("POST", "/v3/wallets/:walletID/buckets", chainhttp.HandlerFunc(createBucket))
-	authAPI.Add("POST", "/v3/wallets/:walletID/assets", chainhttp.HandlerFunc(createAsset))
-	authAPI.Add("POST", "/v3/assets/:assetID/issue", chainhttp.HandlerFunc(issueAsset))
-	authAPI.Add("POST", "/v3/assets/transfer", chainhttp.HandlerFunc(walletBuild))
-	authAPI.Add("POST", "/v3/wallets/transact/finalize", chainhttp.HandlerFunc(walletFinalize))
+	authAPI.AddFunc("POST", "/v3/applications/:applicationID/wallets", createWallet)
+	authAPI.AddFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
+	authAPI.AddFunc("POST", "/v3/wallets/:walletID/assets", createAsset)
+	authAPI.AddFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
+	authAPI.AddFunc("POST", "/v3/assets/transfer", walletBuild)
+	authAPI.AddFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
 
 	var h chainhttp.Handler
 	h = authAPI // TODO(kr): authentication
