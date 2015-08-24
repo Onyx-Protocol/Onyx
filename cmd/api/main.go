@@ -6,6 +6,7 @@ import (
 	"github.com/kr/env"
 	"github.com/kr/secureheader"
 	"github.com/tessr/pat"
+	"golang.org/x/net/context"
 
 	"chain/metrics"
 	chainhttp "chain/net/http"
@@ -36,4 +37,34 @@ func main() {
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
 	http.ListenAndServe(*listenAddr, secureheader.DefaultConfig)
+}
+
+// /v3/applications/:applicationID/wallets
+func createWallet(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	panic("TODO")
+}
+
+// /v3/wallets/:walletID/buckets
+func createBucket(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	panic("TODO")
+}
+
+// /v3/wallets/:walletID/assets
+func createAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	panic("TODO")
+}
+
+// /v3/assets/:assetID/issue
+func issueAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	panic("TODO")
+}
+
+// /v3/assets/transfer
+func walletBuild(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	panic("TODO")
+}
+
+// /v3/wallets/transact/finalize
+func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	panic("TODO")
 }
