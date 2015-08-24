@@ -1,1 +1,7 @@
-🍭
+Chain 🍭
+
+Getting Started
+
+	$ git clone https://github.com/chain-engineering/chain $GOPATH/src/chain
+	$ cd $GOPATH/src/chain
+	$ go install ./cmd/...
