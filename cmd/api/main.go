@@ -1,6 +1,8 @@
 package main
 
 import (
+	"database/sql"
+	"log"
 	"net/http"
 
 	"github.com/kr/env"
@@ -8,17 +10,35 @@ import (
 	"github.com/tessr/pat"
 	"golang.org/x/net/context"
 
+	"chain/database/pg"
 	"chain/metrics"
 	chainhttp "chain/net/http"
 	"chain/net/http/gzip"
 )
 
-// config vars
 var (
+	// config vars
 	listenAddr = env.String("LISTEN", ":8080")
+	dbURL      = env.String("DB_URL", "postgres:///api?sslmode=disable")
+
+	db       *sql.DB
+	buildTag = "dev"
 )
 
 func main() {
+	sql.Register("schemadb", pg.SchemaDriver(buildTag))
+	log.SetPrefix("api-" + buildTag + ": ")
+	log.SetFlags(log.Lshortfile)
+	env.Parse()
+
+	var err error
+	db, err = sql.Open("schemadb", *dbURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pg.LoadFile(db, "reserve.sql")
+
 	authAPI := chainhttp.PatServeMux{pat.New()}
 	authAPI.AddFunc("POST", "/v3/applications/:applicationID/wallets", createWallet)
 	authAPI.AddFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
