@@ -8,6 +8,7 @@ import (
 	"github.com/tessr/pat"
 
 	"chain/metrics"
+	chainhttp "chain/net/http"
 	"chain/net/http/gzip"
 )
 
@@ -17,20 +18,20 @@ var (
 )
 
 func main() {
-	authAPI := patServeMux{pat.New()}
-	authAPI.Add("POST", "/v3/applications/:applicationID/wallets", handlerFunc(createWallet))
-	authAPI.Add("POST", "/v3/wallets/:walletID/buckets", handlerFunc(createBucket))
-	authAPI.Add("POST", "/v3/wallets/:walletID/assets", handlerFunc(createAsset))
-	authAPI.Add("POST", "/v3/assets/:assetID/issue", handlerFunc(issueAsset))
-	authAPI.Add("POST", "/v3/assets/transfer", handlerFunc(walletBuild))
-	authAPI.Add("POST", "/v3/wallets/transact/finalize", handlerFunc(walletFinalize))
+	authAPI := chainhttp.PatServeMux{pat.New()}
+	authAPI.Add("POST", "/v3/applications/:applicationID/wallets", chainhttp.HandlerFunc(createWallet))
+	authAPI.Add("POST", "/v3/wallets/:walletID/buckets", chainhttp.HandlerFunc(createBucket))
+	authAPI.Add("POST", "/v3/wallets/:walletID/assets", chainhttp.HandlerFunc(createAsset))
+	authAPI.Add("POST", "/v3/assets/:assetID/issue", chainhttp.HandlerFunc(issueAsset))
+	authAPI.Add("POST", "/v3/assets/transfer", chainhttp.HandlerFunc(walletBuild))
+	authAPI.Add("POST", "/v3/wallets/transact/finalize", chainhttp.HandlerFunc(walletFinalize))
 
-	var h handler
+	var h chainhttp.Handler
 	h = authAPI // TODO(kr): authentication
 	h = metrics.Handler{h}
 	h = gzip.Handler{h}
 
-	http.Handle("/", h)
+	http.Handle("/", chainhttp.BackgroundHandler{h})
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 
 	secureheader.DefaultConfig.PermitClearLoopback = true

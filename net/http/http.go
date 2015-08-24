@@ -5,6 +5,8 @@ import (
 
 	"github.com/tessr/pat"
 	"golang.org/x/net/context"
+
+	"chain/net/http/reqid"
 )
 
 type Handler interface {
@@ -46,4 +48,18 @@ func (mux PatServeMux) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 	} else {
 		h.ServeHTTP(w, r)
 	}
+}
+
+// BackgroundHandler converts a Handler to an http.Handler
+// by adding a new request ID to the background context.
+type BackgroundHandler struct {
+	Handler Handler
+}
+
+func (b BackgroundHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// TODO(kr): take half of request ID from the client
+	ctx := context.Background()
+	ctx = reqid.AddToContext(ctx)
+	w.Header().Add("Chain-Request-Id", reqid.FromContext(ctx))
+	b.Handler.ServeHTTPContext(ctx, w, r)
 }
