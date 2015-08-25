@@ -1,10 +1,8 @@
 package pg
 
 import (
-	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/lib/pq"
 )
@@ -28,20 +26,4 @@ func (d SchemaDriver) Open(name string) (driver.Conn, error) {
 	}
 
 	return conn, nil
-}
-
-// LoadFile runs all the queries in a file on a database connection
-func LoadFile(db *sql.DB, filepath ...string) error {
-	var buf []byte
-	for _, s := range filepath {
-		b, err := ioutil.ReadFile(s)
-		if err != nil {
-			return err
-		}
-		buf = append(buf, ';')
-		buf = append(buf, b...)
-	}
-	_, err := db.Exec(string(buf))
-	return err
-
 }

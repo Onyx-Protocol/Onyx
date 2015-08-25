@@ -40,8 +40,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	pg.LoadFile(db, "reserve.sql", "keys.sql")
+	wallets.Init(db)
 
 	authAPI := chainhttp.PatServeMux{pat.New()}
 	authAPI.AddFunc("POST", "/v3/applications/:applicationID/wallets", createWallet)

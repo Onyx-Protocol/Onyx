@@ -1,7 +1,6 @@
 package wallets
 
 import (
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"log"
 	"os"
@@ -13,9 +12,8 @@ func init() {
 		u = s
 	}
 
-	db = pgtest.Open(u, "apitest", "schema.sql")
-
-	err := pg.LoadFile(db, "reserve.sql", "keys.sql")
+	db := pgtest.Open(u, "apitest", "schema.sql")
+	err := Init(db)
 	if err != nil {
 		log.Fatal(err)
 	}

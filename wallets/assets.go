@@ -35,7 +35,7 @@ func AssetByID(id string) (*Asset, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = DB.QueryRow(q, id).Scan(
+	err = db.QueryRow(q, id).Scan(
 		(*pg.Strings)(&keyIDs),
 		&a.RedeemScript,
 		&a.WalletID,

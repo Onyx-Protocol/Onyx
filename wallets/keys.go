@@ -66,7 +66,7 @@ func loadKeys(keys ...*Key) error {
 		FROM keys
 		WHERE id=ANY($1)
 	`
-	rows, err := DB.Query(q, pg.SliceString(a))
+	rows, err := db.Query(q, pg.SliceString(a))
 	if err != nil {
 		return err
 	}
