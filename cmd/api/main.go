@@ -13,6 +13,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
+	chainjson "chain/encoding/json"
 	"chain/fedchain/wire"
 	"chain/metrics"
 	chainhttp "chain/net/http"
@@ -122,12 +123,10 @@ func walletBuild(ctx context.Context, w http.ResponseWriter, req *http.Request) 
 
 // /v3/wallets/transact/finalize
 func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	panic("TODO")
-
 	// TODO(kr): validate
 
 	var tpl wallets.Tx
-	err := json.NewDecoder(t.Body).Decode(&tpl)
+	err := json.NewDecoder(req.Body).Decode(&tpl)
 	if err != nil {
 		w.WriteHeader(400)
 		return
@@ -143,14 +142,24 @@ func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Reques
 	for i, in := range tx.TxIn {
 		tplin := tpl.Inputs[i]
 		for _, sig := range tplin.Sigs {
-			in.SignatureScript = append(in.SignatureScript, sig.DER)
+			in.SignatureScript = append(in.SignatureScript, sig.DER...)
 		}
-		in.SignatureScript = append(in.SignatureScript, tplin.RedeemScript)
+		in.SignatureScript = append(in.SignatureScript, tplin.RedeemScript...)
 	}
 
-	err := wallets.InsertOutputs(tx)
+	err = wallets.InsertOutputs(tx)
 	if err != nil {
 		w.WriteHeader(500)
 		return
 	}
+
+	var buf bytes.Buffer
+	tx.Serialize(&buf)
+
+	resp := map[string]interface{}{
+		"transaction_id":  tx.TxSha().String(),
+		"raw_transaction": chainjson.HexBytes(buf.Bytes()),
+	}
+
+	writeJSON(w, resp, 200)
 }
