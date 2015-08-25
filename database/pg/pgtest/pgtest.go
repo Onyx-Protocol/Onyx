@@ -74,12 +74,12 @@ func Init(database *sql.DB, schemaSQLPath string) {
 	}
 }
 
-// LoadFile drops all rows from tables
+// ResetWithFile drops all rows from tables
 // in the connected database,
 // runs the globally-initialized schema SQL,
 // then loads the SQL statements in the given file names
 // into the database.
-func LoadFile(t testing.TB, name ...string) {
+func ResetWithFile(t testing.TB, name ...string) {
 	var a []string
 	for _, s := range name {
 		b, err := ioutil.ReadFile(s)
@@ -88,14 +88,14 @@ func LoadFile(t testing.TB, name ...string) {
 		}
 		a = append(a, string(b))
 	}
-	LoadSQL(t, a...)
+	ResetWithSQL(t, a...)
 }
 
-// LoadSQL drops all rows from tables
+// ResetWithSQL drops all rows from tables
 // in the connected database,
 // runs the globally-initialized schema SQL,
 // then loads the given SQL statements into the database.
-func LoadSQL(t testing.TB, sql ...string) {
+func ResetWithSQL(t testing.TB, sql ...string) {
 	clear(t)
 	for _, q := range sql {
 		exec(t, q)

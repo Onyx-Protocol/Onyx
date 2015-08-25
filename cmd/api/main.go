@@ -1,14 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcutil"
 	"github.com/kr/env"
 	"github.com/kr/secureheader"
 	"github.com/tessr/pat"
@@ -19,6 +17,7 @@ import (
 	"chain/metrics"
 	chainhttp "chain/net/http"
 	"chain/net/http/gzip"
+	"chain/wallets"
 )
 
 var (
@@ -42,7 +41,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pg.LoadFile(db, "reserve.sql")
+	pg.LoadFile(db, "reserve.sql", "keys.sql")
 
 	authAPI := chainhttp.PatServeMux{pat.New()}
 	authAPI.AddFunc("POST", "/v3/applications/:applicationID/wallets", createWallet)
@@ -81,11 +80,7 @@ func createAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) 
 
 // /v3/assets/:assetID/issue
 func issueAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	var outs []struct {
-		Address  string
-		BucketID string
-		Amount   int64
-	}
+	var outs []output
 	err := json.NewDecoder(req.Body).Decode(&outs)
 	if err != nil {
 		w.WriteHeader(400)
@@ -95,33 +90,30 @@ func issueAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	tx := wire.NewMsgTx()
 	tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}))
 
-	aid, err := wire.NewHash20FromStr(req.URL.Query().Get(":assetID"))
+	assetID := req.URL.Query().Get(":assetID")
+	asset, err := wallets.AssetByID(assetID)
 	if err != nil {
 		w.WriteHeader(400)
 		return
 	}
 
-	for _, out := range outs {
-		if out.BucketID != "" {
-			// TODO(erykwalder): actually generate a receiver
-			// This address doesn't mean anything, it was grabbed from the internet.
-			// We don't have its private key.
-			out.Address = "1ByEd6DMfTERyT4JsVSLDoUcLpJTD93ifq"
-		}
-
-		addr, err := btcutil.DecodeAddress(out.Address, &chaincfg.MainNetParams)
-		if err != nil {
-			w.WriteHeader(400)
-			return
-		}
-		pkScript, err := txscript.PayToAddrScript(addr)
-		if err != nil {
-			w.WriteHeader(400)
-			return
-		}
-
-		tx.AddTxOut(wire.NewTxOut(aid, out.Amount, pkScript))
+	err = addAssetIssuanceOutputs(tx, asset, outs)
+	if err != nil {
+		w.WriteHeader(400)
+		return
 	}
+
+	var buf bytes.Buffer
+	tx.Serialize(&buf)
+	resp := map[string]interface{}{
+		"template": wallets.Tx{
+			Unsigned:   buf.Bytes(),
+			BlockChain: "sandbox",
+			Inputs:     []*wallets.Input{asset.IssuanceInput()},
+		},
+		"change_addresses": []changeAddr{},
+	}
+	writeJSON(w, resp, 200)
 }
 
 // /v3/assets/transfer

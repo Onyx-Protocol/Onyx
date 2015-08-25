@@ -1,4 +1,4 @@
-package main
+package wallets
 
 import (
 	"chain/database/pg/pgtest"
@@ -35,7 +35,7 @@ func TestReserve(t *testing.T) {
 
 	for _, test := range tests {
 		t.Log(test.description)
-		pgtest.LoadSQL(t, test.fixture)
+		pgtest.ResetWithSQL(t, test.fixture)
 
 		rows, err := db.Query(`SELECT * FROM reserve_outputs('a1', 'b1', $1)`, test.askAmt)
 		if err != nil {

@@ -31,11 +31,17 @@ func (d SchemaDriver) Open(name string) (driver.Conn, error) {
 }
 
 // LoadFile runs all the queries in a file on a database connection
-func LoadFile(db *sql.DB, filepath string) error {
-	file, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		return err
+func LoadFile(db *sql.DB, filepath ...string) error {
+	var buf []byte
+	for _, s := range filepath {
+		b, err := ioutil.ReadFile(s)
+		if err != nil {
+			return err
+		}
+		buf = append(buf, ';')
+		buf = append(buf, b...)
 	}
-	_, err = db.Exec(string(file))
+	_, err := db.Exec(string(buf))
 	return err
+
 }
