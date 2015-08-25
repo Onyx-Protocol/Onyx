@@ -102,27 +102,77 @@ func ResetWithSQL(t testing.TB, sql ...string) {
 	}
 }
 
+// topSortTables will order tables by foreign key constraints
+// so that records can be deleted from tables in order
+func topSortTables(tables []string, parents map[string][]string) []string {
+	incomingEdges := make(map[string]int)
+	for _, pp := range parents {
+		for _, p := range pp {
+			incomingEdges[p]++
+		}
+	}
+
+	var insertable []string
+	for _, t := range tables {
+		if incomingEdges[t] == 0 {
+			insertable = append(insertable, t)
+		}
+	}
+
+	var (
+		table string
+		fin   []string
+	)
+	for len(insertable) > 0 {
+		table, insertable = insertable[0], insertable[1:]
+		for _, p := range parents[table] {
+			incomingEdges[p]--
+			if incomingEdges[p] == 0 {
+				insertable = append(insertable, p)
+			}
+		}
+		fin = append(fin, table)
+	}
+
+	return fin
+}
+
 func clear(t testing.TB) {
-	getTables := `
-		SELECT table_name FROM information_schema.tables
+	const getTables = `
+		SELECT array_agg(table_name::text) FROM information_schema.tables
 		WHERE table_schema=$1 AND table_type='BASE TABLE';
 	`
-	var deletes []string
-	rows, err := db.Query(getTables, schema)
+	var tables []string
+	err := db.QueryRow(getTables).Scan((*pg.Strings)(&tables))
+
+	const getFkeys = `
+		SELECT
+     	array_agg(tc.table_name::text), array_agg(ccu.table_name::text)
+ 		FROM
+     	information_schema.table_constraints AS tc
+     	JOIN information_schema.key_column_usage
+         AS kcu ON tc.constraint_name = kcu.constraint_name
+     	JOIN information_schema.constraint_column_usage
+         AS ccu ON ccu.constraint_name = tc.constraint_name
+		 	WHERE constraint_type = 'FOREIGN KEY';
+	`
+	var children, parents pg.Strings
+	err = db.QueryRow(getFkeys).Scan(&children, &parents)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer rows.Close()
-	dq := `DELETE FROM %s;`
-	for rows.Next() {
-		var table string
-		if err := rows.Scan(&table); err != nil {
-			t.Fatal(err)
+	fkeys := make(map[string][]string)
+	for i := range children {
+		if fkeys[children[i]] == nil {
+			fkeys[children[i]] = make([]string, 0, 1)
 		}
-		deletes = append(deletes, fmt.Sprintf(dq, table))
+		fkeys[children[i]] = append(fkeys[children[i]], parents[i])
 	}
-	if err = rows.Err(); err != nil {
-		t.Fatal(err)
+
+	tables = topSortTables(tables, fkeys)
+	var deletes []string
+	for _, t := range tables {
+		deletes = append(deletes, "DELETE FROM "+t+";")
 	}
 
 	if len(deletes) > 0 {
@@ -130,7 +180,7 @@ func clear(t testing.TB) {
 	}
 
 	var restarts []string
-	rows, err = db.Query("SELECT relname FROM pg_class WHERE relkind = 'S'")
+	rows, err := db.Query("SELECT relname FROM pg_class WHERE relkind = 'S'")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,4 +207,14 @@ func exec(t testing.TB, q string) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+// Count returns the number of rows in 'table'.
+func Count(t *testing.T, table string) int64 {
+	var n int64
+	err := db.QueryRow("SELECT COUNT(*) FROM " + table).Scan(&n)
+	if err != nil {
+		t.Fatal("Count:", err)
+	}
+	return n
 }

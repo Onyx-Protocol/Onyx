@@ -123,4 +123,34 @@ func walletBuild(ctx context.Context, w http.ResponseWriter, req *http.Request) 
 // /v3/wallets/transact/finalize
 func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	panic("TODO")
+
+	// TODO(kr): validate
+
+	var tpl wallets.Tx
+	err := json.NewDecoder(t.Body).Decode(&tpl)
+	if err != nil {
+		w.WriteHeader(400)
+		return
+	}
+
+	tx := wire.NewMsgTx()
+	err = tx.Deserialize(bytes.NewReader(tpl.Unsigned))
+	if err != nil {
+		w.WriteHeader(400)
+		return
+	}
+
+	for i, in := range tx.TxIn {
+		tplin := tpl.Inputs[i]
+		for _, sig := range tplin.Sigs {
+			in.SignatureScript = append(in.SignatureScript, sig.DER)
+		}
+		in.SignatureScript = append(in.SignatureScript, tplin.RedeemScript)
+	}
+
+	err := wallets.InsertOutputs(tx)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
 }

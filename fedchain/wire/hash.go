@@ -19,6 +19,12 @@ func NewHash20FromStr(str string) (Hash20, error) {
 	return hash, err
 }
 
+func (h *Hash20) String() string {
+	const assetVersion = 23
+
+	return base58.CheckEncode(h[:], assetVersion)
+}
+
 // Hash32 is used in several of the bitcoin messages and common structures.  It
 // typically represents the double sha256 of data.
 type Hash32 [32]byte
