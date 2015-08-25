@@ -63,7 +63,7 @@ type BackgroundHandler struct {
 func (b BackgroundHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO(kr): take half of request ID from the client
 	ctx := context.Background()
-	ctx = reqid.AddToContext(ctx)
+	ctx = reqid.NewContext(ctx, reqid.New())
 	w.Header().Add("Chain-Request-Id", reqid.FromContext(ctx))
 	b.Handler.ServeHTTPContext(ctx, w, r)
 }

@@ -1,3 +1,4 @@
+// Package reqid creates request IDs and stores them in Contexts.
 package reqid
 
 import (
@@ -8,6 +9,9 @@ import (
 	"golang.org/x/net/context"
 )
 
+const Unknown = "unknown_req_id"
+
+// New generates a random request ID.
 func New() string {
 	// Given n IDs of length b bits, the probability that there will be a collision is bounded by
 	// the number of pairs of IDs multiplied by the probability that any pair might collide:
@@ -25,14 +29,17 @@ func New() string {
 	return hex.EncodeToString(b)
 }
 
-func AddToContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, "requestID", New())
+// NewContext returns a new Context that carries reqid.
+func NewContext(ctx context.Context, reqid string) context.Context {
+	return context.WithValue(ctx, "requestID", reqid)
 }
 
+// FromContext returns the request ID stored in ctx,
+// or Unknown, if there is none.
 func FromContext(ctx context.Context) string {
 	reqID, ok := (ctx.Value("requestID")).(string)
 	if !ok {
-		return "unknown_req_id"
+		return Unknown
 	}
 	return reqID
 }
