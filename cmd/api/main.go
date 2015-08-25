@@ -2,15 +2,20 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"log"
 	"net/http"
 
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcutil"
 	"github.com/kr/env"
 	"github.com/kr/secureheader"
 	"github.com/tessr/pat"
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
+	"chain/fedchain/wire"
 	"chain/metrics"
 	chainhttp "chain/net/http"
 	"chain/net/http/gzip"
@@ -76,7 +81,47 @@ func createAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) 
 
 // /v3/assets/:assetID/issue
 func issueAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	panic("TODO")
+	var outs []struct {
+		Address  string
+		BucketID string
+		Amount   int64
+	}
+	err := json.NewDecoder(req.Body).Decode(&outs)
+	if err != nil {
+		w.WriteHeader(400)
+		return
+	}
+
+	tx := wire.NewMsgTx()
+	tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}))
+
+	aid, err := wire.NewHash20FromStr(req.URL.Query().Get(":assetID"))
+	if err != nil {
+		w.WriteHeader(400)
+		return
+	}
+
+	for _, out := range outs {
+		if out.BucketID != "" {
+			// TODO(erykwalder): actually generate a receiver
+			// This address doesn't mean anything, it was grabbed from the internet.
+			// We don't have its private key.
+			out.Address = "1ByEd6DMfTERyT4JsVSLDoUcLpJTD93ifq"
+		}
+
+		addr, err := btcutil.DecodeAddress(out.Address, &chaincfg.MainNetParams)
+		if err != nil {
+			w.WriteHeader(400)
+			return
+		}
+		pkScript, err := txscript.PayToAddrScript(addr)
+		if err != nil {
+			w.WriteHeader(400)
+			return
+		}
+
+		tx.AddTxOut(wire.NewTxOut(aid, out.Amount, pkScript))
+	}
 }
 
 // /v3/assets/transfer
