@@ -1,0 +1,9 @@
+Package secureheader adds some HTTP header fields widely
+considered to improve safety of HTTP requests.
+
+See http://godoc.org/github.com/kr/secureheader for more.
+
+Contributions from web application platforms are
+encouraged. If you have different default behavior that
+would make better sense in your environment, send a pull
+request! See heroku.go for an example.

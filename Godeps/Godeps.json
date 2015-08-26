@@ -1,0 +1,81 @@
+{
+	"ImportPath": "chain",
+	"GoVersion": "go1.5",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/btcsuite/btcd/btcec",
+			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
+			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
+		},
+		{
+			"ImportPath": "github.com/btcsuite/btcd/chaincfg",
+			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
+			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
+		},
+		{
+			"ImportPath": "github.com/btcsuite/btcd/txscript",
+			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
+			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
+		},
+		{
+			"ImportPath": "github.com/btcsuite/btcd/wire",
+			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
+			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
+		},
+		{
+			"ImportPath": "github.com/btcsuite/btclog",
+			"Comment": "BTCLOG_0_0_3-5-g5005b72",
+			"Rev": "5005b7240f310ae8f01c7664a3954d280241eb2b"
+		},
+		{
+			"ImportPath": "github.com/btcsuite/btcutil",
+			"Comment": "BTCUTIL_0_4_0-45-g03f6069",
+			"Rev": "03f6069579df8d3dc1e7298912ac7c75fdd11c9c"
+		},
+		{
+			"ImportPath": "github.com/btcsuite/fastsha256",
+			"Rev": "302ad4db268b46f9ebda3078f6f7397f96047735"
+		},
+		{
+			"ImportPath": "github.com/btcsuite/golangcrypto/ripemd160",
+			"Rev": "53f62d9b43e87a6c56975cf862af7edf33a8d0df"
+		},
+		{
+			"ImportPath": "github.com/btcsuite/seelog",
+			"Comment": "v2.1-84-g313961b",
+			"Rev": "313961b101eb55f65ae0f03ddd4e322731763b6c"
+		},
+		{
+			"ImportPath": "github.com/codahale/hdrhistogram",
+			"Rev": "3989c9c70509e52d10cd2b76e254fb570aa4a348"
+		},
+		{
+			"ImportPath": "github.com/codahale/metrics",
+			"Rev": "b0f2414a7d2e58cc36d113a96efa88f1abf971ac"
+		},
+		{
+			"ImportPath": "github.com/kr/env",
+			"Rev": "73c935da1ab06111a5a1cb5981368063e6c1ceb6"
+		},
+		{
+			"ImportPath": "github.com/kr/secureheader",
+			"Rev": "276a50bbfcfff60aab0f647de537c248d10959a8"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-59-gb269bd0",
+			"Rev": "b269bd035a727d6c1081f76e7a239a1b00674c40"
+		},
+		{
+			"ImportPath": "github.com/tessr/pat",
+			"Rev": "6120d972c8b4199d29c307063bb521cffe35b912"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "7654728e381988afd88e58cabfd6363a5ea91810"
+		}
+	]
+}

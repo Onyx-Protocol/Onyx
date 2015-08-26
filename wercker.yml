@@ -1,0 +1,26 @@
+box: golang:1.5
+
+services:
+  - id: clkao/postgres-plv8
+    env:
+      POSTGRES_PASSWORD: p
+      POSTGRES_USER: u
+      POSTGRES_DB: api-test
+
+build:
+  steps:
+    - script:
+        name: fmt vet test imports
+        code: |
+          set -veo pipefail
+          export GO15VENDOREXPERIMENT=1
+          go get golang.org/x/tools/cmd/vet golang.org/x/tools/cmd/goimports
+          PATH=$GOPATH/bin:$PATH
+          cp -a $WERCKER_SOURCE_DIR $GOPATH/src/chain
+          export WERCKER_SOURCE_DIR=$GOPATH/src/chain
+          export DB_URL_TEST="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/api-test?sslmode=disable"
+          cd $GOPATH/src/chain
+          test -z "$(go fmt $(go list ./...|grep -v vendor))"
+          go vet $(go list ./...|grep -v vendor)
+          go test -cover $(go list ./...|grep -v vendor)
+          test -z "$(goimports -l .|grep -v vendor)"
