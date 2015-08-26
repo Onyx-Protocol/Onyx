@@ -149,7 +149,20 @@ func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Reques
 		in.SignatureScript = append(in.SignatureScript, tplin.RedeemScript...)
 	}
 
-	err = wallets.InsertOutputs(ctx, tx)
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+	defer dbtx.Rollback()
+
+	err = wallets.Commit(ctx, tx)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
+	err = dbtx.Commit()
 	if err != nil {
 		w.WriteHeader(500)
 		return

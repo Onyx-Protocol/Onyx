@@ -33,7 +33,7 @@ func TestInsertOutputs(t *testing.T) {
 
 	tx.AddTxOut(wire.NewTxOut(asset, 1000, pkscript))
 
-	err := InsertOutputs(bgctx, tx)
+	err := insertOutputs(bgctx, tx.TxSha(), tx.TxOut)
 	if err != nil {
 		t.Fatal("unexptected error:", err)
 	}
@@ -80,13 +80,13 @@ func TestTxOutputs(t *testing.T) {
 
 	tx.AddTxOut(wire.NewTxOut(asset, 1000, pkscript))
 
-	got, err := txOutputs(tx)
+	got := new(outputSet)
+	err := addTxOutputs(got, tx.TxOut)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
 
 	want := &outputSet{
-		txid:    "246c6aa1e5cc2bd1132a37cbc267e2031558aee26a8956e21b749d72920331a7",
 		index:   pg.Uint32s{0},
 		assetID: pg.Strings{"AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo"},
 		amount:  pg.Int64s{1000},

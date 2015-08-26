@@ -19,8 +19,44 @@ type outputSet struct {
 	addr    pg.Strings
 }
 
-func InsertOutputs(ctx context.Context, tx *wire.MsgTx) error {
-	outs, err := txOutputs(tx)
+// Commit updates the output set to reflect
+// the effects of tx. It deletes consumed outputs
+// and inserts newly-created outputs.
+// Must be called inside a transaction.
+func Commit(ctx context.Context, tx *wire.MsgTx) error {
+	hash := tx.TxSha()
+	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
+	err := insertOutputs(ctx, hash, tx.TxOut)
+	if err != nil {
+		return err
+	}
+	return deleteOutputs(ctx, tx.TxIn)
+}
+
+func deleteOutputs(ctx context.Context, txins []*wire.TxIn) error {
+	var (
+		txid  []string
+		index []uint32
+	)
+	for _, in := range txins {
+		txid = append(txid, in.PreviousOutPoint.Hash.String())
+		index = append(index, in.PreviousOutPoint.Index)
+	}
+
+	const q = `
+		WITH outpoints AS (
+			SELECT unnest($1::text[]), unnest($2::int[])
+		)
+		DELETE FROM outputs
+		WHERE (txid, index) IN (TABLE outpoints)
+	`
+	_, err := pg.FromContext(ctx).Exec(q, pg.Strings(txid), pg.Uint32s(index))
+	return err
+}
+
+func insertOutputs(ctx context.Context, hash wire.Hash32, txouts []*wire.TxOut) error {
+	outs := &outputSet{txid: hash.String()}
+	err := addTxOutputs(outs, txouts)
 	if err != nil {
 		return err
 	}
@@ -53,22 +89,20 @@ func InsertOutputs(ctx context.Context, tx *wire.MsgTx) error {
 	return err
 }
 
-func txOutputs(tx *wire.MsgTx) (*outputSet, error) {
-	outs := new(outputSet)
-	outs.txid = tx.TxSha().String()
-	for i, txo := range tx.TxOut {
+func addTxOutputs(outs *outputSet, txouts []*wire.TxOut) error {
+	for i, txo := range txouts {
 		outs.index = append(outs.index, uint32(i))
 		outs.assetID = append(outs.assetID, txo.AssetID.String())
 		outs.amount = append(outs.amount, txo.Value)
 
 		addr, err := pkScriptAddr(txo.PkScript)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		outs.addr = append(outs.addr, addr)
 	}
 
-	return outs, nil
+	return nil
 }
 
 func pkScriptAddr(pkScript []byte) (string, error) {
