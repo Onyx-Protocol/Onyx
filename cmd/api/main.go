@@ -58,7 +58,7 @@ func main() {
 
 	bg := context.Background()
 	bg = pg.NewContext(bg, db)
-	http.Handle("/", chainhttp.BackgroundHandler{Background: bg, Handler: h})
+	http.Handle("/", chainhttp.ContextHandler{Context: bg, Handler: h})
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
