@@ -40,9 +40,14 @@ func Wrap(err error, a ...interface{}) error {
 		root = err
 	}
 
+	msg := err.Error()
+	if len(a) > 0 {
+		msg = fmt.Sprint(a...) + ": " + msg
+	}
+
 	return wrapperError{
 		root: root,
-		msg:  fmt.Sprint(a...) + ": " + err.Error(),
+		msg:  msg,
 	}
 }
 

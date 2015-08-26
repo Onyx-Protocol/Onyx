@@ -9,6 +9,7 @@ func TestWrap(t *testing.T) {
 	err := errors.New("0")
 	err1 := Wrap(err, "1")
 	err2 := Wrap(err1, "2")
+	err3 := Wrap(err2)
 
 	if got := Root(err1); got != err {
 		t.Fatalf("Root(%v)=%v want %v", err1, got, err)
@@ -20,6 +21,10 @@ func TestWrap(t *testing.T) {
 
 	if err2.Error() != "2: 1: 0" {
 		t.Fatalf("err msg = %s want '2: 1: 0'", err2.Error())
+	}
+
+	if err3.Error() != "2: 1: 0" {
+		t.Fatalf("err msg = %s want '2: 1: 0'", err3.Error())
 	}
 }
 
