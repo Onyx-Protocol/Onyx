@@ -33,7 +33,7 @@ func TestInsertOutputs(t *testing.T) {
 
 	tx.AddTxOut(wire.NewTxOut(asset, 1000, pkscript))
 
-	err := InsertOutputs(tx)
+	err := InsertOutputs(bgctx, tx)
 	if err != nil {
 		t.Fatal("unexptected error:", err)
 	}

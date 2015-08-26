@@ -43,7 +43,7 @@ func main() {
 	}
 	wallets.Init(db)
 
-	authAPI := chainhttp.PatServeMux{pat.New()}
+	authAPI := chainhttp.PatServeMux{PatternServeMux: pat.New()}
 	authAPI.AddFunc("POST", "/v3/applications/:applicationID/wallets", createWallet)
 	authAPI.AddFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
 	authAPI.AddFunc("POST", "/v3/wallets/:walletID/assets", createAsset)
@@ -53,10 +53,12 @@ func main() {
 
 	var h chainhttp.Handler
 	h = authAPI // TODO(kr): authentication
-	h = metrics.Handler{h}
-	h = gzip.Handler{h}
+	h = metrics.Handler{Handler: h}
+	h = gzip.Handler{Handler: h}
 
-	http.Handle("/", chainhttp.BackgroundHandler{h})
+	bg := context.Background()
+	bg = pg.NewContext(bg, db)
+	http.Handle("/", chainhttp.BackgroundHandler{Background: bg, Handler: h})
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
@@ -91,7 +93,7 @@ func issueAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}))
 
 	assetID := req.URL.Query().Get(":assetID")
-	asset, err := wallets.AssetByID(assetID)
+	asset, err := wallets.AssetByID(ctx, assetID)
 	if err != nil {
 		w.WriteHeader(400)
 		return
@@ -147,7 +149,7 @@ func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Reques
 		in.SignatureScript = append(in.SignatureScript, tplin.RedeemScript...)
 	}
 
-	err = wallets.InsertOutputs(tx)
+	err = wallets.InsertOutputs(ctx, tx)
 	if err != nil {
 		w.WriteHeader(500)
 		return

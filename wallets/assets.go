@@ -1,6 +1,8 @@
 package wallets
 
 import (
+	"golang.org/x/net/context"
+
 	"chain/database/pg"
 	"chain/fedchain/wire"
 )
@@ -18,7 +20,7 @@ type Asset struct {
 }
 
 // AssetByID loads an asset from the database using its ID.
-func AssetByID(id string) (*Asset, error) {
+func AssetByID(ctx context.Context, id string) (*Asset, error) {
 	const q = `
 		SELECT keys, redeem_script, wallet_id,
 			key_index(wallets.key_index), key_index(assets.key_index),
@@ -35,7 +37,7 @@ func AssetByID(id string) (*Asset, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = db.QueryRow(q, id).Scan(
+	err = pg.FromContext(ctx).QueryRow(q, id).Scan(
 		(*pg.Strings)(&keyIDs),
 		&a.RedeemScript,
 		&a.WalletID,
@@ -46,7 +48,7 @@ func AssetByID(id string) (*Asset, error) {
 		return nil, err
 	}
 
-	a.keys, err = getKeys(keyIDs)
+	a.keys, err = getKeys(ctx, keyIDs)
 	if err != nil {
 		return nil, err
 	}

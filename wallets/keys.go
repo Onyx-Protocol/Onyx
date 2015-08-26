@@ -1,14 +1,16 @@
 package wallets
 
 import (
-	"chain/strings"
 	"encoding/hex"
 	"errors"
 	"sort"
 
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
-	"github.com/chain-engineering/pg"
+	"golang.org/x/net/context"
+
+	"chain/database/pg"
+	"chain/strings"
 )
 
 // Key is a wrapper around an extended key, containing metadata
@@ -42,16 +44,16 @@ func NewKey(pubstr, privEnc, keytype string) (*Key, error) {
 
 // getKeys gets the given keys from the db,
 // using id to identify them.
-func getKeys(ids []string) (ks []*Key, err error) {
+func getKeys(ctx context.Context, ids []string) (ks []*Key, err error) {
 	for _, s := range ids {
 		ks = append(ks, &Key{ID: s})
 	}
-	return ks, loadKeys(ks...)
+	return ks, loadKeys(ctx, ks...)
 }
 
 // loadKeys loads the given keys from the db,
 // using id to identify them.
-func loadKeys(keys ...*Key) error {
+func loadKeys(ctx context.Context, keys ...*Key) error {
 	var a []string
 	for _, k := range keys {
 		if k.ID == "" {
@@ -66,7 +68,7 @@ func loadKeys(keys ...*Key) error {
 		FROM keys
 		WHERE id=ANY($1)
 	`
-	rows, err := db.Query(q, pg.SliceString(a))
+	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(a))
 	if err != nil {
 		return err
 	}

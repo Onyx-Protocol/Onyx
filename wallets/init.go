@@ -11,13 +11,10 @@ const (
 	customerAssetsNamespace  = 1
 )
 
-var db *sql.DB
-
-// Init initializes the package to talk to db.
-// It must be called exactly once,
+// Init creates some objects in db.
+// It must be called on program start,
 // before any other functions in this package.
-func Init(sqldb *sql.DB) error {
-	db = sqldb
+func Init(db *sql.DB) error {
 	_, err := db.Exec(reserveSQL)
 	if err != nil {
 		return err

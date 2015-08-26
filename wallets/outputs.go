@@ -8,6 +8,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
+	"golang.org/x/net/context"
 )
 
 type outputSet struct {
@@ -18,7 +19,7 @@ type outputSet struct {
 	addr    pg.Strings
 }
 
-func InsertOutputs(tx *wire.MsgTx) error {
+func InsertOutputs(ctx context.Context, tx *wire.MsgTx) error {
 	outs, err := txOutputs(tx)
 	if err != nil {
 		return err
@@ -42,7 +43,7 @@ func InsertOutputs(tx *wire.MsgTx) error {
 			(txid, index, asset_id, amount, receiver_id, bucket_id, wallet_id)
 		TABLE recouts
 	`
-	_, err = db.Exec(q,
+	_, err = pg.FromContext(ctx).Exec(q,
 		outs.txid,
 		outs.index,
 		outs.assetID,
