@@ -1,4 +1,4 @@
-package wallet
+package appdb
 
 //go:generate go run gen.go wallet reserveSQL reserve.sql
 const reserveSQL = `CREATE OR REPLACE FUNCTION reserve_outputs(asset_id text, bucket_id text, amt bigint)

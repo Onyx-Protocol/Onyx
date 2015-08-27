@@ -1,4 +1,4 @@
-package wallet
+package appdb
 
 import "database/sql"
 

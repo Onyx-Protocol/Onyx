@@ -1,4 +1,4 @@
-package wallet
+package appdb
 
 //go:generate go run gen.go wallet keySQL keys.sql
 const keySQL = `CREATE OR REPLACE FUNCTION key_index(n bigint) RETURNS integer[]

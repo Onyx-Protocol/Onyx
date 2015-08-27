@@ -1,4 +1,4 @@
-package main
+package api
 
 type changeAddr struct {
 	Address        string        `json:"address"`
