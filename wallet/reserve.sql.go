@@ -1,6 +1,6 @@
-package wallets
+package wallet
 
-//go:generate go run gen.go wallets reserveSQL reserve.sql
+//go:generate go run gen.go wallet reserveSQL reserve.sql
 const reserveSQL = `CREATE OR REPLACE FUNCTION reserve_outputs(asset_id text, bucket_id text, amt bigint)
 	RETURNS TABLE(txid text, index integer, amount bigint)
 	LANGUAGE plv8

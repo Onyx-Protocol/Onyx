@@ -6,7 +6,7 @@ import (
 	"github.com/btcsuite/btcutil"
 
 	"chain/fedchain/wire"
-	"chain/wallets"
+	"chain/wallet"
 )
 
 type output struct {
@@ -15,7 +15,7 @@ type output struct {
 	Amount   int64
 }
 
-func addAssetIssuanceOutputs(tx *wire.MsgTx, asset *wallets.Asset, outs []output) error {
+func addAssetIssuanceOutputs(tx *wire.MsgTx, asset *wallet.Asset, outs []output) error {
 	for _, out := range outs {
 		if out.BucketID != "" {
 			// TODO(erykwalder): actually generate a receiver

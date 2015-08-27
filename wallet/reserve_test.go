@@ -1,4 +1,4 @@
-package wallets
+package wallet
 
 import (
 	"chain/database/pg/pgtest"

@@ -1,7 +1,7 @@
 // +build ignore
 
 // usage: go run gen.go [package] [symbol] [file]
-// ex: go run gen.go wallets keySQL keys.sql
+// ex: go run gen.go wallet keySQL keys.sql
 // creates keys.sql.go
 package main
 

@@ -18,7 +18,7 @@ import (
 	"chain/metrics"
 	chainhttp "chain/net/http"
 	"chain/net/http/gzip"
-	"chain/wallets"
+	"chain/wallet"
 )
 
 var (
@@ -41,7 +41,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	wallets.Init(db)
+	wallet.Init(db)
 
 	authAPI := chainhttp.PatServeMux{PatternServeMux: pat.New()}
 	authAPI.AddFunc("POST", "/v3/applications/:applicationID/wallets", createWallet)
@@ -93,7 +93,7 @@ func issueAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}))
 
 	assetID := req.URL.Query().Get(":assetID")
-	asset, err := wallets.AssetByID(ctx, assetID)
+	asset, err := wallet.AssetByID(ctx, assetID)
 	if err != nil {
 		w.WriteHeader(400)
 		return
@@ -108,10 +108,10 @@ func issueAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	var buf bytes.Buffer
 	tx.Serialize(&buf)
 	resp := map[string]interface{}{
-		"template": wallets.Tx{
+		"template": wallet.Tx{
 			Unsigned:   buf.Bytes(),
 			BlockChain: "sandbox",
-			Inputs:     []*wallets.Input{asset.IssuanceInput()},
+			Inputs:     []*wallet.Input{asset.IssuanceInput()},
 		},
 		"change_addresses": []changeAddr{},
 	}
@@ -127,7 +127,7 @@ func walletBuild(ctx context.Context, w http.ResponseWriter, req *http.Request) 
 func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	// TODO(kr): validate
 
-	var tpl wallets.Tx
+	var tpl wallet.Tx
 	err := json.NewDecoder(req.Body).Decode(&tpl)
 	if err != nil {
 		w.WriteHeader(400)
@@ -156,7 +156,7 @@ func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Reques
 	}
 	defer dbtx.Rollback()
 
-	err = wallets.Commit(ctx, tx)
+	err = wallet.Commit(ctx, tx)
 	if err != nil {
 		w.WriteHeader(500)
 		return

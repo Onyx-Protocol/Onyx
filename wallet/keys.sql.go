@@ -1,6 +1,6 @@
-package wallets
+package wallet
 
-//go:generate go run gen.go wallets keySQL keys.sql
+//go:generate go run gen.go wallet keySQL keys.sql
 const keySQL = `CREATE OR REPLACE FUNCTION key_index(n bigint) RETURNS integer[]
 	LANGUAGE plpgsql
 	AS $$
