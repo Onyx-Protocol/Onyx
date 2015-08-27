@@ -35,11 +35,12 @@ func TestReserve(t *testing.T) {
 
 	for _, test := range tests {
 		t.Log(test.description)
-		pgtest.ResetWithSQL(t, test.fixture)
+		dbtx := pgtest.TxWithSQL(t, test.fixture)
 
-		rows, err := db.Query(`SELECT * FROM reserve_outputs('a1', 'b1', $1)`, test.askAmt)
+		rows, err := dbtx.Query(`SELECT * FROM reserve_outputs('a1', 'b1', $1)`, test.askAmt)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
+			dbtx.Rollback()
 			continue
 		}
 
@@ -47,11 +48,13 @@ func TestReserve(t *testing.T) {
 		err = sql.Collect(rows, &got)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
+			dbtx.Rollback()
 			continue
 		}
 
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("got reserve_outputs(%d) = %+v want %+v", test.askAmt, got, test.want)
 		}
+		dbtx.Rollback()
 	}
 }

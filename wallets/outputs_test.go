@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/fedchain/wire"
@@ -19,13 +21,15 @@ func mustDecodeHex(h string) []byte {
 }
 
 func TestInsertOutputs(t *testing.T) {
-	pgtest.ResetWithSQL(t, `
+	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO wallets (id, application_id, label, current_rotation, pek, key_index)
 		VALUES('w1', 'a1', '', 'c1', '', 0);
 		INSERT INTO buckets (id, wallet_id, key_index) VALUES('b1', 'w1', 0);
 		INSERT INTO receivers (id, bucket_id, wallet_id, address, keyset, key_index)
 		VALUES ('r1', 'b1', 'w1', '3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB', '{}', 0);
 	`)
+	defer dbtx.Rollback()
+
 	tx := wire.NewMsgTx()
 
 	pkscript, _ := hex.DecodeString("a914a994a46855d8f4442b3a6db863628cc020537f4087")
@@ -33,6 +37,7 @@ func TestInsertOutputs(t *testing.T) {
 
 	tx.AddTxOut(wire.NewTxOut(asset, 1000, pkscript))
 
+	bgctx := pg.NewContext(context.Background(), dbtx)
 	err := insertOutputs(bgctx, tx.TxSha(), tx.TxOut)
 	if err != nil {
 		t.Fatal("unexptected error:", err)
@@ -48,7 +53,7 @@ func TestInsertOutputs(t *testing.T) {
 		amount                                        int64
 	}
 	var got output
-	err = db.QueryRow(check).Scan(&got.txid, &got.index, &got.assetID, &got.amount, &got.receiverID, &got.bucketID, &got.walletID)
+	err = dbtx.QueryRow(check).Scan(&got.txid, &got.index, &got.assetID, &got.amount, &got.receiverID, &got.bucketID, &got.walletID)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -67,7 +72,7 @@ func TestInsertOutputs(t *testing.T) {
 		t.Errorf("got output = %+v want %+v", got, want)
 	}
 
-	if got := pgtest.Count(t, "outputs"); got != 1 {
+	if got := pgtest.Count(t, dbtx, "outputs"); got != 1 {
 		t.Errorf("Count(outputs) = %d want 1", got)
 	}
 }

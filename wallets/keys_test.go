@@ -2,7 +2,6 @@ package wallets
 
 import (
 	"chain/database/pg"
-	"chain/database/pg/pgtest"
 	"reflect"
 	"testing"
 )
@@ -18,8 +17,6 @@ func TestKeyIndexSQL(t *testing.T) {
 		{0x80000001, []uint32{1, 1}},
 		{0x100000000, []uint32{2, 0}},
 	}
-
-	pgtest.ResetWithSQL(t)
 
 	for _, test := range cases {
 		var got []uint32
