@@ -107,15 +107,14 @@ func issueAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 
 	var buf bytes.Buffer
 	tx.Serialize(&buf)
-	resp := map[string]interface{}{
+	writeJSON(w, 200, map[string]interface{}{
 		"template": wallet.Tx{
 			Unsigned:   buf.Bytes(),
 			BlockChain: "sandbox",
 			Inputs:     []*wallet.Input{asset.IssuanceInput()},
 		},
 		"change_addresses": []changeAddr{},
-	}
-	writeJSON(w, resp, 200)
+	})
 }
 
 // /v3/assets/transfer
@@ -171,10 +170,8 @@ func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Reques
 	var buf bytes.Buffer
 	tx.Serialize(&buf)
 
-	resp := map[string]interface{}{
+	writeJSON(w, 200, map[string]interface{}{
 		"transaction_id":  tx.TxSha().String(),
 		"raw_transaction": chainjson.HexBytes(buf.Bytes()),
-	}
-
-	writeJSON(w, resp, 200)
+	})
 }
