@@ -1,0 +1,42 @@
+#!/bin/bash -e
+
+export RELEASE_URL=$1
+export APP_DIR=/home/ubuntu/chain
+
+rm -rf $APP_DIR
+mkdir $APP_DIR
+
+aws s3 cp "$RELEASE_URL/source.tar.gz" "/tmp/source.tar.gz"
+cat "/tmp/source.tar.gz" | tar xvz --directory "$APP_DIR"
+
+# Load our config from the release into the env.
+# Upstart will source this file prior to running commands.
+aws s3 cp "$RELEASE_URL/env" "$APP_DIR/.env"
+
+sudo stop chain
+sudo rm -f /etc/init/chain-*
+
+cat "$APP_DIR/Procfile" | while read line
+do
+	name=$(echo "$line" | cut -d ':' -f1)
+	cmd=$(echo "$line" | cut -d ':' -f2-)
+	upstartconf=$(cat <<-EOF
+		start on starting chain
+		stop on stopping chain
+		respawn
+		respawn limit unlimited
+		limit nofile 16384 16384
+		console log
+		setuid ubuntu
+		setgid ubuntu
+		chdir $APP_DIR
+		script
+		  . $APP_DIR/.env
+		  exec $cmd 2>&1 | logger -t $name
+		end script
+	EOF
+	)
+	sudo bash -c "echo \"$upstartconf\" > /etc/init/chain-\"$name\".conf"
+done
+
+sudo start chain

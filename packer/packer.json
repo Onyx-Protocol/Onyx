@@ -1,0 +1,27 @@
+{
+  "builders": [{
+    "type": "amazon-ebs",
+    "region": "us-east-1",
+    "source_ami": "ami-d05e75b8",
+    "instance_type": "m4.large",
+    "ssh_username": "ubuntu",
+    "ami_name": "chain-{{timestamp}}"
+  }],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "target-machine",
+      "destination": "/tmp"
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "sudo cp -R /tmp/target-machine/* /",
+        "sudo apt-get update -y",
+        "sudo apt-get install ntp awscli -y",
+        "echo 'must run unattended-upgrade last; otherwise error'",
+        "sudo unattended-upgrade"
+      ]
+    }
+  ]
+}
