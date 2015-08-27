@@ -1,3 +1,4 @@
+// Package api provides http handlers for all Chain operations.
 package api
 
 import (
@@ -75,7 +76,7 @@ func walletBuild(ctx context.Context, w http.ResponseWriter, req *http.Request) 
 func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	// TODO(kr): validate
 
-	var tpl appdb.Tx
+	var tpl asset.Tx
 	err := json.NewDecoder(req.Body).Decode(&tpl)
 	if err != nil {
 		w.WriteHeader(400)

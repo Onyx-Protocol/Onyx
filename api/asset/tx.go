@@ -1,4 +1,4 @@
-package appdb
+package asset
 
 import "chain/encoding/json"
 

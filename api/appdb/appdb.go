@@ -1,14 +1,16 @@
+// Package appdb provides low-level database operations
+// for Chain app wallet objects.
 package appdb
 
 import "database/sql"
 
 const (
-	chainPaymentNamespace  = 0
-	chainPasscodeNamespace = 1
-	chainAssetsNamespace   = 2
+	ChainPaymentNamespace  = 0
+	ChainPasscodeNamespace = 1
+	ChainAssetsNamespace   = 2
 
-	customerPaymentNamespace = 0
-	customerAssetsNamespace  = 1
+	CustomerPaymentNamespace = 0
+	CustomerAssetsNamespace  = 1
 )
 
 // Init creates some objects in db.

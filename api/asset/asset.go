@@ -1,3 +1,4 @@
+// Package asset provides business logic for manipulating assets.
 package asset
 
 import (
@@ -13,7 +14,7 @@ import (
 	"chain/fedchain/wire"
 )
 
-func Issue(ctx context.Context, assetID string, outs []Output) (*appdb.Tx, error) {
+func Issue(ctx context.Context, assetID string, outs []Output) (*Tx, error) {
 	tx := wire.NewMsgTx()
 	tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}))
 
@@ -29,10 +30,10 @@ func Issue(ctx context.Context, assetID string, outs []Output) (*appdb.Tx, error
 
 	var buf bytes.Buffer
 	tx.Serialize(&buf)
-	appTx := &appdb.Tx{
+	appTx := &Tx{
 		Unsigned:   buf.Bytes(),
 		BlockChain: "sandbox", // TODO(tess): make this BlockChain: blockchain.FromContext(ctx)
-		Inputs:     []*appdb.Input{asset.IssuanceInput()},
+		Inputs:     []*Input{issuanceInput(asset)},
 	}
 	return appTx, nil
 }
@@ -62,6 +63,38 @@ func addAssetIssuanceOutputs(tx *wire.MsgTx, asset *appdb.Asset, outs []Output) 
 		}
 
 		tx.AddTxOut(wire.NewTxOut(asset.Hash, out.Amount, pkScript))
+	}
+	return nil
+}
+
+// issuanceInput returns an Input that can be used
+// to issue units of asset 'a'.
+func issuanceInput(a *appdb.Asset) *Input {
+	return &Input{
+		WalletID:     a.WalletID,
+		RedeemScript: a.RedeemScript,
+		Sigs:         issuanceSigs(a),
+	}
+}
+
+func issuanceSigs(a *appdb.Asset) (sigs []*Signature) {
+	for _, key := range a.Keys {
+		signer := &Signature{
+			XPubHash:       key.ID,
+			XPrivEnc:       key.XPrivEnc,
+			DerivationPath: assetIssuanceDerivationPath(key, a),
+		}
+		sigs = append(sigs, signer)
+	}
+	return sigs
+}
+
+func assetIssuanceDerivationPath(key *appdb.Key, asset *appdb.Asset) []uint32 {
+	switch key.Type {
+	case "chain":
+		return append(append(asset.WIndex, appdb.ChainAssetsNamespace), asset.AIndex...)
+	case "client":
+		return append([]uint32{appdb.CustomerAssetsNamespace}, asset.AIndex...)
 	}
 	return nil
 }

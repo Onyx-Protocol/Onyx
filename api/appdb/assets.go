@@ -11,12 +11,11 @@ import (
 // It is made up of extended keys, and paths (indexes) within those keys.
 // Assets belong to wallets.
 type Asset struct {
-	keys           []*Key
-	wIndex, aIndex []uint32
-
-	Hash         wire.Hash20 // the raw Asset ID
-	RedeemScript []byte
-	WalletID     string
+	Keys           []*Key
+	WIndex, AIndex []uint32
+	Hash           wire.Hash20 // the raw Asset ID
+	RedeemScript   []byte
+	WalletID       string
 }
 
 // AssetByID loads an asset from the database using its ID.
@@ -41,50 +40,17 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 		(*pg.Strings)(&keyIDs),
 		&a.RedeemScript,
 		&a.WalletID,
-		(*pg.Uint32s)(&a.wIndex),
-		(*pg.Uint32s)(&a.aIndex),
+		(*pg.Uint32s)(&a.WIndex),
+		(*pg.Uint32s)(&a.AIndex),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	a.keys, err = getKeys(ctx, keyIDs)
+	a.Keys, err = getKeys(ctx, keyIDs)
 	if err != nil {
 		return nil, err
 	}
 
 	return a, nil
-}
-
-// IssuanceInput returns an Input that can be used
-// to issue units of asset 'a'.
-func (a *Asset) IssuanceInput() *Input {
-	return &Input{
-		WalletID:     a.WalletID,
-		RedeemScript: a.RedeemScript,
-		Sigs:         a.issuanceSigs(),
-	}
-}
-
-func (a *Asset) issuanceSigs() (sigs []*Signature) {
-	for _, key := range a.keys {
-		signer := &Signature{
-			XPubHash:       key.ID,
-			XPrivEnc:       key.XPrivEnc,
-			DerivationPath: assetIssuanceDerivationPath(key, a),
-		}
-		sigs = append(sigs, signer)
-	}
-	return sigs
-}
-
-func assetIssuanceDerivationPath(key *Key, asset *Asset) []uint32 {
-	switch key.Type {
-	case "chain":
-		return append(append(asset.wIndex, chainAssetsNamespace), asset.aIndex...)
-	case "client":
-		return append([]uint32{customerAssetsNamespace}, asset.aIndex...)
-	}
-	return nil
-
 }
