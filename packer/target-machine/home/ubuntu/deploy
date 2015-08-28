@@ -1,7 +1,8 @@
-#!/bin/bash -e
+#!/bin/bash
 
 export RELEASE_URL=$1
 export APP_DIR=/home/ubuntu/chain
+export AWS_DEFAULT_REGION=us-east-1
 
 rm -rf $APP_DIR
 mkdir $APP_DIR

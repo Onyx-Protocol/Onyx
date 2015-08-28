@@ -1,0 +1,4 @@
+#!/bin/sh
+/usr/local/go/bin/go build -tags 'prod' -o builds/chainbot/target/chainbot ./cmd/chainbot
+cd builds/chainbot/target > /dev/null
+tar cf - .

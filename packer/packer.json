@@ -20,7 +20,8 @@
         "sudo rm -f /root/.ssh/authorized_keys",
         "sudo cp -R /tmp/target-machine/* /",
         "sudo apt-get update -y",
-        "sudo apt-get install ntp awscli -y",
+        "sudo apt-get install ntp awscli git -y",
+	"curl https://storage.googleapis.com/golang/go1.5.linux-amd64.tar.gz | sudo tar xz -C /usr/local",
         "echo 'must run unattended-upgrade last; otherwise error'",
         "sudo unattended-upgrade"
       ]
