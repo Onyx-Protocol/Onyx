@@ -1,0 +1,2 @@
+#!/bin/sh
+aws s3 cp --region us-east-1 s3://chain-ec2-ssh/authorized_keys /home/ubuntu/.ssh/authorized_keys

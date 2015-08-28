@@ -16,6 +16,8 @@
     {
       "type": "shell",
       "inline": [
+        "echo 'removing packer key from authorized_keys...'",
+        "sudo rm -f /root/.ssh/authorized_keys",
         "sudo cp -R /tmp/target-machine/* /",
         "sudo apt-get update -y",
         "sudo apt-get install ntp awscli -y",

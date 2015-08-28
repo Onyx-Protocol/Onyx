@@ -17,3 +17,23 @@ $ brew install packer
 ```
 $ packer build packer.json
 ```
+
+### Launching instances
+
+##### Basic config
+
+- IAM role: `chain-ec2-instance`
+- Security groups: `splunk`
+- SSH key pair: **Proceed without a keypair**
+- User data: see below
+
+##### User data
+
+As text:
+
+```sh
+#!/bin/sh
+
+# Team SSH access: fetch common authorized_keys
+/home/ubuntu/refresh-authorized-keys
+```
