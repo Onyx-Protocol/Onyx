@@ -14,6 +14,8 @@ build:
         code: |
           set -veo pipefail
           export GO15VENDOREXPERIMENT=1
+          go version
+          go env
           go get golang.org/x/tools/cmd/vet golang.org/x/tools/cmd/goimports
           PATH=$GOPATH/bin:$PATH
           cp -a $WERCKER_SOURCE_DIR $GOPATH/src/chain
@@ -22,5 +24,8 @@ build:
           cd $GOPATH/src/chain
           test -z "$(go fmt $(go list ./...|grep -v vendor))"
           go vet $(go list ./...|grep -v vendor)
+          go install chain/cmd/vet
+          vet .
+          go install chain/log # needed before testing ./cmd/vet below
           go test -cover $(go list ./...|grep -v vendor)
           test -z "$(goimports -l .|grep -v vendor)"
