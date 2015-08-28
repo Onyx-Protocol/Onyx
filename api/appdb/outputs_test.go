@@ -102,25 +102,3 @@ func TestTxOutputs(t *testing.T) {
 		t.Errorf("got txOutputs(tx) = %+v want %+v", got, want)
 	}
 }
-
-func TestPkScriptAddr(t *testing.T) {
-	cases := []struct {
-		script string
-		want   string
-	}{
-		{
-			script: "a914a994a46855d8f4442b3a6db863628cc020537f4087",
-			want:   "3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB",
-		},
-	}
-
-	for _, c := range cases {
-		got, err := pkScriptAddr(mustDecodeHex(c.script))
-		if err != nil {
-			t.Error("unexptected error", err)
-		}
-		if got != c.want {
-			t.Errorf("got pkScriptAddr(%s) = %v want %v", c.script, got, c.want)
-		}
-	}
-}

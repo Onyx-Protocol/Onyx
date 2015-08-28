@@ -2,12 +2,9 @@ package appdb
 
 import (
 	"chain/database/pg"
+	"chain/fedchain/txscript"
 	"chain/fedchain/wire"
-	"errors"
 
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcutil"
 	"golang.org/x/net/context"
 )
 
@@ -95,27 +92,12 @@ func addTxOutputs(outs *outputSet, txouts []*wire.TxOut) error {
 		outs.assetID = append(outs.assetID, txo.AssetID.String())
 		outs.amount = append(outs.amount, txo.Value)
 
-		addr, err := pkScriptAddr(txo.PkScript)
+		addr, err := txscript.PkScriptAddr(txo.PkScript)
 		if err != nil {
 			return err
 		}
-		outs.addr = append(outs.addr, addr)
+		outs.addr = append(outs.addr, addr.String())
 	}
 
 	return nil
-}
-
-func pkScriptAddr(pkScript []byte) (string, error) {
-	pushed, err := txscript.PushedData(pkScript)
-	if err != nil {
-		return "", err
-	}
-	if len(pushed) != 1 || len(pushed[0]) != 20 {
-		return "", errors.New("output address is not p2sh")
-	}
-	addr, err := btcutil.NewAddressScriptHashFromHash(pushed[0], &chaincfg.MainNetParams)
-	if err != nil {
-		return "", err
-	}
-	return addr.String(), nil
 }
