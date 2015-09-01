@@ -22,8 +22,8 @@ func mustDecodeHex(h string) []byte {
 
 func TestInsertOutputs(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO wallets (id, application_id, label, current_rotation, pek, key_index)
-		VALUES('w1', 'a1', '', 'c1', '', 0);
+		INSERT INTO wallets (id, application_id, label, current_rotation, key_index)
+		VALUES('w1', 'a1', '', 'c1', 0);
 		INSERT INTO buckets (id, wallet_id, key_index) VALUES('b1', 'w1', 0);
 		INSERT INTO receivers (id, bucket_id, wallet_id, address, keyset, key_index)
 		VALUES ('r1', 'b1', 'w1', '3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB', '{}', 0);

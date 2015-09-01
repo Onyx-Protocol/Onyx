@@ -1,9 +1,17 @@
 package appdb
 
 import (
-	"chain/database/pg"
 	"reflect"
 	"testing"
+
+	"golang.org/x/net/context"
+
+	"chain/database/pg"
+	"chain/database/pg/pgtest"
+)
+
+var (
+	dummyXPub, _ = NewKey("xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw")
 )
 
 func TestKeyIndexSQL(t *testing.T) {
@@ -29,5 +37,19 @@ func TestKeyIndexSQL(t *testing.T) {
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("key_index(%d) = %v want %v", test.n, got, test.want)
 		}
+	}
+}
+
+func TestUpsertKeys(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+	err := upsertKeys(ctx, dummyXPub)
+	if err != nil {
+		t.Errorf("upsertKeys(%v) error: %v", dummyXPub, err)
+	}
+	err = upsertKeys(ctx, dummyXPub)
+	if err != nil {
+		t.Errorf("upsertKeys(%v) error: %v", dummyXPub, err)
 	}
 }

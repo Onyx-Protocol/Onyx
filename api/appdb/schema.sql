@@ -191,9 +191,7 @@ CREATE SEQUENCE chain_id_seq
 
 CREATE TABLE keys (
     id text NOT NULL,
-    type text,
     xpub text,
-    enc_xpriv text,
     created_at timestamp with time zone DEFAULT now()
 );
 
@@ -242,7 +240,6 @@ CREATE TABLE receivers (
 CREATE TABLE rotations (
     id text DEFAULT next_chain_id('rot'::text) NOT NULL,
     wallet_id text NOT NULL,
-    pek_pub text,
     keyset text[] NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -255,14 +252,11 @@ CREATE TABLE rotations (
 CREATE TABLE wallets (
     id text DEFAULT next_chain_id('w'::text) NOT NULL,
     application_id text NOT NULL,
-    development boolean,
-    block_chain text,
-    sigs_required integer DEFAULT 2 NOT NULL,
-    chain_keys integer DEFAULT 1 NOT NULL,
+    block_chain text DEFAULT 'sandbox' NOT NULL,
+    sigs_required integer DEFAULT 1 NOT NULL,
     key_index bigint NOT NULL,
     label text NOT NULL,
-    current_rotation text NOT NULL,
-    pek text NOT NULL,
+    current_rotation text,
     next_asset_index bigint DEFAULT 0 NOT NULL,
     next_bucket_index bigint DEFAULT 0 NOT NULL,
     buckets_count bigint DEFAULT 0,

@@ -81,7 +81,6 @@ func issuanceSigs(a *appdb.Asset) (sigs []*Signature) {
 	for _, key := range a.Keys {
 		signer := &Signature{
 			XPubHash:       key.ID,
-			XPrivEnc:       key.XPrivEnc,
 			DerivationPath: assetIssuanceDerivationPath(key, a),
 		}
 		sigs = append(sigs, signer)
@@ -90,11 +89,5 @@ func issuanceSigs(a *appdb.Asset) (sigs []*Signature) {
 }
 
 func assetIssuanceDerivationPath(key *appdb.Key, asset *appdb.Asset) []uint32 {
-	switch key.Type {
-	case "chain":
-		return append(append(asset.WIndex, appdb.ChainAssetsNamespace), asset.AIndex...)
-	case "client":
-		return append([]uint32{appdb.CustomerAssetsNamespace}, asset.AIndex...)
-	}
-	return nil
+	return append([]uint32{appdb.CustomerAssetsNamespace}, asset.AIndex...)
 }

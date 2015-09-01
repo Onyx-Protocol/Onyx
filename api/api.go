@@ -19,7 +19,7 @@ import (
 
 func Handler() chainhttp.Handler {
 	h := chainhttp.PatServeMux{PatternServeMux: pat.New()}
-	h.AddFunc("POST", "/v3/applications/:applicationID/wallets", createWallet)
+	h.AddFunc("POST", "/v3/applications/:appID/wallets", createWallet)
 	h.AddFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
 	h.AddFunc("POST", "/v3/wallets/:walletID/assets", createAsset)
 	h.AddFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
@@ -28,9 +28,57 @@ func Handler() chainhttp.Handler {
 	return h
 }
 
-// /v3/applications/:applicationID/wallets
+// /v3/applications/:appID/wallets
 func createWallet(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	panic("TODO")
+	appID := req.URL.Query().Get(":appID")
+
+	var wReq struct {
+		Label string   `json:"label"`
+		XPubs []string `json:"xpubs"`
+	}
+	err := json.NewDecoder(req.Body).Decode(&wReq)
+	if err != nil {
+		w.WriteHeader(400)
+		return
+	}
+
+	var keys []*appdb.Key
+	for _, xpub := range wReq.XPubs {
+		key, err := appdb.NewKey(xpub)
+		if err != nil {
+			w.WriteHeader(400)
+			return
+		}
+		keys = append(keys, key)
+	}
+
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+	defer dbtx.Rollback()
+
+	wID, err := appdb.CreateWallet(ctx, appID, wReq.Label, keys)
+	if err != nil {
+		// TODO(kr): distinguish between user and server error
+		w.WriteHeader(400)
+		return
+	}
+
+	err = dbtx.Commit()
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
+	writeJSON(w, 201, map[string]interface{}{
+		"wallet_id":           wID,
+		"label":               wReq.Label,
+		"block_chain":         "sandbox",
+		"keys":                keys,
+		"signatures_required": 1,
+	})
 }
 
 // /v3/wallets/:walletID/buckets
