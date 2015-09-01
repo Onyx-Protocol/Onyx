@@ -15,7 +15,7 @@ func init() {
 		u = s
 	}
 
-	db = pgtest.Open(u, "apitest", "schema.sql")
+	db = pgtest.Open(u, "appdbtest", "schema.sql")
 	err := Init(db)
 	if err != nil {
 		log.Fatal(err)
