@@ -246,13 +246,25 @@ CREATE TABLE rotations (
 
 
 --
+-- Name: users; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE users (
+    id text DEFAULT next_chain_id('u'::text) NOT NULL,
+    email text NOT NULL,
+    password_hash bytea NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: wallets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE TABLE wallets (
     id text DEFAULT next_chain_id('w'::text) NOT NULL,
     application_id text NOT NULL,
-    block_chain text DEFAULT 'sandbox' NOT NULL,
+    block_chain text DEFAULT 'sandbox'::text NOT NULL,
     sigs_required integer DEFAULT 1 NOT NULL,
     key_index bigint NOT NULL,
     label text NOT NULL,
@@ -340,6 +352,14 @@ ALTER TABLE ONLY rotations
 
 
 --
+-- Name: users_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: wallets_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -394,6 +414,13 @@ CREATE UNIQUE INDEX receivers_bucket_id_key_index_idx ON receivers USING btree (
 --
 
 CREATE INDEX receivers_wallet_id_idx ON receivers USING btree (wallet_id);
+
+
+--
+-- Name: users_lower_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
 
 
 --

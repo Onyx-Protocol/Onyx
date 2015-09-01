@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/tessr/pat"
 	"golang.org/x/net/context"
@@ -25,6 +26,7 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
 	h.AddFunc("POST", "/v3/assets/transfer", walletBuild)
 	h.AddFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
+	h.AddFunc("POST", "/v3/users", createUser)
 	return h
 }
 
@@ -172,4 +174,37 @@ func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Reques
 		"transaction_id":  tx.TxSha().String(),
 		"raw_transaction": chainjson.HexBytes(buf.Bytes()),
 	})
+}
+
+// POST /v3/users
+func createUser(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	var in struct {
+		Email    string
+		Password string
+	}
+
+	err := json.NewDecoder(req.Body).Decode(&in)
+	if err != nil {
+		w.WriteHeader(400)
+		return
+	}
+
+	// TODO(jeffomatic) - these validations could be moved into CreateUser. This
+	// will be easier once we create an app-specific error interface that had
+	// pre-defined HTTP status codes and error messages.
+
+	if len(in.Email) < 1 || 255 < len(in.Email) ||
+		!strings.Contains(in.Email, "@") ||
+		len(in.Password) < 6 || 255 < len(in.Password) {
+		w.WriteHeader(400)
+		return
+	}
+
+	user, err := appdb.CreateUser(ctx, in.Email, in.Password)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
+	writeJSON(w, 200, user)
 }
