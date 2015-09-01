@@ -9,6 +9,20 @@ import (
 	"chain/fedchain/wire"
 )
 
+// AddrPkScript takes a base58-encoded address
+// and generates a PkScript for use on a TxOut.
+func AddrPkScript(addr string) ([]byte, error) {
+	address, err := btcutil.DecodeAddress(addr, &chaincfg.MainNetParams)
+	if err != nil {
+		return nil, err
+	}
+	pkScript, err := txscript.PayToAddrScript(address)
+	if err != nil {
+		return nil, err
+	}
+	return pkScript, nil
+}
+
 // PkScriptAddr returns the address for a public key script,
 // which is stored on a TxOut.
 // It currently only supports p2sh addresses.

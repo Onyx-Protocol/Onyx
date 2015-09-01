@@ -1,28 +1,74 @@
 package appdb
 
 import (
-	"chain/database/pg/pgtest"
-	"chain/database/sql"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/lib/pq"
+	"golang.org/x/net/context"
+
+	"chain/database/pg"
+	"chain/database/pg/pgtest"
+	"chain/database/sql"
+	"chain/fedchain/wire"
 )
+
+func TestReserveUTXOs(t *testing.T) {
+	const outs = `
+		INSERT INTO utxos
+		(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+		VALUES
+			('b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45', 0, 'a1', 1, 'a1', 'b1', 'w1'),
+			('b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45', 1, 'a1', 1, 'a2', 'b1', 'w1');
+	`
+	hash, _ := wire.NewHash32FromStr("b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45")
+	cases := []struct {
+		askAmt  int64
+		wantErr error
+		want    []*UTXO
+	}{{
+		askAmt:  5000,
+		wantErr: ErrInsufficientFunds,
+	}, {
+		askAmt: 1,
+		want: []*UTXO{{
+			OutPoint:  wire.NewOutPoint(hash, 0),
+			Amount:    1,
+			AddressID: "a1",
+		}},
+	}}
+
+	for _, c := range cases {
+		dbtx := pgtest.TxWithSQL(t, outs)
+		ctx := pg.NewContext(context.Background(), dbtx)
+		got, _, err := ReserveUTXOs(ctx, "a1", "b1", c.askAmt)
+
+		if err != c.wantErr {
+			t.Errorf("got err = %q want %q", err, c.wantErr)
+			continue
+		}
+
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("got outs = %v want %v", got, c.want)
+		}
+	}
+}
 
 func TestReserveSQL(t *testing.T) {
 	var threeUTXOsFixture = `
 		INSERT INTO utxos
 		(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
 		VALUES
-			('t1', 0, 'a1', 1, 'r1', 'b1', 'w1'),
-			('t2', 0, 'a1', 1, 'r2', 'b1', 'w1'),
-			('t3', 0, 'a1', 1, 'r3', 'b1', 'w1');
+			('t1', 0, 'a1', 1, 'a1', 'b1', 'w1'),
+			('t2', 0, 'a1', 1, 'a2', 'b1', 'w1'),
+			('t3', 0, 'a1', 1, 'a3', 'b1', 'w1');
 	`
 
 	type want struct {
 		Txid       string
 		Index, Amt int
+		AddressID  string
 	}
 	tests := []struct {
 		description  string
@@ -36,8 +82,8 @@ func TestReserveSQL(t *testing.T) {
 			description:  "test reserves minimum needed",
 			fixture:      threeUTXOsFixture,
 			askAmt:       2,
-			want:         []want{{"t1", 0, 1}, {"t2", 0, 1}},
-			wantReserved: []want{{"t1", 0, 1}, {"t2", 0, 1}},
+			want:         []want{{"t1", 0, 1, "a1"}, {"t2", 0, 1, "a2"}},
+			wantReserved: []want{{"t1", 0, 1, "a1"}, {"t2", 0, 1, "a2"}},
 		},
 		{
 			description: "test returns error if minimum is not met",
@@ -51,12 +97,12 @@ func TestReserveSQL(t *testing.T) {
 				INSERT INTO utxos
 				(txid, index, asset_id, amount, address_id, bucket_id, wallet_id, reserved_at)
 				VALUES
-					('t1', 0, 'a1', 1, 'r1', 'b1', 'w1', now()),
-					('t2', 0, 'a1', 1, 'r2', 'b1', 'w1', now()-'61s'::interval);
+					('t1', 0, 'a1', 1, 'a1', 'b1', 'w1', now()),
+					('t2', 0, 'a1', 1, 'a2', 'b1', 'w1', now()-'61s'::interval);
 			`,
 			askAmt:       1,
-			want:         []want{{"t2", 0, 1}},
-			wantReserved: []want{{"t1", 0, 1}, {"t2", 0, 1}},
+			want:         []want{{"t2", 0, 1, "a2"}},
+			wantReserved: []want{{"t1", 0, 1, "a1"}, {"t2", 0, 1, "a2"}},
 		},
 	}
 
@@ -90,7 +136,7 @@ func TestReserveSQL(t *testing.T) {
 		}
 
 		const onlyReservedQ = `
-			SELECT txid, index, amount FROM utxos
+			SELECT txid, index, amount, address_id FROM utxos
 			WHERE reserved_at > now()-'60s'::interval
 			ORDER BY address_id ASC
 		`

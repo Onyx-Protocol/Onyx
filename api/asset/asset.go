@@ -5,20 +5,21 @@ import (
 	"bytes"
 	"database/sql"
 
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcutil"
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/database/pg"
 	"chain/errors"
+	"chain/fedchain/txscript"
 	"chain/fedchain/wire"
 )
 
 // ErrBadAddr is returned by Issue.
 var ErrBadAddr = errors.New("bad address")
 
+// Issue creates a transaction that
+// issues new units of an asset
+// distributed to the outputs provided.
 func Issue(ctx context.Context, assetID string, outs []Output) (*Tx, error) {
 	tx := wire.NewMsgTx()
 	tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}))
@@ -31,7 +32,7 @@ func Issue(ctx context.Context, assetID string, outs []Output) (*Tx, error) {
 		return nil, errors.WithDetailf(err, "get asset with ID %q", assetID)
 	}
 
-	err = addAssetIssuanceOutputs(tx, asset, outs)
+	err = addAssetIssuanceOutputs(ctx, tx, asset, outs)
 	if err != nil {
 		return nil, errors.Wrap(err, "add issuance outputs")
 	}
@@ -41,33 +42,46 @@ func Issue(ctx context.Context, assetID string, outs []Output) (*Tx, error) {
 	appTx := &Tx{
 		Unsigned:   buf.Bytes(),
 		BlockChain: "sandbox", // TODO(tess): make this BlockChain: blockchain.FromContext(ctx)
-		Inputs:     []*Input{issuanceInput(asset)},
+		Inputs:     []*Input{issuanceInput(asset, tx)},
 	}
 	return appTx, nil
 }
 
+// Output is a user input struct that describes
+// the destination of a transaction's inputs.
 type Output struct {
+	AssetID  string
 	Address  string
 	BucketID string `json:"bucket_id"`
 	Amount   int64
+	isChange bool
 }
 
-func addAssetIssuanceOutputs(tx *wire.MsgTx, asset *appdb.Asset, outs []Output) error {
-	for i, out := range outs {
-		if out.BucketID != "" {
-			// TODO(erykwalder): actually generate an address
-			// This address doesn't mean anything, it was grabbed from the internet.
-			// We don't have its private key.
-			out.Address = "1ByEd6DMfTERyT4JsVSLDoUcLpJTD93ifq"
+// PkScript returns the script for sending to
+// the destination address or bucket id provided.
+func (o *Output) PkScript(ctx context.Context) ([]byte, error) {
+	if o.BucketID != "" {
+		addr := &appdb.Address{
+			BucketID: o.BucketID,
 		}
+		err := CreateAddress(ctx, addr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "output create address error bucket=%v", o.BucketID)
+		}
+		return addr.PKScript, nil
+	}
+	script, err := txscript.AddrPkScript(o.Address)
+	if err != nil {
+		return nil, errors.Wrapf(ErrBadAddr, "output pkscript error addr=%v", o.Address)
+	}
+	return script, nil
+}
 
-		addr, err := btcutil.DecodeAddress(out.Address, &chaincfg.MainNetParams)
+func addAssetIssuanceOutputs(ctx context.Context, tx *wire.MsgTx, asset *appdb.Asset, outs []Output) error {
+	for i, out := range outs {
+		pkScript, err := out.PkScript(ctx)
 		if err != nil {
-			return errors.WithDetailf(ErrBadAddr, "output %d: %v", i, err.Error())
-		}
-		pkScript, err := txscript.PayToAddrScript(addr)
-		if err != nil {
-			return errors.WithDetailf(ErrBadAddr, "output %d: %v", i, err.Error())
+			return errors.WithDetailf(err, "output %d: %v", i, err.Error())
 		}
 
 		tx.AddTxOut(wire.NewTxOut(asset.Hash, out.Amount, pkScript))
@@ -77,21 +91,24 @@ func addAssetIssuanceOutputs(tx *wire.MsgTx, asset *appdb.Asset, outs []Output) 
 
 // issuanceInput returns an Input that can be used
 // to issue units of asset 'a'.
-func issuanceInput(a *appdb.Asset) *Input {
+func issuanceInput(a *appdb.Asset, tx *wire.MsgTx) *Input {
+	var buf bytes.Buffer
+	tx.Serialize(&buf)
+
 	return &Input{
-		AssetGroupID: a.GroupID,
-		RedeemScript: a.RedeemScript,
-		Sigs:         issuanceSigs(a),
+		AssetGroupID:  a.GroupID,
+		RedeemScript:  a.RedeemScript,
+		SignatureData: buf.Bytes(),
+		Sigs:          inputSigs(Signers(a.Keys, IssuancePath(a))),
 	}
 }
 
-func issuanceSigs(a *appdb.Asset) (sigs []*Signature) {
-	for _, key := range a.Keys {
-		signer := &Signature{
-			XPubHash:       key.ID,
-			DerivationPath: IssuancePath(a),
-		}
-		sigs = append(sigs, signer)
+func inputSigs(keys []*DerivedKey) (sigs []*Signature) {
+	for _, k := range keys {
+		sigs = append(sigs, &Signature{
+			XPubHash:       k.Root.ID,
+			DerivationPath: k.Path,
+		})
 	}
 	return sigs
 }

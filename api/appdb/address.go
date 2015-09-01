@@ -2,6 +2,7 @@ package appdb
 
 import (
 	"database/sql"
+	"sort"
 	"time"
 
 	"golang.org/x/net/context"
@@ -10,6 +11,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/strings"
 )
 
 // Address represents a blockchain address that is
@@ -121,4 +123,61 @@ func newAddressIndex(ctx context.Context, bID string) (index []uint32, err error
 	`
 	err = pg.FromContext(ctx).QueryRow(q, bID).Scan((*pg.Uint32s)(&index))
 	return
+}
+
+// AddressesByID loads an array of addresses
+// from the database using their IDs.
+func AddressesByID(ctx context.Context, ids []string) ([]*Address, error) {
+	sort.Strings(ids)
+	ids = strings.Uniq(ids)
+
+	const q = `
+		SELECT a.id, w.id, w.sigs_required, a.redeem_script,
+			key_index(w.key_index), key_index(b.key_index), key_index(a.key_index),
+			(SELECT array_agg(xpub) FROM keys WHERE id=ANY(a.keyset))
+		FROM addresses a
+		JOIN buckets b ON b.id=a.bucket_id
+		JOIN wallets w ON w.id=a.wallet_id
+		WHERE a.id=ANY($1)
+	`
+
+	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(ids))
+	if err != nil {
+		return nil, errors.Wrap(err, "select")
+	}
+	defer rows.Close()
+
+	var addrs []*Address
+	for rows.Next() {
+		var (
+			a     Address
+			xpubs []string
+		)
+		err = rows.Scan(
+			&a.ID, &a.WalletID, &a.SigsRequired, &a.RedeemScript,
+			(*pg.Uint32s)(&a.WalletIndex), (*pg.Uint32s)(&a.BucketIndex), (*pg.Uint32s)(&a.Index),
+			(*pg.Strings)(&xpubs),
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "row scan")
+		}
+		for _, xpub := range xpubs {
+			key, err := NewKey(xpub)
+			if err != nil {
+				return nil, errors.Wrap(err, "NewKey call")
+			}
+			a.Keys = append(a.Keys, key)
+		}
+
+		addrs = append(addrs, &a)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "end row scan loop")
+	}
+
+	if len(addrs) < len(ids) {
+		return nil, errors.Wrapf(errors.New("missing address"), "from set %v", ids)
+	}
+
+	return addrs, nil
 }

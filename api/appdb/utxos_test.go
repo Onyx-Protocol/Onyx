@@ -26,7 +26,7 @@ func TestInsertUTXOs(t *testing.T) {
 		VALUES('w1', 'app-id-0', '', 'c1', 0);
 		INSERT INTO buckets (id, wallet_id, key_index) VALUES('b1', 'w1', 0);
 		INSERT INTO addresses (id, bucket_id, wallet_id, redeem_script, address, pk_script, keyset, key_index)
-		VALUES ('r1', 'b1', 'w1', '', '3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB', '', '{}', 0);
+		VALUES ('a1', 'b1', 'w1', '', '3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB', '', '{}', 0);
 	`)
 	defer dbtx.Rollback()
 
@@ -63,7 +63,7 @@ func TestInsertUTXOs(t *testing.T) {
 		index:     0,
 		assetID:   "AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo",
 		amount:    1000,
-		addressID: "r1",
+		addressID: "a1",
 		bucketID:  "b1",
 		walletID:  "w1",
 	}

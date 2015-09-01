@@ -23,17 +23,21 @@ var (
 	// Missing entries will map to infoInternal.
 	// See chain.com/docs.
 	errorInfoTab = map[error]errorInfo{
-		pg.ErrUserInputNotFound: errorInfo{404, "CH005", "Not found."},
-		ErrBadInputJSON:         errorInfo{400, "CH007", "Invalid request body"},
-		appdb.ErrBadEmail:       errorInfo{400, "CH101", "Invalid email."},
-		appdb.ErrBadPassword:    errorInfo{400, "CH102", "Invalid password."},
-		appdb.ErrBadLabel:       errorInfo{400, "CH704", "Invalid label"},
-		appdb.ErrBadXPubCount:   errorInfo{400, "CH712", "Need exactly one xpub."},
-		appdb.ErrXPriv:          errorInfo{400, "CH713", "Must provide an xpub, not xpriv."},
-		asset.ErrBadAddr:        errorInfo{400, "CH300", "Invalid address"},
-		appdb.ErrBadRole:        errorInfo{400, "CH800", "Member role must be \"developer\" or \"admin\"."},
-		appdb.ErrAlreadyMember:  errorInfo{400, "CH801", "User is already a member of the application."},
-		asset.ErrPastExpires:    errorInfo{400, "CH720", "Expires, if set, must be in the future"},
+		pg.ErrUserInputNotFound:    errorInfo{404, "CH005", "Not found."},
+		ErrBadInputJSON:            errorInfo{400, "CH007", "Invalid request body"},
+		appdb.ErrBadEmail:          errorInfo{400, "CH101", "Invalid email."},
+		appdb.ErrBadPassword:       errorInfo{400, "CH102", "Invalid password."},
+		asset.ErrBadAddr:           errorInfo{400, "CH300", "Invalid address"},
+		appdb.ErrBadLabel:          errorInfo{400, "CH704", "Invalid label"},
+		appdb.ErrBadXPubCount:      errorInfo{400, "CH712", "Need exactly one xpub."},
+		appdb.ErrXPriv:             errorInfo{400, "CH713", "Must provide an xpub, not xpriv."},
+		asset.ErrPastExpires:       errorInfo{400, "CH720", "Expires, if set, must be in the future"},
+		appdb.ErrInsufficientFunds: errorInfo{400, "CH733", "Insufficient funds for tx"},
+		asset.ErrTransferMismatch:  errorInfo{400, "CH738", "Total input amount must equal total output amount"},
+		asset.ErrBadOutDest:        errorInfo{400, "CH744", "Invalid input sources or output destinations"},
+		asset.ErrBadAsset:          errorInfo{400, "CH761", "Invalid asset"},
+		appdb.ErrBadRole:           errorInfo{400, "CH800", "Member role must be \"developer\" or \"admin\"."},
+		appdb.ErrAlreadyMember:     errorInfo{400, "CH801", "User is already a member of the application."},
 
 		// Error codes imported from papi for convenient reference.
 		// Please delete lines from this block when you add them
@@ -62,18 +66,18 @@ var (
 		// ErrMaxInputs           = errorInfo{400, "CH730", "Maximum number of inputs passed"}
 		// ErrNoInputs            = errorInfo{400, "CH731", "No inputs provided"}
 		// ErrNoOutputs           = errorInfo{400, "CH732", "No outputs provided"}
-		// ErrInsufficientFunds   = errorInfo{400, "CH733", "Insufficient funds for tx"}
+		//
 		// ErrZeroInput           = errorInfo{400, "CH734", "Input amount must be greater than 0"}
 		// ErrZeroOutput          = errorInfo{400, "CH735", "Output amount must be greater than 0"}
 		// ErrSoloWallet          = errorInfo{400, "CH736", "Wallet input must be the only input"}
 		// ErrBadOut              = errorInfo{400, "CH737", "Invalid output"}
-		// ErrInputOutputMismatch = errorInfo{400, "CH738", "Total input amount must equal total output amount"}
+		//
 		// ErrFeePayer            = errorInfo{400, "CH739", "There must be exactly one fee payer"}
 		// ErrMetadataHex         = errorInfo{400, "CH740", "Metadata must be hex encoded"}
 		// ErrMetadataLen         = errorInfo{400, "CH741", "Metadata cannot be longer than 40 bytes"}
 		// ErrTxTooBig            = errorInfo{400, "CH742", "Transaction byte size is too big"}
 		// ErrMinBal              = errorInfo{400, "CH743", "Minimum positive balance of 546 satoshis"}
-		// ErrInOutDests          = errorInfo{400, "CH744", "Invalid input sources or output destinations"}
+		//
 		// ErrMetaAndOA           = errorInfo{400, "CH745", "Metadata cannot be added to open asset transactions"}
 		// ErrInvalidTx           = errorInfo{400, "CH750", "Invalid raw transaction hex"}
 		// ErrInvalidSig          = errorInfo{400, "CH751", "Signature was not valid for transaction"}
@@ -82,7 +86,7 @@ var (
 		// ErrBadTemplate         = errorInfo{400, "CH755", "Invalid transaction template, cannot sign"}
 		// ErrBadRedeem           = errorInfo{400, "CH756", "Redeem script is not a valid multisig script"}
 		// ErrMissingAsset        = errorInfo{404, "CH760", "Requested asset could not be found"}
-		// ErrBadAssetOutput      = errorInfo{404, "CH761", "Invalid asset output"}
+		//
 		// ErrAssetOpRetTooBig    = errorInfo{400, "CH762", "Too many outputs and/or asset defintion too large"}
 		// ErrAssetDefIDForbidden = errorInfo{400, "CH763", "Asset definition should not have asset IDs"}
 		// ErrInvalidPolicy       = errorInfo{400, "CH772", "Invalid policy"}

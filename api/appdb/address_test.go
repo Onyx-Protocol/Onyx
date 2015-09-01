@@ -104,3 +104,51 @@ func TestAddressInsert(t *testing.T) {
 		t.Errorf("Created = %v want after %v", addr.Created, t0)
 	}
 }
+
+func TestAddressesByID(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, `
+		INSERT INTO keys (id, xpub) VALUES(
+			'fda6bac8e1901cbc4813e729d3d766988b8b1ac7',
+			'xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd'
+		);
+		INSERT INTO wallets (id, application_id, label) VALUES('w1', 'app-id-0', 'w1');
+		INSERT INTO buckets (id, wallet_id, key_index) VALUES('b1', 'w1', 0);
+		INSERT INTO addresses (id, wallet_id, bucket_id, keyset, key_index, address, redeem_script, pk_script)
+		VALUES('a1', 'w1', 'b1', '{fda6bac8e1901cbc4813e729d3d766988b8b1ac7}', 0, 'a1', '', '');
+	`)
+	defer dbtx.Rollback()
+
+	ctx := pg.NewContext(context.Background(), dbtx)
+	got, err := AddressesByID(ctx, []string{"a1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	k, _ := NewKey("xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd")
+	want := &Address{
+		ID:           "a1",
+		WalletID:     "w1",
+		SigsRequired: 1,
+		RedeemScript: []byte{},
+		WalletIndex:  []uint32{0, 1},
+		BucketIndex:  []uint32{0, 0},
+		Index:        []uint32{0, 0},
+		Keys:         []*Key{k},
+	}
+
+	if !reflect.DeepEqual(got[0], want) {
+		t.Errorf("got AddressesByID[0] = %v want %v", got[0], want)
+	}
+}
+
+func TestAddressesByIDMissing(t *testing.T) {
+	ctx := pg.NewContext(context.Background(), db)
+	_, err := AddressesByID(ctx, []string{"a1"})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if !strings.Contains(err.Error(), "missing address") {
+		t.Error("expected missing address error")
+	}
+}

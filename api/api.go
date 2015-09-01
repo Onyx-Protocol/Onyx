@@ -38,7 +38,7 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("POST", "/v3/asset-groups/:groupID/assets", createAsset)
 	h.AddFunc("POST", "/v3/buckets/:bucketID/addresses", createAddr)
 	h.AddFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
-	h.AddFunc("POST", "/v3/assets/transfer", walletBuild)
+	h.AddFunc("POST", "/v3/assets/transfer", transferAssets)
 	h.AddFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
 	h.AddFunc("POST", "/v3/users", createUser)
 	h.AddFunc("POST", "/v3/login", userCredsAuthn(login))
@@ -242,8 +242,26 @@ func issueAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 }
 
 // /v3/assets/transfer
-func walletBuild(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	panic("TODO")
+func transferAssets(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	var x struct {
+		Inputs  []asset.TransferInput
+		Outputs []asset.Output
+	}
+	err := readJSON(req.Body, &x)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	template, err := asset.Transfer(ctx, x.Inputs, x.Outputs)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	writeJSON(ctx, w, 200, map[string]interface{}{
+		"template": template,
+	})
 }
 
 // /v3/wallets/transact/finalize
