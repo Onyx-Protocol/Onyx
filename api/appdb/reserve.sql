@@ -10,16 +10,18 @@ CREATE OR REPLACE FUNCTION reserve_outputs(asset_id text, bucket_id text, amt bi
 		"		AND reserved_at < now() - '60s'::interval"+
 		"		ORDER BY receiver_id, txid, index ASC"+
 		"		LIMIT 1"+
+		"		FOR UPDATE"+
 		"	)"+
-		"	UPDATE outputs SET reserved_at=NOW() FROM reserved"+
+		"	UPDATE outputs SET reserved_at=now() FROM reserved"+
 		"	WHERE reserved.txid=outputs.txid AND reserved.index=outputs.index"+
 		"	RETURNING reserved.txid, reserved.index, reserved.amount"
 	);
+
 	var selectedOutputs = [];
 	while(amt > 0) {
 		var rows = q.execute([asset_id, bucket_id]);
 		if (rows.length === 0) {
-			return null; // insufficient funds
+			throw new Error("insufficient funds");
 		}
 		amt -= rows[0]["amount"];
 		selectedOutputs.push(rows[0]);
