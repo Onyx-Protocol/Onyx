@@ -15,6 +15,7 @@ func New(text string) error {
 type wrapperError struct {
 	msg    string
 	detail []string
+	stack  []StackFrame
 	root   error
 }
 
@@ -33,11 +34,12 @@ func Root(e error) error {
 	return e
 }
 
-// Wrap adds additional context to err and returns a new error with the
-// new context. Arguments are handled as in fmt.Print.
-// Use Root to recover the original error wrapped by one or more calls to Wrap.
-// Wrap returns nil if err is nil.
-func Wrap(err error, a ...interface{}) error {
+// wrap adds a context message and stack trace to err and returns a new error
+// containing the new context. This function is meant to be composed within
+// other exported functions, such as Wrap and WithDetail.
+// The argument stackSkip is the number of stack frames to ascend when
+// generating stack straces, where 0 is the caller of wrap.
+func wrap(err error, msg string, stackSkip int) error {
 	if err == nil {
 		return nil
 	}
@@ -46,19 +48,27 @@ func Wrap(err error, a ...interface{}) error {
 	if !ok {
 		werr.root = err
 		werr.msg = err.Error()
+		werr.stack = getStack(stackSkip+2, stackTraceSize)
 	}
-	if len(a) > 0 {
-		werr.msg = fmt.Sprint(a...) + ": " + werr.msg
+	if msg != "" {
+		werr.msg = msg + ": " + werr.msg
 	}
+
 	return werr
 }
 
-// Wrapf adds additional context to err and returns a new error with the
-// new context. Arguments are handled as in fmt.Print.
+// Wrap adds a context message and stack trace to err and returns a new error
+// with the new context. Arguments are handled as in fmt.Print.
 // Use Root to recover the original error wrapped by one or more calls to Wrap.
-// Wrapf returns nil if err is nil.
+// Use Stack to recover the stack trace.
+// Wrap returns nil if err is nil.
+func Wrap(err error, a ...interface{}) error {
+	return wrap(err, fmt.Sprint(a...), 1)
+}
+
+// Wrapf is like Wrap, but arguments are handled as in fmt.Printf.
 func Wrapf(err error, format string, a ...interface{}) error {
-	return Wrap(err, fmt.Sprintf(format, a...))
+	return wrap(err, fmt.Sprintf(format, a...), 1)
 }
 
 // WithDetail returns a new error that wraps
@@ -70,7 +80,7 @@ func WithDetail(err error, text string) error {
 	if err == nil {
 		return nil
 	}
-	e1 := Wrap(err, text).(wrapperError)
+	e1 := wrap(err, text, 1).(wrapperError)
 	e1.detail = append(e1.detail, text)
 	return e1
 }
@@ -80,7 +90,13 @@ func WithDetail(err error, text string) error {
 // Function Detail will return the formatted text
 // when called on the new error value.
 func WithDetailf(err error, format string, v ...interface{}) error {
-	return WithDetail(err, fmt.Sprintf(format, v...))
+	if err == nil {
+		return nil
+	}
+	text := fmt.Sprintf(format, v...)
+	e1 := wrap(err, text, 1).(wrapperError)
+	e1.detail = append(e1.detail, text)
+	return e1
 }
 
 // Detail returns the detail message contained in err, if any.

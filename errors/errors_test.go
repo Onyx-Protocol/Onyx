@@ -2,6 +2,8 @@ package errors
 
 import (
 	"errors"
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -25,6 +27,22 @@ func TestWrap(t *testing.T) {
 
 	if err3.Error() != "2: 1: 0" {
 		t.Fatalf("err msg = %s want '2: 1: 0'", err3.Error())
+	}
+
+	stack := Stack(err1)
+	if len(stack) == 0 {
+		t.Fatalf("len(stack) = %v want > 0", len(stack))
+	}
+	if !strings.Contains(stack[0].String(), "TestWrap") {
+		t.Fatalf("first stack frame should contain \"TestWrap\": %v", stack[0].String())
+	}
+
+	if !reflect.DeepEqual(Stack(err2), Stack(err1)) {
+		t.Errorf("err2 stack got %v want %v", Stack(err2), Stack(err1))
+	}
+
+	if !reflect.DeepEqual(Stack(err3), Stack(err1)) {
+		t.Errorf("err3 stack got %v want %v", Stack(err3), Stack(err1))
 	}
 }
 
