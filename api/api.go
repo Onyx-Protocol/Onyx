@@ -3,17 +3,16 @@ package api
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
-	"strings"
+
+	"golang.org/x/net/context"
 
 	"github.com/tessr/pat"
-	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/database/pg"
-	chainjson "chain/encoding/json"
+	"chain/encoding/json"
 	"chain/fedchain/wire"
 	chainhttp "chain/net/http"
 )
@@ -38,9 +37,9 @@ func createWallet(ctx context.Context, w http.ResponseWriter, req *http.Request)
 		Label string   `json:"label"`
 		XPubs []string `json:"xpubs"`
 	}
-	err := json.NewDecoder(req.Body).Decode(&wReq)
+	err := readJSON(req.Body, &wReq)
 	if err != nil {
-		w.WriteHeader(400)
+		writeHTTPError(ctx, w, err)
 		return
 	}
 
@@ -48,7 +47,7 @@ func createWallet(ctx context.Context, w http.ResponseWriter, req *http.Request)
 	for _, xpub := range wReq.XPubs {
 		key, err := appdb.NewKey(xpub)
 		if err != nil {
-			w.WriteHeader(400)
+			writeHTTPError(ctx, w, err)
 			return
 		}
 		keys = append(keys, key)
@@ -56,25 +55,24 @@ func createWallet(ctx context.Context, w http.ResponseWriter, req *http.Request)
 
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
-		w.WriteHeader(500)
+		writeHTTPError(ctx, w, err)
 		return
 	}
 	defer dbtx.Rollback()
 
 	wID, err := appdb.CreateWallet(ctx, appID, wReq.Label, keys)
 	if err != nil {
-		// TODO(kr): distinguish between user and server error
-		w.WriteHeader(400)
+		writeHTTPError(ctx, w, err)
 		return
 	}
 
 	err = dbtx.Commit()
 	if err != nil {
-		w.WriteHeader(500)
+		writeHTTPError(ctx, w, err)
 		return
 	}
 
-	writeJSON(w, 201, map[string]interface{}{
+	writeJSON(ctx, w, 201, map[string]interface{}{
 		"wallet_id":           wID,
 		"label":               wReq.Label,
 		"block_chain":         "sandbox",
@@ -96,25 +94,22 @@ func createAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) 
 // /v3/assets/:assetID/issue
 func issueAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	var outs []asset.Output
-	err := json.NewDecoder(req.Body).Decode(&outs)
+	err := readJSON(req.Body, &outs)
 	if err != nil {
-		w.WriteHeader(400)
+		writeHTTPError(ctx, w, err)
 		return
 	}
 
 	assetID := req.URL.Query().Get(":assetID")
-
 	template, err := asset.Issue(ctx, assetID, outs)
 	if err != nil {
-		// w.WriteHeader(httperror.Status(err)) // i wish
-		w.WriteHeader(400) // not really
+		writeHTTPError(ctx, w, err)
 		return
 	}
 
-	writeJSON(w, 200, map[string]interface{}{
+	writeJSON(ctx, w, 200, map[string]interface{}{
 		"template": template,
 	})
-
 }
 
 // /v3/assets/transfer
@@ -127,16 +122,16 @@ func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Reques
 	// TODO(kr): validate
 
 	var tpl asset.Tx
-	err := json.NewDecoder(req.Body).Decode(&tpl)
+	err := readJSON(req.Body, &tpl)
 	if err != nil {
-		w.WriteHeader(400)
+		writeHTTPError(ctx, w, err)
 		return
 	}
 
 	tx := wire.NewMsgTx()
 	err = tx.Deserialize(bytes.NewReader(tpl.Unsigned))
 	if err != nil {
-		w.WriteHeader(400)
+		writeHTTPError(ctx, w, err)
 		return
 	}
 
@@ -150,29 +145,29 @@ func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Reques
 
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
-		w.WriteHeader(500)
+		writeHTTPError(ctx, w, err)
 		return
 	}
 	defer dbtx.Rollback()
 
 	err = appdb.Commit(ctx, tx)
 	if err != nil {
-		w.WriteHeader(500)
+		writeHTTPError(ctx, w, err)
 		return
 	}
 
 	err = dbtx.Commit()
 	if err != nil {
-		w.WriteHeader(500)
+		writeHTTPError(ctx, w, err)
 		return
 	}
 
 	var buf bytes.Buffer
 	tx.Serialize(&buf)
 
-	writeJSON(w, 200, map[string]interface{}{
+	writeJSON(ctx, w, 200, map[string]interface{}{
 		"transaction_id":  tx.TxSha().String(),
-		"raw_transaction": chainjson.HexBytes(buf.Bytes()),
+		"raw_transaction": json.HexBytes(buf.Bytes()),
 	})
 }
 
@@ -183,28 +178,17 @@ func createUser(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 		Password string
 	}
 
-	err := json.NewDecoder(req.Body).Decode(&in)
+	err := readJSON(req.Body, &in)
 	if err != nil {
-		w.WriteHeader(400)
-		return
-	}
-
-	// TODO(jeffomatic) - these validations could be moved into CreateUser. This
-	// will be easier once we create an app-specific error interface that had
-	// pre-defined HTTP status codes and error messages.
-
-	if len(in.Email) < 1 || 255 < len(in.Email) ||
-		!strings.Contains(in.Email, "@") ||
-		len(in.Password) < 6 || 255 < len(in.Password) {
-		w.WriteHeader(400)
+		writeHTTPError(ctx, w, err)
 		return
 	}
 
 	user, err := appdb.CreateUser(ctx, in.Email, in.Password)
 	if err != nil {
-		w.WriteHeader(500)
+		writeHTTPError(ctx, w, err)
 		return
 	}
 
-	writeJSON(w, 200, user)
+	writeJSON(ctx, w, 200, user)
 }

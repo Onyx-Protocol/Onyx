@@ -7,19 +7,27 @@ import (
 	"chain/errors"
 )
 
+// Errors returned by CreateWallet.
+// May be wrapped using package chain/errors.
+var (
+	ErrBadLabel     = errors.New("bad label")
+	ErrBadXPubCount = errors.New("bad xpub count")
+	ErrXPriv        = errors.New("xpriv given for xpub")
+)
+
 // CreateWallet creates a new wallet,
 // also adding its xpub to the keys table if necessary.
 func CreateWallet(ctx context.Context, appID, label string, xpubs []*Key) (id string, err error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 	if label == "" {
-		return "", errors.New("invalid label")
+		return "", ErrBadLabel
 	} else if len(xpubs) != 1 {
 		// only 1-of-1 supported so far
-		return "", errors.New("must provide exactly 1 xpub")
+		return "", ErrBadXPubCount
 	}
-	for _, xpub := range xpubs {
+	for i, xpub := range xpubs {
 		if xpub.XPub.IsPrivate() {
-			return "", errors.New("xpriv given for xpub")
+			return "", errors.WithDetailf(ErrXPriv, "key number %d", i)
 		}
 	}
 
@@ -44,7 +52,7 @@ func CreateWallet(ctx context.Context, appID, label string, xpubs []*Key) (id st
 	}
 	err = createRotation(ctx, id, keyIDs...)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "create rotation")
 	}
 
 	return id, nil

@@ -3,6 +3,7 @@ package asset
 
 import (
 	"bytes"
+	"database/sql"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
@@ -10,17 +11,24 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/wire"
 )
+
+// ErrBadAddr is returned by Issue.
+var ErrBadAddr = errors.New("bad address")
 
 func Issue(ctx context.Context, assetID string, outs []Output) (*Tx, error) {
 	tx := wire.NewMsgTx()
 	tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}))
 
 	asset, err := appdb.AssetByID(ctx, assetID)
+	if err == sql.ErrNoRows {
+		err = pg.ErrUserInputNotFound
+	}
 	if err != nil {
-		return nil, errors.Wrap(err, "get asset by ID")
+		return nil, errors.WithDetailf(err, "get asset with ID %q", assetID)
 	}
 
 	err = addAssetIssuanceOutputs(tx, asset, outs)
@@ -45,7 +53,7 @@ type Output struct {
 }
 
 func addAssetIssuanceOutputs(tx *wire.MsgTx, asset *appdb.Asset, outs []Output) error {
-	for _, out := range outs {
+	for i, out := range outs {
 		if out.BucketID != "" {
 			// TODO(erykwalder): actually generate an address
 			// This address doesn't mean anything, it was grabbed from the internet.
@@ -55,11 +63,11 @@ func addAssetIssuanceOutputs(tx *wire.MsgTx, asset *appdb.Asset, outs []Output) 
 
 		addr, err := btcutil.DecodeAddress(out.Address, &chaincfg.MainNetParams)
 		if err != nil {
-			return err
+			return errors.WithDetailf(ErrBadAddr, "output %d: %v", i, err.Error())
 		}
 		pkScript, err := txscript.PayToAddrScript(addr)
 		if err != nil {
-			return err
+			return errors.WithDetailf(ErrBadAddr, "output %d: %v", i, err.Error())
 		}
 
 		tx.AddTxOut(wire.NewTxOut(asset.Hash, out.Amount, pkScript))

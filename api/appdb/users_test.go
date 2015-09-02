@@ -123,3 +123,31 @@ func TestCreateUserNoDupes(t *testing.T) {
 		}()
 	}
 }
+
+func TestCreateUserInvalid(t *testing.T) {
+	cases := []struct{ email, password string }{
+		// missing password
+		{"foo@bar.com", ""},
+		// password too short
+		{"foo@bar.com", "12345"},
+		// password too long
+		{"foo@bar.com", "123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890"},
+		// missing email
+		{"", "abracadabra"},
+		// email too long
+		{"123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890@bar.com", "abracadabra"},
+	}
+
+	for _, test := range cases {
+		func() {
+			dbtx := pgtest.TxWithSQL(t)
+			defer dbtx.Rollback()
+			ctx := pg.NewContext(context.Background(), dbtx)
+
+			_, err := CreateUser(ctx, test.email, test.password)
+			if err == nil {
+				t.Errorf("CreateUser(%q, %q) err = nil want error", test.email, test.password)
+			}
+		}()
+	}
+}

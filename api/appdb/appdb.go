@@ -1,5 +1,8 @@
 // Package appdb provides low-level database operations
 // for Chain app wallet objects.
+//
+// All functions in this package can return errors "wrapped"
+// with more information using chain/errors.
 package appdb
 
 import "database/sql"
