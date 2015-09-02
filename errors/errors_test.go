@@ -52,3 +52,29 @@ func TestWrapMsg(t *testing.T) {
 		t.Fatalf("err msg = %s want 'cherry guava: rooti'", err1.Error())
 	}
 }
+
+func TestDetail(t *testing.T) {
+	root := errors.New("foo")
+	cases := []struct {
+		err     error
+		detail  string
+		message string
+	}{
+		{root, "", "foo"},
+		{WithDetail(root, "bar"), "bar", "bar: foo"},
+		{WithDetail(WithDetail(root, "bar"), "baz"), "bar; baz", "baz: bar: foo"},
+		{Wrap(WithDetail(root, "bar"), "baz"), "bar", "baz: bar: foo"},
+	}
+
+	for _, test := range cases {
+		if got := Detail(test.err); got != test.detail {
+			t.Errorf("Detail(%v) = %v want %v", test.err, got, test.detail)
+		}
+		if got := Root(test.err); got != root {
+			t.Errorf("Root(%v) = %v want %v", test.err, got, root)
+		}
+		if got := test.err.Error(); got != test.message {
+			t.Errorf("(%v).Error() = %v want %v", test.err, got, test.message)
+		}
+	}
+}

@@ -3,6 +3,7 @@ package errors
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // New returns an error that formats as the given text.
@@ -12,8 +13,9 @@ func New(text string) error {
 
 // wrapperError satisfies the error interface.
 type wrapperError struct {
-	msg  string
-	root error
+	msg    string
+	detail []string
+	root   error
 }
 
 // It satisfies the error interface.
@@ -40,23 +42,15 @@ func Wrap(err error, a ...interface{}) error {
 		return nil
 	}
 
-	var root error
-
-	if wErr, ok := err.(wrapperError); ok {
-		root = wErr.root
-	} else {
-		root = err
+	werr, ok := err.(wrapperError)
+	if !ok {
+		werr.root = err
+		werr.msg = err.Error()
 	}
-
-	msg := err.Error()
 	if len(a) > 0 {
-		msg = fmt.Sprint(a...) + ": " + msg
+		werr.msg = fmt.Sprint(a...) + ": " + werr.msg
 	}
-
-	return wrapperError{
-		root: root,
-		msg:  msg,
-	}
+	return werr
 }
 
 // Wrapf adds additional context to err and returns a new error with the
@@ -65,4 +59,34 @@ func Wrap(err error, a ...interface{}) error {
 // Wrapf returns nil if err is nil.
 func Wrapf(err error, format string, a ...interface{}) error {
 	return Wrap(err, fmt.Sprintf(format, a...))
+}
+
+// WithDetail returns a new error that wraps
+// err as a chain error messsage containing text
+// as its additional context.
+// Function Detail will return the given text
+// when called on the new error value.
+func WithDetail(err error, text string) error {
+	if err == nil {
+		return nil
+	}
+	e1 := Wrap(err, text).(wrapperError)
+	e1.detail = append(e1.detail, text)
+	return e1
+}
+
+// WithDetailf is like WithDetail, except it formats
+// the detail message as in fmt.Printf.
+// Function Detail will return the formatted text
+// when called on the new error value.
+func WithDetailf(err error, format string, v ...interface{}) error {
+	return WithDetail(err, fmt.Sprintf(format, v...))
+}
+
+// Detail returns the detail message contained in err, if any.
+// An error has a detail message if it was made by WithDetail
+// or WithDetailf.
+func Detail(err error) string {
+	wrapper, _ := err.(wrapperError)
+	return strings.Join(wrapper.detail, "; ")
 }
