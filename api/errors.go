@@ -36,11 +36,7 @@ var (
 		// Please delete lines from this block when you add them
 		// to the live code above or when you know they won't be used.
 		//
-		// ErrInvalidAPIToken = errorInfo{401, "CH001", "Invalid API Token ID"}
-		// ErrInvalidSecret   = errorInfo{401, "CH002", "Invalid API Secret Token"}
-		// ErrMissingAPIToken = errorInfo{401, "CH004", "Must authenticate"}
 		// ErrAPITryAgain     = errorInfo{500, "CH009", "Chain API Error, Try Again"}
-		// ErrBadAuth         = errorInfo{401, "CH010", "Bad Email or Password"}
 		// ErrRateLimit       = errorInfo{429, "CH011", "Exceeded rate limit. Email enterprise@chain.com to learn about our production services."}
 		//
 		// ErrTxStatusUnknown = errorInfo{500, "CH203", "Transaction relayed, status unknown"}

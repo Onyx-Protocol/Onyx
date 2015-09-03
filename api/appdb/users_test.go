@@ -11,6 +11,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/net/http/authn"
 )
 
 func getUserByCreds(ctx context.Context, email, password string) (*User, error) {
@@ -25,7 +26,7 @@ func getUserByCreds(ctx context.Context, email, password string) (*User, error) 
 	}
 
 	if bcrypt.CompareHashAndPassword(phash, []byte(password)) != nil {
-		return nil, errors.New("password does not match") // TODO: should result in 401
+		return nil, errors.New("password does not match")
 	}
 
 	return &User{id, email}, nil
@@ -149,5 +150,45 @@ func TestCreateUserInvalid(t *testing.T) {
 				t.Errorf("CreateUser(%q, %q) err = nil want error", test.email, test.password)
 			}
 		}()
+	}
+}
+
+func TestAuthenticateUserCreds(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, "")
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	u, err := CreateUser(ctx, "foo@bar.com", "abracadabra")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	gotID, err := AuthenticateUserCreds(ctx, "foo@bar.com", "abracadabra")
+	if err != nil {
+		t.Errorf("valid auth err = %v expected nil", err)
+	}
+	if gotID != u.ID {
+		t.Errorf("got user ID = %v want %v", gotID, u.ID)
+	}
+
+	// Capitalization shouldn't matter
+	gotID, err = AuthenticateUserCreds(ctx, "Foo@Bar.com", "abracadabra")
+	if err != nil {
+		t.Errorf("case-insensitive auth err = %v expected nil", err)
+	}
+	if gotID != u.ID {
+		t.Errorf("got user ID = %v want %v", gotID, u.ID)
+	}
+
+	// Invalid email should yield error
+	_, err = AuthenticateUserCreds(ctx, "nonexistent@bar.com", "abracadabra")
+	if err != authn.ErrNotAuthenticated {
+		t.Errorf("bad email auth error got = %v want %v", err, authn.ErrNotAuthenticated)
+	}
+
+	// Invalid password should yield error
+	_, err = AuthenticateUserCreds(ctx, "foo@bar.com", "bad-password")
+	if err != authn.ErrNotAuthenticated {
+		t.Errorf("bad password auth error got = %v want %v", err, authn.ErrNotAuthenticated)
 	}
 }

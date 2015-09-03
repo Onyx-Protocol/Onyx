@@ -218,6 +218,20 @@ CREATE TABLE assets (
 
 
 --
+-- Name: auth_tokens; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE auth_tokens (
+    id text DEFAULT next_chain_id('at'::text) NOT NULL,
+    secret_hash bytea NOT NULL,
+    user_id text,
+    type text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    expires_at timestamp with time zone
+);
+
+
+--
 -- Name: buckets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -513,6 +527,14 @@ ALTER TABLE ONLY addresses
 
 ALTER TABLE ONLY assets
     ADD CONSTRAINT assets_asset_group_id_fkey FOREIGN KEY (asset_group_id) REFERENCES asset_groups(id);
+
+
+--
+-- Name: auth_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY auth_tokens
+    ADD CONSTRAINT auth_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 
 
 --

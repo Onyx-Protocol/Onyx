@@ -1,6 +1,7 @@
 package appdb
 
 import (
+	"database/sql"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
@@ -8,6 +9,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/net/http/authn"
 )
 
 const passwordBcryptCost = 10
@@ -56,4 +58,29 @@ func CreateUser(ctx context.Context, email, password string) (*User, error) {
 	}
 
 	return &User{id, email}, nil
+}
+
+// AuthenticateUserCreds takes an email and password and returns a user ID
+// corresponding to those credentials. If the credentials are invalid,
+// authn.ErrNotAuthenticated is returned.
+func AuthenticateUserCreds(ctx context.Context, email, password string) (userID string, err error) {
+	var (
+		id    string
+		phash []byte
+
+		q = `SELECT id, password_hash FROM users WHERE lower(email) = lower($1)`
+	)
+	err = pg.FromContext(ctx).QueryRow(q, email).Scan(&id, &phash)
+	if err == sql.ErrNoRows {
+		return "", authn.ErrNotAuthenticated
+	}
+	if err != nil {
+		return "", errors.Wrap(err, "select user")
+	}
+
+	if bcrypt.CompareHashAndPassword(phash, []byte(password)) != nil {
+		return "", authn.ErrNotAuthenticated
+	}
+
+	return id, nil
 }

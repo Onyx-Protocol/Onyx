@@ -41,6 +41,7 @@ const (
 
 	KeyMessage = "message" // produced by Message
 	KeyError   = "error"   // produced by Error
+	KeyStack   = "stack"   // produced by Stack
 
 	keyLogError = "log-error" // for errors produced by the log package itself
 )
@@ -116,7 +117,7 @@ func Error(ctx context.Context, err error, a ...interface{}) {
 	}
 
 	if stack := errors.Stack(err); len(stack) > 0 {
-		keyvals = append(keyvals, "stack", stack)
+		keyvals = append(keyvals, KeyStack, stack)
 	}
 
 	Write(ctx, keyvals...)
