@@ -11,7 +11,7 @@ const reserveSQL = `CREATE OR REPLACE FUNCTION reserve_outputs(asset_id text, bu
 		"		SELECT txid, index, amount FROM outputs"+
 		"		WHERE asset_id=$1 AND bucket_id=$2"+
 		"		AND reserved_at < now() - '60s'::interval"+
-		"		ORDER BY receiver_id, txid, index ASC"+
+		"		ORDER BY address_id, txid, index ASC"+
 		"		LIMIT 1"+
 		"		FOR UPDATE"+
 		"	)"+

@@ -13,7 +13,7 @@ import (
 func TestReserveSQL(t *testing.T) {
 	var threeOutputsFixture = `
 		INSERT INTO outputs
-		(txid, index, asset_id, amount, receiver_id, bucket_id, wallet_id)
+		(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
 		VALUES
 			('t1', 0, 'a1', 1, 'r1', 'b1', 'w1'),
 			('t2', 0, 'a1', 1, 'r2', 'b1', 'w1'),
@@ -49,7 +49,7 @@ func TestReserveSQL(t *testing.T) {
 			description: "test does not return already reserved outputs",
 			fixture: `
 				INSERT INTO outputs
-				(txid, index, asset_id, amount, receiver_id, bucket_id, wallet_id, reserved_at)
+				(txid, index, asset_id, amount, address_id, bucket_id, wallet_id, reserved_at)
 				VALUES
 					('t1', 0, 'a1', 1, 'r1', 'b1', 'w1', now()),
 					('t2', 0, 'a1', 1, 'r2', 'b1', 'w1', now()-'61s'::interval);
@@ -92,7 +92,7 @@ func TestReserveSQL(t *testing.T) {
 		const onlyReservedQ = `
 			SELECT txid, index, amount FROM outputs
 			WHERE reserved_at > now()-'60s'::interval
-			ORDER BY receiver_id ASC
+			ORDER BY address_id ASC
 		`
 
 		rows, err = dbtx.Query(onlyReservedQ)

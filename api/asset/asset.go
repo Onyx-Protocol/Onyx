@@ -47,7 +47,7 @@ type Output struct {
 func addAssetIssuanceOutputs(tx *wire.MsgTx, asset *appdb.Asset, outs []Output) error {
 	for _, out := range outs {
 		if out.BucketID != "" {
-			// TODO(erykwalder): actually generate a receiver
+			// TODO(erykwalder): actually generate an address
 			// This address doesn't mean anything, it was grabbed from the internet.
 			// We don't have its private key.
 			out.Address = "1ByEd6DMfTERyT4JsVSLDoUcLpJTD93ifq"

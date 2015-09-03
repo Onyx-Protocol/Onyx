@@ -143,6 +143,26 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
+-- Name: addresses; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE addresses (
+    id text DEFAULT next_chain_id('addr'::text) NOT NULL,
+    wallet_id text NOT NULL,
+    bucket_id text NOT NULL,
+    keyset text[] NOT NULL,
+    key_index bigint NOT NULL,
+    address text NOT NULL,
+    memo text,
+    amount bigint,
+    is_change boolean DEFAULT false NOT NULL,
+    expiration timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: assets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -169,7 +189,7 @@ CREATE TABLE buckets (
     key_index bigint NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
-    next_receiver_index bigint DEFAULT 0 NOT NULL
+    next_address_index bigint DEFAULT 0 NOT NULL
 );
 
 
@@ -205,31 +225,11 @@ CREATE TABLE outputs (
     index integer NOT NULL,
     asset_id text NOT NULL,
     amount bigint NOT NULL,
-    receiver_id text NOT NULL,
+    address_id text NOT NULL,
     bucket_id text NOT NULL,
     wallet_id text NOT NULL,
     reserved_at timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: receivers; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE receivers (
-    id text DEFAULT next_chain_id('r'::text) NOT NULL,
-    wallet_id text NOT NULL,
-    bucket_id text NOT NULL,
-    keyset text[] NOT NULL,
-    key_index bigint NOT NULL,
-    address text NOT NULL,
-    memo text,
-    amount bigint,
-    is_change boolean DEFAULT false NOT NULL,
-    expiration timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -304,6 +304,14 @@ ALTER TABLE ONLY wallets ALTER COLUMN key_index SET DEFAULT nextval('wallets_key
 
 
 --
+-- Name: addresses_address_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY addresses
+    ADD CONSTRAINT addresses_address_key UNIQUE (address);
+
+
+--
 -- Name: assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -336,14 +344,6 @@ ALTER TABLE ONLY outputs
 
 
 --
--- Name: receivers_address_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
---
-
-ALTER TABLE ONLY receivers
-    ADD CONSTRAINT receivers_address_key UNIQUE (address);
-
-
---
 -- Name: rotations_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -368,10 +368,38 @@ ALTER TABLE ONLY wallets
 
 
 --
+-- Name: addresses_bucket_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX addresses_bucket_id_idx ON addresses USING btree (bucket_id);
+
+
+--
+-- Name: addresses_bucket_id_key_index_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX addresses_bucket_id_key_index_idx ON addresses USING btree (bucket_id, key_index);
+
+
+--
+-- Name: addresses_wallet_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX addresses_wallet_id_idx ON addresses USING btree (wallet_id);
+
+
+--
 -- Name: buckets_wallet_path; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE UNIQUE INDEX buckets_wallet_path ON buckets USING btree (wallet_id, key_index);
+
+
+--
+-- Name: outputs_address_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX outputs_address_id_asset_id_reserved_at_idx ON outputs USING btree (address_id, asset_id, reserved_at);
 
 
 --
@@ -382,38 +410,10 @@ CREATE INDEX outputs_bucket_id_asset_id_reserved_at_idx ON outputs USING btree (
 
 
 --
--- Name: outputs_receiver_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX outputs_receiver_id_asset_id_reserved_at_idx ON outputs USING btree (receiver_id, asset_id, reserved_at);
-
-
---
 -- Name: outputs_wallet_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE INDEX outputs_wallet_id_asset_id_reserved_at_idx ON outputs USING btree (wallet_id, asset_id, reserved_at);
-
-
---
--- Name: receivers_bucket_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX receivers_bucket_id_idx ON receivers USING btree (bucket_id);
-
-
---
--- Name: receivers_bucket_id_key_index_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE UNIQUE INDEX receivers_bucket_id_key_index_idx ON receivers USING btree (bucket_id, key_index);
-
-
---
--- Name: receivers_wallet_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX receivers_wallet_id_idx ON receivers USING btree (wallet_id);
 
 
 --
@@ -431,6 +431,22 @@ CREATE INDEX wallets_application_id_idx ON wallets USING btree (application_id);
 
 
 --
+-- Name: addresses_bucket_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY addresses
+    ADD CONSTRAINT addresses_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES buckets(id);
+
+
+--
+-- Name: addresses_wallet_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY addresses
+    ADD CONSTRAINT addresses_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id);
+
+
+--
 -- Name: assets_wallet_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -444,22 +460,6 @@ ALTER TABLE ONLY assets
 
 ALTER TABLE ONLY buckets
     ADD CONSTRAINT buckets_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id);
-
-
---
--- Name: receivers_bucket_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY receivers
-    ADD CONSTRAINT receivers_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES buckets(id);
-
-
---
--- Name: receivers_wallet_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY receivers
-    ADD CONSTRAINT receivers_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id);
 
 
 --

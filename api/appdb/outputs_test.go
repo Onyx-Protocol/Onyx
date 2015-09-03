@@ -25,7 +25,7 @@ func TestInsertOutputs(t *testing.T) {
 		INSERT INTO wallets (id, application_id, label, current_rotation, key_index)
 		VALUES('w1', 'a1', '', 'c1', 0);
 		INSERT INTO buckets (id, wallet_id, key_index) VALUES('b1', 'w1', 0);
-		INSERT INTO receivers (id, bucket_id, wallet_id, address, keyset, key_index)
+		INSERT INTO addresses (id, bucket_id, wallet_id, address, keyset, key_index)
 		VALUES ('r1', 'b1', 'w1', '3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB', '{}', 0);
 	`)
 	defer dbtx.Rollback()
@@ -44,28 +44,28 @@ func TestInsertOutputs(t *testing.T) {
 	}
 
 	const check = `
-		SELECT txid, index, asset_id, amount, receiver_id, bucket_id, wallet_id
+		SELECT txid, index, asset_id, amount, address_id, bucket_id, wallet_id
 		FROM outputs
 	`
 	type output struct {
-		txid, assetID, receiverID, bucketID, walletID string
-		index                                         uint32
-		amount                                        int64
+		txid, assetID, addressID, bucketID, walletID string
+		index                                        uint32
+		amount                                       int64
 	}
 	var got output
-	err = dbtx.QueryRow(check).Scan(&got.txid, &got.index, &got.assetID, &got.amount, &got.receiverID, &got.bucketID, &got.walletID)
+	err = dbtx.QueryRow(check).Scan(&got.txid, &got.index, &got.assetID, &got.amount, &got.addressID, &got.bucketID, &got.walletID)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
 
 	want := output{
-		txid:       "246c6aa1e5cc2bd1132a37cbc267e2031558aee26a8956e21b749d72920331a7",
-		index:      0,
-		assetID:    "AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo",
-		amount:     1000,
-		receiverID: "r1",
-		bucketID:   "b1",
-		walletID:   "w1",
+		txid:      "246c6aa1e5cc2bd1132a37cbc267e2031558aee26a8956e21b749d72920331a7",
+		index:     0,
+		assetID:   "AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo",
+		amount:    1000,
+		addressID: "r1",
+		bucketID:  "b1",
+		walletID:  "w1",
 	}
 
 	if got != want {

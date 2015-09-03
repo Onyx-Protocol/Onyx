@@ -69,11 +69,11 @@ func insertOutputs(ctx context.Context, hash wire.Hash32, txouts []*wire.TxOut) 
 		recouts AS (
 			SELECT
 				$1::text, idx, asset_id, newouts.amount, id, bucket_id, wallet_id
-			FROM receivers
+			FROM addresses
 			INNER JOIN newouts ON address=addr
 		)
 		INSERT INTO outputs
-			(txid, index, asset_id, amount, receiver_id, bucket_id, wallet_id)
+			(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
 		TABLE recouts
 	`
 	_, err = pg.FromContext(ctx).Exec(q,
