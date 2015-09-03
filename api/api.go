@@ -83,7 +83,24 @@ func createWallet(ctx context.Context, w http.ResponseWriter, req *http.Request)
 
 // /v3/wallets/:walletID/buckets
 func createBucket(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	panic("TODO")
+	walletID := req.URL.Query().Get(":walletID")
+
+	var input struct {
+		Label string `json:"label"`
+	}
+	err := readJSON(req.Body, &input)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	bucket, err := appdb.CreateBucket(ctx, walletID, input.Label)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	writeJSON(ctx, w, 201, bucket)
 }
 
 // /v3/wallets/:walletID/assets
