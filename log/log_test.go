@@ -98,6 +98,9 @@ func TestWrite(t *testing.T) {
 				t.Errorf("Result did not contain string:\ngot:  %s\nwant: %s", got, w)
 			}
 		}
+		if !strings.HasSuffix(got, "\n") {
+			t.Errorf("log output should end with a newline")
+		}
 
 		reset()
 	}

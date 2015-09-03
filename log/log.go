@@ -87,6 +87,7 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 
 	logWriterMu.Lock()
 	logWriter.Write([]byte(out)) // ignore errors
+	logWriter.Write([]byte{'\n'})
 	logWriterMu.Unlock()
 }
 
