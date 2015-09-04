@@ -20,6 +20,7 @@ import (
 func Handler() chainhttp.Handler {
 	h := chainhttp.PatServeMux{PatternServeMux: pat.New()}
 	h.AddFunc("POST", "/v3/applications/:appID/wallets", createWallet)
+	h.AddFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
 	h.AddFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
 	h.AddFunc("POST", "/v3/wallets/:walletID/assets", createAsset)
 	h.AddFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
@@ -75,6 +76,58 @@ func createWallet(ctx context.Context, w http.ResponseWriter, req *http.Request)
 	writeJSON(ctx, w, 201, map[string]interface{}{
 		"wallet_id":           wID,
 		"label":               wReq.Label,
+		"block_chain":         "sandbox",
+		"keys":                keys,
+		"signatures_required": 1,
+	})
+}
+
+// /v3/applications/:appID/asset-groups
+func createAssetGroup(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	appID := req.URL.Query().Get(":appID")
+
+	var agReq struct {
+		Label string   `json:"label"`
+		XPubs []string `json:"xpubs"`
+	}
+	err := readJSON(req.Body, &agReq)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	var keys []*appdb.Key
+	for _, xpub := range agReq.XPubs {
+		key, err := appdb.NewKey(xpub)
+		if err != nil {
+			writeHTTPError(ctx, w, err)
+			return
+		}
+		keys = append(keys, key)
+	}
+
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+	defer dbtx.Rollback()
+
+	agID, err := appdb.CreateAssetGroup(ctx, appID, agReq.Label, keys)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	err = dbtx.Commit()
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	writeJSON(ctx, w, 201, map[string]interface{}{
+		"asset_group_id":      agID,
+		"label":               agReq.Label,
 		"block_chain":         "sandbox",
 		"keys":                keys,
 		"signatures_required": 1,

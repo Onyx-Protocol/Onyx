@@ -163,6 +163,43 @@ CREATE TABLE addresses (
 
 
 --
+-- Name: asset_groups; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE asset_groups (
+    id text DEFAULT next_chain_id('ag'::text) NOT NULL,
+    application_id text NOT NULL,
+    block_chain text DEFAULT 'sandbox'::text NOT NULL,
+    sigs_required integer DEFAULT 1 NOT NULL,
+    key_index bigint NOT NULL,
+    label text NOT NULL,
+    keyset text[] NOT NULL,
+    next_asset_index bigint DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: asset_groups_key_index_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE asset_groups_key_index_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: asset_groups_key_index_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE asset_groups_key_index_seq OWNED BY asset_groups.key_index;
+
+
+--
 -- Name: assets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -301,6 +338,13 @@ ALTER SEQUENCE wallets_key_index_seq OWNED BY wallets.key_index;
 -- Name: key_index; Type: DEFAULT; Schema: public; Owner: -
 --
 
+ALTER TABLE ONLY asset_groups ALTER COLUMN key_index SET DEFAULT nextval('asset_groups_key_index_seq'::regclass);
+
+
+--
+-- Name: key_index; Type: DEFAULT; Schema: public; Owner: -
+--
+
 ALTER TABLE ONLY wallets ALTER COLUMN key_index SET DEFAULT nextval('wallets_key_index_seq'::regclass);
 
 
@@ -310,6 +354,14 @@ ALTER TABLE ONLY wallets ALTER COLUMN key_index SET DEFAULT nextval('wallets_key
 
 ALTER TABLE ONLY addresses
     ADD CONSTRAINT addresses_address_key UNIQUE (address);
+
+
+--
+-- Name: asset_groups_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY asset_groups
+    ADD CONSTRAINT asset_groups_pkey PRIMARY KEY (id);
 
 
 --
@@ -387,6 +439,13 @@ CREATE UNIQUE INDEX addresses_bucket_id_key_index_idx ON addresses USING btree (
 --
 
 CREATE INDEX addresses_wallet_id_idx ON addresses USING btree (wallet_id);
+
+
+--
+-- Name: asset_groups_application_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX asset_groups_application_id_idx ON asset_groups USING btree (application_id);
 
 
 --
