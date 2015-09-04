@@ -2,7 +2,6 @@ package log
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -10,6 +9,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/errors"
 	"chain/net/http/reqid"
 )
 
@@ -156,7 +156,9 @@ func TestError(t *testing.T) {
 	reset := setTestLogWriter(buf)
 	defer reset()
 
-	Error(context.Background(), errors.New("boo"), "failure x ", 0)
+	root := errors.New("boo")
+	wrapped := errors.Wrap(root)
+	Error(context.Background(), wrapped, "failure x ", 0)
 
 	read, err := ioutil.ReadAll(buf)
 	if err != nil {
@@ -167,6 +169,10 @@ func TestError(t *testing.T) {
 	want := []string{
 		"at=log_test.go:",
 		`error="failure x 0: boo"`,
+
+		// stack trace
+		`stack="`,
+		"TestError",
 	}
 
 	for _, w := range want {

@@ -15,6 +15,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/errors"
 	"chain/net/http/reqid"
 )
 
@@ -108,7 +109,17 @@ func Error(ctx context.Context, err error, a ...interface{}) {
 	} else {
 		msg = err.Error()
 	}
-	Write(ctx, KeyCaller, caller(1), KeyError, msg)
+
+	keyvals := []interface{}{
+		KeyCaller, caller(1),
+		KeyError, msg,
+	}
+
+	if stack := errors.Stack(err); len(stack) > 0 {
+		keyvals = append(keyvals, "stack", stack)
+	}
+
+	Write(ctx, keyvals...)
 }
 
 // caller returns a string containing filename and line number of a
