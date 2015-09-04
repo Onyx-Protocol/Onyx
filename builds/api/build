@@ -1,0 +1,3 @@
+#!/bin/sh
+/usr/local/go/bin/go build -tags 'prod' -o builds/api/target/api ./cmd/api
+tar -C builds/api/target cf - .
