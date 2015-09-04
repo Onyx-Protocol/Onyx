@@ -35,6 +35,7 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("GET", "/v3/wallets/:walletID/balance", getWalletBalance)
 	h.AddFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
 	h.AddFunc("POST", "/v3/asset-groups/:groupID/assets", createAsset)
+	h.AddFunc("POST", "/v3/buckets/:bucketID/addresses", createAddr)
 	h.AddFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
 	h.AddFunc("POST", "/v3/assets/transfer", walletBuild)
 	h.AddFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
@@ -329,4 +330,13 @@ func createAPIToken(ctx context.Context, w http.ResponseWriter, req *http.Reques
 		return
 	}
 	writeJSON(ctx, w, 200, t)
+}
+
+// optionalTime returns a pointer to t or nil, if t is zero.
+// It is helpful for JSON structs with omitempty.
+func optionalTime(t time.Time) *time.Time {
+	if t.IsZero() {
+		return nil
+	}
+	return &t
 }

@@ -1,10 +1,6 @@
 package asset
 
 import (
-	"bytes"
-	"sort"
-
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"golang.org/x/net/context"
@@ -29,10 +25,9 @@ func Create(ctx context.Context, agID, label string) (*appdb.Asset, error) {
 	asset.Label = label
 
 	var pubkeys []*btcutil.AddressPubKey
-	for _, key := range asset.Keys {
-		pubkeys = append(pubkeys, addrPubKey(key, assetIssuanceDerivationPath(asset)))
+	for _, key := range Signers(asset.Keys, IssuancePath(asset)) {
+		pubkeys = append(pubkeys, key.Address)
 	}
-	sort.Sort(pubKeysByAddress(pubkeys))
 
 	asset.RedeemScript, err = txscript.MultiSigScript(pubkeys, sigsReq)
 	if err != nil {
@@ -50,26 +45,4 @@ func Create(ctx context.Context, agID, label string) (*appdb.Asset, error) {
 	}
 
 	return asset, nil
-}
-
-type pubKeysByAddress []*btcutil.AddressPubKey
-
-func (b pubKeysByAddress) Len() int      { return len(b) }
-func (b pubKeysByAddress) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
-func (b pubKeysByAddress) Less(i, j int) bool {
-	ai := b[i].ScriptAddress()
-	aj := b[j].ScriptAddress()
-	return bytes.Compare(ai, aj) < 0
-}
-
-// The only error returned has a uniformly distributed probability of 1/2^127
-// We've decided to ignore this chance.
-func addrPubKey(key *appdb.Key, path []uint32) *btcutil.AddressPubKey {
-	xpub := &key.XPub.ExtendedKey
-	for _, p := range path {
-		xpub, _ = xpub.Child(p)
-	}
-	eckey, _ := xpub.ECPubKey()
-	addr, _ := btcutil.NewAddressPubKey(eckey.SerializeCompressed(), &chaincfg.MainNetParams)
-	return addr
 }

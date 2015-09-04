@@ -33,6 +33,7 @@ var (
 		asset.ErrBadAddr:        errorInfo{400, "CH300", "Invalid address"},
 		appdb.ErrBadRole:        errorInfo{400, "CH800", "Member role must be \"developer\" or \"admin\"."},
 		appdb.ErrAlreadyMember:  errorInfo{400, "CH801", "User is already a member of the application."},
+		asset.ErrPastExpires:    errorInfo{400, "CH720", "Expires, if set, must be in the future"},
 
 		// Error codes imported from papi for convenient reference.
 		// Please delete lines from this block when you add them
@@ -55,10 +56,8 @@ var (
 		// ErrWalletOwnership     = errorInfo{400, "CH707", "Chain must provide fewer keys than required signatures"}
 		// ErrZeroSigReq          = errorInfo{400, "CH708", "Signatures required must be at least one"}
 		// ErrRequestedKeys       = errorInfo{400, "CH709", "Chain can only provide one key"}
-		// ErrMissingBucket       = errorInfo{404, "CH710", "Requested bucket could not be found"}
 		// ErrMissingBucket400    = errorInfo{400, "CH710", "Requested bucket could not be found"}
 		// ErrMissingApp          = errorInfo{404, "CH711", "Requested application could not be found"}
-		// ErrInvalidExpires      = errorInfo{400, "CH720", "Expires must be set to after current time"}
 		// ErrMissingReceiver     = errorInfo{404, "CH721", "Requested receiver could not be found"}
 		// ErrMaxInputs           = errorInfo{400, "CH730", "Maximum number of inputs passed"}
 		// ErrNoInputs            = errorInfo{400, "CH731", "No inputs provided"}

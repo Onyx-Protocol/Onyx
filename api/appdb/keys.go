@@ -115,3 +115,11 @@ func HashXPub(keystr string) string {
 	hash := btcutil.Hash160([]byte(keystr))
 	return hex.EncodeToString(hash)
 }
+
+func keyIDs(keys []*Key) []string {
+	var a []string
+	for _, k := range keys {
+		a = append(a, k.ID)
+	}
+	return a
+}

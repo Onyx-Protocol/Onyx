@@ -89,19 +89,9 @@ func issuanceSigs(a *appdb.Asset) (sigs []*Signature) {
 	for _, key := range a.Keys {
 		signer := &Signature{
 			XPubHash:       key.ID,
-			DerivationPath: assetIssuanceDerivationPath(a),
+			DerivationPath: IssuancePath(a),
 		}
 		sigs = append(sigs, signer)
 	}
 	return sigs
-}
-
-func assetIssuanceDerivationPath(asset *appdb.Asset) []uint32 {
-	return []uint32{
-		appdb.CustomerAssetsNamespace,
-		asset.AGIndex[0],
-		asset.AGIndex[1],
-		asset.AIndex[0],
-		asset.AIndex[1],
-	}
 }

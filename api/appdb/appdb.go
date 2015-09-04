@@ -7,15 +7,6 @@ package appdb
 
 import "database/sql"
 
-const (
-	ChainPaymentNamespace  = 0
-	ChainPasscodeNamespace = 1
-	ChainAssetsNamespace   = 2
-
-	CustomerPaymentNamespace = 0
-	CustomerAssetsNamespace  = 1
-)
-
 // Init creates some objects in db.
 // It must be called on program start,
 // before any other functions in this package.

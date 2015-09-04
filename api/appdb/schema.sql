@@ -170,7 +170,7 @@ CREATE TABLE activity_buckets (
 --
 
 CREATE TABLE addresses (
-    id text DEFAULT next_chain_id('addr'::text) NOT NULL,
+    id text DEFAULT next_chain_id('a'::text) NOT NULL,
     wallet_id text NOT NULL,
     bucket_id text NOT NULL,
     keyset text[] NOT NULL,
@@ -181,7 +181,9 @@ CREATE TABLE addresses (
     is_change boolean DEFAULT false NOT NULL,
     expiration timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    redeem_script bytea NOT NULL,
+    pk_script bytea NOT NULL
 );
 
 
