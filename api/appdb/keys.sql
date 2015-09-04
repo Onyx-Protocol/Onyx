@@ -7,3 +7,11 @@ BEGIN
 	RETURN ARRAY[(n>>31) & maxint32, n & maxint32];
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION to_key_index(n integer[]) RETURNS bigint
+	LANGUAGE plpgsql
+	AS $$
+BEGIN
+	RETURN n[1]::bigint<<31 | n[2]::bigint;
+END;
+$$;

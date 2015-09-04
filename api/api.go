@@ -20,9 +20,9 @@ import (
 func Handler() chainhttp.Handler {
 	h := chainhttp.PatServeMux{PatternServeMux: pat.New()}
 	h.AddFunc("POST", "/v3/applications/:appID/wallets", createWallet)
-	h.AddFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
 	h.AddFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
-	h.AddFunc("POST", "/v3/wallets/:walletID/assets", createAsset)
+	h.AddFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
+	h.AddFunc("POST", "/v3/asset-groups/:groupID/assets", createAsset)
 	h.AddFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
 	h.AddFunc("POST", "/v3/assets/transfer", walletBuild)
 	h.AddFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
@@ -156,9 +156,24 @@ func createBucket(ctx context.Context, w http.ResponseWriter, req *http.Request)
 	writeJSON(ctx, w, 201, bucket)
 }
 
-// /v3/wallets/:walletID/assets
+// /v3/asset-groups/:groupID/assets
 func createAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	panic("TODO")
+	groupID := req.URL.Query().Get(":groupID")
+
+	var input struct{ Label string }
+	err := readJSON(req.Body, &input)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	asset, err := asset.Create(ctx, groupID, input.Label)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	writeJSON(ctx, w, http.StatusCreated, asset)
 }
 
 // /v3/assets/:assetID/issue

@@ -1,6 +1,8 @@
 package appdb
 
 import (
+	"database/sql"
+
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
@@ -44,4 +46,49 @@ func CreateAssetGroup(ctx context.Context, appID, label string, xpubs []*Key) (i
 	}
 
 	return id, nil
+}
+
+// NextAsset returns all data needed
+// for creating a new asset. This includes
+// all keys, the asset group index, a
+// new index for the asset being created,
+// and the number of signatures required.
+func NextAsset(ctx context.Context, agID string) (asset *Asset, sigsRequired int, err error) {
+	const q = `
+		UPDATE asset_groups
+		SET next_asset_index=next_asset_index+1
+		WHERE id=$1
+		RETURNING
+			(SELECT array_agg(xpub) FROM keys WHERE id=ANY(keyset)),
+			key_index(key_index),
+			key_index(next_asset_index-1),
+			sigs_required
+	`
+	asset = &Asset{GroupID: agID}
+	var (
+		xpubs   []string
+		sigsReq int
+	)
+	err = pg.FromContext(ctx).QueryRow(q, agID).Scan(
+		(*pg.Strings)(&xpubs),
+		(*pg.Uint32s)(&asset.AGIndex),
+		(*pg.Uint32s)(&asset.AIndex),
+		&sigsReq,
+	)
+	if err == sql.ErrNoRows {
+		err = pg.ErrUserInputNotFound
+	}
+	if err != nil {
+		return nil, 0, errors.WithDetailf(err, "asset group %v: get key info", agID)
+	}
+
+	for _, xpub := range xpubs {
+		key, err := NewKey(xpub)
+		if err != nil {
+			return nil, 0, errors.Wrapf(err, "asset group %v: bad key %v", agID, xpub)
+		}
+		asset.Keys = append(asset.Keys, key)
+	}
+
+	return asset, sigsReq, nil
 }

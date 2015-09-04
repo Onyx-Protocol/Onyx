@@ -11,20 +11,21 @@ import (
 // It is made up of extended keys, and paths (indexes) within those keys.
 // Assets belong to wallets.
 type Asset struct {
-	Keys           []*Key
-	WIndex, AIndex []uint32
-	Hash           wire.Hash20 // the raw Asset ID
-	RedeemScript   []byte
-	WalletID       string
+	Hash            wire.Hash20 `json:"id"` // the raw Asset ID
+	GroupID         string      `json:"asset_group_id"`
+	Label           string      `json:"label"`
+	Keys            []*Key      `json:"-"`
+	AGIndex, AIndex []uint32    `json:"-"`
+	RedeemScript    []byte      `json:"-"`
 }
 
 // AssetByID loads an asset from the database using its ID.
 func AssetByID(ctx context.Context, id string) (*Asset, error) {
 	const q = `
-		SELECT keys, redeem_script, wallet_id,
-			key_index(wallets.key_index), key_index(assets.key_index),
+		SELECT keys, redeem_script, asset_group_id,
+			key_index(asset_group.key_index), key_index(assets.key_index),
 		FROM assets
-		INNER JOIN wallets ON wallets.id=assets.wallet_id
+		INNER JOIN asset_groups ON asset_groups.id=assets.asset_group_id
 		WHERE assets.id=$1
 	`
 	var (
@@ -39,8 +40,8 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 	err = pg.FromContext(ctx).QueryRow(q, id).Scan(
 		(*pg.Strings)(&keyIDs),
 		&a.RedeemScript,
-		&a.WalletID,
-		(*pg.Uint32s)(&a.WIndex),
+		&a.GroupID,
+		(*pg.Uint32s)(&a.AGIndex),
 		(*pg.Uint32s)(&a.AIndex),
 	)
 	if err != nil {
@@ -53,4 +54,26 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 	}
 
 	return a, nil
+}
+
+// InsertAsset adds the asset to the database
+func InsertAsset(ctx context.Context, asset *Asset) error {
+	const q = `
+		INSERT INTO assets (id, asset_group_id, key_index, keyset, redeem_script, label)
+		VALUES($1, $2, to_key_index($3), $4, $5, $6)
+	`
+	var xpubs []string
+	for _, key := range asset.Keys {
+		xpubs = append(xpubs, key.XPub.String())
+	}
+
+	_, err := pg.FromContext(ctx).Exec(q,
+		asset.Hash.String(),
+		asset.GroupID,
+		pg.Uint32s(asset.AIndex),
+		pg.Strings(xpubs),
+		asset.RedeemScript,
+		asset.Label,
+	)
+	return err
 }

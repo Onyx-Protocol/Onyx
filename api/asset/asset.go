@@ -79,7 +79,7 @@ func addAssetIssuanceOutputs(tx *wire.MsgTx, asset *appdb.Asset, outs []Output) 
 // to issue units of asset 'a'.
 func issuanceInput(a *appdb.Asset) *Input {
 	return &Input{
-		WalletID:     a.WalletID,
+		AssetGroupID: a.GroupID,
 		RedeemScript: a.RedeemScript,
 		Sigs:         issuanceSigs(a),
 	}
@@ -89,13 +89,19 @@ func issuanceSigs(a *appdb.Asset) (sigs []*Signature) {
 	for _, key := range a.Keys {
 		signer := &Signature{
 			XPubHash:       key.ID,
-			DerivationPath: assetIssuanceDerivationPath(key, a),
+			DerivationPath: assetIssuanceDerivationPath(a),
 		}
 		sigs = append(sigs, signer)
 	}
 	return sigs
 }
 
-func assetIssuanceDerivationPath(key *appdb.Key, asset *appdb.Asset) []uint32 {
-	return append([]uint32{appdb.CustomerAssetsNamespace}, asset.AIndex...)
+func assetIssuanceDerivationPath(asset *appdb.Asset) []uint32 {
+	return []uint32{
+		appdb.CustomerAssetsNamespace,
+		asset.AGIndex[0],
+		asset.AGIndex[1],
+		asset.AIndex[0],
+		asset.AIndex[1],
+	}
 }

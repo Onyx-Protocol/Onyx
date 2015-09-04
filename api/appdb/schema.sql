@@ -205,14 +205,15 @@ ALTER SEQUENCE asset_groups_key_index_seq OWNED BY asset_groups.key_index;
 
 CREATE TABLE assets (
     id text NOT NULL,
-    wallet_id text NOT NULL,
+    asset_group_id text NOT NULL,
     key_index bigint NOT NULL,
-    keys text[] DEFAULT '{}'::text[] NOT NULL,
+    keyset text[] DEFAULT '{}'::text[] NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     definition_mutable boolean DEFAULT false NOT NULL,
     definition_url text DEFAULT ''::text NOT NULL,
     definition bytea,
-    redeem_script bytea
+    redeem_script bytea NOT NULL,
+    label text NOT NULL
 );
 
 
@@ -507,11 +508,11 @@ ALTER TABLE ONLY addresses
 
 
 --
--- Name: assets_wallet_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: assets_asset_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY assets
-    ADD CONSTRAINT assets_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id);
+    ADD CONSTRAINT assets_asset_group_id_fkey FOREIGN KEY (asset_group_id) REFERENCES asset_groups(id);
 
 
 --
