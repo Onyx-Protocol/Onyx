@@ -11,12 +11,12 @@ import (
 // It is made up of extended keys, and paths (indexes) within those keys.
 // Assets belong to wallets.
 type Asset struct {
-	Hash            wire.Hash20 `json:"id"` // the raw Asset ID
-	GroupID         string      `json:"asset_group_id"`
-	Label           string      `json:"label"`
-	Keys            []*Key      `json:"-"`
-	AGIndex, AIndex []uint32    `json:"-"`
-	RedeemScript    []byte      `json:"-"`
+	Hash            wire.Hash20 // the raw Asset ID
+	GroupID         string
+	Label           string
+	Keys            []*Key
+	AGIndex, AIndex []uint32
+	RedeemScript    []byte
 }
 
 // AssetByID loads an asset from the database using its ID.

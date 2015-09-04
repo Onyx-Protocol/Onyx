@@ -173,7 +173,11 @@ func createAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	writeJSON(ctx, w, http.StatusCreated, asset)
+	writeJSON(ctx, w, http.StatusCreated, map[string]interface{}{
+		"id":             asset.Hash.String(),
+		"asset_group_id": asset.GroupID,
+		"label":          asset.Label,
+	})
 }
 
 // /v3/assets/:assetID/issue
