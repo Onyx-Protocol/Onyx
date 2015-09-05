@@ -62,16 +62,16 @@ func InsertAsset(ctx context.Context, asset *Asset) error {
 		INSERT INTO assets (id, asset_group_id, key_index, keyset, redeem_script, label)
 		VALUES($1, $2, to_key_index($3), $4, $5, $6)
 	`
-	var xpubs []string
+	var keyIDs []string
 	for _, key := range asset.Keys {
-		xpubs = append(xpubs, key.XPub.String())
+		keyIDs = append(keyIDs, key.ID)
 	}
 
 	_, err := pg.FromContext(ctx).Exec(q,
 		asset.Hash.String(),
 		asset.GroupID,
 		pg.Uint32s(asset.AIndex),
-		pg.Strings(xpubs),
+		pg.Strings(keyIDs),
 		asset.RedeemScript,
 		asset.Label,
 	)
