@@ -22,8 +22,8 @@ type Asset struct {
 // AssetByID loads an asset from the database using its ID.
 func AssetByID(ctx context.Context, id string) (*Asset, error) {
 	const q = `
-		SELECT keys, redeem_script, asset_group_id,
-			key_index(asset_group.key_index), key_index(assets.key_index),
+		SELECT assets.keyset, redeem_script, asset_group_id,
+			key_index(asset_groups.key_index), key_index(assets.key_index)
 		FROM assets
 		INNER JOIN asset_groups ON asset_groups.id=assets.asset_group_id
 		WHERE assets.id=$1

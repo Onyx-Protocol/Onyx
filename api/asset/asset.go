@@ -48,7 +48,7 @@ func Issue(ctx context.Context, assetID string, outs []Output) (*Tx, error) {
 
 type Output struct {
 	Address  string
-	BucketID string
+	BucketID string `json:"bucket_id"`
 	Amount   int64
 }
 
