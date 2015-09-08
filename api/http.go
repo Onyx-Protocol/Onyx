@@ -39,11 +39,17 @@ func writeHTTPError(ctx context.Context, w http.ResponseWriter, err error) {
 	info := errInfo(err)
 	//metrics.Counter("status." + strconv.Itoa(info.HTTPStatus)).Add()
 	//metrics.Counter("error." + info.ChainCode).Add()
-	log.Write(ctx,
+
+	keyvals := []interface{}{
 		"status", info.HTTPStatus,
 		"chaincode", info.ChainCode,
-		"error", err,
-	)
+		log.KeyError, err,
+	}
+	if info.HTTPStatus == 500 {
+		keyvals = append(keyvals, log.KeyStack, errors.Stack(err))
+	}
+	log.Write(ctx, keyvals...)
+
 	var v interface{} = info
 	if s := errors.Detail(err); s != "" {
 		v = struct {
