@@ -163,6 +163,17 @@ CREATE TABLE addresses (
 
 
 --
+-- Name: applications; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE applications (
+    id text DEFAULT next_chain_id('app'::text) NOT NULL,
+    name text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: asset_groups; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -270,6 +281,19 @@ CREATE TABLE keys (
 
 
 --
+-- Name: members; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE members (
+    application_id text NOT NULL,
+    user_id text NOT NULL,
+    role text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT members_role_check CHECK (((role = 'developer'::text) OR (role = 'admin'::text)))
+);
+
+
+--
 -- Name: outputs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -372,6 +396,14 @@ ALTER TABLE ONLY addresses
 
 
 --
+-- Name: applications_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY applications
+    ADD CONSTRAINT applications_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: asset_groups_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -401,6 +433,14 @@ ALTER TABLE ONLY buckets
 
 ALTER TABLE ONLY keys
     ADD CONSTRAINT keys_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: members_application_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY members
+    ADD CONSTRAINT members_application_id_user_id_key UNIQUE (application_id, user_id);
 
 
 --
@@ -468,6 +508,13 @@ CREATE INDEX asset_groups_application_id_idx ON asset_groups USING btree (applic
 --
 
 CREATE UNIQUE INDEX buckets_wallet_path ON buckets USING btree (wallet_id, key_index);
+
+
+--
+-- Name: members_user_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX members_user_id_idx ON members USING btree (user_id);
 
 
 --
@@ -543,6 +590,22 @@ ALTER TABLE ONLY auth_tokens
 
 ALTER TABLE ONLY buckets
     ADD CONSTRAINT buckets_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id);
+
+
+--
+-- Name: members_application_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY members
+    ADD CONSTRAINT members_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
+
+
+--
+-- Name: members_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY members
+    ADD CONSTRAINT members_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 
 
 --

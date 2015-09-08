@@ -31,6 +31,8 @@ var (
 		appdb.ErrBadXPubCount:   errorInfo{400, "CH712", "Need exactly one xpub."},
 		appdb.ErrXPriv:          errorInfo{400, "CH713", "Must provide an xpub, not xpriv."},
 		asset.ErrBadAddr:        errorInfo{400, "CH300", "Invalid address"},
+		appdb.ErrBadRole:        errorInfo{400, "CH800", "Member role must be \"developer\" or \"admin\"."},
+		appdb.ErrAlreadyMember:  errorInfo{400, "CH801", "User is already a member of the application."},
 
 		// Error codes imported from papi for convenient reference.
 		// Please delete lines from this block when you add them

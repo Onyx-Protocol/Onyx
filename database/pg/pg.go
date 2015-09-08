@@ -27,3 +27,10 @@ func (d SchemaDriver) Open(name string) (driver.Conn, error) {
 
 	return conn, nil
 }
+
+// IsUniqueViolation returns true if the given error is a Postgres unique
+// constraint violation error.
+func IsUniqueViolation(err error) bool {
+	pqErr, ok := err.(*pq.Error)
+	return ok && pqErr.Code.Name() == "unique_violation"
+}

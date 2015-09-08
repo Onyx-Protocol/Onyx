@@ -23,6 +23,13 @@ const sessionTokenLifetime = 2 * 7 * 24 * time.Hour
 
 func Handler() chainhttp.Handler {
 	h := chainhttp.PatServeMux{PatternServeMux: pat.New()}
+	h.AddFunc("GET", "/v3/applications", tokenAuthn(listApplications))
+	h.AddFunc("POST", "/v3/applications", tokenAuthn(createApplication))
+	h.AddFunc("GET", "/v3/applications/:appID", getApplication)
+	h.AddFunc("GET", "/v3/applications/:appID/members", listMembers)
+	h.AddFunc("POST", "/v3/applications/:appID/members", addMember)
+	h.AddFunc("PUT", "/v3/applications/:appID/members/:userID", updateMember)
+	h.AddFunc("DELETE", "/v3/applications/:appID/members/:userID", removeMember)
 	h.AddFunc("POST", "/v3/applications/:appID/wallets", createWallet)
 	h.AddFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
 	h.AddFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
