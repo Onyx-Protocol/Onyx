@@ -58,6 +58,53 @@ func CreateWallet(ctx context.Context, appID, label string, xpubs []*Key) (id st
 	return id, nil
 }
 
+type Balance struct {
+	AssetID   string `json:"asset_id"`
+	Confirmed int64  `json:"confirmed"`
+	Total     int64  `json:"total"`
+}
+
+// WalletBalance fetches the balances of assets contained in this wallet.
+// It returns a slice of Balances, where each Balance contains an asset ID,
+// a confirmed balance, and a total balance. The total and confirmed balances
+// are currently the same.
+func WalletBalance(ctx context.Context, walletID string) ([]*Balance, error) {
+	q := `
+		SELECT asset_id, sum(amount)::bigint
+		FROM outputs
+		WHERE wallet_id=$1
+		GROUP BY asset_id
+		ORDER BY asset_id
+	`
+	rows, err := pg.FromContext(ctx).Query(q, walletID)
+	if err != nil {
+		return nil, errors.Wrap(err, "balance query")
+	}
+	defer rows.Close()
+	var bals []*Balance
+
+	for rows.Next() {
+		var (
+			assetID string
+			bal     int64
+		)
+		err = rows.Scan(&assetID, &bal)
+		if err != nil {
+			return nil, errors.Wrap(err, "row scan")
+		}
+		b := &Balance{
+			AssetID:   assetID,
+			Total:     bal,
+			Confirmed: bal,
+		}
+		bals = append(bals, b)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "rows error")
+	}
+	return bals, err
+}
+
 func createRotation(ctx context.Context, walletID string, hashes ...string) error {
 	const q = `
 		WITH new_rotation AS (

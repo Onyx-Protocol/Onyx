@@ -32,6 +32,7 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("DELETE", "/v3/applications/:appID/members/:userID", removeMember)
 	h.AddFunc("POST", "/v3/applications/:appID/wallets", createWallet)
 	h.AddFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
+	h.AddFunc("GET", "/v3/wallets/:walletID/balance", getWalletBalance)
 	h.AddFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
 	h.AddFunc("POST", "/v3/asset-groups/:groupID/assets", createAsset)
 	h.AddFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
@@ -93,6 +94,18 @@ func createWallet(ctx context.Context, w http.ResponseWriter, req *http.Request)
 		"keys":                keys,
 		"signatures_required": 1,
 	})
+}
+
+// /v3/wallets/:walletID/balance
+func getWalletBalance(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	wID := req.URL.Query().Get(":walletID")
+	bals, err := appdb.WalletBalance(ctx, wID)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	writeJSON(ctx, w, 200, bals)
 }
 
 // /v3/applications/:appID/asset-groups
