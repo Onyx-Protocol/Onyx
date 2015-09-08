@@ -9,6 +9,15 @@ import (
 	"golang.org/x/net/context"
 )
 
+// key is an unexported type for keys defined in this package.
+// This prevents collisions with keys defined in other packages.
+type key int
+
+// reqIDKey is the key for request IDs in Contexts.  It is
+// unexported; clients use NewContext and FromContext
+// instead of using this key directly.
+var reqIDKey key = 0
+
 const Unknown = "unknown_req_id"
 
 // New generates a random request ID.
@@ -31,13 +40,13 @@ func New() string {
 
 // NewContext returns a new Context that carries reqid.
 func NewContext(ctx context.Context, reqid string) context.Context {
-	return context.WithValue(ctx, "requestID", reqid)
+	return context.WithValue(ctx, reqIDKey, reqid)
 }
 
 // FromContext returns the request ID stored in ctx,
 // or Unknown, if there is none.
 func FromContext(ctx context.Context) string {
-	reqID, ok := (ctx.Value("requestID")).(string)
+	reqID, ok := ctx.Value(reqIDKey).(string)
 	if !ok {
 		return Unknown
 	}
