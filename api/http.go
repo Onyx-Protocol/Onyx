@@ -16,6 +16,10 @@ import (
 // possibly including a datatype that doesn't match what we expected.
 var ErrBadInputJSON = errors.New("api: bad input json")
 
+// ErrBadReqHeader indicates the user supplied a malformed request header,
+// possibly including a datatype that doesn't match what we expected.
+var ErrBadReqHeader = errors.New("bad request header")
+
 // readJSON decodes a single JSON text from r into v.
 // The only error it returns is ErrBadInputJSON
 // (wrapped with the original error message as context).

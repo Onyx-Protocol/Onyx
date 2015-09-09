@@ -4,6 +4,7 @@ package api
 import (
 	"bytes"
 	"net/http"
+	"strconv"
 	"time"
 
 	"golang.org/x/net/context"
@@ -36,6 +37,7 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("GET", "/v3/wallets/:walletID/buckets", listBuckets)
 	h.AddFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
 	h.AddFunc("GET", "/v3/wallets/:walletID/balance", getWalletBalance)
+	h.AddFunc("GET", "/v3/wallets/:walletID/activity", getWalletActivity)
 	h.AddFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
 	h.AddFunc("POST", "/v3/asset-groups/:groupID/assets", createAsset)
 	h.AddFunc("POST", "/v3/buckets/:bucketID/addresses", createAddr)
@@ -138,6 +140,30 @@ func listWallets(ctx context.Context, w http.ResponseWriter, req *http.Request) 
 	}
 
 	writeJSON(ctx, w, 200, wallets)
+}
+
+// /v3/wallets/:walletID/activity
+func getWalletActivity(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	wID := req.URL.Query().Get(":walletID")
+	prev := req.Header.Get("Range-After")
+	limit, err := strconv.Atoi(req.Header.Get("Limit"))
+	if err != nil {
+		err = errors.Wrap(ErrBadReqHeader, err.Error())
+		writeHTTPError(ctx, w, errors.WithDetail(err, "limit header"))
+		return
+	}
+
+	activity, last, err := appdb.WalletActivity(ctx, wID, prev, limit)
+
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	writeJSON(ctx, w, 200, map[string]interface{}{
+		"last":       last,
+		"activities": activity,
+	})
 }
 
 // /v3/applications/:appID/asset-groups
