@@ -20,7 +20,7 @@ func mustDecodeHex(h string) []byte {
 	return bits
 }
 
-func TestInsertOutputs(t *testing.T) {
+func TestInsertUTXOs(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO wallets (id, application_id, label, current_rotation, key_index)
 		VALUES('w1', 'a1', '', 'c1', 0);
@@ -38,14 +38,14 @@ func TestInsertOutputs(t *testing.T) {
 	tx.AddTxOut(wire.NewTxOut(asset, 1000, pkscript))
 
 	bgctx := pg.NewContext(context.Background(), dbtx)
-	err := insertOutputs(bgctx, tx.TxSha(), tx.TxOut)
+	err := insertUTXOs(bgctx, tx.TxSha(), tx.TxOut)
 	if err != nil {
 		t.Fatal("unexptected error:", err)
 	}
 
 	const check = `
 		SELECT txid, index, asset_id, amount, address_id, bucket_id, wallet_id
-		FROM outputs
+		FROM utxos
 	`
 	type output struct {
 		txid, assetID, addressID, bucketID, walletID string
@@ -72,8 +72,8 @@ func TestInsertOutputs(t *testing.T) {
 		t.Errorf("got output = %+v want %+v", got, want)
 	}
 
-	if got := pgtest.Count(t, dbtx, "outputs"); got != 1 {
-		t.Errorf("Count(outputs) = %d want 1", got)
+	if got := pgtest.Count(t, dbtx, "utxos"); got != 1 {
+		t.Errorf("Count(utxos) = %d want 1", got)
 	}
 }
 

@@ -71,7 +71,7 @@ type Balance struct {
 func WalletBalance(ctx context.Context, walletID string) ([]*Balance, error) {
 	q := `
 		SELECT asset_id, sum(amount)::bigint
-		FROM outputs
+		FROM utxos
 		WHERE wallet_id=$1
 		GROUP BY asset_id
 		ORDER BY asset_id

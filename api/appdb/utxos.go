@@ -17,20 +17,20 @@ type outputSet struct {
 }
 
 // Commit updates the output set to reflect
-// the effects of tx. It deletes consumed outputs
+// the effects of tx. It deletes consumed utxos
 // and inserts newly-created outputs.
 // Must be called inside a transaction.
 func Commit(ctx context.Context, tx *wire.MsgTx) error {
 	hash := tx.TxSha()
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
-	err := insertOutputs(ctx, hash, tx.TxOut)
+	err := insertUTXOs(ctx, hash, tx.TxOut)
 	if err != nil {
 		return err
 	}
-	return deleteOutputs(ctx, tx.TxIn)
+	return deleteUTXOs(ctx, tx.TxIn)
 }
 
-func deleteOutputs(ctx context.Context, txins []*wire.TxIn) error {
+func deleteUTXOs(ctx context.Context, txins []*wire.TxIn) error {
 	var (
 		txid  []string
 		index []uint32
@@ -44,14 +44,14 @@ func deleteOutputs(ctx context.Context, txins []*wire.TxIn) error {
 		WITH outpoints AS (
 			SELECT unnest($1::text[]), unnest($2::int[])
 		)
-		DELETE FROM outputs
+		DELETE FROM utxos
 		WHERE (txid, index) IN (TABLE outpoints)
 	`
 	_, err := pg.FromContext(ctx).Exec(q, pg.Strings(txid), pg.Uint32s(index))
 	return err
 }
 
-func insertOutputs(ctx context.Context, hash wire.Hash32, txouts []*wire.TxOut) error {
+func insertUTXOs(ctx context.Context, hash wire.Hash32, txouts []*wire.TxOut) error {
 	outs := &outputSet{txid: hash.String()}
 	err := addTxOutputs(outs, txouts)
 	if err != nil {
@@ -72,7 +72,7 @@ func insertOutputs(ctx context.Context, hash wire.Hash32, txouts []*wire.TxOut) 
 			FROM addresses
 			INNER JOIN newouts ON address=addr
 		)
-		INSERT INTO outputs
+		INSERT INTO utxos
 			(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
 		TABLE recouts
 	`

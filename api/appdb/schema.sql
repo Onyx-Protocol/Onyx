@@ -294,23 +294,6 @@ CREATE TABLE members (
 
 
 --
--- Name: outputs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE outputs (
-    txid text NOT NULL,
-    index integer NOT NULL,
-    asset_id text NOT NULL,
-    amount bigint NOT NULL,
-    address_id text NOT NULL,
-    bucket_id text NOT NULL,
-    wallet_id text NOT NULL,
-    reserved_at timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
 -- Name: rotations; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -330,6 +313,23 @@ CREATE TABLE users (
     id text DEFAULT next_chain_id('u'::text) NOT NULL,
     email text NOT NULL,
     password_hash bytea NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: utxos; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE utxos (
+    txid text NOT NULL,
+    index integer NOT NULL,
+    asset_id text NOT NULL,
+    amount bigint NOT NULL,
+    address_id text NOT NULL,
+    bucket_id text NOT NULL,
+    wallet_id text NOT NULL,
+    reserved_at timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
@@ -444,14 +444,6 @@ ALTER TABLE ONLY members
 
 
 --
--- Name: outputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
---
-
-ALTER TABLE ONLY outputs
-    ADD CONSTRAINT outputs_pkey PRIMARY KEY (txid, index);
-
-
---
 -- Name: rotations_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -465,6 +457,14 @@ ALTER TABLE ONLY rotations
 
 ALTER TABLE ONLY users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY utxos
+    ADD CONSTRAINT utxos_pkey PRIMARY KEY (txid, index);
 
 
 --
@@ -518,31 +518,31 @@ CREATE INDEX members_user_id_idx ON members USING btree (user_id);
 
 
 --
--- Name: outputs_address_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX outputs_address_id_asset_id_reserved_at_idx ON outputs USING btree (address_id, asset_id, reserved_at);
-
-
---
--- Name: outputs_bucket_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX outputs_bucket_id_asset_id_reserved_at_idx ON outputs USING btree (bucket_id, asset_id, reserved_at);
-
-
---
--- Name: outputs_wallet_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX outputs_wallet_id_asset_id_reserved_at_idx ON outputs USING btree (wallet_id, asset_id, reserved_at);
-
-
---
 -- Name: users_lower_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
+
+
+--
+-- Name: utxos_address_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX utxos_address_id_asset_id_reserved_at_idx ON utxos USING btree (address_id, asset_id, reserved_at);
+
+
+--
+-- Name: utxos_bucket_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX utxos_bucket_id_asset_id_reserved_at_idx ON utxos USING btree (bucket_id, asset_id, reserved_at);
+
+
+--
+-- Name: utxos_wallet_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX utxos_wallet_id_asset_id_reserved_at_idx ON utxos USING btree (wallet_id, asset_id, reserved_at);
 
 
 --

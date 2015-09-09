@@ -11,8 +11,8 @@ import (
 )
 
 func TestReserveSQL(t *testing.T) {
-	var threeOutputsFixture = `
-		INSERT INTO outputs
+	var threeUTXOsFixture = `
+		INSERT INTO utxos
 		(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
 		VALUES
 			('t1', 0, 'a1', 1, 'r1', 'b1', 'w1'),
@@ -34,21 +34,21 @@ func TestReserveSQL(t *testing.T) {
 	}{
 		{
 			description:  "test reserves minimum needed",
-			fixture:      threeOutputsFixture,
+			fixture:      threeUTXOsFixture,
 			askAmt:       2,
 			want:         []want{{"t1", 0, 1}, {"t2", 0, 1}},
 			wantReserved: []want{{"t1", 0, 1}, {"t2", 0, 1}},
 		},
 		{
 			description: "test returns error if minimum is not met",
-			fixture:     threeOutputsFixture,
+			fixture:     threeUTXOsFixture,
 			askAmt:      4,
 			wantErr:     "insufficient funds",
 		},
 		{
-			description: "test does not return already reserved outputs",
+			description: "test does not return already reserved utxos",
 			fixture: `
-				INSERT INTO outputs
+				INSERT INTO utxos
 				(txid, index, asset_id, amount, address_id, bucket_id, wallet_id, reserved_at)
 				VALUES
 					('t1', 0, 'a1', 1, 'r1', 'b1', 'w1', now()),
@@ -64,7 +64,7 @@ func TestReserveSQL(t *testing.T) {
 		t.Log(test.description)
 		dbtx := pgtest.TxWithSQL(t, test.fixture)
 
-		rows, err := dbtx.Query(`SELECT * FROM reserve_outputs('a1', 'b1', $1)`, test.askAmt)
+		rows, err := dbtx.Query(`SELECT * FROM reserve_utxos('a1', 'b1', $1)`, test.askAmt)
 		if pqErr, ok := (err).(*pq.Error); ok {
 			if !strings.Contains(pqErr.Message, test.wantErr) {
 				t.Errorf("got error = %q want %q", pqErr.Message, test.wantErr)
@@ -86,11 +86,11 @@ func TestReserveSQL(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("got reserve_outputs(%d) = %+v want %+v", test.askAmt, got, test.want)
+			t.Errorf("got reserve_utxos(%d) = %+v want %+v", test.askAmt, got, test.want)
 		}
 
 		const onlyReservedQ = `
-			SELECT txid, index, amount FROM outputs
+			SELECT txid, index, amount FROM utxos
 			WHERE reserved_at > now()-'60s'::interval
 			ORDER BY address_id ASC
 		`
@@ -111,7 +111,7 @@ func TestReserveSQL(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(got, test.wantReserved) {
-			t.Errorf("got outputs reserved = %+v want %+v", got, test.wantReserved)
+			t.Errorf("got utxos reserved = %+v want %+v", got, test.wantReserved)
 		}
 
 		dbtx.Rollback()
