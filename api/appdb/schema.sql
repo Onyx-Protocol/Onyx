@@ -143,6 +143,29 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
+-- Name: activity; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE activity (
+    id text DEFAULT next_chain_id('act'::text) NOT NULL,
+    wallet_id text NOT NULL,
+    data json NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    txid text NOT NULL
+);
+
+
+--
+-- Name: activity_buckets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE activity_buckets (
+    activity_id text NOT NULL,
+    bucket_id text NOT NULL
+);
+
+
+--
 -- Name: addresses; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -388,6 +411,14 @@ ALTER TABLE ONLY wallets ALTER COLUMN key_index SET DEFAULT nextval('wallets_key
 
 
 --
+-- Name: activity_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY activity
+    ADD CONSTRAINT activity_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: addresses_address_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -476,6 +507,34 @@ ALTER TABLE ONLY wallets
 
 
 --
+-- Name: activity_buckets_activity_id_bucket_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX activity_buckets_activity_id_bucket_id_idx ON activity_buckets USING btree (activity_id, bucket_id);
+
+
+--
+-- Name: activity_buckets_bucket_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX activity_buckets_bucket_id_idx ON activity_buckets USING btree (bucket_id);
+
+
+--
+-- Name: activity_wallet_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX activity_wallet_id_idx ON activity USING btree (wallet_id);
+
+
+--
+-- Name: activity_wallet_id_txid_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX activity_wallet_id_txid_idx ON activity USING btree (wallet_id, txid);
+
+
+--
 -- Name: addresses_bucket_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -550,6 +609,30 @@ CREATE INDEX utxos_wallet_id_asset_id_reserved_at_idx ON utxos USING btree (wall
 --
 
 CREATE INDEX wallets_application_id_idx ON wallets USING btree (application_id);
+
+
+--
+-- Name: activity_buckets_activity_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY activity_buckets
+    ADD CONSTRAINT activity_buckets_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES activity(id);
+
+
+--
+-- Name: activity_buckets_bucket_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY activity_buckets
+    ADD CONSTRAINT activity_buckets_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES buckets(id);
+
+
+--
+-- Name: activity_wallet_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY activity
+    ADD CONSTRAINT activity_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id);
 
 
 --
