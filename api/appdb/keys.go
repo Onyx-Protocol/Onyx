@@ -28,7 +28,7 @@ func NewKey(pubstr string) (*Key, error) {
 	}
 	k := &Key{
 		ID:   HashXPub(pubstr),
-		XPub: hdkey.XKey{*extkey},
+		XPub: hdkey.XKey{ExtendedKey: *extkey},
 	}
 	return k, nil
 }
