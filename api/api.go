@@ -42,7 +42,9 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
 	h.AddFunc("POST", "/v3/users", createUser)
 	h.AddFunc("POST", "/v3/login", userCredsAuthn(login))
+	h.AddFunc("GET", "/v3/api-tokens", tokenAuthn(listAPITokens))
 	h.AddFunc("POST", "/v3/api-tokens", tokenAuthn(createAPIToken))
+	h.AddFunc("DELETE", "/v3/api-tokens/:tokenID", deleteAPIToken)
 	return h
 }
 
@@ -345,17 +347,6 @@ func login(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	uid := authn.GetAuthID(ctx)
 	expiresAt := time.Now().UTC().Add(sessionTokenLifetime)
 	t, err := appdb.CreateAuthToken(ctx, uid, "session", &expiresAt)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-	writeJSON(ctx, w, 200, t)
-}
-
-// POST /v3/api-tokens
-func createAPIToken(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	uid := authn.GetAuthID(ctx)
-	t, err := appdb.CreateAuthToken(ctx, uid, "api", nil)
 	if err != nil {
 		writeHTTPError(ctx, w, err)
 		return

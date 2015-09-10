@@ -82,6 +82,47 @@ func AuthenticateToken(ctx context.Context, id, secret string) (userID string, e
 	return uid, nil
 }
 
+// ListAuthTokens returns a list of AuthTokens of the given type and owned by
+// the given user.
+func ListAuthTokens(ctx context.Context, userID string, typ string) ([]*AuthToken, error) {
+	q := `
+		SELECT id FROM auth_tokens
+		WHERE user_id = $1 AND type = $2
+		ORDER BY created_at
+	`
+	rows, err := pg.FromContext(ctx).Query(q, userID, typ)
+	if err != nil {
+		return nil, errors.Wrap(err, "select query")
+	}
+	defer rows.Close()
+
+	var tokens []*AuthToken
+	for rows.Next() {
+		t := new(AuthToken)
+		err := rows.Scan(&t.ID)
+		if err != nil {
+			return nil, errors.Wrap(err, "row scan")
+		}
+		tokens = append(tokens, t)
+	}
+
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrap(err, "end row scan loop")
+	}
+
+	return tokens, nil
+}
+
+// DeleteAuthToken removes the specified auth token from the database.
+func DeleteAuthToken(ctx context.Context, id string) error {
+	q := `DELETE FROM auth_tokens WHERE id = $1`
+	_, err := pg.FromContext(ctx).Exec(q, id)
+	if err != nil {
+		return errors.Wrap(err, "delete query")
+	}
+	return nil
+}
+
 func generateSecret() (secret string, hash []byte, err error) {
 	b := make([]byte, secretBytes)
 	_, err = rand.Read(b)

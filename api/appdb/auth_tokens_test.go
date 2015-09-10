@@ -1,6 +1,7 @@
 package appdb
 
 import (
+	"database/sql"
 	"reflect"
 	"testing"
 	"time"
@@ -27,7 +28,7 @@ const (
 		INSERT INTO auth_tokens (id, secret_hash, type, user_id) VALUES (
 			'sample-token-id-0',
 			'$2a$08$XMDacphqs44K0pzrSQxgqu3dAF.I3vn54toLboBSCKW6oSGitjSpa'::bytea, -- plaintext: 0123456789ABCDEF
-			'type-does-not-matter',
+			'sample-type-0',
 			'sample-user-id-0'
 		);
 
@@ -35,9 +36,16 @@ const (
 		INSERT INTO auth_tokens (id, secret_hash, type, user_id, expires_at) VALUES (
 			'sample-token-id-1',
 			'$2a$08$XMDacphqs44K0pzrSQxgqu3dAF.I3vn54toLboBSCKW6oSGitjSpa'::bytea, -- plaintext: 0123456789ABCDEF
-			'type-does-not-matter',
+			'sample-type-0',
 			'sample-user-id-0',
 			'2000-01-01 00:00:00+00'
+		);
+
+		INSERT INTO auth_tokens (id, secret_hash, type, user_id) VALUES (
+			'sample-token-id-2',
+			'$2a$08$XMDacphqs44K0pzrSQxgqu3dAF.I3vn54toLboBSCKW6oSGitjSpa'::bytea, -- plaintext: 0123456789ABCDEF
+			'sample-type-1',
+			'sample-user-id-0'
 		);
 	`
 )
@@ -79,7 +87,7 @@ func TestCreateAuthToken(t *testing.T) {
 			defer dbtx.Rollback()
 			ctx := pg.NewContext(context.Background(), dbtx)
 
-			tok, err := CreateAuthToken(ctx, "sample-user-id-0", "sample-type", expiresAt)
+			tok, err := CreateAuthToken(ctx, "sample-user-id-0", "sample-type-0", expiresAt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -100,7 +108,7 @@ func TestCreateAuthToken(t *testing.T) {
 			want := testAuthToken{
 				id:         tok.ID,
 				secretHash: got.secretHash, // doesn't matter as long as it's not the secret
-				typ:        "sample-type",
+				typ:        "sample-type-0",
 				userID:     "sample-user-id-0",
 				expiresAt:  expiresAt,
 			}
@@ -148,4 +156,90 @@ func TestAuthenticateToken(t *testing.T) {
 	if err != authn.ErrNotAuthenticated {
 		t.Errorf("expired token err = %v want %v", err, authn.ErrNotAuthenticated)
 	}
+}
+
+func TestListAuthTokens(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, authTokenUserFixture, authTokenFixture)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	examples := []struct {
+		userID string
+		typ    string
+		want   []*AuthToken
+	}{
+		{
+			"sample-user-id-0",
+			"sample-type-0",
+			[]*AuthToken{
+				{ID: "sample-token-id-0"},
+				{ID: "sample-token-id-1"},
+			},
+		},
+		{
+			"sample-user-id-0",
+			"sample-type-1",
+			[]*AuthToken{
+				{ID: "sample-token-id-2"},
+			},
+		},
+		{
+			"sample-user-id-0",
+			"nonexistent-type",
+			nil,
+		},
+		{
+			"nonexistent-user",
+			"sample-type-0",
+			nil,
+		},
+	}
+
+	for _, ex := range examples {
+		t.Log("user ID:", ex.userID, "type", ex.typ)
+
+		got, err := ListAuthTokens(ctx, ex.userID, ex.typ)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("tokens:\ngot:  %v\nwant: %v", got, ex.want)
+		}
+	}
+}
+
+func TestDeleteAuthToken(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, authTokenUserFixture, authTokenFixture)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	if !authTokenExists(ctx, "sample-token-id-0") {
+		t.Error("initial check: token does not exist")
+	}
+
+	err := DeleteAuthToken(ctx, "sample-token-id-0")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if authTokenExists(ctx, "sample-token-id-0") {
+		t.Error("after delete: token still exists")
+	}
+
+	if !authTokenExists(ctx, "sample-token-id-1") {
+		t.Error("after delete: other token was deleted")
+	}
+}
+
+func authTokenExists(ctx context.Context, id string) bool {
+	q := `SELECT 1 FROM auth_tokens WHERE id = $1`
+	err := pg.FromContext(ctx).QueryRow(q, id).Scan(new(int))
+	if err == sql.ErrNoRows {
+		return false
+	}
+	if err != nil {
+		panic(err)
+	}
+	return true
 }
