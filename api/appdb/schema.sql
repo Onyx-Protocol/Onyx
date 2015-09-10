@@ -702,6 +702,14 @@ ALTER TABLE ONLY rotations
 
 
 --
+-- Name: wallets_application_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY wallets
+    ADD CONSTRAINT wallets_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 

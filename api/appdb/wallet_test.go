@@ -11,11 +11,11 @@ import (
 )
 
 func TestCreateWallet(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t)
+	dbtx := pgtest.TxWithSQL(t, sampleAppFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	id, err := CreateWallet(ctx, "a1", "foo", []*Key{dummyXPub})
+	id, err := CreateWallet(ctx, "app-id-0", "foo", []*Key{dummyXPub})
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -54,5 +54,52 @@ func TestWalletBalance(t *testing.T) {
 
 	if !reflect.DeepEqual(want, bals) {
 		t.Errorf("got=%v want=%v", bals, want)
+	}
+}
+
+func TestListWallets(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO applications (id, name) VALUES
+			('app-id-0', 'app-0'),
+			('app-id-1', 'app-1');
+
+		INSERT INTO wallets (id, application_id, key_index, label) VALUES
+			('wallet-id-0', 'app-id-0', 0, 'wallet-0'),
+			('wallet-id-1', 'app-id-0', 1, 'wallet-1'),
+			('wallet-id-2', 'app-id-1', 2, 'wallet-2');
+	`)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	examples := []struct {
+		appID string
+		want  []*Wallet
+	}{
+		{
+			"app-id-0",
+			[]*Wallet{
+				{ID: "wallet-id-0", Blockchain: "sandbox", Label: "wallet-0"},
+				{ID: "wallet-id-1", Blockchain: "sandbox", Label: "wallet-1"},
+			},
+		},
+		{
+			"app-id-1",
+			[]*Wallet{
+				{ID: "wallet-id-2", Blockchain: "sandbox", Label: "wallet-2"},
+			},
+		},
+	}
+
+	for _, ex := range examples {
+		t.Log("Example:", ex.appID)
+
+		got, err := ListWallets(ctx, ex.appID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("wallets:\ngot:  %v\nwant: %v", got, ex.want)
+		}
 	}
 }

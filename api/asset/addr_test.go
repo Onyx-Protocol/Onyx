@@ -18,11 +18,12 @@ var dummyXPub, _ = appdb.NewKey("xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHG
 func TestCreateAddress(t *testing.T) {
 	t0 := time.Now()
 	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	wID, err := appdb.CreateWallet(ctx, "a1", "foo", []*appdb.Key{dummyXPub})
+	wID, err := appdb.CreateWallet(ctx, "app-id-0", "foo", []*appdb.Key{dummyXPub})
 	if err != nil {
 		t.Fatal(err)
 	}

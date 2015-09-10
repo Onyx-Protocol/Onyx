@@ -15,6 +15,14 @@ var (
 	ErrXPriv        = errors.New("xpriv given for xpub")
 )
 
+// Wallet represents a single wallet. It is intended to be used wth API
+// responses.
+type Wallet struct {
+	ID         string `json:"id"`
+	Blockchain string `json:"blockchain"`
+	Label      string `json:"label"`
+}
+
 // CreateWallet creates a new wallet,
 // also adding its xpub to the keys table if necessary.
 func CreateWallet(ctx context.Context, appID, label string, xpubs []*Key) (id string, err error) {
@@ -103,6 +111,36 @@ func WalletBalance(ctx context.Context, walletID string) ([]*Balance, error) {
 		return nil, errors.Wrap(err, "rows error")
 	}
 	return bals, err
+}
+
+// ListWallets returns a list of wallets contained in the given application.
+func ListWallets(ctx context.Context, appID string) ([]*Wallet, error) {
+	q := `
+		SELECT id, block_chain, label
+		FROM wallets
+		WHERE application_id = $1
+	`
+	rows, err := pg.FromContext(ctx).Query(q, appID)
+	if err != nil {
+		return nil, errors.Wrap(err, "select query")
+	}
+	defer rows.Close()
+
+	var wallets []*Wallet
+	for rows.Next() {
+		w := new(Wallet)
+		err := rows.Scan(&w.ID, &w.Blockchain, &w.Label)
+		if err != nil {
+			return nil, errors.Wrap(err, "row scan")
+		}
+		wallets = append(wallets, w)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "end row scan loop")
+	}
+
+	return wallets, nil
 }
 
 func createRotation(ctx context.Context, walletID string, hashes ...string) error {

@@ -10,11 +10,11 @@ import (
 )
 
 func TestCreateBucket(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t)
+	dbtx := pgtest.TxWithSQL(t, sampleAppFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	walletID, err := CreateWallet(ctx, "a1", "foo", []*Key{dummyXPub})
+	walletID, err := CreateWallet(ctx, "app-id-0", "foo", []*Key{dummyXPub})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,11 +32,11 @@ func TestCreateBucket(t *testing.T) {
 }
 
 func TestCreateBucketBadLabel(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t)
+	dbtx := pgtest.TxWithSQL(t, sampleAppFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	walletID, err := CreateWallet(ctx, "a1", "foo", []*Key{dummyXPub})
+	walletID, err := CreateWallet(ctx, "app-id-0", "foo", []*Key{dummyXPub})
 	if err != nil {
 		t.Fatal(err)
 	}

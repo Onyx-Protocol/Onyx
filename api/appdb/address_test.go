@@ -23,7 +23,7 @@ const bucketFixture = `
 		label, current_rotation, next_asset_index, next_bucket_index,
 		buckets_count, created_at, updated_at
 	)
-	VALUES ('w1', 'app1', 'sandbox', 1, 1, 'foo', 'rot1', 0, 1, 1, now(), now());
+	VALUES ('w1', 'app-id-0', 'sandbox', 1, 1, 'foo', 'rot1', 0, 1, 1, now(), now());
 	INSERT INTO rotations (id, wallet_id, keyset)
 	VALUES ('rot1', 'w1', '{4f0fe3f8ede10971f7b9bff8a319c494951337fc}');
 	INSERT INTO buckets (
@@ -34,7 +34,7 @@ const bucketFixture = `
 `
 
 func TestAddressLoadNextIndex(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, bucketFixture)
+	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, bucketFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
@@ -71,7 +71,7 @@ func TestAddressLoadNextIndex(t *testing.T) {
 
 func TestAddressInsert(t *testing.T) {
 	t0 := time.Now()
-	dbtx := pgtest.TxWithSQL(t, bucketFixture)
+	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, bucketFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 

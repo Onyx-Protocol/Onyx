@@ -30,6 +30,7 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("POST", "/v3/applications/:appID/members", addMember)
 	h.AddFunc("PUT", "/v3/applications/:appID/members/:userID", updateMember)
 	h.AddFunc("DELETE", "/v3/applications/:appID/members/:userID", removeMember)
+	h.AddFunc("GET", "/v3/applications/:appID/wallets", listWallets)
 	h.AddFunc("POST", "/v3/applications/:appID/wallets", createWallet)
 	h.AddFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
 	h.AddFunc("GET", "/v3/wallets/:walletID/balance", getWalletBalance)
@@ -107,6 +108,18 @@ func getWalletBalance(ctx context.Context, w http.ResponseWriter, req *http.Requ
 	}
 
 	writeJSON(ctx, w, 200, bals)
+}
+
+// GET /v3/applications/:appID/wallets
+func listWallets(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	aid := req.URL.Query().Get(":appID")
+	wallets, err := appdb.ListWallets(ctx, aid)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	writeJSON(ctx, w, 200, wallets)
 }
 
 // /v3/applications/:appID/asset-groups

@@ -21,9 +21,9 @@ func mustDecodeHex(h string) []byte {
 }
 
 func TestInsertUTXOs(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, `
 		INSERT INTO wallets (id, application_id, label, current_rotation, key_index)
-		VALUES('w1', 'a1', '', 'c1', 0);
+		VALUES('w1', 'app-id-0', '', 'c1', 0);
 		INSERT INTO buckets (id, wallet_id, key_index) VALUES('b1', 'w1', 0);
 		INSERT INTO addresses (id, bucket_id, wallet_id, redeem_script, address, pk_script, keyset, key_index)
 		VALUES ('r1', 'b1', 'w1', '', '3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB', '', '{}', 0);

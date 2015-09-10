@@ -12,6 +12,12 @@ import (
 	"chain/errors"
 )
 
+// A common fixture for use in other test files within the package.
+const sampleAppFixture = `
+	INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+`
+
+// A fixture for tests within this file.
 const applicationsFixtures = `
 	INSERT INTO users (id, email, password_hash) VALUES
 		('user-id-0', 'foo@bar.com', 'password-does-not-matter'),
