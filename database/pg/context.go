@@ -26,7 +26,7 @@ type key int
 // dbKey is the key for DB values in Contexts.  It is
 // unexported; clients use pg.NewContext and pg.FromContext
 // instead of using this key directly.
-var dbKey key = 0
+var dbKey key
 
 // Begin opens a new transaction on the database
 // stored in ctx. It returns the transaction and

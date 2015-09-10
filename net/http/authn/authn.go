@@ -16,7 +16,7 @@ type key int
 
 // authIDKey is the key for authentication identifiers in Contexts. It is
 // unexported; clients use GetAuthID instead of using this key directly.
-var authIDKey key = 0
+var authIDKey key
 
 // AuthFunc describes any function that takes a standard username/password pair
 // and attempts to perform authentication. If authentication is successful, a

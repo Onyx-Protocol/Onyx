@@ -16,7 +16,7 @@ type key int
 // reqIDKey is the key for request IDs in Contexts.  It is
 // unexported; clients use NewContext and FromContext
 // instead of using this key directly.
-var reqIDKey key = 0
+var reqIDKey key
 
 const Unknown = "unknown_req_id"
 
