@@ -4,9 +4,12 @@ Getting Started
 
 	$ git clone https://github.com/chain-engineering/chain $GOPATH/src/chain
 	$ cd $GOPATH/src/chain
+	$ createdb api-test
 	$ go install ./cmd/...
 
 Testing
     
+    $ createdb api-test
+    $ go install ./cmd/...
     $ go test $(go list ./... | grep -v vendor)
 
