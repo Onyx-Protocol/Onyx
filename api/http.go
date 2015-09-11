@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"reflect"
 
 	"golang.org/x/net/context"
 
@@ -29,6 +30,14 @@ func readJSON(r io.Reader, v interface{}) error {
 func writeJSON(ctx context.Context, w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
+
+	// Make sure to render nil slices as "[]", rather than "null"
+	if tv := reflect.TypeOf(v); tv.Kind() == reflect.Slice {
+		if vv := reflect.ValueOf(v); vv.IsNil() {
+			v = []struct{}{}
+		}
+	}
+
 	err := json.NewEncoder(w).Encode(v)
 	if err != nil {
 		log.Error(ctx, err)
