@@ -1,11 +1,18 @@
 package appdb
 
 import (
+	"database/sql"
+
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
+	"chain/errors"
 	"chain/fedchain/wire"
 )
+
+// ErrBadAsset is an error that means the string
+// used as an asset id was not a valid base58 id.
+var ErrBadAsset = errors.New("invalid asset")
 
 // Asset represents an asset type in the blockchain.
 // It is made up of extended keys, and paths (indexes) within those keys.
@@ -35,7 +42,7 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 	var err error
 	a.Hash, err = wire.NewHash20FromStr(id)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithDetailf(ErrBadAsset, "asset id=%v", id)
 	}
 	err = pg.FromContext(ctx).QueryRow(q, id).Scan(
 		(*pg.Strings)(&keyIDs),
@@ -44,8 +51,11 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 		(*pg.Uint32s)(&a.AGIndex),
 		(*pg.Uint32s)(&a.AIndex),
 	)
+	if err == sql.ErrNoRows {
+		err = pg.ErrUserInputNotFound
+	}
 	if err != nil {
-		return nil, err
+		return nil, errors.WithDetailf(err, "asset id=%v", id)
 	}
 
 	a.Keys, err = getKeys(ctx, keyIDs)

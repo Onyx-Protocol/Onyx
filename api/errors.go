@@ -35,7 +35,7 @@ var (
 		appdb.ErrInsufficientFunds: errorInfo{400, "CH733", "Insufficient funds for tx"},
 		asset.ErrTransferMismatch:  errorInfo{400, "CH738", "Total input amount must equal total output amount"},
 		asset.ErrBadOutDest:        errorInfo{400, "CH744", "Invalid input sources or output destinations"},
-		asset.ErrBadAsset:          errorInfo{400, "CH761", "Invalid asset"},
+		appdb.ErrBadAsset:          errorInfo{400, "CH761", "Invalid asset"},
 		appdb.ErrBadRole:           errorInfo{400, "CH800", "Member role must be \"developer\" or \"admin\"."},
 		appdb.ErrAlreadyMember:     errorInfo{400, "CH801", "User is already a member of the application."},
 

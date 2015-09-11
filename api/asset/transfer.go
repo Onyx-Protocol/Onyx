@@ -14,7 +14,6 @@ import (
 var (
 	ErrBadOutDest       = errors.New("invalid output destinations")
 	ErrTransferMismatch = errors.New("input values don't match output values")
-	ErrBadAsset         = errors.New("invalid asset")
 )
 
 // TransferInput is a user input struct used in Transfer.
@@ -65,7 +64,7 @@ func Transfer(ctx context.Context, inputs []TransferInput, outputs []Output) (*T
 	for i, out := range outs {
 		asset, err := wire.NewHash20FromStr(out.AssetID)
 		if err != nil {
-			return nil, errors.WithDetailf(ErrBadAsset, "asset id: %v", out.AssetID)
+			return nil, errors.WithDetailf(appdb.ErrBadAsset, "asset id: %v", out.AssetID)
 		}
 
 		pkScript, err := out.PkScript(ctx)

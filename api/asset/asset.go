@@ -3,12 +3,10 @@ package asset
 
 import (
 	"bytes"
-	"database/sql"
 
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
-	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/txscript"
 	"chain/fedchain/wire"
@@ -25,11 +23,14 @@ func Issue(ctx context.Context, assetID string, outs []Output) (*Tx, error) {
 	tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}))
 
 	asset, err := appdb.AssetByID(ctx, assetID)
-	if err == sql.ErrNoRows {
-		err = pg.ErrUserInputNotFound
-	}
 	if err != nil {
 		return nil, errors.WithDetailf(err, "get asset with ID %q", assetID)
+	}
+
+	for i, out := range outs {
+		if (out.BucketID == "") == (out.Address == "") {
+			return nil, errors.WithDetailf(ErrBadOutDest, "output index=%d", i)
+		}
 	}
 
 	err = addAssetIssuanceOutputs(ctx, tx, asset, outs)
