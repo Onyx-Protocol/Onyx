@@ -42,7 +42,7 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
 	h.AddFunc("POST", "/v3/users", createUser)
 	h.AddFunc("POST", "/v3/login", userCredsAuthn(login))
-	h.AddFunc("POST", "/v3/authcheck", tokenAuthn(authcheck))
+	h.AddFunc("GET", "/v3/authcheck", tokenAuthn(authcheck))
 	h.AddFunc("GET", "/v3/api-tokens", tokenAuthn(listAPITokens))
 	h.AddFunc("POST", "/v3/api-tokens", tokenAuthn(createAPIToken))
 	h.AddFunc("DELETE", "/v3/api-tokens/:tokenID", deleteAPIToken)
