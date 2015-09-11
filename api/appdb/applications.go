@@ -106,6 +106,20 @@ func GetApplication(ctx context.Context, appID string) (*Application, error) {
 	return &Application{ID: appID, Name: name}, nil
 }
 
+// UpdateApplication updates application properties. If the application does not
+// exist, an error with pg.ErrUserInputNotFound as the root is returned.
+func UpdateApplication(ctx context.Context, appID, name string) error {
+	q := `UPDATE applications SET name = $1 WHERE id = $2 RETURNING 1`
+	err := pg.FromContext(ctx).QueryRow(q, name, appID).Scan(new(int))
+	if err == sql.ErrNoRows {
+		return errors.WithDetailf(pg.ErrUserInputNotFound, "application ID: %v", appID)
+	}
+	if err != nil {
+		return errors.Wrap(err, "update query")
+	}
+	return nil
+}
+
 // ListMembers returns a list of members of the given the given application.
 // Member data includes each member's user information and their role within
 // the application.

@@ -135,6 +135,39 @@ func TestGetApplication(t *testing.T) {
 	}
 }
 
+func TestUpdateApplication(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, applicationsFixtures)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	examples := []struct {
+		id      string
+		wantErr error
+	}{
+		{"app-id-0", nil},
+		{"nonexistent", pg.ErrUserInputNotFound},
+	}
+
+	for _, ex := range examples {
+		t.Log("application:", ex.id)
+
+		err := UpdateApplication(ctx, ex.id, "new-name")
+
+		if errors.Root(err) != ex.wantErr {
+			t.Errorf("error got=%v want=%v", errors.Root(err), ex.wantErr)
+		}
+
+		if ex.wantErr == nil {
+			q := `SELECT name FROM applications WHERE id = $1`
+			var got string
+			_ = pg.FromContext(ctx).QueryRow(q, ex.id).Scan(&got)
+			if got != "new-name" {
+				t.Errorf("name got=%v want new-name", got)
+			}
+		}
+	}
+}
+
 func TestListMembers(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, applicationsFixtures)
 	defer dbtx.Rollback()

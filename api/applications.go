@@ -52,6 +52,25 @@ func getApplication(ctx context.Context, w http.ResponseWriter, req *http.Reques
 	writeJSON(ctx, w, 200, a)
 }
 
+// PUT /v3/applications/:appID
+func updateApplication(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	var in struct{ Name string }
+	err := readJSON(req.Body, &in)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	aid := req.URL.Query().Get(":appID")
+	err = appdb.UpdateApplication(ctx, aid, in.Name)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	writeJSON(ctx, w, 200, map[string]string{"message": "ok"})
+}
+
 // GET /v3/applications/:appID/members
 func listMembers(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	aid := req.URL.Query().Get(":appID")

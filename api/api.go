@@ -26,6 +26,7 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("GET", "/v3/applications", tokenAuthn(listApplications))
 	h.AddFunc("POST", "/v3/applications", tokenAuthn(createApplication))
 	h.AddFunc("GET", "/v3/applications/:appID", getApplication)
+	h.AddFunc("PUT", "/v3/applications/:appID", updateApplication)
 	h.AddFunc("GET", "/v3/applications/:appID/members", listMembers)
 	h.AddFunc("POST", "/v3/applications/:appID/members", addMember)
 	h.AddFunc("PUT", "/v3/applications/:appID/members/:userID", updateMember)
