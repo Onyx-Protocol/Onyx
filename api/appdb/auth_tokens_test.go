@@ -25,27 +25,28 @@ const (
 	`
 
 	authTokenFixture = `
-		INSERT INTO auth_tokens (id, secret_hash, type, user_id) VALUES (
+		INSERT INTO auth_tokens (id, secret_hash, type, user_id, created_at, expires_at) VALUES (
 			'sample-token-id-0',
 			'$2a$08$XMDacphqs44K0pzrSQxgqu3dAF.I3vn54toLboBSCKW6oSGitjSpa'::bytea, -- plaintext: 0123456789ABCDEF
 			'sample-type-0',
-			'sample-user-id-0'
-		);
-
-		-- expired token
-		INSERT INTO auth_tokens (id, secret_hash, type, user_id, expires_at) VALUES (
+			'sample-user-id-0',
+			'2000-01-01 00:00:00+00',
+			NULL
+		), (
+			-- expired token
 			'sample-token-id-1',
 			'$2a$08$XMDacphqs44K0pzrSQxgqu3dAF.I3vn54toLboBSCKW6oSGitjSpa'::bytea, -- plaintext: 0123456789ABCDEF
 			'sample-type-0',
 			'sample-user-id-0',
+			'2000-01-01 00:00:00+00',
 			'2000-01-01 00:00:00+00'
-		);
-
-		INSERT INTO auth_tokens (id, secret_hash, type, user_id) VALUES (
+		), (
 			'sample-token-id-2',
 			'$2a$08$XMDacphqs44K0pzrSQxgqu3dAF.I3vn54toLboBSCKW6oSGitjSpa'::bytea, -- plaintext: 0123456789ABCDEF
 			'sample-type-1',
-			'sample-user-id-0'
+			'sample-user-id-0',
+			'2000-01-01 00:00:00+00',
+			NULL
 		);
 	`
 )
@@ -163,6 +164,11 @@ func TestListAuthTokens(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
+	ts, err := time.Parse(time.RFC3339, "2000-01-01T00:00:00Z")
+	if err != nil {
+		panic(err)
+	}
+
 	examples := []struct {
 		userID string
 		typ    string
@@ -172,15 +178,15 @@ func TestListAuthTokens(t *testing.T) {
 			"sample-user-id-0",
 			"sample-type-0",
 			[]*AuthToken{
-				{ID: "sample-token-id-0"},
-				{ID: "sample-token-id-1"},
+				{ID: "sample-token-id-0", CreatedAt: ts},
+				{ID: "sample-token-id-1", CreatedAt: ts},
 			},
 		},
 		{
 			"sample-user-id-0",
 			"sample-type-1",
 			[]*AuthToken{
-				{ID: "sample-token-id-2"},
+				{ID: "sample-token-id-2", CreatedAt: ts},
 			},
 		},
 		{
@@ -203,8 +209,22 @@ func TestListAuthTokens(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !reflect.DeepEqual(got, ex.want) {
-			t.Errorf("tokens:\ngot:  %v\nwant: %v", got, ex.want)
+		if len(got) != len(ex.want) {
+			t.Errorf("token count got=%v want=%v", len(got), len(ex.want))
+			continue
+		}
+
+		for i, g := range got {
+			w := ex.want[i]
+
+			if !g.CreatedAt.Equal(w.CreatedAt) {
+				t.Errorf("created at %d got=%v want=%v", i, g, w.CreatedAt)
+			}
+
+			g.CreatedAt = w.CreatedAt
+			if *g != *w {
+				t.Errorf("token:\ngot:  %v\nwant: %v", *g, *w)
+			}
 		}
 	}
 }

@@ -24,8 +24,9 @@ const (
 // AuthToken represents an ID-secret pair. It can be used in the response of
 // an API call, or to deserialize credentials for incoming API calls.
 type AuthToken struct {
-	ID     string `json:"id"`
-	Secret string `json:"secret,omitempty"`
+	ID        string    `json:"id"`
+	Secret    string    `json:"secret,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // CreateAuthToken creates an auth token for the given user. Conventional token
@@ -41,16 +42,17 @@ func CreateAuthToken(ctx context.Context, userID string, typ string, expiresAt *
 		q = `
 			INSERT INTO auth_tokens (secret_hash, type, user_id, expires_at)
 			VALUES ($1, $2, $3, $4)
-			RETURNING ID
+			RETURNING id, created_at
 		`
-		id string
+		id        string
+		createdAt time.Time
 	)
-	err = pg.FromContext(ctx).QueryRow(q, secretHash, typ, userID, expiresAt).Scan(&id)
+	err = pg.FromContext(ctx).QueryRow(q, secretHash, typ, userID, expiresAt).Scan(&id, &createdAt)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert query")
 	}
 
-	return &AuthToken{id, secret}, nil
+	return &AuthToken{id, secret, createdAt}, nil
 }
 
 // AuthenticateToken takes a token ID and secret and returns a user ID
@@ -86,7 +88,7 @@ func AuthenticateToken(ctx context.Context, id, secret string) (userID string, e
 // the given user.
 func ListAuthTokens(ctx context.Context, userID string, typ string) ([]*AuthToken, error) {
 	q := `
-		SELECT id FROM auth_tokens
+		SELECT id, created_at FROM auth_tokens
 		WHERE user_id = $1 AND type = $2
 		ORDER BY created_at
 	`
@@ -99,7 +101,7 @@ func ListAuthTokens(ctx context.Context, userID string, typ string) ([]*AuthToke
 	var tokens []*AuthToken
 	for rows.Next() {
 		t := new(AuthToken)
-		err := rows.Scan(&t.ID)
+		err := rows.Scan(&t.ID, &t.CreatedAt)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
