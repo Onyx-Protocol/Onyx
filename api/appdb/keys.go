@@ -14,6 +14,9 @@ import (
 	"chain/strings"
 )
 
+// ErrMissingKeys is returned by loadKeys
+var ErrMissingKeys = errors.New("could not load all keys")
+
 // Key is an xpub and its hash.
 type Key struct {
 	ID   string     `json:"key_id"` // ID is the hash of the XPub
@@ -33,9 +36,9 @@ func NewKey(pubstr string) (*Key, error) {
 	return k, nil
 }
 
-// getKeys gets the given keys from the db,
+// GetKeys gets the given keys from the db,
 // using id to identify them.
-func getKeys(ctx context.Context, ids []string) (ks []*Key, err error) {
+func GetKeys(ctx context.Context, ids []string) (ks []*Key, err error) {
 	for _, s := range ids {
 		ks = append(ks, &Key{ID: s})
 	}
@@ -80,7 +83,7 @@ func loadKeys(ctx context.Context, keys ...*Key) error {
 	}
 	err = rows.Err()
 	if err == nil && n != len(keys) {
-		err = errors.New("could not load all keys")
+		err = ErrMissingKeys
 	}
 	return err
 }

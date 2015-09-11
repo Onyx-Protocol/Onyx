@@ -9,6 +9,7 @@ import (
 
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/errors"
 	"chain/fedchain/wire"
 )
 
@@ -18,6 +19,31 @@ func mustDecodeHex(h string) []byte {
 		panic(err)
 	}
 	return bits
+}
+
+func TestDeleteUTXOs(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO utxos
+		(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+		VALUES
+			('b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45', 0, 'a1', 1, 'a1', 'b1', 'w1'),
+			('b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45', 1, 'a1', 1, 'a2', 'b1', 'w1');
+	`)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	hash, _ := wire.NewHash32FromStr("b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45")
+	inputs := []*wire.TxIn{wire.NewTxIn(wire.NewOutPoint(hash, 0), []byte{})}
+
+	err := deleteUTXOs(ctx, inputs)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	if pgtest.Count(t, dbtx, "utxos") != 1 {
+		t.Error("expected 1 record to be deleted")
+	}
 }
 
 func TestInsertUTXOs(t *testing.T) {

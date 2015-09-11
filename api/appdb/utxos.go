@@ -1,11 +1,11 @@
 package appdb
 
 import (
+	"golang.org/x/net/context"
+
 	"chain/database/pg"
 	"chain/fedchain/txscript"
 	"chain/fedchain/wire"
-
-	"golang.org/x/net/context"
 )
 
 type outputSet struct {

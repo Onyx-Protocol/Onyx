@@ -14,7 +14,6 @@ import (
 	"chain/api/asset"
 	"chain/database/pg"
 	"chain/encoding/json"
-	"chain/fedchain/wire"
 	chainhttp "chain/net/http"
 	"chain/net/http/authn"
 )
@@ -272,26 +271,11 @@ func transferAssets(ctx context.Context, w http.ResponseWriter, req *http.Reques
 func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	// TODO(kr): validate
 
-	var tpl asset.Tx
-	err := readJSON(req.Body, &tpl)
+	tpl := new(asset.Tx)
+	err := readJSON(req.Body, tpl)
 	if err != nil {
 		writeHTTPError(ctx, w, err)
 		return
-	}
-
-	tx := wire.NewMsgTx()
-	err = tx.Deserialize(bytes.NewReader(tpl.Unsigned))
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	for i, in := range tx.TxIn {
-		tplin := tpl.Inputs[i]
-		for _, sig := range tplin.Sigs {
-			in.SignatureScript = append(in.SignatureScript, sig.DER...)
-		}
-		in.SignatureScript = append(in.SignatureScript, tplin.RedeemScript...)
 	}
 
 	dbtx, ctx, err := pg.Begin(ctx)
@@ -301,7 +285,7 @@ func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Reques
 	}
 	defer dbtx.Rollback()
 
-	err = appdb.Commit(ctx, tx)
+	tx, err := asset.FinalizeTx(ctx, tpl)
 	if err != nil {
 		writeHTTPError(ctx, w, err)
 		return

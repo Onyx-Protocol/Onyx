@@ -99,7 +99,7 @@ func issuanceInput(a *appdb.Asset, tx *wire.MsgTx) *Input {
 	return &Input{
 		AssetGroupID:  a.GroupID,
 		RedeemScript:  a.RedeemScript,
-		SignatureData: buf.Bytes(),
+		SignatureData: wire.DoubleSha256(buf.Bytes()),
 		Sigs:          inputSigs(Signers(a.Keys, IssuancePath(a))),
 	}
 }

@@ -58,7 +58,7 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 		return nil, errors.WithDetailf(err, "asset id=%v", id)
 	}
 
-	a.Keys, err = getKeys(ctx, keyIDs)
+	a.Keys, err = GetKeys(ctx, keyIDs)
 	if err != nil {
 		return nil, err
 	}

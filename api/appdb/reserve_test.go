@@ -46,12 +46,14 @@ func TestReserveUTXOs(t *testing.T) {
 
 		if err != c.wantErr {
 			t.Errorf("got err = %q want %q", err, c.wantErr)
+			dbtx.Rollback()
 			continue
 		}
 
 		if !reflect.DeepEqual(got, c.want) {
 			t.Errorf("got outs = %v want %v", got, c.want)
 		}
+		dbtx.Rollback()
 	}
 }
 

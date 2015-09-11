@@ -35,6 +35,7 @@ var (
 		appdb.ErrInsufficientFunds: errorInfo{400, "CH733", "Insufficient funds for tx"},
 		asset.ErrTransferMismatch:  errorInfo{400, "CH738", "Total input amount must equal total output amount"},
 		asset.ErrBadOutDest:        errorInfo{400, "CH744", "Invalid input sources or output destinations"},
+		asset.ErrBadTx:             errorInfo{400, "CH755", "Invalid transaction template"},
 		appdb.ErrBadAsset:          errorInfo{400, "CH761", "Invalid asset"},
 		appdb.ErrBadRole:           errorInfo{400, "CH800", "Member role must be \"developer\" or \"admin\"."},
 		appdb.ErrAlreadyMember:     errorInfo{400, "CH801", "User is already a member of the application."},
@@ -83,7 +84,7 @@ var (
 		// ErrInvalidSig          = errorInfo{400, "CH751", "Signature was not valid for transaction"}
 		// ErrNTplInput           = errorInfo{400, "CH752", "Transaction template has wrong number of inputs"}
 		// ErrExtraSig            = errorInfo{400, "CH754", "Too many signatures"}
-		// ErrBadTemplate         = errorInfo{400, "CH755", "Invalid transaction template, cannot sign"}
+		//
 		// ErrBadRedeem           = errorInfo{400, "CH756", "Redeem script is not a valid multisig script"}
 		// ErrMissingAsset        = errorInfo{404, "CH760", "Requested asset could not be found"}
 		//

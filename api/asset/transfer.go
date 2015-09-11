@@ -149,7 +149,7 @@ func addressInput(a *appdb.Address, tx *wire.MsgTx) *Input {
 	return &Input{
 		WalletID:      a.WalletID,
 		RedeemScript:  a.RedeemScript,
-		SignatureData: buf.Bytes(),
+		SignatureData: wire.DoubleSha256(buf.Bytes()),
 		Sigs:          inputSigs(Signers(a.Keys, ReceiverPath(a))),
 	}
 }

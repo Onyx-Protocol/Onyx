@@ -75,7 +75,7 @@ func (a *Address) LoadNextIndex(ctx context.Context) error {
 		return errors.New("could not load keys for bucket " + a.BucketID)
 	}
 
-	a.Keys, err = getKeys(ctx, keyIDs)
+	a.Keys, err = GetKeys(ctx, keyIDs)
 	if err != nil {
 		return errors.Wrap(err, "get keys")
 	}
