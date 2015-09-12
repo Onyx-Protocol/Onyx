@@ -61,8 +61,9 @@ import (
 //	import (
 //		"io"
 //		"net/http"
-//		"github.com/bmizerany/pat"
 //		"log"
+//
+//		"chain/net/http/pat"
 //	)
 //
 //	// hello world, the web server

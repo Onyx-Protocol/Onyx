@@ -142,10 +142,6 @@
 			"Rev": "b269bd035a727d6c1081f76e7a239a1b00674c40"
 		},
 		{
-			"ImportPath": "github.com/tessr/pat",
-			"Rev": "6120d972c8b4199d29c307063bb521cffe35b912"
-		},
-		{
 			"ImportPath": "golang.org/x/crypto/bcrypt",
 			"Rev": "aedad9a179ec1ea11b7064c57cbc6dc30d7724ec"
 		},

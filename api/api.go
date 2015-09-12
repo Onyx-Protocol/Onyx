@@ -8,14 +8,13 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/tessr/pat"
-
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/database/pg"
 	"chain/encoding/json"
 	chainhttp "chain/net/http"
 	"chain/net/http/authn"
+	"chain/net/http/pat"
 )
 
 const sessionTokenLifetime = 2 * 7 * 24 * time.Hour

@@ -1,9 +1,5 @@
 # pat (formerly pat.go) - A Sinatra style pattern muxer for Go's net/http library
 
-## INSTALL
-
-	$ go get github.com/bmizerany/pat
-
 ## USE
 
 	package main
@@ -11,8 +7,9 @@
 	import (
 		"io"
 		"net/http"
-		"github.com/bmizerany/pat"
 		"log"
+
+		"chain/net/http/pat"
 	)
 
 	// hello world, the web server
@@ -36,11 +33,12 @@
 It's that simple.
 
 For more information, see:
-http://godoc.org/github.com/bmizerany/pat
+
+    $ godoc chain/net/http/pat
 
 ## CONTRIBUTORS
 
-* Keith Rarick (@krarick) - github.com/kr
+* Chain Employees
 * Blake Mizerany (@bmizerany) - github.com/bmizerany
 * Evan Shaw
 * George Rogers

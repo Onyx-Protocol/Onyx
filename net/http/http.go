@@ -3,9 +3,9 @@ package http
 import (
 	"net/http"
 
-	"github.com/tessr/pat"
 	"golang.org/x/net/context"
 
+	"chain/net/http/pat"
 	"chain/net/http/reqid"
 )
 
