@@ -32,10 +32,8 @@ func writeJSON(ctx context.Context, w http.ResponseWriter, status int, v interfa
 	w.WriteHeader(status)
 
 	// Make sure to render nil slices as "[]", rather than "null"
-	if tv := reflect.TypeOf(v); tv.Kind() == reflect.Slice {
-		if vv := reflect.ValueOf(v); vv.IsNil() {
-			v = []struct{}{}
-		}
+	if reflect.TypeOf(v).Kind() == reflect.Slice && reflect.ValueOf(v).IsNil() {
+		v = []struct{}{}
 	}
 
 	err := json.NewEncoder(w).Encode(v)
