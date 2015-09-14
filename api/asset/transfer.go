@@ -20,6 +20,7 @@ var (
 type TransferInput struct {
 	AssetID  string `json:"asset_id"`
 	BucketID string `json:"bucket_id"`
+	TxID     string `json:"transaction_id"`
 	Amount   int64
 }
 
@@ -38,10 +39,19 @@ func Transfer(ctx context.Context, inputs []TransferInput, outputs []Output) (*T
 	)
 
 	for _, in := range inputs {
-		utxos, sum, err := appdb.ReserveUTXOs(ctx, in.AssetID, in.BucketID, in.Amount)
+		var (
+			utxos []*appdb.UTXO
+			sum   int64
+			err   error
+		)
+		if in.TxID != "" {
+			utxos, sum, err = appdb.ReserveTxUTXOs(ctx, in.AssetID, in.BucketID, in.TxID, in.Amount)
+		} else {
+			utxos, sum, err = appdb.ReserveUTXOs(ctx, in.AssetID, in.BucketID, in.Amount)
+		}
 		if err != nil {
-			err = errors.WithDetailf(err, "bucket=%v asset=%v amount=%v",
-				in.AssetID, in.BucketID, in.Amount)
+			err = errors.WithDetailf(err, "bucket=%v asset=%v amount=%v txid=%v",
+				in.AssetID, in.BucketID, in.Amount, in.TxID)
 			return nil, err
 		}
 

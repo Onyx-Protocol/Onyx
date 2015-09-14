@@ -57,6 +57,50 @@ func TestReserveUTXOs(t *testing.T) {
 	}
 }
 
+func TestReserveTxUTXOs(t *testing.T) {
+	const outs = `
+		INSERT INTO utxos
+		(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+		VALUES
+			('b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45', 0, 'a1', 1, 'a1', 'b1', 'w1'),
+			('b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45', 1, 'a1', 1, 'a2', 'b1', 'w1');
+	`
+	hash, _ := wire.NewHash32FromStr("b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45")
+	cases := []struct {
+		askAmt  int64
+		wantErr error
+		want    []*UTXO
+	}{{
+		askAmt:  5000,
+		wantErr: ErrInsufficientFunds,
+	}, {
+		askAmt: 1,
+		want: []*UTXO{{
+			OutPoint:  wire.NewOutPoint(hash, 0),
+			Amount:    1,
+			AddressID: "a1",
+		}},
+	}}
+
+	for _, c := range cases {
+		dbtx := pgtest.TxWithSQL(t, outs)
+		ctx := pg.NewContext(context.Background(), dbtx)
+		got, _, err := ReserveTxUTXOs(ctx,
+			"a1", "b1", "b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45", c.askAmt)
+
+		if err != c.wantErr {
+			t.Errorf("got err = %q want %q", err, c.wantErr)
+			dbtx.Rollback()
+			continue
+		}
+
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("got outs = %v want %v", got, c.want)
+		}
+		dbtx.Rollback()
+	}
+}
+
 func TestReserveSQL(t *testing.T) {
 	var threeUTXOsFixture = `
 		INSERT INTO utxos
@@ -163,5 +207,38 @@ func TestReserveSQL(t *testing.T) {
 		}
 
 		dbtx.Rollback()
+	}
+}
+
+func TestReserveTxSQL(t *testing.T) {
+	type utxo struct {
+		Txid       string
+		Index, Amt int
+		AddressID  string
+	}
+
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO utxos
+		(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+		VALUES
+			('t1', 0, 'a1', 1, 'a1', 'b1', 'w1'),
+			('t2', 0, 'a1', 1, 'a2', 'b1', 'w1'),
+			('t1', 1, 'a1', 1, 'a3', 'b1', 'w1');
+	`)
+	defer dbtx.Rollback()
+
+	rows, err := dbtx.Query(`SELECT * FROM reserve_tx_utxos('a1', 'b1', 't1', 2)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []utxo
+	err = sql.Collect(rows, &got)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []utxo{{"t1", 0, 1, "a1"}, {"t1", 1, 1, "a3"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got utxos = %+v want %+v", got, want)
 	}
 }

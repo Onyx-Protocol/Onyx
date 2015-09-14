@@ -1,6 +1,7 @@
 package appdb
 
 import (
+	"database/sql"
 	"strings"
 
 	"github.com/lib/pq"
@@ -36,6 +37,25 @@ func ReserveUTXOs(ctx context.Context, assetID, bucketID string, amount int64) (
 
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 	rows, err := pg.FromContext(ctx).Query(q, assetID, bucketID, amount)
+	return reserved(rows, err)
+}
+
+// ReserveTxUTXOs selects enough UTXOs to satisfy the requested amount.
+// It returns ErrInsufficientFunds if the corresponding bucket
+// and transaction do not have enough of the asset.
+// ctx must have a database transaction.
+func ReserveTxUTXOs(ctx context.Context, assetID, bucketID, txid string, amount int64) ([]*UTXO, int64, error) {
+	const q = `
+		SELECT txid, index, amount, address_id
+		FROM reserve_tx_utxos($1, $2, $3, $4)
+	`
+
+	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
+	rows, err := pg.FromContext(ctx).Query(q, assetID, bucketID, txid, amount)
+	return reserved(rows, err)
+}
+
+func reserved(rows *sql.Rows, err error) ([]*UTXO, int64, error) {
 	if pqErr, ok := err.(*pq.Error); ok && strings.Contains(pqErr.Message, "insufficient funds") {
 		return nil, 0, ErrInsufficientFunds
 	} else if err != nil {
