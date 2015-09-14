@@ -77,7 +77,10 @@ func Init(database *sql.DB, schemaSQLPath string) {
 // TxWithSQL begins a transaction in the connected database,
 // executes the given SQL statements inside the transaction,
 // and returns the in-progress transaction.
-func TxWithSQL(t testing.TB, sql ...string) *sql.Tx {
+// The returned transaction also has a Begin method
+// that returns itself, so it can be provided to
+// pg.NewContext.
+func TxWithSQL(t testing.TB, sql ...string) pg.Tx {
 	tx, err := db.Begin()
 	if err != nil {
 		t.Fatal(err)
@@ -89,8 +92,31 @@ func TxWithSQL(t testing.TB, sql ...string) *sql.Tx {
 			t.Fatal(err)
 		}
 	}
-	return tx
+	return noCommitDB{tx}
 }
+
+// noCommitDB embeds sql.Tx but also
+// provides a Begin method that returns a noCommitTx.
+// It is used as a pg.DB in a test contexts so the
+// code under test doesn't commit or roll back, but
+// the test harness can still roll back.
+type noCommitDB struct {
+	*sql.Tx
+}
+
+// Begin satisfies the interface in the body of pg.Begin.
+func (tx noCommitDB) Begin() (pg.Tx, error) {
+	return noCommitTx{tx.Tx}, nil
+}
+
+// Type noCommitTx is like sql.Tx but only pretends
+// to commit and roll back.
+type noCommitTx struct {
+	*sql.Tx
+}
+
+func (noCommitTx) Commit() error   { return nil }
+func (noCommitTx) Rollback() error { return nil }
 
 // Count returns the number of rows in 'table'.
 func Count(t *testing.T, db pg.DB, table string) int64 {
