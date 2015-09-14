@@ -11,7 +11,7 @@ import (
 
 // Bucket represents an indexed namespace inside of a wallet
 type Bucket struct {
-	ID    string   `json:"bucket_id"`
+	ID    string   `json:"id"`
 	Label string   `json:"label"`
 	Index []uint32 `json:"bucket_index"`
 }
