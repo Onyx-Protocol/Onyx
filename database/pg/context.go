@@ -2,6 +2,7 @@ package pg
 
 import (
 	"database/sql"
+	"errors"
 
 	"golang.org/x/net/context"
 )
@@ -14,9 +15,24 @@ type DB interface {
 	Exec(string, ...interface{}) (sql.Result, error)
 }
 
-type Tx interface {
+// Committer provides methods to commit or roll back a single transaction.
+type Committer interface {
 	Commit() error
 	Rollback() error
+}
+
+// Tx represents a SQL transaction.
+// Type sql.Tx satisfies this interface.
+type Tx interface {
+	DB
+	Committer
+}
+
+// Beginner is used by Begin to create a new transaction.
+// It is an optional alternative to the Begin signature provided by
+// package sql.
+type Beginner interface {
+	Begin() (Tx, error)
 }
 
 // key is an unexported type for keys defined in this package.
@@ -29,20 +45,32 @@ type key int
 var dbKey key
 
 // Begin opens a new transaction on the database
-// stored in ctx. It returns the transaction and
+// stored in ctx. The stored database must
+// provide a Begin method like sql.DB or satisfy
+// the interface Beginner.
+// Begin returns the new transaction and
 // a new context with the transaction as its
 // associated database.
-func Begin(ctx context.Context) (Tx, context.Context, error) {
-	type beginner interface {
-		Begin() (*sql.Tx, error)
-	}
-	db := FromContext(ctx).(beginner)
-	tx, err := db.Begin()
+func Begin(ctx context.Context) (Committer, context.Context, error) {
+	tx, err := begin(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
 	ctx = NewContext(ctx, tx)
 	return tx, ctx, nil
+}
+
+func begin(ctx context.Context) (Tx, error) {
+	type beginner interface {
+		Begin() (*sql.Tx, error)
+	}
+	switch db := FromContext(ctx).(type) {
+	case beginner: // e.g. *sql.DB
+		return db.Begin()
+	case Beginner: // e.g. pgtest.noCommitDB
+		return db.Begin()
+	}
+	return nil, errors.New("unknown db type")
 }
 
 // NewContext returns a new Context that carries value db.
