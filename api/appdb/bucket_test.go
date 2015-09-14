@@ -80,3 +80,55 @@ func TestBucketBalance(t *testing.T) {
 		t.Errorf("got=%v want=%v", bals, want)
 	}
 }
+
+func TestListBuckets(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO applications (id, name) VALUES
+			('app-id-0', 'app-0');
+
+		INSERT INTO wallets (id, application_id, key_index, label) VALUES
+			('wallet-id-0', 'app-id-0', 0, 'wallet-0'),
+			('wallet-id-1', 'app-id-0', 1, 'wallet-1');
+
+		INSERT INTO buckets (id, wallet_id, key_index, label) VALUES
+			('bucket-id-0', 'wallet-id-0', 0, 'bucket-0'),
+			('bucket-id-1', 'wallet-id-0', 1, 'bucket-1'),
+			('bucket-id-2', 'wallet-id-1', 2, 'bucket-2');
+	`)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	examples := []struct {
+		walletID string
+		want     []*Bucket
+	}{
+		{
+			"wallet-id-0",
+			[]*Bucket{
+				{ID: "bucket-id-0", Label: "bucket-0", Index: []uint32{0, 0}},
+				{ID: "bucket-id-1", Label: "bucket-1", Index: []uint32{0, 1}},
+			},
+		},
+		{
+			"wallet-id-1",
+			[]*Bucket{
+				{ID: "bucket-id-2", Label: "bucket-2", Index: []uint32{0, 2}},
+			},
+		},
+		{
+			"nonexistent",
+			nil,
+		},
+	}
+
+	for _, ex := range examples {
+		got, err := ListBuckets(ctx, ex.walletID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("buckets in wallet %v:\ngot:  %v\nwant: %v", ex.walletID, got, ex.want)
+		}
+	}
+}

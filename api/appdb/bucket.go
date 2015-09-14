@@ -11,10 +11,9 @@ import (
 
 // Bucket represents an indexed namespace inside of a wallet
 type Bucket struct {
-	ID      string   `json:"bucket_id"`
-	Label   string   `json:"label"`
-	Index   []uint32 `json:"bucket_index"`
-	Balance int64    `json:"balance"`
+	ID    string   `json:"bucket_id"`
+	Label string   `json:"label"`
+	Index []uint32 `json:"bucket_index"`
 }
 
 // CreateBucket inserts a bucket database record
@@ -104,4 +103,39 @@ func BucketBalance(ctx context.Context, bucketID string) ([]*Balance, error) {
 		return nil, errors.Wrap(err, "rows error")
 	}
 	return bals, err
+}
+
+// ListBuckets returns a list of buckets contained in the given wallet.
+func ListBuckets(ctx context.Context, walletID string) ([]*Bucket, error) {
+	q := `
+		SELECT id, label, key_index(key_index)
+		FROM buckets
+		WHERE wallet_id = $1
+		ORDER BY created_at
+	`
+	rows, err := pg.FromContext(ctx).Query(q, walletID)
+	if err != nil {
+		return nil, errors.Wrap(err, "select query")
+	}
+	defer rows.Close()
+
+	var buckets []*Bucket
+	for rows.Next() {
+		b := new(Bucket)
+		err = rows.Scan(
+			&b.ID,
+			&b.Label,
+			(*pg.Uint32s)(&b.Index),
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "row scan")
+		}
+		buckets = append(buckets, b)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "end row scan loop")
+	}
+
+	return buckets, err
 }
