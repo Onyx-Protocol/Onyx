@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -78,5 +79,23 @@ func TestLogin(t *testing.T) {
 
 	if uid != "sample-user-id-0" {
 		t.Errorf("authenticated user ID = %v want sample-user-id-0", uid)
+	}
+}
+
+func TestCreateWalletBadXPub(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	const body = `{"label": "foo", "xpubs": ["badxpub"]}`
+	req, _ := http.NewRequest("POST", "/v3/applications/a1/wallets", strings.NewReader(body))
+	resp := httptest.NewRecorder()
+	createWallet(ctx, resp, req)
+	if resp.Code != 400 {
+		t.Errorf("createWallet(%#q) http status = %d want 400", body, resp.Code)
+	}
+	want := errorInfoTab[appdb.ErrBadXPub].ChainCode
+	if g := strings.TrimSpace(resp.Body.String()); !strings.Contains(g, want) {
+		t.Errorf("createWallet(%#q) can't find %s in response %#q", body, want, g)
 	}
 }

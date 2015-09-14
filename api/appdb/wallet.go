@@ -14,7 +14,7 @@ import (
 var (
 	ErrBadLabel     = errors.New("bad label")
 	ErrBadXPubCount = errors.New("bad xpub count")
-	ErrXPriv        = errors.New("xpriv given for xpub")
+	ErrBadXPub      = errors.New("bad xpub")
 )
 
 // Wallet represents a single wallet. It is intended to be used wth API
@@ -37,7 +37,8 @@ func CreateWallet(ctx context.Context, appID, label string, xpubs []*Key) (id st
 	}
 	for i, xpub := range xpubs {
 		if xpub.XPub.IsPrivate() {
-			return "", errors.WithDetailf(ErrXPriv, "key number %d", i)
+			err := errors.WithDetailf(ErrBadXPub, "key number %d", i)
+			return "", errors.WithDetail(err, "key is xpriv, not xpub")
 		}
 	}
 

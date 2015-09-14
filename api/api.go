@@ -12,6 +12,7 @@ import (
 	"chain/api/asset"
 	"chain/database/pg"
 	"chain/encoding/json"
+	"chain/errors"
 	chainhttp "chain/net/http"
 	"chain/net/http/authn"
 	"chain/net/http/pat"
@@ -65,10 +66,11 @@ func createWallet(ctx context.Context, w http.ResponseWriter, req *http.Request)
 	}
 
 	var keys []*appdb.Key
-	for _, xpub := range wReq.XPubs {
+	for i, xpub := range wReq.XPubs {
 		key, err := appdb.NewKey(xpub)
 		if err != nil {
-			writeHTTPError(ctx, w, err)
+			err = errors.Wrap(appdb.ErrBadXPub, err.Error())
+			writeHTTPError(ctx, w, errors.WithDetailf(err, "xpub %d", i))
 			return
 		}
 		keys = append(keys, key)

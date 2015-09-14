@@ -21,7 +21,8 @@ func CreateAssetGroup(ctx context.Context, appID, label string, xpubs []*Key) (i
 	}
 	for i, xpub := range xpubs {
 		if xpub.XPub.IsPrivate() {
-			return "", errors.WithDetailf(ErrXPriv, "key number %d", i)
+			err := errors.WithDetailf(ErrBadXPub, "key number %d", i)
+			return "", errors.WithDetail(err, "key is xpriv, not xpub")
 		}
 	}
 

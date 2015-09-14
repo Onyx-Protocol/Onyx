@@ -30,7 +30,7 @@ var (
 		asset.ErrBadAddr:           errorInfo{400, "CH300", "Invalid address"},
 		appdb.ErrBadLabel:          errorInfo{400, "CH704", "Invalid label"},
 		appdb.ErrBadXPubCount:      errorInfo{400, "CH712", "Need exactly one xpub."},
-		appdb.ErrXPriv:             errorInfo{400, "CH713", "Must provide an xpub, not xpriv."},
+		appdb.ErrBadXPub:           errorInfo{400, "CH713", "Invalid xpub."},
 		asset.ErrPastExpires:       errorInfo{400, "CH720", "Expires, if set, must be in the future"},
 		appdb.ErrInsufficientFunds: errorInfo{400, "CH733", "Insufficient funds for tx"},
 		asset.ErrTransferMismatch:  errorInfo{400, "CH738", "Total input amount must equal total output amount"},
