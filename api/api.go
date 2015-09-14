@@ -211,6 +211,18 @@ func createBucket(ctx context.Context, w http.ResponseWriter, req *http.Request)
 	writeJSON(ctx, w, 201, bucket)
 }
 
+// /v3/buckets/:bucketID/balance
+func getBucketBalance(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	bID := req.URL.Query().Get(":bucketID")
+	bals, err := appdb.BucketBalance(ctx, bID)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	writeJSON(ctx, w, 200, bals)
+}
+
 // /v3/asset-groups/:groupID/assets
 func createAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	groupID := req.URL.Query().Get(":groupID")

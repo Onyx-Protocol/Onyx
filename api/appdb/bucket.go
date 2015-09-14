@@ -5,6 +5,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
+	"chain/errors"
 	"chain/log"
 )
 
@@ -62,4 +63,45 @@ func CreateBucket(ctx context.Context, walletID, label string) (*Bucket, error) 
 	}
 
 	return bucket, nil
+}
+
+// BucketBalance fetches the balances of assets contained in this bucket.
+// It returns a slice of Balances, where each Balance contains an asset ID,
+// a confirmed balance, and a total balance. The total and confirmed balances
+// are currently the same.
+func BucketBalance(ctx context.Context, bucketID string) ([]*Balance, error) {
+	q := `
+		SELECT asset_id, sum(amount)::bigint
+		FROM utxos
+		WHERE bucket_id=$1
+		GROUP BY asset_id
+		ORDER BY asset_id
+	`
+	rows, err := pg.FromContext(ctx).Query(q, bucketID)
+	if err != nil {
+		return nil, errors.Wrap(err, "balance query")
+	}
+	defer rows.Close()
+	var bals []*Balance
+
+	for rows.Next() {
+		var (
+			assetID string
+			bal     int64
+		)
+		err = rows.Scan(&assetID, &bal)
+		if err != nil {
+			return nil, errors.Wrap(err, "row scan")
+		}
+		b := &Balance{
+			AssetID:   assetID,
+			Total:     bal,
+			Confirmed: bal,
+		}
+		bals = append(bals, b)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "rows error")
+	}
+	return bals, err
 }
