@@ -139,6 +139,7 @@ func ListWallets(ctx context.Context, appID string) ([]*Wallet, error) {
 		SELECT id, block_chain, label
 		FROM wallets
 		WHERE application_id = $1
+		ORDER BY created_at
 	`
 	rows, err := pg.FromContext(ctx).Query(q, appID)
 	if err != nil {
