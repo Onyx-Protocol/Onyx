@@ -1,6 +1,8 @@
 package appdb
 
 import (
+	"database/sql"
+
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
@@ -70,6 +72,24 @@ type Balance struct {
 	AssetID   string `json:"asset_id"`
 	Confirmed int64  `json:"confirmed"`
 	Total     int64  `json:"total"`
+}
+
+// GetWallet returns basic information about a single wallet.
+func GetWallet(ctx context.Context, walletID string) (*Wallet, error) {
+	var (
+		q     = `SELECT label, block_chain FROM wallets WHERE id = $1`
+		label string
+		bc    string
+	)
+	err := pg.FromContext(ctx).QueryRow(q, walletID).Scan(&label, &bc)
+	if err == sql.ErrNoRows {
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "wallet ID: %v", walletID)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &Wallet{ID: walletID, Label: label, Blockchain: bc}, nil
 }
 
 // WalletBalance fetches the balances of assets contained in this wallet.
