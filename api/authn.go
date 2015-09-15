@@ -7,9 +7,17 @@ import (
 )
 
 func userCredsAuthn(f chainhttp.HandlerFunc) chainhttp.HandlerFunc {
-	return authn.BasicHandler{Auth: appdb.AuthenticateUserCreds, Next: f}.ServeHTTPContext
+	return authn.BasicHandler{
+		Auth:  appdb.AuthenticateUserCreds,
+		Next:  f,
+		Realm: "x.chain.com",
+	}.ServeHTTPContext
 }
 
 func tokenAuthn(f chainhttp.HandlerFunc) chainhttp.HandlerFunc {
-	return authn.BasicHandler{Auth: appdb.AuthenticateToken, Next: f}.ServeHTTPContext
+	return authn.BasicHandler{
+		Auth:  appdb.AuthenticateToken,
+		Next:  f,
+		Realm: "x.chain.com",
+	}.ServeHTTPContext
 }

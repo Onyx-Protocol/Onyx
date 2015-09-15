@@ -35,8 +35,9 @@ var ErrNotAuthenticated = errors.New("not authenticated")
 // the context. The user ID should be retrieved using authn.GetAuthID.
 // BasicHandler satisfies the ContextHandler interface.
 type BasicHandler struct {
-	Auth AuthFunc
-	Next chainhttp.Handler
+	Auth  AuthFunc
+	Realm string
+	Next  chainhttp.Handler
 }
 
 // ServeHTTPContext satisfies the ContextHandler interface.
@@ -51,6 +52,9 @@ func (h BasicHandler) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 			"status", http.StatusUnauthorized,
 			log.KeyError, err,
 		)
+		if username == "" {
+			w.Header().Add("WWW-Authenticate", `Basic realm="`+h.Realm+`"`)
+		}
 		http.Error(w, "Request could not be authenticated", http.StatusUnauthorized)
 	} else {
 		log.Write(ctx,
