@@ -8,17 +8,23 @@
 		"chain/cmd/api",
 		"chain/cmd/chainbot",
 		"chain/cmd/vet",
+		"chain/crypto/hash256",
 		"chain/database/pg",
 		"chain/database/pg/pgtest",
 		"chain/database/sql",
 		"chain/encoding/json",
 		"chain/errors",
+		"chain/fedchain-sandbox/hdkey",
 		"chain/fedchain-sandbox/txscript",
 		"chain/fedchain-sandbox/wire",
 		"chain/log",
 		"chain/metrics",
 		"chain/net/http",
+		"chain/net/http/authn",
 		"chain/net/http/gzip",
+		"chain/net/http/pat",
+		"chain/net/http/pat/example",
+		"chain/net/http/pat/example/patexample",
 		"chain/net/http/reqid",
 		"chain/strings"
 	],
@@ -142,16 +148,24 @@
 			"Rev": "b269bd035a727d6c1081f76e7a239a1b00674c40"
 		},
 		{
-			"ImportPath": "golang.org/x/crypto/bcrypt",
-			"Rev": "aedad9a179ec1ea11b7064c57cbc6dc30d7724ec"
-		},
-		{
 			"ImportPath": "github.com/vaughan0/go-ini",
 			"Rev": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1"
 		},
 		{
+			"ImportPath": "golang.org/x/crypto/bcrypt",
+			"Rev": "aedad9a179ec1ea11b7064c57cbc6dc30d7724ec"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/blowfish",
+			"Rev": "aedad9a179ec1ea11b7064c57cbc6dc30d7724ec"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/curve25519",
+			"Rev": "aedad9a179ec1ea11b7064c57cbc6dc30d7724ec"
+		},
+		{
 			"ImportPath": "golang.org/x/crypto/ssh",
-			"Rev": "4ed45ec682102c643324fae5dff8dab085b6c300"
+			"Rev": "aedad9a179ec1ea11b7064c57cbc6dc30d7724ec"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
