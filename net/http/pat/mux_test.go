@@ -221,6 +221,37 @@ func TestTail(t *testing.T) {
 	}
 }
 
+func TestLabels(t *testing.T) {
+	cases := []struct{ pattern, want string }{
+		{"/", ""},
+		{"/foo/:name", ":name"},
+		{"/foo/:name/baz", ":name"},
+		{"/foo/:name/bar/", ":name"},
+		{"/foo/:name/baz/:id", ":name :id"},
+		{"/foo/:name/baz/:name", ":name :name"},
+		{"/foo/:name.txt", ":name"},
+		{"/foo/:name", ":name"},
+		{"/foo/:a:b", ":a :b"},
+		{"/foo/:a.", ":a"},
+		{"/foo/:a:b", ":a :b"},
+		{"/foo/:a:b:c", ":a :b :c"},
+		{"/foo/::name", ": :name"},
+		{"/foo/:name.txt", ":name"},
+		{"/foo/x:name", ":name"},
+		{"/:a/", ":a"},
+		{"/:a", ":a"},
+		{"/b/:a", ":a"},
+		{"/hello/:title/", ":title"},
+	}
+
+	for _, test := range cases {
+		got := strings.Join(Labels(test.pattern), " ")
+		if got != test.want {
+			t.Errorf("Labels(%q) = %q want %q", test.pattern, got, test.want)
+		}
+	}
+}
+
 func TestLongestMatch(t *testing.T) {
 	p := New()
 	var ok bool

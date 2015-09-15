@@ -223,6 +223,27 @@ func Tail(pat, path string) string {
 	return ""
 }
 
+// Labels returns the list of labels defined in pattern.
+//
+// For example,
+//
+//   pattern         returns
+//   /hello/:title/  [:title]
+//   /:a/:b          [:a :b]
+func Labels(pattern string) []string {
+	var a []string
+	for j := 0; j < len(pattern); {
+		if pattern[j] == ':' {
+			var name string
+			name, _, j = match(pattern, isAlnum, j+1)
+			a = append(a, ":"+name)
+		} else {
+			j++
+		}
+	}
+	return a
+}
+
 type patHandler struct {
 	pat string
 	h   http.Handler
