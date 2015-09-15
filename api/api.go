@@ -36,6 +36,7 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("GET", "/v3/wallets/:walletID", getWallet)
 	h.AddFunc("GET", "/v3/wallets/:walletID/buckets", listBuckets)
 	h.AddFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
+	h.AddFunc("GET", "/v3/buckets/:bucketID/balance", getBucketBalance)
 	h.AddFunc("GET", "/v3/wallets/:walletID/balance", getWalletBalance)
 	h.AddFunc("GET", "/v3/wallets/:walletID/activity", getWalletActivity)
 	h.AddFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
