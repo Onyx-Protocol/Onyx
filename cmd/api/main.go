@@ -19,6 +19,8 @@ import (
 
 var (
 	// config vars
+	tlsCrt     = env.String("TLSCRT", "")
+	tlsKey     = env.String("TLSKEY", "")
 	listenAddr = env.String("LISTEN", ":8080")
 	dbURL      = env.String("DB_URL", "postgres:///api?sslmode=disable")
 
@@ -50,5 +52,13 @@ func main() {
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
-	http.ListenAndServe(*listenAddr, secureheader.DefaultConfig)
+
+	if *tlsCrt != "" {
+		err = chainhttp.ListenAndServeTLS(*listenAddr, *tlsCrt, *tlsKey, secureheader.DefaultConfig)
+	} else {
+		err = http.ListenAndServe(*listenAddr, secureheader.DefaultConfig)
+	}
+	if err != nil {
+		log.Fatalln("ListenAndServe:", err)
+	}
 }
