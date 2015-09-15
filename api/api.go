@@ -330,7 +330,20 @@ func transferAssets(ctx context.Context, w http.ResponseWriter, req *http.Reques
 		return
 	}
 
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+	defer dbtx.Rollback()
+
 	template, err := asset.Transfer(ctx, x.Inputs, x.Outputs)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	err = dbtx.Commit()
 	if err != nil {
 		writeHTTPError(ctx, w, err)
 		return
