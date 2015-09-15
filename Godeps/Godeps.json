@@ -152,6 +152,7 @@
 		{
 			"ImportPath": "golang.org/x/crypto/ssh",
 			"Rev": "4ed45ec682102c643324fae5dff8dab085b6c300"
+		},
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "7654728e381988afd88e58cabfd6363a5ea91810"
