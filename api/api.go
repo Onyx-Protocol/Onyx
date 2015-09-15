@@ -19,7 +19,10 @@ import (
 	"chain/net/http/pat"
 )
 
-const sessionTokenLifetime = 2 * 7 * 24 * time.Hour
+const (
+	sessionTokenLifetime = 2 * 7 * 24 * time.Hour
+	defActivityPageSize  = 50
+)
 
 func Handler() chainhttp.Handler {
 	h := chainhttp.PatServeMux{PatternServeMux: pat.New()}
@@ -147,11 +150,16 @@ func listWallets(ctx context.Context, w http.ResponseWriter, req *http.Request) 
 func getWalletActivity(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	wID := req.URL.Query().Get(":walletID")
 	prev := req.Header.Get("Range-After")
-	limit, err := strconv.Atoi(req.Header.Get("Limit"))
-	if err != nil {
-		err = errors.Wrap(ErrBadReqHeader, err.Error())
-		writeHTTPError(ctx, w, errors.WithDetail(err, "limit header"))
-		return
+
+	limit := defActivityPageSize
+	if lstr := req.Header.Get("Limit"); lstr != "" {
+		var err error
+		limit, err = strconv.Atoi(lstr)
+		if err != nil {
+			err = errors.Wrap(ErrBadReqHeader, err.Error())
+			writeHTTPError(ctx, w, errors.WithDetail(err, "limit header"))
+			return
+		}
 	}
 
 	activity, last, err := appdb.WalletActivity(ctx, wID, prev, limit)
