@@ -8,6 +8,7 @@
 		"chain/cmd/api",
 		"chain/cmd/chainbot",
 		"chain/cmd/vet",
+		"chain/crypto/hash160",
 		"chain/crypto/hash256",
 		"chain/database/pg",
 		"chain/database/pg/pgtest",
@@ -161,6 +162,10 @@
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/curve25519",
+			"Rev": "aedad9a179ec1ea11b7064c57cbc6dc30d7724ec"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ripemd160",
 			"Rev": "aedad9a179ec1ea11b7064c57cbc6dc30d7724ec"
 		},
 		{
