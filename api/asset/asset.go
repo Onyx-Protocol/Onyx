@@ -51,10 +51,10 @@ func Issue(ctx context.Context, assetID string, outs []Output) (*Tx, error) {
 // Output is a user input struct that describes
 // the destination of a transaction's inputs.
 type Output struct {
-	AssetID  string
-	Address  string
+	AssetID  string `json:"asset_id"`
+	Address  string `json:"address"`
 	BucketID string `json:"bucket_id"`
-	Amount   int64
+	Amount   int64  `json:"amount"`
 	isChange bool
 }
 
