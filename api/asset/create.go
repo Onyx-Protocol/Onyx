@@ -7,7 +7,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/errors"
-	chaintxscript "chain/fedchain/txscript"
+	chaintxscript "chain/fedchain-sandbox/txscript"
 )
 
 // Create generates a new asset redeem script

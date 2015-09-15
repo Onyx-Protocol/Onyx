@@ -11,7 +11,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
-	"chain/fedchain/wire"
+	"chain/fedchain-sandbox/wire"
 )
 
 func TestReserveUTXOs(t *testing.T) {

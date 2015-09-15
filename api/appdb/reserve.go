@@ -9,7 +9,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/wire"
+	"chain/fedchain-sandbox/wire"
 )
 
 // ErrInsufficientFunds is an error for comparison purposes.

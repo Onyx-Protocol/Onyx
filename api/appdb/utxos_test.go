@@ -10,7 +10,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain/wire"
+	"chain/fedchain-sandbox/wire"
 )
 
 func mustDecodeHex(h string) []byte {

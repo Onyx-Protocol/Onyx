@@ -6,7 +6,7 @@ import (
 	"github.com/btcsuite/btcutil"
 
 	"chain/errors"
-	"chain/fedchain/wire"
+	"chain/fedchain-sandbox/wire"
 )
 
 // AddrPkScript takes a base58-encoded address

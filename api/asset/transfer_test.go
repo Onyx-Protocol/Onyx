@@ -11,7 +11,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain/wire"
+	"chain/fedchain-sandbox/wire"
 )
 
 func TestTransfer(t *testing.T) {

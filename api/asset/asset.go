@@ -8,8 +8,8 @@ import (
 
 	"chain/api/appdb"
 	"chain/errors"
-	"chain/fedchain/txscript"
-	"chain/fedchain/wire"
+	"chain/fedchain-sandbox/txscript"
+	"chain/fedchain-sandbox/wire"
 )
 
 // ErrBadAddr is returned by Issue.

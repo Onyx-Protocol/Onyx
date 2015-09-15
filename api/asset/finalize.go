@@ -10,7 +10,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/errors"
-	"chain/fedchain/wire"
+	"chain/fedchain-sandbox/wire"
 	"chain/strings"
 )
 

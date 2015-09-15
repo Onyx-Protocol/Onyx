@@ -7,7 +7,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/wire"
+	"chain/fedchain-sandbox/wire"
 )
 
 // ErrBadAsset is an error that means the string

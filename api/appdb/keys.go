@@ -10,7 +10,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/hdkey"
+	"chain/fedchain-sandbox/hdkey"
 	"chain/strings"
 )
 

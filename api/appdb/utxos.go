@@ -4,8 +4,8 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
-	"chain/fedchain/txscript"
-	"chain/fedchain/wire"
+	"chain/fedchain-sandbox/txscript"
+	"chain/fedchain-sandbox/wire"
 )
 
 type outputSet struct {
