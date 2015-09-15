@@ -49,6 +49,7 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("POST", "/v3/assets/transfer", transferAssets)
 	h.AddFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
 	h.AddFunc("POST", "/v3/users", createUser)
+	h.AddFunc("GET", "/v3/user", tokenAuthn(getAuthdUser))
 	h.AddFunc("POST", "/v3/login", userCredsAuthn(login))
 	h.AddFunc("GET", "/v3/authcheck", tokenAuthn(authcheck))
 	h.AddFunc("GET", "/v3/api-tokens", tokenAuthn(listAPITokens))
@@ -411,6 +412,17 @@ func login(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	writeJSON(ctx, w, 200, t)
+}
+
+// GET /v3/user
+func getAuthdUser(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	uid := authn.GetAuthID(ctx)
+	u, err := appdb.GetUser(ctx, uid)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+	writeJSON(ctx, w, 200, u)
 }
 
 // GET /v3/authcheck

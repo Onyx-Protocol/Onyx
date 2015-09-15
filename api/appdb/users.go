@@ -85,6 +85,25 @@ func AuthenticateUserCreds(ctx context.Context, email, password string) (userID 
 	return id, nil
 }
 
+// GetUser returns a User corresponding to the given ID. If no user is found,
+// it will return an error with pg.ErrUserInputNotFound as its root.
+func GetUser(ctx context.Context, id string) (*User, error) {
+	var (
+		q = `SELECT email FROM users WHERE id = $1`
+		u = &User{ID: id}
+	)
+
+	err := pg.FromContext(ctx).QueryRow(q, id).Scan(&u.Email)
+	if err == sql.ErrNoRows {
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "ID: %v", id)
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "select query")
+	}
+
+	return u, nil
+}
+
 // GetUserByEmail returns a User corresponding to the given email. It is not
 // sensitive to the case of the provided email address. If no user is found,
 // it will return an error with pg.ErrUserInputNotFound as its root.

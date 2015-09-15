@@ -194,6 +194,38 @@ func TestAuthenticateUserCreds(t *testing.T) {
 	}
 }
 
+func TestGetUser(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO users (id, email, password_hash)
+		VALUES ('user-id-0', 'foo@bar.com', 'password-does-not-matter');
+	`)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	examples := []struct {
+		id       string
+		wantUser *User
+		wantErr  error
+	}{
+		{"user-id-0", &User{ID: "user-id-0", Email: "foo@bar.com"}, nil},
+		{"nonexistent", nil, pg.ErrUserInputNotFound},
+	}
+
+	for _, ex := range examples {
+		t.Log("id:", ex.id)
+
+		gotUser, gotErr := GetUser(ctx, ex.id)
+
+		if !reflect.DeepEqual(gotUser, ex.wantUser) {
+			t.Errorf("user:\ngot:  %v\nwant: %v", gotUser, ex.wantUser)
+		}
+
+		if errors.Root(gotErr) != ex.wantErr {
+			t.Errorf("error:\ngot:  %v\nwant: %v", gotErr, ex.wantErr)
+		}
+	}
+}
+
 func TestGetUserByEmail(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO users (id, email, password_hash)
