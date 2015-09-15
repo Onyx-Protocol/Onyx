@@ -102,7 +102,7 @@ func createWallet(ctx context.Context, w http.ResponseWriter, req *http.Request)
 	}
 
 	writeJSON(ctx, w, 201, map[string]interface{}{
-		"wallet_id":           wID,
+		"id":                  wID,
 		"label":               wReq.Label,
 		"block_chain":         "sandbox",
 		"keys":                keys,
@@ -219,7 +219,7 @@ func createAssetGroup(ctx context.Context, w http.ResponseWriter, req *http.Requ
 	}
 
 	writeJSON(ctx, w, 201, map[string]interface{}{
-		"asset_group_id":      agID,
+		"id":                  agID,
 		"label":               agReq.Label,
 		"block_chain":         "sandbox",
 		"keys":                keys,

@@ -19,7 +19,7 @@ var ErrMissingKeys = errors.New("could not load all keys")
 
 // Key is an xpub and its hash.
 type Key struct {
-	ID   string     `json:"key_id"` // ID is the hash of the XPub
+	ID   string     `json:"id"` // ID is the hash of the XPub
 	XPub hdkey.XKey `json:"xpub"`
 }
 

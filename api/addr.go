@@ -45,7 +45,7 @@ func createAddr(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 		"block_chain":         "sandbox",
 		"created":             addr.Created.UTC(),
 		"expires":             optionalTime(addr.Expires),
-		"receiver_id":         addr.ID,
+		"id":                  addr.ID,
 		"index":               addr.Index[:],
 	})
 }
