@@ -7,8 +7,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
 
-	"github.com/lib/pq"
-
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -118,9 +116,8 @@ func TestCreateUserNoDupes(t *testing.T) {
 			}
 
 			_, err = CreateUser(ctx, ex.email1, "abracadabra")
-			pqErr, ok := errors.Root(err).(*pq.Error)
-			if !ok || pqErr.Code.Name() != "unique_violation" {
-				t.Errorf("error = %v want unique_violation", err)
+			if errors.Root(err) != ErrBadEmail {
+				t.Errorf("error want = %v got %v", errors.Root(err), ErrBadEmail)
 			}
 		}()
 	}
@@ -256,5 +253,101 @@ func TestGetUserByEmail(t *testing.T) {
 		if errors.Root(gotErr) != ex.wantErr {
 			t.Errorf("error:\ngot:  %v\nwant: %v", gotErr, ex.wantErr)
 		}
+	}
+}
+
+func TestUpdateUserEmail(t *testing.T) {
+	fix := `
+		INSERT INTO users (id, email, password_hash)
+		VALUES (
+			'user-id-0',
+			'foo@bar.com',
+			'$2a$08$DNDEy/pOSfiiyW7o4qEzGO4Ae6gzQVtLVVFCTwO9cwWyekm/gFkxC'::bytea -- plaintext: abracadabra
+		);
+
+		INSERT INTO users (id, email, password_hash)
+		VALUES (
+			'user-id-1',
+			'foo2@bar.com',
+			'$2a$08$DNDEy/pOSfiiyW7o4qEzGO4Ae6gzQVtLVVFCTwO9cwWyekm/gFkxC'::bytea -- plaintext: abracadabra
+		);
+	`
+
+	examples := []struct {
+		password string
+		email    string
+		want     error
+	}{
+		{"abracadabra", "bar@foo.com", nil},
+		{"abracadabra", "foo@bar.com", nil},           // reset to same email
+		{"abracadabra", "Foo@Bar.com", nil},           // reset to same email, modulo case
+		{"abracadabra", "invalid-email", ErrBadEmail}, // new email is not valid
+		{"abracadabra", "foo2@bar.com", ErrBadEmail},  // new email is already taken
+		{"bad-password", "foo@bar.com", ErrPasswordCheck},
+	}
+
+	for i, ex := range examples {
+		func() {
+			t.Log("Example", i)
+
+			dbtx := pgtest.TxWithSQL(t, fix)
+			defer dbtx.Rollback()
+			ctx := pg.NewContext(context.Background(), dbtx)
+
+			err := UpdateUserEmail(ctx, "user-id-0", ex.password, ex.email)
+			if errors.Root(err) != ex.want {
+				t.Errorf("error = %v want %v", errors.Root(err), ex.want)
+			}
+
+			if ex.want == nil {
+				_, err := getUserByCreds(ctx, ex.email, ex.password)
+				if err != nil {
+					t.Errorf("error = %v want nil", err)
+				}
+			}
+		}()
+	}
+}
+
+func TestUpdateUserPassword(t *testing.T) {
+	fix := `
+		INSERT INTO users (id, email, password_hash)
+		VALUES (
+			'user-id-0',
+			'foo@bar.com',
+			'$2a$08$DNDEy/pOSfiiyW7o4qEzGO4Ae6gzQVtLVVFCTwO9cwWyekm/gFkxC'::bytea -- plaintext: abracadabra
+		);
+	`
+
+	examples := []struct {
+		password string
+		newpass  string
+		want     error
+	}{
+		{"abracadabra", "opensesame", nil},
+		{"abracadabra", "", ErrBadPassword},
+		{"bad-password", "opensesame", ErrPasswordCheck},
+	}
+
+	for i, ex := range examples {
+		func() {
+			t.Log("Example", i)
+
+			dbtx := pgtest.TxWithSQL(t, fix)
+			defer dbtx.Rollback()
+			ctx := pg.NewContext(context.Background(), dbtx)
+
+			err := UpdateUserPassword(ctx, "user-id-0", ex.password, ex.newpass)
+			if errors.Root(err) != ex.want {
+				t.Errorf("error = %v want %v", errors.Root(err), ex.want)
+			}
+
+			if ex.want == nil {
+				_, err := getUserByCreds(ctx, "foo@bar.com", ex.newpass)
+				if err != nil {
+					t.Errorf("error = %v want nil", err)
+				}
+			}
+		}()
 	}
 }

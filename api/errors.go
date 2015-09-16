@@ -28,6 +28,7 @@ var (
 		ErrBadReqHeader:            errorInfo{400, "CH008", "Invalid request header"},
 		appdb.ErrBadEmail:          errorInfo{400, "CH101", "Invalid email."},
 		appdb.ErrBadPassword:       errorInfo{400, "CH102", "Invalid password."},
+		appdb.ErrPasswordCheck:     errorInfo{400, "CH103", "Unable to verify password."},
 		asset.ErrBadAddr:           errorInfo{400, "CH300", "Invalid address"},
 		appdb.ErrBadLabel:          errorInfo{400, "CH704", "Invalid label"},
 		appdb.ErrBadXPubCount:      errorInfo{400, "CH712", "Need exactly one xpub."},

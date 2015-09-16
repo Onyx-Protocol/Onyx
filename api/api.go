@@ -50,6 +50,8 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
 	h.AddFunc("POST", "/v3/users", createUser)
 	h.AddFunc("GET", "/v3/user", tokenAuthn(getAuthdUser))
+	h.AddFunc("POST", "/v3/user/email", tokenAuthn(updateUserEmail))
+	h.AddFunc("POST", "/v3/user/password", tokenAuthn(updateUserPassword))
 	h.AddFunc("POST", "/v3/login", userCredsAuthn(login))
 	h.AddFunc("GET", "/v3/authcheck", tokenAuthn(authcheck))
 	h.AddFunc("GET", "/v3/api-tokens", tokenAuthn(listAPITokens))
@@ -436,6 +438,44 @@ func getAuthdUser(ctx context.Context, w http.ResponseWriter, req *http.Request)
 		return
 	}
 	writeJSON(ctx, w, 200, u)
+}
+
+// POST /v3/user/email
+func updateUserEmail(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	var in struct{ Email, Password string }
+	err := readJSON(req.Body, &in)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	uid := authn.GetAuthID(ctx)
+	err = appdb.UpdateUserEmail(ctx, uid, in.Password, in.Email)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	writeJSON(ctx, w, 200, map[string]string{"message": "ok"})
+}
+
+// POST /v3/user/password
+func updateUserPassword(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	var in struct{ Current, New string }
+	err := readJSON(req.Body, &in)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	uid := authn.GetAuthID(ctx)
+	err = appdb.UpdateUserPassword(ctx, uid, in.Current, in.New)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	writeJSON(ctx, w, 200, map[string]string{"message": "ok"})
 }
 
 // GET /v3/authcheck
