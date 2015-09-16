@@ -6,6 +6,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
+	"chain/errors"
 	"chain/fedchain-sandbox/txscript"
 	"chain/fedchain-sandbox/wire"
 	"chain/metrics"
@@ -25,12 +26,21 @@ type outputSet struct {
 // Must be called inside a transaction.
 func Commit(ctx context.Context, tx *wire.MsgTx) error {
 	defer metrics.RecordElapsed(time.Now())
+	commitTime := time.Now()
 	hash := tx.TxSha()
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 	err := insertUTXOs(ctx, hash, tx.TxOut)
 	if err != nil {
 		return err
 	}
+
+	// Activity items rely on the utxo set, so they should be created after
+	// the output utxos are created but before the input utxos are removed.
+	err = CreateActivityItems(ctx, tx, commitTime)
+	if err != nil {
+		return errors.Wrap(err, "creating activity items")
+	}
+
 	return deleteUTXOs(ctx, tx.TxIn)
 }
 
