@@ -13,6 +13,9 @@ func TestWriter(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error", err)
 	}
+	if g := w.Written(); g != 1 {
+		t.Errorf("w.Written() = %d want 1", g)
+	}
 	if len(tw) != 2 {
 		t.Errorf("len(tw) = %d want 2", len(tw))
 	}
@@ -20,6 +23,9 @@ func TestWriter(t *testing.T) {
 		_, err = w.Write([]byte{1})
 		if err != errX {
 			t.Errorf("err = %v want %v", err, errX)
+		}
+		if g := w.Written(); g != 2 {
+			t.Errorf("w.Written() = %d want 2", g)
 		}
 		if len(tw) != 1 {
 			t.Errorf("len(tw) = %d want 1", len(tw))
