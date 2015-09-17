@@ -565,6 +565,13 @@ CREATE INDEX asset_groups_application_id_idx ON asset_groups USING btree (applic
 
 
 --
+-- Name: assets_asset_group_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX assets_asset_group_id_idx ON assets USING btree (asset_group_id);
+
+
+--
 -- Name: auth_tokens_user_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
