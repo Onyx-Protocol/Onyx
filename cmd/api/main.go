@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/kr/env"
 	"github.com/kr/secureheader"
@@ -13,6 +15,7 @@ import (
 	"chain/api/appdb"
 	"chain/database/pg"
 	"chain/metrics"
+	"chain/metrics/librato"
 	chainhttp "chain/net/http"
 	"chain/net/http/gzip"
 )
@@ -23,16 +26,27 @@ var (
 	tlsKey     = env.String("TLSKEY", "")
 	listenAddr = env.String("LISTEN", ":8080")
 	dbURL      = env.String("DB_URL", "postgres:///api?sslmode=disable")
+	samplePer  = env.Duration("SAMPLEPER", 10*time.Second)
 
 	db       *sql.DB
 	buildTag = "dev"
 )
 
 func main() {
+	librato.URL = env.URL("LIBRATO_URL", "")
+	librato.Prefix = "chain.api."
+
 	sql.Register("schemadb", pg.SchemaDriver(buildTag))
 	log.SetPrefix("api-" + buildTag + ": ")
 	log.SetFlags(log.Lshortfile)
 	env.Parse()
+
+	if librato.URL.Host != "" {
+		librato.Source, _ = os.Hostname()
+		go librato.SampleMetrics(*samplePer)
+	} else {
+		log.Println("no metrics; set LIBRATO_URL for prod")
+	}
 
 	var err error
 	db, err = sql.Open("schemadb", *dbURL)

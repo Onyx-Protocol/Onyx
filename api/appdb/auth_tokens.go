@@ -13,6 +13,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/metrics"
 	"chain/net/http/authn"
 )
 
@@ -59,6 +60,7 @@ func CreateAuthToken(ctx context.Context, userID string, typ string, expiresAt *
 // corresponding to those credentials. If the credentials are invalid,
 // authn.ErrNotAuthenticated is returned.
 func AuthenticateToken(ctx context.Context, id, secret string) (userID string, err error) {
+	defer metrics.RecordElapsed(time.Now())
 	var (
 		q          = `SELECT secret_hash, user_id, expires_at FROM auth_tokens WHERE id = $1`
 		secretHash []byte

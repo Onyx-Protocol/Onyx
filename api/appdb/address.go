@@ -11,6 +11,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/metrics"
 	"chain/strings"
 )
 
@@ -46,6 +47,7 @@ type Address struct {
 // LoadNextIndex will initialize some other fields;
 // See Address for which ones.
 func (a *Address) LoadNextIndex(ctx context.Context) error {
+	defer metrics.RecordElapsed(time.Now())
 	var keyIDs []string
 	const q = `
 		SELECT
@@ -91,6 +93,7 @@ func (a *Address) LoadNextIndex(ctx context.Context) error {
 // Insert will initialize fields ID and Created;
 // all other fields must be set prior to calling Insert.
 func (a *Address) Insert(ctx context.Context) error {
+	defer metrics.RecordElapsed(time.Now())
 	const q = `
 		INSERT INTO addresses (
 			address, redeem_script, pk_script, wallet_id, bucket_id,
@@ -128,6 +131,7 @@ func newAddressIndex(ctx context.Context, bID string) (index []uint32, err error
 // AddressesByID loads an array of addresses
 // from the database using their IDs.
 func AddressesByID(ctx context.Context, ids []string) ([]*Address, error) {
+	defer metrics.RecordElapsed(time.Now())
 	sort.Strings(ids)
 	ids = strings.Uniq(ids)
 

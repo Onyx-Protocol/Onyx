@@ -1,11 +1,14 @@
 package appdb
 
 import (
+	"time"
+
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/fedchain-sandbox/txscript"
 	"chain/fedchain-sandbox/wire"
+	"chain/metrics"
 )
 
 type outputSet struct {
@@ -21,6 +24,7 @@ type outputSet struct {
 // and inserts newly-created outputs.
 // Must be called inside a transaction.
 func Commit(ctx context.Context, tx *wire.MsgTx) error {
+	defer metrics.RecordElapsed(time.Now())
 	hash := tx.TxSha()
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 	err := insertUTXOs(ctx, hash, tx.TxOut)
@@ -31,6 +35,7 @@ func Commit(ctx context.Context, tx *wire.MsgTx) error {
 }
 
 func deleteUTXOs(ctx context.Context, txins []*wire.TxIn) error {
+	defer metrics.RecordElapsed(time.Now())
 	var (
 		txid  []string
 		index []uint32
@@ -52,6 +57,7 @@ func deleteUTXOs(ctx context.Context, txins []*wire.TxIn) error {
 }
 
 func insertUTXOs(ctx context.Context, hash wire.Hash32, txouts []*wire.TxOut) error {
+	defer metrics.RecordElapsed(time.Now())
 	outs := &outputSet{txid: hash.String()}
 	err := addTxOutputs(outs, txouts)
 	if err != nil {

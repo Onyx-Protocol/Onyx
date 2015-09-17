@@ -1,12 +1,15 @@
 package appdb
 
 import (
+	"time"
+
 	"github.com/lib/pq"
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
+	"chain/metrics"
 )
 
 // Bucket represents an indexed namespace inside of a wallet
@@ -20,6 +23,7 @@ type Bucket struct {
 // for the given wallet,
 // and returns the new Bucket.
 func CreateBucket(ctx context.Context, walletID, label string) (*Bucket, error) {
+	defer metrics.RecordElapsed(time.Now())
 	if label == "" {
 		return nil, ErrBadLabel
 	}

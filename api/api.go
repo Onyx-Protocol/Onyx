@@ -14,6 +14,7 @@ import (
 	"chain/database/pg"
 	"chain/encoding/json"
 	"chain/errors"
+	"chain/metrics"
 	chainhttp "chain/net/http"
 	"chain/net/http/authn"
 	"chain/net/http/pat"
@@ -243,6 +244,7 @@ func listBuckets(ctx context.Context, w http.ResponseWriter, req *http.Request) 
 
 // /v3/wallets/:walletID/buckets
 func createBucket(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	defer metrics.RecordElapsed(time.Now())
 	walletID := req.URL.Query().Get(":walletID")
 
 	var input struct {
@@ -277,6 +279,7 @@ func getBucketBalance(ctx context.Context, w http.ResponseWriter, req *http.Requ
 
 // /v3/asset-groups/:groupID/assets
 func createAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	defer metrics.RecordElapsed(time.Now())
 	groupID := req.URL.Query().Get(":groupID")
 
 	var input struct{ Label string }
@@ -301,6 +304,7 @@ func createAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) 
 
 // /v3/assets/:assetID/issue
 func issueAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	defer metrics.RecordElapsed(time.Now())
 	var outs []asset.Output
 	err := readJSON(req.Body, &outs)
 	if err != nil {
@@ -322,6 +326,7 @@ func issueAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 
 // /v3/assets/transfer
 func transferAssets(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	defer metrics.RecordElapsed(time.Now())
 	var x struct {
 		Inputs  []asset.TransferInput
 		Outputs []asset.Output
@@ -358,6 +363,7 @@ func transferAssets(ctx context.Context, w http.ResponseWriter, req *http.Reques
 
 // /v3/wallets/transact/finalize
 func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	defer metrics.RecordElapsed(time.Now())
 	// TODO(kr): validate
 
 	tpl := new(asset.Tx)

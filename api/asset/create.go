@@ -1,6 +1,8 @@
 package asset
 
 import (
+	"time"
+
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"golang.org/x/net/context"
@@ -8,11 +10,13 @@ import (
 	"chain/api/appdb"
 	"chain/errors"
 	chaintxscript "chain/fedchain-sandbox/txscript"
+	"chain/metrics"
 )
 
 // Create generates a new asset redeem script
 // and id inside of an asset group.
 func Create(ctx context.Context, agID, label string) (*appdb.Asset, error) {
+	defer metrics.RecordElapsed(time.Now())
 	if label == "" {
 		return nil, appdb.ErrBadLabel
 	}

@@ -2,12 +2,14 @@ package asset
 
 import (
 	"bytes"
+	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/errors"
 	"chain/fedchain-sandbox/wire"
+	"chain/metrics"
 )
 
 // errors returned by Transfer
@@ -28,6 +30,7 @@ type TransferInput struct {
 // transfers assets from input buckets
 // to output buckets or addresses.
 func Transfer(ctx context.Context, inputs []TransferInput, outputs []Output) (*Tx, error) {
+	defer metrics.RecordElapsed(time.Now())
 	if err := validateTransfer(inputs, outputs); err != nil {
 		return nil, err
 	}
@@ -125,6 +128,7 @@ func validateTransfer(inputs []TransferInput, outputs []Output) error {
 // that contain signatures along with the
 // data needed to generate them
 func makeTransferInputs(ctx context.Context, tx *wire.MsgTx, utxos []*appdb.UTXO) ([]*Input, error) {
+	defer metrics.RecordElapsed(time.Now())
 	var addrIDs []string
 	for _, utxo := range utxos {
 		addrIDs = append(addrIDs, utxo.AddressID)

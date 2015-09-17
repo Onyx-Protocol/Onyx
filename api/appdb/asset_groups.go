@@ -2,11 +2,13 @@ package appdb
 
 import (
 	"database/sql"
+	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/metrics"
 )
 
 // CreateAssetGroup creates a new asset group,
@@ -55,6 +57,7 @@ func CreateAssetGroup(ctx context.Context, appID, label string, xpubs []*Key) (i
 // new index for the asset being created,
 // and the number of signatures required.
 func NextAsset(ctx context.Context, agID string) (asset *Asset, sigsRequired int, err error) {
+	defer metrics.RecordElapsed(time.Now())
 	const q = `
 		UPDATE asset_groups
 		SET next_asset_index=next_asset_index+1

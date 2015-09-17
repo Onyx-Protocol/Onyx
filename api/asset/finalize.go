@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"golang.org/x/net/context"
@@ -11,6 +12,7 @@ import (
 	"chain/api/appdb"
 	"chain/errors"
 	"chain/fedchain-sandbox/wire"
+	"chain/metrics"
 	"chain/strings"
 )
 
@@ -21,6 +23,7 @@ var ErrBadTx = errors.New("bad transaction template")
 // assembles a fully signed tx, and stores the effects of
 // its changes on the UTXO set.
 func FinalizeTx(ctx context.Context, tx *Tx) (*wire.MsgTx, error) {
+	defer metrics.RecordElapsed(time.Now())
 	msg := wire.NewMsgTx()
 	err := msg.Deserialize(bytes.NewReader(tx.Unsigned))
 	if err != nil {

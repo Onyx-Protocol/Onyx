@@ -3,6 +3,7 @@ package appdb
 import (
 	"encoding/hex"
 	"sort"
+	"time"
 
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
@@ -11,6 +12,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
+	"chain/metrics"
 	"chain/strings"
 )
 
@@ -48,6 +50,7 @@ func GetKeys(ctx context.Context, ids []string) (ks []*Key, err error) {
 // loadKeys loads the given keys from the db,
 // using id to identify them.
 func loadKeys(ctx context.Context, keys ...*Key) error {
+	defer metrics.RecordElapsed(time.Now())
 	var a []string
 	for _, k := range keys {
 		if k.ID == "" {

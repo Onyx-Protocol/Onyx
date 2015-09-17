@@ -3,6 +3,7 @@ package appdb
 import (
 	"database/sql"
 	"strings"
+	"time"
 
 	"github.com/lib/pq"
 	"golang.org/x/net/context"
@@ -10,6 +11,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain-sandbox/wire"
+	"chain/metrics"
 )
 
 // ErrInsufficientFunds is an error for comparison purposes.
@@ -30,6 +32,7 @@ type UTXO struct {
 // does not have enough of the asset.
 // ctx must have a database transaction.
 func ReserveUTXOs(ctx context.Context, assetID, bucketID string, amount int64) ([]*UTXO, int64, error) {
+	defer metrics.RecordElapsed(time.Now())
 	const q = `
 		SELECT txid, index, amount, address_id
 		FROM reserve_utxos($1, $2, $3)
@@ -45,6 +48,7 @@ func ReserveUTXOs(ctx context.Context, assetID, bucketID string, amount int64) (
 // and transaction do not have enough of the asset.
 // ctx must have a database transaction.
 func ReserveTxUTXOs(ctx context.Context, assetID, bucketID, txid string, amount int64) ([]*UTXO, int64, error) {
+	defer metrics.RecordElapsed(time.Now())
 	const q = `
 		SELECT txid, index, amount, address_id
 		FROM reserve_tx_utxos($1, $2, $3, $4)

@@ -2,12 +2,14 @@ package appdb
 
 import (
 	"database/sql"
+	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain-sandbox/wire"
+	"chain/metrics"
 )
 
 // ErrBadAsset is an error that means the string
@@ -28,6 +30,7 @@ type Asset struct {
 
 // AssetByID loads an asset from the database using its ID.
 func AssetByID(ctx context.Context, id string) (*Asset, error) {
+	defer metrics.RecordElapsed(time.Now())
 	const q = `
 		SELECT assets.keyset, redeem_script, asset_group_id,
 			key_index(asset_groups.key_index), key_index(assets.key_index)
@@ -68,6 +71,7 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 
 // InsertAsset adds the asset to the database
 func InsertAsset(ctx context.Context, asset *Asset) error {
+	defer metrics.RecordElapsed(time.Now())
 	const q = `
 		INSERT INTO assets (id, asset_group_id, key_index, keyset, redeem_script, label)
 		VALUES($1, $2, to_key_index($3), $4, $5, $6)

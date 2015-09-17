@@ -14,6 +14,7 @@ import (
 	"chain/api/appdb"
 	"chain/errors"
 	"chain/log"
+	"chain/metrics"
 )
 
 // ErrPastExpires is returned by CreateAddress
@@ -27,6 +28,7 @@ var ErrPastExpires = errors.New("expires in the past")
 // If Expires is not the zero time, but in the past,
 // it returns ErrPastExpires.
 func CreateAddress(ctx context.Context, addr *appdb.Address) error {
+	defer metrics.RecordElapsed(time.Now())
 	log.Write(ctx, "step", "create address", "in", addr.BucketID)
 
 	if !addr.Expires.IsZero() && addr.Expires.Before(time.Now()) {

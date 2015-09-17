@@ -3,6 +3,7 @@ package asset
 
 import (
 	"bytes"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -10,6 +11,7 @@ import (
 	"chain/errors"
 	"chain/fedchain-sandbox/txscript"
 	"chain/fedchain-sandbox/wire"
+	"chain/metrics"
 )
 
 // ErrBadAddr is returned by Issue.
@@ -19,6 +21,7 @@ var ErrBadAddr = errors.New("bad address")
 // issues new units of an asset
 // distributed to the outputs provided.
 func Issue(ctx context.Context, assetID string, outs []Output) (*Tx, error) {
+	defer metrics.RecordElapsed(time.Now())
 	tx := wire.NewMsgTx()
 	tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}))
 
