@@ -68,16 +68,22 @@ func (w *codeCountResponse) Write(p []byte) (int, error) {
 	return w.ResponseWriter.Write(p)
 }
 
+func normalizeName(name string) string {
+	return strings.Map(func(r rune) rune {
+		if r == '(' || r == ')' || r == '*' {
+			return -1
+		}
+		return r
+	}, name[strings.LastIndex(name, "/")+1:])
+}
+
 func histogram(pc uintptr) *metrics.Histogram {
 	hm.Lock()
 
 	f := runtime.FuncForPC(pc)
 	hist, ok := histograms[f]
 	if !ok {
-		name := strings.Replace(f.Name()+".duration", "(", "", -1)
-		name = strings.Replace(name, ")", "", -1)
-		name = strings.Replace(name, "*", "", -1)
-
+		name := normalizeName(f.Name() + ".duration")
 		hist = metrics.NewHistogram(name, 0, MaxDuration.Nanoseconds(), SigFigs)
 		histograms[f] = hist
 	}
