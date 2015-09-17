@@ -11,6 +11,14 @@ import (
 	"chain/metrics"
 )
 
+// AssetGroup represents a single asset group. It is intended to be used wth API
+// responses.
+type AssetGroup struct {
+	ID         string `json:"id"`
+	Blockchain string `json:"block_chain"`
+	Label      string `json:"label"`
+}
+
 // CreateAssetGroup creates a new asset group,
 // also adding its xpub to the keys table if necessary.
 func CreateAssetGroup(ctx context.Context, appID, label string, xpubs []*Key) (id string, err error) {
@@ -95,4 +103,54 @@ func NextAsset(ctx context.Context, agID string) (asset *Asset, sigsRequired int
 	}
 
 	return asset, sigsReq, nil
+}
+
+// ListAssetGroups returns a list of AssetGroups belonging to the given
+// application.
+func ListAssetGroups(ctx context.Context, appID string) ([]*AssetGroup, error) {
+	q := `
+		SELECT id, block_chain, label
+		FROM asset_groups
+		WHERE application_id = $1
+		ORDER BY created_at
+	`
+	rows, err := pg.FromContext(ctx).Query(q, appID)
+	if err != nil {
+		return nil, errors.Wrap(err, "select query")
+	}
+	defer rows.Close()
+
+	var ags []*AssetGroup
+	for rows.Next() {
+		ag := new(AssetGroup)
+		err := rows.Scan(&ag.ID, &ag.Blockchain, &ag.Label)
+		if err != nil {
+			return nil, errors.Wrap(err, "row scan")
+		}
+		ags = append(ags, ag)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "end row scan loop")
+	}
+
+	return ags, nil
+}
+
+// GetAssetGroup returns basic information about a single asset group.
+func GetAssetGroup(ctx context.Context, groupID string) (*AssetGroup, error) {
+	var (
+		q     = `SELECT label, block_chain FROM asset_groups WHERE id = $1`
+		label string
+		bc    string
+	)
+	err := pg.FromContext(ctx).QueryRow(q, groupID).Scan(&label, &bc)
+	if err == sql.ErrNoRows {
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "asset group ID: %v", groupID)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &AssetGroup{ID: groupID, Label: label, Blockchain: bc}, nil
 }

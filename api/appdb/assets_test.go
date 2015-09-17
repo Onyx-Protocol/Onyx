@@ -69,3 +69,59 @@ func TestAssetByID(t *testing.T) {
 		t.Errorf("got error = %v want %v", errors.Root(err), pg.ErrUserInputNotFound)
 	}
 }
+
+func TestListAssets(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+
+		INSERT INTO asset_groups
+			(id, application_id, key_index, keyset, label)
+		VALUES
+			('ag-id-0', 'app-id-0', 0, '{}', 'ag-0'),
+			('ag-id-1', 'app-id-0', 1, '{}', 'ag-1');
+
+		INSERT INTO assets
+			(id, asset_group_id, key_index, redeem_script, label, created_at)
+		VALUES
+			-- insert in reverse chronological order, to ensure that ListAssets
+			-- is performing a sort.
+			('asset-id-0', 'ag-id-0', 0, '{}', 'asset-0', now()),
+			('asset-id-1', 'ag-id-0', 1, '{}', 'asset-1', now() - '1m'::interval),
+
+			('asset-id-2', 'ag-id-1', 2, '{}', 'asset-2', now());
+	`)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	examples := []struct {
+		appID string
+		want  []*AssetResponse
+	}{
+		{
+			"ag-id-0",
+			[]*AssetResponse{
+				{ID: "asset-id-1", Label: "asset-1"},
+				{ID: "asset-id-0", Label: "asset-0"},
+			},
+		},
+		{
+			"ag-id-1",
+			[]*AssetResponse{
+				{ID: "asset-id-2", Label: "asset-2"},
+			},
+		},
+	}
+
+	for _, ex := range examples {
+		t.Log("Example:", ex.appID)
+
+		got, err := ListAssets(ctx, ex.appID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("assets:\ngot:  %v\nwant: %v", got, ex.want)
+		}
+	}
+}

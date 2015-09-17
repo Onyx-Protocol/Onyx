@@ -43,7 +43,10 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("GET", "/v3/buckets/:bucketID/balance", getBucketBalance)
 	h.AddFunc("GET", "/v3/wallets/:walletID/balance", getWalletBalance)
 	h.AddFunc("GET", "/v3/wallets/:walletID/activity", getWalletActivity)
+	h.AddFunc("GET", "/v3/applications/:appID/asset-groups", listAssetGroups)
 	h.AddFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
+	h.AddFunc("GET", "/v3/asset-groups/:groupID", getAssetGroup)
+	h.AddFunc("GET", "/v3/asset-groups/:groupID/assets", listAssets)
 	h.AddFunc("POST", "/v3/asset-groups/:groupID/assets", createAsset)
 	h.AddFunc("POST", "/v3/buckets/:bucketID/addresses", createAddr)
 	h.AddFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
@@ -179,7 +182,18 @@ func getWalletActivity(ctx context.Context, w http.ResponseWriter, req *http.Req
 	})
 }
 
-// /v3/applications/:appID/asset-groups
+// GET /v3/applications/:appID/asset-groups
+func listAssetGroups(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	appID := req.URL.Query().Get(":appID")
+	ags, err := appdb.ListAssetGroups(ctx, appID)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+	writeJSON(ctx, w, 200, ags)
+}
+
+// POST /v3/applications/:appID/asset-groups
 func createAssetGroup(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	appID := req.URL.Query().Get(":appID")
 
@@ -277,7 +291,29 @@ func getBucketBalance(ctx context.Context, w http.ResponseWriter, req *http.Requ
 	writeJSON(ctx, w, 200, bals)
 }
 
-// /v3/asset-groups/:groupID/assets
+// GET /v3/asset-groups/:groupID
+func getAssetGroup(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	groupID := req.URL.Query().Get(":groupID")
+	g, err := appdb.GetAssetGroup(ctx, groupID)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+	writeJSON(ctx, w, 200, g)
+}
+
+// GET /v3/applications/:appID/asset-groups
+func listAssets(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	groupID := req.URL.Query().Get(":groupID")
+	assets, err := appdb.ListAssets(ctx, groupID)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+	writeJSON(ctx, w, 200, assets)
+}
+
+// POST /v3/asset-groups/:groupID/assets
 func createAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	defer metrics.RecordElapsed(time.Now())
 	groupID := req.URL.Query().Get(":groupID")

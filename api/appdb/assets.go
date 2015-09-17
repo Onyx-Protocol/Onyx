@@ -28,6 +28,13 @@ type Asset struct {
 	RedeemScript    []byte
 }
 
+// AssetResponse is a JSON-serializable version of Asset, intended for use in
+// API responses.
+type AssetResponse struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+}
+
 // AssetByID loads an asset from the database using its ID.
 func AssetByID(ctx context.Context, id string) (*Asset, error) {
 	defer metrics.RecordElapsed(time.Now())
@@ -90,4 +97,35 @@ func InsertAsset(ctx context.Context, asset *Asset) error {
 		asset.Label,
 	)
 	return err
+}
+
+// ListAssets returns a list of AssetResponses belonging to the given asset
+// group.
+func ListAssets(ctx context.Context, groupID string) ([]*AssetResponse, error) {
+	q := `
+		SELECT id, label
+		FROM assets
+		WHERE asset_group_id = $1
+		ORDER BY created_at
+	`
+	rows, err := pg.FromContext(ctx).Query(q, groupID)
+	if err != nil {
+		return nil, errors.Wrap(err, "select query")
+	}
+
+	var assets []*AssetResponse
+	for rows.Next() {
+		a := new(AssetResponse)
+		err := rows.Scan(&a.ID, &a.Label)
+		if err != nil {
+			return nil, errors.Wrap(err, "row scan")
+		}
+		assets = append(assets, a)
+	}
+
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrap(err, "end row scan loop")
+	}
+
+	return assets, nil
 }
