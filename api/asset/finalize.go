@@ -3,7 +3,6 @@ package asset
 import (
 	"bytes"
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -11,9 +10,9 @@ import (
 
 	"chain/api/appdb"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain-sandbox/wire"
 	"chain/metrics"
-	"chain/strings"
 )
 
 // ErrBadTx is returned by FinalizeTx
@@ -30,27 +29,6 @@ func FinalizeTx(ctx context.Context, tx *Tx) (*wire.MsgTx, error) {
 		return nil, errors.WithDetailf(ErrBadTx, "invalid unsigned transaction hex")
 	}
 
-	var keyIDs []string
-	for _, input := range tx.Inputs {
-		for _, sig := range input.Sigs {
-			keyIDs = append(keyIDs, sig.XPubHash)
-		}
-	}
-	sort.Strings(keyIDs)
-	keyIDs = strings.Uniq(keyIDs)
-
-	keys, err := appdb.GetKeys(ctx, keyIDs)
-	if err == appdb.ErrMissingKeys {
-		return nil, errors.WithDetailf(ErrBadTx, "could not find all keys in template")
-	} else if err != nil {
-		return nil, errors.Wrap(err)
-	}
-
-	keyMap := make(map[string]*appdb.Key)
-	for _, k := range keys {
-		keyMap[k.ID] = k
-	}
-
 	if len(tx.Inputs) > len(msg.TxIn) {
 		return nil, errors.WithDetail(ErrBadTx, "too many inputs in template")
 	}
@@ -62,9 +40,13 @@ func FinalizeTx(ctx context.Context, tx *Tx) (*wire.MsgTx, error) {
 			return nil, errors.WithDetailf(ErrBadTx, "input %d must contain signatures", i)
 		}
 		for j, sig := range input.Sigs {
-			key := keyMap[sig.XPubHash]
+			key, err := hdkey.NewXKey(sig.XPub)
+			if err != nil {
+				return nil, errors.WithDetailf(ErrBadTx, "invalid xpub for input %d signature %d", i, j)
+			}
+
 			addr := addrPubKey(key, sig.DerivationPath)
-			err := checkSig(addr.PubKey(), input.SignatureData, sig.DER)
+			err = checkSig(addr.PubKey(), input.SignatureData, sig.DER)
 
 			if err != nil {
 				return nil, errors.WithDetailf(ErrBadTx, "error for input %d signature %d: %v", i, j, err)

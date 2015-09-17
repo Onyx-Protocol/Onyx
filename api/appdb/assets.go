@@ -8,6 +8,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain-sandbox/wire"
 	"chain/metrics"
 )
@@ -23,7 +24,7 @@ type Asset struct {
 	Hash            wire.Hash20 // the raw Asset ID
 	GroupID         string
 	Label           string
-	Keys            []*Key
+	Keys            []*hdkey.XKey
 	AGIndex, AIndex []uint32
 	RedeemScript    []byte
 }
@@ -46,8 +47,8 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 		WHERE assets.id=$1
 	`
 	var (
-		keyIDs []string
-		a      = new(Asset)
+		xpubs []string
+		a     = new(Asset)
 	)
 	var err error
 	a.Hash, err = wire.NewHash20FromStr(id)
@@ -55,7 +56,7 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 		return nil, errors.WithDetailf(ErrBadAsset, "asset id=%v", id)
 	}
 	err = pg.FromContext(ctx).QueryRow(q, id).Scan(
-		(*pg.Strings)(&keyIDs),
+		(*pg.Strings)(&xpubs),
 		&a.RedeemScript,
 		&a.GroupID,
 		(*pg.Uint32s)(&a.AGIndex),
@@ -68,9 +69,9 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 		return nil, errors.WithDetailf(err, "asset id=%v", id)
 	}
 
-	a.Keys, err = GetKeys(ctx, keyIDs)
+	a.Keys, err = xpubsToKeys(xpubs)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "parsing keys")
 	}
 
 	return a, nil
@@ -83,16 +84,12 @@ func InsertAsset(ctx context.Context, asset *Asset) error {
 		INSERT INTO assets (id, asset_group_id, key_index, keyset, redeem_script, label)
 		VALUES($1, $2, to_key_index($3), $4, $5, $6)
 	`
-	var keyIDs []string
-	for _, key := range asset.Keys {
-		keyIDs = append(keyIDs, key.ID)
-	}
 
 	_, err := pg.FromContext(ctx).Exec(q,
 		asset.Hash.String(),
 		asset.GroupID,
 		pg.Uint32s(asset.AIndex),
-		pg.Strings(keyIDs),
+		pg.Strings(keysToXPubs(asset.Keys)),
 		asset.RedeemScript,
 		asset.Label,
 	)

@@ -110,7 +110,7 @@ func issuanceInput(a *appdb.Asset, tx *wire.MsgTx) *Input {
 func inputSigs(keys []*DerivedKey) (sigs []*Signature) {
 	for _, k := range keys {
 		sigs = append(sigs, &Signature{
-			XPubHash:       k.Root.ID,
+			XPub:           k.Root.String(),
 			DerivationPath: k.Path,
 		})
 	}

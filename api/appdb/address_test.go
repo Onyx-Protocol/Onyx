@@ -10,14 +10,10 @@ import (
 
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/fedchain-sandbox/hdkey"
 )
 
 const bucketFixture = `
-	INSERT INTO keys (id, xpub)
-	VALUES (
-		'4f0fe3f8ede10971f7b9bff8a319c494951337fc',
-		'xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw'
-	);
 	INSERT INTO wallets (
 		id, application_id, block_chain, sigs_required, key_index,
 		label, current_rotation, next_asset_index, next_bucket_index,
@@ -25,7 +21,7 @@ const bucketFixture = `
 	)
 	VALUES ('w1', 'app-id-0', 'sandbox', 1, 1, 'foo', 'rot1', 0, 1, 1, now(), now());
 	INSERT INTO rotations (id, wallet_id, keyset)
-	VALUES ('rot1', 'w1', '{4f0fe3f8ede10971f7b9bff8a319c494951337fc}');
+	VALUES ('rot1', 'w1', '{xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw}');
 	INSERT INTO buckets (
 		id, wallet_id, key_index, created_at, updated_at,
 		next_address_index, label
@@ -61,7 +57,7 @@ func TestAddressLoadNextIndex(t *testing.T) {
 		BucketIndex:  []uint32{0, 0},
 		Index:        []uint32{0, 0},
 		SigsRequired: 1,
-		Keys:         []*Key{dummyXPub},
+		Keys:         []*hdkey.XKey{dummyXPub},
 	}
 
 	if !reflect.DeepEqual(addr, want) {
@@ -85,7 +81,7 @@ func TestAddressInsert(t *testing.T) {
 		BucketIndex:  []uint32{0, 0},
 		Index:        []uint32{0, 0},
 		SigsRequired: 1,
-		Keys:         []*Key{dummyXPub},
+		Keys:         []*hdkey.XKey{dummyXPub},
 
 		Address:      "3abc",
 		RedeemScript: []byte{},
@@ -107,14 +103,10 @@ func TestAddressInsert(t *testing.T) {
 
 func TestAddressesByID(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, `
-		INSERT INTO keys (id, xpub) VALUES(
-			'fda6bac8e1901cbc4813e729d3d766988b8b1ac7',
-			'xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd'
-		);
 		INSERT INTO wallets (id, application_id, label) VALUES('w1', 'app-id-0', 'w1');
 		INSERT INTO buckets (id, wallet_id, key_index) VALUES('b1', 'w1', 0);
 		INSERT INTO addresses (id, wallet_id, bucket_id, keyset, key_index, address, redeem_script, pk_script)
-		VALUES('a1', 'w1', 'b1', '{fda6bac8e1901cbc4813e729d3d766988b8b1ac7}', 0, 'a1', '', '');
+		VALUES('a1', 'w1', 'b1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a1', '', '');
 	`)
 	defer dbtx.Rollback()
 
@@ -124,7 +116,7 @@ func TestAddressesByID(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	k, _ := NewKey("xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd")
+	k, _ := hdkey.NewXKey("xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd")
 	want := &Address{
 		ID:           "a1",
 		WalletID:     "w1",
@@ -133,7 +125,7 @@ func TestAddressesByID(t *testing.T) {
 		WalletIndex:  []uint32{0, 1},
 		BucketIndex:  []uint32{0, 0},
 		Index:        []uint32{0, 0},
-		Keys:         []*Key{k},
+		Keys:         []*hdkey.XKey{k},
 	}
 
 	if !reflect.DeepEqual(got[0], want) {

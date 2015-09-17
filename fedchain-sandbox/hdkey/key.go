@@ -27,3 +27,11 @@ func (k *XKey) UnmarshalText(p []byte) error {
 	k.ExtendedKey = *key
 	return nil
 }
+
+func NewXKey(pubstr string) (*XKey, error) {
+	extkey, err := hdkeychain.NewKeyFromString(pubstr)
+	if err != nil {
+		return nil, err
+	}
+	return &XKey{ExtendedKey: *extkey}, nil
+}

@@ -55,7 +55,7 @@ func addrSigners(signers []*asset.DerivedKey) (v []interface{}) {
 		v = append(v, map[string]interface{}{
 			"pubkey":          s.Address.String(),
 			"derivation_path": s.Path,
-			"xpub_hash":       s.Root.ID,
+			"xpub":            s.Root.String(),
 		})
 	}
 	return v

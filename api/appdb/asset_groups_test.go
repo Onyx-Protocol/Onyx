@@ -9,6 +9,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 )
 
 func TestCreateAssetGroup(t *testing.T) {
@@ -16,7 +17,7 @@ func TestCreateAssetGroup(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	id, err := CreateAssetGroup(ctx, "a1", "foo", []*Key{dummyXPub})
+	id, err := CreateAssetGroup(ctx, "a1", "foo", []*hdkey.XKey{dummyXPub})
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}

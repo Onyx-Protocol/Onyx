@@ -11,9 +11,10 @@ import (
 	"chain/api/appdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/fedchain-sandbox/hdkey"
 )
 
-var dummyXPub, _ = appdb.NewKey("xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw")
+var dummyXPub, _ = hdkey.NewXKey("xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw")
 
 func TestCreateAddress(t *testing.T) {
 	t0 := time.Now()
@@ -23,7 +24,7 @@ func TestCreateAddress(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	wID, err := appdb.CreateWallet(ctx, "app-id-0", "foo", []*appdb.Key{dummyXPub})
+	wID, err := appdb.CreateWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +56,7 @@ func TestCreateAddress(t *testing.T) {
 		BucketIndex:  []uint32{0, 0},
 		Index:        []uint32{0, 0},
 		SigsRequired: 1,
-		Keys:         []*appdb.Key{dummyXPub},
+		Keys:         []*hdkey.XKey{dummyXPub},
 
 		Address: "3PFuxhkDFhSZdhDDQ8wQWcfPJ4gy9ykyxe",
 		RedeemScript: []byte{

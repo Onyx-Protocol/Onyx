@@ -8,6 +8,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 	"chain/metrics"
 )
 
@@ -21,29 +22,19 @@ type AssetGroup struct {
 
 // CreateAssetGroup creates a new asset group,
 // also adding its xpub to the keys table if necessary.
-func CreateAssetGroup(ctx context.Context, appID, label string, xpubs []*Key) (id string, err error) {
+func CreateAssetGroup(ctx context.Context, appID, label string, keys []*hdkey.XKey) (id string, err error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 	if label == "" {
 		return "", ErrBadLabel
-	} else if len(xpubs) != 1 {
+	} else if len(keys) != 1 {
 		// only 1-of-1 supported so far
 		return "", ErrBadXPubCount
 	}
-	for i, xpub := range xpubs {
-		if xpub.XPub.IsPrivate() {
+	for i, key := range keys {
+		if key.IsPrivate() {
 			err := errors.WithDetailf(ErrBadXPub, "key number %d", i)
 			return "", errors.WithDetail(err, "key is xpriv, not xpub")
 		}
-	}
-
-	err = upsertKeys(ctx, xpubs...)
-	if err != nil {
-		return "", errors.Wrap(err, "upsert keys")
-	}
-
-	var keyIDs []string
-	for _, xpub := range xpubs {
-		keyIDs = append(keyIDs, xpub.ID)
 	}
 
 	const q = `
@@ -51,7 +42,7 @@ func CreateAssetGroup(ctx context.Context, appID, label string, xpubs []*Key) (i
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
-	err = pg.FromContext(ctx).QueryRow(q, label, appID, pg.Strings(keyIDs)).Scan(&id)
+	err = pg.FromContext(ctx).QueryRow(q, label, appID, pg.Strings(keysToXPubs(keys))).Scan(&id)
 	if err != nil {
 		return "", errors.Wrap(err, "insert asset group")
 	}
@@ -71,7 +62,7 @@ func NextAsset(ctx context.Context, agID string) (asset *Asset, sigsRequired int
 		SET next_asset_index=next_asset_index+1
 		WHERE id=$1
 		RETURNING
-			(SELECT array_agg(xpub) FROM keys WHERE id=ANY(keyset)),
+			keyset,
 			key_index(key_index),
 			key_index(next_asset_index-1),
 			sigs_required
@@ -94,12 +85,9 @@ func NextAsset(ctx context.Context, agID string) (asset *Asset, sigsRequired int
 		return nil, 0, errors.WithDetailf(err, "asset group %v: get key info", agID)
 	}
 
-	for _, xpub := range xpubs {
-		key, err := NewKey(xpub)
-		if err != nil {
-			return nil, 0, errors.Wrapf(err, "asset group %v: bad key %v", agID, xpub)
-		}
-		asset.Keys = append(asset.Keys, key)
+	asset.Keys, err = xpubsToKeys(xpubs)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "parsing keys")
 	}
 
 	return asset, sigsReq, nil

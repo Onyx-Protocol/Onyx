@@ -12,13 +12,8 @@ import (
 
 func TestCreate(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO keys (id, xpub)
-		VALUES(
-			'fda6bac8e1901cbc4813e729d3d766988b8b1ac7',
-			'xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd'
-		);
 		INSERT INTO asset_groups (id, application_id, label, keyset)
-		VALUES ('ag1', 'a1', 'foo', '{fda6bac8e1901cbc4813e729d3d766988b8b1ac7}');
+		VALUES ('ag1', 'a1', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)

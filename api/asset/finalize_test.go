@@ -21,13 +21,7 @@ func mustDecodeHex(data string) []byte {
 }
 
 func TestFinalizeTx(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO keys (id, xpub)
-		VALUES(
-			'f990c45d75c2b80537d3363f3f91a4c756f51fdc',
-			'xpub661MyMwAqRbcGiDB8FQvHnDAZyaGUyzm3qN1Q3NDJz1PgAWCfyi9WRCS7Z9HyM5QNEh45fMyoaBMqjfoWPdnktcN8chJYB57D2Y7QtNmadr'
-		);
-	`)
+	dbtx := pgtest.TxWithSQL(t)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
@@ -37,7 +31,7 @@ func TestFinalizeTx(t *testing.T) {
 			RedeemScript:  []byte{},
 			SignatureData: mustDecodeHex("78e437f627019fc270bbe9ed309291d0a5f6bf98bfae0f750538ba56646f7327"),
 			Sigs: []*Signature{{
-				XPubHash:       "f990c45d75c2b80537d3363f3f91a4c756f51fdc",
+				XPub:           "xpub661MyMwAqRbcGiDB8FQvHnDAZyaGUyzm3qN1Q3NDJz1PgAWCfyi9WRCS7Z9HyM5QNEh45fMyoaBMqjfoWPdnktcN8chJYB57D2Y7QtNmadr",
 				DerivationPath: []uint32{0, 0, 0, 0},
 				DER:            mustDecodeHex("3044022004da5732f6c988b9e2882f5ca4f569b9525d313940e0372d6a84fef73be78f8f02204656916481dc573d771ec42923a8f5af31ae634241a4cb30ea5b359363cf064d"),
 			}},

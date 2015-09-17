@@ -4,14 +4,12 @@ import (
 	"reflect"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"chain/database/pg"
-	"chain/database/pg/pgtest"
+	"chain/fedchain-sandbox/hdkey"
 )
 
 var (
-	dummyXPub, _ = NewKey("xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw")
+	dummyXPub, _ = hdkey.NewXKey("xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw")
 )
 
 func TestKeyIndexSQL(t *testing.T) {
@@ -48,19 +46,5 @@ func TestKeyIndexSQL(t *testing.T) {
 		if got2 != pair.encoded {
 			t.Errorf("to_key_index(%v) = %d want %d", pair.decoded, got, pair.encoded)
 		}
-	}
-}
-
-func TestUpsertKeys(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
-	err := upsertKeys(ctx, dummyXPub)
-	if err != nil {
-		t.Errorf("upsertKeys(%v) error: %v", dummyXPub, err)
-	}
-	err = upsertKeys(ctx, dummyXPub)
-	if err != nil {
-		t.Errorf("upsertKeys(%v) error: %v", dummyXPub, err)
 	}
 }

@@ -13,6 +13,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 	"chain/log"
 	"chain/metrics"
 )
@@ -59,7 +60,7 @@ func CreateAddress(ctx context.Context, addr *appdb.Address) error {
 
 // Signers derives a key for each item in keys, according to path.
 // The returned keys will be sorted by address.
-func Signers(keys []*appdb.Key, path []uint32) []*DerivedKey {
+func Signers(keys []*hdkey.XKey, path []uint32) []*DerivedKey {
 	var a []*DerivedKey
 	for _, k := range keys {
 		a = append(a, &DerivedKey{k, path, addrPubKey(k, path)})
@@ -80,17 +81,17 @@ func redeemScript(signers []*DerivedKey, nSigReq int) ([]byte, error) {
 
 // DerivedKey represents an EC key derived from an xpub
 // and derivation path.
-// TODO(kr): rename appdb.Key to appdb.XKey and DerivedKey to Key.
+// TODO(kr): rename hdkey.XKey to appdb.XKey and DerivedKey to Key.
 type DerivedKey struct {
-	Root    *appdb.Key
+	Root    *hdkey.XKey
 	Path    []uint32
 	Address *btcutil.AddressPubKey
 }
 
-func addrPubKey(xkey *appdb.Key, path []uint32) *btcutil.AddressPubKey {
+func addrPubKey(xkey *hdkey.XKey, path []uint32) *btcutil.AddressPubKey {
 	// The only error has a uniformly distributed probability of 1/2^127
 	// We've decided to ignore this chance.
-	key := &xkey.XPub.ExtendedKey
+	key := &xkey.ExtendedKey
 	for _, p := range path {
 		key, _ = key.Child(p)
 	}

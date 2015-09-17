@@ -9,6 +9,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 )
 
 func TestCreateWallet(t *testing.T) {
@@ -16,7 +17,7 @@ func TestCreateWallet(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	id, err := CreateWallet(ctx, "app-id-0", "foo", []*Key{dummyXPub})
+	id, err := CreateWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub})
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}

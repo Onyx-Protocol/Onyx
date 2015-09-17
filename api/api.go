@@ -14,6 +14,7 @@ import (
 	"chain/database/pg"
 	"chain/encoding/json"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 	"chain/metrics"
 	chainhttp "chain/net/http"
 	"chain/net/http/authn"
@@ -78,9 +79,9 @@ func createWallet(ctx context.Context, w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	var keys []*appdb.Key
+	var keys []*hdkey.XKey
 	for i, xpub := range wReq.XPubs {
-		key, err := appdb.NewKey(xpub)
+		key, err := hdkey.NewXKey(xpub)
 		if err != nil {
 			err = errors.Wrap(appdb.ErrBadXPub, err.Error())
 			writeHTTPError(ctx, w, errors.WithDetailf(err, "xpub %d", i))
@@ -207,9 +208,9 @@ func createAssetGroup(ctx context.Context, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	var keys []*appdb.Key
+	var keys []*hdkey.XKey
 	for _, xpub := range agReq.XPubs {
-		key, err := appdb.NewKey(xpub)
+		key, err := hdkey.NewXKey(xpub)
 		if err != nil {
 			writeHTTPError(ctx, w, err)
 			return

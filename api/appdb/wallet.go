@@ -7,6 +7,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 )
 
 // Errors returned by CreateWallet.
@@ -27,24 +28,19 @@ type Wallet struct {
 
 // CreateWallet creates a new wallet,
 // also adding its xpub to the keys table if necessary.
-func CreateWallet(ctx context.Context, appID, label string, xpubs []*Key) (id string, err error) {
+func CreateWallet(ctx context.Context, appID, label string, keys []*hdkey.XKey) (id string, err error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 	if label == "" {
 		return "", ErrBadLabel
-	} else if len(xpubs) != 1 {
+	} else if len(keys) != 1 {
 		// only 1-of-1 supported so far
 		return "", ErrBadXPubCount
 	}
-	for i, xpub := range xpubs {
-		if xpub.XPub.IsPrivate() {
+	for i, key := range keys {
+		if key.IsPrivate() {
 			err := errors.WithDetailf(ErrBadXPub, "key number %d", i)
 			return "", errors.WithDetail(err, "key is xpriv, not xpub")
 		}
-	}
-
-	err = upsertKeys(ctx, xpubs...)
-	if err != nil {
-		return "", errors.Wrap(err, "upsert keys")
 	}
 
 	const q = `
@@ -57,11 +53,7 @@ func CreateWallet(ctx context.Context, appID, label string, xpubs []*Key) (id st
 		return "", errors.Wrap(err, "insert wallet")
 	}
 
-	var keyIDs []string
-	for _, xpub := range xpubs {
-		keyIDs = append(keyIDs, xpub.ID)
-	}
-	err = createRotation(ctx, id, keyIDs...)
+	err = createRotation(ctx, id, keysToXPubs(keys)...)
 	if err != nil {
 		return "", errors.Wrap(err, "create rotation")
 	}
@@ -165,7 +157,7 @@ func ListWallets(ctx context.Context, appID string) ([]*Wallet, error) {
 	return wallets, nil
 }
 
-func createRotation(ctx context.Context, walletID string, hashes ...string) error {
+func createRotation(ctx context.Context, walletID string, xpubs ...string) error {
 	const q = `
 		WITH new_rotation AS (
 			INSERT INTO rotations (wallet_id, keyset)
@@ -175,6 +167,6 @@ func createRotation(ctx context.Context, walletID string, hashes ...string) erro
 		UPDATE wallets SET current_rotation=(SELECT id FROM new_rotation)
 		WHERE id=$1
 	`
-	_, err := pg.FromContext(ctx).Exec(q, walletID, pg.Strings(hashes))
+	_, err := pg.FromContext(ctx).Exec(q, walletID, pg.Strings(xpubs))
 	return err
 }

@@ -8,6 +8,7 @@ import (
 
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/fedchain-sandbox/hdkey"
 )
 
 func TestCreateBucket(t *testing.T) {
@@ -15,7 +16,7 @@ func TestCreateBucket(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	walletID, err := CreateWallet(ctx, "app-id-0", "foo", []*Key{dummyXPub})
+	walletID, err := CreateWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +38,7 @@ func TestCreateBucketBadLabel(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	walletID, err := CreateWallet(ctx, "app-id-0", "foo", []*Key{dummyXPub})
+	walletID, err := CreateWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub})
 	if err != nil {
 		t.Fatal(err)
 	}

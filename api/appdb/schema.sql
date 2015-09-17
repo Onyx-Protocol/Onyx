@@ -295,17 +295,6 @@ CREATE SEQUENCE chain_id_seq
 
 
 --
--- Name: keys; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE keys (
-    id text NOT NULL,
-    xpub text,
-    created_at timestamp with time zone DEFAULT now()
-);
-
-
---
 -- Name: members; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -466,14 +455,6 @@ ALTER TABLE ONLY assets
 
 ALTER TABLE ONLY buckets
     ADD CONSTRAINT buckets_pkey PRIMARY KEY (id);
-
-
---
--- Name: keys_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
---
-
-ALTER TABLE ONLY keys
-    ADD CONSTRAINT keys_pkey PRIMARY KEY (id);
 
 
 --

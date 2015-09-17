@@ -33,19 +33,14 @@ func init() {
 func TestIssue(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
-		INSERT INTO keys (id, xpub)
-		VALUES(
-			'fda6bac8e1901cbc4813e729d3d766988b8b1ac7',
-			'xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd'
-		);
 		INSERT INTO asset_groups (id, application_id, label, keyset, key_index)
-			VALUES ('ag1', 'app-id-0', 'foo', '{fda6bac8e1901cbc4813e729d3d766988b8b1ac7}', 0);
+			VALUES ('ag1', 'app-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
 		INSERT INTO assets (id, asset_group_id, key_index, keyset, redeem_script, label)
 		VALUES(
 			'AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p',
 			'ag1',
 			0,
-			'{fda6bac8e1901cbc4813e729d3d766988b8b1ac7}',
+			'{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}',
 			decode('51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae', 'hex'),
 			'foo'
 		);
@@ -90,14 +85,10 @@ func TestIssue(t *testing.T) {
 func TestOutputPkScript(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
-		INSERT INTO keys (id, xpub) VALUES(
-			'fda6bac8e1901cbc4813e729d3d766988b8b1ac7',
-			'xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd'
-		);
 		INSERT INTO wallets (id, application_id, label, current_rotation)
 			VALUES('w1', 'app-id-0', 'w1', 'rot1');
 		INSERT INTO rotations (id, wallet_id, keyset)
-			VALUES('rot1', 'w1', '{fda6bac8e1901cbc4813e729d3d766988b8b1ac7}');
+			VALUES('rot1', 'w1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 		INSERT INTO buckets (id, wallet_id, key_index)
 			VALUES('b1', 'w1', 0);
 	`)

@@ -21,7 +21,7 @@ type Input struct {
 
 // Signature is an signature for an app wallet Tx.
 type Signature struct {
-	XPubHash       string        `json:"xpub_hash"`
+	XPub           string        `json:"xpub"`
 	DerivationPath []uint32      `json:"derivation_path"`
 	DER            json.HexBytes `json:"signature"`
 }

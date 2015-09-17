@@ -11,6 +11,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 	"chain/metrics"
 	"chain/strings"
 )
@@ -38,7 +39,7 @@ type Address struct {
 	BucketIndex  []uint32
 	Index        []uint32
 	SigsRequired int
-	Keys         []*Key
+	Keys         []*hdkey.XKey
 }
 
 // LoadNextIndex is a low-level function to initialize a new Address.
@@ -48,7 +49,7 @@ type Address struct {
 // See Address for which ones.
 func (a *Address) LoadNextIndex(ctx context.Context) error {
 	defer metrics.RecordElapsed(time.Now())
-	var keyIDs []string
+	var xpubs []string
 	const q = `
 		SELECT
 			w.id, key_index(b.key_index), key_index(w.key_index),
@@ -62,7 +63,7 @@ func (a *Address) LoadNextIndex(ctx context.Context) error {
 		&a.WalletID,
 		(*pg.Uint32s)(&a.BucketIndex),
 		(*pg.Uint32s)(&a.WalletIndex),
-		(*pg.Strings)(&keyIDs),
+		(*pg.Strings)(&xpubs),
 		&a.SigsRequired,
 	)
 	if err == sql.ErrNoRows {
@@ -71,15 +72,10 @@ func (a *Address) LoadNextIndex(ctx context.Context) error {
 	if err != nil {
 		return errors.WithDetailf(err, "bucket %s", a.BucketID)
 	}
-	if len(keyIDs) == 0 {
-		// Postgres can't put a fk constraint on an array (eg keyset),
-		// so we need to check this explicitly (using a LEFT JOIN above).
-		return errors.New("could not load keys for bucket " + a.BucketID)
-	}
 
-	a.Keys, err = GetKeys(ctx, keyIDs)
+	a.Keys, err = xpubsToKeys(xpubs)
 	if err != nil {
-		return errors.Wrap(err, "get keys")
+		return errors.Wrap(err, "parsing keys")
 	}
 	a.Index, err = newAddressIndex(ctx, a.BucketID)
 	if err != nil {
@@ -108,7 +104,7 @@ func (a *Address) Insert(ctx context.Context) error {
 		a.PKScript,
 		a.WalletID,
 		a.BucketID,
-		pg.Strings(keyIDs(a.Keys)),
+		pg.Strings(keysToXPubs(a.Keys)),
 		pq.NullTime{Time: a.Expires, Valid: !a.Expires.IsZero()},
 		a.Amount,
 		pg.Uint32s(a.Index),
@@ -138,7 +134,7 @@ func AddressesByID(ctx context.Context, ids []string) ([]*Address, error) {
 	const q = `
 		SELECT a.id, w.id, w.sigs_required, a.redeem_script,
 			key_index(w.key_index), key_index(b.key_index), key_index(a.key_index),
-			(SELECT array_agg(xpub) FROM keys WHERE id=ANY(a.keyset))
+			a.keyset
 		FROM addresses a
 		JOIN buckets b ON b.id=a.bucket_id
 		JOIN wallets w ON w.id=a.wallet_id
@@ -165,12 +161,9 @@ func AddressesByID(ctx context.Context, ids []string) ([]*Address, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
-		for _, xpub := range xpubs {
-			key, err := NewKey(xpub)
-			if err != nil {
-				return nil, errors.Wrap(err, "NewKey call")
-			}
-			a.Keys = append(a.Keys, key)
+		a.Keys, err = xpubsToKeys(xpubs)
+		if err != nil {
+			return nil, errors.Wrap(err, "parsing keys")
 		}
 
 		addrs = append(addrs, &a)
