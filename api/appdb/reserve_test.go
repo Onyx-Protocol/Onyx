@@ -22,21 +22,16 @@ func TestReserveUTXOs(t *testing.T) {
 			('b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45', 0, 'a1', 1, 'a1', 'b1', 'w1'),
 			('b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45', 1, 'a1', 1, 'a2', 'b1', 'w1');
 	`
-	hash, _ := wire.NewHash32FromStr("b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45")
 	cases := []struct {
 		askAmt  int64
 		wantErr error
-		want    []*UTXO
+		want    int
 	}{{
 		askAmt:  5000,
 		wantErr: ErrInsufficientFunds,
 	}, {
 		askAmt: 1,
-		want: []*UTXO{{
-			OutPoint:  wire.NewOutPoint(hash, 0),
-			Amount:    1,
-			AddressID: "a1",
-		}},
+		want:   1,
 	}}
 
 	for _, c := range cases {
@@ -50,8 +45,8 @@ func TestReserveUTXOs(t *testing.T) {
 			continue
 		}
 
-		if !reflect.DeepEqual(got, c.want) {
-			t.Errorf("got outs = %v want %v", got, c.want)
+		if len(got) != c.want {
+			t.Errorf("got len(outs) = %d want %d", len(got), c.want)
 		}
 		dbtx.Rollback()
 	}
@@ -121,15 +116,15 @@ func TestReserveSQL(t *testing.T) {
 		fixture      string
 		askAmt       int
 		wantErr      string
-		want         []want
-		wantReserved []want
+		want         int
+		wantReserved int
 	}{
 		{
 			description:  "test reserves minimum needed",
 			fixture:      threeUTXOsFixture,
 			askAmt:       2,
-			want:         []want{{"t1", 0, 1, "a1"}, {"t2", 0, 1, "a2"}},
-			wantReserved: []want{{"t1", 0, 1, "a1"}, {"t2", 0, 1, "a2"}},
+			want:         2,
+			wantReserved: 2,
 		},
 		{
 			description: "test returns error if minimum is not met",
@@ -147,8 +142,8 @@ func TestReserveSQL(t *testing.T) {
 					('t2', 0, 'a1', 1, 'a2', 'b1', 'w1', now()-'61s'::interval);
 			`,
 			askAmt:       1,
-			want:         []want{{"t2", 0, 1, "a2"}},
-			wantReserved: []want{{"t1", 0, 1, "a1"}, {"t2", 0, 1, "a2"}},
+			want:         1,
+			wantReserved: 2,
 		},
 	}
 
@@ -177,33 +172,25 @@ func TestReserveSQL(t *testing.T) {
 			continue
 		}
 
-		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("got reserve_utxos(%d) = %+v want %+v", test.askAmt, got, test.want)
+		if len(got) != test.want {
+			t.Errorf("got len reserve_utxos(%d) = %d want %d", test.askAmt, len(got), test.want)
 		}
 
 		const onlyReservedQ = `
-			SELECT txid, index, amount, address_id FROM utxos
+			SELECT COUNT(*) FROM utxos
 			WHERE reserved_at > now()-'60s'::interval
-			ORDER BY address_id ASC
 		`
 
-		rows, err = dbtx.Query(onlyReservedQ)
+		var reservedCnt int
+		err = dbtx.QueryRow(onlyReservedQ).Scan(&reservedCnt)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 			dbtx.Rollback()
 			continue
 		}
 
-		got = nil
-		err = sql.Collect(rows, &got)
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-			dbtx.Rollback()
-			continue
-		}
-
-		if !reflect.DeepEqual(got, test.wantReserved) {
-			t.Errorf("got utxos reserved = %+v want %+v", got, test.wantReserved)
+		if reservedCnt != test.wantReserved {
+			t.Errorf("got utxos reserved = %d want %d", reservedCnt, test.wantReserved)
 		}
 
 		dbtx.Rollback()
