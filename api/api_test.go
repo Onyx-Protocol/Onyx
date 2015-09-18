@@ -72,7 +72,7 @@ func TestLogin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	uid, err := appdb.AuthenticateToken(ctx, tok.ID, tok.Secret)
+	uid, err := authenticateToken(ctx, tok.ID, tok.Secret)
 	if err != nil {
 		t.Errorf("authenticate token err = %v want nil", err)
 	}

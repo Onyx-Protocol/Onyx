@@ -12,7 +12,6 @@ import (
 
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/net/http/authn"
 )
 
 const (
@@ -122,40 +121,6 @@ func TestCreateAuthToken(t *testing.T) {
 				t.Errorf("secret and secret hash are equal: %v", tok.Secret)
 			}
 		}()
-	}
-}
-
-func TestAuthenticateToken(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, authTokenUserFixture, authTokenFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
-
-	// Valid token
-	uid, err := AuthenticateToken(ctx, "sample-token-id-0", "0123456789ABCDEF")
-	if err != nil {
-		t.Errorf("correct token err = %v want nil", err)
-	}
-
-	if uid != "sample-user-id-0" {
-		t.Errorf("correct token authenticated user id = %v want sample-user-id-0", uid)
-	}
-
-	// Non-existent ID
-	_, err = AuthenticateToken(ctx, "sample-token-id-nonexistent", "0123456789ABCDEF")
-	if err != authn.ErrNotAuthenticated {
-		t.Errorf("bad token ID err = %v want %v", err, authn.ErrNotAuthenticated)
-	}
-
-	// Bad secret
-	_, err = AuthenticateToken(ctx, "sample-token-id-0", "bad-secret")
-	if err != authn.ErrNotAuthenticated {
-		t.Errorf("bad token secret err = %v want %v", err, authn.ErrNotAuthenticated)
-	}
-
-	// Expired token
-	_, err = AuthenticateToken(ctx, "sample-token-id-1", "0123456789ABCDEF")
-	if err != authn.ErrNotAuthenticated {
-		t.Errorf("expired token err = %v want %v", err, authn.ErrNotAuthenticated)
 	}
 }
 

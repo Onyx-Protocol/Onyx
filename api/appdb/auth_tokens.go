@@ -2,7 +2,6 @@ package appdb
 
 import (
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/metrics"
-	"chain/net/http/authn"
 )
 
 const (
@@ -56,34 +54,19 @@ func CreateAuthToken(ctx context.Context, userID string, typ string, expiresAt *
 	return &AuthToken{id, secret, createdAt}, nil
 }
 
-// AuthenticateToken takes a token ID and secret and returns a user ID
-// corresponding to those credentials. If the credentials are invalid,
-// authn.ErrNotAuthenticated is returned.
-func AuthenticateToken(ctx context.Context, id, secret string) (userID string, err error) {
+// GetAuthToken takes a token ID and returns the associated
+// secret hash, user ID, and expiration.
+func GetAuthToken(ctx context.Context, id string) (secretHash []byte, userID string, expiration time.Time, err error) {
 	defer metrics.RecordElapsed(time.Now())
 	var (
-		q          = `SELECT secret_hash, user_id, expires_at FROM auth_tokens WHERE id = $1`
-		secretHash []byte
-		uid        string
-		expiresAt  pq.NullTime
+		q         = `SELECT secret_hash, user_id, expires_at FROM auth_tokens WHERE id = $1`
+		expiresAt pq.NullTime
 	)
-	err = pg.FromContext(ctx).QueryRow(q, id).Scan(&secretHash, &uid, &expiresAt)
-	if err == sql.ErrNoRows {
-		return "", authn.ErrNotAuthenticated
-	}
+	err = pg.FromContext(ctx).QueryRow(q, id).Scan(&secretHash, &userID, &expiresAt)
 	if err != nil {
-		return "", errors.Wrap(err, "select token")
+		return nil, "", expiresAt.Time, errors.Wrap(err, "select token")
 	}
-
-	if expiresAt.Valid && expiresAt.Time.Before(time.Now()) {
-		return "", authn.ErrNotAuthenticated
-	}
-
-	if bcrypt.CompareHashAndPassword(secretHash, []byte(secret)) != nil {
-		return "", authn.ErrNotAuthenticated
-	}
-
-	return uid, nil
+	return secretHash, userID, expiresAt.Time, nil
 }
 
 // ListAuthTokens returns a list of AuthTokens of the given type and owned by
