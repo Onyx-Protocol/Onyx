@@ -134,3 +134,18 @@ func TestBucketActivityLimit(t *testing.T) {
 		t.Fatalf("want={outputs: doop}, got=%v", *activity[1])
 	}
 }
+
+func TestActivityByTxID(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityFixture)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	activity, err := WalletTxActivity(ctx, "w0", "tx0")
+	if err != nil {
+		t.Fatalf("unexpected err %v", err)
+	}
+
+	if string(*activity) != `{"outputs":"boop"}` {
+		t.Fatalf("want={outputs: boop}, got=%s", *activity)
+	}
+}

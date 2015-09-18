@@ -44,6 +44,7 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("GET", "/v3/buckets/:bucketID/balance", getBucketBalance)
 	h.AddFunc("GET", "/v3/wallets/:walletID/balance", getWalletBalance)
 	h.AddFunc("GET", "/v3/wallets/:walletID/activity", getWalletActivity)
+	h.AddFunc("GET", "/v3/wallets/:walletID/transactions/:txID", getWalletTxActivity)
 	h.AddFunc("GET", "/v3/applications/:appID/asset-groups", listAssetGroups)
 	h.AddFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
 	h.AddFunc("GET", "/v3/asset-groups/:groupID", getAssetGroup)
@@ -154,7 +155,7 @@ func listWallets(ctx context.Context, w http.ResponseWriter, req *http.Request) 
 	writeJSON(ctx, w, 200, wallets)
 }
 
-// /v3/wallets/:walletID/activity
+// GET /v3/wallets/:walletID/activity
 func getWalletActivity(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	wID := req.URL.Query().Get(":walletID")
 	prev := req.Header.Get("Range-After")
@@ -181,6 +182,20 @@ func getWalletActivity(ctx context.Context, w http.ResponseWriter, req *http.Req
 		"last":       last,
 		"activities": activity,
 	})
+}
+
+// GET /v3/wallets/:walletID/transactions/:txID
+func getWalletTxActivity(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	wID := req.URL.Query().Get(":walletID")
+	txID := req.URL.Query().Get(":txID")
+
+	activity, err := appdb.WalletTxActivity(ctx, wID, txID)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	writeJSON(ctx, w, 200, activity)
 }
 
 // GET /v3/applications/:appID/asset-groups

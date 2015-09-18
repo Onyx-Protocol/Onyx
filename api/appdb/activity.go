@@ -64,3 +64,14 @@ func activityItemsFromRows(rows *sql.Rows) (items []*json.RawMessage, last strin
 
 	return items, last, nil
 }
+
+func WalletTxActivity(ctx context.Context, walletID, txID string) (*json.RawMessage, error) {
+	q := `
+		SELECT data FROM activity
+		WHERE wallet_id=$1 AND txid=$2
+	`
+
+	var a []byte
+	err := pg.FromContext(ctx).QueryRow(q, walletID, txID).Scan(&a)
+	return (*json.RawMessage)(&a), err
+}
