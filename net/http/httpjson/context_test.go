@@ -1,0 +1,33 @@
+package httpjson
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"golang.org/x/net/context"
+)
+
+func TestContext(t *testing.T) {
+	wantHead := "bar"
+	wantRespHead := "baz"
+	f := func(ctx context.Context) {
+		if g := Request(ctx).Header.Get("Test-Key"); g != wantHead {
+			t.Errorf("header = %q want %q", g, wantHead)
+		}
+		ResponseWriter(ctx).Header().Set("Test-Resp-Key", wantRespHead)
+	}
+
+	h, err := newHandler("/", f, nil)
+	if err != nil {
+		t.Fatalf("err = %v", err)
+	}
+
+	resp := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("Test-Key", wantHead)
+	h.ServeHTTPContext(context.Background(), resp, req)
+	if g := resp.Header().Get("Test-Resp-Key"); g != wantRespHead {
+		t.Errorf("header = %q want %q", g, wantRespHead)
+	}
+}
