@@ -26,6 +26,7 @@ var (
 	tlsKey     = env.String("TLSKEY", "")
 	listenAddr = env.String("LISTEN", ":8080")
 	dbURL      = env.String("DB_URL", "postgres:///api?sslmode=disable")
+	maxDBConns = 100
 	samplePer  = env.Duration("SAMPLEPER", 10*time.Second)
 
 	db       *sql.DB
@@ -53,6 +54,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	db.SetMaxOpenConns(maxDBConns)
 	appdb.Init(db)
 
 	var h chainhttp.Handler
