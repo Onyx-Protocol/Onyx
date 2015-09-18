@@ -429,6 +429,14 @@ ALTER TABLE ONLY addresses
 
 
 --
+-- Name: addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY addresses
+    ADD CONSTRAINT addresses_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: applications_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
