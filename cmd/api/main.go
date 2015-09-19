@@ -22,12 +22,13 @@ import (
 
 var (
 	// config vars
-	tlsCrt     = env.String("TLSCRT", "")
-	tlsKey     = env.String("TLSKEY", "")
-	listenAddr = env.String("LISTEN", ":8080")
-	dbURL      = env.String("DB_URL", "postgres:///api?sslmode=disable")
-	maxDBConns = 100
-	samplePer  = env.Duration("SAMPLEPER", 10*time.Second)
+	tlsCrt       = env.String("TLSCRT", "")
+	tlsKey       = env.String("TLSKEY", "")
+	listenAddr   = env.String("LISTEN", ":8080")
+	dbURL        = env.String("DB_URL", "postgres:///api?sslmode=disable")
+	maxDBConns   = 100
+	maxIdleConns = 100
+	samplePer    = env.Duration("SAMPLEPER", 10*time.Second)
 
 	db       *sql.DB
 	buildTag = "dev"
@@ -55,6 +56,7 @@ func main() {
 		log.Fatal(err)
 	}
 	db.SetMaxOpenConns(maxDBConns)
+	db.SetMaxIdleConns(maxIdleConns)
 	appdb.Init(db)
 
 	var h chainhttp.Handler
