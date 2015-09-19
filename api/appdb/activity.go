@@ -330,7 +330,7 @@ func walletActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, ad
 func WalletActivity(ctx context.Context, walletID string, prev string, limit int) ([]*json.RawMessage, string, error) {
 	q := `
 		SELECT id, data FROM activity
-		WHERE wallet_id=$1 AND id < $2
+		WHERE wallet_id=$1 AND (($2 = '') OR (id < $2))
 		ORDER BY id DESC LIMIT $3
 	`
 
@@ -349,8 +349,8 @@ func BucketActivity(ctx context.Context, bucketID string, prev string, limit int
 		FROM activity AS a
 		LEFT JOIN activity_buckets AS ab
 		ON a.id=ab.activity_id
-		WHERE ab.bucket_id=$1 AND a.id < $2
-		ORDER BY id DESC LIMIT $3
+		WHERE ab.bucket_id=$1 AND (($2 = '') OR (a.id < $2))
+		ORDER BY a.id DESC LIMIT $3
 	`
 
 	rows, err := pg.FromContext(ctx).Query(q, bucketID, prev, limit)

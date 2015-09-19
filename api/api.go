@@ -41,7 +41,6 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("GET", "/v3/wallets/:walletID", getWallet)
 	h.AddFunc("GET", "/v3/wallets/:walletID/buckets", listBuckets)
 	h.AddFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
-	h.AddFunc("GET", "/v3/buckets/:bucketID/balance", getBucketBalance)
 	h.AddFunc("GET", "/v3/wallets/:walletID/balance", getWalletBalance)
 	h.AddFunc("GET", "/v3/wallets/:walletID/activity", getWalletActivity)
 	h.AddFunc("GET", "/v3/wallets/:walletID/transactions/:txID", getWalletTxActivity)
@@ -50,6 +49,8 @@ func Handler() chainhttp.Handler {
 	h.AddFunc("GET", "/v3/asset-groups/:groupID", getAssetGroup)
 	h.AddFunc("GET", "/v3/asset-groups/:groupID/assets", listAssets)
 	h.AddFunc("POST", "/v3/asset-groups/:groupID/assets", createAsset)
+	h.AddFunc("GET", "/v3/buckets/:bucketID/balance", getBucketBalance)
+	h.AddFunc("GET", "/v3/buckets/:bucketID/activity", getBucketActivity)
 	h.AddFunc("POST", "/v3/buckets/:bucketID/addresses", createAddr)
 	h.AddFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
 	h.AddFunc("POST", "/v3/assets/transfer", transferAssets)
@@ -305,6 +306,35 @@ func getBucketBalance(ctx context.Context, w http.ResponseWriter, req *http.Requ
 	}
 
 	writeJSON(ctx, w, 200, bals)
+}
+
+// GET /v3/buckets/:bucketID/activity
+func getBucketActivity(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	bid := req.URL.Query().Get(":bucketID")
+	prev := req.Header.Get("Range-After")
+
+	limit := defActivityPageSize
+	if lstr := req.Header.Get("Limit"); lstr != "" {
+		var err error
+		limit, err = strconv.Atoi(lstr)
+		if err != nil {
+			err = errors.Wrap(ErrBadReqHeader, err.Error())
+			writeHTTPError(ctx, w, errors.WithDetail(err, "limit header"))
+			return
+		}
+	}
+
+	activity, last, err := appdb.BucketActivity(ctx, bid, prev, limit)
+
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	writeJSON(ctx, w, 200, map[string]interface{}{
+		"last":       last,
+		"activities": activity,
+	})
 }
 
 // GET /v3/asset-groups/:groupID
