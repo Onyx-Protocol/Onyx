@@ -58,7 +58,7 @@ func TestTransfer(t *testing.T) {
 	outScript, _ := hex.DecodeString("a914a994a46855d8f4442b3a6db863628cc020537f4087")
 	wantTx.AddTxOut(wire.NewTxOut(outAsset, 5, outScript))
 
-	outScript, _ = hex.DecodeString("a914613333cd9c090b6ea455fb0a894f1824f4dc74f187")
+	outScript, _ = hex.DecodeString("a9143fd679f3dc2886a2943a6408991f34cf115503aa87")
 	wantTx.AddTxOut(wire.NewTxOut(outAsset, 1, outScript))
 
 	gotTx := wire.NewMsgTx()

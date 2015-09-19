@@ -166,6 +166,18 @@ CREATE TABLE activity_buckets (
 
 
 --
+-- Name: address_index_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE address_index_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
 -- Name: addresses; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 

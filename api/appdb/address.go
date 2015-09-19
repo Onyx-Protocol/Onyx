@@ -115,12 +115,8 @@ func (a *Address) Insert(ctx context.Context) error {
 
 // newAddressIndex allocates a new index for an address in bucket bID.
 func newAddressIndex(ctx context.Context, bID string) (index []uint32, err error) {
-	const q = `
-		UPDATE buckets SET next_address_index = next_address_index + 1
-		WHERE id = $1
-		RETURNING key_index(next_address_index - 1)
-	`
-	err = pg.FromContext(ctx).QueryRow(q, bID).Scan((*pg.Uint32s)(&index))
+	const q = `SELECT key_index(nextval('address_index_seq'))`
+	err = pg.FromContext(ctx).QueryRow(q).Scan((*pg.Uint32s)(&index))
 	return
 }
 

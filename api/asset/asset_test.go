@@ -105,13 +105,13 @@ func TestOutputPkScript(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want, _ := hex.DecodeString("a9140ac9c982fd389181752e5a414045dd424a10754b87")
+	want, _ := hex.DecodeString("a91400065635e652a6e00a53cfa07e822de50ccf94a887")
 	if !bytes.Equal(got, want) {
 		t.Errorf("got pkscript = %x want %x", got, want)
 	}
 
 	// Test stringified address output
-	out = &Output{Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK"}
+	out = &Output{Address: "31h9Wq4sVTr2ogZQgcazqgwJtEhM3hFtT2"}
 	got, err = out.PkScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))

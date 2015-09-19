@@ -55,7 +55,7 @@ func TestAddressLoadNextIndex(t *testing.T) {
 		WalletID:     "w1",
 		WalletIndex:  []uint32{0, 1},
 		BucketIndex:  []uint32{0, 0},
-		Index:        []uint32{0, 0},
+		Index:        []uint32{0, 1},
 		SigsRequired: 1,
 		Keys:         []*hdkey.XKey{dummyXPub},
 	}
