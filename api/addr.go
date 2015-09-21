@@ -1,7 +1,6 @@
 package api
 
 import (
-	"io"
 	"net/http"
 	"time"
 
@@ -20,7 +19,7 @@ func createAddr(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 
 	bucketID := req.URL.Query().Get(":bucketID")
 	err := readJSON(req.Body, &input)
-	if err != nil && err != io.EOF {
+	if err != nil {
 		writeHTTPError(ctx, w, err)
 		return
 	}
