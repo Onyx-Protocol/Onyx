@@ -1,5 +1,6 @@
 // Package log implements a standard convention for structured logging.
-// Log entries are formatted as K=V pairs and written to stdout.
+// Log entries are formatted as K=V pairs.
+// By default, output is written to stdout; this can be changed with SetOutput.
 package log
 
 import (
@@ -45,6 +46,15 @@ const (
 
 	keyLogError = "log-error" // for errors produced by the log package itself
 )
+
+// SetOutput sets the log output to w.
+// If SetOutput hasn't been called,
+// the default behavior is to write to stdout.
+func SetOutput(w io.Writer) {
+	logWriterMu.Lock()
+	logWriter = w
+	logWriterMu.Unlock()
+}
 
 // Write writes a structured log entry to stdout. Log fields are
 // specified as a variadic sequence of alternating keys and values.

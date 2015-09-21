@@ -2,8 +2,8 @@ package log
 
 import (
 	"bytes"
-	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -13,16 +13,15 @@ import (
 	"chain/net/http/reqid"
 )
 
-func setTestLogWriter(w io.Writer) func() {
-	logWriterMu.Lock()
-	old := logWriter
-	logWriter = w
-	logWriterMu.Unlock()
-
-	return func() {
-		logWriterMu.Lock()
-		logWriter = old
-		logWriterMu.Unlock()
+func TestSetOutput(t *testing.T) {
+	var buf bytes.Buffer
+	want := "foobar"
+	SetOutput(&buf)
+	Messagef(context.Background(), want)
+	SetOutput(os.Stdout)
+	got := buf.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("log = %q; should contain %q", got, want)
 	}
 }
 
@@ -82,12 +81,13 @@ func TestWrite(t *testing.T) {
 		t.Log("Example", i)
 
 		buf := new(bytes.Buffer)
-		reset := setTestLogWriter(buf)
+		SetOutput(buf)
 
 		Write(context.Background(), ex.keyvals...)
 
 		read, err := ioutil.ReadAll(buf)
 		if err != nil {
+			SetOutput(os.Stdout)
 			t.Fatal("read buffer error:", err)
 		}
 
@@ -102,14 +102,14 @@ func TestWrite(t *testing.T) {
 			t.Errorf("log output should end with a newline")
 		}
 
-		reset()
+		SetOutput(os.Stdout)
 	}
 }
 
 func TestWriteRequestID(t *testing.T) {
 	buf := new(bytes.Buffer)
-	reset := setTestLogWriter(buf)
-	defer reset()
+	SetOutput(buf)
+	defer SetOutput(os.Stdout)
 
 	Write(reqid.NewContext(context.Background(), "example-request-id"))
 
@@ -128,8 +128,8 @@ func TestWriteRequestID(t *testing.T) {
 
 func TestMessagef(t *testing.T) {
 	buf := new(bytes.Buffer)
-	reset := setTestLogWriter(buf)
-	defer reset()
+	SetOutput(buf)
+	defer SetOutput(os.Stdout)
 
 	Messagef(context.Background(), "test round %d", 0)
 
@@ -153,8 +153,8 @@ func TestMessagef(t *testing.T) {
 
 func TestError(t *testing.T) {
 	buf := new(bytes.Buffer)
-	reset := setTestLogWriter(buf)
-	defer reset()
+	SetOutput(buf)
+	defer SetOutput(os.Stdout)
 
 	root := errors.New("boo")
 	wrapped := errors.Wrap(root)
