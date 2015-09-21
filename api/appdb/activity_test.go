@@ -3,6 +3,7 @@ package appdb
 import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"reflect"
 	"testing"
 	"time"
 
@@ -165,197 +166,139 @@ func TestActivityByTxID(t *testing.T) {
 	}
 }
 
-func TestWriteActivity(t *testing.T) {
-	// The txid values in the fixture data are not arbitrary.
-	// 0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098 is from the btcd/wire tests.
-	// 3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df is the hash of the tx generated in this test file.
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityWalletFixture, `
-		INSERT INTO addresses
+// The txid values in the fixture data are not arbitrary.
+// 0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098 is from the btcd/wire tests.
+// 3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df is the hash of the tx generated in this test file.
+const createActivityItemFixture = `
+	INSERT INTO addresses
 			(id, wallet_id, bucket_id, keyset, key_index, address, is_change, redeem_script, pk_script)
 		VALUES
 			('addr0', 'w0', 'b0', '{}', 2, 'aaac', false, '', ''),
-			('addr1', 'w0', 'b1', '{}', 0, 'aaaa', false, '', ''),
-			('addr2', 'w1', 'b3', '{}', 1, 'aaab', false, '', '');
+			('addr1', 'w0', 'b1', '{}', 0, 'aaaa', false, '', '');
 
-		INSERT INTO utxos
+	INSERT INTO utxos
 			(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
 		VALUES
 			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 0, 'a0', 100, 'addr0', 'b0', 'w0'),
-			('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 1, 'a0', 50, 'addr1', 'b1', 'w0'),
-			('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 2, 'a0', 50, 'addr2', 'b3', 'w1');
-	`)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	defer dbtx.Rollback()
+			('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 1, 'a0', 50, 'addr1', 'b1', 'w0');
+`
 
-	hashStr := "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"
-	inHash, err := wire.NewHash32FromStr(hashStr)
-	if err != nil {
-		t.Fatalf("Unexpected err creating fixture hash %v", err)
-	}
+type activityRes struct {
+	id        string
+	wallet_id string
+	data      []byte
+}
 
-	txTime, err := time.Parse(time.RFC3339, "2015-09-17T12:50:53.427092Z")
-	if err != nil {
-		t.Fatalf("unexpected err parsing time %v", err)
-	}
+func TestCreateActivityItem(t *testing.T) {
+	cases := []struct {
+		fixture string
+		want    []activityRes
+	}{
+		{
+			fixture: `
+				INSERT INTO addresses
+					(id, wallet_id, bucket_id, keyset, key_index, address, is_change, redeem_script, pk_script)
+				VALUES
+					('addr2', 'w1', 'b3', '{}', 1, 'aaab', false, '', '');
 
-	tx := wire.NewMsgTx()
-	tx.AddTxIn(&wire.TxIn{
-		PreviousOutPoint: wire.OutPoint{
-			Hash:  *inHash,
-			Index: 0,
+				INSERT INTO utxos
+					(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+				VALUES
+					('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 2, 'a0', 50, 'addr2', 'b3', 'w1');
+			`,
+			want: []activityRes{
+				{
+					wallet_id: "w0",
+					data:      []byte(`{"inputs":[{"amount":100,"asset_id":"a0","bucket_id":"b0"}],"outputs":[{"address":"addr2","amount":50,"asset_id":"a0"},{"amount":50,"asset_id":"a0","bucket_id":"b1"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`),
+				},
+				{
+					wallet_id: "w1",
+					data:      []byte(`{"inputs":[{"address":"addr0","amount":100,"asset_id":"a0"}],"outputs":[{"address":"addr1","amount":50,"asset_id":"a0"},{"amount":50,"asset_id":"a0","bucket_id":"b3"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`),
+				},
+			},
 		},
-		Sequence: 4294967295,
-	})
+		{
+			fixture: `
+					INSERT INTO addresses
+						(id, wallet_id, bucket_id, keyset, key_index, address, is_change, redeem_script, pk_script)
+					VALUES
+						('addr2', 'w1', 'b3', '{}', 1, 'aaab', true, '', '');
 
-	err = CreateActivityItems(ctx, tx, txTime)
-	if err != nil {
-		t.Fatalf("Unexpected err %v", err)
+					INSERT INTO utxos
+						(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+					VALUES
+						('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 2, 'a0', 50, 'addr2', 'b0', 'w0'); -- CHANGE OUTPUT
+				`,
+			want: []activityRes{
+				{
+					wallet_id: "w0",
+					data:      []byte(`{"inputs":[{"amount":50,"asset_id":"a0","bucket_id":"b0"}],"outputs":[{"amount":50,"asset_id":"a0","bucket_id":"b1"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`),
+				},
+			},
+		},
 	}
 
-	const q = `SELECT id, wallet_id, data FROM activity ORDER BY wallet_id`
-	rows, err := pg.FromContext(ctx).Query(q)
-	if err != nil {
-		t.Fatalf("Unexpected err %v", err)
-	}
-	defer rows.Close()
+	for _, test := range cases {
+		dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityWalletFixture, createActivityItemFixture, test.fixture)
+		ctx := pg.NewContext(context.Background(), dbtx)
+		defer dbtx.Rollback()
 
-	type activityRes struct {
-		id        string
-		wallet_id string
-		data      []byte
-	}
-
-	var (
-		id        string
-		wallet_id string
-		data      []byte
-	)
-
-	var res []*activityRes
-	for rows.Next() {
-		err = rows.Scan(&id, &wallet_id, &data)
-		r := &activityRes{
-			id:        id,
-			wallet_id: wallet_id,
-			data:      data,
+		hashStr := "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"
+		inHash, err := wire.NewHash32FromStr(hashStr)
+		if err != nil {
+			t.Fatalf("Unexpected err creating fixture hash %v", err)
 		}
-		res = append(res, r)
-	}
 
-	if res[0].wallet_id != "w0" {
-		t.Fatalf("want w0 got=%v", res[0].wallet_id)
-	}
-	if res[1].wallet_id != "w1" {
-		t.Fatalf("want w1 got=%v", res[1].wallet_id)
-	}
+		txTime, err := time.Parse(time.RFC3339, "2015-09-17T12:50:53.427092Z")
+		if err != nil {
+			t.Fatalf("unexpected err parsing time %v", err)
+		}
 
-	// The notable distinction in the data is the way that addresses and buckets are handled.
-	// For activity in a given wallet, we should see buckets for inputs and outputs that came
-	// from that wallet, but addresses otherwise.
-	wantData0 := `{"inputs":[{"amount":100,"asset_id":"a0","bucket_id":"b0"}],"outputs":[{"address":"addr2","amount":50,"asset_id":"a0"},{"amount":50,"asset_id":"a0","bucket_id":"b1"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`
-	if string(res[0].data) != wantData0 {
-		t.Fatalf("want=%s got=%s", wantData0, string(res[0].data))
-	}
+		tx := wire.NewMsgTx()
+		tx.AddTxIn(&wire.TxIn{
+			PreviousOutPoint: wire.OutPoint{
+				Hash:  *inHash,
+				Index: 0,
+			},
+			Sequence: 4294967295,
+		})
 
-	wantData1 := `{"inputs":[{"address":"addr0","amount":100,"asset_id":"a0"}],"outputs":[{"address":"addr1","amount":50,"asset_id":"a0"},{"amount":50,"asset_id":"a0","bucket_id":"b3"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`
-	if string(res[1].data) != wantData1 {
-		t.Fatalf("want=%s got=%s", wantData1, string(res[1].data))
+		err = CreateActivityItems(ctx, tx, txTime)
+		if err != nil {
+			t.Fatalf("Unexpected err %v", err)
+		}
+
+		const q = `SELECT wallet_id, data FROM activity ORDER BY wallet_id`
+		rows, err := pg.FromContext(ctx).Query(q)
+		if err != nil {
+			t.Fatalf("Unexpected err %v", err)
+		}
+		defer rows.Close()
+
+		var (
+			wallet_id string
+			data      []byte
+		)
+
+		var res []activityRes
+		for rows.Next() {
+			err = rows.Scan(&wallet_id, &data)
+			r := activityRes{
+				wallet_id: wallet_id,
+				data:      data,
+			}
+			res = append(res, r)
+		}
+
+		if !reflect.DeepEqual(test.want, res) {
+			t.Fatalf("want=%v got=%v", test.want, res)
+		}
+
+		dbtx.Rollback()
 	}
 }
 
-func TestWriteActivityWithChangeOutputs(t *testing.T) {
-	// As in the test above, the txid values in the fixture data are not arbitrary.
-	// 0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098 is from the btcd/wire tests.
-	// 3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df is the hash of the tx generated in this test file.
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityWalletFixture, `
-		INSERT INTO addresses
-			(id, wallet_id, bucket_id, keyset, key_index, address, is_change, redeem_script, pk_script)
-		VALUES
-			('addr0', 'w0', 'b0', '{}', 2, 'aaac', false, '', ''),
-			('addr1', 'w0', 'b1', '{}', 0, 'aaaa', false, '', ''),
-			('addr2', 'w1', 'b3', '{}', 1, 'aaab', true, '', '');
-
-		INSERT INTO utxos
-			(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
-		VALUES
-			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 0, 'a0', 100, 'addr0', 'b0', 'w0'),
-			('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 1, 'a0', 50, 'addr1', 'b1', 'w0'),
-			('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 2, 'a0', 50, 'addr2', 'b0', 'w0'); -- CHANGE OUTPUT
-	`)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	defer dbtx.Rollback()
-
-	hashStr := "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"
-	inHash, err := wire.NewHash32FromStr(hashStr)
-	if err != nil {
-		t.Fatalf("Unexpected err creating fixture hash %v", err)
-	}
-
-	txTime, err := time.Parse(time.RFC3339, "2015-09-17T12:50:53.427092Z")
-	if err != nil {
-		t.Fatalf("unexpected err parsing time %v", err)
-	}
-
-	tx := wire.NewMsgTx()
-	tx.AddTxIn(&wire.TxIn{
-		PreviousOutPoint: wire.OutPoint{
-			Hash:  *inHash,
-			Index: 0,
-		},
-		Sequence: 4294967295,
-	})
-
-	err = CreateActivityItems(ctx, tx, txTime)
-	if err != nil {
-		t.Fatalf("Unexpected err %v", err)
-	}
-
-	const q = `SELECT id, wallet_id, data FROM activity ORDER BY wallet_id`
-	rows, err := pg.FromContext(ctx).Query(q)
-	if err != nil {
-		t.Fatalf("Unexpected err %v", err)
-	}
-	defer rows.Close()
-
-	type activityRes struct {
-		id        string
-		wallet_id string
-		data      []byte
-	}
-
-	var (
-		id        string
-		wallet_id string
-		data      []byte
-	)
-
-	var res []*activityRes
-	for rows.Next() {
-		err = rows.Scan(&id, &wallet_id, &data)
-		r := &activityRes{
-			id:        id,
-			wallet_id: wallet_id,
-			data:      data,
-		}
-		res = append(res, r)
-	}
-
-	if len(res) != 1 {
-		t.Fatalf("Should only be one activity response, got %v", len(res))
-	}
-
-	if res[0].wallet_id != "w0" {
-		t.Fatalf("want w0 got=%v", res[0].wallet_id)
-	}
-
-	// The change output should not appear.
-	wantData0 := `{"inputs":[{"amount":50,"asset_id":"a0","bucket_id":"b0"}],"outputs":[{"amount":50,"asset_id":"a0","bucket_id":"b1"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`
-	if string(res[0].data) != wantData0 {
-		t.Fatalf("want=%s got=%s", wantData0, string(res[0].data))
-	}
-}
-
-func TestWriteActivityFromUtxo(t *testing.T) {
+func TestGenerateActivityFromUtxo(t *testing.T) {
 	// The txid values in the fixture data are not arbitrary.
 	// 0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098 is from the btcd/wire tests.
 	// 3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df is the hash of the tx generated in this test file.
@@ -404,57 +347,25 @@ func TestWriteActivityFromUtxo(t *testing.T) {
 		t.Fatalf("Unexpected err %v", err)
 	}
 
-	const q = `SELECT id, wallet_id, data FROM activity ORDER BY wallet_id`
-	rows, err := pg.FromContext(ctx).Query(q)
+	// No change in this transaction.
+	addrIsChange := map[string]bool{}
+
+	item, err := generateActivityItem(ctx, tx, "w0", addrIsChange, txTime)
 	if err != nil {
 		t.Fatalf("Unexpected err %v", err)
 	}
-	defer rows.Close()
 
-	type activityRes struct {
-		id        string
-		wallet_id string
-		data      []byte
+	if item.walletID != "w0" {
+		t.Fatalf("Want walletID=w0 got=%s", item.walletID)
 	}
 
-	var (
-		id        string
-		wallet_id string
-		data      []byte
-	)
-
-	var res []*activityRes
-	for rows.Next() {
-		err = rows.Scan(&id, &wallet_id, &data)
-		r := &activityRes{
-			id:        id,
-			wallet_id: wallet_id,
-			data:      data,
-		}
-		res = append(res, r)
+	if item.txid != "3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df" {
+		t.Fatalf("Want txid=3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df, got=%s", item.txid)
 	}
 
-	if len(res) != 2 {
-		t.Fatalf("wanted 2 activity items got=%d", len(res))
+	wantData := `{"inputs":[{"amount":100,"asset_id":"a0","bucket_id":"b0"}],"outputs":[{"address":"addr2","amount":50,"asset_id":"a0"},{"amount":50,"asset_id":"a0","bucket_id":"b1"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`
+	if string(item.data) != wantData {
+		t.Fatalf("want=%s got=%s", wantData, string(item.data))
 	}
 
-	if res[0].wallet_id != "w0" {
-		t.Fatalf("want w0 got=%v", res[0].wallet_id)
-	}
-	if res[1].wallet_id != "w1" {
-		t.Fatalf("want w1 got=%v", res[1].wallet_id)
-	}
-
-	// The notable distinction in the data is the way that addresses and buckets are handled.
-	// For activity in a given wallet, we should see buckets for inputs and outputs that came
-	// from that wallet, but addresses otherwise.
-	wantData0 := `{"inputs":[{"amount":100,"asset_id":"a0","bucket_id":"b0"}],"outputs":[{"address":"addr2","amount":50,"asset_id":"a0"},{"amount":50,"asset_id":"a0","bucket_id":"b1"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`
-	if string(res[0].data) != wantData0 {
-		t.Fatalf("want=%s got=%s", wantData0, string(res[0].data))
-	}
-
-	wantData1 := `{"inputs":[{"address":"addr0","amount":100,"asset_id":"a0"}],"outputs":[{"address":"addr1","amount":50,"asset_id":"a0"},{"amount":50,"asset_id":"a0","bucket_id":"b3"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`
-	if string(res[1].data) != wantData1 {
-		t.Fatalf("want=%s got=%s", wantData1, string(res[1].data))
-	}
 }

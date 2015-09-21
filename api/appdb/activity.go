@@ -15,6 +15,13 @@ import (
 	"chain/strings"
 )
 
+type activityItem struct {
+	walletID  string
+	txid      string
+	data      []byte
+	bucketIDs []string
+}
+
 // CreateActivityItems writes new activity items given a tx.
 // Must be called inside a db transaction, but after the utxos are
 // updated for this tx.
@@ -27,9 +34,14 @@ func CreateActivityItems(ctx context.Context, tx *wire.MsgTx, txTime time.Time) 
 	}
 
 	for _, w := range wids {
-		err = walletActivityItem(ctx, tx, w, addrIsChange, txTime)
+		item, err := generateActivityItem(ctx, tx, w, addrIsChange, txTime)
 		if err != nil {
-			msg := "writing item for wallet " + w
+			msg := "generating item for wallet " + w
+			return errors.Wrap(err, msg)
+		}
+		err = writeActivityItem(ctx, item)
+		if err != nil {
+			msg := "generating item for wallet " + w
 			return errors.Wrap(err, msg)
 		}
 	}
@@ -91,7 +103,7 @@ func getWalletsAndChangeInTx(ctx context.Context, tx *wire.MsgTx) ([]string, map
 	return wallets, addrIsChange, nil
 }
 
-func walletActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, addrIsChange map[string]bool, txTime time.Time) error {
+func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, addrIsChange map[string]bool, txTime time.Time) (*activityItem, error) {
 	var (
 		insByBucket  = make(map[string]map[string]int64)
 		insByAddr    = make(map[string]map[string]int64)
@@ -119,14 +131,14 @@ func walletActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, ad
 		prev := in.PreviousOutPoint
 		rows, err := pg.FromContext(ctx).Query(inputQ, prev.Hash.String(), prev.Index)
 		if err != nil {
-			return errors.Wrap(err, "querying inputs")
+			return nil, errors.Wrap(err, "querying inputs")
 		}
 		defer rows.Close()
 
 		for rows.Next() {
 			err = rows.Scan(&wid, &bid, &addr, &asset, &amt)
 			if err != nil {
-				return errors.Wrap(err, "row scan")
+				return nil, errors.Wrap(err, "row scan")
 			}
 
 			// We only want to track which bucket this came from
@@ -149,7 +161,7 @@ func walletActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, ad
 		}
 
 		if rows.Err() != nil {
-			return errors.Wrap(rows.Err(), "input tx rows")
+			return nil, errors.Wrap(rows.Err(), "input tx rows")
 		}
 
 		rows.Close()
@@ -165,7 +177,7 @@ func walletActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, ad
 	hash := tx.TxSha().String()
 	rows, err := pg.FromContext(ctx).Query(outputQ, hash)
 	if err != nil {
-		return errors.Wrap(err, "query output utxos")
+		return nil, errors.Wrap(err, "query output utxos")
 	}
 	defer rows.Close()
 
@@ -173,7 +185,7 @@ func walletActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, ad
 	for rows.Next() {
 		err = rows.Scan(&wid, &bid, &addr, &asset, &amt)
 		if err != nil {
-			return errors.Wrap(err, "row scan outputs")
+			return nil, errors.Wrap(err, "row scan outputs")
 		}
 
 		// We only want to track which bucket
@@ -196,7 +208,7 @@ func walletActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, ad
 					// If this addr is a change addr,
 					// there should be an input that could
 					// create said change.
-					return errors.New("change addr without corresponding input")
+					return nil, errors.New("change addr without corresponding input")
 				}
 			} else {
 				if outsByBucket[bid] == nil {
@@ -296,6 +308,22 @@ func walletActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, ad
 	data["txid"] = hash
 	data["transaction_time"] = txTime.UTC()
 
+	blob, err := json.Marshal(data)
+	if err != nil {
+		return nil, errors.Wrap(err, "json marshalling data")
+	}
+
+	item := &activityItem{
+		walletID:  walletID,
+		txid:      hash,
+		data:      blob,
+		bucketIDs: buckets,
+	}
+
+	return item, nil
+}
+
+func writeActivityItem(ctx context.Context, item *activityItem) error {
 	// Now insert the data blob, along with the other tx information.
 	const insertQ = `
 		INSERT INTO activity (wallet_id, data, txid)
@@ -303,13 +331,8 @@ func walletActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, ad
 		RETURNING id
 	`
 
-	blob, err := json.Marshal(data)
-	if err != nil {
-		return errors.Wrap(err, "json marshalling data")
-	}
-
 	var actID string
-	err = pg.FromContext(ctx).QueryRow(insertQ, walletID, blob, hash).Scan(&actID)
+	err := pg.FromContext(ctx).QueryRow(insertQ, item.walletID, item.data, item.txid).Scan(&actID)
 	if err != nil {
 		return errors.Wrap(err, "inserting activity item")
 	}
@@ -318,7 +341,7 @@ func walletActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, ad
 		INSERT INTO activity_buckets (activity_id, bucket_id) VALUES ($1, $2)
 	`
 
-	for _, bid := range buckets {
+	for _, bid := range item.bucketIDs {
 		_, err := pg.FromContext(ctx).Exec(insertBucketQ, actID, bid)
 		if err != nil {
 			return errors.Wrap(err, "inserting activity bucket item")
