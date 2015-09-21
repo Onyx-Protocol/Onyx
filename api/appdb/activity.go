@@ -111,12 +111,13 @@ func walletActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, ad
 	const inputQ = `
 		SELECT wallet_id, bucket_id, address_id, asset_id, amount
 		FROM utxos
-		WHERE txid=$1
+		WHERE txid=$1 AND index=$2
 	`
 
 	// Pool all inputs by bucket or address.
 	for _, in := range tx.TxIn {
-		rows, err := pg.FromContext(ctx).Query(inputQ, in.PreviousOutPoint.Hash.String())
+		prev := in.PreviousOutPoint
+		rows, err := pg.FromContext(ctx).Query(inputQ, prev.Hash.String(), prev.Index)
 		if err != nil {
 			return errors.Wrap(err, "querying inputs")
 		}
