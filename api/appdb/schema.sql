@@ -307,6 +307,20 @@ CREATE SEQUENCE chain_id_seq
 
 
 --
+-- Name: invitations; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE invitations (
+    id text NOT NULL,
+    application_id text NOT NULL,
+    email text NOT NULL,
+    role text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT invitations_role_check CHECK (((role = 'developer'::text) OR (role = 'admin'::text)))
+);
+
+
+--
 -- Name: members; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -467,6 +481,14 @@ ALTER TABLE ONLY assets
 
 ALTER TABLE ONLY buckets
     ADD CONSTRAINT buckets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY invitations
+    ADD CONSTRAINT invitations_pkey PRIMARY KEY (id);
 
 
 --
@@ -690,6 +712,14 @@ ALTER TABLE ONLY auth_tokens
 
 ALTER TABLE ONLY buckets
     ADD CONSTRAINT buckets_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id);
+
+
+--
+-- Name: invitations_application_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY invitations
+    ADD CONSTRAINT invitations_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
 
 
 --

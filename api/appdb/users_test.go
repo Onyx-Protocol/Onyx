@@ -116,8 +116,8 @@ func TestCreateUserNoDupes(t *testing.T) {
 			}
 
 			_, err = CreateUser(ctx, ex.email1, "abracadabra")
-			if errors.Root(err) != ErrBadEmail {
-				t.Errorf("error want = %v got %v", errors.Root(err), ErrBadEmail)
+			if errors.Root(err) != ErrUserAlreadyExists {
+				t.Errorf("error = %v want %v", err, ErrUserAlreadyExists)
 			}
 		}()
 	}

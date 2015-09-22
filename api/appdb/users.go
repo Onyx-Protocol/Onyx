@@ -17,9 +17,10 @@ const passwordBcryptCost = 10
 // Errors returned by CreateUser.
 // May be wrapped using package chain/errors.
 var (
-	ErrBadEmail      = errors.New("bad email")
-	ErrBadPassword   = errors.New("bad password")
-	ErrPasswordCheck = errors.New("password does not match")
+	ErrBadEmail          = errors.New("bad email")
+	ErrBadPassword       = errors.New("bad password")
+	ErrPasswordCheck     = errors.New("password does not match")
+	ErrUserAlreadyExists = errors.New("user already exists")
 )
 
 // User represents a single user. Instances should be safe to deliver in API
@@ -52,7 +53,7 @@ func CreateUser(ctx context.Context, email, password string) (*User, error) {
 	var id string
 	err = pg.FromContext(ctx).QueryRow(q, email, phash).Scan(&id)
 	if pg.IsUniqueViolation(err) {
-		return nil, errors.Wrap(ErrBadEmail, "email address already in use")
+		return nil, ErrUserAlreadyExists
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "insert query")
