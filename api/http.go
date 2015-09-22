@@ -10,9 +10,9 @@ import (
 	"chain/net/http/httpjson"
 )
 
-// ErrBadReqHeader indicates the user supplied a malformed request header,
+// errBadReqHeader indicates the user supplied a malformed request header,
 // possibly including a datatype that doesn't match what we expected.
-var ErrBadReqHeader = errors.New("bad request header")
+var errBadReqHeader = errors.New("bad request header")
 
 func writeHTTPError(ctx context.Context, w http.ResponseWriter, err error) {
 	info := errInfo(err)

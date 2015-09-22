@@ -26,7 +26,7 @@ var (
 	errorInfoTab = map[error]errorInfo{
 		pg.ErrUserInputNotFound:    errorInfo{404, "CH005", "Not found."},
 		httpjson.ErrBadRequest:     errorInfo{400, "CH007", "Invalid request body"},
-		ErrBadReqHeader:            errorInfo{400, "CH008", "Invalid request header"},
+		errBadReqHeader:            errorInfo{400, "CH008", "Invalid request header"},
 		appdb.ErrBadEmail:          errorInfo{400, "CH101", "Invalid email."},
 		appdb.ErrBadPassword:       errorInfo{400, "CH102", "Invalid password."},
 		appdb.ErrPasswordCheck:     errorInfo{400, "CH103", "Unable to verify password."},

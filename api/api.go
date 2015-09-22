@@ -136,7 +136,7 @@ func getWalletActivity(ctx context.Context, wID string) (interface{}, error) {
 		var err error
 		limit, err = strconv.Atoi(lstr)
 		if err != nil {
-			err = errors.Wrap(ErrBadReqHeader, err.Error())
+			err = errors.Wrap(errBadReqHeader, err.Error())
 			return nil, errors.WithDetail(err, "limit header")
 		}
 	}
@@ -208,7 +208,7 @@ func getBucketActivity(ctx context.Context, bid string) (interface{}, error) {
 		var err error
 		limit, err = strconv.Atoi(lstr)
 		if err != nil {
-			err = errors.Wrap(ErrBadReqHeader, err.Error())
+			err = errors.Wrap(errBadReqHeader, err.Error())
 			return nil, errors.WithDetail(err, "limit header")
 		}
 	}
