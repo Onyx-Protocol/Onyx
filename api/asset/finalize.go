@@ -62,6 +62,14 @@ func FinalizeTx(ctx context.Context, tx *Tx) (*wire.MsgTx, error) {
 		return nil, errors.Wrap(err, "storing txn")
 	}
 
+	if isIssuance(msg) {
+		asset, amt := issued(msg.TxOut)
+		err = appdb.AddIssuance(ctx, asset.String(), amt)
+		if err != nil {
+			return nil, errors.Wrap(err, "writing issued assets")
+		}
+	}
+
 	return msg, nil
 }
 
@@ -76,4 +84,31 @@ func checkSig(key *btcec.PublicKey, data, sig []byte) error {
 	}
 
 	return nil
+}
+
+func isIssuance(msg *wire.MsgTx) bool {
+	emptyHash := wire.Hash32{}
+	if len(msg.TxIn) == 1 && msg.TxIn[0].PreviousOutPoint.Hash == emptyHash {
+		if len(msg.TxOut) == 0 {
+			return false
+		}
+		assetID := msg.TxOut[0].AssetID
+		for _, out := range msg.TxOut {
+			if out.AssetID != assetID {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
+// issued returns the asset issued, as well as the amount.
+// It should only be called with outputs from transactions
+// where isIssuance is true.
+func issued(outs []*wire.TxOut) (asset wire.Hash20, amt int64) {
+	for _, out := range outs {
+		amt += out.Value
+	}
+	return outs[0].AssetID, amt
 }

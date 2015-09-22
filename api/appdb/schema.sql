@@ -261,7 +261,8 @@ CREATE TABLE assets (
     definition_url text DEFAULT ''::text NOT NULL,
     definition bytea,
     redeem_script bytea NOT NULL,
-    label text NOT NULL
+    label text NOT NULL,
+    issued bigint DEFAULT 0 NOT NULL
 );
 
 

@@ -1,0 +1,1 @@
+ALTER TABLE assets ADD COLUMN issued bigint NOT NULL DEFAULT 0;

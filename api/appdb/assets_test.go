@@ -121,3 +121,36 @@ func TestListAssets(t *testing.T) {
 		}
 	}
 }
+
+func TestAddIssuance(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO applications (id, name) VALUES ('app0', 'app0');
+		INSERT INTO asset_groups (id, application_id, key_index, keyset, label)
+			VALUES ('ag0', 'app0', 0, '{}', 'ag0');
+		INSERT INTO assets (id, asset_group_id, key_index, redeem_script, label)
+			VALUES ('a0', 'ag0', 0, '{}', 'foo');
+	`)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	const q = `SELECT issued FROM assets WHERE id='a0'`
+	var gotIssued, wantIssued int64
+
+	// Test first issuance, and second
+	for i := 0; i < 2; i++ {
+		err := AddIssuance(ctx, "a0", 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wantIssued += 10
+
+		err = dbtx.QueryRow(q).Scan(&gotIssued)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if gotIssued != wantIssued {
+			t.Errorf("got issued = %d want %d", gotIssued, wantIssued)
+		}
+	}
+}

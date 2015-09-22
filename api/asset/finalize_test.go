@@ -1,6 +1,7 @@
 package asset
 
 import (
+	"bytes"
 	"encoding/hex"
 	"testing"
 
@@ -10,6 +11,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/fedchain-sandbox/wire"
 )
 
 func mustDecodeHex(data string) []byte {
@@ -74,5 +76,80 @@ func TestCheckSig(t *testing.T) {
 		if (err == nil) != c.valid {
 			t.Error("invalid signature")
 		}
+	}
+}
+
+func TestIsIssuance(t *testing.T) {
+	asset1, _ := wire.NewHash20FromStr("AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p")
+	asset2, _ := wire.NewHash20FromStr("AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx")
+	cases := []struct {
+		raw  []byte
+		tx   *wire.MsgTx
+		want bool
+	}{{ // issuance input
+		tx: &wire.MsgTx{
+			TxIn:  []*wire.TxIn{wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{})},
+			TxOut: []*wire.TxOut{wire.NewTxOut(asset1, 5, []byte{})},
+		},
+		want: true,
+	}, { // no outputs
+		tx: &wire.MsgTx{
+			TxIn:  []*wire.TxIn{wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{})},
+			TxOut: []*wire.TxOut{},
+		},
+		want: false,
+	}, { // different asset ids on outputs
+		tx: &wire.MsgTx{
+			TxIn: []*wire.TxIn{wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{})},
+			TxOut: []*wire.TxOut{
+				wire.NewTxOut(asset1, 5, []byte{}),
+				wire.NewTxOut(asset2, 5, []byte{}),
+			},
+		},
+		want: false,
+	}, { // too many inputs
+		tx: &wire.MsgTx{
+			TxIn: []*wire.TxIn{
+				wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}),
+				wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}),
+			},
+			TxOut: []*wire.TxOut{wire.NewTxOut(asset1, 5, []byte{})},
+		},
+		want: false,
+	}, { // wrong previous outpoint hash
+		tx: &wire.MsgTx{
+			TxIn: []*wire.TxIn{
+				wire.NewTxIn(wire.NewOutPoint((*wire.Hash32)(&[32]byte{1}), 0), []byte{}),
+			},
+			TxOut: []*wire.TxOut{wire.NewTxOut(asset1, 5, []byte{})},
+		},
+		want: false,
+	}, { // empty txin
+		tx:   &wire.MsgTx{},
+		want: false,
+	}}
+
+	for _, c := range cases {
+		got := isIssuance(c.tx)
+		if got != c.want {
+			t.Errorf("got isIssuance(%x) = %v want %v", c.raw, got, c.want)
+		}
+	}
+}
+
+func TestIssued(t *testing.T) {
+	hash, _ := wire.NewHash20FromStr("AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p")
+	outs := []*wire.TxOut{
+		wire.NewTxOut(hash, 2, []byte{}),
+		wire.NewTxOut(hash, 3, []byte{}),
+	}
+
+	gotAsset, gotAmt := issued(outs)
+	if !bytes.Equal(gotAsset[:], hash[:]) {
+		t.Errorf("got asset = %q want %q", gotAsset.String(), hash.String())
+	}
+
+	if gotAmt != 5 {
+		t.Errorf("got amt = %d want %d", gotAmt, 5)
 	}
 }

@@ -139,3 +139,11 @@ func assetLabelByID(ctx context.Context, assetID string) string {
 	}
 	return label
 }
+
+// AddIssuance increases the issued column on an asset
+// by the amount provided.
+func AddIssuance(ctx context.Context, id string, amount int64) error {
+	const q = `UPDATE assets SET issued=issued+$1 WHERE id=$2`
+	_, err := pg.FromContext(ctx).Exec(q, amount, id)
+	return errors.Wrap(err)
+}
