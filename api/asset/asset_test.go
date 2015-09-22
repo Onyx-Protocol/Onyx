@@ -129,3 +129,37 @@ func TestOutputPkScript(t *testing.T) {
 		t.Errorf("got pkscript = %x want %x", errors.Root(err), ErrBadAddr)
 	}
 }
+
+func TestPkScriptChangeAddr(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO wallets (id, application_id, label, current_rotation)
+			VALUES('w1', 'app-id-0', 'w1', 'rot1');
+		INSERT INTO rotations (id, wallet_id, keyset)
+			VALUES('rot1', 'w1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
+		INSERT INTO buckets (id, wallet_id, key_index)
+			VALUES('b1', 'w1', 0);
+	`)
+	defer dbtx.Rollback()
+
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	out := &Output{BucketID: "b1", isChange: true}
+	_, err := out.PkScript(ctx)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	var isChange bool
+	const q = `SELECT is_change FROM addresses WHERE bucket_id='b1'`
+	err = pg.FromContext(ctx).QueryRow(q).Scan(&isChange)
+	if err != nil {
+		t.Fatalf("unexpected err %v", err)
+	}
+
+	if !isChange {
+		t.Fatal("Expected change output")
+	}
+
+}

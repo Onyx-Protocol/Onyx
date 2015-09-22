@@ -1,9 +1,6 @@
 package asset
 
 import (
-	"bytes"
-	"encoding/hex"
-	"reflect"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -11,7 +8,6 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain-sandbox/wire"
 )
 
 func TestTransfer(t *testing.T) {
@@ -31,7 +27,7 @@ func TestTransfer(t *testing.T) {
 	defer dbtx.Rollback()
 
 	ctx := pg.NewContext(context.Background(), dbtx)
-	tx, err := Transfer(ctx,
+	_, err := Transfer(ctx,
 		[]TransferInput{{
 			BucketID: "b1",
 			AssetID:  "AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx",
@@ -47,28 +43,6 @@ func TestTransfer(t *testing.T) {
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
-	}
-
-	wantTx := wire.NewMsgTx()
-
-	inHash, _ := wire.NewHash32FromStr("246c6aa1e5cc2bd1132a37cbc267e2031558aee26a8956e21b749d72920331a7")
-	wantTx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(inHash, 0), []byte{}))
-
-	outAsset, _ := wire.NewHash20FromStr("AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx")
-	outScript, _ := hex.DecodeString("a914a994a46855d8f4442b3a6db863628cc020537f4087")
-	wantTx.AddTxOut(wire.NewTxOut(outAsset, 5, outScript))
-
-	outScript, _ = hex.DecodeString("a9143fd679f3dc2886a2943a6408991f34cf115503aa87")
-	wantTx.AddTxOut(wire.NewTxOut(outAsset, 1, outScript))
-
-	gotTx := wire.NewMsgTx()
-	err = gotTx.Deserialize(bytes.NewBuffer(tx.Unsigned))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !reflect.DeepEqual(gotTx, wantTx) {
-		t.Errorf("got tx = %+v want %+v", gotTx, wantTx)
 	}
 }
 

@@ -67,6 +67,7 @@ func (o *Output) PkScript(ctx context.Context) ([]byte, error) {
 	if o.BucketID != "" {
 		addr := &appdb.Address{
 			BucketID: o.BucketID,
+			IsChange: o.isChange,
 		}
 		err := CreateAddress(ctx, addr)
 		if err != nil {
