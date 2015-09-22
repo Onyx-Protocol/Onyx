@@ -14,6 +14,7 @@ import (
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
+	"chain/fedchain-sandbox/wire"
 	"chain/metrics"
 	chainhttp "chain/net/http"
 	"chain/net/http/authn"
@@ -80,7 +81,9 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/v3/buckets/:bucketID/addresses", createAddr)
 	h.HandleFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
 	h.HandleFunc("POST", "/v3/assets/transfer", transferAssets)
+	h.HandleFunc("POST", "/v3/assets/trade", tradeAssets)
 	h.HandleFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
+	h.HandleFunc("POST", "/v3/assets/cancel-reservation", cancelReservation)
 	h.HandleFunc("GET", "/v3/user", getAuthdUser)
 	h.HandleFunc("POST", "/v3/user/email", updateUserEmail)
 	h.HandleFunc("POST", "/v3/user/password", updateUserPassword)
@@ -284,6 +287,33 @@ func transferAssets(ctx context.Context, x struct {
 	return ret, nil
 }
 
+// /v3/assets/trade
+func tradeAssets(ctx context.Context, x struct {
+	PreviousTx *asset.Tx `json:"previous_transaction"`
+	Inputs     []asset.TransferInput
+	Outputs    []asset.Output
+}) (interface{}, error) {
+	defer metrics.RecordElapsed(time.Now())
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer dbtx.Rollback()
+
+	template, err := asset.Trade(ctx, x.PreviousTx, x.Inputs, x.Outputs)
+	if err != nil {
+		return nil, err
+	}
+
+	err = dbtx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	ret := map[string]interface{}{"template": template}
+	return ret, nil
+}
+
 // /v3/wallets/transact/finalize
 func walletFinalize(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
@@ -313,6 +343,19 @@ func walletFinalize(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 		"raw_transaction": json.HexBytes(buf.Bytes()),
 	}
 	return ret, nil
+}
+
+// POST /v3/assets/cancel-reservation
+func cancelReservation(ctx context.Context, x struct {
+	Transaction json.HexBytes
+}) error {
+	tx := wire.NewMsgTx()
+	err := tx.Deserialize(bytes.NewReader(x.Transaction))
+	if err != nil {
+		return errors.Wrap(asset.ErrBadTxHex)
+	}
+
+	return appdb.CancelReservations(ctx, tx.OutPoints())
 }
 
 // POST /v3/login

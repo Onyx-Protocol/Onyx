@@ -16,6 +16,7 @@ import (
 var (
 	ErrBadOutDest       = errors.New("invalid output destinations")
 	ErrTransferMismatch = errors.New("input values don't match output values")
+	ErrBadTxHex         = errors.New("invalid raw transaction hex")
 )
 
 // TransferInput is a user input struct used in Transfer.
@@ -31,7 +32,14 @@ type TransferInput struct {
 // to output buckets or addresses.
 func Transfer(ctx context.Context, inputs []TransferInput, outputs []Output) (*Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
-	if err := validateTransfer(inputs, outputs); err != nil {
+	if err := checkTransferParity(inputs, outputs); err != nil {
+		return nil, err
+	}
+	return build(ctx, inputs, outputs, time.Minute)
+}
+
+func build(ctx context.Context, inputs []TransferInput, outputs []Output, ttl time.Duration) (*Tx, error) {
+	if err := validateOutputs(outputs); err != nil {
 		return nil, err
 	}
 
@@ -48,9 +56,9 @@ func Transfer(ctx context.Context, inputs []TransferInput, outputs []Output) (*T
 			err   error
 		)
 		if in.TxID != "" {
-			utxos, sum, err = appdb.ReserveTxUTXOs(ctx, in.AssetID, in.BucketID, in.TxID, in.Amount, time.Minute)
+			utxos, sum, err = appdb.ReserveTxUTXOs(ctx, in.AssetID, in.BucketID, in.TxID, in.Amount, ttl)
 		} else {
-			utxos, sum, err = appdb.ReserveUTXOs(ctx, in.AssetID, in.BucketID, in.Amount, time.Minute)
+			utxos, sum, err = appdb.ReserveUTXOs(ctx, in.AssetID, in.BucketID, in.Amount, ttl)
 		}
 		if err != nil {
 			err = errors.WithDetailf(err, "bucket=%v asset=%v amount=%v txid=%v",
@@ -105,22 +113,30 @@ func Transfer(ctx context.Context, inputs []TransferInput, outputs []Output) (*T
 	return appTx, nil
 }
 
-func validateTransfer(inputs []TransferInput, outputs []Output) error {
-	parity := make(map[string]int64)
-	for _, in := range inputs {
-		parity[in.AssetID] -= in.Amount
-	}
+func validateOutputs(outputs []Output) error {
 	for i, out := range outputs {
 		if (out.BucketID == "") == (out.Address == "") {
 			return errors.WithDetailf(ErrBadOutDest, "output index=%d", i)
 		}
-		parity[out.AssetID] += out.Amount
 	}
-	for _, amt := range parity {
+	return nil
+}
+
+func checkTransferParity(ins []TransferInput, outs []Output) error {
+	parity := make(map[string]int64)
+	for _, in := range ins {
+		parity[in.AssetID] += in.Amount
+	}
+	for _, out := range outs {
+		parity[out.AssetID] -= out.Amount
+	}
+
+	for asset, amt := range parity {
 		if amt != 0 {
-			return ErrTransferMismatch
+			return errors.WithDetailf(ErrBadTx, "asset %q does not balance", asset)
 		}
 	}
+
 	return nil
 }
 

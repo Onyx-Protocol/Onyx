@@ -12,6 +12,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
+	"chain/errors"
 	"chain/fedchain-sandbox/wire"
 )
 
@@ -228,5 +229,43 @@ func TestReserveTxSQL(t *testing.T) {
 	want := []utxo{{"t1", 0, 1, "a1"}, {"t1", 1, 1, "a3"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got utxos = %+v want %+v", got, want)
+	}
+}
+
+func TestCancelReservations(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO utxos
+		(txid, index, asset_id, amount, address_id, bucket_id, wallet_id, reserved_until)
+		VALUES
+			('0000000000000000000000000000000000000000000000000000000000000001', 0, 'a1', 1, 'a1', 'b1', 'w1', NOW()+'1h'::interval),
+			('0000000000000000000000000000000000000000000000000000000000000002', 0, 'a1', 1, 'a2', 'b1', 'w1', NOW()+'1h'::interval),
+			('0000000000000000000000000000000000000000000000000000000000000003', 0, 'a1', 1, 'a2', 'b1', 'w1', NOW()+'1h'::interval);
+	`)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	outpoints := []wire.OutPoint{{
+		Hash:  wire.Hash32([32]byte{1}),
+		Index: 0,
+	}, {
+		Hash:  wire.Hash32([32]byte{2}),
+		Index: 0,
+	}}
+
+	err := CancelReservations(ctx, outpoints)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	const q = `SELECT COUNT(*) FROM utxos WHERE reserved_until <= NOW()`
+	var cnt int
+	err = dbtx.QueryRow(q).Scan(&cnt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if cnt != 2 {
+		t.Errorf("got free utxos=%d want %d", cnt, 2)
 	}
 }

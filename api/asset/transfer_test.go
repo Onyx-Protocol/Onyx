@@ -46,34 +46,61 @@ func TestTransfer(t *testing.T) {
 	}
 }
 
-func TestValidateTransfer(t *testing.T) {
+func TestValidateOutputs(t *testing.T) {
 	cases := []struct {
-		ins     []TransferInput
 		outs    []Output
 		wantErr error
 	}{{
-		ins:     []TransferInput{},
-		outs:    []Output{{AssetID: "x", Amount: 5, BucketID: "b1"}},
-		wantErr: ErrTransferMismatch,
-	}, {
-		ins:     []TransferInput{{AssetID: "x", Amount: 5}},
 		outs:    []Output{{AssetID: "x", Amount: 5, BucketID: "b1", Address: "a"}},
 		wantErr: ErrBadOutDest,
 	}, {
-		ins:     []TransferInput{{AssetID: "x", Amount: 5}},
 		outs:    []Output{{AssetID: "x", Amount: 5}},
 		wantErr: ErrBadOutDest,
 	}, {
-		ins:     []TransferInput{{AssetID: "x", Amount: 5}},
 		outs:    []Output{{AssetID: "x", Amount: 5, BucketID: "b1"}},
 		wantErr: nil,
 	}}
 
 	for _, c := range cases {
-		got := validateTransfer(c.ins, c.outs)
+		got := validateOutputs(c.outs)
 
 		if errors.Root(got) != c.wantErr {
 			t.Errorf("got err = %v want %v", errors.Root(got), c.wantErr)
+		}
+	}
+}
+
+func TestCheckTransferParity(t *testing.T) {
+	cases := []struct {
+		ins  []TransferInput
+		outs []Output
+		want error
+	}{{
+		ins:  []TransferInput{{AssetID: "x", Amount: 4}},
+		outs: []Output{},
+		want: ErrBadTx,
+	}, {
+		ins:  []TransferInput{},
+		outs: []Output{{AssetID: "x", Amount: 4}},
+		want: ErrBadTx,
+	}, {
+		ins:  []TransferInput{{AssetID: "x", Amount: 4}},
+		outs: []Output{{AssetID: "y", Amount: 4}},
+		want: ErrBadTx,
+	}, {
+		ins:  []TransferInput{{AssetID: "x", Amount: 4}},
+		outs: []Output{{AssetID: "x", Amount: 5}},
+		want: ErrBadTx,
+	}, {
+		ins:  []TransferInput{{AssetID: "x", Amount: 4}},
+		outs: []Output{{AssetID: "x", Amount: 4}},
+		want: nil,
+	}}
+
+	for _, c := range cases {
+		err := checkTransferParity(c.ins, c.outs)
+		if errors.Root(err) != c.want {
+			t.Errorf("got err = %q want %q", errors.Root(err), c.want)
 		}
 	}
 }

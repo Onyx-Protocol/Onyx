@@ -19,12 +19,14 @@ import (
 var ErrInsufficientFunds = errors.New("insufficient funds")
 
 // UTXO is a simple wrapper around an output
-// that contains its outpoint, amount and address id.
+// that contains its outpoint, amount,
+// and either address id or asset id.
 // It is used to create in input on a transaction.
 type UTXO struct {
 	OutPoint  *wire.OutPoint
 	Amount    int64
 	AddressID string
+	AssetID   string
 }
 
 // ReserveUTXOs selects enough UTXOs to satisfy the requested amount.
@@ -96,11 +98,36 @@ func scanUTXOs(rows *sql.Rows, err error) ([]*UTXO, int64, error) {
 		}
 
 		sum += uAmt
-		utxos = append(utxos, &UTXO{wire.NewOutPoint(hash, index), uAmt, addrID})
+		utxos = append(utxos, &UTXO{wire.NewOutPoint(hash, index), uAmt, addrID, ""})
 	}
 	if err = rows.Err(); err != nil {
 		return nil, 0, errors.Wrap(err, "end row scan loop")
 	}
 
 	return utxos, sum, nil
+}
+
+// CancelReservations cancels reservations on all utxos
+// specified by the outpoints. It does this by setting
+// reserved_until to NOW(), effectively freeing the utxos.
+func CancelReservations(ctx context.Context, outpoints []wire.OutPoint) error {
+	var (
+		hashes []string
+		idxes  []uint32
+	)
+	for _, op := range outpoints {
+		hashes = append(hashes, op.Hash.String())
+		idxes = append(idxes, op.Index)
+	}
+
+	const q = `
+		WITH outpoints AS (
+			SELECT unnest($1::text[]) txid, unnest($2::int[])
+		)
+		UPDATE utxos SET reserved_until=NOW()
+		WHERE (txid, index) IN (TABLE outpoints)
+	`
+
+	_, err := pg.FromContext(ctx).Exec(q, pg.Strings(hashes), pg.Uint32s(idxes))
+	return errors.Wrap(err)
 }

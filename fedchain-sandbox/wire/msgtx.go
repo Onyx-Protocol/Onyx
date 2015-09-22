@@ -447,6 +447,16 @@ func (msg *MsgTx) PkScriptLocs() []int {
 	return pkScriptLocs
 }
 
+// OutPoints returns a slice of all the OutPoints
+// consumed by the transaction's inputs.
+func (msg *MsgTx) OutPoints() []OutPoint {
+	var outpoints []OutPoint
+	for _, in := range msg.TxIn {
+		outpoints = append(outpoints, in.PreviousOutPoint)
+	}
+	return outpoints
+}
+
 // NewMsgTx returns a new bitcoin tx message that conforms to the Message
 // interface.  The return instance has a default version of TxVersion and there
 // are no transaction inputs or outputs.  Also, the lock time is set to zero
