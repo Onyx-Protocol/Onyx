@@ -60,7 +60,7 @@ func main() {
 	appdb.Init(db)
 
 	var h chainhttp.Handler
-	h = api.Handler() // TODO(kr): authentication
+	h = api.Handler()
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 
