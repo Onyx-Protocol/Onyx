@@ -1,7 +1,6 @@
 package api
 
 import (
-	"net/http"
 	"time"
 
 	"golang.org/x/net/context"
@@ -11,33 +10,23 @@ import (
 )
 
 // /v3/buckets/:bucketID/addresses
-func createAddr(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	var input struct {
-		Amount  uint64
-		Expires time.Time
-	}
-
-	bucketID := req.URL.Query().Get(":bucketID")
-	err := readJSON(req.Body, &input)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
+func createAddr(ctx context.Context, bucketID string, in struct {
+	Amount  uint64
+	Expires time.Time
+}) (interface{}, error) {
 	addr := &appdb.Address{
 		BucketID: bucketID,
-		Amount:   input.Amount,
-		Expires:  input.Expires,
+		Amount:   in.Amount,
+		Expires:  in.Expires,
 		IsChange: false,
 	}
-	err = asset.CreateAddress(ctx, addr)
+	err := asset.CreateAddress(ctx, addr)
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 
 	signers := asset.Signers(addr.Keys, asset.ReceiverPath(addr))
-	writeJSON(ctx, w, 201, map[string]interface{}{
+	ret := map[string]interface{}{
 		"address":             addr.Address,
 		"signatures_required": addr.SigsRequired,
 		"signers":             addrSigners(signers),
@@ -46,7 +35,8 @@ func createAddr(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 		"expires":             optionalTime(addr.Expires),
 		"id":                  addr.ID,
 		"index":               addr.Index[:],
-	})
+	}
+	return ret, nil
 }
 
 func addrSigners(signers []*asset.DerivedKey) (v []interface{}) {

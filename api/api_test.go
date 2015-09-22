@@ -1,12 +1,6 @@
 package api
 
 import (
-	"bytes"
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -14,6 +8,7 @@ import (
 	"chain/api/appdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/errors"
 	"chain/net/http/authn"
 )
 
@@ -25,28 +20,29 @@ const testUserFixture = `
 	);
 `
 
+func TestMux(t *testing.T) {
+	// Handler calls httpjson.HandleFunc, which panics
+	// if the function signature is not of the right form.
+	// So call Handler here and rescue any panic
+	// to check for this case.
+	defer func() {
+		if err := recover(); err != nil {
+			t.Fatal("unexpected panic:", err)
+		}
+	}()
+	Handler()
+}
+
 func TestCreateUser(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, "")
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
+	req := struct{ Email, Password string }{"foo@bar.com", "abracadabra"}
 
-	rec := httptest.NewRecorder()
-	req := &http.Request{
-		Body: ioutil.NopCloser(bytes.NewBufferString(`{"email": "foo@bar.com", "password": "abracadabra"}`)),
-	}
-
-	createUser(ctx, rec, req)
-
-	if rec.Code != 200 {
-		t.Fatalf("status = %v want 200", rec.Code)
-	}
-
-	var u appdb.User
-	err := readJSON(rec.Body, &u)
+	u, err := createUser(ctx, req)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("unexpected error", err)
 	}
-
 	if u.Email != "foo@bar.com" {
 		t.Errorf("got email = %v want foo@bar.com", u.Email)
 	}
@@ -58,25 +54,16 @@ func TestLogin(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 	ctx = authn.NewContext(ctx, "sample-user-id-0")
 
-	rec := httptest.NewRecorder()
-	login(ctx, rec, new(http.Request))
-
-	if rec.Code != 200 {
-		t.Fatalf("status = %v want 200", rec.Code)
+	tok, err := login(ctx)
+	if err != nil {
+		t.Fatal("unexpected error", err)
 	}
 
 	// Verify that the token is valid
-	tok := new(appdb.AuthToken)
-	err := json.NewDecoder(rec.Body).Decode(tok)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	uid, err := authenticateToken(ctx, tok.ID, tok.Secret)
 	if err != nil {
 		t.Errorf("authenticate token err = %v want nil", err)
 	}
-
 	if uid != "sample-user-id-0" {
 		t.Errorf("authenticated user ID = %v want sample-user-id-0", uid)
 	}
@@ -87,15 +74,13 @@ func TestCreateWalletBadXPub(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	const body = `{"label": "foo", "xpubs": ["badxpub"]}`
-	req, _ := http.NewRequest("POST", "/v3/applications/a1/wallets", strings.NewReader(body))
-	resp := httptest.NewRecorder()
-	createWallet(ctx, resp, req)
-	if resp.Code != 400 {
-		t.Errorf("createWallet(%#q) http status = %d want 400", body, resp.Code)
-	}
-	want := errorInfoTab[appdb.ErrBadXPub].ChainCode
-	if g := strings.TrimSpace(resp.Body.String()); !strings.Contains(g, want) {
-		t.Errorf("createWallet(%#q) can't find %s in response %#q", body, want, g)
+	req := struct {
+		Label string
+		XPubs []string
+	}{"foo", []string{"badxpub"}}
+
+	_, err := createWallet(ctx, "a1", req)
+	if got := errors.Root(err); got != appdb.ErrBadXPub {
+		t.Fatalf("err = %v want %v", got, appdb.ErrBadXPub)
 	}
 }

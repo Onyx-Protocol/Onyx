@@ -3,7 +3,6 @@ package api
 
 import (
 	"bytes"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"chain/metrics"
 	chainhttp "chain/net/http"
 	"chain/net/http/authn"
+	"chain/net/http/httpjson"
 	"chain/net/http/pat"
 )
 
@@ -26,549 +26,318 @@ const (
 	defActivityPageSize  = 50
 )
 
+// Handler returns a handler that serves the Chain HTTP API.
 func Handler() chainhttp.Handler {
 	h := chainhttp.PatServeMux{PatternServeMux: pat.New()}
-	h.AddFunc("GET", "/v3/applications", tokenAuthn(listApplications))
-	h.AddFunc("POST", "/v3/applications", tokenAuthn(createApplication))
-	h.AddFunc("GET", "/v3/applications/:appID", getApplication)
-	h.AddFunc("PUT", "/v3/applications/:appID", updateApplication)
-	h.AddFunc("GET", "/v3/applications/:appID/members", listMembers)
-	h.AddFunc("POST", "/v3/applications/:appID/members", addMember)
-	h.AddFunc("PUT", "/v3/applications/:appID/members/:userID", updateMember)
-	h.AddFunc("DELETE", "/v3/applications/:appID/members/:userID", removeMember)
-	h.AddFunc("GET", "/v3/applications/:appID/wallets", listWallets)
-	h.AddFunc("POST", "/v3/applications/:appID/wallets", createWallet)
-	h.AddFunc("GET", "/v3/wallets/:walletID", getWallet)
-	h.AddFunc("GET", "/v3/wallets/:walletID/buckets", listBuckets)
-	h.AddFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
-	h.AddFunc("GET", "/v3/wallets/:walletID/balance", getWalletBalance)
-	h.AddFunc("GET", "/v3/wallets/:walletID/activity", getWalletActivity)
-	h.AddFunc("GET", "/v3/wallets/:walletID/transactions/:txID", getWalletTxActivity)
-	h.AddFunc("GET", "/v3/applications/:appID/asset-groups", listAssetGroups)
-	h.AddFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
-	h.AddFunc("GET", "/v3/asset-groups/:groupID", getAssetGroup)
-	h.AddFunc("GET", "/v3/asset-groups/:groupID/assets", listAssets)
-	h.AddFunc("POST", "/v3/asset-groups/:groupID/assets", createAsset)
-	h.AddFunc("GET", "/v3/buckets/:bucketID/balance", getBucketBalance)
-	h.AddFunc("GET", "/v3/buckets/:bucketID/activity", getBucketActivity)
-	h.AddFunc("POST", "/v3/buckets/:bucketID/addresses", createAddr)
-	h.AddFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
-	h.AddFunc("POST", "/v3/assets/transfer", transferAssets)
-	h.AddFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
-	h.AddFunc("POST", "/v3/users", createUser)
-	h.AddFunc("GET", "/v3/user", tokenAuthn(getAuthdUser))
-	h.AddFunc("POST", "/v3/user/email", tokenAuthn(updateUserEmail))
-	h.AddFunc("POST", "/v3/user/password", tokenAuthn(updateUserPassword))
-	h.AddFunc("POST", "/v3/login", userCredsAuthn(login))
-	h.AddFunc("GET", "/v3/authcheck", tokenAuthn(authcheck))
-	h.AddFunc("GET", "/v3/api-tokens", tokenAuthn(listAPITokens))
-	h.AddFunc("POST", "/v3/api-tokens", tokenAuthn(createAPIToken))
-	h.AddFunc("DELETE", "/v3/api-tokens/:tokenID", deleteAPIToken)
+
+	noauth := httpjson.NewServeMux(writeHTTPError)
+	noauth.HandleFunc("POST", "/v3/users", createUser)
+	h.AddFunc("POST", "/v3/users", noauth.ServeHTTPContext)
+
+	pwHandler := httpjson.NewServeMux(writeHTTPError)
+	pwHandler.HandleFunc("POST", "/v3/login", login)
+	h.AddFunc("POST", "/v3/login", userCredsAuthn(pwHandler.ServeHTTPContext))
+
+	tokenHandler := chainhttp.HandlerFunc(tokenAuthn(tokenAuthedHandler()))
+	h.Add("GET", "/", tokenHandler)
+	h.Add("PUT", "/", tokenHandler)
+	h.Add("POST", "/", tokenHandler)
+	h.Add("DELETE", "/", tokenHandler)
+
 	return h
 }
 
+func tokenAuthedHandler() chainhttp.HandlerFunc {
+	h := httpjson.NewServeMux(writeHTTPError)
+	h.HandleFunc("GET", "/v3/applications", listApplications)
+	h.HandleFunc("POST", "/v3/applications", createApplication)
+	h.HandleFunc("GET", "/v3/applications/:appID", appdb.GetApplication)
+	h.HandleFunc("PUT", "/v3/applications/:appID", updateApplication)
+	h.HandleFunc("GET", "/v3/applications/:appID/members", appdb.ListMembers)
+	h.HandleFunc("POST", "/v3/applications/:appID/members", addMember)
+	h.HandleFunc("PUT", "/v3/applications/:appID/members/:userID", updateMember)
+	h.HandleFunc("DELETE", "/v3/applications/:appID/members/:userID", appdb.RemoveMember)
+	h.HandleFunc("GET", "/v3/applications/:appID/wallets", appdb.ListWallets)
+	h.HandleFunc("POST", "/v3/applications/:appID/wallets", createWallet)
+	h.HandleFunc("GET", "/v3/wallets/:walletID", appdb.GetWallet)
+	h.HandleFunc("GET", "/v3/wallets/:walletID/buckets", appdb.ListBuckets)
+	h.HandleFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
+	h.HandleFunc("GET", "/v3/wallets/:walletID/balance", appdb.WalletBalance)
+	h.HandleFunc("GET", "/v3/wallets/:walletID/activity", getWalletActivity)
+	h.HandleFunc("GET", "/v3/wallets/:walletID/transactions/:txID", appdb.WalletTxActivity)
+	h.HandleFunc("GET", "/v3/applications/:appID/asset-groups", appdb.ListAssetGroups)
+	h.HandleFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
+	h.HandleFunc("GET", "/v3/asset-groups/:groupID", appdb.GetAssetGroup)
+	h.HandleFunc("GET", "/v3/asset-groups/:groupID/assets", appdb.ListAssets)
+	h.HandleFunc("POST", "/v3/asset-groups/:groupID/assets", createAsset)
+	h.HandleFunc("GET", "/v3/buckets/:bucketID/balance", appdb.BucketBalance)
+	h.HandleFunc("GET", "/v3/buckets/:bucketID/activity", getBucketActivity)
+	h.HandleFunc("POST", "/v3/buckets/:bucketID/addresses", createAddr)
+	h.HandleFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
+	h.HandleFunc("POST", "/v3/assets/transfer", transferAssets)
+	h.HandleFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
+	h.HandleFunc("GET", "/v3/user", getAuthdUser)
+	h.HandleFunc("POST", "/v3/user/email", updateUserEmail)
+	h.HandleFunc("POST", "/v3/user/password", updateUserPassword)
+	h.HandleFunc("GET", "/v3/authcheck", func() {})
+	h.HandleFunc("GET", "/v3/api-tokens", listAPITokens)
+	h.HandleFunc("POST", "/v3/api-tokens", createAPIToken)
+	h.HandleFunc("DELETE", "/v3/api-tokens/:tokenID", appdb.DeleteAuthToken)
+	return h.ServeHTTPContext
+}
+
 // /v3/applications/:appID/wallets
-func createWallet(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	appID := req.URL.Query().Get(":appID")
-
-	var wReq struct {
-		Label string   `json:"label"`
-		XPubs []string `json:"xpubs"`
-	}
-	err := readJSON(req.Body, &wReq)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
+func createWallet(ctx context.Context, appID string, wReq struct {
+	Label string
+	XPubs []string
+}) (interface{}, error) {
 	var keys []*hdkey.XKey
 	for i, xpub := range wReq.XPubs {
 		key, err := hdkey.NewXKey(xpub)
 		if err != nil {
 			err = errors.Wrap(appdb.ErrBadXPub, err.Error())
-			writeHTTPError(ctx, w, errors.WithDetailf(err, "xpub %d", i))
-			return
+			return nil, errors.WithDetailf(err, "xpub %d", i)
 		}
 		keys = append(keys, key)
 	}
 
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 	defer dbtx.Rollback()
 
 	wID, err := appdb.CreateWallet(ctx, appID, wReq.Label, keys)
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 
 	err = dbtx.Commit()
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 
-	writeJSON(ctx, w, 201, map[string]interface{}{
+	ret := map[string]interface{}{
 		"id":                  wID,
 		"label":               wReq.Label,
 		"block_chain":         "sandbox",
 		"keys":                keys,
 		"signatures_required": 1,
-	})
-}
-
-// GET /v3/wallets/:walletID
-func getWallet(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	id := req.URL.Query().Get(":walletID")
-	wal, err := appdb.GetWallet(ctx, id)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
 	}
-
-	writeJSON(ctx, w, 200, wal)
-}
-
-// /v3/wallets/:walletID/balance
-func getWalletBalance(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	wID := req.URL.Query().Get(":walletID")
-	bals, err := appdb.WalletBalance(ctx, wID)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, bals)
-}
-
-// GET /v3/applications/:appID/wallets
-func listWallets(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	aid := req.URL.Query().Get(":appID")
-	wallets, err := appdb.ListWallets(ctx, aid)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, wallets)
+	return ret, nil
 }
 
 // GET /v3/wallets/:walletID/activity
-func getWalletActivity(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	wID := req.URL.Query().Get(":walletID")
-	prev := req.Header.Get("Range-After")
+func getWalletActivity(ctx context.Context, wID string) (interface{}, error) {
+	prev := httpjson.Request(ctx).Header.Get("Range-After")
 
 	limit := defActivityPageSize
-	if lstr := req.Header.Get("Limit"); lstr != "" {
+	if lstr := httpjson.Request(ctx).Header.Get("Limit"); lstr != "" {
 		var err error
 		limit, err = strconv.Atoi(lstr)
 		if err != nil {
 			err = errors.Wrap(ErrBadReqHeader, err.Error())
-			writeHTTPError(ctx, w, errors.WithDetail(err, "limit header"))
-			return
+			return nil, errors.WithDetail(err, "limit header")
 		}
 	}
 
 	activity, last, err := appdb.WalletActivity(ctx, wID, prev, limit)
-
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 
-	writeJSON(ctx, w, 200, map[string]interface{}{
+	ret := map[string]interface{}{
 		"last":       last,
 		"activities": activity,
-	})
-}
-
-// GET /v3/wallets/:walletID/transactions/:txID
-func getWalletTxActivity(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	wID := req.URL.Query().Get(":walletID")
-	txID := req.URL.Query().Get(":txID")
-
-	activity, err := appdb.WalletTxActivity(ctx, wID, txID)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
 	}
-
-	writeJSON(ctx, w, 200, activity)
-}
-
-// GET /v3/applications/:appID/asset-groups
-func listAssetGroups(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	appID := req.URL.Query().Get(":appID")
-	ags, err := appdb.ListAssetGroups(ctx, appID)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-	writeJSON(ctx, w, 200, ags)
+	return ret, nil
 }
 
 // POST /v3/applications/:appID/asset-groups
-func createAssetGroup(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	appID := req.URL.Query().Get(":appID")
-
-	var agReq struct {
-		Label string   `json:"label"`
-		XPubs []string `json:"xpubs"`
-	}
-	err := readJSON(req.Body, &agReq)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
+func createAssetGroup(ctx context.Context, appID string, agReq struct {
+	Label string
+	XPubs []string
+}) (interface{}, error) {
 	var keys []*hdkey.XKey
 	for _, xpub := range agReq.XPubs {
 		key, err := hdkey.NewXKey(xpub)
 		if err != nil {
-			writeHTTPError(ctx, w, err)
-			return
+			return nil, err
 		}
 		keys = append(keys, key)
 	}
 
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 	defer dbtx.Rollback()
 
 	agID, err := appdb.CreateAssetGroup(ctx, appID, agReq.Label, keys)
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 
 	err = dbtx.Commit()
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 
-	writeJSON(ctx, w, 201, map[string]interface{}{
+	ret := map[string]interface{}{
 		"id":                  agID,
 		"label":               agReq.Label,
 		"block_chain":         "sandbox",
 		"keys":                keys,
 		"signatures_required": 1,
-	})
-}
-
-// GET /v3/wallets/:walletID/buckets
-func listBuckets(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	id := req.URL.Query().Get(":walletID")
-	buckets, err := appdb.ListBuckets(ctx, id)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
 	}
-	writeJSON(ctx, w, 200, buckets)
+	return ret, nil
 }
 
 // /v3/wallets/:walletID/buckets
-func createBucket(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+func createBucket(ctx context.Context, walletID string, in struct{ Label string }) (*appdb.Bucket, error) {
 	defer metrics.RecordElapsed(time.Now())
-	walletID := req.URL.Query().Get(":walletID")
-
-	var input struct {
-		Label string `json:"label"`
-	}
-	err := readJSON(req.Body, &input)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	bucket, err := appdb.CreateBucket(ctx, walletID, input.Label)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 201, bucket)
-}
-
-// /v3/buckets/:bucketID/balance
-func getBucketBalance(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	bID := req.URL.Query().Get(":bucketID")
-	bals, err := appdb.BucketBalance(ctx, bID)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, bals)
+	return appdb.CreateBucket(ctx, walletID, in.Label)
 }
 
 // GET /v3/buckets/:bucketID/activity
-func getBucketActivity(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	bid := req.URL.Query().Get(":bucketID")
-	prev := req.Header.Get("Range-After")
+func getBucketActivity(ctx context.Context, bid string) (interface{}, error) {
+	prev := httpjson.Request(ctx).Header.Get("Range-After")
 
 	limit := defActivityPageSize
-	if lstr := req.Header.Get("Limit"); lstr != "" {
+	if lstr := httpjson.Request(ctx).Header.Get("Limit"); lstr != "" {
 		var err error
 		limit, err = strconv.Atoi(lstr)
 		if err != nil {
 			err = errors.Wrap(ErrBadReqHeader, err.Error())
-			writeHTTPError(ctx, w, errors.WithDetail(err, "limit header"))
-			return
+			return nil, errors.WithDetail(err, "limit header")
 		}
 	}
 
 	activity, last, err := appdb.BucketActivity(ctx, bid, prev, limit)
-
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 
-	writeJSON(ctx, w, 200, map[string]interface{}{
+	ret := map[string]interface{}{
 		"last":       last,
 		"activities": activity,
-	})
-}
-
-// GET /v3/asset-groups/:groupID
-func getAssetGroup(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	groupID := req.URL.Query().Get(":groupID")
-	g, err := appdb.GetAssetGroup(ctx, groupID)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
 	}
-	writeJSON(ctx, w, 200, g)
-}
-
-// GET /v3/applications/:appID/asset-groups
-func listAssets(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	groupID := req.URL.Query().Get(":groupID")
-	assets, err := appdb.ListAssets(ctx, groupID)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-	writeJSON(ctx, w, 200, assets)
+	return ret, nil
 }
 
 // POST /v3/asset-groups/:groupID/assets
-func createAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+func createAsset(ctx context.Context, groupID string, in struct{ Label string }) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
-	groupID := req.URL.Query().Get(":groupID")
-
-	var input struct{ Label string }
-	err := readJSON(req.Body, &input)
+	asset, err := asset.Create(ctx, groupID, in.Label)
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 
-	asset, err := asset.Create(ctx, groupID, input.Label)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, http.StatusCreated, map[string]interface{}{
+	ret := map[string]interface{}{
 		"id":             asset.Hash.String(),
 		"asset_group_id": asset.GroupID,
 		"label":          asset.Label,
-	})
+	}
+	return ret, nil
 }
 
 // /v3/assets/:assetID/issue
-func issueAsset(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+func issueAsset(ctx context.Context, assetID string, outs []asset.Output) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
-	var outs []asset.Output
-	err := readJSON(req.Body, &outs)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	assetID := req.URL.Query().Get(":assetID")
 	template, err := asset.Issue(ctx, assetID, outs)
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 
-	writeJSON(ctx, w, 200, map[string]interface{}{
-		"template": template,
-	})
+	ret := map[string]interface{}{"template": template}
+	return ret, nil
 }
 
 // /v3/assets/transfer
-func transferAssets(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+func transferAssets(ctx context.Context, x struct {
+	Inputs  []asset.TransferInput
+	Outputs []asset.Output
+}) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
-	var x struct {
-		Inputs  []asset.TransferInput
-		Outputs []asset.Output
-	}
-	err := readJSON(req.Body, &x)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 	defer dbtx.Rollback()
 
 	template, err := asset.Transfer(ctx, x.Inputs, x.Outputs)
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 
 	err = dbtx.Commit()
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 
-	writeJSON(ctx, w, 200, map[string]interface{}{
-		"template": template,
-	})
+	ret := map[string]interface{}{"template": template}
+	return ret, nil
 }
 
 // /v3/wallets/transact/finalize
-func walletFinalize(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+func walletFinalize(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	// TODO(kr): validate
 
-	tpl := new(asset.Tx)
-	err := readJSON(req.Body, tpl)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 	defer dbtx.Rollback()
 
 	tx, err := asset.FinalizeTx(ctx, tpl)
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 
 	err = dbtx.Commit()
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return nil, err
 	}
 
 	var buf bytes.Buffer
 	tx.Serialize(&buf)
 
-	writeJSON(ctx, w, 200, map[string]interface{}{
+	ret := map[string]interface{}{
 		"transaction_id":  tx.TxSha().String(),
 		"raw_transaction": json.HexBytes(buf.Bytes()),
-	})
+	}
+	return ret, nil
 }
 
 // POST /v3/users
-func createUser(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	var in struct {
-		Email    string
-		Password string
-	}
-
-	err := readJSON(req.Body, &in)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	user, err := appdb.CreateUser(ctx, in.Email, in.Password)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, user)
+func createUser(ctx context.Context, in struct{ Email, Password string }) (*appdb.User, error) {
+	return appdb.CreateUser(ctx, in.Email, in.Password)
 }
 
 // POST /v3/login
-func login(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+func login(ctx context.Context) (*appdb.AuthToken, error) {
 	uid := authn.GetAuthID(ctx)
 	expiresAt := time.Now().UTC().Add(sessionTokenLifetime)
-	t, err := appdb.CreateAuthToken(ctx, uid, "session", &expiresAt)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-	writeJSON(ctx, w, 200, t)
+	return appdb.CreateAuthToken(ctx, uid, "session", &expiresAt)
 }
 
 // GET /v3/user
-func getAuthdUser(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+func getAuthdUser(ctx context.Context) (*appdb.User, error) {
 	uid := authn.GetAuthID(ctx)
-	u, err := appdb.GetUser(ctx, uid)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-	writeJSON(ctx, w, 200, u)
+	return appdb.GetUser(ctx, uid)
 }
 
 // POST /v3/user/email
-func updateUserEmail(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	var in struct{ Email, Password string }
-	err := readJSON(req.Body, &in)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
+func updateUserEmail(ctx context.Context, in struct{ Email, Password string }) error {
 	uid := authn.GetAuthID(ctx)
-	err = appdb.UpdateUserEmail(ctx, uid, in.Password, in.Email)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, map[string]string{"message": "ok"})
+	return appdb.UpdateUserEmail(ctx, uid, in.Password, in.Email)
 }
 
 // POST /v3/user/password
-func updateUserPassword(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	var in struct{ Current, New string }
-	err := readJSON(req.Body, &in)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
+func updateUserPassword(ctx context.Context, in struct{ Current, New string }) error {
 	uid := authn.GetAuthID(ctx)
-	err = appdb.UpdateUserPassword(ctx, uid, in.Current, in.New)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, map[string]string{"message": "ok"})
-}
-
-// GET /v3/authcheck
-func authcheck(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	writeJSON(ctx, w, 200, map[string]string{"message": "ok"})
+	return appdb.UpdateUserPassword(ctx, uid, in.Current, in.New)
 }
 
 // optionalTime returns a pointer to t or nil, if t is zero.

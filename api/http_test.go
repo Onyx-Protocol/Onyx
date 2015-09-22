@@ -3,34 +3,12 @@ package api
 import (
 	"chain/database/pg"
 	"chain/errors"
-	"io/ioutil"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"golang.org/x/net/context"
 )
-
-func TestWriteJSONArray(t *testing.T) {
-	examples := []struct {
-		in   []int
-		want string
-	}{
-		{nil, "[]\n"},
-		{[]int{}, "[]\n"},
-		{make([]int, 0), "[]\n"},
-	}
-
-	for i, ex := range examples {
-		t.Log("Example", i)
-		rec := httptest.NewRecorder()
-		writeJSON(context.Background(), rec, 200, ex.in)
-		got, _ := ioutil.ReadAll(rec.Body)
-		if string(got) != ex.want {
-			t.Errorf("got=%v want=%v", string(got), ex.want)
-		}
-	}
-}
 
 func TestWriteHTTPError(t *testing.T) {
 	cases := []struct {

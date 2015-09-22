@@ -1,8 +1,6 @@
 package api
 
 import (
-	"net/http"
-
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
@@ -10,133 +8,33 @@ import (
 )
 
 // GET /v3/applications
-func listApplications(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+func listApplications(ctx context.Context) ([]*appdb.Application, error) {
 	uid := authn.GetAuthID(ctx)
-	apps, err := appdb.ListApplications(ctx, uid)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, apps)
+	return appdb.ListApplications(ctx, uid)
 }
 
 // POST /v3/applications
-func createApplication(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	var in struct{ Name string }
-	err := readJSON(req.Body, &in)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
+func createApplication(ctx context.Context, in struct{ Name string }) (*appdb.Application, error) {
 	uid := authn.GetAuthID(ctx)
-	a, err := appdb.CreateApplication(ctx, in.Name, uid)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, a)
-}
-
-// GET /v3/applications/:appID
-func getApplication(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	aid := req.URL.Query().Get(":appID")
-	a, err := appdb.GetApplication(ctx, aid)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, a)
+	return appdb.CreateApplication(ctx, in.Name, uid)
 }
 
 // PUT /v3/applications/:appID
-func updateApplication(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	var in struct{ Name string }
-	err := readJSON(req.Body, &in)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	aid := req.URL.Query().Get(":appID")
-	err = appdb.UpdateApplication(ctx, aid, in.Name)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, map[string]string{"message": "ok"})
-}
-
-// GET /v3/applications/:appID/members
-func listMembers(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	aid := req.URL.Query().Get(":appID")
-	members, err := appdb.ListMembers(ctx, aid)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, members)
+func updateApplication(ctx context.Context, aid string, in struct{ Name string }) error {
+	return appdb.UpdateApplication(ctx, aid, in.Name)
 }
 
 // POST /v3/applications/:appID/members
-func addMember(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	var in struct{ Email, Role string }
-	err := readJSON(req.Body, &in)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
+func addMember(ctx context.Context, aid string, in struct{ Email, Role string }) error {
 	user, err := appdb.GetUserByEmail(ctx, in.Email)
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return err
 	}
 
-	aid := req.URL.Query().Get(":appID")
-	err = appdb.AddMember(ctx, aid, user.ID, in.Role)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, map[string]string{"message": "ok"})
+	return appdb.AddMember(ctx, aid, user.ID, in.Role)
 }
 
 // PUT /v3/applications/:appID/members/:userID
-func updateMember(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	var in struct{ Role string }
-	err := readJSON(req.Body, &in)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	aid := req.URL.Query().Get(":appID")
-	memberID := req.URL.Query().Get(":userID")
-	err = appdb.UpdateMember(ctx, aid, memberID, in.Role)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, map[string]string{"message": "ok"})
-}
-
-// DELETE /v3/applications/:appID/members/:userID
-func removeMember(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	aid := req.URL.Query().Get(":appID")
-	memberID := req.URL.Query().Get(":userID")
-	err := appdb.RemoveMember(ctx, aid, memberID)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
-	writeJSON(ctx, w, 200, map[string]string{"message": "ok"})
+func updateMember(ctx context.Context, aid, memberID string, in struct{ Role string }) error {
+	return appdb.UpdateMember(ctx, aid, memberID, in.Role)
 }
