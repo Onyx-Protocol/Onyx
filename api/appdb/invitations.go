@@ -13,10 +13,11 @@ import (
 // Invitation represents an invitation to an application. It is intended to be
 // used with API responses.
 type Invitation struct {
-	ID    string `json:"id"`
-	AppID string `json:"application_id"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
+	ID      string `json:"id"`
+	AppID   string `json:"application_id"`
+	AppName string `json:"application_name"`
+	Email   string `json:"email"`
+	Role    string `json:"role"`
 
 	// Returned by GetInvitation
 	UserID string `json:"user_id,omitempty"`
@@ -45,12 +46,12 @@ func CreateInvitation(ctx context.Context, appID, email, role string) (*Invitati
 	}
 
 	// Ensure that the email address is not already part of the application.
-	selectq := `
+	checkq := `
 		SELECT 1 FROM users u
 		JOIN members m ON u.id = m.user_id
 		WHERE lower(u.email) = lower($1) AND m.application_id = $2
 	`
-	err := pg.FromContext(ctx).QueryRow(selectq, email, appID).Scan(new(int))
+	err := pg.FromContext(ctx).QueryRow(checkq, email, appID).Scan(new(int))
 	if err == nil {
 		return nil, ErrAlreadyMember
 	}
@@ -67,22 +68,30 @@ func CreateInvitation(ctx context.Context, appID, email, role string) (*Invitati
 	}
 	id := hex.EncodeToString(idRaw)
 
-	var (
-		insertq = `
-			INSERT INTO invitations (id, application_id, email, role)
-			VALUES ($1, $2, $3, $4)
-		`
-	)
+	insertq := `
+		INSERT INTO invitations (id, application_id, email, role)
+		VALUES ($1, $2, $3, $4)
+	`
 	_, err = pg.FromContext(ctx).Exec(insertq, id, appID, email, role)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert invitation query")
 	}
 
+	var (
+		nameq = `SELECT name FROM applications WHERE id = $1`
+		name  string
+	)
+	err = pg.FromContext(ctx).QueryRow(nameq, appID).Scan(&name)
+	if err != nil {
+		return nil, errors.Wrap(err, "select app name query")
+	}
+
 	return &Invitation{
-		ID:    id,
-		AppID: appID,
-		Email: email,
-		Role:  role,
+		ID:      id,
+		AppID:   appID,
+		AppName: name,
+		Email:   email,
+		Role:    role,
 	}, nil
 }
 
@@ -95,16 +104,18 @@ func CreateInvitation(ctx context.Context, appID, email, role string) (*Invitati
 func GetInvitation(ctx context.Context, invID string) (*Invitation, error) {
 	var (
 		q = `
-			SELECT i.application_id, i.email, i.role, u.id
+			SELECT i.application_id, a.name, i.email, i.role, u.id
 			FROM invitations i
+			JOIN applications a ON i.application_id = a.id
 			LEFT JOIN users u ON lower(i.email) = lower(u.email)
 			WHERE i.id = $1
 		`
-		appID, email, role string
-		userID             sql.NullString
+		appID, appName, email, role string
+		userID                      sql.NullString
 	)
 	err := pg.FromContext(ctx).QueryRow(q, invID).Scan(
 		&appID,
+		&appName,
 		&email,
 		&role,
 		&userID,
@@ -117,11 +128,12 @@ func GetInvitation(ctx context.Context, invID string) (*Invitation, error) {
 	}
 
 	return &Invitation{
-		ID:     invID,
-		AppID:  appID,
-		Email:  email,
-		Role:   role,
-		UserID: userID.String,
+		ID:      invID,
+		AppID:   appID,
+		AppName: appName,
+		Email:   email,
+		Role:    role,
+		UserID:  userID.String,
 	}, nil
 }
 

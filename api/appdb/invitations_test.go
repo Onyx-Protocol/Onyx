@@ -27,6 +27,10 @@ func TestCreateInvitation(t *testing.T) {
 		t.Fatal("error: ID is blank")
 	}
 
+	if inv.AppName != "app-0" {
+		t.Errorf("app name got = %v want app-0", inv.AppName)
+	}
+
 	got, err := getTestInvitation(ctx, inv.ID)
 	if err != nil {
 		t.Fatal(err)
@@ -120,11 +124,12 @@ func TestGetInvitation(t *testing.T) {
 		{
 			id: "inv-id-0",
 			want: &Invitation{
-				ID:     "inv-id-0",
-				AppID:  "app-id-0",
-				Email:  "foo@bar.com",
-				Role:   "admin",
-				UserID: "user-id-0",
+				ID:      "inv-id-0",
+				AppID:   "app-id-0",
+				AppName: "app-0",
+				Email:   "foo@bar.com",
+				Role:    "admin",
+				UserID:  "user-id-0",
 			},
 		},
 
@@ -132,11 +137,12 @@ func TestGetInvitation(t *testing.T) {
 		{
 			id: "inv-id-1",
 			want: &Invitation{
-				ID:     "inv-id-1",
-				AppID:  "app-id-0",
-				Email:  "Bar@Foo.com",
-				Role:   "developer",
-				UserID: "user-id-1",
+				ID:      "inv-id-1",
+				AppID:   "app-id-0",
+				AppName: "app-0",
+				Email:   "Bar@Foo.com",
+				Role:    "developer",
+				UserID:  "user-id-1",
 			},
 		},
 
@@ -144,11 +150,12 @@ func TestGetInvitation(t *testing.T) {
 		{
 			id: "inv-id-2",
 			want: &Invitation{
-				ID:     "inv-id-2",
-				AppID:  "app-id-0",
-				Email:  "no-account-yet@foo.com",
-				Role:   "developer",
-				UserID: "",
+				ID:      "inv-id-2",
+				AppID:   "app-id-0",
+				AppName: "app-0",
+				Email:   "no-account-yet@foo.com",
+				Role:    "developer",
+				UserID:  "",
 			},
 		},
 
