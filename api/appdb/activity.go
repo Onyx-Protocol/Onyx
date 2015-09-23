@@ -53,6 +53,7 @@ func CreateActivityItems(ctx context.Context, tx *wire.MsgTx, txTime time.Time) 
 // a unique list of all the wallet ids associated with that transaction, and
 // a map, address ids as keys, and values specifying if they're change addresses or not.
 func getWalletsAndChangeInTx(ctx context.Context, tx *wire.MsgTx) ([]string, map[string]bool, error) {
+	defer metrics.RecordElapsed(time.Now())
 	const q = `SELECT wallet_id, address_id FROM utxos WHERE txid=$1`
 
 	var txids []string
@@ -104,6 +105,7 @@ func getWalletsAndChangeInTx(ctx context.Context, tx *wire.MsgTx) ([]string, map
 }
 
 func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, addrIsChange map[string]bool, txTime time.Time) (*activityItem, error) {
+	defer metrics.RecordElapsed(time.Now())
 	var (
 		insByBucket  = make(map[string]map[string]int64)
 		insByAddr    = make(map[string]map[string]int64)
@@ -324,6 +326,7 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 }
 
 func writeActivityItem(ctx context.Context, item *activityItem) error {
+	defer metrics.RecordElapsed(time.Now())
 	// Now insert the data blob, along with the other tx information.
 	const insertQ = `
 		INSERT INTO activity (wallet_id, data, txid)
