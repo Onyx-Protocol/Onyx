@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lib/pq"
 	"golang.org/x/net/context"
@@ -37,7 +38,7 @@ func TestReserveUTXOs(t *testing.T) {
 	for _, c := range cases {
 		dbtx := pgtest.TxWithSQL(t, outs)
 		ctx := pg.NewContext(context.Background(), dbtx)
-		got, _, err := ReserveUTXOs(ctx, "a1", "b1", c.askAmt)
+		got, _, err := ReserveUTXOs(ctx, "a1", "b1", c.askAmt, time.Minute)
 
 		if err != c.wantErr {
 			t.Errorf("got err = %q want %q", err, c.wantErr)
@@ -81,7 +82,7 @@ func TestReserveTxUTXOs(t *testing.T) {
 		dbtx := pgtest.TxWithSQL(t, outs)
 		ctx := pg.NewContext(context.Background(), dbtx)
 		got, _, err := ReserveTxUTXOs(ctx,
-			"a1", "b1", "b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45", c.askAmt)
+			"a1", "b1", "b8eb9723231326795e8022269ad88603761ca65aa397988f0a0909f7702f2e45", c.askAmt, time.Minute)
 
 		if err != c.wantErr {
 			t.Errorf("got err = %q want %q", err, c.wantErr)
@@ -136,10 +137,10 @@ func TestReserveSQL(t *testing.T) {
 			description: "test does not return already reserved utxos",
 			fixture: `
 				INSERT INTO utxos
-				(txid, index, asset_id, amount, address_id, bucket_id, wallet_id, reserved_at)
+				(txid, index, asset_id, amount, address_id, bucket_id, wallet_id, reserved_until)
 				VALUES
-					('t1', 0, 'a1', 1, 'a1', 'b1', 'w1', now()),
-					('t2', 0, 'a1', 1, 'a2', 'b1', 'w1', now()-'61s'::interval);
+					('t1', 0, 'a1', 1, 'a1', 'b1', 'w1', now()+'60s'::interval),
+					('t2', 0, 'a1', 1, 'a2', 'b1', 'w1', now()-'1s'::interval);
 			`,
 			askAmt:       1,
 			want:         1,
@@ -151,7 +152,7 @@ func TestReserveSQL(t *testing.T) {
 		t.Log(test.description)
 		dbtx := pgtest.TxWithSQL(t, test.fixture)
 
-		rows, err := dbtx.Query(`SELECT * FROM reserve_utxos('a1', 'b1', $1)`, test.askAmt)
+		rows, err := dbtx.Query(`SELECT * FROM reserve_utxos('a1', 'b1', $1, '60s'::interval)`, test.askAmt)
 		if pqErr, ok := (err).(*pq.Error); ok {
 			if !strings.Contains(pqErr.Message, test.wantErr) {
 				t.Errorf("got error = %q want %q", pqErr.Message, test.wantErr)
@@ -178,7 +179,7 @@ func TestReserveSQL(t *testing.T) {
 
 		const onlyReservedQ = `
 			SELECT COUNT(*) FROM utxos
-			WHERE reserved_at > now()-'60s'::interval
+			WHERE reserved_until > now()
 		`
 
 		var reservedCnt int
@@ -214,7 +215,7 @@ func TestReserveTxSQL(t *testing.T) {
 	`)
 	defer dbtx.Rollback()
 
-	rows, err := dbtx.Query(`SELECT * FROM reserve_tx_utxos('a1', 'b1', 't1', 2)`)
+	rows, err := dbtx.Query(`SELECT * FROM reserve_tx_utxos('a1', 'b1', 't1', 2, '60s'::interval)`)
 	if err != nil {
 		t.Fatal(err)
 	}

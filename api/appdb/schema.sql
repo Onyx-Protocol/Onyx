@@ -370,7 +370,7 @@ CREATE TABLE utxos (
     address_id text NOT NULL,
     bucket_id text NOT NULL,
     wallet_id text NOT NULL,
-    reserved_at timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
+    reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
@@ -627,21 +627,21 @@ CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
 -- Name: utxos_address_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX utxos_address_id_asset_id_reserved_at_idx ON utxos USING btree (address_id, asset_id, reserved_at);
+CREATE INDEX utxos_address_id_asset_id_reserved_at_idx ON utxos USING btree (address_id, asset_id, reserved_until);
 
 
 --
 -- Name: utxos_bucket_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX utxos_bucket_id_asset_id_reserved_at_idx ON utxos USING btree (bucket_id, asset_id, reserved_at);
+CREATE INDEX utxos_bucket_id_asset_id_reserved_at_idx ON utxos USING btree (bucket_id, asset_id, reserved_until);
 
 
 --
 -- Name: utxos_wallet_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX utxos_wallet_id_asset_id_reserved_at_idx ON utxos USING btree (wallet_id, asset_id, reserved_at);
+CREATE INDEX utxos_wallet_id_asset_id_reserved_at_idx ON utxos USING btree (wallet_id, asset_id, reserved_until);
 
 
 --

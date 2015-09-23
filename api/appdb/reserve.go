@@ -30,36 +30,42 @@ type UTXO struct {
 // ReserveUTXOs selects enough UTXOs to satisfy the requested amount.
 // It returns ErrInsufficientFunds if the corresponding bucket
 // does not have enough of the asset.
+// The reservation will be valid for the given ttl,
+// after which the outputs will become available
+// to reserve again.
 // ctx must have a database transaction.
-func ReserveUTXOs(ctx context.Context, assetID, bucketID string, amount int64) ([]*UTXO, int64, error) {
+func ReserveUTXOs(ctx context.Context, assetID, bucketID string, amount int64, ttl time.Duration) ([]*UTXO, int64, error) {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
 		SELECT txid, index, amount, address_id
-		FROM reserve_utxos($1, $2, $3)
+		FROM reserve_utxos($1, $2, $3, $4::interval)
 	`
 
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
-	rows, err := pg.FromContext(ctx).Query(q, assetID, bucketID, amount)
-	return reserved(rows, err)
+	rows, err := pg.FromContext(ctx).Query(q, assetID, bucketID, amount, ttl.String())
+	return scanUTXOs(rows, err)
 }
 
 // ReserveTxUTXOs selects enough UTXOs to satisfy the requested amount.
 // It returns ErrInsufficientFunds if the corresponding bucket
 // and transaction do not have enough of the asset.
+// The reservation will be valid for the given ttl,
+// after which the outputs will become available
+// to reserve again.
 // ctx must have a database transaction.
-func ReserveTxUTXOs(ctx context.Context, assetID, bucketID, txid string, amount int64) ([]*UTXO, int64, error) {
+func ReserveTxUTXOs(ctx context.Context, assetID, bucketID, txid string, amount int64, ttl time.Duration) ([]*UTXO, int64, error) {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
 		SELECT txid, index, amount, address_id
-		FROM reserve_tx_utxos($1, $2, $3, $4)
+		FROM reserve_tx_utxos($1, $2, $3, $4, $5::interval)
 	`
 
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
-	rows, err := pg.FromContext(ctx).Query(q, assetID, bucketID, txid, amount)
-	return reserved(rows, err)
+	rows, err := pg.FromContext(ctx).Query(q, assetID, bucketID, txid, amount, ttl.String())
+	return scanUTXOs(rows, err)
 }
 
-func reserved(rows *sql.Rows, err error) ([]*UTXO, int64, error) {
+func scanUTXOs(rows *sql.Rows, err error) ([]*UTXO, int64, error) {
 	if pqErr, ok := err.(*pq.Error); ok && strings.Contains(pqErr.Message, "insufficient funds") {
 		return nil, 0, ErrInsufficientFunds
 	} else if err != nil {

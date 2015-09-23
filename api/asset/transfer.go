@@ -48,9 +48,9 @@ func Transfer(ctx context.Context, inputs []TransferInput, outputs []Output) (*T
 			err   error
 		)
 		if in.TxID != "" {
-			utxos, sum, err = appdb.ReserveTxUTXOs(ctx, in.AssetID, in.BucketID, in.TxID, in.Amount)
+			utxos, sum, err = appdb.ReserveTxUTXOs(ctx, in.AssetID, in.BucketID, in.TxID, in.Amount, time.Minute)
 		} else {
-			utxos, sum, err = appdb.ReserveUTXOs(ctx, in.AssetID, in.BucketID, in.Amount)
+			utxos, sum, err = appdb.ReserveUTXOs(ctx, in.AssetID, in.BucketID, in.Amount, time.Minute)
 		}
 		if err != nil {
 			err = errors.WithDetailf(err, "bucket=%v asset=%v amount=%v txid=%v",
