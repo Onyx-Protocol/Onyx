@@ -1,0 +1,100 @@
+#!/bin/sh
+
+set -eo pipefail
+
+if [ $# -ne 0 ]
+then
+	echo >&2 "usage: git land"
+	exit 1
+fi
+
+commit=`git rev-parse HEAD`
+branch=`git symbolic-ref --short HEAD`
+if [ "$branch" = master ]
+then
+	echo >&2 "cannot land branch master onto itself"
+	exit 1
+fi
+
+if ! pr=`git ls-remote origin refs/pull/\*/head|fgrep $commit|cut -d/ -f3`
+then
+	echo >&2 "local branch $branch matches no pull request"
+	exit 1
+fi
+
+if ! url=`git ls-remote --get-url origin|egrep 'https://github.com/|git@github.com:'`
+then
+	echo >&2 "bad format for git remote URL"
+	exit 1
+fi
+
+# Convert the following
+#   https://github.com/user/repo.git
+#   git@github.com:user/repo.git
+# to
+#   user/repo
+proj=$(
+	printf %s "$url"            |
+	sed s,https://github.com/,, |
+	sed s,git@github.com:,,     |
+	sed s,.git,,
+)
+
+state=`curl -sn https://api.github.com/repos/$proj/pulls/$pr|jq -r .state`
+if [ "$state" = closed ]
+then
+	echo >&2 "pull request $pr is not open"
+	exit 1
+elif [ "$state" != open ]
+then
+	echo >&2 "cannot access GitHub API (bad netrc?)"
+	exit 1
+fi
+
+jqprg='
+	map(select(.body|contains("LGTM"))) |
+	reduce .[] as $c
+	({};
+		. + {($c.user.login): $c.body|contains("NOT LGTM")|not}
+	) |
+
+	to_entries |
+	if map(.value)|all then
+		map("@"+.key)|join(" ")
+	else
+		"not-ok"
+	end
+'
+comurl=https://api.github.com/repos/$proj/issues/$pr/comments
+reviewby=$(curl -sn $comurl|jq -r "$jqprg")
+if [ "$reviewby" = "" ]
+then
+	echo >&2 "no reviewers"
+	exit 1
+elif [ "$reviewby" = not-ok ]
+then
+	echo >&2 "some reviewers have responded NOT LGTM"
+	exit 1
+fi
+
+git fetch origin
+n=`git rev-list --count origin/master ^HEAD`
+if [ $n -ne 0 ]
+then
+	echo >&2 "branch $branch is behind master; please rebase"
+	exit 1
+fi
+
+GIT_EDITOR='sed -i "" 1!s/pick/fixup/' \
+	git rebase --interactive origin/master
+GIT_EDITOR="sed -i '' '\$a\\
+Closes #$pr.
+\$a\\
+Reviewers: $reviewby'" \
+	git commit --amend
+git commit --amend # give the human a chance to edit the message
+git push origin $branch:master
+git push origin :$branch
+git checkout master
+git merge --ff-only origin/master
+git branch -d $branch
