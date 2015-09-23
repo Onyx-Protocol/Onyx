@@ -9,6 +9,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/errors"
 	"chain/fedchain-sandbox/wire"
 )
 
@@ -163,6 +164,11 @@ func TestActivityByTxID(t *testing.T) {
 
 	if string(*activity) != `{"outputs":"boop"}` {
 		t.Fatalf("want={outputs: boop}, got=%s", *activity)
+	}
+
+	_, err = WalletTxActivity(ctx, "w0", "txDoesNotExist")
+	if errors.Root(err) != pg.ErrUserInputNotFound {
+		t.Fatalf("want=%v got=%v", pg.ErrUserInputNotFound, err)
 	}
 }
 

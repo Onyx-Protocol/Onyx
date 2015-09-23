@@ -414,5 +414,8 @@ func WalletTxActivity(ctx context.Context, walletID, txID string) (*json.RawMess
 
 	var a []byte
 	err := pg.FromContext(ctx).QueryRow(q, walletID, txID).Scan(&a)
+	if err == sql.ErrNoRows {
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "transaction id: %v", txID)
+	}
 	return (*json.RawMessage)(&a), err
 }
