@@ -33,21 +33,6 @@ func TestMux(t *testing.T) {
 	Handler()
 }
 
-func TestCreateUser(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, "")
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
-	req := struct{ Email, Password string }{"foo@bar.com", "abracadabra"}
-
-	u, err := createUser(ctx, req)
-	if err != nil {
-		t.Fatal("unexpected error", err)
-	}
-	if u.Email != "foo@bar.com" {
-		t.Errorf("got email = %v want foo@bar.com", u.Email)
-	}
-}
-
 func TestLogin(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, testUserFixture)
 	defer dbtx.Rollback()

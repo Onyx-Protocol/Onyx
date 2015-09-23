@@ -31,8 +31,6 @@ func Handler() chainhttp.Handler {
 	h := chainhttp.PatServeMux{PatternServeMux: pat.New()}
 
 	noauth := httpjson.NewServeMux(writeHTTPError)
-	noauth.HandleFunc("POST", "/v3/users", createUser)
-	h.AddFunc("POST", "/v3/users", noauth.ServeHTTPContext)
 	noauth.HandleFunc("GET", "/v3/invitations/:invID", appdb.GetInvitation)
 	h.AddFunc("GET", "/v3/invitations/:invID", noauth.ServeHTTPContext)
 	noauth.HandleFunc("POST", "/v3/invitations/:invID/create-user", createUserFromInvitation)
@@ -315,11 +313,6 @@ func walletFinalize(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 		"raw_transaction": json.HexBytes(buf.Bytes()),
 	}
 	return ret, nil
-}
-
-// POST /v3/users
-func createUser(ctx context.Context, in struct{ Email, Password string }) (*appdb.User, error) {
-	return appdb.CreateUser(ctx, in.Email, in.Password)
 }
 
 // POST /v3/login
