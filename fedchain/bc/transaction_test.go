@@ -42,7 +42,7 @@ func TestTransaction(t *testing.T) {
 						},
 						// "PUSHDATA 'issuance'"
 						SignatureScript: []byte{txscript.OP_DATA_8, 0x69, 0x73, 0x73, 0x75, 0x61, 0x6e, 0x63, 0x65},
-						Metadata:        "input",
+						Metadata:        []byte("input"),
 					},
 				},
 				Outputs: []TxOutput{
@@ -50,7 +50,7 @@ func TestTransaction(t *testing.T) {
 						AssetID:  AssetID{},
 						Value:    1000000000000,
 						Script:   script.Script{txscript.OP_1},
-						Metadata: "output",
+						Metadata: []byte("output"),
 					},
 				},
 				LockTime: 0,
@@ -69,7 +69,7 @@ func TestTransaction(t *testing.T) {
 							Index: 0,
 						},
 						SignatureScript: script.Script{},
-						Metadata:        "input",
+						Metadata:        []byte("input"),
 					},
 				},
 				Outputs: []TxOutput{
@@ -77,13 +77,13 @@ func TestTransaction(t *testing.T) {
 						AssetID:  ComputeAssetID(issuanceScript, genesisHash),
 						Value:    600000000000,
 						Script:   script.Script{txscript.OP_1},
-						Metadata: "",
+						Metadata: nil,
 					},
 					{
 						AssetID:  ComputeAssetID(issuanceScript, genesisHash),
 						Value:    400000000000,
 						Script:   script.Script{txscript.OP_2},
-						Metadata: "",
+						Metadata: nil,
 					},
 				},
 				LockTime: 1492590591,
@@ -121,7 +121,7 @@ func TestIsIssuance(t *testing.T) {
 				},
 				// "PUSHDATA 'issuance'"
 				SignatureScript: []byte{txscript.OP_DATA_8, 0x69, 0x73, 0x73, 0x75, 0x61, 0x6e, 0x63, 0x65},
-				Metadata:        "input",
+				Metadata:        []byte("input"),
 			},
 		},
 		Outputs: []TxOutput{
@@ -129,7 +129,7 @@ func TestIsIssuance(t *testing.T) {
 				AssetID:  AssetID{},
 				Value:    1000000000000,
 				Script:   script.Script{txscript.OP_1},
-				Metadata: "output",
+				Metadata: []byte("output"),
 			},
 		},
 		LockTime: 0,

@@ -33,11 +33,11 @@ type Tx struct {
 type TxInput struct {
 	Previous        Outpoint
 	SignatureScript script.Script
-	Metadata        string
+	Metadata        []byte
 
 	// Optional attributes for convenience during validation.
 	// These are not serialized or hashed.
-	Value      int64
+	Value      uint64
 	AssetID    AssetID
 	IssuanceID IssuanceID
 }
@@ -45,9 +45,9 @@ type TxInput struct {
 // TxOutput encodes a single output in a transaction.
 type TxOutput struct {
 	AssetID  AssetID
-	Value    int64
+	Value    uint64
 	Script   script.Script
-	Metadata string
+	Metadata []byte
 
 	// Optional attributes for convenience during validation.
 	// These are not serialized or hashed.
@@ -136,7 +136,7 @@ func (ti *TxInput) writeTo(w *errors.Writer, forHashing bool) {
 		w.Write(h[:])
 	} else {
 		bitcoin.WriteBytes(w, ti.SignatureScript)
-		bitcoin.WriteString(w, ti.Metadata)
+		bitcoin.WriteBytes(w, ti.Metadata)
 	}
 }
 
@@ -150,7 +150,7 @@ func (to *TxOutput) writeTo(w *errors.Writer, forHashing bool) {
 		h := hash256.Sum([]byte(to.Metadata))
 		w.Write(h[:])
 	} else {
-		bitcoin.WriteString(w, to.Metadata)
+		bitcoin.WriteBytes(w, to.Metadata)
 	}
 }
 

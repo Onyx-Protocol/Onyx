@@ -26,9 +26,9 @@ func ComputeAssetID(issuance script.Script, genesis [32]byte) AssetID {
 	return hash160.Sum(buf)
 }
 
-// Issuance computes the ID of the asset issuance
+// ComputeIssuanceID computes the ID of the asset issuance
 // that occurred in p.
-func Issuance(p Outpoint) (id IssuanceID) {
+func ComputeIssuanceID(p Outpoint) (id IssuanceID) {
 	h := hash160.New()
 	p.WriteTo(h)
 	h.Sum(id[:0])
