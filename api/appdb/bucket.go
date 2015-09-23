@@ -143,3 +143,15 @@ func ListBuckets(ctx context.Context, walletID string) ([]*Bucket, error) {
 
 	return buckets, err
 }
+
+// bucketLabelByID returns the label for the bucket specified by the provided ID.
+// If no bucket is found, it returns an empty string.
+func bucketLabelByID(ctx context.Context, bucketID string) string {
+	const q = `SELECT label FROM buckets WHERE id=$1`
+	var label string
+	err := pg.FromContext(ctx).QueryRow(q, bucketID).Scan(&label)
+	if err != nil {
+		log.Error(ctx, err, "fetching bucket label")
+	}
+	return label
+}

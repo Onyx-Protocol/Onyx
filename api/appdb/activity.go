@@ -240,8 +240,10 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 	//   "inputs": [
 	//     {
 	//       "asset_id": aid,
+	//       "asset_name": asset,
 	//       "amount": 10,
-	//       "bucket_id": bid
+	//       "bucket_id": bid,
+	//       "bucket_label": blabel
 	//     },
 	//     {
 	//       "asset_id": aid2,
@@ -270,6 +272,10 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 			i["amount"] = amt
 			i["address"] = addr
 
+			if l := assetLabelByID(ctx, asset); l != "" {
+				i["asset_label"] = l
+			}
+
 			inputsBlob = append(inputsBlob, i)
 		}
 	}
@@ -279,6 +285,14 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 			i["asset_id"] = asset
 			i["amount"] = amt
 			i["bucket_id"] = bckt
+
+			if l := assetLabelByID(ctx, asset); l != "" {
+				i["asset_label"] = l
+			}
+
+			if l := bucketLabelByID(ctx, bckt); l != "" {
+				i["bucket_label"] = l
+			}
 
 			inputsBlob = append(inputsBlob, i)
 		}
@@ -290,6 +304,10 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 			o["amount"] = amt
 			o["address"] = addr
 
+			if l := assetLabelByID(ctx, asset); l != "" {
+				o["asset_label"] = l
+			}
+
 			outputsBlob = append(outputsBlob, o)
 		}
 	}
@@ -299,6 +317,14 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 			o["asset_id"] = asset
 			o["amount"] = amt
 			o["bucket_id"] = bckt
+
+			if l := assetLabelByID(ctx, asset); l != "" {
+				o["asset_label"] = l
+			}
+
+			if l := bucketLabelByID(ctx, bckt); l != "" {
+				o["bucket_label"] = l
+			}
 
 			outputsBlob = append(outputsBlob, o)
 		}

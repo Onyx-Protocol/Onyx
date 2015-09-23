@@ -25,11 +25,18 @@ const sampleActivityWalletFixture = `
 			VALUES
 				('w0', 'app-id-0', '', 'c0', 0),
 				('w1', 'app-id-0', '', 'c0', 0);
-		INSERT INTO buckets (id, wallet_id, key_index)
+		INSERT INTO buckets (id, wallet_id, key_index, label)
 			VALUES
-				('b0', 'w0', 0),
-				('b1', 'w0', 1),
-				('b3', 'w1', 2);
+				('b0', 'w0', 0, 'bucket zero'),
+				('b1', 'w0', 1, 'bucket one'),
+				('b3', 'w1', 2, 'bucket three');
+`
+
+const sampleAssetActivityFixture = `
+	INSERT INTO asset_groups (id, application_id, key_index, label, keyset)
+		VALUES ('ag','app-id-0', 0, 'whatever', '{}');
+	INSERT INTO assets (id, asset_group_id, key_index, redeem_script, label)
+		VALUES ('a0', 'ag', 0, '', 'asset zero');
 `
 
 func TestWalletActivity(t *testing.T) {
@@ -215,11 +222,11 @@ func TestCreateActivityItem(t *testing.T) {
 			want: []activityRes{
 				{
 					wallet_id: "w0",
-					data:      []byte(`{"inputs":[{"amount":100,"asset_id":"a0","bucket_id":"b0"}],"outputs":[{"address":"addr2","amount":50,"asset_id":"a0"},{"amount":50,"asset_id":"a0","bucket_id":"b1"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`),
+					data:      []byte(`{"inputs":[{"amount":100,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b0","bucket_label":"bucket zero"}],"outputs":[{"address":"addr2","amount":50,"asset_id":"a0","asset_label":"asset zero"},{"amount":50,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b1","bucket_label":"bucket one"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`),
 				},
 				{
 					wallet_id: "w1",
-					data:      []byte(`{"inputs":[{"address":"addr0","amount":100,"asset_id":"a0"}],"outputs":[{"address":"addr1","amount":50,"asset_id":"a0"},{"amount":50,"asset_id":"a0","bucket_id":"b3"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`),
+					data:      []byte(`{"inputs":[{"address":"addr0","amount":100,"asset_id":"a0","asset_label":"asset zero"}],"outputs":[{"address":"addr1","amount":50,"asset_id":"a0","asset_label":"asset zero"},{"amount":50,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b3","bucket_label":"bucket three"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`),
 				},
 			},
 		},
@@ -238,14 +245,19 @@ func TestCreateActivityItem(t *testing.T) {
 			want: []activityRes{
 				{
 					wallet_id: "w0",
-					data:      []byte(`{"inputs":[{"amount":50,"asset_id":"a0","bucket_id":"b0"}],"outputs":[{"amount":50,"asset_id":"a0","bucket_id":"b1"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`),
+					data:      []byte(`{"inputs":[{"amount":50,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b0","bucket_label":"bucket zero"}],"outputs":[{"amount":50,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b1","bucket_label":"bucket one"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`),
 				},
 			},
 		},
 	}
 
 	for _, test := range cases {
-		dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityWalletFixture, createActivityItemFixture, test.fixture)
+		dbtx := pgtest.TxWithSQL(t,
+			sampleAppFixture,
+			sampleActivityWalletFixture,
+			createActivityItemFixture,
+			sampleAssetActivityFixture,
+			test.fixture)
 		ctx := pg.NewContext(context.Background(), dbtx)
 		defer dbtx.Rollback()
 
@@ -297,7 +309,7 @@ func TestCreateActivityItem(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(test.want, res) {
-			t.Fatalf("want=%v got=%v", test.want, res)
+			t.Fatalf("want=%v got=%v", string(test.want[0].data), string(res[0].data))
 		}
 
 		dbtx.Rollback()
@@ -308,7 +320,7 @@ func TestGenerateActivityFromUtxo(t *testing.T) {
 	// The txid values in the fixture data are not arbitrary.
 	// 0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098 is from the btcd/wire tests.
 	// 3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df is the hash of the tx generated in this test file.
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityWalletFixture, `
+	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityWalletFixture, sampleAssetActivityFixture, `
 		INSERT INTO addresses
 			(id, wallet_id, bucket_id, keyset, key_index, address, is_change, redeem_script, pk_script)
 		VALUES
@@ -369,7 +381,7 @@ func TestGenerateActivityFromUtxo(t *testing.T) {
 		t.Fatalf("Want txid=3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df, got=%s", item.txid)
 	}
 
-	wantData := `{"inputs":[{"amount":100,"asset_id":"a0","bucket_id":"b0"}],"outputs":[{"address":"addr2","amount":50,"asset_id":"a0"},{"amount":50,"asset_id":"a0","bucket_id":"b1"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`
+	wantData := `{"inputs":[{"amount":100,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b0","bucket_label":"bucket zero"}],"outputs":[{"address":"addr2","amount":50,"asset_id":"a0","asset_label":"asset zero"},{"amount":50,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b1","bucket_label":"bucket one"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`
 	if string(item.data) != wantData {
 		t.Fatalf("want=%s got=%s", wantData, string(item.data))
 	}

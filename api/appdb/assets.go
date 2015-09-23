@@ -10,6 +10,7 @@ import (
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain-sandbox/wire"
+	"chain/log"
 	"chain/metrics"
 )
 
@@ -125,4 +126,16 @@ func ListAssets(ctx context.Context, groupID string) ([]*AssetResponse, error) {
 	}
 
 	return assets, nil
+}
+
+// assetLabelByID returns the label for the asset specified by the provided ID.
+// If no asset is found, it returns an empty string.
+func assetLabelByID(ctx context.Context, assetID string) string {
+	const q = `SELECT label FROM assets WHERE id=$1`
+	var label string
+	err := pg.FromContext(ctx).QueryRow(q, assetID).Scan(&label)
+	if err != nil {
+		log.Error(ctx, err, "fetching asset label")
+	}
+	return label
 }
