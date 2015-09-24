@@ -33,8 +33,9 @@ type Asset struct {
 // AssetResponse is a JSON-serializable version of Asset, intended for use in
 // API responses.
 type AssetResponse struct {
-	ID    string `json:"id"`
-	Label string `json:"label"`
+	ID          string `json:"id"`
+	Label       string `json:"label"`
+	Circulation uint64 `json:"circulation"`
 }
 
 // AssetByID loads an asset from the database using its ID.
@@ -101,7 +102,7 @@ func InsertAsset(ctx context.Context, asset *Asset) error {
 // group.
 func ListAssets(ctx context.Context, groupID string) ([]*AssetResponse, error) {
 	q := `
-		SELECT id, label
+		SELECT id, label, issued
 		FROM assets
 		WHERE asset_group_id = $1
 		ORDER BY created_at
@@ -114,7 +115,7 @@ func ListAssets(ctx context.Context, groupID string) ([]*AssetResponse, error) {
 	var assets []*AssetResponse
 	for rows.Next() {
 		a := new(AssetResponse)
-		err := rows.Scan(&a.ID, &a.Label)
+		err := rows.Scan(&a.ID, &a.Label, &a.Circulation)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
@@ -126,6 +127,18 @@ func ListAssets(ctx context.Context, groupID string) ([]*AssetResponse, error) {
 	}
 
 	return assets, nil
+}
+
+// GetAsset returns an AssetResponse for the given asset id.
+func GetAsset(ctx context.Context, assetID string) (*AssetResponse, error) {
+	const q = `SELECT id, label, issued FROM assets WHERE id=$1`
+	a := new(AssetResponse)
+
+	err := pg.FromContext(ctx).QueryRow(q, assetID).Scan(&a.ID, &a.Label, &a.Circulation)
+	if err == sql.ErrNoRows {
+		err = pg.ErrUserInputNotFound
+	}
+	return a, errors.WithDetailf(err, "asset id: %s", assetID)
 }
 
 // assetLabelByID returns the label for the asset specified by the provided ID.

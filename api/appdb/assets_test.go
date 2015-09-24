@@ -122,6 +122,34 @@ func TestListAssets(t *testing.T) {
 	}
 }
 
+func TestGetAsset(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO asset_groups (id, application_id, key_index, keyset, label)
+			VALUES ('ag-id-0', 'app-id-0', 0, '{}', 'ag-0');
+		INSERT INTO assets (id, asset_group_id, key_index, redeem_script, label, issued)
+			VALUES ('asset-id-0', 'ag-id-0', 0, '{}', 'asset-0', 58);
+	`)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	got, err := GetAsset(ctx, "asset-id-0")
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	want := &AssetResponse{"asset-id-0", "asset-0", 58}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("GetAsset(%s) = %+v want %+v", "asset-id-0", got, want)
+	}
+
+	_, err = GetAsset(ctx, "nonexistent")
+	if errors.Root(err) != pg.ErrUserInputNotFound {
+		t.Errorf("GetAsset(%s) error = %q want %q", "nonexistent", errors.Root(err), pg.ErrUserInputNotFound)
+	}
+}
+
 func TestAddIssuance(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO applications (id, name) VALUES ('app0', 'app0');
