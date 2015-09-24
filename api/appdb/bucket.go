@@ -110,20 +110,23 @@ func BucketBalance(ctx context.Context, bucketID string) ([]*Balance, error) {
 }
 
 // ListBuckets returns a list of buckets contained in the given wallet.
-func ListBuckets(ctx context.Context, walletID string) ([]*Bucket, error) {
+func ListBuckets(ctx context.Context, walletID string, prev string, limit int) ([]*Bucket, string, error) {
 	q := `
 		SELECT id, label, key_index(key_index)
 		FROM buckets
-		WHERE wallet_id = $1
-		ORDER BY created_at
+		WHERE wallet_id = $1 AND ($2='' OR id<$2)
+		ORDER BY id DESC LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(q, walletID)
+	rows, err := pg.FromContext(ctx).Query(q, walletID, prev, limit)
 	if err != nil {
-		return nil, errors.Wrap(err, "select query")
+		return nil, "", errors.Wrap(err, "select query")
 	}
 	defer rows.Close()
 
-	var buckets []*Bucket
+	var (
+		buckets []*Bucket
+		last    string
+	)
 	for rows.Next() {
 		b := new(Bucket)
 		err = rows.Scan(
@@ -132,16 +135,17 @@ func ListBuckets(ctx context.Context, walletID string) ([]*Bucket, error) {
 			(*pg.Uint32s)(&b.Index),
 		)
 		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
+			return nil, "", errors.Wrap(err, "row scan")
 		}
 		buckets = append(buckets, b)
+		last = b.ID
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "end row scan loop")
+		return nil, "", errors.Wrap(err, "end row scan loop")
 	}
 
-	return buckets, err
+	return buckets, last, err
 }
 
 // bucketLabelByID returns the label for the bucket specified by the provided ID.

@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 
 	"golang.org/x/net/context"
 
@@ -37,4 +38,18 @@ func writeHTTPError(ctx context.Context, w http.ResponseWriter, err error) {
 		}{info, s}
 	}
 	httpjson.Write(ctx, w, info.HTTPStatus, v)
+}
+
+func getPageData(ctx context.Context, defaultLimit int) (prev string, limit int, err error) {
+	prev = httpjson.Request(ctx).Header.Get("Range-After")
+
+	limit = defaultLimit
+	if lstr := httpjson.Request(ctx).Header.Get("Limit"); lstr != "" {
+		limit, err = strconv.Atoi(lstr)
+		if err != nil {
+			err = errors.Wrap(errBadReqHeader, err.Error())
+			return "", 0, errors.WithDetail(err, "limit header")
+		}
+	}
+	return
 }

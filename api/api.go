@@ -3,7 +3,6 @@ package api
 
 import (
 	"bytes"
-	"strconv"
 	"time"
 
 	"golang.org/x/net/context"
@@ -25,6 +24,7 @@ import (
 const (
 	sessionTokenLifetime = 2 * 7 * 24 * time.Hour
 	defActivityPageSize  = 50
+	defBucketPageSize    = 100
 )
 
 // Handler returns a handler that serves the Chain HTTP API.
@@ -66,7 +66,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/applications/:appID/wallets", appdb.ListWallets)
 	h.HandleFunc("POST", "/v3/applications/:appID/wallets", createWallet)
 	h.HandleFunc("GET", "/v3/wallets/:walletID", appdb.GetWallet)
-	h.HandleFunc("GET", "/v3/wallets/:walletID/buckets", appdb.ListBuckets)
+	h.HandleFunc("GET", "/v3/wallets/:walletID/buckets", listBuckets)
 	h.HandleFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
 	h.HandleFunc("GET", "/v3/wallets/:walletID/balance", appdb.WalletBalance)
 	h.HandleFunc("GET", "/v3/wallets/:walletID/activity", getWalletActivity)
@@ -138,16 +138,9 @@ func createWallet(ctx context.Context, appID string, wReq struct {
 
 // GET /v3/wallets/:walletID/activity
 func getWalletActivity(ctx context.Context, wID string) (interface{}, error) {
-	prev := httpjson.Request(ctx).Header.Get("Range-After")
-
-	limit := defActivityPageSize
-	if lstr := httpjson.Request(ctx).Header.Get("Limit"); lstr != "" {
-		var err error
-		limit, err = strconv.Atoi(lstr)
-		if err != nil {
-			err = errors.Wrap(errBadReqHeader, err.Error())
-			return nil, errors.WithDetail(err, "limit header")
-		}
+	prev, limit, err := getPageData(ctx, defActivityPageSize)
+	if err != nil {
+		return nil, err
 	}
 
 	activity, last, err := appdb.WalletActivity(ctx, wID, prev, limit)
@@ -202,6 +195,24 @@ func createAssetGroup(ctx context.Context, appID string, agReq struct {
 	return ret, nil
 }
 
+func listBuckets(ctx context.Context, walletID string) (interface{}, error) {
+	prev, limit, err := getPageData(ctx, defBucketPageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	buckets, last, err := appdb.ListBuckets(ctx, walletID, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := map[string]interface{}{
+		"last":    last,
+		"buckets": buckets,
+	}
+	return ret, nil
+}
+
 // /v3/wallets/:walletID/buckets
 func createBucket(ctx context.Context, walletID string, in struct{ Label string }) (*appdb.Bucket, error) {
 	defer metrics.RecordElapsed(time.Now())
@@ -210,16 +221,9 @@ func createBucket(ctx context.Context, walletID string, in struct{ Label string 
 
 // GET /v3/buckets/:bucketID/activity
 func getBucketActivity(ctx context.Context, bid string) (interface{}, error) {
-	prev := httpjson.Request(ctx).Header.Get("Range-After")
-
-	limit := defActivityPageSize
-	if lstr := httpjson.Request(ctx).Header.Get("Limit"); lstr != "" {
-		var err error
-		limit, err = strconv.Atoi(lstr)
-		if err != nil {
-			err = errors.Wrap(errBadReqHeader, err.Error())
-			return nil, errors.WithDetail(err, "limit header")
-		}
+	prev, limit, err := getPageData(ctx, defActivityPageSize)
+	if err != nil {
+		return nil, err
 	}
 
 	activity, last, err := appdb.BucketActivity(ctx, bid, prev, limit)
