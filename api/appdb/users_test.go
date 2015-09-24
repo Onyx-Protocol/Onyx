@@ -351,3 +351,94 @@ func TestUpdateUserPassword(t *testing.T) {
 		}()
 	}
 }
+
+func TestPasswordResetFlow(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO users (id, email, password_hash)
+		VALUES ('user-id-0', 'foo@bar.com', '{}');
+	`)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	secret, err := StartPasswordReset(ctx, "foo@bar.com")
+	if err != nil {
+		t.Fatal("unexepcted error:", err)
+	}
+
+	err = FinishPasswordReset(ctx, "foo@bar.com", secret, "open-sesame")
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	err = checkPassword(ctx, "user-id-0", "open-sesame")
+	if err != nil {
+		t.Errorf("check password error got = %v want nil", err)
+	}
+
+	// The reset secret should have been invalidated.
+	err = FinishPasswordReset(ctx, "foo@bar.com", secret, "should-not-work")
+	if errors.Root(err) != pg.ErrUserInputNotFound {
+		t.Errorf("reset password error got = %v want %v", errors.Root(err), pg.ErrUserInputNotFound)
+	}
+
+	// The second attempt should not have changed anything.
+	err = checkPassword(ctx, "user-id-0", "open-sesame")
+	if err != nil {
+		t.Errorf("check password error got = %v want nil", err)
+	}
+}
+
+func TestFinishPasswordResetErrs(t *testing.T) {
+	fix := `
+		INSERT INTO users (
+			id, email, password_hash, pwreset_secret_hash, pwreset_expires_at
+		) VALUES (
+			'user-id-0',
+			'foo@bar.com',
+			'{}',
+			'$2a$08$WF7tWRx/26m9Cp2kQBQEwuKxCev9S4TSzWdmtNmHSvan4UhEw0Er.'::bytea, -- plaintext: abracadabra
+			now() + '1h'::interval
+		), (
+			'user-id-1',
+			'bar@foo.com',
+			'{}',
+			'$2a$08$WF7tWRx/26m9Cp2kQBQEwuKxCev9S4TSzWdmtNmHSvan4UhEw0Er.'::bytea, -- plaintext: abracadabra
+			now() - '1h'::interval
+		);
+	`
+
+	examples := []struct {
+		email   string
+		secret  string
+		newpass string
+		wantErr error
+	}{
+		// Valid example
+		{"foo@bar.com", "abracadabra", "new-password", nil},
+		// Valid example, mismatching email case
+		{"Foo@Bar.com", "abracadabra", "new-password", nil},
+		// Invalid proposed password
+		{"foo@bar.com", "abracadabra", "", ErrBadPassword},
+		// Bad secret
+		{"foo@bar.com", "bad-secret", "new-password", pg.ErrUserInputNotFound},
+		// Password reset has expired
+		{"bar@foo.com", "abracadabra", "new-password", pg.ErrUserInputNotFound},
+		// Bad user
+		{"nonexistent", "abracadabra", "new-password", pg.ErrUserInputNotFound},
+	}
+
+	for _, ex := range examples {
+		t.Logf("Example: %s:%s", ex.email, ex.secret)
+
+		func() {
+			dbtx := pgtest.TxWithSQL(t, fix)
+			defer dbtx.Rollback()
+			ctx := pg.NewContext(context.Background(), dbtx)
+
+			gotErr := FinishPasswordReset(ctx, ex.email, ex.secret, ex.newpass)
+			if errors.Root(gotErr) != ex.wantErr {
+				t.Errorf("error got = %v want %v", errors.Root(gotErr), ex.wantErr)
+			}
+		}()
+	}
+}

@@ -354,7 +354,9 @@ CREATE TABLE users (
     id text DEFAULT next_chain_id('u'::text) NOT NULL,
     email text NOT NULL,
     password_hash bytea NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    pwreset_secret_hash bytea,
+    pwreset_expires_at timestamp with time zone
 );
 
 

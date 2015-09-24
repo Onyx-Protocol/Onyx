@@ -59,6 +59,8 @@ func nouserHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/nouser/invitations/:invID", appdb.GetInvitation)
 	h.HandleFunc("POST", "/nouser/invitations/:invID/create-user", createUserFromInvitation)
 	h.HandleFunc("POST", "/nouser/invitations/:invID/add-existing", addMemberFromInvitation)
+	h.HandleFunc("POST", "/nouser/password-reset/start", startPasswordReset)
+	h.HandleFunc("POST", "/nouser/password-reset/finish", finishPasswordReset)
 
 	return h.ServeHTTPContext
 }
@@ -397,6 +399,20 @@ func updateUserEmail(ctx context.Context, in struct{ Email, Password string }) e
 func updateUserPassword(ctx context.Context, in struct{ Current, New string }) error {
 	uid := authn.GetAuthID(ctx)
 	return appdb.UpdateUserPassword(ctx, uid, in.Current, in.New)
+}
+
+// POST /nouser/password-reset/start
+func startPasswordReset(ctx context.Context, in struct{ Email string }) (interface{}, error) {
+	secret, err := appdb.StartPasswordReset(ctx, in.Email)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{"secret": secret}, nil
+}
+
+// POST /nouser/password-reset/finish
+func finishPasswordReset(ctx context.Context, in struct{ Email, Secret, Password string }) error {
+	return appdb.FinishPasswordReset(ctx, in.Email, in.Secret, in.Password)
 }
 
 // optionalTime returns a pointer to t or nil, if t is zero.

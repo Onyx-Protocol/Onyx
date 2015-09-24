@@ -3,6 +3,7 @@ package appdb
 import (
 	"database/sql"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
@@ -12,7 +13,10 @@ import (
 	"chain/net/http/authn"
 )
 
-const passwordBcryptCost = 10
+const (
+	passwordBcryptCost = 10
+	pwResetLiftime     = time.Hour * 24
+)
 
 // Errors returned by CreateUser.
 // May be wrapped using package chain/errors.
@@ -172,6 +176,87 @@ func UpdateUserPassword(ctx context.Context, id, password, newpass string) error
 
 	q := `UPDATE users SET password_hash = $1 WHERE id = $2`
 	_, err = pg.FromContext(ctx).Exec(q, phash, id)
+	if err != nil {
+		return errors.Wrap(err, "update query")
+	}
+
+	return nil
+}
+
+// StartPasswordReset generates an expiring secret token that can be used to
+// set a user's password with no other credentials. For any given user, only
+// the most recent password reset token will be effective.
+//
+// The password reset secret must be handled carefully, since it is equivalent
+// to an auth token for the corresponding user. It should only be sent to
+// trusted clients, such as internal services or the user themselves.
+func StartPasswordReset(ctx context.Context, email string) (string, error) {
+	secret, hash, err := generateSecret()
+	if err != nil {
+		return "", errors.Wrap(err, "generate password reset secret")
+	}
+
+	exp := time.Now().Add(pwResetLiftime)
+	q := `
+		UPDATE users
+		SET pwreset_secret_hash = $1, pwreset_expires_at = $2
+		WHERE lower(email) = lower($3)
+	`
+	_, err = pg.FromContext(ctx).Exec(q, hash, exp, email)
+	if err != nil {
+		return "", errors.Wrap(err, "update query")
+	}
+
+	return secret, nil
+}
+
+// FinishPasswordReset updates a user password using a password reset secret as
+// a credential.
+//
+// If the new password is not valid, ErrBadPassword will be returned. If the
+// the password reset has expired, or either the email or secret are not found,
+// pg.ErrUserInputNotFound will be returned.
+func FinishPasswordReset(ctx context.Context, email, secret, newpass string) error {
+	selectq := `
+		SELECT pwreset_secret_hash
+		FROM users
+		WHERE lower(email) = lower($1)
+			AND pwreset_secret_hash IS NOT NULL
+			AND pwreset_expires_at IS NOT NULL
+			AND pwreset_expires_at > now()
+	`
+	var secHash []byte
+	err := pg.FromContext(ctx).QueryRow(selectq, email).Scan(&secHash)
+	if err == sql.ErrNoRows {
+		return pg.ErrUserInputNotFound
+	}
+	if err != nil {
+		return errors.Wrap(err, "select query")
+	}
+
+	if bcrypt.CompareHashAndPassword(secHash, []byte(secret)) != nil {
+		// Treat a mismatching secret as if StartPasswordReset was never called.
+		return pg.ErrUserInputNotFound
+	}
+
+	if err := validatePassword(newpass); err != nil {
+		return err
+	}
+
+	pwHash, err := bcrypt.GenerateFromPassword([]byte(newpass), passwordBcryptCost)
+	if err != nil {
+		return errors.Wrap(err, "hash password")
+	}
+
+	updateq := `
+		UPDATE users
+		SET
+			password_hash = $1,
+			pwreset_secret_hash = NULL,
+			pwreset_expires_at = NULL
+		WHERE lower(email) = lower($2)
+	`
+	_, err = pg.FromContext(ctx).Exec(updateq, pwHash, email)
 	if err != nil {
 		return errors.Wrap(err, "update query")
 	}
