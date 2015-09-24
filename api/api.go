@@ -27,21 +27,20 @@ const (
 	defBucketPageSize    = 100
 )
 
-// Handler returns a handler that serves the Chain HTTP API.
-func Handler() chainhttp.Handler {
+// Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
+// will be used as the password for routes starting with /nouser/.
+func Handler(nouserSecret string) chainhttp.Handler {
 	h := chainhttp.PatServeMux{PatternServeMux: pat.New()}
-
-	noauth := httpjson.NewServeMux(writeHTTPError)
-	noauth.HandleFunc("GET", "/v3/invitations/:invID", appdb.GetInvitation)
-	h.AddFunc("GET", "/v3/invitations/:invID", noauth.ServeHTTPContext)
-	noauth.HandleFunc("POST", "/v3/invitations/:invID/create-user", createUserFromInvitation)
-	h.AddFunc("POST", "/v3/invitations/:invID/create-user", noauth.ServeHTTPContext)
-	noauth.HandleFunc("POST", "/v3/invitations/:invID/add-existing", addMemberFromInvitation)
-	h.AddFunc("POST", "/v3/invitations/:invID/add-existing", noauth.ServeHTTPContext)
 
 	pwHandler := httpjson.NewServeMux(writeHTTPError)
 	pwHandler.HandleFunc("POST", "/v3/login", login)
 	h.AddFunc("POST", "/v3/login", userCredsAuthn(pwHandler.ServeHTTPContext))
+
+	nouserHandler := chainhttp.HandlerFunc(nouserAuthn(nouserSecret, nouserHandler()))
+	h.Add("GET", "/nouser/", nouserHandler)
+	h.Add("PUT", "/nouser/", nouserHandler)
+	h.Add("POST", "/nouser/", nouserHandler)
+	h.Add("DELETE", "/nouser/", nouserHandler)
 
 	tokenHandler := chainhttp.HandlerFunc(tokenAuthn(tokenAuthedHandler()))
 	h.Add("GET", "/", tokenHandler)
@@ -50,6 +49,18 @@ func Handler() chainhttp.Handler {
 	h.Add("DELETE", "/", tokenHandler)
 
 	return h
+}
+
+func nouserHandler() chainhttp.HandlerFunc {
+	h := httpjson.NewServeMux(writeHTTPError)
+
+	// These routes must trust the client to enforce access control.
+	// Think twice before adding something here.
+	h.HandleFunc("GET", "/nouser/invitations/:invID", appdb.GetInvitation)
+	h.HandleFunc("POST", "/nouser/invitations/:invID/create-user", createUserFromInvitation)
+	h.HandleFunc("POST", "/nouser/invitations/:invID/add-existing", addMemberFromInvitation)
+
+	return h.ServeHTTPContext
 }
 
 func tokenAuthedHandler() chainhttp.HandlerFunc {

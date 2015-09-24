@@ -29,6 +29,7 @@ var (
 	maxDBConns   = 100
 	maxIdleConns = 100
 	samplePer    = env.Duration("SAMPLEPER", 10*time.Second)
+	nouserSecret = env.String("NOUSER_SECRET", "")
 
 	db       *sql.DB
 	buildTag = "dev"
@@ -60,7 +61,7 @@ func main() {
 	appdb.Init(db)
 
 	var h chainhttp.Handler
-	h = api.Handler()
+	h = api.Handler(*nouserSecret)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 

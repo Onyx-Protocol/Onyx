@@ -30,7 +30,7 @@ func TestMux(t *testing.T) {
 			t.Fatal("unexpected panic:", err)
 		}
 	}()
-	Handler()
+	Handler("")
 }
 
 func TestLogin(t *testing.T) {

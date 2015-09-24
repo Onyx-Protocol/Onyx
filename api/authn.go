@@ -1,6 +1,7 @@
 package api
 
 import (
+	"crypto/subtle"
 	"database/sql"
 	"time"
 
@@ -22,6 +23,19 @@ func init() {
 func userCredsAuthn(f chainhttp.HandlerFunc) chainhttp.HandlerFunc {
 	return authn.BasicHandler{
 		Auth:  appdb.AuthenticateUserCreds,
+		Next:  f,
+		Realm: "x.chain.com",
+	}.ServeHTTPContext
+}
+
+func nouserAuthn(secret string, f chainhttp.HandlerFunc) chainhttp.HandlerFunc {
+	return authn.BasicHandler{
+		Auth: func(_ context.Context, _, p string) (string, error) {
+			if subtle.ConstantTimeCompare([]byte(p), []byte(secret)) != 1 {
+				return "", authn.ErrNotAuthenticated
+			}
+			return "", nil
+		},
 		Next:  f,
 		Realm: "x.chain.com",
 	}.ServeHTTPContext
