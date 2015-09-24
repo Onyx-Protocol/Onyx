@@ -28,14 +28,12 @@ func TestEmptyBlock(t *testing.T) {
 		t.Errorf("empty block header bytes = %x want %x", got, want)
 	}
 
-	h := block.Hash()
-	if id := ID(h[:]); id != "766d9541811800a40f2b976fcbb508178e31704167b87f5d8babf8ff951c07af" {
-		t.Errorf("empty block has incorrect ID %s", id)
+	wantHash := mustDecodeHash("af071c95fff8ab8b5d7fb8674170318e1708b5cb6f972b0fa400188141956d76")
+	if h := block.Hash(); !bytes.Equal(h[:], wantHash[:]) {
+		t.Errorf("empty block has incorrect hash %x", h)
 	}
-
-	h = block.HashForSig()
-	if got := hex.EncodeToString(h[:]); got != "af071c95fff8ab8b5d7fb8674170318e1708b5cb6f972b0fa400188141956d76" {
-		t.Errorf("empty block has incorrect ID %s", got)
+	if h := block.HashForSig(); !bytes.Equal(h[:], wantHash[:]) {
+		t.Errorf("empty block has incorrect sig hash %x", h)
 	}
 
 	wTime := time.Unix(0, 0).UTC()

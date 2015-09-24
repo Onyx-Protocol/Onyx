@@ -2,8 +2,8 @@ package bc
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
-	"strconv"
 
 	"chain/crypto/hash256"
 	"chain/encoding/bitcoin"
@@ -156,8 +156,7 @@ func (to *TxOutput) writeTo(w *errors.Writer, forHashing bool) {
 
 // String returns the Outpoint in the human-readable form "hash:index".
 func (p Outpoint) String() string {
-	return ID(p.Hash[:]) + ":" + strconv.FormatUint(uint64(p.Index), 10)
-
+	return fmt.Sprintf("%x:%d", p.Hash, p.Index)
 }
 
 // WriteTo writes p to w.

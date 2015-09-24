@@ -2,6 +2,7 @@ package bc
 
 import (
 	"bytes"
+	"encoding/hex"
 	"io"
 	"testing"
 )
@@ -15,10 +16,13 @@ func serialize(t *testing.T, wt io.WriterTo) []byte {
 	return b.Bytes()
 }
 
-func decodeHash256(id string) (hash [32]byte) {
-	err := DecodeHash256(id, &hash)
+func mustDecodeHash(hash string) (h [32]byte) {
+	if len(hash) != hex.EncodedLen(len(h)) {
+		panic("wrong length hash")
+	}
+	_, err := hex.Decode(h[:], []byte(hash))
 	if err != nil {
 		panic(err)
 	}
-	return hash
+	return h
 }

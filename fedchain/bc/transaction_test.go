@@ -13,12 +13,12 @@ import (
 
 func TestTransaction(t *testing.T) {
 	issuanceScript := script.Script{txscript.OP_1}
-	genesisHash := decodeHash256("e5f90ce43c924a0e57284ad1ff93618c19c997e53b3c4b3d4d903f4c5d6f50dd")
+	genesisHash := mustDecodeHash("dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5")
 
 	cases := []struct {
-		tx  Tx
-		hex string
-		id  string
+		tx   Tx
+		hex  string
+		hash [32]byte
 	}{
 		{
 			tx: Tx{
@@ -28,8 +28,8 @@ func TestTransaction(t *testing.T) {
 				LockTime: 0,
 				Metadata: "",
 			},
-			hex: "010000000000000000000000000000",
-			id:  "5c453d897a609c8cc46958fbd436a52bd3a2ce8f8829aa8a14d500fa44d63300",
+			hex:  "010000000000000000000000000000",
+			hash: mustDecodeHash("0033d644fa00d5148aaa29888fcea2d32ba536d4fb5869c48c9c607a893d455c"),
 		},
 		{
 			tx: Tx{
@@ -37,7 +37,7 @@ func TestTransaction(t *testing.T) {
 				Inputs: []TxInput{
 					{
 						Previous: Outpoint{
-							Hash:  decodeHash256("e5f90ce43c924a0e57284ad1ff93618c19c997e53b3c4b3d4d903f4c5d6f50dd"),
+							Hash:  mustDecodeHash("dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5"),
 							Index: InvalidOutputIndex,
 						},
 						// "PUSHDATA 'issuance'"
@@ -56,8 +56,8 @@ func TestTransaction(t *testing.T) {
 				LockTime: 0,
 				Metadata: "issuance",
 			},
-			hex: "0100000001dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5ffffffff090869737375616e636505696e7075740100000000000000000000000000000000000000000000000000000000000000000010a5d4e80000000151066f757470757400000000000000000869737375616e6365",
-			id:  "24c7a3db6d108dda4ae880bc5ea6346477a6c86bd1e54a12c592c61d5dbe6741",
+			hex:  "0100000001dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5ffffffff090869737375616e636505696e7075740100000000000000000000000000000000000000000000000000000000000000000010a5d4e80000000151066f757470757400000000000000000869737375616e6365",
+			hash: mustDecodeHash("4167be5d1dc692c5124ae5d16bc8a6776434a65ebc80e84ada8d106ddba3c724"),
 		},
 		{
 			tx: Tx{
@@ -65,7 +65,7 @@ func TestTransaction(t *testing.T) {
 				Inputs: []TxInput{
 					{
 						Previous: Outpoint{
-							Hash:  decodeHash256("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"),
+							Hash:  mustDecodeHash("92322db99e8b9e9f1df601cc9d22c5b056ad5189a50fbdc1d8915de26f5f38dd"),
 							Index: 0,
 						},
 						SignatureScript: script.Script{},
@@ -89,8 +89,8 @@ func TestTransaction(t *testing.T) {
 				LockTime: 1492590591,
 				Metadata: "distribution",
 			},
-			hex: "010000000192322db99e8b9e9f1df601cc9d22c5b056ad5189a50fbdc1d8915de26f5f38dd000000000005696e70757402a0f16ffd5618342611dd52589cad51f93e40cb9c54ab2e18c3169ca2e511533f0070c9b28b000000015100a0f16ffd5618342611dd52589cad51f93e40cb9c54ab2e18c3169ca2e511533f00a0db215d000000015200ff1ff758000000000c646973747269627574696f6e",
-			id:  "7f0a1fca0143c46d1f457949d1ae3da426ac9f67c546971dca2e55c5b3e2ee2d",
+			hex:  "010000000192322db99e8b9e9f1df601cc9d22c5b056ad5189a50fbdc1d8915de26f5f38dd000000000005696e70757402a0f16ffd5618342611dd52589cad51f93e40cb9c54ab2e18c3169ca2e511533f0070c9b28b000000015100a0f16ffd5618342611dd52589cad51f93e40cb9c54ab2e18c3169ca2e511533f00a0db215d000000015200ff1ff758000000000c646973747269627574696f6e",
+			hash: mustDecodeHash("2deee2b3c5552eca1d9746c5679fac26a43daed14979451f6dc44301ca1f0a7f"),
 		},
 	}
 
@@ -103,9 +103,9 @@ func TestTransaction(t *testing.T) {
 			t.Errorf("bytes = %x want %x", got, want)
 		}
 
-		h := test.tx.Hash()
-		if got := ID(h[:]); got != test.id {
-			t.Errorf("id = %s want %s", got, test.id)
+		hash := test.tx.Hash()
+		if !bytes.Equal(hash[:], test.hash[:]) {
+			t.Errorf("hash = %x want %x", got, test.hash)
 		}
 	}
 }
@@ -116,7 +116,7 @@ func TestIsIssuance(t *testing.T) {
 		Inputs: []TxInput{
 			{
 				Previous: Outpoint{
-					Hash:  decodeHash256("e5f90ce43c924a0e57284ad1ff93618c19c997e53b3c4b3d4d903f4c5d6f50dd"),
+					Hash:  mustDecodeHash("dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5"),
 					Index: InvalidOutputIndex,
 				},
 				// "PUSHDATA 'issuance'"
@@ -156,12 +156,13 @@ func TestEmptyOutpoint(t *testing.T) {
 }
 
 func TestIssuanceOutpoint(t *testing.T) {
+	hex := "fbc27d22c48b9b2533c4e97f7863f3dca805b8924ea2b7c6783f3fd99fdb2c29"
 	o := Outpoint{
-		Hash:  decodeHash256("292cdb9fd93f3f78c6b7a24e92b805a8dcf363787fe9c433259b8bc4227dc2fb"),
+		Hash:  mustDecodeHash(hex),
 		Index: 0xffffffff,
 	}
-	if o.String() != "292cdb9fd93f3f78c6b7a24e92b805a8dcf363787fe9c433259b8bc4227dc2fb:4294967295" {
-		t.Errorf("Issuance outpoint has incorrect string representation '%v'", o.String())
+	if got := o.String(); got != hex+":4294967295" {
+		t.Errorf("Issuance outpoint has incorrect string representation '%v'", got)
 	}
 }
 
