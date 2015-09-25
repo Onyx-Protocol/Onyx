@@ -109,7 +109,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	return h.ServeHTTPContext
 }
 
-// /v3/applications/:appID/wallets
+// POST /v3/applications/:appID/wallets
 func createWallet(ctx context.Context, appID string, wReq struct {
 	Label string
 	XPubs []string
@@ -169,6 +169,7 @@ func getWalletActivity(ctx context.Context, wID string) (interface{}, error) {
 	return ret, nil
 }
 
+// GET /v3/wallets/:walletID/balance
 func walletBalance(ctx context.Context, walletID string) (interface{}, error) {
 	prev, limit, err := getPageData(ctx, defBalancePageSize)
 	if err != nil {
@@ -183,6 +184,7 @@ func walletBalance(ctx context.Context, walletID string) (interface{}, error) {
 	return map[string]interface{}{"last": last, "balances": balances}, nil
 }
 
+// GET /v3/buckets/:bucketID/balance
 func bucketBalance(ctx context.Context, bucketID string) (interface{}, error) {
 	prev, limit, err := getPageData(ctx, defBalancePageSize)
 	if err != nil {
@@ -237,6 +239,7 @@ func createAssetGroup(ctx context.Context, appID string, agReq struct {
 	return ret, nil
 }
 
+// GET /v3/wallets/:walletID/buckets
 func listBuckets(ctx context.Context, walletID string) (interface{}, error) {
 	prev, limit, err := getPageData(ctx, defBucketPageSize)
 	if err != nil {
@@ -255,7 +258,7 @@ func listBuckets(ctx context.Context, walletID string) (interface{}, error) {
 	return ret, nil
 }
 
-// /v3/wallets/:walletID/buckets
+// POST /v3/wallets/:walletID/buckets
 func createBucket(ctx context.Context, walletID string, in struct{ Label string }) (*appdb.Bucket, error) {
 	defer metrics.RecordElapsed(time.Now())
 	return appdb.CreateBucket(ctx, walletID, in.Label)
@@ -296,7 +299,7 @@ func createAsset(ctx context.Context, groupID string, in struct{ Label string })
 	return ret, nil
 }
 
-// /v3/assets/:assetID/issue
+// POST /v3/assets/:assetID/issue
 func issueAsset(ctx context.Context, assetID string, outs []asset.Output) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	template, err := asset.Issue(ctx, assetID, outs)
@@ -308,7 +311,7 @@ func issueAsset(ctx context.Context, assetID string, outs []asset.Output) (inter
 	return ret, nil
 }
 
-// /v3/assets/transfer
+// POST /v3/assets/transfer
 func transferAssets(ctx context.Context, x struct {
 	Inputs  []asset.TransferInput
 	Outputs []asset.Output
@@ -334,7 +337,7 @@ func transferAssets(ctx context.Context, x struct {
 	return ret, nil
 }
 
-// /v3/assets/trade
+// POST /v3/assets/trade
 func tradeAssets(ctx context.Context, x struct {
 	PreviousTx *asset.Tx `json:"previous_transaction"`
 	Inputs     []asset.TransferInput
@@ -361,7 +364,7 @@ func tradeAssets(ctx context.Context, x struct {
 	return ret, nil
 }
 
-// /v3/wallets/transact/finalize
+// POST /v3/wallets/transact/finalize
 func walletFinalize(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	// TODO(kr): validate
