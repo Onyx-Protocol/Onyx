@@ -35,13 +35,18 @@ func Write(ctx context.Context, w http.ResponseWriter, status int, v interface{}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 
-	// Make sure to render nil slices as "[]", rather than "null"
-	if rv := reflect.ValueOf(v); rv.Kind() == reflect.Slice && rv.IsNil() {
-		v = []struct{}{}
-	}
-
-	err := json.NewEncoder(w).Encode(v)
+	err := json.NewEncoder(w).Encode(Array(v))
 	if err != nil {
 		log.Error(ctx, err)
 	}
+}
+
+// Array returns an empty JSON array if v is a nil slice,
+// so that it renders as "[]" rather than "null".
+// Otherwise, it returns v.
+func Array(v interface{}) interface{} {
+	if rv := reflect.ValueOf(v); rv.Kind() == reflect.Slice && rv.IsNil() {
+		v = []struct{}{}
+	}
+	return v
 }

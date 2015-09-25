@@ -161,7 +161,7 @@ func getWalletActivity(ctx context.Context, wID string) (interface{}, error) {
 
 	ret := map[string]interface{}{
 		"last":       last,
-		"activities": activity,
+		"activities": httpjson.Array(activity),
 	}
 	return ret, nil
 }
@@ -219,7 +219,7 @@ func listBuckets(ctx context.Context, walletID string) (interface{}, error) {
 
 	ret := map[string]interface{}{
 		"last":    last,
-		"buckets": buckets,
+		"buckets": httpjson.Array(buckets),
 	}
 	return ret, nil
 }
@@ -244,7 +244,7 @@ func getBucketActivity(ctx context.Context, bid string) (interface{}, error) {
 
 	ret := map[string]interface{}{
 		"last":       last,
-		"activities": activity,
+		"activities": httpjson.Array(activity),
 	}
 	return ret, nil
 }
