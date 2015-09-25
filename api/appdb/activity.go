@@ -111,7 +111,9 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 		insByAddr    = make(map[string]map[string]int64)
 		outsByBucket = make(map[string]map[string]int64)
 		outsByAddr   = make(map[string]map[string]int64)
-		buckets      []string
+
+		buckets []string
+		assets  []string
 	)
 
 	var (
@@ -142,6 +144,8 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 			if err != nil {
 				return nil, errors.Wrap(err, "row scan")
 			}
+
+			assets = append(assets, asset)
 
 			// We only want to track which bucket this came from
 			// if this input is part of this wallet. Otherwise,
@@ -190,6 +194,8 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 			return nil, errors.Wrap(err, "row scan outputs")
 		}
 
+		assets = append(assets, asset)
+
 		// We only want to track which bucket
 		// this came from if this output is part of this wallet.
 		// Otherwise, we only track the address.
@@ -229,8 +235,22 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 		}
 	}
 
+	rows.Close()
+
 	sort.Strings(buckets)
 	buckets = strings.Uniq(buckets)
+	sort.Strings(assets)
+	assets = strings.Uniq(assets)
+
+	bucketLabels, err := labelsByIDs(ctx, buckets, false)
+	if err != nil {
+		return nil, err
+	}
+
+	assetLabels, err := labelsByIDs(ctx, assets, true)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create Activity Item data blob. The Activity Item
 	// blobs are json objects that look something like this:
@@ -272,7 +292,7 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 			i["amount"] = amt
 			i["address"] = addr
 
-			if l := assetLabelByID(ctx, asset); l != "" {
+			if l := assetLabels[asset]; l != "" {
 				i["asset_label"] = l
 			}
 
@@ -286,11 +306,11 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 			i["amount"] = amt
 			i["bucket_id"] = bckt
 
-			if l := assetLabelByID(ctx, asset); l != "" {
+			if l := assetLabels[asset]; l != "" {
 				i["asset_label"] = l
 			}
 
-			if l := bucketLabelByID(ctx, bckt); l != "" {
+			if l := bucketLabels[bckt]; l != "" {
 				i["bucket_label"] = l
 			}
 
@@ -304,7 +324,7 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 			o["amount"] = amt
 			o["address"] = addr
 
-			if l := assetLabelByID(ctx, asset); l != "" {
+			if l := assetLabels[asset]; l != "" {
 				o["asset_label"] = l
 			}
 
@@ -318,11 +338,11 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 			o["amount"] = amt
 			o["bucket_id"] = bckt
 
-			if l := assetLabelByID(ctx, asset); l != "" {
+			if l := assetLabels[asset]; l != "" {
 				o["asset_label"] = l
 			}
 
-			if l := bucketLabelByID(ctx, bckt); l != "" {
+			if l := bucketLabels[bckt]; l != "" {
 				o["bucket_label"] = l
 			}
 
@@ -349,6 +369,42 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 	}
 
 	return item, nil
+}
+
+func labelsByIDs(ctx context.Context, ids []string, isAsset bool) (map[string]string, error) {
+	const (
+		bucketQ = `SELECT id, label FROM buckets WHERE id=ANY($1)`
+		assetQ  = `SELECT id, label FROM assets WHERE id=ANY($1)`
+	)
+
+	var (
+		rows *sql.Rows
+		err  error
+	)
+
+	if isAsset {
+		rows, err = pg.FromContext(ctx).Query(assetQ, pg.Strings(ids))
+	} else {
+		rows, err = pg.FromContext(ctx).Query(bucketQ, pg.Strings(ids))
+	}
+
+	if err != nil {
+		return nil, errors.Wrap(err, "querying labels")
+	}
+	defer rows.Close()
+
+	labels := make(map[string]string)
+
+	for rows.Next() {
+		var id, l string
+		err = rows.Scan(&id, &l)
+		if err != nil {
+			return nil, errors.Wrap(err, "scanning labels")
+		}
+		labels[id] = l
+	}
+
+	return labels, nil
 }
 
 func writeActivityItem(ctx context.Context, item *activityItem) error {
