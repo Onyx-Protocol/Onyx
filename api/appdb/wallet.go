@@ -61,6 +61,8 @@ func CreateWallet(ctx context.Context, appID, label string, keys []*hdkey.XKey) 
 	return id, nil
 }
 
+// Balance is a struct describing the balance of
+// an asset that a wallet or bucket has.
 type Balance struct {
 	AssetID   string `json:"asset_id"`
 	Confirmed int64  `json:"confirmed"`
@@ -86,23 +88,28 @@ func GetWallet(ctx context.Context, walletID string) (*Wallet, error) {
 }
 
 // WalletBalance fetches the balances of assets contained in this wallet.
-// It returns a slice of Balances, where each Balance contains an asset ID,
-// a confirmed balance, and a total balance. The total and confirmed balances
+// It returns a slice of Balances and the last asset ID in the page.
+// Each Balance contains an asset ID, a confirmed balance,
+// and a total balance. The total and confirmed balances
 // are currently the same.
-func WalletBalance(ctx context.Context, walletID string) ([]*Balance, error) {
+func WalletBalance(ctx context.Context, walletID, prev string, limit int) ([]*Balance, string, error) {
 	q := `
 		SELECT asset_id, sum(amount)::bigint
 		FROM utxos
-		WHERE wallet_id=$1
+		WHERE wallet_id=$1 AND ($2='' OR asset_id>$2)
 		GROUP BY asset_id
 		ORDER BY asset_id
+		LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(q, walletID)
+	rows, err := pg.FromContext(ctx).Query(q, walletID, prev, limit)
 	if err != nil {
-		return nil, errors.Wrap(err, "balance query")
+		return nil, "", errors.Wrap(err, "balance query")
 	}
 	defer rows.Close()
-	var bals []*Balance
+	var (
+		bals []*Balance
+		last string
+	)
 
 	for rows.Next() {
 		var (
@@ -111,19 +118,15 @@ func WalletBalance(ctx context.Context, walletID string) ([]*Balance, error) {
 		)
 		err = rows.Scan(&assetID, &bal)
 		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
+			return nil, "", errors.Wrap(err, "row scan")
 		}
-		b := &Balance{
-			AssetID:   assetID,
-			Total:     bal,
-			Confirmed: bal,
-		}
-		bals = append(bals, b)
+		bals = append(bals, &Balance{assetID, bal, bal})
+		last = assetID
 	}
 	if err = rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "rows error")
+		return nil, "", errors.Wrap(err, "rows error")
 	}
-	return bals, err
+	return bals, last, err
 }
 
 // ListWallets returns a list of wallets contained in the given application.

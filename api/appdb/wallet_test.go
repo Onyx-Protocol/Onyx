@@ -79,26 +79,55 @@ func TestWalletBalance(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	bals, err := WalletBalance(ctx, "w1")
-	if err != nil {
-		t.Errorf("unexpected error %v", err)
-	}
+	cases := []struct {
+		wID      string
+		prev     string
+		limit    int
+		want     []*Balance
+		wantLast string
+	}{{
+		wID:      "w1",
+		limit:    5,
+		want:     []*Balance{{"a1", 15, 15}, {"a2", 20, 20}},
+		wantLast: "a2",
+	}, {
+		wID:      "w1",
+		prev:     "a1",
+		limit:    5,
+		want:     []*Balance{{"a2", 20, 20}},
+		wantLast: "a2",
+	}, {
+		wID:      "w1",
+		prev:     "a2",
+		limit:    5,
+		want:     nil,
+		wantLast: "",
+	}, {
+		wID:      "w1",
+		limit:    1,
+		want:     []*Balance{{"a1", 15, 15}},
+		wantLast: "a1",
+	}, {
+		wID:      "nonexistent",
+		limit:    5,
+		want:     nil,
+		wantLast: "",
+	}}
 
-	want := []*Balance{
-		{
-			AssetID:   "a1",
-			Confirmed: 15,
-			Total:     15,
-		},
-		{
-			AssetID:   "a2",
-			Confirmed: 20,
-			Total:     20,
-		},
-	}
+	for _, c := range cases {
+		got, gotLast, err := WalletBalance(ctx, c.wID, c.prev, c.limit)
+		if err != nil {
+			t.Errorf("WalletBalance(%s, %s, %d): unexpected error %v", c.wID, c.prev, c.limit, err)
+			continue
+		}
 
-	if !reflect.DeepEqual(want, bals) {
-		t.Errorf("got=%v want=%v", bals, want)
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("WalletBalance(%s, %s, %d) = %v want %v", c.wID, c.prev, c.limit, got, c.want)
+		}
+
+		if gotLast != c.wantLast {
+			t.Errorf("WalletBalance(%s, %s, %d) = %v want %v", c.wID, c.prev, c.limit, gotLast, c.wantLast)
+		}
 	}
 }
 

@@ -25,6 +25,7 @@ const (
 	sessionTokenLifetime = 2 * 7 * 24 * time.Hour
 	defActivityPageSize  = 50
 	defBucketPageSize    = 100
+	defBalancePageSize   = 100
 )
 
 // Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
@@ -81,7 +82,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/wallets/:walletID", appdb.GetWallet)
 	h.HandleFunc("GET", "/v3/wallets/:walletID/buckets", listBuckets)
 	h.HandleFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
-	h.HandleFunc("GET", "/v3/wallets/:walletID/balance", appdb.WalletBalance)
+	h.HandleFunc("GET", "/v3/wallets/:walletID/balance", walletBalance)
 	h.HandleFunc("GET", "/v3/wallets/:walletID/activity", getWalletActivity)
 	h.HandleFunc("GET", "/v3/wallets/:walletID/transactions/:txID", appdb.WalletTxActivity)
 	h.HandleFunc("GET", "/v3/applications/:appID/asset-groups", appdb.ListAssetGroups)
@@ -89,7 +90,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/asset-groups/:groupID", appdb.GetAssetGroup)
 	h.HandleFunc("GET", "/v3/asset-groups/:groupID/assets", appdb.ListAssets)
 	h.HandleFunc("POST", "/v3/asset-groups/:groupID/assets", createAsset)
-	h.HandleFunc("GET", "/v3/buckets/:bucketID/balance", appdb.BucketBalance)
+	h.HandleFunc("GET", "/v3/buckets/:bucketID/balance", bucketBalance)
 	h.HandleFunc("GET", "/v3/buckets/:bucketID/activity", getBucketActivity)
 	h.HandleFunc("POST", "/v3/buckets/:bucketID/addresses", createAddr)
 	h.HandleFunc("GET", "/v3/assets/:assetID", appdb.GetAsset)
@@ -166,6 +167,34 @@ func getWalletActivity(ctx context.Context, wID string) (interface{}, error) {
 		"activities": httpjson.Array(activity),
 	}
 	return ret, nil
+}
+
+func walletBalance(ctx context.Context, walletID string) (interface{}, error) {
+	prev, limit, err := getPageData(ctx, defBalancePageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	balances, last, err := appdb.WalletBalance(ctx, walletID, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{"last": last, "balances": balances}, nil
+}
+
+func bucketBalance(ctx context.Context, bucketID string) (interface{}, error) {
+	prev, limit, err := getPageData(ctx, defBalancePageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	balances, last, err := appdb.BucketBalance(ctx, bucketID, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{"last": last, "balances": balances}, nil
 }
 
 // POST /v3/applications/:appID/asset-groups

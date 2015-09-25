@@ -69,23 +69,28 @@ func CreateBucket(ctx context.Context, walletID, label string) (*Bucket, error) 
 }
 
 // BucketBalance fetches the balances of assets contained in this bucket.
-// It returns a slice of Balances, where each Balance contains an asset ID,
-// a confirmed balance, and a total balance. The total and confirmed balances
+// It returns a slice of Balances and the last asset ID in the page.
+// Each Balance contains an asset ID, a confirmed balance,
+// and a total balance. The total and confirmed balances
 // are currently the same.
-func BucketBalance(ctx context.Context, bucketID string) ([]*Balance, error) {
+func BucketBalance(ctx context.Context, bucketID, prev string, limit int) ([]*Balance, string, error) {
 	q := `
 		SELECT asset_id, sum(amount)::bigint
 		FROM utxos
-		WHERE bucket_id=$1
+		WHERE bucket_id=$1 AND ($2='' OR asset_id>$2)
 		GROUP BY asset_id
 		ORDER BY asset_id
+		LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(q, bucketID)
+	rows, err := pg.FromContext(ctx).Query(q, bucketID, prev, limit)
 	if err != nil {
-		return nil, errors.Wrap(err, "balance query")
+		return nil, "", errors.Wrap(err, "balance query")
 	}
 	defer rows.Close()
-	var bals []*Balance
+	var (
+		bals []*Balance
+		last string
+	)
 
 	for rows.Next() {
 		var (
@@ -94,19 +99,15 @@ func BucketBalance(ctx context.Context, bucketID string) ([]*Balance, error) {
 		)
 		err = rows.Scan(&assetID, &bal)
 		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
+			return nil, "", errors.Wrap(err, "row scan")
 		}
-		b := &Balance{
-			AssetID:   assetID,
-			Total:     bal,
-			Confirmed: bal,
-		}
-		bals = append(bals, b)
+		bals = append(bals, &Balance{assetID, bal, bal})
+		last = assetID
 	}
 	if err = rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "rows error")
+		return nil, "", errors.Wrap(err, "rows error")
 	}
-	return bals, err
+	return bals, last, err
 }
 
 // ListBuckets returns a list of buckets contained in the given wallet.
