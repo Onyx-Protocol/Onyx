@@ -97,35 +97,40 @@ func InsertAsset(ctx context.Context, asset *Asset) error {
 	return err
 }
 
-// ListAssets returns a list of AssetResponses belonging to the given asset
-// group.
-func ListAssets(ctx context.Context, groupID string) ([]*AssetResponse, error) {
+// ListAssets returns a paginated list of AssetResponses
+// belonging to the given asset group, along with a sortable id
+// for last asset, used to retrieve the next page.
+func ListAssets(ctx context.Context, groupID string, prev string, limit int) ([]*AssetResponse, string, error) {
 	q := `
-		SELECT id, label, issued
+		SELECT id, label, issued, sort_id
 		FROM assets
-		WHERE asset_group_id = $1
-		ORDER BY created_at
+		WHERE asset_group_id = $1 AND ($2='' OR sort_id<$2)
+		ORDER BY sort_id DESC
+		LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(q, groupID)
+	rows, err := pg.FromContext(ctx).Query(q, groupID, prev, limit)
 	if err != nil {
-		return nil, errors.Wrap(err, "select query")
+		return nil, "", errors.Wrap(err, "select query")
 	}
 
-	var assets []*AssetResponse
+	var (
+		assets []*AssetResponse
+		last   string
+	)
 	for rows.Next() {
 		a := new(AssetResponse)
-		err := rows.Scan(&a.ID, &a.Label, &a.Circulation)
+		err := rows.Scan(&a.ID, &a.Label, &a.Circulation, &last)
 		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
+			return nil, "", errors.Wrap(err, "row scan")
 		}
 		assets = append(assets, a)
 	}
 
 	if err := rows.Close(); err != nil {
-		return nil, errors.Wrap(err, "end row scan loop")
+		return nil, "", errors.Wrap(err, "end row scan loop")
 	}
 
-	return assets, nil
+	return assets, last, nil
 }
 
 // GetAsset returns an AssetResponse for the given asset id.

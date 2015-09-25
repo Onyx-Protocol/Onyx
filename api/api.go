@@ -26,6 +26,7 @@ const (
 	defActivityPageSize  = 50
 	defBucketPageSize    = 100
 	defBalancePageSize   = 100
+	defAssetPageSize     = 100
 )
 
 // Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
@@ -88,7 +89,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/applications/:appID/asset-groups", appdb.ListAssetGroups)
 	h.HandleFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
 	h.HandleFunc("GET", "/v3/asset-groups/:groupID", appdb.GetAssetGroup)
-	h.HandleFunc("GET", "/v3/asset-groups/:groupID/assets", appdb.ListAssets)
+	h.HandleFunc("GET", "/v3/asset-groups/:groupID/assets", listAssets)
 	h.HandleFunc("POST", "/v3/asset-groups/:groupID/assets", createAsset)
 	h.HandleFunc("GET", "/v3/buckets/:bucketID/balance", bucketBalance)
 	h.HandleFunc("GET", "/v3/buckets/:bucketID/activity", getBucketActivity)
@@ -281,6 +282,21 @@ func getBucketActivity(ctx context.Context, bid string) (interface{}, error) {
 		"activities": httpjson.Array(activity),
 	}
 	return ret, nil
+}
+
+// GET /v3/asset-groups/:groupID/assets
+func listAssets(ctx context.Context, groupID string) (interface{}, error) {
+	prev, limit, err := getPageData(ctx, defAssetPageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	assets, last, err := appdb.ListAssets(ctx, groupID, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{"last": last, "assets": assets}, nil
 }
 
 // POST /v3/asset-groups/:groupID/assets

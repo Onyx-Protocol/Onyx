@@ -262,7 +262,8 @@ CREATE TABLE assets (
     definition bytea,
     redeem_script bytea NOT NULL,
     label text NOT NULL,
-    issued bigint DEFAULT 0 NOT NULL
+    issued bigint DEFAULT 0 NOT NULL,
+    sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL
 );
 
 
@@ -595,6 +596,13 @@ CREATE INDEX asset_groups_application_id_idx ON asset_groups USING btree (applic
 --
 
 CREATE INDEX assets_asset_group_id_idx ON assets USING btree (asset_group_id);
+
+
+--
+-- Name: assets_sort_id; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX assets_sort_id ON assets USING btree (sort_id);
 
 
 --
