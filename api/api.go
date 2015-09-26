@@ -182,7 +182,11 @@ func walletBalance(ctx context.Context, walletID string) (interface{}, error) {
 		return nil, err
 	}
 
-	return map[string]interface{}{"last": last, "balances": balances}, nil
+	ret := map[string]interface{}{
+		"last":     last,
+		"balances": httpjson.Array(balances),
+	}
+	return ret, nil
 }
 
 // GET /v3/buckets/:bucketID/balance
@@ -197,7 +201,11 @@ func bucketBalance(ctx context.Context, bucketID string) (interface{}, error) {
 		return nil, err
 	}
 
-	return map[string]interface{}{"last": last, "balances": balances}, nil
+	ret := map[string]interface{}{
+		"last":     last,
+		"balances": httpjson.Array(balances),
+	}
+	return ret, nil
 }
 
 // POST /v3/applications/:appID/asset-groups
@@ -296,7 +304,11 @@ func listAssets(ctx context.Context, groupID string) (interface{}, error) {
 		return nil, err
 	}
 
-	return map[string]interface{}{"last": last, "assets": assets}, nil
+	ret := map[string]interface{}{
+		"last":   last,
+		"assets": httpjson.Array(assets),
+	}
+	return ret, nil
 }
 
 // POST /v3/asset-groups/:groupID/assets
