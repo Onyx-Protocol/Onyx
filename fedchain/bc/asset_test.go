@@ -15,7 +15,7 @@ func TestComputeAssetID(t *testing.T) {
 	genesisHash := decodeHash256("e5f90ce43c924a0e57284ad1ff93618c19c997e53b3c4b3d4d903f4c5d6f50dd")
 	assetID := ComputeAssetID(issuanceScript, genesisHash)
 
-	want, _ := hex.DecodeString("1ccfc833562fde9678bdade004f594111d688ed9")
+	want, _ := hex.DecodeString("a0f16ffd5618342611dd52589cad51f93e40cb9c54ab2e18c3169ca2e511533f")
 	if !bytes.Equal(assetID[:], want) {
 		t.Errorf("asset id = %x want %x", assetID[:], want)
 	}
@@ -23,8 +23,8 @@ func TestComputeAssetID(t *testing.T) {
 
 func TestComputeIssuanceID(t *testing.T) {
 	got := ComputeIssuanceID(Outpoint{})
-	want, _ := hex.DecodeString("d33b70b905f59fac92d69d0978917524660a5f13")
+	want, _ := hex.DecodeString("ca5ace6dec772a290777987fd77016fcfd32925a42c84389b7b5fbd1c02654e1")
 	if !bytes.Equal(got[:], want) {
-		t.Errorf("asset id = %x want %x", got[:], want)
+		t.Errorf("issuance id = %x want %x", got[:], want)
 	}
 }
