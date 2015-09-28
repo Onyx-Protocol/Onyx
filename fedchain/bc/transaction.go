@@ -6,7 +6,6 @@ import (
 	"io"
 
 	"chain/crypto/hash256"
-	"chain/encoding/bitcoin"
 	"chain/errors"
 	"chain/fedchain/script"
 )
@@ -26,7 +25,7 @@ type Tx struct {
 	Inputs   []TxInput
 	Outputs  []TxOutput
 	LockTime uint64
-	Metadata string
+	Metadata []byte
 }
 
 // TxInput encodes a single input in a transaction.
@@ -100,13 +99,13 @@ func (tx *Tx) writeTo(w io.Writer, forHashing bool) (n int64, err error) {
 	ew := errors.NewWriter(w)
 	binary.Write(ew, binary.LittleEndian, tx.Version)
 
-	bitcoin.WriteVarint(ew, uint64(len(tx.Inputs)))
+	writeUvarint(ew, uint64(len(tx.Inputs)))
 	for i := range tx.Inputs {
 		ti := &tx.Inputs[i]
 		ti.writeTo(ew, forHashing)
 	}
 
-	bitcoin.WriteVarint(ew, uint64(len(tx.Outputs)))
+	writeUvarint(ew, uint64(len(tx.Outputs)))
 	for i := range tx.Outputs {
 		to := &tx.Outputs[i]
 		to.writeTo(ew, forHashing)
@@ -114,10 +113,10 @@ func (tx *Tx) writeTo(w io.Writer, forHashing bool) (n int64, err error) {
 
 	binary.Write(ew, binary.LittleEndian, tx.LockTime)
 	if forHashing {
-		h := hash256.Sum([]byte(tx.Metadata))
+		h := hash256.Sum(tx.Metadata)
 		ew.Write(h[:])
 	} else {
-		bitcoin.WriteString(ew, tx.Metadata)
+		writeBytes(ew, tx.Metadata)
 	}
 	return ew.Written(), ew.Err()
 }
@@ -135,22 +134,22 @@ func (ti *TxInput) writeTo(w *errors.Writer, forHashing bool) {
 		h = hash256.Sum([]byte(ti.Metadata))
 		w.Write(h[:])
 	} else {
-		bitcoin.WriteBytes(w, ti.SignatureScript)
-		bitcoin.WriteBytes(w, ti.Metadata)
+		writeBytes(w, ti.SignatureScript)
+		writeBytes(w, ti.Metadata)
 	}
 }
 
 func (to *TxOutput) writeTo(w *errors.Writer, forHashing bool) {
 	w.Write(to.AssetID[:])
 	binary.Write(w, binary.LittleEndian, to.Value)
-	bitcoin.WriteBytes(w, to.Script)
+	writeBytes(w, to.Script)
 
 	// Write the metadata or its hash depending on serialization mode.
 	if forHashing {
 		h := hash256.Sum([]byte(to.Metadata))
 		w.Write(h[:])
 	} else {
-		bitcoin.WriteBytes(w, to.Metadata)
+		writeBytes(w, to.Metadata)
 	}
 }
 
@@ -166,4 +165,15 @@ func (p Outpoint) WriteTo(w io.Writer) (n int64, err error) {
 		return 0, err
 	}
 	return 32 + 4, nil
+}
+
+func writeUvarint(w *errors.Writer, x uint64) {
+	var buf [9]byte
+	n := binary.PutUvarint(buf[:], x)
+	w.Write(buf[0:n])
+}
+
+func writeBytes(w *errors.Writer, data []byte) {
+	writeUvarint(w, uint64(len(data)))
+	w.Write(data)
 }

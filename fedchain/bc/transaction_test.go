@@ -26,7 +26,7 @@ func TestTransaction(t *testing.T) {
 				Inputs:   nil,
 				Outputs:  nil,
 				LockTime: 0,
-				Metadata: "",
+				Metadata: nil,
 			},
 			hex:  "010000000000000000000000000000",
 			hash: mustDecodeHash("0033d644fa00d5148aaa29888fcea2d32ba536d4fb5869c48c9c607a893d455c"),
@@ -54,7 +54,7 @@ func TestTransaction(t *testing.T) {
 					},
 				},
 				LockTime: 0,
-				Metadata: "issuance",
+				Metadata: []byte("issuance"),
 			},
 			hex:  "0100000001dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5ffffffff090869737375616e636505696e7075740100000000000000000000000000000000000000000000000000000000000000000010a5d4e80000000151066f757470757400000000000000000869737375616e6365",
 			hash: mustDecodeHash("4167be5d1dc692c5124ae5d16bc8a6776434a65ebc80e84ada8d106ddba3c724"),
@@ -87,7 +87,7 @@ func TestTransaction(t *testing.T) {
 					},
 				},
 				LockTime: 1492590591,
-				Metadata: "distribution",
+				Metadata: []byte("distribution"),
 			},
 			hex:  "010000000192322db99e8b9e9f1df601cc9d22c5b056ad5189a50fbdc1d8915de26f5f38dd000000000005696e70757402a0f16ffd5618342611dd52589cad51f93e40cb9c54ab2e18c3169ca2e511533f0070c9b28b000000015100a0f16ffd5618342611dd52589cad51f93e40cb9c54ab2e18c3169ca2e511533f00a0db215d000000015200ff1ff758000000000c646973747269627574696f6e",
 			hash: mustDecodeHash("2deee2b3c5552eca1d9746c5679fac26a43daed14979451f6dc44301ca1f0a7f"),
@@ -133,7 +133,7 @@ func TestIsIssuance(t *testing.T) {
 			},
 		},
 		LockTime: 0,
-		Metadata: "issuance",
+		Metadata: []byte("issuance"),
 	}
 
 	if g := tx.Inputs[0].IsIssuance(); !g {

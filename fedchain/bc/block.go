@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"chain/crypto/hash256"
-	"chain/encoding/bitcoin"
 	"chain/errors"
 	"chain/fedchain/script"
 )
@@ -27,7 +26,7 @@ func (b *Block) writeTo(w io.Writer, forSigning bool) (int64, error) {
 	ew := errors.NewWriter(w)
 	b.BlockHeader.writeTo(ew, forSigning)
 	if !forSigning {
-		bitcoin.WriteVarint(ew, uint64(len(b.Transactions)))
+		writeUvarint(ew, uint64(len(b.Transactions)))
 		for _, tx := range b.Transactions {
 			tx.WriteTo(ew)
 		}
@@ -118,9 +117,9 @@ func (bh *BlockHeader) writeTo(w *errors.Writer, forSigning bool) {
 	w.Write(bh.StateRoot[:])
 	binary.Write(w, binary.LittleEndian, bh.Timestamp)
 	if forSigning {
-		bitcoin.WriteString(w, "")
+		writeBytes(w, nil)
 	} else {
-		bitcoin.WriteBytes(w, bh.SignatureScript)
+		writeBytes(w, bh.SignatureScript)
 	}
-	bitcoin.WriteBytes(w, bh.OutputScript)
+	writeBytes(w, bh.OutputScript)
 }
