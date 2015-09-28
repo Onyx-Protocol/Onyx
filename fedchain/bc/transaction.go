@@ -97,7 +97,7 @@ func (tx *Tx) WriteForHashTo(w io.Writer) (int64, error) {
 
 func (tx *Tx) writeTo(w io.Writer, forHashing bool) (n int64, err error) {
 	ew := errors.NewWriter(w)
-	binary.Write(ew, binary.LittleEndian, tx.Version)
+	binary.Write(ew, endianness, tx.Version)
 
 	writeUvarint(ew, uint64(len(tx.Inputs)))
 	for i := range tx.Inputs {
@@ -111,7 +111,7 @@ func (tx *Tx) writeTo(w io.Writer, forHashing bool) (n int64, err error) {
 		to.writeTo(ew, forHashing)
 	}
 
-	binary.Write(ew, binary.LittleEndian, tx.LockTime)
+	binary.Write(ew, endianness, tx.LockTime)
 	if forHashing {
 		h := hash256.Sum(tx.Metadata)
 		ew.Write(h[:])
@@ -141,7 +141,7 @@ func (ti *TxInput) writeTo(w *errors.Writer, forHashing bool) {
 
 func (to *TxOutput) writeTo(w *errors.Writer, forHashing bool) {
 	w.Write(to.AssetID[:])
-	binary.Write(w, binary.LittleEndian, to.Value)
+	binary.Write(w, endianness, to.Value)
 	writeBytes(w, to.Script)
 
 	// Write the metadata or its hash depending on serialization mode.
@@ -160,20 +160,9 @@ func (p Outpoint) String() string {
 
 // WriteTo writes p to w.
 func (p Outpoint) WriteTo(w io.Writer) (n int64, err error) {
-	err = binary.Write(w, binary.LittleEndian, p)
+	err = binary.Write(w, endianness, p)
 	if err != nil {
 		return 0, err
 	}
 	return 32 + 4, nil
-}
-
-func writeUvarint(w *errors.Writer, x uint64) {
-	var buf [9]byte
-	n := binary.PutUvarint(buf[:], x)
-	w.Write(buf[0:n])
-}
-
-func writeBytes(w *errors.Writer, data []byte) {
-	writeUvarint(w, uint64(len(data)))
-	w.Write(data)
 }

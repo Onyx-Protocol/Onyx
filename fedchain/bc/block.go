@@ -110,12 +110,12 @@ func (bh *BlockHeader) WriteForSigTo(w io.Writer) (int64, error) {
 // writeTo writes bh to w.
 // If forSigning is true, it writes an empty string instead of the signature script.
 func (bh *BlockHeader) writeTo(w *errors.Writer, forSigning bool) {
-	binary.Write(w, binary.LittleEndian, bh.Version)
-	binary.Write(w, binary.LittleEndian, bh.Height)
+	binary.Write(w, endianness, bh.Version)
+	binary.Write(w, endianness, bh.Height)
 	w.Write(bh.PreviousBlockHash[:])
 	w.Write(bh.TxRoot[:])
 	w.Write(bh.StateRoot[:])
-	binary.Write(w, binary.LittleEndian, bh.Timestamp)
+	binary.Write(w, endianness, bh.Timestamp)
 	if forSigning {
 		writeBytes(w, nil)
 	} else {
