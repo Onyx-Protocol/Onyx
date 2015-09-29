@@ -11,7 +11,7 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 )
 
 func TestAssetByID(t *testing.T) {
@@ -20,7 +20,7 @@ func TestAssetByID(t *testing.T) {
 			VALUES ('ag1', 'proj-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
 		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, label)
 		VALUES(
-			'AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p',
+			'0000000000000000000000000000000000000000000000000000000000000000',
 			'ag1',
 			0,
 			'{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}',
@@ -31,17 +31,16 @@ func TestAssetByID(t *testing.T) {
 	defer dbtx.Rollback()
 
 	ctx := pg.NewContext(context.Background(), dbtx)
-	got, err := AssetByID(ctx, "AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p")
+	got, err := AssetByID(ctx, bc.AssetID{})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	hash, _ := wire.NewHash20FromStr("AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p")
 	redeem, _ := hex.DecodeString("51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae")
 	key, _ := hdkey.NewXKey("xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd")
 	want := &Asset{
-		Hash:         hash,
+		Hash:         bc.AssetID{},
 		GroupID:      "ag1",
 		AGIndex:      []uint32{0, 0},
 		AIndex:       []uint32{0, 0},
@@ -53,14 +52,8 @@ func TestAssetByID(t *testing.T) {
 		t.Errorf("got asset = %+v want %+v", got, want)
 	}
 
-	// invalid base58 asset id
-	_, err = AssetByID(ctx, "invalid-base58-id")
-	if errors.Root(err) != ErrBadAsset {
-		t.Errorf("got error = %v want %v", errors.Root(err), ErrBadAsset)
-	}
-
 	// missing asset id
-	_, err = AssetByID(ctx, "AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx")
+	_, err = AssetByID(ctx, bc.AssetID{1})
 	if errors.Root(err) != pg.ErrUserInputNotFound {
 		t.Errorf("got error = %v want %v", errors.Root(err), pg.ErrUserInputNotFound)
 	}

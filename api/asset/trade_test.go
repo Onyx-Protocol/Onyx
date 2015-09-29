@@ -1,7 +1,6 @@
 package asset
 
 import (
-	"bytes"
 	"reflect"
 	"testing"
 
@@ -11,7 +10,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 )
 
 func TestTrade(t *testing.T) {
@@ -30,37 +29,31 @@ func TestTrade(t *testing.T) {
 		INSERT INTO utxos
 			(txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
 		VALUES
-			('0000000000000000000000000000000000000000000000000000000000000001', 0, 'AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx', 5, 1, 'b1', 'w1'),
-			('0000000000000000000000000000000000000000000000000000000000000002', 0, 'AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo', 2, 0, 'b2', 'w1');
+			('1000000000000000000000000000000000000000000000000000000000000000', 0, 'fe00000000000000000000000000000000000000000000000000000000000000', 5, 1, 'b1', 'w1'),
+			('2000000000000000000000000000000000000000000000000000000000000000', 0, 'ff00000000000000000000000000000000000000000000000000000000000000', 2, 0, 'b2', 'w1');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
-	utxoDB = utxodb.New(sqlUTXODB{})
 
-	outAsset, _ := wire.NewHash20FromStr("AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo")
-	unsignedTx := &wire.MsgTx{
+	unsignedTx := &bc.Tx{
 		Version: 1,
-		TxIn: []*wire.TxIn{
-			wire.NewTxIn(wire.NewOutPoint((*wire.Hash32)(&[32]byte{1}), 0), []byte{}),
-		},
-		TxOut: []*wire.TxOut{wire.NewTxOut(outAsset, 2, []byte{})},
+		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Hash: [32]byte{16}, Index: 0}}},
+		Outputs: []*bc.TxOutput{{AssetID: [32]byte{255}, Value: 2}},
 	}
-	var buf bytes.Buffer
-	unsignedTx.Serialize(&buf)
 
 	tpl := &Tx{
-		Unsigned:   buf.Bytes(),
+		Unsigned:   unsignedTx,
 		Inputs:     []*Input{{WalletID: "w1"}},
 		BlockChain: "sandbox",
 	}
 	inputs := []utxodb.Input{{
 		BucketID: "b2",
-		AssetID:  "AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo",
+		AssetID:  "ff00000000000000000000000000000000000000000000000000000000000000",
 		Amount:   2,
 	}}
 	outputs := []*Output{{
 		Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK",
-		AssetID: "AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx",
+		AssetID: "fe00000000000000000000000000000000000000000000000000000000000000",
 		Amount:  5,
 	}}
 
@@ -70,64 +63,50 @@ func TestTrade(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gotWire := wire.NewMsgTx()
-	gotWire.Deserialize(bytes.NewReader(got.Unsigned))
-
-	wantHash := "0000000000000000000000000000000000000000000000000000000000000001"
-	if gotWire.TxIn[0].PreviousOutPoint.Hash.String() != wantHash {
-		t.Errorf("got txin[0].hash = %s want %s", gotWire.TxIn[0].PreviousOutPoint.Hash.String(), wantHash)
+	wantHash := "1000000000000000000000000000000000000000000000000000000000000000"
+	if got.Unsigned.Inputs[0].Previous.Hash.String() != wantHash {
+		t.Errorf("got txin[0].hash = %s want %s", got.Unsigned.Inputs[0].Previous.Hash.String(), wantHash)
 	}
 
-	wantHash = "0000000000000000000000000000000000000000000000000000000000000002"
-	if gotWire.TxIn[1].PreviousOutPoint.Hash.String() != wantHash {
-		t.Errorf("got txin[1].hash = %s want %s", gotWire.TxIn[1].PreviousOutPoint.Hash.String(), wantHash)
+	wantHash = "2000000000000000000000000000000000000000000000000000000000000000"
+	if got.Unsigned.Inputs[1].Previous.Hash.String() != wantHash {
+		t.Errorf("got txin[1].hash = %s want %s", got.Unsigned.Inputs[1].Previous.Hash.String(), wantHash)
 	}
 }
 
 func TestCombine(t *testing.T) {
-	asset1, _ := wire.NewHash20FromStr("AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx")
-	asset2, _ := wire.NewHash20FromStr("AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo")
-	unsigned1 := &wire.MsgTx{
+	unsigned1 := &bc.Tx{
 		Version: 1,
-		TxIn: []*wire.TxIn{
-			wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}),
-		},
-		TxOut: []*wire.TxOut{wire.NewTxOut(asset1, 5, []byte{})},
+		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}}},
+		Outputs: []*bc.TxOutput{{AssetID: [32]byte{254}, Value: 5}},
 	}
 
-	unsigned2 := &wire.MsgTx{
+	unsigned2 := &bc.Tx{
 		Version: 1,
-		TxIn: []*wire.TxIn{
-			wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}),
-		},
-		TxOut: []*wire.TxOut{wire.NewTxOut(asset2, 6, []byte{})},
+		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}}},
+		Outputs: []*bc.TxOutput{{AssetID: [32]byte{255}, Value: 6}},
 	}
 
-	combined := &wire.MsgTx{
+	combined := &bc.Tx{
 		Version: 1,
-		TxIn: []*wire.TxIn{
-			wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}),
-			wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}),
+		Inputs: []*bc.TxInput{
+			{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}},
+			{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}},
 		},
-		TxOut: []*wire.TxOut{
-			wire.NewTxOut(asset1, 5, []byte{}),
-			wire.NewTxOut(asset2, 6, []byte{}),
+		Outputs: []*bc.TxOutput{
+			{AssetID: [32]byte{254}, Value: 5},
+			{AssetID: [32]byte{255}, Value: 6},
 		},
 	}
-
-	var buf bytes.Buffer
-	unsigned1.Serialize(&buf)
 
 	tpl1 := &Tx{
-		Unsigned:   buf.Bytes(),
+		Unsigned:   unsigned1,
 		Inputs:     []*Input{{WalletID: "w1"}},
 		BlockChain: "sandbox",
 	}
 
-	buf = bytes.Buffer{}
-	unsigned2.Serialize(&buf)
 	tpl2 := &Tx{
-		Unsigned:   buf.Bytes(),
+		Unsigned:   unsigned2,
 		Inputs:     []*Input{{WalletID: "w2"}},
 		BlockChain: "sandbox",
 	}
@@ -138,10 +117,8 @@ func TestCombine(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	buf = bytes.Buffer{}
-	combined.Serialize(&buf)
 	want := &Tx{
-		Unsigned:   buf.Bytes(),
+		Unsigned:   combined,
 		Inputs:     []*Input{{WalletID: "w1"}, {WalletID: "w2"}},
 		BlockChain: "sandbox",
 	}

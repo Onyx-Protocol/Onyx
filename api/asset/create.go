@@ -11,6 +11,8 @@ import (
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	chaintxscript "chain/fedchain-sandbox/txscript"
+	"chain/fedchain/bc"
+	"chain/fedchain/validation"
 	"chain/metrics"
 )
 
@@ -38,11 +40,8 @@ func Create(ctx context.Context, agID, label string) (*appdb.Asset, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating asset: group id %v sigsReq %v", agID, sigsReq)
 	}
-	pkScript, err := chaintxscript.RedeemToPkScript(asset.RedeemScript)
-	if err != nil {
-		return nil, err
-	}
-	asset.Hash = chaintxscript.PkScriptToAssetID(pkScript)
+	pkScript := chaintxscript.RedeemToPkScript(asset.RedeemScript)
+	asset.Hash = bc.ComputeAssetID(pkScript, validation.TestParams.GenesisHash)
 
 	err = appdb.InsertAsset(ctx, asset)
 	if err != nil {

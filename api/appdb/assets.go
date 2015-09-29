@@ -9,7 +9,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 	"chain/metrics"
 )
 
@@ -21,7 +21,7 @@ var ErrBadAsset = errors.New("invalid asset")
 // It is made up of extended keys, and paths (indexes) within those keys.
 // Assets belong to wallets.
 type Asset struct {
-	Hash            wire.Hash20 // the raw Asset ID
+	Hash            bc.AssetID // the raw Asset ID
 	GroupID         string
 	Label           string
 	Keys            []*hdkey.XKey
@@ -38,7 +38,7 @@ type AssetResponse struct {
 }
 
 // AssetByID loads an asset from the database using its ID.
-func AssetByID(ctx context.Context, id string) (*Asset, error) {
+func AssetByID(ctx context.Context, hash bc.AssetID) (*Asset, error) {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
 		SELECT assets.keyset, redeem_script, issuer_node_id,
@@ -49,14 +49,9 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 	`
 	var (
 		xpubs []string
-		a     = new(Asset)
+		a     = &Asset{Hash: hash}
 	)
-	var err error
-	a.Hash, err = wire.NewHash20FromStr(id)
-	if err != nil {
-		return nil, errors.WithDetailf(ErrBadAsset, "asset id=%v", id)
-	}
-	err = pg.FromContext(ctx).QueryRow(q, id).Scan(
+	err := pg.FromContext(ctx).QueryRow(q, hash.String()).Scan(
 		(*pg.Strings)(&xpubs),
 		&a.RedeemScript,
 		&a.GroupID,
@@ -67,7 +62,7 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 		err = pg.ErrUserInputNotFound
 	}
 	if err != nil {
-		return nil, errors.WithDetailf(err, "asset id=%v", id)
+		return nil, errors.WithDetailf(err, "asset id=%v", hash.String())
 	}
 
 	a.Keys, err = stringsToKeys(xpubs)
@@ -158,7 +153,7 @@ func UpdateAsset(ctx context.Context, assetID string, label *string) error {
 
 // AddIssuance increases the issued column on an asset
 // by the amount provided.
-func AddIssuance(ctx context.Context, id string, amount int64) error {
+func AddIssuance(ctx context.Context, id string, amount uint64) error {
 	const q = `UPDATE assets SET issued=issued+$1 WHERE id=$2`
 	_, err := pg.FromContext(ctx).Exec(q, amount, id)
 	return errors.Wrap(err)

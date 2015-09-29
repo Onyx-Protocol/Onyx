@@ -10,7 +10,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain-sandbox/txscript"
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 	"chain/log"
 	"chain/metrics"
 )
@@ -46,11 +46,11 @@ func (sqlUTXODB) LoadUTXOs(ctx context.Context, bucketID, assetID string) ([]*ut
 		if err != nil {
 			return nil, errors.Wrap(err, "scan")
 		}
-		h, err := wire.NewHash32FromStr(txid)
+		h, err := bc.ParseHash(txid)
 		if err != nil {
 			return nil, errors.Wrap(err, "decode hash")
 		}
-		u.Outpoint.Hash = *h
+		u.Outpoint.Hash = h
 		u.ResvExpires = u.ResvExpires.UTC()
 		utxos = append(utxos, u)
 		if len(utxos)%1e6 == 0 {
@@ -82,12 +82,12 @@ func (sqlUTXODB) SaveReservations(ctx context.Context, utxos []*utxodb.UTXO, exp
 // the effects of tx. It deletes consumed utxos
 // and inserts newly-created outputs.
 // Must be called inside a transaction.
-func (sqlUTXODB) ApplyTx(ctx context.Context, tx *wire.MsgTx, outRecs []*utxodb.Receiver) (deleted, inserted []*utxodb.UTXO, err error) {
+func (sqlUTXODB) ApplyTx(ctx context.Context, tx *bc.Tx, outRecs []*utxodb.Receiver) (deleted, inserted []*utxodb.UTXO, err error) {
 	defer metrics.RecordElapsed(time.Now())
 	now := time.Now()
-	hash := tx.TxSha()
+	hash := tx.Hash()
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
-	insUTXOs, err := insertUTXOs(ctx, hash, tx.TxOut, outRecs)
+	insUTXOs, err := insertUTXOs(ctx, hash, tx.Outputs, outRecs)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "insert")
 	}
@@ -105,7 +105,7 @@ func (sqlUTXODB) ApplyTx(ctx context.Context, tx *wire.MsgTx, outRecs []*utxodb.
 		return nil, nil, errors.Wrap(err, "creating activity items")
 	}
 
-	deleted, err = deleteUTXOs(ctx, tx.TxIn)
+	deleted, err = deleteUTXOs(ctx, tx.Inputs)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "delete")
 	}
@@ -128,20 +128,20 @@ type utxoSet struct {
 	aIndex   pg.Int64s
 }
 
-func deleteUTXOs(ctx context.Context, txins []*wire.TxIn) ([]*utxodb.UTXO, error) {
+func deleteUTXOs(ctx context.Context, txins []*bc.TxInput) ([]*utxodb.UTXO, error) {
 	defer metrics.RecordElapsed(time.Now())
 	var (
 		txid  []string
 		index []uint32
 	)
 	for _, in := range txins {
-		txid = append(txid, in.PreviousOutPoint.Hash.String())
-		index = append(index, in.PreviousOutPoint.Index)
+		txid = append(txid, in.Previous.Hash.String())
+		index = append(index, in.Previous.Index)
 	}
 
 	const q = `
 		WITH outpoints AS (
-			SELECT unnest($1::text[]), unnest($2::int[])
+			SELECT unnest($1::text[]), unnest($2::bigint[])
 		)
 		DELETE FROM utxos
 		WHERE (txid, index) IN (TABLE outpoints)
@@ -160,17 +160,17 @@ func deleteUTXOs(ctx context.Context, txins []*wire.TxIn) ([]*utxodb.UTXO, error
 		if err != nil {
 			return nil, errors.Wrap(err, "scan")
 		}
-		h, err := wire.NewHash32FromStr(txid)
+		h, err := bc.ParseHash(txid)
 		if err != nil {
 			return nil, errors.Wrap(err, "decode hash")
 		}
-		u.Outpoint.Hash = *h
+		u.Outpoint.Hash = h
 		deleted = append(deleted, u)
 	}
 	return deleted, rows.Err()
 }
 
-func insertUTXOs(ctx context.Context, hash wire.Hash32, txouts []*wire.TxOut, recs []*utxodb.Receiver) ([]*appdb.UTXO, error) {
+func insertUTXOs(ctx context.Context, hash bc.Hash, txouts []*bc.TxOutput, recs []*utxodb.Receiver) ([]*appdb.UTXO, error) {
 	if len(txouts) != len(recs) {
 		return nil, errors.New("length mismatch")
 	}
@@ -215,7 +215,7 @@ func insertUTXOs(ctx context.Context, hash wire.Hash32, txouts []*wire.TxOut, re
 		)
 		SELECT
 			$1::text,
-			unnest($2::int[]),
+			unnest($2::bigint[]),
 			unnest($3::text[]),
 			unnest($4::bigint[]),
 			unnest($5::text[]),
@@ -234,10 +234,10 @@ func insertUTXOs(ctx context.Context, hash wire.Hash32, txouts []*wire.TxOut, re
 	return insert, errors.Wrap(err)
 }
 
-func initAddrInfoFromRecs(hash wire.Hash32, txouts []*wire.TxOut, recs []*utxodb.Receiver) ([]*appdb.UTXO, error) {
+func initAddrInfoFromRecs(hash bc.Hash, txouts []*bc.TxOutput, recs []*utxodb.Receiver) ([]*appdb.UTXO, error) {
 	insert := make([]*appdb.UTXO, len(txouts))
 	for i, txo := range txouts {
-		addr, err := txscript.PkScriptAddr(txo.PkScript)
+		addr, err := txscript.PkScriptAddr(txo.Script)
 		if err != nil {
 			return nil, errors.Wrap(err, "bad pk script")
 		}
@@ -246,7 +246,7 @@ func initAddrInfoFromRecs(hash wire.Hash32, txouts []*wire.TxOut, recs []*utxodb
 			UTXO: &utxodb.UTXO{
 				AssetID:  txo.AssetID.String(),
 				Amount:   uint64(txo.Value),
-				Outpoint: wire.OutPoint{Hash: hash, Index: uint32(i)},
+				Outpoint: bc.Outpoint{Hash: hash, Index: uint32(i)},
 			},
 		}
 		if rec := recs[i]; rec != nil {
@@ -274,7 +274,7 @@ func loadAddrInfoFromDB(ctx context.Context, utxos []*appdb.UTXO) error {
 	}
 
 	const q = `
-		SELECT address, account_id, manager_node_id, keyset, key_index, is_change
+		SELECT address, account_id, manager_node_id, key_index(key_index), is_change
 		FROM addresses
 		WHERE address IN (SELECT unnest($1::text[]))
 	`
@@ -293,8 +293,8 @@ func loadAddrInfoFromDB(ctx context.Context, utxos []*appdb.UTXO) error {
 		)
 		err = rows.Scan(
 			&addr,
-			&walletID,
 			&bucketID,
+			&walletID,
 			(*pg.Uint32s)(&addrIndex),
 			&isChange,
 		)

@@ -1,7 +1,6 @@
 package asset
 
 import (
-	"bytes"
 	"time"
 
 	"golang.org/x/net/context"
@@ -10,7 +9,7 @@ import (
 	"chain/api/utxodb"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 	"chain/metrics"
 )
 
@@ -40,7 +39,7 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.
 		return nil, err
 	}
 
-	tx := wire.NewMsgTx()
+	tx := &bc.Tx{Version: bc.CurrentTransactionVersion}
 
 	reserved, change, err := utxoDB.Reserve(ctx, inputs, ttl)
 	if err != nil {
@@ -51,33 +50,31 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.
 		outs = append(outs, &Output{
 			BucketID: c.Input.BucketID,
 			AssetID:  c.Input.AssetID,
-			Amount:   int64(c.Amount),
+			Amount:   c.Amount,
 			isChange: true,
 		})
 	}
 
 	for _, utxo := range reserved {
-		tx.AddTxIn(wire.NewTxIn(&utxo.Outpoint, []byte{}))
+		tx.Inputs = append(tx.Inputs, &bc.TxInput{Previous: utxo.Outpoint})
 	}
 
 	var outRecvs []*utxodb.Receiver
 	for i, out := range outs {
-		asset, err := wire.NewHash20FromStr(out.AssetID)
+		hash, err := bc.ParseHash(out.AssetID)
 		if err != nil {
 			return nil, errors.WithDetailf(appdb.ErrBadAsset, "asset id: %v", out.AssetID)
 		}
+		asset := bc.AssetID(hash)
 
 		pkScript, receiver, err := out.PKScript(ctx)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "output %d", i)
 		}
 
-		tx.AddTxOut(wire.NewTxOut(asset, out.Amount, pkScript))
+		tx.Outputs = append(tx.Outputs, &bc.TxOutput{AssetID: asset, Value: out.Amount, Script: pkScript})
 		outRecvs = append(outRecvs, receiver)
 	}
-
-	var buf bytes.Buffer
-	tx.Serialize(&buf)
 
 	txInputs, err := makeTransferInputs(ctx, tx, reserved)
 	if err != nil {
@@ -85,7 +82,7 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.
 	}
 
 	appTx := &Tx{
-		Unsigned:   buf.Bytes(),
+		Unsigned:   tx,
 		BlockChain: "sandbox",
 		Inputs:     txInputs,
 		OutRecvs:   outRecvs,
@@ -124,7 +121,7 @@ func checkTransferParity(ins []utxodb.Input, outs []*Output) error {
 // makeTransferInputs creates the array of inputs
 // that contain signatures along with the
 // data needed to generate them
-func makeTransferInputs(ctx context.Context, tx *wire.MsgTx, utxos []*utxodb.UTXO) ([]*Input, error) {
+func makeTransferInputs(ctx context.Context, tx *bc.Tx, utxos []*utxodb.UTXO) ([]*Input, error) {
 	defer metrics.RecordElapsed(time.Now())
 	var inputs []*Input
 	for _, utxo := range utxos {
@@ -137,10 +134,7 @@ func makeTransferInputs(ctx context.Context, tx *wire.MsgTx, utxos []*utxodb.UTX
 	return inputs, nil
 }
 
-func addressInput(ctx context.Context, u *utxodb.UTXO, tx *wire.MsgTx) (*Input, error) {
-	var buf bytes.Buffer
-	tx.Serialize(&buf)
-
+func addressInput(ctx context.Context, u *utxodb.UTXO, tx *bc.Tx) (*Input, error) {
 	addrInfo, err := appdb.AddrInfo(ctx, u.BucketID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get addr info")
@@ -157,7 +151,7 @@ func addressInput(ctx context.Context, u *utxodb.UTXO, tx *wire.MsgTx) (*Input, 
 	in := &Input{
 		WalletID:      addrInfo.WalletID,
 		RedeemScript:  redeemScript,
-		SignatureData: wire.DoubleSha256(buf.Bytes()),
+		SignatureData: tx.Hash(),
 		Sigs:          inputSigs(signers),
 	}
 	return in, nil
@@ -165,6 +159,6 @@ func addressInput(ctx context.Context, u *utxodb.UTXO, tx *wire.MsgTx) (*Input, 
 
 // CancelReservations cancels any existing reservations
 // for the given outpoints.
-func CancelReservations(ctx context.Context, outpoints []wire.OutPoint) {
+func CancelReservations(ctx context.Context, outpoints []bc.Outpoint) {
 	utxoDB.Cancel(ctx, outpoints)
 }

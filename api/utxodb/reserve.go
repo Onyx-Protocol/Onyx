@@ -9,7 +9,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 	"chain/log"
 	"chain/metrics"
 )
@@ -57,7 +57,7 @@ type (
 		ResvExpires time.Time
 		heapIndex   int
 
-		Outpoint  wire.OutPoint
+		Outpoint  bc.Outpoint
 		AddrIndex [2]uint32
 	}
 
@@ -95,7 +95,7 @@ type (
 		// ApplyTx applies the Tx to the database,
 		// deleteing spent outputs and inserting new UTXOs.
 		// It returns the deleted and inserted outputs.
-		ApplyTx(context.Context, *wire.MsgTx, []*Receiver) (deleted, inserted []*UTXO, err error)
+		ApplyTx(context.Context, *bc.Tx, []*Receiver) (deleted, inserted []*UTXO, err error)
 	}
 )
 
@@ -115,7 +115,7 @@ func (rs *Reserver) pool(bucketID, assetID string) *pool {
 	p, ok := rs.tab[k]
 	if !ok {
 		p = &pool{
-			byOutpoint: map[wire.OutPoint]*UTXO{},
+			byOutpoint: map[bc.Outpoint]*UTXO{},
 		}
 		rs.tab[k] = p
 	}
@@ -164,7 +164,7 @@ func (rs *Reserver) Reserve(ctx context.Context, inputs []Input, ttl time.Durati
 // Cancel cancels the given reservations, if they still exist.
 // If any do not exist (if they've already been consumed
 // or canceled), it silently ignores them.
-func (rs *Reserver) Cancel(ctx context.Context, outpoints []wire.OutPoint) {
+func (rs *Reserver) Cancel(ctx context.Context, outpoints []bc.Outpoint) {
 	var utxos []*UTXO
 	for _, op := range outpoints {
 		if u := rs.findReservation(op); u != nil {
@@ -174,7 +174,7 @@ func (rs *Reserver) Cancel(ctx context.Context, outpoints []wire.OutPoint) {
 	rs.unreserve(utxos)
 }
 
-func (rs *Reserver) Apply(ctx context.Context, tx *wire.MsgTx, outRecs []*Receiver) error {
+func (rs *Reserver) Apply(ctx context.Context, tx *bc.Tx, outRecs []*Receiver) error {
 	defer metrics.RecordElapsed(time.Now())
 	deleted, inserted, err := rs.db.ApplyTx(ctx, tx, outRecs)
 	if err != nil {
@@ -189,7 +189,7 @@ func (rs *Reserver) Apply(ctx context.Context, tx *wire.MsgTx, outRecs []*Receiv
 // findReservation does a linear scan through the set
 // of pools in rs to find the UTXO that reserves op.
 // If there is no such reservation, it returns nil.
-func (rs *Reserver) findReservation(op wire.OutPoint) *UTXO {
+func (rs *Reserver) findReservation(op bc.Outpoint) *UTXO {
 	// TODO(kr): augment the SDK to include bucket ID and asset ID
 	// for each reservation, so we can do this lookup faster.
 	defer metrics.RecordElapsed(time.Now())

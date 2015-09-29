@@ -14,7 +14,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 )
 
 func init() {
@@ -37,7 +37,7 @@ func TestIssue(t *testing.T) {
 			VALUES ('ag1', 'proj-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
 		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, label)
 		VALUES(
-			'AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p',
+			'0000000000000000000000000000000000000000000000000000000000000000',
 			'ag1',
 			0,
 			'{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}',
@@ -53,29 +53,26 @@ func TestIssue(t *testing.T) {
 		Amount:  123,
 	}}
 
-	resp, err := Issue(ctx, "AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p", outs)
+	resp, err := Issue(ctx, "0000000000000000000000000000000000000000000000000000000000000000", outs)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	got := wire.NewMsgTx()
-	got.Deserialize(bytes.NewReader(resp.Unsigned))
-
-	want := wire.NewMsgTx()
-	want.AddTxIn(wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}))
-
-	outAsset, _ := wire.NewHash20FromStr("AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p")
 	outScript, _ := hex.DecodeString("a9140ac9c982fd389181752e5a414045dd424a10754b87")
-	want.AddTxOut(wire.NewTxOut(outAsset, 123, outScript))
+	want := &bc.Tx{
+		Version: 1,
+		Inputs:  []*bc.TxInput{{Previous: bc.IssuanceOutpoint}},
+		Outputs: []*bc.TxOutput{{AssetID: bc.AssetID{}, Value: 123, Script: outScript}},
+	}
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got tx = %+v want %+v", got, want)
+	if !reflect.DeepEqual(resp.Unsigned, want) {
+		t.Errorf("got tx = %+v want %+v", resp.Unsigned, want)
 	}
 
 	// Bad output destination error
 	outs = []*Output{{Amount: 5}}
-	_, err = Issue(ctx, "AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p", outs)
+	_, err = Issue(ctx, "0000000000000000000000000000000000000000000000000000000000000000", outs)
 
 	if errors.Root(err) != ErrBadOutDest {
 		t.Errorf("got err = %v want %v", errors.Root(err), ErrBadOutDest)

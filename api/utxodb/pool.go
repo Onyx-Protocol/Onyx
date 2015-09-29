@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 	"chain/metrics"
 )
 
@@ -16,7 +16,7 @@ type pool struct {
 	mu         sync.Mutex // protects the following
 	ready      bool
 	outputs    utxosByResvExpires // min heap
-	byOutpoint map[wire.OutPoint]*UTXO
+	byOutpoint map[bc.Outpoint]*UTXO
 }
 
 func (p *pool) init(ctx context.Context, db DB, k key) error {
@@ -34,7 +34,7 @@ func (p *pool) init(ctx context.Context, db DB, k key) error {
 	// We will load them (along with all the other
 	// utxos) again now, so throw away the dups.
 	p.outputs = nil
-	p.byOutpoint = map[wire.OutPoint]*UTXO{}
+	p.byOutpoint = map[bc.Outpoint]*UTXO{}
 
 	utxos, err := db.LoadUTXOs(ctx, k.BucketID, k.AssetID)
 	if err != nil {
@@ -113,7 +113,7 @@ func (p *pool) contains(u *UTXO) bool {
 
 // findReservation finds the UTXO in p that reserves op.
 // If there is no such reservation, it returns nil.
-func (p *pool) findReservation(op wire.OutPoint) *UTXO {
+func (p *pool) findReservation(op bc.Outpoint) *UTXO {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	defer metrics.RecordElapsed(time.Now())

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"sync"
 	"time"
 
@@ -10,9 +9,7 @@ import (
 	"chain/api/asset"
 	"chain/api/utxodb"
 	"chain/database/pg"
-	"chain/encoding/json"
-	"chain/errors"
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 	"chain/metrics"
 )
 
@@ -107,27 +104,22 @@ func submitSingle(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 		return nil, err
 	}
 
-	var buf bytes.Buffer
-	tx.Serialize(&buf)
-
 	ret := map[string]interface{}{
-		"transaction_id":  tx.TxSha().String(),
-		"raw_transaction": json.HexBytes(buf.Bytes()),
+		"transaction_id":  tx.Hash().String(),
+		"raw_transaction": tx,
 	}
 	return ret, nil
 }
 
 // POST /v3/assets/cancel-reservation
 func cancelReservation(ctx context.Context, x struct {
-	Transaction json.HexBytes
+	Transaction *bc.Tx
 }) error {
-	tx := wire.NewMsgTx()
-	err := tx.Deserialize(bytes.NewReader(x.Transaction))
-	if err != nil {
-		return errors.Wrap(asset.ErrBadTxHex)
+	var outpoints []bc.Outpoint
+	for _, input := range x.Transaction.Inputs {
+		outpoints = append(outpoints, input.Previous)
 	}
-
-	asset.CancelReservations(ctx, tx.OutPoints())
+	asset.CancelReservations(ctx, outpoints)
 	return nil
 }
 

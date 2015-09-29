@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 )
 
 func TestPoolReserveErr(t *testing.T) {
 	p := &pool{
-		byOutpoint: map[wire.OutPoint]*UTXO{},
+		byOutpoint: map[bc.Outpoint]*UTXO{},
 		ready:      true,
 	}
 	u := &UTXO{Amount: 1}

@@ -3,12 +3,13 @@ package asset
 import (
 	"chain/api/utxodb"
 	"chain/encoding/json"
+	"chain/fedchain/bc"
 )
 
 // Tx represents a partially- or fully-signed transaction
 // belonging to a Chain project.
 type Tx struct {
-	Unsigned   json.HexBytes      `json:"unsigned_hex"`
+	Unsigned   *bc.Tx             `json:"unsigned_hex"`
 	BlockChain string             `json:"block_chain"`
 	Inputs     []*Input           `json:"inputs"`
 	OutRecvs   []*utxodb.Receiver `json:"output_receivers"`
@@ -19,7 +20,7 @@ type Input struct {
 	AssetGroupID  string        `json:"issuer_node_id,omitempty"`
 	WalletID      string        `json:"manager_node_id,omitempty"`
 	RedeemScript  json.HexBytes `json:"redeem_script"`
-	SignatureData json.HexBytes `json:"signature_data"`
+	SignatureData bc.Hash       `json:"signature_data"`
 	Sigs          []*Signature  `json:"signatures"`
 }
 

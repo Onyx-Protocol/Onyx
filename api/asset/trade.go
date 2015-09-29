@@ -1,14 +1,13 @@
 package asset
 
 import (
-	"bytes"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/api/utxodb"
 	"chain/errors"
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 )
 
 // Trade builds or adds on to a transaction for trading.
@@ -31,31 +30,22 @@ func combine(txs ...*Tx) (*Tx, error) {
 	if len(txs) == 0 {
 		return nil, errors.New("must pass at least one tx")
 	}
-	complete := &Tx{BlockChain: txs[0].BlockChain}
-	completeWire := wire.NewMsgTx()
+	completeWire := &bc.Tx{Version: bc.CurrentTransactionVersion}
+	complete := &Tx{BlockChain: txs[0].BlockChain, Unsigned: completeWire}
 
-	for i, tx := range txs {
+	for _, tx := range txs {
 		if tx.BlockChain != complete.BlockChain {
 			return nil, errors.New("all txs must be the same BlockChain")
 		}
 
 		complete.Inputs = append(complete.Inputs, tx.Inputs...)
 
-		wireTx := wire.NewMsgTx()
-		err := wireTx.Deserialize(bytes.NewReader(tx.Unsigned))
-		if err != nil {
-			return nil, errors.Wrapf(err, "deserializing tx %d", i)
+		for _, txin := range tx.Unsigned.Inputs {
+			completeWire.Inputs = append(completeWire.Inputs, txin)
 		}
-
-		for _, txin := range wireTx.TxIn {
-			completeWire.TxIn = append(completeWire.TxIn, txin)
-		}
-		for _, txout := range wireTx.TxOut {
-			completeWire.TxOut = append(completeWire.TxOut, txout)
+		for _, txout := range tx.Unsigned.Outputs {
+			completeWire.Outputs = append(completeWire.Outputs, txout)
 		}
 	}
-	var buf bytes.Buffer
-	completeWire.Serialize(&buf)
-	complete.Unsigned = buf.Bytes()
 	return complete, nil
 }

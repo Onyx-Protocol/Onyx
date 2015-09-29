@@ -40,33 +40,6 @@ func TestAddrPkScript(t *testing.T) {
 	}
 }
 
-func TestPkScriptToAssetID(t *testing.T) {
-	cases := []struct {
-		pkScript string
-		want     string
-	}{{
-		pkScript: "a91468eab7b0cd1fd188e2abe1c1133d01689e0c10b587",
-		want:     "AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo",
-	}, {
-		pkScript: "a91416dc6aa5e8aac191441e885c6ff17e111872b9e387",
-		want:     "AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx",
-	}, {
-		pkScript: "a914b1cadb9ab9394ccc45ca4e4151e1b64970757e4487",
-		want:     "ANzXFzvPWhubG1TfMDXskiAyHt5i8hREPn",
-	}, {
-		pkScript: "a914efea41476a7567044068760c0dd970f9bbd2d62087",
-		want:     "AZ1nPNeoKjhb71bcNGAUDsFNnWWqg2kCno",
-	}}
-	for _, c := range cases {
-		pkH, _ := hex.DecodeString(c.pkScript)
-		hash := PkScriptToAssetID(pkH)
-
-		if hash.String() != c.want {
-			t.Errorf("got pkScriptToAssetID(%v) = %v want %v", c.pkScript, hash.String(), c.want)
-		}
-	}
-}
-
 // Taken from PAPI
 func TestRedeemToPkScript(t *testing.T) {
 	redeem := []byte{
@@ -86,11 +59,7 @@ func TestRedeemToPkScript(t *testing.T) {
 		179, 65, 183, 169, 3, 163, 165, 135,
 	}
 
-	got, err := RedeemToPkScript(redeem)
-	if err != nil {
-		t.Fatal("unexpected error", err)
-	}
-
+	got := RedeemToPkScript(redeem)
 	if bytes.Compare(got, want) != 0 {
 		t.Errorf("got pkscript = %x want %x", got, want)
 	}

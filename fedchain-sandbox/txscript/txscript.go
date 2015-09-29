@@ -6,7 +6,6 @@ import (
 	"github.com/btcsuite/btcutil"
 
 	"chain/errors"
-	"chain/fedchain-sandbox/wire"
 )
 
 // AddrPkScript takes a base58-encoded address
@@ -43,19 +42,8 @@ func PkScriptAddr(pkScript []byte) (btcutil.Address, error) {
 
 // RedeemToPkScript takes a p2sh redeem script
 // and returns the pkscript to pay to it.
-func RedeemToPkScript(redeem []byte) ([]byte, error) {
-	p2sh, err := btcutil.NewAddressScriptHash(redeem, &chaincfg.MainNetParams)
-	if err != nil {
-		return nil, errors.Wrapf(err, "redeemscript=%X", redeem)
-	}
-	return txscript.PayToAddrScript(p2sh)
-}
-
-// PkScriptToAssetID takes a pkscript
-// and returns its asset ID.
-func PkScriptToAssetID(pkScript []byte) wire.Hash20 {
-	var id wire.Hash20
-	hash := btcutil.Hash160(pkScript)
-	copy(id[:], hash)
-	return id
+func RedeemToPkScript(redeem []byte) []byte {
+	p2sh, _ := btcutil.NewAddressScriptHash(redeem, &chaincfg.MainNetParams)
+	script, _ := txscript.PayToAddrScript(p2sh)
+	return script
 }

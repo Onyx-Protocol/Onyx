@@ -2,7 +2,6 @@
 package asset
 
 import (
-	"bytes"
 	"time"
 
 	"golang.org/x/net/context"
@@ -12,7 +11,7 @@ import (
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain-sandbox/txscript"
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 	"chain/metrics"
 )
 
@@ -24,10 +23,13 @@ var ErrBadAddr = errors.New("bad address")
 // distributed to the outputs provided.
 func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
-	tx := wire.NewMsgTx()
-	tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}))
+	tx := &bc.Tx{Version: bc.CurrentTransactionVersion}
+	tx.Inputs = append(tx.Inputs, &bc.TxInput{Previous: bc.IssuanceOutpoint})
 
-	asset, err := appdb.AssetByID(ctx, assetID)
+	hash, err := bc.ParseHash(assetID)
+	assetHash := bc.AssetID(hash)
+
+	asset, err := appdb.AssetByID(ctx, assetHash)
 	if err != nil {
 		return nil, errors.WithDetailf(err, "get asset with ID %q", assetID)
 	}
@@ -43,10 +45,8 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 		return nil, errors.Wrap(err, "add issuance outputs")
 	}
 
-	var buf bytes.Buffer
-	tx.Serialize(&buf)
 	appTx := &Tx{
-		Unsigned:   buf.Bytes(),
+		Unsigned:   tx,
 		BlockChain: "sandbox", // TODO(tess): make this BlockChain: blockchain.FromContext(ctx)
 		Inputs:     []*Input{issuanceInput(asset, tx)},
 		OutRecvs:   outRecvs,
@@ -60,7 +60,7 @@ type Output struct {
 	AssetID  string `json:"asset_id"`
 	Address  string `json:"address"`
 	BucketID string `json:"account_id"`
-	Amount   int64  `json:"amount"`
+	Amount   uint64 `json:"amount"`
 	isChange bool
 }
 
@@ -86,7 +86,7 @@ func (o *Output) PKScript(ctx context.Context) ([]byte, *utxodb.Receiver, error)
 	return script, nil, nil
 }
 
-func addAssetIssuanceOutputs(ctx context.Context, tx *wire.MsgTx, asset *appdb.Asset, outs []*Output) ([]*utxodb.Receiver, error) {
+func addAssetIssuanceOutputs(ctx context.Context, tx *bc.Tx, asset *appdb.Asset, outs []*Output) ([]*utxodb.Receiver, error) {
 	var outAddrs []*utxodb.Receiver
 	for i, out := range outs {
 		pkScript, receiver, err := out.PKScript(ctx)
@@ -94,7 +94,7 @@ func addAssetIssuanceOutputs(ctx context.Context, tx *wire.MsgTx, asset *appdb.A
 			return nil, errors.WithDetailf(err, "output %d", i)
 		}
 
-		tx.AddTxOut(wire.NewTxOut(asset.Hash, out.Amount, pkScript))
+		tx.Outputs = append(tx.Outputs, &bc.TxOutput{AssetID: asset.Hash, Value: out.Amount, Script: pkScript})
 		outAddrs = append(outAddrs, receiver)
 	}
 	return outAddrs, nil
@@ -111,14 +111,11 @@ func newOutputReceiver(addr *appdb.Address, isChange bool) *utxodb.Receiver {
 
 // issuanceInput returns an Input that can be used
 // to issue units of asset 'a'.
-func issuanceInput(a *appdb.Asset, tx *wire.MsgTx) *Input {
-	var buf bytes.Buffer
-	tx.Serialize(&buf)
-
+func issuanceInput(a *appdb.Asset, tx *bc.Tx) *Input {
 	return &Input{
 		AssetGroupID:  a.GroupID,
 		RedeemScript:  a.RedeemScript,
-		SignatureData: wire.DoubleSha256(buf.Bytes()),
+		SignatureData: tx.Hash(),
 		Sigs:          inputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a))),
 	}
 }

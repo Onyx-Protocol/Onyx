@@ -23,7 +23,7 @@ func TestCreate(t *testing.T) {
 		t.Fatal("unexpected error:", err)
 	}
 
-	wantID := "AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p"
+	wantID := "7b97c04149f6f932a12b5e2f4149aa2024b48f5fdb1be383592f1f30af5aa8ab"
 	if asset.Hash.String() != wantID {
 		t.Errorf("got asset id = %v want %v", asset.Hash.String(), wantID)
 	}

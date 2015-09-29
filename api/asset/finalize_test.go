@@ -12,7 +12,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 )
 
 func mustDecodeHex(data string) []byte {
@@ -24,16 +24,35 @@ func mustDecodeHex(data string) []byte {
 }
 
 func TestFinalizeTx(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t)
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO issuer_nodes (id, project_id, label, keyset, key_index)
+			VALUES ('ag1', 'app-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
+		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, label)
+		VALUES('ff00000000000000000000000000000000000000000000000000000000000000', 'ag1', 0, '{}', '', 'foo');
+		INSERT INTO manager_nodes (id, project_id, label, key_index)
+			VALUES ('mn1', 'app-id-0', 'mnode1', 0);
+		INSERT INTO accounts (id, manager_node_id, key_index, label) VALUES('acc1', 'mn1', 0, 'x');
+		INSERT INTO addresses
+			(id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script)
+			VALUES ('a1', 'mn1', 'acc1', '{}', 0, '32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK', '', '');
+	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
-	utxoDB = utxodb.New(sqlUTXODB{})
+
+	outscript := mustDecodeHex("a9140ac9c982fd389181752e5a414045dd424a10754b87")
+	unsigned := &bc.Tx{
+		Version: 1,
+		Inputs:  []*bc.TxInput{{Previous: bc.IssuanceOutpoint}},
+		Outputs: []*bc.TxOutput{{AssetID: [32]byte{255}, Value: 5, Script: outscript}},
+	}
+	sigHash, _ := bc.ParseHash("78e437f627019fc270bbe9ed309291d0a5f6bf98bfae0f750538ba56646f7327")
 
 	tpl := &Tx{
-		Unsigned: mustDecodeHex("010000000101000000000000000000000000000000000000000000000000000000000000000000000000ffffffff0187849ccdeaa558af265aafdfb6aa17903b2fc6997b0000000000000017a9140ac9c982fd389181752e5a414045dd424a10754b8700000000"),
+		Unsigned: unsigned,
 		Inputs: []*Input{{
 			RedeemScript:  []byte{},
-			SignatureData: mustDecodeHex("78e437f627019fc270bbe9ed309291d0a5f6bf98bfae0f750538ba56646f7327"),
+			SignatureData: sigHash,
 			Sigs: []*Signature{{
 				XPub:           "xpub661MyMwAqRbcGiDB8FQvHnDAZyaGUyzm3qN1Q3NDJz1PgAWCfyi9WRCS7Z9HyM5QNEh45fMyoaBMqjfoWPdnktcN8chJYB57D2Y7QtNmadr",
 				DerivationPath: []uint32{0, 0, 0, 0},
@@ -48,9 +67,9 @@ func TestFinalizeTx(t *testing.T) {
 		t.Fatal(withStack(err))
 	}
 
-	want := "2b7c01a96523a1368cc25d179a15b460cf1f959c09b41a69ad1562652bab97ee"
-	if tx.TxSha().String() != want {
-		t.Errorf("got tx hash = %v want %v", tx.TxSha().String(), want)
+	want := "053159ce7fc94d40d867de1de5b5529948b8ee88d2a9e98faf9aa187f79e9c6b"
+	if tx.Hash().String() != want {
+		t.Errorf("got tx hash = %v want %v", tx.Hash().String(), want)
 	}
 }
 
@@ -74,7 +93,9 @@ func TestCheckSig(t *testing.T) {
 
 	for _, c := range cases {
 		key, _ := btcec.ParsePubKey(c.pubkey, btcec.S256())
-		err := checkSig(key, c.data, c.sig)
+		var hash bc.Hash
+		copy(hash[:], c.data)
+		err := checkSig(key, hash[:], c.sig)
 		if (err == nil) != c.valid {
 			t.Error("invalid signature")
 		}
@@ -82,73 +103,69 @@ func TestCheckSig(t *testing.T) {
 }
 
 func TestIsIssuance(t *testing.T) {
-	asset1, _ := wire.NewHash20FromStr("AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p")
-	asset2, _ := wire.NewHash20FromStr("AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx")
+	asset1 := bc.AssetID{0}
+	asset2 := bc.AssetID{1}
 	cases := []struct {
-		raw  []byte
-		tx   *wire.MsgTx
+		tx   *bc.Tx
 		want bool
 	}{{ // issuance input
-		tx: &wire.MsgTx{
-			TxIn:  []*wire.TxIn{wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{})},
-			TxOut: []*wire.TxOut{wire.NewTxOut(asset1, 5, []byte{})},
+		tx: &bc.Tx{
+			Inputs:  []*bc.TxInput{{Previous: bc.IssuanceOutpoint}},
+			Outputs: []*bc.TxOutput{{AssetID: asset1, Value: 5}},
 		},
 		want: true,
 	}, { // no outputs
-		tx: &wire.MsgTx{
-			TxIn:  []*wire.TxIn{wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{})},
-			TxOut: []*wire.TxOut{},
+		tx: &bc.Tx{
+			Inputs:  []*bc.TxInput{{Previous: bc.IssuanceOutpoint}},
+			Outputs: []*bc.TxOutput{},
 		},
 		want: false,
 	}, { // different asset ids on outputs
-		tx: &wire.MsgTx{
-			TxIn: []*wire.TxIn{wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{})},
-			TxOut: []*wire.TxOut{
-				wire.NewTxOut(asset1, 5, []byte{}),
-				wire.NewTxOut(asset2, 5, []byte{}),
+		tx: &bc.Tx{
+			Inputs: []*bc.TxInput{{Previous: bc.IssuanceOutpoint}},
+			Outputs: []*bc.TxOutput{
+				{AssetID: asset1, Value: 5},
+				{AssetID: asset2, Value: 5},
 			},
 		},
 		want: false,
 	}, { // too many inputs
-		tx: &wire.MsgTx{
-			TxIn: []*wire.TxIn{
-				wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}),
-				wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}),
+		tx: &bc.Tx{
+			Inputs: []*bc.TxInput{
+				{Previous: bc.IssuanceOutpoint},
+				{Previous: bc.IssuanceOutpoint},
 			},
-			TxOut: []*wire.TxOut{wire.NewTxOut(asset1, 5, []byte{})},
+			Outputs: []*bc.TxOutput{{AssetID: asset1, Value: 5}},
 		},
 		want: false,
-	}, { // wrong previous outpoint hash
-		tx: &wire.MsgTx{
-			TxIn: []*wire.TxIn{
-				wire.NewTxIn(wire.NewOutPoint((*wire.Hash32)(&[32]byte{1}), 0), []byte{}),
+	}, { // wrong previous outpoint index
+		tx: &bc.Tx{
+			Inputs: []*bc.TxInput{
+				{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 1}},
 			},
-			TxOut: []*wire.TxOut{wire.NewTxOut(asset1, 5, []byte{})},
+			Outputs: []*bc.TxOutput{{AssetID: asset1, Value: 5}},
 		},
 		want: false,
 	}, { // empty txin
-		tx:   &wire.MsgTx{},
+		tx:   &bc.Tx{},
 		want: false,
 	}}
 
 	for _, c := range cases {
 		got := isIssuance(c.tx)
 		if got != c.want {
-			t.Errorf("got isIssuance(%x) = %v want %v", c.raw, got, c.want)
+			t.Errorf("got isIssuance(%+v) = %v want %v", c.tx, got, c.want)
 		}
 	}
 }
 
 func TestIssued(t *testing.T) {
-	hash, _ := wire.NewHash20FromStr("AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p")
-	outs := []*wire.TxOut{
-		wire.NewTxOut(hash, 2, []byte{}),
-		wire.NewTxOut(hash, 3, []byte{}),
-	}
+	asset := [32]byte{255}
+	outs := []*bc.TxOutput{{AssetID: asset, Value: 2}, {AssetID: asset, Value: 3}}
 
 	gotAsset, gotAmt := issued(outs)
-	if !bytes.Equal(gotAsset[:], hash[:]) {
-		t.Errorf("got asset = %q want %q", gotAsset.String(), hash.String())
+	if !bytes.Equal(gotAsset[:], asset[:]) {
+		t.Errorf("got asset = %q want %q", gotAsset.String(), bc.AssetID(asset).String())
 	}
 
 	if gotAmt != 5 {

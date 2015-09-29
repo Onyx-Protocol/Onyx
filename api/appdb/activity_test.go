@@ -1,9 +1,6 @@
 package appdb
 
 import (
-	"chain/api/utxodb"
-	"chain/database/pg"
-	"chain/database/pg/pgtest"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -11,8 +8,11 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/api/utxodb"
+	"chain/database/pg"
+	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 )
 
 // Addresses formerly in fixture.
@@ -331,14 +331,14 @@ func TestActivityByTxID(t *testing.T) {
 // cases are covered here. Edge cases are covered in unit tests that follow.
 func TestWriteActivity(t *testing.T) {
 	// Mock transactions for creating prevouts.
-	prevTxA := wire.NewMsgTx()
-	prevTxA.AddTxOut(wire.NewTxOut(wire.Hash20{0}, 123, nil))
-	prevTxB := wire.NewMsgTx()
-	prevTxB.AddTxOut(wire.NewTxOut(wire.Hash20{1}, 456, nil))
+	prevTxA := &bc.Tx{Version: bc.CurrentTransactionVersion}
+	prevTxA.Outputs = append(prevTxA.Outputs, &bc.TxOutput{AssetID: bc.AssetID{}, Value: 123})
+	prevTxB := &bc.Tx{Version: bc.CurrentTransactionVersion}
+	prevTxB.Outputs = append(prevTxB.Outputs, &bc.TxOutput{AssetID: bc.AssetID([32]byte{1}), Value: 456})
 	txTime := time.Now().UTC()
 
 	examples := []struct {
-		tx                   *wire.MsgTx
+		tx                   *bc.Tx
 		outs                 []*UTXO
 		fixture              string
 		wantWalletActivity   map[string]actItem
@@ -348,12 +348,12 @@ func TestWriteActivity(t *testing.T) {
 	}{
 		// Issuance
 		{
-			tx: &wire.MsgTx{
+			tx: &bc.Tx{
 				// Issuances have a single prevout with an empty tx hash.
-				TxIn: []*wire.TxIn{{}},
+				Inputs: []*bc.TxInput{{Previous: bc.IssuanceOutpoint}},
 				// The content of the outs is irrelevant for the test.
 				// Issuances require at least one output.
-				TxOut: []*wire.TxOut{{}},
+				Outputs: []*bc.TxOutput{{}},
 			},
 			outs: []*UTXO{
 				{
@@ -361,7 +361,7 @@ func TestWriteActivity(t *testing.T) {
 						BucketID: "bucket-id-0",
 						AssetID:  "asset-id-0",
 						Amount:   1,
-						Outpoint: wire.OutPoint{Hash: mustHash32FromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
+						Outpoint: bc.Outpoint{Hash: mustHashFromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
 					},
 					Addr:     "addr-0",
 					WalletID: "wallet-id-0",
@@ -372,7 +372,7 @@ func TestWriteActivity(t *testing.T) {
 						BucketID: "bucket-id-2",
 						AssetID:  "asset-id-0",
 						Amount:   2,
-						Outpoint: wire.OutPoint{Hash: mustHash32FromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
+						Outpoint: bc.Outpoint{Hash: mustHashFromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
 					},
 					Addr:     "addr-4",
 					WalletID: "wallet-id-1",
@@ -381,7 +381,7 @@ func TestWriteActivity(t *testing.T) {
 			},
 			wantWalletActivity: map[string]actItem{
 				"wallet-id-0": actItem{
-					TxHash: "0282a32a77d3358b28f06134cba121e5c54b205fe9935bfbb06076169a4e89db",
+					TxHash: "9cb6150ade7117fd27bed7ae03ee54716afdde976a654e932baacea225f65b9e",
 					Time:   txTime,
 					Inputs: []actEntry{},
 					Outputs: []actEntry{
@@ -390,7 +390,7 @@ func TestWriteActivity(t *testing.T) {
 					},
 				},
 				"wallet-id-1": actItem{
-					TxHash: "0282a32a77d3358b28f06134cba121e5c54b205fe9935bfbb06076169a4e89db",
+					TxHash: "9cb6150ade7117fd27bed7ae03ee54716afdde976a654e932baacea225f65b9e",
 					Time:   txTime,
 					Inputs: []actEntry{},
 					Outputs: []actEntry{
@@ -402,7 +402,7 @@ func TestWriteActivity(t *testing.T) {
 			wantBuckets: []string{"bucket-id-0", "bucket-id-2"},
 			wantIssuanceActivity: map[string]actItem{
 				"ag-id-0": actItem{
-					TxHash: "0282a32a77d3358b28f06134cba121e5c54b205fe9935bfbb06076169a4e89db",
+					TxHash: "9cb6150ade7117fd27bed7ae03ee54716afdde976a654e932baacea225f65b9e",
 					Time:   txTime,
 					Inputs: []actEntry{},
 					Outputs: []actEntry{
@@ -416,9 +416,9 @@ func TestWriteActivity(t *testing.T) {
 
 		// Transfer with change
 		{
-			tx: &wire.MsgTx{
-				TxIn: []*wire.TxIn{{
-					PreviousOutPoint: wire.OutPoint{Hash: mustHash32FromStr("4786c29077265138e00a8fce822c5fb998c0ce99df53d939bb53d81bca5aa426"), Index: 0},
+			tx: &bc.Tx{
+				Inputs: []*bc.TxInput{{
+					Previous: bc.Outpoint{Hash: mustHashFromStr("4786c29077265138e00a8fce822c5fb998c0ce99df53d939bb53d81bca5aa426"), Index: 0},
 				}},
 			},
 			outs: []*UTXO{
@@ -427,7 +427,7 @@ func TestWriteActivity(t *testing.T) {
 						BucketID: "bucket-id-2",
 						AssetID:  "asset-id-0",
 						Amount:   1,
-						Outpoint: wire.OutPoint{Hash: mustHash32FromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
+						Outpoint: bc.Outpoint{Hash: mustHashFromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
 					},
 					Addr:     "addr-4",
 					WalletID: "wallet-id-1",
@@ -439,7 +439,7 @@ func TestWriteActivity(t *testing.T) {
 						BucketID: "bucket-id-0",
 						AssetID:  "asset-id-0",
 						Amount:   2,
-						Outpoint: wire.OutPoint{Hash: mustHash32FromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 1},
+						Outpoint: bc.Outpoint{Hash: mustHashFromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 1},
 					},
 					Addr:     "addr-1",
 					WalletID: "wallet-id-0",
@@ -454,7 +454,7 @@ func TestWriteActivity(t *testing.T) {
 			`,
 			wantWalletActivity: map[string]actItem{
 				"wallet-id-0": actItem{
-					TxHash: "db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12",
+					TxHash: "6750e5583a6ae5156d7522efa60332448cff475d7fc4dcecd20979540c13c392",
 					Time:   txTime,
 					Inputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, BucketID: "bucket-id-0", BucketLabel: "bucket-0"},
@@ -464,7 +464,7 @@ func TestWriteActivity(t *testing.T) {
 					},
 				},
 				"wallet-id-1": actItem{
-					TxHash: "db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12",
+					TxHash: "6750e5583a6ae5156d7522efa60332448cff475d7fc4dcecd20979540c13c392",
 					Time:   txTime,
 					Inputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK"},
@@ -484,7 +484,7 @@ func TestWriteActivity(t *testing.T) {
 		t.Log("Example", i)
 
 		func() {
-			txHash := ex.tx.TxSha().String()
+			txHash := ex.tx.Hash().String()
 
 			dbtx := pgtest.TxWithSQL(t, writeActivityFix, ex.fixture)
 			ctx := pg.NewContext(context.Background(), dbtx)
@@ -1061,12 +1061,12 @@ func getTestActivityAssets(ctx context.Context, txHash string) ([]string, error)
 	return res, nil
 }
 
-func mustHash32FromStr(s string) wire.Hash32 {
-	h, err := wire.NewHash32FromStr(s)
+func mustHashFromStr(s string) bc.Hash {
+	h, err := bc.ParseHash(s)
 	if err != nil {
 		panic(err)
 	}
-	return *h
+	return h
 }
 
 func stringsToRawJSON(strs ...string) []*json.RawMessage {

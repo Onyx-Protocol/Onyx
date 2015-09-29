@@ -11,7 +11,7 @@ import (
 	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain-sandbox/wire"
+	"chain/fedchain/bc"
 	"chain/metrics"
 	"chain/strings"
 )
@@ -25,20 +25,20 @@ var (
 // This must be called after the output UTXOs have been generated, but before
 // the input UTXOs have been deleted. The supplied context must contain a
 // database transaction.
-func WriteActivity(ctx context.Context, tx *wire.MsgTx, outs []*UTXO, txTime time.Time) error {
+func WriteActivity(ctx context.Context, tx *bc.Tx, outs []*UTXO, txTime time.Time) error {
 	defer metrics.RecordElapsed(time.Now())
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
-	txHash := tx.TxSha().String()
+	txHash := tx.Hash().String()
 
 	// Get detailed UTXO information for the transaction's inputs and outputs.
 	var (
 		hashes  []string
 		indexes []uint32
 	)
-	for _, in := range tx.TxIn {
-		hashes = append(hashes, in.PreviousOutPoint.Hash.String())
-		indexes = append(indexes, in.PreviousOutPoint.Index)
+	for _, in := range tx.Inputs {
+		hashes = append(hashes, in.Previous.Hash.String())
+		indexes = append(indexes, in.Previous.Index)
 	}
 	ins, err := getActUTXOs(ctx, hashes, indexes)
 	if err != nil {
@@ -307,7 +307,7 @@ type actItem struct {
 // transaction.
 func getActUTXOs(ctx context.Context, txHashes []string, indexes []uint32) ([]*UTXO, error) {
 	q := `
-		WITH outpoints AS (SELECT unnest($1::text[]), unnest($2::int[]))
+		WITH outpoints AS (SELECT unnest($1::text[]), unnest($2::bigint[]))
 		SELECT asset_id, amount, key_index(addr_index), account_id, manager_node_id
 		FROM utxos
 		WHERE (txid, index) IN (TABLE outpoints)
@@ -570,14 +570,13 @@ func createActEntries(
 // TODO(jeffomatic): This is identical to asset.isIssuance, but is copied here
 // to avoid circular dependencies betwen the two packages. This should probably
 // be moved to the fedchain(-sandbox?)/wire package at some point.
-func isIssuance(msg *wire.MsgTx) bool {
-	emptyHash := wire.Hash32{}
-	if len(msg.TxIn) == 1 && msg.TxIn[0].PreviousOutPoint.Hash == emptyHash {
-		if len(msg.TxOut) == 0 {
+func isIssuance(msg *bc.Tx) bool {
+	if len(msg.Inputs) == 1 && msg.Inputs[0].IsIssuance() {
+		if len(msg.Outputs) == 0 {
 			return false
 		}
-		assetID := msg.TxOut[0].AssetID
-		for _, out := range msg.TxOut {
+		assetID := msg.Outputs[0].AssetID
+		for _, out := range msg.Outputs {
 			if out.AssetID != assetID {
 				return false
 			}
