@@ -8,13 +8,13 @@ import (
 func TestReader(t *testing.T) {
 	errX := New("x")
 	tw := testReader{nil, errX, nil}
-	r := NewReader(&tw)
+	r := Reader{R: &tw}
 	_, err := r.Read([]byte{0})
 	if err != nil {
 		t.Error("unexpected error", err)
 	}
-	if g := r.BytesRead(); g != 1 {
-		t.Errorf("r.BytesRead() = %d want 1", g)
+	if g := r.N; g != 1 {
+		t.Errorf("r.N = %d want 1", g)
 	}
 	if len(tw) != 2 {
 		t.Errorf("len(tw) = %d want 2", len(tw))
@@ -24,15 +24,15 @@ func TestReader(t *testing.T) {
 		if err != errX {
 			t.Errorf("err = %v want %v", err, errX)
 		}
-		if g := r.BytesRead(); g != 2 {
-			t.Errorf("r.BytesRead() = %d want 2", g)
+		if g := r.N; g != 2 {
+			t.Errorf("r.N = %d want 2", g)
 		}
 		if len(tw) != 1 {
 			t.Errorf("len(tw) = %d want 1", len(tw))
 		}
 	}
-	if got := r.Err(); got != errX {
-		t.Errorf("r.Err() = %v want %v", got, errX)
+	if got := r.Err; got != errX {
+		t.Errorf("r.Err = %v want %v", got, errX)
 	}
 }
 
