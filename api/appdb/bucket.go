@@ -16,7 +16,7 @@ import (
 type Bucket struct {
 	ID    string   `json:"id"`
 	Label string   `json:"label"`
-	Index []uint32 `json:"bucket_index"`
+	Index []uint32 `json:"account_index"`
 }
 
 // CreateBucket inserts a bucket database record

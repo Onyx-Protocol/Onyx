@@ -22,7 +22,7 @@ var (
 // TransferInput is a user input struct used in Transfer.
 type TransferInput struct {
 	AssetID  string `json:"asset_id"`
-	BucketID string `json:"bucket_id"`
+	BucketID string `json:"account_id"`
 	TxID     string `json:"transaction_id"`
 	Amount   int64
 }

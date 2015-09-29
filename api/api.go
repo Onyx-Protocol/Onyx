@@ -69,39 +69,39 @@ func nouserHandler() chainhttp.HandlerFunc {
 
 func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
-	h.HandleFunc("GET", "/v3/applications", listApplications)
-	h.HandleFunc("POST", "/v3/applications", createApplication)
-	h.HandleFunc("GET", "/v3/applications/:appID", appdb.GetApplication)
-	h.HandleFunc("PUT", "/v3/applications/:appID", updateApplication)
-	h.HandleFunc("POST", "/v3/applications/:appID/invitations", createInvitation)
-	h.HandleFunc("GET", "/v3/applications/:appID/members", appdb.ListMembers)
-	h.HandleFunc("POST", "/v3/applications/:appID/members", addMember)
-	h.HandleFunc("PUT", "/v3/applications/:appID/members/:userID", updateMember)
-	h.HandleFunc("DELETE", "/v3/applications/:appID/members/:userID", appdb.RemoveMember)
-	h.HandleFunc("GET", "/v3/applications/:appID/wallets", appdb.ListWallets)
-	h.HandleFunc("POST", "/v3/applications/:appID/wallets", createWallet)
-	h.HandleFunc("GET", "/v3/wallets/:walletID", appdb.GetWallet)
-	h.HandleFunc("GET", "/v3/wallets/:walletID/buckets", listBuckets)
-	h.HandleFunc("POST", "/v3/wallets/:walletID/buckets", createBucket)
-	h.HandleFunc("GET", "/v3/wallets/:walletID/balance", walletBalance)
-	h.HandleFunc("GET", "/v3/wallets/:walletID/activity", getWalletActivity)
-	h.HandleFunc("GET", "/v3/wallets/:walletID/transactions/:txID", appdb.WalletTxActivity)
-	h.HandleFunc("GET", "/v3/applications/:appID/asset-groups", appdb.ListAssetGroups)
-	h.HandleFunc("POST", "/v3/applications/:appID/asset-groups", createAssetGroup)
-	h.HandleFunc("GET", "/v3/asset-groups/:groupID", appdb.GetAssetGroup)
-	h.HandleFunc("GET", "/v3/asset-groups/:groupID/assets", listAssets)
-	h.HandleFunc("POST", "/v3/asset-groups/:groupID/assets", createAsset)
-	h.HandleFunc("GET", "/v3/buckets/:bucketID/balance", bucketBalance)
-	h.HandleFunc("GET", "/v3/buckets/:bucketID/activity", getBucketActivity)
-	h.HandleFunc("POST", "/v3/buckets/:bucketID/addresses", createAddr)
+	h.HandleFunc("GET", "/v3/projects", listApplications)
+	h.HandleFunc("POST", "/v3/projects", createApplication)
+	h.HandleFunc("GET", "/v3/projects/:projID", appdb.GetApplication)
+	h.HandleFunc("PUT", "/v3/projects/:projID", updateApplication)
+	h.HandleFunc("POST", "/v3/projects/:projID/invitations", createInvitation)
+	h.HandleFunc("GET", "/v3/projects/:projID/members", appdb.ListMembers)
+	h.HandleFunc("POST", "/v3/projects/:projID/members", addMember)
+	h.HandleFunc("PUT", "/v3/projects/:projID/members/:userID", updateMember)
+	h.HandleFunc("DELETE", "/v3/projects/:projID/members/:userID", appdb.RemoveMember)
+	h.HandleFunc("GET", "/v3/projects/:projID/manager-nodes", appdb.ListWallets)
+	h.HandleFunc("POST", "/v3/projects/:projID/manager-nodes", createWallet)
+	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID", appdb.GetWallet)
+	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/accounts", listBuckets)
+	h.HandleFunc("POST", "/v3/manager-nodes/:mnodeID/accounts", createBucket)
+	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/balance", walletBalance)
+	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/activity", getWalletActivity)
+	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/transactions/:txID", appdb.WalletTxActivity)
+	h.HandleFunc("GET", "/v3/projects/:projID/issuer-nodes", appdb.ListAssetGroups)
+	h.HandleFunc("POST", "/v3/projects/:projID/issuer-nodes", createAssetGroup)
+	h.HandleFunc("GET", "/v3/issuer-nodes/:inodeID", appdb.GetAssetGroup)
+	h.HandleFunc("GET", "/v3/issuer-nodes/:inodeID/assets", listAssets)
+	h.HandleFunc("POST", "/v3/issuer-nodes/:inodeID/assets", createAsset)
+	h.HandleFunc("GET", "/v3/accounts/:accountID/balance", bucketBalance)
+	h.HandleFunc("GET", "/v3/accounts/:accountID/activity", getBucketActivity)
+	h.HandleFunc("POST", "/v3/accounts/:accountID/addresses", createAddr)
 	h.HandleFunc("GET", "/v3/assets/:assetID", appdb.GetAsset)
 	h.HandleFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
-	h.HandleFunc("POST", "/v3/assets/transfer", transferAssets)
-	h.HandleFunc("POST", "/v3/assets/transfer-batch", batchTransfer)
-	h.HandleFunc("POST", "/v3/assets/trade", tradeAssets)
-	h.HandleFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
-	h.HandleFunc("POST", "/v3/wallets/transact/finalize-batch", batchFinalize)
-	h.HandleFunc("POST", "/v3/assets/cancel-reservation", cancelReservation)
+	h.HandleFunc("POST", "/v3/transact/transfer", transferAssets)
+	h.HandleFunc("POST", "/v3/transact/transfer-batch", batchTransfer)
+	h.HandleFunc("POST", "/v3/transact/trade", tradeAssets)
+	h.HandleFunc("POST", "/v3/transact/finalize", walletFinalize)
+	h.HandleFunc("POST", "/v3/transact/finalize-batch", batchFinalize)
+	h.HandleFunc("POST", "/v3/transact/cancel-reservation", cancelReservation)
 	h.HandleFunc("GET", "/v3/user", getAuthdUser)
 	h.HandleFunc("POST", "/v3/user/email", updateUserEmail)
 	h.HandleFunc("POST", "/v3/user/password", updateUserPassword)
@@ -112,7 +112,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	return h.ServeHTTPContext
 }
 
-// POST /v3/applications/:appID/wallets
+// POST /v3/projects/:projID/manager-nodes
 func createWallet(ctx context.Context, appID string, wReq struct {
 	Label string
 	XPubs []string
@@ -153,7 +153,7 @@ func createWallet(ctx context.Context, appID string, wReq struct {
 	return ret, nil
 }
 
-// GET /v3/wallets/:walletID/activity
+// GET /v3/manager-nodes/:mnodeID/activity
 func getWalletActivity(ctx context.Context, wID string) (interface{}, error) {
 	prev, limit, err := getPageData(ctx, defActivityPageSize)
 	if err != nil {
@@ -172,7 +172,7 @@ func getWalletActivity(ctx context.Context, wID string) (interface{}, error) {
 	return ret, nil
 }
 
-// GET /v3/wallets/:walletID/balance
+// GET /v3/manager-nodes/:mnodeID/balance
 func walletBalance(ctx context.Context, walletID string) (interface{}, error) {
 	prev, limit, err := getPageData(ctx, defBalancePageSize)
 	if err != nil {
@@ -191,7 +191,7 @@ func walletBalance(ctx context.Context, walletID string) (interface{}, error) {
 	return ret, nil
 }
 
-// GET /v3/buckets/:bucketID/balance
+// GET /v3/accounts/:accountID/balance
 func bucketBalance(ctx context.Context, bucketID string) (interface{}, error) {
 	prev, limit, err := getPageData(ctx, defBalancePageSize)
 	if err != nil {
@@ -210,7 +210,7 @@ func bucketBalance(ctx context.Context, bucketID string) (interface{}, error) {
 	return ret, nil
 }
 
-// POST /v3/applications/:appID/asset-groups
+// POST /v3/projects/:projID/issuer-nodes
 func createAssetGroup(ctx context.Context, appID string, agReq struct {
 	Label string
 	XPubs []string
@@ -250,7 +250,7 @@ func createAssetGroup(ctx context.Context, appID string, agReq struct {
 	return ret, nil
 }
 
-// GET /v3/wallets/:walletID/buckets
+// GET /v3/manager-nodes/:mnodeID/accounts
 func listBuckets(ctx context.Context, walletID string) (interface{}, error) {
 	prev, limit, err := getPageData(ctx, defBucketPageSize)
 	if err != nil {
@@ -263,19 +263,19 @@ func listBuckets(ctx context.Context, walletID string) (interface{}, error) {
 	}
 
 	ret := map[string]interface{}{
-		"last":    last,
-		"buckets": httpjson.Array(buckets),
+		"last":     last,
+		"accounts": httpjson.Array(buckets),
 	}
 	return ret, nil
 }
 
-// POST /v3/wallets/:walletID/buckets
+// POST /v3/manager-nodes/:mnodeID/accounts
 func createBucket(ctx context.Context, walletID string, in struct{ Label string }) (*appdb.Bucket, error) {
 	defer metrics.RecordElapsed(time.Now())
 	return appdb.CreateBucket(ctx, walletID, in.Label)
 }
 
-// GET /v3/buckets/:bucketID/activity
+// GET /v3/accounts/:accountID/activity
 func getBucketActivity(ctx context.Context, bid string) (interface{}, error) {
 	prev, limit, err := getPageData(ctx, defActivityPageSize)
 	if err != nil {
@@ -294,7 +294,7 @@ func getBucketActivity(ctx context.Context, bid string) (interface{}, error) {
 	return ret, nil
 }
 
-// GET /v3/asset-groups/:groupID/assets
+// GET /v3/issuer-nodes/:inodeID/assets
 func listAssets(ctx context.Context, groupID string) (interface{}, error) {
 	prev, limit, err := getPageData(ctx, defAssetPageSize)
 	if err != nil {
@@ -313,7 +313,7 @@ func listAssets(ctx context.Context, groupID string) (interface{}, error) {
 	return ret, nil
 }
 
-// POST /v3/asset-groups/:groupID/assets
+// POST /v3/issuer-nodes/:inodeID/assets
 func createAsset(ctx context.Context, groupID string, in struct{ Label string }) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	asset, err := asset.Create(ctx, groupID, in.Label)
@@ -323,7 +323,7 @@ func createAsset(ctx context.Context, groupID string, in struct{ Label string })
 
 	ret := map[string]interface{}{
 		"id":             asset.Hash.String(),
-		"asset_group_id": asset.GroupID,
+		"issuer_node_id": asset.GroupID,
 		"label":          asset.Label,
 	}
 	return ret, nil
@@ -396,7 +396,7 @@ func tradeAssets(ctx context.Context, x struct {
 	return ret, nil
 }
 
-// POST /v3/wallets/transact/finalize
+// POST /v3/manager-nodes/transact/finalize
 func walletFinalize(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	// TODO(kr): validate

@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// POST /v3/applications/:appID/invitations
+// POST /v3/projects/:projID/invitations
 func createInvitation(ctx context.Context, appID string, in struct{ Email, Role string }) (interface{}, error) {
 	return appdb.CreateInvitation(ctx, appID, in.Email, in.Role)
 }

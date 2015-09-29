@@ -12,8 +12,8 @@ type Tx struct {
 
 // Input is an input for an app wallet Tx.
 type Input struct {
-	AssetGroupID  string        `json:"asset_group_id,omitempty"`
-	WalletID      string        `json:"wallet_id,omitempty"`
+	AssetGroupID  string        `json:"issuer_node_id,omitempty"`
+	WalletID      string        `json:"manager_node_id,omitempty"`
 	RedeemScript  json.HexBytes `json:"redeem_script"`
 	SignatureData json.HexBytes `json:"signature_data"`
 	Sigs          []*Signature  `json:"signatures"`

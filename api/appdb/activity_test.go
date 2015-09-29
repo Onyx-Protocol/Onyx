@@ -27,9 +27,9 @@ const sampleActivityWalletFixture = `
 				('w1', 'app-id-0', '', 'c0', 0);
 		INSERT INTO buckets (id, wallet_id, key_index, label)
 			VALUES
-				('b0', 'w0', 0, 'bucket zero'),
-				('b1', 'w0', 1, 'bucket one'),
-				('b3', 'w1', 2, 'bucket three');
+				('b0', 'w0', 0, 'account zero'),
+				('b1', 'w0', 1, 'account one'),
+				('b3', 'w1', 2, 'account three');
 `
 
 const sampleAssetActivityFixture = `
@@ -222,11 +222,11 @@ func TestCreateActivityItem(t *testing.T) {
 			want: []activityRes{
 				{
 					wallet_id: "w0",
-					data:      []byte(`{"inputs":[{"amount":100,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b0","bucket_label":"bucket zero"}],"outputs":[{"address":"addr2","amount":50,"asset_id":"a0","asset_label":"asset zero"},{"amount":50,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b1","bucket_label":"bucket one"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`),
+					data:      []byte(`{"inputs":[{"account_id":"b0","account_label":"account zero","amount":100,"asset_id":"a0","asset_label":"asset zero"}],"outputs":[{"address":"addr2","amount":50,"asset_id":"a0","asset_label":"asset zero"},{"account_id":"b1","account_label":"account one","amount":50,"asset_id":"a0","asset_label":"asset zero"}],"transaction_id":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df","transaction_time":"2015-09-17T12:50:53.427092Z"}`),
 				},
 				{
 					wallet_id: "w1",
-					data:      []byte(`{"inputs":[{"address":"addr0","amount":100,"asset_id":"a0","asset_label":"asset zero"}],"outputs":[{"address":"addr1","amount":50,"asset_id":"a0","asset_label":"asset zero"},{"amount":50,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b3","bucket_label":"bucket three"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`),
+					data:      []byte(`{"inputs":[{"address":"addr0","amount":100,"asset_id":"a0","asset_label":"asset zero"}],"outputs":[{"address":"addr1","amount":50,"asset_id":"a0","asset_label":"asset zero"},{"account_id":"b3","account_label":"account three","amount":50,"asset_id":"a0","asset_label":"asset zero"}],"transaction_id":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df","transaction_time":"2015-09-17T12:50:53.427092Z"}`),
 				},
 			},
 		},
@@ -245,7 +245,7 @@ func TestCreateActivityItem(t *testing.T) {
 			want: []activityRes{
 				{
 					wallet_id: "w0",
-					data:      []byte(`{"inputs":[{"amount":50,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b0","bucket_label":"bucket zero"}],"outputs":[{"amount":50,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b1","bucket_label":"bucket one"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`),
+					data:      []byte(`{"inputs":[{"account_id":"b0","account_label":"account zero","amount":50,"asset_id":"a0","asset_label":"asset zero"}],"outputs":[{"account_id":"b1","account_label":"account one","amount":50,"asset_id":"a0","asset_label":"asset zero"}],"transaction_id":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df","transaction_time":"2015-09-17T12:50:53.427092Z"}`),
 				},
 			},
 		},
@@ -309,7 +309,7 @@ func TestCreateActivityItem(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(test.want, res) {
-			t.Fatalf("want=%v got=%v", string(test.want[0].data), string(res[0].data))
+			t.Fatalf("activity:\ngot:  %v\nwant: %v", string(res[0].data), string(test.want[0].data))
 		}
 
 		dbtx.Rollback()
@@ -381,9 +381,9 @@ func TestGenerateActivityFromUtxo(t *testing.T) {
 		t.Fatalf("Want txid=3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df, got=%s", item.txid)
 	}
 
-	wantData := `{"inputs":[{"amount":100,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b0","bucket_label":"bucket zero"}],"outputs":[{"address":"addr2","amount":50,"asset_id":"a0","asset_label":"asset zero"},{"amount":50,"asset_id":"a0","asset_label":"asset zero","bucket_id":"b1","bucket_label":"bucket one"}],"transaction_time":"2015-09-17T12:50:53.427092Z","txid":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df"}`
+	wantData := `{"inputs":[{"account_id":"b0","account_label":"account zero","amount":100,"asset_id":"a0","asset_label":"asset zero"}],"outputs":[{"address":"addr2","amount":50,"asset_id":"a0","asset_label":"asset zero"},{"account_id":"b1","account_label":"account one","amount":50,"asset_id":"a0","asset_label":"asset zero"}],"transaction_id":"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df","transaction_time":"2015-09-17T12:50:53.427092Z"}`
 	if string(item.data) != wantData {
-		t.Fatalf("want=%s got=%s", wantData, string(item.data))
+		t.Fatalf("activity:\ngot:  %v\nwant: %v", string(item.data), wantData)
 	}
 
 }

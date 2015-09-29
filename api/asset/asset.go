@@ -56,7 +56,7 @@ func Issue(ctx context.Context, assetID string, outs []Output) (*Tx, error) {
 type Output struct {
 	AssetID  string `json:"asset_id"`
 	Address  string `json:"address"`
-	BucketID string `json:"bucket_id"`
+	BucketID string `json:"account_id"`
 	Amount   int64  `json:"amount"`
 	isChange bool
 }

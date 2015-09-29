@@ -9,7 +9,7 @@ import (
 	"chain/api/asset"
 )
 
-// /v3/buckets/:bucketID/addresses
+// /v3/accounts/:accountID/addresses
 func createAddr(ctx context.Context, bucketID string, in struct {
 	Amount  uint64
 	Expires time.Time

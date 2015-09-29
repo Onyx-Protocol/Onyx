@@ -304,14 +304,14 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 			i := make(map[string]interface{})
 			i["asset_id"] = asset
 			i["amount"] = amt
-			i["bucket_id"] = bckt
+			i["account_id"] = bckt
 
 			if l := assetLabels[asset]; l != "" {
 				i["asset_label"] = l
 			}
 
 			if l := bucketLabels[bckt]; l != "" {
-				i["bucket_label"] = l
+				i["account_label"] = l
 			}
 
 			inputsBlob = append(inputsBlob, i)
@@ -336,14 +336,14 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 			o := make(map[string]interface{})
 			o["asset_id"] = asset
 			o["amount"] = amt
-			o["bucket_id"] = bckt
+			o["account_id"] = bckt
 
 			if l := assetLabels[asset]; l != "" {
 				o["asset_label"] = l
 			}
 
 			if l := bucketLabels[bckt]; l != "" {
-				o["bucket_label"] = l
+				o["account_label"] = l
 			}
 
 			outputsBlob = append(outputsBlob, o)
@@ -353,7 +353,7 @@ func generateActivityItem(ctx context.Context, tx *wire.MsgTx, walletID string, 
 	data := make(map[string]interface{})
 	data["inputs"] = inputsBlob
 	data["outputs"] = outputsBlob
-	data["txid"] = hash
+	data["transaction_id"] = hash
 	data["transaction_time"] = txTime.UTC()
 
 	blob, err := json.Marshal(data)

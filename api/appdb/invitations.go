@@ -14,8 +14,8 @@ import (
 // used with API responses.
 type Invitation struct {
 	ID      string `json:"id"`
-	AppID   string `json:"application_id"`
-	AppName string `json:"application_name"`
+	AppID   string `json:"project_id"`
+	AppName string `json:"project_name"`
 	Email   string `json:"email"`
 	Role    string `json:"role"`
 
