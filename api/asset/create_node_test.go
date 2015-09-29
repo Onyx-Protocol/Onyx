@@ -12,7 +12,7 @@ import (
 
 func TestCreateWallet(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
@@ -26,7 +26,7 @@ func TestCreateWallet(t *testing.T) {
 	}
 	var valid bool
 	const checkQ = `
-		SELECT SUBSTR(generated_keys[1], 1, 4)='xprv' FROM wallets LIMIT 1
+		SELECT SUBSTR(generated_keys[1], 1, 4)='xprv' FROM manager_nodes LIMIT 1
 	`
 	err = dbtx.QueryRow(checkQ).Scan(&valid)
 	if err != nil {

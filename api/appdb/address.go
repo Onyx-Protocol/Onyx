@@ -104,12 +104,12 @@ func (a *Address) LoadNextIndex(ctx context.Context) error {
 		var xpubs []string
 		const q = `
 		SELECT
-			w.id, key_index(b.key_index), key_index(w.key_index),
-			r.keyset, w.sigs_required
-		FROM buckets b
-		LEFT JOIN wallets w ON w.id=b.wallet_id
-		LEFT JOIN rotations r ON r.id=w.current_rotation
-		WHERE b.id=$1
+			mn.id, key_index(acc.key_index), key_index(mn.key_index),
+			r.keyset, mn.sigs_required
+		FROM accounts acc
+		LEFT JOIN manager_nodes mn ON mn.id=acc.manager_node_id
+		LEFT JOIN rotations r ON r.id=mn.current_rotation
+		WHERE acc.id=$1
 	`
 		err := pg.FromContext(ctx).QueryRow(q, a.BucketID).Scan(
 			&ai.WalletID,
@@ -157,7 +157,7 @@ func (a *Address) Insert(ctx context.Context) error {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
 		INSERT INTO addresses (
-			address, redeem_script, pk_script, wallet_id, bucket_id,
+			address, redeem_script, pk_script, manager_node_id, account_id,
 			keyset, expiration, amount, key_index, is_change
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, to_key_index($9), $10)
@@ -186,13 +186,13 @@ func AddressesByID(ctx context.Context, ids []string) ([]*Address, error) {
 	ids = strings.Uniq(ids)
 
 	const q = `
-		SELECT a.id, w.id, w.sigs_required, a.redeem_script,
-			key_index(w.key_index), key_index(b.key_index), key_index(a.key_index),
-			a.keyset
-		FROM addresses a
-		JOIN buckets b ON b.id=a.bucket_id
-		JOIN wallets w ON w.id=a.wallet_id
-		WHERE a.id=ANY($1)
+		SELECT addr.id, mn.id, mn.sigs_required, addr.redeem_script,
+			key_index(mn.key_index), key_index(acc.key_index), key_index(addr.key_index),
+			addr.keyset
+		FROM addresses addr
+		JOIN accounts acc ON acc.id=addr.account_id
+		JOIN manager_nodes mn ON mn.id=addr.manager_node_id
+		WHERE addr.id=ANY($1)
 	`
 
 	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(ids))

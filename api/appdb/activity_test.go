@@ -15,26 +15,26 @@ import (
 )
 
 const writeActivityFix = `
-	INSERT INTO applications
+	INSERT INTO projects
 		(id, name)
 	VALUES
 		('app-id-0', 'app-0');
 
-	INSERT INTO wallets
-		(id, application_id, key_index, label)
+	INSERT INTO manager_nodes
+		(id, project_id, key_index, label)
 	VALUES
 		('wallet-id-0', 'app-id-0', 0, 'wallet-0'),
 		('wallet-id-1', 'app-id-0', 0, 'wallet-1');
 
-	INSERT INTO buckets
-		(id, wallet_id, key_index, label)
+	INSERT INTO accounts
+		(id, manager_node_id, key_index, label)
 	VALUES
 		('bucket-id-0', 'wallet-id-0', 0, 'bucket-0'),
 		('bucket-id-1', 'wallet-id-0', 1, 'bucket-1'),
 		('bucket-id-2', 'wallet-id-1', 0, 'bucket-2');
 
 	INSERT INTO addresses
-		(id, wallet_id, bucket_id, keyset, key_index, address, redeem_script, pk_script, is_change)
+		(id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script, is_change)
 	VALUES
 		('addr-id-0', 'wallet-id-0', 'bucket-id-0', '{}', 0, 'addr-0', '{}', '{}', false),
 		('addr-id-1', 'wallet-id-0', 'bucket-id-0', '{}', 1, 'addr-1', '{}', '{}', true),
@@ -43,14 +43,14 @@ const writeActivityFix = `
 		('addr-id-4', 'wallet-id-1', 'bucket-id-2', '{}', 0, 'addr-4', '{}', '{}', false),
 		('addr-id-5', 'wallet-id-1', 'bucket-id-2', '{}', 1, 'addr-5', '{}', '{}', true);
 
-	INSERT INTO asset_groups
-		(id, application_id, key_index, label, keyset)
+	INSERT INTO issuer_nodes
+		(id, project_id, key_index, label, keyset)
 	VALUES
 		('ag-id-0', 'app-id-0', 0, 'ag-0', '{}'),
 		('ag-id-1', 'app-id-0', 1, 'ag-1', '{}');
 
 	INSERT INTO assets
-		(id, asset_group_id, key_index, redeem_script, label)
+		(id, issuer_node_id, key_index, redeem_script, label)
 	VALUES
 		('asset-id-0', 'ag-id-0', 0, '{}', 'asset-0'),
 		('asset-id-1', 'ag-id-0', 1, '{}', 'asset-1'),
@@ -58,9 +58,9 @@ const writeActivityFix = `
 `
 
 const sampleActivityFixture = `
-	INSERT INTO wallets (id, application_id, label, current_rotation, key_index)
+	INSERT INTO manager_nodes (id, project_id, label, current_rotation, key_index)
 		VALUES('w0', 'app-id-0', '', 'c0', 0);
-	INSERT INTO activity (id, wallet_id, data, txid)
+	INSERT INTO activity (id, manager_node_id, data, txid)
 		VALUES('act0', 'w0', '{"outputs":"boop"}', 'tx0');
 `
 
@@ -89,7 +89,7 @@ func TestWalletActivity(t *testing.T) {
 
 func TestWalletActivityLimit(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityFixture, `
-		INSERT INTO activity (id, wallet_id, data, txid)
+		INSERT INTO activity (id, manager_node_id, data, txid)
 			VALUES
 				('act1', 'w0', '{"outputs":"coop"}', 'tx1'),
 				('act2', 'w0', '{"outputs":"doop"}', 'tx2'),
@@ -123,8 +123,8 @@ func TestWalletActivityLimit(t *testing.T) {
 
 func TestBucketActivity(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityFixture, `
-		INSERT INTO buckets (id, wallet_id, key_index) VALUES('b0', 'w0', 0);
-		INSERT INTO activity_buckets VALUES ('act0', 'b0');
+		INSERT INTO accounts (id, manager_node_id, key_index) VALUES('b0', 'w0', 0);
+		INSERT INTO activity_accounts VALUES ('act0', 'b0');
 	`)
 
 	defer dbtx.Rollback()
@@ -146,13 +146,13 @@ func TestBucketActivity(t *testing.T) {
 
 func TestBucketActivityLimit(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityFixture, `
-		INSERT INTO activity (id, wallet_id, data, txid)
+		INSERT INTO activity (id, manager_node_id, data, txid)
 			VALUES
 			('act1', 'w0', '{"outputs":"coop"}', 'tx1'),
 			('act2', 'w0', '{"outputs":"doop"}', 'tx2'),
 			('act3', 'w0', '{"outputs":"foop"}', 'tx3');
-		INSERT INTO buckets (id, wallet_id, key_index) VALUES('b0', 'w0', 0);
-		INSERT INTO activity_buckets VALUES
+		INSERT INTO accounts (id, manager_node_id, key_index) VALUES('b0', 'w0', 0);
+		INSERT INTO activity_accounts VALUES
 			('act0', 'b0'),
 			('act1', 'b0'),
 			('act2', 'b0'),
@@ -187,7 +187,7 @@ func TestBucketActivityLimit(t *testing.T) {
 func TestAssetGroupActivity(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, writeActivityFix, `
 		INSERT INTO issuance_activity
-			(id, asset_group_id, data, txid)
+			(id, issuer_node_id, data, txid)
 		VALUES
 			('ia-id-0', 'ag-id-0', '{"transaction_id": "tx-id-0"}', 'tx-id-0'),
 			('ia-id-1', 'ag-id-1', '{"transaction_id": "tx-id-1"}', 'tx-id-1'),
@@ -239,7 +239,7 @@ func TestAssetGroupActivity(t *testing.T) {
 func TestAssetActivity(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, writeActivityFix, `
 		INSERT INTO issuance_activity
-			(id, asset_group_id, data, txid)
+			(id, issuer_node_id, data, txid)
 		VALUES
 			('ia-id-0', 'ag-id-0', '{"transaction_id": "tx-id-0"}', 'tx-id-0'),
 			('ia-id-1', 'ag-id-1', '{"transaction_id": "tx-id-1"}', 'tx-id-1'),
@@ -327,7 +327,6 @@ func TestWriteActivity(t *testing.T) {
 	prevTxA.AddTxOut(wire.NewTxOut(wire.Hash20{0}, 123, nil))
 	prevTxB := wire.NewMsgTx()
 	prevTxB.AddTxOut(wire.NewTxOut(wire.Hash20{1}, 456, nil))
-
 	txTime := time.Now().UTC()
 
 	examples := []struct {
@@ -351,7 +350,7 @@ func TestWriteActivity(t *testing.T) {
 			},
 			fixture: `
 				INSERT INTO utxos
-					(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+					(txid, index, asset_id, amount, address_id, account_id, manager_node_id)
 				VALUES
 					('0282a32a77d3358b28f06134cba121e5c54b205fe9935bfbb06076169a4e89db', 0, 'asset-id-0', 1, 'addr-id-0', 'bucket-id-0', 'wallet-id-0'),
 					('0282a32a77d3358b28f06134cba121e5c54b205fe9935bfbb06076169a4e89db', 1, 'asset-id-0', 2, 'addr-id-4', 'bucket-id-2', 'wallet-id-1');
@@ -398,7 +397,7 @@ func TestWriteActivity(t *testing.T) {
 			},
 			fixture: `
 				INSERT INTO utxos
-					(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+					(txid, index, asset_id, amount, address_id, account_id, manager_node_id)
 				VALUES
 					('4786c29077265138e00a8fce822c5fb998c0ce99df53d939bb53d81bca5aa426', 0, 'asset-id-0', 3, 'addr-id-0', 'bucket-id-0', 'wallet-id-0'),
 					('db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12', 0, 'asset-id-0', 1, 'addr-id-4', 'bucket-id-2', 'wallet-id-1'),
@@ -489,7 +488,7 @@ func TestWriteActivity(t *testing.T) {
 func TestGetActUTXOs(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO utxos
-			(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+			(txid, index, asset_id, amount, address_id, account_id, manager_node_id)
 		VALUES
 			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 0, 'a0', 100, 'addr0', 'b0', 'w0'),
 			('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 1, 'a0', 50, 'addr1', 'b1', 'w0'),
@@ -526,7 +525,7 @@ func TestGetActUTXOs(t *testing.T) {
 func TestGetActTxUTXOsByTx(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO utxos
-			(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+			(txid, index, asset_id, amount, address_id, account_id, manager_node_id)
 		VALUES
 			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 0, 'a0', 100, 'addr0', 'b0', 'w0'),
 			('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 1, 'a0', 50, 'addr1', 'b1', 'w0'),
@@ -1020,10 +1019,10 @@ func TestWriteIssuanceActivity(t *testing.T) {
 }
 
 func getTestActivity(ctx context.Context, txHash string, issuance bool) (map[string]actItem, error) {
-	relationID := "wallet_id"
+	relationID := "manager_node_id"
 	table := "activity"
 	if issuance {
-		relationID = "asset_group_id"
+		relationID = "issuer_node_id"
 		table = "issuance_activity"
 	}
 
@@ -1067,9 +1066,9 @@ func getTestActivity(ctx context.Context, txHash string, issuance bool) (map[str
 
 func getTestActivityBuckets(ctx context.Context, txHash string) ([]string, error) {
 	q := `
-		SELECT array_agg(bucket_id ORDER BY bucket_id)
-		FROM activity_buckets ab
-		JOIN activity a ON ab.activity_id = a.id
+		SELECT array_agg(account_id ORDER BY account_id)
+		FROM activity_accounts aa
+		JOIN activity a ON aa.activity_id = a.id
 		WHERE a.txid = $1
 	`
 	var res []string

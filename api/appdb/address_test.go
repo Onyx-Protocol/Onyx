@@ -14,16 +14,16 @@ import (
 )
 
 const bucketFixture = `
-	INSERT INTO wallets (
-		id, application_id, block_chain, sigs_required, key_index,
-		label, current_rotation, next_asset_index, next_bucket_index,
-		buckets_count, created_at, updated_at
+	INSERT INTO manager_nodes (
+		id, project_id, block_chain, sigs_required, key_index,
+		label, current_rotation, next_asset_index, next_account_index,
+		accounts_count, created_at, updated_at
 	)
 	VALUES ('w1', 'app-id-0', 'sandbox', 1, 1, 'foo', 'rot1', 0, 1, 1, now(), now());
-	INSERT INTO rotations (id, wallet_id, keyset)
+	INSERT INTO rotations (id, manager_node_id, keyset)
 	VALUES ('rot1', 'w1', '{xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw}');
-	INSERT INTO buckets (
-		id, wallet_id, key_index, created_at, updated_at,
+	INSERT INTO accounts (
+		id, manager_node_id, key_index, created_at, updated_at,
 		next_address_index, label
 	)
 	VALUES ('b1', 'w1', 0, now(), now(), 0, 'foo');
@@ -103,9 +103,9 @@ func TestAddressInsert(t *testing.T) {
 
 func TestAddressesByID(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, `
-		INSERT INTO wallets (id, application_id, label) VALUES('w1', 'app-id-0', 'w1');
-		INSERT INTO buckets (id, wallet_id, key_index) VALUES('b1', 'w1', 0);
-		INSERT INTO addresses (id, wallet_id, bucket_id, keyset, key_index, address, redeem_script, pk_script)
+		INSERT INTO manager_nodes (id, project_id, label) VALUES('w1', 'app-id-0', 'w1');
+		INSERT INTO accounts (id, manager_node_id, key_index) VALUES('b1', 'w1', 0);
+		INSERT INTO addresses (id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script)
 		VALUES('a1', 'w1', 'b1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a1', '', '');
 	`)
 	defer dbtx.Rollback()

@@ -28,10 +28,10 @@ func TestInsertWallet(t *testing.T) {
 
 func TestGetWallet(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES
+		INSERT INTO projects (id, name) VALUES
 			('app-id-0', 'app-0');
 
-		INSERT INTO wallets (id, application_id, key_index, label) VALUES
+		INSERT INTO manager_nodes (id, project_id, key_index, label) VALUES
 			('wallet-id-0', 'app-id-0', 0, 'wallet-0');
 	`)
 	defer dbtx.Rollback()
@@ -71,7 +71,7 @@ func TestGetWallet(t *testing.T) {
 
 func TestWalletBalance(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO utxos (txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+		INSERT INTO utxos (txid, index, asset_id, amount, address_id, account_id, manager_node_id)
 		VALUES ('t0', 0, 'a1', 10, 'add0', 'b0', 'w1'),
 		       ('t1', 1, 'a1', 5, 'add0', 'b0', 'w1'),
 		       ('t2', 2, 'a2', 20, 'add0', 'b1', 'w1');
@@ -133,11 +133,11 @@ func TestWalletBalance(t *testing.T) {
 
 func TestListWallets(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES
+		INSERT INTO projects (id, name) VALUES
 			('app-id-0', 'app-0'),
 			('app-id-1', 'app-1');
 
-		INSERT INTO wallets (id, application_id, key_index, label, created_at) VALUES
+		INSERT INTO manager_nodes (id, project_id, key_index, label, created_at) VALUES
 			-- insert in reverse chronological order, to ensure that ListWallets
 			-- is performing a sort.
 			('wallet-id-0', 'app-id-0', 0, 'wallet-0', now()),

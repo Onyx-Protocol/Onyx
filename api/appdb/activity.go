@@ -143,7 +143,7 @@ func WriteActivity(ctx context.Context, tx *wire.MsgTx, txTime time.Time) error 
 func WalletActivity(ctx context.Context, walletID string, prev string, limit int) ([]*json.RawMessage, string, error) {
 	q := `
 		SELECT id, data FROM activity
-		WHERE wallet_id=$1 AND (($2 = '') OR (id < $2))
+		WHERE manager_node_id=$1 AND (($2 = '') OR (id < $2))
 		ORDER BY id DESC LIMIT $3
 	`
 
@@ -160,9 +160,9 @@ func BucketActivity(ctx context.Context, bucketID string, prev string, limit int
 	q := `
 		SELECT a.id, a.data
 		FROM activity AS a
-		LEFT JOIN activity_buckets AS ab
-		ON a.id=ab.activity_id
-		WHERE ab.bucket_id=$1 AND (($2 = '') OR (a.id < $2))
+		LEFT JOIN activity_accounts AS aa
+		ON a.id=aa.activity_id
+		WHERE aa.account_id=$1 AND (($2 = '') OR (a.id < $2))
 		ORDER BY a.id DESC LIMIT $3
 	`
 
@@ -178,7 +178,7 @@ func BucketActivity(ctx context.Context, bucketID string, prev string, limit int
 func AssetGroupActivity(ctx context.Context, agID string, prev string, limit int) ([]*json.RawMessage, string, error) {
 	q := `
 		SELECT id, data FROM issuance_activity
-		WHERE asset_group_id = $1 AND (($2 = '') OR (id < $2))
+		WHERE issuer_node_id = $1 AND (($2 = '') OR (id < $2))
 		ORDER BY id DESC LIMIT $3
 	`
 	rows, err := pg.FromContext(ctx).Query(q, agID, prev, limit)
@@ -231,7 +231,7 @@ func activityItemsFromRows(rows *sql.Rows) (items []*json.RawMessage, last strin
 func WalletTxActivity(ctx context.Context, walletID, txID string) (*json.RawMessage, error) {
 	q := `
 		SELECT data FROM activity
-		WHERE wallet_id=$1 AND txid=$2
+		WHERE manager_node_id=$1 AND txid=$2
 	`
 
 	var a []byte
@@ -332,7 +332,7 @@ func getActUTXOs(ctx context.Context, txHashes []string, indexes []uint32) ([]*a
 			SELECT unnest($1::text[]), unnest($2::int[])
 		)
 		SELECT asset_id, amount,
-			address_id, bucket_id, wallet_id
+			address_id, account_id, manager_node_id
 		FROM utxos
 		WHERE (txid, index) IN (TABLE outpoints)
 	`
@@ -368,7 +368,7 @@ func getActUTXOs(ctx context.Context, txHashes []string, indexes []uint32) ([]*a
 func getActUTXOsByTx(ctx context.Context, txHash string) ([]*actUTXO, error) {
 	q := `
 		SELECT asset_id, amount,
-			address_id, bucket_id, wallet_id
+			address_id, account_id, manager_node_id
 		FROM utxos
 		WHERE txid = $1
 	`
@@ -469,9 +469,9 @@ func getActAddrs(ctx context.Context, addrIDs []string) ([]*actAddr, error) {
 
 func getActAssets(ctx context.Context, assetIDs []string) ([]*actAsset, error) {
 	q := `
-		SELECT a.id, a.label, ag.id, ag.application_id
+		SELECT a.id, a.label, i.id, i.project_id
 		FROM assets a
-		JOIN asset_groups ag ON a.asset_group_id = ag.id
+		JOIN issuer_nodes i ON a.issuer_node_id = i.id
 		WHERE a.id = ANY($1)
 		ORDER BY a.id
 	`
@@ -500,11 +500,11 @@ func getActAssets(ctx context.Context, assetIDs []string) ([]*actAsset, error) {
 
 func getActBuckets(ctx context.Context, bucketIDs []string) ([]*actBucket, error) {
 	q := `
-		SELECT b.id, b.label, b.wallet_id, w.application_id
-		FROM buckets b
-		JOIN wallets w ON b.wallet_id = w.id
-		WHERE b.id = ANY($1)
-		ORDER BY b.id
+		SELECT acc.id, acc.label, acc.manager_node_id, mn.project_id
+		FROM accounts acc
+		JOIN manager_nodes mn ON acc.manager_node_id = mn.id
+		WHERE acc.id = ANY($1)
+		ORDER BY acc.id
 	`
 	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(bucketIDs))
 	if err != nil {
@@ -687,7 +687,7 @@ func serializeActvity(txHash string, txTime time.Time, ins, outs []actEntry) ([]
 
 func writeWalletActivity(ctx context.Context, walletID, txHash string, data []byte, bucketIDs []string) error {
 	aq := `
-		INSERT INTO activity (wallet_id, txid, data)
+		INSERT INTO activity (manager_node_id, txid, data)
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
@@ -698,7 +698,7 @@ func writeWalletActivity(ctx context.Context, walletID, txHash string, data []by
 	}
 
 	bucketq := `
-		INSERT INTO activity_buckets (activity_id, bucket_id)
+		INSERT INTO activity_accounts (activity_id, account_id)
 		VALUES ($1, unnest($2::text[]))
 	`
 	_, err = pg.FromContext(ctx).Exec(bucketq, id, pg.Strings(bucketIDs))
@@ -711,7 +711,7 @@ func writeWalletActivity(ctx context.Context, walletID, txHash string, data []by
 
 func writeIssuanceActivity(ctx context.Context, a *actAsset, txHash string, data []byte) error {
 	iaq := `
-		INSERT INTO issuance_activity (asset_group_id, txid, data)
+		INSERT INTO issuance_activity (issuer_node_id, txid, data)
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`

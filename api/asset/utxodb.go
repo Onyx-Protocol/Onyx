@@ -23,7 +23,7 @@ func (sqlUTXODB) LoadUTXOs(ctx context.Context, bucketID, assetID string) ([]*ut
 	const q = `
 		SELECT amount, reserved_until, address_id, txid, index
 		FROM utxos
-		WHERE bucket_id=$1 AND asset_id=$2
+		WHERE account_id=$1 AND asset_id=$2
 	`
 	rows, err := pg.FromContext(ctx).Query(q, bucketID, assetID)
 	if err != nil {
@@ -132,7 +132,7 @@ func deleteUTXOs(ctx context.Context, txins []*wire.TxIn) ([]*utxodb.UTXO, error
 		)
 		DELETE FROM utxos
 		WHERE (txid, index) IN (TABLE outpoints)
-		RETURNING bucket_id, asset_id, address_id, txid, index
+		RETURNING account_id, asset_id, address_id, txid, index
 	`
 	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(txid), pg.Uint32s(index))
 	if err != nil {
@@ -175,14 +175,14 @@ func insertUTXOs(ctx context.Context, hash wire.Hash32, txouts []*wire.TxOut) ([
 		),
 		recouts AS (
 			SELECT
-				$1::text, idx, asset_id, newouts.amount, id, bucket_id, wallet_id
+				$1::text, idx, asset_id, newouts.amount, id, account_id, manager_node_id
 			FROM addresses
 			INNER JOIN newouts ON address=addr
 		)
 		INSERT INTO utxos
-			(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+			(txid, index, asset_id, amount, address_id, account_id, manager_node_id)
 		TABLE recouts
-		RETURNING bucket_id, asset_id, amount, address_id, txid, index
+		RETURNING account_id, asset_id, amount, address_id, txid, index
 	`
 	rows, err := pg.FromContext(ctx).Query(q,
 		outs.txid,

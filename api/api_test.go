@@ -56,8 +56,8 @@ func TestLogin(t *testing.T) {
 
 func TestCreateWalletBadXPub(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, testUserFixture, `
-		INSERT INTO applications(id, name) VALUES ('a1', 'x');
-		INSERT INTO members (application_id, user_id, role)
+		INSERT INTO projects(id, name) VALUES ('a1', 'x');
+		INSERT INTO members (project_id, user_id, role)
 			VALUES ('a1', 'sample-user-id-0', 'admin');
 	`)
 	defer dbtx.Rollback()

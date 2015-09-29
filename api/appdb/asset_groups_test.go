@@ -28,12 +28,12 @@ func TestCreateAssetGroup(t *testing.T) {
 
 func TestListAssetGroups(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES
+		INSERT INTO projects (id, name) VALUES
 			('app-id-0', 'app-0'),
 			('app-id-1', 'app-1');
 
-		INSERT INTO asset_groups
-			(id, application_id, key_index, keyset, label, created_at)
+		INSERT INTO issuer_nodes
+			(id, project_id, key_index, keyset, label, created_at)
 		VALUES
 			-- insert in reverse chronological order, to ensure that ListAssetGroups
 			-- is performing a sort.
@@ -80,10 +80,10 @@ func TestListAssetGroups(t *testing.T) {
 
 func TestGetAssetGroup(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES
+		INSERT INTO projects (id, name) VALUES
 			('app-id-0', 'app-0');
 
-		INSERT INTO asset_groups (id, application_id, key_index, keyset, label) VALUES
+		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label) VALUES
 			('ag-id-0', 'app-id-0', 0, '{}', 'ag-0');
 	`)
 	defer dbtx.Rollback()

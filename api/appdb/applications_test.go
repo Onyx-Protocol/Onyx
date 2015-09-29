@@ -14,7 +14,7 @@ import (
 
 // A common fixture for use in other test files within the package.
 const sampleAppFixture = `
-	INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+	INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
 `
 
 // A fixture for tests within this file.
@@ -24,11 +24,11 @@ const applicationsFixtures = `
 		('user-id-1', 'baz@bar.com', 'password-does-not-matter'),
 		('user-id-2', 'biz@bar.com', 'password-does-not-matter');
 
-	INSERT INTO applications (id, name) VALUES
+	INSERT INTO projects (id, name) VALUES
 		('app-id-0', 'app-0'),
 		('app-id-1', 'app-1');
 
-	INSERT INTO members (application_id, user_id, role) VALUES
+	INSERT INTO members (project_id, user_id, role) VALUES
 		('app-id-0', 'user-id-0', 'admin'),
 		('app-id-1', 'user-id-0', 'developer'),
 		('app-id-0', 'user-id-1', 'developer');
@@ -158,7 +158,7 @@ func TestUpdateApplication(t *testing.T) {
 		}
 
 		if ex.wantErr == nil {
-			q := `SELECT name FROM applications WHERE id = $1`
+			q := `SELECT name FROM projects WHERE id = $1`
 			var got string
 			_ = pg.FromContext(ctx).QueryRow(q, ex.id).Scan(&got)
 			if got != "new-name" {
@@ -311,7 +311,7 @@ func checkRole(ctx context.Context, appID, userID string) (string, error) {
 		q = `
 			SELECT role
 			FROM members
-			WHERE application_id = $1 AND user_id = $2
+			WHERE project_id = $1 AND user_id = $2
 		`
 		role string
 	)

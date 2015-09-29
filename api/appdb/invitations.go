@@ -49,7 +49,7 @@ func CreateInvitation(ctx context.Context, appID, email, role string) (*Invitati
 	checkq := `
 		SELECT 1 FROM users u
 		JOIN members m ON u.id = m.user_id
-		WHERE lower(u.email) = lower($1) AND m.application_id = $2
+		WHERE lower(u.email) = lower($1) AND m.project_id = $2
 	`
 	err := pg.FromContext(ctx).QueryRow(checkq, email, appID).Scan(new(int))
 	if err == nil {
@@ -69,7 +69,7 @@ func CreateInvitation(ctx context.Context, appID, email, role string) (*Invitati
 	id := hex.EncodeToString(idRaw)
 
 	insertq := `
-		INSERT INTO invitations (id, application_id, email, role)
+		INSERT INTO invitations (id, project_id, email, role)
 		VALUES ($1, $2, $3, $4)
 	`
 	_, err = pg.FromContext(ctx).Exec(insertq, id, appID, email, role)
@@ -78,7 +78,7 @@ func CreateInvitation(ctx context.Context, appID, email, role string) (*Invitati
 	}
 
 	var (
-		nameq = `SELECT name FROM applications WHERE id = $1`
+		nameq = `SELECT name FROM projects WHERE id = $1`
 		name  string
 	)
 	err = pg.FromContext(ctx).QueryRow(nameq, appID).Scan(&name)
@@ -104,9 +104,9 @@ func CreateInvitation(ctx context.Context, appID, email, role string) (*Invitati
 func GetInvitation(ctx context.Context, invID string) (*Invitation, error) {
 	var (
 		q = `
-			SELECT i.application_id, a.name, i.email, i.role, u.id
+			SELECT i.project_id, p.name, i.email, i.role, u.id
 			FROM invitations i
-			JOIN applications a ON i.application_id = a.id
+			JOIN projects p ON i.project_id = p.id
 			LEFT JOIN users u ON lower(i.email) = lower(u.email)
 			WHERE i.id = $1
 		`

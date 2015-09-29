@@ -16,9 +16,9 @@ import (
 var authzFixture = `
 	INSERT INTO users(id, email, password_hash)
 		VALUES ('u1', 'u1', ''), ('u2', 'u2', '');
-	INSERT INTO applications(id, name)
+	INSERT INTO projects(id, name)
 		VALUES ('app1', 'app1'), ('app2', 'app2'), ('app3', 'app3');
-	INSERT INTO members (application_id, user_id, role)
+	INSERT INTO members (project_id, user_id, role)
 	VALUES
 		('app1', 'u1', 'admin'),
 		('app1', 'u2', 'developer'),
@@ -77,7 +77,7 @@ func TestProjectAuthz(t *testing.T) {
 
 func TestManagerAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
-		INSERT INTO wallets (id, application_id, label)
+		INSERT INTO manager_nodes (id, project_id, label)
 			VALUES ('w1', 'app1', 'x'), ('w2', 'app2', 'x'), ('w3', 'app3', 'x');
 	`)
 	defer dbtx.Rollback()
@@ -102,9 +102,9 @@ func TestManagerAuthz(t *testing.T) {
 
 func TestAccountAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
-		INSERT INTO wallets (id, application_id, label)
+		INSERT INTO manager_nodes (id, project_id, label)
 			VALUES ('w1', 'app1', 'x'), ('w2', 'app2', 'x'), ('w3', 'app3', 'x');
-		INSERT INTO buckets (id, wallet_id, key_index)
+		INSERT INTO accounts (id, manager_node_id, key_index)
 			VALUES ('b1', 'w1', 0), ('b2', 'w2', 0), ('b3', 'w3', 0);
 	`)
 	defer dbtx.Rollback()
@@ -129,7 +129,7 @@ func TestAccountAuthz(t *testing.T) {
 
 func TestIssuerAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
-		INSERT INTO asset_groups (id, application_id, label, keyset)
+		INSERT INTO issuer_nodes (id, project_id, label, keyset)
 			VALUES ('ag1', 'app1', 'x', '{}'), ('ag2', 'app2', 'x', '{}'), ('ag3', 'app3', 'x', '{}');
 	`)
 	defer dbtx.Rollback()
@@ -154,9 +154,9 @@ func TestIssuerAuthz(t *testing.T) {
 
 func TestAssetAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
-		INSERT INTO asset_groups (id, application_id, label, keyset)
+		INSERT INTO issuer_nodes (id, project_id, label, keyset)
 			VALUES ('ag1', 'app1', 'x', '{}'), ('ag2', 'app2', 'x', '{}'), ('ag3', 'app3', 'x', '{}');
-		INSERT INTO assets (id, asset_group_id, key_index, redeem_script, label)
+		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label)
 		VALUES
 			('a1', 'ag1', 0, '', ''),
 			('a2', 'ag2', 0, '', ''),
@@ -184,9 +184,9 @@ func TestAssetAuthz(t *testing.T) {
 
 func TestBuildAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
-		INSERT INTO wallets (id, application_id, label)
+		INSERT INTO manager_nodes (id, project_id, label)
 			VALUES ('w1', 'app1', 'x'), ('w2', 'app2', 'x'), ('w3', 'app3', 'x');
-		INSERT INTO buckets (id, wallet_id, key_index)
+		INSERT INTO accounts (id, manager_node_id, key_index)
 			VALUES
 				('b1', 'w1', 0), ('b2', 'w2', 0), ('b3', 'w3', 0),
 				('b4', 'w1', 1), ('b5', 'w2', 1), ('b6', 'w3', 1);

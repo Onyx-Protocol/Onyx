@@ -52,7 +52,7 @@ func TestCreateBucketBadLabel(t *testing.T) {
 
 func TestBucketBalance(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO utxos (txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+		INSERT INTO utxos (txid, index, asset_id, amount, address_id, account_id, manager_node_id)
 		VALUES ('t0', 0, 'a1', 10, 'add0', 'b0', 'w1'),
 		       ('t1', 1, 'a1', 5, 'add0', 'b0', 'w1'),
 		       ('t2', 2, 'a2', 20, 'add0', 'b0', 'w1');
@@ -114,14 +114,14 @@ func TestBucketBalance(t *testing.T) {
 
 func TestListBuckets(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES
+		INSERT INTO projects (id, name) VALUES
 			('app-id-0', 'app-0');
 
-		INSERT INTO wallets (id, application_id, key_index, label) VALUES
+		INSERT INTO manager_nodes (id, project_id, key_index, label) VALUES
 			('wallet-id-0', 'app-id-0', 0, 'wallet-0'),
 			('wallet-id-1', 'app-id-0', 1, 'wallet-1');
 
-		INSERT INTO buckets (id, wallet_id, key_index, label) VALUES
+		INSERT INTO accounts (id, manager_node_id, key_index, label) VALUES
 			('bucket-id-0', 'wallet-id-0', 0, 'bucket-0'),
 			('bucket-id-1', 'wallet-id-0', 1, 'bucket-1'),
 			('bucket-id-2', 'wallet-id-1', 2, 'bucket-2'),
@@ -205,13 +205,13 @@ func TestListBuckets(t *testing.T) {
 
 func TestGetBucket(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES
+		INSERT INTO projects (id, name) VALUES
 			('app-id-0', 'app-0');
 
-		INSERT INTO wallets (id, application_id, key_index, label) VALUES
+		INSERT INTO manager_nodes (id, project_id, key_index, label) VALUES
 			('wallet-id-0', 'app-id-0', 0, 'wallet-0');
 
-		INSERT INTO buckets (id, wallet_id, key_index, label) VALUES
+		INSERT INTO accounts (id, manager_node_id, key_index, label) VALUES
 			('bucket-id-0', 'wallet-id-0', 0, 'bucket-0')
 	`)
 	defer dbtx.Rollback()

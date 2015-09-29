@@ -35,14 +35,14 @@ func CreateBucket(ctx context.Context, walletID, label string) (*Bucket, error) 
 	for i := 0; i < attempts; i++ {
 		const q = `
 			WITH incr AS (
-				UPDATE wallets
+				UPDATE manager_nodes
 				SET
-					buckets_count=buckets_count+1,
-					next_bucket_index=next_bucket_index+1
+					accounts_count=accounts_count+1,
+					next_account_index=next_account_index+1
 				WHERE id=$1
-				RETURNING (next_bucket_index - 1)
+				RETURNING (next_account_index - 1)
 			)
-			INSERT INTO buckets (wallet_id, key_index, label)
+			INSERT INTO accounts (manager_node_id, key_index, label)
 			VALUES ($1, (TABLE incr), $2)
 			RETURNING id, key_index(key_index)
 		`
@@ -78,7 +78,7 @@ func BucketBalance(ctx context.Context, bucketID, prev string, limit int) ([]*Ba
 	q := `
 		SELECT asset_id, sum(amount)::bigint
 		FROM utxos
-		WHERE bucket_id=$1 AND ($2='' OR asset_id>$2)
+		WHERE account_id=$1 AND ($2='' OR asset_id>$2)
 		GROUP BY asset_id
 		ORDER BY asset_id
 		LIMIT $3
@@ -115,8 +115,8 @@ func BucketBalance(ctx context.Context, bucketID, prev string, limit int) ([]*Ba
 func ListBuckets(ctx context.Context, walletID string, prev string, limit int) ([]*Bucket, string, error) {
 	q := `
 		SELECT id, label, key_index(key_index)
-		FROM buckets
-		WHERE wallet_id = $1 AND ($2='' OR id<$2)
+		FROM accounts
+		WHERE manager_node_id = $1 AND ($2='' OR id<$2)
 		ORDER BY id DESC LIMIT $3
 	`
 	rows, err := pg.FromContext(ctx).Query(q, walletID, prev, limit)
@@ -154,7 +154,7 @@ func ListBuckets(ctx context.Context, walletID string, prev string, limit int) (
 func GetBucket(ctx context.Context, bucketID string) (*Bucket, error) {
 	q := `
 		SELECT label, key_index(key_index)
-		FROM buckets
+		FROM accounts
 		WHERE id = $1
 	`
 	b := &Bucket{ID: bucketID}

@@ -16,19 +16,19 @@ import (
 
 func TestTrade(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
-		INSERT INTO wallets (id, application_id, label, current_rotation)
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
 			VALUES('w1', 'app-id-0', 'w1', 'rot1');
-		INSERT INTO rotations (id, wallet_id, keyset)
+		INSERT INTO rotations (id, manager_node_id, keyset)
 			VALUES('rot1', 'w1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
-		INSERT INTO buckets (id, wallet_id, key_index, next_address_index)
+		INSERT INTO accounts (id, manager_node_id, key_index, next_address_index)
 			VALUES('b1', 'w1', 0, 1);
-		INSERT INTO buckets (id, wallet_id, key_index, next_address_index)
+		INSERT INTO accounts (id, manager_node_id, key_index, next_address_index)
 			VALUES('b2', 'w1', 1, 1);
-		INSERT INTO addresses (id, wallet_id, bucket_id, keyset, key_index, address, redeem_script, pk_script)
+		INSERT INTO addresses (id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script)
 			VALUES('a2', 'w1', 'b2', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a2', '', '');
 		INSERT INTO utxos
-			(txid, index, asset_id, amount, address_id, bucket_id, wallet_id)
+			(txid, index, asset_id, amount, address_id, account_id, manager_node_id)
 		VALUES
 			('0000000000000000000000000000000000000000000000000000000000000001', 0, 'AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx', 5, 'a1', 'b1', 'w1'),
 			('0000000000000000000000000000000000000000000000000000000000000002', 0, 'AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo', 2, 'a2', 'b2', 'w1');

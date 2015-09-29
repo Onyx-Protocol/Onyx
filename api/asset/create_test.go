@@ -12,7 +12,7 @@ import (
 
 func TestCreate(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO asset_groups (id, application_id, label, keyset)
+		INSERT INTO issuer_nodes (id, project_id, label, keyset)
 		VALUES ('ag1', 'a1', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 	`)
 	defer dbtx.Rollback()

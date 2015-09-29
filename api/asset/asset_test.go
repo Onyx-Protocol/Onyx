@@ -32,10 +32,10 @@ func init() {
 
 func TestIssue(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
-		INSERT INTO asset_groups (id, application_id, label, keyset, key_index)
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO issuer_nodes (id, project_id, label, keyset, key_index)
 			VALUES ('ag1', 'app-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
-		INSERT INTO assets (id, asset_group_id, key_index, keyset, redeem_script, label)
+		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, label)
 		VALUES(
 			'AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p',
 			'ag1',
@@ -84,12 +84,12 @@ func TestIssue(t *testing.T) {
 
 func TestOutputPKScript(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
-		INSERT INTO wallets (id, application_id, label, current_rotation)
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
 			VALUES('w1', 'app-id-0', 'w1', 'rot1');
-		INSERT INTO rotations (id, wallet_id, keyset)
+		INSERT INTO rotations (id, manager_node_id, keyset)
 			VALUES('rot1', 'w1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
-		INSERT INTO buckets (id, wallet_id, key_index)
+		INSERT INTO accounts (id, manager_node_id, key_index)
 			VALUES('b1', 'w1', 0);
 	`)
 	defer dbtx.Rollback()
@@ -139,12 +139,12 @@ func TestOutputPKScript(t *testing.T) {
 
 func TestPKScriptChangeAddr(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
-		INSERT INTO wallets (id, application_id, label, current_rotation)
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
 			VALUES('w1', 'app-id-0', 'w1', 'rot1');
-		INSERT INTO rotations (id, wallet_id, keyset)
+		INSERT INTO rotations (id, manager_node_id, keyset)
 			VALUES('rot1', 'w1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
-		INSERT INTO buckets (id, wallet_id, key_index)
+		INSERT INTO accounts (id, manager_node_id, key_index)
 			VALUES('b1', 'w1', 0);
 	`)
 	defer dbtx.Rollback()
@@ -165,7 +165,7 @@ func TestPKScriptChangeAddr(t *testing.T) {
 	}
 
 	var isChange bool
-	const q = `SELECT is_change FROM addresses WHERE bucket_id='b1'`
+	const q = `SELECT is_change FROM addresses WHERE account_id='b1'`
 	err = pg.FromContext(ctx).QueryRow(q).Scan(&isChange)
 	if err != nil {
 		t.Fatalf("unexpected err %v", err)

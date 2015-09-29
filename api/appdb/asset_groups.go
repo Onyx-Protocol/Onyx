@@ -38,7 +38,7 @@ func CreateAssetGroup(ctx context.Context, appID, label string, keys []*hdkey.XK
 	}
 
 	const q = `
-		INSERT INTO asset_groups (label, application_id, keyset)
+		INSERT INTO issuer_nodes (label, project_id, keyset)
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
@@ -58,7 +58,7 @@ func CreateAssetGroup(ctx context.Context, appID, label string, keys []*hdkey.XK
 func NextAsset(ctx context.Context, agID string) (asset *Asset, sigsRequired int, err error) {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
-		UPDATE asset_groups
+		UPDATE issuer_nodes
 		SET next_asset_index=next_asset_index+1
 		WHERE id=$1
 		RETURNING
@@ -98,8 +98,8 @@ func NextAsset(ctx context.Context, agID string) (asset *Asset, sigsRequired int
 func ListAssetGroups(ctx context.Context, appID string) ([]*AssetGroup, error) {
 	q := `
 		SELECT id, block_chain, label
-		FROM asset_groups
-		WHERE application_id = $1
+		FROM issuer_nodes
+		WHERE project_id = $1
 		ORDER BY created_at
 	`
 	rows, err := pg.FromContext(ctx).Query(q, appID)
@@ -128,7 +128,7 @@ func ListAssetGroups(ctx context.Context, appID string) ([]*AssetGroup, error) {
 // GetAssetGroup returns basic information about a single asset group.
 func GetAssetGroup(ctx context.Context, groupID string) (*AssetGroup, error) {
 	var (
-		q     = `SELECT label, block_chain FROM asset_groups WHERE id = $1`
+		q     = `SELECT label, block_chain FROM issuer_nodes WHERE id = $1`
 		label string
 		bc    string
 	)

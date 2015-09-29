@@ -33,7 +33,7 @@ type Wallet struct {
 func InsertWallet(ctx context.Context, appID, label string, keys, gennedKeys []*hdkey.XKey) (w *Wallet, err error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 	const q = `
-		INSERT INTO wallets (label, application_id, generated_keys)
+		INSERT INTO manager_nodes (label, project_id, generated_keys)
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
@@ -70,7 +70,7 @@ type Balance struct {
 // GetWallet returns basic information about a single wallet.
 func GetWallet(ctx context.Context, walletID string) (*Wallet, error) {
 	var (
-		q     = `SELECT label, block_chain FROM wallets WHERE id = $1`
+		q     = `SELECT label, block_chain FROM manager_nodes WHERE id = $1`
 		label string
 		bc    string
 	)
@@ -94,7 +94,7 @@ func WalletBalance(ctx context.Context, walletID, prev string, limit int) ([]*Ba
 	q := `
 		SELECT asset_id, sum(amount)::bigint
 		FROM utxos
-		WHERE wallet_id=$1 AND ($2='' OR asset_id>$2)
+		WHERE manager_node_id=$1 AND ($2='' OR asset_id>$2)
 		GROUP BY asset_id
 		ORDER BY asset_id
 		LIMIT $3
@@ -131,8 +131,8 @@ func WalletBalance(ctx context.Context, walletID, prev string, limit int) ([]*Ba
 func ListWallets(ctx context.Context, appID string) ([]*Wallet, error) {
 	q := `
 		SELECT id, block_chain, label
-		FROM wallets
-		WHERE application_id = $1
+		FROM manager_nodes
+		WHERE project_id = $1
 		ORDER BY created_at
 	`
 	rows, err := pg.FromContext(ctx).Query(q, appID)
@@ -172,11 +172,11 @@ func UpdateManagerNode(ctx context.Context, mnodeID string, label *string) error
 func createRotation(ctx context.Context, walletID string, xpubs ...string) error {
 	const q = `
 		WITH new_rotation AS (
-			INSERT INTO rotations (wallet_id, keyset)
+			INSERT INTO rotations (manager_node_id, keyset)
 			VALUES ($1, $2)
 			RETURNING id
 		)
-		UPDATE wallets SET current_rotation=(SELECT id FROM new_rotation)
+		UPDATE manager_nodes SET current_rotation=(SELECT id FROM new_rotation)
 		WHERE id=$1
 	`
 	_, err := pg.FromContext(ctx).Exec(q, walletID, pg.Strings(xpubs))

@@ -40,7 +40,7 @@ func CreateApplication(ctx context.Context, name string, userID string) (*Applic
 	// require transactions.
 
 	var (
-		q  = `INSERT INTO applications (name) VALUES ($1) RETURNING id`
+		q  = `INSERT INTO projects (name) VALUES ($1) RETURNING id`
 		id string
 	)
 	err := pg.FromContext(ctx).QueryRow(q, name).Scan(&id)
@@ -60,11 +60,11 @@ func CreateApplication(ctx context.Context, name string, userID string) (*Applic
 // member of.
 func ListApplications(ctx context.Context, userID string) ([]*Application, error) {
 	q := `
-		SELECT a.id, a.name
-		FROM applications a
-		JOIN members m ON a.id = m.application_id
+		SELECT p.id, p.name
+		FROM projects p
+		JOIN members m ON p.id = m.project_id
 		WHERE m.user_id = $1
-		ORDER BY a.name
+		ORDER BY p.name
 	`
 	rows, err := pg.FromContext(ctx).Query(q, userID)
 	if err != nil {
@@ -92,7 +92,7 @@ func ListApplications(ctx context.Context, userID string) ([]*Application, error
 // GetApplication returns information about a single application.
 func GetApplication(ctx context.Context, appID string) (*Application, error) {
 	var (
-		q    = `SELECT name FROM applications WHERE id = $1`
+		q    = `SELECT name FROM projects WHERE id = $1`
 		name string
 	)
 	err := pg.FromContext(ctx).QueryRow(q, appID).Scan(&name)
@@ -109,7 +109,7 @@ func GetApplication(ctx context.Context, appID string) (*Application, error) {
 // UpdateApplication updates application properties. If the application does not
 // exist, an error with pg.ErrUserInputNotFound as the root is returned.
 func UpdateApplication(ctx context.Context, appID, name string) error {
-	q := `UPDATE applications SET name = $1 WHERE id = $2 RETURNING 1`
+	q := `UPDATE projects SET name = $1 WHERE id = $2 RETURNING 1`
 	err := pg.FromContext(ctx).QueryRow(q, name, appID).Scan(new(int))
 	if err == sql.ErrNoRows {
 		return errors.WithDetailf(pg.ErrUserInputNotFound, "application ID: %v", appID)
@@ -128,7 +128,7 @@ func ListMembers(ctx context.Context, appID string) ([]*Member, error) {
 		SELECT u.id, u.email, m.role
 		FROM users u
 		JOIN members m ON u.id = m.user_id
-		WHERE m.application_id = $1
+		WHERE m.project_id = $1
 		ORDER BY u.email
 	`
 	rows, err := pg.FromContext(ctx).Query(q, appID)
@@ -163,7 +163,7 @@ func AddMember(ctx context.Context, appID, userID, role string) error {
 	}
 
 	q := `
-		INSERT INTO members (application_id, user_id, role)
+		INSERT INTO members (project_id, user_id, role)
 		SELECT $1, $2, $3
 	`
 	_, err := pg.FromContext(ctx).Exec(q, appID, userID, role)
@@ -188,7 +188,7 @@ func UpdateMember(ctx context.Context, appID, userID, role string) error {
 
 	q := `
 		UPDATE members SET role = $1
-		WHERE application_id = $2 AND user_id = $3
+		WHERE project_id = $2 AND user_id = $3
 		RETURNING 1
 	`
 	err := pg.FromContext(ctx).QueryRow(q, role, appID, userID).Scan(new(int))
@@ -208,7 +208,7 @@ func UpdateMember(ctx context.Context, appID, userID, role string) error {
 func RemoveMember(ctx context.Context, appID string, userID string) error {
 	q := `
 		DELETE FROM members
-		WHERE application_id = $1 AND user_id = $2
+		WHERE project_id = $1 AND user_id = $2
 	`
 	_, err := pg.FromContext(ctx).Exec(q, appID, userID)
 	if err != nil {
@@ -230,7 +230,7 @@ func validateRole(role string) error {
 // IsMember returns true if the user is a member of the project
 func IsMember(ctx context.Context, userID string, project string) (bool, error) {
 	const q = `
-		SELECT COUNT(*)=1 FROM members WHERE user_id=$1 AND application_id=$2
+		SELECT COUNT(*)=1 FROM members WHERE user_id=$1 AND project_id=$2
 	`
 	var isMember bool
 	row := pg.FromContext(ctx).QueryRow(q, userID, project)
@@ -242,7 +242,7 @@ func IsMember(ctx context.Context, userID string, project string) (bool, error) 
 func IsAdmin(ctx context.Context, userID string, project string) (bool, error) {
 	const q = `
 		SELECT COUNT(*)=1 FROM members
-		WHERE user_id=$1 AND application_id=$2 AND role='admin'
+		WHERE user_id=$1 AND project_id=$2 AND role='admin'
 	`
 	var isAdmin bool
 	row := pg.FromContext(ctx).QueryRow(q, userID, project)
@@ -253,8 +253,8 @@ func IsAdmin(ctx context.Context, userID string, project string) (bool, error) {
 // ProjectByManager returns all project IDs associated with a set of manager nodes
 func ProjectByManager(ctx context.Context, managerID string) (string, error) {
 	const q = `
-		SELECT application_id
-		FROM wallets WHERE id=$1
+		SELECT project_id
+		FROM manager_nodes WHERE id=$1
 	`
 	var project string
 	err := pg.FromContext(ctx).QueryRow(q, managerID).Scan(&project)
@@ -267,9 +267,9 @@ func ProjectByManager(ctx context.Context, managerID string) (string, error) {
 // ProjectsByAccount returns all project IDs associated with a set of accounts
 func ProjectsByAccount(ctx context.Context, accountIDs ...string) ([]string, error) {
 	const q = `
-		SELECT array_agg(DISTINCT application_id) FROM buckets b
-		JOIN wallets w ON b.wallet_id=w.id
-		WHERE b.id=ANY($1)
+		SELECT array_agg(DISTINCT project_id) FROM accounts acc
+		JOIN manager_nodes mn ON acc.manager_node_id=mn.id
+		WHERE acc.id=ANY($1)
 	`
 	var projects []string
 	err := pg.FromContext(ctx).QueryRow(q, pg.Strings(accountIDs)).Scan((*pg.Strings)(&projects))
@@ -279,8 +279,8 @@ func ProjectsByAccount(ctx context.Context, accountIDs ...string) ([]string, err
 // ProjectByIssuer returns all project IDs associated with a set of issuer nodes
 func ProjectByIssuer(ctx context.Context, issuerID string) (string, error) {
 	const q = `
-		SELECT application_id
-		FROM asset_groups WHERE id=$1
+		SELECT project_id
+		FROM issuer_nodes WHERE id=$1
 	`
 	var project string
 	err := pg.FromContext(ctx).QueryRow(q, issuerID).Scan(&project)
@@ -293,8 +293,8 @@ func ProjectByIssuer(ctx context.Context, issuerID string) (string, error) {
 // ProjectByAsset returns all project IDs associated with a set of assets
 func ProjectByAsset(ctx context.Context, assetID string) (string, error) {
 	const q = `
-		SELECT application_id FROM assets a
-		JOIN asset_groups ag ON a.asset_group_id=ag.id
+		SELECT project_id FROM assets a
+		JOIN issuer_nodes i ON a.issuer_node_id=i.id
 		WHERE a.id=$1
 	`
 	var project string

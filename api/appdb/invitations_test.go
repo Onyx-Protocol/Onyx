@@ -13,7 +13,7 @@ import (
 
 func TestCreateInvitation(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
@@ -50,12 +50,12 @@ func TestCreateInvitation(t *testing.T) {
 
 func TestCreateInvitationErrs(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
 
 		INSERT INTO users (id, password_hash, email) VALUES
 			('user-id-1', '{}', 'bar@foo.com');
 
-		INSERT INTO members (user_id, application_id, role) VALUES
+		INSERT INTO members (user_id, project_id, role) VALUES
 			('user-id-1', 'app-id-0', 'developer');
 	`)
 	defer dbtx.Rollback()
@@ -89,13 +89,13 @@ func TestCreateInvitationErrs(t *testing.T) {
 
 func TestGetInvitation(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
 
 		INSERT INTO users (id, password_hash, email) VALUES
 			('user-id-0', '{}', 'foo@bar.com'),
 			('user-id-1', '{}', 'bar@foo.com');
 
-		INSERT INTO invitations (id, application_id, email, role) VALUES (
+		INSERT INTO invitations (id, project_id, email, role) VALUES (
 			'inv-id-0',
 			'app-id-0',
 			'foo@bar.com',
@@ -184,9 +184,9 @@ func TestGetInvitation(t *testing.T) {
 
 func TestCreateUserFromInvitation(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
 
-		INSERT INTO invitations (id, application_id, email, role) VALUES (
+		INSERT INTO invitations (id, project_id, email, role) VALUES (
 			'inv-id-0',
 			'app-id-0',
 			'foo@bar.com',
@@ -223,9 +223,9 @@ func TestCreateUserFromInvitation(t *testing.T) {
 
 func TestCreateUserFromInvitationErrs(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
 
-		INSERT INTO invitations (id, application_id, email, role) VALUES (
+		INSERT INTO invitations (id, project_id, email, role) VALUES (
 			'inv-id-0',
 			'app-id-0',
 			'foo@bar.com',
@@ -268,12 +268,12 @@ func TestCreateUserFromInvitationErrs(t *testing.T) {
 
 func TestAddMemberFromInvitation(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
 
 		INSERT INTO users (id, password_hash, email) VALUES
 			('user-id-0', '{}', 'foo@bar.com');
 
-		INSERT INTO invitations (id, application_id, email, role) VALUES (
+		INSERT INTO invitations (id, project_id, email, role) VALUES (
 			'inv-id-0',
 			'app-id-0',
 			'foo@bar.com',
@@ -306,9 +306,9 @@ func TestAddMemberFromInvitation(t *testing.T) {
 
 func TestAddMemberFromInvitationErrs(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
 
-		INSERT INTO invitations (id, application_id, email, role) VALUES (
+		INSERT INTO invitations (id, project_id, email, role) VALUES (
 			'inv-id-0',
 			'app-id-0',
 			'foo@bar.com',
@@ -340,9 +340,9 @@ func TestAddMemberFromInvitationErrs(t *testing.T) {
 
 func TestDeleteInvitation(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
 
-		INSERT INTO invitations (id, application_id, email, role) VALUES (
+		INSERT INTO invitations (id, project_id, email, role) VALUES (
 			'inv-id-0',
 			'app-id-0',
 			'foo@bar.com',
@@ -389,7 +389,7 @@ type testInvitation struct {
 func getTestInvitation(ctx context.Context, id string) (testInvitation, error) {
 	var (
 		q = `
-			SELECT application_id, email, role
+			SELECT project_id, email, role
 			FROM invitations
 			WHERE id = $1
 		`

@@ -143,12 +143,27 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
+-- Name: accounts; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE accounts (
+    id text DEFAULT next_chain_id('acc'::text) NOT NULL,
+    manager_node_id text NOT NULL,
+    key_index bigint NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    next_address_index bigint DEFAULT 0 NOT NULL,
+    label text
+);
+
+
+--
 -- Name: activity; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE TABLE activity (
     id text DEFAULT next_chain_id('act'::text) NOT NULL,
-    wallet_id text NOT NULL,
+    manager_node_id text NOT NULL,
     data json NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     txid text NOT NULL
@@ -156,12 +171,12 @@ CREATE TABLE activity (
 
 
 --
--- Name: activity_buckets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: activity_accounts; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE TABLE activity_buckets (
+CREATE TABLE activity_accounts (
     activity_id text NOT NULL,
-    bucket_id text NOT NULL
+    account_id text NOT NULL
 );
 
 
@@ -183,8 +198,8 @@ CREATE SEQUENCE address_index_seq
 
 CREATE TABLE addresses (
     id text DEFAULT next_chain_id('a'::text) NOT NULL,
-    wallet_id text NOT NULL,
-    bucket_id text NOT NULL,
+    manager_node_id text NOT NULL,
+    account_id text NOT NULL,
     keyset text[] NOT NULL,
     key_index bigint NOT NULL,
     address text NOT NULL,
@@ -200,61 +215,12 @@ CREATE TABLE addresses (
 
 
 --
--- Name: applications; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE applications (
-    id text DEFAULT next_chain_id('app'::text) NOT NULL,
-    name text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: asset_groups; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE asset_groups (
-    id text DEFAULT next_chain_id('ag'::text) NOT NULL,
-    application_id text NOT NULL,
-    block_chain text DEFAULT 'sandbox'::text NOT NULL,
-    sigs_required integer DEFAULT 1 NOT NULL,
-    key_index bigint NOT NULL,
-    label text NOT NULL,
-    keyset text[] NOT NULL,
-    next_asset_index bigint DEFAULT 0 NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    generated_keys text[] DEFAULT '{}'::text[] NOT NULL
-);
-
-
---
--- Name: asset_groups_key_index_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE asset_groups_key_index_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: asset_groups_key_index_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE asset_groups_key_index_seq OWNED BY asset_groups.key_index;
-
-
---
 -- Name: assets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE TABLE assets (
     id text NOT NULL,
-    asset_group_id text NOT NULL,
+    issuer_node_id text NOT NULL,
     key_index bigint NOT NULL,
     keyset text[] DEFAULT '{}'::text[] NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -283,21 +249,6 @@ CREATE TABLE auth_tokens (
 
 
 --
--- Name: buckets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE buckets (
-    id text DEFAULT next_chain_id('b'::text) NOT NULL,
-    wallet_id text NOT NULL,
-    key_index bigint NOT NULL,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    next_address_index bigint DEFAULT 0 NOT NULL,
-    label text
-);
-
-
---
 -- Name: chain_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -315,7 +266,7 @@ CREATE SEQUENCE chain_id_seq
 
 CREATE TABLE invitations (
     id text NOT NULL,
-    application_id text NOT NULL,
+    project_id text NOT NULL,
     email text NOT NULL,
     role text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -329,7 +280,7 @@ CREATE TABLE invitations (
 
 CREATE TABLE issuance_activity (
     id text DEFAULT next_chain_id('iact'::text) NOT NULL,
-    asset_group_id text NOT NULL,
+    issuer_node_id text NOT NULL,
     data json NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     txid text NOT NULL
@@ -347,15 +298,104 @@ CREATE TABLE issuance_activity_assets (
 
 
 --
+-- Name: issuer_nodes; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE issuer_nodes (
+    id text DEFAULT next_chain_id('in'::text) NOT NULL,
+    project_id text NOT NULL,
+    block_chain text DEFAULT 'sandbox'::text NOT NULL,
+    sigs_required integer DEFAULT 1 NOT NULL,
+    key_index bigint NOT NULL,
+    label text NOT NULL,
+    keyset text[] NOT NULL,
+    next_asset_index bigint DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    generated_keys text[] DEFAULT '{}'::text[] NOT NULL
+);
+
+
+--
+-- Name: issuer_nodes_key_index_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE issuer_nodes_key_index_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: issuer_nodes_key_index_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE issuer_nodes_key_index_seq OWNED BY issuer_nodes.key_index;
+
+
+--
+-- Name: manager_nodes; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE manager_nodes (
+    id text DEFAULT next_chain_id('mn'::text) NOT NULL,
+    project_id text NOT NULL,
+    block_chain text DEFAULT 'sandbox'::text NOT NULL,
+    sigs_required integer DEFAULT 1 NOT NULL,
+    key_index bigint NOT NULL,
+    label text NOT NULL,
+    current_rotation text,
+    next_asset_index bigint DEFAULT 0 NOT NULL,
+    next_account_index bigint DEFAULT 0 NOT NULL,
+    accounts_count bigint DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    generated_keys text[] DEFAULT '{}'::text[] NOT NULL
+);
+
+
+--
+-- Name: manager_nodes_key_index_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE manager_nodes_key_index_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: manager_nodes_key_index_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE manager_nodes_key_index_seq OWNED BY manager_nodes.key_index;
+
+
+--
 -- Name: members; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE TABLE members (
-    application_id text NOT NULL,
+    project_id text NOT NULL,
     user_id text NOT NULL,
     role text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT members_role_check CHECK (((role = 'developer'::text) OR (role = 'admin'::text)))
+);
+
+
+--
+-- Name: projects; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE projects (
+    id text DEFAULT next_chain_id('proj'::text) NOT NULL,
+    name text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -365,7 +405,7 @@ CREATE TABLE members (
 
 CREATE TABLE rotations (
     id text DEFAULT next_chain_id('rot'::text) NOT NULL,
-    wallet_id text NOT NULL,
+    manager_node_id text NOT NULL,
     keyset text[] NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -395,65 +435,33 @@ CREATE TABLE utxos (
     asset_id text NOT NULL,
     amount bigint NOT NULL,
     address_id text NOT NULL,
-    bucket_id text NOT NULL,
-    wallet_id text NOT NULL,
+    account_id text NOT NULL,
+    manager_node_id text NOT NULL,
     reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
 --
--- Name: wallets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: key_index; Type: DEFAULT; Schema: public; Owner: -
 --
 
-CREATE TABLE wallets (
-    id text DEFAULT next_chain_id('w'::text) NOT NULL,
-    application_id text NOT NULL,
-    block_chain text DEFAULT 'sandbox'::text NOT NULL,
-    sigs_required integer DEFAULT 1 NOT NULL,
-    key_index bigint NOT NULL,
-    label text NOT NULL,
-    current_rotation text,
-    next_asset_index bigint DEFAULT 0 NOT NULL,
-    next_bucket_index bigint DEFAULT 0 NOT NULL,
-    buckets_count bigint DEFAULT 0,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    generated_keys text[] DEFAULT '{}'::text[] NOT NULL
-);
-
-
---
--- Name: wallets_key_index_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE wallets_key_index_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: wallets_key_index_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE wallets_key_index_seq OWNED BY wallets.key_index;
+ALTER TABLE ONLY issuer_nodes ALTER COLUMN key_index SET DEFAULT nextval('issuer_nodes_key_index_seq'::regclass);
 
 
 --
 -- Name: key_index; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY asset_groups ALTER COLUMN key_index SET DEFAULT nextval('asset_groups_key_index_seq'::regclass);
+ALTER TABLE ONLY manager_nodes ALTER COLUMN key_index SET DEFAULT nextval('manager_nodes_key_index_seq'::regclass);
 
 
 --
--- Name: key_index; Type: DEFAULT; Schema: public; Owner: -
+-- Name: accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
-ALTER TABLE ONLY wallets ALTER COLUMN key_index SET DEFAULT nextval('wallets_key_index_seq'::regclass);
+ALTER TABLE ONLY accounts
+    ADD CONSTRAINT accounts_pkey PRIMARY KEY (id);
 
 
 --
@@ -481,35 +489,11 @@ ALTER TABLE ONLY addresses
 
 
 --
--- Name: applications_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
---
-
-ALTER TABLE ONLY applications
-    ADD CONSTRAINT applications_pkey PRIMARY KEY (id);
-
-
---
--- Name: asset_groups_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
---
-
-ALTER TABLE ONLY asset_groups
-    ADD CONSTRAINT asset_groups_pkey PRIMARY KEY (id);
-
-
---
 -- Name: assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
 ALTER TABLE ONLY assets
     ADD CONSTRAINT assets_pkey PRIMARY KEY (id);
-
-
---
--- Name: buckets_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
---
-
-ALTER TABLE ONLY buckets
-    ADD CONSTRAINT buckets_pkey PRIMARY KEY (id);
 
 
 --
@@ -529,11 +513,35 @@ ALTER TABLE ONLY issuance_activity
 
 
 --
--- Name: members_application_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: issuer_nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY issuer_nodes
+    ADD CONSTRAINT issuer_nodes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: manager_nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY manager_nodes
+    ADD CONSTRAINT manager_nodes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: members_project_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
 ALTER TABLE ONLY members
-    ADD CONSTRAINT members_application_id_user_id_key UNIQUE (application_id, user_id);
+    ADD CONSTRAINT members_project_id_user_id_key UNIQUE (project_id, user_id);
+
+
+--
+-- Name: projects_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY projects
+    ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
 
 
 --
@@ -561,74 +569,66 @@ ALTER TABLE ONLY utxos
 
 
 --
--- Name: wallets_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: accounts_manager_node_path; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-ALTER TABLE ONLY wallets
-    ADD CONSTRAINT wallets_pkey PRIMARY KEY (id);
-
-
---
--- Name: activity_buckets_activity_id_bucket_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE UNIQUE INDEX activity_buckets_activity_id_bucket_id_idx ON activity_buckets USING btree (activity_id, bucket_id);
+CREATE UNIQUE INDEX accounts_manager_node_path ON accounts USING btree (manager_node_id, key_index);
 
 
 --
--- Name: activity_buckets_bucket_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: activity_accounts_account_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX activity_buckets_bucket_id_idx ON activity_buckets USING btree (bucket_id);
-
-
---
--- Name: activity_wallet_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX activity_wallet_id_idx ON activity USING btree (wallet_id);
+CREATE INDEX activity_accounts_account_id_idx ON activity_accounts USING btree (account_id);
 
 
 --
--- Name: activity_wallet_id_txid_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: activity_accounts_activity_id_account_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE UNIQUE INDEX activity_wallet_id_txid_idx ON activity USING btree (wallet_id, txid);
-
-
---
--- Name: addresses_bucket_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX addresses_bucket_id_idx ON addresses USING btree (bucket_id);
+CREATE UNIQUE INDEX activity_accounts_activity_id_account_id_idx ON activity_accounts USING btree (activity_id, account_id);
 
 
 --
--- Name: addresses_bucket_id_key_index_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: activity_manager_node_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE UNIQUE INDEX addresses_bucket_id_key_index_idx ON addresses USING btree (bucket_id, key_index);
-
-
---
--- Name: addresses_wallet_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX addresses_wallet_id_idx ON addresses USING btree (wallet_id);
+CREATE INDEX activity_manager_node_id_idx ON activity USING btree (manager_node_id);
 
 
 --
--- Name: asset_groups_application_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: activity_manager_node_id_txid_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX asset_groups_application_id_idx ON asset_groups USING btree (application_id);
+CREATE UNIQUE INDEX activity_manager_node_id_txid_idx ON activity USING btree (manager_node_id, txid);
 
 
 --
--- Name: assets_asset_group_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: addresses_account_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX assets_asset_group_id_idx ON assets USING btree (asset_group_id);
+CREATE INDEX addresses_account_id_idx ON addresses USING btree (account_id);
+
+
+--
+-- Name: addresses_account_id_key_index_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX addresses_account_id_key_index_idx ON addresses USING btree (account_id, key_index);
+
+
+--
+-- Name: addresses_manager_node_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX addresses_manager_node_id_idx ON addresses USING btree (manager_node_id);
+
+
+--
+-- Name: assets_issuer_node_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX assets_issuer_node_id_idx ON assets USING btree (issuer_node_id);
 
 
 --
@@ -646,27 +646,6 @@ CREATE INDEX auth_tokens_user_id_idx ON auth_tokens USING btree (user_id);
 
 
 --
--- Name: buckets_wallet_path; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE UNIQUE INDEX buckets_wallet_path ON buckets USING btree (wallet_id, key_index);
-
-
---
--- Name: issuance_activity_asset_group_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX issuance_activity_asset_group_id_idx ON issuance_activity USING btree (asset_group_id);
-
-
---
--- Name: issuance_activity_asset_group_id_txid_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE UNIQUE INDEX issuance_activity_asset_group_id_txid_idx ON issuance_activity USING btree (asset_group_id, txid);
-
-
---
 -- Name: issuance_activity_assets_asset_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -678,6 +657,34 @@ CREATE INDEX issuance_activity_assets_asset_id_idx ON issuance_activity_assets U
 --
 
 CREATE UNIQUE INDEX issuance_activity_assets_issuance_activity_id_asset_id_idx ON issuance_activity_assets USING btree (issuance_activity_id, asset_id);
+
+
+--
+-- Name: issuance_activity_issuer_node_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX issuance_activity_issuer_node_id_idx ON issuance_activity USING btree (issuer_node_id);
+
+
+--
+-- Name: issuance_activity_issuer_node_id_txid_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX issuance_activity_issuer_node_id_txid_idx ON issuance_activity USING btree (issuer_node_id, txid);
+
+
+--
+-- Name: issuer_nodes_project_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX issuer_nodes_project_id_idx ON issuer_nodes USING btree (project_id);
+
+
+--
+-- Name: manager_nodes_project_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX manager_nodes_project_id_idx ON manager_nodes USING btree (project_id);
 
 
 --
@@ -695,6 +702,13 @@ CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
 
 
 --
+-- Name: utxos_account_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX utxos_account_id_asset_id_reserved_at_idx ON utxos USING btree (account_id, asset_id, reserved_until);
+
+
+--
 -- Name: utxos_address_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -702,72 +716,66 @@ CREATE INDEX utxos_address_id_asset_id_reserved_at_idx ON utxos USING btree (add
 
 
 --
--- Name: utxos_bucket_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: utxos_manager_node_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX utxos_bucket_id_asset_id_reserved_at_idx ON utxos USING btree (bucket_id, asset_id, reserved_until);
-
-
---
--- Name: utxos_wallet_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX utxos_wallet_id_asset_id_reserved_at_idx ON utxos USING btree (wallet_id, asset_id, reserved_until);
+CREATE INDEX utxos_manager_node_id_asset_id_reserved_at_idx ON utxos USING btree (manager_node_id, asset_id, reserved_until);
 
 
 --
--- Name: wallets_application_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: accounts_manager_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-CREATE INDEX wallets_application_id_idx ON wallets USING btree (application_id);
-
-
---
--- Name: activity_buckets_activity_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY activity_buckets
-    ADD CONSTRAINT activity_buckets_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES activity(id);
+ALTER TABLE ONLY accounts
+    ADD CONSTRAINT accounts_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
 
 
 --
--- Name: activity_buckets_bucket_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: activity_accounts_account_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY activity_buckets
-    ADD CONSTRAINT activity_buckets_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES buckets(id);
+ALTER TABLE ONLY activity_accounts
+    ADD CONSTRAINT activity_accounts_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id);
 
 
 --
--- Name: activity_wallet_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: activity_accounts_activity_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY activity_accounts
+    ADD CONSTRAINT activity_accounts_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES activity(id);
+
+
+--
+-- Name: activity_manager_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY activity
-    ADD CONSTRAINT activity_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id);
+    ADD CONSTRAINT activity_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
 
 
 --
--- Name: addresses_bucket_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY addresses
-    ADD CONSTRAINT addresses_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES buckets(id);
-
-
---
--- Name: addresses_wallet_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: addresses_account_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY addresses
-    ADD CONSTRAINT addresses_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id);
+    ADD CONSTRAINT addresses_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id);
 
 
 --
--- Name: assets_asset_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: addresses_manager_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY addresses
+    ADD CONSTRAINT addresses_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
+
+
+--
+-- Name: assets_issuer_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY assets
-    ADD CONSTRAINT assets_asset_group_id_fkey FOREIGN KEY (asset_group_id) REFERENCES asset_groups(id);
+    ADD CONSTRAINT assets_issuer_node_id_fkey FOREIGN KEY (issuer_node_id) REFERENCES issuer_nodes(id);
 
 
 --
@@ -779,27 +787,11 @@ ALTER TABLE ONLY auth_tokens
 
 
 --
--- Name: buckets_wallet_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY buckets
-    ADD CONSTRAINT buckets_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id);
-
-
---
--- Name: invitations_application_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: invitations_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY invitations
-    ADD CONSTRAINT invitations_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
-
-
---
--- Name: issuance_activity_asset_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY issuance_activity
-    ADD CONSTRAINT issuance_activity_asset_group_id_fkey FOREIGN KEY (asset_group_id) REFERENCES asset_groups(id);
+    ADD CONSTRAINT invitations_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id);
 
 
 --
@@ -819,11 +811,27 @@ ALTER TABLE ONLY issuance_activity_assets
 
 
 --
--- Name: members_application_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: issuance_activity_issuer_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY issuance_activity
+    ADD CONSTRAINT issuance_activity_issuer_node_id_fkey FOREIGN KEY (issuer_node_id) REFERENCES issuer_nodes(id);
+
+
+--
+-- Name: manager_nodes_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY manager_nodes
+    ADD CONSTRAINT manager_nodes_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id);
+
+
+--
+-- Name: members_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY members
-    ADD CONSTRAINT members_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
+    ADD CONSTRAINT members_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id);
 
 
 --
@@ -835,19 +843,11 @@ ALTER TABLE ONLY members
 
 
 --
--- Name: rotations_wallet_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: rotations_manager_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY rotations
-    ADD CONSTRAINT rotations_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id);
-
-
---
--- Name: wallets_application_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY wallets
-    ADD CONSTRAINT wallets_application_id_fkey FOREIGN KEY (application_id) REFERENCES applications(id);
+    ADD CONSTRAINT rotations_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
 
 
 --

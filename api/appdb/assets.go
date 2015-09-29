@@ -41,10 +41,10 @@ type AssetResponse struct {
 func AssetByID(ctx context.Context, id string) (*Asset, error) {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
-		SELECT assets.keyset, redeem_script, asset_group_id,
-			key_index(asset_groups.key_index), key_index(assets.key_index)
+		SELECT assets.keyset, redeem_script, issuer_node_id,
+			key_index(issuer_nodes.key_index), key_index(assets.key_index)
 		FROM assets
-		INNER JOIN asset_groups ON asset_groups.id=assets.asset_group_id
+		INNER JOIN issuer_nodes ON issuer_nodes.id=assets.issuer_node_id
 		WHERE assets.id=$1
 	`
 	var (
@@ -82,7 +82,7 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 func InsertAsset(ctx context.Context, asset *Asset) error {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
-		INSERT INTO assets (id, asset_group_id, key_index, keyset, redeem_script, label)
+		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, label)
 		VALUES($1, $2, to_key_index($3), $4, $5, $6)
 	`
 
@@ -104,7 +104,7 @@ func ListAssets(ctx context.Context, groupID string, prev string, limit int) ([]
 	q := `
 		SELECT id, label, issued, sort_id
 		FROM assets
-		WHERE asset_group_id = $1 AND ($2='' OR sort_id<$2)
+		WHERE issuer_node_id = $1 AND ($2='' OR sort_id<$2)
 		ORDER BY sort_id DESC
 		LIMIT $3
 	`
