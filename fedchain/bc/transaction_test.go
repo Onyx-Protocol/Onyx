@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/btcsuite/btcd/txscript"
@@ -34,7 +35,7 @@ func TestTransaction(t *testing.T) {
 		{
 			tx: Tx{
 				Version: CurrentTransactionVersion,
-				Inputs: []TxInput{
+				Inputs: []*TxInput{
 					{
 						Previous: Outpoint{
 							Hash:  mustDecodeHash("dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5"),
@@ -45,7 +46,7 @@ func TestTransaction(t *testing.T) {
 						Metadata:        []byte("input"),
 					},
 				},
-				Outputs: []TxOutput{
+				Outputs: []*TxOutput{
 					{
 						AssetID:  AssetID{},
 						Value:    1000000000000,
@@ -62,17 +63,17 @@ func TestTransaction(t *testing.T) {
 		{
 			tx: Tx{
 				Version: CurrentTransactionVersion,
-				Inputs: []TxInput{
+				Inputs: []*TxInput{
 					{
 						Previous: Outpoint{
 							Hash:  mustDecodeHash("92322db99e8b9e9f1df601cc9d22c5b056ad5189a50fbdc1d8915de26f5f38dd"),
 							Index: 0,
 						},
-						SignatureScript: script.Script{},
+						SignatureScript: nil,
 						Metadata:        []byte("input"),
 					},
 				},
-				Outputs: []TxOutput{
+				Outputs: []*TxOutput{
 					{
 						AssetID:  ComputeAssetID(issuanceScript, genesisHash),
 						Value:    600000000000,
@@ -102,10 +103,18 @@ func TestTransaction(t *testing.T) {
 		if !bytes.Equal(got, want) {
 			t.Errorf("bytes = %x want %x", got, want)
 		}
-
 		hash := test.tx.Hash()
 		if !bytes.Equal(hash[:], test.hash[:]) {
 			t.Errorf("hash = %x want %x", hash, test.hash)
+		}
+
+		tx1 := new(Tx)
+		err := tx1.UnmarshalText([]byte(test.hex))
+		if err != nil {
+			t.Errorf("unexpected err %v", err)
+		}
+		if !reflect.DeepEqual(*tx1, test.tx) {
+			t.Errorf("tx1 = %v want %v", *tx1, test.tx)
 		}
 	}
 }
@@ -113,7 +122,7 @@ func TestTransaction(t *testing.T) {
 func TestIsIssuance(t *testing.T) {
 	tx := Tx{
 		Version: CurrentTransactionVersion,
-		Inputs: []TxInput{
+		Inputs: []*TxInput{
 			{
 				Previous: Outpoint{
 					Hash:  mustDecodeHash("dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5"),
@@ -124,7 +133,7 @@ func TestIsIssuance(t *testing.T) {
 				Metadata:        []byte("input"),
 			},
 		},
-		Outputs: []TxOutput{
+		Outputs: []*TxOutput{
 			{
 				AssetID:  AssetID{},
 				Value:    1000000000000,
@@ -145,13 +154,10 @@ func TestIsIssuance(t *testing.T) {
 }
 
 func TestEmptyOutpoint(t *testing.T) {
-	o := Outpoint{
-		Hash:  [32]byte{0},
-		Index: 0,
-	}
-
-	if o.String() != "0000000000000000000000000000000000000000000000000000000000000000:0" {
-		t.Errorf("Empty outpoint has incorrect string representation '%v'", o.String())
+	g := Outpoint{}.String()
+	w := "0000000000000000000000000000000000000000000000000000000000000000:0"
+	if g != w {
+		t.Errorf("Empty outpoint has incorrect string representation '%v'", g)
 	}
 }
 

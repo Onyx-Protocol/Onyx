@@ -16,6 +16,13 @@ type (
 	IssuanceID [32]byte
 )
 
+func (a AssetID) String() string                { return Hash(a).String() }
+func (a AssetID) MarshalText() ([]byte, error)  { return Hash(a).MarshalText() }
+func (a *AssetID) UnmarshalText(b []byte) error { return (*Hash)(a).UnmarshalText(b) }
+
+// IssuanceOutpoint is used
+var IssuanceOutpoint = Outpoint{Index: InvalidOutputIndex}
+
 // ComputeAssetID computes the asset ID of the asset defined by
 // the given issuance script and genesis block hash.
 func ComputeAssetID(issuance script.Script, genesis [32]byte) AssetID {

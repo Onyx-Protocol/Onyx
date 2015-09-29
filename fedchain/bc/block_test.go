@@ -47,7 +47,7 @@ func TestSmallBlock(t *testing.T) {
 		BlockHeader: BlockHeader{
 			Version: NewBlockVersion,
 		},
-		Transactions: []Tx{{Version: CurrentTransactionVersion}},
+		Transactions: []*Tx{{Version: CurrentTransactionVersion}},
 	}
 
 	got := serialize(t, &block)

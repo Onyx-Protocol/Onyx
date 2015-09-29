@@ -64,8 +64,7 @@ func TxIsValid(tx *bc.Tx, view state.View, params *Params, timestamp uint64) err
 	// NOTE: review this when we implement import inputs.
 	// Maybe we'll need to have undo ADP.
 	if tx.IsIssuance() {
-		for i := range tx.Outputs {
-			txout := &tx.Outputs[i]
+		for _, txout := range tx.Outputs {
 			if txout.AssetID != (bc.AssetID{}) {
 				return fmt.Errorf("issuance transaction output must contain zero AssetID")
 			}
@@ -80,8 +79,7 @@ func TxIsValid(tx *bc.Tx, view state.View, params *Params, timestamp uint64) err
 
 	// 2b. Verify inputs for double-spends, color with asset ids
 	// and issuance ids, extract asset definition pointers.
-	for inIndex := range tx.Inputs {
-		txin := &tx.Inputs[inIndex]
+	for inIndex, txin := range tx.Inputs {
 		unspent, err := view.Output(txin.Previous)
 		if err != nil {
 			return errors.Wrapf(err, "output %v", txin.Previous)
@@ -151,7 +149,7 @@ func ApplyTx(tx *bc.Tx, view state.View, mod *ADPUpdates) (*UndoTx, error) {
 		}
 		undo.UndoInputs = append(undo.UndoInputs, inputUndo)
 
-		assetDef, err := NewAssetDefinition(tx, unspent, &tx.Inputs[i], uint32(i))
+		assetDef, err := NewAssetDefinition(tx, unspent, tx.Inputs[i], uint32(i))
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +183,7 @@ func ApplyTx(tx *bc.Tx, view state.View, mod *ADPUpdates) (*UndoTx, error) {
 	}
 	for i := range tx.Outputs {
 		unspent := state.Output{
-			TxOutput: tx.Outputs[i],
+			TxOutput: *tx.Outputs[i],
 			Outpoint: bc.Outpoint{Hash: tx.Hash(), Index: uint32(i)},
 			Spent:    false,
 		}

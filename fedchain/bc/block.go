@@ -14,7 +14,7 @@ import (
 // and the transactions it contains.
 type Block struct {
 	BlockHeader
-	Transactions []Tx
+	Transactions []*Tx
 }
 
 // WriteTo satisfies interface io.WriterTo.
@@ -75,7 +75,7 @@ func (bh *BlockHeader) Time() time.Time {
 }
 
 // Hash returns complete hash of the block header.
-func (bh *BlockHeader) Hash() [32]byte {
+func (bh *BlockHeader) Hash() Hash {
 	h := hash256.New()
 	bh.WriteTo(h) // error is impossible
 	var v [32]byte
@@ -85,7 +85,7 @@ func (bh *BlockHeader) Hash() [32]byte {
 
 // HashForSig returns a hash of the block header with signature script blanked out.
 // This hash is used for signing the block and verifying the signature.
-func (bh *BlockHeader) HashForSig() [32]byte {
+func (bh *BlockHeader) HashForSig() Hash {
 	h := hash256.New()
 	bh.WriteForSigTo(h) // error is impossible
 	var v [32]byte
