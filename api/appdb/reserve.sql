@@ -3,41 +3,52 @@ CREATE OR REPLACE FUNCTION reserve_utxos(asset_id text, bucket_id text, amt bigi
 	LANGUAGE plv8
 	AS $$
 
-	var countQ = plv8.prepare(
-		"SELECT COUNT(*) AS cnt FROM utxos "+
-		"WHERE asset_id=$1 AND bucket_id=$2 "+
-		"AND reserved_until < now()"
-	)
-	var count = parseInt(countQ.execute([asset_id, bucket_id])[0]["cnt"]);
-	var max = 10;
+	var candidateRowQ = plv8.prepare(
+		"	SELECT txid, index, amount FROM utxos "+
+		"	WHERE asset_id=$1 AND bucket_id=$2 "+
+		"		AND reserved_until < now()"
+	);
+	var candidateRows = candidateRowQ.execute([asset_id, bucket_id]);
+	var txids = [];
+	var indexes = [];
+	var amountNeeded = amt;
+	for (var i = 0; i < candidateRows.length; ++i) {
+		txids.push(candidateRows[i]['txid']);
+		indexes.push(candidateRows[i]['index']);
+		amountNeeded -= candidateRows[i]['amount'];
+		if (amountNeeded <= 0) {
+			 break;
+		}
+	}
+	if (amountNeeded > 0) {
+		throw new Error("insufficient funds");
+	}
 
-	var q = plv8.prepare(
-		"	WITH reserved AS ("+
-		"		SELECT txid, index, amount, address_id FROM utxos"+
-		"		WHERE asset_id=$1 AND bucket_id=$2"+
-		"		AND reserved_until < now()"+
-		"		LIMIT 1"+
-		"		OFFSET $3"+
-		"		FOR UPDATE"+
+	var lockQ = plv8.prepare(
+		"	WITH outpoints AS ("+
+		"		SELECT unnest($1::text[]), unnest($2::int[])"+
+		"	), locked AS ("+
+		"		SELECT txid, index FROM utxos"+
+		"		WHERE reserved_until < now() AND (txid, index) IN (TABLE outpoints)"+
+		"		FOR UPDATE NOWAIT"+
 		"	)"+
-		"	UPDATE utxos SET reserved_until=now()+$4::interval FROM reserved"+
-		"	WHERE reserved.txid=utxos.txid AND reserved.index=utxos.index"+
-		"	RETURNING reserved.txid, reserved.index, reserved.amount, reserved.address_id"
+		"	SELECT COUNT(*) AS cnt FROM locked;"
+	);
+	var rows = lockQ.execute([txids, indexes]);
+	if (parseInt(rows[0]['cnt']) != txids.length) {
+		throw new Error("candidate rows deleted before lock");
+	}
+
+	var updateQ = plv8.prepare(
+		"	WITH outpoints AS ("+
+		"		SELECT unnest($1::text[]), unnest($2::int[])"+
+		"	)"+
+		"	UPDATE utxos SET reserved_until=now()+$3::interval"+
+		"	WHERE (txid, index) IN (TABLE outpoints)"+
+		"	RETURNING txid, index, amount, address_id;"
 	);
 
-	var selectedUTXOs = [];
-	while(amt > 0) {
-		var off = Math.floor(Math.random() * Math.min(count, max));
-		var rows = q.execute([asset_id, bucket_id, off, ttl]);
-		if (rows.length === 0) {
-			throw new Error("insufficient funds");
-		}
-		amt -= rows[0]["amount"];
-		selectedUTXOs.push(rows[0]);
-
-		if(count > 0) count--;
-	}
-	return selectedUTXOs;
+	return updateQ.execute([txids, indexes, ttl]);
 $$;
 
 CREATE OR REPLACE FUNCTION reserve_tx_utxos(asset_id text, bucket_id text, txid text, amt bigint, ttl interval)
