@@ -59,7 +59,7 @@ func TxIsValid(tx *bc.Tx, view state.View, params *Params, timestamp uint64) err
 		return fmt.Errorf("transaction lock time is in the future")
 	}
 
-	// 2a. If this is an issuance tx, simply assign zero IssuanceID and return.
+	// 2a. If this is an issuance tx, simply return.
 	// There are no outputs to undo, so we return an empty undo object.
 	// NOTE: review this when we implement import inputs.
 	// Maybe we'll need to have undo ADP.
@@ -68,17 +68,12 @@ func TxIsValid(tx *bc.Tx, view state.View, params *Params, timestamp uint64) err
 			if txout.AssetID != (bc.AssetID{}) {
 				return fmt.Errorf("issuance transaction output must contain zero AssetID")
 			}
-			// Set Issuance ID to canonical zero value.
-			// Asset is not issued until this output is spent,
-			// so we cannot allow non-zero values for
-			// Asset ID and Issuance ID.
-			txout.IssuanceID = bc.IssuanceID{}
 		}
 		return nil
 	}
 
 	// 2b. Verify inputs for double-spends, color with asset ids
-	// and issuance ids, extract asset definition pointers.
+	// and extract asset definition pointers.
 	for inIndex, txin := range tx.Inputs {
 		unspent, err := view.Output(txin.Previous)
 		if err != nil {
@@ -92,21 +87,18 @@ func TxIsValid(tx *bc.Tx, view state.View, params *Params, timestamp uint64) err
 		}
 
 		assetID := unspent.AssetID
-		issuanceID := unspent.IssuanceID
 
-		// If it's an issuance output, it has zero AssetID and zero IssuanceID
+		// If it's an issuance output, it has zero AssetID.
 		// We can now derive colors from the issuing output for the rest of
 		// inputs and outputs.
 		if assetID == (bc.AssetID{}) {
 			assetID = bc.ComputeAssetID(unspent.Script, params.GenesisHash)
-			issuanceID = bc.ComputeIssuanceID(unspent.Outpoint)
 		}
 
 		// Color the input too so we can access this data
 		// in ValidateTxBalance and in scripts.
 		txin.Value = unspent.Value
 		txin.AssetID = assetID
-		txin.IssuanceID = issuanceID
 	}
 
 	err = ValidateTxBalance(tx)

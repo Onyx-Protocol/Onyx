@@ -33,10 +33,9 @@ type View interface {
 // for the validation process.
 // In contrast with bc.TxOutput,
 // this stores mandatory extra information
-// such as output index, issuance ID, and spent flag.
+// such as output index and spent flag.
 type Output struct {
 	bc.TxOutput
-	Outpoint   bc.Outpoint
-	IssuanceID bc.IssuanceID
-	Spent      bool
+	Outpoint bc.Outpoint
+	Spent    bool
 }

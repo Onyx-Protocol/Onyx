@@ -10,10 +10,6 @@ type (
 	// for the asset and the genesis block of the chain
 	// where it appears.
 	AssetID [32]byte
-
-	// IssuanceID is the hash160 of the outpoint
-	// of the issuing transaction.
-	IssuanceID [32]byte
 )
 
 func (a AssetID) String() string                { return Hash(a).String() }
@@ -30,15 +26,6 @@ func ComputeAssetID(issuance script.Script, genesis [32]byte) AssetID {
 	sh := hash256.Sum(issuance)
 	buf = append(buf, sh[:]...)
 	return hash256.Sum(buf)
-}
-
-// ComputeIssuanceID computes the ID of the asset issuance
-// that occurred in p.
-func ComputeIssuanceID(p Outpoint) (id IssuanceID) {
-	h := hash256.New()
-	p.WriteTo(h)
-	h.Sum(id[:0])
-	return id
 }
 
 // AssetDefinitionPointer is a Hash256 value of data associated

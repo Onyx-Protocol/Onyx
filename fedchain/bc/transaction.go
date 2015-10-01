@@ -38,9 +38,8 @@ type TxInput struct {
 
 	// Optional attributes for convenience during validation.
 	// These are not serialized or hashed.
-	Value      uint64
-	AssetID    AssetID
-	IssuanceID IssuanceID
+	Value   uint64
+	AssetID AssetID
 }
 
 // TxOutput encodes a single output in a transaction.
@@ -52,8 +51,7 @@ type TxOutput struct {
 
 	// Optional attributes for convenience during validation.
 	// These are not serialized or hashed.
-	Outpoint   Outpoint
-	IssuanceID IssuanceID
+	Outpoint Outpoint
 }
 
 // Outpoint defines a bitcoin data type that is used to track previous

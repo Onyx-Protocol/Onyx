@@ -20,11 +20,3 @@ func TestComputeAssetID(t *testing.T) {
 		t.Errorf("asset id = %x want %x", assetID[:], want)
 	}
 }
-
-func TestComputeIssuanceID(t *testing.T) {
-	got := ComputeIssuanceID(Outpoint{})
-	want, _ := hex.DecodeString("ca5ace6dec772a290777987fd77016fcfd32925a42c84389b7b5fbd1c02654e1")
-	if !bytes.Equal(got[:], want) {
-		t.Errorf("issuance id = %x want %x", got[:], want)
-	}
-}
