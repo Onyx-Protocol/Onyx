@@ -5,6 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -26,9 +27,12 @@ func TestTransfer(t *testing.T) {
 	`)
 	defer dbtx.Rollback()
 
+	var err error
 	ctx := pg.NewContext(context.Background(), dbtx)
-	_, err := Transfer(ctx,
-		[]TransferInput{{
+	utxoDB = utxodb.New(sqlUTXODB{})
+
+	_, err = Transfer(ctx,
+		[]utxodb.Input{{
 			BucketID: "b1",
 			AssetID:  "AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx",
 			Amount:   5,
@@ -72,27 +76,27 @@ func TestValidateOutputs(t *testing.T) {
 
 func TestCheckTransferParity(t *testing.T) {
 	cases := []struct {
-		ins  []TransferInput
+		ins  []utxodb.Input
 		outs []Output
 		want error
 	}{{
-		ins:  []TransferInput{{AssetID: "x", Amount: 4}},
+		ins:  []utxodb.Input{{AssetID: "x", Amount: 4}},
 		outs: []Output{},
 		want: ErrBadTx,
 	}, {
-		ins:  []TransferInput{},
+		ins:  []utxodb.Input{},
 		outs: []Output{{AssetID: "x", Amount: 4}},
 		want: ErrBadTx,
 	}, {
-		ins:  []TransferInput{{AssetID: "x", Amount: 4}},
+		ins:  []utxodb.Input{{AssetID: "x", Amount: 4}},
 		outs: []Output{{AssetID: "y", Amount: 4}},
 		want: ErrBadTx,
 	}, {
-		ins:  []TransferInput{{AssetID: "x", Amount: 4}},
+		ins:  []utxodb.Input{{AssetID: "x", Amount: 4}},
 		outs: []Output{{AssetID: "x", Amount: 5}},
 		want: ErrBadTx,
 	}, {
-		ins:  []TransferInput{{AssetID: "x", Amount: 4}},
+		ins:  []utxodb.Input{{AssetID: "x", Amount: 4}},
 		outs: []Output{{AssetID: "x", Amount: 4}},
 		want: nil,
 	}}

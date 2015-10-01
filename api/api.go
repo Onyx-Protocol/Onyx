@@ -9,6 +9,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/asset"
+	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/encoding/json"
 	"chain/errors"
@@ -342,7 +343,7 @@ func issueAsset(ctx context.Context, assetID string, outs []asset.Output) (inter
 }
 
 type transferReq struct {
-	Inputs  []asset.TransferInput
+	Inputs  []utxodb.Input
 	Outputs []asset.Output
 }
 
@@ -372,7 +373,7 @@ func transferAssets(ctx context.Context, x transferReq) (interface{}, error) {
 // POST /v3/assets/trade
 func tradeAssets(ctx context.Context, x struct {
 	PreviousTx *asset.Tx `json:"previous_transaction"`
-	Inputs     []asset.TransferInput
+	Inputs     []utxodb.Input
 	Outputs    []asset.Output
 }) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
@@ -437,7 +438,8 @@ func cancelReservation(ctx context.Context, x struct {
 		return errors.Wrap(asset.ErrBadTxHex)
 	}
 
-	return appdb.CancelReservations(ctx, tx.OutPoints())
+	asset.CancelReservations(ctx, tx.OutPoints())
+	return nil
 }
 
 // POST /v3/login

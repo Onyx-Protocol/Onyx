@@ -7,10 +7,14 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	"chain/api/utxodb"
 	"chain/errors"
 	"chain/fedchain-sandbox/wire"
 	"chain/metrics"
 )
+
+// All UTXOs in the system.
+var utxoDB = utxodb.New(sqlUTXODB{})
 
 // errors returned by Transfer
 var (
@@ -19,18 +23,10 @@ var (
 	ErrBadTxHex         = errors.New("invalid raw transaction hex")
 )
 
-// TransferInput is a user input struct used in Transfer.
-type TransferInput struct {
-	AssetID  string `json:"asset_id"`
-	BucketID string `json:"account_id"`
-	TxID     string `json:"transaction_id"`
-	Amount   int64
-}
-
 // Transfer creates a transaction that
 // transfers assets from input buckets
 // to output buckets or addresses.
-func Transfer(ctx context.Context, inputs []TransferInput, outputs []Output) (*Tx, error) {
+func Transfer(ctx context.Context, inputs []utxodb.Input, outputs []Output) (*Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if err := checkTransferParity(inputs, outputs); err != nil {
 		return nil, err
@@ -38,48 +34,29 @@ func Transfer(ctx context.Context, inputs []TransferInput, outputs []Output) (*T
 	return build(ctx, inputs, outputs, time.Minute)
 }
 
-func build(ctx context.Context, inputs []TransferInput, outputs []Output, ttl time.Duration) (*Tx, error) {
-	if err := validateOutputs(outputs); err != nil {
+func build(ctx context.Context, inputs []utxodb.Input, outs []Output, ttl time.Duration) (*Tx, error) {
+	if err := validateOutputs(outs); err != nil {
 		return nil, err
 	}
 
-	var (
-		outs     = outputs
-		tx       = wire.NewMsgTx()
-		allUTXOs []*appdb.UTXO
-	)
+	tx := wire.NewMsgTx()
 
-	for _, in := range inputs {
-		var (
-			utxos []*appdb.UTXO
-			sum   int64
-			err   error
-		)
-		if in.TxID != "" {
-			utxos, sum, err = appdb.ReserveTxUTXOs(ctx, in.AssetID, in.BucketID, in.TxID, in.Amount, ttl)
-		} else {
-			utxos, sum, err = appdb.ReserveUTXOs(ctx, in.AssetID, in.BucketID, in.Amount, ttl)
-		}
-		if err != nil {
-			err = errors.WithDetailf(err, "bucket=%v asset=%v amount=%v txid=%v",
-				in.AssetID, in.BucketID, in.Amount, in.TxID)
-			return nil, err
-		}
+	reserved, change, err := utxoDB.Reserve(ctx, inputs, ttl)
+	if err != nil {
+		return nil, errors.Wrap(err, "reserve")
+	}
 
-		allUTXOs = append(allUTXOs, utxos...)
+	for _, c := range change {
+		outs = append(outs, Output{
+			BucketID: c.Input.BucketID,
+			AssetID:  c.Input.AssetID,
+			Amount:   int64(c.Amount),
+			isChange: true,
+		})
+	}
 
-		for _, utxo := range utxos {
-			tx.AddTxIn(wire.NewTxIn(utxo.OutPoint, []byte{}))
-		}
-
-		if sum > in.Amount {
-			outs = append(outs, Output{
-				BucketID: in.BucketID,
-				AssetID:  in.AssetID,
-				Amount:   sum - in.Amount,
-				isChange: true,
-			})
-		}
+	for _, utxo := range reserved {
+		tx.AddTxIn(wire.NewTxIn(&utxo.Outpoint, []byte{}))
 	}
 
 	for i, out := range outs {
@@ -99,7 +76,7 @@ func build(ctx context.Context, inputs []TransferInput, outputs []Output, ttl ti
 	var buf bytes.Buffer
 	tx.Serialize(&buf)
 
-	txInputs, err := makeTransferInputs(ctx, tx, allUTXOs)
+	txInputs, err := makeTransferInputs(ctx, tx, reserved)
 	if err != nil {
 		return nil, err
 	}
@@ -122,13 +99,13 @@ func validateOutputs(outputs []Output) error {
 	return nil
 }
 
-func checkTransferParity(ins []TransferInput, outs []Output) error {
+func checkTransferParity(ins []utxodb.Input, outs []Output) error {
 	parity := make(map[string]int64)
 	for _, in := range ins {
-		parity[in.AssetID] += in.Amount
+		parity[in.AssetID] += int64(in.Amount)
 	}
 	for _, out := range outs {
-		parity[out.AssetID] -= out.Amount
+		parity[out.AssetID] -= int64(out.Amount)
 	}
 
 	for asset, amt := range parity {
@@ -143,7 +120,7 @@ func checkTransferParity(ins []TransferInput, outs []Output) error {
 // makeTransferInputs creates the array of inputs
 // that contain signatures along with the
 // data needed to generate them
-func makeTransferInputs(ctx context.Context, tx *wire.MsgTx, utxos []*appdb.UTXO) ([]*Input, error) {
+func makeTransferInputs(ctx context.Context, tx *wire.MsgTx, utxos []*utxodb.UTXO) ([]*Input, error) {
 	defer metrics.RecordElapsed(time.Now())
 	var addrIDs []string
 	for _, utxo := range utxos {
@@ -182,4 +159,10 @@ func addressInput(a *appdb.Address, tx *wire.MsgTx) *Input {
 		SignatureData: wire.DoubleSha256(buf.Bytes()),
 		Sigs:          inputSigs(Signers(a.Keys, ReceiverPath(a))),
 	}
+}
+
+// CancelReservations cancels any existing reservations
+// for the given outpoints.
+func CancelReservations(ctx context.Context, outpoints []wire.OutPoint) {
+	utxoDB.Cancel(ctx, outpoints)
 }

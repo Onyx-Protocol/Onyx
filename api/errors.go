@@ -3,6 +3,7 @@ package api
 import (
 	"chain/api/appdb"
 	"chain/api/asset"
+	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/httpjson"
@@ -24,25 +25,26 @@ var (
 	// Missing entries will map to infoInternal.
 	// See chain.com/docs.
 	errorInfoTab = map[error]errorInfo{
-		pg.ErrUserInputNotFound:    errorInfo{404, "CH005", "Not found."},
-		httpjson.ErrBadRequest:     errorInfo{400, "CH007", "Invalid request body"},
-		errBadReqHeader:            errorInfo{400, "CH008", "Invalid request header"},
-		appdb.ErrBadEmail:          errorInfo{400, "CH101", "Invalid email."},
-		appdb.ErrBadPassword:       errorInfo{400, "CH102", "Invalid password."},
-		appdb.ErrPasswordCheck:     errorInfo{400, "CH103", "Unable to verify password."},
-		asset.ErrBadAddr:           errorInfo{400, "CH300", "Invalid address"},
-		appdb.ErrBadLabel:          errorInfo{400, "CH704", "Invalid label"},
-		appdb.ErrBadXPubCount:      errorInfo{400, "CH712", "Need exactly one xpub."},
-		appdb.ErrBadXPub:           errorInfo{400, "CH713", "Invalid xpub."},
-		asset.ErrPastExpires:       errorInfo{400, "CH720", "Expires, if set, must be in the future"},
-		appdb.ErrInsufficientFunds: errorInfo{400, "CH733", "Insufficient funds for tx"},
-		asset.ErrTransferMismatch:  errorInfo{400, "CH738", "Total input amount must equal total output amount"},
-		asset.ErrBadOutDest:        errorInfo{400, "CH744", "Invalid input sources or output destinations"},
-		asset.ErrBadTxHex:          errorInfo{400, "CH750", "Invalid raw transaction hex"},
-		asset.ErrBadTx:             errorInfo{400, "CH755", "Invalid transaction template"},
-		appdb.ErrBadAsset:          errorInfo{400, "CH761", "Invalid asset"},
-		appdb.ErrBadRole:           errorInfo{400, "CH800", "Member role must be \"developer\" or \"admin\"."},
-		appdb.ErrAlreadyMember:     errorInfo{400, "CH801", "User is already a member of the application."},
+		pg.ErrUserInputNotFound:   errorInfo{404, "CH005", "Not found."},
+		httpjson.ErrBadRequest:    errorInfo{400, "CH007", "Invalid request body"},
+		errBadReqHeader:           errorInfo{400, "CH008", "Invalid request header"},
+		appdb.ErrBadEmail:         errorInfo{400, "CH101", "Invalid email."},
+		appdb.ErrBadPassword:      errorInfo{400, "CH102", "Invalid password."},
+		appdb.ErrPasswordCheck:    errorInfo{400, "CH103", "Unable to verify password."},
+		asset.ErrBadAddr:          errorInfo{400, "CH300", "Invalid address"},
+		appdb.ErrBadLabel:         errorInfo{400, "CH704", "Invalid label"},
+		appdb.ErrBadXPubCount:     errorInfo{400, "CH712", "Need exactly one xpub."},
+		appdb.ErrBadXPub:          errorInfo{400, "CH713", "Invalid xpub."},
+		asset.ErrPastExpires:      errorInfo{400, "CH720", "Expires, if set, must be in the future"},
+		utxodb.ErrInsufficient:    errorInfo{400, "CH733", "Insufficient funds for tx"},
+		utxodb.ErrReserved:        errorInfo{400, "CH743", "Some outputs are reserved; try again"},
+		asset.ErrTransferMismatch: errorInfo{400, "CH738", "Total input amount must equal total output amount"},
+		asset.ErrBadOutDest:       errorInfo{400, "CH744", "Invalid input sources or output destinations"},
+		asset.ErrBadTxHex:         errorInfo{400, "CH750", "Invalid raw transaction hex"},
+		asset.ErrBadTx:            errorInfo{400, "CH755", "Invalid transaction template"},
+		appdb.ErrBadAsset:         errorInfo{400, "CH761", "Invalid asset"},
+		appdb.ErrBadRole:          errorInfo{400, "CH800", "Member role must be \"developer\" or \"admin\"."},
+		appdb.ErrAlreadyMember:    errorInfo{400, "CH801", "User is already a member of the application."},
 
 		// Error codes imported from papi for convenient reference.
 		// Please delete lines from this block when you add them
@@ -81,7 +83,6 @@ var (
 		// ErrMetadataHex         = errorInfo{400, "CH740", "Metadata must be hex encoded"}
 		// ErrMetadataLen         = errorInfo{400, "CH741", "Metadata cannot be longer than 40 bytes"}
 		// ErrTxTooBig            = errorInfo{400, "CH742", "Transaction byte size is too big"}
-		// ErrMinBal              = errorInfo{400, "CH743", "Minimum positive balance of 546 satoshis"}
 		//
 		// ErrMetaAndOA           = errorInfo{400, "CH745", "Metadata cannot be added to open asset transactions"}
 		//

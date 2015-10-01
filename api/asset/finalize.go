@@ -57,7 +57,7 @@ func FinalizeTx(ctx context.Context, tx *Tx) (*wire.MsgTx, error) {
 		msg.TxIn[i].SignatureScript = append(msg.TxIn[i].SignatureScript, input.RedeemScript...)
 	}
 
-	err = appdb.Commit(ctx, msg)
+	err = utxoDB.Apply(ctx, msg)
 	if err != nil {
 		return nil, errors.Wrap(err, "storing txn")
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"golang.org/x/net/context"
 
+	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -26,6 +27,7 @@ func TestFinalizeTx(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
+	utxoDB = utxodb.New(sqlUTXODB{})
 
 	tpl := &Tx{
 		Unsigned: mustDecodeHex("010000000100000000000000000000000000000000000000000000000000000000000000000000000000ffffffff0187849ccdeaa558af265aafdfb6aa17903b2fc6997b0000000000000017a9140ac9c982fd389181752e5a414045dd424a10754b8700000000"),

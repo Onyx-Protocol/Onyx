@@ -7,6 +7,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -34,6 +35,7 @@ func TestTrade(t *testing.T) {
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
+	utxoDB = utxodb.New(sqlUTXODB{})
 
 	outAsset, _ := wire.NewHash20FromStr("AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo")
 	unsignedTx := &wire.MsgTx{
@@ -51,7 +53,7 @@ func TestTrade(t *testing.T) {
 		Inputs:     []*Input{{WalletID: "w1"}},
 		BlockChain: "sandbox",
 	}
-	inputs := []TransferInput{{
+	inputs := []utxodb.Input{{
 		BucketID: "b2",
 		AssetID:  "AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo",
 		Amount:   2,

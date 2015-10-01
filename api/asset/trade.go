@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/api/utxodb"
 	"chain/errors"
 	"chain/fedchain-sandbox/wire"
 )
@@ -15,7 +16,7 @@ import (
 // Trading partners then satisfy and consume inputs and outputs.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Trade(ctx context.Context, prev *Tx, inputs []TransferInput, outputs []Output) (*Tx, error) {
+func Trade(ctx context.Context, prev *Tx, inputs []utxodb.Input, outputs []Output) (*Tx, error) {
 	tpl, err := build(ctx, inputs, outputs, time.Hour*24)
 	if err != nil {
 		return nil, err
