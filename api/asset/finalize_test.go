@@ -30,7 +30,7 @@ func TestFinalizeTx(t *testing.T) {
 	utxoDB = utxodb.New(sqlUTXODB{})
 
 	tpl := &Tx{
-		Unsigned: mustDecodeHex("010000000100000000000000000000000000000000000000000000000000000000000000000000000000ffffffff0187849ccdeaa558af265aafdfb6aa17903b2fc6997b0000000000000017a9140ac9c982fd389181752e5a414045dd424a10754b8700000000"),
+		Unsigned: mustDecodeHex("010000000101000000000000000000000000000000000000000000000000000000000000000000000000ffffffff0187849ccdeaa558af265aafdfb6aa17903b2fc6997b0000000000000017a9140ac9c982fd389181752e5a414045dd424a10754b8700000000"),
 		Inputs: []*Input{{
 			RedeemScript:  []byte{},
 			SignatureData: mustDecodeHex("78e437f627019fc270bbe9ed309291d0a5f6bf98bfae0f750538ba56646f7327"),
@@ -48,7 +48,7 @@ func TestFinalizeTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := "e3f197e2e73242092f449c06d3c4c8911e1c884d8308ef01dc90f6abfb5da64d"
+	want := "2b7c01a96523a1368cc25d179a15b460cf1f959c09b41a69ad1562652bab97ee"
 	if tx.TxSha().String() != want {
 		t.Errorf("got tx hash = %v want %v", tx.TxSha().String(), want)
 	}

@@ -87,3 +87,22 @@ func createAsset(ctx context.Context, groupID string, in struct{ Label string })
 	}
 	return ret, nil
 }
+
+// GET /v3/issuer-nodes/:inodeID/activity
+func getAssetGroupActivity(ctx context.Context, groupID string) (interface{}, error) {
+	prev, limit, err := getPageData(ctx, defActivityPageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	activity, last, err := appdb.AssetGroupActivity(ctx, groupID, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := map[string]interface{}{
+		"last":       last,
+		"activities": httpjson.Array(activity),
+	}
+	return ret, nil
+}

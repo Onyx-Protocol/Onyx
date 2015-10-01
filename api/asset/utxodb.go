@@ -95,7 +95,7 @@ func (sqlUTXODB) ApplyTx(ctx context.Context, tx *wire.MsgTx) (deleted, inserted
 
 	// Activity items rely on the utxo set, so they should be created after
 	// the output utxos are created but before the input utxos are removed.
-	err = appdb.CreateActivityItems(ctx, tx, now)
+	err = appdb.WriteActivity(ctx, tx, now)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "creating activity items")
 	}
