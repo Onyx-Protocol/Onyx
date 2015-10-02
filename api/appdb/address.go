@@ -53,6 +53,7 @@ func (a *Address) LoadNextIndex(ctx context.Context) error {
 	const q = `
 		SELECT
 			w.id, key_index(b.key_index), key_index(w.key_index),
+			key_index(nextval('address_index_seq')),
 			r.keyset, w.sigs_required
 		FROM buckets b
 		LEFT JOIN wallets w ON w.id=b.wallet_id
@@ -63,6 +64,7 @@ func (a *Address) LoadNextIndex(ctx context.Context) error {
 		&a.WalletID,
 		(*pg.Uint32s)(&a.BucketIndex),
 		(*pg.Uint32s)(&a.WalletIndex),
+		(*pg.Uint32s)(&a.Index),
 		(*pg.Strings)(&xpubs),
 		&a.SigsRequired,
 	)
@@ -76,10 +78,6 @@ func (a *Address) LoadNextIndex(ctx context.Context) error {
 	a.Keys, err = xpubsToKeys(xpubs)
 	if err != nil {
 		return errors.Wrap(err, "parsing keys")
-	}
-	a.Index, err = newAddressIndex(ctx, a.BucketID)
-	if err != nil {
-		return errors.Wrap(err, "allocate index")
 	}
 	return nil
 }
@@ -111,13 +109,6 @@ func (a *Address) Insert(ctx context.Context) error {
 		a.IsChange,
 	)
 	return row.Scan(&a.ID, &a.Created)
-}
-
-// newAddressIndex allocates a new index for an address in bucket bID.
-func newAddressIndex(ctx context.Context, bID string) (index []uint32, err error) {
-	const q = `SELECT key_index(nextval('address_index_seq'))`
-	err = pg.FromContext(ctx).QueryRow(q).Scan((*pg.Uint32s)(&index))
-	return
 }
 
 // AddressesByID loads an array of addresses
