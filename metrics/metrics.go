@@ -33,7 +33,8 @@ var (
 	hm         sync.Mutex // protects the following
 	histograms = make(map[*runtime.Func]*metrics.Histogram)
 
-	nrange = metrics.Counter("Histogram.RangeErr")
+	gcpause = metrics.NewHistogram("Mem.GCPauseTime.duration", 0, (10 * time.Second).Nanoseconds(), 3)
+	nrange  = metrics.Counter("Histogram.RangeErr")
 )
 
 // Handler counts requests and response codes in metrics.
@@ -111,4 +112,28 @@ func RecordElapsed(t0 time.Time) {
 		nrange.Add()
 		log.Write(context.Background(), err)
 	}
+}
+
+// Function recordGC polls the mem stats
+// and records any unrecorded GC pause times
+// in the HDR histogram gcpause.
+// See also runtime.MemStats.
+func recordGC(period time.Duration) {
+	var (
+		igc uint32
+		m   runtime.MemStats
+	)
+	for _ = range time.Tick(period) {
+		runtime.ReadMemStats(&m)
+		for ; igc < m.NumGC; igc++ {
+			err := gcpause.RecordValue(int64(m.PauseNs[igc%256]))
+			if err != nil {
+				log.Write(context.Background(), err)
+			}
+		}
+	}
+}
+
+func init() {
+	go recordGC(time.Second)
 }
