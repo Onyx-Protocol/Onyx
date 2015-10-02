@@ -1,3 +1,10 @@
 #!/bin/sh
+
+# Disable cgo entirely.
+# We have seen one too many problems with cgo,
+# including an occasional (rare) malloc failure.
+# See https://github.com/lib/pq/issues/395.
+export CGO_ENABLED=0
+
 /usr/local/go/bin/go build -tags 'prod' -o builds/api/target/api ./cmd/api
 tar cf - -C builds/api/target .
