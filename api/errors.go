@@ -103,10 +103,11 @@ var (
 	}
 )
 
-// errorHTTPStatus returns the HTTP status code to use for err
+// errInfo returns the HTTP status code to use
+// and a suitable response body describing err
 // by consulting the global lookup table.
 // If no entry is found, it returns infoInternal.
-func errInfo(err error) (info errorInfo) {
+func errInfo(err error) (body interface{}, info errorInfo) {
 	root := errors.Root(err)
 	// Some types cannot be used as map keys, for example slices.
 	// If an error's underlying type is one of these, don't panic.
@@ -114,11 +115,20 @@ func errInfo(err error) (info errorInfo) {
 	defer func() {
 		if err := recover(); err != nil {
 			info = infoInternal
+			body = infoInternal
 		}
 	}()
 	info, ok := errorInfoTab[root]
 	if !ok {
 		info = infoInternal
 	}
-	return info
+
+	if s := errors.Detail(err); s != "" {
+		return struct {
+			errorInfo
+			Detail string `json:"detail"`
+		}{info, s}, info
+	}
+
+	return info, info
 }

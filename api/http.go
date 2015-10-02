@@ -16,7 +16,7 @@ import (
 var errBadReqHeader = errors.New("bad request header")
 
 func writeHTTPError(ctx context.Context, w http.ResponseWriter, err error) {
-	info := errInfo(err)
+	body, info := errInfo(err)
 	//metrics.Counter("status." + strconv.Itoa(info.HTTPStatus)).Add()
 	//metrics.Counter("error." + info.ChainCode).Add()
 
@@ -29,15 +29,7 @@ func writeHTTPError(ctx context.Context, w http.ResponseWriter, err error) {
 		keyvals = append(keyvals, log.KeyStack, errors.Stack(err))
 	}
 	log.Write(ctx, keyvals...)
-
-	var v interface{} = info
-	if s := errors.Detail(err); s != "" {
-		v = struct {
-			errorInfo
-			Detail string `json:"detail"`
-		}{info, s}
-	}
-	httpjson.Write(ctx, w, info.HTTPStatus, v)
+	httpjson.Write(ctx, w, info.HTTPStatus, body)
 }
 
 func getPageData(ctx context.Context, defaultLimit int) (prev string, limit int, err error) {

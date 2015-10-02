@@ -20,7 +20,8 @@ func TestErrInfo(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		got := errInfo(test.err).HTTPStatus
+		_, info := errInfo(test.err)
+		got := info.HTTPStatus
 		if got != test.want {
 			t.Errorf("errInfo(%#v) = %d want %d", test.err, got, test.want)
 		}

@@ -97,8 +97,10 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/assets/:assetID", appdb.GetAsset)
 	h.HandleFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
 	h.HandleFunc("POST", "/v3/assets/transfer", transferAssets)
+	h.HandleFunc("POST", "/v3/assets/transfer-batch", batchTransfer)
 	h.HandleFunc("POST", "/v3/assets/trade", tradeAssets)
 	h.HandleFunc("POST", "/v3/wallets/transact/finalize", walletFinalize)
+	h.HandleFunc("POST", "/v3/wallets/transact/finalize-batch", batchFinalize)
 	h.HandleFunc("POST", "/v3/assets/cancel-reservation", cancelReservation)
 	h.HandleFunc("GET", "/v3/user", getAuthdUser)
 	h.HandleFunc("POST", "/v3/user/email", updateUserEmail)
@@ -339,11 +341,13 @@ func issueAsset(ctx context.Context, assetID string, outs []asset.Output) (inter
 	return ret, nil
 }
 
-// POST /v3/assets/transfer
-func transferAssets(ctx context.Context, x struct {
+type transferReq struct {
 	Inputs  []asset.TransferInput
 	Outputs []asset.Output
-}) (interface{}, error) {
+}
+
+// POST /v3/assets/transfer
+func transferAssets(ctx context.Context, x transferReq) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
