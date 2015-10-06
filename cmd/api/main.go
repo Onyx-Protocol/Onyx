@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"expvar"
 	"log"
 	"net/http"
 	"time"
@@ -28,15 +29,24 @@ var (
 	stack        = env.String("STACK", "sandbox")
 	samplePer    = env.Duration("SAMPLEPER", 10*time.Second)
 	nouserSecret = env.String("NOUSER_SECRET", "")
+	// for config var LIBRATO_URL, see func init below
 
-	db       *sql.DB
-	buildTag = "dev"
+	// build vars; initialized by the linker
+	buildTag    = "dev"
+	buildCommit = "?"
+	buildDate   = "?"
 )
 
-func main() {
+func init() {
 	librato.URL = env.URL("LIBRATO_URL", "")
 	librato.Prefix = "chain.api."
+	expvar.NewString("buildtag").Set(buildTag)
+	expvar.NewString("builddate").Set(buildDate)
+	expvar.NewString("buildcommit").Set(buildCommit)
+}
 
+func main() {
+	env.Parse()
 	sql.Register("schemadb", pg.SchemaDriver(buildTag))
 	log.SetPrefix("api-" + buildTag + ": ")
 	log.SetFlags(log.Lshortfile)
@@ -49,8 +59,7 @@ func main() {
 		log.Println("no metrics; set LIBRATO_URL for prod")
 	}
 
-	var err error
-	db, err = sql.Open("schemadb", *dbURL)
+	db, err := sql.Open("schemadb", *dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
