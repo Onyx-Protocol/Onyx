@@ -170,8 +170,8 @@ CREATE TABLE activity_buckets (
 --
 
 CREATE SEQUENCE address_index_seq
-    START WITH 1
-    INCREMENT BY 1
+    START WITH 10001
+    INCREMENT BY 10000
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;

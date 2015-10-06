@@ -36,6 +36,11 @@ func TestKeyIndexSQL(t *testing.T) {
 			t.Errorf("key_index(%d) = %v want %v", pair.encoded, got, pair.decoded)
 		}
 
+		got = keyIndex(pair.encoded)
+		if !reflect.DeepEqual(got, pair.decoded) {
+			t.Errorf("keyIndex(%d) = %v want %v", pair.encoded, got, pair.decoded)
+		}
+
 		var got2 int64
 
 		err = db.QueryRow(`SELECT to_key_index($1::int[])`, pg.Uint32s(pair.decoded)).Scan(&got2)

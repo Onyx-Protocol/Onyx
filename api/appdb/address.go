@@ -3,6 +3,7 @@ package appdb
 import (
 	"database/sql"
 	"sort"
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -42,6 +43,49 @@ type Address struct {
 	Keys         []*hdkey.XKey
 }
 
+var (
+	// Map bucket ID to address template.
+	// Entries set the following fields:
+	//   WalletID
+	//   WalletIndex
+	//   BucketIndex
+	//   Keys
+	//   SigsRequired
+	addrInfo      = map[string]*Address{}
+	addrIndexNext int64 // next addr index in our block
+	addrIndexCap  int64 // points to end of block
+	addrMu        sync.Mutex
+)
+
+func nextIndex(ctx context.Context) ([]uint32, error) {
+	defer metrics.RecordElapsed(time.Now())
+	addrMu.Lock()
+	defer addrMu.Unlock()
+
+	if addrIndexNext >= addrIndexCap {
+		var cap int64
+		const incrby = 10000 // address_index_seq increments by 10,000
+		const q = `SELECT nextval('address_index_seq')`
+		err := pg.FromContext(ctx).QueryRow(q).Scan(&cap)
+		if err != nil {
+			return nil, errors.Wrap(err, "scan")
+		}
+		addrIndexCap = cap
+		addrIndexNext = cap - incrby
+	}
+
+	n := addrIndexNext
+	addrIndexNext++
+	return keyIndex(n), nil
+}
+
+func keyIndex(n int64) []uint32 {
+	index := make([]uint32, 2)
+	index[0] = uint32(n >> 31)
+	index[1] = uint32(n & 0x7fffffff)
+	return index
+}
+
 // LoadNextIndex is a low-level function to initialize a new Address.
 // It is intended to be used by the asset package.
 // Field BucketID must be set.
@@ -49,36 +93,59 @@ type Address struct {
 // See Address for which ones.
 func (a *Address) LoadNextIndex(ctx context.Context) error {
 	defer metrics.RecordElapsed(time.Now())
-	var xpubs []string
-	const q = `
+
+	addrMu.Lock()
+	ai, ok := addrInfo[a.BucketID]
+	addrMu.Unlock()
+	if !ok {
+		// Concurrent cache misses might be doing
+		// duplicate loads here, but ok.
+		ai = new(Address)
+		var xpubs []string
+		const q = `
 		SELECT
 			w.id, key_index(b.key_index), key_index(w.key_index),
-			key_index(nextval('address_index_seq')),
 			r.keyset, w.sigs_required
 		FROM buckets b
 		LEFT JOIN wallets w ON w.id=b.wallet_id
 		LEFT JOIN rotations r ON r.id=w.current_rotation
 		WHERE b.id=$1
 	`
-	err := pg.FromContext(ctx).QueryRow(q, a.BucketID).Scan(
-		&a.WalletID,
-		(*pg.Uint32s)(&a.BucketIndex),
-		(*pg.Uint32s)(&a.WalletIndex),
-		(*pg.Uint32s)(&a.Index),
-		(*pg.Strings)(&xpubs),
-		&a.SigsRequired,
-	)
-	if err == sql.ErrNoRows {
-		err = pg.ErrUserInputNotFound
-	}
-	if err != nil {
-		return errors.WithDetailf(err, "bucket %s", a.BucketID)
+		err := pg.FromContext(ctx).QueryRow(q, a.BucketID).Scan(
+			&ai.WalletID,
+			(*pg.Uint32s)(&ai.BucketIndex),
+			(*pg.Uint32s)(&ai.WalletIndex),
+			(*pg.Strings)(&xpubs),
+			&ai.SigsRequired,
+		)
+		if err == sql.ErrNoRows {
+			err = pg.ErrUserInputNotFound
+		}
+		if err != nil {
+			return errors.WithDetailf(err, "bucket %s", a.BucketID)
+		}
+
+		ai.Keys, err = xpubsToKeys(xpubs)
+		if err != nil {
+			return errors.Wrap(err, "parsing keys")
+		}
+
+		addrMu.Lock()
+		addrInfo[a.BucketID] = ai
+		addrMu.Unlock()
 	}
 
-	a.Keys, err = xpubsToKeys(xpubs)
+	var err error
+	a.Index, err = nextIndex(ctx)
 	if err != nil {
-		return errors.Wrap(err, "parsing keys")
+		return errors.Wrap(err, "nextIndex")
 	}
+
+	a.WalletID = ai.WalletID
+	a.BucketIndex = ai.BucketIndex
+	a.WalletIndex = ai.WalletIndex
+	a.SigsRequired = ai.SigsRequired
+	a.Keys = ai.Keys
 	return nil
 }
 
