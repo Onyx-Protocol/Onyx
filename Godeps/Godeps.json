@@ -36,51 +36,6 @@
 			"Rev": "5df83ba895b6ba073c0513dddcec6d7473c95592"
 		},
 		{
-			"ImportPath": "github.com/aws/aws-sdk-go/internal/endpoints",
-			"Comment": "v0.7.2-4-g5df83ba",
-			"Rev": "5df83ba895b6ba073c0513dddcec6d7473c95592"
-		},
-		{
-			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/ec2query",
-			"Comment": "v0.7.2-4-g5df83ba",
-			"Rev": "5df83ba895b6ba073c0513dddcec6d7473c95592"
-		},
-		{
-			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/query",
-			"Comment": "v0.7.2-4-g5df83ba",
-			"Rev": "5df83ba895b6ba073c0513dddcec6d7473c95592"
-		},
-		{
-			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/rest",
-			"Comment": "v0.7.2-4-g5df83ba",
-			"Rev": "5df83ba895b6ba073c0513dddcec6d7473c95592"
-		},
-		{
-			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/xml/xmlutil",
-			"Comment": "v0.7.2-4-g5df83ba",
-			"Rev": "5df83ba895b6ba073c0513dddcec6d7473c95592"
-		},
-		{
-			"ImportPath": "github.com/aws/aws-sdk-go/internal/signer/v4",
-			"Comment": "v0.7.2-4-g5df83ba",
-			"Rev": "5df83ba895b6ba073c0513dddcec6d7473c95592"
-		},
-		{
-			"ImportPath": "github.com/aws/aws-sdk-go/service/autoscaling",
-			"Comment": "v0.7.2-4-g5df83ba",
-			"Rev": "5df83ba895b6ba073c0513dddcec6d7473c95592"
-		},
-		{
-			"ImportPath": "github.com/aws/aws-sdk-go/service/ec2",
-			"Comment": "v0.7.2-4-g5df83ba",
-			"Rev": "5df83ba895b6ba073c0513dddcec6d7473c95592"
-		},
-		{
-			"ImportPath": "github.com/aws/aws-sdk-go/service/elb",
-			"Comment": "v0.7.2-4-g5df83ba",
-			"Rev": "5df83ba895b6ba073c0513dddcec6d7473c95592"
-		},
-		{
 			"ImportPath": "github.com/btcsuite/btcd/btcec",
 			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
 			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
