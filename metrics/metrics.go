@@ -111,7 +111,7 @@ func RecordElapsed(t0 time.Time) {
 	err := histogram(pc[0]).RecordValue(elapsed.Nanoseconds())
 	if err != nil {
 		nrange.Add()
-		log.Write(context.Background(), err)
+		log.Error(context.Background(), err)
 	}
 }
 
@@ -129,7 +129,7 @@ func recordGC(period time.Duration) {
 		for ; igc < m.NumGC; igc++ {
 			err := gcpause.RecordValue(int64(m.PauseNs[igc%256]))
 			if err != nil {
-				log.Write(context.Background(), err)
+				log.Error(context.Background(), err)
 			}
 		}
 	}
