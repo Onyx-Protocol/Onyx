@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/kr/env"
@@ -26,6 +25,7 @@ var (
 	tlsKey       = env.String("TLSKEY", "")
 	listenAddr   = env.String("LISTEN", ":8080")
 	dbURL        = env.String("DB_URL", "postgres:///api?sslmode=disable")
+	stack        = env.String("STACK", "sandbox")
 	samplePer    = env.Duration("SAMPLEPER", 10*time.Second)
 	nouserSecret = env.String("NOUSER_SECRET", "")
 
@@ -43,7 +43,7 @@ func main() {
 	env.Parse()
 
 	if librato.URL.Host != "" {
-		librato.Source, _ = os.Hostname()
+		librato.Source = *stack
 		go librato.SampleMetrics(*samplePer)
 	} else {
 		log.Println("no metrics; set LIBRATO_URL for prod")
