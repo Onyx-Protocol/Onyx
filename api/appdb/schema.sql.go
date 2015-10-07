@@ -1,4 +1,7 @@
---
+package appdb
+
+//go:generate go run gen.go appdb SchemaSQL schema.sql
+const SchemaSQL = `--
 -- PostgreSQL database dump
 --
 
@@ -170,8 +173,8 @@ CREATE TABLE activity_buckets (
 --
 
 CREATE SEQUENCE address_index_seq
-    START WITH 10001
-    INCREMENT BY 10000
+    START WITH 1
+    INCREMENT BY 1
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
@@ -319,29 +322,6 @@ CREATE TABLE invitations (
     role text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT invitations_role_check CHECK (((role = 'developer'::text) OR (role = 'admin'::text)))
-);
-
-
---
--- Name: issuance_activity; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE issuance_activity (
-    id text DEFAULT next_chain_id('iact'::text) NOT NULL,
-    asset_group_id text NOT NULL,
-    data json NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    txid text NOT NULL
-);
-
-
---
--- Name: issuance_activity_assets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE issuance_activity_assets (
-    issuance_activity_id text NOT NULL,
-    asset_id text NOT NULL
 );
 
 
@@ -519,14 +499,6 @@ ALTER TABLE ONLY invitations
 
 
 --
--- Name: issuance_activity_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
---
-
-ALTER TABLE ONLY issuance_activity
-    ADD CONSTRAINT issuance_activity_pkey PRIMARY KEY (id);
-
-
---
 -- Name: members_application_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -651,34 +623,6 @@ CREATE UNIQUE INDEX buckets_wallet_path ON buckets USING btree (wallet_id, key_i
 
 
 --
--- Name: issuance_activity_asset_group_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX issuance_activity_asset_group_id_idx ON issuance_activity USING btree (asset_group_id);
-
-
---
--- Name: issuance_activity_asset_group_id_txid_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE UNIQUE INDEX issuance_activity_asset_group_id_txid_idx ON issuance_activity USING btree (asset_group_id, txid);
-
-
---
--- Name: issuance_activity_assets_asset_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX issuance_activity_assets_asset_id_idx ON issuance_activity_assets USING btree (asset_id);
-
-
---
--- Name: issuance_activity_assets_issuance_activity_id_asset_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE UNIQUE INDEX issuance_activity_assets_issuance_activity_id_asset_id_idx ON issuance_activity_assets USING btree (issuance_activity_id, asset_id);
-
-
---
 -- Name: members_user_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -793,30 +737,6 @@ ALTER TABLE ONLY invitations
 
 
 --
--- Name: issuance_activity_asset_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY issuance_activity
-    ADD CONSTRAINT issuance_activity_asset_group_id_fkey FOREIGN KEY (asset_group_id) REFERENCES asset_groups(id);
-
-
---
--- Name: issuance_activity_assets_asset_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY issuance_activity_assets
-    ADD CONSTRAINT issuance_activity_assets_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES assets(id);
-
-
---
--- Name: issuance_activity_assets_issuance_activity_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY issuance_activity_assets
-    ADD CONSTRAINT issuance_activity_assets_issuance_activity_id_fkey FOREIGN KEY (issuance_activity_id) REFERENCES issuance_activity(id);
-
-
---
 -- Name: members_application_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -852,3 +772,4 @@ ALTER TABLE ONLY wallets
 -- PostgreSQL database dump complete
 --
 
+`
