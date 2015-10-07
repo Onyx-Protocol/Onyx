@@ -54,3 +54,12 @@ func TestSliceStringValue(t *testing.T) {
 		}
 	}
 }
+
+func TestSliceStringScanErr(t *testing.T) {
+	s := `{","}`
+	var x Strings
+	err := x.Scan([]byte(s))
+	if err == nil {
+		t.Errorf("Scan(%#q) = nil want error", s)
+	}
+}

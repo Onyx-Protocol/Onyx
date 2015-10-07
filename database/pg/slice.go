@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql/driver"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -24,8 +25,10 @@ func (a *Strings) Scan(val interface{}) error {
 		if len(el) == 0 {
 			continue
 		}
-		if el[0] == byte('"') {
+		if el[0] == '"' && el[len(el)-1] == '"' && len(el) >= 2 {
 			*a = append(*a, string(el[1:len(el)-1]))
+		} else if el[0] == '"' || el[len(el)-1] == '"' {
+			return fmt.Errorf("unsupported syntax or error in %s", s)
 		} else {
 			*a = append(*a, string(el))
 		}
