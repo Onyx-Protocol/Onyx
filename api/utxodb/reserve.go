@@ -68,7 +68,7 @@ type (
 
 	Input struct {
 		AssetID  string `json:"asset_id"`
-		BucketID string `json:"bucket_id"`
+		BucketID string `json:"account_id"`
 		TxID     string `json:"transaction_id"`
 		Amount   uint64
 	}
