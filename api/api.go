@@ -98,6 +98,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/v3/accounts/:accountID/addresses", createAddr)
 	h.HandleFunc("GET", "/v3/assets/:assetID", appdb.GetAsset)
 	h.HandleFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
+	h.HandleFunc("POST", "/v3/transact/build", build)
 	h.HandleFunc("POST", "/v3/transact/transfer", transferAssets)
 	h.HandleFunc("POST", "/v3/transact/transfer-batch", batchTransfer)
 	h.HandleFunc("POST", "/v3/transact/trade", tradeAssets)
