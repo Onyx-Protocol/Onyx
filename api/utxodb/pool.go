@@ -51,7 +51,7 @@ func (p *pool) init(ctx context.Context, db DB, k key) error {
 
 // reserve reserves UTXOs from p to satisfy in and returns them.
 // If the input can't be satisfied, it returns nil.
-func (p *pool) reserve(in Input, now, exp time.Time) (utxos []*UTXO, err error) {
+func (p *pool) reserve(in Input, now, exp time.Time) ([]*UTXO, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	defer metrics.RecordElapsed(time.Now())
@@ -59,6 +59,7 @@ func (p *pool) reserve(in Input, now, exp time.Time) (utxos []*UTXO, err error) 
 	// Put all collected utxos back in the heap,
 	// no matter what. They may or may not have
 	// ResvExpires changed.
+	var utxos []*UTXO
 	defer func() {
 		for _, utxo := range utxos {
 			heap.Push(&p.outputs, utxo)
