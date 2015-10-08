@@ -136,7 +136,7 @@ func (rs *Reserver) Reserve(ctx context.Context, inputs []Input, ttl time.Durati
 		if err != nil {
 			return nil, nil, err
 		}
-		res, err := p.reserve(in, now, exp)
+		res, err := p.reserve(in.Amount, now, exp)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -223,10 +223,15 @@ func (rs *Reserver) mappool(utxos []*UTXO, f func(*pool, *UTXO)) {
 	}
 }
 
+// utxos must not already be in rs.
 func (rs *Reserver) insert(utxos []*UTXO) {
 	ctx := context.TODO()
 	var i int64
 	rs.mappool(utxos, func(p *pool, u *UTXO) {
+		// We assume u isn't already in p.
+		// This is guaranteed by construction
+		// by the caller, because they are
+		// freshly-created.
 		heap.Push(&p.outputs, u)
 		p.byOutpoint[u.Outpoint] = u
 		i++
@@ -242,19 +247,29 @@ func (rs *Reserver) unreserve(utxos []*UTXO) {
 		// It's possible u has been removed from the pool
 		// before we got here, since we just took the lock
 		// at the start of unreserve (in mappool).
-		if !p.contains(u) {
-			// If u is no longer in p, it has been deleted
-			// and unreserve should be a no-op.
-			return
+		// If u is no longer in p, it has been deleted
+		// and unreserve should be a no-op.
+		if p.contains(u) {
+			u.ResvExpires = time.Time{}
+			heap.Fix(&p.outputs, u.heapIndex)
 		}
-		u.ResvExpires = time.Time{}
-		heap.Fix(&p.outputs, u.heapIndex)
 	})
 }
 
 func (rs *Reserver) delete(utxos []*UTXO) {
 	sort.Sort(byKeyUTXO(utxos))
-	rs.mappool(utxos, (*pool).delete)
+	rs.mappool(utxos, func(p *pool, u *UTXO) {
+		// It's possible u has already been deleted.
+		// Also, u might not be the same object stored
+		// in p; it just has the same outpoint.
+		// So we look up the actual pointer and
+		// make sure it's contained in p.
+		if u = p.byOutpoint[u.Outpoint]; u != nil {
+			heap.Remove(&p.outputs, u.heapIndex)
+			delete(p.byOutpoint, u.Outpoint)
+		}
+	})
+
 }
 
 func sum(utxos []*UTXO) (total uint64) {

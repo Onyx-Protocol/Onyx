@@ -18,7 +18,7 @@ func TestPoolReserveErr(t *testing.T) {
 	p.byOutpoint[u.Outpoint] = u
 
 	now := time.Now()
-	p.reserve(Input{Amount: 2}, now, now.Add(time.Minute))
+	p.reserve(2, now, now.Add(time.Minute))
 	if g := len(p.outputs); g != 1 {
 		t.Errorf("len(p.outputs) = %d want 1", g)
 	}

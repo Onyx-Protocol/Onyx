@@ -51,7 +51,7 @@ func (p *pool) init(ctx context.Context, db DB, k key) error {
 
 // reserve reserves UTXOs from p to satisfy in and returns them.
 // If the input can't be satisfied, it returns nil.
-func (p *pool) reserve(in Input, now, exp time.Time) ([]*UTXO, error) {
+func (p *pool) reserve(amount uint64, now, exp time.Time) ([]*UTXO, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	defer metrics.RecordElapsed(time.Now())
@@ -90,10 +90,10 @@ func (p *pool) reserve(in Input, now, exp time.Time) ([]*UTXO, error) {
 			// request?"
 			countingReserved = true
 		}
-		if total >= in.Amount && countingReserved {
+		if total >= amount && countingReserved {
 			return nil, ErrReserved
 		}
-		if total >= in.Amount {
+		if total >= amount {
 			// Success. Mark the collected utxos
 			// with a reservation expiration time.
 			for _, utxo := range utxos {
@@ -103,16 +103,6 @@ func (p *pool) reserve(in Input, now, exp time.Time) ([]*UTXO, error) {
 		}
 	}
 	return nil, ErrInsufficient
-}
-
-// delete deletes u's outpoint from p
-// if p contains a UTXO with that outpoint.
-// The caller must hold p.mu.
-func (p *pool) delete(utxo *UTXO) {
-	if u := p.byOutpoint[utxo.Outpoint]; u != nil {
-		heap.Remove(&p.outputs, u.heapIndex)
-		delete(p.byOutpoint, u.Outpoint)
-	}
 }
 
 // caller must hold p.mu
