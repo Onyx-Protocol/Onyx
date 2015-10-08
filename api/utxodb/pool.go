@@ -115,6 +115,12 @@ func (p *pool) delete(utxo *UTXO) {
 	}
 }
 
+// caller must hold p.mu
+func (p *pool) contains(u *UTXO) bool {
+	i := u.heapIndex
+	return i < len(p.outputs) && p.outputs[i] == u
+}
+
 // findReservation finds the UTXO in p that reserves op.
 // If there is no such reservation, it returns nil.
 func (p *pool) findReservation(op wire.OutPoint) *UTXO {

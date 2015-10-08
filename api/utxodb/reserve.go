@@ -239,6 +239,14 @@ func (rs *Reserver) insert(utxos []*UTXO) {
 func (rs *Reserver) unreserve(utxos []*UTXO) {
 	sort.Sort(byKeyUTXO(utxos))
 	rs.mappool(utxos, func(p *pool, u *UTXO) {
+		// It's possible u has been removed from the pool
+		// before we got here, since we just took the lock
+		// at the start of unreserve (in mappool).
+		if !p.contains(u) {
+			// If u is no longer in p, it has been deleted
+			// and unreserve should be a no-op.
+			return
+		}
 		u.ResvExpires = time.Time{}
 		heap.Fix(&p.outputs, u.heapIndex)
 	})
