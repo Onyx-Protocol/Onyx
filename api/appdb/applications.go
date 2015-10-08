@@ -226,3 +226,81 @@ func validateRole(role string) error {
 	}
 	return nil
 }
+
+// IsMember returns true if the user is a member of the project
+func IsMember(ctx context.Context, userID string, project string) (bool, error) {
+	const q = `
+		SELECT COUNT(*)=1 FROM members WHERE user_id=$1 AND application_id=$2
+	`
+	var isMember bool
+	row := pg.FromContext(ctx).QueryRow(q, userID, project)
+	err := row.Scan(&isMember)
+	return isMember, errors.Wrap(err)
+}
+
+// IsAdmin returns true if the user is an admin of the project
+func IsAdmin(ctx context.Context, userID string, project string) (bool, error) {
+	const q = `
+		SELECT COUNT(*)=1 FROM members
+		WHERE user_id=$1 AND application_id=$2 AND role='admin'
+	`
+	var isAdmin bool
+	row := pg.FromContext(ctx).QueryRow(q, userID, project)
+	err := row.Scan(&isAdmin)
+	return isAdmin, errors.Wrap(err)
+}
+
+// ProjectByManager returns all project IDs associated with a set of manager nodes
+func ProjectByManager(ctx context.Context, managerID string) (string, error) {
+	const q = `
+		SELECT application_id
+		FROM wallets WHERE id=$1
+	`
+	var project string
+	err := pg.FromContext(ctx).QueryRow(q, managerID).Scan(&project)
+	if err == sql.ErrNoRows {
+		err = pg.ErrUserInputNotFound
+	}
+	return project, errors.WithDetailf(err, "manager node %v", managerID)
+}
+
+// ProjectsByAccount returns all project IDs associated with a set of accounts
+func ProjectsByAccount(ctx context.Context, accountIDs ...string) ([]string, error) {
+	const q = `
+		SELECT array_agg(DISTINCT application_id) FROM buckets b
+		JOIN wallets w ON b.wallet_id=w.id
+		WHERE b.id=ANY($1)
+	`
+	var projects []string
+	err := pg.FromContext(ctx).QueryRow(q, pg.Strings(accountIDs)).Scan((*pg.Strings)(&projects))
+	return projects, errors.Wrap(err)
+}
+
+// ProjectByIssuer returns all project IDs associated with a set of issuer nodes
+func ProjectByIssuer(ctx context.Context, issuerID string) (string, error) {
+	const q = `
+		SELECT application_id
+		FROM asset_groups WHERE id=$1
+	`
+	var project string
+	err := pg.FromContext(ctx).QueryRow(q, issuerID).Scan(&project)
+	if err == sql.ErrNoRows {
+		err = pg.ErrUserInputNotFound
+	}
+	return project, errors.WithDetailf(err, "issuer node %v", issuerID)
+}
+
+// ProjectByAsset returns all project IDs associated with a set of assets
+func ProjectByAsset(ctx context.Context, assetID string) (string, error) {
+	const q = `
+		SELECT application_id FROM assets a
+		JOIN asset_groups ag ON a.asset_group_id=ag.id
+		WHERE a.id=$1
+	`
+	var project string
+	err := pg.FromContext(ctx).QueryRow(q, assetID).Scan(&project)
+	if err == sql.ErrNoRows {
+		err = pg.ErrUserInputNotFound
+	}
+	return project, errors.WithDetailf(err, "asset %v", assetID)
+}

@@ -19,6 +19,9 @@ func createWallet(ctx context.Context, appID string, wReq struct {
 	Label string
 	XPubs []string
 }) (interface{}, error) {
+	if err := projectAuthz(ctx, appID); err != nil {
+		return nil, err
+	}
 	var keys []*hdkey.XKey
 	for i, xpub := range wReq.XPubs {
 		key, err := hdkey.NewXKey(xpub)
@@ -55,8 +58,27 @@ func createWallet(ctx context.Context, appID string, wReq struct {
 	return ret, nil
 }
 
+// GET /v3/projects/:projID/manager-nodes
+func listWallets(ctx context.Context, projID string) (interface{}, error) {
+	if err := projectAuthz(ctx, projID); err != nil {
+		return nil, err
+	}
+	return appdb.ListWallets(ctx, projID)
+}
+
+// GET /v3/manager-nodes/:mnodeID
+func getWallet(ctx context.Context, mnodeID string) (interface{}, error) {
+	if err := managerAuthz(ctx, mnodeID); err != nil {
+		return nil, err
+	}
+	return appdb.GetWallet(ctx, mnodeID)
+}
+
 // GET /v3/manager-nodes/:mnodeID/activity
 func getWalletActivity(ctx context.Context, wID string) (interface{}, error) {
+	if err := managerAuthz(ctx, wID); err != nil {
+		return nil, err
+	}
 	prev, limit, err := getPageData(ctx, defActivityPageSize)
 	if err != nil {
 		return nil, err
@@ -74,8 +96,19 @@ func getWalletActivity(ctx context.Context, wID string) (interface{}, error) {
 	return ret, nil
 }
 
+// GET /v3/manager-nodes/:mnodeID/transactions/:txID
+func walletTxActivity(ctx context.Context, mnodeID, txID string) (interface{}, error) {
+	if err := managerAuthz(ctx, mnodeID); err != nil {
+		return nil, err
+	}
+	return appdb.WalletTxActivity(ctx, mnodeID, txID)
+}
+
 // GET /v3/manager-nodes/:mnodeID/balance
 func walletBalance(ctx context.Context, walletID string) (interface{}, error) {
+	if err := managerAuthz(ctx, walletID); err != nil {
+		return nil, err
+	}
 	prev, limit, err := getPageData(ctx, defBalancePageSize)
 	if err != nil {
 		return nil, err
@@ -95,6 +128,9 @@ func walletBalance(ctx context.Context, walletID string) (interface{}, error) {
 
 // GET /v3/manager-nodes/:mnodeID/accounts
 func listBuckets(ctx context.Context, walletID string) (interface{}, error) {
+	if err := managerAuthz(ctx, walletID); err != nil {
+		return nil, err
+	}
 	prev, limit, err := getPageData(ctx, defBucketPageSize)
 	if err != nil {
 		return nil, err
@@ -115,11 +151,17 @@ func listBuckets(ctx context.Context, walletID string) (interface{}, error) {
 // POST /v3/manager-nodes/:mnodeID/accounts
 func createBucket(ctx context.Context, walletID string, in struct{ Label string }) (*appdb.Bucket, error) {
 	defer metrics.RecordElapsed(time.Now())
+	if err := managerAuthz(ctx, walletID); err != nil {
+		return nil, err
+	}
 	return appdb.CreateBucket(ctx, walletID, in.Label)
 }
 
 // GET /v3/accounts/:accountID/activity
 func getBucketActivity(ctx context.Context, bid string) (interface{}, error) {
+	if err := accountAuthz(ctx, bid); err != nil {
+		return nil, err
+	}
 	prev, limit, err := getPageData(ctx, defActivityPageSize)
 	if err != nil {
 		return nil, err
@@ -139,6 +181,9 @@ func getBucketActivity(ctx context.Context, bid string) (interface{}, error) {
 
 // GET /v3/accounts/:accountID/balance
 func bucketBalance(ctx context.Context, bucketID string) (interface{}, error) {
+	if err := accountAuthz(ctx, bucketID); err != nil {
+		return nil, err
+	}
 	prev, limit, err := getPageData(ctx, defBalancePageSize)
 	if err != nil {
 		return nil, err
@@ -161,6 +206,9 @@ func createAddr(ctx context.Context, bucketID string, in struct {
 	Amount  uint64
 	Expires time.Time
 }) (interface{}, error) {
+	if err := accountAuthz(ctx, bucketID); err != nil {
+		return nil, err
+	}
 	addr := &appdb.Address{
 		BucketID: bucketID,
 		Amount:   in.Amount,

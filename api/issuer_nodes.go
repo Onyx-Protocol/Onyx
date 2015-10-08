@@ -18,6 +18,9 @@ func createAssetGroup(ctx context.Context, appID string, agReq struct {
 	Label string
 	XPubs []string
 }) (interface{}, error) {
+	if err := projectAuthz(ctx, appID); err != nil {
+		return nil, err
+	}
 	var keys []*hdkey.XKey
 	for _, xpub := range agReq.XPubs {
 		key, err := hdkey.NewXKey(xpub)
@@ -53,8 +56,27 @@ func createAssetGroup(ctx context.Context, appID string, agReq struct {
 	return ret, nil
 }
 
+// GET /v3/projects/:projID/issuer-nodes
+func listAssetGroups(ctx context.Context, projID string) (interface{}, error) {
+	if err := projectAuthz(ctx, projID); err != nil {
+		return nil, err
+	}
+	return appdb.ListAssetGroups(ctx, projID)
+}
+
+// GET /v3/issuer-nodes/:inodeID
+func getAssetGroup(ctx context.Context, inodeID string) (interface{}, error) {
+	if err := issuerAuthz(ctx, inodeID); err != nil {
+		return nil, err
+	}
+	return appdb.GetAssetGroup(ctx, inodeID)
+}
+
 // GET /v3/issuer-nodes/:inodeID/assets
 func listAssets(ctx context.Context, groupID string) (interface{}, error) {
+	if err := issuerAuthz(ctx, groupID); err != nil {
+		return nil, err
+	}
 	prev, limit, err := getPageData(ctx, defAssetPageSize)
 	if err != nil {
 		return nil, err
@@ -75,6 +97,9 @@ func listAssets(ctx context.Context, groupID string) (interface{}, error) {
 // POST /v3/issuer-nodes/:inodeID/assets
 func createAsset(ctx context.Context, groupID string, in struct{ Label string }) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
+	if err := issuerAuthz(ctx, groupID); err != nil {
+		return nil, err
+	}
 	asset, err := asset.Create(ctx, groupID, in.Label)
 	if err != nil {
 		return nil, err
@@ -88,8 +113,19 @@ func createAsset(ctx context.Context, groupID string, in struct{ Label string })
 	return ret, nil
 }
 
+// GET /v3/assets/:assetID
+func getAsset(ctx context.Context, assetID string) (interface{}, error) {
+	if err := assetAuthz(ctx, assetID); err != nil {
+		return nil, err
+	}
+	return appdb.GetAsset(ctx, assetID)
+}
+
 // GET /v3/issuer-nodes/:inodeID/activity
 func getAssetGroupActivity(ctx context.Context, groupID string) (interface{}, error) {
+	if err := issuerAuthz(ctx, groupID); err != nil {
+		return nil, err
+	}
 	prev, limit, err := getPageData(ctx, defActivityPageSize)
 	if err != nil {
 		return nil, err
@@ -109,6 +145,9 @@ func getAssetGroupActivity(ctx context.Context, groupID string) (interface{}, er
 
 // GET /v3/assets/:assetID/activity
 func getAssetActivity(ctx context.Context, assetID string) (interface{}, error) {
+	if err := assetAuthz(ctx, assetID); err != nil {
+		return nil, err
+	}
 	prev, limit, err := getPageData(ctx, defActivityPageSize)
 	if err != nil {
 		return nil, err

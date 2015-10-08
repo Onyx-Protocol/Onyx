@@ -26,6 +26,9 @@ type buildReq struct {
 // POST /v3/assets/:assetID/issue
 func issueAsset(ctx context.Context, assetID string, outs []asset.Output) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
+	if err := assetAuthz(ctx, assetID); err != nil {
+		return nil, err
+	}
 	template, err := asset.Issue(ctx, assetID, outs)
 	if err != nil {
 		return nil, err
@@ -57,8 +60,11 @@ func buildSingle(ctx context.Context, req buildReq) (interface{}, error) {
 }
 
 // POST /v3/transact/build
-func build(ctx context.Context, buildReqs []buildReq) interface{} {
+func build(ctx context.Context, buildReqs []buildReq) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
+	if err := buildAuthz(ctx, buildReqs...); err != nil {
+		return nil, err
+	}
 
 	responses := make([]interface{}, len(buildReqs))
 	var wg sync.WaitGroup
@@ -77,7 +83,7 @@ func build(ctx context.Context, buildReqs []buildReq) interface{} {
 	}
 
 	wg.Wait()
-	return responses
+	return responses, nil
 }
 
 // POST /v3/manager-nodes/transact/finalize

@@ -26,6 +26,7 @@ var (
 	// See chain.com/docs.
 	errorInfoTab = map[error]errorInfo{
 		pg.ErrUserInputNotFound:   errorInfo{404, "CH005", "Not found."},
+		errNoAccessToResource:     errorInfo{404, "CH005", "Not found."},
 		httpjson.ErrBadRequest:    errorInfo{400, "CH007", "Invalid request body"},
 		errBadReqHeader:           errorInfo{400, "CH008", "Invalid request header"},
 		appdb.ErrBadEmail:         errorInfo{400, "CH101", "Invalid email."},
@@ -45,6 +46,7 @@ var (
 		appdb.ErrBadAsset:         errorInfo{400, "CH761", "Invalid asset"},
 		appdb.ErrBadRole:          errorInfo{400, "CH800", "Member role must be \"developer\" or \"admin\"."},
 		appdb.ErrAlreadyMember:    errorInfo{400, "CH801", "User is already a member of the application."},
+		errNotAdmin:               errorInfo{403, "CH781", "Admin privileges are required perform this action"},
 
 		// Error codes imported from papi for convenient reference.
 		// Please delete lines from this block when you add them
@@ -99,7 +101,7 @@ var (
 		// ErrMissingApproval     = errorInfo{404, "CH773", "Requested approval could not be found"}
 		// ErrBadApprovals        = errorInfo{400, "CH774", "Approval request cannot be satisfied"}
 		// ErrMissingPolicy       = errorInfo{404, "CH775", "Requested policy could not be found"}
-		// ErrNoProdAccess        = errorInfo{403, "CH780", "No access to production-level resources"}
+		//
 		// ErrNoTxActivity        = errorInfo{404, "CH790", "Transaction details could not be found."}
 	}
 )

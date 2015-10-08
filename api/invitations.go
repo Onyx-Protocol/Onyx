@@ -9,6 +9,9 @@ import (
 
 // POST /v3/projects/:projID/invitations
 func createInvitation(ctx context.Context, appID string, in struct{ Email, Role string }) (interface{}, error) {
+	if err := projectAdminAuthz(ctx, appID); err != nil {
+		return nil, err
+	}
 	return appdb.CreateInvitation(ctx, appID, in.Email, in.Role)
 }
 
