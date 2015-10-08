@@ -3,6 +3,7 @@ package api
 
 import (
 	"bytes"
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -368,6 +369,52 @@ func transferAssets(ctx context.Context, x transferReq) (interface{}, error) {
 
 	ret := map[string]interface{}{"template": template}
 	return ret, nil
+}
+
+type buildReq struct {
+	PrevTx  *asset.Tx `json:"previous_transaction"`
+	Inputs  []utxodb.Input
+	Outputs []asset.Output
+	ResTime time.Duration `json:"reservation_duration"`
+}
+
+// POST /v3/transact/build
+func build(ctx context.Context, buildReqs []buildReq) interface{} {
+	defer metrics.RecordElapsed(time.Now())
+
+	responses := make([]interface{}, len(buildReqs))
+	var wg sync.WaitGroup
+	wg.Add(len(responses))
+
+	for i := 0; i < len(responses); i++ {
+		go func(i int) {
+			defer wg.Done()
+
+			dbtx, ctx, err := pg.Begin(ctx)
+			if err != nil {
+				responses[i], _ = errInfo(err)
+				return
+			}
+			defer dbtx.Rollback()
+
+			tpl, err := asset.Build(ctx, buildReqs[i].PrevTx, buildReqs[i].Inputs, buildReqs[i].Outputs, buildReqs[i].ResTime)
+			if err != nil {
+				responses[i], _ = errInfo(err)
+				return
+			}
+
+			err = dbtx.Commit()
+			if err != nil {
+				responses[i], _ = errInfo(err)
+				return
+			}
+
+			responses[i] = map[string]interface{}{"template": tpl}
+		}(i)
+	}
+
+	wg.Wait()
+	return responses
 }
 
 // POST /v3/assets/trade
