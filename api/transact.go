@@ -23,11 +23,6 @@ type buildReq struct {
 	ResTime time.Duration `json:"reservation_duration"`
 }
 
-type transferReq struct {
-	Inputs  []utxodb.Input
-	Outputs []asset.Output
-}
-
 // POST /v3/assets/:assetID/issue
 func issueAsset(ctx context.Context, assetID string, outs []asset.Output) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
@@ -40,8 +35,7 @@ func issueAsset(ctx context.Context, assetID string, outs []asset.Output) (inter
 	return ret, nil
 }
 
-// POST /v3/assets/transfer
-func transferAssets(ctx context.Context, x transferReq) (interface{}, error) {
+func buildSingle(ctx context.Context, req buildReq) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
@@ -49,7 +43,7 @@ func transferAssets(ctx context.Context, x transferReq) (interface{}, error) {
 	}
 	defer dbtx.Rollback()
 
-	template, err := asset.Transfer(ctx, x.Inputs, x.Outputs)
+	tpl, err := asset.Build(ctx, req.PrevTx, req.Inputs, req.Outputs, req.ResTime)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +53,7 @@ func transferAssets(ctx context.Context, x transferReq) (interface{}, error) {
 		return nil, err
 	}
 
-	ret := map[string]interface{}{"template": template}
-	return ret, nil
+	return map[string]interface{}{"template": tpl}, nil
 }
 
 // POST /v3/transact/build
@@ -74,59 +67,17 @@ func build(ctx context.Context, buildReqs []buildReq) interface{} {
 	for i := 0; i < len(responses); i++ {
 		go func(i int) {
 			defer wg.Done()
-
-			dbtx, ctx, err := pg.Begin(ctx)
+			resp, err := buildSingle(ctx, buildReqs[i])
 			if err != nil {
 				responses[i], _ = errInfo(err)
-				return
+			} else {
+				responses[i] = resp
 			}
-			defer dbtx.Rollback()
-
-			tpl, err := asset.Build(ctx, buildReqs[i].PrevTx, buildReqs[i].Inputs, buildReqs[i].Outputs, buildReqs[i].ResTime)
-			if err != nil {
-				responses[i], _ = errInfo(err)
-				return
-			}
-
-			err = dbtx.Commit()
-			if err != nil {
-				responses[i], _ = errInfo(err)
-				return
-			}
-
-			responses[i] = map[string]interface{}{"template": tpl}
 		}(i)
 	}
 
 	wg.Wait()
 	return responses
-}
-
-// POST /v3/assets/trade
-func tradeAssets(ctx context.Context, x struct {
-	PreviousTx *asset.Tx `json:"previous_transaction"`
-	Inputs     []utxodb.Input
-	Outputs    []asset.Output
-}) (interface{}, error) {
-	defer metrics.RecordElapsed(time.Now())
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer dbtx.Rollback()
-
-	template, err := asset.Trade(ctx, x.PreviousTx, x.Inputs, x.Outputs)
-	if err != nil {
-		return nil, err
-	}
-
-	err = dbtx.Commit()
-	if err != nil {
-		return nil, err
-	}
-
-	ret := map[string]interface{}{"template": template}
-	return ret, nil
 }
 
 // POST /v3/manager-nodes/transact/finalize
@@ -172,29 +123,6 @@ func cancelReservation(ctx context.Context, x struct {
 
 	asset.CancelReservations(ctx, tx.OutPoints())
 	return nil
-}
-
-// POST /v3/assets/transfer-batch
-func batchTransfer(ctx context.Context, x struct{ Transfers []transferReq }) interface{} {
-	defer metrics.RecordElapsed(time.Now())
-
-	responses := make([]interface{}, len(x.Transfers))
-	var wg sync.WaitGroup
-	wg.Add(len(responses))
-	for i := 0; i < len(responses); i++ {
-		go func(i int) {
-			resp, err := transferAssets(ctx, x.Transfers[i])
-			if err != nil {
-				responses[i], _ = errInfo(err)
-			} else {
-				responses[i] = resp
-			}
-			wg.Done()
-		}(i)
-	}
-
-	wg.Wait()
-	return responses
 }
 
 // POST /v3/wallets/transact/finalize-batch
