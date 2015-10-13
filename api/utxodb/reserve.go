@@ -23,11 +23,10 @@ var (
 
 	// ErrReserved indicates that a reservation could not be
 	// satisfied because some of the outputs were already reserved.
-	// If those reservations are allowed to expire, the same
-	// request will succeed later. Even if those existing
-	// reservations are finalized into a transaction, it is
-	// still possible (but not guaranteed) that new change outputs
-	// will be created in sufficient amounts to satisfy the request.
+	// When those reservations are finalized into a transaction
+	// (and no other transaction spends funds from the bucket),
+	// new change outputs will be created
+	// in sufficient amounts to satisfy the request.
 	ErrReserved = errors.New("reservation found outputs already reserved")
 )
 
@@ -56,6 +55,7 @@ type (
 
 		ResvExpires time.Time
 		heapIndex   int
+		reserved    uint64 // only valid if ResvExpires after now
 
 		Outpoint  bc.Outpoint
 		AddrIndex [2]uint32

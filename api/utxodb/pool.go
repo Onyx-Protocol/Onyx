@@ -65,38 +65,39 @@ func (p *pool) reserve(amount uint64, now, exp time.Time) ([]*UTXO, error) {
 
 	// TODO(kr): handle reserve-by-txid
 
-	var total uint64
-	countingReserved := false
+	var avail, change uint64
 	for len(p.outputs) > 0 {
 		u := heap.Pop(&p.outputs).(*UTXO)
-		total += u.Amount
 		utxos = append(utxos, u)
 		if u.ResvExpires.After(now) {
 			// We cannot satisfy the request now, but we should
 			// still check if there's enough money in the bucket,
 			// counting reserved outputs. This lets us discriminate
 			// between "you don't have enough money" (ErrInsufficient)
-			// vs "you might have enough money, but some of it is
+			// vs "you have enough money, but some of it is
 			// locked up in a reservation and you have to wait
 			// for a new change output before you can spend it"
 			// (ErrReserved).
-			//
-			// If we also kept track of the amount requested,
-			// we could give a more precise answer to "should I
-			// expect the future change to be enough to cover this
-			// request?"
-			countingReserved = true
+			change += u.Amount - u.reserved
+		} else {
+			avail += u.Amount
 		}
-		if total >= amount && countingReserved {
-			return nil, ErrReserved
-		}
-		if total >= amount {
+		if avail >= amount {
 			// Success. Mark the collected utxos
 			// with a reservation expiration time.
 			for _, utxo := range utxos {
 				utxo.ResvExpires = exp
+				if amount < u.Amount {
+					utxo.reserved = amount
+				} else {
+					utxo.reserved = u.Amount
+				}
+				amount -= utxo.reserved
 			}
 			return utxos, nil
+		}
+		if avail+change >= amount {
+			return nil, ErrReserved
 		}
 	}
 	return nil, ErrInsufficient
