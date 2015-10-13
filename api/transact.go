@@ -87,7 +87,7 @@ func build(ctx context.Context, buildReqs []buildReq) (interface{}, error) {
 }
 
 // POST /v3/manager-nodes/transact/finalize
-func walletFinalize(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
+func submitSingle(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	// TODO(kr): validate
 
@@ -131,8 +131,9 @@ func cancelReservation(ctx context.Context, x struct {
 	return nil
 }
 
+// POST /v3/wallets/submit
 // POST /v3/wallets/transact/finalize-batch
-func batchFinalize(ctx context.Context, x struct{ Transactions []*asset.Tx }) interface{} {
+func submit(ctx context.Context, x struct{ Transactions []*asset.Tx }) interface{} {
 	defer metrics.RecordElapsed(time.Now())
 
 	responses := make([]interface{}, len(x.Transactions))
@@ -140,7 +141,7 @@ func batchFinalize(ctx context.Context, x struct{ Transactions []*asset.Tx }) in
 	wg.Add(len(responses))
 	for i := range responses {
 		go func(i int) {
-			resp, err := walletFinalize(ctx, x.Transactions[i])
+			resp, err := submitSingle(ctx, x.Transactions[i])
 			if err != nil {
 				responses[i], _ = errInfo(err)
 			} else {

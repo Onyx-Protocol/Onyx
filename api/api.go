@@ -88,10 +88,9 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/assets/:assetID/activity", getAssetActivity)
 	h.HandleFunc("POST", "/v3/assets/:assetID/issue", issueAsset)
 	h.HandleFunc("POST", "/v3/transact/build", build)
-	h.HandleFunc("POST", "/v3/transact/transfer", buildSingle)
-	h.HandleFunc("POST", "/v3/transact/trade", buildSingle)
-	h.HandleFunc("POST", "/v3/transact/finalize", walletFinalize)
-	h.HandleFunc("POST", "/v3/transact/finalize-batch", batchFinalize)
+	h.HandleFunc("POST", "/v3/transact/submit", submit)
+	h.HandleFunc("POST", "/v3/transact/finalize", submitSingle) // DEPRECATED
+	h.HandleFunc("POST", "/v3/transact/finalize-batch", submit) // DEPRECATED
 	h.HandleFunc("POST", "/v3/transact/cancel-reservation", cancelReservation)
 	h.HandleFunc("GET", "/v3/user", getAuthdUser)
 	h.HandleFunc("POST", "/v3/user/email", updateUserEmail)
