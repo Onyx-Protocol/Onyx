@@ -8,6 +8,7 @@ import (
 
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 )
 
@@ -198,6 +199,52 @@ func TestListBuckets(t *testing.T) {
 		if gotLast != ex.wantLast {
 			t.Errorf("ListBuckets(%v, %v, %d):\ngot last:  %v\nwant last: %v",
 				ex.walletID, ex.prev, ex.limit, gotLast, ex.wantLast)
+		}
+	}
+}
+
+func TestGetBucket(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO applications (id, name) VALUES
+			('app-id-0', 'app-0');
+
+		INSERT INTO wallets (id, application_id, key_index, label) VALUES
+			('wallet-id-0', 'app-id-0', 0, 'wallet-0');
+
+		INSERT INTO buckets (id, wallet_id, key_index, label) VALUES
+			('bucket-id-0', 'wallet-id-0', 0, 'bucket-0')
+	`)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	examples := []struct {
+		id      string
+		want    *Bucket
+		wantErr error
+	}{
+		{
+			"bucket-id-0",
+			&Bucket{ID: "bucket-id-0", Label: "bucket-0", Index: []uint32{0, 0}},
+			nil,
+		},
+		{
+			"nonexistent",
+			nil,
+			pg.ErrUserInputNotFound,
+		},
+	}
+
+	for _, ex := range examples {
+		t.Log("Example:", ex.id)
+
+		got, gotErr := GetBucket(ctx, ex.id)
+
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("bucket:\ngot:  %v\nwant: %v", got, ex.want)
+		}
+
+		if errors.Root(gotErr) != ex.wantErr {
+			t.Errorf("get bucket error:\ngot:  %v\nwant: %v", errors.Root(gotErr), ex.wantErr)
 		}
 	}
 }

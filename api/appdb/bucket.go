@@ -1,6 +1,7 @@
 package appdb
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/lib/pq"
@@ -147,4 +148,23 @@ func ListBuckets(ctx context.Context, walletID string, prev string, limit int) (
 	}
 
 	return buckets, last, err
+}
+
+// GetBucket returns a single bucket.
+func GetBucket(ctx context.Context, bucketID string) (*Bucket, error) {
+	q := `
+		SELECT label, key_index(key_index)
+		FROM buckets
+		WHERE id = $1
+	`
+	b := &Bucket{ID: bucketID}
+	err := pg.FromContext(ctx).QueryRow(q, bucketID).Scan(&b.Label, (*pg.Uint32s)(&b.Index))
+	if err == sql.ErrNoRows {
+		return nil, pg.ErrUserInputNotFound
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "select query")
+	}
+
+	return b, nil
 }

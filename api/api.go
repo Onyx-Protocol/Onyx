@@ -81,6 +81,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/issuer-nodes/:inodeID/assets", listAssets)
 	h.HandleFunc("POST", "/v3/issuer-nodes/:inodeID/assets", createAsset)
 	h.HandleFunc("GET", "/v3/issuer-nodes/:inodeID/activity", getAssetGroupActivity)
+	h.HandleFunc("GET", "/v3/accounts/:accountID", getBucket)
 	h.HandleFunc("GET", "/v3/accounts/:accountID/balance", bucketBalance)
 	h.HandleFunc("GET", "/v3/accounts/:accountID/activity", getBucketActivity)
 	h.HandleFunc("POST", "/v3/accounts/:accountID/addresses", createAddr)

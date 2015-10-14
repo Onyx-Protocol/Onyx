@@ -157,6 +157,14 @@ func createBucket(ctx context.Context, walletID string, in struct{ Label string 
 	return appdb.CreateBucket(ctx, walletID, in.Label)
 }
 
+// GET /v3/accounts/:accountID
+func getBucket(ctx context.Context, bucketID string) (interface{}, error) {
+	if err := accountAuthz(ctx, bucketID); err != nil {
+		return nil, err
+	}
+	return appdb.GetBucket(ctx, bucketID)
+}
+
 // GET /v3/accounts/:accountID/activity
 func getBucketActivity(ctx context.Context, bid string) (interface{}, error) {
 	if err := accountAuthz(ctx, bid); err != nil {
