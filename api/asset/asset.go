@@ -86,7 +86,7 @@ func addAssetIssuanceOutputs(ctx context.Context, tx *wire.MsgTx, asset *appdb.A
 	for i, out := range outs {
 		pkScript, err := out.PkScript(ctx)
 		if err != nil {
-			return errors.WithDetailf(err, "output %d: %v", i, err.Error())
+			return errors.WithDetailf(err, "output %d", i)
 		}
 
 		tx.AddTxOut(wire.NewTxOut(asset.Hash, out.Amount, pkScript))

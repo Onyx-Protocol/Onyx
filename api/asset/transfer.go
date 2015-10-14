@@ -67,7 +67,7 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []Output, ttl time.D
 
 		pkScript, err := out.PkScript(ctx)
 		if err != nil {
-			return nil, errors.WithDetailf(err, "output %d: %v", i, err.Error())
+			return nil, errors.WithDetailf(err, "output %d", i)
 		}
 
 		tx.AddTxOut(wire.NewTxOut(asset, out.Amount, pkScript))
