@@ -5,6 +5,7 @@ import (
 	"expvar"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"time"
 
 	"github.com/kr/env"
