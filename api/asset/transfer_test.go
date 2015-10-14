@@ -37,7 +37,7 @@ func TestTransfer(t *testing.T) {
 			AssetID:  "AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx",
 			Amount:   5,
 		}},
-		[]Output{{
+		[]*Output{{
 			AssetID: "AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx",
 			Address: "3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB",
 			Amount:  5,
@@ -52,16 +52,16 @@ func TestTransfer(t *testing.T) {
 
 func TestValidateOutputs(t *testing.T) {
 	cases := []struct {
-		outs    []Output
+		outs    []*Output
 		wantErr error
 	}{{
-		outs:    []Output{{AssetID: "x", Amount: 5, BucketID: "b1", Address: "a"}},
+		outs:    []*Output{{AssetID: "x", Amount: 5, BucketID: "b1", Address: "a"}},
 		wantErr: ErrBadOutDest,
 	}, {
-		outs:    []Output{{AssetID: "x", Amount: 5}},
+		outs:    []*Output{{AssetID: "x", Amount: 5}},
 		wantErr: ErrBadOutDest,
 	}, {
-		outs:    []Output{{AssetID: "x", Amount: 5, BucketID: "b1"}},
+		outs:    []*Output{{AssetID: "x", Amount: 5, BucketID: "b1"}},
 		wantErr: nil,
 	}}
 
@@ -77,27 +77,27 @@ func TestValidateOutputs(t *testing.T) {
 func TestCheckTransferParity(t *testing.T) {
 	cases := []struct {
 		ins  []utxodb.Input
-		outs []Output
+		outs []*Output
 		want error
 	}{{
 		ins:  []utxodb.Input{{AssetID: "x", Amount: 4}},
-		outs: []Output{},
+		outs: []*Output{},
 		want: ErrBadTx,
 	}, {
 		ins:  []utxodb.Input{},
-		outs: []Output{{AssetID: "x", Amount: 4}},
+		outs: []*Output{{AssetID: "x", Amount: 4}},
 		want: ErrBadTx,
 	}, {
 		ins:  []utxodb.Input{{AssetID: "x", Amount: 4}},
-		outs: []Output{{AssetID: "y", Amount: 4}},
+		outs: []*Output{{AssetID: "y", Amount: 4}},
 		want: ErrBadTx,
 	}, {
 		ins:  []utxodb.Input{{AssetID: "x", Amount: 4}},
-		outs: []Output{{AssetID: "x", Amount: 5}},
+		outs: []*Output{{AssetID: "x", Amount: 5}},
 		want: ErrBadTx,
 	}, {
 		ins:  []utxodb.Input{{AssetID: "x", Amount: 4}},
-		outs: []Output{{AssetID: "x", Amount: 4}},
+		outs: []*Output{{AssetID: "x", Amount: 4}},
 		want: nil,
 	}}
 

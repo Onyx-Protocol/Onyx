@@ -26,7 +26,7 @@ var (
 // Transfer creates a transaction that
 // transfers assets from input buckets
 // to output buckets or addresses.
-func Transfer(ctx context.Context, inputs []utxodb.Input, outputs []Output) (*Tx, error) {
+func Transfer(ctx context.Context, inputs []utxodb.Input, outputs []*Output) (*Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if err := checkTransferParity(inputs, outputs); err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func Transfer(ctx context.Context, inputs []utxodb.Input, outputs []Output) (*Tx
 	return build(ctx, inputs, outputs, time.Minute)
 }
 
-func build(ctx context.Context, inputs []utxodb.Input, outs []Output, ttl time.Duration) (*Tx, error) {
+func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.Duration) (*Tx, error) {
 	if err := validateOutputs(outs); err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []Output, ttl time.D
 	}
 
 	for _, c := range change {
-		outs = append(outs, Output{
+		outs = append(outs, &Output{
 			BucketID: c.Input.BucketID,
 			AssetID:  c.Input.AssetID,
 			Amount:   int64(c.Amount),
@@ -60,12 +60,20 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []Output, ttl time.D
 	}
 
 	for i, out := range outs {
+		// TODO(kr): run this loop body in parallel
+		err := out.InitBucketAddress(ctx)
+		if err != nil {
+			return nil, errors.WithDetailf(err, "output %d", i)
+		}
+	}
+
+	for i, out := range outs {
 		asset, err := wire.NewHash20FromStr(out.AssetID)
 		if err != nil {
 			return nil, errors.WithDetailf(appdb.ErrBadAsset, "asset id: %v", out.AssetID)
 		}
 
-		pkScript, err := out.PkScript(ctx)
+		pkScript, err := out.PKScript(ctx)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "output %d", i)
 		}
@@ -90,7 +98,7 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []Output, ttl time.D
 	return appTx, nil
 }
 
-func validateOutputs(outputs []Output) error {
+func validateOutputs(outputs []*Output) error {
 	for i, out := range outputs {
 		if (out.BucketID == "") == (out.Address == "") {
 			return errors.WithDetailf(ErrBadOutDest, "output index=%d", i)
@@ -99,7 +107,7 @@ func validateOutputs(outputs []Output) error {
 	return nil
 }
 
-func checkTransferParity(ins []utxodb.Input, outs []Output) error {
+func checkTransferParity(ins []utxodb.Input, outs []*Output) error {
 	parity := make(map[string]int64)
 	for _, in := range ins {
 		parity[in.AssetID] += int64(in.Amount)

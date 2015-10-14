@@ -82,7 +82,7 @@ func TestIssue(t *testing.T) {
 	}
 }
 
-func TestOutputPkScript(t *testing.T) {
+func TestOutputPKScript(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
 		INSERT INTO wallets (id, application_id, label, current_rotation)
@@ -99,7 +99,14 @@ func TestOutputPkScript(t *testing.T) {
 		out = &Output{BucketID: "b1"}
 		ctx = pg.NewContext(context.Background(), dbtx)
 	)
-	got, err := out.PkScript(ctx)
+
+	err := out.InitBucketAddress(ctx)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	got, err := out.PKScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -112,7 +119,7 @@ func TestOutputPkScript(t *testing.T) {
 
 	// Test stringified address output
 	out = &Output{Address: "31h9Wq4sVTr2ogZQgcazqgwJtEhM3hFtT2"}
-	got, err = out.PkScript(ctx)
+	got, err = out.PKScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -124,13 +131,13 @@ func TestOutputPkScript(t *testing.T) {
 
 	// Test bad address output error
 	out = &Output{Address: "bad-addr"}
-	_, err = out.PkScript(ctx)
+	_, err = out.PKScript(ctx)
 	if errors.Root(err) != ErrBadAddr {
 		t.Errorf("got pkscript = %x want %x", errors.Root(err), ErrBadAddr)
 	}
 }
 
-func TestPkScriptChangeAddr(t *testing.T) {
+func TestPKScriptChangeAddr(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO applications (id, name) VALUES ('app-id-0', 'app-0');
 		INSERT INTO wallets (id, application_id, label, current_rotation)
@@ -145,7 +152,13 @@ func TestPkScriptChangeAddr(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	out := &Output{BucketID: "b1", isChange: true}
-	_, err := out.PkScript(ctx)
+	err := out.InitBucketAddress(ctx)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	_, err = out.PKScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

@@ -12,7 +12,7 @@ import (
 // Build partners then satisfy and consume inputs and outputs.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, prev *Tx, inputs []utxodb.Input, outputs []Output, ttl time.Duration) (*Tx, error) {
+func Build(ctx context.Context, prev *Tx, inputs []utxodb.Input, outputs []*Output, ttl time.Duration) (*Tx, error) {
 	if ttl < time.Minute {
 		ttl = time.Minute
 	}

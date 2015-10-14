@@ -59,32 +59,52 @@ type Output struct {
 	BucketID string `json:"account_id"`
 	Amount   int64  `json:"amount"`
 	isChange bool
+	pkScript []byte // set by InitBucketAddress or PKScript
 }
 
-// PkScript returns the script for sending to
-// the destination address or bucket id provided.
-func (o *Output) PkScript(ctx context.Context) ([]byte, error) {
-	if o.BucketID != "" {
-		addr := &appdb.Address{
-			BucketID: o.BucketID,
-			IsChange: o.isChange,
-		}
-		err := CreateAddress(ctx, addr)
-		if err != nil {
-			return nil, errors.Wrapf(err, "output create address error bucket=%v", o.BucketID)
-		}
-		return addr.PKScript, nil
+// InitBucketAddress creates, if necessary,
+// a new address for bucket output o.
+// If o is an address output
+// or a bucket output that already has an address,
+// it does nothing.
+func (o *Output) InitBucketAddress(ctx context.Context) error {
+	if o.BucketID == "" {
+		return nil
 	}
-	script, err := txscript.AddrPkScript(o.Address)
+	addr := &appdb.Address{
+		BucketID: o.BucketID,
+		IsChange: o.isChange,
+	}
+	err := CreateAddress(ctx, addr)
 	if err != nil {
-		return nil, errors.Wrapf(ErrBadAddr, "output pkscript error addr=%v", o.Address)
+		return errors.Wrapf(err, "bucket=%v", o.BucketID)
 	}
-	return script, nil
+	o.pkScript = addr.PKScript
+	return nil
+}
+
+// PKScript returns the output script for sending to o.
+func (o *Output) PKScript(ctx context.Context) ([]byte, error) {
+	if o.pkScript == nil {
+		script, err := txscript.AddrPkScript(o.Address)
+		if err != nil {
+			return nil, errors.Wrapf(ErrBadAddr, "output pkscript error addr=%v", o.Address)
+		}
+		o.pkScript = script
+	}
+	return o.pkScript, nil
 }
 
 func addAssetIssuanceOutputs(ctx context.Context, tx *wire.MsgTx, asset *appdb.Asset, outs []Output) error {
 	for i, out := range outs {
-		pkScript, err := out.PkScript(ctx)
+		// TODO(kr): run this loop body in parallel
+		err := out.InitBucketAddress(ctx)
+		if err != nil {
+			return errors.WithDetailf(err, "output %d", i)
+		}
+	}
+	for i, out := range outs {
+		pkScript, err := out.PKScript(ctx)
 		if err != nil {
 			return errors.WithDetailf(err, "output %d", i)
 		}

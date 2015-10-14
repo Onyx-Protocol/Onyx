@@ -203,7 +203,7 @@ func TestBuildAuthz(t *testing.T) {
 			userID: "u2",
 			request: []buildReq{{
 				Inputs:  []utxodb.Input{{BucketID: "b1"}},
-				Outputs: []asset.Output{{BucketID: "b4"}},
+				Outputs: []*asset.Output{{BucketID: "b4"}},
 			}},
 			want: nil,
 		},
@@ -211,7 +211,7 @@ func TestBuildAuthz(t *testing.T) {
 			userID: "u2",
 			request: []buildReq{{
 				Inputs:  []utxodb.Input{{BucketID: "b1"}},
-				Outputs: []asset.Output{{BucketID: "b4"}},
+				Outputs: []*asset.Output{{BucketID: "b4"}},
 			}, {
 				Inputs: []utxodb.Input{{BucketID: "b4"}},
 			}},
@@ -221,7 +221,7 @@ func TestBuildAuthz(t *testing.T) {
 			userID: "u2",
 			request: []buildReq{{
 				Inputs:  []utxodb.Input{{BucketID: "b3"}},
-				Outputs: []asset.Output{{BucketID: "b6"}},
+				Outputs: []*asset.Output{{BucketID: "b6"}},
 			}},
 			want: errNoAccessToResource,
 		},
@@ -229,7 +229,7 @@ func TestBuildAuthz(t *testing.T) {
 			userID: "u2",
 			request: []buildReq{{
 				Inputs:  []utxodb.Input{{BucketID: "b1"}},
-				Outputs: []asset.Output{{BucketID: "b2"}},
+				Outputs: []*asset.Output{{BucketID: "b2"}},
 			}},
 			want: errNoAccessToResource,
 		},

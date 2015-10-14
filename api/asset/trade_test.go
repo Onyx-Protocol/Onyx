@@ -58,7 +58,7 @@ func TestTrade(t *testing.T) {
 		AssetID:  "AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo",
 		Amount:   2,
 	}}
-	outputs := []Output{{
+	outputs := []*Output{{
 		Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK",
 		AssetID: "AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx",
 		Amount:  5,

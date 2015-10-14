@@ -19,7 +19,7 @@ import (
 type buildReq struct {
 	PrevTx  *asset.Tx `json:"previous_transaction"`
 	Inputs  []utxodb.Input
-	Outputs []asset.Output
+	Outputs []*asset.Output
 	ResTime time.Duration `json:"reservation_duration"`
 }
 
