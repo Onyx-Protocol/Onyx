@@ -2,7 +2,6 @@ package appdb
 
 import (
 	"database/sql"
-	"sort"
 	"sync"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/metrics"
-	"chain/strings"
 )
 
 // Address represents a blockchain address that is
@@ -57,6 +55,55 @@ var (
 	addrMu        sync.Mutex
 )
 
+// AddrInfo looks up the information common to
+// every address in the given bucket.
+// Sets the following fields:
+//   WalletID
+//   WalletIndex
+//   BucketIndex
+//   Keys
+//   SigsRequired
+func AddrInfo(ctx context.Context, bucketID string) (*Address, error) {
+	addrMu.Lock()
+	ai, ok := addrInfo[bucketID]
+	addrMu.Unlock()
+	if !ok {
+		// Concurrent cache misses might be doing
+		// duplicate loads here, but ok.
+		ai = new(Address)
+		var xpubs []string
+		const q = `
+		SELECT
+			w.id, key_index(b.key_index), key_index(w.key_index),
+			r.keyset, w.sigs_required
+		FROM accounts b
+		LEFT JOIN manager_nodes w ON w.id=b.manager_node_id
+		LEFT JOIN rotations r ON r.id=w.current_rotation
+		WHERE b.id=$1
+	`
+		err := pg.FromContext(ctx).QueryRow(q, bucketID).Scan(
+			&ai.WalletID,
+			(*pg.Uint32s)(&ai.BucketIndex),
+			(*pg.Uint32s)(&ai.WalletIndex),
+			(*pg.Strings)(&xpubs),
+			&ai.SigsRequired,
+		)
+		if err != nil {
+			return nil, errors.WithDetailf(err, "bucket %s", bucketID)
+		}
+
+		ai.Keys, err = stringsToKeys(xpubs)
+		if err != nil {
+			return nil, errors.Wrap(err, "parsing keys")
+		}
+
+		addrMu.Lock()
+		addrInfo[bucketID] = ai
+		addrMu.Unlock()
+	}
+	return ai, nil
+}
+
 func nextIndex(ctx context.Context) ([]uint32, error) {
 	defer metrics.RecordElapsed(time.Now())
 	addrMu.Lock()
@@ -94,48 +141,14 @@ func keyIndex(n int64) []uint32 {
 func (a *Address) LoadNextIndex(ctx context.Context) error {
 	defer metrics.RecordElapsed(time.Now())
 
-	addrMu.Lock()
-	ai, ok := addrInfo[a.BucketID]
-	addrMu.Unlock()
-	if !ok {
-		// Concurrent cache misses might be doing
-		// duplicate loads here, but ok.
-		ai = new(Address)
-		var xpubs []string
-		const q = `
-		SELECT
-			mn.id, key_index(acc.key_index), key_index(mn.key_index),
-			r.keyset, mn.sigs_required
-		FROM accounts acc
-		LEFT JOIN manager_nodes mn ON mn.id=acc.manager_node_id
-		LEFT JOIN rotations r ON r.id=mn.current_rotation
-		WHERE acc.id=$1
-	`
-		err := pg.FromContext(ctx).QueryRow(q, a.BucketID).Scan(
-			&ai.WalletID,
-			(*pg.Uint32s)(&ai.BucketIndex),
-			(*pg.Uint32s)(&ai.WalletIndex),
-			(*pg.Strings)(&xpubs),
-			&ai.SigsRequired,
-		)
-		if err == sql.ErrNoRows {
-			err = pg.ErrUserInputNotFound
-		}
-		if err != nil {
-			return errors.WithDetailf(err, "bucket %s", a.BucketID)
-		}
-
-		ai.Keys, err = stringsToKeys(xpubs)
-		if err != nil {
-			return errors.Wrap(err, "parsing keys")
-		}
-
-		addrMu.Lock()
-		addrInfo[a.BucketID] = ai
-		addrMu.Unlock()
+	ai, err := AddrInfo(ctx, a.BucketID)
+	if errors.Root(err) == sql.ErrNoRows {
+		err = errors.Wrap(pg.ErrUserInputNotFound, err.Error())
+	}
+	if err != nil {
+		return err
 	}
 
-	var err error
 	a.Index, err = nextIndex(ctx)
 	if err != nil {
 		return errors.Wrap(err, "nextIndex")
@@ -178,57 +191,14 @@ func (a *Address) Insert(ctx context.Context) error {
 	return row.Scan(&a.ID, &a.Created)
 }
 
-// AddressesByID loads an array of addresses
-// from the database using their IDs.
-func AddressesByID(ctx context.Context, ids []string) ([]*Address, error) {
-	defer metrics.RecordElapsed(time.Now())
-	sort.Strings(ids)
-	ids = strings.Uniq(ids)
-
-	const q = `
-		SELECT addr.id, mn.id, mn.sigs_required, addr.redeem_script,
-			key_index(mn.key_index), key_index(acc.key_index), key_index(addr.key_index),
-			addr.keyset
-		FROM addresses addr
-		JOIN accounts acc ON acc.id=addr.account_id
-		JOIN manager_nodes mn ON mn.id=addr.manager_node_id
-		WHERE addr.id=ANY($1)
-	`
-
-	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(ids))
+func DeriveAddress(ctx context.Context, bucketID string, addrIndex []uint32) (string, error) {
+	addrInfo, err := AddrInfo(ctx, bucketID)
 	if err != nil {
-		return nil, errors.Wrap(err, "select")
+		return "", errors.Wrap(err, "get addr info")
 	}
-	defer rows.Close()
-
-	var addrs []*Address
-	for rows.Next() {
-		var (
-			a     Address
-			xpubs []string
-		)
-		err = rows.Scan(
-			&a.ID, &a.WalletID, &a.SigsRequired, &a.RedeemScript,
-			(*pg.Uint32s)(&a.WalletIndex), (*pg.Uint32s)(&a.BucketIndex), (*pg.Uint32s)(&a.Index),
-			(*pg.Strings)(&xpubs),
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
-		}
-		a.Keys, err = stringsToKeys(xpubs)
-		if err != nil {
-			return nil, errors.Wrap(err, "parsing keys")
-		}
-
-		addrs = append(addrs, &a)
+	addr, _, err := hdkey.Address(addrInfo.Keys, ReceiverPath(addrInfo, addrIndex), addrInfo.SigsRequired)
+	if err != nil {
+		return "", errors.Wrap(err, "compute address")
 	}
-	if err = rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "end row scan loop")
-	}
-
-	if len(addrs) < len(ids) {
-		return nil, errors.Wrapf(errors.New("missing address"), "from set %v", ids)
-	}
-
-	return addrs, nil
+	return addr.String(), nil
 }

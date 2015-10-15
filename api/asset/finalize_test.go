@@ -40,12 +40,12 @@ func TestFinalizeTx(t *testing.T) {
 				DER:            mustDecodeHex("3044022004da5732f6c988b9e2882f5ca4f569b9525d313940e0372d6a84fef73be78f8f02204656916481dc573d771ec42923a8f5af31ae634241a4cb30ea5b359363cf064d"),
 			}},
 		}},
+		OutRecvs: []*utxodb.Receiver{nil}, // pays to external party
 	}
 
 	tx, err := FinalizeTx(ctx, tpl)
 	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		t.Fatal(withStack(err))
 	}
 
 	want := "2b7c01a96523a1368cc25d179a15b460cf1f959c09b41a69ad1562652bab97ee"
@@ -154,4 +154,12 @@ func TestIssued(t *testing.T) {
 	if gotAmt != 5 {
 		t.Errorf("got amt = %d want %d", gotAmt, 5)
 	}
+}
+
+func withStack(err error) string {
+	s := err.Error()
+	for _, frame := range errors.Stack(err) {
+		s += "\n" + frame.String()
+	}
+	return s
 }

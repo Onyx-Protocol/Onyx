@@ -31,6 +31,8 @@ func FinalizeTx(ctx context.Context, tx *Tx) (*wire.MsgTx, error) {
 
 	if len(tx.Inputs) > len(msg.TxIn) {
 		return nil, errors.WithDetail(ErrBadTx, "too many inputs in template")
+	} else if len(msg.TxOut) != len(tx.OutRecvs) {
+		return nil, errors.Wrapf(ErrBadTx, "tx has %d outputs but output receivers list has %d", len(msg.TxOut), len(tx.OutRecvs))
 	}
 
 	// TODO(erykwalder): make sure n signatures are valid
@@ -45,7 +47,7 @@ func FinalizeTx(ctx context.Context, tx *Tx) (*wire.MsgTx, error) {
 				return nil, errors.WithDetailf(ErrBadTx, "invalid xpub for input %d signature %d", i, j)
 			}
 
-			addr := addrPubKey(key, sig.DerivationPath)
+			addr := hdkey.DeriveAPK(key, sig.DerivationPath)
 			err = checkSig(addr.PubKey(), input.SignatureData, sig.DER)
 
 			if err != nil {
@@ -57,7 +59,7 @@ func FinalizeTx(ctx context.Context, tx *Tx) (*wire.MsgTx, error) {
 		msg.TxIn[i].SignatureScript = append(msg.TxIn[i].SignatureScript, input.RedeemScript...)
 	}
 
-	err = utxoDB.Apply(ctx, msg)
+	err = utxoDB.Apply(ctx, msg, tx.OutRecvs)
 	if err != nil {
 		return nil, errors.Wrap(err, "storing txn")
 	}

@@ -90,5 +90,5 @@ func newKey() (pub, priv *hdkey.XKey, err error) {
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting root xpub")
 	}
-	return &hdkey.XKey{*xpub}, &hdkey.XKey{*xprv}, nil
+	return &hdkey.XKey{ExtendedKey: *xpub}, &hdkey.XKey{ExtendedKey: *xprv}, nil
 }

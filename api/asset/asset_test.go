@@ -99,14 +99,7 @@ func TestOutputPKScript(t *testing.T) {
 		out = &Output{BucketID: "b1"}
 		ctx = pg.NewContext(context.Background(), dbtx)
 	)
-
-	err := out.InitBucketAddress(ctx)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	got, err := out.PKScript(ctx)
+	got, _, err := out.PKScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -119,7 +112,7 @@ func TestOutputPKScript(t *testing.T) {
 
 	// Test stringified address output
 	out = &Output{Address: "31h9Wq4sVTr2ogZQgcazqgwJtEhM3hFtT2"}
-	got, err = out.PKScript(ctx)
+	got, _, err = out.PKScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -131,7 +124,7 @@ func TestOutputPKScript(t *testing.T) {
 
 	// Test bad address output error
 	out = &Output{Address: "bad-addr"}
-	_, err = out.PKScript(ctx)
+	_, _, err = out.PKScript(ctx)
 	if errors.Root(err) != ErrBadAddr {
 		t.Errorf("got pkscript = %x want %x", errors.Root(err), ErrBadAddr)
 	}
@@ -152,27 +145,13 @@ func TestPKScriptChangeAddr(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	out := &Output{BucketID: "b1", isChange: true}
-	err := out.InitBucketAddress(ctx)
+	_, recv, err := out.PKScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	_, err = out.PKScript(ctx)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	var isChange bool
-	const q = `SELECT is_change FROM addresses WHERE account_id='b1'`
-	err = pg.FromContext(ctx).QueryRow(q).Scan(&isChange)
-	if err != nil {
-		t.Fatalf("unexpected err %v", err)
-	}
-
-	if !isChange {
+	if !recv.IsChange {
 		t.Fatal("Expected change output")
 	}
-
 }

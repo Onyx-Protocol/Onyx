@@ -9,6 +9,7 @@ import (
 	"chain/api/appdb"
 	"chain/api/utxodb"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain-sandbox/wire"
 	"chain/metrics"
 )
@@ -59,26 +60,20 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.
 		tx.AddTxIn(wire.NewTxIn(&utxo.Outpoint, []byte{}))
 	}
 
-	for i, out := range outs {
-		// TODO(kr): run this loop body in parallel
-		err := out.InitBucketAddress(ctx)
-		if err != nil {
-			return nil, errors.WithDetailf(err, "output %d", i)
-		}
-	}
-
+	var outRecvs []*utxodb.Receiver
 	for i, out := range outs {
 		asset, err := wire.NewHash20FromStr(out.AssetID)
 		if err != nil {
 			return nil, errors.WithDetailf(appdb.ErrBadAsset, "asset id: %v", out.AssetID)
 		}
 
-		pkScript, err := out.PKScript(ctx)
+		pkScript, receiver, err := out.PKScript(ctx)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "output %d", i)
 		}
 
 		tx.AddTxOut(wire.NewTxOut(asset, out.Amount, pkScript))
+		outRecvs = append(outRecvs, receiver)
 	}
 
 	var buf bytes.Buffer
@@ -93,6 +88,7 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.
 		Unsigned:   buf.Bytes(),
 		BlockChain: "sandbox",
 		Inputs:     txInputs,
+		OutRecvs:   outRecvs,
 	}
 
 	return appTx, nil
@@ -130,43 +126,41 @@ func checkTransferParity(ins []utxodb.Input, outs []*Output) error {
 // data needed to generate them
 func makeTransferInputs(ctx context.Context, tx *wire.MsgTx, utxos []*utxodb.UTXO) ([]*Input, error) {
 	defer metrics.RecordElapsed(time.Now())
-	var addrIDs []string
-	for _, utxo := range utxos {
-		addrIDs = append(addrIDs, utxo.AddressID)
-	}
-
-	addrs, err := appdb.AddressesByID(ctx, addrIDs)
-	if err != nil {
-		return nil, errors.Wrapf(err, "for addresses=%+v", addrIDs)
-	}
-
-	addrMap := make(map[string]*appdb.Address)
-	for _, a := range addrs {
-		addrMap[a.ID] = a
-	}
-
 	var inputs []*Input
 	for _, utxo := range utxos {
-		addr, ok := addrMap[utxo.AddressID]
-		if !ok {
-			return nil, errors.New("missing address")
+		input, err := addressInput(ctx, utxo, tx)
+		if err != nil {
+			return nil, errors.Wrap(err, "compute input")
 		}
-		inputs = append(inputs, addressInput(addr, tx))
+		inputs = append(inputs, input)
 	}
-
 	return inputs, nil
 }
 
-func addressInput(a *appdb.Address, tx *wire.MsgTx) *Input {
+func addressInput(ctx context.Context, u *utxodb.UTXO, tx *wire.MsgTx) (*Input, error) {
 	var buf bytes.Buffer
 	tx.Serialize(&buf)
 
-	return &Input{
-		WalletID:      a.WalletID,
-		RedeemScript:  a.RedeemScript,
-		SignatureData: wire.DoubleSha256(buf.Bytes()),
-		Sigs:          inputSigs(Signers(a.Keys, ReceiverPath(a))),
+	addrInfo, err := appdb.AddrInfo(ctx, u.BucketID)
+	if err != nil {
+		return nil, errors.Wrap(err, "get addr info")
 	}
+
+	// TODO(kr): for key rotation, pull keys out of utxo
+	// instead of the bucket (addrInfo).
+	signers := hdkey.Derive(addrInfo.Keys, appdb.ReceiverPath(addrInfo, u.AddrIndex[:]))
+	redeemScript, err := hdkey.RedeemScript(signers, addrInfo.SigsRequired)
+	if err != nil {
+		return nil, errors.Wrap(err, "compute redeem script")
+	}
+
+	in := &Input{
+		WalletID:      addrInfo.WalletID,
+		RedeemScript:  redeemScript,
+		SignatureData: wire.DoubleSha256(buf.Bytes()),
+		Sigs:          inputSigs(signers),
+	}
+	return in, nil
 }
 
 // CancelReservations cancels any existing reservations

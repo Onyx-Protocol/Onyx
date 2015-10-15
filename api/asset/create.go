@@ -9,6 +9,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 	chaintxscript "chain/fedchain-sandbox/txscript"
 	"chain/metrics"
 )
@@ -29,7 +30,7 @@ func Create(ctx context.Context, agID, label string) (*appdb.Asset, error) {
 	asset.Label = label
 
 	var pubkeys []*btcutil.AddressPubKey
-	for _, key := range Signers(asset.Keys, IssuancePath(asset)) {
+	for _, key := range hdkey.Derive(asset.Keys, appdb.IssuancePath(asset)) {
 		pubkeys = append(pubkeys, key.Address)
 	}
 

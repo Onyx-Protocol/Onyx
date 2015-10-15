@@ -1,13 +1,17 @@
 package asset
 
-import "chain/encoding/json"
+import (
+	"chain/api/utxodb"
+	"chain/encoding/json"
+)
 
 // Tx represents a partially- or fully-signed transaction
 // belonging to a Chain project.
 type Tx struct {
-	Unsigned   json.HexBytes `json:"unsigned_hex"`
-	BlockChain string        `json:"block_chain"`
-	Inputs     []*Input      `json:"inputs"`
+	Unsigned   json.HexBytes      `json:"unsigned_hex"`
+	BlockChain string             `json:"block_chain"`
+	Inputs     []*Input           `json:"inputs"`
+	OutRecvs   []*utxodb.Receiver `json:"output_receivers"`
 }
 
 // Input is an input for an project Tx.

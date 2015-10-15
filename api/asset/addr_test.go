@@ -41,7 +41,7 @@ func TestCreateAddress(t *testing.T) {
 		IsChange: false,
 	}
 
-	err = CreateAddress(ctx, addr)
+	err = CreateAddress(ctx, addr, true)
 	if err != nil {
 		t.Fatal(err)
 	}

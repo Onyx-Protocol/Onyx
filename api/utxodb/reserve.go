@@ -47,16 +47,25 @@ type (
 	// TODO(kr): try interning strings in UTXO
 
 	UTXO struct {
+		// Size of this struct matters.
+		// We keep lots of them in memory.
+
 		BucketID string
 		AssetID  string
 		Amount   uint64
 
 		ResvExpires time.Time
+		heapIndex   int
 
-		AddressID string
 		Outpoint  wire.OutPoint
+		AddrIndex [2]uint32
+	}
 
-		heapIndex int
+	Receiver struct {
+		WalletID  string   `json:"manager_node_id"`
+		BucketID  string   `json:"account_id"`
+		AddrIndex []uint32 `json:"address_index"`
+		IsChange  bool     `json:"is_change"`
 	}
 
 	// Change represents reserved units beyond what was asked for.
@@ -86,7 +95,7 @@ type (
 		// ApplyTx applies the Tx to the database,
 		// deleteing spent outputs and inserting new UTXOs.
 		// It returns the deleted and inserted outputs.
-		ApplyTx(context.Context, *wire.MsgTx) (deleted, inserted []*UTXO, err error)
+		ApplyTx(context.Context, *wire.MsgTx, []*Receiver) (deleted, inserted []*UTXO, err error)
 	}
 )
 
@@ -165,9 +174,9 @@ func (rs *Reserver) Cancel(ctx context.Context, outpoints []wire.OutPoint) {
 	rs.unreserve(utxos)
 }
 
-func (rs *Reserver) Apply(ctx context.Context, tx *wire.MsgTx) error {
+func (rs *Reserver) Apply(ctx context.Context, tx *wire.MsgTx, outRecs []*Receiver) error {
 	defer metrics.RecordElapsed(time.Now())
-	deleted, inserted, err := rs.db.ApplyTx(ctx, tx)
+	deleted, inserted, err := rs.db.ApplyTx(ctx, tx, outRecs)
 	if err != nil {
 		return err
 	}

@@ -8,6 +8,7 @@ import (
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/database/pg"
+	"chain/fedchain-sandbox/hdkey"
 	"chain/metrics"
 	"chain/net/http/httpjson"
 )
@@ -196,6 +197,14 @@ func bucketBalance(ctx context.Context, bucketID string) (interface{}, error) {
 	return ret, nil
 }
 
+// PUT /v3/accounts/:accountID
+func updateAccount(ctx context.Context, accountID string, in struct{ Label *string }) error {
+	if err := accountAuthz(ctx, accountID); err != nil {
+		return err
+	}
+	return appdb.UpdateAccount(ctx, accountID, in.Label)
+}
+
 // /v3/accounts/:accountID/addresses
 func createAddr(ctx context.Context, bucketID string, in struct {
 	Amount  uint64
@@ -210,12 +219,12 @@ func createAddr(ctx context.Context, bucketID string, in struct {
 		Expires:  in.Expires,
 		IsChange: false,
 	}
-	err := asset.CreateAddress(ctx, addr)
+	err := asset.CreateAddress(ctx, addr, true)
 	if err != nil {
 		return nil, err
 	}
 
-	signers := asset.Signers(addr.Keys, asset.ReceiverPath(addr))
+	signers := hdkey.Derive(addr.Keys, appdb.ReceiverPath(addr, addr.Index))
 	ret := map[string]interface{}{
 		"address":             addr.Address,
 		"signatures_required": addr.SigsRequired,
@@ -229,15 +238,7 @@ func createAddr(ctx context.Context, bucketID string, in struct {
 	return ret, nil
 }
 
-// PUT /v3/accounts/:accountID
-func updateAccount(ctx context.Context, accountID string, in struct{ Label *string }) error {
-	if err := accountAuthz(ctx, accountID); err != nil {
-		return err
-	}
-	return appdb.UpdateAccount(ctx, accountID, in.Label)
-}
-
-func addrSigners(signers []*asset.DerivedKey) (v []interface{}) {
+func addrSigners(signers []*hdkey.Key) (v []interface{}) {
 	for _, s := range signers {
 		v = append(v, map[string]interface{}{
 			"pubkey":          s.Address.String(),

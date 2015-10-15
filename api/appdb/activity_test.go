@@ -1,6 +1,7 @@
 package appdb
 
 import (
+	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"encoding/json"
@@ -14,6 +15,17 @@ import (
 	"chain/fedchain-sandbox/wire"
 )
 
+// Addresses formerly in fixture.
+// These will now be sent to and echoed from the client,
+// no longer stored in the db.
+//   (id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script, is_change)
+//   ('addr-id-0', 'wallet-id-0', 'bucket-id-0', '{}', 0, 'addr-0', '{}', '{}', false),
+//   ('addr-id-1', 'wallet-id-0', 'bucket-id-0', '{}', 1, 'addr-1', '{}', '{}', true),
+//   ('addr-id-2', 'wallet-id-0', 'bucket-id-1', '{}', 0, 'addr-2', '{}', '{}', false),
+//   ('addr-id-3', 'wallet-id-0', 'bucket-id-1', '{}', 1, 'addr-3', '{}', '{}', true),
+//   ('addr-id-4', 'wallet-id-1', 'bucket-id-2', '{}', 0, 'addr-4', '{}', '{}', false),
+//   ('addr-id-5', 'wallet-id-1', 'bucket-id-2', '{}', 1, 'addr-5', '{}', '{}', true);
+
 const writeActivityFix = `
 	INSERT INTO projects
 		(id, name)
@@ -21,10 +33,10 @@ const writeActivityFix = `
 		('proj-id-0', 'proj-0');
 
 	INSERT INTO manager_nodes
-		(id, project_id, key_index, label)
+		(id, project_id, key_index, label, current_rotation, sigs_required)
 	VALUES
-		('wallet-id-0', 'proj-id-0', 0, 'wallet-0'),
-		('wallet-id-1', 'proj-id-0', 0, 'wallet-1');
+		('wallet-id-0', 'proj-id-0', 0, 'wallet-0', 'rot-id-0', 1),
+		('wallet-id-1', 'proj-id-0', 0, 'wallet-1', 'rot-id-1', 1);
 
 	INSERT INTO accounts
 		(id, manager_node_id, key_index, label)
@@ -32,16 +44,6 @@ const writeActivityFix = `
 		('bucket-id-0', 'wallet-id-0', 0, 'bucket-0'),
 		('bucket-id-1', 'wallet-id-0', 1, 'bucket-1'),
 		('bucket-id-2', 'wallet-id-1', 0, 'bucket-2');
-
-	INSERT INTO addresses
-		(id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script, is_change)
-	VALUES
-		('addr-id-0', 'wallet-id-0', 'bucket-id-0', '{}', 0, 'addr-0', '{}', '{}', false),
-		('addr-id-1', 'wallet-id-0', 'bucket-id-0', '{}', 1, 'addr-1', '{}', '{}', true),
-		('addr-id-2', 'wallet-id-0', 'bucket-id-1', '{}', 0, 'addr-2', '{}', '{}', false),
-		('addr-id-3', 'wallet-id-0', 'bucket-id-1', '{}', 1, 'addr-3', '{}', '{}', true),
-		('addr-id-4', 'wallet-id-1', 'bucket-id-2', '{}', 0, 'addr-4', '{}', '{}', false),
-		('addr-id-5', 'wallet-id-1', 'bucket-id-2', '{}', 1, 'addr-5', '{}', '{}', true);
 
 	INSERT INTO issuer_nodes
 		(id, project_id, key_index, label, keyset)
@@ -55,6 +57,12 @@ const writeActivityFix = `
 		('asset-id-0', 'ag-id-0', 0, '{}', 'asset-0'),
 		('asset-id-1', 'ag-id-0', 1, '{}', 'asset-1'),
 		('asset-id-2', 'ag-id-1', 0, '{}', 'asset-2');
+
+	INSERT INTO rotations
+		(id, manager_node_id, keyset)
+	VALUES
+		('rot-id-0', 'wallet-id-0', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}'),
+		('rot-id-1', 'wallet-id-1', '{xpub661MyMwAqRbcGiDB8FQvHnDAZyaGUyzm3qN1Q3NDJz1PgAWCfyi9WRCS7Z9HyM5QNEh45fMyoaBMqjfoWPdnktcN8chJYB57D2Y7QtNmadr}');
 `
 
 const sampleActivityFixture = `
@@ -331,6 +339,7 @@ func TestWriteActivity(t *testing.T) {
 
 	examples := []struct {
 		tx                   *wire.MsgTx
+		outs                 []*UTXO
 		fixture              string
 		wantWalletActivity   map[string]actItem
 		wantBuckets          []string
@@ -341,20 +350,35 @@ func TestWriteActivity(t *testing.T) {
 		{
 			tx: &wire.MsgTx{
 				// Issuances have a single prevout with an empty tx hash.
-				TxIn: []*wire.TxIn{{
-					PreviousOutPoint: wire.OutPoint{Hash: wire.Hash32{}},
-				}},
-				// The content of the outs is irrelevant for the test. Issuances
-				// require at least one output.
-				TxOut: []*wire.TxOut{{AssetID: wire.Hash20{}}},
+				TxIn: []*wire.TxIn{{}},
+				// The content of the outs is irrelevant for the test.
+				// Issuances require at least one output.
+				TxOut: []*wire.TxOut{{}},
 			},
-			fixture: `
-				INSERT INTO utxos
-					(txid, index, asset_id, amount, address_id, account_id, manager_node_id)
-				VALUES
-					('0282a32a77d3358b28f06134cba121e5c54b205fe9935bfbb06076169a4e89db', 0, 'asset-id-0', 1, 'addr-id-0', 'bucket-id-0', 'wallet-id-0'),
-					('0282a32a77d3358b28f06134cba121e5c54b205fe9935bfbb06076169a4e89db', 1, 'asset-id-0', 2, 'addr-id-4', 'bucket-id-2', 'wallet-id-1');
-			`,
+			outs: []*UTXO{
+				{
+					UTXO: &utxodb.UTXO{
+						BucketID: "bucket-id-0",
+						AssetID:  "asset-id-0",
+						Amount:   1,
+						Outpoint: wire.OutPoint{Hash: mustHash32FromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
+					},
+					Addr:     "addr-0",
+					WalletID: "wallet-id-0",
+					IsChange: false,
+				},
+				{
+					UTXO: &utxodb.UTXO{
+						BucketID: "bucket-id-2",
+						AssetID:  "asset-id-0",
+						Amount:   2,
+						Outpoint: wire.OutPoint{Hash: mustHash32FromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
+					},
+					Addr:     "addr-4",
+					WalletID: "wallet-id-1",
+					IsChange: false,
+				},
+			},
 			wantWalletActivity: map[string]actItem{
 				"wallet-id-0": actItem{
 					TxHash: "0282a32a77d3358b28f06134cba121e5c54b205fe9935bfbb06076169a4e89db",
@@ -396,15 +420,37 @@ func TestWriteActivity(t *testing.T) {
 				TxIn: []*wire.TxIn{{
 					PreviousOutPoint: wire.OutPoint{Hash: mustHash32FromStr("4786c29077265138e00a8fce822c5fb998c0ce99df53d939bb53d81bca5aa426"), Index: 0},
 				}},
-				// Outputs can be nil, since they are retrieved from the database via txid
+			},
+			outs: []*UTXO{
+				{
+					UTXO: &utxodb.UTXO{
+						BucketID: "bucket-id-2",
+						AssetID:  "asset-id-0",
+						Amount:   1,
+						Outpoint: wire.OutPoint{Hash: mustHash32FromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
+					},
+					Addr:     "addr-4",
+					WalletID: "wallet-id-1",
+					IsChange: false,
+				},
+
+				{
+					UTXO: &utxodb.UTXO{
+						BucketID: "bucket-id-0",
+						AssetID:  "asset-id-0",
+						Amount:   2,
+						Outpoint: wire.OutPoint{Hash: mustHash32FromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 1},
+					},
+					Addr:     "addr-1",
+					WalletID: "wallet-id-0",
+					IsChange: true,
+				},
 			},
 			fixture: `
 				INSERT INTO utxos
-					(txid, index, asset_id, amount, address_id, account_id, manager_node_id)
+					(txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
 				VALUES
-					('4786c29077265138e00a8fce822c5fb998c0ce99df53d939bb53d81bca5aa426', 0, 'asset-id-0', 3, 'addr-id-0', 'bucket-id-0', 'wallet-id-0'),
-					('db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12', 0, 'asset-id-0', 1, 'addr-id-4', 'bucket-id-2', 'wallet-id-1'),
-					('db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12', 1, 'asset-id-0', 2, 'addr-id-1', 'bucket-id-0', 'wallet-id-0');
+					('4786c29077265138e00a8fce822c5fb998c0ce99df53d939bb53d81bca5aa426', 0, 'asset-id-0', 3, 0, 'bucket-id-0', 'wallet-id-0');
 			`,
 			wantWalletActivity: map[string]actItem{
 				"wallet-id-0": actItem{
@@ -421,7 +467,7 @@ func TestWriteActivity(t *testing.T) {
 					TxHash: "db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12",
 					Time:   txTime,
 					Inputs: []actEntry{
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: "addr-0"},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK"},
 					},
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, BucketID: "bucket-id-2", BucketLabel: "bucket-2"},
@@ -444,9 +490,9 @@ func TestWriteActivity(t *testing.T) {
 			ctx := pg.NewContext(context.Background(), dbtx)
 			defer dbtx.Rollback()
 
-			err := WriteActivity(ctx, ex.tx, txTime)
+			err := WriteActivity(ctx, ex.tx, ex.outs, txTime)
 			if err != nil {
-				t.Fatal("unexpected error", err)
+				t.Fatal("unexpected error:", withStack(err))
 			}
 
 			gotWalletActivity, err := getTestActivity(ctx, txHash, false)
@@ -455,7 +501,7 @@ func TestWriteActivity(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(gotWalletActivity, ex.wantWalletActivity) {
-				t.Errorf("wallet activity:\ngot:  %v\nwant: %v", gotWalletActivity, ex.wantWalletActivity)
+				t.Errorf("wallet activity:\ngot:  %+v\nwant: %+v", gotWalletActivity, ex.wantWalletActivity)
 			}
 
 			gotBuckets, err := getTestActivityBuckets(ctx, txHash)
@@ -489,13 +535,13 @@ func TestWriteActivity(t *testing.T) {
 }
 
 func TestGetActUTXOs(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	dbtx := pgtest.TxWithSQL(t, writeActivityFix, `
 		INSERT INTO utxos
-			(txid, index, asset_id, amount, address_id, account_id, manager_node_id)
+			(txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
 		VALUES
-			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 0, 'a0', 100, 'addr0', 'b0', 'w0'),
-			('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 1, 'a0', 50, 'addr1', 'b1', 'w0'),
-			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 1, 'a1', 25, 'addr2', 'b2', 'w1');
+			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 0, 'asset-id-0', 100, 0, 'bucket-id-0', 'wallet-id-0'),
+			('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 1, 'asset-id-0', 50, 1, 'bucket-id-1', 'wallet-id-0'),
+			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 1, 'asset-id-1', 25, 0, 'bucket-id-2', 'wallet-id-1');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
@@ -515,75 +561,43 @@ func TestGetActUTXOs(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	want := []*actUTXO{
-		{assetID: "a0", amount: 100, addrID: "addr0", bucketID: "b0", walletID: "w0"},
-		{assetID: "a0", amount: 50, addrID: "addr1", bucketID: "b1", walletID: "w0"},
+	want := []*UTXO{
+		{
+			UTXO:     &utxodb.UTXO{BucketID: "bucket-id-0", AssetID: "asset-id-0", Amount: 100},
+			Addr:     "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK",
+			WalletID: "wallet-id-0",
+		},
+		{
+			UTXO:     &utxodb.UTXO{BucketID: "bucket-id-1", AssetID: "asset-id-0", Amount: 50},
+			Addr:     "34C2bE5U2vXG7Vbu8ZVDcQD5LZrV2nzxx5",
+			WalletID: "wallet-id-0",
+		},
 	}
 
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("utxos:\ngot:  %v\nwant: %v", got, want)
-	}
-}
-
-func TestGetActTxUTXOsByTx(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO utxos
-			(txid, index, asset_id, amount, address_id, account_id, manager_node_id)
-		VALUES
-			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 0, 'a0', 100, 'addr0', 'b0', 'w0'),
-			('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 1, 'a0', 50, 'addr1', 'b1', 'w0'),
-			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 1, 'a1', 25, 'addr2', 'b2', 'w1');
-	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
-
-	examples := []struct {
-		txHash string
-		want   []*actUTXO
-	}{
-		{
-			"0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098",
-			[]*actUTXO{
-				{assetID: "a0", amount: 100, addrID: "addr0", bucketID: "b0", walletID: "w0"},
-				{assetID: "a1", amount: 25, addrID: "addr2", bucketID: "b2", walletID: "w1"},
-			},
-		},
-		{
-			"3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df",
-			[]*actUTXO{
-				{assetID: "a0", amount: 50, addrID: "addr1", bucketID: "b1", walletID: "w0"},
-			},
-		},
-	}
-
-	for _, ex := range examples {
-		t.Log("Example:", ex.txHash)
-
-		got, err := getActUTXOsByTx(ctx, ex.txHash)
-		if err != nil {
-			t.Fatal("unexpected error", err)
+		t.Fail()
+		for i, u := range got {
+			t.Logf("got %d: %+v %+v", i, u.UTXO, u)
 		}
-
-		if !reflect.DeepEqual(got, ex.want) {
-			t.Errorf("utxos:\ngot:  %v\nwant: %v", got, ex.want)
+		for i, u := range want {
+			t.Logf("want %d: %+v %+v", i, u.UTXO, u)
 		}
 	}
 }
 
 func TestGetIDsFromUTXOs(t *testing.T) {
-	utxos := []*actUTXO{
-		{assetID: "asset-id-2", addrID: "addr-id-3", bucketID: "bucket-id-2", walletID: "wallet-id-1"},
-		{assetID: "asset-id-2", addrID: "addr-id-2", bucketID: "bucket-id-1", walletID: "wallet-id-1"},
-		{assetID: "asset-id-2", addrID: "addr-id-1", bucketID: "bucket-id-0", walletID: "wallet-id-0"},
-		{assetID: "asset-id-1", addrID: "addr-id-0", bucketID: "bucket-id-0", walletID: "wallet-id-0"},
-		{assetID: "asset-id-0", addrID: "addr-id-0", bucketID: "bucket-id-0", walletID: "wallet-id-0"},
-		{assetID: "asset-id-0", addrID: "addr-id-0", bucketID: "bucket-id-0", walletID: "wallet-id-0"},
+	utxos := []*UTXO{
+		{UTXO: &utxodb.UTXO{BucketID: "bucket-id-2", AssetID: "asset-id-2"}, WalletID: "wallet-id-1"},
+		{UTXO: &utxodb.UTXO{BucketID: "bucket-id-1", AssetID: "asset-id-2"}, WalletID: "wallet-id-1"},
+		{UTXO: &utxodb.UTXO{BucketID: "bucket-id-0", AssetID: "asset-id-2"}, WalletID: "wallet-id-0"},
+		{UTXO: &utxodb.UTXO{BucketID: "bucket-id-0", AssetID: "asset-id-1"}, WalletID: "wallet-id-0"},
+		{UTXO: &utxodb.UTXO{BucketID: "bucket-id-0", AssetID: "asset-id-0"}, WalletID: "wallet-id-0"},
+		{UTXO: &utxodb.UTXO{BucketID: "bucket-id-0", AssetID: "asset-id-0"}, WalletID: "wallet-id-0"},
 	}
 
-	gAssetIDs, gAddrIDs, gBucketIDs, gWalletIDs, gWalletBuckets := getIDsFromUTXOs(utxos)
+	gAssetIDs, gBucketIDs, gWalletIDs, gWalletBuckets := getIDsFromUTXOs(utxos)
 
 	wAssetIDs := []string{"asset-id-0", "asset-id-1", "asset-id-2"}
-	wAddrIDs := []string{"addr-id-0", "addr-id-1", "addr-id-2", "addr-id-3"}
 	wBucketIDs := []string{"bucket-id-0", "bucket-id-1", "bucket-id-2"}
 	wWalletIDs := []string{"wallet-id-0", "wallet-id-1"}
 	wWalletBuckets := map[string][]string{
@@ -593,9 +607,6 @@ func TestGetIDsFromUTXOs(t *testing.T) {
 
 	if !reflect.DeepEqual(gAssetIDs, wAssetIDs) {
 		t.Errorf("assetIDs:\ngot:  %v\nwant: %v", gAssetIDs, wAssetIDs)
-	}
-	if !reflect.DeepEqual(gAddrIDs, wAddrIDs) {
-		t.Errorf("assetIDs:\ngot:  %v\nwant: %v", gAddrIDs, wAddrIDs)
 	}
 	if !reflect.DeepEqual(gBucketIDs, wBucketIDs) {
 		t.Errorf("assetIDs:\ngot:  %v\nwant: %v", gBucketIDs, wBucketIDs)
@@ -646,45 +657,6 @@ func TestGetActAssets(t *testing.T) {
 	}
 }
 
-func TestGetActAddrs(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, writeActivityFix)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
-
-	examples := []struct {
-		addrIDs []string
-		want    []*actAddr
-	}{
-		{
-			[]string{"addr-id-0", "addr-id-1"},
-			[]*actAddr{
-				{id: "addr-id-0", address: "addr-0", isChange: false},
-				{id: "addr-id-1", address: "addr-1", isChange: true},
-			},
-		},
-		{
-			[]string{"addr-id-2", "addr-id-4"},
-			[]*actAddr{
-				{id: "addr-id-2", address: "addr-2", isChange: false},
-				{id: "addr-id-4", address: "addr-4", isChange: false},
-			},
-		},
-	}
-
-	for _, ex := range examples {
-		t.Log("Example:", ex.addrIDs)
-
-		got, err := getActAddrs(ctx, ex.addrIDs)
-		if err != nil {
-			t.Fatal("unexpected error", err)
-		}
-
-		if !reflect.DeepEqual(got, ex.want) {
-			t.Errorf("addrs:\ngot:  %v\nwant: %v", got, ex.want)
-		}
-	}
-}
-
 func TestGetActBuckets(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, writeActivityFix)
 	defer dbtx.Rollback()
@@ -725,17 +697,17 @@ func TestGetActBuckets(t *testing.T) {
 
 func TestCoalesceActivity(t *testing.T) {
 	examples := []struct {
-		ins, outs                   []*actUTXO
-		visibleBuckets, changeAddrs []string
-		want                        txRawActivity
+		ins, outs      []*UTXO
+		visibleBuckets []string
+		want           txRawActivity
 	}{
 		// Simple transfer from Alice's perspective
 		{
-			ins: []*actUTXO{
-				{assetID: "gold", amount: 10, addrID: "alice-addr-id-0", bucketID: "alice-bucket-id-0"},
+			ins: []*UTXO{
+				{UTXO: &utxodb.UTXO{BucketID: "alice-bucket-id-0", AssetID: "gold", Amount: 10}, Addr: "alice-addr-id-0"},
 			},
-			outs: []*actUTXO{
-				{assetID: "gold", amount: 10, addrID: "bob-addr-id-0", bucketID: "bob-bucket-id-0"},
+			outs: []*UTXO{
+				{UTXO: &utxodb.UTXO{BucketID: "bob-bucket-id-0", AssetID: "gold", Amount: 10}, Addr: "bob-addr-id-0"},
 			},
 
 			visibleBuckets: []string{"alice-bucket-id-0"},
@@ -754,11 +726,11 @@ func TestCoalesceActivity(t *testing.T) {
 
 		// Simple transfer from Bob's perspective
 		{
-			ins: []*actUTXO{
-				{assetID: "gold", amount: 10, addrID: "alice-addr-id-0", bucketID: "alice-bucket-id-0"},
+			ins: []*UTXO{
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 10, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-0"},
 			},
-			outs: []*actUTXO{
-				{assetID: "gold", amount: 10, addrID: "bob-addr-id-0", bucketID: "bob-bucket-id-0"},
+			outs: []*UTXO{
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 10, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-0"},
 			},
 
 			visibleBuckets: []string{"bob-bucket-id-0"},
@@ -777,19 +749,18 @@ func TestCoalesceActivity(t *testing.T) {
 
 		// Trade from Alice's perspective
 		{
-			ins: []*actUTXO{
-				{assetID: "gold", amount: 20, addrID: "alice-addr-id-0", bucketID: "alice-bucket-id-0"},
-				{assetID: "silver", amount: 10, addrID: "bob-addr-id-0", bucketID: "bob-bucket-id-0"},
-				{assetID: "silver", amount: 10, addrID: "bob-addr-id-1", bucketID: "bob-bucket-id-0"},
+			ins: []*UTXO{
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 20, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-0"},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 10, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-0"},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 10, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-1"},
 			},
-			outs: []*actUTXO{
-				{assetID: "silver", amount: 15, addrID: "alice-addr-id-1", bucketID: "alice-bucket-id-0"},
-				{assetID: "gold", amount: 5, addrID: "bob-addr-id-2", bucketID: "bob-bucket-id-0"},
+			outs: []*UTXO{
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 15, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-1"},
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 5, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-2"},
 
-				{assetID: "gold", amount: 15, addrID: "alice-addr-id-2", bucketID: "alice-bucket-id-0"},
-				{assetID: "silver", amount: 5, addrID: "bob-addr-id-3", bucketID: "bob-bucket-id-0"},
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 15, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-2", IsChange: true},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 5, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-3", IsChange: true},
 			},
-			changeAddrs: []string{"alice-addr-id-2", "bob-addr-id-3"},
 
 			visibleBuckets: []string{"alice-bucket-id-0"},
 
@@ -813,19 +784,18 @@ func TestCoalesceActivity(t *testing.T) {
 
 		// Trade from Bob's perspective
 		{
-			ins: []*actUTXO{
-				{assetID: "gold", amount: 20, addrID: "alice-addr-id-0", bucketID: "alice-bucket-id-0"},
-				{assetID: "silver", amount: 10, addrID: "bob-addr-id-0", bucketID: "bob-bucket-id-0"},
-				{assetID: "silver", amount: 10, addrID: "bob-addr-id-1", bucketID: "bob-bucket-id-0"},
+			ins: []*UTXO{
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 20, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-0"},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 10, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-0"},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 10, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-1"},
 			},
-			outs: []*actUTXO{
-				{assetID: "silver", amount: 15, addrID: "alice-addr-id-1", bucketID: "alice-bucket-id-0"},
-				{assetID: "gold", amount: 5, addrID: "bob-addr-id-2", bucketID: "bob-bucket-id-0"},
+			outs: []*UTXO{
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 15, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-1"},
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 5, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-2"},
 
-				{assetID: "gold", amount: 15, addrID: "alice-addr-id-2", bucketID: "alice-bucket-id-0"},
-				{assetID: "silver", amount: 5, addrID: "bob-addr-id-3", bucketID: "bob-bucket-id-0"},
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 15, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-2", IsChange: true},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 5, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-3", IsChange: true},
 			},
-			changeAddrs: []string{"alice-addr-id-2", "bob-addr-id-3"},
 
 			visibleBuckets: []string{"bob-bucket-id-0"},
 
@@ -850,7 +820,7 @@ func TestCoalesceActivity(t *testing.T) {
 	for i, ex := range examples {
 		t.Log("Example", i)
 
-		got := coalesceActivity(ex.ins, ex.outs, ex.visibleBuckets, ex.changeAddrs)
+		got := coalesceActivity(ex.ins, ex.outs, ex.visibleBuckets)
 
 		if !reflect.DeepEqual(got, ex.want) {
 			t.Errorf("coalesced activity:\ngot:  %v\nwant: %v", got, ex.want)
@@ -861,11 +831,11 @@ func TestCoalesceActivity(t *testing.T) {
 func TestCreateActEntries(t *testing.T) {
 	r := txRawActivity{
 		insByA: map[string]map[string]int64{
-			"addr-id-0": map[string]int64{
+			"space-mountain": map[string]int64{
 				"asset-id-0": 1,
 				"asset-id-1": 2,
 			},
-			"addr-id-1": map[string]int64{
+			"small-world": map[string]int64{
 				"asset-id-2": 3,
 				"asset-id-3": 4,
 			},
@@ -877,7 +847,7 @@ func TestCreateActEntries(t *testing.T) {
 			},
 		},
 		outsByA: map[string]map[string]int64{
-			"addr-id-2": map[string]int64{
+			"teacups": map[string]int64{
 				"asset-id-5": 6,
 				"asset-id-4": 5,
 			},
@@ -892,12 +862,6 @@ func TestCreateActEntries(t *testing.T) {
 				"asset-id-0": 1,
 			},
 		},
-	}
-
-	addrs := map[string]string{
-		"addr-id-0": "space-mountain",
-		"addr-id-1": "small-world",
-		"addr-id-2": "teacups",
 	}
 
 	assetLabels := map[string]string{
@@ -915,7 +879,7 @@ func TestCreateActEntries(t *testing.T) {
 		"bucket-id-2": "alice",
 	}
 
-	gotIns, gotOuts := createActEntries(r, addrs, assetLabels, bucketLabels)
+	gotIns, gotOuts := createActEntries(r, assetLabels, bucketLabels)
 
 	wantIns := []actEntry{
 		actEntry{BucketID: "bucket-id-0", BucketLabel: "charlie", AssetID: "asset-id-4", AssetLabel: "avocado", Amount: 5},
@@ -1112,4 +1076,12 @@ func stringsToRawJSON(strs ...string) []*json.RawMessage {
 		res = append(res, &b)
 	}
 	return res
+}
+
+func withStack(err error) string {
+	s := err.Error()
+	for _, frame := range errors.Stack(err) {
+		s += "\n" + frame.String()
+	}
+	return s
 }

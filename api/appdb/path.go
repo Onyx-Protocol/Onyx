@@ -1,23 +1,21 @@
-package asset
-
-import "chain/api/appdb"
+package appdb
 
 const (
 	CustomerPaymentNamespace = 0
 	CustomerAssetsNamespace  = 1
 )
 
-func ReceiverPath(addr *appdb.Address) []uint32 {
+func ReceiverPath(addrInfo *Address, addrIndex []uint32) []uint32 {
 	return []uint32{
 		CustomerPaymentNamespace,
-		addr.BucketIndex[0],
-		addr.BucketIndex[1],
-		addr.Index[0],
-		addr.Index[1],
+		addrInfo.BucketIndex[0],
+		addrInfo.BucketIndex[1],
+		addrIndex[0],
+		addrIndex[1],
 	}
 }
 
-func IssuancePath(asset *appdb.Asset) []uint32 {
+func IssuancePath(asset *Asset) []uint32 {
 	return []uint32{
 		CustomerAssetsNamespace,
 		asset.AGIndex[0],

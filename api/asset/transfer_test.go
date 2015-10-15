@@ -22,8 +22,8 @@ func TestTransfer(t *testing.T) {
 			VALUES('b1', 'w1', 0, 1);
 		INSERT INTO addresses (id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script)
 			VALUES('a1', 'w1', 'b1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a1', '', '');
-		INSERT INTO utxos (txid, index, asset_id, amount, address_id, account_id, manager_node_id)
-			VALUES ('246c6aa1e5cc2bd1132a37cbc267e2031558aee26a8956e21b749d72920331a7', 0, 'AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx', 6, 'a1', 'b1', 'w1');
+		INSERT INTO utxos (txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
+			VALUES ('246c6aa1e5cc2bd1132a37cbc267e2031558aee26a8956e21b749d72920331a7', 0, 'AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx', 6, 0, 'b1', 'w1');
 	`)
 	defer dbtx.Rollback()
 

@@ -28,10 +28,10 @@ func TestTrade(t *testing.T) {
 		INSERT INTO addresses (id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script)
 			VALUES('a2', 'w1', 'b2', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a2', '', '');
 		INSERT INTO utxos
-			(txid, index, asset_id, amount, address_id, account_id, manager_node_id)
+			(txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
 		VALUES
-			('0000000000000000000000000000000000000000000000000000000000000001', 0, 'AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx', 5, 'a1', 'b1', 'w1'),
-			('0000000000000000000000000000000000000000000000000000000000000002', 0, 'AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo', 2, 'a2', 'b2', 'w1');
+			('0000000000000000000000000000000000000000000000000000000000000001', 0, 'AZZR3GkaeC3kbTx37ip8sDPb3AYtdQYrEx', 5, 1, 'b1', 'w1'),
+			('0000000000000000000000000000000000000000000000000000000000000002', 0, 'AdihbprwmmjfCqJbM4PUrncQHuM4kAvGbo', 2, 0, 'b2', 'w1');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)

@@ -21,7 +21,7 @@ func (sqlUTXODB) LoadUTXOs(ctx context.Context, bucketID, assetID string) ([]*ut
 	log.Messagef(ctx, "loading full utxo set")
 	t0 := time.Now()
 	const q = `
-		SELECT amount, reserved_until, address_id, txid, index
+		SELECT amount, reserved_until, txid, index
 		FROM utxos
 		WHERE account_id=$1 AND asset_id=$2
 	`
@@ -40,7 +40,6 @@ func (sqlUTXODB) LoadUTXOs(ctx context.Context, bucketID, assetID string) ([]*ut
 		err = rows.Scan(
 			&u.Amount,
 			&u.ResvExpires,
-			&u.AddressID,
 			&txid,
 			&u.Outpoint.Index,
 		)
@@ -83,19 +82,25 @@ func (sqlUTXODB) SaveReservations(ctx context.Context, utxos []*utxodb.UTXO, exp
 // the effects of tx. It deletes consumed utxos
 // and inserts newly-created outputs.
 // Must be called inside a transaction.
-func (sqlUTXODB) ApplyTx(ctx context.Context, tx *wire.MsgTx) (deleted, inserted []*utxodb.UTXO, err error) {
+func (sqlUTXODB) ApplyTx(ctx context.Context, tx *wire.MsgTx, outRecs []*utxodb.Receiver) (deleted, inserted []*utxodb.UTXO, err error) {
 	defer metrics.RecordElapsed(time.Now())
 	now := time.Now()
 	hash := tx.TxSha()
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
-	inserted, err = insertUTXOs(ctx, hash, tx.TxOut)
+	insUTXOs, err := insertUTXOs(ctx, hash, tx.TxOut, outRecs)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "insert")
+	}
+	var localUTXOs []*appdb.UTXO
+	for _, utxo := range insUTXOs {
+		if utxo.WalletID != "" {
+			localUTXOs = append(localUTXOs, utxo)
+		}
 	}
 
 	// Activity items rely on the utxo set, so they should be created after
 	// the output utxos are created but before the input utxos are removed.
-	err = appdb.WriteActivity(ctx, tx, now)
+	err = appdb.WriteActivity(ctx, tx, localUTXOs, now)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "creating activity items")
 	}
@@ -104,15 +109,23 @@ func (sqlUTXODB) ApplyTx(ctx context.Context, tx *wire.MsgTx) (deleted, inserted
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "delete")
 	}
+	for _, u := range localUTXOs {
+		inserted = append(inserted, u.UTXO)
+	}
 	return deleted, inserted, err
 }
 
-type outputSet struct {
-	txid    string
-	index   pg.Uint32s
-	assetID pg.Strings
-	amount  pg.Int64s
-	addr    pg.Strings
+// utxoSet holds a set of utxo record values
+// to be inserted into the db.
+type utxoSet struct {
+	txid     string
+	index    pg.Uint32s
+	assetID  pg.Strings
+	amount   pg.Int64s
+	addr     pg.Strings
+	bucketID pg.Strings
+	walletID pg.Strings
+	aIndex   pg.Int64s
 }
 
 func deleteUTXOs(ctx context.Context, txins []*wire.TxIn) ([]*utxodb.UTXO, error) {
@@ -132,7 +145,7 @@ func deleteUTXOs(ctx context.Context, txins []*wire.TxIn) ([]*utxodb.UTXO, error
 		)
 		DELETE FROM utxos
 		WHERE (txid, index) IN (TABLE outpoints)
-		RETURNING account_id, asset_id, address_id, txid, index
+		RETURNING account_id, asset_id, txid, index
 	`
 	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(txid), pg.Uint32s(index))
 	if err != nil {
@@ -143,7 +156,7 @@ func deleteUTXOs(ctx context.Context, txins []*wire.TxIn) ([]*utxodb.UTXO, error
 	for rows.Next() {
 		u := new(utxodb.UTXO)
 		var txid string
-		err = rows.Scan(&u.BucketID, &u.AssetID, &u.AddressID, &txid, &u.Outpoint.Index)
+		err = rows.Scan(&u.BucketID, &u.AssetID, &txid, &u.Outpoint.Index)
 		if err != nil {
 			return nil, errors.Wrap(err, "scan")
 		}
@@ -157,74 +170,149 @@ func deleteUTXOs(ctx context.Context, txins []*wire.TxIn) ([]*utxodb.UTXO, error
 	return deleted, rows.Err()
 }
 
-func insertUTXOs(ctx context.Context, hash wire.Hash32, txouts []*wire.TxOut) ([]*utxodb.UTXO, error) {
+func insertUTXOs(ctx context.Context, hash wire.Hash32, txouts []*wire.TxOut, recs []*utxodb.Receiver) ([]*appdb.UTXO, error) {
+	if len(txouts) != len(recs) {
+		return nil, errors.New("length mismatch")
+	}
 	defer metrics.RecordElapsed(time.Now())
-	outs := &outputSet{txid: hash.String()}
-	err := addTxOutputs(outs, txouts)
+
+	// This function inserts utxos into the db, and maps
+	// them to receiver info (bucket id and addr index).
+	// There are three cases:
+	// 1. UTXO pays change or to an "immediate" bucket receiver.
+	//    In this case, we get the receiver info from recs
+	//    (which came from the client and was validated
+	//    in FinalizeTx).
+	// 2. UTXO pays to an address receiver record.
+	//    In this case, we get the receiver info from
+	//    the addresses table (and eventually delete
+	//    the record).
+	// 3. UTXO pays to an unknown address.
+	//    In this case, there is no receiver info.
+	insert, err := initAddrInfoFromRecs(hash, txouts, recs) // case 1
 	if err != nil {
 		return nil, err
+	}
+	err = loadAddrInfoFromDB(ctx, insert) // case 2
+	if err != nil {
+		return nil, err
+	}
+
+	outs := &utxoSet{txid: hash.String()}
+	for i, u := range insert {
+		outs.index = append(outs.index, uint32(i))
+		outs.assetID = append(outs.assetID, u.AssetID)
+		outs.amount = append(outs.amount, int64(u.Amount))
+		outs.bucketID = append(outs.bucketID, u.BucketID)
+		outs.walletID = append(outs.walletID, u.WalletID)
+		outs.aIndex = append(outs.aIndex, toKeyIndex(u.AddrIndex[:]))
 	}
 
 	const q = `
-		WITH newouts AS (
-			SELECT
-				unnest($2::int[]) idx,
-				unnest($3::text[]) asset_id,
-				unnest($4::bigint[]) amount,
-				unnest($5::text[]) addr
-		),
-		recouts AS (
-			SELECT
-				$1::text, idx, asset_id, newouts.amount, id, account_id, manager_node_id
-			FROM addresses
-			INNER JOIN newouts ON address=addr
+		INSERT INTO utxos (
+			txid, index, asset_id, amount,
+			account_id, manager_node_id, addr_index
 		)
-		INSERT INTO utxos
-			(txid, index, asset_id, amount, address_id, account_id, manager_node_id)
-		TABLE recouts
-		RETURNING account_id, asset_id, amount, address_id, txid, index
+		SELECT
+			$1::text,
+			unnest($2::int[]),
+			unnest($3::text[]),
+			unnest($4::bigint[]),
+			unnest($5::text[]),
+			unnest($6::text[]),
+			unnest($7::bigint[])
 	`
-	rows, err := pg.FromContext(ctx).Query(q,
-		outs.txid,
+	_, err = pg.FromContext(ctx).Exec(q,
+		hash.String(),
 		outs.index,
 		outs.assetID,
 		outs.amount,
-		outs.addr,
+		outs.bucketID,
+		outs.walletID,
+		outs.aIndex,
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var inserted []*utxodb.UTXO
-	for rows.Next() {
-		u := new(utxodb.UTXO)
-		var txid string
-		err = rows.Scan(&u.BucketID, &u.AssetID, &u.Amount, &u.AddressID, &txid, &u.Outpoint.Index)
-		if err != nil {
-			return nil, errors.Wrap(err, "scan")
-		}
-		h, err := wire.NewHash32FromStr(txid)
-		if err != nil {
-			return nil, errors.Wrap(err, "decode hash")
-		}
-		u.Outpoint.Hash = *h
-		inserted = append(inserted, u)
-	}
-	return inserted, rows.Err()
+	return insert, errors.Wrap(err)
 }
 
-func addTxOutputs(outs *outputSet, txouts []*wire.TxOut) error {
+func initAddrInfoFromRecs(hash wire.Hash32, txouts []*wire.TxOut, recs []*utxodb.Receiver) ([]*appdb.UTXO, error) {
+	insert := make([]*appdb.UTXO, len(txouts))
 	for i, txo := range txouts {
-		outs.index = append(outs.index, uint32(i))
-		outs.assetID = append(outs.assetID, txo.AssetID.String())
-		outs.amount = append(outs.amount, txo.Value)
-
 		addr, err := txscript.PkScriptAddr(txo.PkScript)
 		if err != nil {
-			return err
+			return nil, errors.Wrap(err, "bad pk script")
 		}
-		outs.addr = append(outs.addr, addr.String())
+		u := &appdb.UTXO{
+			Addr: addr.String(),
+			UTXO: &utxodb.UTXO{
+				AssetID:  txo.AssetID.String(),
+				Amount:   uint64(txo.Value),
+				Outpoint: wire.OutPoint{Hash: hash, Index: uint32(i)},
+			},
+		}
+		if rec := recs[i]; rec != nil {
+			u.WalletID = rec.WalletID
+			u.BucketID = rec.BucketID
+			copy(u.AddrIndex[:], rec.AddrIndex)
+			u.IsChange = rec.IsChange
+		}
+		insert[i] = u
+	}
+	return insert, nil
+}
+
+// loadAddrInfoFromDB loads bucket ID and addr index
+// from the addresses table for utxos that need it.
+// Not all are guaranteed to be in the database;
+// some outputs will be owned by third parties.
+// This function loads what it can.
+func loadAddrInfoFromDB(ctx context.Context, utxos []*appdb.UTXO) error {
+	var addrs []string
+	for _, u := range utxos {
+		if u.BucketID == "" {
+			addrs = append(addrs, u.Addr)
+		}
 	}
 
-	return nil
+	const q = `
+		SELECT address, account_id, manager_node_id, keyset, key_index, is_change
+		FROM addresses
+		WHERE address IN (SELECT unnest($1::text[]))
+	`
+	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(addrs))
+	if err != nil {
+		return errors.Wrap(err, "select")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var (
+			addr      string
+			walletID  string
+			bucketID  string
+			addrIndex []uint32
+			isChange  bool
+		)
+		err = rows.Scan(
+			&addr,
+			&walletID,
+			&bucketID,
+			(*pg.Uint32s)(&addrIndex),
+			&isChange,
+		)
+		if err != nil {
+			return errors.Wrap(err, "scan")
+		}
+		for _, u := range utxos {
+			if u.BucketID == "" && u.Addr == addr {
+				u.WalletID = walletID
+				u.BucketID = bucketID
+				u.IsChange = isChange
+				copy(u.AddrIndex[:], addrIndex)
+			}
+		}
+	}
+	return errors.Wrap(rows.Err(), "rows")
+}
+
+func toKeyIndex(i []uint32) int64 {
+	return int64(i[0])<<31 | int64(i[1]&0x7fffffff)
 }

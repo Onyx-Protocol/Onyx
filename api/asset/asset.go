@@ -8,7 +8,9 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	"chain/api/utxodb"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain-sandbox/txscript"
 	"chain/fedchain-sandbox/wire"
 	"chain/metrics"
@@ -36,7 +38,7 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 		}
 	}
 
-	err = addAssetIssuanceOutputs(ctx, tx, asset, outs)
+	outRecvs, err := addAssetIssuanceOutputs(ctx, tx, asset, outs)
 	if err != nil {
 		return nil, errors.Wrap(err, "add issuance outputs")
 	}
@@ -47,6 +49,7 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 		Unsigned:   buf.Bytes(),
 		BlockChain: "sandbox", // TODO(tess): make this BlockChain: blockchain.FromContext(ctx)
 		Inputs:     []*Input{issuanceInput(asset, tx)},
+		OutRecvs:   outRecvs,
 	}
 	return appTx, nil
 }
@@ -59,59 +62,51 @@ type Output struct {
 	BucketID string `json:"account_id"`
 	Amount   int64  `json:"amount"`
 	isChange bool
-	pkScript []byte // set by InitBucketAddress or PKScript
 }
 
-// InitBucketAddress creates, if necessary,
-// a new address for bucket output o.
-// If o is an address output
-// or a bucket output that already has an address,
-// it does nothing.
-func (o *Output) InitBucketAddress(ctx context.Context) error {
-	if o.BucketID == "" {
-		return nil
+// PKScript returns the script for sending to
+// the destination address or bucket id provided.
+// For an Address-type output, the returned *utxodb.Receiver is nil.
+func (o *Output) PKScript(ctx context.Context) ([]byte, *utxodb.Receiver, error) {
+	if o.BucketID != "" {
+		addr := &appdb.Address{
+			BucketID: o.BucketID,
+			IsChange: o.isChange,
+		}
+		err := CreateAddress(ctx, addr, false)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "output create address error bucket=%v", o.BucketID)
+		}
+		return addr.PKScript, newOutputReceiver(addr, o.isChange), nil
 	}
-	addr := &appdb.Address{
-		BucketID: o.BucketID,
-		IsChange: o.isChange,
-	}
-	err := CreateAddress(ctx, addr)
+	script, err := txscript.AddrPkScript(o.Address)
 	if err != nil {
-		return errors.Wrapf(err, "bucket=%v", o.BucketID)
+		return nil, nil, errors.Wrapf(ErrBadAddr, "output pkscript error addr=%v", o.Address)
 	}
-	o.pkScript = addr.PKScript
-	return nil
+	return script, nil, nil
 }
 
-// PKScript returns the output script for sending to o.
-func (o *Output) PKScript(ctx context.Context) ([]byte, error) {
-	if o.pkScript == nil {
-		script, err := txscript.AddrPkScript(o.Address)
-		if err != nil {
-			return nil, errors.Wrapf(ErrBadAddr, "output pkscript error addr=%v", o.Address)
-		}
-		o.pkScript = script
-	}
-	return o.pkScript, nil
-}
-
-func addAssetIssuanceOutputs(ctx context.Context, tx *wire.MsgTx, asset *appdb.Asset, outs []*Output) error {
+func addAssetIssuanceOutputs(ctx context.Context, tx *wire.MsgTx, asset *appdb.Asset, outs []*Output) ([]*utxodb.Receiver, error) {
+	var outAddrs []*utxodb.Receiver
 	for i, out := range outs {
-		// TODO(kr): run this loop body in parallel
-		err := out.InitBucketAddress(ctx)
+		pkScript, receiver, err := out.PKScript(ctx)
 		if err != nil {
-			return errors.WithDetailf(err, "output %d", i)
-		}
-	}
-	for i, out := range outs {
-		pkScript, err := out.PKScript(ctx)
-		if err != nil {
-			return errors.WithDetailf(err, "output %d", i)
+			return nil, errors.WithDetailf(err, "output %d", i)
 		}
 
 		tx.AddTxOut(wire.NewTxOut(asset.Hash, out.Amount, pkScript))
+		outAddrs = append(outAddrs, receiver)
 	}
-	return nil
+	return outAddrs, nil
+}
+
+func newOutputReceiver(addr *appdb.Address, isChange bool) *utxodb.Receiver {
+	return &utxodb.Receiver{
+		WalletID:  addr.WalletID,
+		BucketID:  addr.BucketID,
+		AddrIndex: addr.Index,
+		IsChange:  isChange,
+	}
 }
 
 // issuanceInput returns an Input that can be used
@@ -124,11 +119,11 @@ func issuanceInput(a *appdb.Asset, tx *wire.MsgTx) *Input {
 		AssetGroupID:  a.GroupID,
 		RedeemScript:  a.RedeemScript,
 		SignatureData: wire.DoubleSha256(buf.Bytes()),
-		Sigs:          inputSigs(Signers(a.Keys, IssuancePath(a))),
+		Sigs:          inputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a))),
 	}
 }
 
-func inputSigs(keys []*DerivedKey) (sigs []*Signature) {
+func inputSigs(keys []*hdkey.Key) (sigs []*Signature) {
 	for _, k := range keys {
 		sigs = append(sigs, &Signature{
 			XPub:           k.Root.String(),

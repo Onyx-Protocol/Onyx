@@ -434,7 +434,7 @@ CREATE TABLE utxos (
     index integer NOT NULL,
     asset_id text NOT NULL,
     amount bigint NOT NULL,
-    address_id text NOT NULL,
+    addr_index bigint NOT NULL,
     account_id text NOT NULL,
     manager_node_id text NOT NULL,
     reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
@@ -706,13 +706,6 @@ CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
 --
 
 CREATE INDEX utxos_account_id_asset_id_reserved_at_idx ON utxos USING btree (account_id, asset_id, reserved_until);
-
-
---
--- Name: utxos_address_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX utxos_address_id_asset_id_reserved_at_idx ON utxos USING btree (address_id, asset_id, reserved_until);
 
 
 --

@@ -52,10 +52,10 @@ func TestCreateBucketBadLabel(t *testing.T) {
 
 func TestBucketBalance(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO utxos (txid, index, asset_id, amount, address_id, account_id, manager_node_id)
-		VALUES ('t0', 0, 'a1', 10, 'add0', 'b0', 'w1'),
-		       ('t1', 1, 'a1', 5, 'add0', 'b0', 'w1'),
-		       ('t2', 2, 'a2', 20, 'add0', 'b0', 'w1');
+		INSERT INTO utxos (txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
+		VALUES ('t0', 0, 'a1', 10, 0, 'b0', 'w1'),
+		       ('t1', 1, 'a1', 5, 0, 'b0', 'w1'),
+		       ('t2', 2, 'a2', 20, 0, 'b0', 'w1');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
