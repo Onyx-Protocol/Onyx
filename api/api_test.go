@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/api/appdb"
+	"chain/api/asset"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -64,13 +64,13 @@ func TestCreateWalletBadXPub(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 	ctx = authn.NewContext(ctx, "sample-user-id-0")
 
-	req := struct {
-		Label string
-		XPubs []string
-	}{"foo", []string{"badxpub"}}
+	req := &asset.CreateWalletRequest{
+		Label: "foo",
+		XPubs: []string{"badxpub"},
+	}
 
 	_, err := createWallet(ctx, "a1", req)
-	if got := errors.Root(err); got != appdb.ErrBadXPub {
-		t.Fatalf("err = %v want %v", got, appdb.ErrBadXPub)
+	if got := errors.Root(err); got != asset.ErrBadXPub {
+		t.Fatalf("err = %v want %v", got, asset.ErrBadXPub)
 	}
 }

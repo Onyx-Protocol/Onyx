@@ -2,17 +2,17 @@ package appdb
 
 import "chain/fedchain-sandbox/hdkey"
 
-func keysToXPubs(keys []*hdkey.XKey) []string {
-	var xpubs []string
+func keysToStrings(keys []*hdkey.XKey) []string {
+	var strings []string
 	for _, k := range keys {
-		xpubs = append(xpubs, k.String())
+		strings = append(strings, k.String())
 	}
-	return xpubs
+	return strings
 }
 
-func xpubsToKeys(xpubs []string) ([]*hdkey.XKey, error) {
+func stringsToKeys(strings []string) ([]*hdkey.XKey, error) {
 	var keys []*hdkey.XKey
-	for _, x := range xpubs {
+	for _, x := range strings {
 		key, err := hdkey.NewXKey(x)
 		if err != nil {
 			return nil, err

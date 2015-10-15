@@ -125,7 +125,7 @@ func (a *Address) LoadNextIndex(ctx context.Context) error {
 			return errors.WithDetailf(err, "bucket %s", a.BucketID)
 		}
 
-		ai.Keys, err = xpubsToKeys(xpubs)
+		ai.Keys, err = stringsToKeys(xpubs)
 		if err != nil {
 			return errors.Wrap(err, "parsing keys")
 		}
@@ -169,7 +169,7 @@ func (a *Address) Insert(ctx context.Context) error {
 		a.PKScript,
 		a.WalletID,
 		a.BucketID,
-		pg.Strings(keysToXPubs(a.Keys)),
+		pg.Strings(keysToStrings(a.Keys)),
 		pq.NullTime{Time: a.Expires, Valid: !a.Expires.IsZero()},
 		a.Amount,
 		pg.Uint32s(a.Index),
@@ -215,7 +215,7 @@ func AddressesByID(ctx context.Context, ids []string) ([]*Address, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
-		a.Keys, err = xpubsToKeys(xpubs)
+		a.Keys, err = stringsToKeys(xpubs)
 		if err != nil {
 			return nil, errors.Wrap(err, "parsing keys")
 		}

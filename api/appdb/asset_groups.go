@@ -42,7 +42,7 @@ func CreateAssetGroup(ctx context.Context, appID, label string, keys []*hdkey.XK
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
-	err = pg.FromContext(ctx).QueryRow(q, label, appID, pg.Strings(keysToXPubs(keys))).Scan(&id)
+	err = pg.FromContext(ctx).QueryRow(q, label, appID, pg.Strings(keysToStrings(keys))).Scan(&id)
 	if err != nil {
 		return "", errors.Wrap(err, "insert asset group")
 	}
@@ -85,7 +85,7 @@ func NextAsset(ctx context.Context, agID string) (asset *Asset, sigsRequired int
 		return nil, 0, errors.WithDetailf(err, "asset group %v: get key info", agID)
 	}
 
-	asset.Keys, err = xpubsToKeys(xpubs)
+	asset.Keys, err = stringsToKeys(xpubs)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "parsing keys")
 	}

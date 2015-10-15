@@ -70,7 +70,7 @@ func AssetByID(ctx context.Context, id string) (*Asset, error) {
 		return nil, errors.WithDetailf(err, "asset id=%v", id)
 	}
 
-	a.Keys, err = xpubsToKeys(xpubs)
+	a.Keys, err = stringsToKeys(xpubs)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing keys")
 	}
@@ -90,7 +90,7 @@ func InsertAsset(ctx context.Context, asset *Asset) error {
 		asset.Hash.String(),
 		asset.GroupID,
 		pg.Uint32s(asset.AIndex),
-		pg.Strings(keysToXPubs(asset.Keys)),
+		pg.Strings(keysToStrings(asset.Keys)),
 		asset.RedeemScript,
 		asset.Label,
 	)

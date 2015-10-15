@@ -10,7 +10,7 @@ import (
 	"chain/fedchain-sandbox/hdkey"
 )
 
-// Errors returned by CreateWallet.
+// Errors returned by CreateAssetGroup.
 // May be wrapped using package chain/errors.
 var (
 	ErrBadLabel     = errors.New("bad label")
@@ -21,44 +21,42 @@ var (
 // Wallet represents a single wallet. It is intended to be used wth API
 // responses.
 type Wallet struct {
-	ID         string `json:"id"`
-	Blockchain string `json:"blockchain"`
-	Label      string `json:"label"`
+	ID          string        `json:"id"`
+	Blockchain  string        `json:"blockchain"`
+	Label       string        `json:"label"`
+	Keys        []*hdkey.XKey `json:"keys,omitempty"`
+	SigsReqd    int           `json:"signatures_required,omitempty"`
+	PrivateKeys []*hdkey.XKey `json:"private_keys,omitempty"`
 }
 
-// CreateWallet creates a new wallet,
-// also adding its xpub to the keys table if necessary.
-func CreateWallet(ctx context.Context, appID, label string, keys []*hdkey.XKey) (id string, err error) {
+// InsertWallet inserts a new wallet into the database.
+func InsertWallet(ctx context.Context, appID, label string, keys, gennedKeys []*hdkey.XKey) (w *Wallet, err error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
-	if label == "" {
-		return "", ErrBadLabel
-	} else if len(keys) != 1 {
-		// only 1-of-1 supported so far
-		return "", ErrBadXPubCount
-	}
-	for i, key := range keys {
-		if key.IsPrivate() {
-			err := errors.WithDetailf(ErrBadXPub, "key number %d", i)
-			return "", errors.WithDetail(err, "key is xpriv, not xpub")
-		}
-	}
-
 	const q = `
-		INSERT INTO wallets (label, application_id)
-		VALUES ($1, $2)
+		INSERT INTO wallets (label, application_id, generated_keys)
+		VALUES ($1, $2, $3)
 		RETURNING id
 	`
-	err = pg.FromContext(ctx).QueryRow(q, label, appID).Scan(&id)
+	var id string
+	xprvs := keysToStrings(gennedKeys)
+	err = pg.FromContext(ctx).QueryRow(q, label, appID, pg.Strings(xprvs)).Scan(&id)
 	if err != nil {
-		return "", errors.Wrap(err, "insert wallet")
+		return nil, errors.Wrap(err, "insert wallet")
 	}
 
-	err = createRotation(ctx, id, keysToXPubs(keys)...)
+	err = createRotation(ctx, id, keysToStrings(keys)...)
 	if err != nil {
-		return "", errors.Wrap(err, "create rotation")
+		return nil, errors.Wrap(err, "create rotation")
 	}
 
-	return id, nil
+	return &Wallet{
+		ID:          id,
+		Blockchain:  "sandbox",
+		Label:       label,
+		Keys:        keys,
+		SigsReqd:    1,
+		PrivateKeys: gennedKeys,
+	}, nil
 }
 
 // Balance is a struct describing the balance of

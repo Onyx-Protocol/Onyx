@@ -24,11 +24,11 @@ func TestCreateAddress(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	wID, err := appdb.CreateWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub})
+	wallet, err := appdb.InsertWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	bucket, err := appdb.CreateBucket(ctx, wID, "foo")
+	bucket, err := appdb.CreateBucket(ctx, wallet.ID, "foo")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func TestCreateAddress(t *testing.T) {
 		Amount:       100,
 		Expires:      exp,
 		IsChange:     false,
-		WalletID:     wID,
+		WalletID:     wallet.ID,
 		WalletIndex:  []uint32{0, 1},
 		BucketIndex:  []uint32{0, 0},
 		Index:        []uint32{0, 1},

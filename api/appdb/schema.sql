@@ -20,7 +20,7 @@ CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
 -- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: -
 --
 
--- COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
+COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 
 
 --
@@ -34,7 +34,7 @@ CREATE EXTENSION IF NOT EXISTS plv8 WITH SCHEMA pg_catalog;
 -- Name: EXTENSION plv8; Type: COMMENT; Schema: -; Owner: -
 --
 
--- COMMENT ON EXTENSION plv8 IS 'PL/JavaScript (v8) trusted procedural language';
+COMMENT ON EXTENSION plv8 IS 'PL/JavaScript (v8) trusted procedural language';
 
 
 SET search_path = public, pg_catalog;
@@ -224,7 +224,8 @@ CREATE TABLE asset_groups (
     keyset text[] NOT NULL,
     next_asset_index bigint DEFAULT 0 NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    generated_keys text[] DEFAULT '{}'::text[] NOT NULL
 );
 
 
@@ -417,7 +418,8 @@ CREATE TABLE wallets (
     next_bucket_index bigint DEFAULT 0 NOT NULL,
     buckets_count bigint DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    generated_keys text[] DEFAULT '{}'::text[] NOT NULL
 );
 
 

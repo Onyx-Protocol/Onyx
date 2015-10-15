@@ -17,12 +17,12 @@ func TestCreateBucket(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	walletID, err := CreateWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub})
+	wallet, err := InsertWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	bucket, err := CreateBucket(ctx, walletID, "foo")
+	bucket, err := CreateBucket(ctx, wallet.ID, "foo")
 	if err != nil {
 		t.Error("unexpected error", err)
 	}
@@ -39,12 +39,12 @@ func TestCreateBucketBadLabel(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	walletID, err := CreateWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub})
+	wallet, err := InsertWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = CreateBucket(ctx, walletID, "")
+	_, err = CreateBucket(ctx, wallet.ID, "")
 	if err == nil {
 		t.Error("err = nil, want error")
 	}

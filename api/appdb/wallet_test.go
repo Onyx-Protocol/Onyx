@@ -12,16 +12,16 @@ import (
 	"chain/fedchain-sandbox/hdkey"
 )
 
-func TestCreateWallet(t *testing.T) {
+func TestInsertWallet(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, sampleAppFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	id, err := CreateWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub})
+	wallet, err := InsertWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
-	if id == "" {
+	if wallet.ID == "" {
 		t.Errorf("got empty wallet id")
 	}
 }

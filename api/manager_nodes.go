@@ -8,28 +8,14 @@ import (
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/database/pg"
-	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
 	"chain/metrics"
 	"chain/net/http/httpjson"
 )
 
 // POST /v3/projects/:projID/manager-nodes
-func createWallet(ctx context.Context, appID string, wReq struct {
-	Label string
-	XPubs []string
-}) (interface{}, error) {
+func createWallet(ctx context.Context, appID string, wReq *asset.CreateWalletRequest) (interface{}, error) {
 	if err := projectAuthz(ctx, appID); err != nil {
 		return nil, err
-	}
-	var keys []*hdkey.XKey
-	for i, xpub := range wReq.XPubs {
-		key, err := hdkey.NewXKey(xpub)
-		if err != nil {
-			err = errors.Wrap(appdb.ErrBadXPub, err.Error())
-			return nil, errors.WithDetailf(err, "xpub %d", i)
-		}
-		keys = append(keys, key)
 	}
 
 	dbtx, ctx, err := pg.Begin(ctx)
@@ -38,7 +24,7 @@ func createWallet(ctx context.Context, appID string, wReq struct {
 	}
 	defer dbtx.Rollback()
 
-	wID, err := appdb.CreateWallet(ctx, appID, wReq.Label, keys)
+	wallet, err := asset.CreateWallet(ctx, appID, wReq)
 	if err != nil {
 		return nil, err
 	}
@@ -48,14 +34,7 @@ func createWallet(ctx context.Context, appID string, wReq struct {
 		return nil, err
 	}
 
-	ret := map[string]interface{}{
-		"id":                  wID,
-		"label":               wReq.Label,
-		"block_chain":         "sandbox",
-		"keys":                keys,
-		"signatures_required": 1,
-	}
-	return ret, nil
+	return wallet, nil
 }
 
 // PUT /v3/manager-nodes/:mnodeID
