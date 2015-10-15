@@ -55,14 +55,14 @@ func (h BasicHandler) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		if username == "" {
 			w.Header().Add("WWW-Authenticate", `Basic realm="`+h.Realm+`"`)
 		}
-		http.Error(w, "Request could not be authenticated", http.StatusUnauthorized)
+		http.Error(w, `{"message": "Request could not be authenticated"}`, http.StatusUnauthorized)
 	} else {
 		log.Write(ctx,
 			"status", http.StatusInternalServerError,
 			log.KeyError, err,
 			log.KeyStack, errors.Stack(err),
 		)
-		http.Error(w, "Internal error", http.StatusInternalServerError)
+		http.Error(w, `{"message": "Internal error"}`, http.StatusInternalServerError)
 	}
 }
 

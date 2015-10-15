@@ -141,12 +141,12 @@ func (p *PatternServeMux) Handler(r *http.Request) http.Handler {
 	}
 
 	if len(allowed) == 0 {
-		return http.NotFoundHandler()
+		return http.HandlerFunc(NotFound)
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Allow", strings.Join(allowed, ", "))
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, `{"message": "Method not allowed"}`, 405)
 	})
 }
 
@@ -242,6 +242,12 @@ func Labels(pattern string) []string {
 		}
 	}
 	return a
+}
+
+// NotFound replies to the request with an HTTP 404 not found error. It is
+// nearly identical to http.NotFound, but returns JSON instead.
+func NotFound(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, `{"message": "Resource not found"}`, http.StatusNotFound)
 }
 
 type patHandler struct {
