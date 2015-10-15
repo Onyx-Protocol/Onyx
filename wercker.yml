@@ -30,3 +30,5 @@ build:
           go test -cover $(go list ./...|grep -v vendor)
           test -z "$(goimports -l .|grep -v vendor)"
           (cd migrations; ./check-names.bash)
+          go generate $(go list ./...|grep -v vendor)
+          git diff --exit-code # make sure generated files are in sync
