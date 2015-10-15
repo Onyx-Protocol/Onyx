@@ -48,7 +48,7 @@ func TestIssue(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	outs := []Output{{
+	outs := []*Output{{
 		Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK",
 		Amount:  123,
 	}}
@@ -74,7 +74,7 @@ func TestIssue(t *testing.T) {
 	}
 
 	// Bad output destination error
-	outs = []Output{{Amount: 5}}
+	outs = []*Output{{Amount: 5}}
 	_, err = Issue(ctx, "AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p", outs)
 
 	if errors.Root(err) != ErrBadOutDest {

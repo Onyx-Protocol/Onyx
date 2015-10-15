@@ -24,7 +24,7 @@ type buildReq struct {
 }
 
 // POST /v3/assets/:assetID/issue
-func issueAsset(ctx context.Context, assetID string, outs []asset.Output) (interface{}, error) {
+func issueAsset(ctx context.Context, assetID string, outs []*asset.Output) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if err := assetAuthz(ctx, assetID); err != nil {
 		return nil, err

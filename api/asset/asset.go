@@ -20,7 +20,7 @@ var ErrBadAddr = errors.New("bad address")
 // Issue creates a transaction that
 // issues new units of an asset
 // distributed to the outputs provided.
-func Issue(ctx context.Context, assetID string, outs []Output) (*Tx, error) {
+func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
 	tx := wire.NewMsgTx()
 	tx.AddTxIn(wire.NewTxIn(wire.NewOutPoint(new(wire.Hash32), 0), []byte{}))
@@ -95,7 +95,7 @@ func (o *Output) PKScript(ctx context.Context) ([]byte, error) {
 	return o.pkScript, nil
 }
 
-func addAssetIssuanceOutputs(ctx context.Context, tx *wire.MsgTx, asset *appdb.Asset, outs []Output) error {
+func addAssetIssuanceOutputs(ctx context.Context, tx *wire.MsgTx, asset *appdb.Asset, outs []*Output) error {
 	for i, out := range outs {
 		// TODO(kr): run this loop body in parallel
 		err := out.InitBucketAddress(ctx)
