@@ -10,14 +10,6 @@ import (
 	"chain/fedchain-sandbox/hdkey"
 )
 
-// Errors returned by CreateAssetGroup.
-// May be wrapped using package chain/errors.
-var (
-	ErrBadLabel     = errors.New("bad label")
-	ErrBadXPubCount = errors.New("bad xpub count")
-	ErrBadXPub      = errors.New("bad xpub")
-)
-
 // Wallet represents a single wallet. It is intended to be used wth API
 // responses.
 type Wallet struct {

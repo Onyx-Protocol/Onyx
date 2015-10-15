@@ -13,7 +13,7 @@ import (
 )
 
 // POST /v3/projects/:projID/manager-nodes
-func createWallet(ctx context.Context, appID string, wReq *asset.CreateWalletRequest) (interface{}, error) {
+func createWallet(ctx context.Context, appID string, wReq *asset.CreateNodeReq) (interface{}, error) {
 	if err := projectAuthz(ctx, appID); err != nil {
 		return nil, err
 	}
@@ -24,7 +24,7 @@ func createWallet(ctx context.Context, appID string, wReq *asset.CreateWalletReq
 	}
 	defer dbtx.Rollback()
 
-	wallet, err := asset.CreateWallet(ctx, appID, wReq)
+	wallet, err := asset.CreateNode(ctx, asset.ManagerNode, appID, wReq)
 	if err != nil {
 		return nil, err
 	}

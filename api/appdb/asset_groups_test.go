@@ -12,16 +12,16 @@ import (
 	"chain/fedchain-sandbox/hdkey"
 )
 
-func TestCreateAssetGroup(t *testing.T) {
+func TestInsertAssetGroup(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	id, err := CreateAssetGroup(ctx, "a1", "foo", []*hdkey.XKey{dummyXPub})
+	group, err := InsertAssetGroup(ctx, "a1", "foo", []*hdkey.XKey{dummyXPub}, nil)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
-	if id == "" {
+	if group.ID == "" {
 		t.Errorf("got empty asset group id")
 	}
 }

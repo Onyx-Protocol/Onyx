@@ -5,6 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/api/appdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -17,9 +18,13 @@ func TestCreateWallet(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	wallet, err := CreateWallet(ctx, "app-id-0", &CreateWalletRequest{Label: "foo", GenerateKey: true})
+	node, err := CreateNode(ctx, ManagerNode, "app-id-0", &CreateNodeReq{Label: "foo", GenerateKey: true})
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
+	}
+	wallet, ok := node.(*appdb.Wallet)
+	if !ok {
+		t.Fatal("expected Wallet struct")
 	}
 	if wallet.ID == "" {
 		t.Errorf("got empty wallet id")

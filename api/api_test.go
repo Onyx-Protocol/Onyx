@@ -64,7 +64,7 @@ func TestCreateWalletBadXPub(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 	ctx = authn.NewContext(ctx, "sample-user-id-0")
 
-	req := &asset.CreateWalletRequest{
+	req := &asset.CreateNodeReq{
 		Label: "foo",
 		XPubs: []string{"badxpub"},
 	}

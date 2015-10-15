@@ -5,7 +5,15 @@
 // with more information using chain/errors.
 package appdb
 
-import "database/sql"
+import (
+	"database/sql"
+	"errors"
+)
+
+// ErrBadLabel is returned by functions that operate
+// on the label of various objects, for instance
+// nodes and accounts.
+var ErrBadLabel = errors.New("bad label")
 
 // Init creates some objects in db.
 // It must be called on program start,

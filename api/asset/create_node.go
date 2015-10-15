@@ -12,23 +12,30 @@ import (
 // Errors returned by CreateWallet.
 // May be wrapped using package chain/errors.
 var (
-	ErrBadLabel     = errors.New("bad label")
 	ErrBadXPubCount = errors.New("bad xpub count")
 	ErrBadXPub      = errors.New("bad xpub")
 )
 
-// CreateWalletRequest is a user filled struct
-// passed into CreateWallet
-type CreateWalletRequest struct {
+type nodeType int
+
+// Node types used for CreateNode
+const (
+	ManagerNode nodeType = iota
+	IssuerNode  nodeType = iota
+)
+
+// CreateNodeReq is a user filled struct
+// passed into CreateWallet or CreateAssetGroup
+type CreateNodeReq struct {
 	Label       string
 	XPubs       []string
 	GenerateKey bool `json:"generate_key"`
 }
 
-// CreateWallet creates a new wallet object, along with its rotation.
-func CreateWallet(ctx context.Context, projID string, req *CreateWalletRequest) (w *appdb.Wallet, err error) {
+// CreateNode is used to create manager and issuer nodes
+func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNodeReq) (interface{}, error) {
 	if req.Label == "" {
-		return nil, ErrBadLabel
+		return nil, appdb.ErrBadLabel
 	}
 
 	var (
@@ -64,7 +71,10 @@ func CreateWallet(ctx context.Context, projID string, req *CreateWalletRequest) 
 		}
 	}
 
-	return appdb.InsertWallet(ctx, projID, req.Label, keys, gennedKeys)
+	if node == ManagerNode {
+		return appdb.InsertWallet(ctx, projID, req.Label, keys, gennedKeys)
+	}
+	return appdb.InsertAssetGroup(ctx, projID, req.Label, keys, gennedKeys)
 }
 
 func newKey() (pub, priv *hdkey.XKey, err error) {

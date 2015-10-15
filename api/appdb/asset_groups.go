@@ -15,39 +15,42 @@ import (
 // AssetGroup represents a single asset group. It is intended to be used wth API
 // responses.
 type AssetGroup struct {
-	ID         string `json:"id"`
-	Blockchain string `json:"block_chain"`
-	Label      string `json:"label"`
+	ID          string        `json:"id"`
+	Blockchain  string        `json:"block_chain"`
+	Label       string        `json:"label"`
+	Keys        []*hdkey.XKey `json:"keys,omitempty"`
+	SigsReqd    int           `json:"signatures_required,omitempty"`
+	PrivateKeys []*hdkey.XKey `json:"private_keys,omitempty"`
 }
 
-// CreateAssetGroup creates a new asset group,
-// also adding its xpub to the keys table if necessary.
-func CreateAssetGroup(ctx context.Context, appID, label string, keys []*hdkey.XKey) (id string, err error) {
+// InsertAssetGroup adds the asset group to the database
+func InsertAssetGroup(ctx context.Context, appID, label string, keys, gennedKeys []*hdkey.XKey) (*AssetGroup, error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
-	if label == "" {
-		return "", ErrBadLabel
-	} else if len(keys) != 1 {
-		// only 1-of-1 supported so far
-		return "", ErrBadXPubCount
-	}
-	for i, key := range keys {
-		if key.IsPrivate() {
-			err := errors.WithDetailf(ErrBadXPub, "key number %d", i)
-			return "", errors.WithDetail(err, "key is xpriv, not xpub")
-		}
-	}
 
 	const q = `
-		INSERT INTO issuer_nodes (label, project_id, keyset)
-		VALUES ($1, $2, $3)
+		INSERT INTO issuer_nodes (label, project_id, keyset, generated_keys)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
-	err = pg.FromContext(ctx).QueryRow(q, label, appID, pg.Strings(keysToStrings(keys))).Scan(&id)
+	var id string
+	err := pg.FromContext(ctx).QueryRow(q,
+		label,
+		appID,
+		pg.Strings(keysToStrings(keys)),
+		pg.Strings(keysToStrings(gennedKeys)),
+	).Scan(&id)
 	if err != nil {
-		return "", errors.Wrap(err, "insert asset group")
+		return nil, errors.Wrap(err, "insert asset group")
 	}
 
-	return id, nil
+	return &AssetGroup{
+		ID:          id,
+		Blockchain:  "sandbox",
+		Label:       label,
+		Keys:        keys,
+		SigsReqd:    1,
+		PrivateKeys: gennedKeys,
+	}, nil
 }
 
 // NextAsset returns all data needed

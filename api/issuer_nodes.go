@@ -8,26 +8,14 @@ import (
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/database/pg"
-	"chain/fedchain-sandbox/hdkey"
 	"chain/metrics"
 	"chain/net/http/httpjson"
 )
 
 // POST /v3/projects/:projID/issuer-nodes
-func createAssetGroup(ctx context.Context, appID string, agReq struct {
-	Label string
-	XPubs []string
-}) (interface{}, error) {
+func createAssetGroup(ctx context.Context, appID string, req *asset.CreateNodeReq) (interface{}, error) {
 	if err := projectAuthz(ctx, appID); err != nil {
 		return nil, err
-	}
-	var keys []*hdkey.XKey
-	for _, xpub := range agReq.XPubs {
-		key, err := hdkey.NewXKey(xpub)
-		if err != nil {
-			return nil, err
-		}
-		keys = append(keys, key)
 	}
 
 	dbtx, ctx, err := pg.Begin(ctx)
@@ -36,7 +24,7 @@ func createAssetGroup(ctx context.Context, appID string, agReq struct {
 	}
 	defer dbtx.Rollback()
 
-	agID, err := appdb.CreateAssetGroup(ctx, appID, agReq.Label, keys)
+	assetGroup, err := asset.CreateNode(ctx, asset.IssuerNode, appID, req)
 	if err != nil {
 		return nil, err
 	}
@@ -46,14 +34,7 @@ func createAssetGroup(ctx context.Context, appID string, agReq struct {
 		return nil, err
 	}
 
-	ret := map[string]interface{}{
-		"id":                  agID,
-		"label":               agReq.Label,
-		"block_chain":         "sandbox",
-		"keys":                keys,
-		"signatures_required": 1,
-	}
-	return ret, nil
+	return assetGroup, nil
 }
 
 // GET /v3/projects/:projID/issuer-nodes
