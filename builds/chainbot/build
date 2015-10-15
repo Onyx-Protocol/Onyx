@@ -1,4 +1,5 @@
 #!/bin/sh
 /usr/local/go/bin/go build -tags 'prod' -o builds/chainbot/target/chainbot ./cmd/chainbot
+cp api/appdb/schema.sql builds/chainbot/target/schema.sql
 cd builds/chainbot/target > /dev/null
 tar cf - .
