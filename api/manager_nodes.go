@@ -58,6 +58,14 @@ func createWallet(ctx context.Context, appID string, wReq struct {
 	return ret, nil
 }
 
+// PUT /v3/manager-nodes/:mnodeID
+func updateManagerNode(ctx context.Context, mnodeID string, in struct{ Label *string }) error {
+	if err := managerAuthz(ctx, mnodeID); err != nil {
+		return err
+	}
+	return appdb.UpdateManagerNode(ctx, mnodeID, in.Label)
+}
+
 // GET /v3/projects/:projID/manager-nodes
 func listWallets(ctx context.Context, projID string) (interface{}, error) {
 	if err := projectAuthz(ctx, projID); err != nil {
@@ -240,6 +248,14 @@ func createAddr(ctx context.Context, bucketID string, in struct {
 		"index":               addr.Index[:],
 	}
 	return ret, nil
+}
+
+// PUT /v3/accounts/:accountID
+func updateAccount(ctx context.Context, accountID string, in struct{ Label *string }) error {
+	if err := accountAuthz(ctx, accountID); err != nil {
+		return err
+	}
+	return appdb.UpdateAccount(ctx, accountID, in.Label)
 }
 
 func addrSigners(signers []*asset.DerivedKey) (v []interface{}) {

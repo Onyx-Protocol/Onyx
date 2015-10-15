@@ -142,3 +142,14 @@ func GetAssetGroup(ctx context.Context, groupID string) (*AssetGroup, error) {
 
 	return &AssetGroup{ID: groupID, Label: label, Blockchain: bc}, nil
 }
+
+// UpdateIssuerNode updates the label of an issuer node.
+func UpdateIssuerNode(ctx context.Context, inodeID string, label *string) error {
+	if label == nil {
+		return nil
+	}
+	const q = `UPDATE asset_groups SET label = $2 WHERE id = $1`
+	db := pg.FromContext(ctx)
+	_, err := db.Exec(q, inodeID, *label)
+	return errors.Wrap(err, "update query")
+}

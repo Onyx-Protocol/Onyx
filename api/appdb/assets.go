@@ -145,6 +145,17 @@ func GetAsset(ctx context.Context, assetID string) (*AssetResponse, error) {
 	return a, errors.WithDetailf(err, "asset id: %s", assetID)
 }
 
+// UpdateAsset updates the label of an asset.
+func UpdateAsset(ctx context.Context, assetID string, label *string) error {
+	if label == nil {
+		return nil
+	}
+	const q = `UPDATE assets SET label = $2 WHERE id = $1`
+	db := pg.FromContext(ctx)
+	_, err := db.Exec(q, assetID, *label)
+	return errors.Wrap(err, "update query")
+}
+
 // AddIssuance increases the issued column on an asset
 // by the amount provided.
 func AddIssuance(ctx context.Context, id string, amount int64) error {

@@ -72,6 +72,14 @@ func getAssetGroup(ctx context.Context, inodeID string) (interface{}, error) {
 	return appdb.GetAssetGroup(ctx, inodeID)
 }
 
+// PUT /v3/issuer-nodes/:inodeID
+func updateIssuerNode(ctx context.Context, inodeID string, in struct{ Label *string }) error {
+	if err := issuerAuthz(ctx, inodeID); err != nil {
+		return err
+	}
+	return appdb.UpdateIssuerNode(ctx, inodeID, in.Label)
+}
+
 // GET /v3/issuer-nodes/:inodeID/assets
 func listAssets(ctx context.Context, groupID string) (interface{}, error) {
 	if err := issuerAuthz(ctx, groupID); err != nil {
@@ -119,6 +127,14 @@ func getAsset(ctx context.Context, assetID string) (interface{}, error) {
 		return nil, err
 	}
 	return appdb.GetAsset(ctx, assetID)
+}
+
+// PUT /v3/assets/:assetID
+func updateAsset(ctx context.Context, assetID string, in struct{ Label *string }) error {
+	if err := assetAuthz(ctx, assetID); err != nil {
+		return err
+	}
+	return appdb.UpdateAsset(ctx, assetID, in.Label)
 }
 
 // GET /v3/issuer-nodes/:inodeID/activity

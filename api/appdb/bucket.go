@@ -168,3 +168,14 @@ func GetBucket(ctx context.Context, bucketID string) (*Bucket, error) {
 
 	return b, nil
 }
+
+// UpdateAccount updates the label of an account.
+func UpdateAccount(ctx context.Context, accountID string, label *string) error {
+	if label == nil {
+		return nil
+	}
+	const q = `UPDATE buckets SET label = $2 WHERE id = $1`
+	db := pg.FromContext(ctx)
+	_, err := db.Exec(q, accountID, *label)
+	return errors.Wrap(err, "update query")
+}
