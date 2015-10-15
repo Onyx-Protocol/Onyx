@@ -62,11 +62,12 @@ type Balance struct {
 // GetWallet returns basic information about a single wallet.
 func GetWallet(ctx context.Context, walletID string) (*Wallet, error) {
 	var (
-		q     = `SELECT label, block_chain FROM manager_nodes WHERE id = $1`
-		label string
-		bc    string
+		q       = `SELECT label, block_chain, generated_keys FROM manager_nodes WHERE id = $1`
+		label   string
+		bc      string
+		keyStrs []string
 	)
-	err := pg.FromContext(ctx).QueryRow(q, walletID).Scan(&label, &bc)
+	err := pg.FromContext(ctx).QueryRow(q, walletID).Scan(&label, &bc, (*pg.Strings)(&keyStrs))
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "wallet ID: %v", walletID)
 	}
@@ -74,7 +75,12 @@ func GetWallet(ctx context.Context, walletID string) (*Wallet, error) {
 		return nil, err
 	}
 
-	return &Wallet{ID: walletID, Label: label, Blockchain: bc}, nil
+	keys, err := stringsToKeys(keyStrs)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing private keys")
+	}
+
+	return &Wallet{ID: walletID, Label: label, Blockchain: bc, PrivateKeys: keys}, nil
 }
 
 // WalletBalance fetches the balances of assets contained in this wallet.
