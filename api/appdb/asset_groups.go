@@ -162,3 +162,26 @@ func UpdateIssuerNode(ctx context.Context, inodeID string, label *string) error 
 	_, err := db.Exec(q, inodeID, *label)
 	return errors.Wrap(err, "update query")
 }
+
+// DeleteIssuerNode deletes the issuer node but only if there are no
+// assets and no issuance activity associated with it (enforced by ON
+// DELETE NO ACTION).
+func DeleteIssuerNode(ctx context.Context, inodeID string) error {
+	const q = `DELETE FROM issuer_nodes WHERE id = $1`
+	db := pg.FromContext(ctx)
+	result, err := db.Exec(q, inodeID)
+	if err != nil {
+		if pg.IsForeignKeyViolation(err) {
+			return errors.WithDetailf(ErrCannotDelete, "issuer node ID %v", inodeID)
+		}
+		return errors.Wrap(err, "delete query")
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "delete query")
+	}
+	if rowsAffected == 0 {
+		return errors.WithDetailf(pg.ErrUserInputNotFound, "issuer node ID %v", inodeID)
+	}
+	return nil
+}

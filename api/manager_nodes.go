@@ -46,6 +46,14 @@ func updateManagerNode(ctx context.Context, mnodeID string, in struct{ Label *st
 	return appdb.UpdateManagerNode(ctx, mnodeID, in.Label)
 }
 
+// DELETE /v3/manager-nodes/:mnodeID
+func deleteManagerNode(ctx context.Context, mnodeID string) error {
+	if err := managerAuthz(ctx, mnodeID); err != nil {
+		return err
+	}
+	return appdb.DeleteManagerNode(ctx, mnodeID)
+}
+
 // GET /v3/projects/:projID/manager-nodes
 func listManagerNodes(ctx context.Context, projID string) (interface{}, error) {
 	if err := projectAuthz(ctx, projID); err != nil {
@@ -203,6 +211,14 @@ func updateAccount(ctx context.Context, accountID string, in struct{ Label *stri
 		return err
 	}
 	return appdb.UpdateAccount(ctx, accountID, in.Label)
+}
+
+// DELETE /v3/accounts/:accountID
+func deleteAccount(ctx context.Context, accountID string) error {
+	if err := accountAuthz(ctx, accountID); err != nil {
+		return err
+	}
+	return appdb.DeleteAccount(ctx, accountID)
 }
 
 // /v3/accounts/:accountID/addresses

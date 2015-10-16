@@ -26,28 +26,89 @@ func withContext(t *testing.T, sql string, fn func(*testing.T, context.Context))
 	fn(t, ctx)
 }
 
-func newTestIssuerNode(t *testing.T, ctx context.Context, inodeID, label string) *AssetGroup {
+func newTestUser(t *testing.T, ctx context.Context, email, password string) *User {
 	ensureInTransaction(ctx)
-	issuerNode, err := InsertAssetGroup(ctx, inodeID, label, []*hdkey.XKey{dummyXPub}, nil)
+	if email == "" {
+		email = "foo@bar.com"
+	}
+	if password == "" {
+		password = "a valid password"
+	}
+	user, err := CreateUser(ctx, email, password)
 	if err != nil {
-		t.Fatalf("trouble setting up issuer node in withIssuerNode: %v", err)
+		t.Fatalf("trouble setting up user in newTestUser: %v", err)
+	}
+	return user
+}
+
+func newTestProject(t *testing.T, ctx context.Context, name string, user *User) *Project {
+	ensureInTransaction(ctx)
+	if user == nil {
+		user = newTestUser(t, ctx, "", "")
+	}
+	project, err := CreateProject(ctx, name, user.ID)
+	if err != nil {
+		t.Fatalf("trouble setting up project in newTestProject: %v", err)
+	}
+	return project
+}
+
+func newTestIssuerNode(t *testing.T, ctx context.Context, project *Project, label string) *AssetGroup {
+	ensureInTransaction(ctx)
+	if project == nil {
+		project = newTestProject(t, ctx, "project-1", nil)
+	}
+	issuerNode, err := InsertAssetGroup(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil)
+	if err != nil {
+		t.Fatalf("trouble setting up issuer node in newTestIssuerNode: %v", err)
 	}
 	if issuerNode.ID == "" {
-		t.Fatal("got empty issuer node id in withIssuerNode")
+		t.Fatal("got empty issuer node id in newTestIssuerNode")
 	}
 	return issuerNode
 }
 
-func newTestManagerNode(t *testing.T, ctx context.Context, mnodeID, label string) *ManagerNode {
+func newTestManagerNode(t *testing.T, ctx context.Context, project *Project, label string) *ManagerNode {
 	ensureInTransaction(ctx)
-	managerNode, err := InsertManagerNode(ctx, mnodeID, label, []*hdkey.XKey{dummyXPub}, nil)
+	if project == nil {
+		project = newTestProject(t, ctx, "project-1", nil)
+	}
+	managerNode, err := InsertManagerNode(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil)
 	if err != nil {
-		t.Fatalf("could not create manager node in withManagerNode: %v", err)
+		t.Fatalf("could not create manager node in newTestManagerNode: %v", err)
 	}
 	if managerNode.ID == "" {
-		t.Fatal("got empty manager node id in withManagerNode")
+		t.Fatal("got empty manager node id in newTestManagerNode")
 	}
 	return managerNode
+}
+
+func newTestAccount(t *testing.T, ctx context.Context, managerNode *ManagerNode, label string) *Bucket {
+	ensureInTransaction(ctx)
+	if managerNode == nil {
+		managerNode = newTestManagerNode(t, ctx, nil, "manager-node-1")
+	}
+	account, err := CreateBucket(ctx, managerNode.ID, label)
+	if err != nil {
+		t.Fatalf("could not create account in newTestAccount: %v", err)
+	}
+	return account
+}
+
+func newTestAsset(t *testing.T, ctx context.Context, issuerNode *AssetGroup) *Asset {
+	ensureInTransaction(ctx)
+	if issuerNode == nil {
+		issuerNode = newTestIssuerNode(t, ctx, nil, "issuer-node-1")
+	}
+	asset, _, err := NextAsset(ctx, issuerNode.ID)
+	if err != nil {
+		t.Fatalf("trouble setting up asset in newTestAsset: %v", err)
+	}
+	err = InsertAsset(ctx, asset)
+	if err != nil {
+		t.Fatalf("trouble setting up asset in newTestAsset: %v", err)
+	}
+	return asset
 }
 
 // Panics if not in a transaction

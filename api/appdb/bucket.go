@@ -179,3 +179,26 @@ func UpdateAccount(ctx context.Context, accountID string, label *string) error {
 	_, err := db.Exec(q, accountID, *label)
 	return errors.Wrap(err, "update query")
 }
+
+// DeleteAccount deletes the account but only if there is no activity
+// and there are no addresses associated with it (enforced by ON
+// DELETE NO ACTION).
+func DeleteAccount(ctx context.Context, accountID string) error {
+	const q = `DELETE FROM accounts WHERE id = $1`
+	db := pg.FromContext(ctx)
+	result, err := db.Exec(q, accountID)
+	if err != nil {
+		if pg.IsForeignKeyViolation(err) {
+			return errors.WithDetailf(ErrCannotDelete, "account ID %v", accountID)
+		}
+		return errors.Wrap(err, "delete query")
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "delete query")
+	}
+	if rowsAffected == 0 {
+		return errors.WithDetailf(pg.ErrUserInputNotFound, "account ID %v", accountID)
+	}
+	return nil
+}

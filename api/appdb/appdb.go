@@ -10,10 +10,16 @@ import (
 	"errors"
 )
 
-// ErrBadLabel is returned by functions that operate
-// on the label of various objects, for instance
-// nodes and accounts.
-var ErrBadLabel = errors.New("bad label")
+var (
+	// ErrBadLabel is returned by functions that operate
+	// on the label of various objects, for instance
+	// nodes and accounts.
+	ErrBadLabel = errors.New("bad label")
+
+	// ErrCannotDelete means someone tried to delete an object (node,
+	// account, asset, etc.) that is referenced by other objects.
+	ErrCannotDelete = errors.New("cannot delete")
+)
 
 // Init creates some objects in db.
 // It must be called on program start,

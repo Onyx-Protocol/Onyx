@@ -12,7 +12,7 @@ import (
 
 func TestInsertAssetGroup(t *testing.T) {
 	withContext(t, "", func(t *testing.T, ctx context.Context) {
-		_ = newTestIssuerNode(t, ctx, "a1", "foo")
+		_ = newTestIssuerNode(t, ctx, nil, "foo")
 	})
 }
 
@@ -111,7 +111,7 @@ func TestGetAssetGroup(t *testing.T) {
 
 func TestUpdateIssuerNode(t *testing.T) {
 	withContext(t, "", func(t *testing.T, ctx context.Context) {
-		issuerNode := newTestIssuerNode(t, ctx, "a1", "foo")
+		issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
 
 		newLabel := "bar"
 
@@ -133,7 +133,7 @@ func TestUpdateIssuerNode(t *testing.T) {
 // Test that calling UpdateIssuerNode with no new label is a no-op.
 func TestUpdateIssuerNodeNoUpdate(t *testing.T) {
 	withContext(t, "", func(t *testing.T, ctx context.Context) {
-		issuerNode := newTestIssuerNode(t, ctx, "a1", "foo")
+		issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
 		err := UpdateIssuerNode(ctx, issuerNode.ID, nil)
 		if err != nil {
 			t.Errorf("update issuer node error %v", err)
@@ -145,6 +145,49 @@ func TestUpdateIssuerNodeNoUpdate(t *testing.T) {
 		}
 		if issuerNode.Label != "foo" {
 			t.Errorf("expected foo, got %s", issuerNode.Label)
+		}
+	})
+}
+
+func TestDeleteIssuerNode(t *testing.T) {
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
+		_, err := GetAssetGroup(ctx, issuerNode.ID)
+		if err != nil {
+			t.Errorf("could not get test issuer node with id %s: %v", issuerNode.ID, err)
+		}
+
+		err = DeleteIssuerNode(ctx, issuerNode.ID)
+		if err != nil {
+			t.Errorf("could not delete issuer node with id %s: %v", issuerNode.ID, err)
+		}
+
+		_, err = GetAssetGroup(ctx, issuerNode.ID)
+		if err == nil { // sic
+			t.Errorf("expected issuer node %s would be deleted, but it wasn't", issuerNode.ID)
+		} else {
+			rootErr := errors.Root(err)
+			if rootErr != pg.ErrUserInputNotFound {
+				t.Errorf("unexpected error when trying to get deleted issuer node %s: %v", issuerNode.ID, err)
+			}
+		}
+	})
+}
+
+// Test that the existence of an asset connected to an issuer node
+// prevents deletion of the node.
+func TestDeleteIssuerNodeBlocked(t *testing.T) {
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
+		_ = newTestAsset(t, ctx, issuerNode)
+		err := DeleteIssuerNode(ctx, issuerNode.ID)
+		if err == nil { // sic
+			t.Errorf("expected to be unable to delete issuer node %s, but was able to", issuerNode.ID)
+		} else {
+			rootErr := errors.Root(err)
+			if rootErr != ErrCannotDelete {
+				t.Errorf("unexpected error trying to delete undeletable issuer node %s: %v", issuerNode.ID, err)
+			}
 		}
 	})
 }

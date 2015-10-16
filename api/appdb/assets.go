@@ -150,6 +150,40 @@ func UpdateAsset(ctx context.Context, assetID string, label *string) error {
 	return errors.Wrap(err, "update query")
 }
 
+// DeleteAsset deletes the asset but only if none of it has been issued.
+func DeleteAsset(ctx context.Context, assetID string) error {
+	const q = `DELETE FROM assets WHERE id = $1 AND issued = 0`
+	db := pg.FromContext(ctx)
+	result, err := db.Exec(q, assetID)
+	if err != nil {
+		return errors.Wrap(err, "delete query")
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "delete query")
+	}
+	if rowsAffected == 0 {
+		// Distinguish between the asset-not-found case and the
+		// assets-issued case.
+		const q2 = `SELECT issued FROM assets WHERE id = $1`
+		var issued int64
+		err = db.QueryRow(q2, assetID).Scan(&issued)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return errors.WithDetailf(pg.ErrUserInputNotFound, "asset id=%v", assetID)
+			}
+			return errors.Wrap(err, "delete query")
+		}
+		if issued != 0 {
+			return errors.WithDetailf(ErrCannotDelete, "asset id=%v", assetID)
+		}
+		// Unexpected error. Could be a race condition where someone else
+		// deleted the asset first.
+		return errors.New("could not delete asset")
+	}
+	return nil
+}
+
 // AddIssuance increases the issued column on an asset
 // by the amount provided.
 func AddIssuance(ctx context.Context, id string, amount uint64) error {

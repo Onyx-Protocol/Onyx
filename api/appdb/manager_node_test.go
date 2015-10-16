@@ -11,8 +11,8 @@ import (
 )
 
 func TestInsertManagerNode(t *testing.T) {
-	withContext(t, sampleProjectFixture, func(t *testing.T, ctx context.Context) {
-		_ = newTestManagerNode(t, ctx, "proj-id-0", "foo")
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		_ = newTestManagerNode(t, ctx, nil, "foo")
 	})
 }
 
@@ -169,8 +169,8 @@ func TestListManagerNodes(t *testing.T) {
 }
 
 func TestUpdateManagerNode(t *testing.T) {
-	withContext(t, sampleProjectFixture, func(t *testing.T, ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, "proj-id-0", "foo")
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 		newLabel := "bar"
 
 		err := UpdateManagerNode(ctx, managerNode.ID, &newLabel)
@@ -190,8 +190,8 @@ func TestUpdateManagerNode(t *testing.T) {
 
 // Test that calling UpdateManagerNode with no new label is a no-op.
 func TestUpdateManagerNodeNoUpdate(t *testing.T) {
-	withContext(t, sampleProjectFixture, func(t *testing.T, ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, "proj-id-0", "foo")
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 		err := UpdateManagerNode(ctx, managerNode.ID, nil)
 		if err != nil {
 			t.Errorf("unexpected error %v", err)
@@ -203,6 +203,50 @@ func TestUpdateManagerNodeNoUpdate(t *testing.T) {
 		}
 		if managerNode.Label != "foo" {
 			t.Errorf("Expected foo, got %s", managerNode.Label)
+		}
+	})
+}
+
+func TestDeleteManagerNode(t *testing.T) {
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		managerNode := newTestManagerNode(t, ctx, nil, "foo")
+
+		_, err := GetManagerNode(ctx, managerNode.ID)
+		if err != nil {
+			t.Errorf("could not get test manager node with id %s: %v", managerNode.ID, err)
+		}
+
+		err = DeleteManagerNode(ctx, managerNode.ID)
+		if err != nil {
+			t.Errorf("could not delete manager node with id %s: %v", managerNode.ID, err)
+		}
+
+		_, err = GetManagerNode(ctx, managerNode.ID)
+		if err == nil { // sic
+			t.Errorf("expected manager node %s would be deleted, but it wasn't", managerNode.ID)
+		} else {
+			rootErr := errors.Root(err)
+			if rootErr != pg.ErrUserInputNotFound {
+				t.Errorf("unexpected error when trying to get deleted manager node %s: %v", managerNode.ID, err)
+			}
+		}
+	})
+}
+
+// Test that the existence of an account connected to a manager node
+// prevents deletion of the node.
+func TestDeleteManagerNodeBlocked(t *testing.T) {
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		managerNode := newTestManagerNode(t, ctx, nil, "foo")
+		_ = newTestAccount(t, ctx, managerNode, "bar")
+		err := DeleteManagerNode(ctx, managerNode.ID)
+		if err == nil { // sic
+			t.Errorf("expected to be unable to delete manager node %s, but was able to", managerNode.ID)
+		} else {
+			rootErr := errors.Root(err)
+			if rootErr != ErrCannotDelete {
+				t.Errorf("unexpected error trying to delete undeletable manager node %s: %v", managerNode.ID, err)
+			}
 		}
 	})
 }

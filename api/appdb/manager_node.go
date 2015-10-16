@@ -167,6 +167,29 @@ func UpdateManagerNode(ctx context.Context, mnodeID string, label *string) error
 	return errors.Wrap(err, "update query")
 }
 
+// DeleteManagerNode deletes the manager node but only if no
+// activity/accounts/addresses/rotations are associated with it
+// (enforced by ON DELETE NO ACTION).
+func DeleteManagerNode(ctx context.Context, mnodeID string) error {
+	const q = `DELETE FROM manager_nodes WHERE id = $1`
+	db := pg.FromContext(ctx)
+	result, err := db.Exec(q, mnodeID)
+	if err != nil {
+		if pg.IsForeignKeyViolation(err) {
+			return errors.WithDetailf(ErrCannotDelete, "manager node ID %v", mnodeID)
+		}
+		return errors.Wrap(err, "delete query")
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "delete query")
+	}
+	if rowsAffected == 0 {
+		return errors.WithDetailf(pg.ErrUserInputNotFound, "manager node ID %v", mnodeID)
+	}
+	return nil
+}
+
 func createRotation(ctx context.Context, managerNodeID string, xpubs ...string) error {
 	const q = `
 		WITH new_rotation AS (

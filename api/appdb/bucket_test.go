@@ -3,16 +3,18 @@ package appdb
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 )
 
 func TestCreateBucket(t *testing.T) {
-	withContext(t, sampleProjectFixture, func(t *testing.T, ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, "proj-id-0", "foo")
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 		bucket, err := CreateBucket(ctx, managerNode.ID, "foo")
 		if err != nil {
 			t.Error("unexpected error", err)
@@ -27,8 +29,8 @@ func TestCreateBucket(t *testing.T) {
 }
 
 func TestCreateBucketBadLabel(t *testing.T) {
-	withContext(t, sampleProjectFixture, func(t *testing.T, ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, "proj-id-0", "foo")
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 		_, err := CreateBucket(ctx, managerNode.ID, "")
 		if err == nil {
 			t.Error("err = nil, want error")
@@ -233,8 +235,8 @@ func TestGetBucket(t *testing.T) {
 }
 
 func TestUpdateAccount(t *testing.T) {
-	withContext(t, sampleProjectFixture, func(t *testing.T, ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, "proj-id-0", "foo")
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 		account, err := CreateBucket(ctx, managerNode.ID, "foo")
 		if err != nil {
 			t.Error("unexpected error", err)
@@ -264,8 +266,8 @@ func TestUpdateAccount(t *testing.T) {
 
 // Test that calling UpdateManagerNode with no new label is a no-op.
 func TestUpdateAccountNoUpdate(t *testing.T) {
-	withContext(t, sampleProjectFixture, func(t *testing.T, ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, "proj-id-0", "foo")
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 		account, err := CreateBucket(ctx, managerNode.ID, "foo")
 		if err != nil {
 			t.Fatalf("could not create account: %v", err)
@@ -291,6 +293,67 @@ func TestUpdateAccountNoUpdate(t *testing.T) {
 		}
 		if account.Label != "foo" {
 			t.Errorf("expected foo, got %s", account.Label)
+		}
+	})
+}
+
+func TestDeleteAccount(t *testing.T) {
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		account := newTestAccount(t, ctx, nil, "account-1")
+		_, err := GetBucket(ctx, account.ID)
+		if err != nil {
+			t.Fatalf("could not get account with id %s: %v", account.ID, err)
+		}
+		err = DeleteAccount(ctx, account.ID)
+		if err != nil {
+			t.Errorf("could not delete account with id %s: %v", account.ID, err)
+		}
+		_, err = GetBucket(ctx, account.ID)
+		if err == nil { // sic
+			t.Errorf("expected account %s would be deleted, but it wasn't", account.ID)
+		} else {
+			rootErr := errors.Root(err)
+			if rootErr != pg.ErrUserInputNotFound {
+				t.Errorf("unexpected error when trying to get deleted account %s: %v", account.ID, err)
+			}
+		}
+	})
+}
+
+// Test that the existence of an address associated with an account
+// prevents that account from being deleted.
+func TestDeleteAccountBlocked(t *testing.T) {
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		managerNode := newTestManagerNode(t, ctx, nil, "manager-node-1")
+		account := newTestAccount(t, ctx, managerNode, "account-1")
+		addr := &Address{
+			BucketID:         account.ID,
+			Amount:           100,
+			Expires:          time.Now().Add(5 * time.Minute),
+			IsChange:         false,
+			ManagerNodeID:    managerNode.ID,
+			ManagerNodeIndex: []uint32{0, 1},
+			BucketIndex:      []uint32{0, 0},
+			Index:            []uint32{0, 0},
+			SigsRequired:     1,
+			Keys:             []*hdkey.XKey{dummyXPub},
+
+			Address:      "3abc",
+			RedeemScript: []byte{},
+			PKScript:     []byte{},
+		}
+		err := addr.Insert(ctx)
+		if err != nil {
+			t.Fatalf("could not insert address during TestDeleteAccountBlocked: %v", err)
+		}
+		err = DeleteAccount(ctx, account.ID)
+		if err == nil { // sic
+			t.Errorf("expected to be unable to delete account %s, but was able to", account.ID)
+		} else {
+			rootErr := errors.Root(err)
+			if rootErr != ErrCannotDelete {
+				t.Errorf("unexpected error trying to delete undeletable account %s: %v", account.ID, err)
+			}
 		}
 	})
 }

@@ -61,6 +61,14 @@ func updateIssuerNode(ctx context.Context, inodeID string, in struct{ Label *str
 	return appdb.UpdateIssuerNode(ctx, inodeID, in.Label)
 }
 
+// DELETE /v3/issuer-nodes/:inodeID
+func deleteIssuerNode(ctx context.Context, inodeID string) error {
+	if err := issuerAuthz(ctx, inodeID); err != nil {
+		return err
+	}
+	return appdb.DeleteIssuerNode(ctx, inodeID)
+}
+
 // GET /v3/issuer-nodes/:inodeID/assets
 func listAssets(ctx context.Context, groupID string) (interface{}, error) {
 	if err := issuerAuthz(ctx, groupID); err != nil {
@@ -116,6 +124,14 @@ func updateAsset(ctx context.Context, assetID string, in struct{ Label *string }
 		return err
 	}
 	return appdb.UpdateAsset(ctx, assetID, in.Label)
+}
+
+// DELETE /v3/assets/:assetID
+func deleteAsset(ctx context.Context, assetID string) error {
+	if err := assetAuthz(ctx, assetID); err != nil {
+		return err
+	}
+	return appdb.DeleteAsset(ctx, assetID)
 }
 
 // GET /v3/issuer-nodes/:inodeID/activity

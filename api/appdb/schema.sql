@@ -720,7 +720,7 @@ CREATE INDEX utxos_manager_node_id_asset_id_reserved_at_idx ON utxos USING btree
 --
 
 ALTER TABLE ONLY accounts
-    ADD CONSTRAINT accounts_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
+    ADD CONSTRAINT accounts_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id) ON DELETE NO ACTION;
 
 
 --
@@ -728,7 +728,7 @@ ALTER TABLE ONLY accounts
 --
 
 ALTER TABLE ONLY activity_accounts
-    ADD CONSTRAINT activity_accounts_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id);
+    ADD CONSTRAINT activity_accounts_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE NO ACTION;
 
 
 --
@@ -744,7 +744,7 @@ ALTER TABLE ONLY activity_accounts
 --
 
 ALTER TABLE ONLY activity
-    ADD CONSTRAINT activity_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
+    ADD CONSTRAINT activity_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id) ON DELETE NO ACTION;
 
 
 --
@@ -752,7 +752,7 @@ ALTER TABLE ONLY activity
 --
 
 ALTER TABLE ONLY addresses
-    ADD CONSTRAINT addresses_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id);
+    ADD CONSTRAINT addresses_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE NO ACTION;
 
 
 --
@@ -760,7 +760,7 @@ ALTER TABLE ONLY addresses
 --
 
 ALTER TABLE ONLY addresses
-    ADD CONSTRAINT addresses_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
+    ADD CONSTRAINT addresses_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id) ON DELETE NO ACTION;
 
 
 --
@@ -768,7 +768,7 @@ ALTER TABLE ONLY addresses
 --
 
 ALTER TABLE ONLY assets
-    ADD CONSTRAINT assets_issuer_node_id_fkey FOREIGN KEY (issuer_node_id) REFERENCES issuer_nodes(id);
+    ADD CONSTRAINT assets_issuer_node_id_fkey FOREIGN KEY (issuer_node_id) REFERENCES issuer_nodes(id) ON DELETE NO ACTION;
 
 
 --
@@ -792,7 +792,7 @@ ALTER TABLE ONLY invitations
 --
 
 ALTER TABLE ONLY issuance_activity_assets
-    ADD CONSTRAINT issuance_activity_assets_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES assets(id);
+    ADD CONSTRAINT issuance_activity_assets_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE NO ACTION;
 
 
 --
@@ -808,7 +808,7 @@ ALTER TABLE ONLY issuance_activity_assets
 --
 
 ALTER TABLE ONLY issuance_activity
-    ADD CONSTRAINT issuance_activity_issuer_node_id_fkey FOREIGN KEY (issuer_node_id) REFERENCES issuer_nodes(id);
+    ADD CONSTRAINT issuance_activity_issuer_node_id_fkey FOREIGN KEY (issuer_node_id) REFERENCES issuer_nodes(id) ON DELETE NO ACTION;
 
 
 --
@@ -840,7 +840,7 @@ ALTER TABLE ONLY members
 --
 
 ALTER TABLE ONLY rotations
-    ADD CONSTRAINT rotations_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
+    ADD CONSTRAINT rotations_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id) ON DELETE CASCADE;
 
 
 --

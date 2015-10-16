@@ -257,3 +257,27 @@ func TestUpdateAssetNoUpdate(t *testing.T) {
 		}
 	})
 }
+
+func TestDeleteAsset(t *testing.T) {
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		asset := newTestAsset(t, ctx, nil)
+		assetID := asset.Hash.String()
+		_, err := GetAsset(ctx, assetID)
+		if err != nil {
+			t.Errorf("could not get test asset with id %s: %v", assetID, err)
+		}
+		err = DeleteAsset(ctx, assetID)
+		if err != nil {
+			t.Errorf("could not delete asset with asset id %s: %v", assetID, err)
+		}
+		_, err = GetAsset(ctx, assetID)
+		if err == nil { // sic
+			t.Errorf("expected asset %s would be deleted, but it wasn't", assetID)
+		} else {
+			rootErr := errors.Root(err)
+			if rootErr != pg.ErrUserInputNotFound {
+				t.Errorf("unexpected error when trying to get deleted asset %s: %v", assetID, err)
+			}
+		}
+	})
+}
