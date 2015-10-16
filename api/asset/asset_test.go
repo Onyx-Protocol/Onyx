@@ -32,9 +32,9 @@ func init() {
 
 func TestIssue(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO issuer_nodes (id, project_id, label, keyset, key_index)
-			VALUES ('ag1', 'app-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
+			VALUES ('ag1', 'proj-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
 		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, label)
 		VALUES(
 			'AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p',
@@ -84,9 +84,9 @@ func TestIssue(t *testing.T) {
 
 func TestOutputPKScript(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
-			VALUES('w1', 'app-id-0', 'w1', 'rot1');
+			VALUES('w1', 'proj-id-0', 'w1', 'rot1');
 		INSERT INTO rotations (id, manager_node_id, keyset)
 			VALUES('rot1', 'w1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 		INSERT INTO accounts (id, manager_node_id, key_index)
@@ -139,9 +139,9 @@ func TestOutputPKScript(t *testing.T) {
 
 func TestPKScriptChangeAddr(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
-			VALUES('w1', 'app-id-0', 'w1', 'rot1');
+			VALUES('w1', 'proj-id-0', 'w1', 'rot1');
 		INSERT INTO rotations (id, manager_node_id, keyset)
 			VALUES('rot1', 'w1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 		INSERT INTO accounts (id, manager_node_id, key_index)

@@ -13,12 +13,12 @@ import (
 
 func TestCreateInvitation(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	inv, err := CreateInvitation(ctx, "app-id-0", "foo@bar.com", "developer")
+	inv, err := CreateInvitation(ctx, "proj-id-0", "foo@bar.com", "developer")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,8 +27,8 @@ func TestCreateInvitation(t *testing.T) {
 		t.Fatal("error: ID is blank")
 	}
 
-	if inv.AppName != "app-0" {
-		t.Errorf("app name got = %v want app-0", inv.AppName)
+	if inv.ProjectName != "proj-0" {
+		t.Errorf("proj name got = %v want proj-0", inv.ProjectName)
 	}
 
 	got, err := getTestInvitation(ctx, inv.ID)
@@ -37,10 +37,10 @@ func TestCreateInvitation(t *testing.T) {
 	}
 
 	want := testInvitation{
-		id:    inv.ID,
-		appID: "app-id-0",
-		email: "foo@bar.com",
-		role:  "developer",
+		id:     inv.ID,
+		projID: "proj-id-0",
+		email:  "foo@bar.com",
+		role:   "developer",
 	}
 
 	if !reflect.DeepEqual(got, want) {
@@ -50,32 +50,32 @@ func TestCreateInvitation(t *testing.T) {
 
 func TestCreateInvitationErrs(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO users (id, password_hash, email) VALUES
 			('user-id-1', '{}', 'bar@foo.com');
 
 		INSERT INTO members (user_id, project_id, role) VALUES
-			('user-id-1', 'app-id-0', 'developer');
+			('user-id-1', 'proj-id-0', 'developer');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	examples := []struct {
-		appID, email, role string
-		wantErr            error
+		projID, email, role string
+		wantErr             error
 	}{
 		// Invalid email
-		{"app-id-0", "invalid-email", "developer", ErrBadEmail},
+		{"proj-id-0", "invalid-email", "developer", ErrBadEmail},
 		// Invalid role
-		{"app-id-0", "foo@bar.com", "benevolent-dictator", ErrBadRole},
+		{"proj-id-0", "foo@bar.com", "benevolent-dictator", ErrBadRole},
 		// Email is already part of the application
-		{"app-id-0", "bar@foo.com", "admin", ErrAlreadyMember},
+		{"proj-id-0", "bar@foo.com", "admin", ErrAlreadyMember},
 	}
 
 	for i, ex := range examples {
 		t.Log("Example", i)
-		inv, err := CreateInvitation(ctx, ex.appID, ex.email, ex.role)
+		inv, err := CreateInvitation(ctx, ex.projID, ex.email, ex.role)
 
 		if inv != nil {
 			t.Errorf("invitation = %v want nil", inv)
@@ -89,7 +89,7 @@ func TestCreateInvitationErrs(t *testing.T) {
 
 func TestGetInvitation(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO users (id, password_hash, email) VALUES
 			('user-id-0', '{}', 'foo@bar.com'),
@@ -97,17 +97,17 @@ func TestGetInvitation(t *testing.T) {
 
 		INSERT INTO invitations (id, project_id, email, role) VALUES (
 			'inv-id-0',
-			'app-id-0',
+			'proj-id-0',
 			'foo@bar.com',
 			'admin'
 		), (
 			'inv-id-1',
-			'app-id-0',
+			'proj-id-0',
 			'Bar@Foo.com',
 			'developer'
 		), (
 			'inv-id-2',
-			'app-id-0',
+			'proj-id-0',
 			'no-account-yet@foo.com',
 			'developer'
 		);
@@ -124,12 +124,12 @@ func TestGetInvitation(t *testing.T) {
 		{
 			id: "inv-id-0",
 			want: &Invitation{
-				ID:      "inv-id-0",
-				AppID:   "app-id-0",
-				AppName: "app-0",
-				Email:   "foo@bar.com",
-				Role:    "admin",
-				UserID:  "user-id-0",
+				ID:          "inv-id-0",
+				ProjectID:   "proj-id-0",
+				ProjectName: "proj-0",
+				Email:       "foo@bar.com",
+				Role:        "admin",
+				UserID:      "user-id-0",
 			},
 		},
 
@@ -137,12 +137,12 @@ func TestGetInvitation(t *testing.T) {
 		{
 			id: "inv-id-1",
 			want: &Invitation{
-				ID:      "inv-id-1",
-				AppID:   "app-id-0",
-				AppName: "app-0",
-				Email:   "Bar@Foo.com",
-				Role:    "developer",
-				UserID:  "user-id-1",
+				ID:          "inv-id-1",
+				ProjectID:   "proj-id-0",
+				ProjectName: "proj-0",
+				Email:       "Bar@Foo.com",
+				Role:        "developer",
+				UserID:      "user-id-1",
 			},
 		},
 
@@ -150,12 +150,12 @@ func TestGetInvitation(t *testing.T) {
 		{
 			id: "inv-id-2",
 			want: &Invitation{
-				ID:      "inv-id-2",
-				AppID:   "app-id-0",
-				AppName: "app-0",
-				Email:   "no-account-yet@foo.com",
-				Role:    "developer",
-				UserID:  "",
+				ID:          "inv-id-2",
+				ProjectID:   "proj-id-0",
+				ProjectName: "proj-0",
+				Email:       "no-account-yet@foo.com",
+				Role:        "developer",
+				UserID:      "",
 			},
 		},
 
@@ -184,11 +184,11 @@ func TestGetInvitation(t *testing.T) {
 
 func TestCreateUserFromInvitation(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO invitations (id, project_id, email, role) VALUES (
 			'inv-id-0',
-			'app-id-0',
+			'proj-id-0',
 			'foo@bar.com',
 			'admin'
 		);
@@ -205,7 +205,7 @@ func TestCreateUserFromInvitation(t *testing.T) {
 		t.Errorf("email = %v want foo@bar.com", user.Email)
 	}
 
-	role, err := checkRole(ctx, "app-id-0", user.ID)
+	role, err := checkRole(ctx, "proj-id-0", user.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,11 +223,11 @@ func TestCreateUserFromInvitation(t *testing.T) {
 
 func TestCreateUserFromInvitationErrs(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO invitations (id, project_id, email, role) VALUES (
 			'inv-id-0',
-			'app-id-0',
+			'proj-id-0',
 			'foo@bar.com',
 			'admin'
 		);
@@ -268,14 +268,14 @@ func TestCreateUserFromInvitationErrs(t *testing.T) {
 
 func TestAddMemberFromInvitation(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO users (id, password_hash, email) VALUES
 			('user-id-0', '{}', 'foo@bar.com');
 
 		INSERT INTO invitations (id, project_id, email, role) VALUES (
 			'inv-id-0',
-			'app-id-0',
+			'proj-id-0',
 			'foo@bar.com',
 			'admin'
 		);
@@ -288,7 +288,7 @@ func TestAddMemberFromInvitation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	role, err := checkRole(ctx, "app-id-0", "user-id-0")
+	role, err := checkRole(ctx, "proj-id-0", "user-id-0")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -306,11 +306,11 @@ func TestAddMemberFromInvitation(t *testing.T) {
 
 func TestAddMemberFromInvitationErrs(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO invitations (id, project_id, email, role) VALUES (
 			'inv-id-0',
-			'app-id-0',
+			'proj-id-0',
 			'foo@bar.com',
 			'admin'
 		);
@@ -340,16 +340,16 @@ func TestAddMemberFromInvitationErrs(t *testing.T) {
 
 func TestDeleteInvitation(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO invitations (id, project_id, email, role) VALUES (
 			'inv-id-0',
-			'app-id-0',
+			'proj-id-0',
 			'foo@bar.com',
 			'admin'
 		), (
 			'inv-id-1',
-			'app-id-0',
+			'proj-id-0',
 			'Bar@Foo.com',
 			'developer'
 		);
@@ -380,10 +380,10 @@ func TestDeleteInvitation(t *testing.T) {
 }
 
 type testInvitation struct {
-	id    string
-	appID string
-	email string
-	role  string
+	id     string
+	projID string
+	email  string
+	role   string
 }
 
 func getTestInvitation(ctx context.Context, id string) (testInvitation, error) {
@@ -397,7 +397,7 @@ func getTestInvitation(ctx context.Context, id string) (testInvitation, error) {
 	)
 
 	err := pg.FromContext(ctx).QueryRow(q, id).Scan(
-		&inv.appID,
+		&inv.projID,
 		&inv.email,
 		&inv.role,
 	)

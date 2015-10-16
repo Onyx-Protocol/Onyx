@@ -8,31 +8,31 @@ import (
 )
 
 // GET /v3/projects/:projID
-func getApplication(ctx context.Context, projID string) (*appdb.Application, error) {
+func getProject(ctx context.Context, projID string) (*appdb.Project, error) {
 	if err := projectAuthz(ctx, projID); err != nil {
 		return nil, err
 	}
-	return appdb.GetApplication(ctx, projID)
+	return appdb.GetProject(ctx, projID)
 }
 
 // GET /v3/projects
-func listApplications(ctx context.Context) ([]*appdb.Application, error) {
+func listProjects(ctx context.Context) ([]*appdb.Project, error) {
 	uid := authn.GetAuthID(ctx)
-	return appdb.ListApplications(ctx, uid)
+	return appdb.ListProjects(ctx, uid)
 }
 
 // POST /v3/projects
-func createApplication(ctx context.Context, in struct{ Name string }) (*appdb.Application, error) {
+func createProject(ctx context.Context, in struct{ Name string }) (*appdb.Project, error) {
 	uid := authn.GetAuthID(ctx)
-	return appdb.CreateApplication(ctx, in.Name, uid)
+	return appdb.CreateProject(ctx, in.Name, uid)
 }
 
 // PUT /v3/projects/:projID
-func updateApplication(ctx context.Context, aid string, in struct{ Name string }) error {
-	if err := projectAdminAuthz(ctx, aid); err != nil {
+func updateProject(ctx context.Context, projID string, in struct{ Name string }) error {
+	if err := projectAdminAuthz(ctx, projID); err != nil {
 		return err
 	}
-	return appdb.UpdateApplication(ctx, aid, in.Name)
+	return appdb.UpdateProject(ctx, projID, in.Name)
 }
 
 // GET /v3/projects/:projID/members

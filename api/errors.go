@@ -46,7 +46,7 @@ var (
 		asset.ErrBadTx:            errorInfo{400, "CH755", "Invalid transaction template"},
 		appdb.ErrBadAsset:         errorInfo{400, "CH761", "Invalid asset"},
 		appdb.ErrBadRole:          errorInfo{400, "CH800", "Member role must be \"developer\" or \"admin\"."},
-		appdb.ErrAlreadyMember:    errorInfo{400, "CH801", "User is already a member of the application."},
+		appdb.ErrAlreadyMember:    errorInfo{400, "CH801", "User is already a member of the project."},
 		errNotAdmin:               errorInfo{403, "CH781", "Admin privileges are required perform this action"},
 
 		// Error codes imported from papi for convenient reference.

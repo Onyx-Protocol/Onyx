@@ -13,8 +13,8 @@ import (
 )
 
 // POST /v3/projects/:projID/issuer-nodes
-func createAssetGroup(ctx context.Context, appID string, req *asset.CreateNodeReq) (interface{}, error) {
-	if err := projectAuthz(ctx, appID); err != nil {
+func createAssetGroup(ctx context.Context, projID string, req *asset.CreateNodeReq) (interface{}, error) {
+	if err := projectAuthz(ctx, projID); err != nil {
 		return nil, err
 	}
 
@@ -24,7 +24,7 @@ func createAssetGroup(ctx context.Context, appID string, req *asset.CreateNodeRe
 	}
 	defer dbtx.Rollback()
 
-	assetGroup, err := asset.CreateNode(ctx, asset.IssuerNode, appID, req)
+	assetGroup, err := asset.CreateNode(ctx, asset.IssuerNode, projID, req)
 	if err != nil {
 		return nil, err
 	}

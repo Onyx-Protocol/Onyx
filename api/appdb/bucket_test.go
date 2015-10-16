@@ -13,11 +13,11 @@ import (
 )
 
 func TestCreateBucket(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture)
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	wallet, err := InsertWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
+	wallet, err := InsertWallet(ctx, "proj-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,11 +35,11 @@ func TestCreateBucket(t *testing.T) {
 }
 
 func TestCreateBucketBadLabel(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture)
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	wallet, err := InsertWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
+	wallet, err := InsertWallet(ctx, "proj-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,11 +115,11 @@ func TestBucketBalance(t *testing.T) {
 func TestListBuckets(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES
-			('app-id-0', 'app-0');
+			('proj-id-0', 'proj-0');
 
 		INSERT INTO manager_nodes (id, project_id, key_index, label) VALUES
-			('wallet-id-0', 'app-id-0', 0, 'wallet-0'),
-			('wallet-id-1', 'app-id-0', 1, 'wallet-1');
+			('wallet-id-0', 'proj-id-0', 0, 'wallet-0'),
+			('wallet-id-1', 'proj-id-0', 1, 'wallet-1');
 
 		INSERT INTO accounts (id, manager_node_id, key_index, label) VALUES
 			('bucket-id-0', 'wallet-id-0', 0, 'bucket-0'),
@@ -206,10 +206,10 @@ func TestListBuckets(t *testing.T) {
 func TestGetBucket(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES
-			('app-id-0', 'app-0');
+			('proj-id-0', 'proj-0');
 
 		INSERT INTO manager_nodes (id, project_id, key_index, label) VALUES
-			('wallet-id-0', 'app-id-0', 0, 'wallet-0');
+			('wallet-id-0', 'proj-id-0', 0, 'wallet-0');
 
 		INSERT INTO accounts (id, manager_node_id, key_index, label) VALUES
 			('bucket-id-0', 'wallet-id-0', 0, 'bucket-0')

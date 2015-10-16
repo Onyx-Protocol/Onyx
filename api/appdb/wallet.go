@@ -22,7 +22,7 @@ type Wallet struct {
 }
 
 // InsertWallet inserts a new wallet into the database.
-func InsertWallet(ctx context.Context, appID, label string, keys, gennedKeys []*hdkey.XKey) (w *Wallet, err error) {
+func InsertWallet(ctx context.Context, projID, label string, keys, gennedKeys []*hdkey.XKey) (w *Wallet, err error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 	const q = `
 		INSERT INTO manager_nodes (label, project_id, generated_keys)
@@ -31,7 +31,7 @@ func InsertWallet(ctx context.Context, appID, label string, keys, gennedKeys []*
 	`
 	var id string
 	xprvs := keysToStrings(gennedKeys)
-	err = pg.FromContext(ctx).QueryRow(q, label, appID, pg.Strings(xprvs)).Scan(&id)
+	err = pg.FromContext(ctx).QueryRow(q, label, projID, pg.Strings(xprvs)).Scan(&id)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert wallet")
 	}
@@ -125,15 +125,15 @@ func WalletBalance(ctx context.Context, walletID, prev string, limit int) ([]*Ba
 	return bals, last, err
 }
 
-// ListWallets returns a list of wallets contained in the given application.
-func ListWallets(ctx context.Context, appID string) ([]*Wallet, error) {
+// ListWallets returns a list of wallets contained in the given project.
+func ListWallets(ctx context.Context, projID string) ([]*Wallet, error) {
 	q := `
 		SELECT id, block_chain, label
 		FROM manager_nodes
 		WHERE project_id = $1
 		ORDER BY created_at
 	`
-	rows, err := pg.FromContext(ctx).Query(q, appID)
+	rows, err := pg.FromContext(ctx).Query(q, projID)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}

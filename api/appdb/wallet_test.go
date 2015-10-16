@@ -13,11 +13,11 @@ import (
 )
 
 func TestInsertWallet(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture)
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	wallet, err := InsertWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
+	wallet, err := InsertWallet(ctx, "proj-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -29,10 +29,10 @@ func TestInsertWallet(t *testing.T) {
 func TestGetWallet(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES
-			('app-id-0', 'app-0');
+			('proj-id-0', 'proj-0');
 
 		INSERT INTO manager_nodes (id, project_id, key_index, label) VALUES
-			('wallet-id-0', 'app-id-0', 0, 'wallet-0');
+			('wallet-id-0', 'proj-id-0', 0, 'wallet-0');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
@@ -134,14 +134,14 @@ func TestWalletBalance(t *testing.T) {
 func TestListWallets(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES
-			('app-id-0', 'app-0'),
+			('proj-id-0', 'proj-0'),
 			('app-id-1', 'app-1');
 
 		INSERT INTO manager_nodes (id, project_id, key_index, label, created_at) VALUES
 			-- insert in reverse chronological order, to ensure that ListWallets
 			-- is performing a sort.
-			('wallet-id-0', 'app-id-0', 0, 'wallet-0', now()),
-			('wallet-id-1', 'app-id-0', 1, 'wallet-1', now() - '1 day'::interval),
+			('wallet-id-0', 'proj-id-0', 0, 'wallet-0', now()),
+			('wallet-id-1', 'proj-id-0', 1, 'wallet-1', now() - '1 day'::interval),
 
 			('wallet-id-2', 'app-id-1', 2, 'wallet-2', now());
 	`)
@@ -149,11 +149,11 @@ func TestListWallets(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	examples := []struct {
-		appID string
-		want  []*Wallet
+		projID string
+		want   []*Wallet
 	}{
 		{
-			"app-id-0",
+			"proj-id-0",
 			[]*Wallet{
 				{ID: "wallet-id-1", Blockchain: "sandbox", Label: "wallet-1"},
 				{ID: "wallet-id-0", Blockchain: "sandbox", Label: "wallet-0"},
@@ -168,9 +168,9 @@ func TestListWallets(t *testing.T) {
 	}
 
 	for _, ex := range examples {
-		t.Log("Example:", ex.appID)
+		t.Log("Example:", ex.projID)
 
-		got, err := ListWallets(ctx, ex.appID)
+		got, err := ListWallets(ctx, ex.projID)
 		if err != nil {
 			t.Fatal(err)
 		}

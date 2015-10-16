@@ -18,13 +18,13 @@ const writeActivityFix = `
 	INSERT INTO projects
 		(id, name)
 	VALUES
-		('app-id-0', 'app-0');
+		('proj-id-0', 'proj-0');
 
 	INSERT INTO manager_nodes
 		(id, project_id, key_index, label)
 	VALUES
-		('wallet-id-0', 'app-id-0', 0, 'wallet-0'),
-		('wallet-id-1', 'app-id-0', 0, 'wallet-1');
+		('wallet-id-0', 'proj-id-0', 0, 'wallet-0'),
+		('wallet-id-1', 'proj-id-0', 0, 'wallet-1');
 
 	INSERT INTO accounts
 		(id, manager_node_id, key_index, label)
@@ -46,8 +46,8 @@ const writeActivityFix = `
 	INSERT INTO issuer_nodes
 		(id, project_id, key_index, label, keyset)
 	VALUES
-		('ag-id-0', 'app-id-0', 0, 'ag-0', '{}'),
-		('ag-id-1', 'app-id-0', 1, 'ag-1', '{}');
+		('ag-id-0', 'proj-id-0', 0, 'ag-0', '{}'),
+		('ag-id-1', 'proj-id-0', 1, 'ag-1', '{}');
 
 	INSERT INTO assets
 		(id, issuer_node_id, key_index, redeem_script, label)
@@ -59,13 +59,13 @@ const writeActivityFix = `
 
 const sampleActivityFixture = `
 	INSERT INTO manager_nodes (id, project_id, label, current_rotation, key_index)
-		VALUES('w0', 'app-id-0', '', 'c0', 0);
+		VALUES('w0', 'proj-id-0', '', 'c0', 0);
 	INSERT INTO activity (id, manager_node_id, data, txid)
 		VALUES('act0', 'w0', '{"outputs":"boop"}', 'tx0');
 `
 
 func TestWalletActivity(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityFixture)
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleActivityFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
@@ -88,7 +88,7 @@ func TestWalletActivity(t *testing.T) {
 }
 
 func TestWalletActivityLimit(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityFixture, `
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleActivityFixture, `
 		INSERT INTO activity (id, manager_node_id, data, txid)
 			VALUES
 				('act1', 'w0', '{"outputs":"coop"}', 'tx1'),
@@ -122,7 +122,7 @@ func TestWalletActivityLimit(t *testing.T) {
 }
 
 func TestBucketActivity(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityFixture, `
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleActivityFixture, `
 		INSERT INTO accounts (id, manager_node_id, key_index) VALUES('b0', 'w0', 0);
 		INSERT INTO activity_accounts VALUES ('act0', 'b0');
 	`)
@@ -145,7 +145,7 @@ func TestBucketActivity(t *testing.T) {
 }
 
 func TestBucketActivityLimit(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityFixture, `
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleActivityFixture, `
 		INSERT INTO activity (id, manager_node_id, data, txid)
 			VALUES
 			('act1', 'w0', '{"outputs":"coop"}', 'tx1'),
@@ -300,7 +300,7 @@ func TestAssetActivity(t *testing.T) {
 }
 
 func TestActivityByTxID(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, sampleActivityFixture)
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleActivityFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
@@ -617,14 +617,14 @@ func TestGetActAssets(t *testing.T) {
 		{
 			[]string{"asset-id-0", "asset-id-2"},
 			[]*actAsset{
-				{id: "asset-id-0", label: "asset-0", agID: "ag-id-0", appID: "app-id-0"},
-				{id: "asset-id-2", label: "asset-2", agID: "ag-id-1", appID: "app-id-0"},
+				{id: "asset-id-0", label: "asset-0", agID: "ag-id-0", projID: "proj-id-0"},
+				{id: "asset-id-2", label: "asset-2", agID: "ag-id-1", projID: "proj-id-0"},
 			},
 		},
 		{
 			[]string{"asset-id-1"},
 			[]*actAsset{
-				{id: "asset-id-1", label: "asset-1", agID: "ag-id-0", appID: "app-id-0"},
+				{id: "asset-id-1", label: "asset-1", agID: "ag-id-0", projID: "proj-id-0"},
 			},
 		},
 	}
@@ -694,14 +694,14 @@ func TestGetActBuckets(t *testing.T) {
 		{
 			[]string{"bucket-id-0", "bucket-id-2"},
 			[]*actBucket{
-				{id: "bucket-id-0", label: "bucket-0", walletID: "wallet-id-0", appID: "app-id-0"},
-				{id: "bucket-id-2", label: "bucket-2", walletID: "wallet-id-1", appID: "app-id-0"},
+				{id: "bucket-id-0", label: "bucket-0", walletID: "wallet-id-0", projID: "proj-id-0"},
+				{id: "bucket-id-2", label: "bucket-2", walletID: "wallet-id-1", projID: "proj-id-0"},
 			},
 		},
 		{
 			[]string{"bucket-id-1"},
 			[]*actBucket{
-				{id: "bucket-id-1", label: "bucket-1", walletID: "wallet-id-0", appID: "app-id-0"},
+				{id: "bucket-id-1", label: "bucket-1", walletID: "wallet-id-0", projID: "proj-id-0"},
 			},
 		},
 	}

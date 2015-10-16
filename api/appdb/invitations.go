@@ -10,14 +10,14 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Invitation represents an invitation to an application. It is intended to be
+// Invitation represents an invitation to a project. It is intended to be
 // used with API responses.
 type Invitation struct {
-	ID      string `json:"id"`
-	AppID   string `json:"project_id"`
-	AppName string `json:"project_name"`
-	Email   string `json:"email"`
-	Role    string `json:"role"`
+	ID          string `json:"id"`
+	ProjectID   string `json:"project_id"`
+	ProjectName string `json:"project_name"`
+	Email       string `json:"email"`
+	Role        string `json:"role"`
 
 	// Returned by GetInvitation
 	UserID string `json:"user_id,omitempty"`
@@ -31,12 +31,12 @@ var (
 const inviteIDBytes = 16
 
 // CreateInvitation generates an invitation for an email address to join the
-// specified application under the specified role. The email address may
+// specified project under the specified role. The email address may
 // represent an existing user account, or one that hasn't been created yet.
 //
 // The given email and role will be validated, and an error is returned if
 // either is invalid.
-func CreateInvitation(ctx context.Context, appID, email, role string) (*Invitation, error) {
+func CreateInvitation(ctx context.Context, projID, email, role string) (*Invitation, error) {
 	if err := validateEmail(email); err != nil {
 		return nil, err
 	}
@@ -45,13 +45,13 @@ func CreateInvitation(ctx context.Context, appID, email, role string) (*Invitati
 		return nil, err
 	}
 
-	// Ensure that the email address is not already part of the application.
+	// Ensure that the email address is not already part of the project.
 	checkq := `
 		SELECT 1 FROM users u
 		JOIN members m ON u.id = m.user_id
 		WHERE lower(u.email) = lower($1) AND m.project_id = $2
 	`
-	err := pg.FromContext(ctx).QueryRow(checkq, email, appID).Scan(new(int))
+	err := pg.FromContext(ctx).QueryRow(checkq, email, projID).Scan(new(int))
 	if err == nil {
 		return nil, ErrAlreadyMember
 	}
@@ -72,7 +72,7 @@ func CreateInvitation(ctx context.Context, appID, email, role string) (*Invitati
 		INSERT INTO invitations (id, project_id, email, role)
 		VALUES ($1, $2, $3, $4)
 	`
-	_, err = pg.FromContext(ctx).Exec(insertq, id, appID, email, role)
+	_, err = pg.FromContext(ctx).Exec(insertq, id, projID, email, role)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert invitation query")
 	}
@@ -81,17 +81,17 @@ func CreateInvitation(ctx context.Context, appID, email, role string) (*Invitati
 		nameq = `SELECT name FROM projects WHERE id = $1`
 		name  string
 	)
-	err = pg.FromContext(ctx).QueryRow(nameq, appID).Scan(&name)
+	err = pg.FromContext(ctx).QueryRow(nameq, projID).Scan(&name)
 	if err != nil {
-		return nil, errors.Wrap(err, "select app name query")
+		return nil, errors.Wrap(err, "select project name query")
 	}
 
 	return &Invitation{
-		ID:      id,
-		AppID:   appID,
-		AppName: name,
-		Email:   email,
-		Role:    role,
+		ID:          id,
+		ProjectID:   projID,
+		ProjectName: name,
+		Email:       email,
+		Role:        role,
 	}, nil
 }
 
@@ -110,12 +110,12 @@ func GetInvitation(ctx context.Context, invID string) (*Invitation, error) {
 			LEFT JOIN users u ON lower(i.email) = lower(u.email)
 			WHERE i.id = $1
 		`
-		appID, appName, email, role string
-		userID                      sql.NullString
+		projID, projName, email, role string
+		userID                        sql.NullString
 	)
 	err := pg.FromContext(ctx).QueryRow(q, invID).Scan(
-		&appID,
-		&appName,
+		&projID,
+		&projName,
 		&email,
 		&role,
 		&userID,
@@ -128,18 +128,18 @@ func GetInvitation(ctx context.Context, invID string) (*Invitation, error) {
 	}
 
 	return &Invitation{
-		ID:      invID,
-		AppID:   appID,
-		AppName: appName,
-		Email:   email,
-		Role:    role,
-		UserID:  userID.String,
+		ID:          invID,
+		ProjectID:   projID,
+		ProjectName: projName,
+		Email:       email,
+		Role:        role,
+		UserID:      userID.String,
 	}, nil
 }
 
 // CreateUserFromInvitation creates a new user account, using a user-supplied
 // password and the email address contained in the invitation. If the user
-// account is successfully created, the user will be added to the application
+// account is successfully created, the user will be added to the project
 // specified by the invitation, and the invitation will be deleted.
 //
 // This function should be used if there is no user account registered under the
@@ -166,7 +166,7 @@ func CreateUserFromInvitation(ctx context.Context, invID, password string) (*Use
 		return nil, errors.Wrap(err, "create user")
 	}
 
-	err = AddMember(ctx, inv.AppID, user.ID, inv.Role)
+	err = AddMember(ctx, inv.ProjectID, user.ID, inv.Role)
 	if err != nil {
 		return nil, errors.Wrap(err, "add member")
 	}
@@ -180,8 +180,8 @@ func CreateUserFromInvitation(ctx context.Context, invID, password string) (*Use
 }
 
 // AddMemberFromInvitation will create a membership relation between a user and
-// an application referenced by the given invitation. If the user is
-// successfully added to the application, the invitation will be deleted.
+// an project referenced by the given invitation. If the user is
+// successfully added to the project, the invitation will be deleted.
 //
 // This function should be used only if there is pre-existing user account
 // registered under the email address in the invitation. If such a user account
@@ -201,7 +201,7 @@ func AddMemberFromInvitation(ctx context.Context, invID string) error {
 		return ErrInviteUserDoesNotExist
 	}
 
-	err = AddMember(ctx, inv.AppID, inv.UserID, inv.Role)
+	err = AddMember(ctx, inv.ProjectID, inv.UserID, inv.Role)
 	if err != nil {
 		return errors.Wrap(err, "add member")
 	}

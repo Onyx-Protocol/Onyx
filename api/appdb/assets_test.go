@@ -15,9 +15,9 @@ import (
 )
 
 func TestAssetByID(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, `
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, `
 		INSERT INTO issuer_nodes (id, project_id, label, keyset, key_index)
-			VALUES ('ag1', 'app-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
+			VALUES ('ag1', 'proj-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
 		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, label)
 		VALUES(
 			'AU8RjUUysqep9wXcZKqtTty1BssV6TcX7p',
@@ -68,12 +68,12 @@ func TestAssetByID(t *testing.T) {
 
 func TestListAssets(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO issuer_nodes
 			(id, project_id, key_index, keyset, label)
 		VALUES
-			('ag-id-0', 'app-id-0', 0, '{}', 'ag-0'),
-			('ag-id-1', 'app-id-0', 1, '{}', 'ag-1');
+			('ag-id-0', 'proj-id-0', 0, '{}', 'ag-0'),
+			('ag-id-1', 'proj-id-0', 1, '{}', 'ag-1');
 		INSERT INTO assets
 			(id, issuer_node_id, key_index, redeem_script, label, sort_id)
 		VALUES
@@ -147,9 +147,9 @@ func TestListAssets(t *testing.T) {
 
 func TestGetAsset(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
-			VALUES ('ag-id-0', 'app-id-0', 0, '{}', 'ag-0');
+			VALUES ('ag-id-0', 'proj-id-0', 0, '{}', 'ag-0');
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label, issued)
 			VALUES ('asset-id-0', 'ag-id-0', 0, '{}', 'asset-0', 58);
 	`)

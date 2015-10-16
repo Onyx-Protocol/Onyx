@@ -29,7 +29,7 @@ func TestInsertAssetGroup(t *testing.T) {
 func TestListAssetGroups(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES
-			('app-id-0', 'app-0'),
+			('proj-id-0', 'proj-0'),
 			('app-id-1', 'app-1');
 
 		INSERT INTO issuer_nodes
@@ -37,8 +37,8 @@ func TestListAssetGroups(t *testing.T) {
 		VALUES
 			-- insert in reverse chronological order, to ensure that ListAssetGroups
 			-- is performing a sort.
-			('ag-id-0', 'app-id-0', 0, '{}', 'ag-0', now()),
-			('ag-id-1', 'app-id-0', 1, '{}', 'ag-1', now() - '1 day'::interval),
+			('ag-id-0', 'proj-id-0', 0, '{}', 'ag-0', now()),
+			('ag-id-1', 'proj-id-0', 1, '{}', 'ag-1', now() - '1 day'::interval),
 
 			('ag-id-2', 'app-id-1', 2, '{}', 'ag-2', now());
 	`)
@@ -46,11 +46,11 @@ func TestListAssetGroups(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	examples := []struct {
-		appID string
-		want  []*AssetGroup
+		projID string
+		want   []*AssetGroup
 	}{
 		{
-			"app-id-0",
+			"proj-id-0",
 			[]*AssetGroup{
 				{ID: "ag-id-1", Blockchain: "sandbox", Label: "ag-1"},
 				{ID: "ag-id-0", Blockchain: "sandbox", Label: "ag-0"},
@@ -65,9 +65,9 @@ func TestListAssetGroups(t *testing.T) {
 	}
 
 	for _, ex := range examples {
-		t.Log("Example:", ex.appID)
+		t.Log("Example:", ex.projID)
 
-		got, err := ListAssetGroups(ctx, ex.appID)
+		got, err := ListAssetGroups(ctx, ex.projID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -81,10 +81,10 @@ func TestListAssetGroups(t *testing.T) {
 func TestGetAssetGroup(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES
-			('app-id-0', 'app-0');
+			('proj-id-0', 'proj-0');
 
 		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label) VALUES
-			('ag-id-0', 'app-id-0', 0, '{}', 'ag-0');
+			('ag-id-0', 'proj-id-0', 0, '{}', 'ag-0');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)

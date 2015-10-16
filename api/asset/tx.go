@@ -3,14 +3,14 @@ package asset
 import "chain/encoding/json"
 
 // Tx represents a partially- or fully-signed transaction
-// belonging to a Chain app wallet.
+// belonging to a Chain project.
 type Tx struct {
 	Unsigned   json.HexBytes `json:"unsigned_hex"`
 	BlockChain string        `json:"block_chain"`
 	Inputs     []*Input      `json:"inputs"`
 }
 
-// Input is an input for an app wallet Tx.
+// Input is an input for an project Tx.
 type Input struct {
 	AssetGroupID  string        `json:"issuer_node_id,omitempty"`
 	WalletID      string        `json:"manager_node_id,omitempty"`
@@ -19,7 +19,7 @@ type Input struct {
 	Sigs          []*Signature  `json:"signatures"`
 }
 
-// Signature is an signature for an app wallet Tx.
+// Signature is an signature for a project Tx.
 type Signature struct {
 	XPub           string        `json:"xpub"`
 	DerivationPath []uint32      `json:"derivation_path"`

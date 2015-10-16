@@ -24,7 +24,7 @@ type AssetGroup struct {
 }
 
 // InsertAssetGroup adds the asset group to the database
-func InsertAssetGroup(ctx context.Context, appID, label string, keys, gennedKeys []*hdkey.XKey) (*AssetGroup, error) {
+func InsertAssetGroup(ctx context.Context, projID, label string, keys, gennedKeys []*hdkey.XKey) (*AssetGroup, error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 
 	const q = `
@@ -35,7 +35,7 @@ func InsertAssetGroup(ctx context.Context, appID, label string, keys, gennedKeys
 	var id string
 	err := pg.FromContext(ctx).QueryRow(q,
 		label,
-		appID,
+		projID,
 		pg.Strings(keysToStrings(keys)),
 		pg.Strings(keysToStrings(gennedKeys)),
 	).Scan(&id)
@@ -97,15 +97,15 @@ func NextAsset(ctx context.Context, agID string) (asset *Asset, sigsRequired int
 }
 
 // ListAssetGroups returns a list of AssetGroups belonging to the given
-// application.
-func ListAssetGroups(ctx context.Context, appID string) ([]*AssetGroup, error) {
+// project.
+func ListAssetGroups(ctx context.Context, projID string) ([]*AssetGroup, error) {
 	q := `
 		SELECT id, block_chain, label
 		FROM issuer_nodes
 		WHERE project_id = $1
 		ORDER BY created_at
 	`
-	rows, err := pg.FromContext(ctx).Query(q, appID)
+	rows, err := pg.FromContext(ctx).Query(q, projID)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}

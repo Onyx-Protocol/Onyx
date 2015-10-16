@@ -13,12 +13,12 @@ import (
 
 func TestCreateWallet(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	node, err := CreateNode(ctx, ManagerNode, "app-id-0", &CreateNodeReq{Label: "foo", GenerateKey: true})
+	node, err := CreateNode(ctx, ManagerNode, "proj-id-0", &CreateNodeReq{Label: "foo", GenerateKey: true})
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}

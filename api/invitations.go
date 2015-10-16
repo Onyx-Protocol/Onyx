@@ -8,11 +8,11 @@ import (
 )
 
 // POST /v3/projects/:projID/invitations
-func createInvitation(ctx context.Context, appID string, in struct{ Email, Role string }) (interface{}, error) {
-	if err := projectAdminAuthz(ctx, appID); err != nil {
+func createInvitation(ctx context.Context, projID string, in struct{ Email, Role string }) (interface{}, error) {
+	if err := projectAdminAuthz(ctx, projID); err != nil {
 		return nil, err
 	}
-	return appdb.CreateInvitation(ctx, appID, in.Email, in.Role)
+	return appdb.CreateInvitation(ctx, projID, in.Email, in.Role)
 }
 
 // POST /v3/invitations/:invID/create-user

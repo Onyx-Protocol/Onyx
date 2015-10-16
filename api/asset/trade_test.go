@@ -16,9 +16,9 @@ import (
 
 func TestTrade(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
-			VALUES('w1', 'app-id-0', 'w1', 'rot1');
+			VALUES('w1', 'proj-id-0', 'w1', 'rot1');
 		INSERT INTO rotations (id, manager_node_id, keyset)
 			VALUES('rot1', 'w1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 		INSERT INTO accounts (id, manager_node_id, key_index, next_address_index)

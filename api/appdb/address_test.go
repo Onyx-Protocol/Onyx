@@ -19,7 +19,7 @@ const bucketFixture = `
 		label, current_rotation, next_asset_index, next_account_index,
 		accounts_count, created_at, updated_at
 	)
-	VALUES ('w1', 'app-id-0', 'sandbox', 1, 1, 'foo', 'rot1', 0, 1, 1, now(), now());
+	VALUES ('w1', 'proj-id-0', 'sandbox', 1, 1, 'foo', 'rot1', 0, 1, 1, now(), now());
 	INSERT INTO rotations (id, manager_node_id, keyset)
 	VALUES ('rot1', 'w1', '{xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw}');
 	INSERT INTO accounts (
@@ -30,7 +30,7 @@ const bucketFixture = `
 `
 
 func TestAddressLoadNextIndex(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, bucketFixture)
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, bucketFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
@@ -67,7 +67,7 @@ func TestAddressLoadNextIndex(t *testing.T) {
 
 func TestAddressInsert(t *testing.T) {
 	t0 := time.Now()
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, bucketFixture)
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, bucketFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
@@ -102,8 +102,8 @@ func TestAddressInsert(t *testing.T) {
 }
 
 func TestAddressesByID(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleAppFixture, `
-		INSERT INTO manager_nodes (id, project_id, label) VALUES('w1', 'app-id-0', 'w1');
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, `
+		INSERT INTO manager_nodes (id, project_id, label) VALUES('w1', 'proj-id-0', 'w1');
 		INSERT INTO accounts (id, manager_node_id, key_index) VALUES('b1', 'w1', 0);
 		INSERT INTO addresses (id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script)
 		VALUES('a1', 'w1', 'b1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a1', '', '');

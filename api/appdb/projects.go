@@ -9,31 +9,31 @@ import (
 	"chain/errors"
 )
 
-// Application represents an application. It can be used safely for API
+// Project represents a project. It can be used safely for API
 // responses.
-type Application struct {
+type Project struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
-// Member represents a member of an application. It contains information
+// Member represents a member of a project. It contains information
 // for populating a member list in the UI, including the user's identity
-// and their role in the application.
+// and their role in the project.
 type Member struct {
 	ID    string `json:"id"`
 	Email string `json:"email"`
 	Role  string `json:"role"`
 }
 
-// Errors returned from application- and membership-related functions.
+// Errors returned from project- and membership-related functions.
 var (
 	ErrBadRole       = errors.New("invalid role")
-	ErrAlreadyMember = errors.New("user is already a member of the application")
+	ErrAlreadyMember = errors.New("user is already a member of the project")
 )
 
-// CreateApplication creates a new application and adds the given user as its
+// CreateProject creates a new project and adds the given user as its
 // initial admin member.
-func CreateApplication(ctx context.Context, name string, userID string) (*Application, error) {
+func CreateProject(ctx context.Context, name string, userID string) (*Project, error) {
 	// TODO(jeffomatic): the insert query and call to AddMember should be
 	// wrapped in a database transaction. In order to do this, the pg package
 	// should be updated so that tests do not fail when running operations that
@@ -50,15 +50,15 @@ func CreateApplication(ctx context.Context, name string, userID string) (*Applic
 
 	err = AddMember(ctx, id, userID, "admin")
 	if err != nil {
-		return nil, errors.Wrap(err, "add app creator as member")
+		return nil, errors.Wrap(err, "add project creator as member")
 	}
 
-	return &Application{ID: id, Name: name}, nil
+	return &Project{ID: id, Name: name}, nil
 }
 
-// ListApplications returns a list of applications that the given user is a
+// ListProjects returns a list of projects that the given user is a
 // member of.
-func ListApplications(ctx context.Context, userID string) ([]*Application, error) {
+func ListProjects(ctx context.Context, userID string) ([]*Project, error) {
 	q := `
 		SELECT p.id, p.name
 		FROM projects p
@@ -72,47 +72,47 @@ func ListApplications(ctx context.Context, userID string) ([]*Application, error
 	}
 	defer rows.Close()
 
-	var apps []*Application
+	var projects []*Project
 	for rows.Next() {
-		a := new(Application)
-		err := rows.Scan(&a.ID, &a.Name)
+		p := new(Project)
+		err := rows.Scan(&p.ID, &p.Name)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
-		apps = append(apps, a)
+		projects = append(projects, p)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrap(err, "end row scan loop")
 	}
 
-	return apps, nil
+	return projects, nil
 }
 
-// GetApplication returns information about a single application.
-func GetApplication(ctx context.Context, appID string) (*Application, error) {
+// GetProject returns information about a single project.
+func GetProject(ctx context.Context, projID string) (*Project, error) {
 	var (
 		q    = `SELECT name FROM projects WHERE id = $1`
 		name string
 	)
-	err := pg.FromContext(ctx).QueryRow(q, appID).Scan(&name)
+	err := pg.FromContext(ctx).QueryRow(q, projID).Scan(&name)
 	if err == sql.ErrNoRows {
-		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "application id: %v", appID)
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "project id: %v", projID)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
 
-	return &Application{ID: appID, Name: name}, nil
+	return &Project{ID: projID, Name: name}, nil
 }
 
-// UpdateApplication updates application properties. If the application does not
+// UpdateProject updates project properties. If the project does not
 // exist, an error with pg.ErrUserInputNotFound as the root is returned.
-func UpdateApplication(ctx context.Context, appID, name string) error {
+func UpdateProject(ctx context.Context, projID, name string) error {
 	q := `UPDATE projects SET name = $1 WHERE id = $2 RETURNING 1`
-	err := pg.FromContext(ctx).QueryRow(q, name, appID).Scan(new(int))
+	err := pg.FromContext(ctx).QueryRow(q, name, projID).Scan(new(int))
 	if err == sql.ErrNoRows {
-		return errors.WithDetailf(pg.ErrUserInputNotFound, "application ID: %v", appID)
+		return errors.WithDetailf(pg.ErrUserInputNotFound, "project ID: %v", projID)
 	}
 	if err != nil {
 		return errors.Wrap(err, "update query")
@@ -120,10 +120,10 @@ func UpdateApplication(ctx context.Context, appID, name string) error {
 	return nil
 }
 
-// ListMembers returns a list of members of the given the given application.
+// ListMembers returns a list of members of the given the given project.
 // Member data includes each member's user information and their role within
-// the application.
-func ListMembers(ctx context.Context, appID string) ([]*Member, error) {
+// the project.
+func ListMembers(ctx context.Context, projID string) ([]*Member, error) {
 	q := `
 		SELECT u.id, u.email, m.role
 		FROM users u
@@ -131,7 +131,7 @@ func ListMembers(ctx context.Context, appID string) ([]*Member, error) {
 		WHERE m.project_id = $1
 		ORDER BY u.email
 	`
-	rows, err := pg.FromContext(ctx).Query(q, appID)
+	rows, err := pg.FromContext(ctx).Query(q, projID)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -154,10 +154,10 @@ func ListMembers(ctx context.Context, appID string) ([]*Member, error) {
 	return members, nil
 }
 
-// AddMember adds a new member to an application with a specific role. If the
+// AddMember adds a new member to an project with a specific role. If the
 // role is not valid, ErrBadRole will be returned. If the user is already a
-// member of the application, ErrAlreadyMember is returned.
-func AddMember(ctx context.Context, appID, userID, role string) error {
+// member of the project, ErrAlreadyMember is returned.
+func AddMember(ctx context.Context, projID, userID, role string) error {
 	if err := validateRole(role); err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func AddMember(ctx context.Context, appID, userID, role string) error {
 		INSERT INTO members (project_id, user_id, role)
 		SELECT $1, $2, $3
 	`
-	_, err := pg.FromContext(ctx).Exec(q, appID, userID, role)
+	_, err := pg.FromContext(ctx).Exec(q, projID, userID, role)
 	if pg.IsUniqueViolation(err) {
 		return ErrAlreadyMember
 	}
@@ -177,11 +177,11 @@ func AddMember(ctx context.Context, appID, userID, role string) error {
 	return nil
 }
 
-// UpdateMember changes the role of a user within an application. If the
+// UpdateMember changes the role of a user within an project. If the
 // role is not valid, ErrBadRole will be returned. If the user is not a member
-// of the application, an error with pg.ErrUserInputNotFound as its root will be
+// of the project, an error with pg.ErrUserInputNotFound as its root will be
 // returned.
-func UpdateMember(ctx context.Context, appID, userID, role string) error {
+func UpdateMember(ctx context.Context, projID, userID, role string) error {
 	if err := validateRole(role); err != nil {
 		return err
 	}
@@ -191,11 +191,11 @@ func UpdateMember(ctx context.Context, appID, userID, role string) error {
 		WHERE project_id = $2 AND user_id = $3
 		RETURNING 1
 	`
-	err := pg.FromContext(ctx).QueryRow(q, role, appID, userID).Scan(new(int))
+	err := pg.FromContext(ctx).QueryRow(q, role, projID, userID).Scan(new(int))
 	if err == sql.ErrNoRows {
 		return errors.WithDetailf(
 			pg.ErrUserInputNotFound,
-			"application id: %v, user id: %v", appID, userID,
+			"project id: %v, user id: %v", projID, userID,
 		)
 	}
 	if err != nil {
@@ -204,13 +204,13 @@ func UpdateMember(ctx context.Context, appID, userID, role string) error {
 	return nil
 }
 
-// RemoveMember removes a member from the application.
-func RemoveMember(ctx context.Context, appID string, userID string) error {
+// RemoveMember removes a member from the project.
+func RemoveMember(ctx context.Context, projID string, userID string) error {
 	q := `
 		DELETE FROM members
 		WHERE project_id = $1 AND user_id = $2
 	`
-	_, err := pg.FromContext(ctx).Exec(q, appID, userID)
+	_, err := pg.FromContext(ctx).Exec(q, projID, userID)
 	if err != nil {
 		return errors.Wrap(err, "delete query")
 	}

@@ -19,12 +19,12 @@ var dummyXPub, _ = hdkey.NewXKey("xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvH
 func TestCreateAddress(t *testing.T) {
 	t0 := time.Now()
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	wallet, err := appdb.InsertWallet(ctx, "app-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
+	wallet, err := appdb.InsertWallet(ctx, "proj-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

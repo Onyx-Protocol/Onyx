@@ -58,10 +58,10 @@ func nouserHandler() chainhttp.HandlerFunc {
 
 func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
-	h.HandleFunc("GET", "/v3/projects", listApplications)
-	h.HandleFunc("POST", "/v3/projects", createApplication)
-	h.HandleFunc("GET", "/v3/projects/:projID", getApplication)
-	h.HandleFunc("PUT", "/v3/projects/:projID", updateApplication)
+	h.HandleFunc("GET", "/v3/projects", listProjects)
+	h.HandleFunc("POST", "/v3/projects", createProject)
+	h.HandleFunc("GET", "/v3/projects/:projID", getProject)
+	h.HandleFunc("PUT", "/v3/projects/:projID", updateProject)
 	h.HandleFunc("POST", "/v3/projects/:projID/invitations", createInvitation)
 	h.HandleFunc("GET", "/v3/projects/:projID/members", listMembers)
 	h.HandleFunc("POST", "/v3/projects/:projID/members", addMember)

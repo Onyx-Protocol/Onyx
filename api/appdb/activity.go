@@ -118,7 +118,7 @@ func WriteActivity(ctx context.Context, tx *wire.MsgTx, txTime time.Time) error 
 
 		var visibleBuckets []string
 		for _, b := range actBuckets {
-			if b.appID == actAssets[0].appID {
+			if b.projID == actAssets[0].projID {
 				visibleBuckets = append(visibleBuckets, b.id)
 			}
 		}
@@ -258,17 +258,17 @@ type actAddr struct {
 }
 
 type actAsset struct {
-	id    string
-	label string
-	agID  string
-	appID string
+	id     string
+	label  string
+	agID   string
+	projID string
 }
 
 type actBucket struct {
 	id       string
 	label    string
 	walletID string
-	appID    string
+	projID   string
 }
 
 type txRawActivity struct {
@@ -484,7 +484,7 @@ func getActAssets(ctx context.Context, assetIDs []string) ([]*actAsset, error) {
 	var res []*actAsset
 	for rows.Next() {
 		a := new(actAsset)
-		err := rows.Scan(&a.id, &a.label, &a.agID, &a.appID)
+		err := rows.Scan(&a.id, &a.label, &a.agID, &a.projID)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
@@ -515,7 +515,7 @@ func getActBuckets(ctx context.Context, bucketIDs []string) ([]*actBucket, error
 	var res []*actBucket
 	for rows.Next() {
 		b := new(actBucket)
-		err := rows.Scan(&b.id, &b.label, &b.walletID, &b.appID)
+		err := rows.Scan(&b.id, &b.label, &b.walletID, &b.projID)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
