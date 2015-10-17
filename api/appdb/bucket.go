@@ -174,7 +174,7 @@ func UpdateAccount(ctx context.Context, accountID string, label *string) error {
 	if label == nil {
 		return nil
 	}
-	const q = `UPDATE buckets SET label = $2 WHERE id = $1`
+	const q = `UPDATE accounts SET label = $2 WHERE id = $1`
 	db := pg.FromContext(ctx)
 	_, err := db.Exec(q, accountID, *label)
 	return errors.Wrap(err, "update query")

@@ -161,7 +161,7 @@ func UpdateManagerNode(ctx context.Context, mnodeID string, label *string) error
 	if label == nil {
 		return nil
 	}
-	const q = `UPDATE wallets SET label = $2 WHERE id = $1`
+	const q = `UPDATE manager_nodes SET label = $2 WHERE id = $1`
 	db := pg.FromContext(ctx)
 	_, err := db.Exec(q, mnodeID, *label)
 	return errors.Wrap(err, "update query")
