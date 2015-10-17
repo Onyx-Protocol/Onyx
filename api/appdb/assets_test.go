@@ -15,7 +15,7 @@ import (
 )
 
 func TestAssetByID(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, `
+	const sql = sampleProjectFixture + `
 		INSERT INTO issuer_nodes (id, project_id, label, keyset, key_index)
 			VALUES ('ag1', 'proj-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
 		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, label)
@@ -27,40 +27,39 @@ func TestAssetByID(t *testing.T) {
 			decode('51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae', 'hex'),
 			'foo'
 		);
-	`)
-	defer dbtx.Rollback()
+	`
+	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+		got, err := AssetByID(ctx, bc.AssetID{})
+		if err != nil {
+			t.Log(errors.Stack(err))
+			t.Fatal(err)
+		}
 
-	ctx := pg.NewContext(context.Background(), dbtx)
-	got, err := AssetByID(ctx, bc.AssetID{})
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
+		redeem, _ := hex.DecodeString("51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae")
+		key, _ := hdkey.NewXKey("xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd")
+		want := &Asset{
+			Hash:         bc.AssetID{},
+			GroupID:      "ag1",
+			AGIndex:      []uint32{0, 0},
+			AIndex:       []uint32{0, 0},
+			RedeemScript: redeem,
+			Keys:         []*hdkey.XKey{key},
+		}
 
-	redeem, _ := hex.DecodeString("51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae")
-	key, _ := hdkey.NewXKey("xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd")
-	want := &Asset{
-		Hash:         bc.AssetID{},
-		GroupID:      "ag1",
-		AGIndex:      []uint32{0, 0},
-		AIndex:       []uint32{0, 0},
-		RedeemScript: redeem,
-		Keys:         []*hdkey.XKey{key},
-	}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got asset = %+v want %+v", got, want)
+		}
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got asset = %+v want %+v", got, want)
-	}
-
-	// missing asset id
-	_, err = AssetByID(ctx, bc.AssetID{1})
-	if errors.Root(err) != pg.ErrUserInputNotFound {
-		t.Errorf("got error = %v want %v", errors.Root(err), pg.ErrUserInputNotFound)
-	}
+		// missing asset id
+		_, err = AssetByID(ctx, bc.AssetID{1})
+		if errors.Root(err) != pg.ErrUserInputNotFound {
+			t.Errorf("got error = %v want %v", errors.Root(err), pg.ErrUserInputNotFound)
+		}
+	})
 }
 
 func TestListAssets(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	const sql = `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO issuer_nodes
 			(id, project_id, key_index, keyset, label)
@@ -73,97 +72,95 @@ func TestListAssets(t *testing.T) {
 			('asset-id-0', 'ag-id-0', 0, '{}', 'asset-0', 'asset0'),
 			('asset-id-1', 'ag-id-0', 1, '{}', 'asset-1', 'asset1'),
 			('asset-id-2', 'ag-id-1', 2, '{}', 'asset-2', 'asset2');
-	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
-
-	examples := []struct {
-		groupID string
-		prev    string
-		limit   int
-		want    []*AssetResponse
-	}{
-		{
-			"ag-id-0",
-			"",
-			5,
-			[]*AssetResponse{
-				{ID: "asset-id-1", Label: "asset-1"},
-				{ID: "asset-id-0", Label: "asset-0"},
+	`
+	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+		examples := []struct {
+			groupID string
+			prev    string
+			limit   int
+			want    []*AssetResponse
+		}{
+			{
+				"ag-id-0",
+				"",
+				5,
+				[]*AssetResponse{
+					{ID: "asset-id-1", Label: "asset-1"},
+					{ID: "asset-id-0", Label: "asset-0"},
+				},
 			},
-		},
-		{
-			"ag-id-1",
-			"",
-			5,
-			[]*AssetResponse{
-				{ID: "asset-id-2", Label: "asset-2"},
+			{
+				"ag-id-1",
+				"",
+				5,
+				[]*AssetResponse{
+					{ID: "asset-id-2", Label: "asset-2"},
+				},
 			},
-		},
-		{
-			"ag-id-0",
-			"",
-			1,
-			[]*AssetResponse{
-				{ID: "asset-id-1", Label: "asset-1"},
+			{
+				"ag-id-0",
+				"",
+				1,
+				[]*AssetResponse{
+					{ID: "asset-id-1", Label: "asset-1"},
+				},
 			},
-		},
-		{
-			"ag-id-0",
-			"asset1",
-			5,
-			[]*AssetResponse{
-				{ID: "asset-id-0", Label: "asset-0"},
+			{
+				"ag-id-0",
+				"asset1",
+				5,
+				[]*AssetResponse{
+					{ID: "asset-id-0", Label: "asset-0"},
+				},
 			},
-		},
-		{
-			"ag-id-0",
-			"asset0",
-			5,
-			nil,
-		},
-	}
-
-	for _, ex := range examples {
-		t.Logf("ListAssets(%s, %s, %d)", ex.groupID, ex.prev, ex.limit)
-
-		got, _, err := ListAssets(ctx, ex.groupID, ex.prev, ex.limit)
-		if err != nil {
-			t.Fatal(err)
+			{
+				"ag-id-0",
+				"asset0",
+				5,
+				nil,
+			},
 		}
 
-		if !reflect.DeepEqual(got, ex.want) {
-			t.Errorf("got:  %v\nwant: %v", got, ex.want)
+		for _, ex := range examples {
+			t.Logf("ListAssets(%s, %s, %d)", ex.groupID, ex.prev, ex.limit)
+
+			got, _, err := ListAssets(ctx, ex.groupID, ex.prev, ex.limit)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(got, ex.want) {
+				t.Errorf("got:  %v\nwant: %v", got, ex.want)
+			}
 		}
-	}
+	})
 }
 
 func TestGetAsset(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	const sql = `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
 			VALUES ('ag-id-0', 'proj-id-0', 0, '{}', 'ag-0');
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label, issued)
 			VALUES ('asset-id-0', 'ag-id-0', 0, '{}', 'asset-0', 58);
-	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	`
+	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+		got, err := GetAsset(ctx, "asset-id-0")
+		if err != nil {
+			t.Log(errors.Stack(err))
+			t.Fatal(err)
+		}
 
-	got, err := GetAsset(ctx, "asset-id-0")
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
+		want := &AssetResponse{"asset-id-0", "asset-0", 58}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("GetAsset(%s) = %+v want %+v", "asset-id-0", got, want)
+		}
 
-	want := &AssetResponse{"asset-id-0", "asset-0", 58}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("GetAsset(%s) = %+v want %+v", "asset-id-0", got, want)
-	}
-
-	_, err = GetAsset(ctx, "nonexistent")
-	if errors.Root(err) != pg.ErrUserInputNotFound {
-		t.Errorf("GetAsset(%s) error = %q want %q", "nonexistent", errors.Root(err), pg.ErrUserInputNotFound)
-	}
+		_, err = GetAsset(ctx, "nonexistent")
+		if errors.Root(err) != pg.ErrUserInputNotFound {
+			t.Errorf("GetAsset(%s) error = %q want %q", "nonexistent", errors.Root(err), pg.ErrUserInputNotFound)
+		}
+	})
 }
 
 func TestAddIssuance(t *testing.T) {
@@ -197,4 +194,66 @@ func TestAddIssuance(t *testing.T) {
 			t.Errorf("got issued = %d want %d", gotIssued, wantIssued)
 		}
 	}
+}
+
+func TestUpdateAsset(t *testing.T) {
+	const sql = `
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
+		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
+			VALUES ('ag-id-0', 'proj-id-0', 0, '{}', 'ag-0');
+		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label, issued)
+			VALUES ('asset-id-0', 'ag-id-0', 0, '{}', 'asset-0', 58);
+	`
+	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+		assetResponse, err := GetAsset(ctx, "asset-id-0")
+		if err != nil {
+			t.Log(errors.Stack(err))
+			t.Fatal(err)
+		}
+
+		newLabel := "bar"
+		err = UpdateAsset(ctx, assetResponse.ID, &newLabel)
+		if err != nil {
+			t.Errorf("unexpected error %v", err)
+		}
+
+		assetResponse, err = GetAsset(ctx, "asset-id-0")
+		if err != nil {
+			t.Fatalf("could not get asset with id asset-id-0: %v", err)
+		}
+		if assetResponse.Label != newLabel {
+			t.Errorf("expected %s, got %s", newLabel, assetResponse.Label)
+		}
+	})
+}
+
+// Test that calling UpdateAsset with no new label is a no-op.
+func TestUpdateAssetNoUpdate(t *testing.T) {
+	const sql = `
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
+		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
+			VALUES ('ag-id-0', 'proj-id-0', 0, '{}', 'ag-0');
+		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label, issued)
+			VALUES ('asset-id-0', 'ag-id-0', 0, '{}', 'asset-0', 58);
+	`
+	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+		assetResponse, err := GetAsset(ctx, "asset-id-0")
+		if err != nil {
+			t.Log(errors.Stack(err))
+			t.Fatal(err)
+		}
+
+		err = UpdateAsset(ctx, assetResponse.ID, nil)
+		if err != nil {
+			t.Errorf("unexpected error %v", err)
+		}
+
+		assetResponse, err = GetAsset(ctx, "asset-id-0")
+		if err != nil {
+			t.Fatalf("could not get asset with id asset-id-0: %v", err)
+		}
+		if assetResponse.Label != "asset-0" {
+			t.Errorf("expected asset-0, got %s", assetResponse.Label)
+		}
+	})
 }

@@ -7,132 +7,120 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
-	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
 )
 
 func TestInsertManagerNode(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
-
-	managerNode, err := InsertManagerNode(ctx, "proj-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
-	if err != nil {
-		t.Errorf("unexpected error %v", err)
-	}
-	if managerNode.ID == "" {
-		t.Errorf("got empty managerNode id")
-	}
+	withContext(t, sampleProjectFixture, func(t *testing.T, ctx context.Context) {
+		_ = newTestManagerNode(t, ctx, "proj-id-0", "foo")
+	})
 }
 
 func TestGetManagerNode(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	const sql = `
 		INSERT INTO projects (id, name) VALUES
 			('proj-id-0', 'proj-0');
 
 		INSERT INTO manager_nodes (id, project_id, key_index, label) VALUES
 			('manager-node-id-0', 'proj-id-0', 0, 'manager-node-0');
-	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
-
-	examples := []struct {
-		id      string
-		want    *ManagerNode
-		wantErr error
-	}{
-		{
-			"manager-node-id-0",
-			&ManagerNode{ID: "manager-node-id-0", Label: "manager-node-0", Blockchain: "sandbox"},
-			nil,
-		},
-		{
-			"nonexistent",
-			nil,
-			pg.ErrUserInputNotFound,
-		},
-	}
-
-	for _, ex := range examples {
-		t.Log("Example:", ex.id)
-
-		got, gotErr := GetManagerNode(ctx, ex.id)
-
-		if !reflect.DeepEqual(got, ex.want) {
-			t.Errorf("managerNode:\ngot:  %v\nwant: %v", got, ex.want)
+	`
+	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+		examples := []struct {
+			id      string
+			want    *ManagerNode
+			wantErr error
+		}{
+			{
+				"manager-node-id-0",
+				&ManagerNode{ID: "manager-node-id-0", Label: "manager-node-0", Blockchain: "sandbox"},
+				nil,
+			},
+			{
+				"nonexistent",
+				nil,
+				pg.ErrUserInputNotFound,
+			},
 		}
 
-		if errors.Root(gotErr) != ex.wantErr {
-			t.Errorf("get managerNode error:\ngot:  %v\nwant: %v", errors.Root(gotErr), ex.wantErr)
+		for _, ex := range examples {
+			t.Log("Example:", ex.id)
+
+			got, gotErr := GetManagerNode(ctx, ex.id)
+
+			if !reflect.DeepEqual(got, ex.want) {
+				t.Errorf("managerNode:\ngot:  %v\nwant: %v", got, ex.want)
+			}
+
+			if errors.Root(gotErr) != ex.wantErr {
+				t.Errorf("get managerNode error:\ngot:  %v\nwant: %v", errors.Root(gotErr), ex.wantErr)
+			}
 		}
-	}
+	})
 }
 
 func TestManagerNodeBalance(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	const sql = `
 		INSERT INTO utxos (txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
 		VALUES ('t0', 0, 'a1', 10, 0, 'b0', 'mn1'),
 		       ('t1', 1, 'a1', 5, 0, 'b0', 'mn1'),
 		       ('t2', 2, 'a2', 20, 0, 'b1', 'mn1');
-	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	`
+	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+		cases := []struct {
+			mnID     string
+			prev     string
+			limit    int
+			want     []*Balance
+			wantLast string
+		}{{
+			mnID:     "mn1",
+			limit:    5,
+			want:     []*Balance{{"a1", 15, 15}, {"a2", 20, 20}},
+			wantLast: "a2",
+		}, {
+			mnID:     "mn1",
+			prev:     "a1",
+			limit:    5,
+			want:     []*Balance{{"a2", 20, 20}},
+			wantLast: "a2",
+		}, {
+			mnID:     "mn1",
+			prev:     "a2",
+			limit:    5,
+			want:     nil,
+			wantLast: "",
+		}, {
+			mnID:     "mn1",
+			limit:    1,
+			want:     []*Balance{{"a1", 15, 15}},
+			wantLast: "a1",
+		}, {
+			mnID:     "nonexistent",
+			limit:    5,
+			want:     nil,
+			wantLast: "",
+		}}
 
-	cases := []struct {
-		mnID     string
-		prev     string
-		limit    int
-		want     []*Balance
-		wantLast string
-	}{{
-		mnID:     "mn1",
-		limit:    5,
-		want:     []*Balance{{"a1", 15, 15}, {"a2", 20, 20}},
-		wantLast: "a2",
-	}, {
-		mnID:     "mn1",
-		prev:     "a1",
-		limit:    5,
-		want:     []*Balance{{"a2", 20, 20}},
-		wantLast: "a2",
-	}, {
-		mnID:     "mn1",
-		prev:     "a2",
-		limit:    5,
-		want:     nil,
-		wantLast: "",
-	}, {
-		mnID:     "mn1",
-		limit:    1,
-		want:     []*Balance{{"a1", 15, 15}},
-		wantLast: "a1",
-	}, {
-		mnID:     "nonexistent",
-		limit:    5,
-		want:     nil,
-		wantLast: "",
-	}}
+		for _, c := range cases {
+			got, gotLast, err := ManagerNodeBalance(ctx, c.mnID, c.prev, c.limit)
+			if err != nil {
+				t.Errorf("ManagerNodeBalance(%s, %s, %d): unexpected error %v", c.mnID, c.prev, c.limit, err)
+				continue
+			}
 
-	for _, c := range cases {
-		got, gotLast, err := ManagerNodeBalance(ctx, c.mnID, c.prev, c.limit)
-		if err != nil {
-			t.Errorf("ManagerNodeBalance(%s, %s, %d): unexpected error %v", c.mnID, c.prev, c.limit, err)
-			continue
+			if !reflect.DeepEqual(got, c.want) {
+				t.Errorf("ManagerNodeBalance(%s, %s, %d) = %v want %v", c.mnID, c.prev, c.limit, got, c.want)
+			}
+
+			if gotLast != c.wantLast {
+				t.Errorf("ManagerNodeBalance(%s, %s, %d) = %v want %v", c.mnID, c.prev, c.limit, gotLast, c.wantLast)
+			}
 		}
-
-		if !reflect.DeepEqual(got, c.want) {
-			t.Errorf("ManagerNodeBalance(%s, %s, %d) = %v want %v", c.mnID, c.prev, c.limit, got, c.want)
-		}
-
-		if gotLast != c.wantLast {
-			t.Errorf("ManagerNodeBalance(%s, %s, %d) = %v want %v", c.mnID, c.prev, c.limit, gotLast, c.wantLast)
-		}
-	}
+	})
 }
 
 func TestListManagerNodes(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	const sql = `
 		INSERT INTO projects (id, name) VALUES
 			('proj-id-0', 'proj-0'),
 			('proj-id-1', 'proj-1');
@@ -144,39 +132,77 @@ func TestListManagerNodes(t *testing.T) {
 			('manager-node-id-1', 'proj-id-0', 1, 'manager-node-1', now() - '1 day'::interval),
 
 			('manager-node-id-2', 'proj-id-1', 2, 'manager-node-2', now());
-	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
-
-	examples := []struct {
-		projID string
-		want   []*ManagerNode
-	}{
-		{
-			"proj-id-0",
-			[]*ManagerNode{
-				{ID: "manager-node-id-1", Blockchain: "sandbox", Label: "manager-node-1"},
-				{ID: "manager-node-id-0", Blockchain: "sandbox", Label: "manager-node-0"},
+	`
+	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+		examples := []struct {
+			projID string
+			want   []*ManagerNode
+		}{
+			{
+				"proj-id-0",
+				[]*ManagerNode{
+					{ID: "manager-node-id-1", Blockchain: "sandbox", Label: "manager-node-1"},
+					{ID: "manager-node-id-0", Blockchain: "sandbox", Label: "manager-node-0"},
+				},
 			},
-		},
-		{
-			"proj-id-1",
-			[]*ManagerNode{
-				{ID: "manager-node-id-2", Blockchain: "sandbox", Label: "manager-node-2"},
+			{
+				"proj-id-1",
+				[]*ManagerNode{
+					{ID: "manager-node-id-2", Blockchain: "sandbox", Label: "manager-node-2"},
+				},
 			},
-		},
-	}
+		}
 
-	for _, ex := range examples {
-		t.Log("Example:", ex.projID)
+		for _, ex := range examples {
+			t.Log("Example:", ex.projID)
 
-		got, err := ListManagerNodes(ctx, ex.projID)
+			got, err := ListManagerNodes(ctx, ex.projID)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(got, ex.want) {
+				t.Errorf("managerNodes:\ngot:  %v\nwant: %v", got, ex.want)
+			}
+		}
+	})
+}
+
+func TestUpdateManagerNode(t *testing.T) {
+	withContext(t, sampleProjectFixture, func(t *testing.T, ctx context.Context) {
+		managerNode := newTestManagerNode(t, ctx, "proj-id-0", "foo")
+		newLabel := "bar"
+
+		err := UpdateManagerNode(ctx, managerNode.ID, &newLabel)
 		if err != nil {
-			t.Fatal(err)
+			t.Errorf("Unexpected error %v", err)
 		}
 
-		if !reflect.DeepEqual(got, ex.want) {
-			t.Errorf("managerNodes:\ngot:  %v\nwant: %v", got, ex.want)
+		managerNode, err = GetManagerNode(ctx, managerNode.ID)
+		if err != nil {
+			t.Errorf("Unexpected error %v", err)
 		}
-	}
+		if managerNode.Label != newLabel {
+			t.Errorf("Expected %s, got %s", newLabel, managerNode.Label)
+		}
+	})
+}
+
+// Test that calling UpdateManagerNode with no new label is a no-op.
+func TestUpdateManagerNodeNoUpdate(t *testing.T) {
+	withContext(t, sampleProjectFixture, func(t *testing.T, ctx context.Context) {
+		managerNode := newTestManagerNode(t, ctx, "proj-id-0", "foo")
+		err := UpdateManagerNode(ctx, managerNode.ID, nil)
+		if err != nil {
+			t.Errorf("unexpected error %v", err)
+		}
+
+		managerNode, err = GetManagerNode(ctx, managerNode.ID)
+		if err != nil {
+			t.Errorf("Unexpected error %v", err)
+		}
+		if managerNode.Label != "foo" {
+			t.Errorf("Expected foo, got %s", managerNode.Label)
+		}
+	})
 }
