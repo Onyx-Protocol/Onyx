@@ -14,7 +14,6 @@ import (
 	"chain/api/appdb"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
-	"chain/log"
 	"chain/metrics"
 )
 
@@ -30,7 +29,6 @@ var ErrPastExpires = errors.New("expires in the past")
 // it returns ErrPastExpires.
 func CreateAddress(ctx context.Context, addr *appdb.Address) error {
 	defer metrics.RecordElapsed(time.Now())
-	log.Write(ctx, "step", "create address", "in", addr.BucketID)
 
 	if !addr.Expires.IsZero() && addr.Expires.Before(time.Now()) {
 		return errors.WithDetailf(ErrPastExpires, "%s ago", time.Since(addr.Expires))
