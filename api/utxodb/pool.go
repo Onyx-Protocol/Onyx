@@ -13,10 +13,9 @@ import (
 
 // A pool holds outputs of a single asset type in a bucket.
 type pool struct {
-	mu         sync.Mutex // protects the following
-	ready      bool
-	outputs    utxosByResvExpires // min heap
-	byOutpoint map[bc.Outpoint]*UTXO
+	mu      sync.Mutex // protects the following
+	ready   bool
+	outputs utxosByResvExpires // min heap
 }
 
 func (p *pool) init(ctx context.Context, db DB, k key) error {
@@ -34,7 +33,6 @@ func (p *pool) init(ctx context.Context, db DB, k key) error {
 	// We will load them (along with all the other
 	// utxos) again now, so throw away the dups.
 	p.outputs = nil
-	p.byOutpoint = map[bc.Outpoint]*UTXO{}
 
 	utxos, err := db.LoadUTXOs(ctx, k.BucketID, k.AssetID)
 	if err != nil {
@@ -43,7 +41,6 @@ func (p *pool) init(ctx context.Context, db DB, k key) error {
 
 	for _, utxo := range utxos {
 		heap.Push(&p.outputs, utxo)
-		p.byOutpoint[utxo.Outpoint] = utxo
 	}
 	p.ready = true
 	return nil
@@ -118,9 +115,18 @@ func (p *pool) findReservation(op bc.Outpoint) *UTXO {
 	defer p.mu.Unlock()
 	defer metrics.RecordElapsed(time.Now())
 
-	u := p.byOutpoint[op]
+	u := p.byOutpoint(op)
 	if u == nil || time.Now().After(u.ResvExpires) {
 		return nil
 	}
 	return u
+}
+
+func (p *pool) byOutpoint(op bc.Outpoint) *UTXO {
+	for _, u := range p.outputs {
+		if u.Outpoint == op {
+			return u
+		}
+	}
+	return nil
 }

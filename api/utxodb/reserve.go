@@ -114,9 +114,7 @@ func (rs *Reserver) pool(bucketID, assetID string) *pool {
 	k := key{bucketID, assetID}
 	p, ok := rs.tab[k]
 	if !ok {
-		p = &pool{
-			byOutpoint: map[bc.Outpoint]*UTXO{},
-		}
+		p = new(pool)
 		rs.tab[k] = p
 	}
 	return p
@@ -242,7 +240,6 @@ func (rs *Reserver) insert(utxos []*UTXO) {
 		// by the caller, because they are
 		// freshly-created.
 		heap.Push(&p.outputs, u)
-		p.byOutpoint[u.Outpoint] = u
 		i++
 		if i%1e6 == 0 {
 			log.Messagef(ctx, "build utxo heaps: did %d so far", i)
@@ -273,9 +270,8 @@ func (rs *Reserver) delete(utxos []*UTXO) {
 		// in p; it just has the same outpoint.
 		// So we look up the actual pointer and
 		// make sure it's contained in p.
-		if u = p.byOutpoint[u.Outpoint]; u != nil {
+		if u = p.byOutpoint(u.Outpoint); u != nil {
 			heap.Remove(&p.outputs, u.heapIndex)
-			delete(p.byOutpoint, u.Outpoint)
 		}
 	})
 
