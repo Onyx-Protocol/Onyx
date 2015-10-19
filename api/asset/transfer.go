@@ -149,7 +149,7 @@ func addressInput(ctx context.Context, u *utxodb.UTXO, tx *bc.Tx) (*Input, error
 	}
 
 	in := &Input{
-		WalletID:      addrInfo.WalletID,
+		ManagerNodeID: addrInfo.ManagerNodeID,
 		RedeemScript:  redeemScript,
 		SignatureData: tx.Hash(),
 		Sigs:          inputSigs(signers),

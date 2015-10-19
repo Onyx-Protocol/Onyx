@@ -17,20 +17,20 @@ func TestTrade(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
-			VALUES('w1', 'proj-id-0', 'w1', 'rot1');
+			VALUES('mn1', 'proj-id-0', 'mn1', 'rot1');
 		INSERT INTO rotations (id, manager_node_id, keyset)
-			VALUES('rot1', 'w1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
+			VALUES('rot1', 'mn1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 		INSERT INTO accounts (id, manager_node_id, key_index, next_address_index)
-			VALUES('b1', 'w1', 0, 1);
+			VALUES('b1', 'mn1', 0, 1);
 		INSERT INTO accounts (id, manager_node_id, key_index, next_address_index)
-			VALUES('b2', 'w1', 1, 1);
+			VALUES('b2', 'mn1', 1, 1);
 		INSERT INTO addresses (id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script)
-			VALUES('a2', 'w1', 'b2', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a2', '', '');
+			VALUES('a2', 'mn1', 'b2', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a2', '', '');
 		INSERT INTO utxos
 			(txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
 		VALUES
-			('1000000000000000000000000000000000000000000000000000000000000000', 0, 'fe00000000000000000000000000000000000000000000000000000000000000', 5, 1, 'b1', 'w1'),
-			('2000000000000000000000000000000000000000000000000000000000000000', 0, 'ff00000000000000000000000000000000000000000000000000000000000000', 2, 0, 'b2', 'w1');
+			('1000000000000000000000000000000000000000000000000000000000000000', 0, 'fe00000000000000000000000000000000000000000000000000000000000000', 5, 1, 'b1', 'mn1'),
+			('2000000000000000000000000000000000000000000000000000000000000000', 0, 'ff00000000000000000000000000000000000000000000000000000000000000', 2, 0, 'b2', 'mn1');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
@@ -43,7 +43,7 @@ func TestTrade(t *testing.T) {
 
 	tpl := &Tx{
 		Unsigned:   unsignedTx,
-		Inputs:     []*Input{{WalletID: "w1"}},
+		Inputs:     []*Input{{ManagerNodeID: "mn1"}},
 		BlockChain: "sandbox",
 	}
 	inputs := []utxodb.Input{{
@@ -101,13 +101,13 @@ func TestCombine(t *testing.T) {
 
 	tpl1 := &Tx{
 		Unsigned:   unsigned1,
-		Inputs:     []*Input{{WalletID: "w1"}},
+		Inputs:     []*Input{{ManagerNodeID: "mn1"}},
 		BlockChain: "sandbox",
 	}
 
 	tpl2 := &Tx{
 		Unsigned:   unsigned2,
-		Inputs:     []*Input{{WalletID: "w2"}},
+		Inputs:     []*Input{{ManagerNodeID: "mn2"}},
 		BlockChain: "sandbox",
 	}
 
@@ -119,7 +119,7 @@ func TestCombine(t *testing.T) {
 
 	want := &Tx{
 		Unsigned:   combined,
-		Inputs:     []*Input{{WalletID: "w1"}, {WalletID: "w2"}},
+		Inputs:     []*Input{{ManagerNodeID: "mn1"}, {ManagerNodeID: "mn2"}},
 		BlockChain: "sandbox",
 	}
 

@@ -9,7 +9,7 @@ import (
 	"chain/fedchain-sandbox/hdkey"
 )
 
-// Errors returned by CreateWallet.
+// Errors returned by CreateNode.
 // May be wrapped using package chain/errors.
 var (
 	ErrBadXPubCount = errors.New("bad xpub count")
@@ -25,7 +25,7 @@ const (
 )
 
 // CreateNodeReq is a user filled struct
-// passed into CreateWallet or CreateAssetGroup
+// passed into CreateManagerNode or CreateAssetGroup
 type CreateNodeReq struct {
 	Label       string
 	XPubs       []string
@@ -72,7 +72,7 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 	}
 
 	if node == ManagerNode {
-		return appdb.InsertWallet(ctx, projID, req.Label, keys, gennedKeys)
+		return appdb.InsertManagerNode(ctx, projID, req.Label, keys, gennedKeys)
 	}
 	return appdb.InsertAssetGroup(ctx, projID, req.Label, keys, gennedKeys)
 }

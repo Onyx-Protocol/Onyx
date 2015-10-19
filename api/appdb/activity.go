@@ -48,7 +48,7 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outs []*UTXO, txTime time.Tim
 	// Extract IDs for all resources involved in the transaction. The lists
 	// should not contain duplicates.
 	allUTXOs := append(ins, outs...)
-	assetIDs, bucketIDs, walletIDs, walletBuckets := getIDsFromUTXOs(allUTXOs)
+	assetIDs, bucketIDs, managerNodeIDs, managerNodeAccounts := getIDsFromUTXOs(allUTXOs)
 
 	// Gather additional data on relevant buckets.
 	actBuckets, err := getActBuckets(ctx, bucketIDs)
@@ -72,9 +72,9 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outs []*UTXO, txTime time.Tim
 		assetLabels[a.id] = a.label
 	}
 
-	// Wallet activity
-	for _, walletID := range walletIDs {
-		r := coalesceActivity(ins, outs, walletBuckets[walletID])
+	//  Manager node activity
+	for _, managerNodeID := range managerNodeIDs {
+		r := coalesceActivity(ins, outs, managerNodeAccounts[managerNodeID])
 		inAct, outAct := createActEntries(r, assetLabels, bucketLabels)
 
 		data, err := serializeActvity(txHash, txTime, inAct, outAct)
@@ -82,9 +82,9 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outs []*UTXO, txTime time.Tim
 			return errors.Wrap(err, "serialize activity")
 		}
 
-		err = writeWalletActivity(ctx, walletID, txHash, data, walletBuckets[walletID])
+		err = writeManagerNodeActivity(ctx, managerNodeID, txHash, data, managerNodeAccounts[managerNodeID])
 		if err != nil {
-			return errors.Wrap(err, "writing activity for wallet", walletID)
+			return errors.Wrap(err, "writing activity for manager node", managerNodeID)
 		}
 	}
 
@@ -119,14 +119,14 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outs []*UTXO, txTime time.Tim
 	return nil
 }
 
-func WalletActivity(ctx context.Context, walletID string, prev string, limit int) ([]*json.RawMessage, string, error) {
+func ManagerNodeActivity(ctx context.Context, managerNodeID string, prev string, limit int) ([]*json.RawMessage, string, error) {
 	q := `
 		SELECT id, data FROM activity
 		WHERE manager_node_id=$1 AND (($2 = '') OR (id < $2))
 		ORDER BY id DESC LIMIT $3
 	`
 
-	rows, err := pg.FromContext(ctx).Query(q, walletID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(q, managerNodeID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "query")
 	}
@@ -207,14 +207,14 @@ func activityItemsFromRows(rows *sql.Rows) (items []*json.RawMessage, last strin
 	return items, last, nil
 }
 
-func WalletTxActivity(ctx context.Context, walletID, txID string) (*json.RawMessage, error) {
+func ManagerNodeTxActivity(ctx context.Context, managerNodeID, txID string) (*json.RawMessage, error) {
 	q := `
 		SELECT data FROM activity
 		WHERE manager_node_id=$1 AND txid=$2
 	`
 
 	var a []byte
-	err := pg.FromContext(ctx).QueryRow(q, walletID, txID).Scan(&a)
+	err := pg.FromContext(ctx).QueryRow(q, managerNodeID, txID).Scan(&a)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "transaction id: %v", txID)
 	}
@@ -225,9 +225,9 @@ func WalletTxActivity(ctx context.Context, walletID, txID string) (*json.RawMess
 // but don't store in memory in package utxodb.
 type UTXO struct {
 	*utxodb.UTXO
-	Addr     string
-	WalletID string
-	IsChange bool
+	Addr          string
+	ManagerNodeID string
+	IsChange      bool
 }
 
 type actAddr struct {
@@ -244,10 +244,10 @@ type actAsset struct {
 }
 
 type actBucket struct {
-	id       string
-	label    string
-	walletID string
-	projID   string
+	id            string
+	label         string
+	managerNodeID string
+	projID        string
 }
 
 type txRawActivity struct {
@@ -326,7 +326,7 @@ func getActUTXOs(ctx context.Context, txHashes []string, indexes []uint32) ([]*U
 
 		err := rows.Scan(
 			&utxo.AssetID, &utxo.Amount,
-			(*pg.Uint32s)(&addrIndex), &utxo.BucketID, &utxo.WalletID,
+			(*pg.Uint32s)(&addrIndex), &utxo.BucketID, &utxo.ManagerNodeID,
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
@@ -355,33 +355,33 @@ func getActUTXOs(ctx context.Context, txHashes []string, indexes []uint32) ([]*U
 func getIDsFromUTXOs(utxos []*UTXO) (
 	assetIDs []string, // list of unique asset IDs
 	bucketIDs []string, // list of unique bucket IDs
-	walletIDs []string, // list of unique wallet IDs
-	walletBuckets map[string][]string, // map of wallet IDs to unique bucket IDs
+	managerNodeIDs []string, // list of unique manager node IDs
+	managerNodeAccounts map[string][]string, // map of manager node IDs to unique account IDs
 ) {
-	walletBuckets = make(map[string][]string)
+	managerNodeAccounts = make(map[string][]string)
 	for _, u := range utxos {
 		if u != nil {
 			assetIDs = append(assetIDs, u.AssetID)
 			bucketIDs = append(bucketIDs, u.BucketID)
-			walletIDs = append(walletIDs, u.WalletID)
-			walletBuckets[u.WalletID] = append(walletBuckets[u.WalletID], u.BucketID)
+			managerNodeIDs = append(managerNodeIDs, u.ManagerNodeID)
+			managerNodeAccounts[u.ManagerNodeID] = append(managerNodeAccounts[u.ManagerNodeID], u.BucketID)
 		}
 	}
 
 	sort.Strings(assetIDs)
 	sort.Strings(bucketIDs)
-	sort.Strings(walletIDs)
+	sort.Strings(managerNodeIDs)
 
 	assetIDs = strings.Uniq(assetIDs)
 	bucketIDs = strings.Uniq(bucketIDs)
-	walletIDs = strings.Uniq(walletIDs)
+	managerNodeIDs = strings.Uniq(managerNodeIDs)
 
-	for walletID, buckets := range walletBuckets {
+	for managerNodeID, buckets := range managerNodeAccounts {
 		sort.Strings(buckets)
-		walletBuckets[walletID] = strings.Uniq(buckets)
+		managerNodeAccounts[managerNodeID] = strings.Uniq(buckets)
 	}
 
-	return assetIDs, bucketIDs, walletIDs, walletBuckets
+	return assetIDs, bucketIDs, managerNodeIDs, managerNodeAccounts
 }
 
 func getActAssets(ctx context.Context, assetIDs []string) ([]*actAsset, error) {
@@ -432,7 +432,7 @@ func getActBuckets(ctx context.Context, bucketIDs []string) ([]*actBucket, error
 	var res []*actBucket
 	for rows.Next() {
 		b := new(actBucket)
-		err := rows.Scan(&b.id, &b.label, &b.walletID, &b.projID)
+		err := rows.Scan(&b.id, &b.label, &b.managerNodeID, &b.projID)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
@@ -602,14 +602,14 @@ func serializeActvity(txHash string, txTime time.Time, ins, outs []actEntry) ([]
 	})
 }
 
-func writeWalletActivity(ctx context.Context, walletID, txHash string, data []byte, bucketIDs []string) error {
+func writeManagerNodeActivity(ctx context.Context, managerNodeID, txHash string, data []byte, bucketIDs []string) error {
 	aq := `
 		INSERT INTO activity (manager_node_id, txid, data)
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
 	var id string
-	err := pg.FromContext(ctx).QueryRow(aq, walletID, txHash, data).Scan(&id)
+	err := pg.FromContext(ctx).QueryRow(aq, managerNodeID, txHash, data).Scan(&id)
 	if err != nil {
 		return errors.Wrap(err, "insert activity")
 	}

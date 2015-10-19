@@ -14,7 +14,7 @@ import (
 )
 
 // POST /v3/projects/:projID/manager-nodes
-func createWallet(ctx context.Context, projID string, wReq *asset.CreateNodeReq) (interface{}, error) {
+func createManagerNode(ctx context.Context, projID string, wReq *asset.CreateNodeReq) (interface{}, error) {
 	if err := projectAuthz(ctx, projID); err != nil {
 		return nil, err
 	}
@@ -25,7 +25,7 @@ func createWallet(ctx context.Context, projID string, wReq *asset.CreateNodeReq)
 	}
 	defer dbtx.Rollback()
 
-	wallet, err := asset.CreateNode(ctx, asset.ManagerNode, projID, wReq)
+	managerNode, err := asset.CreateNode(ctx, asset.ManagerNode, projID, wReq)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func createWallet(ctx context.Context, projID string, wReq *asset.CreateNodeReq)
 		return nil, err
 	}
 
-	return wallet, nil
+	return managerNode, nil
 }
 
 // PUT /v3/manager-nodes/:mnodeID
@@ -47,24 +47,24 @@ func updateManagerNode(ctx context.Context, mnodeID string, in struct{ Label *st
 }
 
 // GET /v3/projects/:projID/manager-nodes
-func listWallets(ctx context.Context, projID string) (interface{}, error) {
+func listManagerNodes(ctx context.Context, projID string) (interface{}, error) {
 	if err := projectAuthz(ctx, projID); err != nil {
 		return nil, err
 	}
-	return appdb.ListWallets(ctx, projID)
+	return appdb.ListManagerNodes(ctx, projID)
 }
 
 // GET /v3/manager-nodes/:mnodeID
-func getWallet(ctx context.Context, mnodeID string) (interface{}, error) {
+func getManagerNode(ctx context.Context, mnodeID string) (interface{}, error) {
 	if err := managerAuthz(ctx, mnodeID); err != nil {
 		return nil, err
 	}
-	return appdb.GetWallet(ctx, mnodeID)
+	return appdb.GetManagerNode(ctx, mnodeID)
 }
 
 // GET /v3/manager-nodes/:mnodeID/activity
-func getWalletActivity(ctx context.Context, wID string) (interface{}, error) {
-	if err := managerAuthz(ctx, wID); err != nil {
+func getManagerNodeActivity(ctx context.Context, mnID string) (interface{}, error) {
+	if err := managerAuthz(ctx, mnID); err != nil {
 		return nil, err
 	}
 	prev, limit, err := getPageData(ctx, defActivityPageSize)
@@ -72,7 +72,7 @@ func getWalletActivity(ctx context.Context, wID string) (interface{}, error) {
 		return nil, err
 	}
 
-	activity, last, err := appdb.WalletActivity(ctx, wID, prev, limit)
+	activity, last, err := appdb.ManagerNodeActivity(ctx, mnID, prev, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -85,16 +85,16 @@ func getWalletActivity(ctx context.Context, wID string) (interface{}, error) {
 }
 
 // GET /v3/manager-nodes/:mnodeID/transactions/:txID
-func walletTxActivity(ctx context.Context, mnodeID, txID string) (interface{}, error) {
+func managerNodeTxActivity(ctx context.Context, mnodeID, txID string) (interface{}, error) {
 	if err := managerAuthz(ctx, mnodeID); err != nil {
 		return nil, err
 	}
-	return appdb.WalletTxActivity(ctx, mnodeID, txID)
+	return appdb.ManagerNodeTxActivity(ctx, mnodeID, txID)
 }
 
 // GET /v3/manager-nodes/:mnodeID/balance
-func walletBalance(ctx context.Context, walletID string) (interface{}, error) {
-	if err := managerAuthz(ctx, walletID); err != nil {
+func managerNodeBalance(ctx context.Context, managerNodeID string) (interface{}, error) {
+	if err := managerAuthz(ctx, managerNodeID); err != nil {
 		return nil, err
 	}
 	prev, limit, err := getPageData(ctx, defBalancePageSize)
@@ -102,7 +102,7 @@ func walletBalance(ctx context.Context, walletID string) (interface{}, error) {
 		return nil, err
 	}
 
-	balances, last, err := appdb.WalletBalance(ctx, walletID, prev, limit)
+	balances, last, err := appdb.ManagerNodeBalance(ctx, managerNodeID, prev, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -115,8 +115,8 @@ func walletBalance(ctx context.Context, walletID string) (interface{}, error) {
 }
 
 // GET /v3/manager-nodes/:mnodeID/accounts
-func listBuckets(ctx context.Context, walletID string) (interface{}, error) {
-	if err := managerAuthz(ctx, walletID); err != nil {
+func listBuckets(ctx context.Context, managerNodeID string) (interface{}, error) {
+	if err := managerAuthz(ctx, managerNodeID); err != nil {
 		return nil, err
 	}
 	prev, limit, err := getPageData(ctx, defBucketPageSize)
@@ -124,7 +124,7 @@ func listBuckets(ctx context.Context, walletID string) (interface{}, error) {
 		return nil, err
 	}
 
-	buckets, last, err := appdb.ListBuckets(ctx, walletID, prev, limit)
+	buckets, last, err := appdb.ListBuckets(ctx, managerNodeID, prev, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -137,12 +137,12 @@ func listBuckets(ctx context.Context, walletID string) (interface{}, error) {
 }
 
 // POST /v3/manager-nodes/:mnodeID/accounts
-func createBucket(ctx context.Context, walletID string, in struct{ Label string }) (*appdb.Bucket, error) {
+func createBucket(ctx context.Context, managerNodeID string, in struct{ Label string }) (*appdb.Bucket, error) {
 	defer metrics.RecordElapsed(time.Now())
-	if err := managerAuthz(ctx, walletID); err != nil {
+	if err := managerAuthz(ctx, managerNodeID); err != nil {
 		return nil, err
 	}
-	return appdb.CreateBucket(ctx, walletID, in.Label)
+	return appdb.CreateBucket(ctx, managerNodeID, in.Label)
 }
 
 // GET /v3/accounts/:accountID

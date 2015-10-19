@@ -10,9 +10,9 @@ import (
 	"chain/fedchain-sandbox/hdkey"
 )
 
-// Wallet represents a single wallet. It is intended to be used wth API
+// ManagerNode represents a single manager node. It is intended to be used wth API
 // responses.
-type Wallet struct {
+type ManagerNode struct {
 	ID          string        `json:"id"`
 	Blockchain  string        `json:"blockchain"`
 	Label       string        `json:"label"`
@@ -21,8 +21,8 @@ type Wallet struct {
 	PrivateKeys []*hdkey.XKey `json:"private_keys,omitempty"`
 }
 
-// InsertWallet inserts a new wallet into the database.
-func InsertWallet(ctx context.Context, projID, label string, keys, gennedKeys []*hdkey.XKey) (w *Wallet, err error) {
+// InsertManagerNode inserts a new manager node into the database.
+func InsertManagerNode(ctx context.Context, projID, label string, keys, gennedKeys []*hdkey.XKey) (w *ManagerNode, err error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 	const q = `
 		INSERT INTO manager_nodes (label, project_id, generated_keys)
@@ -33,7 +33,7 @@ func InsertWallet(ctx context.Context, projID, label string, keys, gennedKeys []
 	xprvs := keysToStrings(gennedKeys)
 	err = pg.FromContext(ctx).QueryRow(q, label, projID, pg.Strings(xprvs)).Scan(&id)
 	if err != nil {
-		return nil, errors.Wrap(err, "insert wallet")
+		return nil, errors.Wrap(err, "insert manager node")
 	}
 
 	err = createRotation(ctx, id, keysToStrings(keys)...)
@@ -41,7 +41,7 @@ func InsertWallet(ctx context.Context, projID, label string, keys, gennedKeys []
 		return nil, errors.Wrap(err, "create rotation")
 	}
 
-	return &Wallet{
+	return &ManagerNode{
 		ID:          id,
 		Blockchain:  "sandbox",
 		Label:       label,
@@ -52,24 +52,24 @@ func InsertWallet(ctx context.Context, projID, label string, keys, gennedKeys []
 }
 
 // Balance is a struct describing the balance of
-// an asset that a wallet or bucket has.
+// an asset that a manager node or bucket has.
 type Balance struct {
 	AssetID   string `json:"asset_id"`
 	Confirmed int64  `json:"confirmed"`
 	Total     int64  `json:"total"`
 }
 
-// GetWallet returns basic information about a single wallet.
-func GetWallet(ctx context.Context, walletID string) (*Wallet, error) {
+// GetManagerNode returns basic information about a single manager node.
+func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, error) {
 	var (
 		q       = `SELECT label, block_chain, generated_keys FROM manager_nodes WHERE id = $1`
 		label   string
 		bc      string
 		keyStrs []string
 	)
-	err := pg.FromContext(ctx).QueryRow(q, walletID).Scan(&label, &bc, (*pg.Strings)(&keyStrs))
+	err := pg.FromContext(ctx).QueryRow(q, managerNodeID).Scan(&label, &bc, (*pg.Strings)(&keyStrs))
 	if err == sql.ErrNoRows {
-		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "wallet ID: %v", walletID)
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "manager node ID: %v", managerNodeID)
 	}
 	if err != nil {
 		return nil, err
@@ -80,15 +80,15 @@ func GetWallet(ctx context.Context, walletID string) (*Wallet, error) {
 		return nil, errors.Wrap(err, "parsing private keys")
 	}
 
-	return &Wallet{ID: walletID, Label: label, Blockchain: bc, PrivateKeys: keys}, nil
+	return &ManagerNode{ID: managerNodeID, Label: label, Blockchain: bc, PrivateKeys: keys}, nil
 }
 
-// WalletBalance fetches the balances of assets contained in this wallet.
+// ManagerNodeBalance fetches the balances of assets contained in this manager node.
 // It returns a slice of Balances and the last asset ID in the page.
 // Each Balance contains an asset ID, a confirmed balance,
 // and a total balance. The total and confirmed balances
 // are currently the same.
-func WalletBalance(ctx context.Context, walletID, prev string, limit int) ([]*Balance, string, error) {
+func ManagerNodeBalance(ctx context.Context, managerNodeID, prev string, limit int) ([]*Balance, string, error) {
 	q := `
 		SELECT asset_id, sum(amount)::bigint
 		FROM utxos
@@ -97,7 +97,7 @@ func WalletBalance(ctx context.Context, walletID, prev string, limit int) ([]*Ba
 		ORDER BY asset_id
 		LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(q, walletID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(q, managerNodeID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "balance query")
 	}
@@ -125,8 +125,8 @@ func WalletBalance(ctx context.Context, walletID, prev string, limit int) ([]*Ba
 	return bals, last, err
 }
 
-// ListWallets returns a list of wallets contained in the given project.
-func ListWallets(ctx context.Context, projID string) ([]*Wallet, error) {
+// ListManagerNodes returns a list of manager nodes contained in the given project.
+func ListManagerNodes(ctx context.Context, projID string) ([]*ManagerNode, error) {
 	q := `
 		SELECT id, block_chain, label
 		FROM manager_nodes
@@ -139,21 +139,21 @@ func ListWallets(ctx context.Context, projID string) ([]*Wallet, error) {
 	}
 	defer rows.Close()
 
-	var wallets []*Wallet
+	var managerNodes []*ManagerNode
 	for rows.Next() {
-		w := new(Wallet)
-		err := rows.Scan(&w.ID, &w.Blockchain, &w.Label)
+		m := new(ManagerNode)
+		err := rows.Scan(&m.ID, &m.Blockchain, &m.Label)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
-		wallets = append(wallets, w)
+		managerNodes = append(managerNodes, m)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrap(err, "end row scan loop")
 	}
 
-	return wallets, nil
+	return managerNodes, nil
 }
 
 // UpdateManagerNode updates the label of a manager node.
@@ -167,7 +167,7 @@ func UpdateManagerNode(ctx context.Context, mnodeID string, label *string) error
 	return errors.Wrap(err, "update query")
 }
 
-func createRotation(ctx context.Context, walletID string, xpubs ...string) error {
+func createRotation(ctx context.Context, managerNodeID string, xpubs ...string) error {
 	const q = `
 		WITH new_rotation AS (
 			INSERT INTO rotations (manager_node_id, keyset)
@@ -177,6 +177,6 @@ func createRotation(ctx context.Context, walletID string, xpubs ...string) error
 		UPDATE manager_nodes SET current_rotation=(SELECT id FROM new_rotation)
 		WHERE id=$1
 	`
-	_, err := pg.FromContext(ctx).Exec(q, walletID, pg.Strings(xpubs))
+	_, err := pg.FromContext(ctx).Exec(q, managerNodeID, pg.Strings(xpubs))
 	return err
 }

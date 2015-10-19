@@ -123,8 +123,7 @@ func cancelReservation(ctx context.Context, x struct {
 	return nil
 }
 
-// POST /v3/wallets/submit
-// POST /v3/wallets/transact/finalize-batch
+// POST /v3/transact/submit
 func submit(ctx context.Context, x struct{ Transactions []*asset.Tx }) interface{} {
 	defer metrics.RecordElapsed(time.Now())
 

@@ -78,24 +78,24 @@ func TestProjectAuthz(t *testing.T) {
 func TestManagerAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
 		INSERT INTO manager_nodes (id, project_id, label)
-			VALUES ('w1', 'proj1', 'x'), ('w2', 'proj2', 'x'), ('w3', 'proj3', 'x');
+			VALUES ('mn1', 'proj1', 'x'), ('mn2', 'proj2', 'x'), ('mn3', 'proj3', 'x');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	cases := []struct {
-		userID   string
-		walletID string
-		want     error
+		userID        string
+		managerNodeID string
+		want          error
 	}{
-		{"u2", "w1", nil}, {"u2", "w2", nil}, {"u2", "w3", errNoAccessToResource},
+		{"u2", "mn1", nil}, {"u2", "mn2", nil}, {"u2", "mn3", errNoAccessToResource},
 	}
 
 	for _, c := range cases {
 		ctx := authn.NewContext(ctx, c.userID)
-		got := managerAuthz(ctx, c.walletID)
+		got := managerAuthz(ctx, c.managerNodeID)
 		if errors.Root(got) != c.want {
-			t.Errorf("managerAuthz(%s, %v) = %q want %q", c.userID, c.walletID, got, c.want)
+			t.Errorf("managerAuthz(%s, %v) = %q want %q", c.userID, c.managerNodeID, got, c.want)
 		}
 	}
 }
@@ -103,9 +103,9 @@ func TestManagerAuthz(t *testing.T) {
 func TestAccountAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
 		INSERT INTO manager_nodes (id, project_id, label)
-			VALUES ('w1', 'proj1', 'x'), ('w2', 'proj2', 'x'), ('w3', 'proj3', 'x');
+			VALUES ('mn1', 'proj1', 'x'), ('mn2', 'proj2', 'x'), ('mn3', 'proj3', 'x');
 		INSERT INTO accounts (id, manager_node_id, key_index)
-			VALUES ('b1', 'w1', 0), ('b2', 'w2', 0), ('b3', 'w3', 0);
+			VALUES ('b1', 'mn1', 0), ('b2', 'mn2', 0), ('b3', 'mn3', 0);
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
@@ -185,11 +185,11 @@ func TestAssetAuthz(t *testing.T) {
 func TestBuildAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
 		INSERT INTO manager_nodes (id, project_id, label)
-			VALUES ('w1', 'proj1', 'x'), ('w2', 'proj2', 'x'), ('w3', 'proj3', 'x');
+			VALUES ('mn1', 'proj1', 'x'), ('mn2', 'proj2', 'x'), ('mn3', 'proj3', 'x');
 		INSERT INTO accounts (id, manager_node_id, key_index)
 			VALUES
-				('b1', 'w1', 0), ('b2', 'w2', 0), ('b3', 'w3', 0),
-				('b4', 'w1', 1), ('b5', 'w2', 1), ('b6', 'w3', 1);
+				('b1', 'mn1', 0), ('b2', 'mn2', 0), ('b3', 'mn3', 0),
+				('b4', 'mn1', 1), ('b5', 'mn2', 1), ('b6', 'mn3', 1);
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)

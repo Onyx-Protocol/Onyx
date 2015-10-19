@@ -24,11 +24,11 @@ func TestCreateAddress(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	wallet, err := appdb.InsertWallet(ctx, "proj-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
+	managerNode, err := appdb.InsertManagerNode(ctx, "proj-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	bucket, err := appdb.CreateBucket(ctx, wallet.ID, "foo")
+	bucket, err := appdb.CreateBucket(ctx, managerNode.ID, "foo")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,16 +47,16 @@ func TestCreateAddress(t *testing.T) {
 	}
 
 	want := &appdb.Address{
-		BucketID:     bucket.ID,
-		Amount:       100,
-		Expires:      exp,
-		IsChange:     false,
-		WalletID:     wallet.ID,
-		WalletIndex:  []uint32{0, 1},
-		BucketIndex:  []uint32{0, 0},
-		Index:        []uint32{0, 1},
-		SigsRequired: 1,
-		Keys:         []*hdkey.XKey{dummyXPub},
+		BucketID:         bucket.ID,
+		Amount:           100,
+		Expires:          exp,
+		IsChange:         false,
+		ManagerNodeID:    managerNode.ID,
+		ManagerNodeIndex: []uint32{0, 1},
+		BucketIndex:      []uint32{0, 0},
+		Index:            []uint32{0, 1},
+		SigsRequired:     1,
+		Keys:             []*hdkey.XKey{dummyXPub},
 
 		Address: "3LkNaCapeRBLcdm5mfH9xv8snvrfzcsixu",
 		RedeemScript: []byte{

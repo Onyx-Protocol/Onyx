@@ -11,7 +11,7 @@ import (
 	"chain/errors"
 )
 
-func TestCreateWallet(t *testing.T) {
+func TestCreateManagerNode(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 	`)
@@ -22,12 +22,12 @@ func TestCreateWallet(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
-	wallet, ok := node.(*appdb.Wallet)
+	managerNode, ok := node.(*appdb.ManagerNode)
 	if !ok {
-		t.Fatal("expected Wallet struct")
+		t.Fatal("expected ManagerNode struct")
 	}
-	if wallet.ID == "" {
-		t.Errorf("got empty wallet id")
+	if managerNode.ID == "" {
+		t.Errorf("got empty managerNode id")
 	}
 	var valid bool
 	const checkQ = `

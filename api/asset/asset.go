@@ -102,10 +102,10 @@ func addAssetIssuanceOutputs(ctx context.Context, tx *bc.Tx, asset *appdb.Asset,
 
 func newOutputReceiver(addr *appdb.Address, isChange bool) *utxodb.Receiver {
 	return &utxodb.Receiver{
-		WalletID:  addr.WalletID,
-		BucketID:  addr.BucketID,
-		AddrIndex: addr.Index,
-		IsChange:  isChange,
+		ManagerNodeID: addr.ManagerNodeID,
+		BucketID:      addr.BucketID,
+		AddrIndex:     addr.Index,
+		IsChange:      isChange,
 	}
 }
 

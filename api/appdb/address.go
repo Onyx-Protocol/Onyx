@@ -33,19 +33,19 @@ type Address struct {
 	IsChange     bool
 
 	// Initialized by LoadNextIndex
-	WalletID     string
-	WalletIndex  []uint32
-	BucketIndex  []uint32
-	Index        []uint32
-	SigsRequired int
-	Keys         []*hdkey.XKey
+	ManagerNodeID    string
+	ManagerNodeIndex []uint32
+	BucketIndex      []uint32
+	Index            []uint32
+	SigsRequired     int
+	Keys             []*hdkey.XKey
 }
 
 var (
 	// Map bucket ID to address template.
 	// Entries set the following fields:
-	//   WalletID
-	//   WalletIndex
+	//   ManagerNodeID
+	//   ManagerNodeIndex
 	//   BucketIndex
 	//   Keys
 	//   SigsRequired
@@ -58,8 +58,8 @@ var (
 // AddrInfo looks up the information common to
 // every address in the given bucket.
 // Sets the following fields:
-//   WalletID
-//   WalletIndex
+//   ManagerNodeID
+//   ManagerNodeIndex
 //   BucketIndex
 //   Keys
 //   SigsRequired
@@ -74,17 +74,17 @@ func AddrInfo(ctx context.Context, bucketID string) (*Address, error) {
 		var xpubs []string
 		const q = `
 		SELECT
-			w.id, key_index(b.key_index), key_index(w.key_index),
-			r.keyset, w.sigs_required
+			mn.id, key_index(b.key_index), key_index(mn.key_index),
+			r.keyset, mn.sigs_required
 		FROM accounts b
-		LEFT JOIN manager_nodes w ON w.id=b.manager_node_id
-		LEFT JOIN rotations r ON r.id=w.current_rotation
+		LEFT JOIN manager_nodes mn ON mn.id=b.manager_node_id
+		LEFT JOIN rotations r ON r.id=mn.current_rotation
 		WHERE b.id=$1
 	`
 		err := pg.FromContext(ctx).QueryRow(q, bucketID).Scan(
-			&ai.WalletID,
+			&ai.ManagerNodeID,
 			(*pg.Uint32s)(&ai.BucketIndex),
-			(*pg.Uint32s)(&ai.WalletIndex),
+			(*pg.Uint32s)(&ai.ManagerNodeIndex),
 			(*pg.Strings)(&xpubs),
 			&ai.SigsRequired,
 		)
@@ -154,9 +154,9 @@ func (a *Address) LoadNextIndex(ctx context.Context) error {
 		return errors.Wrap(err, "nextIndex")
 	}
 
-	a.WalletID = ai.WalletID
+	a.ManagerNodeID = ai.ManagerNodeID
 	a.BucketIndex = ai.BucketIndex
-	a.WalletIndex = ai.WalletIndex
+	a.ManagerNodeIndex = ai.ManagerNodeIndex
 	a.SigsRequired = ai.SigsRequired
 	a.Keys = ai.Keys
 	return nil
@@ -180,7 +180,7 @@ func (a *Address) Insert(ctx context.Context) error {
 		a.Address,
 		a.RedeemScript,
 		a.PKScript,
-		a.WalletID,
+		a.ManagerNodeID,
 		a.BucketID,
 		pg.Strings(keysToStrings(a.Keys)),
 		pq.NullTime{Time: a.Expires, Valid: !a.Expires.IsZero()},

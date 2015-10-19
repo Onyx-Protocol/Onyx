@@ -83,11 +83,11 @@ func TestOutputPKScript(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
-			VALUES('w1', 'proj-id-0', 'w1', 'rot1');
+			VALUES('mn1', 'proj-id-0', 'mn1', 'rot1');
 		INSERT INTO rotations (id, manager_node_id, keyset)
-			VALUES('rot1', 'w1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
+			VALUES('rot1', 'mn1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 		INSERT INTO accounts (id, manager_node_id, key_index)
-			VALUES('b1', 'w1', 0);
+			VALUES('b1', 'mn1', 0);
 	`)
 	defer dbtx.Rollback()
 
@@ -131,11 +131,11 @@ func TestPKScriptChangeAddr(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
-			VALUES('w1', 'proj-id-0', 'w1', 'rot1');
+			VALUES('mn1', 'proj-id-0', 'mn1', 'rot1');
 		INSERT INTO rotations (id, manager_node_id, keyset)
-			VALUES('rot1', 'w1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
+			VALUES('rot1', 'mn1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 		INSERT INTO accounts (id, manager_node_id, key_index)
-			VALUES('b1', 'w1', 0);
+			VALUES('b1', 'mn1', 0);
 	`)
 	defer dbtx.Rollback()
 

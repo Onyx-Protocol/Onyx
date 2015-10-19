@@ -13,7 +13,7 @@ import (
 	"chain/metrics"
 )
 
-// Bucket represents an indexed namespace inside of a wallet
+// Bucket represents an indexed namespace inside of a manager node
 type Bucket struct {
 	ID    string   `json:"id"`
 	Label string   `json:"label"`
@@ -21,9 +21,9 @@ type Bucket struct {
 }
 
 // CreateBucket inserts a bucket database record
-// for the given wallet,
+// for the given manager node,
 // and returns the new Bucket.
-func CreateBucket(ctx context.Context, walletID, label string) (*Bucket, error) {
+func CreateBucket(ctx context.Context, managerNodeID, label string) (*Bucket, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if label == "" {
 		return nil, ErrBadLabel
@@ -46,7 +46,7 @@ func CreateBucket(ctx context.Context, walletID, label string) (*Bucket, error) 
 			VALUES ($1, (TABLE incr), $2)
 			RETURNING id, key_index(key_index)
 		`
-		err := pg.FromContext(ctx).QueryRow(q, walletID, label).Scan(
+		err := pg.FromContext(ctx).QueryRow(q, managerNodeID, label).Scan(
 			&bucket.ID,
 			(*pg.Uint32s)(&bucket.Index),
 		)
@@ -111,15 +111,15 @@ func BucketBalance(ctx context.Context, bucketID, prev string, limit int) ([]*Ba
 	return bals, last, err
 }
 
-// ListBuckets returns a list of buckets contained in the given wallet.
-func ListBuckets(ctx context.Context, walletID string, prev string, limit int) ([]*Bucket, string, error) {
+// ListBuckets returns a list of buckets contained in the given manager node.
+func ListBuckets(ctx context.Context, managerNodeID string, prev string, limit int) ([]*Bucket, string, error) {
 	q := `
 		SELECT id, label, key_index(key_index)
 		FROM accounts
 		WHERE manager_node_id = $1 AND ($2='' OR id<$2)
 		ORDER BY id DESC LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(q, walletID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(q, managerNodeID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "select query")
 	}

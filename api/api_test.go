@@ -54,7 +54,7 @@ func TestLogin(t *testing.T) {
 	}
 }
 
-func TestCreateWalletBadXPub(t *testing.T) {
+func TestCreateManagerNodeBadXPub(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, testUserFixture, `
 		INSERT INTO projects(id, name) VALUES ('a1', 'x');
 		INSERT INTO members (project_id, user_id, role)
@@ -69,7 +69,7 @@ func TestCreateWalletBadXPub(t *testing.T) {
 		XPubs: []string{"badxpub"},
 	}
 
-	_, err := createWallet(ctx, "a1", req)
+	_, err := createManagerNode(ctx, "a1", req)
 	if got := errors.Root(err); got != asset.ErrBadXPub {
 		t.Fatalf("err = %v want %v", got, asset.ErrBadXPub)
 	}

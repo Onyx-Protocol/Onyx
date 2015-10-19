@@ -19,7 +19,6 @@ var ErrBadAsset = errors.New("invalid asset")
 
 // Asset represents an asset type in the blockchain.
 // It is made up of extended keys, and paths (indexes) within those keys.
-// Assets belong to wallets.
 type Asset struct {
 	Hash            bc.AssetID // the raw Asset ID
 	GroupID         string

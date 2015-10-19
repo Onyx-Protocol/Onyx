@@ -19,14 +19,14 @@ const bucketFixture = `
 		label, current_rotation, next_asset_index, next_account_index,
 		accounts_count, created_at, updated_at
 	)
-	VALUES ('w1', 'proj-id-0', 'sandbox', 1, 1, 'foo', 'rot1', 0, 1, 1, now(), now());
+	VALUES ('mn1', 'proj-id-0', 'sandbox', 1, 1, 'foo', 'rot1', 0, 1, 1, now(), now());
 	INSERT INTO rotations (id, manager_node_id, keyset)
-	VALUES ('rot1', 'w1', '{xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw}');
+	VALUES ('rot1', 'mn1', '{xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw}');
 	INSERT INTO accounts (
 		id, manager_node_id, key_index, created_at, updated_at,
 		next_address_index, label
 	)
-	VALUES ('b1', 'w1', 0, now(), now(), 0, 'foo');
+	VALUES ('b1', 'mn1', 0, now(), now(), 0, 'foo');
 `
 
 func TestAddressLoadNextIndex(t *testing.T) {
@@ -52,12 +52,12 @@ func TestAddressLoadNextIndex(t *testing.T) {
 		Expires:  exp,
 		IsChange: false,
 
-		WalletID:     "w1",
-		WalletIndex:  []uint32{0, 1},
-		BucketIndex:  []uint32{0, 0},
-		Index:        []uint32{0, 1},
-		SigsRequired: 1,
-		Keys:         []*hdkey.XKey{dummyXPub},
+		ManagerNodeID:    "mn1",
+		ManagerNodeIndex: []uint32{0, 1},
+		BucketIndex:      []uint32{0, 0},
+		Index:            []uint32{0, 1},
+		SigsRequired:     1,
+		Keys:             []*hdkey.XKey{dummyXPub},
 	}
 
 	if !reflect.DeepEqual(addr, want) {
@@ -72,16 +72,16 @@ func TestAddressInsert(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	addr := &Address{
-		BucketID:     "b1",
-		Amount:       100,
-		Expires:      t0.Add(5 * time.Minute),
-		IsChange:     false,
-		WalletID:     "w1",
-		WalletIndex:  []uint32{0, 1},
-		BucketIndex:  []uint32{0, 0},
-		Index:        []uint32{0, 0},
-		SigsRequired: 1,
-		Keys:         []*hdkey.XKey{dummyXPub},
+		BucketID:         "b1",
+		Amount:           100,
+		Expires:          t0.Add(5 * time.Minute),
+		IsChange:         false,
+		ManagerNodeID:    "mn1",
+		ManagerNodeIndex: []uint32{0, 1},
+		BucketIndex:      []uint32{0, 0},
+		Index:            []uint32{0, 0},
+		SigsRequired:     1,
+		Keys:             []*hdkey.XKey{dummyXPub},
 
 		Address:      "3abc",
 		RedeemScript: []byte{},
