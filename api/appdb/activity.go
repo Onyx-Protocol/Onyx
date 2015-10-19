@@ -677,6 +677,13 @@ func isIssuance(msg *wire.MsgTx) bool {
 }
 
 func serializeActvity(txHash string, txTime time.Time, ins, outs []actEntry) ([]byte, error) {
+	if ins == nil {
+		ins = []actEntry{}
+	}
+	if outs == nil {
+		outs = []actEntry{}
+	}
+
 	return json.Marshal(actItem{
 		TxHash:  txHash,
 		Time:    txTime.UTC(),

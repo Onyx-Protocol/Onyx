@@ -359,6 +359,7 @@ func TestWriteActivity(t *testing.T) {
 				"wallet-id-0": actItem{
 					TxHash: "0282a32a77d3358b28f06134cba121e5c54b205fe9935bfbb06076169a4e89db",
 					Time:   txTime,
+					Inputs: []actEntry{},
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, BucketID: "bucket-id-0", BucketLabel: "bucket-0"},
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, Address: "addr-4"},
@@ -367,6 +368,7 @@ func TestWriteActivity(t *testing.T) {
 				"wallet-id-1": actItem{
 					TxHash: "0282a32a77d3358b28f06134cba121e5c54b205fe9935bfbb06076169a4e89db",
 					Time:   txTime,
+					Inputs: []actEntry{},
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, BucketID: "bucket-id-2", BucketLabel: "bucket-2"},
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, Address: "addr-0"},
@@ -378,6 +380,7 @@ func TestWriteActivity(t *testing.T) {
 				"ag-id-0": actItem{
 					TxHash: "0282a32a77d3358b28f06134cba121e5c54b205fe9935bfbb06076169a4e89db",
 					Time:   txTime,
+					Inputs: []actEntry{},
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, BucketID: "bucket-id-0", BucketLabel: "bucket-0"},
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, BucketID: "bucket-id-2", BucketLabel: "bucket-2"},
