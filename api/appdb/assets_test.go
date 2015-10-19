@@ -175,9 +175,9 @@ func TestGetAsset(t *testing.T) {
 
 func TestAddIssuance(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
-		INSERT INTO projects (id, name) VALUES ('app0', 'app0');
+		INSERT INTO projects (id, name) VALUES ('proj1', 'proj1');
 		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
-			VALUES ('ag0', 'app0', 0, '{}', 'ag0');
+			VALUES ('ag0', 'proj1', 0, '{}', 'ag0');
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label)
 			VALUES ('a0', 'ag0', 0, '{}', 'foo');
 	`)

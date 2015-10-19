@@ -17,13 +17,13 @@ var authzFixture = `
 	INSERT INTO users(id, email, password_hash)
 		VALUES ('u1', 'u1', ''), ('u2', 'u2', '');
 	INSERT INTO projects(id, name)
-		VALUES ('app1', 'app1'), ('app2', 'app2'), ('app3', 'app3');
+		VALUES ('proj1', 'proj1'), ('proj2', 'proj2'), ('proj3', 'proj3');
 	INSERT INTO members (project_id, user_id, role)
 	VALUES
-		('app1', 'u1', 'admin'),
-		('app1', 'u2', 'developer'),
-		('app2', 'u1', 'admin'),
-		('app2', 'u2', 'admin');
+		('proj1', 'u1', 'admin'),
+		('proj1', 'u2', 'developer'),
+		('proj2', 'u1', 'admin'),
+		('proj2', 'u2', 'admin');
 `
 
 func TestProjectAdminAuthz(t *testing.T) {
@@ -36,9 +36,9 @@ func TestProjectAdminAuthz(t *testing.T) {
 		projID string
 		want   error
 	}{
-		{"u1", "app1", nil},         // admin
-		{"u2", "app1", errNotAdmin}, // not an admin
-		{"u3", "app1", errNotAdmin}, // not a member
+		{"u1", "proj1", nil},         // admin
+		{"u2", "proj1", errNotAdmin}, // not an admin
+		{"u3", "proj1", errNotAdmin}, // not a member
 	}
 
 	for _, c := range cases {
@@ -60,10 +60,10 @@ func TestProjectAuthz(t *testing.T) {
 		projID []string
 		want   error
 	}{
-		{"u1", []string{"app1"}, nil},                           // admin
-		{"u2", []string{"app1"}, nil},                           // member
-		{"u3", []string{"app1"}, errNoAccessToResource},         // not a member
-		{"u1", []string{"app1", "app2"}, errNoAccessToResource}, // two apps
+		{"u1", []string{"proj1"}, nil},                            // admin
+		{"u2", []string{"proj1"}, nil},                            // member
+		{"u3", []string{"proj1"}, errNoAccessToResource},          // not a member
+		{"u1", []string{"proj1", "proj2"}, errNoAccessToResource}, // two projects
 	}
 
 	for _, c := range cases {
@@ -78,7 +78,7 @@ func TestProjectAuthz(t *testing.T) {
 func TestManagerAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
 		INSERT INTO manager_nodes (id, project_id, label)
-			VALUES ('w1', 'app1', 'x'), ('w2', 'app2', 'x'), ('w3', 'app3', 'x');
+			VALUES ('w1', 'proj1', 'x'), ('w2', 'proj2', 'x'), ('w3', 'proj3', 'x');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
@@ -103,7 +103,7 @@ func TestManagerAuthz(t *testing.T) {
 func TestAccountAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
 		INSERT INTO manager_nodes (id, project_id, label)
-			VALUES ('w1', 'app1', 'x'), ('w2', 'app2', 'x'), ('w3', 'app3', 'x');
+			VALUES ('w1', 'proj1', 'x'), ('w2', 'proj2', 'x'), ('w3', 'proj3', 'x');
 		INSERT INTO accounts (id, manager_node_id, key_index)
 			VALUES ('b1', 'w1', 0), ('b2', 'w2', 0), ('b3', 'w3', 0);
 	`)
@@ -130,7 +130,7 @@ func TestAccountAuthz(t *testing.T) {
 func TestIssuerAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
-			VALUES ('ag1', 'app1', 'x', '{}'), ('ag2', 'app2', 'x', '{}'), ('ag3', 'app3', 'x', '{}');
+			VALUES ('ag1', 'proj1', 'x', '{}'), ('ag2', 'proj2', 'x', '{}'), ('ag3', 'proj3', 'x', '{}');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
@@ -155,7 +155,7 @@ func TestIssuerAuthz(t *testing.T) {
 func TestAssetAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
-			VALUES ('ag1', 'app1', 'x', '{}'), ('ag2', 'app2', 'x', '{}'), ('ag3', 'app3', 'x', '{}');
+			VALUES ('ag1', 'proj1', 'x', '{}'), ('ag2', 'proj2', 'x', '{}'), ('ag3', 'proj3', 'x', '{}');
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label)
 		VALUES
 			('a1', 'ag1', 0, '', ''),
@@ -185,7 +185,7 @@ func TestAssetAuthz(t *testing.T) {
 func TestBuildAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
 		INSERT INTO manager_nodes (id, project_id, label)
-			VALUES ('w1', 'app1', 'x'), ('w2', 'app2', 'x'), ('w3', 'app3', 'x');
+			VALUES ('w1', 'proj1', 'x'), ('w2', 'proj2', 'x'), ('w3', 'proj3', 'x');
 		INSERT INTO accounts (id, manager_node_id, key_index)
 			VALUES
 				('b1', 'w1', 0), ('b2', 'w2', 0), ('b3', 'w3', 0),

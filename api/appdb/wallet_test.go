@@ -135,7 +135,7 @@ func TestListWallets(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES
 			('proj-id-0', 'proj-0'),
-			('app-id-1', 'app-1');
+			('proj-id-1', 'proj-1');
 
 		INSERT INTO manager_nodes (id, project_id, key_index, label, created_at) VALUES
 			-- insert in reverse chronological order, to ensure that ListWallets
@@ -143,7 +143,7 @@ func TestListWallets(t *testing.T) {
 			('wallet-id-0', 'proj-id-0', 0, 'wallet-0', now()),
 			('wallet-id-1', 'proj-id-0', 1, 'wallet-1', now() - '1 day'::interval),
 
-			('wallet-id-2', 'app-id-1', 2, 'wallet-2', now());
+			('wallet-id-2', 'proj-id-1', 2, 'wallet-2', now());
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
@@ -160,7 +160,7 @@ func TestListWallets(t *testing.T) {
 			},
 		},
 		{
-			"app-id-1",
+			"proj-id-1",
 			[]*Wallet{
 				{ID: "wallet-id-2", Blockchain: "sandbox", Label: "wallet-2"},
 			},

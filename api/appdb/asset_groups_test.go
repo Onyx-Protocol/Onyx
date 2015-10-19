@@ -30,7 +30,7 @@ func TestListAssetGroups(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES
 			('proj-id-0', 'proj-0'),
-			('app-id-1', 'app-1');
+			('proj-id-1', 'proj-1');
 
 		INSERT INTO issuer_nodes
 			(id, project_id, key_index, keyset, label, created_at)
@@ -40,7 +40,7 @@ func TestListAssetGroups(t *testing.T) {
 			('ag-id-0', 'proj-id-0', 0, '{}', 'ag-0', now()),
 			('ag-id-1', 'proj-id-0', 1, '{}', 'ag-1', now() - '1 day'::interval),
 
-			('ag-id-2', 'app-id-1', 2, '{}', 'ag-2', now());
+			('ag-id-2', 'proj-id-1', 2, '{}', 'ag-2', now());
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
@@ -57,7 +57,7 @@ func TestListAssetGroups(t *testing.T) {
 			},
 		},
 		{
-			"app-id-1",
+			"proj-id-1",
 			[]*AssetGroup{
 				{ID: "ag-id-2", Blockchain: "sandbox", Label: "ag-2"},
 			},
