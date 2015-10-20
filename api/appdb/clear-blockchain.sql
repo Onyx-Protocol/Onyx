@@ -13,3 +13,5 @@ TRUNCATE
 	utxos,
 	assets,
 	addresses;
+
+ALTER SEQUENCE address_index_seq RESTART;
