@@ -8,6 +8,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 )
 
 func TestInsertIssuerNode(t *testing.T) {
@@ -68,22 +69,26 @@ func TestListIssuerNodes(t *testing.T) {
 }
 
 func TestGetIssuerNodes(t *testing.T) {
-	const sql = `
-		INSERT INTO projects (id, name) VALUES
-			('proj-id-0', 'proj-0');
-
-		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label) VALUES
-			('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
-	`
-	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		proj := newTestProject(t, ctx, "foo", nil)
+		in, err := InsertIssuerNode(ctx, proj.ID, "in-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv})
+		if err != nil {
+			t.Fatalf("unexpected error on InsertIssuerNode: %v", err)
+		}
 		examples := []struct {
 			id      string
 			want    *IssuerNode
 			wantErr error
 		}{
 			{
-				"in-id-0",
-				&IssuerNode{ID: "in-id-0", Label: "in-0", Blockchain: "sandbox"},
+				in.ID,
+				&IssuerNode{
+					ID:          in.ID,
+					Label:       "in-0",
+					Blockchain:  "sandbox",
+					Keys:        []*hdkey.XKey{dummyXPub},
+					PrivateKeys: []*hdkey.XKey{dummyXPrv},
+				},
 				nil,
 			},
 			{

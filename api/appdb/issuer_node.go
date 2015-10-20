@@ -131,12 +131,18 @@ func ListIssuerNodes(ctx context.Context, projID string) ([]*IssuerNode, error) 
 // GetIssuerNode returns basic information about a single issuer node.
 func GetIssuerNode(ctx context.Context, groupID string) (*IssuerNode, error) {
 	var (
-		q       = `SELECT label, block_chain, generated_keys FROM issuer_nodes WHERE id = $1`
-		label   string
-		bc      string
-		keyStrs []string
+		q           = `SELECT label, block_chain, keyset, generated_keys FROM issuer_nodes WHERE id = $1`
+		label       string
+		bc          string
+		pubKeyStrs  []string
+		privKeyStrs []string
 	)
-	err := pg.FromContext(ctx).QueryRow(q, groupID).Scan(&label, &bc, (*pg.Strings)(&keyStrs))
+	err := pg.FromContext(ctx).QueryRow(q, groupID).Scan(
+		&label,
+		&bc,
+		(*pg.Strings)(&pubKeyStrs),
+		(*pg.Strings)(&privKeyStrs),
+	)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "issuer node ID: %v", groupID)
 	}
@@ -144,12 +150,23 @@ func GetIssuerNode(ctx context.Context, groupID string) (*IssuerNode, error) {
 		return nil, err
 	}
 
-	keys, err := stringsToKeys(keyStrs)
+	pubKeys, err := stringsToKeys(pubKeyStrs)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing pub keys")
+	}
+
+	privKeys, err := stringsToKeys(privKeyStrs)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing private keys")
 	}
 
-	return &IssuerNode{ID: groupID, Label: label, Blockchain: bc, PrivateKeys: keys}, nil
+	return &IssuerNode{
+		ID:          groupID,
+		Label:       label,
+		Blockchain:  bc,
+		Keys:        pubKeys,
+		PrivateKeys: privKeys,
+	}, nil
 }
 
 // UpdateIssuerNode updates the label of an issuer node.

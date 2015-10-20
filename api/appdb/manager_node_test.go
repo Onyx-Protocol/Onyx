@@ -8,6 +8,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 )
 
 func TestInsertManagerNode(t *testing.T) {
@@ -17,22 +18,26 @@ func TestInsertManagerNode(t *testing.T) {
 }
 
 func TestGetManagerNode(t *testing.T) {
-	const sql = `
-		INSERT INTO projects (id, name) VALUES
-			('proj-id-0', 'proj-0');
-
-		INSERT INTO manager_nodes (id, project_id, key_index, label) VALUES
-			('manager-node-id-0', 'proj-id-0', 0, 'manager-node-0');
-	`
-	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		proj := newTestProject(t, ctx, "foo", nil)
+		mn, err := InsertManagerNode(ctx, proj.ID, "manager-node-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv})
+		if err != nil {
+			t.Fatalf("unexpected error on InsertManagerNode: %v", err)
+		}
 		examples := []struct {
 			id      string
 			want    *ManagerNode
 			wantErr error
 		}{
 			{
-				"manager-node-id-0",
-				&ManagerNode{ID: "manager-node-id-0", Label: "manager-node-0", Blockchain: "sandbox"},
+				mn.ID,
+				&ManagerNode{
+					ID:          mn.ID,
+					Label:       "manager-node-0",
+					Blockchain:  "sandbox",
+					Keys:        []*hdkey.XKey{dummyXPub},
+					PrivateKeys: []*hdkey.XKey{dummyXPrv},
+				},
 				nil,
 			},
 			{

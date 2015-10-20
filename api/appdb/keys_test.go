@@ -10,6 +10,7 @@ import (
 
 var (
 	dummyXPub, _ = hdkey.NewXKey("xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw")
+	dummyXPrv, _ = hdkey.NewXKey("xprv9s21ZrQH143K2qkz3k2KKrCuhFmqSz7d6sH2ZkXBpUUCgGiAC9Rca59jS9CLNnx4Sgi4uXH2WzLaZ49hmjM8EHZGC1FJEN1VEbtaw6JmSqo")
 )
 
 func TestKeyIndexSQL(t *testing.T) {

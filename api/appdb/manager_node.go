@@ -62,12 +62,23 @@ type Balance struct {
 // GetManagerNode returns basic information about a single manager node.
 func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, error) {
 	var (
-		q       = `SELECT label, block_chain, generated_keys FROM manager_nodes WHERE id = $1`
-		label   string
-		bc      string
-		keyStrs []string
+		q = `
+			SELECT label, block_chain, keyset, generated_keys
+			FROM manager_nodes mn
+			JOIN rotations r ON r.id=mn.current_rotation
+			WHERE mn.id = $1
+		`
+		label       string
+		bc          string
+		pubKeyStrs  []string
+		privKeyStrs []string
 	)
-	err := pg.FromContext(ctx).QueryRow(q, managerNodeID).Scan(&label, &bc, (*pg.Strings)(&keyStrs))
+	err := pg.FromContext(ctx).QueryRow(q, managerNodeID).Scan(
+		&label,
+		&bc,
+		(*pg.Strings)(&pubKeyStrs),
+		(*pg.Strings)(&privKeyStrs),
+	)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "manager node ID: %v", managerNodeID)
 	}
@@ -75,12 +86,23 @@ func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, er
 		return nil, err
 	}
 
-	keys, err := stringsToKeys(keyStrs)
+	pubKeys, err := stringsToKeys(pubKeyStrs)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing pub keys")
+	}
+
+	privKeys, err := stringsToKeys(privKeyStrs)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing private keys")
 	}
 
-	return &ManagerNode{ID: managerNodeID, Label: label, Blockchain: bc, PrivateKeys: keys}, nil
+	return &ManagerNode{
+		ID:          managerNodeID,
+		Label:       label,
+		Blockchain:  bc,
+		Keys:        pubKeys,
+		PrivateKeys: privKeys,
+	}, nil
 }
 
 // ManagerNodeBalance fetches the balances of assets contained in this manager node.
