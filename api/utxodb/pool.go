@@ -34,6 +34,7 @@ func (p *pool) init(ctx context.Context, db DB, k key) error {
 		return err
 	}
 
+	internIDs(utxos)
 	utxos = append(utxos, p.outputs...)
 	p.outputs = nil
 	sort.Sort(byOutpoint(utxos))

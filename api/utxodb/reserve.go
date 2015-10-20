@@ -179,6 +179,7 @@ func (rs *Reserver) Apply(ctx context.Context, tx *bc.Tx, outRecs []*Receiver) e
 		return err
 	}
 	rs.delete(deleted)
+	internIDs(inserted)
 	sort.Sort(byKeyUTXO(inserted))
 	rs.insert(inserted)
 	return nil
