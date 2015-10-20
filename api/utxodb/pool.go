@@ -11,7 +11,7 @@ import (
 	"chain/metrics"
 )
 
-// A pool holds outputs of a single asset type in a bucket.
+// A pool holds outputs of a single asset type in an account.
 type pool struct {
 	mu      sync.Mutex // protects the following
 	ready   bool
@@ -34,7 +34,7 @@ func (p *pool) init(ctx context.Context, db DB, k key) error {
 	// utxos) again now, so throw away the dups.
 	p.outputs = nil
 
-	utxos, err := db.LoadUTXOs(ctx, k.BucketID, k.AssetID)
+	utxos, err := db.LoadUTXOs(ctx, k.AccountID, k.AssetID)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (p *pool) reserve(amount uint64, now, exp time.Time) ([]*UTXO, error) {
 		utxos = append(utxos, u)
 		if u.ResvExpires.After(now) {
 			// We cannot satisfy the request now, but we should
-			// still check if there's enough money in the bucket,
+			// still check if there's enough money in the account,
 			// counting reserved outputs. This lets us discriminate
 			// between "you don't have enough money" (ErrInsufficient)
 			// vs "you have enough money, but some of it is

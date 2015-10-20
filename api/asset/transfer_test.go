@@ -19,20 +19,20 @@ func TestTransfer(t *testing.T) {
 		INSERT INTO rotations (id, manager_node_id, keyset)
 			VALUES('rot1', 'mn1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 		INSERT INTO accounts (id, manager_node_id, key_index, next_address_index)
-			VALUES('b1', 'mn1', 0, 1);
+			VALUES('acc1', 'mn1', 0, 1);
 		INSERT INTO addresses (id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script)
-			VALUES('a1', 'mn1', 'b1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a1', '', '');
+			VALUES('a1', 'mn1', 'acc1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a1', '', '');
 		INSERT INTO utxos (txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
-			VALUES ('246c6aa1e5cc2bd1132a37cbc267e2031558aee26a8956e21b749d72920331a7', 0, 'ff00000000000000000000000000000000000000000000000000000000000000', 6, 0, 'b1', 'mn1');
+			VALUES ('246c6aa1e5cc2bd1132a37cbc267e2031558aee26a8956e21b749d72920331a7', 0, 'ff00000000000000000000000000000000000000000000000000000000000000', 6, 0, 'acc1', 'mn1');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	_, err := Transfer(ctx,
 		[]utxodb.Input{{
-			BucketID: "b1",
-			AssetID:  "ff00000000000000000000000000000000000000000000000000000000000000",
-			Amount:   5,
+			AccountID: "acc1",
+			AssetID:   "ff00000000000000000000000000000000000000000000000000000000000000",
+			Amount:    5,
 		}},
 		[]*Output{{
 			AssetID: "ff00000000000000000000000000000000000000000000000000000000000000",
@@ -52,13 +52,13 @@ func TestValidateOutputs(t *testing.T) {
 		outs    []*Output
 		wantErr error
 	}{{
-		outs:    []*Output{{AssetID: "x", Amount: 5, BucketID: "b1", Address: "a"}},
+		outs:    []*Output{{AssetID: "x", Amount: 5, AccountID: "acc1", Address: "a"}},
 		wantErr: ErrBadOutDest,
 	}, {
 		outs:    []*Output{{AssetID: "x", Amount: 5}},
 		wantErr: ErrBadOutDest,
 	}, {
-		outs:    []*Output{{AssetID: "x", Amount: 5, BucketID: "b1"}},
+		outs:    []*Output{{AssetID: "x", Amount: 5, AccountID: "acc1"}},
 		wantErr: nil,
 	}}
 

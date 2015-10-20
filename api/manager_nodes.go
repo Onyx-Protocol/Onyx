@@ -123,46 +123,46 @@ func managerNodeBalance(ctx context.Context, managerNodeID string) (interface{},
 }
 
 // GET /v3/manager-nodes/:mnodeID/accounts
-func listBuckets(ctx context.Context, managerNodeID string) (interface{}, error) {
+func listAccounts(ctx context.Context, managerNodeID string) (interface{}, error) {
 	if err := managerAuthz(ctx, managerNodeID); err != nil {
 		return nil, err
 	}
-	prev, limit, err := getPageData(ctx, defBucketPageSize)
+	prev, limit, err := getPageData(ctx, defAccountPageSize)
 	if err != nil {
 		return nil, err
 	}
 
-	buckets, last, err := appdb.ListBuckets(ctx, managerNodeID, prev, limit)
+	accounts, last, err := appdb.ListAccounts(ctx, managerNodeID, prev, limit)
 	if err != nil {
 		return nil, err
 	}
 
 	ret := map[string]interface{}{
 		"last":     last,
-		"accounts": httpjson.Array(buckets),
+		"accounts": httpjson.Array(accounts),
 	}
 	return ret, nil
 }
 
 // POST /v3/manager-nodes/:mnodeID/accounts
-func createBucket(ctx context.Context, managerNodeID string, in struct{ Label string }) (*appdb.Bucket, error) {
+func createAccount(ctx context.Context, managerNodeID string, in struct{ Label string }) (*appdb.Account, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if err := managerAuthz(ctx, managerNodeID); err != nil {
 		return nil, err
 	}
-	return appdb.CreateBucket(ctx, managerNodeID, in.Label)
+	return appdb.CreateAccount(ctx, managerNodeID, in.Label)
 }
 
 // GET /v3/accounts/:accountID
-func getBucket(ctx context.Context, bucketID string) (interface{}, error) {
-	if err := accountAuthz(ctx, bucketID); err != nil {
+func getAccount(ctx context.Context, accountID string) (interface{}, error) {
+	if err := accountAuthz(ctx, accountID); err != nil {
 		return nil, err
 	}
-	return appdb.GetBucket(ctx, bucketID)
+	return appdb.GetAccount(ctx, accountID)
 }
 
 // GET /v3/accounts/:accountID/activity
-func getBucketActivity(ctx context.Context, bid string) (interface{}, error) {
+func getAccountActivity(ctx context.Context, bid string) (interface{}, error) {
 	if err := accountAuthz(ctx, bid); err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func getBucketActivity(ctx context.Context, bid string) (interface{}, error) {
 		return nil, err
 	}
 
-	activity, last, err := appdb.BucketActivity(ctx, bid, prev, limit)
+	activity, last, err := appdb.AccountActivity(ctx, bid, prev, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -184,8 +184,8 @@ func getBucketActivity(ctx context.Context, bid string) (interface{}, error) {
 }
 
 // GET /v3/accounts/:accountID/balance
-func bucketBalance(ctx context.Context, bucketID string) (interface{}, error) {
-	if err := accountAuthz(ctx, bucketID); err != nil {
+func accountBalance(ctx context.Context, accountID string) (interface{}, error) {
+	if err := accountAuthz(ctx, accountID); err != nil {
 		return nil, err
 	}
 	prev, limit, err := getPageData(ctx, defBalancePageSize)
@@ -193,7 +193,7 @@ func bucketBalance(ctx context.Context, bucketID string) (interface{}, error) {
 		return nil, err
 	}
 
-	balances, last, err := appdb.BucketBalance(ctx, bucketID, prev, limit)
+	balances, last, err := appdb.AccountBalance(ctx, accountID, prev, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -222,18 +222,18 @@ func deleteAccount(ctx context.Context, accountID string) error {
 }
 
 // /v3/accounts/:accountID/addresses
-func createAddr(ctx context.Context, bucketID string, in struct {
+func createAddr(ctx context.Context, accountID string, in struct {
 	Amount  uint64
 	Expires time.Time
 }) (interface{}, error) {
-	if err := accountAuthz(ctx, bucketID); err != nil {
+	if err := accountAuthz(ctx, accountID); err != nil {
 		return nil, err
 	}
 	addr := &appdb.Address{
-		BucketID: bucketID,
-		Amount:   in.Amount,
-		Expires:  in.Expires,
-		IsChange: false,
+		AccountID: accountID,
+		Amount:    in.Amount,
+		Expires:   in.Expires,
+		IsChange:  false,
 	}
 	err := asset.CreateAddress(ctx, addr, true)
 	if err != nil {

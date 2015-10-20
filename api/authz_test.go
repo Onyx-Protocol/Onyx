@@ -105,24 +105,24 @@ func TestAccountAuthz(t *testing.T) {
 		INSERT INTO manager_nodes (id, project_id, label)
 			VALUES ('mn1', 'proj1', 'x'), ('mn2', 'proj2', 'x'), ('mn3', 'proj3', 'x');
 		INSERT INTO accounts (id, manager_node_id, key_index)
-			VALUES ('b1', 'mn1', 0), ('b2', 'mn2', 0), ('b3', 'mn3', 0);
+			VALUES ('acc1', 'mn1', 0), ('acc2', 'mn2', 0), ('acc3', 'mn3', 0);
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	cases := []struct {
-		userID   string
-		bucketID string
-		want     error
+		userID    string
+		accountID string
+		want      error
 	}{
-		{"u2", "b1", nil}, {"u2", "b2", nil}, {"u2", "b3", errNoAccessToResource},
+		{"u2", "acc1", nil}, {"u2", "acc2", nil}, {"u2", "acc3", errNoAccessToResource},
 	}
 
 	for _, c := range cases {
 		ctx := authn.NewContext(ctx, c.userID)
-		got := accountAuthz(ctx, c.bucketID)
+		got := accountAuthz(ctx, c.accountID)
 		if errors.Root(got) != c.want {
-			t.Errorf("accountAuthz(%s, %v) = %q want %q", c.userID, c.bucketID, got, c.want)
+			t.Errorf("accountAuthz(%s, %v) = %q want %q", c.userID, c.accountID, got, c.want)
 		}
 	}
 }
@@ -188,8 +188,8 @@ func TestBuildAuthz(t *testing.T) {
 			VALUES ('mn1', 'proj1', 'x'), ('mn2', 'proj2', 'x'), ('mn3', 'proj3', 'x');
 		INSERT INTO accounts (id, manager_node_id, key_index)
 			VALUES
-				('b1', 'mn1', 0), ('b2', 'mn2', 0), ('b3', 'mn3', 0),
-				('b4', 'mn1', 1), ('b5', 'mn2', 1), ('b6', 'mn3', 1);
+				('acc1', 'mn1', 0), ('acc2', 'mn2', 0), ('acc3', 'mn3', 0),
+				('acc4', 'mn1', 1), ('acc5', 'mn2', 1), ('acc6', 'mn3', 1);
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
@@ -202,34 +202,34 @@ func TestBuildAuthz(t *testing.T) {
 		{
 			userID: "u2",
 			request: []buildReq{{
-				Inputs:  []utxodb.Input{{BucketID: "b1"}},
-				Outputs: []*asset.Output{{BucketID: "b4"}},
+				Inputs:  []utxodb.Input{{AccountID: "acc1"}},
+				Outputs: []*asset.Output{{AccountID: "acc4"}},
 			}},
 			want: nil,
 		},
 		{
 			userID: "u2",
 			request: []buildReq{{
-				Inputs:  []utxodb.Input{{BucketID: "b1"}},
-				Outputs: []*asset.Output{{BucketID: "b4"}},
+				Inputs:  []utxodb.Input{{AccountID: "acc1"}},
+				Outputs: []*asset.Output{{AccountID: "acc4"}},
 			}, {
-				Inputs: []utxodb.Input{{BucketID: "b4"}},
+				Inputs: []utxodb.Input{{AccountID: "acc4"}},
 			}},
 			want: nil,
 		},
 		{
 			userID: "u2",
 			request: []buildReq{{
-				Inputs:  []utxodb.Input{{BucketID: "b3"}},
-				Outputs: []*asset.Output{{BucketID: "b6"}},
+				Inputs:  []utxodb.Input{{AccountID: "acc3"}},
+				Outputs: []*asset.Output{{AccountID: "acc6"}},
 			}},
 			want: errNoAccessToResource,
 		},
 		{
 			userID: "u2",
 			request: []buildReq{{
-				Inputs:  []utxodb.Input{{BucketID: "b1"}},
-				Outputs: []*asset.Output{{BucketID: "b2"}},
+				Inputs:  []utxodb.Input{{AccountID: "acc1"}},
+				Outputs: []*asset.Output{{AccountID: "acc2"}},
 			}},
 			want: errNoAccessToResource,
 		},

@@ -13,7 +13,7 @@ import (
 const (
 	sessionTokenLifetime = 2 * 7 * 24 * time.Hour
 	defActivityPageSize  = 50
-	defBucketPageSize    = 100
+	defAccountPageSize   = 100
 	defBalancePageSize   = 100
 	defAssetPageSize     = 100
 )
@@ -70,8 +70,8 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/projects/:projID/manager-nodes", listManagerNodes)
 	h.HandleFunc("POST", "/v3/projects/:projID/manager-nodes", createManagerNode)
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID", getManagerNode)
-	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/accounts", listBuckets)
-	h.HandleFunc("POST", "/v3/manager-nodes/:mnodeID/accounts", createBucket)
+	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/accounts", listAccounts)
+	h.HandleFunc("POST", "/v3/manager-nodes/:mnodeID/accounts", createAccount)
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/balance", managerNodeBalance)
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/activity", getManagerNodeActivity)
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/transactions/:txID", managerNodeTxActivity)
@@ -85,9 +85,9 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/issuer-nodes/:inodeID/assets", listAssets)
 	h.HandleFunc("POST", "/v3/issuer-nodes/:inodeID/assets", createAsset)
 	h.HandleFunc("GET", "/v3/issuer-nodes/:inodeID/activity", getAssetGroupActivity)
-	h.HandleFunc("GET", "/v3/accounts/:accountID", getBucket)
-	h.HandleFunc("GET", "/v3/accounts/:accountID/balance", bucketBalance)
-	h.HandleFunc("GET", "/v3/accounts/:accountID/activity", getBucketActivity)
+	h.HandleFunc("GET", "/v3/accounts/:accountID", getAccount)
+	h.HandleFunc("GET", "/v3/accounts/:accountID/balance", accountBalance)
+	h.HandleFunc("GET", "/v3/accounts/:accountID/activity", getAccountActivity)
 	h.HandleFunc("POST", "/v3/accounts/:accountID/addresses", createAddr)
 	h.HandleFunc("PUT", "/v3/accounts/:accountID", updateAccount)
 	h.HandleFunc("DELETE", "/v3/accounts/:accountID", deleteAccount)

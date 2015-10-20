@@ -8,8 +8,8 @@ const (
 func ReceiverPath(addrInfo *Address, addrIndex []uint32) []uint32 {
 	return []uint32{
 		CustomerPaymentNamespace,
-		addrInfo.BucketIndex[0],
-		addrInfo.BucketIndex[1],
+		addrInfo.AccountIndex[0],
+		addrInfo.AccountIndex[1],
 		addrIndex[0],
 		addrIndex[1],
 	}

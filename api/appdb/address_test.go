@@ -13,7 +13,7 @@ import (
 	"chain/fedchain-sandbox/hdkey"
 )
 
-const bucketFixture = `
+const accountFixture = `
 	INSERT INTO manager_nodes (
 		id, project_id, block_chain, sigs_required, key_index,
 		label, current_rotation, next_asset_index, next_account_index,
@@ -26,35 +26,35 @@ const bucketFixture = `
 		id, manager_node_id, key_index, created_at, updated_at,
 		next_address_index, label
 	)
-	VALUES ('b1', 'mn1', 0, now(), now(), 0, 'foo');
+	VALUES ('acc1', 'mn1', 0, now(), now(), 0, 'foo');
 `
 
 func TestAddressLoadNextIndex(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, bucketFixture)
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, accountFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	exp := time.Now().Add(5 * time.Minute)
 	addr := &Address{
-		BucketID: "b1",
-		Amount:   100,
-		Expires:  exp,
-		IsChange: false,
+		AccountID: "acc1",
+		Amount:    100,
+		Expires:   exp,
+		IsChange:  false,
 	}
-	err := addr.LoadNextIndex(ctx) // get most fields from the db given BucketID
+	err := addr.LoadNextIndex(ctx) // get most fields from the db given AccountID
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	want := &Address{
-		BucketID: "b1",
-		Amount:   100,
-		Expires:  exp,
-		IsChange: false,
+		AccountID: "acc1",
+		Amount:    100,
+		Expires:   exp,
+		IsChange:  false,
 
 		ManagerNodeID:    "mn1",
 		ManagerNodeIndex: []uint32{0, 1},
-		BucketIndex:      []uint32{0, 0},
+		AccountIndex:     []uint32{0, 0},
 		Index:            []uint32{0, 1},
 		SigsRequired:     1,
 		Keys:             []*hdkey.XKey{dummyXPub},
@@ -67,18 +67,18 @@ func TestAddressLoadNextIndex(t *testing.T) {
 
 func TestAddressInsert(t *testing.T) {
 	t0 := time.Now()
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, bucketFixture)
+	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, accountFixture)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	addr := &Address{
-		BucketID:         "b1",
+		AccountID:        "acc1",
 		Amount:           100,
 		Expires:          t0.Add(5 * time.Minute),
 		IsChange:         false,
 		ManagerNodeID:    "mn1",
 		ManagerNodeIndex: []uint32{0, 1},
-		BucketIndex:      []uint32{0, 0},
+		AccountIndex:     []uint32{0, 0},
 		Index:            []uint32{0, 0},
 		SigsRequired:     1,
 		Keys:             []*hdkey.XKey{dummyXPub},
@@ -88,7 +88,7 @@ func TestAddressInsert(t *testing.T) {
 		PKScript:     []byte{},
 	}
 
-	err := addr.Insert(ctx) // get most fields from the db given BucketID
+	err := addr.Insert(ctx) // get most fields from the db given AccountID
 	if err != nil {
 		t.Fatal(err)
 	}

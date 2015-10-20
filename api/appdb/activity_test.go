@@ -19,12 +19,12 @@ import (
 // These will now be sent to and echoed from the client,
 // no longer stored in the db.
 //   (id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script, is_change)
-//   ('addr-id-0', 'manager-node-id-0', 'bucket-id-0', '{}', 0, 'addr-0', '{}', '{}', false),
-//   ('addr-id-1', 'manager-node-id-0', 'bucket-id-0', '{}', 1, 'addr-1', '{}', '{}', true),
-//   ('addr-id-2', 'manager-node-id-0', 'bucket-id-1', '{}', 0, 'addr-2', '{}', '{}', false),
-//   ('addr-id-3', 'manager-node-id-0', 'bucket-id-1', '{}', 1, 'addr-3', '{}', '{}', true),
-//   ('addr-id-4', 'manager-node-id-1', 'bucket-id-2', '{}', 0, 'addr-4', '{}', '{}', false),
-//   ('addr-id-5', 'manager-node-id-1', 'bucket-id-2', '{}', 1, 'addr-5', '{}', '{}', true);
+//   ('addr-id-0', 'manager-node-id-0', 'account-id-0', '{}', 0, 'addr-0', '{}', '{}', false),
+//   ('addr-id-1', 'manager-node-id-0', 'account-id-0', '{}', 1, 'addr-1', '{}', '{}', true),
+//   ('addr-id-2', 'manager-node-id-0', 'account-id-1', '{}', 0, 'addr-2', '{}', '{}', false),
+//   ('addr-id-3', 'manager-node-id-0', 'account-id-1', '{}', 1, 'addr-3', '{}', '{}', true),
+//   ('addr-id-4', 'manager-node-id-1', 'account-id-2', '{}', 0, 'addr-4', '{}', '{}', false),
+//   ('addr-id-5', 'manager-node-id-1', 'account-id-2', '{}', 1, 'addr-5', '{}', '{}', true);
 
 const writeActivityFix = `
 	INSERT INTO projects
@@ -41,9 +41,9 @@ const writeActivityFix = `
 	INSERT INTO accounts
 		(id, manager_node_id, key_index, label)
 	VALUES
-		('bucket-id-0', 'manager-node-id-0', 0, 'bucket-0'),
-		('bucket-id-1', 'manager-node-id-0', 1, 'bucket-1'),
-		('bucket-id-2', 'manager-node-id-1', 0, 'bucket-2');
+		('account-id-0', 'manager-node-id-0', 0, 'account-0'),
+		('account-id-1', 'manager-node-id-0', 1, 'account-1'),
+		('account-id-2', 'manager-node-id-1', 0, 'account-2');
 
 	INSERT INTO issuer_nodes
 		(id, project_id, key_index, label, keyset)
@@ -129,16 +129,16 @@ func TestManagerNodeActivityLimit(t *testing.T) {
 	}
 }
 
-func TestBucketActivity(t *testing.T) {
+func TestAccountActivity(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleActivityFixture, `
-		INSERT INTO accounts (id, manager_node_id, key_index) VALUES('b0', 'mn0', 0);
-		INSERT INTO activity_accounts VALUES ('act0', 'b0');
+		INSERT INTO accounts (id, manager_node_id, key_index) VALUES('acc0', 'mn0', 0);
+		INSERT INTO activity_accounts VALUES ('act0', 'acc0');
 	`)
 
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	activity, last, err := BucketActivity(ctx, "b0", "act1", 1)
+	activity, last, err := AccountActivity(ctx, "acc0", "act1", 1)
 	if err != nil {
 		t.Fatalf("unexpected err %v", err)
 	}
@@ -152,24 +152,24 @@ func TestBucketActivity(t *testing.T) {
 	}
 }
 
-func TestBucketActivityLimit(t *testing.T) {
+func TestAccountActivityLimit(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleActivityFixture, `
 		INSERT INTO activity (id, manager_node_id, data, txid)
 			VALUES
 			('act1', 'mn0', '{"outputs":"coop"}', 'tx1'),
 			('act2', 'mn0', '{"outputs":"doop"}', 'tx2'),
 			('act3', 'mn0', '{"outputs":"foop"}', 'tx3');
-		INSERT INTO accounts (id, manager_node_id, key_index) VALUES('b0', 'mn0', 0);
+		INSERT INTO accounts (id, manager_node_id, key_index) VALUES('acc0', 'mn0', 0);
 		INSERT INTO activity_accounts VALUES
-			('act0', 'b0'),
-			('act1', 'b0'),
-			('act2', 'b0'),
-			('act3', 'b0');
+			('act0', 'acc0'),
+			('act1', 'acc0'),
+			('act2', 'acc0'),
+			('act3', 'acc0');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	activity, last, err := BucketActivity(ctx, "b0", "act4", 2) // act4 would be a newer item than act1
+	activity, last, err := AccountActivity(ctx, "acc0", "act4", 2) // act4 would be a newer item than act1
 	if err != nil {
 		t.Fatalf("unexpected err %v", err)
 	}
@@ -342,7 +342,7 @@ func TestWriteActivity(t *testing.T) {
 		outs                    []*UTXO
 		fixture                 string
 		wantManagerNodeActivity map[string]actItem
-		wantBuckets             []string
+		wantAccounts            []string
 		wantIssuanceActivity    map[string]actItem
 		wantAssets              []string
 	}{
@@ -358,10 +358,10 @@ func TestWriteActivity(t *testing.T) {
 			outs: []*UTXO{
 				{
 					UTXO: &utxodb.UTXO{
-						BucketID: "bucket-id-0",
-						AssetID:  "asset-id-0",
-						Amount:   1,
-						Outpoint: bc.Outpoint{Hash: mustHashFromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
+						AccountID: "account-id-0",
+						AssetID:   "asset-id-0",
+						Amount:    1,
+						Outpoint:  bc.Outpoint{Hash: mustHashFromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
 					},
 					Addr:          "addr-0",
 					ManagerNodeID: "manager-node-id-0",
@@ -369,10 +369,10 @@ func TestWriteActivity(t *testing.T) {
 				},
 				{
 					UTXO: &utxodb.UTXO{
-						BucketID: "bucket-id-2",
-						AssetID:  "asset-id-0",
-						Amount:   2,
-						Outpoint: bc.Outpoint{Hash: mustHashFromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
+						AccountID: "account-id-2",
+						AssetID:   "asset-id-0",
+						Amount:    2,
+						Outpoint:  bc.Outpoint{Hash: mustHashFromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
 					},
 					Addr:          "addr-4",
 					ManagerNodeID: "manager-node-id-1",
@@ -385,7 +385,7 @@ func TestWriteActivity(t *testing.T) {
 					Time:   txTime,
 					Inputs: []actEntry{},
 					Outputs: []actEntry{
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, BucketID: "bucket-id-0", BucketLabel: "bucket-0"},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, AccountID: "account-id-0", AccountLabel: "account-0"},
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, Address: "addr-4"},
 					},
 				},
@@ -394,20 +394,20 @@ func TestWriteActivity(t *testing.T) {
 					Time:   txTime,
 					Inputs: []actEntry{},
 					Outputs: []actEntry{
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, BucketID: "bucket-id-2", BucketLabel: "bucket-2"},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, AccountID: "account-id-2", AccountLabel: "account-2"},
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, Address: "addr-0"},
 					},
 				},
 			},
-			wantBuckets: []string{"bucket-id-0", "bucket-id-2"},
+			wantAccounts: []string{"account-id-0", "account-id-2"},
 			wantIssuanceActivity: map[string]actItem{
 				"ag-id-0": actItem{
 					TxHash: "9cb6150ade7117fd27bed7ae03ee54716afdde976a654e932baacea225f65b9e",
 					Time:   txTime,
 					Inputs: []actEntry{},
 					Outputs: []actEntry{
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, BucketID: "bucket-id-0", BucketLabel: "bucket-0"},
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, BucketID: "bucket-id-2", BucketLabel: "bucket-2"},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, AccountID: "account-id-0", AccountLabel: "account-0"},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, AccountID: "account-id-2", AccountLabel: "account-2"},
 					},
 				},
 			},
@@ -424,10 +424,10 @@ func TestWriteActivity(t *testing.T) {
 			outs: []*UTXO{
 				{
 					UTXO: &utxodb.UTXO{
-						BucketID: "bucket-id-2",
-						AssetID:  "asset-id-0",
-						Amount:   1,
-						Outpoint: bc.Outpoint{Hash: mustHashFromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
+						AccountID: "account-id-2",
+						AssetID:   "asset-id-0",
+						Amount:    1,
+						Outpoint:  bc.Outpoint{Hash: mustHashFromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 0},
 					},
 					Addr:          "addr-4",
 					ManagerNodeID: "manager-node-id-1",
@@ -436,10 +436,10 @@ func TestWriteActivity(t *testing.T) {
 
 				{
 					UTXO: &utxodb.UTXO{
-						BucketID: "bucket-id-0",
-						AssetID:  "asset-id-0",
-						Amount:   2,
-						Outpoint: bc.Outpoint{Hash: mustHashFromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 1},
+						AccountID: "account-id-0",
+						AssetID:   "asset-id-0",
+						Amount:    2,
+						Outpoint:  bc.Outpoint{Hash: mustHashFromStr("db49adbf4b456581d39b610b2e422e21807086c108d01c33363c2c488dc02b12"), Index: 1},
 					},
 					Addr:          "addr-1",
 					ManagerNodeID: "manager-node-id-0",
@@ -450,14 +450,14 @@ func TestWriteActivity(t *testing.T) {
 				INSERT INTO utxos
 					(txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
 				VALUES
-					('4786c29077265138e00a8fce822c5fb998c0ce99df53d939bb53d81bca5aa426', 0, 'asset-id-0', 3, 0, 'bucket-id-0', 'manager-node-id-0');
+					('4786c29077265138e00a8fce822c5fb998c0ce99df53d939bb53d81bca5aa426', 0, 'asset-id-0', 3, 0, 'account-id-0', 'manager-node-id-0');
 			`,
 			wantManagerNodeActivity: map[string]actItem{
 				"manager-node-id-0": actItem{
 					TxHash: "6750e5583a6ae5156d7522efa60332448cff475d7fc4dcecd20979540c13c392",
 					Time:   txTime,
 					Inputs: []actEntry{
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, BucketID: "bucket-id-0", BucketLabel: "bucket-0"},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, AccountID: "account-id-0", AccountLabel: "account-0"},
 					},
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, Address: "addr-4"},
@@ -470,12 +470,12 @@ func TestWriteActivity(t *testing.T) {
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK"},
 					},
 					Outputs: []actEntry{
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, BucketID: "bucket-id-2", BucketLabel: "bucket-2"},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, AccountID: "account-id-2", AccountLabel: "account-2"},
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, Address: "addr-1"},
 					},
 				},
 			},
-			wantBuckets:          []string{"bucket-id-0", "bucket-id-2"},
+			wantAccounts:         []string{"account-id-0", "account-id-2"},
 			wantIssuanceActivity: make(map[string]actItem),
 		},
 	}
@@ -504,13 +504,13 @@ func TestWriteActivity(t *testing.T) {
 				t.Errorf("manager node activity:\ngot:  %+v\nwant: %+v", gotManagerNodeActivity, ex.wantManagerNodeActivity)
 			}
 
-			gotBuckets, err := getTestActivityBuckets(ctx, txHash)
+			gotAccounts, err := getTestActivityAccounts(ctx, txHash)
 			if err != nil {
 				t.Fatal("unexpected error", err)
 			}
 
-			if !reflect.DeepEqual(gotBuckets, ex.wantBuckets) {
-				t.Errorf("buckets:\ngot:  %v\nwant: %v", gotBuckets, ex.wantBuckets)
+			if !reflect.DeepEqual(gotAccounts, ex.wantAccounts) {
+				t.Errorf("accounts:\ngot:  %v\nwant: %v", gotAccounts, ex.wantAccounts)
 			}
 
 			gotIssuanceActivity, err := getTestActivity(ctx, txHash, true)
@@ -539,9 +539,9 @@ func TestGetActUTXOs(t *testing.T) {
 		INSERT INTO utxos
 			(txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
 		VALUES
-			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 0, 'asset-id-0', 100, 0, 'bucket-id-0', 'manager-node-id-0'),
-			('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 1, 'asset-id-0', 50, 1, 'bucket-id-1', 'manager-node-id-0'),
-			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 1, 'asset-id-1', 25, 0, 'bucket-id-2', 'manager-node-id-1');
+			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 0, 'asset-id-0', 100, 0, 'account-id-0', 'manager-node-id-0'),
+			('3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 1, 'asset-id-0', 50, 1, 'account-id-1', 'manager-node-id-0'),
+			('0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 1, 'asset-id-1', 25, 0, 'account-id-2', 'manager-node-id-1');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
@@ -563,12 +563,12 @@ func TestGetActUTXOs(t *testing.T) {
 
 	want := []*UTXO{
 		{
-			UTXO:          &utxodb.UTXO{BucketID: "bucket-id-0", AssetID: "asset-id-0", Amount: 100},
+			UTXO:          &utxodb.UTXO{AccountID: "account-id-0", AssetID: "asset-id-0", Amount: 100},
 			Addr:          "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK",
 			ManagerNodeID: "manager-node-id-0",
 		},
 		{
-			UTXO:          &utxodb.UTXO{BucketID: "bucket-id-1", AssetID: "asset-id-0", Amount: 50},
+			UTXO:          &utxodb.UTXO{AccountID: "account-id-1", AssetID: "asset-id-0", Amount: 50},
 			Addr:          "34C2bE5U2vXG7Vbu8ZVDcQD5LZrV2nzxx5",
 			ManagerNodeID: "manager-node-id-0",
 		},
@@ -587,35 +587,35 @@ func TestGetActUTXOs(t *testing.T) {
 
 func TestGetIDsFromUTXOs(t *testing.T) {
 	utxos := []*UTXO{
-		{UTXO: &utxodb.UTXO{BucketID: "bucket-id-2", AssetID: "asset-id-2"}, ManagerNodeID: "manager-node-id-1"},
-		{UTXO: &utxodb.UTXO{BucketID: "bucket-id-1", AssetID: "asset-id-2"}, ManagerNodeID: "manager-node-id-1"},
-		{UTXO: &utxodb.UTXO{BucketID: "bucket-id-0", AssetID: "asset-id-2"}, ManagerNodeID: "manager-node-id-0"},
-		{UTXO: &utxodb.UTXO{BucketID: "bucket-id-0", AssetID: "asset-id-1"}, ManagerNodeID: "manager-node-id-0"},
-		{UTXO: &utxodb.UTXO{BucketID: "bucket-id-0", AssetID: "asset-id-0"}, ManagerNodeID: "manager-node-id-0"},
-		{UTXO: &utxodb.UTXO{BucketID: "bucket-id-0", AssetID: "asset-id-0"}, ManagerNodeID: "manager-node-id-0"},
+		{UTXO: &utxodb.UTXO{AccountID: "account-id-2", AssetID: "asset-id-2"}, ManagerNodeID: "manager-node-id-1"},
+		{UTXO: &utxodb.UTXO{AccountID: "account-id-1", AssetID: "asset-id-2"}, ManagerNodeID: "manager-node-id-1"},
+		{UTXO: &utxodb.UTXO{AccountID: "account-id-0", AssetID: "asset-id-2"}, ManagerNodeID: "manager-node-id-0"},
+		{UTXO: &utxodb.UTXO{AccountID: "account-id-0", AssetID: "asset-id-1"}, ManagerNodeID: "manager-node-id-0"},
+		{UTXO: &utxodb.UTXO{AccountID: "account-id-0", AssetID: "asset-id-0"}, ManagerNodeID: "manager-node-id-0"},
+		{UTXO: &utxodb.UTXO{AccountID: "account-id-0", AssetID: "asset-id-0"}, ManagerNodeID: "manager-node-id-0"},
 	}
 
-	gAssetIDs, gBucketIDs, gManagerNodeIDs, gManagerNodeBuckets := getIDsFromUTXOs(utxos)
+	gAssetIDs, gAccountIDs, gManagerNodeIDs, gManagerNodeAccounts := getIDsFromUTXOs(utxos)
 
 	wAssetIDs := []string{"asset-id-0", "asset-id-1", "asset-id-2"}
-	wBucketIDs := []string{"bucket-id-0", "bucket-id-1", "bucket-id-2"}
+	wAccountIDs := []string{"account-id-0", "account-id-1", "account-id-2"}
 	wManagerNodeIDs := []string{"manager-node-id-0", "manager-node-id-1"}
-	wManagerNodeBuckets := map[string][]string{
-		"manager-node-id-0": []string{"bucket-id-0"},
-		"manager-node-id-1": []string{"bucket-id-1", "bucket-id-2"},
+	wManagerNodeAccounts := map[string][]string{
+		"manager-node-id-0": []string{"account-id-0"},
+		"manager-node-id-1": []string{"account-id-1", "account-id-2"},
 	}
 
 	if !reflect.DeepEqual(gAssetIDs, wAssetIDs) {
 		t.Errorf("assetIDs:\ngot:  %v\nwant: %v", gAssetIDs, wAssetIDs)
 	}
-	if !reflect.DeepEqual(gBucketIDs, wBucketIDs) {
-		t.Errorf("assetIDs:\ngot:  %v\nwant: %v", gBucketIDs, wBucketIDs)
+	if !reflect.DeepEqual(gAccountIDs, wAccountIDs) {
+		t.Errorf("assetIDs:\ngot:  %v\nwant: %v", gAccountIDs, wAccountIDs)
 	}
 	if !reflect.DeepEqual(gManagerNodeIDs, wManagerNodeIDs) {
 		t.Errorf("assetIDs:\ngot:  %v\nwant: %v", gManagerNodeIDs, wManagerNodeIDs)
 	}
-	if !reflect.DeepEqual(gManagerNodeBuckets, wManagerNodeBuckets) {
-		t.Errorf("assetIDs:\ngot:  %v\nwant: %v", gManagerNodeBuckets, wManagerNodeBuckets)
+	if !reflect.DeepEqual(gManagerNodeAccounts, wManagerNodeAccounts) {
+		t.Errorf("assetIDs:\ngot:  %v\nwant: %v", gManagerNodeAccounts, wManagerNodeAccounts)
 	}
 }
 
@@ -657,92 +657,92 @@ func TestGetActAssets(t *testing.T) {
 	}
 }
 
-func TestGetActBuckets(t *testing.T) {
+func TestGetActAccounts(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, writeActivityFix)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	examples := []struct {
-		bucketIDs []string
-		want      []*actBucket
+		accountIDs []string
+		want       []*actAccount
 	}{
 		{
-			[]string{"bucket-id-0", "bucket-id-2"},
-			[]*actBucket{
-				{id: "bucket-id-0", label: "bucket-0", managerNodeID: "manager-node-id-0", projID: "proj-id-0"},
-				{id: "bucket-id-2", label: "bucket-2", managerNodeID: "manager-node-id-1", projID: "proj-id-0"},
+			[]string{"account-id-0", "account-id-2"},
+			[]*actAccount{
+				{id: "account-id-0", label: "account-0", managerNodeID: "manager-node-id-0", projID: "proj-id-0"},
+				{id: "account-id-2", label: "account-2", managerNodeID: "manager-node-id-1", projID: "proj-id-0"},
 			},
 		},
 		{
-			[]string{"bucket-id-1"},
-			[]*actBucket{
-				{id: "bucket-id-1", label: "bucket-1", managerNodeID: "manager-node-id-0", projID: "proj-id-0"},
+			[]string{"account-id-1"},
+			[]*actAccount{
+				{id: "account-id-1", label: "account-1", managerNodeID: "manager-node-id-0", projID: "proj-id-0"},
 			},
 		},
 	}
 
 	for _, ex := range examples {
-		t.Log("Example:", ex.bucketIDs)
+		t.Log("Example:", ex.accountIDs)
 
-		got, err := getActBuckets(ctx, ex.bucketIDs)
+		got, err := getActAccounts(ctx, ex.accountIDs)
 		if err != nil {
 			t.Fatal("unexpected error", err)
 		}
 
 		if !reflect.DeepEqual(got, ex.want) {
-			t.Errorf("buckets:\ngot:  %v\nwant: %v", got, ex.want)
+			t.Errorf("accounts:\ngot:  %v\nwant: %v", got, ex.want)
 		}
 	}
 }
 
 func TestCoalesceActivity(t *testing.T) {
 	examples := []struct {
-		ins, outs      []*UTXO
-		visibleBuckets []string
-		want           txRawActivity
+		ins, outs       []*UTXO
+		visibleAccounts []string
+		want            txRawActivity
 	}{
 		// Simple transfer from Alice's perspective
 		{
 			ins: []*UTXO{
-				{UTXO: &utxodb.UTXO{BucketID: "alice-bucket-id-0", AssetID: "gold", Amount: 10}, Addr: "alice-addr-id-0"},
+				{UTXO: &utxodb.UTXO{AccountID: "alice-account-id-0", AssetID: "gold", Amount: 10}, Addr: "alice-addr-id-0"},
 			},
 			outs: []*UTXO{
-				{UTXO: &utxodb.UTXO{BucketID: "bob-bucket-id-0", AssetID: "gold", Amount: 10}, Addr: "bob-addr-id-0"},
+				{UTXO: &utxodb.UTXO{AccountID: "bob-account-id-0", AssetID: "gold", Amount: 10}, Addr: "bob-addr-id-0"},
 			},
 
-			visibleBuckets: []string{"alice-bucket-id-0"},
+			visibleAccounts: []string{"alice-account-id-0"},
 
 			want: txRawActivity{
-				insByA: map[string]map[string]int64{},
-				insByB: map[string]map[string]int64{
-					"alice-bucket-id-0": map[string]int64{"gold": 10},
+				insByAsset: map[string]map[string]int64{},
+				insByAccount: map[string]map[string]int64{
+					"alice-account-id-0": map[string]int64{"gold": 10},
 				},
-				outsByA: map[string]map[string]int64{
+				outsByAsset: map[string]map[string]int64{
 					"bob-addr-id-0": map[string]int64{"gold": 10},
 				},
-				outsByB: map[string]map[string]int64{},
+				outsByAccount: map[string]map[string]int64{},
 			},
 		},
 
 		// Simple transfer from Bob's perspective
 		{
 			ins: []*UTXO{
-				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 10, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-0"},
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 10, AccountID: "alice-account-id-0"}, Addr: "alice-addr-id-0"},
 			},
 			outs: []*UTXO{
-				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 10, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-0"},
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 10, AccountID: "bob-account-id-0"}, Addr: "bob-addr-id-0"},
 			},
 
-			visibleBuckets: []string{"bob-bucket-id-0"},
+			visibleAccounts: []string{"bob-account-id-0"},
 
 			want: txRawActivity{
-				insByA: map[string]map[string]int64{
+				insByAsset: map[string]map[string]int64{
 					"alice-addr-id-0": map[string]int64{"gold": 10},
 				},
-				insByB:  map[string]map[string]int64{},
-				outsByA: map[string]map[string]int64{},
-				outsByB: map[string]map[string]int64{
-					"bob-bucket-id-0": map[string]int64{"gold": 10},
+				insByAccount: map[string]map[string]int64{},
+				outsByAsset:  map[string]map[string]int64{},
+				outsByAccount: map[string]map[string]int64{
+					"bob-account-id-0": map[string]int64{"gold": 10},
 				},
 			},
 		},
@@ -750,34 +750,34 @@ func TestCoalesceActivity(t *testing.T) {
 		// Trade from Alice's perspective
 		{
 			ins: []*UTXO{
-				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 20, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-0"},
-				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 10, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-0"},
-				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 10, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-1"},
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 20, AccountID: "alice-account-id-0"}, Addr: "alice-addr-id-0"},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0"}, Addr: "bob-addr-id-0"},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0"}, Addr: "bob-addr-id-1"},
 			},
 			outs: []*UTXO{
-				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 15, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-1"},
-				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 5, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-2"},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 15, AccountID: "alice-account-id-0"}, Addr: "alice-addr-id-1"},
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 5, AccountID: "bob-account-id-0"}, Addr: "bob-addr-id-2"},
 
-				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 15, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-2", IsChange: true},
-				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 5, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-3", IsChange: true},
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 15, AccountID: "alice-account-id-0"}, Addr: "alice-addr-id-2", IsChange: true},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 5, AccountID: "bob-account-id-0"}, Addr: "bob-addr-id-3", IsChange: true},
 			},
 
-			visibleBuckets: []string{"alice-bucket-id-0"},
+			visibleAccounts: []string{"alice-account-id-0"},
 
 			want: txRawActivity{
-				insByA: map[string]map[string]int64{
+				insByAsset: map[string]map[string]int64{
 					"bob-addr-id-0": map[string]int64{"silver": 10},
 					"bob-addr-id-1": map[string]int64{"silver": 10},
 				},
-				insByB: map[string]map[string]int64{
-					"alice-bucket-id-0": map[string]int64{"gold": 5},
+				insByAccount: map[string]map[string]int64{
+					"alice-account-id-0": map[string]int64{"gold": 5},
 				},
-				outsByA: map[string]map[string]int64{
+				outsByAsset: map[string]map[string]int64{
 					"bob-addr-id-2": map[string]int64{"gold": 5},
 					"bob-addr-id-3": map[string]int64{"silver": 5},
 				},
-				outsByB: map[string]map[string]int64{
-					"alice-bucket-id-0": map[string]int64{"silver": 15},
+				outsByAccount: map[string]map[string]int64{
+					"alice-account-id-0": map[string]int64{"silver": 15},
 				},
 			},
 		},
@@ -785,33 +785,33 @@ func TestCoalesceActivity(t *testing.T) {
 		// Trade from Bob's perspective
 		{
 			ins: []*UTXO{
-				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 20, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-0"},
-				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 10, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-0"},
-				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 10, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-1"},
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 20, AccountID: "alice-account-id-0"}, Addr: "alice-addr-id-0"},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0"}, Addr: "bob-addr-id-0"},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0"}, Addr: "bob-addr-id-1"},
 			},
 			outs: []*UTXO{
-				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 15, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-1"},
-				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 5, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-2"},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 15, AccountID: "alice-account-id-0"}, Addr: "alice-addr-id-1"},
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 5, AccountID: "bob-account-id-0"}, Addr: "bob-addr-id-2"},
 
-				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 15, BucketID: "alice-bucket-id-0"}, Addr: "alice-addr-id-2", IsChange: true},
-				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 5, BucketID: "bob-bucket-id-0"}, Addr: "bob-addr-id-3", IsChange: true},
+				{UTXO: &utxodb.UTXO{AssetID: "gold", Amount: 15, AccountID: "alice-account-id-0"}, Addr: "alice-addr-id-2", IsChange: true},
+				{UTXO: &utxodb.UTXO{AssetID: "silver", Amount: 5, AccountID: "bob-account-id-0"}, Addr: "bob-addr-id-3", IsChange: true},
 			},
 
-			visibleBuckets: []string{"bob-bucket-id-0"},
+			visibleAccounts: []string{"bob-account-id-0"},
 
 			want: txRawActivity{
-				insByA: map[string]map[string]int64{
+				insByAsset: map[string]map[string]int64{
 					"alice-addr-id-0": map[string]int64{"gold": 20},
 				},
-				insByB: map[string]map[string]int64{
-					"bob-bucket-id-0": map[string]int64{"silver": 15},
+				insByAccount: map[string]map[string]int64{
+					"bob-account-id-0": map[string]int64{"silver": 15},
 				},
-				outsByA: map[string]map[string]int64{
+				outsByAsset: map[string]map[string]int64{
 					"alice-addr-id-1": map[string]int64{"silver": 15},
 					"alice-addr-id-2": map[string]int64{"gold": 15},
 				},
-				outsByB: map[string]map[string]int64{
-					"bob-bucket-id-0": map[string]int64{"gold": 5},
+				outsByAccount: map[string]map[string]int64{
+					"bob-account-id-0": map[string]int64{"gold": 5},
 				},
 			},
 		},
@@ -820,7 +820,7 @@ func TestCoalesceActivity(t *testing.T) {
 	for i, ex := range examples {
 		t.Log("Example", i)
 
-		got := coalesceActivity(ex.ins, ex.outs, ex.visibleBuckets)
+		got := coalesceActivity(ex.ins, ex.outs, ex.visibleAccounts)
 
 		if !reflect.DeepEqual(got, ex.want) {
 			t.Errorf("coalesced activity:\ngot:  %v\nwant: %v", got, ex.want)
@@ -830,7 +830,7 @@ func TestCoalesceActivity(t *testing.T) {
 
 func TestCreateActEntries(t *testing.T) {
 	r := txRawActivity{
-		insByA: map[string]map[string]int64{
+		insByAsset: map[string]map[string]int64{
 			"space-mountain": map[string]int64{
 				"asset-id-0": 1,
 				"asset-id-1": 2,
@@ -840,24 +840,24 @@ func TestCreateActEntries(t *testing.T) {
 				"asset-id-3": 4,
 			},
 		},
-		insByB: map[string]map[string]int64{
-			"bucket-id-0": map[string]int64{
+		insByAccount: map[string]map[string]int64{
+			"account-id-0": map[string]int64{
 				"asset-id-4": 5,
 				"asset-id-5": 6,
 			},
 		},
-		outsByA: map[string]map[string]int64{
+		outsByAsset: map[string]map[string]int64{
 			"teacups": map[string]int64{
 				"asset-id-5": 6,
 				"asset-id-4": 5,
 			},
 		},
-		outsByB: map[string]map[string]int64{
-			"bucket-id-1": map[string]int64{
+		outsByAccount: map[string]map[string]int64{
+			"account-id-1": map[string]int64{
 				"asset-id-3": 4,
 				"asset-id-2": 3,
 			},
-			"bucket-id-2": map[string]int64{
+			"account-id-2": map[string]int64{
 				"asset-id-1": 2,
 				"asset-id-0": 1,
 			},
@@ -873,17 +873,17 @@ func TestCreateActEntries(t *testing.T) {
 		"asset-id-5": "mango",
 	}
 
-	bucketLabels := map[string]string{
-		"bucket-id-0": "charlie",
-		"bucket-id-1": "bob",
-		"bucket-id-2": "alice",
+	accountLabels := map[string]string{
+		"account-id-0": "charlie",
+		"account-id-1": "bob",
+		"account-id-2": "alice",
 	}
 
-	gotIns, gotOuts := createActEntries(r, assetLabels, bucketLabels)
+	gotIns, gotOuts := createActEntries(r, assetLabels, accountLabels)
 
 	wantIns := []actEntry{
-		actEntry{BucketID: "bucket-id-0", BucketLabel: "charlie", AssetID: "asset-id-4", AssetLabel: "avocado", Amount: 5},
-		actEntry{BucketID: "bucket-id-0", BucketLabel: "charlie", AssetID: "asset-id-5", AssetLabel: "mango", Amount: 6},
+		actEntry{AccountID: "account-id-0", AccountLabel: "charlie", AssetID: "asset-id-4", AssetLabel: "avocado", Amount: 5},
+		actEntry{AccountID: "account-id-0", AccountLabel: "charlie", AssetID: "asset-id-5", AssetLabel: "mango", Amount: 6},
 		actEntry{Address: "small-world", AssetID: "asset-id-2", AssetLabel: "frankincense", Amount: 3},
 		actEntry{Address: "small-world", AssetID: "asset-id-3", AssetLabel: "myrrh", Amount: 4},
 		actEntry{Address: "space-mountain", AssetID: "asset-id-0", AssetLabel: "gold", Amount: 1},
@@ -891,10 +891,10 @@ func TestCreateActEntries(t *testing.T) {
 	}
 
 	wantOuts := []actEntry{
-		actEntry{BucketID: "bucket-id-2", BucketLabel: "alice", AssetID: "asset-id-0", AssetLabel: "gold", Amount: 1},
-		actEntry{BucketID: "bucket-id-2", BucketLabel: "alice", AssetID: "asset-id-1", AssetLabel: "silver", Amount: 2},
-		actEntry{BucketID: "bucket-id-1", BucketLabel: "bob", AssetID: "asset-id-2", AssetLabel: "frankincense", Amount: 3},
-		actEntry{BucketID: "bucket-id-1", BucketLabel: "bob", AssetID: "asset-id-3", AssetLabel: "myrrh", Amount: 4},
+		actEntry{AccountID: "account-id-2", AccountLabel: "alice", AssetID: "asset-id-0", AssetLabel: "gold", Amount: 1},
+		actEntry{AccountID: "account-id-2", AccountLabel: "alice", AssetID: "asset-id-1", AssetLabel: "silver", Amount: 2},
+		actEntry{AccountID: "account-id-1", AccountLabel: "bob", AssetID: "asset-id-2", AssetLabel: "frankincense", Amount: 3},
+		actEntry{AccountID: "account-id-1", AccountLabel: "bob", AssetID: "asset-id-3", AssetLabel: "myrrh", Amount: 4},
 		actEntry{Address: "teacups", AssetID: "asset-id-4", AssetLabel: "avocado", Amount: 5},
 		actEntry{Address: "teacups", AssetID: "asset-id-5", AssetLabel: "mango", Amount: 6},
 	}
@@ -913,16 +913,16 @@ func TestWriteManagerNodeActivity(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	buckets := []string{"bucket-id-0", "bucket-id-1"}
-	bucketSet := make(map[string]bool)
-	for _, b := range buckets {
-		bucketSet[b] = true
+	accounts := []string{"account-id-0", "account-id-1"}
+	accountSet := make(map[string]bool)
+	for _, b := range accounts {
+		accountSet[b] = true
 	}
 
 	err := writeManagerNodeActivity(
 		ctx,
 		"manager-node-id-0", "tx-hash", []byte(`{"transaction_id":"dummy"}`),
-		buckets,
+		accounts,
 	)
 	if err != nil {
 		t.Fatal("unexpected error", err)
@@ -938,14 +938,14 @@ func TestWriteManagerNodeActivity(t *testing.T) {
 		t.Errorf("activity rows:\ngot:  %v\nwant: %v", gotAct, wantAct)
 	}
 
-	gotBuckets, err := getTestActivityBuckets(ctx, "tx-hash")
+	gotAccounts, err := getTestActivityAccounts(ctx, "tx-hash")
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
 
-	wantBuckets := []string{"bucket-id-0", "bucket-id-1"}
-	if !reflect.DeepEqual(gotBuckets, wantBuckets) {
-		t.Errorf("buckets:\ngot:  %v\nwant: %v", gotBuckets, wantBuckets)
+	wantAccounts := []string{"account-id-0", "account-id-1"}
+	if !reflect.DeepEqual(gotAccounts, wantAccounts) {
+		t.Errorf("accounts:\ngot:  %v\nwant: %v", gotAccounts, wantAccounts)
 	}
 }
 
@@ -1031,7 +1031,7 @@ func getTestActivity(ctx context.Context, txHash string, issuance bool) (map[str
 	return res, nil
 }
 
-func getTestActivityBuckets(ctx context.Context, txHash string) ([]string, error) {
+func getTestActivityAccounts(ctx context.Context, txHash string) ([]string, error) {
 	q := `
 		SELECT array_agg(account_id ORDER BY account_id)
 		FROM activity_accounts aa

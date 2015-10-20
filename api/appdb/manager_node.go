@@ -52,7 +52,7 @@ func InsertManagerNode(ctx context.Context, projID, label string, keys, gennedKe
 }
 
 // Balance is a struct describing the balance of
-// an asset that a manager node or bucket has.
+// an asset that a manager node or account has.
 type Balance struct {
 	AssetID   string `json:"asset_id"`
 	Confirmed int64  `json:"confirmed"`

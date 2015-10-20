@@ -16,7 +16,7 @@ import (
 )
 
 // Address represents a blockchain address that is
-// contained in a bucket.
+// contained in an account.
 type Address struct {
 	// Initialized by Insert
 	// (Insert reads all other fields)
@@ -29,24 +29,24 @@ type Address struct {
 	PKScript     []byte
 	Amount       uint64
 	Expires      time.Time
-	BucketID     string // read by LoadNextIndex
+	AccountID    string // read by LoadNextIndex
 	IsChange     bool
 
 	// Initialized by LoadNextIndex
 	ManagerNodeID    string
 	ManagerNodeIndex []uint32
-	BucketIndex      []uint32
+	AccountIndex     []uint32
 	Index            []uint32
 	SigsRequired     int
 	Keys             []*hdkey.XKey
 }
 
 var (
-	// Map bucket ID to address template.
+	// Map account ID to address template.
 	// Entries set the following fields:
 	//   ManagerNodeID
 	//   ManagerNodeIndex
-	//   BucketIndex
+	//   AccountIndex
 	//   Keys
 	//   SigsRequired
 	addrInfo      = map[string]*Address{}
@@ -56,16 +56,16 @@ var (
 )
 
 // AddrInfo looks up the information common to
-// every address in the given bucket.
+// every address in the given account.
 // Sets the following fields:
 //   ManagerNodeID
 //   ManagerNodeIndex
-//   BucketIndex
+//   AccountIndex
 //   Keys
 //   SigsRequired
-func AddrInfo(ctx context.Context, bucketID string) (*Address, error) {
+func AddrInfo(ctx context.Context, accountID string) (*Address, error) {
 	addrMu.Lock()
-	ai, ok := addrInfo[bucketID]
+	ai, ok := addrInfo[accountID]
 	addrMu.Unlock()
 	if !ok {
 		// Concurrent cache misses might be doing
@@ -74,22 +74,22 @@ func AddrInfo(ctx context.Context, bucketID string) (*Address, error) {
 		var xpubs []string
 		const q = `
 		SELECT
-			mn.id, key_index(b.key_index), key_index(mn.key_index),
+			mn.id, key_index(a.key_index), key_index(mn.key_index),
 			r.keyset, mn.sigs_required
-		FROM accounts b
-		LEFT JOIN manager_nodes mn ON mn.id=b.manager_node_id
+		FROM accounts a
+		LEFT JOIN manager_nodes mn ON mn.id=a.manager_node_id
 		LEFT JOIN rotations r ON r.id=mn.current_rotation
-		WHERE b.id=$1
+		WHERE a.id=$1
 	`
-		err := pg.FromContext(ctx).QueryRow(q, bucketID).Scan(
+		err := pg.FromContext(ctx).QueryRow(q, accountID).Scan(
 			&ai.ManagerNodeID,
-			(*pg.Uint32s)(&ai.BucketIndex),
+			(*pg.Uint32s)(&ai.AccountIndex),
 			(*pg.Uint32s)(&ai.ManagerNodeIndex),
 			(*pg.Strings)(&xpubs),
 			&ai.SigsRequired,
 		)
 		if err != nil {
-			return nil, errors.WithDetailf(err, "bucket %s", bucketID)
+			return nil, errors.WithDetailf(err, "account %s", accountID)
 		}
 
 		ai.Keys, err = stringsToKeys(xpubs)
@@ -98,7 +98,7 @@ func AddrInfo(ctx context.Context, bucketID string) (*Address, error) {
 		}
 
 		addrMu.Lock()
-		addrInfo[bucketID] = ai
+		addrInfo[accountID] = ai
 		addrMu.Unlock()
 	}
 	return ai, nil
@@ -135,13 +135,13 @@ func keyIndex(n int64) []uint32 {
 
 // LoadNextIndex is a low-level function to initialize a new Address.
 // It is intended to be used by the asset package.
-// Field BucketID must be set.
+// Field AccountID must be set.
 // LoadNextIndex will initialize some other fields;
 // See Address for which ones.
 func (a *Address) LoadNextIndex(ctx context.Context) error {
 	defer metrics.RecordElapsed(time.Now())
 
-	ai, err := AddrInfo(ctx, a.BucketID)
+	ai, err := AddrInfo(ctx, a.AccountID)
 	if errors.Root(err) == sql.ErrNoRows {
 		err = errors.Wrap(pg.ErrUserInputNotFound, err.Error())
 	}
@@ -155,7 +155,7 @@ func (a *Address) LoadNextIndex(ctx context.Context) error {
 	}
 
 	a.ManagerNodeID = ai.ManagerNodeID
-	a.BucketIndex = ai.BucketIndex
+	a.AccountIndex = ai.AccountIndex
 	a.ManagerNodeIndex = ai.ManagerNodeIndex
 	a.SigsRequired = ai.SigsRequired
 	a.Keys = ai.Keys
@@ -181,7 +181,7 @@ func (a *Address) Insert(ctx context.Context) error {
 		a.RedeemScript,
 		a.PKScript,
 		a.ManagerNodeID,
-		a.BucketID,
+		a.AccountID,
 		pg.Strings(keysToStrings(a.Keys)),
 		pq.NullTime{Time: a.Expires, Valid: !a.Expires.IsZero()},
 		a.Amount,
@@ -191,8 +191,8 @@ func (a *Address) Insert(ctx context.Context) error {
 	return row.Scan(&a.ID, &a.Created)
 }
 
-func DeriveAddress(ctx context.Context, bucketID string, addrIndex []uint32) (string, error) {
-	addrInfo, err := AddrInfo(ctx, bucketID)
+func DeriveAddress(ctx context.Context, accountID string, addrIndex []uint32) (string, error) {
+	addrInfo, err := AddrInfo(ctx, accountID)
 	if err != nil {
 		return "", errors.Wrap(err, "get addr info")
 	}

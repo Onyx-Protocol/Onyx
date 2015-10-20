@@ -17,7 +17,7 @@ import (
 
 type sqlUTXODB struct{}
 
-func (sqlUTXODB) LoadUTXOs(ctx context.Context, bucketID, assetID string) ([]*utxodb.UTXO, error) {
+func (sqlUTXODB) LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, error) {
 	log.Messagef(ctx, "loading full utxo set")
 	t0 := time.Now()
 	const q = `
@@ -25,7 +25,7 @@ func (sqlUTXODB) LoadUTXOs(ctx context.Context, bucketID, assetID string) ([]*ut
 		FROM utxos
 		WHERE account_id=$1 AND asset_id=$2
 	`
-	rows, err := pg.FromContext(ctx).Query(q, bucketID, assetID)
+	rows, err := pg.FromContext(ctx).Query(q, accountID, assetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "query")
 	}
@@ -33,8 +33,8 @@ func (sqlUTXODB) LoadUTXOs(ctx context.Context, bucketID, assetID string) ([]*ut
 	var utxos []*utxodb.UTXO
 	for rows.Next() {
 		u := &utxodb.UTXO{
-			BucketID: bucketID,
-			AssetID:  assetID,
+			AccountID: accountID,
+			AssetID:   assetID,
 		}
 		var txid string
 		err = rows.Scan(
@@ -123,7 +123,7 @@ type utxoSet struct {
 	assetID       pg.Strings
 	amount        pg.Int64s
 	addr          pg.Strings
-	bucketID      pg.Strings
+	accountID     pg.Strings
 	managerNodeID pg.Strings
 	aIndex        pg.Int64s
 }
@@ -156,7 +156,7 @@ func deleteUTXOs(ctx context.Context, txins []*bc.TxInput) ([]*utxodb.UTXO, erro
 	for rows.Next() {
 		u := new(utxodb.UTXO)
 		var txid string
-		err = rows.Scan(&u.BucketID, &u.AssetID, &txid, &u.Outpoint.Index)
+		err = rows.Scan(&u.AccountID, &u.AssetID, &txid, &u.Outpoint.Index)
 		if err != nil {
 			return nil, errors.Wrap(err, "scan")
 		}
@@ -177,9 +177,9 @@ func insertUTXOs(ctx context.Context, hash bc.Hash, txouts []*bc.TxOutput, recs 
 	defer metrics.RecordElapsed(time.Now())
 
 	// This function inserts utxos into the db, and maps
-	// them to receiver info (bucket id and addr index).
+	// them to receiver info (account id and addr index).
 	// There are three cases:
-	// 1. UTXO pays change or to an "immediate" bucket receiver.
+	// 1. UTXO pays change or to an "immediate" account receiver.
 	//    In this case, we get the receiver info from recs
 	//    (which came from the client and was validated
 	//    in FinalizeTx).
@@ -203,7 +203,7 @@ func insertUTXOs(ctx context.Context, hash bc.Hash, txouts []*bc.TxOutput, recs 
 		outs.index = append(outs.index, uint32(i))
 		outs.assetID = append(outs.assetID, u.AssetID)
 		outs.amount = append(outs.amount, int64(u.Amount))
-		outs.bucketID = append(outs.bucketID, u.BucketID)
+		outs.accountID = append(outs.accountID, u.AccountID)
 		outs.managerNodeID = append(outs.managerNodeID, u.ManagerNodeID)
 		outs.aIndex = append(outs.aIndex, toKeyIndex(u.AddrIndex[:]))
 	}
@@ -227,7 +227,7 @@ func insertUTXOs(ctx context.Context, hash bc.Hash, txouts []*bc.TxOutput, recs 
 		outs.index,
 		outs.assetID,
 		outs.amount,
-		outs.bucketID,
+		outs.accountID,
 		outs.managerNodeID,
 		outs.aIndex,
 	)
@@ -251,7 +251,7 @@ func initAddrInfoFromRecs(hash bc.Hash, txouts []*bc.TxOutput, recs []*utxodb.Re
 		}
 		if rec := recs[i]; rec != nil {
 			u.ManagerNodeID = rec.ManagerNodeID
-			u.BucketID = rec.BucketID
+			u.AccountID = rec.AccountID
 			copy(u.AddrIndex[:], rec.AddrIndex)
 			u.IsChange = rec.IsChange
 		}
@@ -260,7 +260,7 @@ func initAddrInfoFromRecs(hash bc.Hash, txouts []*bc.TxOutput, recs []*utxodb.Re
 	return insert, nil
 }
 
-// loadAddrInfoFromDB loads bucket ID and addr index
+// loadAddrInfoFromDB loads account ID and addr index
 // from the addresses table for utxos that need it.
 // Not all are guaranteed to be in the database;
 // some outputs will be owned by third parties.
@@ -268,7 +268,7 @@ func initAddrInfoFromRecs(hash bc.Hash, txouts []*bc.TxOutput, recs []*utxodb.Re
 func loadAddrInfoFromDB(ctx context.Context, utxos []*appdb.UTXO) error {
 	var addrs []string
 	for _, u := range utxos {
-		if u.BucketID == "" {
+		if u.AccountID == "" {
 			addrs = append(addrs, u.Addr)
 		}
 	}
@@ -287,13 +287,13 @@ func loadAddrInfoFromDB(ctx context.Context, utxos []*appdb.UTXO) error {
 		var (
 			addr          string
 			managerNodeID string
-			bucketID      string
+			accountID     string
 			addrIndex     []uint32
 			isChange      bool
 		)
 		err = rows.Scan(
 			&addr,
-			&bucketID,
+			&accountID,
 			&managerNodeID,
 			(*pg.Uint32s)(&addrIndex),
 			&isChange,
@@ -302,9 +302,9 @@ func loadAddrInfoFromDB(ctx context.Context, utxos []*appdb.UTXO) error {
 			return errors.Wrap(err, "scan")
 		}
 		for _, u := range utxos {
-			if u.BucketID == "" && u.Addr == addr {
+			if u.AccountID == "" && u.Addr == addr {
 				u.ManagerNodeID = managerNodeID
-				u.BucketID = bucketID
+				u.AccountID = accountID
 				u.IsChange = isChange
 				copy(u.AddrIndex[:], addrIndex)
 			}

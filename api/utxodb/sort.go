@@ -5,10 +5,10 @@ type byKey []Input
 func (a byKey) Len() int      { return len(a) }
 func (a byKey) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a byKey) Less(i, j int) bool {
-	if a[i].BucketID == a[j].BucketID {
+	if a[i].AccountID == a[j].AccountID {
 		return a[i].AssetID < a[j].AssetID
 	}
-	return a[i].BucketID < a[j].BucketID
+	return a[i].AccountID < a[j].AccountID
 }
 
 type byKeyUTXO []*UTXO
@@ -16,10 +16,10 @@ type byKeyUTXO []*UTXO
 func (u byKeyUTXO) Len() int      { return len(u) }
 func (u byKeyUTXO) Swap(i, j int) { u[i], u[j] = u[j], u[i] }
 func (u byKeyUTXO) Less(i, j int) bool {
-	if u[i].BucketID == u[j].BucketID {
+	if u[i].AccountID == u[j].AccountID {
 		return u[i].AssetID < u[j].AssetID
 	}
-	return u[i].BucketID < u[j].BucketID
+	return u[i].AccountID < u[j].AccountID
 }
 
 type utxosByResvExpires []*UTXO

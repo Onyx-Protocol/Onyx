@@ -24,8 +24,8 @@ var (
 )
 
 // Transfer creates a transaction that
-// transfers assets from input buckets
-// to output buckets or addresses.
+// transfers assets from input accounts
+// to output accounts or addresses.
 func Transfer(ctx context.Context, inputs []utxodb.Input, outputs []*Output) (*Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if err := checkTransferParity(inputs, outputs); err != nil {
@@ -48,10 +48,10 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.
 
 	for _, c := range change {
 		outs = append(outs, &Output{
-			BucketID: c.Input.BucketID,
-			AssetID:  c.Input.AssetID,
-			Amount:   c.Amount,
-			isChange: true,
+			AccountID: c.Input.AccountID,
+			AssetID:   c.Input.AssetID,
+			Amount:    c.Amount,
+			isChange:  true,
 		})
 	}
 
@@ -93,7 +93,7 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.
 
 func validateOutputs(outputs []*Output) error {
 	for i, out := range outputs {
-		if (out.BucketID == "") == (out.Address == "") {
+		if (out.AccountID == "") == (out.Address == "") {
 			return errors.WithDetailf(ErrBadOutDest, "output index=%d", i)
 		}
 	}
@@ -135,13 +135,13 @@ func makeTransferInputs(ctx context.Context, tx *bc.Tx, utxos []*utxodb.UTXO) ([
 }
 
 func addressInput(ctx context.Context, u *utxodb.UTXO, tx *bc.Tx) (*Input, error) {
-	addrInfo, err := appdb.AddrInfo(ctx, u.BucketID)
+	addrInfo, err := appdb.AddrInfo(ctx, u.AccountID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get addr info")
 	}
 
 	// TODO(kr): for key rotation, pull keys out of utxo
-	// instead of the bucket (addrInfo).
+	// instead of the account (addrInfo).
 	signers := hdkey.Derive(addrInfo.Keys, appdb.ReceiverPath(addrInfo, u.AddrIndex[:]))
 	redeemScript, err := hdkey.RedeemScript(signers, addrInfo.SigsRequired)
 	if err != nil {

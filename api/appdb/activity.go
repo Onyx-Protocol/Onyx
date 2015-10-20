@@ -48,17 +48,17 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outs []*UTXO, txTime time.Tim
 	// Extract IDs for all resources involved in the transaction. The lists
 	// should not contain duplicates.
 	allUTXOs := append(ins, outs...)
-	assetIDs, bucketIDs, managerNodeIDs, managerNodeAccounts := getIDsFromUTXOs(allUTXOs)
+	assetIDs, accountIDs, managerNodeIDs, managerNodeAccounts := getIDsFromUTXOs(allUTXOs)
 
-	// Gather additional data on relevant buckets.
-	actBuckets, err := getActBuckets(ctx, bucketIDs)
+	// Gather additional data on relevant accounts.
+	actAccounts, err := getActAccounts(ctx, accountIDs)
 	if err != nil {
-		return errors.Wrap(err, "get buckets")
+		return errors.Wrap(err, "get accounts")
 	}
 
-	bucketLabels := make(map[string]string)
-	for _, b := range actBuckets {
-		bucketLabels[b.id] = b.label
+	accountLabels := make(map[string]string)
+	for _, a := range actAccounts {
+		accountLabels[a.id] = a.label
 	}
 
 	// Gather additional data on relevant assets.
@@ -75,7 +75,7 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outs []*UTXO, txTime time.Tim
 	//  Manager node activity
 	for _, managerNodeID := range managerNodeIDs {
 		r := coalesceActivity(ins, outs, managerNodeAccounts[managerNodeID])
-		inAct, outAct := createActEntries(r, assetLabels, bucketLabels)
+		inAct, outAct := createActEntries(r, assetLabels, accountLabels)
 
 		data, err := serializeActvity(txHash, txTime, inAct, outAct)
 		if err != nil {
@@ -95,15 +95,15 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outs []*UTXO, txTime time.Tim
 			return errors.Wrap(ErrInvalidIssuanceActivity, "asset count:", len(actAssets))
 		}
 
-		var visibleBuckets []string
-		for _, b := range actBuckets {
-			if b.projID == actAssets[0].projID {
-				visibleBuckets = append(visibleBuckets, b.id)
+		var visibleAccounts []string
+		for _, a := range actAccounts {
+			if a.projID == actAssets[0].projID {
+				visibleAccounts = append(visibleAccounts, a.id)
 			}
 		}
 
-		r := coalesceActivity(ins, outs, visibleBuckets)
-		inAct, outAct := createActEntries(r, assetLabels, bucketLabels)
+		r := coalesceActivity(ins, outs, visibleAccounts)
+		inAct, outAct := createActEntries(r, assetLabels, accountLabels)
 
 		data, err := serializeActvity(txHash, txTime, inAct, outAct)
 		if err != nil {
@@ -135,7 +135,7 @@ func ManagerNodeActivity(ctx context.Context, managerNodeID string, prev string,
 	return activityItemsFromRows(rows)
 }
 
-func BucketActivity(ctx context.Context, bucketID string, prev string, limit int) ([]*json.RawMessage, string, error) {
+func AccountActivity(ctx context.Context, accountID string, prev string, limit int) ([]*json.RawMessage, string, error) {
 	q := `
 		SELECT a.id, a.data
 		FROM activity AS a
@@ -145,7 +145,7 @@ func BucketActivity(ctx context.Context, bucketID string, prev string, limit int
 		ORDER BY a.id DESC LIMIT $3
 	`
 
-	rows, err := pg.FromContext(ctx).Query(q, bucketID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(q, accountID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "query")
 	}
@@ -243,7 +243,7 @@ type actAsset struct {
 	projID string
 }
 
-type actBucket struct {
+type actAccount struct {
 	id            string
 	label         string
 	managerNodeID string
@@ -251,16 +251,16 @@ type actBucket struct {
 }
 
 type txRawActivity struct {
-	insByA  map[string]map[string]int64
-	insByB  map[string]map[string]int64
-	outsByA map[string]map[string]int64
-	outsByB map[string]map[string]int64
+	insByAsset    map[string]map[string]int64
+	insByAccount  map[string]map[string]int64
+	outsByAsset   map[string]map[string]int64
+	outsByAccount map[string]map[string]int64
 }
 
 type actEntry struct {
-	Address     string `json:"address,omitempty"`
-	BucketID    string `json:"account_id,omitempty"`
-	BucketLabel string `json:"account_label,omitempty"`
+	Address      string `json:"address,omitempty"`
+	AccountID    string `json:"account_id,omitempty"`
+	AccountLabel string `json:"account_label,omitempty"`
 
 	Amount     int64  `json:"amount"`
 	AssetID    string `json:"asset_id"`
@@ -272,17 +272,17 @@ type actEntryOrder []actEntry
 func (a actEntryOrder) Len() int      { return len(a) }
 func (a actEntryOrder) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a actEntryOrder) Less(i, j int) bool {
-	// Show bucket items first
-	if a[i].BucketLabel != "" && a[j].BucketLabel == "" {
+	// Show account items first
+	if a[i].AccountLabel != "" && a[j].AccountLabel == "" {
 		return true
 	}
-	if a[i].BucketLabel == "" && a[j].BucketLabel != "" {
+	if a[i].AccountLabel == "" && a[j].AccountLabel != "" {
 		return false
 	}
 
-	// Sort by bucket ID, address, asset ID, and amount
-	if a[i].BucketLabel != a[j].BucketLabel {
-		return a[i].BucketLabel < a[j].BucketLabel
+	// Sort by account ID, address, asset ID, and amount
+	if a[i].AccountLabel != a[j].AccountLabel {
+		return a[i].AccountLabel < a[j].AccountLabel
 	}
 	if a[i].Address != a[j].Address {
 		return a[i].Address < a[j].Address
@@ -291,7 +291,7 @@ func (a actEntryOrder) Less(i, j int) bool {
 		return a[i].AssetLabel < a[j].AssetLabel
 	}
 
-	// If coalescing similar assets within the same bucket or address space is
+	// If coalescing similar assets within the same account or address space is
 	// successful, we shouldn't ever get here.
 	return a[i].Amount < a[j].Amount
 }
@@ -326,7 +326,7 @@ func getActUTXOs(ctx context.Context, txHashes []string, indexes []uint32) ([]*U
 
 		err := rows.Scan(
 			&utxo.AssetID, &utxo.Amount,
-			(*pg.Uint32s)(&addrIndex), &utxo.BucketID, &utxo.ManagerNodeID,
+			(*pg.Uint32s)(&addrIndex), &utxo.AccountID, &utxo.ManagerNodeID,
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
@@ -340,7 +340,7 @@ func getActUTXOs(ctx context.Context, txHashes []string, indexes []uint32) ([]*U
 	}
 
 	for i, utxo := range res {
-		utxo.Addr, err = DeriveAddress(ctx, utxo.BucketID, addrIndexes[i])
+		utxo.Addr, err = DeriveAddress(ctx, utxo.AccountID, addrIndexes[i])
 		if err != nil {
 			return nil, errors.Wrap(err, "derive address")
 		}
@@ -354,7 +354,7 @@ func getActUTXOs(ctx context.Context, txHashes []string, indexes []uint32) ([]*U
 // in a transaction.
 func getIDsFromUTXOs(utxos []*UTXO) (
 	assetIDs []string, // list of unique asset IDs
-	bucketIDs []string, // list of unique bucket IDs
+	accountIDs []string, // list of unique account IDs
 	managerNodeIDs []string, // list of unique manager node IDs
 	managerNodeAccounts map[string][]string, // map of manager node IDs to unique account IDs
 ) {
@@ -362,26 +362,26 @@ func getIDsFromUTXOs(utxos []*UTXO) (
 	for _, u := range utxos {
 		if u != nil {
 			assetIDs = append(assetIDs, u.AssetID)
-			bucketIDs = append(bucketIDs, u.BucketID)
+			accountIDs = append(accountIDs, u.AccountID)
 			managerNodeIDs = append(managerNodeIDs, u.ManagerNodeID)
-			managerNodeAccounts[u.ManagerNodeID] = append(managerNodeAccounts[u.ManagerNodeID], u.BucketID)
+			managerNodeAccounts[u.ManagerNodeID] = append(managerNodeAccounts[u.ManagerNodeID], u.AccountID)
 		}
 	}
 
 	sort.Strings(assetIDs)
-	sort.Strings(bucketIDs)
+	sort.Strings(accountIDs)
 	sort.Strings(managerNodeIDs)
 
 	assetIDs = strings.Uniq(assetIDs)
-	bucketIDs = strings.Uniq(bucketIDs)
+	accountIDs = strings.Uniq(accountIDs)
 	managerNodeIDs = strings.Uniq(managerNodeIDs)
 
-	for managerNodeID, buckets := range managerNodeAccounts {
-		sort.Strings(buckets)
-		managerNodeAccounts[managerNodeID] = strings.Uniq(buckets)
+	for managerNodeID, accounts := range managerNodeAccounts {
+		sort.Strings(accounts)
+		managerNodeAccounts[managerNodeID] = strings.Uniq(accounts)
 	}
 
-	return assetIDs, bucketIDs, managerNodeIDs, managerNodeAccounts
+	return assetIDs, accountIDs, managerNodeIDs, managerNodeAccounts
 }
 
 func getActAssets(ctx context.Context, assetIDs []string) ([]*actAsset, error) {
@@ -415,7 +415,7 @@ func getActAssets(ctx context.Context, assetIDs []string) ([]*actAsset, error) {
 	return res, nil
 }
 
-func getActBuckets(ctx context.Context, bucketIDs []string) ([]*actBucket, error) {
+func getActAccounts(ctx context.Context, accountIDs []string) ([]*actAccount, error) {
 	q := `
 		SELECT acc.id, acc.label, acc.manager_node_id, mn.project_id
 		FROM accounts acc
@@ -423,20 +423,20 @@ func getActBuckets(ctx context.Context, bucketIDs []string) ([]*actBucket, error
 		WHERE acc.id = ANY($1)
 		ORDER BY acc.id
 	`
-	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(bucketIDs))
+	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(accountIDs))
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
 	defer rows.Close()
 
-	var res []*actBucket
+	var res []*actAccount
 	for rows.Next() {
-		b := new(actBucket)
-		err := rows.Scan(&b.id, &b.label, &b.managerNodeID, &b.projID)
+		a := new(actAccount)
+		err := rows.Scan(&a.id, &a.label, &a.managerNodeID, &a.projID)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
-		res = append(res, b)
+		res = append(res, a)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -446,61 +446,61 @@ func getActBuckets(ctx context.Context, bucketIDs []string) ([]*actBucket, error
 	return res, nil
 }
 
-func coalesceActivity(ins, outs []*UTXO, visibleBuckets []string) txRawActivity {
-	// create lookup tables for bucket visibility and change addresses
-	isBucketVis := make(map[string]bool)
-	for _, bid := range visibleBuckets {
-		isBucketVis[bid] = true
+func coalesceActivity(ins, outs []*UTXO, visibleAccounts []string) txRawActivity {
+	// create lookup tables for account visibility and change addresses
+	isAccountVis := make(map[string]bool)
+	for _, bid := range visibleAccounts {
+		isAccountVis[bid] = true
 	}
 
 	res := txRawActivity{
-		insByA:  make(map[string]map[string]int64),
-		insByB:  make(map[string]map[string]int64),
-		outsByA: make(map[string]map[string]int64),
-		outsByB: make(map[string]map[string]int64),
+		insByAsset:    make(map[string]map[string]int64),
+		insByAccount:  make(map[string]map[string]int64),
+		outsByAsset:   make(map[string]map[string]int64),
+		outsByAccount: make(map[string]map[string]int64),
 	}
 
-	// Pool all inputs by address, or by bucket if the bucket is visible.
+	// Pool all inputs by address, or by account if the account is visible.
 	for _, u := range ins {
-		if isBucketVis[u.BucketID] {
-			if res.insByB[u.BucketID] == nil {
-				res.insByB[u.BucketID] = make(map[string]int64)
+		if isAccountVis[u.AccountID] {
+			if res.insByAccount[u.AccountID] == nil {
+				res.insByAccount[u.AccountID] = make(map[string]int64)
 			}
-			res.insByB[u.BucketID][u.AssetID] += int64(u.Amount)
+			res.insByAccount[u.AccountID][u.AssetID] += int64(u.Amount)
 		} else {
-			if res.insByA[u.Addr] == nil {
-				res.insByA[u.Addr] = make(map[string]int64)
+			if res.insByAsset[u.Addr] == nil {
+				res.insByAsset[u.Addr] = make(map[string]int64)
 			}
-			res.insByA[u.Addr][u.AssetID] += int64(u.Amount)
+			res.insByAsset[u.Addr][u.AssetID] += int64(u.Amount)
 		}
 	}
 
-	// Pool all outputs by address, or by bucket if the bucket is visible.
+	// Pool all outputs by address, or by account if the account is visible.
 	for _, u := range outs {
-		if isBucketVis[u.BucketID] {
+		if isAccountVis[u.AccountID] {
 			// Rather than create a discrete output for a change address, we
 			// should deduct the value of the output from the corresponding
 			// value in the input. To determine whether to do this, we'll use
 			// the following heuristics:
 			// 1. The output is paid to a change address.
-			// 2. There is a corresponding input for the same bucket and asset.
+			// 2. There is a corresponding input for the same account and asset.
 			// 3. The input's value is greater than the output.
 
 			if u.IsChange &&
-				res.insByB[u.BucketID] != nil &&
-				res.insByB[u.BucketID][u.AssetID] > int64(u.Amount) {
-				res.insByB[u.BucketID][u.AssetID] -= int64(u.Amount)
+				res.insByAccount[u.AccountID] != nil &&
+				res.insByAccount[u.AccountID][u.AssetID] > int64(u.Amount) {
+				res.insByAccount[u.AccountID][u.AssetID] -= int64(u.Amount)
 			} else {
-				if res.outsByB[u.BucketID] == nil {
-					res.outsByB[u.BucketID] = make(map[string]int64)
+				if res.outsByAccount[u.AccountID] == nil {
+					res.outsByAccount[u.AccountID] = make(map[string]int64)
 				}
-				res.outsByB[u.BucketID][u.AssetID] += int64(u.Amount)
+				res.outsByAccount[u.AccountID][u.AssetID] += int64(u.Amount)
 			}
 		} else {
-			if res.outsByA[u.Addr] == nil {
-				res.outsByA[u.Addr] = make(map[string]int64)
+			if res.outsByAsset[u.Addr] == nil {
+				res.outsByAsset[u.Addr] = make(map[string]int64)
 			}
-			res.outsByA[u.Addr][u.AssetID] += int64(u.Amount)
+			res.outsByAsset[u.Addr][u.AssetID] += int64(u.Amount)
 		}
 	}
 
@@ -508,14 +508,14 @@ func coalesceActivity(ins, outs []*UTXO, visibleBuckets []string) txRawActivity 
 }
 
 // createActEntries takes coalesced activity entries and replaces address IDs
-// with addresses, and attaches asset and bucket labels. It ensures the result
+// with addresses, and attaches asset and account labels. It ensures the result
 // is sorted in a consistent order.
 func createActEntries(
 	r txRawActivity,
 	assetLabels map[string]string,
-	bucketLabels map[string]string,
+	accountLabels map[string]string,
 ) (ins, outs []actEntry) {
-	for addr, assetAmts := range r.insByA {
+	for addr, assetAmts := range r.insByAsset {
 		for assetID, amt := range assetAmts {
 			ins = append(ins, actEntry{
 				Address:    addr,
@@ -526,19 +526,19 @@ func createActEntries(
 		}
 	}
 
-	for bucketID, assetAmts := range r.insByB {
+	for accountID, assetAmts := range r.insByAccount {
 		for assetID, amt := range assetAmts {
 			ins = append(ins, actEntry{
-				BucketID:    bucketID,
-				BucketLabel: bucketLabels[bucketID],
-				AssetID:     assetID,
-				AssetLabel:  assetLabels[assetID],
-				Amount:      amt,
+				AccountID:    accountID,
+				AccountLabel: accountLabels[accountID],
+				AssetID:      assetID,
+				AssetLabel:   assetLabels[assetID],
+				Amount:       amt,
 			})
 		}
 	}
 
-	for addr, assetAmts := range r.outsByA {
+	for addr, assetAmts := range r.outsByAsset {
 		for assetID, amt := range assetAmts {
 			outs = append(outs, actEntry{
 				Address:    addr,
@@ -549,14 +549,14 @@ func createActEntries(
 		}
 	}
 
-	for bucketID, assetAmts := range r.outsByB {
+	for accountID, assetAmts := range r.outsByAccount {
 		for assetID, amt := range assetAmts {
 			outs = append(outs, actEntry{
-				BucketID:    bucketID,
-				BucketLabel: bucketLabels[bucketID],
-				AssetID:     assetID,
-				AssetLabel:  assetLabels[assetID],
-				Amount:      amt,
+				AccountID:    accountID,
+				AccountLabel: accountLabels[accountID],
+				AssetID:      assetID,
+				AssetLabel:   assetLabels[assetID],
+				Amount:       amt,
 			})
 		}
 	}
@@ -602,7 +602,7 @@ func serializeActvity(txHash string, txTime time.Time, ins, outs []actEntry) ([]
 	})
 }
 
-func writeManagerNodeActivity(ctx context.Context, managerNodeID, txHash string, data []byte, bucketIDs []string) error {
+func writeManagerNodeActivity(ctx context.Context, managerNodeID, txHash string, data []byte, accountIDs []string) error {
 	aq := `
 		INSERT INTO activity (manager_node_id, txid, data)
 		VALUES ($1, $2, $3)
@@ -614,13 +614,13 @@ func writeManagerNodeActivity(ctx context.Context, managerNodeID, txHash string,
 		return errors.Wrap(err, "insert activity")
 	}
 
-	bucketq := `
+	accountq := `
 		INSERT INTO activity_accounts (activity_id, account_id)
 		VALUES ($1, unnest($2::text[]))
 	`
-	_, err = pg.FromContext(ctx).Exec(bucketq, id, pg.Strings(bucketIDs))
+	_, err = pg.FromContext(ctx).Exec(accountq, id, pg.Strings(accountIDs))
 	if err != nil {
-		return errors.Wrap(err, "insert activity for bucket")
+		return errors.Wrap(err, "insert activity for account")
 	}
 
 	return nil

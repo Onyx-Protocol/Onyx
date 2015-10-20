@@ -74,11 +74,11 @@ func buildAuthz(ctx context.Context, reqs ...buildReq) error {
 	var accountIDs []string
 	for _, req := range reqs {
 		for _, input := range req.Inputs {
-			accountIDs = append(accountIDs, input.BucketID)
+			accountIDs = append(accountIDs, input.AccountID)
 		}
 		for _, output := range req.Outputs {
-			if output.BucketID != "" {
-				accountIDs = append(accountIDs, output.BucketID)
+			if output.AccountID != "" {
+				accountIDs = append(accountIDs, output.AccountID)
 			}
 		}
 	}

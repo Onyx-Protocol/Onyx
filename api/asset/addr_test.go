@@ -28,17 +28,17 @@ func TestCreateAddress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	bucket, err := appdb.CreateBucket(ctx, managerNode.ID, "foo")
+	account, err := appdb.CreateAccount(ctx, managerNode.ID, "foo")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	exp := t0.Add(5 * time.Minute)
 	addr := &appdb.Address{
-		BucketID: bucket.ID,
-		Amount:   100,
-		Expires:  exp,
-		IsChange: false,
+		AccountID: account.ID,
+		Amount:    100,
+		Expires:   exp,
+		IsChange:  false,
 	}
 
 	err = CreateAddress(ctx, addr, true)
@@ -47,13 +47,13 @@ func TestCreateAddress(t *testing.T) {
 	}
 
 	want := &appdb.Address{
-		BucketID:         bucket.ID,
+		AccountID:        account.ID,
 		Amount:           100,
 		Expires:          exp,
 		IsChange:         false,
 		ManagerNodeID:    managerNode.ID,
 		ManagerNodeIndex: []uint32{0, 1},
-		BucketIndex:      []uint32{0, 0},
+		AccountIndex:     []uint32{0, 0},
 		Index:            []uint32{0, 1},
 		SigsRequired:     1,
 		Keys:             []*hdkey.XKey{dummyXPub},

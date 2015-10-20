@@ -15,16 +15,16 @@ import (
 )
 
 var (
-	// ErrInsufficient indicates the bucket doesn't contain enough
+	// ErrInsufficient indicates the account doesn't contain enough
 	// units of the requested asset to satisfy the reservation.
-	// New units must be deposited into the bucket in order to
+	// New units must be deposited into the account in order to
 	// satisfy the request; change will not be sufficient.
 	ErrInsufficient = errors.New("reservation found insufficient funds")
 
 	// ErrReserved indicates that a reservation could not be
 	// satisfied because some of the outputs were already reserved.
 	// When those reservations are finalized into a transaction
-	// (and no other transaction spends funds from the bucket),
+	// (and no other transaction spends funds from the account),
 	// new change outputs will be created
 	// in sufficient amounts to satisfy the request.
 	ErrReserved = errors.New("reservation found outputs already reserved")
@@ -38,10 +38,10 @@ type (
 		tab map[key]*pool
 	}
 
-	key struct{ BucketID, AssetID string }
+	key struct{ AccountID, AssetID string }
 
 	// TODO(kr): see if we can avoid storing
-	// BucketID and AssetID in UTXO
+	// AccountID and AssetID in UTXO
 
 	// TODO(kr): try interning strings in UTXO
 
@@ -49,9 +49,9 @@ type (
 		// Size of this struct matters.
 		// We keep lots of them in memory.
 
-		BucketID string
-		AssetID  string
-		Amount   uint64
+		AccountID string
+		AssetID   string
+		Amount    uint64
 
 		ResvExpires time.Time
 		heapIndex   int
@@ -63,7 +63,7 @@ type (
 
 	Receiver struct {
 		ManagerNodeID string   `json:"manager_node_id"`
-		BucketID      string   `json:"account_id"`
+		AccountID     string   `json:"account_id"`
 		AddrIndex     []uint32 `json:"address_index"`
 		IsChange      bool     `json:"is_change"`
 	}
@@ -76,17 +76,17 @@ type (
 	}
 
 	Input struct {
-		AssetID  string `json:"asset_id"`
-		BucketID string `json:"account_id"`
-		TxID     string `json:"transaction_id"`
-		Amount   uint64
+		AssetID   string `json:"asset_id"`
+		AccountID string `json:"account_id"`
+		TxID      string `json:"transaction_id"`
+		Amount    uint64
 	}
 
 	DB interface {
 		// LoadUTXOs loads the set of UTXOs
 		// available to reserve
-		// for the given asset in the given bucket.
-		LoadUTXOs(ctx context.Context, bucketID, assetID string) ([]*UTXO, error)
+		// for the given asset in the given account.
+		LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*UTXO, error)
 
 		// SaveReservations stores the reservation expiration
 		// time in the database for the given UTXOs.
@@ -106,12 +106,12 @@ func New(db DB) *Reserver {
 	}
 }
 
-// pool returns the pool for the given bucket and asset,
+// pool returns the pool for the given account and asset,
 // creating it if necessary.
-func (rs *Reserver) pool(bucketID, assetID string) *pool {
+func (rs *Reserver) pool(accountID, assetID string) *pool {
 	rs.mu.Lock()
 	defer rs.mu.Unlock()
-	k := key{bucketID, assetID}
+	k := key{accountID, assetID}
 	p, ok := rs.tab[k]
 	if !ok {
 		p = new(pool)
@@ -138,8 +138,8 @@ func (rs *Reserver) Reserve(ctx context.Context, inputs []Input, ttl time.Durati
 
 	sort.Sort(byKey(inputs))
 	for _, in := range inputs {
-		p := rs.pool(in.BucketID, in.AssetID)
-		err := p.init(ctx, rs.db, key{in.BucketID, in.AssetID})
+		p := rs.pool(in.AccountID, in.AssetID)
+		err := p.init(ctx, rs.db, key{in.AccountID, in.AssetID})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -188,7 +188,7 @@ func (rs *Reserver) Apply(ctx context.Context, tx *bc.Tx, outRecs []*Receiver) e
 // of pools in rs to find the UTXO that reserves op.
 // If there is no such reservation, it returns nil.
 func (rs *Reserver) findReservation(op bc.Outpoint) *UTXO {
-	// TODO(kr): augment the SDK to include bucket ID and asset ID
+	// TODO(kr): augment the SDK to include account ID and asset ID
 	// for each reservation, so we can do this lookup faster.
 	defer metrics.RecordElapsed(time.Now())
 	var keys []key
@@ -199,7 +199,7 @@ func (rs *Reserver) findReservation(op bc.Outpoint) *UTXO {
 	rs.mu.Unlock()
 
 	for _, k := range keys {
-		p := rs.pool(k.BucketID, k.AssetID)
+		p := rs.pool(k.AccountID, k.AssetID)
 		if u := p.findReservation(op); u != nil {
 			return u
 		}
@@ -215,7 +215,7 @@ func (rs *Reserver) findReservation(op bc.Outpoint) *UTXO {
 func (rs *Reserver) mappool(utxos []*UTXO, f func(*pool, *UTXO)) {
 	var prev *pool
 	for _, u := range utxos {
-		p := rs.pool(u.BucketID, u.AssetID)
+		p := rs.pool(u.AccountID, u.AssetID)
 		if p != prev {
 			p.mu.Lock()
 			if prev != nil {

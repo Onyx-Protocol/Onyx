@@ -87,13 +87,13 @@ func TestOutputPKScript(t *testing.T) {
 		INSERT INTO rotations (id, manager_node_id, keyset)
 			VALUES('rot1', 'mn1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 		INSERT INTO accounts (id, manager_node_id, key_index)
-			VALUES('b1', 'mn1', 0);
+			VALUES('acc1', 'mn1', 0);
 	`)
 	defer dbtx.Rollback()
 
-	// Test bucket output pk script (address creation)
+	// Test account output pk script (address creation)
 	var (
-		out = &Output{BucketID: "b1"}
+		out = &Output{AccountID: "acc1"}
 		ctx = pg.NewContext(context.Background(), dbtx)
 	)
 	got, _, err := out.PKScript(ctx)
@@ -135,13 +135,13 @@ func TestPKScriptChangeAddr(t *testing.T) {
 		INSERT INTO rotations (id, manager_node_id, keyset)
 			VALUES('rot1', 'mn1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 		INSERT INTO accounts (id, manager_node_id, key_index)
-			VALUES('b1', 'mn1', 0);
+			VALUES('acc1', 'mn1', 0);
 	`)
 	defer dbtx.Rollback()
 
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	out := &Output{BucketID: "b1", isChange: true}
+	out := &Output{AccountID: "acc1", isChange: true}
 	_, recv, err := out.PKScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))

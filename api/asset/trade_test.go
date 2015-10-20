@@ -21,16 +21,16 @@ func TestTrade(t *testing.T) {
 		INSERT INTO rotations (id, manager_node_id, keyset)
 			VALUES('rot1', 'mn1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 		INSERT INTO accounts (id, manager_node_id, key_index, next_address_index)
-			VALUES('b1', 'mn1', 0, 1);
+			VALUES('acc1', 'mn1', 0, 1);
 		INSERT INTO accounts (id, manager_node_id, key_index, next_address_index)
-			VALUES('b2', 'mn1', 1, 1);
+			VALUES('acc2', 'mn1', 1, 1);
 		INSERT INTO addresses (id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script)
-			VALUES('a2', 'mn1', 'b2', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a2', '', '');
+			VALUES('a2', 'mn1', 'acc2', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a2', '', '');
 		INSERT INTO utxos
 			(txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
 		VALUES
-			('1000000000000000000000000000000000000000000000000000000000000000', 0, 'fe00000000000000000000000000000000000000000000000000000000000000', 5, 1, 'b1', 'mn1'),
-			('2000000000000000000000000000000000000000000000000000000000000000', 0, 'ff00000000000000000000000000000000000000000000000000000000000000', 2, 0, 'b2', 'mn1');
+			('1000000000000000000000000000000000000000000000000000000000000000', 0, 'fe00000000000000000000000000000000000000000000000000000000000000', 5, 1, 'acc1', 'mn1'),
+			('2000000000000000000000000000000000000000000000000000000000000000', 0, 'ff00000000000000000000000000000000000000000000000000000000000000', 2, 0, 'acc2', 'mn1');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
@@ -47,9 +47,9 @@ func TestTrade(t *testing.T) {
 		BlockChain: "sandbox",
 	}
 	inputs := []utxodb.Input{{
-		BucketID: "b2",
-		AssetID:  "ff00000000000000000000000000000000000000000000000000000000000000",
-		Amount:   2,
+		AccountID: "acc2",
+		AssetID:   "ff00000000000000000000000000000000000000000000000000000000000000",
+		Amount:    2,
 	}}
 	outputs := []*Output{{
 		Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK",

@@ -35,7 +35,7 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 	}
 
 	for i, out := range outs {
-		if (out.BucketID == "") == (out.Address == "") {
+		if (out.AccountID == "") == (out.Address == "") {
 			return nil, errors.WithDetailf(ErrBadOutDest, "output index=%d", i)
 		}
 	}
@@ -57,25 +57,25 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 // Output is a user input struct that describes
 // the destination of a transaction's inputs.
 type Output struct {
-	AssetID  string `json:"asset_id"`
-	Address  string `json:"address"`
-	BucketID string `json:"account_id"`
-	Amount   uint64 `json:"amount"`
-	isChange bool
+	AssetID   string `json:"asset_id"`
+	Address   string `json:"address"`
+	AccountID string `json:"account_id"`
+	Amount    uint64 `json:"amount"`
+	isChange  bool
 }
 
 // PKScript returns the script for sending to
-// the destination address or bucket id provided.
+// the destination address or account id provided.
 // For an Address-type output, the returned *utxodb.Receiver is nil.
 func (o *Output) PKScript(ctx context.Context) ([]byte, *utxodb.Receiver, error) {
-	if o.BucketID != "" {
+	if o.AccountID != "" {
 		addr := &appdb.Address{
-			BucketID: o.BucketID,
-			IsChange: o.isChange,
+			AccountID: o.AccountID,
+			IsChange:  o.isChange,
 		}
 		err := CreateAddress(ctx, addr, false)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "output create address error bucket=%v", o.BucketID)
+			return nil, nil, errors.Wrapf(err, "output create address error account=%v", o.AccountID)
 		}
 		return addr.PKScript, newOutputReceiver(addr, o.isChange), nil
 	}
@@ -103,7 +103,7 @@ func addAssetIssuanceOutputs(ctx context.Context, tx *bc.Tx, asset *appdb.Asset,
 func newOutputReceiver(addr *appdb.Address, isChange bool) *utxodb.Receiver {
 	return &utxodb.Receiver{
 		ManagerNodeID: addr.ManagerNodeID,
-		BucketID:      addr.BucketID,
+		AccountID:     addr.AccountID,
 		AddrIndex:     addr.Index,
 		IsChange:      isChange,
 	}

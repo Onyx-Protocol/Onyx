@@ -20,7 +20,7 @@ var ErrPastExpires = errors.New("expires in the past")
 
 // CreateAddress uses appdb to allocate an address index for addr
 // and insert it into the database.
-// Fields BucketID, Amount, Expires, and IsChange must be set;
+// Fields AccountID, Amount, Expires, and IsChange must be set;
 // all other fields will be initialized by CreateAddress.
 // If save is false, it will skip saving the address;
 // in that case ID will remain unset.
@@ -33,7 +33,7 @@ func CreateAddress(ctx context.Context, addr *appdb.Address, save bool) error {
 		return errors.WithDetailf(ErrPastExpires, "%s ago", time.Since(addr.Expires))
 	}
 
-	err := addr.LoadNextIndex(ctx) // get most fields from the db given BucketID
+	err := addr.LoadNextIndex(ctx) // get most fields from the db given AccountID
 	if err != nil {
 		return errors.Wrap(err, "load")
 	}

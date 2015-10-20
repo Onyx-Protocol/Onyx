@@ -83,12 +83,12 @@ func newTestManagerNode(t *testing.T, ctx context.Context, project *Project, lab
 	return managerNode
 }
 
-func newTestAccount(t *testing.T, ctx context.Context, managerNode *ManagerNode, label string) *Bucket {
+func newTestAccount(t *testing.T, ctx context.Context, managerNode *ManagerNode, label string) *Account {
 	ensureInTransaction(ctx)
 	if managerNode == nil {
 		managerNode = newTestManagerNode(t, ctx, nil, "manager-node-1")
 	}
-	account, err := CreateBucket(ctx, managerNode.ID, label)
+	account, err := CreateAccount(ctx, managerNode.ID, label)
 	if err != nil {
 		t.Fatalf("could not create account in newTestAccount: %v", err)
 	}
