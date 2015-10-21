@@ -72,6 +72,7 @@ func build(ctx context.Context, buildReqs []buildReq) (interface{}, error) {
 			defer wg.Done()
 			resp, err := buildSingle(ctx, buildReqs[i])
 			if err != nil {
+				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)
 			} else {
 				responses[i] = resp
@@ -134,6 +135,7 @@ func submit(ctx context.Context, x struct{ Transactions []*asset.Tx }) interface
 		go func(i int) {
 			resp, err := submitSingle(ctx, x.Transactions[i])
 			if err != nil {
+				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)
 			} else {
 				responses[i] = resp
