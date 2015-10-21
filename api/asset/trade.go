@@ -39,6 +39,7 @@ func combine(txs ...*Tx) (*Tx, error) {
 		}
 
 		complete.Inputs = append(complete.Inputs, tx.Inputs...)
+		complete.OutRecvs = append(complete.OutRecvs, tx.OutRecvs...)
 
 		for _, txin := range tx.Unsigned.Inputs {
 			completeWire.Inputs = append(completeWire.Inputs, txin)

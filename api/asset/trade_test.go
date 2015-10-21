@@ -102,12 +102,14 @@ func TestCombine(t *testing.T) {
 	tpl1 := &Tx{
 		Unsigned:   unsigned1,
 		Inputs:     []*Input{{ManagerNodeID: "mn1"}},
+		OutRecvs:   []*utxodb.Receiver{{ManagerNodeID: "mn1"}},
 		BlockChain: "sandbox",
 	}
 
 	tpl2 := &Tx{
 		Unsigned:   unsigned2,
 		Inputs:     []*Input{{ManagerNodeID: "mn2"}},
+		OutRecvs:   []*utxodb.Receiver{{ManagerNodeID: "mn2"}},
 		BlockChain: "sandbox",
 	}
 
@@ -120,6 +122,7 @@ func TestCombine(t *testing.T) {
 	want := &Tx{
 		Unsigned:   combined,
 		Inputs:     []*Input{{ManagerNodeID: "mn1"}, {ManagerNodeID: "mn2"}},
+		OutRecvs:   []*utxodb.Receiver{{ManagerNodeID: "mn1"}, {ManagerNodeID: "mn2"}},
 		BlockChain: "sandbox",
 	}
 
