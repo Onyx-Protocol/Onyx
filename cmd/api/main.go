@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 	"time"
 
 	"github.com/kr/env"
@@ -15,6 +16,8 @@ import (
 	"chain/api"
 	"chain/api/appdb"
 	"chain/database/pg"
+	chainlog "chain/log"
+	"chain/log/rotation"
 	"chain/metrics"
 	"chain/metrics/librato"
 	chainhttp "chain/net/http"
@@ -30,6 +33,9 @@ var (
 	stack        = env.String("STACK", "sandbox")
 	samplePer    = env.Duration("SAMPLEPER", 10*time.Second)
 	nouserSecret = env.String("NOUSER_SECRET", "")
+	logFile      = os.Getenv("LOGFILE")
+	logSize      = env.Int("LOGSIZE", 5e6) // 5MB
+	logCount     = env.Int("LOGCOUNT", 9)
 	// for config var LIBRATO_URL, see func init below
 
 	// build vars; initialized by the linker
@@ -51,6 +57,10 @@ func main() {
 	sql.Register("schemadb", pg.SchemaDriver(buildTag))
 	log.SetPrefix("api-" + buildTag + ": ")
 	log.SetFlags(log.Lshortfile)
+	if logFile != "" {
+		log.SetOutput(rotation.Create(logFile+".stdlib", *logSize, *logCount))
+		chainlog.SetOutput(rotation.Create(logFile, *logSize, *logCount))
+	}
 	env.Parse()
 
 	if librato.URL.Host != "" {
