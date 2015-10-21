@@ -25,7 +25,7 @@ const (
 )
 
 // CreateNodeReq is a user filled struct
-// passed into CreateManagerNode or CreateAssetGroup
+// passed into CreateManagerNode or CreateIssuerNode
 type CreateNodeReq struct {
 	Label       string
 	XPubs       []string
@@ -74,7 +74,7 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 	if node == ManagerNode {
 		return appdb.InsertManagerNode(ctx, projID, req.Label, keys, gennedKeys)
 	}
-	return appdb.InsertAssetGroup(ctx, projID, req.Label, keys, gennedKeys)
+	return appdb.InsertIssuerNode(ctx, projID, req.Label, keys, gennedKeys)
 }
 
 func newKey() (pub, priv *hdkey.XKey, err error) {

@@ -48,15 +48,15 @@ const writeActivityFix = `
 	INSERT INTO issuer_nodes
 		(id, project_id, key_index, label, keyset)
 	VALUES
-		('ag-id-0', 'proj-id-0', 0, 'ag-0', '{}'),
-		('ag-id-1', 'proj-id-0', 1, 'ag-1', '{}');
+		('in-id-0', 'proj-id-0', 0, 'in-0', '{}'),
+		('in-id-1', 'proj-id-0', 1, 'in-1', '{}');
 
 	INSERT INTO assets
 		(id, issuer_node_id, key_index, redeem_script, label)
 	VALUES
-		('asset-id-0', 'ag-id-0', 0, '{}', 'asset-0'),
-		('asset-id-1', 'ag-id-0', 1, '{}', 'asset-1'),
-		('asset-id-2', 'ag-id-1', 0, '{}', 'asset-2');
+		('asset-id-0', 'in-id-0', 0, '{}', 'asset-0'),
+		('asset-id-1', 'in-id-0', 1, '{}', 'asset-1'),
+		('asset-id-2', 'in-id-1', 0, '{}', 'asset-2');
 
 	INSERT INTO rotations
 		(id, manager_node_id, keyset)
@@ -192,25 +192,25 @@ func TestAccountActivityLimit(t *testing.T) {
 	}
 }
 
-func TestAssetGroupActivity(t *testing.T) {
+func TestIssuerNodeActivity(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, writeActivityFix, `
 		INSERT INTO issuance_activity
 			(id, issuer_node_id, data, txid)
 		VALUES
-			('ia-id-0', 'ag-id-0', '{"transaction_id": "tx-id-0"}', 'tx-id-0'),
-			('ia-id-1', 'ag-id-1', '{"transaction_id": "tx-id-1"}', 'tx-id-1'),
-			('ia-id-2', 'ag-id-0', '{"transaction_id": "tx-id-2"}', 'tx-id-2');
+			('ia-id-0', 'in-id-0', '{"transaction_id": "tx-id-0"}', 'tx-id-0'),
+			('ia-id-1', 'in-id-1', '{"transaction_id": "tx-id-1"}', 'tx-id-1'),
+			('ia-id-2', 'in-id-0', '{"transaction_id": "tx-id-2"}', 'tx-id-2');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	examples := []struct {
-		agID     string
+		inodeID  string
 		wantAct  []*json.RawMessage
 		wantLast string
 	}{
 		{
-			"ag-id-0",
+			"in-id-0",
 			stringsToRawJSON(
 				`{"transaction_id": "tx-id-2"}`,
 				`{"transaction_id": "tx-id-0"}`,
@@ -218,7 +218,7 @@ func TestAssetGroupActivity(t *testing.T) {
 			"ia-id-0",
 		},
 		{
-			"ag-id-1",
+			"in-id-1",
 			stringsToRawJSON(
 				`{"transaction_id": "tx-id-1"}`,
 			),
@@ -227,9 +227,9 @@ func TestAssetGroupActivity(t *testing.T) {
 	}
 
 	for _, ex := range examples {
-		t.Log("Example", ex.agID)
+		t.Log("Example", ex.inodeID)
 
-		gotAct, gotLast, err := AssetGroupActivity(ctx, ex.agID, "", 50)
+		gotAct, gotLast, err := IssuerNodeActivity(ctx, ex.inodeID, "", 50)
 		if err != nil {
 			t.Fatal("unexpected error", err)
 		}
@@ -249,9 +249,9 @@ func TestAssetActivity(t *testing.T) {
 		INSERT INTO issuance_activity
 			(id, issuer_node_id, data, txid)
 		VALUES
-			('ia-id-0', 'ag-id-0', '{"transaction_id": "tx-id-0"}', 'tx-id-0'),
-			('ia-id-1', 'ag-id-1', '{"transaction_id": "tx-id-1"}', 'tx-id-1'),
-			('ia-id-2', 'ag-id-0', '{"transaction_id": "tx-id-2"}', 'tx-id-2');
+			('ia-id-0', 'in-id-0', '{"transaction_id": "tx-id-0"}', 'tx-id-0'),
+			('ia-id-1', 'in-id-1', '{"transaction_id": "tx-id-1"}', 'tx-id-1'),
+			('ia-id-2', 'in-id-0', '{"transaction_id": "tx-id-2"}', 'tx-id-2');
 
 		INSERT INTO issuance_activity_assets
 			(issuance_activity_id, asset_id)
@@ -401,7 +401,7 @@ func TestWriteActivity(t *testing.T) {
 			},
 			wantAccounts: []string{"account-id-0", "account-id-2"},
 			wantIssuanceActivity: map[string]actItem{
-				"ag-id-0": actItem{
+				"in-id-0": actItem{
 					TxHash: "9cb6150ade7117fd27bed7ae03ee54716afdde976a654e932baacea225f65b9e",
 					Time:   txTime,
 					Inputs: []actEntry{},
@@ -631,14 +631,14 @@ func TestGetActAssets(t *testing.T) {
 		{
 			[]string{"asset-id-0", "asset-id-2"},
 			[]*actAsset{
-				{id: "asset-id-0", label: "asset-0", agID: "ag-id-0", projID: "proj-id-0"},
-				{id: "asset-id-2", label: "asset-2", agID: "ag-id-1", projID: "proj-id-0"},
+				{id: "asset-id-0", label: "asset-0", inID: "in-id-0", projID: "proj-id-0"},
+				{id: "asset-id-2", label: "asset-2", inID: "in-id-1", projID: "proj-id-0"},
 			},
 		},
 		{
 			[]string{"asset-id-1"},
 			[]*actAsset{
-				{id: "asset-id-1", label: "asset-1", agID: "ag-id-0", projID: "proj-id-0"},
+				{id: "asset-id-1", label: "asset-1", inID: "in-id-0", projID: "proj-id-0"},
 			},
 		},
 	}
@@ -956,7 +956,7 @@ func TestWriteIssuanceActivity(t *testing.T) {
 
 	err := writeIssuanceActivity(
 		ctx,
-		&actAsset{id: "asset-id-0", agID: "ag-id-0"},
+		&actAsset{id: "asset-id-0", inID: "in-id-0"},
 		"tx-hash",
 		[]byte(`{"transaction_id": "dummy"}`),
 	)
@@ -969,7 +969,7 @@ func TestWriteIssuanceActivity(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	wantAct := map[string]actItem{"ag-id-0": actItem{TxHash: "dummy"}}
+	wantAct := map[string]actItem{"in-id-0": actItem{TxHash: "dummy"}}
 	if !reflect.DeepEqual(gotAct, wantAct) {
 		t.Errorf("activity rows:\ngot:  %v\nwant: %v", gotAct, wantAct)
 	}

@@ -12,9 +12,9 @@ import (
 	"chain/metrics"
 )
 
-// AssetGroup represents a single asset group. It is intended to be used wth API
+// IssuerNode represents a single issuer ndoe. It is intended to be used wth API
 // responses.
-type AssetGroup struct {
+type IssuerNode struct {
 	ID          string        `json:"id"`
 	Blockchain  string        `json:"block_chain"`
 	Label       string        `json:"label"`
@@ -23,8 +23,8 @@ type AssetGroup struct {
 	PrivateKeys []*hdkey.XKey `json:"private_keys,omitempty"`
 }
 
-// InsertAssetGroup adds the asset group to the database
-func InsertAssetGroup(ctx context.Context, projID, label string, keys, gennedKeys []*hdkey.XKey) (*AssetGroup, error) {
+// InsertIssuerNode adds the issuer node to the database
+func InsertIssuerNode(ctx context.Context, projID, label string, keys, gennedKeys []*hdkey.XKey) (*IssuerNode, error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 
 	const q = `
@@ -40,10 +40,10 @@ func InsertAssetGroup(ctx context.Context, projID, label string, keys, gennedKey
 		pg.Strings(keysToStrings(gennedKeys)),
 	).Scan(&id)
 	if err != nil {
-		return nil, errors.Wrap(err, "insert asset group")
+		return nil, errors.Wrap(err, "insert issuer node")
 	}
 
-	return &AssetGroup{
+	return &IssuerNode{
 		ID:          id,
 		Blockchain:  "sandbox",
 		Label:       label,
@@ -55,10 +55,10 @@ func InsertAssetGroup(ctx context.Context, projID, label string, keys, gennedKey
 
 // NextAsset returns all data needed
 // for creating a new asset. This includes
-// all keys, the asset group index, a
+// all keys, the issuer node index, a
 // new index for the asset being created,
 // and the number of signatures required.
-func NextAsset(ctx context.Context, agID string) (asset *Asset, sigsRequired int, err error) {
+func NextAsset(ctx context.Context, inodeID string) (asset *Asset, sigsRequired int, err error) {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
 		UPDATE issuer_nodes
@@ -70,14 +70,14 @@ func NextAsset(ctx context.Context, agID string) (asset *Asset, sigsRequired int
 			key_index(next_asset_index-1),
 			sigs_required
 	`
-	asset = &Asset{GroupID: agID}
+	asset = &Asset{IssuerNodeID: inodeID}
 	var (
 		xpubs   []string
 		sigsReq int
 	)
-	err = pg.FromContext(ctx).QueryRow(q, agID).Scan(
+	err = pg.FromContext(ctx).QueryRow(q, inodeID).Scan(
 		(*pg.Strings)(&xpubs),
-		(*pg.Uint32s)(&asset.AGIndex),
+		(*pg.Uint32s)(&asset.INIndex),
 		(*pg.Uint32s)(&asset.AIndex),
 		&sigsReq,
 	)
@@ -85,7 +85,7 @@ func NextAsset(ctx context.Context, agID string) (asset *Asset, sigsRequired int
 		err = pg.ErrUserInputNotFound
 	}
 	if err != nil {
-		return nil, 0, errors.WithDetailf(err, "asset group %v: get key info", agID)
+		return nil, 0, errors.WithDetailf(err, "issuer node %v: get key info", inodeID)
 	}
 
 	asset.Keys, err = stringsToKeys(xpubs)
@@ -96,9 +96,9 @@ func NextAsset(ctx context.Context, agID string) (asset *Asset, sigsRequired int
 	return asset, sigsReq, nil
 }
 
-// ListAssetGroups returns a list of AssetGroups belonging to the given
+// ListIssuerNodes returns a list of issuer nodes belonging to the given
 // project.
-func ListAssetGroups(ctx context.Context, projID string) ([]*AssetGroup, error) {
+func ListIssuerNodes(ctx context.Context, projID string) ([]*IssuerNode, error) {
 	q := `
 		SELECT id, block_chain, label
 		FROM issuer_nodes
@@ -111,25 +111,25 @@ func ListAssetGroups(ctx context.Context, projID string) ([]*AssetGroup, error) 
 	}
 	defer rows.Close()
 
-	var ags []*AssetGroup
+	var inodes []*IssuerNode
 	for rows.Next() {
-		ag := new(AssetGroup)
-		err := rows.Scan(&ag.ID, &ag.Blockchain, &ag.Label)
+		inode := new(IssuerNode)
+		err := rows.Scan(&inode.ID, &inode.Blockchain, &inode.Label)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
-		ags = append(ags, ag)
+		inodes = append(inodes, inode)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrap(err, "end row scan loop")
 	}
 
-	return ags, nil
+	return inodes, nil
 }
 
-// GetAssetGroup returns basic information about a single asset group.
-func GetAssetGroup(ctx context.Context, groupID string) (*AssetGroup, error) {
+// GetIssuerNode returns basic information about a single issuer node.
+func GetIssuerNode(ctx context.Context, groupID string) (*IssuerNode, error) {
 	var (
 		q       = `SELECT label, block_chain, generated_keys FROM issuer_nodes WHERE id = $1`
 		label   string
@@ -138,7 +138,7 @@ func GetAssetGroup(ctx context.Context, groupID string) (*AssetGroup, error) {
 	)
 	err := pg.FromContext(ctx).QueryRow(q, groupID).Scan(&label, &bc, (*pg.Strings)(&keyStrs))
 	if err == sql.ErrNoRows {
-		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "asset group ID: %v", groupID)
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "issuer node ID: %v", groupID)
 	}
 	if err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ func GetAssetGroup(ctx context.Context, groupID string) (*AssetGroup, error) {
 		return nil, errors.Wrap(err, "parsing private keys")
 	}
 
-	return &AssetGroup{ID: groupID, Label: label, Blockchain: bc, PrivateKeys: keys}, nil
+	return &IssuerNode{ID: groupID, Label: label, Blockchain: bc, PrivateKeys: keys}, nil
 }
 
 // UpdateIssuerNode updates the label of an issuer node.

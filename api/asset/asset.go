@@ -113,7 +113,7 @@ func newOutputReceiver(addr *appdb.Address, isChange bool) *utxodb.Receiver {
 // to issue units of asset 'a'.
 func issuanceInput(a *appdb.Asset, tx *bc.Tx) *Input {
 	return &Input{
-		AssetGroupID:  a.GroupID,
+		IssuerNodeID:  a.IssuerNodeID,
 		RedeemScript:  a.RedeemScript,
 		SignatureData: tx.Hash(),
 		Sigs:          inputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a))),

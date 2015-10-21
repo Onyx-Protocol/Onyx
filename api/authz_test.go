@@ -130,24 +130,24 @@ func TestAccountAuthz(t *testing.T) {
 func TestIssuerAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
-			VALUES ('ag1', 'proj1', 'x', '{}'), ('ag2', 'proj2', 'x', '{}'), ('ag3', 'proj3', 'x', '{}');
+			VALUES ('in1', 'proj1', 'x', '{}'), ('in2', 'proj2', 'x', '{}'), ('in3', 'proj3', 'x', '{}');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
 	cases := []struct {
 		userID  string
-		groupID string
+		inodeID string
 		want    error
 	}{
-		{"u2", "ag1", nil}, {"u2", "ag2", nil}, {"u2", "ag3", errNoAccessToResource},
+		{"u2", "in1", nil}, {"u2", "in2", nil}, {"u2", "in3", errNoAccessToResource},
 	}
 
 	for _, c := range cases {
 		ctx := authn.NewContext(ctx, c.userID)
-		got := issuerAuthz(ctx, c.groupID)
+		got := issuerAuthz(ctx, c.inodeID)
 		if errors.Root(got) != c.want {
-			t.Errorf("issuerAuthz(%s, %v) = %q want %q", c.userID, c.groupID, got, c.want)
+			t.Errorf("issuerAuthz(%s, %v) = %q want %q", c.userID, c.inodeID, got, c.want)
 		}
 	}
 }
@@ -155,12 +155,12 @@ func TestIssuerAuthz(t *testing.T) {
 func TestAssetAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
-			VALUES ('ag1', 'proj1', 'x', '{}'), ('ag2', 'proj2', 'x', '{}'), ('ag3', 'proj3', 'x', '{}');
+			VALUES ('in1', 'proj1', 'x', '{}'), ('in2', 'proj2', 'x', '{}'), ('in3', 'proj3', 'x', '{}');
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label)
 		VALUES
-			('a1', 'ag1', 0, '', ''),
-			('a2', 'ag2', 0, '', ''),
-			('a3', 'ag3', 0, '', '');
+			('a1', 'in1', 0, '', ''),
+			('a2', 'in2', 0, '', ''),
+			('a3', 'in3', 0, '', '');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)

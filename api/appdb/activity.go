@@ -112,7 +112,7 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outs []*UTXO, txTime time.Tim
 
 		err = writeIssuanceActivity(ctx, actAssets[0], txHash, data)
 		if err != nil {
-			return errors.Wrap(err, "writing activity for asset group", actAssets[0].agID)
+			return errors.Wrap(err, "writing activity for issuer node", actAssets[0].inID)
 		}
 	}
 
@@ -154,13 +154,13 @@ func AccountActivity(ctx context.Context, accountID string, prev string, limit i
 	return activityItemsFromRows(rows)
 }
 
-func AssetGroupActivity(ctx context.Context, agID string, prev string, limit int) ([]*json.RawMessage, string, error) {
+func IssuerNodeActivity(ctx context.Context, inodeID string, prev string, limit int) ([]*json.RawMessage, string, error) {
 	q := `
 		SELECT id, data FROM issuance_activity
 		WHERE issuer_node_id = $1 AND (($2 = '') OR (id < $2))
 		ORDER BY id DESC LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(q, agID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(q, inodeID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "query")
 	}
@@ -239,7 +239,7 @@ type actAddr struct {
 type actAsset struct {
 	id     string
 	label  string
-	agID   string
+	inID   string
 	projID string
 }
 
@@ -401,7 +401,7 @@ func getActAssets(ctx context.Context, assetIDs []string) ([]*actAsset, error) {
 	var res []*actAsset
 	for rows.Next() {
 		a := new(actAsset)
-		err := rows.Scan(&a.id, &a.label, &a.agID, &a.projID)
+		err := rows.Scan(&a.id, &a.label, &a.inID, &a.projID)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
@@ -633,7 +633,7 @@ func writeIssuanceActivity(ctx context.Context, a *actAsset, txHash string, data
 		RETURNING id
 	`
 	var id string
-	err := pg.FromContext(ctx).QueryRow(iaq, a.agID, txHash, data).Scan(&id)
+	err := pg.FromContext(ctx).QueryRow(iaq, a.inID, txHash, data).Scan(&id)
 	if err != nil {
 		return errors.Wrap(err, "insert issuance activity")
 	}

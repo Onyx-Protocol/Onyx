@@ -13,12 +13,12 @@ import (
 func TestCreate(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
-		VALUES ('ag1', 'a1', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
+		VALUES ('in1', 'a1', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 	`)
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	asset, err := Create(ctx, "ag1", "fooAsset")
+	asset, err := Create(ctx, "in1", "fooAsset")
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}

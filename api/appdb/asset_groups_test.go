@@ -10,13 +10,13 @@ import (
 	"chain/errors"
 )
 
-func TestInsertAssetGroup(t *testing.T) {
+func TestInsertIssuerNode(t *testing.T) {
 	withContext(t, "", func(t *testing.T, ctx context.Context) {
 		_ = newTestIssuerNode(t, ctx, nil, "foo")
 	})
 }
 
-func TestListAssetGroups(t *testing.T) {
+func TestListIssuerNodes(t *testing.T) {
 	const sql = `
 		INSERT INTO projects (id, name) VALUES
 			('proj-id-0', 'proj-0'),
@@ -25,29 +25,29 @@ func TestListAssetGroups(t *testing.T) {
 		INSERT INTO issuer_nodes
 			(id, project_id, key_index, keyset, label, created_at)
 		VALUES
-			-- insert in reverse chronological order, to ensure that ListAssetGroups
+			-- insert in reverse chronological order, to ensure that ListIssuerNodes
 			-- is performing a sort.
-			('ag-id-0', 'proj-id-0', 0, '{}', 'ag-0', now()),
-			('ag-id-1', 'proj-id-0', 1, '{}', 'ag-1', now() - '1 day'::interval),
+			('in-id-0', 'proj-id-0', 0, '{}', 'in-0', now()),
+			('in-id-1', 'proj-id-0', 1, '{}', 'in-1', now() - '1 day'::interval),
 
-			('ag-id-2', 'proj-id-1', 2, '{}', 'ag-2', now());
+			('in-id-2', 'proj-id-1', 2, '{}', 'in-2', now());
 	`
 	withContext(t, sql, func(t *testing.T, ctx context.Context) {
 		examples := []struct {
 			projID string
-			want   []*AssetGroup
+			want   []*IssuerNode
 		}{
 			{
 				"proj-id-0",
-				[]*AssetGroup{
-					{ID: "ag-id-1", Blockchain: "sandbox", Label: "ag-1"},
-					{ID: "ag-id-0", Blockchain: "sandbox", Label: "ag-0"},
+				[]*IssuerNode{
+					{ID: "in-id-1", Blockchain: "sandbox", Label: "in-1"},
+					{ID: "in-id-0", Blockchain: "sandbox", Label: "in-0"},
 				},
 			},
 			{
 				"proj-id-1",
-				[]*AssetGroup{
-					{ID: "ag-id-2", Blockchain: "sandbox", Label: "ag-2"},
+				[]*IssuerNode{
+					{ID: "in-id-2", Blockchain: "sandbox", Label: "in-2"},
 				},
 			},
 		}
@@ -55,35 +55,35 @@ func TestListAssetGroups(t *testing.T) {
 		for _, ex := range examples {
 			t.Log("Example:", ex.projID)
 
-			got, err := ListAssetGroups(ctx, ex.projID)
+			got, err := ListIssuerNodes(ctx, ex.projID)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			if !reflect.DeepEqual(got, ex.want) {
-				t.Errorf("asset groups:\ngot:  %v\nwant: %v", got, ex.want)
+				t.Errorf("issuer nodes:\ngot:  %v\nwant: %v", got, ex.want)
 			}
 		}
 	})
 }
 
-func TestGetAssetGroup(t *testing.T) {
+func TestGetIssuerNodes(t *testing.T) {
 	const sql = `
 		INSERT INTO projects (id, name) VALUES
 			('proj-id-0', 'proj-0');
 
 		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label) VALUES
-			('ag-id-0', 'proj-id-0', 0, '{}', 'ag-0');
+			('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
 	`
 	withContext(t, sql, func(t *testing.T, ctx context.Context) {
 		examples := []struct {
 			id      string
-			want    *AssetGroup
+			want    *IssuerNode
 			wantErr error
 		}{
 			{
-				"ag-id-0",
-				&AssetGroup{ID: "ag-id-0", Label: "ag-0", Blockchain: "sandbox"},
+				"in-id-0",
+				&IssuerNode{ID: "in-id-0", Label: "in-0", Blockchain: "sandbox"},
 				nil,
 			},
 			{
@@ -96,14 +96,14 @@ func TestGetAssetGroup(t *testing.T) {
 		for _, ex := range examples {
 			t.Log("Example:", ex.id)
 
-			got, gotErr := GetAssetGroup(ctx, ex.id)
+			got, gotErr := GetIssuerNode(ctx, ex.id)
 
 			if !reflect.DeepEqual(got, ex.want) {
-				t.Errorf("asset group:\ngot:  %v\nwant: %v", got, ex.want)
+				t.Errorf("issuer node:\ngot:  %v\nwant: %v", got, ex.want)
 			}
 
 			if errors.Root(gotErr) != ex.wantErr {
-				t.Errorf("get asset group error:\ngot:  %v\nwant: %v", errors.Root(gotErr), ex.wantErr)
+				t.Errorf("get issuer node error:\ngot:  %v\nwant: %v", errors.Root(gotErr), ex.wantErr)
 			}
 		}
 	})
@@ -120,7 +120,7 @@ func TestUpdateIssuerNode(t *testing.T) {
 			t.Errorf("update issuer node error %v", err)
 		}
 
-		issuerNode, err = GetAssetGroup(ctx, issuerNode.ID)
+		issuerNode, err = GetIssuerNode(ctx, issuerNode.ID)
 		if err != nil {
 			t.Fatalf("could not get issuer node with id %s: %v", issuerNode.ID, err)
 		}
@@ -139,7 +139,7 @@ func TestUpdateIssuerNodeNoUpdate(t *testing.T) {
 			t.Errorf("update issuer node error %v", err)
 		}
 
-		issuerNode, err = GetAssetGroup(ctx, issuerNode.ID)
+		issuerNode, err = GetIssuerNode(ctx, issuerNode.ID)
 		if err != nil {
 			t.Fatalf("could not get issuer node with id %s: %v:", issuerNode.ID, err)
 		}
@@ -152,7 +152,7 @@ func TestUpdateIssuerNodeNoUpdate(t *testing.T) {
 func TestDeleteIssuerNode(t *testing.T) {
 	withContext(t, "", func(t *testing.T, ctx context.Context) {
 		issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
-		_, err := GetAssetGroup(ctx, issuerNode.ID)
+		_, err := GetIssuerNode(ctx, issuerNode.ID)
 		if err != nil {
 			t.Errorf("could not get test issuer node with id %s: %v", issuerNode.ID, err)
 		}
@@ -162,7 +162,7 @@ func TestDeleteIssuerNode(t *testing.T) {
 			t.Errorf("could not delete issuer node with id %s: %v", issuerNode.ID, err)
 		}
 
-		_, err = GetAssetGroup(ctx, issuerNode.ID)
+		_, err = GetIssuerNode(ctx, issuerNode.ID)
 		if err == nil { // sic
 			t.Errorf("expected issuer node %s would be deleted, but it wasn't", issuerNode.ID)
 		} else {

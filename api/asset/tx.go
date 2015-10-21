@@ -17,7 +17,7 @@ type Tx struct {
 
 // Input is an input for an project Tx.
 type Input struct {
-	AssetGroupID  string        `json:"issuer_node_id,omitempty"`
+	IssuerNodeID  string        `json:"issuer_node_id,omitempty"`
 	ManagerNodeID string        `json:"manager_node_id,omitempty"`
 	RedeemScript  json.HexBytes `json:"redeem_script"`
 	SignatureData bc.Hash       `json:"signature_data"`

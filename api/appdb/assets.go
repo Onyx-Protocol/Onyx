@@ -21,10 +21,10 @@ var ErrBadAsset = errors.New("invalid asset")
 // It is made up of extended keys, and paths (indexes) within those keys.
 type Asset struct {
 	Hash            bc.AssetID // the raw Asset ID
-	GroupID         string
+	IssuerNodeID    string
 	Label           string
 	Keys            []*hdkey.XKey
-	AGIndex, AIndex []uint32
+	INIndex, AIndex []uint32
 	RedeemScript    []byte
 }
 
@@ -53,8 +53,8 @@ func AssetByID(ctx context.Context, hash bc.AssetID) (*Asset, error) {
 	err := pg.FromContext(ctx).QueryRow(q, hash.String()).Scan(
 		(*pg.Strings)(&xpubs),
 		&a.RedeemScript,
-		&a.GroupID,
-		(*pg.Uint32s)(&a.AGIndex),
+		&a.IssuerNodeID,
+		(*pg.Uint32s)(&a.INIndex),
 		(*pg.Uint32s)(&a.AIndex),
 	)
 	if err == sql.ErrNoRows {
@@ -82,7 +82,7 @@ func InsertAsset(ctx context.Context, asset *Asset) error {
 
 	_, err := pg.FromContext(ctx).Exec(q,
 		asset.Hash.String(),
-		asset.GroupID,
+		asset.IssuerNodeID,
 		pg.Uint32s(asset.AIndex),
 		pg.Strings(keysToStrings(asset.Keys)),
 		asset.RedeemScript,
@@ -92,9 +92,9 @@ func InsertAsset(ctx context.Context, asset *Asset) error {
 }
 
 // ListAssets returns a paginated list of AssetResponses
-// belonging to the given asset group, along with a sortable id
+// belonging to the given issuer node, along with a sortable id
 // for last asset, used to retrieve the next page.
-func ListAssets(ctx context.Context, groupID string, prev string, limit int) ([]*AssetResponse, string, error) {
+func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]*AssetResponse, string, error) {
 	q := `
 		SELECT id, label, issued, sort_id
 		FROM assets
@@ -102,7 +102,7 @@ func ListAssets(ctx context.Context, groupID string, prev string, limit int) ([]
 		ORDER BY sort_id DESC
 		LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(q, groupID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(q, inodeID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "select query")
 	}

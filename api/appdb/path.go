@@ -18,8 +18,8 @@ func ReceiverPath(addrInfo *Address, addrIndex []uint32) []uint32 {
 func IssuancePath(asset *Asset) []uint32 {
 	return []uint32{
 		CustomerAssetsNamespace,
-		asset.AGIndex[0],
-		asset.AGIndex[1],
+		asset.INIndex[0],
+		asset.INIndex[1],
 		asset.AIndex[0],
 		asset.AIndex[1],
 	}

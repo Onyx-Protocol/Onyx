@@ -53,12 +53,12 @@ func newTestProject(t *testing.T, ctx context.Context, name string, user *User) 
 	return project
 }
 
-func newTestIssuerNode(t *testing.T, ctx context.Context, project *Project, label string) *AssetGroup {
+func newTestIssuerNode(t *testing.T, ctx context.Context, project *Project, label string) *IssuerNode {
 	ensureInTransaction(ctx)
 	if project == nil {
 		project = newTestProject(t, ctx, "project-1", nil)
 	}
-	issuerNode, err := InsertAssetGroup(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil)
+	issuerNode, err := InsertIssuerNode(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil)
 	if err != nil {
 		t.Fatalf("trouble setting up issuer node in newTestIssuerNode: %v", err)
 	}
@@ -95,7 +95,7 @@ func newTestAccount(t *testing.T, ctx context.Context, managerNode *ManagerNode,
 	return account
 }
 
-func newTestAsset(t *testing.T, ctx context.Context, issuerNode *AssetGroup) *Asset {
+func newTestAsset(t *testing.T, ctx context.Context, issuerNode *IssuerNode) *Asset {
 	ensureInTransaction(ctx)
 	if issuerNode == nil {
 		issuerNode = newTestIssuerNode(t, ctx, nil, "issuer-node-1")

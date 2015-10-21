@@ -13,7 +13,7 @@ import (
 )
 
 // POST /v3/projects/:projID/issuer-nodes
-func createAssetGroup(ctx context.Context, projID string, req *asset.CreateNodeReq) (interface{}, error) {
+func createIssuerNode(ctx context.Context, projID string, req *asset.CreateNodeReq) (interface{}, error) {
 	if err := projectAuthz(ctx, projID); err != nil {
 		return nil, err
 	}
@@ -24,7 +24,7 @@ func createAssetGroup(ctx context.Context, projID string, req *asset.CreateNodeR
 	}
 	defer dbtx.Rollback()
 
-	assetGroup, err := asset.CreateNode(ctx, asset.IssuerNode, projID, req)
+	issuerNode, err := asset.CreateNode(ctx, asset.IssuerNode, projID, req)
 	if err != nil {
 		return nil, err
 	}
@@ -34,23 +34,23 @@ func createAssetGroup(ctx context.Context, projID string, req *asset.CreateNodeR
 		return nil, err
 	}
 
-	return assetGroup, nil
+	return issuerNode, nil
 }
 
 // GET /v3/projects/:projID/issuer-nodes
-func listAssetGroups(ctx context.Context, projID string) (interface{}, error) {
+func listIssuerNodes(ctx context.Context, projID string) (interface{}, error) {
 	if err := projectAuthz(ctx, projID); err != nil {
 		return nil, err
 	}
-	return appdb.ListAssetGroups(ctx, projID)
+	return appdb.ListIssuerNodes(ctx, projID)
 }
 
 // GET /v3/issuer-nodes/:inodeID
-func getAssetGroup(ctx context.Context, inodeID string) (interface{}, error) {
+func getIssuerNode(ctx context.Context, inodeID string) (interface{}, error) {
 	if err := issuerAuthz(ctx, inodeID); err != nil {
 		return nil, err
 	}
-	return appdb.GetAssetGroup(ctx, inodeID)
+	return appdb.GetIssuerNode(ctx, inodeID)
 }
 
 // PUT /v3/issuer-nodes/:inodeID
@@ -70,8 +70,8 @@ func deleteIssuerNode(ctx context.Context, inodeID string) error {
 }
 
 // GET /v3/issuer-nodes/:inodeID/assets
-func listAssets(ctx context.Context, groupID string) (interface{}, error) {
-	if err := issuerAuthz(ctx, groupID); err != nil {
+func listAssets(ctx context.Context, inodeID string) (interface{}, error) {
+	if err := issuerAuthz(ctx, inodeID); err != nil {
 		return nil, err
 	}
 	prev, limit, err := getPageData(ctx, defAssetPageSize)
@@ -79,7 +79,7 @@ func listAssets(ctx context.Context, groupID string) (interface{}, error) {
 		return nil, err
 	}
 
-	assets, last, err := appdb.ListAssets(ctx, groupID, prev, limit)
+	assets, last, err := appdb.ListAssets(ctx, inodeID, prev, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -92,19 +92,19 @@ func listAssets(ctx context.Context, groupID string) (interface{}, error) {
 }
 
 // POST /v3/issuer-nodes/:inodeID/assets
-func createAsset(ctx context.Context, groupID string, in struct{ Label string }) (interface{}, error) {
+func createAsset(ctx context.Context, inodeID string, in struct{ Label string }) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
-	if err := issuerAuthz(ctx, groupID); err != nil {
+	if err := issuerAuthz(ctx, inodeID); err != nil {
 		return nil, err
 	}
-	asset, err := asset.Create(ctx, groupID, in.Label)
+	asset, err := asset.Create(ctx, inodeID, in.Label)
 	if err != nil {
 		return nil, err
 	}
 
 	ret := map[string]interface{}{
 		"id":             asset.Hash.String(),
-		"issuer_node_id": asset.GroupID,
+		"issuer_node_id": asset.IssuerNodeID,
 		"label":          asset.Label,
 	}
 	return ret, nil
@@ -135,8 +135,8 @@ func deleteAsset(ctx context.Context, assetID string) error {
 }
 
 // GET /v3/issuer-nodes/:inodeID/activity
-func getAssetGroupActivity(ctx context.Context, groupID string) (interface{}, error) {
-	if err := issuerAuthz(ctx, groupID); err != nil {
+func getIssuerNodeActivity(ctx context.Context, inodeID string) (interface{}, error) {
+	if err := issuerAuthz(ctx, inodeID); err != nil {
 		return nil, err
 	}
 	prev, limit, err := getPageData(ctx, defActivityPageSize)
@@ -144,7 +144,7 @@ func getAssetGroupActivity(ctx context.Context, groupID string) (interface{}, er
 		return nil, err
 	}
 
-	activity, last, err := appdb.AssetGroupActivity(ctx, groupID, prev, limit)
+	activity, last, err := appdb.IssuerNodeActivity(ctx, inodeID, prev, limit)
 	if err != nil {
 		return nil, err
 	}

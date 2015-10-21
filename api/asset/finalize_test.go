@@ -27,9 +27,9 @@ func TestFinalizeTx(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES ('app-id-0', 'app-0');
 		INSERT INTO issuer_nodes (id, project_id, label, keyset, key_index)
-			VALUES ('ag1', 'app-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
+			VALUES ('in1', 'app-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
 		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, label)
-		VALUES('ff00000000000000000000000000000000000000000000000000000000000000', 'ag1', 0, '{}', '', 'foo');
+		VALUES('ff00000000000000000000000000000000000000000000000000000000000000', 'in1', 0, '{}', '', 'foo');
 		INSERT INTO manager_nodes (id, project_id, label, key_index)
 			VALUES ('mn1', 'app-id-0', 'mnode1', 0);
 		INSERT INTO accounts (id, manager_node_id, key_index, label) VALUES('acc1', 'mn1', 0, 'x');

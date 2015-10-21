@@ -17,14 +17,14 @@ import (
 )
 
 // Create generates a new asset redeem script
-// and id inside of an asset group.
-func Create(ctx context.Context, agID, label string) (*appdb.Asset, error) {
+// and id inside of an issuer node.
+func Create(ctx context.Context, inodeID, label string) (*appdb.Asset, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if label == "" {
 		return nil, appdb.ErrBadLabel
 	}
 
-	asset, sigsReq, err := appdb.NextAsset(ctx, agID)
+	asset, sigsReq, err := appdb.NextAsset(ctx, inodeID)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting asset key info")
 	}
@@ -38,7 +38,7 @@ func Create(ctx context.Context, agID, label string) (*appdb.Asset, error) {
 
 	asset.RedeemScript, err = txscript.MultiSigScript(pubkeys, sigsReq)
 	if err != nil {
-		return nil, errors.Wrapf(err, "creating asset: group id %v sigsReq %v", agID, sigsReq)
+		return nil, errors.Wrapf(err, "creating asset: issuer node id %v sigsReq %v", inodeID, sigsReq)
 	}
 	pkScript := chaintxscript.RedeemToPkScript(asset.RedeemScript)
 	asset.Hash = bc.ComputeAssetID(pkScript, validation.TestParams.GenesisHash)
