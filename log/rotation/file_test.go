@@ -2,6 +2,7 @@ package rotation
 
 import (
 	"bytes"
+	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -212,6 +213,21 @@ func TestOpenFail(t *testing.T) {
 	// don't accumulate multiple dropped-log messages
 	if !bytes.Equal(f.buf, want) {
 		t.Fatalf("buf = %q want %q", f.buf, want)
+	}
+}
+
+func TestAppend(t *testing.T) {
+	defer os.Remove("x")
+	b0 := []byte("abc\n")
+	b1 := []byte("def\n")
+	err := ioutil.WriteFile("x", b0, 0666)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := Create("x", 100, 1)
+	f.Write(b1)
+	if want := int64(len(b0) + len(b1)); f.w != want {
+		t.Fatalf("w = %d want %d", f.w, want)
 	}
 }
 
