@@ -2,6 +2,7 @@ package utxodb
 
 import (
 	"container/heap"
+	"sort"
 	"sync"
 	"time"
 
@@ -33,7 +34,14 @@ func (p *pool) init(ctx context.Context, db DB, k key) error {
 		return err
 	}
 
-	for _, utxo := range utxos {
+	utxos = append(utxos, p.outputs...)
+	p.outputs = nil
+	sort.Sort(byOutpoint(utxos))
+
+	for i, utxo := range utxos {
+		if i > 0 && utxos[i-1].Outpoint == utxo.Outpoint {
+			continue
+		}
 		heap.Push(&p.outputs, utxo)
 	}
 	p.ready = true

@@ -1,5 +1,7 @@
 package utxodb
 
+import "bytes"
+
 type byKey []Input
 
 func (a byKey) Len() int      { return len(a) }
@@ -46,4 +48,15 @@ func (u utxosByResvExpires) Less(i, j int) bool {
 		return byKeyUTXO(u).Less(i, j)
 	}
 	return u[i].ResvExpires.Before(u[j].ResvExpires)
+}
+
+type byOutpoint []*UTXO
+
+func (u byOutpoint) Len() int      { return len(u) }
+func (u byOutpoint) Swap(i, j int) { u[i], u[j] = u[j], u[i] }
+func (u byOutpoint) Less(i, j int) bool {
+	if u[i].Outpoint.Hash == u[j].Outpoint.Hash {
+		return u[i].Outpoint.Index < u[j].Outpoint.Index
+	}
+	return bytes.Compare(u[i].Outpoint.Hash[:], u[j].Outpoint.Hash[:]) < 0
 }
