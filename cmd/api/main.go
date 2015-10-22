@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"expvar"
+	"io"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -18,6 +19,7 @@ import (
 	"chain/database/pg"
 	chainlog "chain/log"
 	"chain/log/rotation"
+	"chain/log/splunk"
 	"chain/metrics"
 	"chain/metrics/librato"
 	chainhttp "chain/net/http"
@@ -33,6 +35,7 @@ var (
 	stack        = env.String("STACK", "sandbox")
 	samplePer    = env.Duration("SAMPLEPER", 10*time.Second)
 	nouserSecret = env.String("NOUSER_SECRET", "")
+	splunkAddr   = os.Getenv("SPLUNKADDR")
 	logFile      = os.Getenv("LOGFILE")
 	logSize      = env.Int("LOGSIZE", 5e6) // 5MB
 	logCount     = env.Int("LOGCOUNT", 9)
@@ -57,10 +60,7 @@ func main() {
 	sql.Register("schemadb", pg.SchemaDriver(buildTag))
 	log.SetPrefix("api-" + buildTag + ": ")
 	log.SetFlags(log.Lshortfile)
-	if logFile != "" {
-		log.SetOutput(rotation.Create(logFile+".stdlib", *logSize, *logCount))
-		chainlog.SetOutput(rotation.Create(logFile, *logSize, *logCount))
-	}
+	chainlog.SetOutput(logWriter())
 
 	if librato.URL.Host != "" {
 		librato.Source = *stack
@@ -97,4 +97,38 @@ func main() {
 	if err != nil {
 		log.Fatalln("ListenAndServe:", err)
 	}
+}
+
+func logWriter() io.Writer {
+	dropmsg := []byte("\nlog data dropped\n")
+	rotation := &errlog{w: rotation.Create(logFile, *logSize, *logCount)}
+	splunk := &errlog{w: splunk.New(splunkAddr, dropmsg)}
+
+	switch {
+	case logFile != "" && splunkAddr != "":
+		return io.MultiWriter(rotation, splunk)
+	case logFile != "" && splunkAddr == "":
+		return rotation
+	case logFile == "" && splunkAddr != "":
+		return splunk
+	}
+	return os.Stdout
+}
+
+type errlog struct {
+	w io.Writer
+	t time.Time // protected by chain/log mutex
+}
+
+func (w *errlog) Write(p []byte) (int, error) {
+	// We don't want to ruin our performance
+	// when there's a persistent error
+	// writing to a log sink.
+	// Print to stderr at most once per minute.
+	_, err := w.w.Write(p)
+	if err != nil && time.Since(w.t) > time.Minute {
+		log.Println("chain/log:", err)
+		w.t = time.Now()
+	}
+	return len(p), nil // report success for the MultiWriter
 }
