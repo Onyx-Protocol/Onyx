@@ -218,13 +218,9 @@ func StartPasswordReset(ctx context.Context, email string) (string, error) {
 	return secret, nil
 }
 
-// FinishPasswordReset updates a user password using a password reset secret as
-// a credential.
-//
-// If the new password is not valid, ErrBadPassword will be returned. If the
-// the password reset has expired, or either the email or secret are not found,
-// pg.ErrUserInputNotFound will be returned.
-func FinishPasswordReset(ctx context.Context, email, secret, newpass string) error {
+// CheckPasswordReset returns pg.ErrUserInputNotFound if there is no unexpired
+// password reset corresponding to the given credentials.
+func CheckPasswordReset(ctx context.Context, email, secret string) error {
 	email = strings.TrimSpace(email)
 
 	selectq := `
@@ -247,6 +243,22 @@ func FinishPasswordReset(ctx context.Context, email, secret, newpass string) err
 	if bcrypt.CompareHashAndPassword(secHash, []byte(secret)) != nil {
 		// Treat a mismatching secret as if StartPasswordReset was never called.
 		return pg.ErrUserInputNotFound
+	}
+
+	return nil
+}
+
+// FinishPasswordReset updates a user password using a password reset secret as
+// a credential.
+//
+// If the new password is not valid, ErrBadPassword will be returned. If the
+// the password reset has expired, or either the email or secret are not found,
+// pg.ErrUserInputNotFound will be returned.
+func FinishPasswordReset(ctx context.Context, email, secret, newpass string) error {
+	email = strings.TrimSpace(email)
+
+	if err := CheckPasswordReset(ctx, email, secret); err != nil {
+		return err
 	}
 
 	if err := validatePassword(newpass); err != nil {

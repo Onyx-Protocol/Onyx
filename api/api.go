@@ -51,6 +51,7 @@ func nouserHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/nouser/invitations/:invID/create-user", createUserFromInvitation)
 	h.HandleFunc("POST", "/nouser/invitations/:invID/add-existing", addMemberFromInvitation)
 	h.HandleFunc("POST", "/nouser/password-reset/start", startPasswordReset)
+	h.HandleFunc("POST", "/nouser/password-reset/check", checkPasswordReset)
 	h.HandleFunc("POST", "/nouser/password-reset/finish", finishPasswordReset)
 
 	return h.ServeHTTPContext

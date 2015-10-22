@@ -401,6 +401,55 @@ func TestPasswordResetFlow(t *testing.T) {
 	}
 }
 
+func TestCheckPasswordReset(t *testing.T) {
+	fix := `
+		INSERT INTO users (
+			id, email, password_hash, pwreset_secret_hash, pwreset_expires_at
+		) VALUES (
+			'user-id-0',
+			'foo@bar.com',
+			'{}',
+			'$2a$08$WF7tWRx/26m9Cp2kQBQEwuKxCev9S4TSzWdmtNmHSvan4UhEw0Er.'::bytea, -- plaintext: abracadabra
+			now() + '1h'::interval
+		), (
+			'user-id-1',
+			'bar@foo.com',
+			'{}',
+			'$2a$08$WF7tWRx/26m9Cp2kQBQEwuKxCev9S4TSzWdmtNmHSvan4UhEw0Er.'::bytea, -- plaintext: abracadabra
+			now() - '1h'::interval
+		);
+	`
+
+	withContext(t, fix, func(t *testing.T, ctx context.Context) {
+		examples := []struct {
+			email  string
+			secret string
+			want   error
+		}{
+			// Valid example
+			{"foo@bar.com", "abracadabra", nil},
+			// Valid example, mismatching email case
+			{"Foo@Bar.com", "abracadabra", nil},
+			// Valid example, whitespace in email
+			{"  foo@bar.com  ", "abracadabra", nil},
+			// Bad secret
+			{"foo@bar.com", "bad-secret", pg.ErrUserInputNotFound},
+			// Password reset has expired
+			{"bar@foo.com", "abracadabra", pg.ErrUserInputNotFound},
+			// Bad user
+			{"nonexistent", "abracadabra", pg.ErrUserInputNotFound},
+		}
+
+		for _, ex := range examples {
+			t.Logf("Example: %s:%s", ex.email, ex.secret)
+			got := CheckPasswordReset(ctx, ex.email, ex.secret)
+			if errors.Root(got) != ex.want {
+				t.Errorf("error got = %v want %v", errors.Root(got), ex.want)
+			}
+		}
+	})
+}
+
 func TestFinishPasswordResetErrs(t *testing.T) {
 	fix := `
 		INSERT INTO users (

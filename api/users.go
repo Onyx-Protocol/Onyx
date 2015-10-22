@@ -43,6 +43,11 @@ func startPasswordReset(ctx context.Context, in struct{ Email string }) (interfa
 	return map[string]interface{}{"secret": secret}, nil
 }
 
+// POST /nouser/password-reset/check
+func checkPasswordReset(ctx context.Context, in struct{ Email, Secret string }) error {
+	return appdb.CheckPasswordReset(ctx, in.Email, in.Secret)
+}
+
 // POST /nouser/password-reset/finish
 func finishPasswordReset(ctx context.Context, in struct{ Email, Secret, Password string }) error {
 	return appdb.FinishPasswordReset(ctx, in.Email, in.Secret, in.Password)
