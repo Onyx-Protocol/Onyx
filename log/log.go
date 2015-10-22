@@ -23,6 +23,7 @@ import (
 var (
 	logWriterMu sync.Mutex // protects the following
 	logWriter   io.Writer  = os.Stdout
+	prefix      []byte
 
 	// pairDelims contains a list of characters that may be used as delimeters
 	// between key-value pairs in a log entry. Keys and values will be quoted or
@@ -53,6 +54,26 @@ const (
 func SetOutput(w io.Writer) {
 	logWriterMu.Lock()
 	logWriter = w
+	logWriterMu.Unlock()
+}
+
+// SetPrefix sets the output prefix.
+func SetPrefix(keyval ...interface{}) {
+	// Invariant: len(keyval) is always even.
+	if len(keyval)%2 != 0 {
+		panic(fmt.Sprintf("odd-length prefix args: %v", keyval))
+	}
+	var b []byte
+	for i := 0; i < len(keyval); i += 2 {
+		k := formatKey(keyval[i])
+		v := formatValue(keyval[i+1])
+		b = append(b, k...)
+		b = append(b, '=')
+		b = append(b, v...)
+		b = append(b, ' ')
+	}
+	logWriterMu.Lock()
+	prefix = b
 	logWriterMu.Unlock()
 }
 
@@ -98,6 +119,7 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 	}
 
 	logWriterMu.Lock()
+	logWriter.Write(prefix)
 	logWriter.Write([]byte(out)) // ignore errors
 	logWriter.Write([]byte{'\n'})
 	logWriterMu.Unlock()

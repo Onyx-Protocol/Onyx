@@ -25,6 +25,25 @@ func TestSetOutput(t *testing.T) {
 	}
 }
 
+func TestPrefix(t *testing.T) {
+	buf := new(bytes.Buffer)
+	SetOutput(buf)
+	SetPrefix("foo", "bar")
+	Write(context.Background(), "baz", 1)
+	SetOutput(os.Stdout)
+
+	got := buf.String()
+	wantPrefix := "foo=bar "
+	if !strings.HasPrefix(got, wantPrefix) {
+		t.Errorf("output = %q want prefix %q", got, wantPrefix)
+	}
+
+	SetPrefix()
+	if prefix != nil {
+		t.Errorf("prefix = %q want nil", prefix)
+	}
+}
+
 func TestWrite(t *testing.T) {
 	examples := []struct {
 		keyvals []interface{}
