@@ -61,7 +61,6 @@ func main() {
 		log.SetOutput(rotation.Create(logFile+".stdlib", *logSize, *logCount))
 		chainlog.SetOutput(rotation.Create(logFile, *logSize, *logCount))
 	}
-	env.Parse()
 
 	if librato.URL.Host != "" {
 		librato.Source = *stack
