@@ -401,6 +401,20 @@ func TestPasswordResetFlow(t *testing.T) {
 	}
 }
 
+func TestStartPasswordResetErrs(t *testing.T) {
+	withContext(t, "", func(t *testing.T, ctx context.Context) {
+		gotSecret, gotErr := StartPasswordReset(ctx, "foo@bar.com")
+
+		if gotSecret != "" {
+			t.Errorf("secret got = %v want blank", gotSecret)
+		}
+
+		if errors.Root(gotErr) != ErrNoUserForEmail {
+			t.Errorf("error got = %v want %v", errors.Root(gotErr), ErrNoUserForEmail)
+		}
+	})
+}
+
 func TestCheckPasswordReset(t *testing.T) {
 	fix := `
 		INSERT INTO users (

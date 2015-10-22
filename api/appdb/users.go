@@ -25,6 +25,7 @@ var (
 	ErrBadPassword       = errors.New("bad password")
 	ErrPasswordCheck     = errors.New("password does not match")
 	ErrUserAlreadyExists = errors.New("user already exists")
+	ErrNoUserForEmail    = errors.New("no user for that email")
 )
 
 // User represents a single user. Instances should be safe to deliver in API
@@ -196,6 +197,11 @@ func UpdateUserPassword(ctx context.Context, id, password, newpass string) error
 // The password reset secret must be handled carefully, since it is equivalent
 // to an auth token for the corresponding user. It should only be sent to
 // trusted clients, such as internal services or the user themselves.
+//
+// If the provided email does not correspond to an actual email account,
+// ErrNoUserForEmail is returned. Since this may leak information about
+// the existence of registered accounts, this error should be visible to trusted
+// clients. It should not be propagated all the way to the end user.
 func StartPasswordReset(ctx context.Context, email string) (string, error) {
 	email = strings.TrimSpace(email)
 
@@ -209,8 +215,12 @@ func StartPasswordReset(ctx context.Context, email string) (string, error) {
 		UPDATE users
 		SET pwreset_secret_hash = $1, pwreset_expires_at = $2
 		WHERE lower(email) = lower($3)
+		RETURNING 1
 	`
-	_, err = pg.FromContext(ctx).Exec(q, hash, exp, email)
+	err = pg.FromContext(ctx).QueryRow(q, hash, exp, email).Scan(new(int))
+	if err == sql.ErrNoRows {
+		return "", ErrNoUserForEmail
+	}
 	if err != nil {
 		return "", errors.Wrap(err, "update query")
 	}

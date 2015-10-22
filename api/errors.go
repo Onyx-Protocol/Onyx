@@ -32,6 +32,7 @@ var (
 		appdb.ErrBadEmail:         errorInfo{400, "CH101", "Invalid email."},
 		appdb.ErrBadPassword:      errorInfo{400, "CH102", "Invalid password."},
 		appdb.ErrPasswordCheck:    errorInfo{400, "CH103", "Unable to verify password."},
+		appdb.ErrNoUserForEmail:   errorInfo{400, "CH104", "No user corresponds to the provided email address."},
 		asset.ErrBadAddr:          errorInfo{400, "CH300", "Invalid address"},
 		appdb.ErrBadLabel:         errorInfo{400, "CH704", "Invalid label"},
 		asset.ErrPastExpires:      errorInfo{400, "CH720", "Expires, if set, must be in the future"},
