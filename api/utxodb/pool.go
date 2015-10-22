@@ -28,12 +28,6 @@ func (p *pool) init(ctx context.Context, db DB, k key) error {
 
 	defer metrics.RecordElapsed(time.Now())
 
-	// The pool might have collected some utxos
-	// from Apply before we acquired p.mu here.
-	// We will load them (along with all the other
-	// utxos) again now, so throw away the dups.
-	p.outputs = nil
-
 	utxos, err := db.LoadUTXOs(ctx, k.AccountID, k.AssetID)
 	if err != nil {
 		return err

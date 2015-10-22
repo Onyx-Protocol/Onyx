@@ -235,10 +235,11 @@ func (rs *Reserver) insert(utxos []*UTXO) {
 	ctx := context.TODO()
 	var i int64
 	rs.mappool(utxos, func(p *pool, u *UTXO) {
-		// We assume u isn't already in p.
-		// This is guaranteed by construction
-		// by the caller, because they are
-		// freshly-created.
+		// It's possible u is already in the pool.
+		// If so, there's nothing to do here.
+		if p.byOutpoint(u.Outpoint) != nil {
+			return
+		}
 		heap.Push(&p.outputs, u)
 		i++
 		if i%1e6 == 0 {
