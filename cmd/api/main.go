@@ -45,6 +45,8 @@ var (
 	buildTag    = "dev"
 	buildCommit = "?"
 	buildDate   = "?"
+
+	race []interface{} // initialized in race.go
 )
 
 func init() {
@@ -60,7 +62,7 @@ func main() {
 	sql.Register("schemadb", pg.SchemaDriver(buildTag))
 	log.SetPrefix("api-" + buildTag + ": ")
 	log.SetFlags(log.Lshortfile)
-	chainlog.SetPrefix("app", "api", "target", *target, "buildtag", buildTag)
+	chainlog.SetPrefix(append([]interface{}{"app", "api", "target", *target, "buildtag", buildTag}, race...)...)
 	chainlog.SetOutput(logWriter())
 
 	if librato.URL.Host != "" {
