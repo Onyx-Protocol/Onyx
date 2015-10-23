@@ -113,9 +113,7 @@ func submitSingle(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 }
 
 // POST /v3/assets/cancel-reservation
-func cancelReservation(ctx context.Context, x struct {
-	Transaction *bc.Tx
-}) error {
+func cancelReservation(ctx context.Context, x struct{ Transaction bc.Tx }) error {
 	var outpoints []bc.Outpoint
 	for _, input := range x.Transaction.Inputs {
 		outpoints = append(outpoints, input.Previous)
