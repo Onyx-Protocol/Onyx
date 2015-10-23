@@ -70,7 +70,7 @@ func (s *splunk) Write(p []byte) (n int, err error) {
 		n, s.err = s.conn.Write(p)
 	}
 
-	if t, ok := s.err.(net.Error); !ok || !t.Temporary() {
+	if t, ok := s.err.(net.Error); s.err != nil && (!ok || !t.Temporary()) {
 		s.conn.Close()
 		s.conn = nil
 	}
