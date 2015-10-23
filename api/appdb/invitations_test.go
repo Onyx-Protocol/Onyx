@@ -48,6 +48,35 @@ func TestCreateInvitation(t *testing.T) {
 	}
 }
 
+func TestCreateInvitationEmailWhitespace(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t, `
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
+	`)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	inv, err := CreateInvitation(ctx, "proj-id-0", "  foo@bar.com  ", "developer")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := getTestInvitation(ctx, inv.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := testInvitation{
+		id:     inv.ID,
+		projID: "proj-id-0",
+		email:  "foo@bar.com",
+		role:   "developer",
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("invitation:\ngot:  %v\nwant: %v", got, want)
+	}
+}
+
 func TestCreateInvitationErrs(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');

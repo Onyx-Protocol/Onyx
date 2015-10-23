@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"strings"
 
 	"golang.org/x/net/context"
 )
@@ -37,6 +38,8 @@ const inviteIDBytes = 16
 // The given email and role will be validated, and an error is returned if
 // either is invalid.
 func CreateInvitation(ctx context.Context, projID, email, role string) (*Invitation, error) {
+	email = strings.TrimSpace(email)
+
 	if err := validateEmail(email); err != nil {
 		return nil, err
 	}

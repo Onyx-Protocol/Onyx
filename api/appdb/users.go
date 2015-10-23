@@ -37,6 +37,7 @@ type User struct {
 // CreateUser creates a new row in the users table corresponding to the provided
 // credentials.
 func CreateUser(ctx context.Context, email, password string) (*User, error) {
+	email = strings.TrimSpace(email)
 	if err := validateEmail(email); err != nil {
 		return nil, err
 	}
@@ -70,6 +71,8 @@ func CreateUser(ctx context.Context, email, password string) (*User, error) {
 // corresponding to those credentials. If the credentials are invalid,
 // authn.ErrNotAuthenticated is returned.
 func AuthenticateUserCreds(ctx context.Context, email, password string) (userID string, err error) {
+	email = strings.TrimSpace(email)
+
 	var (
 		id    string
 		phash []byte
@@ -114,6 +117,8 @@ func GetUser(ctx context.Context, id string) (*User, error) {
 // sensitive to the case of the provided email address. If no user is found,
 // it will return an error with pg.ErrUserInputNotFound as its root.
 func GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	email = strings.TrimSpace(email)
+
 	var (
 		q = `SELECT id, email FROM users WHERE lower(email) = lower($1)`
 		u = new(User)
@@ -136,6 +141,7 @@ func GetUserByEmail(ctx context.Context, email string) (*User, error) {
 // check the provided password; if the password is incorrect,
 // ErrPasswordCheck is returned.
 func UpdateUserEmail(ctx context.Context, id, password, email string) error {
+	email = strings.TrimSpace(email)
 	if err := validateEmail(email); err != nil {
 		return err
 	}
@@ -191,6 +197,8 @@ func UpdateUserPassword(ctx context.Context, id, password, newpass string) error
 // to an auth token for the corresponding user. It should only be sent to
 // trusted clients, such as internal services or the user themselves.
 func StartPasswordReset(ctx context.Context, email string) (string, error) {
+	email = strings.TrimSpace(email)
+
 	secret, hash, err := generateSecret()
 	if err != nil {
 		return "", errors.Wrap(err, "generate password reset secret")
@@ -217,6 +225,8 @@ func StartPasswordReset(ctx context.Context, email string) (string, error) {
 // the password reset has expired, or either the email or secret are not found,
 // pg.ErrUserInputNotFound will be returned.
 func FinishPasswordReset(ctx context.Context, email, secret, newpass string) error {
+	email = strings.TrimSpace(email)
+
 	selectq := `
 		SELECT pwreset_secret_hash
 		FROM users
@@ -270,6 +280,8 @@ func validateEmail(email string) error {
 		return errors.WithDetail(ErrBadEmail, "too long")
 	case !strings.Contains(email, "@"):
 		return errors.WithDetail(ErrBadEmail, "no '@' symbol")
+	case email != strings.TrimSpace(email):
+		return errors.WithDetail(ErrBadEmail, "contains extra whitespace")
 	}
 	return nil
 }

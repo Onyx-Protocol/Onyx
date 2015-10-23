@@ -2,6 +2,7 @@ package appdb
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
@@ -98,7 +99,8 @@ func TestCreateUserPreserveCase(t *testing.T) {
 func TestCreateUserNoDupes(t *testing.T) {
 	examples := []struct{ email0, email1 string }{
 		{"foo@bar.com", "foo@bar.com"},
-		{"foo@bar.com", "Foo@bar.com"}, // test case-insensitivity
+		{"foo@bar.com", "Foo@bar.com"},     // test case-insensitivity
+		{"foo@bar.com", "  foo@bar.com  "}, // test whitespace-insensitivity
 	}
 
 	for _, ex := range examples {
@@ -178,6 +180,15 @@ func TestAuthenticateUserCreds(t *testing.T) {
 		t.Errorf("got user ID = %v want %v", gotID, u.ID)
 	}
 
+	// Whitespace in the email shouldn't matter
+	gotID, err = AuthenticateUserCreds(ctx, "  foo@bar.com  ", "abracadabra")
+	if err != nil {
+		t.Errorf("whitespace auth err = %v expected nil", err)
+	}
+	if gotID != u.ID {
+		t.Errorf("got user ID = %v want %v", gotID, u.ID)
+	}
+
 	// Invalid email should yield error
 	_, err = AuthenticateUserCreds(ctx, "nonexistent@bar.com", "abracadabra")
 	if err != authn.ErrNotAuthenticated {
@@ -238,6 +249,7 @@ func TestGetUserByEmail(t *testing.T) {
 	}{
 		{"foo@bar.com", &User{ID: "user-id-0", Email: "foo@bar.com"}, nil},
 		{"Foo@Bar.com", &User{ID: "user-id-0", Email: "foo@bar.com"}, nil},
+		{"  foo@bar.com  ", &User{ID: "user-id-0", Email: "foo@bar.com"}, nil},
 		{"baz@bar.com", nil, pg.ErrUserInputNotFound},
 	}
 
@@ -281,6 +293,7 @@ func TestUpdateUserEmail(t *testing.T) {
 		{"abracadabra", "bar@foo.com", nil},
 		{"abracadabra", "foo@bar.com", nil},           // reset to same email
 		{"abracadabra", "Foo@Bar.com", nil},           // reset to same email, modulo case
+		{"abracadabra", "  foo@bar.com  ", nil},       // reset to same email, stripping whitespace
 		{"abracadabra", "invalid-email", ErrBadEmail}, // new email is not valid
 		{"abracadabra", "foo2@bar.com", ErrBadEmail},  // new email is already taken
 		{"bad-password", "foo@bar.com", ErrPasswordCheck},
@@ -300,7 +313,7 @@ func TestUpdateUserEmail(t *testing.T) {
 			}
 
 			if ex.want == nil {
-				_, err := getUserByCreds(ctx, ex.email, ex.password)
+				_, err := getUserByCreds(ctx, strings.TrimSpace(ex.email), ex.password)
 				if err != nil {
 					t.Errorf("error = %v want nil", err)
 				}
@@ -417,6 +430,8 @@ func TestFinishPasswordResetErrs(t *testing.T) {
 		{"foo@bar.com", "abracadabra", "new-password", nil},
 		// Valid example, mismatching email case
 		{"Foo@Bar.com", "abracadabra", "new-password", nil},
+		// Valid example, extra whitespace
+		{"  foo@bar.com  ", "abracadabra", "new-password", nil},
 		// Invalid proposed password
 		{"foo@bar.com", "abracadabra", "", ErrBadPassword},
 		// Bad secret
