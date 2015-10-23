@@ -32,7 +32,7 @@ var (
 	tlsKey       = env.String("TLSKEY", "")
 	listenAddr   = env.String("LISTEN", ":8080")
 	dbURL        = env.String("DB_URL", "postgres:///api?sslmode=disable")
-	stack        = env.String("STACK", "sandbox")
+	target       = env.String("STACK", "sandbox") // TODO(kr): rename STACK to TARGET
 	samplePer    = env.Duration("SAMPLEPER", 10*time.Second)
 	nouserSecret = env.String("NOUSER_SECRET", "")
 	splunkAddr   = os.Getenv("SPLUNKADDR")
@@ -60,10 +60,11 @@ func main() {
 	sql.Register("schemadb", pg.SchemaDriver(buildTag))
 	log.SetPrefix("api-" + buildTag + ": ")
 	log.SetFlags(log.Lshortfile)
+	chainlog.SetPrefix("app", "api", "target", *target, "buildtag", buildTag)
 	chainlog.SetOutput(logWriter())
 
 	if librato.URL.Host != "" {
-		librato.Source = *stack
+		librato.Source = *target
 		go librato.SampleMetrics(*samplePer)
 	} else {
 		log.Println("no metrics; set LIBRATO_URL for prod")
