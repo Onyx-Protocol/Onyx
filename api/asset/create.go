@@ -12,7 +12,6 @@ import (
 	"chain/fedchain-sandbox/hdkey"
 	chaintxscript "chain/fedchain-sandbox/txscript"
 	"chain/fedchain/bc"
-	"chain/fedchain/validation"
 	"chain/metrics"
 )
 
@@ -41,7 +40,7 @@ func Create(ctx context.Context, inodeID, label string) (*appdb.Asset, error) {
 		return nil, errors.Wrapf(err, "creating asset: issuer node id %v sigsReq %v", inodeID, sigsReq)
 	}
 	pkScript := chaintxscript.RedeemToPkScript(asset.RedeemScript)
-	asset.Hash = bc.ComputeAssetID(pkScript, validation.TestParams.GenesisHash)
+	asset.Hash = bc.ComputeAssetID(pkScript, [32]byte{}) // TODO(kr): get genesis hash from config
 
 	err = appdb.InsertAsset(ctx, asset)
 	if err != nil {

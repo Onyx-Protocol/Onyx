@@ -1,32 +1,24 @@
 package state
 
-import (
-	"errors"
-
-	"chain/fedchain/bc"
-)
-
-// ErrNotFound is returned by View methods
-// when an object is not in the view.
-var ErrNotFound = errors.New("blockchain state object not found")
+import "chain/fedchain/bc"
 
 // View provides access to a consistent snapshot of the blockchain state.
 type View interface {
 	// Output loads the output from the view.
 	// It returns ErrNotFound if output is not stored or does not exist.
-	Output(bc.Outpoint) (*Output, error)
+	Output(bc.Outpoint) *Output
 
 	// SaveOutput stores output in the view.
 	// Saving a spent output may, depending on the type of the view,
 	// either erase an existing output or overwrite it with a "spent" flag.
-	SaveOutput(*Output) error
+	SaveOutput(*Output)
 
 	// AssetDefinitionPointer looks up the given Asset ID.
 	// It returns ErrNotFound if ADP is not stored or does not exist.
-	AssetDefinitionPointer(bc.AssetID) (*bc.AssetDefinitionPointer, error)
+	// AssetDefinitionPointer(bc.AssetID) *bc.AssetDefinitionPointer
 
 	// SaveAssetDefinitionPointer updates the asset definition pointer.
-	SaveAssetDefinitionPointer(*bc.AssetDefinitionPointer) error
+	// SaveAssetDefinitionPointer(*bc.AssetDefinitionPointer)
 }
 
 // Output represents a spent or unspent output
