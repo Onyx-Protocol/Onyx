@@ -53,6 +53,21 @@ func newTestProject(t *testing.T, ctx context.Context, name string, user *User) 
 	return project
 }
 
+func newTestAdminNode(t *testing.T, ctx context.Context, project *Project, label string) *AdminNode {
+	ensureInTransaction(ctx)
+	if project == nil {
+		project = newTestProject(t, ctx, "project-1", nil)
+	}
+	adminNode, err := InsertAdminNode(ctx, project.ID, label)
+	if err != nil {
+		t.Fatalf("trouble setting up admin node in newTestAdminNode: %v", err)
+	}
+	if adminNode.ID == "" {
+		t.Fatal("got empty admin node id in newTestAdminNode")
+	}
+	return adminNode
+}
+
 func newTestIssuerNode(t *testing.T, ctx context.Context, project *Project, label string) *IssuerNode {
 	ensureInTransaction(ctx)
 	if project == nil {
