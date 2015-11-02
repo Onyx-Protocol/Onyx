@@ -1,5 +1,15 @@
 #!/bin/sh
-/usr/local/go/bin/go build -tags 'prod' -o builds/chainbot/target/chainbot ./cmd/chainbot
+
+commit=`git rev-parse HEAD`
+date=`date --utc --rfc-3339=seconds|tr ' ' T|sed s/+00:00/Z/`
+ldflags="-X main.buildTag=$TAG -X main.buildCommit=$commit -X main.buildDate=$date"
+
+/usr/local/go/bin/go build\
+	-tags prod\
+	-ldflags "$ldflags"\
+	-o builds/chainbot/target/chainbot\
+	chain/cmd/chainbot
+
 cp api/appdb/schema.sql builds/chainbot/target/schema.sql
 cd builds/chainbot/target > /dev/null
 tar cf - .
