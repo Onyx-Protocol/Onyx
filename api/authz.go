@@ -82,6 +82,9 @@ func buildAuthz(ctx context.Context, reqs ...buildReq) error {
 			}
 		}
 	}
+	if len(accountIDs) == 0 {
+		return nil
+	}
 	projects, err := appdb.ProjectsByAccount(ctx, accountIDs...)
 	if err != nil {
 		return err
