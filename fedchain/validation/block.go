@@ -5,6 +5,7 @@ import (
 
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
+	"chain/net/trace/span"
 )
 
 // ValidateBlock validates the given block
@@ -13,6 +14,9 @@ import (
 // If block is invalid,
 // it returns a non-nil error describing why.
 func ValidateBlock(ctx context.Context, view state.View, block *bc.Block) error {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	// TODO: Check that block headers are valid.
 	// TODO(kr): consider splitting ApplyTx out of ValidateTx
 	// and therefore making the user call ApplyBlock separately.

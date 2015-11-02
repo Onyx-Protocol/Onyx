@@ -16,6 +16,7 @@ import (
 	"chain/fedchain/state"
 	"chain/fedchain/validation"
 	"chain/log"
+	"chain/net/trace/span"
 )
 
 // ErrBadBlock is returned when a block is invalid.
@@ -59,6 +60,9 @@ func makeBlock(ctx context.Context) {
 // state.
 // TODO - receive parameters for script config.
 func GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, error) {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	ts := uint64(now.Unix())
 
 	prevBlock, err := txdb.LatestBlock(ctx)
@@ -101,6 +105,8 @@ func GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, error) {
 		return nil, errors.Wrap(err)
 	}
 	view := state.Compose(poolView, bcView)
+	ctx = span.NewContextSuffix(ctx, "-validate-all")
+	defer span.Finish(ctx)
 	for _, tx := range txs {
 		if validation.ValidateTxInputs(ctx, view, tx) == nil {
 			validation.ApplyTx(ctx, view, tx)
@@ -119,6 +125,9 @@ func outpoints(outs []*txdb.Output) (p []bc.Outpoint) {
 }
 
 func ApplyBlock(ctx context.Context, block *bc.Block) error {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	delta, err := applyBlock(ctx, block)
 	if err != nil {
 		return errors.Wrap(err)
@@ -138,7 +147,7 @@ func ApplyBlock(ctx context.Context, block *bc.Block) error {
 			resvDelta = append(resvDelta, o)
 		}
 	}
-	applyToReserver(resvDelta)
+	applyToReserver(ctx, resvDelta)
 
 	conflictTxs, err := rebuildPool(ctx, block)
 	if err != nil {
@@ -150,12 +159,14 @@ func ApplyBlock(ctx context.Context, block *bc.Block) error {
 		return errors.Wrap(err)
 	}
 
-	// update reserver
-	applyToReserver(conflictOuts)
+	applyToReserver(ctx, conflictOuts)
 	return nil
 }
 
 func applyBlock(ctx context.Context, block *bc.Block) ([]*txdb.Output, error) {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	delta, adps, err := validateBlock(ctx, block)
 	if err != nil {
 		return nil, errors.Wrap(err, "block validation")
@@ -200,6 +211,9 @@ func applyBlock(ctx context.Context, block *bc.Block) ([]*txdb.Output, error) {
 }
 
 func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "pool update dbtx begin")
@@ -303,6 +317,9 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 }
 
 func getRestoreableOutputs(ctx context.Context, txs []*bc.Tx) (outs []*txdb.Output, err error) {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	poolView, err := txdb.NewPoolViewForPrevouts(ctx, txs)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -347,7 +364,10 @@ func getRestoreableOutputs(ctx context.Context, txs []*bc.Tx) (outs []*txdb.Outp
 	return outs, nil
 }
 
-func applyToReserver(outs []*txdb.Output) {
+func applyToReserver(ctx context.Context, outs []*txdb.Output) {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	var del, ins []*utxodb.UTXO
 	for _, out := range outs {
 		u := &utxodb.UTXO{
@@ -371,6 +391,9 @@ func applyToReserver(outs []*txdb.Output) {
 // actually have account mappings, which come from either the pool_outputs or
 // addresses tables.
 func loadAccountInfo(ctx context.Context, outs []*txdb.Output) error {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	var (
 		hashes          []string
 		indexes         []uint32
@@ -493,6 +516,9 @@ func loadAccountInfo(ctx context.Context, outs []*txdb.Output) error {
 // validateBlock performs validation on an incoming block, in advance of
 // applying the block to the txdb.
 func validateBlock(ctx context.Context, block *bc.Block) (outs []*txdb.Output, adps map[bc.AssetID]*bc.AssetDefinitionPointer, err error) {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	bcView, err := txdb.NewViewForPrevouts(ctx, block.Transactions)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "txdb")

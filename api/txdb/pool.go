@@ -13,6 +13,7 @@ import (
 	"chain/fedchain/state"
 	"chain/fedchain/txscript"
 	"chain/metrics"
+	"chain/net/trace/span"
 )
 
 // loadPoolOutputs returns the outputs in 'load' that can be found.
@@ -21,6 +22,9 @@ import (
 // If some are not found, they will be absent from the map
 // (not an error).
 func loadPoolOutputs(ctx context.Context, load []bc.Outpoint) (map[bc.Outpoint]*state.Output, error) {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	var (
 		txid  []string
 		index []uint32

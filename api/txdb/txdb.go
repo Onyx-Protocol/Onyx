@@ -11,6 +11,7 @@ import (
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
+	"chain/net/trace/span"
 	"chain/strings"
 )
 
@@ -18,6 +19,9 @@ import (
 // TODO(jeffomatic) - at some point in the future, will we want to keep this
 // cached in an in-memory pool, a la btcd's TxMemPool?
 func PoolTxs(ctx context.Context) ([]*bc.Tx, error) {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	const q = `SELECT data FROM pool_txs ORDER BY sort_id`
 	rows, err := pg.FromContext(ctx).Query(q)
 	if err != nil {
@@ -95,6 +99,8 @@ func InsertTx(ctx context.Context, tx *bc.Tx) error {
 
 // LatestBlock returns the most recent block.
 func LatestBlock(ctx context.Context) (*bc.Block, error) {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
 	const q = `SELECT data FROM blocks ORDER BY height DESC LIMIT 1`
 	b := new(bc.Block)
 	err := pg.FromContext(ctx).QueryRow(q).Scan(b)
@@ -108,6 +114,9 @@ func LatestBlock(ctx context.Context) (*bc.Block, error) {
 }
 
 func InsertBlock(ctx context.Context, block *bc.Block) error {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	const q = `
 		INSERT INTO blocks (block_hash, height, data)
 		VALUES ($1, $2, $3)
@@ -122,6 +131,9 @@ func InsertBlock(ctx context.Context, block *bc.Block) error {
 }
 
 func insertBlockTxs(ctx context.Context, block *bc.Block) error {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	var (
 		hashes []string
 		data   [][]byte
@@ -194,6 +206,9 @@ func GetBlock(ctx context.Context, hash string) (*bc.Block, error) {
 }
 
 func RemoveBlockSpentOutputs(ctx context.Context, delta []*Output) error {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	var (
 		txids []string
 		ids   []uint32
@@ -219,6 +234,9 @@ func RemoveBlockSpentOutputs(ctx context.Context, delta []*Output) error {
 }
 
 func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) error {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	var outs utxoSet
 	for _, out := range delta {
 		if out.Spent {

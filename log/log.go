@@ -16,8 +16,12 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/resonancelabs/go-pub/base"
+	"github.com/resonancelabs/go-pub/instrument"
+
 	"chain/errors"
 	"chain/net/http/reqid"
+	"chain/net/trace/span"
 )
 
 var (
@@ -101,26 +105,29 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 	}
 
 	// The auto-generated caller value may be overwritten.
-	var vcaller interface{}
+	var vcaller string
 	if len(keyvals) >= 2 && keyvals[0] == KeyCaller {
-		vcaller = keyvals[1]
+		vcaller = formatValue(keyvals[1])
 		keyvals = keyvals[2:]
 	} else {
 		vcaller = caller(1)
 	}
 
+	t := time.Now().UTC()
+
 	// Prepend the log entry with auto-generated fields.
 	out := fmt.Sprintf(
 		"%s=%s %s=%s %s=%s",
 		KeyReqID, formatValue(reqid.FromContext(ctx)),
-		KeyCaller, formatValue(vcaller),
-		KeyTime, formatValue(time.Now().UTC().Format(time.RFC3339Nano)),
+		KeyCaller, vcaller,
+		KeyTime, formatValue(t.Format(time.RFC3339Nano)),
 	)
 
 	if subreqid := reqid.FromSubContext(ctx); subreqid != reqid.Unknown {
 		out += " " + KeySubReqID + "=" + formatValue(subreqid)
 	}
 
+	rec := newSpanRec(vcaller, t)
 	var stack interface{}
 	for i := 0; i < len(keyvals); i += 2 {
 		k := keyvals[i]
@@ -128,6 +135,9 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 		if k == KeyStack && isStackVal(v) {
 			stack = v
 			continue
+		}
+		if k == KeyError {
+			rec.IsError = true
 		}
 		out += " " + formatKey(k) + "=" + formatValue(v)
 	}
@@ -138,6 +148,30 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 	logWriter.Write([]byte{'\n'})
 	writeRawStack(logWriter, stack)
 	logWriterMu.Unlock()
+
+	if logger := span.LoggerFromContext(ctx); logger != nil {
+		rec.Message = string(prefix) + out
+		if frames, ok := stack.([]errors.StackFrame); ok {
+			for _, f := range frames {
+				rec.StackFrames = append(rec.StackFrames, f.String())
+			}
+		}
+		logger.Log(rec)
+	}
+}
+
+func newSpanRec(vcaller string, t time.Time) instrument.LogRecord {
+	cpos := strings.IndexByte(vcaller, ':')
+	rec := instrument.LogRecord{
+		TimestampMicros: base.ToMicros(t),
+	}
+	if cpos >= 0 {
+		rec.FileName = vcaller[:cpos]
+		rec.LineNumber, _ = strconv.Atoi(vcaller[cpos+1:])
+	} else {
+		rec.FileName = vcaller
+	}
+	return rec
 }
 
 func writeRawStack(w io.Writer, v interface{}) {

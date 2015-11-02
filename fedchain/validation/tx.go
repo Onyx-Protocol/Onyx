@@ -39,6 +39,11 @@ func ValidateTxInputs(ctx context.Context, view state.ViewReader, tx *bc.Tx) err
 // If tx is invalid,
 // it returns a non-nil error describing why.
 func ValidateTx(ctx context.Context, view state.View, tx *bc.Tx, timestamp uint64, prevHash *bc.Hash) error {
+	// Don't make a span here, because there are too many of them
+	// to comfortably fit in a single trace for processing (creating
+	// or applying) a block.
+	// TODO(kr): ask Ben what's reasonable to do in this situation.
+
 	err := txIsWellFormed(tx)
 	if err != nil {
 		return err

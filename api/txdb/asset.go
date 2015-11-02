@@ -9,6 +9,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
+	"chain/net/trace/span"
 )
 
 func AssetDefinition(ctx context.Context, assetID string) (string, []byte, error) {
@@ -49,6 +50,9 @@ func DefinitionHashByAssetID(ctx context.Context, assetID string) (string, error
 // InsertAssetDefinitionPointers writes the and asset id and the definition hash,
 // to the asset_definition_pointers table.
 func InsertAssetDefinitionPointers(ctx context.Context, adps map[bc.AssetID]*bc.AssetDefinitionPointer) error {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	for _, adp := range adps {
 		err := insertADP(ctx, adp)
 		if err != nil {
@@ -60,6 +64,9 @@ func InsertAssetDefinitionPointers(ctx context.Context, adps map[bc.AssetID]*bc.
 }
 
 func insertADP(ctx context.Context, adp *bc.AssetDefinitionPointer) error {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	aid := adp.AssetID.String()
 	hash := bc.Hash(adp.DefinitionHash).String()
 
@@ -98,6 +105,9 @@ func insertADP(ctx context.Context, adp *bc.AssetDefinitionPointer) error {
 // InsertAssetDefinitions writes the maps the hash of an asset definition
 // to that definition.
 func InsertAssetDefinitions(ctx context.Context, block *bc.Block) error {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	defs := make(map[[32]byte][]byte)
 	for _, tx := range block.Transactions {
 		for _, in := range tx.Inputs {

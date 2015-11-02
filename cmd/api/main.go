@@ -12,6 +12,8 @@ import (
 
 	"github.com/kr/env"
 	"github.com/kr/secureheader"
+	"github.com/resonancelabs/go-pub/instrument"
+	"github.com/resonancelabs/go-pub/instrument/client"
 	"golang.org/x/net/context"
 
 	"chain/api"
@@ -24,6 +26,7 @@ import (
 	"chain/metrics/librato"
 	chainhttp "chain/net/http"
 	"chain/net/http/gzip"
+	"chain/net/http/httpspan"
 )
 
 var (
@@ -40,7 +43,8 @@ var (
 	logSize      = env.Int("LOGSIZE", 5e6) // 5MB
 	logCount     = env.Int("LOGCOUNT", 9)
 	// for config var LIBRATO_URL, see func init below
-	maxDBConns = env.Int("MAXDBCONNS", 10) // set to 100 in prod
+	traceguideToken = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
+	maxDBConns      = env.Int("MAXDBCONNS", 10) // set to 100 in prod
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -73,6 +77,20 @@ func main() {
 		log.Println("no metrics; set LIBRATO_URL for prod")
 	}
 
+	if traceguideToken == "" {
+		log.Println("no tracing; set TRACEGUIDE_ACCESS_TOKEN for prod")
+	}
+	instrument.SetDefaultRuntime(client.NewRuntime(&client.Options{
+		AccessToken: traceguideToken,
+		GroupName:   "api",
+		Attributes: map[string]interface{}{
+			"target":      *target,
+			"buildtag":    buildTag,
+			"builddate":   buildDate,
+			"buildcommit": buildCommit,
+		},
+	}))
+
 	db, err := sql.Open("schemadb", *dbURL)
 	if err != nil {
 		log.Fatal(err)
@@ -85,6 +103,7 @@ func main() {
 	h = api.Handler(*nouserSecret)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
+	h = httpspan.Handler{Handler: h}
 
 	bg := context.Background()
 	bg = pg.NewContext(bg, db)

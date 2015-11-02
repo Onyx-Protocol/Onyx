@@ -12,6 +12,7 @@ import (
 	"chain/fedchain/bc"
 	"chain/metrics"
 	"chain/net/http/reqid"
+	"chain/net/trace/span"
 )
 
 type buildReq struct {
@@ -24,6 +25,8 @@ type buildReq struct {
 // POST /v3/assets/:assetID/issue
 func issueAsset(ctx context.Context, assetID string, outs []*asset.Output) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
 	if err := assetAuthz(ctx, assetID); err != nil {
 		return nil, err
 	}
@@ -38,6 +41,8 @@ func issueAsset(ctx context.Context, assetID string, outs []*asset.Output) (inte
 
 func buildSingle(ctx context.Context, req buildReq) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -60,6 +65,9 @@ func buildSingle(ctx context.Context, req buildReq) (interface{}, error) {
 // POST /v3/transact/build
 func build(ctx context.Context, buildReqs []buildReq) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	if err := buildAuthz(ctx, buildReqs...); err != nil {
 		return nil, err
 	}
@@ -88,6 +96,8 @@ func build(ctx context.Context, buildReqs []buildReq) (interface{}, error) {
 // POST /v3/manager-nodes/transact/finalize
 func submitSingle(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
 
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
@@ -125,6 +135,8 @@ func cancelReservation(ctx context.Context, x struct{ Transaction bc.Tx }) error
 // POST /v3/transact/submit
 func submit(ctx context.Context, x struct{ Transactions []*asset.Tx }) interface{} {
 	defer metrics.RecordElapsed(time.Now())
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
 
 	responses := make([]interface{}, len(x.Transactions))
 	var wg sync.WaitGroup

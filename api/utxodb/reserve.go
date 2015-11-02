@@ -12,6 +12,7 @@ import (
 	"chain/fedchain/bc"
 	"chain/log"
 	"chain/metrics"
+	"chain/net/trace/span"
 )
 
 var (
@@ -119,6 +120,8 @@ func (rs *Reserver) pool(accountID, assetID string) *pool {
 
 func (rs *Reserver) Reserve(ctx context.Context, inputs []Input, ttl time.Duration) (u []*UTXO, c []Change, err error) {
 	defer metrics.RecordElapsed(time.Now())
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
 
 	var reserved []*UTXO
 	var change []Change

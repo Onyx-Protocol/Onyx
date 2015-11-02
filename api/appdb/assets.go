@@ -11,6 +11,7 @@ import (
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
 	"chain/metrics"
+	"chain/net/trace/span"
 )
 
 // ErrBadAsset is an error that means the string
@@ -217,6 +218,9 @@ func DeleteAsset(ctx context.Context, assetID string) error {
 // UpdateIssuances modifies the issuance totals of a set of assets by the given
 // amounts. The amounts may be negative.
 func UpdateIssuances(ctx context.Context, deltas map[string]int64, confirmed bool) error {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	var (
 		assetIDs []string
 		amounts  []int64

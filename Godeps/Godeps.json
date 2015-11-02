@@ -84,6 +84,10 @@
 			"Rev": "2df174808ee097f90d259e432cc04442cf60be21"
 		},
 		{
+			"ImportPath": "github.com/golang/glog",
+			"Rev": "fca8c8854093a154ff1eb580aae10276ad6b1b5f"
+		},
+		{
 			"ImportPath": "github.com/kr/env",
 			"Rev": "73c935da1ab06111a5a1cb5981368063e6c1ceb6"
 		},
@@ -105,8 +109,30 @@
 			"Rev": "e8116c9c66e641e9f81fc0a79fac923dfc646378"
 		},
 		{
+			"ImportPath": "github.com/onsi/ginkgo",
+			"Comment": "v1.2.0-29-g7f8ab55",
+			"Rev": "7f8ab55aaf3b86885aa55b762e803744d1674700"
+		},
+		{
+			"ImportPath": "github.com/onsi/gomega",
+			"Comment": "v1.0-71-g2152b45",
+			"Rev": "2152b45fa28a361beba9aab0885972323a444e28"
+		},
+		{
 			"ImportPath": "github.com/pmezard/go-difflib/difflib",
 			"Rev": "e8554b8641db39598be7f6342874b958f12ae1d4"
+		},
+		{
+			"ImportPath": "github.com/resonancelabs/go-pub/base",
+			"Rev": "d6189421f93dd1fe95afafd22623335e9dd01efc"
+		},
+		{
+			"ImportPath": "github.com/resonancelabs/go-pub/instrument",
+			"Rev": "d6189421f93dd1fe95afafd22623335e9dd01efc"
+		},
+		{
+			"ImportPath": "github.com/resonancelabs/go-pub/thrift_0_9_2/lib/go/thrift",
+			"Rev": "d6189421f93dd1fe95afafd22623335e9dd01efc"
 		},
 		{
 			"ImportPath": "github.com/shiena/ansicolor",
