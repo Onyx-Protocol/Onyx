@@ -9,6 +9,28 @@ import (
 	"strings"
 )
 
+type Byteas [][]byte
+
+// it currently only handles simple values exlcuding commas and quotes
+func (a *Byteas) Scan(val interface{}) error {
+	panic("unimplemented")
+}
+
+// Go value: Byteas{{'f', 'o', 'o'}, {'b', 'a', 'r'}}
+// Postgres syntax: {\\x666f6f,\\x626172}
+func (a Byteas) Value() (driver.Value, error) {
+	var buf bytes.Buffer
+	buf.WriteByte('{')
+	for i, b := range a {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+		fmt.Fprintf(&buf, `\\x%x`, b)
+	}
+	buf.WriteByte('}')
+	return buf.Bytes(), nil
+}
+
 type Strings []string
 
 // it currently only handles simple values exlcuding commas and quotes

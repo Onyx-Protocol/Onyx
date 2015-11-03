@@ -2,16 +2,20 @@
 package asset
 
 import (
+	"database/sql"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	"chain/api/txdb"
 	"chain/api/utxodb"
+	"chain/crypto/hash256"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
-	"chain/fedchain-sandbox/txscript"
+	chaintxscript "chain/fedchain-sandbox/txscript"
 	"chain/fedchain/bc"
+	"chain/fedchain/txscript"
 	"chain/metrics"
 )
 
@@ -23,8 +27,11 @@ var ErrBadAddr = errors.New("bad address")
 // distributed to the outputs provided.
 func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
-	tx := &bc.Tx{Version: bc.CurrentTransactionVersion}
-	tx.Inputs = append(tx.Inputs, &bc.TxInput{Previous: bc.IssuanceOutpoint})
+
+	prevBlock, err := txdb.LatestBlock(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
 
 	hash, err := bc.ParseHash(assetID)
 	assetHash := bc.AssetID(hash)
@@ -33,6 +40,26 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 	if err != nil {
 		return nil, errors.WithDetailf(err, "get asset with ID %q", assetID)
 	}
+
+	tx := &bc.Tx{Version: bc.CurrentTransactionVersion}
+	in := &bc.TxInput{Previous: bc.Outpoint{
+		Index: bc.InvalidOutputIndex,
+		Hash:  prevBlock.Hash(),
+	}}
+
+	if len(asset.Definition) != 0 {
+		defHash, err := txdb.DefinitionHashByAssetID(ctx, assetID)
+		if err != nil && errors.Root(err) != sql.ErrNoRows {
+			return nil, errors.WithDetailf(err, "get asset definition pointer for %s", assetID)
+		}
+
+		newDefHash := bc.Hash(hash256.Sum(asset.Definition)).String()
+		if defHash != newDefHash {
+			in.Metadata = asset.Definition
+		}
+	}
+
+	tx.Inputs = append(tx.Inputs, in)
 
 	for i, out := range outs {
 		if (out.AccountID == "") == (out.Address == "") {
@@ -45,10 +72,15 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 		return nil, errors.Wrap(err, "add issuance outputs")
 	}
 
+	input, err := issuanceInput(asset, tx)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating issuance Input")
+	}
+
 	appTx := &Tx{
 		Unsigned:   tx,
 		BlockChain: "sandbox", // TODO(tess): make this BlockChain: blockchain.FromContext(ctx)
-		Inputs:     []*Input{issuanceInput(asset, tx)},
+		Inputs:     []*Input{input},
 		OutRecvs:   outRecvs,
 	}
 	return appTx, nil
@@ -79,7 +111,7 @@ func (o *Output) PKScript(ctx context.Context) ([]byte, *utxodb.Receiver, error)
 		}
 		return addr.PKScript, newOutputReceiver(addr, o.isChange), nil
 	}
-	script, err := txscript.AddrPkScript(o.Address)
+	script, err := chaintxscript.AddrPkScript(o.Address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(ErrBadAddr, "output pkscript error addr=%v", o.Address)
 	}
@@ -111,13 +143,18 @@ func newOutputReceiver(addr *appdb.Address, isChange bool) *utxodb.Receiver {
 
 // issuanceInput returns an Input that can be used
 // to issue units of asset 'a'.
-func issuanceInput(a *appdb.Asset, tx *bc.Tx) *Input {
+func issuanceInput(a *appdb.Asset, tx *bc.Tx) (*Input, error) {
+	hash, err := txscript.CalcSignatureHash(tx, 0, a.RedeemScript, txscript.SigHashAll)
+	if err != nil {
+		return nil, errors.Wrap(err, "calculating signature hash")
+	}
+
 	return &Input{
 		IssuerNodeID:  a.IssuerNodeID,
 		RedeemScript:  a.RedeemScript,
-		SignatureData: tx.Hash(),
+		SignatureData: hash,
 		Sigs:          inputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a))),
-	}
+	}, nil
 }
 
 func inputSigs(keys []*hdkey.Key) (sigs []*Signature) {

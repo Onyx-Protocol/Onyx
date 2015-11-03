@@ -7,9 +7,8 @@ package txscript_test
 import (
 	"testing"
 
+	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
-
-	"github.com/btcsuite/btcd/wire"
 )
 
 // TestBadPC sets the pc to a deliberately bad result then confirms that Step()
@@ -31,12 +30,12 @@ func TestBadPC(t *testing.T) {
 		},
 	}
 	// tx with almost empty scripts.
-	tx := &wire.MsgTx{
+	tx := &bc.Tx{
 		Version: 1,
-		TxIn: []*wire.TxIn{
+		Inputs: []*bc.TxInput{
 			{
-				PreviousOutPoint: wire.OutPoint{
-					Hash: wire.ShaHash([32]byte{
+				Previous: bc.Outpoint{
+					Hash: bc.Hash([32]byte{
 						0xc9, 0x97, 0xa5, 0xe5,
 						0x6e, 0x10, 0x41, 0x02,
 						0xfa, 0x20, 0x9c, 0x6a,
@@ -49,13 +48,12 @@ func TestBadPC(t *testing.T) {
 					Index: 0,
 				},
 				SignatureScript: []uint8{txscript.OP_NOP},
-				Sequence:        4294967295,
 			},
 		},
-		TxOut: []*wire.TxOut{
+		Outputs: []*bc.TxOutput{
 			{
-				Value:    1000000000,
-				PkScript: nil,
+				Value:  1000000000,
+				Script: nil,
 			},
 		},
 		LockTime: 0,
@@ -91,12 +89,12 @@ func TestCheckErrorCondition(t *testing.T) {
 	t.Parallel()
 
 	// tx with almost empty scripts.
-	tx := &wire.MsgTx{
+	tx := &bc.Tx{
 		Version: 1,
-		TxIn: []*wire.TxIn{
+		Inputs: []*bc.TxInput{
 			{
-				PreviousOutPoint: wire.OutPoint{
-					Hash: wire.ShaHash([32]byte{
+				Previous: bc.Outpoint{
+					Hash: bc.Hash([32]byte{
 						0xc9, 0x97, 0xa5, 0xe5,
 						0x6e, 0x10, 0x41, 0x02,
 						0xfa, 0x20, 0x9c, 0x6a,
@@ -109,13 +107,12 @@ func TestCheckErrorCondition(t *testing.T) {
 					Index: 0,
 				},
 				SignatureScript: []uint8{},
-				Sequence:        4294967295,
 			},
 		},
-		TxOut: []*wire.TxOut{
+		Outputs: []*bc.TxOutput{
 			{
-				Value:    1000000000,
-				PkScript: nil,
+				Value:  1000000000,
+				Script: nil,
 			},
 		},
 		LockTime: 0,
@@ -183,12 +180,12 @@ func TestInvalidFlagCombinations(t *testing.T) {
 	}
 
 	// tx with almost empty scripts.
-	tx := &wire.MsgTx{
+	tx := &bc.Tx{
 		Version: 1,
-		TxIn: []*wire.TxIn{
+		Inputs: []*bc.TxInput{
 			{
-				PreviousOutPoint: wire.OutPoint{
-					Hash: wire.ShaHash([32]byte{
+				Previous: bc.Outpoint{
+					Hash: bc.Hash([32]byte{
 						0xc9, 0x97, 0xa5, 0xe5,
 						0x6e, 0x10, 0x41, 0x02,
 						0xfa, 0x20, 0x9c, 0x6a,
@@ -201,13 +198,12 @@ func TestInvalidFlagCombinations(t *testing.T) {
 					Index: 0,
 				},
 				SignatureScript: []uint8{txscript.OP_NOP},
-				Sequence:        4294967295,
 			},
 		},
-		TxOut: []*wire.TxOut{
+		Outputs: []*bc.TxOutput{
 			{
-				Value:    1000000000,
-				PkScript: nil,
+				Value:  1000000000,
+				Script: nil,
 			},
 		},
 		LockTime: 0,

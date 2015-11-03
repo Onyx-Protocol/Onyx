@@ -88,7 +88,6 @@ func build(ctx context.Context, buildReqs []buildReq) (interface{}, error) {
 // POST /v3/manager-nodes/transact/finalize
 func submitSingle(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
-	// TODO(kr): validate
 
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {

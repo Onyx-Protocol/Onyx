@@ -9,7 +9,8 @@ import (
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/wire"
+
+	"chain/fedchain/bc"
 )
 
 // ScriptFlags is a bitmask defining additional operations or tests that will be
@@ -81,7 +82,7 @@ type Engine struct {
 	lastCodeSep     int
 	dstack          stack // data stack
 	astack          stack // alt stack
-	tx              wire.MsgTx
+	tx              bc.Tx
 	txIdx           int
 	condStack       []int
 	numOps          int
@@ -573,12 +574,12 @@ func (vm *Engine) SetAltStack(data [][]byte) {
 // NewEngine returns a new script engine for the provided public key script,
 // transaction, and input index.  The flags modify the behavior of the script
 // engine according to the description provided by each flag.
-func NewEngine(scriptPubKey []byte, tx *wire.MsgTx, txIdx int, flags ScriptFlags) (*Engine, error) {
+func NewEngine(scriptPubKey []byte, tx *bc.Tx, txIdx int, flags ScriptFlags) (*Engine, error) {
 	// The provided transaction input index must refer to a valid input.
-	if txIdx < 0 || txIdx >= len(tx.TxIn) {
+	if txIdx < 0 || txIdx >= len(tx.Inputs) {
 		return nil, ErrInvalidIndex
 	}
-	scriptSig := tx.TxIn[txIdx].SignatureScript
+	scriptSig := tx.Inputs[txIdx].SignatureScript
 
 	// The clean stack flag (ScriptVerifyCleanStack) is not allowed without
 	// the pay-to-script-hash (P2SH) evaluation (ScriptBip16) flag.

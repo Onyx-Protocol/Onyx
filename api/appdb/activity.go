@@ -3,14 +3,15 @@ package appdb
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"time"
 
 	"golang.org/x/net/context"
 
-	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/errors"
+	"chain/fedchain-sandbox/txscript"
 	"chain/fedchain/bc"
 	"chain/metrics"
 	"chain/strings"
@@ -22,33 +23,31 @@ var (
 )
 
 // WriteActivity generates formatted activity history for the given transaction.
-// This must be called after the output UTXOs have been generated, but before
-// the input UTXOs have been deleted. The supplied context must contain a
-// database transaction.
-func WriteActivity(ctx context.Context, tx *bc.Tx, outs []*UTXO, txTime time.Time) error {
+//
+// Change flags on outputs are important to activity formatting. WriteActivity
+// will check the addresses table to determine if specific addresses used as
+// change, but at present, the addresses table is not comprehensive. The
+// outIsChange parameter is provided to supplement the address table. It is
+// typically populated using data bundled with a transaction template.
+func WriteActivity(ctx context.Context, tx *bc.Tx, outIsChange map[int]bool, txTime time.Time) error {
 	defer metrics.RecordElapsed(time.Now())
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
-	txHash := tx.Hash().String()
-
-	// Get detailed UTXO information for the transaction's inputs and outputs.
-	var (
-		hashes  []string
-		indexes []uint32
-	)
-	for _, in := range tx.Inputs {
-		hashes = append(hashes, in.Previous.Hash.String())
-		indexes = append(indexes, in.Previous.Index)
-	}
-	ins, err := getActUTXOs(ctx, hashes, indexes)
+	// Fetch UTXO data for all outputs involved in the transaction.
+	ins, outs, err := getActUTXOs(ctx, tx)
 	if err != nil {
-		return errors.Wrap(err, "get input utxos")
+		return errors.Wrap(err, "get tx utxos")
+	}
+
+	// Add change flags to outputs
+	err = markChangeOuts(ctx, outs, outIsChange)
+	if err != nil {
+		return errors.Wrap(err, "mark change outs")
 	}
 
 	// Extract IDs for all resources involved in the transaction. The lists
 	// should not contain duplicates.
-	allUTXOs := append(ins, outs...)
-	assetIDs, accountIDs, managerNodeIDs, managerNodeAccounts := getIDsFromUTXOs(allUTXOs)
+	assetIDs, accountIDs, managerNodeIDs, managerNodeAccounts := getIDsFromUTXOs(append(ins, outs...))
 
 	// Gather additional data on relevant accounts.
 	actAccounts, err := getActAccounts(ctx, accountIDs)
@@ -72,7 +71,10 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outs []*UTXO, txTime time.Tim
 		assetLabels[a.id] = a.label
 	}
 
-	//  Manager node activity
+	// We'll use the transaction hash several times, so we'll keep it around.
+	txHash := tx.Hash().String()
+
+	// Manager node activity
 	for _, managerNodeID := range managerNodeIDs {
 		r := coalesceActivity(ins, outs, managerNodeAccounts[managerNodeID])
 		inAct, outAct := createActEntries(r, assetLabels, accountLabels)
@@ -221,13 +223,13 @@ func ManagerNodeTxActivity(ctx context.Context, managerNodeID, txID string) (*js
 	return (*json.RawMessage)(&a), err
 }
 
-// UTXO contains fields we need to insert into the db
-// but don't store in memory in package utxodb.
-type UTXO struct {
-	*utxodb.UTXO
-	Addr          string
-	ManagerNodeID string
-	IsChange      bool
+type actUTXO struct {
+	assetID       string
+	amount        uint64
+	managerNodeID string
+	accountID     string
+	addr          string
+	isChange      bool
 }
 
 type actAsset struct {
@@ -297,56 +299,149 @@ type actItem struct {
 	Outputs []actEntry `json:"outputs"`
 }
 
-// getActUTXOs returns all UTXOs consumed by the specified inputs of a
-// transaction.
-func getActUTXOs(ctx context.Context, txHashes []string, indexes []uint32) ([]*UTXO, error) {
-	q := `
+// getActUTXOs returns information about outputs from both sides of a transaciton.
+func getActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*actUTXO, err error) {
+	var (
+		txHash     = tx.Hash()
+		txHashStr  = txHash.String()
+		isIssuance = tx.IsIssuance()
+
+		hashes  []string
+		indexes []uint32
+	)
+
+	if !isIssuance {
+		for _, in := range tx.Inputs {
+			hashes = append(hashes, in.Previous.Hash.String())
+			indexes = append(indexes, in.Previous.Index)
+		}
+	}
+
+	for i := range tx.Outputs {
+		hashes = append(hashes, txHashStr)
+		indexes = append(indexes, uint32(i))
+	}
+
+	const q = `
 		WITH outpoints AS (SELECT unnest($1::text[]), unnest($2::bigint[]))
-		SELECT asset_id, amount, key_index(addr_index), account_id, manager_node_id
-		FROM utxos
-		WHERE (txid, index) IN (TABLE outpoints)
+
+			SELECT txid, index,
+				asset_id, amount, script,
+				account_id, manager_node_id
+			FROM utxos
+			WHERE (txid, index) IN (TABLE outpoints)
+
+			UNION
+
+			SELECT tx_hash, index,
+				asset_id, amount, script,
+				account_id, manager_node_id
+			FROM pool_outputs
+			WHERE (tx_hash, index) IN (TABLE outpoints)
 	`
-	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(txHashes), pg.Uint32s(indexes))
+	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(hashes), pg.Uint32s(indexes))
 	if err != nil {
-		return nil, errors.Wrap(err, "select query")
+		return nil, nil, errors.Wrap(err, "select query")
 	}
 	defer rows.Close()
 
-	var res []*UTXO
-	var addrIndexes [][]uint32
+	all := make(map[bc.Outpoint]*actUTXO)
 	for rows.Next() {
-		var addrIndex []uint32
-		utxo := &UTXO{UTXO: new(utxodb.UTXO)}
-
+		var (
+			hash   bc.Hash
+			index  uint32
+			script []byte
+			utxo   = new(actUTXO)
+		)
 		err := rows.Scan(
-			&utxo.AssetID, &utxo.Amount,
-			(*pg.Uint32s)(&addrIndex), &utxo.AccountID, &utxo.ManagerNodeID,
+			&hash, &index,
+			&utxo.assetID, &utxo.amount, &script,
+			&utxo.accountID, &utxo.managerNodeID,
 		)
 		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
+			return nil, nil, errors.Wrap(err, "row scan")
 		}
 
-		res = append(res, utxo)
-		addrIndexes = append(addrIndexes, addrIndex)
+		addr, err := txscript.PkScriptAddr(script)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "get addr from script: %x", script)
+		}
+		utxo.addr = addr.String()
+
+		all[bc.Outpoint{Hash: hash, Index: index}] = utxo
 	}
 	if rows.Err() != nil {
-		return nil, errors.Wrap(rows.Err(), "end row scan loop")
+		return nil, nil, errors.Wrap(rows.Err(), "end row scan loop")
 	}
 
-	for i, utxo := range res {
-		utxo.Addr, err = DeriveAddress(ctx, utxo.AccountID, addrIndexes[i])
-		if err != nil {
-			return nil, errors.Wrap(err, "derive address")
+	if len(all) != len(hashes) {
+		err := fmt.Errorf("found %d utxos for %d outpoints", len(all), len(hashes))
+		return nil, nil, errors.Wrap(err)
+	}
+
+	if !isIssuance {
+		for _, in := range tx.Inputs {
+			ins = append(ins, all[in.Previous])
 		}
 	}
 
-	return res, nil
+	for i := range tx.Outputs {
+		op := bc.Outpoint{Hash: txHash, Index: uint32(i)}
+		outs = append(outs, all[op])
+	}
+
+	return ins, outs, nil
+}
+
+// markChangeOuts sets the change flag on a set of transaction UTXOs. It checks
+// both the outIsChange parameter and the addresses table.
+func markChangeOuts(ctx context.Context, utxos []*actUTXO, outIsChange map[int]bool) error {
+	var (
+		unknownAddrs  []string
+		unknownByAddr = make(map[string]*actUTXO)
+	)
+	for i, u := range utxos {
+		if outIsChange[i] {
+			u.isChange = true
+		} else {
+			unknownAddrs = append(unknownAddrs, u.addr)
+			unknownByAddr[u.addr] = u
+		}
+	}
+
+	const q = `
+		SELECT address
+		FROM addresses
+		WHERE address IN (SELECT unnest($1::text[]))
+		AND is_change = true
+	`
+	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(unknownAddrs))
+	if err != nil {
+		return errors.Wrap(err, "select query")
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var addr string
+		err := rows.Scan(&addr)
+		if err != nil {
+			return errors.Wrap(err, "row scan")
+		}
+
+		unknownByAddr[addr].isChange = true
+	}
+
+	if err := rows.Err(); err != nil {
+		return errors.Wrap(err, "end row scan loop")
+	}
+
+	return nil
 }
 
 // getIDsFromUTXOs extracts lists of unique identifiers present from the
 // specified UTXOs. It is useful for determining the range of resources involved
 // in a transaction.
-func getIDsFromUTXOs(utxos []*UTXO) (
+func getIDsFromUTXOs(utxos []*actUTXO) (
 	assetIDs []string, // list of unique asset IDs
 	accountIDs []string, // list of unique account IDs
 	managerNodeIDs []string, // list of unique manager node IDs
@@ -355,10 +450,10 @@ func getIDsFromUTXOs(utxos []*UTXO) (
 	managerNodeAccounts = make(map[string][]string)
 	for _, u := range utxos {
 		if u != nil {
-			assetIDs = append(assetIDs, u.AssetID)
-			accountIDs = append(accountIDs, u.AccountID)
-			managerNodeIDs = append(managerNodeIDs, u.ManagerNodeID)
-			managerNodeAccounts[u.ManagerNodeID] = append(managerNodeAccounts[u.ManagerNodeID], u.AccountID)
+			assetIDs = append(assetIDs, u.assetID)
+			accountIDs = append(accountIDs, u.accountID)
+			managerNodeIDs = append(managerNodeIDs, u.managerNodeID)
+			managerNodeAccounts[u.managerNodeID] = append(managerNodeAccounts[u.managerNodeID], u.accountID)
 		}
 	}
 
@@ -440,7 +535,7 @@ func getActAccounts(ctx context.Context, accountIDs []string) ([]*actAccount, er
 	return res, nil
 }
 
-func coalesceActivity(ins, outs []*UTXO, visibleAccounts []string) txRawActivity {
+func coalesceActivity(ins, outs []*actUTXO, visibleAccounts []string) txRawActivity {
 	// create lookup tables for account visibility and change addresses
 	isAccountVis := make(map[string]bool)
 	for _, bid := range visibleAccounts {
@@ -456,22 +551,22 @@ func coalesceActivity(ins, outs []*UTXO, visibleAccounts []string) txRawActivity
 
 	// Pool all inputs by address, or by account if the account is visible.
 	for _, u := range ins {
-		if isAccountVis[u.AccountID] {
-			if res.insByAccount[u.AccountID] == nil {
-				res.insByAccount[u.AccountID] = make(map[string]int64)
+		if isAccountVis[u.accountID] {
+			if res.insByAccount[u.accountID] == nil {
+				res.insByAccount[u.accountID] = make(map[string]int64)
 			}
-			res.insByAccount[u.AccountID][u.AssetID] += int64(u.Amount)
+			res.insByAccount[u.accountID][u.assetID] += int64(u.amount)
 		} else {
-			if res.insByAsset[u.Addr] == nil {
-				res.insByAsset[u.Addr] = make(map[string]int64)
+			if res.insByAsset[u.addr] == nil {
+				res.insByAsset[u.addr] = make(map[string]int64)
 			}
-			res.insByAsset[u.Addr][u.AssetID] += int64(u.Amount)
+			res.insByAsset[u.addr][u.assetID] += int64(u.amount)
 		}
 	}
 
 	// Pool all outputs by address, or by account if the account is visible.
 	for _, u := range outs {
-		if isAccountVis[u.AccountID] {
+		if isAccountVis[u.accountID] {
 			// Rather than create a discrete output for a change address, we
 			// should deduct the value of the output from the corresponding
 			// value in the input. To determine whether to do this, we'll use
@@ -480,21 +575,21 @@ func coalesceActivity(ins, outs []*UTXO, visibleAccounts []string) txRawActivity
 			// 2. There is a corresponding input for the same account and asset.
 			// 3. The input's value is greater than the output.
 
-			if u.IsChange &&
-				res.insByAccount[u.AccountID] != nil &&
-				res.insByAccount[u.AccountID][u.AssetID] > int64(u.Amount) {
-				res.insByAccount[u.AccountID][u.AssetID] -= int64(u.Amount)
+			if u.isChange &&
+				res.insByAccount[u.accountID] != nil &&
+				res.insByAccount[u.accountID][u.assetID] > int64(u.amount) {
+				res.insByAccount[u.accountID][u.assetID] -= int64(u.amount)
 			} else {
-				if res.outsByAccount[u.AccountID] == nil {
-					res.outsByAccount[u.AccountID] = make(map[string]int64)
+				if res.outsByAccount[u.accountID] == nil {
+					res.outsByAccount[u.accountID] = make(map[string]int64)
 				}
-				res.outsByAccount[u.AccountID][u.AssetID] += int64(u.Amount)
+				res.outsByAccount[u.accountID][u.assetID] += int64(u.amount)
 			}
 		} else {
-			if res.outsByAsset[u.Addr] == nil {
-				res.outsByAsset[u.Addr] = make(map[string]int64)
+			if res.outsByAsset[u.addr] == nil {
+				res.outsByAsset[u.addr] = make(map[string]int64)
 			}
-			res.outsByAsset[u.Addr][u.AssetID] += int64(u.Amount)
+			res.outsByAsset[u.addr][u.assetID] += int64(u.amount)
 		}
 	}
 

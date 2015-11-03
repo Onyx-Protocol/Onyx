@@ -112,60 +112,37 @@ func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, er
 	}, nil
 }
 
-// ManagerNodeBalance fetches the balances of assets contained in this manager node.
-// It returns a slice of Balances and the last asset ID in the page.
-// Each Balance contains an asset ID, a confirmed balance,
-// and a total balance. The total and confirmed balances
-// are currently the same.
-func ManagerNodeBalance(ctx context.Context, managerNodeID, prev string, limit int) ([]*Balance, string, error) {
-	q := `
-		SELECT asset_id, sum(amount)::bigint
-		FROM utxos
-		WHERE manager_node_id=$1 AND ($2='' OR asset_id>$2)
-		GROUP BY asset_id
-		ORDER BY asset_id
-		LIMIT $3
-	`
-	rows, err := pg.FromContext(ctx).Query(q, managerNodeID, prev, limit)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "balance query")
-	}
-	defer rows.Close()
-	var (
-		bals []*Balance
-		last string
-	)
-
-	for rows.Next() {
-		var (
-			assetID string
-			bal     int64
-		)
-		err = rows.Scan(&assetID, &bal)
-		if err != nil {
-			return nil, "", errors.Wrap(err, "row scan")
-		}
-		bals = append(bals, &Balance{assetID, bal, bal})
-		last = assetID
-	}
-	if err = rows.Err(); err != nil {
-		return nil, "", errors.Wrap(err, "rows error")
-	}
-	return bals, last, err
-}
-
 // AccountsWithAsset fetches the balance of a particular asset
 // within a manager node, grouped and sorted by individual accounts.
 func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit int) ([]*AccountBalanceItem, string, error) {
 	const q = `
-		SELECT SUM(amount), account_id FROM utxos
-		WHERE asset_id=$1 AND manager_node_id=$2
-		AND ($3='' OR account_id>$3)
+		SELECT SUM(confirmed), SUM(unconfirmed), account_id
+		FROM (
+			SELECT amount AS confirmed, 0 AS unconfirmed, account_id
+				FROM utxos WHERE manager_node_id=$1 AND asset_id=$2
+					AND ($3='' OR account_id>$3)
+			UNION ALL
+			SELECT 0 AS confirmed, amount AS unconfirmed, account_id
+				FROM pool_outputs po WHERE manager_node_id=$1 AND asset_id=$2
+					AND ($3='' OR account_id>$3)
+				AND NOT EXISTS(
+					SELECT 1 FROM pool_inputs pi
+					WHERE po.tx_hash = pi.tx_hash AND po.index = pi.index
+				)
+			UNION ALL
+			SELECT 0 AS confirmed, amount*-1 AS unconfirmed, account_id
+				FROM utxos u WHERE manager_node_id=$1 AND asset_id=$2
+					AND ($3='' OR account_id>$3)
+				AND EXISTS(
+					SELECT 1 FROM pool_inputs pi
+					WHERE u.txid = pi.tx_hash AND u.index = pi.index
+				)
+		) AS bals
 		GROUP BY account_id
 		ORDER BY account_id ASC
 		LIMIT $4
 	`
-	rows, err := pg.FromContext(ctx).Query(q, assetID, mnodeID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(q, mnodeID, assetID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "balances query")
 	}
@@ -177,14 +154,14 @@ func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit
 	)
 	for rows.Next() {
 		var (
-			accountID string
-			bal       int64
+			accountID    string
+			conf, unconf int64
 		)
-		err = rows.Scan(&bal, &accountID)
+		err = rows.Scan(&conf, &unconf, &accountID)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "rows scan")
 		}
-		bals = append(bals, &AccountBalanceItem{accountID, bal, bal})
+		bals = append(bals, &AccountBalanceItem{accountID, conf, conf + unconf})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, "", errors.Wrap(err, "rows error")

@@ -1,6 +1,8 @@
 package bc
 
 import (
+	"bytes"
+	"database/sql/driver"
 	"encoding/binary"
 	"io"
 	"time"
@@ -15,6 +17,34 @@ import (
 type Block struct {
 	BlockHeader
 	Transactions []*Tx
+}
+
+func (b *Block) Scan(val interface{}) error {
+	buf, ok := val.([]byte)
+	if !ok {
+		return errors.New("Scan must receive a byte slice")
+	}
+	r := &errors.Reader{R: bytes.NewReader(buf)}
+	b.readFrom(r)
+	return r.Err
+}
+
+func (b *Block) Value() (driver.Value, error) {
+	buf := new(bytes.Buffer)
+	_, err := b.WriteTo(buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (b *Block) readFrom(r *errors.Reader) {
+	b.BlockHeader.readFrom(r)
+	for n := readUvarint(r); n > 0; n-- {
+		tx := new(Tx)
+		tx.readFrom(r)
+		b.Transactions = append(b.Transactions, tx)
+	}
 }
 
 // WriteTo satisfies interface io.WriterTo.
@@ -47,7 +77,7 @@ type BlockHeader struct {
 	Height uint64
 
 	// Hash of the previous block in the block chain.
-	PreviousBlockHash [32]byte
+	PreviousBlockHash Hash
 
 	// Root of the block's transactions merkle tree.
 	TxRoot [32]byte
@@ -91,6 +121,17 @@ func (bh *BlockHeader) HashForSig() Hash {
 	var v [32]byte
 	h.Sum(v[:0])
 	return v
+}
+
+func (bh *BlockHeader) readFrom(r *errors.Reader) {
+	binary.Read(r, endianness, &bh.Version)
+	binary.Read(r, endianness, &bh.Height)
+	io.ReadFull(r, bh.PreviousBlockHash[:])
+	io.ReadFull(r, bh.TxRoot[:])
+	io.ReadFull(r, bh.StateRoot[:])
+	binary.Read(r, endianness, &bh.Timestamp)
+	readBytes(r, (*[]byte)(&bh.SignatureScript))
+	readBytes(r, (*[]byte)(&bh.OutputScript))
 }
 
 // WriteTo satisfies interface io.WriterTo.

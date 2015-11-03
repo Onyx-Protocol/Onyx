@@ -18,7 +18,8 @@ func TestCreate(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	asset, err := Create(ctx, "in1", "fooAsset")
+	definition := make(map[string]interface{})
+	asset, err := Create(ctx, "in1", "fooAsset", definition)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -35,5 +36,10 @@ func TestCreate(t *testing.T) {
 
 	if asset.Label != "fooAsset" {
 		t.Errorf("got label = %v want %v", asset.Label, "fooAsset")
+	}
+
+	wantIssuance := "a9147ca5bdd7e39cb806681d7c635b1bc36e23cbefa987"
+	if hex.EncodeToString(asset.IssuanceScript) != wantIssuance {
+		t.Errorf("got issuance script=%x want=%v", asset.IssuanceScript, wantIssuance)
 	}
 }

@@ -1,15 +1,17 @@
 package api
 
 import (
-	"chain/api/appdb"
-	"chain/database/pg/pgtest"
 	"io/ioutil"
 	"log"
 	"os"
+
+	"chain/api/appdb"
+	"chain/database/pg/pgtest"
+	chainlog "chain/log"
 )
 
 func init() {
-	log.SetOutput(ioutil.Discard)
+	chainlog.SetOutput(ioutil.Discard)
 
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {

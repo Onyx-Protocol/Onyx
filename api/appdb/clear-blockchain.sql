@@ -12,6 +12,13 @@ TRUNCATE
 	activity,
 	utxos,
 	assets,
-	addresses;
+	addresses,
+	pool_outputs,
+	pool_inputs,
+	pool_txs,
+	blocks,
+	asset_definitions,
+	asset_definition_pointers;
 
 ALTER SEQUENCE address_index_seq RESTART;
+ALTER SEQUENCE pool_tx_sort_id_seq RESTART;

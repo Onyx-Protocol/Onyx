@@ -63,3 +63,20 @@ func TestSliceStringScanErr(t *testing.T) {
 		t.Errorf("Scan(%#q) = nil want error", s)
 	}
 }
+
+func TestSliceByteaValue(t *testing.T) {
+	v := Byteas{
+		[]byte("foo"),
+		[]byte("bar"),
+	}
+
+	const want = `{\\x666f6f,\\x626172}`
+
+	got, err := v.Value()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := string(got.([]byte)); s != want {
+		t.Errorf("%v.Value() got %#q want %#q", v, s, want)
+	}
+}

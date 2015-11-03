@@ -10,6 +10,7 @@ import (
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/fedchain/txscript"
 	"chain/metrics"
 )
 
@@ -124,8 +125,8 @@ func checkTransferParity(ins []utxodb.Input, outs []*Output) error {
 func makeTransferInputs(ctx context.Context, tx *bc.Tx, utxos []*utxodb.UTXO) ([]*Input, error) {
 	defer metrics.RecordElapsed(time.Now())
 	var inputs []*Input
-	for _, utxo := range utxos {
-		input, err := addressInput(ctx, utxo, tx)
+	for i, utxo := range utxos {
+		input, err := addressInput(ctx, utxo, tx, i)
 		if err != nil {
 			return nil, errors.Wrap(err, "compute input")
 		}
@@ -134,7 +135,7 @@ func makeTransferInputs(ctx context.Context, tx *bc.Tx, utxos []*utxodb.UTXO) ([
 	return inputs, nil
 }
 
-func addressInput(ctx context.Context, u *utxodb.UTXO, tx *bc.Tx) (*Input, error) {
+func addressInput(ctx context.Context, u *utxodb.UTXO, tx *bc.Tx, idx int) (*Input, error) {
 	addrInfo, err := appdb.AddrInfo(ctx, u.AccountID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get addr info")
@@ -148,10 +149,15 @@ func addressInput(ctx context.Context, u *utxodb.UTXO, tx *bc.Tx) (*Input, error
 		return nil, errors.Wrap(err, "compute redeem script")
 	}
 
+	hash, err := txscript.CalcSignatureHash(tx, idx, redeemScript, txscript.SigHashAll)
+	if err != nil {
+		return nil, errors.Wrap(err, "calculating signature hash")
+	}
+
 	in := &Input{
 		ManagerNodeID: addrInfo.ManagerNodeID,
 		RedeemScript:  redeemScript,
-		SignatureData: tx.Hash(),
+		SignatureData: hash,
 		Sigs:          inputSigs(signers),
 	}
 	return in, nil

@@ -21,7 +21,7 @@ func TestTransfer(t *testing.T) {
 		INSERT INTO accounts (id, manager_node_id, key_index, next_address_index)
 			VALUES('acc1', 'mn1', 0, 1);
 		INSERT INTO addresses (id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script)
-			VALUES('a1', 'mn1', 'acc1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a1', '', '');
+			VALUES('a1', 'mn1', 'acc1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a1', '\x'::bytea, '');
 		INSERT INTO utxos (txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
 			VALUES ('246c6aa1e5cc2bd1132a37cbc267e2031558aee26a8956e21b749d72920331a7', 0, 'ff00000000000000000000000000000000000000000000000000000000000000', 6, 0, 'acc1', 'mn1');
 	`)

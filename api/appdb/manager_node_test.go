@@ -63,112 +63,79 @@ func TestGetManagerNode(t *testing.T) {
 	})
 }
 
-func TestManagerNodeBalance(t *testing.T) {
-	const sql = `
-		INSERT INTO utxos (txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
-		VALUES ('t0', 0, 'a1', 10, 0, 'b0', 'mn1'),
-		       ('t1', 1, 'a1', 5, 0, 'b0', 'mn1'),
-		       ('t2', 2, 'a2', 20, 0, 'b1', 'mn1');
-	`
-	withContext(t, sql, func(t *testing.T, ctx context.Context) {
-		cases := []struct {
-			mnID     string
-			prev     string
-			limit    int
-			want     []*Balance
-			wantLast string
-		}{{
-			mnID:     "mn1",
-			limit:    5,
-			want:     []*Balance{{"a1", 15, 15}, {"a2", 20, 20}},
-			wantLast: "a2",
-		}, {
-			mnID:     "mn1",
-			prev:     "a1",
-			limit:    5,
-			want:     []*Balance{{"a2", 20, 20}},
-			wantLast: "a2",
-		}, {
-			mnID:     "mn1",
-			prev:     "a2",
-			limit:    5,
-			want:     nil,
-			wantLast: "",
-		}, {
-			mnID:     "mn1",
-			limit:    1,
-			want:     []*Balance{{"a1", 15, 15}},
-			wantLast: "a1",
-		}, {
-			mnID:     "nonexistent",
-			limit:    5,
-			want:     nil,
-			wantLast: "",
-		}}
-
-		for _, c := range cases {
-			got, gotLast, err := ManagerNodeBalance(ctx, c.mnID, c.prev, c.limit)
-			if err != nil {
-				t.Errorf("ManagerNodeBalance(%s, %s, %d): unexpected error %v", c.mnID, c.prev, c.limit, err)
-				continue
-			}
-
-			if !reflect.DeepEqual(got, c.want) {
-				t.Errorf("ManagerNodeBalance(%s, %s, %d) = %v want %v", c.mnID, c.prev, c.limit, got, c.want)
-			}
-
-			if gotLast != c.wantLast {
-				t.Errorf("ManagerNodeBalance(%s, %s, %d) = %v want %v", c.mnID, c.prev, c.limit, gotLast, c.wantLast)
-			}
-		}
-	})
-}
-
 func TestAccountsWithAsset(t *testing.T) {
 	const fix = `
 		INSERT INTO utxos (txid, index, asset_id, amount, addr_index, manager_node_id, account_id)
-		VALUES ('t0', 0, 'a0', 5, 0, 'mn0', 'acc0'),
-		       ('t1', 0, 'a0', 5, 0, 'mn0', 'acc0'),
-		       ('t2', 0, 'a0', 5, 0, 'mn0', 'acc1'),
-		       ('t3', 0, 'a1', 5, 0, 'mn0', 'acc1'),
-		       ('t4', 0, 'a0', 5, 0, 'mn1', 'acc0');
+		VALUES ('ctx-0', 0, 'asset-1', 5, 0, 'mnode-0', 'account-0'),
+		       ('ctx-1', 0, 'asset-1', 5, 0, 'mnode-0', 'account-0'),
+		       ('ctx-2', 0, 'asset-1', 5, 0, 'mnode-0', 'account-1'),
+		       ('ctx-3', 0, 'asset-2', 5, 0, 'mnode-0', 'account-1'),
+		       ('ctx-4', 0, 'asset-1', 5, 0, 'mnode-1', 'account-0');
+
+		INSERT INTO pool_txs
+			(tx_hash, data)
+		VALUES
+			('ptx-0', ''), ('ptx-1', '');
+
+		INSERT INTO pool_outputs
+			(tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, script)
+		VALUES
+			('ptx-0', 0, 'asset-1', 1, 0, 'account-0', 'mnode-0', ''),
+			('ptx-1', 0, 'asset-1', 1, 0, 'account-0', 'mnode-0', '');
+
+		INSERT INTO pool_inputs (tx_hash, index)
+		VALUES ('ptx-1', 0), ('ctx-3', 0);
+
 	`
 	withContext(t, fix, func(t *testing.T, ctx context.Context) {
 		cases := []struct {
+			assetID  string
 			prev     string
 			limit    int
 			want     []*AccountBalanceItem
 			wantLast string
 		}{{
-			prev:  "",
-			limit: 50,
+			assetID: "asset-1",
+			prev:    "",
+			limit:   50,
 			want: []*AccountBalanceItem{
-				{"acc0", 10, 10},
-				{"acc1", 5, 5},
+				{"account-0", 10, 11},
+				{"account-1", 5, 5},
 			},
-			wantLast: "acc1",
+			wantLast: "account-1",
 		}, {
-			prev:  "acc0",
-			limit: 50,
+			assetID: "asset-1",
+			prev:    "account-0",
+			limit:   50,
 			want: []*AccountBalanceItem{
-				{"acc1", 5, 5},
+				{"account-1", 5, 5},
 			},
-			wantLast: "acc1",
+			wantLast: "account-1",
 		}, {
-			prev:  "",
-			limit: 1,
+			assetID: "asset-1",
+			prev:    "",
+			limit:   1,
 			want: []*AccountBalanceItem{
-				{"acc0", 10, 10},
+				{"account-0", 10, 11},
 			},
-			wantLast: "acc0",
+			wantLast: "account-0",
 		}, {
-			prev:     "acc1",
+			assetID:  "asset-1",
+			prev:     "account-1",
 			limit:    50,
 			want:     nil,
 			wantLast: "",
+		}, {
+			assetID: "asset-2",
+			prev:    "",
+			limit:   50,
+			want: []*AccountBalanceItem{
+				{"account-1", 5, 0},
+			},
+			wantLast: "account-1",
 		}}
 		for _, c := range cases {
-			got, gotLast, err := AccountsWithAsset(ctx, "mn0", "a0", c.prev, c.limit)
+			got, gotLast, err := AccountsWithAsset(ctx, "mnode-0", c.assetID, c.prev, c.limit)
 			if err != nil {
 				t.Errorf("AccountsWithAsset(%q, %d) unexpected error = %q", c.prev, c.limit, err)
 				continue

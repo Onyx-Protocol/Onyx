@@ -8,12 +8,12 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"chain/fedchain/txscript"
-
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
+
+	"chain/fedchain/bc"
+	"chain/fedchain/txscript"
 )
 
 // This example demonstrates creating a script which pays to a bitcoin address.
@@ -101,33 +101,32 @@ func ExampleSignTxOutput() {
 	// For this example, create a fake transaction that represents what
 	// would ordinarily be the real transaction that is being spent.  It
 	// contains a single output that pays to address in the amount of 1 BTC.
-	originTx := wire.NewMsgTx()
-	prevOut := wire.NewOutPoint(&wire.ShaHash{}, ^uint32(0))
-	txIn := wire.NewTxIn(prevOut, []byte{txscript.OP_0, txscript.OP_0})
-	originTx.AddTxIn(txIn)
+	originTx := &bc.Tx{
+		Version: bc.CurrentTransactionVersion,
+		Inputs: []*bc.TxInput{{
+			SignatureScript: []byte{txscript.OP_0, txscript.OP_0},
+		}},
+	}
 	pkScript, err := txscript.PayToAddrScript(addr)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	txOut := wire.NewTxOut(100000000, pkScript)
-	originTx.AddTxOut(txOut)
-	originTxHash := originTx.TxSha()
+	originTx.Outputs = append(originTx.Outputs, &bc.TxOutput{Value: 100000000, Script: pkScript})
+	originTxHash := originTx.Hash()
 
 	// Create the transaction to redeem the fake transaction.
-	redeemTx := wire.NewMsgTx()
-
-	// Add the input(s) the redeeming transaction will spend.  There is no
-	// signature script at this point since it hasn't been created or signed
-	// yet, hence nil is provided for it.
-	prevOut = wire.NewOutPoint(&originTxHash, 0)
-	txIn = wire.NewTxIn(prevOut, nil)
-	redeemTx.AddTxIn(txIn)
-
-	// Ordinarily this would contain that actual destination of the funds,
-	// but for this example don't bother.
-	txOut = wire.NewTxOut(0, nil)
-	redeemTx.AddTxOut(txOut)
+	redeemTx := &bc.Tx{
+		Version: bc.CurrentTransactionVersion,
+		Inputs: []*bc.TxInput{{
+			Previous:        bc.Outpoint{Hash: originTxHash, Index: 0},
+			SignatureScript: nil,
+		}},
+		Outputs: []*bc.TxOutput{{
+			Value:  0,
+			Script: nil,
+		}},
+	}
 
 	// Sign the redeeming transaction.
 	lookupKey := func(a btcutil.Address) (*btcec.PrivateKey, bool, error) {
@@ -152,20 +151,20 @@ func ExampleSignTxOutput() {
 	// used.  It must be specified when pay-to-script-hash transactions are
 	// being signed.
 	sigScript, err := txscript.SignTxOutput(&chaincfg.MainNetParams,
-		redeemTx, 0, originTx.TxOut[0].PkScript, txscript.SigHashAll,
+		redeemTx, 0, originTx.Outputs[0].Script, txscript.SigHashAll,
 		txscript.KeyClosure(lookupKey), nil, nil)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	redeemTx.TxIn[0].SignatureScript = sigScript
+	redeemTx.Inputs[0].SignatureScript = sigScript
 
 	// Prove that the transaction has been validly signed by executing the
 	// script pair.
 	flags := txscript.ScriptBip16 | txscript.ScriptVerifyDERSignatures |
 		txscript.ScriptStrictMultiSig |
 		txscript.ScriptDiscourageUpgradableNops
-	vm, err := txscript.NewEngine(originTx.TxOut[0].PkScript, redeemTx, 0,
+	vm, err := txscript.NewEngine(originTx.Outputs[0].Script, redeemTx, 0,
 		flags)
 	if err != nil {
 		fmt.Println(err)

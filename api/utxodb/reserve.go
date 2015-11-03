@@ -91,11 +91,6 @@ type (
 		// SaveReservations stores the reservation expiration
 		// time in the database for the given UTXOs.
 		SaveReservations(ctx context.Context, u []*UTXO, expires time.Time) error
-
-		// ApplyTx applies the Tx to the database,
-		// deleteing spent outputs and inserting new UTXOs.
-		// It returns the deleted and inserted outputs.
-		ApplyTx(context.Context, *bc.Tx, []*Receiver) (deleted, inserted []*UTXO, err error)
 	}
 )
 
@@ -172,17 +167,12 @@ func (rs *Reserver) Cancel(ctx context.Context, outpoints []bc.Outpoint) {
 	rs.unreserve(utxos)
 }
 
-func (rs *Reserver) Apply(ctx context.Context, tx *bc.Tx, outRecs []*Receiver) error {
+func (rs *Reserver) Apply(deleted, inserted []*UTXO) {
 	defer metrics.RecordElapsed(time.Now())
-	deleted, inserted, err := rs.db.ApplyTx(ctx, tx, outRecs)
-	if err != nil {
-		return err
-	}
 	rs.delete(deleted)
 	internIDs(inserted)
 	sort.Sort(byKeyUTXO(inserted))
 	rs.insert(inserted)
-	return nil
 }
 
 // findReservation does a linear scan through the set

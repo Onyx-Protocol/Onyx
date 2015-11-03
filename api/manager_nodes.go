@@ -111,9 +111,22 @@ func managerNodeBalance(ctx context.Context, managerNodeID string) (interface{},
 		return nil, err
 	}
 
-	balances, last, err := appdb.ManagerNodeBalance(ctx, managerNodeID, prev, limit)
+	balances, last, err := appdb.AssetBalance(ctx, &appdb.AssetBalQuery{
+		Owner:   appdb.OwnerManagerNode,
+		OwnerID: managerNodeID,
+		Prev:    prev,
+		Limit:   limit,
+	})
 	if err != nil {
 		return nil, err
+	}
+
+	// !!!HACK(jeffomatic) - do not expose confirmation totals until we enable
+	// automatic block generation.
+	for _, b := range balances {
+		if b.Confirmed == 0 {
+			b.Confirmed = b.Total
+		}
 	}
 
 	ret := map[string]interface{}{
@@ -135,6 +148,14 @@ func listAccountsWithAsset(ctx context.Context, mnodeID, assetID string) (interf
 	balances, last, err := appdb.AccountsWithAsset(ctx, mnodeID, assetID, prev, limit)
 	if err != nil {
 		return nil, err
+	}
+
+	// !!!HACK(jeffomatic) - do not expose confirmation totals until we enable
+	// automatic block generation.
+	for _, b := range balances {
+		if b.Confirmed == 0 {
+			b.Confirmed = b.Total
+		}
 	}
 
 	return map[string]interface{}{
@@ -206,8 +227,14 @@ func getAccountActivity(ctx context.Context, bid string) (interface{}, error) {
 
 // GET /v3/accounts/:accountID/balance
 func accountBalance(ctx context.Context, accountID string) (interface{}, error) {
+	var err error
 	if err := accountAuthz(ctx, accountID); err != nil {
 		return nil, err
+	}
+
+	query := &appdb.AssetBalQuery{
+		Owner:   appdb.OwnerAccount,
+		OwnerID: accountID,
 	}
 
 	// Mode 1: filter by list of asset IDs
@@ -215,28 +242,29 @@ func accountBalance(ctx context.Context, accountID string) (interface{}, error) 
 	qvals := httpjson.Request(ctx).URL.Query()
 	if aidList, ok := qvals["asset_ids"]; ok {
 		// Asset IDs are serialized as a comma-separated list.
-		assetIDs := strings.Split(aidList[0], ",")
-		res, err := appdb.AccountBalanceByAssetID(ctx, accountID, assetIDs)
+		query.AssetIDs = strings.Split(aidList[0], ",")
+		if len(query.AssetIDs) == 0 {
+			return map[string]interface{}{"balances": []string{}, "last": ""}, nil
+		}
+	} else {
+		// Mode 2: return all assets, paginated by asset ID
+		query.Prev, query.Limit, err = getPageData(ctx, defBalancePageSize)
 		if err != nil {
 			return nil, err
 		}
-
-		return map[string]interface{}{
-			"balances": httpjson.Array(res),
-			"last":     "",
-		}, nil
 	}
 
-	// Mode 2: return all assets, paginated by asset ID
-
-	prev, limit, err := getPageData(ctx, defBalancePageSize)
+	balances, last, err := appdb.AssetBalance(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 
-	balances, last, err := appdb.AccountBalance(ctx, accountID, prev, limit)
-	if err != nil {
-		return nil, err
+	// !!!HACK(jeffomatic) - do not expose confirmation totals until we enable
+	// automatic block generation.
+	for _, b := range balances {
+		if b.Confirmed == 0 {
+			b.Confirmed = b.Total
+		}
 	}
 
 	ret := map[string]interface{}{

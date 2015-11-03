@@ -14,10 +14,8 @@ import (
 	"strings"
 	"testing"
 
+	"chain/fedchain/bc"
 	. "chain/fedchain/txscript"
-
-	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
 )
 
 // testName returns a descriptive test name for the given reference test data.
@@ -154,23 +152,21 @@ func parseScriptFlags(flagStr string) (ScriptFlags, error) {
 
 // createSpendTx generates a basic spending transaction given the passed
 // signature and public key scripts.
-func createSpendingTx(sigScript, pkScript []byte) *wire.MsgTx {
-	coinbaseTx := wire.NewMsgTx()
+func createSpendingTx(sigScript, pkScript []byte) *bc.Tx {
+	coinbaseTx := &bc.Tx{
+		Version: bc.CurrentTransactionVersion,
+		Inputs:  []*bc.TxInput{{SignatureScript: []byte{OP_0, OP_0}}},
+		Outputs: []*bc.TxOutput{{Value: 0, Script: pkScript}},
+	}
 
-	outPoint := wire.NewOutPoint(&wire.ShaHash{}, ^uint32(0))
-	txIn := wire.NewTxIn(outPoint, []byte{OP_0, OP_0})
-	txOut := wire.NewTxOut(0, pkScript)
-	coinbaseTx.AddTxIn(txIn)
-	coinbaseTx.AddTxOut(txOut)
-
-	spendingTx := wire.NewMsgTx()
-	coinbaseTxSha := coinbaseTx.TxSha()
-	outPoint = wire.NewOutPoint(&coinbaseTxSha, 0)
-	txIn = wire.NewTxIn(outPoint, sigScript)
-	txOut = wire.NewTxOut(0, nil)
-
-	spendingTx.AddTxIn(txIn)
-	spendingTx.AddTxOut(txOut)
+	spendingTx := &bc.Tx{
+		Version: bc.CurrentTransactionVersion,
+		Inputs: []*bc.TxInput{{
+			Previous:        bc.Outpoint{Hash: coinbaseTx.Hash(), Index: 0},
+			SignatureScript: sigScript,
+		}},
+		Outputs: []*bc.TxOutput{{Value: 0}},
+	}
 
 	return spendingTx
 }
@@ -281,294 +277,6 @@ func TestScriptValidTests(t *testing.T) {
 		if err != nil {
 			t.Errorf("%s failed to execute: %v", name, err)
 			continue
-		}
-	}
-}
-
-// TestTxInvalidTests ensures all of the tests in tx_invalid.json fail as
-// expected.
-func TestTxInvalidTests(t *testing.T) {
-	file, err := ioutil.ReadFile("data/tx_invalid.json")
-	if err != nil {
-		t.Errorf("TestBitcoindInvalidTests: %v\n", err)
-		return
-	}
-
-	var tests [][]interface{}
-	err = json.Unmarshal(file, &tests)
-	if err != nil {
-		t.Errorf("TestBitcoindInvalidTests couldn't Unmarshal: %v\n",
-			err)
-		return
-	}
-
-	// form is either:
-	//   ["this is a comment "]
-	// or:
-	//   [[[previous hash, previous index, previous scriptPubKey]...,]
-	//	serializedTransaction, verifyFlags]
-testloop:
-	for i, test := range tests {
-		inputs, ok := test[0].([]interface{})
-		if !ok {
-			continue
-		}
-
-		if len(test) != 3 {
-			t.Errorf("bad test (bad length) %d: %v", i, test)
-			continue
-
-		}
-		serializedhex, ok := test[1].(string)
-		if !ok {
-			t.Errorf("bad test (arg 2 not string) %d: %v", i, test)
-			continue
-		}
-		serializedTx, err := hex.DecodeString(serializedhex)
-		if err != nil {
-			t.Errorf("bad test (arg 2 not hex %v) %d: %v", err, i,
-				test)
-			continue
-		}
-
-		tx, err := btcutil.NewTxFromBytes(serializedTx)
-		if err != nil {
-			t.Errorf("bad test (arg 2 not msgtx %v) %d: %v", err,
-				i, test)
-			continue
-		}
-
-		verifyFlags, ok := test[2].(string)
-		if !ok {
-			t.Errorf("bad test (arg 3 not string) %d: %v", i, test)
-			continue
-		}
-
-		flags, err := parseScriptFlags(verifyFlags)
-		if err != nil {
-			t.Errorf("bad test %d: %v", i, err)
-			continue
-		}
-
-		prevOuts := make(map[wire.OutPoint][]byte)
-		for j, iinput := range inputs {
-			input, ok := iinput.([]interface{})
-			if !ok {
-				t.Errorf("bad test (%dth input not array)"+
-					"%d: %v", j, i, test)
-				continue testloop
-			}
-
-			if len(input) != 3 {
-				t.Errorf("bad test (%dth input wrong length)"+
-					"%d: %v", j, i, test)
-				continue testloop
-			}
-
-			previoustx, ok := input[0].(string)
-			if !ok {
-				t.Errorf("bad test (%dth input sha not string)"+
-					"%d: %v", j, i, test)
-				continue testloop
-			}
-
-			prevhash, err := wire.NewShaHashFromStr(previoustx)
-			if err != nil {
-				t.Errorf("bad test (%dth input sha not sha %v)"+
-					"%d: %v", j, err, i, test)
-				continue testloop
-			}
-
-			idxf, ok := input[1].(float64)
-			if !ok {
-				t.Errorf("bad test (%dth input idx not number)"+
-					"%d: %v", j, i, test)
-				continue testloop
-			}
-
-			idx := uint32(idxf) // (floor(idxf) == idxf?)
-
-			oscript, ok := input[2].(string)
-			if !ok {
-				t.Errorf("bad test (%dth input script not "+
-					"string) %d: %v", j, i, test)
-				continue testloop
-			}
-
-			script, err := parseShortForm(oscript)
-			if err != nil {
-				t.Errorf("bad test (%dth input script doesn't "+
-					"parse %v) %d: %v", j, err, i, test)
-				continue testloop
-			}
-
-			prevOuts[*wire.NewOutPoint(prevhash, idx)] = script
-		}
-
-		for k, txin := range tx.MsgTx().TxIn {
-			pkScript, ok := prevOuts[txin.PreviousOutPoint]
-			if !ok {
-				t.Errorf("bad test (missing %dth input) %d:%v",
-					k, i, test)
-				continue testloop
-			}
-			// These are meant to fail, so as soon as the first
-			// input fails the transaction has failed. (some of the
-			// test txns have good inputs, too..
-			vm, err := NewEngine(pkScript, tx.MsgTx(), k, flags)
-			if err != nil {
-				continue testloop
-			}
-
-			err = vm.Execute()
-			if err != nil {
-				continue testloop
-			}
-
-		}
-		t.Errorf("test (%d:%v) succeeded when should fail",
-			i, test)
-	}
-}
-
-// TestTxValidTests ensures all of the tests in tx_valid.json pass as expected.
-func TestTxValidTests(t *testing.T) {
-	file, err := ioutil.ReadFile("data/tx_valid.json")
-	if err != nil {
-		t.Errorf("TestBitcoindInvalidTests: %v\n", err)
-		return
-	}
-
-	var tests [][]interface{}
-	err = json.Unmarshal(file, &tests)
-	if err != nil {
-		t.Errorf("TestBitcoindInvalidTests couldn't Unmarshal: %v\n",
-			err)
-		return
-	}
-
-	// form is either:
-	//   ["this is a comment "]
-	// or:
-	//   [[[previous hash, previous index, previous scriptPubKey]...,]
-	//	serializedTransaction, verifyFlags]
-testloop:
-	for i, test := range tests {
-		inputs, ok := test[0].([]interface{})
-		if !ok {
-			continue
-		}
-
-		if len(test) != 3 {
-			t.Errorf("bad test (bad length) %d: %v", i, test)
-			continue
-		}
-		serializedhex, ok := test[1].(string)
-		if !ok {
-			t.Errorf("bad test (arg 2 not string) %d: %v", i, test)
-			continue
-		}
-		serializedTx, err := hex.DecodeString(serializedhex)
-		if err != nil {
-			t.Errorf("bad test (arg 2 not hex %v) %d: %v", err, i,
-				test)
-			continue
-		}
-
-		tx, err := btcutil.NewTxFromBytes(serializedTx)
-		if err != nil {
-			t.Errorf("bad test (arg 2 not msgtx %v) %d: %v", err,
-				i, test)
-			continue
-		}
-
-		verifyFlags, ok := test[2].(string)
-		if !ok {
-			t.Errorf("bad test (arg 3 not string) %d: %v", i, test)
-			continue
-		}
-
-		flags, err := parseScriptFlags(verifyFlags)
-		if err != nil {
-			t.Errorf("bad test %d: %v", i, err)
-			continue
-		}
-
-		prevOuts := make(map[wire.OutPoint][]byte)
-		for j, iinput := range inputs {
-			input, ok := iinput.([]interface{})
-			if !ok {
-				t.Errorf("bad test (%dth input not array)"+
-					"%d: %v", j, i, test)
-				continue
-			}
-
-			if len(input) != 3 {
-				t.Errorf("bad test (%dth input wrong length)"+
-					"%d: %v", j, i, test)
-				continue
-			}
-
-			previoustx, ok := input[0].(string)
-			if !ok {
-				t.Errorf("bad test (%dth input sha not string)"+
-					"%d: %v", j, i, test)
-				continue
-			}
-
-			prevhash, err := wire.NewShaHashFromStr(previoustx)
-			if err != nil {
-				t.Errorf("bad test (%dth input sha not sha %v)"+
-					"%d: %v", j, err, i, test)
-				continue
-			}
-
-			idxf, ok := input[1].(float64)
-			if !ok {
-				t.Errorf("bad test (%dth input idx not number)"+
-					"%d: %v", j, i, test)
-				continue
-			}
-
-			idx := uint32(idxf) // (floor(idxf) == idxf?)
-
-			oscript, ok := input[2].(string)
-			if !ok {
-				t.Errorf("bad test (%dth input script not "+
-					"string) %d: %v", j, i, test)
-				continue
-			}
-
-			script, err := parseShortForm(oscript)
-			if err != nil {
-				t.Errorf("bad test (%dth input script doesn't "+
-					"parse %v) %d: %v", j, err, i, test)
-				continue
-			}
-
-			prevOuts[*wire.NewOutPoint(prevhash, idx)] = script
-		}
-
-		for k, txin := range tx.MsgTx().TxIn {
-			pkScript, ok := prevOuts[txin.PreviousOutPoint]
-			if !ok {
-				t.Errorf("bad test (missing %dth input) %d:%v",
-					k, i, test)
-				continue testloop
-			}
-			vm, err := NewEngine(pkScript, tx.MsgTx(), k, flags)
-			if err != nil {
-				t.Errorf("test (%d:%v:%d) failed to create "+
-					"script: %v", i, test, k, err)
-				continue
-			}
-
-			err = vm.Execute()
-			if err != nil {
-				t.Errorf("test (%d:%v:%d) failed to execute: "+
-					"%v", i, test, k, err)
-				continue
-			}
 		}
 	}
 }

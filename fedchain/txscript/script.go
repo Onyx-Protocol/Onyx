@@ -7,10 +7,12 @@ package txscript
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/btcsuite/btcd/wire"
+	"chain/crypto/hash256"
+	"chain/fedchain/bc"
 )
 
 // Bip16Activation is the timestamp where BIP0016 is valid to use in the
@@ -263,10 +265,28 @@ func removeOpcodeByData(pkscript []parsedOpcode, data []byte) []parsedOpcode {
 
 }
 
+// CalcSignatureHash will, given a script and hash type for the current script
+// engine instance, calculate the signature hash to be used for signing and
+// verification.
+func CalcSignatureHash(tx *bc.Tx, idx int, script []byte, hashType SigHashType) (hash bc.Hash, err error) {
+	parsedScript, err := parseScript(script)
+	if err != nil {
+		return hash, err
+	}
+
+	h := calcSignatureHash(parsedScript, hashType, tx, idx)
+
+	if len(h) != 32 {
+		return hash, errors.New("invalid hash length")
+	}
+	copy(hash[:], h)
+	return hash, nil
+}
+
 // calcSignatureHash will, given a script and hash type for the current script
 // engine instance, calculate the signature hash to be used for signing and
 // verification.
-func calcSignatureHash(script []parsedOpcode, hashType SigHashType, tx *wire.MsgTx, idx int) []byte {
+func calcSignatureHash(script []parsedOpcode, hashType SigHashType, tx *bc.Tx, idx int) []byte {
 	// The SigHashSingle signature type signs only the corresponding input
 	// and output (the output with the same index number as the input).
 	//
@@ -287,8 +307,8 @@ func calcSignatureHash(script []parsedOpcode, hashType SigHashType, tx *wire.Msg
 	// hash of 1.  This in turn presents an opportunity for attackers to
 	// cleverly construct transactions which can steal those coins provided
 	// they can reuse signatures.
-	if hashType&sigHashMask == SigHashSingle && idx >= len(tx.TxOut) {
-		var hash wire.ShaHash
+	if hashType&sigHashMask == SigHashSingle && idx >= len(tx.Outputs) {
+		var hash bc.Hash
 		hash[0] = 0x01
 		return hash[:]
 	}
@@ -299,41 +319,29 @@ func calcSignatureHash(script []parsedOpcode, hashType SigHashType, tx *wire.Msg
 	// Make a deep copy of the transaction, zeroing out the script for all
 	// inputs that are not currently being processed.
 	txCopy := tx.Copy()
-	for i := range txCopy.TxIn {
+	for i := range txCopy.Inputs {
 		if i == idx {
 			// UnparseScript cannot fail here because removeOpcode
 			// above only returns a valid script.
 			sigScript, _ := unparseScript(script)
-			txCopy.TxIn[idx].SignatureScript = sigScript
+			txCopy.Inputs[idx].SignatureScript = sigScript
 		} else {
-			txCopy.TxIn[i].SignatureScript = nil
+			txCopy.Inputs[i].SignatureScript = nil
 		}
 	}
 
 	switch hashType & sigHashMask {
 	case SigHashNone:
-		txCopy.TxOut = txCopy.TxOut[0:0] // Empty slice.
-		for i := range txCopy.TxIn {
-			if i != idx {
-				txCopy.TxIn[i].Sequence = 0
-			}
-		}
+		txCopy.Outputs = txCopy.Outputs[0:0] // Empty slice.
 
 	case SigHashSingle:
 		// Resize output array to up to and including requested index.
-		txCopy.TxOut = txCopy.TxOut[:idx+1]
+		txCopy.Outputs = txCopy.Outputs[:idx+1]
 
 		// All but current output get zeroed out.
 		for i := 0; i < idx; i++ {
-			txCopy.TxOut[i].Value = -1
-			txCopy.TxOut[i].PkScript = nil
-		}
-
-		// Sequence on all other inputs is 0, too.
-		for i := range txCopy.TxIn {
-			if i != idx {
-				txCopy.TxIn[i].Sequence = 0
-			}
+			txCopy.Outputs[i].Value = 0
+			txCopy.Outputs[i].Script = nil
 		}
 
 	default:
@@ -346,7 +354,7 @@ func calcSignatureHash(script []parsedOpcode, hashType SigHashType, tx *wire.Msg
 		// Nothing special here.
 	}
 	if hashType&SigHashAnyOneCanPay != 0 {
-		txCopy.TxIn = txCopy.TxIn[idx : idx+1]
+		txCopy.Inputs = txCopy.Inputs[idx : idx+1]
 		idx = 0
 	}
 
@@ -354,9 +362,10 @@ func calcSignatureHash(script []parsedOpcode, hashType SigHashType, tx *wire.Msg
 	// transaction and the hash type (encoded as a 4-byte little-endian
 	// value) appended.
 	var wbuf bytes.Buffer
-	txCopy.Serialize(&wbuf)
+	txCopy.WriteTo(&wbuf)
 	binary.Write(&wbuf, binary.LittleEndian, uint32(hashType))
-	return wire.DoubleSha256(wbuf.Bytes())
+	hash := hash256.Sum(wbuf.Bytes())
+	return hash[:]
 }
 
 // asSmallInt returns the passed opcode, which must be true according to

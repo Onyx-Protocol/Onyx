@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"chain/api/appdb"
+	"chain/api/auditor"
 	chainhttp "chain/net/http"
 	"chain/net/http/httpjson"
 	"chain/net/http/pat"
@@ -73,6 +74,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/admin-nodes/:anodeID", getAdminNode)
 	h.HandleFunc("PUT", "/v3/admin-nodes/:anodeID", updateAdminNode)
 	h.HandleFunc("DELETE", "/v3/admin-nodes/:anodeID", deleteAdminNode)
+	h.HandleFunc("POST", "/v3/admin-nodes/:anodeID/make-block", makeBlock)
 	h.HandleFunc("GET", "/v3/projects/:projID/manager-nodes", listManagerNodes)
 	h.HandleFunc("POST", "/v3/projects/:projID/manager-nodes", createManagerNode)
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID", getManagerNode)
@@ -115,5 +117,9 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/api-tokens", listAPITokens)
 	h.HandleFunc("POST", "/v3/api-tokens", createAPIToken)
 	h.HandleFunc("DELETE", "/v3/api-tokens/:tokenID", appdb.DeleteAuthToken)
+	// Auditor node endpoints
+	h.HandleFunc("GET", "/v3/blocks", listBlocks)
+	h.HandleFunc("GET", "/v3/blocks/:blockID/summary", auditor.GetBlockSummary)
+	h.HandleFunc("GET", "/v3/transactions/:txID", auditor.GetTx)
 	return h.ServeHTTPContext
 }

@@ -1,6 +1,8 @@
 package bc
 
 import (
+	"database/sql/driver"
+
 	"chain/crypto/hash256"
 	"chain/fedchain/script"
 )
@@ -15,9 +17,8 @@ type (
 func (a AssetID) String() string                { return Hash(a).String() }
 func (a AssetID) MarshalText() ([]byte, error)  { return Hash(a).MarshalText() }
 func (a *AssetID) UnmarshalText(b []byte) error { return (*Hash)(a).UnmarshalText(b) }
-
-// IssuanceOutpoint is used
-var IssuanceOutpoint = Outpoint{Index: InvalidOutputIndex}
+func (a AssetID) Value() (driver.Value, error)  { return Hash(a).Value() }
+func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
 
 // ComputeAssetID computes the asset ID of the asset defined by
 // the given issuance script and genesis block hash.

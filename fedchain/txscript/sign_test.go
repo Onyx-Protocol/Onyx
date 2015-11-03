@@ -9,12 +9,12 @@ import (
 	"fmt"
 	"testing"
 
-	"chain/fedchain/txscript"
-
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
+
+	"chain/fedchain/bc"
+	"chain/fedchain/txscript"
 )
 
 type addressToKey struct {
@@ -56,8 +56,8 @@ func mkGetScript(scripts map[string][]byte) txscript.ScriptDB {
 	})
 }
 
-func checkScripts(msg string, tx *wire.MsgTx, idx int, sigScript, pkScript []byte) error {
-	tx.TxIn[idx].SignatureScript = sigScript
+func checkScripts(msg string, tx *bc.Tx, idx int, sigScript, pkScript []byte) error {
+	tx.Inputs[idx].SignatureScript = sigScript
 	vm, err := txscript.NewEngine(pkScript, tx, idx,
 		txscript.ScriptBip16|txscript.ScriptVerifyDERSignatures)
 	if err != nil {
@@ -74,7 +74,7 @@ func checkScripts(msg string, tx *wire.MsgTx, idx int, sigScript, pkScript []byt
 	return nil
 }
 
-func signAndCheck(msg string, tx *wire.MsgTx, idx int, pkScript []byte,
+func signAndCheck(msg string, tx *bc.Tx, idx int, pkScript []byte,
 	hashType txscript.SigHashType, kdb txscript.KeyDB, sdb txscript.ScriptDB,
 	previousScript []byte) error {
 
@@ -102,39 +102,36 @@ func TestSignTxOutput(t *testing.T) {
 		txscript.SigHashNone | txscript.SigHashAnyOneCanPay,
 		txscript.SigHashSingle | txscript.SigHashAnyOneCanPay,
 	}
-	tx := &wire.MsgTx{
+	tx := &bc.Tx{
 		Version: 1,
-		TxIn: []*wire.TxIn{
-			&wire.TxIn{
-				PreviousOutPoint: wire.OutPoint{
-					Hash:  wire.ShaHash{},
+		Inputs: []*bc.TxInput{
+			&bc.TxInput{
+				Previous: bc.Outpoint{
+					Hash:  bc.Hash{},
 					Index: 0,
 				},
-				Sequence: 4294967295,
 			},
-			&wire.TxIn{
-				PreviousOutPoint: wire.OutPoint{
-					Hash:  wire.ShaHash{},
+			&bc.TxInput{
+				Previous: bc.Outpoint{
+					Hash:  bc.Hash{},
 					Index: 1,
 				},
-				Sequence: 4294967295,
 			},
-			&wire.TxIn{
-				PreviousOutPoint: wire.OutPoint{
-					Hash:  wire.ShaHash{},
+			&bc.TxInput{
+				Previous: bc.Outpoint{
+					Hash:  bc.Hash{},
 					Index: 2,
 				},
-				Sequence: 4294967295,
 			},
 		},
-		TxOut: []*wire.TxOut{
-			&wire.TxOut{
+		Outputs: []*bc.TxOutput{
+			&bc.TxOutput{
 				Value: 1,
 			},
-			&wire.TxOut{
+			&bc.TxOutput{
 				Value: 2,
 			},
-			&wire.TxOut{
+			&bc.TxOutput{
 				Value: 3,
 			},
 		},
@@ -143,7 +140,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to Pubkey Hash (uncompressed)
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 			key, err := btcec.NewPrivateKey(btcec.S256())
 			if err != nil {
@@ -180,7 +177,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to Pubkey Hash (uncompressed) (merging with correct)
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 			key, err := btcec.NewPrivateKey(btcec.S256())
 			if err != nil {
@@ -240,7 +237,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to Pubkey Hash (compressed)
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key, err := btcec.NewPrivateKey(btcec.S256())
@@ -278,7 +275,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to Pubkey Hash (compressed) with duplicate merge
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key, err := btcec.NewPrivateKey(btcec.S256())
@@ -339,7 +336,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to PubKey (uncompressed)
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key, err := btcec.NewPrivateKey(btcec.S256())
@@ -377,7 +374,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to PubKey (uncompressed)
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key, err := btcec.NewPrivateKey(btcec.S256())
@@ -438,7 +435,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to PubKey (compressed)
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key, err := btcec.NewPrivateKey(btcec.S256())
@@ -476,7 +473,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to PubKey (compressed) with duplicate merge
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key, err := btcec.NewPrivateKey(btcec.S256())
@@ -538,7 +535,7 @@ func TestSignTxOutput(t *testing.T) {
 	// As before, but with p2sh now.
 	// Pay to Pubkey Hash (uncompressed)
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 			key, err := btcec.NewPrivateKey(btcec.S256())
 			if err != nil {
@@ -595,7 +592,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to Pubkey Hash (uncompressed) with duplicate merge
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 			key, err := btcec.NewPrivateKey(btcec.S256())
 			if err != nil {
@@ -676,7 +673,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to Pubkey Hash (compressed)
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key, err := btcec.NewPrivateKey(btcec.S256())
@@ -733,7 +730,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to Pubkey Hash (compressed) with duplicate merge
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key, err := btcec.NewPrivateKey(btcec.S256())
@@ -814,7 +811,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to PubKey (uncompressed)
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key, err := btcec.NewPrivateKey(btcec.S256())
@@ -871,7 +868,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to PubKey (uncompressed) with duplicate merge
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key, err := btcec.NewPrivateKey(btcec.S256())
@@ -952,7 +949,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to PubKey (compressed)
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key, err := btcec.NewPrivateKey(btcec.S256())
@@ -1009,7 +1006,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Pay to PubKey (compressed)
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key, err := btcec.NewPrivateKey(btcec.S256())
@@ -1090,7 +1087,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Basic Multisig
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key1, err := btcec.NewPrivateKey(btcec.S256())
@@ -1167,7 +1164,7 @@ func TestSignTxOutput(t *testing.T) {
 
 	// Two part multisig, sign with one key then the other.
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key1, err := btcec.NewPrivateKey(btcec.S256())
@@ -1274,7 +1271,7 @@ func TestSignTxOutput(t *testing.T) {
 	// Two part multisig, sign with one key then both, check key dedup
 	// correctly.
 	for _, hashType := range hashTypes {
-		for i := range tx.TxIn {
+		for i := range tx.Inputs {
 			msg := fmt.Sprintf("%d:%d", hashType, i)
 
 			key1, err := btcec.NewPrivateKey(btcec.S256())
@@ -1382,7 +1379,7 @@ func TestSignTxOutput(t *testing.T) {
 }
 
 type tstInput struct {
-	txout              *wire.TxOut
+	txout              *bc.TxOutput
 	sigscriptGenerates bool
 	inputValidates     bool
 	indexOutOfRange    bool
@@ -1396,7 +1393,7 @@ type tstSigScript struct {
 	scriptAtWrongIndex bool
 }
 
-var coinbaseOutPoint = &wire.OutPoint{
+var coinbaseOutPoint = &bc.Outpoint{
 	Index: (1 << 32) - 1,
 }
 
@@ -1437,7 +1434,7 @@ var sigScriptTests = []tstSigScript{
 		name: "one input uncompressed",
 		inputs: []tstInput{
 			{
-				txout:              wire.NewTxOut(coinbaseVal, uncompressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal, Script: uncompressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
@@ -1451,13 +1448,13 @@ var sigScriptTests = []tstSigScript{
 		name: "two inputs uncompressed",
 		inputs: []tstInput{
 			{
-				txout:              wire.NewTxOut(coinbaseVal, uncompressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal, Script: uncompressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
 			},
 			{
-				txout:              wire.NewTxOut(coinbaseVal+fee, uncompressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal + fee, Script: uncompressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
@@ -1471,7 +1468,7 @@ var sigScriptTests = []tstSigScript{
 		name: "one input compressed",
 		inputs: []tstInput{
 			{
-				txout:              wire.NewTxOut(coinbaseVal, compressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal, Script: compressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
@@ -1485,13 +1482,13 @@ var sigScriptTests = []tstSigScript{
 		name: "two inputs compressed",
 		inputs: []tstInput{
 			{
-				txout:              wire.NewTxOut(coinbaseVal, compressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal, Script: compressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
 			},
 			{
-				txout:              wire.NewTxOut(coinbaseVal+fee, compressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal + fee, Script: compressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
@@ -1505,7 +1502,7 @@ var sigScriptTests = []tstSigScript{
 		name: "hashType SigHashNone",
 		inputs: []tstInput{
 			{
-				txout:              wire.NewTxOut(coinbaseVal, uncompressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal, Script: uncompressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
@@ -1519,7 +1516,7 @@ var sigScriptTests = []tstSigScript{
 		name: "hashType SigHashSingle",
 		inputs: []tstInput{
 			{
-				txout:              wire.NewTxOut(coinbaseVal, uncompressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal, Script: uncompressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
@@ -1533,7 +1530,7 @@ var sigScriptTests = []tstSigScript{
 		name: "hashType SigHashAnyoneCanPay",
 		inputs: []tstInput{
 			{
-				txout:              wire.NewTxOut(coinbaseVal, uncompressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal, Script: uncompressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
@@ -1547,7 +1544,7 @@ var sigScriptTests = []tstSigScript{
 		name: "hashType non-standard",
 		inputs: []tstInput{
 			{
-				txout:              wire.NewTxOut(coinbaseVal, uncompressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal, Script: uncompressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
@@ -1561,7 +1558,7 @@ var sigScriptTests = []tstSigScript{
 		name: "invalid compression",
 		inputs: []tstInput{
 			{
-				txout:              wire.NewTxOut(coinbaseVal, uncompressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal, Script: uncompressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     false,
 				indexOutOfRange:    false,
@@ -1572,10 +1569,10 @@ var sigScriptTests = []tstSigScript{
 		scriptAtWrongIndex: false,
 	},
 	{
-		name: "short PkScript",
+		name: "short Script",
 		inputs: []tstInput{
 			{
-				txout:              wire.NewTxOut(coinbaseVal, shortPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal, Script: shortPkScript},
 				sigscriptGenerates: false,
 				indexOutOfRange:    false,
 			},
@@ -1588,13 +1585,13 @@ var sigScriptTests = []tstSigScript{
 		name: "valid script at wrong index",
 		inputs: []tstInput{
 			{
-				txout:              wire.NewTxOut(coinbaseVal, uncompressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal, Script: uncompressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
 			},
 			{
-				txout:              wire.NewTxOut(coinbaseVal+fee, uncompressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal + fee, Script: uncompressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
@@ -1608,13 +1605,13 @@ var sigScriptTests = []tstSigScript{
 		name: "index out of range",
 		inputs: []tstInput{
 			{
-				txout:              wire.NewTxOut(coinbaseVal, uncompressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal, Script: uncompressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
 			},
 			{
-				txout:              wire.NewTxOut(coinbaseVal+fee, uncompressedPkScript),
+				txout:              &bc.TxOutput{Value: coinbaseVal + fee, Script: uncompressedPkScript},
 				sigscriptGenerates: true,
 				inputValidates:     true,
 				indexOutOfRange:    false,
@@ -1638,19 +1635,19 @@ func TestSignatureScript(t *testing.T) {
 
 nexttest:
 	for i := range sigScriptTests {
-		tx := wire.NewMsgTx()
-
-		output := wire.NewTxOut(500, []byte{txscript.OP_RETURN})
-		tx.AddTxOut(output)
+		tx := &bc.Tx{
+			Version: bc.CurrentTransactionVersion,
+			Outputs: []*bc.TxOutput{{Value: 500, Script: []byte{txscript.OP_RETURN}}},
+		}
 
 		for _ = range sigScriptTests[i].inputs {
-			txin := wire.NewTxIn(coinbaseOutPoint, nil)
-			tx.AddTxIn(txin)
+			txin := &bc.TxInput{Previous: *coinbaseOutPoint}
+			tx.Inputs = append(tx.Inputs, txin)
 		}
 
 		var script []byte
 		var err error
-		for j := range tx.TxIn {
+		for j := range tx.Inputs {
 			var idx int
 			if sigScriptTests[i].inputs[j].indexOutOfRange {
 				t.Errorf("at test %v", sigScriptTests[i].name)
@@ -1659,7 +1656,7 @@ nexttest:
 				idx = j
 			}
 			script, err = txscript.SignatureScript(tx, idx,
-				sigScriptTests[i].inputs[j].txout.PkScript,
+				sigScriptTests[i].inputs[j].txout.Script,
 				sigScriptTests[i].hashType, privKey,
 				sigScriptTests[i].compress)
 
@@ -1678,22 +1675,22 @@ nexttest:
 				continue nexttest
 			}
 
-			tx.TxIn[j].SignatureScript = script
+			tx.Inputs[j].SignatureScript = script
 		}
 
 		// If testing using a correct sigscript but for an incorrect
 		// index, use last input script for first input.  Requires > 0
 		// inputs for test.
 		if sigScriptTests[i].scriptAtWrongIndex {
-			tx.TxIn[0].SignatureScript = script
+			tx.Inputs[0].SignatureScript = script
 			sigScriptTests[i].inputs[0].inputValidates = false
 		}
 
 		// Validate tx input scripts
 		scriptFlags := txscript.ScriptBip16 | txscript.ScriptVerifyDERSignatures
-		for j := range tx.TxIn {
+		for j := range tx.Inputs {
 			vm, err := txscript.NewEngine(sigScriptTests[i].
-				inputs[j].txout.PkScript, tx, j, scriptFlags)
+				inputs[j].txout.Script, tx, j, scriptFlags)
 			if err != nil {
 				t.Errorf("cannot create script vm for test %v: %v",
 					sigScriptTests[i].name, err)

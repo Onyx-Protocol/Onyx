@@ -12,9 +12,10 @@ import (
 	"hash"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/fastsha256"
 	"github.com/btcsuite/golangcrypto/ripemd160"
+
+	"chain/crypto/hash256"
 )
 
 // An opcode defines the information related to a txscript opcode.  opfunc if
@@ -1751,7 +1752,9 @@ func opcodeHash256(op *parsedOpcode, vm *Engine) error {
 		return err
 	}
 
-	vm.dstack.PushByteArray(wire.DoubleSha256(buf))
+	hash := hash256.Sum(buf)
+
+	vm.dstack.PushByteArray(hash[:])
 	return nil
 }
 

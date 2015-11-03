@@ -1,9 +1,11 @@
 package bc
 
 import (
-	"chain/errors"
+	"database/sql/driver"
 	"encoding/hex"
 	"fmt"
+
+	"chain/errors"
 )
 
 // Hash represents a 256-bit hash
@@ -33,6 +35,20 @@ func (h *Hash) UnmarshalText(b []byte) error {
 	}
 	_, err := hex.Decode(h[:], b)
 	return err
+}
+
+// Value satisfies the driver.Valuer interace
+func (h Hash) Value() (driver.Value, error) {
+	return h.MarshalText()
+}
+
+// Scan satisfies the driver.Scanner interace
+func (h *Hash) Scan(val interface{}) error {
+	b, ok := val.([]byte)
+	if !ok {
+		return errors.New("Scan must receive a byte slice")
+	}
+	return h.UnmarshalText(b)
 }
 
 // ParseHash takes a hex-encoded hash and returns

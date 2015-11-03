@@ -84,28 +84,42 @@ func listAssets(ctx context.Context, inodeID string) (interface{}, error) {
 		return nil, err
 	}
 
+	// !!!HACK(jeffomatic) - do not split confirmed/total issuances until we enable
+	// automatic block generation
+	var res []map[string]interface{}
+	for _, a := range assets {
+		res = append(res, map[string]interface{}{
+			"id":          a.ID,
+			"label":       a.Label,
+			"circulation": a.Circulation.Total,
+		})
+	}
+
 	ret := map[string]interface{}{
 		"last":   last,
-		"assets": httpjson.Array(assets),
+		"assets": httpjson.Array(res),
 	}
 	return ret, nil
 }
 
 // POST /v3/issuer-nodes/:inodeID/assets
-func createAsset(ctx context.Context, inodeID string, in struct{ Label string }) (interface{}, error) {
+func createAsset(ctx context.Context, inodeID string, in struct {
+	Label      string
+	Definition map[string]interface{}
+}) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if err := issuerAuthz(ctx, inodeID); err != nil {
 		return nil, err
 	}
-	asset, err := asset.Create(ctx, inodeID, in.Label)
+	ast, err := asset.Create(ctx, inodeID, in.Label, in.Definition)
 	if err != nil {
 		return nil, err
 	}
 
 	ret := map[string]interface{}{
-		"id":             asset.Hash.String(),
-		"issuer_node_id": asset.IssuerNodeID,
-		"label":          asset.Label,
+		"id":             ast.Hash.String(),
+		"issuer_node_id": ast.IssuerNodeID,
+		"label":          ast.Label,
 	}
 	return ret, nil
 }
@@ -115,7 +129,18 @@ func getAsset(ctx context.Context, assetID string) (interface{}, error) {
 	if err := assetAuthz(ctx, assetID); err != nil {
 		return nil, err
 	}
-	return appdb.GetAsset(ctx, assetID)
+
+	// !!!HACK(jeffomatic) - do not split confirmed/total issuances until we enable
+	// automatic block generation
+	asset, err := appdb.GetAsset(ctx, assetID)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"id":          asset.ID,
+		"label":       asset.Label,
+		"circulation": asset.Circulation.Total,
+	}, nil
 }
 
 // PUT /v3/assets/:assetID

@@ -21,18 +21,6 @@ SET client_min_messages = warning;
 
 
 
---
--- Name: plv8; Type: EXTENSION; Schema: -; Owner: -
---
-
-
-
---
--- Name: EXTENSION plv8; Type: COMMENT; Schema: -; Owner: -
---
-
-
-
 SET search_path = public, pg_catalog;
 
 --
@@ -223,6 +211,26 @@ CREATE TABLE admin_nodes (
 
 
 --
+-- Name: asset_definition_pointers; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE asset_definition_pointers (
+    asset_id text NOT NULL,
+    asset_definition_hash text NOT NULL
+);
+
+
+--
+-- Name: asset_definitions; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE asset_definitions (
+    hash text NOT NULL,
+    definition bytea
+);
+
+
+--
 -- Name: assets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -233,12 +241,16 @@ CREATE TABLE assets (
     keyset text[] DEFAULT '{}'::text[] NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     definition_mutable boolean DEFAULT false NOT NULL,
-    definition_url text DEFAULT ''::text NOT NULL,
     definition bytea,
     redeem_script bytea NOT NULL,
     label text NOT NULL,
-    issued bigint DEFAULT 0 NOT NULL,
-    sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL
+    issued_pool bigint DEFAULT 0 NOT NULL,
+    sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL,
+    inner_asset_id text,
+    issuance_script bytea NOT NULL,
+    issued_confirmed bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT positive_issued_confirmed CHECK ((issued_confirmed >= 0)),
+    CONSTRAINT positive_issued_pool CHECK ((issued_pool >= 0))
 );
 
 
@@ -253,6 +265,27 @@ CREATE TABLE auth_tokens (
     type text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     expires_at timestamp with time zone
+);
+
+
+--
+-- Name: blocks; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE blocks (
+    block_hash text NOT NULL,
+    height bigint NOT NULL,
+    data bytea NOT NULL
+);
+
+
+--
+-- Name: blocks_txs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE blocks_txs (
+    tx_hash text NOT NULL,
+    block_hash text NOT NULL
 );
 
 
@@ -397,6 +430,16 @@ CREATE TABLE members (
 
 
 --
+-- Name: pool_inputs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE pool_inputs (
+    tx_hash text NOT NULL,
+    index integer NOT NULL
+);
+
+
+--
 -- Name: pool_outputs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -407,12 +450,24 @@ CREATE TABLE pool_outputs (
     issuance_id text,
     script bytea NOT NULL,
     amount bigint NOT NULL,
-    spent boolean DEFAULT false NOT NULL,
     addr_index bigint NOT NULL,
     account_id text NOT NULL,
     manager_node_id text NOT NULL,
-    reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL
+    reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
+    metadata bytea DEFAULT '\x'::bytea NOT NULL
 );
+
+
+--
+-- Name: pool_tx_sort_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE pool_tx_sort_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
 --
@@ -421,7 +476,8 @@ CREATE TABLE pool_outputs (
 
 CREATE TABLE pool_txs (
     tx_hash text NOT NULL,
-    data bytea NOT NULL
+    data bytea NOT NULL,
+    sort_id text DEFAULT nextval('pool_tx_sort_id_seq'::regclass) NOT NULL
 );
 
 
@@ -445,6 +501,16 @@ CREATE TABLE rotations (
     manager_node_id text NOT NULL,
     keyset text[] NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: txs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE txs (
+    tx_hash text NOT NULL,
+    data bytea NOT NULL
 );
 
 
@@ -477,7 +543,9 @@ CREATE TABLE utxos (
     reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     block_hash text,
-    block_height bigint
+    block_height bigint,
+    metadata bytea DEFAULT '\x'::bytea NOT NULL,
+    script bytea DEFAULT '\x'::bytea NOT NULL
 );
 
 
@@ -528,11 +596,51 @@ ALTER TABLE ONLY addresses
 
 
 --
+-- Name: asset_definition_pointers_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY asset_definition_pointers
+    ADD CONSTRAINT asset_definition_pointers_pkey PRIMARY KEY (asset_id);
+
+
+--
+-- Name: asset_definitions_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY asset_definitions
+    ADD CONSTRAINT asset_definitions_pkey PRIMARY KEY (hash);
+
+
+--
 -- Name: assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
 ALTER TABLE ONLY assets
     ADD CONSTRAINT assets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: blocks_height_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY blocks
+    ADD CONSTRAINT blocks_height_key UNIQUE (height);
+
+
+--
+-- Name: blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY blocks
+    ADD CONSTRAINT blocks_pkey PRIMARY KEY (block_hash);
+
+
+--
+-- Name: blocks_txs_tx_hash_block_hash_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY blocks_txs
+    ADD CONSTRAINT blocks_txs_tx_hash_block_hash_key UNIQUE (tx_hash, block_hash);
 
 
 --
@@ -576,6 +684,14 @@ ALTER TABLE ONLY members
 
 
 --
+-- Name: pool_inputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY pool_inputs
+    ADD CONSTRAINT pool_inputs_pkey PRIMARY KEY (tx_hash, index);
+
+
+--
 -- Name: pool_outputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -592,6 +708,14 @@ ALTER TABLE ONLY pool_txs
 
 
 --
+-- Name: pool_txs_sort_id_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY pool_txs
+    ADD CONSTRAINT pool_txs_sort_id_key UNIQUE (sort_id);
+
+
+--
 -- Name: projects_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -605,6 +729,14 @@ ALTER TABLE ONLY projects
 
 ALTER TABLE ONLY rotations
     ADD CONSTRAINT rotations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY txs
+    ADD CONSTRAINT txs_pkey PRIMARY KEY (tx_hash);
 
 
 --
@@ -747,6 +879,20 @@ CREATE INDEX manager_nodes_project_id_idx ON manager_nodes USING btree (project_
 --
 
 CREATE INDEX members_user_id_idx ON members USING btree (user_id);
+
+
+--
+-- Name: pool_outputs_account_id_asset_id_reserved_until_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX pool_outputs_account_id_asset_id_reserved_until_idx ON pool_outputs USING btree (account_id, asset_id, reserved_until);
+
+
+--
+-- Name: pool_outputs_manager_node_id_asset_id_reserved_until_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX pool_outputs_manager_node_id_asset_id_reserved_until_idx ON pool_outputs USING btree (manager_node_id, asset_id, reserved_until);
 
 
 --

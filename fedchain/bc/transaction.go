@@ -2,6 +2,7 @@ package bc
 
 import (
 	"bytes"
+	"database/sql/driver"
 	"encoding/binary"
 	"encoding/hex"
 	"io"
@@ -48,10 +49,6 @@ type TxOutput struct {
 	Value    uint64
 	Script   script.Script
 	Metadata []byte
-
-	// Optional attributes for convenience during validation.
-	// These are not serialized or hashed.
-	Outpoint Outpoint
 }
 
 // Outpoint defines a bitcoin data type that is used to track previous
@@ -59,6 +56,48 @@ type TxOutput struct {
 type Outpoint struct {
 	Hash  Hash
 	Index uint32
+}
+
+// Copy creates a deep copy of a transaction so that the original does not get
+// modified when the copy is manipulated.
+func (tx *Tx) Copy() *Tx {
+	// Create new tx and start by copying primitive values and making space
+	// for the transaction inputs and outputs.
+	newTx := Tx{
+		Version:  tx.Version,
+		Inputs:   make([]*TxInput, 0, len(tx.Inputs)),
+		Outputs:  make([]*TxOutput, 0, len(tx.Outputs)),
+		LockTime: tx.LockTime,
+		Metadata: copyBytes(tx.Metadata),
+	}
+
+	// Deep copy the old TxIn data.
+	for _, oldIn := range tx.Inputs {
+		newIn := new(TxInput)
+		*newIn = *oldIn
+		newIn.SignatureScript = copyBytes(oldIn.SignatureScript)
+		newIn.Metadata = copyBytes(oldIn.Metadata)
+		newTx.Inputs = append(newTx.Inputs, newIn)
+	}
+
+	// Deep copy the old TxOut data.
+	for _, oldOut := range tx.Outputs {
+		newOut := new(TxOutput)
+		*newOut = *oldOut
+		newOut.Script = copyBytes(oldOut.Script)
+		newOut.Metadata = copyBytes(oldOut.Metadata)
+		newTx.Outputs = append(newTx.Outputs, newOut)
+	}
+
+	return &newTx
+}
+
+func copyBytes(b []byte) (n []byte) {
+	if len(b) > 0 {
+		n = make([]byte, len(b))
+		copy(n, b)
+	}
+	return n
 }
 
 // IsIssuance returns true if this transaction is an issuance transaction.
@@ -79,10 +118,28 @@ func (tx *Tx) UnmarshalText(p []byte) error {
 	if err != nil {
 		return err
 	}
-
 	r := &errors.Reader{R: bytes.NewReader(b)}
 	tx.readFrom(r)
 	return r.Err
+}
+
+func (tx *Tx) Scan(val interface{}) error {
+	b, ok := val.([]byte)
+	if !ok {
+		return errors.New("Scan must receive a byte slice")
+	}
+	r := &errors.Reader{R: bytes.NewReader(b)}
+	tx.readFrom(r)
+	return r.Err
+}
+
+func (tx *Tx) Value() (driver.Value, error) {
+	b := new(bytes.Buffer)
+	_, err := tx.WriteTo(b)
+	if err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
 }
 
 func (tx *Tx) readFrom(r *errors.Reader) {

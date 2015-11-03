@@ -16,10 +16,11 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain/bc"
+	chainlog "chain/log"
 )
 
 func init() {
-	log.SetOutput(ioutil.Discard)
+	chainlog.SetOutput(ioutil.Discard)
 
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
@@ -33,19 +34,48 @@ func init() {
 	}
 }
 
+// Establish a context object with a new db transaction in which to
+// run the given callback function.
+func withContext(t *testing.T, sql string, fn func(*testing.T, context.Context)) {
+	var dbtx pg.Tx
+	if sql == "" {
+		dbtx = pgtest.TxWithSQL(t)
+	} else {
+		dbtx = pgtest.TxWithSQL(t, sql)
+	}
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+	fn(t, ctx)
+}
+
+func mustParseHash(s string) [32]byte {
+	h, err := bc.ParseHash(s)
+	if err != nil {
+		panic(err)
+	}
+	return h
+}
+
 func TestIssue(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO issuer_nodes (id, project_id, label, keyset, key_index)
 			VALUES ('in1', 'proj-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
-		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, label)
+		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label)
 		VALUES(
 			'0000000000000000000000000000000000000000000000000000000000000000',
 			'in1',
 			0,
 			'{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}',
 			decode('51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae', 'hex'),
+			'\x'::bytea,
 			'foo'
+		);
+		INSERT INTO blocks (block_hash, height, data)
+		VALUES(
+			'341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5',
+			1,
+			decode('0000000100000000000000013132330000000000000000000000000000000000000000000000000000000000414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000000000000000000640f746573742d7369672d73637269707412746573742d6f75747075742d73637269707401000000010000000000000000000007746573742d7478', 'hex')
 		);
 	`)
 	defer dbtx.Rollback()
@@ -65,7 +95,10 @@ func TestIssue(t *testing.T) {
 	outScript, _ := hex.DecodeString("a9140ac9c982fd389181752e5a414045dd424a10754b87")
 	want := &bc.Tx{
 		Version: 1,
-		Inputs:  []*bc.TxInput{{Previous: bc.IssuanceOutpoint}},
+		Inputs: []*bc.TxInput{{Previous: bc.Outpoint{
+			Index: bc.InvalidOutputIndex,
+			Hash:  mustParseHash("341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5"),
+		}}},
 		Outputs: []*bc.TxOutput{{AssetID: bc.AssetID{}, Value: 123, Script: outScript}},
 	}
 
