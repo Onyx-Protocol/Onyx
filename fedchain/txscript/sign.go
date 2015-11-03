@@ -139,7 +139,7 @@ func sign(chainParams *chaincfg.Params, tx *bc.Tx, idx int,
 		}
 
 		return script, class, addresses, nrequired, nil
-	case ScriptHashTy:
+	case ScriptHashTy, ContractTy:
 		script, err := sdb.GetScript(addresses[0])
 		if err != nil {
 			return nil, class, nil, 0, err
@@ -174,7 +174,7 @@ func mergeScripts(chainParams *chaincfg.Params, tx *bc.Tx, idx int,
 	// some internal refactoring could probably make this avoid needless
 	// extra calculations.
 	switch class {
-	case ScriptHashTy:
+	case ScriptHashTy, ContractTy:
 		// Remove the last push in the script and then recurse.
 		// this could be a lot less inefficient.
 		sigPops, err := parseScript(sigScript)
@@ -215,7 +215,7 @@ func mergeScripts(chainParams *chaincfg.Params, tx *bc.Tx, idx int,
 	// It doesn't actualy make sense to merge anything other than multiig
 	// and scripthash (because it could contain multisig). Everything else
 	// has either zero signature, can't be spent, or has a single signature
-	// which is either present or not. The other two cases are handled
+	// which is either present or not. The other three cases are handled
 	// above. In the conflict case here we just assume the longest is
 	// correct (this matches behaviour of the reference implementation).
 	default:
@@ -356,8 +356,9 @@ func (kc KeyClosure) GetKey(address btcutil.Address) (*btcec.PrivateKey,
 	return kc(address)
 }
 
-// ScriptDB is an interface type provided to SignTxOutput, it encapsulates any
-// user state required to get the scripts for an pay-to-script-hash address.
+// ScriptDB is an interface type provided to SignTxOutput, it
+// encapsulates any user state required to get the scripts for a
+// pay-to-script-hash or pay-to-contract address.
 type ScriptDB interface {
 	GetScript(btcutil.Address) ([]byte, error)
 }
@@ -387,7 +388,7 @@ func SignTxOutput(chainParams *chaincfg.Params, tx *bc.Tx, idx int,
 		return nil, err
 	}
 
-	if class == ScriptHashTy {
+	if (class == ScriptHashTy) || (class == ContractTy) {
 		// TODO keep the sub addressed and pass down to merge.
 		realSigScript, _, _, _, err := sign(chainParams, tx, idx,
 			sigScript, hashType, kdb, sdb)

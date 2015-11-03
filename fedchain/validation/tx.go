@@ -60,13 +60,17 @@ func ValidateTx(ctx context.Context, view state.View, tx *bc.Tx, timestamp uint6
 		return err
 	}
 
+	engine, err := txscript.NewReusableEngine(ctx, view, tx, txscript.StandardVerifyFlags)
+	if err != nil {
+		return fmt.Errorf("cannot create script engine: %s", err)
+	}
 	for i, input := range tx.Inputs {
 		unspent := view.Output(ctx, input.Previous)
-		engine, err := txscript.NewEngine(unspent.Script, tx, i, txscript.StandardVerifyFlags)
+		err = engine.Prepare(unspent.Script, i)
 		if err != nil {
-			return fmt.Errorf("cannot create script engine: %s", err)
+			return fmt.Errorf("cannot prepare script engine to process input %d: %s", i, err)
 		}
-		if err := engine.Execute(); err != nil {
+		if err = engine.Execute(); err != nil {
 			return fmt.Errorf("cannot validate transaction: %s", err)
 		}
 	}

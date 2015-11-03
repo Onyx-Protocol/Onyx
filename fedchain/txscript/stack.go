@@ -37,6 +37,10 @@ type stack struct {
 	verifyMinimalData bool
 }
 
+func (s *stack) Reset() {
+	s.stk = nil
+}
+
 // Depth returns the number of items on the stack.
 func (s *stack) Depth() int32 {
 	return int32(len(s.stk))

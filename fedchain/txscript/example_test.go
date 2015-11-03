@@ -164,8 +164,7 @@ func ExampleSignTxOutput() {
 	flags := txscript.ScriptBip16 | txscript.ScriptVerifyDERSignatures |
 		txscript.ScriptStrictMultiSig |
 		txscript.ScriptDiscourageUpgradableNops
-	vm, err := txscript.NewEngine(originTx.Outputs[0].Script, redeemTx, 0,
-		flags)
+	vm, err := txscript.NewEngine(nil, nil, originTx.Outputs[0].Script, redeemTx, 0, flags)
 	if err != nil {
 		fmt.Println(err)
 		return

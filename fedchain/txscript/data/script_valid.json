@@ -6,6 +6,13 @@
 ["correct prevout hash), using the given scriptSig. All nLockTimes are 0, all"],
 ["nSequences are max."],
 
+["3 2 DATA_3 0x935587", "0 ROLL DUP HASH160 DATA_20 0x9c7d1d4a371634286f4437f7f8a38021ffbb7ca0 EQUALVERIFY", "P2SH,STRICTENC", "Simple 0-param P2C script"],
+["2 DATA_3 0x935587", "3 1 ROLL DUP HASH160 DATA_20 0x9c7d1d4a371634286f4437f7f8a38021ffbb7ca0 EQUALVERIFY", "P2SH,STRICTENC", "Simple 1-param P2C script"],
+["DATA_3 0x935587", "2 3 2 ROLL DUP HASH160 DATA_20 0x9c7d1d4a371634286f4437f7f8a38021ffbb7ca0 EQUALVERIFY", "P2SH,STRICTENC", "Simple 2-param P2C script"],
+
+["", "ASSET DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 EQUAL", "P2SH,STRICTENC", "Test ASSET opcode"],
+["", "TIME 11 EQUAL", "P2SH,STRICTENC", "Test TIME opcode"],
+
 ["", "DEPTH 0 EQUAL", "P2SH,STRICTENC", "Test the test: we should have an empty stack after scriptSig evaluation"],
 ["  ", "DEPTH 0 EQUAL", "P2SH,STRICTENC", "and multiple spaces should not change that."],
 ["   ", "DEPTH 0 EQUAL", "P2SH,STRICTENC"],

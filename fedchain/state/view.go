@@ -26,6 +26,10 @@ type ViewReader interface {
 	// It returns nil if output is not stored or does not exist.
 	Output(context.Context, bc.Outpoint) *Output
 
+	// Streams all the unspent outputs that are paid with the given
+	// asset to a given p2c contract.
+	UnspentP2COutputs(context.Context, bc.ContractHash, bc.AssetID) []*Output
+
 	// AssetDefinitionPointer looks up the given Asset ID.
 	// It returns nil if ADP is not stored or does not exist.
 	AssetDefinitionPointer(bc.AssetID) *bc.AssetDefinitionPointer
@@ -50,6 +54,14 @@ type Output struct {
 	bc.TxOutput
 	Outpoint bc.Outpoint
 	Spent    bool
+}
+
+func NewOutput(o bc.TxOutput, p bc.Outpoint, spent bool) *Output {
+	return &Output{
+		TxOutput: o,
+		Outpoint: p,
+		Spent:    spent,
+	}
 }
 
 type compositeView struct {
@@ -77,6 +89,24 @@ func (v *compositeView) Output(ctx context.Context, p bc.Outpoint) *Output {
 	return v.back.Output(ctx, p)
 }
 
+func (v *compositeView) UnspentP2COutputs(ctx context.Context, contractHash bc.ContractHash, assetID bc.AssetID) []*Output {
+	// Get the unspent p2c outputs from the "back" view, then check the
+	// "front" view to make sure they're still unspent; then add outputs
+	// from the "front" view.
+	preresult := v.back.UnspentP2COutputs(ctx, contractHash, assetID)
+	result := make([]*Output, 0, len(preresult))
+	for _, uncheckedOutput := range preresult {
+		checkedOutput := v.View.Output(ctx, uncheckedOutput.Outpoint)
+		if checkedOutput != nil && !checkedOutput.Spent {
+			result = append(result, checkedOutput)
+		}
+	}
+	result = append(result, v.View.UnspentP2COutputs(ctx, contractHash, assetID)...)
+	return result
+}
+
+// multiReader
+
 type multiReader struct {
 	front ViewReader
 	back  ViewReader
@@ -99,6 +129,22 @@ func (v *multiReader) Output(ctx context.Context, p bc.Outpoint) *Output {
 	return v.back.Output(ctx, p)
 }
 
+func (v *multiReader) UnspentP2COutputs(ctx context.Context, contractHash bc.ContractHash, assetID bc.AssetID) []*Output {
+	// Get the unspent p2c outputs from the "back" view, then check the
+	// "front" view to make sure they're still unspent; then add outputs
+	// from the "front" view.
+	preresult := v.back.UnspentP2COutputs(ctx, contractHash, assetID)
+	result := make([]*Output, 0, len(preresult))
+	for _, uncheckedOutput := range preresult {
+		checkedOutput := v.front.Output(ctx, uncheckedOutput.Outpoint)
+		if checkedOutput != nil && !checkedOutput.Spent {
+			result = append(result, checkedOutput)
+		}
+	}
+	result = append(result, v.front.UnspentP2COutputs(ctx, contractHash, assetID)...)
+	return result
+}
+
 func (v *multiReader) AssetDefinitionPointer(assetID bc.AssetID) *bc.AssetDefinitionPointer {
 	adp := v.front.AssetDefinitionPointer(assetID)
 	if adp != nil {
@@ -112,6 +158,10 @@ var emptyReader ViewReader = empty{}
 type empty struct{}
 
 func (empty) Output(ctx context.Context, p bc.Outpoint) *Output {
+	return nil
+}
+
+func (empty) UnspentP2COutputs(ctx context.Context, contractHash bc.ContractHash, assetID bc.AssetID) []*Output {
 	return nil
 }
 

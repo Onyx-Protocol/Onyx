@@ -1,6 +1,7 @@
 package txdb
 
 import (
+	"database/sql"
 	"time"
 
 	"golang.org/x/net/context"
@@ -10,6 +11,7 @@ import (
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
+	"chain/fedchain/txscript"
 	"chain/metrics"
 )
 
@@ -86,6 +88,12 @@ func loadPoolOutputs(ctx context.Context, load []bc.Outpoint) (map[bc.Outpoint]*
 	return outs, nil
 }
 
+const poolUnspentP2COutputQuery = `
+	SELECT o.tx_hash, o.index, o.asset_id, o.amount, o.script, o.metadata
+	FROM pool_outputs o LEFT JOIN pool_inputs i USING (tx_hash, index)
+	WHERE o.contract_hash = $1 AND o.asset_id = $2 AND i.tx_hash IS NULL
+`
+
 // LoadPoolUTXOs loads all unspent outputs in the tx pool
 // for the given asset and account.
 func LoadPoolUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, error) {
@@ -94,7 +102,7 @@ func LoadPoolUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UT
 	// LoadPoolUTXOs(context.Context, []bc.Outpoint) []*bc.TxOutput.
 
 	const q = `
-		SELECT amount, reserved_until, out.tx_hash, out.index, key_index(addr_index)
+		SELECT amount, reserved_until, out.tx_hash, out.index, key_index(addr_index), contract_hash
 		FROM pool_outputs out
 		LEFT JOIN pool_inputs inp ON ((out.tx_hash, out.index) = (inp.tx_hash, inp.index))
 		WHERE account_id=$1 AND asset_id=$2 AND inp.tx_hash IS NULL
@@ -114,15 +122,20 @@ func LoadPoolUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UT
 			txid      string
 			addrIndex []uint32
 		)
+		var contractHash sql.NullString
 		err = rows.Scan(
 			&u.Amount,
 			&u.ResvExpires,
 			&txid,
 			&u.Outpoint.Index,
 			(*pg.Uint32s)(&addrIndex),
+			&contractHash,
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "scan")
+		}
+		if contractHash.Valid {
+			u.ContractHash = contractHash.String
 		}
 		copy(u.AddrIndex[:], addrIndex)
 		h, err := bc.ParseHash(txid)
@@ -149,6 +162,7 @@ type utxoSet struct {
 	aIndex        pg.Int64s
 	script        pg.Byteas
 	metadata      pg.Byteas
+	contractHash  pg.Byteas
 }
 
 func InsertPoolTx(ctx context.Context, tx *bc.Tx) error {
@@ -168,13 +182,20 @@ func InsertPoolOutputs(ctx context.Context, hash bc.Hash, insert []*Output) erro
 		outs.managerNodeID = append(outs.managerNodeID, o.ManagerNodeID)
 		outs.aIndex = append(outs.aIndex, toKeyIndex(o.AddrIndex[:]))
 		outs.script = append(outs.script, o.Script)
+
+		isPayToContract, contractHash := txscript.TestPayToContract(o.Script)
+		if isPayToContract {
+			outs.contractHash = append(outs.contractHash, contractHash[:])
+		} else {
+			outs.contractHash = append(outs.contractHash, nil)
+		}
 	}
 
 	const q = `
 		INSERT INTO pool_outputs (
 			tx_hash, index, asset_id, amount,
 			account_id, manager_node_id, addr_index,
-			script
+			script, contract_hash
 		)
 		SELECT
 			$1::text,
@@ -184,7 +205,8 @@ func InsertPoolOutputs(ctx context.Context, hash bc.Hash, insert []*Output) erro
 			unnest($5::text[]),
 			unnest($6::text[]),
 			unnest($7::bigint[]),
-			unnest($8::bytea[])
+			unnest($8::bytea[]),
+			unnest($9::bytea[])
 	`
 	_, err := pg.FromContext(ctx).Exec(q,
 		hash.String(),
@@ -195,6 +217,7 @@ func InsertPoolOutputs(ctx context.Context, hash bc.Hash, insert []*Output) erro
 		outs.managerNodeID,
 		outs.aIndex,
 		outs.script,
+		outs.contractHash,
 	)
 	return errors.Wrap(err)
 }

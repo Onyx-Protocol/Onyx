@@ -83,6 +83,12 @@ func (vm *Engine) TstSetPC(script, off int) {
 	vm.scriptOff = off
 }
 
+// TstSetTimestamp allows the test modules to set the interpreter's
+// timestamp.
+func (vm *Engine) TstSetTimestamp(timestamp int64) {
+	vm.timestamp = timestamp
+}
+
 // Internal tests for opcode parsing with bad data templates.
 func TestParseOpcode(t *testing.T) {
 	// Deep copy the array and make one of the opcodes invalid by setting it

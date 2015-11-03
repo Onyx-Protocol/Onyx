@@ -16,6 +16,7 @@ import (
 	"github.com/btcsuite/golangcrypto/ripemd160"
 
 	"chain/crypto/hash256"
+	"chain/fedchain/bc"
 )
 
 // An opcode defines the information related to a txscript opcode.  opfunc if
@@ -227,70 +228,77 @@ const (
 	OP_UNKNOWN189          = 0xbd // 189
 	OP_UNKNOWN190          = 0xbe // 190
 	OP_UNKNOWN191          = 0xbf // 191
-	OP_UNKNOWN192          = 0xc0 // 192
-	OP_UNKNOWN193          = 0xc1 // 193
-	OP_UNKNOWN194          = 0xc2 // 194
-	OP_UNKNOWN195          = 0xc3 // 195
-	OP_UNKNOWN196          = 0xc4 // 196
-	OP_UNKNOWN197          = 0xc5 // 197
-	OP_UNKNOWN198          = 0xc6 // 198
-	OP_UNKNOWN199          = 0xc7 // 199
-	OP_UNKNOWN200          = 0xc8 // 200
-	OP_UNKNOWN201          = 0xc9 // 201
-	OP_UNKNOWN202          = 0xca // 202
-	OP_UNKNOWN203          = 0xcb // 203
-	OP_UNKNOWN204          = 0xcc // 204
-	OP_UNKNOWN205          = 0xcd // 205
-	OP_UNKNOWN206          = 0xce // 206
-	OP_UNKNOWN207          = 0xcf // 207
-	OP_UNKNOWN208          = 0xd0 // 208
-	OP_UNKNOWN209          = 0xd1 // 209
-	OP_UNKNOWN210          = 0xd2 // 210
-	OP_UNKNOWN211          = 0xd3 // 211
-	OP_UNKNOWN212          = 0xd4 // 212
-	OP_UNKNOWN213          = 0xd5 // 213
-	OP_UNKNOWN214          = 0xd6 // 214
-	OP_UNKNOWN215          = 0xd7 // 215
-	OP_UNKNOWN216          = 0xd8 // 216
-	OP_UNKNOWN217          = 0xd9 // 217
-	OP_UNKNOWN218          = 0xda // 218
-	OP_UNKNOWN219          = 0xdb // 219
-	OP_UNKNOWN220          = 0xdc // 220
-	OP_UNKNOWN221          = 0xdd // 221
-	OP_UNKNOWN222          = 0xde // 222
-	OP_UNKNOWN223          = 0xdf // 223
-	OP_UNKNOWN224          = 0xe0 // 224
-	OP_UNKNOWN225          = 0xe1 // 225
-	OP_UNKNOWN226          = 0xe2 // 226
-	OP_UNKNOWN227          = 0xe3 // 227
-	OP_UNKNOWN228          = 0xe4 // 228
-	OP_UNKNOWN229          = 0xe5 // 229
-	OP_UNKNOWN230          = 0xe6 // 230
-	OP_UNKNOWN231          = 0xe7 // 231
-	OP_UNKNOWN232          = 0xe8 // 232
-	OP_UNKNOWN233          = 0xe9 // 233
-	OP_UNKNOWN234          = 0xea // 234
-	OP_UNKNOWN235          = 0xeb // 235
-	OP_UNKNOWN236          = 0xec // 236
-	OP_UNKNOWN237          = 0xed // 237
-	OP_UNKNOWN238          = 0xee // 238
-	OP_UNKNOWN239          = 0xef // 239
-	OP_UNKNOWN240          = 0xf0 // 240
-	OP_UNKNOWN241          = 0xf1 // 241
-	OP_UNKNOWN242          = 0xf2 // 242
-	OP_UNKNOWN243          = 0xf3 // 243
-	OP_UNKNOWN244          = 0xf4 // 244
-	OP_UNKNOWN245          = 0xf5 // 245
-	OP_UNKNOWN246          = 0xf6 // 246
-	OP_UNKNOWN247          = 0xf7 // 247
-	OP_UNKNOWN248          = 0xf8 // 248
-	OP_SMALLDATA           = 0xf9 // 249 - bitcoin core internal
-	OP_SMALLINTEGER        = 0xfa // 250 - bitcoin core internal
-	OP_PUBKEYS             = 0xfb // 251 - bitcoin core internal
-	OP_UNKNOWN252          = 0xfc // 252
-	OP_PUBKEYHASH          = 0xfd // 253 - bitcoin core internal
-	OP_PUBKEY              = 0xfe // 254 - bitcoin core internal
-	OP_INVALIDOPCODE       = 0xff // 255 - bitcoin core internal
+
+	// p2c extensions
+	OP_REQUIREOUTPUT = 0xc0 // 192
+	OP_BALANCE       = 0xc1 // 193
+	OP_ASSET         = 0xc2 // 194
+	OP_AMOUNT        = 0xc3 // 195
+	OP_OUTPUTSCRIPT  = 0xc4 // 196
+	OP_TIME          = 0xc5 // 197
+	OP_CIRCULATION   = 0xc6 // 198
+	OP_UNKNOWN199    = 0xc7 // 199
+	OP_UNKNOWN200    = 0xc8 // 200
+	OP_EVAL          = 0xc9 // 201
+
+	OP_UNKNOWN202    = 0xca // 202
+	OP_UNKNOWN203    = 0xcb // 203
+	OP_UNKNOWN204    = 0xcc // 204
+	OP_UNKNOWN205    = 0xcd // 205
+	OP_UNKNOWN206    = 0xce // 206
+	OP_UNKNOWN207    = 0xcf // 207
+	OP_UNKNOWN208    = 0xd0 // 208
+	OP_UNKNOWN209    = 0xd1 // 209
+	OP_UNKNOWN210    = 0xd2 // 210
+	OP_UNKNOWN211    = 0xd3 // 211
+	OP_UNKNOWN212    = 0xd4 // 212
+	OP_UNKNOWN213    = 0xd5 // 213
+	OP_UNKNOWN214    = 0xd6 // 214
+	OP_UNKNOWN215    = 0xd7 // 215
+	OP_UNKNOWN216    = 0xd8 // 216
+	OP_UNKNOWN217    = 0xd9 // 217
+	OP_UNKNOWN218    = 0xda // 218
+	OP_UNKNOWN219    = 0xdb // 219
+	OP_UNKNOWN220    = 0xdc // 220
+	OP_UNKNOWN221    = 0xdd // 221
+	OP_UNKNOWN222    = 0xde // 222
+	OP_UNKNOWN223    = 0xdf // 223
+	OP_UNKNOWN224    = 0xe0 // 224
+	OP_UNKNOWN225    = 0xe1 // 225
+	OP_UNKNOWN226    = 0xe2 // 226
+	OP_UNKNOWN227    = 0xe3 // 227
+	OP_UNKNOWN228    = 0xe4 // 228
+	OP_UNKNOWN229    = 0xe5 // 229
+	OP_UNKNOWN230    = 0xe6 // 230
+	OP_UNKNOWN231    = 0xe7 // 231
+	OP_UNKNOWN232    = 0xe8 // 232
+	OP_UNKNOWN233    = 0xe9 // 233
+	OP_UNKNOWN234    = 0xea // 234
+	OP_UNKNOWN235    = 0xeb // 235
+	OP_UNKNOWN236    = 0xec // 236
+	OP_UNKNOWN237    = 0xed // 237
+	OP_UNKNOWN238    = 0xee // 238
+	OP_UNKNOWN239    = 0xef // 239
+	OP_UNKNOWN240    = 0xf0 // 240
+	OP_UNKNOWN241    = 0xf1 // 241
+	OP_UNKNOWN242    = 0xf2 // 242
+	OP_UNKNOWN243    = 0xf3 // 243
+	OP_UNKNOWN244    = 0xf4 // 244
+	OP_UNKNOWN245    = 0xf5 // 245
+	OP_UNKNOWN246    = 0xf6 // 246
+	OP_UNKNOWN247    = 0xf7 // 247
+	OP_UNKNOWN248    = 0xf8 // 248
+	OP_SMALLDATA     = 0xf9 // 249 - bitcoin core internal
+	OP_SMALLINTEGER  = 0xfa // 250 - bitcoin core internal
+	OP_PUBKEYS       = 0xfb // 251 - bitcoin core internal
+	OP_UNKNOWN252    = 0xfc // 252
+	OP_PUBKEYHASH    = 0xfd // 253 - bitcoin core internal
+	OP_PUBKEY        = 0xfe // 254 - bitcoin core internal
+	OP_INVALIDOPCODE = 0xff // 255 - bitcoin core internal
+
+	// p2c extensions
+	OP_SELFHASH = 0xfe
+	OP_ANYDATA  = 0xff
 )
 
 // Conditional execution constants.
@@ -513,16 +521,19 @@ var opcodeArray = [256]opcode{
 	OP_UNKNOWN189: {OP_UNKNOWN189, "OP_UNKNOWN189", 1, opcodeInvalid},
 	OP_UNKNOWN190: {OP_UNKNOWN190, "OP_UNKNOWN190", 1, opcodeInvalid},
 	OP_UNKNOWN191: {OP_UNKNOWN191, "OP_UNKNOWN191", 1, opcodeInvalid},
-	OP_UNKNOWN192: {OP_UNKNOWN192, "OP_UNKNOWN192", 1, opcodeInvalid},
-	OP_UNKNOWN193: {OP_UNKNOWN193, "OP_UNKNOWN193", 1, opcodeInvalid},
-	OP_UNKNOWN194: {OP_UNKNOWN194, "OP_UNKNOWN194", 1, opcodeInvalid},
-	OP_UNKNOWN195: {OP_UNKNOWN195, "OP_UNKNOWN195", 1, opcodeInvalid},
-	OP_UNKNOWN196: {OP_UNKNOWN196, "OP_UNKNOWN196", 1, opcodeInvalid},
-	OP_UNKNOWN197: {OP_UNKNOWN197, "OP_UNKNOWN197", 1, opcodeInvalid},
-	OP_UNKNOWN198: {OP_UNKNOWN198, "OP_UNKNOWN198", 1, opcodeInvalid},
-	OP_UNKNOWN199: {OP_UNKNOWN199, "OP_UNKNOWN199", 1, opcodeInvalid},
-	OP_UNKNOWN200: {OP_UNKNOWN200, "OP_UNKNOWN200", 1, opcodeInvalid},
-	OP_UNKNOWN201: {OP_UNKNOWN201, "OP_UNKNOWN201", 1, opcodeInvalid},
+
+	// p2c extensions
+	OP_REQUIREOUTPUT: {OP_REQUIREOUTPUT, "OP_REQUIREOUTPUT", 1, nil}, // see init()
+	OP_BALANCE:       {OP_BALANCE, "OP_BALANCE", 1, opcodeBalance},
+	OP_ASSET:         {OP_ASSET, "OP_ASSET", 1, opcodeAsset},
+	OP_AMOUNT:        {OP_AMOUNT, "OP_AMOUNT", 1, opcodeAmount},
+	OP_OUTPUTSCRIPT:  {OP_OUTPUTSCRIPT, "OP_OUTPUTSCRIPT", 1, opcodeOutputScript},
+	OP_TIME:          {OP_TIME, "OP_TIME", 1, opcodeTime},
+	OP_CIRCULATION:   {OP_CIRCULATION, "OP_CIRCULATION", 1, opcodeCirculation},
+	OP_UNKNOWN199:    {OP_UNKNOWN199, "OP_UNKNOWN199", 1, opcodeInvalid},
+	OP_UNKNOWN200:    {OP_UNKNOWN200, "OP_UNKNOWN200", 1, opcodeInvalid},
+	OP_EVAL:          {OP_EVAL, "OP_EVAL", 1, nil}, // see init()
+
 	OP_UNKNOWN202: {OP_UNKNOWN202, "OP_UNKNOWN202", 1, opcodeInvalid},
 	OP_UNKNOWN203: {OP_UNKNOWN203, "OP_UNKNOWN203", 1, opcodeInvalid},
 	OP_UNKNOWN204: {OP_UNKNOWN204, "OP_UNKNOWN204", 1, opcodeInvalid},
@@ -1727,6 +1738,12 @@ func opcodeSha256(op *parsedOpcode, vm *Engine) error {
 	return nil
 }
 
+// Compute ripemd160(sha256(buf)).
+func Hash160(buf []byte) []byte {
+	hash1 := fastsha256.Sum256(buf)
+	return calcHash(hash1[:], ripemd160.New())
+}
+
 // opcodeHash160 treats the top item of the data stack as raw bytes and replaces
 // it with ripemd160(sha256(data)).
 //
@@ -1736,9 +1753,7 @@ func opcodeHash160(op *parsedOpcode, vm *Engine) error {
 	if err != nil {
 		return err
 	}
-
-	hash := fastsha256.Sum256(buf)
-	vm.dstack.PushByteArray(calcHash(hash[:], ripemd160.New()))
+	vm.dstack.PushByteArray(Hash160(buf))
 	return nil
 }
 
@@ -2079,6 +2094,213 @@ func opcodeCheckMultiSigVerify(op *parsedOpcode, vm *Engine) error {
 	return err
 }
 
+// P2C extensions
+
+// Pop data off the stack and return it as a ContractHash, if
+// possible.  Also allow an empty byte array on top of the stack,
+// returned as nil.
+func popOptionalContractHash(stack *stack) (*bc.ContractHash, error) {
+	b, err := stack.PopByteArray()
+	if err != nil {
+		return nil, err
+	}
+	if len(b) == 0 {
+		return nil, nil
+	}
+	var result bc.ContractHash
+	if len(b) != len(result) {
+		return nil, ErrContractHashLength
+	}
+	copy(result[:], b)
+	return &result, nil
+}
+
+// Pop data off the stack and return it as an AssetID, if
+// possible.
+func popAssetID(stack *stack) (*bc.AssetID, error) {
+	b, err := stack.PopByteArray()
+	if err != nil {
+		return nil, err
+	}
+	var result bc.AssetID
+	if len(b) != len(result) {
+		return nil, ErrAssetIDLength
+	}
+	copy(result[:], b)
+	return &result, nil
+}
+
+// AMOUNT ASSETID PATTERN OP_REQUIREOUTPUT
+// Checks whether AMOUNT units of ASSETID paid to PATTERN remain among
+// this tx's inputs after accounting for other OP_REQUIREOUTPUTs.
+// PATTERN is compared to each input's pkscript, with OP_SELFHASH
+// matching the current txin's p2c contract hash and OP_ANYDATA
+// matching any data-pushing operation.  Pushes true if so, false
+// otherwise.
+func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
+	scriptPattern, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+	assetID, err := popAssetID(&vm.dstack)
+	if err != nil {
+		return err
+	}
+	amount, err := vm.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+	if amount < 0 {
+		return fmt.Errorf("OP_REQUIREOUTPUT amount %d, must be >= 0", amount)
+	}
+
+	if amount == 0 {
+		// Fast no-op.
+		vm.dstack.PushBool(true)
+		return nil
+	}
+
+	vm.LoadOutputs()
+
+	parsedPattern, err := parseScript(scriptPattern)
+	if err != nil {
+		return err
+	}
+
+	needed := uint64(amount)
+
+	for i, output := range vm.outputs {
+		available := vm.available[i]
+		if available <= 0 {
+			continue
+		}
+		if output.AssetID != *assetID {
+			continue
+		}
+		match, err := scriptMatchesPattern(output.Script, parsedPattern, vm.contractHash)
+		if err != nil {
+			return err
+		}
+		if !match {
+			continue
+		}
+		if available >= needed {
+			vm.available[i] -= needed
+			needed = 0
+			break
+		}
+		// 0 < available < needed
+		needed -= vm.available[i]
+		vm.available[i] = 0
+	}
+	vm.dstack.PushBool(needed == 0)
+	return nil
+}
+
+// Does a given script match a given OP_REQUIREOUTPUT pattern?
+func scriptMatchesPattern(script []byte, parsedPattern []parsedOpcode, contractHash *bc.ContractHash) (bool, error) {
+	parsedScript, err := parseScript(script)
+	if err != nil {
+		return false, err
+	}
+	if len(parsedScript) != len(parsedPattern) {
+		return false, nil
+	}
+	for i, pop := range parsedScript {
+		ppat := parsedPattern[i]
+		switch ppat.opcode.value {
+		case OP_ANYDATA:
+			if !isPushdataOp(pop) {
+				return false, nil
+			}
+		case OP_SELFHASH:
+			if !isPushdataOp(pop) || (contractHash == nil) || !bytes.Equal(contractHash[:], pop.data) {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
+}
+
+// ASSETID CONTRACTHASH OP_BALANCE
+// Pushes the unspent balance of the given ASSETID that has been paid
+// to p2c addrs with the given CONTRACTHASH.
+func opcodeBalance(op *parsedOpcode, vm *Engine) error {
+	contractHash, err := popOptionalContractHash(&vm.dstack)
+	if err != nil {
+		return err
+	}
+	if contractHash == nil {
+		if vm.contractHash == nil {
+			return ErrNoContractHash
+		}
+		contractHash = vm.contractHash
+	}
+	assetID, err := popAssetID(&vm.dstack)
+	if err != nil {
+		return err
+	}
+
+	var balance uint64
+	for _, output := range vm.viewReader.UnspentP2COutputs(vm.ctx, *contractHash, *assetID) {
+		balance += output.Value
+	}
+
+	vm.dstack.PushInt(scriptNum(balance))
+	return nil
+}
+
+// Pushes the current txin's assetid onto the stack.
+func opcodeAsset(op *parsedOpcode, vm *Engine) error {
+	vm.LoadOutputs()
+	vm.dstack.PushByteArray(vm.outputs[vm.txIdx].AssetID[:])
+	return nil
+}
+
+// Pushes the current txin's amount onto the stack.
+func opcodeAmount(op *parsedOpcode, vm *Engine) error {
+	vm.LoadOutputs()
+	vm.dstack.PushInt(scriptNum(vm.outputs[vm.txIdx].Value))
+	return nil
+}
+
+// Pushes the current txin's pkscript onto the stack.
+func opcodeOutputScript(op *parsedOpcode, vm *Engine) error {
+	vm.LoadOutputs()
+	vm.dstack.PushByteArray(vm.outputs[vm.txIdx].Script)
+	return nil
+}
+
+// Pushes the current timestamp (as of when the interpreter was
+// instantiated) onto the stack.
+func opcodeTime(op *parsedOpcode, vm *Engine) error {
+	vm.dstack.PushInt(scriptNum(vm.timestamp))
+	return nil
+}
+
+// ASSETID CIRCULATION
+// Pushes the total amount of the given asset id presently in
+// circulation (issued minus destroyed).
+func opcodeCirculation(op *parsedOpcode, vm *Engine) error {
+	// TODO(bobg): implement
+	panic("unimplemented")
+}
+
+// SCRIPT EVAL
+// Interprets SCRIPT
+func opcodeEval(op *parsedOpcode, vm *Engine) error {
+	script, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+	parsedScript, err := parseScript(script)
+	if err != nil {
+		return err
+	}
+	vm.InsertScript(parsedScript)
+	return nil
+}
+
 // OpcodeByName is a map that can be used to lookup an opcode by its
 // human-readable name (OP_CHECKMULTISIG, OP_CHECKSIG, etc).
 var OpcodeByName = make(map[string]byte)
@@ -2092,4 +2314,11 @@ func init() {
 	}
 	OpcodeByName["OP_FALSE"] = OP_FALSE
 	OpcodeByName["OP_TRUE"] = OP_TRUE
+
+	OpcodeByName["OP_SELFHASH"] = OP_SELFHASH
+	OpcodeByName["OP_ANYDATA"] = OP_ANYDATA
+
+	// The following is placed here to break circular references.
+	opcodeArray[OP_REQUIREOUTPUT].opfunc = opcodeRequireOutput
+	opcodeArray[OP_EVAL].opfunc = opcodeEval
 }

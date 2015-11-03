@@ -60,3 +60,6 @@ func ParseHash(s string) (h Hash, err error) {
 	_, err = hex.Decode(h[:], []byte(s))
 	return h, errors.Wrap(err, "decode hex")
 }
+
+// A 160-bit hash
+type ContractHash [20]byte

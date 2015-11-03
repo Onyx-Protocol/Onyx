@@ -71,6 +71,72 @@ func IsPayToScriptHash(script []byte) bool {
 	return isScriptHash(pops)
 }
 
+// Returns true if the parsed script is in p2c format, false
+// otherwise.
+func isContract(pops []parsedOpcode) bool {
+	result, _ := testContract(pops)
+	return result
+}
+
+// Returns true and the contractHash if the parsed script is in p2c
+// format, false and nil otherwise.
+func testContract(pops []parsedOpcode) (bool, *bc.ContractHash) {
+	l := len(pops)
+	if l < 6 {
+		return false, nil
+	}
+
+	// TODO(bobg,oleganza): Reconsider requiring smallints.
+	numOpcode := pops[l-6].opcode
+	if !isSmallInt(numOpcode) {
+		return false, nil
+	}
+	n := asSmallInt(numOpcode)
+
+	if l != (n + 6) {
+		return false, nil
+	}
+
+	if pops[l-1].opcode.value != OP_EQUALVERIFY {
+		return false, nil
+	}
+	if pops[l-2].opcode.value != OP_DATA_20 {
+		return false, nil
+	}
+	if pops[l-3].opcode.value != OP_HASH160 {
+		return false, nil
+	}
+	if pops[l-4].opcode.value != OP_DUP {
+		return false, nil
+	}
+	if pops[l-5].opcode.value != OP_ROLL {
+		return false, nil
+	}
+	if !isPushOnly(pops[:n]) {
+		return false, nil
+	}
+	var contractHash bc.ContractHash
+	copy(contractHash[:], pops[l-2].data)
+	return true, &contractHash
+}
+
+// IsPayToContract returns true if the script is in the standard
+// pay-to-contract (P2C) format, false otherwise.
+func IsPayToContract(script []byte) bool {
+	result, _ := TestPayToContract(script)
+	return result
+}
+
+// Returns true and the contractHash if the script is in p2c format,
+// false and nil otherwise.
+func TestPayToContract(script []byte) (bool, *bc.ContractHash) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return false, nil
+	}
+	return testContract(pops)
+}
+
 // isPushOnly returns true if the script only pushes data, false otherwise.
 func isPushOnly(pops []parsedOpcode) bool {
 	// NOTE: This function does NOT verify opcodes directly since it is
@@ -78,15 +144,19 @@ func isPushOnly(pops []parsedOpcode) bool {
 	// not have any parse errors.  Thus, consensus is properly maintained.
 
 	for _, pop := range pops {
-		// All opcodes up to OP_16 are data push instructions.
-		// NOTE: This does consider OP_RESERVED to be a data push
-		// instruction, but execution of OP_RESERVED will fail anyways
-		// and matches the behavior required by consensus.
-		if pop.opcode.value > OP_16 {
+		if !isPushdataOp(pop) {
 			return false
 		}
 	}
 	return true
+}
+
+func isPushdataOp(pop parsedOpcode) bool {
+	// All opcodes up to OP_16 are data push instructions.
+	// NOTE: This does consider OP_RESERVED to be a data push
+	// instruction, but execution of OP_RESERVED will fail anyways
+	// and matches the behavior required by consensus.
+	return pop.opcode.value <= OP_16
 }
 
 // IsPushOnlyScript returns whether or not the passed script only pushes data.
@@ -433,8 +503,8 @@ func GetPreciseSigOpCount(scriptSig, scriptPubKey []byte, bip16 bool) int {
 	// list of pops.
 	pops, _ := parseScript(scriptPubKey)
 
-	// Treat non P2SH transactions as normal.
-	if !(bip16 && isScriptHash(pops)) {
+	// Treat non P2SH/P2C transactions as normal.
+	if !(bip16 && (isScriptHash(pops) || isContract(pops))) {
 		return getSigOpCount(pops, true)
 	}
 
@@ -446,24 +516,25 @@ func GetPreciseSigOpCount(scriptSig, scriptPubKey []byte, bip16 bool) int {
 		return 0
 	}
 
-	// The signature script must only push data to the stack for P2SH to be
-	// a valid pair, so the signature operation count is 0 when that is not
-	// the case.
+	// The signature script must only push data to the stack for
+	// P2SH/P2C to be a valid pair, so the signature operation count is
+	// 0 when that is not the case.
 	if !isPushOnly(sigPops) || len(sigPops) == 0 {
 		return 0
 	}
 
-	// The P2SH script is the last item the signature script pushes to the
-	// stack.  When the script is empty, there are no signature operations.
+	// The P2SH/P2C script is the last item the signature script pushes
+	// to the stack.  When the script is empty, there are no signature
+	// operations.
 	shScript := sigPops[len(sigPops)-1].data
 	if len(shScript) == 0 {
 		return 0
 	}
 
-	// Parse the P2SH script and don't check the error since parseScript
-	// returns the parsed-up-to-error list of pops and the consensus rules
-	// dictate signature operations are counted up to the first parse
-	// failure.
+	// Parse the P2SH/P2C script and don't check the error since
+	// parseScript returns the parsed-up-to-error list of pops and the
+	// consensus rules dictate signature operations are counted up to
+	// the first parse failure.
 	shPops, _ := parseScript(shScript)
 	return getSigOpCount(shPops, true)
 }

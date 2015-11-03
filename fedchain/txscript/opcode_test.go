@@ -74,6 +74,10 @@ func TestOpcodeDisasm(t *testing.T) {
 		0xa9: "OP_HASH160", 0xaa: "OP_HASH256", 0xab: "OP_CODESEPARATOR",
 		0xac: "OP_CHECKSIG", 0xad: "OP_CHECKSIGVERIFY",
 		0xae: "OP_CHECKMULTISIG", 0xaf: "OP_CHECKMULTISIGVERIFY",
+		0xc0: "OP_REQUIREOUTPUT", 0xc1: "OP_BALANCE",
+		0xc2: "OP_ASSET", 0xc3: "OP_AMOUNT",
+		0xc4: "OP_OUTPUTSCRIPT", 0xc5: "OP_TIME",
+		0xc6: "OP_CIRCULATION", 0xc9: "OP_EVAL",
 		0xf9: "OP_SMALLDATA", 0xfa: "OP_SMALLINTEGER",
 		0xfb: "OP_PUBKEYS", 0xfd: "OP_PUBKEYHASH", 0xfe: "OP_PUBKEY",
 		0xff: "OP_INVALIDOPCODE",
@@ -113,7 +117,7 @@ func TestOpcodeDisasm(t *testing.T) {
 			expectedStr = "OP_NOP" + strconv.Itoa(int(val))
 
 		// OP_UNKNOWN#.
-		case opcodeVal >= 0xba && opcodeVal <= 0xf8 || opcodeVal == 0xfc:
+		case isUnknownOpcode(opcodeVal):
 			expectedStr = "OP_UNKNOWN" + strconv.Itoa(int(opcodeVal))
 		}
 
@@ -170,7 +174,7 @@ func TestOpcodeDisasm(t *testing.T) {
 			expectedStr = "OP_NOP" + strconv.Itoa(int(val))
 
 		// OP_UNKNOWN#.
-		case opcodeVal >= 0xba && opcodeVal <= 0xf8 || opcodeVal == 0xfc:
+		case isUnknownOpcode(opcodeVal):
 			expectedStr = "OP_UNKNOWN" + strconv.Itoa(int(opcodeVal))
 		}
 
@@ -183,4 +187,8 @@ func TestOpcodeDisasm(t *testing.T) {
 			continue
 		}
 	}
+}
+
+func isUnknownOpcode(opcodeVal int) bool {
+	return (opcodeVal >= 0xb1 && opcodeVal <= 0xbf) || (opcodeVal >= 0xc7 && opcodeVal <= 0xc8) || (opcodeVal >= 0xca && opcodeVal <= 0xf8) || (opcodeVal == 0xfc)
 }

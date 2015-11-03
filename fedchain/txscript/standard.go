@@ -7,6 +7,8 @@ package txscript
 import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
+
+	"chain/fedchain/bc"
 )
 
 const (
@@ -41,6 +43,7 @@ const (
 	NonStandardTy ScriptClass = iota // None of the recognized forms.
 	PubKeyTy                         // Pay pubkey.
 	PubKeyHashTy                     // Pay pubkey hash.
+	ContractTy                       // Pay to contract.
 	ScriptHashTy                     // Pay to script hash.
 	MultiSigTy                       // Multi signature.
 	NullDataTy                       // Empty data-only (provably prunable).
@@ -52,6 +55,7 @@ var scriptClassToName = []string{
 	NonStandardTy: "nonstandard",
 	PubKeyTy:      "pubkey",
 	PubKeyHashTy:  "pubkeyhash",
+	ContractTy:    "contract",
 	ScriptHashTy:  "scripthash",
 	MultiSigTy:    "multisig",
 	NullDataTy:    "nulldata",
@@ -139,6 +143,8 @@ func typeOfScript(pops []parsedOpcode) ScriptClass {
 		return PubKeyTy
 	} else if isPubkeyHash(pops) {
 		return PubKeyHashTy
+	} else if isContract(pops) {
+		return ContractTy
 	} else if isScriptHash(pops) {
 		return ScriptHashTy
 	} else if isMultiSig(pops) {
@@ -173,7 +179,7 @@ func expectedInputs(pops []parsedOpcode, class ScriptClass) int {
 	case PubKeyHashTy:
 		return 2
 
-	case ScriptHashTy:
+	case ScriptHashTy, ContractTy:
 		// Not including script.  That is handled by the caller.
 		return 1
 
@@ -243,9 +249,9 @@ func CalcScriptInfo(sigScript, pkScript []byte, bip16 bool) (*ScriptInfo, error)
 	si.NumInputs = len(sigPops)
 
 	// Count sigops taking into account pay-to-script-hash.
-	if si.PkScriptClass == ScriptHashTy && bip16 {
-		// The pay-to-hash-script is the final data push of the
-		// signature script.
+	if ((si.PkScriptClass == ScriptHashTy) || (si.PkScriptClass == ContractTy)) && bip16 {
+		// The p2sh/p2c script is the final data push of the signature
+		// script.
 		script := sigPops[len(sigPops)-1].data
 		shPops, err := parseScript(script)
 		if err != nil {
@@ -300,6 +306,20 @@ func payToPubKeyHashScript(pubKeyHash []byte) ([]byte, error) {
 		Script()
 }
 
+// payToContractScript creates a new script to pay a transaction
+// output to a contract. It is expected that the input is a valid
+// hash.
+func payToContractScript(contractHash []byte, params [][]byte) ([]byte, error) {
+	sb := NewScriptBuilder()
+	n := len(params)
+	for i := n - 1; i >= 0; i-- {
+		sb = sb.AddData(params[i])
+	}
+	sb = sb.AddInt64(int64(n))
+	sb = sb.AddOp(OP_ROLL).AddOp(OP_DUP).AddOp(OP_HASH160).AddData(contractHash).AddOp(OP_EQUALVERIFY)
+	return sb.Script()
+}
+
 // payToScriptHashScript creates a new script to pay a transaction output to a
 // script hash. It is expected that the input is a valid hash.
 func payToScriptHashScript(scriptHash []byte) ([]byte, error) {
@@ -314,8 +334,52 @@ func payToPubKeyScript(serializedPubKey []byte) ([]byte, error) {
 		AddOp(OP_CHECKSIG).Script()
 }
 
-// PayToAddrScript creates a new script to pay a transaction output to a the
-// specified address.
+// Satisfies btcutil.Address
+type AddressContractHash struct {
+	params [][]byte
+	hash   bc.ContractHash
+}
+
+// String returns the string encoding of the transaction output
+// destination.
+//
+// Please note that String differs subtly from EncodeAddress: String
+// will return the value as a string without any conversion, while
+// EncodeAddress may convert destination types (for example,
+// converting pubkeys to P2PKH addresses) before encoding as a
+// payment address string.
+func (a *AddressContractHash) String() string {
+	return a.EncodeAddress()
+}
+
+// EncodeAddress returns the string encoding of the payment address
+// associated with the Address value.  See the comment on String
+// for how this method differs from String.
+func (a *AddressContractHash) EncodeAddress() string {
+	return string(a.ScriptAddress())
+}
+
+// ScriptAddress returns the raw bytes of the address to be used
+// when inserting the address into a txout's script.
+func (a *AddressContractHash) ScriptAddress() []byte {
+	result, _ := payToContractScript(a.hash[:], a.params)
+	return result
+}
+
+// IsForNet returns whether or not the address is associated with the
+// passed bitcoin network.
+func (a *AddressContractHash) IsForNet(*chaincfg.Params) bool {
+	return true // xxx ok?
+}
+
+func NewAddressContractHash(contractHash []byte, params [][]byte) (*AddressContractHash, error) {
+	result := AddressContractHash{params: params}
+	copy(result.hash[:], contractHash)
+	return &result, nil
+}
+
+// PayToAddrScript creates a new script to pay a transaction output to
+// the specified address.
 func PayToAddrScript(addr btcutil.Address) ([]byte, error) {
 	switch addr := addr.(type) {
 	case *btcutil.AddressPubKeyHash:
@@ -329,6 +393,12 @@ func PayToAddrScript(addr btcutil.Address) ([]byte, error) {
 			return nil, ErrUnsupportedAddress
 		}
 		return payToScriptHashScript(addr.ScriptAddress())
+
+	case *AddressContractHash:
+		if addr == nil {
+			return nil, ErrUnsupportedAddress
+		}
+		return payToContractScript(addr.hash[:], addr.params)
 
 	case *btcutil.AddressPubKey:
 		if addr == nil {
@@ -414,6 +484,21 @@ func ExtractPkScriptAddrs(pkScript []byte, chainParams *chaincfg.Params) (Script
 		// Skip the pubkey if it's invalid for some reason.
 		requiredSigs = 1
 		addr, err := btcutil.NewAddressPubKey(pops[0].data, chainParams)
+		if err == nil {
+			addrs = append(addrs, addr)
+		}
+
+	case ContractTy:
+		// A pay-to-contract script is of the form:
+		//  <param N> <param N-1> ... <param 1> <N> OP_ROLL OP_DUP OP_HASH160 <scripthash> OP_EQUALVERIFY
+		// Therefore the script hash is the next-to-last item on the stack.
+		// Skip the script hash if it's invalid for some reason.
+		requiredSigs = 1
+		params := make([][]byte, len(pops)-5)
+		for i := 0; i < len(pops)-5; i++ {
+			params[i] = pops[len(pops)-6-i].data
+		}
+		addr, err := NewAddressContractHash(pops[len(pops)-1].data, params)
 		if err == nil {
 			addrs = append(addrs, addr)
 		}

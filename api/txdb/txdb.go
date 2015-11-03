@@ -10,6 +10,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
+	"chain/fedchain/txscript"
 	"chain/strings"
 )
 
@@ -230,13 +231,20 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) e
 		outs.aIndex = append(outs.aIndex, toKeyIndex(out.AddrIndex[:]))
 		outs.script = append(outs.script, out.Script)
 		outs.metadata = append(outs.metadata, out.Metadata)
+
+		isPayToContract, contractHash := txscript.TestPayToContract(out.Script)
+		if isPayToContract {
+			outs.contractHash = append(outs.contractHash, contractHash[:])
+		} else {
+			outs.contractHash = append(outs.contractHash, nil)
+		}
 	}
 
 	const q = `
 		INSERT INTO utxos (
 			txid, index, asset_id, amount,
 			account_id, manager_node_id, addr_index,
-			script, metadata,
+			script, contract_hash, metadata,
 			block_hash, block_height
 		)
 		SELECT
@@ -249,8 +257,9 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) e
 			unnest($7::bigint[]),
 			unnest($8::bytea[]),
 			unnest($9::bytea[]),
-			$10,
-			$11
+			unnest($10::bytea[]),
+			$11,
+			$12
 	`
 	_, err := pg.FromContext(ctx).Exec(q,
 		outs.txid,
@@ -261,6 +270,7 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) e
 		outs.managerNodeID,
 		outs.aIndex,
 		outs.script,
+		outs.contractHash,
 		outs.metadata,
 		block.Hash().String(),
 		block.Height,

@@ -1,6 +1,8 @@
 package txdb
 
 import (
+	"database/sql"
+
 	"golang.org/x/net/context"
 
 	"chain/api/utxodb"
@@ -59,6 +61,12 @@ func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.
 	return outs, nil
 }
 
+const bcUnspentP2COutputQuery = `
+	SELECT txid, index, asset_id, amount, script, metadata
+	FROM utxos
+	WHERE contract_hash = $1 AND asset_id = $2
+`
+
 // LoadUTXOs loads all unspent outputs in the blockchain
 // for the given asset and account.
 func LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, error) {
@@ -67,7 +75,7 @@ func LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, 
 	// LoadUTXOs(context.Context, []bc.Outpoint) []*bc.TxOutput.
 
 	const q = `
-		SELECT amount, reserved_until, txid, index
+		SELECT amount, reserved_until, txid, index, contract_hash
 		FROM utxos
 		WHERE account_id=$1 AND asset_id=$2
 	`
@@ -83,14 +91,19 @@ func LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, 
 			AssetID:   assetID,
 		}
 		var txid string
+		var contractHash sql.NullString
 		err = rows.Scan(
 			&u.Amount,
 			&u.ResvExpires,
 			&txid,
 			&u.Outpoint.Index,
+			&contractHash,
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "scan")
+		}
+		if contractHash.Valid {
+			u.ContractHash = contractHash.String
 		}
 		h, err := bc.ParseHash(txid)
 		if err != nil {

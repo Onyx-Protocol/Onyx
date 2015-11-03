@@ -133,6 +133,18 @@ var (
 	// is set and the script contains push operations that do not use
 	// the minimal opcode required.
 	ErrStackMinimalData = errors.New("non-minimally encoded script number")
+
+	// ErrContractHashLength is returned when trying to create a
+	// contract hash from the wrong number of bytes.
+	ErrContractHashLength = errors.New("wrong number of bytes for contract hash")
+
+	// ErrAssetIDLength is returned when trying to create an asset
+	// id from the wrong number of bytes.
+	ErrAssetIDLength = errors.New("wrong number of bytes for asset id")
+
+	// ErrNoContractHash is returned when OP_BALANCE does not get a contract
+	// hash from either the stack or the virtual machine.
+	ErrNoContractHash = errors.New("no contract hash")
 )
 
 var (

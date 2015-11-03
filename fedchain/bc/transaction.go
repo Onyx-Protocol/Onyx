@@ -58,6 +58,12 @@ type Outpoint struct {
 	Index uint32
 }
 
+func NewOutpoint(b []byte, index uint32) *Outpoint {
+	result := &Outpoint{Index: index}
+	copy(result.Hash[:], b)
+	return result
+}
+
 // Copy creates a deep copy of a transaction so that the original does not get
 // modified when the copy is manipulated.
 func (tx *Tx) Copy() *Tx {

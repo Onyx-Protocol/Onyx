@@ -6,6 +6,10 @@
 ["correct prevout hash), using the given scriptSig. All nLockTimes are 0, all"],
 ["nSequences are max."],
 
+["3 4 DATA_3 0x935587", "0 ROLL DUP HASH160 DATA_20 0x9c7d1d4a371634286f4437f7f8a38021ffbb7ca0 EQUALVERIFY", "P2SH,STRICTENC", "Simple 0-param P2C script"],
+["4 DATA_3 0x935587", "3 1 ROLL DUP HASH160 DATA_20 0x9c7d1d4a371634286f4437f7f8a38021ffbb7ca0 EQUALVERIFY", "P2SH,STRICTENC", "Simple 1-param P2C script"],
+["DATA_3 0x935587", "4 3 2 ROLL DUP HASH160 DATA_20 0x9c7d1d4a371634286f4437f7f8a38021ffbb7ca0 EQUALVERIFY", "P2SH,STRICTENC", "Simple 2-param P2C script"],
+
 ["", "DEPTH", "P2SH,STRICTENC",   "Test the test: we should have an empty stack after scriptSig evaluation"],
 ["  ", "DEPTH", "P2SH,STRICTENC", "and multiple spaces should not change that."],
 ["   ", "DEPTH", "P2SH,STRICTENC"],
@@ -187,16 +191,16 @@
 ["1", "IF 0xbd ELSE 1 ENDIF", "P2SH,STRICTENC"],
 ["1", "IF 0xbe ELSE 1 ENDIF", "P2SH,STRICTENC"],
 ["1", "IF 0xbf ELSE 1 ENDIF", "P2SH,STRICTENC"],
-["1", "IF 0xc0 ELSE 1 ENDIF", "P2SH,STRICTENC"],
-["1", "IF 0xc1 ELSE 1 ENDIF", "P2SH,STRICTENC"],
-["1", "IF 0xc2 ELSE 1 ENDIF", "P2SH,STRICTENC"],
-["1", "IF 0xc3 ELSE 1 ENDIF", "P2SH,STRICTENC"],
-["1", "IF 0xc4 ELSE 1 ENDIF", "P2SH,STRICTENC"],
-["1", "IF 0xc5 ELSE 1 ENDIF", "P2SH,STRICTENC"],
-["1", "IF 0xc6 ELSE 1 ENDIF", "P2SH,STRICTENC"],
+
+
+
+
+
+
+
 ["1", "IF 0xc7 ELSE 1 ENDIF", "P2SH,STRICTENC"],
 ["1", "IF 0xc8 ELSE 1 ENDIF", "P2SH,STRICTENC"],
-["1", "IF 0xc9 ELSE 1 ENDIF", "P2SH,STRICTENC"],
+
 ["1", "IF 0xca ELSE 1 ENDIF", "P2SH,STRICTENC"],
 ["1", "IF 0xcb ELSE 1 ENDIF", "P2SH,STRICTENC"],
 ["1", "IF 0xcc ELSE 1 ENDIF", "P2SH,STRICTENC"],

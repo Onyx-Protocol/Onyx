@@ -452,6 +452,7 @@ CREATE TABLE pool_outputs (
     amount bigint NOT NULL,
     addr_index bigint NOT NULL,
     account_id text NOT NULL,
+    contract_hash text,
     manager_node_id text NOT NULL,
     reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
     metadata bytea DEFAULT '\x'::bytea NOT NULL
@@ -539,6 +540,7 @@ CREATE TABLE utxos (
     amount bigint NOT NULL,
     addr_index bigint NOT NULL,
     account_id text NOT NULL,
+    contract_hash text,
     manager_node_id text NOT NULL,
     reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -881,6 +883,8 @@ CREATE INDEX manager_nodes_project_id_idx ON manager_nodes USING btree (project_
 CREATE INDEX members_user_id_idx ON members USING btree (user_id);
 
 
+CREATE INDEX pool_outputs_asset_id_contract_hash_idx ON pool_outputs USING btree (asset_id, contract_hash) WHERE contract_hash IS NOT NULL;
+
 --
 -- Name: pool_outputs_account_id_asset_id_reserved_until_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
@@ -908,6 +912,8 @@ CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
 
 CREATE INDEX utxos_account_id_asset_id_reserved_at_idx ON utxos USING btree (account_id, asset_id, reserved_until);
 
+
+CREATE INDEX utxos_asset_id_contract_hash_idx ON utxos USING btree (asset_id, contract_hash) WHERE contract_hash IS NOT NULL;
 
 --
 -- Name: utxos_manager_node_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 

@@ -1,0 +1,23 @@
+[
+["Format is: [contractScript, sigScript, pubkeyScript, testName]"],
+["SigScript and pubkeyScript are parameters only."],
+["ContractScript is serialized and added to sigScript,"],
+["and also hashed and added to pubkeyScript"],
+["(which also gets the p2c boilerplate)."],
+
+["ADD 6 EQUAL", "3 2", "", "Zero params, EQUAL fails"],
+["ADD 6 EQUAL", "3", "2", "One param, EQUAL fails"],
+["ADD 6 EQUAL", "", "3 2", "Two param, EQUAL fails"],
+["ADD 6 EQUAL", "3", "", "Zero param, stack underflow"],
+["ADD 6 EQUAL", "", "2", "One param, stack underflow"],
+
+["There is a total of 7 units of this asset in the sample tx"],
+["used for testing.  This script is executed twice, once each"],
+["for two of the tx's inputs.  Requiring 4 units of the asset"],
+["twice should deplete it."],
+["4 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 DATA_6 0x007a76a9fe88 OP_REQUIREOUTPUT", "", "", "Not enough of the asset for REQUIREOUTPUT"],
+
+["If the asset id were correct, this should succeed, but it's not,"],
+["so it should fail."],
+["2 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f21 DATA_6 0x007a76a9fe88 OP_REQUIREOUTPUT", "", "", "Wrong asset for REQUIREOUTPUT test"]
+]

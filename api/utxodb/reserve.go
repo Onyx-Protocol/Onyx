@@ -50,7 +50,7 @@ type (
 		// We keep lots of them in memory.
 
 		AccountID string
-		AssetID   string
+		AssetID   string // TODO(bobg): bc.AssetID
 		Amount    uint64
 
 		ResvExpires time.Time
@@ -59,6 +59,8 @@ type (
 
 		Outpoint  bc.Outpoint
 		AddrIndex [2]uint32
+
+		ContractHash string // TODO(bobg): *bc.ContractHash
 	}
 
 	Receiver struct {

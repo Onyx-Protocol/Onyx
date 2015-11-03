@@ -1,0 +1,26 @@
+[
+["Format is: [contractScript, sigScript, pubkeyScript, testName]"],
+["SigScript and pubkeyScript are parameters only."],
+["ContractScript is serialized and added to sigScript,"],
+["and also hashed and added to pubkeyScript"],
+["(which also gets the p2c boilerplate)."],
+
+["TODO(bobg): test OP_CIRCULATION"],
+
+["ADD 5 EQUAL", "3 2", "", "Zero params"],
+["ADD 5 EQUAL", "3", "2", "One param"],
+["ADD 5 EQUAL", "", "3 2", "Two params"],
+
+["The serialized script used by EVAL here is <2 3 ADD>"],
+["DATA_3 0x525393 EVAL 4 ADD 9 EQUAL", "", "", "Simple EVAL test"],
+
+["OUTPUTSCRIPT EQUAL", "DATA_26 0x007a76a9141b37089de91c9a16ae68113c213bf279be3c33e988", ""],
+
+["There is a total of 7 units of this asset in the sample tx"],
+["used for testing.  This script is executed twice, once each"],
+["for two of the tx's inputs.  Requiring 3 units of the asset"],
+["twice should not deplete it."],
+["3 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 DATA_6 0x007a76a9fe88 OP_REQUIREOUTPUT", "", "", "Simple REQUIREOUTPUT test"],
+
+["BALANCE 7 EQUAL", "DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 DATA_20 0x3f52da11da7365434f37152c0e951192e0012464", "", "Must learn BALANCE"]
+]

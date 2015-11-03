@@ -7,10 +7,13 @@ package txscript
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec"
+	"golang.org/x/net/context"
 
 	"chain/fedchain/bc"
+	"chain/fedchain/state"
 )
 
 // ScriptFlags is a bitmask defining additional operations or tests that will be
@@ -74,22 +77,36 @@ const (
 // halforder is used to tame ECDSA malleability (see BIP0062).
 var halfOrder = new(big.Int).Rsh(btcec.S256().N, 1)
 
-// Engine is the virtual machine that executes scripts.
-type Engine struct {
-	scripts         [][]parsedOpcode
-	scriptIdx       int
-	scriptOff       int
-	lastCodeSep     int
-	dstack          stack // data stack
-	astack          stack // alt stack
-	tx              bc.Tx
-	txIdx           int
-	condStack       []int
-	numOps          int
-	flags           ScriptFlags
-	bip16           bool     // treat execution as pay-to-script-hash
-	savedFirstStack [][]byte // stack from first script for bip16 scripts
-}
+type (
+	// A subset of state.ViewReader, declared here to avoid a circular dependency
+	viewReader interface {
+		Output(context.Context, bc.Outpoint) *state.Output
+		UnspentP2COutputs(ctx context.Context, contractHash bc.ContractHash, assetID bc.AssetID) []*state.Output
+	}
+
+	// Engine is the virtual machine that executes scripts.
+	Engine struct {
+		scripts         [][]parsedOpcode
+		scriptIdx       int
+		scriptOff       int
+		lastCodeSep     int
+		dstack          stack // data stack
+		astack          stack // alt stack
+		tx              bc.Tx
+		txIdx           int
+		condStack       []int
+		numOps          int
+		flags           ScriptFlags
+		bip16           bool     // treat execution as pay-to-script-hash
+		savedFirstStack [][]byte // stack from first script for bip16 scripts
+		ctx             context.Context
+		viewReader      viewReader
+		outputs         []*state.Output
+		available       []uint64         // mutable copy of each output's Value field, used for OP_REQUIREOUTPUT reservations
+		contractHash    *bc.ContractHash // contract hash when executing a p2c contract, nil when not
+		timestamp       int64            // Unix timestamp at Engine-creation time
+	}
+)
 
 // hasFlag returns whether the script engine instance has the passed flag set.
 func (vm *Engine) hasFlag(flag ScriptFlags) bool {
@@ -244,6 +261,19 @@ func (vm *Engine) CheckErrorCondition(finalScript bool) error {
 	return nil
 }
 
+// Called by OP_EVAL, inside of a call to vm.Step().  Assumes
+// vm.scriptIdx and vm.scriptOff have not been updated yet.  Arranges
+// for newScript to be the next sequence of opcodes that vm executes.
+func (vm *Engine) InsertScript(newScript []parsedOpcode) {
+	currentScript := vm.scripts[vm.scriptIdx]
+
+	updatedScript := currentScript[:vm.scriptOff+1]
+	updatedScript = append(updatedScript, newScript...)
+	updatedScript = append(updatedScript, currentScript[vm.scriptOff+1:]...)
+
+	vm.scripts[vm.scriptIdx] = updatedScript
+}
+
 // Step will execute the next instruction and move the program counter to the
 // next opcode in the script, or the next script if the current has ended.  Step
 // will return true in the case that the last opcode was successfully executed.
@@ -298,16 +328,27 @@ func (vm *Engine) Step() (done bool, err error) {
 				return false, err
 			}
 
+			// For p2sh and p2c, the serialized script is on top of the
+			// stack after vm.scripts[0] executes.  That state of the stack
+			// is snapshotted in vm.savedFirstStack.
 			script := vm.savedFirstStack[len(vm.savedFirstStack)-1]
+
 			pops, err := parseScript(script)
 			if err != nil {
 				return false, err
 			}
 			vm.scripts = append(vm.scripts, pops)
 
-			// Set stack to be the stack from first script minus the
-			// script itself
-			vm.SetStack(vm.savedFirstStack[:len(vm.savedFirstStack)-1])
+			// Now about to execute the serialized script from the
+			// sigscript.  For p2sh, we restore the stack to the state it
+			// had after the sigscript.  (I.e., we throw away state from the
+			// pkscript.)  For p2c, we keep the pkscript state, which may
+			// have added parameters to the stack.
+			if !vm.isP2C() {
+				// Set stack to be the stack from first script minus the
+				// script itself
+				vm.SetStack(vm.savedFirstStack[:len(vm.savedFirstStack)-1])
+			}
 		} else {
 			vm.scriptIdx++
 		}
@@ -321,6 +362,10 @@ func (vm *Engine) Step() (done bool, err error) {
 		}
 	}
 	return false, nil
+}
+
+func (vm *Engine) isP2C() bool {
+	return vm.contractHash != nil
 }
 
 // Execute will execute all scripts in the script engine and return either nil
@@ -571,33 +616,43 @@ func (vm *Engine) SetAltStack(data [][]byte) {
 	setStack(&vm.astack, data)
 }
 
-// NewEngine returns a new script engine for the provided public key script,
-// transaction, and input index.  The flags modify the behavior of the script
-// engine according to the description provided by each flag.
-func NewEngine(scriptPubKey []byte, tx *bc.Tx, txIdx int, flags ScriptFlags) (*Engine, error) {
-	// The provided transaction input index must refer to a valid input.
-	if txIdx < 0 || txIdx >= len(tx.Inputs) {
-		return nil, ErrInvalidIndex
+// Load the outputs referenced by the transaction.
+// No-op if the outputs are already loaded.
+func (vm *Engine) LoadOutputs() {
+	if len(vm.outputs) == 0 {
+		outpoints := make([]*bc.Outpoint, len(vm.tx.Inputs))
+		for i, txin := range vm.tx.Inputs {
+			outpoints[i] = &txin.Previous
+		}
+		vm.outputs = make([]*state.Output, len(outpoints))
+		vm.available = make([]uint64, len(outpoints))
+		for i, outpoint := range outpoints {
+			// vm.viewReader is responsible for anticipating multiple calls
+			// to Output() and making sure they're efficiently batched as
+			// appropriate.
+			output := vm.viewReader.Output(vm.ctx, *outpoint)
+			vm.outputs[i] = output
+			vm.available[i] = output.Value
+		}
 	}
-	scriptSig := tx.Inputs[txIdx].SignatureScript
+}
 
-	// The clean stack flag (ScriptVerifyCleanStack) is not allowed without
-	// the pay-to-script-hash (P2SH) evaluation (ScriptBip16) flag.
-	//
-	// Recall that evaluating a P2SH script without the flag set results in
-	// non-P2SH evaluation which leaves the P2SH inputs on the stack.  Thus,
-	// allowing the clean stack flag without the P2SH flag would make it
-	// possible to have a situation where P2SH would not be a soft fork when
-	// it should be.
-	vm := Engine{flags: flags}
-	if vm.hasFlag(ScriptVerifyCleanStack) && !vm.hasFlag(ScriptBip16) {
-		return nil, ErrInvalidFlags
+// This function prepares a previously allocated Engine for reuse with
+// another txin, preserving state (to wit, vm.outputs and
+// vm.available) that P2C wants to save between txins.
+func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
+	// The provided transaction input index must refer to a valid input.
+	if txIdx < 0 || txIdx >= len(vm.tx.Inputs) {
+		return ErrInvalidIndex
 	}
+	vm.txIdx = txIdx
+
+	scriptSig := vm.tx.Inputs[txIdx].SignatureScript
 
 	// The signature script must only contain data pushes when the
 	// associated flag is set.
 	if vm.hasFlag(ScriptVerifySigPushOnly) && !IsPushOnlyScript(scriptSig) {
-		return nil, ErrStackNonPushOnly
+		return ErrStackNonPushOnly
 	}
 
 	// The engine stores the scripts in parsed form using a slice.  This
@@ -608,14 +663,25 @@ func NewEngine(scriptPubKey []byte, tx *bc.Tx, txIdx int, flags ScriptFlags) (*E
 	vm.scripts = make([][]parsedOpcode, len(scripts))
 	for i, scr := range scripts {
 		if len(scr) > maxScriptSize {
-			return nil, ErrStackLongScript
+			return ErrStackLongScript
 		}
 		var err error
 		vm.scripts[i], err = parseScript(scr)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
+
+	vm.scriptIdx = 0
+	vm.scriptOff = 0
+	vm.lastCodeSep = 0
+	vm.dstack.Reset()
+	vm.astack.Reset()
+	vm.condStack = nil
+	vm.numOps = 0
+	vm.bip16 = false
+	vm.savedFirstStack = nil
+	vm.contractHash = nil
 
 	// Advance the program counter to the public key script if the signature
 	// script is empty since there is nothing to execute for it in that
@@ -624,20 +690,73 @@ func NewEngine(scriptPubKey []byte, tx *bc.Tx, txIdx int, flags ScriptFlags) (*E
 		vm.scriptIdx++
 	}
 
-	if vm.hasFlag(ScriptBip16) && isScriptHash(vm.scripts[1]) {
-		// Only accept input scripts that push data for P2SH.
-		if !isPushOnly(vm.scripts[0]) {
-			return nil, ErrStackP2SHNonPushOnly
+	if vm.hasFlag(ScriptBip16) {
+		var isPayToContract bool
+		isPayToContract, vm.contractHash = testContract(vm.scripts[1])
+		if isPayToContract || isScriptHash(vm.scripts[1]) {
+			vm.bip16 = true
 		}
-		vm.bip16 = true
+
+		// Only accept input scripts that push data for P2SH.
+		if vm.bip16 && !isPushOnly(vm.scripts[0]) {
+			return ErrStackP2SHNonPushOnly
+		}
 	}
+
+	return nil
+}
+
+// Allocates an Engine object that can execute scripts for every input
+// of a transaction.  Illustration (with error-checking elided for
+// clarity):
+//   engine, err := NewReusableEngine(ctx, viewReader, tx, flags)
+//   for i, txin := range tx.Inputs {
+//     err = engine.Prepare(scriptPubKey, i)
+//     err = engine.Execute()
+//   }
+// Note: every call to Execute() must be preceded by a call to
+// Prepare() (including the first one).
+func NewReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.Tx, flags ScriptFlags) (*Engine, error) {
+	vm := &Engine{
+		ctx:        ctx,
+		viewReader: viewReader,
+		flags:      flags,
+		tx:         *tx,
+		timestamp:  time.Now().Unix(),
+	}
+
+	// The clean stack flag (ScriptVerifyCleanStack) is not allowed without
+	// the pay-to-script-hash (P2SH) evaluation (ScriptBip16) flag.
+	//
+	// Recall that evaluating a P2SH script without the flag set results in
+	// non-P2SH evaluation which leaves the P2SH inputs on the stack.  Thus,
+	// allowing the clean stack flag without the P2SH flag would make it
+	// possible to have a situation where P2SH would not be a soft fork when
+	// it should be.
+	if vm.hasFlag(ScriptVerifyCleanStack) && !vm.hasFlag(ScriptBip16) {
+		return nil, ErrInvalidFlags
+	}
+
 	if vm.hasFlag(ScriptVerifyMinimalData) {
 		vm.dstack.verifyMinimalData = true
 		vm.astack.verifyMinimalData = true
 	}
 
-	vm.tx = *tx
-	vm.txIdx = txIdx
+	return vm, nil
+}
 
-	return &vm, nil
+// NewEngine returns a new script engine for the provided public key script,
+// transaction, and input index.  The flags modify the behavior of the script
+// engine according to the description provided by each flag.
+//
+// This is equivalent to calling NewReusableEngine() followed by a
+// call to Prepare().
+func NewEngine(ctx context.Context, viewReader viewReader, scriptPubKey []byte, tx *bc.Tx, txIdx int, flags ScriptFlags) (*Engine, error) {
+	vm, err := NewReusableEngine(ctx, viewReader, tx, flags)
+	if err != nil {
+		return nil, err
+	}
+
+	err = vm.Prepare(scriptPubKey, txIdx)
+	return vm, err
 }

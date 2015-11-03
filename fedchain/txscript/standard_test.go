@@ -578,11 +578,58 @@ func TestPayToAddrScript(t *testing.T) {
 		return
 	}
 
+	contractHash := decodeHex("6c66f1a1e997fa843ff14e9f87ee27ad694f3827")
+	p2cParams := make([][]byte, 0)
+
+	// zero-param p2c addr
+	p2c0, err := txscript.NewAddressContractHash(contractHash, p2cParams)
+	if err != nil {
+		t.Errorf("Unable to create zero-param p2c address: %v", err)
+		return
+	}
+
+	// one-param p2c addr
+	p2cParams = append(p2cParams, decodeHex("61"))
+	p2c1, err := txscript.NewAddressContractHash(contractHash, p2cParams)
+	if err != nil {
+		t.Errorf("Unable to create one-param p2c address: %v", err)
+		return
+	}
+
+	// two-param p2c addr
+	p2cParams = append(p2cParams, decodeHex("62"))
+	p2c2, err := txscript.NewAddressContractHash(contractHash, p2cParams)
+	if err != nil {
+		t.Errorf("Unable to create two-param p2c address: %v", err)
+		return
+	}
+
 	tests := []struct {
 		in       btcutil.Address
 		expected string
 		err      error
 	}{
+		// pay-to-contract, zero parameters
+		{
+			p2c0,
+			"0 ROLL DUP HASH160 DATA_20 0x6c66f1a1e997fa843ff14e9f87ee27ad694f3827 EQUALVERIFY",
+			nil,
+		},
+
+		// pay-to-contract, one parameter
+		{
+			p2c1,
+			"DATA_1 0x61 1 ROLL DUP HASH160 DATA_20 0x6c66f1a1e997fa843ff14e9f87ee27ad694f3827 EQUALVERIFY",
+			nil,
+		},
+
+		// pay-to-contract, two parameters
+		{
+			p2c2,
+			"DATA_1 0x62 DATA_1 0x61 2 ROLL DUP HASH160 DATA_20 0x6c66f1a1e997fa843ff14e9f87ee27ad694f3827 EQUALVERIFY",
+			nil,
+		},
+
 		// pay-to-pubkey-hash address on mainnet
 		{
 			p2pkhMain,

@@ -14,7 +14,10 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/fedchain/bc"
+	"chain/fedchain/state"
 	. "chain/fedchain/txscript"
 )
 
@@ -150,133 +153,330 @@ func parseScriptFlags(flagStr string) (ScriptFlags, error) {
 	return flags, nil
 }
 
-// createSpendTx generates a basic spending transaction given the passed
-// signature and public key scripts.
-func createSpendingTx(sigScript, pkScript []byte) *bc.Tx {
-	coinbaseTx := &bc.Tx{
+var testAssetID, testAssetID2 bc.AssetID
+
+func newCoinbaseTx(val uint64, pkScript []byte, assetID bc.AssetID) *bc.Tx {
+	if pkScript == nil {
+		pkScript = []byte{OP_TRUE}
+	}
+	return &bc.Tx{
 		Version: bc.CurrentTransactionVersion,
 		Inputs:  []*bc.TxInput{{SignatureScript: []byte{OP_0, OP_0}}},
-		Outputs: []*bc.TxOutput{{Value: 0, Script: pkScript}},
+		Outputs: []*bc.TxOutput{{Value: val, Script: pkScript, AssetID: assetID}},
 	}
+}
+
+// createSpendTx generates a basic spending transaction given the passed
+// signature and public key scripts.
+func createSpendingTx(sigScript, pkScript []byte) (*bc.Tx, *testViewReader) {
+	coinbaseTx1 := newCoinbaseTx(3, pkScript, testAssetID)
+	coinbaseTx2 := newCoinbaseTx(4, pkScript, testAssetID)
+	coinbaseTx3 := newCoinbaseTx(5, nil, testAssetID2)
 
 	spendingTx := &bc.Tx{
 		Version: bc.CurrentTransactionVersion,
-		Inputs: []*bc.TxInput{{
-			Previous:        bc.Outpoint{Hash: coinbaseTx.Hash(), Index: 0},
-			SignatureScript: sigScript,
-		}},
-		Outputs: []*bc.TxOutput{{Value: 0}},
+		Inputs: []*bc.TxInput{
+			{
+				Previous:        bc.Outpoint{Hash: coinbaseTx1.Hash(), Index: 0},
+				SignatureScript: sigScript,
+				AssetID:         testAssetID,
+			},
+			{
+				Previous:        bc.Outpoint{Hash: coinbaseTx2.Hash(), Index: 0},
+				SignatureScript: sigScript,
+				AssetID:         testAssetID,
+			},
+			{
+				Previous: bc.Outpoint{Hash: coinbaseTx3.Hash(), Index: 0},
+				AssetID:  testAssetID2,
+			},
+		},
+		Outputs: []*bc.TxOutput{
+			{
+				Value:   7,
+				AssetID: testAssetID,
+				Script:  pkScript,
+			},
+			{
+				Value:   5,
+				AssetID: testAssetID2,
+			},
+		},
 	}
 
-	return spendingTx
+	return spendingTx, &testViewReader{spendingTx: spendingTx, coinbaseTxs: []*bc.Tx{coinbaseTx1, coinbaseTx2, coinbaseTx3}}
 }
 
 // TestScriptInvalidTests ensures all of the tests in script_invalid.json fail
 // as expected.
 func TestScriptInvalidTests(t *testing.T) {
-	file, err := ioutil.ReadFile("data/script_invalid.json")
-	if err != nil {
-		t.Errorf("TestBitcoindInvalidTests: %v\n", err)
-		return
-	}
-
-	var tests [][]string
-	err = json.Unmarshal(file, &tests)
-	if err != nil {
-		t.Errorf("TestBitcoindInvalidTests couldn't Unmarshal: %v",
-			err)
-		return
-	}
-	for i, test := range tests {
-		// Skip comments
-		if len(test) == 1 {
-			continue
-		}
-		name, err := testName(test)
-		if err != nil {
-			t.Errorf("TestBitcoindInvalidTests: invalid test #%d",
-				i)
-			continue
-		}
+	testHelper(t, "script_invalid.json", func(t *testing.T, test []string, name string, testNum int) {
 		scriptSig, err := parseShortForm(test[0])
 		if err != nil {
 			t.Errorf("%s: can't parse scriptSig; %v", name, err)
-			continue
+			return
 		}
 		scriptPubKey, err := parseShortForm(test[1])
 		if err != nil {
 			t.Errorf("%s: can't parse scriptPubkey; %v", name, err)
-			continue
+			return
 		}
 		flags, err := parseScriptFlags(test[2])
 		if err != nil {
 			t.Errorf("%s: %v", name, err)
-			continue
+			return
 		}
-		tx := createSpendingTx(scriptSig, scriptPubKey)
-		vm, err := NewEngine(scriptPubKey, tx, 0, flags)
+		tx, viewReader := createSpendingTx(scriptSig, scriptPubKey)
+		vm, err := newTestEngine(*viewReader, scriptPubKey, tx, flags)
 		if err == nil {
 			if err := vm.Execute(); err == nil {
 				t.Errorf("%s test succeeded when it "+
 					"should have failed\n", name)
 			}
-			continue
+			return
 		}
-	}
+	})
 }
 
 // TestScriptValidTests ensures all of the tests in script_valid.json pass as
 // expected.
 func TestScriptValidTests(t *testing.T) {
-	file, err := ioutil.ReadFile("data/script_valid.json")
+	testHelper(t, "script_valid.json", func(t *testing.T, test []string, name string, testNum int) {
+		scriptSig, err := parseShortForm(test[0])
+		if err != nil {
+			t.Errorf("%s: can't parse scriptSig; %v", name, err)
+			return
+		}
+		scriptPubKey, err := parseShortForm(test[1])
+		if err != nil {
+			t.Errorf("%s: can't parse scriptPubkey; %v", name, err)
+			return
+		}
+		flags, err := parseScriptFlags(test[2])
+		if err != nil {
+			t.Errorf("%s: %v", name, err)
+			return
+		}
+		tx, viewReader := createSpendingTx(scriptSig, scriptPubKey)
+		vm, err := newTestEngine(*viewReader, scriptPubKey, tx, flags)
+		if err != nil {
+			t.Errorf("%s failed to create script: %v", name, err)
+			return
+		}
+		err = vm.Execute()
+		if err != nil {
+			t.Errorf("%s failed to execute: %v", name, err)
+			return
+		}
+	})
+}
+
+const P2CFLAGS = ScriptBip16 | ScriptVerifyStrictEncoding
+
+// TestP2CValidTests ensures all of the tests in p2c_valid.json pass
+// as expected.
+func TestP2CValidTests(t *testing.T) {
+	testHelper(t, "p2c_valid.json", func(t *testing.T, test []string, name string, testNum int) {
+		scriptSig, scriptPubKey, err := prepareP2CTest(t, test, name, testNum)
+		if err != nil {
+			t.Errorf("Could not prepare P2C valid test %d (%s): %v\n", testNum, name, err)
+			return
+		}
+
+		tx, viewReader := createSpendingTx(scriptSig, scriptPubKey)
+
+		vm, err := newReusableTestEngine(*viewReader, tx)
+		if err != nil {
+			t.Errorf("TestP2CValidTests: test %d (%s) failed to create engine: %v\n", testNum, name, err)
+			return
+		}
+
+		err = vm.Prepare(scriptPubKey, 0)
+		if err != nil {
+			t.Errorf("TestP2CValidTests: Could not prepare engine for test %d (%s), input 0: %v\n", testNum, name, err)
+			return
+		}
+		err = vm.Execute()
+		if err != nil {
+			t.Errorf("TestP2CValidTests: test %d (%s), input 0 failed to execute: %v\n", testNum, name, err)
+			return
+		}
+
+		err = vm.Prepare(scriptPubKey, 1)
+		if err != nil {
+			t.Errorf("TestP2CValidTests: Could not prepare engine for test %d (%s), input 1: %v\n", testNum, name, err)
+			return
+		}
+		err = vm.Execute()
+		if err != nil {
+			t.Errorf("TestP2CValidTests: test %d (%s), input 1 failed to execute: %v\n", testNum, name, err)
+			return
+		}
+	})
+}
+
+// TestP2CValidTests ensures all of the tests in p2c_invalid.json fail
+// as expected.
+func TestP2CInvalidTests(t *testing.T) {
+	testHelper(t, "p2c_invalid.json", func(t *testing.T, test []string, name string, testNum int) {
+		scriptSig, scriptPubKey, err := prepareP2CTest(t, test, name, testNum)
+		if err != nil {
+			t.Errorf("Could not prepare P2C invalid test %d (%s): %v\n", testNum, name, err)
+			return
+		}
+
+		tx, viewReader := createSpendingTx(scriptSig, scriptPubKey)
+
+		vm, err := newReusableTestEngine(*viewReader, tx)
+		if err != nil {
+			t.Errorf("TestP2CInvalidTests: test %d (%s) failed to create engine: %v\n", testNum, name, err)
+			return
+		}
+
+		err = vm.Prepare(scriptPubKey, 0)
+		if err != nil {
+			t.Errorf("TestP2CInvalidTests: Could not prepare engine for test %d (%s), input 0: %v\n", testNum, name, err)
+			return
+		}
+		err = vm.Execute()
+		if err != nil {
+			// Got an expected failure
+			return
+		}
+
+		err = vm.Prepare(scriptPubKey, 1)
+		if err != nil {
+			t.Errorf("TestP2CInvalidTests: Could not prepare engine for test %d (%s), input 1: %v\n", testNum, name, err)
+			return
+		}
+		err = vm.Execute()
+		if err != nil {
+			// Got an expected failure
+			return
+		}
+
+		t.Errorf("TestP2CInvalidTests: test %d (%s) succeeded but was supposed to fail\n", testNum, name)
+	})
+}
+
+func testHelper(t *testing.T, filename string, cb func(*testing.T, []string, string, int)) {
+	file, err := ioutil.ReadFile("data/" + filename)
 	if err != nil {
-		t.Errorf("TestBitcoinValidTests: %v\n", err)
+		t.Errorf("Could not read %s: %v\n", filename, err)
 		return
 	}
 
 	var tests [][]string
 	err = json.Unmarshal(file, &tests)
 	if err != nil {
-		t.Errorf("TestBitcoindValidTests couldn't Unmarshal: %v",
-			err)
+		t.Errorf("Could not unmarshal from %s: %v\n", filename, err)
 		return
 	}
-	for i, test := range tests {
+
+	testNum := 1
+	for _, test := range tests {
 		// Skip comments
 		if len(test) == 1 {
 			continue
 		}
 		name, err := testName(test)
 		if err != nil {
-			t.Errorf("TestBitcoindValidTests: invalid test #%d",
-				i)
+			t.Errorf("Could not get name of test %d: %v\n", testNum, err)
 			continue
 		}
-		scriptSig, err := parseShortForm(test[0])
-		if err != nil {
-			t.Errorf("%s: can't parse scriptSig; %v", name, err)
-			continue
+		cb(t, test, name, testNum)
+		testNum++
+	}
+}
+
+func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([]byte, []byte, error) {
+	contractScript, err := parseShortForm(test[0])
+	if err != nil {
+		return nil, nil, err
+	}
+	scriptSig, err := parseShortForm(test[1])
+	if err != nil {
+		return nil, nil, err
+	}
+	scriptPubKey, err := parseShortForm(test[2])
+	if err != nil {
+		return nil, nil, err
+	}
+
+	scriptSig = AddDataToScript(scriptSig, contractScript)
+
+	parsedScriptPubKey, err := TstParseScript(scriptPubKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	numParams := len(parsedScriptPubKey)
+
+	if numParams == 0 {
+		scriptPubKey = append(scriptPubKey, byte(0))
+	} else {
+		scriptPubKey = append(scriptPubKey, byte((OP_1 + numParams - 1)))
+	}
+	scriptPubKey = append(scriptPubKey, OP_ROLL)
+	scriptPubKey = append(scriptPubKey, OP_DUP)
+	scriptPubKey = append(scriptPubKey, OP_HASH160)
+	scriptPubKey = AddDataToScript(scriptPubKey, Hash160(contractScript))
+	scriptPubKey = append(scriptPubKey, OP_EQUALVERIFY)
+
+	return scriptSig, scriptPubKey, nil
+}
+
+type testViewReader struct {
+	spendingTx  *bc.Tx
+	coinbaseTxs []*bc.Tx
+}
+
+func (viewReader testViewReader) Output(ctx context.Context, outpoint bc.Outpoint) *state.Output {
+	if outpoint.Hash == viewReader.spendingTx.Hash() {
+		return state.NewOutput(*viewReader.spendingTx.Outputs[outpoint.Index], outpoint, false)
+	}
+	for _, coinbaseTx := range viewReader.coinbaseTxs {
+		if outpoint.Hash == coinbaseTx.Hash() {
+			return state.NewOutput(*coinbaseTx.Outputs[outpoint.Index], outpoint, true)
 		}
-		scriptPubKey, err := parseShortForm(test[1])
-		if err != nil {
-			t.Errorf("%s: can't parse scriptPubkey; %v", name, err)
-			continue
+	}
+	return nil
+}
+
+func (viewReader testViewReader) UnspentP2COutputs(ctx context.Context, contractHash bc.ContractHash, assetID bc.AssetID) []*state.Output {
+	result := make([]*state.Output, 0, len(viewReader.spendingTx.Outputs))
+	txhash := viewReader.spendingTx.Hash()
+	for i, output := range viewReader.spendingTx.Outputs {
+		if output.AssetID == assetID {
+			isPayToContract, outputContractHash := TestPayToContract(output.Script)
+			if isPayToContract && *outputContractHash == contractHash {
+				result = append(result, state.NewOutput(*output, *bc.NewOutpoint(txhash[:], uint32(i)), false))
+			}
 		}
-		flags, err := parseScriptFlags(test[2])
-		if err != nil {
-			t.Errorf("%s: %v", name, err)
-			continue
-		}
-		tx := createSpendingTx(scriptSig, scriptPubKey)
-		vm, err := NewEngine(scriptPubKey, tx, 0, flags)
-		if err != nil {
-			t.Errorf("%s failed to create script: %v", name, err)
-			continue
-		}
-		err = vm.Execute()
-		if err != nil {
-			t.Errorf("%s failed to execute: %v", name, err)
-			continue
-		}
+	}
+	return result
+}
+
+func newReusableTestEngine(viewReader testViewReader, tx *bc.Tx) (*Engine, error) {
+	result, err := NewReusableEngine(nil, viewReader, tx, P2CFLAGS)
+	if err != nil {
+		return nil, err
+	}
+	result.TstSetTimestamp(11)
+	return result, nil
+}
+
+func newTestEngine(viewReader testViewReader, scriptPubKey []byte, tx *bc.Tx, flags ScriptFlags) (*Engine, error) {
+	result, err := NewEngine(nil, viewReader, scriptPubKey, tx, 0, flags)
+	if err != nil {
+		return nil, err
+	}
+	result.TstSetTimestamp(11)
+	return result, nil
+}
+
+func init() {
+	for i := 0; i < 32; i++ {
+		testAssetID[i] = byte(i + 1)
+		testAssetID2[i] = byte(i * 2)
 	}
 }
