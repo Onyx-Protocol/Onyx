@@ -401,6 +401,35 @@ CREATE TABLE members (
 
 
 --
+-- Name: pool_outputs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE pool_outputs (
+    tx_hash text NOT NULL,
+    index integer NOT NULL,
+    asset_id text NOT NULL,
+    issuance_id text,
+    script bytea NOT NULL,
+    amount bigint NOT NULL,
+    spent boolean DEFAULT false NOT NULL,
+    addr_index bigint NOT NULL,
+    account_id text NOT NULL,
+    manager_node_id text NOT NULL,
+    reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL
+);
+
+
+--
+-- Name: pool_txs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE pool_txs (
+    tx_hash text NOT NULL,
+    data bytea NOT NULL
+);
+
+
+--
 -- Name: projects; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -450,7 +479,9 @@ CREATE TABLE utxos (
     account_id text NOT NULL,
     manager_node_id text NOT NULL,
     reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    block_hash text,
+    block_height bigint
 );
 
 
@@ -546,6 +577,22 @@ ALTER TABLE ONLY manager_nodes
 
 ALTER TABLE ONLY members
     ADD CONSTRAINT members_project_id_user_id_key UNIQUE (project_id, user_id);
+
+
+--
+-- Name: pool_outputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY pool_outputs
+    ADD CONSTRAINT pool_outputs_pkey PRIMARY KEY (tx_hash, index);
+
+
+--
+-- Name: pool_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY pool_txs
+    ADD CONSTRAINT pool_txs_pkey PRIMARY KEY (tx_hash);
 
 
 --
@@ -845,6 +892,14 @@ ALTER TABLE ONLY members
 
 ALTER TABLE ONLY members
     ADD CONSTRAINT members_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
+
+
+--
+-- Name: pool_outputs_tx_hash_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY pool_outputs
+    ADD CONSTRAINT pool_outputs_tx_hash_fkey FOREIGN KEY (tx_hash) REFERENCES pool_txs(tx_hash) ON DELETE CASCADE;
 
 
 --
