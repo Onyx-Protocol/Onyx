@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -eo pipefail
 
@@ -10,9 +10,10 @@ fi
 
 commit=`git rev-parse HEAD`
 branch=`git symbolic-ref --short HEAD`
-if [ "$branch" = master ]
+onto=${ONTO:-master}
+if [ "$branch" = "$onto" ]
 then
-	echo >&2 "cannot land branch master onto itself"
+	echo >&2 "cannot land branch $onto onto itself"
 	exit 1
 fi
 
@@ -78,23 +79,23 @@ then
 fi
 
 git fetch origin
-n=`git rev-list --count origin/master ^HEAD`
+n=`git rev-list --count origin/$onto ^HEAD`
 if [ $n -ne 0 ]
 then
-	echo >&2 "branch $branch is behind master; please rebase"
+	echo >&2 "branch $branch is behind $onto; please rebase"
 	exit 1
 fi
 
 GIT_EDITOR='sed -i "" 1!s/pick/fixup/' \
-	git rebase --interactive origin/master
+	git rebase --interactive origin/$onto
 GIT_EDITOR="sed -i '' '\$a\\
 Closes #$pr.
 \$a\\
 Reviewers: $reviewby'" \
 	git commit --amend
 git commit --amend # give the human a chance to edit the message
-git push origin $branch:master
+git push origin $branch:$onto
 git push origin :$branch
-git checkout master
-git merge --ff-only origin/master
+git checkout $onto
+git merge --ff-only origin/$onto
 git branch -d $branch
