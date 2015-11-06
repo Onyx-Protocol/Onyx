@@ -2,7 +2,7 @@ package pg
 
 import (
 	"database/sql"
-	"errors"
+	"fmt"
 
 	"golang.org/x/net/context"
 )
@@ -70,7 +70,7 @@ func begin(ctx context.Context) (Tx, error) {
 	case Beginner: // e.g. pgtest.noCommitDB
 		return db.Begin()
 	}
-	return nil, errors.New("unknown db type")
+	return nil, fmt.Errorf("unknown db type %T", FromContext(ctx))
 }
 
 // NewContext returns a new Context that carries value db.
