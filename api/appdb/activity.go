@@ -230,12 +230,6 @@ type UTXO struct {
 	IsChange      bool
 }
 
-type actAddr struct {
-	id       string
-	address  string
-	isChange bool
-}
-
 type actAsset struct {
 	id     string
 	label  string
