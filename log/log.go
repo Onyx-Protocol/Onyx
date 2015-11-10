@@ -109,7 +109,7 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 		"%s=%s %s=%s %s=%s",
 		KeyReqID, formatValue(reqid.FromContext(ctx)),
 		KeyCaller, formatValue(vcaller),
-		KeyTime, formatValue(time.Now().UTC().Format(time.RFC3339)),
+		KeyTime, formatValue(time.Now().UTC().Format(time.RFC3339Nano)),
 	)
 
 	for i := 0; i < len(keyvals); i += 2 {
