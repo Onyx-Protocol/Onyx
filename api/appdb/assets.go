@@ -106,6 +106,7 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 	if err != nil {
 		return nil, "", errors.Wrap(err, "select query")
 	}
+	defer rows.Close()
 
 	var (
 		assets []*AssetResponse
@@ -120,7 +121,7 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 		assets = append(assets, a)
 	}
 
-	if err := rows.Close(); err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, "", errors.Wrap(err, "end row scan loop")
 	}
 
