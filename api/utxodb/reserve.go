@@ -218,10 +218,10 @@ func (rs *Reserver) mappool(utxos []*UTXO, f func(*pool, *UTXO)) {
 	for _, u := range utxos {
 		p := rs.pool(u.AccountID, u.AssetID)
 		if p != prev {
-			p.mu.Lock()
 			if prev != nil {
 				prev.mu.Unlock()
 			}
+			p.mu.Lock()
 			prev = p
 		}
 		f(p, u)
