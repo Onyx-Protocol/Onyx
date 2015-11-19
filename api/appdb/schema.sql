@@ -13,28 +13,24 @@ SET client_min_messages = warning;
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
 
 
 --
 -- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: -
 --
 
-COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 
 
 --
 -- Name: plv8; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS plv8 WITH SCHEMA pg_catalog;
 
 
 --
 -- Name: EXTENSION plv8; Type: COMMENT; Schema: -; Owner: -
 --
 
-COMMENT ON EXTENSION plv8 IS 'PL/JavaScript (v8) trusted procedural language';
 
 
 SET search_path = public, pg_catalog;
@@ -779,7 +775,7 @@ CREATE INDEX utxos_manager_node_id_asset_id_reserved_at_idx ON utxos USING btree
 --
 
 ALTER TABLE ONLY accounts
-    ADD CONSTRAINT accounts_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id) ON DELETE NO ACTION;
+    ADD CONSTRAINT accounts_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
 
 
 --
@@ -787,7 +783,7 @@ ALTER TABLE ONLY accounts
 --
 
 ALTER TABLE ONLY activity_accounts
-    ADD CONSTRAINT activity_accounts_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE NO ACTION;
+    ADD CONSTRAINT activity_accounts_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id);
 
 
 --
@@ -803,7 +799,7 @@ ALTER TABLE ONLY activity_accounts
 --
 
 ALTER TABLE ONLY activity
-    ADD CONSTRAINT activity_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id) ON DELETE NO ACTION;
+    ADD CONSTRAINT activity_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
 
 
 --
@@ -811,7 +807,7 @@ ALTER TABLE ONLY activity
 --
 
 ALTER TABLE ONLY addresses
-    ADD CONSTRAINT addresses_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE NO ACTION;
+    ADD CONSTRAINT addresses_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id);
 
 
 --
@@ -819,7 +815,7 @@ ALTER TABLE ONLY addresses
 --
 
 ALTER TABLE ONLY addresses
-    ADD CONSTRAINT addresses_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id) ON DELETE NO ACTION;
+    ADD CONSTRAINT addresses_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
 
 
 --
@@ -827,7 +823,7 @@ ALTER TABLE ONLY addresses
 --
 
 ALTER TABLE ONLY assets
-    ADD CONSTRAINT assets_issuer_node_id_fkey FOREIGN KEY (issuer_node_id) REFERENCES issuer_nodes(id) ON DELETE NO ACTION;
+    ADD CONSTRAINT assets_issuer_node_id_fkey FOREIGN KEY (issuer_node_id) REFERENCES issuer_nodes(id);
 
 
 --
@@ -851,7 +847,7 @@ ALTER TABLE ONLY invitations
 --
 
 ALTER TABLE ONLY issuance_activity_assets
-    ADD CONSTRAINT issuance_activity_assets_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE NO ACTION;
+    ADD CONSTRAINT issuance_activity_assets_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES assets(id);
 
 
 --
@@ -867,7 +863,7 @@ ALTER TABLE ONLY issuance_activity_assets
 --
 
 ALTER TABLE ONLY issuance_activity
-    ADD CONSTRAINT issuance_activity_issuer_node_id_fkey FOREIGN KEY (issuer_node_id) REFERENCES issuer_nodes(id) ON DELETE NO ACTION;
+    ADD CONSTRAINT issuance_activity_issuer_node_id_fkey FOREIGN KEY (issuer_node_id) REFERENCES issuer_nodes(id);
 
 
 --
