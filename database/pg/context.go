@@ -52,7 +52,7 @@ var dbKey key
 // a new context with the transaction as its
 // associated database.
 func Begin(ctx context.Context) (Committer, context.Context, error) {
-	tx, err := begin(ctx)
+	tx, err := begin(FromContext(ctx))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -60,17 +60,17 @@ func Begin(ctx context.Context) (Committer, context.Context, error) {
 	return tx, ctx, nil
 }
 
-func begin(ctx context.Context) (Tx, error) {
+func begin(db DB) (Tx, error) {
 	type beginner interface {
 		Begin() (*sql.Tx, error)
 	}
-	switch db := FromContext(ctx).(type) {
+	switch d := db.(type) {
 	case beginner: // e.g. *sql.DB
-		return db.Begin()
+		return d.Begin()
 	case Beginner: // e.g. pgtest.noCommitDB
-		return db.Begin()
+		return d.Begin()
 	}
-	return nil, fmt.Errorf("unknown db type %T", FromContext(ctx))
+	return nil, fmt.Errorf("unknown db type %T", db)
 }
 
 // NewContext returns a new Context that carries value db.
@@ -81,5 +81,9 @@ func NewContext(ctx context.Context, db DB) context.Context {
 // FromContext returns the DB value stored in ctx.
 // If there is no DB value, FromContext panics.
 func FromContext(ctx context.Context) DB {
-	return ctx.Value(dbKey).(DB)
+	db := ctx.Value(dbKey).(DB)
+	if ldb, ok := db.(*Logger); ok {
+		return ldb
+	}
+	return &Logger{db, ctx}
 }

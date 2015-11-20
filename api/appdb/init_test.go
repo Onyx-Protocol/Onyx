@@ -3,6 +3,7 @@ package appdb
 import (
 	"chain/database/pg/pgtest"
 	"database/sql"
+	"io/ioutil"
 	"log"
 	"os"
 )
@@ -10,6 +11,8 @@ import (
 var db *sql.DB
 
 func init() {
+	log.SetOutput(ioutil.Discard)
+
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
 		u = s

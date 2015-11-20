@@ -13,10 +13,16 @@ import (
 // This prevents collisions with keys defined in other packages.
 type key int
 
-// reqIDKey is the key for request IDs in Contexts.  It is
-// unexported; clients use NewContext and FromContext
-// instead of using this key directly.
-var reqIDKey key
+const (
+	// reqIDKey is the key for request IDs in Contexts.  It is
+	// unexported; clients use NewContext and FromContext
+	// instead of using this key directly.
+	reqIDKey key = iota
+	// subReqIDKey is the key for sub-request IDs in Contexts.  It is
+	// unexported; clients use NewSubContext and FromSubContext
+	// instead of using this key directly.
+	subReqIDKey
+)
 
 const Unknown = "unknown_req_id"
 
@@ -51,4 +57,19 @@ func FromContext(ctx context.Context) string {
 		return Unknown
 	}
 	return reqID
+}
+
+// NewSubContext returns a new Context that carries subreqid
+func NewSubContext(ctx context.Context, reqid string) context.Context {
+	return context.WithValue(ctx, subReqIDKey, reqid)
+}
+
+// FromSubContext returns the sub-request ID stored in ctx,
+// or Unknown if there is none
+func FromSubContext(ctx context.Context) string {
+	subReqID, ok := ctx.Value(subReqIDKey).(string)
+	if !ok {
+		return Unknown
+	}
+	return subReqID
 }

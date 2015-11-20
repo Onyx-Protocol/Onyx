@@ -37,9 +37,10 @@ var (
 
 // Conventional key names for log entries
 const (
-	KeyCaller = "at"    // location of caller
-	KeyTime   = "t"     // time of call
-	KeyReqID  = "reqid" // request ID from context
+	KeyCaller   = "at"       // location of caller
+	KeyTime     = "t"        // time of call
+	KeyReqID    = "reqid"    // request ID from context
+	KeySubReqID = "subreqid" // potential sub-request ID from context
 
 	KeyMessage = "message" // produced by Message
 	KeyError   = "error"   // produced by Error
@@ -111,6 +112,10 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 		KeyCaller, formatValue(vcaller),
 		KeyTime, formatValue(time.Now().UTC().Format(time.RFC3339Nano)),
 	)
+
+	if subreqid := reqid.FromSubContext(ctx); subreqid != reqid.Unknown {
+		out += " " + KeySubReqID + "=" + formatValue(subreqid)
+	}
 
 	for i := 0; i < len(keyvals); i += 2 {
 		k := formatKey(keyvals[i])

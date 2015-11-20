@@ -3,6 +3,7 @@ package asset
 import (
 	"bytes"
 	"encoding/hex"
+	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
@@ -18,6 +19,8 @@ import (
 )
 
 func init() {
+	log.SetOutput(ioutil.Discard)
+
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
 		u = s

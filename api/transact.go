@@ -11,6 +11,7 @@ import (
 	"chain/database/pg"
 	"chain/fedchain/bc"
 	"chain/metrics"
+	"chain/net/http/reqid"
 )
 
 type buildReq struct {
@@ -70,7 +71,7 @@ func build(ctx context.Context, buildReqs []buildReq) (interface{}, error) {
 	for i := 0; i < len(responses); i++ {
 		go func(i int) {
 			defer wg.Done()
-			resp, err := buildSingle(ctx, buildReqs[i])
+			resp, err := buildSingle(reqid.NewSubContext(ctx, reqid.New()), buildReqs[i])
 			if err != nil {
 				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)
@@ -131,7 +132,7 @@ func submit(ctx context.Context, x struct{ Transactions []*asset.Tx }) interface
 	wg.Add(len(responses))
 	for i := range responses {
 		go func(i int) {
-			resp, err := submitSingle(ctx, x.Transactions[i])
+			resp, err := submitSingle(reqid.NewSubContext(ctx, reqid.New()), x.Transactions[i])
 			if err != nil {
 				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)
