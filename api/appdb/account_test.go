@@ -99,6 +99,67 @@ func TestAccountBalance(t *testing.T) {
 	})
 }
 
+func TestAccountBalanceByAssetID(t *testing.T) {
+	const fix = `
+		INSERT INTO utxos (txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
+		VALUES ('tx-0', 0, 'asset-1', 10, 0, 'account-0', 'mnode-0'),
+		       ('tx-1', 1, 'asset-1', 5, 0, 'account-0', 'mnode-0'),
+		       ('tx-2', 2, 'asset-2', 1, 0, 'account-0', 'mnode-0'),
+		       ('tx-3', 3, 'asset-3', 2, 0, 'account-0', 'mnode-0'),
+		       ('tx-4', 4, 'asset-4', 3, 0, 'account-1', 'mnode-1');
+	`
+
+	examples := []struct {
+		accountID string
+		assetIDs  []string
+		want      []*Balance
+	}{
+		{
+			accountID: "account-0",
+			assetIDs:  []string{"asset-1", "asset-2", "asset-3", "asset-4"},
+			want: []*Balance{
+				{AssetID: "asset-1", Total: 15, Confirmed: 15},
+				{AssetID: "asset-2", Total: 1, Confirmed: 1},
+				{AssetID: "asset-3", Total: 2, Confirmed: 2},
+			},
+		},
+		{
+			accountID: "account-0",
+			assetIDs:  []string{"asset-1"},
+			want: []*Balance{
+				{AssetID: "asset-1", Total: 15, Confirmed: 15},
+			},
+		},
+		{
+			accountID: "account-0",
+			assetIDs:  []string{"asset-4"},
+			want:      nil,
+		},
+		{
+			accountID: "account-1",
+			assetIDs:  []string{"asset-1", "asset-2", "asset-3", "asset-4"},
+			want: []*Balance{
+				{AssetID: "asset-4", Total: 3, Confirmed: 3},
+			},
+		},
+	}
+
+	withContext(t, fix, func(t *testing.T, ctx context.Context) {
+		for i, ex := range examples {
+			t.Log("Example", i)
+
+			got, err := AccountBalanceByAssetID(ctx, ex.accountID, ex.assetIDs)
+			if err != nil {
+				t.Fatal("unexpected error:", err)
+			}
+
+			if !reflect.DeepEqual(got, ex.want) {
+				t.Errorf("asset IDs:\ngot:  %v\nwant: %v", got, ex.want)
+			}
+		}
+	})
+}
+
 func TestListAccounts(t *testing.T) {
 	const sql = `
 		INSERT INTO projects (id, name) VALUES

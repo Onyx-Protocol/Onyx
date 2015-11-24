@@ -1,6 +1,7 @@
 package api
 
 import (
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -188,6 +189,26 @@ func accountBalance(ctx context.Context, accountID string) (interface{}, error) 
 	if err := accountAuthz(ctx, accountID); err != nil {
 		return nil, err
 	}
+
+	// Mode 1: filter by list of asset IDs
+
+	qvals := httpjson.Request(ctx).URL.Query()
+	if aidList, ok := qvals["asset_ids"]; ok {
+		// Asset IDs are serialized as a comma-separated list.
+		assetIDs := strings.Split(aidList[0], ",")
+		res, err := appdb.AccountBalanceByAssetID(ctx, accountID, assetIDs)
+		if err != nil {
+			return nil, err
+		}
+
+		return map[string]interface{}{
+			"balances": httpjson.Array(res),
+			"last":     "",
+		}, nil
+	}
+
+	// Mode 2: return all assets, paginated by asset ID
+
 	prev, limit, err := getPageData(ctx, defBalancePageSize)
 	if err != nil {
 		return nil, err

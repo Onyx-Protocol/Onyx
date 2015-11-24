@@ -111,6 +111,44 @@ func AccountBalance(ctx context.Context, accountID, prev string, limit int) ([]*
 	return bals, last, err
 }
 
+// AccountBalance fetches the balances of assets contained in the specified
+// account, filtered by a list of asset IDs.
+// It returns a slice of Balances. Total and confirmed balances
+// are currently the same.
+func AccountBalanceByAssetID(ctx context.Context, accountID string, assetIDs []string) ([]*Balance, error) {
+	const q = `
+		SELECT asset_id, SUM(amount)::bigint
+		FROM utxos
+		WHERE account_id = $1
+			AND asset_id IN (SELECT unnest($2::text[]))
+		GROUP BY asset_id
+		ORDER BY asset_id
+	`
+	rows, err := pg.FromContext(ctx).Query(q, accountID, pg.Strings(assetIDs))
+	if err != nil {
+		return nil, errors.Wrap(err, "select query")
+	}
+	defer rows.Close()
+
+	var res []*Balance
+	for rows.Next() {
+		b := new(Balance)
+		err = rows.Scan(&b.AssetID, &b.Confirmed)
+		if err != nil {
+			return nil, errors.Wrap(err, "row scan")
+		}
+
+		b.Total = b.Confirmed
+		res = append(res, b)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "end row scan loop")
+	}
+
+	return res, nil
+}
+
 // ListAccounts returns a list of accounts contained in the given manager node.
 func ListAccounts(ctx context.Context, managerNodeID string, prev string, limit int) ([]*Account, string, error) {
 	q := `
