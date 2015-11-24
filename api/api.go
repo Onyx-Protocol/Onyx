@@ -79,6 +79,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/accounts", listAccounts)
 	h.HandleFunc("POST", "/v3/manager-nodes/:mnodeID/accounts", createAccount)
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/balance", managerNodeBalance)
+	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/assets/:assetID/balances", listAccountsWithAsset)
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/activity", getManagerNodeActivity)
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/transactions/:txID", managerNodeTxActivity)
 	h.HandleFunc("PUT", "/v3/manager-nodes/:mnodeID", updateManagerNode)

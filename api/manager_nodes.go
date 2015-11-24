@@ -123,6 +123,26 @@ func managerNodeBalance(ctx context.Context, managerNodeID string) (interface{},
 	return ret, nil
 }
 
+func listAccountsWithAsset(ctx context.Context, mnodeID, assetID string) (interface{}, error) {
+	if err := managerAuthz(ctx, mnodeID); err != nil {
+		return nil, err
+	}
+	prev, limit, err := getPageData(ctx, defBalancePageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	balances, last, err := appdb.AccountsWithAsset(ctx, mnodeID, assetID, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"balances": balances,
+		"last":     last,
+	}, nil
+}
+
 // GET /v3/manager-nodes/:mnodeID/accounts
 func listAccounts(ctx context.Context, managerNodeID string) (interface{}, error) {
 	if err := managerAuthz(ctx, managerNodeID); err != nil {

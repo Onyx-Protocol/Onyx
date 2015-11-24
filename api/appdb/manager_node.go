@@ -59,6 +59,13 @@ type Balance struct {
 	Total     int64  `json:"total"`
 }
 
+// AccountBalanceItem is returned by AccountsWithAsset
+type AccountBalanceItem struct {
+	AccountID string `json:"account_id"`
+	Confirmed int64  `json:"confirmed"`
+	Total     int64  `json:"total"`
+}
+
 // GetManagerNode returns basic information about a single manager node.
 func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, error) {
 	var (
@@ -145,6 +152,49 @@ func ManagerNodeBalance(ctx context.Context, managerNodeID, prev string, limit i
 		return nil, "", errors.Wrap(err, "rows error")
 	}
 	return bals, last, err
+}
+
+// AccountsWithAsset fetches the balance of a particular asset
+// within a manager node, grouped and sorted by individual accounts.
+func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit int) ([]*AccountBalanceItem, string, error) {
+	const q = `
+		SELECT SUM(amount), account_id FROM utxos
+		WHERE asset_id=$1 AND manager_node_id=$2
+		AND ($3='' OR account_id>$3)
+		GROUP BY account_id
+		ORDER BY account_id ASC
+		LIMIT $4
+	`
+	rows, err := pg.FromContext(ctx).Query(q, assetID, mnodeID, prev, limit)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "balances query")
+	}
+	defer rows.Close()
+
+	var (
+		bals []*AccountBalanceItem
+		last string
+	)
+	for rows.Next() {
+		var (
+			accountID string
+			bal       int64
+		)
+		err = rows.Scan(&bal, &accountID)
+		if err != nil {
+			return nil, "", errors.Wrap(err, "rows scan")
+		}
+		bals = append(bals, &AccountBalanceItem{accountID, bal, bal})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, "", errors.Wrap(err, "rows error")
+	}
+
+	if len(bals) > 0 {
+		last = bals[len(bals)-1].AccountID
+	}
+
+	return bals, last, nil
 }
 
 // ListManagerNodes returns a list of manager nodes contained in the given project.

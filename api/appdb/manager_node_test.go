@@ -124,6 +124,65 @@ func TestManagerNodeBalance(t *testing.T) {
 	})
 }
 
+func TestAccountsWithAsset(t *testing.T) {
+	const fix = `
+		INSERT INTO utxos (txid, index, asset_id, amount, addr_index, manager_node_id, account_id)
+		VALUES ('t0', 0, 'a0', 5, 0, 'mn0', 'acc0'),
+		       ('t1', 0, 'a0', 5, 0, 'mn0', 'acc0'),
+		       ('t2', 0, 'a0', 5, 0, 'mn0', 'acc1'),
+		       ('t3', 0, 'a1', 5, 0, 'mn0', 'acc1'),
+		       ('t4', 0, 'a0', 5, 0, 'mn1', 'acc0');
+	`
+	withContext(t, fix, func(t *testing.T, ctx context.Context) {
+		cases := []struct {
+			prev     string
+			limit    int
+			want     []*AccountBalanceItem
+			wantLast string
+		}{{
+			prev:  "",
+			limit: 50,
+			want: []*AccountBalanceItem{
+				{"acc0", 10, 10},
+				{"acc1", 5, 5},
+			},
+			wantLast: "acc1",
+		}, {
+			prev:  "acc0",
+			limit: 50,
+			want: []*AccountBalanceItem{
+				{"acc1", 5, 5},
+			},
+			wantLast: "acc1",
+		}, {
+			prev:  "",
+			limit: 1,
+			want: []*AccountBalanceItem{
+				{"acc0", 10, 10},
+			},
+			wantLast: "acc0",
+		}, {
+			prev:     "acc1",
+			limit:    50,
+			want:     nil,
+			wantLast: "",
+		}}
+		for _, c := range cases {
+			got, gotLast, err := AccountsWithAsset(ctx, "mn0", "a0", c.prev, c.limit)
+			if err != nil {
+				t.Errorf("AccountsWithAsset(%q, %d) unexpected error = %q", c.prev, c.limit, err)
+				continue
+			}
+			if !reflect.DeepEqual(got, c.want) {
+				t.Errorf("AccountsWithAsset(%q, %d) = %+v want %+v", c.prev, c.limit, got, c.want)
+			}
+			if gotLast != c.wantLast {
+				t.Errorf("AccountsWithAsset(%q, %d) last = %q want %q", c.prev, c.limit, gotLast, c.wantLast)
+			}
+		}
+	})
+}
+
 func TestListManagerNodes(t *testing.T) {
 	const sql = `
 		INSERT INTO projects (id, name) VALUES
