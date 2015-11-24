@@ -138,7 +138,7 @@ func listAccountsWithAsset(ctx context.Context, mnodeID, assetID string) (interf
 	}
 
 	return map[string]interface{}{
-		"balances": balances,
+		"balances": httpjson.Array(balances),
 		"last":     last,
 	}, nil
 }
