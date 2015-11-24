@@ -111,7 +111,7 @@ func AccountBalance(ctx context.Context, accountID, prev string, limit int) ([]*
 	return bals, last, err
 }
 
-// AccountBalance fetches the balances of assets contained in the specified
+// AccountBalanceByAssetID fetches the balances of assets contained in the specified
 // account, filtered by a list of asset IDs.
 // It returns a slice of Balances. Total and confirmed balances
 // are currently the same.
