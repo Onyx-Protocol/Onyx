@@ -99,7 +99,7 @@ func InsertBlock(ctx context.Context, block *bc.Block) error {
 
 func InsertTx(ctx context.Context, tx *bc.Tx) error {
 	const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2)`
-	_, err := pg.FromContext(ctx).Exec(q, tx.Hash(), tx.Hash(), tx)
+	_, err := pg.FromContext(ctx).Exec(q, tx.Hash(), tx)
 	return errors.Wrap(err, "insert query")
 }
 
