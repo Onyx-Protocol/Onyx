@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"chain/fedchain/bc"
-
 	"golang.org/x/net/context"
+
+	"chain/fedchain/bc"
 )
 
 func TestGenerateBlock(t *testing.T) {

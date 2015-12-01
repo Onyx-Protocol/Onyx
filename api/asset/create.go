@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
-	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/errors"

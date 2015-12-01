@@ -1,10 +1,11 @@
 package asset
 
 import (
-	"chain/api/utxodb"
 	"time"
 
 	"golang.org/x/net/context"
+
+	"chain/api/utxodb"
 )
 
 // Build builds or adds on to a transaction.
