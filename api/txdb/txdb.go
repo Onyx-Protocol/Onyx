@@ -71,6 +71,12 @@ func GetTxs(ctx context.Context, hashes ...string) (map[string]*bc.Tx, error) {
 	return txs, nil
 }
 
+func InsertTx(ctx context.Context, tx *bc.Tx) error {
+	const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2)`
+	_, err := pg.FromContext(ctx).Exec(q, tx.Hash(), tx)
+	return errors.Wrap(err, "insert query")
+}
+
 // LatestBlock returns the most recent block.
 func LatestBlock(ctx context.Context) (*bc.Block, error) {
 	const q = `SELECT data FROM blocks ORDER BY height DESC LIMIT 1`
@@ -95,12 +101,6 @@ func InsertBlock(ctx context.Context, block *bc.Block) error {
 		return errors.Wrap(err, "insert query")
 	}
 	return insertBlockTxs(ctx, block)
-}
-
-func InsertTx(ctx context.Context, tx *bc.Tx) error {
-	const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2)`
-	_, err := pg.FromContext(ctx).Exec(q, tx.Hash(), tx)
-	return errors.Wrap(err, "insert query")
 }
 
 func insertBlockTxs(ctx context.Context, block *bc.Block) error {
