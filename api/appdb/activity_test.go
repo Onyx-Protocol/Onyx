@@ -740,7 +740,7 @@ func TestMarkChangeOuts(t *testing.T) {
 			('addr-1', false, 'manager-node-id-0', 'account-id-0', '{}', 1, '\x'::bytea, '\x'::bytea);
 	`
 
-	withContext(t, fix, func(t *testing.T, ctx context.Context) {
+	withContext(t, fix, func(ctx context.Context) {
 		utxos := []*actUTXO{
 			{addr: "addr-0"},
 			{addr: "addr-1"},

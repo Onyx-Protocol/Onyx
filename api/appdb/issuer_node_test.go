@@ -12,7 +12,7 @@ import (
 )
 
 func TestInsertIssuerNode(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		_ = newTestIssuerNode(t, ctx, nil, "foo")
 	})
 }
@@ -33,7 +33,7 @@ func TestListIssuerNodes(t *testing.T) {
 
 			('in-id-2', 'proj-id-1', 2, '{}', 'in-2', now());
 	`
-	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+	withContext(t, sql, func(ctx context.Context) {
 		examples := []struct {
 			projID string
 			want   []*IssuerNode
@@ -69,7 +69,7 @@ func TestListIssuerNodes(t *testing.T) {
 }
 
 func TestGetIssuerNodes(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		proj := newTestProject(t, ctx, "foo", nil)
 		in, err := InsertIssuerNode(ctx, proj.ID, "in-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv})
 		if err != nil {
@@ -115,7 +115,7 @@ func TestGetIssuerNodes(t *testing.T) {
 }
 
 func TestUpdateIssuerNode(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
 
 		newLabel := "bar"
@@ -137,7 +137,7 @@ func TestUpdateIssuerNode(t *testing.T) {
 
 // Test that calling UpdateIssuerNode with no new label is a no-op.
 func TestUpdateIssuerNodeNoUpdate(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
 		err := UpdateIssuerNode(ctx, issuerNode.ID, nil)
 		if err != nil {
@@ -155,7 +155,7 @@ func TestUpdateIssuerNodeNoUpdate(t *testing.T) {
 }
 
 func TestDeleteIssuerNode(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
 		_, err := GetIssuerNode(ctx, issuerNode.ID)
 		if err != nil {
@@ -182,7 +182,7 @@ func TestDeleteIssuerNode(t *testing.T) {
 // Test that the existence of an asset connected to an issuer node
 // prevents deletion of the node.
 func TestDeleteIssuerNodeBlocked(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
 		_ = newTestAsset(t, ctx, issuerNode)
 		err := DeleteIssuerNode(ctx, issuerNode.ID)

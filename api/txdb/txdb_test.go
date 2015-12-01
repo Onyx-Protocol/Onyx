@@ -34,16 +34,16 @@ func init() {
 
 // Establish a context object with a new db transaction in which to
 // run the given callback function.
-func withContext(t *testing.T, sql string, fn func(*testing.T, context.Context)) {
+func withContext(tb testing.TB, sql string, fn func(context.Context)) {
 	var dbtx pg.Tx
 	if sql == "" {
-		dbtx = pgtest.TxWithSQL(t)
+		dbtx = pgtest.TxWithSQL(tb)
 	} else {
-		dbtx = pgtest.TxWithSQL(t, sql)
+		dbtx = pgtest.TxWithSQL(tb, sql)
 	}
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
-	fn(t, ctx)
+	fn(ctx)
 }
 
 func mustParseHash(s string) bc.Hash {
@@ -62,7 +62,7 @@ func TestPoolTxs(t *testing.T) {
 			decode('00000001000000000000000000000568656c6c6f', 'hex')
 		);
 	`
-	withContext(t, fix, func(t *testing.T, ctx context.Context) {
+	withContext(t, fix, func(ctx context.Context) {
 		got, err := PoolTxs(ctx)
 		if err != nil {
 			t.Fatalf("err got = %v want nil", err)
@@ -90,7 +90,7 @@ func TestLatestBlock(t *testing.T) {
 			decode('0000000100000000000000013132330000000000000000000000000000000000000000000000000000000000414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000000000000000000640f746573742d7369672d73637269707412746573742d6f75747075742d73637269707401000000010000000000000000000007746573742d7478', 'hex')
 		);
 	`
-	withContext(t, fix, func(t *testing.T, ctx context.Context) {
+	withContext(t, fix, func(ctx context.Context) {
 		got, err := LatestBlock(ctx)
 		if err != nil {
 			t.Fatalf("err got = %v want nil", err)

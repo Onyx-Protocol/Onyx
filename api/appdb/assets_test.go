@@ -28,7 +28,7 @@ func TestAssetByID(t *testing.T) {
 			'foo'
 		);
 	`
-	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+	withContext(t, sql, func(ctx context.Context) {
 		got, err := AssetByID(ctx, bc.AssetID{})
 		if err != nil {
 			t.Log(errors.Stack(err))
@@ -73,7 +73,7 @@ func TestListAssets(t *testing.T) {
 			('asset-id-1', 'in-id-0', 1, '\x'::bytea, '\x'::bytea, 'asset-1', 'asset1', 3, 4),
 			('asset-id-2', 'in-id-1', 2, '\x'::bytea, '\x'::bytea, 'asset-2', 'asset2', 5, 6);
 	`
-	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+	withContext(t, sql, func(ctx context.Context) {
 		examples := []struct {
 			inodeID string
 			prev    string
@@ -144,7 +144,7 @@ func TestGetAsset(t *testing.T) {
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label, issued_confirmed, issued_pool)
 			VALUES ('asset-id-0', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 58, 12);
 	`
-	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+	withContext(t, sql, func(ctx context.Context) {
 		got, err := GetAsset(ctx, "asset-id-0")
 		if err != nil {
 			t.Log(errors.Stack(err))
@@ -247,7 +247,7 @@ func TestUpdateIssuances(t *testing.T) {
 	}
 
 	for i, ex := range examples {
-		withContext(t, fix, func(t *testing.T, ctx context.Context) {
+		withContext(t, fix, func(ctx context.Context) {
 			t.Log("Example", i)
 
 			err := UpdateIssuances(ctx, ex.deltas, ex.confirmed)
@@ -276,7 +276,7 @@ func TestUpdateAsset(t *testing.T) {
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
 			VALUES ('asset-id-0', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
 	`
-	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+	withContext(t, sql, func(ctx context.Context) {
 		assetResponse, err := GetAsset(ctx, "asset-id-0")
 		if err != nil {
 			t.Log(errors.Stack(err))
@@ -308,7 +308,7 @@ func TestUpdateAssetNoUpdate(t *testing.T) {
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
 			VALUES ('asset-id-0', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
 	`
-	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+	withContext(t, sql, func(ctx context.Context) {
 		assetResponse, err := GetAsset(ctx, "asset-id-0")
 		if err != nil {
 			t.Log(errors.Stack(err))
@@ -331,7 +331,7 @@ func TestUpdateAssetNoUpdate(t *testing.T) {
 }
 
 func TestDeleteAsset(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		asset := newTestAsset(t, ctx, nil)
 		assetID := asset.Hash.String()
 		_, err := GetAsset(ctx, assetID)
@@ -393,7 +393,7 @@ func TestAssetBalance(t *testing.T) {
 			('ptx-1', 0),
 			('ptx-6', 0);
 	`
-	withContext(t, fix, func(t *testing.T, ctx context.Context) {
+	withContext(t, fix, func(ctx context.Context) {
 		cases := []struct {
 			owner     AssetOwner
 			accountID string
@@ -644,7 +644,7 @@ func TestAccountBalanceByAssetID(t *testing.T) {
 		},
 	}
 
-	withContext(t, fix, func(t *testing.T, ctx context.Context) {
+	withContext(t, fix, func(ctx context.Context) {
 		for i, ex := range examples {
 			t.Log("Example", i)
 

@@ -402,7 +402,7 @@ func TestPasswordResetFlow(t *testing.T) {
 }
 
 func TestStartPasswordResetErrs(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		gotSecret, gotErr := StartPasswordReset(ctx, "foo@bar.com")
 
 		if gotSecret != "" {
@@ -434,7 +434,7 @@ func TestCheckPasswordReset(t *testing.T) {
 		);
 	`
 
-	withContext(t, fix, func(t *testing.T, ctx context.Context) {
+	withContext(t, fix, func(ctx context.Context) {
 		examples := []struct {
 			email  string
 			secret string

@@ -10,7 +10,7 @@ import (
 )
 
 func TestInsertAssetDefinitionPointers(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		// These hash values are arbitrary.
 		a0str := "a55e710000000000000000000000000000000000000000000000000000000000"
 		def0str := "341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5"
@@ -61,7 +61,7 @@ func TestInsertAssetDefinitionPointers(t *testing.T) {
 }
 
 func TestInsertAssetDefinitionPointersWithUpdate(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		// These hash values are arbitrary.
 		a0str := "a55e710000000000000000000000000000000000000000000000000000000000"
 		def0str := "341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5"
@@ -112,7 +112,7 @@ func TestInsertAssetDefinitionPointersWithUpdate(t *testing.T) {
 }
 
 func TestInsertAssetDefinitions(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		block := &bc.Block{
 			Transactions: []*bc.Tx{
 				&bc.Tx{Inputs: []*bc.TxInput{
@@ -143,7 +143,7 @@ func TestInsertAssetDefinitions(t *testing.T) {
 }
 
 func TestInsertAssetDefinitionsWithUpdate(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		block := &bc.Block{
 			Transactions: []*bc.Tx{
 				&bc.Tx{Inputs: []*bc.TxInput{

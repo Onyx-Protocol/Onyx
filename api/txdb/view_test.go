@@ -68,7 +68,7 @@ func TestView(t *testing.T) {
 		},
 	}
 
-	withContext(t, fix, func(t *testing.T, ctx context.Context) {
+	withContext(t, fix, func(ctx context.Context) {
 		for i, ex := range examples {
 			t.Log("Example", i)
 
@@ -173,7 +173,7 @@ func TestPoolView(t *testing.T) {
 		},
 	}
 
-	withContext(t, fix, func(t *testing.T, ctx context.Context) {
+	withContext(t, fix, func(ctx context.Context) {
 		for i, ex := range examples {
 			t.Log("Example", i)
 

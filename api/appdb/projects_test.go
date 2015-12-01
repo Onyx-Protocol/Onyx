@@ -36,7 +36,7 @@ const (
 )
 
 func TestCreateProject(t *testing.T) {
-	withContext(t, projectsFixtures, func(t *testing.T, ctx context.Context) {
+	withContext(t, projectsFixtures, func(ctx context.Context) {
 		p, err := CreateProject(ctx, "new-proj", "user-id-0")
 		if err != nil {
 			t.Fatal(err)
@@ -63,7 +63,7 @@ func TestCreateProject(t *testing.T) {
 }
 
 func TestListProjects(t *testing.T) {
-	withContext(t, projectsFixtures, func(t *testing.T, ctx context.Context) {
+	withContext(t, projectsFixtures, func(ctx context.Context) {
 		examples := []struct {
 			userID string
 			want   []*Project
@@ -103,7 +103,7 @@ func TestListProjects(t *testing.T) {
 }
 
 func TestGetProject(t *testing.T) {
-	withContext(t, projectsFixtures, func(t *testing.T, ctx context.Context) {
+	withContext(t, projectsFixtures, func(ctx context.Context) {
 		examples := []struct {
 			id          string
 			wantProject *Project
@@ -131,7 +131,7 @@ func TestGetProject(t *testing.T) {
 }
 
 func TestUpdateProject(t *testing.T) {
-	withContext(t, projectsFixtures, func(t *testing.T, ctx context.Context) {
+	withContext(t, projectsFixtures, func(ctx context.Context) {
 		examples := []struct {
 			id      string
 			wantErr error
@@ -162,7 +162,7 @@ func TestUpdateProject(t *testing.T) {
 }
 
 func TestListMembers(t *testing.T) {
-	withContext(t, projectsFixtures, func(t *testing.T, ctx context.Context) {
+	withContext(t, projectsFixtures, func(ctx context.Context) {
 		examples := []struct {
 			projectID string
 			want      []*Member
@@ -198,7 +198,7 @@ func TestListMembers(t *testing.T) {
 }
 
 func TestAddMember(t *testing.T) {
-	withContext(t, projectsFixtures, func(t *testing.T, ctx context.Context) {
+	withContext(t, projectsFixtures, func(ctx context.Context) {
 		err := AddMember(ctx, "proj-id-0", "user-id-2", "developer")
 		if err != nil {
 			t.Fatal(err)
@@ -228,7 +228,7 @@ func TestAddMember(t *testing.T) {
 }
 
 func TestUpdateMember(t *testing.T) {
-	withContext(t, projectsFixtures, func(t *testing.T, ctx context.Context) {
+	withContext(t, projectsFixtures, func(ctx context.Context) {
 		err := UpdateMember(ctx, "proj-id-0", "user-id-0", "developer")
 		if err != nil {
 			t.Fatal(err)
@@ -258,7 +258,7 @@ func TestUpdateMember(t *testing.T) {
 }
 
 func TestRemoveMember(t *testing.T) {
-	withContext(t, projectsFixtures, func(t *testing.T, ctx context.Context) {
+	withContext(t, projectsFixtures, func(ctx context.Context) {
 		err := RemoveMember(ctx, "proj-id-0", "user-id-0")
 		if err != nil {
 			t.Fatal(err)

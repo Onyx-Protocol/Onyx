@@ -12,13 +12,13 @@ import (
 )
 
 func TestInsertManagerNode(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		_ = newTestManagerNode(t, ctx, nil, "foo")
 	})
 }
 
 func TestGetManagerNode(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		proj := newTestProject(t, ctx, "foo", nil)
 		mn, err := InsertManagerNode(ctx, proj.ID, "manager-node-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv})
 		if err != nil {
@@ -87,7 +87,7 @@ func TestAccountsWithAsset(t *testing.T) {
 		VALUES ('ptx-1', 0), ('ctx-3', 0);
 
 	`
-	withContext(t, fix, func(t *testing.T, ctx context.Context) {
+	withContext(t, fix, func(ctx context.Context) {
 		cases := []struct {
 			assetID  string
 			prev     string
@@ -164,7 +164,7 @@ func TestListManagerNodes(t *testing.T) {
 
 			('manager-node-id-2', 'proj-id-1', 2, 'manager-node-2', now());
 	`
-	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+	withContext(t, sql, func(ctx context.Context) {
 		examples := []struct {
 			projID string
 			want   []*ManagerNode
@@ -200,7 +200,7 @@ func TestListManagerNodes(t *testing.T) {
 }
 
 func TestUpdateManagerNode(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 		newLabel := "bar"
 
@@ -221,7 +221,7 @@ func TestUpdateManagerNode(t *testing.T) {
 
 // Test that calling UpdateManagerNode with no new label is a no-op.
 func TestUpdateManagerNodeNoUpdate(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 		err := UpdateManagerNode(ctx, managerNode.ID, nil)
 		if err != nil {
@@ -239,7 +239,7 @@ func TestUpdateManagerNodeNoUpdate(t *testing.T) {
 }
 
 func TestDeleteManagerNode(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 
 		_, err := GetManagerNode(ctx, managerNode.ID)
@@ -267,7 +267,7 @@ func TestDeleteManagerNode(t *testing.T) {
 // Test that the existence of an account connected to a manager node
 // prevents deletion of the node.
 func TestDeleteManagerNodeBlocked(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 		_ = newTestAccount(t, ctx, managerNode, "bar")
 		err := DeleteManagerNode(ctx, managerNode.ID)

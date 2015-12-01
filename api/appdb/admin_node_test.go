@@ -11,7 +11,7 @@ import (
 )
 
 func TestInsertAdminNode(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		p := newTestProject(t, ctx, "proj", nil)
 		_ = newTestAdminNode(t, ctx, p, "foo")
 
@@ -24,7 +24,7 @@ func TestInsertAdminNode(t *testing.T) {
 }
 
 func TestGetAdminNode(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		proj := newTestProject(t, ctx, "foo", nil)
 		an, err := InsertAdminNode(ctx, proj.ID, "admin-node-0")
 		if err != nil {
@@ -79,7 +79,7 @@ func TestListAdminNodes(t *testing.T) {
 			('admin-node-id-1', 'proj-id-0', 'admin-node-1', now() - '1 day'::interval),
 			('admin-node-id-2', 'proj-id-1', 'admin-node-2', now());
 	`
-	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+	withContext(t, sql, func(ctx context.Context) {
 		examples := []struct {
 			projID string
 			want   []*AdminNode
@@ -115,7 +115,7 @@ func TestListAdminNodes(t *testing.T) {
 }
 
 func TestUpdateAdminNode(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		adminNode := newTestAdminNode(t, ctx, nil, "foo")
 		newLabel := "bar"
 
@@ -136,7 +136,7 @@ func TestUpdateAdminNode(t *testing.T) {
 
 // Test that calling UpdateAdminNode with no new label is a no-op.
 func TestUpdateAdminNodeNoUpdate(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		adminNode := newTestAdminNode(t, ctx, nil, "foo")
 		err := UpdateAdminNode(ctx, adminNode.ID, nil)
 		if err != nil {
@@ -154,7 +154,7 @@ func TestUpdateAdminNodeNoUpdate(t *testing.T) {
 }
 
 func TestDeleteAdminNode(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		adminNode := newTestAdminNode(t, ctx, nil, "foo")
 
 		_, err := GetAdminNode(ctx, adminNode.ID)

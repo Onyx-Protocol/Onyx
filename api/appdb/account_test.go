@@ -13,7 +13,7 @@ import (
 )
 
 func TestCreateAccount(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 		account, err := CreateAccount(ctx, managerNode.ID, "foo")
 		if err != nil {
@@ -29,7 +29,7 @@ func TestCreateAccount(t *testing.T) {
 }
 
 func TestCreateAccountBadLabel(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 		_, err := CreateAccount(ctx, managerNode.ID, "")
 		if err == nil {
@@ -53,7 +53,7 @@ func TestListAccounts(t *testing.T) {
 			('account-id-2', 'manager-node-id-1', 2, 'account-2'),
 			('account-id-3', 'manager-node-id-0', 3, 'account-3');
 	`
-	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+	withContext(t, sql, func(ctx context.Context) {
 		examples := []struct {
 			managerNodeID string
 			prev          string
@@ -139,7 +139,7 @@ func TestGetAccount(t *testing.T) {
 		INSERT INTO accounts (id, manager_node_id, key_index, label) VALUES
 			('account-id-0', 'manager-node-id-0', 0, 'account-0')
 	`
-	withContext(t, sql, func(t *testing.T, ctx context.Context) {
+	withContext(t, sql, func(ctx context.Context) {
 		examples := []struct {
 			id      string
 			want    *Account
@@ -174,7 +174,7 @@ func TestGetAccount(t *testing.T) {
 }
 
 func TestUpdateAccount(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 		account, err := CreateAccount(ctx, managerNode.ID, "foo")
 		if err != nil {
@@ -205,7 +205,7 @@ func TestUpdateAccount(t *testing.T) {
 
 // Test that calling UpdateManagerNode with no new label is a no-op.
 func TestUpdateAccountNoUpdate(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "foo")
 		account, err := CreateAccount(ctx, managerNode.ID, "foo")
 		if err != nil {
@@ -237,7 +237,7 @@ func TestUpdateAccountNoUpdate(t *testing.T) {
 }
 
 func TestDeleteAccount(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		account := newTestAccount(t, ctx, nil, "account-1")
 		_, err := GetAccount(ctx, account.ID)
 		if err != nil {
@@ -262,7 +262,7 @@ func TestDeleteAccount(t *testing.T) {
 // Test that the existence of an address associated with an account
 // prevents that account from being deleted.
 func TestDeleteAccountBlocked(t *testing.T) {
-	withContext(t, "", func(t *testing.T, ctx context.Context) {
+	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "manager-node-1")
 		account := newTestAccount(t, ctx, managerNode, "account-1")
 		addr := &Address{

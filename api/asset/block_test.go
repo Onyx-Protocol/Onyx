@@ -31,7 +31,7 @@ func TestGenerateBlock(t *testing.T) {
 		);
 	`
 
-	withContext(t, fix, func(t *testing.T, ctx context.Context) {
+	withContext(t, fix, func(ctx context.Context) {
 		now := time.Now()
 		got, err := GenerateBlock(ctx, now)
 		if err != nil {
