@@ -112,6 +112,8 @@ func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, er
 	}, nil
 }
 
+// EXPERIMENTAL - implemented for Glitterco
+//
 // AccountsWithAsset fetches the balance of a particular asset
 // within a manager node, grouped and sorted by individual accounts.
 func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit int) ([]*AccountBalanceItem, string, error) {

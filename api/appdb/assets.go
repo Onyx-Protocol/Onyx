@@ -252,6 +252,8 @@ type AssetBalQuery struct {
 	// Set the following for the full paginated list
 	Prev  string
 	Limit int
+
+	// EXPERIMENTAL - implemented for Glitterco
 	// Set the following for a filtered list of assets
 	AssetIDs []string
 }

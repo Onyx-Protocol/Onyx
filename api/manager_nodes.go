@@ -136,6 +136,7 @@ func managerNodeBalance(ctx context.Context, managerNodeID string) (interface{},
 	return ret, nil
 }
 
+// EXPERIMENTAL - implemented for Glitterco
 func listAccountsWithAsset(ctx context.Context, mnodeID, assetID string) (interface{}, error) {
 	if err := managerAuthz(ctx, mnodeID); err != nil {
 		return nil, err
@@ -237,10 +238,11 @@ func accountBalance(ctx context.Context, accountID string) (interface{}, error) 
 		OwnerID: accountID,
 	}
 
-	// Mode 1: filter by list of asset IDs
-
 	qvals := httpjson.Request(ctx).URL.Query()
 	if aidList, ok := qvals["asset_ids"]; ok {
+		// EXPERIMENTAL - implemented for Glitterco
+		//
+		// Mode 1: filter by list of asset IDs
 		// Asset IDs are serialized as a comma-separated list.
 		query.AssetIDs = strings.Split(aidList[0], ",")
 		if len(query.AssetIDs) == 0 {
