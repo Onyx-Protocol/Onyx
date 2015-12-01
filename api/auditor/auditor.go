@@ -182,3 +182,40 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 
 	return resp, nil
 }
+
+// Asset is returned by GetAsset
+type Asset struct {
+	ID            string                 `json:"id"`
+	DefinitionPtr string                 `json:"definition_pointer"`
+	Definition    map[string]interface{} `json:"definition"`
+}
+
+// GetAsset returns the most recent asset definition stored in
+// the blockchain, for the given asset.
+func GetAsset(ctx context.Context, assetID string) (*Asset, error) {
+	const q = `
+		SELECT hash, definition
+		FROM asset_definition_pointers adp
+		JOIN asset_definitions ON asset_definition_hash=hash
+		WHERE asset_id=$1
+	`
+	var (
+		hash     string
+		defBytes []byte
+	)
+	err := pg.FromContext(ctx).QueryRow(q, assetID).Scan(&hash, &defBytes)
+	if err == sql.ErrNoRows {
+		err = pg.ErrUserInputNotFound
+	}
+	if err != nil {
+		return nil, errors.WithDetailf(err, "asset=%s", assetID)
+	}
+
+	var definition map[string]interface{}
+	err = json.Unmarshal(defBytes, &definition)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid asset definition stored in db")
+	}
+
+	return &Asset{assetID, hash, definition}, nil
+}

@@ -175,7 +175,7 @@ func TestGetTxIssuance(t *testing.T) {
 	tx := &bc.Tx{
 		Inputs: []*bc.TxInput{{
 			Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
-			Metadata: mustDecodeHex("7b2261223a2262227d"),
+			Metadata: []byte(`{"a":"b"}`),
 		}},
 		Outputs: []*bc.TxOutput{{
 			AssetID:  bc.AssetID([32]byte{0}),
@@ -210,7 +210,7 @@ func TestGetTxIssuance(t *testing.T) {
 				Type:     "issuance",
 				AssetID:  bc.AssetID([32]byte{0}),
 				Amount:   11,
-				Metadata: mustDecodeHex("7b2261223a2262227d"),
+				Metadata: []byte(`{"a":"b"}`),
 				AssetDef: map[string]interface{}{"a": "b"},
 			}},
 			Outputs: []*TxOutput{{
@@ -302,6 +302,32 @@ func TestGetTxTransfer(t *testing.T) {
 
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("got:\n\t%+v\nwant:\n\t:%+v", got, want)
+		}
+	})
+}
+
+func TestGetAsset(t *testing.T) {
+	const fix = `
+		INSERT INTO asset_definition_pointers (asset_id, asset_definition_hash)
+		VALUES ('a1', 'h1');
+		INSERT INTO asset_definitions (hash, definition)
+		VALUES ('h1', '{"a":"b"}'::bytea);
+	`
+	withContext(t, fix, func(ctx context.Context) {
+		got, err := GetAsset(ctx, "a1")
+		if err != nil {
+			t.Log(errors.Stack(err))
+			t.Fatal(err)
+		}
+
+		want := &Asset{"a1", "h1", map[string]interface{}{"a": "b"}}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, want)
+		}
+
+		_, err = GetAsset(ctx, "nonexistent")
+		if errors.Root(err) != pg.ErrUserInputNotFound {
+			t.Errorf("got err = %q want %q", errors.Root(err), pg.ErrUserInputNotFound)
 		}
 	})
 }
