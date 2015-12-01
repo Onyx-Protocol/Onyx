@@ -119,9 +119,10 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) error {
 	}
 
 	const txQ = `
+		WITH t AS (SELECT unnest($1::text[]) txid, unnest($2::bytea[]) dat)
 		INSERT INTO txs (tx_hash, data)
-		SELECT unnest($1::text[]) AS txid, unnest($2::bytea[])
-		WHERE txid NOT IN (SELECT tx_hash FROM txs);
+		SELECT txid, dat FROM t
+		WHERE t.txid NOT IN (SELECT tx_hash FROM txs);
 	`
 	_, err := pg.FromContext(ctx).Exec(txQ, pg.Strings(hashes), pg.Byteas(data))
 	if err != nil {
@@ -130,7 +131,7 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) error {
 
 	const blockTxQ = `
 		INSERT INTO blocks_txs (tx_hash, block_hash)
-		unnest($1::text[], $2);
+		SELECT unnest($1::text[]), $2;
 	`
 	_, err = pg.FromContext(ctx).Exec(blockTxQ, pg.Strings(hashes), block.Hash())
 	return errors.Wrap(err, "insert block txs")
