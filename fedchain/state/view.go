@@ -12,6 +12,15 @@ type View interface {
 	ViewWriter
 }
 
+// ViewReader provides read access to a consistent snapshot
+// of the blockchain state.
+//
+// It is the ViewReader's responsibility to ensure that
+// its methods run fast enough for production throughput.
+// If the underlying storage is on a remote server or
+// otherwise slow, this requirement typically means the
+// view will pre-load or pre-cache many objects in a batch
+// so as to avoid multiple round trips.
 type ViewReader interface {
 	// Output loads the output from the view.
 	// It returns nil if output is not stored or does not exist.

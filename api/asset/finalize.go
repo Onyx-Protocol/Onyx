@@ -67,9 +67,13 @@ func assembleSignatures(tx *Tx) (*bc.Tx, error) {
 }
 
 func publishTx(ctx context.Context, msg *bc.Tx, receivers []*utxodb.Receiver) (err error) {
+	bcView, err := txdb.NewViewForPrevouts(ctx, []*bc.Tx{msg})
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
 	mv := NewMemView()
-	// TODO(kr): preload several outputs in a batch
-	view := state.Compose(mv, txdb.NewPoolView(&err), txdb.NewView(&err))
+	view := state.Compose(mv, txdb.NewPoolView(&err), bcView)
 	// TODO(kr): get current block hash for last argument to ValidateTx
 	verr := validation.ValidateTx(ctx, view, msg, uint64(time.Now().Unix()), nil)
 	if err != nil {

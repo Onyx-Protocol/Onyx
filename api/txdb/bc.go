@@ -1,8 +1,6 @@
 package txdb
 
 import (
-	"database/sql"
-
 	"golang.org/x/net/context"
 
 	"chain/api/utxodb"
@@ -19,32 +17,46 @@ type Output struct {
 	AddrIndex     [2]uint32
 }
 
-func loadOutput(ctx context.Context, p bc.Outpoint) (*state.Output, error) {
-	const q = `
-		SELECT asset_id, amount, script, metadata
-		FROM utxos
-		WHERE txid=$1 AND index=$2
-	`
-	o := &state.Output{
-		Outpoint: p,
+func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.Output, error) {
+	var (
+		txid  []string
+		index []uint32
+	)
+	for _, p := range ps {
+		txid = append(txid, p.Hash.String())
+		index = append(index, p.Index)
+	}
 
+	const q = `
+		SELECT txid, index, asset_id, amount, script, metadata
+		FROM utxos
+		WHERE (txid, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+	`
+	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(txid), pg.Uint32s(index))
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	defer rows.Close()
+	outs := make(map[bc.Outpoint]*state.Output)
+	for rows.Next() {
 		// If the utxo row exists, it is considered unspent. This function does
 		// not (and should not) consider spending activity in the tx pool, which
 		// is handled by poolView.
-		Spent: false,
+		o := new(state.Output)
+		err := rows.Scan(
+			&o.Outpoint.Hash,
+			&o.Outpoint.Index,
+			&o.AssetID,
+			&o.Value,
+			&o.Script,
+			&o.Metadata,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		outs[o.Outpoint] = o
 	}
-	err := pg.FromContext(ctx).QueryRow(q, p.Hash.String(), p.Index).Scan(
-		&o.AssetID,
-		&o.Value,
-		&o.Script,
-		&o.Metadata,
-	)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	} else if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	return o, nil
+	return outs, nil
 }
 
 // LoadUTXOs loads all unspent outputs in the blockchain

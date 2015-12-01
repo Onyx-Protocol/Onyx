@@ -6,6 +6,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/database/pg"
+	"chain/database/pg/pgtest"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
 )
@@ -72,20 +74,42 @@ func TestView(t *testing.T) {
 		for i, ex := range examples {
 			t.Log("Example", i)
 
-			var verr error
-			v := NewView(&verr)
+			v, err := NewView(ctx, []bc.Outpoint{ex.op})
+			if err != nil {
+				t.Fatal("unexpected error:", err)
+			}
 
 			got := v.Output(ctx, ex.op)
-
-			if verr != nil {
-				t.Fatal("unexpected error:", verr)
-			}
 
 			if !reflect.DeepEqual(got, ex.want) {
 				t.Errorf("output:\ngot:  %v\nwant: %v", got, ex.want)
 			}
 		}
 	})
+}
+
+func TestViewForPrevoutsIgnoreIssuance(t *testing.T) {
+	dbtx := pgtest.TxWithSQL(t)
+	defer dbtx.Rollback()
+	ctx := pg.NewContext(context.Background(), dbtx)
+
+	txs := []*bc.Tx{{
+		Inputs: []*bc.TxInput{{
+			Previous: bc.Outpoint{
+				Index: 0xffffffff,
+			},
+		}},
+	}}
+
+	v, err := NewViewForPrevouts(ctx, txs)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	got := len(v.(*bcView).outs)
+	if got != 0 {
+		t.Errorf("len(outs) = %d want 0", got)
+	}
 }
 
 func TestPoolView(t *testing.T) {

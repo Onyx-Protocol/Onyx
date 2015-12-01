@@ -61,7 +61,10 @@ func GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, error) {
 	}
 
 	poolView := NewMemView()
-	bcView := txdb.NewView(&err)
+	bcView, err := txdb.NewViewForPrevouts(ctx, txs)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
 	for _, tx := range txs {
 		vview := NewMemView()
 		view := state.Compose(vview, poolView, bcView)
@@ -71,9 +74,6 @@ func GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, error) {
 				poolView.Outs[op] = out
 			}
 		}
-	}
-	if err != nil {
-		return nil, errors.Wrap(err)
 	}
 	log.Messagef(ctx, "generated block with %d txs", len(block.Transactions))
 	return block, nil
@@ -185,7 +185,10 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 	}
 
 	blockHash := block.Hash()
-	bcView := txdb.NewView(&err)
+	bcView, err := txdb.NewViewForPrevouts(ctx, txs)
+	if err != nil {
+		return nil, errors.Wrap(err, "blockchain view")
+	}
 	for _, tx := range txs {
 		vview := NewMemView()
 		view := state.Compose(vview, poolView, bcView)
@@ -208,9 +211,6 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 				conflictTxs = append(conflictTxs, tx)
 			}
 		}
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "blockchain view")
 	}
 
 	// Delete pool_txs
@@ -257,8 +257,13 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 }
 
 func getRestoreableOutputs(ctx context.Context, txs []*bc.Tx) (outs []*txdb.Output, err error) {
+	bcView, err := txdb.NewViewForPrevouts(ctx, txs)
+	if err != nil {
+		return nil, errors.Wrap(err, "load prev outs from conflicting txs")
+	}
+
 	// undo conflicting txs in reserver
-	view := state.MultiReader(txdb.NewPoolView(&err), txdb.NewView(&err))
+	view := state.MultiReader(txdb.NewPoolView(&err), bcView)
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
 			if in.IsIssuance() {
@@ -440,13 +445,14 @@ func loadAccountInfo(ctx context.Context, outs []*txdb.Output) error {
 // validateBlock performs validation on an incoming block, in advance of
 // applying the block to the txdb.
 func validateBlock(ctx context.Context, block *bc.Block) (outs []*txdb.Output, adps map[bc.AssetID]*bc.AssetDefinitionPointer, err error) {
-	mv := NewMemView()
-	view := state.Compose(mv, txdb.NewView(&err))
-	verr := validation.ValidateBlock(ctx, view, block)
+	bcView, err := txdb.NewViewForPrevouts(ctx, block.Transactions)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "txdb")
-	} else if verr != nil {
-		return nil, nil, errors.Wrapf(ErrBadBlock, "validate block: %v", verr)
+	}
+	mv := NewMemView()
+	err = validation.ValidateBlock(ctx, state.Compose(mv, bcView), block)
+	if err != nil {
+		return nil, nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
 	}
 
 	for _, out := range mv.Outs {
