@@ -1,6 +1,8 @@
 package txdb
 
 import (
+	"database/sql"
+
 	"golang.org/x/net/context"
 
 	"chain/crypto/hash256"
@@ -8,6 +10,27 @@ import (
 	"chain/errors"
 	"chain/fedchain/bc"
 )
+
+func AssetDefinition(ctx context.Context, assetID string) (string, []byte, error) {
+	const q = `
+		SELECT hash, definition
+		FROM asset_definition_pointers adp
+		JOIN asset_definitions ON asset_definition_hash=hash
+		WHERE asset_id=$1
+	`
+	var (
+		hash     string
+		defBytes []byte
+	)
+	err := pg.FromContext(ctx).QueryRow(q, assetID).Scan(&hash, &defBytes)
+	if err == sql.ErrNoRows {
+		err = pg.ErrUserInputNotFound
+	}
+	if err != nil {
+		return "", nil, errors.WithDetailf(err, "asset=%s", assetID)
+	}
+	return hash, defBytes, nil
+}
 
 func DefinitionHashByAssetID(ctx context.Context, assetID string) (string, error) {
 	const q = `

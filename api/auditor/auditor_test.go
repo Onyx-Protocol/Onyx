@@ -313,19 +313,30 @@ func TestGetTxTransfer(t *testing.T) {
 
 func TestGetAsset(t *testing.T) {
 	const fix = `
+		INSERT INTO projects (id, name) VALUES('proj-1', 'foo');
+		INSERT INTO issuer_nodes (id, project_id, label, keyset)
+			VALUES ('inode-1', 'proj-1', 'bar', '{}');
+		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label, issuance_script,
+				issued_pool, issued_confirmed)
+			VALUES ('asset-1', 'inode-1', 0, '', 'baz', '', 5, 6);
 		INSERT INTO asset_definition_pointers (asset_id, asset_definition_hash)
-		VALUES ('a1', 'h1');
+			VALUES ('asset-1', 'hash-1');
 		INSERT INTO asset_definitions (hash, definition)
-		VALUES ('h1', '{"a":"b"}'::bytea);
+			VALUES ('hash-1', '{"a":"b"}'::bytea);
 	`
 	withContext(t, fix, func(ctx context.Context) {
-		got, err := GetAsset(ctx, "a1")
+		got, err := GetAsset(ctx, "asset-1")
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
-		want := &Asset{"a1", "h1", map[string]interface{}{"a": "b"}}
+		want := &Asset{
+			ID:            "asset-1",
+			DefinitionPtr: "hash-1",
+			Definition:    map[string]interface{}{"a": "b"},
+			Circulation:   appdb.AssetCirculation{Total: 11, Confirmed: 6},
+		}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, want)
 		}

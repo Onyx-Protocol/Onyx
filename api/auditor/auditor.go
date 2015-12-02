@@ -2,6 +2,7 @@ package auditor
 
 import (
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"golang.org/x/net/context"
 
+	"chain/api/appdb"
 	"chain/api/txdb"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
@@ -194,35 +196,29 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 type Asset struct {
 	ID            string                 `json:"id"`
 	DefinitionPtr string                 `json:"definition_pointer"`
-	Definition    map[string]interface{} `json:"definition"`
+	Definition    interface{}            `json:"definition"`
+	Circulation   appdb.AssetCirculation `json:"circulation"`
 }
 
 // GetAsset returns the most recent asset definition stored in
 // the blockchain, for the given asset.
 func GetAsset(ctx context.Context, assetID string) (*Asset, error) {
-	const q = `
-		SELECT hash, definition
-		FROM asset_definition_pointers adp
-		JOIN asset_definitions ON asset_definition_hash=hash
-		WHERE asset_id=$1
-	`
-	var (
-		hash     string
-		defBytes []byte
-	)
-	err := pg.FromContext(ctx).QueryRow(q, assetID).Scan(&hash, &defBytes)
-	if err == sql.ErrNoRows {
-		err = pg.ErrUserInputNotFound
-	}
+	hash, defBytes, err := txdb.AssetDefinition(ctx, assetID)
 	if err != nil {
-		return nil, errors.WithDetailf(err, "asset=%s", assetID)
+		return nil, errors.Wrap(err, "loading definition")
 	}
 
-	var definition map[string]interface{}
+	var definition interface{}
 	err = json.Unmarshal(defBytes, &definition)
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid asset definition stored in db")
+		definition = hex.EncodeToString(defBytes)
 	}
 
-	return &Asset{assetID, hash, definition}, nil
+	// TODO(erykwalder): replace with a txdb call
+	asset, err := appdb.GetAsset(ctx, assetID)
+	if err != nil {
+		return nil, errors.Wrap(err, "loading circulation")
+	}
+
+	return &Asset{assetID, hash, definition, asset.Circulation}, nil
 }
