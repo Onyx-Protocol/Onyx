@@ -1,7 +1,6 @@
 package txdb
 
 import (
-	"database/sql"
 	"time"
 
 	"golang.org/x/net/context"
@@ -14,47 +13,77 @@ import (
 	"chain/metrics"
 )
 
-// loadPoolOutput returns the output named by p, if any.
-// If the output is not found, it returns nil (no error).
-func loadPoolOutput(ctx context.Context, p bc.Outpoint) (*state.Output, error) {
-	hash := p.Hash.String()
-	const spentQ = `
-		SELECT count(*) FROM pool_inputs
-		WHERE tx_hash=$1 AND index=$2
-	`
-	var n int
-	err := pg.FromContext(ctx).QueryRow(spentQ, hash, p.Index).Scan(&n)
-	if err != nil {
-		return nil, errors.Wrap(err, "input count query")
-	}
-	if n > 0 {
-		o := &state.Output{
-			Outpoint: p,
-			Spent:    true,
-		}
-		return o, nil
+// loadPoolOutputs returns the outputs in 'load' that can be found.
+// Entries from table pool_inputs that are spending blockchain
+// outputs (rather than pool outputs) will have a zero value bc.Output field.
+// If some are not found, they will be absent from the map
+// (not an error).
+func loadPoolOutputs(ctx context.Context, load []bc.Outpoint) (map[bc.Outpoint]*state.Output, error) {
+	var (
+		txid  []string
+		index []uint32
+	)
+	for _, p := range load {
+		txid = append(txid, p.Hash.String())
+		index = append(index, p.Index)
 	}
 
 	const loadQ = `
-		SELECT asset_id, amount, script, metadata
+		SELECT tx_hash, index, asset_id, amount, script, metadata
 		FROM pool_outputs
-		WHERE tx_hash=$1 AND index=$2
+		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	o := &state.Output{
-		Outpoint: p,
-	}
-	err = pg.FromContext(ctx).QueryRow(loadQ, p.Hash.String(), p.Index).Scan(
-		&o.AssetID,
-		&o.Value,
-		&o.Script,
-		&o.Metadata,
-	)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	} else if err != nil {
+	rows, err := pg.FromContext(ctx).Query(loadQ, pg.Strings(txid), pg.Uint32s(index))
+	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	return o, nil
+	defer rows.Close()
+	outs := make(map[bc.Outpoint]*state.Output)
+	for rows.Next() {
+		o := new(state.Output)
+		err := rows.Scan(
+			&o.Outpoint.Hash,
+			&o.Outpoint.Index,
+			&o.AssetID,
+			&o.Value,
+			&o.Script,
+			&o.Metadata,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		outs[o.Outpoint] = o
+	}
+	if rows.Err() != nil {
+		return nil, errors.Wrap(rows.Err())
+	}
+
+	const spentQ = `
+		SELECT tx_hash, index FROM pool_inputs
+		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+	`
+	rows, err = pg.FromContext(ctx).Query(spentQ, pg.Strings(txid), pg.Uint32s(index))
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p bc.Outpoint
+		err := rows.Scan(&p.Hash, &p.Index)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		if o := outs[p]; o != nil {
+			o.Spent = true
+		} else {
+			outs[p] = &state.Output{Outpoint: p, Spent: true}
+		}
+	}
+	if rows.Err() != nil {
+		return nil, errors.Wrap(rows.Err())
+	}
+
+	return outs, nil
 }
 
 // LoadPoolUTXOs loads all unspent outputs in the tx pool

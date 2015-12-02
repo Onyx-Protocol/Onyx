@@ -257,13 +257,18 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 }
 
 func getRestoreableOutputs(ctx context.Context, txs []*bc.Tx) (outs []*txdb.Output, err error) {
+	poolView, err := txdb.NewPoolViewForPrevouts(ctx, txs)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
 	bcView, err := txdb.NewViewForPrevouts(ctx, txs)
 	if err != nil {
 		return nil, errors.Wrap(err, "load prev outs from conflicting txs")
 	}
 
 	// undo conflicting txs in reserver
-	view := state.MultiReader(txdb.NewPoolView(&err), bcView)
+	view := state.MultiReader(poolView, bcView)
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
 			if in.IsIssuance() {
@@ -286,9 +291,6 @@ func getRestoreableOutputs(ctx context.Context, txs []*bc.Tx) (outs []*txdb.Outp
 				},
 			})
 		}
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "load prev outs from conflicting txs")
 	}
 
 	err = loadAccountInfo(ctx, outs)

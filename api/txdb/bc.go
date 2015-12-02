@@ -100,5 +100,8 @@ func LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, 
 		u.ResvExpires = u.ResvExpires.UTC()
 		utxos = append(utxos, u)
 	}
+	if rows.Err() != nil {
+		return nil, errors.Wrap(rows.Err())
+	}
 	return utxos, errors.Wrap(rows.Err(), "rows")
 }

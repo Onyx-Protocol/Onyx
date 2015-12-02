@@ -106,7 +106,7 @@ func TestViewForPrevoutsIgnoreIssuance(t *testing.T) {
 		t.Fatal("unexpected error:", err)
 	}
 
-	got := len(v.(*bcView).outs)
+	got := len(v.(*view).outs)
 	if got != 0 {
 		t.Errorf("len(outs) = %d want 0", got)
 	}
@@ -131,7 +131,8 @@ func TestPoolView(t *testing.T) {
 		INSERT INTO pool_inputs
 			(tx_hash, index)
 		VALUES
-			('3000000000000000000000000000000000000000000000000000000000000000', 3);
+			('3000000000000000000000000000000000000000000000000000000000000000', 3),
+			('4000000000000000000000000000000000000000000000000000000000000000', 4);
 	`
 
 	examples := []struct {
@@ -180,7 +181,12 @@ func TestPoolView(t *testing.T) {
 				Index: 3,
 			},
 			want: &state.Output{
-				TxOutput: bc.TxOutput{},
+				TxOutput: bc.TxOutput{
+					AssetID:  bc.AssetID(mustParseHash("A55E730000000000000000000000000000000000000000000000000000000000")),
+					Value:    3,
+					Script:   []byte("script-3"),
+					Metadata: []byte("metadata-3"),
+				},
 				Outpoint: bc.Outpoint{
 					Hash:  mustParseHash("3000000000000000000000000000000000000000000000000000000000000000"),
 					Index: 3,
@@ -193,6 +199,19 @@ func TestPoolView(t *testing.T) {
 				Hash:  mustParseHash("4000000000000000000000000000000000000000000000000000000000000000"),
 				Index: 4,
 			},
+			want: &state.Output{
+				Outpoint: bc.Outpoint{
+					Hash:  mustParseHash("4000000000000000000000000000000000000000000000000000000000000000"),
+					Index: 4,
+				},
+				Spent: true,
+			},
+		},
+		{
+			op: bc.Outpoint{
+				Hash:  mustParseHash("5000000000000000000000000000000000000000000000000000000000000000"),
+				Index: 5,
+			},
 			want: nil,
 		},
 	}
@@ -201,15 +220,12 @@ func TestPoolView(t *testing.T) {
 		for i, ex := range examples {
 			t.Log("Example", i)
 
-			var verr error
-			v := NewPoolView(&verr)
-
-			got := v.Output(ctx, ex.op)
-
-			if verr != nil {
-				t.Fatal("unexpected error:", verr)
+			v, err := NewPoolView(ctx, []bc.Outpoint{ex.op})
+			if err != nil {
+				t.Fatal("unexpected error:", err)
 			}
 
+			got := v.Output(ctx, ex.op)
 			if !reflect.DeepEqual(got, ex.want) {
 				t.Errorf("output:\ngot:  %v\nwant: %v", got, ex.want)
 			}

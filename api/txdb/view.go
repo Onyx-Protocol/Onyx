@@ -7,43 +7,40 @@ import (
 	"chain/fedchain/state"
 )
 
-type poolView struct {
-	err *error
+type view struct {
+	outs map[bc.Outpoint]*state.Output
+}
+
+// NewPoolViewForPrevouts returns a new state view on the pool
+// of unconfirmed transactions.
+// It loads the prevouts for transactions in txs;
+// all other outputs will be omitted from the view.
+func NewPoolViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
+	var p []bc.Outpoint
+	for _, tx := range txs {
+		for _, in := range tx.Inputs {
+			if in.IsIssuance() {
+				continue
+			}
+			p = append(p, in.Previous)
+		}
+	}
+	return NewPoolView(ctx, p)
 }
 
 // NewPoolView returns a new state view on the pool
 // of unconfirmed transactions.
-// Errors reading and writing outputs
-// will be stored in err.
-// Any non-nil error value in err will be preserved.
-func NewPoolView(err *error) state.ViewReader {
-	// TODO(kr): preload several outputs in a batch
-	return &poolView{err}
-}
-
-func (v *poolView) Output(ctx context.Context, p bc.Outpoint) *state.Output {
-	if *v.err != nil {
-		return nil
-	}
-	o, err := loadPoolOutput(ctx, p)
+// It loads the outpoints identified in p;
+// all other outputs will be omitted from the view.
+func NewPoolView(ctx context.Context, p []bc.Outpoint) (state.ViewReader, error) {
+	outs, err := loadPoolOutputs(ctx, p)
 	if err != nil {
-		*v.err = err
-		return nil
+		return nil, err
 	}
-	return o
+	return &view{outs}, nil
 }
 
-// poolView.AssetDefinitionPointer returns nil because ADPs are encompassed by transactions
-// when they're in pools.
-func (v *poolView) AssetDefinitionPointer(assetID bc.AssetID) *bc.AssetDefinitionPointer {
-	return nil
-}
-
-type bcView struct {
-	outs map[bc.Outpoint]*state.Output
-}
-
-// NewView returns a new state view on the blockchain.
+// NewViewForPrevouts returns a new state view on the blockchain.
 // It loads the prevouts for transactions in txs;
 // all other outputs will be omitted from the view.
 func NewViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
@@ -67,13 +64,13 @@ func NewView(ctx context.Context, p []bc.Outpoint) (state.ViewReader, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &bcView{outs}, nil
+	return &view{outs}, nil
 }
 
-func (v *bcView) Output(ctx context.Context, p bc.Outpoint) *state.Output {
+func (v *view) Output(ctx context.Context, p bc.Outpoint) *state.Output {
 	return v.outs[p]
 }
 
-func (v *bcView) AssetDefinitionPointer(assetID bc.AssetID) *bc.AssetDefinitionPointer {
+func (v *view) AssetDefinitionPointer(assetID bc.AssetID) *bc.AssetDefinitionPointer {
 	panic("unimplemented")
 }
