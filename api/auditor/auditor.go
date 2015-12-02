@@ -138,7 +138,7 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 		}
 
 		var assetDef map[string]interface{}
-		json.Unmarshal(tx.Inputs[0].Metadata, &assetDef) // fine if it doesn't work
+		json.Unmarshal(tx.Inputs[0].AssetDefinition, &assetDef) // fine if it doesn't work
 
 		resp.Inputs = append(resp.Inputs, &TxInput{
 			Type:     "issuance",

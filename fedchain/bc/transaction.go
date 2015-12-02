@@ -35,6 +35,7 @@ type TxInput struct {
 	Previous        Outpoint
 	SignatureScript []byte
 	Metadata        []byte
+	AssetDefinition []byte
 
 	// Optional attributes for convenience during validation.
 	// These are not serialized or hashed.
@@ -76,6 +77,7 @@ func (tx *Tx) Copy() *Tx {
 		*newIn = *oldIn
 		newIn.SignatureScript = copyBytes(oldIn.SignatureScript)
 		newIn.Metadata = copyBytes(oldIn.Metadata)
+		newIn.AssetDefinition = copyBytes(oldIn.AssetDefinition)
 		newTx.Inputs = append(newTx.Inputs, newIn)
 	}
 
@@ -164,6 +166,7 @@ func (ti *TxInput) readFrom(r *errors.Reader) {
 	ti.Previous.readFrom(r)
 	readBytes(r, (*[]byte)(&ti.SignatureScript))
 	readBytes(r, &ti.Metadata)
+	readBytes(r, &ti.AssetDefinition)
 }
 
 func (to *TxOutput) readFrom(r *errors.Reader) {
@@ -241,9 +244,12 @@ func (ti *TxInput) writeTo(w *errors.Writer, forHashing bool) {
 		w.Write(h[:])
 		h = hash256.Sum(ti.Metadata)
 		w.Write(h[:])
+		h = hash256.Sum(ti.AssetDefinition)
+		w.Write(h[:])
 	} else {
 		writeBytes(w, ti.SignatureScript)
 		writeBytes(w, ti.Metadata)
+		writeBytes(w, ti.AssetDefinition)
 	}
 }
 

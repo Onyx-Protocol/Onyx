@@ -102,7 +102,7 @@ func InsertAssetDefinitions(ctx context.Context, block *bc.Block) error {
 	for _, tx := range block.Transactions {
 		for _, in := range tx.Inputs {
 			if in.IsIssuance() {
-				defs[hash256.Sum(in.Metadata)] = in.Metadata
+				defs[hash256.Sum(in.AssetDefinition)] = in.AssetDefinition
 			}
 		}
 	}

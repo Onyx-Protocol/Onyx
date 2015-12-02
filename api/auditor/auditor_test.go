@@ -175,8 +175,9 @@ func TestGetBlockSummary(t *testing.T) {
 func TestGetTxIssuance(t *testing.T) {
 	tx := &bc.Tx{
 		Inputs: []*bc.TxInput{{
-			Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
-			Metadata: []byte(`{"a":"b"}`),
+			Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
+			Metadata:        []byte(`{"a":"b"}`),
+			AssetDefinition: []byte(`{"c":"d"}`),
 		}},
 		Outputs: []*bc.TxOutput{{
 			AssetID:  bc.AssetID([32]byte{0}),
@@ -213,7 +214,7 @@ func TestGetTxIssuance(t *testing.T) {
 				AssetID:  bc.AssetID([32]byte{0}),
 				Amount:   11,
 				Metadata: []byte(`{"a":"b"}`),
-				AssetDef: map[string]interface{}{"a": "b"},
+				AssetDef: map[string]interface{}{"c": "d"},
 			}},
 			Outputs: []*TxOutput{{
 				AssetID:  bc.AssetID([32]byte{0}),

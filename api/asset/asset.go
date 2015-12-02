@@ -55,7 +55,7 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 
 		newDefHash := bc.Hash(hash256.Sum(asset.Definition)).String()
 		if defHash != newDefHash {
-			in.Metadata = asset.Definition
+			in.AssetDefinition = asset.Definition
 		}
 	}
 
