@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# Define the following envvars:
+# TARGET
+# SRC_DB_URL
+# DST_DB_URL
+
+set -e
+
+DUMP_FILE="/tmp/dbdump-"$$".sql"
+API_HOST=`go run cmd/stack/main.go $TARGET addr0`
+
+echo "Stopping API server..."
+ssh ubuntu@$API_HOST 'sudo stop chain'
+
+echo "Dumping from source database..."
+pg_dump -Ox $SRC_DB_URL > $DUMP_FILE
+
+echo "Applying dump to destination database..."
+psql $DST_DB_URL < $DUMP_FILE
+
+echo "Backing up API server envvars..."
+ssh ubuntu@$API_HOST "mv chain/.env chain/.env.bak"
+
+echo "Updating API server envvars..."
+ssh ubuntu@$API_HOST "cat chain/.env.bak | sed 's#.*DB_URL.*#export DB_URL=$DST_DB_URL#' > chain/.env2"
+# Run as separate command so .env isn't clobbered in the event of sed errors:
+ssh ubuntu@$API_HOST "mv chain/.env2 chain/.env"
+
+echo "Starting API server..."
+ssh ubuntu@$API_HOST 'sudo start chain'
+
+echo "Applying change to envvar template..."
+go run cmd/appenv/main.go -t $TARGET DB_URL="$DST_DB_URL"
+
+echo "Removing dump file..."
+rm $DUMP_FILE
+
+echo "Done."
