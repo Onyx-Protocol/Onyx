@@ -82,6 +82,7 @@ func GetBlockSummary(ctx context.Context, hash string) (*BlockSummary, error) {
 // Tx is returned by GetTx
 type Tx struct {
 	ID       bc.Hash            `json:"id"`
+	BlockID  *bc.Hash           `json:"block_id"`
 	Inputs   []*TxInput         `json:"inputs"`
 	Outputs  []*TxOutput        `json:"outputs"`
 	Metadata chainjson.HexBytes `json:"metadata,omitempty"`
@@ -114,8 +115,14 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 	}
 	tx := txs[txID]
 
+	blockHash, err := txdb.GetTxBlock(ctx, txID)
+	if err != nil {
+		return nil, err
+	}
+
 	resp := &Tx{
 		ID:       tx.Hash(),
+		BlockID:  blockHash,
 		Metadata: tx.Metadata,
 	}
 

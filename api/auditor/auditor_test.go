@@ -12,6 +12,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	"chain/api/txdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -191,9 +192,9 @@ func TestGetTxIssuance(t *testing.T) {
 	}
 
 	withContext(t, "", func(ctx context.Context) {
-		const q = `INSERT INTO txs(tx_hash, data) VALUES($1, $2)`
-		_, err := pg.FromContext(ctx).Exec(q, tx.Hash(), tx)
+		err := txdb.InsertTx(ctx, tx)
 		if err != nil {
+			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
@@ -205,6 +206,7 @@ func TestGetTxIssuance(t *testing.T) {
 
 		want := &Tx{
 			ID:       tx.Hash(),
+			BlockID:  nil,
 			Metadata: []byte{0},
 			Inputs: []*TxInput{{
 				Type:     "issuance",
@@ -259,13 +261,13 @@ func TestGetTxTransfer(t *testing.T) {
 			Script:  mustDecodeHex("a91430819f1955f747220bb247df8a989e36a432733487"), // 367Ve1Xkgwwiu9rmm9bJEnB91ZFnn79M1P
 		}},
 	}
+	blk := &bc.Block{Transactions: append(prevTxs, tx)}
 	withContext(t, "", func(ctx context.Context) {
 		const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2)`
-		for _, tx := range append(prevTxs, tx) {
-			_, err := pg.FromContext(ctx).Exec(q, tx.Hash(), tx)
-			if err != nil {
-				t.Fatal(err)
-			}
+		err := txdb.InsertBlock(ctx, blk)
+		if err != nil {
+			t.Log(errors.Stack(err))
+			t.Fatal(err)
 		}
 
 		got, err := GetTx(ctx, tx.Hash().String())
@@ -274,8 +276,11 @@ func TestGetTxTransfer(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		var blkHash = blk.Hash()
+
 		want := &Tx{
-			ID: tx.Hash(),
+			ID:      tx.Hash(),
+			BlockID: &blkHash,
 			Inputs: []*TxInput{{
 				Type:    "transfer",
 				AssetID: bc.AssetID([32]byte{1}),
