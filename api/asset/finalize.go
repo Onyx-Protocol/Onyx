@@ -89,7 +89,7 @@ func publishTx(ctx context.Context, msg *bc.Tx, receivers []*utxodb.Receiver) (e
 
 	outIsChange := make(map[int]bool)
 	for i, r := range receivers {
-		if r.IsChange {
+		if r != nil && r.IsChange {
 			outIsChange[i] = true
 		}
 	}

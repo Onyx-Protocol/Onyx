@@ -65,11 +65,11 @@ var testAddrs = []struct {
 	addr   string
 	script string
 }{
-	{"3M1zHhUvi8vfmTgdB2QdtqLBwAZWZR2h7F", "a914d400ed9954c6a1f19e9e224d751ab5bc38c56a1487"},
-	{"3P8h3P1gCfbUQD13YEKcH3kMHfctcpUo4B", "a914eb35b1c812f943883b46ac48580a93012b5aa1aa87"},
-	{"3FgNFea8fmCSXWfrcCJps5j3FeZ8f2BNde", "a914997250aca70e0d3b9007489ae28dc6760a7a7d7487"},
 	{"33JaS6naDzZM45imNgNTX93374rL4cn4Na", "a91411b1d274c20532f6b5611d90fa6d854e88fe911687"},
 	{"3EufaWajf5FYtpmpgVCgJEoceFWogyjGih", "a91490fe0f28833af4c9d9194eaa0b5b3aae787a177287"},
+	{"3FgNFea8fmCSXWfrcCJps5j3FeZ8f2BNde", "a914997250aca70e0d3b9007489ae28dc6760a7a7d7487"},
+	{"3M1zHhUvi8vfmTgdB2QdtqLBwAZWZR2h7F", "a914d400ed9954c6a1f19e9e224d751ab5bc38c56a1487"},
+	{"3P8h3P1gCfbUQD13YEKcH3kMHfctcpUo4B", "a914eb35b1c812f943883b46ac48580a93012b5aa1aa87"},
 }
 
 func TestManagerNodeActivity(t *testing.T) {
@@ -340,14 +340,14 @@ func TestWriteActivity(t *testing.T) {
 	issuanceTx := &bc.Tx{
 		// Issuances have a single prevout with an empty tx hash.
 		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Index: bc.InvalidOutputIndex}}},
-		Outputs: []*bc.TxOutput{{}, {}},
+		Outputs: []*bc.TxOutput{{}, {}, {}},
 	}
 
 	transferTx := &bc.Tx{
 		Inputs: []*bc.TxInput{{
 			Previous: bc.Outpoint{Hash: mustHashFromStr("4786c29077265138e00a8fce822c5fb998c0ce99df53d939bb53d81bca5aa426"), Index: 0},
 		}},
-		Outputs: []*bc.TxOutput{{}, {}},
+		Outputs: []*bc.TxOutput{{}, {}, {}},
 	}
 
 	examples := []struct {
@@ -379,6 +379,10 @@ func TestWriteActivity(t *testing.T) {
 					'` + issuanceTx.Hash().String() + `', 1,
 					'asset-id-0', 2,  decode('` + testAddrs[1].script + `', 'hex'),
 					0, 'account-id-2', 'manager-node-id-1'
+				), (
+					'` + issuanceTx.Hash().String() + `', 2,
+					'asset-id-0', 3,  decode('` + testAddrs[2].script + `', 'hex'),
+					0, '', ''
 				);
 			`,
 			outIsChange: make(map[int]bool),
@@ -391,6 +395,7 @@ func TestWriteActivity(t *testing.T) {
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, AccountID: "account-id-0", AccountLabel: "account-0"},
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, Address: testAddrs[1].addr},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: testAddrs[2].addr},
 					},
 				},
 				"manager-node-id-1": actItem{
@@ -400,6 +405,7 @@ func TestWriteActivity(t *testing.T) {
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, AccountID: "account-id-2", AccountLabel: "account-2"},
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, Address: testAddrs[0].addr},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: testAddrs[2].addr},
 					},
 				},
 			},
@@ -412,6 +418,7 @@ func TestWriteActivity(t *testing.T) {
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, AccountID: "account-id-0", AccountLabel: "account-0"},
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, AccountID: "account-id-2", AccountLabel: "account-2"},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: testAddrs[2].addr},
 					},
 				},
 			},
@@ -428,7 +435,7 @@ func TestWriteActivity(t *testing.T) {
 					addr_index, account_id, manager_node_id
 				) VALUES (
 					'4786c29077265138e00a8fce822c5fb998c0ce99df53d939bb53d81bca5aa426', 0,
-					'asset-id-0', 3, decode('` + testAddrs[0].script + `', 'hex'),
+					'asset-id-0', 6, decode('` + testAddrs[0].script + `', 'hex'),
 					0, 'account-id-0', 'manager-node-id-0'
 				);
 
@@ -447,6 +454,10 @@ func TestWriteActivity(t *testing.T) {
 					'` + transferTx.Hash().String() + `', 1,
 					'asset-id-0', 2, decode('` + testAddrs[2].script + `', 'hex'),
 					0, 'account-id-0', 'manager-node-id-0'
+				), (
+					'` + transferTx.Hash().String() + `', 2,
+					'asset-id-0', 3, decode('` + testAddrs[3].script + `', 'hex'),
+					0, '', ''
 				);
 			`,
 			outIsChange: map[int]bool{1: true},
@@ -456,21 +467,23 @@ func TestWriteActivity(t *testing.T) {
 					TxHash: transferTx.Hash().String(),
 					Time:   txTime,
 					Inputs: []actEntry{
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, AccountID: "account-id-0", AccountLabel: "account-0"},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 4, AccountID: "account-id-0", AccountLabel: "account-0"},
 					},
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, Address: testAddrs[1].addr},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: testAddrs[3].addr},
 					},
 				},
 				"manager-node-id-1": actItem{
 					TxHash: transferTx.Hash().String(),
 					Time:   txTime,
 					Inputs: []actEntry{
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: testAddrs[0].addr},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 6, Address: testAddrs[0].addr},
 					},
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, AccountID: "account-id-2", AccountLabel: "account-2"},
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, Address: testAddrs[2].addr},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: testAddrs[3].addr},
 					},
 				},
 			},
@@ -769,6 +782,7 @@ func TestMarkChangeOuts(t *testing.T) {
 
 func TestGetIDsFromUTXOs(t *testing.T) {
 	utxos := []*actUTXO{
+		{assetID: "asset-id-3"},
 		{accountID: "account-id-2", assetID: "asset-id-2", managerNodeID: "manager-node-id-1"},
 		{accountID: "account-id-1", assetID: "asset-id-2", managerNodeID: "manager-node-id-1"},
 		{accountID: "account-id-0", assetID: "asset-id-2", managerNodeID: "manager-node-id-0"},
@@ -779,7 +793,7 @@ func TestGetIDsFromUTXOs(t *testing.T) {
 
 	gAssetIDs, gAccountIDs, gManagerNodeIDs, gManagerNodeAccounts := getIDsFromUTXOs(utxos)
 
-	wAssetIDs := []string{"asset-id-0", "asset-id-1", "asset-id-2"}
+	wAssetIDs := []string{"asset-id-0", "asset-id-1", "asset-id-2", "asset-id-3"}
 	wAccountIDs := []string{"account-id-0", "account-id-1", "account-id-2"}
 	wManagerNodeIDs := []string{"manager-node-id-0", "manager-node-id-1"}
 	wManagerNodeAccounts := map[string][]string{

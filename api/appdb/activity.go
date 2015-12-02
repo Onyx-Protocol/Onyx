@@ -451,9 +451,13 @@ func getIDsFromUTXOs(utxos []*actUTXO) (
 	for _, u := range utxos {
 		if u != nil {
 			assetIDs = append(assetIDs, u.assetID)
-			accountIDs = append(accountIDs, u.accountID)
-			managerNodeIDs = append(managerNodeIDs, u.managerNodeID)
-			managerNodeAccounts[u.managerNodeID] = append(managerNodeAccounts[u.managerNodeID], u.accountID)
+
+			// outputs with pure address receivers will not have account IDs or manager node IDs.
+			if u.accountID != "" {
+				accountIDs = append(accountIDs, u.accountID)
+				managerNodeIDs = append(managerNodeIDs, u.managerNodeID)
+				managerNodeAccounts[u.managerNodeID] = append(managerNodeAccounts[u.managerNodeID], u.accountID)
+			}
 		}
 	}
 
