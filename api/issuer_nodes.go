@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"time"
 
 	"golang.org/x/net/context"
@@ -8,14 +9,55 @@ import (
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/database/pg"
+	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/httpjson"
 )
 
 // POST /v3/projects/:projID/issuer-nodes
-func createIssuerNode(ctx context.Context, projID string, req *asset.CreateNodeReq) (interface{}, error) {
+func createIssuerNode(ctx context.Context, projID string, req map[string]interface{}) (interface{}, error) {
 	if err := projectAuthz(ctx, projID); err != nil {
 		return nil, err
+	}
+
+	_, ok1 := req["generate_key"]
+	_, ok2 := req["xpubs"]
+	isDeprecated := ok1 || ok2
+
+	bReq, err := json.Marshal(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "trouble marshaling request")
+	}
+
+	var (
+		issuerNode interface{}
+		cnReq      asset.CreateNodeReq
+	)
+
+	if isDeprecated {
+		var depReq asset.DeprecatedCreateNodeReq
+		err = json.Unmarshal(bReq, &depReq)
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid node creation request")
+		}
+
+		for _, xp := range depReq.XPubs {
+			key := &asset.XPubInit{Key: xp}
+			cnReq.Keys = append(cnReq.Keys, key)
+		}
+
+		if depReq.GenerateKey {
+			key := &asset.XPubInit{Generate: true}
+			cnReq.Keys = append(cnReq.Keys, key)
+		}
+
+		cnReq.SigsRequired = 1
+		cnReq.Label = depReq.Label
+	} else {
+		err = json.Unmarshal(bReq, &cnReq)
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid node creation request")
+		}
 	}
 
 	dbtx, ctx, err := pg.Begin(ctx)
@@ -24,7 +66,7 @@ func createIssuerNode(ctx context.Context, projID string, req *asset.CreateNodeR
 	}
 	defer dbtx.Rollback()
 
-	issuerNode, err := asset.CreateNode(ctx, asset.IssuerNode, projID, req)
+	issuerNode, err = asset.CreateNode(ctx, asset.IssuerNode, projID, &cnReq)
 	if err != nil {
 		return nil, err
 	}

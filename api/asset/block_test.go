@@ -40,7 +40,7 @@ func TestTransferConfirmed(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hdkey.XKey{manPub}, []*hdkey.XKey{manPriv})
+		manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hdkey.XKey{manPub}, []*hdkey.XKey{manPriv}, 0, 1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -59,7 +59,7 @@ func TestTransferConfirmed(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		issuer, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv})
+		issuer, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv}, 1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -135,7 +135,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hdkey.XKey{manPub}, []*hdkey.XKey{manPriv})
+		manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hdkey.XKey{manPub}, []*hdkey.XKey{manPriv}, 0, 1)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -154,7 +154,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		issuer, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv})
+		issuer, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv}, 1)
 		if err != nil {
 			b.Fatal(err)
 		}

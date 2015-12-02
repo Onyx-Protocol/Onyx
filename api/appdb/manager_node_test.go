@@ -20,7 +20,7 @@ func TestInsertManagerNode(t *testing.T) {
 func TestGetManagerNode(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		proj := newTestProject(t, ctx, "foo", nil)
-		mn, err := InsertManagerNode(ctx, proj.ID, "manager-node-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv})
+		mn, err := InsertManagerNode(ctx, proj.ID, "manager-node-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 0, 1)
 		if err != nil {
 			t.Fatalf("unexpected error on InsertManagerNode: %v", err)
 		}

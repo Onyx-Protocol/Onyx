@@ -21,17 +21,23 @@ type ManagerNode struct {
 	PrivateKeys []*hdkey.XKey `json:"private_keys,omitempty"`
 }
 
+var ErrBadVarKeys = errors.New("Invalid number of variable keys (must be 0 or 1)")
+
 // InsertManagerNode inserts a new manager node into the database.
-func InsertManagerNode(ctx context.Context, projID, label string, keys, gennedKeys []*hdkey.XKey) (w *ManagerNode, err error) {
+func InsertManagerNode(ctx context.Context, projID, label string, keys, gennedKeys []*hdkey.XKey, variableKeys, sigsRequired int) (w *ManagerNode, err error) {
+	if variableKeys > 1 {
+		return nil, ErrBadVarKeys
+	}
+
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 	const q = `
-		INSERT INTO manager_nodes (label, project_id, generated_keys)
-		VALUES ($1, $2, $3)
+		INSERT INTO manager_nodes (label, project_id, generated_keys, variable_keys, sigs_required)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`
 	var id string
 	xprvs := keysToStrings(gennedKeys)
-	err = pg.FromContext(ctx).QueryRow(q, label, projID, pg.Strings(xprvs)).Scan(&id)
+	err = pg.FromContext(ctx).QueryRow(q, label, projID, pg.Strings(xprvs), variableKeys, sigsRequired).Scan(&id)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert manager node")
 	}
@@ -46,7 +52,7 @@ func InsertManagerNode(ctx context.Context, projID, label string, keys, gennedKe
 		Blockchain:  "sandbox",
 		Label:       label,
 		Keys:        keys,
-		SigsReqd:    1,
+		SigsReqd:    sigsRequired,
 		PrivateKeys: gennedKeys,
 	}, nil
 }

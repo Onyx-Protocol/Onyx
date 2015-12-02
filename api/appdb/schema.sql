@@ -414,7 +414,8 @@ CREATE TABLE manager_nodes (
     accounts_count bigint DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    generated_keys text[] DEFAULT '{}'::text[] NOT NULL
+    generated_keys text[] DEFAULT '{}'::text[] NOT NULL,
+    variable_keys integer
 );
 
 

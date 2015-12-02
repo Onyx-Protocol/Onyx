@@ -70,7 +70,7 @@ func TestListIssuerNodes(t *testing.T) {
 func TestGetIssuerNodes(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		proj := newTestProject(t, ctx, "foo", nil)
-		in, err := InsertIssuerNode(ctx, proj.ID, "in-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv})
+		in, err := InsertIssuerNode(ctx, proj.ID, "in-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 1)
 		if err != nil {
 			t.Fatalf("unexpected error on InsertIssuerNode: %v", err)
 		}

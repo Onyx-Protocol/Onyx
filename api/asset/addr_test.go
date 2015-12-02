@@ -24,7 +24,7 @@ func TestCreateAddress(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	managerNode, err := appdb.InsertManagerNode(ctx, "proj-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil)
+	managerNode, err := appdb.InsertManagerNode(ctx, "proj-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil, 0, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

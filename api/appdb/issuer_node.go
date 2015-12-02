@@ -24,12 +24,12 @@ type IssuerNode struct {
 }
 
 // InsertIssuerNode adds the issuer node to the database
-func InsertIssuerNode(ctx context.Context, projID, label string, keys, gennedKeys []*hdkey.XKey) (*IssuerNode, error) {
+func InsertIssuerNode(ctx context.Context, projID, label string, keys, gennedKeys []*hdkey.XKey, sigsRequired int) (*IssuerNode, error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 
 	const q = `
-		INSERT INTO issuer_nodes (label, project_id, keyset, generated_keys)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO issuer_nodes (label, project_id, keyset, generated_keys, sigs_required)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`
 	var id string
@@ -38,6 +38,7 @@ func InsertIssuerNode(ctx context.Context, projID, label string, keys, gennedKey
 		projID,
 		pg.Strings(keysToStrings(keys)),
 		pg.Strings(keysToStrings(gennedKeys)),
+		sigsRequired,
 	).Scan(&id)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert issuer node")
@@ -48,7 +49,7 @@ func InsertIssuerNode(ctx context.Context, projID, label string, keys, gennedKey
 		Blockchain:  "sandbox",
 		Label:       label,
 		Keys:        keys,
-		SigsReqd:    1,
+		SigsReqd:    sigsRequired,
 		PrivateKeys: gennedKeys,
 	}, nil
 }

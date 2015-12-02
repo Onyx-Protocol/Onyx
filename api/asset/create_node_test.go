@@ -18,7 +18,13 @@ func TestCreateManagerNode(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	node, err := CreateNode(ctx, ManagerNode, "proj-id-0", &CreateNodeReq{Label: "foo", GenerateKey: true})
+	req := &CreateNodeReq{
+		Label: "foo",
+		Keys: []*XPubInit{
+			&XPubInit{Generate: true},
+		},
+	}
+	node, err := CreateNode(ctx, ManagerNode, "proj-id-0", req)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
