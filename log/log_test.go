@@ -191,13 +191,13 @@ func TestError(t *testing.T) {
 
 		// stack trace
 		"TestError\n",
-		"\n/usr/local/go",
+		"/go/",
 	}
 
 	t.Logf("output:\n%s", got)
 	for _, w := range want {
 		if !strings.Contains(got, w) {
-			t.Errorf("output did not contain %q", w)
+			t.Errorf("output %q did not contain %q", got, w)
 		}
 	}
 }
