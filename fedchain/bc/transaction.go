@@ -10,7 +10,6 @@ import (
 
 	"chain/crypto/hash256"
 	"chain/errors"
-	"chain/fedchain/script"
 )
 
 const (
@@ -34,7 +33,7 @@ type Tx struct {
 // TxInput encodes a single input in a transaction.
 type TxInput struct {
 	Previous        Outpoint
-	SignatureScript script.Script
+	SignatureScript []byte
 	Metadata        []byte
 
 	// Optional attributes for convenience during validation.
@@ -47,7 +46,7 @@ type TxInput struct {
 type TxOutput struct {
 	AssetID  AssetID
 	Value    uint64
-	Script   script.Script
+	Script   []byte
 	Metadata []byte
 }
 

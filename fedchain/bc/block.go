@@ -9,7 +9,6 @@ import (
 
 	"chain/crypto/hash256"
 	"chain/errors"
-	"chain/fedchain/script"
 )
 
 // Block describes a complete block, including its header
@@ -93,10 +92,10 @@ type BlockHeader struct {
 
 	// Signature script authenticates the block against
 	// the output script from the previous block.
-	SignatureScript script.Script
+	SignatureScript []byte
 
 	// Output script specifies a predicate for signing the next block.
-	OutputScript script.Script
+	OutputScript []byte
 }
 
 // Time returns the time represented by the Timestamp in bh.

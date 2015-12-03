@@ -1,10 +1,5 @@
 package script
 
-// Script is a series of opcodes interspersed with data payloads.
-// Due to script inherent complexity you should use methods to do any manipulation with script data.
-// In the future this type may be transformed into a struct.
-type Script []byte
-
 // Extension is a placeholder type until we define
 // actual script extensions.
 type Extension interface{}

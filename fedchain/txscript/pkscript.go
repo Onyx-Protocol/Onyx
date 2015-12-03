@@ -2,7 +2,6 @@ package txscript
 
 import (
 	"chain/errors"
-	"chain/fedchain/script"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
@@ -19,7 +18,7 @@ func RedeemToPkScript(redeem []byte) []byte {
 
 // RedeemScriptFromP2SHSigScript parses the signature script and returns the
 // redeem script.
-func RedeemScriptFromP2SHSigScript(sigScript script.Script) ([]byte, error) {
+func RedeemScriptFromP2SHSigScript(sigScript []byte) ([]byte, error) {
 	opCodes, err := parseScript(sigScript)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding redeem script from sig script")

@@ -14,7 +14,6 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain/bc"
-	"chain/fedchain/script"
 	"chain/fedchain/state"
 	chainlog "chain/log"
 )
@@ -151,8 +150,8 @@ func TestLatestBlock(t *testing.T) {
 				TxRoot:            [32]byte{'A', 'B', 'C'},
 				StateRoot:         [32]byte{'X', 'Y', 'Z'},
 				Timestamp:         100,
-				SignatureScript:   script.Script("test-sig-script"),
-				OutputScript:      script.Script("test-output-script"),
+				SignatureScript:   []byte("test-sig-script"),
+				OutputScript:      []byte("test-output-script"),
 			},
 			Transactions: []*bc.Tx{
 				{Version: 1, Metadata: []byte("test-tx")},

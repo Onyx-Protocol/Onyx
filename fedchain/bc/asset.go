@@ -4,7 +4,6 @@ import (
 	"database/sql/driver"
 
 	"chain/crypto/hash256"
-	"chain/fedchain/script"
 )
 
 type (
@@ -22,9 +21,9 @@ func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
 
 // ComputeAssetID computes the asset ID of the asset defined by
 // the given issuance script and genesis block hash.
-func ComputeAssetID(issuance script.Script, genesis [32]byte) AssetID {
+func ComputeAssetID(issuanceScript []byte, genesis [32]byte) AssetID {
 	buf := append([]byte{}, genesis[:]...)
-	sh := hash256.Sum(issuance)
+	sh := hash256.Sum(issuanceScript)
 	buf = append(buf, sh[:]...)
 	return hash256.Sum(buf)
 }

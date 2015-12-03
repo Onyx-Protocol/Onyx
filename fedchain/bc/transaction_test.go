@@ -8,12 +8,10 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/txscript"
-
-	"chain/fedchain/script"
 )
 
 func TestTransaction(t *testing.T) {
-	issuanceScript := script.Script{txscript.OP_1}
+	issuanceScript := []byte{txscript.OP_1}
 	genesisHash := mustDecodeHash("dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5")
 
 	cases := []struct {
@@ -50,7 +48,7 @@ func TestTransaction(t *testing.T) {
 					{
 						AssetID:  AssetID{},
 						Value:    1000000000000,
-						Script:   script.Script{txscript.OP_1},
+						Script:   []byte{txscript.OP_1},
 						Metadata: []byte("output"),
 					},
 				},
@@ -77,13 +75,13 @@ func TestTransaction(t *testing.T) {
 					{
 						AssetID:  ComputeAssetID(issuanceScript, genesisHash),
 						Value:    600000000000,
-						Script:   script.Script{txscript.OP_1},
+						Script:   []byte{txscript.OP_1},
 						Metadata: nil,
 					},
 					{
 						AssetID:  ComputeAssetID(issuanceScript, genesisHash),
 						Value:    400000000000,
-						Script:   script.Script{txscript.OP_2},
+						Script:   []byte{txscript.OP_2},
 						Metadata: nil,
 					},
 				},
@@ -137,7 +135,7 @@ func TestIsIssuance(t *testing.T) {
 			{
 				AssetID:  AssetID{},
 				Value:    1000000000000,
-				Script:   script.Script{txscript.OP_1},
+				Script:   []byte{txscript.OP_1},
 				Metadata: []byte("output"),
 			},
 		},
