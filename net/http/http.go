@@ -8,7 +8,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/net/http/pat"
 	"chain/net/http/reqid"
 )
 
@@ -23,38 +22,19 @@ func (f HandlerFunc) ServeHTTPContext(ctx context.Context, w http.ResponseWriter
 	f(ctx, w, r)
 }
 
-func (f HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	panic("HandlerFunc was called without context")
+type noContextHandler struct {
+	h http.Handler
 }
 
-type ServeMux struct {
-	*http.ServeMux
+// DropContext returns a Handler that ignores its context
+// and simply calls h.
+func DropContext(h http.Handler) Handler {
+	return noContextHandler{h}
 }
 
-func (mux ServeMux) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	h, _ := mux.Handler(r)
-	if contextHandler, ok := h.(Handler); ok {
-		contextHandler.ServeHTTPContext(ctx, w, r)
-	} else {
-		h.ServeHTTP(w, r)
-	}
-}
-
-type PatServeMux struct {
-	*pat.PatternServeMux
-}
-
-func (mux PatServeMux) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	h := mux.Handler(r)
-	if contextHandler, ok := h.(Handler); ok {
-		contextHandler.ServeHTTPContext(ctx, w, r)
-	} else {
-		h.ServeHTTP(w, r)
-	}
-}
-
-func (mux PatServeMux) AddFunc(method, pattern string, f HandlerFunc) {
-	mux.Add(method, pattern, f)
+func (h noContextHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) { h.h.ServeHTTP(w, req) }
+func (h noContextHandler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	h.h.ServeHTTP(w, req)
 }
 
 // ContextHandler converts a Handler to an http.Handler

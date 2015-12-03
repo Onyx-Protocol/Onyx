@@ -3,11 +3,15 @@ package pat
 import (
 	"net/http"
 	"testing"
+
+	"golang.org/x/net/context"
+
+	chainhttp "chain/net/http"
 )
 
 func BenchmarkPatternMatching(b *testing.B) {
 	p := New()
-	p.Get("/hello/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	p.Get("/hello/:name", chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {}))
 	for n := 0; n < b.N; n++ {
 		b.StopTimer()
 		r, err := http.NewRequest("GET", "/hello/blake", nil)
@@ -15,6 +19,6 @@ func BenchmarkPatternMatching(b *testing.B) {
 			panic(err)
 		}
 		b.StartTimer()
-		p.ServeHTTP(nil, r)
+		p.ServeHTTPContext(context.Background(), nil, r)
 	}
 }

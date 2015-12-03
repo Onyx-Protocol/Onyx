@@ -5,7 +5,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	chainhttp "chain/net/http"
 	"chain/net/http/pat"
 )
 
@@ -22,7 +21,7 @@ type ErrorWriter func(context.Context, http.ResponseWriter, error)
 // Each function must have an appropriate signature.
 // See the package doc for details.
 type ServeMux struct {
-	pat     chainhttp.PatServeMux
+	pat     *pat.PatternServeMux
 	errFunc ErrorWriter
 }
 
@@ -31,7 +30,7 @@ type ServeMux struct {
 // when the handler function returns an error.
 func NewServeMux(f ErrorWriter) *ServeMux {
 	m := new(ServeMux)
-	m.pat.PatternServeMux = pat.New()
+	m.pat = pat.New()
 	m.errFunc = f
 	return m
 }

@@ -22,7 +22,7 @@ const (
 // Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
 // will be used as the password for routes starting with /nouser/.
 func Handler(nouserSecret string) chainhttp.Handler {
-	h := chainhttp.PatServeMux{PatternServeMux: pat.New()}
+	h := pat.New()
 
 	pwHandler := httpjson.NewServeMux(writeHTTPError)
 	pwHandler.HandleFunc("POST", "/v3/login", login)

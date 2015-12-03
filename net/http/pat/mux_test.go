@@ -8,6 +8,10 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"golang.org/x/net/context"
+
+	chainhttp "chain/net/http"
 )
 
 func TestPatMatch(t *testing.T) {
@@ -52,7 +56,7 @@ func TestPatRoutingHit(t *testing.T) {
 	p := New()
 
 	var ok bool
-	p.Get("/foo/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	p.Get("/foo/:name", chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		ok = true
 		t.Logf("%#v", r.URL.Query())
 		if got := r.URL.Query().Get(":name"); got != "keith" {
@@ -65,7 +69,7 @@ func TestPatRoutingHit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p.ServeHTTP(nil, r)
+	p.ServeHTTPContext(context.Background(), nil, r)
 
 	if !ok {
 		t.Fail()
@@ -76,11 +80,11 @@ func TestPatRoutingMethodNotAllowed(t *testing.T) {
 	p := New()
 
 	var ok bool
-	p.Post("/foo/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	p.Post("/foo/:name", chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		ok = true
 	}))
 
-	p.Put("/foo/:name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	p.Put("/foo/:name", chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		ok = true
 	}))
 
@@ -90,7 +94,7 @@ func TestPatRoutingMethodNotAllowed(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	p.ServeHTTP(rr, r)
+	p.ServeHTTPContext(context.Background(), rr, r)
 
 	if ok {
 		t.Fail()
@@ -112,7 +116,7 @@ func TestPatNoParams(t *testing.T) {
 	p := New()
 
 	var ok bool
-	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	p.Get("/foo/", chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		ok = true
 		t.Logf("%#v", r.URL.RawQuery)
 		want := ""
@@ -127,7 +131,7 @@ func TestPatNoParams(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p.ServeHTTP(nil, r)
+	p.ServeHTTPContext(context.Background(), nil, r)
 
 	if !ok {
 		t.Fail()
@@ -139,7 +143,7 @@ func TestPatOnlyUserParams(t *testing.T) {
 	p := New()
 
 	var ok bool
-	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	p.Get("/foo/", chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		ok = true
 		t.Logf("%#v", r.URL.RawQuery)
 		want := "a=b"
@@ -154,7 +158,7 @@ func TestPatOnlyUserParams(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p.ServeHTTP(nil, r)
+	p.ServeHTTPContext(context.Background(), nil, r)
 
 	if !ok {
 		t.Fail()
@@ -163,7 +167,7 @@ func TestPatOnlyUserParams(t *testing.T) {
 
 func TestPatImplicitRedirect(t *testing.T) {
 	p := New()
-	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	p.Get("/foo/", chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {}))
 
 	r, err := http.NewRequest("GET", "/foo", nil)
 	if err != nil {
@@ -171,7 +175,7 @@ func TestPatImplicitRedirect(t *testing.T) {
 	}
 
 	res := httptest.NewRecorder()
-	p.ServeHTTP(res, r)
+	p.ServeHTTPContext(context.Background(), res, r)
 
 	if res.Code != 301 {
 		t.Errorf("expected Code 301, was %d", res.Code)
@@ -182,8 +186,8 @@ func TestPatImplicitRedirect(t *testing.T) {
 	}
 
 	p = New()
-	p.Get("/foo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	p.Get("/foo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	p.Get("/foo", chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {}))
+	p.Get("/foo/", chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {}))
 
 	r, err = http.NewRequest("GET", "/foo", nil)
 	if err != nil {
@@ -192,7 +196,7 @@ func TestPatImplicitRedirect(t *testing.T) {
 
 	res = httptest.NewRecorder()
 	res.Code = 200
-	p.ServeHTTP(res, r)
+	p.ServeHTTPContext(context.Background(), res, r)
 
 	if res.Code != 200 {
 		t.Errorf("expected Code 200, was %d", res.Code)
@@ -255,10 +259,10 @@ func TestLabels(t *testing.T) {
 func TestLongestMatch(t *testing.T) {
 	p := New()
 	var ok bool
-	p.Get("/foo/:variable", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	p.Get("/foo/:variable", chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		t.Fatal("failed test: shorter pattern was matched")
 	}))
-	p.Get("/foo/longerpath", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	p.Get("/foo/longerpath", chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		ok = true
 	}))
 
@@ -267,7 +271,7 @@ func TestLongestMatch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p.ServeHTTP(httptest.NewRecorder(), r)
+	p.ServeHTTPContext(context.Background(), httptest.NewRecorder(), r)
 	if !ok {
 		t.Fail()
 	}

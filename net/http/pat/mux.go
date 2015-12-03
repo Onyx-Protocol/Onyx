@@ -5,6 +5,10 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"golang.org/x/net/context"
+
+	chainhttp "chain/net/http"
 )
 
 // PatternServeMux is an HTTP request multiplexer. It matches the URL of each
@@ -99,16 +103,16 @@ func New() *PatternServeMux {
 	return &PatternServeMux{make(map[string][]*patHandler)}
 }
 
-// ServeHTTP matches r.URL.Path against its routing table using the rules
+// ServeHTTPContext r.URL.Path against its routing table using the rules
 // described above.
-func (p *PatternServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *PatternServeMux) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	h := p.Handler(r)
-	h.ServeHTTP(w, r)
+	h.ServeHTTPContext(ctx, w, r)
 }
 
 // Handler edits r's query parameters to include elements from the path.
-func (p *PatternServeMux) Handler(r *http.Request) http.Handler {
-	var h http.Handler
+func (p *PatternServeMux) Handler(r *http.Request) chainhttp.Handler {
+	var h chainhttp.Handler
 	var b int
 	var par url.Values
 	for _, ph := range p.handlers[r.Method] {
@@ -141,56 +145,60 @@ func (p *PatternServeMux) Handler(r *http.Request) http.Handler {
 	}
 
 	if len(allowed) == 0 {
-		return http.HandlerFunc(NotFound)
+		return chainhttp.DropContext(http.NotFoundHandler())
 	}
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Allow", strings.Join(allowed, ", "))
 		http.Error(w, `{"message": "Method not allowed"}`, 405)
 	})
 }
 
 // Head will register a pattern with a handler for HEAD requests.
-func (p *PatternServeMux) Head(pat string, h http.Handler) {
+func (p *PatternServeMux) Head(pat string, h chainhttp.Handler) {
 	p.Add("HEAD", pat, h)
 }
 
 // Get will register a pattern with a handler for GET requests.
 // It also registers pat for HEAD requests. If this needs to be overridden, use
 // Head before Get with pat.
-func (p *PatternServeMux) Get(pat string, h http.Handler) {
+func (p *PatternServeMux) Get(pat string, h chainhttp.Handler) {
 	p.Add("HEAD", pat, h)
 	p.Add("GET", pat, h)
 }
 
 // Post will register a pattern with a handler for POST requests.
-func (p *PatternServeMux) Post(pat string, h http.Handler) {
+func (p *PatternServeMux) Post(pat string, h chainhttp.Handler) {
 	p.Add("POST", pat, h)
 }
 
 // Put will register a pattern with a handler for PUT requests.
-func (p *PatternServeMux) Put(pat string, h http.Handler) {
+func (p *PatternServeMux) Put(pat string, h chainhttp.Handler) {
 	p.Add("PUT", pat, h)
 }
 
 // Del will register a pattern with a handler for DELETE requests.
-func (p *PatternServeMux) Del(pat string, h http.Handler) {
+func (p *PatternServeMux) Del(pat string, h chainhttp.Handler) {
 	p.Add("DELETE", pat, h)
 }
 
 // Options will register a pattern with a handler for OPTIONS requests.
-func (p *PatternServeMux) Options(pat string, h http.Handler) {
+func (p *PatternServeMux) Options(pat string, h chainhttp.Handler) {
 	p.Add("OPTIONS", pat, h)
 }
 
 // Add will register a pattern with a handler for meth requests.
-func (p *PatternServeMux) Add(meth, pat string, h http.Handler) {
+func (p *PatternServeMux) Add(meth, pat string, h chainhttp.Handler) {
 	p.handlers[meth] = append(p.handlers[meth], &patHandler{pat, h})
 
 	n := len(pat)
 	if n > 0 && pat[n-1] == '/' {
-		p.Add(meth, pat[:n-1], http.RedirectHandler(pat, http.StatusMovedPermanently))
+		p.Add(meth, pat[:n-1], chainhttp.DropContext(http.RedirectHandler(pat, http.StatusMovedPermanently)))
 	}
+}
+
+func (p *PatternServeMux) AddFunc(meth, pat string, f chainhttp.HandlerFunc) {
+	p.Add(meth, pat, f)
 }
 
 // Tail returns the trailing string in path after the final slash for a pat ending with a slash.
@@ -252,7 +260,7 @@ func NotFound(w http.ResponseWriter, r *http.Request) {
 
 type patHandler struct {
 	pat string
-	h   http.Handler
+	h   chainhttp.Handler
 }
 
 func (ph *patHandler) try(path string) (url.Values, bool) {
