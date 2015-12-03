@@ -90,6 +90,10 @@ func SetPrefix(keyval ...interface{}) {
 // As a special case, the auto-generated caller may be overridden by passing in
 // a new value for the KeyCaller key as the first key-value pair. The override
 // feature should be reserved for custom logging functions that wrap Write.
+//
+// If KeyStack is present and has a value of []byte or []errors.StackFrame,
+// its value will be written verbatim at the end of the message,
+// on separate lines.
 func Write(ctx context.Context, keyvals ...interface{}) {
 	// Invariant: len(keyvals) is always even.
 	if len(keyvals)%2 != 0 {
@@ -117,17 +121,48 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 		out += " " + KeySubReqID + "=" + formatValue(subreqid)
 	}
 
+	var stack interface{}
 	for i := 0; i < len(keyvals); i += 2 {
-		k := formatKey(keyvals[i])
-		v := formatValue(keyvals[i+1])
-		out += " " + k + "=" + v
+		k := keyvals[i]
+		v := keyvals[i+1]
+		if k == KeyStack && isStackVal(v) {
+			stack = v
+			continue
+		}
+		out += " " + formatKey(k) + "=" + formatValue(v)
 	}
 
 	logWriterMu.Lock()
 	logWriter.Write(prefix)
 	logWriter.Write([]byte(out)) // ignore errors
 	logWriter.Write([]byte{'\n'})
+	writeRawStack(logWriter, stack)
 	logWriterMu.Unlock()
+}
+
+func writeRawStack(w io.Writer, v interface{}) {
+	switch v := v.(type) {
+	case []byte:
+		if len(v) > 0 {
+			w.Write(v)
+			w.Write([]byte{'\n'})
+		}
+	case []errors.StackFrame:
+		for _, s := range v {
+			io.WriteString(w, s.String())
+			w.Write([]byte{'\n'})
+		}
+	}
+}
+
+func isStackVal(v interface{}) bool {
+	switch v.(type) {
+	case []byte:
+		return true
+	case []errors.StackFrame:
+		return true
+	}
+	return false
 }
 
 // Messagef writes a log entry containing a message assigned to the

@@ -190,13 +190,66 @@ func TestError(t *testing.T) {
 		`error="failure x 0: boo"`,
 
 		// stack trace
-		`stack="`,
-		"TestError",
+		"TestError\n",
+		"\n/usr/local/go",
 	}
 
+	t.Logf("output:\n%s", got)
 	for _, w := range want {
 		if !strings.Contains(got, w) {
-			t.Errorf("Result did not contain string:\ngot:  %s\nwant: %s", got, w)
+			t.Errorf("output did not contain %q", w)
+		}
+	}
+}
+
+func TestRawStack(t *testing.T) {
+	var buf bytes.Buffer
+	SetOutput(&buf)
+	defer SetOutput(os.Stdout)
+
+	stack := []byte("this\nis\na\nraw\nstack")
+	Write(context.Background(), "message", "foo", "stack", stack)
+
+	got := buf.String()
+	if !strings.HasSuffix(got, "\n"+string(stack)+"\n") {
+		t.Logf("output:\n%s", got)
+		t.Errorf("output did not contain %q", stack)
+	}
+}
+
+func TestIsStackVal(t *testing.T) {
+	cases := []struct {
+		v interface{}
+		w bool
+	}{
+		{[]byte("foo"), true},
+		{[]errors.StackFrame{}, true},
+		{"line1", false},
+		{[...]byte{'x'}, false},
+		{[]string{}, false},
+	}
+	for _, test := range cases {
+		if g := isStackVal(test.v); g != test.w {
+			t.Errorf("isStackVal(%#v) = %v want %v", test.v, g, test.w)
+		}
+	}
+}
+
+func TestWriteRawStack(t *testing.T) {
+	cases := []struct {
+		v interface{}
+		w string
+	}{
+		{[]byte("foo\nbar"), "foo\nbar\n"},
+		{[]errors.StackFrame{{Func: "foo", File: "f.go", Line: 1}}, "f.go:1 - foo\n"},
+		{1, ""}, // int is not a valid stack val
+	}
+
+	for _, test := range cases {
+		var buf bytes.Buffer
+		writeRawStack(&buf, test.v)
+		if g := buf.String(); g != test.w {
+			t.Errorf("writeRawStack(%#v) = %q want %q", test.v, g, test.w)
 		}
 	}
 }
