@@ -262,7 +262,16 @@ func TestGetTxTransfer(t *testing.T) {
 			Script:  mustDecodeHex("a91430819f1955f747220bb247df8a989e36a432733487"), // 367Ve1Xkgwwiu9rmm9bJEnB91ZFnn79M1P
 		}},
 	}
-	blk := &bc.Block{Transactions: append(prevTxs, tx)}
+
+	now := time.Now().UTC().Truncate(time.Second)
+	blk := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			Height:    1,
+			Timestamp: uint64(now.Unix()),
+		},
+		Transactions: append(prevTxs, tx),
+	}
+
 	withContext(t, "", func(ctx context.Context) {
 		const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2)`
 		err := txdb.InsertBlock(ctx, blk)
@@ -280,8 +289,10 @@ func TestGetTxTransfer(t *testing.T) {
 		var blkHash = blk.Hash()
 
 		want := &Tx{
-			ID:      tx.Hash(),
-			BlockID: &blkHash,
+			ID:          tx.Hash(),
+			BlockID:     &blkHash,
+			BlockHeight: 1,
+			BlockTime:   now,
 			Inputs: []*TxInput{{
 				Type:    "transfer",
 				AssetID: bc.AssetID([32]byte{1}),
@@ -307,7 +318,7 @@ func TestGetTxTransfer(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got:\n\t%+v\nwant:\n\t:%+v", got, want)
+			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, want)
 		}
 	})
 }

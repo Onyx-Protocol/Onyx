@@ -71,14 +71,19 @@ func GetTxs(ctx context.Context, hashes ...string) (map[string]*bc.Tx, error) {
 	return txs, nil
 }
 
-func GetTxBlock(ctx context.Context, hash string) (*bc.Hash, error) {
-	const q = `SELECT block_hash FROM blocks_txs WHERE tx_hash=$1`
-	var bHash bc.Hash
-	err := pg.FromContext(ctx).QueryRow(q, hash).Scan(&bHash)
+func GetTxBlock(ctx context.Context, hash string) (*bc.Block, error) {
+	const q = `
+		SELECT data
+		FROM blocks b
+		JOIN blocks_txs bt ON b.block_hash = bt.block_hash
+		WHERE bt.tx_hash=$1
+	`
+	b := new(bc.Block)
+	err := pg.FromContext(ctx).QueryRow(q, hash).Scan(b)
 	if err == sql.ErrNoRows {
 		return nil, nil // tx "not being in a block" is not an error
 	}
-	return &bHash, errors.Wrap(err, "getting block hash")
+	return b, errors.Wrap(err, "select query")
 }
 
 func InsertTx(ctx context.Context, tx *bc.Tx) error {
