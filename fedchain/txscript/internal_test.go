@@ -3552,22 +3552,6 @@ func TestUnparsingInvalidOpcodes(t *testing.T) {
 			expectedErr: ErrStackInvalidOpcode,
 		},
 		{
-			name: "OP_NOP2",
-			pop: &parsedOpcode{
-				opcode: &opcodeArray[OP_NOP2],
-				data:   nil,
-			},
-			expectedErr: nil,
-		},
-		{
-			name: "OP_NOP2 long",
-			pop: &parsedOpcode{
-				opcode: &opcodeArray[OP_NOP2],
-				data:   make([]byte, 1),
-			},
-			expectedErr: ErrStackInvalidOpcode,
-		},
-		{
 			name: "OP_NOP3",
 			pop: &parsedOpcode{
 				opcode: &opcodeArray[OP_NOP3],

@@ -129,7 +129,7 @@ func (vm *Engine) isBranchExecuting() bool {
 // tested in this case.
 func (vm *Engine) executeOpcode(pop *parsedOpcode) error {
 	// Disabled opcodes are fail on program counter.
-	if pop.isDisabled() {
+	if pop.isDisabled(vm.isP2C()) {
 		return ErrStackOpDisabled
 	}
 

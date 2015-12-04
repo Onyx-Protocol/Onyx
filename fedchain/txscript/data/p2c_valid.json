@@ -22,5 +22,37 @@
 ["twice should not deplete it."],
 ["3 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 DATA_6 0x007a76a9fe88 OP_REQUIREOUTPUT", "", "", "Simple REQUIREOUTPUT test"],
 
-["BALANCE 7 EQUAL", "DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 DATA_20 0x3f52da11da7365434f37152c0e951192e0012464", "", "Must learn BALANCE"]
+["BALANCE 7 EQUAL", "DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 DATA_20 0x3f52da11da7365434f37152c0e951192e0012464", "", "Must learn BALANCE"],
+
+["Opcodes enabled only in the P2C context."],
+["CAT DATA_5 0x0102030405 EQUAL", "DATA_3 0x010203 DATA_2 0x0405", "", "CAT"],
+["SUBSTR 'oba' EQUAL", "'foobar' 2 3", "", "SUBSTR"],
+["LEFT 'foo' EQUAL", "'foobar' 3", "", "LEFT"],
+["RIGHT 'bar' EQUAL", "'foobar' 3", "", "RIGHT"],
+["2MUL 14 EQUAL", "7", "", "2MUL"],
+["2MUL -14 EQUAL", "-7", "", "2MUL"],
+["2DIV 7 EQUAL", "14", "", "2DIV"],
+["2DIV -7 EQUAL", "-14", "", "2DIV"],
+["MUL 407 EQUAL", "11 37", "", "MUL"],
+["MUL -407 EQUAL", "-11 37", "", "MUL"],
+["MUL -407 EQUAL", "11 -37", "", "MUL"],
+["MUL 407 EQUAL", "-11 -37", "", "MUL"],
+["DIV 37 EQUAL", "407 11", "", "DIV"],
+["DIV -37 EQUAL", "407 -11", "", "DIV"],
+["DIV -37 EQUAL", "-407 11", "", "DIV"],
+["DIV 37 EQUAL", "-407 -11", "", "DIV"],
+["MOD 1 EQUAL", "17 4", "", "MOD"],
+["LSHIFT 28 EQUAL", "7 2", "", "LSHIFT"],
+["LSHIFT -28 EQUAL", "-7 2", "", "LSHIFT"],
+["RSHIFT 7 EQUAL", "28 2", "", "RSHIFT"],
+["RSHIFT -7 EQUAL", "-28 2", "", "RSHIFT"],
+
+["2DIV 3 EQUAL", "7", "", "Test positive 2DIV truncation"],
+["2DIV -3 EQUAL", "-7", "", "Test negative 2DIV truncation"],
+["DIV 2 EQUAL", "7 3", "", "Test positive integer-division truncation (1)"],
+["DIV 2 EQUAL", "8 3", "", "Test positive integer-division truncation (2)"],
+["DIV -2 EQUAL", "-7 3", "", "Test negative integer-division truncation (1)"],
+["DIV -2 EQUAL", "-8 3", "", "Test negative integer-division truncation (2)"],
+["DIV -2 EQUAL", "7 -3", "", "Test negative integer-division truncation (3)"],
+["DIV -2 EQUAL", "8 -3", "", "Test negative integer-division truncation (4)"]
 ]

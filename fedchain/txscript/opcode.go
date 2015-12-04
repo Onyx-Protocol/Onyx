@@ -213,7 +213,7 @@ const (
 	OP_CHECKMULTISIG       = 0xae // 174
 	OP_CHECKMULTISIGVERIFY = 0xaf // 175
 	OP_NOP1                = 0xb0 // 176
-	OP_NOP2                = 0xb1 // 177
+	OP_CHECKLOCKTIMEVERIFY = 0xb1 // 177
 	OP_NOP3                = 0xb2 // 178
 	OP_NOP4                = 0xb3 // 179
 	OP_NOP5                = 0xb4 // 180
@@ -445,10 +445,10 @@ var opcodeArray = [256]opcode{
 	OP_TUCK:         {OP_TUCK, "OP_TUCK", 1, opcodeTuck},
 
 	// Splice opcodes.
-	OP_CAT:    {OP_CAT, "OP_CAT", 1, opcodeDisabled},
-	OP_SUBSTR: {OP_SUBSTR, "OP_SUBSTR", 1, opcodeDisabled},
-	OP_LEFT:   {OP_LEFT, "OP_LEFT", 1, opcodeDisabled},
-	OP_RIGHT:  {OP_RIGHT, "OP_RIGHT", 1, opcodeDisabled},
+	OP_CAT:    {OP_CAT, "OP_CAT", 1, opcodeP2COnly(opcodeCat)},
+	OP_SUBSTR: {OP_SUBSTR, "OP_SUBSTR", 1, opcodeP2COnly(opcodeSubstr)},
+	OP_LEFT:   {OP_LEFT, "OP_LEFT", 1, opcodeP2COnly(opcodeLeft)},
+	OP_RIGHT:  {OP_RIGHT, "OP_RIGHT", 1, opcodeP2COnly(opcodeRight)},
 	OP_SIZE:   {OP_SIZE, "OP_SIZE", 1, opcodeSize},
 
 	// Bitwise logic opcodes.
@@ -464,19 +464,19 @@ var opcodeArray = [256]opcode{
 	// Numeric related opcodes.
 	OP_1ADD:               {OP_1ADD, "OP_1ADD", 1, opcode1Add},
 	OP_1SUB:               {OP_1SUB, "OP_1SUB", 1, opcode1Sub},
-	OP_2MUL:               {OP_2MUL, "OP_2MUL", 1, opcodeDisabled},
-	OP_2DIV:               {OP_2DIV, "OP_2DIV", 1, opcodeDisabled},
+	OP_2MUL:               {OP_2MUL, "OP_2MUL", 1, opcodeP2COnly(opcode2Mul)},
+	OP_2DIV:               {OP_2DIV, "OP_2DIV", 1, opcodeP2COnly(opcode2Div)},
 	OP_NEGATE:             {OP_NEGATE, "OP_NEGATE", 1, opcodeNegate},
 	OP_ABS:                {OP_ABS, "OP_ABS", 1, opcodeAbs},
 	OP_NOT:                {OP_NOT, "OP_NOT", 1, opcodeNot},
 	OP_0NOTEQUAL:          {OP_0NOTEQUAL, "OP_0NOTEQUAL", 1, opcode0NotEqual},
 	OP_ADD:                {OP_ADD, "OP_ADD", 1, opcodeAdd},
 	OP_SUB:                {OP_SUB, "OP_SUB", 1, opcodeSub},
-	OP_MUL:                {OP_MUL, "OP_MUL", 1, opcodeDisabled},
-	OP_DIV:                {OP_DIV, "OP_DIV", 1, opcodeDisabled},
-	OP_MOD:                {OP_MOD, "OP_MOD", 1, opcodeDisabled},
-	OP_LSHIFT:             {OP_LSHIFT, "OP_LSHIFT", 1, opcodeDisabled},
-	OP_RSHIFT:             {OP_RSHIFT, "OP_RSHIFT", 1, opcodeDisabled},
+	OP_MUL:                {OP_MUL, "OP_MUL", 1, opcodeP2COnly(opcodeMul)},
+	OP_DIV:                {OP_DIV, "OP_DIV", 1, opcodeP2COnly(opcodeDiv)},
+	OP_MOD:                {OP_MOD, "OP_MOD", 1, opcodeP2COnly(opcodeMod)},
+	OP_LSHIFT:             {OP_LSHIFT, "OP_LSHIFT", 1, opcodeP2COnly(opcodeLShift)},
+	OP_RSHIFT:             {OP_RSHIFT, "OP_RSHIFT", 1, opcodeP2COnly(opcodeRShift)},
 	OP_BOOLAND:            {OP_BOOLAND, "OP_BOOLAND", 1, opcodeBoolAnd},
 	OP_BOOLOR:             {OP_BOOLOR, "OP_BOOLOR", 1, opcodeBoolOr},
 	OP_NUMEQUAL:           {OP_NUMEQUAL, "OP_NUMEQUAL", 1, opcodeNumEqual},
@@ -503,8 +503,8 @@ var opcodeArray = [256]opcode{
 	OP_CHECKMULTISIGVERIFY: {OP_CHECKMULTISIGVERIFY, "OP_CHECKMULTISIGVERIFY", 1, opcodeCheckMultiSigVerify},
 
 	// Reserved opcodes.
-	OP_NOP1:  {OP_NOP1, "OP_NOP1", 1, opcodeNop},
-	OP_NOP2:  {OP_NOP2, "OP_NOP2", 1, opcodeNop},
+	OP_NOP1: {OP_NOP1, "OP_NOP1", 1, opcodeNop},
+	// OP_NOP2 replaced with OP_CHECKLOCKTIMEVERIFY
 	OP_NOP3:  {OP_NOP3, "OP_NOP3", 1, opcodeNop},
 	OP_NOP4:  {OP_NOP4, "OP_NOP4", 1, opcodeNop},
 	OP_NOP5:  {OP_NOP5, "OP_NOP5", 1, opcodeNop},
@@ -521,6 +521,9 @@ var opcodeArray = [256]opcode{
 	OP_UNKNOWN189: {OP_UNKNOWN189, "OP_UNKNOWN189", 1, opcodeInvalid},
 	OP_UNKNOWN190: {OP_UNKNOWN190, "OP_UNKNOWN190", 1, opcodeInvalid},
 	OP_UNKNOWN191: {OP_UNKNOWN191, "OP_UNKNOWN191", 1, opcodeInvalid},
+
+	// BIP65
+	OP_CHECKLOCKTIMEVERIFY: {OP_CHECKLOCKTIMEVERIFY, "OP_CHECKLOCKTIMEVERIFY", 1, opcodeCheckLockTimeVerify},
 
 	// p2c extensions
 	OP_REQUIREOUTPUT: {OP_REQUIREOUTPUT, "OP_REQUIREOUTPUT", 1, nil}, // see init()
@@ -627,37 +630,13 @@ type parsedOpcode struct {
 
 // isDisabled returns whether or not the opcode is disabled and thus is always
 // bad to see in the instruction stream (even if turned off by a conditional).
-func (pop *parsedOpcode) isDisabled() bool {
+func (pop *parsedOpcode) isDisabled(isP2C bool) bool {
 	switch pop.opcode.value {
-	case OP_CAT:
-		return true
-	case OP_SUBSTR:
-		return true
-	case OP_LEFT:
-		return true
-	case OP_RIGHT:
-		return true
-	case OP_INVERT:
-		return true
-	case OP_AND:
-		return true
-	case OP_OR:
-		return true
-	case OP_XOR:
-		return true
-	case OP_2MUL:
-		return true
-	case OP_2DIV:
-		return true
-	case OP_MUL:
-		return true
-	case OP_DIV:
-		return true
-	case OP_MOD:
-		return true
-	case OP_LSHIFT:
-		return true
-	case OP_RSHIFT:
+	case OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT:
+		return !isP2C
+	case OP_2MUL, OP_2DIV, OP_MUL, OP_DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT:
+		return !isP2C
+	case OP_INVERT, OP_AND, OP_OR, OP_XOR:
 		return true
 	default:
 		return false
@@ -837,6 +816,17 @@ func opcodeDisabled(op *parsedOpcode, vm *Engine) error {
 	return ErrStackOpDisabled
 }
 
+// Creates an opcode-handling function that only works in a P2C
+// context and behaves like opcodeDisabled() otherwise.
+func opcodeP2COnly(opcodeFn func(*parsedOpcode, *Engine) error) func(*parsedOpcode, *Engine) error {
+	return func(op *parsedOpcode, vm *Engine) error {
+		if vm.isP2C() {
+			return opcodeFn(op, vm)
+		}
+		return opcodeDisabled(op, vm)
+	}
+}
+
 // opcodeReserved is a common handler for all reserved opcodes.  It returns an
 // appropriate error indicating the opcode is reserved.
 func opcodeReserved(op *parsedOpcode, vm *Engine) error {
@@ -885,7 +875,7 @@ func opcodeN(op *parsedOpcode, vm *Engine) error {
 // the flag to discourage use of NOPs is set for select opcodes.
 func opcodeNop(op *parsedOpcode, vm *Engine) error {
 	switch op.opcode.value {
-	case OP_NOP1, OP_NOP2, OP_NOP3, OP_NOP4, OP_NOP5,
+	case OP_NOP1, OP_NOP3, OP_NOP4, OP_NOP5,
 		OP_NOP6, OP_NOP7, OP_NOP8, OP_NOP9, OP_NOP10:
 		if vm.hasFlag(ScriptDiscourageUpgradableNops) {
 			return fmt.Errorf("OP_NOP%d reserved for soft-fork "+
@@ -1200,6 +1190,99 @@ func opcodeTuck(op *parsedOpcode, vm *Engine) error {
 	return vm.dstack.Tuck()
 }
 
+// DATA1 DATA2 OP_CAT -> DATA1DATA2 (concatenated)
+func opcodeCat(op *parsedOpcode, vm *Engine) error {
+	data2, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+	data1, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+	result := make([]byte, 0, len(data1)+len(data2))
+	result = append(result, data1...)
+	result = append(result, data2...)
+	vm.dstack.PushByteArray(result)
+	return nil
+}
+
+// DATA BEGIN SIZE OP_SUBSTR -> DATA[BEGIN:BEGIN+SIZE]
+func opcodeSubstr(op *parsedOpcode, vm *Engine) error {
+	size, err := vm.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+	begin, err := vm.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+	data, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	// Oleg's reference implementation silently clamps BEGIN and SIZE to
+	// the length of DATA, I'll do the same. --bg
+	if begin < 0 {
+		begin = 0
+	}
+	if begin > scriptNum(len(data)) {
+		begin = scriptNum(len(data))
+	}
+	if size < 0 {
+		size = 0
+	}
+	if begin+size > scriptNum(len(data)) {
+		size = scriptNum(len(data)) - begin
+	}
+
+	vm.dstack.PushByteArray(data[begin : begin+size])
+	return nil
+}
+
+// DATA SIZE OP_LEFT -> DATA[:SIZE]
+func opcodeLeft(op *parsedOpcode, vm *Engine) error {
+	size, err := vm.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+	data, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	// Oleg's reference implementation silently clamps SIZE to the
+	// length of DATA, I'll do the same.  -bg
+	if size > scriptNum(len(data)) {
+		size = scriptNum(len(data))
+	}
+
+	vm.dstack.PushByteArray(data[:size])
+	return nil
+}
+
+// DATA SIZE OP_RIGHT -> DATA[len(DATA)-SIZE:]
+func opcodeRight(op *parsedOpcode, vm *Engine) error {
+	size, err := vm.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+	data, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	// Oleg's reference implementation silently clamps SIZE to the
+	// length of DATA, I'll do the same.  -bg
+	if size > scriptNum(len(data)) {
+		size = scriptNum(len(data))
+	}
+
+	vm.dstack.PushByteArray(data[len(data)-int(size):])
+	return nil
+}
+
 // opcodeSize pushes the size of the top item of the data stack onto the data
 // stack.
 //
@@ -1252,7 +1335,7 @@ func opcodeEqualVerify(op *parsedOpcode, vm *Engine) error {
 //
 // Stack transformation: [... x1 x2] -> [... x1 x2+1]
 func opcode1Add(op *parsedOpcode, vm *Engine) error {
-	m, err := vm.dstack.PopInt()
+	m, _, err := vm.dstack.PopIntWithSize(7)
 	if err != nil {
 		return err
 	}
@@ -1266,7 +1349,7 @@ func opcode1Add(op *parsedOpcode, vm *Engine) error {
 //
 // Stack transformation: [... x1 x2] -> [... x1 x2-1]
 func opcode1Sub(op *parsedOpcode, vm *Engine) error {
-	m, err := vm.dstack.PopInt()
+	m, _, err := vm.dstack.PopIntWithSize(7)
 	if err != nil {
 		return err
 	}
@@ -1275,12 +1358,35 @@ func opcode1Sub(op *parsedOpcode, vm *Engine) error {
 	return nil
 }
 
+// N OP_2MUL -> 2*N
+func opcode2Mul(op *parsedOpcode, vm *Engine) error {
+	n, _, err := vm.dstack.PopIntWithSize(8)
+	if err != nil {
+		return err
+	}
+	if n > scriptNum(0x3fffffffffffffff) {
+		return ErrMulOverflow
+	}
+	vm.dstack.PushInt(scriptNum(2 * n))
+	return nil
+}
+
+// N OP_2DIV -> N/2 (integer division)
+func opcode2Div(op *parsedOpcode, vm *Engine) error {
+	n, _, err := vm.dstack.PopIntWithSize(8)
+	if err != nil {
+		return err
+	}
+	vm.dstack.PushInt(rshift(n, 1))
+	return nil
+}
+
 // opcodeNegate treats the top item on the data stack as an integer and replaces
 // it with its negation.
 //
 // Stack transformation: [... x1 x2] -> [... x1 -x2]
 func opcodeNegate(op *parsedOpcode, vm *Engine) error {
-	m, err := vm.dstack.PopInt()
+	m, _, err := vm.dstack.PopIntWithSize(7)
 	if err != nil {
 		return err
 	}
@@ -1294,7 +1400,7 @@ func opcodeNegate(op *parsedOpcode, vm *Engine) error {
 //
 // Stack transformation: [... x1 x2] -> [... x1 abs(x2)]
 func opcodeAbs(op *parsedOpcode, vm *Engine) error {
-	m, err := vm.dstack.PopInt()
+	m, _, err := vm.dstack.PopIntWithSize(7)
 	if err != nil {
 		return err
 	}
@@ -1319,7 +1425,7 @@ func opcodeAbs(op *parsedOpcode, vm *Engine) error {
 // Stack transformation (x2!=0): [... x1 1] -> [... x1 0]
 // Stack transformation (x2!=0): [... x1 17] -> [... x1 0]
 func opcodeNot(op *parsedOpcode, vm *Engine) error {
-	m, err := vm.dstack.PopInt()
+	m, _, err := vm.dstack.PopIntWithSize(8)
 	if err != nil {
 		return err
 	}
@@ -1339,7 +1445,7 @@ func opcodeNot(op *parsedOpcode, vm *Engine) error {
 // Stack transformation (x2!=0): [... x1 1] -> [... x1 1]
 // Stack transformation (x2!=0): [... x1 17] -> [... x1 1]
 func opcode0NotEqual(op *parsedOpcode, vm *Engine) error {
-	m, err := vm.dstack.PopInt()
+	m, _, err := vm.dstack.PopIntWithSize(8)
 	if err != nil {
 		return err
 	}
@@ -1356,12 +1462,12 @@ func opcode0NotEqual(op *parsedOpcode, vm *Engine) error {
 //
 // Stack transformation: [... x1 x2] -> [... x1+x2]
 func opcodeAdd(op *parsedOpcode, vm *Engine) error {
-	v0, err := vm.dstack.PopInt()
+	v0, _, err := vm.dstack.PopIntWithSize(7)
 	if err != nil {
 		return err
 	}
 
-	v1, err := vm.dstack.PopInt()
+	v1, _, err := vm.dstack.PopIntWithSize(7)
 	if err != nil {
 		return err
 	}
@@ -1376,17 +1482,128 @@ func opcodeAdd(op *parsedOpcode, vm *Engine) error {
 //
 // Stack transformation: [... x1 x2] -> [... x1-x2]
 func opcodeSub(op *parsedOpcode, vm *Engine) error {
-	v0, err := vm.dstack.PopInt()
+	v0, _, err := vm.dstack.PopIntWithSize(7)
 	if err != nil {
 		return err
 	}
 
-	v1, err := vm.dstack.PopInt()
+	v1, _, err := vm.dstack.PopIntWithSize(7)
 	if err != nil {
 		return err
 	}
 
 	vm.dstack.PushInt(v1 - v0)
+	return nil
+}
+
+// N M OP_MUL -> M*N
+func opcodeMul(op *parsedOpcode, vm *Engine) error {
+	m, nbytes1, err := vm.dstack.PopIntWithSize(8)
+	if err != nil {
+		return err
+	}
+	n, nbytes2, err := vm.dstack.PopIntWithSize(8)
+	if err != nil {
+		return err
+	}
+	if nbytes1+nbytes2 > 8 {
+		return ErrMulOverflow
+	}
+	vm.dstack.PushInt(scriptNum(m * n))
+	return nil
+}
+
+// N M OP_DIV -> N/M (integer division)
+func opcodeDiv(op *parsedOpcode, vm *Engine) error {
+	m, _, err := vm.dstack.PopIntWithSize(8)
+	if err != nil {
+		return err
+	}
+	if m == 0 {
+		return ErrDivideByZero
+	}
+	n, _, err := vm.dstack.PopIntWithSize(8)
+	if err != nil {
+		return err
+	}
+	vm.dstack.PushInt(scriptNum(n / m)) // xxx are Go's truncation rules right for btc script?
+	return nil
+}
+
+// N M OP_MOD -> N%M
+func opcodeMod(op *parsedOpcode, vm *Engine) error {
+	m, _, err := vm.dstack.PopIntWithSize(8)
+	if err != nil {
+		return err
+	}
+	if m == 0 {
+		return ErrDivideByZero
+	}
+	n, _, err := vm.dstack.PopIntWithSize(8)
+	if err != nil {
+		return err
+	}
+	vm.dstack.PushInt(scriptNum(n % m))
+	return nil
+}
+
+// N B OP_LSHIFT -> N << B (preserving sign)
+func opcodeLShift(op *parsedOpcode, vm *Engine) error {
+	b, _, err := vm.dstack.PopIntWithSize(1)
+	if err != nil {
+		return err
+	}
+	if b < 0 {
+		return ErrNegativeShift
+	}
+	n, nbytes, err := vm.dstack.PopIntWithSize(8)
+	if nbytes*8+int(b) > 63 {
+		return ErrShiftOverflow
+	}
+	if err != nil {
+		return err
+	}
+	var isNegative bool
+	if n < 0 {
+		isNegative = true
+		n = -n
+	}
+	n <<= uint(b)
+	if isNegative {
+		n = -n
+	}
+	vm.dstack.PushInt(n)
+	return nil
+}
+
+func rshift(n scriptNum, b uint) scriptNum {
+	var isNegative bool
+	if n < 0 {
+		isNegative = true
+		n = -n
+	}
+	n >>= b
+	if isNegative {
+		n = -n
+	}
+	return n
+}
+
+// N B OP_RSHIFT -> N >> B (preserving sign)
+func opcodeRShift(op *parsedOpcode, vm *Engine) error {
+	b, _, err := vm.dstack.PopIntWithSize(8)
+	if err != nil {
+		return err
+	}
+	if b < 0 {
+		return ErrNegativeShift
+	}
+	n, _, err := vm.dstack.PopIntWithSize(8)
+	if err != nil {
+		return err
+	}
+	n = rshift(n, uint(b))
+	vm.dstack.PushInt(n)
 	return nil
 }
 
@@ -2222,6 +2439,28 @@ func scriptMatchesPattern(script []byte, parsedPattern []parsedOpcode, contractH
 	return true, nil
 }
 
+// timestamp CHECKLOCKTIMEVERIFY
+// Produces an error unless the timestamp in the current tx is >= the
+// timestamp on the stack.
+func opcodeCheckLockTimeVerify(op *parsedOpcode, vm *Engine) error {
+	timestamp, err := vm.dstack.PeekIntWithSize(5) // permit 5-byte ints for CLTV
+	if err != nil {
+		return err
+	}
+
+	// In Bitcoin, CHECKLOCKTIMEVERIFY values below this threshold are
+	// block heights rather than Unix timestamps.  In Fedchain, block
+	// heights aren't very useful, so we disallow values below this
+	// threshold.
+	if timestamp < scriptNum(LockTimeThreshold) {
+		return ErrEarlyTimestamp
+	}
+	if vm.tx.LockTime < uint64(timestamp) {
+		return ErrStackVerifyFailed
+	}
+	return nil
+}
+
 // ASSETID CONTRACTHASH OP_BALANCE
 // Pushes the unspent balance of the given ASSETID that has been paid
 // to p2c addrs with the given CONTRACTHASH.
@@ -2296,6 +2535,11 @@ func opcodeEval(op *parsedOpcode, vm *Engine) error {
 	parsedScript, err := parseScript(script)
 	if err != nil {
 		return err
+	}
+	for _, pop := range parsedScript {
+		if pop.opcode.value == OP_EVAL {
+			return ErrNestedEval
+		}
 	}
 	vm.InsertScript(parsedScript)
 	return nil

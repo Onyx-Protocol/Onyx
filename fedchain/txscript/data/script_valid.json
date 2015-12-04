@@ -3,12 +3,17 @@
 ["It is evaluated as if there was a crediting coinbase transaction with two 0"],
 ["pushes as scriptSig, and one output of 0 satoshi and given scriptPubKey,"],
 ["followed by a spending transaction which spends this output as only input (and"],
-["correct prevout hash), using the given scriptSig. All nLockTimes are 0, all"],
+["correct prevout hash), using the given scriptSig. All nLockTimes are 2e9, all"],
 ["nSequences are max."],
 
 ["3 2 DATA_3 0x935587", "0 ROLL DUP HASH160 DATA_20 0x9c7d1d4a371634286f4437f7f8a38021ffbb7ca0 EQUALVERIFY", "P2SH,STRICTENC", "Simple 0-param P2C script"],
 ["2 DATA_3 0x935587", "3 1 ROLL DUP HASH160 DATA_20 0x9c7d1d4a371634286f4437f7f8a38021ffbb7ca0 EQUALVERIFY", "P2SH,STRICTENC", "Simple 1-param P2C script"],
 ["DATA_3 0x935587", "2 3 2 ROLL DUP HASH160 DATA_20 0x9c7d1d4a371634286f4437f7f8a38021ffbb7ca0 EQUALVERIFY", "P2SH,STRICTENC", "Simple 2-param P2C script"],
+
+["1000000000 CHECKLOCKTIMEVERIFY", "", "P2SH,STRICTENC", "CHECKLOCKTIMEVERIFY"],
+
+["36028797018963967 0 ADD", "NOP", "P2SH,STRICTENC", "arithmetic operands must be in range [-2^55...2^55] (exclusive)"],
+["-36028797018963967 0 ADD", "NOP", "P2SH,STRICTENC", "arithmetic operands must be in range [-2^55...2^55] (exclusive)"],
 
 ["", "ASSET DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 EQUAL", "P2SH,STRICTENC", "Test ASSET opcode"],
 ["", "TIME 11 EQUAL", "P2SH,STRICTENC", "Test TIME opcode"],
@@ -239,8 +244,8 @@
 ["'abcdefghijklmnopqrstuvwxyz'", "HASH256 0x4c 0x20 0xca139bc10c2f660da42666f72e89a225936fc60f193c161124a672050c434671 EQUAL", "P2SH,STRICTENC"],
 
 
-["1","NOP1 NOP2 NOP3 NOP4 NOP5 NOP6 NOP7 NOP8 NOP9 NOP10 1 EQUAL", "P2SH,STRICTENC"],
-["'NOP_1_to_10' NOP1 NOP2 NOP3 NOP4 NOP5 NOP6 NOP7 NOP8 NOP9 NOP10","'NOP_1_to_10' EQUAL", "P2SH,STRICTENC"],
+["1","NOP1 NOP3 NOP4 NOP5 NOP6 NOP7 NOP8 NOP9 NOP10 1 EQUAL", "P2SH,STRICTENC"],
+["'NOP_1_to_10' NOP1 NOP3 NOP4 NOP5 NOP6 NOP7 NOP8 NOP9 NOP10","'NOP_1_to_10' EQUAL", "P2SH,STRICTENC"],
 
 ["1", "NOP", "P2SH,STRICTENC,DISCOURAGE_UPGRADABLE_NOPS", "Discourage NOPx flag allows OP_NOP"],
 
@@ -449,7 +454,7 @@
 ["NOP", "CODESEPARATOR 1", "P2SH,STRICTENC"],
 
 ["NOP", "NOP1 1", "P2SH,STRICTENC"],
-["NOP", "NOP2 1", "P2SH,STRICTENC"],
+
 ["NOP", "NOP3 1", "P2SH,STRICTENC"],
 ["NOP", "NOP4 1", "P2SH,STRICTENC"],
 ["NOP", "NOP5 1", "P2SH,STRICTENC"],

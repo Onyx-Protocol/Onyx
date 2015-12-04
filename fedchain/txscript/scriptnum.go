@@ -166,9 +166,11 @@ func (n scriptNum) Int32() int32 {
 //
 // See the Bytes function documentation for example encodings.
 func makeScriptNum(v []byte, requireMinimal bool) (scriptNum, error) {
-	// Interpreting data as an integer requires that it is not larger than
-	// a 32-bit integer.
-	if len(v) > maxScriptNumLen {
+	return makeScriptNumWithMaxLen(v, requireMinimal, maxScriptNumLen)
+}
+
+func makeScriptNumWithMaxLen(v []byte, requireMinimal bool, maxLen int) (scriptNum, error) {
+	if len(v) > maxLen {
 		return 0, ErrStackNumberTooBig
 	}
 

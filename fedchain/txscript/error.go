@@ -145,6 +145,28 @@ var (
 	// ErrNoContractHash is returned when OP_BALANCE does not get a contract
 	// hash from either the stack or the virtual machine.
 	ErrNoContractHash = errors.New("no contract hash")
+
+	// ErrEarlyTimestamp is returned when OP_CHECKLOCKTIMEVERIFY is
+	// given a timestamp below 5e8.
+	ErrEarlyTimestamp = errors.New("early CHECKLOCKTIMEVERIFY timestamp")
+
+	// ErrDivideByZero is returned when OP_DIV or OP_MOD tries to divide
+	// by zero.
+	ErrDivideByZero = errors.New("divide by zero")
+
+	// ErrMulOverflow is returned when OP_MUL or OP_2MUL might overflow.
+	ErrMulOverflow = errors.New("overflow in MUL")
+
+	// ErrNegativeShift is when you try to shift a number by a negative
+	// number of bits.
+	ErrNegativeShift = errors.New("negative shift")
+
+	// ErrShiftOverflow is when you try to shift a number left too far.
+	ErrShiftOverflow = errors.New("shift overflow")
+
+	// ErrNestedEval is when EVAL tries adding another EVAL to the
+	// script.
+	ErrNestedEval = errors.New("nested EVAL")
 )
 
 var (

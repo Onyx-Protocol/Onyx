@@ -74,6 +74,7 @@ func TestOpcodeDisasm(t *testing.T) {
 		0xa9: "OP_HASH160", 0xaa: "OP_HASH256", 0xab: "OP_CODESEPARATOR",
 		0xac: "OP_CHECKSIG", 0xad: "OP_CHECKSIGVERIFY",
 		0xae: "OP_CHECKMULTISIG", 0xaf: "OP_CHECKMULTISIGVERIFY",
+		0xb1: "OP_CHECKLOCKTIMEVERIFY",
 		0xc0: "OP_REQUIREOUTPUT", 0xc1: "OP_BALANCE",
 		0xc2: "OP_ASSET", 0xc3: "OP_AMOUNT",
 		0xc4: "OP_OUTPUTSCRIPT", 0xc5: "OP_TIME",
@@ -112,7 +113,7 @@ func TestOpcodeDisasm(t *testing.T) {
 			expectedStr = strconv.Itoa(int(val))
 
 		// OP_NOP1 through OP_NOP10.
-		case opcodeVal >= 0xb0 && opcodeVal <= 0xb9:
+		case isNop(opcodeVal):
 			val := byte(opcodeVal - (0xb0 - 1))
 			expectedStr = "OP_NOP" + strconv.Itoa(int(val))
 
@@ -169,7 +170,7 @@ func TestOpcodeDisasm(t *testing.T) {
 			expectedStr = "OP_" + strconv.Itoa(int(val))
 
 		// OP_NOP1 through OP_NOP10.
-		case opcodeVal >= 0xb0 && opcodeVal <= 0xb9:
+		case isNop(opcodeVal):
 			val := byte(opcodeVal - (0xb0 - 1))
 			expectedStr = "OP_NOP" + strconv.Itoa(int(val))
 
@@ -189,6 +190,10 @@ func TestOpcodeDisasm(t *testing.T) {
 	}
 }
 
+func isNop(opcodeVal int) bool {
+	return opcodeVal >= 0xb0 && opcodeVal <= 0xb9 && opcodeVal != OP_CHECKLOCKTIMEVERIFY
+}
+
 func isUnknownOpcode(opcodeVal int) bool {
-	return (opcodeVal >= 0xb1 && opcodeVal <= 0xbf) || (opcodeVal >= 0xc7 && opcodeVal <= 0xc8) || (opcodeVal >= 0xca && opcodeVal <= 0xf8) || (opcodeVal == 0xfc)
+	return (opcodeVal >= 0xb2 && opcodeVal <= 0xbf) || (opcodeVal >= 0xc7 && opcodeVal <= 0xc8) || (opcodeVal >= 0xca && opcodeVal <= 0xf8) || (opcodeVal == 0xfc)
 }
