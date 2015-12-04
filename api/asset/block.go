@@ -1,6 +1,7 @@
 package asset
 
 import (
+	"runtime"
 	"time"
 
 	"golang.org/x/net/context"
@@ -19,6 +20,40 @@ import (
 
 // ErrBadBlock is returned when a block is invalid.
 var ErrBadBlock = errors.New("invalid block")
+
+// MakeBlocks runs forever,
+// attempting to make one block per period.
+// The caller should call it exactly once.
+func MakeBlocks(ctx context.Context, period time.Duration) {
+	for range time.Tick(period) {
+		makeBlock(ctx)
+	}
+}
+
+func makeBlock(ctx context.Context) {
+	defer func() {
+		if err := recover(); err != nil {
+			const size = 64 << 10
+			buf := make([]byte, size)
+			buf = buf[:runtime.Stack(buf, false)]
+			log.Write(ctx,
+				log.KeyMessage, "panic",
+				log.KeyError, err,
+				log.KeyStack, buf,
+			)
+		}
+	}()
+	log.Messagef(ctx, "making block")
+	b, err := GenerateBlock(ctx, time.Now())
+	if err != nil {
+		log.Error(ctx, errors.Wrap(err, "generate"))
+		return
+	}
+	err = ApplyBlock(ctx, b)
+	if err != nil {
+		log.Error(ctx, errors.Wrap(err, "apply"))
+	}
+}
 
 // GenerateBlock creates a new bc.Block using the current tx pool and blockchain
 // state.

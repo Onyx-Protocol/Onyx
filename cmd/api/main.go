@@ -16,6 +16,7 @@ import (
 
 	"chain/api"
 	"chain/api/appdb"
+	"chain/api/asset"
 	"chain/database/pg"
 	chainlog "chain/log"
 	"chain/log/rotation"
@@ -87,6 +88,7 @@ func main() {
 
 	bg := context.Background()
 	bg = pg.NewContext(bg, db)
+	go asset.MakeBlocks(bg, 1*time.Second)
 	http.Handle("/", chainhttp.ContextHandler{Context: bg, Handler: h})
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 
