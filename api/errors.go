@@ -51,6 +51,7 @@ var (
 		appdb.ErrAlreadyMember:          errorInfo{400, "CH801", "User is already a member of the project."},
 		errNotAdmin:                     errorInfo{403, "CH781", "Admin privileges are required perform this action"},
 		appdb.ErrAdminNodeAlreadyExists: errorInfo{400, "CH999", "Cannot create more than one admin node per blockchain."},
+		asset.ErrBadDefinition:          errorInfo{500, "CH764", "Invalid asset definition"},
 
 		// Error codes imported from papi for convenient reference.
 		// Please delete lines from this block when you add them

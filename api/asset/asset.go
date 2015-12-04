@@ -19,8 +19,13 @@ import (
 	"chain/metrics"
 )
 
-// ErrBadAddr is returned by Issue.
-var ErrBadAddr = errors.New("bad address")
+var (
+	// ErrBadAddr is returned by Issue.
+	ErrBadAddr = errors.New("bad address")
+
+	// ErrBadDefinition is returned by Create.
+	ErrBadDefinition = errors.New("bad definition")
+)
 
 // Issue creates a transaction that
 // issues new units of an asset
