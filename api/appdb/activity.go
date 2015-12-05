@@ -34,7 +34,7 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outIsChange map[int]bool, txT
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
 	// Fetch UTXO data for all outputs involved in the transaction.
-	ins, outs, err := getActUTXOs(ctx, tx)
+	ins, outs, err := GetActUTXOs(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "get tx utxos")
 	}
@@ -50,25 +50,25 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outIsChange map[int]bool, txT
 	assetIDs, accountIDs, managerNodeIDs, managerNodeAccounts := getIDsFromUTXOs(append(ins, outs...))
 
 	// Gather additional data on relevant accounts.
-	actAccounts, err := getActAccounts(ctx, accountIDs)
+	actAccounts, err := GetActAccounts(ctx, accountIDs)
 	if err != nil {
 		return errors.Wrap(err, "get accounts")
 	}
 
 	accountLabels := make(map[string]string)
 	for _, a := range actAccounts {
-		accountLabels[a.id] = a.label
+		accountLabels[a.ID] = a.Label
 	}
 
 	// Gather additional data on relevant assets.
-	actAssets, err := getActAssets(ctx, assetIDs)
+	actAssets, err := GetActAssets(ctx, assetIDs)
 	if err != nil {
 		return errors.Wrap(err, "get assets")
 	}
 
 	assetLabels := make(map[string]string)
 	for _, a := range actAssets {
-		assetLabels[a.id] = a.label
+		assetLabels[a.ID] = a.Label
 	}
 
 	// We'll use the transaction hash several times, so we'll keep it around.
@@ -99,8 +99,8 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outIsChange map[int]bool, txT
 
 		var visibleAccounts []string
 		for _, a := range actAccounts {
-			if a.projID == actAssets[0].projID {
-				visibleAccounts = append(visibleAccounts, a.id)
+			if a.ProjID == actAssets[0].ProjID {
+				visibleAccounts = append(visibleAccounts, a.ID)
 			}
 		}
 
@@ -114,7 +114,7 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outIsChange map[int]bool, txT
 
 		err = writeIssuanceActivity(ctx, actAssets[0], txHash, data)
 		if err != nil {
-			return errors.Wrap(err, "writing activity for issuer node", actAssets[0].inID)
+			return errors.Wrap(err, "writing activity for issuer node", actAssets[0].IssuerNodeID)
 		}
 	}
 
@@ -223,27 +223,28 @@ func ManagerNodeTxActivity(ctx context.Context, managerNodeID, txID string) (*js
 	return (*json.RawMessage)(&a), err
 }
 
-type actUTXO struct {
-	assetID       string
-	amount        uint64
-	managerNodeID string
-	accountID     string
-	addr          string
-	isChange      bool
+type ActUTXO struct {
+	AssetID       string
+	Amount        uint64
+	ManagerNodeID string
+	AccountID     string
+	Addr          string
+	Script        []byte
+	IsChange      bool
 }
 
-type actAsset struct {
-	id     string
-	label  string
-	inID   string
-	projID string
+type ActAsset struct {
+	ID           string
+	Label        string
+	IssuerNodeID string
+	ProjID       string
 }
 
-type actAccount struct {
-	id            string
-	label         string
-	managerNodeID string
-	projID        string
+type ActAccount struct {
+	ID            string
+	Label         string
+	ManagerNodeID string
+	ProjID        string
 }
 
 type txRawActivity struct {
@@ -299,8 +300,8 @@ type actItem struct {
 	Outputs []actEntry `json:"outputs"`
 }
 
-// getActUTXOs returns information about outputs from both sides of a transaciton.
-func getActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*actUTXO, err error) {
+// GetActUTXOs returns information about outputs from both sides of a transaciton.
+func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err error) {
 	var (
 		txHashStr  = tx.Hash.String()
 		isIssuance = tx.IsIssuance()
@@ -344,28 +345,27 @@ func getActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*actUTXO, err erro
 	}
 	defer rows.Close()
 
-	all := make(map[bc.Outpoint]*actUTXO)
+	all := make(map[bc.Outpoint]*ActUTXO)
 	for rows.Next() {
 		var (
-			hash   bc.Hash
-			index  uint32
-			script []byte
-			utxo   = new(actUTXO)
+			hash  bc.Hash
+			index uint32
+			utxo  = new(ActUTXO)
 		)
 		err := rows.Scan(
 			&hash, &index,
-			&utxo.assetID, &utxo.amount, &script,
-			&utxo.accountID, &utxo.managerNodeID,
+			&utxo.AssetID, &utxo.Amount, &utxo.Script,
+			&utxo.AccountID, &utxo.ManagerNodeID,
 		)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "row scan")
 		}
 
-		addr, err := txscript.PkScriptAddr(script)
+		addr, err := txscript.PkScriptAddr(utxo.Script)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "get addr from script: %x", script)
+			return nil, nil, errors.Wrapf(err, "get addr from script: %x", utxo.Script)
 		}
-		utxo.addr = addr.String()
+		utxo.Addr = addr.String()
 
 		all[bc.Outpoint{Hash: hash, Index: index}] = utxo
 	}
@@ -394,17 +394,17 @@ func getActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*actUTXO, err erro
 
 // markChangeOuts sets the change flag on a set of transaction UTXOs. It checks
 // both the outIsChange parameter and the addresses table.
-func markChangeOuts(ctx context.Context, utxos []*actUTXO, outIsChange map[int]bool) error {
+func markChangeOuts(ctx context.Context, utxos []*ActUTXO, outIsChange map[int]bool) error {
 	var (
 		unknownAddrs  []string
-		unknownByAddr = make(map[string]*actUTXO)
+		unknownByAddr = make(map[string]*ActUTXO)
 	)
 	for i, u := range utxos {
 		if outIsChange[i] {
-			u.isChange = true
+			u.IsChange = true
 		} else {
-			unknownAddrs = append(unknownAddrs, u.addr)
-			unknownByAddr[u.addr] = u
+			unknownAddrs = append(unknownAddrs, u.Addr)
+			unknownByAddr[u.Addr] = u
 		}
 	}
 
@@ -427,7 +427,7 @@ func markChangeOuts(ctx context.Context, utxos []*actUTXO, outIsChange map[int]b
 			return errors.Wrap(err, "row scan")
 		}
 
-		unknownByAddr[addr].isChange = true
+		unknownByAddr[addr].IsChange = true
 	}
 
 	if err := rows.Err(); err != nil {
@@ -440,7 +440,7 @@ func markChangeOuts(ctx context.Context, utxos []*actUTXO, outIsChange map[int]b
 // getIDsFromUTXOs extracts lists of unique identifiers present from the
 // specified UTXOs. It is useful for determining the range of resources involved
 // in a transaction.
-func getIDsFromUTXOs(utxos []*actUTXO) (
+func getIDsFromUTXOs(utxos []*ActUTXO) (
 	assetIDs []string, // list of unique asset IDs
 	accountIDs []string, // list of unique account IDs
 	managerNodeIDs []string, // list of unique manager node IDs
@@ -449,13 +449,13 @@ func getIDsFromUTXOs(utxos []*actUTXO) (
 	managerNodeAccounts = make(map[string][]string)
 	for _, u := range utxos {
 		if u != nil {
-			assetIDs = append(assetIDs, u.assetID)
+			assetIDs = append(assetIDs, u.AssetID)
 
 			// outputs with pure address receivers will not have account IDs or manager node IDs.
-			if u.accountID != "" {
-				accountIDs = append(accountIDs, u.accountID)
-				managerNodeIDs = append(managerNodeIDs, u.managerNodeID)
-				managerNodeAccounts[u.managerNodeID] = append(managerNodeAccounts[u.managerNodeID], u.accountID)
+			if u.AccountID != "" {
+				accountIDs = append(accountIDs, u.AccountID)
+				managerNodeIDs = append(managerNodeIDs, u.ManagerNodeID)
+				managerNodeAccounts[u.ManagerNodeID] = append(managerNodeAccounts[u.ManagerNodeID], u.AccountID)
 			}
 		}
 	}
@@ -476,7 +476,7 @@ func getIDsFromUTXOs(utxos []*actUTXO) (
 	return assetIDs, accountIDs, managerNodeIDs, managerNodeAccounts
 }
 
-func getActAssets(ctx context.Context, assetIDs []string) ([]*actAsset, error) {
+func GetActAssets(ctx context.Context, assetIDs []string) ([]*ActAsset, error) {
 	q := `
 		SELECT a.id, a.label, i.id, i.project_id
 		FROM assets a
@@ -490,10 +490,10 @@ func getActAssets(ctx context.Context, assetIDs []string) ([]*actAsset, error) {
 	}
 	defer rows.Close()
 
-	var res []*actAsset
+	var res []*ActAsset
 	for rows.Next() {
-		a := new(actAsset)
-		err := rows.Scan(&a.id, &a.label, &a.inID, &a.projID)
+		a := new(ActAsset)
+		err := rows.Scan(&a.ID, &a.Label, &a.IssuerNodeID, &a.ProjID)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
@@ -507,7 +507,7 @@ func getActAssets(ctx context.Context, assetIDs []string) ([]*actAsset, error) {
 	return res, nil
 }
 
-func getActAccounts(ctx context.Context, accountIDs []string) ([]*actAccount, error) {
+func GetActAccounts(ctx context.Context, accountIDs []string) ([]*ActAccount, error) {
 	q := `
 		SELECT acc.id, acc.label, acc.manager_node_id, mn.project_id
 		FROM accounts acc
@@ -521,10 +521,10 @@ func getActAccounts(ctx context.Context, accountIDs []string) ([]*actAccount, er
 	}
 	defer rows.Close()
 
-	var res []*actAccount
+	var res []*ActAccount
 	for rows.Next() {
-		a := new(actAccount)
-		err := rows.Scan(&a.id, &a.label, &a.managerNodeID, &a.projID)
+		a := new(ActAccount)
+		err := rows.Scan(&a.ID, &a.Label, &a.ManagerNodeID, &a.ProjID)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
@@ -538,7 +538,7 @@ func getActAccounts(ctx context.Context, accountIDs []string) ([]*actAccount, er
 	return res, nil
 }
 
-func coalesceActivity(ins, outs []*actUTXO, visibleAccounts []string) txRawActivity {
+func coalesceActivity(ins, outs []*ActUTXO, visibleAccounts []string) txRawActivity {
 	// create lookup tables for account visibility and change addresses
 	isAccountVis := make(map[string]bool)
 	for _, bid := range visibleAccounts {
@@ -554,22 +554,22 @@ func coalesceActivity(ins, outs []*actUTXO, visibleAccounts []string) txRawActiv
 
 	// Pool all inputs by address, or by account if the account is visible.
 	for _, u := range ins {
-		if isAccountVis[u.accountID] {
-			if res.insByAccount[u.accountID] == nil {
-				res.insByAccount[u.accountID] = make(map[string]int64)
+		if isAccountVis[u.AccountID] {
+			if res.insByAccount[u.AccountID] == nil {
+				res.insByAccount[u.AccountID] = make(map[string]int64)
 			}
-			res.insByAccount[u.accountID][u.assetID] += int64(u.amount)
+			res.insByAccount[u.AccountID][u.AssetID] += int64(u.Amount)
 		} else {
-			if res.insByAsset[u.addr] == nil {
-				res.insByAsset[u.addr] = make(map[string]int64)
+			if res.insByAsset[u.Addr] == nil {
+				res.insByAsset[u.Addr] = make(map[string]int64)
 			}
-			res.insByAsset[u.addr][u.assetID] += int64(u.amount)
+			res.insByAsset[u.Addr][u.AssetID] += int64(u.Amount)
 		}
 	}
 
 	// Pool all outputs by address, or by account if the account is visible.
 	for _, u := range outs {
-		if isAccountVis[u.accountID] {
+		if isAccountVis[u.AccountID] {
 			// Rather than create a discrete output for a change address, we
 			// should deduct the value of the output from the corresponding
 			// value in the input. To determine whether to do this, we'll use
@@ -578,21 +578,21 @@ func coalesceActivity(ins, outs []*actUTXO, visibleAccounts []string) txRawActiv
 			// 2. There is a corresponding input for the same account and asset.
 			// 3. The input's value is greater than the output.
 
-			if u.isChange &&
-				res.insByAccount[u.accountID] != nil &&
-				res.insByAccount[u.accountID][u.assetID] > int64(u.amount) {
-				res.insByAccount[u.accountID][u.assetID] -= int64(u.amount)
+			if u.IsChange &&
+				res.insByAccount[u.AccountID] != nil &&
+				res.insByAccount[u.AccountID][u.AssetID] > int64(u.Amount) {
+				res.insByAccount[u.AccountID][u.AssetID] -= int64(u.Amount)
 			} else {
-				if res.outsByAccount[u.accountID] == nil {
-					res.outsByAccount[u.accountID] = make(map[string]int64)
+				if res.outsByAccount[u.AccountID] == nil {
+					res.outsByAccount[u.AccountID] = make(map[string]int64)
 				}
-				res.outsByAccount[u.accountID][u.assetID] += int64(u.amount)
+				res.outsByAccount[u.AccountID][u.AssetID] += int64(u.Amount)
 			}
 		} else {
-			if res.outsByAsset[u.addr] == nil {
-				res.outsByAsset[u.addr] = make(map[string]int64)
+			if res.outsByAsset[u.Addr] == nil {
+				res.outsByAsset[u.Addr] = make(map[string]int64)
 			}
-			res.outsByAsset[u.addr][u.assetID] += int64(u.amount)
+			res.outsByAsset[u.Addr][u.AssetID] += int64(u.Amount)
 		}
 	}
 
@@ -718,14 +718,14 @@ func writeManagerNodeActivity(ctx context.Context, managerNodeID, txHash string,
 	return nil
 }
 
-func writeIssuanceActivity(ctx context.Context, a *actAsset, txHash string, data []byte) error {
+func writeIssuanceActivity(ctx context.Context, a *ActAsset, txHash string, data []byte) error {
 	iaq := `
 		INSERT INTO issuance_activity (issuer_node_id, txid, data)
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
 	var id string
-	err := pg.FromContext(ctx).QueryRow(iaq, a.inID, txHash, data).Scan(&id)
+	err := pg.FromContext(ctx).QueryRow(iaq, a.IssuerNodeID, txHash, data).Scan(&id)
 	if err != nil {
 		return errors.Wrap(err, "insert issuance activity")
 	}
@@ -734,7 +734,7 @@ func writeIssuanceActivity(ctx context.Context, a *actAsset, txHash string, data
 		INSERT INTO issuance_activity_assets (issuance_activity_id, asset_id)
 		VALUES ($1, $2)
 	`
-	_, err = pg.FromContext(ctx).Exec(assetq, id, a.id)
+	_, err = pg.FromContext(ctx).Exec(assetq, id, a.ID)
 	if err != nil {
 		return errors.Wrap(err, "insert issuance activity for asset")
 	}

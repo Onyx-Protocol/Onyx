@@ -101,6 +101,11 @@ func publishTx(ctx context.Context, msg *bc.Tx, receivers []*utxodb.Receiver) (e
 		return errors.Wrap(err, "writing activitiy")
 	}
 
+	err = WriteNodeTxs(ctx, msg, time.Now())
+	if err != nil {
+		return errors.Wrap(err, "writing activitiy")
+	}
+
 	if msg.IsIssuance() {
 		asset, amt := issued(msg.Outputs)
 		err = appdb.UpdateIssuances(

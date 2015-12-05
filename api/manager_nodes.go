@@ -143,6 +143,28 @@ func managerNodeTxActivity(ctx context.Context, mnodeID, txID string) (interface
 	return appdb.ManagerNodeTxActivity(ctx, mnodeID, txID)
 }
 
+// GET /v3/manager-nodes/:mnodeID/transactions
+func getManagerNodeTxs(ctx context.Context, mnID string) (interface{}, error) {
+	if err := managerAuthz(ctx, mnID); err != nil {
+		return nil, err
+	}
+	prev, limit, err := getPageData(ctx, defActivityPageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	txs, last, err := appdb.ManagerTxs(ctx, mnID, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := map[string]interface{}{
+		"last":         last,
+		"transactions": httpjson.Array(txs),
+	}
+	return ret, nil
+}
+
 // GET /v3/manager-nodes/:mnodeID/balance
 func managerNodeBalance(ctx context.Context, managerNodeID string) (interface{}, error) {
 	if err := managerAuthz(ctx, managerNodeID); err != nil {
@@ -264,6 +286,28 @@ func getAccountActivity(ctx context.Context, bid string) (interface{}, error) {
 	ret := map[string]interface{}{
 		"last":       last,
 		"activities": httpjson.Array(activity),
+	}
+	return ret, nil
+}
+
+// GET /v3/accounts/:accountID/transactions
+func getAccountTxs(ctx context.Context, bid string) (interface{}, error) {
+	if err := accountAuthz(ctx, bid); err != nil {
+		return nil, err
+	}
+	prev, limit, err := getPageData(ctx, defActivityPageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	txs, last, err := appdb.AccountTxs(ctx, bid, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := map[string]interface{}{
+		"last":         last,
+		"transactions": httpjson.Array(txs),
 	}
 	return ret, nil
 }

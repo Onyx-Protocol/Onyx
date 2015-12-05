@@ -1,6 +1,7 @@
 package appdb
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -608,49 +609,54 @@ func TestGetActUTXOs(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	gotIns, gotOuts, err := getActUTXOs(ctx, tx)
+	gotIns, gotOuts, err := GetActUTXOs(ctx, tx)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
 
-	wantIns := []*actUTXO{
+	wantIns := []*ActUTXO{
 		{
-			assetID:       "asset-id-0",
-			amount:        1,
-			managerNodeID: "manager-node-id-0",
-			accountID:     "account-id-0",
-			addr:          testAddrs[0].addr,
+			AssetID:       "asset-id-0",
+			Amount:        1,
+			ManagerNodeID: "manager-node-id-0",
+			AccountID:     "account-id-0",
+			Addr:          testAddrs[0].addr,
+			Script:        mustDecodeHex(testAddrs[0].script),
 		},
 		{
-			assetID:       "asset-id-0",
-			amount:        2,
-			managerNodeID: "manager-node-id-0",
-			accountID:     "account-id-1",
-			addr:          testAddrs[1].addr,
+			AssetID:       "asset-id-0",
+			Amount:        2,
+			ManagerNodeID: "manager-node-id-0",
+			AccountID:     "account-id-1",
+			Addr:          testAddrs[1].addr,
+			Script:        mustDecodeHex(testAddrs[1].script),
 		},
 		{
-			assetID:       "asset-id-1",
-			amount:        3,
-			managerNodeID: "manager-node-id-2",
-			accountID:     "account-id-2",
-			addr:          testAddrs[2].addr,
+			AssetID:       "asset-id-1",
+			Amount:        3,
+			ManagerNodeID: "manager-node-id-2",
+			AccountID:     "account-id-2",
+			Addr:          testAddrs[2].addr,
+			Script:        mustDecodeHex(testAddrs[2].script),
 		},
 	}
 
-	wantOuts := []*actUTXO{
+	wantOuts := []*ActUTXO{
 		{
-			assetID:       "asset-id-0",
-			amount:        3,
-			managerNodeID: "manager-node-id-3",
-			accountID:     "account-id-3",
-			addr:          testAddrs[3].addr,
+			AssetID:       "asset-id-0",
+			Amount:        3,
+			ManagerNodeID: "manager-node-id-3",
+			AccountID:     "account-id-3",
+			Addr:          testAddrs[3].addr,
+			Script:        mustDecodeHex(testAddrs[3].script),
 		},
 		{
-			assetID:       "asset-id-1",
-			amount:        3,
-			managerNodeID: "manager-node-id-4",
-			accountID:     "account-id-4",
-			addr:          testAddrs[4].addr,
+			AssetID:       "asset-id-1",
+			Amount:        3,
+			ManagerNodeID: "manager-node-id-4",
+			AccountID:     "account-id-4",
+			Addr:          testAddrs[4].addr,
+			Script:        mustDecodeHex(testAddrs[4].script),
 		},
 	}
 
@@ -659,7 +665,7 @@ func TestGetActUTXOs(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(gotOuts, wantOuts) {
-		t.Errorf("inputs:\ngot:  %v\nwant: %v", gotOuts, wantOuts)
+		t.Errorf("outputs:\ngot:  %v\nwant: %v", gotOuts, wantOuts)
 	}
 }
 
@@ -692,26 +698,28 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	gotIns, gotOuts, err := getActUTXOs(ctx, tx)
+	gotIns, gotOuts, err := GetActUTXOs(ctx, tx)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
 
-	var wantIns []*actUTXO
-	wantOuts := []*actUTXO{
+	var wantIns []*ActUTXO
+	wantOuts := []*ActUTXO{
 		{
-			assetID:       "asset-id-0",
-			amount:        1,
-			managerNodeID: "manager-node-id-0",
-			accountID:     "account-id-0",
-			addr:          testAddrs[0].addr,
+			AssetID:       "asset-id-0",
+			Amount:        1,
+			ManagerNodeID: "manager-node-id-0",
+			AccountID:     "account-id-0",
+			Addr:          testAddrs[0].addr,
+			Script:        mustDecodeHex(testAddrs[0].script),
 		},
 		{
-			assetID:       "asset-id-0",
-			amount:        2,
-			managerNodeID: "manager-node-id-1",
-			accountID:     "account-id-1",
-			addr:          testAddrs[1].addr,
+			AssetID:       "asset-id-0",
+			Amount:        2,
+			ManagerNodeID: "manager-node-id-1",
+			AccountID:     "account-id-1",
+			Addr:          testAddrs[1].addr,
+			Script:        mustDecodeHex(testAddrs[1].script),
 		},
 	}
 
@@ -749,11 +757,11 @@ func TestMarkChangeOuts(t *testing.T) {
 	`
 
 	withContext(t, fix, func(ctx context.Context) {
-		utxos := []*actUTXO{
-			{addr: "addr-0"},
-			{addr: "addr-1"},
-			{addr: "addr-2"},
-			{addr: "addr-3"},
+		utxos := []*ActUTXO{
+			{Addr: "addr-0"},
+			{Addr: "addr-1"},
+			{Addr: "addr-2"},
+			{Addr: "addr-3"},
 		}
 		outIsChange := map[int]bool{2: true}
 
@@ -762,11 +770,11 @@ func TestMarkChangeOuts(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		want := []*actUTXO{
-			{addr: "addr-0", isChange: true},
-			{addr: "addr-1"},
-			{addr: "addr-2", isChange: true},
-			{addr: "addr-3"},
+		want := []*ActUTXO{
+			{Addr: "addr-0", IsChange: true},
+			{Addr: "addr-1"},
+			{Addr: "addr-2", IsChange: true},
+			{Addr: "addr-3"},
 		}
 
 		if !reflect.DeepEqual(utxos, want) {
@@ -776,14 +784,14 @@ func TestMarkChangeOuts(t *testing.T) {
 }
 
 func TestGetIDsFromUTXOs(t *testing.T) {
-	utxos := []*actUTXO{
-		{assetID: "asset-id-3"},
-		{accountID: "account-id-2", assetID: "asset-id-2", managerNodeID: "manager-node-id-1"},
-		{accountID: "account-id-1", assetID: "asset-id-2", managerNodeID: "manager-node-id-1"},
-		{accountID: "account-id-0", assetID: "asset-id-2", managerNodeID: "manager-node-id-0"},
-		{accountID: "account-id-0", assetID: "asset-id-1", managerNodeID: "manager-node-id-0"},
-		{accountID: "account-id-0", assetID: "asset-id-0", managerNodeID: "manager-node-id-0"},
-		{accountID: "account-id-0", assetID: "asset-id-0", managerNodeID: "manager-node-id-0"},
+	utxos := []*ActUTXO{
+		{AssetID: "asset-id-3"},
+		{AccountID: "account-id-2", AssetID: "asset-id-2", ManagerNodeID: "manager-node-id-1"},
+		{AccountID: "account-id-1", AssetID: "asset-id-2", ManagerNodeID: "manager-node-id-1"},
+		{AccountID: "account-id-0", AssetID: "asset-id-2", ManagerNodeID: "manager-node-id-0"},
+		{AccountID: "account-id-0", AssetID: "asset-id-1", ManagerNodeID: "manager-node-id-0"},
+		{AccountID: "account-id-0", AssetID: "asset-id-0", ManagerNodeID: "manager-node-id-0"},
+		{AccountID: "account-id-0", AssetID: "asset-id-0", ManagerNodeID: "manager-node-id-0"},
 	}
 
 	gAssetIDs, gAccountIDs, gManagerNodeIDs, gManagerNodeAccounts := getIDsFromUTXOs(utxos)
@@ -817,19 +825,19 @@ func TestGetActAssets(t *testing.T) {
 
 	examples := []struct {
 		assetIDs []string
-		want     []*actAsset
+		want     []*ActAsset
 	}{
 		{
 			[]string{"asset-id-0", "asset-id-2"},
-			[]*actAsset{
-				{id: "asset-id-0", label: "asset-0", inID: "in-id-0", projID: "proj-id-0"},
-				{id: "asset-id-2", label: "asset-2", inID: "in-id-1", projID: "proj-id-0"},
+			[]*ActAsset{
+				{ID: "asset-id-0", Label: "asset-0", IssuerNodeID: "in-id-0", ProjID: "proj-id-0"},
+				{ID: "asset-id-2", Label: "asset-2", IssuerNodeID: "in-id-1", ProjID: "proj-id-0"},
 			},
 		},
 		{
 			[]string{"asset-id-1"},
-			[]*actAsset{
-				{id: "asset-id-1", label: "asset-1", inID: "in-id-0", projID: "proj-id-0"},
+			[]*ActAsset{
+				{ID: "asset-id-1", Label: "asset-1", IssuerNodeID: "in-id-0", ProjID: "proj-id-0"},
 			},
 		},
 	}
@@ -837,7 +845,7 @@ func TestGetActAssets(t *testing.T) {
 	for _, ex := range examples {
 		t.Log("Example:", ex.assetIDs)
 
-		got, err := getActAssets(ctx, ex.assetIDs)
+		got, err := GetActAssets(ctx, ex.assetIDs)
 		if err != nil {
 			t.Fatal("unexpected error", err)
 		}
@@ -855,19 +863,19 @@ func TestGetActAccounts(t *testing.T) {
 
 	examples := []struct {
 		accountIDs []string
-		want       []*actAccount
+		want       []*ActAccount
 	}{
 		{
 			[]string{"account-id-0", "account-id-2"},
-			[]*actAccount{
-				{id: "account-id-0", label: "account-0", managerNodeID: "manager-node-id-0", projID: "proj-id-0"},
-				{id: "account-id-2", label: "account-2", managerNodeID: "manager-node-id-1", projID: "proj-id-0"},
+			[]*ActAccount{
+				{ID: "account-id-0", Label: "account-0", ManagerNodeID: "manager-node-id-0", ProjID: "proj-id-0"},
+				{ID: "account-id-2", Label: "account-2", ManagerNodeID: "manager-node-id-1", ProjID: "proj-id-0"},
 			},
 		},
 		{
 			[]string{"account-id-1"},
-			[]*actAccount{
-				{id: "account-id-1", label: "account-1", managerNodeID: "manager-node-id-0", projID: "proj-id-0"},
+			[]*ActAccount{
+				{ID: "account-id-1", Label: "account-1", ManagerNodeID: "manager-node-id-0", ProjID: "proj-id-0"},
 			},
 		},
 	}
@@ -875,7 +883,7 @@ func TestGetActAccounts(t *testing.T) {
 	for _, ex := range examples {
 		t.Log("Example:", ex.accountIDs)
 
-		got, err := getActAccounts(ctx, ex.accountIDs)
+		got, err := GetActAccounts(ctx, ex.accountIDs)
 		if err != nil {
 			t.Fatal("unexpected error", err)
 		}
@@ -888,17 +896,17 @@ func TestGetActAccounts(t *testing.T) {
 
 func TestCoalesceActivity(t *testing.T) {
 	examples := []struct {
-		ins, outs       []*actUTXO
+		ins, outs       []*ActUTXO
 		visibleAccounts []string
 		want            txRawActivity
 	}{
 		// Simple transfer from Alice's perspective
 		{
-			ins: []*actUTXO{
-				{accountID: "alice-account-id-0", assetID: "gold", amount: 10, addr: "alice-addr-id-0"},
+			ins: []*ActUTXO{
+				{AccountID: "alice-account-id-0", AssetID: "gold", Amount: 10, Addr: "alice-addr-id-0"},
 			},
-			outs: []*actUTXO{
-				{accountID: "bob-account-id-0", assetID: "gold", amount: 10, addr: "bob-addr-id-0"},
+			outs: []*ActUTXO{
+				{AccountID: "bob-account-id-0", AssetID: "gold", Amount: 10, Addr: "bob-addr-id-0"},
 			},
 
 			visibleAccounts: []string{"alice-account-id-0"},
@@ -917,11 +925,11 @@ func TestCoalesceActivity(t *testing.T) {
 
 		// Simple transfer from Bob's perspective
 		{
-			ins: []*actUTXO{
-				{assetID: "gold", amount: 10, accountID: "alice-account-id-0", addr: "alice-addr-id-0"},
+			ins: []*ActUTXO{
+				{AssetID: "gold", Amount: 10, AccountID: "alice-account-id-0", Addr: "alice-addr-id-0"},
 			},
-			outs: []*actUTXO{
-				{assetID: "gold", amount: 10, accountID: "bob-account-id-0", addr: "bob-addr-id-0"},
+			outs: []*ActUTXO{
+				{AssetID: "gold", Amount: 10, AccountID: "bob-account-id-0", Addr: "bob-addr-id-0"},
 			},
 
 			visibleAccounts: []string{"bob-account-id-0"},
@@ -940,17 +948,17 @@ func TestCoalesceActivity(t *testing.T) {
 
 		// Trade from Alice's perspective
 		{
-			ins: []*actUTXO{
-				{assetID: "gold", amount: 20, accountID: "alice-account-id-0", addr: "alice-addr-id-0"},
-				{assetID: "silver", amount: 10, accountID: "bob-account-id-0", addr: "bob-addr-id-0"},
-				{assetID: "silver", amount: 10, accountID: "bob-account-id-0", addr: "bob-addr-id-1"},
+			ins: []*ActUTXO{
+				{AssetID: "gold", Amount: 20, AccountID: "alice-account-id-0", Addr: "alice-addr-id-0"},
+				{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0", Addr: "bob-addr-id-0"},
+				{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0", Addr: "bob-addr-id-1"},
 			},
-			outs: []*actUTXO{
-				{assetID: "silver", amount: 15, accountID: "alice-account-id-0", addr: "alice-addr-id-1"},
-				{assetID: "gold", amount: 5, accountID: "bob-account-id-0", addr: "bob-addr-id-2"},
+			outs: []*ActUTXO{
+				{AssetID: "silver", Amount: 15, AccountID: "alice-account-id-0", Addr: "alice-addr-id-1"},
+				{AssetID: "gold", Amount: 5, AccountID: "bob-account-id-0", Addr: "bob-addr-id-2"},
 
-				{assetID: "gold", amount: 15, accountID: "alice-account-id-0", addr: "alice-addr-id-2", isChange: true},
-				{assetID: "silver", amount: 5, accountID: "bob-account-id-0", addr: "bob-addr-id-3", isChange: true},
+				{AssetID: "gold", Amount: 15, AccountID: "alice-account-id-0", Addr: "alice-addr-id-2", IsChange: true},
+				{AssetID: "silver", Amount: 5, AccountID: "bob-account-id-0", Addr: "bob-addr-id-3", IsChange: true},
 			},
 
 			visibleAccounts: []string{"alice-account-id-0"},
@@ -975,17 +983,17 @@ func TestCoalesceActivity(t *testing.T) {
 
 		// Trade from Bob's perspective
 		{
-			ins: []*actUTXO{
-				{assetID: "gold", amount: 20, accountID: "alice-account-id-0", addr: "alice-addr-id-0"},
-				{assetID: "silver", amount: 10, accountID: "bob-account-id-0", addr: "bob-addr-id-0"},
-				{assetID: "silver", amount: 10, accountID: "bob-account-id-0", addr: "bob-addr-id-1"},
+			ins: []*ActUTXO{
+				{AssetID: "gold", Amount: 20, AccountID: "alice-account-id-0", Addr: "alice-addr-id-0"},
+				{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0", Addr: "bob-addr-id-0"},
+				{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0", Addr: "bob-addr-id-1"},
 			},
-			outs: []*actUTXO{
-				{assetID: "silver", amount: 15, accountID: "alice-account-id-0", addr: "alice-addr-id-1"},
-				{assetID: "gold", amount: 5, accountID: "bob-account-id-0", addr: "bob-addr-id-2"},
+			outs: []*ActUTXO{
+				{AssetID: "silver", Amount: 15, AccountID: "alice-account-id-0", Addr: "alice-addr-id-1"},
+				{AssetID: "gold", Amount: 5, AccountID: "bob-account-id-0", Addr: "bob-addr-id-2"},
 
-				{assetID: "gold", amount: 15, accountID: "alice-account-id-0", addr: "alice-addr-id-2", isChange: true},
-				{assetID: "silver", amount: 5, accountID: "bob-account-id-0", addr: "bob-addr-id-3", isChange: true},
+				{AssetID: "gold", Amount: 15, AccountID: "alice-account-id-0", Addr: "alice-addr-id-2", IsChange: true},
+				{AssetID: "silver", Amount: 5, AccountID: "bob-account-id-0", Addr: "bob-addr-id-3", IsChange: true},
 			},
 
 			visibleAccounts: []string{"bob-account-id-0"},
@@ -1147,7 +1155,7 @@ func TestWriteIssuanceActivity(t *testing.T) {
 
 	err := writeIssuanceActivity(
 		ctx,
-		&actAsset{id: "asset-id-0", inID: "in-id-0"},
+		&ActAsset{ID: "asset-id-0", IssuerNodeID: "in-id-0"},
 		"tx-hash",
 		[]byte(`{"transaction_id": "dummy"}`),
 	)
@@ -1275,4 +1283,12 @@ func withStack(err error) string {
 		s += "\n" + frame.String()
 	}
 	return s
+}
+
+func mustDecodeHex(str string) []byte {
+	bytes, err := hex.DecodeString(str)
+	if err != nil {
+		panic(err)
+	}
+	return bytes
 }

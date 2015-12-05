@@ -249,3 +249,47 @@ func getAssetActivity(ctx context.Context, assetID string) (interface{}, error) 
 	}
 	return ret, nil
 }
+
+// GET /v3/issuer-nodes/:inodeID/transactions
+func getIssuerNodeTxs(ctx context.Context, inodeID string) (interface{}, error) {
+	if err := issuerAuthz(ctx, inodeID); err != nil {
+		return nil, err
+	}
+	prev, limit, err := getPageData(ctx, defActivityPageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	txs, last, err := appdb.IssuerTxs(ctx, inodeID, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := map[string]interface{}{
+		"last":         last,
+		"transactions": httpjson.Array(txs),
+	}
+	return ret, nil
+}
+
+// GET /v3/assets/:assetID/transactions
+func getAssetTxs(ctx context.Context, assetID string) (interface{}, error) {
+	if err := assetAuthz(ctx, assetID); err != nil {
+		return nil, err
+	}
+	prev, limit, err := getPageData(ctx, defActivityPageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	txs, last, err := appdb.AssetTxs(ctx, assetID, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := map[string]interface{}{
+		"last":         last,
+		"transactions": httpjson.Array(txs),
+	}
+	return ret, nil
+}

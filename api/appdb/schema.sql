@@ -398,6 +398,29 @@ ALTER SEQUENCE issuer_nodes_key_index_seq OWNED BY issuer_nodes.key_index;
 
 
 --
+-- Name: issuer_txs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE issuer_txs (
+    id text DEFAULT next_chain_id('itx'::text) NOT NULL,
+    issuer_node_id text NOT NULL,
+    data json NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    txid text NOT NULL
+);
+
+
+--
+-- Name: issuer_txs_assets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE issuer_txs_assets (
+    issuer_tx_id text NOT NULL,
+    asset_id text NOT NULL
+);
+
+
+--
 -- Name: manager_nodes; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -436,6 +459,29 @@ CREATE SEQUENCE manager_nodes_key_index_seq
 --
 
 ALTER SEQUENCE manager_nodes_key_index_seq OWNED BY manager_nodes.key_index;
+
+
+--
+-- Name: manager_txs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE manager_txs (
+    id text DEFAULT next_chain_id('mtx'::text) NOT NULL,
+    manager_node_id text NOT NULL,
+    data json NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    txid text NOT NULL
+);
+
+
+--
+-- Name: manager_txs_accounts; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE manager_txs_accounts (
+    manager_tx_id text NOT NULL,
+    account_id text NOT NULL
+);
 
 
 --
