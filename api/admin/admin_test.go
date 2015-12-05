@@ -98,10 +98,10 @@ func TestGetSummary(t *testing.T) {
 			('mn-id-other', 'proj-id-other', 5, 'in-label-other', '{}');
 
 		INSERT INTO blocks
-			(block_hash, height, data)
+			(block_hash, height, data, header)
 		VALUES
-			(` + hashForFixture(b0.Hash()) + `, ` + strconv.Itoa(int(b0.Height)) + `, ` + blockForFixture(&b0) + `),
-			(` + hashForFixture(b1.Hash()) + `, ` + strconv.Itoa(int(b1.Height)) + `, ` + blockForFixture(&b1) + `);
+			(` + hashForFixture(b0.Hash()) + `, ` + strconv.Itoa(int(b0.Height)) + `, ` + blockForFixture(&b0) + `, ''),
+			(` + hashForFixture(b1.Hash()) + `, ` + strconv.Itoa(int(b1.Height)) + `, ` + blockForFixture(&b1) + `, '');
 
 		INSERT INTO blocks_txs
 			(block_hash, tx_hash)

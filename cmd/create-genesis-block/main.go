@@ -35,10 +35,10 @@ func main() {
 	}
 
 	const q = `
-		INSERT INTO blocks (block_hash, height, data)
-		VALUES ($1, $2, $3)
+		INSERT INTO blocks (block_hash, height, data, header)
+		VALUES ($1, $2, $3, $4)
 	`
-	_, err = db.Exec(q, b.Hash(), b.Height, b)
+	_, err = db.Exec(q, b.Hash(), b.Height, b, &b.BlockHeader)
 	if err != nil {
 		log.Fatalln("error:", err)
 	}

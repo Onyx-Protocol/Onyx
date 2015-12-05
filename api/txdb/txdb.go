@@ -84,14 +84,14 @@ func GetTxs(ctx context.Context, hashes ...string) (map[string]*bc.Tx, error) {
 	return txs, nil
 }
 
-func GetTxBlock(ctx context.Context, hash string) (*bc.Block, error) {
+func GetTxBlockHeader(ctx context.Context, hash string) (*bc.BlockHeader, error) {
 	const q = `
-		SELECT data
+		SELECT header
 		FROM blocks b
 		JOIN blocks_txs bt ON b.block_hash = bt.block_hash
 		WHERE bt.tx_hash=$1
 	`
-	b := new(bc.Block)
+	b := new(bc.BlockHeader)
 	err := pg.FromContext(ctx).QueryRow(q, hash).Scan(b)
 	if err == sql.ErrNoRows {
 		return nil, nil // tx "not being in a block" is not an error
@@ -127,10 +127,10 @@ func InsertBlock(ctx context.Context, block *bc.Block) error {
 	defer span.Finish(ctx)
 
 	const q = `
-		INSERT INTO blocks (block_hash, height, data)
-		VALUES ($1, $2, $3)
+		INSERT INTO blocks (block_hash, height, data, header)
+		VALUES ($1, $2, $3, $4)
 	`
-	_, err := pg.FromContext(ctx).Exec(q, block.Hash().String(), block.Height, block)
+	_, err := pg.FromContext(ctx).Exec(q, block.Hash(), block.Height, block, &block.BlockHeader)
 	if err != nil {
 		return errors.Wrap(err, "insert query")
 	}

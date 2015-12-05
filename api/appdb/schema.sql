@@ -283,7 +283,8 @@ CREATE TABLE auth_tokens (
 CREATE TABLE blocks (
     block_hash text NOT NULL,
     height bigint NOT NULL,
-    data bytea NOT NULL
+    data bytea NOT NULL,
+    header bytea NOT NULL
 );
 
 

@@ -127,16 +127,16 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 		Metadata: tx.Metadata,
 	}
 
-	block, err := txdb.GetTxBlock(ctx, txID)
+	blockHeader, err := txdb.GetTxBlockHeader(ctx, txID)
 	if err != nil {
 		return nil, err
 	}
 
-	if block != nil {
-		bhash := block.Hash()
+	if blockHeader != nil {
+		bhash := blockHeader.Hash()
 		resp.BlockID = &bhash
-		resp.BlockHeight = block.Height
-		resp.BlockTime = block.Time()
+		resp.BlockHeight = blockHeader.Height
+		resp.BlockTime = blockHeader.Time()
 	}
 
 	if tx.IsIssuance() {

@@ -105,6 +105,25 @@ func (bh *BlockHeader) Time() time.Time {
 	return time.Unix(int64(bh.Timestamp), 0).UTC()
 }
 
+func (bh *BlockHeader) Scan(val interface{}) error {
+	buf, ok := val.([]byte)
+	if !ok {
+		return errors.New("Scan must receive a byte slice")
+	}
+	r := &errors.Reader{R: bytes.NewReader(buf)}
+	bh.readFrom(r)
+	return r.Err
+}
+
+func (bh *BlockHeader) Value() (driver.Value, error) {
+	buf := new(bytes.Buffer)
+	_, err := bh.WriteTo(buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 // Hash returns complete hash of the block header.
 func (bh *BlockHeader) Hash() Hash {
 	h := hash256.New()
