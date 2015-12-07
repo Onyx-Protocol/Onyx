@@ -111,14 +111,34 @@ func GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, error) {
 	return block, nil
 }
 
+func outpoints(outs []*txdb.Output) (p []bc.Outpoint) {
+	for _, o := range outs {
+		p = append(p, o.Outpoint)
+	}
+	return p
+}
+
 func ApplyBlock(ctx context.Context, block *bc.Block) error {
 	delta, err := applyBlock(ctx, block)
 	if err != nil {
 		return errors.Wrap(err)
 	}
 
-	// update reserver
-	applyToReserver(delta)
+	// When applying block outputs to the reserver,
+	// do not apply an output that has already been
+	// spent in the mempool.
+	poolView, err := txdb.NewPoolView(ctx, outpoints(delta))
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	var resvDelta []*txdb.Output
+	for _, o := range delta {
+		po := poolView.Output(ctx, o.Outpoint)
+		if o.Spent || po == nil {
+			resvDelta = append(resvDelta, o)
+		}
+	}
+	applyToReserver(resvDelta)
 
 	conflictTxs, err := rebuildPool(ctx, block)
 	if err != nil {

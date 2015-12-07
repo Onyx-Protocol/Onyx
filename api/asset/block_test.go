@@ -111,16 +111,115 @@ func TestTransferConfirmed(t *testing.T) {
 	})
 }
 
-func signTx(t *testing.T, tx *Tx, priv *hdkey.XKey) {
+func BenchmarkTransferWithBlocks(b *testing.B) {
+	const genesisBlock = `
+		INSERT INTO blocks (block_hash, height, data)
+		VALUES(
+			'341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5',
+			1,
+			decode('0000000100000000000000013132330000000000000000000000000000000000000000000000000000000000414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000000000000000000640f746573742d7369672d73637269707412746573742d6f75747075742d73637269707401000000010000000000000000000007746573742d7478', 'hex')
+		);
+	`
+	withContext(b, genesisBlock, func(ctx context.Context) {
+		u, err := appdb.CreateUser(ctx, "user@example.com", "password")
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		proj, err := appdb.CreateProject(ctx, "proj", u.ID)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		manPub, manPriv, err := newKey()
+		if err != nil {
+			b.Fatal(err)
+		}
+		manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hdkey.XKey{manPub}, []*hdkey.XKey{manPriv})
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		acctA, err := appdb.CreateAccount(ctx, manager.ID, "label")
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		acctB, err := appdb.CreateAccount(ctx, manager.ID, "label")
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		issPub, issPriv, err := newKey()
+		if err != nil {
+			b.Fatal(err)
+		}
+		issuer, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv})
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		asset, err := Create(ctx, issuer.ID, "label", map[string]interface{}{})
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		for i := 0; i < b.N; i++ {
+			issueOuts := []*Output{{
+				AssetID:   asset.Hash.String(),
+				AccountID: acctA.ID,
+				Amount:    10,
+			}}
+			issueTx, err := Issue(ctx, asset.Hash.String(), issueOuts)
+			if err != nil {
+				b.Fatal(err)
+			}
+			signTx(b, issueTx, issPriv)
+			tx, err := FinalizeTx(ctx, issueTx)
+			if err != nil {
+				b.Fatal(err)
+			}
+			b.Logf("finalized %v", tx.Hash())
+
+			inputs := []utxodb.Input{{
+				AssetID:   asset.Hash.String(),
+				AccountID: acctA.ID,
+				Amount:    10,
+			}}
+			outputs := []*Output{{
+				AssetID:   asset.Hash.String(),
+				AccountID: acctB.ID,
+				Amount:    10,
+			}}
+			xferTx, err := Transfer(ctx, inputs, outputs)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			signTx(b, xferTx, manPriv)
+			tx, err = FinalizeTx(ctx, xferTx)
+			if err != nil {
+				b.Fatal(err)
+			}
+			b.Logf("finalized %v", tx.Hash())
+
+			if i%10 == 0 {
+				makeBlock(ctx)
+			}
+		}
+	})
+}
+
+func signTx(tb testing.TB, tx *Tx, priv *hdkey.XKey) {
 	for _, input := range tx.Inputs {
 		for _, sig := range input.Sigs {
 			key, err := derive(priv, sig.DerivationPath)
 			if err != nil {
-				t.Fatal(err)
+				tb.Fatal(err)
 			}
 			dat, err := key.Sign(input.SignatureData[:])
 			if err != nil {
-				t.Fatal(err)
+				tb.Fatal(err)
 			}
 			sig.DER = append(dat.Serialize(), 1) // append hashtype SIGHASH_ALL
 		}
