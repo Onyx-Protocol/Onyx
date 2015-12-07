@@ -41,6 +41,7 @@ var (
 	logSize      = env.Int("LOGSIZE", 5e6) // 5MB
 	logCount     = env.Int("LOGCOUNT", 9)
 	// for config var LIBRATO_URL, see func init below
+	maxDBConns = env.Int("MAXDBCONNS", 10) // set to 100 in prod
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -77,7 +78,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	db.SetMaxOpenConns(100)
+	db.SetMaxOpenConns(*maxDBConns)
 	db.SetMaxIdleConns(100)
 	appdb.Init(db)
 
