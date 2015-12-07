@@ -55,10 +55,7 @@ func ValidateTx(ctx context.Context, view state.View, tx *bc.Tx, timestamp uint6
 	// NOTE: review this when we implement import inputs.
 	// Maybe we'll need to have undo ADP.
 	if tx.IsIssuance() {
-		if prevHash != nil && *prevHash != tx.Inputs[0].Previous.Hash {
-			return fmt.Errorf("issuance prev block hash mismatch")
-		}
-
+		// TODO(erykwalder): some type of uniqueness check
 		// TODO(erykwalder): check outputs once utxos aren't tied to manager nodes
 		return ApplyTx(ctx, view, tx)
 	}

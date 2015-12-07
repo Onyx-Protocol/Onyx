@@ -244,7 +244,11 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 	for _, tx := range txs {
 		vview := NewMemView()
 		view := state.Compose(vview, poolView, bcView)
-		if validation.ValidateTx(ctx, view, tx, uint64(time.Now().Unix()), &blockHash) == nil {
+		txErr := validation.ValidateTx(ctx, view, tx, uint64(time.Now().Unix()), &blockHash)
+		// Have to explicitly check that tx is not in block
+		// because issuance transactions are always valid, even duplicates.
+		// TODO(erykwalder): Remove this check when issuances become unique
+		if txErr == nil && !txInBlock[tx.Hash()] {
 			for op, out := range vview.Outs {
 				poolView.Outs[op] = out
 			}
