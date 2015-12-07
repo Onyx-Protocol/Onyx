@@ -508,9 +508,13 @@ func validateBlock(ctx context.Context, block *bc.Block) (outs []*txdb.Output, a
 		return nil, nil, errors.Wrap(err, "txdb")
 	}
 	mv := NewMemView()
-	err = validation.ValidateBlock(ctx, state.Compose(mv, bcView), block)
-	if err != nil {
-		return nil, nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
+	if isSignedByTrustedHost(block) {
+		validation.ApplyBlock(ctx, state.Compose(mv, bcView), block)
+	} else {
+		err = validation.ValidateBlock(ctx, state.Compose(mv, bcView), block)
+		if err != nil {
+			return nil, nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
+		}
 	}
 
 	for _, out := range mv.Outs {
@@ -518,6 +522,16 @@ func validateBlock(ctx context.Context, block *bc.Block) (outs []*txdb.Output, a
 	}
 
 	return outs, mv.ADPs, nil
+}
+
+func isSignedByTrustedHost(block *bc.Block) bool {
+	// TODO(kr): this should have a list of trusted keys
+	// (which should really just consist of the public key
+	// for the admin node in the same process)
+	// and check the block signature against that list.
+	// If the block is signed by a trusted node (i.e. us)
+	// then we already validated it before generating it.
+	return true
 }
 
 func issuedAssets(txs []*bc.Tx) map[string]int64 {
