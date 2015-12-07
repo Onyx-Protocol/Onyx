@@ -95,7 +95,7 @@ type Tx struct {
 // TxInput is an input in a Tx
 type TxInput struct {
 	Type     string                 `json:"type"`
-	TxID     bc.Hash                `json:"transaction_id,omitempty"`
+	TxID     *bc.Hash               `json:"transaction_id,omitempty"`
 	TxOut    uint32                 `json:"transaction_output,omitempty"`
 	AssetID  bc.AssetID             `json:"asset_id"`
 	AssetDef map[string]interface{} `json:"asset_definition,omitempty"`
@@ -173,7 +173,7 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 				Type:     "transfer",
 				AssetID:  prev.AssetID,
 				Amount:   prev.Value,
-				TxID:     in.Previous.Hash,
+				TxID:     &in.Previous.Hash,
 				TxOut:    in.Previous.Index,
 				Metadata: in.Metadata,
 			})
