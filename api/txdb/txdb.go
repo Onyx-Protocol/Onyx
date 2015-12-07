@@ -116,7 +116,9 @@ func InsertBlock(ctx context.Context, block *bc.Block) error {
 	if err != nil {
 		return errors.Wrap(err, "insert query")
 	}
-	return insertBlockTxs(ctx, block)
+
+	err = insertBlockTxs(ctx, block)
+	return errors.Wrap(err, "inserting txs")
 }
 
 func insertBlockTxs(ctx context.Context, block *bc.Block) error {

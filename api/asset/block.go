@@ -156,12 +156,6 @@ func ApplyBlock(ctx context.Context, block *bc.Block) error {
 }
 
 func applyBlock(ctx context.Context, block *bc.Block) ([]*txdb.Output, error) {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "blockchain update dbtx begin")
-	}
-	defer dbtx.Rollback()
-
 	delta, adps, err := validateBlock(ctx, block)
 	if err != nil {
 		return nil, errors.Wrap(err, "block validation")
@@ -202,10 +196,6 @@ func applyBlock(ctx context.Context, block *bc.Block) ([]*txdb.Output, error) {
 		return nil, errors.Wrap(err, "update issuances")
 	}
 
-	err = dbtx.Commit()
-	if err != nil {
-		return nil, errors.Wrap(err, "blockchain update dbtx commit")
-	}
 	return delta, nil
 }
 
