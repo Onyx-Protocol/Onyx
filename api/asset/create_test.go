@@ -12,6 +12,7 @@ import (
 
 func TestCreate(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, `
+		ALTER SEQUENCE issuer_nodes_key_index_seq RESTART;
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
 		VALUES ('in1', 'a1', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 	`)

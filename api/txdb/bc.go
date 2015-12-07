@@ -75,7 +75,7 @@ func LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, 
 	// LoadUTXOs(context.Context, []bc.Outpoint) []*bc.TxOutput.
 
 	const q = `
-		SELECT amount, reserved_until, txid, index, contract_hash
+		SELECT amount, reserved_until, txid, index, contract_hash, key_index(addr_index)
 		FROM utxos
 		WHERE account_id=$1 AND asset_id=$2
 	`
@@ -90,14 +90,18 @@ func LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, 
 			AccountID: accountID,
 			AssetID:   assetID,
 		}
-		var txid string
-		var contractHash sql.NullString
+		var (
+			txid         string
+			contractHash sql.NullString
+			addrIndex    []uint32
+		)
 		err = rows.Scan(
 			&u.Amount,
 			&u.ResvExpires,
 			&txid,
 			&u.Outpoint.Index,
 			&contractHash,
+			(*pg.Uint32s)(&addrIndex),
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "scan")
@@ -105,6 +109,7 @@ func LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, 
 		if contractHash.Valid {
 			u.ContractHash = contractHash.String
 		}
+		copy(u.AddrIndex[:], addrIndex)
 		h, err := bc.ParseHash(txid)
 		if err != nil {
 			return nil, errors.Wrap(err, "decode hash")

@@ -7,8 +7,153 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/btcsuite/btcd/btcec"
+
+	"chain/api/appdb"
+	"chain/api/utxodb"
+	"chain/database/pg"
+	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
 )
+
+func TestTransferConfirmed(t *testing.T) {
+	const genesisBlock = `
+		INSERT INTO blocks (block_hash, height, data)
+		VALUES(
+			'341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5',
+			1,
+			decode('0000000100000000000000013132330000000000000000000000000000000000000000000000000000000000414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000000000000000000640f746573742d7369672d73637269707412746573742d6f75747075742d73637269707401000000010000000000000000000007746573742d7478', 'hex')
+		);
+	`
+	withContext(t, genesisBlock, func(ctx context.Context) {
+		u, err := appdb.CreateUser(ctx, "user@example.com", "password")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		proj, err := appdb.CreateProject(ctx, "proj", u.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		manPub, manPriv, err := newKey()
+		if err != nil {
+			t.Fatal(err)
+		}
+		manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hdkey.XKey{manPub}, []*hdkey.XKey{manPriv})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		acctA, err := appdb.CreateAccount(ctx, manager.ID, "label")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		acctB, err := appdb.CreateAccount(ctx, manager.ID, "label")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		issPub, issPriv, err := newKey()
+		if err != nil {
+			t.Fatal(err)
+		}
+		issuer, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		asset, err := Create(ctx, issuer.ID, "label", map[string]interface{}{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		issueOuts := []*Output{{
+			AssetID:   asset.Hash.String(),
+			AccountID: acctA.ID,
+			Amount:    10,
+		}}
+		issueTx, err := Issue(ctx, asset.Hash.String(), issueOuts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		signTx(t, issueTx, issPriv)
+		_, err = FinalizeTx(ctx, issueTx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		dumpState(ctx, t)
+		makeBlock(ctx)
+		dumpState(ctx, t)
+
+		inputs := []utxodb.Input{{
+			AssetID:   asset.Hash.String(),
+			AccountID: acctA.ID,
+			Amount:    10,
+		}}
+		outputs := []*Output{{
+			AssetID:   asset.Hash.String(),
+			AccountID: acctB.ID,
+			Amount:    10,
+		}}
+		xferTx, err := Transfer(ctx, inputs, outputs)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		signTx(t, xferTx, manPriv)
+		_, err = FinalizeTx(ctx, xferTx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+func signTx(t *testing.T, tx *Tx, priv *hdkey.XKey) {
+	for _, input := range tx.Inputs {
+		for _, sig := range input.Sigs {
+			key, err := derive(priv, sig.DerivationPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			dat, err := key.Sign(input.SignatureData[:])
+			if err != nil {
+				t.Fatal(err)
+			}
+			sig.DER = append(dat.Serialize(), 1) // append hashtype SIGHASH_ALL
+		}
+	}
+}
+
+func dumpState(ctx context.Context, t *testing.T) {
+	t.Log("pool")
+	dumpTab(ctx, t, `SELECT tx_hash, index, script FROM pool_outputs`)
+	t.Log("blockchain")
+	dumpTab(ctx, t, `SELECT txid, index, script FROM utxos`)
+}
+
+func dumpTab(ctx context.Context, t *testing.T, q string) {
+	rows, err := pg.FromContext(ctx).Query(q)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var hash bc.Hash
+		var index int32
+		var script []byte
+		err = rows.Scan(&hash, &index, &script)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("hash: %x index: %d pkscript: %x", hash, index, script)
+	}
+	if rows.Err() != nil {
+		t.Fatal(rows.Err())
+	}
+}
 
 func TestGenerateBlock(t *testing.T) {
 	const fix = `
@@ -89,4 +234,14 @@ func TestGenerateBlock(t *testing.T) {
 			t.Errorf("generated block:\ngot:  %+v\nwant: %+v", got, want)
 		}
 	})
+}
+
+func derive(xkey *hdkey.XKey, path []uint32) (*btcec.PrivateKey, error) {
+	// The only error has a uniformly distributed probability of 1/2^127
+	// We've decided to ignore this chance.
+	key := &xkey.ExtendedKey
+	for _, p := range path {
+		key, _ = key.Child(p)
+	}
+	return key.ECPrivKey()
 }
