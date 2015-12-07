@@ -17,7 +17,7 @@ import (
 
 type sqlUTXODB struct{}
 
-func (sqlUTXODB) LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, error) {
+func (sqlUTXODB) LoadUTXOs(ctx context.Context, accountID, assetID string) (resvOuts []*utxodb.UTXO, err error) {
 	bcOuts, err := txdb.LoadUTXOs(ctx, accountID, assetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "load blockchain outputs")
@@ -26,7 +26,33 @@ func (sqlUTXODB) LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*u
 	if err != nil {
 		return nil, errors.Wrap(err, "load pool outputs")
 	}
-	return append(bcOuts, poolOuts...), nil
+
+	var bcOutpoints []bc.Outpoint
+	for _, o := range bcOuts {
+		bcOutpoints = append(bcOutpoints, o.Outpoint)
+	}
+	poolView, err := txdb.NewPoolView(ctx, bcOutpoints)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	inBC := make(map[bc.Outpoint]bool)
+	for _, o := range bcOuts {
+		if !isSpent(ctx, o.Outpoint, poolView) {
+			resvOuts = append(resvOuts, o)
+			inBC[o.Outpoint] = true
+		}
+	}
+	for _, o := range poolOuts {
+		if !inBC[o.Outpoint] {
+			resvOuts = append(resvOuts, o)
+		}
+	}
+	return resvOuts, nil
+}
+
+func isSpent(ctx context.Context, p bc.Outpoint, v state.ViewReader) bool {
+	o := v.Output(ctx, p)
+	return o != nil && o.Spent
 }
 
 func (sqlUTXODB) SaveReservations(ctx context.Context, utxos []*utxodb.UTXO, exp time.Time) error {
