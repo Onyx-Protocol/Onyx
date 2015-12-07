@@ -100,14 +100,11 @@ func GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, error) {
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
+	view := state.Compose(poolView, bcView)
 	for _, tx := range txs {
-		vview := NewMemView()
-		view := state.Compose(vview, poolView, bcView)
-		if validation.ValidateTx(ctx, view, tx, ts, &block.PreviousBlockHash) == nil {
+		if validation.ValidateTxInputs(ctx, view, tx) == nil {
+			validation.ApplyTx(ctx, view, tx)
 			block.Transactions = append(block.Transactions, tx)
-			for op, out := range vview.Outs {
-				poolView.Outs[op] = out
-			}
 		}
 	}
 	log.Messagef(ctx, "generated block with %d txs", len(block.Transactions))

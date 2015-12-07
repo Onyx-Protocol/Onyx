@@ -14,6 +14,25 @@ import (
 
 var stubGenesisHash = bc.Hash{}
 
+// ValidateTxInputs just validates that the tx inputs are present
+// and unspent in the view.
+func ValidateTxInputs(ctx context.Context, view state.ViewReader, tx *bc.Tx) error {
+	// Verify inputs for double-spends and update ADPs on the view.
+	for inIndex, txin := range tx.Inputs {
+		if txin.IsIssuance() {
+			continue
+		}
+		unspent := view.Output(ctx, txin.Previous)
+		// It's possible to load a spent output here because BackedView
+		// explicitly stores spent outputs in frontend to shadow unspent
+		// outputs in backend.
+		if unspent == nil || unspent.Spent {
+			return fmt.Errorf("output for input %d is invalid or already spent (%v)", inIndex, txin.Previous)
+		}
+	}
+	return nil
+}
+
 // ValidateTx validates the given transaction
 // against the given state and applies its
 // changes to the view.
@@ -41,18 +60,12 @@ func ValidateTx(ctx context.Context, view state.View, tx *bc.Tx, timestamp uint6
 		}
 
 		// TODO(erykwalder): check outputs once utxos aren't tied to manager nodes
-		return applyTx(ctx, view, tx)
+		return ApplyTx(ctx, view, tx)
 	}
 
-	// Verify inputs for double-spends and update ADPs on the view.
-	for inIndex, txin := range tx.Inputs {
-		unspent := view.Output(ctx, txin.Previous)
-		// It's possible to load a spent output here because BackedView
-		// explicitly stores spent outputs in frontend to shadow unspent
-		// outputs in backend.
-		if unspent == nil || unspent.Spent {
-			return fmt.Errorf("output for input %d is invalid or already spent (%v)", inIndex, txin.Previous)
-		}
+	err = ValidateTxInputs(ctx, view, tx)
+	if err != nil {
+		return err
 	}
 
 	err = validateTxBalance(ctx, view, tx)
@@ -75,7 +88,7 @@ func ValidateTx(ctx context.Context, view state.View, tx *bc.Tx, timestamp uint6
 		}
 	}
 
-	return applyTx(ctx, view, tx)
+	return ApplyTx(ctx, view, tx)
 }
 
 // txIsWellFormed checks whether tx passes context-free validation.
@@ -138,8 +151,8 @@ func validateTxBalance(ctx context.Context, view state.View, tx *bc.Tx) error {
 	return nil
 }
 
-// applyTx updates the view with all the changes to the ledger
-func applyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
+// ApplyTx updates the view with all the changes to the ledger
+func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 	if !tx.IsIssuance() {
 		for _, in := range tx.Inputs {
 			o := view.Output(ctx, in.Previous)
