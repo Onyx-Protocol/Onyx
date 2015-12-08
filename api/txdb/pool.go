@@ -245,6 +245,14 @@ func InsertPoolInputs(ctx context.Context, outs []bc.Outpoint) error {
 	return errors.Wrap(err)
 }
 
+// CountPoolTxs returns the total number of unconfirmed transactions.
+func CountPoolTxs(ctx context.Context) (uint64, error) {
+	const q = `SELECT count(tx_hash) FROM pool_txs`
+	var res uint64
+	err := pg.FromContext(ctx).QueryRow(q).Scan(&res)
+	return res, errors.Wrap(err)
+}
+
 func toKeyIndex(i []uint32) int64 {
 	return int64(i[0])<<31 | int64(i[1]&0x7fffffff)
 }

@@ -159,10 +159,9 @@ func TestListManagerNodes(t *testing.T) {
 		INSERT INTO manager_nodes (id, project_id, key_index, label, created_at) VALUES
 			-- insert in reverse chronological order, to ensure that ListManagerNodes
 			-- is performing a sort.
-			('manager-node-id-0', 'proj-id-0', 0, 'manager-node-0', now()),
-			('manager-node-id-1', 'proj-id-0', 1, 'manager-node-1', now() - '1 day'::interval),
-
-			('manager-node-id-2', 'proj-id-1', 2, 'manager-node-2', now());
+			('manager-node-id-2', 'proj-id-1', 2, 'manager-node-2', now()),
+			('manager-node-id-1', 'proj-id-0', 1, 'manager-node-1', now()),
+			('manager-node-id-0', 'proj-id-0', 0, 'manager-node-0', now());
 	`
 	withContext(t, sql, func(ctx context.Context) {
 		examples := []struct {
@@ -172,8 +171,8 @@ func TestListManagerNodes(t *testing.T) {
 			{
 				"proj-id-0",
 				[]*ManagerNode{
-					{ID: "manager-node-id-1", Blockchain: "sandbox", Label: "manager-node-1"},
 					{ID: "manager-node-id-0", Blockchain: "sandbox", Label: "manager-node-0"},
+					{ID: "manager-node-id-1", Blockchain: "sandbox", Label: "manager-node-1"},
 				},
 			},
 			{

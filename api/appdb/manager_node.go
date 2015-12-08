@@ -182,7 +182,7 @@ func ListManagerNodes(ctx context.Context, projID string) ([]*ManagerNode, error
 		SELECT id, block_chain, label
 		FROM manager_nodes
 		WHERE project_id = $1
-		ORDER BY created_at
+		ORDER BY id
 	`
 	rows, err := pg.FromContext(ctx).Query(q, projID)
 	if err != nil {

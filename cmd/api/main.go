@@ -16,6 +16,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api"
+	"chain/api/admin"
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/database/pg"
@@ -54,6 +55,8 @@ var (
 	buildDate   = "?"
 
 	race []interface{} // initialized in race.go
+
+	blockInterval = 1 * time.Second
 )
 
 func init() {
@@ -110,7 +113,8 @@ func main() {
 	bg := context.Background()
 	bg = pg.NewContext(bg, db)
 	if *makeBlocks {
-		go asset.MakeBlocks(bg, 1*time.Second)
+		admin.SetBlockInterval(blockInterval)
+		go asset.MakeBlocks(bg, blockInterval)
 	}
 	http.Handle("/", chainhttp.ContextHandler{Context: bg, Handler: h})
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})

@@ -3,8 +3,20 @@ package api
 import (
 	"golang.org/x/net/context"
 
+	"chain/api/admin"
 	"chain/api/appdb"
 )
+
+// GET /v3/projects/:projID/admin-node/summary
+func getAdminNodeSummary(ctx context.Context, projID string) (interface{}, error) {
+	if err := projectAuthz(ctx, projID); err != nil {
+		return nil, err
+	}
+	return admin.GetSummary(ctx, projID)
+}
+
+// Everything below is DEPRECATED. Modeling multiple admin nodes is not
+// part of our immediate product roadmap.
 
 // POST /v3/projects/:projID/admin-nodes
 func createAdminNode(ctx context.Context, projID string, req struct{ Label string }) (interface{}, error) {

@@ -28,10 +28,9 @@ func TestListIssuerNodes(t *testing.T) {
 		VALUES
 			-- insert in reverse chronological order, to ensure that ListIssuerNodes
 			-- is performing a sort.
-			('in-id-0', 'proj-id-0', 0, '{}', 'in-0', now()),
-			('in-id-1', 'proj-id-0', 1, '{}', 'in-1', now() - '1 day'::interval),
-
-			('in-id-2', 'proj-id-1', 2, '{}', 'in-2', now());
+			('in-id-2', 'proj-id-1', 2, '{}', 'in-2', now()),
+			('in-id-1', 'proj-id-0', 1, '{}', 'in-1', now()),
+			('in-id-0', 'proj-id-0', 0, '{}', 'in-0', now());
 	`
 	withContext(t, sql, func(ctx context.Context) {
 		examples := []struct {
@@ -41,8 +40,8 @@ func TestListIssuerNodes(t *testing.T) {
 			{
 				"proj-id-0",
 				[]*IssuerNode{
-					{ID: "in-id-1", Blockchain: "sandbox", Label: "in-1"},
 					{ID: "in-id-0", Blockchain: "sandbox", Label: "in-0"},
+					{ID: "in-id-1", Blockchain: "sandbox", Label: "in-1"},
 				},
 			},
 			{

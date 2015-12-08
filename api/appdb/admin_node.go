@@ -8,6 +8,9 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Everything in this file is DEPRECATED. Modeling multiple admin nodes is not
+// part of our immediate product roadmap.
+
 var ErrAdminNodeAlreadyExists = errors.New("An admin node for this blockchain already exists.")
 
 // AdminNode represents a single admin node. It is intended to be used wth API

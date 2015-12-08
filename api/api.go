@@ -71,6 +71,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("DELETE", "/v3/projects/:projID/members/:userID", removeMember)
 	h.HandleFunc("GET", "/v3/projects/:projID/admin-nodes", listAdminNodes)
 	h.HandleFunc("POST", "/v3/projects/:projID/admin-nodes", createAdminNode)
+	h.HandleFunc("GET", "/v3/projects/:projID/admin-node/summary", getAdminNodeSummary)
 	h.HandleFunc("GET", "/v3/admin-nodes/:anodeID", getAdminNode)
 	h.HandleFunc("PUT", "/v3/admin-nodes/:anodeID", updateAdminNode)
 	h.HandleFunc("DELETE", "/v3/admin-nodes/:anodeID", deleteAdminNode)

@@ -100,7 +100,7 @@ func ListIssuerNodes(ctx context.Context, projID string) ([]*IssuerNode, error) 
 		SELECT id, block_chain, label
 		FROM issuer_nodes
 		WHERE project_id = $1
-		ORDER BY created_at
+		ORDER BY id
 	`
 	rows, err := pg.FromContext(ctx).Query(q, projID)
 	if err != nil {

@@ -310,3 +310,13 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) e
 	)
 	return errors.Wrap(err)
 }
+
+// CountBlockTxs returns the total number of confirmed transactions.
+// TODO: Instead running a count query, we should increment a value each time a
+// new block lands.
+func CountBlockTxs(ctx context.Context) (uint64, error) {
+	const q = `SELECT count(tx_hash) FROM blocks_txs`
+	var res uint64
+	err := pg.FromContext(ctx).QueryRow(q).Scan(&res)
+	return res, errors.Wrap(err)
+}
