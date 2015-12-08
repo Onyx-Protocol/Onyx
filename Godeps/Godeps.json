@@ -2,38 +2,18 @@
 	"ImportPath": "chain",
 	"GoVersion": "go1.5",
 	"Packages": [
-		"chain/api",
-		"chain/api/appdb",
-		"chain/api/asset",
-		"chain/cmd/api",
-		"chain/cmd/chainbot",
-		"chain/cmd/vet",
-		"chain/crypto/hash160",
-		"chain/crypto/hash256",
-		"chain/database/pg",
-		"chain/database/pg/pgtest",
-		"chain/database/sql",
-		"chain/encoding/json",
-		"chain/errors",
-		"chain/fedchain-sandbox/hdkey",
-		"chain/fedchain-sandbox/txscript",
-		"chain/fedchain-sandbox/wire",
-		"chain/log",
-		"chain/metrics",
-		"chain/net/http",
-		"chain/net/http/authn",
-		"chain/net/http/gzip",
-		"chain/net/http/pat",
-		"chain/net/http/pat/example",
-		"chain/net/http/pat/example/patexample",
-		"chain/net/http/reqid",
-		"chain/strings"
+		"./..."
 	],
 	"Deps": [
 		{
-			"ImportPath": "github.com/aws/aws-sdk-go/aws",
+			"ImportPath": "github.com/aws/aws-sdk-go",
 			"Comment": "v0.7.2-4-g5df83ba",
 			"Rev": "5df83ba895b6ba073c0513dddcec6d7473c95592"
+		},
+		{
+			"ImportPath": "github.com/btcsuite/btcd/blockchain",
+			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
+			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
 		},
 		{
 			"ImportPath": "github.com/btcsuite/btcd/btcec",
@@ -42,6 +22,11 @@
 		},
 		{
 			"ImportPath": "github.com/btcsuite/btcd/chaincfg",
+			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
+			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
+		},
+		{
+			"ImportPath": "github.com/btcsuite/btcd/database",
 			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
 			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
 		},
@@ -74,9 +59,17 @@
 			"Rev": "53f62d9b43e87a6c56975cf862af7edf33a8d0df"
 		},
 		{
+			"ImportPath": "github.com/btcsuite/goleveldb/leveldb",
+			"Rev": "d87ae1f5189b9ece9ed9b661e490a668e9a1d0df"
+		},
+		{
 			"ImportPath": "github.com/btcsuite/seelog",
 			"Comment": "v2.1-84-g313961b",
 			"Rev": "313961b101eb55f65ae0f03ddd4e322731763b6c"
+		},
+		{
+			"ImportPath": "github.com/btcsuite/snappy-go/snappy",
+			"Rev": "fff4c573c694b1e2d5c7a9b2b72dbe947b6a4c8e"
 		},
 		{
 			"ImportPath": "github.com/codahale/hdrhistogram",
@@ -85,6 +78,10 @@
 		{
 			"ImportPath": "github.com/codahale/metrics",
 			"Rev": "b0f2414a7d2e58cc36d113a96efa88f1abf971ac"
+		},
+		{
+			"ImportPath": "github.com/davecgh/go-spew/spew",
+			"Rev": "2df174808ee097f90d259e432cc04442cf60be21"
 		},
 		{
 			"ImportPath": "github.com/kr/env",
@@ -102,6 +99,23 @@
 			"ImportPath": "github.com/lib/pq",
 			"Comment": "go1.0-cutoff-59-gb269bd0",
 			"Rev": "b269bd035a727d6c1081f76e7a239a1b00674c40"
+		},
+		{
+			"ImportPath": "github.com/lsegal/gucumber",
+			"Rev": "e8116c9c66e641e9f81fc0a79fac923dfc646378"
+		},
+		{
+			"ImportPath": "github.com/pmezard/go-difflib/difflib",
+			"Rev": "e8554b8641db39598be7f6342874b958f12ae1d4"
+		},
+		{
+			"ImportPath": "github.com/shiena/ansicolor",
+			"Rev": "a422bbe96644373c5753384a59d678f7d261ff10"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Comment": "v1.0-88-ge3a8ff8",
+			"Rev": "e3a8ff8ce36581f87a15341206f205b1da467059"
 		},
 		{
 			"ImportPath": "github.com/vaughan0/go-ini",
