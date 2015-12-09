@@ -181,10 +181,11 @@ func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 		}
 	}
 
+	hash := tx.Hash()
 	for i, out := range tx.Outputs {
 		o := &state.Output{
 			TxOutput: *out,
-			Outpoint: bc.Outpoint{Hash: tx.Hash(), Index: uint32(i)},
+			Outpoint: bc.Outpoint{Hash: hash, Index: uint32(i)},
 			Spent:    false,
 		}
 		view.SaveOutput(o)
