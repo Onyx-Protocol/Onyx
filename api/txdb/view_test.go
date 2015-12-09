@@ -93,13 +93,13 @@ func TestViewForPrevoutsIgnoreIssuance(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	txs := []*bc.Tx{{
+	txs := []*bc.Tx{bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{{
 			Previous: bc.Outpoint{
 				Index: 0xffffffff,
 			},
 		}},
-	}}
+	})}
 
 	v, err := NewViewForPrevouts(ctx, txs)
 	if err != nil {

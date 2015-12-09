@@ -40,7 +40,7 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.
 		return nil, err
 	}
 
-	tx := &bc.Tx{Version: bc.CurrentTransactionVersion}
+	tx := &bc.TxData{Version: bc.CurrentTransactionVersion}
 
 	reserved, change, err := utxoDB.Reserve(ctx, inputs, ttl)
 	if err != nil {
@@ -122,7 +122,7 @@ func checkTransferParity(ins []utxodb.Input, outs []*Output) error {
 // makeTransferInputs creates the array of inputs
 // that contain signatures along with the
 // data needed to generate them
-func makeTransferInputs(ctx context.Context, tx *bc.Tx, utxos []*utxodb.UTXO) ([]*Input, error) {
+func makeTransferInputs(ctx context.Context, tx *bc.TxData, utxos []*utxodb.UTXO) ([]*Input, error) {
 	defer metrics.RecordElapsed(time.Now())
 	var inputs []*Input
 	for i, utxo := range utxos {
@@ -135,7 +135,7 @@ func makeTransferInputs(ctx context.Context, tx *bc.Tx, utxos []*utxodb.UTXO) ([
 	return inputs, nil
 }
 
-func addressInput(ctx context.Context, u *utxodb.UTXO, tx *bc.Tx, idx int) (*Input, error) {
+func addressInput(ctx context.Context, u *utxodb.UTXO, tx *bc.TxData, idx int) (*Input, error) {
 	addrInfo, err := appdb.AddrInfo(ctx, u.AccountID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get addr info")

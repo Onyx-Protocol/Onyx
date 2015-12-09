@@ -39,8 +39,11 @@ func (b *Block) Value() (driver.Value, error) {
 func (b *Block) readFrom(r *errors.Reader) {
 	b.BlockHeader.readFrom(r)
 	for n := readUvarint(r); n > 0; n-- {
-		tx := new(Tx)
-		tx.readFrom(r)
+		var data TxData
+		data.readFrom(r)
+		// TODO(kr): store/reload hashes;
+		// don't compute here if not necessary.
+		tx := NewTx(data)
 		b.Transactions = append(b.Transactions, tx)
 	}
 }

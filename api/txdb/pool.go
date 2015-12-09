@@ -171,8 +171,7 @@ type utxoSet struct {
 
 func InsertPoolTx(ctx context.Context, tx *bc.Tx) error {
 	const q = `INSERT INTO pool_txs (tx_hash, data) VALUES ($1, $2)`
-	hash := tx.Hash()
-	_, err := pg.FromContext(ctx).Exec(q, hash.String(), tx)
+	_, err := pg.FromContext(ctx).Exec(q, tx.Hash, tx)
 	return errors.Wrap(err)
 }
 

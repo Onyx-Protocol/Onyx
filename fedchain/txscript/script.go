@@ -338,7 +338,7 @@ func removeOpcodeByData(pkscript []parsedOpcode, data []byte) []parsedOpcode {
 // CalcSignatureHash will, given a script and hash type for the current script
 // engine instance, calculate the signature hash to be used for signing and
 // verification.
-func CalcSignatureHash(tx *bc.Tx, idx int, script []byte, hashType SigHashType) (hash bc.Hash, err error) {
+func CalcSignatureHash(tx *bc.TxData, idx int, script []byte, hashType SigHashType) (hash bc.Hash, err error) {
 	parsedScript, err := parseScript(script)
 	if err != nil {
 		return hash, err
@@ -356,7 +356,7 @@ func CalcSignatureHash(tx *bc.Tx, idx int, script []byte, hashType SigHashType) 
 // calcSignatureHash will, given a script and hash type for the current script
 // engine instance, calculate the signature hash to be used for signing and
 // verification.
-func calcSignatureHash(script []parsedOpcode, hashType SigHashType, tx *bc.Tx, idx int) []byte {
+func calcSignatureHash(script []parsedOpcode, hashType SigHashType, tx *bc.TxData, idx int) []byte {
 	// The SigHashSingle signature type signs only the corresponding input
 	// and output (the output with the same index number as the input).
 	//

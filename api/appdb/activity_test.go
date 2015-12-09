@@ -330,25 +330,20 @@ func TestActivityByTxID(t *testing.T) {
 // TestWriteActivity is an integration test for WriteActivity. Only basic use
 // cases are covered here. Edge cases are covered in unit tests that follow.
 func TestWriteActivity(t *testing.T) {
-	// Mock transactions for creating prevouts.
-	prevTxA := &bc.Tx{Version: bc.CurrentTransactionVersion}
-	prevTxA.Outputs = append(prevTxA.Outputs, &bc.TxOutput{AssetID: bc.AssetID{}, Value: 123})
-	prevTxB := &bc.Tx{Version: bc.CurrentTransactionVersion}
-	prevTxB.Outputs = append(prevTxB.Outputs, &bc.TxOutput{AssetID: bc.AssetID([32]byte{1}), Value: 456})
 	txTime := time.Now().UTC()
 
-	issuanceTx := &bc.Tx{
+	issuanceTx := bc.NewTx(bc.TxData{
 		// Issuances have a single prevout with an empty tx hash.
 		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Index: bc.InvalidOutputIndex}}},
 		Outputs: []*bc.TxOutput{{}, {}, {}},
-	}
+	})
 
-	transferTx := &bc.Tx{
+	transferTx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{{
 			Previous: bc.Outpoint{Hash: mustHashFromStr("4786c29077265138e00a8fce822c5fb998c0ce99df53d939bb53d81bca5aa426"), Index: 0},
 		}},
 		Outputs: []*bc.TxOutput{{}, {}, {}},
-	}
+	})
 
 	examples := []struct {
 		tx          *bc.Tx
@@ -365,22 +360,22 @@ func TestWriteActivity(t *testing.T) {
 			tx: issuanceTx,
 			fixture: `
 				INSERT INTO pool_txs (tx_hash, data)
-				VALUES ('` + issuanceTx.Hash().String() + `', '\x'::bytea);
+				VALUES ('` + issuanceTx.Hash.String() + `', '\x'::bytea);
 
 				INSERT INTO pool_outputs (
 					tx_hash, index,
 					asset_id, amount, script,
 					addr_index, account_id, manager_node_id
 				) VALUES (
-					'` + issuanceTx.Hash().String() + `', 0,
+					'` + issuanceTx.Hash.String() + `', 0,
 					'asset-id-0', 1, decode('` + testAddrs[0].script + `', 'hex'),
 					0, 'account-id-0', 'manager-node-id-0'
 				), (
-					'` + issuanceTx.Hash().String() + `', 1,
+					'` + issuanceTx.Hash.String() + `', 1,
 					'asset-id-0', 2,  decode('` + testAddrs[1].script + `', 'hex'),
 					0, 'account-id-2', 'manager-node-id-1'
 				), (
-					'` + issuanceTx.Hash().String() + `', 2,
+					'` + issuanceTx.Hash.String() + `', 2,
 					'asset-id-0', 3,  decode('` + testAddrs[2].script + `', 'hex'),
 					0, '', ''
 				);
@@ -389,7 +384,7 @@ func TestWriteActivity(t *testing.T) {
 
 			wantManagerNodeActivity: map[string]actItem{
 				"manager-node-id-0": actItem{
-					TxHash: issuanceTx.Hash().String(),
+					TxHash: issuanceTx.Hash.String(),
 					Time:   txTime,
 					Inputs: []actEntry{},
 					Outputs: []actEntry{
@@ -399,7 +394,7 @@ func TestWriteActivity(t *testing.T) {
 					},
 				},
 				"manager-node-id-1": actItem{
-					TxHash: issuanceTx.Hash().String(),
+					TxHash: issuanceTx.Hash.String(),
 					Time:   txTime,
 					Inputs: []actEntry{},
 					Outputs: []actEntry{
@@ -412,7 +407,7 @@ func TestWriteActivity(t *testing.T) {
 			wantAccounts: []string{"account-id-0", "account-id-2"},
 			wantIssuanceActivity: map[string]actItem{
 				"in-id-0": actItem{
-					TxHash: issuanceTx.Hash().String(),
+					TxHash: issuanceTx.Hash.String(),
 					Time:   txTime,
 					Inputs: []actEntry{},
 					Outputs: []actEntry{
@@ -440,22 +435,22 @@ func TestWriteActivity(t *testing.T) {
 				);
 
 				INSERT INTO pool_txs (tx_hash, data)
-				VALUES ('` + transferTx.Hash().String() + `', '\x'::bytea);
+				VALUES ('` + transferTx.Hash.String() + `', '\x'::bytea);
 
 				INSERT INTO pool_outputs (
 					tx_hash, index,
 					asset_id, amount, script,
 					addr_index, account_id, manager_node_id
 				) VALUES (
-					'` + transferTx.Hash().String() + `', 0,
+					'` + transferTx.Hash.String() + `', 0,
 					'asset-id-0', 1, decode('` + testAddrs[1].script + `', 'hex'),
 					0, 'account-id-2', 'manager-node-id-1'
 				), (
-					'` + transferTx.Hash().String() + `', 1,
+					'` + transferTx.Hash.String() + `', 1,
 					'asset-id-0', 2, decode('` + testAddrs[2].script + `', 'hex'),
 					0, 'account-id-0', 'manager-node-id-0'
 				), (
-					'` + transferTx.Hash().String() + `', 2,
+					'` + transferTx.Hash.String() + `', 2,
 					'asset-id-0', 3, decode('` + testAddrs[3].script + `', 'hex'),
 					0, '', ''
 				);
@@ -464,7 +459,7 @@ func TestWriteActivity(t *testing.T) {
 
 			wantManagerNodeActivity: map[string]actItem{
 				"manager-node-id-0": actItem{
-					TxHash: transferTx.Hash().String(),
+					TxHash: transferTx.Hash.String(),
 					Time:   txTime,
 					Inputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 4, AccountID: "account-id-0", AccountLabel: "account-0"},
@@ -475,7 +470,7 @@ func TestWriteActivity(t *testing.T) {
 					},
 				},
 				"manager-node-id-1": actItem{
-					TxHash: transferTx.Hash().String(),
+					TxHash: transferTx.Hash.String(),
 					Time:   txTime,
 					Inputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 6, Address: testAddrs[0].addr},
@@ -496,7 +491,7 @@ func TestWriteActivity(t *testing.T) {
 		t.Log("Example", i)
 
 		func() {
-			txHash := ex.tx.Hash().String()
+			txHash := ex.tx.Hash.String()
 
 			dbtx := pgtest.TxWithSQL(t, writeActivityFix, ex.fixture)
 			ctx := pg.NewContext(context.Background(), dbtx)
@@ -547,7 +542,7 @@ func TestWriteActivity(t *testing.T) {
 }
 
 func TestGetActUTXOs(t *testing.T) {
-	tx := &bc.Tx{
+	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{
 			{
 				Previous: bc.Outpoint{
@@ -569,7 +564,7 @@ func TestGetActUTXOs(t *testing.T) {
 			},
 		},
 		Outputs: []*bc.TxOutput{{}, {}},
-	}
+	})
 
 	dbtx := pgtest.TxWithSQL(t, writeActivityFix, `
 		INSERT INTO utxos (
@@ -590,7 +585,7 @@ func TestGetActUTXOs(t *testing.T) {
 			(tx_hash, data)
 		VALUES
 			('7de759a6e917f941e8da7c30e6ad8a3d85a4f508d5bbed4fe80244271754eaef', '\x'::bytea),
-			('`+tx.Hash().String()+`', '\x'::bytea);
+			('`+tx.Hash.String()+`', '\x'::bytea);
 
 		INSERT INTO pool_outputs (
 			tx_hash, index,
@@ -601,11 +596,11 @@ func TestGetActUTXOs(t *testing.T) {
 			'asset-id-1', 3, 0, decode('`+testAddrs[2].script+`', 'hex'),
 			'account-id-2', 'manager-node-id-2'
 		), (
-			'`+tx.Hash().String()+`', 0,
+			'`+tx.Hash.String()+`', 0,
 			'asset-id-0', 3, 1, decode('`+testAddrs[3].script+`', 'hex'),
 			'account-id-3', 'manager-node-id-3'
 		), (
-			'`+tx.Hash().String()+`', 1,
+			'`+tx.Hash.String()+`', 1,
 			'asset-id-1', 3, 0, decode('`+testAddrs[4].script+`', 'hex'),
 			'account-id-4', 'manager-node-id-4'
 		);
@@ -669,27 +664,27 @@ func TestGetActUTXOs(t *testing.T) {
 }
 
 func TestGetActUTXOsIssuance(t *testing.T) {
-	tx := &bc.Tx{
+	tx := bc.NewTx(bc.TxData{
 		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Index: bc.InvalidOutputIndex}}},
 		Outputs: []*bc.TxOutput{{}, {}},
-	}
+	})
 
 	dbtx := pgtest.TxWithSQL(t, writeActivityFix, `
 		INSERT INTO pool_txs
 			(tx_hash, data)
 		VALUES
-			('`+tx.Hash().String()+`', '\x'::bytea);
+			('`+tx.Hash.String()+`', '\x'::bytea);
 
 		INSERT INTO pool_outputs (
 			tx_hash, index,
 			asset_id, amount, addr_index, script,
 			account_id, manager_node_id
 		) VALUES (
-			'`+tx.Hash().String()+`', 0,
+			'`+tx.Hash.String()+`', 0,
 			'asset-id-0', 1, 0, decode('`+testAddrs[0].script+`', 'hex'),
 			'account-id-0', 'manager-node-id-0'
 		), (
-			'`+tx.Hash().String()+`', 1,
+			'`+tx.Hash.String()+`', 1,
 			'asset-id-0', 2, 1, decode('`+testAddrs[1].script+`', 'hex'),
 			'account-id-1', 'manager-node-id-1'
 		);

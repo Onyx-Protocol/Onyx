@@ -35,7 +35,7 @@ func TestTrade(t *testing.T) {
 	defer dbtx.Rollback()
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	unsignedTx := &bc.Tx{
+	unsignedTx := &bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Hash: [32]byte{16}, Index: 0}}},
 		Outputs: []*bc.TxOutput{{AssetID: [32]byte{255}, Value: 2}},
@@ -75,19 +75,19 @@ func TestTrade(t *testing.T) {
 }
 
 func TestCombine(t *testing.T) {
-	unsigned1 := &bc.Tx{
+	unsigned1 := &bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}}},
 		Outputs: []*bc.TxOutput{{AssetID: [32]byte{254}, Value: 5}},
 	}
 
-	unsigned2 := &bc.Tx{
+	unsigned2 := &bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}}},
 		Outputs: []*bc.TxOutput{{AssetID: [32]byte{255}, Value: 6}},
 	}
 
-	combined := &bc.Tx{
+	combined := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
 			{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}},

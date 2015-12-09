@@ -30,7 +30,7 @@ func combine(txs ...*Tx) (*Tx, error) {
 	if len(txs) == 0 {
 		return nil, errors.New("must pass at least one tx")
 	}
-	completeWire := &bc.Tx{Version: bc.CurrentTransactionVersion}
+	completeWire := &bc.TxData{Version: bc.CurrentTransactionVersion}
 	complete := &Tx{BlockChain: txs[0].BlockChain, Unsigned: completeWire}
 
 	for _, tx := range txs {

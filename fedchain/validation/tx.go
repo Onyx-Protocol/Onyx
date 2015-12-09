@@ -75,7 +75,7 @@ func ValidateTx(ctx context.Context, view state.View, tx *bc.Tx, timestamp uint6
 		return err
 	}
 
-	engine, err := txscript.NewReusableEngine(ctx, view, tx, txscript.StandardVerifyFlags)
+	engine, err := txscript.NewReusableEngine(ctx, view, &tx.TxData, txscript.StandardVerifyFlags)
 	if err != nil {
 		return fmt.Errorf("cannot create script engine: %s", err)
 	}
@@ -181,11 +181,10 @@ func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 		}
 	}
 
-	hash := tx.Hash()
 	for i, out := range tx.Outputs {
 		o := &state.Output{
 			TxOutput: *out,
-			Outpoint: bc.Outpoint{Hash: hash, Index: uint32(i)},
+			Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(i)},
 			Spent:    false,
 		}
 		view.SaveOutput(o)

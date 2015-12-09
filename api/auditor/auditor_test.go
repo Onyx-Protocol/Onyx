@@ -173,7 +173,7 @@ func TestGetBlockSummary(t *testing.T) {
 }
 
 func TestGetTxIssuance(t *testing.T) {
-	tx := &bc.Tx{
+	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{{
 			Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
 			Metadata:        []byte(`{"a":"b"}`),
@@ -190,7 +190,7 @@ func TestGetTxIssuance(t *testing.T) {
 			Script:  mustDecodeHex("a91430819f1955f747220bb247df8a989e36a432733487"), // 367Ve1Xkgwwiu9rmm9bJEnB91ZFnn79M1P
 		}},
 		Metadata: []byte{0},
-	}
+	})
 
 	withContext(t, "", func(ctx context.Context) {
 		err := txdb.InsertTx(ctx, tx)
@@ -199,14 +199,14 @@ func TestGetTxIssuance(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		got, err := GetTx(ctx, tx.Hash().String())
+		got, err := GetTx(ctx, tx.Hash.String())
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
 		want := &Tx{
-			ID:       tx.Hash(),
+			ID:       tx.Hash,
 			BlockID:  nil,
 			Metadata: []byte{0},
 			Inputs: []*TxInput{{
@@ -235,22 +235,25 @@ func TestGetTxIssuance(t *testing.T) {
 }
 
 func TestGetTxTransfer(t *testing.T) {
-	prevTxs := []*bc.Tx{{
-		Outputs: []*bc.TxOutput{{
-			AssetID: bc.AssetID([32]byte{1}),
-			Value:   5,
-		}},
-	}, {
-		Outputs: []*bc.TxOutput{{}, {
-			AssetID: bc.AssetID([32]byte{2}),
-			Value:   6,
-		}},
-	}}
-	tx := &bc.Tx{
+	prevTxs := []*bc.Tx{
+		bc.NewTx(bc.TxData{
+			Outputs: []*bc.TxOutput{{
+				AssetID: bc.AssetID([32]byte{1}),
+				Value:   5,
+			}},
+		}),
+		bc.NewTx(bc.TxData{
+			Outputs: []*bc.TxOutput{{}, {
+				AssetID: bc.AssetID([32]byte{2}),
+				Value:   6,
+			}},
+		}),
+	}
+	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{{
-			Previous: bc.Outpoint{Hash: prevTxs[0].Hash(), Index: 0},
+			Previous: bc.Outpoint{Hash: prevTxs[0].Hash, Index: 0},
 		}, {
-			Previous: bc.Outpoint{Hash: prevTxs[1].Hash(), Index: 1},
+			Previous: bc.Outpoint{Hash: prevTxs[1].Hash, Index: 1},
 		}},
 		Outputs: []*bc.TxOutput{{
 			AssetID: bc.AssetID([32]byte{1}),
@@ -261,7 +264,7 @@ func TestGetTxTransfer(t *testing.T) {
 			Value:   6,
 			Script:  mustDecodeHex("a91430819f1955f747220bb247df8a989e36a432733487"), // 367Ve1Xkgwwiu9rmm9bJEnB91ZFnn79M1P
 		}},
-	}
+	})
 
 	now := time.Now().UTC().Truncate(time.Second)
 	blk := &bc.Block{
@@ -280,7 +283,7 @@ func TestGetTxTransfer(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		got, err := GetTx(ctx, tx.Hash().String())
+		got, err := GetTx(ctx, tx.Hash.String())
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -288,10 +291,10 @@ func TestGetTxTransfer(t *testing.T) {
 
 		var blkHash = blk.Hash()
 
-		h0, h1 := prevTxs[0].Hash(), prevTxs[1].Hash()
+		h0, h1 := prevTxs[0].Hash, prevTxs[1].Hash
 
 		want := &Tx{
-			ID:          tx.Hash(),
+			ID:          tx.Hash,
 			BlockID:     &blkHash,
 			BlockHeight: 1,
 			BlockTime:   now,

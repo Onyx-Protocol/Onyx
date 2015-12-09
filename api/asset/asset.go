@@ -46,7 +46,7 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 		return nil, errors.WithDetailf(err, "get asset with ID %q", assetID)
 	}
 
-	tx := &bc.Tx{Version: bc.CurrentTransactionVersion}
+	tx := &bc.TxData{Version: bc.CurrentTransactionVersion}
 	in := &bc.TxInput{Previous: bc.Outpoint{
 		Index: bc.InvalidOutputIndex,
 		Hash:  prevBlock.Hash(),
@@ -123,7 +123,7 @@ func (o *Output) PKScript(ctx context.Context) ([]byte, *utxodb.Receiver, error)
 	return script, nil, nil
 }
 
-func addAssetIssuanceOutputs(ctx context.Context, tx *bc.Tx, asset *appdb.Asset, outs []*Output) ([]*utxodb.Receiver, error) {
+func addAssetIssuanceOutputs(ctx context.Context, tx *bc.TxData, asset *appdb.Asset, outs []*Output) ([]*utxodb.Receiver, error) {
 	var outAddrs []*utxodb.Receiver
 	for i, out := range outs {
 		pkScript, receiver, err := out.PKScript(ctx)
@@ -148,7 +148,7 @@ func newOutputReceiver(addr *appdb.Address, isChange bool) *utxodb.Receiver {
 
 // issuanceInput returns an Input that can be used
 // to issue units of asset 'a'.
-func issuanceInput(a *appdb.Asset, tx *bc.Tx) (*Input, error) {
+func issuanceInput(a *appdb.Asset, tx *bc.TxData) (*Input, error) {
 	hash, err := txscript.CalcSignatureHash(tx, 0, a.RedeemScript, txscript.SigHashAll)
 	if err != nil {
 		return nil, errors.Wrap(err, "calculating signature hash")

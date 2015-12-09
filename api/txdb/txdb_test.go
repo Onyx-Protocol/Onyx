@@ -70,38 +70,44 @@ func TestPoolTxs(t *testing.T) {
 		}
 
 		want := []*bc.Tx{
-			{
+			bc.NewTx(bc.TxData{
 				Version:  1,
 				Metadata: []byte("hello"),
-			},
+			}),
 		}
 
 		if !reflect.DeepEqual(got, want) {
-			t.Errorf("txs:\ngot:  %v\nwant: %v", got, want)
+			t.Errorf("txs do not match")
+			for _, tx := range got {
+				t.Logf("\tgot %v", tx)
+			}
+			for _, tx := range want {
+				t.Logf("\twant %v", tx)
+			}
 		}
 	})
 }
 
 func TestGetTxs(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
-		tx := &bc.Tx{Metadata: []byte("tx")}
+		tx := bc.NewTx(bc.TxData{Metadata: []byte("tx")})
 		err := InsertTx(ctx, tx)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
-		txs, err := GetTxs(ctx, tx.Hash().String())
+		txs, err := GetTxs(ctx, tx.Hash.String())
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
-		if !reflect.DeepEqual(txs[tx.Hash().String()], tx) {
-			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", txs[tx.Hash().String()], tx)
+		if !reflect.DeepEqual(txs[tx.Hash.String()], tx) {
+			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", txs[tx.Hash.String()], tx)
 		}
 
-		_, gotErr := GetTxs(ctx, tx.Hash().String(), "nonexistent")
+		_, gotErr := GetTxs(ctx, tx.Hash.String(), "nonexistent")
 		if errors.Root(gotErr) != pg.ErrUserInputNotFound {
 			t.Errorf("got err=%q want %q", errors.Root(gotErr), pg.ErrUserInputNotFound)
 		}
@@ -110,14 +116,14 @@ func TestGetTxs(t *testing.T) {
 
 func TestInsertTx(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
-		tx := &bc.Tx{Metadata: []byte("tx")}
+		tx := bc.NewTx(bc.TxData{Metadata: []byte("tx")})
 		err := InsertTx(ctx, tx)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
-		_, err = GetTxs(ctx, tx.Hash().String())
+		_, err = GetTxs(ctx, tx.Hash.String())
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -154,7 +160,7 @@ func TestLatestBlock(t *testing.T) {
 				OutputScript:      []byte("test-output-script"),
 			},
 			Transactions: []*bc.Tx{
-				{Version: 1, Metadata: []byte("test-tx")},
+				bc.NewTx(bc.TxData{Version: 1, Metadata: []byte("test-tx")}),
 			},
 		}
 
@@ -171,11 +177,14 @@ func TestInsertBlock(t *testing.T) {
 				Version: 1,
 				Height:  1,
 			},
-			Transactions: []*bc.Tx{{
-				Metadata: []byte("a"),
-			}, {
-				Metadata: []byte("b"),
-			}},
+			Transactions: []*bc.Tx{
+				bc.NewTx(bc.TxData{
+					Metadata: []byte("a"),
+				}),
+				bc.NewTx(bc.TxData{
+					Metadata: []byte("b"),
+				}),
+			},
 		}
 		err := InsertBlock(ctx, blk)
 		if err != nil {
@@ -192,7 +201,7 @@ func TestInsertBlock(t *testing.T) {
 
 		// txs in database
 		txs := blk.Transactions
-		_, err = GetTxs(ctx, txs[0].Hash().String(), txs[1].Hash().String())
+		_, err = GetTxs(ctx, txs[0].Hash.String(), txs[1].Hash.String())
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

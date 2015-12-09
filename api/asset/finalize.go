@@ -63,7 +63,7 @@ func assembleSignatures(tx *Tx) (*bc.Tx, error) {
 		}
 		msg.Inputs[i].SignatureScript = script
 	}
-	return msg, nil
+	return bc.NewTx(*msg), nil
 }
 
 func publishTx(ctx context.Context, msg *bc.Tx, receivers []*utxodb.Receiver) (err error) {

@@ -20,7 +20,7 @@ func mustDecodeHex(data string) []byte {
 
 func TestAssembleSignatures(t *testing.T) {
 	outscript := mustDecodeHex("a9140ac9c982fd389181752e5a414045dd424a10754b87")
-	unsigned := &bc.Tx{
+	unsigned := &bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Index: bc.InvalidOutputIndex}}},
 		Outputs: []*bc.TxOutput{{AssetID: [32]byte{255}, Value: 5, Script: outscript}},
@@ -47,8 +47,8 @@ func TestAssembleSignatures(t *testing.T) {
 	}
 
 	want := "95b3ad722cbe3d04426eb07646523b10146e161fe80e6a2d27348e9b8d93127c"
-	if tx.Hash().String() != want {
-		t.Errorf("got tx hash = %v want %v", tx.Hash().String(), want)
+	if tx.Hash.String() != want {
+		t.Errorf("got tx hash = %v want %v", tx.Hash.String(), want)
 	}
 }
 

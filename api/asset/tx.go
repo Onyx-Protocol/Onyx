@@ -9,7 +9,7 @@ import (
 // Tx represents a partially- or fully-signed transaction
 // belonging to a Chain project.
 type Tx struct {
-	Unsigned   *bc.Tx             `json:"unsigned_hex"`
+	Unsigned   *bc.TxData         `json:"unsigned_hex"`
 	BlockChain string             `json:"block_chain"`
 	Inputs     []*Input           `json:"inputs"`
 	OutRecvs   []*utxodb.Receiver `json:"output_receivers"`

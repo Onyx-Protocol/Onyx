@@ -20,8 +20,26 @@ const (
 	InvalidOutputIndex uint32 = 0xffffffff
 )
 
-// Tx encodes a transaction in the blockchain.
+// Tx holds a transaction along with its hash.
 type Tx struct {
+	TxData
+	Hash Hash
+}
+
+// NewTx returns a new Tx containing data and its hash.
+// If you have already computed the hash, use struct literal
+// notation to make a Tx object directly.
+func NewTx(data TxData) *Tx {
+	return &Tx{
+		TxData: data,
+		Hash:   data.Hash(),
+	}
+}
+
+// TxData encodes a transaction in the blockchain.
+// Most users will want to use Tx instead;
+// it includes the hash.
+type TxData struct {
 	Version  uint32
 	Inputs   []*TxInput
 	Outputs  []*TxOutput
@@ -65,10 +83,10 @@ func NewOutpoint(b []byte, index uint32) *Outpoint {
 
 // Copy creates a deep copy of a transaction so that the original does not get
 // modified when the copy is manipulated.
-func (tx *Tx) Copy() *Tx {
+func (tx *TxData) Copy() *TxData {
 	// Create new tx and start by copying primitive values and making space
 	// for the transaction inputs and outputs.
-	newTx := Tx{
+	newTx := TxData{
 		Version:  tx.Version,
 		Inputs:   make([]*TxInput, 0, len(tx.Inputs)),
 		Outputs:  make([]*TxOutput, 0, len(tx.Outputs)),
@@ -118,7 +136,7 @@ func (ti *TxInput) IsIssuance() bool {
 	return ti.Previous.Index == InvalidOutputIndex
 }
 
-func (tx *Tx) UnmarshalText(p []byte) error {
+func (tx *TxData) UnmarshalText(p []byte) error {
 	b := make([]byte, hex.DecodedLen(len(p)))
 	_, err := hex.Decode(b, p)
 	if err != nil {
@@ -129,7 +147,7 @@ func (tx *Tx) UnmarshalText(p []byte) error {
 	return r.Err
 }
 
-func (tx *Tx) Scan(val interface{}) error {
+func (tx *TxData) Scan(val interface{}) error {
 	b, ok := val.([]byte)
 	if !ok {
 		return errors.New("Scan must receive a byte slice")
@@ -139,7 +157,7 @@ func (tx *Tx) Scan(val interface{}) error {
 	return r.Err
 }
 
-func (tx *Tx) Value() (driver.Value, error) {
+func (tx *TxData) Value() (driver.Value, error) {
 	b := new(bytes.Buffer)
 	_, err := tx.WriteTo(b)
 	if err != nil {
@@ -148,7 +166,7 @@ func (tx *Tx) Value() (driver.Value, error) {
 	return b.Bytes(), nil
 }
 
-func (tx *Tx) readFrom(r *errors.Reader) {
+func (tx *TxData) readFrom(r *errors.Reader) {
 	tx.Version = readUint32(r)
 
 	for n := readUvarint(r); n > 0; n-- {
@@ -190,18 +208,19 @@ func (p *Outpoint) readFrom(r *errors.Reader) (n int64, err error) {
 	return 32 + 4, nil
 }
 
-// Hash returns hash of the transaction with metadata fields
-// replaced by their hashes.
-func (tx *Tx) Hash() Hash {
+// Hash computes the hash of the transaction with metadata fields
+// replaced by their hashes,
+// and stores the result in Hash.
+func (tx *TxData) Hash() Hash {
 	h := hash256.New()
 	tx.writeTo(h, true) // error is impossible
-	var v [32]byte
+	var v Hash
 	h.Sum(v[:0])
 	return v
 }
 
 // MarshalText satisfies encoding.TextMarshaller interface
-func (tx *Tx) MarshalText() ([]byte, error) {
+func (tx *TxData) MarshalText() ([]byte, error) {
 	var buf bytes.Buffer
 	tx.WriteTo(&buf) // error is impossible
 	b := make([]byte, hex.EncodedLen(buf.Len()))
@@ -210,11 +229,11 @@ func (tx *Tx) MarshalText() ([]byte, error) {
 }
 
 // WriteTo writes tx to w.
-func (tx *Tx) WriteTo(w io.Writer) (int64, error) {
+func (tx *TxData) WriteTo(w io.Writer) (int64, error) {
 	return tx.writeTo(w, false)
 }
 
-func (tx *Tx) writeTo(w io.Writer, forHashing bool) (n int64, err error) {
+func (tx *TxData) writeTo(w io.Writer, forHashing bool) (n int64, err error) {
 	ew := errors.NewWriter(w)
 	writeUint32(ew, tx.Version)
 

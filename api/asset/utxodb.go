@@ -79,7 +79,6 @@ func (sqlUTXODB) SaveReservations(ctx context.Context, utxos []*utxodb.UTXO, exp
 func applyTx(ctx context.Context, tx *bc.Tx, outRecs []*utxodb.Receiver) (deleted []bc.Outpoint, inserted []*txdb.Output, err error) {
 	defer metrics.RecordElapsed(time.Now())
 
-	hash := tx.Hash()
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
 	err = txdb.InsertTx(ctx, tx)
@@ -92,7 +91,7 @@ func applyTx(ctx context.Context, tx *bc.Tx, outRecs []*utxodb.Receiver) (delete
 		return nil, nil, errors.Wrap(err, "insert into pool_txs")
 	}
 
-	inserted, err = insertUTXOs(ctx, hash, tx.Outputs, outRecs)
+	inserted, err = insertUTXOs(ctx, tx.Hash, tx.Outputs, outRecs)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "insert outputs")
 	}

@@ -30,7 +30,7 @@ func TestBadPC(t *testing.T) {
 		},
 	}
 	// tx with almost empty scripts.
-	tx := &bc.Tx{
+	tx := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
 			{
@@ -89,7 +89,7 @@ func TestCheckErrorCondition(t *testing.T) {
 	t.Parallel()
 
 	// tx with almost empty scripts.
-	tx := &bc.Tx{
+	tx := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
 			{
@@ -180,7 +180,7 @@ func TestInvalidFlagCombinations(t *testing.T) {
 	}
 
 	// tx with almost empty scripts.
-	tx := &bc.Tx{
+	tx := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
 			{

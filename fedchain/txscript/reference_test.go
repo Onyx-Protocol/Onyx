@@ -155,11 +155,11 @@ func parseScriptFlags(flagStr string) (ScriptFlags, error) {
 
 var testAssetID, testAssetID2 bc.AssetID
 
-func newCoinbaseTx(val uint64, pkScript []byte, assetID bc.AssetID) *bc.Tx {
+func newCoinbaseTx(val uint64, pkScript []byte, assetID bc.AssetID) *bc.TxData {
 	if pkScript == nil {
 		pkScript = []byte{OP_TRUE}
 	}
-	return &bc.Tx{
+	return &bc.TxData{
 		Version:  bc.CurrentTransactionVersion,
 		Inputs:   []*bc.TxInput{{SignatureScript: []byte{OP_0, OP_0}}},
 		Outputs:  []*bc.TxOutput{{Value: val, Script: pkScript, AssetID: assetID}},
@@ -169,12 +169,12 @@ func newCoinbaseTx(val uint64, pkScript []byte, assetID bc.AssetID) *bc.Tx {
 
 // createSpendTx generates a basic spending transaction given the passed
 // signature and public key scripts.
-func createSpendingTx(sigScript, pkScript []byte) (*bc.Tx, *testViewReader) {
+func createSpendingTx(sigScript, pkScript []byte) (*bc.TxData, *testViewReader) {
 	coinbaseTx1 := newCoinbaseTx(3, pkScript, testAssetID)
 	coinbaseTx2 := newCoinbaseTx(4, pkScript, testAssetID)
 	coinbaseTx3 := newCoinbaseTx(5, nil, testAssetID2)
 
-	spendingTx := &bc.Tx{
+	spendingTx := &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		Inputs: []*bc.TxInput{
 			{
@@ -206,7 +206,7 @@ func createSpendingTx(sigScript, pkScript []byte) (*bc.Tx, *testViewReader) {
 		LockTime: 2e9,
 	}
 
-	return spendingTx, &testViewReader{spendingTx: spendingTx, coinbaseTxs: []*bc.Tx{coinbaseTx1, coinbaseTx2, coinbaseTx3}}
+	return spendingTx, &testViewReader{spendingTx: spendingTx, coinbaseTxs: []*bc.TxData{coinbaseTx1, coinbaseTx2, coinbaseTx3}}
 }
 
 // TestScriptInvalidTests ensures all of the tests in script_invalid.json fail
@@ -428,8 +428,8 @@ func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([]by
 }
 
 type testViewReader struct {
-	spendingTx  *bc.Tx
-	coinbaseTxs []*bc.Tx
+	spendingTx  *bc.TxData
+	coinbaseTxs []*bc.TxData
 }
 
 func (viewReader testViewReader) Output(ctx context.Context, outpoint bc.Outpoint) *state.Output {
@@ -458,7 +458,7 @@ func (viewReader testViewReader) UnspentP2COutputs(ctx context.Context, contract
 	return result
 }
 
-func newReusableTestEngine(viewReader testViewReader, tx *bc.Tx) (*Engine, error) {
+func newReusableTestEngine(viewReader testViewReader, tx *bc.TxData) (*Engine, error) {
 	result, err := NewReusableEngine(nil, viewReader, tx, P2CFLAGS)
 	if err != nil {
 		return nil, err
@@ -467,7 +467,7 @@ func newReusableTestEngine(viewReader testViewReader, tx *bc.Tx) (*Engine, error
 	return result, nil
 }
 
-func newTestEngine(viewReader testViewReader, scriptPubKey []byte, tx *bc.Tx, flags ScriptFlags) (*Engine, error) {
+func newTestEngine(viewReader testViewReader, scriptPubKey []byte, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
 	result, err := NewEngine(nil, viewReader, scriptPubKey, tx, 0, flags)
 	if err != nil {
 		return nil, err

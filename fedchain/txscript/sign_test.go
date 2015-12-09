@@ -56,7 +56,7 @@ func mkGetScript(scripts map[string][]byte) txscript.ScriptDB {
 	})
 }
 
-func checkScripts(msg string, tx *bc.Tx, idx int, sigScript, pkScript []byte) error {
+func checkScripts(msg string, tx *bc.TxData, idx int, sigScript, pkScript []byte) error {
 	tx.Inputs[idx].SignatureScript = sigScript
 	vm, err := txscript.NewEngine(nil, nil, pkScript, tx, idx, txscript.ScriptBip16|txscript.ScriptVerifyDERSignatures)
 	if err != nil {
@@ -73,7 +73,7 @@ func checkScripts(msg string, tx *bc.Tx, idx int, sigScript, pkScript []byte) er
 	return nil
 }
 
-func signAndCheck(msg string, tx *bc.Tx, idx int, pkScript []byte,
+func signAndCheck(msg string, tx *bc.TxData, idx int, pkScript []byte,
 	hashType txscript.SigHashType, kdb txscript.KeyDB, sdb txscript.ScriptDB,
 	previousScript []byte) error {
 
@@ -101,7 +101,7 @@ func TestSignTxOutput(t *testing.T) {
 		txscript.SigHashNone | txscript.SigHashAnyOneCanPay,
 		txscript.SigHashSingle | txscript.SigHashAnyOneCanPay,
 	}
-	tx := &bc.Tx{
+	tx := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
 			&bc.TxInput{
@@ -1634,7 +1634,7 @@ func TestSignatureScript(t *testing.T) {
 
 nexttest:
 	for i := range sigScriptTests {
-		tx := &bc.Tx{
+		tx := &bc.TxData{
 			Version: bc.CurrentTransactionVersion,
 			Outputs: []*bc.TxOutput{{Value: 500, Script: []byte{txscript.OP_RETURN}}},
 		}

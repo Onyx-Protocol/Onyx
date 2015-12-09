@@ -92,7 +92,7 @@ type (
 		lastCodeSep     int
 		dstack          stack // data stack
 		astack          stack // alt stack
-		tx              bc.Tx
+		tx              bc.TxData
 		txIdx           int
 		condStack       []int
 		numOps          int
@@ -716,7 +716,7 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 //   }
 // Note: every call to Execute() must be preceded by a call to
 // Prepare() (including the first one).
-func NewReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.Tx, flags ScriptFlags) (*Engine, error) {
+func NewReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
 	vm := &Engine{
 		ctx:        ctx,
 		viewReader: viewReader,
@@ -751,7 +751,7 @@ func NewReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.Tx, fl
 //
 // This is equivalent to calling NewReusableEngine() followed by a
 // call to Prepare().
-func NewEngine(ctx context.Context, viewReader viewReader, scriptPubKey []byte, tx *bc.Tx, txIdx int, flags ScriptFlags) (*Engine, error) {
+func NewEngine(ctx context.Context, viewReader viewReader, scriptPubKey []byte, tx *bc.TxData, txIdx int, flags ScriptFlags) (*Engine, error) {
 	vm, err := NewReusableEngine(ctx, viewReader, tx, flags)
 	if err != nil {
 		return nil, err

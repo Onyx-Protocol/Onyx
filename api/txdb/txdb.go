@@ -22,7 +22,7 @@ func PoolTxs(ctx context.Context) ([]*bc.Tx, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	const q = `SELECT data FROM pool_txs ORDER BY sort_id`
+	const q = `SELECT tx_hash, data FROM pool_txs ORDER BY sort_id`
 	rows, err := pg.FromContext(ctx).Query(q)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
@@ -31,12 +31,13 @@ func PoolTxs(ctx context.Context) ([]*bc.Tx, error) {
 
 	var txs []*bc.Tx
 	for rows.Next() {
-		tx := new(bc.Tx)
-		err := rows.Scan(tx)
+		var hash bc.Hash
+		var data bc.TxData
+		err := rows.Scan(&hash, &data)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
-		txs = append(txs, tx)
+		txs = append(txs, &bc.Tx{TxData: data, Hash: hash})
 	}
 
 	if err := rows.Err(); err != nil {
@@ -51,7 +52,7 @@ func PoolTxs(ctx context.Context) ([]*bc.Tx, error) {
 func GetTxs(ctx context.Context, hashes ...string) (map[string]*bc.Tx, error) {
 	sort.Strings(hashes)
 	hashes = strings.Uniq(hashes)
-	const q = `SELECT data FROM txs WHERE tx_hash=ANY($1)`
+	const q = `SELECT tx_hash, data FROM txs WHERE tx_hash=ANY($1)`
 	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(hashes))
 	if err != nil {
 		return nil, errors.Wrap(err, "get txs query")
@@ -60,12 +61,13 @@ func GetTxs(ctx context.Context, hashes ...string) (map[string]*bc.Tx, error) {
 
 	txs := make(map[string]*bc.Tx, len(hashes))
 	for rows.Next() {
-		tx := new(bc.Tx)
-		err = rows.Scan(&tx)
+		var hash bc.Hash
+		var data bc.TxData
+		err = rows.Scan(&hash, &data)
 		if err != nil {
 			return nil, errors.Wrap(err, "rows scan")
 		}
-		txs[tx.Hash().String()] = tx
+		txs[hash.String()] = &bc.Tx{TxData: data, Hash: hash}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrap(err, "rows end")
@@ -91,9 +93,10 @@ func GetTxBlock(ctx context.Context, hash string) (*bc.Block, error) {
 	return b, errors.Wrap(err, "select query")
 }
 
+// InsertTx inserts tx into txs.
 func InsertTx(ctx context.Context, tx *bc.Tx) error {
 	const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2)`
-	_, err := pg.FromContext(ctx).Exec(q, tx.Hash(), tx)
+	_, err := pg.FromContext(ctx).Exec(q, tx.Hash, tx)
 	return errors.Wrap(err, "insert query")
 }
 
@@ -139,7 +142,7 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) error {
 		data   [][]byte
 	)
 	for _, tx := range block.Transactions {
-		hashes = append(hashes, tx.Hash().String())
+		hashes = append(hashes, tx.Hash.String())
 		var buf bytes.Buffer
 		_, err := tx.WriteTo(&buf)
 		if err != nil {

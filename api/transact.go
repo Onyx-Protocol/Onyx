@@ -116,7 +116,7 @@ func submitSingle(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 	}
 
 	ret := map[string]interface{}{
-		"transaction_id":  tx.Hash().String(),
+		"transaction_id":  tx.Hash.String(),
 		"raw_transaction": tx,
 	}
 	return ret, nil

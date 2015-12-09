@@ -93,7 +93,7 @@ func TestIssue(t *testing.T) {
 	}
 
 	outScript, _ := hex.DecodeString("a9140ac9c982fd389181752e5a414045dd424a10754b87")
-	want := &bc.Tx{
+	want := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{{Previous: bc.Outpoint{
 			Index: bc.InvalidOutputIndex,

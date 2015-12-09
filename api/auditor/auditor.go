@@ -69,7 +69,7 @@ func GetBlockSummary(ctx context.Context, hash string) (*BlockSummary, error) {
 
 	txHashes := make([]bc.Hash, 0, len(block.Transactions))
 	for _, tx := range block.Transactions {
-		txHashes = append(txHashes, tx.Hash())
+		txHashes = append(txHashes, tx.Hash)
 	}
 
 	return &BlockSummary{
@@ -117,10 +117,13 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	tx := txs[txID]
+	tx, ok := txs[txID]
+	if !ok {
+		return nil, errors.New("tx not found: " + txID)
+	}
 
 	resp := &Tx{
-		ID:       tx.Hash(),
+		ID:       tx.Hash,
 		Metadata: tx.Metadata,
 	}
 

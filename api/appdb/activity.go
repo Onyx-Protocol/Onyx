@@ -72,7 +72,7 @@ func WriteActivity(ctx context.Context, tx *bc.Tx, outIsChange map[int]bool, txT
 	}
 
 	// We'll use the transaction hash several times, so we'll keep it around.
-	txHash := tx.Hash().String()
+	txHash := tx.Hash.String()
 
 	// Manager node activity
 	for _, managerNodeID := range managerNodeIDs {
@@ -302,8 +302,7 @@ type actItem struct {
 // getActUTXOs returns information about outputs from both sides of a transaciton.
 func getActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*actUTXO, err error) {
 	var (
-		txHash     = tx.Hash()
-		txHashStr  = txHash.String()
+		txHashStr  = tx.Hash.String()
 		isIssuance = tx.IsIssuance()
 
 		hashes  []string
@@ -386,7 +385,7 @@ func getActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*actUTXO, err erro
 	}
 
 	for i := range tx.Outputs {
-		op := bc.Outpoint{Hash: txHash, Index: uint32(i)}
+		op := bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
 		outs = append(outs, all[op])
 	}
 

@@ -115,12 +115,12 @@ func TestInsertAssetDefinitions(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		block := &bc.Block{
 			Transactions: []*bc.Tx{
-				&bc.Tx{Inputs: []*bc.TxInput{
+				bc.NewTx(bc.TxData{Inputs: []*bc.TxInput{
 					{
 						Metadata: []byte("{'key': 'im totally json'}"),
 						Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
 					},
-				}},
+				}}),
 			},
 		}
 		err := InsertAssetDefinitions(ctx, block)
@@ -146,12 +146,12 @@ func TestInsertAssetDefinitionsWithUpdate(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		block := &bc.Block{
 			Transactions: []*bc.Tx{
-				&bc.Tx{Inputs: []*bc.TxInput{
+				bc.NewTx(bc.TxData{Inputs: []*bc.TxInput{
 					{
 						Metadata: []byte("{'key': 'im totally json'}"),
 						Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
 					},
-				}},
+				}}),
 			},
 		}
 		err := InsertAssetDefinitions(ctx, block)

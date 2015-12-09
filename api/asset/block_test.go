@@ -179,7 +179,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			b.Logf("finalized %v", tx.Hash())
+			b.Logf("finalized %v", tx.Hash)
 
 			inputs := []utxodb.Input{{
 				AssetID:   asset.Hash.String(),
@@ -201,7 +201,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			b.Logf("finalized %v", tx.Hash())
+			b.Logf("finalized %v", tx.Hash)
 
 			if i%10 == 0 {
 				makeBlock(ctx)
@@ -290,7 +290,7 @@ func TestGenerateBlock(t *testing.T) {
 				Timestamp:         uint64(now.Unix()),
 			},
 			Transactions: []*bc.Tx{
-				{
+				bc.NewTx(bc.TxData{
 					Version: 1,
 					Inputs: []*bc.TxInput{{
 						Previous: bc.Outpoint{
@@ -307,8 +307,8 @@ func TestGenerateBlock(t *testing.T) {
 						AssetID: mustParseHash("25fbb43a93c290fde3997d92c416d3cc7ff40a13aa309d051406978635085c8d"),
 						Script:  mustDecodeHex("a9145881cd104f8d64635751ac0f3c0decf9150c110687"),
 					}},
-				},
-				{
+				}),
+				bc.NewTx(bc.TxData{
 					Version: 1,
 					Inputs: []*bc.TxInput{{
 						Previous: bc.Outpoint{
@@ -325,7 +325,7 @@ func TestGenerateBlock(t *testing.T) {
 						AssetID: mustParseHash("25fbb43a93c290fde3997d92c416d3cc7ff40a13aa309d051406978635085c8d"),
 						Script:  mustDecodeHex("a914c171e443e05b953baa7b7d834028ed91e47b4d0b87"),
 					}},
-				},
+				}),
 			},
 		}
 

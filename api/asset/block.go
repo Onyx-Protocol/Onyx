@@ -222,7 +222,7 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 
 	txInBlock := make(map[bc.Hash]bool)
 	for _, tx := range block.Transactions {
-		txInBlock[tx.Hash()] = true
+		txInBlock[tx.Hash] = true
 	}
 
 	var (
@@ -252,13 +252,13 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 		// Have to explicitly check that tx is not in block
 		// because issuance transactions are always valid, even duplicates.
 		// TODO(erykwalder): Remove this check when issuances become unique
-		if txErr == nil && !txInBlock[tx.Hash()] {
+		if txErr == nil && !txInBlock[tx.Hash] {
 			for op, out := range vview.Outs {
 				poolView.Outs[op] = out
 			}
 		} else {
 			deleteTxs = append(deleteTxs, tx)
-			deleteTxHashes = append(deleteTxHashes, tx.Hash().String())
+			deleteTxHashes = append(deleteTxHashes, tx.Hash.String())
 			for _, in := range tx.Inputs {
 				if in.IsIssuance() {
 					continue
@@ -267,7 +267,7 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 				deleteInputTxIndexes = append(deleteInputTxIndexes, in.Previous.Index)
 			}
 
-			if !txInBlock[tx.Hash()] {
+			if !txInBlock[tx.Hash] {
 				conflictTxs = append(conflictTxs, tx)
 			}
 		}
@@ -345,7 +345,7 @@ func getRestoreableOutputs(ctx context.Context, txs []*bc.Tx) (outs []*txdb.Outp
 		}
 
 		for i, out := range tx.Outputs {
-			op := bc.Outpoint{Hash: tx.Hash(), Index: uint32(i)}
+			op := bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
 			outs = append(outs, &txdb.Output{
 				Output: state.Output{
 					TxOutput: *out,

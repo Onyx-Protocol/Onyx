@@ -101,7 +101,7 @@ func ExampleSignTxOutput() {
 	// For this example, create a fake transaction that represents what
 	// would ordinarily be the real transaction that is being spent.  It
 	// contains a single output that pays to address in the amount of 1 BTC.
-	originTx := &bc.Tx{
+	originTx := &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		Inputs: []*bc.TxInput{{
 			SignatureScript: []byte{txscript.OP_0, txscript.OP_0},
@@ -113,13 +113,12 @@ func ExampleSignTxOutput() {
 		return
 	}
 	originTx.Outputs = append(originTx.Outputs, &bc.TxOutput{Value: 100000000, Script: pkScript})
-	originTxHash := originTx.Hash()
 
 	// Create the transaction to redeem the fake transaction.
-	redeemTx := &bc.Tx{
+	redeemTx := &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		Inputs: []*bc.TxInput{{
-			Previous:        bc.Outpoint{Hash: originTxHash, Index: 0},
+			Previous:        bc.Outpoint{Hash: originTx.Hash(), Index: 0},
 			SignatureScript: nil,
 		}},
 		Outputs: []*bc.TxOutput{{
