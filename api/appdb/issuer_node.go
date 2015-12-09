@@ -61,14 +61,11 @@ func InsertIssuerNode(ctx context.Context, projID, label string, keys, gennedKey
 func NextAsset(ctx context.Context, inodeID string) (asset *Asset, sigsRequired int, err error) {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
-		UPDATE issuer_nodes
-		SET next_asset_index=next_asset_index+1
+		SELECT keyset,
+		key_index(key_index),
+		key_index(nextval('assets_key_index_seq'::regclass)-1),
+		sigs_required FROM issuer_nodes
 		WHERE id=$1
-		RETURNING
-			keyset,
-			key_index(key_index),
-			key_index(next_asset_index-1),
-			sigs_required
 	`
 	asset = &Asset{IssuerNodeID: inodeID}
 	var (

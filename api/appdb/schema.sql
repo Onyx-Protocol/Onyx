@@ -255,6 +255,18 @@ CREATE TABLE assets (
 
 
 --
+-- Name: assets_key_index_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE assets_key_index_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
 -- Name: auth_tokens; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
