@@ -13,11 +13,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/kr/env"
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/database/pg"
+	"chain/env"
 )
 
 var (

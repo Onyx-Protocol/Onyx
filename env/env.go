@@ -35,6 +35,29 @@ func Int(name string, value int) *int {
 	return p
 }
 
+// Bool returns a new bool pointer.
+// When Parse is called,
+// env var name will be parsed
+// and the resulting value
+// will be assigned to the returned location.
+// Parsing uses strconv.ParseBool.
+func Bool(name string, value bool) *bool {
+	p := new(bool)
+	*p = value
+	funcs = append(funcs, func() bool {
+		if s := os.Getenv(name); s != "" {
+			v, err := strconv.ParseBool(s)
+			if err != nil {
+				log.Println(name, err)
+				return false
+			}
+			*p = v
+		}
+		return true
+	})
+	return p
+}
+
 // Duration returns a new time.Duration pointer.
 // When Parse is called,
 // env var name will be parsed

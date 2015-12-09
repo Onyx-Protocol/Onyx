@@ -10,7 +10,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/kr/env"
 	"github.com/kr/secureheader"
 	"github.com/resonancelabs/go-pub/instrument"
 	"github.com/resonancelabs/go-pub/instrument/client"
@@ -18,7 +17,9 @@ import (
 
 	"chain/api"
 	"chain/api/appdb"
+	"chain/api/asset"
 	"chain/database/pg"
+	"chain/env"
 	chainlog "chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
@@ -45,6 +46,7 @@ var (
 	// for config var LIBRATO_URL, see func init below
 	traceguideToken = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns      = env.Int("MAXDBCONNS", 10) // set to 100 in prod
+	makeBlocks      = env.Bool("MAKEBLOCKS", false)
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -107,7 +109,9 @@ func main() {
 
 	bg := context.Background()
 	bg = pg.NewContext(bg, db)
-	//go asset.MakeBlocks(bg, 1*time.Second)
+	if *makeBlocks {
+		go asset.MakeBlocks(bg, 1*time.Second)
+	}
 	http.Handle("/", chainhttp.ContextHandler{Context: bg, Handler: h})
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 

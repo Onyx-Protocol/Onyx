@@ -1,14 +1,14 @@
 package main
 
 import (
-	"chain/api/appdb"
-	"chain/database/pg"
-	"chain/fedchain/bc"
 	"database/sql"
 	"log"
 	"time"
 
-	"github.com/kr/env"
+	"chain/api/appdb"
+	"chain/database/pg"
+	"chain/env"
+	"chain/fedchain/bc"
 )
 
 var (
