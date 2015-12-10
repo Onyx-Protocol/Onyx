@@ -67,11 +67,17 @@ func TestListAssets(t *testing.T) {
 			('in-id-0', 'proj-id-0', 0, '{}', 'in-0'),
 			('in-id-1', 'proj-id-0', 1, '{}', 'in-1');
 		INSERT INTO assets
-			(id, issuer_node_id, key_index, redeem_script, issuance_script, label, sort_id, issued_confirmed, issued_pool)
+			(id, issuer_node_id, key_index, redeem_script, issuance_script, label, sort_id)
 		VALUES
-			('asset-id-0', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 'asset0', 1, 2),
-			('asset-id-1', 'in-id-0', 1, '\x'::bytea, '\x'::bytea, 'asset-1', 'asset1', 3, 4),
-			('asset-id-2', 'in-id-1', 2, '\x'::bytea, '\x'::bytea, 'asset-2', 'asset2', 5, 6);
+			('asset-id-0', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 'asset0'),
+			('asset-id-1', 'in-id-0', 1, '\x'::bytea, '\x'::bytea, 'asset-1', 'asset1'),
+			('asset-id-2', 'in-id-1', 2, '\x'::bytea, '\x'::bytea, 'asset-2', 'asset2');
+		INSERT INTO issuance_totals
+			(asset_id, confirmed, pool)
+		VALUES
+			('asset-id-0', 1, 2),
+			('asset-id-1', 3, 4),
+			('asset-id-2', 5, 6);
 	`
 	withContext(t, sql, func(ctx context.Context) {
 		examples := []struct {
@@ -141,8 +147,10 @@ func TestGetAsset(t *testing.T) {
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
 			VALUES ('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
-		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label, issued_confirmed, issued_pool)
-			VALUES ('asset-id-0', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 58, 12);
+		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
+			VALUES ('asset-id-0', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
+		INSERT INTO issuance_totals (asset_id, confirmed, pool)
+			VALUES ('asset-id-0', 58, 12);
 	`
 	withContext(t, sql, func(ctx context.Context) {
 		got, err := GetAsset(ctx, "asset-id-0")
@@ -168,10 +176,15 @@ func TestUpdateIssuances(t *testing.T) {
 		INSERT INTO issuer_nodes (id, project_id, label, keyset, key_index)
 			VALUES ('issuer-node-id-0', 'project-id-0', 'foo', '{}', 0);
 
-		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label, issued_confirmed, issued_pool)
-		VALUES ('asset-id-0', 'issuer-node-id-0', 0, '{}', '', '', '', 10, 10),
-			('asset-id-1', 'issuer-node-id-0', 1, '{}', '', '', '', 10, 10),
-			('asset-id-2', 'issuer-node-id-0', 2, '{}', '', '', '', 10, 10);
+		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label)
+		VALUES ('asset-id-0', 'issuer-node-id-0', 0, '{}', '', '', ''),
+			('asset-id-1', 'issuer-node-id-0', 1, '{}', '', '', ''),
+			('asset-id-2', 'issuer-node-id-0', 2, '{}', '', '', '');
+		INSERT INTO issuance_totals (asset_id, confirmed, pool)
+		VALUES
+			('asset-id-0', 10, 10),
+			('asset-id-1', 10, 10),
+			('asset-id-2', 10, 10);
 	`
 
 	examples := []struct {
@@ -275,6 +288,7 @@ func TestUpdateAsset(t *testing.T) {
 			VALUES ('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
 			VALUES ('asset-id-0', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
+		INSERT INTO issuance_totals (asset_id) VALUES ('asset-id-0');
 	`
 	withContext(t, sql, func(ctx context.Context) {
 		assetResponse, err := GetAsset(ctx, "asset-id-0")
@@ -307,6 +321,7 @@ func TestUpdateAssetNoUpdate(t *testing.T) {
 			VALUES ('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
 			VALUES ('asset-id-0', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
+		INSERT INTO issuance_totals (asset_id) VALUES ('asset-id-0');
 	`
 	withContext(t, sql, func(ctx context.Context) {
 		assetResponse, err := GetAsset(ctx, "asset-id-0")

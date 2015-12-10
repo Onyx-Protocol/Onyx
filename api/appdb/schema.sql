@@ -244,13 +244,9 @@ CREATE TABLE assets (
     definition bytea,
     redeem_script bytea NOT NULL,
     label text NOT NULL,
-    issued_pool bigint DEFAULT 0 NOT NULL,
     sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL,
     inner_asset_id text,
-    issuance_script bytea NOT NULL,
-    issued_confirmed bigint DEFAULT 0 NOT NULL,
-    CONSTRAINT positive_issued_confirmed CHECK ((issued_confirmed >= 0)),
-    CONSTRAINT positive_issued_pool CHECK ((issued_pool >= 0))
+    issuance_script bytea NOT NULL
 );
 
 
@@ -347,6 +343,19 @@ CREATE TABLE issuance_activity (
 CREATE TABLE issuance_activity_assets (
     issuance_activity_id text NOT NULL,
     asset_id text NOT NULL
+);
+
+
+--
+-- Name: issuance_totals; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE issuance_totals (
+    asset_id text NOT NULL,
+    pool bigint DEFAULT 0 NOT NULL,
+    confirmed bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT issuance_totals_confirmed_check CHECK ((confirmed >= 0)),
+    CONSTRAINT issuance_totals_pool_check CHECK ((pool >= 0))
 );
 
 
@@ -671,6 +680,14 @@ ALTER TABLE ONLY invitations
 
 ALTER TABLE ONLY issuance_activity
     ADD CONSTRAINT issuance_activity_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: issuance_totals_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY issuance_totals
+    ADD CONSTRAINT issuance_totals_pkey PRIMARY KEY (asset_id);
 
 
 --

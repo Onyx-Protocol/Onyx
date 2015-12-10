@@ -333,9 +333,10 @@ func TestGetAsset(t *testing.T) {
 		INSERT INTO projects (id, name) VALUES('proj-1', 'foo');
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
 			VALUES ('inode-1', 'proj-1', 'bar', '{}');
-		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label, issuance_script,
-				issued_pool, issued_confirmed)
-			VALUES ('asset-1', 'inode-1', 0, '', 'baz', '', 5, 6);
+		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label, issuance_script)
+			VALUES ('asset-1', 'inode-1', 0, '', 'baz', '');
+		INSERT INTO issuance_totals (asset_id, pool, confirmed)
+			VALUES ('asset-1', 5, 6);
 		INSERT INTO asset_definition_pointers (asset_id, asset_definition_hash)
 			VALUES ('asset-1', 'hash-1');
 		INSERT INTO asset_definitions (hash, definition)

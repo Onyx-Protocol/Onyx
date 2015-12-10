@@ -99,8 +99,12 @@ func AssetByID(ctx context.Context, hash bc.AssetID) (*Asset, error) {
 func InsertAsset(ctx context.Context, asset *Asset) error {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
-		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label, definition)
-		VALUES($1, $2, to_key_index($3), $4, $5, $6, $7, $8)
+		WITH newasset AS (
+			INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label, definition)
+			VALUES($1, $2, to_key_index($3), $4, $5, $6, $7, $8)
+			RETURNING id
+		)
+		INSERT INTO issuance_totals (asset_id) TABLE newasset;
 	`
 
 	_, err := pg.FromContext(ctx).Exec(q,
@@ -121,8 +125,9 @@ func InsertAsset(ctx context.Context, asset *Asset) error {
 // for last asset, used to retrieve the next page.
 func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]*AssetResponse, string, error) {
 	q := `
-		SELECT id, label, issued_confirmed, (issued_confirmed + issued_pool), sort_id
+		SELECT id, label, t.confirmed, (t.confirmed + t.pool), sort_id
 		FROM assets
+		JOIN issuance_totals t ON (asset_id=assets.id)
 		WHERE issuer_node_id = $1 AND ($2='' OR sort_id<$2)
 		ORDER BY sort_id DESC
 		LIMIT $3
@@ -156,8 +161,10 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 // GetAsset returns an AssetResponse for the given asset id.
 func GetAsset(ctx context.Context, assetID string) (*AssetResponse, error) {
 	const q = `
-		SELECT id, label, issued_confirmed, (issued_confirmed + issued_pool)
-		FROM assets WHERE id=$1
+		SELECT id, label, t.confirmed, (t.confirmed + t.pool)
+		FROM assets
+		JOIN issuance_totals t ON (asset_id=assets.id)
+		WHERE id=$1
 	`
 	a := new(AssetResponse)
 
@@ -183,7 +190,14 @@ func UpdateAsset(ctx context.Context, assetID string, label *string) error {
 
 // DeleteAsset deletes the asset but only if none of it has been issued.
 func DeleteAsset(ctx context.Context, assetID string) error {
-	const q = `DELETE FROM assets WHERE id = $1 AND issued_confirmed = 0 AND issued_pool = 0`
+	const q = `
+		WITH deleted AS (
+			DELETE FROM issuance_totals
+			WHERE asset_id=$1 AND confirmed=0 AND pool=0
+			RETURNING asset_id
+		)
+		DELETE FROM assets WHERE id IN (TABLE deleted)
+	`
 	db := pg.FromContext(ctx)
 	result, err := db.Exec(q, assetID)
 	if err != nil {
@@ -230,20 +244,20 @@ func UpdateIssuances(ctx context.Context, deltas map[string]int64, confirmed boo
 		amounts = append(amounts, amt)
 	}
 
-	column := "issued_pool"
+	column := "pool"
 	if confirmed {
-		column = "issued_confirmed"
+		column = "confirmed"
 	}
 
 	q := `
-		UPDATE assets
+		UPDATE issuance_totals
 		SET ` + column + ` = ` + column + ` + updates.amount
 		FROM (
 			SELECT
 				unnest($1::text[]) AS asset_id,
 				unnest($2::bigint[]) AS amount
 		) AS updates
-		WHERE assets.id = updates.asset_id
+		WHERE issuance_totals.asset_id = updates.asset_id
 	`
 	_, err := pg.FromContext(ctx).Exec(q, pg.Strings(assetIDs), pg.Int64s(amounts))
 	return errors.Wrap(err)
