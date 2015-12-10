@@ -69,12 +69,12 @@ func TestPoolTxs(t *testing.T) {
 			t.Fatalf("err got = %v want nil", err)
 		}
 
-		want := []*bc.Tx{
-			bc.NewTx(bc.TxData{
-				Version:  1,
-				Metadata: []byte("hello"),
-			}),
-		}
+		wantTx := bc.NewTx(bc.TxData{
+			Version:  1,
+			Metadata: []byte("hello"),
+		})
+		wantTx.Stored = true
+		want := []*bc.Tx{wantTx}
 
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("txs do not match")
@@ -106,12 +106,12 @@ func TestPoolTxsLimit(t *testing.T) {
 			t.Fatalf("err got = %v want nil", err)
 		}
 
-		want := []*bc.Tx{
-			bc.NewTx(bc.TxData{
-				Version:  1,
-				Metadata: []byte("hello"),
-			}),
-		}
+		wantTx := bc.NewTx(bc.TxData{
+			Version:  1,
+			Metadata: []byte("hello"),
+		})
+		wantTx.Stored = true
+		want := []*bc.Tx{wantTx}
 
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("txs do not match")
@@ -140,6 +140,7 @@ func TestGetTxs(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		tx.Stored = true
 		if !reflect.DeepEqual(txs[tx.Hash.String()], tx) {
 			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", txs[tx.Hash.String()], tx)
 		}

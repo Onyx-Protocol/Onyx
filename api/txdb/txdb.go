@@ -43,7 +43,7 @@ func PoolTxs(ctx context.Context, max int) ([]*bc.Tx, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
-		txs = append(txs, &bc.Tx{TxData: data, Hash: hash})
+		txs = append(txs, &bc.Tx{TxData: data, Hash: hash, Stored: true})
 	}
 
 	if err := rows.Err(); err != nil {
@@ -73,7 +73,7 @@ func GetTxs(ctx context.Context, hashes ...string) (map[string]*bc.Tx, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "rows scan")
 		}
-		txs[hash.String()] = &bc.Tx{TxData: data, Hash: hash}
+		txs[hash.String()] = &bc.Tx{TxData: data, Hash: hash, Stored: true}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrap(err, "rows end")
@@ -144,17 +144,21 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) error {
 	defer span.Finish(ctx)
 
 	var (
-		hashes []string
-		data   [][]byte
+		hashInBlock []string // all txs in block
+		hashHist    []string // historical txs not already stored
+		data        [][]byte // parallel with hashHist
 	)
 	for _, tx := range block.Transactions {
-		hashes = append(hashes, tx.Hash.String())
-		var buf bytes.Buffer
-		_, err := tx.WriteTo(&buf)
-		if err != nil {
-			return errors.Wrap(err, "serializing tx")
+		hashInBlock = append(hashInBlock, tx.Hash.String())
+		if !tx.Stored {
+			var buf bytes.Buffer
+			_, err := tx.WriteTo(&buf)
+			if err != nil {
+				return errors.Wrap(err, "serializing tx")
+			}
+			data = append(data, buf.Bytes())
+			hashHist = append(hashHist, tx.Hash.String())
 		}
-		data = append(data, buf.Bytes())
 	}
 
 	const txQ = `
@@ -163,7 +167,7 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) error {
 		SELECT txid, dat FROM t
 		WHERE t.txid NOT IN (SELECT tx_hash FROM txs);
 	`
-	_, err := pg.FromContext(ctx).Exec(txQ, pg.Strings(hashes), pg.Byteas(data))
+	_, err := pg.FromContext(ctx).Exec(txQ, pg.Strings(hashHist), pg.Byteas(data))
 	if err != nil {
 		return errors.Wrap(err, "insert txs")
 	}
@@ -172,7 +176,7 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) error {
 		INSERT INTO blocks_txs (tx_hash, block_hash)
 		SELECT unnest($1::text[]), $2;
 	`
-	_, err = pg.FromContext(ctx).Exec(blockTxQ, pg.Strings(hashes), block.Hash())
+	_, err = pg.FromContext(ctx).Exec(blockTxQ, pg.Strings(hashInBlock), block.Hash())
 	return errors.Wrap(err, "insert block txs")
 }
 

@@ -23,7 +23,8 @@ const (
 // Tx holds a transaction along with its hash.
 type Tx struct {
 	TxData
-	Hash Hash
+	Hash   Hash
+	Stored bool // whether this tx is on durable storage
 }
 
 // NewTx returns a new Tx containing data and its hash.
