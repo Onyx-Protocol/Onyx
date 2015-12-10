@@ -208,6 +208,17 @@ func BenchmarkTxWriteToFalse(b *testing.B) {
 	}
 }
 
+func BenchmarkTxWriteToTrue200(b *testing.B) {
+	tx := &Tx{}
+	for i := 0; i < 200; i++ {
+		tx.Inputs = append(tx.Inputs, &TxInput{})
+		tx.Outputs = append(tx.Outputs, &TxOutput{})
+	}
+	for i := 0; i < b.N; i++ {
+		tx.writeTo(ioutil.Discard, true)
+	}
+}
+
 func BenchmarkTxWriteToFalse200(b *testing.B) {
 	tx := &Tx{}
 	for i := 0; i < 200; i++ {

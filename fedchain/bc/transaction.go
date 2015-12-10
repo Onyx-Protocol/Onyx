@@ -268,9 +268,9 @@ func (ti *TxInput) writeTo(w *errors.Writer, forHashing bool) {
 	if forHashing {
 		h := hash256.Sum(ti.SignatureScript)
 		w.Write(h[:])
-		h = hash256.Sum(ti.Metadata)
+		h = fastHash(ti.Metadata)
 		w.Write(h[:])
-		h = hash256.Sum(ti.AssetDefinition)
+		h = fastHash(ti.AssetDefinition)
 		w.Write(h[:])
 	} else {
 		writeBytes(w, ti.SignatureScript)
@@ -286,7 +286,7 @@ func (to *TxOutput) writeTo(w *errors.Writer, forHashing bool) {
 
 	// Write the metadata or its hash depending on serialization mode.
 	if forHashing {
-		h := hash256.Sum(to.Metadata)
+		h := fastHash(to.Metadata)
 		w.Write(h[:])
 	} else {
 		writeBytes(w, to.Metadata)
