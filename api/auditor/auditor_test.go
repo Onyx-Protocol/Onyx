@@ -2,7 +2,6 @@ package auditor
 
 import (
 	"encoding/hex"
-	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
@@ -17,12 +16,9 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain/bc"
-	chainlog "chain/log"
 )
 
 func init() {
-	chainlog.SetOutput(ioutil.Discard)
-
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
 		u = s

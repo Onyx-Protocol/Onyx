@@ -44,6 +44,7 @@ var (
 	logFile      = os.Getenv("LOGFILE")
 	logSize      = env.Int("LOGSIZE", 5e6) // 5MB
 	logCount     = env.Int("LOGCOUNT", 9)
+	logQueries   = env.Bool("LOG_QUERIES", false)
 	// for config var LIBRATO_URL, see func init below
 	traceguideToken = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns      = env.Int("MAXDBCONNS", 10) // set to 100 in prod
@@ -95,6 +96,8 @@ func main() {
 			"buildcommit": buildCommit,
 		},
 	}))
+
+	pg.EnableQueryLogging(*logQueries)
 
 	db, err := sql.Open("schemadb", *dbURL)
 	if err != nil {

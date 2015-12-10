@@ -1,10 +1,11 @@
 package pg
 
 import (
-	"chain/log"
 	"database/sql"
 
 	"golang.org/x/net/context"
+
+	"chain/log"
 )
 
 type Logger struct {

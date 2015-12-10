@@ -1,7 +1,6 @@
 package txdb
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
@@ -15,12 +14,9 @@ import (
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
-	chainlog "chain/log"
 )
 
 func init() {
-	chainlog.SetOutput(ioutil.Discard)
-
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
 		u = s

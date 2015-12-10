@@ -44,6 +44,15 @@ type key int
 // instead of using this key directly.
 var dbKey key
 
+var logQueries bool
+
+// EnableQueryLogging enables or disables log output for queries. For
+// simplicity, it is not thread-safe. It makes the most sense to set this once
+// at process boot.
+func EnableQueryLogging(e bool) {
+	logQueries = e
+}
+
 // Begin opens a new transaction on the database
 // stored in ctx. The stored database must
 // provide a Begin method like sql.DB or satisfy
@@ -82,6 +91,10 @@ func NewContext(ctx context.Context, db DB) context.Context {
 // If there is no DB value, FromContext panics.
 func FromContext(ctx context.Context) DB {
 	db := ctx.Value(dbKey).(DB)
+	if !logQueries {
+		return db
+	}
+
 	if ldb, ok := db.(*Logger); ok {
 		return ldb
 	}
