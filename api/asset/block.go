@@ -32,6 +32,8 @@ func MakeBlocks(ctx context.Context, period time.Duration) {
 }
 
 func makeBlock(ctx context.Context) {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
 	defer func() {
 		if err := recover(); err != nil {
 			const size = 64 << 10
