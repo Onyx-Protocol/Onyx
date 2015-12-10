@@ -56,6 +56,9 @@ func makeBlock(ctx context.Context) {
 		log.Error(ctx, errors.Wrap(err, "generate"))
 		return
 	}
+	if len(b.Transactions) == 0 {
+		return // don't bother making an empty block
+	}
 	err = ApplyBlock(ctx, b)
 	if err != nil {
 		log.Error(ctx, errors.Wrap(err, "apply"))
