@@ -19,6 +19,10 @@ import (
 	"chain/net/trace/span"
 )
 
+// MaxBlockTxs limits the number of transactions
+// included in each block.
+const MaxBlockTxs = 10000
+
 // ErrBadBlock is returned when a block is invalid.
 var ErrBadBlock = errors.New("invalid block")
 
@@ -76,7 +80,7 @@ func GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, error) {
 		return nil, errors.New("timestamp is earlier than prevblock timestamp")
 	}
 
-	txs, err := txdb.PoolTxs(ctx)
+	txs, err := txdb.PoolTxs(ctx, MaxBlockTxs)
 	if err != nil {
 		return nil, errors.Wrap(err, "get pool TXs")
 	}
@@ -237,7 +241,7 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 
 	poolView := NewMemView()
 
-	txs, err := txdb.PoolTxs(ctx)
+	txs, err := txdb.PoolTxs(ctx, -1)
 	if err != nil {
 		return nil, errors.Wrap(err, "")
 	}

@@ -64,7 +64,44 @@ func TestPoolTxs(t *testing.T) {
 		);
 	`
 	withContext(t, fix, func(ctx context.Context) {
-		got, err := PoolTxs(ctx)
+		got, err := PoolTxs(ctx, -1)
+		if err != nil {
+			t.Fatalf("err got = %v want nil", err)
+		}
+
+		want := []*bc.Tx{
+			bc.NewTx(bc.TxData{
+				Version:  1,
+				Metadata: []byte("hello"),
+			}),
+		}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("txs do not match")
+			for _, tx := range got {
+				t.Logf("\tgot %v", tx)
+			}
+			for _, tx := range want {
+				t.Logf("\twant %v", tx)
+			}
+		}
+	})
+}
+
+func TestPoolTxsLimit(t *testing.T) {
+	const fix = `
+		INSERT INTO pool_txs (tx_hash, data)
+		VALUES (
+			'9e8cf364fc0446a1341dd021098a07983108c7bb853a8a33b466a292c4a8b248',
+			decode('00000001000000000000000000000568656c6c6f', 'hex')
+		),
+		(
+			'87428fc522803d31065e7bce3cf03fe475096631e5e07bbd7a0fde60c4cf25c7',
+			decode('0000000100000000000000000000000000000000', 'hex')
+		);
+	`
+	withContext(t, fix, func(ctx context.Context) {
+		got, err := PoolTxs(ctx, 1)
 		if err != nil {
 			t.Fatalf("err got = %v want nil", err)
 		}
