@@ -38,3 +38,33 @@ func readUvarint(r *errors.Reader) uint64 {
 	}
 	return n
 }
+
+func writeUint32(w *errors.Writer, x uint32) {
+	var buf [4]byte
+	endianness.PutUint32(buf[:], x)
+	w.Write(buf[:])
+}
+
+func readUint32(r *errors.Reader) uint32 {
+	var buf [4]byte
+	_, err := io.ReadFull(r, buf[:])
+	if err != nil {
+		r.Err = err
+	}
+	return endianness.Uint32(buf[:])
+}
+
+func writeUint64(w *errors.Writer, x uint64) {
+	var buf [8]byte
+	endianness.PutUint64(buf[:], x)
+	w.Write(buf[:])
+}
+
+func readUint64(r *errors.Reader) uint64 {
+	var buf [8]byte
+	_, err := io.ReadFull(r, buf[:])
+	if err != nil {
+		r.Err = err
+	}
+	return endianness.Uint64(buf[:])
+}

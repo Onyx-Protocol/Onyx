@@ -3,11 +3,13 @@ package bc
 import (
 	"bytes"
 	"encoding/hex"
-	"errors"
+	"io/ioutil"
 	"reflect"
 	"testing"
 
 	"github.com/btcsuite/btcd/txscript"
+
+	"chain/errors"
 )
 
 func TestTransaction(t *testing.T) {
@@ -184,4 +186,68 @@ type errWriter struct{}
 
 func (errWriter) Write(p []byte) (int, error) {
 	return 0, errors.New("bad write")
+}
+
+func BenchmarkTxHash(b *testing.B) {
+	tx := &Tx{}
+	for i := 0; i < b.N; i++ {
+		tx.Hash()
+	}
+}
+
+func BenchmarkTxWriteToTrue(b *testing.B) {
+	tx := &Tx{}
+	for i := 0; i < b.N; i++ {
+		tx.writeTo(ioutil.Discard, true)
+	}
+}
+
+func BenchmarkTxWriteToFalse(b *testing.B) {
+	tx := &Tx{}
+	for i := 0; i < b.N; i++ {
+		tx.writeTo(ioutil.Discard, false)
+	}
+}
+
+func BenchmarkTxWriteToFalse200(b *testing.B) {
+	tx := &Tx{}
+	for i := 0; i < 200; i++ {
+		tx.Inputs = append(tx.Inputs, &TxInput{})
+		tx.Outputs = append(tx.Outputs, &TxOutput{})
+	}
+	for i := 0; i < b.N; i++ {
+		tx.writeTo(ioutil.Discard, false)
+	}
+}
+
+func BenchmarkTxInputWriteToTrue(b *testing.B) {
+	input := &TxInput{}
+	ew := errors.NewWriter(ioutil.Discard)
+	for i := 0; i < b.N; i++ {
+		input.writeTo(ew, true)
+	}
+}
+
+func BenchmarkTxInputWriteToFalse(b *testing.B) {
+	input := &TxInput{}
+	ew := errors.NewWriter(ioutil.Discard)
+	for i := 0; i < b.N; i++ {
+		input.writeTo(ew, false)
+	}
+}
+
+func BenchmarkTxOutputWriteToTrue(b *testing.B) {
+	output := &TxOutput{}
+	ew := errors.NewWriter(ioutil.Discard)
+	for i := 0; i < b.N; i++ {
+		output.writeTo(ew, true)
+	}
+}
+
+func BenchmarkTxOutputWriteToFalse(b *testing.B) {
+	output := &TxOutput{}
+	ew := errors.NewWriter(ioutil.Discard)
+	for i := 0; i < b.N; i++ {
+		output.writeTo(ew, false)
+	}
 }

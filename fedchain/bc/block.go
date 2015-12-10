@@ -3,7 +3,6 @@ package bc
 import (
 	"bytes"
 	"database/sql/driver"
-	"encoding/binary"
 	"io"
 	"time"
 
@@ -123,12 +122,12 @@ func (bh *BlockHeader) HashForSig() Hash {
 }
 
 func (bh *BlockHeader) readFrom(r *errors.Reader) {
-	binary.Read(r, endianness, &bh.Version)
-	binary.Read(r, endianness, &bh.Height)
+	bh.Version = readUint32(r)
+	bh.Height = readUint64(r)
 	io.ReadFull(r, bh.PreviousBlockHash[:])
 	io.ReadFull(r, bh.TxRoot[:])
 	io.ReadFull(r, bh.StateRoot[:])
-	binary.Read(r, endianness, &bh.Timestamp)
+	bh.Timestamp = readUint64(r)
 	readBytes(r, (*[]byte)(&bh.SignatureScript))
 	readBytes(r, (*[]byte)(&bh.OutputScript))
 }
@@ -150,12 +149,12 @@ func (bh *BlockHeader) WriteForSigTo(w io.Writer) (int64, error) {
 // writeTo writes bh to w.
 // If forSigning is true, it writes an empty string instead of the signature script.
 func (bh *BlockHeader) writeTo(w *errors.Writer, forSigning bool) {
-	binary.Write(w, endianness, bh.Version)
-	binary.Write(w, endianness, bh.Height)
+	writeUint32(w, bh.Version)
+	writeUint64(w, bh.Height)
 	w.Write(bh.PreviousBlockHash[:])
 	w.Write(bh.TxRoot[:])
 	w.Write(bh.StateRoot[:])
-	binary.Write(w, endianness, bh.Timestamp)
+	writeUint64(w, bh.Timestamp)
 	if forSigning {
 		writeBytes(w, nil)
 	} else {

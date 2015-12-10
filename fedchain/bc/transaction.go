@@ -3,7 +3,6 @@ package bc
 import (
 	"bytes"
 	"database/sql/driver"
-	"encoding/binary"
 	"encoding/hex"
 	"io"
 	"strconv"
@@ -150,7 +149,7 @@ func (tx *Tx) Value() (driver.Value, error) {
 }
 
 func (tx *Tx) readFrom(r *errors.Reader) {
-	binary.Read(r, endianness, &tx.Version)
+	tx.Version = readUint32(r)
 
 	for n := readUvarint(r); n > 0; n-- {
 		ti := new(TxInput)
@@ -164,7 +163,7 @@ func (tx *Tx) readFrom(r *errors.Reader) {
 		tx.Outputs = append(tx.Outputs, to)
 	}
 
-	binary.Read(r, endianness, &tx.LockTime)
+	tx.LockTime = readUint64(r)
 	readBytes(r, &tx.Metadata)
 }
 
@@ -177,16 +176,17 @@ func (ti *TxInput) readFrom(r *errors.Reader) {
 
 func (to *TxOutput) readFrom(r *errors.Reader) {
 	io.ReadFull(r, to.AssetID[:])
-	binary.Read(r, endianness, &to.Value)
+	to.Value = readUint64(r)
 	readBytes(r, (*[]byte)(&to.Script))
 	readBytes(r, &to.Metadata)
 }
 
 func (p *Outpoint) readFrom(r *errors.Reader) (n int64, err error) {
-	err = binary.Read(r, endianness, p)
+	x, err := io.ReadFull(r, p.Hash[:])
 	if err != nil {
-		return 0, err
+		return int64(x), err
 	}
+	p.Index = readUint32(r)
 	return 32 + 4, nil
 }
 
@@ -216,7 +216,7 @@ func (tx *Tx) WriteTo(w io.Writer) (int64, error) {
 
 func (tx *Tx) writeTo(w io.Writer, forHashing bool) (n int64, err error) {
 	ew := errors.NewWriter(w)
-	binary.Write(ew, endianness, tx.Version)
+	writeUint32(ew, tx.Version)
 
 	writeUvarint(ew, uint64(len(tx.Inputs)))
 	for _, ti := range tx.Inputs {
@@ -228,7 +228,7 @@ func (tx *Tx) writeTo(w io.Writer, forHashing bool) (n int64, err error) {
 		to.writeTo(ew, forHashing)
 	}
 
-	binary.Write(ew, endianness, tx.LockTime)
+	writeUint64(ew, tx.LockTime)
 	if forHashing {
 		h := hash256.Sum(tx.Metadata)
 		ew.Write(h[:])
@@ -261,7 +261,7 @@ func (ti *TxInput) writeTo(w *errors.Writer, forHashing bool) {
 
 func (to *TxOutput) writeTo(w *errors.Writer, forHashing bool) {
 	w.Write(to.AssetID[:])
-	binary.Write(w, endianness, to.Value)
+	writeUint64(w, to.Value)
 	writeBytes(w, to.Script)
 
 	// Write the metadata or its hash depending on serialization mode.
@@ -280,9 +280,16 @@ func (p Outpoint) String() string {
 
 // WriteTo writes p to w.
 func (p Outpoint) WriteTo(w io.Writer) (n int64, err error) {
-	err = binary.Write(w, endianness, p)
+	_, err = w.Write(p.Hash[:])
 	if err != nil {
 		return 0, err
+	}
+
+	var buf [4]byte
+	endianness.PutUint32(buf[:], p.Index)
+	_, err = w.Write(buf[:])
+	if err != nil {
+		return 32, err
 	}
 	return 32 + 4, nil
 }
