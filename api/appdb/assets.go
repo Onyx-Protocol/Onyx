@@ -307,20 +307,20 @@ func AssetBalance(ctx context.Context, abq *AssetBalQuery) ([]*Balance, string, 
 		SELECT SUM(confirmed), SUM(unconfirmed), asset_id
 		FROM (
 			SELECT amount AS confirmed, 0 AS unconfirmed, asset_id
-				FROM utxos WHERE ` + field + `=$1 AND ` + filter + `
+				FROM utxos WHERE confirmed AND ` + field + `=$1 AND ` + filter + `
 			UNION ALL
 			SELECT 0 AS confirmed, amount AS unconfirmed, asset_id
-				FROM pool_outputs po WHERE ` + field + `=$1 AND ` + filter + `
+				FROM utxos po WHERE NOT po.confirmed AND ` + field + `=$1 AND ` + filter + `
 				AND NOT EXISTS(
 					SELECT 1 FROM pool_inputs pi
 					WHERE po.tx_hash = pi.tx_hash AND po.index = pi.index
 				)
 			UNION ALL
 			SELECT 0 AS confirmed, amount*-1 AS unconfirmed, asset_id
-				FROM utxos u WHERE ` + field + `=$1 AND ` + filter + `
+				FROM utxos u WHERE u.confirmed AND ` + field + `=$1 AND ` + filter + `
 				AND EXISTS(
 					SELECT 1 FROM pool_inputs pi
-					WHERE u.txid = pi.tx_hash AND u.index = pi.index
+					WHERE u.tx_hash = pi.tx_hash AND u.index = pi.index
 				)
 		) AS bals
 		GROUP BY asset_id

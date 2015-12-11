@@ -60,15 +60,16 @@ func (sqlUTXODB) SaveReservations(ctx context.Context, utxos []*utxodb.UTXO, exp
 	const q = `
 		UPDATE utxos
 		SET reserved_until=$3
-		WHERE (txid, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+		WHERE confirmed
+		    AND (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	var txids []string
+	var txHashes []string
 	var indexes []uint32
 	for _, u := range utxos {
-		txids = append(txids, u.Outpoint.Hash.String())
+		txHashes = append(txHashes, u.Outpoint.Hash.String())
 		indexes = append(indexes, u.Outpoint.Index)
 	}
-	_, err := pg.FromContext(ctx).Exec(q, pg.Strings(txids), pg.Uint32s(indexes), exp)
+	_, err := pg.FromContext(ctx).Exec(q, pg.Strings(txHashes), pg.Uint32s(indexes), exp)
 	return errors.Wrap(err, "update utxo reserve expiration")
 }
 

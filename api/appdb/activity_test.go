@@ -363,22 +363,22 @@ func TestWriteActivity(t *testing.T) {
 				INSERT INTO pool_txs (tx_hash, data)
 				VALUES ('` + issuanceTx.Hash.String() + `', '\x'::bytea);
 
-				INSERT INTO pool_outputs (
-					tx_hash, index,
+				INSERT INTO utxos (
+					tx_hash, pool_tx_hash, index,
 					asset_id, amount, script,
-					addr_index, account_id, manager_node_id
+					addr_index, account_id, manager_node_id, confirmed
 				) VALUES (
-					'` + issuanceTx.Hash.String() + `', 0,
+					'` + issuanceTx.Hash.String() + `', '` + issuanceTx.Hash.String() + `', 0,
 					'asset-id-0', 1, decode('` + testAddrs[0].script + `', 'hex'),
-					0, 'account-id-0', 'manager-node-id-0'
+					0, 'account-id-0', 'manager-node-id-0', FALSE
 				), (
-					'` + issuanceTx.Hash.String() + `', 1,
+					'` + issuanceTx.Hash.String() + `', '` + issuanceTx.Hash.String() + `', 1,
 					'asset-id-0', 2,  decode('` + testAddrs[1].script + `', 'hex'),
-					0, 'account-id-2', 'manager-node-id-1'
+					0, 'account-id-2', 'manager-node-id-1', FALSE
 				), (
-					'` + issuanceTx.Hash.String() + `', 2,
+					'` + issuanceTx.Hash.String() + `', '` + issuanceTx.Hash.String() + `', 2,
 					'asset-id-0', 3,  decode('` + testAddrs[2].script + `', 'hex'),
-					0, '', ''
+					0, '', '', FALSE
 				);
 			`,
 			outIsChange: make(map[int]bool),
@@ -426,34 +426,36 @@ func TestWriteActivity(t *testing.T) {
 			tx: transferTx,
 			fixture: `
 				INSERT INTO utxos (
-					txid, index,
+					tx_hash, index,
 					asset_id, amount, script,
-					addr_index, account_id, manager_node_id
+					addr_index, account_id, manager_node_id, confirmed,
+					block_hash, block_height
 				) VALUES (
 					'4786c29077265138e00a8fce822c5fb998c0ce99df53d939bb53d81bca5aa426', 0,
 					'asset-id-0', 6, decode('` + testAddrs[0].script + `', 'hex'),
-					0, 'account-id-0', 'manager-node-id-0'
+					0, 'account-id-0', 'manager-node-id-0', TRUE,
+					'bh1', 1
 				);
 
 				INSERT INTO pool_txs (tx_hash, data)
 				VALUES ('` + transferTx.Hash.String() + `', '\x'::bytea);
 
-				INSERT INTO pool_outputs (
-					tx_hash, index,
+				INSERT INTO utxos (
+					tx_hash, pool_tx_hash, index,
 					asset_id, amount, script,
-					addr_index, account_id, manager_node_id
+					addr_index, account_id, manager_node_id, confirmed
 				) VALUES (
-					'` + transferTx.Hash.String() + `', 0,
+					'` + transferTx.Hash.String() + `', '` + transferTx.Hash.String() + `', 0,
 					'asset-id-0', 1, decode('` + testAddrs[1].script + `', 'hex'),
-					0, 'account-id-2', 'manager-node-id-1'
+					0, 'account-id-2', 'manager-node-id-1', FALSE
 				), (
-					'` + transferTx.Hash.String() + `', 1,
+					'` + transferTx.Hash.String() + `', '` + transferTx.Hash.String() + `', 1,
 					'asset-id-0', 2, decode('` + testAddrs[2].script + `', 'hex'),
-					0, 'account-id-0', 'manager-node-id-0'
+					0, 'account-id-0', 'manager-node-id-0', FALSE
 				), (
-					'` + transferTx.Hash.String() + `', 2,
+					'` + transferTx.Hash.String() + `', '` + transferTx.Hash.String() + `', 2,
 					'asset-id-0', 3, decode('` + testAddrs[3].script + `', 'hex'),
-					0, '', ''
+					0, '', '', FALSE
 				);
 			`,
 			outIsChange: map[int]bool{1: true},
@@ -569,17 +571,20 @@ func TestGetActUTXOs(t *testing.T) {
 
 	dbtx := pgtest.TxWithSQL(t, writeActivityFix, `
 		INSERT INTO utxos (
-			txid, index,
+			tx_hash, index,
 			asset_id, amount, addr_index, script,
-			account_id, manager_node_id
+			account_id, manager_node_id, confirmed,
+			block_hash, block_height
 		) VALUES (
 			'0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 0,
 			'asset-id-0', 1, 0, decode('`+testAddrs[0].script+`', 'hex'),
-			'account-id-0', 'manager-node-id-0'
+			'account-id-0', 'manager-node-id-0', TRUE,
+			'bh1', 1
 		), (
 			'3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 1,
 			'asset-id-0', 2, 1, decode('`+testAddrs[1].script+`', 'hex'),
-			'account-id-1', 'manager-node-id-0'
+			'account-id-1', 'manager-node-id-0', TRUE,
+			'bh1', 1
 		);
 
 		INSERT INTO pool_txs
@@ -588,22 +593,22 @@ func TestGetActUTXOs(t *testing.T) {
 			('7de759a6e917f941e8da7c30e6ad8a3d85a4f508d5bbed4fe80244271754eaef', '\x'::bytea),
 			('`+tx.Hash.String()+`', '\x'::bytea);
 
-		INSERT INTO pool_outputs (
-			tx_hash, index,
+		INSERT INTO utxos (
+			tx_hash, pool_tx_hash, index,
 			asset_id, amount, addr_index, script,
-			account_id, manager_node_id
+			account_id, manager_node_id, confirmed
 		) VALUES (
-			'7de759a6e917f941e8da7c30e6ad8a3d85a4f508d5bbed4fe80244271754eaef', 0,
+			'7de759a6e917f941e8da7c30e6ad8a3d85a4f508d5bbed4fe80244271754eaef', '7de759a6e917f941e8da7c30e6ad8a3d85a4f508d5bbed4fe80244271754eaef', 0,
 			'asset-id-1', 3, 0, decode('`+testAddrs[2].script+`', 'hex'),
-			'account-id-2', 'manager-node-id-2'
+			'account-id-2', 'manager-node-id-2', FALSE
 		), (
-			'`+tx.Hash.String()+`', 0,
+			'`+tx.Hash.String()+`', '`+tx.Hash.String()+`', 0,
 			'asset-id-0', 3, 1, decode('`+testAddrs[3].script+`', 'hex'),
-			'account-id-3', 'manager-node-id-3'
+			'account-id-3', 'manager-node-id-3', FALSE
 		), (
-			'`+tx.Hash.String()+`', 1,
+			'`+tx.Hash.String()+`', '`+tx.Hash.String()+`', 1,
 			'asset-id-1', 3, 0, decode('`+testAddrs[4].script+`', 'hex'),
-			'account-id-4', 'manager-node-id-4'
+			'account-id-4', 'manager-node-id-4', FALSE
 		);
 	`)
 	defer dbtx.Rollback()
@@ -681,18 +686,18 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 		VALUES
 			('`+tx.Hash.String()+`', '\x'::bytea);
 
-		INSERT INTO pool_outputs (
-			tx_hash, index,
+		INSERT INTO utxos (
+			tx_hash, pool_tx_hash, index,
 			asset_id, amount, addr_index, script,
-			account_id, manager_node_id
+			account_id, manager_node_id, confirmed
 		) VALUES (
-			'`+tx.Hash.String()+`', 0,
+			'`+tx.Hash.String()+`', '`+tx.Hash.String()+`', 0,
 			'asset-id-0', 1, 0, decode('`+testAddrs[0].script+`', 'hex'),
-			'account-id-0', 'manager-node-id-0'
+			'account-id-0', 'manager-node-id-0', FALSE
 		), (
-			'`+tx.Hash.String()+`', 1,
+			'`+tx.Hash.String()+`', '`+tx.Hash.String()+`', 1,
 			'asset-id-0', 2, 1, decode('`+testAddrs[1].script+`', 'hex'),
-			'account-id-1', 'manager-node-id-1'
+			'account-id-1', 'manager-node-id-1', FALSE
 		);
 	`)
 	defer dbtx.Rollback()

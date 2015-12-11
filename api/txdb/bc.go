@@ -21,20 +21,21 @@ type Output struct {
 
 func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.Output, error) {
 	var (
-		txid  []string
-		index []uint32
+		txHashes []string
+		indexes  []uint32
 	)
 	for _, p := range ps {
-		txid = append(txid, p.Hash.String())
-		index = append(index, p.Index)
+		txHashes = append(txHashes, p.Hash.String())
+		indexes = append(indexes, p.Index)
 	}
 
 	const q = `
-		SELECT txid, index, asset_id, amount, script, metadata
+		SELECT tx_hash, index, asset_id, amount, script, metadata
 		FROM utxos
-		WHERE (txid, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+		WHERE confirmed
+		    AND (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(txid), pg.Uint32s(index))
+	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(txHashes), pg.Uint32s(indexes))
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -62,9 +63,9 @@ func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.
 }
 
 const bcUnspentP2COutputQuery = `
-	SELECT txid, index, asset_id, amount, script, metadata
+	SELECT tx_hash, index, asset_id, amount, script, metadata
 	FROM utxos
-	WHERE contract_hash = $1 AND asset_id = $2
+	WHERE contract_hash = $1 AND asset_id = $2 AND confirmed
 `
 
 // LoadUTXOs loads all unspent outputs in the blockchain
@@ -75,9 +76,9 @@ func LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, 
 	// LoadUTXOs(context.Context, []bc.Outpoint) []*bc.TxOutput.
 
 	const q = `
-		SELECT amount, reserved_until, txid, index, contract_hash, key_index(addr_index)
+		SELECT amount, reserved_until, tx_hash, index, contract_hash, key_index(addr_index)
 		FROM utxos
-		WHERE account_id=$1 AND asset_id=$2
+		WHERE account_id=$1 AND asset_id=$2 AND confirmed
 	`
 	rows, err := pg.FromContext(ctx).Query(q, accountID, assetID)
 	if err != nil {

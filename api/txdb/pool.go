@@ -26,20 +26,21 @@ func loadPoolOutputs(ctx context.Context, load []bc.Outpoint) (map[bc.Outpoint]*
 	defer span.Finish(ctx)
 
 	var (
-		txid  []string
-		index []uint32
+		txHashes []string
+		indexes  []uint32
 	)
 	for _, p := range load {
-		txid = append(txid, p.Hash.String())
-		index = append(index, p.Index)
+		txHashes = append(txHashes, p.Hash.String())
+		indexes = append(indexes, p.Index)
 	}
 
 	const loadQ = `
 		SELECT tx_hash, index, asset_id, amount, script, metadata
-		FROM pool_outputs
-		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+		    FROM utxos
+		    WHERE NOT confirmed
+		        AND (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	rows, err := pg.FromContext(ctx).Query(loadQ, pg.Strings(txid), pg.Uint32s(index))
+	rows, err := pg.FromContext(ctx).Query(loadQ, pg.Strings(txHashes), pg.Uint32s(indexes))
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -68,7 +69,7 @@ func loadPoolOutputs(ctx context.Context, load []bc.Outpoint) (map[bc.Outpoint]*
 		SELECT tx_hash, index FROM pool_inputs
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	rows, err = pg.FromContext(ctx).Query(spentQ, pg.Strings(txid), pg.Uint32s(index))
+	rows, err = pg.FromContext(ctx).Query(spentQ, pg.Strings(txHashes), pg.Uint32s(indexes))
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -94,8 +95,8 @@ func loadPoolOutputs(ctx context.Context, load []bc.Outpoint) (map[bc.Outpoint]*
 
 const poolUnspentP2COutputQuery = `
 	SELECT o.tx_hash, o.index, o.asset_id, o.amount, o.script, o.metadata
-	FROM pool_outputs o LEFT JOIN pool_inputs i USING (tx_hash, index)
-	WHERE o.contract_hash = $1 AND o.asset_id = $2 AND i.tx_hash IS NULL
+	FROM utxos o LEFT JOIN pool_inputs i USING (tx_hash, index)
+	WHERE o.contract_hash = $1 AND o.asset_id = $2 AND i.tx_hash IS NULL AND NOT o.confirmed
 `
 
 // LoadPoolUTXOs loads all unspent outputs in the tx pool
@@ -107,9 +108,9 @@ func LoadPoolUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UT
 
 	const q = `
 		SELECT amount, reserved_until, out.tx_hash, out.index, key_index(addr_index), contract_hash
-		FROM pool_outputs out
+		FROM utxos out
 		LEFT JOIN pool_inputs inp ON ((out.tx_hash, out.index) = (inp.tx_hash, inp.index))
-		WHERE account_id=$1 AND asset_id=$2 AND inp.tx_hash IS NULL
+		WHERE account_id=$1 AND asset_id=$2 AND inp.tx_hash IS NULL AND NOT out.confirmed
 	`
 	rows, err := pg.FromContext(ctx).Query(q, accountID, assetID)
 	if err != nil {
@@ -156,7 +157,7 @@ func LoadPoolUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UT
 // utxoSet holds a set of utxo record values
 // to be inserted into the db.
 type utxoSet struct {
-	txid          pg.Strings
+	txHash        pg.Strings
 	index         pg.Uint32s
 	assetID       pg.Strings
 	amount        pg.Int64s
@@ -195,12 +196,13 @@ func InsertPoolOutputs(ctx context.Context, hash bc.Hash, insert []*Output) erro
 	}
 
 	const q = `
-		INSERT INTO pool_outputs (
-			tx_hash, index, asset_id, amount,
+		INSERT INTO utxos (
+			tx_hash, pool_tx_hash, index, asset_id, amount,
 			account_id, manager_node_id, addr_index,
-			script, contract_hash
+			script, contract_hash, confirmed
 		)
 		SELECT
+			$1::text,
 			$1::text,
 			unnest($2::bigint[]),
 			unnest($3::text[]),
@@ -209,7 +211,8 @@ func InsertPoolOutputs(ctx context.Context, hash bc.Hash, insert []*Output) erro
 			unnest($6::text[]),
 			unnest($7::bigint[]),
 			unnest($8::bytea[]),
-			unnest($9::bytea[])
+			unnest($9::bytea[]),
+			FALSE
 	`
 	_, err := pg.FromContext(ctx).Exec(q,
 		hash.String(),
@@ -229,11 +232,11 @@ func InsertPoolOutputs(ctx context.Context, hash bc.Hash, insert []*Output) erro
 func InsertPoolInputs(ctx context.Context, outs []bc.Outpoint) error {
 	defer metrics.RecordElapsed(time.Now())
 	var (
-		txid  []string
-		index []uint32
+		txHashes []string
+		index    []uint32
 	)
 	for _, o := range outs {
-		txid = append(txid, o.Hash.String())
+		txHashes = append(txHashes, o.Hash.String())
 		index = append(index, o.Index)
 	}
 
@@ -241,7 +244,7 @@ func InsertPoolInputs(ctx context.Context, outs []bc.Outpoint) error {
 		INSERT INTO pool_inputs (tx_hash, index)
 		SELECT unnest($1::text[]), unnest($2::bigint[])
 	`
-	_, err := pg.FromContext(ctx).Exec(q, pg.Strings(txid), pg.Uint32s(index))
+	_, err := pg.FromContext(ctx).Exec(q, pg.Strings(txHashes), pg.Uint32s(index))
 	return errors.Wrap(err)
 }
 

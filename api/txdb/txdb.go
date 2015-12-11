@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"sort"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -11,6 +12,7 @@ import (
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
+	"chain/metrics"
 	"chain/net/trace/span"
 	"chain/strings"
 )
@@ -162,10 +164,10 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) error {
 	}
 
 	const txQ = `
-		WITH t AS (SELECT unnest($1::text[]) txid, unnest($2::bytea[]) dat)
+		WITH t AS (SELECT unnest($1::text[]) tx_hash, unnest($2::bytea[]) dat)
 		INSERT INTO txs (tx_hash, data)
-		SELECT txid, dat FROM t
-		WHERE t.txid NOT IN (SELECT tx_hash FROM txs);
+		SELECT tx_hash, dat FROM t
+		WHERE t.tx_hash NOT IN (SELECT tx_hash FROM txs);
 	`
 	_, err := pg.FromContext(ctx).Exec(txQ, pg.Strings(hashHist), pg.Byteas(data))
 	if err != nil {
@@ -223,22 +225,23 @@ func RemoveBlockSpentOutputs(ctx context.Context, delta []*Output) error {
 	defer span.Finish(ctx)
 
 	var (
-		txids []string
-		ids   []uint32
+		txHashes []string
+		ids      []uint32
 	)
 	for _, out := range delta {
 		if !out.Spent {
 			continue
 		}
-		txids = append(txids, out.Outpoint.Hash.String())
+		txHashes = append(txHashes, out.Outpoint.Hash.String())
 		ids = append(ids, out.Outpoint.Index)
 	}
 
 	const q = `
 		DELETE FROM utxos
-		WHERE (txid, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+		WHERE confirmed
+					AND (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	_, err := pg.FromContext(ctx).Exec(q, pg.Strings(txids), pg.Uint32s(ids))
+	_, err := pg.FromContext(ctx).Exec(q, pg.Strings(txHashes), pg.Uint32s(ids))
 	if err != nil {
 		return errors.Wrap(err, "delete query")
 	}
@@ -247,15 +250,53 @@ func RemoveBlockSpentOutputs(ctx context.Context, delta []*Output) error {
 }
 
 func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) error {
+	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
+
+	txHashes := make([]string, 0, len(delta))
+	indexes := make([]uint32, 0, len(delta))
+	for _, out := range delta {
+		txHashes = append(txHashes, out.Outpoint.Hash.String())
+		indexes = append(indexes, out.Outpoint.Index)
+	}
+
+	blockHashStr := block.Hash().String()
+
+	// Some of the utxos may already be in the utxos table as
+	// unconfirmed pool utxos.  Upgrade them to confirmed.
+	const updateQ = `
+		UPDATE utxos SET block_hash = $1, block_height = $2, confirmed = TRUE, pool_tx_hash = NULL
+			WHERE NOT confirmed
+			      AND (tx_hash, index) IN (SELECT unnest($3::text[]), unnest($4::integer[]))
+			RETURNING tx_hash, index
+	`
+	rows, err := pg.FromContext(ctx).Query(updateQ, blockHashStr, block.Height, pg.Strings(txHashes), pg.Uint32s(indexes))
+	if err != nil {
+		return errors.Wrap(err, "update utxos")
+	}
+	defer rows.Close()
+
+	updated := make(map[bc.Outpoint]bool)
+	for rows.Next() {
+		var outpoint bc.Outpoint
+		err = rows.Scan(&outpoint.Hash, &outpoint.Index)
+		if err != nil {
+			return errors.Wrap(err, "scanning update utxos result")
+		}
+		updated[outpoint] = true
+	}
 
 	var outs utxoSet
 	for _, out := range delta {
 		if out.Spent {
 			continue
 		}
-		outs.txid = append(outs.txid, out.Outpoint.Hash.String())
+		if updated[out.Outpoint] {
+			// already updated above
+			continue
+		}
+		outs.txHash = append(outs.txHash, out.Outpoint.Hash.String())
 		outs.index = append(outs.index, out.Outpoint.Index)
 		outs.assetID = append(outs.assetID, out.AssetID.String())
 		outs.amount = append(outs.amount, int64(out.Value))
@@ -273,12 +314,13 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) e
 		}
 	}
 
-	const q = `
+	// Insert the ones not upgraded above.
+	const insertQ = `
 		INSERT INTO utxos (
-			txid, index, asset_id, amount,
+			tx_hash, index, asset_id, amount,
 			account_id, manager_node_id, addr_index,
 			script, contract_hash, metadata,
-			block_hash, block_height
+			block_hash, block_height, confirmed
 		)
 		SELECT
 			unnest($1::text[]),
@@ -292,10 +334,11 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) e
 			unnest($9::bytea[]),
 			unnest($10::bytea[]),
 			$11,
-			$12
+			$12,
+			TRUE
 	`
-	_, err := pg.FromContext(ctx).Exec(q,
-		outs.txid,
+	_, err = pg.FromContext(ctx).Exec(insertQ,
+		outs.txHash,
 		outs.index,
 		outs.assetID,
 		outs.amount,
@@ -305,10 +348,10 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) e
 		outs.script,
 		outs.contractHash,
 		outs.metadata,
-		block.Hash().String(),
+		blockHashStr,
 		block.Height,
 	)
-	return errors.Wrap(err)
+	return errors.Wrap(err, "insert utxos")
 }
 
 // CountBlockTxs returns the total number of confirmed transactions.

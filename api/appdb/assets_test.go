@@ -372,16 +372,16 @@ func TestDeleteAsset(t *testing.T) {
 func TestAssetBalance(t *testing.T) {
 	const fix = `
 		INSERT INTO utxos
-			(txid, index, asset_id, amount, addr_index, account_id, manager_node_id, script)
+			(tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, script, confirmed, block_hash, block_height)
 		VALUES
-			('ctx-0', 0, 'asset-0', 1, 0, 'account-0', 'mnode-0', ''),
-			('ctx-1', 0, 'asset-0', 1, 0, 'account-0', 'mnode-0', ''),
-			('ctx-2', 0, 'asset-0', 1, 0, 'account-1', 'mnode-1', ''),
-			('ctx-3', 0, 'asset-2', 1, 0, 'account-0', 'mnode-0', ''),
-			('ctx-4', 0, 'asset-3', 1, 0, 'account-0', 'mnode-0', ''),
-			('ctx-5', 0, 'asset-5', 1, 0, 'account-0', 'mnode-0', ''),
-			('ctx-6', 0, 'asset-5', 1, 0, 'account-0', 'mnode-0', ''),
-			('ctx-7', 0, 'asset-5', 1, 0, 'account-0', 'mnode-0', '');
+			('ctx-0', 0, 'asset-0', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
+			('ctx-1', 0, 'asset-0', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
+			('ctx-2', 0, 'asset-0', 1, 0, 'account-1', 'mnode-1', '', TRUE, 'bh1', 1),
+			('ctx-3', 0, 'asset-2', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
+			('ctx-4', 0, 'asset-3', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
+			('ctx-5', 0, 'asset-5', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
+			('ctx-6', 0, 'asset-5', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
+			('ctx-7', 0, 'asset-5', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1);
 
 		INSERT INTO pool_txs
 			(tx_hash, data)
@@ -390,16 +390,16 @@ func TestAssetBalance(t *testing.T) {
 			('ptx-3', ''), ('ptx-4', ''), ('ptx-5', ''),
 			('ptx-6', '');
 
-		INSERT INTO pool_outputs
-			(tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, script)
+		INSERT INTO utxos
+			(tx_hash, pool_tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, script, confirmed)
 		VALUES
-			('ptx-0', 0, 'asset-1', 1, 0, 'account-0', 'mnode-0', ''),
-			('ptx-1', 0, 'asset-1', 1, 0, 'account-0', 'mnode-0', ''),
-			('ptx-2', 0, 'asset-1', 1, 0, 'account-0', 'mnode-0', ''),
-			('ptx-3', 0, 'asset-2', 1, 0, 'account-0', 'mnode-0', ''),
-			('ptx-4', 0, 'asset-4', 1, 0, 'account-0', 'mnode-0', ''),
-			('ptx-5', 0, 'asset-4', 1, 0, 'account-1', 'mnode-1', ''),
-			('ptx-6', 0, 'asset-5', 1, 0, 'account-1', 'mnode-1', '');
+			('ptx-0', 'ptx-0', 0, 'asset-1', 1, 0, 'account-0', 'mnode-0', '', FALSE),
+			('ptx-1', 'ptx-1', 0, 'asset-1', 1, 0, 'account-0', 'mnode-0', '', FALSE),
+			('ptx-2', 'ptx-2', 0, 'asset-1', 1, 0, 'account-0', 'mnode-0', '', FALSE),
+			('ptx-3', 'ptx-3', 0, 'asset-2', 1, 0, 'account-0', 'mnode-0', '', FALSE),
+			('ptx-4', 'ptx-4', 0, 'asset-4', 1, 0, 'account-0', 'mnode-0', '', FALSE),
+			('ptx-5', 'ptx-5', 0, 'asset-4', 1, 0, 'account-1', 'mnode-1', '', FALSE),
+			('ptx-6', 'ptx-6', 0, 'asset-5', 1, 0, 'account-1', 'mnode-1', '', FALSE);
 
 		INSERT INTO pool_inputs (tx_hash, index)
 		VALUES
@@ -616,12 +616,12 @@ func TestAssetBalance(t *testing.T) {
 
 func TestAccountBalanceByAssetID(t *testing.T) {
 	const fix = `
-		INSERT INTO utxos (txid, index, asset_id, amount, addr_index, account_id, manager_node_id)
-		VALUES ('tx-0', 0, 'asset-1', 10, 0, 'account-0', 'mnode-0'),
-		       ('tx-1', 1, 'asset-1', 5, 0, 'account-0', 'mnode-0'),
-		       ('tx-2', 2, 'asset-2', 1, 0, 'account-0', 'mnode-0'),
-		       ('tx-3', 3, 'asset-3', 2, 0, 'account-0', 'mnode-0'),
-		       ('tx-4', 4, 'asset-4', 3, 0, 'account-1', 'mnode-1');
+		INSERT INTO utxos (tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, confirmed, block_hash, block_height)
+		VALUES ('tx-0', 0, 'asset-1', 10, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
+		       ('tx-1', 1, 'asset-1', 5, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
+		       ('tx-2', 2, 'asset-2', 1, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
+		       ('tx-3', 3, 'asset-3', 2, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
+		       ('tx-4', 4, 'asset-4', 3, 0, 'account-1', 'mnode-1', TRUE, 'bh1', 1);
 	`
 
 	examples := []struct {

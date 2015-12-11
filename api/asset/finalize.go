@@ -211,14 +211,8 @@ func getUTXOsForDeletion(ctx context.Context, ops []bc.Outpoint) ([]*utxodb.UTXO
 	}
 
 	const q = `
-		SELECT txid, index, account_id, asset_id
-		FROM utxos
-		WHERE (txid, index) IN (SELECT unnest($1::text[]), unnest($2::bigint[]))
-
-		UNION
-
 		SELECT tx_hash, index, account_id, asset_id
-		FROM pool_outputs
+		FROM utxos
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::bigint[]))
 	`
 	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(hashes), pg.Uint32s(indexes))

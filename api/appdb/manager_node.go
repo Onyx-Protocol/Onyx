@@ -127,11 +127,11 @@ func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit
 		SELECT SUM(confirmed), SUM(unconfirmed), account_id
 		FROM (
 			SELECT amount AS confirmed, 0 AS unconfirmed, account_id
-				FROM utxos WHERE manager_node_id=$1 AND asset_id=$2
+				FROM utxos WHERE confirmed AND manager_node_id=$1 AND asset_id=$2
 					AND ($3='' OR account_id>$3)
 			UNION ALL
 			SELECT 0 AS confirmed, amount AS unconfirmed, account_id
-				FROM pool_outputs po WHERE manager_node_id=$1 AND asset_id=$2
+				FROM utxos po WHERE NOT po.confirmed AND manager_node_id=$1 AND asset_id=$2
 					AND ($3='' OR account_id>$3)
 				AND NOT EXISTS(
 					SELECT 1 FROM pool_inputs pi
@@ -139,11 +139,11 @@ func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit
 				)
 			UNION ALL
 			SELECT 0 AS confirmed, amount*-1 AS unconfirmed, account_id
-				FROM utxos u WHERE manager_node_id=$1 AND asset_id=$2
+				FROM utxos u WHERE u.confirmed AND manager_node_id=$1 AND asset_id=$2
 					AND ($3='' OR account_id>$3)
 				AND EXISTS(
 					SELECT 1 FROM pool_inputs pi
-					WHERE u.txid = pi.tx_hash AND u.index = pi.index
+					WHERE u.tx_hash = pi.tx_hash AND u.index = pi.index
 				)
 		) AS bals
 		GROUP BY account_id

@@ -499,26 +499,6 @@ CREATE TABLE pool_inputs (
 
 
 --
--- Name: pool_outputs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE pool_outputs (
-    tx_hash text NOT NULL,
-    index integer NOT NULL,
-    asset_id text NOT NULL,
-    issuance_id text,
-    script bytea NOT NULL,
-    amount bigint NOT NULL,
-    addr_index bigint NOT NULL,
-    account_id text NOT NULL,
-    contract_hash text,
-    manager_node_id text NOT NULL,
-    reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
-    metadata bytea DEFAULT '\x'::bytea NOT NULL
-);
-
-
---
 -- Name: pool_tx_sort_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -593,7 +573,7 @@ CREATE TABLE users (
 --
 
 CREATE TABLE utxos (
-    txid text NOT NULL,
+    tx_hash text NOT NULL,
     index integer NOT NULL,
     asset_id text NOT NULL,
     amount bigint NOT NULL,
@@ -603,10 +583,15 @@ CREATE TABLE utxos (
     manager_node_id text NOT NULL,
     reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    metadata bytea DEFAULT '\x'::bytea NOT NULL,
+    script bytea DEFAULT '\x'::bytea NOT NULL,
+    confirmed boolean NOT NULL,
+    pool_tx_hash text,
     block_hash text,
     block_height bigint,
-    metadata bytea DEFAULT '\x'::bytea NOT NULL,
-    script bytea DEFAULT '\x'::bytea NOT NULL
+    CONSTRAINT utxos_check CHECK ((confirmed = (pool_tx_hash IS NULL))),
+    CONSTRAINT utxos_check1 CHECK ((confirmed = (block_hash IS NOT NULL))),
+    CONSTRAINT utxos_check2 CHECK ((confirmed = (block_height IS NOT NULL)))
 );
 
 
@@ -761,14 +746,6 @@ ALTER TABLE ONLY pool_inputs
 
 
 --
--- Name: pool_outputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
---
-
-ALTER TABLE ONLY pool_outputs
-    ADD CONSTRAINT pool_outputs_pkey PRIMARY KEY (tx_hash, index);
-
-
---
 -- Name: pool_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -821,7 +798,7 @@ ALTER TABLE ONLY users
 --
 
 ALTER TABLE ONLY utxos
-    ADD CONSTRAINT utxos_pkey PRIMARY KEY (txid, index);
+    ADD CONSTRAINT utxos_pkey PRIMARY KEY (tx_hash, index);
 
 
 --
@@ -951,27 +928,6 @@ CREATE INDEX members_user_id_idx ON members USING btree (user_id);
 
 
 --
--- Name: pool_outputs_account_id_asset_id_reserved_until_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX pool_outputs_account_id_asset_id_reserved_until_idx ON pool_outputs USING btree (account_id, asset_id, reserved_until);
-
-
---
--- Name: pool_outputs_asset_id_contract_hash_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX pool_outputs_asset_id_contract_hash_idx ON pool_outputs USING btree (asset_id, contract_hash) WHERE (contract_hash IS NOT NULL);
-
-
---
--- Name: pool_outputs_manager_node_id_asset_id_reserved_until_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX pool_outputs_manager_node_id_asset_id_reserved_until_idx ON pool_outputs USING btree (manager_node_id, asset_id, reserved_until);
-
-
---
 -- Name: users_lower_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -993,10 +949,10 @@ CREATE INDEX utxos_asset_id_contract_hash_idx ON utxos USING btree (asset_id, co
 
 
 --
--- Name: utxos_manager_node_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: utxos_manager_node_id_asset_id_reserved_until_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX utxos_manager_node_id_asset_id_reserved_at_idx ON utxos USING btree (manager_node_id, asset_id, reserved_until);
+CREATE INDEX utxos_manager_node_id_asset_id_reserved_until_idx ON utxos USING btree (manager_node_id, asset_id, reserved_until);
 
 
 --
@@ -1120,19 +1076,19 @@ ALTER TABLE ONLY members
 
 
 --
--- Name: pool_outputs_tx_hash_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY pool_outputs
-    ADD CONSTRAINT pool_outputs_tx_hash_fkey FOREIGN KEY (tx_hash) REFERENCES pool_txs(tx_hash) ON DELETE CASCADE;
-
-
---
 -- Name: rotations_manager_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY rotations
     ADD CONSTRAINT rotations_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id) ON DELETE CASCADE;
+
+
+--
+-- Name: utxos_pool_tx_hash_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY utxos
+    ADD CONSTRAINT utxos_pool_tx_hash_fkey FOREIGN KEY (pool_tx_hash) REFERENCES pool_txs(tx_hash) ON DELETE CASCADE;
 
 
 --

@@ -322,21 +322,13 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 		indexes = append(indexes, uint32(i))
 	}
 
+	// Both confirmed (blockchain) utxos and unconfirmed (pool) utxos
 	const q = `
 		WITH outpoints AS (SELECT unnest($1::text[]), unnest($2::bigint[]))
-
-			SELECT txid, index,
-				asset_id, amount, script,
-				account_id, manager_node_id
-			FROM utxos
-			WHERE (txid, index) IN (TABLE outpoints)
-
-			UNION
-
 			SELECT tx_hash, index,
 				asset_id, amount, script,
 				account_id, manager_node_id
-			FROM pool_outputs
+			FROM utxos
 			WHERE (tx_hash, index) IN (TABLE outpoints)
 	`
 	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(hashes), pg.Uint32s(indexes))

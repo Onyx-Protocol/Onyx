@@ -230,9 +230,9 @@ func signTx(tb testing.TB, tx *Tx, priv *hdkey.XKey) {
 
 func dumpState(ctx context.Context, t *testing.T) {
 	t.Log("pool")
-	dumpTab(ctx, t, `SELECT tx_hash, index, script FROM pool_outputs`)
+	dumpTab(ctx, t, `SELECT tx_hash, index, script FROM utxos WHERE NOT confirmed`)
 	t.Log("blockchain")
-	dumpTab(ctx, t, `SELECT txid, index, script FROM utxos`)
+	dumpTab(ctx, t, `SELECT tx_hash, index, script FROM utxos WHERE confirmed`)
 }
 
 func dumpTab(ctx context.Context, t *testing.T, q string) {

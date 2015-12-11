@@ -379,11 +379,11 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 		return nil, errors.Wrap(err, "delete from pool_txs")
 	}
 
-	// Delete pool_outputs
-	const outq = `DELETE FROM pool_outputs WHERE tx_hash IN (SELECT unnest($1::text[]))`
+	// Delete pool outputs
+	const outq = `DELETE FROM utxos WHERE NOT confirmed AND tx_hash IN (SELECT unnest($1::text[]))`
 	_, err = pg.FromContext(ctx).Exec(outq, pg.Strings(deleteTxHashes))
 	if err != nil {
-		return nil, errors.Wrap(err, "delete from pool_outputs")
+		return nil, errors.Wrap(err, "delete from utxos")
 	}
 
 	// Delete pool_inputs
@@ -487,7 +487,7 @@ func applyToReserver(ctx context.Context, outs []*txdb.Output) {
 
 // loadAccountInfo returns annotated UTXO data (outputs + account mappings) for
 // addresses known to this manager node. It is only concerned with outputs that
-// actually have account mappings, which come from either the pool_outputs or
+// actually have account mappings, which come from either the utxos or
 // addresses tables.
 func loadAccountInfo(ctx context.Context, outs []*txdb.Output) error {
 	ctx = span.NewContext(ctx)
@@ -545,44 +545,12 @@ func loadAccountInfo(ctx context.Context, outs []*txdb.Output) error {
 		return errors.Wrap(err, "addresses end row scan loop")
 	}
 
-	// pool_outputs table
-
-	const poolq = `
-		SELECT tx_hash, index, manager_node_id, account_id, key_index(addr_index)
-		FROM pool_outputs
-		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
-	`
-	rows, err = pg.FromContext(ctx).Query(poolq, pg.Strings(hashes), pg.Uint32s(indexes))
-	if err != nil {
-		return errors.Wrap(err, "pool_outputs select query")
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var (
-			op             bc.Outpoint
-			mnodeID, accID string
-			addrIndex      []uint32
-		)
-		err := rows.Scan(&op.Hash, &op.Index, &mnodeID, &accID, (*pg.Uint32s)(&addrIndex))
-		if err != nil {
-			return errors.Wrap(err, "pool_outputs row scan")
-		}
-		out := outputs[op]
-		out.ManagerNodeID = mnodeID
-		out.AccountID = accID
-		copy(out.AddrIndex[:], addrIndex)
-	}
-	if err := rows.Err(); err != nil {
-		return errors.Wrap(err, "pool_outputs end row scan loop")
-	}
-
-	// utxos table
+	// utxos table - both confirmed (blockchain) and unconfirmed (pool)
 
 	const utxoq = `
-		SELECT txid, index, manager_node_id, account_id, key_index(addr_index)
+		SELECT tx_hash, index, manager_node_id, account_id, key_index(addr_index)
 		FROM utxos
-		WHERE (txid, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
 	rows, err = pg.FromContext(ctx).Query(utxoq, pg.Strings(hashes), pg.Uint32s(indexes))
 	if err != nil {
