@@ -12,6 +12,7 @@ TRUNCATE
 	activity,
 	utxos,
 	assets,
+	issuance_totals,
 	addresses,
 	pool_outputs,
 	pool_inputs,
