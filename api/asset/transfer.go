@@ -73,7 +73,12 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.
 			return nil, errors.WithDetailf(err, "output %d", i)
 		}
 
-		tx.Outputs = append(tx.Outputs, &bc.TxOutput{AssetID: asset, Value: out.Amount, Script: pkScript})
+		tx.Outputs = append(tx.Outputs, &bc.TxOutput{
+			AssetID:  asset,
+			Value:    out.Amount,
+			Script:   pkScript,
+			Metadata: out.Metadata,
+		})
 		outRecvs = append(outRecvs, receiver)
 	}
 

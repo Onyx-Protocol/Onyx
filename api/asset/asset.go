@@ -11,6 +11,7 @@ import (
 	"chain/api/txdb"
 	"chain/api/utxodb"
 	"chain/crypto/hash256"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	chaintxscript "chain/fedchain-sandbox/txscript"
@@ -94,10 +95,11 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 // Output is a user input struct that describes
 // the destination of a transaction's inputs.
 type Output struct {
-	AssetID   string `json:"asset_id"`
-	Address   string `json:"address"`
-	AccountID string `json:"account_id"`
-	Amount    uint64 `json:"amount"`
+	AssetID   string             `json:"asset_id"`
+	Address   string             `json:"address"`
+	AccountID string             `json:"account_id"`
+	Amount    uint64             `json:"amount"`
+	Metadata  chainjson.HexBytes `json:"metadata"`
 	isChange  bool
 }
 
@@ -130,8 +132,12 @@ func addAssetIssuanceOutputs(ctx context.Context, tx *bc.TxData, asset *appdb.As
 		if err != nil {
 			return nil, errors.WithDetailf(err, "output %d", i)
 		}
-
-		tx.Outputs = append(tx.Outputs, &bc.TxOutput{AssetID: asset.Hash, Value: out.Amount, Script: pkScript})
+		tx.Outputs = append(tx.Outputs, &bc.TxOutput{
+			AssetID:  asset.Hash,
+			Value:    out.Amount,
+			Script:   pkScript,
+			Metadata: out.Metadata,
+		})
 		outAddrs = append(outAddrs, receiver)
 	}
 	return outAddrs, nil
