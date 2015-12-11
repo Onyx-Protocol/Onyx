@@ -312,8 +312,6 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 		deleteInputTxIndexes []uint32
 	)
 
-	poolView := NewMemView()
-
 	txs, err := txdb.PoolTxs(ctx, -1)
 	if err != nil {
 		return nil, errors.Wrap(err, "")
@@ -324,22 +322,19 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 		txs = topSort(txs)
 	}
 
-	blockHash := block.Hash()
+	poolView := NewMemView()
 	bcView, err := txdb.NewViewForPrevouts(ctx, txs)
 	if err != nil {
 		return nil, errors.Wrap(err, "blockchain view")
 	}
+	view := state.Compose(poolView, bcView)
 	for _, tx := range txs {
-		vview := NewMemView()
-		view := state.Compose(vview, poolView, bcView)
-		txErr := validation.ValidateTx(ctx, view, tx, uint64(time.Now().Unix()), &blockHash)
+		txErr := validation.ValidateTxInputs(ctx, view, tx)
 		// Have to explicitly check that tx is not in block
 		// because issuance transactions are always valid, even duplicates.
 		// TODO(erykwalder): Remove this check when issuances become unique
 		if txErr == nil && !txInBlock[tx.Hash] {
-			for op, out := range vview.Outs {
-				poolView.Outs[op] = out
-			}
+			validation.ApplyTx(ctx, view, tx)
 		} else {
 			deleteTxs = append(deleteTxs, tx)
 			deleteTxHashes = append(deleteTxHashes, tx.Hash.String())
