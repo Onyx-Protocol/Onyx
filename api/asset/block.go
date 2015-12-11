@@ -354,7 +354,20 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 
 			if !txInBlock[tx.Hash] {
 				conflictTxs = append(conflictTxs, tx)
+				// This should never happen in sandbox, unless a reservation expired
+				// before the original tx was finalized.
 				log.Messagef(ctx, "deleting conflict tx %v because %q", tx.Hash, txErr)
+				for i, in := range tx.Inputs {
+					out := view.Output(ctx, in.Previous)
+					if out == nil {
+						log.Messagef(ctx, "conflict tx %v missing input %d (%v)", tx.Hash, in.Previous)
+						continue
+					}
+					if out.Spent {
+						log.Messagef(ctx, "conflict tx %v spent input %d (%v) inblock=%v inpool=%v",
+							tx.Hash, i, in.Previous, bcView.Output(ctx, in.Previous), poolView.Output(ctx, in.Previous))
+					}
+				}
 			}
 		}
 	}
