@@ -50,7 +50,6 @@ func makeBlock(ctx context.Context) {
 			)
 		}
 	}()
-	log.Messagef(ctx, "making block")
 	b, err := GenerateBlock(ctx, time.Now())
 	if err != nil {
 		log.Error(ctx, errors.Wrap(err, "generate"))
@@ -63,6 +62,7 @@ func makeBlock(ctx context.Context) {
 	if err != nil {
 		log.Error(ctx, errors.Wrap(err, "apply"))
 	}
+	log.Messagef(ctx, "made block %s height %d with %d txs", b.Hash(), b.Height, len(b.Transactions))
 }
 
 // GenerateBlock creates a new bc.Block using the current tx pool and blockchain
@@ -122,7 +122,6 @@ func GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, error) {
 			block.Transactions = append(block.Transactions, tx)
 		}
 	}
-	log.Messagef(ctx, "generated block with %d txs", len(block.Transactions))
 	return block, nil
 }
 
