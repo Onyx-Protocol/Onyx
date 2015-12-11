@@ -13,23 +13,44 @@ import (
 	"chain/metrics"
 )
 
+// ErrBadAccountKeyCount is returned by CreateAccount when the
+// number of keys provided doesn't match the number required by
+// the manager node.
+var ErrBadAccountKeyCount = errors.New("account has provided wrong number of keys")
+
 // Account represents an indexed namespace inside of a manager node
 type Account struct {
 	ID    string   `json:"id"`
 	Label string   `json:"label"`
 	Index []uint32 `json:"account_index"`
+	Keys  []string `json:"keys"`
 }
 
 // CreateAccount inserts an account database record
-// for the given manager node,
-// and returns the new Account.
-func CreateAccount(ctx context.Context, managerNodeID, label string) (*Account, error) {
+// for the given manager node, and returns the new Account.
+// Parameter keys will be concatenated with the manager node's
+// keys when creating redeem scripts for this account.
+// The len(keys) must equal variable_keys in the manager node.
+func CreateAccount(ctx context.Context, managerNodeID, label string, keys []string) (*Account, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if label == "" {
 		return nil, ErrBadLabel
 	}
 
 	account := &Account{Label: label}
+
+	keyCount, err := managerNodeVariableKeys(ctx, managerNodeID)
+	if err != nil {
+		return nil, errors.Wrap(err, "fetching variable key count for manager node")
+	}
+
+	if keyCount != len(keys) {
+		return nil, ErrBadAccountKeyCount
+	}
+
+	if len(keys) > 0 {
+		account.Keys = keys
+	}
 
 	const attempts = 3
 	for i := 0; i < attempts; i++ {
@@ -42,11 +63,11 @@ func CreateAccount(ctx context.Context, managerNodeID, label string) (*Account, 
 				WHERE id=$1
 				RETURNING (next_account_index - 1)
 			)
-			INSERT INTO accounts (manager_node_id, key_index, label)
-			VALUES ($1, (TABLE incr), $2)
+			INSERT INTO accounts (manager_node_id, key_index, label, keys)
+			VALUES ($1, (TABLE incr), $2, $3)
 			RETURNING id, key_index(key_index)
 		`
-		err := pg.FromContext(ctx).QueryRow(q, managerNodeID, label).Scan(
+		err := pg.FromContext(ctx).QueryRow(q, managerNodeID, label, pg.Strings(keys)).Scan(
 			&account.ID,
 			(*pg.Uint32s)(&account.Index),
 		)

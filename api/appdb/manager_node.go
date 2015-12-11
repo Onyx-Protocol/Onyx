@@ -260,3 +260,13 @@ func createRotation(ctx context.Context, managerNodeID string, xpubs ...string) 
 	_, err := pg.FromContext(ctx).Exec(q, managerNodeID, pg.Strings(xpubs))
 	return err
 }
+
+func managerNodeVariableKeys(ctx context.Context, managerNodeID string) (int, error) {
+	const q = `SELECT variable_keys FROM manager_nodes WHERE id = $1`
+	count := 0
+	err := pg.FromContext(ctx).QueryRow(q, managerNodeID).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}

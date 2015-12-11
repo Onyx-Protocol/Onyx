@@ -98,12 +98,27 @@ func newTestManagerNode(t *testing.T, ctx context.Context, project *Project, lab
 	return managerNode
 }
 
+func newTestVarKeyManagerNode(t *testing.T, ctx context.Context, project *Project, label string, varKeys, sigsReq int) *ManagerNode {
+	ensureInTransaction(ctx)
+	if project == nil {
+		project = newTestProject(t, ctx, "project-1", nil)
+	}
+	managerNode, err := InsertManagerNode(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil, varKeys, sigsReq)
+	if err != nil {
+		t.Fatalf("could not create manager node in newTestVarKeyManagerNode: %v", err)
+	}
+	if managerNode.ID == "" {
+		t.Fatal("got empty manager node id in newTestVarKeyManagerNode")
+	}
+	return managerNode
+}
+
 func newTestAccount(t *testing.T, ctx context.Context, managerNode *ManagerNode, label string) *Account {
 	ensureInTransaction(ctx)
 	if managerNode == nil {
 		managerNode = newTestManagerNode(t, ctx, nil, "manager-node-1")
 	}
-	account, err := CreateAccount(ctx, managerNode.ID, label)
+	account, err := CreateAccount(ctx, managerNode.ID, label, nil)
 	if err != nil {
 		t.Fatalf("could not create account in newTestAccount: %v", err)
 	}

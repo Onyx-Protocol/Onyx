@@ -252,12 +252,15 @@ func listAccounts(ctx context.Context, managerNodeID string) (interface{}, error
 }
 
 // POST /v3/manager-nodes/:mnodeID/accounts
-func createAccount(ctx context.Context, managerNodeID string, in struct{ Label string }) (*appdb.Account, error) {
+func createAccount(ctx context.Context, managerNodeID string, in struct {
+	Label string
+	Keys  []string
+}) (*appdb.Account, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if err := managerAuthz(ctx, managerNodeID); err != nil {
 		return nil, err
 	}
-	return appdb.CreateAccount(ctx, managerNodeID, in.Label)
+	return appdb.CreateAccount(ctx, managerNodeID, in.Label, in.Keys)
 }
 
 // GET /v3/accounts/:accountID

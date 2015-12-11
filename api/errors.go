@@ -39,6 +39,7 @@ var (
 		asset.ErrBadXPub:                errorInfo{400, "CH713", "Invalid xpub."},
 		appdb.ErrBadVarKeys:             errorInfo{400, "CH714", "Invalid number of variable keys (must be 0 or 1)"},
 		asset.ErrTooFewKeys:             errorInfo{400, "CH715", "Cannot have more signatures required than keys."},
+		appdb.ErrBadAccountKeyCount:     errorInfo{400, "CH716", "Accounts must provide the correct number of keys for a manager node."},
 		asset.ErrPastExpires:            errorInfo{400, "CH720", "Expires, if set, must be in the future"},
 		utxodb.ErrInsufficient:          errorInfo{400, "CH733", "Insufficient funds for tx"},
 		utxodb.ErrReserved:              errorInfo{400, "CH743", "Some outputs are reserved; try again"},

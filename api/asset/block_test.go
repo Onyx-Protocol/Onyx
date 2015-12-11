@@ -46,12 +46,12 @@ func TestTransferConfirmed(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		acctA, err := appdb.CreateAccount(ctx, manager.ID, "label")
+		acctA, err := appdb.CreateAccount(ctx, manager.ID, "label", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		acctB, err := appdb.CreateAccount(ctx, manager.ID, "label")
+		acctB, err := appdb.CreateAccount(ctx, manager.ID, "label", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -142,12 +142,12 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 			b.Fatal(err)
 		}
 
-		acctA, err := appdb.CreateAccount(ctx, manager.ID, "label")
+		acctA, err := appdb.CreateAccount(ctx, manager.ID, "label", nil)
 		if err != nil {
 			b.Fatal(err)
 		}
 
-		acctB, err := appdb.CreateAccount(ctx, manager.ID, "label")
+		acctB, err := appdb.CreateAccount(ctx, manager.ID, "label", nil)
 		if err != nil {
 			b.Fatal(err)
 		}

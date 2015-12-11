@@ -137,7 +137,8 @@ CREATE TABLE accounts (
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     next_address_index bigint DEFAULT 0 NOT NULL,
-    label text
+    label text,
+    keys text[] DEFAULT '{}'::text[] NOT NULL
 );
 
 

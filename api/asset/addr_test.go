@@ -28,7 +28,7 @@ func TestCreateAddress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	account, err := appdb.CreateAccount(ctx, managerNode.ID, "foo")
+	account, err := appdb.CreateAccount(ctx, managerNode.ID, "foo", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
