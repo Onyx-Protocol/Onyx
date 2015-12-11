@@ -54,6 +54,11 @@ func main() {
 
 	appdb.Init(db)
 	ctx := pg.NewContext(context.Background(), db)
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		fatal("begin")
+	}
+	defer dbtx.Rollback()
 
 	u, err := appdb.CreateUser(ctx, os.Args[1], os.Args[2])
 	if err != nil {
@@ -97,7 +102,12 @@ func main() {
 		INSERT INTO blocks (block_hash, height, data)
 		VALUES ($1, $2, $3)
 	`
-	_, err = db.Exec(q, block.Hash(), block.Height, block)
+	_, err = pg.FromContext(ctx).Exec(q, block.Hash(), block.Height, block)
+	if err != nil {
+		fatal(err)
+	}
+
+	err = dbtx.Commit()
 	if err != nil {
 		fatal(err)
 	}
