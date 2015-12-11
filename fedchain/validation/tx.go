@@ -27,7 +27,7 @@ func ValidateTxInputs(ctx context.Context, view state.ViewReader, tx *bc.Tx) err
 		// explicitly stores spent outputs in frontend to shadow unspent
 		// outputs in backend.
 		if unspent == nil || unspent.Spent {
-			return fmt.Errorf("output for input %d is invalid or already spent (%v)", inIndex, txin.Previous)
+			return fmt.Errorf("output for input %d is invalid or already spent (%v) (%v)", inIndex, txin.Previous, unspent)
 		}
 	}
 	return nil
