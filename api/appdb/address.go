@@ -61,7 +61,7 @@ var (
 //   ManagerNodeID
 //   ManagerNodeIndex
 //   AccountIndex
-//   Keys
+//   Keys (comprised of both manager node keys and account keys)
 //   SigsRequired
 func AddrInfo(ctx context.Context, accountID string) (*Address, error) {
 	addrMu.Lock()
@@ -71,11 +71,12 @@ func AddrInfo(ctx context.Context, accountID string) (*Address, error) {
 		// Concurrent cache misses might be doing
 		// duplicate loads here, but ok.
 		ai = new(Address)
-		var xpubs []string
+		var nodeXPubs []string
+		var accXPubs []string
 		const q = `
 		SELECT
 			mn.id, key_index(a.key_index), key_index(mn.key_index),
-			r.keyset, mn.sigs_required
+			r.keyset, a.keys, mn.sigs_required
 		FROM accounts a
 		LEFT JOIN manager_nodes mn ON mn.id=a.manager_node_id
 		LEFT JOIN rotations r ON r.id=mn.current_rotation
@@ -85,16 +86,26 @@ func AddrInfo(ctx context.Context, accountID string) (*Address, error) {
 			&ai.ManagerNodeID,
 			(*pg.Uint32s)(&ai.AccountIndex),
 			(*pg.Uint32s)(&ai.ManagerNodeIndex),
-			(*pg.Strings)(&xpubs),
+			(*pg.Strings)(&nodeXPubs),
+			(*pg.Strings)(&accXPubs),
 			&ai.SigsRequired,
 		)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "account %s", accountID)
 		}
 
-		ai.Keys, err = stringsToKeys(xpubs)
+		ai.Keys, err = stringsToKeys(nodeXPubs)
 		if err != nil {
-			return nil, errors.Wrap(err, "parsing keys")
+			return nil, errors.Wrap(err, "parsing node keys")
+		}
+
+		if len(accXPubs) > 0 {
+			accKeys, err := stringsToKeys(accXPubs)
+			if err != nil {
+				return nil, errors.Wrap(err, "parsing accountkeys")
+			}
+
+			ai.Keys = append(ai.Keys, accKeys...)
 		}
 
 		addrMu.Lock()
