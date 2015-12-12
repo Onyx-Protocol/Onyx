@@ -99,10 +99,10 @@ func main() {
 		},
 	}
 	const q = `
-		INSERT INTO blocks (block_hash, height, data)
-		VALUES ($1, $2, $3)
+		INSERT INTO blocks (block_hash, height, data, header)
+		VALUES ($1, $2, $3, $4)
 	`
-	_, err = pg.FromContext(ctx).Exec(q, block.Hash(), block.Height, block)
+	_, err = pg.FromContext(ctx).Exec(q, block.Hash(), block.Height, block, &block.BlockHeader)
 	if err != nil {
 		fatal(err)
 	}
