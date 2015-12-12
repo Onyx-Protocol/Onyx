@@ -5,4 +5,4 @@ CREATE TABLE pool_inputs (
 	tx_hash text,
 	index integer,
 	PRIMARY KEY (tx_hash, index)
-)
+);
