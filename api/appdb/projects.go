@@ -250,20 +250,6 @@ func IsAdmin(ctx context.Context, userID string, project string) (bool, error) {
 	return isAdmin, errors.Wrap(err)
 }
 
-// ProjectByAdminNode returns the project that contains the given admin node.
-func ProjectByAdminNode(ctx context.Context, anodeID string) (string, error) {
-	const q = `
-		SELECT project_id
-		FROM admin_nodes WHERE id=$1
-	`
-	var project string
-	err := pg.FromContext(ctx).QueryRow(q, anodeID).Scan(&project)
-	if err == sql.ErrNoRows {
-		err = pg.ErrUserInputNotFound
-	}
-	return project, errors.WithDetailf(err, "admin node %v", anodeID)
-}
-
 // ProjectByManager returns all project IDs associated with a set of manager nodes
 func ProjectByManager(ctx context.Context, managerID string) (string, error) {
 	const q = `

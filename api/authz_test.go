@@ -75,31 +75,6 @@ func TestProjectAuthz(t *testing.T) {
 	}
 }
 
-func TestAdminNodeAuthz(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, authzFixture, `
-		INSERT INTO admin_nodes (id, project_id, label)
-			VALUES ('an1', 'proj1', 'x'), ('an2', 'proj2', 'x'), ('an3', 'proj3', 'x');
-	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
-
-	cases := []struct {
-		userID  string
-		anodeID string
-		want    error
-	}{
-		{"u2", "an1", nil}, {"u2", "an2", nil}, {"u2", "an3", errNoAccessToResource},
-	}
-
-	for _, c := range cases {
-		ctx := authn.NewContext(ctx, c.userID)
-		got := adminNodeAuthz(ctx, c.anodeID)
-		if errors.Root(got) != c.want {
-			t.Errorf("adminNodeAuthz(%s, %v) = %q want %q", c.userID, c.anodeID, got, c.want)
-		}
-	}
-}
-
 func TestManagerAuthz(t *testing.T) {
 	dbtx := pgtest.TxWithSQL(t, authzFixture, `
 		INSERT INTO manager_nodes (id, project_id, label)

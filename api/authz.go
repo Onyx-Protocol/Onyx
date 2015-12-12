@@ -38,14 +38,6 @@ func projectAuthz(ctx context.Context, projects ...string) error {
 	return nil
 }
 
-func adminNodeAuthz(ctx context.Context, anodeID string) error {
-	project, err := appdb.ProjectByAdminNode(ctx, anodeID)
-	if err != nil {
-		return err
-	}
-	return errors.WithDetailf(projectAuthz(ctx, project), "admin node %v", anodeID)
-}
-
 func managerAuthz(ctx context.Context, managerID string) error {
 	project, err := appdb.ProjectByManager(ctx, managerID)
 	if err != nil {

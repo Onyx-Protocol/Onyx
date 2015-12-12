@@ -75,11 +75,6 @@ func main() {
 		fatal(err)
 	}
 
-	adminNode, err := appdb.InsertAdminNode(ctx, proj.ID, "admin")
-	if err != nil {
-		fatal(err)
-	}
-
 	mpub, mpriv := genKey()
 	mn, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", mpub, mpriv, 0, 1)
 	if err != nil {
@@ -117,7 +112,6 @@ func main() {
 		"tokenID":          tok.ID,
 		"tokenSecret":      tok.Secret,
 		"projectID":        proj.ID,
-		"adminNodeID":      adminNode.ID,
 		"managerXPRV":      mpriv[0].String(),
 		"managerNodeID":    mn.ID,
 		"issuerXPRV":       ipriv[0].String(),
