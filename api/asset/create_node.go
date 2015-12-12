@@ -87,6 +87,12 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 		}
 	}
 
+	// If the request is missing a SigsRequired field,
+	// it's a deprecated-style request. Default to 1-of-1.
+	if req.SigsRequired == 0 {
+		req.SigsRequired = 1
+	}
+
 	if len(keys)+variableKeyCount < req.SigsRequired {
 		return nil, ErrTooFewKeys
 	}
