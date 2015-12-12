@@ -46,6 +46,11 @@ func FinalizeTx(ctx context.Context, tx *Tx) (*bc.Tx, error) {
 func assembleSignatures(tx *Tx) (*bc.Tx, error) {
 	msg := tx.Unsigned
 	for i, input := range tx.Inputs {
+		sigsAdded := 0
+		sigsReqd, err := getSigsRequired(input.RedeemScript)
+		if err != nil {
+			return nil, err
+		}
 		if len(input.Sigs) == 0 {
 			return nil, errors.WithDetailf(ErrBadTx, "input %d must contain signatures", i)
 		}
@@ -54,6 +59,10 @@ func assembleSignatures(tx *Tx) (*bc.Tx, error) {
 		for _, sig := range input.Sigs {
 			if len(sig.DER) > 0 {
 				builder.AddData(sig.DER)
+				sigsAdded++
+				if sigsAdded == sigsReqd {
+					break
+				}
 			}
 		}
 		builder.AddData(input.RedeemScript)
@@ -64,6 +73,17 @@ func assembleSignatures(tx *Tx) (*bc.Tx, error) {
 		msg.Inputs[i].SignatureScript = script
 	}
 	return bc.NewTx(*msg), nil
+}
+
+func getSigsRequired(script []byte) (sigsReqd int, err error) {
+	sigsReqd = 1
+	if txscript.GetScriptClass(script) == txscript.MultiSigTy {
+		_, sigsReqd, err = txscript.CalcMultiSigStats(script)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return sigsReqd, nil
 }
 
 func publishTx(ctx context.Context, msg *bc.Tx, receivers []*utxodb.Receiver) (err error) {
