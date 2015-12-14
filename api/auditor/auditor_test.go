@@ -213,7 +213,7 @@ func TestGetTxIssuance(t *testing.T) {
 				AssetID:  bc.AssetID([32]byte{0}),
 				Amount:   11,
 				Metadata: []byte(`{"a":"b"}`),
-				AssetDef: map[string]interface{}{"c": "d"},
+				AssetDef: []byte(`{"c":"d"}`),
 			}},
 			Outputs: []*TxOutput{{
 				AssetID:  bc.AssetID([32]byte{0}),

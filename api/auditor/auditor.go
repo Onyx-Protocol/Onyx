@@ -94,13 +94,13 @@ type Tx struct {
 
 // TxInput is an input in a Tx
 type TxInput struct {
-	Type     string                 `json:"type"`
-	TxID     *bc.Hash               `json:"transaction_id,omitempty"`
-	TxOut    uint32                 `json:"transaction_output,omitempty"`
-	AssetID  bc.AssetID             `json:"asset_id"`
-	AssetDef map[string]interface{} `json:"asset_definition,omitempty"`
-	Amount   uint64                 `json:"amount"`
-	Metadata chainjson.HexBytes     `json:"metadata,omitempty"`
+	Type     string             `json:"type"`
+	TxID     *bc.Hash           `json:"transaction_id,omitempty"`
+	TxOut    uint32             `json:"transaction_output,omitempty"`
+	AssetID  bc.AssetID         `json:"asset_id"`
+	Amount   uint64             `json:"amount"`
+	Metadata chainjson.HexBytes `json:"metadata,omitempty"`
+	AssetDef chainjson.HexBytes `json:"asset_definition,omitempty"`
 }
 
 // TxOutput is an output in a Tx
@@ -148,15 +148,12 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 			totalOut += out.Value
 		}
 
-		var assetDef map[string]interface{}
-		json.Unmarshal(tx.Inputs[0].AssetDefinition, &assetDef) // fine if it doesn't work
-
 		resp.Inputs = append(resp.Inputs, &TxInput{
 			Type:     "issuance",
 			AssetID:  tx.Outputs[0].AssetID,
 			Amount:   totalOut,
 			Metadata: tx.Inputs[0].Metadata,
-			AssetDef: assetDef,
+			AssetDef: tx.Inputs[0].AssetDefinition,
 		})
 	} else {
 		var inHashes []string
