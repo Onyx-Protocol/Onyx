@@ -17,21 +17,17 @@ import (
 	"chain/strings"
 )
 
-// PoolTxs loads up to max pooled transactions from the database in order received.
+// PoolTxs returns the pooled transactions
+// in topological order.
 // If max is negative, there is no limit.
 // TODO(jeffomatic) - at some point in the future, will we want to keep this
 // cached in an in-memory pool, a la btcd's TxMemPool?
-func PoolTxs(ctx context.Context, max int) ([]*bc.Tx, error) {
+func PoolTxs(ctx context.Context) ([]*bc.Tx, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	var limit interface{} // can be nil => sql NULL
-	if max >= 0 {
-		limit = max
-	}
-
-	const q = `SELECT tx_hash, data FROM pool_txs ORDER BY sort_id LIMIT $1`
-	rows, err := pg.FromContext(ctx).Query(q, limit)
+	const q = `SELECT tx_hash, data FROM pool_txs ORDER BY sort_id`
+	rows, err := pg.FromContext(ctx).Query(q)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -52,6 +48,7 @@ func PoolTxs(ctx context.Context, max int) ([]*bc.Tx, error) {
 		return nil, errors.Wrap(err, "end row scan loop")
 	}
 
+	txs = topSort(ctx, txs)
 	return txs, nil
 }
 
