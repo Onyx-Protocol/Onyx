@@ -428,7 +428,7 @@ CREATE TABLE manager_nodes (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     generated_keys text[] DEFAULT '{}'::text[] NOT NULL,
-    variable_keys integer
+    variable_keys integer DEFAULT 0
 );
 
 
