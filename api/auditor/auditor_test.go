@@ -351,7 +351,7 @@ func TestGetAsset(t *testing.T) {
 		want := &Asset{
 			ID:            "asset-1",
 			DefinitionPtr: "hash-1",
-			Definition:    map[string]interface{}{"a": "b"},
+			Definition:    []byte(`{"a":"b"}`),
 			Circulation:   appdb.AssetCirculation{Total: 11, Confirmed: 6},
 		}
 		if !reflect.DeepEqual(got, want) {

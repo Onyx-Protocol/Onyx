@@ -2,8 +2,6 @@ package auditor
 
 import (
 	"database/sql"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -204,22 +202,16 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 type Asset struct {
 	ID            string                 `json:"id"`
 	DefinitionPtr string                 `json:"definition_pointer"`
-	Definition    interface{}            `json:"definition"`
+	Definition    chainjson.HexBytes     `json:"definition"`
 	Circulation   appdb.AssetCirculation `json:"circulation"`
 }
 
 // GetAsset returns the most recent asset definition stored in
 // the blockchain, for the given asset.
 func GetAsset(ctx context.Context, assetID string) (*Asset, error) {
-	hash, defBytes, err := txdb.AssetDefinition(ctx, assetID)
+	hash, def, err := txdb.AssetDefinition(ctx, assetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "loading definition")
-	}
-
-	var definition interface{}
-	err = json.Unmarshal(defBytes, &definition)
-	if err != nil {
-		definition = hex.EncodeToString(defBytes)
 	}
 
 	// TODO(erykwalder): replace with a txdb call
@@ -228,5 +220,5 @@ func GetAsset(ctx context.Context, assetID string) (*Asset, error) {
 		return nil, errors.Wrap(err, "loading circulation")
 	}
 
-	return &Asset{assetID, hash, definition, asset.Circulation}, nil
+	return &Asset{assetID, hash, def, asset.Circulation}, nil
 }
