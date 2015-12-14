@@ -218,7 +218,10 @@ func applyBlock(ctx context.Context, block *bc.Block) ([]*txdb.Output, error) {
 	return delta, nil
 }
 
-func isTopSorted(txs []*bc.Tx) bool {
+func isTopSorted(ctx context.Context, txs []*bc.Tx) bool {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	exists := make(map[bc.Hash]bool)
 	seen := make(map[bc.Hash]bool)
 	for _, tx := range txs {
@@ -235,7 +238,10 @@ func isTopSorted(txs []*bc.Tx) bool {
 	return true
 }
 
-func topSort(txs []*bc.Tx) []*bc.Tx {
+func topSort(ctx context.Context, txs []*bc.Tx) []*bc.Tx {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	if len(txs) == 1 {
 		return txs
 	}
@@ -317,9 +323,9 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 		return nil, errors.Wrap(err, "")
 	}
 
-	if !isTopSorted(txs) {
+	if !isTopSorted(ctx, txs) {
 		log.Error(ctx, errors.New("txdb.PoolTxs not top sorted"), "block=", block.Hash(), " num-txs=", len(txs))
-		txs = topSort(txs)
+		txs = topSort(ctx, txs)
 	}
 
 	poolView := NewMemView()
