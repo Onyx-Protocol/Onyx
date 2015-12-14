@@ -364,7 +364,8 @@ CREATE TABLE issuer_nodes (
     next_asset_index bigint DEFAULT 0 NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    generated_keys text[] DEFAULT '{}'::text[] NOT NULL
+    generated_keys text[] DEFAULT '{}'::text[] NOT NULL,
+    variable_keys integer DEFAULT 0 NOT NULL
 );
 
 
@@ -428,7 +429,7 @@ CREATE TABLE manager_nodes (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     generated_keys text[] DEFAULT '{}'::text[] NOT NULL,
-    variable_keys integer DEFAULT 0
+    variable_keys integer DEFAULT 0 NOT NULL
 );
 
 
