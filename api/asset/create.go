@@ -25,11 +25,6 @@ func Create(ctx context.Context, inodeID, label string, definition map[string]in
 		return nil, appdb.ErrBadLabel
 	}
 
-	if definition == nil {
-		// Definitions can be empty (`{}`) but they cannot be nil.
-		return nil, ErrBadDefinition
-	}
-
 	asset, sigsReq, err := appdb.NextAsset(ctx, inodeID)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting asset key info")
@@ -68,5 +63,8 @@ func Create(ctx context.Context, inodeID, label string, definition map[string]in
 // appear in lexicographic order. Although this is mostly meant for machine
 // consumption, the JSON is pretty-printed for easy reading.
 func serializeAssetDef(def map[string]interface{}) ([]byte, error) {
+	if def == nil {
+		return nil, nil
+	}
 	return json.MarshalIndent(def, "", "  ")
 }

@@ -154,10 +154,6 @@ func createAsset(ctx context.Context, inodeID string, in struct {
 		return nil, err
 	}
 
-	if in.Definition == nil {
-		in.Definition = make(map[string]interface{})
-	}
-
 	ast, err := asset.Create(ctx, inodeID, in.Label, in.Definition)
 	if err != nil {
 		return nil, err
