@@ -101,12 +101,20 @@ type (
 		savedFirstStack [][]byte // stack from first script for bip16 scripts
 		ctx             context.Context
 		viewReader      viewReader
-		outputs         []*state.Output
 		available       []uint64         // mutable copy of each output's Value field, used for OP_REQUIREOUTPUT reservations
 		contractHash    *bc.ContractHash // contract hash when executing a p2c contract, nil when not
 		timestamp       int64            // Unix timestamp at Engine-creation time
 	}
 )
+
+func (vm *Engine) currentTxInput() *bc.TxInput {
+	return vm.tx.Inputs[vm.txIdx]
+}
+
+func (vm *Engine) currentPrevOut() *state.Output {
+	txInput := vm.currentTxInput()
+	return vm.viewReader.Output(vm.ctx, txInput.Previous)
+}
 
 // hasFlag returns whether the script engine instance has the passed flag set.
 func (vm *Engine) hasFlag(flag ScriptFlags) bool {
@@ -616,30 +624,9 @@ func (vm *Engine) SetAltStack(data [][]byte) {
 	setStack(&vm.astack, data)
 }
 
-// Load the outputs referenced by the transaction.
-// No-op if the outputs are already loaded.
-func (vm *Engine) LoadOutputs() {
-	if len(vm.outputs) == 0 {
-		outpoints := make([]*bc.Outpoint, len(vm.tx.Inputs))
-		for i, txin := range vm.tx.Inputs {
-			outpoints[i] = &txin.Previous
-		}
-		vm.outputs = make([]*state.Output, len(outpoints))
-		vm.available = make([]uint64, len(outpoints))
-		for i, outpoint := range outpoints {
-			// vm.viewReader is responsible for anticipating multiple calls
-			// to Output() and making sure they're efficiently batched as
-			// appropriate.
-			output := vm.viewReader.Output(vm.ctx, *outpoint)
-			vm.outputs[i] = output
-			vm.available[i] = output.Value
-		}
-	}
-}
-
 // This function prepares a previously allocated Engine for reuse with
-// another txin, preserving state (to wit, vm.outputs and
-// vm.available) that P2C wants to save between txins.
+// another txin, preserving state (to wit, vm.available) that P2C
+// wants to save between txins.
 func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 	// The provided transaction input index must refer to a valid input.
 	if txIdx < 0 || txIdx >= len(vm.tx.Inputs) {
@@ -740,6 +727,11 @@ func NewReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData
 	if vm.hasFlag(ScriptVerifyMinimalData) {
 		vm.dstack.verifyMinimalData = true
 		vm.astack.verifyMinimalData = true
+	}
+
+	vm.available = make([]uint64, len(tx.Outputs))
+	for i, output := range tx.Outputs {
+		vm.available[i] = output.Value
 	}
 
 	return vm, nil

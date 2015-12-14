@@ -2377,8 +2377,6 @@ func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
 		return nil
 	}
 
-	vm.LoadOutputs()
-
 	parsedPattern, err := parseScript(scriptPattern)
 	if err != nil {
 		return err
@@ -2386,7 +2384,7 @@ func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
 
 	needed := uint64(amount)
 
-	for i, output := range vm.outputs {
+	for i, output := range vm.tx.Outputs {
 		available := vm.available[i]
 		if available <= 0 {
 			continue
@@ -2491,22 +2489,22 @@ func opcodeBalance(op *parsedOpcode, vm *Engine) error {
 
 // Pushes the current txin's assetid onto the stack.
 func opcodeAsset(op *parsedOpcode, vm *Engine) error {
-	vm.LoadOutputs()
-	vm.dstack.PushByteArray(vm.outputs[vm.txIdx].AssetID[:])
+	prevOut := vm.currentPrevOut()
+	vm.dstack.PushByteArray(prevOut.AssetID[:])
 	return nil
 }
 
 // Pushes the current txin's amount onto the stack.
 func opcodeAmount(op *parsedOpcode, vm *Engine) error {
-	vm.LoadOutputs()
-	vm.dstack.PushInt(scriptNum(vm.outputs[vm.txIdx].Value))
+	prevOut := vm.currentPrevOut()
+	vm.dstack.PushInt(scriptNum(prevOut.Value))
 	return nil
 }
 
 // Pushes the current txin's pkscript onto the stack.
 func opcodeOutputScript(op *parsedOpcode, vm *Engine) error {
-	vm.LoadOutputs()
-	vm.dstack.PushByteArray(vm.outputs[vm.txIdx].Script)
+	prevOut := vm.currentPrevOut()
+	vm.dstack.PushByteArray(prevOut.Script)
 	return nil
 }
 
