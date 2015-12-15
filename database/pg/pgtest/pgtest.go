@@ -108,7 +108,7 @@ type noCommitDB struct {
 }
 
 // Begin satisfies the interface in the body of pg.Begin.
-func (tx noCommitDB) Begin() (pg.Tx, error) {
+func (tx noCommitDB) Begin(context.Context) (pg.Tx, error) {
 	return noCommitTx{tx.Tx}, nil
 }
 

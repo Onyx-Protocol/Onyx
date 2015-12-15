@@ -33,7 +33,7 @@ type Tx interface {
 // It is an optional alternative to the Begin signature provided by
 // package sql.
 type Beginner interface {
-	Begin() (Tx, error)
+	Begin(context.Context) (Tx, error)
 }
 
 // key is an unexported type for keys defined in this package.
@@ -53,7 +53,7 @@ var dbKey key
 // a new context with the transaction as its
 // associated database.
 func Begin(ctx context.Context) (Committer, context.Context, error) {
-	tx, err := begin(FromContext(ctx))
+	tx, err := begin(FromContext(ctx), ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -61,15 +61,15 @@ func Begin(ctx context.Context) (Committer, context.Context, error) {
 	return tx, ctx, nil
 }
 
-func begin(db DB) (Tx, error) {
+func begin(db DB, ctx context.Context) (Tx, error) {
 	type beginner interface {
-		Begin() (*sql.Tx, error)
+		Begin(context.Context) (*sql.Tx, error)
 	}
 	switch d := db.(type) {
 	case beginner: // e.g. *sql.DB
-		return d.Begin()
+		return d.Begin(ctx)
 	case Beginner: // e.g. pgtest.noCommitDB
-		return d.Begin()
+		return d.Begin(ctx)
 	}
 	return nil, fmt.Errorf("unknown db type %T", db)
 }
