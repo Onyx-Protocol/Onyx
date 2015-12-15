@@ -34,8 +34,17 @@ func Build(ctx context.Context, prev *Tx, inputs []utxodb.Input, outputs []*Outp
 		return nil, err
 	}
 	if prev != nil {
-		return combine(prev, tpl)
+		tpl, err = combine(prev, tpl)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	err = setSignatureData(tpl)
+	if err != nil {
+		return nil, err
+	}
+
 	return tpl, nil
 }
 
@@ -140,15 +149,10 @@ func addressInput(ctx context.Context, u *utxodb.UTXO, tx *bc.TxData, idx int) (
 		return nil, errors.Wrap(err, "compute redeem script")
 	}
 
-	hash, err := txscript.CalcSignatureHash(tx, idx, redeemScript, txscript.SigHashAll)
-	if err != nil {
-		return nil, errors.Wrap(err, "calculating signature hash")
-	}
-
 	in := &Input{
 		ManagerNodeID: addrInfo.ManagerNodeID,
 		RedeemScript:  redeemScript,
-		SignatureData: hash,
+		SignatureData: bc.Hash{}, // calculated later
 		Sigs:          inputSigs(signers),
 	}
 	return in, nil
@@ -176,7 +180,20 @@ func combine(txs ...*Tx) (*Tx, error) {
 			completeWire.Outputs = append(completeWire.Outputs, txout)
 		}
 	}
+
 	return complete, nil
+}
+
+func setSignatureData(tpl *Tx) error {
+	for i, in := range tpl.Inputs {
+		hash, err := txscript.CalcSignatureHash(tpl.Unsigned, i, in.RedeemScript, txscript.SigHashAll)
+		if err != nil {
+			return errors.Wrap(err, "calculating signature hash")
+		}
+
+		in.SignatureData = hash
+	}
+	return nil
 }
 
 // CancelReservations cancels any existing reservations
