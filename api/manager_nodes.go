@@ -64,7 +64,7 @@ func createManagerNode(ctx context.Context, projID string, req map[string]interf
 
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "begin tx")
 	}
 	defer dbtx.Rollback(ctx)
 
@@ -75,7 +75,7 @@ func createManagerNode(ctx context.Context, projID string, req map[string]interf
 
 	err = dbtx.Commit(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "commit tx")
 	}
 
 	return managerNode, nil

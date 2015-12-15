@@ -62,7 +62,7 @@ func createIssuerNode(ctx context.Context, projID string, req map[string]interfa
 
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "begin dbtx")
 	}
 	defer dbtx.Rollback(ctx)
 
@@ -73,7 +73,7 @@ func createIssuerNode(ctx context.Context, projID string, req map[string]interfa
 
 	err = dbtx.Commit(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "commit dbtx")
 	}
 
 	return issuerNode, nil
