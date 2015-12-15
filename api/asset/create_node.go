@@ -77,13 +77,15 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 			gennedKeys = append(gennedKeys, priv)
 		} else if xpub.Variable {
 			variableKeyCount++
-		} else {
+		} else if xpub.Key != "" {
 			key, err := hdkey.NewXKey(xpub.Key)
 			if err != nil {
 				err = errors.Wrap(ErrBadXPub, err.Error())
 				return nil, errors.WithDetailf(err, "xpub %d", i)
 			}
 			keys = append(keys, key)
+		} else {
+			return nil, errors.WithDetail(ErrBadXPub, "xpub must have `generated`, `variable` or `key` set")
 		}
 	}
 
