@@ -99,7 +99,7 @@ func TestTransferConfirmed(t *testing.T) {
 			AccountID: acctB.ID,
 			Amount:    10,
 		}}
-		xferTx, err := Transfer(ctx, inputs, outputs)
+		xferTx, err := Build(ctx, nil, inputs, outputs, time.Minute)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -193,7 +193,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 				AccountID: acctB.ID,
 				Amount:    10,
 			}}
-			xferTx, err := Transfer(ctx, inputs, outputs)
+			xferTx, err := Build(ctx, nil, inputs, outputs, time.Minute)
 			if err != nil {
 				b.Fatal(err)
 			}
