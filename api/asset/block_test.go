@@ -12,194 +12,98 @@ import (
 	"chain/api/appdb"
 	"chain/api/utxodb"
 	"chain/database/pg"
+	"chain/database/pg/pgtest"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
 )
 
 func TestTransferConfirmed(t *testing.T) {
-	const genesisBlock = `
-		INSERT INTO blocks (block_hash, height, data, header)
-		VALUES(
-			'341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5',
-			1,
-			decode('0000000100000000000000013132330000000000000000000000000000000000000000000000000000000000414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000000000000000000640f746573742d7369672d73637269707412746573742d6f75747075742d73637269707401000000010000000000000000000007746573742d7478', 'hex'),
-			''
-		);
-	`
-	withContext(t, genesisBlock, func(ctx context.Context) {
-		u, err := appdb.CreateUser(ctx, "user@example.com", "password")
-		if err != nil {
-			t.Fatal(err)
-		}
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+	info, err := bootdb(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		proj, err := appdb.CreateProject(ctx, "proj", u.ID)
-		if err != nil {
-			t.Fatal(err)
-		}
+	_, err = issue(ctx, info, info.acctA.ID, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		manPub, manPriv, err := newKey()
-		if err != nil {
-			t.Fatal(err)
-		}
-		manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hdkey.XKey{manPub}, []*hdkey.XKey{manPriv}, 0, 1)
-		if err != nil {
-			t.Fatal(err)
-		}
+	dumpState(ctx, t)
+	makeBlock(ctx)
+	dumpState(ctx, t)
 
-		acctA, err := appdb.CreateAccount(ctx, manager.ID, "label", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+	_, err = transfer(ctx, info, info.acctA.ID, info.acctB.ID, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
 
-		acctB, err := appdb.CreateAccount(ctx, manager.ID, "label", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+func TestGenSpendApply(t *testing.T) {
+	// 1. Start with an output in pool.
+	// 2. Generate a block.
+	// 3. Spend the output.
+	// 4. Apply the block.
+	// Output should stay spent!
 
-		issPub, issPriv, err := newKey()
-		if err != nil {
-			t.Fatal(err)
-		}
-		issuer, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv}, 1)
-		if err != nil {
-			t.Fatal(err)
-		}
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
 
-		asset, err := Create(ctx, issuer.ID, "label", map[string]interface{}{})
-		if err != nil {
-			t.Fatal(err)
-		}
+	info, err := bootdb(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	issueTx, err := issue(ctx, info, info.acctA.ID, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("issued %v", issueTx.Hash)
 
-		issueOuts := []*Output{{
-			AssetID:   asset.Hash.String(),
-			AccountID: acctA.ID,
-			Amount:    10,
-		}}
-		issueTx, err := Issue(ctx, asset.Hash.String(), issueOuts)
-		if err != nil {
-			t.Fatal(err)
-		}
-		signTx(t, issueTx, issPriv)
-		_, err = FinalizeTx(ctx, issueTx)
-		if err != nil {
-			t.Fatal(err)
-		}
+	block, err := GenerateBlock(ctx, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		dumpState(ctx, t)
-		makeBlock(ctx)
-		dumpState(ctx, t)
+	_, err = transfer(ctx, info, info.acctA.ID, info.acctB.ID, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		inputs := []utxodb.Input{{
-			AssetID:   asset.Hash.String(),
-			AccountID: acctA.ID,
-			Amount:    10,
-		}}
-		outputs := []*Output{{
-			AssetID:   asset.Hash.String(),
-			AccountID: acctB.ID,
-			Amount:    10,
-		}}
-		xferTx, err := Build(ctx, nil, inputs, outputs, time.Minute)
-		if err != nil {
-			t.Fatal(err)
-		}
+	err = ApplyBlock(ctx, block)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		signTx(t, xferTx, manPriv)
-		_, err = FinalizeTx(ctx, xferTx)
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
+	inputs := []utxodb.Input{{
+		AssetID:   info.asset.Hash.String(),
+		AccountID: info.acctA.ID,
+		Amount:    10,
+	}}
+	reserved, _, err := utxoDB.Reserve(ctx, inputs, 2*time.Minute)
+	if err != nil && err != utxodb.ErrInsufficient {
+		t.Fatal(err)
+	}
+	if len(reserved) > 0 {
+		t.Fatalf("want %v to stay spent after landing block", issueTx.Hash)
+	}
 }
 
 func BenchmarkTransferWithBlocks(b *testing.B) {
-	const genesisBlock = `
-		INSERT INTO blocks (block_hash, height, data, header)
-		VALUES(
-			'341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5',
-			1,
-			decode('0000000100000000000000013132330000000000000000000000000000000000000000000000000000000000414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000000000000000000640f746573742d7369672d73637269707412746573742d6f75747075742d73637269707401000000010000000000000000000007746573742d7478', 'hex'),
-			''
-		);
-	`
-	withContext(b, genesisBlock, func(ctx context.Context) {
-		u, err := appdb.CreateUser(ctx, "user@example.com", "password")
-		if err != nil {
-			b.Fatal(err)
-		}
-
-		proj, err := appdb.CreateProject(ctx, "proj", u.ID)
-		if err != nil {
-			b.Fatal(err)
-		}
-
-		manPub, manPriv, err := newKey()
-		if err != nil {
-			b.Fatal(err)
-		}
-		manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hdkey.XKey{manPub}, []*hdkey.XKey{manPriv}, 0, 1)
-		if err != nil {
-			b.Fatal(err)
-		}
-
-		acctA, err := appdb.CreateAccount(ctx, manager.ID, "label", nil)
-		if err != nil {
-			b.Fatal(err)
-		}
-
-		acctB, err := appdb.CreateAccount(ctx, manager.ID, "label", nil)
-		if err != nil {
-			b.Fatal(err)
-		}
-
-		issPub, issPriv, err := newKey()
-		if err != nil {
-			b.Fatal(err)
-		}
-		issuer, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv}, 1)
-		if err != nil {
-			b.Fatal(err)
-		}
-
-		asset, err := Create(ctx, issuer.ID, "label", map[string]interface{}{})
+	withContext(b, "", func(ctx context.Context) {
+		info, err := bootdb(ctx)
 		if err != nil {
 			b.Fatal(err)
 		}
 
 		for i := 0; i < b.N; i++ {
-			issueOuts := []*Output{{
-				AssetID:   asset.Hash.String(),
-				AccountID: acctA.ID,
-				Amount:    10,
-			}}
-			issueTx, err := Issue(ctx, asset.Hash.String(), issueOuts)
-			if err != nil {
-				b.Fatal(err)
-			}
-			signTx(b, issueTx, issPriv)
-			tx, err := FinalizeTx(ctx, issueTx)
+			tx, err := issue(ctx, info, info.acctA.ID, 10)
 			if err != nil {
 				b.Fatal(err)
 			}
 			b.Logf("finalized %v", tx.Hash)
 
-			inputs := []utxodb.Input{{
-				AssetID:   asset.Hash.String(),
-				AccountID: acctA.ID,
-				Amount:    10,
-			}}
-			outputs := []*Output{{
-				AssetID:   asset.Hash.String(),
-				AccountID: acctB.ID,
-				Amount:    10,
-			}}
-			xferTx, err := Build(ctx, nil, inputs, outputs, time.Minute)
-			if err != nil {
-				b.Fatal(err)
-			}
-
-			signTx(b, xferTx, manPriv)
-			tx, err = FinalizeTx(ctx, xferTx)
+			tx, err = transfer(ctx, info, info.acctA.ID, info.acctB.ID, 10)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -212,20 +116,21 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 	})
 }
 
-func signTx(tb testing.TB, tx *Tx, priv *hdkey.XKey) {
+func signTx(tx *Tx, priv *hdkey.XKey) error {
 	for _, input := range tx.Inputs {
 		for _, sig := range input.Sigs {
 			key, err := derive(priv, sig.DerivationPath)
 			if err != nil {
-				tb.Fatal(err)
+				return err
 			}
 			dat, err := key.Sign(input.SignatureData[:])
 			if err != nil {
-				tb.Fatal(err)
+				return err
 			}
 			sig.DER = append(dat.Serialize(), 1) // append hashtype SIGHASH_ALL
 		}
 	}
+	return nil
 }
 
 func dumpState(ctx context.Context, t *testing.T) {
@@ -389,4 +294,121 @@ func benchGenBlock(b *testing.B) {
 			b.Fatal(err)
 		}
 	})
+}
+
+type clientInfo struct {
+	asset          *appdb.Asset
+	acctA          *appdb.Account
+	acctB          *appdb.Account
+	privKeyIssuer  *hdkey.XKey
+	privKeyManager *hdkey.XKey
+}
+
+// TODO(kr): refactor this into new package api/apiutil
+// and consume it from cmd/bootdb.
+func bootdb(ctx context.Context) (*clientInfo, error) {
+	const genesisBlock = `
+		INSERT INTO blocks (block_hash, height, data, header)
+		VALUES(
+			'341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5',
+			1,
+			decode('0000000100000000000000013132330000000000000000000000000000000000000000000000000000000000414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000000000000000000640f746573742d7369672d73637269707412746573742d6f75747075742d73637269707401000000010000000000000000000007746573742d7478', 'hex'),
+			''
+		);
+	`
+	_, err := pg.FromContext(ctx).Exec(ctx, genesisBlock)
+	if err != nil {
+		return nil, err
+	}
+	u, err := appdb.CreateUser(ctx, "user@example.com", "password")
+	if err != nil {
+		return nil, err
+	}
+
+	proj, err := appdb.CreateProject(ctx, "proj", u.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	manPub, manPriv, err := newKey()
+	if err != nil {
+		return nil, err
+	}
+	manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hdkey.XKey{manPub}, []*hdkey.XKey{manPriv}, 0, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	acctA, err := appdb.CreateAccount(ctx, manager.ID, "label", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	acctB, err := appdb.CreateAccount(ctx, manager.ID, "label", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	issPub, issPriv, err := newKey()
+	if err != nil {
+		return nil, err
+	}
+	issuer, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv}, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	asset, err := Create(ctx, issuer.ID, "label", map[string]interface{}{})
+	if err != nil {
+		return nil, err
+	}
+
+	info := &clientInfo{
+		asset:          asset,
+		acctA:          acctA,
+		acctB:          acctB,
+		privKeyIssuer:  issPriv,
+		privKeyManager: manPriv,
+	}
+	return info, nil
+}
+
+func issue(ctx context.Context, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
+	assetID := info.asset.Hash.String()
+	issueOuts := []*Output{{
+		AssetID:   assetID,
+		AccountID: destAcctID,
+		Amount:    amount,
+	}}
+	issueTx, err := Issue(ctx, assetID, issueOuts)
+	if err != nil {
+		return nil, err
+	}
+	err = signTx(issueTx, info.privKeyIssuer)
+	if err != nil {
+		return nil, err
+	}
+	return FinalizeTx(ctx, issueTx)
+}
+
+func transfer(ctx context.Context, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
+	inputs := []utxodb.Input{{
+		AssetID:   info.asset.Hash.String(),
+		AccountID: srcAcctID,
+		Amount:    amount,
+	}}
+	outputs := []*Output{{
+		AssetID:   info.asset.Hash.String(),
+		AccountID: destAcctID,
+		Amount:    amount,
+	}}
+	xferTx, err := Build(ctx, nil, inputs, outputs, time.Minute)
+	if err != nil {
+		return nil, err
+	}
+	err = signTx(xferTx, info.privKeyManager)
+	if err != nil {
+		return nil, err
+	}
+	return FinalizeTx(ctx, xferTx)
 }
