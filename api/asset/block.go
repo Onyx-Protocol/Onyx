@@ -229,7 +229,7 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "pool update dbtx begin")
 	}
-	defer dbtx.Rollback()
+	defer dbtx.Rollback(ctx)
 
 	txInBlock := make(map[bc.Hash]bool)
 	for _, tx := range block.Transactions {
@@ -295,14 +295,14 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 
 	// Delete pool_txs
 	const txq = `DELETE FROM pool_txs WHERE tx_hash IN (SELECT unnest($1::text[]))`
-	_, err = pg.FromContext(ctx).Exec(txq, pg.Strings(deleteTxHashes))
+	_, err = pg.FromContext(ctx).Exec(ctx, txq, pg.Strings(deleteTxHashes))
 	if err != nil {
 		return nil, errors.Wrap(err, "delete from pool_txs")
 	}
 
 	// Delete pool outputs
 	const outq = `DELETE FROM utxos WHERE NOT confirmed AND tx_hash IN (SELECT unnest($1::text[]))`
-	_, err = pg.FromContext(ctx).Exec(outq, pg.Strings(deleteTxHashes))
+	_, err = pg.FromContext(ctx).Exec(ctx, outq, pg.Strings(deleteTxHashes))
 	if err != nil {
 		return nil, errors.Wrap(err, "delete from utxos")
 	}
@@ -314,7 +314,7 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 			SELECT unnest($1::text[]), unnest($2::integer[])
 		)
 	`
-	_, err = pg.FromContext(ctx).Exec(inq, pg.Strings(deleteInputTxHashes), pg.Uint32s(deleteInputTxIndexes))
+	_, err = pg.FromContext(ctx).Exec(ctx, inq, pg.Strings(deleteInputTxHashes), pg.Uint32s(deleteInputTxIndexes))
 	if err != nil {
 		return nil, errors.Wrap(err, "delete from pool_inputs")
 	}
@@ -329,7 +329,7 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 		return nil, errors.Wrap(err, "undo pool issuances")
 	}
 
-	err = dbtx.Commit()
+	err = dbtx.Commit(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "pool update dbtx commit")
 	}
@@ -442,7 +442,7 @@ func loadAccountInfo(ctx context.Context, outs []*txdb.Output) error {
 		FROM addresses
 		WHERE address IN (SELECT unnest($1::text[]))
 	`
-	rows, err := pg.FromContext(ctx).Query(addrq, pg.Strings(addrs))
+	rows, err := pg.FromContext(ctx).Query(ctx, addrq, pg.Strings(addrs))
 	if err != nil {
 		return errors.Wrap(err, "addresses select query")
 	}
@@ -473,7 +473,7 @@ func loadAccountInfo(ctx context.Context, outs []*txdb.Output) error {
 		FROM utxos
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	rows, err = pg.FromContext(ctx).Query(utxoq, pg.Strings(hashes), pg.Uint32s(indexes))
+	rows, err = pg.FromContext(ctx).Query(ctx, utxoq, pg.Strings(hashes), pg.Uint32s(indexes))
 	if err != nil {
 		return errors.Wrap(err, "utxos select query")
 	}

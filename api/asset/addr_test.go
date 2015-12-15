@@ -6,10 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"chain/api/appdb"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/fedchain-sandbox/hdkey"
 )
@@ -18,11 +15,10 @@ var dummyXPub, _ = hdkey.NewXKey("xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvH
 
 func TestCreateAddress(t *testing.T) {
 	t0 := time.Now()
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	managerNode, err := appdb.InsertManagerNode(ctx, "proj-id-0", "foo", []*hdkey.XKey{dummyXPub}, nil, 0, 1)
 	if err != nil {

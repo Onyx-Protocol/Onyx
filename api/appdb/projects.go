@@ -43,7 +43,7 @@ func CreateProject(ctx context.Context, name string, userID string) (*Project, e
 		q  = `INSERT INTO projects (name) VALUES ($1) RETURNING id`
 		id string
 	)
-	err := pg.FromContext(ctx).QueryRow(q, name).Scan(&id)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, name).Scan(&id)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert query")
 	}
@@ -66,7 +66,7 @@ func ListProjects(ctx context.Context, userID string) ([]*Project, error) {
 		WHERE m.user_id = $1
 		ORDER BY p.name
 	`
-	rows, err := pg.FromContext(ctx).Query(q, userID)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, userID)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -95,7 +95,7 @@ func GetProject(ctx context.Context, projID string) (*Project, error) {
 		q    = `SELECT name FROM projects WHERE id = $1`
 		name string
 	)
-	err := pg.FromContext(ctx).QueryRow(q, projID).Scan(&name)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, projID).Scan(&name)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "project id: %v", projID)
 	}
@@ -110,7 +110,7 @@ func GetProject(ctx context.Context, projID string) (*Project, error) {
 // exist, an error with pg.ErrUserInputNotFound as the root is returned.
 func UpdateProject(ctx context.Context, projID, name string) error {
 	q := `UPDATE projects SET name = $1 WHERE id = $2 RETURNING 1`
-	err := pg.FromContext(ctx).QueryRow(q, name, projID).Scan(new(int))
+	err := pg.FromContext(ctx).QueryRow(ctx, q, name, projID).Scan(new(int))
 	if err == sql.ErrNoRows {
 		return errors.WithDetailf(pg.ErrUserInputNotFound, "project ID: %v", projID)
 	}
@@ -131,7 +131,7 @@ func ListMembers(ctx context.Context, projID string) ([]*Member, error) {
 		WHERE m.project_id = $1
 		ORDER BY u.email
 	`
-	rows, err := pg.FromContext(ctx).Query(q, projID)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, projID)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -166,7 +166,7 @@ func AddMember(ctx context.Context, projID, userID, role string) error {
 		INSERT INTO members (project_id, user_id, role)
 		SELECT $1, $2, $3
 	`
-	_, err := pg.FromContext(ctx).Exec(q, projID, userID, role)
+	_, err := pg.FromContext(ctx).Exec(ctx, q, projID, userID, role)
 	if pg.IsUniqueViolation(err) {
 		return ErrAlreadyMember
 	}
@@ -191,7 +191,7 @@ func UpdateMember(ctx context.Context, projID, userID, role string) error {
 		WHERE project_id = $2 AND user_id = $3
 		RETURNING 1
 	`
-	err := pg.FromContext(ctx).QueryRow(q, role, projID, userID).Scan(new(int))
+	err := pg.FromContext(ctx).QueryRow(ctx, q, role, projID, userID).Scan(new(int))
 	if err == sql.ErrNoRows {
 		return errors.WithDetailf(
 			pg.ErrUserInputNotFound,
@@ -210,7 +210,7 @@ func RemoveMember(ctx context.Context, projID string, userID string) error {
 		DELETE FROM members
 		WHERE project_id = $1 AND user_id = $2
 	`
-	_, err := pg.FromContext(ctx).Exec(q, projID, userID)
+	_, err := pg.FromContext(ctx).Exec(ctx, q, projID, userID)
 	if err != nil {
 		return errors.Wrap(err, "delete query")
 	}
@@ -233,7 +233,7 @@ func IsMember(ctx context.Context, userID string, project string) (bool, error) 
 		SELECT COUNT(*)=1 FROM members WHERE user_id=$1 AND project_id=$2
 	`
 	var isMember bool
-	row := pg.FromContext(ctx).QueryRow(q, userID, project)
+	row := pg.FromContext(ctx).QueryRow(ctx, q, userID, project)
 	err := row.Scan(&isMember)
 	return isMember, errors.Wrap(err)
 }
@@ -245,7 +245,7 @@ func IsAdmin(ctx context.Context, userID string, project string) (bool, error) {
 		WHERE user_id=$1 AND project_id=$2 AND role='admin'
 	`
 	var isAdmin bool
-	row := pg.FromContext(ctx).QueryRow(q, userID, project)
+	row := pg.FromContext(ctx).QueryRow(ctx, q, userID, project)
 	err := row.Scan(&isAdmin)
 	return isAdmin, errors.Wrap(err)
 }
@@ -257,7 +257,7 @@ func ProjectByManager(ctx context.Context, managerID string) (string, error) {
 		FROM manager_nodes WHERE id=$1
 	`
 	var project string
-	err := pg.FromContext(ctx).QueryRow(q, managerID).Scan(&project)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, managerID).Scan(&project)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
@@ -272,7 +272,7 @@ func ProjectsByAccount(ctx context.Context, accountIDs ...string) ([]string, err
 		WHERE acc.id=ANY($1)
 	`
 	var projects []string
-	err := pg.FromContext(ctx).QueryRow(q, pg.Strings(accountIDs)).Scan((*pg.Strings)(&projects))
+	err := pg.FromContext(ctx).QueryRow(ctx, q, pg.Strings(accountIDs)).Scan((*pg.Strings)(&projects))
 	return projects, errors.Wrap(err)
 }
 
@@ -283,7 +283,7 @@ func ProjectByIssuer(ctx context.Context, issuerID string) (string, error) {
 		FROM issuer_nodes WHERE id=$1
 	`
 	var project string
-	err := pg.FromContext(ctx).QueryRow(q, issuerID).Scan(&project)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, issuerID).Scan(&project)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
@@ -298,7 +298,7 @@ func ProjectByAsset(ctx context.Context, assetID string) (string, error) {
 		WHERE a.id=$1
 	`
 	var project string
-	err := pg.FromContext(ctx).QueryRow(q, assetID).Scan(&project)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, assetID).Scan(&project)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}

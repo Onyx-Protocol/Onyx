@@ -21,14 +21,14 @@ func createUserFromInvitation(ctx context.Context, invID string, in struct{ Pass
 	if err != nil {
 		return nil, err
 	}
-	defer dbtx.Rollback()
+	defer dbtx.Rollback(ctx)
 
 	user, err := appdb.CreateUserFromInvitation(ctx, invID, in.Password)
 	if err != nil {
 		return nil, err
 	}
 
-	err = dbtx.Commit()
+	err = dbtx.Commit(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -42,14 +42,14 @@ func addMemberFromInvitation(ctx context.Context, invID string) error {
 	if err != nil {
 		return err
 	}
-	defer dbtx.Rollback()
+	defer dbtx.Rollback(ctx)
 
 	err = appdb.AddMemberFromInvitation(ctx, invID)
 	if err != nil {
 		return err
 	}
 
-	err = dbtx.Commit()
+	err = dbtx.Commit(ctx)
 	if err != nil {
 		return err
 	}

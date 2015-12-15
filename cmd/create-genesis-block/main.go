@@ -1,12 +1,14 @@
 package main
 
 import (
-	"database/sql"
 	"log"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"chain/api/appdb"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/env"
 	"chain/fedchain/bc"
 )
@@ -25,7 +27,8 @@ func main() {
 	if err != nil {
 		log.Fatalln("error:", err)
 	}
-	appdb.Init(db)
+	ctx := pg.NewContext(context.Background(), db)
+	appdb.Init(ctx, db)
 
 	b := &bc.Block{
 		BlockHeader: bc.BlockHeader{
@@ -38,7 +41,7 @@ func main() {
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES ($1, $2, $3, $4)
 	`
-	_, err = db.Exec(q, b.Hash(), b.Height, b, &b.BlockHeader)
+	_, err = db.Exec(ctx, q, b.Hash(), b.Height, b, &b.BlockHeader)
 	if err != nil {
 		log.Fatalln("error:", err)
 	}

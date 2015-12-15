@@ -6,7 +6,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
@@ -89,9 +88,8 @@ func TestView(t *testing.T) {
 }
 
 func TestViewForPrevoutsIgnoreIssuance(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
 
 	txs := []*bc.Tx{bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{{

@@ -82,9 +82,8 @@ func TestWriteIssuerTx(t *testing.T) {
 }
 
 func TestManagerTxs(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleTxFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleTxFixture)
+	defer pgtest.Finish(ctx)
 
 	txs, last, err := ManagerTxs(ctx, "mn0", "mtx2", 1) // mtx2 would be a newer item than mtx1
 	if err != nil {
@@ -105,15 +104,14 @@ func TestManagerTxs(t *testing.T) {
 }
 
 func TestManagerTxsLimit(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleTxFixture, `
+	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleTxFixture, `
 		INSERT INTO manager_txs (id, manager_node_id, data, txid)
 			VALUES
 				('mtx1', 'mn0', '{"outputs":"coop"}', 'tx1'),
 				('mtx2', 'mn0', '{"outputs":"doop"}', 'tx2'),
 				('mtx3', 'mn0', '{"outputs":"foop"}', 'tx3');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	txs, last, err := ManagerTxs(ctx, "mn0", "mtx4", 2) // mtx4 would be a newer item than mtx1
 	if err != nil {
@@ -139,13 +137,12 @@ func TestManagerTxsLimit(t *testing.T) {
 }
 
 func TestAccountTxs(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleTxFixture, `
+	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleTxFixture, `
 		INSERT INTO accounts (id, manager_node_id, key_index) VALUES('acc0', 'mn0', 0);
 		INSERT INTO manager_txs_accounts VALUES ('mtx0', 'acc0');
 	`)
 
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	txs, last, err := AccountTxs(ctx, "acc0", "mtx1", 1)
 	if err != nil {
@@ -162,7 +159,7 @@ func TestAccountTxs(t *testing.T) {
 }
 
 func TestAccountTxsLimit(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleTxFixture, `
+	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleTxFixture, `
 		INSERT INTO manager_txs (id, manager_node_id, data, txid)
 			VALUES
 			('mtx1', 'mn0', '{"outputs":"coop"}', 'tx1'),
@@ -175,8 +172,7 @@ func TestAccountTxsLimit(t *testing.T) {
 			('mtx2', 'acc0'),
 			('mtx3', 'acc0');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	txs, last, err := AccountTxs(ctx, "acc0", "mtx4", 2) // mtx4 would be a newer item than mtx1
 	if err != nil {
@@ -202,7 +198,7 @@ func TestAccountTxsLimit(t *testing.T) {
 }
 
 func TestIssuerTxs(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, writeActivityFix, `
+	ctx := pgtest.NewContext(t, writeActivityFix, `
 		INSERT INTO issuer_txs
 			(id, issuer_node_id, data, txid)
 		VALUES
@@ -210,8 +206,7 @@ func TestIssuerTxs(t *testing.T) {
 			('itx-id-1', 'in-id-1', '{"transaction_id": "tx-id-1"}', 'tx-id-1'),
 			('itx-id-2', 'in-id-0', '{"transaction_id": "tx-id-2"}', 'tx-id-2');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	examples := []struct {
 		inodeID  string
@@ -254,7 +249,7 @@ func TestIssuerTxs(t *testing.T) {
 }
 
 func TestAssetTxs(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, writeActivityFix, `
+	ctx := pgtest.NewContext(t, writeActivityFix, `
 		INSERT INTO issuer_txs
 			(id, issuer_node_id, data, txid)
 		VALUES
@@ -269,8 +264,7 @@ func TestAssetTxs(t *testing.T) {
 			('itx-id-1', 'asset-id-1'),
 			('itx-id-2', 'asset-id-0');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	stringsToRawJSON := func(strs ...string) []*json.RawMessage {
 		var res []*json.RawMessage
@@ -317,9 +311,8 @@ func TestAssetTxs(t *testing.T) {
 }
 
 func TestManagerTx(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleTxFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleTxFixture)
+	defer pgtest.Finish(ctx)
 
 	txs, err := ManagerTx(ctx, "mn0", "tx0")
 	if err != nil {

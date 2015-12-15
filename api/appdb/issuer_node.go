@@ -33,7 +33,7 @@ func InsertIssuerNode(ctx context.Context, projID, label string, keys, gennedKey
 		RETURNING id
 	`
 	var id string
-	err := pg.FromContext(ctx).QueryRow(q,
+	err := pg.FromContext(ctx).QueryRow(ctx, q,
 		label,
 		projID,
 		pg.Strings(keysToStrings(keys)),
@@ -73,7 +73,7 @@ func NextAsset(ctx context.Context, inodeID string) (asset *Asset, sigsRequired 
 		xpubs   []string
 		sigsReq int
 	)
-	err = pg.FromContext(ctx).QueryRow(q, inodeID).Scan(
+	err = pg.FromContext(ctx).QueryRow(ctx, q, inodeID).Scan(
 		(*pg.Strings)(&xpubs),
 		(*pg.Uint32s)(&asset.INIndex),
 		(*pg.Uint32s)(&asset.AIndex),
@@ -103,7 +103,7 @@ func ListIssuerNodes(ctx context.Context, projID string) ([]*IssuerNode, error) 
 		WHERE project_id = $1
 		ORDER BY id
 	`
-	rows, err := pg.FromContext(ctx).Query(q, projID)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, projID)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -135,7 +135,7 @@ func GetIssuerNode(ctx context.Context, groupID string) (*IssuerNode, error) {
 		pubKeyStrs  []string
 		privKeyStrs []string
 	)
-	err := pg.FromContext(ctx).QueryRow(q, groupID).Scan(
+	err := pg.FromContext(ctx).QueryRow(ctx, q, groupID).Scan(
 		&label,
 		&bc,
 		(*pg.Strings)(&pubKeyStrs),
@@ -174,7 +174,7 @@ func UpdateIssuerNode(ctx context.Context, inodeID string, label *string) error 
 	}
 	const q = `UPDATE issuer_nodes SET label = $2 WHERE id = $1`
 	db := pg.FromContext(ctx)
-	_, err := db.Exec(q, inodeID, *label)
+	_, err := db.Exec(ctx, q, inodeID, *label)
 	return errors.Wrap(err, "update query")
 }
 
@@ -184,7 +184,7 @@ func UpdateIssuerNode(ctx context.Context, inodeID string, label *string) error 
 func DeleteIssuerNode(ctx context.Context, inodeID string) error {
 	const q = `DELETE FROM issuer_nodes WHERE id = $1`
 	db := pg.FromContext(ctx)
-	result, err := db.Exec(q, inodeID)
+	result, err := db.Exec(ctx, q, inodeID)
 	if err != nil {
 		if pg.IsForeignKeyViolation(err) {
 			return errors.WithDetailf(ErrCannotDelete, "issuer node ID %v", inodeID)

@@ -15,14 +15,13 @@ import (
 // Establish a context object with a new db transaction in which to
 // run the given callback function.
 func withContext(tb testing.TB, sql string, fn func(context.Context)) {
-	var dbtx pg.Tx
+	var ctx context.Context
 	if sql == "" {
-		dbtx = pgtest.TxWithSQL(tb)
+		ctx = pgtest.NewContext(tb)
 	} else {
-		dbtx = pgtest.TxWithSQL(tb, sql)
+		ctx = pgtest.NewContext(tb, sql)
 	}
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 	fn(ctx)
 }
 

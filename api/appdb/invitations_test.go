@@ -12,11 +12,10 @@ import (
 )
 
 func TestCreateInvitation(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	inv, err := CreateInvitation(ctx, "proj-id-0", "foo@bar.com", "developer")
 	if err != nil {
@@ -49,11 +48,10 @@ func TestCreateInvitation(t *testing.T) {
 }
 
 func TestCreateInvitationEmailWhitespace(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	inv, err := CreateInvitation(ctx, "proj-id-0", "  foo@bar.com  ", "developer")
 	if err != nil {
@@ -78,7 +76,7 @@ func TestCreateInvitationEmailWhitespace(t *testing.T) {
 }
 
 func TestCreateInvitationErrs(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO users (id, password_hash, email) VALUES
@@ -87,8 +85,7 @@ func TestCreateInvitationErrs(t *testing.T) {
 		INSERT INTO members (user_id, project_id, role) VALUES
 			('user-id-1', 'proj-id-0', 'developer');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	examples := []struct {
 		projID, email, role string
@@ -117,7 +114,7 @@ func TestCreateInvitationErrs(t *testing.T) {
 }
 
 func TestGetInvitation(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO users (id, password_hash, email) VALUES
@@ -141,8 +138,7 @@ func TestGetInvitation(t *testing.T) {
 			'developer'
 		);
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	examples := []struct {
 		id      string
@@ -212,7 +208,7 @@ func TestGetInvitation(t *testing.T) {
 }
 
 func TestCreateUserFromInvitation(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO invitations (id, project_id, email, role) VALUES (
@@ -222,8 +218,7 @@ func TestCreateUserFromInvitation(t *testing.T) {
 			'admin'
 		);
 	`)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	defer dbtx.Rollback()
+	defer pgtest.Finish(ctx)
 
 	user, err := CreateUserFromInvitation(ctx, "inv-id-0", "password")
 	if err != nil {
@@ -251,7 +246,7 @@ func TestCreateUserFromInvitation(t *testing.T) {
 }
 
 func TestCreateUserFromInvitationErrs(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO invitations (id, project_id, email, role) VALUES (
@@ -264,8 +259,7 @@ func TestCreateUserFromInvitationErrs(t *testing.T) {
 		INSERT INTO users (id, password_hash, email) VALUES
 			('user-id-0', '{}', 'foo@bar.com');
 	`)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	defer dbtx.Rollback()
+	defer pgtest.Finish(ctx)
 
 	examples := []struct {
 		id       string
@@ -296,7 +290,7 @@ func TestCreateUserFromInvitationErrs(t *testing.T) {
 }
 
 func TestAddMemberFromInvitation(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO users (id, password_hash, email) VALUES
@@ -309,8 +303,7 @@ func TestAddMemberFromInvitation(t *testing.T) {
 			'admin'
 		);
 	`)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	defer dbtx.Rollback()
+	defer pgtest.Finish(ctx)
 
 	err := AddMemberFromInvitation(ctx, "inv-id-0")
 	if err != nil {
@@ -334,7 +327,7 @@ func TestAddMemberFromInvitation(t *testing.T) {
 }
 
 func TestAddMemberFromInvitationErrs(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO invitations (id, project_id, email, role) VALUES (
@@ -344,8 +337,7 @@ func TestAddMemberFromInvitationErrs(t *testing.T) {
 			'admin'
 		);
 	`)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	defer dbtx.Rollback()
+	defer pgtest.Finish(ctx)
 
 	examples := []struct {
 		id      string
@@ -368,7 +360,7 @@ func TestAddMemberFromInvitationErrs(t *testing.T) {
 }
 
 func TestDeleteInvitation(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 
 		INSERT INTO invitations (id, project_id, email, role) VALUES (
@@ -383,8 +375,7 @@ func TestDeleteInvitation(t *testing.T) {
 			'developer'
 		);
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	err := deleteInvitation(ctx, "inv-id-0")
 	if err != nil {
@@ -425,7 +416,7 @@ func getTestInvitation(ctx context.Context, id string) (testInvitation, error) {
 		inv = testInvitation{id: id}
 	)
 
-	err := pg.FromContext(ctx).QueryRow(q, id).Scan(
+	err := pg.FromContext(ctx).QueryRow(ctx, q, id).Scan(
 		&inv.projID,
 		&inv.email,
 		&inv.role,

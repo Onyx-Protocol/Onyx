@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/database/pg"
 	"chain/fedchain-sandbox/hdkey"
 )
@@ -25,10 +27,11 @@ func TestKeyIndexSQL(t *testing.T) {
 		{0x100000000, []uint32{2, 0}},
 	}
 
+	ctx := context.Background()
 	for _, pair := range pairs {
 		var got []uint32
 
-		err := db.QueryRow(`SELECT key_index($1)`, pair.encoded).Scan((*pg.Uint32s)(&got))
+		err := db.QueryRow(ctx, `SELECT key_index($1)`, pair.encoded).Scan((*pg.Uint32s)(&got))
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 			continue
@@ -44,7 +47,7 @@ func TestKeyIndexSQL(t *testing.T) {
 
 		var got2 int64
 
-		err = db.QueryRow(`SELECT to_key_index($1::int[])`, pg.Uint32s(pair.decoded)).Scan(&got2)
+		err = db.QueryRow(ctx, `SELECT to_key_index($1::int[])`, pg.Uint32s(pair.decoded)).Scan(&got2)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 			continue

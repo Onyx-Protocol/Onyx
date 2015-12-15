@@ -64,14 +64,14 @@ func createIssuerNode(ctx context.Context, projID string, req map[string]interfa
 	if err != nil {
 		return nil, err
 	}
-	defer dbtx.Rollback()
+	defer dbtx.Rollback(ctx)
 
 	issuerNode, err = asset.CreateNode(ctx, asset.IssuerNode, projID, &cnReq)
 	if err != nil {
 		return nil, err
 	}
 
-	err = dbtx.Commit()
+	err = dbtx.Commit(ctx)
 	if err != nil {
 		return nil, err
 	}

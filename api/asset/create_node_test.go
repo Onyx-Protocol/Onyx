@@ -3,8 +3,6 @@ package asset
 import (
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"chain/api/appdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -12,11 +10,10 @@ import (
 )
 
 func TestCreateManagerNode(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	req := &CreateNodeReq{
 		Label: "foo",
@@ -39,7 +36,7 @@ func TestCreateManagerNode(t *testing.T) {
 	const checkQ = `
 		SELECT SUBSTR(generated_keys[1], 1, 4)='xprv' FROM manager_nodes LIMIT 1
 	`
-	err = dbtx.QueryRow(checkQ).Scan(&valid)
+	err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&valid)
 	if err != nil {
 		t.Fatal(err)
 	}

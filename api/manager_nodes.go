@@ -66,14 +66,14 @@ func createManagerNode(ctx context.Context, projID string, req map[string]interf
 	if err != nil {
 		return nil, err
 	}
-	defer dbtx.Rollback()
+	defer dbtx.Rollback(ctx)
 
 	managerNode, err = asset.CreateNode(ctx, asset.ManagerNode, projID, &cnReq)
 	if err != nil {
 		return nil, err
 	}
 
-	err = dbtx.Commit()
+	err = dbtx.Commit(ctx)
 	if err != nil {
 		return nil, err
 	}

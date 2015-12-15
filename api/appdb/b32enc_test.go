@@ -1,6 +1,10 @@
 package appdb
 
-import "testing"
+import (
+	"testing"
+
+	"golang.org/x/net/context"
+)
 
 // Adapted from encoding/base32.
 // See $GOROOT/src/encoding/base32/base32_test.go.
@@ -30,9 +34,10 @@ func TestB32encCrockford(t *testing.T) {
 		{"\x00\x11\x22\x33\x44\x55\x66\x77", "008J4CT4ANK7E"},
 	}
 
+	ctx := context.Background()
 	for _, test := range cases {
 		var got string
-		err := db.QueryRow(`SELECT b32enc_crockford($1)`, test.decoded).Scan(&got)
+		err := db.QueryRow(ctx, `SELECT b32enc_crockford($1)`, test.decoded).Scan(&got)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 			continue

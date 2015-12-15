@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"expvar"
 	"io"
 	"log"
@@ -20,6 +19,7 @@ import (
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/env"
 	chainlog "chain/log"
 	"chain/log/rotation"
@@ -97,15 +97,16 @@ func main() {
 		},
 	}))
 
-	pg.EnableQueryLogging(*logQueries)
-
+	sql.EnableQueryLogging(*logQueries)
 	db, err := sql.Open("schemadb", *dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 	db.SetMaxOpenConns(*maxDBConns)
 	db.SetMaxIdleConns(100)
-	appdb.Init(db)
+	ctx := context.Background()
+	ctx = pg.NewContext(ctx, db)
+	appdb.Init(ctx, db)
 
 	var h chainhttp.Handler
 	h = api.Handler(*nouserSecret)
@@ -113,13 +114,11 @@ func main() {
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}
 
-	bg := context.Background()
-	bg = pg.NewContext(bg, db)
 	if *makeBlocks {
 		admin.SetBlockInterval(blockInterval)
-		go asset.MakeBlocks(bg, blockInterval)
+		go asset.MakeBlocks(ctx, blockInterval)
 	}
-	http.Handle("/", chainhttp.ContextHandler{Context: bg, Handler: h})
+	http.Handle("/", chainhttp.ContextHandler{Context: ctx, Handler: h})
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 
 	secureheader.DefaultConfig.PermitClearLoopback = true

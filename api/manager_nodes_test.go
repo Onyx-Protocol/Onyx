@@ -3,8 +3,6 @@ package api
 import (
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"chain/api/asset"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -13,13 +11,12 @@ import (
 )
 
 func TestCreateManagerNodeBadXPub(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, testUserFixture, `
+	ctx := pgtest.NewContext(t, testUserFixture, `
 		INSERT INTO projects(id, name) VALUES ('a1', 'x');
 		INSERT INTO members (project_id, user_id, role)
 			VALUES ('a1', 'sample-user-id-0', 'admin');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 	ctx = authn.NewContext(ctx, "sample-user-id-0")
 
 	req := map[string]interface{}{
@@ -34,13 +31,12 @@ func TestCreateManagerNodeBadXPub(t *testing.T) {
 }
 
 func TestCreateManagerNode(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, testUserFixture, `
+	ctx := pgtest.NewContext(t, testUserFixture, `
 		INSERT INTO projects(id, name) VALUES ('a1', 'x');
 		INSERT INTO members (project_id, user_id, role)
 			VALUES ('a1', 'sample-user-id-0', 'admin');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 	ctx = authn.NewContext(ctx, "sample-user-id-0")
 
 	req := map[string]interface{}{
@@ -58,7 +54,7 @@ func TestCreateManagerNode(t *testing.T) {
 	var checkQ = `
 		SELECT COUNT(*) FROM manager_nodes
 	`
-	err = pg.FromContext(ctx).QueryRow(checkQ).Scan(&count)
+	err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -68,13 +64,12 @@ func TestCreateManagerNode(t *testing.T) {
 }
 
 func TestCreateManagerNodeDeprecated(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, testUserFixture, `
+	ctx := pgtest.NewContext(t, testUserFixture, `
 		INSERT INTO projects(id, name) VALUES ('a1', 'x');
 		INSERT INTO members (project_id, user_id, role)
 			VALUES ('a1', 'sample-user-id-0', 'admin');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 	ctx = authn.NewContext(ctx, "sample-user-id-0")
 
 	req := map[string]interface{}{
@@ -91,7 +86,7 @@ func TestCreateManagerNodeDeprecated(t *testing.T) {
 	var checkQ = `
 		SELECT COUNT(*) FROM manager_nodes
 	`
-	err = pg.FromContext(ctx).QueryRow(checkQ).Scan(&count)
+	err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}

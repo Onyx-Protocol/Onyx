@@ -54,7 +54,7 @@ func CreateInvitation(ctx context.Context, projID, email, role string) (*Invitat
 		JOIN members m ON u.id = m.user_id
 		WHERE lower(u.email) = lower($1) AND m.project_id = $2
 	`
-	err := pg.FromContext(ctx).QueryRow(checkq, email, projID).Scan(new(int))
+	err := pg.FromContext(ctx).QueryRow(ctx, checkq, email, projID).Scan(new(int))
 	if err == nil {
 		return nil, ErrAlreadyMember
 	}
@@ -75,7 +75,7 @@ func CreateInvitation(ctx context.Context, projID, email, role string) (*Invitat
 		INSERT INTO invitations (id, project_id, email, role)
 		VALUES ($1, $2, $3, $4)
 	`
-	_, err = pg.FromContext(ctx).Exec(insertq, id, projID, email, role)
+	_, err = pg.FromContext(ctx).Exec(ctx, insertq, id, projID, email, role)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert invitation query")
 	}
@@ -84,7 +84,7 @@ func CreateInvitation(ctx context.Context, projID, email, role string) (*Invitat
 		nameq = `SELECT name FROM projects WHERE id = $1`
 		name  string
 	)
-	err = pg.FromContext(ctx).QueryRow(nameq, projID).Scan(&name)
+	err = pg.FromContext(ctx).QueryRow(ctx, nameq, projID).Scan(&name)
 	if err != nil {
 		return nil, errors.Wrap(err, "select project name query")
 	}
@@ -116,7 +116,7 @@ func GetInvitation(ctx context.Context, invID string) (*Invitation, error) {
 		projID, projName, email, role string
 		userID                        sql.NullString
 	)
-	err := pg.FromContext(ctx).QueryRow(q, invID).Scan(
+	err := pg.FromContext(ctx).QueryRow(ctx, q, invID).Scan(
 		&projID,
 		&projName,
 		&email,
@@ -219,7 +219,7 @@ func AddMemberFromInvitation(ctx context.Context, invID string) error {
 
 func deleteInvitation(ctx context.Context, invID string) error {
 	q := `DELETE FROM invitations WHERE id = $1`
-	_, err := pg.FromContext(ctx).Exec(q, invID)
+	_, err := pg.FromContext(ctx).Exec(ctx, q, invID)
 	if err != nil {
 		return errors.Wrap(err, "delete query")
 	}

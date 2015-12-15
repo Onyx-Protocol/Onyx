@@ -9,7 +9,6 @@
 package main
 
 import (
-	"database/sql"
 	"log"
 	"os"
 
@@ -17,6 +16,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/env"
 )
 
@@ -39,8 +39,8 @@ func main() {
 		log.Fatalln("error:", err)
 	}
 
-	appdb.Init(db)
 	ctx := pg.NewContext(context.Background(), db)
+	appdb.Init(ctx, db)
 
 	u, err := appdb.CreateUser(ctx, os.Args[1], os.Args[2])
 	if err != nil {

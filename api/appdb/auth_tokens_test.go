@@ -64,7 +64,7 @@ func testGetAuthToken(ctx context.Context, id string) (*testAuthToken, error) {
 		expiresAt pq.NullTime
 		tok       = &testAuthToken{id: id}
 	)
-	err := pg.FromContext(ctx).QueryRow(q, id).Scan(&tok.secretHash, &tok.typ, &tok.userID, &expiresAt)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, id).Scan(&tok.secretHash, &tok.typ, &tok.userID, &expiresAt)
 	if err != nil {
 		return nil, err
 	}
@@ -83,9 +83,8 @@ func TestCreateAuthToken(t *testing.T) {
 		t.Log("expiresAt:", expiresAt)
 
 		func() {
-			dbtx := pgtest.TxWithSQL(t, authTokenUserFixture)
-			defer dbtx.Rollback()
-			ctx := pg.NewContext(context.Background(), dbtx)
+			ctx := pgtest.NewContext(t, authTokenUserFixture)
+			defer pgtest.Finish(ctx)
 
 			tok, err := CreateAuthToken(ctx, "sample-user-id-0", "sample-type-0", expiresAt)
 			if err != nil {
@@ -125,9 +124,8 @@ func TestCreateAuthToken(t *testing.T) {
 }
 
 func TestListAuthTokens(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, authTokenUserFixture, authTokenFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, authTokenUserFixture, authTokenFixture)
+	defer pgtest.Finish(ctx)
 
 	ts, err := time.Parse(time.RFC3339, "2000-01-01T00:00:00Z")
 	if err != nil {
@@ -195,9 +193,8 @@ func TestListAuthTokens(t *testing.T) {
 }
 
 func TestDeleteAuthToken(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, authTokenUserFixture, authTokenFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, authTokenUserFixture, authTokenFixture)
+	defer pgtest.Finish(ctx)
 
 	if !authTokenExists(ctx, "sample-token-id-0") {
 		t.Error("initial check: token does not exist")
@@ -219,7 +216,7 @@ func TestDeleteAuthToken(t *testing.T) {
 
 func authTokenExists(ctx context.Context, id string) bool {
 	q := `SELECT 1 FROM auth_tokens WHERE id = $1`
-	err := pg.FromContext(ctx).QueryRow(q, id).Scan(new(int))
+	err := pg.FromContext(ctx).QueryRow(ctx, q, id).Scan(new(int))
 	if err == sql.ErrNoRows {
 		return false
 	}

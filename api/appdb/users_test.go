@@ -20,7 +20,7 @@ func getUserByCreds(ctx context.Context, email, password string) (*User, error) 
 		id    string
 		phash []byte
 	)
-	err := pg.FromContext(ctx).QueryRow(q, email).Scan(&id, &phash)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, email).Scan(&id, &phash)
 	if err != nil {
 		return nil, errors.Wrap(err, "user lookup")
 	}
@@ -33,9 +33,8 @@ func getUserByCreds(ctx context.Context, email, password string) (*User, error) 
 }
 
 func TestCreateUser(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, "")
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, "")
+	defer pgtest.Finish(ctx)
 
 	u1, err := CreateUser(ctx, "foo@bar.com", "abracadabra")
 	if err != nil {
@@ -68,9 +67,8 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestCreateUserPreserveCase(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, "")
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, "")
+	defer pgtest.Finish(ctx)
 
 	u1, err := CreateUser(ctx, "Foo@Bar.com", "abracadabra")
 	if err != nil {
@@ -86,7 +84,7 @@ func TestCreateUserPreserveCase(t *testing.T) {
 		email string
 		q     = "SELECT email FROM users where lower(email) = 'foo@bar.com'"
 	)
-	err = dbtx.QueryRow(q).Scan(&email)
+	err = pg.FromContext(ctx).QueryRow(ctx, q).Scan(&email)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,10 +105,8 @@ func TestCreateUserNoDupes(t *testing.T) {
 		t.Log("Example", ex.email0, ex.email1)
 
 		func() {
-			dbtx := pgtest.TxWithSQL(t, "")
-			defer dbtx.Rollback()
-
-			ctx := pg.NewContext(context.Background(), dbtx)
+			ctx := pgtest.NewContext(t, "")
+			defer pgtest.Finish(ctx)
 
 			_, err := CreateUser(ctx, ex.email0, "abracadabra")
 			if err != nil {
@@ -141,9 +137,8 @@ func TestCreateUserInvalid(t *testing.T) {
 
 	for _, test := range cases {
 		func() {
-			dbtx := pgtest.TxWithSQL(t)
-			defer dbtx.Rollback()
-			ctx := pg.NewContext(context.Background(), dbtx)
+			ctx := pgtest.NewContext(t)
+			defer pgtest.Finish(ctx)
 
 			_, err := CreateUser(ctx, test.email, test.password)
 			if err == nil {
@@ -154,9 +149,8 @@ func TestCreateUserInvalid(t *testing.T) {
 }
 
 func TestAuthenticateUserCreds(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, "")
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, "")
+	defer pgtest.Finish(ctx)
 
 	u, err := CreateUser(ctx, "foo@bar.com", "abracadabra")
 	if err != nil {
@@ -203,12 +197,11 @@ func TestAuthenticateUserCreds(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO users (id, email, password_hash)
 		VALUES ('user-id-0', 'foo@bar.com', 'password-does-not-matter');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	examples := []struct {
 		id       string
@@ -235,12 +228,11 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetUserByEmail(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO users (id, email, password_hash)
 		VALUES ('user-id-0', 'foo@bar.com', 'password-does-not-matter');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	examples := []struct {
 		email    string
@@ -303,9 +295,8 @@ func TestUpdateUserEmail(t *testing.T) {
 		func() {
 			t.Log("Example", i)
 
-			dbtx := pgtest.TxWithSQL(t, fix)
-			defer dbtx.Rollback()
-			ctx := pg.NewContext(context.Background(), dbtx)
+			ctx := pgtest.NewContext(t, fix)
+			defer pgtest.Finish(ctx)
 
 			err := UpdateUserEmail(ctx, "user-id-0", ex.password, ex.email)
 			if errors.Root(err) != ex.want {
@@ -346,9 +337,8 @@ func TestUpdateUserPassword(t *testing.T) {
 		func() {
 			t.Log("Example", i)
 
-			dbtx := pgtest.TxWithSQL(t, fix)
-			defer dbtx.Rollback()
-			ctx := pg.NewContext(context.Background(), dbtx)
+			ctx := pgtest.NewContext(t, fix)
+			defer pgtest.Finish(ctx)
 
 			err := UpdateUserPassword(ctx, "user-id-0", ex.password, ex.newpass)
 			if errors.Root(err) != ex.want {
@@ -366,12 +356,11 @@ func TestUpdateUserPassword(t *testing.T) {
 }
 
 func TestPasswordResetFlow(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO users (id, email, password_hash)
 		VALUES ('user-id-0', 'foo@bar.com', '{}');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	secret, err := StartPasswordReset(ctx, "foo@bar.com")
 	if err != nil {
@@ -509,9 +498,8 @@ func TestFinishPasswordResetErrs(t *testing.T) {
 		t.Logf("Example: %s:%s", ex.email, ex.secret)
 
 		func() {
-			dbtx := pgtest.TxWithSQL(t, fix)
-			defer dbtx.Rollback()
-			ctx := pg.NewContext(context.Background(), dbtx)
+			ctx := pgtest.NewContext(t, fix)
+			defer pgtest.Finish(ctx)
 
 			gotErr := FinishPasswordReset(ctx, ex.email, ex.secret, ex.newpass)
 			if errors.Root(gotErr) != ex.wantErr {

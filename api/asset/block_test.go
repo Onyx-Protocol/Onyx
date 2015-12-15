@@ -236,7 +236,7 @@ func dumpState(ctx context.Context, t *testing.T) {
 }
 
 func dumpTab(ctx context.Context, t *testing.T, q string) {
-	rows, err := pg.FromContext(ctx).Query(q)
+	rows, err := pg.FromContext(ctx).Query(ctx, q)
 	if err != nil {
 		t.Fatal(err)
 	}

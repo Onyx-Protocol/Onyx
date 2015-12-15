@@ -6,9 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/net/context"
-
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/fedchain-sandbox/hdkey"
 )
@@ -30,9 +27,8 @@ const accountFixture = `
 `
 
 func TestAddressLoadNextIndex(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, accountFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, sampleProjectFixture, accountFixture)
+	defer pgtest.Finish(ctx)
 
 	exp := time.Now().Add(5 * time.Minute)
 	addr := &Address{
@@ -67,9 +63,8 @@ func TestAddressLoadNextIndex(t *testing.T) {
 
 func TestAddressInsert(t *testing.T) {
 	t0 := time.Now()
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, accountFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, sampleProjectFixture, accountFixture)
+	defer pgtest.Finish(ctx)
 
 	addr := &Address{
 		AccountID:        "acc1",

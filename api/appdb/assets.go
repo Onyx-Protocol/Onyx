@@ -72,7 +72,7 @@ func AssetByID(ctx context.Context, hash bc.AssetID) (*Asset, error) {
 		a     = &Asset{Hash: hash}
 	)
 
-	err := pg.FromContext(ctx).QueryRow(q, hash.String()).Scan(
+	err := pg.FromContext(ctx).QueryRow(ctx, q, hash.String()).Scan(
 		(*pg.Strings)(&xpubs),
 		&a.RedeemScript,
 		&a.IssuerNodeID,
@@ -107,7 +107,7 @@ func InsertAsset(ctx context.Context, asset *Asset) error {
 		INSERT INTO issuance_totals (asset_id) TABLE newasset;
 	`
 
-	_, err := pg.FromContext(ctx).Exec(q,
+	_, err := pg.FromContext(ctx).Exec(ctx, q,
 		asset.Hash.String(),
 		asset.IssuerNodeID,
 		pg.Uint32s(asset.AIndex),
@@ -132,7 +132,7 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 		ORDER BY sort_id DESC
 		LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(q, inodeID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, inodeID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "select query")
 	}
@@ -168,7 +168,7 @@ func GetAsset(ctx context.Context, assetID string) (*AssetResponse, error) {
 	`
 	a := new(AssetResponse)
 
-	err := pg.FromContext(ctx).QueryRow(q, assetID).Scan(
+	err := pg.FromContext(ctx).QueryRow(ctx, q, assetID).Scan(
 		&a.ID, &a.Label, &a.Circulation.Confirmed, &a.Circulation.Total,
 	)
 	if err == sql.ErrNoRows {
@@ -184,7 +184,7 @@ func UpdateAsset(ctx context.Context, assetID string, label *string) error {
 	}
 	const q = `UPDATE assets SET label = $2 WHERE id = $1`
 	db := pg.FromContext(ctx)
-	_, err := db.Exec(q, assetID, *label)
+	_, err := db.Exec(ctx, q, assetID, *label)
 	return errors.Wrap(err, "update query")
 }
 
@@ -199,7 +199,7 @@ func DeleteAsset(ctx context.Context, assetID string) error {
 		DELETE FROM assets WHERE id IN (TABLE deleted)
 	`
 	db := pg.FromContext(ctx)
-	result, err := db.Exec(q, assetID)
+	result, err := db.Exec(ctx, q, assetID)
 	if err != nil {
 		return errors.Wrap(err, "delete query")
 	}
@@ -212,7 +212,7 @@ func DeleteAsset(ctx context.Context, assetID string) error {
 		// assets-issued case.
 		const q2 = `SELECT issued FROM assets WHERE id = $1`
 		var issued int64
-		err = db.QueryRow(q2, assetID).Scan(&issued)
+		err = db.QueryRow(ctx, q2, assetID).Scan(&issued)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return errors.WithDetailf(pg.ErrUserInputNotFound, "asset id=%v", assetID)
@@ -259,7 +259,7 @@ func UpdateIssuances(ctx context.Context, deltas map[string]int64, confirmed boo
 		) AS updates
 		WHERE issuance_totals.asset_id = updates.asset_id
 	`
-	_, err := pg.FromContext(ctx).Exec(q, pg.Strings(assetIDs), pg.Int64s(amounts))
+	_, err := pg.FromContext(ctx).Exec(ctx, q, pg.Strings(assetIDs), pg.Int64s(amounts))
 	return errors.Wrap(err)
 }
 
@@ -327,7 +327,7 @@ func AssetBalance(ctx context.Context, abq *AssetBalQuery) ([]*Balance, string, 
 		ORDER BY asset_id ASC
 	` + limitQ
 
-	rows, err := pg.FromContext(ctx).Query(q, params...)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, params...)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "balance query")
 	}

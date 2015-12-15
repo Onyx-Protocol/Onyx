@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	"golang.org/x/net/context"
+
 	"chain/api/appdb"
 	"chain/database/pg/pgtest"
 )
@@ -14,8 +16,9 @@ func init() {
 		u = s
 	}
 
-	db := pgtest.Open(u, "apitest", "appdb/schema.sql")
-	err := appdb.Init(db)
+	ctx := context.Background()
+	db := pgtest.Open(ctx, u, "apitest", "appdb/schema.sql")
+	err := appdb.Init(ctx, db)
 	if err != nil {
 		log.Fatal(err)
 	}

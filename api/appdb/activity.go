@@ -1,7 +1,6 @@
 package appdb
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -10,6 +9,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/fedchain-sandbox/txscript"
 	"chain/fedchain/bc"
@@ -128,7 +128,7 @@ func ManagerNodeActivity(ctx context.Context, managerNodeID string, prev string,
 		ORDER BY id DESC LIMIT $3
 	`
 
-	rows, err := pg.FromContext(ctx).Query(q, managerNodeID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, managerNodeID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "query")
 	}
@@ -147,7 +147,7 @@ func AccountActivity(ctx context.Context, accountID string, prev string, limit i
 		ORDER BY a.id DESC LIMIT $3
 	`
 
-	rows, err := pg.FromContext(ctx).Query(q, accountID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, accountID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "query")
 	}
@@ -162,7 +162,7 @@ func IssuerNodeActivity(ctx context.Context, inodeID string, prev string, limit 
 		WHERE issuer_node_id = $1 AND (($2 = '') OR (id < $2))
 		ORDER BY id DESC LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(q, inodeID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, inodeID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "query")
 	}
@@ -180,7 +180,7 @@ func AssetActivity(ctx context.Context, assetID string, prev string, limit int) 
 		WHERE j.asset_id = $1 AND (($2 = '') OR (ia.id < $2))
 		ORDER BY ia.id DESC LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(q, assetID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, assetID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "query")
 	}
@@ -216,7 +216,7 @@ func ManagerNodeTxActivity(ctx context.Context, managerNodeID, txID string) (*js
 	`
 
 	var a []byte
-	err := pg.FromContext(ctx).QueryRow(q, managerNodeID, txID).Scan(&a)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, managerNodeID, txID).Scan(&a)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "transaction id: %v", txID)
 	}
@@ -331,7 +331,7 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 			FROM utxos
 			WHERE (tx_hash, index) IN (TABLE outpoints)
 	`
-	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(hashes), pg.Uint32s(indexes))
+	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(hashes), pg.Uint32s(indexes))
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "select query")
 	}
@@ -406,7 +406,7 @@ func markChangeOuts(ctx context.Context, utxos []*ActUTXO, outIsChange map[int]b
 		WHERE address IN (SELECT unnest($1::text[]))
 		AND is_change = true
 	`
-	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(unknownAddrs))
+	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(unknownAddrs))
 	if err != nil {
 		return errors.Wrap(err, "select query")
 	}
@@ -476,7 +476,7 @@ func GetActAssets(ctx context.Context, assetIDs []string) ([]*ActAsset, error) {
 		WHERE a.id = ANY($1)
 		ORDER BY a.id
 	`
-	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(assetIDs))
+	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(assetIDs))
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -507,7 +507,7 @@ func GetActAccounts(ctx context.Context, accountIDs []string) ([]*ActAccount, er
 		WHERE acc.id = ANY($1)
 		ORDER BY acc.id
 	`
-	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(accountIDs))
+	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(accountIDs))
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -693,7 +693,7 @@ func writeManagerNodeActivity(ctx context.Context, managerNodeID, txHash string,
 		RETURNING id
 	`
 	var id string
-	err := pg.FromContext(ctx).QueryRow(aq, managerNodeID, txHash, data).Scan(&id)
+	err := pg.FromContext(ctx).QueryRow(ctx, aq, managerNodeID, txHash, data).Scan(&id)
 	if err != nil {
 		return errors.Wrap(err, "insert activity")
 	}
@@ -702,7 +702,7 @@ func writeManagerNodeActivity(ctx context.Context, managerNodeID, txHash string,
 		INSERT INTO activity_accounts (activity_id, account_id)
 		VALUES ($1, unnest($2::text[]))
 	`
-	_, err = pg.FromContext(ctx).Exec(accountq, id, pg.Strings(accountIDs))
+	_, err = pg.FromContext(ctx).Exec(ctx, accountq, id, pg.Strings(accountIDs))
 	if err != nil {
 		return errors.Wrap(err, "insert activity for account")
 	}
@@ -717,7 +717,7 @@ func writeIssuanceActivity(ctx context.Context, a *ActAsset, txHash string, data
 		RETURNING id
 	`
 	var id string
-	err := pg.FromContext(ctx).QueryRow(iaq, a.IssuerNodeID, txHash, data).Scan(&id)
+	err := pg.FromContext(ctx).QueryRow(ctx, iaq, a.IssuerNodeID, txHash, data).Scan(&id)
 	if err != nil {
 		return errors.Wrap(err, "insert issuance activity")
 	}
@@ -726,7 +726,7 @@ func writeIssuanceActivity(ctx context.Context, a *ActAsset, txHash string, data
 		INSERT INTO issuance_activity_assets (issuance_activity_id, asset_id)
 		VALUES ($1, $2)
 	`
-	_, err = pg.FromContext(ctx).Exec(assetq, id, a.ID)
+	_, err = pg.FromContext(ctx).Exec(ctx, assetq, id, a.ID)
 	if err != nil {
 		return errors.Wrap(err, "insert issuance activity for asset")
 	}

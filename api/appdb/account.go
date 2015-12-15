@@ -67,7 +67,7 @@ func CreateAccount(ctx context.Context, managerNodeID, label string, keys []stri
 			VALUES ($1, (TABLE incr), $2, $3)
 			RETURNING id, key_index(key_index)
 		`
-		err := pg.FromContext(ctx).QueryRow(q, managerNodeID, label, pg.Strings(keys)).Scan(
+		err := pg.FromContext(ctx).QueryRow(ctx, q, managerNodeID, label, pg.Strings(keys)).Scan(
 			&account.ID,
 			(*pg.Uint32s)(&account.Index),
 		)
@@ -98,7 +98,7 @@ func ListAccounts(ctx context.Context, managerNodeID string, prev string, limit 
 		WHERE manager_node_id = $1 AND ($2='' OR id<$2)
 		ORDER BY id DESC LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(q, managerNodeID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, managerNodeID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "select query")
 	}
@@ -137,7 +137,7 @@ func GetAccount(ctx context.Context, accountID string) (*Account, error) {
 		WHERE id = $1
 	`
 	a := &Account{ID: accountID}
-	err := pg.FromContext(ctx).QueryRow(q, accountID).Scan(&a.Label, (*pg.Uint32s)(&a.Index))
+	err := pg.FromContext(ctx).QueryRow(ctx, q, accountID).Scan(&a.Label, (*pg.Uint32s)(&a.Index))
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
 	}
@@ -155,7 +155,7 @@ func UpdateAccount(ctx context.Context, accountID string, label *string) error {
 	}
 	const q = `UPDATE accounts SET label = $2 WHERE id = $1`
 	db := pg.FromContext(ctx)
-	_, err := db.Exec(q, accountID, *label)
+	_, err := db.Exec(ctx, q, accountID, *label)
 	return errors.Wrap(err, "update query")
 }
 
@@ -165,7 +165,7 @@ func UpdateAccount(ctx context.Context, accountID string, label *string) error {
 func DeleteAccount(ctx context.Context, accountID string) error {
 	const q = `DELETE FROM accounts WHERE id = $1`
 	db := pg.FromContext(ctx)
-	result, err := db.Exec(q, accountID)
+	result, err := db.Exec(ctx, q, accountID)
 	if err != nil {
 		if pg.IsForeignKeyViolation(err) {
 			return errors.WithDetailf(ErrCannotDelete, "account ID %v", accountID)

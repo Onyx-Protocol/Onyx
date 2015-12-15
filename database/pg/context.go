@@ -1,24 +1,25 @@
 package pg
 
 import (
-	"database/sql"
 	"fmt"
 
 	"golang.org/x/net/context"
+
+	"chain/database/sql"
 )
 
 // DB holds methods common to the DB, Tx, and Stmt types
 // in package sql.
 type DB interface {
-	Query(string, ...interface{}) (*sql.Rows, error)
-	QueryRow(string, ...interface{}) *sql.Row
-	Exec(string, ...interface{}) (sql.Result, error)
+	Query(context.Context, string, ...interface{}) (*sql.Rows, error)
+	QueryRow(context.Context, string, ...interface{}) *sql.Row
+	Exec(context.Context, string, ...interface{}) (sql.Result, error)
 }
 
 // Committer provides methods to commit or roll back a single transaction.
 type Committer interface {
-	Commit() error
-	Rollback() error
+	Commit(context.Context) error
+	Rollback(context.Context) error
 }
 
 // Tx represents a SQL transaction.
@@ -43,15 +44,6 @@ type key int
 // unexported; clients use pg.NewContext and pg.FromContext
 // instead of using this key directly.
 var dbKey key
-
-var logQueries bool
-
-// EnableQueryLogging enables or disables log output for queries. For
-// simplicity, it is not thread-safe. It makes the most sense to set this once
-// at process boot.
-func EnableQueryLogging(e bool) {
-	logQueries = e
-}
 
 // Begin opens a new transaction on the database
 // stored in ctx. The stored database must
@@ -90,13 +82,5 @@ func NewContext(ctx context.Context, db DB) context.Context {
 // FromContext returns the DB value stored in ctx.
 // If there is no DB value, FromContext panics.
 func FromContext(ctx context.Context) DB {
-	db := ctx.Value(dbKey).(DB)
-	if !logQueries {
-		return db
-	}
-
-	if ldb, ok := db.(*Logger); ok {
-		return ldb
-	}
-	return &Logger{db, ctx}
+	return ctx.Value(dbKey).(DB)
 }

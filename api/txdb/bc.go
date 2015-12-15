@@ -35,7 +35,7 @@ func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.
 		WHERE confirmed
 		    AND (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(txHashes), pg.Uint32s(indexes))
+	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(txHashes), pg.Uint32s(indexes))
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -80,7 +80,7 @@ func LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, 
 		FROM utxos
 		WHERE account_id=$1 AND asset_id=$2 AND confirmed
 	`
-	rows, err := pg.FromContext(ctx).Query(q, accountID, assetID)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, accountID, assetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "query")
 	}

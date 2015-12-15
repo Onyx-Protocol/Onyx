@@ -215,7 +215,7 @@ func getUTXOsForDeletion(ctx context.Context, ops []bc.Outpoint) ([]*utxodb.UTXO
 		FROM utxos
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::bigint[]))
 	`
-	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(hashes), pg.Uint32s(indexes))
+	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(hashes), pg.Uint32s(indexes))
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

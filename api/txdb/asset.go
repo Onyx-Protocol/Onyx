@@ -23,7 +23,7 @@ func AssetDefinition(ctx context.Context, assetID string) (string, []byte, error
 		hash     string
 		defBytes []byte
 	)
-	err := pg.FromContext(ctx).QueryRow(q, assetID).Scan(&hash, &defBytes)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, assetID).Scan(&hash, &defBytes)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
@@ -39,7 +39,7 @@ func DefinitionHashByAssetID(ctx context.Context, assetID string) (string, error
 	`
 
 	var hash string
-	err := pg.FromContext(ctx).QueryRow(q, assetID).Scan(&hash)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, assetID).Scan(&hash)
 	if err != nil {
 		return "", errors.Wrapf(err, "fetching definition for asset %s", assetID)
 	}
@@ -76,7 +76,7 @@ func insertADP(ctx context.Context, adp *bc.AssetDefinitionPointer) error {
 		WHERE asset_id=$1
 	`
 
-	res, err := pg.FromContext(ctx).Exec(updateQ, aid, hash)
+	res, err := pg.FromContext(ctx).Exec(ctx, updateQ, aid, hash)
 	if err != nil {
 		return errors.Wrap(err, "updateQ setting asset definition pointer")
 	}
@@ -92,7 +92,7 @@ func insertADP(ctx context.Context, adp *bc.AssetDefinitionPointer) error {
 			VALUES ($1, $2)
 		`
 
-		_, err = pg.FromContext(ctx).Exec(insertQ, aid, hash)
+		_, err = pg.FromContext(ctx).Exec(ctx, insertQ, aid, hash)
 		if err != nil {
 			return errors.Wrap(err, "insertQ setting asset definition pointer")
 		}
@@ -130,7 +130,7 @@ func InsertAssetDefinitions(ctx context.Context, block *bc.Block) error {
 func insertAssetDefinition(ctx context.Context, hash [32]byte, definition []byte) error {
 	hashString := bc.Hash(hash).String()
 	const updateQ = `UPDATE asset_definitions SET definition=$2 WHERE hash=$1`
-	res, err := pg.FromContext(ctx).Exec(updateQ, hashString, definition)
+	res, err := pg.FromContext(ctx).Exec(ctx, updateQ, hashString, definition)
 	if err != nil {
 		return errors.Wrap(err, "updateQ setting asset definition")
 	}
@@ -143,7 +143,7 @@ func insertAssetDefinition(ctx context.Context, hash [32]byte, definition []byte
 	if affected == 0 {
 		const insertQ = `INSERT INTO asset_definitions(hash, definition) VALUES ($1, $2)`
 
-		_, err = pg.FromContext(ctx).Exec(insertQ, hashString, definition)
+		_, err = pg.FromContext(ctx).Exec(ctx, insertQ, hashString, definition)
 		if err != nil {
 			return errors.Wrap(err, "setting asset definition")
 		}

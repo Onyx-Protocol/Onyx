@@ -43,14 +43,14 @@ func TestInsertAssetDefinitionPointers(t *testing.T) {
 		const checkQ = `
 			SELECT asset_definition_hash FROM asset_definition_pointers WHERE asset_id=$1
 		`
-		err = pg.FromContext(ctx).QueryRow(checkQ, a0str).Scan(&resID)
+		err = pg.FromContext(ctx).QueryRow(ctx, checkQ, a0str).Scan(&resID)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
 		if resID != def0str {
 			t.Fatalf("checking inputs, want=%s, got=%s", def0str, resID)
 		}
-		err = pg.FromContext(ctx).QueryRow(checkQ, a1str).Scan(&resID)
+		err = pg.FromContext(ctx).QueryRow(ctx, checkQ, a1str).Scan(&resID)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -101,7 +101,7 @@ func TestInsertAssetDefinitionPointersWithUpdate(t *testing.T) {
 		const checkQ = `
 			SELECT COUNT(*) FROM asset_definition_pointers
 		`
-		err = pg.FromContext(ctx).QueryRow(checkQ).Scan(&count)
+		err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -132,7 +132,7 @@ func TestInsertAssetDefinitions(t *testing.T) {
 		var checkQ = `
 			SELECT COUNT(*) FROM asset_definitions
 		`
-		err = pg.FromContext(ctx).QueryRow(checkQ).Scan(&count)
+		err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -168,7 +168,7 @@ func TestInsertAssetDefinitionsWithUpdate(t *testing.T) {
 		var checkQ = `
 			SELECT COUNT(*) FROM asset_definitions
 		`
-		err = pg.FromContext(ctx).QueryRow(checkQ).Scan(&count)
+		err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}

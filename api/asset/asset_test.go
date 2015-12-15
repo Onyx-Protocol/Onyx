@@ -11,7 +11,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain/bc"
@@ -23,8 +22,9 @@ func init() {
 		u = s
 	}
 
-	db := pgtest.Open(u, "assettest", "../appdb/schema.sql")
-	err := appdb.Init(db)
+	ctx := context.Background()
+	db := pgtest.Open(ctx, u, "assettest", "../appdb/schema.sql")
+	err := appdb.Init(ctx, db)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,14 +33,13 @@ func init() {
 // Establish a context object with a new db transaction in which to
 // run the given callback function.
 func withContext(tb testing.TB, sql string, fn func(context.Context)) {
-	var dbtx pg.Tx
+	var ctx context.Context
 	if sql == "" {
-		dbtx = pgtest.TxWithSQL(tb)
+		ctx = pgtest.NewContext(tb)
 	} else {
-		dbtx = pgtest.TxWithSQL(tb, sql)
+		ctx = pgtest.NewContext(tb, sql)
 	}
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 	fn(ctx)
 }
 
@@ -53,7 +52,7 @@ func mustParseHash(s string) [32]byte {
 }
 
 func TestIssue(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO issuer_nodes (id, project_id, label, keyset, key_index)
 			VALUES ('in1', 'proj-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
@@ -75,8 +74,7 @@ func TestIssue(t *testing.T) {
 			''
 		);
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	outs := []*Output{{
 		Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK",
@@ -113,7 +111,7 @@ func TestIssue(t *testing.T) {
 }
 
 func TestOutputPKScript(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
 			VALUES('mn1', 'proj-id-0', 'mn1', 'rot1');
@@ -122,13 +120,10 @@ func TestOutputPKScript(t *testing.T) {
 		INSERT INTO accounts (id, manager_node_id, key_index)
 			VALUES('acc1', 'mn1', 0);
 	`)
-	defer dbtx.Rollback()
+	defer pgtest.Finish(ctx)
 
 	// Test account output pk script (address creation)
-	var (
-		out = &Output{AccountID: "acc1"}
-		ctx = pg.NewContext(context.Background(), dbtx)
-	)
+	out := &Output{AccountID: "acc1"}
 	got, _, err := out.PKScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -161,7 +156,7 @@ func TestOutputPKScript(t *testing.T) {
 }
 
 func TestPKScriptChangeAddr(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
 			VALUES('mn1', 'proj-id-0', 'mn1', 'rot1');
@@ -170,9 +165,7 @@ func TestPKScriptChangeAddr(t *testing.T) {
 		INSERT INTO accounts (id, manager_node_id, key_index)
 			VALUES('acc1', 'mn1', 0);
 	`)
-	defer dbtx.Rollback()
-
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	out := &Output{AccountID: "acc1", isChange: true}
 	_, recv, err := out.PKScript(ctx)

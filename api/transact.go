@@ -47,14 +47,14 @@ func buildSingle(ctx context.Context, req buildReq) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer dbtx.Rollback()
+	defer dbtx.Rollback(ctx)
 
 	tpl, err := asset.Build(ctx, req.PrevTx, req.Inputs, req.Outputs, req.ResTime)
 	if err != nil {
 		return nil, err
 	}
 
-	err = dbtx.Commit()
+	err = dbtx.Commit(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -103,14 +103,14 @@ func submitSingle(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer dbtx.Rollback()
+	defer dbtx.Rollback(ctx)
 
 	tx, err := asset.FinalizeTx(ctx, tpl)
 	if err != nil {
 		return nil, err
 	}
 
-	err = dbtx.Commit()
+	err = dbtx.Commit(ctx)
 	if err != nil {
 		return nil, err
 	}

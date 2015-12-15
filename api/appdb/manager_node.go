@@ -37,7 +37,7 @@ func InsertManagerNode(ctx context.Context, projID, label string, keys, gennedKe
 	`
 	var id string
 	xprvs := keysToStrings(gennedKeys)
-	err = pg.FromContext(ctx).QueryRow(q, label, projID, pg.Strings(xprvs), variableKeys, sigsRequired).Scan(&id)
+	err = pg.FromContext(ctx).QueryRow(ctx, q, label, projID, pg.Strings(xprvs), variableKeys, sigsRequired).Scan(&id)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert manager node")
 	}
@@ -86,7 +86,7 @@ func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, er
 		pubKeyStrs  []string
 		privKeyStrs []string
 	)
-	err := pg.FromContext(ctx).QueryRow(q, managerNodeID).Scan(
+	err := pg.FromContext(ctx).QueryRow(ctx, q, managerNodeID).Scan(
 		&label,
 		&bc,
 		(*pg.Strings)(&pubKeyStrs),
@@ -150,7 +150,7 @@ func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit
 		ORDER BY account_id ASC
 		LIMIT $4
 	`
-	rows, err := pg.FromContext(ctx).Query(q, mnodeID, assetID, prev, limit)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, mnodeID, assetID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "balances query")
 	}
@@ -190,7 +190,7 @@ func ListManagerNodes(ctx context.Context, projID string) ([]*ManagerNode, error
 		WHERE project_id = $1
 		ORDER BY id
 	`
-	rows, err := pg.FromContext(ctx).Query(q, projID)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, projID)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -220,7 +220,7 @@ func UpdateManagerNode(ctx context.Context, mnodeID string, label *string) error
 	}
 	const q = `UPDATE manager_nodes SET label = $2 WHERE id = $1`
 	db := pg.FromContext(ctx)
-	_, err := db.Exec(q, mnodeID, *label)
+	_, err := db.Exec(ctx, q, mnodeID, *label)
 	return errors.Wrap(err, "update query")
 }
 
@@ -230,7 +230,7 @@ func UpdateManagerNode(ctx context.Context, mnodeID string, label *string) error
 func DeleteManagerNode(ctx context.Context, mnodeID string) error {
 	const q = `DELETE FROM manager_nodes WHERE id = $1`
 	db := pg.FromContext(ctx)
-	result, err := db.Exec(q, mnodeID)
+	result, err := db.Exec(ctx, q, mnodeID)
 	if err != nil {
 		if pg.IsForeignKeyViolation(err) {
 			return errors.WithDetailf(ErrCannotDelete, "manager node ID %v", mnodeID)
@@ -257,14 +257,14 @@ func createRotation(ctx context.Context, managerNodeID string, xpubs ...string) 
 		UPDATE manager_nodes SET current_rotation=(SELECT id FROM new_rotation)
 		WHERE id=$1
 	`
-	_, err := pg.FromContext(ctx).Exec(q, managerNodeID, pg.Strings(xpubs))
+	_, err := pg.FromContext(ctx).Exec(ctx, q, managerNodeID, pg.Strings(xpubs))
 	return err
 }
 
 func managerNodeVariableKeys(ctx context.Context, managerNodeID string) (int, error) {
 	const q = `SELECT variable_keys FROM manager_nodes WHERE id = $1`
 	count := 0
-	err := pg.FromContext(ctx).QueryRow(q, managerNodeID).Scan(&count)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, managerNodeID).Scan(&count)
 	if err != nil {
 		return 0, err
 	}

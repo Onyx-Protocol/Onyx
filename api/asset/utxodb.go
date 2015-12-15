@@ -69,7 +69,7 @@ func (sqlUTXODB) SaveReservations(ctx context.Context, utxos []*utxodb.UTXO, exp
 		txHashes = append(txHashes, u.Outpoint.Hash.String())
 		indexes = append(indexes, u.Outpoint.Index)
 	}
-	_, err := pg.FromContext(ctx).Exec(q, pg.Strings(txHashes), pg.Uint32s(indexes), exp)
+	_, err := pg.FromContext(ctx).Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(indexes), exp)
 	return errors.Wrap(err, "update utxo reserve expiration")
 }
 
@@ -188,7 +188,7 @@ func loadAddrInfoFromDB(ctx context.Context, outs []*txdb.Output) error {
 		FROM addresses
 		WHERE address IN (SELECT unnest($1::text[]))
 	`
-	rows, err := pg.FromContext(ctx).Query(q, pg.Strings(addrs))
+	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(addrs))
 	if err != nil {
 		return errors.Wrap(err, "select")
 	}

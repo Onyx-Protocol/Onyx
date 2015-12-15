@@ -82,7 +82,7 @@ func AddrInfo(ctx context.Context, accountID string) (*Address, error) {
 		LEFT JOIN rotations r ON r.id=mn.current_rotation
 		WHERE a.id=$1
 	`
-		err := pg.FromContext(ctx).QueryRow(q, accountID).Scan(
+		err := pg.FromContext(ctx).QueryRow(ctx, q, accountID).Scan(
 			&ai.ManagerNodeID,
 			(*pg.Uint32s)(&ai.AccountIndex),
 			(*pg.Uint32s)(&ai.ManagerNodeIndex),
@@ -124,7 +124,7 @@ func nextIndex(ctx context.Context) ([]uint32, error) {
 		var cap int64
 		const incrby = 10000 // address_index_seq increments by 10,000
 		const q = `SELECT nextval('address_index_seq')`
-		err := pg.FromContext(ctx).QueryRow(q).Scan(&cap)
+		err := pg.FromContext(ctx).QueryRow(ctx, q).Scan(&cap)
 		if err != nil {
 			return nil, errors.Wrap(err, "scan")
 		}
@@ -187,7 +187,7 @@ func (a *Address) Insert(ctx context.Context) error {
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, to_key_index($9), $10)
 		RETURNING id, created_at;
 	`
-	row := pg.FromContext(ctx).QueryRow(q,
+	row := pg.FromContext(ctx).QueryRow(ctx, q,
 		a.Address,
 		a.RedeemScript,
 		a.PKScript,

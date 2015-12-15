@@ -6,8 +6,11 @@
 package appdb
 
 import (
-	"database/sql"
 	"errors"
+
+	"golang.org/x/net/context"
+
+	"chain/database/sql"
 )
 
 var (
@@ -24,7 +27,7 @@ var (
 // Init creates some objects in db.
 // It must be called on program start,
 // before any other functions in this package.
-func Init(db *sql.DB) error {
-	_, err := db.Exec(keySQL)
+func Init(ctx context.Context, db *sql.DB) error {
+	_, err := db.Exec(ctx, keySQL)
 	return err
 }

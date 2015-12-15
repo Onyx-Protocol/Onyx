@@ -3,9 +3,6 @@ package api
 import (
 	"testing"
 
-	"golang.org/x/net/context"
-
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/net/http/authn"
 )
@@ -32,9 +29,8 @@ func TestMux(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, testUserFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, testUserFixture)
+	defer pgtest.Finish(ctx)
 	ctx = authn.NewContext(ctx, "sample-user-id-0")
 
 	tok, err := login(ctx)

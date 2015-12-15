@@ -1,12 +1,10 @@
 package api
 
 import (
-	"chain/database/pg"
-	"chain/database/pg/pgtest"
-	"chain/net/http/authn"
 	"testing"
 
-	"golang.org/x/net/context"
+	"chain/database/pg/pgtest"
+	"chain/net/http/authn"
 )
 
 const (
@@ -46,9 +44,8 @@ const (
 )
 
 func TestAuthenticateToken(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, authTokenUserFixture, authTokenFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, authTokenUserFixture, authTokenFixture)
+	defer pgtest.Finish(ctx)
 
 	// Valid token
 	uid, err := authenticateToken(ctx, "sample-token-id-0", "0123456789ABCDEF")

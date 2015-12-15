@@ -8,19 +8,17 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 )
 
 func TestCreate(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		ALTER SEQUENCE issuer_nodes_key_index_seq RESTART;
 		ALTER SEQUENCE assets_key_index_seq RESTART;
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
 		VALUES ('in1', 'a1', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	definition := make(map[string]interface{})
 	asset, err := Create(ctx, "in1", "fooAsset", definition)

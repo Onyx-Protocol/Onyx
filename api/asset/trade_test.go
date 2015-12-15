@@ -4,17 +4,14 @@ import (
 	"reflect"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"chain/api/utxodb"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain/bc"
 )
 
 func TestTrade(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
 			VALUES('mn1', 'proj-id-0', 'mn1', 'rot1');
@@ -32,8 +29,7 @@ func TestTrade(t *testing.T) {
 			('1000000000000000000000000000000000000000000000000000000000000000', 0, 'fe00000000000000000000000000000000000000000000000000000000000000', 5, 1, 'acc1', 'mn1', TRUE, 'bh1', 1),
 			('2000000000000000000000000000000000000000000000000000000000000000', 0, 'ff00000000000000000000000000000000000000000000000000000000000000', 2, 0, 'acc2', 'mn1', TRUE, 'bh1', 1);
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	unsignedTx := &bc.TxData{
 		Version: 1,

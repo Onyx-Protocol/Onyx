@@ -11,7 +11,6 @@ package main
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,6 +22,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/env"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
@@ -52,13 +52,13 @@ func main() {
 		fatal(err)
 	}
 
-	appdb.Init(db)
 	ctx := pg.NewContext(context.Background(), db)
+	appdb.Init(ctx, db)
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		fatal("begin")
 	}
-	defer dbtx.Rollback()
+	defer dbtx.Rollback(ctx)
 
 	u, err := appdb.CreateUser(ctx, os.Args[1], os.Args[2])
 	if err != nil {
@@ -97,12 +97,12 @@ func main() {
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES ($1, $2, $3, $4)
 	`
-	_, err = pg.FromContext(ctx).Exec(q, block.Hash(), block.Height, block, &block.BlockHeader)
+	_, err = pg.FromContext(ctx).Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
 	if err != nil {
 		fatal(err)
 	}
 
-	err = dbtx.Commit()
+	err = dbtx.Commit(ctx)
 	if err != nil {
 		fatal(err)
 	}

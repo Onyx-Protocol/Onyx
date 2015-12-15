@@ -103,7 +103,7 @@ func (v *view) UnspentP2COutputs(ctx context.Context, contractHash bc.ContractHa
 }
 
 func loadUnspentP2COutputs(ctx context.Context, contractHash bc.ContractHash, assetID bc.AssetID, query string) (result []*state.Output, err error) {
-	rows, err := pg.FromContext(ctx).Query(query, contractHash, assetID)
+	rows, err := pg.FromContext(ctx).Query(ctx, query, contractHash, assetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "query")
 	}

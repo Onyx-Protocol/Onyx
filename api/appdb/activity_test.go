@@ -74,9 +74,8 @@ var testAddrs = []struct {
 }
 
 func TestManagerNodeActivity(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleActivityFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleActivityFixture)
+	defer pgtest.Finish(ctx)
 
 	activity, last, err := ManagerNodeActivity(ctx, "mn0", "act2", 1) // act2 would be a newer item than act1
 	if err != nil {
@@ -97,15 +96,14 @@ func TestManagerNodeActivity(t *testing.T) {
 }
 
 func TestManagerNodeActivityLimit(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleActivityFixture, `
+	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleActivityFixture, `
 		INSERT INTO activity (id, manager_node_id, data, txid)
 			VALUES
 				('act1', 'mn0', '{"outputs":"coop"}', 'tx1'),
 				('act2', 'mn0', '{"outputs":"doop"}', 'tx2'),
 				('act3', 'mn0', '{"outputs":"foop"}', 'tx3');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	activity, last, err := ManagerNodeActivity(ctx, "mn0", "act4", 2) // act4 would be a newer item than act1
 	if err != nil {
@@ -131,13 +129,12 @@ func TestManagerNodeActivityLimit(t *testing.T) {
 }
 
 func TestAccountActivity(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleActivityFixture, `
+	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleActivityFixture, `
 		INSERT INTO accounts (id, manager_node_id, key_index) VALUES('acc0', 'mn0', 0);
 		INSERT INTO activity_accounts VALUES ('act0', 'acc0');
 	`)
 
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	activity, last, err := AccountActivity(ctx, "acc0", "act1", 1)
 	if err != nil {
@@ -154,7 +151,7 @@ func TestAccountActivity(t *testing.T) {
 }
 
 func TestAccountActivityLimit(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleActivityFixture, `
+	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleActivityFixture, `
 		INSERT INTO activity (id, manager_node_id, data, txid)
 			VALUES
 			('act1', 'mn0', '{"outputs":"coop"}', 'tx1'),
@@ -167,8 +164,7 @@ func TestAccountActivityLimit(t *testing.T) {
 			('act2', 'acc0'),
 			('act3', 'acc0');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	activity, last, err := AccountActivity(ctx, "acc0", "act4", 2) // act4 would be a newer item than act1
 	if err != nil {
@@ -194,7 +190,7 @@ func TestAccountActivityLimit(t *testing.T) {
 }
 
 func TestIssuerNodeActivity(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, writeActivityFix, `
+	ctx := pgtest.NewContext(t, writeActivityFix, `
 		INSERT INTO issuance_activity
 			(id, issuer_node_id, data, txid)
 		VALUES
@@ -202,8 +198,7 @@ func TestIssuerNodeActivity(t *testing.T) {
 			('ia-id-1', 'in-id-1', '{"transaction_id": "tx-id-1"}', 'tx-id-1'),
 			('ia-id-2', 'in-id-0', '{"transaction_id": "tx-id-2"}', 'tx-id-2');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	examples := []struct {
 		inodeID  string
@@ -246,7 +241,7 @@ func TestIssuerNodeActivity(t *testing.T) {
 }
 
 func TestAssetActivity(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, writeActivityFix, `
+	ctx := pgtest.NewContext(t, writeActivityFix, `
 		INSERT INTO issuance_activity
 			(id, issuer_node_id, data, txid)
 		VALUES
@@ -261,8 +256,7 @@ func TestAssetActivity(t *testing.T) {
 			('ia-id-1', 'asset-id-1'),
 			('ia-id-2', 'asset-id-0');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	stringsToRawJSON := func(strs ...string) []*json.RawMessage {
 		var res []*json.RawMessage
@@ -309,9 +303,8 @@ func TestAssetActivity(t *testing.T) {
 }
 
 func TestActivityByTxID(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, sampleProjectFixture, sampleActivityFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleActivityFixture)
+	defer pgtest.Finish(ctx)
 
 	activity, err := ManagerNodeTxActivity(ctx, "mn0", "tx0")
 	if err != nil {
@@ -496,9 +489,8 @@ func TestWriteActivity(t *testing.T) {
 		func() {
 			txHash := ex.tx.Hash.String()
 
-			dbtx := pgtest.TxWithSQL(t, writeActivityFix, ex.fixture)
-			ctx := pg.NewContext(context.Background(), dbtx)
-			defer dbtx.Rollback()
+			ctx := pgtest.NewContext(t, writeActivityFix, ex.fixture)
+			defer pgtest.Finish(ctx)
 
 			err := WriteActivity(ctx, ex.tx, ex.outIsChange, txTime)
 			if err != nil {
@@ -569,7 +561,7 @@ func TestGetActUTXOs(t *testing.T) {
 		Outputs: []*bc.TxOutput{{}, {}},
 	})
 
-	dbtx := pgtest.TxWithSQL(t, writeActivityFix, `
+	ctx := pgtest.NewContext(t, writeActivityFix, `
 		INSERT INTO utxos (
 			tx_hash, index,
 			asset_id, amount, addr_index, script,
@@ -611,8 +603,7 @@ func TestGetActUTXOs(t *testing.T) {
 			'account-id-4', 'manager-node-id-4', FALSE
 		);
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	gotIns, gotOuts, err := GetActUTXOs(ctx, tx)
 	if err != nil {
@@ -680,7 +671,7 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 		Outputs: []*bc.TxOutput{{}, {}},
 	})
 
-	dbtx := pgtest.TxWithSQL(t, writeActivityFix, `
+	ctx := pgtest.NewContext(t, writeActivityFix, `
 		INSERT INTO pool_txs
 			(tx_hash, data)
 		VALUES
@@ -700,8 +691,7 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 			'account-id-1', 'manager-node-id-1', FALSE
 		);
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	gotIns, gotOuts, err := GetActUTXOs(ctx, tx)
 	if err != nil {
@@ -824,9 +814,8 @@ func TestGetIDsFromUTXOs(t *testing.T) {
 }
 
 func TestGetActAssets(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, writeActivityFix)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, writeActivityFix)
+	defer pgtest.Finish(ctx)
 
 	examples := []struct {
 		assetIDs []string
@@ -862,9 +851,8 @@ func TestGetActAssets(t *testing.T) {
 }
 
 func TestGetActAccounts(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, writeActivityFix)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, writeActivityFix)
+	defer pgtest.Finish(ctx)
 
 	examples := []struct {
 		accountIDs []string
@@ -1113,9 +1101,8 @@ func TestCreateActEntries(t *testing.T) {
 }
 
 func TestWriteManagerNodeActivity(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, writeActivityFix)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, writeActivityFix)
+	defer pgtest.Finish(ctx)
 
 	accounts := []string{"account-id-0", "account-id-1"}
 	accountSet := make(map[string]bool)
@@ -1154,9 +1141,8 @@ func TestWriteManagerNodeActivity(t *testing.T) {
 }
 
 func TestWriteIssuanceActivity(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, writeActivityFix)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, writeActivityFix)
+	defer pgtest.Finish(ctx)
 
 	err := writeIssuanceActivity(
 		ctx,
@@ -1202,7 +1188,7 @@ func getTestActivity(ctx context.Context, txHash string, issuance bool) (map[str
 		FROM ` + table + `
 		WHERE txid = $1
 	`
-	rows, err := pg.FromContext(ctx).Query(q, txHash)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, txHash)
 	if err != nil {
 		return nil, err
 	}
@@ -1243,7 +1229,7 @@ func getTestActivityAccounts(ctx context.Context, txHash string) ([]string, erro
 		WHERE a.txid = $1
 	`
 	var res []string
-	err := pg.FromContext(ctx).QueryRow(q, txHash).Scan((*pg.Strings)(&res))
+	err := pg.FromContext(ctx).QueryRow(ctx, q, txHash).Scan((*pg.Strings)(&res))
 	if err != nil {
 		return nil, err
 	}
@@ -1258,7 +1244,7 @@ func getTestActivityAssets(ctx context.Context, txHash string) ([]string, error)
 		WHERE ia.txid = $1
 	`
 	var res []string
-	err := pg.FromContext(ctx).QueryRow(q, txHash).Scan((*pg.Strings)(&res))
+	err := pg.FromContext(ctx).QueryRow(ctx, q, txHash).Scan((*pg.Strings)(&res))
 	if err != nil {
 		return nil, err
 	}

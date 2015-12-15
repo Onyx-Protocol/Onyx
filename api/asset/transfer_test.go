@@ -3,16 +3,13 @@ package asset
 import (
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"chain/api/utxodb"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 )
 
 func TestTransfer(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, `
+	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
 			VALUES('mn1', 'proj-id-0', 'mn1', 'rot1');
@@ -25,8 +22,7 @@ func TestTransfer(t *testing.T) {
 		INSERT INTO utxos (tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, confirmed, block_hash, block_height)
 			VALUES ('246c6aa1e5cc2bd1132a37cbc267e2031558aee26a8956e21b749d72920331a7', 0, 'ff00000000000000000000000000000000000000000000000000000000000000', 6, 0, 'acc1', 'mn1', TRUE, 'bh1', 1);
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	_, err := Transfer(ctx,
 		[]utxodb.Input{{

@@ -1,15 +1,18 @@
 package pgtest
 
 import (
-	"chain/database/pg"
-	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"strings"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"github.com/lib/pq"
+
+	"chain/database/pg"
+	"chain/database/sql"
 )
 
 var (
@@ -23,7 +26,7 @@ var (
 // dbURI is a standard database connection uri
 // schemaName is the name of the database schema to use. It will be created if necessary.
 // schemaSQLPath is the filepath to the sql dump of the database
-func Open(dbURI, schemaName, schemaSQLPath string) *sql.DB {
+func Open(ctx context.Context, dbURI, schemaName, schemaSQLPath string) *sql.DB {
 	schema = schemaName
 	sql.Register("schemadb", pg.SchemaDriver(schemaName))
 
@@ -33,7 +36,7 @@ func Open(dbURI, schemaName, schemaSQLPath string) *sql.DB {
 		log.Fatal(err)
 	}
 
-	Init(db, schemaSQLPath)
+	Init(ctx, db, schemaSQLPath)
 
 	return db
 }
@@ -42,7 +45,7 @@ func Open(dbURI, schemaName, schemaSQLPath string) *sql.DB {
 // Any SQL statements in file schemaPath
 // will be executed before loading each set of fixtures.
 // If the db was opened using
-func Init(database *sql.DB, schemaSQLPath string) {
+func Init(ctx context.Context, database *sql.DB, schemaSQLPath string) {
 	db = database
 
 	const reset = `
@@ -51,7 +54,7 @@ func Init(database *sql.DB, schemaSQLPath string) {
 	`
 
 	quotedSchema := pq.QuoteIdentifier(schema)
-	_, err := db.Exec(fmt.Sprintf(reset, quotedSchema, quotedSchema))
+	_, err := db.Exec(ctx, fmt.Sprintf(reset, quotedSchema, quotedSchema))
 	if err != nil {
 		panic(err)
 	}
@@ -68,27 +71,27 @@ func Init(database *sql.DB, schemaSQLPath string) {
 			-1,
 		)
 	}
-	_, err = db.Exec(q)
+	_, err = db.Exec(ctx, q)
 	if err != nil {
 		panic(err)
 	}
 }
 
-// TxWithSQL begins a transaction in the connected database,
+// txWithSQL begins a transaction in the connected database,
 // executes the given SQL statements inside the transaction,
 // and returns the in-progress transaction.
 // The returned transaction also has a Begin method
 // that returns itself, so it can be provided to
 // pg.NewContext.
-func TxWithSQL(t testing.TB, sql ...string) pg.Tx {
-	tx, err := db.Begin()
+func txWithSQL(ctx context.Context, t testing.TB, sql ...string) pg.Tx {
+	tx, err := db.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, q := range sql {
-		_, err := tx.Exec(q)
+		_, err := tx.Exec(ctx, q)
 		if err != nil {
-			tx.Rollback()
+			tx.Rollback(ctx)
 			t.Fatal(err)
 		}
 	}
@@ -115,13 +118,13 @@ type noCommitTx struct {
 	*sql.Tx
 }
 
-func (noCommitTx) Commit() error   { return nil }
-func (noCommitTx) Rollback() error { return nil }
+func (noCommitTx) Commit(context.Context) error   { return nil }
+func (noCommitTx) Rollback(context.Context) error { return nil }
 
 // Count returns the number of rows in 'table'.
-func Count(t *testing.T, db pg.DB, table string) int64 {
+func Count(ctx context.Context, t *testing.T, db pg.DB, table string) int64 {
 	var n int64
-	err := db.QueryRow("SELECT COUNT(*) FROM " + table).Scan(&n)
+	err := db.QueryRow(ctx, "SELECT COUNT(*) FROM "+table).Scan(&n)
 	if err != nil {
 		t.Fatal("Count:", err)
 	}

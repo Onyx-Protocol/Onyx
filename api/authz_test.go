@@ -3,11 +3,8 @@ package api
 import (
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"chain/api/asset"
 	"chain/api/utxodb"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/net/http/authn"
@@ -27,9 +24,8 @@ var authzFixture = `
 `
 
 func TestProjectAdminAuthz(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, authzFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, authzFixture)
+	defer pgtest.Finish(ctx)
 
 	cases := []struct {
 		userID string
@@ -51,9 +47,8 @@ func TestProjectAdminAuthz(t *testing.T) {
 }
 
 func TestProjectAuthz(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, authzFixture)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	ctx := pgtest.NewContext(t, authzFixture)
+	defer pgtest.Finish(ctx)
 
 	cases := []struct {
 		userID string
@@ -76,12 +71,11 @@ func TestProjectAuthz(t *testing.T) {
 }
 
 func TestManagerAuthz(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, authzFixture, `
+	ctx := pgtest.NewContext(t, authzFixture, `
 		INSERT INTO manager_nodes (id, project_id, label)
 			VALUES ('mn1', 'proj1', 'x'), ('mn2', 'proj2', 'x'), ('mn3', 'proj3', 'x');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	cases := []struct {
 		userID        string
@@ -101,14 +95,13 @@ func TestManagerAuthz(t *testing.T) {
 }
 
 func TestAccountAuthz(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, authzFixture, `
+	ctx := pgtest.NewContext(t, authzFixture, `
 		INSERT INTO manager_nodes (id, project_id, label)
 			VALUES ('mn1', 'proj1', 'x'), ('mn2', 'proj2', 'x'), ('mn3', 'proj3', 'x');
 		INSERT INTO accounts (id, manager_node_id, key_index)
 			VALUES ('acc1', 'mn1', 0), ('acc2', 'mn2', 0), ('acc3', 'mn3', 0);
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	cases := []struct {
 		userID    string
@@ -128,12 +121,11 @@ func TestAccountAuthz(t *testing.T) {
 }
 
 func TestIssuerAuthz(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, authzFixture, `
+	ctx := pgtest.NewContext(t, authzFixture, `
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
 			VALUES ('in1', 'proj1', 'x', '{}'), ('in2', 'proj2', 'x', '{}'), ('in3', 'proj3', 'x', '{}');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	cases := []struct {
 		userID  string
@@ -153,7 +145,7 @@ func TestIssuerAuthz(t *testing.T) {
 }
 
 func TestAssetAuthz(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, authzFixture, `
+	ctx := pgtest.NewContext(t, authzFixture, `
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
 			VALUES ('in1', 'proj1', 'x', '{}'), ('in2', 'proj2', 'x', '{}'), ('in3', 'proj3', 'x', '{}');
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
@@ -162,8 +154,7 @@ func TestAssetAuthz(t *testing.T) {
 			('a2', 'in2', 0, '\x'::bytea, '\x'::bytea, ''),
 			('a3', 'in3', 0, '\x'::bytea, '\x'::bytea, '');
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	cases := []struct {
 		userID  string
@@ -183,7 +174,7 @@ func TestAssetAuthz(t *testing.T) {
 }
 
 func TestBuildAuthz(t *testing.T) {
-	dbtx := pgtest.TxWithSQL(t, authzFixture, `
+	ctx := pgtest.NewContext(t, authzFixture, `
 		INSERT INTO manager_nodes (id, project_id, label)
 			VALUES ('mn1', 'proj1', 'x'), ('mn2', 'proj2', 'x'), ('mn3', 'proj3', 'x');
 		INSERT INTO accounts (id, manager_node_id, key_index)
@@ -191,8 +182,7 @@ func TestBuildAuthz(t *testing.T) {
 				('acc1', 'mn1', 0), ('acc2', 'mn2', 0), ('acc3', 'mn3', 0),
 				('acc4', 'mn1', 1), ('acc5', 'mn2', 1), ('acc6', 'mn3', 1);
 	`)
-	defer dbtx.Rollback()
-	ctx := pg.NewContext(context.Background(), dbtx)
+	defer pgtest.Finish(ctx)
 
 	cases := []struct {
 		userID  string
