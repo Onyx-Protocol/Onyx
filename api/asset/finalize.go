@@ -25,6 +25,7 @@ var ErrBadTx = errors.New("bad transaction template")
 // its changes on the UTXO set.
 func FinalizeTx(ctx context.Context, tx *Tx) (*bc.Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
+
 	if len(tx.Inputs) > len(tx.Unsigned.Inputs) {
 		return nil, errors.WithDetail(ErrBadTx, "too many inputs in template")
 	} else if len(tx.Unsigned.Outputs) != len(tx.OutRecvs) {
@@ -87,6 +88,12 @@ func getSigsRequired(script []byte) (sigsReqd int, err error) {
 }
 
 func publishTx(ctx context.Context, msg *bc.Tx, receivers []*utxodb.Receiver) (err error) {
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	defer dbtx.Rollback(ctx)
+
 	poolView, err := txdb.NewPoolViewForPrevouts(ctx, []*bc.Tx{msg})
 	if err != nil {
 		return errors.Wrap(err)
@@ -105,9 +112,10 @@ func publishTx(ctx context.Context, msg *bc.Tx, receivers []*utxodb.Receiver) (e
 		return errors.Wrapf(ErrBadTx, "validate tx: %v", err)
 	}
 
-	err = flushToPool(ctx, msg, receivers)
+	// Update persistent tx pool state
+	deleted, inserted, err := applyTx(ctx, msg, receivers)
 	if err != nil {
-		return errors.Wrap(err, "flush pool view")
+		return errors.Wrap(err, "apply TX")
 	}
 
 	outIsChange := make(map[int]bool)
@@ -138,18 +146,6 @@ func publishTx(ctx context.Context, msg *bc.Tx, receivers []*utxodb.Receiver) (e
 		}
 	}
 
-	return nil
-}
-
-func flushToPool(ctx context.Context, tx *bc.Tx, recvs []*utxodb.Receiver) error {
-	defer metrics.RecordElapsed(time.Now())
-
-	// Update persistent tx pool state
-	deleted, inserted, err := applyTx(ctx, tx, recvs)
-	if err != nil {
-		return errors.Wrap(err, "apply TX")
-	}
-
 	// Fetch account data for deleted UTXOs so we can apply the deletions to
 	// the reservation system.
 	delUTXOs, err := getUTXOsForDeletion(ctx, deleted)
@@ -175,6 +171,11 @@ func flushToPool(ctx context.Context, tx *bc.Tx, recvs []*utxodb.Receiver) error
 			AccountID: o.AccountID,
 			AddrIndex: o.AddrIndex,
 		})
+	}
+
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		return errors.Wrap(err)
 	}
 
 	// Update reservation state

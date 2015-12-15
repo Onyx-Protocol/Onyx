@@ -99,18 +99,7 @@ func submitSingle(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer dbtx.Rollback(ctx)
-
 	tx, err := asset.FinalizeTx(ctx, tpl)
-	if err != nil {
-		return nil, err
-	}
-
-	err = dbtx.Commit(ctx)
 	if err != nil {
 		return nil, err
 	}
