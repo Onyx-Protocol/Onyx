@@ -20,9 +20,8 @@ func createIssuerNode(ctx context.Context, projID string, req map[string]interfa
 		return nil, err
 	}
 
-	_, ok1 := req["generate_key"]
-	_, ok2 := req["xpubs"]
-	isDeprecated := ok1 || ok2
+	_, ok := req["keys"]
+	isDeprecated := !ok
 
 	bReq, err := json.Marshal(req)
 	if err != nil {
