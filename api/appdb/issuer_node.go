@@ -19,7 +19,8 @@ type IssuerNode struct {
 	Blockchain  string        `json:"block_chain"`
 	Label       string        `json:"label"`
 	Keys        []*hdkey.XKey `json:"keys,omitempty"`
-	SigsReqd    int           `json:"signatures_required,omitempty"`
+	VarKeys     int           `json:"variable_key_count"`
+	SigsReqd    int           `json:"signatures_required"`
 	PrivateKeys []*hdkey.XKey `json:"private_keys,omitempty"`
 }
 
@@ -129,17 +130,19 @@ func ListIssuerNodes(ctx context.Context, projID string) ([]*IssuerNode, error) 
 // GetIssuerNode returns basic information about a single issuer node.
 func GetIssuerNode(ctx context.Context, groupID string) (*IssuerNode, error) {
 	var (
-		q           = `SELECT label, block_chain, keyset, generated_keys FROM issuer_nodes WHERE id = $1`
+		q           = `SELECT label, block_chain, keyset, generated_keys, variable_keys FROM issuer_nodes WHERE id = $1`
 		label       string
 		bc          string
 		pubKeyStrs  []string
 		privKeyStrs []string
+		varKeys     int
 	)
 	err := pg.FromContext(ctx).QueryRow(ctx, q, groupID).Scan(
 		&label,
 		&bc,
 		(*pg.Strings)(&pubKeyStrs),
 		(*pg.Strings)(&privKeyStrs),
+		&varKeys,
 	)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "issuer node ID: %v", groupID)
@@ -164,6 +167,7 @@ func GetIssuerNode(ctx context.Context, groupID string) (*IssuerNode, error) {
 		Blockchain:  bc,
 		Keys:        pubKeys,
 		PrivateKeys: privKeys,
+		VarKeys:     varKeys,
 	}, nil
 }
 
