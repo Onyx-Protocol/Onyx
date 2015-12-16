@@ -1,4 +1,6 @@
-ALTER TABLE utxos ADD confirmed BOOLEAN NOT NULL;
+-- All transaction activity should be halted when running this migration.
+ALTER TABLE utxos ADD confirmed BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE utxos ALTER confirmed DROP DEFAULT;
 ALTER TABLE utxos ADD pool_tx_hash TEXT REFERENCES pool_txs (tx_hash);
 ALTER TABLE utxos RENAME COLUMN txid TO tx_hash;
 ALTER TABLE utxos ADD CHECK (confirmed = (pool_tx_hash IS NULL));
