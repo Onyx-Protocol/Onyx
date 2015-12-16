@@ -352,7 +352,8 @@ func TestGetAsset(t *testing.T) {
 			ID:            "asset-1",
 			DefinitionPtr: "hash-1",
 			Definition:    []byte(`{"a":"b"}`),
-			Circulation:   appdb.AssetCirculation{Total: 11, Confirmed: 6},
+			Issued:        appdb.AssetAmount{Total: 11, Confirmed: 6},
+			Circulation:   appdb.AssetAmount{Total: 11, Confirmed: 6},
 		}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, want)

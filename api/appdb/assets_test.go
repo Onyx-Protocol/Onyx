@@ -91,8 +91,8 @@ func TestListAssets(t *testing.T) {
 				"",
 				5,
 				[]*AssetResponse{
-					{ID: "asset-id-1", Label: "asset-1", Circulation: AssetCirculation{3, 7}},
-					{ID: "asset-id-0", Label: "asset-0", Circulation: AssetCirculation{1, 3}},
+					{ID: "asset-id-1", Label: "asset-1", Issued: AssetAmount{3, 7}, Circulation: 7},
+					{ID: "asset-id-0", Label: "asset-0", Issued: AssetAmount{1, 3}, Circulation: 3},
 				},
 			},
 			{
@@ -100,7 +100,7 @@ func TestListAssets(t *testing.T) {
 				"",
 				5,
 				[]*AssetResponse{
-					{ID: "asset-id-2", Label: "asset-2", Circulation: AssetCirculation{5, 11}},
+					{ID: "asset-id-2", Label: "asset-2", Issued: AssetAmount{5, 11}, Circulation: 11},
 				},
 			},
 			{
@@ -108,7 +108,7 @@ func TestListAssets(t *testing.T) {
 				"",
 				1,
 				[]*AssetResponse{
-					{ID: "asset-id-1", Label: "asset-1", Circulation: AssetCirculation{3, 7}},
+					{ID: "asset-id-1", Label: "asset-1", Issued: AssetAmount{3, 7}, Circulation: 7},
 				},
 			},
 			{
@@ -116,7 +116,7 @@ func TestListAssets(t *testing.T) {
 				"asset1",
 				5,
 				[]*AssetResponse{
-					{ID: "asset-id-0", Label: "asset-0", Circulation: AssetCirculation{1, 3}},
+					{ID: "asset-id-0", Label: "asset-0", Issued: AssetAmount{1, 3}, Circulation: 3},
 				},
 			},
 			{
@@ -159,7 +159,7 @@ func TestGetAsset(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		want := &AssetResponse{"asset-id-0", "asset-0", AssetCirculation{58, 70}}
+		want := &AssetResponse{"asset-id-0", "asset-0", AssetAmount{58, 70}, 70}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("GetAsset(%s) = %+v want %+v", "asset-id-0", got, want)
 		}
@@ -190,7 +190,7 @@ func TestUpdateIssuances(t *testing.T) {
 	examples := []struct {
 		deltas    map[string]int64
 		confirmed bool
-		want      map[string]AssetCirculation
+		want      map[string]AssetAmount
 	}{
 		// Example: what happens to confirmation numbers when a block lands.
 		{
@@ -200,16 +200,16 @@ func TestUpdateIssuances(t *testing.T) {
 				"asset-id-2": 3,
 			},
 			confirmed: true,
-			want: map[string]AssetCirculation{
-				"asset-id-0": AssetCirculation{
+			want: map[string]AssetAmount{
+				"asset-id-0": AssetAmount{
 					Confirmed: 11,
 					Total:     21,
 				},
-				"asset-id-1": AssetCirculation{
+				"asset-id-1": AssetAmount{
 					Confirmed: 12,
 					Total:     22,
 				},
-				"asset-id-2": AssetCirculation{
+				"asset-id-2": AssetAmount{
 					Confirmed: 13,
 					Total:     23,
 				},
@@ -223,16 +223,16 @@ func TestUpdateIssuances(t *testing.T) {
 				"asset-id-2": -3,
 			},
 			confirmed: false,
-			want: map[string]AssetCirculation{
-				"asset-id-0": AssetCirculation{
+			want: map[string]AssetAmount{
+				"asset-id-0": AssetAmount{
 					Confirmed: 10,
 					Total:     19,
 				},
-				"asset-id-1": AssetCirculation{
+				"asset-id-1": AssetAmount{
 					Confirmed: 10,
 					Total:     18,
 				},
-				"asset-id-2": AssetCirculation{
+				"asset-id-2": AssetAmount{
 					Confirmed: 10,
 					Total:     17,
 				},
@@ -242,16 +242,16 @@ func TestUpdateIssuances(t *testing.T) {
 		{
 			deltas:    map[string]int64{"asset-id-0": 5},
 			confirmed: false,
-			want: map[string]AssetCirculation{
-				"asset-id-0": AssetCirculation{
+			want: map[string]AssetAmount{
+				"asset-id-0": AssetAmount{
 					Confirmed: 10,
 					Total:     25,
 				},
-				"asset-id-1": AssetCirculation{
+				"asset-id-1": AssetAmount{
 					Confirmed: 10,
 					Total:     20,
 				},
-				"asset-id-2": AssetCirculation{
+				"asset-id-2": AssetAmount{
 					Confirmed: 10,
 					Total:     20,
 				},
@@ -273,8 +273,8 @@ func TestUpdateIssuances(t *testing.T) {
 				if err != nil {
 					t.Fatal("unexpected error:", err)
 				}
-				if asset.Circulation != want {
-					t.Errorf("asset %v got %v want %v", aid, asset.Circulation, want)
+				if asset.Issued != want {
+					t.Errorf("asset %v got %v want %v", aid, asset.Issued, want)
 				}
 			}
 		})

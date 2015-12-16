@@ -125,20 +125,9 @@ func listAssets(ctx context.Context, inodeID string) (interface{}, error) {
 		return nil, err
 	}
 
-	// !!!HACK(jeffomatic) - do not split confirmed/total issuances until we enable
-	// automatic block generation
-	var res []map[string]interface{}
-	for _, a := range assets {
-		res = append(res, map[string]interface{}{
-			"id":          a.ID,
-			"label":       a.Label,
-			"circulation": a.Circulation.Total,
-		})
-	}
-
 	ret := map[string]interface{}{
 		"last":   last,
-		"assets": httpjson.Array(res),
+		"assets": httpjson.Array(assets),
 	}
 	return ret, nil
 }
@@ -171,18 +160,7 @@ func getAsset(ctx context.Context, assetID string) (interface{}, error) {
 	if err := assetAuthz(ctx, assetID); err != nil {
 		return nil, err
 	}
-
-	// !!!HACK(jeffomatic) - do not split confirmed/total issuances until we enable
-	// automatic block generation
-	asset, err := appdb.GetAsset(ctx, assetID)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]interface{}{
-		"id":          asset.ID,
-		"label":       asset.Label,
-		"circulation": asset.Circulation.Total,
-	}, nil
+	return appdb.GetAsset(ctx, assetID)
 }
 
 // PUT /v3/assets/:assetID

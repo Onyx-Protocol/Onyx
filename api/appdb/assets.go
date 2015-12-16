@@ -31,11 +31,10 @@ type Asset struct {
 	Definition      []byte
 }
 
-// AssetCirculation is a JSON-serializeable representation of the total
-// quantity of issuances of a particular asset. Confirmed represents the amount
-// issued in valid blocks, while total includes issuances from unconfirmed
-// transactions in the tx pool.
-type AssetCirculation struct {
+// AssetAmount is a composite representation of a sum of an asset.
+// Confirmed reflects the amount of the asset present in blocks.
+// Total includes amounts from unconfirmed transactions.
+type AssetAmount struct {
 	Confirmed uint64 `json:"confirmed"`
 	Total     uint64 `json:"total"`
 }
@@ -43,9 +42,12 @@ type AssetCirculation struct {
 // AssetResponse is a JSON-serializable version of Asset, intended for use in
 // API responses.
 type AssetResponse struct {
-	ID          string           `json:"id"`
-	Label       string           `json:"label"`
-	Circulation AssetCirculation `json:"circulation"`
+	ID     string      `json:"id"`
+	Label  string      `json:"label"`
+	Issued AssetAmount `json:"issued"`
+
+	// Deprecated in its current form, which is equivalent to Issued.Total
+	Circulation uint64 `json:"circulation"`
 }
 
 // AssetOwner indicates either an account or a manager node.
@@ -144,10 +146,11 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 	)
 	for rows.Next() {
 		a := new(AssetResponse)
-		err := rows.Scan(&a.ID, &a.Label, &a.Circulation.Confirmed, &a.Circulation.Total, &last)
+		err := rows.Scan(&a.ID, &a.Label, &a.Issued.Confirmed, &a.Issued.Total, &last)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "row scan")
 		}
+		a.Circulation = a.Issued.Total // populate deprecated field
 		assets = append(assets, a)
 	}
 
@@ -169,11 +172,12 @@ func GetAsset(ctx context.Context, assetID string) (*AssetResponse, error) {
 	a := new(AssetResponse)
 
 	err := pg.FromContext(ctx).QueryRow(ctx, q, assetID).Scan(
-		&a.ID, &a.Label, &a.Circulation.Confirmed, &a.Circulation.Total,
+		&a.ID, &a.Label, &a.Issued.Confirmed, &a.Issued.Total,
 	)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
+	a.Circulation = a.Issued.Total // populate deprecated field
 	return a, errors.WithDetailf(err, "asset id: %s", assetID)
 }
 

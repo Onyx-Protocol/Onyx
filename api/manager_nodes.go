@@ -184,14 +184,6 @@ func managerNodeBalance(ctx context.Context, managerNodeID string) (interface{},
 		return nil, err
 	}
 
-	// !!!HACK(jeffomatic) - do not expose confirmation totals until we enable
-	// automatic block generation.
-	for _, b := range balances {
-		if b.Confirmed == 0 {
-			b.Confirmed = b.Total
-		}
-	}
-
 	ret := map[string]interface{}{
 		"last":     last,
 		"balances": httpjson.Array(balances),
@@ -212,14 +204,6 @@ func listAccountsWithAsset(ctx context.Context, mnodeID, assetID string) (interf
 	balances, last, err := appdb.AccountsWithAsset(ctx, mnodeID, assetID, prev, limit)
 	if err != nil {
 		return nil, err
-	}
-
-	// !!!HACK(jeffomatic) - do not expose confirmation totals until we enable
-	// automatic block generation.
-	for _, b := range balances {
-		if b.Confirmed == 0 {
-			b.Confirmed = b.Total
-		}
 	}
 
 	return map[string]interface{}{
@@ -347,14 +331,6 @@ func accountBalance(ctx context.Context, accountID string) (interface{}, error) 
 	balances, last, err := appdb.AssetBalance(ctx, query)
 	if err != nil {
 		return nil, err
-	}
-
-	// !!!HACK(jeffomatic) - do not expose confirmation totals until we enable
-	// automatic block generation.
-	for _, b := range balances {
-		if b.Confirmed == 0 {
-			b.Confirmed = b.Total
-		}
 	}
 
 	ret := map[string]interface{}{
