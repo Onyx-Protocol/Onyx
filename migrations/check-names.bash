@@ -20,3 +20,13 @@ done
 if test $ok != true
 then exit 1
 fi
+
+# Fail if we have more than one of any index
+# on the same day. YYYY-MM-DD.N
+dups=$(ls 201?-*|cut -b-12|sort|uniq -c|grep -v '1 ' || true)
+if test -n "$dups"
+then
+	printf >&2 'duplicate indexes:\n'
+	printf >&2 '%s\n' "$dups"
+	exit 1
+fi
