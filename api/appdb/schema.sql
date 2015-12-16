@@ -517,7 +517,7 @@ CREATE SEQUENCE pool_tx_sort_id_seq
 CREATE TABLE pool_txs (
     tx_hash text NOT NULL,
     data bytea NOT NULL,
-    sort_id text DEFAULT nextval('pool_tx_sort_id_seq'::regclass) NOT NULL
+    sort_id bigint DEFAULT nextval('pool_tx_sort_id_seq'::regclass) NOT NULL
 );
 
 

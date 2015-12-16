@@ -4,6 +4,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/fedchain/bc"
+	"chain/log"
 	"chain/net/trace/span"
 )
 
@@ -12,6 +13,7 @@ func topSort(ctx context.Context, txs []*bc.Tx) []*bc.Tx {
 		return txs
 	}
 
+	log.Messagef(ctx, "set of %d txs not in topo order; sorting", len(txs))
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
