@@ -204,9 +204,6 @@ type Asset struct {
 	DefinitionPtr string             `json:"definition_pointer"`
 	Definition    chainjson.HexBytes `json:"definition"`
 	Issued        appdb.AssetAmount  `json:"issued"`
-
-	// Deprecated in its current form. Use Issued instead.
-	Circulation appdb.AssetAmount `json:"circulation"`
 }
 
 // GetAsset returns the most recent asset definition stored in
@@ -223,5 +220,5 @@ func GetAsset(ctx context.Context, assetID string) (*Asset, error) {
 		return nil, errors.Wrap(err, "loading circulation")
 	}
 
-	return &Asset{assetID, hash, def, asset.Issued, asset.Issued}, nil
+	return &Asset{assetID, hash, def, asset.Issued}, nil
 }
