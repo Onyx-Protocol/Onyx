@@ -21,6 +21,7 @@ package sql
 import (
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
 
 	"golang.org/x/net/context"
 
@@ -36,6 +37,8 @@ func Register(name string, driver driver.Driver) {
 	sql.Register(name, driver)
 }
 
+const maxArgsLogLen = 20 // bytes
+
 var logQueries bool
 
 // EnableQueryLogging enables or disables log output for queries.
@@ -46,7 +49,11 @@ func EnableQueryLogging(e bool) {
 
 func logQuery(ctx context.Context, query string, args interface{}) {
 	if logQueries {
-		log.Write(ctx, "query", query, "args", args)
+		s := fmt.Sprint(args)
+		if len(s) > maxArgsLogLen {
+			s = s[:maxArgsLogLen-3] + "..."
+		}
+		log.Write(ctx, "query", query, "args", s)
 	}
 }
 
