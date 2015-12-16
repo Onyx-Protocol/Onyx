@@ -246,7 +246,15 @@ func RemoveBlockSpentOutputs(ctx context.Context, delta []*Output) error {
 	return nil
 }
 
-func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) error {
+// InsertBlockOutputs updates utxos to mark
+// unconfirmed records as confirmed and to insert new
+// records as necessary, one for each unspent item
+// in delta.
+//
+// It returns a new list containing all spent items
+// from delta, plus all newly-inserted unspent outputs
+// from delta, omitting the updated items.
+func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) ([]*Output, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -270,7 +278,7 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) e
 	`
 	rows, err := pg.FromContext(ctx).Query(ctx, updateQ, blockHashStr, block.Height, pg.Strings(txHashes), pg.Uint32s(indexes))
 	if err != nil {
-		return errors.Wrap(err, "update utxos")
+		return nil, errors.Wrap(err, "update utxos")
 	}
 	defer rows.Close()
 
@@ -279,18 +287,22 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) e
 		var outpoint bc.Outpoint
 		err = rows.Scan(&outpoint.Hash, &outpoint.Index)
 		if err != nil {
-			return errors.Wrap(err, "scanning update utxos result")
+			return nil, errors.Wrap(err, "scanning update utxos result")
 		}
 		updated[outpoint] = true
 	}
 
-	var outs utxoSet
+	var (
+		outs     utxoSet
+		newDelta = make([]*Output, 0, len(delta)-len(updated))
+	)
 	for _, out := range delta {
-		if out.Spent {
-			continue
-		}
 		if updated[out.Outpoint] {
 			// already updated above
+			continue
+		}
+		newDelta = append(newDelta, out)
+		if out.Spent {
 			continue
 		}
 		outs.txHash = append(outs.txHash, out.Outpoint.Hash.String())
@@ -348,7 +360,7 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) e
 		blockHashStr,
 		block.Height,
 	)
-	return errors.Wrap(err, "insert utxos")
+	return newDelta, errors.Wrap(err, "insert utxos")
 }
 
 // CountBlockTxs returns the total number of confirmed transactions.

@@ -174,6 +174,9 @@ func ApplyBlock(ctx context.Context, block *bc.Block) error {
 	return nil
 }
 
+// applyBlock returns a delta for the reserver:
+//   - deleted outputs
+//   - inserted outputs (not previously part of the pool)
 func applyBlock(ctx context.Context, block *bc.Block) ([]*txdb.Output, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -208,7 +211,7 @@ func applyBlock(ctx context.Context, block *bc.Block) ([]*txdb.Output, error) {
 		return nil, errors.Wrap(err, "remove block spent outputs")
 	}
 
-	err = txdb.InsertBlockOutputs(ctx, block, delta)
+	delta, err = txdb.InsertBlockOutputs(ctx, block, delta)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert block outputs")
 	}

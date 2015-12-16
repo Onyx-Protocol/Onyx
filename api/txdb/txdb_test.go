@@ -305,7 +305,7 @@ func TestRemoveBlockOutputs(t *testing.T) {
 			ManagerNodeID: "mnode-1",
 			AddrIndex:     [2]uint32{0, 0},
 		}
-		err := InsertBlockOutputs(ctx, blk, []*Output{out})
+		_, err := InsertBlockOutputs(ctx, blk, []*Output{out})
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -347,7 +347,7 @@ func TestInsertBlockOutputs(t *testing.T) {
 			ManagerNodeID: "mnode-1",
 			AddrIndex:     [2]uint32{0, 0},
 		}
-		err := InsertBlockOutputs(ctx, blk, []*Output{out})
+		_, err := InsertBlockOutputs(ctx, blk, []*Output{out})
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
