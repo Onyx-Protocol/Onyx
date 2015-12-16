@@ -29,7 +29,7 @@ type nodeTxInput struct {
 	Amount       uint64             `json:"amount"`
 	Address      chainjson.HexBytes `json:"address,omitempty"`
 	AccountID    string             `json:"account_id,omitempty"`
-	AccountLabel string             `json:"account_label"`
+	AccountLabel string             `json:"account_label,omitempty"`
 	Metadata     chainjson.HexBytes `json:"metadata"`
 
 	mNodeID string
