@@ -14,7 +14,6 @@ TRUNCATE
 	assets,
 	issuance_totals,
 	addresses,
-	pool_outputs,
 	pool_inputs,
 	pool_txs,
 	blocks,
