@@ -53,53 +53,93 @@ func InsertAssetDefinitionPointers(ctx context.Context, adps map[bc.AssetID]*bc.
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	for _, adp := range adps {
-		err := insertADP(ctx, adp)
-		if err != nil {
-			return errors.Wrapf(err, "inserting adp for asset %s", adp.AssetID)
+	/*
+		TODO(erykwalder): do it in a single query,
+		something like this:
+
+		WITH adps AS (
+			SELECT unnest($1::text[]) h, unnest($2::text[]) id
+		), updates AS (
+			UPDATE asset_definition_pointers
+			SET asset_definition_hash=h
+			FROM adps
+			WHERE asset_id=id
+			RETURNING asset_id
+		)
+		INSERT INTO asset_definition_pointers (asset_id, asset_definition_hash)
+		SELECT * FROM adps
+		WHERE id NOT IN (TABLE updates)
+	*/
+
+	var aids, ptrs []string
+	for id, p := range adps {
+		aids = append(aids, id.String())
+		ptrs = append(ptrs, bc.Hash(p.DefinitionHash).String())
+	}
+	updated, err := updateADPs(ctx, aids, ptrs)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	var aidsNew, ptrsNew []string
+	for i := range aids {
+		if updated[aids[i]] {
+			continue
 		}
+		aidsNew = append(aidsNew, aids[i])
+		ptrsNew = append(ptrsNew, ptrs[i])
+	}
+	err = insertADPs(ctx, aidsNew, ptrsNew)
+	if err != nil {
+		return errors.Wrap(err)
 	}
 
 	return nil
 }
 
-func insertADP(ctx context.Context, adp *bc.AssetDefinitionPointer) error {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
-	aid := adp.AssetID.String()
-	hash := bc.Hash(adp.DefinitionHash).String()
-
-	const updateQ = `
+func updateADPs(ctx context.Context, aids, ptrs []string) (updated map[string]bool, err error) {
+	const q = `
+		WITH adps AS (
+			SELECT unnest($1::text[]) h, unnest($2::text[]) id
+		)
 		UPDATE asset_definition_pointers
-		SET asset_definition_hash=$2
-		WHERE asset_id=$1
+		SET asset_definition_hash=h
+		FROM adps
+		WHERE asset_id=id
+		RETURNING asset_id
 	`
-
-	res, err := pg.FromContext(ctx).Exec(ctx, updateQ, aid, hash)
+	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(aids), pg.Strings(ptrs))
 	if err != nil {
-		return errors.Wrap(err, "updateQ setting asset definition pointer")
+		return nil, errors.Wrap(err)
 	}
-
-	affected, err := res.RowsAffected()
-	if err != nil {
-		return errors.Wrap(err, "checking rows affected, setting asset definition pointer")
-	}
-
-	if affected == 0 {
-		const insertQ = `
-			INSERT INTO asset_definition_pointers (asset_id, asset_definition_hash)
-			VALUES ($1, $2)
-		`
-
-		_, err = pg.FromContext(ctx).Exec(ctx, insertQ, aid, hash)
+	defer rows.Close()
+	updated = make(map[string]bool)
+	for rows.Next() {
+		var h bc.Hash
+		err = rows.Scan(&h)
 		if err != nil {
-			return errors.Wrap(err, "insertQ setting asset definition pointer")
+			return nil, errors.Wrap(err)
 		}
-
+		updated[h.String()] = true
 	}
+	if rows.Err() != nil {
+		return nil, errors.Wrap(rows.Err())
+	}
+	return updated, nil
+}
 
-	return nil
+func insertADPs(ctx context.Context, aids, ptrs []string) error {
+	const q = `
+		WITH adps AS (SELECT unnest($1::text[]) id, unnest($2::text[]))
+		INSERT INTO asset_definition_pointers (asset_id, asset_definition_hash)
+		SELECT * FROM adps
+		WHERE NOT EXISTS (
+			SELECT 1 from asset_definition_pointers
+			WHERE id=asset_id
+		)
+	`
+	_, err := pg.FromContext(ctx).Exec(ctx, q, pg.Strings(aids), pg.Strings(ptrs))
+	return errors.Wrap(err)
 }
 
 // InsertAssetDefinitions inserts a record for each asset definition
