@@ -1,10 +1,12 @@
 package txdb
 
 import (
+	"bytes"
 	"testing"
 
 	"golang.org/x/net/context"
 
+	"chain/crypto/hash256"
 	"chain/database/pg"
 	"chain/fedchain/bc"
 )
@@ -112,13 +114,16 @@ func TestInsertAssetDefinitionPointersWithUpdate(t *testing.T) {
 }
 
 func TestInsertAssetDefinitions(t *testing.T) {
+	def := []byte("{'key': 'im totally json'}")
+	hash := bc.Hash(hash256.Sum(def)).String()
+
 	withContext(t, "", func(ctx context.Context) {
 		block := &bc.Block{
 			Transactions: []*bc.Tx{
 				bc.NewTx(bc.TxData{Inputs: []*bc.TxInput{
 					{
-						Metadata: []byte("{'key': 'im totally json'}"),
-						Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
+						AssetDefinition: def,
+						Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
 					},
 				}}),
 			},
@@ -139,17 +144,30 @@ func TestInsertAssetDefinitions(t *testing.T) {
 		if count != 1 {
 			t.Fatalf("checking results, want=1, got=%d", count)
 		}
+
+		var got []byte
+		const selectQ = `SELECT definition FROM asset_definitions WHERE hash=$1`
+		err = pg.FromContext(ctx).QueryRow(ctx, selectQ, hash).Scan(&got)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(got, def) {
+			t.Fatalf("inserted definition %q want %q", got, def)
+		}
 	})
 }
 
-func TestInsertAssetDefinitionsWithUpdate(t *testing.T) {
+func TestInsertAssetDefinitionsIdempotent(t *testing.T) {
+	def := []byte("{'key': 'im totally json'}")
+	hash := bc.Hash(hash256.Sum(def)).String()
+
 	withContext(t, "", func(ctx context.Context) {
 		block := &bc.Block{
 			Transactions: []*bc.Tx{
 				bc.NewTx(bc.TxData{Inputs: []*bc.TxInput{
 					{
-						Metadata: []byte("{'key': 'im totally json'}"),
-						Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
+						AssetDefinition: def,
+						Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
 					},
 				}}),
 			},
@@ -174,6 +192,16 @@ func TestInsertAssetDefinitionsWithUpdate(t *testing.T) {
 		}
 		if count != 1 {
 			t.Fatalf("checking results, want=1, got=%d", count)
+		}
+
+		var got []byte
+		const selectQ = `SELECT definition FROM asset_definitions WHERE hash=$1`
+		err = pg.FromContext(ctx).QueryRow(ctx, selectQ, hash).Scan(&got)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(got, def) {
+			t.Fatalf("inserted definition %q want %q", got, def)
 		}
 	})
 }
