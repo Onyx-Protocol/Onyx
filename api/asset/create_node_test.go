@@ -16,9 +16,10 @@ func TestCreateManagerNode(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	req := &CreateNodeReq{
-		Label: "foo",
-		Keys: []*XPubInit{
-			&XPubInit{Generate: true},
+		Label:        "foo",
+		SigsRequired: 1,
+		Keys: []*CreateNodeKeySpec{
+			{Type: "node", Generate: true},
 		},
 	}
 	node, err := CreateNode(ctx, ManagerNode, "proj-id-0", req)

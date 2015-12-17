@@ -20,13 +20,14 @@ func TestCreateManagerNodeBadXPub(t *testing.T) {
 	ctx = authn.NewContext(ctx, "sample-user-id-0")
 
 	req := map[string]interface{}{
-		"label": "deprecated node",
-		"keys":  []*asset.XPubInit{{Key: "badxpub"}},
+		"label":               "node",
+		"signatures_required": 1,
+		"keys":                []*asset.CreateNodeKeySpec{{Type: "node", XPub: "badxpub"}},
 	}
 
 	_, err := createManagerNode(ctx, "a1", req)
-	if got := errors.Root(err); got != asset.ErrBadXPub {
-		t.Fatalf("err = %v want %v", got, asset.ErrBadXPub)
+	if got := errors.Root(err); got != asset.ErrBadKeySpec {
+		t.Fatalf("err = %v want %v", got, asset.ErrBadKeySpec)
 	}
 }
 
@@ -41,7 +42,7 @@ func TestCreateManagerNode(t *testing.T) {
 
 	req := map[string]interface{}{
 		"label":               "node",
-		"keys":                []*asset.XPubInit{{Generate: true}},
+		"keys":                []*asset.CreateNodeKeySpec{{Type: "node", Generate: true}},
 		"signatures_required": 1,
 	}
 
@@ -51,9 +52,7 @@ func TestCreateManagerNode(t *testing.T) {
 	}
 
 	var count int
-	var checkQ = `
-		SELECT COUNT(*) FROM manager_nodes
-	`
+	var checkQ = `SELECT COUNT(*) FROM manager_nodes`
 	err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
@@ -83,9 +82,7 @@ func TestCreateManagerNodeDeprecated(t *testing.T) {
 	}
 
 	var count int
-	var checkQ = `
-		SELECT COUNT(*) FROM manager_nodes
-	`
+	var checkQ = `SELECT COUNT(*) FROM manager_nodes`
 	err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)

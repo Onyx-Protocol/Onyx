@@ -20,7 +20,7 @@ func TestCreateIssuerNode(t *testing.T) {
 
 	req := map[string]interface{}{
 		"label":               "node",
-		"keys":                []*asset.XPubInit{{Generate: true}},
+		"keys":                []*asset.CreateNodeKeySpec{{Type: "node", Generate: true}},
 		"signatures_required": 1,
 	}
 
@@ -30,9 +30,7 @@ func TestCreateIssuerNode(t *testing.T) {
 	}
 
 	var count int
-	var checkQ = `
-			SELECT COUNT(*) FROM issuer_nodes
-		`
+	var checkQ = `SELECT COUNT(*) FROM issuer_nodes`
 	err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
@@ -62,9 +60,7 @@ func TestCreateIssuerNodeDeprecated(t *testing.T) {
 	}
 
 	var count int
-	var checkQ = `
-			SELECT COUNT(*) FROM issuer_nodes
-		`
+	var checkQ = `SELECT COUNT(*) FROM issuer_nodes`
 	err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)

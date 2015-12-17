@@ -41,12 +41,12 @@ func createIssuerNode(ctx context.Context, projID string, req map[string]interfa
 		}
 
 		for _, xp := range depReq.XPubs {
-			key := &asset.XPubInit{Key: xp}
+			key := &asset.CreateNodeKeySpec{Type: "node", XPub: xp}
 			cnReq.Keys = append(cnReq.Keys, key)
 		}
 
 		if depReq.GenerateKey {
-			key := &asset.XPubInit{Generate: true}
+			key := &asset.CreateNodeKeySpec{Type: "node", Generate: true}
 			cnReq.Keys = append(cnReq.Keys, key)
 		}
 

@@ -9,14 +9,11 @@ import (
 	"chain/fedchain-sandbox/hdkey"
 )
 
+// Errors returned by functions in this file.
 var (
-	// ErrBadXPub is returned by CreateNode.
-	// It may be wrapped using package chain/errors.
-	ErrBadXPub = errors.New("bad xpub")
-
-	// ErrTooFewKeys can be returned by CreateNode if not enough keys
-	// have been provided or generated.
-	ErrTooFewKeys = errors.New("too few keys for signatures required")
+	ErrBadSigsRequired = errors.New("zero signatures required")
+	ErrBadKeySpec      = errors.New("bad key specification")
+	ErrTooFewKeys      = errors.New("too few keys for signatures required")
 )
 
 type nodeType int
@@ -31,7 +28,7 @@ const (
 // passed into CreateManagerNode or CreateIssuerNode
 type CreateNodeReq struct {
 	Label        string
-	Keys         []*XPubInit
+	Keys         []*CreateNodeKeySpec
 	SigsRequired int `json:"signatures_required"`
 }
 
@@ -44,15 +41,19 @@ type DeprecatedCreateNodeReq struct {
 	GenerateKey bool `json:"generate_key"`
 }
 
-// XPubInit is a representation of an xpub used when nodes are being created.
-// It includes the key itself, as well as two flags:
-// Generate specifies whether the key needs to be generated server-side, and
-// Variable specifies whether this is a placeholder for an account-specific key.
-// If Variable is true, Generate must be false and Key must be empty.
-type XPubInit struct {
-	Key      string
+// CreateNodeKeySpec describes a single key in a node's multi-sig configuration.
+// It consists of a type, plus parameters depending on that type.
+// Valid manager node types include "node" and "account". For issuer nodes,
+// only "node" is valid.
+// For node-type keys, either the XPub field is explicitly provided, or the
+// Generate flag is set to true, in which case the xprv/xpub will be generated
+// on the server side.
+type CreateNodeKeySpec struct {
+	Type string
+
+	// Parameters for type "node"
+	XPub     string
 	Generate bool
-	Variable bool
 }
 
 // CreateNode is used to create manager and issuer nodes
@@ -61,55 +62,56 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 		return nil, appdb.ErrBadLabel
 	}
 
+	if req.SigsRequired < 1 {
+		return nil, ErrBadSigsRequired
+	}
+
 	var (
-		keys       []*hdkey.XKey
-		gennedKeys []*hdkey.XKey
+		xpubs       []*hdkey.XKey
+		gennedXprvs []*hdkey.XKey
 	)
 
 	variableKeyCount := 0
-	for i, xpub := range req.Keys {
-		if xpub.Generate {
-			pub, priv, err := newKey()
-			if err != nil {
-				return nil, err
+	for i, k := range req.Keys {
+		switch k.Type {
+		case "node":
+			if k.XPub != "" {
+				xpub, err := hdkey.NewXKey(k.XPub)
+				if err != nil {
+					return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: xpub is not valid", i)
+				} else if xpub.IsPrivate() {
+					return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: is xpriv, not xpub", i)
+				}
+				xpubs = append(xpubs, xpub)
+			} else if k.Generate {
+				xpub, xprv, err := newKey()
+				if err != nil {
+					return nil, err
+				}
+				xpubs = append(xpubs, xpub)
+				gennedXprvs = append(gennedXprvs, xprv)
+			} else {
+				return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: node key must be generated, or an explicit xpub", i)
 			}
-			keys = append(keys, pub)
-			gennedKeys = append(gennedKeys, priv)
-		} else if xpub.Variable {
+		case "account":
+			if node != ManagerNode {
+				return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: account keys are only valid for manager nodes", i)
+			}
 			variableKeyCount++
-		} else if xpub.Key != "" {
-			key, err := hdkey.NewXKey(xpub.Key)
-			if err != nil {
-				err = errors.Wrap(ErrBadXPub, err.Error())
-				return nil, errors.WithDetailf(err, "xpub %d", i)
-			}
-			keys = append(keys, key)
-		} else {
-			return nil, errors.WithDetail(ErrBadXPub, "xpub must have `generated`, `variable` or `key` set")
+		default:
+			return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: invalid type %s", i, k.Type)
 		}
 	}
 
-	// If the request is missing a SigsRequired field,
-	// it's a deprecated-style request. Default to 1-of-1.
-	if req.SigsRequired == 0 {
-		req.SigsRequired = 1
-	}
-
-	if len(keys)+variableKeyCount < req.SigsRequired {
+	if len(xpubs)+variableKeyCount < req.SigsRequired {
 		return nil, ErrTooFewKeys
 	}
 
-	for i, key := range keys {
-		if key.IsPrivate() {
-			return nil, errors.WithDetailf(ErrBadXPub, "key %d is xpriv, not xpub", i)
-		}
-	}
-
 	if node == ManagerNode {
-		return appdb.InsertManagerNode(ctx, projID, req.Label, keys, gennedKeys, variableKeyCount, req.SigsRequired)
+		return appdb.InsertManagerNode(ctx, projID, req.Label, xpubs, gennedXprvs, variableKeyCount, req.SigsRequired)
 	}
 	// Do nothing with variable keys for Issuer Nodes since they can't have variable keys yet.
-	return appdb.InsertIssuerNode(ctx, projID, req.Label, keys, gennedKeys, req.SigsRequired)
+	return appdb.InsertIssuerNode(ctx, projID, req.Label, xpubs, gennedXprvs, req.SigsRequired)
 }
 
 func newKey() (pub, priv *hdkey.XKey, err error) {
