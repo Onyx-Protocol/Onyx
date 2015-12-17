@@ -205,3 +205,51 @@ func TestInsertAssetDefinitionsIdempotent(t *testing.T) {
 		}
 	})
 }
+
+func TestInsertAssetDefinitionsDuplicates(t *testing.T) {
+	def := []byte("{'key': 'im totally json'}")
+	hash := bc.Hash(hash256.Sum(def)).String()
+
+	withContext(t, "", func(ctx context.Context) {
+		block := &bc.Block{
+			Transactions: []*bc.Tx{
+				bc.NewTx(bc.TxData{Inputs: []*bc.TxInput{
+					{
+						AssetDefinition: def,
+						Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
+					},
+					{
+						AssetDefinition: def, // duplicate
+						Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
+					},
+				}}),
+			},
+		}
+		err := InsertAssetDefinitions(ctx, block)
+		if err != nil {
+			t.Fatalf("unexpected error %v", err)
+		}
+
+		var count int
+		var checkQ = `
+			SELECT COUNT(*) FROM asset_definitions
+		`
+		err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
+		if err != nil {
+			t.Fatalf("unexpected error %v", err)
+		}
+		if count != 1 {
+			t.Fatalf("checking results, want=1, got=%d", count)
+		}
+
+		var got []byte
+		const selectQ = `SELECT definition FROM asset_definitions WHERE hash=$1`
+		err = pg.FromContext(ctx).QueryRow(ctx, selectQ, hash).Scan(&got)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(got, def) {
+			t.Fatalf("inserted definition %q want %q", got, def)
+		}
+	})
+}

@@ -109,6 +109,7 @@ func InsertAssetDefinitions(ctx context.Context, block *bc.Block) error {
 	defer span.Finish(ctx)
 
 	var (
+		seen = map[bc.Hash]bool{}
 		hash []string
 		defn [][]byte
 	)
@@ -116,6 +117,10 @@ func InsertAssetDefinitions(ctx context.Context, block *bc.Block) error {
 		for _, in := range tx.Inputs {
 			if in.IsIssuance() && len(in.AssetDefinition) > 0 {
 				var h bc.Hash = hash256.Sum(in.AssetDefinition)
+				if seen[h] {
+					continue
+				}
+				seen[h] = true
 				hash = append(hash, h.String())
 				defn = append(defn, in.AssetDefinition)
 			}
