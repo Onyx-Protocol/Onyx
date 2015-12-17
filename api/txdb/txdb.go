@@ -235,8 +235,7 @@ func RemoveBlockSpentOutputs(ctx context.Context, delta []*Output) error {
 
 	const q = `
 		DELETE FROM utxos
-		WHERE confirmed
-					AND (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
 	_, err := pg.FromContext(ctx).Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(ids))
 	if err != nil {
