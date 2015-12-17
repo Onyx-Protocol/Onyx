@@ -7,6 +7,7 @@ import (
 	"github.com/resonancelabs/go-pub/instrument"
 	"golang.org/x/net/context"
 
+	"chain/log"
 	chainhttp "chain/net/http"
 	"chain/net/http/reqid"
 	"chain/net/trace/span"
@@ -41,6 +42,11 @@ func (h Handler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, re
 	}
 	sp.AddTraceJoinId("reqid", reqid.FromContext(ctx))
 	ctx = span.NewContextWithSpan(ctx, sp)
+	log.Write(
+		ctx,
+		"user-agent", req.Header.Get("User-Agent"),
+		"path", req.URL.Path,
+	)
 	h.Handler.ServeHTTPContext(ctx, w, req)
 	sp.Finish()
 }

@@ -43,9 +43,10 @@ func nouserAuthn(secret string, f chainhttp.HandlerFunc) chainhttp.HandlerFunc {
 
 func tokenAuthn(f chainhttp.HandlerFunc) chainhttp.HandlerFunc {
 	return authn.BasicHandler{
-		Auth:  authenticateToken,
-		Next:  f,
-		Realm: "x.chain.com",
+		Auth:         authenticateToken,
+		Next:         f,
+		Realm:        "x.chain.com",
+		AuthIDLogKey: "user-id",
 	}.ServeHTTPContext
 }
 
