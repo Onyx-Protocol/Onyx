@@ -290,7 +290,7 @@ func TestGetTxTransfer(t *testing.T) {
 
 		var blkHash = blk.Hash()
 
-		h0, h1 := prevTxs[0].Hash, prevTxs[1].Hash
+		zero, one, h0, h1 := uint32(0), uint32(1), prevTxs[0].Hash, prevTxs[1].Hash
 
 		want := &Tx{
 			ID:          tx.Hash,
@@ -302,13 +302,13 @@ func TestGetTxTransfer(t *testing.T) {
 				AssetID: bc.AssetID([32]byte{1}),
 				Amount:  5,
 				TxID:    &h0,
-				TxOut:   0,
+				TxOut:   &zero,
 			}, {
 				Type:    "transfer",
 				AssetID: bc.AssetID([32]byte{2}),
 				Amount:  6,
 				TxID:    &h1,
-				TxOut:   1,
+				TxOut:   &one,
 			}},
 			Outputs: []*TxOutput{{
 				AssetID: bc.AssetID([32]byte{1}),

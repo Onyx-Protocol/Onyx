@@ -94,7 +94,7 @@ type Tx struct {
 type TxInput struct {
 	Type     string             `json:"type"`
 	TxID     *bc.Hash           `json:"transaction_id,omitempty"`
-	TxOut    uint32             `json:"transaction_output,omitempty"`
+	TxOut    *uint32            `json:"transaction_output,omitempty"`
 	AssetID  bc.AssetID         `json:"asset_id"`
 	Amount   uint64             `json:"amount"`
 	Metadata chainjson.HexBytes `json:"metadata,omitempty"`
@@ -172,7 +172,7 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 				AssetID:  prev.AssetID,
 				Amount:   prev.Value,
 				TxID:     &in.Previous.Hash,
-				TxOut:    in.Previous.Index,
+				TxOut:    &in.Previous.Index,
 				Metadata: in.Metadata,
 			})
 		}
