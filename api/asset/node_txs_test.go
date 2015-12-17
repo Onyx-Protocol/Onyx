@@ -58,13 +58,15 @@ func TestGenerateNodeTxTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	one := uint32(1)
+
 	want := &nodeTx{
 		ID:   bc.Hash{},
 		Time: txTime,
 		Inputs: []nodeTxInput{{
 			Type:         "transfer",
-			TxID:         bc.Hash([32]byte{255}),
-			TxOut:        1,
+			TxID:         (*bc.Hash)(&[32]byte{255}),
+			TxOut:        &one,
 			AssetID:      asset0,
 			AssetLabel:   "asset0",
 			Amount:       987,

@@ -22,8 +22,8 @@ type nodeTx struct {
 
 type nodeTxInput struct {
 	Type         string             `json:"type"`
-	TxID         bc.Hash            `json:"transaction_id,omitempty"`
-	TxOut        uint32             `json:"transaction_output,omitempty"`
+	TxID         *bc.Hash           `json:"transaction_id,omitempty"`
+	TxOut        *uint32            `json:"transaction_output,omitempty"`
 	AssetID      bc.AssetID         `json:"asset_id"`
 	AssetLabel   string             `json:"asset_label,omitempty"`
 	Amount       uint64             `json:"amount"`
@@ -172,8 +172,8 @@ func generateNodeTx(
 
 		actTx.Inputs = append(actTx.Inputs, nodeTxInput{
 			Type:         "transfer",
-			TxID:         in.Previous.Hash,
-			TxOut:        in.Previous.Index,
+			TxID:         &in.Previous.Hash,
+			TxOut:        &in.Previous.Index,
 			AssetID:      bc.AssetID(assetID),
 			AssetLabel:   assetLabel,
 			Amount:       ins[i].Amount,
