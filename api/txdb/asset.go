@@ -102,52 +102,36 @@ func insertADP(ctx context.Context, adp *bc.AssetDefinitionPointer) error {
 	return nil
 }
 
-// InsertAssetDefinitions writes the maps the hash of an asset definition
-// to that definition.
+// InsertAssetDefinitions inserts a record for each asset definition
+// in block. The record maps the hash to the data of the definition.
 func InsertAssetDefinitions(ctx context.Context, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	defs := make(map[[32]byte][]byte)
+	var (
+		hash []string
+		defn [][]byte
+	)
 	for _, tx := range block.Transactions {
 		for _, in := range tx.Inputs {
-			if in.IsIssuance() {
-				defs[hash256.Sum(in.AssetDefinition)] = in.AssetDefinition
+			if in.IsIssuance() && len(in.AssetDefinition) > 0 {
+				var h bc.Hash = hash256.Sum(in.AssetDefinition)
+				hash = append(hash, h.String())
+				defn = append(defn, in.AssetDefinition)
 			}
 		}
 	}
 
-	for hash, def := range defs {
-		err := insertAssetDefinition(ctx, hash, def)
-		if err != nil {
-			return errors.Wrapf(err, "inserting definition for definition hash %s", hash)
-		}
-	}
-
-	return nil
-}
-
-func insertAssetDefinition(ctx context.Context, hash [32]byte, definition []byte) error {
-	hashString := bc.Hash(hash).String()
-	const updateQ = `UPDATE asset_definitions SET definition=$2 WHERE hash=$1`
-	res, err := pg.FromContext(ctx).Exec(ctx, updateQ, hashString, definition)
-	if err != nil {
-		return errors.Wrap(err, "updateQ setting asset definition")
-	}
-
-	affected, err := res.RowsAffected()
-	if err != nil {
-		return errors.Wrap(err, "checking rows affected, setting asset definition")
-	}
-
-	if affected == 0 {
-		const insertQ = `INSERT INTO asset_definitions(hash, definition) VALUES ($1, $2)`
-
-		_, err = pg.FromContext(ctx).Exec(ctx, insertQ, hashString, definition)
-		if err != nil {
-			return errors.Wrap(err, "setting asset definition")
-		}
-	}
-
-	return nil
+	const q = `
+		WITH defs AS (
+			SELECT * FROM unnest($1::text[]) h, unnest($2::bytea[]) d
+			WHERE NOT EXISTS (
+				SELECT hash from asset_definitions
+				WHERE h=hash
+			)
+		)
+		INSERT INTO asset_definitions (hash, definition) TABLE defs
+	`
+	_, err := pg.FromContext(ctx).Exec(ctx, q, pg.Strings(hash), pg.Byteas(defn))
+	return errors.Wrap(err)
 }
