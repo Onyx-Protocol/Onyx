@@ -92,7 +92,7 @@ func TestIssue(t *testing.T) {
 		Version: 1,
 		Inputs: []*bc.TxInput{{Previous: bc.Outpoint{
 			Index: bc.InvalidOutputIndex,
-			Hash:  mustParseHash("341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5"),
+			Hash:  bc.Hash{},
 		}}},
 		Outputs: []*bc.TxOutput{{AssetID: bc.AssetID{}, Value: 123, Script: outScript}},
 	}

@@ -29,11 +29,6 @@ var ErrBadAddr = errors.New("bad address")
 func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
 
-	prevBlock, err := txdb.LatestBlock(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-
 	hash, err := bc.ParseHash(assetID)
 	assetHash := bc.AssetID(hash)
 
@@ -45,7 +40,7 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 	tx := &bc.TxData{Version: bc.CurrentTransactionVersion}
 	in := &bc.TxInput{Previous: bc.Outpoint{
 		Index: bc.InvalidOutputIndex,
-		Hash:  prevBlock.Hash(),
+		Hash:  bc.Hash{}, // TODO(kr): figure out anti-replay for issuance
 	}}
 
 	if len(asset.Definition) != 0 {
