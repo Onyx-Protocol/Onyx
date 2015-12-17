@@ -164,7 +164,9 @@ func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 	}
 
 	for _, in := range tx.Inputs {
-		if in.IsIssuance() {
+		// If metadata field is empty, no update of ADP takes place.
+		// See https://github.com/chain-engineering/fedchain/blob/master/documentation/fedchain-specification.md#extract-asset-definition.
+		if in.IsIssuance() && len(in.AssetDefinition) > 0 {
 			redeemScript, err := txscript.RedeemScriptFromP2SHSigScript(in.SignatureScript)
 			if err != nil {
 				return errors.Wrap(err, "extracting redeem script from sigscript")
