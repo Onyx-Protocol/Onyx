@@ -41,6 +41,14 @@ type DeprecatedCreateNodeReq struct {
 	GenerateKey bool `json:"generate_key"`
 }
 
+// CreateNodeResp is returned when a new node is created.
+type CreateNodeResp struct {
+	ID           string               `json:"id"`
+	Label        string               `json:"label"`
+	Keys         []*CreateNodeRespKey `json:"keys"`
+	SigsRequired int                  `json:"signatures_required"`
+}
+
 // CreateNodeKeySpec describes a single key in a node's multi-sig configuration.
 // It consists of a type, plus parameters depending on that type.
 // Valid manager node types include "node" and "account". For issuer nodes,
@@ -56,8 +64,24 @@ type CreateNodeKeySpec struct {
 	Generate bool
 }
 
+// CreateNodeRespKey is represents a single key in a node's multi-sig configuration.
+// It is used as a return value when nodes are created.
+//
+// As with CreateNodeKeySpec, it consists of a type, plus parameters depending on that type.
+// Valid manager node types include "node" and "account". For issuer nodes,
+// only "node" is valid.
+// For node-type keys, XPrv will be populated only if it was generated server-side
+// when the node was created.
+type CreateNodeRespKey struct {
+	Type string `json:"type"`
+
+	// Parameters for type "node"
+	XPub string `json:"xpub,omitempty"`
+	XPrv string `json:"xprv,omitempty"`
+}
+
 // CreateNode is used to create manager and issuer nodes
-func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNodeReq) (interface{}, error) {
+func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNodeReq) (*CreateNodeResp, error) {
 	if req.Label == "" {
 		return nil, appdb.ErrBadLabel
 	}
@@ -71,6 +95,10 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 		gennedXprvs []*hdkey.XKey
 	)
 
+	resp := &CreateNodeResp{
+		Keys: []*CreateNodeRespKey{},
+	}
+
 	variableKeyCount := 0
 	for i, k := range req.Keys {
 		switch k.Type {
@@ -83,6 +111,7 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 					return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: is xpriv, not xpub", i)
 				}
 				xpubs = append(xpubs, xpub)
+				resp.Keys = append(resp.Keys, &CreateNodeRespKey{Type: "node", XPub: xpub.String()})
 			} else if k.Generate {
 				xpub, xprv, err := newKey()
 				if err != nil {
@@ -90,6 +119,7 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 				}
 				xpubs = append(xpubs, xpub)
 				gennedXprvs = append(gennedXprvs, xprv)
+				resp.Keys = append(resp.Keys, &CreateNodeRespKey{Type: "node", XPub: xpub.String(), XPrv: xprv.String()})
 			} else {
 				return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: node key must be generated, or an explicit xpub", i)
 			}
@@ -98,6 +128,7 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 				return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: account keys are only valid for manager nodes", i)
 			}
 			variableKeyCount++
+			resp.Keys = append(resp.Keys, &CreateNodeRespKey{Type: "account"})
 		default:
 			return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: invalid type %s", i, k.Type)
 		}
@@ -107,11 +138,27 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 		return nil, ErrTooFewKeys
 	}
 
+	resp.SigsRequired = req.SigsRequired
+
 	if node == ManagerNode {
-		return appdb.InsertManagerNode(ctx, projID, req.Label, xpubs, gennedXprvs, variableKeyCount, req.SigsRequired)
+		mn, err := appdb.InsertManagerNode(ctx, projID, req.Label, xpubs, gennedXprvs, variableKeyCount, req.SigsRequired)
+		if err != nil {
+			return nil, err
+		}
+
+		resp.ID = mn.ID
+		resp.Label = mn.Label
+		return resp, nil
 	}
 	// Do nothing with variable keys for Issuer Nodes since they can't have variable keys yet.
-	return appdb.InsertIssuerNode(ctx, projID, req.Label, xpubs, gennedXprvs, req.SigsRequired)
+	in, err := appdb.InsertIssuerNode(ctx, projID, req.Label, xpubs, gennedXprvs, req.SigsRequired)
+	if err != nil {
+		return nil, err
+	}
+
+	resp.ID = in.ID
+	resp.Label = in.Label
+	return resp, nil
 }
 
 func newKey() (pub, priv *hdkey.XKey, err error) {

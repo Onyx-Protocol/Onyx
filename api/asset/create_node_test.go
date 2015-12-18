@@ -3,7 +3,6 @@ package asset
 import (
 	"testing"
 
-	"chain/api/appdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -26,11 +25,7 @@ func TestCreateManagerNode(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
-	managerNode, ok := node.(*appdb.ManagerNode)
-	if !ok {
-		t.Fatal("expected ManagerNode struct")
-	}
-	if managerNode.ID == "" {
+	if node.ID == "" {
 		t.Errorf("got empty managerNode id")
 	}
 	var valid bool
