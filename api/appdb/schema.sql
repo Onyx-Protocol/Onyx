@@ -956,6 +956,13 @@ CREATE INDEX utxos_manager_node_id_asset_id_reserved_until_idx ON utxos USING bt
 
 
 --
+-- Name: utxos_pool_tx_hash_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX utxos_pool_tx_hash_idx ON utxos USING btree (pool_tx_hash);
+
+
+--
 -- Name: accounts_manager_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
