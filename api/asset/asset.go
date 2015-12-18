@@ -26,7 +26,7 @@ var ErrBadAddr = errors.New("bad address")
 // Issue creates a transaction that
 // issues new units of an asset
 // distributed to the outputs provided.
-func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
+func Issue(ctx context.Context, assetID string, outs []*Output) (*TxTemplate, error) {
 	defer metrics.RecordElapsed(time.Now())
 
 	hash, err := bc.ParseHash(assetID)
@@ -73,7 +73,7 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*Tx, error) {
 		return nil, errors.Wrap(err, "creating issuance Input")
 	}
 
-	appTx := &Tx{
+	appTx := &TxTemplate{
 		Unsigned:   tx,
 		BlockChain: "sandbox", // TODO(tess): make this BlockChain: blockchain.FromContext(ctx)
 		Inputs:     []*Input{input},

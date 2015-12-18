@@ -27,7 +27,7 @@ func TestAssembleSignatures(t *testing.T) {
 	}
 	sigHash, _ := bc.ParseHash("78e437f627019fc270bbe9ed309291d0a5f6bf98bfae0f750538ba56646f7327")
 
-	tpl := &Tx{
+	tpl := &TxTemplate{
 		Unsigned: unsigned,
 		Inputs: []*Input{{
 			RedeemScript:  []byte{},

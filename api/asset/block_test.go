@@ -116,7 +116,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 	})
 }
 
-func signTx(tx *Tx, priv *hdkey.XKey) error {
+func signTx(tx *TxTemplate, priv *hdkey.XKey) error {
 	for _, input := range tx.Inputs {
 		for _, sig := range input.Sigs {
 			key, err := derive(priv, sig.DerivationPath)

@@ -25,7 +25,7 @@ var ErrBadOutDest = errors.New("invalid output destinations")
 // Build partners then satisfy and consume inputs and outputs.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, prev *Tx, inputs []utxodb.Input, outputs []*Output, ttl time.Duration) (*Tx, error) {
+func Build(ctx context.Context, prev *TxTemplate, inputs []utxodb.Input, outputs []*Output, ttl time.Duration) (*TxTemplate, error) {
 	if ttl < time.Minute {
 		ttl = time.Minute
 	}
@@ -48,7 +48,7 @@ func Build(ctx context.Context, prev *Tx, inputs []utxodb.Input, outputs []*Outp
 	return tpl, nil
 }
 
-func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.Duration) (*Tx, error) {
+func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.Duration) (*TxTemplate, error) {
 	if err := validateOutputs(outs); err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.
 		return nil, err
 	}
 
-	appTx := &Tx{
+	appTx := &TxTemplate{
 		Unsigned:   tx,
 		BlockChain: "sandbox",
 		Inputs:     txInputs,
@@ -158,12 +158,12 @@ func addressInput(ctx context.Context, u *utxodb.UTXO, tx *bc.TxData, idx int) (
 	return in, nil
 }
 
-func combine(txs ...*Tx) (*Tx, error) {
+func combine(txs ...*TxTemplate) (*TxTemplate, error) {
 	if len(txs) == 0 {
 		return nil, errors.New("must pass at least one tx")
 	}
 	completeWire := &bc.TxData{Version: bc.CurrentTransactionVersion}
-	complete := &Tx{BlockChain: txs[0].BlockChain, Unsigned: completeWire}
+	complete := &TxTemplate{BlockChain: txs[0].BlockChain, Unsigned: completeWire}
 
 	for _, tx := range txs {
 		if tx.BlockChain != complete.BlockChain {
@@ -184,7 +184,7 @@ func combine(txs ...*Tx) (*Tx, error) {
 	return complete, nil
 }
 
-func setSignatureData(tpl *Tx) error {
+func setSignatureData(tpl *TxTemplate) error {
 	for i, in := range tpl.Inputs {
 		hash, err := txscript.CalcSignatureHash(tpl.Unsigned, i, in.RedeemScript, txscript.SigHashAll)
 		if err != nil {

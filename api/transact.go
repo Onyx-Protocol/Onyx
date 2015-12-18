@@ -16,7 +16,7 @@ import (
 )
 
 type buildReq struct {
-	PrevTx  *asset.Tx `json:"previous_transaction"`
+	PrevTx  *asset.TxTemplate `json:"previous_transaction"`
 	Inputs  []utxodb.Input
 	Outputs []*asset.Output
 	ResTime time.Duration `json:"reservation_duration"`
@@ -94,7 +94,7 @@ func build(ctx context.Context, buildReqs []buildReq) (interface{}, error) {
 }
 
 // POST /v3/manager-nodes/transact/finalize
-func submitSingle(ctx context.Context, tpl *asset.Tx) (interface{}, error) {
+func submitSingle(ctx context.Context, tpl *asset.TxTemplate) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -122,7 +122,7 @@ func cancelReservation(ctx context.Context, x struct{ Transaction bc.Tx }) error
 }
 
 // POST /v3/transact/submit
-func submit(ctx context.Context, x struct{ Transactions []*asset.Tx }) interface{} {
+func submit(ctx context.Context, x struct{ Transactions []*asset.TxTemplate }) interface{} {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)

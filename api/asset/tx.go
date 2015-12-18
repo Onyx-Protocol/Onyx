@@ -6,16 +6,16 @@ import (
 	"chain/fedchain/bc"
 )
 
-// Tx represents a partially- or fully-signed transaction
+// TxTemplate represents a partially- or fully-signed transaction
 // belonging to a Chain project.
-type Tx struct {
+type TxTemplate struct {
 	Unsigned   *bc.TxData         `json:"unsigned_hex"`
 	BlockChain string             `json:"block_chain"`
 	Inputs     []*Input           `json:"inputs"`
 	OutRecvs   []*utxodb.Receiver `json:"output_receivers"`
 }
 
-// Input is an input for an project Tx.
+// Input is an input for a project TxTemplate.
 type Input struct {
 	IssuerNodeID  string        `json:"issuer_node_id,omitempty"`
 	ManagerNodeID string        `json:"manager_node_id,omitempty"`
@@ -24,7 +24,7 @@ type Input struct {
 	Sigs          []*Signature  `json:"signatures"`
 }
 
-// Signature is an signature for a project Tx.
+// Signature is an signature for a project TxTemplate.
 type Signature struct {
 	XPub           string        `json:"xpub"`
 	DerivationPath []uint32      `json:"derivation_path"`

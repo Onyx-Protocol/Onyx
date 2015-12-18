@@ -38,7 +38,7 @@ func TestBuildTrade(t *testing.T) {
 		Outputs: []*bc.TxOutput{{AssetID: [32]byte{255}, Value: 2}},
 	}
 
-	tpl := &Tx{
+	tpl := &TxTemplate{
 		Unsigned:   unsignedTx,
 		Inputs:     []*Input{{ManagerNodeID: "mn1"}},
 		BlockChain: "sandbox",
@@ -157,14 +157,14 @@ func TestCombine(t *testing.T) {
 		},
 	}
 
-	tpl1 := &Tx{
+	tpl1 := &TxTemplate{
 		Unsigned:   unsigned1,
 		Inputs:     []*Input{{ManagerNodeID: "mn1"}},
 		OutRecvs:   []*utxodb.Receiver{{ManagerNodeID: "mn1"}},
 		BlockChain: "sandbox",
 	}
 
-	tpl2 := &Tx{
+	tpl2 := &TxTemplate{
 		Unsigned:   unsigned2,
 		Inputs:     []*Input{{ManagerNodeID: "mn2"}},
 		OutRecvs:   []*utxodb.Receiver{{ManagerNodeID: "mn2"}},
@@ -177,7 +177,7 @@ func TestCombine(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := &Tx{
+	want := &TxTemplate{
 		Unsigned:   combined,
 		Inputs:     []*Input{{ManagerNodeID: "mn1"}, {ManagerNodeID: "mn2"}},
 		OutRecvs:   []*utxodb.Receiver{{ManagerNodeID: "mn1"}, {ManagerNodeID: "mn2"}},

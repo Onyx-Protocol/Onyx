@@ -23,7 +23,7 @@ var ErrBadTx = errors.New("bad transaction template")
 // FinalizeTx validates a transaction signature template,
 // assembles a fully signed tx, and stores the effects of
 // its changes on the UTXO set.
-func FinalizeTx(ctx context.Context, tx *Tx) (*bc.Tx, error) {
+func FinalizeTx(ctx context.Context, tx *TxTemplate) (*bc.Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
 
 	if len(tx.Inputs) > len(tx.Unsigned.Inputs) {
@@ -44,7 +44,7 @@ func FinalizeTx(ctx context.Context, tx *Tx) (*bc.Tx, error) {
 	return msg, nil
 }
 
-func assembleSignatures(tx *Tx) (*bc.Tx, error) {
+func assembleSignatures(tx *TxTemplate) (*bc.Tx, error) {
 	msg := tx.Unsigned
 	for i, input := range tx.Inputs {
 		sigsAdded := 0
