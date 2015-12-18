@@ -209,15 +209,16 @@ type Asset struct {
 // GetAsset returns the most recent asset definition stored in
 // the blockchain, for the given asset.
 func GetAsset(ctx context.Context, assetID string) (*Asset, error) {
-	hash, def, err := txdb.AssetDefinition(ctx, assetID)
-	if err != nil {
-		return nil, errors.Wrap(err, "loading definition")
-	}
-
 	// TODO(erykwalder): replace with a txdb call
 	asset, err := appdb.GetAsset(ctx, assetID)
 	if err != nil {
-		return nil, errors.Wrap(err, "loading circulation")
+		return nil, errors.Wrap(err, "loading asset")
+	}
+
+	// Ignore missing asset defs
+	hash, def, err := txdb.AssetDefinition(ctx, assetID)
+	if err != nil && errors.Root(err) != pg.ErrUserInputNotFound {
+		return nil, errors.Wrap(err, "loading definition")
 	}
 
 	return &Asset{assetID, hash, def, asset.Issued}, nil

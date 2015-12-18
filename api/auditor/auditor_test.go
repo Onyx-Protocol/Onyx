@@ -333,32 +333,57 @@ func TestGetAsset(t *testing.T) {
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
 			VALUES ('inode-1', 'proj-1', 'bar', '{}');
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label, issuance_script)
-			VALUES ('asset-1', 'inode-1', 0, '', 'baz', '');
+			VALUES ('asset-id-1', 'inode-1', 0, '', 'asset-label-1', ''),
+				('asset-id-2', 'inode-1', 1, '', 'asset-label-2', '');
 		INSERT INTO issuance_totals (asset_id, pool, confirmed)
-			VALUES ('asset-1', 5, 6);
+			VALUES ('asset-id-1', 5, 6),
+				('asset-id-2', 3, 4);
 		INSERT INTO asset_definition_pointers (asset_id, asset_definition_hash)
-			VALUES ('asset-1', 'hash-1');
+			VALUES ('asset-id-1', 'hash-1');
 		INSERT INTO asset_definitions (hash, definition)
 			VALUES ('hash-1', '{"a":"b"}'::bytea);
 	`
 	withContext(t, fix, func(ctx context.Context) {
-		got, err := GetAsset(ctx, "asset-1")
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
+		examples := []struct {
+			id   string
+			want *Asset
+		}{
+			{
+				"asset-id-1",
+				&Asset{
+					ID:            "asset-id-1",
+					DefinitionPtr: "hash-1",
+					Definition:    []byte(`{"a":"b"}`),
+					Issued:        appdb.AssetAmount{Total: 11, Confirmed: 6},
+				},
+			},
+
+			// Blank definition
+			{
+				"asset-id-2",
+				&Asset{
+					ID:            "asset-id-2",
+					DefinitionPtr: "",
+					Definition:    nil,
+					Issued:        appdb.AssetAmount{Total: 7, Confirmed: 4},
+				},
+			},
 		}
 
-		want := &Asset{
-			ID:            "asset-1",
-			DefinitionPtr: "hash-1",
-			Definition:    []byte(`{"a":"b"}`),
-			Issued:        appdb.AssetAmount{Total: 11, Confirmed: 6},
-		}
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, want)
+		for i, ex := range examples {
+			t.Log("Example", i)
+
+			got, err := GetAsset(ctx, ex.id)
+			if err != nil {
+				t.Fatal("unexpected error: ", err)
+			}
+
+			if !reflect.DeepEqual(got, ex.want) {
+				t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, ex.want)
+			}
 		}
 
-		_, err = GetAsset(ctx, "nonexistent")
+		_, err := GetAsset(ctx, "nonexistent")
 		if errors.Root(err) != pg.ErrUserInputNotFound {
 			t.Errorf("got err = %q want %q", errors.Root(err), pg.ErrUserInputNotFound)
 		}
