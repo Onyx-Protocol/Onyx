@@ -375,12 +375,12 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 
 func issue(ctx context.Context, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetID := info.asset.Hash.String()
-	issueOuts := []*Output{{
+	issueDests := []*Destination{{
 		AssetID:   assetID,
 		AccountID: destAcctID,
 		Amount:    amount,
 	}}
-	issueTx, err := Issue(ctx, assetID, issueOuts)
+	issueTx, err := Issue(ctx, assetID, issueDests)
 	if err != nil {
 		return nil, err
 	}
@@ -397,12 +397,12 @@ func transfer(ctx context.Context, info *clientInfo, srcAcctID, destAcctID strin
 		AccountID: srcAcctID,
 		Amount:    amount,
 	}}
-	outputs := []*Output{{
+	dests := []*Destination{{
 		AssetID:   info.asset.Hash.String(),
 		AccountID: destAcctID,
 		Amount:    amount,
 	}}
-	xferTx, err := Build(ctx, nil, inputs, outputs, time.Minute)
+	xferTx, err := Build(ctx, nil, inputs, dests, time.Minute)
 	if err != nil {
 		return nil, err
 	}

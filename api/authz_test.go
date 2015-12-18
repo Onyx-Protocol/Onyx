@@ -192,16 +192,16 @@ func TestBuildAuthz(t *testing.T) {
 		{
 			userID: "u2",
 			request: []buildReq{{
-				Inputs:  []utxodb.Input{{AccountID: "acc1"}},
-				Outputs: []*asset.Output{{AccountID: "acc4"}},
+				Inputs: []utxodb.Input{{AccountID: "acc1"}},
+				Dests:  []*asset.Destination{{AccountID: "acc4"}},
 			}},
 			want: nil,
 		},
 		{
 			userID: "u2",
 			request: []buildReq{{
-				Inputs:  []utxodb.Input{{AccountID: "acc1"}},
-				Outputs: []*asset.Output{{AccountID: "acc4"}},
+				Inputs: []utxodb.Input{{AccountID: "acc1"}},
+				Dests:  []*asset.Destination{{AccountID: "acc4"}},
 			}, {
 				Inputs: []utxodb.Input{{AccountID: "acc4"}},
 			}},
@@ -210,16 +210,16 @@ func TestBuildAuthz(t *testing.T) {
 		{
 			userID: "u2",
 			request: []buildReq{{
-				Inputs:  []utxodb.Input{{AccountID: "acc3"}},
-				Outputs: []*asset.Output{{AccountID: "acc6"}},
+				Inputs: []utxodb.Input{{AccountID: "acc3"}},
+				Dests:  []*asset.Destination{{AccountID: "acc6"}},
 			}},
 			want: errNoAccessToResource,
 		},
 		{
 			userID: "u2",
 			request: []buildReq{{
-				Inputs:  []utxodb.Input{{AccountID: "acc1"}},
-				Outputs: []*asset.Output{{AccountID: "acc2"}},
+				Inputs: []utxodb.Input{{AccountID: "acc1"}},
+				Dests:  []*asset.Destination{{AccountID: "acc2"}},
 			}},
 			want: errNoAccessToResource,
 		},

@@ -76,7 +76,7 @@ func TestIssue(t *testing.T) {
 	`)
 	defer pgtest.Finish(ctx)
 
-	outs := []*Output{{
+	outs := []*Destination{{
 		Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK",
 		Amount:  123,
 	}}
@@ -102,7 +102,7 @@ func TestIssue(t *testing.T) {
 	}
 
 	// Bad output destination error
-	outs = []*Output{{Amount: 5}}
+	outs = []*Destination{{Amount: 5}}
 	_, err = Issue(ctx, "0000000000000000000000000000000000000000000000000000000000000000", outs)
 
 	if errors.Root(err) != ErrBadOutDest {
@@ -123,8 +123,8 @@ func TestOutputPKScript(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	// Test account output pk script (address creation)
-	out := &Output{AccountID: "acc1"}
-	got, _, err := out.PKScript(ctx)
+	dest := &Destination{AccountID: "acc1"}
+	got, _, err := dest.PKScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -136,8 +136,8 @@ func TestOutputPKScript(t *testing.T) {
 	}
 
 	// Test stringified address output
-	out = &Output{Address: "31h9Wq4sVTr2ogZQgcazqgwJtEhM3hFtT2"}
-	got, _, err = out.PKScript(ctx)
+	dest = &Destination{Address: "31h9Wq4sVTr2ogZQgcazqgwJtEhM3hFtT2"}
+	got, _, err = dest.PKScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -148,8 +148,8 @@ func TestOutputPKScript(t *testing.T) {
 	}
 
 	// Test bad address output error
-	out = &Output{Address: "bad-addr"}
-	_, _, err = out.PKScript(ctx)
+	dest = &Destination{Address: "bad-addr"}
+	_, _, err = dest.PKScript(ctx)
 	if errors.Root(err) != ErrBadAddr {
 		t.Errorf("got pkscript = %x want %x", errors.Root(err), ErrBadAddr)
 	}
@@ -167,8 +167,8 @@ func TestPKScriptChangeAddr(t *testing.T) {
 	`)
 	defer pgtest.Finish(ctx)
 
-	out := &Output{AccountID: "acc1", isChange: true}
-	_, recv, err := out.PKScript(ctx)
+	dest := &Destination{AccountID: "acc1", isChange: true}
+	_, recv, err := dest.PKScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

@@ -21,15 +21,15 @@ var utxoDB = utxodb.New(sqlUTXODB{})
 var ErrBadOutDest = errors.New("invalid output destinations")
 
 // Build builds or adds on to a transaction.
-// Initially, inputs are left unconsumed, and outputs unsatisfied.
-// Build partners then satisfy and consume inputs and outputs.
+// Initially, inputs are left unconsumed, and destinations unsatisfied.
+// Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, prev *TxTemplate, inputs []utxodb.Input, outputs []*Output, ttl time.Duration) (*TxTemplate, error) {
+func Build(ctx context.Context, prev *TxTemplate, inputs []utxodb.Input, dests []*Destination, ttl time.Duration) (*TxTemplate, error) {
 	if ttl < time.Minute {
 		ttl = time.Minute
 	}
-	tpl, err := build(ctx, inputs, outputs, ttl)
+	tpl, err := build(ctx, inputs, dests, ttl)
 	if err != nil {
 		return nil, err
 	}
@@ -48,8 +48,8 @@ func Build(ctx context.Context, prev *TxTemplate, inputs []utxodb.Input, outputs
 	return tpl, nil
 }
 
-func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.Duration) (*TxTemplate, error) {
-	if err := validateOutputs(outs); err != nil {
+func build(ctx context.Context, inputs []utxodb.Input, dests []*Destination, ttl time.Duration) (*TxTemplate, error) {
+	if err := validateOutputs(dests); err != nil {
 		return nil, err
 	}
 
@@ -61,7 +61,7 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.
 	}
 
 	for _, c := range change {
-		outs = append(outs, &Output{
+		dests = append(dests, &Destination{
 			AccountID: c.Input.AccountID,
 			AssetID:   c.Input.AssetID,
 			Amount:    c.Amount,
@@ -74,7 +74,7 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.
 	}
 
 	var outRecvs []*utxodb.Receiver
-	for i, out := range outs {
+	for i, out := range dests {
 		hash, err := bc.ParseHash(out.AssetID)
 		if err != nil {
 			return nil, errors.WithDetailf(appdb.ErrBadAsset, "asset id: %v", out.AssetID)
@@ -110,8 +110,8 @@ func build(ctx context.Context, inputs []utxodb.Input, outs []*Output, ttl time.
 	return appTx, nil
 }
 
-func validateOutputs(outputs []*Output) error {
-	for i, out := range outputs {
+func validateOutputs(dests []*Destination) error {
+	for i, out := range dests {
 		if (out.AccountID == "") == (out.Address == "") {
 			return errors.WithDetailf(ErrBadOutDest, "output index=%d", i)
 		}

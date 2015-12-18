@@ -48,13 +48,13 @@ func TestBuildTrade(t *testing.T) {
 		AssetID:   "ff00000000000000000000000000000000000000000000000000000000000000",
 		Amount:    2,
 	}}
-	outputs := []*Output{{
+	dests := []*Destination{{
 		Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK",
 		AssetID: "fe00000000000000000000000000000000000000000000000000000000000000",
 		Amount:  5,
 	}}
 
-	got, err := Build(ctx, tpl, inputs, outputs, time.Hour*24)
+	got, err := Build(ctx, tpl, inputs, dests, time.Hour*24)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -94,7 +94,7 @@ func TestBuildTransfer(t *testing.T) {
 			AssetID:   "ff00000000000000000000000000000000000000000000000000000000000000",
 			Amount:    5,
 		}},
-		[]*Output{{
+		[]*Destination{{
 			AssetID: "ff00000000000000000000000000000000000000000000000000000000000000",
 			Address: "3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB",
 			Amount:  5,
@@ -110,21 +110,21 @@ func TestBuildTransfer(t *testing.T) {
 
 func TestValidateOutputs(t *testing.T) {
 	cases := []struct {
-		outs    []*Output
+		dests   []*Destination
 		wantErr error
 	}{{
-		outs:    []*Output{{AssetID: "x", Amount: 5, AccountID: "acc1", Address: "a"}},
+		dests:   []*Destination{{AssetID: "x", Amount: 5, AccountID: "acc1", Address: "a"}},
 		wantErr: ErrBadOutDest,
 	}, {
-		outs:    []*Output{{AssetID: "x", Amount: 5}},
+		dests:   []*Destination{{AssetID: "x", Amount: 5}},
 		wantErr: ErrBadOutDest,
 	}, {
-		outs:    []*Output{{AssetID: "x", Amount: 5, AccountID: "acc1"}},
+		dests:   []*Destination{{AssetID: "x", Amount: 5, AccountID: "acc1"}},
 		wantErr: nil,
 	}}
 
 	for _, c := range cases {
-		got := validateOutputs(c.outs)
+		got := validateOutputs(c.dests)
 
 		if errors.Root(got) != c.wantErr {
 			t.Errorf("got err = %v want %v", errors.Root(got), c.wantErr)

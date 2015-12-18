@@ -26,7 +26,7 @@ var ErrBadAddr = errors.New("bad address")
 // Issue creates a transaction that
 // issues new units of an asset
 // distributed to the outputs provided.
-func Issue(ctx context.Context, assetID string, outs []*Output) (*TxTemplate, error) {
+func Issue(ctx context.Context, assetID string, dests []*Destination) (*TxTemplate, error) {
 	defer metrics.RecordElapsed(time.Now())
 
 	hash, err := bc.ParseHash(assetID)
@@ -57,13 +57,13 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*TxTemplate, er
 
 	tx.Inputs = append(tx.Inputs, in)
 
-	for i, out := range outs {
-		if (out.AccountID == "") == (out.Address == "") {
+	for i, dest := range dests {
+		if (dest.AccountID == "") == (dest.Address == "") {
 			return nil, errors.WithDetailf(ErrBadOutDest, "output index=%d", i)
 		}
 	}
 
-	outRecvs, err := addAssetIssuanceOutputs(ctx, tx, asset, outs)
+	outRecvs, err := addAssetIssuanceOutputs(ctx, tx, asset, dests)
 	if err != nil {
 		return nil, errors.Wrap(err, "add issuance outputs")
 	}
@@ -82,9 +82,9 @@ func Issue(ctx context.Context, assetID string, outs []*Output) (*TxTemplate, er
 	return appTx, nil
 }
 
-// Output is a user input struct that describes
+// Destination is a user input struct that describes
 // the destination of a transaction's inputs.
-type Output struct {
+type Destination struct {
 	AssetID   string             `json:"asset_id"`
 	Address   string             `json:"address"`
 	AccountID string             `json:"account_id"`
@@ -96,7 +96,7 @@ type Output struct {
 // PKScript returns the script for sending to
 // the destination address or account id provided.
 // For an Address-type output, the returned *utxodb.Receiver is nil.
-func (o *Output) PKScript(ctx context.Context) ([]byte, *utxodb.Receiver, error) {
+func (o *Destination) PKScript(ctx context.Context) ([]byte, *utxodb.Receiver, error) {
 	if o.AccountID != "" {
 		addr := &appdb.Address{
 			AccountID: o.AccountID,
@@ -115,18 +115,18 @@ func (o *Output) PKScript(ctx context.Context) ([]byte, *utxodb.Receiver, error)
 	return script, nil, nil
 }
 
-func addAssetIssuanceOutputs(ctx context.Context, tx *bc.TxData, asset *appdb.Asset, outs []*Output) ([]*utxodb.Receiver, error) {
+func addAssetIssuanceOutputs(ctx context.Context, tx *bc.TxData, asset *appdb.Asset, dests []*Destination) ([]*utxodb.Receiver, error) {
 	var outAddrs []*utxodb.Receiver
-	for i, out := range outs {
-		pkScript, receiver, err := out.PKScript(ctx)
+	for i, dest := range dests {
+		pkScript, receiver, err := dest.PKScript(ctx)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "output %d", i)
 		}
 		tx.Outputs = append(tx.Outputs, &bc.TxOutput{
 			AssetID:  asset.Hash,
-			Value:    out.Amount,
+			Value:    dest.Amount,
 			Script:   pkScript,
-			Metadata: out.Metadata,
+			Metadata: dest.Metadata,
 		})
 		outAddrs = append(outAddrs, receiver)
 	}

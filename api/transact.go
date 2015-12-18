@@ -18,12 +18,12 @@ import (
 type buildReq struct {
 	PrevTx  *asset.TxTemplate `json:"previous_transaction"`
 	Inputs  []utxodb.Input
-	Outputs []*asset.Output
-	ResTime time.Duration `json:"reservation_duration"`
+	Dests   []*asset.Destination `json:"outputs"`
+	ResTime time.Duration        `json:"reservation_duration"`
 }
 
 // POST /v3/assets/:assetID/issue
-func issueAsset(ctx context.Context, assetID string, outs []*asset.Output) (interface{}, error) {
+func issueAsset(ctx context.Context, assetID string, outs []*asset.Destination) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -49,7 +49,7 @@ func buildSingle(ctx context.Context, req buildReq) (interface{}, error) {
 	}
 	defer dbtx.Rollback(ctx)
 
-	tpl, err := asset.Build(ctx, req.PrevTx, req.Inputs, req.Outputs, req.ResTime)
+	tpl, err := asset.Build(ctx, req.PrevTx, req.Inputs, req.Dests, req.ResTime)
 	if err != nil {
 		return nil, err
 	}
