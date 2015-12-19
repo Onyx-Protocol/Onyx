@@ -2,7 +2,7 @@ package utxodb
 
 import "bytes"
 
-type byKey []Input
+type byKey []Source
 
 func (a byKey) Len() int      { return len(a) }
 func (a byKey) Swap(i, j int) { a[i], a[j] = a[j], a[i] }

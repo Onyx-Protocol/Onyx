@@ -72,13 +72,13 @@ type (
 	}
 
 	// Change represents reserved units beyond what was asked for.
-	// Total reservation is for Amount+Input.Amount.
+	// Total reservation is for Amount+Source.Amount.
 	Change struct {
-		Input  Input
+		Source Source
 		Amount uint64
 	}
 
-	Input struct {
+	Source struct {
 		AssetID   string `json:"asset_id"`
 		AccountID string `json:"account_id"`
 		TxID      string `json:"transaction_id"`
@@ -118,7 +118,7 @@ func (rs *Reserver) pool(accountID, assetID string) *pool {
 	return p
 }
 
-func (rs *Reserver) Reserve(ctx context.Context, inputs []Input, ttl time.Duration) (u []*UTXO, c []Change, err error) {
+func (rs *Reserver) Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTXO, c []Change, err error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -136,8 +136,8 @@ func (rs *Reserver) Reserve(ctx context.Context, inputs []Input, ttl time.Durati
 	now := time.Now().UTC()
 	exp := now.Add(ttl)
 
-	sort.Sort(byKey(inputs))
-	for _, in := range inputs {
+	sort.Sort(byKey(sources))
+	for _, in := range sources {
 		p := rs.pool(in.AccountID, in.AssetID)
 		err := p.init(ctx, rs.db, key{in.AccountID, in.AssetID})
 		if err != nil {

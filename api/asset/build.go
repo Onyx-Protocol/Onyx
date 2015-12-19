@@ -25,11 +25,11 @@ var ErrBadOutDest = errors.New("invalid output destinations")
 // Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, prev *TxTemplate, inputs []utxodb.Input, dests []*Destination, ttl time.Duration) (*TxTemplate, error) {
+func Build(ctx context.Context, prev *TxTemplate, sources []utxodb.Source, dests []*Destination, ttl time.Duration) (*TxTemplate, error) {
 	if ttl < time.Minute {
 		ttl = time.Minute
 	}
-	tpl, err := build(ctx, inputs, dests, ttl)
+	tpl, err := build(ctx, sources, dests, ttl)
 	if err != nil {
 		return nil, err
 	}
@@ -48,22 +48,22 @@ func Build(ctx context.Context, prev *TxTemplate, inputs []utxodb.Input, dests [
 	return tpl, nil
 }
 
-func build(ctx context.Context, inputs []utxodb.Input, dests []*Destination, ttl time.Duration) (*TxTemplate, error) {
+func build(ctx context.Context, sources []utxodb.Source, dests []*Destination, ttl time.Duration) (*TxTemplate, error) {
 	if err := validateOutputs(dests); err != nil {
 		return nil, err
 	}
 
 	tx := &bc.TxData{Version: bc.CurrentTransactionVersion}
 
-	reserved, change, err := utxoDB.Reserve(ctx, inputs, ttl)
+	reserved, change, err := utxoDB.Reserve(ctx, sources, ttl)
 	if err != nil {
 		return nil, errors.Wrap(err, "reserve")
 	}
 
 	for _, c := range change {
 		dests = append(dests, &Destination{
-			AccountID: c.Input.AccountID,
-			AssetID:   c.Input.AssetID,
+			AccountID: c.Source.AccountID,
+			AssetID:   c.Source.AssetID,
 			Amount:    c.Amount,
 			isChange:  true,
 		})

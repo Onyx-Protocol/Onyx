@@ -43,7 +43,7 @@ func TestBuildTrade(t *testing.T) {
 		Inputs:     []*Input{{ManagerNodeID: "mn1"}},
 		BlockChain: "sandbox",
 	}
-	inputs := []utxodb.Input{{
+	inputs := []utxodb.Source{{
 		AccountID: "acc2",
 		AssetID:   "ff00000000000000000000000000000000000000000000000000000000000000",
 		Amount:    2,
@@ -89,7 +89,7 @@ func TestBuildTransfer(t *testing.T) {
 
 	_, err := Build(ctx,
 		nil,
-		[]utxodb.Input{{
+		[]utxodb.Source{{
 			AccountID: "acc1",
 			AssetID:   "ff00000000000000000000000000000000000000000000000000000000000000",
 			Amount:    5,

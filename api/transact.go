@@ -16,8 +16,8 @@ import (
 )
 
 type buildReq struct {
-	PrevTx  *asset.TxTemplate `json:"previous_transaction"`
-	Inputs  []utxodb.Input
+	PrevTx  *asset.TxTemplate    `json:"previous_transaction"`
+	Sources []utxodb.Source      `json:"inputs"`
 	Dests   []*asset.Destination `json:"outputs"`
 	ResTime time.Duration        `json:"reservation_duration"`
 }
@@ -49,7 +49,7 @@ func buildSingle(ctx context.Context, req buildReq) (interface{}, error) {
 	}
 	defer dbtx.Rollback(ctx)
 
-	tpl, err := asset.Build(ctx, req.PrevTx, req.Inputs, req.Dests, req.ResTime)
+	tpl, err := asset.Build(ctx, req.PrevTx, req.Sources, req.Dests, req.ResTime)
 	if err != nil {
 		return nil, err
 	}

@@ -75,7 +75,7 @@ func TestGenSpendApply(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	inputs := []utxodb.Input{{
+	inputs := []utxodb.Source{{
 		AssetID:   info.asset.Hash.String(),
 		AccountID: info.acctA.ID,
 		Amount:    10,
@@ -392,7 +392,7 @@ func issue(ctx context.Context, info *clientInfo, destAcctID string, amount uint
 }
 
 func transfer(ctx context.Context, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
-	inputs := []utxodb.Input{{
+	inputs := []utxodb.Source{{
 		AssetID:   info.asset.Hash.String(),
 		AccountID: srcAcctID,
 		Amount:    amount,
