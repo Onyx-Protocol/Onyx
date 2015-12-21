@@ -8,17 +8,17 @@ import (
 
 func TestUnreserveDeleted(t *testing.T) {
 	rs := New(nil)
-	p := rs.pool("acc1", "a1")
+	p := rs.pool("acc1", bc.AssetID{})
 	p.ready = true
 	u1 := &UTXO{
 		AccountID: "acc1",
-		AssetID:   "a1",
+		AssetID:   bc.AssetID{},
 		Amount:    1,
 		Outpoint:  bc.Outpoint{Index: 0},
 	}
 	u2 := &UTXO{
 		AccountID: "acc1",
-		AssetID:   "a1",
+		AssetID:   bc.AssetID{},
 		Amount:    1,
 		Outpoint:  bc.Outpoint{Index: 1},
 	}

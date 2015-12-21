@@ -70,7 +70,7 @@ const bcUnspentP2COutputQuery = `
 
 // LoadUTXOs loads all unspent outputs in the blockchain
 // for the given asset and account.
-func LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, error) {
+func LoadUTXOs(ctx context.Context, accountID string, assetID bc.AssetID) ([]*utxodb.UTXO, error) {
 	// TODO(kr): account stuff will split into a separate
 	// table and this will become something like
 	// LoadUTXOs(context.Context, []bc.Outpoint) []*bc.TxOutput.

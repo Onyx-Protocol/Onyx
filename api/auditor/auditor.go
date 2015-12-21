@@ -200,7 +200,7 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 
 // Asset is returned by GetAsset
 type Asset struct {
-	ID            string             `json:"id"`
+	ID            bc.AssetID         `json:"id"`
 	DefinitionPtr string             `json:"definition_pointer"`
 	Definition    chainjson.HexBytes `json:"definition"`
 	Issued        appdb.AssetAmount  `json:"issued"`
@@ -221,5 +221,5 @@ func GetAsset(ctx context.Context, assetID string) (*Asset, error) {
 		return nil, errors.Wrap(err, "loading definition")
 	}
 
-	return &Asset{assetID, hash, def, asset.Issued}, nil
+	return &Asset{asset.ID, hash, def, asset.Issued}, nil
 }

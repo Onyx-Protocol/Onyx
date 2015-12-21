@@ -75,19 +75,13 @@ func build(ctx context.Context, sources []utxodb.Source, dests []*Destination, t
 
 	var outRecvs []*utxodb.Receiver
 	for i, out := range dests {
-		hash, err := bc.ParseHash(out.AssetID)
-		if err != nil {
-			return nil, errors.WithDetailf(appdb.ErrBadAsset, "asset id: %v", out.AssetID)
-		}
-		asset := bc.AssetID(hash)
-
 		pkScript, receiver, err := out.PKScript(ctx)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "output %d", i)
 		}
 
 		tx.Outputs = append(tx.Outputs, &bc.TxOutput{
-			AssetID:  asset,
+			AssetID:  out.AssetID,
 			Value:    out.Amount,
 			Script:   pkScript,
 			Metadata: out.Metadata,

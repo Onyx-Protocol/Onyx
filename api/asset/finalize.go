@@ -138,7 +138,7 @@ func publishTx(ctx context.Context, msg *bc.Tx, receivers []*utxodb.Receiver) (e
 		asset, amt := issued(msg.Outputs)
 		err = appdb.UpdateIssuances(
 			ctx,
-			map[string]int64{asset.String(): int64(amt)},
+			map[bc.AssetID]int64{asset: int64(amt)},
 			false,
 		)
 		if err != nil {
@@ -166,7 +166,7 @@ func publishTx(ctx context.Context, msg *bc.Tx, receivers []*utxodb.Receiver) (e
 
 		insUTXOs = append(insUTXOs, &utxodb.UTXO{
 			Outpoint:  o.Outpoint,
-			AssetID:   o.AssetID.String(),
+			AssetID:   o.AssetID,
 			Amount:    o.Value,
 			AccountID: o.AccountID,
 			AddrIndex: o.AddrIndex,

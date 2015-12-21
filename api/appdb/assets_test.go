@@ -29,7 +29,7 @@ func TestAssetByID(t *testing.T) {
 		);
 	`
 	withContext(t, sql, func(ctx context.Context) {
-		got, err := AssetByID(ctx, bc.AssetID{})
+		got, err := AssetByID(ctx, [32]byte{})
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -38,7 +38,7 @@ func TestAssetByID(t *testing.T) {
 		redeem, _ := hex.DecodeString("51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae")
 		key, _ := hdkey.NewXKey("xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd")
 		want := &Asset{
-			Hash:         bc.AssetID{},
+			Hash:         [32]byte{},
 			IssuerNodeID: "in1",
 			INIndex:      []uint32{0, 0},
 			AIndex:       []uint32{0, 0},
@@ -69,15 +69,15 @@ func TestListAssets(t *testing.T) {
 		INSERT INTO assets
 			(id, issuer_node_id, key_index, redeem_script, issuance_script, label, sort_id)
 		VALUES
-			('asset-id-0', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 'asset0'),
-			('asset-id-1', 'in-id-0', 1, '\x'::bytea, '\x'::bytea, 'asset-1', 'asset1'),
-			('asset-id-2', 'in-id-1', 2, '\x'::bytea, '\x'::bytea, 'asset-2', 'asset2');
+			('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 'asset0'),
+			('0100000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 1, '\x'::bytea, '\x'::bytea, 'asset-1', 'asset1'),
+			('0200000000000000000000000000000000000000000000000000000000000000', 'in-id-1', 2, '\x'::bytea, '\x'::bytea, 'asset-2', 'asset2');
 		INSERT INTO issuance_totals
 			(asset_id, confirmed, pool)
 		VALUES
-			('asset-id-0', 1, 2),
-			('asset-id-1', 3, 4),
-			('asset-id-2', 5, 6);
+			('0000000000000000000000000000000000000000000000000000000000000000', 1, 2),
+			('0100000000000000000000000000000000000000000000000000000000000000', 3, 4),
+			('0200000000000000000000000000000000000000000000000000000000000000', 5, 6);
 	`
 	withContext(t, sql, func(ctx context.Context) {
 		examples := []struct {
@@ -91,8 +91,8 @@ func TestListAssets(t *testing.T) {
 				"",
 				5,
 				[]*AssetResponse{
-					{ID: "asset-id-1", Label: "asset-1", Issued: AssetAmount{3, 7}, Circulation: 7},
-					{ID: "asset-id-0", Label: "asset-0", Issued: AssetAmount{1, 3}, Circulation: 3},
+					{ID: [32]byte{1}, Label: "asset-1", Issued: AssetAmount{3, 7}, Circulation: 7},
+					{ID: [32]byte{}, Label: "asset-0", Issued: AssetAmount{1, 3}, Circulation: 3},
 				},
 			},
 			{
@@ -100,7 +100,7 @@ func TestListAssets(t *testing.T) {
 				"",
 				5,
 				[]*AssetResponse{
-					{ID: "asset-id-2", Label: "asset-2", Issued: AssetAmount{5, 11}, Circulation: 11},
+					{ID: [32]byte{2}, Label: "asset-2", Issued: AssetAmount{5, 11}, Circulation: 11},
 				},
 			},
 			{
@@ -108,7 +108,7 @@ func TestListAssets(t *testing.T) {
 				"",
 				1,
 				[]*AssetResponse{
-					{ID: "asset-id-1", Label: "asset-1", Issued: AssetAmount{3, 7}, Circulation: 7},
+					{ID: [32]byte{1}, Label: "asset-1", Issued: AssetAmount{3, 7}, Circulation: 7},
 				},
 			},
 			{
@@ -116,7 +116,7 @@ func TestListAssets(t *testing.T) {
 				"asset1",
 				5,
 				[]*AssetResponse{
-					{ID: "asset-id-0", Label: "asset-0", Issued: AssetAmount{1, 3}, Circulation: 3},
+					{ID: [32]byte{}, Label: "asset-0", Issued: AssetAmount{1, 3}, Circulation: 3},
 				},
 			},
 			{
@@ -148,20 +148,20 @@ func TestGetAsset(t *testing.T) {
 		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
 			VALUES ('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
-			VALUES ('asset-id-0', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
+			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
 		INSERT INTO issuance_totals (asset_id, confirmed, pool)
-			VALUES ('asset-id-0', 58, 12);
+			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 58, 12);
 	`
 	withContext(t, sql, func(ctx context.Context) {
-		got, err := GetAsset(ctx, "asset-id-0")
+		got, err := GetAsset(ctx, "0000000000000000000000000000000000000000000000000000000000000000")
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
-		want := &AssetResponse{"asset-id-0", "asset-0", AssetAmount{58, 70}, 70}
+		want := &AssetResponse{[32]byte{}, "asset-0", AssetAmount{58, 70}, 70}
 		if !reflect.DeepEqual(got, want) {
-			t.Errorf("GetAsset(%s) = %+v want %+v", "asset-id-0", got, want)
+			t.Errorf("GetAsset(%s) = %+v want %+v", [32]byte{}, got, want)
 		}
 
 		_, err = GetAsset(ctx, "nonexistent")
@@ -177,39 +177,39 @@ func TestUpdateIssuances(t *testing.T) {
 			VALUES ('issuer-node-id-0', 'project-id-0', 'foo', '{}', 0);
 
 		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label)
-		VALUES ('asset-id-0', 'issuer-node-id-0', 0, '{}', '', '', ''),
-			('asset-id-1', 'issuer-node-id-0', 1, '{}', '', '', ''),
-			('asset-id-2', 'issuer-node-id-0', 2, '{}', '', '', '');
+		VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'issuer-node-id-0', 0, '{}', '', '', ''),
+			('0100000000000000000000000000000000000000000000000000000000000000', 'issuer-node-id-0', 1, '{}', '', '', ''),
+			('0200000000000000000000000000000000000000000000000000000000000000', 'issuer-node-id-0', 2, '{}', '', '', '');
 		INSERT INTO issuance_totals (asset_id, confirmed, pool)
 		VALUES
-			('asset-id-0', 10, 10),
-			('asset-id-1', 10, 10),
-			('asset-id-2', 10, 10);
+			('0000000000000000000000000000000000000000000000000000000000000000', 10, 10),
+			('0100000000000000000000000000000000000000000000000000000000000000', 10, 10),
+			('0200000000000000000000000000000000000000000000000000000000000000', 10, 10);
 	`
 
 	examples := []struct {
-		deltas    map[string]int64
+		deltas    map[bc.AssetID]int64
 		confirmed bool
-		want      map[string]AssetAmount
+		want      map[bc.AssetID]AssetAmount
 	}{
 		// Example: what happens to confirmation numbers when a block lands.
 		{
-			deltas: map[string]int64{
-				"asset-id-0": 1,
-				"asset-id-1": 2,
-				"asset-id-2": 3,
+			deltas: map[bc.AssetID]int64{
+				[32]byte{}:  1,
+				[32]byte{1}: 2,
+				[32]byte{2}: 3,
 			},
 			confirmed: true,
-			want: map[string]AssetAmount{
-				"asset-id-0": AssetAmount{
+			want: map[bc.AssetID]AssetAmount{
+				[32]byte{}: AssetAmount{
 					Confirmed: 11,
 					Total:     21,
 				},
-				"asset-id-1": AssetAmount{
+				[32]byte{1}: AssetAmount{
 					Confirmed: 12,
 					Total:     22,
 				},
-				"asset-id-2": AssetAmount{
+				[32]byte{2}: AssetAmount{
 					Confirmed: 13,
 					Total:     23,
 				},
@@ -217,22 +217,22 @@ func TestUpdateIssuances(t *testing.T) {
 		},
 		// Example: what happens to pool/unconfirmed numbers when a block lands.
 		{
-			deltas: map[string]int64{
-				"asset-id-0": -1,
-				"asset-id-1": -2,
-				"asset-id-2": -3,
+			deltas: map[bc.AssetID]int64{
+				[32]byte{}:  -1,
+				[32]byte{1}: -2,
+				[32]byte{2}: -3,
 			},
 			confirmed: false,
-			want: map[string]AssetAmount{
-				"asset-id-0": AssetAmount{
+			want: map[bc.AssetID]AssetAmount{
+				[32]byte{}: AssetAmount{
 					Confirmed: 10,
 					Total:     19,
 				},
-				"asset-id-1": AssetAmount{
+				[32]byte{1}: AssetAmount{
 					Confirmed: 10,
 					Total:     18,
 				},
-				"asset-id-2": AssetAmount{
+				[32]byte{2}: AssetAmount{
 					Confirmed: 10,
 					Total:     17,
 				},
@@ -240,18 +240,18 @@ func TestUpdateIssuances(t *testing.T) {
 		},
 		// Example: what happens to pool/unconfirmed numbers when a tx lands.
 		{
-			deltas:    map[string]int64{"asset-id-0": 5},
+			deltas:    map[bc.AssetID]int64{[32]byte{}: 5},
 			confirmed: false,
-			want: map[string]AssetAmount{
-				"asset-id-0": AssetAmount{
+			want: map[bc.AssetID]AssetAmount{
+				[32]byte{}: AssetAmount{
 					Confirmed: 10,
 					Total:     25,
 				},
-				"asset-id-1": AssetAmount{
+				[32]byte{1}: AssetAmount{
 					Confirmed: 10,
 					Total:     20,
 				},
-				"asset-id-2": AssetAmount{
+				[32]byte{2}: AssetAmount{
 					Confirmed: 10,
 					Total:     20,
 				},
@@ -269,7 +269,7 @@ func TestUpdateIssuances(t *testing.T) {
 			}
 
 			for aid, want := range ex.want {
-				asset, err := GetAsset(ctx, aid)
+				asset, err := GetAsset(ctx, aid.String())
 				if err != nil {
 					t.Fatal("unexpected error:", err)
 				}
@@ -287,25 +287,25 @@ func TestUpdateAsset(t *testing.T) {
 		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
 			VALUES ('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
-			VALUES ('asset-id-0', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
-		INSERT INTO issuance_totals (asset_id) VALUES ('asset-id-0');
+			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
+		INSERT INTO issuance_totals (asset_id) VALUES ('0000000000000000000000000000000000000000000000000000000000000000');
 	`
 	withContext(t, sql, func(ctx context.Context) {
-		assetResponse, err := GetAsset(ctx, "asset-id-0")
+		assetResponse, err := GetAsset(ctx, "0000000000000000000000000000000000000000000000000000000000000000")
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
 		newLabel := "bar"
-		err = UpdateAsset(ctx, assetResponse.ID, &newLabel)
+		err = UpdateAsset(ctx, assetResponse.ID.String(), &newLabel)
 		if err != nil {
 			t.Errorf("unexpected error %v", err)
 		}
 
-		assetResponse, err = GetAsset(ctx, "asset-id-0")
+		assetResponse, err = GetAsset(ctx, "0000000000000000000000000000000000000000000000000000000000000000")
 		if err != nil {
-			t.Fatalf("could not get asset with id asset-id-0: %v", err)
+			t.Fatalf("could not get asset with id 0000000000000000000000000000000000000000000000000000000000000000: %v", err)
 		}
 		if assetResponse.Label != newLabel {
 			t.Errorf("expected %s, got %s", newLabel, assetResponse.Label)
@@ -320,22 +320,22 @@ func TestUpdateAssetNoUpdate(t *testing.T) {
 		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
 			VALUES ('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
-			VALUES ('asset-id-0', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
-		INSERT INTO issuance_totals (asset_id) VALUES ('asset-id-0');
+			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
+		INSERT INTO issuance_totals (asset_id) VALUES ('0000000000000000000000000000000000000000000000000000000000000000');
 	`
 	withContext(t, sql, func(ctx context.Context) {
-		assetResponse, err := GetAsset(ctx, "asset-id-0")
+		assetResponse, err := GetAsset(ctx, "0000000000000000000000000000000000000000000000000000000000000000")
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
-		err = UpdateAsset(ctx, assetResponse.ID, nil)
+		err = UpdateAsset(ctx, assetResponse.ID.String(), nil)
 		if err != nil {
 			t.Errorf("unexpected error %v", err)
 		}
 
-		assetResponse, err = GetAsset(ctx, "asset-id-0")
+		assetResponse, err = GetAsset(ctx, "0000000000000000000000000000000000000000000000000000000000000000")
 		if err != nil {
 			t.Fatalf("could not get asset with id asset-id-0: %v", err)
 		}
@@ -374,14 +374,14 @@ func TestAssetBalance(t *testing.T) {
 		INSERT INTO utxos
 			(tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, script, confirmed, block_hash, block_height)
 		VALUES
-			('ctx-0', 0, 'asset-0', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
-			('ctx-1', 0, 'asset-0', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
-			('ctx-2', 0, 'asset-0', 1, 0, 'account-1', 'mnode-1', '', TRUE, 'bh1', 1),
-			('ctx-3', 0, 'asset-2', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
-			('ctx-4', 0, 'asset-3', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
-			('ctx-5', 0, 'asset-5', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
-			('ctx-6', 0, 'asset-5', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
-			('ctx-7', 0, 'asset-5', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1);
+			('ctx-0', 0, '0000000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
+			('ctx-1', 0, '0000000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
+			('ctx-2', 0, '0000000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-1', 'mnode-1', '', TRUE, 'bh1', 1),
+			('ctx-3', 0, '0200000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
+			('ctx-4', 0, '0300000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
+			('ctx-5', 0, '0500000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
+			('ctx-6', 0, '0500000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
+			('ctx-7', 0, '0500000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1);
 
 		INSERT INTO pool_txs
 			(tx_hash, data)
@@ -393,13 +393,13 @@ func TestAssetBalance(t *testing.T) {
 		INSERT INTO utxos
 			(tx_hash, pool_tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, script, confirmed)
 		VALUES
-			('ptx-0', 'ptx-0', 0, 'asset-1', 1, 0, 'account-0', 'mnode-0', '', FALSE),
-			('ptx-1', 'ptx-1', 0, 'asset-1', 1, 0, 'account-0', 'mnode-0', '', FALSE),
-			('ptx-2', 'ptx-2', 0, 'asset-1', 1, 0, 'account-0', 'mnode-0', '', FALSE),
-			('ptx-3', 'ptx-3', 0, 'asset-2', 1, 0, 'account-0', 'mnode-0', '', FALSE),
-			('ptx-4', 'ptx-4', 0, 'asset-4', 1, 0, 'account-0', 'mnode-0', '', FALSE),
-			('ptx-5', 'ptx-5', 0, 'asset-4', 1, 0, 'account-1', 'mnode-1', '', FALSE),
-			('ptx-6', 'ptx-6', 0, 'asset-5', 1, 0, 'account-1', 'mnode-1', '', FALSE);
+			('ptx-0', 'ptx-0', 0, '0100000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', FALSE),
+			('ptx-1', 'ptx-1', 0, '0100000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', FALSE),
+			('ptx-2', 'ptx-2', 0, '0100000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', FALSE),
+			('ptx-3', 'ptx-3', 0, '0200000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', FALSE),
+			('ptx-4', 'ptx-4', 0, '0400000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', FALSE),
+			('ptx-5', 'ptx-5', 0, '0400000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-1', 'mnode-1', '', FALSE),
+			('ptx-6', 'ptx-6', 0, '0500000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-1', 'mnode-1', '', FALSE);
 
 		INSERT INTO pool_inputs (tx_hash, index)
 		VALUES
@@ -423,12 +423,12 @@ func TestAssetBalance(t *testing.T) {
 				prev:      "",
 				limit:     9999,
 				want: []*Balance{
-					{AssetID: "asset-0", Confirmed: 2, Total: 2},
-					{AssetID: "asset-1", Confirmed: 0, Total: 2},
-					{AssetID: "asset-2", Confirmed: 1, Total: 2},
-					{AssetID: "asset-3", Confirmed: 1, Total: 1},
-					{AssetID: "asset-4", Confirmed: 0, Total: 1},
-					{AssetID: "asset-5", Confirmed: 3, Total: 1},
+					{AssetID: [32]byte{}, Confirmed: 2, Total: 2},
+					{AssetID: [32]byte{1}, Confirmed: 0, Total: 2},
+					{AssetID: [32]byte{2}, Confirmed: 1, Total: 2},
+					{AssetID: [32]byte{3}, Confirmed: 1, Total: 1},
+					{AssetID: [32]byte{4}, Confirmed: 0, Total: 1},
+					{AssetID: [32]byte{5}, Confirmed: 3, Total: 1},
 				},
 				wantLast: "",
 			},
@@ -438,59 +438,59 @@ func TestAssetBalance(t *testing.T) {
 				prev:      "",
 				limit:     1,
 				want: []*Balance{
-					{AssetID: "asset-0", Confirmed: 2, Total: 2},
+					{AssetID: [32]byte{}, Confirmed: 2, Total: 2},
 				},
-				wantLast: "asset-0",
+				wantLast: bc.AssetID{}.String(),
 			},
 			{
 				owner:     OwnerAccount,
 				accountID: "account-0",
-				prev:      "asset-0",
+				prev:      bc.AssetID{}.String(),
 				limit:     1,
 				want: []*Balance{
-					{AssetID: "asset-1", Confirmed: 0, Total: 2},
+					{AssetID: [32]byte{1}, Confirmed: 0, Total: 2},
 				},
-				wantLast: "asset-1",
+				wantLast: bc.AssetID([32]byte{1}).String(),
 			},
 			{
 				owner:     OwnerAccount,
 				accountID: "account-0",
-				prev:      "asset-1",
+				prev:      bc.AssetID([32]byte{1}).String(),
 				limit:     1,
 				want: []*Balance{
-					{AssetID: "asset-2", Confirmed: 1, Total: 2},
+					{AssetID: [32]byte{2}, Confirmed: 1, Total: 2},
 				},
-				wantLast: "asset-2",
+				wantLast: bc.AssetID([32]byte{2}).String(),
 			},
 			{
 				owner:     OwnerAccount,
 				accountID: "account-0",
-				prev:      "asset-2",
+				prev:      bc.AssetID([32]byte{2}).String(),
 				limit:     1,
 				want: []*Balance{
-					{AssetID: "asset-3", Confirmed: 1, Total: 1},
+					{AssetID: [32]byte{3}, Confirmed: 1, Total: 1},
 				},
-				wantLast: "asset-3",
+				wantLast: bc.AssetID([32]byte{3}).String(),
 			},
 			{
 				owner:     OwnerAccount,
 				accountID: "account-0",
-				prev:      "asset-3",
+				prev:      bc.AssetID([32]byte{3}).String(),
 				limit:     1,
 				want: []*Balance{
-					{AssetID: "asset-4", Confirmed: 0, Total: 1},
+					{AssetID: [32]byte{4}, Confirmed: 0, Total: 1},
 				},
-				wantLast: "asset-4",
+				wantLast: bc.AssetID([32]byte{4}).String(),
 			},
 			{
 				owner:     OwnerAccount,
 				accountID: "account-0",
-				prev:      "asset-4",
+				prev:      bc.AssetID([32]byte{4}).String(),
 				limit:     1,
 				want: []*Balance{
-					{AssetID: "asset-5", Confirmed: 3, Total: 1},
+					{AssetID: [32]byte{5}, Confirmed: 3, Total: 1},
 				},
-				wantLast: "asset-5",
+				wantLast: bc.AssetID([32]byte{5}).String(),
 			},
 			{
 				owner:     OwnerAccount,
@@ -498,28 +498,28 @@ func TestAssetBalance(t *testing.T) {
 				prev:      "",
 				limit:     4,
 				want: []*Balance{
-					{AssetID: "asset-0", Confirmed: 2, Total: 2},
-					{AssetID: "asset-1", Confirmed: 0, Total: 2},
-					{AssetID: "asset-2", Confirmed: 1, Total: 2},
-					{AssetID: "asset-3", Confirmed: 1, Total: 1},
+					{AssetID: [32]byte{}, Confirmed: 2, Total: 2},
+					{AssetID: [32]byte{1}, Confirmed: 0, Total: 2},
+					{AssetID: [32]byte{2}, Confirmed: 1, Total: 2},
+					{AssetID: [32]byte{3}, Confirmed: 1, Total: 1},
 				},
-				wantLast: "asset-3",
+				wantLast: bc.AssetID([32]byte{3}).String(),
 			},
 			{
 				owner:     OwnerAccount,
 				accountID: "account-0",
-				prev:      "asset-3",
+				prev:      bc.AssetID([32]byte{3}).String(),
 				limit:     4,
 				want: []*Balance{
-					{AssetID: "asset-4", Confirmed: 0, Total: 1},
-					{AssetID: "asset-5", Confirmed: 3, Total: 1},
+					{AssetID: [32]byte{4}, Confirmed: 0, Total: 1},
+					{AssetID: [32]byte{5}, Confirmed: 3, Total: 1},
 				},
 				wantLast: "",
 			},
 			{
 				owner:     OwnerAccount,
 				accountID: "account-0",
-				prev:      "asset-5",
+				prev:      bc.AssetID([32]byte{5}).String(),
 				limit:     4,
 				want:      nil,
 				wantLast:  "",
@@ -530,8 +530,8 @@ func TestAssetBalance(t *testing.T) {
 				prev:      "",
 				limit:     9999,
 				want: []*Balance{
-					{AssetID: "asset-0", Confirmed: 1, Total: 1},
-					{AssetID: "asset-4", Confirmed: 0, Total: 1},
+					{AssetID: [32]byte{}, Confirmed: 1, Total: 1},
+					{AssetID: [32]byte{4}, Confirmed: 0, Total: 1},
 				},
 				wantLast: "",
 			},
@@ -542,19 +542,19 @@ func TestAssetBalance(t *testing.T) {
 				prev:      "",
 				limit:     9999,
 				want: []*Balance{
-					{AssetID: "asset-0", Confirmed: 2, Total: 2},
-					{AssetID: "asset-1", Confirmed: 0, Total: 2},
-					{AssetID: "asset-2", Confirmed: 1, Total: 2},
-					{AssetID: "asset-3", Confirmed: 1, Total: 1},
-					{AssetID: "asset-4", Confirmed: 0, Total: 1},
-					{AssetID: "asset-5", Confirmed: 3, Total: 1},
+					{AssetID: [32]byte{}, Confirmed: 2, Total: 2},
+					{AssetID: [32]byte{1}, Confirmed: 0, Total: 2},
+					{AssetID: [32]byte{2}, Confirmed: 1, Total: 2},
+					{AssetID: [32]byte{3}, Confirmed: 1, Total: 1},
+					{AssetID: [32]byte{4}, Confirmed: 0, Total: 1},
+					{AssetID: [32]byte{5}, Confirmed: 3, Total: 1},
 				},
 				wantLast: "",
 			},
 			{
 				owner:     OwnerManagerNode,
 				accountID: "mnode-0",
-				prev:      "asset-5",
+				prev:      bc.AssetID([32]byte{5}).String(),
 				limit:     9999,
 				want:      nil,
 				wantLast:  "",
@@ -565,15 +565,15 @@ func TestAssetBalance(t *testing.T) {
 				prev:      "",
 				limit:     9999,
 				want: []*Balance{
-					{AssetID: "asset-0", Confirmed: 1, Total: 1},
-					{AssetID: "asset-4", Confirmed: 0, Total: 1},
+					{AssetID: [32]byte{}, Confirmed: 1, Total: 1},
+					{AssetID: [32]byte{4}, Confirmed: 0, Total: 1},
 				},
 				wantLast: "",
 			},
 			{
 				owner:     OwnerManagerNode,
 				accountID: "mnode-1",
-				prev:      "asset-4",
+				prev:      bc.AssetID([32]byte{4}).String(),
 				limit:     9999,
 				want:      nil,
 				wantLast:  "",
@@ -617,11 +617,11 @@ func TestAssetBalance(t *testing.T) {
 func TestAccountBalanceByAssetID(t *testing.T) {
 	const fix = `
 		INSERT INTO utxos (tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, confirmed, block_hash, block_height)
-		VALUES ('tx-0', 0, 'asset-1', 10, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
-		       ('tx-1', 1, 'asset-1', 5, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
-		       ('tx-2', 2, 'asset-2', 1, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
-		       ('tx-3', 3, 'asset-3', 2, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
-		       ('tx-4', 4, 'asset-4', 3, 0, 'account-1', 'mnode-1', TRUE, 'bh1', 1);
+		VALUES ('tx-0', 0, '0100000000000000000000000000000000000000000000000000000000000000', 10, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
+		       ('tx-1', 1, '0100000000000000000000000000000000000000000000000000000000000000', 5, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
+		       ('tx-2', 2, '0200000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
+		       ('tx-3', 3, '0300000000000000000000000000000000000000000000000000000000000000', 2, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
+		       ('tx-4', 4, '0400000000000000000000000000000000000000000000000000000000000000', 3, 0, 'account-1', 'mnode-1', TRUE, 'bh1', 1);
 	`
 
 	examples := []struct {
@@ -631,30 +631,40 @@ func TestAccountBalanceByAssetID(t *testing.T) {
 	}{
 		{
 			accountID: "account-0",
-			assetIDs:  []string{"asset-1", "asset-2", "asset-3", "asset-4"},
+			assetIDs: []string{
+				bc.AssetID([32]byte{1}).String(),
+				bc.AssetID([32]byte{2}).String(),
+				bc.AssetID([32]byte{3}).String(),
+				bc.AssetID([32]byte{4}).String(),
+			},
 			want: []*Balance{
-				{AssetID: "asset-1", Total: 15, Confirmed: 15},
-				{AssetID: "asset-2", Total: 1, Confirmed: 1},
-				{AssetID: "asset-3", Total: 2, Confirmed: 2},
+				{AssetID: [32]byte{1}, Total: 15, Confirmed: 15},
+				{AssetID: [32]byte{2}, Total: 1, Confirmed: 1},
+				{AssetID: [32]byte{3}, Total: 2, Confirmed: 2},
 			},
 		},
 		{
 			accountID: "account-0",
-			assetIDs:  []string{"asset-1"},
+			assetIDs:  []string{bc.AssetID([32]byte{1}).String()},
 			want: []*Balance{
-				{AssetID: "asset-1", Total: 15, Confirmed: 15},
+				{AssetID: [32]byte{1}, Total: 15, Confirmed: 15},
 			},
 		},
 		{
 			accountID: "account-0",
-			assetIDs:  []string{"asset-4"},
+			assetIDs:  []string{bc.AssetID([32]byte{4}).String()},
 			want:      nil,
 		},
 		{
 			accountID: "account-1",
-			assetIDs:  []string{"asset-1", "asset-2", "asset-3", "asset-4"},
+			assetIDs: []string{
+				bc.AssetID([32]byte{1}).String(),
+				bc.AssetID([32]byte{2}).String(),
+				bc.AssetID([32]byte{3}).String(),
+				bc.AssetID([32]byte{4}).String(),
+			},
 			want: []*Balance{
-				{AssetID: "asset-4", Total: 3, Confirmed: 3},
+				{AssetID: [32]byte{4}, Total: 3, Confirmed: 3},
 			},
 		},
 	}

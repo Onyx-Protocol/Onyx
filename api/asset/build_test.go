@@ -45,12 +45,12 @@ func TestBuildTrade(t *testing.T) {
 	}
 	inputs := []utxodb.Source{{
 		AccountID: "acc2",
-		AssetID:   "ff00000000000000000000000000000000000000000000000000000000000000",
+		AssetID:   [32]byte{255},
 		Amount:    2,
 	}}
 	dests := []*Destination{{
 		Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK",
-		AssetID: "fe00000000000000000000000000000000000000000000000000000000000000",
+		AssetID: [32]byte{254},
 		Amount:  5,
 	}}
 
@@ -91,11 +91,11 @@ func TestBuildTransfer(t *testing.T) {
 		nil,
 		[]utxodb.Source{{
 			AccountID: "acc1",
-			AssetID:   "ff00000000000000000000000000000000000000000000000000000000000000",
+			AssetID:   [32]byte{255},
 			Amount:    5,
 		}},
 		[]*Destination{{
-			AssetID: "ff00000000000000000000000000000000000000000000000000000000000000",
+			AssetID: [32]byte{255},
 			Address: "3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB",
 			Amount:  5,
 		}},
@@ -113,13 +113,13 @@ func TestValidateOutputs(t *testing.T) {
 		dests   []*Destination
 		wantErr error
 	}{{
-		dests:   []*Destination{{AssetID: "x", Amount: 5, AccountID: "acc1", Address: "a"}},
+		dests:   []*Destination{{AssetID: bc.AssetID{}, Amount: 5, AccountID: "acc1", Address: "a"}},
 		wantErr: ErrBadOutDest,
 	}, {
-		dests:   []*Destination{{AssetID: "x", Amount: 5}},
+		dests:   []*Destination{{AssetID: bc.AssetID{}, Amount: 5}},
 		wantErr: ErrBadOutDest,
 	}, {
-		dests:   []*Destination{{AssetID: "x", Amount: 5, AccountID: "acc1"}},
+		dests:   []*Destination{{AssetID: bc.AssetID{}, Amount: 5, AccountID: "acc1"}},
 		wantErr: nil,
 	}}
 

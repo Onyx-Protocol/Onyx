@@ -333,13 +333,13 @@ func TestGetAsset(t *testing.T) {
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
 			VALUES ('inode-1', 'proj-1', 'bar', '{}');
 		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label, issuance_script)
-			VALUES ('asset-id-1', 'inode-1', 0, '', 'asset-label-1', ''),
-				('asset-id-2', 'inode-1', 1, '', 'asset-label-2', '');
+			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'inode-1', 0, '', 'asset-label-1', ''),
+				('0100000000000000000000000000000000000000000000000000000000000000', 'inode-1', 1, '', 'asset-label-2', '');
 		INSERT INTO issuance_totals (asset_id, pool, confirmed)
-			VALUES ('asset-id-1', 5, 6),
-				('asset-id-2', 3, 4);
+			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 5, 6),
+				('0100000000000000000000000000000000000000000000000000000000000000', 3, 4);
 		INSERT INTO asset_definition_pointers (asset_id, asset_definition_hash)
-			VALUES ('asset-id-1', 'hash-1');
+			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'hash-1');
 		INSERT INTO asset_definitions (hash, definition)
 			VALUES ('hash-1', '{"a":"b"}'::bytea);
 	`
@@ -349,9 +349,9 @@ func TestGetAsset(t *testing.T) {
 			want *Asset
 		}{
 			{
-				"asset-id-1",
+				"0000000000000000000000000000000000000000000000000000000000000000",
 				&Asset{
-					ID:            "asset-id-1",
+					ID:            bc.AssetID{},
 					DefinitionPtr: "hash-1",
 					Definition:    []byte(`{"a":"b"}`),
 					Issued:        appdb.AssetAmount{Total: 11, Confirmed: 6},
@@ -360,9 +360,9 @@ func TestGetAsset(t *testing.T) {
 
 			// Blank definition
 			{
-				"asset-id-2",
+				"0100000000000000000000000000000000000000000000000000000000000000",
 				&Asset{
-					ID:            "asset-id-2",
+					ID:            [32]byte{1},
 					DefinitionPtr: "",
 					Definition:    nil,
 					Issued:        appdb.AssetAmount{Total: 7, Confirmed: 4},

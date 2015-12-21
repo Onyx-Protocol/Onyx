@@ -76,7 +76,7 @@ func TestGenSpendApply(t *testing.T) {
 	}
 
 	inputs := []utxodb.Source{{
-		AssetID:   info.asset.Hash.String(),
+		AssetID:   info.asset.Hash,
 		AccountID: info.acctA.ID,
 		Amount:    10,
 	}}
@@ -374,13 +374,13 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 }
 
 func issue(ctx context.Context, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
-	assetID := info.asset.Hash.String()
+	assetID := info.asset.Hash
 	issueDests := []*Destination{{
 		AssetID:   assetID,
 		AccountID: destAcctID,
 		Amount:    amount,
 	}}
-	issueTx, err := Issue(ctx, assetID, issueDests)
+	issueTx, err := Issue(ctx, assetID.String(), issueDests)
 	if err != nil {
 		return nil, err
 	}
@@ -393,12 +393,12 @@ func issue(ctx context.Context, info *clientInfo, destAcctID string, amount uint
 
 func transfer(ctx context.Context, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
 	inputs := []utxodb.Source{{
-		AssetID:   info.asset.Hash.String(),
+		AssetID:   info.asset.Hash,
 		AccountID: srcAcctID,
 		Amount:    amount,
 	}}
 	dests := []*Destination{{
-		AssetID:   info.asset.Hash.String(),
+		AssetID:   info.asset.Hash,
 		AccountID: destAcctID,
 		Amount:    amount,
 	}}

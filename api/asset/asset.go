@@ -85,7 +85,7 @@ func Issue(ctx context.Context, assetID string, dests []*Destination) (*TxTempla
 // Destination is a user input struct that describes
 // the destination of a transaction's inputs.
 type Destination struct {
-	AssetID   string             `json:"asset_id"`
+	AssetID   bc.AssetID         `json:"asset_id"`
 	Address   string             `json:"address"`
 	AccountID string             `json:"account_id"`
 	Amount    uint64             `json:"amount"`

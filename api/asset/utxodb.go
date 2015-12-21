@@ -17,7 +17,7 @@ import (
 
 type sqlUTXODB struct{}
 
-func (sqlUTXODB) LoadUTXOs(ctx context.Context, accountID, assetID string) (resvOuts []*utxodb.UTXO, err error) {
+func (sqlUTXODB) LoadUTXOs(ctx context.Context, accountID string, assetID bc.AssetID) (resvOuts []*utxodb.UTXO, err error) {
 	bcOuts, err := txdb.LoadUTXOs(ctx, accountID, assetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "load blockchain outputs")

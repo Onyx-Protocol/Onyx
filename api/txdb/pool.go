@@ -101,7 +101,7 @@ const poolUnspentP2COutputQuery = `
 
 // LoadPoolUTXOs loads all unspent outputs in the tx pool
 // for the given asset and account.
-func LoadPoolUTXOs(ctx context.Context, accountID, assetID string) ([]*utxodb.UTXO, error) {
+func LoadPoolUTXOs(ctx context.Context, accountID string, assetID bc.AssetID) ([]*utxodb.UTXO, error) {
 	// TODO(kr): account stuff will split into a separate
 	// table and this will become something like
 	// LoadPoolUTXOs(context.Context, []bc.Outpoint) []*bc.TxOutput.

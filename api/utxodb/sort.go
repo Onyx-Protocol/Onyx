@@ -8,7 +8,7 @@ func (a byKey) Len() int      { return len(a) }
 func (a byKey) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a byKey) Less(i, j int) bool {
 	if a[i].AccountID == a[j].AccountID {
-		return a[i].AssetID < a[j].AssetID
+		return bytes.Compare(a[i].AssetID[:], a[j].AssetID[:]) < 0
 	}
 	return a[i].AccountID < a[j].AccountID
 }
@@ -19,7 +19,7 @@ func (u byKeyUTXO) Len() int      { return len(u) }
 func (u byKeyUTXO) Swap(i, j int) { u[i], u[j] = u[j], u[i] }
 func (u byKeyUTXO) Less(i, j int) bool {
 	if u[i].AccountID == u[j].AccountID {
-		return u[i].AssetID < u[j].AssetID
+		return bytes.Compare(u[i].AssetID[:], u[j].AssetID[:]) < 0
 	}
 	return u[i].AccountID < u[j].AccountID
 }

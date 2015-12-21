@@ -395,7 +395,7 @@ func applyToReserver(ctx context.Context, outs []*txdb.Output) {
 	for _, out := range outs {
 		u := &utxodb.UTXO{
 			AccountID: out.AccountID,
-			AssetID:   out.AssetID.String(),
+			AssetID:   out.AssetID,
 			Amount:    out.Value,
 			Outpoint:  out.Outpoint,
 			AddrIndex: out.AddrIndex,
@@ -541,14 +541,14 @@ func isSignedByTrustedHost(block *bc.Block) bool {
 	return true
 }
 
-func issuedAssets(txs []*bc.Tx) map[string]int64 {
-	issued := make(map[string]int64)
+func issuedAssets(txs []*bc.Tx) map[bc.AssetID]int64 {
+	issued := make(map[bc.AssetID]int64)
 	for _, tx := range txs {
 		if !tx.IsIssuance() {
 			continue
 		}
 		for _, out := range tx.Outputs {
-			issued[out.AssetID.String()] += int64(out.Value)
+			issued[out.AssetID] += int64(out.Value)
 		}
 	}
 	return issued

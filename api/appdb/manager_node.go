@@ -8,6 +8,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
+	"chain/fedchain/bc"
 )
 
 // ManagerNode represents a single manager node. It is intended to be used wth API
@@ -55,9 +56,9 @@ func InsertManagerNode(ctx context.Context, projID, label string, keys, gennedKe
 // Balance is a struct describing the balance of
 // an asset that a manager node or account has.
 type Balance struct {
-	AssetID   string `json:"asset_id"`
-	Confirmed int64  `json:"confirmed"`
-	Total     int64  `json:"total"`
+	AssetID   bc.AssetID `json:"asset_id"`
+	Confirmed int64      `json:"confirmed"`
+	Total     int64      `json:"total"`
 }
 
 // AccountBalanceItem is returned by AccountsWithAsset

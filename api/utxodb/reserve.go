@@ -39,7 +39,10 @@ type (
 		tab map[key]*pool
 	}
 
-	key struct{ AccountID, AssetID string }
+	key struct {
+		AccountID string
+		AssetID   bc.AssetID
+	}
 
 	// TODO(kr): see if we can avoid storing
 	// AccountID and AssetID in UTXO
@@ -51,7 +54,7 @@ type (
 		// We keep lots of them in memory.
 
 		AccountID string
-		AssetID   string // TODO(bobg): bc.AssetID
+		AssetID   bc.AssetID
 		Amount    uint64
 
 		ResvExpires time.Time
@@ -79,9 +82,9 @@ type (
 	}
 
 	Source struct {
-		AssetID   string `json:"asset_id"`
-		AccountID string `json:"account_id"`
-		TxID      string `json:"transaction_id"`
+		AssetID   bc.AssetID `json:"asset_id"`
+		AccountID string     `json:"account_id"`
+		TxID      string     `json:"transaction_id"`
 		Amount    uint64
 	}
 
@@ -89,7 +92,7 @@ type (
 		// LoadUTXOs loads the set of UTXOs
 		// available to reserve
 		// for the given asset in the given account.
-		LoadUTXOs(ctx context.Context, accountID, assetID string) ([]*UTXO, error)
+		LoadUTXOs(ctx context.Context, accountID string, assetID bc.AssetID) ([]*UTXO, error)
 
 		// SaveReservations stores the reservation expiration
 		// time in the database for the given UTXOs.
@@ -106,7 +109,7 @@ func New(db DB) *Reserver {
 
 // pool returns the pool for the given account and asset,
 // creating it if necessary.
-func (rs *Reserver) pool(accountID, assetID string) *pool {
+func (rs *Reserver) pool(accountID string, assetID bc.AssetID) *pool {
 	rs.mu.Lock()
 	defer rs.mu.Unlock()
 	k := key{accountID, assetID}

@@ -42,7 +42,7 @@ type AssetAmount struct {
 // AssetResponse is a JSON-serializable version of Asset, intended for use in
 // API responses.
 type AssetResponse struct {
-	ID     string      `json:"id"`
+	ID     bc.AssetID  `json:"id"`
 	Label  string      `json:"label"`
 	Issued AssetAmount `json:"issued"`
 
@@ -235,7 +235,7 @@ func DeleteAsset(ctx context.Context, assetID string) error {
 
 // UpdateIssuances modifies the issuance totals of a set of assets by the given
 // amounts. The amounts may be negative.
-func UpdateIssuances(ctx context.Context, deltas map[string]int64, confirmed bool) error {
+func UpdateIssuances(ctx context.Context, deltas map[bc.AssetID]int64, confirmed bool) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -244,7 +244,7 @@ func UpdateIssuances(ctx context.Context, deltas map[string]int64, confirmed boo
 		amounts  []int64
 	)
 	for aid, amt := range deltas {
-		assetIDs = append(assetIDs, aid)
+		assetIDs = append(assetIDs, aid.String())
 		amounts = append(amounts, amt)
 	}
 
@@ -343,7 +343,7 @@ func AssetBalance(ctx context.Context, abq *AssetBalQuery) ([]*Balance, string, 
 	)
 	for rows.Next() {
 		var (
-			id           string
+			id           bc.AssetID
 			conf, unconf int64
 		)
 		err = rows.Scan(&conf, &unconf, &id)
@@ -361,7 +361,7 @@ func AssetBalance(ctx context.Context, abq *AssetBalQuery) ([]*Balance, string, 
 	}
 
 	if paginating && len(res) == abq.Limit {
-		last = res[len(res)-1].AssetID
+		last = res[len(res)-1].AssetID.String()
 	}
 	return res, last, nil
 }
