@@ -203,7 +203,7 @@ type Asset struct {
 	ID            bc.AssetID         `json:"id"`
 	DefinitionPtr string             `json:"definition_pointer"`
 	Definition    chainjson.HexBytes `json:"definition"`
-	Issued        appdb.AssetAmount  `json:"issued"`
+	Issued        uint64             `json:"issued"`
 }
 
 // GetAsset returns the most recent asset definition stored in
@@ -221,5 +221,5 @@ func GetAsset(ctx context.Context, assetID string) (*Asset, error) {
 		return nil, errors.Wrap(err, "loading definition")
 	}
 
-	return &Asset{asset.ID, hash, def, asset.Issued}, nil
+	return &Asset{asset.ID, hash, def, asset.Issued.Confirmed}, nil
 }

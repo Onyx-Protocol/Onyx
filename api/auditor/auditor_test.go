@@ -354,7 +354,7 @@ func TestGetAsset(t *testing.T) {
 					ID:            bc.AssetID{},
 					DefinitionPtr: "hash-1",
 					Definition:    []byte(`{"a":"b"}`),
-					Issued:        appdb.AssetAmount{Total: 11, Confirmed: 6},
+					Issued:        6,
 				},
 			},
 
@@ -365,7 +365,7 @@ func TestGetAsset(t *testing.T) {
 					ID:            [32]byte{1},
 					DefinitionPtr: "",
 					Definition:    nil,
-					Issued:        appdb.AssetAmount{Total: 7, Confirmed: 4},
+					Issued:        4,
 				},
 			},
 		}
