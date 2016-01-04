@@ -96,7 +96,7 @@ type TxInput struct {
 	TxID     *bc.Hash           `json:"transaction_id,omitempty"`
 	TxOut    *uint32            `json:"transaction_output,omitempty"`
 	AssetID  bc.AssetID         `json:"asset_id"`
-	Amount   uint64             `json:"amount"`
+	Amount   *uint64            `json:"amount,omitempty"`
 	Metadata chainjson.HexBytes `json:"metadata,omitempty"`
 	AssetDef chainjson.HexBytes `json:"asset_definition,omitempty"`
 }
@@ -141,15 +141,10 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 		if len(tx.Outputs) == 0 {
 			return nil, errors.New("invalid transaction")
 		}
-		var totalOut uint64
-		for _, out := range tx.Outputs {
-			totalOut += out.Value
-		}
 
 		resp.Inputs = append(resp.Inputs, &TxInput{
 			Type:     "issuance",
 			AssetID:  tx.Outputs[0].AssetID,
-			Amount:   totalOut,
 			Metadata: tx.Inputs[0].Metadata,
 			AssetDef: tx.Inputs[0].AssetDefinition,
 		})
@@ -170,7 +165,7 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 			resp.Inputs = append(resp.Inputs, &TxInput{
 				Type:     "transfer",
 				AssetID:  prev.AssetID,
-				Amount:   prev.Value,
+				Amount:   &prev.Value,
 				TxID:     &in.Previous.Hash,
 				TxOut:    &in.Previous.Index,
 				Metadata: in.Metadata,

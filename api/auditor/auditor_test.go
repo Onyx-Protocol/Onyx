@@ -211,7 +211,6 @@ func TestGetTxIssuance(t *testing.T) {
 			Inputs: []*TxInput{{
 				Type:     "issuance",
 				AssetID:  bc.AssetID([32]byte{0}),
-				Amount:   11,
 				Metadata: []byte(`{"a":"b"}`),
 				AssetDef: []byte(`{"c":"d"}`),
 			}},
@@ -290,7 +289,9 @@ func TestGetTxTransfer(t *testing.T) {
 
 		var blkHash = blk.Hash()
 
-		zero, one, h0, h1 := uint32(0), uint32(1), prevTxs[0].Hash, prevTxs[1].Hash
+		zero, one := uint32(0), uint32(1)
+		five, six := uint64(5), uint64(6)
+		h0, h1 := prevTxs[0].Hash, prevTxs[1].Hash
 
 		want := &Tx{
 			ID:          tx.Hash,
@@ -300,13 +301,13 @@ func TestGetTxTransfer(t *testing.T) {
 			Inputs: []*TxInput{{
 				Type:    "transfer",
 				AssetID: bc.AssetID([32]byte{1}),
-				Amount:  5,
+				Amount:  &five,
 				TxID:    &h0,
 				TxOut:   &zero,
 			}, {
 				Type:    "transfer",
 				AssetID: bc.AssetID([32]byte{2}),
-				Amount:  6,
+				Amount:  &six,
 				TxID:    &h1,
 				TxOut:   &one,
 			}},
