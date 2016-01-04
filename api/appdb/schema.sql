@@ -30,6 +30,9 @@ SET search_path = public, pg_catalog;
 CREATE FUNCTION b32enc_crockford(src bytea) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
     AS $$
+	-- Adapted from the Go package encoding/base32.
+	-- See https://golang.org/src/encoding/base32/base32.go.
+	-- NOTE(kr): this function does not pad its output
 DECLARE
 	-- alphabet is the base32 alphabet defined
 	-- by Douglas Crockford. It preserves lexical
@@ -105,6 +108,8 @@ $$;
 CREATE FUNCTION next_chain_id(prefix text) RETURNS text
     LANGUAGE plpgsql
     AS $$
+	-- Adapted from the technique published by Instagram.
+	-- See http://instagram-engineering.tumblr.com/post/10853187575/sharding-ids-at-instagram.
 DECLARE
 	our_epoch_ms bigint := 1433333333333; -- do not change
 	seq_id bigint;
