@@ -77,8 +77,8 @@ func buildAuthz(ctx context.Context, reqs ...buildReq) error {
 			accountIDs = append(accountIDs, input.AccountID)
 		}
 		for _, output := range req.Dests {
-			if output.AccountID != "" {
-				accountIDs = append(accountIDs, output.AccountID)
+			if output.AccountID() != "" {
+				accountIDs = append(accountIDs, output.AccountID())
 			}
 		}
 	}

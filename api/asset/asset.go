@@ -3,6 +3,7 @@ package asset
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 
 	"golang.org/x/net/context"
@@ -57,12 +58,6 @@ func Issue(ctx context.Context, assetID string, dests []*Destination) (*TxTempla
 
 	tx.Inputs = append(tx.Inputs, in)
 
-	for i, dest := range dests {
-		if (dest.AccountID == "") == (dest.Address == "") {
-			return nil, errors.WithDetailf(ErrBadOutDest, "output index=%d", i)
-		}
-	}
-
 	outRecvs, err := addAssetIssuanceOutputs(ctx, tx, asset, dests)
 	if err != nil {
 		return nil, errors.Wrap(err, "add issuance outputs")
@@ -85,32 +80,79 @@ func Issue(ctx context.Context, assetID string, dests []*Destination) (*TxTempla
 // Destination is a user input struct that describes
 // the destination of a transaction's inputs.
 type Destination struct {
-	AssetID   bc.AssetID         `json:"asset_id"`
-	Address   string             `json:"address"`
-	AccountID string             `json:"account_id"`
-	Amount    uint64             `json:"amount"`
-	Metadata  chainjson.HexBytes `json:"metadata"`
+	AssetID    bc.AssetID `json:"asset_id"`
+	Amount     uint64
+	Metadata   chainjson.HexBytes
+	Type       string // determines pkScripter type
+	pkScripter pkScripter
+}
+
+// AccountID returns the account ID for this destination, if any.
+// It can be used for authorization.
+func (d *Destination) AccountID() string {
+	if a, ok := d.pkScripter.(*acctPKScripter); ok {
+		return a.AccountID
+	}
+	return ""
+}
+
+func (d *Destination) UnmarshalJSON(b []byte) error {
+	type dest Destination // lose the method set; avoid infinite recursion
+	err := json.Unmarshal(b, (*dest)(d))
+	if err != nil {
+		return err
+	}
+	switch d.Type {
+	case "account", "": // default type
+		d.pkScripter = new(acctPKScripter)
+	case "address":
+		// TODO(kr): move to a "script" type
+		// containing the literal pk script.
+		d.pkScripter = new(addrPKScripter)
+	default:
+		return errors.WithDetailf(ErrBadOutDest, "unknown type %q", d.Type)
+	}
+	return json.Unmarshal(b, d.pkScripter)
+}
+
+// pkScripter computes the PK script (aka output script)
+// for sending to an arbitrary destination.
+// The returned recv can be nil.
+type pkScripter interface {
+	pkScript(context.Context) (script []byte, recv *utxodb.Receiver, err error)
+}
+
+type acctPKScripter struct {
+	AccountID string `json:"account_id"`
 	isChange  bool
 }
 
-// PKScript returns the script for sending to
-// the destination address or account id provided.
-// For an Address-type output, the returned *utxodb.Receiver is nil.
-func (o *Destination) PKScript(ctx context.Context) ([]byte, *utxodb.Receiver, error) {
-	if o.AccountID != "" {
-		addr := &appdb.Address{
-			AccountID: o.AccountID,
-			IsChange:  o.isChange,
-		}
-		err := CreateAddress(ctx, addr, false)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "output create address error account=%v", o.AccountID)
-		}
-		return addr.PKScript, newOutputReceiver(addr, o.isChange), nil
+// pkScript returns the script for sending to
+// the destination account id in s.
+func (s *acctPKScripter) pkScript(ctx context.Context) ([]byte, *utxodb.Receiver, error) {
+	addr := &appdb.Address{
+		AccountID: s.AccountID,
+		IsChange:  s.isChange,
 	}
-	script, err := chaintxscript.AddrPkScript(o.Address)
+	err := CreateAddress(ctx, addr, false)
 	if err != nil {
-		return nil, nil, errors.Wrapf(ErrBadAddr, "output pkscript error addr=%v", o.Address)
+		return nil, nil, errors.Wrapf(err, "output create address error account=%v", s.AccountID)
+	}
+	return addr.PKScript, newOutputReceiver(addr, s.isChange), nil
+}
+
+type addrPKScripter struct {
+	Address  string `json:"address"`
+	isChange bool
+}
+
+// pkScript returns the script for sending to
+// the destination address in s.
+// The returned extra data is nil.
+func (s *addrPKScripter) pkScript(context.Context) ([]byte, *utxodb.Receiver, error) {
+	script, err := chaintxscript.AddrPkScript(s.Address)
+	if err != nil {
+		return nil, nil, errors.Wrapf(ErrBadAddr, "output pkscript error addr=%v", s.Address)
 	}
 	return script, nil, nil
 }
@@ -118,7 +160,7 @@ func (o *Destination) PKScript(ctx context.Context) ([]byte, *utxodb.Receiver, e
 func addAssetIssuanceOutputs(ctx context.Context, tx *bc.TxData, asset *appdb.Asset, dests []*Destination) ([]*utxodb.Receiver, error) {
 	var outAddrs []*utxodb.Receiver
 	for i, dest := range dests {
-		pkScript, receiver, err := dest.PKScript(ctx)
+		pkScript, receiver, err := dest.pkScripter.pkScript(ctx)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "output %d", i)
 		}

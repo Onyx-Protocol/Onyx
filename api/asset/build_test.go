@@ -49,9 +49,9 @@ func TestBuildTrade(t *testing.T) {
 		Amount:    2,
 	}}
 	dests := []*Destination{{
-		Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK",
-		AssetID: [32]byte{254},
-		Amount:  5,
+		pkScripter: &addrPKScripter{Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK"},
+		AssetID:    [32]byte{254},
+		Amount:     5,
 	}}
 
 	got, err := Build(ctx, tpl, inputs, dests, time.Hour*24)
@@ -95,9 +95,9 @@ func TestBuildTransfer(t *testing.T) {
 			Amount:    5,
 		}},
 		[]*Destination{{
-			AssetID: [32]byte{255},
-			Address: "3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB",
-			Amount:  5,
+			AssetID:    [32]byte{255},
+			pkScripter: &addrPKScripter{Address: "3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB"},
+			Amount:     5,
 		}},
 		time.Minute,
 	)
@@ -105,30 +105,6 @@ func TestBuildTransfer(t *testing.T) {
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
-	}
-}
-
-func TestValidateOutputs(t *testing.T) {
-	cases := []struct {
-		dests   []*Destination
-		wantErr error
-	}{{
-		dests:   []*Destination{{AssetID: bc.AssetID{}, Amount: 5, AccountID: "acc1", Address: "a"}},
-		wantErr: ErrBadOutDest,
-	}, {
-		dests:   []*Destination{{AssetID: bc.AssetID{}, Amount: 5}},
-		wantErr: ErrBadOutDest,
-	}, {
-		dests:   []*Destination{{AssetID: bc.AssetID{}, Amount: 5, AccountID: "acc1"}},
-		wantErr: nil,
-	}}
-
-	for _, c := range cases {
-		got := validateOutputs(c.dests)
-
-		if errors.Root(got) != c.wantErr {
-			t.Errorf("got err = %v want %v", errors.Root(got), c.wantErr)
-		}
 	}
 }
 

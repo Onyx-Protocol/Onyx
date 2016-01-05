@@ -377,9 +377,9 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 func issue(ctx context.Context, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetID := info.asset.Hash
 	issueDests := []*Destination{{
-		AssetID:   assetID,
-		AccountID: destAcctID,
-		Amount:    amount,
+		AssetID:    assetID,
+		pkScripter: &acctPKScripter{AccountID: destAcctID},
+		Amount:     amount,
 	}}
 	issueTx, err := Issue(ctx, assetID.String(), issueDests)
 	if err != nil {
@@ -399,9 +399,9 @@ func transfer(ctx context.Context, info *clientInfo, srcAcctID, destAcctID strin
 		Amount:    amount,
 	}}
 	dests := []*Destination{{
-		AssetID:   info.asset.Hash,
-		AccountID: destAcctID,
-		Amount:    amount,
+		AssetID:    info.asset.Hash,
+		pkScripter: &acctPKScripter{AccountID: destAcctID},
+		Amount:     amount,
 	}}
 	xferTx, err := Build(ctx, nil, inputs, dests, time.Minute)
 	if err != nil {

@@ -49,10 +49,6 @@ func Build(ctx context.Context, prev *TxTemplate, sources []utxodb.Source, dests
 }
 
 func build(ctx context.Context, sources []utxodb.Source, dests []*Destination, ttl time.Duration) (*TxTemplate, error) {
-	if err := validateOutputs(dests); err != nil {
-		return nil, err
-	}
-
 	tx := &bc.TxData{Version: bc.CurrentTransactionVersion}
 
 	reserved, change, err := utxoDB.Reserve(ctx, sources, ttl)
@@ -62,10 +58,12 @@ func build(ctx context.Context, sources []utxodb.Source, dests []*Destination, t
 
 	for _, c := range change {
 		dests = append(dests, &Destination{
-			AccountID: c.Source.AccountID,
-			AssetID:   c.Source.AssetID,
-			Amount:    c.Amount,
-			isChange:  true,
+			Amount:  c.Amount,
+			AssetID: c.Source.AssetID,
+			pkScripter: &acctPKScripter{
+				AccountID: c.Source.AccountID,
+				isChange:  true,
+			},
 		})
 	}
 
@@ -75,7 +73,7 @@ func build(ctx context.Context, sources []utxodb.Source, dests []*Destination, t
 
 	var outRecvs []*utxodb.Receiver
 	for i, out := range dests {
-		pkScript, receiver, err := out.PKScript(ctx)
+		pkScript, receiver, err := out.pkScripter.pkScript(ctx)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "output %d", i)
 		}
@@ -102,15 +100,6 @@ func build(ctx context.Context, sources []utxodb.Source, dests []*Destination, t
 	}
 
 	return appTx, nil
-}
-
-func validateOutputs(dests []*Destination) error {
-	for i, out := range dests {
-		if (out.AccountID == "") == (out.Address == "") {
-			return errors.WithDetailf(ErrBadOutDest, "output index=%d", i)
-		}
-	}
-	return nil
 }
 
 // makeTransferInputs creates the array of inputs

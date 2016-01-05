@@ -77,8 +77,8 @@ func TestIssue(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	outs := []*Destination{{
-		Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK",
-		Amount:  123,
+		pkScripter: &addrPKScripter{Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK"},
+		Amount:     123,
 	}}
 
 	resp, err := Issue(ctx, "0000000000000000000000000000000000000000000000000000000000000000", outs)
@@ -100,17 +100,9 @@ func TestIssue(t *testing.T) {
 	if !reflect.DeepEqual(resp.Unsigned, want) {
 		t.Errorf("got tx = %+v want %+v", resp.Unsigned, want)
 	}
-
-	// Bad output destination error
-	outs = []*Destination{{Amount: 5}}
-	_, err = Issue(ctx, "0000000000000000000000000000000000000000000000000000000000000000", outs)
-
-	if errors.Root(err) != ErrBadOutDest {
-		t.Errorf("got err = %v want %v", errors.Root(err), ErrBadOutDest)
-	}
 }
 
-func TestOutputPKScript(t *testing.T) {
+func TestAccountOutputPKScript(t *testing.T) {
 	ctx := pgtest.NewContext(t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
@@ -123,8 +115,8 @@ func TestOutputPKScript(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	// Test account output pk script (address creation)
-	dest := &Destination{AccountID: "acc1"}
-	got, _, err := dest.PKScript(ctx)
+	pkScripter := &acctPKScripter{AccountID: "acc1"}
+	got, _, err := pkScripter.pkScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -135,40 +127,8 @@ func TestOutputPKScript(t *testing.T) {
 		t.Errorf("got pkscript = %x want %x", got, want)
 	}
 
-	// Test stringified address output
-	dest = &Destination{Address: "31h9Wq4sVTr2ogZQgcazqgwJtEhM3hFtT2"}
-	got, _, err = dest.PKScript(ctx)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	if !bytes.Equal(got, want) {
-		t.Errorf("got pkscript = %x want %x", got, want)
-	}
-
-	// Test bad address output error
-	dest = &Destination{Address: "bad-addr"}
-	_, _, err = dest.PKScript(ctx)
-	if errors.Root(err) != ErrBadAddr {
-		t.Errorf("got pkscript = %x want %x", errors.Root(err), ErrBadAddr)
-	}
-}
-
-func TestPKScriptChangeAddr(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
-			VALUES('mn1', 'proj-id-0', 'mn1', 'rot1');
-		INSERT INTO rotations (id, manager_node_id, keyset)
-			VALUES('rot1', 'mn1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
-		INSERT INTO accounts (id, manager_node_id, key_index)
-			VALUES('acc1', 'mn1', 0);
-	`)
-	defer pgtest.Finish(ctx)
-
-	dest := &Destination{AccountID: "acc1", isChange: true}
-	_, recv, err := dest.PKScript(ctx)
+	pkScripter = &acctPKScripter{AccountID: "acc1", isChange: true}
+	_, recv, err := pkScripter.pkScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -176,5 +136,30 @@ func TestPKScriptChangeAddr(t *testing.T) {
 
 	if !recv.IsChange {
 		t.Fatal("Expected change output")
+	}
+}
+
+func TestAddressOutputPKScript(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	// Test stringified address output
+	pkScripter := &addrPKScripter{Address: "31h9Wq4sVTr2ogZQgcazqgwJtEhM3hFtT2"}
+	got, _, err := pkScripter.pkScript(ctx)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	want, _ := hex.DecodeString("a91400065635e652a6e00a53cfa07e822de50ccf94a887")
+	if !bytes.Equal(got, want) {
+		t.Errorf("got pkscript = %x want %x", got, want)
+	}
+
+	// Test bad address output error
+	pkScripter = &addrPKScripter{Address: "bad-addr"}
+	_, _, err = pkScripter.pkScript(ctx)
+	if errors.Root(err) != ErrBadAddr {
+		t.Errorf("got pkscript = %x want %x", errors.Root(err), ErrBadAddr)
 	}
 }

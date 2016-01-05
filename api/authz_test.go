@@ -193,7 +193,7 @@ func TestBuildAuthz(t *testing.T) {
 			userID: "u2",
 			request: []buildReq{{
 				Sources: []utxodb.Source{{AccountID: "acc1"}},
-				Dests:   []*asset.Destination{{AccountID: "acc4"}},
+				Dests:   []*asset.Destination{acctDest("acc4")},
 			}},
 			want: nil,
 		},
@@ -201,7 +201,7 @@ func TestBuildAuthz(t *testing.T) {
 			userID: "u2",
 			request: []buildReq{{
 				Sources: []utxodb.Source{{AccountID: "acc1"}},
-				Dests:   []*asset.Destination{{AccountID: "acc4"}},
+				Dests:   []*asset.Destination{acctDest("acc4")},
 			}, {
 				Sources: []utxodb.Source{{AccountID: "acc4"}},
 			}},
@@ -211,7 +211,7 @@ func TestBuildAuthz(t *testing.T) {
 			userID: "u2",
 			request: []buildReq{{
 				Sources: []utxodb.Source{{AccountID: "acc3"}},
-				Dests:   []*asset.Destination{{AccountID: "acc6"}},
+				Dests:   []*asset.Destination{acctDest("acc6")},
 			}},
 			want: errNoAccessToResource,
 		},
@@ -219,7 +219,7 @@ func TestBuildAuthz(t *testing.T) {
 			userID: "u2",
 			request: []buildReq{{
 				Sources: []utxodb.Source{{AccountID: "acc1"}},
-				Dests:   []*asset.Destination{{AccountID: "acc2"}},
+				Dests:   []*asset.Destination{acctDest("acc2")},
 			}},
 			want: errNoAccessToResource,
 		},
@@ -232,4 +232,10 @@ func TestBuildAuthz(t *testing.T) {
 			t.Errorf("%d: buildAuthz = %q want %q", i, got, c.want)
 		}
 	}
+}
+
+func acctDest(acctID string) *asset.Destination {
+	d := new(asset.Destination)
+	d.UnmarshalJSON([]byte(`{"type": "account", "account_id":"` + acctID + `"}`))
+	return d
 }
