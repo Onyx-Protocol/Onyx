@@ -37,7 +37,7 @@ var (
 	tlsKey       = env.String("TLSKEY", "")
 	listenAddr   = env.String("LISTEN", ":8080")
 	dbURL        = env.String("DB_URL", "postgres:///api?sslmode=disable")
-	target       = env.String("STACK", "sandbox") // TODO(kr): rename STACK to TARGET
+	target       = env.String("TARGET", "sandbox")
 	samplePer    = env.Duration("SAMPLEPER", 10*time.Second)
 	nouserSecret = env.String("NOUSER_SECRET", "")
 	splunkAddr   = os.Getenv("SPLUNKADDR")
