@@ -24,7 +24,6 @@ type Address struct {
 	Created time.Time
 
 	// Initialized by the package client
-	Address      string // base58-encoded
 	RedeemScript []byte
 	PKScript     []byte
 	Amount       uint64
@@ -181,14 +180,13 @@ func (a *Address) Insert(ctx context.Context) error {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
 		INSERT INTO addresses (
-			address, redeem_script, pk_script, manager_node_id, account_id,
+			redeem_script, pk_script, manager_node_id, account_id,
 			keyset, expiration, amount, key_index, is_change
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, to_key_index($9), $10)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, to_key_index($8), $9)
 		RETURNING id, created_at;
 	`
 	row := pg.FromContext(ctx).QueryRow(ctx, q,
-		a.Address,
 		a.RedeemScript,
 		a.PKScript,
 		a.ManagerNodeID,

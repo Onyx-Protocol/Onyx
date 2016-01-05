@@ -11,7 +11,6 @@ import (
 	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain-sandbox/txscript"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
 	"chain/fedchain/validation"
@@ -418,34 +417,29 @@ func loadAccountInfo(ctx context.Context, outs []*txdb.Output) error {
 	defer span.Finish(ctx)
 
 	var (
-		hashes          []string
-		indexes         []uint32
-		addrs           []string
-		outpointsByAddr = make(map[string]bc.Outpoint)
-		outputs         = make(map[bc.Outpoint]*txdb.Output)
+		hashes            []string
+		indexes           []uint32
+		scripts           [][]byte
+		outpointsByScript = make(map[string]bc.Outpoint)
+		outputs           = make(map[bc.Outpoint]*txdb.Output)
 	)
 	for _, out := range outs {
 		outputs[out.Outpoint] = out
 		hashes = append(hashes, out.Outpoint.Hash.String())
 		indexes = append(indexes, out.Outpoint.Index)
 
-		addr, err := txscript.PkScriptAddr(out.Script)
-		if err != nil {
-			return errors.Wrapf(err, "output %s: bad script: %x", out.Outpoint, out.Script)
-		}
-		s := addr.String()
-		addrs = append(addrs, s)
-		outpointsByAddr[s] = out.Outpoint
+		scripts = append(scripts, out.Script)
+		outpointsByScript[string(out.Script)] = out.Outpoint
 	}
 
 	// addresses table
 
 	const addrq = `
-		SELECT address, manager_node_id, account_id, key_index(key_index)
+		SELECT pk_script, manager_node_id, account_id, key_index(key_index)
 		FROM addresses
-		WHERE address IN (SELECT unnest($1::text[]))
+		WHERE pk_script IN (SELECT unnest($1::bytea[]))
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, addrq, pg.Strings(addrs))
+	rows, err := pg.FromContext(ctx).Query(ctx, addrq, pg.Byteas(scripts))
 	if err != nil {
 		return errors.Wrap(err, "addresses select query")
 	}
@@ -453,14 +447,15 @@ func loadAccountInfo(ctx context.Context, outs []*txdb.Output) error {
 
 	for rows.Next() {
 		var (
-			addr, mnodeID, accID string
-			addrIndex            []uint32
+			script         []byte
+			mnodeID, accID string
+			addrIndex      []uint32
 		)
-		err := rows.Scan(&addr, &mnodeID, &accID, (*pg.Uint32s)(&addrIndex))
+		err := rows.Scan(&script, &mnodeID, &accID, (*pg.Uint32s)(&addrIndex))
 		if err != nil {
 			return errors.Wrap(err, "addresses row scan")
 		}
-		out := outputs[outpointsByAddr[addr]]
+		out := outputs[outpointsByScript[string(script)]]
 		out.ManagerNodeID = mnodeID
 		out.AccountID = accID
 		copy(out.AddrIndex[:], addrIndex)

@@ -54,7 +54,6 @@ func TestCreateAddress(t *testing.T) {
 		SigsRequired:     1,
 		Keys:             []*hdkey.XKey{dummyXPub},
 
-		Address: "3LkNaCapeRBLcdm5mfH9xv8snvrfzcsixu",
 		RedeemScript: []byte{
 			81, 33, 2, 241, 154, 202, 111, 123, 48, 123, 116, 244, 53,
 			11, 207, 218, 165, 175, 26, 38, 65, 147, 76, 125, 77, 183,

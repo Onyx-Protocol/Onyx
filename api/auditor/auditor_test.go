@@ -182,11 +182,11 @@ func TestGetTxIssuance(t *testing.T) {
 			AssetID:  bc.AssetID([32]byte{0}),
 			Value:    5,
 			Metadata: []byte{2},
-			Script:   mustDecodeHex("a914488f20d75535a8f408f47d954cbbb319482ca68987"), // 38Jg35n4ne2C6rDLCYM94odqgWG9QZW1SW
+			Script:   []byte("addr0"),
 		}, {
 			AssetID: bc.AssetID([32]byte{0}),
 			Value:   6,
-			Script:  mustDecodeHex("a91430819f1955f747220bb247df8a989e36a432733487"), // 367Ve1Xkgwwiu9rmm9bJEnB91ZFnn79M1P
+			Script:  []byte("addr1"),
 		}},
 		Metadata: []byte{0},
 	})
@@ -217,12 +217,14 @@ func TestGetTxIssuance(t *testing.T) {
 			Outputs: []*TxOutput{{
 				AssetID:  bc.AssetID([32]byte{0}),
 				Amount:   5,
-				Address:  "38Jg35n4ne2C6rDLCYM94odqgWG9QZW1SW",
+				Address:  []byte("addr0"),
+				Script:   []byte("addr0"),
 				Metadata: []byte{2},
 			}, {
 				AssetID: bc.AssetID([32]byte{0}),
 				Amount:  6,
-				Address: "367Ve1Xkgwwiu9rmm9bJEnB91ZFnn79M1P",
+				Address: []byte("addr1"),
+				Script:  []byte("addr1"),
 			}},
 		}
 
@@ -256,11 +258,11 @@ func TestGetTxTransfer(t *testing.T) {
 		Outputs: []*bc.TxOutput{{
 			AssetID: bc.AssetID([32]byte{1}),
 			Value:   5,
-			Script:  mustDecodeHex("a914488f20d75535a8f408f47d954cbbb319482ca68987"), // 38Jg35n4ne2C6rDLCYM94odqgWG9QZW1SW
+			Script:  []byte("addr0"),
 		}, {
 			AssetID: bc.AssetID([32]byte{2}),
 			Value:   6,
-			Script:  mustDecodeHex("a91430819f1955f747220bb247df8a989e36a432733487"), // 367Ve1Xkgwwiu9rmm9bJEnB91ZFnn79M1P
+			Script:  []byte("addr1"),
 		}},
 	})
 
@@ -314,11 +316,13 @@ func TestGetTxTransfer(t *testing.T) {
 			Outputs: []*TxOutput{{
 				AssetID: bc.AssetID([32]byte{1}),
 				Amount:  5,
-				Address: "38Jg35n4ne2C6rDLCYM94odqgWG9QZW1SW",
+				Address: []byte("addr0"),
+				Script:  []byte("addr0"),
 			}, {
 				AssetID: bc.AssetID([32]byte{2}),
 				Amount:  6,
-				Address: "367Ve1Xkgwwiu9rmm9bJEnB91ZFnn79M1P",
+				Address: []byte("addr1"),
+				Script:  []byte("addr1"),
 			}},
 		}
 

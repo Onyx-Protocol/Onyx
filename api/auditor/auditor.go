@@ -3,10 +3,8 @@ package auditor
 import (
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/btcsuite/btcd/chaincfg"
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
@@ -15,7 +13,6 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
 )
 
 // ListBlocksItem is returned by ListBlocks
@@ -105,7 +102,8 @@ type TxInput struct {
 type TxOutput struct {
 	AssetID  bc.AssetID         `json:"asset_id"`
 	Amount   uint64             `json:"amount"`
-	Address  string             `json:"address"`
+	Address  chainjson.HexBytes `json:"address"` // deprecated
+	Script   chainjson.HexBytes `json:"script"`
 	Metadata chainjson.HexBytes `json:"metadata,omitempty"`
 }
 
@@ -174,18 +172,11 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 	}
 
 	for _, out := range tx.Outputs {
-		_, addrs, _, err := txscript.ExtractPkScriptAddrs(out.Script, &chaincfg.MainNetParams)
-		if err != nil {
-			return nil, err
-		}
-		var addrStrs []string
-		for _, addr := range addrs {
-			addrStrs = append(addrStrs, addr.String())
-		}
 		resp.Outputs = append(resp.Outputs, &TxOutput{
 			AssetID:  out.AssetID,
 			Amount:   out.Value,
-			Address:  strings.Join(addrStrs, ","),
+			Address:  out.Script,
+			Script:   out.Script,
 			Metadata: out.Metadata,
 		})
 	}

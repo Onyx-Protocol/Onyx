@@ -10,6 +10,7 @@ import (
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/database/pg"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/metrics"
@@ -377,7 +378,8 @@ func createAddr(ctx context.Context, accountID string, in struct {
 
 	signers := hdkey.Derive(addr.Keys, appdb.ReceiverPath(addr, addr.Index))
 	ret := map[string]interface{}{
-		"address":             addr.Address,
+		"address":             chainjson.HexBytes(addr.PKScript), // deprecated
+		"script":              chainjson.HexBytes(addr.PKScript),
 		"signatures_required": addr.SigsRequired,
 		"signers":             addrSigners(signers),
 		"block_chain":         "sandbox",

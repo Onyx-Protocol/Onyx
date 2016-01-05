@@ -15,7 +15,6 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
-	chaintxscript "chain/fedchain-sandbox/txscript"
 	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
 	"chain/metrics"
@@ -105,10 +104,8 @@ func (d *Destination) UnmarshalJSON(b []byte) error {
 	switch d.Type {
 	case "account", "": // default type
 		d.pkScripter = new(acctPKScripter)
-	case "address":
-		// TODO(kr): move to a "script" type
-		// containing the literal pk script.
-		d.pkScripter = new(addrPKScripter)
+	case "script":
+		d.pkScripter = new(scriptPKScripter)
 	default:
 		return errors.WithDetailf(ErrBadOutDest, "unknown type %q", d.Type)
 	}
@@ -141,20 +138,14 @@ func (s *acctPKScripter) pkScript(ctx context.Context) ([]byte, *utxodb.Receiver
 	return addr.PKScript, newOutputReceiver(addr, s.isChange), nil
 }
 
-type addrPKScripter struct {
-	Address  string `json:"address"`
-	isChange bool
+type scriptPKScripter struct {
+	Script chainjson.HexBytes `json:"script"`
 }
 
-// pkScript returns the script for sending to
-// the destination address in s.
+// pkScript returns the destination script in s.
 // The returned extra data is nil.
-func (s *addrPKScripter) pkScript(context.Context) ([]byte, *utxodb.Receiver, error) {
-	script, err := chaintxscript.AddrPkScript(s.Address)
-	if err != nil {
-		return nil, nil, errors.Wrapf(ErrBadAddr, "output pkscript error addr=%v", s.Address)
-	}
-	return script, nil, nil
+func (s *scriptPKScripter) pkScript(context.Context) ([]byte, *utxodb.Receiver, error) {
+	return s.Script, nil, nil
 }
 
 func addAssetIssuanceOutputs(ctx context.Context, tx *bc.TxData, asset *appdb.Asset, dests []*Destination) ([]*utxodb.Receiver, error) {

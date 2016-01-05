@@ -192,7 +192,6 @@ CREATE TABLE addresses (
     account_id text NOT NULL,
     keyset text[] NOT NULL,
     key_index bigint NOT NULL,
-    address text NOT NULL,
     memo text,
     amount bigint,
     is_change boolean DEFAULT false NOT NULL,
@@ -631,14 +630,6 @@ ALTER TABLE ONLY activity
 
 
 --
--- Name: addresses_address_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
---
-
-ALTER TABLE ONLY addresses
-    ADD CONSTRAINT addresses_address_key UNIQUE (address);
-
-
---
 -- Name: addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -860,6 +851,13 @@ CREATE UNIQUE INDEX addresses_account_id_key_index_idx ON addresses USING btree 
 --
 
 CREATE INDEX addresses_manager_node_id_idx ON addresses USING btree (manager_node_id);
+
+
+--
+-- Name: addresses_pk_script_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX addresses_pk_script_idx ON addresses USING btree (pk_script);
 
 
 --

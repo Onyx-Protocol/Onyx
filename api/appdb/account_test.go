@@ -309,7 +309,6 @@ func TestDeleteAccountBlocked(t *testing.T) {
 			SigsRequired:     1,
 			Keys:             []*hdkey.XKey{dummyXPub},
 
-			Address:      "3abc",
 			RedeemScript: []byte{},
 			PKScript:     []byte{},
 		}

@@ -76,8 +76,9 @@ func TestIssue(t *testing.T) {
 	`)
 	defer pgtest.Finish(ctx)
 
+	outScript := mustDecodeHex("a9140ac9c982fd389181752e5a414045dd424a10754b87")
 	outs := []*Destination{{
-		pkScripter: &addrPKScripter{Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK"},
+		pkScripter: &scriptPKScripter{Script: outScript},
 		Amount:     123,
 	}}
 
@@ -87,7 +88,6 @@ func TestIssue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	outScript, _ := hex.DecodeString("a9140ac9c982fd389181752e5a414045dd424a10754b87")
 	want := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{{Previous: bc.Outpoint{
@@ -143,23 +143,17 @@ func TestAddressOutputPKScript(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
+	script := mustDecodeHex("a91400065635e652a6e00a53cfa07e822de50ccf94a887")
+
 	// Test stringified address output
-	pkScripter := &addrPKScripter{Address: "31h9Wq4sVTr2ogZQgcazqgwJtEhM3hFtT2"}
+	pkScripter := &scriptPKScripter{Script: script}
 	got, _, err := pkScripter.pkScript(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	want, _ := hex.DecodeString("a91400065635e652a6e00a53cfa07e822de50ccf94a887")
-	if !bytes.Equal(got, want) {
-		t.Errorf("got pkscript = %x want %x", got, want)
-	}
-
-	// Test bad address output error
-	pkScripter = &addrPKScripter{Address: "bad-addr"}
-	_, _, err = pkScripter.pkScript(ctx)
-	if errors.Root(err) != ErrBadAddr {
-		t.Errorf("got pkscript = %x want %x", errors.Root(err), ErrBadAddr)
+	if !bytes.Equal(got, script) {
+		t.Errorf("got pkscript = %x want %x", got, script)
 	}
 }

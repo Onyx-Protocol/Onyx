@@ -62,15 +62,12 @@ const sampleActivityFixture = `
 `
 
 // Some test addresses and PK scripts.
-var testAddrs = []struct {
-	addr   string
-	script string
-}{
-	{"33JaS6naDzZM45imNgNTX93374rL4cn4Na", "a91411b1d274c20532f6b5611d90fa6d854e88fe911687"},
-	{"3EufaWajf5FYtpmpgVCgJEoceFWogyjGih", "a91490fe0f28833af4c9d9194eaa0b5b3aae787a177287"},
-	{"3FgNFea8fmCSXWfrcCJps5j3FeZ8f2BNde", "a914997250aca70e0d3b9007489ae28dc6760a7a7d7487"},
-	{"3M1zHhUvi8vfmTgdB2QdtqLBwAZWZR2h7F", "a914d400ed9954c6a1f19e9e224d751ab5bc38c56a1487"},
-	{"3P8h3P1gCfbUQD13YEKcH3kMHfctcpUo4B", "a914eb35b1c812f943883b46ac48580a93012b5aa1aa87"},
+var testAddrs = []string{
+	"a91411b1d274c20532f6b5611d90fa6d854e88fe911687",
+	"a91490fe0f28833af4c9d9194eaa0b5b3aae787a177287",
+	"a914997250aca70e0d3b9007489ae28dc6760a7a7d7487",
+	"a914d400ed9954c6a1f19e9e224d751ab5bc38c56a1487",
+	"a914eb35b1c812f943883b46ac48580a93012b5aa1aa87",
 }
 
 func TestManagerNodeActivity(t *testing.T) {
@@ -362,15 +359,15 @@ func TestWriteActivity(t *testing.T) {
 					addr_index, account_id, manager_node_id, confirmed
 				) VALUES (
 					'` + issuanceTx.Hash.String() + `', '` + issuanceTx.Hash.String() + `', 0,
-					'asset-id-0', 1, decode('` + testAddrs[0].script + `', 'hex'),
+					'asset-id-0', 1, decode('` + testAddrs[0] + `', 'hex'),
 					0, 'account-id-0', 'manager-node-id-0', FALSE
 				), (
 					'` + issuanceTx.Hash.String() + `', '` + issuanceTx.Hash.String() + `', 1,
-					'asset-id-0', 2,  decode('` + testAddrs[1].script + `', 'hex'),
+					'asset-id-0', 2,  decode('` + testAddrs[1] + `', 'hex'),
 					0, 'account-id-2', 'manager-node-id-1', FALSE
 				), (
 					'` + issuanceTx.Hash.String() + `', '` + issuanceTx.Hash.String() + `', 2,
-					'asset-id-0', 3,  decode('` + testAddrs[2].script + `', 'hex'),
+					'asset-id-0', 3,  decode('` + testAddrs[2] + `', 'hex'),
 					0, '', '', FALSE
 				);
 			`,
@@ -383,8 +380,8 @@ func TestWriteActivity(t *testing.T) {
 					Inputs: []actEntry{},
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, AccountID: "account-id-0", AccountLabel: "account-0"},
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, Address: testAddrs[1].addr},
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: testAddrs[2].addr},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, Address: mustDecodeHex(testAddrs[1])},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: mustDecodeHex(testAddrs[2])},
 					},
 				},
 				"manager-node-id-1": actItem{
@@ -393,8 +390,8 @@ func TestWriteActivity(t *testing.T) {
 					Inputs: []actEntry{},
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, AccountID: "account-id-2", AccountLabel: "account-2"},
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, Address: testAddrs[0].addr},
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: testAddrs[2].addr},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, Address: mustDecodeHex(testAddrs[0])},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: mustDecodeHex(testAddrs[2])},
 					},
 				},
 			},
@@ -407,7 +404,7 @@ func TestWriteActivity(t *testing.T) {
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, AccountID: "account-id-0", AccountLabel: "account-0"},
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, AccountID: "account-id-2", AccountLabel: "account-2"},
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: testAddrs[2].addr},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: mustDecodeHex(testAddrs[2])},
 					},
 				},
 			},
@@ -425,7 +422,7 @@ func TestWriteActivity(t *testing.T) {
 					block_hash, block_height
 				) VALUES (
 					'4786c29077265138e00a8fce822c5fb998c0ce99df53d939bb53d81bca5aa426', 0,
-					'asset-id-0', 6, decode('` + testAddrs[0].script + `', 'hex'),
+					'asset-id-0', 6, decode('` + testAddrs[0] + `', 'hex'),
 					0, 'account-id-0', 'manager-node-id-0', TRUE,
 					'bh1', 1
 				);
@@ -439,15 +436,15 @@ func TestWriteActivity(t *testing.T) {
 					addr_index, account_id, manager_node_id, confirmed
 				) VALUES (
 					'` + transferTx.Hash.String() + `', '` + transferTx.Hash.String() + `', 0,
-					'asset-id-0', 1, decode('` + testAddrs[1].script + `', 'hex'),
+					'asset-id-0', 1, decode('` + testAddrs[1] + `', 'hex'),
 					0, 'account-id-2', 'manager-node-id-1', FALSE
 				), (
 					'` + transferTx.Hash.String() + `', '` + transferTx.Hash.String() + `', 1,
-					'asset-id-0', 2, decode('` + testAddrs[2].script + `', 'hex'),
+					'asset-id-0', 2, decode('` + testAddrs[2] + `', 'hex'),
 					0, 'account-id-0', 'manager-node-id-0', FALSE
 				), (
 					'` + transferTx.Hash.String() + `', '` + transferTx.Hash.String() + `', 2,
-					'asset-id-0', 3, decode('` + testAddrs[3].script + `', 'hex'),
+					'asset-id-0', 3, decode('` + testAddrs[3] + `', 'hex'),
 					0, '', '', FALSE
 				);
 			`,
@@ -461,20 +458,20 @@ func TestWriteActivity(t *testing.T) {
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 4, AccountID: "account-id-0", AccountLabel: "account-0"},
 					},
 					Outputs: []actEntry{
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, Address: testAddrs[1].addr},
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: testAddrs[3].addr},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, Address: mustDecodeHex(testAddrs[1])},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: mustDecodeHex(testAddrs[3])},
 					},
 				},
 				"manager-node-id-1": actItem{
 					TxHash: transferTx.Hash.String(),
 					Time:   txTime,
 					Inputs: []actEntry{
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 6, Address: testAddrs[0].addr},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 6, Address: mustDecodeHex(testAddrs[0])},
 					},
 					Outputs: []actEntry{
 						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 1, AccountID: "account-id-2", AccountLabel: "account-2"},
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, Address: testAddrs[2].addr},
-						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: testAddrs[3].addr},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 2, Address: mustDecodeHex(testAddrs[2])},
+						{AssetID: "asset-id-0", AssetLabel: "asset-0", Amount: 3, Address: mustDecodeHex(testAddrs[3])},
 					},
 				},
 			},
@@ -569,12 +566,12 @@ func TestGetActUTXOs(t *testing.T) {
 			block_hash, block_height
 		) VALUES (
 			'0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098', 0,
-			'asset-id-0', 1, 0, decode('`+testAddrs[0].script+`', 'hex'),
+			'asset-id-0', 1, 0, decode('`+testAddrs[0]+`', 'hex'),
 			'account-id-0', 'manager-node-id-0', TRUE,
 			'bh1', 1
 		), (
 			'3924f077fedeb24248f9e63532433473710a4df88df4805425a16598dd3f58df', 1,
-			'asset-id-0', 2, 1, decode('`+testAddrs[1].script+`', 'hex'),
+			'asset-id-0', 2, 1, decode('`+testAddrs[1]+`', 'hex'),
 			'account-id-1', 'manager-node-id-0', TRUE,
 			'bh1', 1
 		);
@@ -591,15 +588,15 @@ func TestGetActUTXOs(t *testing.T) {
 			account_id, manager_node_id, confirmed
 		) VALUES (
 			'7de759a6e917f941e8da7c30e6ad8a3d85a4f508d5bbed4fe80244271754eaef', '7de759a6e917f941e8da7c30e6ad8a3d85a4f508d5bbed4fe80244271754eaef', 0,
-			'asset-id-1', 3, 0, decode('`+testAddrs[2].script+`', 'hex'),
+			'asset-id-1', 3, 0, decode('`+testAddrs[2]+`', 'hex'),
 			'account-id-2', 'manager-node-id-2', FALSE
 		), (
 			'`+tx.Hash.String()+`', '`+tx.Hash.String()+`', 0,
-			'asset-id-0', 3, 1, decode('`+testAddrs[3].script+`', 'hex'),
+			'asset-id-0', 3, 1, decode('`+testAddrs[3]+`', 'hex'),
 			'account-id-3', 'manager-node-id-3', FALSE
 		), (
 			'`+tx.Hash.String()+`', '`+tx.Hash.String()+`', 1,
-			'asset-id-1', 3, 0, decode('`+testAddrs[4].script+`', 'hex'),
+			'asset-id-1', 3, 0, decode('`+testAddrs[4]+`', 'hex'),
 			'account-id-4', 'manager-node-id-4', FALSE
 		);
 	`)
@@ -616,24 +613,21 @@ func TestGetActUTXOs(t *testing.T) {
 			Amount:        1,
 			ManagerNodeID: "manager-node-id-0",
 			AccountID:     "account-id-0",
-			Addr:          testAddrs[0].addr,
-			Script:        mustDecodeHex(testAddrs[0].script),
+			Script:        mustDecodeHex(testAddrs[0]),
 		},
 		{
 			AssetID:       "asset-id-0",
 			Amount:        2,
 			ManagerNodeID: "manager-node-id-0",
 			AccountID:     "account-id-1",
-			Addr:          testAddrs[1].addr,
-			Script:        mustDecodeHex(testAddrs[1].script),
+			Script:        mustDecodeHex(testAddrs[1]),
 		},
 		{
 			AssetID:       "asset-id-1",
 			Amount:        3,
 			ManagerNodeID: "manager-node-id-2",
 			AccountID:     "account-id-2",
-			Addr:          testAddrs[2].addr,
-			Script:        mustDecodeHex(testAddrs[2].script),
+			Script:        mustDecodeHex(testAddrs[2]),
 		},
 	}
 
@@ -643,16 +637,14 @@ func TestGetActUTXOs(t *testing.T) {
 			Amount:        3,
 			ManagerNodeID: "manager-node-id-3",
 			AccountID:     "account-id-3",
-			Addr:          testAddrs[3].addr,
-			Script:        mustDecodeHex(testAddrs[3].script),
+			Script:        mustDecodeHex(testAddrs[3]),
 		},
 		{
 			AssetID:       "asset-id-1",
 			Amount:        3,
 			ManagerNodeID: "manager-node-id-4",
 			AccountID:     "account-id-4",
-			Addr:          testAddrs[4].addr,
-			Script:        mustDecodeHex(testAddrs[4].script),
+			Script:        mustDecodeHex(testAddrs[4]),
 		},
 	}
 
@@ -683,11 +675,11 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 			account_id, manager_node_id, confirmed
 		) VALUES (
 			'`+tx.Hash.String()+`', '`+tx.Hash.String()+`', 0,
-			'asset-id-0', 1, 0, decode('`+testAddrs[0].script+`', 'hex'),
+			'asset-id-0', 1, 0, decode('`+testAddrs[0]+`', 'hex'),
 			'account-id-0', 'manager-node-id-0', FALSE
 		), (
 			'`+tx.Hash.String()+`', '`+tx.Hash.String()+`', 1,
-			'asset-id-0', 2, 1, decode('`+testAddrs[1].script+`', 'hex'),
+			'asset-id-0', 2, 1, decode('`+testAddrs[1]+`', 'hex'),
 			'account-id-1', 'manager-node-id-1', FALSE
 		);
 	`)
@@ -705,16 +697,14 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 			Amount:        1,
 			ManagerNodeID: "manager-node-id-0",
 			AccountID:     "account-id-0",
-			Addr:          testAddrs[0].addr,
-			Script:        mustDecodeHex(testAddrs[0].script),
+			Script:        mustDecodeHex(testAddrs[0]),
 		},
 		{
 			AssetID:       "asset-id-0",
 			Amount:        2,
 			ManagerNodeID: "manager-node-id-1",
 			AccountID:     "account-id-1",
-			Addr:          testAddrs[1].addr,
-			Script:        mustDecodeHex(testAddrs[1].script),
+			Script:        mustDecodeHex(testAddrs[1]),
 		},
 	}
 
@@ -745,18 +735,18 @@ func TestMarkChangeOuts(t *testing.T) {
 			('account-id-0', 'manager-node-id-0', 0, 'account-0');
 
 		INSERT INTO addresses
-			(address, is_change, manager_node_id, account_id, keyset, key_index, redeem_script, pk_script)
+			(is_change, manager_node_id, account_id, keyset, key_index, redeem_script, pk_script)
 		VALUES
-			('addr-0', true, 'manager-node-id-0', 'account-id-0', '{}', 0, '\x'::bytea, '\x'::bytea),
-			('addr-1', false, 'manager-node-id-0', 'account-id-0', '{}', 1, '\x'::bytea, '\x'::bytea);
+			(true, 'manager-node-id-0', 'account-id-0', '{}', 0, '\x'::bytea, '\x01'::bytea),
+			(false, 'manager-node-id-0', 'account-id-0', '{}', 1, '\x'::bytea, '\x02'::bytea);
 	`
 
 	withContext(t, fix, func(ctx context.Context) {
 		utxos := []*ActUTXO{
-			{Addr: "addr-0"},
-			{Addr: "addr-1"},
-			{Addr: "addr-2"},
-			{Addr: "addr-3"},
+			{Script: []byte{1}},
+			{Script: []byte{2}},
+			{Script: []byte{3}},
+			{Script: []byte{4}},
 		}
 		outIsChange := map[int]bool{2: true}
 
@@ -766,10 +756,10 @@ func TestMarkChangeOuts(t *testing.T) {
 		}
 
 		want := []*ActUTXO{
-			{Addr: "addr-0", IsChange: true},
-			{Addr: "addr-1"},
-			{Addr: "addr-2", IsChange: true},
-			{Addr: "addr-3"},
+			{Script: []byte{1}, IsChange: true},
+			{Script: []byte{2}},
+			{Script: []byte{3}, IsChange: true},
+			{Script: []byte{4}},
 		}
 
 		if !reflect.DeepEqual(utxos, want) {
@@ -896,10 +886,10 @@ func TestCoalesceActivity(t *testing.T) {
 		// Simple transfer from Alice's perspective
 		{
 			ins: []*ActUTXO{
-				{AccountID: "alice-account-id-0", AssetID: "gold", Amount: 10, Addr: "alice-addr-id-0"},
+				{AccountID: "alice-account-id-0", AssetID: "gold", Amount: 10, Script: []byte("alice-addr-id-0")},
 			},
 			outs: []*ActUTXO{
-				{AccountID: "bob-account-id-0", AssetID: "gold", Amount: 10, Addr: "bob-addr-id-0"},
+				{AccountID: "bob-account-id-0", AssetID: "gold", Amount: 10, Script: []byte("bob-addr-id-0")},
 			},
 
 			visibleAccounts: []string{"alice-account-id-0"},
@@ -919,10 +909,10 @@ func TestCoalesceActivity(t *testing.T) {
 		// Simple transfer from Bob's perspective
 		{
 			ins: []*ActUTXO{
-				{AssetID: "gold", Amount: 10, AccountID: "alice-account-id-0", Addr: "alice-addr-id-0"},
+				{AssetID: "gold", Amount: 10, AccountID: "alice-account-id-0", Script: []byte("alice-addr-id-0")},
 			},
 			outs: []*ActUTXO{
-				{AssetID: "gold", Amount: 10, AccountID: "bob-account-id-0", Addr: "bob-addr-id-0"},
+				{AssetID: "gold", Amount: 10, AccountID: "bob-account-id-0", Script: []byte("bob-addr-id-0")},
 			},
 
 			visibleAccounts: []string{"bob-account-id-0"},
@@ -942,16 +932,16 @@ func TestCoalesceActivity(t *testing.T) {
 		// Trade from Alice's perspective
 		{
 			ins: []*ActUTXO{
-				{AssetID: "gold", Amount: 20, AccountID: "alice-account-id-0", Addr: "alice-addr-id-0"},
-				{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0", Addr: "bob-addr-id-0"},
-				{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0", Addr: "bob-addr-id-1"},
+				{AssetID: "gold", Amount: 20, AccountID: "alice-account-id-0", Script: []byte("alice-addr-id-0")},
+				{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0", Script: []byte("bob-addr-id-0")},
+				{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0", Script: []byte("bob-addr-id-1")},
 			},
 			outs: []*ActUTXO{
-				{AssetID: "silver", Amount: 15, AccountID: "alice-account-id-0", Addr: "alice-addr-id-1"},
-				{AssetID: "gold", Amount: 5, AccountID: "bob-account-id-0", Addr: "bob-addr-id-2"},
+				{AssetID: "silver", Amount: 15, AccountID: "alice-account-id-0", Script: []byte("alice-addr-id-1")},
+				{AssetID: "gold", Amount: 5, AccountID: "bob-account-id-0", Script: []byte("bob-addr-id-2")},
 
-				{AssetID: "gold", Amount: 15, AccountID: "alice-account-id-0", Addr: "alice-addr-id-2", IsChange: true},
-				{AssetID: "silver", Amount: 5, AccountID: "bob-account-id-0", Addr: "bob-addr-id-3", IsChange: true},
+				{AssetID: "gold", Amount: 15, AccountID: "alice-account-id-0", Script: []byte("alice-addr-id-2"), IsChange: true},
+				{AssetID: "silver", Amount: 5, AccountID: "bob-account-id-0", Script: []byte("bob-addr-id-3"), IsChange: true},
 			},
 
 			visibleAccounts: []string{"alice-account-id-0"},
@@ -977,16 +967,16 @@ func TestCoalesceActivity(t *testing.T) {
 		// Trade from Bob's perspective
 		{
 			ins: []*ActUTXO{
-				{AssetID: "gold", Amount: 20, AccountID: "alice-account-id-0", Addr: "alice-addr-id-0"},
-				{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0", Addr: "bob-addr-id-0"},
-				{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0", Addr: "bob-addr-id-1"},
+				{AssetID: "gold", Amount: 20, AccountID: "alice-account-id-0", Script: []byte("alice-addr-id-0")},
+				{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0", Script: []byte("bob-addr-id-0")},
+				{AssetID: "silver", Amount: 10, AccountID: "bob-account-id-0", Script: []byte("bob-addr-id-1")},
 			},
 			outs: []*ActUTXO{
-				{AssetID: "silver", Amount: 15, AccountID: "alice-account-id-0", Addr: "alice-addr-id-1"},
-				{AssetID: "gold", Amount: 5, AccountID: "bob-account-id-0", Addr: "bob-addr-id-2"},
+				{AssetID: "silver", Amount: 15, AccountID: "alice-account-id-0", Script: []byte("alice-addr-id-1")},
+				{AssetID: "gold", Amount: 5, AccountID: "bob-account-id-0", Script: []byte("bob-addr-id-2")},
 
-				{AssetID: "gold", Amount: 15, AccountID: "alice-account-id-0", Addr: "alice-addr-id-2", IsChange: true},
-				{AssetID: "silver", Amount: 5, AccountID: "bob-account-id-0", Addr: "bob-addr-id-3", IsChange: true},
+				{AssetID: "gold", Amount: 15, AccountID: "alice-account-id-0", Script: []byte("alice-addr-id-2"), IsChange: true},
+				{AssetID: "silver", Amount: 5, AccountID: "bob-account-id-0", Script: []byte("bob-addr-id-3"), IsChange: true},
 			},
 
 			visibleAccounts: []string{"bob-account-id-0"},
@@ -1076,10 +1066,10 @@ func TestCreateActEntries(t *testing.T) {
 	wantIns := []actEntry{
 		actEntry{AccountID: "account-id-0", AccountLabel: "charlie", AssetID: "asset-id-4", AssetLabel: "avocado", Amount: 5},
 		actEntry{AccountID: "account-id-0", AccountLabel: "charlie", AssetID: "asset-id-5", AssetLabel: "mango", Amount: 6},
-		actEntry{Address: "small-world", AssetID: "asset-id-2", AssetLabel: "frankincense", Amount: 3},
-		actEntry{Address: "small-world", AssetID: "asset-id-3", AssetLabel: "myrrh", Amount: 4},
-		actEntry{Address: "space-mountain", AssetID: "asset-id-0", AssetLabel: "gold", Amount: 1},
-		actEntry{Address: "space-mountain", AssetID: "asset-id-1", AssetLabel: "silver", Amount: 2},
+		actEntry{Address: []byte("small-world"), AssetID: "asset-id-2", AssetLabel: "frankincense", Amount: 3},
+		actEntry{Address: []byte("small-world"), AssetID: "asset-id-3", AssetLabel: "myrrh", Amount: 4},
+		actEntry{Address: []byte("space-mountain"), AssetID: "asset-id-0", AssetLabel: "gold", Amount: 1},
+		actEntry{Address: []byte("space-mountain"), AssetID: "asset-id-1", AssetLabel: "silver", Amount: 2},
 	}
 
 	wantOuts := []actEntry{
@@ -1087,8 +1077,8 @@ func TestCreateActEntries(t *testing.T) {
 		actEntry{AccountID: "account-id-2", AccountLabel: "alice", AssetID: "asset-id-1", AssetLabel: "silver", Amount: 2},
 		actEntry{AccountID: "account-id-1", AccountLabel: "bob", AssetID: "asset-id-2", AssetLabel: "frankincense", Amount: 3},
 		actEntry{AccountID: "account-id-1", AccountLabel: "bob", AssetID: "asset-id-3", AssetLabel: "myrrh", Amount: 4},
-		actEntry{Address: "teacups", AssetID: "asset-id-4", AssetLabel: "avocado", Amount: 5},
-		actEntry{Address: "teacups", AssetID: "asset-id-5", AssetLabel: "mango", Amount: 6},
+		actEntry{Address: []byte("teacups"), AssetID: "asset-id-4", AssetLabel: "avocado", Amount: 5},
+		actEntry{Address: []byte("teacups"), AssetID: "asset-id-5", AssetLabel: "mango", Amount: 6},
 	}
 
 	if !reflect.DeepEqual(gotIns, wantIns) {

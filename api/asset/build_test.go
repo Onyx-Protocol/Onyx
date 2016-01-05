@@ -22,8 +22,8 @@ func TestBuildTrade(t *testing.T) {
 			VALUES('acc1', 'mn1', 0, 1);
 		INSERT INTO accounts (id, manager_node_id, key_index, next_address_index)
 			VALUES('acc2', 'mn1', 1, 1);
-		INSERT INTO addresses (id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script)
-			VALUES('a2', 'mn1', 'acc2', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a2', '\x'::bytea, '');
+		INSERT INTO addresses (id, manager_node_id, account_id, keyset, key_index, redeem_script, pk_script)
+			VALUES('a2', 'mn1', 'acc2', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, '', '\x01');
 		INSERT INTO utxos
 			(tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, confirmed, block_hash, block_height)
 		VALUES
@@ -49,7 +49,7 @@ func TestBuildTrade(t *testing.T) {
 		Amount:    2,
 	}}
 	dests := []*Destination{{
-		pkScripter: &addrPKScripter{Address: "32g4QsxVQrhZeXyXTUnfSByNBAdTfVUdVK"},
+		pkScripter: &scriptPKScripter{Script: []byte{}},
 		AssetID:    [32]byte{254},
 		Amount:     5,
 	}}
@@ -80,8 +80,8 @@ func TestBuildTransfer(t *testing.T) {
 			VALUES('rot1', 'mn1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 		INSERT INTO accounts (id, manager_node_id, key_index, next_address_index)
 			VALUES('acc1', 'mn1', 0, 1);
-		INSERT INTO addresses (id, manager_node_id, account_id, keyset, key_index, address, redeem_script, pk_script)
-			VALUES('a1', 'mn1', 'acc1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, 'a1', '\x'::bytea, '');
+		INSERT INTO addresses (id, manager_node_id, account_id, keyset, key_index, redeem_script, pk_script)
+			VALUES('a1', 'mn1', 'acc1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0, '', '\x01');
 		INSERT INTO utxos (tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, confirmed, block_hash, block_height)
 			VALUES ('246c6aa1e5cc2bd1132a37cbc267e2031558aee26a8956e21b749d72920331a7', 0, 'ff00000000000000000000000000000000000000000000000000000000000000', 6, 0, 'acc1', 'mn1', TRUE, 'bh1', 1);
 	`)
@@ -96,7 +96,7 @@ func TestBuildTransfer(t *testing.T) {
 		}},
 		[]*Destination{{
 			AssetID:    [32]byte{255},
-			pkScripter: &addrPKScripter{Address: "3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB"},
+			pkScripter: &scriptPKScripter{Script: []byte{}},
 			Amount:     5,
 		}},
 		time.Minute,

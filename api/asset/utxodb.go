@@ -9,7 +9,6 @@ import (
 	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain-sandbox/txscript"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
 	"chain/metrics"
@@ -166,29 +165,24 @@ func initAddrInfoFromRecs(hash bc.Hash, txouts []*bc.TxOutput, recs []*utxodb.Re
 // This function loads what it can.
 func loadAddrInfoFromDB(ctx context.Context, outs []*txdb.Output) error {
 	var (
-		addrs      []string
-		outsByAddr = make(map[string]*txdb.Output)
+		scripts      [][]byte
+		outsByScript = make(map[string]*txdb.Output)
 	)
-	for i, o := range outs {
+	for _, o := range outs {
 		if o.AccountID != "" {
 			continue
 		}
 
-		addr, err := txscript.PkScriptAddr(o.Script)
-		if err != nil {
-			return errors.Wrapf(err, "bad pk script in output %d", i)
-		}
-
-		addrs = append(addrs, addr.String())
-		outsByAddr[addr.String()] = o
+		scripts = append(scripts, o.Script)
+		outsByScript[string(o.Script)] = o
 	}
 
 	const q = `
-		SELECT address, account_id, manager_node_id, key_index(key_index)
+		SELECT pk_script, account_id, manager_node_id, key_index(key_index)
 		FROM addresses
-		WHERE address IN (SELECT unnest($1::text[]))
+		WHERE pk_script IN (SELECT unnest($1::bytea[]))
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(addrs))
+	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Byteas(scripts))
 	if err != nil {
 		return errors.Wrap(err, "select")
 	}
@@ -196,13 +190,13 @@ func loadAddrInfoFromDB(ctx context.Context, outs []*txdb.Output) error {
 
 	for rows.Next() {
 		var (
-			addr          string
+			script        []byte
 			managerNodeID string
 			accountID     string
 			addrIndex     []uint32
 		)
 		err = rows.Scan(
-			&addr,
+			&script,
 			&accountID,
 			&managerNodeID,
 			(*pg.Uint32s)(&addrIndex),
@@ -211,7 +205,7 @@ func loadAddrInfoFromDB(ctx context.Context, outs []*txdb.Output) error {
 			return errors.Wrap(err, "scan")
 		}
 
-		o := outsByAddr[addr]
+		o := outsByScript[string(script)]
 		o.AccountID = accountID
 		o.ManagerNodeID = managerNodeID
 		copy(o.AddrIndex[:], addrIndex)

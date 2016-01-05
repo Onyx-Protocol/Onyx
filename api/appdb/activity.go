@@ -1,6 +1,7 @@
 package appdb
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -10,8 +11,8 @@ import (
 
 	"chain/database/pg"
 	"chain/database/sql"
+	chainjson "chain/encoding/json"
 	"chain/errors"
-	"chain/fedchain-sandbox/txscript"
 	"chain/fedchain/bc"
 	"chain/metrics"
 	"chain/strings"
@@ -228,7 +229,6 @@ type ActUTXO struct {
 	Amount        uint64
 	ManagerNodeID string
 	AccountID     string
-	Addr          string
 	Script        []byte
 	IsChange      bool
 }
@@ -255,9 +255,9 @@ type txRawActivity struct {
 }
 
 type actEntry struct {
-	Address      string `json:"address,omitempty"`
-	AccountID    string `json:"account_id,omitempty"`
-	AccountLabel string `json:"account_label,omitempty"`
+	Address      chainjson.HexBytes `json:"address,omitempty"`
+	AccountID    string             `json:"account_id,omitempty"`
+	AccountLabel string             `json:"account_label,omitempty"`
 
 	Amount     int64  `json:"amount"`
 	AssetID    string `json:"asset_id"`
@@ -281,8 +281,8 @@ func (a actEntryOrder) Less(i, j int) bool {
 	if a[i].AccountLabel != a[j].AccountLabel {
 		return a[i].AccountLabel < a[j].AccountLabel
 	}
-	if a[i].Address != a[j].Address {
-		return a[i].Address < a[j].Address
+	if !bytes.Equal(a[i].Address, a[j].Address) {
+		return bytes.Compare(a[i].Address, a[j].Address) < 0
 	}
 	if a[i].AssetLabel != a[j].AssetLabel {
 		return a[i].AssetLabel < a[j].AssetLabel
@@ -353,12 +353,6 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 			return nil, nil, errors.Wrap(err, "row scan")
 		}
 
-		addr, err := txscript.PkScriptAddr(utxo.Script)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "get addr from script: %x", utxo.Script)
-		}
-		utxo.Addr = addr.String()
-
 		all[bc.Outpoint{Hash: hash, Index: index}] = utxo
 	}
 	if rows.Err() != nil {
@@ -388,38 +382,38 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 // both the outIsChange parameter and the addresses table.
 func markChangeOuts(ctx context.Context, utxos []*ActUTXO, outIsChange map[int]bool) error {
 	var (
-		unknownAddrs  []string
-		unknownByAddr = make(map[string]*ActUTXO)
+		unknownScripts  [][]byte
+		unknownByScript = make(map[string]*ActUTXO)
 	)
 	for i, u := range utxos {
 		if outIsChange[i] {
 			u.IsChange = true
 		} else {
-			unknownAddrs = append(unknownAddrs, u.Addr)
-			unknownByAddr[u.Addr] = u
+			unknownScripts = append(unknownScripts, u.Script)
+			unknownByScript[string(u.Script)] = u
 		}
 	}
 
 	const q = `
-		SELECT address
+		SELECT pk_script
 		FROM addresses
-		WHERE address IN (SELECT unnest($1::text[]))
+		WHERE pk_script IN (SELECT unnest($1::bytea[]))
 		AND is_change = true
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(unknownAddrs))
+	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Byteas(unknownScripts))
 	if err != nil {
 		return errors.Wrap(err, "select query")
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var addr string
-		err := rows.Scan(&addr)
+		var script []byte
+		err := rows.Scan(&script)
 		if err != nil {
 			return errors.Wrap(err, "row scan")
 		}
 
-		unknownByAddr[addr].IsChange = true
+		unknownByScript[string(script)].IsChange = true
 	}
 
 	if err := rows.Err(); err != nil {
@@ -552,10 +546,10 @@ func coalesceActivity(ins, outs []*ActUTXO, visibleAccounts []string) txRawActiv
 			}
 			res.insByAccount[u.AccountID][u.AssetID] += int64(u.Amount)
 		} else {
-			if res.insByAsset[u.Addr] == nil {
-				res.insByAsset[u.Addr] = make(map[string]int64)
+			if res.insByAsset[string(u.Script)] == nil {
+				res.insByAsset[string(u.Script)] = make(map[string]int64)
 			}
-			res.insByAsset[u.Addr][u.AssetID] += int64(u.Amount)
+			res.insByAsset[string(u.Script)][u.AssetID] += int64(u.Amount)
 		}
 	}
 
@@ -581,10 +575,10 @@ func coalesceActivity(ins, outs []*ActUTXO, visibleAccounts []string) txRawActiv
 				res.outsByAccount[u.AccountID][u.AssetID] += int64(u.Amount)
 			}
 		} else {
-			if res.outsByAsset[u.Addr] == nil {
-				res.outsByAsset[u.Addr] = make(map[string]int64)
+			if res.outsByAsset[string(u.Script)] == nil {
+				res.outsByAsset[string(u.Script)] = make(map[string]int64)
 			}
-			res.outsByAsset[u.Addr][u.AssetID] += int64(u.Amount)
+			res.outsByAsset[string(u.Script)][u.AssetID] += int64(u.Amount)
 		}
 	}
 
@@ -602,7 +596,7 @@ func createActEntries(
 	for addr, assetAmts := range r.insByAsset {
 		for assetID, amt := range assetAmts {
 			ins = append(ins, actEntry{
-				Address:    addr,
+				Address:    []byte(addr),
 				AssetID:    assetID,
 				AssetLabel: assetLabels[assetID],
 				Amount:     amt,
@@ -625,7 +619,7 @@ func createActEntries(
 	for addr, assetAmts := range r.outsByAsset {
 		for assetID, amt := range assetAmts {
 			outs = append(outs, actEntry{
-				Address:    addr,
+				Address:    []byte(addr),
 				AssetID:    assetID,
 				AssetLabel: assetLabels[assetID],
 				Amount:     amt,

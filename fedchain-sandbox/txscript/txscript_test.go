@@ -2,43 +2,8 @@ package txscript
 
 import (
 	"bytes"
-	"encoding/hex"
 	"testing"
 )
-
-func TestAddrPkScript(t *testing.T) {
-	cases := []struct {
-		addr   string
-		script string
-	}{
-		{
-			addr:   "3H9gBofbYu4uQXwfMVcFiWjQHXf6vmnVGB",
-			script: "a914a994a46855d8f4442b3a6db863628cc020537f4087",
-		},
-	}
-
-	for _, c := range cases {
-		pkScript, err := hex.DecodeString(c.script)
-		if err != nil {
-			t.Fatal(err)
-		}
-		got, err := AddrPkScript(c.addr)
-		if err != nil {
-			t.Error("unexptected error", err)
-		}
-		if !bytes.Equal(got, pkScript) {
-			t.Errorf("got AddrPkScript(%s) = %X want %X", c.addr, got, pkScript)
-		}
-
-		got2, err := PkScriptAddr(pkScript)
-		if err != nil {
-			t.Error("unexptected error", err)
-		}
-		if got2.String() != c.addr {
-			t.Errorf("got PkScriptAddr(%s) = %v want %v", c.script, got2, c.addr)
-		}
-	}
-}
 
 // Taken from PAPI
 func TestRedeemToPkScript(t *testing.T) {

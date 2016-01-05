@@ -48,7 +48,6 @@ func CreateAddress(ctx context.Context, addr *appdb.Address, save bool) error {
 	if err != nil {
 		return errors.Wrap(err, "compute pk script")
 	}
-	addr.Address = bcAddr.String()
 	if !save {
 		addr.Created = time.Now()
 		return nil
