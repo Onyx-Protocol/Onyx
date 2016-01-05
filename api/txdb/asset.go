@@ -105,13 +105,15 @@ func InsertAssetDefinitions(ctx context.Context, block *bc.Block) error {
 
 	const q = `
 		WITH defs AS (
-			SELECT * FROM unnest($1::text[]) h, unnest($2::bytea[]) d
+			SELECT unnest($1::text[]) h, unnest($2::bytea[]) d
+		), filtered_defs AS (
+			SELECT h, d FROM defs
 			WHERE NOT EXISTS (
-				SELECT hash from asset_definitions
-				WHERE h=hash
+				SELECT null FROM asset_definitions
+				WHERE h = hash
 			)
 		)
-		INSERT INTO asset_definitions (hash, definition) TABLE defs
+		INSERT INTO asset_definitions (hash, definition) TABLE filtered_defs
 	`
 	_, err := pg.FromContext(ctx).Exec(ctx, q, pg.Strings(hash), pg.Byteas(defn))
 	return errors.Wrap(err)
