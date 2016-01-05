@@ -11,20 +11,61 @@ import (
 	"chain/fedchain/bc"
 )
 
+// NodeKey is represents a single key in a node's multi-sig configuration.
+// It is used as a return value when nodes are created.
+//
+// A NodeKey consists of a type, plus parameters depending on that type. Valid
+// manager node types include "node" and "account". For issuer nodes, only
+// "node" is valid.
+//
+// For node-type keys, XPrv will be populated only if it was generated
+// server-side when the node was created.
+type NodeKey struct {
+	Type string `json:"type"`
+
+	// Parameters for type "node"
+	XPub *hdkey.XKey `json:"xpub,omitempty"`
+	XPrv *hdkey.XKey `json:"xprv,omitempty"`
+}
+
+func buildNodeKeys(xpubs, xprvs []*hdkey.XKey) ([]*NodeKey, error) {
+	pubToPrv := make(map[string]*hdkey.XKey)
+	for i, xprv := range xprvs {
+		xpub, err := xprv.Neuter()
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot extract xpub from xprv: %d", i)
+		}
+
+		k := &hdkey.XKey{ExtendedKey: *xpub}
+		pubToPrv[k.String()] = xprv
+	}
+
+	var res []*NodeKey
+	for _, xpub := range xpubs {
+		k := &NodeKey{Type: "node", XPub: xpub}
+
+		s := xpub.String()
+		if xprv := pubToPrv[s]; xprv != nil {
+			k.XPrv = xprv
+		}
+
+		res = append(res, k)
+	}
+
+	return res, nil
+}
+
 // ManagerNode represents a single manager node. It is intended to be used wth API
 // responses.
 type ManagerNode struct {
-	ID          string        `json:"id"`
-	Blockchain  string        `json:"blockchain"`
-	Label       string        `json:"label"`
-	Keys        []*hdkey.XKey `json:"keys,omitempty"`
-	VarKeys     int           `json:"variable_key_count"`
-	SigsReqd    int           `json:"signatures_required"`
-	PrivateKeys []*hdkey.XKey `json:"private_keys,omitempty"`
+	ID       string     `json:"id"`
+	Label    string     `json:"label"`
+	Keys     []*NodeKey `json:"keys"`
+	SigsReqd int        `json:"signatures_required"`
 }
 
 // InsertManagerNode inserts a new manager node into the database.
-func InsertManagerNode(ctx context.Context, projID, label string, keys, gennedKeys []*hdkey.XKey, variableKeys, sigsRequired int) (w *ManagerNode, err error) {
+func InsertManagerNode(ctx context.Context, projID, label string, xpubs, gennedKeys []*hdkey.XKey, variableKeys, sigsRequired int) (w *ManagerNode, err error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 	const q = `
 		INSERT INTO manager_nodes (label, project_id, generated_keys, variable_keys, sigs_required)
@@ -38,18 +79,25 @@ func InsertManagerNode(ctx context.Context, projID, label string, keys, gennedKe
 		return nil, errors.Wrap(err, "insert manager node")
 	}
 
-	err = createRotation(ctx, id, keysToStrings(keys)...)
+	err = createRotation(ctx, id, keysToStrings(xpubs)...)
 	if err != nil {
 		return nil, errors.Wrap(err, "create rotation")
 	}
 
+	keys, err := buildNodeKeys(xpubs, gennedKeys)
+	if err != nil {
+		return nil, errors.Wrap(err, "generating node key list")
+	}
+
+	for i := 0; i < variableKeys; i++ {
+		keys = append(keys, &NodeKey{Type: "account"})
+	}
+
 	return &ManagerNode{
-		ID:          id,
-		Blockchain:  "sandbox",
-		Label:       label,
-		Keys:        keys,
-		SigsReqd:    sigsRequired,
-		PrivateKeys: gennedKeys,
+		ID:       id,
+		Label:    label,
+		Keys:     keys,
+		SigsReqd: sigsRequired,
 	}, nil
 }
 
@@ -72,23 +120,23 @@ type AccountBalanceItem struct {
 func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, error) {
 	var (
 		q = `
-			SELECT label, block_chain, keyset, generated_keys, variable_keys
+			SELECT label, keyset, generated_keys, variable_keys, sigs_required
 			FROM manager_nodes mn
 			JOIN rotations r ON r.id=mn.current_rotation
 			WHERE mn.id = $1
 		`
 		label       string
-		bc          string
 		pubKeyStrs  []string
 		privKeyStrs []string
 		varKeys     int
+		sigsReqd    int
 	)
 	err := pg.FromContext(ctx).QueryRow(ctx, q, managerNodeID).Scan(
 		&label,
-		&bc,
 		(*pg.Strings)(&pubKeyStrs),
 		(*pg.Strings)(&privKeyStrs),
 		&varKeys,
+		&sigsReqd,
 	)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "manager node ID: %v", managerNodeID)
@@ -97,23 +145,30 @@ func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, er
 		return nil, err
 	}
 
-	pubKeys, err := stringsToKeys(pubKeyStrs)
+	xpubs, err := stringsToKeys(pubKeyStrs)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing pub keys")
 	}
 
-	privKeys, err := stringsToKeys(privKeyStrs)
+	xprvs, err := stringsToKeys(privKeyStrs)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing private keys")
 	}
 
+	keys, err := buildNodeKeys(xpubs, xprvs)
+	if err != nil {
+		return nil, errors.Wrap(err, "generating node key list")
+	}
+
+	for i := 0; i < varKeys; i++ {
+		keys = append(keys, &NodeKey{Type: "account"})
+	}
+
 	return &ManagerNode{
-		ID:          managerNodeID,
-		Label:       label,
-		Blockchain:  bc,
-		Keys:        pubKeys,
-		PrivateKeys: privKeys,
-		VarKeys:     varKeys,
+		ID:       managerNodeID,
+		Label:    label,
+		Keys:     keys,
+		SigsReqd: sigsReqd,
 	}, nil
 }
 
@@ -184,7 +239,7 @@ func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit
 // ListManagerNodes returns a list of manager nodes contained in the given project.
 func ListManagerNodes(ctx context.Context, projID string) ([]*ManagerNode, error) {
 	q := `
-		SELECT id, block_chain, label
+		SELECT id, label
 		FROM manager_nodes
 		WHERE project_id = $1
 		ORDER BY id
@@ -198,7 +253,7 @@ func ListManagerNodes(ctx context.Context, projID string) ([]*ManagerNode, error
 	var managerNodes []*ManagerNode
 	for rows.Next() {
 		m := new(ManagerNode)
-		err := rows.Scan(&m.ID, &m.Blockchain, &m.Label)
+		err := rows.Scan(&m.ID, &m.Label)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}

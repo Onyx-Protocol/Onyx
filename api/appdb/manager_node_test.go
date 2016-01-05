@@ -21,6 +21,7 @@ func TestGetManagerNode(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		proj := newTestProject(t, ctx, "foo", nil)
 		mn, err := InsertManagerNode(ctx, proj.ID, "manager-node-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 0, 1)
+
 		if err != nil {
 			t.Fatalf("unexpected error on InsertManagerNode: %v", err)
 		}
@@ -32,11 +33,16 @@ func TestGetManagerNode(t *testing.T) {
 			{
 				mn.ID,
 				&ManagerNode{
-					ID:          mn.ID,
-					Label:       "manager-node-0",
-					Blockchain:  "sandbox",
-					Keys:        []*hdkey.XKey{dummyXPub},
-					PrivateKeys: []*hdkey.XKey{dummyXPrv},
+					ID:    mn.ID,
+					Label: "manager-node-0",
+					Keys: []*NodeKey{
+						{
+							Type: "node",
+							XPub: dummyXPub,
+							XPrv: dummyXPrv,
+						},
+					},
+					SigsReqd: 1,
 				},
 				nil,
 			},
@@ -171,14 +177,14 @@ func TestListManagerNodes(t *testing.T) {
 			{
 				"proj-id-0",
 				[]*ManagerNode{
-					{ID: "manager-node-id-0", Blockchain: "sandbox", Label: "manager-node-0"},
-					{ID: "manager-node-id-1", Blockchain: "sandbox", Label: "manager-node-1"},
+					{ID: "manager-node-id-0", Label: "manager-node-0"},
+					{ID: "manager-node-id-1", Label: "manager-node-1"},
 				},
 			},
 			{
 				"proj-id-1",
 				[]*ManagerNode{
-					{ID: "manager-node-id-2", Blockchain: "sandbox", Label: "manager-node-2"},
+					{ID: "manager-node-id-2", Label: "manager-node-2"},
 				},
 			},
 		}

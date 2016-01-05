@@ -10,7 +10,7 @@ import (
 	"chain/fedchain-sandbox/hdkey"
 )
 
-const accountFixture = `
+var accountFixture = `
 	INSERT INTO manager_nodes (
 		id, project_id, block_chain, sigs_required, key_index,
 		label, current_rotation, next_asset_index, next_account_index,
@@ -18,7 +18,7 @@ const accountFixture = `
 	)
 	VALUES ('mn1', 'proj-id-0', 'sandbox', 1, 1, 'foo', 'rot1', 0, 1, 1, now(), now());
 	INSERT INTO rotations (id, manager_node_id, keyset)
-	VALUES ('rot1', 'mn1', '{xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw}');
+	VALUES ('rot1', 'mn1', '{` + dummyXPub.String() + `}');
 	INSERT INTO accounts (
 		id, manager_node_id, key_index, created_at, updated_at,
 		next_address_index, label

@@ -3,6 +3,7 @@ package asset
 import (
 	"testing"
 
+	"chain/api/appdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -25,9 +26,15 @@ func TestCreateManagerNode(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
-	if node.ID == "" {
+
+	mnode, ok := node.(*appdb.ManagerNode)
+	if !ok {
+		t.Fatal("expected CreateNode return value to be a manager node")
+	}
+	if mnode.ID == "" {
 		t.Errorf("got empty managerNode id")
 	}
+
 	var valid bool
 	const checkQ = `
 		SELECT SUBSTR(generated_keys[1], 1, 4)='xprv' FROM manager_nodes LIMIT 1

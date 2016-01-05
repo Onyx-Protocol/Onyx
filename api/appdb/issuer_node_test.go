@@ -40,14 +40,14 @@ func TestListIssuerNodes(t *testing.T) {
 			{
 				"proj-id-0",
 				[]*IssuerNode{
-					{ID: "in-id-0", Blockchain: "sandbox", Label: "in-0"},
-					{ID: "in-id-1", Blockchain: "sandbox", Label: "in-1"},
+					{ID: "in-id-0", Label: "in-0"},
+					{ID: "in-id-1", Label: "in-1"},
 				},
 			},
 			{
 				"proj-id-1",
 				[]*IssuerNode{
-					{ID: "in-id-2", Blockchain: "sandbox", Label: "in-2"},
+					{ID: "in-id-2", Label: "in-2"},
 				},
 			},
 		}
@@ -82,11 +82,16 @@ func TestGetIssuerNodes(t *testing.T) {
 			{
 				in.ID,
 				&IssuerNode{
-					ID:          in.ID,
-					Label:       "in-0",
-					Blockchain:  "sandbox",
-					Keys:        []*hdkey.XKey{dummyXPub},
-					PrivateKeys: []*hdkey.XKey{dummyXPrv},
+					ID:    in.ID,
+					Label: "in-0",
+					Keys: []*NodeKey{
+						{
+							Type: "node",
+							XPub: dummyXPub,
+							XPrv: dummyXPrv,
+						},
+					},
+					SigsReqd: 1,
 				},
 				nil,
 			},

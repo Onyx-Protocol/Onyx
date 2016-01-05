@@ -15,17 +15,14 @@ import (
 // IssuerNode represents a single issuer ndoe. It is intended to be used wth API
 // responses.
 type IssuerNode struct {
-	ID          string        `json:"id"`
-	Blockchain  string        `json:"block_chain"`
-	Label       string        `json:"label"`
-	Keys        []*hdkey.XKey `json:"keys,omitempty"`
-	VarKeys     int           `json:"variable_key_count"`
-	SigsReqd    int           `json:"signatures_required"`
-	PrivateKeys []*hdkey.XKey `json:"private_keys,omitempty"`
+	ID       string     `json:"id"`
+	Label    string     `json:"label"`
+	Keys     []*NodeKey `json:"keys,omitempty"`
+	SigsReqd int        `json:"signatures_required"`
 }
 
 // InsertIssuerNode adds the issuer node to the database
-func InsertIssuerNode(ctx context.Context, projID, label string, keys, gennedKeys []*hdkey.XKey, sigsRequired int) (*IssuerNode, error) {
+func InsertIssuerNode(ctx context.Context, projID, label string, xpubs, gennedKeys []*hdkey.XKey, sigsRequired int) (*IssuerNode, error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 
 	const q = `
@@ -37,7 +34,7 @@ func InsertIssuerNode(ctx context.Context, projID, label string, keys, gennedKey
 	err := pg.FromContext(ctx).QueryRow(ctx, q,
 		label,
 		projID,
-		pg.Strings(keysToStrings(keys)),
+		pg.Strings(keysToStrings(xpubs)),
 		pg.Strings(keysToStrings(gennedKeys)),
 		sigsRequired,
 	).Scan(&id)
@@ -45,13 +42,16 @@ func InsertIssuerNode(ctx context.Context, projID, label string, keys, gennedKey
 		return nil, errors.Wrap(err, "insert issuer node")
 	}
 
+	keys, err := buildNodeKeys(xpubs, gennedKeys)
+	if err != nil {
+		return nil, errors.Wrap(err, "generating node key list")
+	}
+
 	return &IssuerNode{
-		ID:          id,
-		Blockchain:  "sandbox",
-		Label:       label,
-		Keys:        keys,
-		SigsReqd:    sigsRequired,
-		PrivateKeys: gennedKeys,
+		ID:       id,
+		Label:    label,
+		Keys:     keys,
+		SigsReqd: sigsRequired,
 	}, nil
 }
 
@@ -99,7 +99,7 @@ func NextAsset(ctx context.Context, inodeID string) (asset *Asset, sigsRequired 
 // project.
 func ListIssuerNodes(ctx context.Context, projID string) ([]*IssuerNode, error) {
 	q := `
-		SELECT id, block_chain, label
+		SELECT id, label
 		FROM issuer_nodes
 		WHERE project_id = $1
 		ORDER BY id
@@ -113,7 +113,7 @@ func ListIssuerNodes(ctx context.Context, projID string) ([]*IssuerNode, error) 
 	var inodes []*IssuerNode
 	for rows.Next() {
 		inode := new(IssuerNode)
-		err := rows.Scan(&inode.ID, &inode.Blockchain, &inode.Label)
+		err := rows.Scan(&inode.ID, &inode.Label)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")
 		}
@@ -130,19 +130,17 @@ func ListIssuerNodes(ctx context.Context, projID string) ([]*IssuerNode, error) 
 // GetIssuerNode returns basic information about a single issuer node.
 func GetIssuerNode(ctx context.Context, groupID string) (*IssuerNode, error) {
 	var (
-		q           = `SELECT label, block_chain, keyset, generated_keys, variable_keys FROM issuer_nodes WHERE id = $1`
+		q           = `SELECT label, keyset, generated_keys, sigs_required FROM issuer_nodes WHERE id = $1`
 		label       string
-		bc          string
 		pubKeyStrs  []string
 		privKeyStrs []string
-		varKeys     int
+		sigsReqd    int
 	)
 	err := pg.FromContext(ctx).QueryRow(ctx, q, groupID).Scan(
 		&label,
-		&bc,
 		(*pg.Strings)(&pubKeyStrs),
 		(*pg.Strings)(&privKeyStrs),
-		&varKeys,
+		&sigsReqd,
 	)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "issuer node ID: %v", groupID)
@@ -151,23 +149,26 @@ func GetIssuerNode(ctx context.Context, groupID string) (*IssuerNode, error) {
 		return nil, err
 	}
 
-	pubKeys, err := stringsToKeys(pubKeyStrs)
+	xpubs, err := stringsToKeys(pubKeyStrs)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing pub keys")
 	}
 
-	privKeys, err := stringsToKeys(privKeyStrs)
+	xprvs, err := stringsToKeys(privKeyStrs)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing private keys")
 	}
 
+	keys, err := buildNodeKeys(xpubs, xprvs)
+	if err != nil {
+		return nil, errors.Wrap(err, "generating node key list")
+	}
+
 	return &IssuerNode{
-		ID:          groupID,
-		Label:       label,
-		Blockchain:  bc,
-		Keys:        pubKeys,
-		PrivateKeys: privKeys,
-		VarKeys:     varKeys,
+		ID:       groupID,
+		Label:    label,
+		Keys:     keys,
+		SigsReqd: sigsReqd,
 	}, nil
 }
 
