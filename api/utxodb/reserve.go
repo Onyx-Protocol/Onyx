@@ -2,13 +2,13 @@ package utxodb
 
 import (
 	"container/heap"
-	"errors"
 	"sort"
 	"sync"
 	"time"
 
 	"golang.org/x/net/context"
 
+	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/log"
 	"chain/metrics"
@@ -140,7 +140,7 @@ func (rs *Reserver) Reserve(ctx context.Context, sources []Source, ttl time.Dura
 	exp := now.Add(ttl)
 
 	sort.Sort(byKey(sources))
-	for _, in := range sources {
+	for i, in := range sources {
 		p := rs.pool(in.AccountID, in.AssetID)
 		err := p.init(ctx, rs.db, key{in.AccountID, in.AssetID})
 		if err != nil {
@@ -148,6 +148,8 @@ func (rs *Reserver) Reserve(ctx context.Context, sources []Source, ttl time.Dura
 		}
 		res, err := p.reserve(in.Amount, now, exp)
 		if err != nil {
+			err = errors.WithDetailf(err, "input %d: account=%s asset=%s amount=%d",
+				i, in.AccountID, in.AssetID.String(), in.Amount)
 			return nil, nil, err
 		}
 		reserved = append(reserved, res...)

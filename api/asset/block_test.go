@@ -13,6 +13,7 @@ import (
 	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
 )
@@ -81,7 +82,7 @@ func TestGenSpendApply(t *testing.T) {
 		Amount:    10,
 	}}
 	reserved, _, err := utxoDB.Reserve(ctx, inputs, 2*time.Minute)
-	if err != nil && err != utxodb.ErrInsufficient {
+	if err != nil && errors.Root(err) != utxodb.ErrInsufficient {
 		t.Fatal(err)
 	}
 	if len(reserved) > 0 {
