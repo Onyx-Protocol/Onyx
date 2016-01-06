@@ -38,7 +38,7 @@ func ValidateTxInputs(ctx context.Context, view state.ViewReader, tx *bc.Tx) err
 // changes to the view.
 // If tx is invalid,
 // it returns a non-nil error describing why.
-func ValidateTx(ctx context.Context, view state.View, tx *bc.Tx, timestamp uint64, prevHash *bc.Hash) error {
+func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp uint64, prevHash *bc.Hash) error {
 	// Don't make a span here, because there are too many of them
 	// to comfortably fit in a single trace for processing (creating
 	// or applying) a block.
@@ -62,7 +62,7 @@ func ValidateTx(ctx context.Context, view state.View, tx *bc.Tx, timestamp uint6
 	if tx.IsIssuance() {
 		// TODO(erykwalder): some type of uniqueness check
 		// TODO(erykwalder): check outputs once utxos aren't tied to manager nodes
-		return ApplyTx(ctx, view, tx)
+		return nil
 	}
 
 	err = ValidateTxInputs(ctx, view, tx)
@@ -90,7 +90,7 @@ func ValidateTx(ctx context.Context, view state.View, tx *bc.Tx, timestamp uint6
 		}
 	}
 
-	return ApplyTx(ctx, view, tx)
+	return nil
 }
 
 // txIsWellFormed checks whether tx passes context-free validation.
@@ -132,7 +132,7 @@ func txIsWellFormed(tx *bc.Tx) error {
 
 // validateTxBalance ensures that non-issuance transactions
 // have the exact same input and output asset amounts.
-func validateTxBalance(ctx context.Context, view state.View, tx *bc.Tx) error {
+func validateTxBalance(ctx context.Context, view state.ViewReader, tx *bc.Tx) error {
 	parity := make(map[bc.AssetID]uint64)
 	for _, out := range tx.Outputs {
 		parity[out.AssetID] -= out.Value

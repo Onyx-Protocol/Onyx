@@ -104,8 +104,7 @@ func publishTx(ctx context.Context, msg *bc.Tx, receivers []*utxodb.Receiver) (e
 		return errors.Wrap(err)
 	}
 
-	mv := NewMemView()
-	view := state.Compose(mv, poolView, bcView)
+	view := state.MultiReader(poolView, bcView)
 	// TODO(kr): get current block hash for last argument to ValidateTx
 	err = validation.ValidateTx(ctx, view, msg, uint64(time.Now().Unix()), nil)
 	if err != nil {

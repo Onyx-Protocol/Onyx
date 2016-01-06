@@ -513,7 +513,7 @@ func validateBlock(ctx context.Context, block *bc.Block) (outs []*txdb.Output, a
 	if isSignedByTrustedHost(block) {
 		validation.ApplyBlock(ctx, state.Compose(mv, bcView), block)
 	} else {
-		err = validation.ValidateBlock(ctx, state.Compose(mv, bcView), block)
+		err = validation.ValidateAndApplyBlock(ctx, state.Compose(mv, bcView), block)
 		if err != nil {
 			return nil, nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
 		}
