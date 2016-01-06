@@ -20,6 +20,7 @@ var (
 	flagA = flag.String("a", "api", "`app`")
 	flagT = flag.String("t", os.Getenv("USER"), "`target`")
 	flagR = flag.String("r", "next", "`release`")
+	flagD = flag.Bool("d", false, "delete env vars")
 	flagH = flag.Bool("h", false, "show help")
 
 	awsS3 = s3.New(aws.DefaultConfig.WithRegion("us-east-1"))
@@ -38,9 +39,18 @@ func main() {
 		flag.PrintDefaults()
 		return
 	}
-	if flag.NArg() > 1 && !allContainEquals(flag.Args()) {
+	any, all := containsEquals(flag.Args())
+	if !*flagD && flag.NArg() > 1 && !any {
+		log.Println("cannot get more than one")
+		os.Exit(2)
+	} else if !*flagD && any && !all {
 		log.Println("cannot mix get and set operations")
 		os.Exit(2)
+	} else if *flagD && any {
+		log.Println("cannot mix delete and set operations")
+		os.Exit(2)
+	} else if *flagD && flag.NArg() == 0 {
+		os.Exit(0) // nothing to do
 	}
 
 	path := envPath(*flagA, *flagT, *flagR)
@@ -53,6 +63,18 @@ func main() {
 	case len(args) == 0: // list
 		for _, v := range config {
 			fmt.Println(v)
+		}
+	case *flagD:
+		if *flagR != "next" {
+			log.Println("past releases are readonly")
+			log.Println("use '-r next' to delete future values")
+			os.Exit(1)
+		}
+		config = removeEnvNames(config, args)
+		sort.Strings(config)
+		err = setConfig(path, config)
+		if err != nil {
+			log.Fatal(err)
 		}
 	case len(args) == 1 && !strings.Contains(args[0], "="): // print one
 		p := args[0] + "="
@@ -114,13 +136,16 @@ func setConfig(path string, config []string) error {
 	return err
 }
 
-func allContainEquals(args []string) bool {
-	for _, s := range args {
-		if !strings.Contains(s, "=") {
-			return false
+func containsEquals(a []string) (any, all bool) {
+	all = true
+	for _, s := range a {
+		if strings.Contains(s, "=") {
+			any = true
+		} else {
+			all = false
 		}
 	}
-	return true
+	return any, all
 }
 
 // mergeEnvLists merges the two environment lists such that
@@ -138,6 +163,28 @@ NextVar:
 		out = append(out, inkv)
 	}
 	return out
+}
+
+// removeEnvNames destructively removes variables
+// from env that are listed in names.
+func removeEnvNames(env, names []string) []string {
+	for i := 0; i < len(env); i++ {
+		k := strings.SplitN(env[i], "=", 2)[0]
+		if contains(names, k) {
+			copy(env[i:], env[i+1:])
+			env = env[:len(env)-1]
+		}
+	}
+	return env
+}
+
+func contains(haystack []string, needle string) bool {
+	for _, s := range haystack {
+		if s == needle {
+			return true
+		}
+	}
+	return false
 }
 
 func envPath(app, target, rel string) string {
