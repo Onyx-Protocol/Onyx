@@ -101,11 +101,16 @@ func (d *Destination) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
+	if d.Type == "" && hasAddressField(b) {
+		d.Type = "address" // detect the old format, for compatibility
+	}
 	switch d.Type {
 	case "account", "": // default type
 		d.pkScripter = new(acctPKScripter)
 	case "script":
 		d.pkScripter = new(scriptPKScripter)
+	case "address":
+		d.pkScripter = new(addrPKScripter)
 	default:
 		return errors.WithDetailf(ErrBadOutDest, "unknown type %q", d.Type)
 	}
@@ -146,6 +151,25 @@ type scriptPKScripter struct {
 // The returned extra data is nil.
 func (s *scriptPKScripter) pkScript(context.Context) ([]byte, *utxodb.Receiver, error) {
 	return s.Script, nil, nil
+}
+
+// addrPKScripter is for compatibility with existing clients
+// that set the "address" field without setting type to address.
+// The contents of this field is actually a pk script,
+// since it is taken from a prior server response where we
+// put the script in the address field.
+type addrPKScripter struct {
+	Script chainjson.HexBytes `json:"address"`
+}
+
+func (s *addrPKScripter) pkScript(context.Context) ([]byte, *utxodb.Receiver, error) {
+	return s.Script, nil, nil
+}
+
+func hasAddressField(b []byte) bool {
+	var v struct{ Address string }
+	err := json.Unmarshal(b, &v)
+	return err != nil && v.Address != ""
 }
 
 func addAssetIssuanceOutputs(ctx context.Context, tx *bc.TxData, asset *appdb.Asset, dests []*Destination) ([]*utxodb.Receiver, error) {
