@@ -169,7 +169,7 @@ func (s *addrPKScripter) pkScript(context.Context) ([]byte, *utxodb.Receiver, er
 func hasAddressField(b []byte) bool {
 	var v struct{ Address string }
 	err := json.Unmarshal(b, &v)
-	return err != nil && v.Address != ""
+	return err == nil && v.Address != ""
 }
 
 func addAssetIssuanceOutputs(ctx context.Context, tx *bc.TxData, asset *appdb.Asset, dests []*Destination) ([]*utxodb.Receiver, error) {

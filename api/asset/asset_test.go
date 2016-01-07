@@ -3,6 +3,7 @@ package asset
 import (
 	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"log"
 	"os"
 	"reflect"
@@ -139,7 +140,7 @@ func TestAccountOutputPKScript(t *testing.T) {
 	}
 }
 
-func TestAddressOutputPKScript(t *testing.T) {
+func TestScriptOutputPKScript(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
@@ -155,5 +156,23 @@ func TestAddressOutputPKScript(t *testing.T) {
 
 	if !bytes.Equal(got, script) {
 		t.Errorf("got pkscript = %x want %x", got, script)
+	}
+}
+
+func TestDestinationUnmarshal(t *testing.T) {
+	data := `{
+		"amount": 120,
+		"asset_id": "32a8a017015c40c1ddbddb72d9764135eebf17adc25ce81be3503ac9a68177b4",
+		"address": "a914d845992c396cb934452a72b41976350ddc5698d887"
+	}`
+	var dest Destination
+	err := json.Unmarshal([]byte(data), &dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, ok := dest.pkScripter.(*addrPKScripter)
+	if !ok {
+		t.Fatalf("expected pkScripter type to be addrPKScripter")
 	}
 }
