@@ -52,6 +52,15 @@ then
 	exit 1
 fi
 
+buildstatus="$(curl -sn https://api.github.com/repos/$proj/commits/$commit/status)"
+combinedstate=`echo "$buildstatus"|jq -r .state`
+if [ "$combinedstate" != success ]
+then
+	echo >&2 "build state is $combinedstate"
+	echo "$buildstatus" | jq >&2 -r '.statuses[]|.context+" "+.state+": "+.description'
+	exit 1
+fi
+
 jqprg='
 	map(select(.body|contains("LGTM"))) |
 	reduce .[] as $c
