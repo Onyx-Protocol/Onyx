@@ -413,3 +413,27 @@ func transfer(ctx context.Context, info *clientInfo, srcAcctID, destAcctID strin
 	}
 	return FinalizeTx(ctx, xferTx)
 }
+
+func TestUpsertGenesisBlock(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	b, err := UpsertGenesisBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	n := pgtest.Count(ctx, t, pg.FromContext(ctx), "blocks")
+	if n != 1 {
+		t.Fatalf("count(*) FROM blocks = %d want 1", n)
+	}
+	var got bc.Hash
+	err = pg.FromContext(ctx).QueryRow(ctx, `SELECT block_hash FROM blocks`).Scan(&got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := b.Hash()
+	if got != want {
+		t.Errorf("block hash = %v want %v", got, want)
+	}
+}

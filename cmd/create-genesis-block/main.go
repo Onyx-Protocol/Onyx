@@ -2,15 +2,14 @@ package main
 
 import (
 	"log"
-	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	"chain/api/asset"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
-	"chain/fedchain/bc"
 )
 
 var (
@@ -30,21 +29,9 @@ func main() {
 	ctx := pg.NewContext(context.Background(), db)
 	appdb.Init(ctx, db)
 
-	b := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Version:   bc.NewBlockVersion,
-			Timestamp: uint64(time.Now().Unix()),
-		},
-	}
-
-	const q = `
-		INSERT INTO blocks (block_hash, height, data, header)
-		VALUES ($1, $2, $3, $4)
-	`
-	_, err = db.Exec(ctx, q, b.Hash(), b.Height, b, &b.BlockHeader)
+	b, err := asset.UpsertGenesisBlock(ctx)
 	if err != nil {
 		log.Fatalln("error:", err)
 	}
-
 	log.Printf("block created: %+v", b)
 }
