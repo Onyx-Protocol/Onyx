@@ -44,7 +44,7 @@ func (h Handler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, re
 	ctx = span.NewContextWithSpan(ctx, sp)
 	log.Write(
 		ctx,
-		"user-agent", req.Header.Get("User-Agent"),
+		"useragent", req.Header.Get("User-Agent"),
 		"method", req.Method,
 		"path", req.URL.Path,
 	)
