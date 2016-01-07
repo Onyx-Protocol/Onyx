@@ -115,6 +115,10 @@ func main() {
 	h = httpspan.Handler{Handler: h}
 
 	if *makeBlocks {
+		_, err = asset.UpsertGenesisBlock(ctx)
+		if err != nil {
+			chainlog.Error(ctx, err) // non-fatal
+		}
 		admin.SetBlockInterval(blockInterval)
 		go asset.MakeBlocks(ctx, blockInterval)
 	}
