@@ -3,239 +3,316 @@ package api
 import (
 	"testing"
 
-	"chain/api/asset"
-	"chain/api/utxodb"
+	"golang.org/x/net/context"
+
+	"chain/api/appdb"
+	"chain/api/testutil"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/fedchain/bc"
 	"chain/net/http/authn"
 )
 
-var authzFixture = `
-	INSERT INTO users(id, email, password_hash)
-		VALUES ('u1', 'u1', ''), ('u2', 'u2', '');
-	INSERT INTO projects(id, name)
-		VALUES ('proj1', 'proj1'), ('proj2', 'proj2'), ('proj3', 'proj3');
-	INSERT INTO members (project_id, user_id, role)
-	VALUES
-		('proj1', 'u1', 'admin'),
-		('proj1', 'u2', 'developer'),
-		('proj2', 'u1', 'admin'),
-		('proj2', 'u2', 'admin');
-`
+type fixtureInfo struct {
+	u1ID, u2ID, u3ID          string
+	proj1ID, proj2ID, proj3ID string
+}
 
 func TestProjectAdminAuthz(t *testing.T) {
-	ctx := pgtest.NewContext(t, authzFixture)
-	defer pgtest.Finish(ctx)
-
-	cases := []struct {
-		userID string
-		projID string
-		want   error
-	}{
-		{"u1", "proj1", nil},         // admin
-		{"u2", "proj1", errNotAdmin}, // not an admin
-		{"u3", "proj1", errNotAdmin}, // not a member
-	}
-
-	for _, c := range cases {
-		ctx := authn.NewContext(ctx, c.userID)
-		got := projectAdminAuthz(ctx, c.projID)
-		if got != c.want {
-			t.Errorf("projectAdminAuthz(%s, %s) = %q want %q", c.userID, c.projID, got, c.want)
+	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
+		cases := []struct {
+			userID string
+			projID string
+			want   error
+		}{
+			{fixtureInfo.u1ID, fixtureInfo.proj1ID, nil},         // admin
+			{fixtureInfo.u2ID, fixtureInfo.proj1ID, errNotAdmin}, // not an admin
+			{fixtureInfo.u3ID, fixtureInfo.proj1ID, errNotAdmin}, // not a member
 		}
-	}
+
+		for _, c := range cases {
+			ctx := authn.NewContext(ctx, c.userID)
+			got := projectAdminAuthz(ctx, c.projID)
+			if got != c.want {
+				t.Errorf("projectAdminAuthz(%s, %s) = %q want %q", c.userID, c.projID, got, c.want)
+			}
+		}
+	})
 }
 
 func TestProjectAuthz(t *testing.T) {
-	ctx := pgtest.NewContext(t, authzFixture)
-	defer pgtest.Finish(ctx)
-
-	cases := []struct {
-		userID string
-		projID []string
-		want   error
-	}{
-		{"u1", []string{"proj1"}, nil},                            // admin
-		{"u2", []string{"proj1"}, nil},                            // member
-		{"u3", []string{"proj1"}, errNoAccessToResource},          // not a member
-		{"u1", []string{"proj1", "proj2"}, errNoAccessToResource}, // two projects
-	}
-
-	for _, c := range cases {
-		ctx := authn.NewContext(ctx, c.userID)
-		got := projectAuthz(ctx, c.projID...)
-		if errors.Root(got) != c.want {
-			t.Errorf("projectAuthz(%s, %v) = %q want %q", c.userID, c.projID, got, c.want)
+	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
+		cases := []struct {
+			userID string
+			projID []string
+			want   error
+		}{
+			{fixtureInfo.u1ID, []string{fixtureInfo.proj1ID}, nil},                                        // admin
+			{fixtureInfo.u2ID, []string{fixtureInfo.proj1ID}, nil},                                        // member
+			{fixtureInfo.u3ID, []string{fixtureInfo.proj1ID}, errNoAccessToResource},                      // not a member
+			{fixtureInfo.u1ID, []string{fixtureInfo.proj1ID, fixtureInfo.proj2ID}, errNoAccessToResource}, // two projects
 		}
-	}
+
+		for _, c := range cases {
+			ctx := authn.NewContext(ctx, c.userID)
+			got := projectAuthz(ctx, c.projID...)
+			if errors.Root(got) != c.want {
+				t.Errorf("projectAuthz(%s, %v) = %q want %q", c.userID, c.projID, got, c.want)
+			}
+		}
+	})
 }
 
 func TestManagerAuthz(t *testing.T) {
-	ctx := pgtest.NewContext(t, authzFixture, `
-		INSERT INTO manager_nodes (id, project_id, label)
-			VALUES ('mn1', 'proj1', 'x'), ('mn2', 'proj2', 'x'), ('mn3', 'proj3', 'x');
-	`)
-	defer pgtest.Finish(ctx)
+	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
+		mn1ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
+		mn2ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
+		mn3ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
-	cases := []struct {
-		userID        string
-		managerNodeID string
-		want          error
-	}{
-		{"u2", "mn1", nil}, {"u2", "mn2", nil}, {"u2", "mn3", errNoAccessToResource},
-	}
-
-	for _, c := range cases {
-		ctx := authn.NewContext(ctx, c.userID)
-		got := managerAuthz(ctx, c.managerNodeID)
-		if errors.Root(got) != c.want {
-			t.Errorf("managerAuthz(%s, %v) = %q want %q", c.userID, c.managerNodeID, got, c.want)
+		cases := []struct {
+			userID        string
+			managerNodeID string
+			want          error
+		}{
+			{fixtureInfo.u2ID, mn1ID, nil}, {fixtureInfo.u2ID, mn2ID, nil}, {fixtureInfo.u2ID, mn3ID, errNoAccessToResource},
 		}
-	}
+
+		for _, c := range cases {
+			ctx := authn.NewContext(ctx, c.userID)
+			got := managerAuthz(ctx, c.managerNodeID)
+			if errors.Root(got) != c.want {
+				t.Errorf("managerAuthz(%s, %v) = %q want %q", c.userID, c.managerNodeID, got, c.want)
+			}
+		}
+	})
 }
 
 func TestAccountAuthz(t *testing.T) {
-	ctx := pgtest.NewContext(t, authzFixture, `
-		INSERT INTO manager_nodes (id, project_id, label)
-			VALUES ('mn1', 'proj1', 'x'), ('mn2', 'proj2', 'x'), ('mn3', 'proj3', 'x');
-		INSERT INTO accounts (id, manager_node_id, key_index)
-			VALUES ('acc1', 'mn1', 0), ('acc2', 'mn2', 0), ('acc3', 'mn3', 0);
-	`)
-	defer pgtest.Finish(ctx)
+	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
+		mn1ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
+		mn2ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
+		mn3ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
-	cases := []struct {
-		userID    string
-		accountID string
-		want      error
-	}{
-		{"u2", "acc1", nil}, {"u2", "acc2", nil}, {"u2", "acc3", errNoAccessToResource},
-	}
+		acc1ID := testutil.CreateAccountFixture(ctx, t, mn1ID, "", nil)
+		acc2ID := testutil.CreateAccountFixture(ctx, t, mn2ID, "", nil)
+		acc3ID := testutil.CreateAccountFixture(ctx, t, mn3ID, "", nil)
 
-	for _, c := range cases {
-		ctx := authn.NewContext(ctx, c.userID)
-		got := accountAuthz(ctx, c.accountID)
-		if errors.Root(got) != c.want {
-			t.Errorf("accountAuthz(%s, %v) = %q want %q", c.userID, c.accountID, got, c.want)
+		cases := []struct {
+			userID    string
+			accountID string
+			want      error
+		}{
+			{fixtureInfo.u2ID, acc1ID, nil}, {fixtureInfo.u2ID, acc2ID, nil}, {fixtureInfo.u2ID, acc3ID, errNoAccessToResource},
 		}
-	}
+
+		for _, c := range cases {
+			ctx := authn.NewContext(ctx, c.userID)
+			got := accountAuthz(ctx, c.accountID)
+			if errors.Root(got) != c.want {
+				t.Errorf("accountAuthz(%s, %v) = %q want %q", c.userID, c.accountID, got, c.want)
+			}
+		}
+	})
 }
 
 func TestIssuerAuthz(t *testing.T) {
-	ctx := pgtest.NewContext(t, authzFixture, `
-		INSERT INTO issuer_nodes (id, project_id, label, keyset)
-			VALUES ('in1', 'proj1', 'x', '{}'), ('in2', 'proj2', 'x', '{}'), ('in3', 'proj3', 'x', '{}');
-	`)
-	defer pgtest.Finish(ctx)
+	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
+		in1ID := testutil.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
+		in2ID := testutil.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
+		in3ID := testutil.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
-	cases := []struct {
-		userID  string
-		inodeID string
-		want    error
-	}{
-		{"u2", "in1", nil}, {"u2", "in2", nil}, {"u2", "in3", errNoAccessToResource},
-	}
-
-	for _, c := range cases {
-		ctx := authn.NewContext(ctx, c.userID)
-		got := issuerAuthz(ctx, c.inodeID)
-		if errors.Root(got) != c.want {
-			t.Errorf("issuerAuthz(%s, %v) = %q want %q", c.userID, c.inodeID, got, c.want)
+		cases := []struct {
+			userID  string
+			inodeID string
+			want    error
+		}{
+			{fixtureInfo.u2ID, in1ID, nil}, {fixtureInfo.u2ID, in2ID, nil}, {fixtureInfo.u2ID, in3ID, errNoAccessToResource},
 		}
-	}
+
+		for _, c := range cases {
+			ctx := authn.NewContext(ctx, c.userID)
+			got := issuerAuthz(ctx, c.inodeID)
+			if errors.Root(got) != c.want {
+				t.Errorf("issuerAuthz(%s, %v) = %q want %q", c.userID, c.inodeID, got, c.want)
+			}
+		}
+	})
 }
 
 func TestAssetAuthz(t *testing.T) {
-	ctx := pgtest.NewContext(t, authzFixture, `
-		INSERT INTO issuer_nodes (id, project_id, label, keyset)
-			VALUES ('in1', 'proj1', 'x', '{}'), ('in2', 'proj2', 'x', '{}'), ('in3', 'proj3', 'x', '{}');
-		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
-		VALUES
-			('a1', 'in1', 0, '\x'::bytea, '\x'::bytea, ''),
-			('a2', 'in2', 0, '\x'::bytea, '\x'::bytea, ''),
-			('a3', 'in3', 0, '\x'::bytea, '\x'::bytea, '');
-	`)
-	defer pgtest.Finish(ctx)
+	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
+		in1ID := testutil.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
+		in2ID := testutil.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
+		in3ID := testutil.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
-	cases := []struct {
-		userID  string
-		assetID string
-		want    error
-	}{
-		{"u2", "a1", nil}, {"u2", "a2", nil}, {"u2", "a3", errNoAccessToResource},
-	}
+		a1ID := testutil.CreateAssetFixture(ctx, t, in1ID, "")
+		a2ID := testutil.CreateAssetFixture(ctx, t, in2ID, "")
+		a3ID := testutil.CreateAssetFixture(ctx, t, in3ID, "")
 
-	for _, c := range cases {
-		ctx := authn.NewContext(ctx, c.userID)
-		got := assetAuthz(ctx, c.assetID)
-		if errors.Root(got) != c.want {
-			t.Errorf("assetAuthz(%s, %v) = %q want %q", c.userID, c.assetID, got, c.want)
+		cases := []struct {
+			userID  string
+			assetID bc.AssetID
+			want    error
+		}{
+			{fixtureInfo.u2ID, a1ID, nil}, {fixtureInfo.u2ID, a2ID, nil}, {fixtureInfo.u2ID, a3ID, errNoAccessToResource},
 		}
-	}
+
+		for _, c := range cases {
+			ctx := authn.NewContext(ctx, c.userID)
+			got := assetAuthz(ctx, c.assetID.String())
+			if errors.Root(got) != c.want {
+				t.Errorf("assetAuthz(%s, %v) = %q want %q", c.userID, c.assetID, got, c.want)
+			}
+		}
+	})
 }
 
 func TestBuildAuthz(t *testing.T) {
-	ctx := pgtest.NewContext(t, authzFixture, `
-		INSERT INTO manager_nodes (id, project_id, label)
-			VALUES ('mn1', 'proj1', 'x'), ('mn2', 'proj2', 'x'), ('mn3', 'proj3', 'x');
-		INSERT INTO accounts (id, manager_node_id, key_index)
-			VALUES
-				('acc1', 'mn1', 0), ('acc2', 'mn2', 0), ('acc3', 'mn3', 0),
-				('acc4', 'mn1', 1), ('acc5', 'mn2', 1), ('acc6', 'mn3', 1);
-	`)
-	defer pgtest.Finish(ctx)
+	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
+		mn1ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
+		mn2ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
+		mn3ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
-	cases := []struct {
-		userID  string
-		request []buildReq
-		want    error
-	}{
-		{
-			userID: "u2",
-			request: []buildReq{{
-				Sources: []utxodb.Source{{AccountID: "acc1"}},
-				Dests:   []*asset.Destination{acctDest("acc4")},
-			}},
-			want: nil,
-		},
-		{
-			userID: "u2",
-			request: []buildReq{{
-				Sources: []utxodb.Source{{AccountID: "acc1"}},
-				Dests:   []*asset.Destination{acctDest("acc4")},
-			}, {
-				Sources: []utxodb.Source{{AccountID: "acc4"}},
-			}},
-			want: nil,
-		},
-		{
-			userID: "u2",
-			request: []buildReq{{
-				Sources: []utxodb.Source{{AccountID: "acc3"}},
-				Dests:   []*asset.Destination{acctDest("acc6")},
-			}},
-			want: errNoAccessToResource,
-		},
-		{
-			userID: "u2",
-			request: []buildReq{{
-				Sources: []utxodb.Source{{AccountID: "acc1"}},
-				Dests:   []*asset.Destination{acctDest("acc2")},
-			}},
-			want: errNoAccessToResource,
-		},
-	}
+		acc1ID := testutil.CreateAccountFixture(ctx, t, mn1ID, "", nil)
+		acc2ID := testutil.CreateAccountFixture(ctx, t, mn2ID, "", nil)
+		// acc3ID := testutil.CreateAccountFixture(ctx, t, mn3ID, "", nil)
+		acc4ID := testutil.CreateAccountFixture(ctx, t, mn1ID, "", nil)
+		// acc5ID := testutil.CreateAccountFixture(ctx, t, mn2ID, "", nil)
+		acc6ID := testutil.CreateAccountFixture(ctx, t, mn3ID, "", nil)
 
-	for i, c := range cases {
-		ctx := authn.NewContext(ctx, c.userID)
-		got := buildAuthz(ctx, c.request...)
-		if errors.Root(got) != c.want {
-			t.Errorf("%d: buildAuthz = %q want %q", i, got, c.want)
+		assetIDPtr := &bc.AssetID{}
+
+		cases := []struct {
+			userID  string
+			request []*BuildRequest
+			want    error
+		}{
+			{
+				userID: fixtureInfo.u2ID,
+				request: []*BuildRequest{
+					&BuildRequest{
+						Sources: []*Source{
+							&Source{
+								AssetID:   assetIDPtr,
+								AccountID: acc1ID,
+							},
+						},
+						Dests: []*Destination{
+							&Destination{
+								AssetID:   assetIDPtr,
+								AccountID: acc4ID,
+							},
+						},
+					},
+				},
+				want: nil,
+			},
+			{
+				userID: fixtureInfo.u2ID,
+				request: []*BuildRequest{
+					&BuildRequest{
+						Sources: []*Source{
+							{
+								AssetID:   assetIDPtr,
+								AccountID: acc1ID,
+							},
+						},
+						Dests: []*Destination{
+							&Destination{
+								AssetID:   assetIDPtr,
+								AccountID: acc4ID,
+							},
+						},
+					},
+					&BuildRequest{
+						Sources: []*Source{
+							&Source{
+								AssetID:   assetIDPtr,
+								AccountID: acc4ID,
+							},
+						},
+					},
+				},
+				want: nil,
+			},
+			{
+				userID: fixtureInfo.u2ID,
+				request: []*BuildRequest{
+					&BuildRequest{
+						Sources: []*Source{
+							&Source{
+								AssetID:   assetIDPtr,
+								AccountID: acc2ID,
+							},
+						},
+						Dests: []*Destination{
+							&Destination{
+								AssetID:   assetIDPtr,
+								AccountID: acc6ID,
+							},
+						},
+					},
+				},
+				want: errNoAccessToResource,
+			},
+			{
+				userID: fixtureInfo.u2ID,
+				request: []*BuildRequest{
+					&BuildRequest{
+						Sources: []*Source{
+							&Source{
+								AssetID:   assetIDPtr,
+								AccountID: acc1ID,
+							},
+						},
+						Dests: []*Destination{
+							&Destination{
+								AssetID:   assetIDPtr,
+								AccountID: acc2ID,
+							},
+						},
+					},
+				},
+				want: errNoAccessToResource,
+			},
 		}
-	}
+
+		for i, c := range cases {
+			ctx := authn.NewContext(ctx, c.userID)
+			got := buildAuthz(ctx, c.request...)
+			if errors.Root(got) != c.want {
+				t.Errorf("%d: buildAuthz = %q want %q", i, got, c.want)
+			}
+		}
+	})
 }
 
-func acctDest(acctID string) *asset.Destination {
-	d := new(asset.Destination)
-	d.UnmarshalJSON([]byte(`{"type": "account", "account_id":"` + acctID + `"}`))
-	return d
+func withCommonFixture(t *testing.T, fn func(context.Context, *fixtureInfo)) {
+	ctx := testutil.NewContextWithGenesisBlock(t)
+	defer pgtest.Finish(ctx)
+
+	var (
+		fixtureInfo fixtureInfo
+		err         error
+	)
+
+	fixtureInfo.u1ID = testutil.CreateUserFixture(ctx, t, "", "")
+	fixtureInfo.u2ID = testutil.CreateUserFixture(ctx, t, "", "")
+	fixtureInfo.u3ID = testutil.CreateUserFixture(ctx, t, "", "")
+
+	fixtureInfo.proj1ID = testutil.CreateProjectFixture(ctx, t, fixtureInfo.u1ID, "")
+	err = appdb.AddMember(ctx, fixtureInfo.proj1ID, fixtureInfo.u2ID, "developer")
+	if err != nil {
+		panic(err)
+	}
+
+	fixtureInfo.proj2ID = testutil.CreateProjectFixture(ctx, t, fixtureInfo.u1ID, "")
+	err = appdb.AddMember(ctx, fixtureInfo.proj2ID, fixtureInfo.u2ID, "admin")
+	if err != nil {
+		panic(err)
+	}
+
+	fixtureInfo.proj3ID = testutil.CreateProjectFixture(ctx, t, "", "")
+
+	fn(ctx, &fixtureInfo)
 }

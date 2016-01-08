@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"chain/api/utxodb"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain/bc"
@@ -40,21 +39,28 @@ func TestBuildTrade(t *testing.T) {
 
 	tpl := &TxTemplate{
 		Unsigned:   unsignedTx,
-		Inputs:     []*Input{{ManagerNodeID: "mn1"}},
+		Inputs:     []*Input{{}},
 		BlockChain: "sandbox",
 	}
-	inputs := []utxodb.Source{{
-		AccountID: "acc2",
-		AssetID:   [32]byte{255},
-		Amount:    2,
-	}}
-	dests := []*Destination{{
-		pkScripter: &scriptPKScripter{Script: []byte{}},
-		AssetID:    [32]byte{254},
-		Amount:     5,
-	}}
+	assetAmount1 := &bc.AssetAmount{
+		AssetID: [32]byte{255},
+		Amount:  2,
+	}
+	source := NewAccountSource(ctx, assetAmount1, "acc2")
+	sources := []*Source{source}
 
-	got, err := Build(ctx, tpl, inputs, dests, time.Hour*24)
+	assetAmount2 := &bc.AssetAmount{
+		AssetID: [32]byte{254},
+		Amount:  5,
+	}
+	dest, err := NewScriptDestination(ctx, assetAmount2, []byte{}, false, nil)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+	dests := []*Destination{dest}
+
+	got, err := Build(ctx, tpl, sources, dests, time.Hour*24)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -87,20 +93,21 @@ func TestBuildTransfer(t *testing.T) {
 	`)
 	defer pgtest.Finish(ctx)
 
-	_, err := Build(ctx,
-		nil,
-		[]utxodb.Source{{
-			AccountID: "acc1",
-			AssetID:   [32]byte{255},
-			Amount:    5,
-		}},
-		[]*Destination{{
-			AssetID:    [32]byte{255},
-			pkScripter: &scriptPKScripter{Script: []byte{}},
-			Amount:     5,
-		}},
-		time.Minute,
-	)
+	assetAmount := &bc.AssetAmount{
+		AssetID: [32]byte{255},
+		Amount:  5,
+	}
+	source := NewAccountSource(ctx, assetAmount, "acc1")
+	sources := []*Source{source}
+
+	dest, err := NewScriptDestination(ctx, assetAmount, []byte{}, false, nil)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+	dests := []*Destination{dest}
+
+	_, err = Build(ctx, nil, sources, dests, time.Minute)
 
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -133,17 +140,29 @@ func TestCombine(t *testing.T) {
 		},
 	}
 
+	scriptDest1, err := NewScriptDestination(nil, &bc.AssetAmount{Amount: 1}, []byte{}, false, nil)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	scriptDest2, err := NewScriptDestination(nil, &bc.AssetAmount{Amount: 2}, []byte{}, false, nil)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
 	tpl1 := &TxTemplate{
 		Unsigned:   unsigned1,
-		Inputs:     []*Input{{ManagerNodeID: "mn1"}},
-		OutRecvs:   []*utxodb.Receiver{{ManagerNodeID: "mn1"}},
+		Inputs:     []*Input{{}},
+		OutRecvs:   []Receiver{scriptDest1.Receiver},
 		BlockChain: "sandbox",
 	}
 
 	tpl2 := &TxTemplate{
 		Unsigned:   unsigned2,
-		Inputs:     []*Input{{ManagerNodeID: "mn2"}},
-		OutRecvs:   []*utxodb.Receiver{{ManagerNodeID: "mn2"}},
+		Inputs:     []*Input{{}},
+		OutRecvs:   []Receiver{scriptDest2.Receiver},
 		BlockChain: "sandbox",
 	}
 
@@ -155,8 +174,8 @@ func TestCombine(t *testing.T) {
 
 	want := &TxTemplate{
 		Unsigned:   combined,
-		Inputs:     []*Input{{ManagerNodeID: "mn1"}, {ManagerNodeID: "mn2"}},
-		OutRecvs:   []*utxodb.Receiver{{ManagerNodeID: "mn1"}, {ManagerNodeID: "mn2"}},
+		Inputs:     []*Input{{}, {}},
+		OutRecvs:   []Receiver{scriptDest1.Receiver, scriptDest2.Receiver},
 		BlockChain: "sandbox",
 	}
 

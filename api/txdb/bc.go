@@ -19,6 +19,16 @@ type Output struct {
 	AddrIndex     [2]uint32
 }
 
+func (output *Output) GetUTXO() *utxodb.UTXO {
+	return &utxodb.UTXO{
+		Outpoint:  output.Outpoint,
+		AssetID:   output.AssetID,
+		Amount:    output.Value,
+		AccountID: output.AccountID,
+		AddrIndex: output.AddrIndex,
+	}
+}
+
 func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.Output, error) {
 	var (
 		txHashes []string

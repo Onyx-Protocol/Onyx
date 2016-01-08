@@ -376,12 +376,15 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 
 func issue(ctx context.Context, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetID := info.asset.Hash
-	issueDests := []*Destination{{
-		AssetID:    assetID,
-		pkScripter: &acctPKScripter{AccountID: destAcctID},
-		Amount:     amount,
-	}}
-	issueTx, err := Issue(ctx, assetID.String(), issueDests)
+	assetAmount := &bc.AssetAmount{
+		AssetID: info.asset.Hash,
+		Amount:  amount,
+	}
+	issueDest, err := NewAccountDestination(ctx, assetAmount, destAcctID, false, nil)
+	if err != nil {
+		return nil, err
+	}
+	issueTx, err := Issue(ctx, assetID.String(), []*Destination{issueDest})
 	if err != nil {
 		return nil, err
 	}
@@ -393,24 +396,29 @@ func issue(ctx context.Context, info *clientInfo, destAcctID string, amount uint
 }
 
 func transfer(ctx context.Context, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
-	inputs := []utxodb.Source{{
-		AssetID:   info.asset.Hash,
-		AccountID: srcAcctID,
-		Amount:    amount,
-	}}
-	dests := []*Destination{{
-		AssetID:    info.asset.Hash,
-		pkScripter: &acctPKScripter{AccountID: destAcctID},
-		Amount:     amount,
-	}}
-	xferTx, err := Build(ctx, nil, inputs, dests, time.Minute)
+	assetAmount := &bc.AssetAmount{
+		AssetID: info.asset.Hash,
+		Amount:  amount,
+	}
+	source := NewAccountSource(ctx, assetAmount, srcAcctID)
+	sources := []*Source{source}
+
+	dest, err := NewAccountDestination(ctx, assetAmount, destAcctID, false, nil)
 	if err != nil {
 		return nil, err
 	}
+	dests := []*Destination{dest}
+
+	xferTx, err := Build(ctx, nil, sources, dests, time.Minute)
+	if err != nil {
+		return nil, err
+	}
+
 	err = signTx(xferTx, info.privKeyManager)
 	if err != nil {
 		return nil, err
 	}
+
 	return FinalizeTx(ctx, xferTx)
 }
 

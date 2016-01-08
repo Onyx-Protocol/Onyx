@@ -50,6 +50,7 @@ type TxData struct {
 
 // TxInput encodes a single input in a transaction.
 type TxInput struct {
+	// TODO(bobg): replace Value and AssetID with AssetAmount
 	Previous        Outpoint
 	SignatureScript []byte
 	Metadata        []byte
@@ -63,6 +64,7 @@ type TxInput struct {
 
 // TxOutput encodes a single output in a transaction.
 type TxOutput struct {
+	// TODO(bobg): replace Value and AssetID with AssetAmount
 	AssetID  AssetID
 	Value    uint64
 	Script   []byte
@@ -312,4 +314,9 @@ func (p Outpoint) WriteTo(w io.Writer) (n int64, err error) {
 		return 32, err
 	}
 	return 32 + 4, nil
+}
+
+type AssetAmount struct {
+	Amount  uint64
+	AssetID AssetID `json:"asset_id"`
 }

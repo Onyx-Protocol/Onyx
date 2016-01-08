@@ -76,7 +76,7 @@ func (sqlUTXODB) SaveReservations(ctx context.Context, utxos []*utxodb.UTXO, exp
 // the effects of tx. It deletes consumed utxos
 // and inserts newly-created outputs.
 // Must be called inside a transaction.
-func applyTx(ctx context.Context, tx *bc.Tx, outRecs []*utxodb.Receiver) (deleted []bc.Outpoint, inserted []*txdb.Output, err error) {
+func applyTx(ctx context.Context, tx *bc.Tx, outRecs []Receiver) (deleted []bc.Outpoint, inserted []*txdb.Output, err error) {
 	defer metrics.RecordElapsed(time.Now())
 
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
@@ -110,106 +110,33 @@ func applyTx(ctx context.Context, tx *bc.Tx, outRecs []*utxodb.Receiver) (delete
 	return deleted, inserted, err
 }
 
-func insertUTXOs(ctx context.Context, hash bc.Hash, txouts []*bc.TxOutput, recs []*utxodb.Receiver) ([]*txdb.Output, error) {
-	if len(txouts) != len(recs) {
+func insertUTXOs(ctx context.Context, hash bc.Hash, txouts []*bc.TxOutput, receivers []Receiver) (inserted []*txdb.Output, err error) {
+	if len(txouts) != len(receivers) {
 		return nil, errors.New("length mismatch")
 	}
 	defer metrics.RecordElapsed(time.Now())
 
-	// This function inserts utxos into the db, and maps
-	// them to receiver info (account id and addr index).
-	// There are three cases:
-	// 1. UTXO pays change or to an "immediate" account receiver.
-	//    In this case, we get the receiver info from recs
-	//    (which came from the client and was validated
-	//    in FinalizeTx).
-	// 2. UTXO pays to an address receiver record.
-	//    In this case, we get the receiver info from
-	//    the addresses table (and eventually delete
-	//    the record).
-	// 3. UTXO pays to an unknown address.
-	//    In this case, there is no receiver info.
-	outs := initAddrInfoFromRecs(hash, txouts, recs) // case 1
-	err := loadAddrInfoFromDB(ctx, outs)             // case 2
-	if err != nil {
-		return nil, err
-	}
+	var utxoInserters []UTXOInserter
 
-	err = txdb.InsertPoolOutputs(ctx, hash, outs)
-	return outs, errors.Wrap(err)
-}
-
-func initAddrInfoFromRecs(hash bc.Hash, txouts []*bc.TxOutput, recs []*utxodb.Receiver) []*txdb.Output {
-	insert := make([]*txdb.Output, len(txouts))
-	for i, txo := range txouts {
-		o := &txdb.Output{
-			Output: state.Output{
-				TxOutput: *txo,
-				Outpoint: bc.Outpoint{Hash: hash, Index: uint32(i)},
-			},
+	for i, txOutput := range txouts {
+		receiver := receivers[i]
+		outpoint := &bc.Outpoint{
+			Hash:  hash,
+			Index: uint32(i),
 		}
-		if rec := recs[i]; rec != nil {
-			o.AccountID = rec.AccountID
-			o.ManagerNodeID = rec.ManagerNodeID
-			copy(o.AddrIndex[:], rec.AddrIndex)
-		}
-		insert[i] = o
-	}
-	return insert
-}
-
-// loadAddrInfoFromDB loads account ID, manager node ID, and addr index
-// from the addresses table for outputs that need it.
-// Not all are guaranteed to be in the database;
-// some outputs will be owned by third parties.
-// This function loads what it can.
-func loadAddrInfoFromDB(ctx context.Context, outs []*txdb.Output) error {
-	var (
-		scripts      [][]byte
-		outsByScript = make(map[string]*txdb.Output)
-	)
-	for _, o := range outs {
-		if o.AccountID != "" {
-			continue
-		}
-
-		scripts = append(scripts, o.Script)
-		outsByScript[string(o.Script)] = o
-	}
-
-	const q = `
-		SELECT pk_script, account_id, manager_node_id, key_index(key_index)
-		FROM addresses
-		WHERE pk_script IN (SELECT unnest($1::bytea[]))
-	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Byteas(scripts))
-	if err != nil {
-		return errors.Wrap(err, "select")
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var (
-			script        []byte
-			managerNodeID string
-			accountID     string
-			addrIndex     []uint32
-		)
-		err = rows.Scan(
-			&script,
-			&accountID,
-			&managerNodeID,
-			(*pg.Uint32s)(&addrIndex),
-		)
+		utxoInserters, err = receiver.AccumulateUTXO(ctx, outpoint, txOutput, utxoInserters)
 		if err != nil {
-			return errors.Wrap(err, "scan")
+			return nil, errors.Wrap(err, "accumulate utxo inserter")
 		}
-
-		o := outsByScript[string(script)]
-		o.AccountID = accountID
-		o.ManagerNodeID = managerNodeID
-		copy(o.AddrIndex[:], addrIndex)
 	}
 
-	return errors.Wrap(rows.Err(), "rows")
+	for _, utxoInserter := range utxoInserters {
+		theseInsertions, err := utxoInserter.InsertUTXOs(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "insert utxos")
+		}
+		inserted = append(inserted, theseInsertions...)
+	}
+
+	return inserted, nil
 }

@@ -7,7 +7,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/asset"
-	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/fedchain/bc"
 	"chain/metrics"
@@ -15,22 +14,37 @@ import (
 	"chain/net/trace/span"
 )
 
-type buildReq struct {
-	PrevTx  *asset.TxTemplate    `json:"previous_transaction"`
-	Sources []utxodb.Source      `json:"inputs"`
-	Dests   []*asset.Destination `json:"outputs"`
-	ResTime time.Duration        `json:"reservation_duration"`
-}
-
 // POST /v3/assets/:assetID/issue
-func issueAsset(ctx context.Context, assetID string, outs []*asset.Destination) (interface{}, error) {
+func issueAsset(ctx context.Context, assetIDStr string, reqDests []*Destination) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
-	if err := assetAuthz(ctx, assetID); err != nil {
+	if err := assetAuthz(ctx, assetIDStr); err != nil {
 		return nil, err
 	}
-	template, err := asset.Issue(ctx, assetID, outs)
+
+	var assetID bc.AssetID
+	err := assetID.UnmarshalText([]byte(assetIDStr))
+	if err != nil {
+		return nil, err
+	}
+
+	// Where asset_ids are not specified in destinations - and even
+	// where they are - use the one passed in above.
+	for _, dest := range reqDests {
+		dest.AssetID = &assetID
+	}
+
+	dests := make([]*asset.Destination, 0, len(reqDests))
+	for _, reqDest := range reqDests {
+		parsed, err := reqDest.parse(ctx)
+		if err != nil {
+			return nil, err
+		}
+		dests = append(dests, parsed)
+	}
+
+	template, err := asset.Issue(ctx, assetIDStr, dests)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +53,7 @@ func issueAsset(ctx context.Context, assetID string, outs []*asset.Destination) 
 	return ret, nil
 }
 
-func buildSingle(ctx context.Context, req buildReq) (interface{}, error) {
+func buildSingle(ctx context.Context, req *BuildRequest) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -49,7 +63,12 @@ func buildSingle(ctx context.Context, req buildReq) (interface{}, error) {
 	}
 	defer dbtx.Rollback(ctx)
 
-	tpl, err := asset.Build(ctx, req.PrevTx, req.Sources, req.Dests, req.ResTime)
+	prevTx, sources, destinations, err := req.parse(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tpl, err := asset.Build(ctx, prevTx, sources, destinations, req.ResTime)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +82,7 @@ func buildSingle(ctx context.Context, req buildReq) (interface{}, error) {
 }
 
 // POST /v3/transact/build
-func build(ctx context.Context, buildReqs []buildReq) (interface{}, error) {
+func build(ctx context.Context, buildReqs []*BuildRequest) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -94,12 +113,17 @@ func build(ctx context.Context, buildReqs []buildReq) (interface{}, error) {
 }
 
 // POST /v3/manager-nodes/transact/finalize
-func submitSingle(ctx context.Context, tpl *asset.TxTemplate) (interface{}, error) {
+func submitSingle(ctx context.Context, tpl *Template) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	tx, err := asset.FinalizeTx(ctx, tpl)
+	parsed, err := tpl.parse(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := asset.FinalizeTx(ctx, parsed)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +146,7 @@ func cancelReservation(ctx context.Context, x struct{ Transaction bc.Tx }) error
 }
 
 // POST /v3/transact/submit
-func submit(ctx context.Context, x struct{ Transactions []*asset.TxTemplate }) interface{} {
+func submit(ctx context.Context, x struct{ Transactions []*Template }) interface{} {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)

@@ -1,7 +1,6 @@
 package asset
 
 import (
-	"chain/api/utxodb"
 	"chain/encoding/json"
 	"chain/fedchain/bc"
 )
@@ -9,16 +8,14 @@ import (
 // TxTemplate represents a partially- or fully-signed transaction
 // belonging to a Chain project.
 type TxTemplate struct {
-	Unsigned   *bc.TxData         `json:"unsigned_hex"`
-	BlockChain string             `json:"block_chain"`
-	Inputs     []*Input           `json:"inputs"`
-	OutRecvs   []*utxodb.Receiver `json:"output_receivers"`
+	Unsigned   *bc.TxData `json:"unsigned_hex"`
+	BlockChain string     `json:"block_chain"`
+	Inputs     []*Input   `json:"inputs"`
+	OutRecvs   []Receiver `json:"output_receivers"`
 }
 
 // Input is an input for a project TxTemplate.
 type Input struct {
-	IssuerNodeID  string        `json:"issuer_node_id,omitempty"`
-	ManagerNodeID string        `json:"manager_node_id,omitempty"`
 	RedeemScript  json.HexBytes `json:"redeem_script"`
 	SignatureData bc.Hash       `json:"signature_data"`
 	Sigs          []*Signature  `json:"signatures"`

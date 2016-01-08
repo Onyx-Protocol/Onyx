@@ -2,8 +2,6 @@ package asset
 
 import (
 	"bytes"
-	"encoding/hex"
-	"encoding/json"
 	"log"
 	"os"
 	"reflect"
@@ -14,7 +12,9 @@ import (
 	"chain/api/appdb"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/fedchain/txscript"
 )
 
 func init() {
@@ -78,11 +78,13 @@ func TestIssue(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	outScript := mustDecodeHex("a9140ac9c982fd389181752e5a414045dd424a10754b87")
-	outs := []*Destination{{
-		pkScripter: &scriptPKScripter{Script: outScript},
-		Amount:     123,
-	}}
-
+	assetAmount := &bc.AssetAmount{Amount: 123}
+	dest, err := NewScriptDestination(ctx, assetAmount, outScript, false, nil)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+	outs := []*Destination{dest}
 	resp, err := Issue(ctx, "0000000000000000000000000000000000000000000000000000000000000000", outs)
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -116,27 +118,32 @@ func TestAccountOutputPKScript(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	// Test account output pk script (address creation)
-	pkScripter := &acctPKScripter{AccountID: "acc1"}
-	got, _, err := pkScripter.pkScript(ctx)
+	dest, err := NewAccountDestination(ctx, &bc.AssetAmount{Amount: 1}, "acc1", false, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
+	got := dest.PKScript()
 
-	want, _ := hex.DecodeString("a91400065635e652a6e00a53cfa07e822de50ccf94a887")
+	receiver := dest.Receiver
+	accountReceiver, ok := receiver.(*AccountReceiver)
+	if !ok {
+		t.Log(errors.Stack(err))
+		t.Fatal("receiver is not an AccountReceiver")
+	}
+	addr := accountReceiver.addr
+	bcAddr, _, err := hdkey.Address(addr.Keys, appdb.ReceiverPath(addr, addr.Index), addr.SigsRequired)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+	want, err := txscript.PayToAddrScript(bcAddr)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
 	if !bytes.Equal(got, want) {
 		t.Errorf("got pkscript = %x want %x", got, want)
-	}
-
-	pkScripter = &acctPKScripter{AccountID: "acc1", isChange: true}
-	_, recv, err := pkScripter.pkScript(ctx)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	if !recv.IsChange {
-		t.Fatal("Expected change output")
 	}
 }
 
@@ -146,33 +153,13 @@ func TestScriptOutputPKScript(t *testing.T) {
 
 	script := mustDecodeHex("a91400065635e652a6e00a53cfa07e822de50ccf94a887")
 
-	// Test stringified address output
-	pkScripter := &scriptPKScripter{Script: script}
-	got, _, err := pkScripter.pkScript(ctx)
+	dest, err := NewScriptDestination(ctx, &bc.AssetAmount{Amount: 1}, script, false, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-
+	got := dest.PKScript()
 	if !bytes.Equal(got, script) {
 		t.Errorf("got pkscript = %x want %x", got, script)
-	}
-}
-
-func TestDestinationUnmarshal(t *testing.T) {
-	data := `{
-		"amount": 120,
-		"asset_id": "32a8a017015c40c1ddbddb72d9764135eebf17adc25ce81be3503ac9a68177b4",
-		"address": "a914d845992c396cb934452a72b41976350ddc5698d887"
-	}`
-	var dest Destination
-	err := json.Unmarshal([]byte(data), &dest)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, ok := dest.pkScripter.(*addrPKScripter)
-	if !ok {
-		t.Fatalf("expected pkScripter type to be addrPKScripter")
 	}
 }

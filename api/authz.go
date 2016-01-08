@@ -28,6 +28,7 @@ func projectAuthz(ctx context.Context, projects ...string) error {
 	if len(projects) != 1 {
 		return errNoAccessToResource
 	}
+
 	hasAccess, err := appdb.IsMember(ctx, authn.GetAuthID(ctx), projects[0])
 	if err != nil {
 		return err
@@ -70,15 +71,17 @@ func assetAuthz(ctx context.Context, assetID string) error {
 	return errors.WithDetailf(projectAuthz(ctx, project), "asset %v", assetID)
 }
 
-func buildAuthz(ctx context.Context, reqs ...buildReq) error {
+func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
 	var accountIDs []string
 	for _, req := range reqs {
-		for _, input := range req.Sources {
-			accountIDs = append(accountIDs, input.AccountID)
+		for _, source := range req.Sources {
+			if source.AccountID != "" {
+				accountIDs = append(accountIDs, source.AccountID)
+			}
 		}
-		for _, output := range req.Dests {
-			if output.AccountID() != "" {
-				accountIDs = append(accountIDs, output.AccountID())
+		for _, dest := range req.Dests {
+			if dest.AccountID != "" {
+				accountIDs = append(accountIDs, dest.AccountID)
 			}
 		}
 	}

@@ -23,30 +23,30 @@ var ErrBadTx = errors.New("bad transaction template")
 // FinalizeTx validates a transaction signature template,
 // assembles a fully signed tx, and stores the effects of
 // its changes on the UTXO set.
-func FinalizeTx(ctx context.Context, tx *TxTemplate) (*bc.Tx, error) {
+func FinalizeTx(ctx context.Context, txTemplate *TxTemplate) (*bc.Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
 
-	if len(tx.Inputs) > len(tx.Unsigned.Inputs) {
+	if len(txTemplate.Inputs) > len(txTemplate.Unsigned.Inputs) {
 		return nil, errors.WithDetail(ErrBadTx, "too many inputs in template")
-	} else if len(tx.Unsigned.Outputs) != len(tx.OutRecvs) {
-		return nil, errors.Wrapf(ErrBadTx, "tx has %d outputs but output receivers list has %d", len(tx.Unsigned.Outputs), len(tx.OutRecvs))
+	} else if len(txTemplate.Unsigned.Outputs) != len(txTemplate.OutRecvs) {
+		return nil, errors.Wrapf(ErrBadTx, "txTemplate has %d outputs but output receivers list has %d", len(txTemplate.Unsigned.Outputs), len(txTemplate.OutRecvs))
 	}
 
-	msg, err := assembleSignatures(tx)
+	msg, err := assembleSignatures(txTemplate)
 	if err != nil {
 		return nil, err
 	}
 
-	err = publishTx(ctx, msg, tx.OutRecvs)
+	err = publishTx(ctx, msg, txTemplate.OutRecvs)
 	if err != nil {
 		return nil, err
 	}
 	return msg, nil
 }
 
-func assembleSignatures(tx *TxTemplate) (*bc.Tx, error) {
-	msg := tx.Unsigned
-	for i, input := range tx.Inputs {
+func assembleSignatures(txTemplate *TxTemplate) (*bc.Tx, error) {
+	msg := txTemplate.Unsigned
+	for i, input := range txTemplate.Inputs {
 		sigsAdded := 0
 		sigsReqd, err := getSigsRequired(input.RedeemScript)
 		if err != nil {
@@ -87,7 +87,7 @@ func getSigsRequired(script []byte) (sigsReqd int, err error) {
 	return sigsReqd, nil
 }
 
-func publishTx(ctx context.Context, msg *bc.Tx, receivers []*utxodb.Receiver) (err error) {
+func publishTx(ctx context.Context, msg *bc.Tx, receivers []Receiver) (err error) {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return errors.Wrap(err)
@@ -119,7 +119,7 @@ func publishTx(ctx context.Context, msg *bc.Tx, receivers []*utxodb.Receiver) (e
 
 	outIsChange := make(map[int]bool)
 	for i, r := range receivers {
-		if r != nil && r.IsChange {
+		if r != nil && r.IsChange() {
 			outIsChange[i] = true
 		}
 	}

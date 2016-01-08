@@ -176,10 +176,11 @@ func InsertPoolTx(ctx context.Context, tx *bc.Tx) error {
 	return errors.Wrap(err)
 }
 
-func InsertPoolOutputs(ctx context.Context, hash bc.Hash, insert []*Output) error {
+func InsertPoolOutputs(ctx context.Context, insert []*Output) error {
 	var outs utxoSet
-	for i, o := range insert {
-		outs.index = append(outs.index, uint32(i))
+	for _, o := range insert {
+		outs.txHash = append(outs.txHash, o.Outpoint.Hash.String())
+		outs.index = append(outs.index, o.Outpoint.Index)
 		outs.assetID = append(outs.assetID, o.AssetID.String())
 		outs.amount = append(outs.amount, int64(o.Value))
 		outs.accountID = append(outs.accountID, o.AccountID)
@@ -202,8 +203,8 @@ func InsertPoolOutputs(ctx context.Context, hash bc.Hash, insert []*Output) erro
 			script, contract_hash, confirmed
 		)
 		SELECT
-			$1::text,
-			$1::text,
+			unnest($1::text[]),
+			unnest($1::text[]),
 			unnest($2::bigint[]),
 			unnest($3::text[]),
 			unnest($4::bigint[]),
@@ -215,7 +216,7 @@ func InsertPoolOutputs(ctx context.Context, hash bc.Hash, insert []*Output) erro
 			FALSE
 	`
 	_, err := pg.FromContext(ctx).Exec(ctx, q,
-		hash.String(),
+		outs.txHash,
 		outs.index,
 		outs.assetID,
 		outs.amount,

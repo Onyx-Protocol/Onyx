@@ -3,16 +3,13 @@ package asset
 
 import (
 	"database/sql"
-	"encoding/json"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/api/txdb"
-	"chain/api/utxodb"
 	"chain/crypto/hash256"
-	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
@@ -57,145 +54,35 @@ func Issue(ctx context.Context, assetID string, dests []*Destination) (*TxTempla
 
 	tx.Inputs = append(tx.Inputs, in)
 
-	outRecvs, err := addAssetIssuanceOutputs(ctx, tx, asset, dests)
-	if err != nil {
-		return nil, errors.Wrap(err, "add issuance outputs")
-	}
+	addAssetIssuanceOutputs(ctx, tx, asset, dests)
 
 	input, err := issuanceInput(asset, tx)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating issuance Input")
 	}
 
+	receivers := make([]Receiver, 0, len(dests))
+	for _, dest := range dests {
+		receivers = append(receivers, dest.Receiver)
+	}
+
 	appTx := &TxTemplate{
 		Unsigned:   tx,
 		BlockChain: "sandbox", // TODO(tess): make this BlockChain: blockchain.FromContext(ctx)
 		Inputs:     []*Input{input},
-		OutRecvs:   outRecvs,
+		OutRecvs:   receivers,
 	}
 	return appTx, nil
 }
 
-// Destination is a user input struct that describes
-// the destination of a transaction's inputs.
-type Destination struct {
-	AssetID    bc.AssetID `json:"asset_id"`
-	Amount     uint64
-	Metadata   chainjson.HexBytes
-	Type       string // determines pkScripter type
-	pkScripter pkScripter
-}
-
-// AccountID returns the account ID for this destination, if any.
-// It can be used for authorization.
-func (d *Destination) AccountID() string {
-	if a, ok := d.pkScripter.(*acctPKScripter); ok {
-		return a.AccountID
-	}
-	return ""
-}
-
-func (d *Destination) UnmarshalJSON(b []byte) error {
-	type dest Destination // lose the method set; avoid infinite recursion
-	err := json.Unmarshal(b, (*dest)(d))
-	if err != nil {
-		return err
-	}
-	if d.Type == "" && hasAddressField(b) {
-		d.Type = "address" // detect the old format, for compatibility
-	}
-	switch d.Type {
-	case "account", "": // default type
-		d.pkScripter = new(acctPKScripter)
-	case "script":
-		d.pkScripter = new(scriptPKScripter)
-	case "address":
-		d.pkScripter = new(addrPKScripter)
-	default:
-		return errors.WithDetailf(ErrBadOutDest, "unknown type %q", d.Type)
-	}
-	return json.Unmarshal(b, d.pkScripter)
-}
-
-// pkScripter computes the PK script (aka output script)
-// for sending to an arbitrary destination.
-// The returned recv can be nil.
-type pkScripter interface {
-	pkScript(context.Context) (script []byte, recv *utxodb.Receiver, err error)
-}
-
-type acctPKScripter struct {
-	AccountID string `json:"account_id"`
-	isChange  bool
-}
-
-// pkScript returns the script for sending to
-// the destination account id in s.
-func (s *acctPKScripter) pkScript(ctx context.Context) ([]byte, *utxodb.Receiver, error) {
-	addr := &appdb.Address{
-		AccountID: s.AccountID,
-		IsChange:  s.isChange,
-	}
-	err := CreateAddress(ctx, addr, false)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "output create address error account=%v", s.AccountID)
-	}
-	return addr.PKScript, newOutputReceiver(addr, s.isChange), nil
-}
-
-type scriptPKScripter struct {
-	Script chainjson.HexBytes `json:"script"`
-}
-
-// pkScript returns the destination script in s.
-// The returned extra data is nil.
-func (s *scriptPKScripter) pkScript(context.Context) ([]byte, *utxodb.Receiver, error) {
-	return s.Script, nil, nil
-}
-
-// addrPKScripter is for compatibility with existing clients
-// that set the "address" field without setting type to address.
-// The contents of this field is actually a pk script,
-// since it is taken from a prior server response where we
-// put the script in the address field.
-type addrPKScripter struct {
-	Script chainjson.HexBytes `json:"address"`
-}
-
-func (s *addrPKScripter) pkScript(context.Context) ([]byte, *utxodb.Receiver, error) {
-	return s.Script, nil, nil
-}
-
-func hasAddressField(b []byte) bool {
-	var v struct{ Address string }
-	err := json.Unmarshal(b, &v)
-	return err == nil && v.Address != ""
-}
-
-func addAssetIssuanceOutputs(ctx context.Context, tx *bc.TxData, asset *appdb.Asset, dests []*Destination) ([]*utxodb.Receiver, error) {
-	var outAddrs []*utxodb.Receiver
-	for i, dest := range dests {
-		pkScript, receiver, err := dest.pkScripter.pkScript(ctx)
-		if err != nil {
-			return nil, errors.WithDetailf(err, "output %d", i)
-		}
+func addAssetIssuanceOutputs(ctx context.Context, tx *bc.TxData, asset *appdb.Asset, dests []*Destination) {
+	for _, dest := range dests {
 		tx.Outputs = append(tx.Outputs, &bc.TxOutput{
 			AssetID:  asset.Hash,
 			Value:    dest.Amount,
-			Script:   pkScript,
+			Script:   dest.PKScript(),
 			Metadata: dest.Metadata,
 		})
-		outAddrs = append(outAddrs, receiver)
-	}
-	return outAddrs, nil
-}
-
-func newOutputReceiver(addr *appdb.Address, isChange bool) *utxodb.Receiver {
-	return &utxodb.Receiver{
-		ManagerNodeID: addr.ManagerNodeID,
-		AccountID:     addr.AccountID,
-		AddrIndex:     addr.Index,
-		IsChange:      isChange,
 	}
 }
 
@@ -208,7 +95,6 @@ func issuanceInput(a *appdb.Asset, tx *bc.TxData) (*Input, error) {
 	}
 
 	return &Input{
-		IssuerNodeID:  a.IssuerNodeID,
 		RedeemScript:  a.RedeemScript,
 		SignatureData: hash,
 		Sigs:          inputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a))),

@@ -5,13 +5,10 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/api/appdb"
 	"chain/api/utxodb"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
-	"chain/metrics"
 )
 
 // All UTXOs in the system.
@@ -25,7 +22,7 @@ var ErrBadOutDest = errors.New("invalid output destinations")
 // Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, prev *TxTemplate, sources []utxodb.Source, dests []*Destination, ttl time.Duration) (*TxTemplate, error) {
+func Build(ctx context.Context, prev *TxTemplate, sources []*Source, dests []*Destination, ttl time.Duration) (*TxTemplate, error) {
 	if ttl < time.Minute {
 		ttl = time.Minute
 	}
@@ -48,97 +45,48 @@ func Build(ctx context.Context, prev *TxTemplate, sources []utxodb.Source, dests
 	return tpl, nil
 }
 
-func build(ctx context.Context, sources []utxodb.Source, dests []*Destination, ttl time.Duration) (*TxTemplate, error) {
+func build(ctx context.Context, sources []*Source, dests []*Destination, ttl time.Duration) (*TxTemplate, error) {
 	tx := &bc.TxData{Version: bc.CurrentTransactionVersion}
 
-	reserved, change, err := utxoDB.Reserve(ctx, sources, ttl)
-	if err != nil {
-		return nil, errors.Wrap(err, "reserve")
-	}
+	var inputs []*Input
 
-	for _, c := range change {
-		dests = append(dests, &Destination{
-			Amount:  c.Amount,
-			AssetID: c.Source.AssetID,
-			pkScripter: &acctPKScripter{
-				AccountID: c.Source.AccountID,
-				isChange:  true,
-			},
-		})
-	}
-
-	for _, utxo := range reserved {
-		tx.Inputs = append(tx.Inputs, &bc.TxInput{Previous: utxo.Outpoint})
-	}
-
-	var outRecvs []*utxodb.Receiver
-	for i, out := range dests {
-		pkScript, receiver, err := out.pkScripter.pkScript(ctx)
+	for _, source := range sources {
+		reserveResult, err := source.Reserve(ctx, ttl)
 		if err != nil {
-			return nil, errors.WithDetailf(err, "output %d", i)
+			return nil, errors.Wrap(err, "reserve")
 		}
-
-		tx.Outputs = append(tx.Outputs, &bc.TxOutput{
-			AssetID:  out.AssetID,
-			Value:    out.Amount,
-			Script:   pkScript,
-			Metadata: out.Metadata,
-		})
-		outRecvs = append(outRecvs, receiver)
+		for _, item := range reserveResult.Items {
+			tx.Inputs = append(tx.Inputs, item.TxInput)
+			inputs = append(inputs, item.TemplateInput)
+		}
+		if reserveResult.Change != nil {
+			dests = append(dests, reserveResult.Change)
+		}
 	}
 
-	txInputs, err := makeTransferInputs(ctx, tx, reserved)
-	if err != nil {
-		return nil, err
+	for _, dest := range dests {
+		output := &bc.TxOutput{
+			AssetID:  dest.AssetID,
+			Value:    dest.Amount,
+			Script:   dest.PKScript(),
+			Metadata: dest.Metadata,
+		}
+		tx.Outputs = append(tx.Outputs, output)
+	}
+
+	receivers := make([]Receiver, 0, len(dests))
+	for _, dest := range dests {
+		receivers = append(receivers, dest.Receiver)
 	}
 
 	appTx := &TxTemplate{
 		Unsigned:   tx,
 		BlockChain: "sandbox",
-		Inputs:     txInputs,
-		OutRecvs:   outRecvs,
+		Inputs:     inputs,
+		OutRecvs:   receivers,
 	}
 
 	return appTx, nil
-}
-
-// makeTransferInputs creates the array of inputs
-// that contain signatures along with the
-// data needed to generate them
-func makeTransferInputs(ctx context.Context, tx *bc.TxData, utxos []*utxodb.UTXO) ([]*Input, error) {
-	defer metrics.RecordElapsed(time.Now())
-	var inputs []*Input
-	for i, utxo := range utxos {
-		input, err := addressInput(ctx, utxo, tx, i)
-		if err != nil {
-			return nil, errors.Wrap(err, "compute input")
-		}
-		inputs = append(inputs, input)
-	}
-	return inputs, nil
-}
-
-func addressInput(ctx context.Context, u *utxodb.UTXO, tx *bc.TxData, idx int) (*Input, error) {
-	addrInfo, err := appdb.AddrInfo(ctx, u.AccountID)
-	if err != nil {
-		return nil, errors.Wrap(err, "get addr info")
-	}
-
-	// TODO(kr): for key rotation, pull keys out of utxo
-	// instead of the account (addrInfo).
-	signers := hdkey.Derive(addrInfo.Keys, appdb.ReceiverPath(addrInfo, u.AddrIndex[:]))
-	redeemScript, err := hdkey.RedeemScript(signers, addrInfo.SigsRequired)
-	if err != nil {
-		return nil, errors.Wrap(err, "compute redeem script")
-	}
-
-	in := &Input{
-		ManagerNodeID: addrInfo.ManagerNodeID,
-		RedeemScript:  redeemScript,
-		SignatureData: bc.Hash{}, // calculated later
-		Sigs:          inputSigs(signers),
-	}
-	return in, nil
 }
 
 func combine(txs ...*TxTemplate) (*TxTemplate, error) {
