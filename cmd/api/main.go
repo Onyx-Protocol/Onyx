@@ -48,7 +48,7 @@ var (
 	// for config var LIBRATO_URL, see func init below
 	traceguideToken = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns      = env.Int("MAXDBCONNS", 10) // set to 100 in prod
-	makeBlocks      = env.Bool("MAKEBLOCKS", false)
+	makeBlocks      = env.Bool("MAKEBLOCKS", true)
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
