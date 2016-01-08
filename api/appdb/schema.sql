@@ -718,11 +718,27 @@ ALTER TABLE ONLY issuer_nodes
 
 
 --
+-- Name: issuer_txs_add_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY issuer_txs
+    ADD CONSTRAINT issuer_txs_add_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: manager_nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
 ALTER TABLE ONLY manager_nodes
     ADD CONSTRAINT manager_nodes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: manager_txs_add_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY manager_txs
+    ADD CONSTRAINT manager_txs_add_pkey PRIMARY KEY (id);
 
 
 --
@@ -917,10 +933,38 @@ CREATE INDEX issuer_nodes_project_id_idx ON issuer_nodes USING btree (project_id
 
 
 --
+-- Name: issuer_txs_assets_asset_id_issuer_tx_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX issuer_txs_assets_asset_id_issuer_tx_id_idx ON issuer_txs_assets USING btree (asset_id, issuer_tx_id DESC);
+
+
+--
+-- Name: issuer_txs_issuer_node_id_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX issuer_txs_issuer_node_id_id_idx ON issuer_txs USING btree (issuer_node_id, id DESC);
+
+
+--
 -- Name: manager_nodes_project_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE INDEX manager_nodes_project_id_idx ON manager_nodes USING btree (project_id);
+
+
+--
+-- Name: manager_txs_accounts_account_id_manager_tx_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX manager_txs_accounts_account_id_manager_tx_id_idx ON manager_txs_accounts USING btree (account_id, manager_tx_id DESC);
+
+
+--
+-- Name: manager_txs_manager_node_id_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX manager_txs_manager_node_id_id_idx ON manager_txs USING btree (manager_node_id, id DESC);
 
 
 --
