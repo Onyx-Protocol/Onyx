@@ -54,7 +54,8 @@ fi
 
 buildstatus="$(curl -sn https://api.github.com/repos/$proj/commits/$commit/status)"
 combinedstate=`echo "$buildstatus"|jq -r .state`
-if [ "$combinedstate" != success ]
+ntest=`echo "$buildstatus"|jq '.statuses|length'`
+if [ "$combinedstate" != success -a "$ntest" -gt 0 ]
 then
 	echo >&2 "build state is $combinedstate"
 	echo "$buildstatus" | jq >&2 -r '.statuses[]|.context+" "+.state+": "+.description'
