@@ -214,7 +214,7 @@ func DeleteAsset(ctx context.Context, assetID string) error {
 	if rowsAffected == 0 {
 		// Distinguish between the asset-not-found case and the
 		// assets-issued case.
-		const q2 = `SELECT issued FROM assets WHERE id = $1`
+		const q2 = `SELECT confirmed+pool FROM issuance_totals WHERE asset_id = $1`
 		var issued int64
 		err = db.QueryRow(ctx, q2, assetID).Scan(&issued)
 		if err != nil {

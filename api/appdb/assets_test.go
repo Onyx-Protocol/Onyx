@@ -347,7 +347,8 @@ func TestUpdateAssetNoUpdate(t *testing.T) {
 
 func TestDeleteAsset(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
-		asset := newTestAsset(t, ctx, nil)
+		iNode := newTestIssuerNode(t, ctx, nil, "x")
+		asset := newTestAsset(t, ctx, iNode)
 		assetID := asset.Hash.String()
 		_, err := GetAsset(ctx, assetID)
 		if err != nil {
@@ -365,6 +366,21 @@ func TestDeleteAsset(t *testing.T) {
 			if rootErr != pg.ErrUserInputNotFound {
 				t.Errorf("unexpected error when trying to get deleted asset %s: %v", assetID, err)
 			}
+		}
+
+		err = DeleteAsset(ctx, "missing-asset")
+		if errors.Root(err) != pg.ErrUserInputNotFound {
+			t.Errorf("got err = %v want %v", errors.Root(err), pg.ErrUserInputNotFound)
+		}
+
+		asset = newTestAsset(t, ctx, iNode)
+		err = UpdateIssuances(ctx, map[bc.AssetID]int64{asset.Hash: 500}, false)
+		if err != nil {
+			t.Errorf("unexpected error when trying to update issuance: %v", err)
+		}
+		err = DeleteAsset(ctx, assetID)
+		if errors.Root(err) != ErrCannotDelete {
+			t.Errorf("got err = %v want %v", errors.Root(err), ErrCannotDelete)
 		}
 	})
 }
