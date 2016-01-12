@@ -96,14 +96,16 @@ then
 	exit 1
 fi
 
+prurl=https://api.github.com/repos/$proj/issues/$pr
+mfile=$(mktemp)
+trap "rm $mfile" EXIT
+curl -sn $prurl|jq -r '.title+"\n\n"+.body+"\n"' >$mfile
+echo Closes "#$pr." >>$mfile
+echo Reviewers: $reviewby >>$mfile
+
 GIT_EDITOR='sed -i "" 1!s/pick/fixup/' \
 	git rebase --interactive origin/$onto
-GIT_EDITOR="sed -i '' '\$a\\
-Closes #$pr.
-\$a\\
-Reviewers: $reviewby'" \
-	git commit --amend
-git commit --amend # give the human a chance to edit the message
+git commit -F $mfile --amend # use PR message; let the human edit it
 git push origin $branch:$onto
 git push origin :$branch
 git checkout $onto
