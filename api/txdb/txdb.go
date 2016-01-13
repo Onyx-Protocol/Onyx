@@ -314,7 +314,7 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) (
 		outs.script = append(outs.script, out.Script)
 		outs.metadata = append(outs.metadata, out.Metadata)
 
-		isPayToContract, contractHash := txscript.TestPayToContract(out.Script)
+		isPayToContract, contractHash, _ := txscript.TestPayToContract(out.Script)
 		if isPayToContract {
 			outs.contractHash = append(outs.contractHash, contractHash[:])
 		} else {

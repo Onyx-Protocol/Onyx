@@ -122,5 +122,9 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/auditor/blocks/:blockID/summary", auditor.GetBlockSummary)
 	h.HandleFunc("GET", "/v3/auditor/transactions/:txID", auditor.GetTx)
 	h.HandleFunc("GET", "/v3/auditor/assets/:assetID", auditor.GetAsset)
+	// Orderbook endpoints
+	h.HandleFunc("POST", "/v3/contracts/orderbook", findOrders)
+	h.HandleFunc("POST", "/v3/contracts/orderbook/:accountID", findAccountOrders)
+
 	return h.ServeHTTPContext
 }

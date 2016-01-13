@@ -13,6 +13,7 @@ import (
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
+	"chain/fedchain/txscript"
 )
 
 type AccountReserver struct {
@@ -51,7 +52,7 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 		if err != nil {
 			return nil, errors.Wrap(err, "compute pk script")
 		}
-		templateInput.RedeemScript = redeemScript
+		templateInput.RedeemScript = txscript.AddDataToScript(nil, redeemScript)
 		templateInput.SignScript = pkScript
 		templateInput.Sigs = inputSigs(signers)
 
@@ -89,12 +90,8 @@ type AccountReceiver struct {
 	addr *appdb.Address
 }
 
-func (receiver *AccountReceiver) IsChange() bool { return receiver.addr.IsChange }
-
-func (receiver *AccountReceiver) PKScript() []byte {
-	return receiver.addr.PKScript
-}
-
+func (receiver *AccountReceiver) IsChange() bool   { return receiver.addr.IsChange }
+func (receiver *AccountReceiver) PKScript() []byte { return receiver.addr.PKScript }
 func (receiver *AccountReceiver) AccumulateUTXO(ctx context.Context, outpoint *bc.Outpoint, txOutput *bc.TxOutput, utxoInserters []UTXOInserter) ([]UTXOInserter, error) {
 	// Find or create an item in utxoInserters that is an
 	// AccountUTXOInserter
@@ -128,7 +125,7 @@ func NewAccountReceiver(addr *appdb.Address) *AccountReceiver {
 }
 
 func NewAccountDestination(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, isChange bool, metadata []byte) (*Destination, error) {
-	addr, err := appdb.NewAddress(ctx, accountID, isChange)
+	addr, err := appdb.NewAddress(ctx, accountID, isChange, false)
 	if err != nil {
 		return nil, err
 	}

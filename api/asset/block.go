@@ -35,8 +35,6 @@ func MakeBlocks(ctx context.Context, period time.Duration) {
 }
 
 func makeBlock(ctx context.Context) {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
 	defer func() {
 		if err := recover(); err != nil {
 			const size = 64 << 10
@@ -49,19 +47,29 @@ func makeBlock(ctx context.Context) {
 			)
 		}
 	}()
+	MakeBlock(ctx)
+}
+
+// MakeBlock creates a new bc.Block and updates the txpool/utxo state.
+func MakeBlock(ctx context.Context) (*bc.Block, error) {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
 	b, err := GenerateBlock(ctx, time.Now())
 	if err != nil {
 		log.Error(ctx, errors.Wrap(err, "generate"))
-		return
+		return nil, err
 	}
 	if len(b.Transactions) == 0 {
-		return // don't bother making an empty block
+		return nil, nil // don't bother making an empty block
 	}
 	err = ApplyBlock(ctx, b)
 	if err != nil {
 		log.Error(ctx, errors.Wrap(err, "apply"))
+		return nil, err
 	}
 	log.Messagef(ctx, "made block %s height %d with %d txs", b.Hash(), b.Height, len(b.Transactions))
+	return b, nil
 }
 
 // GenerateBlock creates a new bc.Block using the current tx pool and blockchain
@@ -295,16 +303,18 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 		}
 	}
 
+	db := pg.FromContext(ctx)
+
 	// Delete pool_txs
 	const txq = `DELETE FROM pool_txs WHERE tx_hash IN (SELECT unnest($1::text[]))`
-	_, err = pg.FromContext(ctx).Exec(ctx, txq, pg.Strings(deleteTxHashes))
+	_, err = db.Exec(ctx, txq, pg.Strings(deleteTxHashes))
 	if err != nil {
 		return nil, errors.Wrap(err, "delete from pool_txs")
 	}
 
 	// Delete pool outputs
 	const outq = `DELETE FROM utxos WHERE NOT confirmed AND tx_hash IN (SELECT unnest($1::text[]))`
-	_, err = pg.FromContext(ctx).Exec(ctx, outq, pg.Strings(deleteTxHashes))
+	_, err = db.Exec(ctx, outq, pg.Strings(deleteTxHashes))
 	if err != nil {
 		return nil, errors.Wrap(err, "delete from utxos")
 	}
@@ -316,7 +326,7 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 			SELECT unnest($1::text[]), unnest($2::integer[])
 		)
 	`
-	_, err = pg.FromContext(ctx).Exec(ctx, inq, pg.Strings(deleteInputTxHashes), pg.Uint32s(deleteInputTxIndexes))
+	_, err = db.Exec(ctx, inq, pg.Strings(deleteInputTxHashes), pg.Uint32s(deleteInputTxIndexes))
 	if err != nil {
 		return nil, errors.Wrap(err, "delete from pool_inputs")
 	}

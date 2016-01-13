@@ -125,6 +125,10 @@ func (n scriptNum) Bytes() []byte {
 	return result
 }
 
+func Int64ToScriptBytes(n int64) []byte {
+	return scriptNum(n).Bytes()
+}
+
 // Int32 returns the script number clamped to a valid int32.  That is to say
 // when the script number is higher than the max allowed int32, the max int32
 // value is returned and vice versa for the minimum value.  Note that this
@@ -166,10 +170,10 @@ func (n scriptNum) Int32() int32 {
 //
 // See the Bytes function documentation for example encodings.
 func makeScriptNum(v []byte, requireMinimal bool) (scriptNum, error) {
-	return makeScriptNumWithMaxLen(v, requireMinimal, maxScriptNumLen)
+	return MakeScriptNumWithMaxLen(v, requireMinimal, maxScriptNumLen)
 }
 
-func makeScriptNumWithMaxLen(v []byte, requireMinimal bool, maxLen int) (scriptNum, error) {
+func MakeScriptNumWithMaxLen(v []byte, requireMinimal bool, maxLen int) (scriptNum, error) {
 	if len(v) > maxLen {
 		return 0, ErrStackNumberTooBig
 	}

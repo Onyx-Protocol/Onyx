@@ -188,7 +188,7 @@ func InsertPoolOutputs(ctx context.Context, insert []*Output) error {
 		outs.aIndex = append(outs.aIndex, toKeyIndex(o.AddrIndex[:]))
 		outs.script = append(outs.script, o.Script)
 
-		isPayToContract, contractHash := txscript.TestPayToContract(o.Script)
+		isPayToContract, contractHash, _ := txscript.TestPayToContract(o.Script)
 		if isPayToContract {
 			outs.contractHash = append(outs.contractHash, contractHash[:])
 		} else {

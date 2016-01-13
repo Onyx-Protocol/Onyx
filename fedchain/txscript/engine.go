@@ -12,6 +12,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"golang.org/x/net/context"
 
+	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
 )
@@ -655,7 +656,8 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 	// The signature script must only contain data pushes when the
 	// associated flag is set.
 	if vm.hasFlag(ScriptVerifySigPushOnly) && !IsPushOnlyScript(scriptSig) {
-		return ErrStackNonPushOnly
+		scriptSigStr, _ := DisasmString(scriptSig)
+		return errors.Wrapf(ErrStackNonPushOnly, "scriptSig: %s", scriptSigStr)
 	}
 
 	// The engine stores the scripts in parsed form using a slice.  This
@@ -695,14 +697,15 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 
 	if vm.hasFlag(ScriptBip16) {
 		var isPayToContract bool
-		isPayToContract, vm.contractHash = testContract(vm.scripts[1])
+		isPayToContract, vm.contractHash, _ = testContract(vm.scripts[1])
 		if isPayToContract || isScriptHash(vm.scripts[1]) {
 			vm.bip16 = true
 		}
 
 		// Only accept input scripts that push data for P2SH.
 		if vm.bip16 && !isPushOnly(vm.scripts[0]) {
-			return ErrStackP2SHNonPushOnly
+			scriptSigStr, _ := DisasmString(scripts[0])
+			return errors.Wrapf(ErrStackP2SHNonPushOnly, "scriptSig: %s", scriptSigStr)
 		}
 	}
 

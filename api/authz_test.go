@@ -6,7 +6,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
-	"chain/api/testutil"
+	"chain/api/asset/assettest"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain/bc"
@@ -65,9 +65,9 @@ func TestProjectAuthz(t *testing.T) {
 
 func TestManagerAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
-		mn1ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
-		mn2ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		mn3ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
+		mn1ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
+		mn2ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
+		mn3ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
 		cases := []struct {
 			userID        string
@@ -89,13 +89,13 @@ func TestManagerAuthz(t *testing.T) {
 
 func TestAccountAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
-		mn1ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
-		mn2ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		mn3ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
+		mn1ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
+		mn2ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
+		mn3ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
-		acc1ID := testutil.CreateAccountFixture(ctx, t, mn1ID, "", nil)
-		acc2ID := testutil.CreateAccountFixture(ctx, t, mn2ID, "", nil)
-		acc3ID := testutil.CreateAccountFixture(ctx, t, mn3ID, "", nil)
+		acc1ID := assettest.CreateAccountFixture(ctx, t, mn1ID, "", nil)
+		acc2ID := assettest.CreateAccountFixture(ctx, t, mn2ID, "", nil)
+		acc3ID := assettest.CreateAccountFixture(ctx, t, mn3ID, "", nil)
 
 		cases := []struct {
 			userID    string
@@ -117,9 +117,9 @@ func TestAccountAuthz(t *testing.T) {
 
 func TestIssuerAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
-		in1ID := testutil.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
-		in2ID := testutil.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		in3ID := testutil.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
+		in1ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
+		in2ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
+		in3ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
 		cases := []struct {
 			userID  string
@@ -141,13 +141,13 @@ func TestIssuerAuthz(t *testing.T) {
 
 func TestAssetAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
-		in1ID := testutil.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
-		in2ID := testutil.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		in3ID := testutil.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
+		in1ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
+		in2ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
+		in3ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
-		a1ID := testutil.CreateAssetFixture(ctx, t, in1ID, "")
-		a2ID := testutil.CreateAssetFixture(ctx, t, in2ID, "")
-		a3ID := testutil.CreateAssetFixture(ctx, t, in3ID, "")
+		a1ID := assettest.CreateAssetFixture(ctx, t, in1ID, "")
+		a2ID := assettest.CreateAssetFixture(ctx, t, in2ID, "")
+		a3ID := assettest.CreateAssetFixture(ctx, t, in3ID, "")
 
 		cases := []struct {
 			userID  string
@@ -169,16 +169,16 @@ func TestAssetAuthz(t *testing.T) {
 
 func TestBuildAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
-		mn1ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
-		mn2ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		mn3ID := testutil.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
+		mn1ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
+		mn2ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
+		mn3ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
-		acc1ID := testutil.CreateAccountFixture(ctx, t, mn1ID, "", nil)
-		acc2ID := testutil.CreateAccountFixture(ctx, t, mn2ID, "", nil)
-		// acc3ID := testutil.CreateAccountFixture(ctx, t, mn3ID, "", nil)
-		acc4ID := testutil.CreateAccountFixture(ctx, t, mn1ID, "", nil)
-		// acc5ID := testutil.CreateAccountFixture(ctx, t, mn2ID, "", nil)
-		acc6ID := testutil.CreateAccountFixture(ctx, t, mn3ID, "", nil)
+		acc1ID := assettest.CreateAccountFixture(ctx, t, mn1ID, "", nil)
+		acc2ID := assettest.CreateAccountFixture(ctx, t, mn2ID, "", nil)
+		// acc3ID := assettest.CreateAccountFixture(ctx, t, mn3ID, "", nil)
+		acc4ID := assettest.CreateAccountFixture(ctx, t, mn1ID, "", nil)
+		// acc5ID := assettest.CreateAccountFixture(ctx, t, mn2ID, "", nil)
+		acc6ID := assettest.CreateAccountFixture(ctx, t, mn3ID, "", nil)
 
 		assetIDPtr := &bc.AssetID{}
 
@@ -288,7 +288,7 @@ func TestBuildAuthz(t *testing.T) {
 }
 
 func withCommonFixture(t *testing.T, fn func(context.Context, *fixtureInfo)) {
-	ctx := testutil.NewContextWithGenesisBlock(t)
+	ctx := assettest.NewContextWithGenesisBlock(t)
 	defer pgtest.Finish(ctx)
 
 	var (
@@ -296,23 +296,23 @@ func withCommonFixture(t *testing.T, fn func(context.Context, *fixtureInfo)) {
 		err         error
 	)
 
-	fixtureInfo.u1ID = testutil.CreateUserFixture(ctx, t, "", "")
-	fixtureInfo.u2ID = testutil.CreateUserFixture(ctx, t, "", "")
-	fixtureInfo.u3ID = testutil.CreateUserFixture(ctx, t, "", "")
+	fixtureInfo.u1ID = assettest.CreateUserFixture(ctx, t, "", "")
+	fixtureInfo.u2ID = assettest.CreateUserFixture(ctx, t, "", "")
+	fixtureInfo.u3ID = assettest.CreateUserFixture(ctx, t, "", "")
 
-	fixtureInfo.proj1ID = testutil.CreateProjectFixture(ctx, t, fixtureInfo.u1ID, "")
+	fixtureInfo.proj1ID = assettest.CreateProjectFixture(ctx, t, fixtureInfo.u1ID, "")
 	err = appdb.AddMember(ctx, fixtureInfo.proj1ID, fixtureInfo.u2ID, "developer")
 	if err != nil {
 		panic(err)
 	}
 
-	fixtureInfo.proj2ID = testutil.CreateProjectFixture(ctx, t, fixtureInfo.u1ID, "")
+	fixtureInfo.proj2ID = assettest.CreateProjectFixture(ctx, t, fixtureInfo.u1ID, "")
 	err = appdb.AddMember(ctx, fixtureInfo.proj2ID, fixtureInfo.u2ID, "admin")
 	if err != nil {
 		panic(err)
 	}
 
-	fixtureInfo.proj3ID = testutil.CreateProjectFixture(ctx, t, "", "")
+	fixtureInfo.proj3ID = assettest.CreateProjectFixture(ctx, t, "", "")
 
 	fn(ctx, &fixtureInfo)
 }

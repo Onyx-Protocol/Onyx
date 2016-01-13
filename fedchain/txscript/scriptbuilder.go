@@ -220,6 +220,18 @@ func (b *ScriptBuilder) AddInt64(val int64) *ScriptBuilder {
 	return b
 }
 
+// ConcatRawScript makes the ability to add the pass script directly to
+// an existing script to the test package.  This differs from AddData since it
+// doesn't add a push data opcode.
+func (b *ScriptBuilder) ConcatRawScript(data []byte) *ScriptBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	b.script = append(b.script, data...)
+	return b
+}
+
 // Reset resets the script so it has no content.
 func (b *ScriptBuilder) Reset() *ScriptBuilder {
 	b.script = b.script[0:0]

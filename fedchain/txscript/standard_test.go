@@ -29,12 +29,12 @@ func decodeHex(hexStr string) []byte {
 	return b
 }
 
-// mustParseShortForm parses the passed short form script and returns the
+// mustParseScriptString parses the passed short form script and returns the
 // resulting bytes.  It panics if an error occurs.  This is only used in the
 // tests as a helper since the only way it can fail is if there is an error in
 // the test source code.
-func mustParseShortForm(script string) []byte {
-	s, err := parseShortForm(script)
+func mustParseScriptString(script string) []byte {
+	s, err := txscript.ParseScriptString(script)
 	if err != nil {
 		panic("invalid short form script in test source: err " +
 			err.Error() + ", script: " + script)
@@ -475,8 +475,8 @@ func TestCalcScriptInfo(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		sigScript := mustParseShortForm(test.sigScript)
-		pkScript := mustParseShortForm(test.pkScript)
+		sigScript := mustParseScriptString(test.sigScript)
+		pkScript := mustParseScriptString(test.pkScript)
 		si, err := txscript.CalcScriptInfo(sigScript, pkScript,
 			test.bip16)
 		if err != nil {
@@ -686,7 +686,7 @@ func TestPayToAddrScript(t *testing.T) {
 			continue
 		}
 
-		expected := mustParseShortForm(test.expected)
+		expected := mustParseScriptString(test.expected)
 		if !bytes.Equal(pkScript, expected) {
 			t.Errorf("PayToAddrScript #%d got: %x\nwant: %x",
 				i, pkScript, expected)
@@ -798,7 +798,7 @@ func TestMultiSigScript(t *testing.T) {
 			continue
 		}
 
-		expected := mustParseShortForm(test.expected)
+		expected := mustParseScriptString(test.expected)
 		if !bytes.Equal(script, expected) {
 			t.Errorf("MultiSigScript #%d got: %x\nwant: %x",
 				i, script, expected)
@@ -843,7 +843,7 @@ func TestCalcMultiSigStats(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		script := mustParseShortForm(test.script)
+		script := mustParseScriptString(test.script)
 		if _, _, err := txscript.CalcMultiSigStats(script); err != test.err {
 			t.Errorf("CalcMultiSigStats #%d (%s) unexpected "+
 				"error\ngot: %v\nwant: %v", i, test.name, err,
@@ -984,7 +984,7 @@ func TestScriptClass(t *testing.T) {
 	t.Parallel()
 
 	for _, test := range scriptClassTests {
-		script := mustParseShortForm(test.script)
+		script := mustParseScriptString(test.script)
 		class := txscript.GetScriptClass(script)
 		if class != test.class {
 			t.Errorf("%s: expected %s got %s", test.name,

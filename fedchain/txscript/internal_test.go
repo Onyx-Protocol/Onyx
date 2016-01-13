@@ -25,18 +25,6 @@ var TstHasCanonicalPushes = canonicalPush
 // test package.
 var TstParseScript = parseScript
 
-// TstConcatRawScript makes the ability to add the pass script directly to
-// an existing script to the test package.  This differs from AddData since it
-// doesn't add a push data opcode.
-func (b *ScriptBuilder) TstConcatRawScript(data []byte) *ScriptBuilder {
-	if b.err != nil {
-		return b
-	}
-
-	b.script = append(b.script, data...)
-	return b
-}
-
 // TstCheckPubKeyEncoding makes the internal checkPubKeyEncoding function
 // available to the test package.  Since it only really needs from the engine
 // for the flags, just accept the flags and create a new engine skeleton.

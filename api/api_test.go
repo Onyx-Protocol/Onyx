@@ -8,11 +8,12 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/asset"
-	"chain/api/testutil"
+	"chain/api/asset/assettest"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/net/http/authn"
+	chaintest "chain/testutil"
 )
 
 const testUserFixture = `
@@ -57,15 +58,15 @@ func TestLogin(t *testing.T) {
 }
 
 func TestIssue(t *testing.T) {
-	ctx := testutil.NewContextWithGenesisBlock(t)
+	ctx := assettest.NewContextWithGenesisBlock(t)
 	defer pgtest.Finish(ctx)
 
-	userID := testutil.CreateUserFixture(ctx, t, "", "")
-	projectID := testutil.CreateProjectFixture(ctx, t, userID, "")
-	issuerNodeID := testutil.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
-	managerNodeID := testutil.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
-	assetID := testutil.CreateAssetFixture(ctx, t, issuerNodeID, "")
-	account1ID := testutil.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
+	userID := assettest.CreateUserFixture(ctx, t, "", "")
+	projectID := assettest.CreateProjectFixture(ctx, t, userID, "")
+	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
+	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "")
+	account1ID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
 
 	ctx = authn.NewContext(ctx, userID)
 
@@ -101,16 +102,16 @@ func TestIssue(t *testing.T) {
 }
 
 func TestTransfer(t *testing.T) {
-	ctx := testutil.NewContextWithGenesisBlock(t)
+	ctx := assettest.NewContextWithGenesisBlock(t)
 	defer pgtest.Finish(ctx)
 
-	userID := testutil.CreateUserFixture(ctx, t, "", "")
-	projectID := testutil.CreateProjectFixture(ctx, t, userID, "")
-	issuerNodeID := testutil.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
-	managerNodeID := testutil.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
-	assetID := testutil.CreateAssetFixture(ctx, t, issuerNodeID, "")
-	account1ID := testutil.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
-	account2ID := testutil.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
+	userID := assettest.CreateUserFixture(ctx, t, "", "")
+	projectID := assettest.CreateProjectFixture(ctx, t, userID, "")
+	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
+	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "")
+	account1ID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
+	account2ID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
 
 	assetIDStr := assetID.String()
 
@@ -171,7 +172,7 @@ func TestTransfer(t *testing.T) {
 	}
 	toSign := inspectTemplate(t, parsedResult[0], managerNodeID, account2ID)
 	txTemplate, err = toTxTemplate(ctx, toSign)
-	err = testutil.SignTx(txTemplate, testutil.TestXPrv)
+	err = asset.SignTxTemplate(txTemplate, chaintest.TestXPrv)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

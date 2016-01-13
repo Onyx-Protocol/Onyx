@@ -1,18 +1,17 @@
-package testutil
+package assettest
 
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/api/asset"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/testutil"
 )
 
 var userCounter = createCounter()
@@ -26,7 +25,7 @@ func CreateUserFixture(ctx context.Context, t *testing.T, email, password string
 	}
 	user, err := appdb.CreateUser(ctx, email, password)
 	if err != nil {
-		FatalErr(t, err)
+		testutil.FatalErr(t, err)
 	}
 	return user.ID
 }
@@ -42,7 +41,7 @@ func CreateProjectFixture(ctx context.Context, t *testing.T, userID, name string
 	}
 	proj, err := appdb.CreateProject(ctx, name, userID)
 	if err != nil {
-		FatalErr(t, err)
+		testutil.FatalErr(t, err)
 	}
 	return proj.ID
 }
@@ -57,12 +56,12 @@ func CreateIssuerNodeFixture(ctx context.Context, t *testing.T, projectID, label
 		label = fmt.Sprintf("inode-%d", <-issuerNodeCounter)
 	}
 	if len(xpubs) == 0 && len(xprvs) == 0 {
-		xpubs = append(xpubs, TestXPub)
-		xprvs = append(xprvs, TestXPrv)
+		xpubs = append(xpubs, testutil.TestXPub)
+		xprvs = append(xprvs, testutil.TestXPrv)
 	}
 	issuerNode, err := appdb.InsertIssuerNode(ctx, projectID, label, xpubs, xprvs, 1)
 	if err != nil {
-		FatalErr(t, err)
+		testutil.FatalErr(t, err)
 	}
 	return issuerNode.ID
 }
@@ -77,12 +76,12 @@ func CreateManagerNodeFixture(ctx context.Context, t *testing.T, projectID, labe
 		label = fmt.Sprintf("mnode-%d", <-managerNodeCounter)
 	}
 	if len(xpubs) == 0 && len(xprvs) == 0 {
-		xpubs = append(xpubs, TestXPub)
-		xprvs = append(xprvs, TestXPrv)
+		xpubs = append(xpubs, testutil.TestXPub)
+		xprvs = append(xprvs, testutil.TestXPrv)
 	}
 	managerNode, err := appdb.InsertManagerNode(ctx, projectID, label, xpubs, xprvs, 0, 1)
 	if err != nil {
-		FatalErr(t, err)
+		testutil.FatalErr(t, err)
 	}
 	return managerNode.ID
 }
@@ -98,7 +97,7 @@ func CreateAccountFixture(ctx context.Context, t *testing.T, managerNodeID, labe
 	}
 	account, err := appdb.CreateAccount(ctx, managerNodeID, label, keys)
 	if err != nil {
-		FatalErr(t, err)
+		testutil.FatalErr(t, err)
 	}
 	return account.ID
 }
@@ -114,7 +113,7 @@ func CreateAssetFixture(ctx context.Context, t *testing.T, issuerNodeID, label s
 	}
 	asset, err := asset.Create(ctx, issuerNodeID, label, nil)
 	if err != nil {
-		FatalErr(t, err)
+		testutil.FatalErr(t, err)
 	}
 	return asset.Hash
 }
@@ -132,25 +131,11 @@ func createCounter() <-chan int {
 	return result
 }
 
-func CreateGenesisBlock(ctx context.Context) {
-	genesisBlock := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Version:   bc.NewBlockVersion,
-			Timestamp: uint64(time.Now().Unix()),
-		},
-	}
-	const q = `
-		INSERT INTO blocks (block_hash, height, data, header)
-		    VALUES ($1, $2, $3, $4)
-	`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, genesisBlock.Hash(), genesisBlock.Height, genesisBlock, &genesisBlock.BlockHeader)
+func NewContextWithGenesisBlock(tb testing.TB) context.Context {
+	ctx := pgtest.NewContext(tb)
+	_, err := asset.UpsertGenesisBlock(ctx)
 	if err != nil {
-		panic(err)
+		tb.Fatal(err)
 	}
-}
-
-func NewContextWithGenesisBlock(tb testing.TB, sql ...string) context.Context {
-	ctx := pgtest.NewContext(tb, sql...)
-	CreateGenesisBlock(ctx)
 	return ctx
 }

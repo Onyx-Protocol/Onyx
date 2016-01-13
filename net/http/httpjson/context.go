@@ -35,3 +35,9 @@ func Request(ctx context.Context) *http.Request {
 func ResponseWriter(ctx context.Context) http.ResponseWriter {
 	return ctx.Value(respKey).(http.ResponseWriter)
 }
+
+// WithRequest returns a context with an HTTP request stored in it.
+// It is useful for testing.
+func WithRequest(ctx context.Context, req *http.Request) context.Context {
+	return context.WithValue(ctx, reqKey, req)
+}

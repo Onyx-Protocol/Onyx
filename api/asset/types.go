@@ -60,6 +60,4 @@ func (source *Source) Reserve(ctx context.Context, ttl time.Duration) (*ReserveR
 	return source.Reserver.Reserve(ctx, &source.AssetAmount, ttl)
 }
 
-func (dest *Destination) PKScript() []byte {
-	return dest.Receiver.PKScript()
-}
+func (dest *Destination) PKScript() []byte { return dest.Receiver.PKScript() }

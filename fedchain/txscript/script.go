@@ -7,8 +7,11 @@ package txscript
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"chain/crypto/hash256"
@@ -74,65 +77,74 @@ func IsPayToScriptHash(script []byte) bool {
 // Returns true if the parsed script is in p2c format, false
 // otherwise.
 func isContract(pops []parsedOpcode) bool {
-	result, _ := testContract(pops)
+	result, _, _ := testContract(pops)
 	return result
 }
 
-// Returns true and the contractHash if the parsed script is in p2c
-// format, false and nil otherwise.
-func testContract(pops []parsedOpcode) (bool, *bc.ContractHash) {
+// Returns true, the contractHash, and the params if the parsed script
+// is in p2c format, false and nil otherwise.
+func testContract(pops []parsedOpcode) (bool, *bc.ContractHash, [][]byte) {
 	l := len(pops)
 	if l < 6 {
-		return false, nil
+		return false, nil, nil
 	}
 
 	// TODO(bobg,oleganza): Reconsider requiring smallints.
 	numOpcode := pops[l-6].opcode
 	if !isSmallInt(numOpcode) {
-		return false, nil
+		return false, nil, nil
 	}
 	n := asSmallInt(numOpcode)
 
 	if l != (n + 6) {
-		return false, nil
+		return false, nil, nil
 	}
 
 	if pops[l-1].opcode.value != OP_EQUALVERIFY {
-		return false, nil
+		return false, nil, nil
 	}
 	if pops[l-2].opcode.value != OP_DATA_20 {
-		return false, nil
+		return false, nil, nil
 	}
 	if pops[l-3].opcode.value != OP_HASH160 {
-		return false, nil
+		return false, nil, nil
 	}
 	if pops[l-4].opcode.value != OP_DUP {
-		return false, nil
+		return false, nil, nil
 	}
 	if pops[l-5].opcode.value != OP_ROLL {
-		return false, nil
+		return false, nil, nil
 	}
 	if !isPushOnly(pops[:n]) {
-		return false, nil
+		return false, nil, nil
 	}
 	var contractHash bc.ContractHash
 	copy(contractHash[:], pops[l-2].data)
-	return true, &contractHash
+
+	var params [][]byte
+	for i := n - 1; i >= 0; i-- {
+		if !isPushdataOp(pops[i]) {
+			return false, nil, nil
+		}
+		params = append(params, pops[i].data)
+	}
+
+	return true, &contractHash, params
 }
 
 // IsPayToContract returns true if the script is in the standard
 // pay-to-contract (P2C) format, false otherwise.
 func IsPayToContract(script []byte) bool {
-	result, _ := TestPayToContract(script)
+	result, _, _ := TestPayToContract(script)
 	return result
 }
 
-// Returns true and the contractHash if the script is in p2c format,
-// false and nil otherwise.
-func TestPayToContract(script []byte) (bool, *bc.ContractHash) {
+// Returns true, the contractHash, and the params if the script is in
+// p2c format, false and nil otherwise.
+func TestPayToContract(script []byte) (bool, *bc.ContractHash, [][]byte) {
 	pops, err := parseScript(script)
 	if err != nil {
-		return false, nil
+		return false, nil, nil
 	}
 	return testContract(pops)
 }
@@ -549,4 +561,84 @@ func IsUnspendable(pkScript []byte) bool {
 	}
 
 	return len(pops) > 0 && pops[0].opcode.value == OP_RETURN
+}
+
+// parse hex string into a []byte.
+func parseHex(tok string) ([]byte, error) {
+	if !strings.HasPrefix(tok, "0x") {
+		return nil, errors.New("not a hex number")
+	}
+	return hex.DecodeString(tok[2:])
+}
+
+// shortFormOps holds a map of opcode names to values for use in short form
+// parsing.  It is declared here so it only needs to be created once.
+var shortFormOps map[string]byte
+
+// ParseScriptString parses a string as as used in the Bitcoin Core
+// reference tests into the script it came from.
+//
+// The format used for these tests is pretty simple if ad-hoc:
+//   - Opcodes other than the push opcodes and unknown are present as
+//     either OP_NAME or just NAME
+//   - Plain numbers are made into push operations
+//   - Numbers beginning with 0x are inserted into the []byte as-is (so
+//     0x14 is OP_DATA_20)
+//   - Single quoted strings are pushed as data
+//   - Anything else is an error
+//
+// IMPORTANT! Equivalent script strings supplied to this function
+// should always produce identical bytes.  Otherwise you risk
+// producing a script-hash mismatch that could make some tx output
+// depending on that hash unspendable.
+func ParseScriptString(script string) ([]byte, error) {
+	// Only create the short form opcode map once.
+	if shortFormOps == nil {
+		ops := make(map[string]byte)
+		for opcodeName, opcodeValue := range OpcodeByName {
+			if strings.Contains(opcodeName, "OP_UNKNOWN") {
+				continue
+			}
+			ops[opcodeName] = opcodeValue
+
+			// The opcodes named OP_# can't have the OP_ prefix
+			// stripped or they would conflict with the plain
+			// numbers.  Also, since OP_FALSE and OP_TRUE are
+			// aliases for the OP_0, and OP_1, respectively, they
+			// have the same value, so detect those by name and
+			// allow them.
+			if (opcodeName == "OP_FALSE" || opcodeName == "OP_TRUE") ||
+				(opcodeValue != OP_0 && (opcodeValue < OP_1 ||
+					opcodeValue > OP_16)) {
+
+				ops[strings.TrimPrefix(opcodeName, "OP_")] = opcodeValue
+			}
+		}
+		shortFormOps = ops
+	}
+
+	tokens := strings.Fields(script)
+	builder := NewScriptBuilder()
+
+	for _, tok := range tokens {
+		if len(tok) == 0 {
+			continue
+		}
+		// if parses as a plain number
+		if num, err := strconv.ParseInt(tok, 10, 64); err == nil {
+			builder.AddInt64(num)
+			continue
+		} else if bts, err := parseHex(tok); err == nil {
+			builder.ConcatRawScript(bts)
+		} else if len(tok) >= 2 &&
+			tok[0] == '\'' && tok[len(tok)-1] == '\'' {
+			builder.AddFullData([]byte(tok[1 : len(tok)-1]))
+		} else if opcode, ok := shortFormOps[tok]; ok {
+			builder.AddOp(opcode)
+		} else {
+			return nil, fmt.Errorf("bad token \"%s\"", tok)
+		}
+
+	}
+	return builder.Script()
 }

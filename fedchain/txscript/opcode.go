@@ -1526,7 +1526,7 @@ func opcodeDiv(op *parsedOpcode, vm *Engine) error {
 	if err != nil {
 		return err
 	}
-	vm.dstack.PushInt(scriptNum(n / m)) // xxx are Go's truncation rules right for btc script?
+	vm.dstack.PushInt(scriptNum(n / m))
 	return nil
 }
 
@@ -2196,7 +2196,7 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 			len(dummy))
 	}
 
-	// Get script to sign
+	// Get script to be signed
 	script := vm.signScript
 
 	// Remove any of the signatures since there is no way for a signature to
@@ -2432,6 +2432,19 @@ func scriptMatchesPattern(script []byte, parsedPattern []parsedOpcode, contractH
 			if !isPushdataOp(pop) || (contractHash == nil) || !bytes.Equal(contractHash[:], pop.data) {
 				return false, nil
 			}
+		default:
+			if isPushdataOp(pop) {
+				if !isPushdataOp(ppat) {
+					return false, nil
+				}
+				if !bytes.Equal(pop.data, ppat.data) {
+					return false, nil
+				}
+			} else if isPushdataOp(ppat) {
+				return false, nil
+			} else if pop.opcode.value != ppat.opcode.value {
+				return false, nil
+			}
 		}
 	}
 	return true, nil
@@ -2533,11 +2546,6 @@ func opcodeEval(op *parsedOpcode, vm *Engine) error {
 	parsedScript, err := parseScript(script)
 	if err != nil {
 		return err
-	}
-	for _, pop := range parsedScript {
-		if pop.opcode.value == OP_EVAL {
-			return ErrNestedEval
-		}
 	}
 	vm.InsertScript(parsedScript)
 	return nil

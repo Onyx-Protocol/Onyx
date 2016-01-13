@@ -1,19 +1,13 @@
-package testutil
+package asset
 
 import (
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcutil/hdkeychain"
 
-	"chain/api/asset"
 	"chain/fedchain-sandbox/hdkey"
 )
 
-var (
-	TestXPub, TestXPrv *hdkey.XKey
-)
-
-func SignTx(tx *asset.TxTemplate, priv *hdkey.XKey) error {
-	for _, input := range tx.Inputs {
+func SignTxTemplate(txTemplate *TxTemplate, priv *hdkey.XKey) error {
+	for _, input := range txTemplate.Inputs {
 		for _, sig := range input.Sigs {
 			key, err := derive(priv, sig.DerivationPath)
 			if err != nil {
@@ -37,21 +31,4 @@ func derive(xkey *hdkey.XKey, path []uint32) (*btcec.PrivateKey, error) {
 		key, _ = key.Child(p)
 	}
 	return key.ECPrivKey()
-}
-
-func init() {
-	seed, err := hdkeychain.GenerateSeed(hdkeychain.RecommendedSeedLen)
-	if err != nil {
-		panic(err)
-	}
-	xprv, err := hdkeychain.NewMaster(seed)
-	if err != nil {
-		panic(err)
-	}
-	xpub, err := xprv.Neuter()
-	if err != nil {
-		panic(err)
-	}
-	TestXPub = &hdkey.XKey{ExtendedKey: *xpub}
-	TestXPrv = &hdkey.XKey{ExtendedKey: *xprv}
 }

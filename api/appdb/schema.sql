@@ -525,6 +525,30 @@ CREATE TABLE members (
 
 
 --
+-- Name: orderbook_prices; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE orderbook_prices (
+    tx_hash text NOT NULL,
+    index integer NOT NULL,
+    asset_id text NOT NULL,
+    offer_amount bigint NOT NULL,
+    payment_amount bigint NOT NULL
+);
+
+
+--
+-- Name: orderbook_utxos; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE orderbook_utxos (
+    tx_hash text NOT NULL,
+    index integer NOT NULL,
+    seller_id text NOT NULL
+);
+
+
+--
 -- Name: pool_inputs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -614,7 +638,7 @@ CREATE TABLE utxos (
     asset_id text NOT NULL,
     amount bigint NOT NULL,
     addr_index bigint NOT NULL,
-    account_id text NOT NULL,
+    account_id text,
     contract_hash text,
     manager_node_id text NOT NULL,
     reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
@@ -779,6 +803,14 @@ ALTER TABLE ONLY manager_txs
 
 ALTER TABLE ONLY members
     ADD CONSTRAINT members_project_id_user_id_key UNIQUE (project_id, user_id);
+
+
+--
+-- Name: orderbook_utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY orderbook_utxos
+    ADD CONSTRAINT orderbook_utxos_pkey PRIMARY KEY (tx_hash, index);
 
 
 --
@@ -1007,6 +1039,20 @@ CREATE INDEX members_user_id_idx ON members USING btree (user_id);
 
 
 --
+-- Name: orderbook_prices_asset_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX orderbook_prices_asset_id_idx ON orderbook_prices USING btree (asset_id);
+
+
+--
+-- Name: orderbook_utxos_seller_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX orderbook_utxos_seller_id_idx ON orderbook_utxos USING btree (seller_id);
+
+
+--
 -- Name: users_lower_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -1017,14 +1063,7 @@ CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
 -- Name: utxos_account_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX utxos_account_id_asset_id_reserved_at_idx ON utxos USING btree (account_id, asset_id, reserved_until);
-
-
---
--- Name: utxos_asset_id_contract_hash_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX utxos_asset_id_contract_hash_idx ON utxos USING btree (asset_id, contract_hash) WHERE (contract_hash IS NOT NULL);
+CREATE INDEX utxos_account_id_asset_id_reserved_at_idx ON utxos USING btree (account_id, asset_id, reserved_until) WHERE (account_id IS NOT NULL);
 
 
 --
@@ -1159,6 +1198,22 @@ ALTER TABLE ONLY members
 
 ALTER TABLE ONLY members
     ADD CONSTRAINT members_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
+
+
+--
+-- Name: orderbook_prices_tx_hash_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY orderbook_prices
+    ADD CONSTRAINT orderbook_prices_tx_hash_fkey FOREIGN KEY (tx_hash, index) REFERENCES utxos(tx_hash, index) ON DELETE CASCADE;
+
+
+--
+-- Name: orderbook_utxos_tx_hash_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY orderbook_utxos
+    ADD CONSTRAINT orderbook_utxos_tx_hash_fkey FOREIGN KEY (tx_hash, index) REFERENCES utxos(tx_hash, index) ON DELETE CASCADE;
 
 
 --

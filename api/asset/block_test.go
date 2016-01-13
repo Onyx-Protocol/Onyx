@@ -7,8 +7,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/btcsuite/btcd/btcec"
-
 	"chain/api/appdb"
 	"chain/api/utxodb"
 	"chain/database/pg"
@@ -32,7 +30,7 @@ func TestTransferConfirmed(t *testing.T) {
 	}
 
 	dumpState(ctx, t)
-	makeBlock(ctx)
+	MakeBlock(ctx)
 	dumpState(ctx, t)
 
 	_, err = transfer(ctx, info, info.acctA.ID, info.acctB.ID, 10)
@@ -111,27 +109,10 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 			b.Logf("finalized %v", tx.Hash)
 
 			if i%10 == 0 {
-				makeBlock(ctx)
+				MakeBlock(ctx)
 			}
 		}
 	})
-}
-
-func signTx(tx *TxTemplate, priv *hdkey.XKey) error {
-	for _, input := range tx.Inputs {
-		for _, sig := range input.Sigs {
-			key, err := derive(priv, sig.DerivationPath)
-			if err != nil {
-				return err
-			}
-			dat, err := key.Sign(input.SignatureData[:])
-			if err != nil {
-				return err
-			}
-			sig.DER = append(dat.Serialize(), 1) // append hashtype SIGHASH_ALL
-		}
-	}
-	return nil
 }
 
 func dumpState(ctx context.Context, t *testing.T) {
@@ -249,16 +230,6 @@ func TestGenerateBlock(t *testing.T) {
 			t.Errorf("generated block:\ngot:  %+v\nwant: %+v", got, want)
 		}
 	})
-}
-
-func derive(xkey *hdkey.XKey, path []uint32) (*btcec.PrivateKey, error) {
-	// The only error has a uniformly distributed probability of 1/2^127
-	// We've decided to ignore this chance.
-	key := &xkey.ExtendedKey
-	for _, p := range path {
-		key, _ = key.Child(p)
-	}
-	return key.ECPrivKey()
 }
 
 func BenchmarkGenerateBlock(b *testing.B) {
@@ -392,7 +363,7 @@ func issue(ctx context.Context, info *clientInfo, destAcctID string, amount uint
 	if err != nil {
 		return nil, err
 	}
-	err = signTx(issueTx, info.privKeyIssuer)
+	err = SignTxTemplate(issueTx, info.privKeyIssuer)
 	if err != nil {
 		return nil, err
 	}
@@ -418,7 +389,7 @@ func transfer(ctx context.Context, info *clientInfo, srcAcctID, destAcctID strin
 		return nil, err
 	}
 
-	err = signTx(xferTx, info.privKeyManager)
+	err = SignTxTemplate(xferTx, info.privKeyManager)
 	if err != nil {
 		return nil, err
 	}

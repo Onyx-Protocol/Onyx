@@ -8,8 +8,11 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/asset"
+	"chain/api/smartcontracts/orderbook"
+	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/fedchain/bc"
+	"chain/net/http/httpjson"
 )
 
 // Data types and functions for marshaling/unmarshaling API requests
@@ -22,16 +25,20 @@ var (
 )
 
 type Source struct {
-	AssetID   *bc.AssetID `json:"asset_id"`
-	Amount    uint64
-	AccountID string `json:"account_id"`
-	Type      string
+	AssetID        *bc.AssetID `json:"asset_id"`
+	Amount         uint64
+	PaymentAssetID *bc.AssetID `json:"payment_asset_id"`
+	PaymentAmount  uint64      `json:"payment_amount"`
+	AccountID      string      `json:"account_id"`
+	TxHash         *bc.Hash    `json:"transaction_hash"`
+	Index          *uint32     `json:"index"`
+	Type           string
 }
 
 func (source *Source) parse(ctx context.Context) (*asset.Source, error) {
 	if source.Type == "account" || source.Type == "" {
 		if source.AssetID == nil {
-			return nil, ErrNullAsset
+			return nil, httpjson.ErrBadRequest
 		}
 		assetAmount := &bc.AssetAmount{
 			AssetID: *source.AssetID,
@@ -39,17 +46,57 @@ func (source *Source) parse(ctx context.Context) (*asset.Source, error) {
 		}
 		return asset.NewAccountSource(ctx, assetAmount, source.AccountID), nil
 	}
+	if source.Type == "orderbook-redeem" {
+		if source.PaymentAssetID == nil || source.TxHash == nil || source.Index == nil {
+			return nil, httpjson.ErrBadRequest
+		}
+		outpoint := &bc.Outpoint{
+			Hash:  *source.TxHash,
+			Index: *source.Index,
+		}
+		openOrder, err := orderbook.FindOpenOrderByOutpoint(ctx, outpoint)
+		if err != nil {
+			return nil, err
+		}
+		if openOrder == nil {
+			return nil, pg.ErrUserInputNotFound
+		}
+		paymentAmount := &bc.AssetAmount{
+			AssetID: *source.PaymentAssetID,
+			Amount:  source.PaymentAmount,
+		}
+		return orderbook.NewRedeemSource(openOrder, source.Amount, paymentAmount), nil
+	}
+	if source.Type == "orderbook-cancel" {
+		if source.TxHash == nil || source.Index == nil {
+			return nil, httpjson.ErrBadRequest
+		}
+		outpoint := &bc.Outpoint{
+			Hash:  *source.TxHash,
+			Index: *source.Index,
+		}
+		openOrder, err := orderbook.FindOpenOrderByOutpoint(ctx, outpoint)
+		if err != nil {
+			return nil, err
+		}
+		if openOrder == nil {
+			return nil, pg.ErrUserInputNotFound
+		}
+		return orderbook.NewCancelSource(openOrder), nil
+	}
 	return nil, ErrUnknownSourceType
 }
 
 type Destination struct {
-	AssetID   *bc.AssetID `json:"asset_id"`
-	Amount    uint64
-	AccountID string `json:"account_id"`
-	Address   chainjson.HexBytes
-	IsChange  bool `json:"is_change"`
-	Metadata  chainjson.HexBytes
-	Type      string
+	AssetID         *bc.AssetID `json:"asset_id"`
+	Amount          uint64
+	AccountID       string             `json:"account_id,omitempty"`
+	Address         chainjson.HexBytes `json:"address,omitempty"`
+	IsChange        bool               `json:"is_change"`
+	Metadata        chainjson.HexBytes `json:"metadata,omitempty"`
+	OrderbookPrices []*orderbook.Price `json:"orderbook_prices,omitempty"`
+	Script          chainjson.HexBytes `json:"script,omitempty"`
+	Type            string
 }
 
 func (dest Destination) parse(ctx context.Context) (*asset.Destination, error) {
@@ -72,6 +119,12 @@ func (dest Destination) parse(ctx context.Context) (*asset.Destination, error) {
 		return asset.NewAccountDestination(ctx, assetAmount, dest.AccountID, dest.IsChange, dest.Metadata)
 	case "address":
 		return asset.NewScriptDestination(ctx, assetAmount, dest.Address, dest.IsChange, dest.Metadata)
+	case "orderbook":
+		orderInfo := &orderbook.OrderInfo{
+			SellerAccountID: dest.AccountID,
+			Prices:          dest.OrderbookPrices,
+		}
+		return orderbook.NewDestinationWithScript(ctx, assetAmount, orderInfo, dest.IsChange, dest.Metadata, dest.Script)
 	}
 	return nil, ErrUnknownDestinationType
 }
@@ -82,6 +135,7 @@ type Receiver struct {
 	IsChange      bool     `json:"is_change"`
 	ManagerNodeID string   `json:"manager_node_id"`
 	Script        chainjson.HexBytes
+	OrderInfo     *orderbook.OrderInfo `json:"orderbook_info"`
 	Type          string
 }
 
@@ -101,6 +155,11 @@ func (receiver *Receiver) parse() (asset.Receiver, error) {
 			ManagerNodeID: receiver.ManagerNodeID,
 		}
 		return asset.NewAccountReceiver(addr), nil
+	case "orderbook":
+		if receiver.OrderInfo == nil {
+			return nil, httpjson.ErrBadRequest
+		}
+		return orderbook.NewReceiver(receiver.OrderInfo, receiver.IsChange, receiver.Script), nil
 	}
 	return nil, ErrUnknownReceiverType
 }

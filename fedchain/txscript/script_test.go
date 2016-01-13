@@ -24,7 +24,7 @@ func TestPushedData(t *testing.T) {
 	}{
 		{
 			"0 IF 0 ELSE 2 ENDIF",
-			[][]byte{nil, nil},
+			[][]byte{nil, nil, []byte{0x02}},
 			true,
 		},
 		{
@@ -56,7 +56,7 @@ func TestPushedData(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		script := mustParseShortForm(test.script)
+		script := mustParseScriptString(test.script)
 		data, err := txscript.PushedData(script)
 		if test.valid && err != nil {
 			t.Errorf("TestPushedData failed test #%d: %v\n", i, err)
@@ -173,7 +173,7 @@ func TestGetPreciseSigOps(t *testing.T) {
 	// The signature in the p2sh script is nonsensical for the tests since
 	// this script will never be executed.  What matters is that it matches
 	// the right pattern.
-	pkScript := mustParseShortForm("HASH160 DATA_20 0x433ec2ac1ffa1b7b7d0" +
+	pkScript := mustParseScriptString("HASH160 DATA_20 0x433ec2ac1ffa1b7b7d0" +
 		"27f564529c57197f9ae88 EQUAL")
 	for _, test := range tests {
 		count := txscript.GetPreciseSigOpCount(test.scriptSig, pkScript,
@@ -241,8 +241,8 @@ func TestRemoveOpcodes(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		before := mustParseShortForm(test.before)
-		after := mustParseShortForm(test.after)
+		before := mustParseScriptString(test.before)
+		after := mustParseScriptString(test.after)
 		result, err := txscript.TstRemoveOpcode(before, test.remove)
 		if test.err != nil {
 			if err != test.err {
@@ -412,7 +412,7 @@ func TestIsPayToScriptHash(t *testing.T) {
 	t.Parallel()
 
 	for _, test := range scriptClassTests {
-		script := mustParseShortForm(test.script)
+		script := mustParseScriptString(test.script)
 		shouldBe := (test.class == txscript.ScriptHashTy)
 		p2sh := txscript.IsPayToScriptHash(script)
 		if p2sh != shouldBe {
@@ -446,7 +446,7 @@ func TestHasCanonicalPushes(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		script := mustParseShortForm(test.script)
+		script := mustParseScriptString(test.script)
 		pops, err := txscript.TstParseScript(script)
 		if err != nil {
 			if test.expected {
@@ -476,7 +476,7 @@ func TestIsPushOnlyScript(t *testing.T) {
 		expected bool
 	}{
 		name: "does not parse",
-		script: mustParseShortForm("0x046708afdb0fe5548271967f1a67130" +
+		script: mustParseScriptString("0x046708afdb0fe5548271967f1a67130" +
 			"b7105cd6a828e03909a67962e0ea1f61d"),
 		expected: false,
 	}

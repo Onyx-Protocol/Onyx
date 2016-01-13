@@ -96,7 +96,7 @@ func issuanceInput(a *appdb.Asset, tx *bc.TxData) (*Input, error) {
 	}
 
 	return &Input{
-		RedeemScript:  a.RedeemScript,
+		RedeemScript:  txscript.AddDataToScript(nil, a.RedeemScript),
 		SignScript:    pkScript,
 		SignatureData: hash,
 		Sigs:          inputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a))),

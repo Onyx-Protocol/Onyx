@@ -163,10 +163,6 @@ var (
 
 	// ErrShiftOverflow is when you try to shift a number left too far.
 	ErrShiftOverflow = errors.New("shift overflow")
-
-	// ErrNestedEval is when EVAL tries adding another EVAL to the
-	// script.
-	ErrNestedEval = errors.New("nested EVAL")
 )
 
 var (

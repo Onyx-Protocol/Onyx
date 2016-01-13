@@ -18,10 +18,8 @@ type ScriptReceiver struct {
 	isChange bool
 }
 
-func (receiver *ScriptReceiver) IsChange() bool { return receiver.isChange }
-
+func (receiver *ScriptReceiver) IsChange() bool   { return receiver.isChange }
 func (receiver *ScriptReceiver) PKScript() []byte { return receiver.script }
-
 func (receiver *ScriptReceiver) AccumulateUTXO(ctx context.Context, outpoint *bc.Outpoint, txOutput *bc.TxOutput, utxoInserters []UTXOInserter) ([]UTXOInserter, error) {
 	// Find or create an item in utxoInserters that is a
 	// ScriptUTXOInserter

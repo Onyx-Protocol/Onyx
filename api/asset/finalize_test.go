@@ -35,6 +35,7 @@ func TestAssembleSignatures(t *testing.T) {
 				DerivationPath: []uint32{0, 0, 0, 0},
 				DER:            mustDecodeHex("3044022004da5732f6c988b9e2882f5ca4f569b9525d313940e0372d6a84fef73be78f8f02204656916481dc573d771ec42923a8f5af31ae634241a4cb30ea5b359363cf064d"),
 			}},
+			RedeemScript: []byte{0},
 		}},
 		OutRecvs: []Receiver{nil}, // pays to external party
 	}

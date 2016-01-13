@@ -2,6 +2,7 @@ package validation
 
 import (
 	"fmt"
+	"os"
 
 	"golang.org/x/net/context"
 
@@ -46,7 +47,7 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 
 	err := txIsWellFormed(tx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "well-formed test")
 	}
 
 	// Check time
@@ -67,18 +68,24 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 
 	err = ValidateTxInputs(ctx, view, tx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "validating inputs")
 	}
 
 	err = validateTxBalance(ctx, view, tx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "validating balance")
 	}
 
 	engine, err := txscript.NewReusableEngine(ctx, view, &tx.TxData, txscript.StandardVerifyFlags)
 	if err != nil {
 		return fmt.Errorf("cannot create script engine: %s", err)
 	}
+
+	if false { // change to true for quick debug tracing
+		txscript.SetLogWriter(os.Stdout, "trace")
+		defer txscript.DisableLog()
+	}
+
 	for i, input := range tx.Inputs {
 		unspent := view.Output(ctx, input.Previous)
 		err = engine.Prepare(unspent.Script, i)
@@ -86,7 +93,9 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 			return fmt.Errorf("cannot prepare script engine to process input %d: %s", i, err)
 		}
 		if err = engine.Execute(); err != nil {
-			return fmt.Errorf("cannot validate transaction: %s", err)
+			pkScriptStr, _ := txscript.DisasmString(unspent.Script)
+			redeemScriptStr, _ := txscript.DisasmString(input.SignatureScript)
+			return errors.Wrapf(err, "validation failed in script execution, input %d (redeemscript[%s] pkscript[%s])", i, redeemScriptStr, pkScriptStr)
 		}
 	}
 

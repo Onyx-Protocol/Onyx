@@ -200,6 +200,30 @@ func (a *Address) Insert(ctx context.Context) error {
 	return row.Scan(&a.ID, &a.Created)
 }
 
+// GetAddress looks up an address by its pkscript
+func GetAddress(ctx context.Context, pkScript []byte) (*Address, error) {
+	const q = `
+		SELECT addresses.id, addresses.redeem_script, addresses.manager_node_id, addresses.account_id, addresses.keyset, key_index(addresses.key_index), key_index(accounts.key_index)
+		FROM addresses, accounts
+		WHERE addresses.pk_script = $1 AND addresses.account_id = accounts.id
+	`
+	var (
+		a    Address
+		keys []string
+	)
+	row := pg.FromContext(ctx).QueryRow(ctx, q, pkScript)
+	err := row.Scan(&a.ID, &a.RedeemScript, &a.ManagerNodeID, &a.AccountID, (*pg.Strings)(&keys), (*pg.Uint32s)(&a.Index), (*pg.Uint32s)(&a.AccountIndex))
+	if err != nil {
+		return nil, errors.Wrap(err, "loading address")
+	}
+	a.PKScript = pkScript
+	a.Keys, err = stringsToKeys(keys)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing address keys")
+	}
+	return &a, nil
+}
+
 // ErrPastExpires is returned by CreateAddress
 // if the expiration time is in the past.
 var ErrPastExpires = errors.New("expires in the past")
@@ -237,12 +261,12 @@ func CreateAddress(ctx context.Context, addr *Address, save bool) error {
 	return errors.Wrap(err, "save")
 }
 
-func NewAddress(ctx context.Context, accountID string, isChange bool) (*Address, error) {
+func NewAddress(ctx context.Context, accountID string, isChange, save bool) (*Address, error) {
 	result := &Address{
 		AccountID: accountID,
 		IsChange:  isChange,
 	}
-	err := CreateAddress(ctx, result, false)
+	err := CreateAddress(ctx, result, save)
 	if err != nil {
 		return nil, err
 	}

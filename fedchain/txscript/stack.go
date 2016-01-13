@@ -354,7 +354,7 @@ func (s *stack) String() string {
 func (s *stack) PeekIntWithSize(maxLen int) (result scriptNum, err error) {
 	b, err := s.PeekByteArray(0)
 	if err == nil {
-		result, err = makeScriptNumWithMaxLen(b, s.verifyMinimalData, maxLen)
+		result, err = MakeScriptNumWithMaxLen(b, s.verifyMinimalData, maxLen)
 	}
 	return result, err
 }
@@ -363,7 +363,7 @@ func (s *stack) PopIntWithSize(maxLen int) (result scriptNum, nbytes int, err er
 	b, err := s.PopByteArray()
 	if err == nil {
 		nbytes = len(b)
-		result, err = makeScriptNumWithMaxLen(b, s.verifyMinimalData, maxLen)
+		result, err = MakeScriptNumWithMaxLen(b, s.verifyMinimalData, maxLen)
 	}
 	return result, nbytes, err
 }

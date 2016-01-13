@@ -53,11 +53,10 @@ func assembleSignatures(txTemplate *TxTemplate) (*bc.Tx, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(input.Sigs) == 0 {
-			return nil, errors.WithDetailf(ErrBadTx, "input %d must contain signatures", i)
-		}
 		builder := txscript.NewScriptBuilder()
-		builder.AddOp(txscript.OP_FALSE)
+		if len(input.Sigs) > 0 {
+			builder.AddOp(txscript.OP_FALSE)
+		}
 		for _, sig := range input.Sigs {
 			if len(sig.DER) > 0 {
 				builder.AddData(sig.DER)
@@ -67,12 +66,11 @@ func assembleSignatures(txTemplate *TxTemplate) (*bc.Tx, error) {
 				}
 			}
 		}
-		builder.AddData(input.RedeemScript)
 		script, err := builder.Script()
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
-		msg.Inputs[i].SignatureScript = script
+		msg.Inputs[i].SignatureScript = append(script, input.RedeemScript...)
 	}
 	return bc.NewTx(*msg), nil
 }

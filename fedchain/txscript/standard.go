@@ -307,8 +307,7 @@ func payToPubKeyHashScript(pubKeyHash []byte) ([]byte, error) {
 }
 
 // payToContractScript creates a new script to pay a transaction
-// output to a contract. It is expected that the input is a valid
-// hash.
+// output to a contract.
 func payToContractScript(contractHash []byte, params [][]byte) ([]byte, error) {
 	sb := NewScriptBuilder()
 	n := len(params)
@@ -369,7 +368,7 @@ func (a *AddressContractHash) ScriptAddress() []byte {
 // IsForNet returns whether or not the address is associated with the
 // passed bitcoin network.
 func (a *AddressContractHash) IsForNet(*chaincfg.Params) bool {
-	return true // xxx ok?
+	return true
 }
 
 func NewAddressContractHash(contractHash []byte, params [][]byte) (*AddressContractHash, error) {
@@ -430,7 +429,7 @@ func MultiSigScript(pubkeys []*btcutil.AddressPubKey, nrequired int) ([]byte, er
 }
 
 // PushedData returns an array of byte slices containing any pushed data found
-// in the passed script.  This includes OP_0, but not OP_1 - OP_16.
+// in the passed script.  This includes OP_0, OP_1 - OP_16, and OP_1NEGATE.
 func PushedData(script []byte) ([][]byte, error) {
 	pops, err := parseScript(script)
 	if err != nil {
@@ -443,6 +442,10 @@ func PushedData(script []byte) ([][]byte, error) {
 			data = append(data, pop.data)
 		} else if pop.opcode.value == OP_0 {
 			data = append(data, nil)
+		} else if pop.opcode.value >= OP_1 && pop.opcode.value <= OP_16 {
+			data = append(data, scriptNum((pop.opcode.value - OP_1 + 1)).Bytes())
+		} else if pop.opcode.value == OP_1NEGATE {
+			data = append(data, scriptNum(-1).Bytes())
 		}
 	}
 	return data, nil

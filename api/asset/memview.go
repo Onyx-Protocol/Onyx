@@ -56,7 +56,7 @@ func (v *MemView) SaveOutput(o *state.Output) {
 
 	v.Outs[o.Outpoint] = newOutput
 
-	isPayToContract, contractHash := txscript.TestPayToContract(o.TxOutput.Script)
+	isPayToContract, contractHash, _ := txscript.TestPayToContract(o.TxOutput.Script)
 	if isPayToContract {
 		_, ok := v.outsByContractHash[*contractHash]
 		if ok {
