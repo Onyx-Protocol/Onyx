@@ -97,7 +97,7 @@ then
 fi
 
 prurl=https://api.github.com/repos/$proj/issues/$pr
-mfile=$(mktemp)
+mfile=$(mktemp -t gitland)
 trap "rm $mfile" EXIT
 curl -sn $prurl|jq -r '.title+"\n\n"+.body+"\n"' >$mfile
 echo Closes "#$pr." >>$mfile
