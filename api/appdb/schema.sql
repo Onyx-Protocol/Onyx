@@ -348,8 +348,12 @@ CREATE TABLE issuance_totals (
     asset_id text NOT NULL,
     pool bigint DEFAULT 0 NOT NULL,
     confirmed bigint DEFAULT 0 NOT NULL,
+    destroyed_pool bigint DEFAULT 0 NOT NULL,
+    destroyed_confirmed bigint DEFAULT 0 NOT NULL,
     CONSTRAINT issuance_totals_confirmed_check CHECK ((confirmed >= 0)),
-    CONSTRAINT issuance_totals_pool_check CHECK ((pool >= 0))
+    CONSTRAINT issuance_totals_pool_check CHECK ((pool >= 0)),
+    CONSTRAINT positive_destroyed_confirmed CHECK ((destroyed_confirmed >= 0)),
+    CONSTRAINT positive_destroyed_pool CHECK ((destroyed_pool >= 0))
 );
 
 
