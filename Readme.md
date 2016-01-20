@@ -1,4 +1,4 @@
-Chain 
+Chain 🍭
 
 ## Getting Started
 
