@@ -1,7 +1,6 @@
 package appdb
 
 import (
-	"log"
 	"os"
 
 	"golang.org/x/net/context"
@@ -20,8 +19,4 @@ func init() {
 
 	ctx := context.Background()
 	db = pgtest.Open(ctx, u, "appdbtest", "schema.sql")
-	err := Init(ctx, db)
-	if err != nil {
-		log.Fatal(err)
-	}
 }

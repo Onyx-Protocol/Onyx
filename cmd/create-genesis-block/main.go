@@ -5,7 +5,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/database/pg"
 	"chain/database/sql"
@@ -27,7 +26,6 @@ func main() {
 		log.Fatalln("error:", err)
 	}
 	ctx := pg.NewContext(context.Background(), db)
-	appdb.Init(ctx, db)
 
 	b, err := asset.UpsertGenesisBlock(ctx)
 	if err != nil {

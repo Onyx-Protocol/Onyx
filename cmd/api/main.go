@@ -16,7 +16,6 @@ import (
 
 	"chain/api"
 	"chain/api/admin"
-	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/database/pg"
 	"chain/database/sql"
@@ -106,7 +105,6 @@ func main() {
 	db.SetMaxIdleConns(100)
 	ctx := context.Background()
 	ctx = pg.NewContext(ctx, db)
-	appdb.Init(ctx, db)
 
 	var h chainhttp.Handler
 	h = api.Handler(*nouserSecret)

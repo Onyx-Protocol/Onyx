@@ -2,7 +2,6 @@ package auditor
 
 import (
 	"encoding/hex"
-	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -10,7 +9,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/api/appdb"
 	"chain/api/txdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -25,11 +23,7 @@ func init() {
 	}
 
 	ctx := context.Background()
-	db := pgtest.Open(ctx, u, "auditortest", "../appdb/schema.sql")
-	err := appdb.Init(ctx, db)
-	if err != nil {
-		log.Fatal(err)
-	}
+	pgtest.Open(ctx, u, "auditortest", "../appdb/schema.sql")
 }
 
 // Establish a context object with a new db transaction in which to

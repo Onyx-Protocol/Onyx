@@ -102,6 +102,21 @@ $$;
 
 
 --
+-- Name: key_index(bigint); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION key_index(n bigint) RETURNS integer[]
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	maxint32 int := x'7fffffff'::int;
+BEGIN
+	RETURN ARRAY[(n>>31) & maxint32, n & maxint32];
+END;
+$$;
+
+
+--
 -- Name: next_chain_id(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -123,6 +138,19 @@ BEGIN
 	n := n | (shard_id << 10);
 	n := n | (seq_id);
 	RETURN prefix || b32enc_crockford(int8send(n));
+END;
+$$;
+
+
+--
+-- Name: to_key_index(integer[]); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION to_key_index(n integer[]) RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN n[1]::bigint<<31 | n[2]::bigint;
 END;
 $$;
 

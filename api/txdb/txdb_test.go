@@ -1,14 +1,12 @@
 package txdb
 
 import (
-	"log"
 	"os"
 	"reflect"
 	"testing"
 
 	"golang.org/x/net/context"
 
-	"chain/api/appdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -23,11 +21,7 @@ func init() {
 	}
 
 	ctx := context.Background()
-	db := pgtest.Open(ctx, u, "txdbtest", "../appdb/schema.sql")
-	err := appdb.Init(ctx, db)
-	if err != nil {
-		log.Fatal(err)
-	}
+	pgtest.Open(ctx, u, "txdbtest", "../appdb/schema.sql")
 }
 
 // Establish a context object with a new db transaction in which to

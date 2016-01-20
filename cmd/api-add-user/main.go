@@ -40,8 +40,6 @@ func main() {
 	}
 
 	ctx := pg.NewContext(context.Background(), db)
-	appdb.Init(ctx, db)
-
 	u, err := appdb.CreateUser(ctx, os.Args[1], os.Args[2])
 	if err != nil {
 		log.Fatalln("error:", err)

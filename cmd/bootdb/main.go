@@ -53,7 +53,6 @@ func main() {
 	}
 
 	ctx := pg.NewContext(context.Background(), db)
-	appdb.Init(ctx, db)
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		fatal("begin")

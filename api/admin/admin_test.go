@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"os"
 	"reflect"
 	"strconv"
@@ -12,7 +11,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/api/appdb"
 	"chain/database/pg/pgtest"
 	"chain/fedchain/bc"
 )
@@ -24,11 +22,7 @@ func init() {
 	}
 
 	ctx := context.Background()
-	db := pgtest.Open(ctx, u, "admintest", "../appdb/schema.sql")
-	err := appdb.Init(ctx, db)
-	if err != nil {
-		log.Fatal(err)
-	}
+	pgtest.Open(ctx, u, "admintest", "../appdb/schema.sql")
 }
 
 // Establish a context object with a new db transaction in which to

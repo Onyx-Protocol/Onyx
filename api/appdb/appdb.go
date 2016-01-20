@@ -5,13 +5,7 @@
 // with more information using chain/errors.
 package appdb
 
-import (
-	"errors"
-
-	"golang.org/x/net/context"
-
-	"chain/database/sql"
-)
+import "errors"
 
 var (
 	// ErrBadLabel is returned by functions that operate
@@ -23,11 +17,3 @@ var (
 	// account, asset, etc.) that is referenced by other objects.
 	ErrCannotDelete = errors.New("cannot delete")
 )
-
-// Init creates some objects in db.
-// It must be called on program start,
-// before any other functions in this package.
-func Init(ctx context.Context, db *sql.DB) error {
-	_, err := db.Exec(ctx, keySQL)
-	return err
-}
