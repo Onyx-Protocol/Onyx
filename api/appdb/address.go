@@ -202,18 +202,6 @@ func (a *Address) Insert(ctx context.Context) error {
 	return row.Scan(&a.ID, &a.Created)
 }
 
-func DeriveAddress(ctx context.Context, accountID string, addrIndex []uint32) (string, error) {
-	addrInfo, err := AddrInfo(ctx, accountID)
-	if err != nil {
-		return "", errors.Wrap(err, "get addr info")
-	}
-	addr, _, err := hdkey.Address(addrInfo.Keys, ReceiverPath(addrInfo, addrIndex), addrInfo.SigsRequired)
-	if err != nil {
-		return "", errors.Wrap(err, "compute address")
-	}
-	return addr.String(), nil
-}
-
 // ErrPastExpires is returned by CreateAddress
 // if the expiration time is in the past.
 var ErrPastExpires = errors.New("expires in the past")
