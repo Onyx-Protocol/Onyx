@@ -6,6 +6,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	"chain/api/asset/nodetxlog"
 	"chain/api/txdb"
 	"chain/api/utxodb"
 	"chain/database/pg"
@@ -128,7 +129,7 @@ func publishTx(ctx context.Context, msg *bc.Tx, receivers []Receiver) (err error
 		return errors.Wrap(err, "writing activitiy")
 	}
 
-	err = WriteNodeTxs(ctx, msg, time.Now())
+	err = nodetxlog.Write(ctx, msg, time.Now())
 	if err != nil {
 		return errors.Wrap(err, "writing activitiy")
 	}

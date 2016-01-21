@@ -1,4 +1,4 @@
-package asset
+package nodetxlog
 
 import (
 	"chain/api/appdb"

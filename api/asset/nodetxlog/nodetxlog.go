@@ -1,4 +1,4 @@
-package asset
+package nodetxlog
 
 import (
 	"encoding/json"
@@ -49,9 +49,9 @@ type nodeTxOutput struct {
 	mNodeID string
 }
 
-// WriteNodeTxs persists a transaction along with its metadata
+// Write persists a transaction along with its metadata
 // for every node (issuer, manager) associated with the transaction.
-func WriteNodeTxs(ctx context.Context, tx *bc.Tx, ts time.Time) error {
+func Write(ctx context.Context, tx *bc.Tx, ts time.Time) error {
 	ins, outs, err := appdb.GetActUTXOs(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "fetching utxo account data")
