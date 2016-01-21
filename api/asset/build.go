@@ -14,9 +14,6 @@ import (
 // All UTXOs in the system.
 var utxoDB = utxodb.New(sqlUTXODB{})
 
-// errors returned by Build
-var ErrBadOutDest = errors.New("invalid output destinations")
-
 // Build builds or adds on to a transaction.
 // Initially, inputs are left unconsumed, and destinations unsatisfied.
 // Build partners then satisfy and consume inputs and destinations.

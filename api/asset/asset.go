@@ -17,9 +17,6 @@ import (
 	"chain/metrics"
 )
 
-// ErrBadAddr is returned by Issue.
-var ErrBadAddr = errors.New("bad address")
-
 // Issue creates a transaction that
 // issues new units of an asset
 // distributed to the outputs provided.

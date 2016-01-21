@@ -14,10 +14,6 @@ import (
 	"chain/net/trace/span"
 )
 
-// ErrBadAsset is an error that means the string
-// used as an asset id was not a valid base58 id.
-var ErrBadAsset = errors.New("invalid asset")
-
 // Asset represents an asset type in the blockchain.
 // It is made up of extended keys, and paths (indexes) within those keys.
 type Asset struct {
