@@ -27,8 +27,9 @@ type Member struct {
 
 // Errors returned from project- and membership-related functions.
 var (
-	ErrBadRole       = errors.New("invalid role")
-	ErrAlreadyMember = errors.New("user is already a member of the project")
+	ErrBadProjectName = errors.New("invalid project name")
+	ErrBadRole        = errors.New("invalid role")
+	ErrAlreadyMember  = errors.New("user is already a member of the project")
 )
 
 // CreateProject creates a new project and adds the given user as its
@@ -38,6 +39,10 @@ func CreateProject(ctx context.Context, name string, userID string) (*Project, e
 	// wrapped in a database transaction. In order to do this, the pg package
 	// should be updated so that tests do not fail when running operations that
 	// require transactions.
+
+	if name == "" {
+		return nil, errors.Wrap(ErrBadProjectName)
+	}
 
 	var (
 		q  = `INSERT INTO projects (name) VALUES ($1) RETURNING id`

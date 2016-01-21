@@ -45,6 +45,7 @@ var (
 		asset.ErrBadOutDest:         errorInfo{400, "CH744", "Invalid input sources or output destinations"},
 		asset.ErrBadTx:              errorInfo{400, "CH755", "Invalid transaction template"},
 		appdb.ErrBadAsset:           errorInfo{400, "CH761", "Invalid asset"},
+		appdb.ErrBadProjectName:     errorInfo{400, "CH770", "Invalid project name."},
 		appdb.ErrCannotDelete:       errorInfo{400, "CH901", "Cannot delete non-empty object"},
 		appdb.ErrBadRole:            errorInfo{400, "CH800", "Member role must be \"developer\" or \"admin\"."},
 		appdb.ErrAlreadyMember:      errorInfo{400, "CH801", "User is already a member of the project."},
