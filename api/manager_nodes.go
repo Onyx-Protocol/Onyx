@@ -135,6 +135,14 @@ func getManagerNodeActivity(ctx context.Context, mnID string) (interface{}, erro
 	return ret, nil
 }
 
+func managerNodeTx(ctx context.Context, mnodeID, txID string) (interface{}, error) {
+	if err := managerAuthz(ctx, mnodeID); err != nil {
+		return nil, err
+	}
+	return appdb.ManagerTx(ctx, mnodeID, txID)
+}
+
+// DEPRECATED - we will migrate the API to use managerNodeTx.
 // GET /v3/manager-nodes/:mnodeID/transactions/:txID
 func managerNodeTxActivity(ctx context.Context, mnodeID, txID string) (interface{}, error) {
 	if err := managerAuthz(ctx, mnodeID); err != nil {

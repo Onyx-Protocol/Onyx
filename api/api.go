@@ -80,6 +80,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/activity", getManagerNodeActivity)
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/transactions", getManagerNodeTxs)
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/transactions/:txID", managerNodeTxActivity)
+	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/transactions-new/:txID", managerNodeTx) // We'll remove the '-new' when all clients have migrated to new SDKs.
 	h.HandleFunc("PUT", "/v3/manager-nodes/:mnodeID", updateManagerNode)
 	h.HandleFunc("DELETE", "/v3/manager-nodes/:mnodeID", deleteManagerNode)
 	h.HandleFunc("GET", "/v3/projects/:projID/issuer-nodes", listIssuerNodes)
