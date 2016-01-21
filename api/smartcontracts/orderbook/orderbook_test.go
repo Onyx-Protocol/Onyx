@@ -11,6 +11,7 @@ import (
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/api/asset/assettest"
+	"chain/api/txbuilder"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/fedchain/bc"
@@ -51,7 +52,7 @@ func TestBuy(t *testing.T) {
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		issueTxTemplate, err := asset.Issue(ctx, fixtureInfo.usdAssetID.String(), []*asset.Destination{issueDest})
+		issueTxTemplate, err := asset.Issue(ctx, fixtureInfo.usdAssetID.String(), []*txbuilder.Destination{issueDest})
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -74,7 +75,7 @@ func TestBuy(t *testing.T) {
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		err = asset.SignTxTemplate(buyTxTemplate, testutil.TestXPrv)
+		err = assettest.SignTxTemplate(buyTxTemplate, testutil.TestXPrv)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -147,7 +148,7 @@ func TestCancel(t *testing.T) {
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		err = asset.SignTxTemplate(cancelTxTemplate, testutil.TestXPrv)
+		err = assettest.SignTxTemplate(cancelTxTemplate, testutil.TestXPrv)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -206,7 +207,7 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	issueTxTemplate, err := asset.Issue(ctx, fixtureInfo.aaplAssetID.String(), []*asset.Destination{issueDest})
+	issueTxTemplate, err := asset.Issue(ctx, fixtureInfo.aaplAssetID.String(), []*txbuilder.Destination{issueDest})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -228,7 +229,7 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 		testutil.FatalErr(t, err)
 	}
 
-	err = asset.SignTxTemplate(offerTxTemplate, testutil.TestXPrv)
+	err = assettest.SignTxTemplate(offerTxTemplate, testutil.TestXPrv)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -254,9 +255,9 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 	fn(ctx, &fixtureInfo)
 }
 
-func offer(ctx context.Context, sellerAccountID string, assetAmount *bc.AssetAmount, prices []*Price, ttl time.Duration) (*asset.TxTemplate, error) {
+func offer(ctx context.Context, sellerAccountID string, assetAmount *bc.AssetAmount, prices []*Price, ttl time.Duration) (*txbuilder.Template, error) {
 	source := asset.NewAccountSource(ctx, assetAmount, sellerAccountID)
-	sources := []*asset.Source{source}
+	sources := []*txbuilder.Source{source}
 
 	orderInfo := &OrderInfo{
 		SellerAccountID: sellerAccountID,
@@ -267,16 +268,16 @@ func offer(ctx context.Context, sellerAccountID string, assetAmount *bc.AssetAmo
 	if err != nil {
 		return nil, err
 	}
-	destinations := []*asset.Destination{destination}
+	destinations := []*txbuilder.Destination{destination}
 
-	return asset.Build(ctx, nil, sources, destinations, nil, ttl)
+	return txbuilder.Build(ctx, nil, sources, destinations, nil, ttl)
 }
 
-func buy(ctx context.Context, order *OpenOrder, funds *asset.Source, destination *asset.Destination, ttl time.Duration) (*asset.TxTemplate, error) {
+func buy(ctx context.Context, order *OpenOrder, funds *txbuilder.Source, destination *txbuilder.Destination, ttl time.Duration) (*txbuilder.Template, error) {
 	redeemSource := NewRedeemSource(order, destination.Amount, &funds.AssetAmount)
-	sources := []*asset.Source{funds, redeemSource}
+	sources := []*txbuilder.Source{funds, redeemSource}
 
-	destinations := make([]*asset.Destination, 0, 3)
+	destinations := make([]*txbuilder.Destination, 0, 3)
 	destinations = append(destinations, destination)
 
 	sellerScript, err := order.SellerScript()
@@ -289,20 +290,20 @@ func buy(ctx context.Context, order *OpenOrder, funds *asset.Source, destination
 	}
 	destinations = append(destinations, sellerDestination)
 
-	return asset.Build(ctx, nil, sources, destinations, nil, ttl)
+	return txbuilder.Build(ctx, nil, sources, destinations, nil, ttl)
 }
 
-func cancel(ctx context.Context, order *OpenOrder, ttl time.Duration) (*asset.TxTemplate, error) {
+func cancel(ctx context.Context, order *OpenOrder, ttl time.Duration) (*txbuilder.Template, error) {
 	cancelSource := NewCancelSource(order)
-	sources := []*asset.Source{cancelSource}
+	sources := []*txbuilder.Source{cancelSource}
 
 	destination, err := asset.NewAccountDestination(ctx, &order.AssetAmount, order.SellerAccountID, false, nil)
 	if err != nil {
 		return nil, err
 	}
-	destinations := []*asset.Destination{destination}
+	destinations := []*txbuilder.Destination{destination}
 
-	return asset.Build(ctx, nil, sources, destinations, nil, ttl)
+	return txbuilder.Build(ctx, nil, sources, destinations, nil, ttl)
 }
 
 func expectPaysToAccount(ctx context.Context, t *testing.T, accountID string, script []byte) {

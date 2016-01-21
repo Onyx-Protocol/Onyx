@@ -8,9 +8,11 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/asset"
+	"chain/api/txdb"
 	"chain/database/pg/pgtest"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/fedchain/state"
 	"chain/testutil"
 )
 
@@ -138,4 +140,31 @@ func NewContextWithGenesisBlock(tb testing.TB) context.Context {
 		tb.Fatal(err)
 	}
 	return ctx
+}
+
+func CreateAccountUTXOFixture(ctx context.Context, t *testing.T, accountID string, op bc.Outpoint, assetID bc.AssetID, amount uint64) {
+	addr := &appdb.Address{AccountID: accountID}
+	err := appdb.CreateAddress(ctx, addr, false)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	output := &txdb.Output{
+		Output: state.Output{
+			Outpoint: op,
+			TxOutput: bc.TxOutput{
+				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: amount},
+				Script:      addr.PKScript,
+			},
+		},
+		ManagerNodeID: addr.ManagerNodeID,
+		AccountID:     accountID,
+	}
+	copy(output.AddrIndex[:], addr.Index[0:2])
+
+	// ignore error from potential duplicate
+	txdb.InsertPoolTx(ctx, &bc.Tx{Hash: op.Hash, TxData: bc.TxData{}})
+	err = txdb.InsertPoolOutputs(ctx, []*txdb.Output{output})
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
 }

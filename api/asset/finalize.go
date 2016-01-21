@@ -7,13 +7,13 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/asset/nodetxlog"
+	"chain/api/txbuilder"
 	"chain/api/txdb"
 	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
-	"chain/fedchain/txscript"
 	"chain/fedchain/validation"
 	"chain/metrics"
 )
@@ -24,7 +24,7 @@ var ErrBadTx = errors.New("bad transaction template")
 // FinalizeTx validates a transaction signature template,
 // assembles a fully signed tx, and stores the effects of
 // its changes on the UTXO set.
-func FinalizeTx(ctx context.Context, txTemplate *TxTemplate) (*bc.Tx, error) {
+func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
 
 	if len(txTemplate.Inputs) > len(txTemplate.Unsigned.Inputs) {
@@ -33,9 +33,9 @@ func FinalizeTx(ctx context.Context, txTemplate *TxTemplate) (*bc.Tx, error) {
 		return nil, errors.Wrapf(ErrBadTx, "txTemplate has %d outputs but output receivers list has %d", len(txTemplate.Unsigned.Outputs), len(txTemplate.OutRecvs))
 	}
 
-	msg, err := assembleSignatures(txTemplate)
+	msg, err := txbuilder.AssembleSignatures(txTemplate)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithDetail(ErrBadTx, err.Error())
 	}
 
 	err = publishTx(ctx, msg, txTemplate.OutRecvs)
@@ -45,48 +45,7 @@ func FinalizeTx(ctx context.Context, txTemplate *TxTemplate) (*bc.Tx, error) {
 	return msg, nil
 }
 
-func assembleSignatures(txTemplate *TxTemplate) (*bc.Tx, error) {
-	msg := txTemplate.Unsigned
-	for i, input := range txTemplate.Inputs {
-		sigsAdded := 0
-		sigsReqd, err := getSigsRequired(input.RedeemScript)
-		if err != nil {
-			return nil, err
-		}
-		builder := txscript.NewScriptBuilder()
-		if len(input.Sigs) > 0 {
-			builder.AddOp(txscript.OP_FALSE)
-		}
-		for _, sig := range input.Sigs {
-			if len(sig.DER) > 0 {
-				builder.AddData(sig.DER)
-				sigsAdded++
-				if sigsAdded == sigsReqd {
-					break
-				}
-			}
-		}
-		script, err := builder.Script()
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-		msg.Inputs[i].SignatureScript = append(script, input.RedeemScript...)
-	}
-	return bc.NewTx(*msg), nil
-}
-
-func getSigsRequired(script []byte) (sigsReqd int, err error) {
-	sigsReqd = 1
-	if txscript.GetScriptClass(script) == txscript.MultiSigTy {
-		_, sigsReqd, err = txscript.CalcMultiSigStats(script)
-		if err != nil {
-			return 0, err
-		}
-	}
-	return sigsReqd, nil
-}
-
-func publishTx(ctx context.Context, msg *bc.Tx, receivers []Receiver) (err error) {
+func publishTx(ctx context.Context, msg *bc.Tx, receivers []txbuilder.Receiver) (err error) {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return errors.Wrap(err)

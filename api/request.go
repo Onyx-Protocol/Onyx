@@ -9,6 +9,7 @@ import (
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/api/smartcontracts/orderbook"
+	"chain/api/txbuilder"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/fedchain/bc"
@@ -35,7 +36,7 @@ type Source struct {
 	Type           string
 }
 
-func (source *Source) parse(ctx context.Context) (*asset.Source, error) {
+func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 	if source.Type == "account" || source.Type == "" {
 		if source.AssetID == nil {
 			return nil, httpjson.ErrBadRequest
@@ -99,7 +100,7 @@ type Destination struct {
 	Type            string
 }
 
-func (dest Destination) parse(ctx context.Context) (*asset.Destination, error) {
+func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, error) {
 	if dest.AssetID == nil {
 		return nil, ErrNullAsset
 	}
@@ -139,7 +140,7 @@ type Receiver struct {
 	Type          string
 }
 
-func (receiver *Receiver) parse() (asset.Receiver, error) {
+func (receiver *Receiver) parse() (txbuilder.Receiver, error) {
 	// backwards compatibility fix
 	if receiver.Type == "" && receiver.AccountID != "" {
 		receiver.Type = "account"
@@ -167,12 +168,12 @@ func (receiver *Receiver) parse() (asset.Receiver, error) {
 type Template struct {
 	Unsigned   *bc.TxData `json:"unsigned_hex"`
 	BlockChain string     `json:"block_chain"`
-	Inputs     []*asset.Input
+	Inputs     []*txbuilder.Input
 	OutRecvs   []Receiver `json:"output_receivers"`
 }
 
-func (tpl *Template) parse(ctx context.Context) (*asset.TxTemplate, error) {
-	result := &asset.TxTemplate{
+func (tpl *Template) parse(ctx context.Context) (*txbuilder.Template, error) {
+	result := &txbuilder.Template{
 		Unsigned:   tpl.Unsigned,
 		BlockChain: tpl.BlockChain,
 		Inputs:     tpl.Inputs,
@@ -195,9 +196,9 @@ type BuildRequest struct {
 	ResTime  time.Duration      `json:"reservation_duration"`
 }
 
-func (req *BuildRequest) parse(ctx context.Context) (*asset.TxTemplate, []*asset.Source, []*asset.Destination, error) {
+func (req *BuildRequest) parse(ctx context.Context) (*txbuilder.Template, []*txbuilder.Source, []*txbuilder.Destination, error) {
 	var (
-		prevTx *asset.TxTemplate
+		prevTx *txbuilder.Template
 		err    error
 	)
 	if req.PrevTx != nil {
@@ -207,8 +208,8 @@ func (req *BuildRequest) parse(ctx context.Context) (*asset.TxTemplate, []*asset
 		}
 	}
 
-	sources := make([]*asset.Source, 0, len(req.Sources))
-	destinations := make([]*asset.Destination, 0, len(req.Dests))
+	sources := make([]*txbuilder.Source, 0, len(req.Sources))
+	destinations := make([]*txbuilder.Destination, 0, len(req.Dests))
 
 	for _, source := range req.Sources {
 		parsed, err := source.parse(ctx)

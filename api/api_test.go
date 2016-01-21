@@ -9,6 +9,7 @@ import (
 
 	"chain/api/asset"
 	"chain/api/asset/assettest"
+	"chain/api/txbuilder"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain/bc"
@@ -127,7 +128,7 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	txTemplate, err := asset.Issue(ctx, assetIDStr, []*asset.Destination{issueDest})
+	txTemplate, err := asset.Issue(ctx, assetIDStr, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -172,7 +173,7 @@ func TestTransfer(t *testing.T) {
 	}
 	toSign := inspectTemplate(t, parsedResult[0], managerNodeID, account2ID)
 	txTemplate, err = toTxTemplate(ctx, toSign)
-	err = asset.SignTxTemplate(txTemplate, chaintest.TestXPrv)
+	err = assettest.SignTxTemplate(txTemplate, chaintest.TestXPrv)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -273,7 +274,7 @@ func inspectTemplate(t *testing.T, inp map[string]interface{}, expectedReceiverM
 	return parsedTemplate
 }
 
-func toTxTemplate(ctx context.Context, inp map[string]interface{}) (*asset.TxTemplate, error) {
+func toTxTemplate(ctx context.Context, inp map[string]interface{}) (*txbuilder.Template, error) {
 	jsonInp, err := json.Marshal(inp)
 	if err != nil {
 		return nil, err
@@ -286,7 +287,7 @@ func toTxTemplate(ctx context.Context, inp map[string]interface{}) (*asset.TxTem
 	return tpl.parse(ctx)
 }
 
-func toRequestTemplate(inp *asset.TxTemplate) (*Template, error) {
+func toRequestTemplate(inp *txbuilder.Template) (*Template, error) {
 	jsonInp, err := json.Marshal(inp)
 	if err != nil {
 		return nil, err

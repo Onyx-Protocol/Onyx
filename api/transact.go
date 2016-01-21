@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/asset"
+	"chain/api/txbuilder"
 	"chain/database/pg"
 	"chain/fedchain/bc"
 	"chain/metrics"
@@ -35,7 +36,7 @@ func issueAsset(ctx context.Context, assetIDStr string, reqDests []*Destination)
 		dest.AssetID = &assetID
 	}
 
-	dests := make([]*asset.Destination, 0, len(reqDests))
+	dests := make([]*txbuilder.Destination, 0, len(reqDests))
 	for _, reqDest := range reqDests {
 		parsed, err := reqDest.parse(ctx)
 		if err != nil {
@@ -68,7 +69,7 @@ func buildSingle(ctx context.Context, req *BuildRequest) (interface{}, error) {
 		return nil, err
 	}
 
-	tpl, err := asset.Build(ctx, prevTx, sources, destinations, req.Metadata, req.ResTime)
+	tpl, err := txbuilder.Build(ctx, prevTx, sources, destinations, req.Metadata, req.ResTime)
 	if err != nil {
 		return nil, err
 	}

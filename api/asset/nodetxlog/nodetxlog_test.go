@@ -1,12 +1,13 @@
 package nodetxlog
 
 import (
-	"chain/api/appdb"
-	"chain/errors"
-	"chain/fedchain/bc"
 	"reflect"
 	"testing"
 	"time"
+
+	"chain/api/appdb"
+	"chain/errors"
+	"chain/fedchain/bc"
 )
 
 func TestGenerateNodeTxTransfer(t *testing.T) {

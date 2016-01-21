@@ -13,6 +13,7 @@ import (
 	"chain/api/asset"
 	"chain/api/asset/assettest"
 	"chain/api/smartcontracts/orderbook"
+	"chain/api/txbuilder"
 	"chain/database/pg/pgtest"
 	"chain/fedchain/bc"
 	"chain/net/http/httpjson"
@@ -54,8 +55,8 @@ func TestOfferContractViaBuild(t *testing.T) {
 				},
 			},
 		}
-		callBuildSingle(t, ctx, buildRequest, func(txTemplate *asset.TxTemplate) {
-			err := asset.SignTxTemplate(txTemplate, testutil.TestXPrv)
+		callBuildSingle(t, ctx, buildRequest, func(txTemplate *txbuilder.Template) {
+			err := assettest.SignTxTemplate(txTemplate, testutil.TestXPrv)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -80,14 +81,14 @@ func TestOfferContractViaBuild(t *testing.T) {
 	})
 }
 
-func callBuildSingle(t *testing.T, ctx context.Context, request *BuildRequest, continuation func(*asset.TxTemplate)) {
+func callBuildSingle(t *testing.T, ctx context.Context, request *BuildRequest, continuation func(*txbuilder.Template)) {
 	result, err := buildSingle(ctx, request)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if dict, ok := result.(map[string]interface{}); ok {
 		if template, ok := dict["template"]; ok {
-			if txTemplate, ok := template.(*asset.TxTemplate); ok {
+			if txTemplate, ok := template.(*txbuilder.Template); ok {
 				continuation(txTemplate)
 			} else {
 				t.Fatal("expected result[\"template\"] to be a TxTemplate")
@@ -118,7 +119,7 @@ func TestFindAndBuyContractViaBuild(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		issueTxTemplate, err := asset.Issue(ctx, fixtureInfo.usdAssetID.String(), []*asset.Destination{issueDest})
+		issueTxTemplate, err := asset.Issue(ctx, fixtureInfo.usdAssetID.String(), []*txbuilder.Destination{issueDest})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -164,8 +165,8 @@ func TestFindAndBuyContractViaBuild(t *testing.T) {
 				},
 			},
 		}
-		callBuildSingle(t, ctx, buildRequest, func(txTemplate *asset.TxTemplate) {
-			err := asset.SignTxTemplate(txTemplate, testutil.TestXPrv)
+		callBuildSingle(t, ctx, buildRequest, func(txTemplate *txbuilder.Template) {
+			err := assettest.SignTxTemplate(txTemplate, testutil.TestXPrv)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -188,7 +189,7 @@ func offerAndFind(ctx context.Context, fixtureInfo *contractsFixtureInfo) (*orde
 		Amount:  100,
 	}
 	source := asset.NewAccountSource(ctx, assetAmount, fixtureInfo.sellerAccountID)
-	sources := []*asset.Source{source}
+	sources := []*txbuilder.Source{source}
 
 	orderInfo := &orderbook.OrderInfo{
 		SellerAccountID: fixtureInfo.sellerAccountID,
@@ -199,13 +200,13 @@ func offerAndFind(ctx context.Context, fixtureInfo *contractsFixtureInfo) (*orde
 	if err != nil {
 		return nil, err
 	}
-	destinations := []*asset.Destination{destination}
+	destinations := []*txbuilder.Destination{destination}
 
-	offerTxTemplate, err := asset.Build(ctx, nil, sources, destinations, nil, ttl)
+	offerTxTemplate, err := txbuilder.Build(ctx, nil, sources, destinations, nil, ttl)
 	if err != nil {
 		return nil, err
 	}
-	err = asset.SignTxTemplate(offerTxTemplate, testutil.TestXPrv)
+	err = assettest.SignTxTemplate(offerTxTemplate, testutil.TestXPrv)
 	if err != nil {
 		return nil, err
 	}
@@ -260,8 +261,8 @@ func TestFindAndCancelContractViaBuild(t *testing.T) {
 				},
 			},
 		}
-		callBuildSingle(t, ctx, buildRequest, func(txTemplate *asset.TxTemplate) {
-			err := asset.SignTxTemplate(txTemplate, testutil.TestXPrv)
+		callBuildSingle(t, ctx, buildRequest, func(txTemplate *txbuilder.Template) {
+			err := assettest.SignTxTemplate(txTemplate, testutil.TestXPrv)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
@@ -317,7 +318,7 @@ func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtu
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-	txTemplate, err := asset.Issue(ctx, fixtureInfo.aaplAssetID.String(), []*asset.Destination{issueDest})
+	txTemplate, err := asset.Issue(ctx, fixtureInfo.aaplAssetID.String(), []*txbuilder.Destination{issueDest})
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}

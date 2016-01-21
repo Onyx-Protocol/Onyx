@@ -1,4 +1,4 @@
-package asset
+package asset_test
 
 import (
 	"reflect"
@@ -8,6 +8,9 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	. "chain/api/asset"
+	"chain/api/asset/assettest"
+	"chain/api/txbuilder"
 	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -79,7 +82,7 @@ func TestGenSpendApply(t *testing.T) {
 		AccountID: info.acctA.ID,
 		Amount:    10,
 	}}
-	reserved, _, err := utxoDB.Reserve(ctx, inputs, 2*time.Minute)
+	reserved, _, err := UTXODB().Reserve(ctx, inputs, 2*time.Minute)
 	if err != nil && errors.Root(err) != utxodb.ErrInsufficient {
 		t.Fatal(err)
 	}
@@ -306,7 +309,7 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 		return nil, err
 	}
 
-	manPub, manPriv, err := newKey()
+	manPub, manPriv, err := NewKey()
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +328,7 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 		return nil, err
 	}
 
-	issPub, issPriv, err := newKey()
+	issPub, issPriv, err := NewKey()
 	if err != nil {
 		return nil, err
 	}
@@ -359,11 +362,11 @@ func issue(ctx context.Context, info *clientInfo, destAcctID string, amount uint
 	if err != nil {
 		return nil, err
 	}
-	issueTx, err := Issue(ctx, assetID.String(), []*Destination{issueDest})
+	issueTx, err := Issue(ctx, assetID.String(), []*txbuilder.Destination{issueDest})
 	if err != nil {
 		return nil, err
 	}
-	err = SignTxTemplate(issueTx, info.privKeyIssuer)
+	err = assettest.SignTxTemplate(issueTx, info.privKeyIssuer)
 	if err != nil {
 		return nil, err
 	}
@@ -376,20 +379,20 @@ func transfer(ctx context.Context, info *clientInfo, srcAcctID, destAcctID strin
 		Amount:  amount,
 	}
 	source := NewAccountSource(ctx, assetAmount, srcAcctID)
-	sources := []*Source{source}
+	sources := []*txbuilder.Source{source}
 
 	dest, err := NewAccountDestination(ctx, assetAmount, destAcctID, false, nil)
 	if err != nil {
 		return nil, err
 	}
-	dests := []*Destination{dest}
+	dests := []*txbuilder.Destination{dest}
 
-	xferTx, err := Build(ctx, nil, sources, dests, []byte{}, time.Minute)
+	xferTx, err := txbuilder.Build(ctx, nil, sources, dests, []byte{}, time.Minute)
 	if err != nil {
 		return nil, err
 	}
 
-	err = SignTxTemplate(xferTx, info.privKeyManager)
+	err = assettest.SignTxTemplate(xferTx, info.privKeyManager)
 	if err != nil {
 		return nil, err
 	}

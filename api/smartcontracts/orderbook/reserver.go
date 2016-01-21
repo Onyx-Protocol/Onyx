@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
-	"chain/api/asset"
+	"chain/api/txbuilder"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
@@ -21,8 +21,8 @@ type redeemReserver struct {
 	paymentAmount *bc.AssetAmount
 }
 
-// Reserve satisfies asset.Reserver.
-func (reserver *redeemReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*asset.ReserveResult, error) {
+// Reserve satisfies txbuilder.Reserver.
+func (reserver *redeemReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
 	openOrder := reserver.openOrder
 	changeAmount, err := reserveOrder(ctx, openOrder, assetAmount.Amount, ttl)
 	if err != nil {
@@ -41,11 +41,11 @@ func (reserver *redeemReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 	if err != nil {
 		return nil, err
 	}
-	result := &asset.ReserveResult{
-		Items: []*asset.ReserveResultItem{
+	result := &txbuilder.ReserveResult{
+		Items: []*txbuilder.ReserveResultItem{
 			{
 				TxInput:       &bc.TxInput{Previous: openOrder.Outpoint},
-				TemplateInput: &asset.Input{RedeemScript: redeemScript},
+				TemplateInput: &txbuilder.Input{RedeemScript: redeemScript},
 			},
 		},
 	}
@@ -62,10 +62,10 @@ func (reserver *redeemReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 	return result, nil
 }
 
-// NewRedeemSource creates an asset.Source that redeems a specific
+// NewRedeemSource creates an txbuilder.Source that redeems a specific
 // Orderbook order by paying one of its requested prices.
-func NewRedeemSource(openOrder *OpenOrder, offerAmount uint64, paymentAmount *bc.AssetAmount) *asset.Source {
-	return &asset.Source{
+func NewRedeemSource(openOrder *OpenOrder, offerAmount uint64, paymentAmount *bc.AssetAmount) *txbuilder.Source {
+	return &txbuilder.Source{
 		AssetAmount: bc.AssetAmount{
 			AssetID: openOrder.AssetID,
 			Amount:  offerAmount,
@@ -85,7 +85,7 @@ type cancelReserver struct {
 // cancelReserver error.
 var ErrUnexpectedChange = errors.New("unexpected change")
 
-func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*asset.ReserveResult, error) {
+func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
 	openOrder := reserver.openOrder
 	changeAmount, err := reserveOrder(ctx, openOrder, assetAmount.Amount, ttl)
 	if err != nil {
@@ -113,11 +113,11 @@ func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 	if err != nil {
 		return nil, err
 	}
-	result := &asset.ReserveResult{
-		Items: []*asset.ReserveResultItem{
+	result := &txbuilder.ReserveResult{
+		Items: []*txbuilder.ReserveResultItem{
 			{
 				TxInput: &bc.TxInput{Previous: openOrder.Outpoint},
-				TemplateInput: &asset.Input{
+				TemplateInput: &txbuilder.Input{
 					RedeemScript: redeemScript,
 					Sigs:         inputSigs(hdkey.Derive(sellerAddr.Keys, appdb.ReceiverPath(sellerAddr, sellerAddr.Index))),
 				},
@@ -158,10 +158,10 @@ func reserveOrder(ctx context.Context, openOrder *OpenOrder, amount uint64, ttl 
 	return changeAmount, nil
 }
 
-// NewCancelSource creates an asset.Source that cancels a specific
+// NewCancelSource creates an txbuilder.Source that cancels a specific
 // Orderbook order, sending its balance back to the seller.
-func NewCancelSource(openOrder *OpenOrder) *asset.Source {
-	return &asset.Source{
+func NewCancelSource(openOrder *OpenOrder) *txbuilder.Source {
+	return &txbuilder.Source{
 		AssetAmount: openOrder.AssetAmount,
 		Reserver: &cancelReserver{
 			openOrder: openOrder,
@@ -171,9 +171,9 @@ func NewCancelSource(openOrder *OpenOrder) *asset.Source {
 
 // TODO(bobg): refactor to not duplicate this function from
 // api/asset/asset.go
-func inputSigs(keys []*hdkey.Key) (sigs []*asset.Signature) {
+func inputSigs(keys []*hdkey.Key) (sigs []*txbuilder.Signature) {
 	for _, k := range keys {
-		sigs = append(sigs, &asset.Signature{
+		sigs = append(sigs, &txbuilder.Signature{
 			XPub:           k.Root.String(),
 			DerivationPath: k.Path,
 		})

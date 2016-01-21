@@ -1,4 +1,4 @@
-package asset
+package asset_test
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	. "chain/api/asset"
 	"chain/database/pg/pgtest"
 )
 

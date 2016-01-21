@@ -1,9 +1,10 @@
-package asset
+package asset_test
 
 import (
 	"testing"
 
 	"chain/api/appdb"
+	. "chain/api/asset"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -49,7 +50,7 @@ func TestCreateManagerNode(t *testing.T) {
 }
 
 func TestNewKey(t *testing.T) {
-	pub, priv, err := newKey()
+	pub, priv, err := NewKey()
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/api/asset"
+	"chain/api/txbuilder"
 	chainjson "chain/encoding/json"
 	"chain/fedchain/bc"
 )
@@ -18,7 +18,7 @@ type orderbookReceiver struct {
 
 func (receiver *orderbookReceiver) IsChange() bool   { return receiver.isChange }
 func (receiver *orderbookReceiver) PKScript() []byte { return receiver.pkscript }
-func (receiver *orderbookReceiver) AccumulateUTXO(ctx context.Context, outpoint *bc.Outpoint, txOutput *bc.TxOutput, inserters []asset.UTXOInserter) ([]asset.UTXOInserter, error) {
+func (receiver *orderbookReceiver) AccumulateUTXO(ctx context.Context, outpoint *bc.Outpoint, txOutput *bc.TxOutput, inserters []txbuilder.UTXOInserter) ([]txbuilder.UTXOInserter, error) {
 	// Find or create an item in utxoInserters that is an
 	// orderbookUTXOInserter
 	var orderbookInserter *orderbookUTXOInserter
@@ -52,16 +52,16 @@ func NewReceiver(orderInfo *OrderInfo, isChange bool, pkscript []byte) *orderboo
 	}
 }
 
-// NewDestination creates an asset.Destination that commits assets to
+// NewDestination creates an txbuilder.Destination that commits assets to
 // an Orderbook contract.
-func NewDestination(ctx context.Context, assetAmount *bc.AssetAmount, orderInfo *OrderInfo, isChange bool, metadata []byte) (*asset.Destination, error) {
+func NewDestination(ctx context.Context, assetAmount *bc.AssetAmount, orderInfo *OrderInfo, isChange bool, metadata []byte) (*txbuilder.Destination, error) {
 	return NewDestinationWithScript(ctx, assetAmount, orderInfo, isChange, metadata, nil)
 }
 
-// NewDestinationWithScript creates an asset.Destination that commits
+// NewDestinationWithScript creates an txbuilder.Destination that commits
 // assets to an Orderbook contract, and short-circuits
 // script/address-creation.
-func NewDestinationWithScript(ctx context.Context, assetAmount *bc.AssetAmount, orderInfo *OrderInfo, isChange bool, metadata, pkscript []byte) (*asset.Destination, error) {
+func NewDestinationWithScript(ctx context.Context, assetAmount *bc.AssetAmount, orderInfo *OrderInfo, isChange bool, metadata, pkscript []byte) (*txbuilder.Destination, error) {
 	if pkscript == nil {
 		var err error
 		pkscript, _, _, err = orderInfo.generateScript(ctx, nil)
@@ -69,7 +69,7 @@ func NewDestinationWithScript(ctx context.Context, assetAmount *bc.AssetAmount, 
 			return nil, err
 		}
 	}
-	result := &asset.Destination{
+	result := &txbuilder.Destination{
 		AssetAmount: *assetAmount,
 		IsChange:    isChange,
 		Metadata:    metadata,

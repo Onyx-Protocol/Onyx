@@ -1,4 +1,4 @@
-package asset
+package txbuilder
 
 import (
 	"time"
@@ -6,21 +6,18 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/txdb"
-	"chain/api/utxodb"
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
+	"chain/fedchain/txscript"
 )
-
-// All UTXOs in the system.
-var utxoDB = utxodb.New(sqlUTXODB{})
 
 // Build builds or adds on to a transaction.
 // Initially, inputs are left unconsumed, and destinations unsatisfied.
 // Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, prev *TxTemplate, sources []*Source, dests []*Destination, metadata []byte, ttl time.Duration) (*TxTemplate, error) {
+func Build(ctx context.Context, prev *Template, sources []*Source, dests []*Destination, metadata []byte, ttl time.Duration) (*Template, error) {
 	if ttl < time.Minute {
 		ttl = time.Minute
 	}
@@ -43,7 +40,7 @@ func Build(ctx context.Context, prev *TxTemplate, sources []*Source, dests []*De
 	return tpl, nil
 }
 
-func build(ctx context.Context, sources []*Source, dests []*Destination, metadata []byte, ttl time.Duration) (*TxTemplate, error) {
+func build(ctx context.Context, sources []*Source, dests []*Destination, metadata []byte, ttl time.Duration) (*Template, error) {
 	tx := &bc.TxData{
 		Version:  bc.CurrentTransactionVersion,
 		Metadata: metadata,
@@ -79,7 +76,7 @@ func build(ctx context.Context, sources []*Source, dests []*Destination, metadat
 		receivers = append(receivers, dest.Receiver)
 	}
 
-	appTx := &TxTemplate{
+	appTx := &Template{
 		Unsigned:   tx,
 		BlockChain: "sandbox",
 		Inputs:     inputs,
@@ -89,12 +86,12 @@ func build(ctx context.Context, sources []*Source, dests []*Destination, metadat
 	return appTx, nil
 }
 
-func combine(txs ...*TxTemplate) (*TxTemplate, error) {
+func combine(txs ...*Template) (*Template, error) {
 	if len(txs) == 0 {
 		return nil, errors.New("must pass at least one tx")
 	}
 	completeWire := &bc.TxData{Version: bc.CurrentTransactionVersion}
-	complete := &TxTemplate{BlockChain: txs[0].BlockChain, Unsigned: completeWire}
+	complete := &Template{BlockChain: txs[0].BlockChain, Unsigned: completeWire}
 
 	for _, tx := range txs {
 		if tx.BlockChain != complete.BlockChain {
@@ -115,7 +112,7 @@ func combine(txs ...*TxTemplate) (*TxTemplate, error) {
 	return complete, nil
 }
 
-func setSignatureData(ctx context.Context, tpl *TxTemplate) error {
+func setSignatureData(ctx context.Context, tpl *Template) error {
 	txSet := []*bc.Tx{bc.NewTx(*tpl.Unsigned)}
 	bcView, err := txdb.NewViewForPrevouts(ctx, txSet)
 	if err != nil {
@@ -143,8 +140,46 @@ func setSignatureData(ctx context.Context, tpl *TxTemplate) error {
 	return nil
 }
 
-// CancelReservations cancels any existing reservations
-// for the given outpoints.
-func CancelReservations(ctx context.Context, outpoints []bc.Outpoint) {
-	utxoDB.Cancel(ctx, outpoints)
+// AssembleSignatures takes a filled in Template
+// and adds the signatures to the template's unsigned transaction,
+// creating a fully-signed transaction.
+func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
+	msg := txTemplate.Unsigned
+	for i, input := range txTemplate.Inputs {
+		sigsAdded := 0
+		sigsReqd, err := getSigsRequired(input.RedeemScript)
+		if err != nil {
+			return nil, err
+		}
+		builder := txscript.NewScriptBuilder()
+		if len(input.Sigs) > 0 {
+			builder.AddOp(txscript.OP_FALSE)
+		}
+		for _, sig := range input.Sigs {
+			if len(sig.DER) > 0 {
+				builder.AddData(sig.DER)
+				sigsAdded++
+				if sigsAdded == sigsReqd {
+					break
+				}
+			}
+		}
+		script, err := builder.Script()
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		msg.Inputs[i].SignatureScript = append(script, input.RedeemScript...)
+	}
+	return bc.NewTx(*msg), nil
+}
+
+func getSigsRequired(script []byte) (sigsReqd int, err error) {
+	sigsReqd = 1
+	if txscript.GetScriptClass(script) == txscript.MultiSigTy {
+		_, sigsReqd, err = txscript.CalcMultiSigStats(script)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return sigsReqd, nil
 }

@@ -1,17 +1,16 @@
-package asset
+package asset_test
 
 import (
-	"bytes"
 	"os"
 	"reflect"
 	"testing"
 
 	"golang.org/x/net/context"
 
-	"chain/api/appdb"
+	. "chain/api/asset"
+	"chain/api/txbuilder"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
 )
 
@@ -78,7 +77,7 @@ func TestIssue(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	outs := []*Destination{dest}
+	outs := []*txbuilder.Destination{dest}
 	resp, err := Issue(ctx, "0000000000000000000000000000000000000000000000000000000000000000", outs)
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -96,59 +95,5 @@ func TestIssue(t *testing.T) {
 
 	if !reflect.DeepEqual(resp.Unsigned, want) {
 		t.Errorf("got tx = %+v want %+v", resp.Unsigned, want)
-	}
-}
-
-func TestAccountOutputPKScript(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-		INSERT INTO manager_nodes (id, project_id, label, current_rotation)
-			VALUES('mn1', 'proj-id-0', 'mn1', 'rot1');
-		INSERT INTO rotations (id, manager_node_id, keyset)
-			VALUES('rot1', 'mn1', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
-		INSERT INTO accounts (id, manager_node_id, key_index)
-			VALUES('acc1', 'mn1', 0);
-	`)
-	defer pgtest.Finish(ctx)
-
-	// Test account output pk script (address creation)
-	dest, err := NewAccountDestination(ctx, &bc.AssetAmount{Amount: 1}, "acc1", false, nil)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-	got := dest.PKScript()
-
-	receiver := dest.Receiver
-	accountReceiver, ok := receiver.(*AccountReceiver)
-	if !ok {
-		t.Log(errors.Stack(err))
-		t.Fatal("receiver is not an AccountReceiver")
-	}
-	addr := accountReceiver.addr
-	want, _, err := hdkey.Scripts(addr.Keys, appdb.ReceiverPath(addr, addr.Index), addr.SigsRequired)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-	if !bytes.Equal(got, want) {
-		t.Errorf("got pkscript = %x want %x", got, want)
-	}
-}
-
-func TestScriptOutputPKScript(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
-
-	script := mustDecodeHex("a91400065635e652a6e00a53cfa07e822de50ccf94a887")
-
-	dest, err := NewScriptDestination(ctx, &bc.AssetAmount{Amount: 1}, script, false, nil)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-	got := dest.PKScript()
-	if !bytes.Equal(got, script) {
-		t.Errorf("got pkscript = %x want %x", got, script)
 	}
 }

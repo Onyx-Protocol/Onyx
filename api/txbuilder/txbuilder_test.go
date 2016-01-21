@@ -1,0 +1,253 @@
+package txbuilder
+
+import (
+	"encoding/hex"
+	"os"
+	"reflect"
+	"testing"
+	"time"
+
+	"golang.org/x/net/context"
+
+	"chain/api/txdb"
+	"chain/database/pg/pgtest"
+	"chain/errors"
+	"chain/fedchain/bc"
+	"chain/fedchain/state"
+	"chain/testutil"
+)
+
+func init() {
+	u := "postgres:///api-test?sslmode=disable"
+	if s := os.Getenv("DB_URL_TEST"); s != "" {
+		u = s
+	}
+
+	ctx := context.Background()
+	pgtest.Open(ctx, u, "apitest", "../appdb/schema.sql")
+}
+
+type testRecv struct {
+	script   []byte
+	isChange bool
+}
+
+func (tr *testRecv) IsChange() bool   { return tr.isChange }
+func (tr *testRecv) PKScript() []byte { return tr.script }
+func (tr *testRecv) AccumulateUTXO(ctx context.Context, op *bc.Outpoint, out *bc.TxOutput, inserters []UTXOInserter) ([]UTXOInserter, error) {
+	return inserters, nil
+}
+func (tr *testRecv) MarshalJSON() ([]byte, error) { return []byte{}, nil }
+
+type testReserver struct{}
+
+func (tr *testReserver) Reserve(ctx context.Context, assetAmt *bc.AssetAmount, ttl time.Duration) (*ReserveResult, error) {
+	return &ReserveResult{
+		Items: []*ReserveResultItem{{
+			TxInput: &bc.TxInput{Previous: bc.Outpoint{Hash: [32]byte{255}, Index: 0}},
+			TemplateInput: &Input{
+				RedeemScript: []byte("redeem"),
+			},
+		}},
+		Change: &Destination{
+			AssetAmount: *assetAmt,
+			Receiver:    &testRecv{script: []byte("change"), isChange: true},
+		},
+	}, nil
+}
+
+func TestBuild(t *testing.T) {
+	ctx := pgtest.NewContext(t, ``)
+	defer pgtest.Finish(ctx)
+
+	output := &txdb.Output{
+		Output: state.Output{
+			Outpoint: bc.Outpoint{Hash: [32]byte{255}, Index: 0},
+			TxOutput: bc.TxOutput{
+				AssetAmount: bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5},
+				Script:      []byte{},
+			},
+		},
+	}
+	// ignore error from potential duplicate
+	txdb.InsertPoolTx(ctx, &bc.Tx{Hash: [32]byte{255}, TxData: bc.TxData{}})
+	err := txdb.InsertPoolOutputs(ctx, []*txdb.Output{output})
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	sources := []*Source{{
+		AssetAmount: bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5},
+		Reserver:    &testReserver{},
+	}}
+	dests := []*Destination{{
+		AssetAmount: bc.AssetAmount{AssetID: [32]byte{2}, Amount: 6},
+		Receiver:    &testRecv{script: []byte("dest")},
+	}}
+
+	got, err := Build(ctx, nil, sources, dests, nil, time.Minute)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	want := &Template{
+		BlockChain: "sandbox",
+		Unsigned: &bc.TxData{
+			Version: 1,
+			Inputs: []*bc.TxInput{{
+				Previous: bc.Outpoint{Hash: [32]byte{255}, Index: 0},
+			}},
+			Outputs: []*bc.TxOutput{
+				{
+					AssetAmount: bc.AssetAmount{AssetID: [32]byte{2}, Amount: 6},
+					Script:      []byte("dest"),
+				},
+				{
+					AssetAmount: bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5},
+					Script:      []byte("change"),
+				},
+			},
+		},
+		Inputs: []*Input{{
+			RedeemScript: []byte("redeem"),
+		}},
+		OutRecvs: []Receiver{
+			&testRecv{script: []byte("dest")},
+			&testRecv{script: []byte("change"), isChange: true},
+		},
+	}
+	err = setSignatureData(ctx, want)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(got.Unsigned, want.Unsigned) {
+		t.Errorf("got tx:\n\t%#v\nwant tx:\n\t%#v", got.Unsigned, want.Unsigned)
+		t.Errorf("got tx inputs:\n\t%#v\nwant tx inputs:\n\t%#v", got.Unsigned.Inputs, want.Unsigned.Inputs)
+		t.Errorf("got tx outputs:\n\t%#v\nwant tx outputs:\n\t%#v", got.Unsigned.Outputs, want.Unsigned.Outputs)
+	}
+
+	if !reflect.DeepEqual(got.Inputs, want.Inputs) {
+		t.Errorf("got inputs:\n\t%#v\nwant inputs:\n\t%#v", got.Inputs, want.Inputs)
+	}
+
+	if !reflect.DeepEqual(got.OutRecvs, want.OutRecvs) {
+		t.Errorf("got out recvs:\n\t%#v\nwant out recvs:\n\t%#v", got.OutRecvs, want.OutRecvs)
+	}
+}
+
+func TestCombine(t *testing.T) {
+	unsigned1 := &bc.TxData{
+		Version: 1,
+		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}}},
+		Outputs: []*bc.TxOutput{{
+			AssetAmount: bc.AssetAmount{AssetID: [32]byte{254}, Amount: 5},
+		}},
+	}
+
+	unsigned2 := &bc.TxData{
+		Version: 1,
+		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}}},
+		Outputs: []*bc.TxOutput{{
+			AssetAmount: bc.AssetAmount{AssetID: [32]byte{255}, Amount: 6},
+		}},
+	}
+
+	combined := &bc.TxData{
+		Version: 1,
+		Inputs: []*bc.TxInput{
+			{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}},
+			{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}},
+		},
+		Outputs: []*bc.TxOutput{
+			{AssetAmount: bc.AssetAmount{AssetID: [32]byte{254}, Amount: 5}},
+			{AssetAmount: bc.AssetAmount{AssetID: [32]byte{255}, Amount: 6}},
+		},
+	}
+	recv1 := &testRecv{}
+	recv2 := &testRecv{}
+
+	tpl1 := &Template{
+		Unsigned:   unsigned1,
+		Inputs:     []*Input{{}},
+		OutRecvs:   []Receiver{recv1},
+		BlockChain: "sandbox",
+	}
+
+	tpl2 := &Template{
+		Unsigned:   unsigned2,
+		Inputs:     []*Input{{}},
+		OutRecvs:   []Receiver{recv2},
+		BlockChain: "sandbox",
+	}
+
+	got, err := combine(tpl1, tpl2)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	want := &Template{
+		Unsigned:   combined,
+		Inputs:     []*Input{{}, {}},
+		OutRecvs:   []Receiver{recv1, recv2},
+		BlockChain: "sandbox",
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("combine:\ngot: \t%#v\nwant:\t%#v", got, want)
+	}
+}
+
+func TestAssembleSignatures(t *testing.T) {
+	outscript := mustDecodeHex("a9140ac9c982fd389181752e5a414045dd424a10754b87")
+	unsigned := &bc.TxData{
+		Version: 1,
+		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Index: bc.InvalidOutputIndex}}},
+		Outputs: []*bc.TxOutput{{
+			AssetAmount: bc.AssetAmount{AssetID: [32]byte{255}, Amount: 5},
+			Script:      outscript,
+		}},
+	}
+	sigHash, _ := bc.ParseHash("78e437f627019fc270bbe9ed309291d0a5f6bf98bfae0f750538ba56646f7327")
+
+	tpl := &Template{
+		Unsigned: unsigned,
+		Inputs: []*Input{{
+			SignatureData: sigHash,
+			Sigs: []*Signature{{
+				XPub:           "xpub661MyMwAqRbcGiDB8FQvHnDAZyaGUyzm3qN1Q3NDJz1PgAWCfyi9WRCS7Z9HyM5QNEh45fMyoaBMqjfoWPdnktcN8chJYB57D2Y7QtNmadr",
+				DerivationPath: []uint32{0, 0, 0, 0},
+				DER:            mustDecodeHex("3044022004da5732f6c988b9e2882f5ca4f569b9525d313940e0372d6a84fef73be78f8f02204656916481dc573d771ec42923a8f5af31ae634241a4cb30ea5b359363cf064d"),
+			}},
+		}},
+		OutRecvs: []Receiver{nil}, // pays to external party
+	}
+
+	tx, err := AssembleSignatures(tpl)
+	if err != nil {
+		t.Fatal(withStack(err))
+	}
+
+	want := "62af8aac66d5f8c31e04bb4fcae798feaf3db36732d40579c3654245e881aa8e"
+	if got := tx.WitnessHash().String(); got != want {
+		t.Errorf("got tx witness hash = %v want %v", got, want)
+	}
+}
+
+func withStack(err error) string {
+	s := err.Error()
+	for _, frame := range errors.Stack(err) {
+		s += "\n" + frame.String()
+	}
+	return s
+}
+
+func mustDecodeHex(str string) []byte {
+	data, err := hex.DecodeString(str)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}

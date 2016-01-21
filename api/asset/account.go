@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	"chain/api/txbuilder"
 	"chain/api/txdb"
 	"chain/api/utxodb"
 	"chain/errors"
@@ -20,7 +21,7 @@ type AccountReserver struct {
 	AccountID string
 }
 
-func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*ReserveResult, error) {
+func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
 	utxodbSource := utxodb.Source{
 		AssetID:   assetAmount.AssetID,
 		Amount:    assetAmount.Amount,
@@ -32,13 +33,13 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 		return nil, err
 	}
 
-	result := &ReserveResult{}
+	result := &txbuilder.ReserveResult{}
 	for _, r := range reserved {
 		txInput := &bc.TxInput{
 			Previous: r.Outpoint,
 		}
 
-		templateInput := &Input{}
+		templateInput := &txbuilder.Input{}
 		addrInfo, err := appdb.AddrInfo(ctx, r.AccountID)
 		if err != nil {
 			return nil, errors.Wrap(err, "get addr info")
@@ -51,7 +52,7 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 		templateInput.RedeemScript = txscript.AddDataToScript(nil, redeemScript)
 		templateInput.Sigs = inputSigs(signers)
 
-		item := &ReserveResultItem{
+		item := &txbuilder.ReserveResultItem{
 			TxInput:       txInput,
 			TemplateInput: templateInput,
 		}
@@ -72,8 +73,8 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 	return result, nil
 }
 
-func NewAccountSource(ctx context.Context, assetAmount *bc.AssetAmount, accountID string) *Source {
-	return &Source{
+func NewAccountSource(ctx context.Context, assetAmount *bc.AssetAmount, accountID string) *txbuilder.Source {
+	return &txbuilder.Source{
 		AssetAmount: *assetAmount,
 		Reserver: &AccountReserver{
 			AccountID: accountID,
@@ -87,7 +88,7 @@ type AccountReceiver struct {
 
 func (receiver *AccountReceiver) IsChange() bool   { return receiver.addr.IsChange }
 func (receiver *AccountReceiver) PKScript() []byte { return receiver.addr.PKScript }
-func (receiver *AccountReceiver) AccumulateUTXO(ctx context.Context, outpoint *bc.Outpoint, txOutput *bc.TxOutput, utxoInserters []UTXOInserter) ([]UTXOInserter, error) {
+func (receiver *AccountReceiver) AccumulateUTXO(ctx context.Context, outpoint *bc.Outpoint, txOutput *bc.TxOutput, utxoInserters []txbuilder.UTXOInserter) ([]txbuilder.UTXOInserter, error) {
 	// Find or create an item in utxoInserters that is an
 	// AccountUTXOInserter
 	var accountUTXOInserter *AccountUTXOInserter
@@ -119,13 +120,13 @@ func NewAccountReceiver(addr *appdb.Address) *AccountReceiver {
 	return &AccountReceiver{addr: addr}
 }
 
-func NewAccountDestination(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, isChange bool, metadata []byte) (*Destination, error) {
+func NewAccountDestination(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, isChange bool, metadata []byte) (*txbuilder.Destination, error) {
 	addr, err := appdb.NewAddress(ctx, accountID, isChange, false)
 	if err != nil {
 		return nil, err
 	}
 	receiver := NewAccountReceiver(addr)
-	result := &Destination{
+	result := &txbuilder.Destination{
 		AssetAmount: *assetAmount,
 		IsChange:    isChange,
 		Metadata:    metadata,
@@ -153,4 +154,10 @@ func (inserter *AccountUTXOInserter) Add(outpoint *bc.Outpoint, txOutput *bc.TxO
 
 func (inserter *AccountUTXOInserter) InsertUTXOs(ctx context.Context) ([]*txdb.Output, error) {
 	return inserter.txdbOutputs, txdb.InsertPoolOutputs(ctx, inserter.txdbOutputs)
+}
+
+// CancelReservations cancels any existing reservations
+// for the given outpoints.
+func CancelReservations(ctx context.Context, outpoints []bc.Outpoint) {
+	utxoDB.Cancel(ctx, outpoints)
 }

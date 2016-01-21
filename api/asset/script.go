@@ -5,6 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/api/txbuilder"
 	"chain/api/txdb"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
@@ -20,7 +21,7 @@ type ScriptReceiver struct {
 
 func (receiver *ScriptReceiver) IsChange() bool   { return receiver.isChange }
 func (receiver *ScriptReceiver) PKScript() []byte { return receiver.script }
-func (receiver *ScriptReceiver) AccumulateUTXO(ctx context.Context, outpoint *bc.Outpoint, txOutput *bc.TxOutput, utxoInserters []UTXOInserter) ([]UTXOInserter, error) {
+func (receiver *ScriptReceiver) AccumulateUTXO(ctx context.Context, outpoint *bc.Outpoint, txOutput *bc.TxOutput, utxoInserters []txbuilder.UTXOInserter) ([]txbuilder.UTXOInserter, error) {
 	// Find or create an item in utxoInserters that is a
 	// ScriptUTXOInserter
 	var scriptUTXOInserter *ScriptUTXOInserter
@@ -53,9 +54,9 @@ func NewScriptReceiver(script []byte, isChange bool) *ScriptReceiver {
 	}
 }
 
-func NewScriptDestination(ctx context.Context, assetAmount *bc.AssetAmount, script []byte, isChange bool, metadata []byte) (*Destination, error) {
+func NewScriptDestination(ctx context.Context, assetAmount *bc.AssetAmount, script []byte, isChange bool, metadata []byte) (*txbuilder.Destination, error) {
 	scriptReceiver := NewScriptReceiver(script, isChange)
-	dest := &Destination{
+	dest := &txbuilder.Destination{
 		AssetAmount: *assetAmount,
 		IsChange:    isChange,
 		Metadata:    metadata,

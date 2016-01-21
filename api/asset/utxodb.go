@@ -5,6 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/api/txbuilder"
 	"chain/api/txdb"
 	"chain/api/utxodb"
 	"chain/database/pg"
@@ -15,6 +16,9 @@ import (
 )
 
 type sqlUTXODB struct{}
+
+// All UTXOs in the system.
+var utxoDB = utxodb.New(sqlUTXODB{})
 
 func (sqlUTXODB) LoadUTXOs(ctx context.Context, accountID string, assetID bc.AssetID) (resvOuts []*utxodb.UTXO, err error) {
 	bcOuts, err := txdb.LoadUTXOs(ctx, accountID, assetID)
@@ -76,7 +80,7 @@ func (sqlUTXODB) SaveReservations(ctx context.Context, utxos []*utxodb.UTXO, exp
 // the effects of tx. It deletes consumed utxos
 // and inserts newly-created outputs.
 // Must be called inside a transaction.
-func applyTx(ctx context.Context, tx *bc.Tx, outRecs []Receiver) (deleted []bc.Outpoint, inserted []*txdb.Output, err error) {
+func applyTx(ctx context.Context, tx *bc.Tx, outRecs []txbuilder.Receiver) (deleted []bc.Outpoint, inserted []*txdb.Output, err error) {
 	defer metrics.RecordElapsed(time.Now())
 
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
@@ -110,13 +114,13 @@ func applyTx(ctx context.Context, tx *bc.Tx, outRecs []Receiver) (deleted []bc.O
 	return deleted, inserted, err
 }
 
-func insertUTXOs(ctx context.Context, hash bc.Hash, txouts []*bc.TxOutput, receivers []Receiver) (inserted []*txdb.Output, err error) {
+func insertUTXOs(ctx context.Context, hash bc.Hash, txouts []*bc.TxOutput, receivers []txbuilder.Receiver) (inserted []*txdb.Output, err error) {
 	if len(txouts) != len(receivers) {
 		return nil, errors.New("length mismatch")
 	}
 	defer metrics.RecordElapsed(time.Now())
 
-	var utxoInserters []UTXOInserter
+	var utxoInserters []txbuilder.UTXOInserter
 
 	for i, txOutput := range txouts {
 		receiver := receivers[i]
