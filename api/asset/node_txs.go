@@ -28,6 +28,7 @@ type nodeTxInput struct {
 	AssetLabel   string             `json:"asset_label,omitempty"`
 	Amount       uint64             `json:"amount"`
 	Address      chainjson.HexBytes `json:"address,omitempty"`
+	Script       chainjson.HexBytes `json:"address,omitempty"`
 	AccountID    string             `json:"account_id,omitempty"`
 	AccountLabel string             `json:"account_label,omitempty"`
 	Metadata     chainjson.HexBytes `json:"metadata"`
@@ -40,6 +41,7 @@ type nodeTxOutput struct {
 	AssetLabel   string             `json:"asset_label,omitempty"`
 	Amount       uint64             `json:"amount"`
 	Address      chainjson.HexBytes `json:"address,omitempty"`
+	Script       chainjson.HexBytes `json:"address,omitempty"`
 	AccountID    string             `json:"account_id,omitempty"`
 	AccountLabel string             `json:"account_label,omitempty"`
 	Metadata     chainjson.HexBytes `json:"metadata"`
@@ -180,6 +182,7 @@ func generateNodeTx(
 			AccountID:    ins[i].AccountID,
 			AccountLabel: accountLabel,
 			Address:      ins[i].Script,
+			Script:       ins[i].Script,
 			Metadata:     in.Metadata,
 			mNodeID:      mNodeID,
 		})
@@ -204,6 +207,7 @@ func generateNodeTx(
 			AssetLabel:   assetLabel,
 			Amount:       out.Value,
 			Address:      out.Script,
+			Script:       out.Script,
 			AccountID:    outs[i].AccountID,
 			AccountLabel: accountLabel,
 			Metadata:     out.Metadata,
