@@ -170,6 +170,38 @@ func TestMessagef(t *testing.T) {
 	}
 }
 
+func TestWriteStack(t *testing.T) {
+	buf := new(bytes.Buffer)
+	SetOutput(buf)
+	defer SetOutput(os.Stdout)
+
+	root := errors.New("boo")
+	wrapped := errors.Wrap(root)
+	Write(context.Background(), KeyError, wrapped)
+
+	read, err := ioutil.ReadAll(buf)
+	if err != nil {
+		t.Fatal("read buffer error:", err)
+	}
+
+	got := string(read)
+	want := []string{
+		"at=log_test.go:",
+		"error=boo",
+
+		// stack trace
+		"TestWriteStack\n",
+		"/go/",
+	}
+
+	t.Logf("output:\n%s", got)
+	for _, w := range want {
+		if !strings.Contains(got, w) {
+			t.Errorf("output %q did not contain %q", got, w)
+		}
+	}
+}
+
 func TestError(t *testing.T) {
 	buf := new(bytes.Buffer)
 	SetOutput(buf)

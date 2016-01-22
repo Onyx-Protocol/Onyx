@@ -48,7 +48,7 @@ const (
 
 	KeyMessage = "message" // produced by Message
 	KeyError   = "error"   // produced by Error
-	KeyStack   = "stack"   // produced by Stack
+	KeyStack   = "stack"   // used by Write to print stack on subsequent lines
 
 	keyLogError = "log-error" // for errors produced by the log package itself
 )
@@ -95,9 +95,11 @@ func SetPrefix(keyval ...interface{}) {
 // a new value for the KeyCaller key as the first key-value pair. The override
 // feature should be reserved for custom logging functions that wrap Write.
 //
-// If KeyStack is present and has a value of []byte or []errors.StackFrame,
-// its value will be written verbatim at the end of the message,
-// on separate lines.
+// Write will also print the stack trace, if any, on separate lines
+// following the message. The stack is obtained from the following,
+// in order of preference:
+//   - a KeyStack value with type []byte or []errors.StackFrame
+//   - a KeyError value with type error, using the result of errors.Stack
 func Write(ctx context.Context, keyvals ...interface{}) {
 	// Invariant: len(keyvals) is always even.
 	if len(keyvals)%2 != 0 {
@@ -138,6 +140,9 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 		}
 		if k == KeyError {
 			rec.IsError = true
+			if e, ok := v.(error); ok && stack == nil {
+				stack = errors.Stack(e)
+			}
 		}
 		out += " " + formatKey(k) + "=" + formatValue(v)
 	}
@@ -210,23 +215,12 @@ func Messagef(ctx context.Context, format string, a ...interface{}) {
 // Optionally, an error message prefix can be included. Prefix arguments are
 // handled as in fmt.Print.
 func Error(ctx context.Context, err error, a ...interface{}) {
-	var msg string
-	if len(a) > 0 {
-		msg = fmt.Sprint(a...) + ": " + err.Error()
-	} else {
-		msg = err.Error()
+	if len(a) > 0 && len(errors.Stack(err)) > 0 {
+		err = errors.Wrap(err, a...) // keep err's stack
+	} else if len(a) > 0 {
+		err = fmt.Errorf("%s: %s", fmt.Sprint(a...), err) // don't add a stack here
 	}
-
-	keyvals := []interface{}{
-		KeyCaller, caller(1),
-		KeyError, msg,
-	}
-
-	if stack := errors.Stack(err); len(stack) > 0 {
-		keyvals = append(keyvals, KeyStack, stack)
-	}
-
-	Write(ctx, keyvals...)
+	Write(ctx, KeyCaller, caller(1), KeyError, err)
 }
 
 // caller returns a string containing filename and line number of a
