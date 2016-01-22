@@ -62,6 +62,10 @@ func logQuery(ctx context.Context, query string, args interface{}) {
 // defers this error until a Scan.
 var ErrNoRows = sql.ErrNoRows
 
+// ErrTxDone is returned by Commit or Rollback when one or the other
+// has already happened on a transaction.
+var ErrTxDone = sql.ErrTxDone
+
 // DB is a database handle representing a pool of zero or more
 // underlying connections. It's safe for concurrent use by multiple
 // goroutines.

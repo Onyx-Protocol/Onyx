@@ -140,6 +140,7 @@ func submitSingle(ctx context.Context, tpl *Template) (interface{}, error) {
 	return ret, nil
 }
 
+// TODO(bobg): allow caller to specify reservation by (encrypted) id?
 // POST /v3/assets/cancel-reservation
 // Idempotent
 func cancelReservation(ctx context.Context, x struct{ Transaction bc.Tx }) error {
@@ -147,8 +148,7 @@ func cancelReservation(ctx context.Context, x struct{ Transaction bc.Tx }) error
 	for _, input := range x.Transaction.Inputs {
 		outpoints = append(outpoints, input.Previous)
 	}
-	asset.CancelReservations(ctx, outpoints)
-	return nil
+	return asset.CancelReservations(ctx, outpoints)
 }
 
 // POST /v3/transact/submit

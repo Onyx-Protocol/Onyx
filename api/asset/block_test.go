@@ -89,7 +89,7 @@ func TestGenSpendApply(t *testing.T) {
 		AccountID: info.acctA.ID,
 		Amount:    10,
 	}}
-	reserved, _, err := UTXODB().Reserve(ctx, inputs, 2*time.Minute)
+	reserved, _, err := utxodb.Reserve(ctx, inputs, 2*time.Minute)
 	if err != nil && errors.Root(err) != utxodb.ErrInsufficient {
 		t.Fatal(err)
 	}

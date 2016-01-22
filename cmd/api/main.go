@@ -24,6 +24,7 @@ import (
 	"chain/api/signer"
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/txdb"
+	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
@@ -72,7 +73,8 @@ var (
 
 	race []interface{} // initialized in race.go
 
-	blockPeriod = 1 * time.Second
+	blockPeriod              = 1 * time.Second
+	expireReservationsPeriod = time.Minute
 )
 
 func init() {
@@ -164,6 +166,7 @@ func main() {
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}
 
+	go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
 	if *isGenerator {
 		remotes := remoteSignerInfo(ctx)
 		err := generator.Init(ctx, blockPeriod, localSigner, remotes)

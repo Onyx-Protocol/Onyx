@@ -83,23 +83,5 @@ func addAccountData(ctx context.Context, tx *bc.Tx) error {
 	}
 
 	err = txdb.InsertAccountOutputs(ctx, txdbOuts)
-	if err != nil {
-		return errors.Wrap(err, "updating pool outputs")
-	}
-
-	// build up delete list
-	for _, in := range tx.Inputs {
-		if in.IsIssuance() {
-			continue
-		}
-		txdbOuts = append(txdbOuts, &txdb.Output{
-			Output: state.Output{
-				Outpoint: in.Previous,
-				Spent:    true,
-			},
-		})
-	}
-
-	applyToReserver(ctx, txdbOuts)
-	return nil
+	return errors.Wrap(err, "updating pool outputs")
 }

@@ -1,11 +1,8 @@
 package txdb
 
 import (
-	"database/sql"
-
 	"golang.org/x/net/context"
 
-	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
@@ -17,16 +14,6 @@ type Output struct {
 	ManagerNodeID string
 	AccountID     string
 	AddrIndex     [2]uint32
-}
-
-func (output *Output) GetUTXO() *utxodb.UTXO {
-	return &utxodb.UTXO{
-		Outpoint:  output.Outpoint,
-		AssetID:   output.AssetID,
-		Amount:    output.Amount,
-		AccountID: output.AccountID,
-		AddrIndex: output.AddrIndex,
-	}
 }
 
 func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.Output, error) {
@@ -69,62 +56,5 @@ func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.
 		}
 		outs[o.Outpoint] = o
 	}
-	return outs, nil
-}
-
-// LoadUTXOs loads all unspent outputs in the blockchain
-// for the given asset and account.
-func LoadUTXOs(ctx context.Context, accountID string, assetID bc.AssetID) ([]*utxodb.UTXO, error) {
-	// TODO(kr): account stuff will split into a separate
-	// table and this will become something like
-	// LoadUTXOs(context.Context, []bc.Outpoint) []*bc.TxOutput.
-
-	const q = `
-		SELECT amount, reserved_until, tx_hash, index, key_index(addr_index)
-		FROM account_utxos
-		WHERE account_id=$1 AND asset_id=$2
-			AND (tx_hash, index) NOT IN (TABLE pool_inputs)
-	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, accountID, assetID)
-	if err != nil {
-		return nil, errors.Wrap(err, "query")
-	}
-	defer rows.Close()
-	var utxos []*utxodb.UTXO
-	for rows.Next() {
-		u := &utxodb.UTXO{
-			AccountID: accountID,
-			AssetID:   assetID,
-		}
-		var (
-			txid         string
-			contractHash sql.NullString
-			addrIndex    []uint32
-		)
-		err = rows.Scan(
-			&u.Amount,
-			&u.ResvExpires,
-			&txid,
-			&u.Outpoint.Index,
-			(*pg.Uint32s)(&addrIndex),
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "scan")
-		}
-		if contractHash.Valid {
-			u.ContractHash = contractHash.String
-		}
-		copy(u.AddrIndex[:], addrIndex)
-		h, err := bc.ParseHash(txid)
-		if err != nil {
-			return nil, errors.Wrap(err, "decode hash")
-		}
-		u.Outpoint.Hash = h
-		u.ResvExpires = u.ResvExpires.UTC()
-		utxos = append(utxos, u)
-	}
-	if rows.Err() != nil {
-		return nil, errors.Wrap(rows.Err())
-	}
-	return utxos, errors.Wrap(rows.Err(), "rows")
+	return outs, errors.Wrap(rows.Err(), "end row scan loop")
 }

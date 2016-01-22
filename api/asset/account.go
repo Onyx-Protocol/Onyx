@@ -25,7 +25,7 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 		AccountID: reserver.AccountID,
 	}
 	utxodbSources := []utxodb.Source{utxodbSource}
-	reserved, change, err := utxoDB.Reserve(ctx, utxodbSources, ttl)
+	reserved, change, err := utxodb.Reserve(ctx, utxodbSources, ttl)
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +107,6 @@ func NewAccountDestination(ctx context.Context, assetAmount *bc.AssetAmount, acc
 
 // CancelReservations cancels any existing reservations
 // for the given outpoints.
-func CancelReservations(ctx context.Context, outpoints []bc.Outpoint) {
-	utxoDB.Cancel(ctx, outpoints)
+func CancelReservations(ctx context.Context, outpoints []bc.Outpoint) error {
+	return utxodb.Cancel(ctx, outpoints)
 }

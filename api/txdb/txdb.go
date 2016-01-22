@@ -250,16 +250,30 @@ func removeBlockSpentOutputs(ctx context.Context, delta []*state.Output) error {
 		ids = append(ids, out.Outpoint.Index)
 	}
 
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return errors.Wrap(err, "begin db transaction for deleting utxos")
+	}
+	defer dbtx.Rollback(ctx)
+
+	db := pg.FromContext(ctx)
+
+	// account_utxos are deleted by a foreign key constraint
+	_, err = db.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
+	if err != nil {
+		return errors.Wrap(err, "acquire lock for deleting utxos")
+	}
+
 	const q = `
 		DELETE FROM utxos
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(ids))
+	_, err = db.Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(ids))
 	if err != nil {
 		return errors.Wrap(err, "delete query")
 	}
 
-	return nil
+	return errors.Wrap(dbtx.Commit(ctx), "commit transaction for deleting utxos")
 }
 
 // insertBlockOutputs updates utxos to mark

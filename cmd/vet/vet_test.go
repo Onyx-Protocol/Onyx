@@ -51,7 +51,7 @@ func TestVet(t *testing.T) {
 	flags := []string{"./" + binary}
 	cmd = exec.Command(errchk, append(flags, files...)...)
 	if !run(cmd, t) {
-		t.Fatal("vet command failed")
+		t.Fatalf("vet command failed: %s %v %v", errchk, flags, files)
 	}
 }
 

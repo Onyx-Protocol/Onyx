@@ -106,6 +106,50 @@ $$;
 
 
 --
+-- Name: cancel_reservation(integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION cancel_reservation(inp_reservation_id integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    DELETE FROM reservations WHERE reservation_id = inp_reservation_id;
+END;
+$$;
+
+
+--
+-- Name: create_reservation(text, text, timestamp with time zone); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION create_reservation(inp_asset_id text, inp_account_id text, inp_expiry timestamp with time zone) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    new_reservation_id INT;
+    row RECORD;
+BEGIN
+    SELECT NEXTVAL('reservation_seq') INTO STRICT new_reservation_id;
+    INSERT INTO reservations (reservation_id, asset_id, account_id, expiry) VALUES (new_reservation_id, inp_asset_id, inp_account_id, inp_expiry);
+    RETURN new_reservation_id;
+END;
+$$;
+
+
+--
+-- Name: expire_reservations(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION expire_reservations() RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    DELETE FROM reservations WHERE expiry < CURRENT_TIMESTAMP;
+END;
+$$;
+
+
+--
 -- Name: key_index(bigint); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -147,6 +191,62 @@ $$;
 
 
 --
+-- Name: reserve_utxos(text, text, bigint, timestamp with time zone); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION reserve_utxos(inp_asset_id text, inp_account_id text, inp_amt bigint, inp_expiry timestamp with time zone) RETURNS record
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    row RECORD;
+    ret RECORD;
+    new_reservation_id INT;
+    available BIGINT := 0;
+    unavailable BIGINT := 0;
+BEGIN
+    SELECT create_reservation(inp_asset_id, inp_account_id, inp_expiry) INTO STRICT new_reservation_id;
+
+    LOOP
+        SELECT tx_hash, index, amount INTO row
+            FROM account_utxos u
+            WHERE asset_id = inp_asset_id
+                  AND inp_account_id = account_id
+                  AND reservation_id IS NULL
+                  AND (tx_hash, index) NOT IN (TABLE pool_inputs)
+            LIMIT 1
+            FOR UPDATE
+            SKIP LOCKED;
+        IF FOUND THEN
+            UPDATE account_utxos SET reservation_id = new_reservation_id
+                WHERE (tx_hash, index) = (row.tx_hash, row.index);
+            available := available + row.amount;
+            IF available >= inp_amt THEN
+                EXIT;
+            END IF;
+        ELSE
+            EXIT;
+        END IF;
+    END LOOP;
+
+    IF available < inp_amt THEN
+        SELECT SUM(change) AS change INTO STRICT row
+            FROM reservations
+            WHERE asset_id = inp_asset_id AND account_id = inp_account_id;
+        unavailable := row.change;
+        PERFORM cancel_reservation(new_reservation_id);
+        new_reservation_id := 0;
+    ELSE
+        UPDATE reservations SET change = available - inp_amt
+            WHERE reservation_id = new_reservation_id;
+    END IF;
+
+    SELECT new_reservation_id, available, (available+unavailable < inp_amt) INTO ret;
+    RETURN ret;
+END;
+$$;
+
+
+--
 -- Name: to_key_index(integer[]); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -175,7 +275,7 @@ CREATE TABLE account_utxos (
     manager_node_id text NOT NULL,
     account_id text NOT NULL,
     addr_index bigint NOT NULL,
-    reserved_until timestamp with time zone DEFAULT '1970-01-01 00:00:00-08'::timestamp with time zone NOT NULL
+    reservation_id integer
 );
 
 
@@ -628,6 +728,31 @@ CREATE TABLE projects (
 
 
 --
+-- Name: reservation_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE reservation_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: reservations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE reservations (
+    reservation_id integer DEFAULT nextval('reservation_seq'::regclass) NOT NULL,
+    asset_id text NOT NULL,
+    account_id text NOT NULL,
+    expiry timestamp with time zone DEFAULT '1970-01-01 00:00:00-08'::timestamp with time zone NOT NULL,
+    change bigint DEFAULT 0 NOT NULL
+);
+
+
+--
 -- Name: rotations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -904,6 +1029,14 @@ ALTER TABLE ONLY projects
 
 
 --
+-- Name: reservations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY reservations
+    ADD CONSTRAINT reservations_pkey PRIMARY KEY (reservation_id);
+
+
+--
 -- Name: rotations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -954,6 +1087,13 @@ CREATE INDEX account_utxos_account_id_asset_id_idx ON account_utxos USING btree 
 --
 
 CREATE INDEX account_utxos_manager_node_id_asset_id_idx ON account_utxos USING btree (manager_node_id, asset_id);
+
+
+--
+-- Name: account_utxos_reservation_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX account_utxos_reservation_id_idx ON account_utxos USING btree (reservation_id);
 
 
 --
@@ -1132,6 +1272,20 @@ CREATE INDEX orderbook_utxos_seller_id_idx ON orderbook_utxos USING btree (selle
 
 
 --
+-- Name: reservations_asset_id_account_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX reservations_asset_id_account_id_idx ON reservations USING btree (asset_id, account_id);
+
+
+--
+-- Name: reservations_expiry; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX reservations_expiry ON reservations USING btree (expiry);
+
+
+--
 -- Name: users_lower_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1144,6 +1298,14 @@ CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
 
 ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_fkey FOREIGN KEY (tx_hash, index) REFERENCES utxos(tx_hash, index) ON DELETE CASCADE;
+
+
+--
+-- Name: account_utxos_reservation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY account_utxos
+    ADD CONSTRAINT account_utxos_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id) ON DELETE SET NULL;
 
 
 --

@@ -52,13 +52,23 @@ var dbKey key
 // Begin returns the new transaction and
 // a new context with the transaction as its
 // associated database.
+//
+// Note: if a transaction is already pending in the passed-in context,
+// this function does not create a new one but returns the existing
+// one.
 func Begin(ctx context.Context) (Committer, context.Context, error) {
-	tx, err := begin(FromContext(ctx), ctx)
+	db := FromContext(ctx)
+
+	if dbtx, ok := db.(Tx); ok {
+		return newNestedTx(ctx, dbtx)
+	}
+
+	dbtx, err := begin(db, ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-	ctx = NewContext(ctx, tx)
-	return tx, ctx, nil
+	ctx = NewContext(ctx, dbtx)
+	return dbtx, ctx, nil
 }
 
 func begin(db DB, ctx context.Context) (Tx, error) {

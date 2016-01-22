@@ -1,16 +1,14 @@
 package utxodb
 
 import (
-	"container/heap"
-	"sort"
-	"sync"
 	"time"
 
 	"golang.org/x/net/context"
 
+	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
-	"chain/log"
+	chainlog "chain/log"
 	"chain/metrics"
 	"chain/net/trace/span"
 )
@@ -32,16 +30,6 @@ var (
 )
 
 type (
-	Reserver struct {
-		db DB
-
-		mu  sync.Mutex // protects the following
-		tab map[key]*pool
-
-		outpointMu    sync.Mutex // protects the following
-		outpointUTXOs map[bc.Outpoint]*UTXO
-	}
-
 	key struct {
 		AccountID string
 		AssetID   bc.AssetID
@@ -61,7 +49,6 @@ type (
 		Amount    uint64
 
 		ResvExpires time.Time
-		heapIndex   int
 		reserved    uint64 // only valid if ResvExpires after now
 
 		Outpoint  bc.Outpoint
@@ -89,213 +76,162 @@ type (
 		TxID      string     `json:"transaction_id"` // TODO(bobg): remove this, it's unused
 		Amount    uint64
 	}
-
-	DB interface {
-		// LoadUTXOs loads the set of UTXOs
-		// available to reserve
-		// for the given asset in the given account.
-		LoadUTXOs(ctx context.Context, accountID string, assetID bc.AssetID) ([]*UTXO, error)
-
-		// SaveReservations stores the reservation expiration
-		// time in the database for the given UTXOs.
-		SaveReservations(ctx context.Context, u []*UTXO, expires time.Time) error
-	}
 )
 
-func New(db DB) *Reserver {
-	return &Reserver{
-		db:            db,
-		tab:           make(map[key]*pool),
-		outpointUTXOs: make(map[bc.Outpoint]*UTXO),
-	}
-}
-
-// pool returns the pool for the given account and asset,
-// creating it if necessary.
-func (rs *Reserver) pool(accountID string, assetID bc.AssetID) *pool {
-	rs.mu.Lock()
-	defer rs.mu.Unlock()
-	k := key{accountID, assetID}
-	p, ok := rs.tab[k]
-	if !ok {
-		p = new(pool)
-		rs.tab[k] = p
-	}
-	return p
-}
-
-func (rs *Reserver) Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTXO, c []Change, err error) {
+func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTXO, c []Change, err error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
 	var reserved []*UTXO
 	var change []Change
+	var reservationIDs []int32
+
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "begin transaction for reserving utxos")
+	}
+	defer dbtx.Rollback(ctx)
+
+	db := pg.FromContext(ctx)
+
+	_, err = db.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "acquire lock for reserving utxos")
+	}
+
 	defer func() {
 		if err != nil {
-			u = nil
-			c = nil
-			rs.unreserve(reserved)
+			db.Exec(ctx, "SELECT cancel_reservations($1)", pg.Int32s(reservationIDs)) // ignore errors
 		}
 	}()
 
 	now := time.Now().UTC()
 	exp := now.Add(ttl)
 
-	sort.Sort(byKey(sources))
-	for i, in := range sources {
-		p := rs.pool(in.AccountID, in.AssetID)
-		err := rs.initPool(ctx, p, rs.db, key{in.AccountID, in.AssetID})
+	const q1 = `
+		SELECT * FROM reserve_utxos($1, $2, $3, $4)
+		    AS (reservation_id INT, amount BIGINT, insufficient BOOLEAN)
+		`
+	const q2 = `
+		SELECT tx_hash, index, amount, key_index(addr_index)
+		    FROM account_utxos
+		    WHERE reservation_id = $1
+		`
+
+	for _, source := range sources {
+		var (
+			reservationID  int32
+			reservedAmount uint64
+			insufficient   bool
+		)
+
+		row := db.QueryRow(ctx, q1, source.AssetID, source.AccountID, source.Amount, exp)
+		err = row.Scan(&reservationID, &reservedAmount, &insufficient)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Wrap(err, "reserve utxos")
 		}
-		res, err := p.reserve(in.Amount, now, exp)
+
+		if reservationID <= 0 {
+			if insufficient {
+				return nil, nil, ErrInsufficient
+			}
+			return nil, nil, ErrReserved
+		}
+
+		reservationIDs = append(reservationIDs, reservationID)
+
+		if reservedAmount > source.Amount {
+			change = append(change, Change{source, reservedAmount - source.Amount})
+		}
+
+		rows, err := db.Query(ctx, q2, reservationID)
 		if err != nil {
-			err = errors.WithDetailf(err, "input %d: account=%s asset=%s amount=%d",
-				i, in.AccountID, in.AssetID.String(), in.Amount)
-			return nil, nil, err
+			return nil, nil, errors.Wrap(err, "reservation member query")
 		}
-		reserved = append(reserved, res...)
-		if n := sum(res); n > in.Amount {
-			change = append(change, Change{in, n - in.Amount})
+		defer rows.Close()
+
+		for rows.Next() {
+			// TODO(bobg): Sort utxos from largest amount to smallest, which
+			// might allow us to satisfy source.Amount with fewer utxos,
+			// unreserving some and making less change.
+			var addrIndex []uint32
+			utxo := UTXO{
+				AssetID:     source.AssetID,
+				AccountID:   source.AccountID,
+				ResvExpires: exp,
+			}
+			err = rows.Scan(&utxo.Outpoint.Hash, &utxo.Outpoint.Index, &utxo.Amount, (*pg.Uint32s)(&addrIndex))
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "reservation member row scan")
+			}
+			copy(utxo.AddrIndex[:], addrIndex)
+			reserved = append(reserved, &utxo)
+		}
+		if err = rows.Err(); err != nil {
+			return nil, nil, errors.Wrap(err, "end reservation member row scan loop")
 		}
 	}
 
-	if ttl > 2*time.Minute {
-		err = rs.db.SaveReservations(ctx, reserved, exp)
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "commit transaction for reserving utxos")
 	}
+
 	return reserved, change, err
 }
 
 // Cancel cancels the given reservations, if they still exist.
 // If any do not exist (if they've already been consumed
 // or canceled), it silently ignores them.
-func (rs *Reserver) Cancel(ctx context.Context, outpoints []bc.Outpoint) {
-	var utxos []*UTXO
-	for _, op := range outpoints {
-		if u := rs.findReservation(op); u != nil {
-			utxos = append(utxos, u)
-		}
+func Cancel(ctx context.Context, outpoints []bc.Outpoint) error {
+	txHashes := make([]bc.Hash, 0, len(outpoints))
+	indexes := make([]uint32, 0, len(outpoints))
+	for _, outpoint := range outpoints {
+		txHashes = append(txHashes, outpoint.Hash)
+		indexes = append(indexes, outpoint.Index)
 	}
-	rs.unreserve(utxos)
+
+	const query = `
+		WITH reservation_ids AS (
+		    SELECT DISTINCT reservation_id FROM utxos
+		        WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::bigint[]))
+		)
+		SELECT cancel_reservation(reservation_id) FROM reservation_ids
+	`
+
+	_, err := pg.FromContext(ctx).Exec(ctx, query, txHashes, indexes)
+	return err
 }
 
-func (rs *Reserver) Apply(deleted, inserted []*UTXO) {
-	defer metrics.RecordElapsed(time.Now())
-	rs.delete(deleted)
-	internIDs(inserted)
-	sort.Sort(byKeyUTXO(inserted))
-	rs.insert(inserted)
-}
-
-// findReservation does a linear scan through the set
-// of pools in rs to find the UTXO that reserves op.
-// If there is no such reservation, it returns nil.
-func (rs *Reserver) findReservation(op bc.Outpoint) *UTXO {
-	// TODO(kr): augment the SDK to include account ID and asset ID
-	// for each reservation, so we can do this lookup faster.
-	defer metrics.RecordElapsed(time.Now())
-	var keys []key
-	rs.mu.Lock()
-	for k := range rs.tab {
-		keys = append(keys, k)
-	}
-	rs.mu.Unlock()
-
-	for _, k := range keys {
-		p := rs.pool(k.AccountID, k.AssetID)
-		if u := p.findReservation(op); u != nil {
-			return u
-		}
-	}
-	return nil
-}
-
-// mappool finds the pool for each element of utxos
-// and calls f.
-// It holds the pool's lock when it calls f,
-// so f can modify the pool outputs list and u.
-// f must preserve the heap invariant for p.outputs.
-func (rs *Reserver) mappool(utxos []*UTXO, f func(*pool, *UTXO)) {
-	var prev *pool
-	for _, u := range utxos {
-		p := rs.pool(u.AccountID, u.AssetID)
-		if p != prev {
-			if prev != nil {
-				prev.mu.Unlock()
+// ExpireReservations is meant to be run as a goroutine. It loops
+// forever, calling the expire_reservations() pl/pgsql function to
+// remove expired reservations from the reservations table.
+func ExpireReservations(ctx context.Context, period time.Duration) {
+	for range time.Tick(period) {
+		err := func() error {
+			dbtx, ctx, err := pg.Begin(ctx)
+			if err != nil {
+				return err
 			}
-			p.mu.Lock()
-			prev = p
+			defer dbtx.Rollback(ctx)
+
+			db := pg.FromContext(ctx)
+
+			_, err = db.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
+			if err != nil {
+				return err
+			}
+
+			_, err = db.Exec(ctx, `SELECT expire_reservations()`)
+			if err != nil {
+				return err
+			}
+
+			return dbtx.Commit(ctx)
+		}()
+		if err != nil {
+			chainlog.Error(ctx, err)
 		}
-		f(p, u)
 	}
-	if prev != nil {
-		prev.mu.Unlock()
-	}
-}
-
-// utxos must not already be in rs.
-func (rs *Reserver) insert(utxos []*UTXO) {
-	ctx := context.TODO()
-	var i int64
-	rs.outpointMu.Lock()
-	defer rs.outpointMu.Unlock()
-	rs.mappool(utxos, func(p *pool, u *UTXO) {
-		// It's possible u is already in the pool.
-		// If so, there's nothing to do here.
-		if p.byOutpoint(u.Outpoint) != nil {
-			return
-		}
-		rs.outpointUTXOs[u.Outpoint] = u
-		heap.Push(&p.outputs, u)
-		i++
-		if i%1e6 == 0 {
-			log.Messagef(ctx, "build utxo heaps: did %d so far", i)
-		}
-	})
-}
-
-func (rs *Reserver) unreserve(utxos []*UTXO) {
-	sort.Sort(byKeyUTXO(utxos))
-	rs.mappool(utxos, func(p *pool, u *UTXO) {
-		// It's possible u has been removed from the pool
-		// before we got here, since we just took the lock
-		// at the start of unreserve (in mappool).
-		// If u is no longer in p, it has been deleted
-		// and unreserve should be a no-op.
-		if p.contains(u) {
-			u.ResvExpires = time.Time{}
-			heap.Fix(&p.outputs, u.heapIndex)
-		}
-	})
-}
-
-func (rs *Reserver) delete(utxos []*UTXO) {
-	rs.outpointMu.Lock()
-	defer rs.outpointMu.Unlock()
-
-	for i, u := range utxos {
-		utxos[i] = rs.outpointUTXOs[u.Outpoint]
-	}
-
-	sort.Sort(byKeyUTXO(utxos))
-	rs.mappool(utxos, func(p *pool, u *UTXO) {
-		// It's possible u has already been deleted.
-		// Also, u might not be the same object stored
-		// in p; it just has the same outpoint.
-		// So we look up the actual pointer and
-		// make sure it's contained in p.
-		if u = p.byOutpoint(u.Outpoint); u != nil {
-			heap.Remove(&p.outputs, u.heapIndex)
-		}
-		delete(rs.outpointUTXOs, u.Outpoint)
-	})
-
-}
-
-func sum(utxos []*UTXO) (total uint64) {
-	for _, u := range utxos {
-		total += u.Amount
-	}
-	return
 }
