@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/fedchain-sandbox/hdkey"
 )
@@ -112,6 +113,10 @@ func TestCreateAddress(t *testing.T) {
 
 	// Force predictable values.
 	addrIndexNext, addrIndexCap = 1, 100
+	_, err := pg.FromContext(ctx).Exec(ctx, `ALTER SEQUENCE manager_nodes_key_index_seq RESTART`)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	managerNode, err := InsertManagerNode(ctx, "proj-id-0", "foo", []*hdkey.XKey{dummyXPub2}, nil, 0, 1)
 	if err != nil {
@@ -141,7 +146,7 @@ func TestCreateAddress(t *testing.T) {
 		Expires:          exp,
 		IsChange:         false,
 		ManagerNodeID:    managerNode.ID,
-		ManagerNodeIndex: []uint32{0, 10},
+		ManagerNodeIndex: []uint32{0, 1},
 		AccountIndex:     []uint32{0, 0},
 		Index:            []uint32{0, 1},
 		SigsRequired:     1,
