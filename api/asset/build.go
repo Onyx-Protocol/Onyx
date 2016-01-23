@@ -116,7 +116,7 @@ func combine(txs ...*TxTemplate) (*TxTemplate, error) {
 
 func setSignatureData(tpl *TxTemplate) error {
 	for i, in := range tpl.Inputs {
-		hash, err := txscript.CalcSignatureHash(tpl.Unsigned, i, in.RedeemScript, txscript.SigHashAll)
+		hash, err := txscript.CalcSignatureHash(tpl.Unsigned, i, in.SignScript, txscript.SigHashAll)
 		if err != nil {
 			return errors.Wrap(err, "calculating signature hash")
 		}

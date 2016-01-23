@@ -17,6 +17,7 @@ type TxTemplate struct {
 // Input is an input for a project TxTemplate.
 type Input struct {
 	RedeemScript  json.HexBytes `json:"redeem_script"`
+	SignScript    json.HexBytes `json:"sign_script"`
 	SignatureData bc.Hash       `json:"signature_data"`
 	Sigs          []*Signature  `json:"signatures"`
 }
