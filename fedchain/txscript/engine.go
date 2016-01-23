@@ -87,6 +87,7 @@ type (
 	// Engine is the virtual machine that executes scripts.
 	Engine struct {
 		scripts         [][]parsedOpcode
+		signScript      []parsedOpcode
 		scriptIdx       int
 		scriptOff       int
 		lastCodeSep     int
@@ -275,7 +276,8 @@ func (vm *Engine) CheckErrorCondition(finalScript bool) error {
 func (vm *Engine) InsertScript(newScript []parsedOpcode) {
 	currentScript := vm.scripts[vm.scriptIdx]
 
-	updatedScript := currentScript[:vm.scriptOff+1]
+	var updatedScript []parsedOpcode
+	updatedScript = append(updatedScript, currentScript[:vm.scriptOff+1]...)
 	updatedScript = append(updatedScript, newScript...)
 	updatedScript = append(updatedScript, currentScript[vm.scriptOff+1:]...)
 
@@ -324,11 +326,11 @@ func (vm *Engine) Step() (done bool, err error) {
 		vm.numOps = 0 // number of ops is per script.
 		vm.scriptOff = 0
 		if vm.scriptIdx == 0 && vm.bip16 {
-			vm.scriptIdx++
+			vm.incrScriptIdx()
 			vm.savedFirstStack = vm.GetStack()
 		} else if vm.scriptIdx == 1 && vm.bip16 {
 			// Put us past the end for CheckErrorCondition()
-			vm.scriptIdx++
+			vm.incrScriptIdx()
 			// Check script ran successfully and pull the script
 			// out of the first stack and execute that.
 			err := vm.CheckErrorCondition(false)
@@ -346,6 +348,7 @@ func (vm *Engine) Step() (done bool, err error) {
 				return false, err
 			}
 			vm.scripts = append(vm.scripts, pops)
+			vm.signScript = vm.scripts[vm.scriptIdx]
 
 			// Now about to execute the serialized script from the
 			// sigscript.  For p2sh, we restore the stack to the state it
@@ -358,11 +361,11 @@ func (vm *Engine) Step() (done bool, err error) {
 				vm.SetStack(vm.savedFirstStack[:len(vm.savedFirstStack)-1])
 			}
 		} else {
-			vm.scriptIdx++
+			vm.incrScriptIdx()
 		}
 		// there are zero length scripts in the wild
 		if vm.scriptIdx < len(vm.scripts) && vm.scriptOff >= len(vm.scripts[vm.scriptIdx]) {
-			vm.scriptIdx++
+			vm.incrScriptIdx()
 		}
 		vm.lastCodeSep = 0
 		if vm.scriptIdx >= len(vm.scripts) {
@@ -380,6 +383,10 @@ func (vm *Engine) isP2C() bool {
 // for successful validation or an error if one occurred.
 func (vm *Engine) Execute() (err error) {
 	done := false
+	if vm.scriptIdx < len(vm.scripts) {
+		vm.signScript = vm.scripts[vm.scriptIdx]
+	}
+
 	for done != true {
 		log.Tracef("%v", newLogClosure(func() string {
 			dis, err := vm.DisasmPC()
@@ -624,6 +631,15 @@ func (vm *Engine) SetAltStack(data [][]byte) {
 	setStack(&vm.astack, data)
 }
 
+// incrScriptIdx increments the current script
+// and tracks what the script should be signed
+func (vm *Engine) incrScriptIdx() {
+	vm.scriptIdx++
+	if vm.scriptIdx < len(vm.scripts) {
+		vm.signScript = vm.scripts[vm.scriptIdx]
+	}
+}
+
 // This function prepares a previously allocated Engine for reuse with
 // another txin, preserving state (to wit, vm.available) that P2C
 // wants to save between txins.
@@ -674,7 +690,7 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 	// script is empty since there is nothing to execute for it in that
 	// case.
 	if len(scripts[0]) == 0 {
-		vm.scriptIdx++
+		vm.incrScriptIdx()
 	}
 
 	if vm.hasFlag(ScriptBip16) {

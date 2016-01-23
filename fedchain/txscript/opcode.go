@@ -2056,8 +2056,8 @@ func opcodeCheckSig(op *parsedOpcode, vm *Engine) error {
 		return err
 	}
 
-	// Get script starting from the most recent OP_CODESEPARATOR.
-	subScript := vm.subScript()
+	// Get script to sign
+	subScript := vm.signScript
 
 	// Remove the signature since there is no way for a signature to sign
 	// itself.
@@ -2196,8 +2196,8 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 			len(dummy))
 	}
 
-	// Get script starting from the most recent OP_CODESEPARATOR.
-	script := vm.subScript()
+	// Get script to sign
+	script := vm.signScript
 
 	// Remove any of the signatures since there is no way for a signature to
 	// sign itself.
