@@ -28,7 +28,7 @@ type nodeTxInput struct {
 	AssetLabel   string             `json:"asset_label,omitempty"`
 	Amount       uint64             `json:"amount"`
 	Address      chainjson.HexBytes `json:"address,omitempty"`
-	Script       chainjson.HexBytes `json:"address,omitempty"`
+	Script       chainjson.HexBytes `json:"script,omitempty"`
 	AccountID    string             `json:"account_id,omitempty"`
 	AccountLabel string             `json:"account_label,omitempty"`
 	Metadata     chainjson.HexBytes `json:"metadata"`
@@ -41,7 +41,7 @@ type nodeTxOutput struct {
 	AssetLabel   string             `json:"asset_label,omitempty"`
 	Amount       uint64             `json:"amount"`
 	Address      chainjson.HexBytes `json:"address,omitempty"`
-	Script       chainjson.HexBytes `json:"address,omitempty"`
+	Script       chainjson.HexBytes `json:"script,omitempty"`
 	AccountID    string             `json:"account_id,omitempty"`
 	AccountLabel string             `json:"account_label,omitempty"`
 	Metadata     chainjson.HexBytes `json:"metadata"`
