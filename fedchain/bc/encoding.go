@@ -9,7 +9,7 @@ import (
 )
 
 // endianness is the default endian encoding (little or big)
-var endianness = binary.BigEndian
+var endianness = binary.LittleEndian
 
 func writeUvarint(w *errors.Writer, x uint64) {
 	var buf [9]byte
@@ -67,4 +67,13 @@ func readUint64(r *errors.Reader) uint64 {
 		r.Err = err
 	}
 	return endianness.Uint64(buf[:])
+}
+
+func writeMetadata(w *errors.Writer, data []byte, forHashing bool) {
+	if forHashing {
+		h := fastHash(data)
+		writeBytes(w, h)
+	} else {
+		writeBytes(w, data)
+	}
 }

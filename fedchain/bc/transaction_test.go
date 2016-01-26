@@ -14,37 +14,38 @@ import (
 
 func TestTransaction(t *testing.T) {
 	issuanceScript := []byte{txscript.OP_1}
-	genesisHash := mustDecodeHash("dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5")
+	genesisHash := mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d")
 
 	cases := []struct {
-		tx   *Tx
-		hex  string
-		hash [32]byte
+		tx          *Tx
+		hex         string
+		hash        [32]byte
+		witnessHash [32]byte
 	}{
 		{
 			tx: NewTx(TxData{
-				Version:  CurrentTransactionVersion,
+				Version:  1,
 				Inputs:   nil,
 				Outputs:  nil,
 				LockTime: 0,
 				Metadata: nil,
 			}),
-			hex:  "000000010000000000000000000000",
-			hash: mustDecodeHash("6ded6af33b14c1d4745cea6965b3483f642057c057724d6ea2df05fc78bc5b4d"),
+			hex:         "010000000000000000000000000000",
+			hash:        mustDecodeHash("d64277a66bbd1a66e12ee31797f7b9d2487e056def294e5f5240e64e0324ad45"),
+			witnessHash: mustDecodeHash("bb0e9f24579bab40b88df4b409984ef7fdcb1a9416ba5d89e6009f6f7358214d"),
 		},
 		{
 			tx: NewTx(TxData{
-				Version: CurrentTransactionVersion,
+				Version: 1,
 				Inputs: []*TxInput{
 					{
 						Previous: Outpoint{
-							Hash:  mustDecodeHash("dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5"),
+							Hash:  mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"),
 							Index: InvalidOutputIndex,
 						},
 						// "PUSHDATA 'issuance'"
 						SignatureScript: []byte{txscript.OP_DATA_8, 0x69, 0x73, 0x73, 0x75, 0x61, 0x6e, 0x63, 0x65},
 						Metadata:        []byte("input"),
-						AssetDefinition: []byte("definition"),
 					},
 				},
 				Outputs: []*TxOutput{
@@ -57,20 +58,22 @@ func TestTransaction(t *testing.T) {
 				LockTime: 0,
 				Metadata: []byte("issuance"),
 			}),
-			hex:  "0000000101dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5ffffffff090869737375616e636505696e7075740a646566696e6974696f6e010000000000000000000000000000000000000000000000000000000000000000000000e8d4a510000151066f757470757400000000000000000869737375616e6365",
-			hash: mustDecodeHash("c9346331def1a4084b910e759277974ab339d46aefc2a434f2de8745321bd762"),
+			hex:         "010000000103deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758dffffffff090869737375616e636505696e707574000100000000000000000000000000000000000000000000000000000000000000000010a5d4e80000000151066f757470757400000000000000000869737375616e6365",
+			hash:        mustDecodeHash("fa104295fcf2dc017cab5ce66b1306e070478311dde94cf4ad5c874934ffbfcf"),
+			witnessHash: mustDecodeHash("f0c903c599c5b963c51d63cfd7025e0f5c6d368f95cfa4a684ff6bf49325ebab"),
 		},
 		{
 			tx: NewTx(TxData{
-				Version: CurrentTransactionVersion,
+				Version: 1,
 				Inputs: []*TxInput{
 					{
 						Previous: Outpoint{
-							Hash:  mustDecodeHash("92322db99e8b9e9f1df601cc9d22c5b056ad5189a50fbdc1d8915de26f5f38dd"),
+							Hash:  mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"),
 							Index: 0,
 						},
 						SignatureScript: nil,
 						Metadata:        []byte("input"),
+						AssetDefinition: []byte("assetdef"),
 					},
 				},
 				Outputs: []*TxOutput{
@@ -88,8 +91,9 @@ func TestTransaction(t *testing.T) {
 				LockTime: 1492590591,
 				Metadata: []byte("distribution"),
 			}),
-			hex:  "000000010192322db99e8b9e9f1df601cc9d22c5b056ad5189a50fbdc1d8915de26f5f38dd000000000005696e7075740002a0f16ffd5618342611dd52589cad51f93e40cb9c54ab2e18c3169ca2e511533f0000008bb2c97000015100a0f16ffd5618342611dd52589cad51f93e40cb9c54ab2e18c3169ca2e511533f0000005d21dba0000152000000000058f71fff0c646973747269627574696f6e",
-			hash: mustDecodeHash("b4f46e285ec1bf75edd3790e09743eaee8ee60126abb9841d4b9aa7795347573"),
+			hex:         "0100000001dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292000000000005696e7075740861737365746465660265dad3e60971527b1158344272b23ef9634cc72ce69ce54d501b5293dce0ef7c0070c9b28b00000001510065dad3e60971527b1158344272b23ef9634cc72ce69ce54d501b5293dce0ef7c00a0db215d000000015200ff1ff758000000000c646973747269627574696f6e",
+			hash:        mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151"),
+			witnessHash: mustDecodeHash("c0c7aae5cca172a06265670cabce02d4f3efbbafdb8e4e8e60f84b1822bb64d9"),
 		},
 	}
 
@@ -102,7 +106,10 @@ func TestTransaction(t *testing.T) {
 			t.Errorf("bytes = %x want %x", got, want)
 		}
 		if test.tx.Hash != test.hash {
-			t.Errorf("hash = %x want %x", test.tx.Hash, test.hash)
+			t.Errorf("hash = %s want %x", test.tx.Hash, test.hash)
+		}
+		if g := test.tx.WitnessHash(); g != test.witnessHash {
+			t.Errorf("witness hash = %s want %x", g, test.witnessHash)
 		}
 
 		tx1 := new(TxData)

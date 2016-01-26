@@ -45,7 +45,7 @@ func TestAssembleSignatures(t *testing.T) {
 		t.Fatal(withStack(err))
 	}
 
-	want := "95b3ad722cbe3d04426eb07646523b10146e161fe80e6a2d27348e9b8d93127c"
+	want := "a83ee0b537eead1f68c9d77657ebb2407833641cc44c85e2c7a43b8a9d50c337"
 	if tx.Hash.String() != want {
 		t.Errorf("got tx hash = %v want %v", tx.Hash.String(), want)
 	}

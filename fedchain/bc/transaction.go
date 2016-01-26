@@ -3,6 +3,7 @@ package bc
 import (
 	"bytes"
 	"database/sql/driver"
+	"encoding/binary"
 	"encoding/hex"
 	"io"
 	"strconv"
@@ -189,8 +190,7 @@ func (ti *TxInput) readFrom(r *errors.Reader) {
 }
 
 func (to *TxOutput) readFrom(r *errors.Reader) {
-	io.ReadFull(r, to.AssetID[:])
-	to.Amount = readUint64(r)
+	to.AssetAmount.readFrom(r)
 	readBytes(r, (*[]byte)(&to.Script))
 	readBytes(r, &to.Metadata)
 }
@@ -213,6 +213,27 @@ func (tx *TxData) Hash() Hash {
 	var v Hash
 	h.Sum(v[:0])
 	return v
+}
+
+// WitnessHash is the combined hash of the
+// transactions hash and signature data hash.
+// It is used to compute the TxRoot of a block.
+func (tx *TxData) WitnessHash() Hash {
+	var data []byte
+
+	var lenBytes [9]byte
+	n := binary.PutUvarint(lenBytes[:], uint64(len(tx.Inputs)))
+	data = append(data, lenBytes[:n]...)
+
+	for _, in := range tx.Inputs {
+		sigHash := hash256.Sum(in.SignatureScript)
+		data = append(data, sigHash[:]...)
+	}
+
+	txHash := tx.Hash()
+	dataHash := hash256.Sum(data)
+
+	return hash256.Sum(append(txHash[:], dataHash[:]...))
 }
 
 // MarshalText satisfies encoding.TextMarshaller interface
@@ -244,12 +265,7 @@ func (tx *TxData) writeTo(w io.Writer, forHashing bool) (n int64, err error) {
 	}
 
 	writeUint64(ew, tx.LockTime)
-	if forHashing {
-		h := hash256.Sum(tx.Metadata)
-		ew.Write(h[:])
-	} else {
-		writeBytes(ew, tx.Metadata)
-	}
+	writeMetadata(ew, tx.Metadata, forHashing)
 	return ew.Written(), ew.Err()
 }
 
@@ -261,31 +277,20 @@ func (ti *TxInput) writeTo(w *errors.Writer, forHashing bool) {
 	// redeem scripts and contracts to optimize memory/storage use.
 	// Write the metadata or its hash depending on serialization mode.
 	if forHashing {
-		h := hash256.Sum(ti.SignatureScript)
-		w.Write(h[:])
-		h = fastHash(ti.Metadata)
-		w.Write(h[:])
-		h = fastHash(ti.AssetDefinition)
-		w.Write(h[:])
+		writeBytes(w, nil)
 	} else {
 		writeBytes(w, ti.SignatureScript)
-		writeBytes(w, ti.Metadata)
-		writeBytes(w, ti.AssetDefinition)
 	}
+	writeMetadata(w, ti.Metadata, forHashing)
+	writeMetadata(w, ti.AssetDefinition, forHashing)
 }
 
 func (to *TxOutput) writeTo(w *errors.Writer, forHashing bool) {
-	w.Write(to.AssetID[:])
-	writeUint64(w, to.Amount)
+	to.AssetAmount.writeTo(w)
 	writeBytes(w, to.Script)
 
 	// Write the metadata or its hash depending on serialization mode.
-	if forHashing {
-		h := fastHash(to.Metadata)
-		w.Write(h[:])
-	} else {
-		writeBytes(w, to.Metadata)
-	}
+	writeMetadata(w, to.Metadata, forHashing)
 }
 
 // String returns the Outpoint in the human-readable form "hash:index".
@@ -310,6 +315,16 @@ func (p Outpoint) WriteTo(w io.Writer) (n int64, err error) {
 }
 
 type AssetAmount struct {
-	Amount  uint64
 	AssetID AssetID `json:"asset_id"`
+	Amount  uint64
+}
+
+func (a *AssetAmount) readFrom(r *errors.Reader) {
+	io.ReadFull(r, a.AssetID[:])
+	a.Amount = readUint64(r)
+}
+
+func (a AssetAmount) writeTo(w *errors.Writer) {
+	w.Write(a.AssetID[:])
+	writeUint64(w, a.Amount)
 }

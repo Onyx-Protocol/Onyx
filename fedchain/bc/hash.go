@@ -65,14 +65,10 @@ func ParseHash(s string) (h Hash, err error) {
 // A 160-bit hash
 type ContractHash [20]byte
 
-var emptyHash = [32]byte{
-	93, 246, 224, 226, 118, 19, 89, 211, 10, 130, 117, 5, 142, 41, 159, 204,
-	3, 129, 83, 69, 69, 245, 92, 244, 62, 65, 152, 63, 93, 76, 148, 86,
-}
-
-func fastHash(d []byte) [32]byte {
+func fastHash(d []byte) []byte {
 	if len(d) == 0 {
-		return emptyHash
+		return nil
 	}
-	return hash256.Sum(d)
+	h := hash256.Sum(d)
+	return h[:]
 }
