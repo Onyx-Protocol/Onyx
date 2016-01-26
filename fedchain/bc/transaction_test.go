@@ -49,10 +49,9 @@ func TestTransaction(t *testing.T) {
 				},
 				Outputs: []*TxOutput{
 					{
-						AssetID:  AssetID{},
-						Value:    1000000000000,
-						Script:   []byte{txscript.OP_1},
-						Metadata: []byte("output"),
+						AssetAmount: AssetAmount{AssetID: AssetID{}, Amount: 1000000000000},
+						Script:      []byte{txscript.OP_1},
+						Metadata:    []byte("output"),
 					},
 				},
 				LockTime: 0,
@@ -76,16 +75,14 @@ func TestTransaction(t *testing.T) {
 				},
 				Outputs: []*TxOutput{
 					{
-						AssetID:  ComputeAssetID(issuanceScript, genesisHash),
-						Value:    600000000000,
-						Script:   []byte{txscript.OP_1},
-						Metadata: nil,
+						AssetAmount: AssetAmount{AssetID: ComputeAssetID(issuanceScript, genesisHash), Amount: 600000000000},
+						Script:      []byte{txscript.OP_1},
+						Metadata:    nil,
 					},
 					{
-						AssetID:  ComputeAssetID(issuanceScript, genesisHash),
-						Value:    400000000000,
-						Script:   []byte{txscript.OP_2},
-						Metadata: nil,
+						AssetAmount: AssetAmount{AssetID: ComputeAssetID(issuanceScript, genesisHash), Amount: 400000000000},
+						Script:      []byte{txscript.OP_2},
+						Metadata:    nil,
 					},
 				},
 				LockTime: 1492590591,
@@ -135,10 +132,9 @@ func TestIsIssuance(t *testing.T) {
 		},
 		Outputs: []*TxOutput{
 			{
-				AssetID:  AssetID{},
-				Value:    1000000000000,
-				Script:   []byte{txscript.OP_1},
-				Metadata: []byte("output"),
+				AssetAmount: AssetAmount{AssetID: AssetID{}, Amount: 1000000000000},
+				Script:      []byte{txscript.OP_1},
+				Metadata:    []byte("output"),
 			},
 		},
 		LockTime: 0,

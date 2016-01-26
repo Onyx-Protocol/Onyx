@@ -2480,7 +2480,7 @@ func opcodeBalance(op *parsedOpcode, vm *Engine) error {
 
 	var balance uint64
 	for _, output := range vm.viewReader.UnspentP2COutputs(vm.ctx, *contractHash, *assetID) {
-		balance += output.Value
+		balance += output.Amount
 	}
 
 	vm.dstack.PushInt(scriptNum(balance))
@@ -2497,7 +2497,7 @@ func opcodeAsset(op *parsedOpcode, vm *Engine) error {
 // Pushes the current txin's amount onto the stack.
 func opcodeAmount(op *parsedOpcode, vm *Engine) error {
 	prevOut := vm.currentPrevOut()
-	vm.dstack.PushInt(scriptNum(prevOut.Value))
+	vm.dstack.PushInt(scriptNum(prevOut.Amount))
 	return nil
 }
 

@@ -123,7 +123,7 @@ func txIsWellFormed(tx *bc.Tx) error {
 		// asset definition using issuance transactions.
 		// Non-issuance transactions cannot have zero-value outputs.
 		// If all inputs have zero value, tx therefore must have no outputs.
-		if txout.Value == 0 && !tx.IsIssuance() {
+		if txout.Amount == 0 && !tx.IsIssuance() {
 			return fmt.Errorf("non-issuance output value must be > 0")
 		}
 	}
@@ -135,7 +135,7 @@ func txIsWellFormed(tx *bc.Tx) error {
 func validateTxBalance(ctx context.Context, view state.ViewReader, tx *bc.Tx) error {
 	parity := make(map[bc.AssetID]uint64)
 	for _, out := range tx.Outputs {
-		parity[out.AssetID] -= out.Value
+		parity[out.AssetID] -= out.Amount
 	}
 	for _, in := range tx.Inputs {
 		unspent := view.Output(ctx, in.Previous)
@@ -143,7 +143,7 @@ func validateTxBalance(ctx context.Context, view state.ViewReader, tx *bc.Tx) er
 		if assetID == (bc.AssetID{}) {
 			assetID = bc.ComputeAssetID(unspent.Script, stubGenesisHash)
 		}
-		parity[assetID] += unspent.Value
+		parity[assetID] += unspent.Amount
 	}
 	for _, val := range parity {
 		if val != 0 {

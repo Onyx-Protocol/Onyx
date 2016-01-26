@@ -112,7 +112,7 @@ func loadUnspentP2COutputs(ctx context.Context, contractHash bc.ContractHash, as
 		var txhash []byte
 		var index uint32
 		var output state.Output
-		err = rows.Scan(&txhash, &index, &output.AssetID, &output.Value, &output.Script, &output.Metadata)
+		err = rows.Scan(&txhash, &index, &output.AssetID, &output.Amount, &output.Script, &output.Metadata)
 		if err != nil {
 			return nil, errors.Wrap(err, "scan")
 		}

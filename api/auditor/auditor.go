@@ -163,7 +163,7 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 			resp.Inputs = append(resp.Inputs, &TxInput{
 				Type:     "transfer",
 				AssetID:  prev.AssetID,
-				Amount:   &prev.Value,
+				Amount:   &prev.Amount,
 				TxID:     &in.Previous.Hash,
 				TxOut:    &in.Previous.Index,
 				Metadata: in.Metadata,
@@ -174,7 +174,7 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 	for _, out := range tx.Outputs {
 		resp.Outputs = append(resp.Outputs, &TxOutput{
 			AssetID:  out.AssetID,
-			Amount:   out.Value,
+			Amount:   out.Amount,
 			Address:  out.Script,
 			Script:   out.Script,
 			Metadata: out.Metadata,

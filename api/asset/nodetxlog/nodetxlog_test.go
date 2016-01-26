@@ -21,10 +21,9 @@ func TestGenerateNodeTxTransfer(t *testing.T) {
 				Metadata: []byte("input"),
 			}},
 			Outputs: []*bc.TxOutput{{
-				AssetID:  bc.AssetID([32]byte{1}),
-				Value:    987,
-				Script:   []byte{1, 1},
-				Metadata: []byte("output"),
+				AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{1}), Amount: 987},
+				Script:      []byte{1, 1},
+				Metadata:    []byte("output"),
 			}},
 			Metadata: []byte("tx"),
 		},
@@ -107,8 +106,7 @@ func TestGenerateNodeTxIssuance(t *testing.T) {
 				AssetDefinition: []byte(`{"name": "asset 1"}`),
 			}},
 			Outputs: []*bc.TxOutput{{
-				AssetID: bc.AssetID([32]byte{1}),
-				Value:   543,
+				AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{1}), Amount: 543},
 			}},
 		},
 	}

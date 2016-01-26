@@ -34,7 +34,7 @@ func TestBuildTrade(t *testing.T) {
 	unsignedTx := &bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Hash: [32]byte{16}, Index: 0}}},
-		Outputs: []*bc.TxOutput{{AssetID: [32]byte{255}, Value: 2}},
+		Outputs: []*bc.TxOutput{{AssetAmount: bc.AssetAmount{AssetID: [32]byte{255}, Amount: 2}}},
 	}
 
 	tpl := &TxTemplate{
@@ -119,13 +119,13 @@ func TestCombine(t *testing.T) {
 	unsigned1 := &bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}}},
-		Outputs: []*bc.TxOutput{{AssetID: [32]byte{254}, Value: 5}},
+		Outputs: []*bc.TxOutput{{AssetAmount: bc.AssetAmount{AssetID: [32]byte{254}, Amount: 5}}},
 	}
 
 	unsigned2 := &bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}}},
-		Outputs: []*bc.TxOutput{{AssetID: [32]byte{255}, Value: 6}},
+		Outputs: []*bc.TxOutput{{AssetAmount: bc.AssetAmount{AssetID: [32]byte{255}, Amount: 6}}},
 	}
 
 	combined := &bc.TxData{
@@ -135,8 +135,8 @@ func TestCombine(t *testing.T) {
 			{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}},
 		},
 		Outputs: []*bc.TxOutput{
-			{AssetID: [32]byte{254}, Value: 5},
-			{AssetID: [32]byte{255}, Value: 6},
+			{AssetAmount: bc.AssetAmount{AssetID: [32]byte{254}, Amount: 5}},
+			{AssetAmount: bc.AssetAmount{AssetID: [32]byte{255}, Amount: 6}},
 		},
 	}
 

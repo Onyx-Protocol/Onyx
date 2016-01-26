@@ -75,10 +75,9 @@ func Issue(ctx context.Context, assetID string, dests []*Destination) (*TxTempla
 func addAssetIssuanceOutputs(ctx context.Context, tx *bc.TxData, asset *appdb.Asset, dests []*Destination) {
 	for _, dest := range dests {
 		tx.Outputs = append(tx.Outputs, &bc.TxOutput{
-			AssetID:  asset.Hash,
-			Value:    dest.Amount,
-			Script:   dest.PKScript(),
-			Metadata: dest.Metadata,
+			AssetAmount: bc.AssetAmount{AssetID: asset.Hash, Amount: dest.Amount},
+			Script:      dest.PKScript(),
+			Metadata:    dest.Metadata,
 		})
 	}
 }

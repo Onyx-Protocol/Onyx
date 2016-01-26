@@ -63,10 +63,9 @@ func build(ctx context.Context, sources []*Source, dests []*Destination, ttl tim
 
 	for _, dest := range dests {
 		output := &bc.TxOutput{
-			AssetID:  dest.AssetID,
-			Value:    dest.Amount,
-			Script:   dest.PKScript(),
-			Metadata: dest.Metadata,
+			AssetAmount: bc.AssetAmount{AssetID: dest.AssetID, Amount: dest.Amount},
+			Script:      dest.PKScript(),
+			Metadata:    dest.Metadata,
 		}
 		tx.Outputs = append(tx.Outputs, output)
 	}

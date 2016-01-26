@@ -52,8 +52,8 @@ func TestBadPC(t *testing.T) {
 		},
 		Outputs: []*bc.TxOutput{
 			{
-				Value:  1000000000,
-				Script: nil,
+				AssetAmount: bc.AssetAmount{Amount: 1000000000},
+				Script:      nil,
 			},
 		},
 		LockTime: 0,
@@ -111,8 +111,8 @@ func TestCheckErrorCondition(t *testing.T) {
 		},
 		Outputs: []*bc.TxOutput{
 			{
-				Value:  1000000000,
-				Script: nil,
+				AssetAmount: bc.AssetAmount{Amount: 1000000000},
+				Script:      nil,
 			},
 		},
 		LockTime: 0,
@@ -202,8 +202,8 @@ func TestInvalidFlagCombinations(t *testing.T) {
 		},
 		Outputs: []*bc.TxOutput{
 			{
-				Value:  1000000000,
-				Script: nil,
+				AssetAmount: bc.AssetAmount{Amount: 1000000000},
+				Script:      nil,
 			},
 		},
 		LockTime: 0,

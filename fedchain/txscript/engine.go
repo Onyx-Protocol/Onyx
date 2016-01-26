@@ -731,7 +731,7 @@ func NewReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData
 
 	vm.available = make([]uint64, len(tx.Outputs))
 	for i, output := range tx.Outputs {
-		vm.available[i] = output.Value
+		vm.available[i] = output.Amount
 	}
 
 	return vm, nil

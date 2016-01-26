@@ -55,18 +55,11 @@ type TxInput struct {
 	SignatureScript []byte
 	Metadata        []byte
 	AssetDefinition []byte
-
-	// Optional attributes for convenience during validation.
-	// These are not serialized or hashed.
-	Value   uint64
-	AssetID AssetID
 }
 
 // TxOutput encodes a single output in a transaction.
 type TxOutput struct {
-	// TODO(bobg): replace Value and AssetID with AssetAmount
-	AssetID  AssetID
-	Value    uint64
+	AssetAmount
 	Script   []byte
 	Metadata []byte
 }
@@ -197,7 +190,7 @@ func (ti *TxInput) readFrom(r *errors.Reader) {
 
 func (to *TxOutput) readFrom(r *errors.Reader) {
 	io.ReadFull(r, to.AssetID[:])
-	to.Value = readUint64(r)
+	to.Amount = readUint64(r)
 	readBytes(r, (*[]byte)(&to.Script))
 	readBytes(r, &to.Metadata)
 }
@@ -283,7 +276,7 @@ func (ti *TxInput) writeTo(w *errors.Writer, forHashing bool) {
 
 func (to *TxOutput) writeTo(w *errors.Writer, forHashing bool) {
 	w.Write(to.AssetID[:])
-	writeUint64(w, to.Value)
+	writeUint64(w, to.Amount)
 	writeBytes(w, to.Script)
 
 	// Write the metadata or its hash depending on serialization mode.

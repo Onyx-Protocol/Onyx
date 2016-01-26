@@ -288,10 +288,9 @@ func TestRemoveBlockOutputs(t *testing.T) {
 		out := &Output{
 			Output: state.Output{
 				TxOutput: bc.TxOutput{
-					AssetID:  bc.AssetID{},
-					Value:    5,
-					Script:   []byte("a"),
-					Metadata: []byte("b"),
+					AssetAmount: bc.AssetAmount{AssetID: bc.AssetID{}, Amount: 5},
+					Script:      []byte("a"),
+					Metadata:    []byte("b"),
 				},
 				Outpoint: bc.Outpoint{},
 			},
@@ -330,10 +329,9 @@ func TestInsertBlockOutputs(t *testing.T) {
 		out := &Output{
 			Output: state.Output{
 				TxOutput: bc.TxOutput{
-					AssetID:  bc.AssetID{},
-					Value:    5,
-					Script:   []byte("a"),
-					Metadata: []byte("b"),
+					AssetAmount: bc.AssetAmount{AssetID: bc.AssetID{}, Amount: 5},
+					Script:      []byte("a"),
+					Metadata:    []byte("b"),
 				},
 				Outpoint: bc.Outpoint{},
 			},

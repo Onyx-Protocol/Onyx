@@ -52,7 +52,7 @@ func loadPoolOutputs(ctx context.Context, load []bc.Outpoint) (map[bc.Outpoint]*
 			&o.Outpoint.Hash,
 			&o.Outpoint.Index,
 			&o.AssetID,
-			&o.Value,
+			&o.Amount,
 			&o.Script,
 			&o.Metadata,
 		)
@@ -182,7 +182,7 @@ func InsertPoolOutputs(ctx context.Context, insert []*Output) error {
 		outs.txHash = append(outs.txHash, o.Outpoint.Hash.String())
 		outs.index = append(outs.index, o.Outpoint.Index)
 		outs.assetID = append(outs.assetID, o.AssetID.String())
-		outs.amount = append(outs.amount, int64(o.Value))
+		outs.amount = append(outs.amount, int64(o.Amount))
 		outs.accountID = append(outs.accountID, o.AccountID)
 		outs.managerNodeID = append(outs.managerNodeID, o.ManagerNodeID)
 		outs.aIndex = append(outs.aIndex, toKeyIndex(o.AddrIndex[:]))

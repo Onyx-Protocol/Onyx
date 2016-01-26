@@ -395,7 +395,7 @@ func applyToReserver(ctx context.Context, outs []*txdb.Output) {
 		u := &utxodb.UTXO{
 			AccountID: out.AccountID,
 			AssetID:   out.AssetID,
-			Amount:    out.Value,
+			Amount:    out.Amount,
 			Outpoint:  out.Outpoint,
 			AddrIndex: out.AddrIndex,
 		}
@@ -543,7 +543,7 @@ func issuedAssets(txs []*bc.Tx) map[bc.AssetID]int64 {
 			continue
 		}
 		for _, out := range tx.Outputs {
-			issued[out.AssetID] += int64(out.Value)
+			issued[out.AssetID] += int64(out.Amount)
 		}
 	}
 	return issued

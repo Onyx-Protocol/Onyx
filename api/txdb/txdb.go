@@ -307,7 +307,7 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) (
 		outs.txHash = append(outs.txHash, out.Outpoint.Hash.String())
 		outs.index = append(outs.index, out.Outpoint.Index)
 		outs.assetID = append(outs.assetID, out.AssetID.String())
-		outs.amount = append(outs.amount, int64(out.Value))
+		outs.amount = append(outs.amount, int64(out.Amount))
 		outs.accountID = append(outs.accountID, out.AccountID)
 		outs.managerNodeID = append(outs.managerNodeID, out.ManagerNodeID)
 		outs.aIndex = append(outs.aIndex, toKeyIndex(out.AddrIndex[:]))

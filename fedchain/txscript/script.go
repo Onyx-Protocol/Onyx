@@ -410,7 +410,7 @@ func calcSignatureHash(script []parsedOpcode, hashType SigHashType, tx *bc.TxDat
 
 		// All but current output get zeroed out.
 		for i := 0; i < idx; i++ {
-			txCopy.Outputs[i].Value = 0
+			txCopy.Outputs[i].Amount = 0
 			txCopy.Outputs[i].Script = nil
 		}
 

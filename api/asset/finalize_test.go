@@ -22,7 +22,7 @@ func TestAssembleSignatures(t *testing.T) {
 	unsigned := &bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Index: bc.InvalidOutputIndex}}},
-		Outputs: []*bc.TxOutput{{AssetID: [32]byte{255}, Value: 5, Script: outscript}},
+		Outputs: []*bc.TxOutput{{AssetAmount: bc.AssetAmount{AssetID: [32]byte{255}, Amount: 5}, Script: outscript}},
 	}
 	sigHash, _ := bc.ParseHash("78e437f627019fc270bbe9ed309291d0a5f6bf98bfae0f750538ba56646f7327")
 
@@ -53,7 +53,10 @@ func TestAssembleSignatures(t *testing.T) {
 
 func TestIssued(t *testing.T) {
 	asset := [32]byte{255}
-	outs := []*bc.TxOutput{{AssetID: asset, Value: 2}, {AssetID: asset, Value: 3}}
+	outs := []*bc.TxOutput{
+		{AssetAmount: bc.AssetAmount{AssetID: asset, Amount: 2}},
+		{AssetAmount: bc.AssetAmount{AssetID: asset, Amount: 3}},
+	}
 
 	gotAsset, gotAmt := issued(outs)
 	if !bytes.Equal(gotAsset[:], asset[:]) {

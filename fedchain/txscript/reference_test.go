@@ -162,7 +162,7 @@ func newCoinbaseTx(val uint64, pkScript []byte, assetID bc.AssetID) *bc.TxData {
 	return &bc.TxData{
 		Version:  bc.CurrentTransactionVersion,
 		Inputs:   []*bc.TxInput{{SignatureScript: []byte{OP_0, OP_0}}},
-		Outputs:  []*bc.TxOutput{{Value: val, Script: pkScript, AssetID: assetID}},
+		Outputs:  []*bc.TxOutput{{AssetAmount: bc.AssetAmount{Amount: val, AssetID: assetID}, Script: pkScript}},
 		LockTime: 2e9,
 	}
 }
@@ -180,27 +180,22 @@ func createSpendingTx(sigScript, pkScript []byte) (*bc.TxData, *testViewReader) 
 			{
 				Previous:        bc.Outpoint{Hash: coinbaseTx1.Hash(), Index: 0},
 				SignatureScript: sigScript,
-				AssetID:         testAssetID,
 			},
 			{
 				Previous:        bc.Outpoint{Hash: coinbaseTx2.Hash(), Index: 0},
 				SignatureScript: sigScript,
-				AssetID:         testAssetID,
 			},
 			{
 				Previous: bc.Outpoint{Hash: coinbaseTx3.Hash(), Index: 0},
-				AssetID:  testAssetID2,
 			},
 		},
 		Outputs: []*bc.TxOutput{
 			{
-				Value:   7,
-				AssetID: testAssetID,
-				Script:  pkScript,
+				AssetAmount: bc.AssetAmount{AssetID: testAssetID, Amount: 7},
+				Script:      pkScript,
 			},
 			{
-				Value:   5,
-				AssetID: testAssetID2,
+				AssetAmount: bc.AssetAmount{AssetID: testAssetID2, Amount: 5},
 			},
 		},
 		LockTime: 2e9,

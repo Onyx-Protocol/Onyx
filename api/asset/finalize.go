@@ -167,7 +167,7 @@ func publishTx(ctx context.Context, msg *bc.Tx, receivers []Receiver) (err error
 		insUTXOs = append(insUTXOs, &utxodb.UTXO{
 			Outpoint:  o.Outpoint,
 			AssetID:   o.AssetID,
-			Amount:    o.Value,
+			Amount:    o.Amount,
 			AccountID: o.AccountID,
 			AddrIndex: o.AddrIndex,
 		})
@@ -188,7 +188,7 @@ func publishTx(ctx context.Context, msg *bc.Tx, receivers []Receiver) (err error
 // where isIssuance is true.
 func issued(outs []*bc.TxOutput) (asset bc.AssetID, amt uint64) {
 	for _, out := range outs {
-		amt += out.Value
+		amt += out.Amount
 	}
 	return outs[0].AssetID, amt
 }

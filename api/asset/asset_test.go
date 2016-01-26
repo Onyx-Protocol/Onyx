@@ -92,7 +92,7 @@ func TestIssue(t *testing.T) {
 			Index: bc.InvalidOutputIndex,
 			Hash:  bc.Hash{},
 		}}},
-		Outputs: []*bc.TxOutput{{AssetID: bc.AssetID{}, Value: 123, Script: outScript}},
+		Outputs: []*bc.TxOutput{{AssetAmount: bc.AssetAmount{AssetID: bc.AssetID{}, Amount: 123}, Script: outScript}},
 	}
 
 	if !reflect.DeepEqual(resp.Unsigned, want) {

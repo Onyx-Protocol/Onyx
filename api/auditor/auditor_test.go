@@ -173,14 +173,12 @@ func TestGetTxIssuance(t *testing.T) {
 			AssetDefinition: []byte(`{"c":"d"}`),
 		}},
 		Outputs: []*bc.TxOutput{{
-			AssetID:  bc.AssetID([32]byte{0}),
-			Value:    5,
-			Metadata: []byte{2},
-			Script:   []byte("addr0"),
+			AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{0}), Amount: 5},
+			Metadata:    []byte{2},
+			Script:      []byte("addr0"),
 		}, {
-			AssetID: bc.AssetID([32]byte{0}),
-			Value:   6,
-			Script:  []byte("addr1"),
+			AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{0}), Amount: 6},
+			Script:      []byte("addr1"),
 		}},
 		Metadata: []byte{0},
 	})
@@ -232,14 +230,12 @@ func TestGetTxTransfer(t *testing.T) {
 	prevTxs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Outputs: []*bc.TxOutput{{
-				AssetID: bc.AssetID([32]byte{1}),
-				Value:   5,
+				AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{1}), Amount: 5},
 			}},
 		}),
 		bc.NewTx(bc.TxData{
 			Outputs: []*bc.TxOutput{{}, {
-				AssetID: bc.AssetID([32]byte{2}),
-				Value:   6,
+				AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{2}), Amount: 6},
 			}},
 		}),
 	}
@@ -250,13 +246,11 @@ func TestGetTxTransfer(t *testing.T) {
 			Previous: bc.Outpoint{Hash: prevTxs[1].Hash, Index: 1},
 		}},
 		Outputs: []*bc.TxOutput{{
-			AssetID: bc.AssetID([32]byte{1}),
-			Value:   5,
-			Script:  []byte("addr0"),
+			AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{1}), Amount: 5},
+			Script:      []byte("addr0"),
 		}, {
-			AssetID: bc.AssetID([32]byte{2}),
-			Value:   6,
-			Script:  []byte("addr1"),
+			AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{2}), Amount: 6},
+			Script:      []byte("addr1"),
 		}},
 	})
 

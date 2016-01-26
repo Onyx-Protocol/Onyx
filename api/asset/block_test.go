@@ -212,9 +212,11 @@ func TestGenerateBlock(t *testing.T) {
 }`),
 					}},
 					Outputs: []*bc.TxOutput{{
-						Value:   50,
-						AssetID: mustParseHash("25fbb43a93c290fde3997d92c416d3cc7ff40a13aa309d051406978635085c8d"),
-						Script:  mustDecodeHex("a9145881cd104f8d64635751ac0f3c0decf9150c110687"),
+						AssetAmount: bc.AssetAmount{
+							AssetID: mustParseHash("25fbb43a93c290fde3997d92c416d3cc7ff40a13aa309d051406978635085c8d"),
+							Amount:  50,
+						},
+						Script: mustDecodeHex("a9145881cd104f8d64635751ac0f3c0decf9150c110687"),
 					}},
 				}),
 				bc.NewTx(bc.TxData{
@@ -230,9 +232,11 @@ func TestGenerateBlock(t *testing.T) {
 }`),
 					}},
 					Outputs: []*bc.TxOutput{{
-						Value:   50,
-						AssetID: mustParseHash("25fbb43a93c290fde3997d92c416d3cc7ff40a13aa309d051406978635085c8d"),
-						Script:  mustDecodeHex("a914c171e443e05b953baa7b7d834028ed91e47b4d0b87"),
+						AssetAmount: bc.AssetAmount{
+							AssetID: mustParseHash("25fbb43a93c290fde3997d92c416d3cc7ff40a13aa309d051406978635085c8d"),
+							Amount:  50,
+						},
+						Script: mustDecodeHex("a914c171e443e05b953baa7b7d834028ed91e47b4d0b87"),
 					}},
 				}),
 			},

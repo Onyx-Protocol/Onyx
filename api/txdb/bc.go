@@ -23,7 +23,7 @@ func (output *Output) GetUTXO() *utxodb.UTXO {
 	return &utxodb.UTXO{
 		Outpoint:  output.Outpoint,
 		AssetID:   output.AssetID,
-		Amount:    output.Value,
+		Amount:    output.Amount,
 		AccountID: output.AccountID,
 		AddrIndex: output.AddrIndex,
 	}
@@ -60,7 +60,7 @@ func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.
 			&o.Outpoint.Hash,
 			&o.Outpoint.Index,
 			&o.AssetID,
-			&o.Value,
+			&o.Amount,
 			&o.Script,
 			&o.Metadata,
 		)

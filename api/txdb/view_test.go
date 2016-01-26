@@ -31,10 +31,9 @@ func TestView(t *testing.T) {
 			},
 			want: &state.Output{
 				TxOutput: bc.TxOutput{
-					AssetID:  bc.AssetID(mustParseHash("A55E710000000000000000000000000000000000000000000000000000000000")),
-					Value:    1,
-					Script:   []byte("script-1"),
-					Metadata: []byte("metadata-1"),
+					AssetAmount: bc.AssetAmount{AssetID: bc.AssetID(mustParseHash("A55E710000000000000000000000000000000000000000000000000000000000")), Amount: 1},
+					Script:      []byte("script-1"),
+					Metadata:    []byte("metadata-1"),
 				},
 				Outpoint: bc.Outpoint{
 					Hash:  mustParseHash("1000000000000000000000000000000000000000000000000000000000000000"),
@@ -49,10 +48,9 @@ func TestView(t *testing.T) {
 			},
 			want: &state.Output{
 				TxOutput: bc.TxOutput{
-					AssetID:  bc.AssetID(mustParseHash("A55E720000000000000000000000000000000000000000000000000000000000")),
-					Value:    2,
-					Script:   []byte("script-2"),
-					Metadata: []byte("metadata-2"),
+					AssetAmount: bc.AssetAmount{AssetID: bc.AssetID(mustParseHash("A55E720000000000000000000000000000000000000000000000000000000000")), Amount: 2},
+					Script:      []byte("script-2"),
+					Metadata:    []byte("metadata-2"),
 				},
 				Outpoint: bc.Outpoint{
 					Hash:  mustParseHash("2000000000000000000000000000000000000000000000000000000000000000"),
@@ -144,10 +142,9 @@ func TestPoolView(t *testing.T) {
 			},
 			want: &state.Output{
 				TxOutput: bc.TxOutput{
-					AssetID:  bc.AssetID(mustParseHash("A55E710000000000000000000000000000000000000000000000000000000000")),
-					Value:    1,
-					Script:   []byte("script-1"),
-					Metadata: []byte("metadata-1"),
+					AssetAmount: bc.AssetAmount{AssetID: bc.AssetID(mustParseHash("A55E710000000000000000000000000000000000000000000000000000000000")), Amount: 1},
+					Script:      []byte("script-1"),
+					Metadata:    []byte("metadata-1"),
 				},
 				Outpoint: bc.Outpoint{
 					Hash:  mustParseHash("1000000000000000000000000000000000000000000000000000000000000000"),
@@ -162,10 +159,9 @@ func TestPoolView(t *testing.T) {
 			},
 			want: &state.Output{
 				TxOutput: bc.TxOutput{
-					AssetID:  bc.AssetID(mustParseHash("A55E720000000000000000000000000000000000000000000000000000000000")),
-					Value:    2,
-					Script:   []byte("script-2"),
-					Metadata: []byte("metadata-2"),
+					AssetAmount: bc.AssetAmount{AssetID: bc.AssetID(mustParseHash("A55E720000000000000000000000000000000000000000000000000000000000")), Amount: 2},
+					Script:      []byte("script-2"),
+					Metadata:    []byte("metadata-2"),
 				},
 				Outpoint: bc.Outpoint{
 					Hash:  mustParseHash("2000000000000000000000000000000000000000000000000000000000000000"),
@@ -180,10 +176,9 @@ func TestPoolView(t *testing.T) {
 			},
 			want: &state.Output{
 				TxOutput: bc.TxOutput{
-					AssetID:  bc.AssetID(mustParseHash("A55E730000000000000000000000000000000000000000000000000000000000")),
-					Value:    3,
-					Script:   []byte("script-3"),
-					Metadata: []byte("metadata-3"),
+					AssetAmount: bc.AssetAmount{AssetID: bc.AssetID(mustParseHash("A55E730000000000000000000000000000000000000000000000000000000000")), Amount: 3},
+					Script:      []byte("script-3"),
+					Metadata:    []byte("metadata-3"),
 				},
 				Outpoint: bc.Outpoint{
 					Hash:  mustParseHash("3000000000000000000000000000000000000000000000000000000000000000"),

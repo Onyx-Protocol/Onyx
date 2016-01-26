@@ -138,7 +138,7 @@ func generateNodeTx(
 				assetID bc.AssetID
 			)
 			for _, o := range tx.Outputs {
-				amt += o.Value
+				amt += o.Amount
 				assetID = o.AssetID
 			}
 			asset := assetMap[assetID.String()]
@@ -207,7 +207,7 @@ func generateNodeTx(
 		actTx.Outputs = append(actTx.Outputs, nodeTxOutput{
 			AssetID:      out.AssetID,
 			AssetLabel:   assetLabel,
-			Amount:       out.Value,
+			Amount:       out.Amount,
 			Address:      out.Script,
 			Script:       out.Script,
 			AccountID:    outs[i].AccountID,

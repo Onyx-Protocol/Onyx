@@ -35,8 +35,6 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 	for _, r := range reserved {
 		txInput := &bc.TxInput{
 			Previous: r.Outpoint,
-			Value:    r.Amount,
-			AssetID:  r.AssetID,
 		}
 
 		templateInput := &Input{}
