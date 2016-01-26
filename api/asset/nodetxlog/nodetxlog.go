@@ -21,17 +21,18 @@ type nodeTx struct {
 }
 
 type nodeTxInput struct {
-	Type         string             `json:"type"`
-	TxID         *bc.Hash           `json:"transaction_id,omitempty"`
-	TxOut        *uint32            `json:"transaction_output,omitempty"`
-	AssetID      bc.AssetID         `json:"asset_id"`
-	AssetLabel   string             `json:"asset_label,omitempty"`
-	Amount       uint64             `json:"amount"`
-	Address      chainjson.HexBytes `json:"address,omitempty"`
-	Script       chainjson.HexBytes `json:"script,omitempty"`
-	AccountID    string             `json:"account_id,omitempty"`
-	AccountLabel string             `json:"account_label,omitempty"`
-	Metadata     chainjson.HexBytes `json:"metadata"`
+	Type            string             `json:"type"`
+	TxID            *bc.Hash           `json:"transaction_id,omitempty"`
+	TxOut           *uint32            `json:"transaction_output,omitempty"`
+	AssetID         bc.AssetID         `json:"asset_id"`
+	AssetLabel      string             `json:"asset_label,omitempty"`
+	AssetDefinition chainjson.HexBytes `json:"asset_definition,omitempty"`
+	Amount          uint64             `json:"amount"`
+	Address         chainjson.HexBytes `json:"address,omitempty"`
+	Script          chainjson.HexBytes `json:"script,omitempty"`
+	AccountID       string             `json:"account_id,omitempty"`
+	AccountLabel    string             `json:"account_label,omitempty"`
+	Metadata        chainjson.HexBytes `json:"metadata"`
 
 	mNodeID string
 }
@@ -146,11 +147,12 @@ func generateNodeTx(
 				label = asset.Label
 			}
 			actTx.Inputs = append(actTx.Inputs, nodeTxInput{
-				Type:       "issuance",
-				AssetID:    assetID,
-				AssetLabel: label,
-				Amount:     amt,
-				Metadata:   in.Metadata,
+				Type:            "issuance",
+				AssetID:         assetID,
+				AssetLabel:      label,
+				AssetDefinition: in.AssetDefinition,
+				Amount:          amt,
+				Metadata:        in.Metadata,
 			})
 			continue
 		}

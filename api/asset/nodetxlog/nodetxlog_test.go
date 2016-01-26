@@ -103,7 +103,8 @@ func TestGenerateNodeTxIssuance(t *testing.T) {
 		Hash: bc.Hash{},
 		TxData: bc.TxData{
 			Inputs: []*bc.TxInput{{
-				Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
+				Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
+				AssetDefinition: []byte(`{"name": "asset 1"}`),
 			}},
 			Outputs: []*bc.TxOutput{{
 				AssetID: bc.AssetID([32]byte{1}),
@@ -134,10 +135,11 @@ func TestGenerateNodeTxIssuance(t *testing.T) {
 		ID:   bc.Hash{},
 		Time: txTime,
 		Inputs: []nodeTxInput{{
-			Type:       "issuance",
-			AssetID:    asset1,
-			AssetLabel: "asset1",
-			Amount:     543,
+			Type:            "issuance",
+			AssetID:         asset1,
+			AssetLabel:      "asset1",
+			AssetDefinition: []byte(`{"name": "asset 1"}`),
+			Amount:          543,
 		}},
 		Outputs: []nodeTxOutput{{
 			AssetID:      asset1,
