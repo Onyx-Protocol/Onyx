@@ -7,11 +7,13 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/btcsuite/btcutil"
 	"github.com/lib/pq"
 
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
+	"chain/fedchain/txscript"
 	"chain/metrics"
 )
 
@@ -224,11 +226,16 @@ func CreateAddress(ctx context.Context, addr *Address, save bool) error {
 		return errors.Wrap(err, "load")
 	}
 
-	addr.PKScript, addr.RedeemScript, err = hdkey.Scripts(addr.Keys, ReceiverPath(addr, addr.Index), addr.SigsRequired)
+	var bcAddr *btcutil.AddressScriptHash
+	bcAddr, addr.RedeemScript, err = hdkey.Address(addr.Keys, ReceiverPath(addr, addr.Index), addr.SigsRequired)
 	if err != nil {
-		return errors.Wrap(err, "compute scripts")
+		return errors.Wrap(err, "compute redeem script")
 	}
 
+	addr.PKScript, err = txscript.PayToAddrScript(bcAddr)
+	if err != nil {
+		return errors.Wrap(err, "compute pk script")
+	}
 	if !save {
 		addr.Created = time.Now()
 		return nil

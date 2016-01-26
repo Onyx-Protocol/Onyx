@@ -29,6 +29,7 @@ func TestAssembleSignatures(t *testing.T) {
 	tpl := &TxTemplate{
 		Unsigned: unsigned,
 		Inputs: []*Input{{
+			RedeemScript:  []byte{},
 			SignatureData: sigHash,
 			Sigs: []*Signature{{
 				XPub:           "xpub661MyMwAqRbcGiDB8FQvHnDAZyaGUyzm3qN1Q3NDJz1PgAWCfyi9WRCS7Z9HyM5QNEh45fMyoaBMqjfoWPdnktcN8chJYB57D2Y7QtNmadr",

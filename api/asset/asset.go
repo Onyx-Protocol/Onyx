@@ -86,19 +86,13 @@ func addAssetIssuanceOutputs(ctx context.Context, tx *bc.TxData, asset *appdb.As
 // issuanceInput returns an Input that can be used
 // to issue units of asset 'a'.
 func issuanceInput(a *appdb.Asset, tx *bc.TxData) (*Input, error) {
-	pkScript, err := hdkey.PayToRedeem(a.RedeemScript)
-	if err != nil {
-		return nil, errors.Wrap(err, "calculating pk script")
-	}
-
-	hash, err := txscript.CalcSignatureHash(tx, 0, pkScript, txscript.SigHashAll)
+	hash, err := txscript.CalcSignatureHash(tx, 0, a.RedeemScript, txscript.SigHashAll)
 	if err != nil {
 		return nil, errors.Wrap(err, "calculating signature hash")
 	}
 
 	return &Input{
 		RedeemScript:  a.RedeemScript,
-		SignScript:    pkScript,
 		SignatureData: hash,
 		Sigs:          inputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a))),
 	}, nil

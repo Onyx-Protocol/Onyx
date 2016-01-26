@@ -5,12 +5,11 @@ import (
 	"sort"
 
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
 
-	"chain/crypto/hash160"
 	"chain/errors"
-	"chain/fedchain/txscript"
 )
 
 // XKey represents an extended key,
@@ -62,34 +61,16 @@ func RedeemScript(signers []*Key, nSigReq int) ([]byte, error) {
 	return txscript.MultiSigScript(addrs, nSigReq)
 }
 
-// Scripts computes the P2SH redeem script
-// and corresponding pk script
+// Address computes the P2SH redeem script
+// and corresponding address address
 // for the given set of keys and derivation path.
-func Scripts(xkeys []*XKey, path []uint32, nSigReq int) (pkScript, redeemScript []byte, err error) {
-	redeemScript, err = RedeemScript(Derive(xkeys, path), nSigReq)
+func Address(xkeys []*XKey, path []uint32, nSigReq int) (*btcutil.AddressScriptHash, []byte, error) {
+	script, err := RedeemScript(Derive(xkeys, path), nSigReq)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "compute redeem script")
 	}
-
-	pkScript, err = PayToRedeem(redeemScript)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return pkScript, redeemScript, nil
-}
-
-// PayToRedeem takes a redeem script
-// and calculates its corresponding pk script
-func PayToRedeem(redeem []byte) ([]byte, error) {
-	hash := hash160.Sum(redeem)
-	builder := txscript.NewScriptBuilder()
-	builder.AddOp(txscript.OP_DUP)
-	builder.AddOp(txscript.OP_HASH160)
-	builder.AddData(hash[:])
-	builder.AddOp(txscript.OP_EQUALVERIFY)
-	builder.AddOp(txscript.OP_EVAL)
-	return builder.Script()
+	addr, err := btcutil.NewAddressScriptHash(script, &chaincfg.MainNetParams)
+	return addr, script, err
 }
 
 // Derive derives a key for each item in xkeys, according to path.

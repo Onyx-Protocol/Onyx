@@ -13,6 +13,7 @@ import (
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/fedchain/txscript"
 )
 
 func init() {
@@ -126,7 +127,12 @@ func TestAccountOutputPKScript(t *testing.T) {
 		t.Fatal("receiver is not an AccountReceiver")
 	}
 	addr := accountReceiver.addr
-	want, _, err := hdkey.Scripts(addr.Keys, appdb.ReceiverPath(addr, addr.Index), addr.SigsRequired)
+	bcAddr, _, err := hdkey.Address(addr.Keys, appdb.ReceiverPath(addr, addr.Index), addr.SigsRequired)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+	want, err := txscript.PayToAddrScript(bcAddr)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
