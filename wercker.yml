@@ -37,3 +37,10 @@ build:
         code: |
           bin/cfmt
           git diff --exit-code
+    - script:
+        name: check for tk and xxx
+        code: |
+          p='(xxx|tk)' # can't write inline or it'll match this file
+          if egrep -inr '//.*\b'$p'\b' $(ls -1|grep -v vendor)
+          then exit 1
+          fi
