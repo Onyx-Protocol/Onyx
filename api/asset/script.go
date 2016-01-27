@@ -7,6 +7,7 @@ import (
 
 	"chain/api/txdb"
 	"chain/database/pg"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
@@ -41,7 +42,7 @@ func (receiver *ScriptReceiver) AccumulateUTXO(ctx context.Context, outpoint *bc
 
 func (receiver *ScriptReceiver) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
-		"script":    receiver.script, // xxx ?
+		"script":    chainjson.HexBytes(receiver.script),
 		"is_change": receiver.isChange,
 		"type":      "script",
 	})
