@@ -5,10 +5,11 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/api/txdb"
 	"chain/api/utxodb"
 	"chain/errors"
 	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
+	"chain/fedchain/state"
 )
 
 // All UTXOs in the system.
@@ -34,7 +35,7 @@ func Build(ctx context.Context, prev *TxTemplate, sources []*Source, dests []*De
 		}
 	}
 
-	err = setSignatureData(tpl)
+	err = setSignatureData(ctx, tpl)
 	if err != nil {
 		return nil, err
 	}
@@ -114,14 +115,30 @@ func combine(txs ...*TxTemplate) (*TxTemplate, error) {
 	return complete, nil
 }
 
-func setSignatureData(tpl *TxTemplate) error {
-	for i, in := range tpl.Inputs {
-		hash, err := txscript.CalcSignatureHash(tpl.Unsigned, i, in.SignScript, txscript.SigHashAll)
-		if err != nil {
-			return errors.Wrap(err, "calculating signature hash")
-		}
+func setSignatureData(ctx context.Context, tpl *TxTemplate) error {
+	txSet := []*bc.Tx{bc.NewTx(*tpl.Unsigned)}
+	bcView, err := txdb.NewViewForPrevouts(ctx, txSet)
+	if err != nil {
+		return errors.Wrap(err, "loading utxos")
+	}
+	poolView, err := txdb.NewPoolViewForPrevouts(ctx, txSet)
+	if err != nil {
+		return errors.Wrap(err, "loading utxos")
+	}
+	view := state.MultiReader(poolView, bcView)
 
-		in.SignatureData = hash
+	hashCache := &bc.SigHashCache{}
+
+	for i, in := range tpl.Unsigned.Inputs {
+		var assetAmount bc.AssetAmount
+		if !in.IsIssuance() {
+			unspent := view.Output(ctx, in.Previous)
+			if unspent == nil {
+				return errors.New("could not load previous output")
+			}
+			assetAmount = unspent.AssetAmount
+		}
+		tpl.Inputs[i].SignatureData = tpl.Unsigned.HashForSigCached(i, assetAmount, bc.SigHashAll, hashCache)
 	}
 	return nil
 }

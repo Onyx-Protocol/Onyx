@@ -119,7 +119,6 @@ func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 				TxInput: &bc.TxInput{Previous: openOrder.Outpoint},
 				TemplateInput: &asset.Input{
 					RedeemScript: redeemScript,
-					SignScript:   contractScript,
 					Sigs:         inputSigs(hdkey.Derive(sellerAddr.Keys, appdb.ReceiverPath(sellerAddr, sellerAddr.Index))),
 				},
 			},

@@ -6,7 +6,6 @@ package txscript
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -14,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"chain/crypto/hash256"
 	"chain/fedchain/bc"
 )
 
@@ -22,22 +20,6 @@ import (
 // blockchain.  To be used to determine if BIP0016 should be called for or not.
 // This timestamp corresponds to Sun Apr 1 00:00:00 UTC 2012.
 var Bip16Activation = time.Unix(1333238400, 0)
-
-// SigHashType represents hash type bits at the end of a signature.
-type SigHashType byte
-
-// Hash type bits from the end of a signature.
-const (
-	SigHashOld          SigHashType = 0x0
-	SigHashAll          SigHashType = 0x1
-	SigHashNone         SigHashType = 0x2
-	SigHashSingle       SigHashType = 0x3
-	SigHashAnyOneCanPay SigHashType = 0x80
-
-	// sigHashMask defines the number of bits of the hash type which is used
-	// to identify which outputs are signed.
-	sigHashMask = 0x1f
-)
 
 // These are the constants specified for maximums in individual scripts.
 const (
@@ -345,109 +327,6 @@ func removeOpcodeByData(pkscript []parsedOpcode, data []byte) []parsedOpcode {
 	}
 	return retScript
 
-}
-
-// CalcSignatureHash will, given a script and hash type for the current script
-// engine instance, calculate the signature hash to be used for signing and
-// verification.
-func CalcSignatureHash(tx *bc.TxData, idx int, script []byte, hashType SigHashType) (hash bc.Hash, err error) {
-	parsedScript, err := parseScript(script)
-	if err != nil {
-		return hash, err
-	}
-
-	h := calcSignatureHash(parsedScript, hashType, tx, idx)
-
-	if len(h) != 32 {
-		return hash, errors.New("invalid hash length")
-	}
-	copy(hash[:], h)
-	return hash, nil
-}
-
-// calcSignatureHash will, given a script and hash type for the current script
-// engine instance, calculate the signature hash to be used for signing and
-// verification.
-func calcSignatureHash(script []parsedOpcode, hashType SigHashType, tx *bc.TxData, idx int) []byte {
-	// The SigHashSingle signature type signs only the corresponding input
-	// and output (the output with the same index number as the input).
-	//
-	// Since transactions can have more inputs than outputs, this means it
-	// is improper to use SigHashSingle on input indices that don't have a
-	// corresponding output.
-	//
-	// A bug in the original Satoshi client implementation means specifying
-	// an index that is out of range results in a signature hash of 1 (as a
-	// uint256 little endian).  The original intent appeared to be to
-	// indicate failure, but unfortunately, it was never checked and thus is
-	// treated as the actual signature hash.  This buggy behavior is now
-	// part of the consensus and a hard fork would be required to fix it.
-	//
-	// Due to this, care must be taken by software that creates transactions
-	// which make use of SigHashSingle because it can lead to an extremely
-	// dangerous situation where the invalid inputs will end up signing a
-	// hash of 1.  This in turn presents an opportunity for attackers to
-	// cleverly construct transactions which can steal those coins provided
-	// they can reuse signatures.
-	if hashType&sigHashMask == SigHashSingle && idx >= len(tx.Outputs) {
-		var hash bc.Hash
-		hash[0] = 0x01
-		return hash[:]
-	}
-
-	// Remove all instances of OP_CODESEPARATOR from the script.
-	script = removeOpcode(script, OP_CODESEPARATOR)
-
-	// Make a deep copy of the transaction, zeroing out the script for all
-	// inputs that are not currently being processed.
-	txCopy := tx.Copy()
-	for i := range txCopy.Inputs {
-		if i == idx {
-			// UnparseScript cannot fail here because removeOpcode
-			// above only returns a valid script.
-			sigScript, _ := unparseScript(script)
-			txCopy.Inputs[idx].SignatureScript = sigScript
-		} else {
-			txCopy.Inputs[i].SignatureScript = nil
-		}
-	}
-
-	switch hashType & sigHashMask {
-	case SigHashNone:
-		txCopy.Outputs = txCopy.Outputs[0:0] // Empty slice.
-
-	case SigHashSingle:
-		// Resize output array to up to and including requested index.
-		txCopy.Outputs = txCopy.Outputs[:idx+1]
-
-		// All but current output get zeroed out.
-		for i := 0; i < idx; i++ {
-			txCopy.Outputs[i].Amount = 0
-			txCopy.Outputs[i].Script = nil
-		}
-
-	default:
-		// Consensus treats undefined hashtypes like normal SigHashAll
-		// for purposes of hash generation.
-		fallthrough
-	case SigHashOld:
-		fallthrough
-	case SigHashAll:
-		// Nothing special here.
-	}
-	if hashType&SigHashAnyOneCanPay != 0 {
-		txCopy.Inputs = txCopy.Inputs[idx : idx+1]
-		idx = 0
-	}
-
-	// The final hash is the double sha256 of both the serialized modified
-	// transaction and the hash type (encoded as a 4-byte little-endian
-	// value) appended.
-	var wbuf bytes.Buffer
-	txCopy.WriteTo(&wbuf)
-	binary.Write(&wbuf, binary.LittleEndian, uint32(hashType))
-	hash := hash256.Sum(wbuf.Bytes())
-	return hash[:]
 }
 
 // asSmallInt returns the passed opcode, which must be true according to

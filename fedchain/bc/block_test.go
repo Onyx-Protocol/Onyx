@@ -1,4 +1,4 @@
-package bc
+package bc_test
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	//	"github.com/btcsuite/btcd/txscript"
+	. "chain/fedchain/bc"
 )
 
 func TestEmptyBlock(t *testing.T) {

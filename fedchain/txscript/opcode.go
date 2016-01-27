@@ -2044,7 +2044,7 @@ func opcodeCheckSig(op *parsedOpcode, vm *Engine) error {
 	// the data stack.  This is required because the more general script
 	// validation consensus rules do not have the new strict encoding
 	// requirements enabled by the flags.
-	hashType := SigHashType(fullSigBytes[len(fullSigBytes)-1])
+	hashType := bc.SigHashType(fullSigBytes[len(fullSigBytes)-1])
 	sigBytes := fullSigBytes[:len(fullSigBytes)-1]
 	if err := vm.checkHashTypeEncoding(hashType); err != nil {
 		return err
@@ -2056,15 +2056,8 @@ func opcodeCheckSig(op *parsedOpcode, vm *Engine) error {
 		return err
 	}
 
-	// Get script to sign
-	subScript := vm.signScript
-
-	// Remove the signature since there is no way for a signature to sign
-	// itself.
-	subScript = removeOpcodeByData(subScript, fullSigBytes)
-
 	// Generate the signature hash based on the signature hash type.
-	hash := calcSignatureHash(subScript, hashType, &vm.tx, vm.txIdx)
+	hash := vm.tx.HashForSigCached(vm.txIdx, vm.currentPrevOut().AssetAmount, hashType, vm.hashCache)
 
 	pubKey, err := btcec.ParsePubKey(pkBytes, btcec.S256())
 	if err != nil {
@@ -2085,7 +2078,7 @@ func opcodeCheckSig(op *parsedOpcode, vm *Engine) error {
 		return nil
 	}
 
-	ok := signature.Verify(hash, pubKey)
+	ok := signature.Verify(hash[:], pubKey)
 	vm.dstack.PushBool(ok)
 	return nil
 }
@@ -2196,15 +2189,6 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 			len(dummy))
 	}
 
-	// Get script to be signed
-	script := vm.signScript
-
-	// Remove any of the signatures since there is no way for a signature to
-	// sign itself.
-	for _, sigInfo := range signatures {
-		script = removeOpcodeByData(script, sigInfo.signature)
-	}
-
 	success := true
 	numPubKeys++
 	pubKeyIdx := -1
@@ -2234,7 +2218,7 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 		}
 
 		// Split the signature into hash type and signature components.
-		hashType := SigHashType(rawSig[len(rawSig)-1])
+		hashType := bc.SigHashType(rawSig[len(rawSig)-1])
 		signature := rawSig[:len(rawSig)-1]
 
 		// Only parse and check the signature encoding once.
@@ -2284,9 +2268,9 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 		}
 
 		// Generate the signature hash based on the signature hash type.
-		hash := calcSignatureHash(script, hashType, &vm.tx, vm.txIdx)
+		hash := vm.tx.HashForSigCached(vm.txIdx, vm.currentPrevOut().AssetAmount, hashType, vm.hashCache)
 
-		if parsedSig.Verify(hash, parsedPubKey) {
+		if parsedSig.Verify(hash[:], parsedPubKey) {
 			// PubKey verified, move on to the next signature.
 			signatureIdx++
 			numSignatures--

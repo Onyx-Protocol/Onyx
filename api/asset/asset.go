@@ -53,11 +53,6 @@ func Issue(ctx context.Context, assetID string, dests []*Destination) (*TxTempla
 
 	addAssetIssuanceOutputs(ctx, tx, asset, dests)
 
-	input, err := issuanceInput(asset, tx)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating issuance Input")
-	}
-
 	receivers := make([]Receiver, 0, len(dests))
 	for _, dest := range dests {
 		receivers = append(receivers, dest.Receiver)
@@ -66,7 +61,7 @@ func Issue(ctx context.Context, assetID string, dests []*Destination) (*TxTempla
 	appTx := &TxTemplate{
 		Unsigned:   tx,
 		BlockChain: "sandbox", // TODO(tess): make this BlockChain: blockchain.FromContext(ctx)
-		Inputs:     []*Input{input},
+		Inputs:     []*Input{issuanceInput(asset, tx)},
 		OutRecvs:   receivers,
 	}
 	return appTx, nil
@@ -84,23 +79,14 @@ func addAssetIssuanceOutputs(ctx context.Context, tx *bc.TxData, asset *appdb.As
 
 // issuanceInput returns an Input that can be used
 // to issue units of asset 'a'.
-func issuanceInput(a *appdb.Asset, tx *bc.TxData) (*Input, error) {
-	pkScript, err := hdkey.PayToRedeem(a.RedeemScript)
-	if err != nil {
-		return nil, errors.Wrap(err, "calculating pk script")
-	}
-
-	hash, err := txscript.CalcSignatureHash(tx, 0, pkScript, txscript.SigHashAll)
-	if err != nil {
-		return nil, errors.Wrap(err, "calculating signature hash")
-	}
+func issuanceInput(a *appdb.Asset, tx *bc.TxData) *Input {
+	hash := tx.HashForSig(0, bc.AssetAmount{}, bc.SigHashAll)
 
 	return &Input{
 		RedeemScript:  txscript.AddDataToScript(nil, a.RedeemScript),
-		SignScript:    pkScript,
 		SignatureData: hash,
 		Sigs:          inputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a))),
-	}, nil
+	}
 }
 
 func inputSigs(keys []*hdkey.Key) (sigs []*Signature) {

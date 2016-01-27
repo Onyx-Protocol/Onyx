@@ -48,12 +48,7 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 		if err != nil {
 			return nil, errors.Wrap(err, "compute redeem script")
 		}
-		pkScript, err := hdkey.PayToRedeem(redeemScript)
-		if err != nil {
-			return nil, errors.Wrap(err, "compute pk script")
-		}
 		templateInput.RedeemScript = txscript.AddDataToScript(nil, redeemScript)
-		templateInput.SignScript = pkScript
 		templateInput.Sigs = inputSigs(signers)
 
 		item := &ReserveResultItem{

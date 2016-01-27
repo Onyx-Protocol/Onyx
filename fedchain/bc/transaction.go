@@ -78,49 +78,6 @@ func NewOutpoint(b []byte, index uint32) *Outpoint {
 	return result
 }
 
-// Copy creates a deep copy of a transaction so that the original does not get
-// modified when the copy is manipulated.
-func (tx *TxData) Copy() *TxData {
-	// Create new tx and start by copying primitive values and making space
-	// for the transaction inputs and outputs.
-	newTx := TxData{
-		Version:  tx.Version,
-		Inputs:   make([]*TxInput, 0, len(tx.Inputs)),
-		Outputs:  make([]*TxOutput, 0, len(tx.Outputs)),
-		LockTime: tx.LockTime,
-		Metadata: copyBytes(tx.Metadata),
-	}
-
-	// Deep copy the old TxIn data.
-	for _, oldIn := range tx.Inputs {
-		newIn := new(TxInput)
-		*newIn = *oldIn
-		newIn.SignatureScript = copyBytes(oldIn.SignatureScript)
-		newIn.Metadata = copyBytes(oldIn.Metadata)
-		newIn.AssetDefinition = copyBytes(oldIn.AssetDefinition)
-		newTx.Inputs = append(newTx.Inputs, newIn)
-	}
-
-	// Deep copy the old TxOut data.
-	for _, oldOut := range tx.Outputs {
-		newOut := new(TxOutput)
-		*newOut = *oldOut
-		newOut.Script = copyBytes(oldOut.Script)
-		newOut.Metadata = copyBytes(oldOut.Metadata)
-		newTx.Outputs = append(newTx.Outputs, newOut)
-	}
-
-	return &newTx
-}
-
-func copyBytes(b []byte) (n []byte) {
-	if len(b) > 0 {
-		n = make([]byte, len(b))
-		copy(n, b)
-	}
-	return n
-}
-
 // IsIssuance returns true if this transaction is an issuance transaction.
 // Issuance transaction is one with first input having
 // Outpoint.Index == 0xffffffff.
@@ -234,6 +191,97 @@ func (tx *TxData) WitnessHash() Hash {
 	dataHash := hash256.Sum(data)
 
 	return hash256.Sum(append(txHash[:], dataHash[:]...))
+}
+
+// HashForSig generates the hash required for the
+// specified input's signature, given the AssetAmount
+// of its matching previous output.
+func (tx *TxData) HashForSig(idx int, assetAmount AssetAmount, hashType SigHashType) Hash {
+	return tx.HashForSigCached(idx, assetAmount, hashType, nil)
+}
+
+// SigHashCache is used to reduce redundant work
+// in consecutive HashForSigCached calls.
+type SigHashCache struct {
+	inputsHash, outputsHash *Hash
+}
+
+// HashForSigCached is the same operation as HashForSig,
+// but it also stores some of the intermediate hashes
+// in order to reduce work in consecutive calls for the
+// same transaction.
+func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType SigHashType, cache *SigHashCache) Hash {
+	var hash, inputsHash, outputsHash Hash
+
+	if (hashType & SigHashAnyOneCanPay) == 0 {
+		if cache != nil && cache.inputsHash != nil {
+			inputsHash = *cache.inputsHash
+		}
+		h := hash256.New()
+		w := errors.NewWriter(h)
+		writeUvarint(w, uint64(len(tx.Inputs)))
+		for _, in := range tx.Inputs {
+			in.writeTo(w, true)
+		}
+		h.Sum(inputsHash[:0])
+		if cache != nil {
+			cache.inputsHash = &inputsHash
+		}
+	}
+
+	switch hashType & sigHashMask {
+	case SigHashSingle:
+		if idx >= len(tx.Outputs) {
+			break
+		}
+		h := hash256.New()
+		w := errors.NewWriter(h)
+		writeUvarint(w, 1)
+		tx.Outputs[idx].writeTo(w, true)
+		h.Sum(outputsHash[:0])
+	case SigHashNone:
+		break
+	default:
+		if cache != nil && cache.outputsHash != nil {
+			outputsHash = *cache.outputsHash
+		} else {
+			h := hash256.New()
+			w := errors.NewWriter(h)
+			writeUvarint(w, uint64(len(tx.Outputs)))
+			for _, out := range tx.Outputs {
+				out.writeTo(w, true)
+			}
+			h.Sum(outputsHash[:0])
+			if cache != nil {
+				cache.outputsHash = &outputsHash
+			}
+		}
+	}
+
+	h := hash256.New()
+	w := errors.NewWriter(h)
+
+	writeUint32(w, tx.Version)
+
+	w.Write(inputsHash[:])
+
+	var buf bytes.Buffer
+	tx.Inputs[idx].writeTo(errors.NewWriter(&buf), true)
+	writeBytes(w, buf.Bytes())
+
+	assetAmount.writeTo(w)
+
+	w.Write(outputsHash[:])
+
+	writeUint64(w, tx.LockTime)
+
+	writeMetadata(w, tx.Metadata, true)
+
+	w.Write([]byte{byte(hashType)})
+
+	h.Sum(hash[:0])
+
+	return hash
 }
 
 // MarshalText satisfies encoding.TextMarshaller interface

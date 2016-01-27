@@ -1,4 +1,4 @@
-package bc
+package bc_test
 
 import (
 	"bytes"
@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/btcsuite/btcd/txscript"
-
 	"chain/errors"
+	. "chain/fedchain/bc"
+	"chain/fedchain/txscript"
 )
 
 func TestTransaction(t *testing.T) {
@@ -184,6 +184,61 @@ func TestOutpointWriteErr(t *testing.T) {
 	}
 }
 
+func TestTxHashForSig(t *testing.T) {
+	assetID := ComputeAssetID([]byte{txscript.OP_1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"))
+	tx := &TxData{
+		Version: 1,
+		Inputs: []*TxInput{{
+			Previous:        Outpoint{Hash: mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151")},
+			SignatureScript: []byte{txscript.OP_1},
+			Metadata:        []byte("input1"),
+		}, {
+			Previous:        Outpoint{Hash: mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151"), Index: 1},
+			SignatureScript: []byte{txscript.OP_2},
+		}},
+		Outputs: []*TxOutput{{
+			AssetAmount: AssetAmount{AssetID: assetID, Amount: 1000000000000},
+			Script:      []byte{txscript.OP_3},
+		}},
+		Metadata: []byte("transfer"),
+	}
+	cases := []struct {
+		idx      int
+		hashType SigHashType
+		wantHash string
+	}{
+		{0, SigHashAll, "c0c9a7e21ae86ad8e00080193a0eeacda58bef2f20b1a4f26a25f9276a52a6a6"},
+		{0, SigHashSingle, "ea8736b45276e1ad35933c616c6c1b064dae85a2f254fd4c599ea983feb0b8ae"},
+		{0, SigHashNone, "e1f8f931e6cad3a8220dff0f311f6776e0bec1c6ef2942cfc4214ffcee394b1b"},
+		{0, SigHashAll | SigHashAnyOneCanPay, "87d5decac7242727351ed312a8fc9a72452e371a086f4c4007cbe5d95f681481"},
+		{0, SigHashSingle | SigHashAnyOneCanPay, "18648d6c5ecd58ddd255c69439b461420abc7afc0c7d392b24a25abe3aca5a8a"},
+		{0, SigHashNone | SigHashAnyOneCanPay, "36029bf2b9d5253c6554644e537eedf38791341ee3ef36cc1bcce13bd6cd451c"},
+
+		{1, SigHashAll, "2859efe72e7b4dc7e010feb896a489a19220c8b784c1da1505217a017c9913f5"},
+		{1, SigHashSingle, "4e1caa039e66bd99eae2309d90d612407cca585d685e2e1232144473918c3365"},
+		{1, SigHashNone, "19b604471a3566aea416116dd3048d8195214566230e0007341b28a66cad838b"},
+		{1, SigHashAll | SigHashAnyOneCanPay, "a6afa32a2e5d47cccda3c75383e1b8338b7dde8310b4beed39e3d4d9ba4a43e0"},
+		{1, SigHashSingle | SigHashAnyOneCanPay, "4c4f465a026b8ea06e73c34b37d83cabadb3d34b4dc468dc8e237f10fecab1df"},
+		{1, SigHashNone | SigHashAnyOneCanPay, "1acc09ba0ba78006c024a88f90e0fce8997db7c32b25709873df65907a88352f"},
+	}
+	assetAmount := tx.Outputs[0].AssetAmount
+	cache := &SigHashCache{}
+
+	for _, c := range cases {
+		hash := tx.HashForSig(c.idx, assetAmount, c.hashType)
+
+		if hash.String() != c.wantHash {
+			t.Errorf("HashForSig(%d, %v) = %s want %s", c.idx, c.hashType, hash.String(), c.wantHash)
+		}
+
+		cachedHash := tx.HashForSigCached(c.idx, assetAmount, c.hashType, cache)
+
+		if cachedHash.String() != c.wantHash {
+			t.Errorf("HashForSigCached(%d, %v) = %s want %s", c.idx, c.hashType, hash.String(), c.wantHash)
+		}
+	}
+}
+
 type errWriter struct{}
 
 func (errWriter) Write(p []byte) (int, error) {
@@ -200,14 +255,14 @@ func BenchmarkTxHash(b *testing.B) {
 func BenchmarkTxWriteToTrue(b *testing.B) {
 	tx := &Tx{}
 	for i := 0; i < b.N; i++ {
-		tx.writeTo(ioutil.Discard, true)
+		tx.WriteToForHash(ioutil.Discard, true)
 	}
 }
 
 func BenchmarkTxWriteToFalse(b *testing.B) {
 	tx := &Tx{}
 	for i := 0; i < b.N; i++ {
-		tx.writeTo(ioutil.Discard, false)
+		tx.WriteToForHash(ioutil.Discard, false)
 	}
 }
 
@@ -218,7 +273,7 @@ func BenchmarkTxWriteToTrue200(b *testing.B) {
 		tx.Outputs = append(tx.Outputs, &TxOutput{})
 	}
 	for i := 0; i < b.N; i++ {
-		tx.writeTo(ioutil.Discard, true)
+		tx.WriteToForHash(ioutil.Discard, true)
 	}
 }
 
@@ -229,7 +284,7 @@ func BenchmarkTxWriteToFalse200(b *testing.B) {
 		tx.Outputs = append(tx.Outputs, &TxOutput{})
 	}
 	for i := 0; i < b.N; i++ {
-		tx.writeTo(ioutil.Discard, false)
+		tx.WriteToForHash(ioutil.Discard, false)
 	}
 }
 
@@ -237,7 +292,7 @@ func BenchmarkTxInputWriteToTrue(b *testing.B) {
 	input := &TxInput{}
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
-		input.writeTo(ew, true)
+		input.WriteTo(ew, true)
 	}
 }
 
@@ -245,7 +300,7 @@ func BenchmarkTxInputWriteToFalse(b *testing.B) {
 	input := &TxInput{}
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
-		input.writeTo(ew, false)
+		input.WriteTo(ew, false)
 	}
 }
 
@@ -253,7 +308,7 @@ func BenchmarkTxOutputWriteToTrue(b *testing.B) {
 	output := &TxOutput{}
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
-		output.writeTo(ew, true)
+		output.WriteTo(ew, true)
 	}
 }
 
@@ -261,6 +316,6 @@ func BenchmarkTxOutputWriteToFalse(b *testing.B) {
 	output := &TxOutput{}
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
-		output.writeTo(ew, false)
+		output.WriteTo(ew, false)
 	}
 }

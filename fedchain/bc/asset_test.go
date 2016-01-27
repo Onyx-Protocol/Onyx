@@ -1,11 +1,12 @@
-package bc
+package bc_test
 
 import (
 	"bytes"
 	"encoding/hex"
 	"testing"
 
-	"github.com/btcsuite/btcd/txscript"
+	. "chain/fedchain/bc"
+	"chain/fedchain/txscript"
 )
 
 func TestComputeAssetID(t *testing.T) {
