@@ -129,10 +129,11 @@ func (tpl *Template) parse(ctx context.Context) (*asset.TxTemplate, error) {
 }
 
 type BuildRequest struct {
-	PrevTx  *Template      `json:"previous_transaction"`
-	Sources []*Source      `json:"inputs"`
-	Dests   []*Destination `json:"outputs"`
-	ResTime time.Duration  `json:"reservation_duration"`
+	PrevTx   *Template          `json:"previous_transaction"`
+	Sources  []*Source          `json:"inputs"`
+	Dests    []*Destination     `json:"outputs"`
+	Metadata chainjson.HexBytes `json:"metadata"`
+	ResTime  time.Duration      `json:"reservation_duration"`
 }
 
 func (req *BuildRequest) parse(ctx context.Context) (*asset.TxTemplate, []*asset.Source, []*asset.Destination, error) {

@@ -413,7 +413,7 @@ func transfer(ctx context.Context, info *clientInfo, srcAcctID, destAcctID strin
 	}
 	dests := []*Destination{dest}
 
-	xferTx, err := Build(ctx, nil, sources, dests, time.Minute)
+	xferTx, err := Build(ctx, nil, sources, dests, []byte{}, time.Minute)
 	if err != nil {
 		return nil, err
 	}

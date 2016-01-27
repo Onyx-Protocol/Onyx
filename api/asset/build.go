@@ -19,11 +19,11 @@ var utxoDB = utxodb.New(sqlUTXODB{})
 // Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, prev *TxTemplate, sources []*Source, dests []*Destination, ttl time.Duration) (*TxTemplate, error) {
+func Build(ctx context.Context, prev *TxTemplate, sources []*Source, dests []*Destination, metadata []byte, ttl time.Duration) (*TxTemplate, error) {
 	if ttl < time.Minute {
 		ttl = time.Minute
 	}
-	tpl, err := build(ctx, sources, dests, ttl)
+	tpl, err := build(ctx, sources, dests, metadata, ttl)
 	if err != nil {
 		return nil, err
 	}
@@ -42,8 +42,11 @@ func Build(ctx context.Context, prev *TxTemplate, sources []*Source, dests []*De
 	return tpl, nil
 }
 
-func build(ctx context.Context, sources []*Source, dests []*Destination, ttl time.Duration) (*TxTemplate, error) {
-	tx := &bc.TxData{Version: bc.CurrentTransactionVersion}
+func build(ctx context.Context, sources []*Source, dests []*Destination, metadata []byte, ttl time.Duration) (*TxTemplate, error) {
+	tx := &bc.TxData{
+		Version:  bc.CurrentTransactionVersion,
+		Metadata: metadata,
+	}
 
 	var inputs []*Input
 

@@ -68,7 +68,7 @@ func buildSingle(ctx context.Context, req *BuildRequest) (interface{}, error) {
 		return nil, err
 	}
 
-	tpl, err := asset.Build(ctx, prevTx, sources, destinations, req.ResTime)
+	tpl, err := asset.Build(ctx, prevTx, sources, destinations, req.Metadata, req.ResTime)
 	if err != nil {
 		return nil, err
 	}

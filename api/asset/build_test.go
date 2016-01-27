@@ -60,7 +60,7 @@ func TestBuildTrade(t *testing.T) {
 	}
 	dests := []*Destination{dest}
 
-	got, err := Build(ctx, tpl, sources, dests, time.Hour*24)
+	got, err := Build(ctx, tpl, sources, dests, []byte{}, time.Hour*24)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -107,7 +107,7 @@ func TestBuildTransfer(t *testing.T) {
 	}
 	dests := []*Destination{dest}
 
-	_, err = Build(ctx, nil, sources, dests, time.Minute)
+	_, err = Build(ctx, nil, sources, dests, []byte{}, time.Minute)
 
 	if err != nil {
 		t.Log(errors.Stack(err))
