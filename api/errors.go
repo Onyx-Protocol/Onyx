@@ -44,6 +44,7 @@ var (
 		asset.ErrBadTx:              errorInfo{400, "CH755", "Invalid transaction template"},
 		appdb.ErrBadProjectName:     errorInfo{400, "CH770", "Invalid project name."},
 		appdb.ErrCannotDelete:       errorInfo{400, "CH901", "Cannot delete non-empty object"},
+		appdb.ErrArchived:           errorInfo{404, "CH902", "Item has been archived"},
 		appdb.ErrBadRole:            errorInfo{400, "CH800", "Member role must be \"developer\" or \"admin\"."},
 		appdb.ErrAlreadyMember:      errorInfo{400, "CH801", "User is already a member of the project."},
 		errNotAdmin:                 errorInfo{403, "CH781", "Admin privileges are required perform this action"},

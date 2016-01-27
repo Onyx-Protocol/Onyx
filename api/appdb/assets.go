@@ -55,19 +55,21 @@ const (
 	OwnerManagerNode
 )
 
-// AssetByID loads an asset from the database using its ID.
+// AssetByID loads an asset from the database using its ID. If an asset has
+// been archived, this function will return ErrArchived.
 func AssetByID(ctx context.Context, hash bc.AssetID) (*Asset, error) {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
 		SELECT assets.keyset, redeem_script, issuer_node_id,
-			key_index(issuer_nodes.key_index), key_index(assets.key_index), definition
+			key_index(issuer_nodes.key_index), key_index(assets.key_index), definition, assets.archived
 		FROM assets
 		INNER JOIN issuer_nodes ON issuer_nodes.id=assets.issuer_node_id
 		WHERE assets.id=$1
 	`
 	var (
-		xpubs []string
-		a     = &Asset{Hash: hash}
+		xpubs    []string
+		archived bool
+		a        = &Asset{Hash: hash}
 	)
 
 	err := pg.FromContext(ctx).QueryRow(ctx, q, hash.String()).Scan(
@@ -77,9 +79,13 @@ func AssetByID(ctx context.Context, hash bc.AssetID) (*Asset, error) {
 		(*pg.Uint32s)(&a.INIndex),
 		(*pg.Uint32s)(&a.AIndex),
 		&a.Definition,
+		&archived,
 	)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
+	}
+	if archived {
+		err = ErrArchived
 	}
 	if err != nil {
 		return nil, errors.WithDetailf(err, "asset id=%v", hash.String())
@@ -126,7 +132,7 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 		SELECT id, label, t.confirmed, (t.confirmed + t.pool), sort_id
 		FROM assets
 		JOIN issuance_totals t ON (asset_id=assets.id)
-		WHERE issuer_node_id = $1 AND ($2='' OR sort_id<$2)
+		WHERE issuer_node_id = $1 AND ($2='' OR sort_id<$2) AND NOT archived
 		ORDER BY sort_id DESC
 		LIMIT $3
 	`
@@ -188,45 +194,14 @@ func UpdateAsset(ctx context.Context, assetID string, label *string) error {
 	return errors.Wrap(err, "update query")
 }
 
-// DeleteAsset deletes the asset but only if none of it has been issued.
-func DeleteAsset(ctx context.Context, assetID string) error {
-	const q = `
-		WITH deleted AS (
-			DELETE FROM issuance_totals
-			WHERE asset_id=$1 AND confirmed=0 AND pool=0
-			RETURNING asset_id
-		)
-		DELETE FROM assets WHERE id IN (TABLE deleted)
-	`
+// ArchiveAsset marks an asset as archived. Once an asset has been archived, it
+// cannot be issued, and it won't show up in listAsset responses.
+func ArchiveAsset(ctx context.Context, assetID string) error {
+	const q = `UPDATE assets SET archived = true WHERE id = $1`
 	db := pg.FromContext(ctx)
-	result, err := db.Exec(ctx, q, assetID)
-	if err != nil {
-		return errors.Wrap(err, "delete query")
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return errors.Wrap(err, "delete query")
-	}
-	if rowsAffected == 0 {
-		// Distinguish between the asset-not-found case and the
-		// assets-issued case.
-		const q2 = `SELECT confirmed+pool FROM issuance_totals WHERE asset_id = $1`
-		var issued int64
-		err = db.QueryRow(ctx, q2, assetID).Scan(&issued)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				return errors.WithDetailf(pg.ErrUserInputNotFound, "asset id=%v", assetID)
-			}
-			return errors.Wrap(err, "delete query")
-		}
-		if issued != 0 {
-			return errors.WithDetailf(ErrCannotDelete, "asset id=%v", assetID)
-		}
-		// Unexpected error. Could be a race condition where someone else
-		// deleted the asset first.
-		return errors.New("could not delete asset")
-	}
-	return nil
+
+	_, err := db.Exec(ctx, q, assetID)
+	return errors.Wrap(err, "archive query")
 }
 
 // UpdateIssuances modifies the issuance totals of a set of assets by the given

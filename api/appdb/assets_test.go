@@ -67,17 +67,19 @@ func TestListAssets(t *testing.T) {
 			('in-id-0', 'proj-id-0', 0, '{}', 'in-0'),
 			('in-id-1', 'proj-id-0', 1, '{}', 'in-1');
 		INSERT INTO assets
-			(id, issuer_node_id, key_index, redeem_script, issuance_script, label, sort_id)
+			(id, issuer_node_id, key_index, redeem_script, issuance_script, label, sort_id, archived)
 		VALUES
-			('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 'asset0'),
-			('0100000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 1, '\x'::bytea, '\x'::bytea, 'asset-1', 'asset1'),
-			('0200000000000000000000000000000000000000000000000000000000000000', 'in-id-1', 2, '\x'::bytea, '\x'::bytea, 'asset-2', 'asset2');
+			('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 'asset0', false),
+			('0100000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 1, '\x'::bytea, '\x'::bytea, 'asset-1', 'asset1', false),
+			('0200000000000000000000000000000000000000000000000000000000000000', 'in-id-1', 2, '\x'::bytea, '\x'::bytea, 'asset-2', 'asset2', false),
+			('0300000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 3, '\x'::bytea, '\x'::bytea, 'asset-3', 'asset3', true);
 		INSERT INTO issuance_totals
 			(asset_id, confirmed, pool)
 		VALUES
 			('0000000000000000000000000000000000000000000000000000000000000000', 1, 2),
 			('0100000000000000000000000000000000000000000000000000000000000000', 3, 4),
-			('0200000000000000000000000000000000000000000000000000000000000000', 5, 6);
+			('0200000000000000000000000000000000000000000000000000000000000000', 5, 6),
+			('0300000000000000000000000000000000000000000000000000000000000000', 7, 8);
 	`
 	withContext(t, sql, func(ctx context.Context) {
 		examples := []struct {
@@ -345,42 +347,31 @@ func TestUpdateAssetNoUpdate(t *testing.T) {
 	})
 }
 
-func TestDeleteAsset(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		iNode := newTestIssuerNode(t, ctx, nil, "x")
-		asset := newTestAsset(t, ctx, iNode)
-		assetID := asset.Hash.String()
-		_, err := GetAsset(ctx, assetID)
+func TestArchiveAsset(t *testing.T) {
+	const sql = `
+		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
+		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
+			VALUES ('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
+		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
+			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
+		INSERT INTO issuance_totals (asset_id) VALUES ('0000000000000000000000000000000000000000000000000000000000000000');
+	`
+	withContext(t, sql, func(ctx context.Context) {
+		assetID := "0000000000000000000000000000000000000000000000000000000000000000"
+		err := ArchiveAsset(ctx, assetID)
 		if err != nil {
-			t.Errorf("could not get test asset with id %s: %v", assetID, err)
-		}
-		err = DeleteAsset(ctx, assetID)
-		if err != nil {
-			t.Errorf("could not delete asset with asset id %s: %v", assetID, err)
-		}
-		_, err = GetAsset(ctx, assetID)
-		if err == nil { // sic
-			t.Errorf("expected asset %s would be deleted, but it wasn't", assetID)
-		} else {
-			rootErr := errors.Root(err)
-			if rootErr != pg.ErrUserInputNotFound {
-				t.Errorf("unexpected error when trying to get deleted asset %s: %v", assetID, err)
-			}
+			t.Errorf("unexpected error %v", err)
 		}
 
-		err = DeleteAsset(ctx, "missing-asset")
-		if errors.Root(err) != pg.ErrUserInputNotFound {
-			t.Errorf("got err = %v want %v", errors.Root(err), pg.ErrUserInputNotFound)
-		}
-
-		asset = newTestAsset(t, ctx, iNode)
-		err = UpdateIssuances(ctx, map[bc.AssetID]int64{asset.Hash: 500}, false)
+		// Verify that the asset was archived.
+		var archived bool
+		var checkQ = `SELECT archived FROM assets WHERE id = $1`
+		err = pg.FromContext(ctx).QueryRow(ctx, checkQ, assetID).Scan(&archived)
 		if err != nil {
-			t.Errorf("unexpected error when trying to update issuance: %v", err)
+			t.Errorf("unexpected error %v", err)
 		}
-		err = DeleteAsset(ctx, assetID)
-		if errors.Root(err) != ErrCannotDelete {
-			t.Errorf("got err = %v want %v", errors.Root(err), ErrCannotDelete)
+		if !archived {
+			t.Errorf("expected asset %s to be archived", assetID)
 		}
 	})
 }

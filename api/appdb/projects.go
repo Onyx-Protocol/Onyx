@@ -307,17 +307,24 @@ func ProjectByIssuer(ctx context.Context, issuerID string) (string, error) {
 	return project, errors.WithDetailf(err, "issuer node %v", issuerID)
 }
 
-// ProjectByAsset returns all project IDs associated with a set of assets
-func ProjectByAsset(ctx context.Context, assetID string) (string, error) {
+// ProjectByActiveAsset returns the project ID associated with an unarchived asset. If
+// an asset has been archived, this function returns ErrArchived.
+func ProjectByActiveAsset(ctx context.Context, assetID string) (string, error) {
 	const q = `
-		SELECT project_id FROM assets a
+		SELECT project_id, a.archived FROM assets a
 		JOIN issuer_nodes i ON a.issuer_node_id=i.id
 		WHERE a.id=$1
 	`
-	var project string
-	err := pg.FromContext(ctx).QueryRow(ctx, q, assetID).Scan(&project)
+	var (
+		project  string
+		archived bool
+	)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, assetID).Scan(&project, &archived)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
+	}
+	if archived {
+		err = ErrArchived
 	}
 	return project, errors.WithDetailf(err, "asset %v", assetID)
 }

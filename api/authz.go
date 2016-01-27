@@ -65,7 +65,7 @@ func issuerAuthz(ctx context.Context, issuerID string) error {
 }
 
 func assetAuthz(ctx context.Context, assetID string) error {
-	project, err := appdb.ProjectByAsset(ctx, assetID)
+	project, err := appdb.ProjectByActiveAsset(ctx, assetID)
 	if err != nil {
 		return err
 	}

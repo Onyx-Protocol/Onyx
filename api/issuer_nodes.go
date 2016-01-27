@@ -172,11 +172,11 @@ func updateAsset(ctx context.Context, assetID string, in struct{ Label *string }
 }
 
 // DELETE /v3/assets/:assetID
-func deleteAsset(ctx context.Context, assetID string) error {
+func archiveAsset(ctx context.Context, assetID string) error {
 	if err := assetAuthz(ctx, assetID); err != nil {
 		return err
 	}
-	return appdb.DeleteAsset(ctx, assetID)
+	return appdb.ArchiveAsset(ctx, assetID)
 }
 
 // GET /v3/issuer-nodes/:inodeID/activity

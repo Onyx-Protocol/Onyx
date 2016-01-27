@@ -8,6 +8,10 @@ package appdb
 import "errors"
 
 var (
+	// ErrArchived means someone tried to retrieve an object (node,
+	// account, asset, etc.) that has been archived.
+	ErrArchived = errors.New("archived")
+
 	// ErrBadLabel is returned by functions that operate
 	// on the label of various objects, for instance
 	// nodes and accounts.

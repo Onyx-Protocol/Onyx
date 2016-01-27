@@ -171,7 +171,8 @@ CREATE TABLE accounts (
     updated_at timestamp with time zone DEFAULT now(),
     next_address_index bigint DEFAULT 0 NOT NULL,
     label text,
-    keys text[] DEFAULT '{}'::text[] NOT NULL
+    keys text[] DEFAULT '{}'::text[] NOT NULL,
+    archived boolean DEFAULT false NOT NULL
 );
 
 
@@ -267,7 +268,8 @@ CREATE TABLE assets (
     label text NOT NULL,
     sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL,
     inner_asset_id text,
-    issuance_script bytea NOT NULL
+    issuance_script bytea NOT NULL,
+    archived boolean DEFAULT false NOT NULL
 );
 
 
@@ -401,7 +403,8 @@ CREATE TABLE issuer_nodes (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     generated_keys text[] DEFAULT '{}'::text[] NOT NULL,
-    variable_keys integer DEFAULT 0 NOT NULL
+    variable_keys integer DEFAULT 0 NOT NULL,
+    archived boolean DEFAULT false NOT NULL
 );
 
 
@@ -465,7 +468,8 @@ CREATE TABLE manager_nodes (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     generated_keys text[] DEFAULT '{}'::text[] NOT NULL,
-    variable_keys integer DEFAULT 0 NOT NULL
+    variable_keys integer DEFAULT 0 NOT NULL,
+    archived boolean DEFAULT false NOT NULL
 );
 
 
@@ -588,7 +592,8 @@ CREATE TABLE pool_txs (
 CREATE TABLE projects (
     id text DEFAULT next_chain_id('proj'::text) NOT NULL,
     name text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    archived boolean DEFAULT false NOT NULL
 );
 
 
