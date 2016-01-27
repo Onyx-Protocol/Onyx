@@ -105,7 +105,8 @@ echo Reviewers: $reviewby >>$mfile
 
 GIT_EDITOR='sed -i "" 1!s/pick/fixup/' \
 	git rebase --interactive origin/$onto
-git commit -F $mfile --amend # use PR message; let the human edit it
+git commit -F $mfile --amend # use PR message
+git commit --amend           # let the human edit it
 git push origin $branch:$onto
 git push origin :$branch
 git checkout $onto
