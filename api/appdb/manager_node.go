@@ -200,6 +200,8 @@ func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit
 					WHERE u.tx_hash = pi.tx_hash AND u.index = pi.index
 				)
 		) AS bals
+		INNER JOIN accounts ON accounts.id = account_id
+		WHERE NOT accounts.archived
 		GROUP BY account_id
 		ORDER BY account_id ASC
 		LIMIT $4

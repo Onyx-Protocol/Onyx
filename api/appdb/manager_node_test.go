@@ -71,12 +71,24 @@ func TestGetManagerNode(t *testing.T) {
 
 func TestAccountsWithAsset(t *testing.T) {
 	const fix = `
+	INSERT INTO projects (id, name) VALUES
+			('proj-id-0', 'proj-0');
+
+		INSERT INTO manager_nodes (id, project_id, key_index, label) VALUES
+			('manager-node-id-0', 'proj-id-0', 0, 'manager-node-0'),
+			('manager-node-id-1', 'proj-id-0', 1, 'manager-node-1');
+
+		INSERT INTO accounts (id, manager_node_id, key_index, label, archived) VALUES
+			('account-0', 'manager-node-id-0', 0, 'account-0', false),
+			('account-1', 'manager-node-id-0', 1, 'account-1', false);
+
 		INSERT INTO utxos (tx_hash, index, asset_id, amount, addr_index, manager_node_id, account_id, confirmed, block_hash, block_height)
 		VALUES ('ctx-0', 0, 'asset-1', 5, 0, 'mnode-0', 'account-0', TRUE, 'bh1', 1),
 		       ('ctx-1', 0, 'asset-1', 5, 0, 'mnode-0', 'account-0', TRUE, 'bh1', 1),
 		       ('ctx-2', 0, 'asset-1', 5, 0, 'mnode-0', 'account-1', TRUE, 'bh1', 1),
 		       ('ctx-3', 0, 'asset-2', 5, 0, 'mnode-0', 'account-1', TRUE, 'bh1', 1),
-		       ('ctx-4', 0, 'asset-1', 5, 0, 'mnode-1', 'account-0', TRUE, 'bh1', 1);
+		       ('ctx-4', 0, 'asset-1', 5, 0, 'mnode-1', 'account-0', TRUE, 'bh1', 1),
+		       ('ctx-5', 0, 'asset-1', 5, 0, 'mnode-1', 'account-2', TRUE, 'bh1', 1);
 
 		INSERT INTO pool_txs
 			(tx_hash, data)

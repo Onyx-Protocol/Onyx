@@ -3,13 +3,11 @@ package appdb
 import (
 	"reflect"
 	"testing"
-	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
 )
 
 func TestCreateAccount(t *testing.T) {
@@ -79,11 +77,12 @@ func TestListAccounts(t *testing.T) {
 			('manager-node-id-0', 'proj-id-0', 0, 'manager-node-0'),
 			('manager-node-id-1', 'proj-id-0', 1, 'manager-node-1');
 
-		INSERT INTO accounts (id, manager_node_id, key_index, label) VALUES
-			('account-id-0', 'manager-node-id-0', 0, 'account-0'),
-			('account-id-1', 'manager-node-id-0', 1, 'account-1'),
-			('account-id-2', 'manager-node-id-1', 2, 'account-2'),
-			('account-id-3', 'manager-node-id-0', 3, 'account-3');
+		INSERT INTO accounts (id, manager_node_id, key_index, label, archived) VALUES
+			('account-id-0', 'manager-node-id-0', 0, 'account-0', false),
+			('account-id-1', 'manager-node-id-0', 1, 'account-1', false),
+			('account-id-2', 'manager-node-id-1', 2, 'account-2', false),
+			('account-id-3', 'manager-node-id-0', 3, 'account-3', false),
+			('account-id-4', 'manager-node-id-0', 4, 'account-4', true);
 	`
 	withContext(t, sql, func(ctx context.Context) {
 		examples := []struct {
@@ -268,62 +267,20 @@ func TestUpdateAccountNoUpdate(t *testing.T) {
 	})
 }
 
-func TestDeleteAccount(t *testing.T) {
+func TestArchiveAccount(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		account := newTestAccount(t, ctx, nil, "account-1")
-		_, err := GetAccount(ctx, account.ID)
+		err := ArchiveAccount(ctx, account.ID)
 		if err != nil {
-			t.Fatalf("could not get account with id %s: %v", account.ID, err)
+			t.Errorf("could not archive account with id %s: %v", account.ID, err)
 		}
-		err = DeleteAccount(ctx, account.ID)
-		if err != nil {
-			t.Errorf("could not delete account with id %s: %v", account.ID, err)
-		}
-		_, err = GetAccount(ctx, account.ID)
-		if err == nil { // sic
-			t.Errorf("expected account %s would be deleted, but it wasn't", account.ID)
-		} else {
-			rootErr := errors.Root(err)
-			if rootErr != pg.ErrUserInputNotFound {
-				t.Errorf("unexpected error when trying to get deleted account %s: %v", account.ID, err)
-			}
-		}
-	})
-}
 
-// Test that the existence of an address associated with an account
-// prevents that account from being deleted.
-func TestDeleteAccountBlocked(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, nil, "manager-node-1")
-		account := newTestAccount(t, ctx, managerNode, "account-1")
-		addr := &Address{
-			AccountID:        account.ID,
-			Amount:           100,
-			Expires:          time.Now().Add(5 * time.Minute),
-			IsChange:         false,
-			ManagerNodeID:    managerNode.ID,
-			ManagerNodeIndex: []uint32{0, 1},
-			AccountIndex:     []uint32{0, 0},
-			Index:            []uint32{0, 0},
-			SigsRequired:     1,
-			Keys:             []*hdkey.XKey{dummyXPub},
+		var archived bool
+		checkQ := `SELECT archived FROM accounts WHERE id = $1`
+		err = pg.FromContext(ctx).QueryRow(ctx, checkQ, account.ID).Scan(&archived)
 
-			RedeemScript: []byte{},
-			PKScript:     []byte{},
-		}
-		err := addr.Insert(ctx)
-		if err != nil {
-			t.Fatalf("could not insert address during TestDeleteAccountBlocked: %v", err)
-		}
-		err = DeleteAccount(ctx, account.ID)
-		if err == nil { // sic
-			t.Errorf("expected to be unable to delete account %s, but was able to", account.ID)
-		} else {
-			rootErr := errors.Root(err)
-			if rootErr != ErrCannotDelete {
-				t.Errorf("unexpected error trying to delete undeletable account %s: %v", account.ID, err)
-			}
+		if !archived {
+			t.Errorf("expected account %s to be archived", account.ID)
 		}
 	})
 }

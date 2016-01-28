@@ -95,7 +95,7 @@ func ListAccounts(ctx context.Context, managerNodeID string, prev string, limit 
 	q := `
 		SELECT id, label, key_index(key_index)
 		FROM accounts
-		WHERE manager_node_id = $1 AND ($2='' OR id<$2)
+		WHERE manager_node_id = $1 AND ($2='' OR id<$2) AND NOT archived
 		ORDER BY id DESC LIMIT $3
 	`
 	rows, err := pg.FromContext(ctx).Query(ctx, q, managerNodeID, prev, limit)
@@ -159,25 +159,11 @@ func UpdateAccount(ctx context.Context, accountID string, label *string) error {
 	return errors.Wrap(err, "update query")
 }
 
-// DeleteAccount deletes the account but only if there is no activity
-// and there are no addresses associated with it (enforced by ON
-// DELETE NO ACTION).
-func DeleteAccount(ctx context.Context, accountID string) error {
-	const q = `DELETE FROM accounts WHERE id = $1`
-	db := pg.FromContext(ctx)
-	result, err := db.Exec(ctx, q, accountID)
-	if err != nil {
-		if pg.IsForeignKeyViolation(err) {
-			return errors.WithDetailf(ErrCannotDelete, "account ID %v", accountID)
-		}
-		return errors.Wrap(err, "delete query")
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return errors.Wrap(err, "delete query")
-	}
-	if rowsAffected == 0 {
-		return errors.WithDetailf(pg.ErrUserInputNotFound, "account ID %v", accountID)
-	}
-	return nil
+// ArchiveAccount marks an account as archived. Once an account has
+// been archived, it does not appear for its manager node, and it cannot
+// be used in transactions.
+func ArchiveAccount(ctx context.Context, accountID string) error {
+	const q = `UPDATE accounts SET archived = true WHERE id = $1`
+	_, err := pg.FromContext(ctx).Exec(ctx, q, accountID)
+	return errors.Wrap(err, "archive query")
 }

@@ -358,11 +358,11 @@ func updateAccount(ctx context.Context, accountID string, in struct{ Label *stri
 }
 
 // DELETE /v3/accounts/:accountID
-func deleteAccount(ctx context.Context, accountID string) error {
+func archiveAccount(ctx context.Context, accountID string) error {
 	if err := accountAuthz(ctx, accountID); err != nil {
 		return err
 	}
-	return appdb.DeleteAccount(ctx, accountID)
+	return appdb.ArchiveAccount(ctx, accountID)
 }
 
 // /v3/accounts/:accountID/addresses

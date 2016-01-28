@@ -98,7 +98,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/accounts/:accountID/transactions", getAccountTxs)
 	h.HandleFunc("POST", "/v3/accounts/:accountID/addresses", createAddr)
 	h.HandleFunc("PUT", "/v3/accounts/:accountID", updateAccount)
-	h.HandleFunc("DELETE", "/v3/accounts/:accountID", deleteAccount)
+	h.HandleFunc("DELETE", "/v3/accounts/:accountID", archiveAccount)
 	h.HandleFunc("GET", "/v3/assets/:assetID", getAsset)
 	h.HandleFunc("GET", "/v3/assets/:assetID/activity", getAssetActivity)
 	h.HandleFunc("GET", "/v3/assets/:assetID/transactions", getAssetTxs)

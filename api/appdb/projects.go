@@ -271,7 +271,7 @@ func ProjectByManager(ctx context.Context, managerID string) (string, error) {
 	return project, errors.WithDetailf(err, "manager node %v", managerID)
 }
 
-// ProjectsByAccount returns all project IDs associated with a set of accounts
+// ProjectsByAccount returns all project IDs associated with a set of active accounts
 func ProjectsByAccount(ctx context.Context, accountIDs ...string) ([]string, error) {
 	// Remove duplicates so that we know how many accounts to expect.
 	sort.Strings(accountIDs)
@@ -280,7 +280,7 @@ func ProjectsByAccount(ctx context.Context, accountIDs ...string) ([]string, err
 	const q = `
 		SELECT COUNT(acc.id), array_agg(DISTINCT project_id) FROM accounts acc
 		JOIN manager_nodes mn ON acc.manager_node_id=mn.id
-		WHERE acc.id=ANY($1)
+		WHERE acc.id=ANY($1) AND NOT acc.archived
 	`
 	var (
 		accountsFound int
