@@ -4,6 +4,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/authn"
 )
@@ -89,6 +90,9 @@ func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
 		return nil
 	}
 	projects, err := appdb.ProjectsByAccount(ctx, accountIDs...)
+	if errors.Root(err) == pg.ErrUserInputNotFound {
+		return errors.WithDetailf(errNoAccessToResource, "accounts %+v", accountIDs)
+	}
 	if err != nil {
 		return err
 	}

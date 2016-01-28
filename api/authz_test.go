@@ -240,6 +240,38 @@ func TestBuildAuthz(t *testing.T) {
 				request: []*BuildRequest{
 					&BuildRequest{
 						Sources: []*Source{
+							{
+								AssetID:   assetIDPtr,
+								AccountID: acc1ID,
+							},
+							{
+								AssetID:   assetIDPtr,
+								AccountID: "fake-account",
+							},
+						},
+						Dests: []*Destination{
+							&Destination{
+								AssetID:   assetIDPtr,
+								AccountID: acc4ID,
+							},
+						},
+					},
+					&BuildRequest{
+						Sources: []*Source{
+							&Source{
+								AssetID:   assetIDPtr,
+								AccountID: acc4ID,
+							},
+						},
+					},
+				},
+				want: errNoAccessToResource,
+			},
+			{
+				userID: fixtureInfo.u2ID,
+				request: []*BuildRequest{
+					&BuildRequest{
+						Sources: []*Source{
 							&Source{
 								AssetID:   assetIDPtr,
 								AccountID: acc2ID,

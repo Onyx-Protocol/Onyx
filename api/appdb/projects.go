@@ -2,11 +2,13 @@ package appdb
 
 import (
 	"database/sql"
+	"sort"
 
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/strings"
 )
 
 // Project represents a project. It can be used safely for API
@@ -271,13 +273,23 @@ func ProjectByManager(ctx context.Context, managerID string) (string, error) {
 
 // ProjectsByAccount returns all project IDs associated with a set of accounts
 func ProjectsByAccount(ctx context.Context, accountIDs ...string) ([]string, error) {
+	// Remove duplicates so that we know how many accounts to expect.
+	sort.Strings(accountIDs)
+	accountIDs = strings.Uniq(accountIDs)
+
 	const q = `
-		SELECT array_agg(DISTINCT project_id) FROM accounts acc
+		SELECT COUNT(acc.id), array_agg(DISTINCT project_id) FROM accounts acc
 		JOIN manager_nodes mn ON acc.manager_node_id=mn.id
 		WHERE acc.id=ANY($1)
 	`
-	var projects []string
-	err := pg.FromContext(ctx).QueryRow(ctx, q, pg.Strings(accountIDs)).Scan((*pg.Strings)(&projects))
+	var (
+		accountsFound int
+		projects      []string
+	)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, pg.Strings(accountIDs)).Scan(&accountsFound, (*pg.Strings)(&projects))
+	if accountsFound != len(accountIDs) {
+		err = pg.ErrUserInputNotFound
+	}
 	return projects, errors.Wrap(err)
 }
 
