@@ -2,12 +2,16 @@
 -- PostgreSQL database dump
 --
 
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
+SET row_security = off;
 
 --
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
@@ -160,7 +164,7 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
--- Name: accounts; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: accounts; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE accounts (
@@ -177,7 +181,7 @@ CREATE TABLE accounts (
 
 
 --
--- Name: activity; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: activity; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE activity (
@@ -190,7 +194,7 @@ CREATE TABLE activity (
 
 
 --
--- Name: activity_accounts; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: activity_accounts; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE activity_accounts (
@@ -212,7 +216,7 @@ CREATE SEQUENCE address_index_seq
 
 
 --
--- Name: addresses; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: addresses; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE addresses (
@@ -233,7 +237,7 @@ CREATE TABLE addresses (
 
 
 --
--- Name: asset_definition_pointers; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: asset_definition_pointers; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE asset_definition_pointers (
@@ -243,7 +247,7 @@ CREATE TABLE asset_definition_pointers (
 
 
 --
--- Name: asset_definitions; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: asset_definitions; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE asset_definitions (
@@ -253,7 +257,7 @@ CREATE TABLE asset_definitions (
 
 
 --
--- Name: assets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: assets; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE assets (
@@ -286,7 +290,7 @@ CREATE SEQUENCE assets_key_index_seq
 
 
 --
--- Name: auth_tokens; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: auth_tokens; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE auth_tokens (
@@ -300,7 +304,7 @@ CREATE TABLE auth_tokens (
 
 
 --
--- Name: blocks; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: blocks; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE blocks (
@@ -312,7 +316,7 @@ CREATE TABLE blocks (
 
 
 --
--- Name: blocks_txs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: blocks_txs; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE blocks_txs (
@@ -334,7 +338,7 @@ CREATE SEQUENCE chain_id_seq
 
 
 --
--- Name: invitations; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: invitations; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE invitations (
@@ -348,7 +352,7 @@ CREATE TABLE invitations (
 
 
 --
--- Name: issuance_activity; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: issuance_activity; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE issuance_activity (
@@ -361,7 +365,7 @@ CREATE TABLE issuance_activity (
 
 
 --
--- Name: issuance_activity_assets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: issuance_activity_assets; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE issuance_activity_assets (
@@ -371,7 +375,7 @@ CREATE TABLE issuance_activity_assets (
 
 
 --
--- Name: issuance_totals; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: issuance_totals; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE issuance_totals (
@@ -388,7 +392,7 @@ CREATE TABLE issuance_totals (
 
 
 --
--- Name: issuer_nodes; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: issuer_nodes; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE issuer_nodes (
@@ -428,7 +432,7 @@ ALTER SEQUENCE issuer_nodes_key_index_seq OWNED BY issuer_nodes.key_index;
 
 
 --
--- Name: issuer_txs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: issuer_txs; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE issuer_txs (
@@ -441,7 +445,7 @@ CREATE TABLE issuer_txs (
 
 
 --
--- Name: issuer_txs_assets; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: issuer_txs_assets; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE issuer_txs_assets (
@@ -451,7 +455,7 @@ CREATE TABLE issuer_txs_assets (
 
 
 --
--- Name: manager_nodes; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: manager_nodes; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE manager_nodes (
@@ -493,7 +497,7 @@ ALTER SEQUENCE manager_nodes_key_index_seq OWNED BY manager_nodes.key_index;
 
 
 --
--- Name: manager_txs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: manager_txs; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE manager_txs (
@@ -506,7 +510,7 @@ CREATE TABLE manager_txs (
 
 
 --
--- Name: manager_txs_accounts; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: manager_txs_accounts; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE manager_txs_accounts (
@@ -516,7 +520,7 @@ CREATE TABLE manager_txs_accounts (
 
 
 --
--- Name: members; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: members; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE members (
@@ -529,7 +533,7 @@ CREATE TABLE members (
 
 
 --
--- Name: orderbook_prices; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: orderbook_prices; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE orderbook_prices (
@@ -542,7 +546,7 @@ CREATE TABLE orderbook_prices (
 
 
 --
--- Name: orderbook_utxos; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: orderbook_utxos; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE orderbook_utxos (
@@ -553,7 +557,7 @@ CREATE TABLE orderbook_utxos (
 
 
 --
--- Name: pool_inputs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: pool_inputs; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE pool_inputs (
@@ -575,7 +579,7 @@ CREATE SEQUENCE pool_tx_sort_id_seq
 
 
 --
--- Name: pool_txs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: pool_txs; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE pool_txs (
@@ -586,7 +590,7 @@ CREATE TABLE pool_txs (
 
 
 --
--- Name: projects; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: projects; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE projects (
@@ -598,7 +602,7 @@ CREATE TABLE projects (
 
 
 --
--- Name: rotations; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: rotations; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE rotations (
@@ -610,7 +614,7 @@ CREATE TABLE rotations (
 
 
 --
--- Name: txs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: txs; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE txs (
@@ -620,7 +624,7 @@ CREATE TABLE txs (
 
 
 --
--- Name: users; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE users (
@@ -634,7 +638,7 @@ CREATE TABLE users (
 
 
 --
--- Name: utxos; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: utxos; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE utxos (
@@ -675,7 +679,7 @@ ALTER TABLE ONLY manager_nodes ALTER COLUMN key_index SET DEFAULT nextval('manag
 
 
 --
--- Name: accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY accounts
@@ -683,7 +687,7 @@ ALTER TABLE ONLY accounts
 
 
 --
--- Name: activity_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: activity_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY activity
@@ -691,7 +695,7 @@ ALTER TABLE ONLY activity
 
 
 --
--- Name: addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY addresses
@@ -699,7 +703,7 @@ ALTER TABLE ONLY addresses
 
 
 --
--- Name: asset_definition_pointers_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: asset_definition_pointers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY asset_definition_pointers
@@ -707,7 +711,7 @@ ALTER TABLE ONLY asset_definition_pointers
 
 
 --
--- Name: asset_definitions_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: asset_definitions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY asset_definitions
@@ -715,7 +719,7 @@ ALTER TABLE ONLY asset_definitions
 
 
 --
--- Name: assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY assets
@@ -723,7 +727,7 @@ ALTER TABLE ONLY assets
 
 
 --
--- Name: blocks_height_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: blocks_height_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY blocks
@@ -731,7 +735,7 @@ ALTER TABLE ONLY blocks
 
 
 --
--- Name: blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY blocks
@@ -739,7 +743,7 @@ ALTER TABLE ONLY blocks
 
 
 --
--- Name: blocks_txs_tx_hash_block_hash_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: blocks_txs_tx_hash_block_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY blocks_txs
@@ -747,7 +751,7 @@ ALTER TABLE ONLY blocks_txs
 
 
 --
--- Name: invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY invitations
@@ -755,7 +759,7 @@ ALTER TABLE ONLY invitations
 
 
 --
--- Name: issuance_activity_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: issuance_activity_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY issuance_activity
@@ -763,7 +767,7 @@ ALTER TABLE ONLY issuance_activity
 
 
 --
--- Name: issuance_totals_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: issuance_totals_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY issuance_totals
@@ -771,7 +775,7 @@ ALTER TABLE ONLY issuance_totals
 
 
 --
--- Name: issuer_nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: issuer_nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY issuer_nodes
@@ -779,7 +783,7 @@ ALTER TABLE ONLY issuer_nodes
 
 
 --
--- Name: issuer_txs_add_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: issuer_txs_add_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY issuer_txs
@@ -787,7 +791,7 @@ ALTER TABLE ONLY issuer_txs
 
 
 --
--- Name: manager_nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: manager_nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY manager_nodes
@@ -795,7 +799,7 @@ ALTER TABLE ONLY manager_nodes
 
 
 --
--- Name: manager_txs_add_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: manager_txs_add_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY manager_txs
@@ -803,7 +807,7 @@ ALTER TABLE ONLY manager_txs
 
 
 --
--- Name: members_project_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: members_project_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY members
@@ -811,7 +815,7 @@ ALTER TABLE ONLY members
 
 
 --
--- Name: orderbook_utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: orderbook_utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY orderbook_utxos
@@ -819,7 +823,7 @@ ALTER TABLE ONLY orderbook_utxos
 
 
 --
--- Name: pool_inputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: pool_inputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY pool_inputs
@@ -827,7 +831,7 @@ ALTER TABLE ONLY pool_inputs
 
 
 --
--- Name: pool_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: pool_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY pool_txs
@@ -835,7 +839,7 @@ ALTER TABLE ONLY pool_txs
 
 
 --
--- Name: pool_txs_sort_id_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: pool_txs_sort_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY pool_txs
@@ -843,7 +847,7 @@ ALTER TABLE ONLY pool_txs
 
 
 --
--- Name: projects_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: projects_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY projects
@@ -851,7 +855,7 @@ ALTER TABLE ONLY projects
 
 
 --
--- Name: rotations_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: rotations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY rotations
@@ -859,7 +863,7 @@ ALTER TABLE ONLY rotations
 
 
 --
--- Name: txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY txs
@@ -867,7 +871,7 @@ ALTER TABLE ONLY txs
 
 
 --
--- Name: users_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY users
@@ -875,7 +879,7 @@ ALTER TABLE ONLY users
 
 
 --
--- Name: utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY utxos
@@ -883,203 +887,203 @@ ALTER TABLE ONLY utxos
 
 
 --
--- Name: accounts_manager_node_path; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: accounts_manager_node_path; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX accounts_manager_node_path ON accounts USING btree (manager_node_id, key_index);
 
 
 --
--- Name: activity_accounts_account_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: activity_accounts_account_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX activity_accounts_account_id_idx ON activity_accounts USING btree (account_id);
 
 
 --
--- Name: activity_accounts_activity_id_account_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: activity_accounts_activity_id_account_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX activity_accounts_activity_id_account_id_idx ON activity_accounts USING btree (activity_id, account_id);
 
 
 --
--- Name: activity_manager_node_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: activity_manager_node_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX activity_manager_node_id_idx ON activity USING btree (manager_node_id);
 
 
 --
--- Name: activity_manager_node_id_txid_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: activity_manager_node_id_txid_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX activity_manager_node_id_txid_idx ON activity USING btree (manager_node_id, txid);
 
 
 --
--- Name: addresses_account_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: addresses_account_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX addresses_account_id_idx ON addresses USING btree (account_id);
 
 
 --
--- Name: addresses_account_id_key_index_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: addresses_account_id_key_index_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX addresses_account_id_key_index_idx ON addresses USING btree (account_id, key_index);
 
 
 --
--- Name: addresses_manager_node_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: addresses_manager_node_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX addresses_manager_node_id_idx ON addresses USING btree (manager_node_id);
 
 
 --
--- Name: addresses_pk_script_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: addresses_pk_script_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX addresses_pk_script_idx ON addresses USING btree (pk_script);
 
 
 --
--- Name: assets_issuer_node_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: assets_issuer_node_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX assets_issuer_node_id_idx ON assets USING btree (issuer_node_id);
 
 
 --
--- Name: assets_sort_id; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: assets_sort_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX assets_sort_id ON assets USING btree (sort_id);
 
 
 --
--- Name: auth_tokens_user_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: auth_tokens_user_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX auth_tokens_user_id_idx ON auth_tokens USING btree (user_id);
 
 
 --
--- Name: issuance_activity_assets_asset_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: issuance_activity_assets_asset_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX issuance_activity_assets_asset_id_idx ON issuance_activity_assets USING btree (asset_id);
 
 
 --
--- Name: issuance_activity_assets_issuance_activity_id_asset_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: issuance_activity_assets_issuance_activity_id_asset_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX issuance_activity_assets_issuance_activity_id_asset_id_idx ON issuance_activity_assets USING btree (issuance_activity_id, asset_id);
 
 
 --
--- Name: issuance_activity_issuer_node_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: issuance_activity_issuer_node_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX issuance_activity_issuer_node_id_idx ON issuance_activity USING btree (issuer_node_id);
 
 
 --
--- Name: issuance_activity_issuer_node_id_txid_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: issuance_activity_issuer_node_id_txid_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX issuance_activity_issuer_node_id_txid_idx ON issuance_activity USING btree (issuer_node_id, txid);
 
 
 --
--- Name: issuer_nodes_project_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: issuer_nodes_project_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX issuer_nodes_project_id_idx ON issuer_nodes USING btree (project_id);
 
 
 --
--- Name: issuer_txs_assets_asset_id_issuer_tx_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: issuer_txs_assets_asset_id_issuer_tx_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX issuer_txs_assets_asset_id_issuer_tx_id_idx ON issuer_txs_assets USING btree (asset_id, issuer_tx_id DESC);
 
 
 --
--- Name: issuer_txs_issuer_node_id_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: issuer_txs_issuer_node_id_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX issuer_txs_issuer_node_id_id_idx ON issuer_txs USING btree (issuer_node_id, id DESC);
 
 
 --
--- Name: manager_nodes_project_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: manager_nodes_project_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX manager_nodes_project_id_idx ON manager_nodes USING btree (project_id);
 
 
 --
--- Name: manager_txs_accounts_account_id_manager_tx_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: manager_txs_accounts_account_id_manager_tx_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX manager_txs_accounts_account_id_manager_tx_id_idx ON manager_txs_accounts USING btree (account_id, manager_tx_id DESC);
 
 
 --
--- Name: manager_txs_manager_node_id_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: manager_txs_manager_node_id_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX manager_txs_manager_node_id_id_idx ON manager_txs USING btree (manager_node_id, id DESC);
 
 
 --
--- Name: members_user_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: members_user_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX members_user_id_idx ON members USING btree (user_id);
 
 
 --
--- Name: orderbook_prices_asset_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: orderbook_prices_asset_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX orderbook_prices_asset_id_idx ON orderbook_prices USING btree (asset_id);
 
 
 --
--- Name: orderbook_utxos_seller_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: orderbook_utxos_seller_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX orderbook_utxos_seller_id_idx ON orderbook_utxos USING btree (seller_id);
 
 
 --
--- Name: users_lower_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: users_lower_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
 
 
 --
--- Name: utxos_account_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: utxos_account_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX utxos_account_id_asset_id_reserved_at_idx ON utxos USING btree (account_id, asset_id, reserved_until) WHERE (account_id IS NOT NULL);
 
 
 --
--- Name: utxos_manager_node_id_asset_id_reserved_until_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: utxos_manager_node_id_asset_id_reserved_until_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX utxos_manager_node_id_asset_id_reserved_until_idx ON utxos USING btree (manager_node_id, asset_id, reserved_until);
 
 
 --
--- Name: utxos_pool_tx_hash_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: utxos_pool_tx_hash_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX utxos_pool_tx_hash_idx ON utxos USING btree (pool_tx_hash);
