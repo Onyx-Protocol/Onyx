@@ -1,11 +1,14 @@
 package asset_test
 
 import (
+	"log"
 	"reflect"
 	"testing"
 	"time"
 
 	"golang.org/x/net/context"
+
+	"github.com/btcsuite/btcd/btcec"
 
 	"chain/api/appdb"
 	. "chain/api/asset"
@@ -17,6 +20,8 @@ import (
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/fedchain/txscript"
+	"chain/testutil"
 )
 
 func TestTransferConfirmed(t *testing.T) {
@@ -33,7 +38,7 @@ func TestTransferConfirmed(t *testing.T) {
 	}
 
 	dumpState(ctx, t)
-	MakeBlock(ctx)
+	MakeBlock(ctx, BlockKey)
 	dumpState(ctx, t)
 
 	_, err = transfer(ctx, info, info.acctA.ID, info.acctB.ID, 10)
@@ -63,6 +68,11 @@ func TestGenSpendApply(t *testing.T) {
 	t.Logf("issued %v", issueTx.Hash)
 
 	block, err := GenerateBlock(ctx, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = SignBlock(block, BlockKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +122,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 			b.Logf("finalized %v", tx.Hash)
 
 			if i%10 == 0 {
-				MakeBlock(ctx)
+				MakeBlock(ctx, BlockKey)
 			}
 		}
 	})
@@ -235,6 +245,101 @@ func TestGenerateBlock(t *testing.T) {
 	})
 }
 
+func TestSignBlock(t *testing.T) {
+	ctx := context.Background()
+
+	key := newPrivKey(t)
+
+	outscript, err := GenerateBlockScript([]*btcec.PublicKey{key.PubKey()}, 1)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		log.Fatal(err)
+	}
+
+	block := &bc.Block{}
+	err = SignBlock(block, key)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	engine, err := txscript.NewEngineForBlock(ctx, outscript, block, txscript.StandardVerifyFlags)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	err = engine.Execute()
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+}
+
+func TestIsSignedByTrustedHost(t *testing.T) {
+	keys := []*btcec.PrivateKey{newPrivKey(t)}
+
+	block := &bc.Block{}
+	err := SignBlock(block, keys[0])
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+	sig := block.SignatureScript
+
+	cases := []struct {
+		desc        string
+		sigScript   []byte
+		trustedKeys []*btcec.PublicKey
+		want        bool
+	}{{
+		desc:        "empty sig",
+		sigScript:   nil,
+		trustedKeys: privToPub(keys),
+		want:        false,
+	}, {
+		desc:        "wrong trusted keys",
+		sigScript:   sig,
+		trustedKeys: privToPub([]*btcec.PrivateKey{newPrivKey(t)}),
+		want:        false,
+	}, {
+		desc:        "one-of-one trusted keys",
+		sigScript:   sig,
+		trustedKeys: privToPub(keys),
+		want:        true,
+	}, {
+		desc:        "one-of-two trusted keys",
+		sigScript:   sig,
+		trustedKeys: privToPub(append(keys, newPrivKey(t))),
+		want:        true,
+	}}
+
+	for _, c := range cases {
+		block.SignatureScript = c.sigScript
+		got := IsSignedByTrustedHost(block, c.trustedKeys)
+
+		if got != c.want {
+			t.Errorf("%s: got %v want %v", c.desc, got, c.want)
+		}
+	}
+}
+
+func privToPub(privs []*btcec.PrivateKey) []*btcec.PublicKey {
+	var public []*btcec.PublicKey
+	for _, priv := range privs {
+		public = append(public, priv.PubKey())
+	}
+	return public
+}
+
+func newPrivKey(t *testing.T) *btcec.PrivateKey {
+	key, err := btcec.NewPrivateKey(btcec.S256())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return key
+}
+
 func BenchmarkGenerateBlock(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		benchGenBlock(b)
@@ -286,19 +391,16 @@ type clientInfo struct {
 // TODO(kr): refactor this into new package api/apiutil
 // and consume it from cmd/bootdb.
 func bootdb(ctx context.Context) (*clientInfo, error) {
-	const genesisBlock = `
-		INSERT INTO blocks (block_hash, height, data, header)
-		VALUES(
-			'72a7766e340ce61838d88fbd2f3bcf6064b2d6a21596028d031c6a9d24dbd4af',
-			1,
-			decode('0100000001000000000000003132330000000000000000000000000000000000000000000000000000000000414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000064000000000000000f746573742d7369672d73637269707412746573742d6f75747075742d73637269707401010000000000000000000000000007746573742d7478', 'hex'),
-			''
-		);
-	`
-	_, err := pg.FromContext(ctx).Exec(ctx, genesisBlock)
+	key, err := testutil.TestXPrv.ECPrivKey()
 	if err != nil {
 		return nil, err
 	}
+	BlockKey = key
+	_, err = UpsertGenesisBlock(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	u, err := appdb.CreateUser(ctx, "user@example.com", "password")
 	if err != nil {
 		return nil, err
@@ -403,6 +505,12 @@ func transfer(ctx context.Context, info *clientInfo, srcAcctID, destAcctID strin
 func TestUpsertGenesisBlock(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	key, err := testutil.TestXPrv.ECPrivKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	BlockKey = key
 
 	b, err := UpsertGenesisBlock(ctx)
 	if err != nil {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"expvar"
 	"io"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/kr/secureheader"
 	"github.com/resonancelabs/go-pub/instrument"
 	"github.com/resonancelabs/go-pub/instrument/client"
@@ -44,6 +46,7 @@ var (
 	logSize      = env.Int("LOGSIZE", 5e6) // 5MB
 	logCount     = env.Int("LOGCOUNT", 9)
 	logQueries   = env.Bool("LOG_QUERIES", false)
+	blockKey     = env.String("BLOCK_KEY", "2c1f68880327212b6aa71d7c8e0a9375451143352d5c760dc38559f1159c84ce")
 	// for config var LIBRATO_URL, see func init below
 	traceguideToken = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns      = env.Int("MAXDBCONNS", 10) // set to 100 in prod
@@ -74,6 +77,14 @@ func main() {
 	log.SetFlags(log.Lshortfile)
 	chainlog.SetPrefix(append([]interface{}{"app", "api", "target", *target, "buildtag", buildTag}, race...)...)
 	chainlog.SetOutput(logWriter())
+
+	keyBytes, err := hex.DecodeString(*blockKey)
+	if err != nil {
+		log.Fatalln("error:", err)
+	}
+
+	privKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes) // second assignment is pubkey, not error
+	asset.BlockKey = privKey
 
 	if librato.URL.Host != "" {
 		librato.Source = *target

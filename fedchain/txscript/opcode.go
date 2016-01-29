@@ -630,14 +630,18 @@ type parsedOpcode struct {
 
 // isDisabled returns whether or not the opcode is disabled and thus is always
 // bad to see in the instruction stream (even if turned off by a conditional).
-func (pop *parsedOpcode) isDisabled(isP2C bool) bool {
+func (pop *parsedOpcode) isDisabled(isP2C, isBlock bool) bool {
 	switch pop.opcode.value {
+
 	case OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT:
 		return !isP2C
 	case OP_2MUL, OP_2DIV, OP_MUL, OP_DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT:
 		return !isP2C
 	case OP_INVERT, OP_AND, OP_OR, OP_XOR:
 		return true
+	case OP_REQUIREOUTPUT, OP_BALANCE, OP_ASSET, OP_AMOUNT, OP_OUTPUTSCRIPT,
+		OP_TIME, OP_CIRCULATION:
+		return isBlock
 	default:
 		return false
 	}
@@ -2057,7 +2061,12 @@ func opcodeCheckSig(op *parsedOpcode, vm *Engine) error {
 	}
 
 	// Generate the signature hash based on the signature hash type.
-	hash := vm.tx.HashForSigCached(vm.txIdx, vm.currentPrevOut().AssetAmount, hashType, vm.hashCache)
+	var hash bc.Hash
+	if vm.block != nil {
+		hash = vm.block.HashForSig()
+	} else {
+		hash = vm.tx.HashForSigCached(vm.txIdx, vm.currentPrevOut().AssetAmount, hashType, vm.hashCache)
+	}
 
 	pubKey, err := btcec.ParsePubKey(pkBytes, btcec.S256())
 	if err != nil {
@@ -2268,7 +2277,12 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 		}
 
 		// Generate the signature hash based on the signature hash type.
-		hash := vm.tx.HashForSigCached(vm.txIdx, vm.currentPrevOut().AssetAmount, hashType, vm.hashCache)
+		var hash bc.Hash
+		if vm.block != nil {
+			hash = vm.block.HashForSig()
+		} else {
+			hash = vm.tx.HashForSigCached(vm.txIdx, vm.currentPrevOut().AssetAmount, hashType, vm.hashCache)
+		}
 
 		if parsedSig.Verify(hash[:], parsedPubKey) {
 			// PubKey verified, move on to the next signature.

@@ -9,8 +9,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
 	"golang.org/x/net/context"
+
+	"github.com/btcsuite/btcd/btcec"
 
 	"chain/errors"
 	"chain/fedchain/bc"
@@ -93,7 +94,8 @@ type (
 		lastCodeSep     int
 		dstack          stack // data stack
 		astack          stack // alt stack
-		tx              bc.TxData
+		tx              *bc.TxData
+		block           *bc.Block
 		hashCache       *bc.SigHashCache
 		txIdx           int
 		condStack       []int
@@ -139,7 +141,7 @@ func (vm *Engine) isBranchExecuting() bool {
 // tested in this case.
 func (vm *Engine) executeOpcode(pop *parsedOpcode) error {
 	// Disabled opcodes are fail on program counter.
-	if pop.isDisabled(vm.isP2C()) {
+	if pop.isDisabled(vm.isP2C(), vm.block != nil) {
 		return ErrStackOpDisabled
 	}
 
@@ -633,12 +635,17 @@ func (vm *Engine) SetAltStack(data [][]byte) {
 // wants to save between txins.
 func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 	// The provided transaction input index must refer to a valid input.
-	if txIdx < 0 || txIdx >= len(vm.tx.Inputs) {
+	if txIdx < 0 || (vm.tx != nil && txIdx >= len(vm.tx.Inputs)) {
 		return ErrInvalidIndex
 	}
 	vm.txIdx = txIdx
 
-	scriptSig := vm.tx.Inputs[txIdx].SignatureScript
+	var scriptSig []byte
+	if vm.tx != nil {
+		scriptSig = vm.tx.Inputs[txIdx].SignatureScript
+	} else {
+		scriptSig = vm.block.SignatureScript
+	}
 
 	// The signature script must only contain data pushes when the
 	// associated flag is set.
@@ -710,11 +717,16 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 // Note: every call to Execute() must be preceded by a call to
 // Prepare() (including the first one).
 func NewReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
+	return newReusableEngine(ctx, viewReader, tx, nil, flags)
+}
+
+func newReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData, block *bc.Block, flags ScriptFlags) (*Engine, error) {
 	vm := &Engine{
 		ctx:        ctx,
 		viewReader: viewReader,
+		tx:         tx,
+		block:      block,
 		flags:      flags,
-		tx:         *tx,
 		hashCache:  &bc.SigHashCache{},
 		timestamp:  time.Now().Unix(),
 	}
@@ -736,9 +748,11 @@ func NewReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData
 		vm.astack.verifyMinimalData = true
 	}
 
-	vm.available = make([]uint64, len(tx.Outputs))
-	for i, output := range tx.Outputs {
-		vm.available[i] = output.Amount
+	if vm.tx != nil {
+		vm.available = make([]uint64, len(tx.Outputs))
+		for i, output := range tx.Outputs {
+			vm.available[i] = output.Amount
+		}
 	}
 
 	return vm, nil
@@ -757,5 +771,18 @@ func NewEngine(ctx context.Context, viewReader viewReader, scriptPubKey []byte, 
 	}
 
 	err = vm.Prepare(scriptPubKey, txIdx)
+	return vm, err
+}
+
+// NewEngingeForBlock returns a new script engine for the provided block
+// and its script. The flags modify the behavior of the script engine
+// according to the description provided by each flag.
+func NewEngineForBlock(ctx context.Context, scriptPubKey []byte, block *bc.Block, flags ScriptFlags) (*Engine, error) {
+	vm, err := newReusableEngine(ctx, nil, nil, block, flags)
+	if err != nil {
+		return nil, err
+	}
+
+	err = vm.Prepare(scriptPubKey, 0)
 	return vm, err
 }

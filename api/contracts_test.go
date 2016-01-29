@@ -273,7 +273,7 @@ func TestFindAndCancelContractViaBuild(t *testing.T) {
 			}
 
 			// Make a block so the order should go away
-			_, err = asset.MakeBlock(ctx)
+			_, err = asset.MakeBlock(ctx, asset.BlockKey)
 			if err != nil {
 				t.Fatal(err)
 			}

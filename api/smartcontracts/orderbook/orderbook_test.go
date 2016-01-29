@@ -174,7 +174,7 @@ func TestCancel(t *testing.T) {
 		found := slurpOpenOrders(foundChan)
 		testutil.ExpectEqual(t, len(found), 0, "expected no cancelable orders [1]")
 
-		asset.MakeBlock(ctx)
+		asset.MakeBlock(ctx, asset.BlockKey)
 
 		foundChan, err = FindOpenOrders(ctx, fixtureInfo.aaplAssetID, nil)
 		if err != nil {

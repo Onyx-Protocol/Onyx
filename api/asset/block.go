@@ -6,6 +6,10 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
+
 	"chain/api/appdb"
 	"chain/api/txdb"
 	"chain/api/utxodb"
@@ -13,6 +17,7 @@ import (
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
+	"chain/fedchain/txscript"
 	"chain/fedchain/validation"
 	"chain/log"
 	"chain/net/trace/span"
@@ -24,6 +29,9 @@ const MaxBlockTxs = 10000
 
 // ErrBadBlock is returned when a block is invalid.
 var ErrBadBlock = errors.New("invalid block")
+
+// BlockKey is the private key used to sign blocks.
+var BlockKey *btcec.PrivateKey
 
 // MakeBlocks runs forever,
 // attempting to make one block per period.
@@ -47,11 +55,11 @@ func makeBlock(ctx context.Context) {
 			)
 		}
 	}()
-	MakeBlock(ctx)
+	MakeBlock(ctx, BlockKey)
 }
 
 // MakeBlock creates a new bc.Block and updates the txpool/utxo state.
-func MakeBlock(ctx context.Context) (*bc.Block, error) {
+func MakeBlock(ctx context.Context, key *btcec.PrivateKey) (*bc.Block, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -63,6 +71,11 @@ func MakeBlock(ctx context.Context) (*bc.Block, error) {
 	if len(b.Transactions) == 0 {
 		return nil, nil // don't bother making an empty block
 	}
+	err = SignBlock(b, key)
+	if err != nil {
+		log.Error(ctx, errors.Wrap(err, "sign"))
+		return nil, err
+	}
 	err = ApplyBlock(ctx, b)
 	if err != nil {
 		log.Error(ctx, errors.Wrap(err, "apply"))
@@ -70,6 +83,29 @@ func MakeBlock(ctx context.Context) (*bc.Block, error) {
 	}
 	log.Messagef(ctx, "made block %s height %d with %d txs", b.Hash(), b.Height, len(b.Transactions))
 	return b, nil
+}
+
+func SignBlock(b *bc.Block, key *btcec.PrivateKey) error {
+	// assumes multisig output script
+	hash := b.HashForSig()
+
+	dat, err := key.Sign(hash[:])
+	if err != nil {
+		return err
+	}
+	sig := append(dat.Serialize(), 1) // append hashtype -- unused for blocks
+
+	builder := txscript.NewScriptBuilder()
+	builder.AddOp(txscript.OP_0) // required because of bug in OP_CHECKMULTISIG
+	builder.AddData(sig)
+	script, err := builder.Script()
+	if err != nil {
+		return err
+	}
+
+	b.SignatureScript = script
+
+	return nil
 }
 
 // GenerateBlock creates a new bc.Block using the current tx pool and blockchain
@@ -112,9 +148,8 @@ func GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, error) {
 			// previous block, but we won't validate that here.
 			Timestamp: ts,
 
-			// TODO: Generate sigscript/outscript.
-			//SignatureScript:
-			//OutputScript:
+			// TODO: Generate SignatureScript
+			OutputScript: prevBlock.OutputScript,
 		},
 	}
 
@@ -520,10 +555,21 @@ func validateBlock(ctx context.Context, block *bc.Block) (outs []*txdb.Output, a
 		return nil, nil, errors.Wrap(err, "txdb")
 	}
 	mv := NewMemView()
-	if isSignedByTrustedHost(block) {
+
+	prevBlock, err := txdb.LatestBlock(ctx)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "loading previous block")
+	}
+
+	err = validation.ValidateBlockHeader(ctx, prevBlock, block)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "validating block header")
+	}
+
+	if isSignedByTrustedHost(block, []*btcec.PublicKey{BlockKey.PubKey()}) {
 		validation.ApplyBlock(ctx, state.Compose(mv, bcView), block)
 	} else {
-		err = validation.ValidateAndApplyBlock(ctx, state.Compose(mv, bcView), block)
+		err = validation.ValidateAndApplyBlock(ctx, state.Compose(mv, bcView), prevBlock, block)
 		if err != nil {
 			return nil, nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
 		}
@@ -536,14 +582,29 @@ func validateBlock(ctx context.Context, block *bc.Block) (outs []*txdb.Output, a
 	return outs, mv.ADPs, nil
 }
 
-func isSignedByTrustedHost(block *bc.Block) bool {
-	// TODO(kr): this should have a list of trusted keys
-	// (which should really just consist of the public key
-	// for the admin node in the same process)
-	// and check the block signature against that list.
-	// If the block is signed by a trusted node (i.e. us)
-	// then we already validated it before generating it.
-	return true
+func isSignedByTrustedHost(block *bc.Block, trustedKeys []*btcec.PublicKey) bool {
+	sigs, err := txscript.PushedData(block.SignatureScript)
+	if err != nil {
+		return false
+	}
+
+	hash := block.HashForSig()
+	for _, sig := range sigs {
+		if len(sig) == 0 {
+			continue
+		}
+		parsedSig, err := btcec.ParseSignature(sig, btcec.S256())
+		if err != nil { // could be arbitrary push data
+			continue
+		}
+		for _, pubk := range trustedKeys {
+			if parsedSig.Verify(hash[:], pubk) {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func issuedAssets(txs []*bc.Tx) map[bc.AssetID]int64 {
@@ -561,10 +622,16 @@ func issuedAssets(txs []*bc.Tx) map[bc.AssetID]int64 {
 
 // UpsertGenesisBlock creates a genesis block iff it does not exist.
 func UpsertGenesisBlock(ctx context.Context) (*bc.Block, error) {
+	script, err := generateBlockScript([]*btcec.PublicKey{BlockKey.PubKey()}, 1)
+	if err != nil {
+		return nil, err
+	}
+
 	b := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Version:   bc.NewBlockVersion,
-			Timestamp: uint64(time.Now().Unix()),
+			Version:      bc.NewBlockVersion,
+			Timestamp:    uint64(time.Now().Unix()),
+			OutputScript: script,
 		},
 	}
 
@@ -573,9 +640,22 @@ func UpsertGenesisBlock(ctx context.Context) (*bc.Block, error) {
 		SELECT $1, $2, $3, $4
 		WHERE NOT EXISTS (SELECT 1 FROM blocks WHERE height=$2)
 	`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, b.Hash(), b.Height, b, &b.BlockHeader)
+	_, err = pg.FromContext(ctx).Exec(ctx, q, b.Hash(), b.Height, b, &b.BlockHeader)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
 	return b, nil
+}
+
+func generateBlockScript(keys []*btcec.PublicKey, nSigs int) ([]byte, error) {
+	var addrs []*btcutil.AddressPubKey
+	for _, key := range keys {
+		keyData := key.SerializeCompressed()
+		addr, err := btcutil.NewAddressPubKey(keyData, &chaincfg.MainNetParams)
+		if err != nil {
+			return nil, err
+		}
+		addrs = append(addrs, addr)
+	}
+	return txscript.MultiSigScript(addrs, nSigs)
 }

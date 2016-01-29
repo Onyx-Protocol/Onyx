@@ -135,7 +135,14 @@ func createCounter() <-chan int {
 
 func NewContextWithGenesisBlock(tb testing.TB) context.Context {
 	ctx := pgtest.NewContext(tb)
-	_, err := asset.UpsertGenesisBlock(ctx)
+
+	key, err := testutil.TestXPrv.ECPrivKey()
+	if err != nil {
+		tb.Fatal(err)
+	}
+	asset.BlockKey = key
+
+	_, err = asset.UpsertGenesisBlock(ctx)
 	if err != nil {
 		tb.Fatal(err)
 	}
