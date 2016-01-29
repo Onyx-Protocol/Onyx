@@ -67,12 +67,12 @@ func TestListAssets(t *testing.T) {
 			('in-id-0', 'proj-id-0', 0, '{}', 'in-0'),
 			('in-id-1', 'proj-id-0', 1, '{}', 'in-1');
 		INSERT INTO assets
-			(id, issuer_node_id, key_index, redeem_script, issuance_script, label, sort_id, archived)
+			(id, issuer_node_id, key_index, redeem_script, issuance_script, label, sort_id, archived, definition)
 		VALUES
-			('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 'asset0', false),
-			('0100000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 1, '\x'::bytea, '\x'::bytea, 'asset-1', 'asset1', false),
-			('0200000000000000000000000000000000000000000000000000000000000000', 'in-id-1', 2, '\x'::bytea, '\x'::bytea, 'asset-2', 'asset2', false),
-			('0300000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 3, '\x'::bytea, '\x'::bytea, 'asset-3', 'asset3', true);
+			('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 'asset0', false, 'def-0'),
+			('0100000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 1, '\x'::bytea, '\x'::bytea, 'asset-1', 'asset1', false, 'def-1'),
+			('0200000000000000000000000000000000000000000000000000000000000000', 'in-id-1', 2, '\x'::bytea, '\x'::bytea, 'asset-2', 'asset2', false, 'def-2'),
+			('0300000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 3, '\x'::bytea, '\x'::bytea, 'asset-3', 'asset3', true, 'def-3');
 		INSERT INTO issuance_totals
 			(asset_id, confirmed, pool)
 		VALUES
@@ -93,8 +93,8 @@ func TestListAssets(t *testing.T) {
 				"",
 				5,
 				[]*AssetResponse{
-					{ID: [32]byte{1}, Label: "asset-1", Issued: AssetAmount{3, 7}, Circulation: 7},
-					{ID: [32]byte{}, Label: "asset-0", Issued: AssetAmount{1, 3}, Circulation: 3},
+					{ID: [32]byte{1}, Label: "asset-1", Issued: AssetAmount{3, 7}, Definition: []byte("def-1"), Circulation: 7},
+					{ID: [32]byte{}, Label: "asset-0", Issued: AssetAmount{1, 3}, Definition: []byte("def-0"), Circulation: 3},
 				},
 			},
 			{
@@ -102,7 +102,7 @@ func TestListAssets(t *testing.T) {
 				"",
 				5,
 				[]*AssetResponse{
-					{ID: [32]byte{2}, Label: "asset-2", Issued: AssetAmount{5, 11}, Circulation: 11},
+					{ID: [32]byte{2}, Label: "asset-2", Issued: AssetAmount{5, 11}, Definition: []byte("def-2"), Circulation: 11},
 				},
 			},
 			{
@@ -110,7 +110,7 @@ func TestListAssets(t *testing.T) {
 				"",
 				1,
 				[]*AssetResponse{
-					{ID: [32]byte{1}, Label: "asset-1", Issued: AssetAmount{3, 7}, Circulation: 7},
+					{ID: [32]byte{1}, Label: "asset-1", Issued: AssetAmount{3, 7}, Definition: []byte("def-1"), Circulation: 7},
 				},
 			},
 			{
@@ -118,7 +118,7 @@ func TestListAssets(t *testing.T) {
 				"asset1",
 				5,
 				[]*AssetResponse{
-					{ID: [32]byte{}, Label: "asset-0", Issued: AssetAmount{1, 3}, Circulation: 3},
+					{ID: [32]byte{}, Label: "asset-0", Issued: AssetAmount{1, 3}, Definition: []byte("def-0"), Circulation: 3},
 				},
 			},
 			{
@@ -149,8 +149,8 @@ func TestGetAsset(t *testing.T) {
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
 			VALUES ('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
-		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
-			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
+		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label, definition)
+			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 'hello world');
 		INSERT INTO issuance_totals (asset_id, confirmed, pool)
 			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 58, 12);
 	`
@@ -161,7 +161,13 @@ func TestGetAsset(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		want := &AssetResponse{[32]byte{}, "asset-0", AssetAmount{58, 70}, 70}
+		want := &AssetResponse{
+			ID:          [32]byte{},
+			Label:       "asset-0",
+			Definition:  []byte("hello world"),
+			Issued:      AssetAmount{58, 70},
+			Circulation: 70,
+		}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("GetAsset(%s) = %+v want %+v", [32]byte{}, got, want)
 		}

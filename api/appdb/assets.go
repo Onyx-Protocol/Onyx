@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
@@ -38,9 +39,10 @@ type AssetAmount struct {
 // AssetResponse is a JSON-serializable version of Asset, intended for use in
 // API responses.
 type AssetResponse struct {
-	ID     bc.AssetID  `json:"id"`
-	Label  string      `json:"label"`
-	Issued AssetAmount `json:"issued"`
+	ID         bc.AssetID         `json:"id"`
+	Label      string             `json:"label"`
+	Definition chainjson.HexBytes `json:"definition"`
+	Issued     AssetAmount        `json:"issued"`
 
 	// Deprecated in its current form, which is equivalent to Issued.Total
 	Circulation uint64 `json:"circulation"`
@@ -129,7 +131,7 @@ func InsertAsset(ctx context.Context, asset *Asset) error {
 // for last asset, used to retrieve the next page.
 func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]*AssetResponse, string, error) {
 	q := `
-		SELECT id, label, t.confirmed, (t.confirmed + t.pool), sort_id
+		SELECT id, label, t.confirmed, (t.confirmed + t.pool), definition, sort_id
 		FROM assets
 		JOIN issuance_totals t ON (asset_id=assets.id)
 		WHERE issuer_node_id = $1 AND ($2='' OR sort_id<$2) AND NOT archived
@@ -148,7 +150,14 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 	)
 	for rows.Next() {
 		a := new(AssetResponse)
-		err := rows.Scan(&a.ID, &a.Label, &a.Issued.Confirmed, &a.Issued.Total, &last)
+		err := rows.Scan(
+			&a.ID,
+			&a.Label,
+			&a.Issued.Confirmed,
+			&a.Issued.Total,
+			(*[]byte)(&a.Definition),
+			&last,
+		)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "row scan")
 		}
@@ -166,7 +175,7 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 // GetAsset returns an AssetResponse for the given asset id.
 func GetAsset(ctx context.Context, assetID string) (*AssetResponse, error) {
 	const q = `
-		SELECT id, label, t.confirmed, (t.confirmed + t.pool)
+		SELECT id, label, t.confirmed, (t.confirmed + t.pool), definition
 		FROM assets
 		JOIN issuance_totals t ON (asset_id=assets.id)
 		WHERE id=$1
@@ -174,7 +183,11 @@ func GetAsset(ctx context.Context, assetID string) (*AssetResponse, error) {
 	a := new(AssetResponse)
 
 	err := pg.FromContext(ctx).QueryRow(ctx, q, assetID).Scan(
-		&a.ID, &a.Label, &a.Issued.Confirmed, &a.Issued.Total,
+		&a.ID,
+		&a.Label,
+		&a.Issued.Confirmed,
+		&a.Issued.Total,
+		(*[]byte)(&a.Definition),
 	)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
