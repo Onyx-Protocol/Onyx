@@ -24,13 +24,14 @@ func TestListIssuerNodes(t *testing.T) {
 			('proj-id-1', 'proj-1');
 
 		INSERT INTO issuer_nodes
-			(id, project_id, key_index, keyset, label, created_at)
+			(id, project_id, key_index, keyset, label, created_at, archived)
 		VALUES
 			-- insert in reverse chronological order, to ensure that ListIssuerNodes
 			-- is performing a sort.
-			('in-id-2', 'proj-id-1', 2, '{}', 'in-2', now()),
-			('in-id-1', 'proj-id-0', 1, '{}', 'in-1', now()),
-			('in-id-0', 'proj-id-0', 0, '{}', 'in-0', now());
+			('in-id-2', 'proj-id-1', 2, '{}', 'in-2', now(), false),
+			('in-id-1', 'proj-id-0', 1, '{}', 'in-1', now(), false),
+			('in-id-0', 'proj-id-0', 0, '{}', 'in-0', now(), false),
+			('in-id-3', 'proj-id-0', 3, '{}', 'in-3-archived', now(), true);
 	`
 	withContext(t, sql, func(ctx context.Context) {
 		examples := []struct {
@@ -158,45 +159,27 @@ func TestUpdateIssuerNodeNoUpdate(t *testing.T) {
 	})
 }
 
-func TestDeleteIssuerNode(t *testing.T) {
+func TestArchiveIssuerNode(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
-		_, err := GetIssuerNode(ctx, issuerNode.ID)
+		asset := newTestAsset(t, ctx, issuerNode)
+		err := ArchiveIssuerNode(ctx, issuerNode.ID)
 		if err != nil {
-			t.Errorf("could not get test issuer node with id %s: %v", issuerNode.ID, err)
+			t.Errorf("could not archive issuer node with id %s: %v", issuerNode.ID, err)
 		}
 
-		err = DeleteIssuerNode(ctx, issuerNode.ID)
-		if err != nil {
-			t.Errorf("could not delete issuer node with id %s: %v", issuerNode.ID, err)
+		var archived bool
+		checkQ := `SELECT archived FROM issuer_nodes WHERE id = $1`
+		err = pg.FromContext(ctx).QueryRow(ctx, checkQ, issuerNode.ID).Scan(&archived)
+
+		if !archived {
+			t.Errorf("expected issuer node %s to be archived", issuerNode.ID)
 		}
 
-		_, err = GetIssuerNode(ctx, issuerNode.ID)
-		if err == nil { // sic
-			t.Errorf("expected issuer node %s would be deleted, but it wasn't", issuerNode.ID)
-		} else {
-			rootErr := errors.Root(err)
-			if rootErr != pg.ErrUserInputNotFound {
-				t.Errorf("unexpected error when trying to get deleted issuer node %s: %v", issuerNode.ID, err)
-			}
-		}
-	})
-}
-
-// Test that the existence of an asset connected to an issuer node
-// prevents deletion of the node.
-func TestDeleteIssuerNodeBlocked(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
-		_ = newTestAsset(t, ctx, issuerNode)
-		err := DeleteIssuerNode(ctx, issuerNode.ID)
-		if err == nil { // sic
-			t.Errorf("expected to be unable to delete issuer node %s, but was able to", issuerNode.ID)
-		} else {
-			rootErr := errors.Root(err)
-			if rootErr != ErrCannotDelete {
-				t.Errorf("unexpected error trying to delete undeletable issuer node %s: %v", issuerNode.ID, err)
-			}
+		checkAssetQ := `SELECT archived FROM assets WHERE id = $1`
+		err = pg.FromContext(ctx).QueryRow(ctx, checkAssetQ, asset.Hash.String()).Scan(&archived)
+		if !archived {
+			t.Errorf("expected child asset %s to be archived", asset.Hash.String())
 		}
 	})
 }

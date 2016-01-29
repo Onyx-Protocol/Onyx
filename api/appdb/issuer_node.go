@@ -101,7 +101,7 @@ func ListIssuerNodes(ctx context.Context, projID string) ([]*IssuerNode, error) 
 	q := `
 		SELECT id, label
 		FROM issuer_nodes
-		WHERE project_id = $1
+		WHERE project_id = $1 AND NOT archived
 		ORDER BY id
 	`
 	rows, err := pg.FromContext(ctx).Query(ctx, q, projID)
@@ -183,25 +183,28 @@ func UpdateIssuerNode(ctx context.Context, inodeID string, label *string) error 
 	return errors.Wrap(err, "update query")
 }
 
-// DeleteIssuerNode deletes the issuer node but only if there are no
-// assets and no issuance activity associated with it (enforced by ON
-// DELETE NO ACTION).
-func DeleteIssuerNode(ctx context.Context, inodeID string) error {
-	const q = `DELETE FROM issuer_nodes WHERE id = $1`
-	db := pg.FromContext(ctx)
-	result, err := db.Exec(ctx, q, inodeID)
+// ArchiveIssuerNode marks an issuer node as archived.
+// Archived issuer nodes do not appear for their parent projects,
+// in the dashboard or for listIssuerNodes. They cannot create new
+// assets, and their preexisting assets become archived.
+func ArchiveIssuerNode(ctx context.Context, inodeID string) error {
+	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
-		if pg.IsForeignKeyViolation(err) {
-			return errors.WithDetailf(ErrCannotDelete, "issuer node ID %v", inodeID)
-		}
-		return errors.Wrap(err, "delete query")
+		return err
 	}
-	rowsAffected, err := result.RowsAffected()
+	defer dbtx.Rollback(ctx)
+
+	const assetQ = `UPDATE assets SET archived = true WHERE issuer_node_id = $1`
+	_, err = pg.FromContext(ctx).Exec(ctx, assetQ, inodeID)
 	if err != nil {
-		return errors.Wrap(err, "delete query")
+		return errors.Wrap(err, "archiving assets")
 	}
-	if rowsAffected == 0 {
-		return errors.WithDetailf(pg.ErrUserInputNotFound, "issuer node ID %v", inodeID)
+
+	const q = `UPDATE issuer_nodes SET archived = true WHERE id = $1`
+	_, err = pg.FromContext(ctx).Exec(ctx, q, inodeID)
+	if err != nil {
+		return errors.Wrap(err, "archive query")
 	}
-	return nil
+
+	return dbtx.Commit(ctx)
 }

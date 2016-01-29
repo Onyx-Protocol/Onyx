@@ -103,11 +103,11 @@ func updateIssuerNode(ctx context.Context, inodeID string, in struct{ Label *str
 }
 
 // DELETE /v3/issuer-nodes/:inodeID
-func deleteIssuerNode(ctx context.Context, inodeID string) error {
+func archiveIssuerNode(ctx context.Context, inodeID string) error {
 	if err := issuerAuthz(ctx, inodeID); err != nil {
 		return err
 	}
-	return appdb.DeleteIssuerNode(ctx, inodeID)
+	return appdb.ArchiveIssuerNode(ctx, inodeID)
 }
 
 // GET /v3/issuer-nodes/:inodeID/assets

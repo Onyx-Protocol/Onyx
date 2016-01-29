@@ -294,11 +294,11 @@ func ProjectsByAccount(ctx context.Context, accountIDs ...string) ([]string, err
 	return projects, errors.Wrap(err)
 }
 
-// ProjectByIssuer returns all project IDs associated with a set of issuer nodes
-func ProjectByIssuer(ctx context.Context, issuerID string) (string, error) {
+// ProjectByActiveIssuer returns the project ID associated with an active issuer nodes
+func ProjectByActiveIssuer(ctx context.Context, issuerID string) (string, error) {
 	const q = `
 		SELECT project_id
-		FROM issuer_nodes WHERE id=$1
+		FROM issuer_nodes WHERE id=$1 AND NOT archived
 	`
 	var project string
 	err := pg.FromContext(ctx).QueryRow(ctx, q, issuerID).Scan(&project)

@@ -57,7 +57,7 @@ func accountAuthz(ctx context.Context, accountID string) error {
 }
 
 func issuerAuthz(ctx context.Context, issuerID string) error {
-	project, err := appdb.ProjectByIssuer(ctx, issuerID)
+	project, err := appdb.ProjectByActiveIssuer(ctx, issuerID)
 	if err != nil {
 		return err
 	}
