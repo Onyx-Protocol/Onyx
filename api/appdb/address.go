@@ -79,7 +79,7 @@ func AddrInfo(ctx context.Context, accountID string) (*Address, error) {
 		FROM accounts a
 		LEFT JOIN manager_nodes mn ON mn.id=a.manager_node_id
 		LEFT JOIN rotations r ON r.id=mn.current_rotation
-		WHERE a.id=$1
+		WHERE a.id=$1 AND NOT a.archived
 	`
 		err := pg.FromContext(ctx).QueryRow(ctx, q, accountID).Scan(
 			&ai.ManagerNodeID,
