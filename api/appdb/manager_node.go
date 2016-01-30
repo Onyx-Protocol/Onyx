@@ -238,12 +238,12 @@ func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit
 	return bals, last, nil
 }
 
-// ListManagerNodes returns a list of manager nodes contained in the given project.
+// ListManagerNodes returns a list of active manager nodes contained in the given project.
 func ListManagerNodes(ctx context.Context, projID string) ([]*ManagerNode, error) {
 	q := `
 		SELECT id, label
 		FROM manager_nodes
-		WHERE project_id = $1
+		WHERE project_id = $1 AND NOT archived
 		ORDER BY id
 	`
 	rows, err := pg.FromContext(ctx).Query(ctx, q, projID)
@@ -280,27 +280,30 @@ func UpdateManagerNode(ctx context.Context, mnodeID string, label *string) error
 	return errors.Wrap(err, "update query")
 }
 
-// DeleteManagerNode deletes the manager node but only if no
-// activity/accounts/addresses/rotations are associated with it
-// (enforced by ON DELETE NO ACTION).
-func DeleteManagerNode(ctx context.Context, mnodeID string) error {
-	const q = `DELETE FROM manager_nodes WHERE id = $1`
-	db := pg.FromContext(ctx)
-	result, err := db.Exec(ctx, q, mnodeID)
+// ArchiveManagerNode marks a manager node as archived.
+// Archived manager nodes do not appear for their parent projects,
+// in the dashboard or for listManagerNodes. They cannot create new
+// accounts or initiate or receive transactions, and their preexisting
+// accounts become archived.
+func ArchiveManagerNode(ctx context.Context, mnodeID string) error {
+	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
-		if pg.IsForeignKeyViolation(err) {
-			return errors.WithDetailf(ErrCannotDelete, "manager node ID %v", mnodeID)
-		}
-		return errors.Wrap(err, "delete query")
+		return err
 	}
-	rowsAffected, err := result.RowsAffected()
+	defer dbtx.Rollback(ctx)
+
+	const accountQ = `UPDATE accounts SET archived = true WHERE manager_node_id = $1`
+	_, err = pg.FromContext(ctx).Exec(ctx, accountQ, mnodeID)
 	if err != nil {
-		return errors.Wrap(err, "delete query")
+		return errors.Wrap(err, "archiving accounts")
 	}
-	if rowsAffected == 0 {
-		return errors.WithDetailf(pg.ErrUserInputNotFound, "manager node ID %v", mnodeID)
+
+	const mnQ = `UPDATE manager_nodes SET archived = true WHERE id = $1`
+	_, err = pg.FromContext(ctx).Exec(ctx, mnQ, mnodeID)
+	if err != nil {
+		return errors.Wrap(err, "archive query")
 	}
-	return nil
+	return dbtx.Commit(ctx)
 }
 
 func createRotation(ctx context.Context, managerNodeID string, xpubs ...string) error {

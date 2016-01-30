@@ -90,11 +90,11 @@ func updateManagerNode(ctx context.Context, mnodeID string, in struct{ Label *st
 }
 
 // DELETE /v3/manager-nodes/:mnodeID
-func deleteManagerNode(ctx context.Context, mnodeID string) error {
+func archiveManagerNode(ctx context.Context, mnodeID string) error {
 	if err := managerAuthz(ctx, mnodeID); err != nil {
 		return err
 	}
-	return appdb.DeleteManagerNode(ctx, mnodeID)
+	return appdb.ArchiveManagerNode(ctx, mnodeID)
 }
 
 // GET /v3/projects/:projID/manager-nodes

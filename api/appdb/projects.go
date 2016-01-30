@@ -257,11 +257,12 @@ func IsAdmin(ctx context.Context, userID string, project string) (bool, error) {
 	return isAdmin, errors.Wrap(err)
 }
 
-// ProjectByManager returns all project IDs associated with a set of manager nodes
-func ProjectByManager(ctx context.Context, managerID string) (string, error) {
+// ProjectByActiveManager returns the project ID associated with
+// an active manager node
+func ProjectByActiveManager(ctx context.Context, managerID string) (string, error) {
 	const q = `
 		SELECT project_id
-		FROM manager_nodes WHERE id=$1
+		FROM manager_nodes WHERE id=$1 AND NOT archived
 	`
 	var project string
 	err := pg.FromContext(ctx).QueryRow(ctx, q, managerID).Scan(&project)

@@ -41,7 +41,7 @@ func projectAuthz(ctx context.Context, projects ...string) error {
 }
 
 func managerAuthz(ctx context.Context, managerID string) error {
-	project, err := appdb.ProjectByManager(ctx, managerID)
+	project, err := appdb.ProjectByActiveManager(ctx, managerID)
 	if err != nil {
 		return err
 	}

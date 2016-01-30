@@ -255,46 +255,28 @@ func TestUpdateManagerNodeNoUpdate(t *testing.T) {
 	})
 }
 
-func TestDeleteManagerNode(t *testing.T) {
+func TestArchiveManagerNode(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "foo")
-
-		_, err := GetManagerNode(ctx, managerNode.ID)
+		account := newTestAccount(t, ctx, managerNode, "bar")
+		err := ArchiveManagerNode(ctx, managerNode.ID)
 		if err != nil {
-			t.Errorf("could not get test manager node with id %s: %v", managerNode.ID, err)
+			t.Errorf("could not archive manager node with id %s: %v", managerNode.ID, err)
 		}
 
-		err = DeleteManagerNode(ctx, managerNode.ID)
-		if err != nil {
-			t.Errorf("could not delete manager node with id %s: %v", managerNode.ID, err)
+		var archived bool
+		checkQ := `SELECT archived FROM manager_nodes WHERE id = $1`
+		err = pg.FromContext(ctx).QueryRow(ctx, checkQ, managerNode.ID).Scan(&archived)
+
+		if !archived {
+			t.Errorf("expected manager node %s to be archived", managerNode.ID)
 		}
 
-		_, err = GetManagerNode(ctx, managerNode.ID)
-		if err == nil { // sic
-			t.Errorf("expected manager node %s would be deleted, but it wasn't", managerNode.ID)
-		} else {
-			rootErr := errors.Root(err)
-			if rootErr != pg.ErrUserInputNotFound {
-				t.Errorf("unexpected error when trying to get deleted manager node %s: %v", managerNode.ID, err)
-			}
+		checkAccountQ := `SELECT archived FROM accounts WHERE id = $1`
+		err = pg.FromContext(ctx).QueryRow(ctx, checkAccountQ, account.ID).Scan(&archived)
+		if !archived {
+			t.Errorf("expected child account %s to be archived", account.ID)
 		}
-	})
-}
 
-// Test that the existence of an account connected to a manager node
-// prevents deletion of the node.
-func TestDeleteManagerNodeBlocked(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, nil, "foo")
-		_ = newTestAccount(t, ctx, managerNode, "bar")
-		err := DeleteManagerNode(ctx, managerNode.ID)
-		if err == nil { // sic
-			t.Errorf("expected to be unable to delete manager node %s, but was able to", managerNode.ID)
-		} else {
-			rootErr := errors.Root(err)
-			if rootErr != ErrCannotDelete {
-				t.Errorf("unexpected error trying to delete undeletable manager node %s: %v", managerNode.ID, err)
-			}
-		}
 	})
 }
