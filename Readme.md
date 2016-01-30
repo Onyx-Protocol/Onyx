@@ -2,10 +2,22 @@ Chain 🍭
 
 ## Getting Started
 
+### Environment
+
+Set the `CHAIN` environment variable, in `.profile` in your home
+directory, to point to the root of the Chain source code repo:
+
+	export CHAIN
+	CHAIN=$GOPATH/src/chain
+
+You might want to open a new Terminal window to pick up the change.
+
+### Source Code
+
 Get and and compile the source:
 
-	$ git clone https://github.com/chain-engineering/chain $GOPATH/src/chain
-	$ cd $GOPATH/src/chain
+	$ git clone https://github.com/chain-engineering/chain $CHAIN
+	$ cd $CHAIN
 	$ go install ./cmd/...
 
 Create a development database:
