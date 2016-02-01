@@ -14,8 +14,8 @@ import (
 )
 
 type fixtureInfo struct {
-	u1ID, u2ID, u3ID          string
-	proj1ID, proj2ID, proj3ID string
+	u1ID, u2ID, u3ID, u4ID             string
+	proj1ID, proj2ID, proj3ID, proj4ID string
 }
 
 func TestProjectAdminAuthz(t *testing.T) {
@@ -28,6 +28,7 @@ func TestProjectAdminAuthz(t *testing.T) {
 			{fixtureInfo.u1ID, fixtureInfo.proj1ID, nil},         // admin
 			{fixtureInfo.u2ID, fixtureInfo.proj1ID, errNotAdmin}, // not an admin
 			{fixtureInfo.u3ID, fixtureInfo.proj1ID, errNotAdmin}, // not a member
+			{fixtureInfo.u4ID, fixtureInfo.proj4ID, errNotAdmin}, // project archived
 		}
 
 		for _, c := range cases {
@@ -51,6 +52,7 @@ func TestProjectAuthz(t *testing.T) {
 			{fixtureInfo.u2ID, []string{fixtureInfo.proj1ID}, nil},                                        // member
 			{fixtureInfo.u3ID, []string{fixtureInfo.proj1ID}, errNoAccessToResource},                      // not a member
 			{fixtureInfo.u1ID, []string{fixtureInfo.proj1ID, fixtureInfo.proj2ID}, errNoAccessToResource}, // two projects
+			{fixtureInfo.u4ID, []string{fixtureInfo.proj4ID}, errNoAccessToResource},                      // project archived
 		}
 
 		for _, c := range cases {
@@ -331,6 +333,7 @@ func withCommonFixture(t *testing.T, fn func(context.Context, *fixtureInfo)) {
 	fixtureInfo.u1ID = assettest.CreateUserFixture(ctx, t, "", "")
 	fixtureInfo.u2ID = assettest.CreateUserFixture(ctx, t, "", "")
 	fixtureInfo.u3ID = assettest.CreateUserFixture(ctx, t, "", "")
+	fixtureInfo.u4ID = assettest.CreateUserFixture(ctx, t, "", "")
 
 	fixtureInfo.proj1ID = assettest.CreateProjectFixture(ctx, t, fixtureInfo.u1ID, "")
 	err = appdb.AddMember(ctx, fixtureInfo.proj1ID, fixtureInfo.u2ID, "developer")
@@ -345,6 +348,12 @@ func withCommonFixture(t *testing.T, fn func(context.Context, *fixtureInfo)) {
 	}
 
 	fixtureInfo.proj3ID = assettest.CreateProjectFixture(ctx, t, "", "")
+
+	fixtureInfo.proj4ID = assettest.CreateProjectFixture(ctx, t, fixtureInfo.u4ID, "")
+	err = appdb.ArchiveProject(ctx, fixtureInfo.proj4ID)
+	if err != nil {
+		panic(err)
+	}
 
 	fn(ctx, &fixtureInfo)
 }

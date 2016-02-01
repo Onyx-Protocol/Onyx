@@ -64,6 +64,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/v3/projects", createProject)
 	h.HandleFunc("GET", "/v3/projects/:projID", getProject)
 	h.HandleFunc("PUT", "/v3/projects/:projID", updateProject)
+	h.HandleFunc("DELETE", "/v3/projects/:projID", archiveProject)
 	h.HandleFunc("POST", "/v3/projects/:projID/invitations", createInvitation)
 	h.HandleFunc("GET", "/v3/projects/:projID/members", listMembers)
 	h.HandleFunc("POST", "/v3/projects/:projID/members", addMember)

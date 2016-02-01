@@ -35,6 +35,14 @@ func updateProject(ctx context.Context, projID string, in struct{ Name string })
 	return appdb.UpdateProject(ctx, projID, in.Name)
 }
 
+// DELETE /v3/projects/:projID
+func archiveProject(ctx context.Context, projID string) error {
+	if err := projectAdminAuthz(ctx, projID); err != nil {
+		return err
+	}
+	return appdb.ArchiveProject(ctx, projID)
+}
+
 // GET /v3/projects/:projID/members
 func listMembers(ctx context.Context, projID string) (interface{}, error) {
 	if err := projectAuthz(ctx, projID); err != nil {

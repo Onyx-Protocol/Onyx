@@ -24,14 +24,40 @@ const (
 			('user-id-1', 'baz@bar.com', 'password-does-not-matter'),
 			('user-id-2', 'biz@bar.com', 'password-does-not-matter');
 
-		INSERT INTO projects (id, name) VALUES
-			('proj-id-0', 'proj-0'),
-			('proj-id-1', 'proj-1');
+		INSERT INTO projects (id, name, archived) VALUES
+			('proj-id-0', 'proj-0', false),
+			('proj-id-1', 'proj-1', false),
+			('proj-id-2', 'proj-2', true);
 
 		INSERT INTO members (project_id, user_id, role) VALUES
 			('proj-id-0', 'user-id-0', 'admin'),
 			('proj-id-1', 'user-id-0', 'developer'),
+			('proj-id-2', 'user-id-0', 'developer'),
 			('proj-id-0', 'user-id-1', 'developer');
+	`
+	projectChildrenFixtures = `
+		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label) VALUES
+			('in-id-0', 'proj-id-0', 0, '{}', 'in-0'),
+			('in-id-1', 'proj-id-0', 1, '{}', 'in-1');
+
+		INSERT INTO assets
+			(id, issuer_node_id, key_index, redeem_script, issuance_script, label, sort_id, definition)
+		VALUES
+			('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 'asset0', 'def-0'),
+			('0100000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 1, '\x'::bytea, '\x'::bytea, 'asset-1', 'asset1', 'def-1'),
+			('0200000000000000000000000000000000000000000000000000000000000000', 'in-id-1', 2, '\x'::bytea, '\x'::bytea, 'asset-2', 'asset2', 'def-2'),
+			('0300000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 3, '\x'::bytea, '\x'::bytea, 'asset-3', 'asset3', 'def-3');
+
+		INSERT INTO manager_nodes (id, project_id, key_index, label) VALUES
+			('manager-node-id-0', 'proj-id-0', 0, 'manager-node-0'),
+			('manager-node-id-1', 'proj-id-0', 1, 'manager-node-1');
+
+		INSERT INTO accounts (id, manager_node_id, key_index, label) VALUES
+			('account-id-0', 'manager-node-id-0', 0, 'account-0'),
+			('account-id-1', 'manager-node-id-0', 1, 'account-1'),
+			('account-id-2', 'manager-node-id-1', 2, 'account-2'),
+			('account-id-3', 'manager-node-id-0', 3, 'account-3'),
+			('account-id-4', 'manager-node-id-0', 4, 'account-4');
 	`
 )
 
@@ -155,6 +181,84 @@ func TestUpdateProject(t *testing.T) {
 				_ = pg.FromContext(ctx).QueryRow(ctx, q, ex.id).Scan(&got)
 				if got != "new-name" {
 					t.Errorf("name got=%v want new-name", got)
+				}
+			}
+		}
+	})
+}
+
+func TestArchiveProject(t *testing.T) {
+	withContext(t, projectsFixtures+projectChildrenFixtures, func(ctx context.Context) {
+		examples := []struct {
+			id      string
+			wantErr error
+		}{
+			{"proj-id-0", nil},
+			{"nonexistent", pg.ErrUserInputNotFound},
+		}
+
+		for _, ex := range examples {
+			t.Log("project:", ex.id)
+
+			err := ArchiveProject(ctx, ex.id)
+
+			if errors.Root(err) != ex.wantErr {
+				t.Errorf("error got=%v want=%v", errors.Root(err), ex.wantErr)
+			}
+
+			if ex.wantErr == nil {
+				// Verify that the project is marked as archived.
+				q := `SELECT archived FROM projects WHERE id = $1`
+				var got bool
+				_ = pg.FromContext(ctx).QueryRow(ctx, q, ex.id).Scan(&got)
+				if !got {
+					t.Errorf("archived=%v want true", got)
+				}
+
+				var count int
+
+				// Check that all manager nodes are archived.
+				q = `SELECT COUNT(id) FROM manager_nodes WHERE project_id = $1 AND NOT archived`
+				if err := pg.FromContext(ctx).QueryRow(ctx, q, ex.id).Scan(&count); err != nil {
+					t.Fatal(err)
+				}
+				if count != 0 {
+					t.Errorf("manager_nodes count=%v, want 0", count)
+				}
+
+				// Check that all issuer nodes are archived.
+				q = `SELECT COUNT(id) FROM issuer_nodes WHERE project_id = $1 AND NOT archived`
+				if err := pg.FromContext(ctx).QueryRow(ctx, q, ex.id).Scan(&count); err != nil {
+					t.Fatal(err)
+				}
+				if count != 0 {
+					t.Errorf("issuer_nodes count=%v, want 0", count)
+				}
+
+				// Check that all accounts are archived.
+				q = `
+					SELECT COUNT(id) FROM accounts WHERE manager_node_id IN (
+						SELECT id FROM manager_nodes WHERE project_id = $1
+					) AND NOT archived
+				`
+				if err := pg.FromContext(ctx).QueryRow(ctx, q, ex.id).Scan(&count); err != nil {
+					t.Fatal(err)
+				}
+				if count != 0 {
+					t.Errorf("accounts count=%v, want 0", count)
+				}
+
+				// Check that all assets are archived.
+				q = `
+					SELECT COUNT(id) FROM assets WHERE issuer_node_id IN (
+						SELECT id FROM issuer_nodes WHERE project_id = $1
+					) AND NOT archived
+				`
+				if err := pg.FromContext(ctx).QueryRow(ctx, q, ex.id).Scan(&count); err != nil {
+					t.Fatal(err)
+				}
+				if count != 0 {
+					t.Errorf("assets count=%v, want 0", count)
 				}
 			}
 		}

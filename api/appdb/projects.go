@@ -63,14 +63,14 @@ func CreateProject(ctx context.Context, name string, userID string) (*Project, e
 	return &Project{ID: id, Name: name}, nil
 }
 
-// ListProjects returns a list of projects that the given user is a
+// ListProjects returns a list of active projects that the given user is a
 // member of.
 func ListProjects(ctx context.Context, userID string) ([]*Project, error) {
 	q := `
 		SELECT p.id, p.name
 		FROM projects p
 		JOIN members m ON p.id = m.project_id
-		WHERE m.user_id = $1
+		WHERE m.user_id = $1 AND NOT p.archived
 		ORDER BY p.name
 	`
 	rows, err := pg.FromContext(ctx).Query(ctx, q, userID)
@@ -125,6 +125,55 @@ func UpdateProject(ctx context.Context, projID, name string) error {
 		return errors.Wrap(err, "update query")
 	}
 	return nil
+}
+
+// ArchiveProject marks a project as archived, hiding it from listProjects and
+// archiving all of its managers, issuers, accounts and assets.
+func ArchiveProject(ctx context.Context, projID string) error {
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer dbtx.Rollback(ctx)
+
+	const q = `UPDATE projects SET archived = true WHERE id = $1 RETURNING 1`
+	err = pg.FromContext(ctx).QueryRow(ctx, q, projID).Scan(new(int))
+	if err == sql.ErrNoRows {
+		return errors.WithDetailf(pg.ErrUserInputNotFound, "project ID: %v", projID)
+	}
+	if err != nil {
+		return errors.Wrap(err, "archive query")
+	}
+
+	const mnQ = `UPDATE manager_nodes SET archived = true WHERE project_id = $1`
+	if _, err := pg.FromContext(ctx).Exec(ctx, mnQ, projID); err != nil {
+		return errors.Wrap(err, "archive manager nodes query")
+	}
+
+	const inQ = `UPDATE issuer_nodes SET archived = true WHERE project_id = $1`
+	if _, err := pg.FromContext(ctx).Exec(ctx, inQ, projID); err != nil {
+		return errors.Wrap(err, "archive issuer nodes query")
+	}
+
+	const accountQ = `
+		UPDATE accounts SET archived = true WHERE manager_node_id IN (
+			SELECT id FROM manager_nodes WHERE project_id = $1
+		)
+	`
+	if _, err := pg.FromContext(ctx).Exec(ctx, accountQ, projID); err != nil {
+		return errors.Wrap(err, "archive accounts query")
+	}
+
+	const assetQ = `
+		UPDATE assets SET archived = true WHERE issuer_node_id IN (
+			SELECT id FROM issuer_nodes WHERE project_id = $1
+		)
+	`
+	if _, err := pg.FromContext(ctx).Exec(ctx, assetQ, projID); err != nil {
+		return errors.Wrap(err, "archive assets query")
+	}
+
+	return dbtx.Commit(ctx)
 }
 
 // ListMembers returns a list of members of the given the given project.
@@ -237,7 +286,9 @@ func validateRole(role string) error {
 // IsMember returns true if the user is a member of the project
 func IsMember(ctx context.Context, userID string, project string) (bool, error) {
 	const q = `
-		SELECT COUNT(*)=1 FROM members WHERE user_id=$1 AND project_id=$2
+		SELECT COUNT(*)=1 FROM members
+		INNER JOIN projects ON projects.id = members.project_id
+		WHERE user_id=$1 AND project_id=$2 AND NOT projects.archived
 	`
 	var isMember bool
 	row := pg.FromContext(ctx).QueryRow(ctx, q, userID, project)
@@ -249,7 +300,8 @@ func IsMember(ctx context.Context, userID string, project string) (bool, error) 
 func IsAdmin(ctx context.Context, userID string, project string) (bool, error) {
 	const q = `
 		SELECT COUNT(*)=1 FROM members
-		WHERE user_id=$1 AND project_id=$2 AND role='admin'
+		INNER JOIN projects ON projects.id = members.project_id
+		WHERE user_id=$1 AND project_id=$2 AND role='admin' AND NOT projects.archived
 	`
 	var isAdmin bool
 	row := pg.FromContext(ctx).QueryRow(ctx, q, userID, project)
