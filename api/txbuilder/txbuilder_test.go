@@ -24,7 +24,7 @@ func init() {
 	}
 
 	ctx := context.Background()
-	pgtest.Open(ctx, u, "apitest", "../appdb/schema.sql")
+	pgtest.Open(ctx, u, "txbuildertest", "../appdb/schema.sql")
 }
 
 type testRecv struct {
