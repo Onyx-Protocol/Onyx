@@ -55,14 +55,15 @@ var (
 	logQueries   = env.Bool("LOG_QUERIES", false)
 	blockKey     = env.String("BLOCK_KEY", "2c1f68880327212b6aa71d7c8e0a9375451143352d5c760dc38559f1159c84ce")
 	// for config var LIBRATO_URL, see func init below
-	traceguideToken = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
-	maxDBConns      = env.Int("MAXDBCONNS", 10) // set to 100 in prod
-	rpcSecretToken  = env.String("RPC_SECRET", "secret")
-	isSigner        = env.Bool("SIGNER", true)
-
-	isGenerator      = env.Bool("GENERATOR", true)
-	remoteSignerURLs = env.StringSlice("REMOTE_SIGNER_URLS")
-	remoteSignerKeys = env.StringSlice("REMOTE_SIGNER_KEYS")
+	traceguideToken    = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
+	maxDBConns         = env.Int("MAXDBCONNS", 10) // set to 100 in prod
+	rpcSecretToken     = env.String("RPC_SECRET", "secret")
+	isSigner           = env.Bool("SIGNER", true) // node type must set FALSE explicitly
+	isGenerator        = env.Bool("GENERATOR", true)
+	isManager          = env.Bool("MANAGER", true)
+	remoteGeneratorURL = env.String("REMOTE_GENERATOR_URL", "")
+	remoteSignerURLs   = env.StringSlice("REMOTE_SIGNER_URLS")
+	remoteSignerKeys   = env.StringSlice("REMOTE_SIGNER_KEYS")
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -110,6 +111,8 @@ func main() {
 		chainlog.Fatal(ctx, "error", err)
 	}
 
+	asset.Generator = remoteGeneratorURL
+
 	privKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes) // second assignment is pubkey, not error
 	asset.BlockKey = privKey
 
@@ -148,8 +151,12 @@ func main() {
 	if *isSigner {
 		localSigner = signer.New(privKey, fc)
 	}
-	asset.ConnectFedchain(fc, localSigner)
-	orderbook.ConnectFedchain(fc)
+	asset.Init(fc, localSigner, *isManager)
+
+	if *isManager {
+		orderbook.ConnectFedchain(fc)
+	}
+	generator.ConnectFedchain(fc)
 
 	var h chainhttp.Handler
 	h = api.Handler(*nouserSecret)
@@ -164,6 +171,20 @@ func main() {
 			chainlog.Fatal(ctx, "error", err)
 		}
 	}
+
+	if *asset.Generator == "" {
+		// This node should only upsert genesis block
+		// if it is a generator.
+		// TODO: make sure this is consistent with new
+		// node config setup.
+		_, err = asset.UpsertGenesisBlock(ctx)
+		if err != nil {
+			chainlog.Error(ctx, err) // non-fatal
+		}
+	}
+
+	go asset.MakeOrGetBlocks(ctx, blockPeriod)
+
 	http.Handle("/", chainhttp.ContextHandler{Context: ctx, Handler: h})
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 

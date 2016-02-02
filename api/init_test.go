@@ -14,7 +14,7 @@ import (
 
 func init() {
 	fc := fedchain.New(&txdb.Store{}, nil)
-	asset.ConnectFedchain(fc, nil)
+	asset.Init(fc, nil, true)
 	orderbook.ConnectFedchain(fc)
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {

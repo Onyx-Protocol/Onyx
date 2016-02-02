@@ -1,6 +1,7 @@
 package fedchain
 
 import (
+	"database/sql"
 	"time"
 
 	"golang.org/x/net/context"
@@ -136,6 +137,14 @@ func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, view state.Vie
 
 	prevBlock, err := fc.store.LatestBlock(ctx)
 	if err != nil {
+		if errors.Root(err) == sql.ErrNoRows && block.Height == 0 {
+			// If there aren't any blocks on this node, and the incoming
+			// block is a genesis block, accept it without attempting to
+			// validate the previous block (which is, in this case,
+			// non-existent).
+			validation.ApplyBlock(ctx, view, block)
+			return nil
+		}
 		return errors.Wrap(err, "loading previous block")
 	}
 

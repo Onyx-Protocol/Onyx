@@ -10,11 +10,15 @@ import (
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
+	chainlog "chain/log"
 	"chain/metrics"
+	"chain/net/rpc"
 )
 
 // ErrBadTx is returned by FinalizeTx
 var ErrBadTx = errors.New("bad transaction template")
+
+var Generator *string
 
 // FinalizeTx validates a transaction signature template,
 // assembles a fully signed tx, and stores the effects of
@@ -35,6 +39,11 @@ func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, er
 	if err != nil {
 		return nil, err
 	}
+
+	if Generator != nil {
+		go publishTxToGenerator(ctx, msg)
+	}
+
 	return msg, nil
 }
 
@@ -82,6 +91,12 @@ func addAccountData(ctx context.Context, tx *bc.Tx) error {
 
 	applyToReserver(ctx, txdbOuts)
 	return nil
+}
+
+func publishTxToGenerator(ctx context.Context, msg *bc.Tx) {
+	if err := rpc.Call(ctx, *Generator, "/rpc/generator/submit", msg, nil); err != nil {
+		chainlog.Write(ctx, "publishTxToGenerator", err)
+	}
 }
 
 // issued returns the asset issued, as well as the amount.

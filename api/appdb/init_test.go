@@ -19,7 +19,8 @@ var (
 
 func init() {
 	store = &txdb.Store{}
-	asset.ConnectFedchain(fedchain.New(store, nil), nil)
+	fc := fedchain.New(store, nil)
+	asset.Init(fc, nil, true)
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
 		u = s

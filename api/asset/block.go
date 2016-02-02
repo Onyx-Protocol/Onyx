@@ -1,6 +1,7 @@
 package asset
 
 import (
+	"database/sql"
 	"runtime"
 	"time"
 
@@ -18,70 +19,102 @@ import (
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
 	"chain/log"
+	"chain/net/rpc"
 	"chain/net/trace/span"
 )
 
 var fc *fedchain.FC
 
-// ConnectFedchain sets the package level fedchain
-// as well as registers all necessary callbacks
-// with the fedchain.
-func ConnectFedchain(chain *fedchain.FC, signer *signer.Signer) {
-	// TODO(kr): rename this to Init.
+// Init sets the package level fedchain. If isManager is true,
+// Init registers all necessary callbacks for updating
+// application state with the fedchain.
+func Init(chain *fedchain.FC, signer *signer.Signer, isManager bool) {
 	fc = chain
-	fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
-		err := addAccountData(ctx, tx)
-		if err != nil {
-			log.Error(ctx, errors.Wrap(err, "adding account data"))
-		}
-	})
-	fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
-		err := nodetxlog.Write(ctx, tx, time.Now())
-		if err != nil {
-			log.Error(ctx, errors.Wrap(err, "writing activitiy"))
-		}
-	})
-	fc.AddBlockCallback(func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx) {
-		outs, err := getRestorableOutputs(ctx, conflicts)
-		if err != nil {
-			log.Error(ctx, errors.Wrap(err, "getting restorable outs"))
-			return
-		}
+	if isManager {
+		fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
+			err := addAccountData(ctx, tx)
+			if err != nil {
+				log.Error(ctx, errors.Wrap(err, "adding account data"))
+			}
+		})
+		fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
+			err := nodetxlog.Write(ctx, tx, time.Now())
+			if err != nil {
+				log.Error(ctx, errors.Wrap(err, "writing activitiy"))
+			}
+		})
+		fc.AddBlockCallback(func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx) {
+			outs, err := getRestorableOutputs(ctx, conflicts)
+			if err != nil {
+				log.Error(ctx, errors.Wrap(err, "getting restorable outs"))
+				return
+			}
 
-		applyToReserver(ctx, outs)
-	})
+			applyToReserver(ctx, outs)
+		})
+	}
 }
 
 // BlockKey is the private key used to sign blocks.
 var BlockKey *btcec.PrivateKey
 
-// MakeBlocks runs forever,
-// attempting to make one block per period.
+// MakeOrGetBlocks runs forever, attempting to either
+// make one block per period, if this is a generator node,
+// or get one block per period from a remote generator.
 // The caller should call it exactly once.
-func MakeBlocks(ctx context.Context, period time.Duration) {
+func MakeOrGetBlocks(ctx context.Context, period time.Duration) {
 	for range time.Tick(period) {
-		makeBlock(ctx)
+		if *Generator == "" {
+			makeBlock(ctx)
+		} else {
+			getBlocks(ctx)
+		}
+	}
+}
+
+// Use of this function must be inside a defer.
+func recoverAndLogError(ctx context.Context) {
+	if err := recover(); err != nil {
+		const size = 64 << 10
+		buf := make([]byte, size)
+		buf = buf[:runtime.Stack(buf, false)]
+		log.Write(ctx,
+			log.KeyMessage, "panic",
+			log.KeyError, err,
+			log.KeyStack, buf,
+		)
 	}
 }
 
 func makeBlock(ctx context.Context) {
-	defer func() {
-		if err := recover(); err != nil {
-			const size = 64 << 10
-			buf := make([]byte, size)
-			buf = buf[:runtime.Stack(buf, false)]
-			log.Write(ctx,
-				log.KeyMessage, "panic",
-				log.KeyError, err,
-				log.KeyStack, buf,
-			)
-		}
-	}()
-	b, err := MakeBlock(ctx, BlockKey)
-	if err != nil {
+	defer recoverAndLogError(ctx)
+	MakeBlock(ctx, BlockKey)
+}
+
+func getBlocks(ctx context.Context) {
+	defer recoverAndLogError(ctx)
+	store := new(txdb.Store)
+	latestBlock, err := store.LatestBlock(ctx)
+	if err != nil && errors.Root(err) != sql.ErrNoRows {
+		log.Error(ctx, errors.Wrapf(err, "could not fetch latest block"))
+	}
+
+	var height *uint64
+	if latestBlock != nil {
+		height = &latestBlock.Height
+	}
+
+	var blocks []*bc.Block
+	if err := rpc.Call(ctx, *Generator, "/rpc/generator/get-blocks", height, &blocks); err != nil {
 		log.Error(ctx, err)
-	} else if b != nil {
-		log.Messagef(ctx, "made block %s height %d with %d txs", b.Hash(), b.Height, len(b.Transactions))
+	}
+
+	for _, b := range blocks {
+		err := fc.AddBlock(ctx, b)
+		if err != nil {
+			log.Error(ctx, errors.Wrapf(err, "applying block at height %d", b.Height))
+			return
+		}
 	}
 }
 

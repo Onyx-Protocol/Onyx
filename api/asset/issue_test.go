@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	ConnectFedchain(fedchain.New(&txdb.Store{}, nil), nil)
+	Init(fedchain.New(&txdb.Store{}, nil), nil, true)
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
 		u = s

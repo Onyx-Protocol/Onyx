@@ -6,6 +6,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/explorer"
+	"chain/api/generator"
 	chainhttp "chain/net/http"
 	"chain/net/http/httpjson"
 	"chain/net/http/pat"
@@ -149,7 +150,8 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 func rpcAuthedHandler() chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
 
-	// RPC routes will be defined in here.
+	h.HandleFunc("POST", "/rpc/generator/submit", generator.Submit)
+	h.HandleFunc("POST", "/rpc/generator/get-blocks", generator.GetBlocks)
 
 	return h.ServeHTTPContext
 }

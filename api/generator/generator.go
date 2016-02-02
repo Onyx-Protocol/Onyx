@@ -9,8 +9,18 @@ import (
 
 	"chain/api/asset"
 	"chain/api/signer"
+	"chain/database/pg"
 	"chain/errors"
+	"chain/fedchain"
+	"chain/fedchain/bc"
 )
+
+var fc *fedchain.FC
+
+// ConnectFedchain sets the package level fedchain.
+func ConnectFedchain(chain *fedchain.FC) {
+	fc = chain
+}
 
 var (
 	// enabled records whether the generator component has been enabled.
@@ -57,6 +67,50 @@ func Init(ctx context.Context, period time.Duration, local *signer.Signer, remot
 	localSigner = local
 	blockPeriod = period
 	enabled = true
-	go asset.MakeBlocks(ctx, blockPeriod)
+	go asset.MakeOrGetBlocks(ctx, blockPeriod)
+
 	return nil
+}
+
+// Submit is an http handler for the generator submit transaction endpoint.
+// Other nodes will call this endpoint to notify the generator of submitted
+// transactions.
+func Submit(ctx context.Context, tx *bc.Tx) error {
+	if err := fc.AddTx(ctx, tx); err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetBlocks returns blocks in block-height order.
+// If afterHeight is non-nil, GetBlocks only returns
+// blocks with a height larger than afterHeight.
+func GetBlocks(ctx context.Context, afterHeight *uint64) ([]*bc.Block, error) {
+	var startHeight uint64
+	if afterHeight != nil {
+		startHeight = *afterHeight + 1
+	}
+
+	q := `SELECT data FROM blocks WHERE height >= $1 ORDER BY height`
+	rows, err := pg.FromContext(ctx).Query(ctx, q, startHeight)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var blocks []*bc.Block
+
+	for rows.Next() {
+		var block bc.Block
+		err = rows.Scan(&block)
+		if err != nil {
+			return nil, err
+		}
+		blocks = append(blocks, &block)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return blocks, nil
 }
