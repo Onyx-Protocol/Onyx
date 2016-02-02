@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# This file uses clang-format. You can install it
+# on Mac OS X with 'brew install clang-format'.
+
+CFILES=`find . -path ./vendor -prune -o -name '*.[ch]' -print`
+
+test -z "$CFILES" && (echo no files to format; exit 0)
+
+if type -P clang-format-3.5 >/dev/null
+then
+    cmd=clang-format-3.5
+else
+    cmd=clang-format
+fi
+$cmd -i $CFILES

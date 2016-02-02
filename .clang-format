@@ -1,0 +1,9 @@
+---
+BasedOnStyle: Mozilla
+IndentWidth: 8
+TabWidth: 8
+UseTab: ForIndentation
+---
+Language: Cpp
+DerivePointerAlignment: false
+PointerAlignment: Right

@@ -1,4 +1,4 @@
-box: golang:1.5
+box: erykwalder/docker-containers:golang1.5
 
 services:
   - id: clkao/postgres-plv8
@@ -32,3 +32,8 @@ build:
           (cd migrations; ./check-names.bash)
           go generate $(go list ./...|grep -v vendor)
           git diff --exit-code # make sure generated files are in sync
+    - script:
+        name: cfmt
+        code: |
+          bin/cfmt
+          git diff --exit-code
