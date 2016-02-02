@@ -10,6 +10,8 @@ TRUNCATE
 	issuance_activity,
 	activity_accounts,
 	activity,
+	orderbook_prices,
+	orderbook_utxos,
 	utxos,
 	assets,
 	issuance_totals,
