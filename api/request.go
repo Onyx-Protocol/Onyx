@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"time"
 
 	"golang.org/x/net/context"
@@ -12,18 +11,12 @@ import (
 	"chain/api/txbuilder"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
+	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/net/http/httpjson"
 )
 
 // Data types and functions for marshaling/unmarshaling API requests
-
-var (
-	ErrNullAsset              = errors.New("asset type unspecified")
-	ErrUnknownReceiverType    = errors.New("unknown request type")
-	ErrUnknownSourceType      = errors.New("unknown source type")
-	ErrUnknownDestinationType = errors.New("unknown destination type")
-)
 
 type Source struct {
 	AssetID        *bc.AssetID `json:"asset_id"`
@@ -39,7 +32,11 @@ type Source struct {
 func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 	if source.Type == "account" || source.Type == "" {
 		if source.AssetID == nil {
-			return nil, httpjson.ErrBadRequest
+			return nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
+		}
+		if source.Amount == 0 {
+			return nil, errors.WithDetailf(ErrBadBuildRequest,
+				"input for asset %s has zero amount", source.AssetID)
 		}
 		assetAmount := &bc.AssetAmount{
 			AssetID: *source.AssetID,
@@ -48,8 +45,15 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 		return asset.NewAccountSource(ctx, assetAmount, source.AccountID), nil
 	}
 	if source.Type == "orderbook-redeem" {
-		if source.PaymentAssetID == nil || source.TxHash == nil || source.Index == nil {
-			return nil, httpjson.ErrBadRequest
+		if source.PaymentAssetID == nil {
+			return nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
+		}
+		if source.PaymentAmount == 0 {
+			return nil, errors.WithDetailf(ErrBadBuildRequest,
+				"input for asset %s has zero amount", *source.PaymentAssetID)
+		}
+		if source.TxHash == nil || source.Index == nil {
+			return nil, errors.WithDetailf(ErrBadBuildRequest, "bad order")
 		}
 		outpoint := &bc.Outpoint{
 			Hash:  *source.TxHash,
@@ -70,7 +74,7 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 	}
 	if source.Type == "orderbook-cancel" {
 		if source.TxHash == nil || source.Index == nil {
-			return nil, httpjson.ErrBadRequest
+			return nil, errors.WithDetailf(ErrBadBuildRequest, "bad order")
 		}
 		outpoint := &bc.Outpoint{
 			Hash:  *source.TxHash,
@@ -85,7 +89,7 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 		}
 		return orderbook.NewCancelSource(openOrder), nil
 	}
-	return nil, ErrUnknownSourceType
+	return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown source type `%s`", source.Type)
 }
 
 type Destination struct {
@@ -102,7 +106,7 @@ type Destination struct {
 
 func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, error) {
 	if dest.AssetID == nil {
-		return nil, ErrNullAsset
+		return nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
 	}
 
 	// backwards compatibility fix
@@ -127,7 +131,7 @@ func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, erro
 		}
 		return orderbook.NewDestinationWithScript(ctx, assetAmount, orderInfo, dest.IsChange, dest.Metadata, dest.Script)
 	}
-	return nil, ErrUnknownDestinationType
+	return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown destination type `%s`", dest.Type)
 }
 
 type Receiver struct {
@@ -162,7 +166,7 @@ func (receiver *Receiver) parse() (txbuilder.Receiver, error) {
 		}
 		return orderbook.NewReceiver(receiver.OrderInfo, receiver.IsChange, receiver.Script), nil
 	}
-	return nil, ErrUnknownReceiverType
+	return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown receiver type `%s`", receiver.Type)
 }
 
 type Template struct {

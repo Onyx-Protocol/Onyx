@@ -32,7 +32,12 @@ func (h Hash) MarshalText() ([]byte, error) {
 // It decodes hex data from b into h.
 func (h *Hash) UnmarshalText(b []byte) error {
 	if len(b) != hex.EncodedLen(len(h)) {
-		return fmt.Errorf("bad hash hex length %d", len(b))
+		return errors.WithDetailf(
+			fmt.Errorf("bad hash hex length %d", len(b)),
+			"expected hex string of length %d, but got `%s`",
+			hex.EncodedLen(len(h)),
+			b,
+		)
 	}
 	_, err := hex.Decode(h[:], b)
 	return err

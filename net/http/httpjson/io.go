@@ -22,9 +22,11 @@ var ErrBadRequest = errors.New("httpjson: bad request")
 func Read(ctx context.Context, r io.Reader, v interface{}) error {
 	err := json.NewDecoder(r).Decode(v)
 	if err != nil {
-		return errors.Wrap(ErrBadRequest, err.Error())
+		detail := errors.Detail(err)
+		userErr := errors.Wrap(ErrBadRequest, err)
+		return errors.WithDetail(userErr, detail)
 	}
-	return nil
+	return err
 }
 
 // Write sets the Content-Type header field to indicate

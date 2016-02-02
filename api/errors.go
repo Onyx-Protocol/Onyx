@@ -9,6 +9,11 @@ import (
 	"chain/net/http/httpjson"
 )
 
+var (
+	// ErrBadBuildRequest is returned for malformed build transaction requests.
+	ErrBadBuildRequest = errors.New("bad build request")
+)
+
 // errorInfo contains a set of error codes to send to the user.
 type errorInfo struct {
 	HTTPStatus int    `json:"-"`
@@ -42,6 +47,7 @@ var (
 		utxodb.ErrInsufficient:      errorInfo{400, "CH733", "Insufficient funds for tx"},
 		utxodb.ErrReserved:          errorInfo{400, "CH743", "Some outputs are reserved; try again"},
 		asset.ErrBadTx:              errorInfo{400, "CH755", "Invalid transaction template"},
+		ErrBadBuildRequest:          errorInfo{400, "CH756", "Invalid build transaction request"},
 		appdb.ErrBadProjectName:     errorInfo{400, "CH770", "Invalid project name."},
 		appdb.ErrCannotDelete:       errorInfo{400, "CH901", "Cannot delete non-empty object"},
 		appdb.ErrArchived:           errorInfo{404, "CH902", "Item has been archived"},

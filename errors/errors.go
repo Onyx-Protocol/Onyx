@@ -80,6 +80,9 @@ func WithDetail(err error, text string) error {
 	if err == nil {
 		return nil
 	}
+	if text == "" {
+		return err
+	}
 	e1 := wrap(err, text, 1).(wrapperError)
 	e1.detail = append(e1.detail, text)
 	return e1
