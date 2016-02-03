@@ -22,6 +22,14 @@
         "sudo apt-get update -y",
         "sudo apt-get install ntp awscli git -y",
 	"curl https://storage.googleapis.com/golang/go1.5.linux-amd64.tar.gz | sudo tar xz -C /usr/local",
+        "echo 'install postgres 9.5'",
+        "wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -",
+        "sudo apt-get update",
+        "sudo apt-get install postgresql-9.5 -y",
+        "sudo -i -u postgres psql -c \"create role api with login password 'DEFAULT_DB_PASS_TO_BE_CHANGED'\"",
+        "sudo -i -u postgres psql -c \"create database api with owner = api\"",
+        "sudo sh -c \"echo host all all  0.0.0.0/0 md5 >> /etc/postgresql/9.5/main/pg_hba.conf\"",
+        "sudo sh -c \"echo listen_addresses=\\'*\\' >> /etc/postgresql/9.5/main/postgresql.conf\"",
         "echo 'must run unattended-upgrade last; otherwise error'",
         "sudo unattended-upgrade"
       ]
