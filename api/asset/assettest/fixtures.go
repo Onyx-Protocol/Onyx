@@ -10,7 +10,6 @@ import (
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/api/txbuilder"
-	"chain/database/pg/pgtest"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
@@ -166,20 +165,18 @@ func createCounter() <-chan int {
 	return result
 }
 
-func NewContextWithGenesisBlock(tb testing.TB) context.Context {
-	ctx := pgtest.NewContext(tb)
-
+func CreateGenesisBlockFixture(ctx context.Context, tb testing.TB) *bc.Block {
 	key, err := testutil.TestXPrv.ECPrivKey()
 	if err != nil {
 		tb.Fatal(err)
 	}
 	asset.BlockKey = key
 
-	_, err = asset.UpsertGenesisBlock(ctx)
+	block, err := asset.UpsertGenesisBlock(ctx)
 	if err != nil {
 		tb.Fatal(err)
 	}
-	return ctx
+	return block
 }
 
 func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64, accountID string) state.Output {

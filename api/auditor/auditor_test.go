@@ -16,11 +16,15 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/fedchain"
 	"chain/fedchain/bc"
 	"chain/testutil"
 )
 
 func init() {
+	fc := fedchain.New(&txdb.Store{}, nil)
+	asset.ConnectFedchain(fc)
+
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
 		u = s
@@ -269,7 +273,7 @@ func TestGetTxTransfer(t *testing.T) {
 
 	withContext(t, "", func(ctx context.Context) {
 		const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2)`
-		err := txdb.InsertBlock(ctx, blk)
+		_, err := txdb.InsertBlock(ctx, blk)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -325,8 +329,10 @@ func TestGetTxTransfer(t *testing.T) {
 }
 
 func TestGetAssets(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 
@@ -388,8 +394,10 @@ func TestGetAssets(t *testing.T) {
 }
 
 func TestGetAsset(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 

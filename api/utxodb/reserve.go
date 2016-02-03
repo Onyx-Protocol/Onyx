@@ -37,6 +37,9 @@ type (
 
 		mu  sync.Mutex // protects the following
 		tab map[key]*pool
+
+		outpointMu    sync.Mutex // protects the following
+		outpointUTXOs map[bc.Outpoint]*UTXO
 	}
 
 	key struct {
@@ -101,8 +104,9 @@ type (
 
 func New(db DB) *Reserver {
 	return &Reserver{
-		db:  db,
-		tab: make(map[key]*pool),
+		db:            db,
+		tab:           make(map[key]*pool),
+		outpointUTXOs: make(map[bc.Outpoint]*UTXO),
 	}
 }
 
@@ -141,7 +145,7 @@ func (rs *Reserver) Reserve(ctx context.Context, sources []Source, ttl time.Dura
 	sort.Sort(byKey(sources))
 	for i, in := range sources {
 		p := rs.pool(in.AccountID, in.AssetID)
-		err := p.init(ctx, rs.db, key{in.AccountID, in.AssetID})
+		err := rs.initPool(ctx, p, rs.db, key{in.AccountID, in.AssetID})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -234,12 +238,15 @@ func (rs *Reserver) mappool(utxos []*UTXO, f func(*pool, *UTXO)) {
 func (rs *Reserver) insert(utxos []*UTXO) {
 	ctx := context.TODO()
 	var i int64
+	rs.outpointMu.Lock()
+	defer rs.outpointMu.Unlock()
 	rs.mappool(utxos, func(p *pool, u *UTXO) {
 		// It's possible u is already in the pool.
 		// If so, there's nothing to do here.
 		if p.byOutpoint(u.Outpoint) != nil {
 			return
 		}
+		rs.outpointUTXOs[u.Outpoint] = u
 		heap.Push(&p.outputs, u)
 		i++
 		if i%1e6 == 0 {
@@ -264,6 +271,13 @@ func (rs *Reserver) unreserve(utxos []*UTXO) {
 }
 
 func (rs *Reserver) delete(utxos []*UTXO) {
+	rs.outpointMu.Lock()
+	defer rs.outpointMu.Unlock()
+
+	for i, u := range utxos {
+		utxos[i] = rs.outpointUTXOs[u.Outpoint]
+	}
+
 	sort.Sort(byKeyUTXO(utxos))
 	rs.mappool(utxos, func(p *pool, u *UTXO) {
 		// It's possible u has already been deleted.
@@ -274,6 +288,7 @@ func (rs *Reserver) delete(utxos []*UTXO) {
 		if u = p.byOutpoint(u.Outpoint); u != nil {
 			heap.Remove(&p.outputs, u.heapIndex)
 		}
+		delete(rs.outpointUTXOs, u.Outpoint)
 	})
 
 }

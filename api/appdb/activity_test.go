@@ -6,96 +6,22 @@ import (
 	"reflect"
 	"sort"
 	"testing"
-	"time"
-
-	"golang.org/x/net/context"
 
 	. "chain/api/appdb"
 	"chain/api/asset"
 	"chain/api/asset/assettest"
-	"chain/api/txbuilder"
-	"chain/api/txdb"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain/bc"
-	"chain/metrics"
 	"chain/testutil"
 )
 
-// Copied from $CHAIN/api/asset/utxodb.go.
-// Delete this and use fedchain.ApplyTx when it exists.
-func applyTx(ctx context.Context, tx *bc.Tx, outRecs []txbuilder.Receiver) error {
-	defer metrics.RecordElapsed(time.Now())
-
-	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
-
-	err := txdb.InsertTx(ctx, tx)
-	if err != nil {
-		return errors.Wrap(err, "insert into txs")
-	}
-
-	err = txdb.InsertPoolTx(ctx, tx)
-	if err != nil {
-		return errors.Wrap(err, "insert into pool_txs")
-	}
-
-	_, err = insertUTXOs(ctx, tx.Hash, tx.Outputs, outRecs)
-	if err != nil {
-		return errors.Wrap(err, "insert outputs")
-	}
-
-	var deleted []bc.Outpoint
-	for _, in := range tx.Inputs {
-		if in.IsIssuance() {
-			continue
-		}
-		deleted = append(deleted, in.Previous)
-	}
-	err = txdb.InsertPoolInputs(ctx, deleted)
-	if err != nil {
-		return errors.Wrap(err, "delete")
-	}
-
-	return err
-}
-
-// Copied from $CHAIN/api/asset/utxodb.go.
-// Delete this when we delete applyTx above.
-func insertUTXOs(ctx context.Context, hash bc.Hash, txouts []*bc.TxOutput, receivers []txbuilder.Receiver) (inserted []*txdb.Output, err error) {
-	if len(txouts) != len(receivers) {
-		return nil, errors.New("length mismatch")
-	}
-	defer metrics.RecordElapsed(time.Now())
-
-	var utxoInserters []txbuilder.UTXOInserter
-
-	for i, txOutput := range txouts {
-		receiver := receivers[i]
-		outpoint := &bc.Outpoint{
-			Hash:  hash,
-			Index: uint32(i),
-		}
-		utxoInserters, err = receiver.AccumulateUTXO(ctx, outpoint, txOutput, utxoInserters)
-		if err != nil {
-			return nil, errors.Wrap(err, "accumulate utxo inserter")
-		}
-	}
-
-	for _, utxoInserter := range utxoInserters {
-		theseInsertions, err := utxoInserter.InsertUTXOs(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "insert utxos")
-		}
-		inserted = append(inserted, theseInsertions...)
-	}
-
-	return inserted, nil
-}
-
 func TestGetActUTXOs(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
+
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-0", nil, nil)
 	mn2 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-2", nil, nil)
 	mn3 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-3", nil, nil)
@@ -135,7 +61,7 @@ func TestGetActUTXOs(t *testing.T) {
 		},
 	})
 
-	err := applyTx(ctx, tx, []txbuilder.Receiver{dest0.Receiver, dest1.Receiver})
+	err := store.ApplyTx(ctx, tx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -196,8 +122,10 @@ func TestGetActUTXOs(t *testing.T) {
 }
 
 func TestGetActUTXOsIssuance(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-0", nil, nil)
 	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "account-0", nil)
@@ -213,7 +141,7 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 		}},
 	})
 
-	err := applyTx(ctx, tx, []txbuilder.Receiver{dest0.Receiver})
+	err := store.ApplyTx(ctx, tx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -223,7 +151,7 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	var wantIns []*ActUTXO
+	wantIns := []*ActUTXO{nil}
 	wantOuts := []*ActUTXO{
 		{
 			AssetID:       asset0.String(),
@@ -239,13 +167,15 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(gotOuts, wantOuts) {
-		t.Errorf("outputs:\ngot:  %v\nwant: %v", gotOuts, wantOuts)
+		t.Errorf("outputs:\ngot:  %+v\nwant: %+v", gotOuts, wantOuts)
 	}
 }
 
 func TestGetActAssets(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	proj0 := assettest.CreateProjectFixture(ctx, t, "", "proj0")
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, proj0, "in-0", nil, nil)
@@ -305,8 +235,10 @@ func (a byAssetID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byAssetID) Less(i, j int) bool { return a[i].ID < a[j].ID }
 
 func TestGetActAccounts(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	proj0 := assettest.CreateProjectFixture(ctx, t, "", "proj0")
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, proj0, "in-0", nil, nil)

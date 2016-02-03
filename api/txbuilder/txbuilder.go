@@ -71,16 +71,10 @@ func build(ctx context.Context, sources []*Source, dests []*Destination, metadat
 		tx.Outputs = append(tx.Outputs, output)
 	}
 
-	receivers := make([]Receiver, 0, len(dests))
-	for _, dest := range dests {
-		receivers = append(receivers, dest.Receiver)
-	}
-
 	appTx := &Template{
 		Unsigned:   tx,
 		BlockChain: "sandbox",
 		Inputs:     inputs,
-		OutRecvs:   receivers,
 	}
 
 	return appTx, nil
@@ -99,7 +93,6 @@ func combine(txs ...*Template) (*Template, error) {
 		}
 
 		complete.Inputs = append(complete.Inputs, tx.Inputs...)
-		complete.OutRecvs = append(complete.OutRecvs, tx.OutRecvs...)
 
 		for _, txin := range tx.Unsigned.Inputs {
 			completeWire.Inputs = append(completeWire.Inputs, txin)

@@ -13,8 +13,10 @@ import (
 )
 
 func TestFindOpenOrders(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	projectID := assettest.CreateProjectFixture(ctx, t, "", "")
 	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)

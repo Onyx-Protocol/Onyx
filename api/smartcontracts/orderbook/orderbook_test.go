@@ -12,9 +12,11 @@ import (
 	"chain/api/asset"
 	"chain/api/asset/assettest"
 	"chain/api/txbuilder"
+	"chain/api/txdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/fedchain"
 	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
 	"chain/testutil"
@@ -179,8 +181,10 @@ func TestCancel(t *testing.T) {
 }
 
 func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo *orderbookFixtureInfo)) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	var fixtureInfo orderbookFixtureInfo
 
@@ -371,6 +375,9 @@ func slurpOpenOrders(ch <-chan *OpenOrder) (result []*OpenOrder) {
 }
 
 func init() {
+	fc := fedchain.New(&txdb.Store{}, nil)
+	asset.ConnectFedchain(fc)
+	ConnectFedchain(fc)
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
 		u = s

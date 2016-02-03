@@ -17,8 +17,10 @@ import (
 )
 
 func TestAccountSourceReserve(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	accID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
 	asset := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")

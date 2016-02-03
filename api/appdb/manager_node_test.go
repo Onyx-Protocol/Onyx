@@ -76,8 +76,10 @@ func TestGetManagerNode(t *testing.T) {
 }
 
 func TestAccountsWithAsset(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	asset1 := assettest.CreateAssetFixture(ctx, t, "", "", "")
 	asset2 := assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -105,7 +107,7 @@ func TestAccountsWithAsset(t *testing.T) {
 		{Previous: out1.Outpoint},
 		{Previous: out2.Outpoint},
 	}}}
-	err = applyTx(ctx, tx, nil)
+	err = store.ApplyTx(ctx, tx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

@@ -114,6 +114,25 @@ type utxoSet struct {
 	contractHash  pg.Byteas
 }
 
+func addToUTXOSet(set *utxoSet, out *Output) {
+	set.txHash = append(set.txHash, out.Outpoint.Hash.String())
+	set.index = append(set.index, out.Outpoint.Index)
+	set.assetID = append(set.assetID, out.AssetID.String())
+	set.amount = append(set.amount, int64(out.Amount))
+	set.accountID = append(set.accountID, out.AccountID)
+	set.managerNodeID = append(set.managerNodeID, out.ManagerNodeID)
+	set.aIndex = append(set.aIndex, toKeyIndex(out.AddrIndex[:]))
+	set.script = append(set.script, out.Script)
+	set.metadata = append(set.metadata, out.Metadata)
+
+	isPayToContract, contractHash, _ := txscript.TestPayToContract(out.Script)
+	if isPayToContract {
+		set.contractHash = append(set.contractHash, contractHash[:])
+	} else {
+		set.contractHash = append(set.contractHash, nil)
+	}
+}
+
 func InsertPoolTx(ctx context.Context, tx *bc.Tx) error {
 	const q = `INSERT INTO pool_txs (tx_hash, data) VALUES ($1, $2)`
 	_, err := pg.FromContext(ctx).Exec(ctx, q, tx.Hash, tx)
@@ -123,22 +142,7 @@ func InsertPoolTx(ctx context.Context, tx *bc.Tx) error {
 func InsertPoolOutputs(ctx context.Context, insert []*Output) error {
 	var outs utxoSet
 	for _, o := range insert {
-		outs.txHash = append(outs.txHash, o.Outpoint.Hash.String())
-		outs.index = append(outs.index, o.Outpoint.Index)
-		outs.assetID = append(outs.assetID, o.AssetID.String())
-		outs.amount = append(outs.amount, int64(o.Amount))
-		outs.accountID = append(outs.accountID, o.AccountID)
-		outs.managerNodeID = append(outs.managerNodeID, o.ManagerNodeID)
-		outs.aIndex = append(outs.aIndex, toKeyIndex(o.AddrIndex[:]))
-		outs.script = append(outs.script, o.Script)
-		outs.metadata = append(outs.metadata, o.Metadata)
-
-		isPayToContract, contractHash, _ := txscript.TestPayToContract(o.Script)
-		if isPayToContract {
-			outs.contractHash = append(outs.contractHash, contractHash[:])
-		} else {
-			outs.contractHash = append(outs.contractHash, nil)
-		}
+		addToUTXOSet(&outs, o)
 	}
 
 	db := pg.FromContext(ctx)
@@ -166,20 +170,38 @@ func InsertPoolOutputs(ctx context.Context, insert []*Output) error {
 		outs.contractHash,
 		outs.metadata,
 	)
-	if err != nil {
-		return err
+	return err
+}
+
+// InsertAccountOutputs records the account data for utxos
+// TODO: move this function outside of the txdb package
+func InsertAccountOutputs(ctx context.Context, outs []*Output) error {
+	var set utxoSet
+	for _, out := range outs {
+		addToUTXOSet(&set, out)
 	}
 
-	const q3 = `
+	const q = `
+		WITH outputs AS (
+			SELECT t.* FROM unnest($1::text[], $2::bigint[], $3::text[], $4::bigint[], $5::text[], $6::text[], $7::bigint[])
+			AS t(tx_hash, index, asset_id, amount, mnode, acc, addr_index)
+			LEFT JOIN account_utxos a ON (t.tx_hash, t.index) = (a.tx_hash, a.index)
+			WHERE a.tx_hash IS NULL
+		)
 		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, manager_node_id, account_id, addr_index)
-		    SELECT unnest($1::text[]), unnest($2::bigint[]), unnest($3::text[]), unnest($4::bigint[]), unnest($5::text[]), unnest($6::text[]), unnest($7::bigint[])
+		SELECT * FROM outputs o
 	`
-	_, err = db.Exec(ctx, q3, outs.txHash, outs.index, outs.assetID, outs.amount, outs.managerNodeID, outs.accountID, outs.aIndex)
-	if err != nil {
-		return err
-	}
+	_, err := pg.FromContext(ctx).Exec(ctx, q,
+		set.txHash,
+		set.index,
+		set.assetID,
+		set.amount,
+		set.managerNodeID,
+		set.accountID,
+		set.aIndex,
+	)
 
-	return nil
+	return errors.Wrap(err)
 }
 
 // InsertPoolInputs inserts outpoints into pool_inputs.

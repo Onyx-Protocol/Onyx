@@ -322,8 +322,10 @@ func TestBuildAuthz(t *testing.T) {
 }
 
 func withCommonFixture(t *testing.T, fn func(context.Context, *fixtureInfo)) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	var (
 		fixtureInfo fixtureInfo

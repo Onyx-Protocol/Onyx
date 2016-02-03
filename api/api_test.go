@@ -53,8 +53,10 @@ func TestLogin(t *testing.T) {
 }
 
 func TestIssue(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "")
 	projectID := assettest.CreateProjectFixture(ctx, t, userID, "")
@@ -97,8 +99,10 @@ func TestIssue(t *testing.T) {
 }
 
 func TestTransfer(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "")
 	projectID := assettest.CreateProjectFixture(ctx, t, userID, "")
@@ -200,55 +204,6 @@ func inspectTemplate(t *testing.T, inp map[string]interface{}, expectedReceiverM
 	}
 	if len(parsedInputs) != 1 {
 		t.Errorf("expected template.inputs in result to have length 1, got %d", len(parsedInputs))
-	}
-	member, ok = parsedTemplate["output_receivers"]
-	if !ok {
-		t.Errorf("expected template.output_receivers in result")
-	}
-	parsedReceivers, ok := member.([]interface{})
-	if !ok {
-		t.Errorf("expected template.output_receivers to be a list")
-	}
-	if len(parsedReceivers) != 1 {
-		t.Errorf("expected template.output_receivers in result to have length 1, got %d", len(parsedReceivers))
-	}
-	member = parsedReceivers[0]
-	parsedReceiver, ok := member.(map[string]interface{})
-	if !ok {
-		t.Errorf("expected template.output_receivers in result to be a list of maps")
-	}
-	member, ok = parsedReceiver["account_id"]
-	if !ok {
-		t.Errorf("expected template.output_receivers[0].account_id in result")
-	}
-	receiverAccountID, ok := member.(string)
-	if !ok {
-		t.Errorf("expected template.output_receivers[0].account_id in result to be a string")
-	}
-	if receiverAccountID != expectedReceiverAccountID {
-		t.Errorf("expected template.output_receivers[0].account_id in result to be %s, got %s", expectedReceiverAccountID, receiverAccountID)
-	}
-	member, ok = parsedReceiver["manager_node_id"]
-	if !ok {
-		t.Errorf("expected template.output_receivers[0].manager_node_id in result")
-	}
-	receiverManagerNodeID, ok := member.(string)
-	if !ok {
-		t.Errorf("expected template.output_receivers[0].manager_node_id in result to be a string")
-	}
-	if receiverManagerNodeID != expectedReceiverManagerNodeID {
-		t.Errorf("expected template.output_receivers[0].manager_node_id in result to be %s, got %s", expectedReceiverManagerNodeID, receiverManagerNodeID)
-	}
-	member, ok = parsedReceiver["type"]
-	if !ok {
-		t.Errorf("expected template.output_receivers[0].type in result")
-	}
-	receiverType, ok := member.(string)
-	if !ok {
-		t.Errorf("expected template.output_receivers[0].type in result to be a string")
-	}
-	if receiverType != "account" {
-		t.Errorf("expected template.output_receivers[0].type in result to be account, got %s", receiverType)
 	}
 	return parsedTemplate
 }

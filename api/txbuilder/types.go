@@ -5,7 +5,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/api/txdb"
 	"chain/encoding/json"
 	"chain/fedchain/bc"
 )
@@ -16,7 +15,6 @@ type Template struct {
 	Unsigned   *bc.TxData `json:"unsigned_hex"`
 	BlockChain string     `json:"block_chain"`
 	Inputs     []*Input   `json:"inputs"`
-	OutRecvs   []Receiver `json:"output_receivers"`
 }
 
 // Input is an input for a project TxTemplate.
@@ -58,11 +56,6 @@ type Source struct {
 
 type Receiver interface {
 	PKScript() []byte
-	// Make sure the UTXOInserter list contains the right kind of
-	// UTXOInserter (adding one if necessary), and add data about the
-	// txoutput to it.
-	AccumulateUTXO(context.Context, *bc.Outpoint, *bc.TxOutput, []UTXOInserter) ([]UTXOInserter, error)
-	MarshalJSON() ([]byte, error)
 }
 
 // A Destination is a payment destination for a transaction.
@@ -70,13 +63,6 @@ type Destination struct {
 	bc.AssetAmount
 	Metadata []byte
 	Receiver Receiver
-}
-
-type UTXOInserter interface {
-	// This function performs UTXO insertion into the db.  It's called
-	// as one of the final steps in FinalizeTx().  There may be many
-	// UTXOInserters, each inserting utxos of a different type.
-	InsertUTXOs(context.Context) ([]*txdb.Output, error)
 }
 
 func (source *Source) Reserve(ctx context.Context, ttl time.Duration) (*ReserveResult, error) {

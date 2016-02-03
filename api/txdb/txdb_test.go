@@ -178,7 +178,7 @@ func TestInsertBlock(t *testing.T) {
 				}),
 			},
 		}
-		err := InsertBlock(ctx, blk)
+		_, err := InsertBlock(ctx, blk)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -209,7 +209,7 @@ func TestGetBlock(t *testing.T) {
 				Height:  1,
 			},
 		}
-		err := InsertBlock(ctx, blk)
+		_, err := InsertBlock(ctx, blk)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -239,7 +239,7 @@ func TestListBlocks(t *testing.T) {
 			{BlockHeader: bc.BlockHeader{Height: 0}},
 		}
 		for _, blk := range blks {
-			err := InsertBlock(ctx, blk)
+			_, err := InsertBlock(ctx, blk)
 			if err != nil {
 				t.Log(errors.Stack(err))
 				t.Fatal(err)
@@ -284,27 +284,23 @@ func TestListBlocks(t *testing.T) {
 
 func TestRemoveBlockOutputs(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
-		out := &Output{
-			Output: state.Output{
-				TxOutput: bc.TxOutput{
-					AssetAmount: bc.AssetAmount{AssetID: bc.AssetID{}, Amount: 5},
-					Script:      []byte("a"),
-					Metadata:    []byte("b"),
-				},
-				Outpoint: bc.Outpoint{},
+
+		out := &state.Output{
+			TxOutput: bc.TxOutput{
+				AssetAmount: bc.AssetAmount{AssetID: bc.AssetID{}, Amount: 5},
+				Script:      []byte("a"),
+				Metadata:    []byte("b"),
 			},
-			AccountID:     "account-1",
-			ManagerNodeID: "mnode-1",
-			AddrIndex:     [2]uint32{0, 0},
+			Outpoint: bc.Outpoint{},
 		}
-		_, err := InsertBlockOutputs(ctx, []*Output{out})
+		err := InsertBlockOutputs(ctx, []*state.Output{out})
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
 		out.Spent = true
-		err = RemoveBlockSpentOutputs(ctx, []*Output{out})
+		err = RemoveBlockSpentOutputs(ctx, []*state.Output{out})
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -324,20 +320,15 @@ func TestRemoveBlockOutputs(t *testing.T) {
 
 func TestInsertBlockOutputs(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
-		out := &Output{
-			Output: state.Output{
-				TxOutput: bc.TxOutput{
-					AssetAmount: bc.AssetAmount{AssetID: bc.AssetID{}, Amount: 5},
-					Script:      []byte("a"),
-					Metadata:    []byte("b"),
-				},
-				Outpoint: bc.Outpoint{},
+		out := &state.Output{
+			TxOutput: bc.TxOutput{
+				AssetAmount: bc.AssetAmount{AssetID: bc.AssetID{}, Amount: 5},
+				Script:      []byte("a"),
+				Metadata:    []byte("b"),
 			},
-			AccountID:     "account-1",
-			ManagerNodeID: "mnode-1",
-			AddrIndex:     [2]uint32{0, 0},
+			Outpoint: bc.Outpoint{},
 		}
-		_, err := InsertBlockOutputs(ctx, []*Output{out})
+		err := InsertBlockOutputs(ctx, []*state.Output{out})
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

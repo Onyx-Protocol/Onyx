@@ -20,9 +20,12 @@ import (
 	"chain/api"
 	"chain/api/admin"
 	"chain/api/asset"
+	"chain/api/smartcontracts/orderbook"
+	"chain/api/txdb"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
+	"chain/fedchain"
 	chainlog "chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
@@ -133,6 +136,10 @@ func main() {
 	db.SetMaxOpenConns(*maxDBConns)
 	db.SetMaxIdleConns(100)
 	ctx = pg.NewContext(ctx, db)
+
+	fc := fedchain.New(&txdb.Store{}, []*btcec.PublicKey{privKey.PubKey()})
+	asset.ConnectFedchain(fc)
+	orderbook.ConnectFedchain(fc)
 
 	var h chainhttp.Handler
 	h = api.Handler(*nouserSecret)

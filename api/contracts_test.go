@@ -315,8 +315,10 @@ func callFindAccountOrders(ctx context.Context, accountID string) ([]*orderbook.
 }
 
 func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtureInfo)) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	var fixtureInfo contractsFixtureInfo
 

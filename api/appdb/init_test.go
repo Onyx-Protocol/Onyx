@@ -5,13 +5,22 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/api/asset"
+	"chain/api/txdb"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
+	"chain/fedchain"
 )
 
-var db *sql.DB
+var (
+	db    *sql.DB
+	store fedchain.Store
+)
 
 func init() {
+	store = &txdb.Store{}
+	fc := fedchain.New(store, nil)
+	asset.ConnectFedchain(fc)
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
 		u = s

@@ -1,14 +1,10 @@
 package asset_test
 
 import (
-	"log"
-	"reflect"
 	"testing"
 	"time"
 
 	"golang.org/x/net/context"
-
-	"github.com/btcsuite/btcd/btcec"
 
 	"chain/api/appdb"
 	. "chain/api/asset"
@@ -18,9 +14,9 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/fedchain"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
 	"chain/testutil"
 )
 
@@ -67,12 +63,12 @@ func TestGenSpendApply(t *testing.T) {
 	}
 	t.Logf("issued %v", issueTx.Hash)
 
-	block, err := GenerateBlock(ctx, time.Now())
+	block, err := FC().GenerateBlock(ctx, time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = SignBlock(block, BlockKey)
+	err = fedchain.SignBlock(block, BlockKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +78,7 @@ func TestGenSpendApply(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = ApplyBlock(ctx, block)
+	err = FC().AddBlock(ctx, block)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,190 +158,6 @@ func dumpTab(ctx context.Context, t *testing.T, q string) {
 	}
 }
 
-func TestGenerateBlock(t *testing.T) {
-	const fix = `
-		INSERT INTO blocks (block_hash, height, data, header)
-		VALUES(
-			'c33576c0fa9ee9b3b71dcfb7872835400df327501da144fdf770ef751c08376d',
-			11,
-			decode('010000000b0000000000000095a00b5cd11f577a461e6bb884899ee0aa1662088097b644af7a50d76e1a243f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003895f5600000000000001010000000195a00b5cd11f577a461e6bb884899ee0aa1662088097b644af7a50d76e1a243fffffffff7000483045022100c80b4deb9aae29da4e8768a5fbe0ac6ccca1d020f4b924005cc066f09b18e14e02206acd491a84eda9c15bed01a7648b191974a2ef47f7cefda3bde06092cd144e68012551210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae00000125fbb43a93c290fde3997d92c416d3cc7ff40a13aa309d051406978635085c8d320000000000000017a9144bbae13b661c0cd9cf89271fd96dadb65e7a80378700000000000000000000', 'hex'),
-			''
-		);
-
-		INSERT INTO pool_txs (tx_hash, data, sort_id)
-		VALUES (
-			'87a15e9b5707faac3fb7f573faf5f64b60696e584e158b8a494c12a26149a313',
-			decode('010000000192b34025babea306bdf67cfe9a2576d8475ea9476caeb1fbdea43bf3d56d011affffffff70004830450221009037e1d39b7d59d24eba8012baddd5f4ab886a51b46f52b7c479ddfa55eeb5c5022076008409243475b25dfba6db85e15cf3d74561a147375941e4830baa69769b51012551210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae00137b0a2020226b6579223a2022636c616d220a7d0125fbb43a93c290fde3997d92c416d3cc7ff40a13aa309d051406978635085c8d320000000000000017a9145881cd104f8d64635751ac0f3c0decf9150c11068700000000000000000000', 'hex'),
-			1
-		), (
-			'c9667fd0c400df50b1b0629b0c2f47a72cad0a38a5c5a9cfc669ca3155f79791',
-			decode('010000000192b34025babea306bdf67cfe9a2576d8475ea9476caeb1fbdea43bf3d56d011affffffff7000483045022100f3bcffcfd6a1ce9542b653500386cd0ee7b9c86c59390ca0fc0238c0ebe3f1d6022065ac468a51a016842660c3a616c99a9aa5109a3bad1877ba3e0f010f3972472e012551210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae00137b0a2020226b6579223a2022636c616d220a7d0125fbb43a93c290fde3997d92c416d3cc7ff40a13aa309d051406978635085c8d320000000000000017a914c171e443e05b953baa7b7d834028ed91e47b4d0b8700000000000000000000', 'hex'),
-			2
-		);
-	`
-
-	withContext(t, fix, func(ctx context.Context) {
-		now := time.Now()
-		got, err := GenerateBlock(ctx, now)
-		if err != nil {
-			t.Fatalf("err got = %v want nil", err)
-		}
-
-		want := &bc.Block{
-			BlockHeader: bc.BlockHeader{
-				Version:           bc.NewBlockVersion,
-				Height:            12,
-				PreviousBlockHash: mustParseHash("c33576c0fa9ee9b3b71dcfb7872835400df327501da144fdf770ef751c08376d"),
-				Timestamp:         uint64(now.Unix()),
-			},
-			Transactions: []*bc.Tx{
-				bc.NewTx(bc.TxData{
-					Version: 1,
-					Inputs: []*bc.TxInput{{
-						Previous: bc.Outpoint{
-							Hash:  mustParseHash("92b34025babea306bdf67cfe9a2576d8475ea9476caeb1fbdea43bf3d56d011a"),
-							Index: bc.InvalidOutputIndex,
-						},
-						SignatureScript: mustDecodeHex("004830450221009037e1d39b7d59d24eba8012baddd5f4ab886a51b46f52b7c479ddfa55eeb5c5022076008409243475b25dfba6db85e15cf3d74561a147375941e4830baa69769b51012551210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae"),
-						AssetDefinition: []byte(`{
-  "key": "clam"
-}`),
-					}},
-					Outputs: []*bc.TxOutput{{
-						AssetAmount: bc.AssetAmount{
-							AssetID: mustParseHash("25fbb43a93c290fde3997d92c416d3cc7ff40a13aa309d051406978635085c8d"),
-							Amount:  50,
-						},
-						Script: mustDecodeHex("a9145881cd104f8d64635751ac0f3c0decf9150c110687"),
-					}},
-				}),
-				bc.NewTx(bc.TxData{
-					Version: 1,
-					Inputs: []*bc.TxInput{{
-						Previous: bc.Outpoint{
-							Hash:  mustParseHash("92b34025babea306bdf67cfe9a2576d8475ea9476caeb1fbdea43bf3d56d011a"),
-							Index: bc.InvalidOutputIndex,
-						},
-						SignatureScript: mustDecodeHex("00483045022100f3bcffcfd6a1ce9542b653500386cd0ee7b9c86c59390ca0fc0238c0ebe3f1d6022065ac468a51a016842660c3a616c99a9aa5109a3bad1877ba3e0f010f3972472e012551210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae"),
-						AssetDefinition: []byte(`{
-  "key": "clam"
-}`),
-					}},
-					Outputs: []*bc.TxOutput{{
-						AssetAmount: bc.AssetAmount{
-							AssetID: mustParseHash("25fbb43a93c290fde3997d92c416d3cc7ff40a13aa309d051406978635085c8d"),
-							Amount:  50,
-						},
-						Script: mustDecodeHex("a914c171e443e05b953baa7b7d834028ed91e47b4d0b87"),
-					}},
-				}),
-			},
-		}
-		for _, wanttx := range want.Transactions {
-			wanttx.Stored = true
-		}
-
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("generated block:\ngot:  %+v\nwant: %+v", got, want)
-		}
-	})
-}
-
-func TestSignBlock(t *testing.T) {
-	ctx := context.Background()
-
-	key := newPrivKey(t)
-
-	outscript, err := GenerateBlockScript([]*btcec.PublicKey{key.PubKey()}, 1)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		log.Fatal(err)
-	}
-
-	block := &bc.Block{}
-	err = SignBlock(block, key)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	engine, err := txscript.NewEngineForBlock(ctx, outscript, block, txscript.StandardVerifyFlags)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	err = engine.Execute()
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-}
-
-func TestIsSignedByTrustedHost(t *testing.T) {
-	keys := []*btcec.PrivateKey{newPrivKey(t)}
-
-	block := &bc.Block{}
-	err := SignBlock(block, keys[0])
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-	sig := block.SignatureScript
-
-	cases := []struct {
-		desc        string
-		sigScript   []byte
-		trustedKeys []*btcec.PublicKey
-		want        bool
-	}{{
-		desc:        "empty sig",
-		sigScript:   nil,
-		trustedKeys: privToPub(keys),
-		want:        false,
-	}, {
-		desc:        "wrong trusted keys",
-		sigScript:   sig,
-		trustedKeys: privToPub([]*btcec.PrivateKey{newPrivKey(t)}),
-		want:        false,
-	}, {
-		desc:        "one-of-one trusted keys",
-		sigScript:   sig,
-		trustedKeys: privToPub(keys),
-		want:        true,
-	}, {
-		desc:        "one-of-two trusted keys",
-		sigScript:   sig,
-		trustedKeys: privToPub(append(keys, newPrivKey(t))),
-		want:        true,
-	}}
-
-	for _, c := range cases {
-		block.SignatureScript = c.sigScript
-		got := IsSignedByTrustedHost(block, c.trustedKeys)
-
-		if got != c.want {
-			t.Errorf("%s: got %v want %v", c.desc, got, c.want)
-		}
-	}
-}
-
-func privToPub(privs []*btcec.PrivateKey) []*btcec.PublicKey {
-	var public []*btcec.PublicKey
-	for _, priv := range privs {
-		public = append(public, priv.PubKey())
-	}
-	return public
-}
-
-func newPrivKey(t *testing.T) *btcec.PrivateKey {
-	key, err := btcec.NewPrivateKey(btcec.S256())
-	if err != nil {
-		t.Fatal(err)
-	}
-	return key
-}
-
 func BenchmarkGenerateBlock(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		benchGenBlock(b)
@@ -378,7 +190,7 @@ func benchGenBlock(b *testing.B) {
 	withContext(b, fix, func(ctx context.Context) {
 		now := time.Now()
 		b.StartTimer()
-		_, err := GenerateBlock(ctx, now)
+		_, err := FC().GenerateBlock(ctx, now)
 		b.StopTimer()
 		if err != nil {
 			b.Fatal(err)

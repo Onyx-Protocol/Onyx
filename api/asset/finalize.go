@@ -6,8 +6,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/api/appdb"
-	"chain/api/asset/nodetxlog"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
 	"chain/api/utxodb"
@@ -15,7 +13,6 @@ import (
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
-	"chain/fedchain/validation"
 	"chain/metrics"
 )
 
@@ -30,8 +27,6 @@ func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, er
 
 	if len(txTemplate.Inputs) > len(txTemplate.Unsigned.Inputs) {
 		return nil, errors.WithDetail(ErrBadTx, "too many inputs in template")
-	} else if len(txTemplate.Unsigned.Outputs) != len(txTemplate.OutRecvs) {
-		return nil, errors.Wrapf(ErrBadTx, "txTemplate has %d outputs but output receivers list has %d", len(txTemplate.Unsigned.Outputs), len(txTemplate.OutRecvs))
 	}
 
 	msg, err := txbuilder.AssembleSignatures(txTemplate)
@@ -39,94 +34,56 @@ func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, er
 		return nil, errors.WithDetail(ErrBadTx, err.Error())
 	}
 
-	err = publishTx(ctx, msg, txTemplate.OutRecvs)
+	err = publishTx(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 	return msg, nil
 }
 
-func publishTx(ctx context.Context, msg *bc.Tx, receivers []txbuilder.Receiver) (err error) {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-	defer dbtx.Rollback(ctx)
+func publishTx(ctx context.Context, msg *bc.Tx) error {
+	err := fc.AddTx(ctx, msg)
+	return errors.Wrap(err, "add tx to fedchain")
+}
 
-	poolView, err := txdb.NewPoolViewForPrevouts(ctx, []*bc.Tx{msg})
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	bcView, err := txdb.NewViewForPrevouts(ctx, []*bc.Tx{msg})
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	view := state.MultiReader(poolView, bcView)
-	// TODO(kr): get current block hash for last argument to ValidateTx
-	err = validation.ValidateTx(ctx, view, msg, uint64(time.Now().Unix()), nil)
-	if err != nil {
-		return errors.Wrapf(ErrBadTx, "validate tx: %v", err)
-	}
-
-	// Update persistent tx pool state
-	deleted, inserted, err := applyTx(ctx, msg, receivers)
-	if err != nil {
-		return errors.Wrap(err, "apply TX")
-	}
-
-	err = nodetxlog.Write(ctx, msg, time.Now())
-	if err != nil {
-		return errors.Wrap(err, "writing activitiy")
-	}
-
-	if msg.IsIssuance() {
-		asset, amt := issued(msg.Outputs)
-		err = appdb.UpdateIssuances(
-			ctx,
-			map[bc.AssetID]int64{asset: int64(amt)},
-			false,
-		)
-		if err != nil {
-			return errors.Wrap(err, "update issuances")
+func addAccountData(ctx context.Context, tx *bc.Tx) error {
+	txdbMap := make(map[bc.Outpoint]*txdb.Output, len(tx.Outputs))
+	txdbOuts := make([]*txdb.Output, 0, len(tx.Outputs))
+	for i, out := range tx.Outputs {
+		txdbOutput := &txdb.Output{
+			Output: state.Output{
+				TxOutput: *out,
+				Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(i)},
+			},
 		}
+		txdbMap[txdbOutput.Outpoint] = txdbOutput
+		txdbOuts = append(txdbOuts, txdbOutput)
 	}
 
-	// Fetch account data for deleted UTXOs so we can apply the deletions to
-	// the reservation system.
-	delUTXOs, err := getUTXOsForDeletion(ctx, deleted)
+	err := loadAccountInfoFromAddrs(ctx, txdbMap)
 	if err != nil {
-		return errors.Wrap(err, "get UTXOs for deletion")
+		return errors.Wrap(err, "loading account info from addresses")
 	}
 
-	// Repack the inserted UTXO data into a format the reservation system can
-	// understand.
-	var insUTXOs []*utxodb.UTXO
-	for _, o := range inserted {
-		// The reserver is only interested in outputs that have a defined
-		// account ID. Outputs with blank account IDs are external to this
-		// manager node.
-		if o.AccountID == "" {
+	err = txdb.InsertAccountOutputs(ctx, txdbOuts)
+	if err != nil {
+		return errors.Wrap(err, "updating pool outputs")
+	}
+
+	// build up delete list
+	for _, in := range tx.Inputs {
+		if in.IsIssuance() {
 			continue
 		}
-
-		insUTXOs = append(insUTXOs, &utxodb.UTXO{
-			Outpoint:  o.Outpoint,
-			AssetID:   o.AssetID,
-			Amount:    o.Amount,
-			AccountID: o.AccountID,
-			AddrIndex: o.AddrIndex,
+		txdbOuts = append(txdbOuts, &txdb.Output{
+			Output: state.Output{
+				Outpoint: in.Previous,
+				Spent:    true,
+			},
 		})
 	}
 
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	// Update reservation state
-	utxoDB.Apply(delUTXOs, insUTXOs)
+	applyToReserver(ctx, txdbOuts)
 	return nil
 }
 

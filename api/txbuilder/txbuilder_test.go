@@ -32,10 +32,6 @@ type testRecv struct {
 }
 
 func (tr *testRecv) PKScript() []byte { return tr.script }
-func (tr *testRecv) AccumulateUTXO(ctx context.Context, op *bc.Outpoint, out *bc.TxOutput, inserters []UTXOInserter) ([]UTXOInserter, error) {
-	return inserters, nil
-}
-func (tr *testRecv) MarshalJSON() ([]byte, error) { return []byte{}, nil }
 
 type testReserver struct{}
 
@@ -110,10 +106,6 @@ func TestBuild(t *testing.T) {
 		Inputs: []*Input{{
 			SigScriptSuffix: []byte("redeem"),
 		}},
-		OutRecvs: []Receiver{
-			&testRecv{script: []byte("dest")},
-			&testRecv{script: []byte("change")},
-		},
 	}
 	err = setSignatureData(ctx, want)
 	if err != nil {
@@ -128,10 +120,6 @@ func TestBuild(t *testing.T) {
 
 	if !reflect.DeepEqual(got.Inputs, want.Inputs) {
 		t.Errorf("got inputs:\n\t%#v\nwant inputs:\n\t%#v", got.Inputs, want.Inputs)
-	}
-
-	if !reflect.DeepEqual(got.OutRecvs, want.OutRecvs) {
-		t.Errorf("got out recvs:\n\t%#v\nwant out recvs:\n\t%#v", got.OutRecvs, want.OutRecvs)
 	}
 }
 
@@ -163,20 +151,16 @@ func TestCombine(t *testing.T) {
 			{AssetAmount: bc.AssetAmount{AssetID: [32]byte{255}, Amount: 6}},
 		},
 	}
-	recv1 := &testRecv{}
-	recv2 := &testRecv{}
 
 	tpl1 := &Template{
 		Unsigned:   unsigned1,
 		Inputs:     []*Input{{}},
-		OutRecvs:   []Receiver{recv1},
 		BlockChain: "sandbox",
 	}
 
 	tpl2 := &Template{
 		Unsigned:   unsigned2,
 		Inputs:     []*Input{{}},
-		OutRecvs:   []Receiver{recv2},
 		BlockChain: "sandbox",
 	}
 
@@ -189,7 +173,6 @@ func TestCombine(t *testing.T) {
 	want := &Template{
 		Unsigned:   combined,
 		Inputs:     []*Input{{}, {}},
-		OutRecvs:   []Receiver{recv1, recv2},
 		BlockChain: "sandbox",
 	}
 
@@ -220,7 +203,6 @@ func TestAssembleSignatures(t *testing.T) {
 				DER:            mustDecodeHex("3044022004da5732f6c988b9e2882f5ca4f569b9525d313940e0372d6a84fef73be78f8f02204656916481dc573d771ec42923a8f5af31ae634241a4cb30ea5b359363cf064d"),
 			}},
 		}},
-		OutRecvs: []Receiver{nil}, // pays to external party
 	}
 
 	tx, err := AssembleSignatures(tpl)

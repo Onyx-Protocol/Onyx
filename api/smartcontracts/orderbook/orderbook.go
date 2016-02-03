@@ -1,14 +1,18 @@
 package orderbook
 
 import (
+	"bytes"
+
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/crypto/hash160"
 	chainjson "chain/encoding/json"
 	"chain/errors"
+	"chain/fedchain"
 	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
+	"chain/log"
 )
 
 type (
@@ -55,6 +59,32 @@ var (
 
 // Maximum number of entries in an OrderInfo Prices list.
 const MaxPrices = 1 // TODO(bobg): Support multiple prices per order.
+
+var fc *fedchain.FC
+
+func ConnectFedchain(chain *fedchain.FC) {
+	fc = chain
+	fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
+		// TODO: handle contracts with multiple prices
+		contract, err := buildContract(1)
+		if err != nil {
+			log.Error(ctx, err)
+			return
+		}
+		contractHash := txscript.Hash160(contract)
+
+		for i, out := range tx.Outputs {
+			isContract, hash, _ := txscript.TestPayToContract(out.Script)
+			if isContract && bytes.Equal(hash[:], contractHash[:]) {
+				err := addOrderbookUTXO(ctx, tx.Hash, i, out)
+				if err != nil {
+					log.Error(ctx, errors.Wrap(err, "adding orderbook utxo"))
+					return
+				}
+			}
+		}
+	})
+}
 
 func (info *OrderInfo) generateScript(ctx context.Context, sellerScript []byte) (pkScript, contract, contractHash []byte, err error) {
 	var params [][]byte

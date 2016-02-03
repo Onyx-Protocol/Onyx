@@ -75,7 +75,7 @@ func Write(ctx context.Context, tx *bc.Tx, ts time.Time) error {
 	nodeAccounts := make(map[string][]string)
 	var accountIDs []string
 	for _, utxo := range append(ins, outs...) {
-		if utxo.AccountID != "" {
+		if utxo != nil && utxo.AccountID != "" {
 			accountIDs = append(accountIDs, utxo.AccountID)
 		}
 	}

@@ -11,7 +11,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
+	"chain/fedchain/state"
 	"chain/metrics"
 	"chain/net/trace/span"
 	"chain/strings"
@@ -121,7 +121,7 @@ func LatestBlock(ctx context.Context) (*bc.Block, error) {
 	return b, nil
 }
 
-func InsertBlock(ctx context.Context, block *bc.Block) error {
+func InsertBlock(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -131,14 +131,14 @@ func InsertBlock(ctx context.Context, block *bc.Block) error {
 	`
 	_, err := pg.FromContext(ctx).Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
 	if err != nil {
-		return errors.Wrap(err, "insert query")
+		return nil, errors.Wrap(err, "insert query")
 	}
 
-	err = insertBlockTxs(ctx, block)
-	return errors.Wrap(err, "inserting txs")
+	newHashes, err := insertBlockTxs(ctx, block)
+	return newHashes, errors.Wrap(err, "inserting txs")
 }
 
-func insertBlockTxs(ctx context.Context, block *bc.Block) error {
+func insertBlockTxs(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -153,7 +153,7 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) error {
 			var buf bytes.Buffer
 			_, err := tx.WriteTo(&buf)
 			if err != nil {
-				return errors.Wrap(err, "serializing tx")
+				return nil, errors.Wrap(err, "serializing tx")
 			}
 			data = append(data, buf.Bytes())
 			hashHist = append(hashHist, tx.Hash.String())
@@ -164,11 +164,24 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) error {
 		WITH t AS (SELECT unnest($1::text[]) tx_hash, unnest($2::bytea[]) dat)
 		INSERT INTO txs (tx_hash, data)
 		SELECT tx_hash, dat FROM t
-		WHERE t.tx_hash NOT IN (SELECT tx_hash FROM txs);
+		WHERE t.tx_hash NOT IN (SELECT tx_hash FROM txs)
+		RETURNING tx_hash;
 	`
-	_, err := pg.FromContext(ctx).Exec(ctx, txQ, pg.Strings(hashHist), pg.Byteas(data))
+	var newHashes []bc.Hash
+	rows, err := pg.FromContext(ctx).Query(ctx, txQ, pg.Strings(hashHist), pg.Byteas(data))
 	if err != nil {
-		return errors.Wrap(err, "insert txs")
+		return nil, errors.Wrap(err, "insert txs")
+	}
+	for rows.Next() {
+		var hash bc.Hash
+		err := rows.Scan(&hash)
+		if err != nil {
+			return nil, errors.Wrap(err, "rows scan")
+		}
+		newHashes = append(newHashes, hash)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "rows err check")
 	}
 
 	const blockTxQ = `
@@ -176,7 +189,7 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) error {
 		SELECT unnest($1::text[]), $2;
 	`
 	_, err = pg.FromContext(ctx).Exec(ctx, blockTxQ, pg.Strings(hashInBlock), block.Hash())
-	return errors.Wrap(err, "insert block txs")
+	return nil, errors.Wrap(err, "insert block txs")
 }
 
 // ListBlocks returns a list of the most recent blocks,
@@ -217,7 +230,7 @@ func GetBlock(ctx context.Context, hash string) (*bc.Block, error) {
 	return block, errors.WithDetailf(err, "block hash=%v", hash)
 }
 
-func RemoveBlockSpentOutputs(ctx context.Context, delta []*Output) error {
+func RemoveBlockSpentOutputs(ctx context.Context, delta []*state.Output) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -253,45 +266,19 @@ func RemoveBlockSpentOutputs(ctx context.Context, delta []*Output) error {
 // It returns a new list containing all spent items
 // from delta, plus all newly-inserted unspent outputs
 // from delta, omitting the updated items.
-func InsertBlockOutputs(ctx context.Context, delta []*Output) ([]*Output, error) {
+func InsertBlockOutputs(ctx context.Context, delta []*state.Output) error {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	txHashes := make([]string, 0, len(delta))
-	indexes := make([]uint32, 0, len(delta))
-	for _, out := range delta {
-		txHashes = append(txHashes, out.Outpoint.Hash.String())
-		indexes = append(indexes, out.Outpoint.Index)
-	}
-
 	db := pg.FromContext(ctx)
 
-	var (
-		outs     utxoSet
-		newDelta []*Output
-	)
+	var outs utxoSet
 	for _, out := range delta {
 		if out.Spent {
-			newDelta = append(newDelta, out)
 			continue
 		}
-		outs.txHash = append(outs.txHash, out.Outpoint.Hash.String())
-		outs.index = append(outs.index, out.Outpoint.Index)
-		outs.assetID = append(outs.assetID, out.AssetID.String())
-		outs.amount = append(outs.amount, int64(out.Amount))
-		outs.accountID = append(outs.accountID, out.AccountID)
-		outs.managerNodeID = append(outs.managerNodeID, out.ManagerNodeID)
-		outs.aIndex = append(outs.aIndex, toKeyIndex(out.AddrIndex[:]))
-		outs.script = append(outs.script, out.Script)
-		outs.metadata = append(outs.metadata, out.Metadata)
-
-		isPayToContract, contractHash, _ := txscript.TestPayToContract(out.Script)
-		if isPayToContract {
-			outs.contractHash = append(outs.contractHash, contractHash[:])
-		} else {
-			outs.contractHash = append(outs.contractHash, nil)
-		}
+		addToUTXOSet(&outs, &Output{Output: *out})
 	}
 
 	// Insert the ones not upgraded above.
@@ -312,11 +299,9 @@ func InsertBlockOutputs(ctx context.Context, delta []*Output) ([]*Output, error)
 		)
 		SELECT * FROM new_utxos n WHERE NOT EXISTS
 			(SELECT 1 FROM utxos u WHERE (n.tx_hash, n.index) = (u.tx_hash, u.index))
-		RETURNING tx_hash, index
 	`
 
-	inserted := make(map[bc.Outpoint]bool)
-	rows, err := db.Query(ctx, insertQ1,
+	_, err := db.Exec(ctx, insertQ1,
 		outs.txHash,
 		outs.index,
 		outs.assetID,
@@ -326,24 +311,7 @@ func InsertBlockOutputs(ctx context.Context, delta []*Output) ([]*Output, error)
 		outs.metadata,
 	)
 	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var op bc.Outpoint
-		err := rows.Scan(&op.Hash, &op.Index)
-		if err != nil {
-			return nil, errors.Wrap(err, "rows scan")
-		}
-		inserted[op] = true
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "end rows check")
-	}
-
-	for _, out := range delta {
-		if inserted[out.Outpoint] {
-			newDelta = append(newDelta, out)
-		}
+		return errors.Wrap(err, "insert into utxos")
 	}
 
 	const insertQ2 = `
@@ -351,30 +319,7 @@ func InsertBlockOutputs(ctx context.Context, delta []*Output) ([]*Output, error)
 		    SELECT unnest($1::text[]), unnest($2::bigint[])
 	`
 	_, err = db.Exec(ctx, insertQ2, outs.txHash, outs.index)
-	if err != nil {
-		return nil, err
-	}
-
-	const insertQ3 = `
-		WITH new_acc_utxos AS (
-			SELECT unnest($1::text[]) AS tx_hash,
-			unnest($2::bigint[]) AS index,
-			unnest($3::text[]),
-			unnest($4::bigint[]),
-			unnest($5::text[]),
-			unnest($6::text[]),
-			unnest($7::bigint[])
-		)
-		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, manager_node_id, account_id, addr_index)
-		SELECT * FROM new_acc_utxos n WHERE NOT EXISTS
-		  	(SELECT 1 FROM account_utxos a WHERE (n.tx_hash, n.index) = (a.tx_hash, a.index))
-	`
-	_, err = db.Exec(ctx, insertQ3, outs.txHash, outs.index, outs.assetID, outs.amount, outs.managerNodeID, outs.accountID, outs.aIndex)
-	if err != nil {
-		return nil, err
-	}
-
-	return newDelta, nil
+	return errors.Wrap(err, "insert into blocks_utxos")
 }
 
 // CountBlockTxs returns the total number of confirmed transactions.

@@ -19,7 +19,7 @@ type pool struct {
 	outputs utxosByResvExpires // min heap
 }
 
-func (p *pool) init(ctx context.Context, db DB, k key) error {
+func (rs *Reserver) initPool(ctx context.Context, p *pool, db DB, k key) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -39,10 +39,13 @@ func (p *pool) init(ctx context.Context, db DB, k key) error {
 	p.outputs = nil
 	sort.Sort(byOutpoint(utxos))
 
+	rs.outpointMu.Lock()
+	defer rs.outpointMu.Unlock()
 	for i, utxo := range utxos {
 		if i > 0 && utxos[i-1].Outpoint == utxo.Outpoint {
 			continue
 		}
+		rs.outpointUTXOs[utxo.Outpoint] = utxo
 		heap.Push(&p.outputs, utxo)
 	}
 	p.ready = true

@@ -1,19 +1,16 @@
 package asset
 
 import (
-	"encoding/json"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/api/txbuilder"
-	"chain/api/txdb"
 	"chain/api/utxodb"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
-	"chain/fedchain/state"
 	"chain/fedchain/txscript"
 )
 
@@ -87,39 +84,13 @@ type AccountReceiver struct {
 }
 
 func (receiver *AccountReceiver) PKScript() []byte { return receiver.addr.PKScript }
-func (receiver *AccountReceiver) AccumulateUTXO(ctx context.Context, outpoint *bc.Outpoint, txOutput *bc.TxOutput, utxoInserters []txbuilder.UTXOInserter) ([]txbuilder.UTXOInserter, error) {
-	// Find or create an item in utxoInserters that is an
-	// AccountUTXOInserter
-	var accountUTXOInserter *AccountUTXOInserter
-	for _, inserter := range utxoInserters {
-		var ok bool
-		if accountUTXOInserter, ok = inserter.(*AccountUTXOInserter); ok {
-			break
-		}
-	}
-	if accountUTXOInserter == nil {
-		accountUTXOInserter = &AccountUTXOInserter{}
-		utxoInserters = append(utxoInserters, accountUTXOInserter)
-	}
-	accountUTXOInserter.Add(outpoint, txOutput, receiver)
-	return utxoInserters, nil
-}
-
-func (receiver *AccountReceiver) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		"manager_node_id": receiver.addr.ManagerNodeID,
-		"account_id":      receiver.addr.AccountID,
-		"address_index":   receiver.addr.Index,
-		"type":            "account",
-	})
-}
 
 func NewAccountReceiver(addr *appdb.Address) *AccountReceiver {
 	return &AccountReceiver{addr: addr}
 }
 
 func NewAccountDestination(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, metadata []byte) (*txbuilder.Destination, error) {
-	addr, err := appdb.NewAddress(ctx, accountID, false)
+	addr, err := appdb.NewAddress(ctx, accountID, true)
 	if err != nil {
 		return nil, err
 	}
@@ -130,27 +101,6 @@ func NewAccountDestination(ctx context.Context, assetAmount *bc.AssetAmount, acc
 		Receiver:    receiver,
 	}
 	return result, nil
-}
-
-type AccountUTXOInserter struct {
-	txdbOutputs []*txdb.Output
-}
-
-func (inserter *AccountUTXOInserter) Add(outpoint *bc.Outpoint, txOutput *bc.TxOutput, receiver *AccountReceiver) {
-	txdbOutput := &txdb.Output{
-		Output: state.Output{
-			TxOutput: *txOutput,
-			Outpoint: *outpoint,
-		},
-		ManagerNodeID: receiver.addr.ManagerNodeID,
-		AccountID:     receiver.addr.AccountID,
-	}
-	copy(txdbOutput.AddrIndex[:], receiver.addr.Index)
-	inserter.txdbOutputs = append(inserter.txdbOutputs, txdbOutput)
-}
-
-func (inserter *AccountUTXOInserter) InsertUTXOs(ctx context.Context) ([]*txdb.Output, error) {
-	return inserter.txdbOutputs, txdb.InsertPoolOutputs(ctx, inserter.txdbOutputs)
 }
 
 // CancelReservations cancels any existing reservations

@@ -5,7 +5,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/txbuilder"
@@ -13,7 +12,6 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/fedchain/bc"
-	"chain/net/http/httpjson"
 )
 
 // Data types and functions for marshaling/unmarshaling API requests
@@ -133,45 +131,10 @@ func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, erro
 	return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown destination type `%s`", dest.Type)
 }
 
-type Receiver struct {
-	AccountID     string   `json:"account_id"`
-	AddrIndex     []uint32 `json:"address_index"`
-	ManagerNodeID string   `json:"manager_node_id"`
-	Script        chainjson.HexBytes
-	OrderInfo     *orderbook.OrderInfo `json:"orderbook_info"`
-	Type          string
-}
-
-func (receiver *Receiver) parse() (txbuilder.Receiver, error) {
-	// backwards compatibility fix
-	if receiver.Type == "" && receiver.AccountID != "" {
-		receiver.Type = "account"
-	}
-
-	switch receiver.Type {
-	case "script", "":
-		return asset.NewScriptReceiver(receiver.Script), nil
-	case "account":
-		addr := &appdb.Address{
-			AccountID:     receiver.AccountID,
-			Index:         receiver.AddrIndex,
-			ManagerNodeID: receiver.ManagerNodeID,
-		}
-		return asset.NewAccountReceiver(addr), nil
-	case "orderbook":
-		if receiver.OrderInfo == nil {
-			return nil, httpjson.ErrBadRequest
-		}
-		return orderbook.NewReceiver(receiver.OrderInfo, receiver.Script), nil
-	}
-	return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown receiver type `%s`", receiver.Type)
-}
-
 type Template struct {
 	Unsigned   *bc.TxData `json:"unsigned_hex"`
 	BlockChain string     `json:"block_chain"`
 	Inputs     []*txbuilder.Input
-	OutRecvs   []Receiver `json:"output_receivers"`
 }
 
 func (tpl *Template) parse(ctx context.Context) (*txbuilder.Template, error) {
@@ -179,13 +142,6 @@ func (tpl *Template) parse(ctx context.Context) (*txbuilder.Template, error) {
 		Unsigned:   tpl.Unsigned,
 		BlockChain: tpl.BlockChain,
 		Inputs:     tpl.Inputs,
-	}
-	for _, receiver := range tpl.OutRecvs {
-		parsed, err := receiver.parse()
-		if err != nil {
-			return nil, err
-		}
-		result.OutRecvs = append(result.OutRecvs, parsed)
 	}
 	return result, nil
 }

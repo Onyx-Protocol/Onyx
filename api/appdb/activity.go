@@ -2,10 +2,10 @@ package appdb
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"golang.org/x/net/context"
 
+	"chain/api/txdb"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
@@ -57,72 +57,74 @@ type ActAccount struct {
 // GetActUTXOs returns information about outputs from both sides of a transaciton.
 func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err error) {
 	var (
-		txHashStr  = tx.Hash.String()
 		isIssuance = tx.IsIssuance()
-
-		hashes  []string
-		indexes []uint32
+		hashes     []string
 	)
+
+	all := make(map[bc.Outpoint]*ActUTXO)
+	scriptMap := make(map[string]bc.Outpoint)
+	var scripts [][]byte
 
 	if !isIssuance {
 		for _, in := range tx.Inputs {
 			hashes = append(hashes, in.Previous.Hash.String())
-			indexes = append(indexes, in.Previous.Index)
 		}
 	}
 
-	for i := range tx.Outputs {
-		hashes = append(hashes, txHashStr)
-		indexes = append(indexes, uint32(i))
+	for i, out := range tx.Outputs {
+		all[bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}] = &ActUTXO{
+			AssetID: out.AssetID.String(),
+			Amount:  out.Amount,
+			Script:  out.Script,
+		}
+		scriptMap[string(out.Script)] = bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
+		scripts = append(scripts, out.Script)
 	}
 
-	// Both confirmed (blockchain) utxos and unconfirmed (pool) utxos
-	const q = `
-		WITH outpoints AS (SELECT unnest($1::text[]), unnest($2::bigint[]))
-			SELECT u.tx_hash, u.index,
-				u.asset_id, u.amount, u.script,
-				a.account_id, a.manager_node_id
-			FROM utxos u
-			JOIN account_utxos a ON (u.tx_hash, u.index) = (a.tx_hash, a.index)
-			WHERE (u.tx_hash, u.index) IN (TABLE outpoints)
-	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(hashes), pg.Uint32s(indexes))
+	txs, err := txdb.GetTxs(ctx, hashes...) // modifies hashes
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "select query")
+		return nil, nil, err
 	}
-	defer rows.Close()
+	for _, in := range tx.Inputs {
+		if in.IsIssuance() {
+			continue
+		}
+		out := txs[in.Previous.Hash.String()].Outputs[in.Previous.Index]
+		all[in.Previous] = &ActUTXO{
+			Amount:  out.Amount,
+			AssetID: out.AssetID.String(),
+			Script:  out.Script,
+		}
+		scriptMap[string(out.Script)] = in.Previous
+		scripts = append(scripts, out.Script)
+	}
 
-	all := make(map[bc.Outpoint]*ActUTXO)
+	const scriptQ = `
+		SELECT pk_script, account_id, manager_node_id FROM addresses WHERE pk_script=ANY($1)
+	`
+	rows, err := pg.FromContext(ctx).Query(ctx, scriptQ, pg.Byteas(scripts))
+	if err != nil {
+		return nil, nil, err
+	}
 	for rows.Next() {
 		var (
-			hash  bc.Hash
-			index uint32
-			utxo  = new(ActUTXO)
+			script             []byte
+			accountID, mNodeID string
 		)
-		err := rows.Scan(
-			&hash, &index,
-			&utxo.AssetID, &utxo.Amount, &utxo.Script,
-			&utxo.AccountID, &utxo.ManagerNodeID,
-		)
+		err := rows.Scan(&script, &accountID, &mNodeID)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "row scan")
+			return nil, nil, err
 		}
-
-		all[bc.Outpoint{Hash: hash, Index: index}] = utxo
+		utxo := all[scriptMap[string(script)]]
+		utxo.AccountID = accountID
+		utxo.ManagerNodeID = mNodeID
 	}
-	if rows.Err() != nil {
-		return nil, nil, errors.Wrap(rows.Err(), "end row scan loop")
-	}
-
-	if len(all) != len(hashes) {
-		err := fmt.Errorf("found %d utxos for %d outpoints", len(all), len(hashes))
-		return nil, nil, errors.Wrap(err)
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
 	}
 
-	if !isIssuance {
-		for _, in := range tx.Inputs {
-			ins = append(ins, all[in.Previous])
-		}
+	for _, in := range tx.Inputs {
+		ins = append(ins, all[in.Previous]) // nil for issuance
 	}
 
 	for i := range tx.Outputs {

@@ -67,8 +67,10 @@ func getSortID(ctx context.Context, t testing.TB, assetID bc.AssetID) (sortID st
 }
 
 func TestListAssets(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	in1 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-1", nil, nil)
@@ -167,8 +169,10 @@ func TestListAssets(t *testing.T) {
 }
 
 func TestGetAssets(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 
@@ -222,8 +226,10 @@ func TestGetAssets(t *testing.T) {
 }
 
 func TestGetAsset(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
@@ -255,8 +261,10 @@ func TestGetAsset(t *testing.T) {
 
 // What happens to confirmation numbers when a block lands.
 func TestUpdateIssuancesBlock(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
@@ -309,8 +317,10 @@ func TestUpdateIssuancesBlock(t *testing.T) {
 
 // What happens to pool/unconfirmed numbers when a block lands.
 func TestUpdateIssuancesPoolBlock(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
@@ -363,8 +373,10 @@ func TestUpdateIssuancesPoolBlock(t *testing.T) {
 
 // What happens to pool/unconfirmed numbers when a tx lands.
 func TestUpdateIssuancesPoolTx(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
@@ -489,8 +501,10 @@ func TestArchiveAsset(t *testing.T) {
 }
 
 func TestAssetBalance(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-0", nil, nil)
@@ -534,7 +548,7 @@ func TestAssetBalance(t *testing.T) {
 		},
 	})
 
-	err := applyTx(ctx, tx, nil)
+	err := store.ApplyTx(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -760,8 +774,10 @@ func (a balancesByAssetID) Less(i, j int) bool {
 }
 
 func TestAccountBalanceByAssetID(t *testing.T) {
-	ctx := assettest.NewContextWithGenesisBlock(t)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	account1 := assettest.CreateAccountFixture(ctx, t, "", "", nil)
 	account2 := assettest.CreateAccountFixture(ctx, t, "", "", nil)
