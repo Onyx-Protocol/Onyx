@@ -6,7 +6,6 @@
 //   admin node
 //   manager node (with keys)
 //   issuer node (with keys)
-//   genesis block
 package main
 
 import (
@@ -15,10 +14,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
-
-	"github.com/btcsuite/btcutil/hdkeychain"
-	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/database/pg"
@@ -26,8 +21,10 @@ import (
 	"chain/env"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
-	"chain/fedchain/bc"
 	"chain/log"
+
+	"github.com/btcsuite/btcutil/hdkeychain"
+	"golang.org/x/net/context"
 )
 
 // config vars
@@ -86,36 +83,20 @@ func main() {
 		fatal(err)
 	}
 
-	block := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Version:   bc.NewBlockVersion,
-			Timestamp: uint64(time.Now().Unix()),
-		},
-	}
-	const q = `
-		INSERT INTO blocks (block_hash, height, data, header)
-		VALUES ($1, $2, $3, $4)
-	`
-	_, err = pg.FromContext(ctx).Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
-	if err != nil {
-		fatal(err)
-	}
-
 	err = dbtx.Commit(ctx)
 	if err != nil {
 		fatal(err)
 	}
 
 	result, _ := json.MarshalIndent(map[string]string{
-		"userID":           u.ID,
-		"tokenID":          tok.ID,
-		"tokenSecret":      tok.Secret,
-		"projectID":        proj.ID,
-		"managerXPRV":      mpriv[0].String(),
-		"managerNodeID":    mn.ID,
-		"issuerXPRV":       ipriv[0].String(),
-		"issuerNodeID":     in.ID,
-		"genesisBlockHash": block.Hash().String(),
+		"userID":        u.ID,
+		"tokenID":       tok.ID,
+		"tokenSecret":   tok.Secret,
+		"projectID":     proj.ID,
+		"managerXPRV":   mpriv[0].String(),
+		"managerNodeID": mn.ID,
+		"issuerXPRV":    ipriv[0].String(),
+		"issuerNodeID":  in.ID,
 	}, "", "  ")
 	fmt.Printf("%s\n", result)
 }
