@@ -37,20 +37,21 @@ var (
 // CreateProject creates a new project and adds the given user as its
 // initial admin member.
 func CreateProject(ctx context.Context, name string, userID string) (*Project, error) {
-	// TODO(jeffomatic): the insert query and call to AddMember should be
-	// wrapped in a database transaction. In order to do this, the pg package
-	// should be updated so that tests do not fail when running operations that
-	// require transactions.
-
 	if name == "" {
 		return nil, errors.Wrap(ErrBadProjectName)
 	}
+
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer dbtx.Rollback(ctx)
 
 	var (
 		q  = `INSERT INTO projects (name) VALUES ($1) RETURNING id`
 		id string
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, name).Scan(&id)
+	err = pg.FromContext(ctx).QueryRow(ctx, q, name).Scan(&id)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert query")
 	}
@@ -60,7 +61,7 @@ func CreateProject(ctx context.Context, name string, userID string) (*Project, e
 		return nil, errors.Wrap(err, "add project creator as member")
 	}
 
-	return &Project{ID: id, Name: name}, nil
+	return &Project{ID: id, Name: name}, dbtx.Commit(ctx)
 }
 
 // ListProjects returns a list of active projects that the given user is a
