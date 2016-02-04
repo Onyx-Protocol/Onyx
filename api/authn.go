@@ -12,6 +12,7 @@ import (
 	"chain/errors"
 	chainhttp "chain/net/http"
 	"chain/net/http/authn"
+	"chain/net/rpc"
 )
 
 var tokenCache *authn.TokenCache
@@ -47,6 +48,14 @@ func tokenAuthn(f chainhttp.HandlerFunc) chainhttp.HandlerFunc {
 		Next:         f,
 		Realm:        "x.chain.com",
 		AuthIDLogKey: "user-id",
+	}.ServeHTTPContext
+}
+
+func rpcAuthn(f chainhttp.HandlerFunc) chainhttp.HandlerFunc {
+	return authn.BasicHandler{
+		Auth:  rpc.Authenticate,
+		Next:  f,
+		Realm: "x.chain.com",
 	}.ServeHTTPContext
 }
 

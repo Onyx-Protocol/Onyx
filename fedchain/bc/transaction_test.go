@@ -3,6 +3,7 @@ package bc_test
 import (
 	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"io/ioutil"
 	"reflect"
 	"testing"
@@ -112,9 +113,20 @@ func TestTransaction(t *testing.T) {
 			t.Errorf("witness hash = %s want %x", g, test.witnessHash)
 		}
 
-		tx1 := new(TxData)
-		err := tx1.UnmarshalText([]byte(test.hex))
+		txJSON, err := json.Marshal(test.tx)
 		if err != nil {
+			t.Errorf("error marshaling tx to json: %s", err)
+		}
+		var txFromJSON Tx
+		if err := json.Unmarshal(txJSON, &txFromJSON); err != nil {
+			t.Errorf("error unmarshaling tx from json: %s", err)
+		}
+		if !reflect.DeepEqual(test.tx, &txFromJSON) {
+			t.Errorf("bc.Tx -> json -> bc.Tx: got=%#v want=%#v", &txFromJSON, test.tx)
+		}
+
+		tx1 := new(TxData)
+		if err := tx1.UnmarshalText([]byte(test.hex)); err != nil {
 			t.Errorf("unexpected err %v", err)
 		}
 		if !reflect.DeepEqual(*tx1, test.tx.TxData) {

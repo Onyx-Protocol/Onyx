@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -118,6 +119,24 @@ func String(name string, value string) *string {
 	funcs = append(funcs, func() bool {
 		if s := os.Getenv(name); s != "" {
 			*p = s
+		}
+		return true
+	})
+	return p
+}
+
+// StringSlice returns a pointer to a slice
+// of strings. It expects env var name to
+// be a list of items delimited by commas.
+// If env var name is missing, StringSlice
+// returns a pointer to an empty slice.
+func StringSlice(name string) *[]string {
+	p := new([]string)
+	funcs = append(funcs, func() bool {
+		if s := os.Getenv(name); s != "" {
+			a := strings.Split(s, ",")
+			log.Println(a)
+			*p = a
 		}
 		return true
 	})

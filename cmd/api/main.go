@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/hex"
 	"expvar"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -30,6 +31,7 @@ import (
 	chainhttp "chain/net/http"
 	"chain/net/http/gzip"
 	"chain/net/http/httpspan"
+	"chain/net/rpc"
 )
 
 var (
@@ -51,6 +53,7 @@ var (
 	traceguideToken = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns      = env.Int("MAXDBCONNS", 10) // set to 100 in prod
 	makeBlocks      = env.Bool("MAKEBLOCKS", true)
+	rpcSecretToken  = env.String("RPC_SECRET", "secret")
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -72,10 +75,24 @@ func init() {
 
 func main() {
 	env.Parse()
+	hostname, err := os.Hostname()
+	if err != nil {
+		panic(err)
+	}
+
+	// Initialize the internode rpc package.
+	processID := fmt.Sprintf("chain-%s-%s-%d", *target, hostname, os.Getpid())
+	rpc.LocalNode = rpc.NodeInfo{
+		ProcessID: processID,
+		Target:    *target,
+		BuildTag:  buildTag,
+	}
+	rpc.SecretToken = *rpcSecretToken
+
 	sql.Register("schemadb", pg.SchemaDriver(buildTag))
 	log.SetPrefix("api-" + buildTag + ": ")
 	log.SetFlags(log.Lshortfile)
-	chainlog.SetPrefix(append([]interface{}{"app", "api", "target", *target, "buildtag", buildTag}, race...)...)
+	chainlog.SetPrefix(append([]interface{}{"app", "api", "target", *target, "buildtag", buildTag, "processID", processID}, race...)...)
 	chainlog.SetOutput(logWriter())
 
 	keyBytes, err := hex.DecodeString(*blockKey)

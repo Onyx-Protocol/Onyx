@@ -40,6 +40,12 @@ func Handler(nouserSecret string) chainhttp.Handler {
 	h.Add("POST", "/", tokenHandler)
 	h.Add("DELETE", "/", tokenHandler)
 
+	rpcHandler := chainhttp.HandlerFunc(rpcAuthn(rpcAuthedHandler()))
+	h.Add("GET", "/rpc/", rpcHandler)
+	h.Add("PUT", "/rpc/", rpcHandler)
+	h.Add("POST", "/rpc/", rpcHandler)
+	h.Add("DELETE", "/rpc/", rpcHandler)
+
 	return h
 }
 
@@ -126,6 +132,14 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	// Orderbook endpoints
 	h.HandleFunc("POST", "/v3/contracts/orderbook", findOrders)
 	h.HandleFunc("POST", "/v3/contracts/orderbook/:accountID", findAccountOrders)
+
+	return h.ServeHTTPContext
+}
+
+func rpcAuthedHandler() chainhttp.HandlerFunc {
+	h := httpjson.NewServeMux(writeHTTPError)
+
+	// RPC routes will be defined in here.
 
 	return h.ServeHTTPContext
 }

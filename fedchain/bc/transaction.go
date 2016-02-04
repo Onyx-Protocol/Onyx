@@ -28,6 +28,15 @@ type Tx struct {
 	Stored bool // whether this tx is on durable storage
 }
 
+func (tx *Tx) UnmarshalText(p []byte) error {
+	if err := tx.TxData.UnmarshalText(p); err != nil {
+		return err
+	}
+
+	tx.Hash = tx.TxData.Hash()
+	return nil
+}
+
 // NewTx returns a new Tx containing data and its hash.
 // If you have already computed the hash, use struct literal
 // notation to make a Tx object directly.
