@@ -216,7 +216,7 @@ func offerAndFind(ctx context.Context, fixtureInfo *contractsFixtureInfo) (*orde
 	}
 
 	req1 := globalFindOrder{
-		OfferedAssetID:  fixtureInfo.aaplAssetID,
+		OfferedAssetIDs: []bc.AssetID{fixtureInfo.aaplAssetID},
 		PaymentAssetIDs: []bc.AssetID{fixtureInfo.usdAssetID},
 	}
 

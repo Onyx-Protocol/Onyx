@@ -10,7 +10,7 @@ import (
 )
 
 type globalFindOrder struct {
-	OfferedAssetID  bc.AssetID   `json:"offered_asset_id"`
+	OfferedAssetIDs []bc.AssetID `json:"offered_asset_ids"`
 	PaymentAssetIDs []bc.AssetID `json:"payment_asset_ids"`
 }
 
@@ -20,7 +20,7 @@ func findOrders(ctx context.Context, req globalFindOrder) ([]*orderbook.OpenOrde
 		// TODO(tessr): find closed orders
 		return nil, errors.Wrap(httpjson.ErrBadRequest, "unimplemented: find all orders")
 	}
-	oc, err := orderbook.FindOpenOrders(ctx, req.OfferedAssetID, req.PaymentAssetIDs)
+	oc, err := orderbook.FindOpenOrders(ctx, req.OfferedAssetIDs, req.PaymentAssetIDs)
 	if err != nil {
 		return nil, errors.Wrap(err, "finding orders by offered and payment asset ids")
 	}

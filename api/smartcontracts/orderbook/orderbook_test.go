@@ -167,7 +167,7 @@ func TestCancel(t *testing.T) {
 
 		expectPaysToAccount(ctx, t, fixtureInfo.sellerAccountID, output.Script)
 
-		foundChan, err := FindOpenOrders(ctx, fixtureInfo.aaplAssetID, nil)
+		foundChan, err := FindOpenOrders(ctx, []bc.AssetID{fixtureInfo.aaplAssetID}, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -176,7 +176,7 @@ func TestCancel(t *testing.T) {
 
 		asset.MakeBlock(ctx, asset.BlockKey)
 
-		foundChan, err = FindOpenOrders(ctx, fixtureInfo.aaplAssetID, nil)
+		foundChan, err = FindOpenOrders(ctx, []bc.AssetID{fixtureInfo.aaplAssetID}, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}

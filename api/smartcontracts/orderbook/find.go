@@ -9,19 +9,36 @@ import (
 )
 
 // Find* errors
-var ErrDuplicateOutpoints = errors.New("multiple orders found with duplicate outpoints") // should be impossible
+var (
+	ErrDuplicateOutpoints = errors.New("multiple orders found with duplicate outpoints") // should be impossible
+	ErrNoAssets           = errors.New("no asset ids specified in find-orders request")
+)
 
-// FindOpenOrders find open orders offering the given offeredAssetID
-// and accepting one or more of the given paymentAssetIDs.  With zero
-// paymentAssetIDs, returns all open orders offering offeredAssetID.
-func FindOpenOrders(ctx context.Context, offeredAssetID bc.AssetID, paymentAssetIDs []bc.AssetID) (<-chan *OpenOrder, error) {
-	extra := `u.asset_id = $1`
-	offeredAssetIDStr := offeredAssetID.String()
-	if len(paymentAssetIDs) == 0 {
-		return findOpenOrdersHelper(ctx, makeQuery(extra), offeredAssetIDStr)
+// FindOpenOrders finds open orders offering one of the given
+// offeredAssetIDs and accepting one or more of the given
+// paymentAssetIDs.  With zero paymentAssetIDs, returns all open
+// orders offering any offeredAssetID.  With zero offeredAssetIDs,
+// returns all open orders accepting any paymentAssetID.
+func FindOpenOrders(ctx context.Context, offeredAssetIDs []bc.AssetID, paymentAssetIDs []bc.AssetID) (<-chan *OpenOrder, error) {
+	var extra string
+	var extraParams []interface{}
+
+	if len(offeredAssetIDs) == 0 {
+		if len(paymentAssetIDs) == 0 {
+			return nil, ErrNoAssets
+		}
+		// Find all open orders that can be paid for with any of the paymentAssetIDs
+		extra = `p.asset_id IN (SELECT unnest($1::text[]))`
+		extraParams = append(extraParams, makeAssetIDStrs(paymentAssetIDs))
+	} else {
+		extra = `u.asset_id IN (SELECT unnest($1::text[]))`
+		extraParams = append(extraParams, makeAssetIDStrs(offeredAssetIDs))
+		if len(paymentAssetIDs) > 0 {
+			extra += ` AND p.asset_id IN (SELECT unnest($2::text[]))`
+			extraParams = append(extraParams, makeAssetIDStrs(paymentAssetIDs))
+		}
 	}
-	extra += ` AND p.asset_id IN (SELECT unnest($2::text[]))`
-	return findOpenOrdersHelper(ctx, makeQuery(extra), offeredAssetIDStr, makeAssetIDStrs(paymentAssetIDs))
+	return findOpenOrdersHelper(ctx, makeQuery(extra), extraParams...)
 }
 
 // FindOpenOrdersBySeller find open orders from the given seller account.
