@@ -1,14 +1,16 @@
-package appdb
+package appdb_test
 
 import (
-	"chain/database/pg"
-	"chain/database/pg/pgtest"
-	"chain/errors"
 	"database/sql"
 	"reflect"
 	"testing"
 
 	"golang.org/x/net/context"
+
+	. "chain/api/appdb"
+	"chain/database/pg"
+	"chain/database/pg/pgtest"
+	"chain/errors"
 )
 
 func TestCreateInvitation(t *testing.T) {
@@ -377,7 +379,7 @@ func TestDeleteInvitation(t *testing.T) {
 	`)
 	defer pgtest.Finish(ctx)
 
-	err := deleteInvitation(ctx, "inv-id-0")
+	err := DeleteInvitation(ctx, "inv-id-0")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,4 +1,4 @@
-package appdb
+package appdb_test
 
 import (
 	"reflect"
@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	. "chain/api/appdb"
 	"chain/database/pg"
 	"chain/fedchain-sandbox/hdkey"
 )
@@ -41,9 +42,9 @@ func TestKeyIndexSQL(t *testing.T) {
 			t.Errorf("key_index(%d) = %v want %v", pair.encoded, got, pair.decoded)
 		}
 
-		got = keyIndex(pair.encoded)
+		got = KeyIndex(pair.encoded)
 		if !reflect.DeepEqual(got, pair.decoded) {
-			t.Errorf("keyIndex(%d) = %v want %v", pair.encoded, got, pair.decoded)
+			t.Errorf("KeyIndex(%d) = %v want %v", pair.encoded, got, pair.decoded)
 		}
 
 		var got2 int64

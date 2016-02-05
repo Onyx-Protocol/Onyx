@@ -1,4 +1,4 @@
-package appdb
+package appdb_test
 
 import (
 	"reflect"
@@ -8,6 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
 
+	. "chain/api/appdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -372,7 +373,7 @@ func TestPasswordResetFlow(t *testing.T) {
 		t.Fatal("unexpected error:", err)
 	}
 
-	err = checkPassword(ctx, "user-id-0", "open-sesame")
+	err = CheckPassword(ctx, "user-id-0", "open-sesame")
 	if err != nil {
 		t.Errorf("check password error got = %v want nil", err)
 	}
@@ -384,7 +385,7 @@ func TestPasswordResetFlow(t *testing.T) {
 	}
 
 	// The second attempt should not have changed anything.
-	err = checkPassword(ctx, "user-id-0", "open-sesame")
+	err = CheckPassword(ctx, "user-id-0", "open-sesame")
 	if err != nil {
 		t.Errorf("check password error got = %v want nil", err)
 	}

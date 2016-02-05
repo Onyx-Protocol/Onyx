@@ -1,4 +1,4 @@
-package appdb
+package appdb_test
 
 import (
 	"database/sql"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/lib/pq"
 
+	. "chain/api/appdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 )

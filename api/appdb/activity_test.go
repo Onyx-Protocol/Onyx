@@ -1,4 +1,4 @@
-package appdb
+package appdb_test
 
 import (
 	"encoding/hex"
@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	. "chain/api/appdb"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain/bc"

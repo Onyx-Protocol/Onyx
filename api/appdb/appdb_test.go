@@ -1,4 +1,4 @@
-package appdb
+package appdb_test
 
 // Utility functions for testing the appdb package.
 
@@ -7,6 +7,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	. "chain/api/appdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/fedchain-sandbox/hdkey"

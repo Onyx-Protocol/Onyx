@@ -149,7 +149,12 @@ func NewContextWithGenesisBlock(tb testing.TB) context.Context {
 	return ctx
 }
 
-func CreateAccountUTXOFixture(ctx context.Context, t *testing.T, accountID string, op bc.Outpoint, assetID bc.AssetID, amount uint64) {
+var opIndexCounter = createCounter()
+
+func CreateAccountUTXOFixture(ctx context.Context, t *testing.T, accountID string, assetID bc.AssetID, amt uint64, confirmed bool) bc.Outpoint {
+	if accountID == "" {
+		accountID = CreateAccountFixture(ctx, t, "", "x", []string{testutil.TestXPub.String()})
+	}
 	addr := &appdb.Address{AccountID: accountID}
 	err := appdb.CreateAddress(ctx, addr, false)
 	if err != nil {
@@ -157,10 +162,9 @@ func CreateAccountUTXOFixture(ctx context.Context, t *testing.T, accountID strin
 	}
 	output := &txdb.Output{
 		Output: state.Output{
-			Outpoint: op,
+			Outpoint: bc.Outpoint{Index: uint32(<-opIndexCounter)},
 			TxOutput: bc.TxOutput{
-				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: amount},
-				Script:      addr.PKScript,
+				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: amt},
 			},
 		},
 		ManagerNodeID: addr.ManagerNodeID,
@@ -168,10 +172,15 @@ func CreateAccountUTXOFixture(ctx context.Context, t *testing.T, accountID strin
 	}
 	copy(output.AddrIndex[:], addr.Index[0:2])
 
-	// ignore error from potential duplicate
-	txdb.InsertPoolTx(ctx, &bc.Tx{Hash: op.Hash, TxData: bc.TxData{}})
-	err = txdb.InsertPoolOutputs(ctx, []*txdb.Output{output})
-	if err != nil {
-		testutil.FatalErr(t, err)
+	if !confirmed {
+		// ignore error from potential duplicate
+		txdb.InsertPoolTx(ctx, &bc.Tx{Hash: output.Outpoint.Hash, TxData: bc.TxData{}})
+		err = txdb.InsertPoolOutputs(ctx, []*txdb.Output{output})
+		if err != nil {
+			testutil.FatalErr(t, err)
+		}
+	} else {
+		_, err = txdb.InsertBlockOutputs(ctx, &bc.Block{}, []*txdb.Output{output})
 	}
+	return output.Outpoint
 }

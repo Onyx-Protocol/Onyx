@@ -1,4 +1,4 @@
-package appdb
+package appdb_test
 
 import (
 	"database/sql"
@@ -7,6 +7,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	. "chain/api/appdb"
 	"chain/database/pg"
 	"chain/errors"
 )

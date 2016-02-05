@@ -1,4 +1,4 @@
-package appdb
+package appdb_test
 
 import (
 	"reflect"
@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	. "chain/api/appdb"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"

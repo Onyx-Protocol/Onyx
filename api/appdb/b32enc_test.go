@@ -1,4 +1,4 @@
-package appdb
+package appdb_test
 
 import (
 	"testing"

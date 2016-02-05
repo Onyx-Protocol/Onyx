@@ -1,4 +1,4 @@
-package appdb
+package appdb_test
 
 import (
 	"encoding/hex"
@@ -7,7 +7,10 @@ import (
 
 	"golang.org/x/net/context"
 
+	. "chain/api/appdb"
+	"chain/api/asset/assettest"
 	"chain/database/pg"
+	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
@@ -51,7 +54,7 @@ func TestAssetByID(t *testing.T) {
 		}
 
 		// missing asset id
-		_, err = AssetByID(ctx, bc.AssetID{1})
+		_, err = AssetByID(ctx, [32]byte{1})
 		if errors.Root(err) != pg.ErrUserInputNotFound {
 			t.Errorf("got error = %v want %v", errors.Root(err), pg.ErrUserInputNotFound)
 		}
@@ -628,14 +631,17 @@ func TestAssetBalance(t *testing.T) {
 }
 
 func TestAccountBalanceByAssetID(t *testing.T) {
-	const fix = `
-		INSERT INTO utxos (tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, confirmed, block_hash, block_height)
-		VALUES ('tx-0', 0, '0100000000000000000000000000000000000000000000000000000000000000', 10, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
-		       ('tx-1', 1, '0100000000000000000000000000000000000000000000000000000000000000', 5, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
-		       ('tx-2', 2, '0200000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
-		       ('tx-3', 3, '0300000000000000000000000000000000000000000000000000000000000000', 2, 0, 'account-0', 'mnode-0', TRUE, 'bh1', 1),
-		       ('tx-4', 4, '0400000000000000000000000000000000000000000000000000000000000000', 3, 0, 'account-1', 'mnode-1', TRUE, 'bh1', 1);
-	`
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	account1 := assettest.CreateAccountFixture(ctx, t, "", "", nil)
+	account2 := assettest.CreateAccountFixture(ctx, t, "", "", nil)
+
+	assettest.CreateAccountUTXOFixture(ctx, t, account1, [32]byte{1}, 10, true)
+	assettest.CreateAccountUTXOFixture(ctx, t, account1, [32]byte{1}, 5, true)
+	assettest.CreateAccountUTXOFixture(ctx, t, account1, [32]byte{2}, 1, true)
+	assettest.CreateAccountUTXOFixture(ctx, t, account1, [32]byte{3}, 2, true)
+	assettest.CreateAccountUTXOFixture(ctx, t, account2, [32]byte{4}, 3, true)
 
 	examples := []struct {
 		accountID string
@@ -643,7 +649,7 @@ func TestAccountBalanceByAssetID(t *testing.T) {
 		want      []*Balance
 	}{
 		{
-			accountID: "account-0",
+			accountID: account1,
 			assetIDs: []string{
 				bc.AssetID([32]byte{1}).String(),
 				bc.AssetID([32]byte{2}).String(),
@@ -657,19 +663,19 @@ func TestAccountBalanceByAssetID(t *testing.T) {
 			},
 		},
 		{
-			accountID: "account-0",
+			accountID: account1,
 			assetIDs:  []string{bc.AssetID([32]byte{1}).String()},
 			want: []*Balance{
 				{AssetID: [32]byte{1}, Total: 15, Confirmed: 15},
 			},
 		},
 		{
-			accountID: "account-0",
+			accountID: account1,
 			assetIDs:  []string{bc.AssetID([32]byte{4}).String()},
 			want:      nil,
 		},
 		{
-			accountID: "account-1",
+			accountID: account2,
 			assetIDs: []string{
 				bc.AssetID([32]byte{1}).String(),
 				bc.AssetID([32]byte{2}).String(),
@@ -682,26 +688,24 @@ func TestAccountBalanceByAssetID(t *testing.T) {
 		},
 	}
 
-	withContext(t, fix, func(ctx context.Context) {
-		for i, ex := range examples {
-			t.Log("Example", i)
+	for i, ex := range examples {
+		t.Log("Example", i)
 
-			got, last, err := AssetBalance(ctx, &AssetBalQuery{
-				Owner:    OwnerAccount,
-				OwnerID:  ex.accountID,
-				AssetIDs: ex.assetIDs,
-			})
-			if err != nil {
-				t.Fatal("unexpected error:", err)
-			}
-
-			if !reflect.DeepEqual(got, ex.want) {
-				t.Errorf("asset IDs:\ngot:  %v\nwant: %v", got, ex.want)
-			}
-
-			if last != "" {
-				t.Errorf("got last = %q want blank", last)
-			}
+		got, last, err := AssetBalance(ctx, &AssetBalQuery{
+			Owner:    OwnerAccount,
+			OwnerID:  ex.accountID,
+			AssetIDs: ex.assetIDs,
+		})
+		if err != nil {
+			t.Fatal("unexpected error:", err)
 		}
-	})
+
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("asset IDs:\ngot:  %v\nwant: %v", got, ex.want)
+		}
+
+		if last != "" {
+			t.Errorf("got last = %q want blank", last)
+		}
+	}
 }

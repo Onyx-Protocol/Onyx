@@ -1,14 +1,16 @@
-package appdb
+package appdb_test
 
 import (
-	"chain/database/pg"
-	"chain/database/pg/pgtest"
-	"chain/errors"
 	"encoding/json"
 	"reflect"
 	"testing"
 
 	"golang.org/x/net/context"
+
+	. "chain/api/appdb"
+	"chain/database/pg"
+	"chain/database/pg/pgtest"
+	"chain/errors"
 )
 
 const sampleTxFixture = `

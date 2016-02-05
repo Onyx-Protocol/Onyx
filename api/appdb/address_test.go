@@ -1,4 +1,4 @@
-package appdb
+package appdb_test
 
 import (
 	"reflect"
@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	. "chain/api/appdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/fedchain-sandbox/hdkey"
@@ -32,7 +33,7 @@ func TestAddressLoadNextIndex(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	// Force predictable values.
-	addrIndexNext, addrIndexCap = 1, 100
+	ResetAddrIndex()
 
 	exp := time.Now().Add(5 * time.Minute)
 	addr := &Address{
@@ -69,7 +70,7 @@ func TestAddressInsert(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	// Force predictable values.
-	addrIndexNext, addrIndexCap = 1, 100
+	ResetAddrIndex()
 
 	addr := &Address{
 		AccountID:        "acc1",
@@ -109,7 +110,7 @@ func TestCreateAddress(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	// Force predictable values.
-	addrIndexNext, addrIndexCap = 1, 100
+	ResetAddrIndex()
 	_, err := pg.FromContext(ctx).Exec(ctx, `ALTER SEQUENCE manager_nodes_key_index_seq RESTART`)
 	if err != nil {
 		t.Fatal(err)
