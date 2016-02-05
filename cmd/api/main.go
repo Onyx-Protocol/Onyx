@@ -74,6 +74,7 @@ func init() {
 }
 
 func main() {
+	ctx := context.Background()
 	env.Parse()
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -97,7 +98,7 @@ func main() {
 
 	keyBytes, err := hex.DecodeString(*blockKey)
 	if err != nil {
-		log.Fatalln("error:", err)
+		chainlog.Fatal(ctx, "error", err)
 	}
 
 	privKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes) // second assignment is pubkey, not error
@@ -127,11 +128,10 @@ func main() {
 	sql.EnableQueryLogging(*logQueries)
 	db, err := sql.Open("schemadb", *dbURL)
 	if err != nil {
-		log.Fatal(err)
+		chainlog.Fatal(ctx, "error", err)
 	}
 	db.SetMaxOpenConns(*maxDBConns)
 	db.SetMaxIdleConns(100)
-	ctx := context.Background()
 	ctx = pg.NewContext(ctx, db)
 
 	var h chainhttp.Handler
@@ -159,7 +159,7 @@ func main() {
 		err = http.ListenAndServe(*listenAddr, secureheader.DefaultConfig)
 	}
 	if err != nil {
-		log.Fatalln("ListenAndServe:", err)
+		chainlog.Fatal(ctx, "error", "ListenAndServe"+err.Error())
 	}
 }
 
