@@ -4,6 +4,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	"chain/database/pg"
 	"chain/net/http/authn"
 )
 
@@ -24,7 +25,24 @@ func listProjects(ctx context.Context) ([]*appdb.Project, error) {
 // POST /v3/projects
 func createProject(ctx context.Context, in struct{ Name string }) (*appdb.Project, error) {
 	uid := authn.GetAuthID(ctx)
-	return appdb.CreateProject(ctx, in.Name, uid)
+
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer dbtx.Rollback(ctx)
+
+	p, err := appdb.CreateProject(ctx, in.Name, uid)
+	if err != nil {
+		return nil, err
+	}
+
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }
 
 // PUT /v3/projects/:projID
@@ -40,7 +58,19 @@ func archiveProject(ctx context.Context, projID string) error {
 	if err := projectAdminAuthz(ctx, projID); err != nil {
 		return err
 	}
-	return appdb.ArchiveProject(ctx, projID)
+
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer dbtx.Rollback(ctx)
+
+	err = appdb.ArchiveProject(ctx, projID)
+	if err != nil {
+		return err
+	}
+
+	return dbtx.Commit(ctx)
 }
 
 // GET /v3/projects/:projID/members

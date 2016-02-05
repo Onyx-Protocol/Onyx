@@ -107,7 +107,19 @@ func archiveIssuerNode(ctx context.Context, inodeID string) error {
 	if err := issuerAuthz(ctx, inodeID); err != nil {
 		return err
 	}
-	return appdb.ArchiveIssuerNode(ctx, inodeID)
+
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer dbtx.Rollback(ctx)
+
+	err = appdb.ArchiveIssuerNode(ctx, inodeID)
+	if err != nil {
+		return err
+	}
+
+	return dbtx.Commit(ctx)
 }
 
 // GET /v3/issuer-nodes/:inodeID/assets

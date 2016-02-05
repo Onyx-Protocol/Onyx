@@ -94,7 +94,19 @@ func archiveManagerNode(ctx context.Context, mnodeID string) error {
 	if err := managerAuthz(ctx, mnodeID); err != nil {
 		return err
 	}
-	return appdb.ArchiveManagerNode(ctx, mnodeID)
+
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer dbtx.Rollback(ctx)
+
+	err = appdb.ArchiveManagerNode(ctx, mnodeID)
+	if err != nil {
+		return err
+	}
+
+	return dbtx.Commit(ctx)
 }
 
 // GET /v3/projects/:projID/manager-nodes

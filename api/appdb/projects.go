@@ -36,22 +36,20 @@ var (
 
 // CreateProject creates a new project and adds the given user as its
 // initial admin member.
+//
+// Must be called inside a database transaction.
 func CreateProject(ctx context.Context, name string, userID string) (*Project, error) {
+	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
+
 	if name == "" {
 		return nil, errors.Wrap(ErrBadProjectName)
 	}
-
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer dbtx.Rollback(ctx)
 
 	var (
 		q  = `INSERT INTO projects (name) VALUES ($1) RETURNING id`
 		id string
 	)
-	err = pg.FromContext(ctx).QueryRow(ctx, q, name).Scan(&id)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, name).Scan(&id)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert query")
 	}
@@ -61,7 +59,7 @@ func CreateProject(ctx context.Context, name string, userID string) (*Project, e
 		return nil, errors.Wrap(err, "add project creator as member")
 	}
 
-	return &Project{ID: id, Name: name}, dbtx.Commit(ctx)
+	return &Project{ID: id, Name: name}, nil
 }
 
 // ListProjects returns a list of active projects that the given user is a
@@ -130,15 +128,13 @@ func UpdateProject(ctx context.Context, projID, name string) error {
 
 // ArchiveProject marks a project as archived, hiding it from listProjects and
 // archiving all of its managers, issuers, accounts and assets.
+//
+// Must be called inside a database transaction.
 func ArchiveProject(ctx context.Context, projID string) error {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer dbtx.Rollback(ctx)
+	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
 	const q = `UPDATE projects SET archived = true WHERE id = $1 RETURNING 1`
-	err = pg.FromContext(ctx).QueryRow(ctx, q, projID).Scan(new(int))
+	err := pg.FromContext(ctx).QueryRow(ctx, q, projID).Scan(new(int))
 	if err == sql.ErrNoRows {
 		return errors.WithDetailf(pg.ErrUserInputNotFound, "project ID: %v", projID)
 	}
@@ -174,7 +170,7 @@ func ArchiveProject(ctx context.Context, projID string) error {
 		return errors.Wrap(err, "archive assets query")
 	}
 
-	return dbtx.Commit(ctx)
+	return nil
 }
 
 // ListMembers returns a list of members of the given the given project.

@@ -285,15 +285,13 @@ func UpdateManagerNode(ctx context.Context, mnodeID string, label *string) error
 // in the dashboard or for listManagerNodes. They cannot create new
 // accounts or initiate or receive transactions, and their preexisting
 // accounts become archived.
+//
+// Must be called inside a database transaction.
 func ArchiveManagerNode(ctx context.Context, mnodeID string) error {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer dbtx.Rollback(ctx)
+	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
 	const accountQ = `UPDATE accounts SET archived = true WHERE manager_node_id = $1`
-	_, err = pg.FromContext(ctx).Exec(ctx, accountQ, mnodeID)
+	_, err := pg.FromContext(ctx).Exec(ctx, accountQ, mnodeID)
 	if err != nil {
 		return errors.Wrap(err, "archiving accounts")
 	}
@@ -303,7 +301,8 @@ func ArchiveManagerNode(ctx context.Context, mnodeID string) error {
 	if err != nil {
 		return errors.Wrap(err, "archive query")
 	}
-	return dbtx.Commit(ctx)
+
+	return nil
 }
 
 func createRotation(ctx context.Context, managerNodeID string, xpubs ...string) error {

@@ -187,15 +187,13 @@ func UpdateIssuerNode(ctx context.Context, inodeID string, label *string) error 
 // Archived issuer nodes do not appear for their parent projects,
 // in the dashboard or for listIssuerNodes. They cannot create new
 // assets, and their preexisting assets become archived.
+//
+// Must be called inside a database transaction.
 func ArchiveIssuerNode(ctx context.Context, inodeID string) error {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer dbtx.Rollback(ctx)
+	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
 	const assetQ = `UPDATE assets SET archived = true WHERE issuer_node_id = $1`
-	_, err = pg.FromContext(ctx).Exec(ctx, assetQ, inodeID)
+	_, err := pg.FromContext(ctx).Exec(ctx, assetQ, inodeID)
 	if err != nil {
 		return errors.Wrap(err, "archiving assets")
 	}
@@ -206,5 +204,5 @@ func ArchiveIssuerNode(ctx context.Context, inodeID string) error {
 		return errors.Wrap(err, "archive query")
 	}
 
-	return dbtx.Commit(ctx)
+	return nil
 }
