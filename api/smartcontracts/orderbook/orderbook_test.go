@@ -75,10 +75,7 @@ func TestBuy(t *testing.T) {
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		err = assettest.SignTxTemplate(buyTxTemplate, testutil.TestXPrv)
-		if err != nil {
-			testutil.FatalErr(t, err)
-		}
+		assettest.SignTxTemplate(t, buyTxTemplate, testutil.TestXPrv)
 
 		buyTx, err := asset.FinalizeTx(ctx, buyTxTemplate)
 		if err != nil {
@@ -148,10 +145,7 @@ func TestCancel(t *testing.T) {
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		err = assettest.SignTxTemplate(cancelTxTemplate, testutil.TestXPrv)
-		if err != nil {
-			testutil.FatalErr(t, err)
-		}
+		assettest.SignTxTemplate(t, cancelTxTemplate, testutil.TestXPrv)
 		cancelTx, err := asset.FinalizeTx(ctx, cancelTxTemplate)
 		if err != nil {
 			testutil.FatalErr(t, err)
@@ -193,8 +187,8 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 	fixtureInfo.managerNodeID = assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.projectID, "", nil, nil)
 	fixtureInfo.issuerNodeID = assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.projectID, "", nil, nil)
 	fixtureInfo.sellerAccountID = assettest.CreateAccountFixture(ctx, t, fixtureInfo.managerNodeID, "seller", nil)
-	fixtureInfo.aaplAssetID = assettest.CreateAssetFixture(ctx, t, fixtureInfo.issuerNodeID, "")
-	fixtureInfo.usdAssetID = assettest.CreateAssetFixture(ctx, t, fixtureInfo.issuerNodeID, "")
+	fixtureInfo.aaplAssetID = assettest.CreateAssetFixture(ctx, t, fixtureInfo.issuerNodeID, "", "")
+	fixtureInfo.usdAssetID = assettest.CreateAssetFixture(ctx, t, fixtureInfo.issuerNodeID, "", "")
 
 	aapl100 := &bc.AssetAmount{
 		AssetID: fixtureInfo.aaplAssetID,
@@ -227,10 +221,7 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 		testutil.FatalErr(t, err)
 	}
 
-	err = assettest.SignTxTemplate(offerTxTemplate, testutil.TestXPrv)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
+	assettest.SignTxTemplate(t, offerTxTemplate, testutil.TestXPrv)
 
 	fixtureInfo.offerTx, err = asset.FinalizeTx(ctx, offerTxTemplate)
 	if err != nil {

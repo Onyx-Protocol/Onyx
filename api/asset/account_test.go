@@ -21,10 +21,11 @@ func TestAccountSourceReserve(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	accID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
-	op := assettest.CreateAccountUTXOFixture(ctx, t, accID, [32]byte{255}, 2, false)
+	asset := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
+	out := assettest.IssueAssetsFixture(ctx, t, asset, 2, accID)
 
 	assetAmount1 := &bc.AssetAmount{
-		AssetID: [32]byte{255},
+		AssetID: asset,
 		Amount:  1,
 	}
 	source := NewAccountSource(ctx, assetAmount1, accID)
@@ -38,12 +39,12 @@ func TestAccountSourceReserve(t *testing.T) {
 	want := &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{{
 			TxInput: &bc.TxInput{
-				Previous: op,
+				Previous: out.Outpoint,
 			},
 			TemplateInput: nil,
 		}},
 		Change: &txbuilder.Destination{
-			AssetAmount: bc.AssetAmount{AssetID: [32]byte{255}, Amount: 1},
+			AssetAmount: bc.AssetAmount{AssetID: asset, Amount: 1},
 		},
 	}
 

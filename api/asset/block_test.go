@@ -32,7 +32,7 @@ func TestTransferConfirmed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = issue(ctx, info, info.acctA.ID, 10)
+	_, err = issue(ctx, t, info, info.acctA.ID, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func TestTransferConfirmed(t *testing.T) {
 	MakeBlock(ctx, BlockKey)
 	dumpState(ctx, t)
 
-	_, err = transfer(ctx, info, info.acctA.ID, info.acctB.ID, 10)
+	_, err = transfer(ctx, t, info, info.acctA.ID, info.acctB.ID, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestGenSpendApply(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	issueTx, err := issue(ctx, info, info.acctA.ID, 10)
+	issueTx, err := issue(ctx, t, info, info.acctA.ID, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestGenSpendApply(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = transfer(ctx, info, info.acctA.ID, info.acctB.ID, 10)
+	_, err = transfer(ctx, t, info, info.acctA.ID, info.acctB.ID, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,13 +109,13 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 		}
 
 		for i := 0; i < b.N; i++ {
-			tx, err := issue(ctx, info, info.acctA.ID, 10)
+			tx, err := issue(ctx, b, info, info.acctA.ID, 10)
 			if err != nil {
 				b.Fatal(err)
 			}
 			b.Logf("finalized %v", tx.Hash)
 
-			tx, err = transfer(ctx, info, info.acctA.ID, info.acctB.ID, 10)
+			tx, err = transfer(ctx, b, info, info.acctA.ID, info.acctB.ID, 10)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -454,7 +454,7 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 	return info, nil
 }
 
-func issue(ctx context.Context, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
+func issue(ctx context.Context, t testing.TB, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetID := info.asset.Hash
 	assetAmount := &bc.AssetAmount{
 		AssetID: info.asset.Hash,
@@ -468,14 +468,11 @@ func issue(ctx context.Context, info *clientInfo, destAcctID string, amount uint
 	if err != nil {
 		return nil, err
 	}
-	err = assettest.SignTxTemplate(issueTx, info.privKeyIssuer)
-	if err != nil {
-		return nil, err
-	}
+	assettest.SignTxTemplate(t, issueTx, info.privKeyIssuer)
 	return FinalizeTx(ctx, issueTx)
 }
 
-func transfer(ctx context.Context, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
+func transfer(ctx context.Context, t testing.TB, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := &bc.AssetAmount{
 		AssetID: info.asset.Hash,
 		Amount:  amount,
@@ -494,10 +491,7 @@ func transfer(ctx context.Context, info *clientInfo, srcAcctID, destAcctID strin
 		return nil, err
 	}
 
-	err = assettest.SignTxTemplate(xferTx, info.privKeyManager)
-	if err != nil {
-		return nil, err
-	}
+	assettest.SignTxTemplate(t, xferTx, info.privKeyManager)
 
 	return FinalizeTx(ctx, xferTx)
 }

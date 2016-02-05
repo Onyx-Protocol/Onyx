@@ -7,37 +7,23 @@ import (
 	"time"
 
 	. "chain/api/appdb"
-	"chain/database/pg"
+	"chain/api/asset/assettest"
 	"chain/database/pg/pgtest"
 	"chain/fedchain-sandbox/hdkey"
+	"chain/testutil"
 )
 
-var accountFixture = `
-	INSERT INTO manager_nodes (
-		id, project_id, block_chain, sigs_required, key_index,
-		label, current_rotation, next_asset_index, next_account_index,
-		accounts_count, created_at, updated_at
-	)
-	VALUES ('mn1', 'proj-id-0', 'sandbox', 1, 1, 'foo', 'rot1', 0, 1, 1, now(), now());
-	INSERT INTO rotations (id, manager_node_id, keyset)
-	VALUES ('rot1', 'mn1', '{` + dummyXPub.String() + `}');
-	INSERT INTO accounts (
-		id, manager_node_id, key_index, created_at, updated_at,
-		next_address_index, label
-	)
-	VALUES ('acc1', 'mn1', 0, now(), now(), 0, 'foo');
-`
-
 func TestAddressLoadNextIndex(t *testing.T) {
-	ctx := pgtest.NewContext(t, sampleProjectFixture, accountFixture)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	// Force predictable values.
-	ResetAddrIndex()
+	ResetSeqs(ctx, t) // Force predictable values.
+	mn := assettest.CreateManagerNodeFixture(ctx, t, "", "", nil, nil)
+	acc := assettest.CreateAccountFixture(ctx, t, mn, "", nil)
 
 	exp := time.Now().Add(5 * time.Minute)
 	addr := &Address{
-		AccountID: "acc1",
+		AccountID: acc,
 		Amount:    100,
 		Expires:   exp,
 	}
@@ -47,16 +33,16 @@ func TestAddressLoadNextIndex(t *testing.T) {
 	}
 
 	want := &Address{
-		AccountID: "acc1",
+		AccountID: acc,
 		Amount:    100,
 		Expires:   exp,
 
-		ManagerNodeID:    "mn1",
+		ManagerNodeID:    mn,
 		ManagerNodeIndex: []uint32{0, 1},
 		AccountIndex:     []uint32{0, 0},
 		Index:            []uint32{0, 1},
 		SigsRequired:     1,
-		Keys:             []*hdkey.XKey{dummyXPub},
+		Keys:             []*hdkey.XKey{testutil.TestXPub},
 	}
 
 	if !reflect.DeepEqual(addr, want) {
@@ -66,22 +52,23 @@ func TestAddressLoadNextIndex(t *testing.T) {
 
 func TestAddressInsert(t *testing.T) {
 	t0 := time.Now()
-	ctx := pgtest.NewContext(t, sampleProjectFixture, accountFixture)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	// Force predictable values.
-	ResetAddrIndex()
+	ResetSeqs(ctx, t) // Force predictable values.
+	mn := assettest.CreateManagerNodeFixture(ctx, t, "", "", nil, nil)
+	acc := assettest.CreateAccountFixture(ctx, t, mn, "", nil)
 
 	addr := &Address{
-		AccountID:        "acc1",
+		AccountID:        acc,
 		Amount:           100,
 		Expires:          t0.Add(5 * time.Minute),
-		ManagerNodeID:    "mn1",
+		ManagerNodeID:    mn,
 		ManagerNodeIndex: []uint32{0, 1},
 		AccountIndex:     []uint32{0, 0},
 		Index:            []uint32{0, 0},
 		SigsRequired:     1,
-		Keys:             []*hdkey.XKey{dummyXPub},
+		Keys:             []*hdkey.XKey{testutil.TestXPub},
 
 		RedeemScript: []byte{},
 		PKScript:     []byte{},
@@ -104,44 +91,30 @@ var dummyXPub2, _ = hdkey.NewXKey("xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGv
 
 func TestCreateAddress(t *testing.T) {
 	t0 := time.Now()
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	// Force predictable values.
-	ResetAddrIndex()
-	_, err := pg.FromContext(ctx).Exec(ctx, `ALTER SEQUENCE manager_nodes_key_index_seq RESTART`)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	managerNode, err := InsertManagerNode(ctx, "proj-id-0", "foo", []*hdkey.XKey{dummyXPub2}, nil, 0, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	account, err := CreateAccount(ctx, managerNode.ID, "foo", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ResetSeqs(ctx, t) // Force predictable values.
+	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "foo", []*hdkey.XKey{dummyXPub2}, nil)
+	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "foo", nil)
 
 	exp := t0.Add(5 * time.Minute)
 	addr := &Address{
-		AccountID: account.ID,
+		AccountID: acc0,
 		Amount:    100,
 		Expires:   exp,
 	}
 
-	err = CreateAddress(ctx, addr, true)
+	err := CreateAddress(ctx, addr, true)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	want := &Address{
-		AccountID:        account.ID,
+		AccountID:        acc0,
 		Amount:           100,
 		Expires:          exp,
-		ManagerNodeID:    managerNode.ID,
+		ManagerNodeID:    mn0,
 		ManagerNodeIndex: []uint32{0, 1},
 		AccountIndex:     []uint32{0, 0},
 		Index:            []uint32{0, 1},

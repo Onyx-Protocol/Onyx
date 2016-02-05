@@ -1,647 +1,732 @@
 package appdb_test
 
 import (
+	"bytes"
 	"encoding/hex"
 	"reflect"
+	"sort"
 	"testing"
 
 	"golang.org/x/net/context"
 
 	. "chain/api/appdb"
+	"chain/api/asset"
 	"chain/api/asset/assettest"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/testutil"
 )
 
 func TestAssetByID(t *testing.T) {
-	const sql = sampleProjectFixture + `
-		INSERT INTO issuer_nodes (id, project_id, label, keyset, key_index)
-			VALUES ('in1', 'proj-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
-		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label)
-		VALUES(
-			'0000000000000000000000000000000000000000000000000000000000000000',
-			'in1',
-			0,
-			'{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}',
-			decode('51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae', 'hex'),
-			'\x'::bytea,
-			'foo'
-		);
-	`
-	withContext(t, sql, func(ctx context.Context) {
-		got, err := AssetByID(ctx, [32]byte{})
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
 
-		redeem, _ := hex.DecodeString("51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae")
-		key, _ := hdkey.NewXKey("xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd")
-		want := &Asset{
-			Hash:         [32]byte{},
-			IssuerNodeID: "in1",
-			INIndex:      []uint32{0, 0},
-			AIndex:       []uint32{0, 0},
-			RedeemScript: redeem,
-			Keys:         []*hdkey.XKey{key},
-		}
+	ResetSeqs(ctx, t)
+	xpubs := testutil.XPubs("xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd")
+	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", xpubs, nil)
+	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "")
 
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got asset = %+v want %+v", got, want)
-		}
+	got, err := AssetByID(ctx, asset0)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
 
-		// missing asset id
-		_, err = AssetByID(ctx, [32]byte{1})
-		if errors.Root(err) != pg.ErrUserInputNotFound {
-			t.Errorf("got error = %v want %v", errors.Root(err), pg.ErrUserInputNotFound)
-		}
-	})
+	redeem, _ := hex.DecodeString("51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae")
+	want := &Asset{
+		Hash:         asset0,
+		IssuerNodeID: in0,
+		INIndex:      []uint32{0, 1},
+		AIndex:       []uint32{0, 0},
+		RedeemScript: redeem,
+		Keys:         xpubs,
+		Definition:   []byte("{\n  \"s\": \"\"\n}"),
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("asset = %#v want %#v", got, want)
+	}
+
+	// missing asset id
+	_, err = AssetByID(ctx, [32]byte{1})
+	if g := errors.Root(err); g != pg.ErrUserInputNotFound {
+		t.Errorf("err = %v want %v", g, pg.ErrUserInputNotFound)
+	}
+}
+
+func getSortID(ctx context.Context, t testing.TB, assetID bc.AssetID) (sortID string) {
+	const q = `SELECT sort_id FROM assets WHERE id=$1`
+	err := pg.FromContext(ctx).QueryRow(ctx, q, assetID).Scan(&sortID)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	return sortID
 }
 
 func TestListAssets(t *testing.T) {
-	const sql = `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-		INSERT INTO issuer_nodes
-			(id, project_id, key_index, keyset, label)
-		VALUES
-			('in-id-0', 'proj-id-0', 0, '{}', 'in-0'),
-			('in-id-1', 'proj-id-0', 1, '{}', 'in-1');
-		INSERT INTO assets
-			(id, issuer_node_id, key_index, redeem_script, issuance_script, label, sort_id, archived, definition)
-		VALUES
-			('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 'asset0', false, 'def-0'),
-			('0100000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 1, '\x'::bytea, '\x'::bytea, 'asset-1', 'asset1', false, 'def-1'),
-			('0200000000000000000000000000000000000000000000000000000000000000', 'in-id-1', 2, '\x'::bytea, '\x'::bytea, 'asset-2', 'asset2', false, 'def-2'),
-			('0300000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 3, '\x'::bytea, '\x'::bytea, 'asset-3', 'asset3', true, 'def-3');
-		INSERT INTO issuance_totals
-			(asset_id, confirmed, pool)
-		VALUES
-			('0000000000000000000000000000000000000000000000000000000000000000', 1, 2),
-			('0100000000000000000000000000000000000000000000000000000000000000', 3, 4),
-			('0200000000000000000000000000000000000000000000000000000000000000', 5, 6),
-			('0300000000000000000000000000000000000000000000000000000000000000', 7, 8);
-	`
-	withContext(t, sql, func(ctx context.Context) {
-		examples := []struct {
-			inodeID string
-			prev    string
-			limit   int
-			want    []*AssetResponse
-		}{
-			{
-				"in-id-0",
-				"",
-				5,
-				[]*AssetResponse{
-					{ID: [32]byte{1}, Label: "asset-1", Issued: AssetAmount{3, 7}, Definition: []byte("def-1"), Circulation: 7},
-					{ID: [32]byte{}, Label: "asset-0", Issued: AssetAmount{1, 3}, Definition: []byte("def-0"), Circulation: 3},
-				},
-			},
-			{
-				"in-id-1",
-				"",
-				5,
-				[]*AssetResponse{
-					{ID: [32]byte{2}, Label: "asset-2", Issued: AssetAmount{5, 11}, Definition: []byte("def-2"), Circulation: 11},
-				},
-			},
-			{
-				"in-id-0",
-				"",
-				1,
-				[]*AssetResponse{
-					{ID: [32]byte{1}, Label: "asset-1", Issued: AssetAmount{3, 7}, Definition: []byte("def-1"), Circulation: 7},
-				},
-			},
-			{
-				"in-id-0",
-				"asset1",
-				5,
-				[]*AssetResponse{
-					{ID: [32]byte{}, Label: "asset-0", Issued: AssetAmount{1, 3}, Definition: []byte("def-0"), Circulation: 3},
-				},
-			},
-			{
-				"in-id-0",
-				"asset0",
-				5,
-				nil,
-			},
-		}
+	ctx := assettest.NewContextWithGenesisBlock(t)
+	defer pgtest.Finish(ctx)
 
-		for _, ex := range examples {
-			t.Logf("ListAssets(%s, %s, %d)", ex.inodeID, ex.prev, ex.limit)
+	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
+	in1 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-1", nil, nil)
 
-			got, _, err := ListAssets(ctx, ex.inodeID, ex.prev, ex.limit)
-			if err != nil {
-				t.Fatal(err)
-			}
+	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
+	asset1 := assettest.CreateAssetFixture(ctx, t, in0, "asset-1", "def-1")
+	asset2 := assettest.CreateAssetFixture(ctx, t, in1, "asset-2", "def-2")
+	asset3 := assettest.CreateAssetFixture(ctx, t, in0, "asset-3", "def-3")
 
-			if !reflect.DeepEqual(got, ex.want) {
-				t.Errorf("got:  %v\nwant: %v", got, ex.want)
-			}
-		}
-	})
-}
+	assettest.IssueAssetsFixture(ctx, t, asset0, 1, "")
+	assettest.IssueAssetsFixture(ctx, t, asset1, 3, "")
+	assettest.IssueAssetsFixture(ctx, t, asset2, 5, "")
+	assettest.IssueAssetsFixture(ctx, t, asset3, 7, "")
+	asset.MakeBlock(ctx, asset.BlockKey)
+	assettest.IssueAssetsFixture(ctx, t, asset0, 2, "")
+	assettest.IssueAssetsFixture(ctx, t, asset1, 4, "")
+	assettest.IssueAssetsFixture(ctx, t, asset2, 6, "")
+	assettest.IssueAssetsFixture(ctx, t, asset3, 8, "")
 
-func TestGetAsset(t *testing.T) {
-	const sql = `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
-			VALUES ('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
-		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label, definition)
-			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0', 'hello world');
-		INSERT INTO issuance_totals (asset_id, confirmed, pool)
-			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 58, 12);
-	`
-	withContext(t, sql, func(ctx context.Context) {
-		got, err := GetAsset(ctx, "0000000000000000000000000000000000000000000000000000000000000000")
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
+	err := ArchiveAsset(ctx, asset3.String())
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
 
-		want := &AssetResponse{
-			ID:          [32]byte{},
-			Label:       "asset-0",
-			Definition:  []byte("hello world"),
-			Issued:      AssetAmount{58, 70},
-			Circulation: 70,
-		}
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("GetAsset(%s) = %+v want %+v", [32]byte{}, got, want)
-		}
-
-		_, err = GetAsset(ctx, "nonexistent")
-		if errors.Root(err) != pg.ErrUserInputNotFound {
-			t.Errorf("GetAsset(%s) error = %q want %q", "nonexistent", errors.Root(err), pg.ErrUserInputNotFound)
-		}
-	})
-}
-
-func TestUpdateIssuances(t *testing.T) {
-	const fix = `
-		INSERT INTO issuer_nodes (id, project_id, label, keyset, key_index)
-			VALUES ('issuer-node-id-0', 'project-id-0', 'foo', '{}', 0);
-
-		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label)
-		VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'issuer-node-id-0', 0, '{}', '', '', ''),
-			('0100000000000000000000000000000000000000000000000000000000000000', 'issuer-node-id-0', 1, '{}', '', '', ''),
-			('0200000000000000000000000000000000000000000000000000000000000000', 'issuer-node-id-0', 2, '{}', '', '', '');
-		INSERT INTO issuance_totals (asset_id, confirmed, pool)
-		VALUES
-			('0000000000000000000000000000000000000000000000000000000000000000', 10, 10),
-			('0100000000000000000000000000000000000000000000000000000000000000', 10, 10),
-			('0200000000000000000000000000000000000000000000000000000000000000', 10, 10);
-	`
+	def0 := []byte("{\n  \"s\": \"def-0\"\n}")
+	def1 := []byte("{\n  \"s\": \"def-1\"\n}")
+	def2 := []byte("{\n  \"s\": \"def-2\"\n}")
 
 	examples := []struct {
-		deltas    map[bc.AssetID]int64
-		confirmed bool
-		want      map[bc.AssetID]AssetAmount
+		inodeID string
+		prev    string
+		limit   int
+		want    []*AssetResponse
 	}{
-		// Example: what happens to confirmation numbers when a block lands.
 		{
-			deltas: map[bc.AssetID]int64{
-				[32]byte{}:  1,
-				[32]byte{1}: 2,
-				[32]byte{2}: 3,
-			},
-			confirmed: true,
-			want: map[bc.AssetID]AssetAmount{
-				[32]byte{}: AssetAmount{
-					Confirmed: 11,
-					Total:     21,
-				},
-				[32]byte{1}: AssetAmount{
-					Confirmed: 12,
-					Total:     22,
-				},
-				[32]byte{2}: AssetAmount{
-					Confirmed: 13,
-					Total:     23,
-				},
+			in0,
+			"",
+			5,
+			[]*AssetResponse{
+				{ID: asset1, Label: "asset-1", Issued: AssetAmount{3, 7}, Definition: def1, Circulation: 7},
+				{ID: asset0, Label: "asset-0", Issued: AssetAmount{1, 3}, Definition: def0, Circulation: 3},
 			},
 		},
-		// Example: what happens to pool/unconfirmed numbers when a block lands.
 		{
-			deltas: map[bc.AssetID]int64{
-				[32]byte{}:  -1,
-				[32]byte{1}: -2,
-				[32]byte{2}: -3,
-			},
-			confirmed: false,
-			want: map[bc.AssetID]AssetAmount{
-				[32]byte{}: AssetAmount{
-					Confirmed: 10,
-					Total:     19,
-				},
-				[32]byte{1}: AssetAmount{
-					Confirmed: 10,
-					Total:     18,
-				},
-				[32]byte{2}: AssetAmount{
-					Confirmed: 10,
-					Total:     17,
-				},
+			in1,
+			"",
+			5,
+			[]*AssetResponse{
+				{ID: asset2, Label: "asset-2", Issued: AssetAmount{5, 11}, Definition: def2, Circulation: 11},
 			},
 		},
-		// Example: what happens to pool/unconfirmed numbers when a tx lands.
 		{
-			deltas:    map[bc.AssetID]int64{[32]byte{}: 5},
-			confirmed: false,
-			want: map[bc.AssetID]AssetAmount{
-				[32]byte{}: AssetAmount{
-					Confirmed: 10,
-					Total:     25,
-				},
-				[32]byte{1}: AssetAmount{
-					Confirmed: 10,
-					Total:     20,
-				},
-				[32]byte{2}: AssetAmount{
-					Confirmed: 10,
-					Total:     20,
-				},
+			in0,
+			"",
+			1,
+			[]*AssetResponse{
+				{ID: asset1, Label: "asset-1", Issued: AssetAmount{3, 7}, Definition: def1, Circulation: 7},
 			},
+		},
+		{
+			in0,
+			getSortID(ctx, t, asset1),
+			5,
+			[]*AssetResponse{
+				{ID: asset0, Label: "asset-0", Issued: AssetAmount{1, 3}, Definition: def0, Circulation: 3},
+			},
+		},
+		{
+			in0,
+			getSortID(ctx, t, asset0),
+			5,
+			nil,
 		},
 	}
 
-	for i, ex := range examples {
-		withContext(t, fix, func(ctx context.Context) {
-			t.Log("Example", i)
+	for _, ex := range examples {
+		t.Logf("ListAssets(%s, %s, %d)", ex.inodeID, ex.prev, ex.limit)
 
-			err := UpdateIssuances(ctx, ex.deltas, ex.confirmed)
-			if err != nil {
-				t.Fatal("unexpected error:", err)
-			}
+		got, _, err := ListAssets(ctx, ex.inodeID, ex.prev, ex.limit)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-			for aid, want := range ex.want {
-				asset, err := GetAsset(ctx, aid.String())
-				if err != nil {
-					t.Fatal("unexpected error:", err)
-				}
-				if asset.Issued != want {
-					t.Errorf("asset %v got %v want %v", aid, asset.Issued, want)
-				}
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Fail()
+			t.Log("got:")
+			for _, x := range got {
+				t.Logf("\t%#v", x)
 			}
-		})
+			t.Log("want:")
+			for _, x := range ex.want {
+				t.Logf("\t%#v", x)
+			}
+		}
+	}
+}
+
+func TestGetAsset(t *testing.T) {
+	ctx := assettest.NewContextWithGenesisBlock(t)
+	defer pgtest.Finish(ctx)
+
+	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
+	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
+	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
+	asset.MakeBlock(ctx, asset.BlockKey)
+	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
+
+	got, err := GetAsset(ctx, asset0.String())
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	want := &AssetResponse{
+		ID:          asset0,
+		Label:       "asset-0",
+		Definition:  []byte("{\n  \"s\": \"def-0\"\n}"),
+		Issued:      AssetAmount{58, 70},
+		Circulation: 70,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("GetAsset(%s) = %+v want %+v", asset0, got, want)
+	}
+
+	_, err = GetAsset(ctx, "nonexistent")
+	if errors.Root(err) != pg.ErrUserInputNotFound {
+		t.Errorf("GetAsset(%s) error = %q want %q", "nonexistent", errors.Root(err), pg.ErrUserInputNotFound)
+	}
+}
+
+// What happens to confirmation numbers when a block lands.
+func TestUpdateIssuancesBlock(t *testing.T) {
+	ctx := assettest.NewContextWithGenesisBlock(t)
+	defer pgtest.Finish(ctx)
+
+	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
+	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
+	asset1 := assettest.CreateAssetFixture(ctx, t, in0, "asset-1", "def-1")
+	asset2 := assettest.CreateAssetFixture(ctx, t, in0, "asset-2", "def-2")
+	assettest.IssueAssetsFixture(ctx, t, asset0, 10, "")
+	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
+	assettest.IssueAssetsFixture(ctx, t, asset2, 10, "")
+	asset.MakeBlock(ctx, asset.BlockKey)
+	assettest.IssueAssetsFixture(ctx, t, asset0, 10, "")
+	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
+	assettest.IssueAssetsFixture(ctx, t, asset2, 10, "")
+
+	deltas := map[bc.AssetID]int64{
+		asset0: 1,
+		asset1: 2,
+		asset2: 3,
+	}
+	want := map[bc.AssetID]AssetAmount{
+		asset0: AssetAmount{
+			Confirmed: 11,
+			Total:     21,
+		},
+		asset1: AssetAmount{
+			Confirmed: 12,
+			Total:     22,
+		},
+		asset2: AssetAmount{
+			Confirmed: 13,
+			Total:     23,
+		},
+	}
+
+	confirmed := true
+	err := UpdateIssuances(ctx, deltas, confirmed)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	for aid, want := range want {
+		asset, err := GetAsset(ctx, aid.String())
+		if err != nil {
+			t.Fatal("unexpected error:", err)
+		}
+		if asset.Issued != want {
+			t.Errorf("asset %v got %v want %v", aid, asset.Issued, want)
+		}
+	}
+}
+
+// What happens to pool/unconfirmed numbers when a block lands.
+func TestUpdateIssuancesPoolBlock(t *testing.T) {
+	ctx := assettest.NewContextWithGenesisBlock(t)
+	defer pgtest.Finish(ctx)
+
+	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
+	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
+	asset1 := assettest.CreateAssetFixture(ctx, t, in0, "asset-1", "def-1")
+	asset2 := assettest.CreateAssetFixture(ctx, t, in0, "asset-2", "def-2")
+	assettest.IssueAssetsFixture(ctx, t, asset0, 10, "")
+	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
+	assettest.IssueAssetsFixture(ctx, t, asset2, 10, "")
+	asset.MakeBlock(ctx, asset.BlockKey)
+	assettest.IssueAssetsFixture(ctx, t, asset0, 10, "")
+	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
+	assettest.IssueAssetsFixture(ctx, t, asset2, 10, "")
+
+	deltas := map[bc.AssetID]int64{
+		asset0: -1,
+		asset1: -2,
+		asset2: -3,
+	}
+	want := map[bc.AssetID]AssetAmount{
+		asset0: AssetAmount{
+			Confirmed: 10,
+			Total:     19,
+		},
+		asset1: AssetAmount{
+			Confirmed: 10,
+			Total:     18,
+		},
+		asset2: AssetAmount{
+			Confirmed: 10,
+			Total:     17,
+		},
+	}
+
+	confirmed := false
+	err := UpdateIssuances(ctx, deltas, confirmed)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	for aid, want := range want {
+		asset, err := GetAsset(ctx, aid.String())
+		if err != nil {
+			t.Fatal("unexpected error:", err)
+		}
+		if asset.Issued != want {
+			t.Errorf("asset %v got %v want %v", aid, asset.Issued, want)
+		}
+	}
+}
+
+// What happens to pool/unconfirmed numbers when a tx lands.
+func TestUpdateIssuancesPoolTx(t *testing.T) {
+	ctx := assettest.NewContextWithGenesisBlock(t)
+	defer pgtest.Finish(ctx)
+
+	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
+	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
+	asset1 := assettest.CreateAssetFixture(ctx, t, in0, "asset-1", "def-1")
+	asset2 := assettest.CreateAssetFixture(ctx, t, in0, "asset-2", "def-2")
+	assettest.IssueAssetsFixture(ctx, t, asset0, 10, "")
+	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
+	assettest.IssueAssetsFixture(ctx, t, asset2, 10, "")
+	asset.MakeBlock(ctx, asset.BlockKey)
+	assettest.IssueAssetsFixture(ctx, t, asset0, 10, "")
+	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
+	assettest.IssueAssetsFixture(ctx, t, asset2, 10, "")
+
+	deltas := map[bc.AssetID]int64{asset0: 5}
+	want := map[bc.AssetID]AssetAmount{
+		asset0: AssetAmount{
+			Confirmed: 10,
+			Total:     25,
+		},
+		asset1: AssetAmount{
+			Confirmed: 10,
+			Total:     20,
+		},
+		asset2: AssetAmount{
+			Confirmed: 10,
+			Total:     20,
+		},
+	}
+
+	confirmed := false
+	err := UpdateIssuances(ctx, deltas, confirmed)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	for aid, want := range want {
+		asset, err := GetAsset(ctx, aid.String())
+		if err != nil {
+			t.Fatal("unexpected error:", err)
+		}
+		if asset.Issued != want {
+			t.Errorf("asset %v got %v want %v", aid, asset.Issued, want)
+		}
 	}
 }
 
 func TestUpdateAsset(t *testing.T) {
-	const sql = `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
-			VALUES ('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
-		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
-			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
-		INSERT INTO issuance_totals (asset_id) VALUES ('0000000000000000000000000000000000000000000000000000000000000000');
-	`
-	withContext(t, sql, func(ctx context.Context) {
-		assetResponse, err := GetAsset(ctx, "0000000000000000000000000000000000000000000000000000000000000000")
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
 
-		newLabel := "bar"
-		err = UpdateAsset(ctx, assetResponse.ID.String(), &newLabel)
-		if err != nil {
-			t.Errorf("unexpected error %v", err)
-		}
+	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 
-		assetResponse, err = GetAsset(ctx, "0000000000000000000000000000000000000000000000000000000000000000")
-		if err != nil {
-			t.Fatalf("could not get asset with id 0000000000000000000000000000000000000000000000000000000000000000: %v", err)
-		}
-		if assetResponse.Label != newLabel {
-			t.Errorf("expected %s, got %s", newLabel, assetResponse.Label)
-		}
-	})
+	assetResponse, err := GetAsset(ctx, asset0.String())
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	newLabel := "bar"
+	err = UpdateAsset(ctx, assetResponse.ID.String(), &newLabel)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+
+	assetResponse, err = GetAsset(ctx, asset0.String())
+	if err != nil {
+		t.Fatalf("could not get asset with id %v: %v", asset0, err)
+	}
+	if assetResponse.Label != newLabel {
+		t.Errorf("expected %s, got %s", newLabel, assetResponse.Label)
+	}
 }
 
 // Test that calling UpdateAsset with no new label is a no-op.
 func TestUpdateAssetNoUpdate(t *testing.T) {
-	const sql = `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
-			VALUES ('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
-		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
-			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
-		INSERT INTO issuance_totals (asset_id) VALUES ('0000000000000000000000000000000000000000000000000000000000000000');
-	`
-	withContext(t, sql, func(ctx context.Context) {
-		assetResponse, err := GetAsset(ctx, "0000000000000000000000000000000000000000000000000000000000000000")
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
 
-		err = UpdateAsset(ctx, assetResponse.ID.String(), nil)
-		if err != nil {
-			t.Errorf("unexpected error %v", err)
-		}
+	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 
-		assetResponse, err = GetAsset(ctx, "0000000000000000000000000000000000000000000000000000000000000000")
-		if err != nil {
-			t.Fatalf("could not get asset with id asset-id-0: %v", err)
-		}
-		if assetResponse.Label != "asset-0" {
-			t.Errorf("expected asset-0, got %s", assetResponse.Label)
-		}
-	})
+	assetResponse, err := GetAsset(ctx, asset0.String())
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	err = UpdateAsset(ctx, assetResponse.ID.String(), nil)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+
+	assetResponse, err = GetAsset(ctx, asset0.String())
+	if err != nil {
+		t.Fatalf("could not get asset with id asset-id-0: %v", err)
+	}
+	if assetResponse.Label != "asset-0" {
+		t.Errorf("expected asset-0, got %s", assetResponse.Label)
+	}
 }
 
 func TestArchiveAsset(t *testing.T) {
-	const sql = `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-		INSERT INTO issuer_nodes (id, project_id, key_index, keyset, label)
-			VALUES ('in-id-0', 'proj-id-0', 0, '{}', 'in-0');
-		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, issuance_script, label)
-			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'in-id-0', 0, '\x'::bytea, '\x'::bytea, 'asset-0');
-		INSERT INTO issuance_totals (asset_id) VALUES ('0000000000000000000000000000000000000000000000000000000000000000');
-	`
-	withContext(t, sql, func(ctx context.Context) {
-		assetID := "0000000000000000000000000000000000000000000000000000000000000000"
-		err := ArchiveAsset(ctx, assetID)
-		if err != nil {
-			t.Errorf("unexpected error %v", err)
-		}
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
 
-		// Verify that the asset was archived.
-		var archived bool
-		var checkQ = `SELECT archived FROM assets WHERE id = $1`
-		err = pg.FromContext(ctx).QueryRow(ctx, checkQ, assetID).Scan(&archived)
-		if err != nil {
-			t.Errorf("unexpected error %v", err)
-		}
-		if !archived {
-			t.Errorf("expected asset %s to be archived", assetID)
-		}
-	})
+	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
+
+	err := ArchiveAsset(ctx, asset0.String())
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+
+	// Verify that the asset was archived.
+	var archived bool
+	var checkQ = `SELECT archived FROM assets WHERE id = $1`
+	err = pg.FromContext(ctx).QueryRow(ctx, checkQ, asset0.String()).Scan(&archived)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+	if !archived {
+		t.Errorf("expected asset %s to be archived", asset0.String())
+	}
 }
 
 func TestAssetBalance(t *testing.T) {
-	const fix = `
-		INSERT INTO utxos
-			(tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, script, confirmed, block_hash, block_height)
-		VALUES
-			('ctx-0', 0, '0000000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
-			('ctx-1', 0, '0000000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
-			('ctx-2', 0, '0000000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-1', 'mnode-1', '', TRUE, 'bh1', 1),
-			('ctx-3', 0, '0200000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
-			('ctx-4', 0, '0300000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
-			('ctx-5', 0, '0500000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
-			('ctx-6', 0, '0500000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1),
-			('ctx-7', 0, '0500000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', TRUE, 'bh1', 1);
+	ctx := assettest.NewContextWithGenesisBlock(t)
+	defer pgtest.Finish(ctx)
 
-		INSERT INTO pool_txs
-			(tx_hash, data)
-		VALUES
-			('ptx-0', ''), ('ptx-1', ''), ('ptx-2', ''),
-			('ptx-3', ''), ('ptx-4', ''), ('ptx-5', ''),
-			('ptx-6', '');
+	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
+	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-0", nil, nil)
+	mn1 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-1", nil, nil)
+	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "", nil)
+	acc1 := assettest.CreateAccountFixture(ctx, t, mn1, "", nil)
 
-		INSERT INTO utxos
-			(tx_hash, pool_tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, script, confirmed)
-		VALUES
-			('ptx-0', 'ptx-0', 0, '0100000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', FALSE),
-			('ptx-1', 'ptx-1', 0, '0100000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', FALSE),
-			('ptx-2', 'ptx-2', 0, '0100000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', FALSE),
-			('ptx-3', 'ptx-3', 0, '0200000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', FALSE),
-			('ptx-4', 'ptx-4', 0, '0400000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-0', 'mnode-0', '', FALSE),
-			('ptx-5', 'ptx-5', 0, '0400000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-1', 'mnode-1', '', FALSE),
-			('ptx-6', 'ptx-6', 0, '0500000000000000000000000000000000000000000000000000000000000000', 1, 0, 'account-1', 'mnode-1', '', FALSE);
+	var assets []bc.AssetID
+	assets = append(assets, assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0"))
+	assets = append(assets, assettest.CreateAssetFixture(ctx, t, in0, "asset-1", "def-1"))
+	assets = append(assets, assettest.CreateAssetFixture(ctx, t, in0, "asset-2", "def-2"))
+	assets = append(assets, assettest.CreateAssetFixture(ctx, t, in0, "asset-3", "def-3"))
+	assets = append(assets, assettest.CreateAssetFixture(ctx, t, in0, "asset-4", "def-4"))
+	assets = append(assets, assettest.CreateAssetFixture(ctx, t, in0, "asset-5", "def-5"))
+	sort.Sort(byAsset(assets))
 
-		INSERT INTO pool_inputs (tx_hash, index)
-		VALUES
-			('ctx-6', 0),
-			('ctx-7', 0),
-			('ptx-1', 0),
-			('ptx-6', 0);
-	`
-	withContext(t, fix, func(ctx context.Context) {
-		cases := []struct {
-			owner     AssetOwner
-			accountID string
-			prev      string
-			limit     int
-			want      []*Balance
-			wantLast  string
-		}{
-			{
-				owner:     OwnerAccount,
-				accountID: "account-0",
-				prev:      "",
-				limit:     9999,
-				want: []*Balance{
-					{AssetID: [32]byte{}, Confirmed: 2, Total: 2},
-					{AssetID: [32]byte{1}, Confirmed: 0, Total: 2},
-					{AssetID: [32]byte{2}, Confirmed: 1, Total: 2},
-					{AssetID: [32]byte{3}, Confirmed: 1, Total: 1},
-					{AssetID: [32]byte{4}, Confirmed: 0, Total: 1},
-					{AssetID: [32]byte{5}, Confirmed: 3, Total: 1},
-				},
-				wantLast: "",
-			},
-			{
-				owner:     OwnerAccount,
-				accountID: "account-0",
-				prev:      "",
-				limit:     1,
-				want: []*Balance{
-					{AssetID: [32]byte{}, Confirmed: 2, Total: 2},
-				},
-				wantLast: bc.AssetID{}.String(),
-			},
-			{
-				owner:     OwnerAccount,
-				accountID: "account-0",
-				prev:      bc.AssetID{}.String(),
-				limit:     1,
-				want: []*Balance{
-					{AssetID: [32]byte{1}, Confirmed: 0, Total: 2},
-				},
-				wantLast: bc.AssetID([32]byte{1}).String(),
-			},
-			{
-				owner:     OwnerAccount,
-				accountID: "account-0",
-				prev:      bc.AssetID([32]byte{1}).String(),
-				limit:     1,
-				want: []*Balance{
-					{AssetID: [32]byte{2}, Confirmed: 1, Total: 2},
-				},
-				wantLast: bc.AssetID([32]byte{2}).String(),
-			},
-			{
-				owner:     OwnerAccount,
-				accountID: "account-0",
-				prev:      bc.AssetID([32]byte{2}).String(),
-				limit:     1,
-				want: []*Balance{
-					{AssetID: [32]byte{3}, Confirmed: 1, Total: 1},
-				},
-				wantLast: bc.AssetID([32]byte{3}).String(),
-			},
-			{
-				owner:     OwnerAccount,
-				accountID: "account-0",
-				prev:      bc.AssetID([32]byte{3}).String(),
-				limit:     1,
-				want: []*Balance{
-					{AssetID: [32]byte{4}, Confirmed: 0, Total: 1},
-				},
-				wantLast: bc.AssetID([32]byte{4}).String(),
-			},
-			{
-				owner:     OwnerAccount,
-				accountID: "account-0",
-				prev:      bc.AssetID([32]byte{4}).String(),
-				limit:     1,
-				want: []*Balance{
-					{AssetID: [32]byte{5}, Confirmed: 3, Total: 1},
-				},
-				wantLast: bc.AssetID([32]byte{5}).String(),
-			},
-			{
-				owner:     OwnerAccount,
-				accountID: "account-0",
-				prev:      "",
-				limit:     4,
-				want: []*Balance{
-					{AssetID: [32]byte{}, Confirmed: 2, Total: 2},
-					{AssetID: [32]byte{1}, Confirmed: 0, Total: 2},
-					{AssetID: [32]byte{2}, Confirmed: 1, Total: 2},
-					{AssetID: [32]byte{3}, Confirmed: 1, Total: 1},
-				},
-				wantLast: bc.AssetID([32]byte{3}).String(),
-			},
-			{
-				owner:     OwnerAccount,
-				accountID: "account-0",
-				prev:      bc.AssetID([32]byte{3}).String(),
-				limit:     4,
-				want: []*Balance{
-					{AssetID: [32]byte{4}, Confirmed: 0, Total: 1},
-					{AssetID: [32]byte{5}, Confirmed: 3, Total: 1},
-				},
-				wantLast: "",
-			},
-			{
-				owner:     OwnerAccount,
-				accountID: "account-0",
-				prev:      bc.AssetID([32]byte{5}).String(),
-				limit:     4,
-				want:      nil,
-				wantLast:  "",
-			},
-			{
-				owner:     OwnerAccount,
-				accountID: "account-1",
-				prev:      "",
-				limit:     9999,
-				want: []*Balance{
-					{AssetID: [32]byte{}, Confirmed: 1, Total: 1},
-					{AssetID: [32]byte{4}, Confirmed: 0, Total: 1},
-				},
-				wantLast: "",
-			},
+	assettest.IssueAssetsFixture(ctx, t, assets[0], 1, acc0)
+	assettest.IssueAssetsFixture(ctx, t, assets[0], 1, acc0)
+	assettest.IssueAssetsFixture(ctx, t, assets[0], 1, acc1)
+	assettest.IssueAssetsFixture(ctx, t, assets[2], 1, acc0)
+	assettest.IssueAssetsFixture(ctx, t, assets[3], 1, acc0)
+	assettest.IssueAssetsFixture(ctx, t, assets[5], 1, acc0)
+	out1 := assettest.IssueAssetsFixture(ctx, t, assets[5], 1, acc0)
+	out2 := assettest.IssueAssetsFixture(ctx, t, assets[5], 1, acc0)
+	asset.MakeBlock(ctx, asset.BlockKey)
 
-			{
-				owner:     OwnerManagerNode,
-				accountID: "mnode-0",
-				prev:      "",
-				limit:     9999,
-				want: []*Balance{
-					{AssetID: [32]byte{}, Confirmed: 2, Total: 2},
-					{AssetID: [32]byte{1}, Confirmed: 0, Total: 2},
-					{AssetID: [32]byte{2}, Confirmed: 1, Total: 2},
-					{AssetID: [32]byte{3}, Confirmed: 1, Total: 1},
-					{AssetID: [32]byte{4}, Confirmed: 0, Total: 1},
-					{AssetID: [32]byte{5}, Confirmed: 3, Total: 1},
-				},
-				wantLast: "",
-			},
-			{
-				owner:     OwnerManagerNode,
-				accountID: "mnode-0",
-				prev:      bc.AssetID([32]byte{5}).String(),
-				limit:     9999,
-				want:      nil,
-				wantLast:  "",
-			},
-			{
-				owner:     OwnerManagerNode,
-				accountID: "mnode-1",
-				prev:      "",
-				limit:     9999,
-				want: []*Balance{
-					{AssetID: [32]byte{}, Confirmed: 1, Total: 1},
-					{AssetID: [32]byte{4}, Confirmed: 0, Total: 1},
-				},
-				wantLast: "",
-			},
-			{
-				owner:     OwnerManagerNode,
-				accountID: "mnode-1",
-				prev:      bc.AssetID([32]byte{4}).String(),
-				limit:     9999,
-				want:      nil,
-				wantLast:  "",
-			},
-		}
+	assettest.IssueAssetsFixture(ctx, t, assets[1], 1, acc0)
+	out3 := assettest.IssueAssetsFixture(ctx, t, assets[1], 1, acc0)
+	assettest.IssueAssetsFixture(ctx, t, assets[1], 1, acc0)
+	assettest.IssueAssetsFixture(ctx, t, assets[2], 1, acc0)
+	assettest.IssueAssetsFixture(ctx, t, assets[4], 1, acc0)
+	assettest.IssueAssetsFixture(ctx, t, assets[4], 1, acc1)
+	out4 := assettest.IssueAssetsFixture(ctx, t, assets[5], 1, acc1)
 
-		for _, c := range cases {
-			got, gotLast, err := AssetBalance(ctx, &AssetBalQuery{
-				Owner:   c.owner,
-				OwnerID: c.accountID,
-				Prev:    c.prev,
-				Limit:   c.limit,
-			})
-			if err != nil {
-				t.Errorf("AssetBalance(%s, %s, %d): unexpected error %v", c.accountID, c.prev, c.limit, err)
-				continue
-			}
-
-			if !reflect.DeepEqual(got, c.want) {
-				t.Fail()
-				t.Logf("AssetBalance(%s, %s, %d)", c.accountID, c.prev, c.limit)
-
-				t.Log("Got:")
-				for _, b := range got {
-					t.Log(b)
-				}
-
-				t.Log("Want:")
-				for _, b := range c.want {
-					t.Log(b)
-				}
-			}
-
-			if gotLast != c.wantLast {
-				t.Errorf("AssetBalance(%s, %s, %d) last = %v want %v", c.accountID, c.prev, c.limit, gotLast, c.wantLast)
-			}
-		}
+	tx := bc.NewTx(bc.TxData{
+		Inputs: []*bc.TxInput{
+			{Previous: out1.Outpoint},
+			{Previous: out2.Outpoint},
+			{Previous: out3.Outpoint},
+			{Previous: out4.Outpoint},
+		},
 	})
+
+	err := applyTx(ctx, tx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		owner     AssetOwner
+		accountID string
+		prev      string
+		limit     int
+		want      []*Balance
+		wantLast  string
+	}{
+		{
+			owner:     OwnerAccount,
+			accountID: acc0,
+			prev:      "",
+			limit:     9999,
+			want: []*Balance{
+				{AssetID: assets[0], Confirmed: 2, Total: 2},
+				{AssetID: assets[1], Confirmed: 0, Total: 2},
+				{AssetID: assets[2], Confirmed: 1, Total: 2},
+				{AssetID: assets[3], Confirmed: 1, Total: 1},
+				{AssetID: assets[4], Confirmed: 0, Total: 1},
+				{AssetID: assets[5], Confirmed: 3, Total: 1},
+			},
+			wantLast: "",
+		},
+		{
+			owner:     OwnerAccount,
+			accountID: acc0,
+			prev:      "",
+			limit:     1,
+			want: []*Balance{
+				{AssetID: assets[0], Confirmed: 2, Total: 2},
+			},
+			wantLast: assets[0].String(),
+		},
+		{
+			owner:     OwnerAccount,
+			accountID: acc0,
+			prev:      assets[0].String(),
+			limit:     1,
+			want: []*Balance{
+				{AssetID: assets[1], Confirmed: 0, Total: 2},
+			},
+			wantLast: assets[1].String(),
+		},
+		{
+			owner:     OwnerAccount,
+			accountID: acc0,
+			prev:      assets[1].String(),
+			limit:     1,
+			want: []*Balance{
+				{AssetID: assets[2], Confirmed: 1, Total: 2},
+			},
+			wantLast: assets[2].String(),
+		},
+		{
+			owner:     OwnerAccount,
+			accountID: acc0,
+			prev:      assets[2].String(),
+			limit:     1,
+			want: []*Balance{
+				{AssetID: assets[3], Confirmed: 1, Total: 1},
+			},
+			wantLast: assets[3].String(),
+		},
+		{
+			owner:     OwnerAccount,
+			accountID: acc0,
+			prev:      assets[3].String(),
+			limit:     1,
+			want: []*Balance{
+				{AssetID: assets[4], Confirmed: 0, Total: 1},
+			},
+			wantLast: assets[4].String(),
+		},
+		{
+			owner:     OwnerAccount,
+			accountID: acc0,
+			prev:      assets[4].String(),
+			limit:     1,
+			want: []*Balance{
+				{AssetID: assets[5], Confirmed: 3, Total: 1},
+			},
+			wantLast: assets[5].String(),
+		},
+		{
+			owner:     OwnerAccount,
+			accountID: acc0,
+			prev:      "",
+			limit:     4,
+			want: []*Balance{
+				{AssetID: assets[0], Confirmed: 2, Total: 2},
+				{AssetID: assets[1], Confirmed: 0, Total: 2},
+				{AssetID: assets[2], Confirmed: 1, Total: 2},
+				{AssetID: assets[3], Confirmed: 1, Total: 1},
+			},
+			wantLast: assets[3].String(),
+		},
+		{
+			owner:     OwnerAccount,
+			accountID: acc0,
+			prev:      assets[3].String(),
+			limit:     4,
+			want: []*Balance{
+				{AssetID: assets[4], Confirmed: 0, Total: 1},
+				{AssetID: assets[5], Confirmed: 3, Total: 1},
+			},
+			wantLast: "",
+		},
+		{
+			owner:     OwnerAccount,
+			accountID: acc0,
+			prev:      assets[5].String(),
+			limit:     4,
+			want:      nil,
+			wantLast:  "",
+		},
+		{
+			owner:     OwnerAccount,
+			accountID: acc1,
+			prev:      "",
+			limit:     9999,
+			want: []*Balance{
+				{AssetID: assets[0], Confirmed: 1, Total: 1},
+				{AssetID: assets[4], Confirmed: 0, Total: 1},
+			},
+			wantLast: "",
+		},
+
+		{
+			owner:     OwnerManagerNode,
+			accountID: mn0,
+			prev:      "",
+			limit:     9999,
+			want: []*Balance{
+				{AssetID: assets[0], Confirmed: 2, Total: 2},
+				{AssetID: assets[1], Confirmed: 0, Total: 2},
+				{AssetID: assets[2], Confirmed: 1, Total: 2},
+				{AssetID: assets[3], Confirmed: 1, Total: 1},
+				{AssetID: assets[4], Confirmed: 0, Total: 1},
+				{AssetID: assets[5], Confirmed: 3, Total: 1},
+			},
+			wantLast: "",
+		},
+		{
+			owner:     OwnerManagerNode,
+			accountID: mn0,
+			prev:      assets[5].String(),
+			limit:     9999,
+			want:      nil,
+			wantLast:  "",
+		},
+		{
+			owner:     OwnerManagerNode,
+			accountID: mn1,
+			prev:      "",
+			limit:     9999,
+			want: []*Balance{
+				{AssetID: assets[0], Confirmed: 1, Total: 1},
+				{AssetID: assets[4], Confirmed: 0, Total: 1},
+			},
+			wantLast: "",
+		},
+		{
+			owner:     OwnerManagerNode,
+			accountID: mn1,
+			prev:      assets[4].String(),
+			limit:     9999,
+			want:      nil,
+			wantLast:  "",
+		},
+	}
+
+	for _, c := range cases {
+		got, gotLast, err := AssetBalance(ctx, &AssetBalQuery{
+			Owner:   c.owner,
+			OwnerID: c.accountID,
+			Prev:    c.prev,
+			Limit:   c.limit,
+		})
+		if err != nil {
+			t.Errorf("AssetBalance(%s, %s, %d): unexpected error %v", c.accountID, c.prev, c.limit, err)
+			continue
+		}
+
+		sort.Sort(balancesByAssetID(got))
+		sort.Sort(balancesByAssetID(c.want))
+		if !reflect.DeepEqual(got, c.want) {
+			t.Fail()
+			t.Logf("AssetBalance(%s, %s, %d)", c.accountID, c.prev, c.limit)
+
+			t.Log("Got:")
+			for _, b := range got {
+				t.Log(b)
+			}
+
+			t.Log("Want:")
+			for _, b := range c.want {
+				t.Log(b)
+			}
+		}
+
+		if gotLast != c.wantLast {
+			t.Errorf("AssetBalance(%s, %s, %d) last = %v want %v", c.accountID, c.prev, c.limit, gotLast, c.wantLast)
+		}
+	}
+}
+
+type byAsset []bc.AssetID
+
+func (a byAsset) Len() int           { return len(a) }
+func (a byAsset) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byAsset) Less(i, j int) bool { return bytes.Compare(a[i][:], a[j][:]) < 0 }
+
+type balancesByAssetID []*Balance
+
+func (a balancesByAssetID) Len() int      { return len(a) }
+func (a balancesByAssetID) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a balancesByAssetID) Less(i, j int) bool {
+	return bytes.Compare(a[i].AssetID[:], a[j].AssetID[:]) < 0
 }
 
 func TestAccountBalanceByAssetID(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := assettest.NewContextWithGenesisBlock(t)
 	defer pgtest.Finish(ctx)
 
 	account1 := assettest.CreateAccountFixture(ctx, t, "", "", nil)
 	account2 := assettest.CreateAccountFixture(ctx, t, "", "", nil)
 
-	assettest.CreateAccountUTXOFixture(ctx, t, account1, [32]byte{1}, 10, true)
-	assettest.CreateAccountUTXOFixture(ctx, t, account1, [32]byte{1}, 5, true)
-	assettest.CreateAccountUTXOFixture(ctx, t, account1, [32]byte{2}, 1, true)
-	assettest.CreateAccountUTXOFixture(ctx, t, account1, [32]byte{3}, 2, true)
-	assettest.CreateAccountUTXOFixture(ctx, t, account2, [32]byte{4}, 3, true)
+	var assets []bc.AssetID
+	assets = append(assets, assettest.CreateAssetFixture(ctx, t, "", "asset-0", ""))
+	assets = append(assets, assettest.CreateAssetFixture(ctx, t, "", "asset-1", ""))
+	assets = append(assets, assettest.CreateAssetFixture(ctx, t, "", "asset-2", ""))
+	assets = append(assets, assettest.CreateAssetFixture(ctx, t, "", "asset-3", ""))
+	sort.Sort(byAsset(assets))
+
+	assettest.IssueAssetsFixture(ctx, t, assets[0], 10, account1)
+	assettest.IssueAssetsFixture(ctx, t, assets[0], 5, account1)
+	assettest.IssueAssetsFixture(ctx, t, assets[1], 1, account1)
+	assettest.IssueAssetsFixture(ctx, t, assets[2], 2, account1)
+	assettest.IssueAssetsFixture(ctx, t, assets[3], 3, account2)
+
+	_, err := asset.MakeBlock(ctx, asset.BlockKey)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
 
 	examples := []struct {
 		accountID string
@@ -651,39 +736,39 @@ func TestAccountBalanceByAssetID(t *testing.T) {
 		{
 			accountID: account1,
 			assetIDs: []string{
-				bc.AssetID([32]byte{1}).String(),
-				bc.AssetID([32]byte{2}).String(),
-				bc.AssetID([32]byte{3}).String(),
-				bc.AssetID([32]byte{4}).String(),
+				assets[0].String(),
+				assets[1].String(),
+				assets[2].String(),
+				assets[3].String(),
 			},
 			want: []*Balance{
-				{AssetID: [32]byte{1}, Total: 15, Confirmed: 15},
-				{AssetID: [32]byte{2}, Total: 1, Confirmed: 1},
-				{AssetID: [32]byte{3}, Total: 2, Confirmed: 2},
+				{AssetID: assets[0], Total: 15, Confirmed: 15},
+				{AssetID: assets[1], Total: 1, Confirmed: 1},
+				{AssetID: assets[2], Total: 2, Confirmed: 2},
 			},
 		},
 		{
 			accountID: account1,
-			assetIDs:  []string{bc.AssetID([32]byte{1}).String()},
+			assetIDs:  []string{assets[0].String()},
 			want: []*Balance{
-				{AssetID: [32]byte{1}, Total: 15, Confirmed: 15},
+				{AssetID: assets[0], Total: 15, Confirmed: 15},
 			},
 		},
 		{
 			accountID: account1,
-			assetIDs:  []string{bc.AssetID([32]byte{4}).String()},
+			assetIDs:  []string{assets[3].String()},
 			want:      nil,
 		},
 		{
 			accountID: account2,
 			assetIDs: []string{
-				bc.AssetID([32]byte{1}).String(),
-				bc.AssetID([32]byte{2}).String(),
-				bc.AssetID([32]byte{3}).String(),
-				bc.AssetID([32]byte{4}).String(),
+				assets[0].String(),
+				assets[1].String(),
+				assets[2].String(),
+				assets[3].String(),
 			},
 			want: []*Balance{
-				{AssetID: [32]byte{4}, Total: 3, Confirmed: 3},
+				{AssetID: assets[3], Total: 3, Confirmed: 3},
 			},
 		},
 	}

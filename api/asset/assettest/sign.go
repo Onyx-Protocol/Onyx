@@ -1,27 +1,29 @@
 package assettest
 
 import (
+	"testing"
+
 	"github.com/btcsuite/btcd/btcec"
 
 	"chain/api/txbuilder"
 	"chain/fedchain-sandbox/hdkey"
+	"chain/testutil"
 )
 
-func SignTxTemplate(template *txbuilder.Template, priv *hdkey.XKey) error {
+func SignTxTemplate(t testing.TB, template *txbuilder.Template, priv *hdkey.XKey) {
 	for _, input := range template.Inputs {
 		for _, sig := range input.Sigs {
 			key, err := derive(priv, sig.DerivationPath)
 			if err != nil {
-				return err
+				testutil.FatalErr(t, err)
 			}
 			dat, err := key.Sign(input.SignatureData[:])
 			if err != nil {
-				return err
+				testutil.FatalErr(t, err)
 			}
 			sig.DER = append(dat.Serialize(), 1) // append hashtype SIGHASH_ALL
 		}
 	}
-	return nil
 }
 
 func derive(xkey *hdkey.XKey, path []uint32) (*btcec.PrivateKey, error) {

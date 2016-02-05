@@ -13,10 +13,9 @@ import (
 	"chain/net/http/authn"
 )
 
-const (
-	passwordBcryptCost = 10
-	pwResetLiftime     = time.Hour * 24
-)
+const pwResetLiftime = time.Hour * 24
+
+var passwordBcryptCost = 10
 
 // Errors returned by CreateUser.
 // May be wrapped using package chain/errors.
@@ -202,7 +201,7 @@ func UpdateUserPassword(ctx context.Context, id, password, newpass string) error
 // ErrNoUserForEmail is returned. Since this may leak information about
 // the existence of registered accounts, this error should be visible to trusted
 // clients. It should not be propagated all the way to the end user.
-func StartPasswordReset(ctx context.Context, email string) (string, error) {
+func StartPasswordReset(ctx context.Context, email string, now time.Time) (string, error) {
 	email = strings.TrimSpace(email)
 
 	secret, hash, err := generateSecret()
@@ -210,7 +209,7 @@ func StartPasswordReset(ctx context.Context, email string) (string, error) {
 		return "", errors.Wrap(err, "generate password reset secret")
 	}
 
-	exp := time.Now().Add(pwResetLiftime)
+	exp := now.Add(pwResetLiftime)
 	q := `
 		UPDATE users
 		SET pwreset_secret_hash = $1, pwreset_expires_at = $2

@@ -20,9 +20,9 @@ func TestFindOpenOrders(t *testing.T) {
 	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
 	accountID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
-	assetID1 := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "")
-	assetID2 := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "")
-	assetID3 := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "")
+	assetID1 := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
+	assetID2 := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
+	assetID3 := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
 
 	openOrders, err := FindOpenOrders(ctx, []bc.AssetID{assetID1}, []bc.AssetID{})
 	if err != nil {
@@ -61,10 +61,7 @@ func TestFindOpenOrders(t *testing.T) {
 		chaintest.FatalErr(t, err)
 	}
 
-	err = assettest.SignTxTemplate(offerTxTemplate, chaintest.TestXPrv)
-	if err != nil {
-		chaintest.FatalErr(t, err)
-	}
+	assettest.SignTxTemplate(t, offerTxTemplate, chaintest.TestXPrv)
 
 	_, err = asset.FinalizeTx(ctx, offerTxTemplate)
 	if err != nil {
@@ -135,10 +132,7 @@ func TestFindOpenOrders(t *testing.T) {
 		chaintest.FatalErr(t, err)
 	}
 
-	err = assettest.SignTxTemplate(offerTxTemplate, chaintest.TestXPrv)
-	if err != nil {
-		chaintest.FatalErr(t, err)
-	}
+	assettest.SignTxTemplate(t, offerTxTemplate, chaintest.TestXPrv)
 
 	_, err = asset.FinalizeTx(ctx, offerTxTemplate)
 	if err != nil {

@@ -7,9 +7,14 @@ import (
 	"golang.org/x/net/context"
 
 	. "chain/api/appdb"
+	"chain/api/asset"
+	"chain/api/asset/assettest"
 	"chain/database/pg"
+	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
+	"chain/fedchain/bc"
+	"chain/testutil"
 )
 
 func TestInsertManagerNode(t *testing.T) {
@@ -71,150 +76,141 @@ func TestGetManagerNode(t *testing.T) {
 }
 
 func TestAccountsWithAsset(t *testing.T) {
-	const fix = `
-	INSERT INTO projects (id, name) VALUES
-			('proj-id-0', 'proj-0');
+	ctx := assettest.NewContextWithGenesisBlock(t)
+	defer pgtest.Finish(ctx)
 
-		INSERT INTO manager_nodes (id, project_id, key_index, label) VALUES
-			('manager-node-id-0', 'proj-id-0', 0, 'manager-node-0'),
-			('manager-node-id-1', 'proj-id-0', 1, 'manager-node-1');
+	asset1 := assettest.CreateAssetFixture(ctx, t, "", "", "")
+	asset2 := assettest.CreateAssetFixture(ctx, t, "", "", "")
+	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-node-0", nil, nil)
+	mn1 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-node-1", nil, nil)
+	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "account-0", nil)
+	acc1 := assettest.CreateAccountFixture(ctx, t, mn0, "account-1", nil)
+	acc2 := assettest.CreateAccountFixture(ctx, t, mn1, "account-2", nil)
 
-		INSERT INTO accounts (id, manager_node_id, key_index, label, archived) VALUES
-			('account-0', 'manager-node-id-0', 0, 'account-0', false),
-			('account-1', 'manager-node-id-0', 1, 'account-1', false);
+	assettest.IssueAssetsFixture(ctx, t, asset1, 5, acc0)
+	assettest.IssueAssetsFixture(ctx, t, asset1, 5, acc0)
+	assettest.IssueAssetsFixture(ctx, t, asset1, 5, acc1)
+	out1 := assettest.IssueAssetsFixture(ctx, t, asset2, 5, acc1)
+	assettest.IssueAssetsFixture(ctx, t, asset1, 5, acc2)
 
-		INSERT INTO utxos (tx_hash, index, asset_id, amount, addr_index, manager_node_id, account_id, confirmed, block_hash, block_height)
-		VALUES ('ctx-0', 0, 'asset-1', 5, 0, 'mnode-0', 'account-0', TRUE, 'bh1', 1),
-		       ('ctx-1', 0, 'asset-1', 5, 0, 'mnode-0', 'account-0', TRUE, 'bh1', 1),
-		       ('ctx-2', 0, 'asset-1', 5, 0, 'mnode-0', 'account-1', TRUE, 'bh1', 1),
-		       ('ctx-3', 0, 'asset-2', 5, 0, 'mnode-0', 'account-1', TRUE, 'bh1', 1),
-		       ('ctx-4', 0, 'asset-1', 5, 0, 'mnode-1', 'account-0', TRUE, 'bh1', 1),
-		       ('ctx-5', 0, 'asset-1', 5, 0, 'mnode-1', 'account-2', TRUE, 'bh1', 1);
+	_, err := asset.MakeBlock(ctx, asset.BlockKey)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
 
-		INSERT INTO pool_txs
-			(tx_hash, data)
-		VALUES
-			('ptx-0', ''), ('ptx-1', '');
+	assettest.IssueAssetsFixture(ctx, t, asset1, 1, acc0)
+	out2 := assettest.IssueAssetsFixture(ctx, t, asset1, 1, acc0)
 
-		INSERT INTO utxos
-			(tx_hash, pool_tx_hash, index, asset_id, amount, addr_index, account_id, manager_node_id, script, confirmed)
-		VALUES
-			('ptx-0', 'ptx-0', 0, 'asset-1', 1, 0, 'account-0', 'mnode-0', '', FALSE),
-			('ptx-1', 'ptx-1', 0, 'asset-1', 1, 0, 'account-0', 'mnode-0', '', FALSE);
-
-		INSERT INTO pool_inputs (tx_hash, index)
-		VALUES ('ptx-1', 0), ('ctx-3', 0);
-
-	`
-	withContext(t, fix, func(ctx context.Context) {
-		cases := []struct {
-			assetID  string
-			prev     string
-			limit    int
-			want     []*AccountBalanceItem
-			wantLast string
-		}{{
-			assetID: "asset-1",
-			prev:    "",
-			limit:   50,
-			want: []*AccountBalanceItem{
-				{"account-0", 10, 11},
-				{"account-1", 5, 5},
-			},
-			wantLast: "account-1",
-		}, {
-			assetID: "asset-1",
-			prev:    "account-0",
-			limit:   50,
-			want: []*AccountBalanceItem{
-				{"account-1", 5, 5},
-			},
-			wantLast: "account-1",
-		}, {
-			assetID: "asset-1",
-			prev:    "",
-			limit:   1,
-			want: []*AccountBalanceItem{
-				{"account-0", 10, 11},
-			},
-			wantLast: "account-0",
-		}, {
-			assetID:  "asset-1",
-			prev:     "account-1",
-			limit:    50,
-			want:     nil,
-			wantLast: "",
-		}, {
-			assetID: "asset-2",
-			prev:    "",
-			limit:   50,
-			want: []*AccountBalanceItem{
-				{"account-1", 5, 0},
-			},
-			wantLast: "account-1",
-		}}
-		for _, c := range cases {
-			got, gotLast, err := AccountsWithAsset(ctx, "mnode-0", c.assetID, c.prev, c.limit)
-			if err != nil {
-				t.Errorf("AccountsWithAsset(%q, %d) unexpected error = %q", c.prev, c.limit, err)
-				continue
-			}
-			if !reflect.DeepEqual(got, c.want) {
-				t.Errorf("AccountsWithAsset(%q, %d) = %+v want %+v", c.prev, c.limit, got, c.want)
-			}
-			if gotLast != c.wantLast {
-				t.Errorf("AccountsWithAsset(%q, %d) last = %q want %q", c.prev, c.limit, gotLast, c.wantLast)
-			}
+	tx := &bc.Tx{TxData: bc.TxData{Inputs: []*bc.TxInput{
+		{Previous: out1.Outpoint},
+		{Previous: out2.Outpoint},
+	}}}
+	err = applyTx(ctx, tx, nil)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	cases := []struct {
+		assetID  bc.AssetID
+		prev     string
+		limit    int
+		want     []*AccountBalanceItem
+		wantLast string
+	}{{
+		assetID: asset1,
+		prev:    "",
+		limit:   50,
+		want: []*AccountBalanceItem{
+			{acc0, 10, 11},
+			{acc1, 5, 5},
+		},
+		wantLast: acc1,
+	}, {
+		assetID: asset1,
+		prev:    acc0,
+		limit:   50,
+		want: []*AccountBalanceItem{
+			{acc1, 5, 5},
+		},
+		wantLast: acc1,
+	}, {
+		assetID: asset1,
+		prev:    "",
+		limit:   1,
+		want: []*AccountBalanceItem{
+			{acc0, 10, 11},
+		},
+		wantLast: acc0,
+	}, {
+		assetID:  asset1,
+		prev:     acc1,
+		limit:    50,
+		want:     nil,
+		wantLast: "",
+	}, {
+		assetID: asset2,
+		prev:    "",
+		limit:   50,
+		want: []*AccountBalanceItem{
+			{acc1, 5, 0},
+		},
+		wantLast: acc1,
+	}}
+	for _, c := range cases {
+		got, gotLast, err := AccountsWithAsset(ctx, mn0, c.assetID.String(), c.prev, c.limit)
+		if err != nil {
+			t.Errorf("AccountsWithAsset(%q, %d) unexpected error = %q", c.prev, c.limit, err)
+			continue
 		}
-	})
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("AccountsWithAsset(%q, %d) = %+v want %+v", c.prev, c.limit, got, c.want)
+		}
+		if gotLast != c.wantLast {
+			t.Errorf("AccountsWithAsset(%q, %d) last = %q want %q", c.prev, c.limit, gotLast, c.wantLast)
+		}
+	}
 }
 
 func TestListManagerNodes(t *testing.T) {
-	const sql = `
-		INSERT INTO projects (id, name) VALUES
-			('proj-id-0', 'proj-0'),
-			('proj-id-1', 'proj-1');
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
 
-		INSERT INTO manager_nodes (id, project_id, key_index, label, created_at) VALUES
-			-- insert in reverse chronological order, to ensure that ListManagerNodes
-			-- is performing a sort.
-			('manager-node-id-2', 'proj-id-1', 2, 'manager-node-2', now()),
-			('manager-node-id-1', 'proj-id-0', 1, 'manager-node-1', now()),
-			('manager-node-id-0', 'proj-id-0', 0, 'manager-node-0', now());
-	`
-	withContext(t, sql, func(ctx context.Context) {
-		examples := []struct {
-			projID string
-			want   []*ManagerNode
-		}{
-			{
-				"proj-id-0",
-				[]*ManagerNode{
-					{ID: "manager-node-id-0", Label: "manager-node-0"},
-					{ID: "manager-node-id-1", Label: "manager-node-1"},
-				},
+	proj0 := assettest.CreateProjectFixture(ctx, t, "", "")
+	proj1 := assettest.CreateProjectFixture(ctx, t, "", "")
+	mn0 := assettest.CreateManagerNodeFixture(ctx, t, proj0, "manager-node-0", nil, nil)
+	mn1 := assettest.CreateManagerNodeFixture(ctx, t, proj0, "manager-node-1", nil, nil)
+	mn2 := assettest.CreateManagerNodeFixture(ctx, t, proj1, "manager-node-2", nil, nil)
+
+	examples := []struct {
+		projID string
+		want   []*ManagerNode
+	}{
+		{
+			proj0,
+			[]*ManagerNode{
+				{ID: mn0, Label: "manager-node-0"},
+				{ID: mn1, Label: "manager-node-1"},
 			},
-			{
-				"proj-id-1",
-				[]*ManagerNode{
-					{ID: "manager-node-id-2", Label: "manager-node-2"},
-				},
+		},
+		{
+			proj1,
+			[]*ManagerNode{
+				{ID: mn2, Label: "manager-node-2"},
 			},
+		},
+	}
+
+	for _, ex := range examples {
+		t.Log("Example:", ex.projID)
+
+		got, err := ListManagerNodes(ctx, ex.projID)
+		if err != nil {
+			t.Fatal(err)
 		}
 
-		for _, ex := range examples {
-			t.Log("Example:", ex.projID)
-
-			got, err := ListManagerNodes(ctx, ex.projID)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if !reflect.DeepEqual(got, ex.want) {
-				t.Errorf("managerNodes:\ngot:  %v\nwant: %v", got, ex.want)
-			}
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("managerNodes:\ngot:  %v\nwant: %v", got, ex.want)
 		}
-	})
+	}
 }
 
 func TestUpdateManagerNode(t *testing.T) {

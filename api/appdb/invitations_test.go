@@ -8,18 +8,18 @@ import (
 	"golang.org/x/net/context"
 
 	. "chain/api/appdb"
+	"chain/api/asset/assettest"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 )
 
 func TestCreateInvitation(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	inv, err := CreateInvitation(ctx, "proj-id-0", "foo@bar.com", "developer")
+	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
+	inv, err := CreateInvitation(ctx, projID, "foo@bar.com", "developer")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +39,7 @@ func TestCreateInvitation(t *testing.T) {
 
 	want := testInvitation{
 		id:     inv.ID,
-		projID: "proj-id-0",
+		projID: projID,
 		email:  "foo@bar.com",
 		role:   "developer",
 	}
@@ -50,12 +50,11 @@ func TestCreateInvitation(t *testing.T) {
 }
 
 func TestCreateInvitationEmailWhitespace(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	inv, err := CreateInvitation(ctx, "proj-id-0", "  foo@bar.com  ", "developer")
+	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
+	inv, err := CreateInvitation(ctx, projID, "  foo@bar.com  ", "developer")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +66,7 @@ func TestCreateInvitationEmailWhitespace(t *testing.T) {
 
 	want := testInvitation{
 		id:     inv.ID,
-		projID: "proj-id-0",
+		projID: projID,
 		email:  "foo@bar.com",
 		role:   "developer",
 	}
@@ -78,27 +77,22 @@ func TestCreateInvitationEmailWhitespace(t *testing.T) {
 }
 
 func TestCreateInvitationErrs(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-
-		INSERT INTO users (id, password_hash, email) VALUES
-			('user-id-1', '{}', 'bar@foo.com');
-
-		INSERT INTO members (user_id, project_id, role) VALUES
-			('user-id-1', 'proj-id-0', 'developer');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	userID := assettest.CreateUserFixture(ctx, t, "bar@foo.com", "")
+	projID := assettest.CreateProjectFixture(ctx, t, userID, "proj-0")
 
 	examples := []struct {
 		projID, email, role string
 		wantErr             error
 	}{
 		// Invalid email
-		{"proj-id-0", "invalid-email", "developer", ErrBadEmail},
+		{projID, "invalid-email", "developer", ErrBadEmail},
 		// Invalid role
-		{"proj-id-0", "foo@bar.com", "benevolent-dictator", ErrBadRole},
+		{projID, "foo@bar.com", "benevolent-dictator", ErrBadRole},
 		// Email is already part of the application
-		{"proj-id-0", "bar@foo.com", "admin", ErrAlreadyMember},
+		{projID, "bar@foo.com", "admin", ErrAlreadyMember},
 	}
 
 	for i, ex := range examples {
@@ -116,31 +110,15 @@ func TestCreateInvitationErrs(t *testing.T) {
 }
 
 func TestGetInvitation(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-
-		INSERT INTO users (id, password_hash, email) VALUES
-			('user-id-0', '{}', 'foo@bar.com'),
-			('user-id-1', '{}', 'bar@foo.com');
-
-		INSERT INTO invitations (id, project_id, email, role) VALUES (
-			'inv-id-0',
-			'proj-id-0',
-			'foo@bar.com',
-			'admin'
-		), (
-			'inv-id-1',
-			'proj-id-0',
-			'Bar@Foo.com',
-			'developer'
-		), (
-			'inv-id-2',
-			'proj-id-0',
-			'no-account-yet@foo.com',
-			'developer'
-		);
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	user0ID := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "")
+	user1ID := assettest.CreateUserFixture(ctx, t, "bar@foo.com", "")
+	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
+	inv0ID := assettest.CreateInvitationFixture(ctx, t, projID, "foo@bar.com", "admin")
+	inv1ID := assettest.CreateInvitationFixture(ctx, t, projID, "Bar@Foo.com", "developer")
+	inv2ID := assettest.CreateInvitationFixture(ctx, t, projID, "no-account-yet@foo.com", "developer")
 
 	examples := []struct {
 		id      string
@@ -149,36 +127,36 @@ func TestGetInvitation(t *testing.T) {
 	}{
 		// Invitation to existing user account
 		{
-			id: "inv-id-0",
+			id: inv0ID,
 			want: &Invitation{
-				ID:          "inv-id-0",
-				ProjectID:   "proj-id-0",
+				ID:          inv0ID,
+				ProjectID:   projID,
 				ProjectName: "proj-0",
 				Email:       "foo@bar.com",
 				Role:        "admin",
-				UserID:      "user-id-0",
+				UserID:      user0ID,
 			},
 		},
 
 		// Invitation to existing user account with mismatching email case
 		{
-			id: "inv-id-1",
+			id: inv1ID,
 			want: &Invitation{
-				ID:          "inv-id-1",
-				ProjectID:   "proj-id-0",
+				ID:          inv1ID,
+				ProjectID:   projID,
 				ProjectName: "proj-0",
 				Email:       "Bar@Foo.com",
 				Role:        "developer",
-				UserID:      "user-id-1",
+				UserID:      user1ID,
 			},
 		},
 
 		// Invitation to email address with no corresponding user account
 		{
-			id: "inv-id-2",
+			id: inv2ID,
 			want: &Invitation{
-				ID:          "inv-id-2",
-				ProjectID:   "proj-id-0",
+				ID:          inv2ID,
+				ProjectID:   projID,
 				ProjectName: "proj-0",
 				Email:       "no-account-yet@foo.com",
 				Role:        "developer",
@@ -210,19 +188,13 @@ func TestGetInvitation(t *testing.T) {
 }
 
 func TestCreateUserFromInvitation(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-
-		INSERT INTO invitations (id, project_id, email, role) VALUES (
-			'inv-id-0',
-			'proj-id-0',
-			'foo@bar.com',
-			'admin'
-		);
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	user, err := CreateUserFromInvitation(ctx, "inv-id-0", "password")
+	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
+	invID := assettest.CreateInvitationFixture(ctx, t, projID, "foo@bar.com", "admin")
+
+	user, err := CreateUserFromInvitation(ctx, invID, "password")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -231,7 +203,7 @@ func TestCreateUserFromInvitation(t *testing.T) {
 		t.Errorf("email = %v want foo@bar.com", user.Email)
 	}
 
-	role, err := checkRole(ctx, "proj-id-0", user.ID)
+	role, err := checkRole(ctx, projID, user.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,27 +213,19 @@ func TestCreateUserFromInvitation(t *testing.T) {
 	}
 
 	// Attempting to accept the invitation twice should yield an error
-	_, err = CreateUserFromInvitation(ctx, "inv-id-0", "password")
+	_, err = CreateUserFromInvitation(ctx, invID, "password")
 	if errors.Root(err) != pg.ErrUserInputNotFound {
 		t.Errorf("error = %v want %v", errors.Root(err), pg.ErrUserInputNotFound)
 	}
 }
 
 func TestCreateUserFromInvitationErrs(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-
-		INSERT INTO invitations (id, project_id, email, role) VALUES (
-			'inv-id-0',
-			'proj-id-0',
-			'foo@bar.com',
-			'admin'
-		);
-
-		INSERT INTO users (id, password_hash, email) VALUES
-			('user-id-0', '{}', 'foo@bar.com');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
+	invID := assettest.CreateInvitationFixture(ctx, t, projID, "foo@bar.com", "admin")
+	assettest.CreateUserFixture(ctx, t, "foo@bar.com", "")
 
 	examples := []struct {
 		id       string
@@ -269,11 +233,11 @@ func TestCreateUserFromInvitationErrs(t *testing.T) {
 		wantErr  error
 	}{
 		// Invalid password
-		{"inv-id-0", "badpw", ErrBadPassword},
+		{invID, "badpw", ErrBadPassword},
 		// Non-existent invite
 		{"nonexistent", "password", pg.ErrUserInputNotFound},
 		// Pre-existing user account
-		{"inv-id-0", "password", ErrUserAlreadyExists},
+		{invID, "password", ErrUserAlreadyExists},
 	}
 
 	for _, ex := range examples {
@@ -292,27 +256,19 @@ func TestCreateUserFromInvitationErrs(t *testing.T) {
 }
 
 func TestAddMemberFromInvitation(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-
-		INSERT INTO users (id, password_hash, email) VALUES
-			('user-id-0', '{}', 'foo@bar.com');
-
-		INSERT INTO invitations (id, project_id, email, role) VALUES (
-			'inv-id-0',
-			'proj-id-0',
-			'foo@bar.com',
-			'admin'
-		);
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	err := AddMemberFromInvitation(ctx, "inv-id-0")
+	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
+	userID := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "")
+	invID := assettest.CreateInvitationFixture(ctx, t, projID, "foo@bar.com", "admin")
+
+	err := AddMemberFromInvitation(ctx, invID)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	role, err := checkRole(ctx, "proj-id-0", "user-id-0")
+	role, err := checkRole(ctx, projID, userID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -322,24 +278,18 @@ func TestAddMemberFromInvitation(t *testing.T) {
 	}
 
 	// Attempting to accept the invitation twice should yield an error
-	err = AddMemberFromInvitation(ctx, "inv-id-0")
+	err = AddMemberFromInvitation(ctx, invID)
 	if errors.Root(err) != pg.ErrUserInputNotFound {
 		t.Errorf("error = %v want %v", errors.Root(err), pg.ErrUserInputNotFound)
 	}
 }
 
 func TestAddMemberFromInvitationErrs(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-
-		INSERT INTO invitations (id, project_id, email, role) VALUES (
-			'inv-id-0',
-			'proj-id-0',
-			'foo@bar.com',
-			'admin'
-		);
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
+	invID := assettest.CreateInvitationFixture(ctx, t, projID, "foo@bar.com", "admin")
 
 	examples := []struct {
 		id      string
@@ -348,7 +298,7 @@ func TestAddMemberFromInvitationErrs(t *testing.T) {
 		// Non-existent invite
 		{"nonexistent", pg.ErrUserInputNotFound},
 		// User doesn't exist
-		{"inv-id-0", ErrInviteUserDoesNotExist},
+		{invID, ErrInviteUserDoesNotExist},
 	}
 
 	for _, ex := range examples {
@@ -362,36 +312,26 @@ func TestAddMemberFromInvitationErrs(t *testing.T) {
 }
 
 func TestDeleteInvitation(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-
-		INSERT INTO invitations (id, project_id, email, role) VALUES (
-			'inv-id-0',
-			'proj-id-0',
-			'foo@bar.com',
-			'admin'
-		), (
-			'inv-id-1',
-			'proj-id-0',
-			'Bar@Foo.com',
-			'developer'
-		);
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	err := DeleteInvitation(ctx, "inv-id-0")
+	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
+	inv0ID := assettest.CreateInvitationFixture(ctx, t, projID, "foo@bar.com", "admin")
+	inv1ID := assettest.CreateInvitationFixture(ctx, t, projID, "Bar@Foo.com", "developer")
+
+	err := DeleteInvitation(ctx, inv0ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// The specified invitation should have been deleted...
-	_, err = getTestInvitation(ctx, "inv-id-0")
+	_, err = getTestInvitation(ctx, inv0ID)
 	if errors.Root(err) != sql.ErrNoRows {
 		t.Fatalf("error = %v want %v", errors.Root(err), sql.ErrNoRows)
 	}
 
 	// ...but other rows should not have been affected
-	other, err := getTestInvitation(ctx, "inv-id-1")
+	other, err := getTestInvitation(ctx, inv1ID)
 	if err != nil {
 		t.Fatal(err)
 	}

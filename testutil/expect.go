@@ -9,13 +9,13 @@ import (
 	"chain/fedchain/txscript"
 )
 
-func ExpectEqual(t *testing.T, actual, expected interface{}, msg string) {
+func ExpectEqual(t testing.TB, actual, expected interface{}, msg string) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("%s: got %v, expected %v\n%s", msg, actual, expected, stackTrace())
 	}
 }
 
-func ExpectScriptEqual(t *testing.T, actual, expected []byte, msg string) {
+func ExpectScriptEqual(t testing.TB, actual, expected []byte, msg string) {
 	if !reflect.DeepEqual(expected, actual) {
 		expectedStr, _ := txscript.DisasmString(expected)
 		actualStr, _ := txscript.DisasmString(actual)
@@ -23,14 +23,14 @@ func ExpectScriptEqual(t *testing.T, actual, expected []byte, msg string) {
 	}
 }
 
-func ExpectError(t *testing.T, expected error, msg string, fn func() error) {
+func ExpectError(t testing.TB, expected error, msg string, fn func() error) {
 	actual := fn()
 	if expected != errors.Root(actual) {
 		t.Errorf("%s: got error %v, expected %v\n%s", msg, actual, expected, stackTrace())
 	}
 }
 
-func FatalErr(t *testing.T, err error) {
+func FatalErr(t testing.TB, err error) {
 	t.Log(err)
 	for _, frame := range errors.Stack(err) {
 		t.Log(frame)

@@ -36,7 +36,7 @@ func updateUserPassword(ctx context.Context, in struct{ Current, New string }) e
 
 // POST /nouser/password-reset/start
 func startPasswordReset(ctx context.Context, in struct{ Email string }) (interface{}, error) {
-	secret, err := appdb.StartPasswordReset(ctx, in.Email)
+	secret, err := appdb.StartPasswordReset(ctx, in.Email, time.Now())
 	if err != nil {
 		return nil, err
 	}

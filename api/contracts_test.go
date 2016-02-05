@@ -56,10 +56,7 @@ func TestOfferContract(t *testing.T) {
 			},
 		}
 		callBuildSingle(t, ctx, buildRequest, func(txTemplate *txbuilder.Template) {
-			err := assettest.SignTxTemplate(txTemplate, testutil.TestXPrv)
-			if err != nil {
-				t.Fatal(err)
-			}
+			assettest.SignTxTemplate(t, txTemplate, testutil.TestXPrv)
 
 			offerTx, err := asset.FinalizeTx(ctx, txTemplate)
 			if err != nil {
@@ -103,7 +100,7 @@ func callBuildSingle(t *testing.T, ctx context.Context, request *BuildRequest, c
 
 func TestFindAndBuyContract(t *testing.T) {
 	withContractsFixture(t, func(ctx context.Context, fixtureInfo *contractsFixtureInfo) {
-		openOrder, err := offerAndFind(ctx, fixtureInfo)
+		openOrder, err := offerAndFind(ctx, t, fixtureInfo)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -166,10 +163,7 @@ func TestFindAndBuyContract(t *testing.T) {
 			},
 		}
 		callBuildSingle(t, ctx, buildRequest, func(txTemplate *txbuilder.Template) {
-			err := assettest.SignTxTemplate(txTemplate, testutil.TestXPrv)
-			if err != nil {
-				t.Fatal(err)
-			}
+			assettest.SignTxTemplate(t, txTemplate, testutil.TestXPrv)
 
 			buyTx, err := asset.FinalizeTx(ctx, txTemplate)
 			if err != nil {
@@ -183,7 +177,7 @@ func TestFindAndBuyContract(t *testing.T) {
 	})
 }
 
-func offerAndFind(ctx context.Context, fixtureInfo *contractsFixtureInfo) (*orderbook.OpenOrder, error) {
+func offerAndFind(ctx context.Context, t testing.TB, fixtureInfo *contractsFixtureInfo) (*orderbook.OpenOrder, error) {
 	assetAmount := &bc.AssetAmount{
 		AssetID: fixtureInfo.aaplAssetID,
 		Amount:  100,
@@ -206,10 +200,7 @@ func offerAndFind(ctx context.Context, fixtureInfo *contractsFixtureInfo) (*orde
 	if err != nil {
 		return nil, err
 	}
-	err = assettest.SignTxTemplate(offerTxTemplate, testutil.TestXPrv)
-	if err != nil {
-		return nil, err
-	}
+	assettest.SignTxTemplate(t, offerTxTemplate, testutil.TestXPrv)
 	_, err = asset.FinalizeTx(ctx, offerTxTemplate)
 	if err != nil {
 		return nil, err
@@ -240,7 +231,7 @@ func offerAndFind(ctx context.Context, fixtureInfo *contractsFixtureInfo) (*orde
 
 func TestFindAndCancelContract(t *testing.T) {
 	withContractsFixture(t, func(ctx context.Context, fixtureInfo *contractsFixtureInfo) {
-		openOrder, err := offerAndFind(ctx, fixtureInfo)
+		openOrder, err := offerAndFind(ctx, t, fixtureInfo)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -262,12 +253,9 @@ func TestFindAndCancelContract(t *testing.T) {
 			},
 		}
 		callBuildSingle(t, ctx, buildRequest, func(txTemplate *txbuilder.Template) {
-			err := assettest.SignTxTemplate(txTemplate, testutil.TestXPrv)
-			if err != nil {
-				t.Fatalf("unexpected error %v", err)
-			}
+			assettest.SignTxTemplate(t, txTemplate, testutil.TestXPrv)
 
-			_, err = asset.FinalizeTx(ctx, txTemplate)
+			_, err := asset.FinalizeTx(ctx, txTemplate)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
@@ -292,7 +280,7 @@ func TestFindAndCancelContract(t *testing.T) {
 
 func TestFindBySeller(t *testing.T) {
 	withContractsFixture(t, func(ctx context.Context, fixtureInfo *contractsFixtureInfo) {
-		order, err := offerAndFind(ctx, fixtureInfo)
+		order, err := offerAndFind(ctx, t, fixtureInfo)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -336,8 +324,8 @@ func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtu
 	fixtureInfo.managerNodeID = assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.projectID, "", nil, nil)
 	fixtureInfo.issuerNodeID = assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.projectID, "", nil, nil)
 	fixtureInfo.sellerAccountID = assettest.CreateAccountFixture(ctx, t, fixtureInfo.managerNodeID, "seller", nil)
-	fixtureInfo.aaplAssetID = assettest.CreateAssetFixture(ctx, t, fixtureInfo.issuerNodeID, "")
-	fixtureInfo.usdAssetID = assettest.CreateAssetFixture(ctx, t, fixtureInfo.issuerNodeID, "")
+	fixtureInfo.aaplAssetID = assettest.CreateAssetFixture(ctx, t, fixtureInfo.issuerNodeID, "", "")
+	fixtureInfo.usdAssetID = assettest.CreateAssetFixture(ctx, t, fixtureInfo.issuerNodeID, "", "")
 	fixtureInfo.prices = []*orderbook.Price{
 		&orderbook.Price{
 			AssetID:       fixtureInfo.usdAssetID,

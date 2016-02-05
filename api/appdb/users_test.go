@@ -4,16 +4,23 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
 
 	. "chain/api/appdb"
+	"chain/api/asset/assettest"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/net/http/authn"
+	"chain/testutil"
 )
+
+func init() {
+	SetPasswordBCryptCost(bcrypt.MinCost)
+}
 
 func getUserByCreds(ctx context.Context, email, password string) (*User, error) {
 	q := `SELECT id, password_hash FROM users WHERE lower(email) = lower($1)`
@@ -198,18 +205,17 @@ func TestAuthenticateUserCreds(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO users (id, email, password_hash)
-		VALUES ('user-id-0', 'foo@bar.com', 'password-does-not-matter');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	id := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 
 	examples := []struct {
 		id       string
 		wantUser *User
 		wantErr  error
 	}{
-		{"user-id-0", &User{ID: "user-id-0", Email: "foo@bar.com"}, nil},
+		{id, &User{ID: id, Email: "foo@bar.com"}, nil},
 		{"nonexistent", nil, pg.ErrUserInputNotFound},
 	}
 
@@ -229,20 +235,19 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetUserByEmail(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO users (id, email, password_hash)
-		VALUES ('user-id-0', 'foo@bar.com', 'password-does-not-matter');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	id := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 
 	examples := []struct {
 		email    string
 		wantUser *User
 		wantErr  error
 	}{
-		{"foo@bar.com", &User{ID: "user-id-0", Email: "foo@bar.com"}, nil},
-		{"Foo@Bar.com", &User{ID: "user-id-0", Email: "foo@bar.com"}, nil},
-		{"  foo@bar.com  ", &User{ID: "user-id-0", Email: "foo@bar.com"}, nil},
+		{"foo@bar.com", &User{ID: id, Email: "foo@bar.com"}, nil},
+		{"Foo@Bar.com", &User{ID: id, Email: "foo@bar.com"}, nil},
+		{"  foo@bar.com  ", &User{ID: id, Email: "foo@bar.com"}, nil},
 		{"baz@bar.com", nil, pg.ErrUserInputNotFound},
 	}
 
@@ -262,22 +267,6 @@ func TestGetUserByEmail(t *testing.T) {
 }
 
 func TestUpdateUserEmail(t *testing.T) {
-	fix := `
-		INSERT INTO users (id, email, password_hash)
-		VALUES (
-			'user-id-0',
-			'foo@bar.com',
-			'$2a$08$DNDEy/pOSfiiyW7o4qEzGO4Ae6gzQVtLVVFCTwO9cwWyekm/gFkxC'::bytea -- plaintext: abracadabra
-		);
-
-		INSERT INTO users (id, email, password_hash)
-		VALUES (
-			'user-id-1',
-			'foo2@bar.com',
-			'$2a$08$DNDEy/pOSfiiyW7o4qEzGO4Ae6gzQVtLVVFCTwO9cwWyekm/gFkxC'::bytea -- plaintext: abracadabra
-		);
-	`
-
 	examples := []struct {
 		password string
 		email    string
@@ -296,10 +285,13 @@ func TestUpdateUserEmail(t *testing.T) {
 		func() {
 			t.Log("Example", i)
 
-			ctx := pgtest.NewContext(t, fix)
+			ctx := pgtest.NewContext(t)
 			defer pgtest.Finish(ctx)
 
-			err := UpdateUserEmail(ctx, "user-id-0", ex.password, ex.email)
+			id1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+			assettest.CreateUserFixture(ctx, t, "foo2@bar.com", "abracadabra")
+
+			err := UpdateUserEmail(ctx, id1, ex.password, ex.email)
 			if errors.Root(err) != ex.want {
 				t.Errorf("error = %v want %v", errors.Root(err), ex.want)
 			}
@@ -315,15 +307,6 @@ func TestUpdateUserEmail(t *testing.T) {
 }
 
 func TestUpdateUserPassword(t *testing.T) {
-	fix := `
-		INSERT INTO users (id, email, password_hash)
-		VALUES (
-			'user-id-0',
-			'foo@bar.com',
-			'$2a$08$DNDEy/pOSfiiyW7o4qEzGO4Ae6gzQVtLVVFCTwO9cwWyekm/gFkxC'::bytea -- plaintext: abracadabra
-		);
-	`
-
 	examples := []struct {
 		password string
 		newpass  string
@@ -338,10 +321,12 @@ func TestUpdateUserPassword(t *testing.T) {
 		func() {
 			t.Log("Example", i)
 
-			ctx := pgtest.NewContext(t, fix)
+			ctx := pgtest.NewContext(t)
 			defer pgtest.Finish(ctx)
 
-			err := UpdateUserPassword(ctx, "user-id-0", ex.password, ex.newpass)
+			id1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+
+			err := UpdateUserPassword(ctx, id1, ex.password, ex.newpass)
 			if errors.Root(err) != ex.want {
 				t.Errorf("error = %v want %v", errors.Root(err), ex.want)
 			}
@@ -357,13 +342,12 @@ func TestUpdateUserPassword(t *testing.T) {
 }
 
 func TestPasswordResetFlow(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
-		INSERT INTO users (id, email, password_hash)
-		VALUES ('user-id-0', 'foo@bar.com', '{}');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	secret, err := StartPasswordReset(ctx, "foo@bar.com")
+	id1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+
+	secret, err := StartPasswordReset(ctx, "foo@bar.com", time.Now())
 	if err != nil {
 		t.Fatal("unexepcted error:", err)
 	}
@@ -373,7 +357,7 @@ func TestPasswordResetFlow(t *testing.T) {
 		t.Fatal("unexpected error:", err)
 	}
 
-	err = CheckPassword(ctx, "user-id-0", "open-sesame")
+	err = CheckPassword(ctx, id1, "open-sesame")
 	if err != nil {
 		t.Errorf("check password error got = %v want nil", err)
 	}
@@ -385,7 +369,7 @@ func TestPasswordResetFlow(t *testing.T) {
 	}
 
 	// The second attempt should not have changed anything.
-	err = CheckPassword(ctx, "user-id-0", "open-sesame")
+	err = CheckPassword(ctx, id1, "open-sesame")
 	if err != nil {
 		t.Errorf("check password error got = %v want nil", err)
 	}
@@ -393,7 +377,7 @@ func TestPasswordResetFlow(t *testing.T) {
 
 func TestStartPasswordResetErrs(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
-		gotSecret, gotErr := StartPasswordReset(ctx, "foo@bar.com")
+		gotSecret, gotErr := StartPasswordReset(ctx, "foo@bar.com", time.Now())
 
 		if gotSecret != "" {
 			t.Errorf("secret got = %v want blank", gotSecret)
@@ -406,103 +390,92 @@ func TestStartPasswordResetErrs(t *testing.T) {
 }
 
 func TestCheckPasswordReset(t *testing.T) {
-	fix := `
-		INSERT INTO users (
-			id, email, password_hash, pwreset_secret_hash, pwreset_expires_at
-		) VALUES (
-			'user-id-0',
-			'foo@bar.com',
-			'{}',
-			'$2a$08$WF7tWRx/26m9Cp2kQBQEwuKxCev9S4TSzWdmtNmHSvan4UhEw0Er.'::bytea, -- plaintext: abracadabra
-			now() + '1h'::interval
-		), (
-			'user-id-1',
-			'bar@foo.com',
-			'{}',
-			'$2a$08$WF7tWRx/26m9Cp2kQBQEwuKxCev9S4TSzWdmtNmHSvan4UhEw0Er.'::bytea, -- plaintext: abracadabra
-			now() - '1h'::interval
-		);
-	`
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
 
-	withContext(t, fix, func(ctx context.Context) {
-		examples := []struct {
-			email  string
-			secret string
-			want   error
-		}{
-			// Valid example
-			{"foo@bar.com", "abracadabra", nil},
-			// Valid example, mismatching email case
-			{"Foo@Bar.com", "abracadabra", nil},
-			// Valid example, whitespace in email
-			{"  foo@bar.com  ", "abracadabra", nil},
-			// Bad secret
-			{"foo@bar.com", "bad-secret", pg.ErrUserInputNotFound},
-			// Password reset has expired
-			{"bar@foo.com", "abracadabra", pg.ErrUserInputNotFound},
-			// Bad user
-			{"nonexistent", "abracadabra", pg.ErrUserInputNotFound},
-		}
+	assettest.CreateUserFixture(ctx, t, "foo@bar.com", "anything")
+	assettest.CreateUserFixture(ctx, t, "bar@foo.com", "anything")
 
-		for _, ex := range examples {
-			t.Logf("Example: %s:%s", ex.email, ex.secret)
-			got := CheckPasswordReset(ctx, ex.email, ex.secret)
-			if errors.Root(got) != ex.want {
-				t.Errorf("error got = %v want %v", errors.Root(got), ex.want)
-			}
-		}
-	})
-}
-
-func TestFinishPasswordResetErrs(t *testing.T) {
-	fix := `
-		INSERT INTO users (
-			id, email, password_hash, pwreset_secret_hash, pwreset_expires_at
-		) VALUES (
-			'user-id-0',
-			'foo@bar.com',
-			'{}',
-			'$2a$08$WF7tWRx/26m9Cp2kQBQEwuKxCev9S4TSzWdmtNmHSvan4UhEw0Er.'::bytea, -- plaintext: abracadabra
-			now() + '1h'::interval
-		), (
-			'user-id-1',
-			'bar@foo.com',
-			'{}',
-			'$2a$08$WF7tWRx/26m9Cp2kQBQEwuKxCev9S4TSzWdmtNmHSvan4UhEw0Er.'::bytea, -- plaintext: abracadabra
-			now() - '1h'::interval
-		);
-	`
+	secret1, err := StartPasswordReset(ctx, "foo@bar.com", time.Now())
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	secret2, err := StartPasswordReset(ctx, "bar@foo.com", time.Now().Add(PWResetLifeTime()*-2))
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
 
 	examples := []struct {
-		email   string
-		secret  string
-		newpass string
-		wantErr error
+		email  string
+		secret string
+		want   error
 	}{
 		// Valid example
-		{"foo@bar.com", "abracadabra", "new-password", nil},
+		{"foo@bar.com", secret1, nil},
 		// Valid example, mismatching email case
-		{"Foo@Bar.com", "abracadabra", "new-password", nil},
-		// Valid example, extra whitespace
-		{"  foo@bar.com  ", "abracadabra", "new-password", nil},
-		// Invalid proposed password
-		{"foo@bar.com", "abracadabra", "", ErrBadPassword},
+		{"Foo@Bar.com", secret1, nil},
+		// Valid example, whitespace in email
+		{"  foo@bar.com  ", secret1, nil},
 		// Bad secret
-		{"foo@bar.com", "bad-secret", "new-password", pg.ErrUserInputNotFound},
+		{"foo@bar.com", "bad-secret", pg.ErrUserInputNotFound},
 		// Password reset has expired
-		{"bar@foo.com", "abracadabra", "new-password", pg.ErrUserInputNotFound},
+		{"bar@foo.com", secret2, pg.ErrUserInputNotFound},
 		// Bad user
-		{"nonexistent", "abracadabra", "new-password", pg.ErrUserInputNotFound},
+		{"nonexistent", secret2, pg.ErrUserInputNotFound},
 	}
 
 	for _, ex := range examples {
 		t.Logf("Example: %s:%s", ex.email, ex.secret)
+		got := CheckPasswordReset(ctx, ex.email, ex.secret)
+		if errors.Root(got) != ex.want {
+			t.Errorf("error got = %v want %v", errors.Root(got), ex.want)
+		}
+	}
+}
+
+func TestFinishPasswordResetErrs(t *testing.T) {
+	examples := []struct {
+		email     string
+		useSecret bool
+		newpass   string
+		resetTime time.Time
+		wantErr   error
+	}{
+		// Valid example
+		{"foo@bar.com", true, "new-password", time.Now(), nil},
+		// Valid example, mismatching email case
+		{"Foo@Bar.com", true, "new-password", time.Now(), nil},
+		// Valid example, extra whitespace
+		{"  foo@bar.com  ", true, "new-password", time.Now(), nil},
+		// Invalid proposed password
+		{"foo@bar.com", true, "", time.Now(), ErrBadPassword},
+		// Bad secret
+		{"foo@bar.com", false, "new-password", time.Now(), pg.ErrUserInputNotFound},
+		// Password reset has expired
+		{"foo@bar.com", true, "new-password", time.Now().Add(PWResetLifeTime() * -2), pg.ErrUserInputNotFound},
+		// Bad user
+		{"nonexistent", true, "new-password", time.Now(), pg.ErrUserInputNotFound},
+	}
+
+	for _, ex := range examples {
+		t.Logf("Example: %s:%v", ex.email, ex.useSecret)
 
 		func() {
-			ctx := pgtest.NewContext(t, fix)
+			ctx := pgtest.NewContext(t)
 			defer pgtest.Finish(ctx)
 
-			gotErr := FinishPasswordReset(ctx, ex.email, ex.secret, ex.newpass)
+			assettest.CreateUserFixture(ctx, t, "foo@bar.com", "anything")
+			secret1, err := StartPasswordReset(ctx, "foo@bar.com", ex.resetTime)
+			if err != nil {
+				testutil.FatalErr(t, err)
+			}
+
+			secret := "bad-secret"
+			if ex.useSecret {
+				secret = secret1
+			}
+
+			gotErr := FinishPasswordReset(ctx, ex.email, secret, ex.newpass)
 			if errors.Root(gotErr) != ex.wantErr {
 				t.Errorf("error got = %v want %v", errors.Root(gotErr), ex.wantErr)
 			}

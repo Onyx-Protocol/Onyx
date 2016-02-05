@@ -1,7 +1,6 @@
 package appdb_test
 
 import (
-	"database/sql"
 	"reflect"
 	"testing"
 	"time"
@@ -11,44 +10,9 @@ import (
 	"github.com/lib/pq"
 
 	. "chain/api/appdb"
+	"chain/api/asset/assettest"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-)
-
-const (
-	authTokenUserFixture = `
-		INSERT INTO users (id, email, password_hash) VALUES (
-			'sample-user-id-0',
-			'foo@bar.com',
-			'$2a$08$cHBfwMUAhhPcphRz1HgidO.gxb8WKXqUPVWfmcsuHUQoEB2RRzeSC'::bytea -- plaintext: abracadbra
-		);
-	`
-
-	authTokenFixture = `
-		INSERT INTO auth_tokens (id, secret_hash, type, user_id, created_at, expires_at) VALUES (
-			'sample-token-id-0',
-			'$2a$08$XMDacphqs44K0pzrSQxgqu3dAF.I3vn54toLboBSCKW6oSGitjSpa'::bytea, -- plaintext: 0123456789ABCDEF
-			'sample-type-0',
-			'sample-user-id-0',
-			'2000-01-01 00:00:00+00',
-			NULL
-		), (
-			-- expired token
-			'sample-token-id-1',
-			'$2a$08$XMDacphqs44K0pzrSQxgqu3dAF.I3vn54toLboBSCKW6oSGitjSpa'::bytea, -- plaintext: 0123456789ABCDEF
-			'sample-type-0',
-			'sample-user-id-0',
-			'2000-01-01 00:00:00+00',
-			'2000-01-01 00:00:00+00'
-		), (
-			'sample-token-id-2',
-			'$2a$08$XMDacphqs44K0pzrSQxgqu3dAF.I3vn54toLboBSCKW6oSGitjSpa'::bytea, -- plaintext: 0123456789ABCDEF
-			'sample-type-1',
-			'sample-user-id-0',
-			'2000-01-01 00:00:00+00',
-			NULL
-		);
-	`
 )
 
 type testAuthToken struct {
@@ -84,10 +48,12 @@ func TestCreateAuthToken(t *testing.T) {
 		t.Log("expiresAt:", expiresAt)
 
 		func() {
-			ctx := pgtest.NewContext(t, authTokenUserFixture)
+			ctx := pgtest.NewContext(t)
 			defer pgtest.Finish(ctx)
 
-			tok, err := CreateAuthToken(ctx, "sample-user-id-0", "sample-type-0", expiresAt)
+			uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+
+			tok, err := CreateAuthToken(ctx, uid, "sample-type-0", expiresAt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -109,7 +75,7 @@ func TestCreateAuthToken(t *testing.T) {
 				id:         tok.ID,
 				secretHash: got.secretHash, // doesn't matter as long as it's not the secret
 				typ:        "sample-type-0",
-				userID:     "sample-user-id-0",
+				userID:     uid,
 				expiresAt:  expiresAt,
 			}
 
@@ -125,13 +91,18 @@ func TestCreateAuthToken(t *testing.T) {
 }
 
 func TestListAuthTokens(t *testing.T) {
-	ctx := pgtest.NewContext(t, authTokenUserFixture, authTokenFixture)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
 	ts, err := time.Parse(time.RFC3339, "2000-01-01T00:00:00Z")
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
+
+	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	tok0 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-0", nil)
+	tok1 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-0", &ts)
+	tok2 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-1", nil)
 
 	examples := []struct {
 		userID string
@@ -139,22 +110,22 @@ func TestListAuthTokens(t *testing.T) {
 		want   []*AuthToken
 	}{
 		{
-			"sample-user-id-0",
+			uid,
 			"sample-type-0",
 			[]*AuthToken{
-				{ID: "sample-token-id-0", CreatedAt: ts},
-				{ID: "sample-token-id-1", CreatedAt: ts},
+				{ID: tok0.ID, CreatedAt: tok0.CreatedAt},
+				{ID: tok1.ID, CreatedAt: tok1.CreatedAt},
 			},
 		},
 		{
-			"sample-user-id-0",
+			uid,
 			"sample-type-1",
 			[]*AuthToken{
-				{ID: "sample-token-id-2", CreatedAt: ts},
+				{ID: tok2.ID, CreatedAt: tok2.CreatedAt},
 			},
 		},
 		{
-			"sample-user-id-0",
+			uid,
 			"nonexistent-type",
 			nil,
 		},
@@ -194,35 +165,32 @@ func TestListAuthTokens(t *testing.T) {
 }
 
 func TestDeleteAuthToken(t *testing.T) {
-	ctx := pgtest.NewContext(t, authTokenUserFixture, authTokenFixture)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	if !authTokenExists(ctx, "sample-token-id-0") {
-		t.Error("initial check: token does not exist")
-	}
-
-	err := DeleteAuthToken(ctx, "sample-token-id-0")
+	ts, err := time.Parse(time.RFC3339, "2000-01-01T00:00:00Z")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if authTokenExists(ctx, "sample-token-id-0") {
+	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	tok0 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-0", nil)
+	tok1 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-0", &ts)
+
+	if _, _, _, err := GetAuthToken(ctx, tok0.ID); err != nil {
+		t.Error("initial check: token does not exist")
+	}
+
+	err = DeleteAuthToken(ctx, tok0.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, _, _, err := GetAuthToken(ctx, tok0.ID); err == nil {
 		t.Error("after delete: token still exists")
 	}
 
-	if !authTokenExists(ctx, "sample-token-id-1") {
+	if _, _, _, err := GetAuthToken(ctx, tok1.ID); err != nil {
 		t.Error("after delete: other token was deleted")
 	}
-}
-
-func authTokenExists(ctx context.Context, id string) bool {
-	q := `SELECT 1 FROM auth_tokens WHERE id = $1`
-	err := pg.FromContext(ctx).QueryRow(ctx, q, id).Scan(new(int))
-	if err == sql.ErrNoRows {
-		return false
-	}
-	if err != nil {
-		panic(err)
-	}
-	return true
 }

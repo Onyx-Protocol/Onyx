@@ -98,7 +98,7 @@ func Write(ctx context.Context, tx *bc.Tx, ts time.Time) error {
 		if err != nil {
 			return errors.Wrap(err, "filtering tx")
 		}
-		err = appdb.WriteIssuerTx(ctx, tx.Hash.String(), filteredTx, assets[0].IssuerNodeID, assets[0].ID)
+		_, err = appdb.WriteIssuerTx(ctx, tx.Hash.String(), filteredTx, assets[0].IssuerNodeID, assets[0].ID)
 		if err != nil {
 			return errors.Wrap(err, "writing issuer tx")
 		}
@@ -109,7 +109,7 @@ func Write(ctx context.Context, tx *bc.Tx, ts time.Time) error {
 		if err != nil {
 			return errors.Wrap(err, "filtering tx")
 		}
-		err = appdb.WriteManagerTx(ctx, tx.Hash.String(), filteredTx, nodeID, accountIDs)
+		_, err = appdb.WriteManagerTx(ctx, tx.Hash.String(), filteredTx, nodeID, accountIDs)
 		if err != nil {
 			return errors.Wrap(err, "writing manager tx")
 		}

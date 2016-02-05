@@ -3,12 +3,13 @@ package assettest
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/api/asset"
-	"chain/api/txdb"
+	"chain/api/txbuilder"
 	"chain/database/pg/pgtest"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
@@ -18,7 +19,7 @@ import (
 
 var userCounter = createCounter()
 
-func CreateUserFixture(ctx context.Context, t *testing.T, email, password string) string {
+func CreateUserFixture(ctx context.Context, t testing.TB, email, password string) string {
 	if email == "" {
 		email = fmt.Sprintf("user-%d@domain.tld", <-userCounter)
 	}
@@ -32,9 +33,17 @@ func CreateUserFixture(ctx context.Context, t *testing.T, email, password string
 	return user.ID
 }
 
+func CreateAuthTokenFixture(ctx context.Context, t testing.TB, userID string, typ string, expiresAt *time.Time) *appdb.AuthToken {
+	token, err := appdb.CreateAuthToken(ctx, userID, typ, expiresAt)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	return token
+}
+
 var projCounter = createCounter()
 
-func CreateProjectFixture(ctx context.Context, t *testing.T, userID, name string) string {
+func CreateProjectFixture(ctx context.Context, t testing.TB, userID, name string) string {
 	if userID == "" {
 		userID = CreateUserFixture(ctx, t, "", "")
 	}
@@ -48,9 +57,23 @@ func CreateProjectFixture(ctx context.Context, t *testing.T, userID, name string
 	return proj.ID
 }
 
+func CreateMemberFixture(ctx context.Context, t testing.TB, userID, projectID, role string) {
+	if err := appdb.AddMember(ctx, projectID, userID, role); err != nil {
+		testutil.FatalErr(t, err)
+	}
+}
+
+func CreateInvitationFixture(ctx context.Context, t testing.TB, projectID, email, role string) string {
+	invitation, err := appdb.CreateInvitation(ctx, projectID, email, role)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	return invitation.ID
+}
+
 var issuerNodeCounter = createCounter()
 
-func CreateIssuerNodeFixture(ctx context.Context, t *testing.T, projectID, label string, xpubs, xprvs []*hdkey.XKey) string {
+func CreateIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs, xprvs []*hdkey.XKey) string {
 	if projectID == "" {
 		projectID = CreateProjectFixture(ctx, t, "", "")
 	}
@@ -68,9 +91,19 @@ func CreateIssuerNodeFixture(ctx context.Context, t *testing.T, projectID, label
 	return issuerNode.ID
 }
 
+func CreateArchivedIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs, xprvs []*hdkey.XKey) string {
+	inodeID := CreateIssuerNodeFixture(ctx, t, projectID, label, xpubs, xprvs)
+	err := appdb.ArchiveIssuerNode(ctx, inodeID)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	return inodeID
+}
+
 var managerNodeCounter = createCounter()
 
-func CreateManagerNodeFixture(ctx context.Context, t *testing.T, projectID, label string, xpubs, xprvs []*hdkey.XKey) string {
+func CreateManagerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs, xprvs []*hdkey.XKey) string {
 	if projectID == "" {
 		projectID = CreateProjectFixture(ctx, t, "", "")
 	}
@@ -90,7 +123,7 @@ func CreateManagerNodeFixture(ctx context.Context, t *testing.T, projectID, labe
 
 var accountCounter = createCounter()
 
-func CreateAccountFixture(ctx context.Context, t *testing.T, managerNodeID, label string, keys []string) string {
+func CreateAccountFixture(ctx context.Context, t testing.TB, managerNodeID, label string, keys []string) string {
 	if managerNodeID == "" {
 		managerNodeID = CreateManagerNodeFixture(ctx, t, "", "", nil, nil)
 	}
@@ -106,14 +139,14 @@ func CreateAccountFixture(ctx context.Context, t *testing.T, managerNodeID, labe
 
 var assetCounter = createCounter()
 
-func CreateAssetFixture(ctx context.Context, t *testing.T, issuerNodeID, label string) bc.AssetID {
+func CreateAssetFixture(ctx context.Context, t testing.TB, issuerNodeID, label, def string) bc.AssetID {
 	if issuerNodeID == "" {
 		issuerNodeID = CreateIssuerNodeFixture(ctx, t, "", "", nil, nil)
 	}
 	if label == "" {
 		label = fmt.Sprintf("inode-%d", <-assetCounter)
 	}
-	asset, err := asset.Create(ctx, issuerNodeID, label, nil)
+	asset, err := asset.Create(ctx, issuerNodeID, label, map[string]interface{}{"s": def})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -149,38 +182,50 @@ func NewContextWithGenesisBlock(tb testing.TB) context.Context {
 	return ctx
 }
 
-var opIndexCounter = createCounter()
-
-func CreateAccountUTXOFixture(ctx context.Context, t *testing.T, accountID string, assetID bc.AssetID, amt uint64, confirmed bool) bc.Outpoint {
+func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64, accountID string) state.Output {
 	if accountID == "" {
-		accountID = CreateAccountFixture(ctx, t, "", "x", []string{testutil.TestXPub.String()})
+		accountID = CreateAccountFixture(ctx, t, "", "foo", nil)
 	}
-	addr := &appdb.Address{AccountID: accountID}
-	err := appdb.CreateAddress(ctx, addr, false)
+	dest := AccountDestinationFixture(ctx, t, assetID, amount, accountID)
+
+	tpl, err := asset.Issue(ctx, assetID.String(), []*txbuilder.Destination{dest})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	output := &txdb.Output{
-		Output: state.Output{
-			Outpoint: bc.Outpoint{Index: uint32(<-opIndexCounter)},
-			TxOutput: bc.TxOutput{
-				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: amt},
-			},
-		},
-		ManagerNodeID: addr.ManagerNodeID,
-		AccountID:     accountID,
-	}
-	copy(output.AddrIndex[:], addr.Index[0:2])
 
-	if !confirmed {
-		// ignore error from potential duplicate
-		txdb.InsertPoolTx(ctx, &bc.Tx{Hash: output.Outpoint.Hash, TxData: bc.TxData{}})
-		err = txdb.InsertPoolOutputs(ctx, []*txdb.Output{output})
-		if err != nil {
-			testutil.FatalErr(t, err)
-		}
-	} else {
-		_, err = txdb.InsertBlockOutputs(ctx, &bc.Block{}, []*txdb.Output{output})
+	SignTxTemplate(t, tpl, testutil.TestXPrv)
+
+	tx, err := asset.FinalizeTx(ctx, tpl)
+	if err != nil {
+		testutil.FatalErr(t, err)
 	}
-	return output.Outpoint
+
+	return state.Output{
+		Outpoint: bc.Outpoint{Hash: tx.Hash, Index: 0},
+		TxOutput: *tx.Outputs[0],
+	}
+}
+
+func AccountDestinationFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64, accountID string) *txbuilder.Destination {
+	dest, err := asset.NewAccountDestination(ctx, &bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	return dest
+}
+
+func IssuerTxFixture(ctx context.Context, t testing.TB, txHash string, data []byte, iNodeID string, asset string) (id string) {
+	id, err := appdb.WriteIssuerTx(ctx, txHash, data, iNodeID, asset)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	return id
+}
+
+func ManagerTxFixture(ctx context.Context, t testing.TB, txHash string, data []byte, mNodeID string, accounts []string) (id string) {
+	id, err := appdb.WriteManagerTx(ctx, txHash, data, mNodeID, accounts)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	return id
 }

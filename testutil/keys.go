@@ -26,3 +26,16 @@ func init() {
 	TestXPub = &hdkey.XKey{ExtendedKey: *xpub}
 	TestXPrv = &hdkey.XKey{ExtendedKey: *xprv}
 }
+
+// XPubs parses the serialized xpubs in a.
+// If there is a parsing error, it panics.
+func XPubs(a ...string) (ks []*hdkey.XKey) {
+	for _, s := range a {
+		xk, err := hdkey.NewXKey(s)
+		if err != nil {
+			panic(err)
+		}
+		ks = append(ks, xk)
+	}
+	return ks
+}

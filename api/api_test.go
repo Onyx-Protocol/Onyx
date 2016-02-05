@@ -66,7 +66,7 @@ func TestIssue(t *testing.T) {
 	projectID := assettest.CreateProjectFixture(ctx, t, userID, "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
 	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
-	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "")
+	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
 	account1ID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
 
 	ctx = authn.NewContext(ctx, userID)
@@ -110,7 +110,7 @@ func TestTransfer(t *testing.T) {
 	projectID := assettest.CreateProjectFixture(ctx, t, userID, "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
 	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
-	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "")
+	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
 	account1ID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
 	account2ID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
 
@@ -173,11 +173,7 @@ func TestTransfer(t *testing.T) {
 	}
 	toSign := inspectTemplate(t, parsedResult[0], managerNodeID, account2ID)
 	txTemplate, err = toTxTemplate(ctx, toSign)
-	err = assettest.SignTxTemplate(txTemplate, chaintest.TestXPrv)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
+	assettest.SignTxTemplate(t, txTemplate, chaintest.TestXPrv)
 	signedTemplate, err := toRequestTemplate(txTemplate)
 	if err != nil {
 		t.Log(errors.Stack(err))

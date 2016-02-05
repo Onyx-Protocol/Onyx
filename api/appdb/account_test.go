@@ -7,7 +7,9 @@ import (
 	"golang.org/x/net/context"
 
 	. "chain/api/appdb"
+	"chain/api/asset/assettest"
 	"chain/database/pg"
+	"chain/database/pg/pgtest"
 	"chain/errors"
 )
 
@@ -70,139 +72,131 @@ func TestCreateAccountWithTooManyKeys(t *testing.T) {
 }
 
 func TestListAccounts(t *testing.T) {
-	const sql = `
-		INSERT INTO projects (id, name) VALUES
-			('proj-id-0', 'proj-0');
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
 
-		INSERT INTO manager_nodes (id, project_id, key_index, label) VALUES
-			('manager-node-id-0', 'proj-id-0', 0, 'manager-node-0'),
-			('manager-node-id-1', 'proj-id-0', 1, 'manager-node-1');
+	manager1 := assettest.CreateManagerNodeFixture(ctx, t, "", "m1", nil, nil)
+	manager2 := assettest.CreateManagerNodeFixture(ctx, t, "", "m2", nil, nil)
+	acc0 := assettest.CreateAccountFixture(ctx, t, manager1, "account-0", nil)
+	acc1 := assettest.CreateAccountFixture(ctx, t, manager1, "account-1", nil)
+	acc2 := assettest.CreateAccountFixture(ctx, t, manager2, "account-2", nil)
+	acc3 := assettest.CreateAccountFixture(ctx, t, manager1, "account-3", nil)
+	acc4 := assettest.CreateAccountFixture(ctx, t, manager1, "account-4", nil)
 
-		INSERT INTO accounts (id, manager_node_id, key_index, label, archived) VALUES
-			('account-id-0', 'manager-node-id-0', 0, 'account-0', false),
-			('account-id-1', 'manager-node-id-0', 1, 'account-1', false),
-			('account-id-2', 'manager-node-id-1', 2, 'account-2', false),
-			('account-id-3', 'manager-node-id-0', 3, 'account-3', false),
-			('account-id-4', 'manager-node-id-0', 4, 'account-4', true);
-	`
-	withContext(t, sql, func(ctx context.Context) {
-		examples := []struct {
-			managerNodeID string
-			prev          string
-			limit         int
-			want          []*Account
-			wantLast      string
-		}{
-			{
-				managerNodeID: "manager-node-id-0",
-				limit:         5,
-				want: []*Account{
-					{ID: "account-id-3", Label: "account-3", Index: []uint32{0, 3}},
-					{ID: "account-id-1", Label: "account-1", Index: []uint32{0, 1}},
-					{ID: "account-id-0", Label: "account-0", Index: []uint32{0, 0}},
-				},
-				wantLast: "account-id-0",
+	err := ArchiveAccount(ctx, acc4)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	examples := []struct {
+		managerNodeID string
+		prev          string
+		limit         int
+		want          []*Account
+		wantLast      string
+	}{
+		{
+			managerNodeID: manager1,
+			limit:         5,
+			want: []*Account{
+				{ID: acc3, Label: "account-3", Index: []uint32{0, 2}},
+				{ID: acc1, Label: "account-1", Index: []uint32{0, 1}},
+				{ID: acc0, Label: "account-0", Index: []uint32{0, 0}},
 			},
-			{
-				managerNodeID: "manager-node-id-1",
-				limit:         5,
-				want: []*Account{
-					{ID: "account-id-2", Label: "account-2", Index: []uint32{0, 2}},
-				},
-				wantLast: "account-id-2",
+			wantLast: acc0,
+		},
+		{
+			managerNodeID: manager2,
+			limit:         5,
+			want: []*Account{
+				{ID: acc2, Label: "account-2", Index: []uint32{0, 0}},
 			},
-			{
-				managerNodeID: "nonexistent",
-				want:          nil,
+			wantLast: acc2,
+		},
+		{
+			managerNodeID: "nonexistent",
+			want:          nil,
+		},
+		{
+			managerNodeID: manager1,
+			limit:         2,
+			want: []*Account{
+				{ID: acc3, Label: "account-3", Index: []uint32{0, 2}},
+				{ID: acc1, Label: "account-1", Index: []uint32{0, 1}},
 			},
-			{
-				managerNodeID: "manager-node-id-0",
-				limit:         2,
-				want: []*Account{
-					{ID: "account-id-3", Label: "account-3", Index: []uint32{0, 3}},
-					{ID: "account-id-1", Label: "account-1", Index: []uint32{0, 1}},
-				},
-				wantLast: "account-id-1",
+			wantLast: acc1,
+		},
+		{
+			managerNodeID: manager1,
+			limit:         2,
+			prev:          acc1,
+			want: []*Account{
+				{ID: acc0, Label: "account-0", Index: []uint32{0, 0}},
 			},
-			{
-				managerNodeID: "manager-node-id-0",
-				limit:         2,
-				prev:          "account-id-1",
-				want: []*Account{
-					{ID: "account-id-0", Label: "account-0", Index: []uint32{0, 0}},
-				},
-				wantLast: "account-id-0",
-			},
-			{
-				managerNodeID: "manager-node-id-0",
-				limit:         2,
-				prev:          "account-id-0",
-				want:          nil,
-				wantLast:      "",
-			},
+			wantLast: acc0,
+		},
+		{
+			managerNodeID: manager1,
+			limit:         2,
+			prev:          acc0,
+			want:          nil,
+			wantLast:      "",
+		},
+	}
+
+	for _, ex := range examples {
+		got, gotLast, err := ListAccounts(ctx, ex.managerNodeID, ex.prev, ex.limit)
+		if err != nil {
+			t.Fatal(err)
 		}
 
-		for _, ex := range examples {
-			got, gotLast, err := ListAccounts(ctx, ex.managerNodeID, ex.prev, ex.limit)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if !reflect.DeepEqual(got, ex.want) {
-				t.Errorf("ListAccounts(%v, %v, %d):\ngot:  %v\nwant: %v", ex.managerNodeID, ex.prev, ex.limit, got, ex.want)
-			}
-
-			if gotLast != ex.wantLast {
-				t.Errorf("ListAccounts(%v, %v, %d):\ngot last:  %v\nwant last: %v",
-					ex.managerNodeID, ex.prev, ex.limit, gotLast, ex.wantLast)
-			}
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("ListAccounts(%v, %v, %d):\ngot:  %v\nwant: %v", ex.managerNodeID, ex.prev, ex.limit, got, ex.want)
 		}
-	})
+
+		if gotLast != ex.wantLast {
+			t.Errorf("ListAccounts(%v, %v, %d):\ngot last:  %v\nwant last: %v",
+				ex.managerNodeID, ex.prev, ex.limit, gotLast, ex.wantLast)
+		}
+	}
 }
 
 func TestGetAccount(t *testing.T) {
-	const sql = `
-		INSERT INTO projects (id, name) VALUES
-			('proj-id-0', 'proj-0');
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
 
-		INSERT INTO manager_nodes (id, project_id, key_index, label) VALUES
-			('manager-node-id-0', 'proj-id-0', 0, 'manager-node-0');
+	acc0 := assettest.CreateAccountFixture(ctx, t, "", "account-0", nil)
+	examples := []struct {
+		id      string
+		want    *Account
+		wantErr error
+	}{
+		{
+			acc0,
+			&Account{ID: acc0, Label: "account-0", Index: []uint32{0, 0}},
+			nil,
+		},
+		{
+			"nonexistent",
+			nil,
+			pg.ErrUserInputNotFound,
+		},
+	}
 
-		INSERT INTO accounts (id, manager_node_id, key_index, label) VALUES
-			('account-id-0', 'manager-node-id-0', 0, 'account-0')
-	`
-	withContext(t, sql, func(ctx context.Context) {
-		examples := []struct {
-			id      string
-			want    *Account
-			wantErr error
-		}{
-			{
-				"account-id-0",
-				&Account{ID: "account-id-0", Label: "account-0", Index: []uint32{0, 0}},
-				nil,
-			},
-			{
-				"nonexistent",
-				nil,
-				pg.ErrUserInputNotFound,
-			},
+	for _, ex := range examples {
+		t.Log("Example:", ex.id)
+
+		got, gotErr := GetAccount(ctx, ex.id)
+
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("account:\ngot:  %v\nwant: %v", got, ex.want)
 		}
 
-		for _, ex := range examples {
-			t.Log("Example:", ex.id)
-
-			got, gotErr := GetAccount(ctx, ex.id)
-
-			if !reflect.DeepEqual(got, ex.want) {
-				t.Errorf("account:\ngot:  %v\nwant: %v", got, ex.want)
-			}
-
-			if errors.Root(gotErr) != ex.wantErr {
-				t.Errorf("get account error:\ngot:  %v\nwant: %v", errors.Root(gotErr), ex.wantErr)
-			}
+		if errors.Root(gotErr) != ex.wantErr {
+			t.Errorf("get account error:\ngot:  %v\nwant: %v", errors.Root(gotErr), ex.wantErr)
 		}
-	})
+	}
 }
 
 func TestUpdateAccount(t *testing.T) {

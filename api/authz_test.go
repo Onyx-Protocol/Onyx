@@ -147,9 +147,9 @@ func TestAssetAuthz(t *testing.T) {
 		in2ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
 		in3ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
-		a1ID := assettest.CreateAssetFixture(ctx, t, in1ID, "")
-		a2ID := assettest.CreateAssetFixture(ctx, t, in2ID, "")
-		a3ID := assettest.CreateAssetFixture(ctx, t, in3ID, "")
+		a1ID := assettest.CreateAssetFixture(ctx, t, in1ID, "", "")
+		a2ID := assettest.CreateAssetFixture(ctx, t, in2ID, "", "")
+		a3ID := assettest.CreateAssetFixture(ctx, t, in3ID, "", "")
 
 		cases := []struct {
 			userID  string

@@ -8,22 +8,16 @@ import (
 	"golang.org/x/net/context"
 
 	. "chain/api/appdb"
+	"chain/api/asset/assettest"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 )
 
-const sampleTxFixture = `
-	INSERT INTO manager_nodes (id, project_id, label, current_rotation, key_index)
-		VALUES('mn0', 'proj-id-0', '', 'c0', 0);
-	INSERT INTO manager_txs (id, manager_node_id, data, txid)
-		VALUES('mtx0', 'mn0', '{"outputs":"boop"}', 'tx0');
-`
-
 func TestWriteManagerTx(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		accounts := []string{"account-1", "account-2"}
-		err := WriteManagerTx(ctx, "tx1", []byte(`{}`), "mnode-1", accounts)
+		_, err := WriteManagerTx(ctx, "tx1", []byte(`{}`), "mnode-1", accounts)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -55,7 +49,7 @@ func TestWriteManagerTx(t *testing.T) {
 
 func TestWriteIssuerTx(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
-		err := WriteIssuerTx(ctx, "tx1", []byte(`{}`), "inode-1", "asset-1")
+		_, err := WriteIssuerTx(ctx, "tx1", []byte(`{}`), "inode-1", "asset-1")
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -84,10 +78,13 @@ func TestWriteIssuerTx(t *testing.T) {
 }
 
 func TestManagerTxs(t *testing.T) {
-	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleTxFixture)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	txs, last, err := ManagerTxs(ctx, "mn0", "mtx2", 1) // mtx2 would be a newer item than mtx1
+	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
+	mtx := assettest.ManagerTxFixture(ctx, t, "tx0", []byte(`{"outputs":"boop"}`), mn0, nil)
+
+	txs, last, err := ManagerTxs(ctx, mn0, "", 1)
 	if err != nil {
 		t.Fatalf("unexpected err %v", err)
 	}
@@ -96,8 +93,8 @@ func TestManagerTxs(t *testing.T) {
 		t.Fatalf("want len(txs)=1 got=%d", len(txs))
 	}
 
-	if last != "mtx0" {
-		t.Fatalf("want last txs to be mtx0 got=%v", last)
+	if last != mtx {
+		t.Fatalf("got last tx=%v want %v", last, mtx)
 	}
 
 	if string(*txs[0]) != `{"outputs":"boop"}` {
@@ -106,16 +103,16 @@ func TestManagerTxs(t *testing.T) {
 }
 
 func TestManagerTxsLimit(t *testing.T) {
-	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleTxFixture, `
-		INSERT INTO manager_txs (id, manager_node_id, data, txid)
-			VALUES
-				('mtx1', 'mn0', '{"outputs":"coop"}', 'tx1'),
-				('mtx2', 'mn0', '{"outputs":"doop"}', 'tx2'),
-				('mtx3', 'mn0', '{"outputs":"foop"}', 'tx3');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	txs, last, err := ManagerTxs(ctx, "mn0", "mtx4", 2) // mtx4 would be a newer item than mtx1
+	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
+	assettest.ManagerTxFixture(ctx, t, "tx0", []byte(`{"outputs":"boop"}`), mn0, nil)
+	assettest.ManagerTxFixture(ctx, t, "tx1", []byte(`{"outputs":"coop"}`), mn0, nil)
+	mtx2 := assettest.ManagerTxFixture(ctx, t, "tx2", []byte(`{"outputs":"doop"}`), mn0, nil)
+	assettest.ManagerTxFixture(ctx, t, "tx3", []byte(`{"outputs":"foop"}`), mn0, nil)
+
+	txs, last, err := ManagerTxs(ctx, mn0, "", 2)
 	if err != nil {
 		t.Fatalf("unexpected err %v", err)
 	}
@@ -125,8 +122,8 @@ func TestManagerTxsLimit(t *testing.T) {
 		t.Fatalf("want len(txs)=2 got=%d", len(txs))
 	}
 
-	if last != "mtx2" {
-		t.Fatalf("want last txs to be mtx2 got=%v", last)
+	if last != mtx2 {
+		t.Fatalf("got last tx=%v want %v", last, mtx2)
 	}
 
 	if string(*txs[0]) != `{"outputs":"foop"}` {
@@ -139,14 +136,14 @@ func TestManagerTxsLimit(t *testing.T) {
 }
 
 func TestAccountTxs(t *testing.T) {
-	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleTxFixture, `
-		INSERT INTO accounts (id, manager_node_id, key_index) VALUES('acc0', 'mn0', 0);
-		INSERT INTO manager_txs_accounts VALUES ('mtx0', 'acc0');
-	`)
-
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	txs, last, err := AccountTxs(ctx, "acc0", "mtx1", 1)
+	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
+	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "foo", nil)
+	mtx := assettest.ManagerTxFixture(ctx, t, "tx0", []byte(`{"outputs":"boop"}`), mn0, []string{acc0})
+
+	txs, last, err := AccountTxs(ctx, acc0, "", 1)
 	if err != nil {
 		t.Fatalf("unexpected err %v", err)
 	}
@@ -155,28 +152,23 @@ func TestAccountTxs(t *testing.T) {
 		t.Fatalf("want len(txs)=1 got=%d", len(txs))
 	}
 
-	if last != "mtx0" {
-		t.Fatalf("want last txs to be mtx0 got=%v", last)
+	if last != mtx {
+		t.Fatalf("got last tx=%v want %v", last, mtx)
 	}
 }
 
 func TestAccountTxsLimit(t *testing.T) {
-	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleTxFixture, `
-		INSERT INTO manager_txs (id, manager_node_id, data, txid)
-			VALUES
-			('mtx1', 'mn0', '{"outputs":"coop"}', 'tx1'),
-			('mtx2', 'mn0', '{"outputs":"doop"}', 'tx2'),
-			('mtx3', 'mn0', '{"outputs":"foop"}', 'tx3');
-		INSERT INTO accounts (id, manager_node_id, key_index) VALUES('acc0', 'mn0', 0);
-		INSERT INTO manager_txs_accounts VALUES
-			('mtx0', 'acc0'),
-			('mtx1', 'acc0'),
-			('mtx2', 'acc0'),
-			('mtx3', 'acc0');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	txs, last, err := AccountTxs(ctx, "acc0", "mtx4", 2) // mtx4 would be a newer item than mtx1
+	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
+	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "foo", nil)
+	assettest.ManagerTxFixture(ctx, t, "tx0", []byte(`{"outputs":"boop"}`), mn0, []string{acc0})
+	assettest.ManagerTxFixture(ctx, t, "tx1", []byte(`{"outputs":"coop"}`), mn0, []string{acc0})
+	mtx2 := assettest.ManagerTxFixture(ctx, t, "tx2", []byte(`{"outputs":"doop"}`), mn0, []string{acc0})
+	assettest.ManagerTxFixture(ctx, t, "tx3", []byte(`{"outputs":"foop"}`), mn0, []string{acc0})
+
+	txs, last, err := AccountTxs(ctx, acc0, "", 2)
 	if err != nil {
 		t.Fatalf("unexpected err %v", err)
 	}
@@ -186,8 +178,8 @@ func TestAccountTxsLimit(t *testing.T) {
 		t.Fatalf("want len(txs)=2 got=%d", len(txs))
 	}
 
-	if last != "mtx2" {
-		t.Fatalf("want last txs to be mtx2 got=%v", last)
+	if last != mtx2 {
+		t.Fatalf("got last tx=%v want %v", last, mtx2)
 	}
 
 	if string(*txs[0]) != `{"outputs":"foop"}` {
@@ -200,15 +192,15 @@ func TestAccountTxsLimit(t *testing.T) {
 }
 
 func TestIssuerTxs(t *testing.T) {
-	ctx := pgtest.NewContext(t, writeActivityFix, `
-		INSERT INTO issuer_txs
-			(id, issuer_node_id, data, txid)
-		VALUES
-			('itx-id-0', 'in-id-0', '{"transaction_id": "tx-id-0"}', 'tx-id-0'),
-			('itx-id-1', 'in-id-1', '{"transaction_id": "tx-id-1"}', 'tx-id-1'),
-			('itx-id-2', 'in-id-0', '{"transaction_id": "tx-id-2"}', 'tx-id-2');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
+	in1 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-1", nil, nil)
+
+	itx0 := assettest.IssuerTxFixture(ctx, t, "tx-id-0", []byte(`{"transaction_id": "tx-id-0"}`), in0, "asset-id-0")
+	itx1 := assettest.IssuerTxFixture(ctx, t, "tx-id-1", []byte(`{"transaction_id": "tx-id-1"}`), in1, "asset-id-1")
+	assettest.IssuerTxFixture(ctx, t, "tx-id-2", []byte(`{"transaction_id": "tx-id-2"}`), in0, "asset-id-0")
 
 	examples := []struct {
 		inodeID  string
@@ -216,19 +208,19 @@ func TestIssuerTxs(t *testing.T) {
 		wantLast string
 	}{
 		{
-			"in-id-0",
+			in0,
 			stringsToRawJSON(
 				`{"transaction_id": "tx-id-2"}`,
 				`{"transaction_id": "tx-id-0"}`,
 			),
-			"itx-id-0",
+			itx0,
 		},
 		{
-			"in-id-1",
+			in1,
 			stringsToRawJSON(
 				`{"transaction_id": "tx-id-1"}`,
 			),
-			"itx-id-1",
+			itx1,
 		},
 	}
 
@@ -251,22 +243,15 @@ func TestIssuerTxs(t *testing.T) {
 }
 
 func TestAssetTxs(t *testing.T) {
-	ctx := pgtest.NewContext(t, writeActivityFix, `
-		INSERT INTO issuer_txs
-			(id, issuer_node_id, data, txid)
-		VALUES
-			('itx-id-0', 'in-id-0', '{"transaction_id": "tx-id-0"}', 'tx-id-0'),
-			('itx-id-1', 'in-id-1', '{"transaction_id": "tx-id-1"}', 'tx-id-1'),
-			('itx-id-2', 'in-id-0', '{"transaction_id": "tx-id-2"}', 'tx-id-2');
-
-		INSERT INTO issuer_txs_assets
-			(issuer_tx_id, asset_id)
-		VALUES
-			('itx-id-0', 'asset-id-0'),
-			('itx-id-1', 'asset-id-1'),
-			('itx-id-2', 'asset-id-0');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
+	in1 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-1", nil, nil)
+
+	itx0 := assettest.IssuerTxFixture(ctx, t, "tx-id-0", []byte(`{"transaction_id": "tx-id-0"}`), in0, "asset-id-0")
+	itx1 := assettest.IssuerTxFixture(ctx, t, "tx-id-1", []byte(`{"transaction_id": "tx-id-1"}`), in1, "asset-id-1")
+	assettest.IssuerTxFixture(ctx, t, "tx-id-2", []byte(`{"transaction_id": "tx-id-2"}`), in0, "asset-id-0")
 
 	stringsToRawJSON := func(strs ...string) []*json.RawMessage {
 		var res []*json.RawMessage
@@ -285,12 +270,12 @@ func TestAssetTxs(t *testing.T) {
 		{
 			"asset-id-0",
 			stringsToRawJSON(`{"transaction_id": "tx-id-2"}`, `{"transaction_id": "tx-id-0"}`),
-			"itx-id-0",
+			itx0,
 		},
 		{
 			"asset-id-1",
 			stringsToRawJSON(`{"transaction_id": "tx-id-1"}`),
-			"itx-id-1",
+			itx1,
 		},
 	}
 
@@ -313,10 +298,13 @@ func TestAssetTxs(t *testing.T) {
 }
 
 func TestManagerTx(t *testing.T) {
-	ctx := pgtest.NewContext(t, sampleProjectFixture, sampleTxFixture)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	txs, err := ManagerTx(ctx, "mn0", "tx0")
+	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
+	assettest.ManagerTxFixture(ctx, t, "tx0", []byte(`{"outputs":"boop"}`), mn0, nil)
+
+	txs, err := ManagerTx(ctx, mn0, "tx0")
 	if err != nil {
 		t.Fatalf("unexpected err %v", err)
 	}
@@ -325,7 +313,7 @@ func TestManagerTx(t *testing.T) {
 		t.Fatalf("want={outputs: boop}, got=%s", *txs)
 	}
 
-	_, err = ManagerTx(ctx, "mn0", "txDoesNotExist")
+	_, err = ManagerTx(ctx, mn0, "txDoesNotExist")
 	if errors.Root(err) != pg.ErrUserInputNotFound {
 		t.Fatalf("want=%v got=%v", pg.ErrUserInputNotFound, err)
 	}

@@ -138,7 +138,6 @@ func GetActAssets(ctx context.Context, assetIDs []string) ([]*ActAsset, error) {
 		FROM assets a
 		JOIN issuer_nodes i ON a.issuer_node_id = i.id
 		WHERE a.id = ANY($1)
-		ORDER BY a.id
 	`
 	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(assetIDs))
 	if err != nil {

@@ -10,16 +10,15 @@ import (
 	"chain/errors"
 )
 
-func WriteIssuerTx(ctx context.Context, txHash string, data []byte, iNodeID string, asset string) error {
+func WriteIssuerTx(ctx context.Context, txHash string, data []byte, iNodeID string, asset string) (id string, err error) {
 	issuerQ := `
 		INSERT INTO issuer_txs (issuer_node_id, txid, data)
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
-	var id string
-	err := pg.FromContext(ctx).QueryRow(ctx, issuerQ, iNodeID, txHash, data).Scan(&id)
+	err = pg.FromContext(ctx).QueryRow(ctx, issuerQ, iNodeID, txHash, data).Scan(&id)
 	if err != nil {
-		return errors.Wrap(err, "insert issuer tx")
+		return "", errors.Wrap(err, "insert issuer tx")
 	}
 
 	assetQ := `
@@ -27,19 +26,18 @@ func WriteIssuerTx(ctx context.Context, txHash string, data []byte, iNodeID stri
 		VALUES ($1, $2)
 	`
 	_, err = pg.FromContext(ctx).Exec(ctx, assetQ, id, asset)
-	return errors.Wrap(err, "insert issuer tx for asset")
+	return id, errors.Wrap(err, "insert issuer tx for asset")
 }
 
-func WriteManagerTx(ctx context.Context, txHash string, data []byte, mNodeID string, accounts []string) error {
+func WriteManagerTx(ctx context.Context, txHash string, data []byte, mNodeID string, accounts []string) (id string, err error) {
 	managerQ := `
 		INSERT INTO manager_txs (manager_node_id, txid, data)
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
-	var id string
-	err := pg.FromContext(ctx).QueryRow(ctx, managerQ, mNodeID, txHash, data).Scan(&id)
+	err = pg.FromContext(ctx).QueryRow(ctx, managerQ, mNodeID, txHash, data).Scan(&id)
 	if err != nil {
-		return errors.Wrap(err, "insert manager tx")
+		return "", errors.Wrap(err, "insert manager tx")
 	}
 
 	accountQ := `
@@ -47,7 +45,7 @@ func WriteManagerTx(ctx context.Context, txHash string, data []byte, mNodeID str
 		VALUES ($1, unnest($2::text[]))
 	`
 	_, err = pg.FromContext(ctx).Exec(ctx, accountQ, id, pg.Strings(accounts))
-	return errors.Wrap(err, "insert manager tx for account")
+	return id, errors.Wrap(err, "insert manager tx for account")
 }
 
 func ManagerTxs(ctx context.Context, managerNodeID string, prev string, limit int) ([]*json.RawMessage, string, error) {
