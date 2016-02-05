@@ -189,7 +189,12 @@ func getIssuerNodeActivity(ctx context.Context, inodeID string) (interface{}, er
 		return nil, err
 	}
 
-	activity, last, err := appdb.IssuerNodeActivity(ctx, inodeID, prev, limit)
+	nodeTxs, last, err := appdb.IssuerTxs(ctx, inodeID, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	activity, err := nodeTxsToActivity(nodeTxs)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +216,12 @@ func getAssetActivity(ctx context.Context, assetID string) (interface{}, error) 
 		return nil, err
 	}
 
-	activity, last, err := appdb.AssetActivity(ctx, assetID, prev, limit)
+	nodeTxs, last, err := appdb.AssetTxs(ctx, assetID, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	activity, err := nodeTxsToActivity(nodeTxs)
 	if err != nil {
 		return nil, err
 	}

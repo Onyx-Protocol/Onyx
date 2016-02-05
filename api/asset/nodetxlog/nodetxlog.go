@@ -12,7 +12,7 @@ import (
 	"chain/fedchain/bc"
 )
 
-type nodeTx struct {
+type NodeTx struct {
 	ID       bc.Hash            `json:"id"`
 	Time     time.Time          `json:"transaction_time"`
 	Inputs   []nodeTxInput      `json:"inputs"`
@@ -88,13 +88,13 @@ func Write(ctx context.Context, tx *bc.Tx, ts time.Time) error {
 		nodeAccounts[acc.ManagerNodeID] = append(nodeAccounts[acc.ManagerNodeID], acc.ID)
 	}
 
-	nodeTx, err := generateNodeTx(tx, ins, outs, assetMap, accountMap, ts)
+	NodeTx, err := generateNodeTx(tx, ins, outs, assetMap, accountMap, ts)
 	if err != nil {
 		return errors.Wrap(err, "generating master")
 	}
 
 	if tx.IsIssuance() {
-		filteredTx, err := json.Marshal(filterAccounts(nodeTx, ""))
+		filteredTx, err := json.Marshal(filterAccounts(NodeTx, ""))
 		if err != nil {
 			return errors.Wrap(err, "filtering tx")
 		}
@@ -105,7 +105,7 @@ func Write(ctx context.Context, tx *bc.Tx, ts time.Time) error {
 	}
 
 	for nodeID, accountIDs := range nodeAccounts {
-		filteredTx, err := json.Marshal(filterAccounts(nodeTx, nodeID))
+		filteredTx, err := json.Marshal(filterAccounts(NodeTx, nodeID))
 		if err != nil {
 			return errors.Wrap(err, "filtering tx")
 		}
@@ -125,8 +125,8 @@ func generateNodeTx(
 	assetMap map[string]*appdb.ActAsset,
 	accountMap map[string]*appdb.ActAccount,
 	ts time.Time,
-) (*nodeTx, error) {
-	actTx := &nodeTx{
+) (*NodeTx, error) {
+	actTx := &NodeTx{
 		ID:       tx.Hash,
 		Metadata: tx.Metadata,
 		Time:     ts,
@@ -219,8 +219,8 @@ func generateNodeTx(
 	return actTx, nil
 }
 
-func filterAccounts(tx *nodeTx, keepID string) *nodeTx {
-	filteredTx := new(nodeTx)
+func filterAccounts(tx *NodeTx, keepID string) *NodeTx {
+	filteredTx := new(NodeTx)
 	*filteredTx = *tx
 	filteredTx.Inputs = make([]nodeTxInput, len(tx.Inputs))
 	copy(filteredTx.Inputs, tx.Inputs)

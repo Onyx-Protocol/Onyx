@@ -60,7 +60,7 @@ func TestGenerateNodeTxTransfer(t *testing.T) {
 
 	one := uint32(1)
 
-	want := &nodeTx{
+	want := &NodeTx{
 		ID:   bc.Hash{},
 		Time: txTime,
 		Inputs: []nodeTxInput{{
@@ -130,7 +130,7 @@ func TestGenerateNodeTxIssuance(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := &nodeTx{
+	want := &NodeTx{
 		ID:   bc.Hash{},
 		Time: txTime,
 		Inputs: []nodeTxInput{{
@@ -156,7 +156,7 @@ func TestGenerateNodeTxIssuance(t *testing.T) {
 }
 
 func TestFilterAccounts(t *testing.T) {
-	startTx := &nodeTx{
+	startTx := &NodeTx{
 		Inputs: []nodeTxInput{
 			{mNodeID: "mnode-1", AccountID: "acc-1", AccountLabel: "foo"},
 			{mNodeID: "mnode-2", AccountID: "acc-2", AccountLabel: "bar"},
@@ -167,11 +167,11 @@ func TestFilterAccounts(t *testing.T) {
 	}
 	cases := []struct {
 		mnode string
-		want  *nodeTx
+		want  *NodeTx
 	}{
 		{
 			mnode: "mnode-1",
-			want: &nodeTx{
+			want: &NodeTx{
 				Inputs: []nodeTxInput{
 					{mNodeID: "mnode-1", AccountID: "acc-1", AccountLabel: "foo"},
 					{mNodeID: "mnode-2", AccountID: "", AccountLabel: ""},
@@ -183,7 +183,7 @@ func TestFilterAccounts(t *testing.T) {
 		},
 		{
 			mnode: "mnode-2",
-			want: &nodeTx{
+			want: &NodeTx{
 				Inputs: []nodeTxInput{
 					{mNodeID: "mnode-1", AccountID: "", AccountLabel: ""},
 					{mNodeID: "mnode-2", AccountID: "acc-2", AccountLabel: "bar"},
@@ -195,7 +195,7 @@ func TestFilterAccounts(t *testing.T) {
 		},
 		{
 			mnode: "",
-			want: &nodeTx{
+			want: &NodeTx{
 				Inputs: []nodeTxInput{
 					{mNodeID: "mnode-1", AccountID: "", AccountLabel: ""},
 					{mNodeID: "mnode-2", AccountID: "", AccountLabel: ""},

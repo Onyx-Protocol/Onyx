@@ -123,7 +123,12 @@ func getManagerNodeActivity(ctx context.Context, mnID string) (interface{}, erro
 		return nil, err
 	}
 
-	activity, last, err := appdb.ManagerNodeActivity(ctx, mnID, prev, limit)
+	nodeTxs, last, err := appdb.ManagerTxs(ctx, mnID, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	activity, err := nodeTxsToActivity(nodeTxs)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +153,11 @@ func managerNodeTxActivity(ctx context.Context, mnodeID, txID string) (interface
 	if err := managerAuthz(ctx, mnodeID); err != nil {
 		return nil, err
 	}
-	return appdb.ManagerNodeTxActivity(ctx, mnodeID, txID)
+	nodeTx, err := appdb.ManagerTx(ctx, mnodeID, txID)
+	if err != nil {
+		return nil, err
+	}
+	return nodeTxToActivity(*nodeTx)
 }
 
 // GET /v3/manager-nodes/:mnodeID/transactions
@@ -273,7 +282,12 @@ func getAccountActivity(ctx context.Context, bid string) (interface{}, error) {
 		return nil, err
 	}
 
-	activity, last, err := appdb.AccountActivity(ctx, bid, prev, limit)
+	nodeTxs, last, err := appdb.AccountTxs(ctx, bid, prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	activity, err := nodeTxsToActivity(nodeTxs)
 	if err != nil {
 		return nil, err
 	}
