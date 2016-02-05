@@ -75,17 +75,6 @@ func publishTx(ctx context.Context, msg *bc.Tx, receivers []txbuilder.Receiver) 
 		return errors.Wrap(err, "apply TX")
 	}
 
-	outIsChange := make(map[int]bool)
-	for i, r := range receivers {
-		if r != nil && r.IsChange() {
-			outIsChange[i] = true
-		}
-	}
-	err = appdb.WriteActivity(ctx, msg, outIsChange, time.Now())
-	if err != nil {
-		return errors.Wrap(err, "writing activitiy")
-	}
-
 	err = nodetxlog.Write(ctx, msg, time.Now())
 	if err != nil {
 		return errors.Wrap(err, "writing activitiy")

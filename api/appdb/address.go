@@ -29,7 +29,6 @@ type Address struct {
 	Amount       uint64
 	Expires      time.Time
 	AccountID    string // read by LoadNextIndex
-	IsChange     bool
 
 	// Initialized by LoadNextIndex
 	ManagerNodeID    string
@@ -181,9 +180,9 @@ func (a *Address) Insert(ctx context.Context) error {
 	const q = `
 		INSERT INTO addresses (
 			redeem_script, pk_script, manager_node_id, account_id,
-			keyset, expiration, amount, key_index, is_change
+			keyset, expiration, amount, key_index
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, to_key_index($8), $9)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, to_key_index($8))
 		RETURNING id, created_at;
 	`
 	row := pg.FromContext(ctx).QueryRow(ctx, q,
@@ -195,7 +194,6 @@ func (a *Address) Insert(ctx context.Context) error {
 		pq.NullTime{Time: a.Expires, Valid: !a.Expires.IsZero()},
 		a.Amount,
 		pg.Uint32s(a.Index),
-		a.IsChange,
 	)
 	return row.Scan(&a.ID, &a.Created)
 }
@@ -230,7 +228,7 @@ var ErrPastExpires = errors.New("expires in the past")
 
 // CreateAddress uses appdb to allocate an address index for addr
 // and insert it into the database.
-// Fields AccountID, Amount, Expires, and IsChange must be set;
+// Fields AccountID, Amount, and Expires must be set;
 // all other fields will be initialized by CreateAddress.
 // If save is false, it will skip saving the address;
 // in that case ID will remain unset.
@@ -261,10 +259,9 @@ func CreateAddress(ctx context.Context, addr *Address, save bool) error {
 	return errors.Wrap(err, "save")
 }
 
-func NewAddress(ctx context.Context, accountID string, isChange, save bool) (*Address, error) {
+func NewAddress(ctx context.Context, accountID string, save bool) (*Address, error) {
 	result := &Address{
 		AccountID: accountID,
-		IsChange:  isChange,
 	}
 	err := CreateAddress(ctx, result, save)
 	if err != nil {

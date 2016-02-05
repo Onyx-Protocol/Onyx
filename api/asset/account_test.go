@@ -44,7 +44,6 @@ func TestAccountSourceReserve(t *testing.T) {
 		}},
 		Change: &txbuilder.Destination{
 			AssetAmount: bc.AssetAmount{AssetID: [32]byte{255}, Amount: 1},
-			IsChange:    true,
 		},
 	}
 
@@ -82,7 +81,7 @@ func TestAccountDestinationPKScript(t *testing.T) {
 	acc := assettest.CreateAccountFixture(ctx, t, "", "", nil)
 
 	// Test account output pk script (address creation)
-	dest, err := NewAccountDestination(ctx, &bc.AssetAmount{Amount: 1}, acc, false, nil)
+	dest, err := NewAccountDestination(ctx, &bc.AssetAmount{Amount: 1}, acc, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

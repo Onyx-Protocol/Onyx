@@ -107,7 +107,7 @@ func extractSellerScript(pkscript []byte) ([]byte, error) {
 }
 
 func scriptFromAccountID(ctx context.Context, accountID string) ([]byte, error) {
-	addr, err := appdb.NewAddress(ctx, accountID, false, true)
+	addr, err := appdb.NewAddress(ctx, accountID, true)
 	if err != nil {
 		return nil, errors.Wrapf(err, "generating address, accountID %s", accountID)
 	}

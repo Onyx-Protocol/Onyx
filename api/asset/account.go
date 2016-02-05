@@ -64,7 +64,7 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 			AssetID: assetAmount.AssetID,
 			Amount:  change[0].Amount,
 		}
-		result.Change, err = NewAccountDestination(ctx, changeAssetAmount, reserver.AccountID, true, nil)
+		result.Change, err = NewAccountDestination(ctx, changeAssetAmount, reserver.AccountID, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -86,7 +86,6 @@ type AccountReceiver struct {
 	addr *appdb.Address
 }
 
-func (receiver *AccountReceiver) IsChange() bool   { return receiver.addr.IsChange }
 func (receiver *AccountReceiver) PKScript() []byte { return receiver.addr.PKScript }
 func (receiver *AccountReceiver) AccumulateUTXO(ctx context.Context, outpoint *bc.Outpoint, txOutput *bc.TxOutput, utxoInserters []txbuilder.UTXOInserter) ([]txbuilder.UTXOInserter, error) {
 	// Find or create an item in utxoInserters that is an
@@ -111,7 +110,6 @@ func (receiver *AccountReceiver) MarshalJSON() ([]byte, error) {
 		"manager_node_id": receiver.addr.ManagerNodeID,
 		"account_id":      receiver.addr.AccountID,
 		"address_index":   receiver.addr.Index,
-		"is_change":       receiver.addr.IsChange,
 		"type":            "account",
 	})
 }
@@ -120,15 +118,14 @@ func NewAccountReceiver(addr *appdb.Address) *AccountReceiver {
 	return &AccountReceiver{addr: addr}
 }
 
-func NewAccountDestination(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, isChange bool, metadata []byte) (*txbuilder.Destination, error) {
-	addr, err := appdb.NewAddress(ctx, accountID, isChange, false)
+func NewAccountDestination(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, metadata []byte) (*txbuilder.Destination, error) {
+	addr, err := appdb.NewAddress(ctx, accountID, false)
 	if err != nil {
 		return nil, err
 	}
 	receiver := NewAccountReceiver(addr)
 	result := &txbuilder.Destination{
 		AssetAmount: *assetAmount,
-		IsChange:    isChange,
 		Metadata:    metadata,
 		Receiver:    receiver,
 	}

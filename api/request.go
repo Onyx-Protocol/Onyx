@@ -97,7 +97,6 @@ type Destination struct {
 	Amount          uint64
 	AccountID       string             `json:"account_id,omitempty"`
 	Address         chainjson.HexBytes `json:"address,omitempty"`
-	IsChange        bool               `json:"is_change"`
 	Metadata        chainjson.HexBytes `json:"metadata,omitempty"`
 	OrderbookPrices []*orderbook.Price `json:"orderbook_prices,omitempty"`
 	Script          chainjson.HexBytes `json:"script,omitempty"`
@@ -121,15 +120,15 @@ func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, erro
 
 	switch dest.Type {
 	case "account", "":
-		return asset.NewAccountDestination(ctx, assetAmount, dest.AccountID, dest.IsChange, dest.Metadata)
+		return asset.NewAccountDestination(ctx, assetAmount, dest.AccountID, dest.Metadata)
 	case "address":
-		return asset.NewScriptDestination(ctx, assetAmount, dest.Address, dest.IsChange, dest.Metadata)
+		return asset.NewScriptDestination(ctx, assetAmount, dest.Address, dest.Metadata)
 	case "orderbook":
 		orderInfo := &orderbook.OrderInfo{
 			SellerAccountID: dest.AccountID,
 			Prices:          dest.OrderbookPrices,
 		}
-		return orderbook.NewDestinationWithScript(ctx, assetAmount, orderInfo, dest.IsChange, dest.Metadata, dest.Script)
+		return orderbook.NewDestinationWithScript(ctx, assetAmount, orderInfo, dest.Metadata, dest.Script)
 	}
 	return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown destination type `%s`", dest.Type)
 }
@@ -137,7 +136,6 @@ func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, erro
 type Receiver struct {
 	AccountID     string   `json:"account_id"`
 	AddrIndex     []uint32 `json:"address_index"`
-	IsChange      bool     `json:"is_change"`
 	ManagerNodeID string   `json:"manager_node_id"`
 	Script        chainjson.HexBytes
 	OrderInfo     *orderbook.OrderInfo `json:"orderbook_info"`
@@ -152,7 +150,7 @@ func (receiver *Receiver) parse() (txbuilder.Receiver, error) {
 
 	switch receiver.Type {
 	case "script", "":
-		return asset.NewScriptReceiver(receiver.Script, receiver.IsChange), nil
+		return asset.NewScriptReceiver(receiver.Script), nil
 	case "account":
 		addr := &appdb.Address{
 			AccountID:     receiver.AccountID,
@@ -164,7 +162,7 @@ func (receiver *Receiver) parse() (txbuilder.Receiver, error) {
 		if receiver.OrderInfo == nil {
 			return nil, httpjson.ErrBadRequest
 		}
-		return orderbook.NewReceiver(receiver.OrderInfo, receiver.IsChange, receiver.Script), nil
+		return orderbook.NewReceiver(receiver.OrderInfo, receiver.Script), nil
 	}
 	return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown receiver type `%s`", receiver.Type)
 }

@@ -55,7 +55,6 @@ type Source struct {
 }
 
 type Receiver interface {
-	IsChange() bool
 	PKScript() []byte
 	// Make sure the UTXOInserter list contains the right kind of
 	// UTXOInserter (adding one if necessary), and add data about the
@@ -67,7 +66,6 @@ type Receiver interface {
 // A Destination is a payment destination for a transaction.
 type Destination struct {
 	bc.AssetAmount
-	IsChange bool
 	Metadata []byte
 	Receiver Receiver
 }

@@ -28,11 +28,9 @@ func init() {
 }
 
 type testRecv struct {
-	script   []byte
-	isChange bool
+	script []byte
 }
 
-func (tr *testRecv) IsChange() bool   { return tr.isChange }
 func (tr *testRecv) PKScript() []byte { return tr.script }
 func (tr *testRecv) AccumulateUTXO(ctx context.Context, op *bc.Outpoint, out *bc.TxOutput, inserters []UTXOInserter) ([]UTXOInserter, error) {
 	return inserters, nil
@@ -51,7 +49,7 @@ func (tr *testReserver) Reserve(ctx context.Context, assetAmt *bc.AssetAmount, t
 		}},
 		Change: &Destination{
 			AssetAmount: *assetAmt,
-			Receiver:    &testRecv{script: []byte("change"), isChange: true},
+			Receiver:    &testRecv{script: []byte("change")},
 		},
 	}, nil
 }
@@ -114,7 +112,7 @@ func TestBuild(t *testing.T) {
 		}},
 		OutRecvs: []Receiver{
 			&testRecv{script: []byte("dest")},
-			&testRecv{script: []byte("change"), isChange: true},
+			&testRecv{script: []byte("change")},
 		},
 	}
 	err = setSignatureData(ctx, want)

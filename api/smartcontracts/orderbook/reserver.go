@@ -54,7 +54,7 @@ func (reserver *redeemReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 			AssetID: assetAmount.AssetID,
 			Amount:  changeAmount,
 		}
-		result.Change, err = NewDestinationWithScript(ctx, changeAssetAmount, &openOrder.OrderInfo, true, nil, openOrder.Script)
+		result.Change, err = NewDestinationWithScript(ctx, changeAssetAmount, &openOrder.OrderInfo, nil, openOrder.Script)
 		if err != nil {
 			return nil, err
 		}

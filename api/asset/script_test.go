@@ -16,7 +16,7 @@ func TestScriptDestinationPKScript(t *testing.T) {
 
 	script := mustDecodeHex("a91400065635e652a6e00a53cfa07e822de50ccf94a887")
 
-	dest, err := NewScriptDestination(ctx, &bc.AssetAmount{Amount: 1}, script, false, nil)
+	dest, err := NewScriptDestination(ctx, &bc.AssetAmount{Amount: 1}, script, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

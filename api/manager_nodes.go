@@ -391,7 +391,6 @@ func createAddr(ctx context.Context, accountID string, in struct {
 		AccountID: accountID,
 		Amount:    in.Amount,
 		Expires:   in.Expires,
-		IsChange:  false,
 	}
 	err := appdb.CreateAddress(ctx, addr, true)
 	if err != nil {

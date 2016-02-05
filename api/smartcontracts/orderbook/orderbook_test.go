@@ -48,7 +48,7 @@ func TestBuy(t *testing.T) {
 			AssetID: fixtureInfo.usdAssetID,
 			Amount:  2200,
 		}
-		issueDest, err := asset.NewAccountDestination(ctx, usd2200, buyerAccountID, false, nil)
+		issueDest, err := asset.NewAccountDestination(ctx, usd2200, buyerAccountID, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -66,7 +66,7 @@ func TestBuy(t *testing.T) {
 			AssetID: fixtureInfo.aaplAssetID,
 			Amount:  20,
 		}
-		buyerDest, err := asset.NewAccountDestination(ctx, aapl20, buyerAccountID, false, nil)
+		buyerDest, err := asset.NewAccountDestination(ctx, aapl20, buyerAccountID, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -203,7 +203,7 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 		Amount:  100,
 	}
 
-	issueDest, err := asset.NewAccountDestination(ctx, aapl100, fixtureInfo.sellerAccountID, false, nil)
+	issueDest, err := asset.NewAccountDestination(ctx, aapl100, fixtureInfo.sellerAccountID, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -264,7 +264,7 @@ func offer(ctx context.Context, sellerAccountID string, assetAmount *bc.AssetAmo
 		Prices:          prices,
 	}
 
-	destination, err := NewDestination(ctx, assetAmount, orderInfo, false, nil)
+	destination, err := NewDestination(ctx, assetAmount, orderInfo, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +284,7 @@ func buy(ctx context.Context, order *OpenOrder, funds *txbuilder.Source, destina
 	if err != nil {
 		return nil, err
 	}
-	sellerDestination, err := asset.NewScriptDestination(ctx, &funds.AssetAmount, sellerScript, false, nil)
+	sellerDestination, err := asset.NewScriptDestination(ctx, &funds.AssetAmount, sellerScript, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +297,7 @@ func cancel(ctx context.Context, order *OpenOrder, ttl time.Duration) (*txbuilde
 	cancelSource := NewCancelSource(order)
 	sources := []*txbuilder.Source{cancelSource}
 
-	destination, err := asset.NewAccountDestination(ctx, &order.AssetAmount, order.SellerAccountID, false, nil)
+	destination, err := asset.NewAccountDestination(ctx, &order.AssetAmount, order.SellerAccountID, nil)
 	if err != nil {
 		return nil, err
 	}

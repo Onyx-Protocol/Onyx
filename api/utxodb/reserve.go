@@ -71,7 +71,6 @@ type (
 		ManagerNodeID string   `json:"manager_node_id"`
 		AccountID     string   `json:"account_id"`
 		AddrIndex     []uint32 `json:"address_index"`
-		IsChange      bool     `json:"is_change"`
 	}
 
 	// Change represents reserved units beyond what was asked for.

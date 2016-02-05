@@ -115,7 +115,7 @@ func TestFindAndBuyContractViaBuild(t *testing.T) {
 			AssetID: fixtureInfo.usdAssetID,
 			Amount:  2200,
 		}
-		issueDest, err := asset.NewAccountDestination(ctx, usd2200, buyerAccountID, false, nil)
+		issueDest, err := asset.NewAccountDestination(ctx, usd2200, buyerAccountID, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -196,7 +196,7 @@ func offerAndFind(ctx context.Context, fixtureInfo *contractsFixtureInfo) (*orde
 		Prices:          fixtureInfo.prices,
 	}
 
-	destination, err := orderbook.NewDestination(ctx, assetAmount, orderInfo, false, nil)
+	destination, err := orderbook.NewDestination(ctx, assetAmount, orderInfo, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +314,7 @@ func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtu
 		AssetID: fixtureInfo.aaplAssetID,
 		Amount:  100,
 	}
-	issueDest, err := asset.NewAccountDestination(ctx, aapl100, fixtureInfo.sellerAccountID, false, nil)
+	issueDest, err := asset.NewAccountDestination(ctx, aapl100, fixtureInfo.sellerAccountID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}

@@ -39,7 +39,6 @@ func TestAddressLoadNextIndex(t *testing.T) {
 		AccountID: "acc1",
 		Amount:    100,
 		Expires:   exp,
-		IsChange:  false,
 	}
 	err := addr.LoadNextIndex(ctx) // get most fields from the db given AccountID
 	if err != nil {
@@ -50,7 +49,6 @@ func TestAddressLoadNextIndex(t *testing.T) {
 		AccountID: "acc1",
 		Amount:    100,
 		Expires:   exp,
-		IsChange:  false,
 
 		ManagerNodeID:    "mn1",
 		ManagerNodeIndex: []uint32{0, 1},
@@ -77,7 +75,6 @@ func TestAddressInsert(t *testing.T) {
 		AccountID:        "acc1",
 		Amount:           100,
 		Expires:          t0.Add(5 * time.Minute),
-		IsChange:         false,
 		ManagerNodeID:    "mn1",
 		ManagerNodeIndex: []uint32{0, 1},
 		AccountIndex:     []uint32{0, 0},
@@ -132,7 +129,6 @@ func TestCreateAddress(t *testing.T) {
 		AccountID: account.ID,
 		Amount:    100,
 		Expires:   exp,
-		IsChange:  false,
 	}
 
 	err = CreateAddress(ctx, addr, true)
@@ -144,7 +140,6 @@ func TestCreateAddress(t *testing.T) {
 		AccountID:        account.ID,
 		Amount:           100,
 		Expires:          exp,
-		IsChange:         false,
 		ManagerNodeID:    managerNode.ID,
 		ManagerNodeIndex: []uint32{0, 1},
 		AccountIndex:     []uint32{0, 0},

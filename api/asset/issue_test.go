@@ -72,7 +72,7 @@ func TestIssue(t *testing.T) {
 
 	outScript := mustDecodeHex("a9140ac9c982fd389181752e5a414045dd424a10754b87")
 	assetAmount := &bc.AssetAmount{Amount: 123}
-	dest, err := NewScriptDestination(ctx, assetAmount, outScript, false, nil)
+	dest, err := NewScriptDestination(ctx, assetAmount, outScript, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

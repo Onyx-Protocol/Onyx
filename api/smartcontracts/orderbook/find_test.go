@@ -43,7 +43,7 @@ func TestFindOpenOrders(t *testing.T) {
 		Amount:  100,
 	}
 
-	issueDest, err := asset.NewAccountDestination(ctx, asset1x100, accountID, false, nil)
+	issueDest, err := asset.NewAccountDestination(ctx, asset1x100, accountID, nil)
 	if err != nil {
 		chaintest.FatalErr(t, err)
 	}
@@ -102,7 +102,7 @@ func TestFindOpenOrders(t *testing.T) {
 		Amount:  100,
 	}
 
-	issueDest, err = asset.NewAccountDestination(ctx, asset3x100, accountID, false, nil)
+	issueDest, err = asset.NewAccountDestination(ctx, asset3x100, accountID, nil)
 	if err != nil {
 		chaintest.FatalErr(t, err)
 	}

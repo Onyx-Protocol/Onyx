@@ -123,7 +123,7 @@ func TestTransfer(t *testing.T) {
 		AssetID: assetID,
 		Amount:  100,
 	}
-	issueDest, err := asset.NewAccountDestination(ctx, issueAssetAmount, account1ID, false, nil)
+	issueDest, err := asset.NewAccountDestination(ctx, issueAssetAmount, account1ID, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -237,17 +237,6 @@ func inspectTemplate(t *testing.T, inp map[string]interface{}, expectedReceiverM
 	}
 	if receiverAccountID != expectedReceiverAccountID {
 		t.Errorf("expected template.output_receivers[0].account_id in result to be %s, got %s", expectedReceiverAccountID, receiverAccountID)
-	}
-	member, ok = parsedReceiver["is_change"]
-	if !ok {
-		t.Errorf("expected template.output_receivers[0].is_change in result")
-	}
-	receiverIsChange, ok := member.(bool)
-	if !ok {
-		t.Errorf("expected template.output_receivers[0].is_change in result to be a bool")
-	}
-	if receiverIsChange {
-		t.Errorf("expected template.output_receivers[0].is_change in result to be false, got true")
 	}
 	member, ok = parsedReceiver["manager_node_id"]
 	if !ok {

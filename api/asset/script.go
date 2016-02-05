@@ -15,11 +15,9 @@ import (
 )
 
 type ScriptReceiver struct {
-	script   []byte
-	isChange bool
+	script []byte
 }
 
-func (receiver *ScriptReceiver) IsChange() bool   { return receiver.isChange }
 func (receiver *ScriptReceiver) PKScript() []byte { return receiver.script }
 func (receiver *ScriptReceiver) AccumulateUTXO(ctx context.Context, outpoint *bc.Outpoint, txOutput *bc.TxOutput, utxoInserters []txbuilder.UTXOInserter) ([]txbuilder.UTXOInserter, error) {
 	// Find or create an item in utxoInserters that is a
@@ -41,24 +39,21 @@ func (receiver *ScriptReceiver) AccumulateUTXO(ctx context.Context, outpoint *bc
 
 func (receiver *ScriptReceiver) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
-		"script":    chainjson.HexBytes(receiver.script),
-		"is_change": receiver.isChange,
-		"type":      "script",
+		"script": chainjson.HexBytes(receiver.script),
+		"type":   "script",
 	})
 }
 
-func NewScriptReceiver(script []byte, isChange bool) *ScriptReceiver {
+func NewScriptReceiver(script []byte) *ScriptReceiver {
 	return &ScriptReceiver{
-		script:   script,
-		isChange: isChange,
+		script: script,
 	}
 }
 
-func NewScriptDestination(ctx context.Context, assetAmount *bc.AssetAmount, script []byte, isChange bool, metadata []byte) (*txbuilder.Destination, error) {
-	scriptReceiver := NewScriptReceiver(script, isChange)
+func NewScriptDestination(ctx context.Context, assetAmount *bc.AssetAmount, script []byte, metadata []byte) (*txbuilder.Destination, error) {
+	scriptReceiver := NewScriptReceiver(script)
 	dest := &txbuilder.Destination{
 		AssetAmount: *assetAmount,
-		IsChange:    isChange,
 		Metadata:    metadata,
 		Receiver:    scriptReceiver,
 	}
