@@ -31,8 +31,11 @@ func ExpectError(t *testing.T, expected error, msg string, fn func() error) {
 }
 
 func FatalErr(t *testing.T, err error) {
-	t.Log(errors.Stack(err))
-	t.Fatal(err)
+	t.Log(err)
+	for _, frame := range errors.Stack(err) {
+		t.Log(frame)
+	}
+	t.FailNow()
 }
 
 func stackTrace() []byte {
