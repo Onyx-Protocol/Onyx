@@ -55,7 +55,12 @@ func makeBlock(ctx context.Context) {
 			)
 		}
 	}()
-	MakeBlock(ctx, BlockKey)
+	b, err := MakeBlock(ctx, BlockKey)
+	if err != nil {
+		log.Error(ctx, err)
+	} else if b != nil {
+		log.Messagef(ctx, "made block %s height %d with %d txs", b.Hash(), b.Height, len(b.Transactions))
+	}
 }
 
 // MakeBlock creates a new bc.Block and updates the txpool/utxo state.
@@ -65,23 +70,19 @@ func MakeBlock(ctx context.Context, key *btcec.PrivateKey) (*bc.Block, error) {
 
 	b, err := GenerateBlock(ctx, time.Now())
 	if err != nil {
-		log.Error(ctx, errors.Wrap(err, "generate"))
-		return nil, err
+		return nil, errors.Wrap(err, "generate")
 	}
 	if len(b.Transactions) == 0 {
 		return nil, nil // don't bother making an empty block
 	}
 	err = SignBlock(b, key)
 	if err != nil {
-		log.Error(ctx, errors.Wrap(err, "sign"))
-		return nil, err
+		return nil, errors.Wrap(err, "sign")
 	}
 	err = ApplyBlock(ctx, b)
 	if err != nil {
-		log.Error(ctx, errors.Wrap(err, "apply"))
-		return nil, err
+		return nil, errors.Wrap(err, "apply")
 	}
-	log.Messagef(ctx, "made block %s height %d with %d txs", b.Hash(), b.Height, len(b.Transactions))
 	return b, nil
 }
 
