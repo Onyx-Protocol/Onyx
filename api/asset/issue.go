@@ -14,6 +14,7 @@ import (
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/fedchain/txscript"
 	"chain/metrics"
 )
 
@@ -72,8 +73,8 @@ func Issue(ctx context.Context, assetID string, dests []*txbuilder.Destination) 
 // to issue units of asset 'a'.
 func issuanceInput(a *appdb.Asset) *txbuilder.Input {
 	return &txbuilder.Input{
-		RedeemScript: a.RedeemScript,
-		Sigs:         inputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a))),
+		SigScriptSuffix: txscript.AddDataToScript(nil, a.RedeemScript),
+		Sigs:            inputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a))),
 	}
 }
 

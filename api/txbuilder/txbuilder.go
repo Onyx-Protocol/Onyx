@@ -147,7 +147,7 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 	msg := txTemplate.Unsigned
 	for i, input := range txTemplate.Inputs {
 		sigsAdded := 0
-		sigsReqd, err := getSigsRequired(input.RedeemScript)
+		sigsReqd, err := getSigsRequired(input.SigScriptSuffix)
 		if err != nil {
 			return nil, err
 		}
@@ -168,7 +168,7 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
-		msg.Inputs[i].SignatureScript = append(script, input.RedeemScript...)
+		msg.Inputs[i].SignatureScript = append(script, input.SigScriptSuffix...)
 	}
 	return bc.NewTx(*msg), nil
 }

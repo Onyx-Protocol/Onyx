@@ -44,7 +44,7 @@ func (tr *testReserver) Reserve(ctx context.Context, assetAmt *bc.AssetAmount, t
 		Items: []*ReserveResultItem{{
 			TxInput: &bc.TxInput{Previous: bc.Outpoint{Hash: [32]byte{255}, Index: 0}},
 			TemplateInput: &Input{
-				RedeemScript: []byte("redeem"),
+				SigScriptSuffix: []byte("redeem"),
 			},
 		}},
 		Change: &Destination{
@@ -108,7 +108,7 @@ func TestBuild(t *testing.T) {
 			},
 		},
 		Inputs: []*Input{{
-			RedeemScript: []byte("redeem"),
+			SigScriptSuffix: []byte("redeem"),
 		}},
 		OutRecvs: []Receiver{
 			&testRecv{script: []byte("dest")},

@@ -37,7 +37,7 @@ func (reserver *redeemReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 	sb = sb.AddInt64(int64(changeAmount))
 	sb = sb.AddInt64(1)
 	sb = sb.AddData(contractScript)
-	redeemScript, err := sb.Script()
+	sigScriptSuffix, err := sb.Script()
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (reserver *redeemReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 		Items: []*txbuilder.ReserveResultItem{
 			{
 				TxInput:       &bc.TxInput{Previous: openOrder.Outpoint},
-				TemplateInput: &txbuilder.Input{RedeemScript: redeemScript},
+				TemplateInput: &txbuilder.Input{SigScriptSuffix: sigScriptSuffix},
 			},
 		},
 	}
@@ -109,7 +109,7 @@ func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 	}
 	sb := txscript.NewScriptBuilder()
 	sb = sb.AddData(sellerAddr.RedeemScript).AddInt64(0).AddData(contractScript)
-	redeemScript, err := sb.Script()
+	sigScriptSuffix, err := sb.Script()
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +118,8 @@ func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 			{
 				TxInput: &bc.TxInput{Previous: openOrder.Outpoint},
 				TemplateInput: &txbuilder.Input{
-					RedeemScript: redeemScript,
-					Sigs:         inputSigs(hdkey.Derive(sellerAddr.Keys, appdb.ReceiverPath(sellerAddr, sellerAddr.Index))),
+					SigScriptSuffix: sigScriptSuffix,
+					Sigs:            inputSigs(hdkey.Derive(sellerAddr.Keys, appdb.ReceiverPath(sellerAddr, sellerAddr.Index))),
 				},
 			},
 		},
