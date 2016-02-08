@@ -2,59 +2,30 @@ package api
 
 import (
 	"testing"
+	"time"
 
+	"chain/api/asset/assettest"
 	"chain/database/pg/pgtest"
 	"chain/net/http/authn"
 )
 
-const (
-	authTokenUserFixture = `
-		INSERT INTO users (id, email, password_hash) VALUES (
-			'sample-user-id-0',
-			'foo@bar.com',
-			'$2a$08$cHBfwMUAhhPcphRz1HgidO.gxb8WKXqUPVWfmcsuHUQoEB2RRzeSC'::bytea -- plaintext: abracadbra
-		);
-	`
-
-	authTokenFixture = `
-		INSERT INTO auth_tokens (id, secret_hash, type, user_id, created_at, expires_at) VALUES (
-			'sample-token-id-0',
-			'$2a$08$XMDacphqs44K0pzrSQxgqu3dAF.I3vn54toLboBSCKW6oSGitjSpa'::bytea, -- plaintext: 0123456789ABCDEF
-			'sample-type-0',
-			'sample-user-id-0',
-			'2000-01-01 00:00:00+00',
-			NULL
-		), (
-			-- expired token
-			'sample-token-id-1',
-			'$2a$08$XMDacphqs44K0pzrSQxgqu3dAF.I3vn54toLboBSCKW6oSGitjSpa'::bytea, -- plaintext: 0123456789ABCDEF
-			'sample-type-0',
-			'sample-user-id-0',
-			'2000-01-01 00:00:00+00',
-			'2000-01-01 00:00:00+00'
-		), (
-			'sample-token-id-2',
-			'$2a$08$XMDacphqs44K0pzrSQxgqu3dAF.I3vn54toLboBSCKW6oSGitjSpa'::bytea, -- plaintext: 0123456789ABCDEF
-			'sample-type-1',
-			'sample-user-id-0',
-			'2000-01-01 00:00:00+00',
-			NULL
-		);
-	`
-)
-
 func TestAuthenticateToken(t *testing.T) {
-	ctx := pgtest.NewContext(t, authTokenUserFixture, authTokenFixture)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
+	expires := time.Now().Add(-1 * time.Minute)
+	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	tok0 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-0", nil)
+	tok1 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-0", &expires)
+
 	// Valid token
-	uid, err := authenticateToken(ctx, "sample-token-id-0", "0123456789ABCDEF")
+	gotUID, err := authenticateToken(ctx, tok0.ID, tok0.Secret)
 	if err != nil {
 		t.Errorf("correct token err = %v want nil", err)
 	}
 
-	if uid != "sample-user-id-0" {
-		t.Errorf("correct token authenticated user id = %v want sample-user-id-0", uid)
+	if gotUID != uid {
+		t.Errorf("correct token authenticated user id = %v want %v", gotUID, uid)
 	}
 
 	// Non-existent ID
@@ -64,13 +35,13 @@ func TestAuthenticateToken(t *testing.T) {
 	}
 
 	// Bad secret
-	_, err = authenticateToken(ctx, "sample-token-id-0", "bad-secret")
+	_, err = authenticateToken(ctx, tok0.ID, "bad-secret")
 	if err != authn.ErrNotAuthenticated {
 		t.Errorf("bad token secret err = %v want %v", err, authn.ErrNotAuthenticated)
 	}
 
 	// Expired token
-	_, err = authenticateToken(ctx, "sample-token-id-1", "0123456789ABCDEF")
+	_, err = authenticateToken(ctx, tok1.ID, tok1.Secret)
 	if err != authn.ErrNotAuthenticated {
 		t.Errorf("expired token err = %v want %v", err, authn.ErrNotAuthenticated)
 	}

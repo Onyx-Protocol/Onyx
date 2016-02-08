@@ -4,19 +4,20 @@ import (
 	"testing"
 
 	"chain/api/asset"
+	"chain/api/asset/assettest"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/net/http/authn"
 )
 
 func TestCreateIssuerNode(t *testing.T) {
-	ctx := pgtest.NewContext(t, testUserFixture, `
-		INSERT INTO projects(id, name) VALUES ('a1', 'x');
-		INSERT INTO members (project_id, user_id, role)
-			VALUES ('a1', 'sample-user-id-0', 'admin');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
-	ctx = authn.NewContext(ctx, "sample-user-id-0")
+
+	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	proj0 := assettest.CreateProjectFixture(ctx, t, uid, "x")
+
+	ctx = authn.NewContext(ctx, uid)
 
 	req := map[string]interface{}{
 		"label":               "node",
@@ -24,7 +25,7 @@ func TestCreateIssuerNode(t *testing.T) {
 		"signatures_required": 1,
 	}
 
-	_, err := createIssuerNode(ctx, "a1", req)
+	_, err := createIssuerNode(ctx, proj0, req)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -41,20 +42,19 @@ func TestCreateIssuerNode(t *testing.T) {
 }
 
 func TestCreateIssuerNodeDeprecated(t *testing.T) {
-	ctx := pgtest.NewContext(t, testUserFixture, `
-		INSERT INTO projects(id, name) VALUES ('a1', 'x');
-		INSERT INTO members (project_id, user_id, role)
-			VALUES ('a1', 'sample-user-id-0', 'admin');
-	`)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
-	ctx = authn.NewContext(ctx, "sample-user-id-0")
+	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	proj0 := assettest.CreateProjectFixture(ctx, t, uid, "x")
+
+	ctx = authn.NewContext(ctx, uid)
 
 	req := map[string]interface{}{
 		"label":        "deprecated node",
 		"generate_key": true,
 	}
 
-	_, err := createIssuerNode(ctx, "a1", req)
+	_, err := createIssuerNode(ctx, proj0, req)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}

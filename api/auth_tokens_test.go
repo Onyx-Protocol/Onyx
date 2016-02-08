@@ -3,14 +3,17 @@ package api
 import (
 	"testing"
 
+	"chain/api/asset/assettest"
 	"chain/database/pg/pgtest"
 	"chain/net/http/authn"
 )
 
 func TestCreateAPIToken(t *testing.T) {
-	ctx := pgtest.NewContext(t, testUserFixture)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
-	ctx = authn.NewContext(ctx, "sample-user-id-0")
+
+	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	ctx = authn.NewContext(ctx, uid)
 
 	tok, err := createAPIToken(ctx)
 	if err != nil {
@@ -18,11 +21,11 @@ func TestCreateAPIToken(t *testing.T) {
 	}
 
 	// Verify that the token is valid
-	uid, err := authenticateToken(ctx, tok.ID, tok.Secret)
+	gotUID, err := authenticateToken(ctx, tok.ID, tok.Secret)
 	if err != nil {
 		t.Errorf("authenticate token err = %v want nil", err)
 	}
-	if uid != "sample-user-id-0" {
-		t.Errorf("authenticated user ID = %v want sample-user-id-0", uid)
+	if gotUID != uid {
+		t.Errorf("authenticated user ID = %v want %v", gotUID, uid)
 	}
 }

@@ -17,14 +17,6 @@ import (
 	chaintest "chain/testutil"
 )
 
-const testUserFixture = `
-	INSERT INTO users (id, email, password_hash) VALUES (
-		'sample-user-id-0',
-		'foo@bar.com',
-		'$2a$08$WF7tWRx/26m9Cp2kQBQEwuKxCev9S4TSzWdmtNmHSvan4UhEw0Er.'::bytea -- plaintext: abracadabra
-	);
-`
-
 func TestMux(t *testing.T) {
 	// Handler calls httpjson.HandleFunc, which panics
 	// if the function signature is not of the right form.
@@ -39,9 +31,11 @@ func TestMux(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	ctx := pgtest.NewContext(t, testUserFixture)
+	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
-	ctx = authn.NewContext(ctx, "sample-user-id-0")
+
+	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	ctx = authn.NewContext(ctx, uid)
 
 	tok, err := login(ctx)
 	if err != nil {
@@ -49,12 +43,12 @@ func TestLogin(t *testing.T) {
 	}
 
 	// Verify that the token is valid
-	uid, err := authenticateToken(ctx, tok.ID, tok.Secret)
+	gotUID, err := authenticateToken(ctx, tok.ID, tok.Secret)
 	if err != nil {
 		t.Errorf("authenticate token err = %v want nil", err)
 	}
-	if uid != "sample-user-id-0" {
-		t.Errorf("authenticated user ID = %v want sample-user-id-0", uid)
+	if gotUID != uid {
+		t.Errorf("authenticated user ID = %v want %v", gotUID, uid)
 	}
 }
 
