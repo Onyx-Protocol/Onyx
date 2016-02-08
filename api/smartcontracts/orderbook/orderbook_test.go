@@ -131,7 +131,7 @@ func TestBuy(t *testing.T) {
 			if txOutput.Amount != 80 {
 				return false
 			}
-			if !reflect.DeepEqual(txOutput.Script, fixtureInfo.openOrder.Script) {
+			if !reflect.DeepEqual(txOutput.Script, []byte(fixtureInfo.openOrder.Script)) {
 				return false
 			}
 			return true

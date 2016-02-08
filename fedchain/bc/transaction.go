@@ -77,8 +77,8 @@ type TxOutput struct {
 // Outpoint defines a bitcoin data type that is used to track previous
 // transaction outputs.
 type Outpoint struct {
-	Hash  Hash
-	Index uint32
+	Hash  Hash   `json:"hash"`
+	Index uint32 `json:"index"`
 }
 
 func NewOutpoint(b []byte, index uint32) *Outpoint {
@@ -373,7 +373,7 @@ func (p Outpoint) WriteTo(w io.Writer) (n int64, err error) {
 
 type AssetAmount struct {
 	AssetID AssetID `json:"asset_id"`
-	Amount  uint64
+	Amount  uint64  `json:"amount"`
 }
 
 func (a *AssetAmount) readFrom(r *errors.Reader) {

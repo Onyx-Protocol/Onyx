@@ -5,6 +5,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/crypto/hash160"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
@@ -32,7 +33,7 @@ type (
 		bc.Outpoint
 		bc.AssetAmount
 		OrderInfo
-		Script []byte
+		Script chainjson.HexBytes `json:"script"`
 	}
 )
 
