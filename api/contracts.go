@@ -20,14 +20,9 @@ func findOrders(ctx context.Context, req globalFindOrder) ([]*orderbook.OpenOrde
 		// TODO(tessr): find closed orders
 		return nil, errors.Wrap(httpjson.ErrBadRequest, "unimplemented: find all orders")
 	}
-	oc, err := orderbook.FindOpenOrders(ctx, req.OfferedAssetIDs, req.PaymentAssetIDs)
+	orders, err := orderbook.FindOpenOrders(ctx, req.OfferedAssetIDs, req.PaymentAssetIDs)
 	if err != nil {
 		return nil, errors.Wrap(err, "finding orders by offered and payment asset ids")
-	}
-
-	orders := make([]*orderbook.OpenOrder, 0)
-	for order := range oc {
-		orders = append(orders, order)
 	}
 
 	return orders, nil
@@ -39,33 +34,25 @@ func findAccountOrders(ctx context.Context, accountID string) ([]*orderbook.Open
 		// TODO(tessr): find closed orders
 		return nil, errors.Wrap(httpjson.ErrBadRequest, "unimplemented: find all orders")
 	}
-	var (
-		oc  <-chan *orderbook.OpenOrder
-		err error
-	)
 	if aids, ok := qvals["asset_id"]; ok {
 		var assetIDs []bc.AssetID
 		for _, id := range aids {
 			var assetID bc.AssetID
-			err = assetID.UnmarshalText([]byte(id))
+			err := assetID.UnmarshalText([]byte(id))
 			if err != nil {
 				return nil, errors.Wrap(httpjson.ErrBadRequest, "invalid assetID")
 			}
 			assetIDs = append(assetIDs, assetID)
 		}
-		oc, err = orderbook.FindOpenOrdersBySellerAndAsset(ctx, accountID, assetIDs)
+		orders, err := orderbook.FindOpenOrdersBySellerAndAsset(ctx, accountID, assetIDs)
 		if err != nil {
 			return nil, errors.Wrap(err, "finding orders by seller and asset")
 		}
-	} else {
-		oc, err = orderbook.FindOpenOrdersBySeller(ctx, accountID)
-		return nil, errors.Wrap(err, "finding orders by seller")
+		return orders, nil
 	}
-
-	orders := make([]*orderbook.OpenOrder, 0)
-	for order := range oc {
-		orders = append(orders, order)
+	orders, err := orderbook.FindOpenOrdersBySeller(ctx, accountID)
+	if err != nil {
+		return nil, err
 	}
-
 	return orders, nil
 }

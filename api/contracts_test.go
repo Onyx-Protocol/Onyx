@@ -28,7 +28,7 @@ type contractsFixtureInfo struct {
 
 var ttl = time.Hour
 
-func TestOfferContractViaBuild(t *testing.T) {
+func TestOfferContract(t *testing.T) {
 	withContractsFixture(t, func(ctx context.Context, fixtureInfo *contractsFixtureInfo) {
 		buildRequest := &BuildRequest{
 			Sources: []*Source{
@@ -101,7 +101,7 @@ func callBuildSingle(t *testing.T, ctx context.Context, request *BuildRequest, c
 	}
 }
 
-func TestFindAndBuyContractViaBuild(t *testing.T) {
+func TestFindAndBuyContract(t *testing.T) {
 	withContractsFixture(t, func(ctx context.Context, fixtureInfo *contractsFixtureInfo) {
 		openOrder, err := offerAndFind(ctx, fixtureInfo)
 		if err != nil {
@@ -238,7 +238,7 @@ func offerAndFind(ctx context.Context, fixtureInfo *contractsFixtureInfo) (*orde
 	return openOrders[0], nil
 }
 
-func TestFindAndCancelContractViaBuild(t *testing.T) {
+func TestFindAndCancelContract(t *testing.T) {
 	withContractsFixture(t, func(ctx context.Context, fixtureInfo *contractsFixtureInfo) {
 		openOrder, err := offerAndFind(ctx, fixtureInfo)
 		if err != nil {
@@ -288,6 +288,42 @@ func TestFindAndCancelContractViaBuild(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestFindBySeller(t *testing.T) {
+	withContractsFixture(t, func(ctx context.Context, fixtureInfo *contractsFixtureInfo) {
+		order, err := offerAndFind(ctx, fixtureInfo)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedOrders := []*orderbook.OpenOrder{order}
+
+		foundOrders, err := callFindAccountOrders(ctx, fixtureInfo.sellerAccountID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		testutil.ExpectEqual(t, foundOrders, expectedOrders, "find by seller [1]")
+
+		foundOrders, err = callFindAccountOrders(ctx, fixtureInfo.sellerAccountID+"x")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if foundOrders != nil {
+			t.Errorf("find by seller [2]: got %v, expected nil", foundOrders)
+		}
+	})
+}
+
+func callFindAccountOrders(ctx context.Context, accountID string) ([]*orderbook.OpenOrder, error) {
+	// Need to add an http request to the context before running Find
+	httpURL, err := url.Parse("http://boop.bop/v3/contracts/orderbook?status=open")
+	if err != nil {
+		return nil, err
+	}
+	httpReq := http.Request{URL: httpURL}
+	ctx = httpjson.WithRequest(ctx, &httpReq)
+	return findAccountOrders(ctx, accountID)
 }
 
 func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtureInfo)) {

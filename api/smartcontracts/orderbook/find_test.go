@@ -24,11 +24,10 @@ func TestFindOpenOrders(t *testing.T) {
 	assetID2 := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "")
 	assetID3 := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "")
 
-	openOrderChan, err := FindOpenOrders(ctx, []bc.AssetID{assetID1}, []bc.AssetID{})
+	openOrders, err := FindOpenOrders(ctx, []bc.AssetID{assetID1}, []bc.AssetID{})
 	if err != nil {
 		chaintest.FatalErr(t, err)
 	}
-	openOrders := slurpOpenOrders(openOrderChan)
 	chaintest.ExpectEqual(t, len(openOrders), 0, "expected no results from FindOpenOrders")
 
 	prices := []*Price{
@@ -72,18 +71,16 @@ func TestFindOpenOrders(t *testing.T) {
 		chaintest.FatalErr(t, err)
 	}
 
-	openOrderChan, err = FindOpenOrders(ctx, []bc.AssetID{assetID2}, []bc.AssetID{})
+	openOrders, err = FindOpenOrders(ctx, []bc.AssetID{assetID2}, []bc.AssetID{})
 	if err != nil {
 		chaintest.FatalErr(t, err)
 	}
-	openOrders = slurpOpenOrders(openOrderChan)
 	chaintest.ExpectEqual(t, len(openOrders), 0, "expected no results from FindOpenOrders(assetID2, {}) [1]")
 
-	openOrderChan, err = FindOpenOrders(ctx, []bc.AssetID{assetID1}, []bc.AssetID{assetID3})
+	openOrders, err = FindOpenOrders(ctx, []bc.AssetID{assetID1}, []bc.AssetID{assetID3})
 	if err != nil {
 		chaintest.FatalErr(t, err)
 	}
-	openOrders = slurpOpenOrders(openOrderChan)
 	chaintest.ExpectEqual(t, len(openOrders), 0, "expected no results from FindOpenOrders(assetID1, {assetID3})")
 
 	combinations := []struct {
@@ -97,11 +94,10 @@ func TestFindOpenOrders(t *testing.T) {
 		{nil, []bc.AssetID{assetID2, assetID3}},
 	}
 	for i, combination := range combinations {
-		openOrderChan, err = FindOpenOrders(ctx, combination.offeredAssetIDs, combination.paymentAssetIDs)
+		openOrders, err = FindOpenOrders(ctx, combination.offeredAssetIDs, combination.paymentAssetIDs)
 		if err != nil {
 			chaintest.FatalErr(t, err)
 		}
-		openOrders = slurpOpenOrders(openOrderChan)
 		chaintest.ExpectEqual(t, len(openOrders), 1, fmt.Sprintf("expected 1 result from FindOpenOrders (case %d)", i))
 		openOrder := openOrders[0]
 		chaintest.ExpectEqual(t, openOrder.AssetID, assetID1, fmt.Sprintf("wrong assetID in result of FindOpenOrders (case %d)", i))
@@ -110,11 +106,10 @@ func TestFindOpenOrders(t *testing.T) {
 		chaintest.ExpectEqual(t, openOrder.OrderInfo.Prices, prices, fmt.Sprintf("wrong prices in result of FindOpenOrders (case %d)", i))
 	}
 
-	openOrderChan, err = FindOpenOrders(ctx, nil, []bc.AssetID{assetID1})
+	openOrders, err = FindOpenOrders(ctx, nil, []bc.AssetID{assetID1})
 	if err != nil {
 		chaintest.FatalErr(t, err)
 	}
-	openOrders = slurpOpenOrders(openOrderChan)
 	chaintest.ExpectEqual(t, len(openOrders), 0, "expected no results from FindOpenOrders({}, {assetID1})")
 
 	asset3x100 := &bc.AssetAmount{
@@ -150,18 +145,16 @@ func TestFindOpenOrders(t *testing.T) {
 		chaintest.FatalErr(t, err)
 	}
 
-	openOrderChan, err = FindOpenOrders(ctx, []bc.AssetID{assetID2}, []bc.AssetID{})
+	openOrders, err = FindOpenOrders(ctx, []bc.AssetID{assetID2}, []bc.AssetID{})
 	if err != nil {
 		chaintest.FatalErr(t, err)
 	}
-	openOrders = slurpOpenOrders(openOrderChan)
 	chaintest.ExpectEqual(t, len(openOrders), 0, "expected no results from FindOpenOrders(assetID2, {}) [2]")
 
-	openOrderChan, err = FindOpenOrders(ctx, []bc.AssetID{assetID3}, []bc.AssetID{})
+	openOrders, err = FindOpenOrders(ctx, []bc.AssetID{assetID3}, []bc.AssetID{})
 	if err != nil {
 		chaintest.FatalErr(t, err)
 	}
-	openOrders = slurpOpenOrders(openOrderChan)
 	chaintest.ExpectEqual(t, len(openOrders), 1, "expected 1 result from FindOpenOrders(assetID3, {})")
 	openOrder := openOrders[0]
 	chaintest.ExpectEqual(t, openOrder.AssetID, assetID3, "wrong assetID in result of FindOpenOrders(assetID3, {})")

@@ -19,7 +19,7 @@ var (
 // paymentAssetIDs.  With zero paymentAssetIDs, returns all open
 // orders offering any offeredAssetID.  With zero offeredAssetIDs,
 // returns all open orders accepting any paymentAssetID.
-func FindOpenOrders(ctx context.Context, offeredAssetIDs []bc.AssetID, paymentAssetIDs []bc.AssetID) (<-chan *OpenOrder, error) {
+func FindOpenOrders(ctx context.Context, offeredAssetIDs []bc.AssetID, paymentAssetIDs []bc.AssetID) ([]*OpenOrder, error) {
 	var extra string
 	var extraParams []interface{}
 
@@ -42,13 +42,13 @@ func FindOpenOrders(ctx context.Context, offeredAssetIDs []bc.AssetID, paymentAs
 }
 
 // FindOpenOrdersBySeller find open orders from the given seller account.
-func FindOpenOrdersBySeller(ctx context.Context, accountID string) (<-chan *OpenOrder, error) {
+func FindOpenOrdersBySeller(ctx context.Context, accountID string) ([]*OpenOrder, error) {
 	return findOpenOrdersHelper(ctx, makeQuery(`ou.seller_id = $1`), accountID)
 }
 
 // FindOpenOrdersBySellerAndAsset find open orders from the given
 // seller account and offering any of the given assetIDs.
-func FindOpenOrdersBySellerAndAsset(ctx context.Context, accountID string, assetIDs []bc.AssetID) (<-chan *OpenOrder, error) {
+func FindOpenOrdersBySellerAndAsset(ctx context.Context, accountID string, assetIDs []bc.AssetID) ([]*OpenOrder, error) {
 	if len(assetIDs) == 0 {
 		return FindOpenOrdersBySeller(ctx, accountID)
 	}
@@ -58,14 +58,14 @@ func FindOpenOrdersBySellerAndAsset(ctx context.Context, accountID string, asset
 // FindOpenOrderByOutpoint finds the open order with the given
 // outpoint, if one exists.  Returns nil (no error) if it doesn't.
 func FindOpenOrderByOutpoint(ctx context.Context, outpoint *bc.Outpoint) (*OpenOrder, error) {
-	ch, err := findOpenOrdersHelper(ctx, makeQuery(`u.tx_hash = $1 AND u.index = $2`), outpoint.Hash, outpoint.Index)
+	openOrders, err := findOpenOrdersHelper(ctx, makeQuery(`u.tx_hash = $1 AND u.index = $2`), outpoint.Hash, outpoint.Index)
 	if err != nil {
 		return nil, err
 	}
 	var result *OpenOrder
-	for order := range ch {
+	for _, openOrder := range openOrders {
 		if result == nil {
-			result = order
+			result = openOrder
 		} else {
 			return nil, ErrDuplicateOutpoints // should be impossible
 		}
@@ -73,71 +73,74 @@ func FindOpenOrderByOutpoint(ctx context.Context, outpoint *bc.Outpoint) (*OpenO
 	return result, nil // note, result may be nil
 }
 
-func findOpenOrdersHelper(ctx context.Context, q string, args ...interface{}) (<-chan *OpenOrder, error) {
+func findOpenOrdersHelper(ctx context.Context, q string, args ...interface{}) ([]*OpenOrder, error) {
 	rows, err := pg.FromContext(ctx).Query(ctx, q, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "query")
 	}
+	defer rows.Close()
 
-	result := make(chan *OpenOrder)
+	var result []*OpenOrder
 
-	go func() {
-		defer rows.Close()
-		defer close(result)
+	var (
+		lastTxHashStr string
+		lastIndex     uint32
+		openOrder     *OpenOrder
+	)
 
+	for rows.Next() {
 		var (
-			lastTxHashStr string
-			lastIndex     uint32
-			openOrder     *OpenOrder
+			txHash                     bc.Hash
+			index                      uint32
+			offeredAssetID             bc.AssetID
+			amount                     uint64
+			script                     []byte
+			sellerAccountID            string
+			paymentAssetID             bc.AssetID
+			offerAmount, paymentAmount uint64
 		)
 
-		for rows.Next() {
-			var (
-				txHash                     bc.Hash
-				index                      uint32
-				offeredAssetID             bc.AssetID
-				amount                     uint64
-				script                     []byte
-				sellerAccountID            string
-				paymentAssetID             bc.AssetID
-				offerAmount, paymentAmount uint64
-			)
-
-			err = rows.Scan(&txHash, &index, &offeredAssetID, &amount, &script, &sellerAccountID, &paymentAssetID, &offerAmount, &paymentAmount)
-
-			if txHash.String() != lastTxHashStr || index != lastIndex {
-				// wrap up the previous OpenOrder and start a new one
-				if openOrder != nil {
-					result <- openOrder
-				}
-				openOrder = &OpenOrder{
-					Outpoint: bc.Outpoint{
-						Hash:  txHash,
-						Index: index,
-					},
-					OrderInfo: OrderInfo{
-						SellerAccountID: sellerAccountID,
-					},
-					AssetAmount: bc.AssetAmount{
-						AssetID: offeredAssetID,
-						Amount:  amount,
-					},
-					Script: script,
-				}
-			}
-			orderbookPrice := &Price{
-				AssetID:       paymentAssetID,
-				OfferAmount:   offerAmount,
-				PaymentAmount: paymentAmount,
-			}
-			openOrder.Prices = append(openOrder.Prices, orderbookPrice)
-			lastTxHashStr = txHash.String()
-			lastIndex = index
+		err = rows.Scan(&txHash, &index, &offeredAssetID, &amount, &script, &sellerAccountID, &paymentAssetID, &offerAmount, &paymentAmount)
+		if err != nil {
+			return nil, errors.Wrap(err, "scan")
 		}
-		if openOrder != nil {
-			result <- openOrder
+
+		if txHash.String() != lastTxHashStr || index != lastIndex {
+			// wrap up the previous OpenOrder and start a new one
+			if openOrder != nil {
+				result = append(result, openOrder)
+			}
+			openOrder = &OpenOrder{
+				Outpoint: bc.Outpoint{
+					Hash:  txHash,
+					Index: index,
+				},
+				OrderInfo: OrderInfo{
+					SellerAccountID: sellerAccountID,
+				},
+				AssetAmount: bc.AssetAmount{
+					AssetID: offeredAssetID,
+					Amount:  amount,
+				},
+				Script: script,
+			}
 		}
-	}()
+		orderbookPrice := &Price{
+			AssetID:       paymentAssetID,
+			OfferAmount:   offerAmount,
+			PaymentAmount: paymentAmount,
+		}
+		openOrder.Prices = append(openOrder.Prices, orderbookPrice)
+		lastTxHashStr = txHash.String()
+		lastIndex = index
+	}
+	if err = rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "end scan")
+	}
+
+	if openOrder != nil {
+		result = append(result, openOrder)
+	}
 
 	return result, nil
 }
