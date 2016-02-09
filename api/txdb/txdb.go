@@ -17,12 +17,7 @@ import (
 	"chain/strings"
 )
 
-// PoolTxs returns the pooled transactions
-// in topological order.
-// If max is negative, there is no limit.
-// TODO(jeffomatic) - at some point in the future, will we want to keep this
-// cached in an in-memory pool, a la btcd's TxMemPool?
-func PoolTxs(ctx context.Context) ([]*bc.Tx, error) {
+func poolTxs(ctx context.Context) ([]*bc.Tx, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -98,15 +93,14 @@ func GetTxBlockHeader(ctx context.Context, hash string) (*bc.BlockHeader, error)
 	return b, errors.Wrap(err, "select query")
 }
 
-// InsertTx inserts tx into txs.
-func InsertTx(ctx context.Context, tx *bc.Tx) error {
+// insertTx inserts tx into txs.
+func insertTx(ctx context.Context, tx *bc.Tx) error {
 	const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2)`
 	_, err := pg.FromContext(ctx).Exec(ctx, q, tx.Hash, tx)
 	return errors.Wrap(err, "insert query")
 }
 
-// LatestBlock returns the most recent block.
-func LatestBlock(ctx context.Context) (*bc.Block, error) {
+func latestBlock(ctx context.Context) (*bc.Block, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 	const q = `SELECT data FROM blocks ORDER BY height DESC LIMIT 1`
@@ -121,7 +115,7 @@ func LatestBlock(ctx context.Context) (*bc.Block, error) {
 	return b, nil
 }
 
-func InsertBlock(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
+func insertBlock(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -230,7 +224,7 @@ func GetBlock(ctx context.Context, hash string) (*bc.Block, error) {
 	return block, errors.WithDetailf(err, "block hash=%v", hash)
 }
 
-func RemoveBlockSpentOutputs(ctx context.Context, delta []*state.Output) error {
+func removeBlockSpentOutputs(ctx context.Context, delta []*state.Output) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -258,7 +252,7 @@ func RemoveBlockSpentOutputs(ctx context.Context, delta []*state.Output) error {
 	return nil
 }
 
-// InsertBlockOutputs updates utxos to mark
+// insertBlockOutputs updates utxos to mark
 // unconfirmed records as confirmed and to insert new
 // records as necessary, one for each unspent item
 // in delta.
@@ -266,7 +260,7 @@ func RemoveBlockSpentOutputs(ctx context.Context, delta []*state.Output) error {
 // It returns a new list containing all spent items
 // from delta, plus all newly-inserted unspent outputs
 // from delta, omitting the updated items.
-func InsertBlockOutputs(ctx context.Context, delta []*state.Output) error {
+func insertBlockOutputs(ctx context.Context, delta []*state.Output) error {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)

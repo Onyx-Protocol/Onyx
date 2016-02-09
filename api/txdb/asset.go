@@ -84,9 +84,9 @@ func DefinitionHashByAssetID(ctx context.Context, assetID string) (string, error
 	return hash, nil
 }
 
-// InsertAssetDefinitionPointers writes the and asset id and the definition hash,
+// insertAssetDefinitionPointers writes the and asset id and the definition hash,
 // to the asset_definition_pointers table.
-func InsertAssetDefinitionPointers(ctx context.Context, adps map[bc.AssetID]*bc.AssetDefinitionPointer) error {
+func insertAssetDefinitionPointers(ctx context.Context, adps map[bc.AssetID]*bc.AssetDefinitionPointer) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -115,9 +115,9 @@ func InsertAssetDefinitionPointers(ctx context.Context, adps map[bc.AssetID]*bc.
 	return errors.Wrap(err)
 }
 
-// InsertAssetDefinitions inserts a record for each asset definition
+// insertAssetDefinitions inserts a record for each asset definition
 // in block. The record maps the hash to the data of the definition.
-func InsertAssetDefinitions(ctx context.Context, block *bc.Block) error {
+func insertAssetDefinitions(ctx context.Context, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 

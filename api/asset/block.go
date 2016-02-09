@@ -143,12 +143,15 @@ func getRestorableOutputs(ctx context.Context, txs []*bc.Tx) (outs []*txdb.Outpu
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	poolView, err := txdb.NewPoolViewForPrevouts(ctx, txs)
+	// TODO(kr): probably should use fedchain.FC instead
+	store := new(txdb.Store)
+
+	poolView, err := store.NewPoolViewForPrevouts(ctx, txs)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
 
-	bcView, err := txdb.NewViewForPrevouts(ctx, txs)
+	bcView, err := store.NewViewForPrevouts(ctx, txs)
 	if err != nil {
 		return nil, errors.Wrap(err, "load prev outs from conflicting txs")
 	}

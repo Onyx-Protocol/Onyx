@@ -76,7 +76,7 @@ func TestView(t *testing.T) {
 		for i, ex := range examples {
 			t.Log("Example", i)
 
-			v, err := NewView(ctx, []bc.Outpoint{ex.op})
+			v, err := newView(ctx, []bc.Outpoint{ex.op})
 			if err != nil {
 				t.Fatal("unexpected error:", err)
 			}
@@ -102,7 +102,7 @@ func TestViewForPrevoutsIgnoreIssuance(t *testing.T) {
 		}},
 	})}
 
-	v, err := NewViewForPrevouts(ctx, txs)
+	v, err := newViewForPrevouts(ctx, txs)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -218,7 +218,7 @@ func TestPoolView(t *testing.T) {
 		for i, ex := range examples {
 			t.Log("Example", i)
 
-			v, err := NewPoolView(ctx, []bc.Outpoint{ex.op})
+			v, err := newPoolView(ctx, []bc.Outpoint{ex.op})
 			if err != nil {
 				t.Fatal("unexpected error:", err)
 			}

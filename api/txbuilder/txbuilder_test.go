@@ -13,7 +13,6 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain/bc"
-	"chain/fedchain/state"
 	"chain/testutil"
 )
 
@@ -54,18 +53,12 @@ func TestBuild(t *testing.T) {
 	ctx := pgtest.NewContext(t, ``)
 	defer pgtest.Finish(ctx)
 
-	output := &txdb.Output{
-		Output: state.Output{
-			Outpoint: bc.Outpoint{Hash: [32]byte{255}, Index: 0},
-			TxOutput: bc.TxOutput{
-				AssetAmount: bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5},
-				Script:      []byte{},
-			},
-		},
-	}
-	// ignore error from potential duplicate
-	txdb.InsertPoolTx(ctx, &bc.Tx{Hash: [32]byte{255}, TxData: bc.TxData{}})
-	err := txdb.InsertPoolOutputs(ctx, []*txdb.Output{output})
+	err := new(txdb.Store).ApplyTx(ctx, &bc.Tx{Hash: [32]byte{255}, TxData: bc.TxData{
+		Outputs: []*bc.TxOutput{{
+			AssetAmount: bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5},
+			Script:      []byte{},
+		}},
+	}})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

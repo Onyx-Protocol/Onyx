@@ -54,7 +54,7 @@ func TestPoolTxs(t *testing.T) {
 		);
 	`
 	withContext(t, fix, func(ctx context.Context) {
-		got, err := PoolTxs(ctx)
+		got, err := poolTxs(ctx)
 		if err != nil {
 			t.Fatalf("err got = %v want nil", err)
 		}
@@ -81,7 +81,7 @@ func TestPoolTxs(t *testing.T) {
 func TestGetTxs(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		tx := bc.NewTx(bc.TxData{Metadata: []byte("tx")})
-		err := InsertTx(ctx, tx)
+		err := insertTx(ctx, tx)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -108,7 +108,7 @@ func TestGetTxs(t *testing.T) {
 func TestInsertTx(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		tx := bc.NewTx(bc.TxData{Metadata: []byte("tx")})
-		err := InsertTx(ctx, tx)
+		err := insertTx(ctx, tx)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -135,7 +135,7 @@ func TestLatestBlock(t *testing.T) {
 		);
 	`
 	withContext(t, fix, func(ctx context.Context) {
-		got, err := LatestBlock(ctx)
+		got, err := latestBlock(ctx)
 		if err != nil {
 			t.Fatalf("err got = %v want nil", err)
 		}
@@ -178,7 +178,7 @@ func TestInsertBlock(t *testing.T) {
 				}),
 			},
 		}
-		_, err := InsertBlock(ctx, blk)
+		_, err := insertBlock(ctx, blk)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -209,7 +209,7 @@ func TestGetBlock(t *testing.T) {
 				Height:  1,
 			},
 		}
-		_, err := InsertBlock(ctx, blk)
+		_, err := insertBlock(ctx, blk)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -239,7 +239,7 @@ func TestListBlocks(t *testing.T) {
 			{BlockHeader: bc.BlockHeader{Height: 0}},
 		}
 		for _, blk := range blks {
-			_, err := InsertBlock(ctx, blk)
+			_, err := insertBlock(ctx, blk)
 			if err != nil {
 				t.Log(errors.Stack(err))
 				t.Fatal(err)
@@ -293,14 +293,14 @@ func TestRemoveBlockOutputs(t *testing.T) {
 			},
 			Outpoint: bc.Outpoint{},
 		}
-		err := InsertBlockOutputs(ctx, []*state.Output{out})
+		err := insertBlockOutputs(ctx, []*state.Output{out})
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
 		out.Spent = true
-		err = RemoveBlockSpentOutputs(ctx, []*state.Output{out})
+		err = removeBlockSpentOutputs(ctx, []*state.Output{out})
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -328,7 +328,7 @@ func TestInsertBlockOutputs(t *testing.T) {
 			},
 			Outpoint: bc.Outpoint{},
 		}
-		err := InsertBlockOutputs(ctx, []*state.Output{out})
+		err := insertBlockOutputs(ctx, []*state.Output{out})
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

@@ -15,11 +15,7 @@ type view struct {
 	err                   *error
 }
 
-// NewPoolViewForPrevouts returns a new state view on the pool
-// of unconfirmed transactions.
-// It loads the prevouts for transactions in txs;
-// all other outputs will be omitted from the view.
-func NewPoolViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
+func newPoolViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
 	var p []bc.Outpoint
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
@@ -29,14 +25,14 @@ func NewPoolViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader
 			p = append(p, in.Previous)
 		}
 	}
-	return NewPoolView(ctx, p)
+	return newPoolView(ctx, p)
 }
 
-// NewPoolView returns a new state view on the pool
+// newPoolView returns a new state view on the pool
 // of unconfirmed transactions.
 // It loads the outpoints identified in p;
 // all other outputs will be omitted from the view.
-func NewPoolView(ctx context.Context, p []bc.Outpoint) (state.ViewReader, error) {
+func newPoolView(ctx context.Context, p []bc.Outpoint) (state.ViewReader, error) {
 	outs, err := loadPoolOutputs(ctx, p)
 	if err != nil {
 		return nil, err
@@ -50,10 +46,7 @@ func NewPoolView(ctx context.Context, p []bc.Outpoint) (state.ViewReader, error)
 	return result, nil
 }
 
-// NewViewForPrevouts returns a new state view on the blockchain.
-// It loads the prevouts for transactions in txs;
-// all other outputs will be omitted from the view.
-func NewViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
+func newViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
 	var p []bc.Outpoint
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
@@ -63,13 +56,13 @@ func NewViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, er
 			p = append(p, in.Previous)
 		}
 	}
-	return NewView(ctx, p)
+	return newView(ctx, p)
 }
 
-// NewView returns a new state view on the blockchain.
+// newView returns a new state view on the blockchain.
 // It loads the outpoints identified in p;
 // all other outputs will be omitted from the view.
-func NewView(ctx context.Context, p []bc.Outpoint) (state.ViewReader, error) {
+func newView(ctx context.Context, p []bc.Outpoint) (state.ViewReader, error) {
 	outs, err := loadOutputs(ctx, p)
 	if err != nil {
 		return nil, err

@@ -14,13 +14,14 @@ type Store struct{}
 
 var _ fedchain.Store = (*Store)(nil)
 
+// ApplyTx adds tx to the pending pool.
 func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx) error {
-	err := InsertTx(ctx, tx)
+	err := insertTx(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "insert into txs")
 	}
 
-	err = InsertPoolTx(ctx, tx)
+	err = insertPoolTx(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "insert into pool txs")
 	}
@@ -34,7 +35,7 @@ func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx) error {
 			},
 		})
 	}
-	err = InsertPoolOutputs(ctx, outputs)
+	err = insertPoolOutputs(ctx, outputs)
 	if err != nil {
 		return errors.Wrap(err, "insert into utxos")
 	}
@@ -46,10 +47,11 @@ func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx) error {
 		}
 		deleted = append(deleted, in.Previous)
 	}
-	err = InsertPoolInputs(ctx, deleted)
+	err = insertPoolInputs(ctx, deleted)
 	return errors.Wrap(err, "insert into pool inputs")
 }
 
+// RemoveTxs removes confirmedTxs and conflictTxs from the pool.
 func (s *Store) RemoveTxs(ctx context.Context, confirmedTxs, conflictTxs []*bc.Tx) error {
 	db := pg.FromContext(ctx)
 
@@ -69,6 +71,11 @@ func (s *Store) RemoveTxs(ctx context.Context, confirmedTxs, conflictTxs []*bc.T
 			deleteInputIndexes = append(deleteInputIndexes, in.Previous.Index)
 		}
 	}
+	// TODO(kr): ideally there is no distinction between confirmedTxs
+	// and conflictTxs here. We currently need to know the difference,
+	// because we mix pool outputs with blockchain outputs in postgres,
+	// and this means we have to take extra care not to delete confirmed
+	// outputs.
 	for _, tx := range conflictTxs {
 		conflictTxHashes = append(conflictTxHashes, tx.Hash.String())
 	}
@@ -100,16 +107,23 @@ func (s *Store) RemoveTxs(ctx context.Context, confirmedTxs, conflictTxs []*bc.T
 	return errors.Wrap(err, "delete from pool_inputs")
 }
 
+// PoolTxs returns the pooled transactions in topological order.
 func (s *Store) PoolTxs(ctx context.Context) ([]*bc.Tx, error) {
-	return PoolTxs(ctx)
+	// TODO(jeffomatic) - at some point in the future, will we want to keep this
+	// cached in an in-memory pool, a la btcd's TxMemPool?
+	return poolTxs(ctx)
 }
 
+// NewPoolViewForPrevouts returns a new state view on the pool
+// of unconfirmed transactions.
+// It loads the prevouts for transactions in txs;
+// all other outputs will be omitted from the view.
 func (s *Store) NewPoolViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
-	return NewPoolViewForPrevouts(ctx, txs)
+	return newPoolViewForPrevouts(ctx, txs)
 }
 
 func (s *Store) ApplyBlock(ctx context.Context, block *bc.Block, adps map[bc.AssetID]*bc.AssetDefinitionPointer, delta []*state.Output) ([]*bc.Tx, error) {
-	newHashes, err := InsertBlock(ctx, block)
+	newHashes, err := insertBlock(ctx, block)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert block")
 	}
@@ -125,22 +139,22 @@ func (s *Store) ApplyBlock(ctx context.Context, block *bc.Block, adps map[bc.Ass
 		}
 	}
 
-	err = InsertAssetDefinitionPointers(ctx, adps)
+	err = insertAssetDefinitionPointers(ctx, adps)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert ADPs")
 	}
 
-	err = InsertAssetDefinitions(ctx, block)
+	err = insertAssetDefinitions(ctx, block)
 	if err != nil {
 		return nil, errors.Wrap(err, "writing asset definitions")
 	}
 
-	err = RemoveBlockSpentOutputs(ctx, delta)
+	err = removeBlockSpentOutputs(ctx, delta)
 	if err != nil {
 		return nil, errors.Wrap(err, "remove block spent outputs")
 	}
 
-	err = InsertBlockOutputs(ctx, delta)
+	err = insertBlockOutputs(ctx, delta)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert block outputs")
 	}
@@ -148,10 +162,14 @@ func (s *Store) ApplyBlock(ctx context.Context, block *bc.Block, adps map[bc.Ass
 	return newTxs, nil
 }
 
+// LatestBlock returns the most recent block.
 func (s *Store) LatestBlock(ctx context.Context) (*bc.Block, error) {
-	return LatestBlock(ctx)
+	return latestBlock(ctx)
 }
 
+// NewViewForPrevouts returns a new state view on the blockchain.
+// It loads the prevouts for transactions in txs;
+// all other outputs will be omitted from the view.
 func (s *Store) NewViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
-	return NewViewForPrevouts(ctx, txs)
+	return newViewForPrevouts(ctx, txs)
 }

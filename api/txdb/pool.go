@@ -133,13 +133,13 @@ func addToUTXOSet(set *utxoSet, out *Output) {
 	}
 }
 
-func InsertPoolTx(ctx context.Context, tx *bc.Tx) error {
+func insertPoolTx(ctx context.Context, tx *bc.Tx) error {
 	const q = `INSERT INTO pool_txs (tx_hash, data) VALUES ($1, $2)`
 	_, err := pg.FromContext(ctx).Exec(ctx, q, tx.Hash, tx)
 	return errors.Wrap(err)
 }
 
-func InsertPoolOutputs(ctx context.Context, insert []*Output) error {
+func insertPoolOutputs(ctx context.Context, insert []*Output) error {
 	var outs utxoSet
 	for _, o := range insert {
 		addToUTXOSet(&outs, o)
@@ -204,8 +204,8 @@ func InsertAccountOutputs(ctx context.Context, outs []*Output) error {
 	return errors.Wrap(err)
 }
 
-// InsertPoolInputs inserts outpoints into pool_inputs.
-func InsertPoolInputs(ctx context.Context, outs []bc.Outpoint) error {
+// insertPoolInputs inserts outpoints into pool_inputs.
+func insertPoolInputs(ctx context.Context, outs []bc.Outpoint) error {
 	defer metrics.RecordElapsed(time.Now())
 	var (
 		txHashes []string

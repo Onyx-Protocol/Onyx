@@ -84,7 +84,7 @@ func TestInsertAssetDefinitionPointers(t *testing.T) {
 		adps[a0] = adp0
 		adps[a1] = adp1
 
-		err := InsertAssetDefinitionPointers(ctx, adps)
+		err := insertAssetDefinitionPointers(ctx, adps)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -135,14 +135,14 @@ func TestInsertAssetDefinitionPointersWithUpdate(t *testing.T) {
 		adps := make(map[bc.AssetID]*bc.AssetDefinitionPointer)
 		adps[a0] = adp0
 
-		err := InsertAssetDefinitionPointers(ctx, adps)
+		err := insertAssetDefinitionPointers(ctx, adps)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
 
 		delete(adps, a0)
 		adps[a1] = adp1
-		err = InsertAssetDefinitionPointers(ctx, adps)
+		err = insertAssetDefinitionPointers(ctx, adps)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -187,7 +187,7 @@ func TestInsertAssetDefinitions(t *testing.T) {
 
 	withContext(t, "", func(ctx context.Context) {
 		block := &bc.Block{Transactions: txs}
-		err := InsertAssetDefinitions(ctx, block)
+		err := insertAssetDefinitions(ctx, block)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -231,12 +231,12 @@ func TestInsertAssetDefinitionsIdempotent(t *testing.T) {
 				}}),
 			},
 		}
-		err := InsertAssetDefinitions(ctx, block)
+		err := insertAssetDefinitions(ctx, block)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
 		// Just do it again
-		err = InsertAssetDefinitions(ctx, block)
+		err = insertAssetDefinitions(ctx, block)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -284,7 +284,7 @@ func TestInsertAssetDefinitionsDuplicates(t *testing.T) {
 				}}),
 			},
 		}
-		err := InsertAssetDefinitions(ctx, block)
+		err := insertAssetDefinitions(ctx, block)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}

@@ -106,12 +106,15 @@ func combine(txs ...*Template) (*Template, error) {
 }
 
 func setSignatureData(ctx context.Context, tpl *Template) error {
+	// TODO(kr): probably should use fedchain.FC instead
+	store := new(txdb.Store)
+
 	txSet := []*bc.Tx{bc.NewTx(*tpl.Unsigned)}
-	bcView, err := txdb.NewViewForPrevouts(ctx, txSet)
+	bcView, err := store.NewViewForPrevouts(ctx, txSet)
 	if err != nil {
 		return errors.Wrap(err, "loading utxos")
 	}
-	poolView, err := txdb.NewPoolViewForPrevouts(ctx, txSet)
+	poolView, err := store.NewPoolViewForPrevouts(ctx, txSet)
 	if err != nil {
 		return errors.Wrap(err, "loading utxos")
 	}

@@ -192,7 +192,7 @@ func TestGetTxIssuance(t *testing.T) {
 	})
 
 	withContext(t, "", func(ctx context.Context) {
-		err := txdb.InsertTx(ctx, tx)
+		err := new(txdb.Store).ApplyTx(ctx, tx)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -273,7 +273,7 @@ func TestGetTxTransfer(t *testing.T) {
 
 	withContext(t, "", func(ctx context.Context) {
 		const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2)`
-		_, err := txdb.InsertBlock(ctx, blk)
+		_, err := new(txdb.Store).ApplyBlock(ctx, blk, nil, nil)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
