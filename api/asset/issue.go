@@ -10,7 +10,6 @@ import (
 	"chain/api/appdb"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
-	"chain/crypto/hash256"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
@@ -35,7 +34,7 @@ func (ir *IssuanceReserver) Reserve(ctx context.Context, amt *bc.AssetAmount, tt
 			return nil, errors.WithDetailf(err, "get asset definition pointer for %s", ir.asset.Hash)
 		}
 
-		newDefHash := bc.Hash(hash256.Sum(ir.asset.Definition)).String()
+		newDefHash := bc.HashAssetDefinition(ir.asset.Definition).String()
 		if defHash != newDefHash {
 			in.AssetDefinition = ir.asset.Definition
 		}

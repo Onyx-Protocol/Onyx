@@ -2,14 +2,62 @@ package txdb
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 
 	"golang.org/x/net/context"
 
-	"chain/crypto/hash256"
 	"chain/database/pg"
 	"chain/fedchain/bc"
+	"chain/testutil"
 )
+
+func TestAssetDefinitions(t *testing.T) {
+	withContext(t, "", func(ctx context.Context) {
+		createAssetDefFixture(ctx, t, "asset-1", []byte("asset-1-def"))
+		createAssetDefFixture(ctx, t, "asset-2", []byte("asset-2-def"))
+
+		examples := []struct {
+			assetIDs []string
+			want     map[string][]byte
+		}{
+			{
+				[]string{"asset-1"},
+				map[string][]byte{
+					"asset-1": []byte("asset-1-def"),
+				},
+			},
+			{
+				[]string{"asset-1", "asset-2", "asset-3"},
+				map[string][]byte{
+					"asset-1": []byte("asset-1-def"),
+					"asset-2": []byte("asset-2-def"),
+				},
+			},
+			{
+				[]string{"asset-3"},
+				map[string][]byte{},
+			},
+			{
+				nil,
+				map[string][]byte{},
+			},
+		}
+
+		for _, ex := range examples {
+			t.Log("Example:", ex.assetIDs)
+
+			got, err := AssetDefinitions(ctx, ex.assetIDs)
+			if err != nil {
+				t.Fatal("unexpected error: ", err)
+			}
+
+			if !reflect.DeepEqual(got, ex.want) {
+				t.Errorf("result:\ngot:  %v\nwant: %v", got, ex.want)
+			}
+		}
+	})
+}
 
 func TestInsertAssetDefinitionPointers(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
@@ -124,7 +172,7 @@ func TestInsertAssetDefinitions(t *testing.T) {
 		txs    []*bc.Tx
 	)
 	for _, d := range defs {
-		hashes = append(hashes, bc.Hash(hash256.Sum(d)).String())
+		hashes = append(hashes, bc.HashAssetDefinition(d).String())
 
 		tx := bc.NewTx(bc.TxData{
 			Inputs: []*bc.TxInput{
@@ -170,7 +218,7 @@ func TestInsertAssetDefinitions(t *testing.T) {
 
 func TestInsertAssetDefinitionsIdempotent(t *testing.T) {
 	def := []byte("{'key': 'im totally json'}")
-	hash := bc.Hash(hash256.Sum(def)).String()
+	hash := bc.HashAssetDefinition(def).String()
 
 	withContext(t, "", func(ctx context.Context) {
 		block := &bc.Block{
@@ -219,7 +267,7 @@ func TestInsertAssetDefinitionsIdempotent(t *testing.T) {
 
 func TestInsertAssetDefinitionsDuplicates(t *testing.T) {
 	def := []byte("{'key': 'im totally json'}")
-	hash := bc.Hash(hash256.Sum(def)).String()
+	hash := bc.HashAssetDefinition(def).String()
 
 	withContext(t, "", func(ctx context.Context) {
 		block := &bc.Block{
@@ -263,4 +311,27 @@ func TestInsertAssetDefinitionsDuplicates(t *testing.T) {
 			t.Fatalf("inserted definition %q want %q", got, def)
 		}
 	})
+}
+
+func createAssetDefFixture(ctx context.Context, t *testing.T, assetID string, def []byte) {
+	h := bc.HashAssetDefinition(def)
+
+	const q1 = `
+		INSERT INTO asset_definition_pointers (asset_id, asset_definition_hash)
+		VALUES ($1, $2)
+	`
+	_, err := pg.FromContext(ctx).Exec(ctx, q1, assetID, h)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	const q2 = `
+		INSERT INTO asset_definitions (hash, definition)
+		VALUES ($1, $2)
+	`
+	_, err = pg.FromContext(ctx).Exec(ctx, q2, h, def)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
 }

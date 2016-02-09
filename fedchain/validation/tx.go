@@ -6,7 +6,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/crypto/hash256"
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
@@ -182,8 +181,7 @@ func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 			}
 			pkScript := txscript.RedeemToPkScript(redeemScript)
 			assetID := bc.ComputeAssetID(pkScript, [32]byte{}) // TODO(tessr): get genesis hash
-			definition := in.AssetDefinition
-			defHash := hash256.Sum(definition)
+			defHash := bc.HashAssetDefinition(in.AssetDefinition)
 			adp := &bc.AssetDefinitionPointer{
 				AssetID:        assetID,
 				DefinitionHash: defHash,

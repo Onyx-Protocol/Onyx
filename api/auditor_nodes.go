@@ -23,3 +23,21 @@ func listBlocks(ctx context.Context) (interface{}, error) {
 		"last":   last,
 	}, nil
 }
+
+// EXPERIMENTAL(jeffomatic), implemented for R3 demo. Before baking it into the
+// public API, we should decide whether this style of API querying is desirable.
+func getAuditorAssets(ctx context.Context, req struct {
+	AssetIDs []string `json:"asset_ids"`
+}) (interface{}, error) {
+	assets, err := auditor.GetAssets(ctx, req.AssetIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	var res []*auditor.Asset
+	for _, a := range assets {
+		res = append(res, a)
+	}
+
+	return res, nil
+}

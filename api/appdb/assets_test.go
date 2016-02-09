@@ -3,6 +3,7 @@ package appdb_test
 import (
 	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"reflect"
 	"sort"
 	"testing"
@@ -162,6 +163,61 @@ func TestListAssets(t *testing.T) {
 				t.Logf("\t%#v", x)
 			}
 		}
+	}
+}
+
+func TestGetAssets(t *testing.T) {
+	ctx := assettest.NewContextWithGenesisBlock(t)
+	defer pgtest.Finish(ctx)
+
+	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
+
+	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
+	asset1 := assettest.CreateAssetFixture(ctx, t, in0, "asset-1", "def-1")
+
+	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
+	asset.MakeBlock(ctx, asset.BlockKey)
+	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
+	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
+
+	got, err := GetAssets(ctx, []string{
+		asset0.String(),
+		asset1.String(),
+		"other-asset-id",
+	})
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	want := map[string]*AssetResponse{
+		asset0.String(): &AssetResponse{
+			ID:          asset0,
+			Label:       "asset-0",
+			Definition:  []byte("{\n  \"s\": \"def-0\"\n}"),
+			Issued:      AssetAmount{58, 70},
+			Circulation: 70,
+		},
+		asset1.String(): &AssetResponse{
+			ID:          asset1,
+			Label:       "asset-1",
+			Definition:  []byte("{\n  \"s\": \"def-1\"\n}"),
+			Issued:      AssetAmount{0, 10},
+			Circulation: 10,
+		},
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		g, err := json.MarshalIndent(got, "", "  ")
+		if err != nil {
+			testutil.FatalErr(t, err)
+		}
+
+		w, err := json.MarshalIndent(want, "", "  ")
+		if err != nil {
+			testutil.FatalErr(t, err)
+		}
+
+		t.Errorf("assets:\ngot:  %v\nwant: %v", string(g), string(w))
 	}
 }
 

@@ -2,6 +2,7 @@ package auditor
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"reflect"
 	"testing"
@@ -9,11 +10,14 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/api/asset"
+	"chain/api/asset/assettest"
 	"chain/api/txdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain/bc"
+	"chain/testutil"
 )
 
 func init() {
@@ -320,65 +324,129 @@ func TestGetTxTransfer(t *testing.T) {
 	})
 }
 
-func TestGetAsset(t *testing.T) {
-	const fix = `
-		INSERT INTO projects (id, name) VALUES('proj-1', 'foo');
-		INSERT INTO issuer_nodes (id, project_id, label, keyset)
-			VALUES ('inode-1', 'proj-1', 'bar', '{}');
-		INSERT INTO assets (id, issuer_node_id, key_index, redeem_script, label, issuance_script)
-			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'inode-1', 0, '', 'asset-label-1', ''),
-				('0100000000000000000000000000000000000000000000000000000000000000', 'inode-1', 1, '', 'asset-label-2', '');
-		INSERT INTO issuance_totals (asset_id, pool, confirmed)
-			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 5, 6),
-				('0100000000000000000000000000000000000000000000000000000000000000', 3, 4);
-		INSERT INTO asset_definition_pointers (asset_id, asset_definition_hash)
-			VALUES ('0000000000000000000000000000000000000000000000000000000000000000', 'hash-1');
-		INSERT INTO asset_definitions (hash, definition)
-			VALUES ('hash-1', '{"a":"b"}'::bytea);
-	`
-	withContext(t, fix, func(ctx context.Context) {
-		examples := []struct {
-			id   string
-			want *Asset
-		}{
-			{
-				"0000000000000000000000000000000000000000000000000000000000000000",
-				&Asset{
-					ID:            bc.AssetID{},
-					DefinitionPtr: "hash-1",
-					Definition:    []byte(`{"a":"b"}`),
-					Issued:        6,
-				},
-			},
+func TestGetAssets(t *testing.T) {
+	ctx := assettest.NewContextWithGenesisBlock(t)
+	defer pgtest.Finish(ctx)
 
-			// Blank definition
-			{
-				"0100000000000000000000000000000000000000000000000000000000000000",
-				&Asset{
-					ID:            [32]byte{1},
-					DefinitionPtr: "",
-					Definition:    nil,
-					Issued:        4,
-				},
-			},
-		}
+	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 
-		for i, ex := range examples {
-			t.Log("Example", i)
+	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
+	asset1 := assettest.CreateAssetFixture(ctx, t, in0, "asset-1", "def-1")
 
-			got, err := GetAsset(ctx, ex.id)
-			if err != nil {
-				t.Fatal("unexpected error: ", err)
-			}
+	def0 := []byte("{\n  \"s\": \"def-0\"\n}")
+	defPtr0 := bc.HashAssetDefinition(def0).String()
 
-			if !reflect.DeepEqual(got, ex.want) {
-				t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, ex.want)
-			}
-		}
+	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
+	asset.MakeBlock(ctx, asset.BlockKey)
+	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
+	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
 
-		_, err := GetAsset(ctx, "nonexistent")
-		if errors.Root(err) != pg.ErrUserInputNotFound {
-			t.Errorf("got err = %q want %q", errors.Root(err), pg.ErrUserInputNotFound)
-		}
+	got, err := GetAssets(ctx, []string{
+		asset0.String(),
+		asset1.String(),
+		"other-asset-id",
 	})
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	want := map[string]*Asset{
+		asset0.String(): &Asset{
+			ID:            asset0,
+			DefinitionPtr: defPtr0,
+			Definition:    def0,
+			Issued:        58,
+		},
+
+		// Strictly speaking, asset1 should not be returned yet, since it has
+		// not landed in a block, so we shouldn't return it. However, we are
+		// including it here, since there is no easy way to know which asset
+		// issuances have landed, and which haven't. We can fix this by always
+		// writing asset definition pointers, even for issuances that have a
+		// blank asset definition.
+		asset1.String(): &Asset{
+			ID:            asset1,
+			DefinitionPtr: "",
+			Definition:    nil,
+			Issued:        0,
+		},
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		g, err := json.MarshalIndent(got, "", "  ")
+		if err != nil {
+			testutil.FatalErr(t, err)
+		}
+
+		w, err := json.MarshalIndent(want, "", "  ")
+		if err != nil {
+			testutil.FatalErr(t, err)
+		}
+
+		t.Errorf("assets:\ngot:  %v\nwant: %v", string(g), string(w))
+	}
+}
+
+func TestGetAsset(t *testing.T) {
+	ctx := assettest.NewContextWithGenesisBlock(t)
+	defer pgtest.Finish(ctx)
+
+	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
+
+	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
+	asset1 := assettest.CreateAssetFixture(ctx, t, in0, "asset-1", "def-1")
+
+	def0 := []byte("{\n  \"s\": \"def-0\"\n}")
+	defPtr0 := bc.HashAssetDefinition(def0).String()
+
+	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
+	asset.MakeBlock(ctx, asset.BlockKey)
+	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
+	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
+
+	examples := []struct {
+		id      string
+		wantErr error
+		want    *Asset
+	}{
+		{
+			id: asset0.String(),
+			want: &Asset{
+				ID:            asset0,
+				DefinitionPtr: defPtr0,
+				Definition:    def0,
+				Issued:        58,
+			},
+		},
+
+		// Blank definition
+		{
+			id: asset1.String(),
+			want: &Asset{
+				ID:            asset1,
+				DefinitionPtr: "",
+				Definition:    nil,
+				Issued:        0,
+			},
+		},
+
+		// Missing asset
+		{
+			id:      "other-asset-id",
+			wantErr: pg.ErrUserInputNotFound,
+		},
+	}
+
+	for _, ex := range examples {
+		t.Log("Example", ex.id)
+
+		got, err := GetAsset(ctx, ex.id)
+		if errors.Root(err) != ex.wantErr {
+			t.Fatalf("error:\ngot:  %v\nwant: %v", errors.Root(err), ex.wantErr)
+		}
+
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, ex.want)
+		}
+	}
 }

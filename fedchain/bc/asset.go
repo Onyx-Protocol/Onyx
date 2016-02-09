@@ -35,3 +35,8 @@ type AssetDefinitionPointer struct {
 	AssetID        AssetID
 	DefinitionHash [32]byte
 }
+
+// HashAssetDefinition calculates an asset definition's hash.
+func HashAssetDefinition(def []byte) Hash {
+	return Hash(hash256.Sum(def))
+}

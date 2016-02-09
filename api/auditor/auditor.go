@@ -192,20 +192,83 @@ type Asset struct {
 	Issued        uint64             `json:"issued"`
 }
 
+// GetAssets returns data about the specified assets, including the most recent
+// asset definition submitted for each asset. If a given asset ID is not found,
+// that asset will not be included in the response.
+func GetAssets(ctx context.Context, assetIDs []string) (map[string]*Asset, error) {
+	// TODO(jeffomatic): This function makes use of the assets and
+	// issuance_totals tables, which technically violates the line between
+	// issuer nodes and auditor nodes.
+	//
+	// We do this because we require:
+	// 1. issued totals, which are only tracked in the issuance_totals table.
+	// 2. assets with blank asset defs, which appear in the assets table, but
+	//    not the asset_definition_pointers table. This is a bug.
+	//
+	// As a result, the auditor node will return entries for assets that have
+	// not yet been issued, or whose issuances have not yet landed in a block.
+	// For these results, the asset definition will appear to be blank.
+
+	res := make(map[string]*Asset)
+
+	withCirc, err := appdb.GetAssets(ctx, assetIDs)
+	if err != nil {
+		return nil, errors.Wrap(err, "fetch issuer node asset data")
+	}
+
+	for id, inodeAsset := range withCirc {
+		res[id] = &Asset{
+			ID:     inodeAsset.ID,
+			Issued: inodeAsset.Issued.Confirmed,
+		}
+	}
+
+	defs, err := txdb.AssetDefinitions(ctx, assetIDs)
+	if err != nil {
+		return nil, errors.Wrap(err, "fetch txdb asset def")
+	}
+
+	for id, def := range defs {
+		p := bc.HashAssetDefinition(def).String()
+		d := chainjson.HexBytes(def)
+
+		if a, ok := res[id]; ok {
+			a.DefinitionPtr = p
+			a.Definition = d
+		} else {
+			// Ignore missing asset defs. It could mean the asset hasn't
+			// landed yet, or it could mean that the asset def was blank.
+
+			aid := new(bc.AssetID)
+			err := aid.UnmarshalText([]byte(id))
+			if err != nil {
+				// should never happen
+				return nil, errors.Wrap(err, "invalid asset id:", id)
+			}
+
+			res[id] = &Asset{
+				ID:            *aid,
+				DefinitionPtr: p,
+				Definition:    d,
+			}
+		}
+	}
+
+	return res, nil
+}
+
 // GetAsset returns the most recent asset definition stored in
 // the blockchain, for the given asset.
 func GetAsset(ctx context.Context, assetID string) (*Asset, error) {
-	// TODO(erykwalder): replace with a txdb call
-	asset, err := appdb.GetAsset(ctx, assetID)
+	assets, err := GetAssets(ctx, []string{assetID})
 	if err != nil {
-		return nil, errors.Wrap(err, "loading asset")
+		return nil, err
 	}
 
-	// Ignore missing asset defs
-	hash, def, err := txdb.AssetDefinition(ctx, assetID)
-	if err != nil && errors.Root(err) != pg.ErrUserInputNotFound {
-		return nil, errors.Wrap(err, "loading definition")
+	a, ok := assets[assetID]
+	if !ok {
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "asset ID: %q", assetID)
 	}
 
-	return &Asset{asset.ID, hash, def, asset.Issued.Confirmed}, nil
+	return a, nil
 }

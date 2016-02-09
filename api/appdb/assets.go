@@ -172,28 +172,61 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 	return assets, last, nil
 }
 
-// GetAsset returns an AssetResponse for the given asset id.
-func GetAsset(ctx context.Context, assetID string) (*AssetResponse, error) {
+// GetAssets returns an AssetResponse for the given asset IDs. If the given
+// asset IDs are not found, they will not be included in the response.
+func GetAssets(ctx context.Context, assetIDs []string) (map[string]*AssetResponse, error) {
 	const q = `
 		SELECT id, label, t.confirmed, (t.confirmed + t.pool), definition
 		FROM assets
 		JOIN issuance_totals t ON (asset_id=assets.id)
-		WHERE id=$1
+		WHERE id IN (SELECT unnest($1::text[]))
 	`
-	a := new(AssetResponse)
 
-	err := pg.FromContext(ctx).QueryRow(ctx, q, assetID).Scan(
-		&a.ID,
-		&a.Label,
-		&a.Issued.Confirmed,
-		&a.Issued.Total,
-		(*[]byte)(&a.Definition),
-	)
-	if err == sql.ErrNoRows {
-		err = pg.ErrUserInputNotFound
+	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(assetIDs))
+	if err != nil {
+		return nil, errors.Wrap(err, "select query")
 	}
-	a.Circulation = a.Issued.Total // populate deprecated field
-	return a, errors.WithDetailf(err, "asset id: %s", assetID)
+	defer rows.Close()
+
+	res := make(map[string]*AssetResponse)
+	for rows.Next() {
+		a := new(AssetResponse)
+
+		err := rows.Scan(
+			&a.ID,
+			&a.Label,
+			&a.Issued.Confirmed,
+			&a.Issued.Total,
+			(*[]byte)(&a.Definition),
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "row scan")
+		}
+
+		a.Circulation = a.Issued.Total // populate deprecated field
+		res[a.ID.String()] = a
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "end row scan loop")
+	}
+
+	return res, nil
+}
+
+// GetAsset returns an AssetResponse for the given asset id.
+func GetAsset(ctx context.Context, assetID string) (*AssetResponse, error) {
+	assets, err := GetAssets(ctx, []string{assetID})
+	if err != nil {
+		return nil, err
+	}
+
+	a, ok := assets[assetID]
+	if !ok {
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "asset ID: %q", assetID)
+	}
+
+	return a, nil
 }
 
 // UpdateAsset updates the label of an asset.

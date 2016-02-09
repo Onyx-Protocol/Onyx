@@ -124,11 +124,14 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/api-tokens", listAPITokens)
 	h.HandleFunc("POST", "/v3/api-tokens", createAPIToken)
 	h.HandleFunc("DELETE", "/v3/api-tokens/:tokenID", appdb.DeleteAuthToken)
+
 	// Auditor node endpoints
 	h.HandleFunc("GET", "/v3/auditor/blocks", listBlocks)
 	h.HandleFunc("GET", "/v3/auditor/blocks/:blockID/summary", auditor.GetBlockSummary)
 	h.HandleFunc("GET", "/v3/auditor/transactions/:txID", auditor.GetTx)
 	h.HandleFunc("GET", "/v3/auditor/assets/:assetID", auditor.GetAsset)
+	h.HandleFunc("POST", "/v3/auditor/get-assets", getAuditorAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
+
 	// Orderbook endpoints
 	h.HandleFunc("POST", "/v3/contracts/orderbook", findOrders)
 	h.HandleFunc("POST", "/v3/contracts/orderbook/:accountID", findAccountOrders)

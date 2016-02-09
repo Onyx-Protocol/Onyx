@@ -5,12 +5,49 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/crypto/hash256"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/net/trace/span"
 )
+
+// GetAssetDefs retrieves a list of asset definitions matching assetIDs. The
+// results are returned as a map from an ID to the definition.
+func AssetDefinitions(ctx context.Context, assetIDs []string) (map[string][]byte, error) {
+	const q = `
+		SELECT adp.asset_id, ad.definition
+		FROM asset_definition_pointers adp
+		JOIN asset_definitions ad ON adp.asset_definition_hash = ad.hash
+		WHERE adp.asset_id IN (SELECT unnest($1::text[]))
+	`
+
+	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(assetIDs))
+	if err != nil {
+		return nil, errors.Wrap(err, "select query")
+	}
+	defer rows.Close()
+
+	res := make(map[string][]byte)
+	for rows.Next() {
+		var (
+			id  string
+			def []byte
+		)
+
+		err := rows.Scan(&id, &def)
+		if err != nil {
+			return nil, errors.Wrap(err, "row scan")
+		}
+
+		res[id] = def
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "end row scan loop")
+	}
+
+	return res, nil
+}
 
 func AssetDefinition(ctx context.Context, assetID string) (string, []byte, error) {
 	const q = `
@@ -92,7 +129,7 @@ func InsertAssetDefinitions(ctx context.Context, block *bc.Block) error {
 	for _, tx := range block.Transactions {
 		for _, in := range tx.Inputs {
 			if in.IsIssuance() && len(in.AssetDefinition) > 0 {
-				var h bc.Hash = hash256.Sum(in.AssetDefinition)
+				h := bc.HashAssetDefinition(in.AssetDefinition)
 				if seen[h] {
 					continue
 				}
