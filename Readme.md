@@ -31,15 +31,14 @@ Create a development database:
 
 ## Updating the schema with migrations
 
-First, restore your database to the current version of `api/appdb/schema.sql`:
+First, drop and recreate your database:
 
 	$ dropdb api
 	$ createdb api
-	$ psql api < api/appdb/schema.sql
 
-Next, run any migrations:
+Next, run all migrations, including your new migrations:
 
-	$ psql api < migrations/your-migration.sql
+	$ migratedb -d postgresql:///api?sslmode=disable
 	$ ...
 
 Finally, dump the database schema, filtering any extension statements:

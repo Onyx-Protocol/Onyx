@@ -1,5 +1,0 @@
-ALTER TABLE outputs RENAME TO utxos;
-ALTER INDEX outputs_pkey RENAME TO utxos_pkey;
-ALTER INDEX outputs_address_id_asset_id_reserved_at_idx RENAME TO utxos_address_id_asset_id_reserved_at_idx;
-ALTER INDEX outputs_bucket_id_asset_id_reserved_at_idx RENAME TO utxos_bucket_id_asset_id_reserved_at_idx;
-ALTER INDEX outputs_wallet_id_asset_id_reserved_at_idx RENAME TO utxos_wallet_id_asset_id_reserved_at_idx;
