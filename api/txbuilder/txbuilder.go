@@ -131,7 +131,7 @@ func setSignatureData(ctx context.Context, tpl *Template) error {
 		if !in.IsIssuance() {
 			unspent := view.Output(ctx, in.Previous)
 			if unspent == nil {
-				return errors.New("could not load previous output")
+				return errors.Wrap(errors.New("could not load previous output"))
 			}
 			assetAmount = unspent.AssetAmount
 		}

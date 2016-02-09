@@ -284,7 +284,6 @@ func TestListBlocks(t *testing.T) {
 
 func TestRemoveBlockOutputs(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
-		blk := &bc.Block{BlockHeader: bc.BlockHeader{Height: 1}}
 		out := &Output{
 			Output: state.Output{
 				TxOutput: bc.TxOutput{
@@ -298,7 +297,7 @@ func TestRemoveBlockOutputs(t *testing.T) {
 			ManagerNodeID: "mnode-1",
 			AddrIndex:     [2]uint32{0, 0},
 		}
-		_, err := InsertBlockOutputs(ctx, blk, []*Output{out})
+		_, err := InsertBlockOutputs(ctx, []*Output{out})
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -325,7 +324,6 @@ func TestRemoveBlockOutputs(t *testing.T) {
 
 func TestInsertBlockOutputs(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
-		blk := &bc.Block{BlockHeader: bc.BlockHeader{Height: 1}}
 		out := &Output{
 			Output: state.Output{
 				TxOutput: bc.TxOutput{
@@ -339,7 +337,7 @@ func TestInsertBlockOutputs(t *testing.T) {
 			ManagerNodeID: "mnode-1",
 			AddrIndex:     [2]uint32{0, 0},
 		}
-		_, err := InsertBlockOutputs(ctx, blk, []*Output{out})
+		_, err := InsertBlockOutputs(ctx, []*Output{out})
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

@@ -282,37 +282,37 @@ func AssetBalance(ctx context.Context, abq *AssetBalQuery) ([]*Balance, string, 
 		field = "manager_node_id"
 	}
 
-	filter := "asset_id=ANY($2)"
+	filter := "a.asset_id=ANY($2)"
 	limitQ := ""
 	params := []interface{}{abq.OwnerID, pg.Strings(abq.AssetIDs)}
 	if paginating {
-		filter = "($2='' OR asset_id>$2)"
+		filter = "($2='' OR a.asset_id>$2)"
 		limitQ = "LIMIT $3"
 		params = []interface{}{abq.OwnerID, abq.Prev, abq.Limit}
 	}
 
 	q := `
-		SELECT SUM(confirmed), SUM(unconfirmed), asset_id
-		FROM (
-			SELECT amount AS confirmed, 0 AS unconfirmed, asset_id
-				FROM utxos WHERE confirmed AND ` + field + `=$1 AND ` + filter + `
-			UNION ALL
-			SELECT 0 AS confirmed, amount AS unconfirmed, asset_id
-				FROM utxos po WHERE NOT po.confirmed AND ` + field + `=$1 AND ` + filter + `
-				AND NOT EXISTS(
-					SELECT 1 FROM pool_inputs pi
-					WHERE po.tx_hash = pi.tx_hash AND po.index = pi.index
-				)
-			UNION ALL
-			SELECT 0 AS confirmed, amount*-1 AS unconfirmed, asset_id
-				FROM utxos u WHERE u.confirmed AND ` + field + `=$1 AND ` + filter + `
-				AND EXISTS(
-					SELECT 1 FROM pool_inputs pi
-					WHERE u.tx_hash = pi.tx_hash AND u.index = pi.index
-				)
-		) AS bals
+		WITH combined_utxos AS (
+			SELECT a.amount, a.asset_id, a.tx_hash, a.index,
+			manager_node_id, account_id,
+			bu.tx_hash IS NOT NULL as confirmed,
+			pi.tx_hash IS NOT NULL as spent_in_pool
+			FROM account_utxos a
+			LEFT JOIN blocks_utxos bu ON (a.tx_hash, a.index) = (bu.tx_hash, bu.index)
+			LEFT JOIN pool_inputs pi ON (a.tx_hash, a.index) = (pi.tx_hash, pi.index)
+			WHERE ` + field + `=$1 AND ` + filter + `
+		), amounts AS (
+			SELECT
+				(CASE WHEN confirmed THEN amount ELSE 0 END) as confirmed_amount,
+				(CASE WHEN NOT spent_in_pool THEN amount ELSE 0 END) as total_amount,
+				asset_id FROM combined_utxos
+				WHERE confirmed OR NOT spent_in_pool
+		)
+		SELECT sum(confirmed_amount), sum(total_amount), asset_id
+		FROM amounts
 		GROUP BY asset_id
 		ORDER BY asset_id ASC
+
 	` + limitQ
 
 	rows, err := pg.FromContext(ctx).Query(ctx, q, params...)
@@ -326,19 +326,12 @@ func AssetBalance(ctx context.Context, abq *AssetBalQuery) ([]*Balance, string, 
 		last string
 	)
 	for rows.Next() {
-		var (
-			id           bc.AssetID
-			conf, unconf int64
-		)
-		err = rows.Scan(&conf, &unconf, &id)
+		var bal Balance
+		err = rows.Scan(&bal.Confirmed, &bal.Total, &bal.AssetID)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "row scan")
 		}
-		res = append(res, &Balance{
-			AssetID:   id,
-			Confirmed: conf,
-			Total:     conf + unconf,
-		})
+		res = append(res, &bal)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, "", errors.Wrap(err, "rows end")

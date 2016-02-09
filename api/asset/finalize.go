@@ -1,6 +1,7 @@
 package asset
 
 import (
+	"database/sql"
 	"time"
 
 	"golang.org/x/net/context"
@@ -159,7 +160,7 @@ func getUTXOsForDeletion(ctx context.Context, ops []bc.Outpoint) ([]*utxodb.UTXO
 
 	const q = `
 		SELECT tx_hash, index, account_id, asset_id
-		FROM utxos
+		FROM account_utxos
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::bigint[]))
 	`
 	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(hashes), pg.Uint32s(indexes))
@@ -170,12 +171,16 @@ func getUTXOsForDeletion(ctx context.Context, ops []bc.Outpoint) ([]*utxodb.UTXO
 
 	var utxos []*utxodb.UTXO
 	for rows.Next() {
-		u := new(utxodb.UTXO)
-		err := rows.Scan(&u.Outpoint.Hash, &u.Outpoint.Index, &u.AccountID, &u.AssetID)
+		var u utxodb.UTXO
+		var accountID sql.NullString
+		err := rows.Scan(&u.Outpoint.Hash, &u.Outpoint.Index, &accountID, &u.AssetID)
 		if err != nil {
 			return nil, errors.Wrap(err, "scan")
 		}
-		utxos = append(utxos, u)
+		if accountID.Valid {
+			u.AccountID = accountID.String
+		}
+		utxos = append(utxos, &u)
 	}
 	return utxos, errors.Wrap(rows.Err())
 }

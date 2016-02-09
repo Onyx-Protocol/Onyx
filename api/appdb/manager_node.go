@@ -178,29 +178,26 @@ func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, er
 // within a manager node, grouped and sorted by individual accounts.
 func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit int) ([]*AccountBalanceItem, string, error) {
 	const q = `
-		SELECT SUM(confirmed), SUM(unconfirmed), account_id
-		FROM (
-			SELECT amount AS confirmed, 0 AS unconfirmed, account_id
-				FROM utxos WHERE confirmed AND manager_node_id=$1 AND asset_id=$2
-					AND ($3='' OR account_id>$3)
-			UNION ALL
-			SELECT 0 AS confirmed, amount AS unconfirmed, account_id
-				FROM utxos po WHERE NOT po.confirmed AND manager_node_id=$1 AND asset_id=$2
-					AND ($3='' OR account_id>$3)
-				AND NOT EXISTS(
-					SELECT 1 FROM pool_inputs pi
-					WHERE po.tx_hash = pi.tx_hash AND po.index = pi.index
-				)
-			UNION ALL
-			SELECT 0 AS confirmed, amount*-1 AS unconfirmed, account_id
-				FROM utxos u WHERE u.confirmed AND manager_node_id=$1 AND asset_id=$2
-					AND ($3='' OR account_id>$3)
-				AND EXISTS(
-					SELECT 1 FROM pool_inputs pi
-					WHERE u.tx_hash = pi.tx_hash AND u.index = pi.index
-				)
-		) AS bals
-		INNER JOIN accounts ON accounts.id = account_id
+		WITH combined_utxos AS (
+			SELECT a.amount, a.asset_id, a.tx_hash, a.index,
+			manager_node_id, account_id,
+			bu.tx_hash IS NOT NULL as confirmed,
+			pi.tx_hash IS NOT NULL as spent_in_pool
+			FROM account_utxos a
+			LEFT JOIN blocks_utxos bu ON (a.tx_hash, a.index) = (bu.tx_hash, bu.index)
+			LEFT JOIN pool_inputs pi ON (a.tx_hash, a.index) = (pi.tx_hash, pi.index)
+			WHERE manager_node_id=$1 AND a.asset_id=$2 AND ($3='' OR account_id>$3)
+		), amounts AS (
+			SELECT
+				(CASE WHEN confirmed THEN amount ELSE 0 END) as confirmed_amount,
+				(CASE WHEN NOT spent_in_pool THEN amount ELSE 0 END) as total_amount,
+				account_id FROM combined_utxos
+				WHERE confirmed OR NOT spent_in_pool
+		)
+
+		SELECT sum(confirmed_amount), sum(total_amount), account_id
+		FROM amounts
+		JOIN accounts ON accounts.id = account_id
 		WHERE NOT accounts.archived
 		GROUP BY account_id
 		ORDER BY account_id ASC
@@ -217,15 +214,12 @@ func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit
 		last string
 	)
 	for rows.Next() {
-		var (
-			accountID    string
-			conf, unconf int64
-		)
-		err = rows.Scan(&conf, &unconf, &accountID)
+		var item AccountBalanceItem
+		err = rows.Scan(&item.Confirmed, &item.Total, &item.AccountID)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "rows scan")
 		}
-		bals = append(bals, &AccountBalanceItem{accountID, conf, conf + unconf})
+		bals = append(bals, &item)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, "", errors.Wrap(err, "rows error")

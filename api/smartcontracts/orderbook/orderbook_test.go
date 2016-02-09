@@ -14,6 +14,7 @@ import (
 	"chain/api/txbuilder"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
 	"chain/testutil"
@@ -103,7 +104,7 @@ func TestBuy(t *testing.T) {
 			if txOutput.Amount != 20 {
 				return false
 			}
-			if !paysToAccount(ctx, buyerAccountID, txOutput.Script) {
+			if !paysToAccount(ctx, t, buyerAccountID, txOutput.Script) {
 				return false
 			}
 			return true
@@ -296,16 +297,23 @@ func cancel(ctx context.Context, order *OpenOrder, ttl time.Duration) (*txbuilde
 }
 
 func expectPaysToAccount(ctx context.Context, t *testing.T, accountID string, script []byte) {
-	if !paysToAccount(ctx, accountID, script) {
+	if !paysToAccount(ctx, t, accountID, script) {
 		t.Errorf("expected script to pay to account %s: %x", accountID, script)
 	}
 }
 
-func paysToAccount(ctx context.Context, accountID string, script []byte) bool {
+func paysToAccount(ctx context.Context, t testing.TB, accountID string, script []byte) bool {
 	// first check utxos
-	const q = `SELECT account_id=$1 FROM utxos WHERE script=$2`
+	const q = `
+		SELECT account_id=$1 FROM utxos u
+		JOIN account_utxos a ON (u.tx_hash, u.index) = (a.tx_hash, a.index)
+		WHERE script=$2
+	`
 	var utxoMatch bool
-	pg.FromContext(ctx).QueryRow(ctx, q, accountID, script).Scan(&utxoMatch)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, accountID, script).Scan(&utxoMatch)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
 	if utxoMatch {
 		return true
 	}
@@ -315,8 +323,10 @@ func paysToAccount(ctx context.Context, accountID string, script []byte) bool {
 		return false
 	}
 	addr, err := appdb.GetAddress(ctx, sellerScript)
-	if err != nil {
+	if errors.Root(err) == pg.ErrUserInputNotFound {
 		return false
+	} else if err != nil {
+		testutil.FatalErr(t, err)
 	}
 	return addr.AccountID == accountID
 }

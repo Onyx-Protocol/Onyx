@@ -25,32 +25,7 @@ func (sqlUTXODB) LoadUTXOs(ctx context.Context, accountID string, assetID bc.Ass
 	if err != nil {
 		return nil, errors.Wrap(err, "load blockchain outputs")
 	}
-	poolOuts, err := txdb.LoadPoolUTXOs(ctx, accountID, assetID)
-	if err != nil {
-		return nil, errors.Wrap(err, "load pool outputs")
-	}
-
-	var bcOutpoints []bc.Outpoint
-	for _, o := range bcOuts {
-		bcOutpoints = append(bcOutpoints, o.Outpoint)
-	}
-	poolView, err := txdb.NewPoolView(ctx, bcOutpoints)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	inBC := make(map[bc.Outpoint]bool)
-	for _, o := range bcOuts {
-		if !isSpent(ctx, o.Outpoint, poolView) {
-			resvOuts = append(resvOuts, o)
-			inBC[o.Outpoint] = true
-		}
-	}
-	for _, o := range poolOuts {
-		if !inBC[o.Outpoint] {
-			resvOuts = append(resvOuts, o)
-		}
-	}
-	return resvOuts, nil
+	return bcOuts, nil
 }
 
 func isSpent(ctx context.Context, p bc.Outpoint, v state.ViewReader) bool {
@@ -61,10 +36,9 @@ func isSpent(ctx context.Context, p bc.Outpoint, v state.ViewReader) bool {
 func (sqlUTXODB) SaveReservations(ctx context.Context, utxos []*utxodb.UTXO, exp time.Time) error {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
-		UPDATE utxos
+		UPDATE account_utxos
 		SET reserved_until=$3
-		WHERE confirmed
-		    AND (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
 	var txHashes []string
 	var indexes []uint32

@@ -41,7 +41,7 @@ func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.
 
 	const q = `
 		SELECT tx_hash, index, asset_id, amount, script, metadata
-		FROM utxos
+		FROM utxos_status
 		WHERE confirmed
 		    AND (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
@@ -74,7 +74,7 @@ func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.
 
 const bcUnspentP2COutputQuery = `
 	SELECT tx_hash, index, asset_id, amount, script, metadata
-	FROM utxos
+	FROM utxos_status
 	WHERE contract_hash = $1 AND asset_id = $2 AND confirmed
 `
 
@@ -86,9 +86,10 @@ func LoadUTXOs(ctx context.Context, accountID string, assetID bc.AssetID) ([]*ut
 	// LoadUTXOs(context.Context, []bc.Outpoint) []*bc.TxOutput.
 
 	const q = `
-		SELECT amount, reserved_until, tx_hash, index, contract_hash, key_index(addr_index)
-		FROM utxos
-		WHERE account_id=$1 AND asset_id=$2 AND confirmed
+		SELECT amount, reserved_until, tx_hash, index, key_index(addr_index)
+		FROM account_utxos
+		WHERE account_id=$1 AND asset_id=$2
+			AND (tx_hash, index) NOT IN (TABLE pool_inputs)
 	`
 	rows, err := pg.FromContext(ctx).Query(ctx, q, accountID, assetID)
 	if err != nil {
@@ -111,7 +112,6 @@ func LoadUTXOs(ctx context.Context, accountID string, assetID bc.AssetID) ([]*ut
 			&u.ResvExpires,
 			&txid,
 			&u.Outpoint.Index,
-			&contractHash,
 			(*pg.Uint32s)(&addrIndex),
 		)
 		if err != nil {

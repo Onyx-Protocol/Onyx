@@ -164,6 +164,22 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
+-- Name: account_utxos; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE account_utxos (
+    tx_hash text NOT NULL,
+    index integer NOT NULL,
+    asset_id text NOT NULL,
+    amount bigint NOT NULL,
+    manager_node_id text NOT NULL,
+    account_id text NOT NULL,
+    addr_index bigint NOT NULL,
+    reserved_until timestamp with time zone DEFAULT '1970-01-01 00:00:00-08'::timestamp with time zone NOT NULL
+);
+
+
+--
 -- Name: accounts; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -322,6 +338,16 @@ CREATE TABLE blocks (
 CREATE TABLE blocks_txs (
     tx_hash text NOT NULL,
     block_hash text NOT NULL
+);
+
+
+--
+-- Name: blocks_utxos; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE blocks_utxos (
+    tx_hash text NOT NULL,
+    index integer NOT NULL
 );
 
 
@@ -646,22 +672,29 @@ CREATE TABLE utxos (
     index integer NOT NULL,
     asset_id text NOT NULL,
     amount bigint NOT NULL,
-    addr_index bigint NOT NULL,
-    account_id text,
     contract_hash text,
-    manager_node_id text NOT NULL,
-    reserved_until timestamp with time zone DEFAULT '1979-12-31 16:00:00-08'::timestamp with time zone NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     metadata bytea DEFAULT '\x'::bytea NOT NULL,
-    script bytea DEFAULT '\x'::bytea NOT NULL,
-    confirmed boolean NOT NULL,
-    pool_tx_hash text,
-    block_hash text,
-    block_height bigint,
-    CONSTRAINT utxos_check CHECK ((confirmed = (pool_tx_hash IS NULL))),
-    CONSTRAINT utxos_check1 CHECK ((confirmed = (block_hash IS NOT NULL))),
-    CONSTRAINT utxos_check2 CHECK ((confirmed = (block_height IS NOT NULL)))
+    script bytea DEFAULT '\x'::bytea NOT NULL
 );
+
+
+--
+-- Name: utxos_status; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW utxos_status AS
+ SELECT u.tx_hash,
+    u.index,
+    u.asset_id,
+    u.amount,
+    u.contract_hash,
+    u.created_at,
+    u.metadata,
+    u.script,
+    (b.tx_hash IS NOT NULL) AS confirmed
+   FROM (utxos u
+     LEFT JOIN blocks_utxos b ON (((u.tx_hash = b.tx_hash) AND (u.index = b.index))));
 
 
 --
@@ -676,6 +709,14 @@ ALTER TABLE ONLY issuer_nodes ALTER COLUMN key_index SET DEFAULT nextval('issuer
 --
 
 ALTER TABLE ONLY manager_nodes ALTER COLUMN key_index SET DEFAULT nextval('manager_nodes_key_index_seq'::regclass);
+
+
+--
+-- Name: account_utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY account_utxos
+    ADD CONSTRAINT account_utxos_pkey PRIMARY KEY (tx_hash, index);
 
 
 --
@@ -748,6 +789,14 @@ ALTER TABLE ONLY blocks
 
 ALTER TABLE ONLY blocks_txs
     ADD CONSTRAINT blocks_txs_tx_hash_block_hash_key UNIQUE (tx_hash, block_hash);
+
+
+--
+-- Name: blocks_utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY blocks_utxos
+    ADD CONSTRAINT blocks_utxos_pkey PRIMARY KEY (tx_hash, index);
 
 
 --
@@ -884,6 +933,27 @@ ALTER TABLE ONLY users
 
 ALTER TABLE ONLY utxos
     ADD CONSTRAINT utxos_pkey PRIMARY KEY (tx_hash, index);
+
+
+--
+-- Name: account_utxos_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX account_utxos_account_id ON account_utxos USING btree (account_id);
+
+
+--
+-- Name: account_utxos_account_id_asset_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX account_utxos_account_id_asset_id_idx ON account_utxos USING btree (account_id, asset_id);
+
+
+--
+-- Name: account_utxos_manager_node_id_asset_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX account_utxos_manager_node_id_asset_id_idx ON account_utxos USING btree (manager_node_id, asset_id);
 
 
 --
@@ -1069,24 +1139,11 @@ CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
 
 
 --
--- Name: utxos_account_id_asset_id_reserved_at_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: account_utxos_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-CREATE INDEX utxos_account_id_asset_id_reserved_at_idx ON utxos USING btree (account_id, asset_id, reserved_until) WHERE (account_id IS NOT NULL);
-
-
---
--- Name: utxos_manager_node_id_asset_id_reserved_until_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX utxos_manager_node_id_asset_id_reserved_until_idx ON utxos USING btree (manager_node_id, asset_id, reserved_until);
-
-
---
--- Name: utxos_pool_tx_hash_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX utxos_pool_tx_hash_idx ON utxos USING btree (pool_tx_hash);
+ALTER TABLE ONLY account_utxos
+    ADD CONSTRAINT account_utxos_fkey FOREIGN KEY (tx_hash, index) REFERENCES utxos(tx_hash, index) ON DELETE CASCADE;
 
 
 --
@@ -1151,6 +1208,14 @@ ALTER TABLE ONLY assets
 
 ALTER TABLE ONLY auth_tokens
     ADD CONSTRAINT auth_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
+
+
+--
+-- Name: blocks_utxos_tx_hash_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY blocks_utxos
+    ADD CONSTRAINT blocks_utxos_tx_hash_fkey FOREIGN KEY (tx_hash, index) REFERENCES utxos(tx_hash, index) ON DELETE CASCADE;
 
 
 --
@@ -1231,14 +1296,6 @@ ALTER TABLE ONLY orderbook_utxos
 
 ALTER TABLE ONLY rotations
     ADD CONSTRAINT rotations_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id) ON DELETE CASCADE;
-
-
---
--- Name: utxos_pool_tx_hash_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY utxos
-    ADD CONSTRAINT utxos_pool_tx_hash_fkey FOREIGN KEY (pool_tx_hash) REFERENCES pool_txs(tx_hash) ON DELETE CASCADE;
 
 
 --

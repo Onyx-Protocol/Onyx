@@ -253,7 +253,7 @@ func RemoveBlockSpentOutputs(ctx context.Context, delta []*Output) error {
 // It returns a new list containing all spent items
 // from delta, plus all newly-inserted unspent outputs
 // from delta, omitting the updated items.
-func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) ([]*Output, error) {
+func InsertBlockOutputs(ctx context.Context, delta []*Output) ([]*Output, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -265,43 +265,15 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) (
 		indexes = append(indexes, out.Outpoint.Index)
 	}
 
-	blockHashStr := block.Hash().String()
-
-	// Some of the utxos may already be in the utxos table as
-	// unconfirmed pool utxos.  Upgrade them to confirmed.
-	const updateQ = `
-		UPDATE utxos SET block_hash = $1, block_height = $2, confirmed = TRUE, pool_tx_hash = NULL
-			WHERE NOT confirmed
-			      AND (tx_hash, index) IN (SELECT unnest($3::text[]), unnest($4::integer[]))
-			RETURNING tx_hash, index
-	`
-	rows, err := pg.FromContext(ctx).Query(ctx, updateQ, blockHashStr, block.Height, pg.Strings(txHashes), pg.Uint32s(indexes))
-	if err != nil {
-		return nil, errors.Wrap(err, "update utxos")
-	}
-	defer rows.Close()
-
-	updated := make(map[bc.Outpoint]bool)
-	for rows.Next() {
-		var outpoint bc.Outpoint
-		err = rows.Scan(&outpoint.Hash, &outpoint.Index)
-		if err != nil {
-			return nil, errors.Wrap(err, "scanning update utxos result")
-		}
-		updated[outpoint] = true
-	}
+	db := pg.FromContext(ctx)
 
 	var (
 		outs     utxoSet
-		newDelta = make([]*Output, 0, len(delta)-len(updated))
+		newDelta []*Output
 	)
 	for _, out := range delta {
-		if updated[out.Outpoint] {
-			// already updated above
-			continue
-		}
-		newDelta = append(newDelta, out)
 		if out.Spent {
+			newDelta = append(newDelta, out)
 			continue
 		}
 		outs.txHash = append(outs.txHash, out.Outpoint.Hash.String())
@@ -323,43 +295,86 @@ func InsertBlockOutputs(ctx context.Context, block *bc.Block, delta []*Output) (
 	}
 
 	// Insert the ones not upgraded above.
-	const insertQ = `
+	const insertQ1 = `
+		WITH new_utxos AS (
+			SELECT
+				unnest($1::text[]) AS tx_hash,
+				unnest($2::bigint[]) AS index,
+				unnest($3::text[]),
+				unnest($4::bigint[]),
+				unnest($5::bytea[]),
+				unnest($6::bytea[]),
+				unnest($7::bytea[])
+		)
 		INSERT INTO utxos (
 			tx_hash, index, asset_id, amount,
-			account_id, manager_node_id, addr_index,
-			script, contract_hash, metadata,
-			block_hash, block_height, confirmed
+			script, contract_hash, metadata
 		)
-		SELECT
-			unnest($1::text[]),
-			unnest($2::bigint[]),
-			unnest($3::text[]),
-			unnest($4::bigint[]),
-			unnest($5::text[]),
-			unnest($6::text[]),
-			unnest($7::bigint[]),
-			unnest($8::bytea[]),
-			unnest($9::bytea[]),
-			unnest($10::bytea[]),
-			$11,
-			$12,
-			TRUE
+		SELECT * FROM new_utxos n WHERE NOT EXISTS
+			(SELECT 1 FROM utxos u WHERE (n.tx_hash, n.index) = (u.tx_hash, u.index))
+		RETURNING tx_hash, index
 	`
-	_, err = pg.FromContext(ctx).Exec(ctx, insertQ,
+
+	inserted := make(map[bc.Outpoint]bool)
+	rows, err := db.Query(ctx, insertQ1,
 		outs.txHash,
 		outs.index,
 		outs.assetID,
 		outs.amount,
-		outs.accountID,
-		outs.managerNodeID,
-		outs.aIndex,
 		outs.script,
 		outs.contractHash,
 		outs.metadata,
-		blockHashStr,
-		block.Height,
 	)
-	return newDelta, errors.Wrap(err, "insert utxos")
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var op bc.Outpoint
+		err := rows.Scan(&op.Hash, &op.Index)
+		if err != nil {
+			return nil, errors.Wrap(err, "rows scan")
+		}
+		inserted[op] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "end rows check")
+	}
+
+	for _, out := range delta {
+		if inserted[out.Outpoint] {
+			newDelta = append(newDelta, out)
+		}
+	}
+
+	const insertQ2 = `
+		INSERT INTO blocks_utxos (tx_hash, index)
+		    SELECT unnest($1::text[]), unnest($2::bigint[])
+	`
+	_, err = db.Exec(ctx, insertQ2, outs.txHash, outs.index)
+	if err != nil {
+		return nil, err
+	}
+
+	const insertQ3 = `
+		WITH new_acc_utxos AS (
+			SELECT unnest($1::text[]) AS tx_hash,
+			unnest($2::bigint[]) AS index,
+			unnest($3::text[]),
+			unnest($4::bigint[]),
+			unnest($5::text[]),
+			unnest($6::text[]),
+			unnest($7::bigint[])
+		)
+		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, manager_node_id, account_id, addr_index)
+		SELECT * FROM new_acc_utxos n WHERE NOT EXISTS
+		  	(SELECT 1 FROM account_utxos a WHERE (n.tx_hash, n.index) = (a.tx_hash, a.index))
+	`
+	_, err = db.Exec(ctx, insertQ3, outs.txHash, outs.index, outs.assetID, outs.amount, outs.managerNodeID, outs.accountID, outs.aIndex)
+	if err != nil {
+		return nil, err
+	}
+
+	return newDelta, nil
 }
 
 // CountBlockTxs returns the total number of confirmed transactions.

@@ -43,7 +43,7 @@ func TestTransferConfirmed(t *testing.T) {
 
 	_, err = transfer(ctx, t, info, info.acctA.ID, info.acctB.ID, 10)
 	if err != nil {
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 }
 
@@ -130,9 +130,15 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 
 func dumpState(ctx context.Context, t *testing.T) {
 	t.Log("pool")
-	dumpTab(ctx, t, `SELECT tx_hash, index, script FROM utxos WHERE NOT confirmed`)
+	dumpTab(ctx, t, `
+		SELECT tx_hash, index, script FROM utxos_status
+		WHERE NOT confirmed
+	`)
 	t.Log("blockchain")
-	dumpTab(ctx, t, `SELECT tx_hash, index, script FROM utxos WHERE confirmed`)
+	dumpTab(ctx, t, `
+		SELECT tx_hash, index, script FROM utxos_status
+		WHERE confirmed
+	`)
 }
 
 func dumpTab(ctx context.Context, t *testing.T, q string) {
@@ -149,7 +155,7 @@ func dumpTab(ctx context.Context, t *testing.T, q string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Logf("hash: %x index: %d pkscript: %x", hash, index, script)
+		t.Logf("hash: %s index: %d pkscript: %x", hash, index, script)
 	}
 	if rows.Err() != nil {
 		t.Fatal(rows.Err())
@@ -482,18 +488,19 @@ func transfer(ctx context.Context, t testing.TB, info *clientInfo, srcAcctID, de
 
 	dest, err := NewAccountDestination(ctx, assetAmount, destAcctID, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 	dests := []*txbuilder.Destination{dest}
 
 	xferTx, err := txbuilder.Build(ctx, nil, sources, dests, []byte{}, time.Minute)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	assettest.SignTxTemplate(t, xferTx, info.privKeyManager)
 
-	return FinalizeTx(ctx, xferTx)
+	tx, err := FinalizeTx(ctx, xferTx)
+	return tx, errors.Wrap(err)
 }
 
 func TestUpsertGenesisBlock(t *testing.T) {

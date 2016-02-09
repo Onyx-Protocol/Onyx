@@ -24,7 +24,7 @@ type redeemReserver struct {
 // Reserve satisfies txbuilder.Reserver.
 func (reserver *redeemReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
 	openOrder := reserver.openOrder
-	changeAmount, err := reserveOrder(ctx, openOrder, assetAmount.Amount, ttl)
+	changeAmount, err := reserveOrder(ctx, openOrder, assetAmount.Amount)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ var ErrUnexpectedChange = errors.New("unexpected change")
 
 func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
 	openOrder := reserver.openOrder
-	changeAmount, err := reserveOrder(ctx, openOrder, assetAmount.Amount, ttl)
+	changeAmount, err := reserveOrder(ctx, openOrder, assetAmount.Amount)
 	if err != nil {
 		return nil, err
 	}
@@ -127,27 +127,21 @@ func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 	return result, nil
 }
 
-func reserveOrder(ctx context.Context, openOrder *OpenOrder, amount uint64, ttl time.Duration) (changeAmount uint64, err error) {
-	// TODO(bobg): Consider verifying that a matching record exists in the orderbook_utxos table.
+func reserveOrder(ctx context.Context, openOrder *OpenOrder, amount uint64) (changeAmount uint64, err error) {
 	const q = `
-		UPDATE utxos SET reserved_until = $1
-		    WHERE tx_hash = $2 AND index = $3 AND reserved_until < NOW()
-		        AND NOT EXISTS (SELECT 1 FROM pool_inputs WHERE tx_hash = $2 AND index = $3)
+		SELECT COUNT(*) FROM utxos
+		  WHERE (tx_hash, index) = ($1, $2)
+		  AND (tx_hash, index) NOT IN (TABLE pool_inputs)
 	`
 
-	now := time.Now().UTC()
-	expiry := now.Add(ttl)
-	result, err := pg.FromContext(ctx).Exec(ctx, q, expiry, openOrder.Outpoint.Hash, openOrder.Outpoint.Index)
+	var cnt int
+	row := pg.FromContext(ctx).QueryRow(ctx, q, openOrder.Outpoint.Hash, openOrder.Outpoint.Index)
+	err = row.Scan(&cnt)
 	if err != nil {
 		return 0, err
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return 0, err
-	}
-
-	if rowsAffected == 0 {
+	if cnt == 0 {
 		return 0, fmt.Errorf("utxo not found: %s", openOrder.Outpoint.Hash)
 	}
 

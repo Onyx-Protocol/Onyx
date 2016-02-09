@@ -254,7 +254,7 @@ func applyBlock(ctx context.Context, block *bc.Block) ([]*txdb.Output, error) {
 		return nil, errors.Wrap(err, "remove block spent outputs")
 	}
 
-	delta, err = txdb.InsertBlockOutputs(ctx, block, delta)
+	delta, err = txdb.InsertBlockOutputs(ctx, delta)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert block outputs")
 	}
@@ -284,6 +284,7 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 
 	var (
 		conflictTxs          []*bc.Tx
+		conflictHashes       []string
 		deleteTxs            []*bc.Tx
 		deleteTxHashes       []string
 		deleteInputTxHashes  []string
@@ -292,7 +293,7 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 
 	txs, err := txdb.PoolTxs(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrap(err)
 	}
 
 	poolView := NewMemView()
@@ -321,6 +322,7 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 
 			if !txInBlock[tx.Hash] {
 				conflictTxs = append(conflictTxs, tx)
+				conflictHashes = append(conflictHashes, tx.Hash.String())
 				// This should never happen in sandbox, unless a reservation expired
 				// before the original tx was finalized.
 				log.Messagef(ctx, "deleting conflict tx %v because %q", tx.Hash, txErr)
@@ -348,9 +350,11 @@ func rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
 		return nil, errors.Wrap(err, "delete from pool_txs")
 	}
 
-	// Delete pool outputs
-	const outq = `DELETE FROM utxos WHERE NOT confirmed AND tx_hash IN (SELECT unnest($1::text[]))`
-	_, err = db.Exec(ctx, outq, pg.Strings(deleteTxHashes))
+	// Delete conflicting pool outputs
+	const outq = `
+		DELETE FROM utxos WHERE tx_hash IN (SELECT unnest($1::text[]))
+	`
+	_, err = db.Exec(ctx, outq, pg.Strings(conflictHashes))
 	if err != nil {
 		return nil, errors.Wrap(err, "delete from utxos")
 	}
@@ -514,7 +518,7 @@ func loadAccountInfo(ctx context.Context, outs []*txdb.Output) error {
 
 	const utxoq = `
 		SELECT tx_hash, index, manager_node_id, account_id, key_index(addr_index)
-		FROM utxos
+		FROM account_utxos
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
 	rows, err = pg.FromContext(ctx).Query(ctx, utxoq, pg.Strings(hashes), pg.Uint32s(indexes))
