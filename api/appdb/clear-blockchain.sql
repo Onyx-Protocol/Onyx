@@ -13,6 +13,8 @@ TRUNCATE
 	orderbook_prices,
 	orderbook_utxos,
 	utxos,
+	blocks_utxos,
+	account_utxos,
 	assets,
 	issuance_totals,
 	addresses,
