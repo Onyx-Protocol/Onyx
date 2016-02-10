@@ -1,15 +1,12 @@
 package asset
 
 import (
-	"database/sql"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/api/txbuilder"
 	"chain/api/txdb"
-	"chain/api/utxodb"
-	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
@@ -95,49 +92,4 @@ func issued(outs []*bc.TxOutput) (asset bc.AssetID, amt uint64) {
 		amt += out.Amount
 	}
 	return outs[0].AssetID, amt
-}
-
-// getUTXOsForDeletion takes a set of outpoints and retrieves a list of
-// partial utxodb.UTXOs, with enough information to be used in
-// utxodb.Reserver.delete.
-// TODO(jeffomatic) - consider revising the signature for utxodb.Reserver.delete
-// so that it takes a smaller data structure. This way, we don't have to
-// generate and propagate partially-filled data structures.
-func getUTXOsForDeletion(ctx context.Context, ops []bc.Outpoint) ([]*utxodb.UTXO, error) {
-	defer metrics.RecordElapsed(time.Now())
-
-	var (
-		hashes  []string
-		indexes []uint32
-	)
-	for _, op := range ops {
-		hashes = append(hashes, op.Hash.String())
-		indexes = append(indexes, op.Index)
-	}
-
-	const q = `
-		SELECT tx_hash, index, account_id, asset_id
-		FROM account_utxos
-		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::bigint[]))
-	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(hashes), pg.Uint32s(indexes))
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	defer rows.Close()
-
-	var utxos []*utxodb.UTXO
-	for rows.Next() {
-		var u utxodb.UTXO
-		var accountID sql.NullString
-		err := rows.Scan(&u.Outpoint.Hash, &u.Outpoint.Index, &accountID, &u.AssetID)
-		if err != nil {
-			return nil, errors.Wrap(err, "scan")
-		}
-		if accountID.Valid {
-			u.AccountID = accountID.String
-		}
-		utxos = append(utxos, &u)
-	}
-	return utxos, errors.Wrap(rows.Err())
 }
