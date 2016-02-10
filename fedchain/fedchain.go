@@ -5,8 +5,7 @@ and validation for a blockchain. This comprises all behavior
 that's common to every full node, as well as other functions that
 need to operate on the blockchain state.
 
-Here follows examples of typical full node types, but this is not
-an exhaustive list.
+Here are a few examples of typical full node types.
 
 Generator
 
@@ -98,9 +97,9 @@ type FC struct {
 
 // New returns a new FC using store as the underlying storage.
 //
-// ApplyBlock will skip validation for any block signed by a key
+// AddBlock will skip validation for any block signed by a key
 // in trustedKeys. Typically, trustedKeys contains the public key
-// for the local block-signer process; the presence of our own
+// for the local block-signer process; the presence of its
 // signature indicates the block was already validated locally.
 func New(store Store, trustedKeys []*btcec.PublicKey) *FC {
 	return &FC{store: store, trustedKeys: trustedKeys}
