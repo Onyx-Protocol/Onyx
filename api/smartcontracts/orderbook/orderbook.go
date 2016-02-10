@@ -30,6 +30,10 @@ type (
 	OrderInfo struct {
 		SellerAccountID string   `json:"seller_account_id"`
 		Prices          []*Price `json:"prices"`
+
+		// SellerScript is only used by findOpenOrdersHelper to format API
+		// responses.
+		SellerScript chainjson.HexBytes `json:"script"`
 	}
 
 	// OpenOrder identifies a specific Orderbook contract.

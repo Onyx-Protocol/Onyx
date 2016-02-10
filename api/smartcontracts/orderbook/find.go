@@ -124,6 +124,12 @@ func findOpenOrdersHelper(ctx context.Context, q string, args ...interface{}) ([
 				},
 				Script: script,
 			}
+
+			// Make the seller script directly visible in API responses.
+			openOrder.OrderInfo.SellerScript, err = openOrder.SellerScript()
+			if err != nil {
+				return nil, errors.Wrap(err, "generate seller script")
+			}
 		}
 		orderbookPrice := &Price{
 			AssetID:       paymentAssetID,

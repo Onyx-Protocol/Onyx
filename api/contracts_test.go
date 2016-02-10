@@ -125,11 +125,6 @@ func TestFindAndBuyContract(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		sellerScript, err := openOrder.SellerScript()
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		buildRequest := &BuildRequest{
 			Sources: []*Source{
 				&Source{
@@ -151,7 +146,7 @@ func TestFindAndBuyContract(t *testing.T) {
 				&Destination{
 					AssetID: &fixtureInfo.usdAssetID,
 					Amount:  2200,
-					Address: sellerScript,
+					Address: openOrder.OrderInfo.SellerScript,
 					Type:    "address",
 				},
 				&Destination{
@@ -171,7 +166,7 @@ func TestFindAndBuyContract(t *testing.T) {
 			}
 
 			assettest.ExpectMatchingOutputs(t, buyTx, 1, "sending payment to seller", func(t *testing.T, txOutput *bc.TxOutput) bool {
-				return reflect.DeepEqual(txOutput.Script, sellerScript)
+				return reflect.DeepEqual(txOutput.Script, []byte(openOrder.OrderInfo.SellerScript))
 			})
 		})
 	})
