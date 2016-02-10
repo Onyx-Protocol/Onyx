@@ -91,13 +91,6 @@ func loadPoolOutputs(ctx context.Context, load []bc.Outpoint) (map[bc.Outpoint]*
 	return outs, nil
 }
 
-const poolUnspentP2COutputQuery = `
-	SELECT tx_hash, index, asset_id, amount, script, metadata
-	FROM utxos_status
-	WHERE contract_hash = $1 AND asset_id = $2 AND NOT confirmed
-	      AND (tx_hash, index) NOT IN (TABLE pool_inputs)
-`
-
 // utxoSet holds a set of utxo record values
 // to be inserted into the db.
 type utxoSet struct {

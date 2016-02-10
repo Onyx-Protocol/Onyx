@@ -230,8 +230,8 @@ const (
 	OP_UNKNOWN191          = 0xbf // 191
 
 	// p2c extensions
-	OP_REQUIREOUTPUT = 0xc0 // 192
-	OP_BALANCE       = 0xc1 // 193
+	OP_EVAL          = 0xc0 // 192
+	OP_REQUIREOUTPUT = 0xc1 // 193
 	OP_ASSET         = 0xc2 // 194
 	OP_AMOUNT        = 0xc3 // 195
 	OP_OUTPUTSCRIPT  = 0xc4 // 196
@@ -239,7 +239,7 @@ const (
 	OP_CIRCULATION   = 0xc6 // 198
 	OP_UNKNOWN199    = 0xc7 // 199
 	OP_UNKNOWN200    = 0xc8 // 200
-	OP_EVAL          = 0xc9 // 201
+	OP_UNKNOWN201    = 0xc9 // 201
 
 	OP_UNKNOWN202    = 0xca // 202
 	OP_UNKNOWN203    = 0xcb // 203
@@ -295,10 +295,6 @@ const (
 	OP_PUBKEYHASH    = 0xfd // 253 - bitcoin core internal
 	OP_PUBKEY        = 0xfe // 254 - bitcoin core internal
 	OP_INVALIDOPCODE = 0xff // 255 - bitcoin core internal
-
-	// p2c extensions
-	OP_SELFHASH = 0xfe
-	OP_ANYDATA  = 0xff
 )
 
 // Conditional execution constants.
@@ -526,8 +522,8 @@ var opcodeArray = [256]opcode{
 	OP_CHECKLOCKTIMEVERIFY: {OP_CHECKLOCKTIMEVERIFY, "OP_CHECKLOCKTIMEVERIFY", 1, opcodeCheckLockTimeVerify},
 
 	// p2c extensions
+	OP_EVAL:          {OP_EVAL, "OP_EVAL", 1, nil},                   // see init()
 	OP_REQUIREOUTPUT: {OP_REQUIREOUTPUT, "OP_REQUIREOUTPUT", 1, nil}, // see init()
-	OP_BALANCE:       {OP_BALANCE, "OP_BALANCE", 1, opcodeBalance},
 	OP_ASSET:         {OP_ASSET, "OP_ASSET", 1, opcodeAsset},
 	OP_AMOUNT:        {OP_AMOUNT, "OP_AMOUNT", 1, opcodeAmount},
 	OP_OUTPUTSCRIPT:  {OP_OUTPUTSCRIPT, "OP_OUTPUTSCRIPT", 1, opcodeOutputScript},
@@ -535,7 +531,7 @@ var opcodeArray = [256]opcode{
 	OP_CIRCULATION:   {OP_CIRCULATION, "OP_CIRCULATION", 1, opcodeCirculation},
 	OP_UNKNOWN199:    {OP_UNKNOWN199, "OP_UNKNOWN199", 1, opcodeInvalid},
 	OP_UNKNOWN200:    {OP_UNKNOWN200, "OP_UNKNOWN200", 1, opcodeInvalid},
-	OP_EVAL:          {OP_EVAL, "OP_EVAL", 1, nil}, // see init()
+	OP_UNKNOWN201:    {OP_UNKNOWN201, "OP_UNKNOWN201", 1, opcodeInvalid},
 
 	OP_UNKNOWN202: {OP_UNKNOWN202, "OP_UNKNOWN202", 1, opcodeInvalid},
 	OP_UNKNOWN203: {OP_UNKNOWN203, "OP_UNKNOWN203", 1, opcodeInvalid},
@@ -639,7 +635,7 @@ func (pop *parsedOpcode) isDisabled(isP2C, isBlock bool) bool {
 		return !isP2C
 	case OP_INVERT, OP_AND, OP_OR, OP_XOR:
 		return true
-	case OP_REQUIREOUTPUT, OP_BALANCE, OP_ASSET, OP_AMOUNT, OP_OUTPUTSCRIPT,
+	case OP_REQUIREOUTPUT, OP_ASSET, OP_AMOUNT, OP_OUTPUTSCRIPT,
 		OP_TIME, OP_CIRCULATION:
 		return isBlock
 	default:
@@ -2345,15 +2341,12 @@ func popAssetID(stack *stack) (*bc.AssetID, error) {
 	return &result, nil
 }
 
-// AMOUNT ASSETID PATTERN OP_REQUIREOUTPUT
-// Checks whether AMOUNT units of ASSETID paid to PATTERN remain among
-// this tx's inputs after accounting for other OP_REQUIREOUTPUTs.
-// PATTERN is compared to each input's pkscript, with OP_SELFHASH
-// matching the current txin's p2c contract hash and OP_ANYDATA
-// matching any data-pushing operation.  Pushes true if so, false
+// AMOUNT ASSETID SCRIPT OP_REQUIREOUTPUT Checks whether AMOUNT units
+// of ASSETID paid to SCRIPT remain among this tx's inputs after
+// accounting for other OP_REQUIREOUTPUTs.  Pushes true if so, false
 // otherwise.
 func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
-	scriptPattern, err := vm.dstack.PopByteArray()
+	script, err := vm.dstack.PopByteArray()
 	if err != nil {
 		return err
 	}
@@ -2375,11 +2368,6 @@ func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
 		return nil
 	}
 
-	parsedPattern, err := parseScript(scriptPattern)
-	if err != nil {
-		return err
-	}
-
 	needed := uint64(amount)
 
 	for i, output := range vm.tx.Outputs {
@@ -2390,11 +2378,7 @@ func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
 		if output.AssetID != *assetID {
 			continue
 		}
-		match, err := scriptMatchesPattern(output.Script, parsedPattern, vm.contractHash)
-		if err != nil {
-			return err
-		}
-		if !match {
+		if !bytes.Equal(output.Script, script) {
 			continue
 		}
 		if available >= needed {
@@ -2408,44 +2392,6 @@ func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
 	}
 	vm.dstack.PushBool(needed == 0)
 	return nil
-}
-
-// Does a given script match a given OP_REQUIREOUTPUT pattern?
-func scriptMatchesPattern(script []byte, parsedPattern []parsedOpcode, contractHash *bc.ContractHash) (bool, error) {
-	parsedScript, err := parseScript(script)
-	if err != nil {
-		return false, err
-	}
-	if len(parsedScript) != len(parsedPattern) {
-		return false, nil
-	}
-	for i, pop := range parsedScript {
-		ppat := parsedPattern[i]
-		switch ppat.opcode.value {
-		case OP_ANYDATA:
-			if !isPushdataOp(pop) {
-				return false, nil
-			}
-		case OP_SELFHASH:
-			if !isPushdataOp(pop) || (contractHash == nil) || !bytes.Equal(contractHash[:], pop.data) {
-				return false, nil
-			}
-		default:
-			if isPushdataOp(pop) {
-				if !isPushdataOp(ppat) {
-					return false, nil
-				}
-				if !bytes.Equal(pop.data, ppat.data) {
-					return false, nil
-				}
-			} else if isPushdataOp(ppat) {
-				return false, nil
-			} else if pop.opcode.value != ppat.opcode.value {
-				return false, nil
-			}
-		}
-	}
-	return true, nil
 }
 
 // timestamp CHECKLOCKTIMEVERIFY
@@ -2467,34 +2413,6 @@ func opcodeCheckLockTimeVerify(op *parsedOpcode, vm *Engine) error {
 	if vm.tx.LockTime < uint64(timestamp) {
 		return ErrStackVerifyFailed
 	}
-	return nil
-}
-
-// ASSETID CONTRACTHASH OP_BALANCE
-// Pushes the unspent balance of the given ASSETID that has been paid
-// to p2c addrs with the given CONTRACTHASH.
-func opcodeBalance(op *parsedOpcode, vm *Engine) error {
-	contractHash, err := popOptionalContractHash(&vm.dstack)
-	if err != nil {
-		return err
-	}
-	if contractHash == nil {
-		if vm.contractHash == nil {
-			return ErrNoContractHash
-		}
-		contractHash = vm.contractHash
-	}
-	assetID, err := popAssetID(&vm.dstack)
-	if err != nil {
-		return err
-	}
-
-	var balance uint64
-	for _, output := range vm.viewReader.UnspentP2COutputs(vm.ctx, *contractHash, *assetID) {
-		balance += output.Amount
-	}
-
-	vm.dstack.PushInt(scriptNum(balance))
 	return nil
 }
 
@@ -2562,9 +2480,6 @@ func init() {
 	}
 	OpcodeByName["OP_FALSE"] = OP_FALSE
 	OpcodeByName["OP_TRUE"] = OP_TRUE
-
-	OpcodeByName["OP_SELFHASH"] = OP_SELFHASH
-	OpcodeByName["OP_ANYDATA"] = OP_ANYDATA
 
 	// The following is placed here to break circular references.
 	opcodeArray[OP_REQUIREOUTPUT].opfunc = opcodeRequireOutput

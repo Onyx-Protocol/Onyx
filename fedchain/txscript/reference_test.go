@@ -358,20 +358,6 @@ func (viewReader testViewReader) Output(ctx context.Context, outpoint bc.Outpoin
 	return nil
 }
 
-func (viewReader testViewReader) UnspentP2COutputs(ctx context.Context, contractHash bc.ContractHash, assetID bc.AssetID) []*state.Output {
-	result := make([]*state.Output, 0, len(viewReader.spendingTx.Outputs))
-	txhash := viewReader.spendingTx.Hash()
-	for i, output := range viewReader.spendingTx.Outputs {
-		if output.AssetID == assetID {
-			isPayToContract, outputContractHash, _ := TestPayToContract(output.Script)
-			if isPayToContract && *outputContractHash == contractHash {
-				result = append(result, state.NewOutput(*output, *bc.NewOutpoint(txhash[:], uint32(i)), false))
-			}
-		}
-	}
-	return result
-}
-
 func newReusableTestEngine(viewReader testViewReader, tx *bc.TxData) (*Engine, error) {
 	result, err := NewReusableEngine(nil, viewReader, tx, P2CFLAGS)
 	if err != nil {

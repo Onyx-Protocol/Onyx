@@ -26,17 +26,6 @@ func (v *MemView) Output(ctx context.Context, p bc.Outpoint) *state.Output {
 	return v.Outs[p]
 }
 
-func (v *MemView) UnspentP2COutputs(ctx context.Context, contractHash bc.ContractHash, assetID bc.AssetID) (result []*state.Output) {
-	if outputs, ok := v.outsByContractHash[contractHash]; ok {
-		for _, output := range outputs {
-			if !output.Spent && output.AssetID == assetID {
-				result = append(result, output)
-			}
-		}
-	}
-	return result
-}
-
 func (v *MemView) AssetDefinitionPointer(assetID bc.AssetID) *bc.AssetDefinitionPointer {
 	return v.ADPs[assetID]
 }

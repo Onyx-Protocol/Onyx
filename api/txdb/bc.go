@@ -72,12 +72,6 @@ func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.
 	return outs, nil
 }
 
-const bcUnspentP2COutputQuery = `
-	SELECT tx_hash, index, asset_id, amount, script, metadata
-	FROM utxos_status
-	WHERE contract_hash = $1 AND asset_id = $2 AND confirmed
-`
-
 // LoadUTXOs loads all unspent outputs in the blockchain
 // for the given asset and account.
 func LoadUTXOs(ctx context.Context, accountID string, assetID bc.AssetID) ([]*utxodb.UTXO, error) {

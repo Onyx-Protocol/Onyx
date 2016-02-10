@@ -47,10 +47,6 @@ func newTestView() *testView {
 	}
 }
 
-func (v *testView) UnspentP2COutputs(context.Context, bc.ContractHash, bc.AssetID) []*state.Output {
-	return nil
-}
-
 func (v *testView) AssetDefinitionPointer(id bc.AssetID) *bc.AssetDefinitionPointer {
 	return v.adps[id]
 }

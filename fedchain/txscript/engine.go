@@ -83,7 +83,6 @@ type (
 	// A subset of state.ViewReader, declared here to avoid a circular dependency
 	viewReader interface {
 		Output(context.Context, bc.Outpoint) *state.Output
-		UnspentP2COutputs(ctx context.Context, contractHash bc.ContractHash, assetID bc.AssetID) []*state.Output
 	}
 
 	// Engine is the virtual machine that executes scripts.

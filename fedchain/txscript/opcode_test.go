@@ -75,10 +75,10 @@ func TestOpcodeDisasm(t *testing.T) {
 		0xac: "OP_CHECKSIG", 0xad: "OP_CHECKSIGVERIFY",
 		0xae: "OP_CHECKMULTISIG", 0xaf: "OP_CHECKMULTISIGVERIFY",
 		0xb1: "OP_CHECKLOCKTIMEVERIFY",
-		0xc0: "OP_REQUIREOUTPUT", 0xc1: "OP_BALANCE",
+		0xc0: "OP_EVAL", 0xc1: "OP_REQUIREOUTPUT",
 		0xc2: "OP_ASSET", 0xc3: "OP_AMOUNT",
 		0xc4: "OP_OUTPUTSCRIPT", 0xc5: "OP_TIME",
-		0xc6: "OP_CIRCULATION", 0xc9: "OP_EVAL",
+		0xc6: "OP_CIRCULATION",
 		0xf9: "OP_SMALLDATA", 0xfa: "OP_SMALLINTEGER",
 		0xfb: "OP_PUBKEYS", 0xfd: "OP_PUBKEYHASH", 0xfe: "OP_PUBKEY",
 		0xff: "OP_INVALIDOPCODE",
@@ -195,5 +195,5 @@ func isNop(opcodeVal int) bool {
 }
 
 func isUnknownOpcode(opcodeVal int) bool {
-	return (opcodeVal >= 0xb2 && opcodeVal <= 0xbf) || (opcodeVal >= 0xc7 && opcodeVal <= 0xc8) || (opcodeVal >= 0xca && opcodeVal <= 0xf8) || (opcodeVal == 0xfc)
+	return (opcodeVal >= 0xb2 && opcodeVal <= 0xbf) || (opcodeVal >= 0xc7 && opcodeVal <= 0xc9) || (opcodeVal >= 0xca && opcodeVal <= 0xf8) || (opcodeVal == 0xfc)
 }
