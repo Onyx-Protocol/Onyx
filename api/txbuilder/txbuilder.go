@@ -7,6 +7,7 @@ import (
 
 	"chain/api/txdb"
 	"chain/errors"
+	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
 	"chain/fedchain/txscript"
@@ -167,6 +168,19 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 		msg.Inputs[i].SignatureScript = append(script, input.SigScriptSuffix...)
 	}
 	return bc.NewTx(*msg), nil
+}
+
+// InputSigs takes a set of keys
+// and creates a matching set of Input Signatures
+// for a Template
+func InputSigs(keys []*hdkey.Key) (sigs []*Signature) {
+	for _, k := range keys {
+		sigs = append(sigs, &Signature{
+			XPub:           k.Root.String(),
+			DerivationPath: k.Path,
+		})
+	}
+	return sigs
 }
 
 func getSigsRequired(script []byte) (sigsReqd int, err error) {

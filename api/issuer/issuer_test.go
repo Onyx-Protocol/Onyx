@@ -1,13 +1,14 @@
-package asset_test
+package issuer
 
 import (
+	"encoding/hex"
 	"os"
 	"reflect"
 	"testing"
 
 	"golang.org/x/net/context"
 
-	. "chain/api/asset"
+	"chain/api/asset"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
 	"chain/database/pg/pgtest"
@@ -17,35 +18,14 @@ import (
 )
 
 func init() {
-	Init(fedchain.New(&txdb.Store{}, nil), nil, true)
+	asset.Init(fedchain.New(&txdb.Store{}, nil), nil, true)
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
 		u = s
 	}
 
 	ctx := context.Background()
-	pgtest.Open(ctx, u, "assettest", "../appdb/schema.sql")
-}
-
-// Establish a context object with a new db transaction in which to
-// run the given callback function.
-func withContext(tb testing.TB, sql string, fn func(context.Context)) {
-	var ctx context.Context
-	if sql == "" {
-		ctx = pgtest.NewContext(tb)
-	} else {
-		ctx = pgtest.NewContext(tb, sql)
-	}
-	defer pgtest.Finish(ctx)
-	fn(ctx)
-}
-
-func mustParseHash(s string) [32]byte {
-	h, err := bc.ParseHash(s)
-	if err != nil {
-		panic(err)
-	}
-	return h
+	pgtest.Open(ctx, u, "issuertest", "../appdb/schema.sql")
 }
 
 func TestIssue(t *testing.T) {
@@ -75,7 +55,7 @@ func TestIssue(t *testing.T) {
 
 	outScript := mustDecodeHex("a9140ac9c982fd389181752e5a414045dd424a10754b87")
 	assetAmount := &bc.AssetAmount{Amount: 123}
-	dest, err := NewScriptDestination(ctx, assetAmount, outScript, nil)
+	dest, err := asset.NewScriptDestination(ctx, assetAmount, outScript, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -99,4 +79,12 @@ func TestIssue(t *testing.T) {
 	if !reflect.DeepEqual(resp.Unsigned, want) {
 		t.Errorf("got tx = %+v want %+v", resp.Unsigned, want)
 	}
+}
+
+func mustDecodeHex(str string) []byte {
+	d, err := hex.DecodeString(str)
+	if err != nil {
+		panic(err)
+	}
+	return d
 }

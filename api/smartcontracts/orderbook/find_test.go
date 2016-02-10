@@ -6,6 +6,7 @@ import (
 
 	"chain/api/asset"
 	"chain/api/asset/assettest"
+	"chain/api/issuer"
 	"chain/api/txbuilder"
 	"chain/database/pg/pgtest"
 	"chain/fedchain/bc"
@@ -49,7 +50,7 @@ func TestFindOpenOrders(t *testing.T) {
 	if err != nil {
 		chaintest.FatalErr(t, err)
 	}
-	txTemplate, err := asset.Issue(ctx, assetID1.String(), []*txbuilder.Destination{issueDest})
+	txTemplate, err := issuer.Issue(ctx, assetID1.String(), []*txbuilder.Destination{issueDest})
 	if err != nil {
 		chaintest.FatalErr(t, err)
 	}
@@ -120,7 +121,7 @@ func TestFindOpenOrders(t *testing.T) {
 	if err != nil {
 		chaintest.FatalErr(t, err)
 	}
-	txTemplate, err = asset.Issue(ctx, assetID3.String(), []*txbuilder.Destination{issueDest})
+	txTemplate, err = issuer.Issue(ctx, assetID3.String(), []*txbuilder.Destination{issueDest})
 	if err != nil {
 		chaintest.FatalErr(t, err)
 	}

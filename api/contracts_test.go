@@ -12,6 +12,7 @@ import (
 
 	"chain/api/asset"
 	"chain/api/asset/assettest"
+	"chain/api/issuer"
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/txbuilder"
 	"chain/database/pg/pgtest"
@@ -116,7 +117,7 @@ func TestFindAndBuyContract(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		issueTxTemplate, err := asset.Issue(ctx, fixtureInfo.usdAssetID.String(), []*txbuilder.Destination{issueDest})
+		issueTxTemplate, err := issuer.Issue(ctx, fixtureInfo.usdAssetID.String(), []*txbuilder.Destination{issueDest})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -339,7 +340,7 @@ func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtu
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-	txTemplate, err := asset.Issue(ctx, fixtureInfo.aaplAssetID.String(), []*txbuilder.Destination{issueDest})
+	txTemplate, err := issuer.Issue(ctx, fixtureInfo.aaplAssetID.String(), []*txbuilder.Destination{issueDest})
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}

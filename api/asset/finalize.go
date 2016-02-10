@@ -103,13 +103,3 @@ func addAccountData(ctx context.Context, tx *bc.Tx) error {
 	applyToReserver(ctx, txdbOuts)
 	return nil
 }
-
-// issued returns the asset issued, as well as the amount.
-// It should only be called with outputs from transactions
-// where isIssuance is true.
-func issued(outs []*bc.TxOutput) (asset bc.AssetID, amt uint64) {
-	for _, out := range outs {
-		amt += out.Amount
-	}
-	return outs[0].AssetID, amt
-}

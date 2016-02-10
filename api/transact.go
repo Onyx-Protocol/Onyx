@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/asset"
+	"chain/api/issuer"
 	"chain/api/txbuilder"
 	"chain/database/pg"
 	"chain/fedchain/bc"
@@ -45,7 +46,7 @@ func issueAsset(ctx context.Context, assetIDStr string, reqDests []*Destination)
 		dests = append(dests, parsed)
 	}
 
-	template, err := asset.Issue(ctx, assetIDStr, dests)
+	template, err := issuer.Issue(ctx, assetIDStr, dests)
 	if err != nil {
 		return nil, err
 	}

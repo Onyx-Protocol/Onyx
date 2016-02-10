@@ -1,6 +1,7 @@
 package asset_test
 
 import (
+	"encoding/hex"
 	"testing"
 
 	. "chain/api/asset"
@@ -23,4 +24,12 @@ func TestScriptDestinationPKScript(t *testing.T) {
 	}
 	got := dest.PKScript()
 	testutil.ExpectScriptEqual(t, got, script, "ScriptDestination pk script")
+}
+
+func mustDecodeHex(data string) []byte {
+	h, err := hex.DecodeString(data)
+	if err != nil {
+		panic(err)
+	}
+	return h
 }

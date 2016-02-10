@@ -9,6 +9,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/asset"
+	"chain/api/issuer"
 	"chain/api/txbuilder"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
@@ -145,7 +146,7 @@ func CreateAssetFixture(ctx context.Context, t testing.TB, issuerNodeID, label, 
 	if label == "" {
 		label = fmt.Sprintf("inode-%d", <-assetCounter)
 	}
-	asset, err := asset.Create(ctx, issuerNodeID, label, map[string]interface{}{"s": def})
+	asset, err := issuer.CreateAsset(ctx, issuerNodeID, label, map[string]interface{}{"s": def})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -185,7 +186,7 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, a
 	}
 	dest := AccountDestinationFixture(ctx, t, assetID, amount, accountID)
 
-	tpl, err := asset.Issue(ctx, assetID.String(), []*txbuilder.Destination{dest})
+	tpl, err := issuer.Issue(ctx, assetID.String(), []*txbuilder.Destination{dest})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

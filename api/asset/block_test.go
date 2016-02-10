@@ -9,6 +9,7 @@ import (
 	"chain/api/appdb"
 	. "chain/api/asset"
 	"chain/api/asset/assettest"
+	"chain/api/issuer"
 	"chain/api/txbuilder"
 	"chain/api/utxodb"
 	"chain/database/pg"
@@ -252,12 +253,12 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	issuer, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv}, 1)
+	iNode, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv}, 1)
 	if err != nil {
 		return nil, err
 	}
 
-	asset, err := Create(ctx, issuer.ID, "label", map[string]interface{}{})
+	asset, err := issuer.CreateAsset(ctx, iNode.ID, "label", map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +283,7 @@ func issue(ctx context.Context, t testing.TB, info *clientInfo, destAcctID strin
 	if err != nil {
 		return nil, err
 	}
-	issueTx, err := Issue(ctx, assetID.String(), []*txbuilder.Destination{issueDest})
+	issueTx, err := issuer.Issue(ctx, assetID.String(), []*txbuilder.Destination{issueDest})
 	if err != nil {
 		return nil, err
 	}

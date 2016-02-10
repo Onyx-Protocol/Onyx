@@ -8,6 +8,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/asset"
+	"chain/api/issuer"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/metrics"
@@ -154,7 +155,7 @@ func createAsset(ctx context.Context, inodeID string, in struct {
 		return nil, err
 	}
 
-	ast, err := asset.Create(ctx, inodeID, in.Label, in.Definition)
+	ast, err := issuer.CreateAsset(ctx, inodeID, in.Label, in.Definition)
 	if err != nil {
 		return nil, err
 	}

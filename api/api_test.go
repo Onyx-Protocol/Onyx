@@ -9,6 +9,7 @@ import (
 
 	"chain/api/asset"
 	"chain/api/asset/assettest"
+	"chain/api/issuer"
 	"chain/api/txbuilder"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -126,7 +127,7 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	txTemplate, err := asset.Issue(ctx, assetIDStr, []*txbuilder.Destination{issueDest})
+	txTemplate, err := issuer.Issue(ctx, assetIDStr, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

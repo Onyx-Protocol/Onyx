@@ -1,5 +1,4 @@
-// Package asset provides business logic for manipulating assets.
-package asset
+package issuer
 
 import (
 	"database/sql"
@@ -17,6 +16,8 @@ import (
 	"chain/metrics"
 )
 
+// IssuanceReserver is a txbuilder.Reserver
+// that issues an asset
 type IssuanceReserver struct {
 	asset *appdb.Asset
 }
@@ -73,16 +74,6 @@ func Issue(ctx context.Context, assetID string, dests []*txbuilder.Destination) 
 func issuanceInput(a *appdb.Asset) *txbuilder.Input {
 	return &txbuilder.Input{
 		SigScriptSuffix: txscript.AddDataToScript(nil, a.RedeemScript),
-		Sigs:            inputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a))),
+		Sigs:            txbuilder.InputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a))),
 	}
-}
-
-func inputSigs(keys []*hdkey.Key) (sigs []*txbuilder.Signature) {
-	for _, k := range keys {
-		sigs = append(sigs, &txbuilder.Signature{
-			XPub:           k.Root.String(),
-			DerivationPath: k.Path,
-		})
-	}
-	return sigs
 }

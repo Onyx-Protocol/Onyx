@@ -47,7 +47,7 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 			return nil, errors.Wrap(err, "compute redeem script")
 		}
 		templateInput.SigScriptSuffix = txscript.AddDataToScript(nil, redeemScript)
-		templateInput.Sigs = inputSigs(signers)
+		templateInput.Sigs = txbuilder.InputSigs(signers)
 
 		item := &txbuilder.ReserveResultItem{
 			TxInput:       txInput,

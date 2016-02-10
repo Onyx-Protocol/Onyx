@@ -5,7 +5,6 @@ import (
 	"chain/api/utxodb"
 	"chain/fedchain"
 	"chain/fedchain-sandbox/hdkey"
-	"chain/fedchain/bc"
 )
 
 func (ar *AccountReceiver) Addr() *appdb.Address {
@@ -18,10 +17,6 @@ func UTXODB() *utxodb.Reserver {
 
 func NewKey() (pub, priv *hdkey.XKey, err error) {
 	return newKey()
-}
-
-func Issued(outs []*bc.TxOutput) (bc.AssetID, uint64) {
-	return issued(outs)
 }
 
 func FC() *fedchain.FC {

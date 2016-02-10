@@ -1,4 +1,4 @@
-package asset
+package issuer
 
 import (
 	"encoding/json"
@@ -17,9 +17,9 @@ import (
 	"chain/metrics"
 )
 
-// Create generates a new asset redeem script
+// CreateAsset generates a new asset redeem script
 // and id inside of an issuer node.
-func Create(ctx context.Context, inodeID, label string, definition map[string]interface{}) (*appdb.Asset, error) {
+func CreateAsset(ctx context.Context, inodeID, label string, definition map[string]interface{}) (*appdb.Asset, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if label == "" {
 		return nil, appdb.ErrBadLabel

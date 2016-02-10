@@ -11,6 +11,7 @@ import (
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/api/asset/assettest"
+	"chain/api/issuer"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
 	"chain/database/pg"
@@ -55,7 +56,7 @@ func TestBuy(t *testing.T) {
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		issueTxTemplate, err := asset.Issue(ctx, fixtureInfo.usdAssetID.String(), []*txbuilder.Destination{issueDest})
+		issueTxTemplate, err := issuer.Issue(ctx, fixtureInfo.usdAssetID.String(), []*txbuilder.Destination{issueDest})
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -204,7 +205,7 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	issueTxTemplate, err := asset.Issue(ctx, fixtureInfo.aaplAssetID.String(), []*txbuilder.Destination{issueDest})
+	issueTxTemplate, err := issuer.Issue(ctx, fixtureInfo.aaplAssetID.String(), []*txbuilder.Destination{issueDest})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

@@ -1,18 +1,16 @@
-package asset_test
+package issuer_test
 
 import (
 	"bytes"
 	"encoding/hex"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"chain/api/appdb"
-	. "chain/api/asset"
+	. "chain/api/issuer"
 	"chain/database/pg/pgtest"
 )
 
-func TestCreate(t *testing.T) {
+func TestCreateAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t, `
 		ALTER SEQUENCE issuer_nodes_key_index_seq RESTART;
 		ALTER SEQUENCE assets_key_index_seq RESTART;
@@ -22,7 +20,7 @@ func TestCreate(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	definition := make(map[string]interface{})
-	asset, err := Create(ctx, "in1", "fooAsset", definition)
+	asset, err := CreateAsset(ctx, "in1", "fooAsset", definition)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -73,24 +71,25 @@ func TestCreateDefs(t *testing.T) {
 	for i, ex := range examples {
 		t.Log("Example", i)
 
-		withContext(t, fix, func(ctx context.Context) {
-			gotCreated, err := Create(ctx, "inode-0", "label", ex.def)
-			if err != nil {
-				t.Fatal("unexpected error: ", err)
-			}
+		ctx := pgtest.NewContext(t, fix)
+		defer pgtest.Finish(ctx)
+		gotCreated, err := CreateAsset(ctx, "inode-0", "label", ex.def)
+		if err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
 
-			if !bytes.Equal(gotCreated.Definition, ex.want) {
-				t.Errorf("create result:\ngot:  %s\nwant: %s", gotCreated.Definition, ex.want)
-			}
+		if !bytes.Equal(gotCreated.Definition, ex.want) {
+			t.Errorf("create result:\ngot:  %s\nwant: %s", gotCreated.Definition, ex.want)
+		}
 
-			gotFetch, err := appdb.AssetByID(ctx, gotCreated.Hash)
-			if err != nil {
-				t.Fatal("unexpected error: ", err)
-			}
+		gotFetch, err := appdb.AssetByID(ctx, gotCreated.Hash)
+		if err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
 
-			if !bytes.Equal(gotFetch.Definition, ex.want) {
-				t.Errorf("db fetch result:\ngot:  %s\nwant: %s", gotFetch.Definition, ex.want)
-			}
-		})
+		if !bytes.Equal(gotFetch.Definition, ex.want) {
+			t.Errorf("db fetch result:\ngot:  %s\nwant: %s", gotFetch.Definition, ex.want)
+		}
+		pgtest.Finish(ctx)
 	}
 }
