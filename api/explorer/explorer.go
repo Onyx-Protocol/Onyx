@@ -1,4 +1,4 @@
-package auditor
+package explorer
 
 import (
 	"database/sql"
@@ -198,14 +198,14 @@ type Asset struct {
 func GetAssets(ctx context.Context, assetIDs []string) (map[string]*Asset, error) {
 	// TODO(jeffomatic): This function makes use of the assets and
 	// issuance_totals tables, which technically violates the line between
-	// issuer nodes and auditor nodes.
+	// issuer nodes and explorer nodes.
 	//
 	// We do this because we require:
 	// 1. issued totals, which are only tracked in the issuance_totals table.
 	// 2. assets with blank asset defs, which appear in the assets table, but
 	//    not the asset_definition_pointers table. This is a bug.
 	//
-	// As a result, the auditor node will return entries for assets that have
+	// As a result, the explorer node will return entries for assets that have
 	// not yet been issued, or whose issuances have not yet landed in a block.
 	// For these results, the asset definition will appear to be blank.
 

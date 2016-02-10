@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"chain/api/appdb"
-	"chain/api/auditor"
+	"chain/api/explorer"
 	chainhttp "chain/net/http"
 	"chain/net/http/httpjson"
 	"chain/net/http/pat"
@@ -125,12 +125,19 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/v3/api-tokens", createAPIToken)
 	h.HandleFunc("DELETE", "/v3/api-tokens/:tokenID", appdb.DeleteAuthToken)
 
-	// Auditor node endpoints
+	// Auditor node endpoints -- DEPRECATED: use explorer endpoints instead
 	h.HandleFunc("GET", "/v3/auditor/blocks", listBlocks)
-	h.HandleFunc("GET", "/v3/auditor/blocks/:blockID/summary", auditor.GetBlockSummary)
-	h.HandleFunc("GET", "/v3/auditor/transactions/:txID", auditor.GetTx)
-	h.HandleFunc("GET", "/v3/auditor/assets/:assetID", auditor.GetAsset)
-	h.HandleFunc("POST", "/v3/auditor/get-assets", getAuditorAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
+	h.HandleFunc("GET", "/v3/auditor/blocks/:blockID/summary", explorer.GetBlockSummary)
+	h.HandleFunc("GET", "/v3/auditor/transactions/:txID", explorer.GetTx)
+	h.HandleFunc("GET", "/v3/auditor/assets/:assetID", explorer.GetAsset)
+	h.HandleFunc("POST", "/v3/auditor/get-assets", getExplorerAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
+
+	// Explorer node endpoints
+	h.HandleFunc("GET", "/v3/explorer/blocks", listBlocks)
+	h.HandleFunc("GET", "/v3/explorer/blocks/:blockID/summary", explorer.GetBlockSummary)
+	h.HandleFunc("GET", "/v3/explorer/transactions/:txID", explorer.GetTx)
+	h.HandleFunc("GET", "/v3/explorer/assets/:assetID", explorer.GetAsset)
+	h.HandleFunc("POST", "/v3/explorer/get-assets", getExplorerAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
 
 	// Orderbook endpoints
 	h.HandleFunc("POST", "/v3/contracts/orderbook", findOrders)

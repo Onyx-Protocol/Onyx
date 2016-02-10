@@ -1,4 +1,4 @@
-package auditor
+package explorer
 
 import (
 	"encoding/hex"
@@ -31,7 +31,7 @@ func init() {
 	}
 
 	ctx := context.Background()
-	pgtest.Open(ctx, u, "auditortest", "../appdb/schema.sql")
+	pgtest.Open(ctx, u, "explorertest", "../appdb/schema.sql")
 }
 
 // Establish a context object with a new db transaction in which to
