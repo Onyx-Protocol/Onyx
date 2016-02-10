@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"net/url"
 	"os"
 	"time"
 
@@ -18,8 +19,8 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api"
-	"chain/api/admin"
 	"chain/api/asset"
+	"chain/api/generator"
 	"chain/api/signer"
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/txdb"
@@ -56,9 +57,12 @@ var (
 	// for config var LIBRATO_URL, see func init below
 	traceguideToken = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns      = env.Int("MAXDBCONNS", 10) // set to 100 in prod
-	makeBlocks      = env.Bool("MAKEBLOCKS", true)
 	rpcSecretToken  = env.String("RPC_SECRET", "secret")
 	isSigner        = env.Bool("SIGNER", true)
+
+	isGenerator      = env.Bool("GENERATOR", true)
+	remoteSignerURLs = env.StringSlice("REMOTE_SIGNER_URLS")
+	remoteSignerKeys = env.StringSlice("REMOTE_SIGNER_KEYS")
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -67,7 +71,7 @@ var (
 
 	race []interface{} // initialized in race.go
 
-	blockInterval = 1 * time.Second
+	blockPeriod = 1 * time.Second
 )
 
 func init() {
@@ -140,11 +144,11 @@ func main() {
 	ctx = pg.NewContext(ctx, db)
 
 	fc := fedchain.New(&txdb.Store{}, []*btcec.PublicKey{privKey.PubKey()})
-	var sig *signer.Signer
+	var localSigner *signer.Signer
 	if *isSigner {
-		sig = signer.New(privKey, fc)
+		localSigner = signer.New(privKey, fc)
 	}
-	asset.ConnectFedchain(fc, sig)
+	asset.ConnectFedchain(fc, localSigner)
 	orderbook.ConnectFedchain(fc)
 
 	var h chainhttp.Handler
@@ -153,13 +157,12 @@ func main() {
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}
 
-	if *makeBlocks {
-		_, err = asset.UpsertGenesisBlock(ctx)
+	if *isGenerator {
+		remotes := remoteSignerInfo(ctx)
+		err := generator.Init(ctx, blockPeriod, localSigner, remotes)
 		if err != nil {
-			chainlog.Error(ctx, err) // non-fatal
+			chainlog.Fatal(ctx, "error", err)
 		}
-		admin.SetBlockInterval(blockInterval)
-		go asset.MakeBlocks(ctx, blockInterval)
 	}
 	http.Handle("/", chainhttp.ContextHandler{Context: ctx, Handler: h})
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
@@ -174,6 +177,31 @@ func main() {
 	if err != nil {
 		chainlog.Fatal(ctx, "error", "ListenAndServe"+err.Error())
 	}
+}
+
+func remoteSignerInfo(ctx context.Context) (a []generator.RemoteSigner) {
+	// REMOTE_SIGNER_URLS and REMOTE_SIGNER_KEYS should be parallel,
+	// comma-separated lists. Each element of REMOTE_SIGNER_KEYS is the
+	// public key for the corresponding URL in REMOTE_SIGNER_URLS.
+	if len(*remoteSignerURLs) != len(*remoteSignerKeys) {
+		chainlog.Fatal(ctx, "error", "REMOTE_SIGNER_URLS and REMOTE_SIGNER_KEYS must be same length")
+	}
+	for i := range *remoteSignerURLs {
+		u, err := url.Parse((*remoteSignerURLs)[i])
+		if err != nil {
+			chainlog.Fatal(ctx, "error", err)
+		}
+		b, err := hex.DecodeString((*remoteSignerKeys)[i])
+		if err != nil {
+			chainlog.Fatal(ctx, "error", err, "at", "decoding signer public key")
+		}
+		k, err := btcec.ParsePubKey(b, btcec.S256())
+		if err != nil {
+			chainlog.Fatal(ctx, "error", err, "at", "parsing signer public key")
+		}
+		a = append(a, generator.RemoteSigner{URL: u, Key: k})
+	}
+	return a
 }
 
 func logWriter() io.Writer {

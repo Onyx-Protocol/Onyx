@@ -1,21 +1,12 @@
-package admin
+package generator
 
 import (
-	"time"
-
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/api/txdb"
 	"chain/errors"
 )
-
-var blockInterval time.Duration
-
-// SetBlockInterval sets the block frequency value for GetSummary.
-func SetBlockInterval(d time.Duration) {
-	blockInterval = d
-}
 
 // TxCount describes the number of transactions in a blockchain.
 type TxCount struct {
@@ -64,7 +55,7 @@ func newSummary() *Summary {
 func GetSummary(ctx context.Context, projID string) (*Summary, error) {
 	res := newSummary()
 
-	res.BlockFreqMs = uint64(blockInterval.Nanoseconds() / 1000000)
+	res.BlockFreqMs = uint64(blockPeriod.Nanoseconds() / 1000000)
 
 	store := new(txdb.Store) // TODO(kr): probably should use fedchain.FC instead
 	top, err := store.LatestBlock(ctx)

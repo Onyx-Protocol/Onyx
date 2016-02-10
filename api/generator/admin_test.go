@@ -1,4 +1,4 @@
-package admin
+package generator
 
 import (
 	"bytes"
@@ -22,7 +22,7 @@ func init() {
 	}
 
 	ctx := context.Background()
-	pgtest.Open(ctx, u, "admintest", "../appdb/schema.sql")
+	pgtest.Open(ctx, u, "generatortest", "../appdb/schema.sql")
 }
 
 // Establish a context object with a new db transaction in which to
