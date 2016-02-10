@@ -16,15 +16,15 @@ To collect pending transactions, call InsertPendingTx for each one.
 
 To add a new block to the blockchain, call GenerateBlock, sign
 the block (possibly collecting signatures from other parties),
-and call InsertBlock.
+and call AddBlock.
 
 Signer
 
 An signer has one basic job: sign exactly one valid block at each height.
 
-To ingest an unsigned block obtained from a generator node,
+To sign an unsigned block obtained from a generator node,
 first validate against the current blockchain state
-(TODO(kr): call ValidateBlockForSig), then sign the block, and
+(TODO(kr): call ValidateBlockForSig), then call SignBlock, and
 finally send the signature back to the generator node.
 
 Manager
@@ -34,11 +34,11 @@ transactions.
 
 To publish a new transaction, prepare your transaction (select
 outputs, and compose and sign the tx), call InsertPendingTx and
-send the transaction to an generator node.
+send the transaction to a generator node.
 (TODO(kr): Then call WaitTx; when it returns (with no error),
 the transaction has been confirmed.)
 
-To ingest a block, call InsertBlock.
+To ingest a block, call AddBlock.
 
 */
 package fedchain
