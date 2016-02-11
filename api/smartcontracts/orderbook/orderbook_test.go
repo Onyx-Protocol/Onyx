@@ -279,7 +279,7 @@ func buy(ctx context.Context, order *OpenOrder, funds *txbuilder.Source, destina
 	if err != nil {
 		return nil, err
 	}
-	sellerDestination, err := asset.NewScriptDestination(ctx, &funds.AssetAmount, sellerScript, nil)
+	sellerDestination := txbuilder.NewScriptDestination(ctx, &funds.AssetAmount, sellerScript, nil)
 	if err != nil {
 		return nil, err
 	}

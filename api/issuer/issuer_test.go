@@ -55,11 +55,7 @@ func TestIssue(t *testing.T) {
 
 	outScript := mustDecodeHex("a9140ac9c982fd389181752e5a414045dd424a10754b87")
 	assetAmount := &bc.AssetAmount{Amount: 123}
-	dest, err := asset.NewScriptDestination(ctx, assetAmount, outScript, nil)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
+	dest := txbuilder.NewScriptDestination(ctx, assetAmount, outScript, nil)
 	outs := []*txbuilder.Destination{dest}
 	resp, err := Issue(ctx, "0000000000000000000000000000000000000000000000000000000000000000", outs)
 	if err != nil {
