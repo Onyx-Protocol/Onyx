@@ -76,7 +76,6 @@ func (fc *FC) applyTx(ctx context.Context, tx *bc.Tx) (err error) {
 
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
-	fc.store.ApplyTx(ctx, tx)
-
-	return errors.Wrap(err, "insert into pool inputs")
+	err = fc.store.ApplyTx(ctx, tx)
+	return errors.Wrap(err, "applying tx to store")
 }

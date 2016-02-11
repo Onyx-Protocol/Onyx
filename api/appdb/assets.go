@@ -12,7 +12,6 @@ import (
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
 	"chain/metrics"
-	"chain/net/trace/span"
 )
 
 // Asset represents an asset type in the blockchain.
@@ -105,12 +104,8 @@ func AssetByID(ctx context.Context, hash bc.AssetID) (*Asset, error) {
 func InsertAsset(ctx context.Context, asset *Asset) error {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
-		WITH newasset AS (
-			INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label, definition)
-			VALUES($1, $2, to_key_index($3), $4, $5, $6, $7, $8)
-			RETURNING id
-		)
-		INSERT INTO issuance_totals (asset_id) TABLE newasset;
+		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label, definition)
+		VALUES($1, $2, to_key_index($3), $4, $5, $6, $7, $8)
 	`
 
 	_, err := pg.FromContext(ctx).Exec(ctx, q,
@@ -131,9 +126,9 @@ func InsertAsset(ctx context.Context, asset *Asset) error {
 // for last asset, used to retrieve the next page.
 func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]*AssetResponse, string, error) {
 	q := `
-		SELECT id, label, t.confirmed, (t.confirmed + t.pool), definition, sort_id
+		SELECT id, label, COALESCE(t.confirmed, 0), COALESCE(t.confirmed + t.pool, 0), definition, sort_id
 		FROM assets
-		JOIN issuance_totals t ON (asset_id=assets.id)
+		LEFT JOIN issuance_totals t ON (asset_id=assets.id)
 		WHERE issuer_node_id = $1 AND ($2='' OR sort_id<$2) AND NOT archived
 		ORDER BY sort_id DESC
 		LIMIT $3
@@ -176,9 +171,9 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 // asset IDs are not found, they will not be included in the response.
 func GetAssets(ctx context.Context, assetIDs []string) (map[string]*AssetResponse, error) {
 	const q = `
-		SELECT id, label, t.confirmed, (t.confirmed + t.pool), definition
+		SELECT id, label, COALESCE(t.confirmed, 0), COALESCE(t.confirmed + t.pool, 0), definition
 		FROM assets
-		JOIN issuance_totals t ON (asset_id=assets.id)
+		LEFT JOIN issuance_totals t ON (asset_id=assets.id)
 		WHERE id IN (SELECT unnest($1::text[]))
 	`
 
@@ -248,40 +243,6 @@ func ArchiveAsset(ctx context.Context, assetID string) error {
 
 	_, err := db.Exec(ctx, q, assetID)
 	return errors.Wrap(err, "archive query")
-}
-
-// UpdateIssuances modifies the issuance totals of a set of assets by the given
-// amounts. The amounts may be negative.
-func UpdateIssuances(ctx context.Context, deltas map[bc.AssetID]int64, confirmed bool) error {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
-	var (
-		assetIDs []string
-		amounts  []int64
-	)
-	for aid, amt := range deltas {
-		assetIDs = append(assetIDs, aid.String())
-		amounts = append(amounts, amt)
-	}
-
-	column := "pool"
-	if confirmed {
-		column = "confirmed"
-	}
-
-	q := `
-		UPDATE issuance_totals
-		SET ` + column + ` = ` + column + ` + updates.amount
-		FROM (
-			SELECT
-				unnest($1::text[]) AS asset_id,
-				unnest($2::bigint[]) AS amount
-		) AS updates
-		WHERE issuance_totals.asset_id = updates.asset_id
-	`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, pg.Strings(assetIDs), pg.Int64s(amounts))
-	return errors.Wrap(err)
 }
 
 // AssetBalQuery is a parameter struct passed in to AssetBalance

@@ -8,7 +8,6 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 
-	"chain/api/appdb"
 	"chain/api/asset/nodetxlog"
 	"chain/api/signer"
 	"chain/api/txdb"
@@ -40,38 +39,6 @@ func ConnectFedchain(chain *fedchain.FC, signer *signer.Signer) {
 		err := nodetxlog.Write(ctx, tx, time.Now())
 		if err != nil {
 			log.Error(ctx, errors.Wrap(err, "writing activitiy"))
-		}
-	})
-	fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
-		if tx.IsIssuance() {
-			asset, amt := issued(tx.Outputs)
-			err := appdb.UpdateIssuances(
-				ctx,
-				map[bc.AssetID]int64{asset: int64(amt)},
-				false,
-			)
-			if err != nil {
-				log.Error(ctx, errors.Wrap(err, "update issuances"))
-			}
-		}
-	})
-	fc.AddBlockCallback(func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx) {
-		issued := issuedAssets(block.Transactions)
-		err := appdb.UpdateIssuances(ctx, issued, true)
-		if err != nil {
-			log.Error(ctx, errors.Wrap(err, "update issuances"))
-			return
-		}
-		deletedIssued := issuedAssets(conflicts)
-		for asset := range issued {
-			issued[asset] *= -1
-		}
-		for asset, amt := range deletedIssued {
-			issued[asset] = -amt
-		}
-		err = appdb.UpdateIssuances(ctx, issued, false)
-		if err != nil {
-			log.Error(ctx, errors.Wrap(err, "update pool issuances"))
 		}
 	})
 	fc.AddBlockCallback(func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx) {

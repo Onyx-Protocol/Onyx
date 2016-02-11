@@ -48,7 +48,12 @@ func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx) error {
 		deleted = append(deleted, in.Previous)
 	}
 	err = insertPoolInputs(ctx, deleted)
-	return errors.Wrap(err, "insert into pool inputs")
+	if err != nil {
+		return errors.Wrap(err, "insert into pool inputs")
+	}
+
+	err = addIssuances(ctx, sumIssued(tx), false)
+	return errors.Wrap(err, "adding issuances")
 }
 
 // RemoveTxs removes confirmedTxs and conflictTxs from the pool.
@@ -104,7 +109,12 @@ func (s *Store) RemoveTxs(ctx context.Context, confirmedTxs, conflictTxs []*bc.T
 		)
 	`
 	_, err = db.Exec(ctx, inq, pg.Strings(deleteInputHashes), pg.Uint32s(deleteInputIndexes))
-	return errors.Wrap(err, "delete from pool_inputs")
+	if err != nil {
+		return errors.Wrap(err, "delete from pool_inputs")
+	}
+
+	err = removeIssuances(ctx, sumIssued(conflictTxs...))
+	return errors.Wrap(err, "removing issuances")
 }
 
 // PoolTxs returns the pooled transactions in topological order.
@@ -122,7 +132,12 @@ func (s *Store) NewPoolViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state
 	return newPoolViewForPrevouts(ctx, txs)
 }
 
-func (s *Store) ApplyBlock(ctx context.Context, block *bc.Block, adps map[bc.AssetID]*bc.AssetDefinitionPointer, delta []*state.Output) ([]*bc.Tx, error) {
+func (s *Store) ApplyBlock(
+	ctx context.Context,
+	block *bc.Block,
+	adps map[bc.AssetID]*bc.AssetDefinitionPointer,
+	delta []*state.Output,
+) ([]*bc.Tx, error) {
 	newHashes, err := insertBlock(ctx, block)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert block")
@@ -130,13 +145,16 @@ func (s *Store) ApplyBlock(ctx context.Context, block *bc.Block, adps map[bc.Ass
 
 	newMap := make(map[bc.Hash]bool, len(newHashes))
 	newTxs := make([]*bc.Tx, 0, len(newHashes))
+	oldTxs := make([]*bc.Tx, 0, len(block.Transactions)-len(newHashes))
 	for _, hash := range newHashes {
 		newMap[hash] = true
 	}
 	for _, tx := range block.Transactions {
 		if newTx := newMap[tx.Hash]; newTx {
 			newTxs = append(newTxs, tx)
+			continue
 		}
+		oldTxs = append(oldTxs, tx)
 	}
 
 	err = insertAssetDefinitionPointers(ctx, adps)
@@ -157,6 +175,16 @@ func (s *Store) ApplyBlock(ctx context.Context, block *bc.Block, adps map[bc.Ass
 	err = insertBlockOutputs(ctx, delta)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert block outputs")
+	}
+
+	err = addIssuances(ctx, sumIssued(block.Transactions...), true)
+	if err != nil {
+		return nil, errors.Wrap(err, "adding issuances")
+	}
+
+	err = removeIssuances(ctx, sumIssued(oldTxs...))
+	if err != nil {
+		return nil, errors.Wrap(err, "removing confirmed issuances from pool")
 	}
 
 	return newTxs, nil
