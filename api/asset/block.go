@@ -10,6 +10,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/asset/nodetxlog"
+	"chain/api/signer"
 	"chain/api/txdb"
 	"chain/api/utxodb"
 	"chain/database/pg"
@@ -26,7 +27,8 @@ var fc *fedchain.FC
 // ConnectFedchain sets the package level fedchain
 // as well as registers all necessary callbacks
 // with the fedchain.
-func ConnectFedchain(chain *fedchain.FC) {
+func ConnectFedchain(chain *fedchain.FC, signer *signer.Signer) {
+	// TODO(kr): rename this to Init.
 	fc = chain
 	fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
 		err := addAccountData(ctx, tx)

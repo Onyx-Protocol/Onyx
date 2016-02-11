@@ -20,6 +20,7 @@ import (
 	"chain/api"
 	"chain/api/admin"
 	"chain/api/asset"
+	"chain/api/signer"
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/txdb"
 	"chain/database/pg"
@@ -57,6 +58,7 @@ var (
 	maxDBConns      = env.Int("MAXDBCONNS", 10) // set to 100 in prod
 	makeBlocks      = env.Bool("MAKEBLOCKS", true)
 	rpcSecretToken  = env.String("RPC_SECRET", "secret")
+	isSigner        = env.Bool("SIGNER", true)
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -138,7 +140,11 @@ func main() {
 	ctx = pg.NewContext(ctx, db)
 
 	fc := fedchain.New(&txdb.Store{}, []*btcec.PublicKey{privKey.PubKey()})
-	asset.ConnectFedchain(fc)
+	var sig *signer.Signer
+	if *isSigner {
+		sig = signer.New(privKey, fc)
+	}
+	asset.ConnectFedchain(fc, sig)
 	orderbook.ConnectFedchain(fc)
 
 	var h chainhttp.Handler
