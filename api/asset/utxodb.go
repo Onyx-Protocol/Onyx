@@ -10,7 +10,6 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
-	"chain/fedchain/state"
 	"chain/metrics"
 )
 
@@ -25,11 +24,6 @@ func (sqlUTXODB) LoadUTXOs(ctx context.Context, accountID string, assetID bc.Ass
 		return nil, errors.Wrap(err, "load blockchain outputs")
 	}
 	return bcOuts, nil
-}
-
-func isSpent(ctx context.Context, p bc.Outpoint, v state.ViewReader) bool {
-	o := v.Output(ctx, p)
-	return o != nil && o.Spent
 }
 
 func (sqlUTXODB) SaveReservations(ctx context.Context, utxos []*utxodb.UTXO, exp time.Time) error {
