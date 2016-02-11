@@ -5,20 +5,17 @@ import (
 
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
-	"chain/fedchain/txscript"
 )
 
 type MemView struct {
-	Outs               map[bc.Outpoint]*state.Output
-	outsByContractHash map[bc.ContractHash][]*state.Output
-	ADPs               map[bc.AssetID]*bc.AssetDefinitionPointer
+	Outs map[bc.Outpoint]*state.Output
+	ADPs map[bc.AssetID]*bc.AssetDefinitionPointer
 }
 
 func NewMemView() *MemView {
 	return &MemView{
-		Outs:               make(map[bc.Outpoint]*state.Output),
-		outsByContractHash: make(map[bc.ContractHash][]*state.Output),
-		ADPs:               make(map[bc.AssetID]*bc.AssetDefinitionPointer),
+		Outs: make(map[bc.Outpoint]*state.Output),
+		ADPs: make(map[bc.AssetID]*bc.AssetDefinitionPointer),
 	}
 }
 
@@ -32,11 +29,6 @@ func (v *MemView) AssetDefinitionPointer(assetID bc.AssetID) *bc.AssetDefinition
 
 func (v *MemView) SaveOutput(o *state.Output) {
 	v.Outs[o.Outpoint] = o
-
-	isPayToContract, contractHash, _ := txscript.TestPayToContract(o.TxOutput.Script)
-	if isPayToContract {
-		v.outsByContractHash[*contractHash] = append(v.outsByContractHash[*contractHash], o)
-	}
 }
 
 func (v *MemView) SaveAssetDefinitionPointer(adp *bc.AssetDefinitionPointer) {
