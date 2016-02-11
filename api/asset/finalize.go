@@ -40,16 +40,27 @@ func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, er
 		return nil, err
 	}
 
-	if Generator != nil {
-		go publishTxToGenerator(ctx, msg)
-	}
-
 	return msg, nil
 }
 
 func publishTx(ctx context.Context, msg *bc.Tx) error {
 	err := fc.AddTx(ctx, msg)
-	return errors.Wrap(err, "add tx to fedchain")
+	if err != nil {
+		return errors.Wrap(err, "add tx to fedchain")
+	}
+
+	if Generator != nil {
+		err = rpc.Call(ctx, *Generator, "/rpc/generator/submit", msg, nil)
+		if err != nil {
+			err = errors.Wrap(err, "generator transaction notice")
+			chainlog.Error(ctx, err)
+
+			// Return an error so that the client knows that it needs to
+			// retry the request.
+			return err
+		}
+	}
+	return nil
 }
 
 func addAccountData(ctx context.Context, tx *bc.Tx) error {
@@ -91,12 +102,6 @@ func addAccountData(ctx context.Context, tx *bc.Tx) error {
 
 	applyToReserver(ctx, txdbOuts)
 	return nil
-}
-
-func publishTxToGenerator(ctx context.Context, msg *bc.Tx) {
-	if err := rpc.Call(ctx, *Generator, "/rpc/generator/submit", msg, nil); err != nil {
-		chainlog.Write(ctx, "publishTxToGenerator", err)
-	}
 }
 
 // issued returns the asset issued, as well as the amount.
