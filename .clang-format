@@ -3,6 +3,7 @@ BasedOnStyle: Mozilla
 IndentWidth: 8
 TabWidth: 8
 UseTab: ForIndentation
+ColumnLimit: 0
 ---
 Language: Cpp
 DerivePointerAlignment: false
