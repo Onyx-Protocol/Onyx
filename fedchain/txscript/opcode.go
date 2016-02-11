@@ -441,10 +441,10 @@ var opcodeArray = [256]opcode{
 	OP_TUCK:         {OP_TUCK, "OP_TUCK", 1, opcodeTuck},
 
 	// Splice opcodes.
-	OP_CAT:    {OP_CAT, "OP_CAT", 1, opcodeP2COnly(opcodeCat)},
-	OP_SUBSTR: {OP_SUBSTR, "OP_SUBSTR", 1, opcodeP2COnly(opcodeSubstr)},
-	OP_LEFT:   {OP_LEFT, "OP_LEFT", 1, opcodeP2COnly(opcodeLeft)},
-	OP_RIGHT:  {OP_RIGHT, "OP_RIGHT", 1, opcodeP2COnly(opcodeRight)},
+	OP_CAT:    {OP_CAT, "OP_CAT", 1, opcodeVersion01Only(opcodeCat)},
+	OP_SUBSTR: {OP_SUBSTR, "OP_SUBSTR", 1, opcodeVersion01Only(opcodeSubstr)},
+	OP_LEFT:   {OP_LEFT, "OP_LEFT", 1, opcodeVersion01Only(opcodeLeft)},
+	OP_RIGHT:  {OP_RIGHT, "OP_RIGHT", 1, opcodeVersion01Only(opcodeRight)},
 	OP_SIZE:   {OP_SIZE, "OP_SIZE", 1, opcodeSize},
 
 	// Bitwise logic opcodes.
@@ -460,19 +460,19 @@ var opcodeArray = [256]opcode{
 	// Numeric related opcodes.
 	OP_1ADD:               {OP_1ADD, "OP_1ADD", 1, opcode1Add},
 	OP_1SUB:               {OP_1SUB, "OP_1SUB", 1, opcode1Sub},
-	OP_2MUL:               {OP_2MUL, "OP_2MUL", 1, opcodeP2COnly(opcode2Mul)},
-	OP_2DIV:               {OP_2DIV, "OP_2DIV", 1, opcodeP2COnly(opcode2Div)},
+	OP_2MUL:               {OP_2MUL, "OP_2MUL", 1, opcodeVersion01Only(opcode2Mul)},
+	OP_2DIV:               {OP_2DIV, "OP_2DIV", 1, opcodeVersion01Only(opcode2Div)},
 	OP_NEGATE:             {OP_NEGATE, "OP_NEGATE", 1, opcodeNegate},
 	OP_ABS:                {OP_ABS, "OP_ABS", 1, opcodeAbs},
 	OP_NOT:                {OP_NOT, "OP_NOT", 1, opcodeNot},
 	OP_0NOTEQUAL:          {OP_0NOTEQUAL, "OP_0NOTEQUAL", 1, opcode0NotEqual},
 	OP_ADD:                {OP_ADD, "OP_ADD", 1, opcodeAdd},
 	OP_SUB:                {OP_SUB, "OP_SUB", 1, opcodeSub},
-	OP_MUL:                {OP_MUL, "OP_MUL", 1, opcodeP2COnly(opcodeMul)},
-	OP_DIV:                {OP_DIV, "OP_DIV", 1, opcodeP2COnly(opcodeDiv)},
-	OP_MOD:                {OP_MOD, "OP_MOD", 1, opcodeP2COnly(opcodeMod)},
-	OP_LSHIFT:             {OP_LSHIFT, "OP_LSHIFT", 1, opcodeP2COnly(opcodeLShift)},
-	OP_RSHIFT:             {OP_RSHIFT, "OP_RSHIFT", 1, opcodeP2COnly(opcodeRShift)},
+	OP_MUL:                {OP_MUL, "OP_MUL", 1, opcodeVersion01Only(opcodeMul)},
+	OP_DIV:                {OP_DIV, "OP_DIV", 1, opcodeVersion01Only(opcodeDiv)},
+	OP_MOD:                {OP_MOD, "OP_MOD", 1, opcodeVersion01Only(opcodeMod)},
+	OP_LSHIFT:             {OP_LSHIFT, "OP_LSHIFT", 1, opcodeVersion01Only(opcodeLShift)},
+	OP_RSHIFT:             {OP_RSHIFT, "OP_RSHIFT", 1, opcodeVersion01Only(opcodeRShift)},
 	OP_BOOLAND:            {OP_BOOLAND, "OP_BOOLAND", 1, opcodeBoolAnd},
 	OP_BOOLOR:             {OP_BOOLOR, "OP_BOOLOR", 1, opcodeBoolOr},
 	OP_NUMEQUAL:           {OP_NUMEQUAL, "OP_NUMEQUAL", 1, opcodeNumEqual},
@@ -626,21 +626,21 @@ type parsedOpcode struct {
 
 // isDisabled returns whether or not the opcode is disabled and thus is always
 // bad to see in the instruction stream (even if turned off by a conditional).
-func (pop *parsedOpcode) isDisabled(isP2C, isBlock bool) bool {
-	switch pop.opcode.value {
+func (pop *parsedOpcode) isDisabled(scriptVersionVal int, isBlock bool) bool {
+	v01 := (scriptVersionVal == 0 || scriptVersionVal == 1)
 
-	case OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT:
-		return !isP2C
-	case OP_2MUL, OP_2DIV, OP_MUL, OP_DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT:
-		return !isP2C
+	switch pop.opcode.value {
+	case OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT, OP_2MUL, OP_2DIV, OP_MUL, OP_DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT:
+		return !v01
 	case OP_INVERT, OP_AND, OP_OR, OP_XOR:
 		return true
-	case OP_REQUIREOUTPUT, OP_ASSET, OP_AMOUNT, OP_OUTPUTSCRIPT,
-		OP_TIME, OP_CIRCULATION:
-		return isBlock
-	default:
-		return false
+	case OP_REQUIREOUTPUT:
+		return scriptVersionVal != 1
+	case OP_ASSET, OP_AMOUNT, OP_OUTPUTSCRIPT, OP_TIME, OP_CIRCULATION:
+		return !v01 || isBlock
 	}
+
+	return false
 }
 
 // alwaysIllegal returns whether or not the opcode is always illegal when passed
@@ -816,11 +816,12 @@ func opcodeDisabled(op *parsedOpcode, vm *Engine) error {
 	return ErrStackOpDisabled
 }
 
-// Creates an opcode-handling function that only works in a P2C
-// context and behaves like opcodeDisabled() otherwise.
-func opcodeP2COnly(opcodeFn func(*parsedOpcode, *Engine) error) func(*parsedOpcode, *Engine) error {
+// Creates an opcode-handling function that only works with in a
+// version 0/1 script context and behaves like opcodeDisabled()
+// otherwise.
+func opcodeVersion01Only(opcodeFn func(*parsedOpcode, *Engine) error) func(*parsedOpcode, *Engine) error {
 	return func(op *parsedOpcode, vm *Engine) error {
-		if vm.isP2C() {
+		if vm.scriptVersionVal == 0 || vm.scriptVersionVal == 1 {
 			return opcodeFn(op, vm)
 		}
 		return opcodeDisabled(op, vm)
@@ -2342,10 +2343,13 @@ func popAssetID(stack *stack) (*bc.AssetID, error) {
 }
 
 // AMOUNT ASSETID SCRIPT OP_REQUIREOUTPUT Checks whether AMOUNT units
-// of ASSETID paid to SCRIPT remain among this tx's inputs after
+// of ASSETID paid to SCRIPT remain among this tx's outputs after
 // accounting for other OP_REQUIREOUTPUTs.  Pushes true if so, false
 // otherwise.
 func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
+	if vm.scriptVersionVal != 1 {
+		return ErrScriptVersion
+	}
 	script, err := vm.dstack.PopByteArray()
 	if err != nil {
 		return err
@@ -2455,6 +2459,9 @@ func opcodeCirculation(op *parsedOpcode, vm *Engine) error {
 // SCRIPT EVAL
 // Interprets SCRIPT
 func opcodeEval(op *parsedOpcode, vm *Engine) error {
+	if vm.scriptVersionVal != 0 && vm.scriptVersionVal != 1 {
+		return ErrScriptVersion
+	}
 	script, err := vm.dstack.PopByteArray()
 	if err != nil {
 		return err

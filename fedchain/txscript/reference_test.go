@@ -179,6 +179,7 @@ func TestScriptValidTests(t *testing.T) {
 			t.Errorf("%s failed to create script: %v", name, err)
 			return
 		}
+
 		err = vm.Execute()
 		if err != nil {
 			t.Errorf("%s failed to execute: %v", name, err)

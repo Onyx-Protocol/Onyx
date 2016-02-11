@@ -142,10 +142,6 @@ var (
 	// id from the wrong number of bytes.
 	ErrAssetIDLength = errors.New("wrong number of bytes for asset id")
 
-	// ErrNoContractHash is returned when OP_BALANCE does not get a contract
-	// hash from either the stack or the virtual machine.
-	ErrNoContractHash = errors.New("no contract hash")
-
 	// ErrEarlyTimestamp is returned when OP_CHECKLOCKTIMEVERIFY is
 	// given a timestamp below 5e8.
 	ErrEarlyTimestamp = errors.New("early CHECKLOCKTIMEVERIFY timestamp")
@@ -163,6 +159,10 @@ var (
 
 	// ErrShiftOverflow is when you try to shift a number left too far.
 	ErrShiftOverflow = errors.New("shift overflow")
+
+	// ErrScriptVersion is when a restricted opcode tries to run under
+	// an unsuitable script version.
+	ErrScriptVersion = errors.New("script version")
 )
 
 var (

@@ -23,9 +23,10 @@ var Bip16Activation = time.Unix(1333238400, 0)
 
 // These are the constants specified for maximums in individual scripts.
 const (
-	MaxOpsPerScript       = 201 // Max number of non-push operations.
-	MaxPubKeysPerMultiSig = 20  // Multisig can't have more sigs than this.
-	MaxScriptElementSize  = 520 // Max bytes pushable to the stack.
+	MaxOpsPerScript       = 201  // Max number of non-push operations for non-P2C scripts.
+	MaxOpsPerP2CScript    = 1000 // Max number of non-push operations for P2C scripts.
+	MaxPubKeysPerMultiSig = 20   // Multisig can't have more sigs than this.
+	MaxScriptElementSize  = 520  // Max bytes pushable to the stack.
 )
 
 // isSmallInt returns whether or not the opcode is considered a small integer,
@@ -64,7 +65,7 @@ func isContract(pops []parsedOpcode) bool {
 }
 
 // Returns true, the contractHash, and the params if the parsed script
-// is in p2c format, false and nil otherwise.
+// is in p2c format, false, nil, and nil otherwise.
 func testContract(pops []parsedOpcode) (bool, *bc.ContractHash, [][]byte) {
 	l := len(pops)
 	if l < 6 {
@@ -121,8 +122,8 @@ func IsPayToContract(script []byte) bool {
 	return result
 }
 
-// Returns true, the contractHash, and the params if the script is in
-// p2c format, false and nil otherwise.
+// TestPayToContract returns true, the contractHash, and the params if
+// the script is in p2c format, false, nil and nil otherwise.
 func TestPayToContract(script []byte) (bool, *bc.ContractHash, [][]byte) {
 	pops, err := parseScript(script)
 	if err != nil {
@@ -520,4 +521,40 @@ func ParseScriptString(script string) ([]byte, error) {
 
 	}
 	return builder.Script()
+}
+
+// ParseScriptVersion parses the version identifier from the script.
+// The version is specified at the beginning of the script as
+// [version] OP_DROP ...
+// where [version] is any push-data op (including OP_0 and OP_1..OP_16).
+//
+// If the beginning of the script does not match this pattern, it's
+// treated as OP_0 OP_DROP ...
+func ParseScriptVersion(script []byte) ([]byte, error) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, err
+	}
+	return parseScriptVersion(pops), nil
+}
+
+func parseScriptVersion(pops []parsedOpcode) []byte {
+	if len(pops) < 2 {
+		return nil
+	}
+	if pops[1].opcode.value != OP_DROP {
+		return nil
+	}
+	if !isPushdataOp(pops[0]) {
+		return nil
+	}
+
+	pop0 := pops[0]
+	op0 := pop0.opcode
+	data := pop0.data
+
+	if data == nil && isSmallInt(op0) {
+		return scriptNum(asSmallInt(op0)).Bytes()
+	}
+	return data
 }

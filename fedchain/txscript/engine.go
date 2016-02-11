@@ -87,26 +87,29 @@ type (
 
 	// Engine is the virtual machine that executes scripts.
 	Engine struct {
-		scripts         [][]parsedOpcode
-		scriptIdx       int
-		scriptOff       int
-		lastCodeSep     int
-		dstack          stack // data stack
-		astack          stack // alt stack
-		tx              *bc.TxData
-		block           *bc.Block
-		hashCache       *bc.SigHashCache
-		txIdx           int
-		condStack       []int
-		numOps          int
-		flags           ScriptFlags
-		bip16           bool     // treat execution as pay-to-script-hash
-		savedFirstStack [][]byte // stack from first script for bip16 scripts
-		ctx             context.Context
-		viewReader      viewReader
-		available       []uint64         // mutable copy of each output's Value field, used for OP_REQUIREOUTPUT reservations
-		contractHash    *bc.ContractHash // contract hash when executing a p2c contract, nil when not
-		timestamp       int64            // Unix timestamp at Engine-creation time
+		scripts          [][]parsedOpcode
+		scriptVersion    []byte
+		scriptVersionVal scriptNum // optimization - the scriptNum value of scriptVersion
+		maxOps           int
+		scriptIdx        int
+		scriptOff        int
+		lastCodeSep      int
+		dstack           stack // data stack
+		astack           stack // alt stack
+		tx               *bc.TxData
+		block            *bc.Block
+		hashCache        *bc.SigHashCache
+		txIdx            int
+		condStack        []int
+		numOps           int
+		flags            ScriptFlags
+		bip16            bool     // treat execution as pay-to-script-hash
+		savedFirstStack  [][]byte // stack from first script for bip16 scripts
+		ctx              context.Context
+		viewReader       viewReader
+		available        []uint64         // mutable copy of each output's Value field, used for OP_REQUIREOUTPUT reservations
+		contractHash     *bc.ContractHash // contract hash when executing a p2c contract, nil when not
+		timestamp        int64            // Unix timestamp at Engine-creation time
 	}
 )
 
@@ -140,7 +143,7 @@ func (vm *Engine) isBranchExecuting() bool {
 // tested in this case.
 func (vm *Engine) executeOpcode(pop *parsedOpcode) error {
 	// Disabled opcodes are fail on program counter.
-	if pop.isDisabled(vm.isP2C(), vm.block != nil) {
+	if pop.isDisabled(int(vm.scriptVersionVal), vm.block != nil) {
 		return ErrStackOpDisabled
 	}
 
@@ -152,7 +155,7 @@ func (vm *Engine) executeOpcode(pop *parsedOpcode) error {
 	// Note that this includes OP_RESERVED which counts as a push operation.
 	if pop.opcode.value > OP_16 {
 		vm.numOps++
-		if vm.numOps > MaxOpsPerScript {
+		if vm.numOps > vm.maxOps {
 			return ErrStackTooManyOperations
 		}
 
@@ -328,11 +331,11 @@ func (vm *Engine) Step() (done bool, err error) {
 		vm.numOps = 0 // number of ops is per script.
 		vm.scriptOff = 0
 		if vm.scriptIdx == 0 && vm.bip16 {
-			vm.scriptIdx++
+			vm.nextScript()
 			vm.savedFirstStack = vm.GetStack()
 		} else if vm.scriptIdx == 1 && vm.bip16 {
 			// Put us past the end for CheckErrorCondition()
-			vm.scriptIdx++
+			vm.nextScript()
 			// Check script ran successfully and pull the script
 			// out of the first stack and execute that.
 			err := vm.CheckErrorCondition(false)
@@ -362,11 +365,11 @@ func (vm *Engine) Step() (done bool, err error) {
 				vm.SetStack(vm.savedFirstStack[:len(vm.savedFirstStack)-1])
 			}
 		} else {
-			vm.scriptIdx++
+			vm.nextScript()
 		}
 		// there are zero length scripts in the wild
 		if vm.scriptIdx < len(vm.scripts) && vm.scriptOff >= len(vm.scripts[vm.scriptIdx]) {
-			vm.scriptIdx++
+			vm.nextScript()
 		}
 		vm.lastCodeSep = 0
 		if vm.scriptIdx >= len(vm.scripts) {
@@ -671,6 +674,8 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 	}
 
 	vm.scriptIdx = 0
+	vm.setScriptVals()
+
 	vm.scriptOff = 0
 	vm.lastCodeSep = 0
 	vm.dstack.Reset()
@@ -685,7 +690,7 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 	// script is empty since there is nothing to execute for it in that
 	// case.
 	if len(scripts[0]) == 0 {
-		vm.scriptIdx++
+		vm.nextScript()
 	}
 
 	if vm.hasFlag(ScriptBip16) {
@@ -703,6 +708,32 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 	}
 
 	return nil
+}
+
+func (vm *Engine) nextScript() {
+	vm.scriptIdx++
+	vm.setScriptVals()
+}
+
+func (vm *Engine) setScriptVals() {
+	if vm.scriptIdx < len(vm.scripts) {
+		script := vm.scripts[vm.scriptIdx]
+		vm.scriptVersion = parseScriptVersion(script)
+		vm.scriptVersionVal, _ = makeScriptNum(vm.scriptVersion, false) // swallow errors
+
+		var isPayToContract bool
+		isPayToContract, vm.contractHash, _ = testContract(script)
+
+		if isPayToContract {
+			vm.maxOps = MaxOpsPerP2CScript
+			// TODO(bobg): Remove this special-case setting of scriptVersion
+			// in phase 3 of spec-change tracking.
+			vm.scriptVersion = []byte{1}
+			vm.scriptVersionVal = 1
+		} else {
+			vm.maxOps = MaxOpsPerScript
+		}
+	}
 }
 
 // Allocates an Engine object that can execute scripts for every input
