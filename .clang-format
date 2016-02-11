@@ -8,3 +8,5 @@ ColumnLimit: 0
 Language: Cpp
 DerivePointerAlignment: false
 PointerAlignment: Right
+AlignConsecutiveAssignments: true
+# AlignConsecutiveDeclarations: true # new in clang 3.9
