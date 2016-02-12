@@ -5,21 +5,23 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
 	"chain/fedchain/bc"
 )
 
-const (
-	help = `
-Usage:
+const help = `
+Command decode reads a data item from stdin, decodes it,
+and prints its JSON representation to stdout.
 
-	decode tx [hex-encoded bc.Tx]
-	decode block [hex-encoded bc.Block]
-	decode blockheader [hex-encoded bc.BlockHeader]
+On Mac OS X, to decode an item from the pasteboard,
+
+	pbpaste|decode tx
+	pbpaste|decode block
+	pbpaste|decode blockheader
 `
-)
 
 func fatalf(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, format, args...)
@@ -41,14 +43,20 @@ func main() {
 	flag.Parse()
 
 	args := flag.Args()
-	if len(args) < 2 {
+	if len(args) != 1 {
 		fmt.Println(strings.TrimSpace(help))
 		return
 	}
 
+	data, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		fatalf("%v", err)
+	}
+
 	switch strings.ToLower(args[0]) {
 	case "blockheader":
-		b, err := hex.DecodeString(args[1])
+		b := make([]byte, len(data)/2)
+		_, err := hex.Decode(b, data)
 		if err != nil {
 			fatalf("err decoding hex: %s", err)
 		}
@@ -64,7 +72,8 @@ func main() {
 		fmt.Printf("Block Hash: %s\n", bh.Hash())
 		prettyPrint(bh)
 	case "block":
-		b, err := hex.DecodeString(args[1])
+		b := make([]byte, len(data)/2)
+		_, err := hex.Decode(b, data)
 		if err != nil {
 			fatalf("err decoding hex: %s", err)
 		}
@@ -81,7 +90,7 @@ func main() {
 		prettyPrint(block)
 	case "tx":
 		var tx bc.Tx
-		err := tx.UnmarshalText([]byte(args[1]))
+		err := tx.UnmarshalText(data)
 		if err != nil {
 			fatalf("error decoding: %s", err)
 		}
