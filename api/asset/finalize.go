@@ -49,7 +49,7 @@ func publishTx(ctx context.Context, msg *bc.Tx) error {
 		return errors.Wrap(err, "add tx to fedchain")
 	}
 
-	if Generator != nil {
+	if Generator != nil && *Generator != "" {
 		err = rpc.Call(ctx, *Generator, "/rpc/generator/submit", msg, nil)
 		if err != nil {
 			err = errors.Wrap(err, "generator transaction notice")
