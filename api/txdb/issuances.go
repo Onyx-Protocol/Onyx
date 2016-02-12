@@ -42,29 +42,20 @@ func addIssuances(ctx context.Context, issued map[bc.AssetID]uint64, confirmed b
 	assetIDs, amounts := collectIssuedArrays(issued)
 
 	const insertQ = `
-		WITH a AS (
-			SELECT * FROM unnest($1::text[]) AS t(asset_id)
-			WHERE t.asset_id NOT IN (SELECT asset_id FROM issuance_totals)
-		)
-		INSERT INTO issuance_totals (asset_id)
-		SELECT * FROM a
-	`
-	_, err := pg.FromContext(ctx).Exec(ctx, insertQ, pg.Strings(assetIDs))
-	if err != nil {
-		return errors.Wrap(err, "inserting new issuance_totals")
-	}
-
-	const q = `
 		WITH issued AS (
 			SELECT * FROM unnest($1::text[], $2::bigint[]) AS t(asset_id, amount)
 		)
-		UPDATE issuance_totals it
-		SET confirmed=confirmed+(CASE WHEN $3 THEN amount ELSE 0 END),
-			pool=pool+(CASE WHEN $3 THEN 0 ELSE amount END)
-		FROM issued i WHERE it.asset_id=i.asset_id
+		INSERT INTO issuance_totals(asset_id, confirmed, pool)
+		SELECT asset_id,
+			(CASE WHEN $3 THEN amount ELSE 0 END),
+			(CASE WHEN $3 THEN 0 ELSE amount END)
+		FROM issued
+		ON CONFLICT (asset_id) DO UPDATE
+		SET confirmed=issuance_totals.confirmed+excluded.confirmed,
+			pool=issuance_totals.pool+excluded.pool
 	`
-	_, err = pg.FromContext(ctx).Exec(ctx, q, pg.Strings(assetIDs), pg.Uint64s(amounts), confirmed)
-	return errors.Wrap(err, "updating issuance_totals")
+	_, err := pg.FromContext(ctx).Exec(ctx, insertQ, pg.Strings(assetIDs), pg.Uint64s(amounts), confirmed)
+	return errors.Wrap(err, "inserting new issuance_totals")
 }
 
 func removeIssuances(ctx context.Context, issued map[bc.AssetID]uint64) error {
