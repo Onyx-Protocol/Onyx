@@ -44,8 +44,11 @@ func (reserver *redeemReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 	result := &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{
 			{
-				TxInput:       &bc.TxInput{Previous: openOrder.Outpoint},
-				TemplateInput: &txbuilder.Input{SigScriptSuffix: sigScriptSuffix},
+				TxInput: &bc.TxInput{Previous: openOrder.Outpoint},
+				TemplateInput: &txbuilder.Input{
+					AssetAmount:     openOrder.AssetAmount,
+					SigScriptSuffix: sigScriptSuffix,
+				},
 			},
 		},
 	}
@@ -118,6 +121,7 @@ func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 			{
 				TxInput: &bc.TxInput{Previous: openOrder.Outpoint},
 				TemplateInput: &txbuilder.Input{
+					AssetAmount:     openOrder.AssetAmount,
 					SigScriptSuffix: sigScriptSuffix,
 					Sigs:            inputSigs(hdkey.Derive(sellerAddr.Keys, appdb.ReceiverPath(sellerAddr, sellerAddr.Index))),
 				},

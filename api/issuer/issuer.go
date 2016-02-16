@@ -43,7 +43,7 @@ func (ir *IssuanceReserver) Reserve(ctx context.Context, amt *bc.AssetAmount, tt
 	return &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{{
 			TxInput:       in,
-			TemplateInput: issuanceInput(ir.asset),
+			TemplateInput: issuanceInput(ir.asset, *amt),
 		}},
 	}, nil
 }
@@ -71,8 +71,9 @@ func Issue(ctx context.Context, assetID string, dests []*txbuilder.Destination) 
 
 // issuanceInput returns an Input that can be used
 // to issue units of asset 'a'.
-func issuanceInput(a *appdb.Asset) *txbuilder.Input {
+func issuanceInput(a *appdb.Asset, aa bc.AssetAmount) *txbuilder.Input {
 	return &txbuilder.Input{
+		AssetAmount:     aa,
 		SigScriptSuffix: txscript.AddDataToScript(nil, a.RedeemScript),
 		Sigs:            txbuilder.InputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a))),
 	}

@@ -19,6 +19,8 @@ type Template struct {
 
 // Input is an input for a project TxTemplate.
 type Input struct {
+	bc.AssetAmount
+
 	// The serialized key "redeem_script" is not strictly correct. Changing it
 	// will require an update to the Java SDK.
 	SigScriptSuffix json.HexBytes `json:"redeem_script"`

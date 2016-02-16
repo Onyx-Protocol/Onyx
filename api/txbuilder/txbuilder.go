@@ -5,11 +5,9 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/api/txdb"
 	"chain/errors"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
-	"chain/fedchain/state"
 	"chain/fedchain/txscript"
 )
 
@@ -107,32 +105,10 @@ func combine(txs ...*Template) (*Template, error) {
 }
 
 func setSignatureData(ctx context.Context, tpl *Template) error {
-	// TODO(kr): probably should use fedchain.FC instead
-	store := new(txdb.Store)
-
-	txSet := []*bc.Tx{bc.NewTx(*tpl.Unsigned)}
-	bcView, err := store.NewViewForPrevouts(ctx, txSet)
-	if err != nil {
-		return errors.Wrap(err, "loading utxos")
-	}
-	poolView, err := store.NewPoolViewForPrevouts(ctx, txSet)
-	if err != nil {
-		return errors.Wrap(err, "loading utxos")
-	}
-	view := state.MultiReader(poolView, bcView)
-
 	hashCache := &bc.SigHashCache{}
-
-	for i, in := range tpl.Unsigned.Inputs {
-		var assetAmount bc.AssetAmount
-		if !in.IsIssuance() {
-			unspent := view.Output(ctx, in.Previous)
-			if unspent == nil {
-				return errors.Wrap(errors.New("could not load previous output"))
-			}
-			assetAmount = unspent.AssetAmount
-		}
-		tpl.Inputs[i].SignatureData = tpl.Unsigned.HashForSigCached(i, assetAmount, bc.SigHashAll, hashCache)
+	for i, in := range tpl.Inputs {
+		aa := in.AssetAmount
+		in.SignatureData = tpl.Unsigned.HashForSigCached(i, aa, bc.SigHashAll, hashCache)
 	}
 	return nil
 }
