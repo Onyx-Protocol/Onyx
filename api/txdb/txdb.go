@@ -93,11 +93,21 @@ func GetTxBlockHeader(ctx context.Context, hash string) (*bc.BlockHeader, error)
 	return b, errors.Wrap(err, "select query")
 }
 
-// insertTx inserts tx into txs.
-func insertTx(ctx context.Context, tx *bc.Tx) error {
-	const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2)`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, tx.Hash, tx)
-	return errors.Wrap(err, "insert query")
+// insertTx inserts tx into txs. It returns true if the insert query inserted the
+// transaction. It returns false if the transaction already existed and the query
+// had no effect.
+func insertTx(ctx context.Context, tx *bc.Tx) (bool, error) {
+	const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2) ON CONFLICT DO NOTHING`
+	res, err := pg.FromContext(ctx).Exec(ctx, q, tx.Hash, tx)
+	if err != nil {
+		return false, errors.Wrap(err, "insert query")
+	}
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return false, errors.Wrap(err, "insert query rows affected")
+	}
+	return affected > 0, nil
 }
 
 func latestBlock(ctx context.Context) (*bc.Block, error) {

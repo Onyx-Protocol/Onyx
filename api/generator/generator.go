@@ -75,11 +75,10 @@ func Init(ctx context.Context, period time.Duration, local *signer.Signer, remot
 // Submit is an http handler for the generator submit transaction endpoint.
 // Other nodes will call this endpoint to notify the generator of submitted
 // transactions.
+// Idempotent
 func Submit(ctx context.Context, tx *bc.Tx) error {
-	if err := fc.AddTx(ctx, tx); err != nil {
-		return err
-	}
-	return nil
+	err := fc.AddTx(ctx, tx)
+	return err
 }
 
 // GetBlocks returns blocks in block-height order.

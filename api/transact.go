@@ -17,6 +17,7 @@ import (
 )
 
 // POST /v3/assets/:assetID/issue
+// Idempotent
 func issueAsset(ctx context.Context, assetIDStr string, reqDests []*Destination) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
@@ -84,6 +85,7 @@ func buildSingle(ctx context.Context, req *BuildRequest) (interface{}, error) {
 }
 
 // POST /v3/transact/build
+// Idempotent
 func build(ctx context.Context, buildReqs []*BuildRequest) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
@@ -115,6 +117,7 @@ func build(ctx context.Context, buildReqs []*BuildRequest) (interface{}, error) 
 }
 
 // POST /v3/manager-nodes/transact/finalize
+// Idempotent
 func submitSingle(ctx context.Context, tpl *Template) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
@@ -138,6 +141,7 @@ func submitSingle(ctx context.Context, tpl *Template) (interface{}, error) {
 }
 
 // POST /v3/assets/cancel-reservation
+// Idempotent
 func cancelReservation(ctx context.Context, x struct{ Transaction bc.Tx }) error {
 	var outpoints []bc.Outpoint
 	for _, input := range x.Transaction.Inputs {
@@ -148,6 +152,7 @@ func cancelReservation(ctx context.Context, x struct{ Transaction bc.Tx }) error
 }
 
 // POST /v3/transact/submit
+// Idempotent
 func submit(ctx context.Context, x struct{ Transactions []*Template }) interface{} {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)

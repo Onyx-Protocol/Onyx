@@ -81,10 +81,13 @@ func TestPoolTxs(t *testing.T) {
 func TestGetTxs(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		tx := bc.NewTx(bc.TxData{Metadata: []byte("tx")})
-		err := insertTx(ctx, tx)
+		ok, err := insertTx(ctx, tx)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
+		}
+		if !ok {
+			t.Fatal("expected insertTx to be successful")
 		}
 
 		txs, err := GetTxs(ctx, tx.Hash.String())
@@ -108,10 +111,13 @@ func TestGetTxs(t *testing.T) {
 func TestInsertTx(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		tx := bc.NewTx(bc.TxData{Metadata: []byte("tx")})
-		err := insertTx(ctx, tx)
+		ok, err := insertTx(ctx, tx)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
+		}
+		if !ok {
+			t.Fatal("expected insertTx to be successful")
 		}
 
 		_, err = GetTxs(ctx, tx.Hash.String())

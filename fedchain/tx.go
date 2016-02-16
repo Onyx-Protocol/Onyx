@@ -23,6 +23,9 @@ const MaxBlockTxs = 10000
 // It validates tx against the blockchain state and the existing
 // pending pool.
 //
+// It is okay to add the same transaction more than once; subsequent
+// attempts will have no effect and return a nil error.
+//
 // TODO(kr): accept tx if it is valid for any *subset* of the pool.
 // This means accepting conflicting transactions in the same pool
 // at the same time.
@@ -40,6 +43,15 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 
 	bcView, err := fc.store.NewViewForPrevouts(txCtx, []*bc.Tx{tx})
 	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	// Check if the transaction already exists in the blockchain.
+	txs, err := fc.store.GetTxs(txCtx, tx.Hash.String())
+	if _, ok := txs[tx.Hash.String()]; ok {
+		return nil
+	}
+	if err != nil && errors.Root(err) != pg.ErrUserInputNotFound {
 		return errors.Wrap(err)
 	}
 

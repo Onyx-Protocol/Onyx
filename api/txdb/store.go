@@ -14,11 +14,28 @@ type Store struct{}
 
 var _ fedchain.Store = (*Store)(nil)
 
+// GetTxs looks up transactions by their hashes
+// in the block chain and in the pool.
+// TODO(jackson) Update Store.GetTxs and txdb.GetTxs to use
+// bc.Hash instead of string.
+func (s *Store) GetTxs(ctx context.Context, hashes ...string) (map[string]*bc.Tx, error) {
+	txs, err := GetTxs(ctx, hashes...)
+	if err != nil {
+		return nil, err
+	}
+	return txs, nil
+}
+
 // ApplyTx adds tx to the pending pool.
 func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx) error {
-	err := insertTx(ctx, tx)
+	inserted, err := insertTx(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "insert into txs")
+	}
+	if !inserted {
+		// Another SQL transaction already succeeded in applying the tx,
+		// so there's no need to do anything else.
+		return nil
 	}
 
 	err = insertPoolTx(ctx, tx)
