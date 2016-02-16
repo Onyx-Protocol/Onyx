@@ -13,13 +13,14 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/crypto/hash256"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
 	. "chain/fedchain/txscript"
 )
 
 // testName returns a descriptive test name for the given reference test data.
-func testName(test []string) (string, error) {
+func testName(test []string, num int) (string, error) {
 	var name string
 
 	if len(test) < 3 || len(test) > 4 {
@@ -27,9 +28,9 @@ func testName(test []string) (string, error) {
 	}
 
 	if len(test) == 4 {
-		name = fmt.Sprintf("test (%s)", test[3])
+		name = fmt.Sprintf("test %d (%s)", num, test[3])
 	} else {
-		name = fmt.Sprintf("test ([%s, %s, %s])", test[0], test[1],
+		name = fmt.Sprintf("test %d ([%s, %s, %s])", num, test[0], test[1],
 			test[2])
 	}
 	return name, nil
@@ -45,8 +46,6 @@ func parseScriptFlags(flagStr string) (ScriptFlags, error) {
 		switch flag {
 		case "":
 			// Nothing.
-		case "CLEANSTACK":
-			flags |= ScriptVerifyCleanStack
 		case "DERSIG":
 			flags |= ScriptVerifyDERSignatures
 		case "DISCOURAGE_UPGRADABLE_NOPS":
@@ -59,8 +58,6 @@ func parseScriptFlags(flagStr string) (ScriptFlags, error) {
 			// Nothing.
 		case "NULLDUMMY":
 			flags |= ScriptStrictMultiSig
-		case "P2SH":
-			flags |= ScriptBip16
 		case "SIGPUSHONLY":
 			flags |= ScriptVerifySigPushOnly
 		case "STRICTENC":
@@ -179,7 +176,6 @@ func TestScriptValidTests(t *testing.T) {
 			t.Errorf("%s failed to create script: %v", name, err)
 			return
 		}
-
 		err = vm.Execute()
 		if err != nil {
 			t.Errorf("%s failed to execute: %v", name, err)
@@ -187,8 +183,6 @@ func TestScriptValidTests(t *testing.T) {
 		}
 	})
 }
-
-const P2CFLAGS = ScriptBip16 | ScriptVerifyStrictEncoding
 
 // TestP2CValidTests ensures all of the tests in p2c_valid.json pass
 // as expected.
@@ -296,7 +290,7 @@ func testHelper(t *testing.T, filename string, cb func(*testing.T, []string, str
 		if len(test) == 1 {
 			continue
 		}
-		name, err := testName(test)
+		name, err := testName(test, testNum)
 		if err != nil {
 			t.Errorf("Could not get name of test %d: %v\n", testNum, err)
 			continue
@@ -315,31 +309,33 @@ func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([]by
 	if err != nil {
 		return nil, nil, err
 	}
-	scriptPubKey, err := ParseScriptString(test[2])
+	pkParamsBytes, err := ParseScriptString(test[2])
 	if err != nil {
 		return nil, nil, err
 	}
 
 	scriptSig = AddDataToScript(scriptSig, contractScript)
 
-	parsedScriptPubKey, err := TstParseScript(scriptPubKey)
+	pkParamsPops, err := TstParseScript(pkParamsBytes)
 	if err != nil {
 		return nil, nil, err
 	}
-	numParams := len(parsedScriptPubKey)
 
-	if numParams == 0 {
-		scriptPubKey = append(scriptPubKey, byte(0))
-	} else {
-		scriptPubKey = append(scriptPubKey, byte((OP_1 + numParams - 1)))
+	pkParams := make([][]byte, 0, len(pkParamsPops))
+	for _, pkParamsPop := range pkParamsPops {
+		if !TstIsPushdataOp(pkParamsPop) {
+			return nil, nil, ErrStackNonPushOnly
+		}
+		pkParams = append(pkParams, TstPopData(pkParamsPop))
 	}
-	scriptPubKey = append(scriptPubKey, OP_ROLL)
-	scriptPubKey = append(scriptPubKey, OP_DUP)
-	scriptPubKey = append(scriptPubKey, OP_HASH160)
-	scriptPubKey = AddDataToScript(scriptPubKey, Hash160(contractScript))
-	scriptPubKey = append(scriptPubKey, OP_EQUALVERIFY)
 
-	return scriptSig, scriptPubKey, nil
+	contractHash := hash256.Sum(contractScript)
+	pkScript, err := TstPayToContractScript(contractHash[:], pkParams)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return scriptSig, pkScript, nil
 }
 
 type testViewReader struct {
@@ -360,7 +356,7 @@ func (viewReader testViewReader) Output(ctx context.Context, outpoint bc.Outpoin
 }
 
 func newReusableTestEngine(viewReader testViewReader, tx *bc.TxData) (*Engine, error) {
-	result, err := NewReusableEngine(nil, viewReader, tx, P2CFLAGS)
+	result, err := NewReusableEngine(nil, viewReader, tx, 0)
 	if err != nil {
 		return nil, err
 	}

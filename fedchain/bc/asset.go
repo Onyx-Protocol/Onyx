@@ -6,12 +6,9 @@ import (
 	"chain/crypto/hash256"
 )
 
-type (
-	// AssetID is the Hash160 of the issuance script
-	// for the asset and the genesis block of the chain
-	// where it appears.
-	AssetID [32]byte
-)
+// AssetID is the Hash256 of the issuance script for the asset and the
+// genesis block of the chain where it appears.
+type AssetID [32]byte
 
 func (a AssetID) String() string                { return Hash(a).String() }
 func (a AssetID) MarshalText() ([]byte, error)  { return Hash(a).MarshalText() }

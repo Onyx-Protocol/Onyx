@@ -2,11 +2,12 @@ package orderbook
 
 import (
 	"bytes"
+	"fmt"
 
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
-	"chain/crypto/hash160"
+	"chain/crypto/hash256"
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/fedchain"
@@ -61,6 +62,11 @@ var (
 	ErrWrongPrice       = errors.New("payment does not match price")
 )
 
+var (
+	onePriceContract     []byte
+	onePriceContractHash bc.ContractHash
+)
+
 // Maximum number of entries in an OrderInfo Prices list.
 const MaxPrices = 1 // TODO(bobg): Support multiple prices per order.
 
@@ -68,15 +74,12 @@ var fc *fedchain.FC
 
 func ConnectFedchain(chain *fedchain.FC) {
 	fc = chain
-	fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
-		// TODO: handle contracts with multiple prices
-		contract, err := buildContract(1)
-		if err != nil {
-			log.Error(ctx, err)
-			return
-		}
-		contractHash := txscript.Hash160(contract)
 
+	// TODO: handle contracts with multiple prices
+	contract, _ := buildContract(1)
+	contractHash := hash256.Sum(contract)
+
+	fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
 		for i, out := range tx.Outputs {
 			isContract, hash, _ := txscript.TestPayToContract(out.Script)
 			if isContract && bytes.Equal(hash[:], contractHash[:]) {
@@ -90,8 +93,11 @@ func ConnectFedchain(chain *fedchain.FC) {
 	})
 }
 
-func (info *OrderInfo) generateScript(ctx context.Context, sellerScript []byte) (pkScript, contract, contractHash []byte, err error) {
-	var params [][]byte
+func (info *OrderInfo) generateScript(ctx context.Context, sellerScript []byte) ([]byte, []byte, []byte, error) {
+	var (
+		params [][]byte
+		err    error
+	)
 
 	if sellerScript == nil {
 		sellerScript, err = scriptFromAccountID(ctx, info.SellerAccountID)
@@ -107,17 +113,17 @@ func (info *OrderInfo) generateScript(ctx context.Context, sellerScript []byte) 
 	}
 	params = append(params, sellerScript)
 
-	contract, err = buildContract(len(info.Prices))
+	contract, err := buildContract(len(info.Prices))
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	contractHash = txscript.Hash160(contract)
+	contractHash := hash256.Sum(contract)
 
-	addr, err := txscript.NewAddressContractHash(contractHash, params)
+	addr, err := txscript.NewAddressContractHash(contractHash[:], params)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	return addr.ScriptAddress(), contract, contractHash, nil
+	return addr.ScriptAddress(), contract, contractHash[:], nil
 }
 
 // SellerScript returns the contract parameter indicating where
@@ -126,19 +132,52 @@ func (openOrder *OpenOrder) SellerScript() ([]byte, error) {
 	return extractSellerScript(openOrder.Script)
 }
 
+// testOrderbookScript tests whether the given pkscript is an
+// orderbook contract.  Returns true, the seller script, and the list
+// of prices if so; false, nil, and nil otherwise.
+func testOrderbookScript(pkscript []byte) (isOrderbook bool, sellerScript []byte, prices []*Price, err error) {
+	isp2c, contractHash, params := txscript.TestPayToContract(pkscript)
+	if !isp2c {
+		return false, nil, nil, nil
+	}
+	if *contractHash != onePriceContractHash {
+		return false, nil, nil, nil
+	}
+	if len(params) < 4 {
+		return false, nil, nil, nil
+	}
+	if (len(params)-1)%3 != 0 {
+		return false, nil, nil, nil
+	}
+
+	prices = make([]*Price, 0, (len(params)-1)/3)
+	for i := 0; i < len(params)-1; i += 3 {
+		offerAmount, err := txscript.MakeScriptNumWithMaxLen(params[i], false, len(params[i]))
+		if err != nil {
+			return false, nil, nil, errors.Wrapf(err, "offerAmount %v", params[i])
+		}
+		paymentAmount, err := txscript.MakeScriptNumWithMaxLen(params[i+1], false, len(params[i+1]))
+		if err != nil {
+			return false, nil, nil, errors.Wrapf(err, "paymentAmount %v", params[i+1])
+		}
+		assetID := params[i+2]
+		price := &Price{
+			OfferAmount:   uint64(offerAmount),
+			PaymentAmount: uint64(paymentAmount),
+		}
+		copy(price.AssetID[:], assetID)
+		prices = append(prices, price)
+	}
+	return true, params[len(params)-1], prices, nil
+}
+
 func extractSellerScript(pkscript []byte) ([]byte, error) {
-	isP2C, _, params := txscript.TestPayToContract(pkscript)
-	if !isP2C {
-		return nil, ErrNonP2CScript
+	isOrderbook, sellerScript, _, err := testOrderbookScript(pkscript)
+	if !isOrderbook {
+		pkscriptStr, _ := txscript.DisasmString(pkscript)
+		return nil, fmt.Errorf("extractSellerScript called on non-orderbook script [%s]", pkscriptStr)
 	}
-	l := len(params)
-	if l < 4 {
-		return nil, ErrNumParams
-	}
-	if l%3 != 1 {
-		return nil, ErrNumParams
-	}
-	return params[l-1], nil
+	return sellerScript, err
 }
 
 func scriptFromAccountID(ctx context.Context, accountID string) ([]byte, error) {
@@ -147,16 +186,7 @@ func scriptFromAccountID(ctx context.Context, accountID string) ([]byte, error) 
 		return nil, errors.Wrapf(err, "generating address, accountID %s", accountID)
 	}
 
-	redeemHash := hash160.Sum(addr.RedeemScript)
-
-	sb := txscript.NewScriptBuilder()
-	sb.AddOp(txscript.OP_DUP)
-	sb.AddOp(txscript.OP_HASH160)
-	sb.AddData(redeemHash[:])
-	sb.AddOp(txscript.OP_EQUALVERIFY)
-	sb.AddOp(txscript.OP_EVAL)
-
-	return sb.Script()
+	return addr.PKScript, nil
 }
 
 // Build the contract script for an n-price orderbook order.
@@ -199,4 +229,9 @@ func buildContract(n int) ([]byte, error) {
 		ENDIF
 	`
 	return txscript.ParseScriptString(script1)
+}
+
+func init() {
+	onePriceContract, _ = buildContract(1)
+	onePriceContractHash = hash256.Sum(onePriceContract)
 }

@@ -9,7 +9,8 @@ import (
 	"chain/errors"
 )
 
-// Hash represents a 256-bit hash
+// Hash represents a 256-bit hash.  By convention, Hash objects are
+// typically passed as values, not as pointers.
 type Hash [32]byte
 
 // String returns the bytes of h encoded in hex.
@@ -67,8 +68,9 @@ func ParseHash(s string) (h Hash, err error) {
 	return h, errors.Wrap(err, "decode hex")
 }
 
-// A 160-bit hash
-type ContractHash [20]byte
+// A 256-bit hash.  By convention, Hash objects are typically passed
+// as values, not as pointers.
+type ContractHash [32]byte
 
 func fastHash(d []byte) []byte {
 	if len(d) == 0 {

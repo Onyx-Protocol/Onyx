@@ -23,13 +23,9 @@ import (
 type ScriptFlags uint32
 
 const (
-	// ScriptBip16 defines whether the bip16 threshhold has passed and thus
-	// pay-to-script hash transactions will be fully validated.
-	ScriptBip16 ScriptFlags = 1 << iota
-
 	// ScriptStrictMultiSig defines whether to verify the stack item
 	// used by CHECKMULTISIG is zero length.
-	ScriptStrictMultiSig
+	ScriptStrictMultiSig ScriptFlags = 1 << iota
 
 	// ScriptDiscourageUpgradableNops defines whether to verify that
 	// NOP1 through NOP10 are reserved for future soft-fork upgrades.  This
@@ -38,12 +34,6 @@ const (
 	// checks.  This flag is only applied when the above opcodes are
 	// executed.
 	ScriptDiscourageUpgradableNops
-
-	// ScriptVerifyCleanStack defines that the stack must contain only
-	// one stack element after evaluation and that the element must be
-	// true if interpreted as a boolean.  This is rule 6 of BIP0062.
-	// This flag should never be used without the ScriptBip16 flag.
-	ScriptVerifyCleanStack
 
 	// ScriptVerifyDERSignatures defines that signatures are required
 	// to compily with the DER format.
@@ -103,13 +93,10 @@ type (
 		condStack        []int
 		numOps           int
 		flags            ScriptFlags
-		bip16            bool     // treat execution as pay-to-script-hash
-		savedFirstStack  [][]byte // stack from first script for bip16 scripts
 		ctx              context.Context
 		viewReader       viewReader
-		available        []uint64         // mutable copy of each output's Value field, used for OP_REQUIREOUTPUT reservations
-		contractHash     *bc.ContractHash // contract hash when executing a p2c contract, nil when not
-		timestamp        int64            // Unix timestamp at Engine-creation time
+		available        []uint64 // mutable copy of each output's Value field, used for OP_REQUIREOUTPUT reservations
+		timestamp        int64    // Unix timestamp at Engine-creation time
 	}
 )
 
@@ -250,11 +237,7 @@ func (vm *Engine) CheckErrorCondition(finalScript bool) error {
 	if vm.scriptIdx < len(vm.scripts) {
 		return ErrStackScriptUnfinished
 	}
-	if finalScript && vm.hasFlag(ScriptVerifyCleanStack) &&
-		vm.dstack.Depth() != 1 {
-
-		return ErrStackCleanStack
-	} else if vm.dstack.Depth() < 1 {
+	if vm.dstack.Depth() < 1 {
 		return ErrStackEmptyStack
 	}
 
@@ -329,58 +312,18 @@ func (vm *Engine) Step() (done bool, err error) {
 		_ = vm.astack.DropN(vm.astack.Depth())
 
 		vm.numOps = 0 // number of ops is per script.
-		vm.scriptOff = 0
-		if vm.scriptIdx == 0 && vm.bip16 {
-			vm.nextScript()
-			vm.savedFirstStack = vm.GetStack()
-		} else if vm.scriptIdx == 1 && vm.bip16 {
-			// Put us past the end for CheckErrorCondition()
-			vm.nextScript()
-			// Check script ran successfully and pull the script
-			// out of the first stack and execute that.
-			err := vm.CheckErrorCondition(false)
-			if err != nil {
-				return false, err
-			}
 
-			// For p2sh and p2c, the serialized script is on top of the
-			// stack after vm.scripts[0] executes.  That state of the stack
-			// is snapshotted in vm.savedFirstStack.
-			script := vm.savedFirstStack[len(vm.savedFirstStack)-1]
-
-			pops, err := parseScript(script)
-			if err != nil {
-				return false, err
-			}
-			vm.scripts = append(vm.scripts, pops)
-
-			// Now about to execute the serialized script from the
-			// sigscript.  For p2sh, we restore the stack to the state it
-			// had after the sigscript.  (I.e., we throw away state from the
-			// pkscript.)  For p2c, we keep the pkscript state, which may
-			// have added parameters to the stack.
-			if !vm.isP2C() {
-				// Set stack to be the stack from first script minus the
-				// script itself
-				vm.SetStack(vm.savedFirstStack[:len(vm.savedFirstStack)-1])
-			}
-		} else {
-			vm.nextScript()
-		}
 		// there are zero length scripts in the wild
-		if vm.scriptIdx < len(vm.scripts) && vm.scriptOff >= len(vm.scripts[vm.scriptIdx]) {
+		for vm.scriptIdx < len(vm.scripts) && vm.scriptOff >= len(vm.scripts[vm.scriptIdx]) {
 			vm.nextScript()
 		}
+
 		vm.lastCodeSep = 0
 		if vm.scriptIdx >= len(vm.scripts) {
 			return true, nil
 		}
 	}
 	return false, nil
-}
-
-func (vm *Engine) isP2C() bool {
-	return vm.contractHash != nil
 }
 
 // Execute will execute all scripts in the script engine and return either nil
@@ -676,35 +619,17 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 	vm.scriptIdx = 0
 	vm.setScriptVals()
 
-	vm.scriptOff = 0
 	vm.lastCodeSep = 0
 	vm.dstack.Reset()
 	vm.astack.Reset()
 	vm.condStack = nil
 	vm.numOps = 0
-	vm.bip16 = false
-	vm.savedFirstStack = nil
-	vm.contractHash = nil
 
 	// Advance the program counter to the public key script if the signature
 	// script is empty since there is nothing to execute for it in that
 	// case.
 	if len(scripts[0]) == 0 {
 		vm.nextScript()
-	}
-
-	if vm.hasFlag(ScriptBip16) {
-		var isPayToContract bool
-		isPayToContract, vm.contractHash, _ = testContract(vm.scripts[1])
-		if isPayToContract || isScriptHash(vm.scripts[1]) {
-			vm.bip16 = true
-		}
-
-		// Only accept input scripts that push data for P2SH.
-		if vm.bip16 && !isPushOnly(vm.scripts[0]) {
-			scriptSigStr, _ := DisasmString(scripts[0])
-			return errors.Wrapf(ErrStackP2SHNonPushOnly, "scriptSig: %s", scriptSigStr)
-		}
 	}
 
 	return nil
@@ -721,18 +646,12 @@ func (vm *Engine) setScriptVals() {
 		vm.scriptVersion = parseScriptVersion(script)
 		vm.scriptVersionVal, _ = makeScriptNum(vm.scriptVersion, false) // swallow errors
 
-		var isPayToContract bool
-		isPayToContract, vm.contractHash, _ = testContract(script)
-
-		if isPayToContract {
+		if isPayToContract, _, _ := testContract(script); isPayToContract {
 			vm.maxOps = MaxOpsPerP2CScript
-			// TODO(bobg): Remove this special-case setting of scriptVersion
-			// in phase 3 of spec-change tracking.
-			vm.scriptVersion = []byte{1}
-			vm.scriptVersionVal = 1
 		} else {
 			vm.maxOps = MaxOpsPerScript
 		}
+		vm.scriptOff = 0
 	}
 }
 
@@ -759,18 +678,6 @@ func newReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData
 		flags:      flags,
 		hashCache:  &bc.SigHashCache{},
 		timestamp:  time.Now().Unix(),
-	}
-
-	// The clean stack flag (ScriptVerifyCleanStack) is not allowed without
-	// the pay-to-script-hash (P2SH) evaluation (ScriptBip16) flag.
-	//
-	// Recall that evaluating a P2SH script without the flag set results in
-	// non-P2SH evaluation which leaves the P2SH inputs on the stack.  Thus,
-	// allowing the clean stack flag without the P2SH flag would make it
-	// possible to have a situation where P2SH would not be a soft fork when
-	// it should be.
-	if vm.hasFlag(ScriptVerifyCleanStack) && !vm.hasFlag(ScriptBip16) {
-		return nil, ErrInvalidFlags
 	}
 
 	if vm.hasFlag(ScriptVerifyMinimalData) {

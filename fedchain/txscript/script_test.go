@@ -130,62 +130,6 @@ func TestHasCanonicalPush(t *testing.T) {
 	}
 }
 
-// TestGetPreciseSigOps ensures the more precise signature operation counting
-// mechanism which includes signatures in P2SH scripts works as expected.
-func TestGetPreciseSigOps(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name      string
-		scriptSig []byte
-		nSigOps   int
-		err       error
-	}{
-		{
-			name:      "scriptSig doesn't parse",
-			scriptSig: []byte{txscript.OP_PUSHDATA1, 2},
-			err:       txscript.ErrStackShortScript,
-		},
-		{
-			name:      "scriptSig isn't push only",
-			scriptSig: []byte{txscript.OP_1, txscript.OP_DUP},
-			nSigOps:   0,
-		},
-		{
-			name:      "scriptSig length 0",
-			scriptSig: nil,
-			nSigOps:   0,
-		},
-		{
-			name: "No script at the end",
-			// No script at end but still push only.
-			scriptSig: []byte{txscript.OP_1, txscript.OP_1},
-			nSigOps:   0,
-		},
-		{
-			name: "pushed script doesn't parse",
-			scriptSig: []byte{txscript.OP_DATA_2,
-				txscript.OP_PUSHDATA1, 2},
-			err: txscript.ErrStackShortScript,
-		},
-	}
-
-	// The signature in the p2sh script is nonsensical for the tests since
-	// this script will never be executed.  What matters is that it matches
-	// the right pattern.
-	pkScript := mustParseScriptString("HASH160 DATA_20 0x433ec2ac1ffa1b7b7d0" +
-		"27f564529c57197f9ae88 EQUAL")
-	for _, test := range tests {
-		count := txscript.GetPreciseSigOpCount(test.scriptSig, pkScript,
-			true)
-		if count != test.nSigOps {
-			t.Errorf("%s: expected count of %d, got %d", test.name,
-				test.nSigOps, count)
-
-		}
-	}
-}
-
 // TestRemoveOpcodes ensures that removing opcodes from scripts behaves as
 // expected.
 func TestRemoveOpcodes(t *testing.T) {

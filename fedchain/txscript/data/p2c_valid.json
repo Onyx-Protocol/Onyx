@@ -14,13 +14,13 @@
 ["The serialized script used by EVAL here is <2 3 ADD>"],
 ["DATA_3 0x525393 EVAL 4 ADD 9 EQUAL", "", "", "Simple EVAL test"],
 
-["OUTPUTSCRIPT EQUAL", "DATA_26 0x007a76a9141b37089de91c9a16ae68113c213bf279be3c33e988", ""],
+["OUTPUTSCRIPT EQUAL", "DATA_39 0x517576aa20c5fd8a0d0c9adf6b92ce40f278d0a4d5814faa43486f0fdc44eec6eca493c77288c0", ""],
 
 ["There is a total of 7 units of this asset in the sample tx"],
 ["used for testing.  This script is executed twice, once each"],
 ["for two of the tx's inputs.  Requiring 3 units of the asset"],
 ["twice should not deplete it."],
-["3 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 OUTPUTSCRIPT OP_REQUIREOUTPUT", "", "", "Simple REQUIREOUTPUT test"],
+["3 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 OUTPUTSCRIPT REQUIREOUTPUT", "", "", "Simple REQUIREOUTPUT test"],
 
 ["Opcodes enabled only in the P2C context."],
 ["CAT DATA_5 0x0102030405 EQUAL", "DATA_3 0x010203 DATA_2 0x0405", "", "CAT"],

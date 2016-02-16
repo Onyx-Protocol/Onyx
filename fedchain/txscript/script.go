@@ -11,15 +11,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"chain/fedchain/bc"
 )
-
-// Bip16Activation is the timestamp where BIP0016 is valid to use in the
-// blockchain.  To be used to determine if BIP0016 should be called for or not.
-// This timestamp corresponds to Sun Apr 1 00:00:00 UTC 2012.
-var Bip16Activation = time.Unix(1333238400, 0)
 
 // These are the constants specified for maximums in individual scripts.
 const (
@@ -65,52 +59,78 @@ func isContract(pops []parsedOpcode) bool {
 }
 
 // Returns true, the contractHash, and the params if the parsed script
-// is in p2c format, false, nil, and nil otherwise.
+// is in p2c format; false, nil, and nil otherwise.
+//
+// P2C format for N>=1 params is:
+//   1 DROP <paramN> <paramN-1> ... <param1> <N> ROLL DUP HASH256 <contractHash> EQUALVERIFY EVAL
+// For N=0 params it's just:
+//   1 DROP DUP HASH256 <contractHash> EQUALVERIFY EVAL
 func testContract(pops []parsedOpcode) (bool, *bc.ContractHash, [][]byte) {
+	scriptVersionBytes := parseScriptVersion(pops)
+	scriptVersion, err := makeScriptNum(scriptVersionBytes, false)
+	if err != nil {
+		return false, nil, nil // swallow errors
+	}
+	if scriptVersion != scriptNum(1) {
+		return false, nil, nil
+	}
+
 	l := len(pops)
-	if l < 6 {
+	if l < 7 || (l > 7 && l < 10) {
+		// Zero-param form has exactly 7 opcodes.
+		// 1+ params has 10 or more opcodes.
 		return false, nil, nil
 	}
 
-	// TODO(bobg,oleganza): Reconsider requiring smallints.
-	numOpcode := pops[l-6].opcode
-	if !isSmallInt(numOpcode) {
+	if pops[l-1].opcode.value != OP_EVAL {
 		return false, nil, nil
 	}
-	n := asSmallInt(numOpcode)
-
-	if l != (n + 6) {
+	if pops[l-2].opcode.value != OP_EQUALVERIFY {
 		return false, nil, nil
 	}
 
-	if pops[l-1].opcode.value != OP_EQUALVERIFY {
+	if !isPushdataOp(pops[l-3]) {
 		return false, nil, nil
 	}
-	if pops[l-2].opcode.value != OP_DATA_20 {
+	if len(pops[l-3].data) != 32 {
 		return false, nil, nil
 	}
-	if pops[l-3].opcode.value != OP_HASH160 {
+
+	if pops[l-4].opcode.value != OP_HASH256 {
 		return false, nil, nil
 	}
-	if pops[l-4].opcode.value != OP_DUP {
+	if pops[l-5].opcode.value != OP_DUP {
 		return false, nil, nil
 	}
-	if pops[l-5].opcode.value != OP_ROLL {
-		return false, nil, nil
-	}
-	if !isPushOnly(pops[:n]) {
-		return false, nil, nil
-	}
-	var contractHash bc.ContractHash
-	copy(contractHash[:], pops[l-2].data)
 
 	var params [][]byte
-	for i := n - 1; i >= 0; i-- {
-		if !isPushdataOp(pops[i]) {
+
+	if l > 7 {
+		params = make([][]byte, 0, l-9)
+
+		if pops[l-6].opcode.value != OP_ROLL {
 			return false, nil, nil
 		}
-		params = append(params, pops[i].data)
+		if !isPushdataOp(pops[l-7]) {
+			return false, nil, nil
+		}
+		n, err := asScriptNum(pops[l-7], false)
+		if err != nil {
+			return false, nil, nil // swallow errors
+		}
+		if n != scriptNum(l-9) {
+			return false, nil, nil
+		}
+		for i := l - 8; i >= 2; i-- {
+			if !isPushdataOp(pops[i]) {
+				return false, nil, nil
+			}
+			params = append(params, asPushdata(pops[i]))
+		}
 	}
+
+	var contractHash bc.ContractHash
+	copy(contractHash[:], pops[l-3].data)
 
 	return true, &contractHash, params
 }
@@ -123,7 +143,7 @@ func IsPayToContract(script []byte) bool {
 }
 
 // TestPayToContract returns true, the contractHash, and the params if
-// the script is in p2c format, false, nil and nil otherwise.
+// the script is in p2c format; false, nil and nil otherwise.
 func TestPayToContract(script []byte) (bool, *bc.ContractHash, [][]byte) {
 	pops, err := parseScript(script)
 	if err != nil {
@@ -152,6 +172,22 @@ func isPushdataOp(pop parsedOpcode) bool {
 	// instruction, but execution of OP_RESERVED will fail anyways
 	// and matches the behavior required by consensus.
 	return pop.opcode.value <= OP_16
+}
+
+// asPushdata returns the pushdata for a data-pushing operation.  For
+// OP_0 and OP_1 through OP_16, which have no pop.data field
+// populated, this function constructs a data value.
+func asPushdata(pop parsedOpcode) []byte {
+	if pop.opcode.value == OP_0 {
+		return nil
+	}
+	if pop.opcode.value >= OP_1 && pop.opcode.value <= OP_16 {
+		return scriptNum(1 + pop.opcode.value - OP_1).Bytes()
+	}
+	if pop.opcode.value == OP_1NEGATE {
+		return scriptNum(-1).Bytes()
+	}
+	return pop.data
 }
 
 // IsPushOnlyScript returns whether or not the passed script only pushes data.
@@ -340,95 +376,11 @@ func asSmallInt(op *opcode) int {
 	return int(op.value - (OP_1 - 1))
 }
 
-// getSigOpCount is the implementation function for counting the number of
-// signature operations in the script provided by pops. If precise mode is
-// requested then we attempt to count the number of operations for a multisig
-// op. Otherwise we use the maximum.
-func getSigOpCount(pops []parsedOpcode, precise bool) int {
-	nSigs := 0
-	for i, pop := range pops {
-		switch pop.opcode.value {
-		case OP_CHECKSIG:
-			fallthrough
-		case OP_CHECKSIGVERIFY:
-			nSigs++
-		case OP_CHECKMULTISIG:
-			fallthrough
-		case OP_CHECKMULTISIGVERIFY:
-			// If we are being precise then look for familiar
-			// patterns for multisig, for now all we recognise is
-			// OP_1 - OP_16 to signify the number of pubkeys.
-			// Otherwise, we use the max of 20.
-			if precise && i > 0 &&
-				pops[i-1].opcode.value >= OP_1 &&
-				pops[i-1].opcode.value <= OP_16 {
-				nSigs += asSmallInt(pops[i-1].opcode)
-			} else {
-				nSigs += MaxPubKeysPerMultiSig
-			}
-		default:
-			// Not a sigop.
-		}
+func asScriptNum(pop parsedOpcode, requireMinimal bool) (scriptNum, error) {
+	if isSmallInt(pop.opcode) {
+		return scriptNum(asSmallInt(pop.opcode)), nil
 	}
-
-	return nSigs
-}
-
-// GetSigOpCount provides a quick count of the number of signature operations
-// in a script. a CHECKSIG operations counts for 1, and a CHECK_MULTISIG for 20.
-// If the script fails to parse, then the count up to the point of failure is
-// returned.
-func GetSigOpCount(script []byte) int {
-	// Don't check error since parseScript returns the parsed-up-to-error
-	// list of pops.
-	pops, _ := parseScript(script)
-	return getSigOpCount(pops, false)
-}
-
-// GetPreciseSigOpCount returns the number of signature operations in
-// scriptPubKey.  If bip16 is true then scriptSig may be searched for the
-// Pay-To-Script-Hash script in order to find the precise number of signature
-// operations in the transaction.  If the script fails to parse, then the count
-// up to the point of failure is returned.
-func GetPreciseSigOpCount(scriptSig, scriptPubKey []byte, bip16 bool) int {
-	// Don't check error since parseScript returns the parsed-up-to-error
-	// list of pops.
-	pops, _ := parseScript(scriptPubKey)
-
-	// Treat non P2SH/P2C transactions as normal.
-	if !(bip16 && (isScriptHash(pops) || isContract(pops))) {
-		return getSigOpCount(pops, true)
-	}
-
-	// The public key script is a pay-to-script-hash, so parse the signature
-	// script to get the final item.  Scripts that fail to fully parse count
-	// as 0 signature operations.
-	sigPops, err := parseScript(scriptSig)
-	if err != nil {
-		return 0
-	}
-
-	// The signature script must only push data to the stack for
-	// P2SH/P2C to be a valid pair, so the signature operation count is
-	// 0 when that is not the case.
-	if !isPushOnly(sigPops) || len(sigPops) == 0 {
-		return 0
-	}
-
-	// The P2SH/P2C script is the last item the signature script pushes
-	// to the stack.  When the script is empty, there are no signature
-	// operations.
-	shScript := sigPops[len(sigPops)-1].data
-	if len(shScript) == 0 {
-		return 0
-	}
-
-	// Parse the P2SH/P2C script and don't check the error since
-	// parseScript returns the parsed-up-to-error list of pops and the
-	// consensus rules dictate signature operations are counted up to
-	// the first parse failure.
-	shPops, _ := parseScript(shScript)
-	return getSigOpCount(shPops, true)
+	return makeScriptNum(pop.data, requireMinimal)
 }
 
 // IsUnspendable returns whether the passed public key script is unspendable, or

@@ -25,6 +25,23 @@ var TstHasCanonicalPushes = canonicalPush
 // test package.
 var TstParseScript = parseScript
 
+// TstPayToContractScript makes the internal payToContractScript
+// function available to the test package.
+var TstPayToContractScript = payToContractScript
+
+// TstIsPushdataOp makes the internal isPushdataOp function available
+// to the test package.
+var TstIsPushdataOp = isPushdataOp
+
+// TstPopData extracts the data field of a parsedOpcode.  If the
+// opcode is a small int, pushdata is constructed.
+func TstPopData(pop parsedOpcode) []byte {
+	if isSmallInt(pop.opcode) {
+		return Int64ToScriptBytes(int64(asSmallInt(pop.opcode)))
+	}
+	return pop.data
+}
+
 // TstCheckPubKeyEncoding makes the internal checkPubKeyEncoding function
 // available to the test package.  Since it only really needs from the engine
 // for the flags, just accept the flags and create a new engine skeleton.
