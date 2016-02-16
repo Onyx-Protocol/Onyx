@@ -5,6 +5,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/database/pg"
+	"chain/errors"
 	"chain/net/http/authn"
 )
 
@@ -54,8 +55,12 @@ func updateProject(ctx context.Context, projID string, in struct{ Name string })
 }
 
 // DELETE /v3/projects/:projID
+// Idempotent
 func archiveProject(ctx context.Context, projID string) error {
-	if err := projectAdminAuthz(ctx, projID); err != nil {
+	if err := projectAdminAuthz(ctx, projID); errors.Root(err) == appdb.ErrArchived {
+		// This project was already archived. Return success.
+		return nil
+	} else if err != nil {
 		return err
 	}
 

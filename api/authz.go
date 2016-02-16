@@ -40,6 +40,8 @@ func projectAuthz(ctx context.Context, projects ...string) error {
 	return nil
 }
 
+// managerAuthz will verify whether this request has access to the provided manager
+// node. If the manager node is archived, managerAuthz will return ErrArchived.
 func managerAuthz(ctx context.Context, managerID string) error {
 	project, err := appdb.ProjectByActiveManager(ctx, managerID)
 	if err != nil {
@@ -48,14 +50,18 @@ func managerAuthz(ctx context.Context, managerID string) error {
 	return errors.WithDetailf(projectAuthz(ctx, project), "manager node %v", managerID)
 }
 
+// accountAuthz will verify whether this request has access to the provided account. If
+// the account is archived, accountAuthz will return ErrArchived.
 func accountAuthz(ctx context.Context, accountID string) error {
-	projects, err := appdb.ProjectsByAccount(ctx, accountID)
+	projects, err := appdb.ProjectsByActiveAccount(ctx, accountID)
 	if err != nil {
 		return err
 	}
 	return errors.WithDetailf(projectAuthz(ctx, projects...), "account %v", accountID)
 }
 
+// issuerAuthz will verify whether this request has access to the provided issuer node.
+// If the issuer node is archived, issuerAuthz will return ErrArchived.
 func issuerAuthz(ctx context.Context, issuerID string) error {
 	project, err := appdb.ProjectByActiveIssuer(ctx, issuerID)
 	if err != nil {
@@ -64,6 +70,8 @@ func issuerAuthz(ctx context.Context, issuerID string) error {
 	return errors.WithDetailf(projectAuthz(ctx, project), "issuer node %v", issuerID)
 }
 
+// assetAuthz will verify whether this request has access to the provided asset.
+// If the asset is archived, assetAuthz will return ErrArchived.
 func assetAuthz(ctx context.Context, assetID string) error {
 	project, err := appdb.ProjectByActiveAsset(ctx, assetID)
 	if err != nil {
@@ -89,8 +97,8 @@ func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
 	if len(accountIDs) == 0 {
 		return nil
 	}
-	projects, err := appdb.ProjectsByAccount(ctx, accountIDs...)
-	if errors.Root(err) == pg.ErrUserInputNotFound {
+	projects, err := appdb.ProjectsByActiveAccount(ctx, accountIDs...)
+	if errors.Root(err) == pg.ErrUserInputNotFound || errors.Root(err) == appdb.ErrArchived {
 		return errors.WithDetailf(errNoAccessToResource, "accounts %+v", accountIDs)
 	}
 	if err != nil {

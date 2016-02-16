@@ -104,8 +104,12 @@ func updateIssuerNode(ctx context.Context, inodeID string, in struct{ Label *str
 }
 
 // DELETE /v3/issuer-nodes/:inodeID
+// Idempotent
 func archiveIssuerNode(ctx context.Context, inodeID string) error {
-	if err := issuerAuthz(ctx, inodeID); err != nil {
+	if err := issuerAuthz(ctx, inodeID); errors.Root(err) == appdb.ErrArchived {
+		// This issuer node was already archived. Return success.
+		return nil
+	} else if err != nil {
 		return err
 	}
 
@@ -185,8 +189,12 @@ func updateAsset(ctx context.Context, assetID string, in struct{ Label *string }
 }
 
 // DELETE /v3/assets/:assetID
+// Idempotent
 func archiveAsset(ctx context.Context, assetID string) error {
-	if err := assetAuthz(ctx, assetID); err != nil {
+	if err := assetAuthz(ctx, assetID); errors.Root(err) == appdb.ErrArchived {
+		// This asset was already archived. Return success.
+		return nil
+	} else if err != nil {
 		return err
 	}
 	return appdb.ArchiveAsset(ctx, assetID)

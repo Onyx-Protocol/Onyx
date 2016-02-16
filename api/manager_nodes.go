@@ -90,8 +90,12 @@ func updateManagerNode(ctx context.Context, mnodeID string, in struct{ Label *st
 }
 
 // DELETE /v3/manager-nodes/:mnodeID
+// Idempotent
 func archiveManagerNode(ctx context.Context, mnodeID string) error {
-	if err := managerAuthz(ctx, mnodeID); err != nil {
+	if err := managerAuthz(ctx, mnodeID); errors.Root(err) == appdb.ErrArchived {
+		// This manager node was already archived. Return success.
+		return nil
+	} else if err != nil {
 		return err
 	}
 
@@ -384,8 +388,12 @@ func updateAccount(ctx context.Context, accountID string, in struct{ Label *stri
 }
 
 // DELETE /v3/accounts/:accountID
+// Idempotent
 func archiveAccount(ctx context.Context, accountID string) error {
-	if err := accountAuthz(ctx, accountID); err != nil {
+	if err := accountAuthz(ctx, accountID); errors.Root(err) == appdb.ErrArchived {
+		// This account was already archived. Return success.
+		return nil
+	} else if err != nil {
 		return err
 	}
 	return appdb.ArchiveAccount(ctx, accountID)

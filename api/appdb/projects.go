@@ -293,71 +293,99 @@ func IsMember(ctx context.Context, userID string, project string) (bool, error) 
 	return isMember, errors.Wrap(err)
 }
 
-// IsAdmin returns true if the user is an admin of the project
+// IsAdmin returns true if the user is an admin of the project. If the project
+// is archived, IsAdmin will return ErrArchived.
 func IsAdmin(ctx context.Context, userID string, project string) (bool, error) {
 	const q = `
-		SELECT COUNT(*)=1 FROM members
-		INNER JOIN projects ON projects.id = members.project_id
-		WHERE user_id=$1 AND project_id=$2 AND role='admin' AND NOT projects.archived
+		SELECT COUNT(*)=1, COUNT(CASE WHEN projects.archived THEN 1 ELSE NULL END) AS archived
+		FROM members INNER JOIN projects ON projects.id = members.project_id
+		WHERE user_id=$1 AND project_id=$2 AND role='admin'
 	`
-	var isAdmin bool
+	var (
+		isAdmin  bool
+		archived bool
+	)
 	row := pg.FromContext(ctx).QueryRow(ctx, q, userID, project)
-	err := row.Scan(&isAdmin)
+	err := row.Scan(&isAdmin, &archived)
+	if err == nil && archived {
+		err = ErrArchived
+	}
 	return isAdmin, errors.Wrap(err)
 }
 
 // ProjectByActiveManager returns the project ID associated with
-// an active manager node
+// a manager node. If the manager node is archived, this function
+// will return ErrArchived.
 func ProjectByActiveManager(ctx context.Context, managerID string) (string, error) {
 	const q = `
-		SELECT project_id
-		FROM manager_nodes WHERE id=$1 AND NOT archived
+		SELECT project_id, archived
+		FROM manager_nodes WHERE id=$1
 	`
-	var project string
-	err := pg.FromContext(ctx).QueryRow(ctx, q, managerID).Scan(&project)
+	var (
+		project  string
+		archived bool
+	)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, managerID).Scan(&project, &archived)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
+	}
+	if archived {
+		err = ErrArchived
 	}
 	return project, errors.WithDetailf(err, "manager node %v", managerID)
 }
 
-// ProjectsByAccount returns all project IDs associated with a set of active accounts
-func ProjectsByAccount(ctx context.Context, accountIDs ...string) ([]string, error) {
+// ProjectsByActiveAccount returns all project IDs associated with a set of active accounts.
+// If any of the accounts are archived, this function returns ErrArchived.
+func ProjectsByActiveAccount(ctx context.Context, accountIDs ...string) ([]string, error) {
 	// Remove duplicates so that we know how many accounts to expect.
 	sort.Strings(accountIDs)
 	accountIDs = strings.Uniq(accountIDs)
 
 	const q = `
-		SELECT COUNT(acc.id), array_agg(DISTINCT project_id) FROM accounts acc
+		SELECT COUNT(acc.id), array_agg(DISTINCT project_id),
+		       COUNT(CASE WHEN acc.archived THEN 1 ELSE NULL END) AS archived
+		FROM accounts acc
 		JOIN manager_nodes mn ON acc.manager_node_id=mn.id
-		WHERE acc.id=ANY($1) AND NOT acc.archived
+		WHERE acc.id=ANY($1)
 	`
 	var (
-		accountsFound int
-		projects      []string
+		accountsArchived int
+		accountsFound    int
+		projects         []string
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, pg.Strings(accountIDs)).Scan(&accountsFound, (*pg.Strings)(&projects))
+	err := pg.FromContext(ctx).QueryRow(ctx, q, pg.Strings(accountIDs)).
+		Scan(&accountsFound, (*pg.Strings)(&projects), &accountsArchived)
 	if accountsFound != len(accountIDs) {
 		err = pg.ErrUserInputNotFound
+	} else if accountsArchived > 0 {
+		err = ErrArchived
 	}
 	return projects, errors.Wrap(err)
 }
 
-// ProjectByActiveIssuer returns the project ID associated with an active issuer nodes
+// ProjectByActiveIssuer returns the project ID associated with an active issuer node. If the
+// issuer node has been archived, ProjectByIssuer returns ErrArchived.
 func ProjectByActiveIssuer(ctx context.Context, issuerID string) (string, error) {
 	const q = `
-		SELECT project_id
-		FROM issuer_nodes WHERE id=$1 AND NOT archived
+		SELECT project_id, archived
+		FROM issuer_nodes WHERE id=$1
 	`
-	var project string
-	err := pg.FromContext(ctx).QueryRow(ctx, q, issuerID).Scan(&project)
+	var (
+		project  string
+		archived bool
+	)
+	err := pg.FromContext(ctx).QueryRow(ctx, q, issuerID).Scan(&project, &archived)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
+	}
+	if archived {
+		err = ErrArchived
 	}
 	return project, errors.WithDetailf(err, "issuer node %v", issuerID)
 }
 
-// ProjectByActiveAsset returns the project ID associated with an unarchived asset. If
+// ProjectByActiveAsset returns the project ID associated with an asset. If
 // an asset has been archived, this function returns ErrArchived.
 func ProjectByActiveAsset(ctx context.Context, assetID string) (string, error) {
 	const q = `

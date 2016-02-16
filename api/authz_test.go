@@ -25,15 +25,15 @@ func TestProjectAdminAuthz(t *testing.T) {
 			projID string
 			want   error
 		}{
-			{fixtureInfo.u1ID, fixtureInfo.proj1ID, nil},         // admin
-			{fixtureInfo.u2ID, fixtureInfo.proj1ID, errNotAdmin}, // not an admin
-			{fixtureInfo.u3ID, fixtureInfo.proj1ID, errNotAdmin}, // not a member
-			{fixtureInfo.u4ID, fixtureInfo.proj4ID, errNotAdmin}, // project archived
+			{fixtureInfo.u1ID, fixtureInfo.proj1ID, nil},               // admin
+			{fixtureInfo.u2ID, fixtureInfo.proj1ID, errNotAdmin},       // not an admin
+			{fixtureInfo.u3ID, fixtureInfo.proj1ID, errNotAdmin},       // not a member
+			{fixtureInfo.u4ID, fixtureInfo.proj4ID, appdb.ErrArchived}, // project archived
 		}
 
 		for _, c := range cases {
 			ctx := authn.NewContext(ctx, c.userID)
-			got := projectAdminAuthz(ctx, c.projID)
+			got := errors.Root(projectAdminAuthz(ctx, c.projID))
 			if got != c.want {
 				t.Errorf("projectAdminAuthz(%s, %s) = %q want %q", c.userID, c.projID, got, c.want)
 			}
