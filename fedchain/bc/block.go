@@ -81,11 +81,11 @@ type BlockHeader struct {
 	PreviousBlockHash Hash
 
 	// Root of the block's transactions merkle tree.
-	TxRoot [32]byte
+	TxRoot Hash
 
 	// Root of the state merkle tree after applying
 	// transactions in the block.
-	StateRoot [32]byte
+	StateRoot Hash
 
 	// Time of the block in seconds.
 	// Must grow monotonically and can be equal

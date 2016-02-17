@@ -100,6 +100,7 @@ func TestGenerateBlock(t *testing.T) {
 			Version:           bc.NewBlockVersion,
 			Height:            1,
 			PreviousBlockHash: block.Hash(),
+			TxRoot:            mustParseHash("221e04fdea661d26dbaef32df7b40fd93d97e359dcb9113c0fab763291a97a75"),
 			Timestamp:         uint64(now.Unix()),
 			OutputScript:      block.OutputScript,
 		},

@@ -61,8 +61,7 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, erro
 			Height:            prevBlock.Height + 1,
 			PreviousBlockHash: prevBlock.Hash(),
 
-			// TODO: Calculate merkle hashes of txs and blockchain state.
-			//TxRoot:
+			// TODO: Calculate merkle hash of blockchain state.
 			//StateRoot:
 
 			Timestamp: ts,
@@ -86,6 +85,9 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, erro
 			block.Transactions = append(block.Transactions, tx)
 		}
 	}
+
+	block.TxRoot = validation.CalcMerkleRoot(block.Transactions)
+
 	return block, nil
 }
 

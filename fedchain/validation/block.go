@@ -19,6 +19,7 @@ var (
 	ErrBadTimestamp = errors.New("invalid block timestamp")
 	ErrBadScript    = errors.New("unspendable block script")
 	ErrBadSig       = errors.New("invalid signature script")
+	ErrBadTxRoot    = errors.New("invalid transaction merkle root")
 )
 
 // ValidateAndApplyBlock validates the given block
@@ -69,6 +70,12 @@ func ValidateBlockHeader(ctx context.Context, prevBlock, block *bc.Block) error 
 	prevHash := prevBlock.Hash()
 	if !bytes.Equal(block.PreviousBlockHash[:], prevHash[:]) {
 		return ErrBadPrevHash
+	}
+
+	txMerkleRoot := CalcMerkleRoot(block.Transactions)
+	// can be modified to allow soft fork
+	if !bytes.Equal(block.TxRoot[:], txMerkleRoot[:]) {
+		return ErrBadTxRoot
 	}
 
 	if block.Height != prevBlock.Height+1 {
