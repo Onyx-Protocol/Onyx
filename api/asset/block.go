@@ -82,7 +82,7 @@ func makeBlock(ctx context.Context) {
 
 func getBlocks(ctx context.Context) {
 	defer recoverAndLogError(ctx)
-	store := new(txdb.Store)
+	store := txdb.NewStore()
 	latestBlock, err := store.LatestBlock(ctx)
 	if err != nil && errors.Root(err) != sql.ErrNoRows {
 		log.Error(ctx, errors.Wrapf(err, "could not fetch latest block"))

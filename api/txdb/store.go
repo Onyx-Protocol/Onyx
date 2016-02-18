@@ -1,6 +1,8 @@
 package txdb
 
 import (
+	"sync"
+
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
@@ -10,9 +12,19 @@ import (
 	"chain/fedchain/state"
 )
 
-type Store struct{}
+type Store struct {
+	latestBlockCache struct {
+		mutex sync.Mutex
+		block *bc.Block
+	}
+}
 
 var _ fedchain.Store = (*Store)(nil)
+
+// NewStore creates and returns a new Store object.
+func NewStore() *Store {
+	return &Store{}
+}
 
 // GetTxs looks up transactions by their hashes
 // in the block chain and in the pool.
@@ -202,12 +214,9 @@ func (s *Store) ApplyBlock(
 		return nil, errors.Wrap(err, "removing confirmed issuances from pool")
 	}
 
-	return newTxs, nil
-}
+	s.setLatestBlockCache(block, false)
 
-// LatestBlock returns the most recent block.
-func (s *Store) LatestBlock(ctx context.Context) (*bc.Block, error) {
-	return latestBlock(ctx)
+	return newTxs, nil
 }
 
 // NewViewForPrevouts returns a new state view on the blockchain.

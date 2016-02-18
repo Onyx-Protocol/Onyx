@@ -114,21 +114,6 @@ func insertTx(ctx context.Context, tx *bc.Tx) (bool, error) {
 	return affected > 0, nil
 }
 
-func latestBlock(ctx context.Context) (*bc.Block, error) {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-	const q = `SELECT data FROM blocks ORDER BY height DESC LIMIT 1`
-	b := new(bc.Block)
-	err := pg.FromContext(ctx).QueryRow(ctx, q).Scan(b)
-	if err == sql.ErrNoRows {
-		return nil, errors.Wrap(err, "blocks table is empty; please seed with genesis block")
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "select query")
-	}
-	return b, nil
-}
-
 func insertBlock(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)

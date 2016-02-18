@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	store = &txdb.Store{}
+	store = txdb.NewStore()
 	fc := fedchain.New(store, nil)
 	asset.Init(fc, nil, true)
 	u := "postgres:///api-test?sslmode=disable"

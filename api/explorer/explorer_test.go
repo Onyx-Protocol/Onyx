@@ -22,7 +22,7 @@ import (
 )
 
 func init() {
-	fc := fedchain.New(&txdb.Store{}, nil)
+	fc := fedchain.New(txdb.NewStore(), nil)
 	asset.Init(fc, nil, true)
 
 	u := "postgres:///api-test?sslmode=disable"
@@ -192,7 +192,7 @@ func TestGetTxIssuance(t *testing.T) {
 	})
 
 	withContext(t, "", func(ctx context.Context) {
-		err := new(txdb.Store).ApplyTx(ctx, tx)
+		err := txdb.NewStore().ApplyTx(ctx, tx)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -273,7 +273,7 @@ func TestGetTxTransfer(t *testing.T) {
 
 	withContext(t, "", func(ctx context.Context) {
 		const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2)`
-		_, err := new(txdb.Store).ApplyBlock(ctx, blk, nil, nil)
+		_, err := txdb.NewStore().ApplyBlock(ctx, blk, nil, nil)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

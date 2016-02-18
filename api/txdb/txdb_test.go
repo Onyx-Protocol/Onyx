@@ -142,7 +142,8 @@ func TestLatestBlock(t *testing.T) {
 		);
 	`
 	withContext(t, fix, func(ctx context.Context) {
-		got, err := latestBlock(ctx)
+		store := NewStore()
+		got, err := store.LatestBlock(ctx)
 		if err != nil {
 			t.Fatalf("err got = %v want nil", err)
 		}

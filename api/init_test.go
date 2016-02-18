@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	fc := fedchain.New(&txdb.Store{}, nil)
+	fc := fedchain.New(txdb.NewStore(), nil)
 	asset.Init(fc, nil, true)
 	orderbook.ConnectFedchain(fc)
 	u := "postgres:///api-test?sslmode=disable"

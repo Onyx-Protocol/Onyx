@@ -376,7 +376,7 @@ func slurpOpenOrders(ch <-chan *OpenOrder) (result []*OpenOrder) {
 }
 
 func init() {
-	fc := fedchain.New(&txdb.Store{}, nil)
+	fc := fedchain.New(txdb.NewStore(), nil)
 	asset.Init(fc, nil, true)
 	ConnectFedchain(fc)
 	u := "postgres:///api-test?sslmode=disable"

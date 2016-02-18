@@ -37,7 +37,7 @@ func TestGenerateBlock(t *testing.T) {
 
 	block := assettest.CreateGenesisBlockFixture(ctx, t)
 
-	fc := New(&txdb.Store{}, nil)
+	fc := New(txdb.NewStore(), nil)
 
 	txs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
