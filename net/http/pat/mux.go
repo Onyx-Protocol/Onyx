@@ -145,7 +145,7 @@ func (p *PatternServeMux) Handler(r *http.Request) chainhttp.Handler {
 	}
 
 	if len(allowed) == 0 {
-		return chainhttp.DropContext(http.NotFoundHandler())
+		return chainhttp.DropContext(http.HandlerFunc(NotFound))
 	}
 
 	return chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
