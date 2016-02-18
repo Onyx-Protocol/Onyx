@@ -12,6 +12,7 @@ import (
 
 	"chain/api/asset"
 	"chain/api/asset/assettest"
+	"chain/api/generator"
 	"chain/api/txdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -332,6 +333,10 @@ func TestGetAssets(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
+	store := txdb.NewStore()
+	fc := fedchain.New(store, nil)
+	generator.ConnectFedchain(fc)
+
 	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
@@ -343,7 +348,7 @@ func TestGetAssets(t *testing.T) {
 	defPtr0 := bc.HashAssetDefinition(def0).String()
 
 	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
-	asset.MakeBlock(ctx, asset.BlockKey)
+	generator.MakeBlock(ctx, asset.BlockKey)
 	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
 	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
 
@@ -397,6 +402,10 @@ func TestGetAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
+	store := txdb.NewStore()
+	fc := fedchain.New(store, nil)
+	generator.ConnectFedchain(fc)
+
 	assettest.CreateGenesisBlockFixture(ctx, t)
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
@@ -408,7 +417,7 @@ func TestGetAsset(t *testing.T) {
 	defPtr0 := bc.HashAssetDefinition(def0).String()
 
 	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
-	asset.MakeBlock(ctx, asset.BlockKey)
+	generator.MakeBlock(ctx, asset.BlockKey)
 	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
 	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
 

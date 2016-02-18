@@ -10,8 +10,11 @@ import (
 	. "chain/api/appdb"
 	"chain/api/asset"
 	"chain/api/asset/assettest"
+	"chain/api/generator"
+	"chain/api/txdb"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/fedchain"
 	"chain/fedchain/bc"
 	"chain/testutil"
 )
@@ -19,6 +22,10 @@ import (
 func TestGetActUTXOs(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	store := txdb.NewStore()
+	fc := fedchain.New(store, nil)
+	generator.ConnectFedchain(fc)
 
 	assettest.CreateGenesisBlockFixture(ctx, t)
 
@@ -37,7 +44,7 @@ func TestGetActUTXOs(t *testing.T) {
 
 	out0 := assettest.IssueAssetsFixture(ctx, t, asset0, 1, acc0)
 	out1 := assettest.IssueAssetsFixture(ctx, t, asset0, 2, acc1)
-	asset.MakeBlock(ctx, asset.BlockKey)
+	generator.MakeBlock(ctx, asset.BlockKey)
 
 	out2 := assettest.IssueAssetsFixture(ctx, t, asset1, 3, acc2)
 	dest0 := assettest.AccountDestinationFixture(ctx, t, asset0, 3, acc3)

@@ -9,6 +9,7 @@ import (
 	. "chain/api/appdb"
 	"chain/api/asset"
 	"chain/api/asset/assettest"
+	"chain/api/generator"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -95,7 +96,7 @@ func TestAccountsWithAsset(t *testing.T) {
 	out1 := assettest.IssueAssetsFixture(ctx, t, asset2, 5, acc1)
 	assettest.IssueAssetsFixture(ctx, t, asset1, 5, acc2)
 
-	_, err := asset.MakeBlock(ctx, asset.BlockKey)
+	_, err := generator.MakeBlock(ctx, asset.BlockKey)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

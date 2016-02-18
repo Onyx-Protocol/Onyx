@@ -7,7 +7,6 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"golang.org/x/net/context"
 
-	"chain/api/asset"
 	"chain/api/signer"
 	"chain/database/pg"
 	"chain/errors"
@@ -67,7 +66,10 @@ func Init(ctx context.Context, blockPubkeys []*btcec.PublicKey, nSigs int, perio
 	localSigner = local
 	blockPeriod = period
 	enabled = true
-	go asset.MakeOrGetBlocks(ctx, blockPeriod)
+
+	if period != 0 { // 0 means "I'll call MakeBlock myself, thanks"
+		go makeBlocks(ctx, blockPeriod)
+	}
 
 	return nil
 }

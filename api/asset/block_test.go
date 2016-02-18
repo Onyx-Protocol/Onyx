@@ -11,6 +11,7 @@ import (
 	"chain/api/appdb"
 	. "chain/api/asset"
 	"chain/api/asset/assettest"
+	"chain/api/generator"
 	"chain/api/issuer"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
@@ -32,13 +33,17 @@ func TestTransferConfirmed(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	store := txdb.NewStore()
+	fc := fedchain.New(store, nil)
+	generator.ConnectFedchain(fc)
+
 	_, err = issue(ctx, t, info, info.acctA.ID, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	dumpState(ctx, t)
-	MakeBlock(ctx, BlockKey)
+	generator.MakeBlock(ctx, BlockKey)
 	dumpState(ctx, t)
 
 	_, err = transfer(ctx, t, info, info.acctA.ID, info.acctB.ID, 10)
@@ -108,6 +113,10 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 			b.Fatal(err)
 		}
 
+		store := txdb.NewStore()
+		fc := fedchain.New(store, nil)
+		generator.ConnectFedchain(fc)
+
 		for i := 0; i < b.N; i++ {
 			tx, err := issue(ctx, b, info, info.acctA.ID, 10)
 			if err != nil {
@@ -122,7 +131,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 			b.Logf("finalized %v", tx.Hash)
 
 			if i%10 == 0 {
-				MakeBlock(ctx, BlockKey)
+				generator.MakeBlock(ctx, BlockKey)
 			}
 		}
 	})

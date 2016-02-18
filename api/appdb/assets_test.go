@@ -13,6 +13,7 @@ import (
 	. "chain/api/appdb"
 	"chain/api/asset"
 	"chain/api/asset/assettest"
+	"chain/api/generator"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -84,7 +85,7 @@ func TestListAssets(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, asset1, 3, "")
 	assettest.IssueAssetsFixture(ctx, t, asset2, 5, "")
 	assettest.IssueAssetsFixture(ctx, t, asset3, 7, "")
-	asset.MakeBlock(ctx, asset.BlockKey)
+	generator.MakeBlock(ctx, asset.BlockKey)
 	assettest.IssueAssetsFixture(ctx, t, asset0, 2, "")
 	assettest.IssueAssetsFixture(ctx, t, asset1, 4, "")
 	assettest.IssueAssetsFixture(ctx, t, asset2, 6, "")
@@ -180,7 +181,7 @@ func TestGetAssets(t *testing.T) {
 	asset1 := assettest.CreateAssetFixture(ctx, t, in0, "asset-1", "def-1")
 
 	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
-	asset.MakeBlock(ctx, asset.BlockKey)
+	generator.MakeBlock(ctx, asset.BlockKey)
 	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
 	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
 
@@ -234,7 +235,7 @@ func TestGetAsset(t *testing.T) {
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
 	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
-	asset.MakeBlock(ctx, asset.BlockKey)
+	generator.MakeBlock(ctx, asset.BlockKey)
 	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
 
 	got, err := GetAsset(ctx, asset0.String())
@@ -365,7 +366,7 @@ func TestAssetBalance(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, assets[5], 1, acc0)
 	out1 := assettest.IssueAssetsFixture(ctx, t, assets[5], 1, acc0)
 	out2 := assettest.IssueAssetsFixture(ctx, t, assets[5], 1, acc0)
-	asset.MakeBlock(ctx, asset.BlockKey)
+	generator.MakeBlock(ctx, asset.BlockKey)
 
 	assettest.IssueAssetsFixture(ctx, t, assets[1], 1, acc0)
 	out3 := assettest.IssueAssetsFixture(ctx, t, assets[1], 1, acc0)
@@ -631,7 +632,7 @@ func TestAccountBalanceByAssetID(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, assets[2], 2, account1)
 	assettest.IssueAssetsFixture(ctx, t, assets[3], 3, account2)
 
-	_, err := asset.MakeBlock(ctx, asset.BlockKey)
+	_, err := generator.MakeBlock(ctx, asset.BlockKey)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

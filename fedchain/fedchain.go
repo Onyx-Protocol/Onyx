@@ -113,3 +113,7 @@ func (fc *FC) AddBlockCallback(f BlockCallback) {
 func (fc *FC) AddTxCallback(f TxCallback) {
 	fc.txCallbacks = append(fc.txCallbacks, f)
 }
+
+func (fc *FC) LatestBlock(ctx context.Context) (*bc.Block, error) {
+	return fc.store.LatestBlock(ctx)
+}

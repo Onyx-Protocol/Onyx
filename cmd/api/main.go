@@ -21,6 +21,7 @@ import (
 	"chain/api"
 	"chain/api/asset"
 	"chain/api/generator"
+	"chain/api/rpcclient"
 	"chain/api/signer"
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/txdb"
@@ -153,18 +154,15 @@ func main() {
 	if *isSigner {
 		localSigner = signer.New(privKey, fc)
 	}
+
+	rpcclient.Init(fc, *remoteGeneratorURL)
+
 	asset.Init(fc, localSigner, *isManager)
 
 	if *isManager {
 		orderbook.ConnectFedchain(fc)
 	}
 	generator.ConnectFedchain(fc)
-
-	var h chainhttp.Handler
-	h = api.Handler(*nouserSecret)
-	h = metrics.Handler{Handler: h}
-	h = gzip.Handler{Handler: h}
-	h = httpspan.Handler{Handler: h}
 
 	go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
 	if *isGenerator {
@@ -173,7 +171,15 @@ func main() {
 		if err != nil {
 			chainlog.Fatal(ctx, "error", err)
 		}
+	} else {
+		go rpcclient.PollForBlocks(ctx, blockPeriod)
 	}
+
+	var h chainhttp.Handler
+	h = api.Handler(*nouserSecret)
+	h = metrics.Handler{Handler: h}
+	h = gzip.Handler{Handler: h}
+	h = httpspan.Handler{Handler: h}
 
 	http.Handle("/", chainhttp.ContextHandler{Context: ctx, Handler: h})
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})

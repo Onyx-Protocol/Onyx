@@ -11,6 +11,7 @@ import (
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/api/asset/assettest"
+	"chain/api/generator"
 	"chain/api/issuer"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
@@ -171,7 +172,7 @@ func TestCancel(t *testing.T) {
 		}
 		testutil.ExpectEqual(t, len(found), 0, "expected no cancelable orders [1]")
 
-		asset.MakeBlock(ctx, asset.BlockKey)
+		generator.MakeBlock(ctx, asset.BlockKey)
 
 		found, err = FindOpenOrders(ctx, []bc.AssetID{fixtureInfo.aaplAssetID}, nil)
 		if err != nil {
@@ -184,6 +185,10 @@ func TestCancel(t *testing.T) {
 func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo *orderbookFixtureInfo)) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
+	store := txdb.NewStore()
+	fc := fedchain.New(store, nil)
+	generator.ConnectFedchain(fc)
 
 	assettest.CreateGenesisBlockFixture(ctx, t)
 

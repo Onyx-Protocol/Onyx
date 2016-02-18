@@ -5,6 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/api/rpcclient"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
 	"chain/errors"
@@ -12,7 +13,6 @@ import (
 	"chain/fedchain/state"
 	chainlog "chain/log"
 	"chain/metrics"
-	"chain/net/rpc"
 )
 
 // ErrBadTx is returned by FinalizeTx
@@ -50,7 +50,7 @@ func publishTx(ctx context.Context, msg *bc.Tx) error {
 	}
 
 	if Generator != nil && *Generator != "" {
-		err = rpc.Call(ctx, *Generator, "/rpc/generator/submit", msg, nil)
+		err = rpcclient.Submit(ctx, msg)
 		if err != nil {
 			err = errors.Wrap(err, "generator transaction notice")
 			chainlog.Error(ctx, err)
