@@ -214,6 +214,8 @@ func (s *Store) ApplyBlock(
 		return nil, errors.Wrap(err, "removing confirmed issuances from pool")
 	}
 
+	// Note: this is done last so that callers of LatestBlock
+	// can safely assume the block they get has been applied.
 	s.setLatestBlockCache(block, false)
 
 	return newTxs, nil

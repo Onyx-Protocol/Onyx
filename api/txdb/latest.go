@@ -49,5 +49,8 @@ func (s *Store) setLatestBlockCache(b *bc.Block, cacheLocked bool) {
 		defer s.latestBlockCache.mutex.Unlock()
 	}
 
+	// TODO(kr): get a signal from the underlying storage (postgres)
+	// when another process has landed a block and we should
+	// invalidate this cache.
 	s.latestBlockCache.block = b
 }
