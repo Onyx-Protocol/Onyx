@@ -187,30 +187,3 @@ func issuedAssets(txs []*bc.Tx) map[bc.AssetID]int64 {
 	}
 	return issued
 }
-
-// UpsertGenesisBlock creates a genesis block iff it does not exist.
-func UpsertGenesisBlock(ctx context.Context) (*bc.Block, error) {
-	script, err := fedchain.GenerateBlockScript([]*btcec.PublicKey{BlockKey.PubKey()}, 1)
-	if err != nil {
-		return nil, err
-	}
-
-	b := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Version:      bc.NewBlockVersion,
-			Timestamp:    uint64(time.Now().Unix()),
-			OutputScript: script,
-		},
-	}
-
-	const q = `
-		INSERT INTO blocks (block_hash, height, data, header)
-		SELECT $1, $2, $3, $4
-		WHERE NOT EXISTS (SELECT 1 FROM blocks WHERE height=$2)
-	`
-	_, err = pg.FromContext(ctx).Exec(ctx, q, b.Hash(), b.Height, b, &b.BlockHeader)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	return b, nil
-}

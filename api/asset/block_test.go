@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/btcsuite/btcd/btcec"
+
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
@@ -11,6 +13,7 @@ import (
 	"chain/api/asset/assettest"
 	"chain/api/issuer"
 	"chain/api/txbuilder"
+	"chain/api/txdb"
 	"chain/api/utxodb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -215,7 +218,15 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 		return nil, err
 	}
 	BlockKey = key
-	_, err = UpsertGenesisBlock(ctx)
+
+	pubkey, err := testutil.TestXPub.ECPubKey()
+	if err != nil {
+		return nil, err
+	}
+
+	store := txdb.NewStore()
+	fc := fedchain.New(store, nil)
+	_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +337,14 @@ func TestUpsertGenesisBlock(t *testing.T) {
 	}
 	BlockKey = key
 
-	b, err := UpsertGenesisBlock(ctx)
+	pubkey, err := testutil.TestXPub.ECPubKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	store := txdb.NewStore()
+	fc := fedchain.New(store, nil)
+	b, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

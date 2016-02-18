@@ -97,6 +97,18 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, erro
 //
 // This updates the UTXO set and ADPs, and calls new-block callbacks.
 func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
+	if block.Height == 0 {
+		// Handle genesis block
+		latestBlock, err := fc.store.LatestBlock(ctx)
+		if err != nil && errors.Root(err) != sql.ErrNoRows {
+			return errors.Wrap(err, "getting latest block")
+		}
+		if latestBlock != nil {
+			// Genesis block already exists, silently ignore this one
+			return nil
+		}
+	}
+
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -137,32 +149,27 @@ func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, view state.Vie
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	prevBlock, err := fc.store.LatestBlock(ctx)
-	if err != nil {
-		if errors.Root(err) == sql.ErrNoRows && block.Height == 0 {
-			// If there aren't any blocks on this node, and the incoming
-			// block is a genesis block, accept it without attempting to
-			// validate the previous block (which is, in this case,
-			// non-existent).
-			validation.ApplyBlock(ctx, view, block)
+	if block.Height > 0 {
+		prevBlock, err := fc.store.LatestBlock(ctx)
+		if err != nil {
+			return errors.Wrap(err, "loading previous block")
+		}
+		err = validation.ValidateBlockHeader(ctx, prevBlock, block)
+		if err != nil {
+			return errors.Wrap(err, "validating block header")
+		}
+		if !isSignedByTrustedHost(block, fc.trustedKeys) {
+			err = validation.ValidateAndApplyBlock(ctx, view, prevBlock, block)
+			if err != nil {
+				return errors.Wrapf(ErrBadBlock, "validate block: %v", err)
+			}
 			return nil
 		}
-		return errors.Wrap(err, "loading previous block")
 	}
 
-	err = validation.ValidateBlockHeader(ctx, prevBlock, block)
-	if err != nil {
-		return errors.Wrap(err, "validating block header")
-	}
-
-	if isSignedByTrustedHost(block, fc.trustedKeys) {
-		validation.ApplyBlock(ctx, view, block)
-	} else {
-		err = validation.ValidateAndApplyBlock(ctx, view, prevBlock, block)
-		if err != nil {
-			return errors.Wrapf(ErrBadBlock, "validate block: %v", err)
-		}
-	}
+	// Block height is 0, or it's signed by a trusted host.  Apply
+	// without validation.
+	validation.ApplyBlock(ctx, view, block)
 
 	return nil
 }
@@ -319,4 +326,27 @@ func GenerateBlockScript(keys []*btcec.PublicKey, nSigs int) ([]byte, error) {
 		addrs = append(addrs, addr)
 	}
 	return txscript.MultiSigScript(addrs, nSigs)
+}
+
+// UpsertGenesisBlock creates a genesis block iff it does not exist.
+func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []*btcec.PublicKey, nSigs int) (*bc.Block, error) {
+	script, err := GenerateBlockScript(pubkeys, nSigs)
+	if err != nil {
+		return nil, err
+	}
+
+	b := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			Version:      bc.NewBlockVersion,
+			Timestamp:    uint64(time.Now().Unix()),
+			OutputScript: script,
+		},
+	}
+
+	err = fc.AddBlock(ctx, b)
+	if err != nil {
+		return nil, errors.Wrap(err, "adding genesis block")
+	}
+
+	return b, nil
 }

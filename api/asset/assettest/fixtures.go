@@ -5,12 +5,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/btcsuite/btcd/btcec"
+
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/api/issuer"
 	"chain/api/txbuilder"
+	"chain/api/txdb"
+	"chain/fedchain"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
@@ -167,13 +171,20 @@ func createCounter() <-chan int {
 }
 
 func CreateGenesisBlockFixture(ctx context.Context, tb testing.TB) *bc.Block {
-	key, err := testutil.TestXPrv.ECPrivKey()
+	privkey, err := testutil.TestXPrv.ECPrivKey()
 	if err != nil {
 		tb.Fatal(err)
 	}
-	asset.BlockKey = key
+	asset.BlockKey = privkey
 
-	block, err := asset.UpsertGenesisBlock(ctx)
+	pubkey, err := testutil.TestXPub.ECPubKey()
+	if err != nil {
+		tb.Fatal(err)
+	}
+
+	store := txdb.NewStore()
+	fc := fedchain.New(store, nil)
+	block, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
 	if err != nil {
 		tb.Fatal(err)
 	}

@@ -51,7 +51,7 @@ func Enabled() bool {
 // It will attempt to create one block per period.
 // The signers in remote will be contacted to sign each block.
 // The local signer, if non-nil, will also sign each block.
-func Init(ctx context.Context, period time.Duration, local *signer.Signer, remote []RemoteSigner) error {
+func Init(ctx context.Context, blockPubkeys []*btcec.PublicKey, nSigs int, period time.Duration, local *signer.Signer, remote []RemoteSigner) error {
 	if enabled {
 		return errors.New("generator: Init called more than once")
 	}
@@ -59,7 +59,7 @@ func Init(ctx context.Context, period time.Duration, local *signer.Signer, remot
 		return errors.New("generator: no signer configured")
 	}
 
-	_, err := asset.UpsertGenesisBlock(ctx)
+	_, err := fc.UpsertGenesisBlock(ctx, blockPubkeys, nSigs)
 	if err != nil {
 		return errors.Wrap(err)
 	}

@@ -115,7 +115,7 @@ func main() {
 
 	asset.Generator = remoteGeneratorURL
 
-	privKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes) // second assignment is pubkey, not error
+	privKey, pubKey := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
 	asset.BlockKey = privKey
 
 	if librato.URL.Host != "" {
@@ -148,7 +148,7 @@ func main() {
 	db.SetMaxIdleConns(100)
 	ctx = pg.NewContext(ctx, db)
 
-	fc := fedchain.New(txdb.NewStore(), []*btcec.PublicKey{privKey.PubKey()})
+	fc := fedchain.New(txdb.NewStore(), []*btcec.PublicKey{pubKey})
 	var localSigner *signer.Signer
 	if *isSigner {
 		localSigner = signer.New(privKey, fc)
@@ -169,24 +169,11 @@ func main() {
 	go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
 	if *isGenerator {
 		remotes := remoteSignerInfo(ctx)
-		err := generator.Init(ctx, blockPeriod, localSigner, remotes)
+		err := generator.Init(ctx, []*btcec.PublicKey{pubKey}, 1, blockPeriod, localSigner, remotes)
 		if err != nil {
 			chainlog.Fatal(ctx, "error", err)
 		}
 	}
-
-	if *asset.Generator == "" {
-		// This node should only upsert genesis block
-		// if it is a generator.
-		// TODO: make sure this is consistent with new
-		// node config setup.
-		_, err = asset.UpsertGenesisBlock(ctx)
-		if err != nil {
-			chainlog.Error(ctx, err) // non-fatal
-		}
-	}
-
-	go asset.MakeOrGetBlocks(ctx, blockPeriod)
 
 	http.Handle("/", chainhttp.ContextHandler{Context: ctx, Handler: h})
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})

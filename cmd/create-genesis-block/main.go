@@ -9,9 +9,11 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 
 	"chain/api/asset"
+	"chain/api/txdb"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
+	"chain/fedchain"
 )
 
 var (
@@ -29,7 +31,7 @@ func main() {
 		log.Fatalln("error:", err)
 	}
 
-	privKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes) // second assignment is pubkey, not error
+	privKey, pubKey := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
 	asset.BlockKey = privKey
 
 	sql.Register("schemadb", pg.SchemaDriver("create-genesis-block"))
@@ -39,7 +41,9 @@ func main() {
 	}
 	ctx := pg.NewContext(context.Background(), db)
 
-	b, err := asset.UpsertGenesisBlock(ctx)
+	store := txdb.NewStore()
+	fc := fedchain.New(store, nil)
+	b, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubKey}, 1)
 	if err != nil {
 		log.Fatalln("error:", err)
 	}
