@@ -16,9 +16,7 @@ var _ fedchain.Store = (*Store)(nil)
 
 // GetTxs looks up transactions by their hashes
 // in the block chain and in the pool.
-// TODO(jackson) Update Store.GetTxs and txdb.GetTxs to use
-// bc.Hash instead of string.
-func (s *Store) GetTxs(ctx context.Context, hashes ...string) (map[string]*bc.Tx, error) {
+func (s *Store) GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
 	txs, err := GetTxs(ctx, hashes...)
 	if err != nil {
 		return nil, err

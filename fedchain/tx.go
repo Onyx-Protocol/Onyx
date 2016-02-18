@@ -47,8 +47,8 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 	}
 
 	// Check if the transaction already exists in the blockchain.
-	txs, err := fc.store.GetTxs(txCtx, tx.Hash.String())
-	if _, ok := txs[tx.Hash.String()]; ok {
+	txs, err := fc.store.GetTxs(txCtx, tx.Hash)
+	if _, ok := txs[tx.Hash]; ok {
 		return nil
 	}
 	if err != nil && errors.Root(err) != pg.ErrUserInputNotFound {

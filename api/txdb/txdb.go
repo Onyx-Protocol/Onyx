@@ -49,17 +49,21 @@ func poolTxs(ctx context.Context) ([]*bc.Tx, error) {
 
 // GetTxs looks up transactions by their hashes
 // in the block chain and in the pool.
-func GetTxs(ctx context.Context, hashes ...string) (map[string]*bc.Tx, error) {
-	sort.Strings(hashes)
-	hashes = strings.Uniq(hashes)
+func GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
+	hashStrings := make([]string, 0, len(hashes))
+	for _, h := range hashes {
+		hashStrings = append(hashStrings, h.String())
+	}
+	sort.Strings(hashStrings)
+	hashStrings = strings.Uniq(hashStrings)
 	const q = `SELECT tx_hash, data FROM txs WHERE tx_hash=ANY($1)`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(hashes))
+	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(hashStrings))
 	if err != nil {
 		return nil, errors.Wrap(err, "get txs query")
 	}
 	defer rows.Close()
 
-	txs := make(map[string]*bc.Tx, len(hashes))
+	txs := make(map[bc.Hash]*bc.Tx, len(hashes))
 	for rows.Next() {
 		var hash bc.Hash
 		var data bc.TxData
@@ -67,12 +71,12 @@ func GetTxs(ctx context.Context, hashes ...string) (map[string]*bc.Tx, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "rows scan")
 		}
-		txs[hash.String()] = &bc.Tx{TxData: data, Hash: hash, Stored: true}
+		txs[hash] = &bc.Tx{TxData: data, Hash: hash, Stored: true}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrap(err, "rows end")
 	}
-	if len(txs) < len(hashes) {
+	if len(txs) < len(hashStrings) {
 		return nil, errors.Wrap(pg.ErrUserInputNotFound, "missing tx")
 	}
 	return txs, nil

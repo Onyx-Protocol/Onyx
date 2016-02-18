@@ -73,7 +73,7 @@ type TxCallback func(context.Context, *bc.Tx)
 // to commit the validated data.
 type Store interface {
 	// tx pool
-	GetTxs(context.Context, ...string) (map[string]*bc.Tx, error)
+	GetTxs(context.Context, ...bc.Hash) (map[bc.Hash]*bc.Tx, error)
 	ApplyTx(context.Context, *bc.Tx) error
 	RemoveTxs(ctx context.Context, confirmed, conflicting []*bc.Tx) error
 	PoolTxs(context.Context) ([]*bc.Tx, error)

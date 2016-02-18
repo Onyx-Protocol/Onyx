@@ -90,18 +90,19 @@ func TestGetTxs(t *testing.T) {
 			t.Fatal("expected insertTx to be successful")
 		}
 
-		txs, err := GetTxs(ctx, tx.Hash.String())
+		txs, err := GetTxs(ctx, tx.Hash)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
 		tx.Stored = true
-		if !reflect.DeepEqual(txs[tx.Hash.String()], tx) {
-			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", txs[tx.Hash.String()], tx)
+		if !reflect.DeepEqual(txs[tx.Hash], tx) {
+			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", txs[tx.Hash], tx)
 		}
 
-		_, gotErr := GetTxs(ctx, tx.Hash.String(), "nonexistent")
+		nonexistentHash := mustParseHash("beefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeef")
+		_, gotErr := GetTxs(ctx, tx.Hash, nonexistentHash)
 		if errors.Root(gotErr) != pg.ErrUserInputNotFound {
 			t.Errorf("got err=%q want %q", errors.Root(gotErr), pg.ErrUserInputNotFound)
 		}
@@ -120,7 +121,7 @@ func TestInsertTx(t *testing.T) {
 			t.Fatal("expected insertTx to be successful")
 		}
 
-		_, err = GetTxs(ctx, tx.Hash.String())
+		_, err = GetTxs(ctx, tx.Hash)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -199,7 +200,7 @@ func TestInsertBlock(t *testing.T) {
 
 		// txs in database
 		txs := blk.Transactions
-		_, err = GetTxs(ctx, txs[0].Hash.String(), txs[1].Hash.String())
+		_, err = GetTxs(ctx, txs[0].Hash, txs[1].Hash)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

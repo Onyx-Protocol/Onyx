@@ -58,7 +58,7 @@ type ActAccount struct {
 func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err error) {
 	var (
 		isIssuance = tx.IsIssuance()
-		hashes     []string
+		hashes     []bc.Hash
 	)
 
 	all := make(map[bc.Outpoint]*ActUTXO)
@@ -67,7 +67,7 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 
 	if !isIssuance {
 		for _, in := range tx.Inputs {
-			hashes = append(hashes, in.Previous.Hash.String())
+			hashes = append(hashes, in.Previous.Hash)
 		}
 	}
 
@@ -89,7 +89,7 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 		if in.IsIssuance() {
 			continue
 		}
-		out := txs[in.Previous.Hash.String()].Outputs[in.Previous.Index]
+		out := txs[in.Previous.Hash].Outputs[in.Previous.Index]
 		all[in.Previous] = &ActUTXO{
 			Amount:  out.Amount,
 			AssetID: out.AssetID.String(),

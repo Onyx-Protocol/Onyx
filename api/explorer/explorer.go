@@ -109,11 +109,16 @@ type TxOutput struct {
 
 // GetTx returns a transaction with additional details added.
 func GetTx(ctx context.Context, txID string) (*Tx, error) {
-	txs, err := txdb.GetTxs(ctx, txID)
+	hash, err := bc.ParseHash(txID)
+	if err != nil {
+		return nil, pg.ErrUserInputNotFound
+	}
+
+	txs, err := txdb.GetTxs(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
-	tx, ok := txs[txID]
+	tx, ok := txs[hash]
 	if !ok {
 		return nil, errors.New("tx not found: " + txID)
 	}
@@ -147,9 +152,9 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 			AssetDef: tx.Inputs[0].AssetDefinition,
 		})
 	} else {
-		var inHashes []string
+		var inHashes []bc.Hash
 		for _, in := range tx.Inputs {
-			inHashes = append(inHashes, in.Previous.Hash.String())
+			inHashes = append(inHashes, in.Previous.Hash)
 		}
 		txs, err = txdb.GetTxs(ctx, inHashes...)
 		if err != nil {
@@ -159,7 +164,7 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 			return nil, errors.Wrap(err, "fetching inputs")
 		}
 		for _, in := range tx.Inputs {
-			prev := txs[in.Previous.Hash.String()].Outputs[in.Previous.Index]
+			prev := txs[in.Previous.Hash].Outputs[in.Previous.Index]
 			resp.Inputs = append(resp.Inputs, &TxInput{
 				Type:     "transfer",
 				AssetID:  prev.AssetID,
