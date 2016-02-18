@@ -1,0 +1,28 @@
+#!/bin/sh -e
+
+# This command is a wrapper for Thales nfast tools.
+# It ensures the NFAST env var is set to a reasonable
+# default, prefixes PATH with the directories where
+# those (and related) tools live, and execs its args
+# as a command.
+#
+# You can run an nfast tool x as 'thales-nfast x'
+# without needing to put its directory in your path.
+
+NFAST=${NFAST:-/opt/nfast}
+export NFAST
+
+case "$PATH" in
+$CHAIN/crypto/hsm/thales/bin:$NFAST/bin:$NFAST/gcc/bin:*)
+	;;
+*)
+	PATH=$CHAIN/crypto/hsm/thales/bin:$NFAST/bin:$NFAST/gcc/bin:$PATH
+	export PATH
+	;;
+esac
+
+case $# in
+[1-9]*)
+       exec "$@"
+       ;;
+esac
