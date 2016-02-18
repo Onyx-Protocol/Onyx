@@ -389,7 +389,8 @@ CREATE TABLE assets (
     sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL,
     inner_asset_id text,
     issuance_script bytea NOT NULL,
-    archived boolean DEFAULT false NOT NULL
+    archived boolean DEFAULT false NOT NULL,
+    client_token text
 );
 
 
@@ -893,6 +894,14 @@ ALTER TABLE ONLY asset_definition_pointers
 
 ALTER TABLE ONLY asset_definitions
     ADD CONSTRAINT asset_definitions_pkey PRIMARY KEY (hash);
+
+
+--
+-- Name: assets_issuer_node_id_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY assets
+    ADD CONSTRAINT assets_issuer_node_id_client_token_key UNIQUE (issuer_node_id, client_token);
 
 
 --

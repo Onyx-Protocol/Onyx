@@ -19,7 +19,9 @@ import (
 
 // CreateAsset generates a new asset redeem script
 // and id inside of an issuer node.
-func CreateAsset(ctx context.Context, inodeID, label string, definition map[string]interface{}) (*appdb.Asset, error) {
+// TODO(jackson): Once SDKs have been adopted and everyone has updated,
+// we should make clientToken required.
+func CreateAsset(ctx context.Context, inodeID, label string, definition map[string]interface{}, clientToken *string) (*appdb.Asset, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if label == "" {
 		return nil, appdb.ErrBadLabel
@@ -30,6 +32,7 @@ func CreateAsset(ctx context.Context, inodeID, label string, definition map[stri
 		return nil, errors.Wrap(err, "getting asset key info")
 	}
 
+	asset.ClientToken = clientToken
 	asset.Label = label
 	asset.Definition, err = serializeAssetDef(definition)
 	if err != nil {
@@ -49,11 +52,10 @@ func CreateAsset(ctx context.Context, inodeID, label string, definition map[stri
 	asset.Hash = bc.ComputeAssetID(pkScript, [32]byte{}) // TODO(kr): get genesis hash from config
 	asset.IssuanceScript = pkScript
 
-	err = appdb.InsertAsset(ctx, asset)
+	asset, err = appdb.InsertAsset(ctx, asset)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting asset")
 	}
-
 	return asset, nil
 }
 

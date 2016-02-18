@@ -37,14 +37,17 @@ func TestAssetByID(t *testing.T) {
 	}
 
 	redeem, _ := hex.DecodeString("51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae")
+	issuance, _ := hex.DecodeString("a9147ca5bdd7e39cb806681d7c635b1bc36e23cbefa987")
 	want := &Asset{
-		Hash:         asset0,
-		IssuerNodeID: in0,
-		INIndex:      []uint32{0, 1},
-		AIndex:       []uint32{0, 0},
-		RedeemScript: redeem,
-		Keys:         xpubs,
-		Definition:   []byte("{\n  \"s\": \"\"\n}"),
+		Hash:           asset0,
+		IssuerNodeID:   in0,
+		INIndex:        []uint32{0, 1},
+		AIndex:         []uint32{0, 0},
+		Label:          "asset-0",
+		RedeemScript:   redeem,
+		IssuanceScript: issuance,
+		Keys:           xpubs,
+		Definition:     []byte("{\n  \"s\": \"\"\n}"),
 	}
 
 	if !reflect.DeepEqual(got, want) {

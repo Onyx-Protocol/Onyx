@@ -25,6 +25,7 @@ type Asset struct {
 	RedeemScript    []byte
 	IssuanceScript  []byte
 	Definition      []byte
+	ClientToken     *string
 }
 
 // AssetAmount is a composite representation of a sum of an asset.
@@ -56,31 +57,69 @@ const (
 	OwnerManagerNode
 )
 
+type assetLookupQuery struct {
+	hash         bc.AssetID
+	issuerNodeID string
+	clientToken  string
+}
+
 // AssetByID loads an asset from the database using its ID. If an asset has
 // been archived, this function will return ErrArchived.
 func AssetByID(ctx context.Context, hash bc.AssetID) (*Asset, error) {
 	defer metrics.RecordElapsed(time.Now())
-	const q = `
-		SELECT assets.keyset, redeem_script, issuer_node_id,
-			key_index(issuer_nodes.key_index), key_index(assets.key_index), definition, assets.archived
+	asset, err := lookupAsset(ctx, assetLookupQuery{hash: hash})
+	return asset, errors.WithDetailf(err, "asset id=%v", hash.String())
+}
+
+// AssetByClientToken loads an asset from the database using its issuer node id
+// and its client token.
+func AssetByClientToken(ctx context.Context, issuerNodeID string, clientToken string) (*Asset, error) {
+	defer metrics.RecordElapsed(time.Now())
+	query := assetLookupQuery{
+		issuerNodeID: issuerNodeID,
+		clientToken:  clientToken,
+	}
+	asset, err := lookupAsset(ctx, query)
+	return asset, errors.WithDetailf(err, "issuer node id=%s, client token=%s", issuerNodeID, clientToken)
+}
+
+func lookupAsset(ctx context.Context, query assetLookupQuery) (*Asset, error) {
+	const baseQ = `
+		SELECT assets.id, assets.keyset, redeem_script, assets.label, issuer_node_id,
+			key_index(issuer_nodes.key_index), key_index(assets.key_index), definition,
+			issuance_script, assets.archived, assets.client_token
 		FROM assets
 		INNER JOIN issuer_nodes ON issuer_nodes.id=assets.issuer_node_id
-		WHERE assets.id=$1
+		WHERE 
 	`
 	var (
 		xpubs    []string
 		archived bool
-		a        = &Asset{Hash: hash}
+		a        = &Asset{}
+		q        = baseQ
+		args     []interface{}
 	)
 
-	err := pg.FromContext(ctx).QueryRow(ctx, q, hash.String()).Scan(
+	if query.issuerNodeID != "" && query.clientToken != "" {
+		q = q + "assets.issuer_node_id = $1 AND assets.client_token = $2"
+		args = []interface{}{query.issuerNodeID, query.clientToken}
+	} else {
+		q = q + "assets.id = $1"
+		args = []interface{}{query.hash.String()}
+	}
+
+	err := pg.FromContext(ctx).QueryRow(ctx, q, args...).Scan(
+		&a.Hash,
 		(*pg.Strings)(&xpubs),
 		&a.RedeemScript,
+		&a.Label,
 		&a.IssuerNodeID,
 		(*pg.Uint32s)(&a.INIndex),
 		(*pg.Uint32s)(&a.AIndex),
 		&a.Definition,
+		&a.IssuanceScript,
 		&archived,
+		&a.ClientToken,
 	)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
@@ -89,7 +128,7 @@ func AssetByID(ctx context.Context, hash bc.AssetID) (*Asset, error) {
 		err = ErrArchived
 	}
 	if err != nil {
-		return nil, errors.WithDetailf(err, "asset id=%v", hash.String())
+		return nil, err
 	}
 
 	a.Keys, err = stringsToKeys(xpubs)
@@ -100,15 +139,18 @@ func AssetByID(ctx context.Context, hash bc.AssetID) (*Asset, error) {
 	return a, nil
 }
 
-// InsertAsset adds the asset to the database
-func InsertAsset(ctx context.Context, asset *Asset) error {
+// InsertAsset adds the asset to the database. If the asset has a client token,
+// and there already exists an asset for the same issuer node with that client
+// token, InsertAsset will lookup and return the existing asset instead.
+func InsertAsset(ctx context.Context, asset *Asset) (*Asset, error) {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
-		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label, definition)
-		VALUES($1, $2, to_key_index($3), $4, $5, $6, $7, $8)
+		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label, definition, client_token)
+		VALUES($1, $2, to_key_index($3), $4, $5, $6, $7, $8, $9)
+		ON CONFLICT DO NOTHING
 	`
 
-	_, err := pg.FromContext(ctx).Exec(ctx, q,
+	res, err := pg.FromContext(ctx).Exec(ctx, q,
 		asset.Hash.String(),
 		asset.IssuerNodeID,
 		pg.Uint32s(asset.AIndex),
@@ -117,8 +159,22 @@ func InsertAsset(ctx context.Context, asset *Asset) error {
 		asset.IssuanceScript,
 		asset.Label,
 		asset.Definition,
+		asset.ClientToken,
 	)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return nil, errors.Wrap(err, "retrieving rows affected")
+	}
+	if rowsAffected == 0 && asset.ClientToken != nil {
+		// There is already an asset for this issuer node with the provided client
+		// token. We should return the existing asset.
+		asset, err = AssetByClientToken(ctx, asset.IssuerNodeID, *asset.ClientToken)
+		return asset, errors.Wrap(err, "retrieving existing asset")
+	}
+	return asset, err
 }
 
 // ListAssets returns a paginated list of AssetResponses

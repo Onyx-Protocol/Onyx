@@ -278,7 +278,7 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 		return nil, err
 	}
 
-	asset, err := issuer.CreateAsset(ctx, iNode.ID, "label", map[string]interface{}{})
+	asset, err := issuer.CreateAsset(ctx, iNode.ID, "label", map[string]interface{}{}, nil)
 	if err != nil {
 		return nil, err
 	}

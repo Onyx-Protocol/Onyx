@@ -119,7 +119,7 @@ func newTestAsset(t *testing.T, ctx context.Context, issuerNode *IssuerNode) *As
 	if err != nil {
 		t.Fatalf("trouble setting up asset in newTestAsset: %v", err)
 	}
-	err = InsertAsset(ctx, asset)
+	asset, err = InsertAsset(ctx, asset)
 	if err != nil {
 		t.Fatalf("trouble setting up asset in newTestAsset: %v", err)
 	}

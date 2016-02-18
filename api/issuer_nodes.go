@@ -151,15 +151,16 @@ func listAssets(ctx context.Context, inodeID string) (interface{}, error) {
 
 // POST /v3/issuer-nodes/:inodeID/assets
 func createAsset(ctx context.Context, inodeID string, in struct {
-	Label      string
-	Definition map[string]interface{}
+	Label       string
+	Definition  map[string]interface{}
+	ClientToken *string `json:"client_token"`
 }) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if err := issuerAuthz(ctx, inodeID); err != nil {
 		return nil, err
 	}
 
-	ast, err := issuer.CreateAsset(ctx, inodeID, in.Label, in.Definition)
+	ast, err := issuer.CreateAsset(ctx, inodeID, in.Label, in.Definition, in.ClientToken)
 	if err != nil {
 		return nil, err
 	}

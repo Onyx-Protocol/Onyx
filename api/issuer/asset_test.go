@@ -3,6 +3,8 @@ package issuer_test
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
+	"reflect"
 	"testing"
 
 	"chain/api/appdb"
@@ -19,8 +21,9 @@ func TestCreateAsset(t *testing.T) {
 	`)
 	defer pgtest.Finish(ctx)
 
+	clientToken := "a-client-provided-unique-token"
 	definition := make(map[string]interface{})
-	asset, err := CreateAsset(ctx, "in1", "fooAsset", definition)
+	asset, err := CreateAsset(ctx, "in1", "fooAsset", definition, &clientToken)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -42,6 +45,16 @@ func TestCreateAsset(t *testing.T) {
 	wantIssuance := "a9147ca5bdd7e39cb806681d7c635b1bc36e23cbefa987"
 	if hex.EncodeToString(asset.IssuanceScript) != wantIssuance {
 		t.Errorf("got issuance script=%x want=%v", asset.IssuanceScript, wantIssuance)
+	}
+
+	// Try to create the same asset again, and ensure that it returns the
+	// original asset.
+	newAsset, err := CreateAsset(ctx, "in1", "fooAsset2", definition, &clientToken)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	if !reflect.DeepEqual(asset, newAsset) {
+		t.Errorf("got new asset = %#v want original asset with same client_token = %#v", newAsset, asset)
 	}
 }
 
@@ -70,10 +83,11 @@ func TestCreateDefs(t *testing.T) {
 
 	for i, ex := range examples {
 		t.Log("Example", i)
+		clientToken := fmt.Sprintf("example-%d", i)
 
 		ctx := pgtest.NewContext(t, fix)
 		defer pgtest.Finish(ctx)
-		gotCreated, err := CreateAsset(ctx, "inode-0", "label", ex.def)
+		gotCreated, err := CreateAsset(ctx, "inode-0", "label", ex.def, &clientToken)
 		if err != nil {
 			t.Fatal("unexpected error: ", err)
 		}

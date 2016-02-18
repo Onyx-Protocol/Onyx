@@ -150,7 +150,7 @@ func CreateAssetFixture(ctx context.Context, t testing.TB, issuerNodeID, label, 
 	if label == "" {
 		label = fmt.Sprintf("inode-%d", <-assetCounter)
 	}
-	asset, err := issuer.CreateAsset(ctx, issuerNodeID, label, map[string]interface{}{"s": def})
+	asset, err := issuer.CreateAsset(ctx, issuerNodeID, label, map[string]interface{}{"s": def}, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
