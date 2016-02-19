@@ -8,13 +8,10 @@ import (
 	"testing"
 
 	. "chain/api/appdb"
-	"chain/api/asset"
 	"chain/api/asset/assettest"
 	"chain/api/generator"
-	"chain/api/txdb"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain"
 	"chain/fedchain/bc"
 	"chain/testutil"
 )
@@ -23,11 +20,10 @@ func TestGetActUTXOs(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	store := txdb.NewStore()
-	fc := fedchain.New(store, nil)
-	generator.ConnectFedchain(fc)
-
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-0", nil, nil)
 	mn2 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-2", nil, nil)
@@ -44,7 +40,11 @@ func TestGetActUTXOs(t *testing.T) {
 
 	out0 := assettest.IssueAssetsFixture(ctx, t, asset0, 1, acc0)
 	out1 := assettest.IssueAssetsFixture(ctx, t, asset0, 2, acc1)
-	generator.MakeBlock(ctx, asset.BlockKey)
+
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	out2 := assettest.IssueAssetsFixture(ctx, t, asset1, 3, acc2)
 	dest0 := assettest.AccountDestinationFixture(ctx, t, asset0, 3, acc3)
@@ -68,7 +68,7 @@ func TestGetActUTXOs(t *testing.T) {
 		},
 	})
 
-	err := store.ApplyTx(ctx, tx)
+	err = store.ApplyTx(ctx, tx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -132,7 +132,10 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-0", nil, nil)
 	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "account-0", nil)
@@ -148,7 +151,7 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 		}},
 	})
 
-	err := store.ApplyTx(ctx, tx)
+	err = store.ApplyTx(ctx, tx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -182,7 +185,10 @@ func TestGetActAssets(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	proj0 := assettest.CreateProjectFixture(ctx, t, "", "proj0")
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, proj0, "in-0", nil, nil)
@@ -245,7 +251,10 @@ func TestGetActAccounts(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	proj0 := assettest.CreateProjectFixture(ctx, t, "", "proj0")
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, proj0, "in-0", nil, nil)

@@ -4,6 +4,8 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"golang.org/x/net/context"
 
+	"chain/crypto"
+	"chain/errors"
 	"chain/fedchain"
 	"chain/fedchain/bc"
 )
@@ -27,32 +29,37 @@ func New(k *btcec.PrivateKey, fc *fedchain.FC) *Signer {
 	}
 }
 
-// SignLocalBlock signs b using the private key in s.
-// It does not validate b.
-//
-// Note: not yet implemented.
-func (s *Signer) SignLocalBlock(ctx context.Context, b *bc.Block) error {
-	// TODO(kr): sign the block
-	// 1. trust that the block is valid:
-	//    - local generator will only generate valid blocks
-	//    - it's a waste of resources to validate
-	// 2. compute and return signature.
-	panic("unimplemented")
+// ComputeBlockSignature computes the signature for the block using
+// the private key in s.  It does not validate the block.
+func (s *Signer) ComputeBlockSignature(b *bc.Block) (*btcec.Signature, error) {
+	return fedchain.ComputeBlockSignature(b, s.key)
 }
 
-// SignRemoteBlock validates b against the current blockchain
-// and, if valid, signs b using the private key in s.
+// SignBlock validates the given block against the current blockchain
+// and, if valid, computes and returns a signature for the block.  It
+// is used as the httpjson handler for /rpc/signer/sign-block.
 //
-// SignRemoteBlock will never sign more than one block
-// at any height. It ensures this invariant by storing
-// the necessary state in its FC object.
-//
-// Note: not yet implemented.
-func (s *Signer) SignRemoteBlock(ctx context.Context, b *bc.Block) error {
-	// TODO(kr): sign the block
-	// 1. validate block (except for sigscript eval)
-	// 2. ensure we haven't signed any other block
-	//    at this height (and never will)
-	// 3. compute and return signature.
-	panic("unimplemented")
+// This function fails if this node has ever signed a block at the
+// same height as that of the given block.  The heights of blocks it
+// has signed are stored in the FC object.
+func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) (*crypto.Signature, error) {
+	fc := s.fc
+	err := fc.WaitForBlock(ctx, b.Height-1)
+	if err != nil {
+		return nil, errors.Wrapf(err, "waiting for block at height %d", b.Height-1)
+	}
+	err = fc.ValidateBlockForSig(ctx, b)
+	if err != nil {
+		return nil, errors.Wrap(err, "validating block for signature")
+	}
+	signature, err := s.ComputeBlockSignature(b)
+	if err != nil {
+		return nil, err
+	}
+	return (*crypto.Signature)(signature), nil
+}
+
+// PublicKey gets the public key for the signer's private key.
+func (s *Signer) PublicKey() *btcec.PublicKey {
+	return s.key.PubKey()
 }

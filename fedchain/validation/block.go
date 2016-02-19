@@ -28,10 +28,21 @@ var (
 // If block is invalid,
 // it returns a non-nil error describing why.
 func ValidateAndApplyBlock(ctx context.Context, view state.View, prevBlock, block *bc.Block) error {
+	return validateBlock(ctx, view, prevBlock, block, true)
+}
+
+// ValidateBlockForSig performs validation on an incoming _unsigned_
+// block in preparation for signing it.  By definition it does not
+// execute the sigscript.
+func ValidateBlockForSig(ctx context.Context, view state.View, prevBlock, block *bc.Block) error {
+	return validateBlock(ctx, view, prevBlock, block, false)
+}
+
+func validateBlock(ctx context.Context, view state.View, prevBlock, block *bc.Block, runScript bool) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	err := ValidateBlockHeader(ctx, prevBlock, block)
+	err := validateBlockHeader(ctx, prevBlock, block, runScript)
 	if err != nil {
 		return err
 	}
@@ -52,6 +63,7 @@ func ValidateAndApplyBlock(ctx context.Context, view state.View, prevBlock, bloc
 	return nil
 }
 
+// ApplyBlock applies the transactions in the block to the view.
 func ApplyBlock(ctx context.Context, view state.View, block *bc.Block) error {
 	for _, tx := range block.Transactions {
 		err := ApplyTx(ctx, view, tx)
@@ -67,6 +79,10 @@ func ApplyBlock(ctx context.Context, view state.View, block *bc.Block) error {
 // This includes the previous block hash, height, timestamp,
 // output script, and signature script.
 func ValidateBlockHeader(ctx context.Context, prevBlock, block *bc.Block) error {
+	return validateBlockHeader(ctx, prevBlock, block, true)
+}
+
+func validateBlockHeader(ctx context.Context, prevBlock, block *bc.Block, runScript bool) error {
 	prevHash := prevBlock.Hash()
 	if !bytes.Equal(block.PreviousBlockHash[:], prevHash[:]) {
 		return ErrBadPrevHash
@@ -90,14 +106,17 @@ func ValidateBlockHeader(ctx context.Context, prevBlock, block *bc.Block) error 
 		return ErrBadScript
 	}
 
-	engine, err := txscript.NewEngineForBlock(ctx, prevBlock.OutputScript, block, txscript.StandardVerifyFlags)
-	if err != nil {
-		return err
+	if runScript {
+		engine, err := txscript.NewEngineForBlock(ctx, prevBlock.OutputScript, block, txscript.StandardVerifyFlags)
+		if err != nil {
+			return err
+		}
+		if err = engine.Execute(); err != nil {
+			pkScriptStr, _ := txscript.DisasmString(prevBlock.OutputScript)
+			sigScriptStr, _ := txscript.DisasmString(block.SignatureScript)
+			return errors.Wrapf(ErrBadSig, "validation failed in script execution in block (sigscript[%s] pkscript[%s]): %s", sigScriptStr, pkScriptStr, err.Error())
+		}
 	}
-	if err = engine.Execute(); err != nil {
-		pkScriptStr, _ := txscript.DisasmString(prevBlock.OutputScript)
-		sigScriptStr, _ := txscript.DisasmString(block.SignatureScript)
-		return errors.Wrapf(ErrBadSig, "validation failed in script execution in block (sigscript[%s] pkscript[%s]): %s", sigScriptStr, pkScriptStr, err.Error())
-	}
+
 	return nil
 }

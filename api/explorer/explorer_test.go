@@ -24,7 +24,7 @@ import (
 
 func init() {
 	fc := fedchain.New(txdb.NewStore(), nil)
-	asset.Init(fc, nil, true)
+	asset.Init(fc, true)
 
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
@@ -333,11 +333,10 @@ func TestGetAssets(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	store := txdb.NewStore()
-	fc := fedchain.New(store, nil)
-	generator.ConnectFedchain(fc)
-
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 
@@ -348,7 +347,12 @@ func TestGetAssets(t *testing.T) {
 	defPtr0 := bc.HashAssetDefinition(def0).String()
 
 	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
-	generator.MakeBlock(ctx, asset.BlockKey)
+
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
 	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
 
@@ -402,11 +406,10 @@ func TestGetAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	store := txdb.NewStore()
-	fc := fedchain.New(store, nil)
-	generator.ConnectFedchain(fc)
-
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 
@@ -417,7 +420,12 @@ func TestGetAsset(t *testing.T) {
 	defPtr0 := bc.HashAssetDefinition(def0).String()
 
 	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
-	generator.MakeBlock(ctx, asset.BlockKey)
+
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
 	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
 

@@ -22,10 +22,10 @@ Signer
 
 An signer has one basic job: sign exactly one valid block at each height.
 
-To sign an unsigned block obtained from a generator node,
-first validate against the current blockchain state
-(TODO(kr): call ValidateBlockForSig), then call SignBlock, and
-finally send the signature back to the generator node.
+To sign an unsigned block obtained from a generator node, first
+validate against the current blockchain state, then call
+ComputeBlockSignature, and finally send the signature back to the
+generator node.
 
 Manager
 
@@ -44,6 +44,8 @@ To ingest a block, call AddBlock.
 package fedchain
 
 import (
+	"sync"
+
 	"golang.org/x/net/context"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -53,7 +55,14 @@ import (
 	"chain/fedchain/state"
 )
 
-var ErrTxRejected = errors.New("transaction rejected")
+var (
+	ErrTxRejected = errors.New("transaction rejected")
+
+	// ErrTheDistantFuture (https://youtu.be/2IPAOxrH7Ro) is returned when
+	// waiting for a blockheight too far in excess of the tip of the
+	// blockchain.
+	ErrTheDistantFuture = errors.New("the block height is too damn high")
+)
 
 type BlockCallback func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx)
 type TxCallback func(context.Context, *bc.Tx)
@@ -83,6 +92,7 @@ type Store interface {
 	ApplyBlock(context.Context, *bc.Block, map[bc.AssetID]*bc.AssetDefinitionPointer, []*state.Output) ([]*bc.Tx, error)
 	LatestBlock(context.Context) (*bc.Block, error)
 	NewViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error)
+	LockBlockHeight(context.Context, *bc.Block) error
 }
 
 // FC provides a complete, minimal blockchain database. It
@@ -90,10 +100,15 @@ type Store interface {
 // validation logic from package validation to decide what
 // objects can be safely stored.
 type FC struct {
-	blockCallbacks []BlockCallback
-	txCallbacks    []TxCallback
-	trustedKeys    []*btcec.PublicKey
-	store          Store
+	blockCallbacks  []BlockCallback
+	txCallbacks     []TxCallback
+	trustedKeys     []*btcec.PublicKey
+	blockHeightInfo struct {
+		mutex   sync.Mutex
+		condvar *sync.Cond
+		height  uint64 // protected by mutex
+	}
+	store Store
 }
 
 // New returns a new FC using store as the underlying storage.
@@ -103,7 +118,9 @@ type FC struct {
 // for the local block-signer process; the presence of its
 // signature indicates the block was already validated locally.
 func New(store Store, trustedKeys []*btcec.PublicKey) *FC {
-	return &FC{store: store, trustedKeys: trustedKeys}
+	result := &FC{store: store, trustedKeys: trustedKeys}
+	result.blockHeightInfo.condvar = sync.NewCond(&result.blockHeightInfo.mutex)
+	return result
 }
 
 func (fc *FC) AddBlockCallback(f BlockCallback) {
@@ -116,4 +133,21 @@ func (fc *FC) AddTxCallback(f TxCallback) {
 
 func (fc *FC) LatestBlock(ctx context.Context) (*bc.Block, error) {
 	return fc.store.LatestBlock(ctx)
+}
+
+func (fc *FC) WaitForBlock(ctx context.Context, height uint64) error {
+	const slop = 3
+
+	fc.blockHeightInfo.mutex.Lock()
+	defer fc.blockHeightInfo.mutex.Unlock()
+
+	if height > fc.blockHeightInfo.height+slop {
+		return ErrTheDistantFuture
+	}
+
+	for fc.blockHeightInfo.height < height {
+		fc.blockHeightInfo.condvar.Wait()
+	}
+
+	return nil
 }

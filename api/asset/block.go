@@ -5,10 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/btcsuite/btcd/btcec"
-
 	"chain/api/asset/nodetxlog"
-	"chain/api/signer"
 	"chain/api/txdb"
 	"chain/database/pg"
 	"chain/errors"
@@ -23,7 +20,12 @@ var fc *fedchain.FC
 // Init sets the package level fedchain. If isManager is true,
 // Init registers all necessary callbacks for updating
 // application state with the fedchain.
-func Init(chain *fedchain.FC, signer *signer.Signer, isManager bool) {
+func Init(chain *fedchain.FC, isManager bool) {
+	if fc == chain {
+		// Silently ignore duplicate calls.
+		return
+	}
+
 	fc = chain
 	if isManager {
 		fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
@@ -40,9 +42,6 @@ func Init(chain *fedchain.FC, signer *signer.Signer, isManager bool) {
 		})
 	}
 }
-
-// BlockKey is the private key used to sign blocks.
-var BlockKey *btcec.PrivateKey
 
 // loadAccountInfoFromAddrs queries the addresses table
 // to load account information using output scripts

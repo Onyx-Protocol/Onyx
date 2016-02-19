@@ -5,9 +5,11 @@
 package txscript
 
 import (
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 
+	"chain/errors"
 	"chain/fedchain/bc"
 )
 
@@ -357,6 +359,58 @@ func MultiSigScript(pubkeys []*btcutil.AddressPubKey, nrequired int) ([]byte, er
 	builder.AddOp(OP_CHECKMULTISIG)
 
 	return builder.Script()
+}
+
+// ParseMultiSigScript is (almost) the inverse of MultiSigScript().
+// It parses the script to produce the list of PublicKeys and
+// nrequired values encoded within.  (The "almost" is because
+// MultiSigScript takes btcutil.AddressPubKeys, but this function
+// gives back btcec.PublicKeys.)
+func ParseMultiSigScript(script []byte) ([]*btcec.PublicKey, int, error) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if len(pops) < 4 {
+		return nil, 0, ErrStackShortScript // overloading this error code
+	}
+	nrequiredOp := pops[0].opcode
+	if !isSmallInt(nrequiredOp) {
+		return nil, 0, errors.Wrap(ErrScriptFormat, "nrequired not small int")
+	}
+	nrequired := asSmallInt(nrequiredOp)
+	if nrequired < 1 {
+		return nil, 0, errors.Wrap(ErrScriptFormat, "nrequired < 1")
+	}
+	if pops[len(pops)-1].opcode.value != OP_CHECKMULTISIG {
+		return nil, 0, errors.Wrap(ErrScriptFormat, "no OP_CHECKMULTISIG")
+	}
+	npubkeysOp := pops[len(pops)-2].opcode
+	if !isSmallInt(npubkeysOp) {
+		return nil, 0, errors.Wrap(ErrScriptFormat, "npubkeys not small int")
+	}
+	npubkeys := asSmallInt(npubkeysOp)
+	if npubkeys != len(pops)-3 {
+		return nil, 0, errors.Wrap(ErrScriptFormat, "npubkeys has wrong value")
+	}
+	if nrequired > npubkeys {
+		return nil, 0, errors.Wrap(ErrScriptFormat, "nrequired > npubkeys")
+	}
+	pubkeyPops := pops[1 : len(pops)-2]
+	if !isPushOnly(pubkeyPops) {
+		return nil, 0, errors.Wrap(ErrScriptFormat, "not push-only")
+	}
+	pubkeys := make([]*btcec.PublicKey, 0, len(pubkeyPops))
+	for _, pop := range pubkeyPops {
+		pubkeyData := pop.data
+		pubkey, err := btcec.ParsePubKey(pubkeyData, btcec.S256())
+		if err != nil {
+			return nil, 0, errors.Wrap(err, "parsing pubkey")
+		}
+		pubkeys = append(pubkeys, pubkey)
+	}
+	return pubkeys, nrequired, nil
 }
 
 // PushedData returns an array of byte slices containing any pushed data found

@@ -13,12 +13,13 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 
 	"chain/api/asset/assettest"
-	"chain/api/txdb"
+	"chain/api/generator"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	. "chain/fedchain"
 	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
+	"chain/testutil"
 )
 
 func init() {
@@ -35,9 +36,15 @@ func TestGenerateBlock(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	block := assettest.CreateGenesisBlockFixture(ctx, t)
+	fc, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	fc := New(txdb.NewStore(), nil)
+	latestBlock, err := fc.LatestBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	txs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
@@ -90,7 +97,7 @@ func TestGenerateBlock(t *testing.T) {
 	}
 
 	now := time.Now()
-	got, err := fc.GenerateBlock(ctx, now)
+	got, _, err := fc.GenerateBlock(ctx, now)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
@@ -99,10 +106,10 @@ func TestGenerateBlock(t *testing.T) {
 		BlockHeader: bc.BlockHeader{
 			Version:           bc.NewBlockVersion,
 			Height:            1,
-			PreviousBlockHash: block.Hash(),
+			PreviousBlockHash: latestBlock.Hash(),
 			TxRoot:            mustParseHash("221e04fdea661d26dbaef32df7b40fd93d97e359dcb9113c0fab763291a97a75"),
 			Timestamp:         uint64(now.Unix()),
-			OutputScript:      block.OutputScript,
+			OutputScript:      latestBlock.OutputScript,
 		},
 		Transactions: txs,
 	}
@@ -116,10 +123,28 @@ func TestGenerateBlock(t *testing.T) {
 }
 
 func TestIsSignedByTrustedHost(t *testing.T) {
-	keys := []*btcec.PrivateKey{newPrivKey(t)}
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	fc, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	latestBlock, err := fc.LatestBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	privKey, err := testutil.TestXPrv.ECPrivKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	keys := []*btcec.PrivateKey{privKey}
 
 	block := &bc.Block{}
-	err := SignBlock(block, keys[0])
+	err = generator.GetAndAddBlockSignatures(ctx, block, latestBlock)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -164,18 +189,34 @@ func TestIsSignedByTrustedHost(t *testing.T) {
 }
 
 func TestSignBlock(t *testing.T) {
-	ctx := context.Background()
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
 
-	key := newPrivKey(t)
+	fc, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	outscript, err := GenerateBlockScript([]*btcec.PublicKey{key.PubKey()}, 1)
+	latestBlock, err := fc.LatestBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pubkey, err := testutil.TestXPub.ECPubKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	outscript, err := GenerateBlockScript([]*btcec.PublicKey{pubkey}, 1)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		log.Fatal(err)
 	}
 
 	block := &bc.Block{}
-	err = SignBlock(block, key)
+
+	err = generator.GetAndAddBlockSignatures(ctx, block, latestBlock)
+
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

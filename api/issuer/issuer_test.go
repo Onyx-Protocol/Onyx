@@ -18,7 +18,7 @@ import (
 )
 
 func init() {
-	asset.Init(fedchain.New(txdb.NewStore(), nil), nil, true)
+	asset.Init(fedchain.New(txdb.NewStore(), nil), true)
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
 		u = s

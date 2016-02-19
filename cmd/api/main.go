@@ -117,7 +117,6 @@ func main() {
 	asset.Generator = remoteGeneratorURL
 
 	privKey, pubKey := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
-	asset.BlockKey = privKey
 
 	if librato.URL.Host != "" {
 		librato.Source = *target
@@ -157,17 +156,16 @@ func main() {
 
 	rpcclient.Init(fc, *remoteGeneratorURL)
 
-	asset.Init(fc, localSigner, *isManager)
+	asset.Init(fc, *isManager)
 
 	if *isManager {
 		orderbook.ConnectFedchain(fc)
 	}
-	generator.ConnectFedchain(fc)
 
 	go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
 	if *isGenerator {
 		remotes := remoteSignerInfo(ctx)
-		err := generator.Init(ctx, []*btcec.PublicKey{pubKey}, 1, blockPeriod, localSigner, remotes)
+		err := generator.Init(ctx, fc, []*btcec.PublicKey{pubKey}, 1, blockPeriod, localSigner, remotes)
 		if err != nil {
 			chainlog.Fatal(ctx, "error", err)
 		}
@@ -196,7 +194,7 @@ func main() {
 	}
 }
 
-func remoteSignerInfo(ctx context.Context) (a []generator.RemoteSigner) {
+func remoteSignerInfo(ctx context.Context) (a []*generator.RemoteSigner) {
 	// REMOTE_SIGNER_URLS and REMOTE_SIGNER_KEYS should be parallel,
 	// comma-separated lists. Each element of REMOTE_SIGNER_KEYS is the
 	// public key for the corresponding URL in REMOTE_SIGNER_URLS.
@@ -216,7 +214,7 @@ func remoteSignerInfo(ctx context.Context) (a []generator.RemoteSigner) {
 		if err != nil {
 			chainlog.Fatal(ctx, "error", err, "at", "parsing signer public key")
 		}
-		a = append(a, generator.RemoteSigner{URL: u, Key: k})
+		a = append(a, &generator.RemoteSigner{URL: u, Key: k})
 	}
 	return a
 }

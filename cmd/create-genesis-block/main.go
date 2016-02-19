@@ -8,7 +8,6 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 
-	"chain/api/asset"
 	"chain/api/txdb"
 	"chain/database/pg"
 	"chain/database/sql"
@@ -31,8 +30,7 @@ func main() {
 		log.Fatalln("error:", err)
 	}
 
-	privKey, pubKey := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
-	asset.BlockKey = privKey
+	_, pubKey := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
 
 	sql.Register("schemadb", pg.SchemaDriver("create-genesis-block"))
 	db, err := sql.Open("schemadb", *dbURL)

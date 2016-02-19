@@ -20,46 +20,40 @@ import (
 	"chain/net/trace/span"
 )
 
-// TODO(kr): add method FC.ValidateBlockForSig that validates
-// the block contents but does not check signatures.
-// This will be used by the signer process to sign candidate blocks.
-// See https://github.com/chain-engineering/chain/pull/480 for a sketch.
-// This function is important, because it's responsible for ensuring
-// we never sign more than one candidate block at any given height.
-
 // ErrBadBlock is returned when a block is invalid.
 var ErrBadBlock = errors.New("invalid block")
 
-// GenerateBlock generates a valid, but unsigned, candidate block
-// from the current tx pool. It has no side effects.
-func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, error) {
+// GenerateBlock generates a valid, but unsigned, candidate block from
+// the current tx pool.  It returns the new block and the previous
+// block (the latest on the blockchain).  It has no side effects.
+func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Block, err error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
 	ts := uint64(now.Unix())
 
-	prevBlock, err := fc.store.LatestBlock(ctx)
+	prev, err = fc.store.LatestBlock(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "fetch latest block")
+		return nil, nil, errors.Wrap(err, "fetch latest block")
 	}
 
-	if ts < prevBlock.Timestamp {
-		return nil, errors.New("timestamp is earlier than prevblock timestamp")
+	if ts < prev.Timestamp {
+		return nil, nil, errors.New("timestamp is earlier than prevblock timestamp")
 	}
 
 	txs, err := fc.store.PoolTxs(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "get pool TXs")
+		return nil, nil, errors.Wrap(err, "get pool TXs")
 	}
 	if len(txs) > MaxBlockTxs {
 		txs = txs[:MaxBlockTxs]
 	}
 
-	block := &bc.Block{
+	b = &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Version:           bc.NewBlockVersion,
-			Height:            prevBlock.Height + 1,
-			PreviousBlockHash: prevBlock.Hash(),
+			Height:            prev.Height + 1,
+			PreviousBlockHash: prev.Hash(),
 
 			// TODO: Calculate merkle hash of blockchain state.
 			//StateRoot:
@@ -67,14 +61,14 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, erro
 			Timestamp: ts,
 
 			// TODO: Generate SignatureScript
-			OutputScript: prevBlock.OutputScript,
+			OutputScript: prev.OutputScript,
 		},
 	}
 
 	poolView := newMemView()
 	bcView, err := fc.store.NewViewForPrevouts(ctx, txs)
 	if err != nil {
-		return nil, errors.Wrap(err)
+		return nil, nil, errors.Wrap(err)
 	}
 	view := state.Compose(poolView, bcView)
 	ctx = span.NewContextSuffix(ctx, "-validate-all")
@@ -82,13 +76,13 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (*bc.Block, erro
 	for _, tx := range txs {
 		if validation.ValidateTxInputs(ctx, view, tx) == nil {
 			validation.ApplyTx(ctx, view, tx)
-			block.Transactions = append(block.Transactions, tx)
+			b.Transactions = append(b.Transactions, tx)
 		}
 	}
 
-	block.TxRoot = validation.CalcMerkleRoot(block.Transactions)
+	b.TxRoot = validation.CalcMerkleRoot(b.Transactions)
 
-	return block, nil
+	return b, prev, nil
 }
 
 // AddBlock validates block and (if valid) adds it to the chain.
@@ -138,9 +132,44 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 		cb(ctx, block, conflicts)
 	}
 
+	fc.blockHeightInfo.mutex.Lock()
+	defer fc.blockHeightInfo.mutex.Unlock()
+
+	fc.blockHeightInfo.height = block.Height
+	fc.blockHeightInfo.condvar.Broadcast()
+
 	// TODO(kr): add WaitTx method and notify any waiting goroutines here.
 	// See https://github.com/chain-engineering/chain/pull/480 for a sketch.
 	return nil
+}
+
+// ValidateBlockForSig performs validation on an incoming _unsigned_
+// block in preparation for signing it.  By definition it does not
+// execute the sigscript.  On successful validation, it "locks" the
+// block's height and will refuse to validate any other blocks at the
+// same height.
+func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
+	bcView, err := fc.store.NewViewForPrevouts(ctx, block.Transactions)
+	if err != nil {
+		return errors.Wrap(err, "txdb")
+	}
+	mv := newMemView()
+
+	prevBlock, err := fc.LatestBlock(ctx)
+	if err != nil {
+		return errors.Wrap(err, "getting latest known block")
+	}
+
+	err = validation.ValidateBlockForSig(ctx, state.Compose(mv, bcView), prevBlock, block)
+	if err != nil {
+		return errors.Wrap(err, "validation")
+	}
+
+	err = fc.store.LockBlockHeight(ctx, block)
+	return errors.Wrap(err, "lock block height")
 }
 
 // validateBlock performs validation on an incoming block, in advance of
@@ -288,24 +317,29 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 	return conflictTxs, nil
 }
 
-// SignBlock signs b with key.
-// It does not validate b.
-func SignBlock(b *bc.Block, key *btcec.PrivateKey) error {
-	// assumes multisig output script
+// ComputeBlockSignature signs a block with the given key.  It does
+// not validate the block.
+func ComputeBlockSignature(b *bc.Block, key *btcec.PrivateKey) (*btcec.Signature, error) {
 	hash := b.HashForSig()
+	return key.Sign(hash[:])
+}
 
-	dat, err := key.Sign(hash[:])
-	if err != nil {
-		return err
-	}
-	sig := append(dat.Serialize(), 1) // append hashtype -- unused for blocks
-
+// AddSignaturesToBlock adds signatures to a block, replacing the
+// block's SignatureScript.  The signatures must be in the correct
+// order, to wit: matching the order of pubkeys in the previous
+// block's output script.
+func AddSignaturesToBlock(b *bc.Block, signatures []*btcec.Signature) error {
+	// assumes multisig output script
 	builder := txscript.NewScriptBuilder()
 	builder.AddOp(txscript.OP_0) // required because of bug in OP_CHECKMULTISIG
-	builder.AddData(sig)
+	for _, signature := range signatures {
+		serialized := signature.Serialize()
+		serialized = append(serialized, 1) // append hashtype -- unused for blocks
+		builder.AddData(serialized)
+	}
 	script, err := builder.Script()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "finalizing block sigscript")
 	}
 
 	b.SignatureScript = script

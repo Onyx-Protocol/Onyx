@@ -16,9 +16,7 @@ import (
 	"chain/api/issuer"
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/txbuilder"
-	"chain/api/txdb"
 	"chain/database/pg/pgtest"
-	"chain/fedchain"
 	"chain/fedchain/bc"
 	"chain/net/http/httpjson"
 	"chain/testutil"
@@ -260,7 +258,7 @@ func TestFindAndCancelContract(t *testing.T) {
 			}
 
 			// Make a block so the order should go away
-			_, err = generator.MakeBlock(ctx, asset.BlockKey)
+			_, err = generator.MakeBlock(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -317,11 +315,11 @@ func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtu
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	store := txdb.NewStore()
-	fc := fedchain.New(store, nil)
-	generator.ConnectFedchain(fc)
-
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	fc, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	orderbook.ConnectFedchain(fc)
 
 	var fixtureInfo contractsFixtureInfo
 

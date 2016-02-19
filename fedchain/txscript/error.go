@@ -163,6 +163,9 @@ var (
 	// ErrScriptVersion is when a restricted opcode tries to run under
 	// an unsuitable script version.
 	ErrScriptVersion = errors.New("script version")
+
+	// ErrScriptFormat is for various script-parsing errors.
+	ErrScriptFormat = errors.New("incorrect script format")
 )
 
 var (

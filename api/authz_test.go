@@ -325,12 +325,12 @@ func withCommonFixture(t *testing.T, fn func(context.Context, *fixtureInfo)) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	var (
-		fixtureInfo fixtureInfo
-		err         error
-	)
+	var fixtureInfo fixtureInfo
 
 	fixtureInfo.u1ID = assettest.CreateUserFixture(ctx, t, "", "")
 	fixtureInfo.u2ID = assettest.CreateUserFixture(ctx, t, "", "")

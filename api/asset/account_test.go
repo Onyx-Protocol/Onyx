@@ -20,7 +20,10 @@ func TestAccountSourceReserve(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	accID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
 	asset := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")

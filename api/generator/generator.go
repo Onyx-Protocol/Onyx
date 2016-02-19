@@ -16,18 +16,13 @@ import (
 
 var fc *fedchain.FC
 
-// ConnectFedchain sets the package level fedchain.
-func ConnectFedchain(chain *fedchain.FC) {
-	fc = chain
-}
-
 var (
 	// enabled records whether the generator component has been enabled.
 	enabled bool
 
 	// remoteSigners is a slice of the addresses of the signers that
 	// the generator should use.
-	remoteSigners []RemoteSigner
+	remoteSigners []*RemoteSigner
 
 	localSigner *signer.Signer
 
@@ -50,13 +45,15 @@ func Enabled() bool {
 // It will attempt to create one block per period.
 // The signers in remote will be contacted to sign each block.
 // The local signer, if non-nil, will also sign each block.
-func Init(ctx context.Context, blockPubkeys []*btcec.PublicKey, nSigs int, period time.Duration, local *signer.Signer, remote []RemoteSigner) error {
+func Init(ctx context.Context, chain *fedchain.FC, blockPubkeys []*btcec.PublicKey, nSigs int, period time.Duration, local *signer.Signer, remote []*RemoteSigner) error {
 	if enabled {
 		return errors.New("generator: Init called more than once")
 	}
 	if len(remote) == 0 && local == nil {
 		return errors.New("generator: no signer configured")
 	}
+
+	fc = chain
 
 	_, err := fc.UpsertGenesisBlock(ctx, blockPubkeys, nSigs)
 	if err != nil {

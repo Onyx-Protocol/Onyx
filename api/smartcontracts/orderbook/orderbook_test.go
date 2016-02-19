@@ -14,11 +14,9 @@ import (
 	"chain/api/generator"
 	"chain/api/issuer"
 	"chain/api/txbuilder"
-	"chain/api/txdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain"
 	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
 	"chain/testutil"
@@ -172,7 +170,10 @@ func TestCancel(t *testing.T) {
 		}
 		testutil.ExpectEqual(t, len(found), 0, "expected no cancelable orders [1]")
 
-		generator.MakeBlock(ctx, asset.BlockKey)
+		_, err = generator.MakeBlock(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		found, err = FindOpenOrders(ctx, []bc.AssetID{fixtureInfo.aaplAssetID}, nil)
 		if err != nil {
@@ -186,11 +187,12 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	store := txdb.NewStore()
-	fc := fedchain.New(store, nil)
-	generator.ConnectFedchain(fc)
+	fc, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	ConnectFedchain(fc)
 
 	var fixtureInfo orderbookFixtureInfo
 
@@ -381,9 +383,6 @@ func slurpOpenOrders(ch <-chan *OpenOrder) (result []*OpenOrder) {
 }
 
 func init() {
-	fc := fedchain.New(txdb.NewStore(), nil)
-	asset.Init(fc, nil, true)
-	ConnectFedchain(fc)
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
 		u = s

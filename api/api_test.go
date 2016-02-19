@@ -57,7 +57,10 @@ func TestIssue(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "")
 	projectID := assettest.CreateProjectFixture(ctx, t, userID, "")
@@ -75,7 +78,7 @@ func TestIssue(t *testing.T) {
 	`
 	reqDestStr := fmt.Sprintf(reqDestFmt, assetID.String(), account1ID)
 	var reqDest Destination
-	err := json.Unmarshal([]byte(reqDestStr), &reqDest)
+	err = json.Unmarshal([]byte(reqDestStr), &reqDest)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -103,7 +106,10 @@ func TestTransfer(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "")
 	projectID := assettest.CreateProjectFixture(ctx, t, userID, "")

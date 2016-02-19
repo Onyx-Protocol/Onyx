@@ -28,14 +28,11 @@ import (
 func TestTransferConfirmed(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
+
 	info, err := bootdb(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	store := txdb.NewStore()
-	fc := fedchain.New(store, nil)
-	generator.ConnectFedchain(fc)
 
 	_, err = issue(ctx, t, info, info.acctA.ID, 10)
 	if err != nil {
@@ -43,7 +40,10 @@ func TestTransferConfirmed(t *testing.T) {
 	}
 
 	dumpState(ctx, t)
-	generator.MakeBlock(ctx, BlockKey)
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 	dumpState(ctx, t)
 
 	_, err = transfer(ctx, t, info, info.acctA.ID, info.acctB.ID, 10)
@@ -72,12 +72,12 @@ func TestGenSpendApply(t *testing.T) {
 	}
 	t.Logf("issued %v", issueTx.Hash)
 
-	block, err := FC().GenerateBlock(ctx, time.Now())
+	block, prevBlock, err := FC().GenerateBlock(ctx, time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = fedchain.SignBlock(block, BlockKey)
+	err = generator.GetAndAddBlockSignatures(ctx, block, prevBlock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,10 +113,6 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 			b.Fatal(err)
 		}
 
-		store := txdb.NewStore()
-		fc := fedchain.New(store, nil)
-		generator.ConnectFedchain(fc)
-
 		for i := 0; i < b.N; i++ {
 			tx, err := issue(ctx, b, info, info.acctA.ID, 10)
 			if err != nil {
@@ -131,7 +127,10 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 			b.Logf("finalized %v", tx.Hash)
 
 			if i%10 == 0 {
-				generator.MakeBlock(ctx, BlockKey)
+				_, err = generator.MakeBlock(ctx)
+				if err != nil {
+					b.Fatal(err)
+				}
 			}
 		}
 	})
@@ -203,7 +202,7 @@ func benchGenBlock(b *testing.B) {
 	withContext(b, fix, func(ctx context.Context) {
 		now := time.Now()
 		b.StartTimer()
-		_, err := FC().GenerateBlock(ctx, now)
+		_, _, err := FC().GenerateBlock(ctx, now)
 		b.StopTimer()
 		if err != nil {
 			b.Fatal(err)
@@ -222,20 +221,7 @@ type clientInfo struct {
 // TODO(kr): refactor this into new package api/apiutil
 // and consume it from cmd/bootdb.
 func bootdb(ctx context.Context) (*clientInfo, error) {
-	key, err := testutil.TestXPrv.ECPrivKey()
-	if err != nil {
-		return nil, err
-	}
-	BlockKey = key
-
-	pubkey, err := testutil.TestXPub.ECPubKey()
-	if err != nil {
-		return nil, err
-	}
-
-	store := txdb.NewStore()
-	fc := fedchain.New(store, nil)
-	_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
+	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -340,19 +326,12 @@ func TestUpsertGenesisBlock(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	key, err := testutil.TestXPrv.ECPrivKey()
-	if err != nil {
-		t.Fatal(err)
-	}
-	BlockKey = key
-
 	pubkey, err := testutil.TestXPub.ECPubKey()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	store := txdb.NewStore()
-	fc := fedchain.New(store, nil)
+	fc := fedchain.New(txdb.NewStore(), nil)
 	b, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
 	if err != nil {
 		t.Fatal(err)

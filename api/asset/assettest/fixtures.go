@@ -11,7 +11,9 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/asset"
+	"chain/api/generator"
 	"chain/api/issuer"
+	"chain/api/signer"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
 	"chain/fedchain"
@@ -170,27 +172,6 @@ func createCounter() <-chan int {
 	return result
 }
 
-func CreateGenesisBlockFixture(ctx context.Context, tb testing.TB) *bc.Block {
-	privkey, err := testutil.TestXPrv.ECPrivKey()
-	if err != nil {
-		tb.Fatal(err)
-	}
-	asset.BlockKey = privkey
-
-	pubkey, err := testutil.TestXPub.ECPubKey()
-	if err != nil {
-		tb.Fatal(err)
-	}
-
-	store := txdb.NewStore()
-	fc := fedchain.New(store, nil)
-	block, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
-	if err != nil {
-		tb.Fatal(err)
-	}
-	return block
-}
-
 func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64, accountID string) state.Output {
 	if accountID == "" {
 		accountID = CreateAccountFixture(ctx, t, "", "foo", nil)
@@ -237,4 +218,33 @@ func ManagerTxFixture(ctx context.Context, t testing.TB, txHash string, data []b
 		testutil.FatalErr(t, err)
 	}
 	return id
+}
+
+func InitializeSigningGenerator(ctx context.Context) (*fedchain.FC, error) {
+	pubkey, err := testutil.TestXPub.ECPubKey()
+	if err != nil {
+		return nil, err
+	}
+	fc := fedchain.New(txdb.NewStore(), nil)
+	asset.Init(fc, true)
+	privkey, err := testutil.TestXPrv.ECPrivKey()
+	if err != nil {
+		return nil, err
+	}
+	localSigner := signer.New(privkey, fc)
+	if generator.Enabled() {
+		// Don't call generator.Init() again, but do ensure the genesis
+		// block is present. (It might have been rolled back by a test
+		// transaction.)
+		_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = generator.Init(ctx, fc, []*btcec.PublicKey{pubkey}, 1, 0, localSigner, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return fc, nil
 }

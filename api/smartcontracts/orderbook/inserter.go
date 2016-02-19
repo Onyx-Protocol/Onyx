@@ -1,31 +1,19 @@
 package orderbook
 
 import (
-	"fmt"
-
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
 )
 
-func addOrderbookUTXO(ctx context.Context, hash bc.Hash, index int, output *bc.TxOutput) error {
+func addOrderbookUTXO(ctx context.Context, hash bc.Hash, index int, sellerScript []byte, prices []*Price) error {
 	db, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return errors.Wrap(err, "opening database tx")
 	}
 	defer db.Rollback(ctx)
-
-	isOrderbook, sellerScript, prices, err := testOrderbookScript(output.Script)
-	if err != nil {
-		return errors.Wrap(err, "parsing utxo script")
-	}
-	if !isOrderbook {
-		scriptStr, _ := txscript.DisasmString(output.Script)
-		return fmt.Errorf("addOrderbookUTXO called on non-orderbook utxo [%s]", scriptStr)
-	}
 
 	// TODO(bobg): batch these inserts
 	const q1 = `

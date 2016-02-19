@@ -778,6 +778,16 @@ CREATE TABLE rotations (
 
 
 --
+-- Name: signed_blocks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE signed_blocks (
+    block_height bigint NOT NULL,
+    block_hash text NOT NULL
+);
+
+
+--
 -- Name: txs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1320,6 +1330,13 @@ CREATE INDEX reservations_asset_id_account_id_idx ON reservations USING btree (a
 --
 
 CREATE INDEX reservations_expiry ON reservations USING btree (expiry);
+
+
+--
+-- Name: signed_blocks_block_height_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX signed_blocks_block_height_idx ON signed_blocks USING btree (block_height);
 
 
 --

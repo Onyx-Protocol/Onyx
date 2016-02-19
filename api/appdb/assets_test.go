@@ -11,7 +11,6 @@ import (
 	"golang.org/x/net/context"
 
 	. "chain/api/appdb"
-	"chain/api/asset"
 	"chain/api/asset/assettest"
 	"chain/api/generator"
 	"chain/database/pg"
@@ -74,7 +73,10 @@ func TestListAssets(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	in1 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-1", nil, nil)
@@ -88,13 +90,18 @@ func TestListAssets(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, asset1, 3, "")
 	assettest.IssueAssetsFixture(ctx, t, asset2, 5, "")
 	assettest.IssueAssetsFixture(ctx, t, asset3, 7, "")
-	generator.MakeBlock(ctx, asset.BlockKey)
+
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	assettest.IssueAssetsFixture(ctx, t, asset0, 2, "")
 	assettest.IssueAssetsFixture(ctx, t, asset1, 4, "")
 	assettest.IssueAssetsFixture(ctx, t, asset2, 6, "")
 	assettest.IssueAssetsFixture(ctx, t, asset3, 8, "")
 
-	err := ArchiveAsset(ctx, asset3.String())
+	err = ArchiveAsset(ctx, asset3.String())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -176,7 +183,10 @@ func TestGetAssets(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 
@@ -184,7 +194,12 @@ func TestGetAssets(t *testing.T) {
 	asset1 := assettest.CreateAssetFixture(ctx, t, in0, "asset-1", "def-1")
 
 	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
-	generator.MakeBlock(ctx, asset.BlockKey)
+
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
 	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
 
@@ -233,12 +248,20 @@ func TestGetAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
 	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
-	generator.MakeBlock(ctx, asset.BlockKey)
+
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
 
 	got, err := GetAsset(ctx, asset0.String())
@@ -344,7 +367,10 @@ func TestAssetBalance(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-0", nil, nil)
@@ -369,7 +395,11 @@ func TestAssetBalance(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, assets[5], 1, acc0)
 	out1 := assettest.IssueAssetsFixture(ctx, t, assets[5], 1, acc0)
 	out2 := assettest.IssueAssetsFixture(ctx, t, assets[5], 1, acc0)
-	generator.MakeBlock(ctx, asset.BlockKey)
+
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	assettest.IssueAssetsFixture(ctx, t, assets[1], 1, acc0)
 	out3 := assettest.IssueAssetsFixture(ctx, t, assets[1], 1, acc0)
@@ -388,7 +418,7 @@ func TestAssetBalance(t *testing.T) {
 		},
 	})
 
-	err := store.ApplyTx(ctx, tx)
+	err = store.ApplyTx(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -617,7 +647,10 @@ func TestAccountBalanceByAssetID(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	account1 := assettest.CreateAccountFixture(ctx, t, "", "", nil)
 	account2 := assettest.CreateAccountFixture(ctx, t, "", "", nil)
@@ -635,7 +668,7 @@ func TestAccountBalanceByAssetID(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, assets[2], 2, account1)
 	assettest.IssueAssetsFixture(ctx, t, assets[3], 3, account2)
 
-	_, err := generator.MakeBlock(ctx, asset.BlockKey)
+	_, err = generator.MakeBlock(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

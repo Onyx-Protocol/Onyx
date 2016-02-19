@@ -7,7 +7,6 @@ import (
 	"golang.org/x/net/context"
 
 	. "chain/api/appdb"
-	"chain/api/asset"
 	"chain/api/asset/assettest"
 	"chain/api/generator"
 	"chain/database/pg"
@@ -80,7 +79,10 @@ func TestAccountsWithAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
-	assettest.CreateGenesisBlockFixture(ctx, t)
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	asset1 := assettest.CreateAssetFixture(ctx, t, "", "", "")
 	asset2 := assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -96,7 +98,7 @@ func TestAccountsWithAsset(t *testing.T) {
 	out1 := assettest.IssueAssetsFixture(ctx, t, asset2, 5, acc1)
 	assettest.IssueAssetsFixture(ctx, t, asset1, 5, acc2)
 
-	_, err := generator.MakeBlock(ctx, asset.BlockKey)
+	_, err = generator.MakeBlock(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

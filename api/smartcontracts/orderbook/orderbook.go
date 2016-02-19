@@ -1,7 +1,6 @@
 package orderbook
 
 import (
-	"bytes"
 	"fmt"
 
 	"golang.org/x/net/context"
@@ -73,17 +72,24 @@ const MaxPrices = 1 // TODO(bobg): Support multiple prices per order.
 var fc *fedchain.FC
 
 func ConnectFedchain(chain *fedchain.FC) {
+	if fc == chain {
+		// Silently ignore duplicate calls.
+		return
+	}
+
 	fc = chain
 
-	// TODO: handle contracts with multiple prices
-	contract, _ := buildContract(1)
-	contractHash := hash256.Sum(contract)
-
 	fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
+		// For outputs that match the orderbook p2c script format, index
+		// orderbook-specific info in the db.
 		for i, out := range tx.Outputs {
-			isContract, hash, _ := txscript.TestPayToContract(out.Script)
-			if isContract && bytes.Equal(hash[:], contractHash[:]) {
-				err := addOrderbookUTXO(ctx, tx.Hash, i, out)
+			isOrderbook, sellerScript, prices, err := testOrderbookScript(out.Script)
+			if err != nil {
+				log.Error(ctx, errors.Wrap(err, "testing for orderbook output script"))
+				return
+			}
+			if isOrderbook {
+				err = addOrderbookUTXO(ctx, tx.Hash, i, sellerScript, prices)
 				if err != nil {
 					log.Error(ctx, errors.Wrap(err, "adding orderbook utxo"))
 					return
