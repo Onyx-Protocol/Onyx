@@ -269,15 +269,18 @@ func listAccounts(ctx context.Context, managerNodeID string) (interface{}, error
 }
 
 // POST /v3/manager-nodes/:mnodeID/accounts
+// TODO(jackson): ClientToken should become required once all SDKs
+// have been updated.
 func createAccount(ctx context.Context, managerNodeID string, in struct {
-	Label string
-	Keys  []string
+	Label       string
+	Keys        []string
+	ClientToken *string `json:"client_token"`
 }) (*appdb.Account, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if err := managerAuthz(ctx, managerNodeID); err != nil {
 		return nil, err
 	}
-	return appdb.CreateAccount(ctx, managerNodeID, in.Label, in.Keys)
+	return appdb.CreateAccount(ctx, managerNodeID, in.Label, in.Keys, in.ClientToken)
 }
 
 // GET /v3/accounts/:accountID

@@ -259,12 +259,12 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 		return nil, err
 	}
 
-	acctA, err := appdb.CreateAccount(ctx, manager.ID, "label", nil)
+	acctA, err := appdb.CreateAccount(ctx, manager.ID, "label", nil, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	acctB, err := appdb.CreateAccount(ctx, manager.ID, "label", nil)
+	acctB, err := appdb.CreateAccount(ctx, manager.ID, "label", nil, nil)
 	if err != nil {
 		return nil, err
 	}

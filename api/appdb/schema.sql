@@ -292,7 +292,8 @@ CREATE TABLE accounts (
     next_address_index bigint DEFAULT 0 NOT NULL,
     label text,
     keys text[] DEFAULT '{}'::text[] NOT NULL,
-    archived boolean DEFAULT false NOT NULL
+    archived boolean DEFAULT false NOT NULL,
+    client_token text
 );
 
 
@@ -854,6 +855,14 @@ ALTER TABLE ONLY manager_nodes ALTER COLUMN key_index SET DEFAULT nextval('manag
 
 ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_pkey PRIMARY KEY (tx_hash, index);
+
+
+--
+-- Name: accounts_manager_node_id_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY accounts
+    ADD CONSTRAINT accounts_manager_node_id_client_token_key UNIQUE (manager_node_id, client_token);
 
 
 --

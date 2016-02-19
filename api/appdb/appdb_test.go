@@ -103,7 +103,7 @@ func newTestAccount(t *testing.T, ctx context.Context, managerNode *ManagerNode,
 	if managerNode == nil {
 		managerNode = newTestManagerNode(t, ctx, nil, "manager-node-1")
 	}
-	account, err := CreateAccount(ctx, managerNode.ID, label, nil)
+	account, err := CreateAccount(ctx, managerNode.ID, label, nil, nil)
 	if err != nil {
 		t.Fatalf("could not create account in newTestAccount: %v", err)
 	}

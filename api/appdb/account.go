@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/lib/pq"
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
@@ -31,7 +30,7 @@ type Account struct {
 // Parameter keys will be concatenated with the manager node's
 // keys when creating redeem scripts for this account.
 // The len(keys) must equal variable_keys in the manager node.
-func CreateAccount(ctx context.Context, managerNodeID, label string, keys []string) (*Account, error) {
+func CreateAccount(ctx context.Context, managerNodeID, label string, keys []string, clientToken *string) (*Account, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if label == "" {
 		return nil, ErrBadLabel
@@ -63,31 +62,61 @@ func CreateAccount(ctx context.Context, managerNodeID, label string, keys []stri
 				WHERE id=$1
 				RETURNING (next_account_index - 1)
 			)
-			INSERT INTO accounts (manager_node_id, key_index, label, keys)
-			VALUES ($1, (TABLE incr), $2, $3)
+			INSERT INTO accounts (manager_node_id, key_index, label, keys, client_token)
+			VALUES ($1, (TABLE incr), $2, $3, $4)
+			ON CONFLICT (manager_node_id, client_token) DO NOTHING
 			RETURNING id, key_index(key_index)
 		`
-		err := pg.FromContext(ctx).QueryRow(ctx, q, managerNodeID, label, pg.Strings(keys)).Scan(
+		err := pg.FromContext(ctx).QueryRow(ctx, q, managerNodeID, label, pg.Strings(keys), clientToken).Scan(
 			&account.ID,
 			(*pg.Uint32s)(&account.Index),
 		)
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code.Name() == "unique_violation" {
-			// There was an (expected) unique index conflict.
-			// It is safe to try again.
-			// This happens when there is contention incrementing
-			// the account index.
+
+		// A unique violation error is expected and caused by contention on the account
+		// index. We should retry the query.
+		if pg.IsUniqueViolation(err) {
 			log.Write(ctx, "attempt", i, "error", err)
 			if i == attempts-1 {
 				return nil, err
 			}
 			continue
-		} else if err != nil {
+		}
+
+		// No rows indicates that the insertion failed because of a unique index violation
+		// on the (maanger_node_id, client_token) index. This indicates that the account
+		// was successfully created in a previous request.
+		if err == sql.ErrNoRows && clientToken != nil {
+			return getAccountByClientToken(ctx, managerNodeID, *clientToken)
+		}
+
+		// Any other error is unexpected.
+		if err != nil {
 			return nil, err
 		}
+
+		// The new account was succesfully inserted.
 		break
 	}
 
 	return account, nil
+}
+
+func getAccountByClientToken(ctx context.Context, managerNodeID, clientToken string) (*Account, error) {
+	const q = `
+		SELECT id, label, key_index(key_index), keys
+		FROM accounts
+		WHERE manager_node_id = $1 AND client_token = $2
+	`
+	a := &Account{}
+	err := pg.FromContext(ctx).QueryRow(ctx, q, managerNodeID, clientToken).Scan(
+		&a.ID, &a.Label, (*pg.Uint32s)(&a.Index), (*pg.Strings)(&a.Keys))
+	if err == sql.ErrNoRows {
+		return nil, pg.ErrUserInputNotFound
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "select query")
+	}
+	return a, nil
 }
 
 // ListAccounts returns a list of accounts contained in the given manager node.
@@ -131,7 +160,7 @@ func ListAccounts(ctx context.Context, managerNodeID string, prev string, limit 
 
 // GetAccount returns a single account.
 func GetAccount(ctx context.Context, accountID string) (*Account, error) {
-	q := `
+	const q = `
 		SELECT label, key_index(key_index)
 		FROM accounts
 		WHERE id = $1

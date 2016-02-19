@@ -134,7 +134,7 @@ func CreateAccountFixture(ctx context.Context, t testing.TB, managerNodeID, labe
 	if label == "" {
 		label = fmt.Sprintf("acct-%d", <-accountCounter)
 	}
-	account, err := appdb.CreateAccount(ctx, managerNodeID, label, keys)
+	account, err := appdb.CreateAccount(ctx, managerNodeID, label, keys, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

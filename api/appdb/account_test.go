@@ -16,7 +16,7 @@ import (
 func TestCreateAccount(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "foo")
-		account, err := CreateAccount(ctx, managerNode.ID, "foo", nil)
+		account, err := CreateAccount(ctx, managerNode.ID, "foo", nil, nil)
 		if err != nil {
 			t.Error("unexpected error", err)
 		}
@@ -32,7 +32,7 @@ func TestCreateAccount(t *testing.T) {
 func TestCreateAccountBadLabel(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "foo")
-		_, err := CreateAccount(ctx, managerNode.ID, "", nil)
+		_, err := CreateAccount(ctx, managerNode.ID, "", nil, nil)
 		if err == nil {
 			t.Error("err = nil, want error")
 		}
@@ -43,7 +43,7 @@ func TestCreateAccountWithKey(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
 		keys := []string{"keyo"}
-		_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys)
+		_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, nil)
 		if err != nil {
 			t.Error("unexpected error", err)
 		}
@@ -53,7 +53,7 @@ func TestCreateAccountWithKey(t *testing.T) {
 func TestCreateAccountWithMissingKey(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
-		_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", nil)
+		_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", nil, nil)
 		if err == nil {
 			t.Error("err = nil, want error")
 		}
@@ -64,9 +64,33 @@ func TestCreateAccountWithTooManyKeys(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
 		keys := []string{"keyo", "keya", "keyeeeee"}
-		_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys)
+		_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, nil)
 		if err == nil {
 			t.Error("err = nil, want error")
+		}
+	})
+}
+
+func TestCreateAccountIdempotency(t *testing.T) {
+	withContext(t, "", func(ctx context.Context) {
+		managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
+		keys := []string{"keyo"}
+
+		idempotencyKey := "an-idempotency-key-from-the-client"
+		acc1, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, &idempotencyKey)
+		if err != nil {
+			t.Error("unexpected error", err)
+		}
+
+		// Re-use the same client token. CreateAccount should not create a new account,
+		// and should return acc1 again.
+		acc2, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, &idempotencyKey)
+		if err != nil {
+			t.Error("unexpected error", err)
+		}
+
+		if !reflect.DeepEqual(acc1, acc2) {
+			t.Errorf("acc2 got=%#v  want=%#v", acc2, acc1)
 		}
 	})
 }
@@ -202,7 +226,7 @@ func TestGetAccount(t *testing.T) {
 func TestUpdateAccount(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "foo")
-		account, err := CreateAccount(ctx, managerNode.ID, "foo", nil)
+		account, err := CreateAccount(ctx, managerNode.ID, "foo", nil, nil)
 		if err != nil {
 			t.Error("unexpected error", err)
 		}
@@ -233,7 +257,7 @@ func TestUpdateAccount(t *testing.T) {
 func TestUpdateAccountNoUpdate(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		managerNode := newTestManagerNode(t, ctx, nil, "foo")
-		account, err := CreateAccount(ctx, managerNode.ID, "foo", nil)
+		account, err := CreateAccount(ctx, managerNode.ID, "foo", nil, nil)
 		if err != nil {
 			t.Fatalf("could not create account: %v", err)
 		}
