@@ -659,6 +659,17 @@ CREATE TABLE members (
 
 
 --
+-- Name: migrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE migrations (
+    filename text NOT NULL,
+    hash text NOT NULL,
+    applied_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: orderbook_prices; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -989,6 +1000,14 @@ ALTER TABLE ONLY members
 
 
 --
+-- Name: migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY migrations
+    ADD CONSTRAINT migrations_pkey PRIMARY KEY (filename);
+
+
+--
 -- Name: orderbook_utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1290,6 +1309,13 @@ CREATE INDEX reservations_expiry ON reservations USING btree (expiry);
 --
 
 CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
+
+
+--
+-- Name: utxos_asset_id_contract_hash_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX utxos_asset_id_contract_hash_idx ON utxos USING btree (asset_id, contract_hash) WHERE (contract_hash IS NOT NULL);
 
 
 --

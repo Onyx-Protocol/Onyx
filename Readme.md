@@ -38,7 +38,7 @@ First, drop and recreate your database:
 
 Next, run all migrations, including your new migrations:
 
-	$ migratedb -d postgresql:///api?sslmode=disable
+	$ migratedb -d postgres:///api?sslmode=disable
 	$ ...
 
 Finally, dump the database schema, filtering any extension statements:
