@@ -10,7 +10,7 @@ fi
 
 commit=`git rev-parse HEAD`
 branch=`git symbolic-ref --short HEAD`
-onto=${ONTO:-master}
+onto=${ONTO:-main}
 if [ "$branch" = "$onto" ]
 then
 	echo >&2 "cannot land branch $onto onto itself"
