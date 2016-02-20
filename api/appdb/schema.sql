@@ -552,7 +552,8 @@ CREATE TABLE issuer_nodes (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     generated_keys text[] DEFAULT '{}'::text[] NOT NULL,
     variable_keys integer DEFAULT 0 NOT NULL,
-    archived boolean DEFAULT false NOT NULL
+    archived boolean DEFAULT false NOT NULL,
+    client_token text
 );
 
 
@@ -617,7 +618,8 @@ CREATE TABLE manager_nodes (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     generated_keys text[] DEFAULT '{}'::text[] NOT NULL,
     variable_keys integer DEFAULT 0 NOT NULL,
-    archived boolean DEFAULT false NOT NULL
+    archived boolean DEFAULT false NOT NULL,
+    client_token text
 );
 
 
@@ -1013,6 +1015,14 @@ ALTER TABLE ONLY issuer_nodes
 
 
 --
+-- Name: issuer_nodes_project_id_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY issuer_nodes
+    ADD CONSTRAINT issuer_nodes_project_id_client_token_key UNIQUE (project_id, client_token);
+
+
+--
 -- Name: issuer_txs_add_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1026,6 +1036,14 @@ ALTER TABLE ONLY issuer_txs
 
 ALTER TABLE ONLY manager_nodes
     ADD CONSTRAINT manager_nodes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: manager_nodes_project_id_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY manager_nodes
+    ADD CONSTRAINT manager_nodes_project_id_client_token_key UNIQUE (project_id, client_token);
 
 
 --

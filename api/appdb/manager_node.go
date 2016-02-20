@@ -64,17 +64,27 @@ type ManagerNode struct {
 	SigsReqd int        `json:"signatures_required"`
 }
 
-// InsertManagerNode inserts a new manager node into the database.
-func InsertManagerNode(ctx context.Context, projID, label string, xpubs, gennedKeys []*hdkey.XKey, variableKeys, sigsRequired int) (w *ManagerNode, err error) {
+// InsertManagerNode inserts a new manager node into the database. If a manager node
+// already exists with the provided project ID and client token, this function will
+// return the existing manager node.
+func InsertManagerNode(ctx context.Context, projID, label string, xpubs, gennedKeys []*hdkey.XKey, variableKeys, sigsRequired int, clientToken *string) (w *ManagerNode, err error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 	const q = `
-		INSERT INTO manager_nodes (label, project_id, generated_keys, variable_keys, sigs_required)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO manager_nodes (label, project_id, generated_keys, variable_keys, sigs_required, client_token)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (project_id, client_token) DO NOTHING
 		RETURNING id
 	`
 	var id string
 	xprvs := keysToStrings(gennedKeys)
-	err = pg.FromContext(ctx).QueryRow(ctx, q, label, projID, pg.Strings(xprvs), variableKeys, sigsRequired).Scan(&id)
+	err = pg.FromContext(ctx).QueryRow(ctx, q, label, projID, pg.Strings(xprvs), variableKeys, sigsRequired, clientToken).Scan(&id)
+	if err == sql.ErrNoRows && clientToken != nil {
+		// A sql.ErrNoRows error here indicates that we failed to insert
+		// a manager node because there was a conflict on the client token.
+		// A previous request to create this manager node succeeded.
+		mn, err := getManagerNodeByClientToken(ctx, projID, *clientToken)
+		return mn, errors.Wrap(err, "looking up existing manager node")
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, "insert manager node")
 	}
@@ -116,31 +126,70 @@ type AccountBalanceItem struct {
 	Total     int64  `json:"total"`
 }
 
-// GetManagerNode returns basic information about a single manager node.
+// getManagerNodeByClientToken returns basic information about a single manager node,
+// looking up the manager node by its project ID and its client token.
+func getManagerNodeByClientToken(ctx context.Context, projID, clientToken string) (*ManagerNode, error) {
+	mnq := managerNodeQuery{
+		projectID:   projID,
+		clientToken: clientToken,
+	}
+
+	managerNode, err := lookupManagerNode(ctx, mnq)
+	return managerNode, errors.WithDetailf(err, "project ID: %s, client token: %s", projID, clientToken)
+}
+
+// GetManagerNode returns basic information about a single manager node, looking
+// up the manager node by its unique ID.
 func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, error) {
-	var (
-		q = `
-			SELECT label, keyset, generated_keys, variable_keys, sigs_required
+	managerNode, err := lookupManagerNode(ctx, managerNodeQuery{id: managerNodeID})
+	if err == sql.ErrNoRows {
+		err = pg.ErrUserInputNotFound
+	}
+	return managerNode, errors.WithDetailf(err, "manager node ID: %v", managerNodeID)
+}
+
+type managerNodeQuery struct {
+	id          string
+	projectID   string
+	clientToken string
+}
+
+func lookupManagerNode(ctx context.Context, mnq managerNodeQuery) (*ManagerNode, error) {
+	const (
+		baseQ = `
+			SELECT mn.id, label, keyset, generated_keys, variable_keys, sigs_required
 			FROM manager_nodes mn
 			JOIN rotations r ON r.id=mn.current_rotation
-			WHERE mn.id = $1
 		`
+	)
+	var (
+		queryArgs []interface{}
+		q         string
+	)
+	if mnq.projectID != "" && mnq.clientToken != "" {
+		q = baseQ + "WHERE mn.project_id = $1 AND client_token = $2"
+		queryArgs = []interface{}{mnq.projectID, mnq.clientToken}
+	} else {
+		q = baseQ + "WHERE mn.id = $1"
+		queryArgs = []interface{}{mnq.id}
+	}
+
+	var (
+		id          string
 		label       string
 		pubKeyStrs  []string
 		privKeyStrs []string
 		varKeys     int
 		sigsReqd    int
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, managerNodeID).Scan(
+	err := pg.FromContext(ctx).QueryRow(ctx, q, queryArgs...).Scan(
+		&id,
 		&label,
 		(*pg.Strings)(&pubKeyStrs),
 		(*pg.Strings)(&privKeyStrs),
 		&varKeys,
 		&sigsReqd,
 	)
-	if err == sql.ErrNoRows {
-		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "manager node ID: %v", managerNodeID)
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +214,7 @@ func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, er
 	}
 
 	return &ManagerNode{
-		ID:       managerNodeID,
+		ID:       id,
 		Label:    label,
 		Keys:     keys,
 		SigsReqd: sigsReqd,

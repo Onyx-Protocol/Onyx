@@ -151,8 +151,14 @@ func listAssets(ctx context.Context, inodeID string) (interface{}, error) {
 
 // POST /v3/issuer-nodes/:inodeID/assets
 func createAsset(ctx context.Context, inodeID string, in struct {
-	Label       string
-	Definition  map[string]interface{}
+	Label      string
+	Definition map[string]interface{}
+
+	// ClientToken is the application's unique token for the asset. Every asset
+	// within an issuer node should have a unique client token. The client token
+	// is used to ensure idempotency of create asset requests. Duplicate create
+	// asset requests within the same issuer node with the same client_token will
+	// only create one asset.
 	ClientToken *string `json:"client_token"`
 }) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())

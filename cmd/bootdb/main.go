@@ -72,13 +72,13 @@ func main() {
 	}
 
 	mpub, mpriv := genKey()
-	mn, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", mpub, mpriv, 0, 1)
+	mn, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", mpub, mpriv, 0, 1, nil)
 	if err != nil {
 		fatal(err)
 	}
 
 	ipub, ipriv := genKey()
-	in, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", ipub, ipriv, 1)
+	in, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", ipub, ipriv, 1, nil)
 	if err != nil {
 		fatal(err)
 	}

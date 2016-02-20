@@ -22,12 +22,13 @@ type IssuerNode struct {
 }
 
 // InsertIssuerNode adds the issuer node to the database
-func InsertIssuerNode(ctx context.Context, projID, label string, xpubs, gennedKeys []*hdkey.XKey, sigsRequired int) (*IssuerNode, error) {
+func InsertIssuerNode(ctx context.Context, projID, label string, xpubs, gennedKeys []*hdkey.XKey, sigsRequired int, clientToken *string) (*IssuerNode, error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 
 	const q = `
-		INSERT INTO issuer_nodes (label, project_id, keyset, generated_keys, sigs_required)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO issuer_nodes (label, project_id, keyset, generated_keys, sigs_required, client_token)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (project_id, client_token) DO NOTHING
 		RETURNING id
 	`
 	var id string
@@ -37,7 +38,15 @@ func InsertIssuerNode(ctx context.Context, projID, label string, xpubs, gennedKe
 		pg.Strings(keysToStrings(xpubs)),
 		pg.Strings(keysToStrings(gennedKeys)),
 		sigsRequired,
+		clientToken,
 	).Scan(&id)
+	if err == sql.ErrNoRows && clientToken != nil {
+		// A sql.ErrNoRows error here indicates that we failed to insert
+		// an issuer node because there was a conflict on the client token.
+		// A previous request to create this issuer node succeeded.
+		in, err := getIssuerNodeByClientToken(ctx, projID, *clientToken)
+		return in, errors.Wrap(err, "looking up existing issuer node")
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, "insert issuer node")
 	}
@@ -127,24 +136,66 @@ func ListIssuerNodes(ctx context.Context, projID string) ([]*IssuerNode, error) 
 	return inodes, nil
 }
 
+// getIssuerNodeByClientToken returns basic information about a single issuer
+// node, looking the node up by its project ID and its client token.
+func getIssuerNodeByClientToken(ctx context.Context, projID, clientToken string) (*IssuerNode, error) {
+	inq := issuerNodeQuery{
+		projectID:   projID,
+		clientToken: clientToken,
+	}
+	issuerNode, err := lookupIssuerNode(ctx, inq)
+	return issuerNode, errors.WithDetailf(err, "project ID: %s, client token: %s", projID, clientToken)
+}
+
 // GetIssuerNode returns basic information about a single issuer node.
-func GetIssuerNode(ctx context.Context, groupID string) (*IssuerNode, error) {
+func GetIssuerNode(ctx context.Context, issuerNodeID string) (*IssuerNode, error) {
+	issuerNode, err := lookupIssuerNode(ctx, issuerNodeQuery{id: issuerNodeID})
+	if err == sql.ErrNoRows {
+		err = pg.ErrUserInputNotFound
+	}
+	return issuerNode, errors.WithDetailf(err, "issuer node ID: %v", issuerNodeID)
+}
+
+type issuerNodeQuery struct {
+	id          string
+	projectID   string
+	clientToken string
+}
+
+func lookupIssuerNode(ctx context.Context, inq issuerNodeQuery) (*IssuerNode, error) {
+	const (
+		baseQ = `
+			SELECT id, label, keyset, generated_keys, sigs_required
+			FROM issuer_nodes
+		`
+	)
 	var (
-		q           = `SELECT label, keyset, generated_keys, sigs_required FROM issuer_nodes WHERE id = $1`
+		q         string
+		queryArgs []interface{}
+	)
+
+	if inq.projectID != "" && inq.clientToken != "" {
+		q = baseQ + "WHERE project_id = $1 AND client_token = $2"
+		queryArgs = []interface{}{inq.projectID, inq.clientToken}
+	} else {
+		q = baseQ + "WHERE id = $1"
+		queryArgs = []interface{}{inq.id}
+	}
+
+	var (
+		id          string
 		label       string
 		pubKeyStrs  []string
 		privKeyStrs []string
 		sigsReqd    int
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, groupID).Scan(
+	err := pg.FromContext(ctx).QueryRow(ctx, q, queryArgs...).Scan(
+		&id,
 		&label,
 		(*pg.Strings)(&pubKeyStrs),
 		(*pg.Strings)(&privKeyStrs),
 		&sigsReqd,
 	)
-	if err == sql.ErrNoRows {
-		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "issuer node ID: %v", groupID)
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +216,7 @@ func GetIssuerNode(ctx context.Context, groupID string) (*IssuerNode, error) {
 	}
 
 	return &IssuerNode{
-		ID:       groupID,
+		ID:       id,
 		Label:    label,
 		Keys:     keys,
 		SigsReqd: sigsReqd,

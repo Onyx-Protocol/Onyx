@@ -20,6 +20,47 @@ func TestInsertIssuerNode(t *testing.T) {
 	})
 }
 
+func TestInsertIssuerNodeIdempotence(t *testing.T) {
+	withContext(t, "", func(ctx context.Context) {
+		project1 := newTestProject(t, ctx, "project-1", nil)
+		project2 := newTestProject(t, ctx, "project-2", newTestUser(t, ctx, "two@user.com", "password"))
+
+		idempotencyKey := "my-issuer-node-client-token"
+		in1, err := InsertIssuerNode(ctx, project1.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 1, &idempotencyKey)
+		if err != nil {
+			t.Fatalf("could not create issuer node: %v", err)
+		}
+		if in1.ID == "" {
+			t.Fatal("got empty issuer node id")
+		}
+
+		in2, err := InsertIssuerNode(ctx, project1.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 1, &idempotencyKey)
+		if err != nil {
+			t.Fatalf("failed on 2nd call to insert issuer node: %s", err)
+		}
+		if !reflect.DeepEqual(in1, in2) {
+			t.Errorf("got=%#v\nwant=%#v", in2, in1)
+		}
+
+		in3, err := InsertManagerNode(ctx, project2.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
+		if err != nil {
+			t.Fatalf("failed on 3rd call to insert issuer node: %s", err)
+		}
+		if in3.ID == in1.ID {
+			t.Error("client_token should be project-scoped")
+		}
+
+		newIdempotencyKey := "my-new-issuer-node"
+		in4, err := InsertManagerNode(ctx, project1.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &newIdempotencyKey)
+		if err != nil {
+			t.Fatalf("failed on 4th call to insert issuer node: %s", err)
+		}
+		if in4.ID == in1.ID {
+			t.Errorf("got=%#v want new issuer node, not %#v", in4, in1)
+		}
+	})
+}
+
 func TestListIssuerNodes(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
@@ -69,7 +110,7 @@ func TestGetIssuerNodes(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 	proj := newTestProject(t, ctx, "foo", nil)
-	in, err := InsertIssuerNode(ctx, proj.ID, "in-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 1)
+	in, err := InsertIssuerNode(ctx, proj.ID, "in-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 1, nil)
 	if err != nil {
 		t.Fatalf("unexpected error on InsertIssuerNode: %v", err)
 	}

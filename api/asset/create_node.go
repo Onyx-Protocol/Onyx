@@ -26,10 +26,19 @@ const (
 
 // CreateNodeReq is a user filled struct
 // passed into CreateManagerNode or CreateIssuerNode
+// TODO(jackson): ClientToken should become required once
+// all the SDKs have been updated.
 type CreateNodeReq struct {
 	Label        string
 	Keys         []*CreateNodeKeySpec
 	SigsRequired int `json:"signatures_required"`
+
+	// ClientToken is the application's unique token for the node. Every node
+	// within a project should have a unique client token. The client token
+	// is used to ensure idempotency of create node requests. Duplicate create
+	// node requests within the same project with the same client_token will
+	// only create one node.
+	ClientToken *string `json:"client_token"`
 }
 
 // DeprecatedCreateNodeReq is a user filled struct
@@ -108,11 +117,11 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 	}
 
 	if node == ManagerNode {
-		return appdb.InsertManagerNode(ctx, projID, req.Label, xpubs, gennedXprvs, variableKeyCount, req.SigsRequired)
+		return appdb.InsertManagerNode(ctx, projID, req.Label, xpubs, gennedXprvs, variableKeyCount, req.SigsRequired, req.ClientToken)
 	}
 
 	// Do nothing with variable keys for Issuer Nodes since they can't have variable keys yet.
-	return appdb.InsertIssuerNode(ctx, projID, req.Label, xpubs, gennedXprvs, req.SigsRequired)
+	return appdb.InsertIssuerNode(ctx, projID, req.Label, xpubs, gennedXprvs, req.SigsRequired, req.ClientToken)
 }
 
 func newKey() (pub, priv *hdkey.XKey, err error) {

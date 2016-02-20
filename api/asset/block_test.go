@@ -240,7 +240,7 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hdkey.XKey{manPub}, []*hdkey.XKey{manPriv}, 0, 1)
+	manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hdkey.XKey{manPub}, []*hdkey.XKey{manPriv}, 0, 1, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +259,7 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	iNode, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv}, 1)
+	iNode, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv}, 1, nil)
 	if err != nil {
 		return nil, err
 	}

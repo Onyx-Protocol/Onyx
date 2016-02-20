@@ -91,7 +91,7 @@ func CreateIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label
 		xpubs = append(xpubs, testutil.TestXPub)
 		xprvs = append(xprvs, testutil.TestXPrv)
 	}
-	issuerNode, err := appdb.InsertIssuerNode(ctx, projectID, label, xpubs, xprvs, 1)
+	issuerNode, err := appdb.InsertIssuerNode(ctx, projectID, label, xpubs, xprvs, 1, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -121,7 +121,7 @@ func CreateManagerNodeFixture(ctx context.Context, t testing.TB, projectID, labe
 		xpubs = append(xpubs, testutil.TestXPub)
 		xprvs = append(xprvs, testutil.TestXPrv)
 	}
-	managerNode, err := appdb.InsertManagerNode(ctx, projectID, label, xpubs, xprvs, 0, 1)
+	managerNode, err := appdb.InsertManagerNode(ctx, projectID, label, xpubs, xprvs, 0, 1, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

@@ -58,7 +58,7 @@ func newTestIssuerNode(t *testing.T, ctx context.Context, project *Project, labe
 	if project == nil {
 		project = newTestProject(t, ctx, "project-1", nil)
 	}
-	issuerNode, err := InsertIssuerNode(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil, 1)
+	issuerNode, err := InsertIssuerNode(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil, 1, nil)
 	if err != nil {
 		t.Fatalf("trouble setting up issuer node in newTestIssuerNode: %v", err)
 	}
@@ -73,7 +73,7 @@ func newTestManagerNode(t *testing.T, ctx context.Context, project *Project, lab
 	if project == nil {
 		project = newTestProject(t, ctx, "project-1", nil)
 	}
-	managerNode, err := InsertManagerNode(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil, 0, 1)
+	managerNode, err := InsertManagerNode(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil, 0, 1, nil)
 	if err != nil {
 		t.Fatalf("could not create manager node in newTestManagerNode: %v", err)
 	}
@@ -88,7 +88,7 @@ func newTestVarKeyManagerNode(t *testing.T, ctx context.Context, project *Projec
 	if project == nil {
 		project = newTestProject(t, ctx, "project-1", nil)
 	}
-	managerNode, err := InsertManagerNode(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil, varKeys, sigsReq)
+	managerNode, err := InsertManagerNode(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil, varKeys, sigsReq, nil)
 	if err != nil {
 		t.Fatalf("could not create manager node in newTestVarKeyManagerNode: %v", err)
 	}

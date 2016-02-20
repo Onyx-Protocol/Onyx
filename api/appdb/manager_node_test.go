@@ -23,10 +23,51 @@ func TestInsertManagerNode(t *testing.T) {
 	})
 }
 
+func TestInsertManagerNodeIdempotence(t *testing.T) {
+	withContext(t, "", func(ctx context.Context) {
+		project1 := newTestProject(t, ctx, "project-1", nil)
+		project2 := newTestProject(t, ctx, "project-2", newTestUser(t, ctx, "two@user.com", "password"))
+
+		idempotencyKey := "my-manager-node"
+		mn1, err := InsertManagerNode(ctx, project1.ID, "manager-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
+		if err != nil {
+			t.Fatalf("could not create manager node: %v", err)
+		}
+		if mn1.ID == "" {
+			t.Fatal("got empty manager node id")
+		}
+
+		mn2, err := InsertManagerNode(ctx, project1.ID, "manager-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
+		if err != nil {
+			t.Fatalf("failed on 2nd call to insert manager node: %s", err)
+		}
+		if !reflect.DeepEqual(mn1, mn2) {
+			t.Errorf("got=%#v\nwant=%#v", mn2, mn1)
+		}
+
+		mn3, err := InsertManagerNode(ctx, project2.ID, "manager-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
+		if err != nil {
+			t.Fatalf("failed on 3rd call to insert manager node: %s", err)
+		}
+		if mn3.ID == mn1.ID {
+			t.Error("client_token should be project-scoped")
+		}
+
+		newIdempotencyKey := "my-new-manager-node"
+		mn4, err := InsertManagerNode(ctx, project1.ID, "manager-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &newIdempotencyKey)
+		if err != nil {
+			t.Fatalf("failed on 4th call to insert manager node: %s", err)
+		}
+		if mn4.ID == mn1.ID {
+			t.Errorf("got=%#v want new manager node, not %#v", mn4, mn1)
+		}
+	})
+}
+
 func TestGetManagerNode(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		proj := newTestProject(t, ctx, "foo", nil)
-		mn, err := InsertManagerNode(ctx, proj.ID, "manager-node-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 0, 1)
+		mn, err := InsertManagerNode(ctx, proj.ID, "manager-node-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 0, 1, nil)
 
 		if err != nil {
 			t.Fatalf("unexpected error on InsertManagerNode: %v", err)

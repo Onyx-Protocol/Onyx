@@ -272,8 +272,14 @@ func listAccounts(ctx context.Context, managerNodeID string) (interface{}, error
 // TODO(jackson): ClientToken should become required once all SDKs
 // have been updated.
 func createAccount(ctx context.Context, managerNodeID string, in struct {
-	Label       string
-	Keys        []string
+	Label string
+	Keys  []string
+
+	// ClientToken is the application's unique token for the account. Every account
+	// within a manager node should have a unique client token. The client token
+	// is used to ensure idempotency of create account requests. Duplicate create
+	// account requests within the same manager node with the same client_token will
+	// only create one account.
 	ClientToken *string `json:"client_token"`
 }) (*appdb.Account, error) {
 	defer metrics.RecordElapsed(time.Now())
