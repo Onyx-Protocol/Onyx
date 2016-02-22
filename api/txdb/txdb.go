@@ -137,10 +137,12 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 
 	var (
 		hashInBlock []string // all txs in block
+		blockPos    []int32  // position of txs in block
 		hashHist    []string // historical txs not already stored
 		data        [][]byte // parallel with hashHist
 	)
-	for _, tx := range block.Transactions {
+	for i, tx := range block.Transactions {
+		blockPos = append(blockPos, int32(i))
 		hashInBlock = append(hashInBlock, tx.Hash.String())
 		if !tx.Stored {
 			var buf bytes.Buffer
@@ -178,10 +180,17 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 	}
 
 	const blockTxQ = `
-		INSERT INTO blocks_txs (tx_hash, block_hash)
-		SELECT unnest($1::text[]), $2;
+		INSERT INTO blocks_txs (tx_hash, block_pos, block_hash, block_height)
+		SELECT unnest($1::text[]), unnest($2::int[]), $3, $4;
 	`
-	_, err = pg.FromContext(ctx).Exec(ctx, blockTxQ, pg.Strings(hashInBlock), block.Hash())
+	_, err = pg.FromContext(ctx).Exec(
+		ctx,
+		blockTxQ,
+		pg.Strings(hashInBlock),
+		pg.Int32s(blockPos),
+		block.Hash(),
+		block.Height,
+	)
 	return nil, errors.Wrap(err, "insert block txs")
 }
 

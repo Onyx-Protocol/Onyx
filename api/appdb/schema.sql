@@ -439,7 +439,9 @@ CREATE TABLE blocks (
 
 CREATE TABLE blocks_txs (
     tx_hash text NOT NULL,
-    block_hash text NOT NULL
+    block_hash text NOT NULL,
+    block_height bigint,
+    block_pos integer
 );
 
 

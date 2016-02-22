@@ -97,11 +97,11 @@ func TestGetSummary(t *testing.T) {
 			(` + hashForFixture(b1.Hash()) + `, ` + strconv.Itoa(int(b1.Height)) + `, ` + blockForFixture(&b1) + `, '');
 
 		INSERT INTO blocks_txs
-			(block_hash, tx_hash)
+			(block_hash, tx_hash, block_height, block_pos)
 		VALUES
-			(` + hashForFixture(b0.Hash()) + `, ` + hashForFixture(t0.Hash()) + `),
-			(` + hashForFixture(b1.Hash()) + `, ` + hashForFixture(t1.Hash()) + `),
-			(` + hashForFixture(b1.Hash()) + `, ` + hashForFixture(t2.Hash()) + `);
+			(` + hashForFixture(b0.Hash()) + `, ` + hashForFixture(t0.Hash()) + `, 1, 0),
+			(` + hashForFixture(b1.Hash()) + `, ` + hashForFixture(t1.Hash()) + `, 1, 1),
+			(` + hashForFixture(b1.Hash()) + `, ` + hashForFixture(t2.Hash()) + `, 1, 2);
 
 		INSERT INTO pool_txs
 			(tx_hash, data)
