@@ -88,13 +88,13 @@ func Write(ctx context.Context, tx *bc.Tx, ts time.Time) error {
 		nodeAccounts[acc.ManagerNodeID] = append(nodeAccounts[acc.ManagerNodeID], acc.ID)
 	}
 
-	NodeTx, err := generateNodeTx(tx, ins, outs, assetMap, accountMap, ts)
+	nodeTx, err := generateNodeTx(tx, ins, outs, assetMap, accountMap, ts)
 	if err != nil {
-		return errors.Wrap(err, "generating master")
+		return errors.Wrap(err, "generating principal nodetx")
 	}
 
 	if tx.IsIssuance() {
-		filteredTx, err := json.Marshal(filterAccounts(NodeTx, ""))
+		filteredTx, err := json.Marshal(filterAccounts(nodeTx, ""))
 		if err != nil {
 			return errors.Wrap(err, "filtering tx")
 		}
@@ -105,7 +105,7 @@ func Write(ctx context.Context, tx *bc.Tx, ts time.Time) error {
 	}
 
 	for nodeID, accountIDs := range nodeAccounts {
-		filteredTx, err := json.Marshal(filterAccounts(NodeTx, nodeID))
+		filteredTx, err := json.Marshal(filterAccounts(nodeTx, nodeID))
 		if err != nil {
 			return errors.Wrap(err, "filtering tx")
 		}
