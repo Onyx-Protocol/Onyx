@@ -4,7 +4,7 @@ txscript
 # Fedchain version
 
 This directory was created by duplicating
-https://github.com/chain-engineering/chain/tree/master/vendor/github.com/btcsuite/btcd/txscript
+$CHAIN/vendor/github.com/btcsuite/btcd/txscript
 (at commit
 https://github.com/chain-engineering/chain/commit/32d6bec1b8011311d730ba1aaf4c1f9bb972aa46)
 for purposes of extending Bitcoin Script with Fedchain P2C opcodes and
