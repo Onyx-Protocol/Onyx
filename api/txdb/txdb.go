@@ -191,7 +191,10 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 		block.Hash(),
 		block.Height,
 	)
-	return nil, errors.Wrap(err, "insert block txs")
+	if err != nil {
+		return nil, errors.Wrap(err, "insert block txs")
+	}
+	return newHashes, nil
 }
 
 // ListBlocks returns a list of the most recent blocks,
