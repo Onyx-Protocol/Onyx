@@ -177,7 +177,7 @@ func (s *Store) ApplyBlock(
 		newMap[hash] = true
 	}
 	for _, tx := range block.Transactions {
-		if newTx := newMap[tx.Hash]; newTx {
+		if newMap[tx.Hash] {
 			newTxs = append(newTxs, tx)
 			continue
 		}
