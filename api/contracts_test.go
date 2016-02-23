@@ -179,7 +179,7 @@ func offerAndFind(ctx context.Context, t testing.TB, fixtureInfo *contractsFixtu
 		AssetID: fixtureInfo.aaplAssetID,
 		Amount:  100,
 	}
-	source := asset.NewAccountSource(ctx, assetAmount, fixtureInfo.sellerAccountID)
+	source := asset.NewAccountSource(ctx, assetAmount, fixtureInfo.sellerAccountID, nil)
 	sources := []*txbuilder.Source{source}
 
 	orderInfo := &orderbook.OrderInfo{

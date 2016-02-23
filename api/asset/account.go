@@ -15,14 +15,16 @@ import (
 )
 
 type AccountReserver struct {
-	AccountID string
+	AccountID   string
+	ClientToken *string
 }
 
 func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
 	utxodbSource := utxodb.Source{
-		AssetID:   assetAmount.AssetID,
-		Amount:    assetAmount.Amount,
-		AccountID: reserver.AccountID,
+		AssetID:     assetAmount.AssetID,
+		Amount:      assetAmount.Amount,
+		AccountID:   reserver.AccountID,
+		ClientToken: reserver.ClientToken,
 	}
 	utxodbSources := []utxodb.Source{utxodbSource}
 	reserved, change, err := utxodb.Reserve(ctx, utxodbSources, ttl)
@@ -72,11 +74,12 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 	return result, nil
 }
 
-func NewAccountSource(ctx context.Context, assetAmount *bc.AssetAmount, accountID string) *txbuilder.Source {
+func NewAccountSource(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, clientToken *string) *txbuilder.Source {
 	return &txbuilder.Source{
 		AssetAmount: *assetAmount,
 		Reserver: &AccountReserver{
-			AccountID: accountID,
+			AccountID:   accountID,
+			ClientToken: clientToken,
 		},
 	}
 }

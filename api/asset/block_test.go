@@ -302,7 +302,7 @@ func transfer(ctx context.Context, t testing.TB, info *clientInfo, srcAcctID, de
 		AssetID: info.asset.Hash,
 		Amount:  amount,
 	}
-	source := NewAccountSource(ctx, assetAmount, srcAcctID)
+	source := NewAccountSource(ctx, assetAmount, srcAcctID, nil)
 	sources := []*txbuilder.Source{source}
 
 	dest, err := NewAccountDestination(ctx, assetAmount, destAcctID, nil)

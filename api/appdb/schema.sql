@@ -119,19 +119,29 @@ $$;
 
 
 --
--- Name: create_reservation(text, text, timestamp with time zone); Type: FUNCTION; Schema: public; Owner: -
+-- Name: create_reservation(text, text, timestamp with time zone, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION create_reservation(inp_asset_id text, inp_account_id text, inp_expiry timestamp with time zone) RETURNS integer
+CREATE FUNCTION create_reservation(inp_asset_id text, inp_account_id text, inp_expiry timestamp with time zone, inp_idempotency_key text, OUT reservation_id integer, OUT already_existed boolean, OUT existing_change bigint) RETURNS record
     LANGUAGE plpgsql
     AS $$
 DECLARE
-    new_reservation_id INT;
     row RECORD;
 BEGIN
-    SELECT NEXTVAL('reservation_seq') INTO STRICT new_reservation_id;
-    INSERT INTO reservations (reservation_id, asset_id, account_id, expiry) VALUES (new_reservation_id, inp_asset_id, inp_account_id, inp_expiry);
-    RETURN new_reservation_id;
+    INSERT INTO reservations (asset_id, account_id, expiry, idempotency_key)
+        VALUES (inp_asset_id, inp_account_id, inp_expiry, inp_idempotency_key)
+        ON CONFLICT (account_id, idempotency_key) DO NOTHING
+        RETURNING reservations.reservation_id, FALSE AS already_existed, CAST(0 AS BIGINT) AS existing_change INTO row;
+    -- Iff the insert was successful, then a row is returned. The IF NOT FOUND check
+    -- will be true iff the insert failed because the row already exists.
+    IF NOT FOUND THEN
+        SELECT r.reservation_id, TRUE AS already_existed, r.change AS existing_change INTO STRICT row
+            FROM reservations r
+            WHERE r.account_id = inp_account_id AND r.idempotency_key = inp_idempotency_key;
+    END IF;
+    reservation_id := row.reservation_id;
+    already_existed := row.already_existed;
+    existing_change := row.existing_change;
 END;
 $$;
 
@@ -191,20 +201,24 @@ $$;
 
 
 --
--- Name: reserve_utxos(text, text, bigint, timestamp with time zone); Type: FUNCTION; Schema: public; Owner: -
+-- Name: reserve_utxos(text, text, bigint, timestamp with time zone, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION reserve_utxos(inp_asset_id text, inp_account_id text, inp_amt bigint, inp_expiry timestamp with time zone) RETURNS record
+CREATE FUNCTION reserve_utxos(inp_asset_id text, inp_account_id text, inp_amt bigint, inp_expiry timestamp with time zone, inp_idempotency_key text) RETURNS record
     LANGUAGE plpgsql
     AS $$
 DECLARE
+    res RECORD;
     row RECORD;
     ret RECORD;
-    new_reservation_id INT;
     available BIGINT := 0;
     unavailable BIGINT := 0;
 BEGIN
-    SELECT create_reservation(inp_asset_id, inp_account_id, inp_expiry) INTO STRICT new_reservation_id;
+    SELECT * FROM create_reservation(inp_asset_id, inp_account_id, inp_expiry, inp_idempotency_key) INTO STRICT res;
+    IF res.already_existed THEN
+      SELECT res.reservation_id, res.already_existed, res.existing_change, CAST(0 AS BIGINT) AS amount, FALSE AS insufficient INTO ret;
+      RETURN ret;
+    END IF;
 
     LOOP
         SELECT tx_hash, index, amount INTO row
@@ -217,7 +231,7 @@ BEGIN
             FOR UPDATE
             SKIP LOCKED;
         IF FOUND THEN
-            UPDATE account_utxos SET reservation_id = new_reservation_id
+            UPDATE account_utxos SET reservation_id = res.reservation_id
                 WHERE (tx_hash, index) = (row.tx_hash, row.index);
             available := available + row.amount;
             IF available >= inp_amt THEN
@@ -233,14 +247,14 @@ BEGIN
             FROM reservations
             WHERE asset_id = inp_asset_id AND account_id = inp_account_id;
         unavailable := row.change;
-        PERFORM cancel_reservation(new_reservation_id);
-        new_reservation_id := 0;
+        PERFORM cancel_reservation(res.reservation_id);
+        res.reservation_id := 0;
     ELSE
         UPDATE reservations SET change = available - inp_amt
-            WHERE reservation_id = new_reservation_id;
+            WHERE reservation_id = res.reservation_id;
     END IF;
 
-    SELECT new_reservation_id, available, (available+unavailable < inp_amt) INTO ret;
+    SELECT res.reservation_id, res.already_existed, CAST(0 AS BIGINT) AS existing_change, available AS amount, (available+unavailable < inp_amt) AS insufficient INTO ret;
     RETURN ret;
 END;
 $$;
@@ -763,7 +777,8 @@ CREATE TABLE reservations (
     asset_id text NOT NULL,
     account_id text NOT NULL,
     expiry timestamp with time zone DEFAULT '1970-01-01 00:00:00-08'::timestamp with time zone NOT NULL,
-    change bigint DEFAULT 0 NOT NULL
+    change bigint DEFAULT 0 NOT NULL,
+    idempotency_key text
 );
 
 
@@ -1075,6 +1090,14 @@ ALTER TABLE ONLY pool_txs
 
 ALTER TABLE ONLY projects
     ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: reservations_account_id_idempotency_key_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY reservations
+    ADD CONSTRAINT reservations_account_id_idempotency_key_key UNIQUE (account_id, idempotency_key);
 
 
 --

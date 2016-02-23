@@ -25,6 +25,8 @@ type Source struct {
 	TxHash         *bc.Hash    `json:"transaction_hash"`
 	Index          *uint32     `json:"index"`
 	Type           string
+	// ClientToken is an idempotency key to guarantee one-time reservation.
+	ClientToken *string `json:"client_token"`
 }
 
 func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
@@ -40,7 +42,7 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 			AssetID: *source.AssetID,
 			Amount:  source.Amount,
 		}
-		return asset.NewAccountSource(ctx, assetAmount, source.AccountID), nil
+		return asset.NewAccountSource(ctx, assetAmount, source.AccountID, source.ClientToken), nil
 	}
 	if source.Type == "orderbook-redeem" {
 		if source.PaymentAssetID == nil {

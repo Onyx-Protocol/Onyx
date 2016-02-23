@@ -17,7 +17,6 @@ import (
 )
 
 // POST /v3/assets/:assetID/issue
-// Idempotent
 func issueAsset(ctx context.Context, assetIDStr string, reqDests []*Destination) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)

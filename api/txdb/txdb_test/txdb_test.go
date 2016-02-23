@@ -61,7 +61,7 @@ func TestListUTXOsByAsset(t *testing.T) {
 		[]*txbuilder.Source{asset.NewAccountSource(ctx, &bc.AssetAmount{
 			AssetID: assetID2,
 			Amount:  1,
-		}, accountID2)},
+		}, accountID2, nil)},
 		[]*txbuilder.Destination{assettest.AccountDest(ctx, t, accountID1, assetID2, 1)},
 	)
 
@@ -78,7 +78,7 @@ func TestListUTXOsByAsset(t *testing.T) {
 		[]*txbuilder.Source{asset.NewAccountSource(ctx, &bc.AssetAmount{
 			AssetID: assetID1,
 			Amount:  1,
-		}, accountID1)},
+		}, accountID1, nil)},
 		[]*txbuilder.Destination{assettest.AccountDest(ctx, t, accountID2, assetID1, 1)},
 	)
 

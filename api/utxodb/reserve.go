@@ -71,10 +71,11 @@ type (
 	}
 
 	Source struct {
-		AssetID   bc.AssetID `json:"asset_id"`
-		AccountID string     `json:"account_id"`
-		TxID      string     `json:"transaction_id"` // TODO(bobg): remove this, it's unused
-		Amount    uint64
+		AssetID     bc.AssetID `json:"asset_id"`
+		AccountID   string     `json:"account_id"`
+		TxID        string     `json:"transaction_id"` // TODO(bobg): remove this, it's unused
+		Amount      uint64
+		ClientToken *string `json:"client_token"`
 	}
 )
 
@@ -109,29 +110,43 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 	now := time.Now().UTC()
 	exp := now.Add(ttl)
 
-	const q1 = `
-		SELECT * FROM reserve_utxos($1, $2, $3, $4)
-		    AS (reservation_id INT, amount BIGINT, insufficient BOOLEAN)
+	const (
+		reserveQ = `
+		SELECT * FROM reserve_utxos($1, $2, $3, $4, $5)
+		    AS (reservation_id INT, already_existed BOOLEAN, existing_change BIGINT, amount BIGINT, insufficient BOOLEAN)
 		`
-	const q2 = `
+		utxosQ = `
 		SELECT tx_hash, index, amount, key_index(addr_index)
 		    FROM account_utxos
 		    WHERE reservation_id = $1
 		`
+	)
 
 	for _, source := range sources {
 		var (
 			reservationID  int32
+			alreadyExisted bool
+			existingChange uint64
 			reservedAmount uint64
 			insufficient   bool
 		)
 
-		row := db.QueryRow(ctx, q1, source.AssetID, source.AccountID, source.Amount, exp)
-		err = row.Scan(&reservationID, &reservedAmount, &insufficient)
+		// Create a reservation row and reserve the utxos. If this reservation
+		// has alredy been processed in a previous request:
+		//  * the existing reservation ID will be returned
+		//  * already_existed will be TRUE
+		//  * existing_change will be the change value for the existing
+		//    reservation row.
+		err = db.QueryRow(ctx, reserveQ, source.AssetID, source.AccountID, source.Amount, exp, source.ClientToken).Scan(
+			&reservationID,
+			&alreadyExisted,
+			&existingChange,
+			&reservedAmount,
+			&insufficient,
+		)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "reserve utxos")
 		}
-
 		if reservationID <= 0 {
 			if insufficient {
 				return nil, nil, ErrInsufficient
@@ -141,11 +156,14 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 
 		reservationIDs = append(reservationIDs, reservationID)
 
-		if reservedAmount > source.Amount {
+		if alreadyExisted && existingChange > 0 {
+			// This reservation already exists from a previous request
+			change = append(change, Change{source, existingChange})
+		} else if reservedAmount > source.Amount {
 			change = append(change, Change{source, reservedAmount - source.Amount})
 		}
 
-		rows, err := db.Query(ctx, q2, reservationID)
+		rows, err := db.Query(ctx, utxosQ, reservationID)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "reservation member query")
 		}
