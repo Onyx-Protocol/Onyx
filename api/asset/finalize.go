@@ -8,11 +8,13 @@ import (
 	"chain/api/rpcclient"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
+	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
 	chainlog "chain/log"
 	"chain/metrics"
+	"chain/net/trace/span"
 )
 
 // ErrBadTx is returned by FinalizeTx
@@ -64,8 +66,7 @@ func publishTx(ctx context.Context, msg *bc.Tx) error {
 }
 
 func addAccountData(ctx context.Context, tx *bc.Tx) error {
-	txdbMap := make(map[bc.Outpoint]*txdb.Output, len(tx.Outputs))
-	txdbOuts := make([]*txdb.Output, 0, len(tx.Outputs))
+	var outs []*txdb.Output
 	for i, out := range tx.Outputs {
 		txdbOutput := &txdb.Output{
 			Output: state.Output{
@@ -73,15 +74,64 @@ func addAccountData(ctx context.Context, tx *bc.Tx) error {
 				Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(i)},
 			},
 		}
-		txdbMap[txdbOutput.Outpoint] = txdbOutput
-		txdbOuts = append(txdbOuts, txdbOutput)
+		outs = append(outs, txdbOutput)
 	}
 
-	err := loadAccountInfoFromAddrs(ctx, txdbMap)
+	addrOuts, err := loadAccountInfo(ctx, outs)
 	if err != nil {
 		return errors.Wrap(err, "loading account info from addresses")
 	}
 
-	err = txdb.InsertAccountOutputs(ctx, txdbOuts)
+	err = txdb.InsertAccountOutputs(ctx, addrOuts)
 	return errors.Wrap(err, "updating pool outputs")
+}
+
+// loadAccountInfo queries the addresses table
+// to load account information using output scripts
+func loadAccountInfo(ctx context.Context, outs []*txdb.Output) ([]*txdb.Output, error) {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
+	var (
+		scripts      [][]byte
+		outsByScript = make(map[string][]*txdb.Output)
+	)
+	for _, out := range outs {
+		scripts = append(scripts, out.Script)
+		outsByScript[string(out.Script)] = append(outsByScript[string(out.Script)], out)
+	}
+
+	const addrq = `
+		SELECT pk_script, manager_node_id, account_id, key_index(key_index)
+		FROM addresses
+		WHERE pk_script IN (SELECT unnest($1::bytea[]))
+	`
+	rows, err := pg.FromContext(ctx).Query(ctx, addrq, pg.Byteas(scripts))
+	if err != nil {
+		return nil, errors.Wrap(err, "addresses select query")
+	}
+	defer rows.Close()
+
+	var addrOuts []*txdb.Output
+	for rows.Next() {
+		var (
+			script         []byte
+			mnodeID, accID string
+			addrIndex      []uint32
+		)
+		err := rows.Scan(&script, &mnodeID, &accID, (*pg.Uint32s)(&addrIndex))
+		if err != nil {
+			return nil, errors.Wrap(err, "addresses row scan")
+		}
+		for _, out := range outsByScript[string(script)] {
+			out.ManagerNodeID = mnodeID
+			out.AccountID = accID
+			copy(out.AddrIndex[:], addrIndex)
+			addrOuts = append(addrOuts, out)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(rows.Err(), "addresses end row scan loop")
+	}
+	return addrOuts, nil
 }

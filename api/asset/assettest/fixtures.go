@@ -143,6 +143,17 @@ func CreateAccountFixture(ctx context.Context, t testing.TB, managerNodeID, labe
 	return account.ID
 }
 
+func CreateAddressFixture(ctx context.Context, t testing.TB, accID string) *appdb.Address {
+	if accID == "" {
+		accID = CreateAccountFixture(ctx, t, "", "", nil)
+	}
+	addr, err := appdb.NewAddress(ctx, accID, true)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	return addr
+}
+
 var assetCounter = createCounter()
 
 func CreateAssetFixture(ctx context.Context, t testing.TB, issuerNodeID, label, def string) bc.AssetID {
