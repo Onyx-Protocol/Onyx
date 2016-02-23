@@ -440,8 +440,8 @@ CREATE TABLE blocks (
 CREATE TABLE blocks_txs (
     tx_hash text NOT NULL,
     block_hash text NOT NULL,
-    block_height bigint,
-    block_pos integer
+    block_height bigint NOT NULL,
+    block_pos integer NOT NULL
 );
 
 
@@ -1227,6 +1227,13 @@ CREATE INDEX assets_sort_id ON assets USING btree (sort_id);
 --
 
 CREATE INDEX auth_tokens_user_id_idx ON auth_tokens USING btree (user_id);
+
+
+--
+-- Name: blocks_txs_block_height_block_pos_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX blocks_txs_block_height_block_pos_key ON blocks_txs USING btree (block_height, block_pos);
 
 
 --
