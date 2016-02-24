@@ -165,6 +165,12 @@ func (s *Store) ApplyBlock(
 	adps map[bc.AssetID]*bc.AssetDefinitionPointer,
 	delta []*state.Output,
 ) ([]*bc.Tx, error) {
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer dbtx.Rollback(ctx)
+
 	newHashes, err := insertBlock(ctx, block)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert block")
@@ -212,6 +218,11 @@ func (s *Store) ApplyBlock(
 	err = removeIssuances(ctx, sumIssued(oldTxs...))
 	if err != nil {
 		return nil, errors.Wrap(err, "removing confirmed issuances from pool")
+	}
+
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "committing db transaction")
 	}
 
 	// Note: this is done last so that callers of LatestBlock
