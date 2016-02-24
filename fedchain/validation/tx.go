@@ -38,7 +38,7 @@ func ValidateTxInputs(ctx context.Context, view state.ViewReader, tx *bc.Tx) err
 // changes to the view.
 // If tx is invalid,
 // it returns a non-nil error describing why.
-func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp uint64, prevHash *bc.Hash) error {
+func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp uint64) error {
 	// Don't make a span here, because there are too many of them
 	// to comfortably fit in a single trace for processing (creating
 	// or applying) a block.

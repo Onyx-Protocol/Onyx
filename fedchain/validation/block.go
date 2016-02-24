@@ -51,7 +51,7 @@ func validateBlock(ctx context.Context, view state.View, prevBlock, block *bc.Bl
 	// TODO(erywalder): consider writing to a temporary view instead
 	// of the one provided and make the caller call ApplyBlock as well
 	for _, tx := range block.Transactions {
-		err := ValidateTx(ctx, view, tx, block.Timestamp, &block.PreviousBlockHash)
+		err := ValidateTx(ctx, view, tx, block.Timestamp)
 		if err != nil {
 			return err
 		}

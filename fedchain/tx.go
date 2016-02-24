@@ -56,8 +56,7 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 	}
 
 	view := state.MultiReader(poolView, bcView)
-	// TODO(kr): get current block hash for last argument to ValidateTx
-	err = validation.ValidateTx(txCtx, view, tx, uint64(time.Now().Unix()), nil)
+	err = validation.ValidateTx(txCtx, view, tx, uint64(time.Now().Unix()))
 	if err != nil {
 		return errors.Wrapf(ErrTxRejected, "validate tx: %v", err)
 	}
