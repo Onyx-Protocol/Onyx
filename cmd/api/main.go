@@ -174,7 +174,7 @@ func main() {
 	}
 
 	var h chainhttp.Handler
-	h = api.Handler(*nouserSecret)
+	h = api.Handler(*nouserSecret, localSigner)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}

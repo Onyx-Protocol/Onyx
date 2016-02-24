@@ -7,6 +7,7 @@ import (
 	"chain/api/appdb"
 	"chain/api/explorer"
 	"chain/api/generator"
+	"chain/api/signer"
 	chainhttp "chain/net/http"
 	"chain/net/http/httpjson"
 	"chain/net/http/pat"
@@ -22,7 +23,7 @@ const (
 
 // Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
 // will be used as the password for routes starting with /nouser/.
-func Handler(nouserSecret string) chainhttp.Handler {
+func Handler(nouserSecret string, signer *signer.Signer) chainhttp.Handler {
 	h := pat.New()
 
 	pwHandler := httpjson.NewServeMux(writeHTTPError)
@@ -41,7 +42,7 @@ func Handler(nouserSecret string) chainhttp.Handler {
 	h.Add("POST", "/", tokenHandler)
 	h.Add("DELETE", "/", tokenHandler)
 
-	rpcHandler := chainhttp.HandlerFunc(rpcAuthn(rpcAuthedHandler()))
+	rpcHandler := chainhttp.HandlerFunc(rpcAuthn(rpcAuthedHandler(signer)))
 	h.Add("GET", "/rpc/", rpcHandler)
 	h.Add("PUT", "/rpc/", rpcHandler)
 	h.Add("POST", "/rpc/", rpcHandler)
@@ -147,11 +148,16 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	return h.ServeHTTPContext
 }
 
-func rpcAuthedHandler() chainhttp.HandlerFunc {
+func rpcAuthedHandler(signer *signer.Signer) chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
 
-	h.HandleFunc("POST", "/rpc/generator/submit", generator.Submit)
-	h.HandleFunc("POST", "/rpc/generator/get-blocks", generator.GetBlocks)
+	if generator.Enabled() {
+		h.HandleFunc("POST", "/rpc/generator/submit", generator.Submit)
+		h.HandleFunc("POST", "/rpc/generator/get-blocks", generator.GetBlocks)
+	}
+	if signer != nil {
+		h.HandleFunc("POST", "/rpc/signer/sign-block", signer.SignBlock)
+	}
 
 	return h.ServeHTTPContext
 }

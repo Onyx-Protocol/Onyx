@@ -28,7 +28,7 @@ func TestMux(t *testing.T) {
 			t.Fatal("unexpected panic:", err)
 		}
 	}()
-	Handler("")
+	Handler("", nil)
 }
 
 func TestLogin(t *testing.T) {
