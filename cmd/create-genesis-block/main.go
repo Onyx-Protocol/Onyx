@@ -39,8 +39,11 @@ func main() {
 	}
 	ctx := pg.NewContext(context.Background(), db)
 
-	store := txdb.NewStore()
-	fc := fedchain.New(store, nil)
+	fc, err := fedchain.New(ctx, txdb.NewStore(), nil)
+	if err != nil {
+		log.Fatalln("error:", err)
+	}
+
 	b, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubKey}, 1)
 	if err != nil {
 		log.Fatalln("error:", err)

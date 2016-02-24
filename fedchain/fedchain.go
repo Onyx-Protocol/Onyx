@@ -62,6 +62,10 @@ var (
 	// waiting for a blockheight too far in excess of the tip of the
 	// blockchain.
 	ErrTheDistantFuture = errors.New("the block height is too damn high")
+
+	// ErrNoBlocks is returned when LatestBlock is called and the store
+	// contains no blocks.
+	ErrNoBlocks = errors.New("no blocks in the store")
 )
 
 type BlockCallback func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx)
@@ -104,9 +108,9 @@ type FC struct {
 	txCallbacks     []TxCallback
 	trustedKeys     []*btcec.PublicKey
 	blockHeightInfo struct {
-		mutex   sync.Mutex
+		mutex   sync.Mutex // protects this structure
 		condvar *sync.Cond
-		height  uint64 // protected by mutex
+		height  uint64
 	}
 	store Store
 }
@@ -117,10 +121,22 @@ type FC struct {
 // in trustedKeys. Typically, trustedKeys contains the public key
 // for the local block-signer process; the presence of its
 // signature indicates the block was already validated locally.
-func New(store Store, trustedKeys []*btcec.PublicKey) *FC {
+func New(ctx context.Context, store Store, trustedKeys []*btcec.PublicKey) (*FC, error) {
 	result := &FC{store: store, trustedKeys: trustedKeys}
+
+	latestBlock, err := result.LatestBlock(ctx)
+	if err == nil {
+		result.blockHeightInfo.height = latestBlock.Height
+	} else if errors.Root(err) != ErrNoBlocks {
+		return nil, errors.Wrap(err, "looking up latest block")
+	}
+
+	// Now result.blockHeightInfo.height may be zero because of
+	// ErrNoBlocks or because latestBlock.Height==0.  For now at least,
+	// we don't need to distinguish between those cases.
+
 	result.blockHeightInfo.condvar = sync.NewCond(&result.blockHeightInfo.mutex)
-	return result
+	return result, nil
 }
 
 func (fc *FC) AddBlockCallback(f BlockCallback) {
@@ -132,7 +148,14 @@ func (fc *FC) AddTxCallback(f TxCallback) {
 }
 
 func (fc *FC) LatestBlock(ctx context.Context) (*bc.Block, error) {
-	return fc.store.LatestBlock(ctx)
+	result, err := fc.store.LatestBlock(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, ErrNoBlocks
+	}
+	return result, nil
 }
 
 func (fc *FC) WaitForBlock(ctx context.Context, height uint64) error {

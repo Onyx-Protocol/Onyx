@@ -83,9 +83,21 @@ func ValidateBlockHeader(ctx context.Context, prevBlock, block *bc.Block) error 
 }
 
 func validateBlockHeader(ctx context.Context, prevBlock, block *bc.Block, runScript bool) error {
-	prevHash := prevBlock.Hash()
-	if !bytes.Equal(block.PreviousBlockHash[:], prevHash[:]) {
-		return ErrBadPrevHash
+	if prevBlock == nil {
+		if block.Height != 0 {
+			return ErrBadHeight
+		}
+	} else {
+		prevHash := prevBlock.Hash()
+		if !bytes.Equal(block.PreviousBlockHash[:], prevHash[:]) {
+			return ErrBadPrevHash
+		}
+		if block.Height != prevBlock.Height+1 {
+			return ErrBadHeight
+		}
+		if block.Timestamp < prevBlock.Timestamp {
+			return ErrBadTimestamp
+		}
 	}
 
 	txMerkleRoot := CalcMerkleRoot(block.Transactions)
@@ -94,19 +106,11 @@ func validateBlockHeader(ctx context.Context, prevBlock, block *bc.Block, runScr
 		return ErrBadTxRoot
 	}
 
-	if block.Height != prevBlock.Height+1 {
-		return ErrBadHeight
-	}
-
-	if block.Timestamp < prevBlock.Timestamp {
-		return ErrBadTimestamp
-	}
-
 	if txscript.IsUnspendable(block.OutputScript) {
 		return ErrBadScript
 	}
 
-	if runScript {
+	if runScript && prevBlock != nil {
 		engine, err := txscript.NewEngineForBlock(ctx, prevBlock.OutputScript, block, txscript.StandardVerifyFlags)
 		if err != nil {
 			return err

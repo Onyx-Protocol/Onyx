@@ -148,7 +148,11 @@ func main() {
 	db.SetMaxIdleConns(100)
 	ctx = pg.NewContext(ctx, db)
 
-	fc := fedchain.New(txdb.NewStore(), []*btcec.PublicKey{pubKey})
+	fc, err := fedchain.New(ctx, txdb.NewStore(), []*btcec.PublicKey{pubKey})
+	if err != nil {
+		chainlog.Fatal(ctx, "error", err)
+	}
+
 	var localSigner *signer.Signer
 	if *isSigner {
 		localSigner = signer.New(privKey, fc)

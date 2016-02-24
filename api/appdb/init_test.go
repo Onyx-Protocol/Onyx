@@ -5,7 +5,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/api/asset"
 	"chain/api/txdb"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
@@ -18,9 +17,6 @@ var (
 )
 
 func init() {
-	store = txdb.NewStore()
-	fc := fedchain.New(store, nil)
-	asset.Init(fc, true)
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
 		u = s
@@ -28,4 +24,5 @@ func init() {
 
 	ctx := context.Background()
 	db = pgtest.Open(ctx, u, "appdbtest", "schema.sql")
+	store = txdb.NewStore()
 }

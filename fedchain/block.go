@@ -1,7 +1,6 @@
 package fedchain
 
 import (
-	"database/sql"
 	"time"
 
 	"golang.org/x/net/context"
@@ -91,18 +90,6 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 //
 // This updates the UTXO set and ADPs, and calls new-block callbacks.
 func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
-	if block.Height == 0 {
-		// Handle genesis block
-		latestBlock, err := fc.store.LatestBlock(ctx)
-		if err != nil && errors.Root(err) != sql.ErrNoRows {
-			return errors.Wrap(err, "getting latest block")
-		}
-		if latestBlock != nil {
-			// Genesis block already exists, silently ignore this one
-			return nil
-		}
-	}
-
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -159,7 +146,7 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	mv := newMemView()
 
 	prevBlock, err := fc.LatestBlock(ctx)
-	if err != nil {
+	if err != nil && errors.Root(err) != ErrNoBlocks {
 		return errors.Wrap(err, "getting latest known block")
 	}
 
@@ -178,28 +165,23 @@ func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, view state.Vie
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	if block.Height > 0 {
-		prevBlock, err := fc.store.LatestBlock(ctx)
-		if err != nil {
-			return errors.Wrap(err, "loading previous block")
-		}
-		err = validation.ValidateBlockHeader(ctx, prevBlock, block)
-		if err != nil {
-			return errors.Wrap(err, "validating block header")
-		}
-		if !isSignedByTrustedHost(block, fc.trustedKeys) {
-			err = validation.ValidateAndApplyBlock(ctx, view, prevBlock, block)
-			if err != nil {
-				return errors.Wrapf(ErrBadBlock, "validate block: %v", err)
-			}
-			return nil
-		}
+	prevBlock, err := fc.store.LatestBlock(ctx)
+	if err != nil {
+		return errors.Wrap(err, "loading previous block")
+	}
+	err = validation.ValidateBlockHeader(ctx, prevBlock, block)
+	if err != nil {
+		return errors.Wrap(err, "validating block header")
 	}
 
-	// Block height is 0, or it's signed by a trusted host.  Apply
-	// without validation.
-	validation.ApplyBlock(ctx, view, block)
-
+	if isSignedByTrustedHost(block, fc.trustedKeys) {
+		err = validation.ApplyBlock(ctx, view, block)
+	} else {
+		err = validation.ValidateAndApplyBlock(ctx, view, prevBlock, block)
+	}
+	if err != nil {
+		return errors.Wrapf(ErrBadBlock, "validate block: %v", err)
+	}
 	return nil
 }
 

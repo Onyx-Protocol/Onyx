@@ -331,7 +331,11 @@ func TestUpsertGenesisBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fc := fedchain.New(txdb.NewStore(), nil)
+	fc, err := fedchain.New(ctx, txdb.NewStore(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	b, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
 	if err != nil {
 		t.Fatal(err)

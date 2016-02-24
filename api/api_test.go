@@ -10,9 +10,12 @@ import (
 	"chain/api/asset"
 	"chain/api/asset/assettest"
 	"chain/api/issuer"
+	"chain/api/smartcontracts/orderbook"
 	"chain/api/txbuilder"
+	"chain/api/txdb"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/fedchain"
 	"chain/fedchain/bc"
 	"chain/net/http/authn"
 	chaintest "chain/testutil"
@@ -54,7 +57,7 @@ func TestLogin(t *testing.T) {
 }
 
 func TestIssue(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := apiTest(t)
 	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
@@ -103,7 +106,7 @@ func TestIssue(t *testing.T) {
 }
 
 func TestTransfer(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := apiTest(t)
 	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
@@ -236,4 +239,18 @@ func toRequestTemplate(inp *txbuilder.Template) (*Template, error) {
 	var tpl Template
 	err = json.Unmarshal(jsonInp, &tpl)
 	return &tpl, err
+}
+
+func apiTest(t testing.TB) context.Context {
+	ctx := pgtest.NewContext(t)
+
+	fc, err := fedchain.New(ctx, txdb.NewStore(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	asset.Init(fc, true)
+	orderbook.ConnectFedchain(fc)
+
+	return ctx
 }

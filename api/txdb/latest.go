@@ -11,7 +11,8 @@ import (
 	"chain/net/trace/span"
 )
 
-// LatestBlock returns the most recent block.
+// LatestBlock returns the most recent block.  It is not an error (at
+// this layer) to have an empty blocks table.
 func (s *Store) LatestBlock(ctx context.Context) (*bc.Block, error) {
 	s.latestBlockCache.mutex.Lock()
 	defer s.latestBlockCache.mutex.Unlock()
@@ -29,7 +30,7 @@ func (s *Store) LatestBlock(ctx context.Context) (*bc.Block, error) {
 	b := new(bc.Block)
 	err := pg.FromContext(ctx).QueryRow(ctx, q).Scan(b)
 	if err == sql.ErrNoRows {
-		return nil, errors.Wrap(err, "blocks table is empty; please seed with genesis block")
+		return nil, nil
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")

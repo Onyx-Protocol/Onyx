@@ -1,12 +1,12 @@
 package rpcclient
 
 import (
-	"database/sql"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/errors"
+	"chain/fedchain"
 	"chain/fedchain/bc"
 	"chain/log"
 	"chain/net/rpc"
@@ -44,7 +44,7 @@ func GetBlocks(ctx context.Context) error {
 	}
 
 	latestBlock, err := fc.LatestBlock(ctx)
-	if err != nil && errors.Root(err) != sql.ErrNoRows {
+	if err != nil && errors.Root(err) != fedchain.ErrNoBlocks {
 		return errors.Wrap(err, "looking up last-known block")
 	}
 

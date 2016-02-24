@@ -236,7 +236,10 @@ func InitializeSigningGenerator(ctx context.Context) (*fedchain.FC, error) {
 	if err != nil {
 		return nil, err
 	}
-	fc := fedchain.New(txdb.NewStore(), nil)
+	fc, err := fedchain.New(ctx, txdb.NewStore(), nil)
+	if err != nil {
+		return nil, err
+	}
 	asset.Init(fc, true)
 	privkey, err := testutil.TestXPrv.ECPrivKey()
 	if err != nil {
