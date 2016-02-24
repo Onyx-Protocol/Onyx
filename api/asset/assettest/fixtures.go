@@ -16,6 +16,7 @@ import (
 	"chain/api/signer"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
+	"chain/errors"
 	"chain/fedchain"
 	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
@@ -261,4 +262,49 @@ func InitializeSigningGenerator(ctx context.Context) (*fedchain.FC, error) {
 		}
 	}
 	return fc, nil
+}
+
+func Issue(ctx context.Context, t testing.TB, assetID bc.AssetID, dests []*txbuilder.Destination) *bc.Tx {
+	txTemplate, err := issuer.Issue(ctx, assetID.String(), dests)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+	tx, err := asset.FinalizeTx(ctx, txTemplate)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	return tx
+}
+
+func Transfer(ctx context.Context, t testing.TB, srcs []*txbuilder.Source, dests []*txbuilder.Destination) *bc.Tx {
+	template, err := txbuilder.Build(ctx, nil, srcs, dests, nil, time.Hour)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	SignTxTemplate(t, template, testutil.TestXPrv)
+
+	tx, err := asset.FinalizeTx(ctx, template)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	return tx
+}
+
+func AccountDest(ctx context.Context, t testing.TB, accountID string, assetID bc.AssetID, amount uint64) *txbuilder.Destination {
+	d, err := asset.NewAccountDestination(ctx, &bc.AssetAmount{
+		AssetID: assetID,
+		Amount:  amount,
+	}, accountID, nil)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+	return d
 }

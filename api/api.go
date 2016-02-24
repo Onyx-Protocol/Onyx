@@ -139,6 +139,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/explorer/blocks/:blockID/summary", explorer.GetBlockSummary)
 	h.HandleFunc("GET", "/v3/explorer/transactions/:txID", explorer.GetTx)
 	h.HandleFunc("GET", "/v3/explorer/assets/:assetID", explorer.GetAsset)
+	h.HandleFunc("GET", "/v3/explorer/assets/:assetID/utxos", listExplorerUTXOsByAsset)
 	h.HandleFunc("POST", "/v3/explorer/get-assets", getExplorerAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
 
 	// Orderbook endpoints

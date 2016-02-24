@@ -4,6 +4,8 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/explorer"
+	"chain/errors"
+	"chain/fedchain/bc"
 	"chain/net/http/httpjson"
 )
 
@@ -40,4 +42,26 @@ func getExplorerAssets(ctx context.Context, req struct {
 	}
 
 	return res, nil
+}
+
+func listExplorerUTXOsByAsset(ctx context.Context, assetID string) (interface{}, error) {
+	prev, limit, err := getPageData(ctx, 50)
+	if err != nil {
+		return nil, err
+	}
+
+	h, err := bc.ParseHash(assetID)
+	if err != nil {
+		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid asset ID: %q", assetID)
+	}
+
+	list, last, err := explorer.ListUTXOsByAsset(ctx, bc.AssetID(h), prev, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"utxos": httpjson.Array(list),
+		"last":  last,
+	}, nil
 }

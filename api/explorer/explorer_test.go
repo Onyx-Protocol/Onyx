@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 
 	"chain/api/asset/assettest"
 	"chain/api/generator"
+	"chain/api/txbuilder"
 	"chain/api/txdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -491,6 +493,68 @@ func TestGetAsset(t *testing.T) {
 		if !reflect.DeepEqual(got, ex.want) {
 			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, ex.want)
 		}
+	}
+}
+
+func TestListUTXOsByAsset(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	projectID := assettest.CreateProjectFixture(ctx, t, "", "")
+	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
+	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
+	accountID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
+
+	tx := assettest.Issue(ctx, t, assetID, []*txbuilder.Destination{
+		assettest.AccountDest(ctx, t, accountID, assetID, 1),
+	})
+
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	zero := uint32(0)
+
+	want := []*TxOutput{{
+		TxHash:   &tx.Hash,
+		TxIndex:  &zero,
+		AssetID:  assetID,
+		Amount:   1,
+		Address:  tx.Outputs[0].Script,
+		Script:   tx.Outputs[0].Script,
+		Metadata: []byte{},
+	}}
+
+	got, gotLast, err := ListUTXOsByAsset(ctx, assetID, "", 10000)
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		gotStr, err := json.MarshalIndent(got, "", "  ")
+		if err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
+
+		wantStr, err := json.MarshalIndent(want, "", "  ")
+		if err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
+
+		t.Errorf("txs:\ngot:\n%s\nwant:\n%s", string(gotStr), string(wantStr))
+	}
+
+	// block height is unpredictable in this test file
+	if !strings.HasSuffix(gotLast, "-0-0") {
+		t.Errorf("last: got=%s should-end-with= -0-0", gotLast)
 	}
 }
 

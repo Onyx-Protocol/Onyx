@@ -100,6 +100,11 @@ type TxInput struct {
 
 // TxOutput is an output in a Tx
 type TxOutput struct {
+	// TxHash and TxIndex should only be populated if you're returning TxOutputs
+	// directly outside of a Tx
+	TxHash  *bc.Hash `json:"transaction_id,omitempty"`
+	TxIndex *uint32  `json:"transaction_output,omitempty"`
+
 	AssetID  bc.AssetID         `json:"asset_id"`
 	Amount   uint64             `json:"amount"`
 	Address  chainjson.HexBytes `json:"address"` // deprecated
@@ -231,6 +236,28 @@ func GetAsset(ctx context.Context, assetID string) (*Asset, error) {
 	}
 
 	return a, nil
+}
+
+func ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limit int) ([]*TxOutput, string, error) {
+	stateOuts, last, err := txdb.ListUTXOsByAsset(ctx, assetID, prev, limit)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var res []*TxOutput
+	for _, sOut := range stateOuts {
+		res = append(res, &TxOutput{
+			TxHash:   &sOut.Outpoint.Hash,
+			TxIndex:  &sOut.Outpoint.Index,
+			AssetID:  sOut.AssetID,
+			Amount:   sOut.Amount,
+			Address:  sOut.Script,
+			Script:   sOut.Script,
+			Metadata: sOut.Metadata,
+		})
+	}
+
+	return res, last, nil
 }
 
 func makeTx(bcTx *bc.Tx, blockHeader *bc.BlockHeader, prevTxs map[bc.Hash]*bc.Tx) (*Tx, error) {

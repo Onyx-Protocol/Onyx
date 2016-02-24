@@ -3,6 +3,7 @@ package txdb
 import (
 	"bytes"
 	"database/sql"
+	"fmt"
 	"sort"
 	"time"
 
@@ -346,4 +347,81 @@ func CountBlockTxs(ctx context.Context) (uint64, error) {
 	var res uint64
 	err := pg.FromContext(ctx).QueryRow(ctx, q).Scan(&res)
 	return res, errors.Wrap(err)
+}
+
+func ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limit int) ([]*state.Output, string, error) {
+	const q = `
+		SELECT blocks_txs.block_height,
+			blocks_txs.block_pos,
+			utxos.tx_hash,
+			utxos.index,
+			utxos.asset_id,
+			utxos.amount,
+			utxos.metadata,
+			utxos.script
+		FROM utxos
+		JOIN blocks_txs ON utxos.tx_hash = blocks_txs.tx_hash
+		WHERE utxos.asset_id = $1
+		AND blocks_txs.block_height >= $2
+		-- Block pos only matters if we're in the same block
+		AND (blocks_txs.block_height != $2 OR blocks_txs.block_pos >= $3)
+		-- Output index only matters if we're in the same block and the same transaction
+		AND (blocks_txs.block_height != $2 OR blocks_txs.block_pos != $3 OR utxos.index > $4)
+		ORDER BY blocks_txs.block_height, blocks_txs.block_pos, utxos.index
+		LIMIT $5
+	`
+
+	// Since the sort criteria is composite, the cursor is composite.
+	var (
+		prevBlock    int64
+		prevBlockPos int
+		prevOutIndex int
+	)
+	_, err := fmt.Sscanf(prev, "%d-%d-%d", &prevBlock, &prevBlockPos, &prevOutIndex)
+	if err != nil {
+		// tolerate malformed cursors
+		prevBlock = 0
+		prevBlockPos = -1
+		prevOutIndex = -1
+	}
+
+	rows, err := pg.FromContext(ctx).Query(ctx, q, assetID, prevBlock, prevBlockPos, prevOutIndex, limit)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "select query")
+	}
+	defer rows.Close()
+
+	var (
+		res  []*state.Output
+		last string
+	)
+	for rows.Next() {
+		var (
+			bh       int64
+			blockPos int
+			out      = new(state.Output)
+		)
+		err := rows.Scan(
+			&bh,
+			&blockPos,
+			&out.Outpoint.Hash,
+			&out.Outpoint.Index,
+			&out.AssetID,
+			&out.Amount,
+			&out.Metadata,
+			&out.Script,
+		)
+		if err != nil {
+			return nil, "", errors.Wrap(err, "row scan")
+		}
+
+		res = append(res, out)
+		last = fmt.Sprintf("%d-%d-%d", bh, blockPos, out.Outpoint.Index)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, "", errors.Wrap(err, "end row scan loop")
+	}
+
+	return res, last, nil
 }
