@@ -1,7 +1,6 @@
 package explorer
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/fedchain/bc"
+	"chain/fedchain/txscript"
 )
 
 // ListBlocksItem is returned by ListBlocks
@@ -123,70 +123,25 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
 
-	resp := &Tx{
-		ID:       tx.Hash,
-		Metadata: tx.Metadata,
-	}
-
 	blockHeader, err := txdb.GetTxBlockHeader(ctx, txID)
 	if err != nil {
 		return nil, err
 	}
 
-	if blockHeader != nil {
-		bhash := blockHeader.Hash()
-		resp.BlockID = &bhash
-		resp.BlockHeight = blockHeader.Height
-		resp.BlockTime = blockHeader.Time()
+	var inHashes []bc.Hash
+	for _, in := range tx.Inputs {
+		if in.IsIssuance() {
+			continue
+		}
+		inHashes = append(inHashes, in.Previous.Hash)
+	}
+	prevTxs, err := txdb.GetTxs(ctx, inHashes...)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "fetching inputs")
 	}
 
-	if tx.IsIssuance() {
-		if len(tx.Outputs) == 0 {
-			return nil, errors.New("invalid transaction")
-		}
-
-		resp.Inputs = append(resp.Inputs, &TxInput{
-			Type:     "issuance",
-			AssetID:  tx.Outputs[0].AssetID,
-			Metadata: tx.Inputs[0].Metadata,
-			AssetDef: tx.Inputs[0].AssetDefinition,
-		})
-	} else {
-		var inHashes []bc.Hash
-		for _, in := range tx.Inputs {
-			inHashes = append(inHashes, in.Previous.Hash)
-		}
-		txs, err = txdb.GetTxs(ctx, inHashes...)
-		if err != nil {
-			if errors.Root(err) == pg.ErrUserInputNotFound {
-				err = sql.ErrNoRows
-			}
-			return nil, errors.Wrap(err, "fetching inputs")
-		}
-		for _, in := range tx.Inputs {
-			prev := txs[in.Previous.Hash].Outputs[in.Previous.Index]
-			resp.Inputs = append(resp.Inputs, &TxInput{
-				Type:     "transfer",
-				AssetID:  prev.AssetID,
-				Amount:   &prev.Amount,
-				TxID:     &in.Previous.Hash,
-				TxOut:    &in.Previous.Index,
-				Metadata: in.Metadata,
-			})
-		}
-	}
-
-	for _, out := range tx.Outputs {
-		resp.Outputs = append(resp.Outputs, &TxOutput{
-			AssetID:  out.AssetID,
-			Amount:   out.Amount,
-			Address:  out.Script,
-			Script:   out.Script,
-			Metadata: out.Metadata,
-		})
-	}
-
-	return resp, nil
+	return makeTx(tx, blockHeader, prevTxs)
 }
 
 // Asset is returned by GetAsset
@@ -276,4 +231,65 @@ func GetAsset(ctx context.Context, assetID string) (*Asset, error) {
 	}
 
 	return a, nil
+}
+
+func makeTx(bcTx *bc.Tx, blockHeader *bc.BlockHeader, prevTxs map[bc.Hash]*bc.Tx) (*Tx, error) {
+	resp := &Tx{
+		ID:       bcTx.Hash,
+		Metadata: bcTx.Metadata,
+	}
+
+	bhash := blockHeader.Hash()
+	resp.BlockID = &bhash
+	resp.BlockHeight = blockHeader.Height
+	resp.BlockTime = blockHeader.Time()
+
+	for _, in := range bcTx.Inputs {
+		if in.IsIssuance() {
+			redeemScript, err := txscript.RedeemScriptFromP2SHSigScript(in.SignatureScript)
+			if err != nil {
+				return nil, errors.Wrap(err, "extracting redeem script from sigscript")
+			}
+			pkScript := txscript.RedeemToPkScript(redeemScript)
+			assetID := bc.ComputeAssetID(pkScript, [32]byte{}) // TODO(tessr): get genesis hash
+
+			resp.Inputs = append(resp.Inputs, &TxInput{
+				Type:     "issuance",
+				AssetID:  assetID,
+				Metadata: in.Metadata,
+				AssetDef: in.AssetDefinition,
+			})
+		} else {
+			prevTx, ok := prevTxs[in.Previous.Hash]
+			if !ok {
+				return nil, errors.Wrap(fmt.Errorf("missing previous transaction %s", in.Previous.Hash))
+			}
+
+			if in.Previous.Index >= uint32(len(prevTx.Outputs)) {
+				return nil, errors.Wrap(fmt.Errorf("transaction %s missing output %d", in.Previous.Hash, in.Previous.Index))
+			}
+
+			resp.Inputs = append(resp.Inputs, &TxInput{
+				Type:     "transfer",
+				AssetID:  prevTx.Outputs[in.Previous.Index].AssetID,
+				Amount:   &prevTx.Outputs[in.Previous.Index].Amount,
+				TxID:     &in.Previous.Hash,
+				TxOut:    &in.Previous.Index,
+				Metadata: in.Metadata,
+			})
+		}
+
+	}
+
+	for _, out := range bcTx.Outputs {
+		resp.Outputs = append(resp.Outputs, &TxOutput{
+			AssetID:  out.AssetID,
+			Amount:   out.Amount,
+			Address:  out.Script,
+			Script:   out.Script,
+			Metadata: out.Metadata,
+		})
+	}
+
+	return resp, nil
 }

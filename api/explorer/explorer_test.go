@@ -19,6 +19,7 @@ import (
 	"chain/errors"
 	"chain/fedchain"
 	"chain/fedchain/bc"
+	"chain/fedchain/txscript"
 	"chain/testutil"
 )
 
@@ -175,25 +176,43 @@ func TestGetBlockSummary(t *testing.T) {
 }
 
 func TestGetTxIssuance(t *testing.T) {
+	assetID, sigScript := mockAssetIdAndSigScript()
+
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{{
 			Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
+			SignatureScript: sigScript,
 			Metadata:        []byte(`{"a":"b"}`),
 			AssetDefinition: []byte(`{"c":"d"}`),
 		}},
 		Outputs: []*bc.TxOutput{{
-			AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{0}), Amount: 5},
+			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 5},
 			Metadata:    []byte{2},
 			Script:      []byte("addr0"),
 		}, {
-			AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{0}), Amount: 6},
+			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 6},
 			Script:      []byte("addr1"),
 		}},
 		Metadata: []byte{0},
 	})
 
+	now := time.Now().UTC().Truncate(time.Second)
+	blk := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			Height:    1,
+			Timestamp: uint64(now.Unix()),
+		},
+		Transactions: []*bc.Tx{tx},
+	}
+
 	withContext(t, "", func(ctx context.Context) {
 		err := txdb.NewStore().ApplyTx(ctx, tx)
+		if err != nil {
+			t.Log(errors.Stack(err))
+			t.Fatal(err)
+		}
+
+		_, err = txdb.NewStore().ApplyBlock(ctx, blk, nil, nil)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -205,24 +224,28 @@ func TestGetTxIssuance(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		bh := blk.Hash()
+
 		want := &Tx{
-			ID:       tx.Hash,
-			BlockID:  nil,
-			Metadata: []byte{0},
+			ID:          tx.Hash,
+			BlockID:     &bh,
+			BlockHeight: 1,
+			BlockTime:   now,
+			Metadata:    []byte{0},
 			Inputs: []*TxInput{{
 				Type:     "issuance",
-				AssetID:  bc.AssetID([32]byte{0}),
+				AssetID:  assetID,
 				Metadata: []byte(`{"a":"b"}`),
 				AssetDef: []byte(`{"c":"d"}`),
 			}},
 			Outputs: []*TxOutput{{
-				AssetID:  bc.AssetID([32]byte{0}),
+				AssetID:  assetID,
 				Amount:   5,
 				Address:  []byte("addr0"),
 				Script:   []byte("addr0"),
 				Metadata: []byte{2},
 			}, {
-				AssetID: bc.AssetID([32]byte{0}),
+				AssetID: assetID,
 				Amount:  6,
 				Address: []byte("addr1"),
 				Script:  []byte("addr1"),
@@ -474,4 +497,22 @@ func TestGetAsset(t *testing.T) {
 			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, ex.want)
 		}
 	}
+}
+
+func mockAssetIdAndSigScript() (bc.AssetID, []byte) {
+	builder := txscript.NewScriptBuilder()
+	builder.AddOp(txscript.OP_FALSE)
+	script, err := builder.Script()
+	if err != nil {
+		panic(err)
+	}
+
+	redeemScript, err := txscript.RedeemScriptFromP2SHSigScript(script)
+	if err != nil {
+		panic(err)
+	}
+	pkScript := txscript.RedeemToPkScript(redeemScript)
+	assetID := bc.ComputeAssetID(pkScript, [32]byte{})
+
+	return assetID, script
 }
