@@ -103,8 +103,8 @@ func TestGetTxs(t *testing.T) {
 
 		nonexistentHash := mustParseHash("beefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeef")
 		_, gotErr := GetTxs(ctx, tx.Hash, nonexistentHash)
-		if errors.Root(gotErr) != pg.ErrUserInputNotFound {
-			t.Errorf("got err=%q want %q", errors.Root(gotErr), pg.ErrUserInputNotFound)
+		if gotErr != nil {
+			t.Errorf("got err=%v want nil", gotErr)
 		}
 	})
 }

@@ -111,7 +111,7 @@ type TxOutput struct {
 func GetTx(ctx context.Context, txID string) (*Tx, error) {
 	hash, err := bc.ParseHash(txID)
 	if err != nil {
-		return nil, pg.ErrUserInputNotFound
+		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
 
 	txs, err := txdb.GetTxs(ctx, hash)
@@ -120,7 +120,7 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 	}
 	tx, ok := txs[hash]
 	if !ok {
-		return nil, errors.New("tx not found: " + txID)
+		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
 
 	resp := &Tx{

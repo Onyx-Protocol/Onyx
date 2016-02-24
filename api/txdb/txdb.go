@@ -76,9 +76,6 @@ func GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) 
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrap(err, "rows end")
 	}
-	if len(txs) < len(hashStrings) {
-		return nil, errors.Wrap(pg.ErrUserInputNotFound, "missing tx")
-	}
 	return txs, nil
 }
 
