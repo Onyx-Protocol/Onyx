@@ -1363,6 +1363,13 @@ CREATE INDEX utxos_asset_id_contract_hash_idx ON utxos USING btree (asset_id, co
 
 
 --
+-- Name: utxos_asset_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX utxos_asset_id_idx ON utxos USING btree (asset_id);
+
+
+--
 -- Name: account_utxos_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
