@@ -14,7 +14,12 @@ func (s *Signature) MarshalJSON() ([]byte, error) {
 }
 
 func (s *Signature) UnmarshalJSON(encoded []byte) error {
-	parsed, err := btcec.ParseDERSignature(encoded, btcec.S256())
+	var b []byte
+	err := json.Unmarshal(encoded, &b)
+	if err != nil {
+		return err
+	}
+	parsed, err := btcec.ParseDERSignature(b, btcec.S256())
 	if err == nil {
 		*s = (Signature)(*parsed)
 	}

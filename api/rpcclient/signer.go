@@ -14,7 +14,7 @@ import (
 // the given signer, with the block already serialized for transport.
 func GetSignatureForSerializedBlock(ctx context.Context, signerURL string, block []byte) (*btcec.Signature, error) {
 	var result btcec.Signature
-	err := rpc.Call(ctx, signerURL, "/rpc/signer/sign-block", json.RawMessage(block), (*crypto.Signature)(&result))
+	err := rpc.Call(ctx, signerURL, "/rpc/signer/sign-block", (*json.RawMessage)(&block), (*crypto.Signature)(&result))
 	if err != nil {
 		return nil, err
 	}
