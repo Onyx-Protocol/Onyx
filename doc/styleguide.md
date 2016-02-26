@@ -365,7 +365,7 @@ valuable documentation—it’s just as important.
 We follow the advice and conventions in these documents from the Go
 team:
 - https://golang.org/doc/effective_go.html
-- https://code.google.com/p/go-wiki/wiki/CodeReviewComments
+- https://github.com/golang/go/wiki/CodeReviewComments
 
 Where possible, we enforce style rules mechanically.
 
