@@ -346,11 +346,12 @@ func GenerateBlockScript(keys []*btcec.PublicKey, nSigs int) ([]byte, error) {
 
 // UpsertGenesisBlock creates a genesis block iff it does not exist.
 func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []*btcec.PublicKey, nSigs int) (*bc.Block, error) {
+	// TODO(bobg): Cache the genesis block if it exists and return it
+	// rather than always consing up a new one.
 	script, err := GenerateBlockScript(pubkeys, nSigs)
 	if err != nil {
 		return nil, err
 	}
-
 	b := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Version:      bc.NewBlockVersion,
@@ -359,9 +360,15 @@ func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []*btcec.PublicKey
 		},
 	}
 
-	err = fc.AddBlock(ctx, b)
+	latestBlock, err := fc.store.LatestBlock(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "adding genesis block")
+		return nil, errors.Wrap(err, "getting latest block")
+	}
+	if latestBlock == nil {
+		err = fc.AddBlock(ctx, b)
+		if err != nil {
+			return nil, errors.Wrap(err, "adding genesis block")
+		}
 	}
 
 	return b, nil

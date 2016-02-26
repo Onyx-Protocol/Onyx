@@ -32,6 +32,28 @@ func init() {
 	pgtest.Open(ctx, u, "fedchaintest", "../api/appdb/schema.sql")
 }
 
+func TestIdempotentUpsert(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	fc, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pubkey, err := testutil.TestXPub.ECPubKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// InitializeSigningGenerator added a genesis block.  Calling
+	// UpsertGenesisBlock again should be a no-op, not produce an error.
+	_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestGenerateBlock(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
