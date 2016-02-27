@@ -65,7 +65,7 @@ func TestGenerateNodeTxTransfer(t *testing.T) {
 		Time: txTime,
 		Inputs: []nodeTxInput{{
 			Type:         "transfer",
-			TxID:         (*bc.Hash)(&[32]byte{255}),
+			TxHash:       (*bc.Hash)(&[32]byte{255}),
 			TxOut:        &one,
 			AssetID:      asset0,
 			AssetLabel:   "asset0",

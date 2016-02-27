@@ -80,7 +80,7 @@ func GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) 
 	return txs, nil
 }
 
-func GetTxBlockHeader(ctx context.Context, hash string) (*bc.BlockHeader, error) {
+func GetTxBlockHeader(ctx context.Context, hash bc.Hash) (*bc.BlockHeader, error) {
 	const q = `
 		SELECT header
 		FROM blocks b

@@ -160,7 +160,7 @@ func TestGetBlockSummary(t *testing.T) {
 			Height:  2,
 			Time:    time.Unix(105, 0).UTC(),
 			TxCount: 2,
-			TxIDs: []bc.Hash{
+			TxHashes: []bc.Hash{
 				mustParseHash("c4da6c3203bd0fc597be31244c419faf0b333c7eff6368de4bb3c3ccff2dcc9d"),
 				mustParseHash("21f62c32964b7514afe6d1ef8b2ffb2dcc4c8c3c181f6f27b2f6868f32b0f9f5"),
 			},
@@ -320,13 +320,13 @@ func TestGetTxTransfer(t *testing.T) {
 				Type:    "transfer",
 				AssetID: bc.AssetID([32]byte{1}),
 				Amount:  &five,
-				TxID:    &h0,
+				TxHash:  &h0,
 				TxOut:   &zero,
 			}, {
 				Type:    "transfer",
 				AssetID: bc.AssetID([32]byte{2}),
 				Amount:  &six,
-				TxID:    &h1,
+				TxHash:  &h1,
 				TxOut:   &one,
 			}},
 			Outputs: []*TxOutput{{

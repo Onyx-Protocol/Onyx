@@ -64,7 +64,6 @@ type (
 	Source struct {
 		AssetID     bc.AssetID `json:"asset_id"`
 		AccountID   string     `json:"account_id"`
-		TxID        string     `json:"transaction_id"` // TODO(bobg): remove this, it's unused
 		Amount      uint64
 		ClientToken *string `json:"client_token"`
 	}

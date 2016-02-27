@@ -48,11 +48,11 @@ func ListBlocks(ctx context.Context, prev string, limit int) ([]ListBlocksItem, 
 
 // BlockSummary is returned by GetBlockSummary
 type BlockSummary struct {
-	ID      bc.Hash   `json:"id"`
-	Height  uint64    `json:"height"`
-	Time    time.Time `json:"time"`
-	TxCount int       `json:"transaction_count"`
-	TxIDs   []bc.Hash `json:"transaction_ids"`
+	ID       bc.Hash   `json:"id"`
+	Height   uint64    `json:"height"`
+	Time     time.Time `json:"time"`
+	TxCount  int       `json:"transaction_count"`
+	TxHashes []bc.Hash `json:"transaction_ids"`
 }
 
 // GetBlockSummary returns header data for the requested block.
@@ -68,11 +68,11 @@ func GetBlockSummary(ctx context.Context, hash string) (*BlockSummary, error) {
 	}
 
 	return &BlockSummary{
-		ID:      block.Hash(),
-		Height:  block.Height,
-		Time:    block.Time(),
-		TxCount: len(block.Transactions),
-		TxIDs:   txHashes,
+		ID:       block.Hash(),
+		Height:   block.Height,
+		Time:     block.Time(),
+		TxCount:  len(block.Transactions),
+		TxHashes: txHashes,
 	}, nil
 }
 
@@ -90,7 +90,7 @@ type Tx struct {
 // TxInput is an input in a Tx
 type TxInput struct {
 	Type     string             `json:"type"`
-	TxID     *bc.Hash           `json:"transaction_id,omitempty"`
+	TxHash   *bc.Hash           `json:"transaction_id,omitempty"`
 	TxOut    *uint32            `json:"transaction_output,omitempty"`
 	AssetID  bc.AssetID         `json:"asset_id"`
 	Amount   *uint64            `json:"amount,omitempty"`
@@ -113,8 +113,8 @@ type TxOutput struct {
 }
 
 // GetTx returns a transaction with additional details added.
-func GetTx(ctx context.Context, txID string) (*Tx, error) {
-	hash, err := bc.ParseHash(txID)
+func GetTx(ctx context.Context, txHashStr string) (*Tx, error) {
+	hash, err := bc.ParseHash(txHashStr)
 	if err != nil {
 		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
@@ -128,7 +128,7 @@ func GetTx(ctx context.Context, txID string) (*Tx, error) {
 		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
 
-	blockHeader, err := txdb.GetTxBlockHeader(ctx, txID)
+	blockHeader, err := txdb.GetTxBlockHeader(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +300,7 @@ func makeTx(bcTx *bc.Tx, blockHeader *bc.BlockHeader, prevTxs map[bc.Hash]*bc.Tx
 				Type:     "transfer",
 				AssetID:  prevTx.Outputs[in.Previous.Index].AssetID,
 				Amount:   &prevTx.Outputs[in.Previous.Index].Amount,
-				TxID:     &in.Previous.Hash,
+				TxHash:   &in.Previous.Hash,
 				TxOut:    &in.Previous.Index,
 				Metadata: in.Metadata,
 			})
