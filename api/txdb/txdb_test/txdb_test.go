@@ -26,7 +26,7 @@ func init() {
 	}
 
 	ctx := context.Background()
-	pgtest.Open(ctx, u, "txdbtest", "../../appdb/schema.sql")
+	pgtest.Open(ctx, u, "txdbtest2", "../../appdb/schema.sql")
 }
 
 func TestListUTXOsByAsset(t *testing.T) {
