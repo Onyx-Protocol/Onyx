@@ -293,7 +293,6 @@ func TestGetTxTransfer(t *testing.T) {
 	}
 
 	withContext(t, "", func(ctx context.Context) {
-		const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2)`
 		_, err := txdb.NewStore().ApplyBlock(ctx, blk, nil, nil)
 		if err != nil {
 			t.Log(errors.Stack(err))
