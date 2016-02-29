@@ -23,27 +23,13 @@ func poolTxs(ctx context.Context) ([]*bc.Tx, error) {
 	defer span.Finish(ctx)
 
 	const q = `SELECT tx_hash, data FROM pool_txs ORDER BY sort_id`
-	rows, err := pg.Query(ctx, q)
-	if err != nil {
-		return nil, errors.Wrap(err, "select query")
-	}
-	defer rows.Close()
-
 	var txs []*bc.Tx
-	for rows.Next() {
-		var hash bc.Hash
-		var data bc.TxData
-		err := rows.Scan(&hash, &data)
-		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
-		}
+	err := pg.ForQueryRows(ctx, q, func(hash bc.Hash, data bc.TxData) {
 		txs = append(txs, &bc.Tx{TxData: data, Hash: hash, Stored: true})
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "end row scan loop")
-	}
-
 	txs = topSort(ctx, txs)
 	return txs, nil
 }
@@ -58,26 +44,11 @@ func GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) 
 	sort.Strings(hashStrings)
 	hashStrings = strings.Uniq(hashStrings)
 	const q = `SELECT tx_hash, data FROM txs WHERE tx_hash=ANY($1)`
-	rows, err := pg.Query(ctx, q, pg.Strings(hashStrings))
-	if err != nil {
-		return nil, errors.Wrap(err, "get txs query")
-	}
-	defer rows.Close()
-
 	txs := make(map[bc.Hash]*bc.Tx, len(hashes))
-	for rows.Next() {
-		var hash bc.Hash
-		var data bc.TxData
-		err = rows.Scan(&hash, &data)
-		if err != nil {
-			return nil, errors.Wrap(err, "rows scan")
-		}
+	err := pg.ForQueryRows(ctx, q, pg.Strings(hashStrings), func(hash bc.Hash, data bc.TxData) {
 		txs[hash] = &bc.Tx{TxData: data, Hash: hash, Stored: true}
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "rows end")
-	}
-	return txs, nil
+	})
+	return txs, errors.Wrap(err, "get txs query")
 }
 
 func GetTxBlockHeader(ctx context.Context, hash bc.Hash) (*bc.BlockHeader, error) {
@@ -160,21 +131,14 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 		WHERE t.tx_hash NOT IN (SELECT tx_hash FROM txs)
 		RETURNING tx_hash;
 	`
-	var newHashes []bc.Hash
-	rows, err := pg.Query(ctx, txQ, pg.Strings(hashHist), pg.Byteas(data))
+	var (
+		newHashes []bc.Hash
+	)
+	err := pg.ForQueryRows(ctx, txQ, pg.Strings(hashHist), pg.Byteas(data), func(hash bc.Hash) {
+		newHashes = append(newHashes, hash)
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "insert txs")
-	}
-	for rows.Next() {
-		var hash bc.Hash
-		err := rows.Scan(&hash)
-		if err != nil {
-			return nil, errors.Wrap(err, "rows scan")
-		}
-		newHashes = append(newHashes, hash)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "rows err check")
 	}
 
 	const blockTxQ = `
@@ -202,24 +166,11 @@ func ListBlocks(ctx context.Context, prev string, limit int) ([]*bc.Block, error
 		SELECT data FROM blocks WHERE ($1='' OR height<$1::bigint)
 		ORDER BY height DESC LIMIT $2
 	`
-	rows, err := pg.Query(ctx, q, prev, limit)
-	if err != nil {
-		return nil, errors.Wrap(err, "select query")
-	}
-	defer rows.Close()
 	var blocks []*bc.Block
-	for rows.Next() {
-		var block bc.Block
-		err := rows.Scan(&block)
-		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
-		}
-		blocks = append(blocks, &block)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "rows loop")
-	}
-	return blocks, nil
+	err := pg.ForQueryRows(ctx, q, prev, limit, func(b bc.Block) {
+		blocks = append(blocks, &b)
+	})
+	return blocks, err
 }
 
 // GetBlock fetches a block by its hash
@@ -381,42 +332,24 @@ func ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limi
 		prevOutIndex = -1
 	}
 
-	rows, err := pg.Query(ctx, q, assetID, prevBlock, prevBlockPos, prevOutIndex, limit)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "select query")
-	}
-	defer rows.Close()
-
 	var (
 		res  []*state.Output
 		last string
 	)
-	for rows.Next() {
-		var (
-			bh       int64
-			blockPos int
-			out      = new(state.Output)
-		)
-		err := rows.Scan(
-			&bh,
-			&blockPos,
-			&out.Outpoint.Hash,
-			&out.Outpoint.Index,
-			&out.AssetID,
-			&out.Amount,
-			&out.Metadata,
-			&out.Script,
-		)
-		if err != nil {
-			return nil, "", errors.Wrap(err, "row scan")
+	err = pg.ForQueryRows(ctx, q, assetID, prevBlock, prevBlockPos, prevOutIndex, limit, func(bh int64, bpos int, hash bc.Hash, index uint32, assetID bc.AssetID, amount uint64, metadata, script []byte) {
+		o := &state.Output{
+			Outpoint: bc.Outpoint{Hash: hash, Index: index},
+			TxOutput: bc.TxOutput{
+				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: amount},
+				Script:      script,
+				Metadata:    metadata,
+			},
 		}
-
-		res = append(res, out)
-		last = fmt.Sprintf("%d-%d-%d", bh, blockPos, out.Outpoint.Index)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, "", errors.Wrap(err, "end row scan loop")
+		res = append(res, o)
+		last = fmt.Sprintf("%d-%d-%d", bh, bpos, index)
+	})
+	if err != nil {
+		return nil, "", err
 	}
 
 	return res, last, nil

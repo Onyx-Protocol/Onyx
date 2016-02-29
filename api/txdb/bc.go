@@ -4,7 +4,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/database/pg"
-	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
 )
@@ -32,29 +31,17 @@ func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.
 		WHERE confirmed
 		    AND (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	rows, err := pg.Query(ctx, q, pg.Strings(txHashes), pg.Uint32s(indexes))
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	defer rows.Close()
 	outs := make(map[bc.Outpoint]*state.Output)
-	for rows.Next() {
-		// If the utxo row exists, it is considered unspent. This function does
-		// not (and should not) consider spending activity in the tx pool, which
-		// is handled by poolView.
-		o := new(state.Output)
-		err := rows.Scan(
-			&o.Outpoint.Hash,
-			&o.Outpoint.Index,
-			&o.AssetID,
-			&o.Amount,
-			&o.Script,
-			&o.Metadata,
-		)
-		if err != nil {
-			return nil, errors.Wrap(err)
+	err := pg.ForQueryRows(ctx, q, pg.Strings(txHashes), pg.Uint32s(indexes), func(hash bc.Hash, index uint32, assetID bc.AssetID, amount uint64, script, metadata []byte) {
+		o := &state.Output{
+			Outpoint: bc.Outpoint{Hash: hash, Index: index},
+			TxOutput: bc.TxOutput{
+				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: amount},
+				Script:      script,
+				Metadata:    metadata,
+			},
 		}
 		outs[o.Outpoint] = o
-	}
-	return outs, errors.Wrap(rows.Err(), "end row scan loop")
+	})
+	return outs, err
 }

@@ -127,34 +127,19 @@ func ListAccounts(ctx context.Context, managerNodeID string, prev string, limit 
 		WHERE manager_node_id = $1 AND ($2='' OR id<$2) AND NOT archived
 		ORDER BY id DESC LIMIT $3
 	`
-	rows, err := pg.Query(ctx, q, managerNodeID, prev, limit)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "select query")
-	}
-	defer rows.Close()
-
 	var (
 		accounts []*Account
 		last     string
 	)
-	for rows.Next() {
-		a := new(Account)
-		err = rows.Scan(
-			&a.ID,
-			&a.Label,
-			(*pg.Uint32s)(&a.Index),
-		)
-		if err != nil {
-			return nil, "", errors.Wrap(err, "row scan")
+	err := pg.ForQueryRows(ctx, q, managerNodeID, prev, limit, func(id, label string, index pg.Uint32s) {
+		account := &Account{
+			ID:    id,
+			Label: label,
+			Index: index,
 		}
-		accounts = append(accounts, a)
-		last = a.ID
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, "", errors.Wrap(err, "end row scan loop")
-	}
-
+		accounts = append(accounts, account)
+		last = id
+	})
 	return accounts, last, err
 }
 

@@ -38,57 +38,35 @@ func loadPoolOutputs(ctx context.Context, load []bc.Outpoint) (map[bc.Outpoint]*
 		  WHERE NOT confirmed
 		    AND (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	rows, err := pg.Query(ctx, loadQ, pg.Strings(txHashes), pg.Uint32s(indexes))
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	defer rows.Close()
 	outs := make(map[bc.Outpoint]*state.Output)
-	for rows.Next() {
-		o := new(state.Output)
-		err := rows.Scan(
-			&o.Outpoint.Hash,
-			&o.Outpoint.Index,
-			&o.AssetID,
-			&o.Amount,
-			&o.Script,
-			&o.Metadata,
-		)
-		if err != nil {
-			return nil, errors.Wrap(err)
+	err := pg.ForQueryRows(ctx, loadQ, pg.Strings(txHashes), pg.Uint32s(indexes), func(hash bc.Hash, index uint32, assetID bc.AssetID, amount uint64, script, metadata []byte) {
+		o := &state.Output{
+			Outpoint: bc.Outpoint{Hash: hash, Index: index},
+			TxOutput: bc.TxOutput{
+				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: amount},
+				Script:      script,
+				Metadata:    metadata,
+			},
 		}
 		outs[o.Outpoint] = o
-	}
-	if rows.Err() != nil {
-		return nil, errors.Wrap(rows.Err())
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	const spentQ = `
 		SELECT tx_hash, index FROM pool_inputs
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	rows, err = pg.Query(ctx, spentQ, pg.Strings(txHashes), pg.Uint32s(indexes))
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var p bc.Outpoint
-		err := rows.Scan(&p.Hash, &p.Index)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
+	err = pg.ForQueryRows(ctx, spentQ, pg.Strings(txHashes), pg.Uint32s(indexes), func(hash bc.Hash, index uint32) {
+		p := bc.Outpoint{Hash: hash, Index: index}
 		if o := outs[p]; o != nil {
 			o.Spent = true
 		} else {
 			outs[p] = &state.Output{Outpoint: p, Spent: true}
 		}
-	}
-	if rows.Err() != nil {
-		return nil, errors.Wrap(rows.Err())
-	}
-
-	return outs, nil
+	})
+	return outs, err
 }
 
 // utxoSet holds a set of utxo record values

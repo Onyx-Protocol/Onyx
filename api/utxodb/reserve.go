@@ -150,32 +150,17 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 			change = append(change, Change{source, reservedAmount - source.Amount})
 		}
 
-		rows, err := pg.Query(ctx, utxosQ, reservationID)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "reservation member query")
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			// TODO(bobg): Sort utxos from largest amount to smallest, which
-			// might allow us to satisfy source.Amount with fewer utxos,
-			// unreserving some and making less change.
-			var addrIndex []uint32
+		err = pg.ForQueryRows(ctx, utxosQ, reservationID, func(hash bc.Hash, index uint32, amount uint64, addrIndex pg.Uint32s) {
 			utxo := UTXO{
-				AssetAmount: bc.AssetAmount{
-					AssetID: source.AssetID,
-				},
-				AccountID: source.AccountID,
-			}
-			err = rows.Scan(&utxo.Hash, &utxo.Index, &utxo.Amount, (*pg.Uint32s)(&addrIndex))
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "reservation member row scan")
+				Outpoint:    bc.Outpoint{Hash: hash, Index: index},
+				AssetAmount: bc.AssetAmount{AssetID: source.AssetID, Amount: amount},
+				AccountID:   source.AccountID,
 			}
 			copy(utxo.AddrIndex[:], addrIndex)
 			reserved = append(reserved, &utxo)
-		}
-		if err = rows.Err(); err != nil {
-			return nil, nil, errors.Wrap(err, "end reservation member row scan loop")
+		})
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "query reservation members")
 		}
 	}
 

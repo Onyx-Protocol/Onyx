@@ -20,33 +20,11 @@ func AssetDefinitions(ctx context.Context, assetIDs []string) (map[string][]byte
 		JOIN asset_definitions ad ON adp.asset_definition_hash = ad.hash
 		WHERE adp.asset_id IN (SELECT unnest($1::text[]))
 	`
-
-	rows, err := pg.Query(ctx, q, pg.Strings(assetIDs))
-	if err != nil {
-		return nil, errors.Wrap(err, "select query")
-	}
-	defer rows.Close()
-
 	res := make(map[string][]byte)
-	for rows.Next() {
-		var (
-			id  string
-			def []byte
-		)
-
-		err := rows.Scan(&id, &def)
-		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
-		}
-
+	err := pg.ForQueryRows(ctx, q, pg.Strings(assetIDs), func(id string, def []byte) {
 		res[id] = def
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "end row scan loop")
-	}
-
-	return res, nil
+	})
+	return res, err
 }
 
 func AssetDefinition(ctx context.Context, assetID string) (string, []byte, error) {

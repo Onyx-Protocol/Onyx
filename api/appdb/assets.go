@@ -189,38 +189,26 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 		ORDER BY sort_id DESC
 		LIMIT $3
 	`
-	rows, err := pg.Query(ctx, q, inodeID, prev, limit)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "select query")
-	}
-	defer rows.Close()
-
 	var (
-		assets []*AssetResponse
-		last   string
+		assets  []*AssetResponse
+		lastOut string
 	)
-	for rows.Next() {
-		a := new(AssetResponse)
-		err := rows.Scan(
-			&a.ID,
-			&a.Label,
-			&a.Issued.Confirmed,
-			&a.Issued.Total,
-			(*[]byte)(&a.Definition),
-			&last,
-		)
-		if err != nil {
-			return nil, "", errors.Wrap(err, "row scan")
+	err := pg.ForQueryRows(ctx, q, inodeID, prev, limit, func(id bc.AssetID, label string, issuedConfirmed, issuedTotal uint64, definition []byte, last string) {
+		a := &AssetResponse{
+			ID:          id,
+			Label:       label,
+			Issued:      AssetAmount{Confirmed: issuedConfirmed, Total: issuedTotal},
+			Circulation: issuedTotal,
+			Definition:  definition,
 		}
-		a.Circulation = a.Issued.Total // populate deprecated field
 		assets = append(assets, a)
+		lastOut = last
+	})
+	if err != nil {
+		return nil, "", err
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, "", errors.Wrap(err, "end row scan loop")
-	}
-
-	return assets, last, nil
+	return assets, lastOut, nil
 }
 
 // GetAssets returns an AssetResponse for the given asset IDs. If the given

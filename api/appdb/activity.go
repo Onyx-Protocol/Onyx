@@ -99,24 +99,12 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 	const scriptQ = `
 		SELECT pk_script, account_id, manager_node_id FROM addresses WHERE pk_script=ANY($1)
 	`
-	rows, err := pg.Query(ctx, scriptQ, pg.Byteas(scripts))
-	if err != nil {
-		return nil, nil, err
-	}
-	for rows.Next() {
-		var (
-			script             []byte
-			accountID, mNodeID string
-		)
-		err := rows.Scan(&script, &accountID, &mNodeID)
-		if err != nil {
-			return nil, nil, err
-		}
+	err = pg.ForQueryRows(ctx, scriptQ, pg.Byteas(scripts), func(script []byte, accountID, mnodeID string) {
 		utxo := all[scriptMap[string(script)]]
 		utxo.AccountID = accountID
-		utxo.ManagerNodeID = mNodeID
-	}
-	if err := rows.Err(); err != nil {
+		utxo.ManagerNodeID = mnodeID
+	})
+	if err != nil {
 		return nil, nil, err
 	}
 
@@ -139,27 +127,11 @@ func GetActAssets(ctx context.Context, assetIDs []string) ([]*ActAsset, error) {
 		JOIN issuer_nodes i ON a.issuer_node_id = i.id
 		WHERE a.id = ANY($1)
 	`
-	rows, err := pg.Query(ctx, q, pg.Strings(assetIDs))
-	if err != nil {
-		return nil, errors.Wrap(err, "select query")
-	}
-	defer rows.Close()
-
 	var res []*ActAsset
-	for rows.Next() {
-		a := new(ActAsset)
-		err := rows.Scan(&a.ID, &a.Label, &a.IssuerNodeID, &a.ProjID)
-		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
-		}
-		res = append(res, a)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "end row scan loop")
-	}
-
-	return res, nil
+	err := pg.ForQueryRows(ctx, q, pg.Strings(assetIDs), func(id, label, inodeID, projID string) {
+		res = append(res, &ActAsset{ID: id, Label: label, IssuerNodeID: inodeID, ProjID: projID})
+	})
+	return res, err
 }
 
 func GetActAccounts(ctx context.Context, accountIDs []string) ([]*ActAccount, error) {
@@ -170,25 +142,9 @@ func GetActAccounts(ctx context.Context, accountIDs []string) ([]*ActAccount, er
 		WHERE acc.id = ANY($1)
 		ORDER BY acc.id
 	`
-	rows, err := pg.Query(ctx, q, pg.Strings(accountIDs))
-	if err != nil {
-		return nil, errors.Wrap(err, "select query")
-	}
-	defer rows.Close()
-
 	var res []*ActAccount
-	for rows.Next() {
-		a := new(ActAccount)
-		err := rows.Scan(&a.ID, &a.Label, &a.ManagerNodeID, &a.ProjID)
-		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
-		}
-		res = append(res, a)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "end row scan loop")
-	}
-
-	return res, nil
+	err := pg.ForQueryRows(ctx, q, pg.Strings(accountIDs), func(id, label, mnodeID, projID string) {
+		res = append(res, &ActAccount{ID: id, Label: label, ManagerNodeID: mnodeID, ProjID: projID})
+	})
+	return res, err
 }
