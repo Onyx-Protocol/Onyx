@@ -39,16 +39,3 @@ func Init(chain *fedchain.FC, isManager bool) {
 		})
 	}
 }
-
-func issuedAssets(txs []*bc.Tx) map[bc.AssetID]int64 {
-	issued := make(map[bc.AssetID]int64)
-	for _, tx := range txs {
-		if !tx.IsIssuance() {
-			continue
-		}
-		for _, out := range tx.Outputs {
-			issued[out.AssetID] += int64(out.Amount)
-		}
-	}
-	return issued
-}
