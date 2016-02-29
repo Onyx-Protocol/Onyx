@@ -418,7 +418,7 @@ func TestAssetBalance(t *testing.T) {
 		},
 	})
 
-	err = store.ApplyTx(ctx, tx)
+	err = store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

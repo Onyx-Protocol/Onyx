@@ -87,11 +87,14 @@ func NewOutpoint(b []byte, index uint32) *Outpoint {
 	return result
 }
 
-// IsIssuance returns true if this transaction is an issuance transaction.
-// Issuance transaction is one with first input having
-// Outpoint.Index == 0xffffffff.
-func (tx *Tx) IsIssuance() bool {
-	return len(tx.Inputs) > 0 && tx.Inputs[0].IsIssuance()
+// HasIssuance returns true if this transaction has an issuance input.
+func (tx *TxData) HasIssuance() bool {
+	for _, in := range tx.Inputs {
+		if in.IsIssuance() {
+			return true
+		}
+	}
+	return false
 }
 
 // IsIssuance returns true if input's index is 0xffffffff.

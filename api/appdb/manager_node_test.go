@@ -151,7 +151,7 @@ func TestAccountsWithAsset(t *testing.T) {
 		{Previous: out1.Outpoint},
 		{Previous: out2.Outpoint},
 	}}}
-	err = store.ApplyTx(ctx, tx)
+	err = store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

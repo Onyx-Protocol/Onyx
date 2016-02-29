@@ -68,7 +68,7 @@ func TestGetActUTXOs(t *testing.T) {
 		},
 	})
 
-	err = store.ApplyTx(ctx, tx)
+	err = store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -151,7 +151,7 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 		}},
 	})
 
-	err = store.ApplyTx(ctx, tx)
+	err = store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

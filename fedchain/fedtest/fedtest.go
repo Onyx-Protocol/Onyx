@@ -113,3 +113,10 @@ func Transfer(t testing.TB, out *state.Output, from, to *TestDest) *bc.Tx {
 
 	return bc.NewTx(*tx)
 }
+
+func StateOut(tx *bc.Tx, index int) *state.Output {
+	return &state.Output{
+		TxOutput: *tx.Outputs[index],
+		Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(index)},
+	}
+}

@@ -93,7 +93,7 @@ func Write(ctx context.Context, tx *bc.Tx, ts time.Time) error {
 		return errors.Wrap(err, "generating principal nodetx")
 	}
 
-	if tx.IsIssuance() && len(assets) > 0 {
+	if tx.HasIssuance() && len(assets) > 0 {
 		filteredTx, err := json.Marshal(filterAccounts(nodeTx, ""))
 		if err != nil {
 			return errors.Wrap(err, "filtering tx")

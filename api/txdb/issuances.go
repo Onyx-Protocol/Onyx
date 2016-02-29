@@ -10,19 +10,6 @@ import (
 	"chain/fedchain/bc"
 )
 
-// TODO: handle mixing of issuance and transfers
-func sumIssued(txs ...*bc.Tx) map[bc.AssetID]uint64 {
-	issued := make(map[bc.AssetID]uint64)
-	for _, tx := range txs {
-		if tx.IsIssuance() {
-			for _, out := range tx.Outputs {
-				issued[out.AssetID] += out.Amount
-			}
-		}
-	}
-	return issued
-}
-
 // issued returns the confirmed and total amounts
 // issued of the given asset.
 // TODO: export this function and use in other packages

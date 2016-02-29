@@ -56,17 +56,14 @@ type ActAccount struct {
 
 // GetActUTXOs returns information about outputs from both sides of a transaciton.
 func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err error) {
-	var (
-		isIssuance = tx.IsIssuance()
-		hashes     []bc.Hash
-	)
+	var hashes []bc.Hash
 
 	all := make(map[bc.Outpoint]*ActUTXO)
 	scriptMap := make(map[string]bc.Outpoint)
 	var scripts [][]byte
 
-	if !isIssuance {
-		for _, in := range tx.Inputs {
+	for _, in := range tx.Inputs {
+		if !in.IsIssuance() {
 			hashes = append(hashes, in.Previous.Hash)
 		}
 	}

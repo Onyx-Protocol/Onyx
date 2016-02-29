@@ -37,7 +37,7 @@ func (s *Store) GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.
 }
 
 // ApplyTx adds tx to the pending pool.
-func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx) error {
+func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx, issued map[bc.AssetID]uint64) error {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return errors.Wrap(err)
@@ -85,7 +85,7 @@ func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx) error {
 		return errors.Wrap(err, "insert into pool inputs")
 	}
 
-	err = addIssuances(ctx, sumIssued(tx), false)
+	err = addIssuances(ctx, issued, false)
 	if err != nil {
 		return errors.Wrap(err, "adding issuances")
 	}
@@ -95,13 +95,16 @@ func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx) error {
 }
 
 // RemoveTxs removes confirmedTxs and conflictTxs from the pool.
-func (s *Store) RemoveTxs(ctx context.Context, confirmedTxs, conflictTxs []*bc.Tx) error {
+func (s *Store) RemoveTxs(
+	ctx context.Context,
+	confirmedTxs, conflictTxs []*bc.Tx,
+	issued map[bc.AssetID]uint64,
+) error {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return errors.Wrap(err, "pool update dbtx begin")
 	}
 	defer dbtx.Rollback(ctx)
-
 	db := pg.FromContext(ctx)
 
 	var (
@@ -157,7 +160,7 @@ func (s *Store) RemoveTxs(ctx context.Context, confirmedTxs, conflictTxs []*bc.T
 		return errors.Wrap(err, "delete from pool_inputs")
 	}
 
-	err = removeIssuances(ctx, sumIssued(conflictTxs...))
+	err = removeIssuances(ctx, issued)
 	if err != nil {
 		return errors.Wrap(err, "removing issuances")
 	}
@@ -186,6 +189,7 @@ func (s *Store) ApplyBlock(
 	block *bc.Block,
 	adps map[bc.AssetID]bc.Hash,
 	delta []*state.Output,
+	issued map[bc.AssetID]uint64,
 ) ([]*bc.Tx, error) {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
@@ -232,14 +236,9 @@ func (s *Store) ApplyBlock(
 		return nil, errors.Wrap(err, "insert block outputs")
 	}
 
-	err = addIssuances(ctx, sumIssued(block.Transactions...), true)
+	err = addIssuances(ctx, issued, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "adding issuances")
-	}
-
-	err = removeIssuances(ctx, sumIssued(oldTxs...))
-	if err != nil {
-		return nil, errors.Wrap(err, "removing confirmed issuances from pool")
 	}
 
 	err = dbtx.Commit(ctx)

@@ -102,12 +102,13 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 	}
 	mv := state.NewMemView()
 
-	err = fc.validateBlock(ctx, block, state.Compose(mv, bcView))
+	view := state.Compose(mv, bcView)
+	err = fc.validateBlock(ctx, block, view)
 	if err != nil {
 		return errors.Wrap(err, "block validation")
 	}
 
-	newTxs, conflicts, err := fc.applyBlock(ctx, block, mv)
+	newTxs, conflicts, err := fc.applyBlock(ctx, block, mv, view)
 	if err != nil {
 		return errors.Wrap(err, "applying block")
 	}
@@ -206,22 +207,24 @@ func isSignedByTrustedHost(block *bc.Block, trustedKeys []*btcec.PublicKey) bool
 	return false
 }
 
-func (fc *FC) applyBlock(ctx context.Context, block *bc.Block, mv *state.MemView) (newTxs []*bc.Tx, conflictingTxs []*bc.Tx, err error) {
+func (fc *FC) applyBlock(ctx context.Context, block *bc.Block, mv *state.MemView, view state.ViewReader) (newTxs []*bc.Tx, conflictingTxs []*bc.Tx, err error) {
 	delta := make([]*state.Output, 0, len(mv.Outs))
 	for _, out := range mv.Outs {
 		delta = append(delta, out)
 	}
 
-	newTxs, err = fc.store.ApplyBlock(ctx, block, mv.ADPs, delta)
+	issued := sumIssued(ctx, view, block.Transactions...)
+
+	newTxs, err = fc.store.ApplyBlock(ctx, block, mv.ADPs, delta, issued)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "storing block")
 	}
 
-	conflicts, err := fc.rebuildPool(ctx, block)
+	conflicts, err := fc.rebuildPool(ctx, block, view)
 	return newTxs, conflicts, errors.Wrap(err, "rebuilding pool")
 }
 
-func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
+func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block, prevView state.ViewReader) ([]*bc.Tx, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -241,12 +244,18 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 	}
 
 	poolView := state.NewMemView()
+	allOuts := state.NewMemView()
 	bcView, err := fc.store.NewViewForPrevouts(ctx, txs)
 	if err != nil {
 		return nil, errors.Wrap(err, "blockchain view")
 	}
 	view := state.Compose(poolView, bcView)
 	for _, tx := range txs {
+		// Used to help determine issuances below
+		for _, out := range tx.Outputs {
+			allOuts.SaveOutput(&state.Output{TxOutput: *out})
+		}
+
 		txErr := validation.ValidateTxInputs(ctx, view, tx)
 		// Have to explicitly check that tx is not in block
 		// because issuance transactions are always valid, even duplicates.
@@ -276,7 +285,13 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		}
 	}
 
-	err = fc.store.RemoveTxs(ctx, confirmedTxs, conflictTxs)
+	// sumIssued needs to know about all previous outputs,
+	// even if they were spent in the block, hence using prevView
+	combinedView := state.MultiReader(allOuts, prevView)
+	combinedTxs := append(confirmedTxs, conflictTxs...)
+	issued := sumIssued(ctx, combinedView, combinedTxs...)
+
+	err = fc.store.RemoveTxs(ctx, confirmedTxs, conflictTxs, issued)
 	if err != nil {
 		return nil, errors.Wrap(err, "removing conflicting txs")
 	}

@@ -135,36 +135,35 @@ func TestTransaction(t *testing.T) {
 	}
 }
 
-func TestIsIssuance(t *testing.T) {
-	tx := NewTx(TxData{
-		Version: CurrentTransactionVersion,
-		Inputs: []*TxInput{
-			{
-				Previous: Outpoint{
-					Hash:  mustDecodeHash("dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5"),
-					Index: InvalidOutputIndex,
-				},
-				// "PUSHDATA 'issuance'"
-				SignatureScript: []byte{txscript.OP_DATA_8, 0x69, 0x73, 0x73, 0x75, 0x61, 0x6e, 0x63, 0x65},
-				Metadata:        []byte("input"),
-			},
+func TestHasIssuance(t *testing.T) {
+	cases := []struct {
+		tx   *TxData
+		want bool
+	}{{
+		tx: &TxData{
+			Inputs: []*TxInput{{Previous: Outpoint{Index: InvalidOutputIndex}}},
 		},
-		Outputs: []*TxOutput{
-			{
-				AssetAmount: AssetAmount{AssetID: AssetID{}, Amount: 1000000000000},
-				Script:      []byte{txscript.OP_1},
-				Metadata:    []byte("output"),
-			},
+		want: true,
+	}, {
+		tx: &TxData{
+			Inputs: []*TxInput{{}, {Previous: Outpoint{Index: InvalidOutputIndex}}},
 		},
-		LockTime: 0,
-		Metadata: []byte("issuance"),
-	})
+		want: true,
+	}, {
+		tx: &TxData{
+			Inputs: []*TxInput{{}},
+		},
+		want: false,
+	}, {
+		tx:   &TxData{},
+		want: false,
+	}}
 
-	if g := tx.Inputs[0].IsIssuance(); !g {
-		t.Errorf("input IsIssuance() = %v want true", g)
-	}
-	if g := tx.IsIssuance(); !g {
-		t.Errorf("tx IsIssuance() = %v want true", g)
+	for _, c := range cases {
+		got := c.tx.HasIssuance()
+		if got != c.want {
+			t.Errorf("HasIssuance(%+v) = %v want %v", c.tx, got, c.want)
+		}
 	}
 }
 

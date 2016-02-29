@@ -22,7 +22,7 @@ func TestLatestBlock(t *testing.T) {
 
 	noBlocks := memstore.New()
 	oneBlock := memstore.New()
-	oneBlock.ApplyBlock(ctx, &bc.Block{}, nil, nil)
+	oneBlock.ApplyBlock(ctx, &bc.Block{}, nil, nil, nil)
 
 	cases := []struct {
 		store   Store
@@ -73,7 +73,7 @@ func TestWaitForBlock(t *testing.T) {
 			OutputScript:      []byte{txscript.OP_TRUE},
 		},
 	}
-	store.ApplyBlock(ctx, block0, nil, nil)
+	store.ApplyBlock(ctx, block0, nil, nil, nil)
 	fc, err := New(ctx, store, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -216,7 +216,7 @@ func TestGenerateBlock(t *testing.T) {
 		}),
 	}
 	for _, tx := range txs {
-		err := fc.applyTx(ctx, tx)
+		err := fc.applyTx(ctx, tx, nil)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

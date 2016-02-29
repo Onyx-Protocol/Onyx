@@ -56,14 +56,9 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 
 	// If this is an issuance tx, check its prevout hash against the
 	// previous block hash if we have one.
-	// There are no outputs to undo, so we return an empty undo object.
 	// NOTE: review this when we implement import inputs.
 	// Maybe we'll need to have undo ADP.
-	if tx.IsIssuance() {
-		// TODO(erykwalder): some type of uniqueness check
-		// TODO(erykwalder): check outputs once utxos aren't tied to manager nodes
-		return nil
-	}
+	// TODO(erykwalder): some type of uniqueness check
 
 	err = ValidateTxInputs(ctx, view, tx)
 	if err != nil {
@@ -86,6 +81,10 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 	}
 
 	for i, input := range tx.Inputs {
+		if input.IsIssuance() {
+			// TODO: implement issuance scheme
+			continue
+		}
 		unspent := view.Output(ctx, input.Previous)
 		err = engine.Prepare(unspent.Script, i)
 		if err != nil {
@@ -109,16 +108,12 @@ func txIsWellFormed(tx *bc.Tx) error {
 		return errors.New("inputs are missing")
 	}
 
-	// Special rules for the issuance transaction.
-	// Issuance transaction must also reference previous block hash,
-	// but we can verify that only within CheckBlock method.
-	if tx.IsIssuance() && len(tx.Inputs) != 1 {
-		return errors.New("issuance tx has more than one input")
-	}
-
 	// Check for duplicate inputs
 	uniqueFilter := map[bc.Outpoint]bool{}
 	for _, txin := range tx.Inputs {
+		if txin.IsIssuance() {
+			continue
+		}
 		if uniqueFilter[txin.Previous] {
 			return fmt.Errorf("input is duplicate: %s", txin.Previous.String())
 		}
@@ -131,7 +126,7 @@ func txIsWellFormed(tx *bc.Tx) error {
 		// asset definition using issuance transactions.
 		// Non-issuance transactions cannot have zero-value outputs.
 		// If all inputs have zero value, tx therefore must have no outputs.
-		if txout.Amount == 0 && !tx.IsIssuance() {
+		if txout.Amount == 0 && !tx.HasIssuance() {
 			return fmt.Errorf("non-issuance output value must be > 0")
 		}
 	}
@@ -141,20 +136,29 @@ func txIsWellFormed(tx *bc.Tx) error {
 // validateTxBalance ensures that non-issuance transactions
 // have the exact same input and output asset amounts.
 func validateTxBalance(ctx context.Context, view state.ViewReader, tx *bc.Tx) error {
-	parity := make(map[bc.AssetID]uint64)
+	parity := make(map[bc.AssetID]int64)
+	issued := make(map[bc.AssetID]bool)
 	for _, out := range tx.Outputs {
-		parity[out.AssetID] -= out.Amount
+		parity[out.AssetID] -= int64(out.Amount)
 	}
 	for _, in := range tx.Inputs {
+		if in.IsIssuance() {
+			assetID, err := assetIDFromSigScript(in.SignatureScript)
+			if err != nil {
+				return err
+			}
+			issued[assetID] = true
+			continue
+		}
 		unspent := view.Output(ctx, in.Previous)
 		assetID := unspent.AssetID
 		if assetID == (bc.AssetID{}) {
 			assetID = bc.ComputeAssetID(unspent.Script, stubGenesisHash)
 		}
-		parity[assetID] += unspent.Amount
+		parity[assetID] += int64(unspent.Amount)
 	}
-	for _, val := range parity {
-		if val != 0 {
+	for asset, val := range parity {
+		if val > 0 || (val < 0 && !issued[asset]) {
 			return errors.New("transaction does not have input output parity")
 		}
 	}
@@ -163,24 +167,23 @@ func validateTxBalance(ctx context.Context, view state.ViewReader, tx *bc.Tx) er
 
 // ApplyTx updates the view with all the changes to the ledger
 func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
-	if !tx.IsIssuance() {
-		for _, in := range tx.Inputs {
-			o := view.Output(ctx, in.Previous)
-			o.Spent = true
-			view.SaveOutput(o)
+	for _, in := range tx.Inputs {
+		if in.IsIssuance() {
+			continue
 		}
+		o := view.Output(ctx, in.Previous)
+		o.Spent = true
+		view.SaveOutput(o)
 	}
 
 	for _, in := range tx.Inputs {
 		// If metadata field is empty, no update of ADP takes place.
 		// See https://github.com/chain-engineering/fedchain/blob/master/documentation/fedchain-specification.md#extract-asset-definition.
 		if in.IsIssuance() && len(in.AssetDefinition) > 0 {
-			redeemScript, err := txscript.RedeemScriptFromP2SHSigScript(in.SignatureScript)
+			assetID, err := assetIDFromSigScript(in.SignatureScript)
 			if err != nil {
-				return errors.Wrap(err, "extracting redeem script from sigscript")
+				return err
 			}
-			pkScript := txscript.RedeemToPkScript(redeemScript)
-			assetID := bc.ComputeAssetID(pkScript, [32]byte{}) // TODO(tessr): get genesis hash
 			defHash := bc.HashAssetDefinition(in.AssetDefinition)
 			view.SaveAssetDefinitionPointer(assetID, defHash)
 		}
@@ -196,4 +199,13 @@ func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 	}
 
 	return nil
+}
+
+func assetIDFromSigScript(script []byte) (bc.AssetID, error) {
+	redeemScript, err := txscript.RedeemScriptFromP2SHSigScript(script)
+	if err != nil {
+		return bc.AssetID{}, errors.Wrap(err, "extracting redeem script from sigscript")
+	}
+	pkScript := txscript.RedeemToPkScript(redeemScript)
+	return bc.ComputeAssetID(pkScript, [32]byte{}), nil // TODO(tessr): get genesis hash
 }

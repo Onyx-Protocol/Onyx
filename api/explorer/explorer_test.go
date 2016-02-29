@@ -203,13 +203,13 @@ func TestGetTxIssuance(t *testing.T) {
 	}
 
 	withContext(t, "", func(ctx context.Context) {
-		err := txdb.NewStore().ApplyTx(ctx, tx)
+		err := txdb.NewStore().ApplyTx(ctx, tx, nil)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
-		_, err = txdb.NewStore().ApplyBlock(ctx, blk, nil, nil)
+		_, err = txdb.NewStore().ApplyBlock(ctx, blk, nil, nil, nil)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -293,7 +293,7 @@ func TestGetTxTransfer(t *testing.T) {
 	}
 
 	withContext(t, "", func(ctx context.Context) {
-		_, err := txdb.NewStore().ApplyBlock(ctx, blk, nil, nil)
+		_, err := txdb.NewStore().ApplyBlock(ctx, blk, nil, nil, nil)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
