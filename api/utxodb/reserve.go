@@ -41,20 +41,11 @@ type (
 	// TODO(kr): try interning strings in UTXO
 
 	UTXO struct {
-		// Size of this struct matters.
-		// We keep lots of them in memory.
+		bc.Outpoint
+		bc.AssetAmount
 
 		AccountID string
-		AssetID   bc.AssetID
-		Amount    uint64
-
-		ResvExpires time.Time
-		reserved    uint64 // only valid if ResvExpires after now
-
-		Outpoint  bc.Outpoint
 		AddrIndex [2]uint32
-
-		ContractHash string // TODO(bobg): *bc.ContractHash
 	}
 
 	Receiver struct {
@@ -175,11 +166,12 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 			// unreserving some and making less change.
 			var addrIndex []uint32
 			utxo := UTXO{
-				AssetID:     source.AssetID,
-				AccountID:   source.AccountID,
-				ResvExpires: exp,
+				AssetAmount: bc.AssetAmount{
+					AssetID: source.AssetID,
+				},
+				AccountID: source.AccountID,
 			}
-			err = rows.Scan(&utxo.Outpoint.Hash, &utxo.Outpoint.Index, &utxo.Amount, (*pg.Uint32s)(&addrIndex))
+			err = rows.Scan(&utxo.Hash, &utxo.Index, &utxo.Amount, (*pg.Uint32s)(&addrIndex))
 			if err != nil {
 				return nil, nil, errors.Wrap(err, "reservation member row scan")
 			}
