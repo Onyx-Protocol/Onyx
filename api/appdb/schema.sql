@@ -539,7 +539,7 @@ CREATE TABLE issuer_txs (
     issuer_node_id text NOT NULL,
     data json NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    txid text NOT NULL
+    tx_hash text NOT NULL
 );
 
 
@@ -605,7 +605,7 @@ CREATE TABLE manager_txs (
     manager_node_id text NOT NULL,
     data json NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    txid text NOT NULL
+    tx_hash text NOT NULL
 );
 
 

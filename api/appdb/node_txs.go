@@ -12,7 +12,7 @@ import (
 
 func WriteIssuerTx(ctx context.Context, txHash string, data []byte, iNodeID string, asset string) (id string, err error) {
 	issuerQ := `
-		INSERT INTO issuer_txs (issuer_node_id, txid, data)
+		INSERT INTO issuer_txs (issuer_node_id, tx_hash, data)
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
@@ -31,7 +31,7 @@ func WriteIssuerTx(ctx context.Context, txHash string, data []byte, iNodeID stri
 
 func WriteManagerTx(ctx context.Context, txHash string, data []byte, mNodeID string, accounts []string) (id string, err error) {
 	managerQ := `
-		INSERT INTO manager_txs (manager_node_id, txid, data)
+		INSERT INTO manager_txs (manager_node_id, tx_hash, data)
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
@@ -119,7 +119,7 @@ func AssetTxs(ctx context.Context, assetID string, prev string, limit int) ([]*j
 func ManagerTx(ctx context.Context, managerNodeID, txID string) (*json.RawMessage, error) {
 	q := `
 		SELECT data FROM manager_txs
-		WHERE manager_node_id=$1 AND txid=$2
+		WHERE manager_node_id=$1 AND tx_hash=$2
 	`
 
 	var a []byte
