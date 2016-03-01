@@ -1,8 +1,7 @@
-package fedchain_test
+package fedchain
 
 import (
 	"encoding/hex"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -11,59 +10,41 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 
-	"chain/api/asset/assettest"
-	"chain/api/generator"
-	"chain/database/pg/pgtest"
 	"chain/errors"
-	. "chain/fedchain"
 	"chain/fedchain/bc"
+	"chain/fedchain/memstore"
 	"chain/testutil"
 )
 
-func init() {
-	u := "postgres:///api-test?sslmode=disable"
-	if s := os.Getenv("DB_URL_TEST"); s != "" {
-		u = s
-	}
-
-	ctx := context.Background()
-	pgtest.Open(ctx, u, "fedchaintest", "../api/appdb/schema.sql")
-}
-
 func TestIdempotentUpsert(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
-
-	fc, err := assettest.InitializeSigningGenerator(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctx, fc := newContextFC(t)
 
 	pubkey, err := testutil.TestXPub.ECPubKey()
 	if err != nil {
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	// InitializeSigningGenerator added a genesis block.  Calling
 	// UpsertGenesisBlock again should be a no-op, not produce an error.
-	_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
-	if err != nil {
-		t.Fatal(err)
+	for i := 0; i < 2; i++ {
+		_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
+		if err != nil {
+			testutil.FatalErr(t, err)
+		}
 	}
 }
 
 func TestGenerateBlock(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
+	ctx, fc := newContextFC(t)
 
-	fc, err := assettest.InitializeSigningGenerator(ctx)
+	pubkey, err := testutil.TestXPub.ECPubKey()
 	if err != nil {
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
-	latestBlock, err := fc.LatestBlock(ctx)
+	latestBlock, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
 	if err != nil {
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 
 	txs := []*bc.Tx{
@@ -109,7 +90,7 @@ func TestGenerateBlock(t *testing.T) {
 		}),
 	}
 	for _, tx := range txs {
-		err := fc.ApplyTx(ctx, tx)
+		err := fc.applyTx(ctx, tx)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -143,19 +124,6 @@ func TestGenerateBlock(t *testing.T) {
 }
 
 func TestIsSignedByTrustedHost(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
-
-	fc, err := assettest.InitializeSigningGenerator(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	latestBlock, err := fc.LatestBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	privKey, err := testutil.TestXPrv.ECPrivKey()
 	if err != nil {
 		t.Fatal(err)
@@ -164,11 +132,7 @@ func TestIsSignedByTrustedHost(t *testing.T) {
 	keys := []*btcec.PrivateKey{privKey}
 
 	block := &bc.Block{}
-	err = generator.GetAndAddBlockSignatures(ctx, block, latestBlock)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
+	signBlock(t, block, keys)
 	sig := block.SignatureScript
 
 	cases := []struct {
@@ -200,11 +164,36 @@ func TestIsSignedByTrustedHost(t *testing.T) {
 
 	for _, c := range cases {
 		block.SignatureScript = c.sigScript
-		got := IsSignedByTrustedHost(block, c.trustedKeys)
+		got := isSignedByTrustedHost(block, c.trustedKeys)
 
 		if got != c.want {
 			t.Errorf("%s: got %v want %v", c.desc, got, c.want)
 		}
+	}
+}
+
+func newContextFC(t testing.TB) (context.Context, *FC) {
+	ctx := context.Background()
+	fc, err := New(ctx, memstore.New(), nil)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	return ctx, fc
+}
+
+func signBlock(t testing.TB, b *bc.Block, keys []*btcec.PrivateKey) {
+	var sigs []*btcec.Signature
+	for _, key := range keys {
+		sig, err := ComputeBlockSignature(b, key)
+		if err != nil {
+			testutil.FatalErr(t, err)
+		}
+		sigs = append(sigs, sig)
+	}
+	err := AddSignaturesToBlock(b, sigs)
+	if err != nil {
+		testutil.FatalErr(t, err)
 	}
 }
 

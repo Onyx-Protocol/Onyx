@@ -67,7 +67,7 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 		},
 	}
 
-	poolView := newMemView()
+	poolView := state.NewMemView()
 	bcView, err := fc.store.NewViewForPrevouts(ctx, txs)
 	if err != nil {
 		return nil, nil, errors.Wrap(err)
@@ -100,7 +100,7 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 	if err != nil {
 		return errors.Wrap(err, "txdb")
 	}
-	mv := newMemView()
+	mv := state.NewMemView()
 
 	err = fc.validateBlock(ctx, block, state.Compose(mv, bcView))
 	if err != nil {
@@ -144,7 +144,7 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	if err != nil {
 		return errors.Wrap(err, "txdb")
 	}
-	mv := newMemView()
+	mv := state.NewMemView()
 
 	prevBlock, err := fc.LatestBlock(ctx)
 	if err != nil && errors.Root(err) != ErrNoBlocks {
@@ -206,7 +206,7 @@ func isSignedByTrustedHost(block *bc.Block, trustedKeys []*btcec.PublicKey) bool
 	return false
 }
 
-func (fc *FC) applyBlock(ctx context.Context, block *bc.Block, mv *memView) (newTxs []*bc.Tx, conflictingTxs []*bc.Tx, err error) {
+func (fc *FC) applyBlock(ctx context.Context, block *bc.Block, mv *state.MemView) (newTxs []*bc.Tx, conflictingTxs []*bc.Tx, err error) {
 	delta := make([]*state.Output, 0, len(mv.Outs))
 	for _, out := range mv.Outs {
 		delta = append(delta, out)
@@ -240,7 +240,7 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		return nil, errors.Wrap(err, "")
 	}
 
-	poolView := newMemView()
+	poolView := state.NewMemView()
 	bcView, err := fc.store.NewViewForPrevouts(ctx, txs)
 	if err != nil {
 		return nil, errors.Wrap(err, "blockchain view")
