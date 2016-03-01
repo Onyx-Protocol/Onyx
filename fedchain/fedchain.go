@@ -93,7 +93,7 @@ type Store interface {
 	NewPoolViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error)
 
 	// blocks
-	ApplyBlock(context.Context, *bc.Block, map[bc.AssetID]*bc.AssetDefinitionPointer, []*state.Output) ([]*bc.Tx, error)
+	ApplyBlock(context.Context, *bc.Block, map[bc.AssetID]bc.Hash, []*state.Output) ([]*bc.Tx, error)
 	LatestBlock(context.Context) (*bc.Block, error)
 	NewViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error)
 }

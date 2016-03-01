@@ -86,7 +86,7 @@ func DefinitionHashByAssetID(ctx context.Context, assetID string) (string, error
 
 // insertAssetDefinitionPointers writes the and asset id and the definition hash,
 // to the asset_definition_pointers table.
-func insertAssetDefinitionPointers(ctx context.Context, adps map[bc.AssetID]*bc.AssetDefinitionPointer) error {
+func insertAssetDefinitionPointers(ctx context.Context, adps map[bc.AssetID]bc.Hash) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -108,7 +108,7 @@ func insertAssetDefinitionPointers(ctx context.Context, adps map[bc.AssetID]*bc.
 	var aids, ptrs []string
 	for id, p := range adps {
 		aids = append(aids, id.String())
-		ptrs = append(ptrs, bc.Hash(p.DefinitionHash).String())
+		ptrs = append(ptrs, p.String())
 	}
 
 	_, err := pg.FromContext(ctx).Exec(ctx, q, pg.Strings(ptrs), pg.Strings(aids))

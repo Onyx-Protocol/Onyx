@@ -36,21 +36,21 @@ func BenchmarkValidateTx(b *testing.B) {
 
 type testView struct {
 	outs map[bc.Outpoint]*state.Output
-	adps map[bc.AssetID]*bc.AssetDefinitionPointer
+	adps map[bc.AssetID]bc.Hash
 }
 
 func newTestView() *testView {
 	return &testView{
 		outs: make(map[bc.Outpoint]*state.Output),
-		adps: make(map[bc.AssetID]*bc.AssetDefinitionPointer),
+		adps: make(map[bc.AssetID]bc.Hash),
 	}
 }
 func (v *testView) Output(context.Context, bc.Outpoint) *state.Output {
 	return nil
 }
 
-func (v *testView) SaveAssetDefinitionPointer(adp *bc.AssetDefinitionPointer) {
-	v.adps[adp.AssetID] = adp
+func (v *testView) SaveAssetDefinitionPointer(asset bc.AssetID, hash bc.Hash) {
+	v.adps[asset] = hash
 }
 
 func (v *testView) SaveOutput(*state.Output) {}

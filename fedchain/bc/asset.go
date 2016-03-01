@@ -25,14 +25,6 @@ func ComputeAssetID(issuanceScript []byte, genesis [32]byte) AssetID {
 	return hash256.Sum(buf)
 }
 
-// AssetDefinitionPointer is a Hash256 value of data associated
-// with a specific AssetID.
-// This is issuer's authenticated description of their asset.
-type AssetDefinitionPointer struct {
-	AssetID        AssetID
-	DefinitionHash [32]byte
-}
-
 // HashAssetDefinition calculates an asset definition's hash.
 func HashAssetDefinition(def []byte) Hash {
 	return Hash(hash256.Sum(def))

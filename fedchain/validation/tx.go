@@ -182,11 +182,7 @@ func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 			pkScript := txscript.RedeemToPkScript(redeemScript)
 			assetID := bc.ComputeAssetID(pkScript, [32]byte{}) // TODO(tessr): get genesis hash
 			defHash := bc.HashAssetDefinition(in.AssetDefinition)
-			adp := &bc.AssetDefinitionPointer{
-				AssetID:        assetID,
-				DefinitionHash: defHash,
-			}
-			view.SaveAssetDefinitionPointer(adp)
+			view.SaveAssetDefinitionPointer(assetID, defHash)
 		}
 	}
 

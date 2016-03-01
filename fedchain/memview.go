@@ -9,13 +9,13 @@ import (
 
 type memView struct {
 	Outs map[bc.Outpoint]*state.Output
-	ADPs map[bc.AssetID]*bc.AssetDefinitionPointer
+	ADPs map[bc.AssetID]bc.Hash
 }
 
 func newMemView() *memView {
 	return &memView{
 		Outs: make(map[bc.Outpoint]*state.Output),
-		ADPs: make(map[bc.AssetID]*bc.AssetDefinitionPointer),
+		ADPs: make(map[bc.AssetID]bc.Hash),
 	}
 }
 
@@ -27,6 +27,6 @@ func (v *memView) SaveOutput(o *state.Output) {
 	v.Outs[o.Outpoint] = o
 }
 
-func (v *memView) SaveAssetDefinitionPointer(adp *bc.AssetDefinitionPointer) {
-	v.ADPs[adp.AssetID] = adp
+func (v *memView) SaveAssetDefinitionPointer(asset bc.AssetID, hash bc.Hash) {
+	v.ADPs[asset] = hash
 }

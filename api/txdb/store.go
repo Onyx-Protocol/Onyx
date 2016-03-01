@@ -162,7 +162,7 @@ func (s *Store) NewPoolViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state
 func (s *Store) ApplyBlock(
 	ctx context.Context,
 	block *bc.Block,
-	adps map[bc.AssetID]*bc.AssetDefinitionPointer,
+	adps map[bc.AssetID]bc.Hash,
 	delta []*state.Output,
 ) ([]*bc.Tx, error) {
 	dbtx, ctx, err := pg.Begin(ctx)

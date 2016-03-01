@@ -34,7 +34,7 @@ type ViewWriter interface {
 	SaveOutput(*Output)
 
 	// SaveAssetDefinitionPointer updates the asset definition pointer.
-	SaveAssetDefinitionPointer(*bc.AssetDefinitionPointer)
+	SaveAssetDefinitionPointer(bc.AssetID, bc.Hash)
 }
 
 // Output represents a spent or unspent output
