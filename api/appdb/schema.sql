@@ -312,29 +312,6 @@ CREATE TABLE accounts (
 
 
 --
--- Name: activity; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE activity (
-    id text DEFAULT next_chain_id('act'::text) NOT NULL,
-    manager_node_id text NOT NULL,
-    data json NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    txid text NOT NULL
-);
-
-
---
--- Name: activity_accounts; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE activity_accounts (
-    activity_id text NOT NULL,
-    account_id text NOT NULL
-);
-
-
---
 -- Name: address_index_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -492,29 +469,6 @@ CREATE TABLE invitations (
     role text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT invitations_role_check CHECK (((role = 'developer'::text) OR (role = 'admin'::text)))
-);
-
-
---
--- Name: issuance_activity; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE issuance_activity (
-    id text DEFAULT next_chain_id('iact'::text) NOT NULL,
-    issuer_node_id text NOT NULL,
-    data json NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    txid text NOT NULL
-);
-
-
---
--- Name: issuance_activity_assets; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE issuance_activity_assets (
-    issuance_activity_id text NOT NULL,
-    asset_id text NOT NULL
 );
 
 
@@ -903,14 +857,6 @@ ALTER TABLE ONLY accounts
 
 
 --
--- Name: activity_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY activity
-    ADD CONSTRAINT activity_pkey PRIMARY KEY (id);
-
-
---
 -- Name: addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -988,14 +934,6 @@ ALTER TABLE ONLY blocks_utxos
 
 ALTER TABLE ONLY invitations
     ADD CONSTRAINT invitations_pkey PRIMARY KEY (id);
-
-
---
--- Name: issuance_activity_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY issuance_activity
-    ADD CONSTRAINT issuance_activity_pkey PRIMARY KEY (id);
 
 
 --
@@ -1194,34 +1132,6 @@ CREATE UNIQUE INDEX accounts_manager_node_path ON accounts USING btree (manager_
 
 
 --
--- Name: activity_accounts_account_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX activity_accounts_account_id_idx ON activity_accounts USING btree (account_id);
-
-
---
--- Name: activity_accounts_activity_id_account_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX activity_accounts_activity_id_account_id_idx ON activity_accounts USING btree (activity_id, account_id);
-
-
---
--- Name: activity_manager_node_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX activity_manager_node_id_idx ON activity USING btree (manager_node_id);
-
-
---
--- Name: activity_manager_node_id_txid_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX activity_manager_node_id_txid_idx ON activity USING btree (manager_node_id, txid);
-
-
---
 -- Name: addresses_account_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1275,34 +1185,6 @@ CREATE INDEX auth_tokens_user_id_idx ON auth_tokens USING btree (user_id);
 --
 
 CREATE UNIQUE INDEX blocks_txs_block_height_block_pos_key ON blocks_txs USING btree (block_height, block_pos);
-
-
---
--- Name: issuance_activity_assets_asset_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX issuance_activity_assets_asset_id_idx ON issuance_activity_assets USING btree (asset_id);
-
-
---
--- Name: issuance_activity_assets_issuance_activity_id_asset_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX issuance_activity_assets_issuance_activity_id_asset_id_idx ON issuance_activity_assets USING btree (issuance_activity_id, asset_id);
-
-
---
--- Name: issuance_activity_issuer_node_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX issuance_activity_issuer_node_id_idx ON issuance_activity USING btree (issuer_node_id);
-
-
---
--- Name: issuance_activity_issuer_node_id_txid_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX issuance_activity_issuer_node_id_txid_idx ON issuance_activity USING btree (issuer_node_id, txid);
 
 
 --
@@ -1435,30 +1317,6 @@ ALTER TABLE ONLY accounts
 
 
 --
--- Name: activity_accounts_account_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY activity_accounts
-    ADD CONSTRAINT activity_accounts_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id);
-
-
---
--- Name: activity_accounts_activity_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY activity_accounts
-    ADD CONSTRAINT activity_accounts_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES activity(id);
-
-
---
--- Name: activity_manager_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY activity
-    ADD CONSTRAINT activity_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
-
-
---
 -- Name: addresses_account_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1504,30 +1362,6 @@ ALTER TABLE ONLY blocks_utxos
 
 ALTER TABLE ONLY invitations
     ADD CONSTRAINT invitations_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id);
-
-
---
--- Name: issuance_activity_assets_asset_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY issuance_activity_assets
-    ADD CONSTRAINT issuance_activity_assets_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES assets(id);
-
-
---
--- Name: issuance_activity_assets_issuance_activity_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY issuance_activity_assets
-    ADD CONSTRAINT issuance_activity_assets_issuance_activity_id_fkey FOREIGN KEY (issuance_activity_id) REFERENCES issuance_activity(id);
-
-
---
--- Name: issuance_activity_issuer_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY issuance_activity
-    ADD CONSTRAINT issuance_activity_issuer_node_id_fkey FOREIGN KEY (issuer_node_id) REFERENCES issuer_nodes(id);
 
 
 --

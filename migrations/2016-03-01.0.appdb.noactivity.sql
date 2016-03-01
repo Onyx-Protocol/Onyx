@@ -1,0 +1,13 @@
+DROP INDEX activity_accounts_account_id_idx;
+DROP INDEX activity_accounts_activity_id_account_id_idx;
+DROP INDEX activity_manager_node_id_idx;
+DROP INDEX activity_manager_node_id_txid_idx;
+DROP INDEX issuance_activity_assets_asset_id_idx;
+DROP INDEX issuance_activity_assets_issuance_activity_id_asset_id_idx;
+DROP INDEX issuance_activity_issuer_node_id_idx;
+DROP INDEX issuance_activity_issuer_node_id_txid_idx;
+
+DROP TABLE activity;
+DROP TABLE activity_accounts;
+DROP TABLE issuance_activity;
+DROP TABLE issuance_activity_assets;
