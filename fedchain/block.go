@@ -132,9 +132,7 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 
 // ValidateBlockForSig performs validation on an incoming _unsigned_
 // block in preparation for signing it.  By definition it does not
-// execute the sigscript.  On successful validation, it "locks" the
-// block's height and will refuse to validate any other blocks at the
-// same height.
+// execute the sigscript.
 func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -151,12 +149,7 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	}
 
 	err = validation.ValidateBlockForSig(ctx, state.Compose(mv, bcView), prevBlock, block)
-	if err != nil {
-		return errors.Wrap(err, "validation")
-	}
-
-	err = fc.store.LockBlockHeight(ctx, block)
-	return errors.Wrap(err, "lock block height")
+	return errors.Wrap(err, "validation")
 }
 
 // validateBlock performs validation on an incoming block, in advance of

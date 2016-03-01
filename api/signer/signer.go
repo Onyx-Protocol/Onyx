@@ -5,6 +5,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/crypto"
+	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain"
 	"chain/fedchain/bc"
@@ -52,6 +53,10 @@ func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) (*crypto.Signature,
 	if err != nil {
 		return nil, errors.Wrap(err, "validating block for signature")
 	}
+	err = lockBlockHeight(ctx, b)
+	if err != nil {
+		return nil, errors.Wrap(err, "lock block height")
+	}
 	signature, err := s.ComputeBlockSignature(b)
 	if err != nil {
 		return nil, err
@@ -62,4 +67,18 @@ func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) (*crypto.Signature,
 // PublicKey gets the public key for the signer's private key.
 func (s *Signer) PublicKey() *btcec.PublicKey {
 	return s.key.PubKey()
+}
+
+// lockBlockHeight records a signer's intention to sign a given block
+// at a given height.  It's an error if a different block at the same
+// height has previously been signed.
+func lockBlockHeight(ctx context.Context, b *bc.Block) error {
+	const q = `
+		INSERT INTO signed_blocks (block_height, block_hash)
+		SELECT $1, $2
+		    WHERE NOT EXISTS (SELECT 1 FROM signed_blocks
+		                      WHERE block_height = $1 AND block_hash = $2)
+	`
+	_, err := pg.FromContext(ctx).Exec(ctx, q, b.Height, b.HashForSig())
+	return err
 }

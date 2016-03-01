@@ -96,7 +96,6 @@ type Store interface {
 	ApplyBlock(context.Context, *bc.Block, map[bc.AssetID]*bc.AssetDefinitionPointer, []*state.Output) ([]*bc.Tx, error)
 	LatestBlock(context.Context) (*bc.Block, error)
 	NewViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error)
-	LockBlockHeight(context.Context, *bc.Block) error
 }
 
 // FC provides a complete, minimal blockchain database. It

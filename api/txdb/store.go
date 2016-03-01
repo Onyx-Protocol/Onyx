@@ -238,17 +238,3 @@ func (s *Store) ApplyBlock(
 func (s *Store) NewViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
 	return newViewForPrevouts(ctx, txs)
 }
-
-// LockBlockHeight records a signer's intention to sign a given block
-// at a given height.  It's an error if a different block at the same
-// height has previously been signed.
-func (s *Store) LockBlockHeight(ctx context.Context, b *bc.Block) error {
-	const q = `
-		INSERT INTO signed_blocks (block_height, block_hash)
-		SELECT $1, $2
-		    WHERE NOT EXISTS (SELECT 1 FROM signed_blocks
-		                      WHERE block_height = $1 AND block_hash = $2)
-	`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, b.Height, b.HashForSig())
-	return err
-}
