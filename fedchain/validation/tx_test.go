@@ -45,10 +45,6 @@ func newTestView() *testView {
 		adps: make(map[bc.AssetID]*bc.AssetDefinitionPointer),
 	}
 }
-
-func (v *testView) AssetDefinitionPointer(id bc.AssetID) *bc.AssetDefinitionPointer {
-	return v.adps[id]
-}
 func (v *testView) Output(context.Context, bc.Outpoint) *state.Output {
 	return nil
 }

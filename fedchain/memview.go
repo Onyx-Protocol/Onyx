@@ -23,10 +23,6 @@ func (v *memView) Output(ctx context.Context, p bc.Outpoint) *state.Output {
 	return v.Outs[p]
 }
 
-func (v *memView) AssetDefinitionPointer(assetID bc.AssetID) *bc.AssetDefinitionPointer {
-	return v.ADPs[assetID]
-}
-
 func (v *memView) SaveOutput(o *state.Output) {
 	v.Outs[o.Outpoint] = o
 }

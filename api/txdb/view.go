@@ -77,7 +77,3 @@ func (v *view) Output(ctx context.Context, p bc.Outpoint) *state.Output {
 	}
 	return v.outs[p]
 }
-
-func (v *view) AssetDefinitionPointer(assetID bc.AssetID) *bc.AssetDefinitionPointer {
-	panic("unimplemented")
-}

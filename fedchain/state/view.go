@@ -25,10 +25,6 @@ type ViewReader interface {
 	// Output loads the output from the view.
 	// It returns nil if output is not stored or does not exist.
 	Output(context.Context, bc.Outpoint) *Output
-
-	// AssetDefinitionPointer looks up the given Asset ID.
-	// It returns nil if ADP is not stored or does not exist.
-	AssetDefinitionPointer(bc.AssetID) *bc.AssetDefinitionPointer
 }
 
 type ViewWriter interface {
@@ -109,22 +105,10 @@ func (v *multiReader) Output(ctx context.Context, p bc.Outpoint) *Output {
 	return v.back.Output(ctx, p)
 }
 
-func (v *multiReader) AssetDefinitionPointer(assetID bc.AssetID) *bc.AssetDefinitionPointer {
-	adp := v.front.AssetDefinitionPointer(assetID)
-	if adp != nil {
-		return adp
-	}
-	return v.back.AssetDefinitionPointer(assetID)
-}
-
 var emptyReader ViewReader = empty{}
 
 type empty struct{}
 
 func (empty) Output(ctx context.Context, p bc.Outpoint) *Output {
-	return nil
-}
-
-func (empty) AssetDefinitionPointer(assetID bc.AssetID) *bc.AssetDefinitionPointer {
 	return nil
 }
