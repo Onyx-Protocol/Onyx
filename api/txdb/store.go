@@ -38,6 +38,12 @@ func (s *Store) GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.
 
 // ApplyTx adds tx to the pending pool.
 func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx) error {
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	defer dbtx.Rollback(ctx)
+
 	inserted, err := insertTx(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "insert into txs")
@@ -80,11 +86,22 @@ func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx) error {
 	}
 
 	err = addIssuances(ctx, sumIssued(tx), false)
-	return errors.Wrap(err, "adding issuances")
+	if err != nil {
+		return errors.Wrap(err, "adding issuances")
+	}
+
+	err = dbtx.Commit(ctx)
+	return errors.Wrap(err, "committing database transaction")
 }
 
 // RemoveTxs removes confirmedTxs and conflictTxs from the pool.
 func (s *Store) RemoveTxs(ctx context.Context, confirmedTxs, conflictTxs []*bc.Tx) error {
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return errors.Wrap(err, "pool update dbtx begin")
+	}
+	defer dbtx.Rollback(ctx)
+
 	db := pg.FromContext(ctx)
 
 	var (
@@ -114,7 +131,7 @@ func (s *Store) RemoveTxs(ctx context.Context, confirmedTxs, conflictTxs []*bc.T
 
 	// Delete pool_txs
 	const txq = `DELETE FROM pool_txs WHERE tx_hash IN (SELECT unnest($1::text[]))`
-	_, err := db.Exec(ctx, txq, pg.Strings(deleteTxHashes))
+	_, err = db.Exec(ctx, txq, pg.Strings(deleteTxHashes))
 	if err != nil {
 		return errors.Wrap(err, "delete from pool_txs")
 	}
@@ -141,7 +158,12 @@ func (s *Store) RemoveTxs(ctx context.Context, confirmedTxs, conflictTxs []*bc.T
 	}
 
 	err = removeIssuances(ctx, sumIssued(conflictTxs...))
-	return errors.Wrap(err, "removing issuances")
+	if err != nil {
+		return errors.Wrap(err, "removing issuances")
+	}
+
+	err = dbtx.Commit(ctx)
+	return errors.Wrap(err, "pool update dbtx commit")
 }
 
 // PoolTxs returns the pooled transactions in topological order.

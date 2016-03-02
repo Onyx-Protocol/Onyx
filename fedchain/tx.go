@@ -5,7 +5,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
@@ -30,46 +29,35 @@ const MaxBlockTxs = 10000
 // This means accepting conflicting transactions in the same pool
 // at the same time.
 func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
-	dbtx, txCtx, err := pg.Begin(ctx)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-	defer dbtx.Rollback(ctx)
-
-	poolView, err := fc.store.NewPoolViewForPrevouts(txCtx, []*bc.Tx{tx})
+	poolView, err := fc.store.NewPoolViewForPrevouts(ctx, []*bc.Tx{tx})
 	if err != nil {
 		return errors.Wrap(err)
 	}
 
-	bcView, err := fc.store.NewViewForPrevouts(txCtx, []*bc.Tx{tx})
+	bcView, err := fc.store.NewViewForPrevouts(ctx, []*bc.Tx{tx})
 	if err != nil {
 		return errors.Wrap(err)
 	}
 
 	// Check if the transaction already exists in the blockchain.
-	txs, err := fc.store.GetTxs(txCtx, tx.Hash)
+	txs, err := fc.store.GetTxs(ctx, tx.Hash)
 	if _, ok := txs[tx.Hash]; ok {
 		return nil
 	}
-	if err != nil && errors.Root(err) != pg.ErrUserInputNotFound {
+	if err != nil {
 		return errors.Wrap(err)
 	}
 
 	view := state.MultiReader(poolView, bcView)
-	err = validation.ValidateTx(txCtx, view, tx, uint64(time.Now().Unix()))
+	err = validation.ValidateTx(ctx, view, tx, uint64(time.Now().Unix()))
 	if err != nil {
 		return errors.Wrapf(ErrTxRejected, "validate tx: %v", err)
 	}
 
 	// Update persistent tx pool state
-	err = fc.applyTx(txCtx, tx)
+	err = fc.applyTx(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "apply TX")
-	}
-
-	err = dbtx.Commit(txCtx)
-	if err != nil {
-		return errors.Wrap(err)
 	}
 
 	for _, cb := range fc.txCallbacks {
@@ -84,8 +72,6 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 // Must be called inside a transaction.
 func (fc *FC) applyTx(ctx context.Context, tx *bc.Tx) (err error) {
 	defer metrics.RecordElapsed(time.Now())
-
-	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
 	err = fc.store.ApplyTx(ctx, tx)
 	return errors.Wrap(err, "applying tx to store")

@@ -9,7 +9,6 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 
-	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
@@ -222,12 +221,6 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "pool update dbtx begin")
-	}
-	defer dbtx.Rollback(ctx)
-
 	txInBlock := make(map[bc.Hash]bool)
 	for _, tx := range block.Transactions {
 		txInBlock[tx.Hash] = true
@@ -282,11 +275,6 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 	err = fc.store.RemoveTxs(ctx, confirmedTxs, conflictTxs)
 	if err != nil {
 		return nil, errors.Wrap(err, "removing conflicting txs")
-	}
-
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "pool update dbtx commit")
 	}
 
 	return conflictTxs, nil
