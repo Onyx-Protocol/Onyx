@@ -18,6 +18,10 @@ import (
 	"chain/net/trace/span"
 )
 
+// maxBlockTxs limits the number of transactions
+// included in each block.
+const maxBlockTxs = 10000
+
 // ErrBadBlock is returned when a block is invalid.
 var ErrBadBlock = errors.New("invalid block")
 
@@ -43,8 +47,8 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "get pool TXs")
 	}
-	if len(txs) > MaxBlockTxs {
-		txs = txs[:MaxBlockTxs]
+	if len(txs) > maxBlockTxs {
+		txs = txs[:maxBlockTxs]
 	}
 
 	b = &bc.Block{

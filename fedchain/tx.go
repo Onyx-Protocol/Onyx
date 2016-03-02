@@ -12,10 +12,6 @@ import (
 	"chain/metrics"
 )
 
-// MaxBlockTxs limits the number of transactions
-// included in each block.
-const MaxBlockTxs = 10000
-
 // AddTx inserts tx into the set of "pending" transactions available
 // to be included in the next block produced by GenerateBlock.
 //
