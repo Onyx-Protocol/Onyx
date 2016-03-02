@@ -39,7 +39,12 @@ func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, er
 
 	err = publishTx(ctx, msg)
 	if err != nil {
-		return nil, err
+		rawtx, err2 := msg.MarshalText()
+		if err2 != nil {
+			// ignore marshalling errors (they should never happen anyway)
+			return nil, err
+		}
+		return nil, errors.Wrapf(err, "tx=%s", rawtx)
 	}
 
 	return msg, nil
