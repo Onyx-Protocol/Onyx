@@ -6,14 +6,13 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 
 	"chain/api/appdb"
 	"chain/errors"
-	chaintxscript "chain/fedchain-sandbox/txscript"
 	"chain/fedchain/bc"
 	"chain/fedchain/hdkey"
+	"chain/fedchain/txscript"
 	"chain/metrics"
 )
 
@@ -48,7 +47,7 @@ func CreateAsset(ctx context.Context, inodeID, label string, definition map[stri
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating asset: issuer node id %v sigsReq %v", inodeID, sigsReq)
 	}
-	pkScript := chaintxscript.RedeemToPkScript(asset.RedeemScript)
+	pkScript := txscript.RedeemToPkScript(asset.RedeemScript)
 	asset.Hash = bc.ComputeAssetID(pkScript, [32]byte{}) // TODO(kr): get genesis hash from config
 	asset.IssuanceScript = pkScript
 
