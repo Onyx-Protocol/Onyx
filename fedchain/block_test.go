@@ -16,6 +16,39 @@ import (
 	"chain/testutil"
 )
 
+func TestLatestBlock(t *testing.T) {
+	ctx := context.Background()
+
+	noBlocks := memstore.New()
+	oneBlock := memstore.New()
+	oneBlock.ApplyBlock(ctx, &bc.Block{}, nil, nil)
+
+	cases := []struct {
+		store   Store
+		want    *bc.Block
+		wantErr error
+	}{
+		{noBlocks, nil, ErrNoBlocks},
+		{oneBlock, &bc.Block{}, nil},
+	}
+
+	for _, c := range cases {
+		fc, err := New(ctx, c.store, nil)
+		if err != nil {
+			testutil.FatalErr(t, err)
+		}
+		got, gotErr := fc.LatestBlock(ctx)
+
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("got latest = %+v want %+v", got, c.want)
+		}
+
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("got latest err = %q want %q", gotErr, c.wantErr)
+		}
+	}
+}
+
 func TestIdempotentUpsert(t *testing.T) {
 	ctx, fc := newContextFC(t)
 
