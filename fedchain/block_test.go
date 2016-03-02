@@ -13,6 +13,7 @@ import (
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/memstore"
+	"chain/fedchain/txscript"
 	"chain/testutil"
 )
 
@@ -47,6 +48,98 @@ func TestLatestBlock(t *testing.T) {
 			t.Errorf("got latest err = %q want %q", gotErr, c.wantErr)
 		}
 	}
+}
+
+func TestWaitForBlock(t *testing.T) {
+	ctx := context.Background()
+	store := memstore.New()
+	block0 := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			Height:       0,
+			OutputScript: []byte{txscript.OP_TRUE},
+		},
+	}
+	block1 := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			PreviousBlockHash: block0.Hash(),
+			Height:            1,
+			OutputScript:      []byte{txscript.OP_TRUE},
+		},
+	}
+	block2 := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			PreviousBlockHash: block1.Hash(),
+			Height:            2,
+			OutputScript:      []byte{txscript.OP_TRUE},
+		},
+	}
+	store.ApplyBlock(ctx, block0, nil, nil)
+	fc, err := New(ctx, store, nil)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	ch := waitForBlockChan(ctx, fc, 0)
+	select {
+	case err := <-ch:
+		if err != nil {
+			t.Errorf("got err %q waiting for block 0", err)
+		}
+	case <-time.After(10 * time.Millisecond):
+		t.Errorf("timed out waiting for block 0")
+	}
+
+	ch = waitForBlockChan(ctx, fc, 4)
+	select {
+	case err := <-ch:
+		if err != ErrTheDistantFuture {
+			t.Errorf("got %q waiting for block 4, expected %q", err, ErrTheDistantFuture)
+		}
+	case <-time.After(10 * time.Millisecond):
+		t.Errorf("timed out waiting for block 0")
+	}
+
+	ch = waitForBlockChan(ctx, fc, 2)
+
+	select {
+	case <-ch:
+		t.Errorf("WaitForBlock should wait")
+	default:
+	}
+
+	err = fc.AddBlock(ctx, block1)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	select {
+	case <-ch:
+		t.Errorf("WaitForBlock should wait")
+	default:
+	}
+
+	err = fc.AddBlock(ctx, block2)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	select {
+	case err := <-ch:
+		if err != nil {
+			t.Errorf("got err %q waiting for block 2", err)
+		}
+	case <-time.After(10 * time.Millisecond):
+		t.Errorf("timed out waiting for block 2")
+	}
+}
+
+func waitForBlockChan(ctx context.Context, fc *FC, height uint64) chan error {
+	ch := make(chan error)
+	go func() {
+		err := fc.WaitForBlock(ctx, height)
+		ch <- err
+	}()
+	return ch
 }
 
 func TestIdempotentUpsert(t *testing.T) {
