@@ -2,7 +2,6 @@ package fedchain_test
 
 import (
 	"encoding/hex"
-	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -18,7 +17,6 @@ import (
 	"chain/errors"
 	. "chain/fedchain"
 	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
 	"chain/testutil"
 )
 
@@ -207,53 +205,6 @@ func TestIsSignedByTrustedHost(t *testing.T) {
 		if got != c.want {
 			t.Errorf("%s: got %v want %v", c.desc, got, c.want)
 		}
-	}
-}
-
-func TestSignBlock(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
-
-	fc, err := assettest.InitializeSigningGenerator(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	latestBlock, err := fc.LatestBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	pubkey, err := testutil.TestXPub.ECPubKey()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	outscript, err := GenerateBlockScript([]*btcec.PublicKey{pubkey}, 1)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		log.Fatal(err)
-	}
-
-	block := &bc.Block{}
-
-	err = generator.GetAndAddBlockSignatures(ctx, block, latestBlock)
-
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	engine, err := txscript.NewEngineForBlock(ctx, outscript, block, txscript.StandardVerifyFlags)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	err = engine.Execute()
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
 	}
 }
 

@@ -1,4 +1,4 @@
-package generator
+package generator_test
 
 import (
 	"bytes"
@@ -11,6 +11,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	. "chain/api/generator"
 	"chain/database/pg/pgtest"
 	"chain/fedchain/bc"
 )
