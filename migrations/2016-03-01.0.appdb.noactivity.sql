@@ -7,7 +7,8 @@ DROP INDEX issuance_activity_assets_issuance_activity_id_asset_id_idx;
 DROP INDEX issuance_activity_issuer_node_id_idx;
 DROP INDEX issuance_activity_issuer_node_id_txid_idx;
 
-DROP TABLE activity;
-DROP TABLE activity_accounts;
-DROP TABLE issuance_activity;
-DROP TABLE issuance_activity_assets;
+DROP TABLE
+activity,
+activity_accounts,
+issuance_activity,
+issuance_activity_assets;
