@@ -20,8 +20,8 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/fedchain"
-	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/fedchain/hdkey"
 	"chain/testutil"
 )
 

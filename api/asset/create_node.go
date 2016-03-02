@@ -6,7 +6,7 @@ import (
 
 	"chain/api/appdb"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
+	"chain/fedchain/hdkey"
 )
 
 // Errors returned by functions in this file.

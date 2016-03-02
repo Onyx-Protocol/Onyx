@@ -8,7 +8,7 @@ import (
 
 	. "chain/api/appdb"
 	"chain/database/pg"
-	"chain/fedchain-sandbox/hdkey"
+	"chain/fedchain/hdkey"
 )
 
 var (

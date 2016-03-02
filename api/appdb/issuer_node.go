@@ -8,7 +8,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
+	"chain/fedchain/hdkey"
 	"chain/metrics"
 )
 

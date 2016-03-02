@@ -11,9 +11,9 @@ import (
 
 	"chain/api/appdb"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
 	chaintxscript "chain/fedchain-sandbox/txscript"
 	"chain/fedchain/bc"
+	"chain/fedchain/hdkey"
 	"chain/metrics"
 )
 

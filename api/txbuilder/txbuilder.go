@@ -6,8 +6,8 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/fedchain/hdkey"
 	"chain/fedchain/txscript"
 )
 

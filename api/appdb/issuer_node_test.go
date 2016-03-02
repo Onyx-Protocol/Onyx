@@ -11,7 +11,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
+	"chain/fedchain/hdkey"
 )
 
 func TestInsertIssuerNode(t *testing.T) {

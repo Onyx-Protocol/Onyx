@@ -9,7 +9,7 @@ import (
 	. "chain/api/appdb"
 	"chain/api/asset/assettest"
 	"chain/database/pg/pgtest"
-	"chain/fedchain-sandbox/hdkey"
+	"chain/fedchain/hdkey"
 	"chain/testutil"
 )
 

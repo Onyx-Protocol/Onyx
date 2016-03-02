@@ -12,7 +12,7 @@ import (
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
+	"chain/fedchain/hdkey"
 	"chain/metrics"
 	"chain/net/http/httpjson"
 )

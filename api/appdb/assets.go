@@ -9,8 +9,8 @@ import (
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/fedchain/hdkey"
 	"chain/metrics"
 )
 

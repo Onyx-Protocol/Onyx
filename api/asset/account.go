@@ -9,8 +9,8 @@ import (
 	"chain/api/txbuilder"
 	"chain/api/utxodb"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/fedchain/hdkey"
 	"chain/fedchain/txscript"
 )
 

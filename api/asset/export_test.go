@@ -6,7 +6,7 @@ import (
 	"chain/api/appdb"
 	"chain/api/txdb"
 	"chain/fedchain"
-	"chain/fedchain-sandbox/hdkey"
+	"chain/fedchain/hdkey"
 )
 
 func (ar *AccountReceiver) Addr() *appdb.Address {

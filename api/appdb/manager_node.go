@@ -7,8 +7,8 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/fedchain/hdkey"
 )
 
 // NodeKey is represents a single key in a node's multi-sig configuration.

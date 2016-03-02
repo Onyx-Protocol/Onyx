@@ -1,6 +1,6 @@
 package appdb
 
-import "chain/fedchain-sandbox/hdkey"
+import "chain/fedchain/hdkey"
 
 func keysToStrings(keys []*hdkey.XKey) []string {
 	var strings []string

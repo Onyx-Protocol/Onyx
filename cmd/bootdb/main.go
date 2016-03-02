@@ -20,7 +20,7 @@ import (
 	"chain/database/sql"
 	"chain/env"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
+	"chain/fedchain/hdkey"
 	"chain/log"
 
 	"github.com/btcsuite/btcutil/hdkeychain"

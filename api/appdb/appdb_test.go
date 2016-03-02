@@ -10,7 +10,7 @@ import (
 	. "chain/api/appdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/fedchain-sandbox/hdkey"
+	"chain/fedchain/hdkey"
 )
 
 // Establish a context object with a new db transaction in which to

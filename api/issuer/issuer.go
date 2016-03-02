@@ -10,8 +10,8 @@ import (
 	"chain/api/txbuilder"
 	"chain/api/txdb"
 	"chain/errors"
-	"chain/fedchain-sandbox/hdkey"
 	"chain/fedchain/bc"
+	"chain/fedchain/hdkey"
 	"chain/fedchain/txscript"
 	"chain/metrics"
 )
