@@ -4,7 +4,6 @@ import (
 	"chain/errors"
 
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 )
 
@@ -12,7 +11,7 @@ import (
 // and returns the pkscript to pay to it.
 func RedeemToPkScript(redeem []byte) []byte {
 	p2sh, _ := btcutil.NewAddressScriptHash(redeem, &chaincfg.MainNetParams)
-	script, _ := txscript.PayToAddrScript(p2sh)
+	script, _ := PayToAddrScript(p2sh)
 	return script
 }
 
