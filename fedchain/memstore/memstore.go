@@ -33,7 +33,9 @@ func New() *MemStore {
 func (m *MemStore) GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
 	txs := make(map[bc.Hash]*bc.Tx)
 	for _, hash := range hashes {
-		txs[hash] = m.blockTxs[hash]
+		if tx := m.blockTxs[hash]; tx != nil {
+			txs[hash] = m.blockTxs[hash]
+		}
 		if tx := m.poolMap[hash]; tx != nil {
 			txs[hash] = tx
 		}
