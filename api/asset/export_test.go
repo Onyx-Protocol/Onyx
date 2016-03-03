@@ -6,15 +6,10 @@ import (
 	"chain/api/appdb"
 	"chain/api/txdb"
 	"chain/fedchain"
-	"chain/fedchain/hdkey"
 )
 
 func (ar *AccountReceiver) Addr() *appdb.Address {
 	return ar.addr
-}
-
-func NewKey() (pub, priv *hdkey.XKey, err error) {
-	return newKey()
 }
 
 func FC() *fedchain.FC {

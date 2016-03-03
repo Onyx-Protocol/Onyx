@@ -7,7 +7,6 @@ import (
 	. "chain/api/asset"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/errors"
 )
 
 func TestCreateManagerNode(t *testing.T) {
@@ -46,22 +45,5 @@ func TestCreateManagerNode(t *testing.T) {
 	}
 	if !valid {
 		t.Errorf("private key not stored")
-	}
-}
-
-func TestNewKey(t *testing.T) {
-	pub, priv, err := NewKey()
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	validPub, err := priv.Neuter()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if validPub.String() != pub.String() {
-		t.Fatal("incorrect private/public key pair")
 	}
 }

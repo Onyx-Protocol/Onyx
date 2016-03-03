@@ -236,7 +236,7 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 		return nil, err
 	}
 
-	manPub, manPriv, err := NewKey()
+	manPub, manPriv, err := hdkey.New()
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 		return nil, err
 	}
 
-	issPub, issPriv, err := NewKey()
+	issPub, issPriv, err := hdkey.New()
 	if err != nil {
 		return nil, err
 	}

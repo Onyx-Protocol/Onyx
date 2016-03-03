@@ -19,11 +19,9 @@ import (
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
-	"chain/errors"
 	"chain/fedchain/hdkey"
 	"chain/log"
 
-	"github.com/btcsuite/btcutil/hdkeychain"
 	"golang.org/x/net/context"
 )
 
@@ -102,29 +100,13 @@ func main() {
 }
 
 func genKey() (pub, priv []*hdkey.XKey) {
-	pk, sk, err := newKey()
+	pk, sk, err := hdkey.New()
 	if err != nil {
 		fatal(err)
 	}
 	pub = append(pub, pk)
 	priv = append(priv, sk)
 	return
-}
-
-func newKey() (pub, priv *hdkey.XKey, err error) {
-	seed, err := hdkeychain.GenerateSeed(hdkeychain.RecommendedSeedLen)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "generating key seed")
-	}
-	xprv, err := hdkeychain.NewMaster(seed)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "creating root xprv")
-	}
-	xpub, err := xprv.Neuter()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting root xpub")
-	}
-	return &hdkey.XKey{ExtendedKey: *xpub}, &hdkey.XKey{ExtendedKey: *xprv}, nil
 }
 
 func fatal(v interface{}) {

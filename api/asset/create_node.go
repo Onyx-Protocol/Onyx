@@ -1,7 +1,6 @@
 package asset
 
 import (
-	"github.com/btcsuite/btcutil/hdkeychain"
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
@@ -93,7 +92,7 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 				}
 				xpubs = append(xpubs, xpub)
 			} else if k.Generate {
-				xpub, xprv, err := newKey()
+				xpub, xprv, err := hdkey.New()
 				if err != nil {
 					return nil, err
 				}
@@ -122,20 +121,4 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 
 	// Do nothing with variable keys for Issuer Nodes since they can't have variable keys yet.
 	return appdb.InsertIssuerNode(ctx, projID, req.Label, xpubs, gennedXprvs, req.SigsRequired, req.ClientToken)
-}
-
-func newKey() (pub, priv *hdkey.XKey, err error) {
-	seed, err := hdkeychain.GenerateSeed(hdkeychain.RecommendedSeedLen)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "generating key seed")
-	}
-	xprv, err := hdkeychain.NewMaster(seed)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "creating root xprv")
-	}
-	xpub, err := xprv.Neuter()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting root xpub")
-	}
-	return &hdkey.XKey{ExtendedKey: *xpub}, &hdkey.XKey{ExtendedKey: *xprv}, nil
 }

@@ -30,6 +30,23 @@ type Key struct {
 	Address *btcutil.AddressPubKey
 }
 
+// New returns a new public/private XKey pair.
+func New() (pub, priv *XKey, err error) {
+	seed, err := hdkeychain.GenerateSeed(hdkeychain.RecommendedSeedLen)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "generating key seed")
+	}
+	xprv, err := hdkeychain.NewMaster(seed)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "creating root xprv")
+	}
+	xpub, err := xprv.Neuter()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "getting root xpub")
+	}
+	return &XKey{ExtendedKey: *xpub}, &XKey{ExtendedKey: *xprv}, nil
+}
+
 func (k XKey) MarshalText() ([]byte, error) {
 	return []byte(k.String()), nil
 }
