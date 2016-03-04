@@ -8,7 +8,6 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
 
-	"chain/crypto/hash160"
 	"chain/errors"
 	"chain/fedchain/txscript"
 )
@@ -88,25 +87,9 @@ func Scripts(xkeys []*XKey, path []uint32, nSigReq int) (pkScript, redeemScript 
 		return nil, nil, errors.Wrap(err, "compute redeem script")
 	}
 
-	pkScript, err = PayToRedeem(redeemScript)
-	if err != nil {
-		return nil, nil, err
-	}
+	pkScript = txscript.RedeemToPkScript(redeemScript)
 
 	return pkScript, redeemScript, nil
-}
-
-// PayToRedeem takes a redeem script
-// and calculates its corresponding pk script
-func PayToRedeem(redeem []byte) ([]byte, error) {
-	hash := hash160.Sum(redeem)
-	builder := txscript.NewScriptBuilder()
-	builder.AddOp(txscript.OP_DUP)
-	builder.AddOp(txscript.OP_HASH160)
-	builder.AddData(hash[:])
-	builder.AddOp(txscript.OP_EQUALVERIFY)
-	builder.AddOp(txscript.OP_EVAL)
-	return builder.Script()
 }
 
 // Derive derives a key for each item in xkeys, according to path.

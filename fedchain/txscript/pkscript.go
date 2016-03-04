@@ -1,17 +1,21 @@
 package txscript
 
 import (
+	"chain/crypto/hash160"
 	"chain/errors"
-
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
 )
 
-// RedeemToPkScript takes a p2sh redeem script
-// and returns the pkscript to pay to it.
+// RedeemToPkScript takes a redeem script
+// and calculates its corresponding pk script
 func RedeemToPkScript(redeem []byte) []byte {
-	p2sh, _ := btcutil.NewAddressScriptHash(redeem, &chaincfg.MainNetParams)
-	script, _ := PayToAddrScript(p2sh)
+	hash := hash160.Sum(redeem)
+	builder := NewScriptBuilder()
+	builder.AddOp(OP_DUP)
+	builder.AddOp(OP_HASH160)
+	builder.AddData(hash[:])
+	builder.AddOp(OP_EQUALVERIFY)
+	builder.AddOp(OP_EVAL)
+	script, _ := builder.Script()
 	return script
 }
 
