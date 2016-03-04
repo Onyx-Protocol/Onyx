@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/hex"
 	"expvar"
 	"fmt"
@@ -188,13 +189,25 @@ func main() {
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
 
+	server := &http.Server{
+		Addr:    *listenAddr,
+		Handler: secureheader.DefaultConfig,
+	}
 	if *tlsCrt != "" {
-		err = chainhttp.ListenAndServeTLS(*listenAddr, *tlsCrt, *tlsKey, secureheader.DefaultConfig)
+		cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
+		if err != nil {
+			chainlog.Fatal(ctx, "error", "parsing tls X509 key pair", err.Error())
+		}
+
+		server.TLSConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+		err = server.ListenAndServeTLS("", "") // uses TLS certs from above
 	} else {
-		err = http.ListenAndServe(*listenAddr, secureheader.DefaultConfig)
+		err = server.ListenAndServe()
 	}
 	if err != nil {
-		chainlog.Fatal(ctx, "error", "ListenAndServe"+err.Error())
+		chainlog.Fatal(ctx, "error", "ListenAndServe", err.Error())
 	}
 }
 
