@@ -1,6 +1,7 @@
 package utxodb
 
 import (
+	"database/sql"
 	"time"
 
 	"golang.org/x/net/context"
@@ -64,6 +65,7 @@ type (
 	Source struct {
 		AssetID     bc.AssetID `json:"asset_id"`
 		AccountID   string     `json:"account_id"`
+		TxHash      *bc.Hash
 		Amount      uint64
 		ClientToken *string `json:"client_token"`
 	}
@@ -102,7 +104,7 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 
 	const (
 		reserveQ = `
-		SELECT * FROM reserve_utxos($1, $2, $3, $4, $5)
+		SELECT * FROM reserve_utxos($1, $2, $3, $4, $5, $6)
 		    AS (reservation_id INT, already_existed BOOLEAN, existing_change BIGINT, amount BIGINT, insufficient BOOLEAN)
 		`
 		utxosQ = `
@@ -114,6 +116,8 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 
 	for _, source := range sources {
 		var (
+			txHash sql.NullString
+
 			reservationID  int32
 			alreadyExisted bool
 			existingChange uint64
@@ -121,13 +125,18 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 			insufficient   bool
 		)
 
+		if source.TxHash != nil {
+			txHash.Valid = true
+			txHash.String = source.TxHash.String()
+		}
+
 		// Create a reservation row and reserve the utxos. If this reservation
 		// has alredy been processed in a previous request:
 		//  * the existing reservation ID will be returned
 		//  * already_existed will be TRUE
 		//  * existing_change will be the change value for the existing
 		//    reservation row.
-		err = db.QueryRow(ctx, reserveQ, source.AssetID, source.AccountID, source.Amount, exp, source.ClientToken).Scan(
+		err = db.QueryRow(ctx, reserveQ, source.AssetID, source.AccountID, txHash, source.Amount, exp, source.ClientToken).Scan(
 			&reservationID,
 			&alreadyExisted,
 			&existingChange,

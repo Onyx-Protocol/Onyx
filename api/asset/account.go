@@ -16,6 +16,7 @@ import (
 
 type AccountReserver struct {
 	AccountID   string
+	TxHash      *bc.Hash // optional filter
 	ClientToken *string
 }
 
@@ -24,6 +25,7 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 		AssetID:     assetAmount.AssetID,
 		Amount:      assetAmount.Amount,
 		AccountID:   reserver.AccountID,
+		TxHash:      reserver.TxHash,
 		ClientToken: reserver.ClientToken,
 	}
 	utxodbSources := []utxodb.Source{utxodbSource}
@@ -74,11 +76,12 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 	return result, nil
 }
 
-func NewAccountSource(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, clientToken *string) *txbuilder.Source {
+func NewAccountSource(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, txHash *bc.Hash, clientToken *string) *txbuilder.Source {
 	return &txbuilder.Source{
 		AssetAmount: *assetAmount,
 		Reserver: &AccountReserver{
 			AccountID:   accountID,
+			TxHash:      txHash,
 			ClientToken: clientToken,
 		},
 	}

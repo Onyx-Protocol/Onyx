@@ -42,7 +42,7 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 			AssetID: *source.AssetID,
 			Amount:  source.Amount,
 		}
-		return asset.NewAccountSource(ctx, assetAmount, source.AccountID, source.ClientToken), nil
+		return asset.NewAccountSource(ctx, assetAmount, source.AccountID, source.TxHash, source.ClientToken), nil
 	}
 	if source.Type == "orderbook-redeem" {
 		if source.PaymentAssetID == nil {

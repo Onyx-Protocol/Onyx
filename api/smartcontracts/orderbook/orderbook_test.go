@@ -63,7 +63,7 @@ func TestBuy(t *testing.T) {
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		funds := asset.NewAccountSource(ctx, usd2200, buyerAccountID, nil)
+		funds := asset.NewAccountSource(ctx, usd2200, buyerAccountID, nil, nil)
 
 		aapl20 := &bc.AssetAmount{
 			AssetID: fixtureInfo.aaplAssetID,
@@ -258,7 +258,7 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 }
 
 func offer(ctx context.Context, sellerAccountID string, assetAmount *bc.AssetAmount, prices []*Price, ttl time.Duration) (*txbuilder.Template, error) {
-	source := asset.NewAccountSource(ctx, assetAmount, sellerAccountID, nil)
+	source := asset.NewAccountSource(ctx, assetAmount, sellerAccountID, nil, nil)
 	sources := []*txbuilder.Source{source}
 
 	orderInfo := &OrderInfo{

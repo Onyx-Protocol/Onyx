@@ -201,10 +201,10 @@ $$;
 
 
 --
--- Name: reserve_utxos(text, text, bigint, timestamp with time zone, text); Type: FUNCTION; Schema: public; Owner: -
+-- Name: reserve_utxos(text, text, text, bigint, timestamp with time zone, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION reserve_utxos(inp_asset_id text, inp_account_id text, inp_amt bigint, inp_expiry timestamp with time zone, inp_idempotency_key text) RETURNS record
+CREATE FUNCTION reserve_utxos(inp_asset_id text, inp_account_id text, inp_tx_hash text, inp_amt bigint, inp_expiry timestamp with time zone, inp_idempotency_key text) RETURNS record
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -225,6 +225,7 @@ BEGIN
             FROM account_utxos u
             WHERE asset_id = inp_asset_id
                   AND inp_account_id = account_id
+                  AND (inp_tx_hash IS NULL OR inp_tx_hash = tx_hash)
                   AND reservation_id IS NULL
                   AND (tx_hash, index) NOT IN (TABLE pool_inputs)
             LIMIT 1
@@ -1104,10 +1105,10 @@ CREATE INDEX account_utxos_account_id ON account_utxos USING btree (account_id);
 
 
 --
--- Name: account_utxos_account_id_asset_id_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: account_utxos_account_id_asset_id_tx_hash_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX account_utxos_account_id_asset_id_idx ON account_utxos USING btree (account_id, asset_id);
+CREATE INDEX account_utxos_account_id_asset_id_tx_hash_idx ON account_utxos USING btree (account_id, asset_id, tx_hash);
 
 
 --

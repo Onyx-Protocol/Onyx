@@ -33,7 +33,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		AssetID: asset,
 		Amount:  1,
 	}
-	source := NewAccountSource(ctx, assetAmount1, accID, nil)
+	source := NewAccountSource(ctx, assetAmount1, accID, nil, nil)
 
 	got, err := source.Reserver.Reserve(ctx, assetAmount1, time.Minute)
 	if err != nil {
@@ -102,9 +102,9 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		// An idempotency key that both reservations should use.
 		clientToken1 = "a-unique-idempotency-key"
 		clientToken2 = "another-unique-idempotency-key"
-		wantSrc      = NewAccountSource(ctx, assetAmount1, accID, &clientToken1)
-		gotSrc       = NewAccountSource(ctx, assetAmount1, accID, &clientToken1)
-		separateSrc  = NewAccountSource(ctx, assetAmount1, accID, &clientToken2)
+		wantSrc      = NewAccountSource(ctx, assetAmount1, accID, nil, &clientToken1)
+		gotSrc       = NewAccountSource(ctx, assetAmount1, accID, nil, &clientToken1)
+		separateSrc  = NewAccountSource(ctx, assetAmount1, accID, nil, &clientToken2)
 	)
 
 	reserveFunc := func(source *txbuilder.Source) *txbuilder.ReserveResult {
@@ -179,4 +179,48 @@ func TestAccountDestinationPKScript(t *testing.T) {
 		t.Fatal(err)
 	}
 	testutil.ExpectScriptEqual(t, got, want, "AccountDestination pk script")
+}
+
+func TestAccountSourceWithTxHash(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	_, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var (
+		acc      = assettest.CreateAccountFixture(ctx, t, "", "", nil)
+		asset    = assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
+		assetAmt = bc.AssetAmount{AssetID: asset, Amount: 1}
+		utxos    = 4
+		srcTxs   []bc.Hash
+	)
+
+	for i := 0; i < utxos; i++ {
+		o := assettest.IssueAssetsFixture(ctx, t, asset, 1, acc)
+		srcTxs = append(srcTxs, o.Outpoint.Hash)
+	}
+
+	for i := 0; i < utxos; i++ {
+		theTxHash := srcTxs[i]
+		source := NewAccountSource(ctx, &assetAmt, acc, &theTxHash, nil)
+
+		gotRes, err := source.Reserver.Reserve(ctx, &assetAmt, time.Minute)
+		if err != nil {
+			t.Log(errors.Stack(err))
+			t.Fatal(err)
+		}
+
+		if len(gotRes.Items) != 1 {
+			t.Fatalf("expected 1 result utxo")
+		}
+
+		got := gotRes.Items[0].TxInput.Previous
+		want := bc.Outpoint{Hash: theTxHash, Index: 0}
+		if got != want {
+			t.Errorf("reserved utxo outpoint got=%v want=%v", got, want)
+		}
+	}
 }
