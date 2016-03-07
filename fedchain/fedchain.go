@@ -103,13 +103,12 @@ type Store interface {
 // validation logic from package validation to decide what
 // objects can be safely stored.
 type FC struct {
-	blockCallbacks  []BlockCallback
-	txCallbacks     []TxCallback
-	trustedKeys     []*btcec.PublicKey
-	blockHeightInfo struct {
-		mutex   sync.Mutex // protects this structure
-		condvar *sync.Cond
-		height  uint64
+	blockCallbacks []BlockCallback
+	txCallbacks    []TxCallback
+	trustedKeys    []*btcec.PublicKey
+	height         struct {
+		cond sync.Cond // protects n
+		n    uint64
 	}
 	store Store
 }
@@ -121,21 +120,21 @@ type FC struct {
 // for the local block-signer process; the presence of its
 // signature indicates the block was already validated locally.
 func New(ctx context.Context, store Store, trustedKeys []*btcec.PublicKey) (*FC, error) {
-	result := &FC{store: store, trustedKeys: trustedKeys}
+	fc := &FC{store: store, trustedKeys: trustedKeys}
 
-	latestBlock, err := result.LatestBlock(ctx)
+	latestBlock, err := fc.LatestBlock(ctx)
 	if err == nil {
-		result.blockHeightInfo.height = latestBlock.Height
+		fc.height.n = latestBlock.Height
 	} else if errors.Root(err) != ErrNoBlocks {
 		return nil, errors.Wrap(err, "looking up latest block")
 	}
 
-	// Now result.blockHeightInfo.height may be zero because of
+	// Now fc.height.n may be zero because of
 	// ErrNoBlocks or because latestBlock.Height==0.  For now at least,
 	// we don't need to distinguish between those cases.
 
-	result.blockHeightInfo.condvar = sync.NewCond(&result.blockHeightInfo.mutex)
-	return result, nil
+	fc.height.cond.L = new(sync.Mutex)
+	return fc, nil
 }
 
 func (fc *FC) AddBlockCallback(f BlockCallback) {
@@ -147,28 +146,28 @@ func (fc *FC) AddTxCallback(f TxCallback) {
 }
 
 func (fc *FC) LatestBlock(ctx context.Context) (*bc.Block, error) {
-	result, err := fc.store.LatestBlock(ctx)
+	b, err := fc.store.LatestBlock(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if result == nil {
+	if b == nil {
 		return nil, ErrNoBlocks
 	}
-	return result, nil
+	return b, nil
 }
 
 func (fc *FC) WaitForBlock(ctx context.Context, height uint64) error {
 	const slop = 3
 
-	fc.blockHeightInfo.mutex.Lock()
-	defer fc.blockHeightInfo.mutex.Unlock()
+	fc.height.cond.L.Lock()
+	defer fc.height.cond.L.Unlock()
 
-	if height > fc.blockHeightInfo.height+slop {
+	if height > fc.height.n+slop {
 		return ErrTheDistantFuture
 	}
 
-	for fc.blockHeightInfo.height < height {
-		fc.blockHeightInfo.condvar.Wait()
+	for fc.height.n < height {
+		fc.height.cond.Wait()
 	}
 
 	return nil
