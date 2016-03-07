@@ -6,6 +6,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/asset"
+	"chain/api/issuer"
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/txbuilder"
 	"chain/database/pg"
@@ -44,8 +45,8 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 		source.TxHash = source.TxHashAsID
 	}
 	source.TxHashAsID = nil
-
-	if source.Type == "account" || source.Type == "" {
+	switch source.Type {
+	case "account", "":
 		if source.AssetID == nil {
 			return nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
 		}
@@ -58,8 +59,16 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 			Amount:  source.Amount,
 		}
 		return asset.NewAccountSource(ctx, assetAmount, source.AccountID, source.TxHash, source.ClientToken), nil
-	}
-	if source.Type == "orderbook-redeem" {
+	case "issue":
+		if source.AssetID == nil {
+			return nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
+		}
+		assetAmount := &bc.AssetAmount{
+			AssetID: *source.AssetID,
+			Amount:  source.Amount,
+		}
+		return issuer.NewIssueSource(ctx, assetAmount), nil
+	case "orderbook-redeem":
 		if source.PaymentAssetID == nil {
 			return nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
 		}
@@ -86,8 +95,7 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 			Amount:  source.PaymentAmount,
 		}
 		return orderbook.NewRedeemSource(openOrder, source.Amount, paymentAmount), nil
-	}
-	if source.Type == "orderbook-cancel" {
+	case "orderbook-cancel":
 		if source.TxHash == nil || source.Index == nil {
 			return nil, errors.WithDetailf(ErrBadBuildRequest, "bad order")
 		}

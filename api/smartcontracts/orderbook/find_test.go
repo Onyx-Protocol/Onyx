@@ -54,7 +54,7 @@ func TestFindOpenOrders(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	txTemplate, err := issuer.Issue(ctx, assetID1.String(), []*txbuilder.Destination{issueDest})
+	txTemplate, err := issuer.Issue(ctx, assetID1, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -125,7 +125,7 @@ func TestFindOpenOrders(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	txTemplate, err = issuer.Issue(ctx, assetID3.String(), []*txbuilder.Destination{issueDest})
+	txTemplate, err = issuer.Issue(ctx, assetID3, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

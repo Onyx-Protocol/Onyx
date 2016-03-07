@@ -55,7 +55,7 @@ func TestBuy(t *testing.T) {
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		issueTxTemplate, err := issuer.Issue(ctx, fixtureInfo.usdAssetID.String(), []*txbuilder.Destination{issueDest})
+		issueTxTemplate, err := issuer.Issue(ctx, fixtureInfo.usdAssetID, []*txbuilder.Destination{issueDest})
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -212,7 +212,7 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	issueTxTemplate, err := issuer.Issue(ctx, fixtureInfo.aaplAssetID.String(), []*txbuilder.Destination{issueDest})
+	issueTxTemplate, err := issuer.Issue(ctx, fixtureInfo.aaplAssetID, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

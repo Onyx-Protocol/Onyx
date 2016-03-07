@@ -136,7 +136,7 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	txTemplate, err := issuer.Issue(ctx, assetIDStr, []*txbuilder.Destination{issueDest})
+	txTemplate, err := issuer.Issue(ctx, assetID, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

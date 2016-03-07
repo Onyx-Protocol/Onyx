@@ -10,6 +10,7 @@ import (
 	"chain/api/issuer"
 	"chain/api/txbuilder"
 	"chain/database/pg"
+	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/metrics"
 	"chain/net/http/reqid"
@@ -28,7 +29,7 @@ func issueAsset(ctx context.Context, assetIDStr string, reqDests []*Destination)
 	var assetID bc.AssetID
 	err := assetID.UnmarshalText([]byte(assetIDStr))
 	if err != nil {
-		return nil, err
+		return nil, errors.WithDetailf(ErrBadBuildRequest, "invalid asset id %q", assetIDStr)
 	}
 
 	// Where asset_ids are not specified in destinations - and even
@@ -46,7 +47,7 @@ func issueAsset(ctx context.Context, assetIDStr string, reqDests []*Destination)
 		dests = append(dests, parsed)
 	}
 
-	template, err := issuer.Issue(ctx, assetIDStr, dests)
+	template, err := issuer.Issue(ctx, assetID, dests)
 	if err != nil {
 		return nil, err
 	}

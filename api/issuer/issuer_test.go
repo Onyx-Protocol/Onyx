@@ -53,7 +53,7 @@ func TestIssue(t *testing.T) {
 	assetAmount := &bc.AssetAmount{Amount: 123}
 	dest := txbuilder.NewScriptDestination(ctx, assetAmount, outScript, nil)
 	outs := []*txbuilder.Destination{dest}
-	resp, err := Issue(ctx, "0000000000000000000000000000000000000000000000000000000000000000", outs)
+	resp, err := Issue(ctx, bc.AssetID{}, outs)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

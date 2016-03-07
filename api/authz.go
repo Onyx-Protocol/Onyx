@@ -1,12 +1,15 @@
 package api
 
 import (
+	"sort"
+
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/authn"
+	"chain/strings"
 )
 
 var (
@@ -73,19 +76,25 @@ func issuerAuthz(ctx context.Context, issuerID string) error {
 // assetAuthz will verify whether this request has access to the provided asset.
 // If the asset is archived, assetAuthz will return ErrArchived.
 func assetAuthz(ctx context.Context, assetID string) error {
-	project, err := appdb.ProjectByActiveAsset(ctx, assetID)
+	projects, err := appdb.ProjectsByActiveAsset(ctx, assetID)
 	if err != nil {
 		return err
 	}
-	return errors.WithDetailf(projectAuthz(ctx, project), "asset %v", assetID)
+	return errors.WithDetailf(projectAuthz(ctx, projects...), "asset %v", assetID)
 }
 
 func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
-	var accountIDs []string
+	var (
+		accountIDs []string
+		assetIDs   []string
+	)
 	for _, req := range reqs {
 		for _, source := range req.Sources {
 			if source.AccountID != "" {
 				accountIDs = append(accountIDs, source.AccountID)
+			}
+			if source.Type == "issue" && source.AssetID != nil {
+				assetIDs = append(assetIDs, source.AssetID.String())
 			}
 		}
 		for _, dest := range req.Dests {
@@ -97,12 +106,26 @@ func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
 	if len(accountIDs) == 0 {
 		return nil
 	}
-	projects, err := appdb.ProjectsByActiveAccount(ctx, accountIDs...)
+
+	accountProjects, err := appdb.ProjectsByActiveAccount(ctx, accountIDs...)
 	if errors.Root(err) == pg.ErrUserInputNotFound || errors.Root(err) == appdb.ErrArchived {
 		return errors.WithDetailf(errNoAccessToResource, "accounts %+v", accountIDs)
 	}
 	if err != nil {
 		return err
 	}
-	return errors.WithDetail(projectAuthz(ctx, projects...), "invalid combination of accounts")
+
+	assetProjects, err := appdb.ProjectsByActiveAsset(ctx, assetIDs...)
+	if errors.Root(err) == pg.ErrUserInputNotFound || errors.Root(err) == appdb.ErrArchived {
+		return errors.WithDetailf(errNoAccessToResource, "accounts %+v", accountIDs)
+	}
+	if err != nil {
+		return err
+	}
+
+	projects := append(accountProjects, assetProjects...)
+	sort.Strings(projects)
+	projects = strings.Uniq(projects)
+
+	return errors.WithDetail(projectAuthz(ctx, projects...), "invalid combination of accounts or assets")
 }

@@ -289,7 +289,7 @@ func issue(ctx context.Context, t testing.TB, info *clientInfo, destAcctID strin
 	if err != nil {
 		return nil, err
 	}
-	issueTx, err := issuer.Issue(ctx, assetID.String(), []*txbuilder.Destination{issueDest})
+	issueTx, err := issuer.Issue(ctx, assetID, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		return nil, err
 	}

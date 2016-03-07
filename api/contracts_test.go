@@ -118,7 +118,7 @@ func TestFindAndBuyContract(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		issueTxTemplate, err := issuer.Issue(ctx, fixtureInfo.usdAssetID.String(), []*txbuilder.Destination{issueDest})
+		issueTxTemplate, err := issuer.Issue(ctx, fixtureInfo.usdAssetID, []*txbuilder.Destination{issueDest})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -345,7 +345,7 @@ func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtu
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-	txTemplate, err := issuer.Issue(ctx, fixtureInfo.aaplAssetID.String(), []*txbuilder.Destination{issueDest})
+	txTemplate, err := issuer.Issue(ctx, fixtureInfo.aaplAssetID, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
