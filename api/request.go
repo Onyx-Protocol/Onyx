@@ -27,9 +27,24 @@ type Source struct {
 	Type           string
 	// ClientToken is an idempotency key to guarantee one-time reservation.
 	ClientToken *string `json:"client_token"`
+
+	// TxHashAsID exists only to provide an alternate input alias
+	// ("transaction_id") for TxHash. This field should be treated as read-only.
+	TxHashAsID *bc.Hash `json:"transaction_id"`
 }
 
 func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
+	// source.TxHash can be provided via JSON as either "transaction_hash" or
+	// "transaction_id". Each JSON key has its own struct field, but only
+	// source.TxHash should be used outside of this function.
+	if source.TxHash != nil && source.TxHashAsID != nil {
+		return nil, errors.WithDetail(ErrBadBuildRequest, "transaction_id and transaction_hash are both specified, please use transaction_id only")
+	}
+	if source.TxHash == nil {
+		source.TxHash = source.TxHashAsID
+	}
+	source.TxHashAsID = nil
+
 	if source.Type == "account" || source.Type == "" {
 		if source.AssetID == nil {
 			return nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
