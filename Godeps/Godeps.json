@@ -80,6 +80,10 @@
 			"Rev": "b0f2414a7d2e58cc36d113a96efa88f1abf971ac"
 		},
 		{
+			"ImportPath": "github.com/coreos/etcd/client",
+			"Rev": "eb1211bced9bc0ff255e6f1f7e26c3838950bb69"
+		},
+		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Rev": "2df174808ee097f90d259e432cc04442cf60be21"
 		},
