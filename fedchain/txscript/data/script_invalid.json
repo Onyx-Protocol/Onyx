@@ -84,8 +84,6 @@
 ["1", "VERIFY", "STRICTENC"],
 ["1", "VERIFY 0", "STRICTENC"],
 
-["1 TOALTSTACK", "FROMALTSTACK 1", "STRICTENC", "alt stack not shared between sig/pubkey"],
-
 ["IFDUP", "DEPTH 0 EQUAL", "STRICTENC"],
 ["DROP", "DEPTH 0 EQUAL", "STRICTENC"],
 ["DUP", "DEPTH 0 EQUAL", "STRICTENC"],

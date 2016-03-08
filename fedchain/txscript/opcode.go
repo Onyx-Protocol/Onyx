@@ -821,7 +821,7 @@ func opcodeDisabled(op *parsedOpcode, vm *Engine) error {
 // otherwise.
 func opcodeVersion01Only(opcodeFn func(*parsedOpcode, *Engine) error) func(*parsedOpcode, *Engine) error {
 	return func(op *parsedOpcode, vm *Engine) error {
-		if vm.scriptVersionVal == 0 || vm.scriptVersionVal == 1 {
+		if vm.currentVersion() == 0 || vm.currentVersion() == 1 {
 			return opcodeFn(op, vm)
 		}
 		return opcodeDisabled(op, vm)
@@ -914,7 +914,8 @@ func opcodeIf(op *parsedOpcode, vm *Engine) error {
 	} else {
 		condVal = OpCondSkip
 	}
-	vm.condStack = append(vm.condStack, condVal)
+	frame := vm.estack.Peek()
+	frame.condStack = append(frame.condStack, condVal)
 	return nil
 }
 
@@ -947,7 +948,8 @@ func opcodeNotIf(op *parsedOpcode, vm *Engine) error {
 	} else {
 		condVal = OpCondSkip
 	}
-	vm.condStack = append(vm.condStack, condVal)
+	frame := vm.estack.Peek()
+	frame.condStack = append(frame.condStack, condVal)
 	return nil
 }
 
@@ -957,16 +959,17 @@ func opcodeNotIf(op *parsedOpcode, vm *Engine) error {
 //
 // Conditional stack transformation: [... OpCondValue] -> [... !OpCondValue]
 func opcodeElse(op *parsedOpcode, vm *Engine) error {
-	if len(vm.condStack) == 0 {
+	frame := vm.estack.Peek()
+	if len(frame.condStack) == 0 {
 		return ErrStackNoIf
 	}
 
-	conditionalIdx := len(vm.condStack) - 1
-	switch vm.condStack[conditionalIdx] {
+	conditionalIdx := len(frame.condStack) - 1
+	switch frame.condStack[conditionalIdx] {
 	case OpCondTrue:
-		vm.condStack[conditionalIdx] = OpCondFalse
+		frame.condStack[conditionalIdx] = OpCondFalse
 	case OpCondFalse:
-		vm.condStack[conditionalIdx] = OpCondTrue
+		frame.condStack[conditionalIdx] = OpCondTrue
 	case OpCondSkip:
 		// Value doesn't change in skip since it indicates this opcode
 		// is nested in a non-executed branch.
@@ -981,11 +984,12 @@ func opcodeElse(op *parsedOpcode, vm *Engine) error {
 //
 // Conditional stack transformation: [... OpCondValue] -> [...]
 func opcodeEndif(op *parsedOpcode, vm *Engine) error {
-	if len(vm.condStack) == 0 {
+	frame := vm.estack.Peek()
+	if len(frame.condStack) == 0 {
 		return ErrStackNoIf
 	}
 
-	vm.condStack = vm.condStack[:len(vm.condStack)-1]
+	frame.condStack = frame.condStack[:len(frame.condStack)-1]
 	return nil
 }
 
@@ -1991,12 +1995,9 @@ func opcodeHash256(op *parsedOpcode, vm *Engine) error {
 	return nil
 }
 
-// opcodeCodeSeparator stores the current script offset as the most recently
-// seen OP_CODESEPARATOR which is used during signature checking.
-//
-// This opcode does not change the contents of the data stack.
+// opcodeCodeSeparator is currently a NOP for us. It might
+// be used in the future, but for now it does nothing.
 func opcodeCodeSeparator(op *parsedOpcode, vm *Engine) error {
-	vm.lastCodeSep = vm.scriptOff
 	return nil
 }
 
@@ -2347,7 +2348,7 @@ func popAssetID(stack *stack) (*bc.AssetID, error) {
 // accounting for other OP_REQUIREOUTPUTs.  Pushes true if so, false
 // otherwise.
 func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
-	if vm.scriptVersionVal != 1 {
+	if vm.currentVersion() != 1 {
 		return ErrScriptVersion
 	}
 	script, err := vm.dstack.PopByteArray()
@@ -2459,7 +2460,7 @@ func opcodeCirculation(op *parsedOpcode, vm *Engine) error {
 // SCRIPT EVAL
 // Interprets SCRIPT
 func opcodeEval(op *parsedOpcode, vm *Engine) error {
-	if vm.scriptVersionVal != 0 && vm.scriptVersionVal != 1 {
+	if vm.currentVersion() != 0 && vm.currentVersion() != 1 {
 		return ErrScriptVersion
 	}
 	script, err := vm.dstack.PopByteArray()
@@ -2470,7 +2471,7 @@ func opcodeEval(op *parsedOpcode, vm *Engine) error {
 	if err != nil {
 		return err
 	}
-	vm.InsertScript(parsedScript)
+	vm.PushScript(parsedScript, true)
 	return nil
 }
 

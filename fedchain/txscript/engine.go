@@ -62,6 +62,10 @@ const (
 	// during execution.
 	maxStackSize = 1000
 
+	// maxExecutionStackSize is the maximum number of stack frames that
+	// can be on the execution stack.
+	maxExecutionStackSize = 10
+
 	// maxScriptSize is the maximum allowed length of a raw script.
 	maxScriptSize = 10000
 )
@@ -77,28 +81,26 @@ type (
 
 	// Engine is the virtual machine that executes scripts.
 	Engine struct {
-		scripts          [][]parsedOpcode
-		scriptVersion    []byte
-		scriptVersionVal scriptNum // optimization - the scriptNum value of scriptVersion
-		maxOps           int
-		scriptIdx        int
-		scriptOff        int
-		lastCodeSep      int
-		dstack           stack // data stack
-		astack           stack // alt stack
-		tx               *bc.TxData
-		block            *bc.Block
-		hashCache        *bc.SigHashCache
-		txIdx            int
-		condStack        []int
-		numOps           int
-		flags            ScriptFlags
-		ctx              context.Context
-		viewReader       viewReader
-		available        []uint64 // mutable copy of each output's Value field, used for OP_REQUIREOUTPUT reservations
-		timestamp        int64    // Unix timestamp at Engine-creation time
+		estack     scriptStack // execution stack
+		dstack     stack       // data stack
+		astack     stack       // alternate data stack
+		tx         *bc.TxData
+		block      *bc.Block
+		hashCache  *bc.SigHashCache
+		txIdx      int
+		maxOps     int
+		numOps     int
+		flags      ScriptFlags
+		ctx        context.Context
+		viewReader viewReader
+		available  []uint64 // mutable copy of each output's Amount field, used for OP_REQUIREOUTPUT reservations
+		timestamp  int64    // Unix timestamp at Engine-creation time
 	}
 )
+
+func (vm *Engine) currentVersion() scriptNum {
+	return vm.estack.Peek().scriptVersionVal
+}
 
 func (vm *Engine) currentTxInput() *bc.TxInput {
 	return vm.tx.Inputs[vm.txIdx]
@@ -119,10 +121,11 @@ func (vm *Engine) hasFlag(flag ScriptFlags) bool {
 // and an OP_IF is encountered, the branch is inactive until an OP_ELSE or
 // OP_ENDIF is encountered.  It properly handles nested conditionals.
 func (vm *Engine) isBranchExecuting() bool {
-	if len(vm.condStack) == 0 {
+	s := vm.estack.Peek().condStack
+	if len(s) == 0 {
 		return true
 	}
-	return vm.condStack[len(vm.condStack)-1] == OpCondTrue
+	return s[len(s)-1] == OpCondTrue
 }
 
 // executeOpcode peforms execution on the passed opcode.  It takes into account
@@ -130,7 +133,7 @@ func (vm *Engine) isBranchExecuting() bool {
 // tested in this case.
 func (vm *Engine) executeOpcode(pop *parsedOpcode) error {
 	// Disabled opcodes are fail on program counter.
-	if pop.isDisabled(int(vm.scriptVersionVal), vm.block != nil) {
+	if pop.isDisabled(int(vm.currentVersion()), vm.block != nil) {
 		return ErrStackOpDisabled
 	}
 
@@ -169,72 +172,34 @@ func (vm *Engine) executeOpcode(pop *parsedOpcode) error {
 	return pop.opcode.opfunc(pop, vm)
 }
 
-// disasm is a helper function to produce the output for DisasmPC and
-// DisasmScript.  It produces the opcode prefixed by the program counter at the
-// provided position in the script.  It does no error checking and leaves that
-// to the caller to provide a valid offset.
-func (vm *Engine) disasm(scriptIdx int, scriptOff int) string {
-	return fmt.Sprintf("%02x:%04x: %s", scriptIdx, scriptOff,
-		vm.scripts[scriptIdx][scriptOff].print(false))
-}
-
-// validPC returns an error if the current script position is valid for
-// execution, nil otherwise.
-func (vm *Engine) validPC() error {
-	if vm.scriptIdx >= len(vm.scripts) {
-		return fmt.Errorf("past input scripts %v:%v %v:xxxx",
-			vm.scriptIdx, vm.scriptOff, len(vm.scripts))
-	}
-	if vm.scriptOff >= len(vm.scripts[vm.scriptIdx]) {
-		return fmt.Errorf("past input scripts %v:%v %v:%04d",
-			vm.scriptIdx, vm.scriptOff, vm.scriptIdx,
-			len(vm.scripts[vm.scriptIdx]))
-	}
-	return nil
-}
-
-// curPC returns either the current script and offset, or an error if the
-// position isn't valid.
-func (vm *Engine) curPC() (script int, off int, err error) {
-	err = vm.validPC()
-	if err != nil {
-		return 0, 0, err
-	}
-	return vm.scriptIdx, vm.scriptOff, nil
-}
-
 // DisasmPC returns the string for the disassembly of the opcode that will be
 // next to execute when Step() is called.
 func (vm *Engine) DisasmPC() (string, error) {
-	scriptIdx, scriptOff, err := vm.curPC()
+	frame, off, err := vm.estack.curPC()
 	if err != nil {
 		return "", err
 	}
-	return vm.disasm(scriptIdx, scriptOff), nil
+	return vm.estack.disasm(frame, off), nil
 }
 
-// DisasmScript returns the disassembly string for the script at the requested
-// offset index.  Index 0 is the signature script and 1 is the public key
-// script.
-func (vm *Engine) DisasmScript(idx int) (string, error) {
-	if idx >= len(vm.scripts) {
-		return "", ErrStackInvalidIndex
-	}
-
+// DisasmScript returns the disassembly string for the entire script.
+func (vm *Engine) DisasmScript() (string, error) {
 	var disstr string
-	for i := range vm.scripts[idx] {
-		disstr = disstr + vm.disasm(idx, i) + "\n"
+	for fIdx := range vm.estack.frames {
+		frame := vm.estack.frames[len(vm.estack.frames)-fIdx-1]
+		for idx := range frame.script {
+			disstr = disstr + frame.disasm(idx) + "\n"
+		}
 	}
 	return disstr, nil
 }
 
 // CheckErrorCondition returns nil if the running script has ended and was
-// successful, leaving a a true boolean on the stack.  An error otherwise,
+// successful, leaving a true boolean on the stack.  An error otherwise,
 // including if the script has not finished.
 func (vm *Engine) CheckErrorCondition(finalScript bool) error {
-	// Check execution is actually done.  When pc is past the end of script
-	// array there are no more scripts to run.
-	if vm.scriptIdx < len(vm.scripts) {
+	// Check execution is actually done.
+	if !vm.estack.empty() {
 		return ErrStackScriptUnfinished
 	}
 	if vm.dstack.Depth() < 1 {
@@ -248,28 +213,27 @@ func (vm *Engine) CheckErrorCondition(finalScript bool) error {
 	if v == false {
 		// Log interesting data.
 		log.Tracef("%v", newLogClosure(func() string {
-			dis0, _ := vm.DisasmScript(0)
-			dis1, _ := vm.DisasmScript(1)
-			return fmt.Sprintf("scripts failed: script0: %s\n"+
-				"script1: %s", dis0, dis1)
+			dis, _ := vm.DisasmScript()
+			return fmt.Sprintf("scripts failed: %s\n", dis)
 		}))
 		return ErrStackScriptFailed
 	}
 	return nil
 }
 
-// Called by OP_EVAL, inside of a call to vm.Step().  Assumes
-// vm.scriptIdx and vm.scriptOff have not been updated yet.  Arranges
-// for newScript to be the next sequence of opcodes that vm executes.
-func (vm *Engine) InsertScript(newScript []parsedOpcode) {
-	currentScript := vm.scripts[vm.scriptIdx]
+// PushScript is called by OP_EVAL. It adds a new stack frame to the top
+// of the execution stack.
+func (vm *Engine) PushScript(newScript []parsedOpcode, adoptScriptVersion bool) {
 
-	var updatedScript []parsedOpcode
-	updatedScript = append(updatedScript, currentScript[:vm.scriptOff+1]...)
-	updatedScript = append(updatedScript, newScript...)
-	updatedScript = append(updatedScript, currentScript[vm.scriptOff+1:]...)
-
-	vm.scripts[vm.scriptIdx] = updatedScript
+	f := vm.newFrame(newScript)
+	if f.scriptVersion == nil && adoptScriptVersion {
+		// The new script doesn't have an explicit version number, so the version
+		// is inferred to be the same as the current version number. EVAL requires
+		// this behavior.
+		f.scriptVersion = vm.estack.Peek().scriptVersion
+		f.scriptVersionVal = vm.estack.Peek().scriptVersionVal
+	}
+	vm.estack.Push(f)
 }
 
 // Step will execute the next instruction and move the program counter to the
@@ -279,12 +243,14 @@ func (vm *Engine) InsertScript(newScript []parsedOpcode) {
 // The result of calling Step or any other method is undefined if an error is
 // returned.
 func (vm *Engine) Step() (done bool, err error) {
-	// Verify that it is pointing to a valid script address.
-	err = vm.validPC()
+
+	// Verify that it is pointing to a valid address.
+	_, off, err := vm.estack.curPC()
 	if err != nil {
 		return true, err
 	}
-	opcode := &vm.scripts[vm.scriptIdx][vm.scriptOff]
+	frame := vm.estack.Peek()
+	opcode := frame.opcode(off)
 
 	// Execute the opcode while taking into account several things such as
 	// disabled opcodes, illegal opcodes, maximum allowed operations per
@@ -299,29 +265,18 @@ func (vm *Engine) Step() (done bool, err error) {
 	if vm.dstack.Depth()+vm.astack.Depth() > maxStackSize {
 		return false, ErrStackOverflow
 	}
+	// The number of stack frames is also limited.
+	if vm.estack.Depth() > maxExecutionStackSize {
+		return false, ErrStackOverflow
+	}
 
-	// Prepare for next instruction.
-	vm.scriptOff++
-	if vm.scriptOff >= len(vm.scripts[vm.scriptIdx]) {
-		// Illegal to have an `if' that straddles two scripts.
-		if err == nil && len(vm.condStack) != 0 {
-			return false, ErrStackMissingEndif
-		}
+	// Move on to the next instruction.
+	frame.step()
 
-		// Alt stack doesn't persist.
-		_ = vm.astack.DropN(vm.astack.Depth())
-
-		vm.numOps = 0 // number of ops is per script.
-
-		// there are zero length scripts in the wild
-		for vm.scriptIdx < len(vm.scripts) && vm.scriptOff >= len(vm.scripts[vm.scriptIdx]) {
-			vm.nextScript()
-		}
-
-		vm.lastCodeSep = 0
-		if vm.scriptIdx >= len(vm.scripts) {
-			return true, nil
-		}
+	// If we're finished with the frame, pop off stack frames until we find
+	// one that is not finished yet.
+	if frame.done() {
+		return vm.estack.nextFrame()
 	}
 	return false, nil
 }
@@ -360,11 +315,6 @@ func (vm *Engine) Execute() (err error) {
 	}
 
 	return vm.CheckErrorCondition(true)
-}
-
-// subScript returns the script since the last OP_CODESEPARATOR.
-func (vm *Engine) subScript() []parsedOpcode {
-	return vm.scripts[vm.scriptIdx][vm.lastCodeSep:]
 }
 
 // checkHashTypeEncoding returns whether or not the passed hashtype adheres to
@@ -563,13 +513,13 @@ func (vm *Engine) SetStack(data [][]byte) {
 	setStack(&vm.dstack, data)
 }
 
-// GetAltStack returns the contents of the primary stack as an array. where the
+// GetAltStack returns the contents of the alt stack as an array. where the
 // last item in the array is the top of the stack.
 func (vm *Engine) GetAltStack() [][]byte {
 	return getStack(&vm.astack)
 }
 
-// SetAltStack sets the contents of the primary stack to the contents of the
+// SetAltStack sets the contents of the alt stack to the contents of the
 // provided array where the last item in the array will be the top of the stack.
 func (vm *Engine) SetAltStack(data [][]byte) {
 	setStack(&vm.astack, data)
@@ -599,60 +549,45 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 		return errors.Wrapf(ErrStackNonPushOnly, "scriptSig: %s", scriptSigStr)
 	}
 
-	// The engine stores the scripts in parsed form using a slice.  This
-	// allows multiple scripts to be executed in sequence.  For example,
-	// with a pay-to-script-hash transaction, there will be ultimately be
-	// a third script to execute.
-	scripts := [][]byte{scriptSig, scriptPubKey}
-	vm.scripts = make([][]parsedOpcode, len(scripts))
-	for i, scr := range scripts {
-		if len(scr) > maxScriptSize {
-			return ErrStackLongScript
-		}
-		var err error
-		vm.scripts[i], err = parseScript(scr)
-		if err != nil {
-			return err
-		}
+	if len(scriptSig) > maxScriptSize || len(scriptPubKey) > maxScriptSize {
+		return ErrStackLongScript
+	}
+	parsedScriptSig, err := parseScript(scriptSig)
+	if err != nil {
+		return err
+	}
+	parsedScriptPubKey, err := parseScript(scriptPubKey)
+	if err != nil {
+		return err
 	}
 
-	vm.scriptIdx = 0
-	vm.setScriptVals()
-
-	vm.lastCodeSep = 0
 	vm.dstack.Reset()
-	vm.astack.Reset()
-	vm.condStack = nil
+	vm.estack.Reset()
+
+	// The pkscript and the sigscript are executed in separate stack frames,
+	// because they may have separate script versions. The sigscript is added
+	// second so that it will execute first.
+	vm.PushScript(parsedScriptPubKey, false)
+	vm.PushScript(parsedScriptSig, false)
+
 	vm.numOps = 0
-
-	// Advance the program counter to the public key script if the signature
-	// script is empty since there is nothing to execute for it in that
-	// case.
-	if len(scripts[0]) == 0 {
-		vm.nextScript()
+	if isPayToContract, _, _ := testContract(parsedScriptPubKey); isPayToContract {
+		vm.maxOps = MaxOpsPerP2CScript
+	} else {
+		vm.maxOps = MaxOpsPerScript
 	}
-
 	return nil
 }
 
-func (vm *Engine) nextScript() {
-	vm.scriptIdx++
-	vm.setScriptVals()
-}
+// newFrame creates a new script stack frame from parsed opcodes. If the provided
+// script doesn't have an explicit version, the script will adopt the version of
+// the current top stack frame.
+func (vm *Engine) newFrame(script []parsedOpcode) *stackFrame {
+	f := &stackFrame{script: script}
 
-func (vm *Engine) setScriptVals() {
-	if vm.scriptIdx < len(vm.scripts) {
-		script := vm.scripts[vm.scriptIdx]
-		vm.scriptVersion = parseScriptVersion(script)
-		vm.scriptVersionVal, _ = makeScriptNum(vm.scriptVersion, false) // swallow errors
-
-		if isPayToContract, _, _ := testContract(script); isPayToContract {
-			vm.maxOps = MaxOpsPerP2CScript
-		} else {
-			vm.maxOps = MaxOpsPerScript
-		}
-		vm.scriptOff = 0
-	}
+	f.scriptVersion = parseScriptVersion(script)
+	f.scriptVersionVal, _ = makeScriptNum(f.scriptVersion, false) // swallow errors
+	return f
 }
 
 // Allocates an Engine object that can execute scripts for every input
@@ -682,7 +617,6 @@ func newReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData
 
 	if vm.hasFlag(ScriptVerifyMinimalData) {
 		vm.dstack.verifyMinimalData = true
-		vm.astack.verifyMinimalData = true
 	}
 
 	if vm.tx != nil {

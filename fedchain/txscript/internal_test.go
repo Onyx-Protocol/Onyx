@@ -81,11 +81,15 @@ func TstRemoveOpcodeByData(pkscript []byte, data []byte) ([]byte, error) {
 	return unparseScript(pops)
 }
 
-// TestSetPC allows the test modules to set the program counter to whatever they
+// TstSetPC allows the test modules to set the program counter to whatever they
 // want.
-func (vm *Engine) TstSetPC(script, off int) {
-	vm.scriptIdx = script
-	vm.scriptOff = off
+func (vm *Engine) TstSetPC(frame int, pc int) {
+	vm.estack.frames[frame].pc = pc
+}
+
+// TstSetFrame allows the test modules to set the current frame to whatever they want.
+func (vm *Engine) TstSetFrame(frame int) {
+	vm.estack.frames = vm.estack.frames[:frame+1]
 }
 
 // TstSetTimestamp allows the test modules to set the interpreter's

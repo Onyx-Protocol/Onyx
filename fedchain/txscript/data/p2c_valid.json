@@ -20,7 +20,7 @@
 ["used for testing.  This script is executed twice, once each"],
 ["for two of the tx's inputs.  Requiring 3 units of the asset"],
 ["twice should not deplete it."],
-["3 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 OUTPUTSCRIPT REQUIREOUTPUT", "", "", "Simple REQUIREOUTPUT test"],
+["1 DROP 3 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 OUTPUTSCRIPT REQUIREOUTPUT", "", "", "Simple REQUIREOUTPUT test"],
 
 ["Opcodes enabled only in the P2C context."],
 ["CAT DATA_5 0x0102030405 EQUAL", "DATA_3 0x010203 DATA_2 0x0405", "", "CAT"],

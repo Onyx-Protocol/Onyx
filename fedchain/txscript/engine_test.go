@@ -21,10 +21,6 @@ func TestBadPC(t *testing.T) {
 	}
 	pcTests := []pcTest{
 		{
-			script: 2,
-			off:    0,
-		},
-		{
 			script: 0,
 			off:    2,
 		},
@@ -68,6 +64,7 @@ func TestBadPC(t *testing.T) {
 
 		// set to after all scripts
 		vm.TstSetPC(test.script, test.off)
+		vm.TstSetFrame(test.script)
 
 		_, err = vm.Step()
 		if err == nil {
