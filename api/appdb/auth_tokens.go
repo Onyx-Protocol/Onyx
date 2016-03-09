@@ -46,7 +46,7 @@ func CreateAuthToken(ctx context.Context, userID string, typ string, expiresAt *
 		id        string
 		createdAt time.Time
 	)
-	err = pg.FromContext(ctx).QueryRow(ctx, q, secretHash, typ, userID, expiresAt).Scan(&id, &createdAt)
+	err = pg.QueryRow(ctx, q, secretHash, typ, userID, expiresAt).Scan(&id, &createdAt)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert query")
 	}
@@ -62,7 +62,7 @@ func GetAuthToken(ctx context.Context, id string) (secretHash []byte, userID str
 		q         = `SELECT secret_hash, user_id, expires_at FROM auth_tokens WHERE id = $1`
 		expiresAt pq.NullTime
 	)
-	err = pg.FromContext(ctx).QueryRow(ctx, q, id).Scan(&secretHash, &userID, &expiresAt)
+	err = pg.QueryRow(ctx, q, id).Scan(&secretHash, &userID, &expiresAt)
 	if err != nil {
 		return nil, "", expiresAt.Time, errors.Wrap(err, "select token")
 	}
@@ -77,7 +77,7 @@ func ListAuthTokens(ctx context.Context, userID string, typ string) ([]*AuthToke
 		WHERE user_id = $1 AND type = $2
 		ORDER BY created_at
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, userID, typ)
+	rows, err := pg.Query(ctx, q, userID, typ)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -103,7 +103,7 @@ func ListAuthTokens(ctx context.Context, userID string, typ string) ([]*AuthToke
 // DeleteAuthToken removes the specified auth token from the database.
 func DeleteAuthToken(ctx context.Context, id string) error {
 	q := `DELETE FROM auth_tokens WHERE id = $1`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, id)
+	_, err := pg.Exec(ctx, q, id)
 	if err != nil {
 		return errors.Wrap(err, "delete query")
 	}

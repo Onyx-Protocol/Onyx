@@ -111,7 +111,7 @@ func loadAccountInfo(ctx context.Context, outs []*txdb.Output) ([]*txdb.Output, 
 		FROM addresses
 		WHERE pk_script IN (SELECT unnest($1::bytea[]))
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, addrq, pg.Byteas(scripts))
+	rows, err := pg.Query(ctx, addrq, pg.Byteas(scripts))
 	if err != nil {
 		return nil, errors.Wrap(err, "addresses select query")
 	}

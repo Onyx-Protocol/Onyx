@@ -90,7 +90,7 @@ func GetBlocks(ctx context.Context, afterHeight *uint64) ([]*bc.Block, error) {
 	}
 
 	q := `SELECT data FROM blocks WHERE height >= $1 ORDER BY height`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, startHeight)
+	rows, err := pg.Query(ctx, q, startHeight)
 	if err != nil {
 		return nil, err
 	}

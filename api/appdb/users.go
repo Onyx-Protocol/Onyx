@@ -56,7 +56,7 @@ func CreateUser(ctx context.Context, email, password string) (*User, error) {
 		RETURNING id
 	`
 	var id string
-	err = pg.FromContext(ctx).QueryRow(ctx, q, email, phash).Scan(&id)
+	err = pg.QueryRow(ctx, q, email, phash).Scan(&id)
 	if pg.IsUniqueViolation(err) {
 		return nil, ErrUserAlreadyExists
 	}
@@ -79,7 +79,7 @@ func AuthenticateUserCreds(ctx context.Context, email, password string) (userID 
 
 		q = `SELECT id, password_hash FROM users WHERE lower(email) = lower($1)`
 	)
-	err = pg.FromContext(ctx).QueryRow(ctx, q, email).Scan(&id, &phash)
+	err = pg.QueryRow(ctx, q, email).Scan(&id, &phash)
 	if err == sql.ErrNoRows {
 		return "", authn.ErrNotAuthenticated
 	}
@@ -102,7 +102,7 @@ func GetUser(ctx context.Context, id string) (*User, error) {
 		u = &User{ID: id}
 	)
 
-	err := pg.FromContext(ctx).QueryRow(ctx, q, id).Scan(&u.Email)
+	err := pg.QueryRow(ctx, q, id).Scan(&u.Email)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "ID: %v", id)
 	}
@@ -124,7 +124,7 @@ func GetUserByEmail(ctx context.Context, email string) (*User, error) {
 		u = new(User)
 	)
 
-	err := pg.FromContext(ctx).QueryRow(ctx, q, email).Scan(&u.ID, &u.Email)
+	err := pg.QueryRow(ctx, q, email).Scan(&u.ID, &u.Email)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "email: %v", email)
 	}
@@ -151,7 +151,7 @@ func UpdateUserEmail(ctx context.Context, id, password, email string) error {
 	}
 
 	q := `UPDATE users SET email = $1 WHERE id = $2`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, email, id)
+	_, err := pg.Exec(ctx, q, email, id)
 	if pg.IsUniqueViolation(err) {
 		return errors.Wrap(ErrBadEmail, "email address already in use")
 	}
@@ -181,7 +181,7 @@ func UpdateUserPassword(ctx context.Context, id, password, newpass string) error
 	}
 
 	q := `UPDATE users SET password_hash = $1 WHERE id = $2`
-	_, err = pg.FromContext(ctx).Exec(ctx, q, phash, id)
+	_, err = pg.Exec(ctx, q, phash, id)
 	if err != nil {
 		return errors.Wrap(err, "update query")
 	}
@@ -216,7 +216,7 @@ func StartPasswordReset(ctx context.Context, email string, now time.Time) (strin
 		WHERE lower(email) = lower($3)
 		RETURNING 1
 	`
-	err = pg.FromContext(ctx).QueryRow(ctx, q, hash, exp, email).Scan(new(int))
+	err = pg.QueryRow(ctx, q, hash, exp, email).Scan(new(int))
 	if err == sql.ErrNoRows {
 		return "", ErrNoUserForEmail
 	}
@@ -241,7 +241,7 @@ func CheckPasswordReset(ctx context.Context, email, secret string) error {
 			AND pwreset_expires_at > now()
 	`
 	var secHash []byte
-	err := pg.FromContext(ctx).QueryRow(ctx, selectq, email).Scan(&secHash)
+	err := pg.QueryRow(ctx, selectq, email).Scan(&secHash)
 	if err == sql.ErrNoRows {
 		return pg.ErrUserInputNotFound
 	}
@@ -287,7 +287,7 @@ func FinishPasswordReset(ctx context.Context, email, secret, newpass string) err
 			pwreset_expires_at = NULL
 		WHERE lower(email) = lower($2)
 	`
-	_, err = pg.FromContext(ctx).Exec(ctx, updateq, pwHash, email)
+	_, err = pg.Exec(ctx, updateq, pwHash, email)
 	if err != nil {
 		return errors.Wrap(err, "update query")
 	}
@@ -322,7 +322,7 @@ func checkPassword(ctx context.Context, id, password string) error {
 		q     = `SELECT password_hash FROM users WHERE id = $1`
 		phash []byte
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, id).Scan(&phash)
+	err := pg.QueryRow(ctx, q, id).Scan(&phash)
 	if err != nil {
 		return errors.Wrap(err, "select query")
 	}

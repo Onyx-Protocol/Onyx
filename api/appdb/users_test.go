@@ -28,7 +28,7 @@ func getUserByCreds(ctx context.Context, email, password string) (*User, error) 
 		id    string
 		phash []byte
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, email).Scan(&id, &phash)
+	err := pg.QueryRow(ctx, q, email).Scan(&id, &phash)
 	if err != nil {
 		return nil, errors.Wrap(err, "user lookup")
 	}
@@ -92,7 +92,7 @@ func TestCreateUserPreserveCase(t *testing.T) {
 		email string
 		q     = "SELECT email FROM users where lower(email) = 'foo@bar.com'"
 	)
-	err = pg.FromContext(ctx).QueryRow(ctx, q).Scan(&email)
+	err = pg.QueryRow(ctx, q).Scan(&email)
 	if err != nil {
 		t.Fatal(err)
 	}

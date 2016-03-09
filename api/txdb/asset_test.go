@@ -85,14 +85,14 @@ func TestInsertAssetDefinitionPointers(t *testing.T) {
 		const checkQ = `
 			SELECT asset_definition_hash FROM asset_definition_pointers WHERE asset_id=$1
 		`
-		err = pg.FromContext(ctx).QueryRow(ctx, checkQ, a0str).Scan(&resID)
+		err = pg.QueryRow(ctx, checkQ, a0str).Scan(&resID)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
 		if resID != def0str {
 			t.Fatalf("checking inputs, want=%s, got=%s", def0str, resID)
 		}
-		err = pg.FromContext(ctx).QueryRow(ctx, checkQ, a1str).Scan(&resID)
+		err = pg.QueryRow(ctx, checkQ, a1str).Scan(&resID)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -135,7 +135,7 @@ func TestInsertAssetDefinitionPointersWithUpdate(t *testing.T) {
 		const checkQ = `
 			SELECT COUNT(*) FROM asset_definition_pointers
 		`
-		err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
+		err = pg.QueryRow(ctx, checkQ).Scan(&count)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -178,7 +178,7 @@ func TestInsertAssetDefinitions(t *testing.T) {
 
 		var count int
 		var checkQ = `SELECT COUNT(*) FROM asset_definitions`
-		err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
+		err = pg.QueryRow(ctx, checkQ).Scan(&count)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -189,7 +189,7 @@ func TestInsertAssetDefinitions(t *testing.T) {
 		for i := range defs {
 			var got []byte
 			const selectQ = `SELECT definition FROM asset_definitions WHERE hash=$1`
-			err = pg.FromContext(ctx).QueryRow(ctx, selectQ, hashes[i]).Scan(&got)
+			err = pg.QueryRow(ctx, selectQ, hashes[i]).Scan(&got)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -229,7 +229,7 @@ func TestInsertAssetDefinitionsIdempotent(t *testing.T) {
 		var checkQ = `
 			SELECT COUNT(*) FROM asset_definitions
 		`
-		err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
+		err = pg.QueryRow(ctx, checkQ).Scan(&count)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -239,7 +239,7 @@ func TestInsertAssetDefinitionsIdempotent(t *testing.T) {
 
 		var got []byte
 		const selectQ = `SELECT definition FROM asset_definitions WHERE hash=$1`
-		err = pg.FromContext(ctx).QueryRow(ctx, selectQ, hash).Scan(&got)
+		err = pg.QueryRow(ctx, selectQ, hash).Scan(&got)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -277,7 +277,7 @@ func TestInsertAssetDefinitionsDuplicates(t *testing.T) {
 		var checkQ = `
 			SELECT COUNT(*) FROM asset_definitions
 		`
-		err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
+		err = pg.QueryRow(ctx, checkQ).Scan(&count)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -287,7 +287,7 @@ func TestInsertAssetDefinitionsDuplicates(t *testing.T) {
 
 		var got []byte
 		const selectQ = `SELECT definition FROM asset_definitions WHERE hash=$1`
-		err = pg.FromContext(ctx).QueryRow(ctx, selectQ, hash).Scan(&got)
+		err = pg.QueryRow(ctx, selectQ, hash).Scan(&got)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -304,7 +304,7 @@ func createAssetDefFixture(ctx context.Context, t *testing.T, assetID string, de
 		INSERT INTO asset_definition_pointers (asset_id, asset_definition_hash)
 		VALUES ($1, $2)
 	`
-	_, err := pg.FromContext(ctx).Exec(ctx, q1, assetID, h)
+	_, err := pg.Exec(ctx, q1, assetID, h)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -313,7 +313,7 @@ func createAssetDefFixture(ctx context.Context, t *testing.T, assetID string, de
 		INSERT INTO asset_definitions (hash, definition)
 		VALUES ($1, $2)
 	`
-	_, err = pg.FromContext(ctx).Exec(ctx, q2, h, def)
+	_, err = pg.Exec(ctx, q2, h, def)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

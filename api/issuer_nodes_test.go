@@ -32,7 +32,7 @@ func TestCreateIssuerNode(t *testing.T) {
 
 	var count int
 	var checkQ = `SELECT COUNT(*) FROM issuer_nodes`
-	err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
+	err = pg.QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -61,7 +61,7 @@ func TestCreateIssuerNodeDeprecated(t *testing.T) {
 
 	var count int
 	var checkQ = `SELECT COUNT(*) FROM issuer_nodes`
-	err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
+	err = pg.QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}

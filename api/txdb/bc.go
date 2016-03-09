@@ -32,7 +32,7 @@ func loadOutputs(ctx context.Context, ps []bc.Outpoint) (map[bc.Outpoint]*state.
 		WHERE confirmed
 		    AND (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(txHashes), pg.Uint32s(indexes))
+	rows, err := pg.Query(ctx, q, pg.Strings(txHashes), pg.Uint32s(indexes))
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

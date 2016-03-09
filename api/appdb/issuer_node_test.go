@@ -211,14 +211,14 @@ func TestArchiveIssuerNode(t *testing.T) {
 
 	var archived bool
 	checkQ := `SELECT archived FROM issuer_nodes WHERE id = $1`
-	err = pg.FromContext(ctx).QueryRow(ctx, checkQ, issuerNode.ID).Scan(&archived)
+	err = pg.QueryRow(ctx, checkQ, issuerNode.ID).Scan(&archived)
 
 	if !archived {
 		t.Errorf("expected issuer node %s to be archived", issuerNode.ID)
 	}
 
 	checkAssetQ := `SELECT archived FROM assets WHERE id = $1`
-	err = pg.FromContext(ctx).QueryRow(ctx, checkAssetQ, asset.Hash.String()).Scan(&archived)
+	err = pg.QueryRow(ctx, checkAssetQ, asset.Hash.String()).Scan(&archived)
 	if !archived {
 		t.Errorf("expected child asset %s to be archived", asset.Hash.String())
 	}

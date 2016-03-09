@@ -296,7 +296,7 @@ func TestArchiveAccount(t *testing.T) {
 
 		var archived bool
 		checkQ := `SELECT archived FROM accounts WHERE id = $1`
-		err = pg.FromContext(ctx).QueryRow(ctx, checkQ, account.ID).Scan(&archived)
+		err = pg.QueryRow(ctx, checkQ, account.ID).Scan(&archived)
 
 		if !archived {
 			t.Errorf("expected account %s to be archived", account.ID)

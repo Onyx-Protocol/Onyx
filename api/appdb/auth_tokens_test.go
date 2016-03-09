@@ -29,7 +29,7 @@ func testGetAuthToken(ctx context.Context, id string) (*testAuthToken, error) {
 		expiresAt pq.NullTime
 		tok       = &testAuthToken{id: id}
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, id).Scan(&tok.secretHash, &tok.typ, &tok.userID, &expiresAt)
+	err := pg.QueryRow(ctx, q, id).Scan(&tok.secretHash, &tok.typ, &tok.userID, &expiresAt)
 	if err != nil {
 		return nil, err
 	}

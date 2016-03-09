@@ -79,6 +79,6 @@ func lockBlockHeight(ctx context.Context, b *bc.Block) error {
 		    WHERE NOT EXISTS (SELECT 1 FROM signed_blocks
 		                      WHERE block_height = $1 AND block_hash = $2)
 	`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, b.Height, b.HashForSig())
+	_, err := pg.Exec(ctx, q, b.Height, b.HashForSig())
 	return err
 }

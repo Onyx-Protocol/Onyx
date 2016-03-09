@@ -139,7 +139,7 @@ func reserveOrder(ctx context.Context, openOrder *OpenOrder, amount uint64) (cha
 	`
 
 	var cnt int
-	row := pg.FromContext(ctx).QueryRow(ctx, q, openOrder.Outpoint.Hash, openOrder.Outpoint.Index)
+	row := pg.QueryRow(ctx, q, openOrder.Outpoint.Hash, openOrder.Outpoint.Index)
 	err = row.Scan(&cnt)
 	if err != nil {
 		return 0, err

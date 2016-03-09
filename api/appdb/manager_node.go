@@ -77,7 +77,7 @@ func InsertManagerNode(ctx context.Context, projID, label string, xpubs, gennedK
 	`
 	var id string
 	xprvs := keysToStrings(gennedKeys)
-	err = pg.FromContext(ctx).QueryRow(ctx, q, label, projID, pg.Strings(xprvs), variableKeys, sigsRequired, clientToken).Scan(&id)
+	err = pg.QueryRow(ctx, q, label, projID, pg.Strings(xprvs), variableKeys, sigsRequired, clientToken).Scan(&id)
 	if err == sql.ErrNoRows && clientToken != nil {
 		// A sql.ErrNoRows error here indicates that we failed to insert
 		// a manager node because there was a conflict on the client token.
@@ -182,7 +182,7 @@ func lookupManagerNode(ctx context.Context, mnq managerNodeQuery) (*ManagerNode,
 		varKeys     int
 		sigsReqd    int
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, queryArgs...).Scan(
+	err := pg.QueryRow(ctx, q, queryArgs...).Scan(
 		&id,
 		&label,
 		(*pg.Strings)(&pubKeyStrs),
@@ -252,7 +252,7 @@ func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit
 		ORDER BY account_id ASC
 		LIMIT $4
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, mnodeID, assetID, prev, limit)
+	rows, err := pg.Query(ctx, q, mnodeID, assetID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "balances query")
 	}
@@ -289,7 +289,7 @@ func ListManagerNodes(ctx context.Context, projID string) ([]*ManagerNode, error
 		WHERE project_id = $1 AND NOT archived
 		ORDER BY id
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, projID)
+	rows, err := pg.Query(ctx, q, projID)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -318,8 +318,7 @@ func UpdateManagerNode(ctx context.Context, mnodeID string, label *string) error
 		return nil
 	}
 	const q = `UPDATE manager_nodes SET label = $2 WHERE id = $1`
-	db := pg.FromContext(ctx)
-	_, err := db.Exec(ctx, q, mnodeID, *label)
+	_, err := pg.Exec(ctx, q, mnodeID, *label)
 	return errors.Wrap(err, "update query")
 }
 
@@ -334,13 +333,13 @@ func ArchiveManagerNode(ctx context.Context, mnodeID string) error {
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
 	const accountQ = `UPDATE accounts SET archived = true WHERE manager_node_id = $1`
-	_, err := pg.FromContext(ctx).Exec(ctx, accountQ, mnodeID)
+	_, err := pg.Exec(ctx, accountQ, mnodeID)
 	if err != nil {
 		return errors.Wrap(err, "archiving accounts")
 	}
 
 	const mnQ = `UPDATE manager_nodes SET archived = true WHERE id = $1`
-	_, err = pg.FromContext(ctx).Exec(ctx, mnQ, mnodeID)
+	_, err = pg.Exec(ctx, mnQ, mnodeID)
 	if err != nil {
 		return errors.Wrap(err, "archive query")
 	}
@@ -358,14 +357,14 @@ func createRotation(ctx context.Context, managerNodeID string, xpubs ...string) 
 		UPDATE manager_nodes SET current_rotation=(SELECT id FROM new_rotation)
 		WHERE id=$1
 	`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, managerNodeID, pg.Strings(xpubs))
+	_, err := pg.Exec(ctx, q, managerNodeID, pg.Strings(xpubs))
 	return err
 }
 
 func managerNodeVariableKeys(ctx context.Context, managerNodeID string) (int, error) {
 	const q = `SELECT variable_keys FROM manager_nodes WHERE id = $1`
 	count := 0
-	err := pg.FromContext(ctx).QueryRow(ctx, q, managerNodeID).Scan(&count)
+	err := pg.QueryRow(ctx, q, managerNodeID).Scan(&count)
 	if err != nil {
 		return 0, err
 	}

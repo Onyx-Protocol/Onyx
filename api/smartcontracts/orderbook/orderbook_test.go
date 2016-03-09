@@ -322,7 +322,7 @@ func paysToAccount(ctx context.Context, t testing.TB, accountID string, script [
 		WHERE script=$2
 	`
 	var utxoMatch bool
-	err := pg.FromContext(ctx).QueryRow(ctx, q, accountID, script).Scan(&utxoMatch)
+	err := pg.QueryRow(ctx, q, accountID, script).Scan(&utxoMatch)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

@@ -49,7 +49,7 @@ func CreateProject(ctx context.Context, name string, userID string) (*Project, e
 		q  = `INSERT INTO projects (name) VALUES ($1) RETURNING id`
 		id string
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, name).Scan(&id)
+	err := pg.QueryRow(ctx, q, name).Scan(&id)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert query")
 	}
@@ -72,7 +72,7 @@ func ListProjects(ctx context.Context, userID string) ([]*Project, error) {
 		WHERE m.user_id = $1 AND NOT p.archived
 		ORDER BY p.name
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, userID)
+	rows, err := pg.Query(ctx, q, userID)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -101,7 +101,7 @@ func GetProject(ctx context.Context, projID string) (*Project, error) {
 		q    = `SELECT name FROM projects WHERE id = $1`
 		name string
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, projID).Scan(&name)
+	err := pg.QueryRow(ctx, q, projID).Scan(&name)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "project id: %v", projID)
 	}
@@ -116,7 +116,7 @@ func GetProject(ctx context.Context, projID string) (*Project, error) {
 // exist, an error with pg.ErrUserInputNotFound as the root is returned.
 func UpdateProject(ctx context.Context, projID, name string) error {
 	q := `UPDATE projects SET name = $1 WHERE id = $2 RETURNING 1`
-	err := pg.FromContext(ctx).QueryRow(ctx, q, name, projID).Scan(new(int))
+	err := pg.QueryRow(ctx, q, name, projID).Scan(new(int))
 	if err == sql.ErrNoRows {
 		return errors.WithDetailf(pg.ErrUserInputNotFound, "project ID: %v", projID)
 	}
@@ -134,7 +134,7 @@ func ArchiveProject(ctx context.Context, projID string) error {
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
 	const q = `UPDATE projects SET archived = true WHERE id = $1 RETURNING 1`
-	err := pg.FromContext(ctx).QueryRow(ctx, q, projID).Scan(new(int))
+	err := pg.QueryRow(ctx, q, projID).Scan(new(int))
 	if err == sql.ErrNoRows {
 		return errors.WithDetailf(pg.ErrUserInputNotFound, "project ID: %v", projID)
 	}
@@ -143,12 +143,12 @@ func ArchiveProject(ctx context.Context, projID string) error {
 	}
 
 	const mnQ = `UPDATE manager_nodes SET archived = true WHERE project_id = $1`
-	if _, err := pg.FromContext(ctx).Exec(ctx, mnQ, projID); err != nil {
+	if _, err := pg.Exec(ctx, mnQ, projID); err != nil {
 		return errors.Wrap(err, "archive manager nodes query")
 	}
 
 	const inQ = `UPDATE issuer_nodes SET archived = true WHERE project_id = $1`
-	if _, err := pg.FromContext(ctx).Exec(ctx, inQ, projID); err != nil {
+	if _, err := pg.Exec(ctx, inQ, projID); err != nil {
 		return errors.Wrap(err, "archive issuer nodes query")
 	}
 
@@ -157,7 +157,7 @@ func ArchiveProject(ctx context.Context, projID string) error {
 			SELECT id FROM manager_nodes WHERE project_id = $1
 		)
 	`
-	if _, err := pg.FromContext(ctx).Exec(ctx, accountQ, projID); err != nil {
+	if _, err := pg.Exec(ctx, accountQ, projID); err != nil {
 		return errors.Wrap(err, "archive accounts query")
 	}
 
@@ -166,7 +166,7 @@ func ArchiveProject(ctx context.Context, projID string) error {
 			SELECT id FROM issuer_nodes WHERE project_id = $1
 		)
 	`
-	if _, err := pg.FromContext(ctx).Exec(ctx, assetQ, projID); err != nil {
+	if _, err := pg.Exec(ctx, assetQ, projID); err != nil {
 		return errors.Wrap(err, "archive assets query")
 	}
 
@@ -184,7 +184,7 @@ func ListMembers(ctx context.Context, projID string) ([]*Member, error) {
 		WHERE m.project_id = $1
 		ORDER BY u.email
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, projID)
+	rows, err := pg.Query(ctx, q, projID)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -219,7 +219,7 @@ func AddMember(ctx context.Context, projID, userID, role string) error {
 		INSERT INTO members (project_id, user_id, role)
 		SELECT $1, $2, $3
 	`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, projID, userID, role)
+	_, err := pg.Exec(ctx, q, projID, userID, role)
 	if pg.IsUniqueViolation(err) {
 		return ErrAlreadyMember
 	}
@@ -244,7 +244,7 @@ func UpdateMember(ctx context.Context, projID, userID, role string) error {
 		WHERE project_id = $2 AND user_id = $3
 		RETURNING 1
 	`
-	err := pg.FromContext(ctx).QueryRow(ctx, q, role, projID, userID).Scan(new(int))
+	err := pg.QueryRow(ctx, q, role, projID, userID).Scan(new(int))
 	if err == sql.ErrNoRows {
 		return errors.WithDetailf(
 			pg.ErrUserInputNotFound,
@@ -263,7 +263,7 @@ func RemoveMember(ctx context.Context, projID string, userID string) error {
 		DELETE FROM members
 		WHERE project_id = $1 AND user_id = $2
 	`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, projID, userID)
+	_, err := pg.Exec(ctx, q, projID, userID)
 	if err != nil {
 		return errors.Wrap(err, "delete query")
 	}
@@ -288,7 +288,7 @@ func IsMember(ctx context.Context, userID string, project string) (bool, error) 
 		WHERE user_id=$1 AND project_id=$2 AND NOT projects.archived
 	`
 	var isMember bool
-	row := pg.FromContext(ctx).QueryRow(ctx, q, userID, project)
+	row := pg.QueryRow(ctx, q, userID, project)
 	err := row.Scan(&isMember)
 	return isMember, errors.Wrap(err)
 }
@@ -305,7 +305,7 @@ func IsAdmin(ctx context.Context, userID string, project string) (bool, error) {
 		isAdmin  bool
 		archived bool
 	)
-	row := pg.FromContext(ctx).QueryRow(ctx, q, userID, project)
+	row := pg.QueryRow(ctx, q, userID, project)
 	err := row.Scan(&isAdmin, &archived)
 	if err == nil && archived {
 		err = ErrArchived
@@ -325,7 +325,7 @@ func ProjectByActiveManager(ctx context.Context, managerID string) (string, erro
 		project  string
 		archived bool
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, managerID).Scan(&project, &archived)
+	err := pg.QueryRow(ctx, q, managerID).Scan(&project, &archived)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
@@ -354,7 +354,7 @@ func ProjectsByActiveAccount(ctx context.Context, accountIDs ...string) ([]strin
 		accountsFound    int
 		projects         []string
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, pg.Strings(accountIDs)).
+	err := pg.QueryRow(ctx, q, pg.Strings(accountIDs)).
 		Scan(&accountsFound, (*pg.Strings)(&projects), &accountsArchived)
 	if accountsFound != len(accountIDs) {
 		err = pg.ErrUserInputNotFound
@@ -375,7 +375,7 @@ func ProjectByActiveIssuer(ctx context.Context, issuerID string) (string, error)
 		project  string
 		archived bool
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, issuerID).Scan(&project, &archived)
+	err := pg.QueryRow(ctx, q, issuerID).Scan(&project, &archived)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
@@ -404,7 +404,7 @@ func ProjectsByActiveAsset(ctx context.Context, assetIDs ...string) ([]string, e
 		assetsFound    int
 		projects       []string
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, pg.Strings(assetIDs)).
+	err := pg.QueryRow(ctx, q, pg.Strings(assetIDs)).
 		Scan(&assetsFound, (*pg.Strings)(&projects), &assetsArchived)
 	if err != nil {
 		return nil, errors.Wrap(err)

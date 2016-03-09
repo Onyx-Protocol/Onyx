@@ -150,7 +150,7 @@ func dumpState(ctx context.Context, t *testing.T) {
 }
 
 func dumpTab(ctx context.Context, t *testing.T, q string) {
-	rows, err := pg.FromContext(ctx).Query(ctx, q)
+	rows, err := pg.Query(ctx, q)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -346,7 +346,7 @@ func TestUpsertGenesisBlock(t *testing.T) {
 		t.Fatalf("count(*) FROM blocks = %d want 1", n)
 	}
 	var got bc.Hash
-	err = pg.FromContext(ctx).QueryRow(ctx, `SELECT block_hash FROM blocks`).Scan(&got)
+	err = pg.QueryRow(ctx, `SELECT block_hash FROM blocks`).Scan(&got)
 	if err != nil {
 		t.Fatal(err)
 	}

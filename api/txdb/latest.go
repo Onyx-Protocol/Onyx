@@ -28,7 +28,7 @@ func (s *Store) LatestBlock(ctx context.Context) (*bc.Block, error) {
 
 	const q = `SELECT data FROM blocks ORDER BY height DESC LIMIT 1`
 	b := new(bc.Block)
-	err := pg.FromContext(ctx).QueryRow(ctx, q).Scan(b)
+	err := pg.QueryRow(ctx, q).Scan(b)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}

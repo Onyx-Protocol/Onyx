@@ -105,7 +105,6 @@ func (s *Store) RemoveTxs(
 		return errors.Wrap(err, "pool update dbtx begin")
 	}
 	defer dbtx.Rollback(ctx)
-	db := pg.FromContext(ctx)
 
 	var (
 		deleteTxHashes     []string
@@ -134,7 +133,7 @@ func (s *Store) RemoveTxs(
 
 	// Delete pool_txs
 	const txq = `DELETE FROM pool_txs WHERE tx_hash IN (SELECT unnest($1::text[]))`
-	_, err = db.Exec(ctx, txq, pg.Strings(deleteTxHashes))
+	_, err = pg.Exec(ctx, txq, pg.Strings(deleteTxHashes))
 	if err != nil {
 		return errors.Wrap(err, "delete from pool_txs")
 	}
@@ -143,7 +142,7 @@ func (s *Store) RemoveTxs(
 	const outq = `
 		DELETE FROM utxos u WHERE tx_hash IN (SELECT unnest($1::text[]))
 	`
-	_, err = db.Exec(ctx, outq, pg.Strings(conflictTxHashes))
+	_, err = pg.Exec(ctx, outq, pg.Strings(conflictTxHashes))
 	if err != nil {
 		return errors.Wrap(err, "delete from utxos")
 	}
@@ -155,7 +154,7 @@ func (s *Store) RemoveTxs(
 			SELECT unnest($1::text[]), unnest($2::integer[])
 		)
 	`
-	_, err = db.Exec(ctx, inq, pg.Strings(deleteInputHashes), pg.Uint32s(deleteInputIndexes))
+	_, err = pg.Exec(ctx, inq, pg.Strings(deleteInputHashes), pg.Uint32s(deleteInputIndexes))
 	if err != nil {
 		return errors.Wrap(err, "delete from pool_inputs")
 	}

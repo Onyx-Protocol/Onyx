@@ -21,7 +21,7 @@ func AssetDefinitions(ctx context.Context, assetIDs []string) (map[string][]byte
 		WHERE adp.asset_id IN (SELECT unnest($1::text[]))
 	`
 
-	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(assetIDs))
+	rows, err := pg.Query(ctx, q, pg.Strings(assetIDs))
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -60,7 +60,7 @@ func AssetDefinition(ctx context.Context, assetID string) (string, []byte, error
 		hash     string
 		defBytes []byte
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, assetID).Scan(&hash, &defBytes)
+	err := pg.QueryRow(ctx, q, assetID).Scan(&hash, &defBytes)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
@@ -76,7 +76,7 @@ func DefinitionHashByAssetID(ctx context.Context, assetID string) (string, error
 	`
 
 	var hash string
-	err := pg.FromContext(ctx).QueryRow(ctx, q, assetID).Scan(&hash)
+	err := pg.QueryRow(ctx, q, assetID).Scan(&hash)
 	if err != nil {
 		return "", errors.Wrapf(err, "fetching definition for asset %s", assetID)
 	}
@@ -111,7 +111,7 @@ func insertAssetDefinitionPointers(ctx context.Context, adps map[bc.AssetID]bc.H
 		ptrs = append(ptrs, p.String())
 	}
 
-	_, err := pg.FromContext(ctx).Exec(ctx, q, pg.Strings(ptrs), pg.Strings(aids))
+	_, err := pg.Exec(ctx, q, pg.Strings(ptrs), pg.Strings(aids))
 	return errors.Wrap(err)
 }
 
@@ -152,6 +152,6 @@ func insertAssetDefinitions(ctx context.Context, block *bc.Block) error {
 		)
 		INSERT INTO asset_definitions (hash, definition) TABLE filtered_defs
 	`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, pg.Strings(hash), pg.Byteas(defn))
+	_, err := pg.Exec(ctx, q, pg.Strings(hash), pg.Byteas(defn))
 	return errors.Wrap(err)
 }

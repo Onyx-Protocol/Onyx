@@ -99,7 +99,7 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 	const scriptQ = `
 		SELECT pk_script, account_id, manager_node_id FROM addresses WHERE pk_script=ANY($1)
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, scriptQ, pg.Byteas(scripts))
+	rows, err := pg.Query(ctx, scriptQ, pg.Byteas(scripts))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -139,7 +139,7 @@ func GetActAssets(ctx context.Context, assetIDs []string) ([]*ActAsset, error) {
 		JOIN issuer_nodes i ON a.issuer_node_id = i.id
 		WHERE a.id = ANY($1)
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(assetIDs))
+	rows, err := pg.Query(ctx, q, pg.Strings(assetIDs))
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -170,7 +170,7 @@ func GetActAccounts(ctx context.Context, accountIDs []string) ([]*ActAccount, er
 		WHERE acc.id = ANY($1)
 		ORDER BY acc.id
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(accountIDs))
+	rows, err := pg.Query(ctx, q, pg.Strings(accountIDs))
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}

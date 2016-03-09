@@ -62,7 +62,7 @@ func TestAssetByID(t *testing.T) {
 
 func getSortID(ctx context.Context, t testing.TB, assetID bc.AssetID) (sortID string) {
 	const q = `SELECT sort_id FROM assets WHERE id=$1`
-	err := pg.FromContext(ctx).QueryRow(ctx, q, assetID).Scan(&sortID)
+	err := pg.QueryRow(ctx, q, assetID).Scan(&sortID)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -354,7 +354,7 @@ func TestArchiveAsset(t *testing.T) {
 	// Verify that the asset was archived.
 	var archived bool
 	var checkQ = `SELECT archived FROM assets WHERE id = $1`
-	err = pg.FromContext(ctx).QueryRow(ctx, checkQ, asset0.String()).Scan(&archived)
+	err = pg.QueryRow(ctx, checkQ, asset0.String()).Scan(&archived)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}

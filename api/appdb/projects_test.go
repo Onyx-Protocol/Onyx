@@ -147,7 +147,7 @@ func TestUpdateProject(t *testing.T) {
 		if ex.wantErr == nil {
 			q := `SELECT name FROM projects WHERE id = $1`
 			var got string
-			_ = pg.FromContext(ctx).QueryRow(ctx, q, ex.id).Scan(&got)
+			_ = pg.QueryRow(ctx, q, ex.id).Scan(&got)
 			if got != "new-name" {
 				t.Errorf("name got=%v want new-name", got)
 			}
@@ -198,7 +198,7 @@ func TestArchiveProject(t *testing.T) {
 			// Verify that the project is marked as archived.
 			q := `SELECT archived FROM projects WHERE id = $1`
 			var got bool
-			_ = pg.FromContext(ctx).QueryRow(ctx, q, ex.id).Scan(&got)
+			_ = pg.QueryRow(ctx, q, ex.id).Scan(&got)
 			if !got {
 				t.Errorf("archived=%v want true", got)
 			}
@@ -207,7 +207,7 @@ func TestArchiveProject(t *testing.T) {
 
 			// Check that all manager nodes are archived.
 			q = `SELECT COUNT(id) FROM manager_nodes WHERE project_id = $1 AND NOT archived`
-			if err := pg.FromContext(ctx).QueryRow(ctx, q, ex.id).Scan(&count); err != nil {
+			if err := pg.QueryRow(ctx, q, ex.id).Scan(&count); err != nil {
 				t.Fatal(err)
 			}
 			if count != 0 {
@@ -216,7 +216,7 @@ func TestArchiveProject(t *testing.T) {
 
 			// Check that all issuer nodes are archived.
 			q = `SELECT COUNT(id) FROM issuer_nodes WHERE project_id = $1 AND NOT archived`
-			if err := pg.FromContext(ctx).QueryRow(ctx, q, ex.id).Scan(&count); err != nil {
+			if err := pg.QueryRow(ctx, q, ex.id).Scan(&count); err != nil {
 				t.Fatal(err)
 			}
 			if count != 0 {
@@ -229,7 +229,7 @@ func TestArchiveProject(t *testing.T) {
 					SELECT id FROM manager_nodes WHERE project_id = $1
 				) AND NOT archived
 			`
-			if err := pg.FromContext(ctx).QueryRow(ctx, q, ex.id).Scan(&count); err != nil {
+			if err := pg.QueryRow(ctx, q, ex.id).Scan(&count); err != nil {
 				t.Fatal(err)
 			}
 			if count != 0 {
@@ -242,7 +242,7 @@ func TestArchiveProject(t *testing.T) {
 					SELECT id FROM issuer_nodes WHERE project_id = $1
 				) AND NOT archived
 			`
-			if err := pg.FromContext(ctx).QueryRow(ctx, q, ex.id).Scan(&count); err != nil {
+			if err := pg.QueryRow(ctx, q, ex.id).Scan(&count); err != nil {
 				t.Fatal(err)
 			}
 			if count != 0 {
@@ -412,6 +412,6 @@ func checkRole(ctx context.Context, projID, userID string) (string, error) {
 		`
 		role string
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, projID, userID).Scan(&role)
+	err := pg.QueryRow(ctx, q, projID, userID).Scan(&role)
 	return role, err
 }

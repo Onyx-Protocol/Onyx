@@ -86,16 +86,14 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 	}
 	defer dbtx.Rollback(ctx)
 
-	db := pg.FromContext(ctx)
-
-	_, err = db.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
+	_, err = pg.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "acquire lock for reserving utxos")
 	}
 
 	defer func() {
 		if err != nil {
-			db.Exec(ctx, "SELECT cancel_reservations($1)", pg.Int32s(reservationIDs)) // ignore errors
+			pg.Exec(ctx, "SELECT cancel_reservations($1)", pg.Int32s(reservationIDs)) // ignore errors
 		}
 	}()
 
@@ -136,7 +134,7 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 		//  * already_existed will be TRUE
 		//  * existing_change will be the change value for the existing
 		//    reservation row.
-		err = db.QueryRow(ctx, reserveQ, source.AssetID, source.AccountID, txHash, source.Amount, exp, source.ClientToken).Scan(
+		err = pg.QueryRow(ctx, reserveQ, source.AssetID, source.AccountID, txHash, source.Amount, exp, source.ClientToken).Scan(
 			&reservationID,
 			&alreadyExisted,
 			&existingChange,
@@ -162,7 +160,7 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 			change = append(change, Change{source, reservedAmount - source.Amount})
 		}
 
-		rows, err := db.Query(ctx, utxosQ, reservationID)
+		rows, err := pg.Query(ctx, utxosQ, reservationID)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "reservation member query")
 		}
@@ -218,7 +216,7 @@ func Cancel(ctx context.Context, outpoints []bc.Outpoint) error {
 		SELECT cancel_reservation(reservation_id) FROM reservation_ids
 	`
 
-	_, err := pg.FromContext(ctx).Exec(ctx, query, txHashes, indexes)
+	_, err := pg.Exec(ctx, query, txHashes, indexes)
 	return err
 }
 
@@ -234,14 +232,12 @@ func ExpireReservations(ctx context.Context, period time.Duration) {
 			}
 			defer dbtx.Rollback(ctx)
 
-			db := pg.FromContext(ctx)
-
-			_, err = db.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
+			_, err = pg.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
 			if err != nil {
 				return err
 			}
 
-			_, err = db.Exec(ctx, `SELECT expire_reservations()`)
+			_, err = pg.Exec(ctx, `SELECT expire_reservations()`)
 			if err != nil {
 				return err
 			}

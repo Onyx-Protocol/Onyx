@@ -16,7 +16,7 @@ func WriteIssuerTx(ctx context.Context, txHash string, data []byte, iNodeID stri
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
-	err = pg.FromContext(ctx).QueryRow(ctx, issuerQ, iNodeID, txHash, data).Scan(&id)
+	err = pg.QueryRow(ctx, issuerQ, iNodeID, txHash, data).Scan(&id)
 	if err != nil {
 		return "", errors.Wrap(err, "insert issuer tx")
 	}
@@ -25,7 +25,7 @@ func WriteIssuerTx(ctx context.Context, txHash string, data []byte, iNodeID stri
 		INSERT INTO issuer_txs_assets (issuer_tx_id, asset_id)
 		VALUES ($1, $2)
 	`
-	_, err = pg.FromContext(ctx).Exec(ctx, assetQ, id, asset)
+	_, err = pg.Exec(ctx, assetQ, id, asset)
 	return id, errors.Wrap(err, "insert issuer tx for asset")
 }
 
@@ -35,7 +35,7 @@ func WriteManagerTx(ctx context.Context, txHash string, data []byte, mNodeID str
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
-	err = pg.FromContext(ctx).QueryRow(ctx, managerQ, mNodeID, txHash, data).Scan(&id)
+	err = pg.QueryRow(ctx, managerQ, mNodeID, txHash, data).Scan(&id)
 	if err != nil {
 		return "", errors.Wrap(err, "insert manager tx")
 	}
@@ -44,7 +44,7 @@ func WriteManagerTx(ctx context.Context, txHash string, data []byte, mNodeID str
 		INSERT INTO manager_txs_accounts (manager_tx_id, account_id)
 		VALUES ($1, unnest($2::text[]))
 	`
-	_, err = pg.FromContext(ctx).Exec(ctx, accountQ, id, pg.Strings(accounts))
+	_, err = pg.Exec(ctx, accountQ, id, pg.Strings(accounts))
 	return id, errors.Wrap(err, "insert manager tx for account")
 }
 
@@ -55,7 +55,7 @@ func ManagerTxs(ctx context.Context, managerNodeID string, prev string, limit in
 		ORDER BY id DESC LIMIT $3
 	`
 
-	rows, err := pg.FromContext(ctx).Query(ctx, q, managerNodeID, prev, limit)
+	rows, err := pg.Query(ctx, q, managerNodeID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "query")
 	}
@@ -74,7 +74,7 @@ func AccountTxs(ctx context.Context, accountID string, prev string, limit int) (
 		ORDER BY mt.id DESC LIMIT $3
 	`
 
-	rows, err := pg.FromContext(ctx).Query(ctx, q, accountID, prev, limit)
+	rows, err := pg.Query(ctx, q, accountID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "query")
 	}
@@ -89,7 +89,7 @@ func IssuerTxs(ctx context.Context, inodeID string, prev string, limit int) ([]*
 		WHERE issuer_node_id = $1 AND (($2 = '') OR (id < $2))
 		ORDER BY id DESC LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, inodeID, prev, limit)
+	rows, err := pg.Query(ctx, q, inodeID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "query")
 	}
@@ -107,7 +107,7 @@ func AssetTxs(ctx context.Context, assetID string, prev string, limit int) ([]*j
 		WHERE a.asset_id = $1 AND (($2 = '') OR (it.id < $2))
 		ORDER BY it.id DESC LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, assetID, prev, limit)
+	rows, err := pg.Query(ctx, q, assetID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "query")
 	}
@@ -123,7 +123,7 @@ func ManagerTx(ctx context.Context, managerNodeID, txID string) (*json.RawMessag
 	`
 
 	var a []byte
-	err := pg.FromContext(ctx).QueryRow(ctx, q, managerNodeID, txID).Scan(&a)
+	err := pg.QueryRow(ctx, q, managerNodeID, txID).Scan(&a)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "transaction id: %v", txID)
 	}

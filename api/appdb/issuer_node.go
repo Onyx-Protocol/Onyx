@@ -32,7 +32,7 @@ func InsertIssuerNode(ctx context.Context, projID, label string, xpubs, gennedKe
 		RETURNING id
 	`
 	var id string
-	err := pg.FromContext(ctx).QueryRow(ctx, q,
+	err := pg.QueryRow(ctx, q,
 		label,
 		projID,
 		pg.Strings(keysToStrings(xpubs)),
@@ -83,7 +83,7 @@ func NextAsset(ctx context.Context, inodeID string) (asset *Asset, sigsRequired 
 		xpubs   []string
 		sigsReq int
 	)
-	err = pg.FromContext(ctx).QueryRow(ctx, q, inodeID).Scan(
+	err = pg.QueryRow(ctx, q, inodeID).Scan(
 		(*pg.Strings)(&xpubs),
 		(*pg.Uint32s)(&asset.INIndex),
 		(*pg.Uint32s)(&asset.AIndex),
@@ -113,7 +113,7 @@ func ListIssuerNodes(ctx context.Context, projID string) ([]*IssuerNode, error) 
 		WHERE project_id = $1 AND NOT archived
 		ORDER BY id
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, projID)
+	rows, err := pg.Query(ctx, q, projID)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -189,7 +189,7 @@ func lookupIssuerNode(ctx context.Context, inq issuerNodeQuery) (*IssuerNode, er
 		privKeyStrs []string
 		sigsReqd    int
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, queryArgs...).Scan(
+	err := pg.QueryRow(ctx, q, queryArgs...).Scan(
 		&id,
 		&label,
 		(*pg.Strings)(&pubKeyStrs),
@@ -229,8 +229,7 @@ func UpdateIssuerNode(ctx context.Context, inodeID string, label *string) error 
 		return nil
 	}
 	const q = `UPDATE issuer_nodes SET label = $2 WHERE id = $1`
-	db := pg.FromContext(ctx)
-	_, err := db.Exec(ctx, q, inodeID, *label)
+	_, err := pg.Exec(ctx, q, inodeID, *label)
 	return errors.Wrap(err, "update query")
 }
 
@@ -244,13 +243,13 @@ func ArchiveIssuerNode(ctx context.Context, inodeID string) error {
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
 	const assetQ = `UPDATE assets SET archived = true WHERE issuer_node_id = $1`
-	_, err := pg.FromContext(ctx).Exec(ctx, assetQ, inodeID)
+	_, err := pg.Exec(ctx, assetQ, inodeID)
 	if err != nil {
 		return errors.Wrap(err, "archiving assets")
 	}
 
 	const q = `UPDATE issuer_nodes SET archived = true WHERE id = $1`
-	_, err = pg.FromContext(ctx).Exec(ctx, q, inodeID)
+	_, err = pg.Exec(ctx, q, inodeID)
 	if err != nil {
 		return errors.Wrap(err, "archive query")
 	}

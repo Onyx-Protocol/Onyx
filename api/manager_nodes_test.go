@@ -54,7 +54,7 @@ func TestCreateManagerNode(t *testing.T) {
 
 	var count int
 	var checkQ = `SELECT COUNT(*) FROM manager_nodes`
-	err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
+	err = pg.QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -84,7 +84,7 @@ func TestCreateManagerNodeDeprecated(t *testing.T) {
 
 	var count int
 	var checkQ = `SELECT COUNT(*) FROM manager_nodes`
-	err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&count)
+	err = pg.QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}

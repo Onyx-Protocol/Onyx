@@ -39,7 +39,7 @@ func TestCreateManagerNode(t *testing.T) {
 	const checkQ = `
 		SELECT SUBSTR(generated_keys[1], 1, 4)='xprv' FROM manager_nodes LIMIT 1
 	`
-	err = pg.FromContext(ctx).QueryRow(ctx, checkQ).Scan(&valid)
+	err = pg.QueryRow(ctx, checkQ).Scan(&valid)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -133,7 +133,7 @@ func Count(ctx context.Context, t *testing.T, db pg.DB, table string) int64 {
 }
 
 func Exec(ctx context.Context, t testing.TB, q string) {
-	_, err := pg.FromContext(ctx).Exec(ctx, q)
+	_, err := pg.Exec(ctx, q)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

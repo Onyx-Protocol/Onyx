@@ -90,7 +90,7 @@ func lookupAsset(ctx context.Context, query assetLookupQuery) (*Asset, error) {
 			issuance_script, assets.archived, assets.client_token
 		FROM assets
 		INNER JOIN issuer_nodes ON issuer_nodes.id=assets.issuer_node_id
-		WHERE 
+		WHERE
 	`
 	var (
 		xpubs    []string
@@ -108,7 +108,7 @@ func lookupAsset(ctx context.Context, query assetLookupQuery) (*Asset, error) {
 		args = []interface{}{query.hash.String()}
 	}
 
-	err := pg.FromContext(ctx).QueryRow(ctx, q, args...).Scan(
+	err := pg.QueryRow(ctx, q, args...).Scan(
 		&a.Hash,
 		(*pg.Strings)(&xpubs),
 		&a.RedeemScript,
@@ -150,7 +150,7 @@ func InsertAsset(ctx context.Context, asset *Asset) (*Asset, error) {
 		ON CONFLICT DO NOTHING
 	`
 
-	res, err := pg.FromContext(ctx).Exec(ctx, q,
+	res, err := pg.Exec(ctx, q,
 		asset.Hash.String(),
 		asset.IssuerNodeID,
 		pg.Uint32s(asset.AIndex),
@@ -189,7 +189,7 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 		ORDER BY sort_id DESC
 		LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, inodeID, prev, limit)
+	rows, err := pg.Query(ctx, q, inodeID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "select query")
 	}
@@ -233,7 +233,7 @@ func GetAssets(ctx context.Context, assetIDs []string) (map[string]*AssetRespons
 		WHERE id IN (SELECT unnest($1::text[]))
 	`
 
-	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(assetIDs))
+	rows, err := pg.Query(ctx, q, pg.Strings(assetIDs))
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -286,8 +286,7 @@ func UpdateAsset(ctx context.Context, assetID string, label *string) error {
 		return nil
 	}
 	const q = `UPDATE assets SET label = $2 WHERE id = $1`
-	db := pg.FromContext(ctx)
-	_, err := db.Exec(ctx, q, assetID, *label)
+	_, err := pg.Exec(ctx, q, assetID, *label)
 	return errors.Wrap(err, "update query")
 }
 
@@ -295,9 +294,7 @@ func UpdateAsset(ctx context.Context, assetID string, label *string) error {
 // cannot be issued, and it won't show up in listAsset responses.
 func ArchiveAsset(ctx context.Context, assetID string) error {
 	const q = `UPDATE assets SET archived = true WHERE id = $1`
-	db := pg.FromContext(ctx)
-
-	_, err := db.Exec(ctx, q, assetID)
+	_, err := pg.Exec(ctx, q, assetID)
 	return errors.Wrap(err, "archive query")
 }
 
@@ -365,7 +362,7 @@ func AssetBalance(ctx context.Context, abq *AssetBalQuery) ([]*Balance, string, 
 
 	` + limitQ
 
-	rows, err := pg.FromContext(ctx).Query(ctx, q, params...)
+	rows, err := pg.Query(ctx, q, params...)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "balance query")
 	}

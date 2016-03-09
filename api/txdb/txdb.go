@@ -23,7 +23,7 @@ func poolTxs(ctx context.Context) ([]*bc.Tx, error) {
 	defer span.Finish(ctx)
 
 	const q = `SELECT tx_hash, data FROM pool_txs ORDER BY sort_id`
-	rows, err := pg.FromContext(ctx).Query(ctx, q)
+	rows, err := pg.Query(ctx, q)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -58,7 +58,7 @@ func GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) 
 	sort.Strings(hashStrings)
 	hashStrings = strings.Uniq(hashStrings)
 	const q = `SELECT tx_hash, data FROM txs WHERE tx_hash=ANY($1)`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, pg.Strings(hashStrings))
+	rows, err := pg.Query(ctx, q, pg.Strings(hashStrings))
 	if err != nil {
 		return nil, errors.Wrap(err, "get txs query")
 	}
@@ -88,7 +88,7 @@ func GetTxBlockHeader(ctx context.Context, hash bc.Hash) (*bc.BlockHeader, error
 		WHERE bt.tx_hash=$1
 	`
 	b := new(bc.BlockHeader)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, hash).Scan(b)
+	err := pg.QueryRow(ctx, q, hash).Scan(b)
 	if err == sql.ErrNoRows {
 		return nil, nil // tx "not being in a block" is not an error
 	}
@@ -100,7 +100,7 @@ func GetTxBlockHeader(ctx context.Context, hash bc.Hash) (*bc.BlockHeader, error
 // had no effect.
 func insertTx(ctx context.Context, tx *bc.Tx) (bool, error) {
 	const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2) ON CONFLICT DO NOTHING`
-	res, err := pg.FromContext(ctx).Exec(ctx, q, tx.Hash, tx)
+	res, err := pg.Exec(ctx, q, tx.Hash, tx)
 	if err != nil {
 		return false, errors.Wrap(err, "insert query")
 	}
@@ -120,7 +120,7 @@ func insertBlock(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES ($1, $2, $3, $4)
 	`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
+	_, err := pg.Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert query")
 	}
@@ -161,7 +161,7 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 		RETURNING tx_hash;
 	`
 	var newHashes []bc.Hash
-	rows, err := pg.FromContext(ctx).Query(ctx, txQ, pg.Strings(hashHist), pg.Byteas(data))
+	rows, err := pg.Query(ctx, txQ, pg.Strings(hashHist), pg.Byteas(data))
 	if err != nil {
 		return nil, errors.Wrap(err, "insert txs")
 	}
@@ -181,7 +181,7 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 		INSERT INTO blocks_txs (tx_hash, block_pos, block_hash, block_height)
 		SELECT unnest($1::text[]), unnest($2::int[]), $3, $4;
 	`
-	_, err = pg.FromContext(ctx).Exec(
+	_, err = pg.Exec(
 		ctx,
 		blockTxQ,
 		pg.Strings(hashInBlock),
@@ -202,7 +202,7 @@ func ListBlocks(ctx context.Context, prev string, limit int) ([]*bc.Block, error
 		SELECT data FROM blocks WHERE ($1='' OR height<$1::bigint)
 		ORDER BY height DESC LIMIT $2
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, prev, limit)
+	rows, err := pg.Query(ctx, q, prev, limit)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -226,7 +226,7 @@ func ListBlocks(ctx context.Context, prev string, limit int) ([]*bc.Block, error
 func GetBlock(ctx context.Context, hash string) (*bc.Block, error) {
 	const q = `SELECT data FROM blocks WHERE block_hash=$1`
 	block := new(bc.Block)
-	err := pg.FromContext(ctx).QueryRow(ctx, q, hash).Scan(block)
+	err := pg.QueryRow(ctx, q, hash).Scan(block)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
@@ -255,10 +255,8 @@ func removeBlockSpentOutputs(ctx context.Context, delta []*state.Output) error {
 	}
 	defer dbtx.Rollback(ctx)
 
-	db := pg.FromContext(ctx)
-
 	// account_utxos are deleted by a foreign key constraint
-	_, err = db.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
+	_, err = pg.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
 	if err != nil {
 		return errors.Wrap(err, "acquire lock for deleting utxos")
 	}
@@ -267,7 +265,7 @@ func removeBlockSpentOutputs(ctx context.Context, delta []*state.Output) error {
 		DELETE FROM utxos
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	_, err = db.Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(ids))
+	_, err = pg.Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(ids))
 	if err != nil {
 		return errors.Wrap(err, "delete query")
 	}
@@ -287,8 +285,6 @@ func insertBlockOutputs(ctx context.Context, delta []*state.Output) error {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
-
-	db := pg.FromContext(ctx)
 
 	var outs utxoSet
 	for _, out := range delta {
@@ -318,7 +314,7 @@ func insertBlockOutputs(ctx context.Context, delta []*state.Output) error {
 			(SELECT 1 FROM utxos u WHERE (n.tx_hash, n.index) = (u.tx_hash, u.index))
 	`
 
-	_, err := db.Exec(ctx, insertQ1,
+	_, err := pg.Exec(ctx, insertQ1,
 		outs.txHash,
 		outs.index,
 		outs.assetID,
@@ -335,7 +331,7 @@ func insertBlockOutputs(ctx context.Context, delta []*state.Output) error {
 		INSERT INTO blocks_utxos (tx_hash, index)
 		    SELECT unnest($1::text[]), unnest($2::bigint[])
 	`
-	_, err = db.Exec(ctx, insertQ2, outs.txHash, outs.index)
+	_, err = pg.Exec(ctx, insertQ2, outs.txHash, outs.index)
 	return errors.Wrap(err, "insert into blocks_utxos")
 }
 
@@ -345,7 +341,7 @@ func insertBlockOutputs(ctx context.Context, delta []*state.Output) error {
 func CountBlockTxs(ctx context.Context) (uint64, error) {
 	const q = `SELECT count(tx_hash) FROM blocks_txs`
 	var res uint64
-	err := pg.FromContext(ctx).QueryRow(ctx, q).Scan(&res)
+	err := pg.QueryRow(ctx, q).Scan(&res)
 	return res, errors.Wrap(err)
 }
 
@@ -385,7 +381,7 @@ func ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limi
 		prevOutIndex = -1
 	}
 
-	rows, err := pg.FromContext(ctx).Query(ctx, q, assetID, prevBlock, prevBlockPos, prevOutIndex, limit)
+	rows, err := pg.Query(ctx, q, assetID, prevBlock, prevBlockPos, prevOutIndex, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "select query")
 	}

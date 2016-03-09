@@ -67,7 +67,7 @@ func CreateAccount(ctx context.Context, managerNodeID, label string, keys []stri
 			ON CONFLICT (manager_node_id, client_token) DO NOTHING
 			RETURNING id, key_index(key_index)
 		`
-		err := pg.FromContext(ctx).QueryRow(ctx, q, managerNodeID, label, pg.Strings(keys), clientToken).Scan(
+		err := pg.QueryRow(ctx, q, managerNodeID, label, pg.Strings(keys), clientToken).Scan(
 			&account.ID,
 			(*pg.Uint32s)(&account.Index),
 		)
@@ -108,7 +108,7 @@ func getAccountByClientToken(ctx context.Context, managerNodeID, clientToken str
 		WHERE manager_node_id = $1 AND client_token = $2
 	`
 	a := &Account{}
-	err := pg.FromContext(ctx).QueryRow(ctx, q, managerNodeID, clientToken).Scan(
+	err := pg.QueryRow(ctx, q, managerNodeID, clientToken).Scan(
 		&a.ID, &a.Label, (*pg.Uint32s)(&a.Index), (*pg.Strings)(&a.Keys))
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
@@ -127,7 +127,7 @@ func ListAccounts(ctx context.Context, managerNodeID string, prev string, limit 
 		WHERE manager_node_id = $1 AND ($2='' OR id<$2) AND NOT archived
 		ORDER BY id DESC LIMIT $3
 	`
-	rows, err := pg.FromContext(ctx).Query(ctx, q, managerNodeID, prev, limit)
+	rows, err := pg.Query(ctx, q, managerNodeID, prev, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "select query")
 	}
@@ -166,7 +166,7 @@ func GetAccount(ctx context.Context, accountID string) (*Account, error) {
 		WHERE id = $1
 	`
 	a := &Account{ID: accountID}
-	err := pg.FromContext(ctx).QueryRow(ctx, q, accountID).Scan(&a.Label, (*pg.Uint32s)(&a.Index))
+	err := pg.QueryRow(ctx, q, accountID).Scan(&a.Label, (*pg.Uint32s)(&a.Index))
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
 	}
@@ -183,8 +183,7 @@ func UpdateAccount(ctx context.Context, accountID string, label *string) error {
 		return nil
 	}
 	const q = `UPDATE accounts SET label = $2 WHERE id = $1`
-	db := pg.FromContext(ctx)
-	_, err := db.Exec(ctx, q, accountID, *label)
+	_, err := pg.Exec(ctx, q, accountID, *label)
 	return errors.Wrap(err, "update query")
 }
 
@@ -193,6 +192,6 @@ func UpdateAccount(ctx context.Context, accountID string, label *string) error {
 // be used in transactions.
 func ArchiveAccount(ctx context.Context, accountID string) error {
 	const q = `UPDATE accounts SET archived = true WHERE id = $1`
-	_, err := pg.FromContext(ctx).Exec(ctx, q, accountID)
+	_, err := pg.Exec(ctx, q, accountID)
 	return errors.Wrap(err, "archive query")
 }

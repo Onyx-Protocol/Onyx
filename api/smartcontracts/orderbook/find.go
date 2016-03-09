@@ -74,7 +74,7 @@ func FindOpenOrderByOutpoint(ctx context.Context, outpoint *bc.Outpoint) (*OpenO
 }
 
 func findOpenOrdersHelper(ctx context.Context, q string, args ...interface{}) ([]*OpenOrder, error) {
-	rows, err := pg.FromContext(ctx).Query(ctx, q, args...)
+	rows, err := pg.Query(ctx, q, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "query")
 	}

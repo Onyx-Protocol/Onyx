@@ -358,7 +358,7 @@ func getTestInvitation(ctx context.Context, id string) (testInvitation, error) {
 		inv = testInvitation{id: id}
 	)
 
-	err := pg.FromContext(ctx).QueryRow(ctx, q, id).Scan(
+	err := pg.QueryRow(ctx, q, id).Scan(
 		&inv.projID,
 		&inv.email,
 		&inv.role,
