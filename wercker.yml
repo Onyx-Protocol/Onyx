@@ -33,6 +33,12 @@ build:
           go generate $(go list ./...|grep -v vendor)
           git diff --exit-code # make sure generated files are in sync
     - script:
+        name: thales hsm unit tests
+        code: |
+          export CHAIN=$GOPATH/src/chain
+          PATH=$CHAIN/bin:$PATH
+          make -C $CHAIN/crypto/hsm/thales/xprvseemodule test
+    - script:
         name: cfmt
         code: |
           bin/cfmt
