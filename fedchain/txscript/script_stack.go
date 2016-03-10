@@ -53,7 +53,7 @@ func (ss *scriptStack) nextFrame() (done bool, err error) {
 
 		// Conditionals cannot span stack frames.
 		if len(finishedFrame.condStack) != 0 {
-			return false, ErrStackMissingEndif
+			return false, ErrStackMissingEnd
 		}
 	}
 	return len(ss.frames) == 0, nil
@@ -100,6 +100,13 @@ type stackFrame struct {
 	script           []parsedOpcode
 	condStack        []int // conditional stack
 	pc               int
+}
+
+// clone makes a shallow copy of the stackFrame. It's used in the
+// implementation of OP_WHILE.
+func (f *stackFrame) clone() *stackFrame {
+	clone := *f
+	return &clone
 }
 
 // step increments the frame's program counter.

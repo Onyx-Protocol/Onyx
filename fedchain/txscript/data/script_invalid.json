@@ -500,5 +500,19 @@
 ["0 0 0x02 0x0000", "CHECKMULTISIGVERIFY 1", "MINIMALDATA"],
 ["0 0x02 0x0000 0", "CHECKMULTISIGVERIFY 1", "MINIMALDATA"],
 
+["WHILE loop conditionals"],
+
+["1", "2 DROP IF 1 ENDWHILE", "STRICTENC", "IF ... ending in ENDWHILE"],
+["1", "2 DROP NOTIF 1 ENDWHILE", "STRICTENC", "NOTIF ... ending in ENDWHILE"],
+["1", "2 DROP IF 1 ELSE 1 ENDWHILE", "STRICTENC", "IF ... ELSE ending in ENDWHILE"],
+["1", "2 DROP WHILE 1 0 ELSE 1 ENDWHILE", "STRICTENC", "ELSE in the middle of WHILE loop"],
+["1", "2 DROP WHILE 1 ENDIF", "STRICTENC", "ENDIF as end of WHILE loop"],
+["0", "2 DROP WHILE 1 ENDWHILE 0", "STRICTENC", "failed WHILE test condition"],
+["1 1", "2 DROP WHILE 0 ENDWHILE", "STRICTENC", "succeeded WHILE test condition"],
+["1", "2 DROP WHILE ENDWHILE 1", "STRICTENC", "simple infinite loop"],
+["1", "2 DROP WHILE 1", "STRICTENC", "while loop not terminated"],
+["1", "2 DROP WHILE IF ENDWHILE ENDIF 1", "STRICTENC", "intertwined WHILE and IF"],
+["1", "WHILE 0 ENDWHILE DROP", "STRICTENC", "WHILE requires version 2"],
+
 ["The End"]
 ]

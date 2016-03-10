@@ -54,9 +54,14 @@ var (
 	// without first having an OP_IF or OP_NOTIF in the script.
 	ErrStackNoIf = errors.New("OP_ELSE or OP_ENDIF with no matching OP_IF")
 
-	// ErrStackMissingEndif is returned if the end of a script is reached
-	// without and OP_ENDIF to correspond to a conditional expression.
-	ErrStackMissingEndif = fmt.Errorf("execute fail, in conditional execution")
+	// ErrStackNoWhile is returned if an OP_ENDWHILE is encountered
+	// without first having an OP_WHILE in the script.
+	ErrStackNoWhile = errors.New("OP_ENDWHILE with no matching OP_WHILE")
+
+	// ErrStackMissingEnd is returned if the end of a script is reached
+	// without an OP_ENDIF or OP_ENDWHILE to correspond to a conditional
+	// expression.
+	ErrStackMissingEnd = fmt.Errorf("conditional opened but not closed")
 
 	// ErrStackTooManyPubKeys is returned if an OP_CHECKMULTISIG is
 	// encountered with more than MaxPubKeysPerMultiSig pubkeys present.

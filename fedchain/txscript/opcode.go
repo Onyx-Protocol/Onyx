@@ -247,8 +247,8 @@ const (
 	OP_UNKNOWN205    = 0xcd // 205
 	OP_UNKNOWN206    = 0xce // 206
 	OP_UNKNOWN207    = 0xcf // 207
-	OP_UNKNOWN208    = 0xd0 // 208
-	OP_UNKNOWN209    = 0xd1 // 209
+	OP_WHILE         = 0xd0 // 208
+	OP_ENDWHILE      = 0xd1 // 209
 	OP_UNKNOWN210    = 0xd2 // 210
 	OP_UNKNOWN211    = 0xd3 // 211
 	OP_UNKNOWN212    = 0xd4 // 212
@@ -299,9 +299,12 @@ const (
 
 // Conditional execution constants.
 const (
-	OpCondFalse = 0
-	OpCondTrue  = 1
-	OpCondSkip  = 2
+	OpCondIfFalse    = 0
+	OpCondIfTrue     = 1
+	OpCondIfSkip     = 2
+	OpCondWhileFalse = 3
+	OpCondWhileTrue  = 4
+	OpCondWhileSkip  = 5
 )
 
 // opcodeArray holds details about all possible opcodes such as how many bytes
@@ -441,10 +444,10 @@ var opcodeArray = [256]opcode{
 	OP_TUCK:         {OP_TUCK, "OP_TUCK", 1, opcodeTuck},
 
 	// Splice opcodes.
-	OP_CAT:    {OP_CAT, "OP_CAT", 1, opcodeVersion01Only(opcodeCat)},
-	OP_SUBSTR: {OP_SUBSTR, "OP_SUBSTR", 1, opcodeVersion01Only(opcodeSubstr)},
-	OP_LEFT:   {OP_LEFT, "OP_LEFT", 1, opcodeVersion01Only(opcodeLeft)},
-	OP_RIGHT:  {OP_RIGHT, "OP_RIGHT", 1, opcodeVersion01Only(opcodeRight)},
+	OP_CAT:    {OP_CAT, "OP_CAT", 1, opcodeVersions(opcodeCat, 0, 1, 2)},
+	OP_SUBSTR: {OP_SUBSTR, "OP_SUBSTR", 1, opcodeVersions(opcodeSubstr, 0, 1, 2)},
+	OP_LEFT:   {OP_LEFT, "OP_LEFT", 1, opcodeVersions(opcodeLeft, 0, 1, 2)},
+	OP_RIGHT:  {OP_RIGHT, "OP_RIGHT", 1, opcodeVersions(opcodeRight, 0, 1, 2)},
 	OP_SIZE:   {OP_SIZE, "OP_SIZE", 1, opcodeSize},
 
 	// Bitwise logic opcodes.
@@ -460,19 +463,19 @@ var opcodeArray = [256]opcode{
 	// Numeric related opcodes.
 	OP_1ADD:               {OP_1ADD, "OP_1ADD", 1, opcode1Add},
 	OP_1SUB:               {OP_1SUB, "OP_1SUB", 1, opcode1Sub},
-	OP_2MUL:               {OP_2MUL, "OP_2MUL", 1, opcodeVersion01Only(opcode2Mul)},
-	OP_2DIV:               {OP_2DIV, "OP_2DIV", 1, opcodeVersion01Only(opcode2Div)},
+	OP_2MUL:               {OP_2MUL, "OP_2MUL", 1, opcodeVersions(opcode2Mul, 0, 1, 2)},
+	OP_2DIV:               {OP_2DIV, "OP_2DIV", 1, opcodeVersions(opcode2Div, 0, 1, 2)},
 	OP_NEGATE:             {OP_NEGATE, "OP_NEGATE", 1, opcodeNegate},
 	OP_ABS:                {OP_ABS, "OP_ABS", 1, opcodeAbs},
 	OP_NOT:                {OP_NOT, "OP_NOT", 1, opcodeNot},
 	OP_0NOTEQUAL:          {OP_0NOTEQUAL, "OP_0NOTEQUAL", 1, opcode0NotEqual},
 	OP_ADD:                {OP_ADD, "OP_ADD", 1, opcodeAdd},
 	OP_SUB:                {OP_SUB, "OP_SUB", 1, opcodeSub},
-	OP_MUL:                {OP_MUL, "OP_MUL", 1, opcodeVersion01Only(opcodeMul)},
-	OP_DIV:                {OP_DIV, "OP_DIV", 1, opcodeVersion01Only(opcodeDiv)},
-	OP_MOD:                {OP_MOD, "OP_MOD", 1, opcodeVersion01Only(opcodeMod)},
-	OP_LSHIFT:             {OP_LSHIFT, "OP_LSHIFT", 1, opcodeVersion01Only(opcodeLShift)},
-	OP_RSHIFT:             {OP_RSHIFT, "OP_RSHIFT", 1, opcodeVersion01Only(opcodeRShift)},
+	OP_MUL:                {OP_MUL, "OP_MUL", 1, opcodeVersions(opcodeMul, 0, 1, 2)},
+	OP_DIV:                {OP_DIV, "OP_DIV", 1, opcodeVersions(opcodeDiv, 0, 1, 2)},
+	OP_MOD:                {OP_MOD, "OP_MOD", 1, opcodeVersions(opcodeMod, 0, 1, 2)},
+	OP_LSHIFT:             {OP_LSHIFT, "OP_LSHIFT", 1, opcodeVersions(opcodeLShift, 0, 1, 2)},
+	OP_RSHIFT:             {OP_RSHIFT, "OP_RSHIFT", 1, opcodeVersions(opcodeRShift, 0, 1, 2)},
 	OP_BOOLAND:            {OP_BOOLAND, "OP_BOOLAND", 1, opcodeBoolAnd},
 	OP_BOOLOR:             {OP_BOOLOR, "OP_BOOLOR", 1, opcodeBoolOr},
 	OP_NUMEQUAL:           {OP_NUMEQUAL, "OP_NUMEQUAL", 1, opcodeNumEqual},
@@ -539,8 +542,8 @@ var opcodeArray = [256]opcode{
 	OP_UNKNOWN205: {OP_UNKNOWN205, "OP_UNKNOWN205", 1, opcodeInvalid},
 	OP_UNKNOWN206: {OP_UNKNOWN206, "OP_UNKNOWN206", 1, opcodeInvalid},
 	OP_UNKNOWN207: {OP_UNKNOWN207, "OP_UNKNOWN207", 1, opcodeInvalid},
-	OP_UNKNOWN208: {OP_UNKNOWN208, "OP_UNKNOWN208", 1, opcodeInvalid},
-	OP_UNKNOWN209: {OP_UNKNOWN209, "OP_UNKNOWN209", 1, opcodeInvalid},
+	OP_WHILE:      {OP_WHILE, "OP_WHILE", 1, opcodeVersions(opcodeWhile, 2)},
+	OP_ENDWHILE:   {OP_ENDWHILE, "OP_ENDWHILE", 1, opcodeVersions(opcodeEndwhile, 2)},
 	OP_UNKNOWN210: {OP_UNKNOWN210, "OP_UNKNOWN210", 1, opcodeInvalid},
 	OP_UNKNOWN211: {OP_UNKNOWN211, "OP_UNKNOWN211", 1, opcodeInvalid},
 	OP_UNKNOWN212: {OP_UNKNOWN212, "OP_UNKNOWN212", 1, opcodeInvalid},
@@ -661,13 +664,7 @@ func (pop *parsedOpcode) alwaysIllegal() bool {
 // changes the conditional execution stack when executed.
 func (pop *parsedOpcode) isConditional() bool {
 	switch pop.opcode.value {
-	case OP_IF:
-		return true
-	case OP_NOTIF:
-		return true
-	case OP_ELSE:
-		return true
-	case OP_ENDIF:
+	case OP_IF, OP_NOTIF, OP_ELSE, OP_ENDIF, OP_WHILE, OP_ENDWHILE:
 		return true
 	default:
 		return false
@@ -816,13 +813,15 @@ func opcodeDisabled(op *parsedOpcode, vm *Engine) error {
 	return ErrStackOpDisabled
 }
 
-// Creates an opcode-handling function that only works with in a
-// version 0/1 script context and behaves like opcodeDisabled()
+// opcodeVersions creates an opcode-handling function that only works in a
+// script with the provided versions. It behaves like opcodeDisabled()
 // otherwise.
-func opcodeVersion01Only(opcodeFn func(*parsedOpcode, *Engine) error) func(*parsedOpcode, *Engine) error {
+func opcodeVersions(opcodeFn func(*parsedOpcode, *Engine) error, versions ...scriptNum) func(*parsedOpcode, *Engine) error {
 	return func(op *parsedOpcode, vm *Engine) error {
-		if vm.currentVersion() == 0 || vm.currentVersion() == 1 {
-			return opcodeFn(op, vm)
+		for _, v := range versions {
+			if vm.currentVersion() == v {
+				return opcodeFn(op, vm)
+			}
 		}
 		return opcodeDisabled(op, vm)
 	}
@@ -902,17 +901,17 @@ func opcodeNop(op *parsedOpcode, vm *Engine) error {
 // Data stack transformation: [... bool] -> [...]
 // Conditional stack transformation: [...] -> [... OpCondValue]
 func opcodeIf(op *parsedOpcode, vm *Engine) error {
-	condVal := OpCondFalse
+	condVal := OpCondIfFalse
 	if vm.isBranchExecuting() {
 		ok, err := vm.dstack.PopBool()
 		if err != nil {
 			return err
 		}
 		if ok {
-			condVal = OpCondTrue
+			condVal = OpCondIfTrue
 		}
 	} else {
-		condVal = OpCondSkip
+		condVal = OpCondIfSkip
 	}
 	frame := vm.estack.Peek()
 	frame.condStack = append(frame.condStack, condVal)
@@ -936,17 +935,17 @@ func opcodeIf(op *parsedOpcode, vm *Engine) error {
 // Data stack transformation: [... bool] -> [...]
 // Conditional stack transformation: [...] -> [... OpCondValue]
 func opcodeNotIf(op *parsedOpcode, vm *Engine) error {
-	condVal := OpCondFalse
+	condVal := OpCondIfFalse
 	if vm.isBranchExecuting() {
 		ok, err := vm.dstack.PopBool()
 		if err != nil {
 			return err
 		}
 		if !ok {
-			condVal = OpCondTrue
+			condVal = OpCondIfTrue
 		}
 	} else {
-		condVal = OpCondSkip
+		condVal = OpCondIfSkip
 	}
 	frame := vm.estack.Peek()
 	frame.condStack = append(frame.condStack, condVal)
@@ -966,13 +965,16 @@ func opcodeElse(op *parsedOpcode, vm *Engine) error {
 
 	conditionalIdx := len(frame.condStack) - 1
 	switch frame.condStack[conditionalIdx] {
-	case OpCondTrue:
-		frame.condStack[conditionalIdx] = OpCondFalse
-	case OpCondFalse:
-		frame.condStack[conditionalIdx] = OpCondTrue
-	case OpCondSkip:
+	case OpCondIfTrue:
+		frame.condStack[conditionalIdx] = OpCondIfFalse
+	case OpCondIfFalse:
+		frame.condStack[conditionalIdx] = OpCondIfTrue
+	case OpCondIfSkip:
 		// Value doesn't change in skip since it indicates this opcode
 		// is nested in a non-executed branch.
+	default:
+		// The most nested conditional is not an IF conditional.
+		return ErrStackNoIf
 	}
 	return nil
 }
@@ -989,7 +991,12 @@ func opcodeEndif(op *parsedOpcode, vm *Engine) error {
 		return ErrStackNoIf
 	}
 
+	condVal := frame.condStack[len(frame.condStack)-1]
 	frame.condStack = frame.condStack[:len(frame.condStack)-1]
+	if condVal != OpCondIfSkip && condVal != OpCondIfTrue && condVal != OpCondIfFalse {
+		// Only IF or NOTIF conditionals can be ended with ENDIF
+		return ErrStackNoIf
+	}
 	return nil
 }
 
@@ -2472,6 +2479,97 @@ func opcodeEval(op *parsedOpcode, vm *Engine) error {
 		return err
 	}
 	vm.PushScript(parsedScript, true)
+	return nil
+}
+
+// opcodeWhile treats the top item on the data stack as a boolean but
+// does not remove it.
+//
+// An appropriate entry is added to the conditional stack depending on whether
+// the boolean is true and whether this if is on an executing branch in order
+// to allow proper execution of further opcodes depending on the conditional
+// logic.  When the boolean is true, the body will be executed on a new stack
+// frame (unless this opcode is nested in a non-executed branch).
+//
+// <expression> while [statements] endwhile
+//
+// Note that this is executed even when it is on a non-executing branch
+// (unlike other non-conditional opcodes) so proper nesting is maintained on
+// the conditional stack.
+//
+// This implementation does not yet track "gas" or "storage" accounting.
+// However, every instruction in every iteration will count towards the max
+// opcode limit.
+//
+// Data stack transformation: [... bool] -> [... bool]
+// Conditional stack transformation: [...] -> [... OpCondValue]
+func opcodeWhile(op *parsedOpcode, vm *Engine) error {
+	condVal := OpCondWhileFalse
+	if vm.isBranchExecuting() {
+		ok, err := vm.dstack.PeekBool(0)
+		if err != nil {
+			return err
+		}
+		if ok {
+			condVal = OpCondWhileTrue
+		}
+	} else {
+		condVal = OpCondWhileSkip
+	}
+
+	frame := vm.estack.Peek()
+	if condVal == OpCondWhileTrue {
+		// If the condition is true, a new stack frame for the body of the
+		// while loop is pushed. This new stack frame has the same script
+		// but starts at PC + 1.
+		bodyFrame := frame.clone()
+		bodyFrame.pc++
+		bodyFrame.condStack = []int{OpCondWhileTrue}
+		vm.estack.Push(bodyFrame)
+	} else {
+		// Put skip or false on the cond stack so that the engine
+		// skips all ops until the end of the while loop.
+		frame.condStack = append(frame.condStack, condVal)
+	}
+	return nil
+}
+
+// opcodeEndwhile terminates a while loop conditional block, removing the
+// value from the conditional execution stack.
+//
+// An error is returned if there has not already been a matching OP_WHILE.
+//
+// Conditional stack transformation: [... OpCondValue] -> [...]
+func opcodeEndwhile(op *parsedOpcode, vm *Engine) error {
+	frame := vm.estack.Peek()
+	if len(frame.condStack) == 0 {
+		return ErrStackNoWhile
+	}
+
+	// Pop from the condStack
+	condVal := frame.condStack[len(frame.condStack)-1]
+	frame.condStack = frame.condStack[:len(frame.condStack)-1]
+
+	switch condVal {
+	case OpCondWhileTrue:
+		// This OP_ENDWHILE is executing in a separate stack frame and
+		// represents the body of the while loop. The OP_ENDWHILE indicates
+		// the body is complete, and the current stack frame should be popped.
+		vm.estack.Pop()
+
+		// After popping the frame containing the WHILE body, the execution
+		// stack now contains the frame that pushed that body, which it did
+		// after executing an OP_WHILE. Decrement the pc to re-execute
+		// the OP_WHILE.
+		originalFrame := vm.estack.Peek()
+		originalFrame.pc--
+
+	case OpCondWhileFalse, OpCondWhileSkip:
+		// Nothing to do after popping from the cond stack.
+	default:
+		// The most nested conditional is not a WHILE conditional.
+		return ErrStackNoWhile
+	}
 	return nil
 }
 

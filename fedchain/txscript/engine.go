@@ -125,7 +125,8 @@ func (vm *Engine) isBranchExecuting() bool {
 	if len(s) == 0 {
 		return true
 	}
-	return s[len(s)-1] == OpCondTrue
+	v := s[len(s)-1]
+	return v == OpCondIfTrue || v == OpCondWhileTrue
 }
 
 // executeOpcode peforms execution on the passed opcode.  It takes into account
