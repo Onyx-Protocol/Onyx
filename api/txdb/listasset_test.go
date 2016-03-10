@@ -2,11 +2,8 @@ package txdb_test
 
 import (
 	"encoding/json"
-	"os"
 	"reflect"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"chain/api/asset"
 	"chain/api/asset/assettest"
@@ -18,16 +15,6 @@ import (
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
 )
-
-func init() {
-	u := "postgres:///api-test?sslmode=disable"
-	if s := os.Getenv("DB_URL_TEST"); s != "" {
-		u = s
-	}
-
-	ctx := context.Background()
-	pgtest.Open(ctx, u, "txdbtest2", "../../appdb/schema.sql")
-}
 
 func TestListUTXOsByAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
