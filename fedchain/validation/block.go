@@ -83,11 +83,10 @@ func ValidateBlockHeader(ctx context.Context, prevBlock, block *bc.Block) error 
 }
 
 func validateBlockHeader(ctx context.Context, prevBlock, block *bc.Block, runScript bool) error {
-	if prevBlock == nil {
-		if block.Height != 0 {
-			return ErrBadHeight
-		}
-	} else {
+	if prevBlock == nil && block.Height != 1 {
+		return ErrBadHeight
+	}
+	if prevBlock != nil {
 		prevHash := prevBlock.Hash()
 		if !bytes.Equal(block.PreviousBlockHash[:], prevHash[:]) {
 			return ErrBadPrevHash

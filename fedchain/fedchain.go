@@ -123,15 +123,13 @@ func New(ctx context.Context, store Store, trustedKeys []*btcec.PublicKey) (*FC,
 	fc := &FC{store: store, trustedKeys: trustedKeys}
 
 	latestBlock, err := fc.LatestBlock(ctx)
-	if err == nil {
-		fc.height.n = latestBlock.Height
-	} else if errors.Root(err) != ErrNoBlocks {
+	if err != nil && errors.Root(err) != ErrNoBlocks {
 		return nil, errors.Wrap(err, "looking up latest block")
 	}
-
-	// Now fc.height.n may be zero because of
-	// ErrNoBlocks or because latestBlock.Height==0.  For now at least,
-	// we don't need to distinguish between those cases.
+	if latestBlock != nil {
+		fc.height.n = latestBlock.Height
+	}
+	// Now fc.height.n may still be zero because of ErrNoBlocks.
 
 	fc.height.cond.L = new(sync.Mutex)
 	return fc, nil

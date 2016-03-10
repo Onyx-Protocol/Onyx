@@ -355,6 +355,7 @@ func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []*btcec.PublicKey
 	b := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Version:      bc.NewBlockVersion,
+			Height:       1,
 			Timestamp:    uint64(time.Now().Unix()),
 			OutputScript: script,
 		},

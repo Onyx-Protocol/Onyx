@@ -14,7 +14,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	ctx := context.Background()
 	prevBlock := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Height:       0,
+			Height:       1,
 			Timestamp:    5,
 			OutputScript: []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
 		},
@@ -28,28 +28,39 @@ func TestValidateBlockHeader(t *testing.T) {
 		desc: "bad prev block hash",
 		header: bc.BlockHeader{
 			PreviousBlockHash: bc.Hash{},
+			Height:            2,
 		},
 		want: ErrBadPrevHash,
 	}, {
 		desc: "bad block height",
 		header: bc.BlockHeader{
 			PreviousBlockHash: prevHash,
-			Height:            2,
+			Height:            3,
 		},
 		want: ErrBadHeight,
 	}, {
 		desc: "bad block timestamp",
 		header: bc.BlockHeader{
 			PreviousBlockHash: prevHash,
-			Height:            1,
+			Height:            2,
 			Timestamp:         3,
 		},
 		want: ErrBadTimestamp,
 	}, {
-		desc: "bad block output script",
+		desc: "fake genesis block",
 		header: bc.BlockHeader{
 			PreviousBlockHash: prevHash,
 			Height:            1,
+			Timestamp:         6,
+			OutputScript:      []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
+			SignatureScript:   []byte{txscript.OP_4},
+		},
+		want: ErrBadHeight,
+	}, {
+		desc: "bad block output script",
+		header: bc.BlockHeader{
+			PreviousBlockHash: prevHash,
+			Height:            2,
 			Timestamp:         6,
 			OutputScript:      []byte{txscript.OP_RETURN},
 		},
@@ -58,7 +69,7 @@ func TestValidateBlockHeader(t *testing.T) {
 		desc: "bad block signature script",
 		header: bc.BlockHeader{
 			PreviousBlockHash: prevHash,
-			Height:            1,
+			Height:            2,
 			Timestamp:         6,
 			OutputScript:      []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
 			SignatureScript:   []byte{txscript.OP_3},
@@ -68,7 +79,7 @@ func TestValidateBlockHeader(t *testing.T) {
 		desc: "valid header",
 		header: bc.BlockHeader{
 			PreviousBlockHash: prevHash,
-			Height:            1,
+			Height:            2,
 			Timestamp:         6,
 			OutputScript:      []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
 			SignatureScript:   []byte{txscript.OP_4},

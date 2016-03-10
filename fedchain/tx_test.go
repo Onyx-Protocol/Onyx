@@ -17,6 +17,10 @@ import (
 
 func TestIdempotentAddTx(t *testing.T) {
 	ctx, fc := newContextFC(t)
+	_, err := fc.UpsertGenesisBlock(ctx, nil, 0)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
 
 	issueTx, _, _ := fedtest.Issue(t, nil, nil, 1)
 
@@ -28,12 +32,8 @@ func TestIdempotentAddTx(t *testing.T) {
 	}
 
 	// still idempotent after block lands
-	err := fc.AddBlock(ctx, &bc.Block{})
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
 	block, _, err := fc.GenerateBlock(ctx, time.Now())
-	block.SignatureScript = []byte{txscript.OP_TRUE}
+	block.SignatureScript = []byte{txscript.OP_0}
 	err = fc.AddBlock(ctx, block)
 	if err != nil {
 		testutil.FatalErr(t, err)

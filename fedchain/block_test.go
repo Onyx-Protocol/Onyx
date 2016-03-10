@@ -232,7 +232,7 @@ func TestGenerateBlock(t *testing.T) {
 	want := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Version:           bc.NewBlockVersion,
-			Height:            1,
+			Height:            2,
 			PreviousBlockHash: latestBlock.Hash(),
 			TxRoot:            mustParseHash("221e04fdea661d26dbaef32df7b40fd93d97e359dcb9113c0fab763291a97a75"),
 			Timestamp:         uint64(now.Unix()),
@@ -247,6 +247,7 @@ func TestGenerateBlock(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("generated block:\ngot:  %+v\nwant: %+v", got, want)
 	}
+
 }
 
 func TestIsSignedByTrustedHost(t *testing.T) {
