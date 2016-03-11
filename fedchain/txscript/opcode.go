@@ -237,7 +237,7 @@ const (
 	OP_OUTPUTSCRIPT  = 0xc4 // 196
 	OP_TIME          = 0xc5 // 197
 	OP_CIRCULATION   = 0xc6 // 198
-	OP_UNKNOWN199    = 0xc7 // 199
+	OP_CATPUSHDATA   = 0xc7 // 199
 	OP_UNKNOWN200    = 0xc8 // 200
 	OP_UNKNOWN201    = 0xc9 // 201
 
@@ -532,7 +532,7 @@ var opcodeArray = [256]opcode{
 	OP_OUTPUTSCRIPT:  {OP_OUTPUTSCRIPT, "OP_OUTPUTSCRIPT", 1, opcodeOutputScript},
 	OP_TIME:          {OP_TIME, "OP_TIME", 1, opcodeTime},
 	OP_CIRCULATION:   {OP_CIRCULATION, "OP_CIRCULATION", 1, opcodeCirculation},
-	OP_UNKNOWN199:    {OP_UNKNOWN199, "OP_UNKNOWN199", 1, opcodeInvalid},
+	OP_CATPUSHDATA:   {OP_CATPUSHDATA, "OP_CATPUSHDATA", 1, opcodeVersions(opcodeCatPushData, 0, 1, 2)},
 	OP_UNKNOWN200:    {OP_UNKNOWN200, "OP_UNKNOWN200", 1, opcodeInvalid},
 	OP_UNKNOWN201:    {OP_UNKNOWN201, "OP_UNKNOWN201", 1, opcodeInvalid},
 
@@ -2460,6 +2460,25 @@ func opcodeEval(op *parsedOpcode, vm *Engine) error {
 		return err
 	}
 	vm.PushScript(parsedScript, true)
+	return nil
+}
+
+// opcodeCatPushData pops two items off the stack. The top stack item is
+// formatted as a minimally-encoded PUSHDATA opcode, then both items are
+// concatenated and pushed onto the stack.
+//
+// Stack transformation: [... x2 x1] -> [... "x2pushdata(x1)"]
+func opcodeCatPushData(op *parsedOpcode, vm *Engine) error {
+	pushData, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+	existingData, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+	result := AddDataToScript(existingData, pushData)
+	vm.dstack.PushByteArray(result)
 	return nil
 }
 

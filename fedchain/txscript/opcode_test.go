@@ -78,7 +78,7 @@ func TestOpcodeDisasm(t *testing.T) {
 		0xc0: "OP_EVAL", 0xc1: "OP_REQUIREOUTPUT",
 		0xc2: "OP_ASSET", 0xc3: "OP_AMOUNT",
 		0xc4: "OP_OUTPUTSCRIPT", 0xc5: "OP_TIME",
-		0xc6: "OP_CIRCULATION",
+		0xc6: "OP_CIRCULATION", 0xc7: "OP_CATPUSHDATA",
 		0xd0: "OP_WHILE", 0xd1: "OP_ENDWHILE",
 		0xf9: "OP_SMALLDATA", 0xfa: "OP_SMALLINTEGER",
 		0xfb: "OP_PUBKEYS", 0xfd: "OP_PUBKEYHASH", 0xfe: "OP_PUBKEY",
@@ -196,5 +196,5 @@ func isNop(opcodeVal int) bool {
 }
 
 func isUnknownOpcode(opcodeVal int) bool {
-	return (opcodeVal >= 0xb2 && opcodeVal <= 0xbf) || (opcodeVal >= 0xc7 && opcodeVal <= 0xcf) || (opcodeVal >= 0xd2 && opcodeVal <= 0xf8) || (opcodeVal == 0xfc)
+	return (opcodeVal >= 0xb2 && opcodeVal <= 0xbf) || (opcodeVal >= 0xc8 && opcodeVal <= 0xcf) || (opcodeVal >= 0xd2 && opcodeVal <= 0xf8) || (opcodeVal == 0xfc)
 }

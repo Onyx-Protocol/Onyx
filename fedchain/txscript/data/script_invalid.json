@@ -196,7 +196,6 @@
 
 
 
-["1", "IF 0xc7 ELSE 1 ENDIF", "STRICTENC"],
 ["1", "IF 0xc8 ELSE 1 ENDIF", "STRICTENC"],
 
 ["1", "IF 0xca ELSE 1 ENDIF", "STRICTENC"],
