@@ -31,10 +31,6 @@ var (
 
 var exitCode = 0
 
-// "all" is here only for the appearance of backwards compatibility.
-// It has no effect; the triState flags do the work.
-var all = flag.Bool("all", true, "check everything; disabled if any explicit check is requested")
-
 // Flags to control which individual checks to perform.
 var report = map[string]*triState{}
 
@@ -355,25 +351,9 @@ func visit(path string, f os.FileInfo, err error) error {
 	return nil
 }
 
-func (pkg *Package) hasFileWithSuffix(suffix string) bool {
-	for _, f := range pkg.files {
-		if strings.HasSuffix(f.name, suffix) {
-			return true
-		}
-	}
-	return false
-}
-
 // walkDir recursively walks the tree looking for Go packages.
 func walkDir(root string) {
 	filepath.Walk(root, visit)
-}
-
-// errorf formats the error to standard error, adding program
-// identification and a newline, and exits.
-func errorf(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, "vet: "+format+"\n", args...)
-	os.Exit(2)
 }
 
 // warnf formats the error to standard error, adding program

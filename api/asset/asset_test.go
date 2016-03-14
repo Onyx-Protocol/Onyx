@@ -7,7 +7,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/database/pg/pgtest"
-	"chain/fedchain/bc"
 )
 
 func init() {
@@ -31,12 +30,4 @@ func withContext(tb testing.TB, sql string, fn func(context.Context)) {
 	}
 	defer pgtest.Finish(ctx)
 	fn(ctx)
-}
-
-func mustParseHash(s string) [32]byte {
-	h, err := bc.ParseHash(s)
-	if err != nil {
-		panic(err)
-	}
-	return h
 }

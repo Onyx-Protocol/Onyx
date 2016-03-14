@@ -42,47 +42,6 @@ func mustParseScriptString(script string) []byte {
 	return s
 }
 
-// newAddressPubKey returns a new btcutil.AddressPubKey from the provided
-// serialized public key.  It panics if an error occurs.  This is only used in
-// the tests as a helper since the only way it can fail is if there is an error
-// in the test source code.
-func newAddressPubKey(serializedPubKey []byte) btcutil.Address {
-	addr, err := btcutil.NewAddressPubKey(serializedPubKey,
-		&chaincfg.MainNetParams)
-	if err != nil {
-		panic("invalid public key in test source")
-	}
-
-	return addr
-}
-
-// newAddressPubKeyHash returns a new btcutil.AddressPubKeyHash from the
-// provided hash.  It panics if an error occurs.  This is only used in the tests
-// as a helper since the only way it can fail is if there is an error in the
-// test source code.
-func newAddressPubKeyHash(pkHash []byte) btcutil.Address {
-	addr, err := btcutil.NewAddressPubKeyHash(pkHash, &chaincfg.MainNetParams)
-	if err != nil {
-		panic("invalid public key hash in test source")
-	}
-
-	return addr
-}
-
-// newAddressScriptHash returns a new btcutil.AddressScriptHash from the
-// provided hash.  It panics if an error occurs.  This is only used in the tests
-// as a helper since the only way it can fail is if there is an error in the
-// test source code.
-func newAddressScriptHash(scriptHash []byte) btcutil.Address {
-	addr, err := btcutil.NewAddressScriptHashFromHash(scriptHash,
-		&chaincfg.MainNetParams)
-	if err != nil {
-		panic("invalid script hash in test source")
-	}
-
-	return addr
-}
-
 // bogusAddress implements the btcutil.Address interface so the tests can ensure
 // unsupported address types are handled properly.
 type bogusAddress struct{}

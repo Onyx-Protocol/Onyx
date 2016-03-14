@@ -1,7 +1,6 @@
 package explorer
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"os"
 	"reflect"
@@ -52,14 +51,6 @@ func mustParseHash(str string) bc.Hash {
 		panic(err)
 	}
 	return hash
-}
-
-func mustDecodeHex(str string) []byte {
-	bytes, err := hex.DecodeString(str)
-	if err != nil {
-		panic(err)
-	}
-	return bytes
 }
 
 func TestListBlocks(t *testing.T) {

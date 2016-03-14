@@ -2316,25 +2316,6 @@ func opcodeCheckMultiSigVerify(op *parsedOpcode, vm *Engine) error {
 
 // P2C extensions
 
-// Pop data off the stack and return it as a ContractHash, if
-// possible.  Also allow an empty byte array on top of the stack,
-// returned as nil.
-func popOptionalContractHash(stack *stack) (*bc.ContractHash, error) {
-	b, err := stack.PopByteArray()
-	if err != nil {
-		return nil, err
-	}
-	if len(b) == 0 {
-		return nil, nil
-	}
-	var result bc.ContractHash
-	if len(b) != len(result) {
-		return nil, ErrContractHashLength
-	}
-	copy(result[:], b)
-	return &result, nil
-}
-
 // Pop data off the stack and return it as an AssetID, if
 // possible.
 func popAssetID(stack *stack) (*bc.AssetID, error) {

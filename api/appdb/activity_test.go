@@ -1,7 +1,6 @@
 package appdb_test
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"reflect"
 	"sort"
@@ -11,7 +10,6 @@ import (
 	"chain/api/asset/assettest"
 	"chain/api/generator"
 	"chain/database/pg/pgtest"
-	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/testutil"
 )
@@ -296,14 +294,6 @@ func TestGetActAccounts(t *testing.T) {
 	}
 }
 
-func mustHashFromStr(s string) bc.Hash {
-	h, err := bc.ParseHash(s)
-	if err != nil {
-		panic(err)
-	}
-	return h
-}
-
 func stringsToRawJSON(strs ...string) []*json.RawMessage {
 	var res []*json.RawMessage
 	for _, s := range strs {
@@ -311,20 +301,4 @@ func stringsToRawJSON(strs ...string) []*json.RawMessage {
 		res = append(res, &b)
 	}
 	return res
-}
-
-func withStack(err error) string {
-	s := err.Error()
-	for _, frame := range errors.Stack(err) {
-		s += "\n" + frame.String()
-	}
-	return s
-}
-
-func mustDecodeHex(str string) []byte {
-	bytes, err := hex.DecodeString(str)
-	if err != nil {
-		panic(err)
-	}
-	return bytes
 }

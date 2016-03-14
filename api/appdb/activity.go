@@ -192,22 +192,3 @@ func GetActAccounts(ctx context.Context, accountIDs []string) ([]*ActAccount, er
 
 	return res, nil
 }
-
-// TODO(jeffomatic): This is identical to asset.isIssuance, but is copied here
-// to avoid circular dependencies betwen the two packages. This should probably
-// be moved to the fedchain(-sandbox?)/wire package at some point.
-func isIssuance(msg *bc.Tx) bool {
-	if len(msg.Inputs) == 1 && msg.Inputs[0].IsIssuance() {
-		if len(msg.Outputs) == 0 {
-			return false
-		}
-		assetID := msg.Outputs[0].AssetID
-		for _, out := range msg.Outputs {
-			if out.AssetID != assetID {
-				return false
-			}
-		}
-		return true
-	}
-	return false
-}

@@ -31,16 +31,6 @@ var (
 )
 
 type (
-	key struct {
-		AccountID string
-		AssetID   bc.AssetID
-	}
-
-	// TODO(kr): see if we can avoid storing
-	// AccountID and AssetID in UTXO
-
-	// TODO(kr): try interning strings in UTXO
-
 	UTXO struct {
 		bc.Outpoint
 		bc.AssetAmount

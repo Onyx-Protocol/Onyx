@@ -166,40 +166,6 @@ func GetScriptClass(script []byte) ScriptClass {
 	return typeOfScript(pops)
 }
 
-// expectedInputs returns the number of arguments required by a script.
-// If the script is of unknown type such that the number can not be determined
-// then -1 is returned. We are an internal function and thus assume that class
-// is the real class of pops (and we can thus assume things that were determined
-// while finding out the type).
-func expectedInputs(pops []parsedOpcode, class ScriptClass) int {
-	switch class {
-	case PubKeyTy:
-		return 1
-
-	case PubKeyHashTy:
-		return 2
-
-	case ScriptHashTy, ContractTy:
-		// Not including script.  That is handled by the caller.
-		return 1
-
-	case MultiSigTy:
-		// Standard multisig has a push a small number for the number
-		// of sigs and number of keys.  Check the first push instruction
-		// to see how many arguments are expected. typeOfScript already
-		// checked this so we know it'll be a small int.  Also, due to
-		// the original bitcoind bug where OP_CHECKMULTISIG pops an
-		// additional item from the stack, add an extra expected input
-		// for the extra push that is required to compensate.
-		return asSmallInt(pops[0].opcode) + 1
-
-	case NullDataTy:
-		fallthrough
-	default:
-		return -1
-	}
-}
-
 // CalcMultiSigStats returns the number of public keys and signatures from
 // a multi-signature transaction script.  The passed script MUST already be
 // known to be a multi-signature script.

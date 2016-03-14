@@ -28,10 +28,7 @@ import (
 // config vars
 var dbURL = env.String("DB_URL", "postgres:///api?sslmode=disable")
 
-var (
-	db     *sql.DB
-	logbuf bytes.Buffer
-)
+var logbuf bytes.Buffer
 
 func main() {
 	env.Parse()

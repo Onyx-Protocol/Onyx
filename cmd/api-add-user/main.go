@@ -20,10 +20,7 @@ import (
 	"chain/env"
 )
 
-var (
-	dbURL = env.String("DB_URL", "postgres:///api?sslmode=disable")
-	db    *sql.DB
-)
+var dbURL = env.String("DB_URL", "postgres:///api?sslmode=disable")
 
 func main() {
 	log.SetFlags(0)

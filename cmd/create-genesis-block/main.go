@@ -18,7 +18,6 @@ import (
 var (
 	dbURL    = env.String("DB_URL", "postgres:///api?sslmode=disable")
 	blockKey = env.String("BLOCK_KEY", "2c1f68880327212b6aa71d7c8e0a9375451143352d5c760dc38559f1159c84ce")
-	db       *sql.DB
 )
 
 func main() {

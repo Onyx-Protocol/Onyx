@@ -375,13 +375,6 @@ func expectPaysToOrderbookContract(ctx context.Context, t *testing.T, openOrder 
 	testutil.ExpectScriptEqual(t, script, expectedScript, msg)
 }
 
-func slurpOpenOrders(ch <-chan *OpenOrder) (result []*OpenOrder) {
-	for order := range ch {
-		result = append(result, order)
-	}
-	return result
-}
-
 func init() {
 	u := "postgres:///api-test?sslmode=disable"
 	if s := os.Getenv("DB_URL_TEST"); s != "" {
