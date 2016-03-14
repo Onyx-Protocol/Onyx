@@ -57,28 +57,17 @@ func NewOutput(o bc.TxOutput, p bc.Outpoint, spent bool) *Output {
 }
 
 type compositeView struct {
-	View
-	back ViewReader
+	ViewWriter
+	multiReader
 }
 
 // Compose returns a view that combines v
-// with all the readonly views in r.
+// with the readonly view in r.
 // Calls to Output try v
-// followed by each element of r in order.
+// followed by r.
 // Calls to SetOutput go to v.
-func Compose(v View, r ...ViewReader) View {
-	if len(r) == 0 {
-		return v
-	}
-	return Compose(&compositeView{v, r[0]}, r[1:]...)
-}
-
-func (v *compositeView) Output(ctx context.Context, p bc.Outpoint) *Output {
-	o := v.View.Output(ctx, p)
-	if o != nil {
-		return o
-	}
-	return v.back.Output(ctx, p)
+func Compose(v View, r ViewReader) View {
+	return &compositeView{v, multiReader{v, r}}
 }
 
 // multiReader
@@ -89,12 +78,9 @@ type multiReader struct {
 }
 
 // MultiReader returns a view that reads from
-// each element of r in order.
-func MultiReader(r ...ViewReader) ViewReader {
-	if len(r) == 0 {
-		return emptyReader
-	}
-	return &multiReader{r[0], MultiReader(r[1:]...)}
+// a and then b.
+func MultiReader(a, b ViewReader) ViewReader {
+	return &multiReader{a, b}
 }
 
 func (v *multiReader) Output(ctx context.Context, p bc.Outpoint) *Output {
@@ -103,12 +89,4 @@ func (v *multiReader) Output(ctx context.Context, p bc.Outpoint) *Output {
 		return o
 	}
 	return v.back.Output(ctx, p)
-}
-
-var emptyReader ViewReader = empty{}
-
-type empty struct{}
-
-func (empty) Output(ctx context.Context, p bc.Outpoint) *Output {
-	return nil
 }
