@@ -30,6 +30,9 @@ type ViewReader interface {
 	// Circulation returns the circulation
 	// for the given set of assets.
 	Circulation(context.Context, []bc.AssetID) (map[bc.AssetID]int64, error)
+
+	// StateRoot returns the merkle root of the state tree
+	StateRoot(context.Context) (bc.Hash, error)
 }
 
 type ViewWriter interface {
@@ -84,8 +87,8 @@ func Compose(v View, r ViewReader) View {
 // multiReader
 
 type multiReader struct {
-	front ViewReader
-	back  ViewReader
+	ViewReader
+	back ViewReader
 }
 
 // MultiReader returns a view that reads from
@@ -95,7 +98,7 @@ func MultiReader(a, b ViewReader) ViewReader {
 }
 
 func (v *multiReader) Output(ctx context.Context, p bc.Outpoint) *Output {
-	o := v.front.Output(ctx, p)
+	o := v.ViewReader.Output(ctx, p)
 	if o != nil {
 		return o
 	}
@@ -103,7 +106,7 @@ func (v *multiReader) Output(ctx context.Context, p bc.Outpoint) *Output {
 }
 
 func (v *multiReader) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.AssetID]int64, error) {
-	front, err := v.front.Circulation(ctx, assets)
+	front, err := v.ViewReader.Circulation(ctx, assets)
 	if err != nil {
 		return nil, errors.Wrap(err, "loading circulation from front")
 	}
@@ -115,4 +118,23 @@ func (v *multiReader) Circulation(ctx context.Context, assets []bc.AssetID) (map
 		front[asset] += amt
 	}
 	return front, nil
+}
+
+func (v *multiReader) StateRoot(ctx context.Context) (bc.Hash, error) {
+	if mv, ok := v.ViewReader.(*MemView); ok {
+		var assets []bc.AssetID
+		for asset, amts := range mv.Assets {
+			if amts.Issuance+amts.Destroyed > 0 {
+				assets = append(assets, asset)
+			}
+		}
+		circs, err := v.Circulation(ctx, assets)
+		if err != nil {
+			return bc.Hash{}, err
+		}
+		for asset, amt := range circs {
+			mv.StateTree.Insert(CirculationTreeItem(asset, uint64(amt)))
+		}
+	}
+	return v.ViewReader.StateRoot(ctx)
 }

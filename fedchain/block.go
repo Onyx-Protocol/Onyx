@@ -67,7 +67,12 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 		},
 	}
 
-	poolView := state.NewMemView()
+	tree, err := fc.store.StateTree(ctx, prev.Height)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "loading state tree")
+	}
+
+	poolView := state.NewMemView(tree)
 	bcView, err := fc.store.NewViewForPrevouts(ctx, txs)
 	if err != nil {
 		return nil, nil, errors.Wrap(err)
@@ -82,6 +87,10 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 		}
 	}
 
+	b.StateRoot, err = view.StateRoot(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 	b.TxRoot = validation.CalcMerkleRoot(b.Transactions)
 
 	return b, prev, nil
@@ -96,16 +105,25 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
+	tree, err := fc.store.StateTree(ctx, block.Height-1)
+	if err != nil {
+		return errors.Wrap(err, "loading state tree")
+	}
+
 	bcView, err := fc.store.NewViewForPrevouts(ctx, block.Transactions)
 	if err != nil {
 		return errors.Wrap(err, "txdb")
 	}
-	mv := state.NewMemView()
+	mv := state.NewMemView(tree)
 
 	view := state.Compose(mv, bcView)
 	err = fc.validateBlock(ctx, block, view)
 	if err != nil {
 		return errors.Wrap(err, "block validation")
+	}
+	_, err = view.StateRoot(ctx)
+	if err != nil {
+		return errors.Wrap(err, "adding circulation to state tree")
 	}
 
 	newTxs, conflicts, err := fc.applyBlock(ctx, block, mv)
@@ -141,11 +159,16 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
+	tree, err := fc.store.StateTree(ctx, block.Height-1)
+	if err != nil {
+		return errors.Wrap(err, "loading state tree")
+	}
+
 	bcView, err := fc.store.NewViewForPrevouts(ctx, block.Transactions)
 	if err != nil {
 		return errors.Wrap(err, "txdb")
 	}
-	mv := state.NewMemView()
+	mv := state.NewMemView(tree)
 
 	prevBlock, err := fc.LatestBlock(ctx)
 	if err != nil && errors.Root(err) != ErrNoBlocks {
@@ -207,13 +230,17 @@ func isSignedByTrustedHost(block *bc.Block, trustedKeys []*btcec.PublicKey) bool
 	return false
 }
 
-func (fc *FC) applyBlock(ctx context.Context, block *bc.Block, mv *state.MemView) (newTxs []*bc.Tx, conflictingTxs []*bc.Tx, err error) {
+func (fc *FC) applyBlock(
+	ctx context.Context,
+	block *bc.Block,
+	mv *state.MemView,
+) (newTxs []*bc.Tx, conflictingTxs []*bc.Tx, err error) {
 	delta := make([]*state.Output, 0, len(mv.Outs))
 	for _, out := range mv.Outs {
 		delta = append(delta, out)
 	}
 
-	newTxs, err = fc.store.ApplyBlock(ctx, block, delta, mv.Assets)
+	newTxs, err = fc.store.ApplyBlock(ctx, block, delta, mv.Assets, mv.StateTree)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "storing block")
 	}
@@ -241,7 +268,7 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		return nil, errors.Wrap(err, "")
 	}
 
-	poolView := state.NewMemView()
+	poolView := state.NewMemView(nil)
 	bcView, err := fc.store.NewViewForPrevouts(ctx, txs)
 	if err != nil {
 		return nil, errors.Wrap(err, "blockchain view")

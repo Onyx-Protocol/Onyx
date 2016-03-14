@@ -108,3 +108,7 @@ func (v *view) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.Ass
 
 	return circ, nil
 }
+
+func (v *view) StateRoot(context.Context) (bc.Hash, error) {
+	panic("unimplemented")
+}

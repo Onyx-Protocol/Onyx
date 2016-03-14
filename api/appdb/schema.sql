@@ -774,6 +774,17 @@ CREATE TABLE signed_blocks (
 
 
 --
+-- Name: state_trees; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE state_trees (
+    key text NOT NULL,
+    hash text NOT NULL,
+    leaf boolean NOT NULL
+);
+
+
+--
 -- Name: txs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1111,6 +1122,14 @@ ALTER TABLE ONLY reservations
 
 ALTER TABLE ONLY rotations
     ADD CONSTRAINT rotations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: state_trees_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY state_trees
+    ADD CONSTRAINT state_trees_pkey PRIMARY KEY (key);
 
 
 --
@@ -1471,4 +1490,3 @@ ALTER TABLE ONLY rotations
 --
 -- PostgreSQL database dump complete
 --
-

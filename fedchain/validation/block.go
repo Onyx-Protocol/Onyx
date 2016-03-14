@@ -20,6 +20,7 @@ var (
 	ErrBadScript    = errors.New("unspendable block script")
 	ErrBadSig       = errors.New("invalid signature script")
 	ErrBadTxRoot    = errors.New("invalid transaction merkle root")
+	ErrBadStateRoot = errors.New("invalid state merkle root")
 )
 
 // ValidateAndApplyBlock validates the given block
@@ -60,6 +61,15 @@ func validateBlock(ctx context.Context, view state.View, prevBlock, block *bc.Bl
 			return err
 		}
 	}
+
+	viewRoot, err := view.StateRoot(ctx)
+	if err != nil {
+		return err
+	}
+	if block.StateRoot != viewRoot {
+		return ErrBadStateRoot
+	}
+
 	return nil
 }
 

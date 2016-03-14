@@ -359,6 +359,8 @@ func (viewReader testViewReader) Circulation(ctx context.Context, assets []bc.As
 	return map[bc.AssetID]int64{bc.AssetID{1}: 5}, nil
 }
 
+func (viewReader testViewReader) StateRoot(context.Context) (bc.Hash, error) { return bc.Hash{}, nil }
+
 func newReusableTestEngine(viewReader testViewReader, tx *bc.TxData) (*Engine, error) {
 	result, err := NewReusableEngine(nil, viewReader, tx, 0)
 	if err != nil {

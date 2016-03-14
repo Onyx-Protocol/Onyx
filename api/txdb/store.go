@@ -9,13 +9,15 @@ import (
 	"chain/errors"
 	"chain/fedchain"
 	"chain/fedchain/bc"
+	"chain/fedchain/patricia"
 	"chain/fedchain/state"
 )
 
 type Store struct {
 	latestBlockCache struct {
-		mutex sync.Mutex
-		block *bc.Block
+		mutex     sync.Mutex
+		block     *bc.Block
+		stateTree *patricia.Tree
 	}
 }
 
@@ -188,6 +190,7 @@ func (s *Store) ApplyBlock(
 	block *bc.Block,
 	delta []*state.Output,
 	assets map[bc.AssetID]*state.AssetState,
+	state *patricia.Tree,
 ) ([]*bc.Tx, error) {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
@@ -239,6 +242,11 @@ func (s *Store) ApplyBlock(
 		return nil, errors.Wrap(err, "adding issuances")
 	}
 
+	err = writeStateTree(ctx, state)
+	if err != nil {
+		return nil, errors.Wrap(err, "updating state tree")
+	}
+
 	err = dbtx.Commit(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "committing db transaction")
@@ -246,7 +254,7 @@ func (s *Store) ApplyBlock(
 
 	// Note: this is done last so that callers of LatestBlock
 	// can safely assume the block they get has been applied.
-	s.setLatestBlockCache(block, false)
+	s.setLatestBlockCache(block, patricia.Copy(state), false)
 
 	return newTxs, nil
 }
@@ -256,4 +264,19 @@ func (s *Store) ApplyBlock(
 // all other outputs will be omitted from the view.
 func (s *Store) NewViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
 	return newViewForPrevouts(ctx, txs)
+}
+
+func (s *Store) StateTree(ctx context.Context, block uint64) (*patricia.Tree, error) {
+	s.latestBlockCache.mutex.Lock()
+	defer s.latestBlockCache.mutex.Unlock()
+
+	if s.latestBlockCache.stateTree == nil {
+		stateTree, err := stateTree(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		s.setLatestBlockCache(s.latestBlockCache.block, stateTree, true)
+	}
+	return patricia.Copy(s.latestBlockCache.stateTree), nil
 }

@@ -44,7 +44,7 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 		return errors.Wrap(err)
 	}
 
-	mv := state.NewMemView()
+	mv := state.NewMemView(nil)
 	view := state.Compose(mv, state.MultiReader(poolView, bcView))
 	err = validation.ValidateTx(ctx, view, tx, uint64(time.Now().Unix()))
 	if err != nil {

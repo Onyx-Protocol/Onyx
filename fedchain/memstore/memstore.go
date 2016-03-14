@@ -4,6 +4,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/fedchain/bc"
+	"chain/fedchain/patricia"
 	"chain/fedchain/state"
 )
 
@@ -17,6 +18,8 @@ type MemStore struct {
 	pool      []*bc.Tx // used for keeping topological order
 	poolMap   map[bc.Hash]*bc.Tx
 	poolUTXOs map[bc.Outpoint]*state.Output
+
+	stateTree *patricia.Tree
 }
 
 // New returns a new MemStore
@@ -119,6 +122,7 @@ func (m *MemStore) ApplyBlock(
 	b *bc.Block,
 	utxos []*state.Output,
 	assets map[bc.AssetID]*state.AssetState,
+	stateTree *patricia.Tree,
 ) ([]*bc.Tx, error) {
 	m.blocks = append(m.blocks, b)
 
@@ -150,6 +154,8 @@ func (m *MemStore) ApplyBlock(
 		}
 	}
 
+	m.stateTree = patricia.Copy(stateTree)
+
 	return newTxs, nil
 }
 
@@ -164,4 +170,11 @@ func (m *MemStore) NewViewForPrevouts(context.Context, []*bc.Tx) (state.ViewRead
 	return &state.MemView{
 		Outs: m.blockUTXOs,
 	}, nil
+}
+
+func (m *MemStore) StateTree(context.Context, uint64) (*patricia.Tree, error) {
+	if m.stateTree == nil {
+		m.stateTree = patricia.NewTree(nil)
+	}
+	return patricia.Copy(m.stateTree), nil
 }

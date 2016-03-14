@@ -52,6 +52,7 @@ import (
 
 	"chain/errors"
 	"chain/fedchain/bc"
+	"chain/fedchain/patricia"
 	"chain/fedchain/state"
 )
 
@@ -91,9 +92,10 @@ type Store interface {
 	NewPoolViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error)
 
 	// blocks
-	ApplyBlock(context.Context, *bc.Block, []*state.Output, map[bc.AssetID]*state.AssetState) ([]*bc.Tx, error)
+	ApplyBlock(context.Context, *bc.Block, []*state.Output, map[bc.AssetID]*state.AssetState, *patricia.Tree) ([]*bc.Tx, error)
 	LatestBlock(context.Context) (*bc.Block, error)
 	NewViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error)
+	StateTree(context.Context, uint64) (*patricia.Tree, error)
 }
 
 // FC provides a complete, minimal blockchain database. It

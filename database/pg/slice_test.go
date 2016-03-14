@@ -80,3 +80,53 @@ func TestSliceByteaValue(t *testing.T) {
 		t.Errorf("%v.Value() got %#q want %#q", v, s, want)
 	}
 }
+
+func TestBoolsScan(t *testing.T) {
+	tests := []struct {
+		in  string
+		out Bools
+	}{
+		{`{t,f}`, Bools{true, false}},
+		{`{f}`, Bools{false}},
+		{`{}`, nil},
+	}
+	for i, test := range tests {
+		var arr Bools
+		err := arr.Scan([]byte(test.in))
+		if err != nil {
+			t.Errorf("%d: unexpected error: %s", i, err)
+			continue
+		}
+		if !reflect.DeepEqual(arr, test.out) {
+			t.Errorf("%d: Scan(%v) got %v want %v", i, test.in, arr, test.out)
+		}
+	}
+}
+
+func TestBoolsValue(t *testing.T) {
+	tests := []struct {
+		in  Bools
+		out string
+	}{
+		{Bools{true, false}, `{t,f}`},
+		{Bools{false}, `{f}`},
+		{Bools{}, `{}`},
+		{nil, `{}`},
+	}
+
+	for i, test := range tests {
+		val, err := test.in.Value()
+		if err != nil {
+			t.Errorf("%d: unexpected error: %s", i, err)
+			continue
+		}
+		b, ok := val.([]byte)
+		if !ok {
+			t.Errorf("%d: could not type assert to []byte", i)
+			continue
+		}
+		if !reflect.DeepEqual(string(b), test.out) {
+			t.Errorf("%d: Scan(%v) got %v want %v", i, test.in, string(b), test.out)
+		}
+	}
+}

@@ -227,3 +227,41 @@ func (a Int32s) Value() (driver.Value, error) {
 	}
 	return append(val, '}'), nil
 }
+
+type Bools []bool
+
+func (a *Bools) Scan(val interface{}) error {
+	*a = nil
+	if val == nil {
+		return nil
+	}
+	b, ok := val.([]byte)
+	if !ok {
+		return errors.New("invalid interface for Scan")
+	}
+	s := string(b)
+	for _, el := range strings.Split(s[1:len(s)-1], ",") {
+		if len(el) == 0 {
+			continue
+		}
+		n := el == "t"
+		*a = append(*a, n)
+	}
+	return nil
+}
+
+func (a Bools) Value() (driver.Value, error) {
+	var val []byte
+	val = append(val, '{')
+	for i, b := range a {
+		if i > 0 {
+			val = append(val, ',')
+		}
+		if b {
+			val = append(val, 't')
+			continue
+		}
+		val = append(val, 'f')
+	}
+	return append(val, '}'), nil
+}

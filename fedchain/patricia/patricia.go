@@ -8,11 +8,9 @@ import (
 	"chain/fedchain/bc"
 )
 
-const keyLen = 256
-
-// ErrKeyLength is returned if a key passed into
-// Insert or Delete is not the required length.
-var ErrKeyLength = errors.New("key must be 256 bits long")
+// ErrPrefix is returned from Insert or Delete if
+// the key provided is a prefix to existing nodes.
+var ErrPrefix = errors.New("key provided is a prefix to other keys")
 
 // Hasher is the interface used for values inserted
 // into the tree. Since this tree is used to create
@@ -27,9 +25,92 @@ type Hasher interface {
 // where the value is placed in the tree, with each bit
 // of the key indicating a path.
 //
-// The zero value of Tree is an empty tree, ready to use.
+// The nodes in the tree form an immutable persistent
+// data structure, therefore Copy is a O(1) operation.
 type Tree struct {
-	root *node
+	root    *Node
+	deletes map[string]bool
+	updates map[string]*Node
+	inserts map[string]*Node
+}
+
+// NewTree assembles a tree using a slice of nodes.
+// The slice of nodes passed must form a complete
+// breadth-first traversal of the entire tree, including
+// interior nodes.
+func NewTree(nodes []*Node) *Tree {
+	tree := &Tree{
+		deletes: make(map[string]bool),
+		updates: make(map[string]*Node),
+		inserts: make(map[string]*Node),
+	}
+
+	for _, node := range nodes {
+		if tree.root == nil {
+			tree.root = node
+			continue
+		}
+		parent := tree.root
+		for {
+			next := parent.children[node.key[len(parent.key)]]
+			if next == nil {
+				parent.children[node.key[len(parent.key)]] = node
+				break
+			}
+			parent = next
+		}
+	}
+
+	return tree
+}
+
+// Copy returns a new tree with the same root as this tree
+func Copy(t *Tree) *Tree {
+	newT := NewTree(nil)
+	newT.root = t.root
+	return newT
+}
+
+// Delta returns all of the deletes, inserts, and updates
+// that have occurred on the tree.
+func (t *Tree) Delta() (deletes [][]uint8, inserts, updates []*Node) {
+	for k := range t.deletes {
+		deletes = append(deletes, []uint8(k))
+	}
+	for _, node := range t.inserts {
+		inserts = append(inserts, node)
+	}
+	for _, node := range t.updates {
+		updates = append(updates, node)
+	}
+
+	return deletes, inserts, updates
+}
+
+func (t *Tree) trackDelete(key []uint8) {
+	if t.inserts[string(key)] != nil {
+		delete(t.inserts, string(key))
+		return
+	}
+	delete(t.updates, string(key))
+	t.deletes[string(key)] = true
+}
+
+func (t *Tree) trackUpdate(n *Node) {
+	if t.inserts[string(n.key)] != nil {
+		t.inserts[string(n.key)] = n
+		return
+	}
+	t.updates[string(n.key)] = n
+}
+
+func (t *Tree) trackInsert(n *Node) {
+	if t.deletes[string(n.key)] {
+		delete(t.deletes, string(n.key))
+		t.updates[string(n.key)] = n
+		return
+	}
+	t.inserts[string(n.key)] = n
 }
 
 // Insert enters data into the tree.
@@ -40,88 +121,126 @@ type Tree struct {
 // and its value is updated, leaving the structure of
 // the tree alone.
 func (t *Tree) Insert(bkey []byte, val Hasher) error {
-	key := boolKey(bkey)
-
-	if len(key) != keyLen {
-		return ErrKeyLength
-	}
+	key := bitKey(bkey)
 
 	if t.root == nil {
-		t.root = &node{key: key, val: val}
+		t.root = &Node{key: key, val: val, isLeaf: true}
+		t.trackInsert(t.root)
 		return nil
 	}
 
-	insert(t.root, key, val)
-	return nil
+	var err error
+	t.root, err = t.insert(t.root, key, val)
+
+	return err
 }
 
-func insert(n *node, key []uint8, val Hasher) {
+func (t *Tree) insert(n *Node, key []uint8, val Hasher) (*Node, error) {
 	if bytes.Equal(n.key, key) {
-		n.val = val
-		return
+		if !n.isLeaf {
+			return n, errors.Wrap(ErrPrefix)
+		}
+		n = &Node{
+			isLeaf: true,
+			key:    n.key,
+			val:    val,
+		}
+		t.trackUpdate(n)
+		return n, nil
 	}
 
-	if bytes.Equal(n.key, key[:len(n.key)]) {
-		child := n.children[key[len(n.key)]]
-		insert(child, key[len(n.key):], val)
-		return
+	if bytes.HasPrefix(key, n.key) {
+		if n.isLeaf {
+			return n, errors.Wrap(ErrPrefix)
+		}
+		bit := key[len(n.key)]
+
+		child := n.children[bit]
+		child, err := t.insert(child, key, val)
+		if err != nil {
+			return n, err
+		}
+		newNode := new(Node)
+		*newNode = *n
+		newNode.children[bit] = child // mutation is ok because newNode hasn't escaped yet
+		t.trackUpdate(newNode)
+		return newNode, nil
 	}
 
 	common := len(commonPrefix(n.key, key))
-	n.fork(common)
-	n.children[key[common]] = &node{key: key[common:], val: val}
+	newNode := &Node{
+		key: n.key[:common],
+	}
+	newNode.children[key[common]] = &Node{
+		key:    key,
+		val:    val,
+		isLeaf: true,
+	}
+	newNode.children[1-key[common]] = n
+	t.trackInsert(newNode)
+	t.trackInsert(newNode.children[key[common]])
+	return newNode, nil
 }
 
 // Delete removes up to one value with a matching key.
 // After removing the node, it will rearrange the tree
 // to the optimal structure.
 func (t *Tree) Delete(bkey []byte) error {
-	key := boolKey(bkey)
-	if len(key) != keyLen {
-		return ErrKeyLength
-	}
+	key := bitKey(bkey)
 
 	if t.root == nil {
 		return nil
 	}
 
-	if bytes.Equal(t.root.key, key) {
-		t.root = nil
-		return nil
-	}
-
-	delete(t.root, key)
-
-	return nil
+	var err error
+	t.root, err = t.delete(t.root, key)
+	return err
 }
 
-func delete(n *node, key []uint8) {
-	if !bytes.Equal(n.key, key[:len(n.key)]) {
-		return
+func (t *Tree) delete(n *Node, key []uint8) (*Node, error) {
+	if bytes.Equal(key, n.key) {
+		if !n.isLeaf {
+			return n, errors.Wrap(ErrPrefix)
+		}
+		t.trackDelete(key)
+		return nil, nil
 	}
 
-	key = key[len(n.key):]
-	child := n.children[key[0]]
-	if bytes.Equal(child.key, key) {
-		n.children[key[0]] = nil
-		n.merge(n.children[1-key[0]])
-		return
+	if !bytes.HasPrefix(key, n.key) {
+		return n, nil
 	}
 
-	delete(child, key)
+	bit := key[len(n.key)]
+	newChild, err := t.delete(n.children[bit], key)
+	if err != nil {
+		return nil, err
+	}
+
+	if newChild == nil {
+		t.trackDelete(n.key)
+		return n.children[1-bit], nil
+	}
+
+	newNode := new(Node)
+	*newNode = *n
+	newNode.children[bit] = newChild
+
+	t.trackUpdate(newNode)
+	return newNode, nil
 }
 
 // RootHash returns the merkle root of the tree
 func (t *Tree) RootHash() bc.Hash {
-	if t.root == nil {
+	root := t.root
+	if root == nil {
 		return bc.Hash{}
 	}
-	return t.root.hash()
+	return root.Hash()
 }
 
-// boolKey takes a byte array and returns a key that can
+// bitKey takes a byte array and returns a key that can
 // be used inside insert and delete operations.
-func boolKey(byteKey []byte) []uint8 {
+func bitKey(byteKey []byte) []uint8 {
 	var key []uint8
 	for _, b := range byteKey {
 		for i := uint(0); i < 8; i++ {
@@ -142,43 +261,49 @@ func commonPrefix(a, b []uint8) []uint8 {
 	return common
 }
 
-type node struct {
+// Node is a leaf or branch node in a tree
+type Node struct {
 	key      []uint8
-	children [2]*node
+	hash     *bc.Hash
+	isLeaf   bool
+	children [2]*Node
 	val      Hasher
 }
 
-func (n *node) isLeaf() bool {
-	return n.val != nil
+// NewNode returns a node with the given key and hash
+func NewNode(key []uint8, hash bc.Hash, isLeaf bool) *Node {
+	return &Node{key: key, hash: &hash, isLeaf: isLeaf}
 }
 
-func (n *node) hash() bc.Hash {
-	if n.isLeaf() {
+// Key returns the key for the current node
+func (n *Node) Key() []uint8 { return n.key }
+
+// IsLeaf returns whether the current node is a leaf node
+func (n *Node) IsLeaf() bool { return n.isLeaf }
+
+// Hash will return a cached hash if available,
+// if not it will calculate a new hash and cache it.
+func (n *Node) Hash() bc.Hash {
+	if n.hash != nil {
+		return *n.hash
+	}
+
+	hash := n.calcHash()
+	n.hash = &hash
+
+	return hash
+}
+
+func (n *Node) calcHash() bc.Hash {
+	if n.isLeaf {
 		return n.val.Hash()
 	}
 
 	var data []byte
 	for _, c := range n.children {
-		h := c.hash()
+		h := c.Hash()
 		data = append(data, h[:]...)
 	}
 
 	return hash256.Sum(data)
-}
-
-func (n *node) merge(child *node) {
-	n.key = append(n.key, child.key...)
-	n.val = child.val
-	n.children = child.children
-}
-
-func (n *node) fork(after int) {
-	newLeaf := &node{key: n.key[after:], val: n.val, children: n.children}
-	n.children = [2]*node{nil, nil}
-	n.children[n.key[after]] = newLeaf
-	n.key = n.key[:after]
-	if len(n.key) == 0 {
-		n.key = nil
-	}
-	n.val = nil
 }

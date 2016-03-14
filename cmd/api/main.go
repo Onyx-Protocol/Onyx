@@ -152,7 +152,6 @@ func main() {
 	db.SetMaxOpenConns(*maxDBConns)
 	db.SetMaxIdleConns(100)
 	ctx = pg.NewContext(ctx, db)
-
 	fc, err := fedchain.New(ctx, txdb.NewStore(), []*btcec.PublicKey{pubKey})
 	if err != nil {
 		chainlog.Fatal(ctx, "error", err)

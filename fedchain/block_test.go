@@ -13,6 +13,7 @@ import (
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/memstore"
+	"chain/fedchain/patricia"
 	"chain/fedchain/state"
 	"chain/fedchain/txscript"
 	"chain/testutil"
@@ -23,7 +24,7 @@ func TestLatestBlock(t *testing.T) {
 
 	noBlocks := memstore.New()
 	oneBlock := memstore.New()
-	oneBlock.ApplyBlock(ctx, &bc.Block{}, nil, nil)
+	oneBlock.ApplyBlock(ctx, &bc.Block{}, nil, nil, patricia.NewTree(nil))
 
 	cases := []struct {
 		store   Store
@@ -74,7 +75,7 @@ func TestWaitForBlock(t *testing.T) {
 			OutputScript:      []byte{txscript.OP_TRUE},
 		},
 	}
-	store.ApplyBlock(ctx, block0, nil, nil)
+	store.ApplyBlock(ctx, block0, nil, nil, patricia.NewTree(nil))
 	fc, err := New(ctx, store, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -217,7 +218,7 @@ func TestGenerateBlock(t *testing.T) {
 		}),
 	}
 	for _, tx := range txs {
-		err := fc.applyTx(ctx, tx, state.NewMemView())
+		err := fc.applyTx(ctx, tx, state.NewMemView(nil))
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -236,6 +237,7 @@ func TestGenerateBlock(t *testing.T) {
 			Height:            2,
 			PreviousBlockHash: latestBlock.Hash(),
 			TxRoot:            mustParseHash("221e04fdea661d26dbaef32df7b40fd93d97e359dcb9113c0fab763291a97a75"),
+			StateRoot:         mustParseHash("cec024dc67344514d290aba12a9f75cef530fbe15cbdef79033105f9aae23542"),
 			Timestamp:         uint64(now.Unix()),
 			OutputScript:      latestBlock.OutputScript,
 		},

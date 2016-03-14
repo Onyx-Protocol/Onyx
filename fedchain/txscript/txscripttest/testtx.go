@@ -16,7 +16,7 @@ var testTxHash = bc.Hash{}
 // to modify the txscript.Engine before executing a script.
 func NewTestTx(engineFuncs ...func(vm *txscript.Engine)) *TestTx {
 	return &TestTx{
-		view:        state.NewMemView(),
+		view:        state.NewMemView(nil),
 		engineFuncs: engineFuncs,
 	}
 }

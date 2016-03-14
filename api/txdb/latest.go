@@ -8,6 +8,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
+	"chain/fedchain/patricia"
 	"chain/net/trace/span"
 )
 
@@ -36,7 +37,7 @@ func (s *Store) LatestBlock(ctx context.Context) (*bc.Block, error) {
 		return nil, errors.Wrap(err, "select query")
 	}
 
-	s.setLatestBlockCache(b, true)
+	s.setLatestBlockCache(b, nil, true)
 
 	return b, nil
 }
@@ -44,7 +45,7 @@ func (s *Store) LatestBlock(ctx context.Context) (*bc.Block, error) {
 // setLatestValidBlock stores the given block as the head of the
 // blockchain.  It also wakes up any threads waiting in
 // waitForNewValidBlock.
-func (s *Store) setLatestBlockCache(b *bc.Block, cacheLocked bool) {
+func (s *Store) setLatestBlockCache(b *bc.Block, stateTree *patricia.Tree, cacheLocked bool) {
 	if !cacheLocked {
 		s.latestBlockCache.mutex.Lock()
 		defer s.latestBlockCache.mutex.Unlock()
@@ -54,4 +55,5 @@ func (s *Store) setLatestBlockCache(b *bc.Block, cacheLocked bool) {
 	// when another process has landed a block and we should
 	// invalidate this cache.
 	s.latestBlockCache.block = b
+	s.latestBlockCache.stateTree = stateTree
 }

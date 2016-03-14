@@ -4,6 +4,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/fedchain/bc"
+	"chain/fedchain/patricia"
 )
 
 var _ View = (*MemView)(nil)
@@ -17,13 +18,20 @@ type AssetState struct {
 type MemView struct {
 	Outs   map[bc.Outpoint]*Output
 	Assets map[bc.AssetID]*AssetState
+
+	StateTree *patricia.Tree
 }
 
-// NewMemView returns a new MemView
-func NewMemView() *MemView {
+// NewMemView returns a new MemView. It takes an
+// existing state tree. As ViewWriter functions
+// are called, the tree will update such that it
+// reflects the composite tree of the what was
+// entered and the updates that have been made.
+func NewMemView(stateTree *patricia.Tree) *MemView {
 	return &MemView{
-		Outs:   make(map[bc.Outpoint]*Output),
-		Assets: make(map[bc.AssetID]*AssetState),
+		Outs:      make(map[bc.Outpoint]*Output),
+		Assets:    make(map[bc.AssetID]*AssetState),
+		StateTree: stateTree,
 	}
 }
 
@@ -52,10 +60,25 @@ func (v *MemView) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.
 
 func (v *MemView) SaveOutput(o *Output) {
 	v.Outs[o.Outpoint] = o
+	if v.StateTree != nil {
+		k, hasher := OutputTreeItem(o)
+		if o.Spent {
+			v.StateTree.Delete(k)
+			return
+		}
+		v.StateTree.Insert(k, hasher)
+	}
 }
 
 func (v *MemView) SaveAssetDefinitionPointer(asset bc.AssetID, hash bc.Hash) {
 	v.asset(asset).ADP = hash
+	if v.StateTree != nil {
+		v.StateTree.Insert(ADPTreeItem(asset, hash))
+	}
+}
+
+func (v *MemView) StateRoot(context.Context) (bc.Hash, error) {
+	return v.StateTree.RootHash(), nil
 }
 
 func (v *MemView) SaveIssuance(asset bc.AssetID, amount uint64) {
