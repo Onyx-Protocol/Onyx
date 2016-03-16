@@ -189,7 +189,9 @@ func TestIssuanceOutpoint(t *testing.T) {
 func TestOutpointWriteErr(t *testing.T) {
 	var w errWriter
 	var p Outpoint
-	_, err := p.WriteTo(&w)
+	ew := errors.NewWriter(w)
+	p.WriteTo(ew)
+	err := ew.Err()
 	if err == nil {
 		t.Error("outpoint WriteTo(w) err = nil; want non-nil error")
 	}

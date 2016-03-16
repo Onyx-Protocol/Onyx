@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"chain/crypto/hash256"
+	"chain/encoding/blockchain"
 	"chain/errors"
 )
 
@@ -38,7 +39,7 @@ func (b *Block) Value() (driver.Value, error) {
 
 func (b *Block) readFrom(r *errors.Reader) {
 	b.BlockHeader.readFrom(r)
-	for n := readUvarint(r); n > 0; n-- {
+	for n := blockchain.ReadUvarint(r); n > 0; n-- {
 		var data TxData
 		data.readFrom(r)
 		// TODO(kr): store/reload hashes;
@@ -57,7 +58,7 @@ func (b *Block) writeTo(w io.Writer, forSigning bool) (int64, error) {
 	ew := errors.NewWriter(w)
 	b.BlockHeader.writeTo(ew, forSigning)
 	if !forSigning {
-		writeUvarint(ew, uint64(len(b.Transactions)))
+		blockchain.WriteUvarint(ew, uint64(len(b.Transactions)))
 		for _, tx := range b.Transactions {
 			tx.WriteTo(ew)
 		}
@@ -144,14 +145,14 @@ func (bh *BlockHeader) HashForSig() Hash {
 }
 
 func (bh *BlockHeader) readFrom(r *errors.Reader) {
-	bh.Version = readUint32(r)
-	bh.Height = readUint64(r)
+	bh.Version = blockchain.ReadUint32(r)
+	bh.Height = blockchain.ReadUint64(r)
 	io.ReadFull(r, bh.PreviousBlockHash[:])
 	io.ReadFull(r, bh.TxRoot[:])
 	io.ReadFull(r, bh.StateRoot[:])
-	bh.Timestamp = readUint64(r)
-	readBytes(r, (*[]byte)(&bh.SignatureScript))
-	readBytes(r, (*[]byte)(&bh.OutputScript))
+	bh.Timestamp = blockchain.ReadUint64(r)
+	blockchain.ReadBytes(r, (*[]byte)(&bh.SignatureScript))
+	blockchain.ReadBytes(r, (*[]byte)(&bh.OutputScript))
 }
 
 // WriteTo satisfies interface io.WriterTo.
@@ -171,16 +172,16 @@ func (bh *BlockHeader) WriteForSigTo(w io.Writer) (int64, error) {
 // writeTo writes bh to w.
 // If forSigning is true, it writes an empty string instead of the signature script.
 func (bh *BlockHeader) writeTo(w *errors.Writer, forSigning bool) {
-	writeUint32(w, bh.Version)
-	writeUint64(w, bh.Height)
+	blockchain.WriteUint32(w, bh.Version)
+	blockchain.WriteUint64(w, bh.Height)
 	w.Write(bh.PreviousBlockHash[:])
 	w.Write(bh.TxRoot[:])
 	w.Write(bh.StateRoot[:])
-	writeUint64(w, bh.Timestamp)
+	blockchain.WriteUint64(w, bh.Timestamp)
 	if forSigning {
-		writeBytes(w, nil)
+		blockchain.WriteBytes(w, nil)
 	} else {
-		writeBytes(w, bh.SignatureScript)
+		blockchain.WriteBytes(w, bh.SignatureScript)
 	}
-	writeBytes(w, bh.OutputScript)
+	blockchain.WriteBytes(w, bh.OutputScript)
 }

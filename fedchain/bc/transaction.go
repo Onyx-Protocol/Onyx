@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"chain/crypto/hash256"
+	"chain/encoding/blockchain"
 	"chain/errors"
 )
 
@@ -133,35 +134,35 @@ func (tx *TxData) Value() (driver.Value, error) {
 }
 
 func (tx *TxData) readFrom(r *errors.Reader) {
-	tx.Version = readUint32(r)
+	tx.Version = blockchain.ReadUint32(r)
 
-	for n := readUvarint(r); n > 0; n-- {
+	for n := blockchain.ReadUvarint(r); n > 0; n-- {
 		ti := new(TxInput)
 		ti.readFrom(r)
 		tx.Inputs = append(tx.Inputs, ti)
 	}
 
-	for n := readUvarint(r); n > 0; n-- {
+	for n := blockchain.ReadUvarint(r); n > 0; n-- {
 		to := new(TxOutput)
 		to.readFrom(r)
 		tx.Outputs = append(tx.Outputs, to)
 	}
 
-	tx.LockTime = readUint64(r)
-	readBytes(r, &tx.Metadata)
+	tx.LockTime = blockchain.ReadUint64(r)
+	blockchain.ReadBytes(r, &tx.Metadata)
 }
 
 func (ti *TxInput) readFrom(r *errors.Reader) {
 	ti.Previous.readFrom(r)
-	readBytes(r, (*[]byte)(&ti.SignatureScript))
-	readBytes(r, &ti.Metadata)
-	readBytes(r, &ti.AssetDefinition)
+	blockchain.ReadBytes(r, (*[]byte)(&ti.SignatureScript))
+	blockchain.ReadBytes(r, &ti.Metadata)
+	blockchain.ReadBytes(r, &ti.AssetDefinition)
 }
 
 func (to *TxOutput) readFrom(r *errors.Reader) {
 	to.AssetAmount.readFrom(r)
-	readBytes(r, (*[]byte)(&to.Script))
-	readBytes(r, &to.Metadata)
+	blockchain.ReadBytes(r, (*[]byte)(&to.Script))
+	blockchain.ReadBytes(r, &to.Metadata)
 }
 
 func (p *Outpoint) readFrom(r *errors.Reader) (n int64, err error) {
@@ -169,7 +170,7 @@ func (p *Outpoint) readFrom(r *errors.Reader) (n int64, err error) {
 	if err != nil {
 		return int64(x), err
 	}
-	p.Index = readUint32(r)
+	p.Index = blockchain.ReadUint32(r)
 	return 32 + 4, nil
 }
 
@@ -231,7 +232,7 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 		}
 		h := hash256.New()
 		w := errors.NewWriter(h)
-		writeUvarint(w, uint64(len(tx.Inputs)))
+		blockchain.WriteUvarint(w, uint64(len(tx.Inputs)))
 		for _, in := range tx.Inputs {
 			in.writeTo(w, true)
 		}
@@ -248,7 +249,7 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 		}
 		h := hash256.New()
 		w := errors.NewWriter(h)
-		writeUvarint(w, 1)
+		blockchain.WriteUvarint(w, 1)
 		tx.Outputs[idx].writeTo(w, true)
 		h.Sum(outputsHash[:0])
 	case SigHashNone:
@@ -259,7 +260,7 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 		} else {
 			h := hash256.New()
 			w := errors.NewWriter(h)
-			writeUvarint(w, uint64(len(tx.Outputs)))
+			blockchain.WriteUvarint(w, uint64(len(tx.Outputs)))
 			for _, out := range tx.Outputs {
 				out.writeTo(w, true)
 			}
@@ -273,19 +274,19 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 	h := hash256.New()
 	w := errors.NewWriter(h)
 
-	writeUint32(w, tx.Version)
+	blockchain.WriteUint32(w, tx.Version)
 
 	w.Write(inputsHash[:])
 
 	var buf bytes.Buffer
 	tx.Inputs[idx].writeTo(errors.NewWriter(&buf), true)
-	writeBytes(w, buf.Bytes())
+	blockchain.WriteBytes(w, buf.Bytes())
 
 	assetAmount.writeTo(w)
 
 	w.Write(outputsHash[:])
 
-	writeUint64(w, tx.LockTime)
+	blockchain.WriteUint64(w, tx.LockTime)
 
 	writeMetadata(w, tx.Metadata, true)
 
@@ -296,7 +297,7 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 	return hash
 }
 
-// MarshalText satisfies encoding.TextMarshaller interface
+// MarshalText satisfies blockchain.TextMarshaller interface
 func (tx *TxData) MarshalText() ([]byte, error) {
 	var buf bytes.Buffer
 	tx.WriteTo(&buf) // error is impossible
@@ -312,19 +313,19 @@ func (tx *TxData) WriteTo(w io.Writer) (int64, error) {
 
 func (tx *TxData) writeTo(w io.Writer, forHashing bool) (n int64, err error) {
 	ew := errors.NewWriter(w)
-	writeUint32(ew, tx.Version)
+	blockchain.WriteUint32(ew, tx.Version)
 
-	writeUvarint(ew, uint64(len(tx.Inputs)))
+	blockchain.WriteUvarint(ew, uint64(len(tx.Inputs)))
 	for _, ti := range tx.Inputs {
 		ti.writeTo(ew, forHashing)
 	}
 
-	writeUvarint(ew, uint64(len(tx.Outputs)))
+	blockchain.WriteUvarint(ew, uint64(len(tx.Outputs)))
 	for _, to := range tx.Outputs {
 		to.writeTo(ew, forHashing)
 	}
 
-	writeUint64(ew, tx.LockTime)
+	blockchain.WriteUint64(ew, tx.LockTime)
 	writeMetadata(ew, tx.Metadata, forHashing)
 	return ew.Written(), ew.Err()
 }
@@ -337,9 +338,9 @@ func (ti *TxInput) writeTo(w *errors.Writer, forHashing bool) {
 	// redeem scripts and contracts to optimize memory/storage use.
 	// Write the metadata or its hash depending on serialization mode.
 	if forHashing {
-		writeBytes(w, nil)
+		blockchain.WriteBytes(w, nil)
 	} else {
-		writeBytes(w, ti.SignatureScript)
+		blockchain.WriteBytes(w, ti.SignatureScript)
 	}
 	writeMetadata(w, ti.Metadata, forHashing)
 	writeMetadata(w, ti.AssetDefinition, forHashing)
@@ -347,7 +348,7 @@ func (ti *TxInput) writeTo(w *errors.Writer, forHashing bool) {
 
 func (to *TxOutput) writeTo(w *errors.Writer, forHashing bool) {
 	to.AssetAmount.writeTo(w)
-	writeBytes(w, to.Script)
+	blockchain.WriteBytes(w, to.Script)
 
 	// Write the metadata or its hash depending on serialization mode.
 	writeMetadata(w, to.Metadata, forHashing)
@@ -359,19 +360,9 @@ func (p Outpoint) String() string {
 }
 
 // WriteTo writes p to w.
-func (p Outpoint) WriteTo(w io.Writer) (n int64, err error) {
-	_, err = w.Write(p.Hash[:])
-	if err != nil {
-		return 0, err
-	}
-
-	var buf [4]byte
-	endianness.PutUint32(buf[:], p.Index)
-	_, err = w.Write(buf[:])
-	if err != nil {
-		return 32, err
-	}
-	return 32 + 4, nil
+func (p Outpoint) WriteTo(ew *errors.Writer) {
+	ew.Write(p.Hash[:])
+	blockchain.WriteUint32(ew, p.Index)
 }
 
 type AssetAmount struct {
@@ -381,10 +372,19 @@ type AssetAmount struct {
 
 func (a *AssetAmount) readFrom(r *errors.Reader) {
 	io.ReadFull(r, a.AssetID[:])
-	a.Amount = readUint64(r)
+	a.Amount = blockchain.ReadUint64(r)
 }
 
 func (a AssetAmount) writeTo(w *errors.Writer) {
 	w.Write(a.AssetID[:])
-	writeUint64(w, a.Amount)
+	blockchain.WriteUint64(w, a.Amount)
+}
+
+func writeMetadata(w *errors.Writer, data []byte, forHashing bool) {
+	if forHashing {
+		h := fastHash(data)
+		blockchain.WriteBytes(w, h)
+	} else {
+		blockchain.WriteBytes(w, data)
+	}
 }
