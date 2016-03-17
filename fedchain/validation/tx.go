@@ -14,6 +14,9 @@ import (
 
 var stubGenesisHash = bc.Hash{}
 
+// ErrBadTx is returned for transactions failing validation
+var ErrBadTx = errors.New("invalid transaction")
+
 // ValidateTxInputs just validates that the tx inputs are present
 // and unspent in the view.
 func ValidateTxInputs(ctx context.Context, view state.ViewReader, tx *bc.Tx) error {
@@ -27,7 +30,7 @@ func ValidateTxInputs(ctx context.Context, view state.ViewReader, tx *bc.Tx) err
 		// explicitly stores spent outputs in frontend to shadow unspent
 		// outputs in backend.
 		if unspent == nil || unspent.Spent {
-			return fmt.Errorf("output for input %d is invalid or already spent (%v) (%v)", inIndex, txin.Previous, unspent)
+			return errors.WithDetailf(ErrBadTx, "output %s for input %d is invalid or already spent", txin.Previous.String(), inIndex)
 		}
 	}
 	return nil
@@ -51,7 +54,7 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 
 	// Check time
 	if tx.LockTime > timestamp {
-		return fmt.Errorf("transaction lock time is in the future")
+		return errors.WithDetail(ErrBadTx, "transaction lock time is in the future")
 	}
 
 	// If this is an issuance tx, check its prevout hash against the
@@ -88,12 +91,13 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 		unspent := view.Output(ctx, input.Previous)
 		err = engine.Prepare(unspent.Script, i)
 		if err != nil {
-			return fmt.Errorf("cannot prepare script engine to process input %d: %s", i, err)
+			err = errors.Wrapf(ErrBadTx, "cannot prepare script engine to process input %d: %s", i, err)
+			return errors.WithDetailf(err, "invalid script on input %d", i)
 		}
 		if err = engine.Execute(); err != nil {
 			pkScriptStr, _ := txscript.DisasmString(unspent.Script)
-			redeemScriptStr, _ := txscript.DisasmString(input.SignatureScript)
-			return errors.Wrapf(err, "validation failed in script execution, input %d (redeemscript[%s] pkscript[%s])", i, redeemScriptStr, pkScriptStr)
+			sigScriptStr, _ := txscript.DisasmString(input.SignatureScript)
+			return errors.WithDetailf(ErrBadTx, "validation failed in script execution, input %d (sigscript[%s] pkscript[%s])", i, sigScriptStr, pkScriptStr)
 		}
 	}
 
@@ -105,7 +109,7 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 // otherwise, it returns an error describing why tx is invalid.
 func txIsWellFormed(tx *bc.Tx) error {
 	if len(tx.Inputs) == 0 {
-		return errors.New("inputs are missing")
+		return errors.WithDetail(ErrBadTx, "inputs are missing")
 	}
 
 	// Check for duplicate inputs
@@ -115,7 +119,7 @@ func txIsWellFormed(tx *bc.Tx) error {
 			continue
 		}
 		if uniqueFilter[txin.Previous] {
-			return fmt.Errorf("input is duplicate: %s", txin.Previous.String())
+			return errors.WithDetailf(ErrBadTx, "duplicated input for %s", txin.Previous.String())
 		}
 		uniqueFilter[txin.Previous] = true
 	}
@@ -126,8 +130,9 @@ func txIsWellFormed(tx *bc.Tx) error {
 		// asset definition using issuance transactions.
 		// Non-issuance transactions cannot have zero-value outputs.
 		// If all inputs have zero value, tx therefore must have no outputs.
+		// TODO: check that output asset id is an asset being issued
 		if txout.Amount == 0 && !tx.HasIssuance() {
-			return fmt.Errorf("non-issuance output value must be > 0")
+			return errors.WithDetailf(ErrBadTx, "non-issuance output value must be greater than 0")
 		}
 	}
 	return nil
@@ -159,7 +164,7 @@ func validateTxBalance(ctx context.Context, view state.ViewReader, tx *bc.Tx) er
 	}
 	for asset, val := range parity {
 		if val > 0 || (val < 0 && !issued[asset]) {
-			return errors.New("transaction does not have input output parity")
+			return errors.WithDetailf(ErrBadTx, "amounts for asset %s are not balanced on inputs and outputs")
 		}
 	}
 	return nil

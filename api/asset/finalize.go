@@ -12,13 +12,14 @@ import (
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
+	"chain/fedchain/validation"
 	chainlog "chain/log"
 	"chain/metrics"
 	"chain/net/trace/span"
 )
 
-// ErrBadTx is returned by FinalizeTx
-var ErrBadTx = errors.New("bad transaction template")
+// ErrBadTxTemplate is returned by FinalizeTx
+var ErrBadTxTemplate = errors.New("bad transaction template")
 
 var Generator *string
 
@@ -29,12 +30,12 @@ func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, er
 	defer metrics.RecordElapsed(time.Now())
 
 	if len(txTemplate.Inputs) > len(txTemplate.Unsigned.Inputs) {
-		return nil, errors.WithDetail(ErrBadTx, "too many inputs in template")
+		return nil, errors.WithDetail(ErrBadTxTemplate, "too many inputs in template")
 	}
 
 	msg, err := txbuilder.AssembleSignatures(txTemplate)
 	if err != nil {
-		return nil, errors.WithDetail(ErrBadTx, err.Error())
+		return nil, errors.WithDetail(ErrBadTxTemplate, err.Error())
 	}
 
 	err = publishTx(ctx, msg)
@@ -52,7 +53,11 @@ func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, er
 
 func publishTx(ctx context.Context, msg *bc.Tx) error {
 	err := fc.AddTx(ctx, msg)
-	if err != nil {
+	if errors.Root(err) == validation.ErrBadTx {
+		detail := errors.Detail(err)
+		err = errors.Wrap(ErrBadTxTemplate, err)
+		return errors.WithDetail(err, detail)
+	} else if err != nil {
 		return errors.Wrap(err, "add tx to fedchain")
 	}
 

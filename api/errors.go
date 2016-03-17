@@ -47,7 +47,7 @@ var (
 		appdb.ErrPastExpires:        errorInfo{400, "CH720", "Expires, if set, must be in the future"},
 		utxodb.ErrInsufficient:      errorInfo{400, "CH733", "Insufficient funds for tx"},
 		utxodb.ErrReserved:          errorInfo{400, "CH743", "Some outputs are reserved; try again"},
-		asset.ErrBadTx:              errorInfo{400, "CH755", "Invalid transaction template"},
+		asset.ErrBadTxTemplate:      errorInfo{400, "CH755", "Invalid transaction template"},
 		ErrBadBuildRequest:          errorInfo{400, "CH756", "Invalid build transaction request"},
 		orderbook.ErrNoAssets:       errorInfo{400, "CH757", "No assets specified"},
 		appdb.ErrBadProjectName:     errorInfo{400, "CH770", "Invalid project name."},
