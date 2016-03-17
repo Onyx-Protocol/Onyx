@@ -47,6 +47,9 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 	source.TxHashAsID = nil
 	switch source.Type {
 	case "account", "":
+		if source.AccountID == "" {
+			return nil, errors.WithDetail(ErrBadBuildRequest, "no account specified on input")
+		}
 		if source.AssetID == nil {
 			return nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
 		}
@@ -143,6 +146,9 @@ func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, erro
 
 	switch dest.Type {
 	case "account", "":
+		if dest.AccountID == "" {
+			return nil, errors.WithDetail(ErrBadBuildRequest, "no account specified on output")
+		}
 		return asset.NewAccountDestination(ctx, assetAmount, dest.AccountID, dest.Metadata)
 	case "address":
 		return txbuilder.NewScriptDestination(ctx, assetAmount, dest.Address, dest.Metadata), nil
