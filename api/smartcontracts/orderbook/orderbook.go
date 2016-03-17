@@ -125,10 +125,7 @@ func (info *OrderInfo) generateScript(ctx context.Context, sellerScript []byte) 
 	}
 	contractHash := hash256.Sum(contract)
 
-	addr, err := txscript.NewAddressContractHash(contractHash[:], params)
-	if err != nil {
-		return nil, nil, nil, err
-	}
+	addr := txscript.NewAddressContractHash(contractHash[:], params)
 	return addr.ScriptAddress(), contract, contractHash[:], nil
 }
 

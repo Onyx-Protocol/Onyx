@@ -270,10 +270,10 @@ func (a *AddressContractHash) IsForNet(*chaincfg.Params) bool {
 	return true
 }
 
-func NewAddressContractHash(contractHash []byte, params [][]byte) (*AddressContractHash, error) {
+func NewAddressContractHash(contractHash []byte, params [][]byte) *AddressContractHash {
 	result := AddressContractHash{params: params}
 	copy(result.hash[:], contractHash)
-	return &result, nil
+	return &result
 }
 
 // PayToAddrScript creates a new script to pay a transaction output to
