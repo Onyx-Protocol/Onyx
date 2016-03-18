@@ -164,7 +164,7 @@ func validateTxBalance(ctx context.Context, view state.ViewReader, tx *bc.Tx) er
 	}
 	for asset, val := range parity {
 		if val > 0 || (val < 0 && !issued[asset]) {
-			return errors.WithDetailf(ErrBadTx, "amounts for asset %s are not balanced on inputs and outputs")
+			return errors.WithDetailf(ErrBadTx, "amounts for asset %s are not balanced on inputs and outputs", asset)
 		}
 	}
 	return nil
