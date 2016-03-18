@@ -56,8 +56,6 @@ import (
 )
 
 var (
-	ErrTxRejected = errors.New("transaction rejected")
-
 	// ErrTheDistantFuture (https://youtu.be/2IPAOxrH7Ro) is returned when
 	// waiting for a blockheight too far in excess of the tip of the
 	// blockchain.

@@ -47,7 +47,7 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 	view := state.MultiReader(poolView, bcView)
 	err = validation.ValidateTx(ctx, view, tx, uint64(time.Now().Unix()))
 	if err != nil {
-		return errors.Wrapf(ErrTxRejected, "validate tx: %v", err)
+		return errors.Wrap(err, "tx rejected")
 	}
 
 	// Update persistent tx pool state

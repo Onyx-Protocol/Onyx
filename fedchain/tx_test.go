@@ -12,6 +12,7 @@ import (
 	"chain/fedchain/fedtest"
 	"chain/fedchain/memstore"
 	"chain/fedchain/txscript"
+	"chain/fedchain/validation"
 	"chain/testutil"
 )
 
@@ -68,8 +69,8 @@ func TestAddTx(t *testing.T) {
 	invalidTransfer := fedtest.Transfer(t, fedtest.StateOut(issueTx, 0), dest1, fedtest.Dest(t))
 
 	err = fc.AddTx(ctx, invalidTransfer)
-	if errors.Root(err) != ErrTxRejected {
-		t.Fatalf("got err = %q want %q", errors.Root(err), ErrTxRejected)
+	if errors.Root(err) != validation.ErrBadTx {
+		t.Fatalf("got err = %q want %q", errors.Root(err), validation.ErrBadTx)
 	}
 }
 
