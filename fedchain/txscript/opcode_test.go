@@ -12,22 +12,35 @@ import (
 	"testing"
 )
 
-// TestOpcodeDisabled tests the opcodeDisabled function manually because all
-// disabled opcodes result in a script execution failure when executed normally,
-// so the function is not called under normal circumstances.
-func TestOpcodeDisabled(t *testing.T) {
+// TestOpcodeIsDisabled tests that the opcode's isDisabled function.
+func TestOpcodeIsDisabled(t *testing.T) {
 	t.Parallel()
 
-	tests := []byte{OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT, OP_INVERT,
-		OP_AND, OP_OR, OP_2MUL, OP_2DIV, OP_MUL, OP_DIV, OP_MOD,
-		OP_LSHIFT, OP_RSHIFT,
+	tests := []struct {
+		Opcode        byte
+		ScriptVersion int
+		Disabled      bool
+	}{
+		{OP_WHILE, 0, true},
+		{OP_WHILE, 1, true},
+		{OP_WHILE, 2, false},
+		{OP_WHILE, 3, false},
+		{OP_ENDWHILE, 0, true},
+		{OP_ENDWHILE, 1, true},
+		{OP_ENDWHILE, 2, false},
+		{OP_ENDWHILE, 3, false},
+		{OP_CIRCULATION, 1, false},
+		{OP_REQUIREOUTPUT, 0, true},
+		{OP_REQUIREOUTPUT, 1, false},
+		{OP_REQUIREOUTPUT, 2, false},
+		{OP_REQUIREOUTPUT, 3, false},
 	}
-	for _, opcodeVal := range tests {
-		pop := parsedOpcode{opcode: &opcodeArray[opcodeVal], data: nil}
-		if err := opcodeDisabled(&pop, nil); err != ErrStackOpDisabled {
-			t.Errorf("opcodeDisabled: unexpected error - got %v, "+
-				"want %v", err, ErrStackOpDisabled)
-			return
+
+	for _, tc := range tests {
+		pop := parsedOpcode{opcode: &opcodeArray[tc.Opcode]}
+		if disabled := pop.isDisabled(tc.ScriptVersion, false); disabled != tc.Disabled {
+			t.Errorf("%s.isDisabled(%d) = %t, want %t",
+				pop.print(false), tc.ScriptVersion, disabled, tc.Disabled)
 		}
 	}
 }

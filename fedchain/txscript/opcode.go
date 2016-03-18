@@ -444,17 +444,17 @@ var opcodeArray = [256]opcode{
 	OP_TUCK:         {OP_TUCK, "OP_TUCK", 1, opcodeTuck},
 
 	// Splice opcodes.
-	OP_CAT:    {OP_CAT, "OP_CAT", 1, opcodeVersions(opcodeCat, 0, 1, 2)},
-	OP_SUBSTR: {OP_SUBSTR, "OP_SUBSTR", 1, opcodeVersions(opcodeSubstr, 0, 1, 2)},
-	OP_LEFT:   {OP_LEFT, "OP_LEFT", 1, opcodeVersions(opcodeLeft, 0, 1, 2)},
-	OP_RIGHT:  {OP_RIGHT, "OP_RIGHT", 1, opcodeVersions(opcodeRight, 0, 1, 2)},
+	OP_CAT:    {OP_CAT, "OP_CAT", 1, opcodeCat},
+	OP_SUBSTR: {OP_SUBSTR, "OP_SUBSTR", 1, opcodeSubstr},
+	OP_LEFT:   {OP_LEFT, "OP_LEFT", 1, opcodeLeft},
+	OP_RIGHT:  {OP_RIGHT, "OP_RIGHT", 1, opcodeRight},
 	OP_SIZE:   {OP_SIZE, "OP_SIZE", 1, opcodeSize},
 
 	// Bitwise logic opcodes.
-	OP_INVERT:      {OP_INVERT, "OP_INVERT", 1, opcodeDisabled},
-	OP_AND:         {OP_AND, "OP_AND", 1, opcodeDisabled},
-	OP_OR:          {OP_OR, "OP_OR", 1, opcodeDisabled},
-	OP_XOR:         {OP_XOR, "OP_XOR", 1, opcodeDisabled},
+	OP_INVERT:      {OP_INVERT, "OP_INVERT", 1, nil}, // disabled
+	OP_AND:         {OP_AND, "OP_AND", 1, nil},       // disabled
+	OP_OR:          {OP_OR, "OP_OR", 1, nil},         // disabled
+	OP_XOR:         {OP_XOR, "OP_XOR", 1, nil},       // disabled
 	OP_EQUAL:       {OP_EQUAL, "OP_EQUAL", 1, opcodeEqual},
 	OP_EQUALVERIFY: {OP_EQUALVERIFY, "OP_EQUALVERIFY", 1, opcodeEqualVerify},
 	OP_RESERVED1:   {OP_RESERVED1, "OP_RESERVED1", 1, opcodeReserved},
@@ -463,19 +463,19 @@ var opcodeArray = [256]opcode{
 	// Numeric related opcodes.
 	OP_1ADD:               {OP_1ADD, "OP_1ADD", 1, opcode1Add},
 	OP_1SUB:               {OP_1SUB, "OP_1SUB", 1, opcode1Sub},
-	OP_2MUL:               {OP_2MUL, "OP_2MUL", 1, opcodeVersions(opcode2Mul, 0, 1, 2)},
-	OP_2DIV:               {OP_2DIV, "OP_2DIV", 1, opcodeVersions(opcode2Div, 0, 1, 2)},
+	OP_2MUL:               {OP_2MUL, "OP_2MUL", 1, opcode2Mul},
+	OP_2DIV:               {OP_2DIV, "OP_2DIV", 1, opcode2Div},
 	OP_NEGATE:             {OP_NEGATE, "OP_NEGATE", 1, opcodeNegate},
 	OP_ABS:                {OP_ABS, "OP_ABS", 1, opcodeAbs},
 	OP_NOT:                {OP_NOT, "OP_NOT", 1, opcodeNot},
 	OP_0NOTEQUAL:          {OP_0NOTEQUAL, "OP_0NOTEQUAL", 1, opcode0NotEqual},
 	OP_ADD:                {OP_ADD, "OP_ADD", 1, opcodeAdd},
 	OP_SUB:                {OP_SUB, "OP_SUB", 1, opcodeSub},
-	OP_MUL:                {OP_MUL, "OP_MUL", 1, opcodeVersions(opcodeMul, 0, 1, 2)},
-	OP_DIV:                {OP_DIV, "OP_DIV", 1, opcodeVersions(opcodeDiv, 0, 1, 2)},
-	OP_MOD:                {OP_MOD, "OP_MOD", 1, opcodeVersions(opcodeMod, 0, 1, 2)},
-	OP_LSHIFT:             {OP_LSHIFT, "OP_LSHIFT", 1, opcodeVersions(opcodeLShift, 0, 1, 2)},
-	OP_RSHIFT:             {OP_RSHIFT, "OP_RSHIFT", 1, opcodeVersions(opcodeRShift, 0, 1, 2)},
+	OP_MUL:                {OP_MUL, "OP_MUL", 1, opcodeMul},
+	OP_DIV:                {OP_DIV, "OP_DIV", 1, opcodeDiv},
+	OP_MOD:                {OP_MOD, "OP_MOD", 1, opcodeMod},
+	OP_LSHIFT:             {OP_LSHIFT, "OP_LSHIFT", 1, opcodeLShift},
+	OP_RSHIFT:             {OP_RSHIFT, "OP_RSHIFT", 1, opcodeRShift},
 	OP_BOOLAND:            {OP_BOOLAND, "OP_BOOLAND", 1, opcodeBoolAnd},
 	OP_BOOLOR:             {OP_BOOLOR, "OP_BOOLOR", 1, opcodeBoolOr},
 	OP_NUMEQUAL:           {OP_NUMEQUAL, "OP_NUMEQUAL", 1, opcodeNumEqual},
@@ -532,7 +532,7 @@ var opcodeArray = [256]opcode{
 	OP_OUTPUTSCRIPT:  {OP_OUTPUTSCRIPT, "OP_OUTPUTSCRIPT", 1, opcodeOutputScript},
 	OP_TIME:          {OP_TIME, "OP_TIME", 1, opcodeTime},
 	OP_CIRCULATION:   {OP_CIRCULATION, "OP_CIRCULATION", 1, opcodeCirculation},
-	OP_CATPUSHDATA:   {OP_CATPUSHDATA, "OP_CATPUSHDATA", 1, opcodeVersions(opcodeCatPushData, 0, 1, 2)},
+	OP_CATPUSHDATA:   {OP_CATPUSHDATA, "OP_CATPUSHDATA", 1, opcodeCatPushData},
 	OP_UNKNOWN200:    {OP_UNKNOWN200, "OP_UNKNOWN200", 1, opcodeInvalid},
 	OP_UNKNOWN201:    {OP_UNKNOWN201, "OP_UNKNOWN201", 1, opcodeInvalid},
 
@@ -542,8 +542,8 @@ var opcodeArray = [256]opcode{
 	OP_UNKNOWN205: {OP_UNKNOWN205, "OP_UNKNOWN205", 1, opcodeInvalid},
 	OP_UNKNOWN206: {OP_UNKNOWN206, "OP_UNKNOWN206", 1, opcodeInvalid},
 	OP_UNKNOWN207: {OP_UNKNOWN207, "OP_UNKNOWN207", 1, opcodeInvalid},
-	OP_WHILE:      {OP_WHILE, "OP_WHILE", 1, opcodeVersions(opcodeWhile, 2)},
-	OP_ENDWHILE:   {OP_ENDWHILE, "OP_ENDWHILE", 1, opcodeVersions(opcodeEndwhile, 2)},
+	OP_WHILE:      {OP_WHILE, "OP_WHILE", 1, opcodeWhile},
+	OP_ENDWHILE:   {OP_ENDWHILE, "OP_ENDWHILE", 1, opcodeEndwhile},
 	OP_UNKNOWN210: {OP_UNKNOWN210, "OP_UNKNOWN210", 1, opcodeInvalid},
 	OP_UNKNOWN211: {OP_UNKNOWN211, "OP_UNKNOWN211", 1, opcodeInvalid},
 	OP_UNKNOWN212: {OP_UNKNOWN212, "OP_UNKNOWN212", 1, opcodeInvalid},
@@ -630,17 +630,15 @@ type parsedOpcode struct {
 // isDisabled returns whether or not the opcode is disabled and thus is always
 // bad to see in the instruction stream (even if turned off by a conditional).
 func (pop *parsedOpcode) isDisabled(scriptVersionVal int, isBlock bool) bool {
-	v01 := (scriptVersionVal == 0 || scriptVersionVal == 1)
-
 	switch pop.opcode.value {
-	case OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT, OP_2MUL, OP_2DIV, OP_MUL, OP_DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT:
-		return !v01
 	case OP_INVERT, OP_AND, OP_OR, OP_XOR:
 		return true
 	case OP_REQUIREOUTPUT:
-		return scriptVersionVal != 1
+		return scriptVersionVal == 0
 	case OP_ASSET, OP_AMOUNT, OP_OUTPUTSCRIPT, OP_TIME, OP_CIRCULATION:
-		return !v01 || isBlock
+		return isBlock
+	case OP_WHILE, OP_ENDWHILE:
+		return scriptVersionVal == 0 || scriptVersionVal == 1
 	}
 
 	return false
@@ -802,30 +800,6 @@ func (pop *parsedOpcode) bytes() ([]byte, error) {
 // *******************************************
 // Opcode implementation functions start here.
 // *******************************************
-
-// opcodeDisabled is a common handler for disabled opcodes.  It returns an
-// appropriate error indicating the opcode is disabled.  While it would
-// ordinarily make more sense to detect if the script contains any disabled
-// opcodes before executing in an initial parse step, the consensus rules
-// dictate the script doesn't fail until the program counter passes over a
-// disabled opcode (even when they appear in a branch that is not executed).
-func opcodeDisabled(op *parsedOpcode, vm *Engine) error {
-	return ErrStackOpDisabled
-}
-
-// opcodeVersions creates an opcode-handling function that only works in a
-// script with the provided versions. It behaves like opcodeDisabled()
-// otherwise.
-func opcodeVersions(opcodeFn func(*parsedOpcode, *Engine) error, versions ...scriptNum) func(*parsedOpcode, *Engine) error {
-	return func(op *parsedOpcode, vm *Engine) error {
-		for _, v := range versions {
-			if vm.currentVersion() == v {
-				return opcodeFn(op, vm)
-			}
-		}
-		return opcodeDisabled(op, vm)
-	}
-}
 
 // opcodeReserved is a common handler for all reserved opcodes.  It returns an
 // appropriate error indicating the opcode is reserved.
@@ -2336,9 +2310,6 @@ func popAssetID(stack *stack) (*bc.AssetID, error) {
 // accounting for other OP_REQUIREOUTPUTs.  Pushes true if so, false
 // otherwise.
 func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
-	if vm.currentVersion() != 1 {
-		return ErrScriptVersion
-	}
 	script, err := vm.dstack.PopByteArray()
 	if err != nil {
 		return err
@@ -2448,9 +2419,6 @@ func opcodeCirculation(op *parsedOpcode, vm *Engine) error {
 // SCRIPT EVAL
 // Interprets SCRIPT
 func opcodeEval(op *parsedOpcode, vm *Engine) error {
-	if vm.currentVersion() != 0 && vm.currentVersion() != 1 {
-		return ErrScriptVersion
-	}
 	script, err := vm.dstack.PopByteArray()
 	if err != nil {
 		return err
