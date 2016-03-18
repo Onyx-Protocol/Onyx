@@ -81,6 +81,11 @@ func buildSingle(ctx context.Context, req *BuildRequest) (interface{}, error) {
 		return nil, err
 	}
 
+	// ensure null is never returned for inputs
+	if tpl.Inputs == nil {
+		tpl.Inputs = []*txbuilder.Input{}
+	}
+
 	return map[string]interface{}{"template": tpl}, nil
 }
 
