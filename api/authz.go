@@ -15,6 +15,8 @@ import (
 var (
 	errNoAccessToResource = errors.New("Resources are not available to user")
 	errNotAdmin           = errors.New("Resource is only available to admins")
+
+	EnableCrossProjectXferHack = false
 )
 
 func projectAdminAuthz(ctx context.Context, project string) error {
@@ -121,6 +123,13 @@ func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
 	}
 	if err != nil {
 		return err
+	}
+
+	// If EnableCrossProjectXferHack is set, we can ignore authz constraints on
+	// number of projects and project membership. As a practical concession,
+	// this hack does not account for projects that have been archived.
+	if EnableCrossProjectXferHack {
+		return nil
 	}
 
 	projects := append(accountProjects, assetProjects...)
