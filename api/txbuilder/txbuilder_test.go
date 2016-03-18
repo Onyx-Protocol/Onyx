@@ -42,10 +42,10 @@ func (tr *testReserver) Reserve(ctx context.Context, assetAmt *bc.AssetAmount, t
 				SigScriptSuffix: []byte("redeem"),
 			},
 		}},
-		Change: &Destination{
+		Change: []*Destination{{
 			AssetAmount: *assetAmt,
 			Receiver:    &testRecv{script: []byte("change")},
-		},
+		}},
 	}, nil
 }
 

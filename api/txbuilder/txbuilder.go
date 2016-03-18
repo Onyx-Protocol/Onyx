@@ -56,9 +56,7 @@ func build(ctx context.Context, sources []*Source, dests []*Destination, metadat
 			tx.Inputs = append(tx.Inputs, item.TxInput)
 			inputs = append(inputs, item.TemplateInput)
 		}
-		if reserveResult.Change != nil {
-			dests = append(dests, reserveResult.Change)
-		}
+		dests = append(dests, reserveResult.Change...)
 	}
 
 	for _, dest := range dests {

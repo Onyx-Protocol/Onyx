@@ -19,3 +19,5 @@ func FC() *fedchain.FC {
 func LoadAccountInfo(ctx context.Context, outs []*txdb.Output) ([]*txdb.Output, error) {
 	return loadAccountInfo(ctx, outs)
 }
+
+var BreakupChange = breakupChange

@@ -48,9 +48,9 @@ func TestAccountSourceReserve(t *testing.T) {
 			},
 			TemplateInput: nil,
 		}},
-		Change: &txbuilder.Destination{
+		Change: []*txbuilder.Destination{{
 			AssetAmount: bc.AssetAmount{AssetID: asset, Amount: 1},
-		},
+		}},
 	}
 
 	if len(got.Items) != 1 {
@@ -60,7 +60,7 @@ func TestAccountSourceReserve(t *testing.T) {
 	// generated address can change based on test ordering, so ignore in comparison
 	got.Items[0].TemplateInput = nil
 
-	ar, ok := got.Change.Receiver.(*AccountReceiver)
+	ar, ok := got.Change[0].Receiver.(*AccountReceiver)
 	if !ok {
 		t.Fatalf("expected change destination to have AccountReceiver")
 	}
@@ -70,7 +70,7 @@ func TestAccountSourceReserve(t *testing.T) {
 	}
 
 	// clear out to not compare generated addresses
-	got.Change.Receiver = nil
+	got.Change[0].Receiver = nil
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("reserve result\ngot:\n\t%+v\nwant:\n\t%+v", got, want)
@@ -119,7 +119,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		// generated address can change based on test ordering, so ignore in comparison
 		got.Items[0].TemplateInput = nil
 
-		ar, ok := got.Change.Receiver.(*AccountReceiver)
+		ar, ok := got.Change[0].Receiver.(*AccountReceiver)
 		if !ok {
 			t.Fatalf("expected change destination to have AccountReceiver")
 		}
@@ -127,7 +127,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 			t.Errorf("got receiver addr account = %v want %v", ar.Addr().AccountID, accID)
 		}
 		// clear out to not compare generated addresses
-		got.Change.Receiver = nil
+		got.Change[0].Receiver = nil
 		return got
 	}
 
@@ -222,5 +222,35 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 		if got != want {
 			t.Errorf("reserved utxo outpoint got=%v want=%v", got, want)
 		}
+	}
+}
+
+func TestBreakupChange(t *testing.T) {
+	got := BreakupChange(1)
+	want := []uint64{1}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("expected %v, got %v", want, got)
+	}
+
+	// Now do a lot of BreakupChange calls and expect that at least one
+	// of them will create two or more pieces.  Check that in all cases
+	// the pieces add up to the input.
+	var anyMultiples bool
+	for i := 0; i < 100; i++ {
+		got := BreakupChange(100)
+		var sum uint64
+		for _, n := range got {
+			sum += n
+		}
+		if sum != 100 {
+			t.Errorf("sum of %v is %d, not 100", got, sum)
+		}
+		if len(got) > 1 {
+			anyMultiples = true
+		}
+	}
+
+	if !anyMultiples {
+		t.Errorf("no calls produced multiple change pieces, that's very unlikely")
 	}
 }

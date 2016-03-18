@@ -1,6 +1,7 @@
 package asset
 
 import (
+	"math/rand"
 	"time"
 
 	"golang.org/x/net/context"
@@ -63,17 +64,34 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 		result.Items = append(result.Items, item)
 	}
 	if len(change) > 0 {
-		changeAssetAmount := &bc.AssetAmount{
-			AssetID: assetAmount.AssetID,
-			Amount:  change[0].Amount,
-		}
-		result.Change, err = NewAccountDestination(ctx, changeAssetAmount, reserver.AccountID, nil)
-		if err != nil {
-			return nil, err
+		changeAmounts := breakupChange(change[0].Amount)
+
+		// TODO(bobg): As pointed out by @kr, each time through this loop
+		// involves a db write (in the call to NewAccountDestination).
+		// May be preferable performancewise to allocate all the
+		// destinations in one call.
+		for _, changeAmount := range changeAmounts {
+			dest, err := NewAccountDestination(ctx, &bc.AssetAmount{AssetID: assetAmount.AssetID, Amount: changeAmount}, reserver.AccountID, nil)
+			if err != nil {
+				return nil, errors.Wrap(err, "creating change destination")
+			}
+			result.Change = append(result.Change, dest)
 		}
 	}
 
 	return result, nil
+}
+
+func breakupChange(total uint64) (amounts []uint64) {
+	for total > 1 && rand.Intn(2) == 0 {
+		thisChange := 1 + uint64(rand.Int63n(int64(total)))
+		amounts = append(amounts, thisChange)
+		total -= thisChange
+	}
+	if total > 0 {
+		amounts = append(amounts, total)
+	}
+	return amounts
 }
 
 func NewAccountSource(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, txHash *bc.Hash, clientToken *string) *txbuilder.Source {

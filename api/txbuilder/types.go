@@ -43,7 +43,7 @@ type ReserveResultItem struct {
 
 type ReserveResult struct {
 	Items  []*ReserveResultItem
-	Change *Destination
+	Change []*Destination
 }
 
 type Reserver interface {
