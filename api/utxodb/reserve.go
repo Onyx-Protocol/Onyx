@@ -213,29 +213,36 @@ func Cancel(ctx context.Context, outpoints []bc.Outpoint) error {
 // ExpireReservations is meant to be run as a goroutine. It loops
 // forever, calling the expire_reservations() pl/pgsql function to
 // remove expired reservations from the reservations table.
-func ExpireReservations(ctx context.Context, period time.Duration) {
-	for range time.Tick(period) {
-		err := func() error {
-			dbtx, ctx, err := pg.Begin(ctx)
-			if err != nil {
-				return err
-			}
-			defer dbtx.Rollback(ctx)
+func ExpireReservations(ctx context.Context, period time.Duration, deposed <-chan struct{}) {
+	ticks := time.Tick(period)
+	for {
+		select {
+		case <-deposed:
+			chainlog.Messagef(ctx, "Deposed, ExpireReservations exiting")
+			return
+		case <-ticks:
+			err := func() error {
+				dbtx, ctx, err := pg.Begin(ctx)
+				if err != nil {
+					return err
+				}
+				defer dbtx.Rollback(ctx)
 
-			_, err = pg.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
-			if err != nil {
-				return err
-			}
+				_, err = pg.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
+				if err != nil {
+					return err
+				}
 
-			_, err = pg.Exec(ctx, `SELECT expire_reservations()`)
-			if err != nil {
-				return err
-			}
+				_, err = pg.Exec(ctx, `SELECT expire_reservations()`)
+				if err != nil {
+					return err
+				}
 
-			return dbtx.Commit(ctx)
-		}()
-		if err != nil {
-			chainlog.Error(ctx, err)
+				return dbtx.Commit(ctx)
+			}()
+			if err != nil {
+				chainlog.Error(ctx, err)
+			}
 		}
 	}
 }

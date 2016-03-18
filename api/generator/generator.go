@@ -42,9 +42,13 @@ func Enabled() bool {
 
 // Init initializes and enables the generator component of the node.
 // It must be called before any other functions in this package.
-// It will attempt to create one block per period.
 // The signers in remote will be contacted to sign each block.
 // The local signer, if non-nil, will also sign each block.
+//
+// TODO(bobg): Remove the period parameter, since this function no
+// longer launches a make-blocks goroutine.  (But for now it's used to
+// initialize a package-private copy of that value for use in
+// GetSummary.)
 func Init(ctx context.Context, chain *fedchain.FC, blockPubkeys []*btcec.PublicKey, nSigs int, period time.Duration, local *signer.Signer, remote []*RemoteSigner) error {
 	if enabled {
 		return errors.New("generator: Init called more than once")
@@ -63,10 +67,6 @@ func Init(ctx context.Context, chain *fedchain.FC, blockPubkeys []*btcec.PublicK
 	localSigner = local
 	blockPeriod = period
 	enabled = true
-
-	if period != 0 { // 0 means "I'll call MakeBlock myself, thanks"
-		go makeBlocks(ctx, blockPeriod)
-	}
 
 	return nil
 }

@@ -14,7 +14,6 @@ import (
 	"chain/fedchain"
 	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
-	"chain/log"
 	"chain/net/trace/span"
 )
 
@@ -29,19 +28,6 @@ var (
 	// block.
 	ErrUnknownPubkey = errors.New("unknown block pubkey")
 )
-
-// makeBlocks runs forever, creating a block periodically.
-func makeBlocks(ctx context.Context, period time.Duration) {
-	for range time.Tick(period) {
-		func() {
-			defer log.RecoverAndLogError(ctx)
-			_, err := MakeBlock(ctx)
-			if err != nil {
-				log.Error(ctx, err)
-			}
-		}()
-	}
-}
 
 // MakeBlock creates a new bc.Block and updates the txpool/utxo state.
 func MakeBlock(ctx context.Context) (*bc.Block, error) {

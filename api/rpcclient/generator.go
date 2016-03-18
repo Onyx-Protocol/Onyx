@@ -1,14 +1,11 @@
 package rpcclient
 
 import (
-	"time"
-
 	"golang.org/x/net/context"
 
 	"chain/errors"
 	"chain/fedchain"
 	"chain/fedchain/bc"
-	"chain/log"
 	"chain/net/rpc"
 )
 
@@ -19,21 +16,6 @@ func Submit(ctx context.Context, tx *bc.Tx) error {
 		return ErrNoGenerator
 	}
 	return rpc.Call(ctx, generatorURL, "/rpc/generator/submit", tx, nil)
-}
-
-// PollForBlocks runs forever, attempting to get the latest blocks
-// once per period from a remote generator.  Do not call this if no
-// remote generator is configured!
-func PollForBlocks(ctx context.Context, period time.Duration) {
-	for range time.Tick(period) {
-		func() {
-			defer log.RecoverAndLogError(ctx)
-			err := GetBlocks(ctx)
-			if err != nil {
-				log.Error(ctx, err)
-			}
-		}()
-	}
 }
 
 // GetBlocks sends a get-blocks RPC request to the generator for all

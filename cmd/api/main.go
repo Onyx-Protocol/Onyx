@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"crypto/tls"
 	"encoding/hex"
 	"expvar"
@@ -167,19 +168,17 @@ func main() {
 		orderbook.ConnectFedchain(fc)
 	}
 
-	go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
 	if *isGenerator {
 		remotes := remoteSignerInfo(ctx)
 		err := generator.Init(ctx, fc, []*btcec.PublicKey{pubKey}, 1, blockPeriod, localSigner, remotes)
 		if err != nil {
 			chainlog.Fatal(ctx, "error", err)
 		}
-	} else {
-		go rpcclient.PollForBlocks(ctx, blockPeriod)
 	}
 
-	var h chainhttp.Handler
-	h = api.Handler(*nouserSecret, localSigner)
+	go determineLeader(ctx)
+
+	h := api.Handler(*nouserSecret, localSigner)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}
@@ -268,4 +267,111 @@ func (w *errlog) Write(p []byte) (int, error) {
 		w.t = time.Now()
 	}
 	return len(p), nil // report success for the MultiWriter
+}
+
+// This runs as a goroutine, trying once every five seconds to become
+// the leader for the core.  If it succeeds, then it launches the
+// leader goroutines (for generating or fetching blocks, and for
+// expiring reservations) and enters a leadership-keepalive loop.
+//
+// The Chain Core has up to a 10-second refractory period after
+// shutdown, during which no process can become the new leader.
+func determineLeader(ctx context.Context) {
+	leaderKeyBytes := make([]byte, 32)
+	_, err := rand.Read(leaderKeyBytes)
+	if err != nil {
+		chainlog.Fatal(ctx, "error", err)
+	}
+	leaderKey := hex.EncodeToString(leaderKeyBytes)
+	log.Println("Chose leaderKey:", leaderKey)
+
+	const (
+		insertQ = `
+			INSERT INTO leader (leader_key, expiry) VALUES ($1, CURRENT_TIMESTAMP + INTERVAL '10 seconds')
+			ON CONFLICT DO UPDATE SET leader_key = $1, expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
+				WHERE expiry < CURRENT_TIMESTAMP
+		`
+		updateQ = `
+			UPDATE leader SET expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
+				WHERE leader_key = $1
+		`
+	)
+
+	for range time.Tick(5 * time.Second) {
+		// Try to put this process's leaderKey into the leader table.  It
+		// succeeds if the table's empty or the existing row (there can be
+		// only one) is expired.  It fails otherwise.
+		//
+		// On success, this process's leadership expires in 10 seconds
+		// unless it's renewed using maintain_leadership() (which happens
+		// below).  That extends it for another 10 seconds.
+		res, err := pg.Exec(ctx, insertQ, leaderKey)
+		if err != nil {
+			chainlog.Error(ctx, err)
+			continue
+		}
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			chainlog.Error(ctx, err)
+			continue
+		}
+
+		if rowsAffected == 0 {
+			continue
+		}
+
+		log.Println("I am the core leader")
+
+		deposed := make(chan struct{})
+
+		go blockLoop(ctx, deposed)
+		if *isManager {
+			go utxodb.ExpireReservations(ctx, expireReservationsPeriod, deposed)
+		}
+
+		for range time.Tick(5 * time.Second) {
+			res, err = pg.Exec(ctx, updateQ, leaderKey)
+			if err == nil {
+				rowsAffected, err = res.RowsAffected()
+				if err == nil && rowsAffected > 0 {
+					// still leading
+					continue
+				}
+			}
+
+			// Either the UPDATE affected no rows, or it (or RowsAffected)
+			// produced an error.
+
+			if err != nil {
+				chainlog.Error(ctx, err)
+			}
+			log.Println("No longer core leader")
+			close(deposed)
+			break
+		}
+	}
+}
+
+func blockLoop(ctx context.Context, deposed <-chan struct{}) {
+	ticks := time.Tick(blockPeriod)
+	for {
+		select {
+		case <-deposed:
+			log.Println("Deposed, blockLoop exiting")
+			return
+		case <-ticks:
+			func() {
+				defer chainlog.RecoverAndLogError(ctx)
+				var err error
+				if *isGenerator {
+					_, err = generator.MakeBlock(ctx)
+				} else {
+					err = rpcclient.GetBlocks(ctx)
+				}
+				if err != nil {
+					chainlog.Error(ctx, err)
+				}
+			}()
+		}
+	}
 }
