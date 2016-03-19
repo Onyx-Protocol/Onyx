@@ -48,10 +48,10 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 	switch source.Type {
 	case "account", "":
 		if source.AccountID == "" {
-			return nil, errors.WithDetail(ErrBadBuildRequest, "no account specified on input")
+			return nil, errors.WithDetail(ErrBadBuildRequest, "account_id is not specified on the input")
 		}
 		if source.AssetID == nil {
-			return nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
+			return nil, errors.WithDetail(ErrBadBuildRequest, "asset_id is not specified on the input")
 		}
 		if source.Amount == 0 {
 			return nil, errors.WithDetailf(ErrBadBuildRequest,
@@ -64,7 +64,7 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 		return asset.NewAccountSource(ctx, assetAmount, source.AccountID, source.TxHash, source.ClientToken), nil
 	case "issue":
 		if source.AssetID == nil {
-			return nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
+			return nil, errors.WithDetail(ErrBadBuildRequest, "asset_id is not specified on the issuance input")
 		}
 		assetAmount := &bc.AssetAmount{
 			AssetID: *source.AssetID,
@@ -73,14 +73,17 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 		return issuer.NewIssueSource(ctx, assetAmount), nil
 	case "orderbook-redeem":
 		if source.PaymentAssetID == nil {
-			return nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
+			return nil, errors.WithDetail(ErrBadBuildRequest, "asset_id is not specified on the orderbook-redeem input")
 		}
 		if source.PaymentAmount == 0 {
 			return nil, errors.WithDetailf(ErrBadBuildRequest,
 				"input for asset %s has zero amount", *source.PaymentAssetID)
 		}
-		if source.TxHash == nil || source.Index == nil {
-			return nil, errors.WithDetailf(ErrBadBuildRequest, "bad order")
+		if source.TxHash == nil {
+			return nil, errors.WithDetailf(ErrBadBuildRequest, "transaction_id is not specified on the orderbook-redeem input")
+		}
+		if source.Index == nil {
+			return nil, errors.WithDetailf(ErrBadBuildRequest, "index is not specified on the orderbook-redeem input")
 		}
 		outpoint := &bc.Outpoint{
 			Hash:  *source.TxHash,
@@ -99,8 +102,11 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 		}
 		return orderbook.NewRedeemSource(openOrder, source.Amount, paymentAmount), nil
 	case "orderbook-cancel":
-		if source.TxHash == nil || source.Index == nil {
-			return nil, errors.WithDetailf(ErrBadBuildRequest, "bad order")
+		if source.TxHash == nil {
+			return nil, errors.WithDetailf(ErrBadBuildRequest, "transaction_id is not specified on the orderbook-cancel input")
+		}
+		if source.Index == nil {
+			return nil, errors.WithDetailf(ErrBadBuildRequest, "index is not specified on the orderbook-cancel input")
 		}
 		outpoint := &bc.Outpoint{
 			Hash:  *source.TxHash,
@@ -131,7 +137,7 @@ type Destination struct {
 
 func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, error) {
 	if dest.AssetID == nil {
-		return nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
+		return nil, errors.WithDetail(ErrBadBuildRequest, "asset_id is not specified on output")
 	}
 
 	// backwards compatibility fix
@@ -147,7 +153,7 @@ func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, erro
 	switch dest.Type {
 	case "account", "":
 		if dest.AccountID == "" {
-			return nil, errors.WithDetail(ErrBadBuildRequest, "no account specified on output")
+			return nil, errors.WithDetail(ErrBadBuildRequest, "account_id is not specified on output")
 		}
 		return asset.NewAccountDestination(ctx, assetAmount, dest.AccountID, dest.Metadata)
 	case "address":
