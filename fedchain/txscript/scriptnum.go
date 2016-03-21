@@ -129,6 +129,13 @@ func Int64ToScriptBytes(n int64) []byte {
 	return scriptNum(n).Bytes()
 }
 
+func BoolToScriptBytes(b bool) []byte {
+	if b {
+		return Int64ToScriptBytes(1)
+	}
+	return Int64ToScriptBytes(0)
+}
+
 // Int32 returns the script number clamped to a valid int32.  That is to say
 // when the script number is higher than the max allowed int32, the max int32
 // value is returned and vice versa for the minimum value.  Note that this

@@ -6,8 +6,8 @@ package txscript
 
 import "encoding/hex"
 
-// asBool gets the boolean value of the byte array.
-func asBool(t []byte) bool {
+// AsBool gets the boolean value of the byte array.
+func AsBool(t []byte) bool {
 	for i := range t {
 		if t[i] != 0 {
 			// Negative 0 is also considered false.
@@ -18,6 +18,15 @@ func asBool(t []byte) bool {
 		}
 	}
 	return false
+}
+
+// AsInt64 decodes an int64 from a byte array.
+func AsInt64(param []byte) (int64, error) {
+	v, err := MakeScriptNumWithMaxLen(param, false, len(param))
+	if err != nil {
+		return 0, err
+	}
+	return int64(v), nil
 }
 
 // fromBool converts a boolean into the appropriate byte array.
@@ -100,7 +109,7 @@ func (s *stack) PopBool() (bool, error) {
 		return false, err
 	}
 
-	return asBool(so), nil
+	return AsBool(so), nil
 }
 
 // PeekByteArray returns the Nth item on the stack without removing it.
@@ -132,7 +141,7 @@ func (s *stack) PeekBool(idx int32) (bool, error) {
 		return false, err
 	}
 
-	return asBool(so), nil
+	return AsBool(so), nil
 }
 
 // nipN is an internal function that removes the nth item on the stack and

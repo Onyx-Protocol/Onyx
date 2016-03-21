@@ -26,6 +26,7 @@ import (
 	"chain/api/rpcclient"
 	"chain/api/signer"
 	"chain/api/smartcontracts/orderbook"
+	"chain/api/smartcontracts/voting"
 	"chain/api/txdb"
 	"chain/api/utxodb"
 	"chain/database/pg"
@@ -168,6 +169,7 @@ func main() {
 
 	if *isManager {
 		orderbook.ConnectFedchain(fc)
+		voting.ConnectFedchain(fc)
 	}
 
 	if *isGenerator {

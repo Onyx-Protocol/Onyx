@@ -220,6 +220,19 @@ func (b *ScriptBuilder) AddInt64(val int64) *ScriptBuilder {
 	return b
 }
 
+// AddBool pushes the passed boolean to the end of the script.  If the boolean
+// is true, a OP_1 will be pushed onto the stack.  If the boolean is false, a
+// OP_0 will be pushed onto the stack.  The script will not be modified if
+// pushing the data would cause the script to exceed the maximum allowed script
+// engine size.
+func (b *ScriptBuilder) AddBool(val bool) *ScriptBuilder {
+	var v int64
+	if val {
+		v = 1
+	}
+	return b.AddInt64(v)
+}
+
 // ConcatRawScript makes the ability to add the pass script directly to
 // an existing script to the test package.  This differs from AddData since it
 // doesn't add a push data opcode.

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -203,10 +204,20 @@ func (req *BuildRequest) parse(ctx context.Context) (*txbuilder.Template, []*txb
 		}
 	}
 
-	sources := make([]*txbuilder.Source, 0, len(req.Sources))
-	destinations := make([]*txbuilder.Destination, 0, len(req.Dests))
+	var (
+		votingSources      = []*Source{}
+		votingDestinations = []*Destination{}
+		sources            = make([]*txbuilder.Source, 0, len(req.Sources))
+		destinations       = make([]*txbuilder.Destination, 0, len(req.Dests))
+	)
 
+	// Voting sources and destinations require custom parsing.
 	for _, source := range req.Sources {
+		if strings.HasPrefix(source.Type, "vrtoken-") {
+			votingSources = append(votingSources, source)
+			continue
+		}
+
 		parsed, err := source.parse(ctx)
 		if err != nil {
 			return nil, nil, nil, err
@@ -214,11 +225,25 @@ func (req *BuildRequest) parse(ctx context.Context) (*txbuilder.Template, []*txb
 		sources = append(sources, parsed)
 	}
 	for _, destination := range req.Dests {
+		if destination.Type == "vrtoken" {
+			votingDestinations = append(votingDestinations, destination)
+			continue
+		}
+
 		parsed, err := destination.parse(ctx)
 		if err != nil {
 			return nil, nil, nil, err
 		}
 		destinations = append(destinations, parsed)
+	}
+
+	if len(votingSources) > 0 || len(votingDestinations) > 0 {
+		parsedVotingSources, parsedVotingDests, err := parseVotingBuildRequest(ctx, votingSources, votingDestinations)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		sources = append(sources, parsedVotingSources...)
+		destinations = append(destinations, parsedVotingDests...)
 	}
 	return prevTx, sources, destinations, nil
 }

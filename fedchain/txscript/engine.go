@@ -528,6 +528,12 @@ func (vm *Engine) SetAltStack(data [][]byte) {
 	setStack(&vm.astack, data)
 }
 
+// SetTimestamp sets the engine's timestamp. Some opcodes read the engine's
+// timestamp during execution.
+func (vm *Engine) SetTimestamp(t time.Time) {
+	vm.timestamp = t.Unix()
+}
+
 // This function prepares a previously allocated Engine for reuse with
 // another txin, preserving state (to wit, vm.available) that P2C
 // wants to save between txins.

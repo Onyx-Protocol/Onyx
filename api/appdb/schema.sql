@@ -832,6 +832,22 @@ CREATE VIEW utxos_status AS
 
 
 --
+-- Name: voting_right_txs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE voting_right_txs (
+    tx_hash text NOT NULL,
+    index integer NOT NULL,
+    asset_id text NOT NULL,
+    account_id text,
+    holder bytea NOT NULL,
+    deadline bigint,
+    delegatable boolean NOT NULL,
+    ownership_chain bytea NOT NULL
+);
+
+
+--
 -- Name: key_index; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1115,6 +1131,14 @@ ALTER TABLE ONLY users
 
 ALTER TABLE ONLY utxos
     ADD CONSTRAINT utxos_pkey PRIMARY KEY (tx_hash, index);
+
+
+--
+-- Name: voting_right_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY voting_right_txs
+    ADD CONSTRAINT voting_right_txs_pkey PRIMARY KEY (tx_hash, index);
 
 
 --

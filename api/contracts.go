@@ -3,7 +3,11 @@ package api
 import (
 	"golang.org/x/net/context"
 
+	"chain/api/appdb"
 	"chain/api/smartcontracts/orderbook"
+	"chain/api/smartcontracts/voting"
+	"chain/api/txbuilder"
+	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/net/http/httpjson"
@@ -55,4 +59,104 @@ func findAccountOrders(ctx context.Context, accountID string) ([]*orderbook.Open
 		return nil, err
 	}
 	return orders, nil
+}
+
+// parseVotingBuildRequest parses `vrtoken` BuildRequest sources and
+// destinations. Unlike other asset types, voting request inputs and
+// outputs need data from each other in order to build the correct
+// txbuilder.Reservers and txbuilder.Receivers.
+//
+// This function will pair the vrtoken sources and destinations up by
+// asset ID, and use the information from both to construct the
+// txbuilder.Sources and txbuilder.Destinations.
+func parseVotingBuildRequest(ctx context.Context, sources []*Source, destinations []*Destination) (srcs []*txbuilder.Source, dsts []*txbuilder.Destination, err error) {
+	var (
+		srcsByAssetID = map[bc.AssetID]*Source{}
+		dstsByAssetID = map[bc.AssetID]*Destination{}
+	)
+	// Pair voting rights up by asset id.
+	for _, src := range sources {
+		if src.AssetID == nil {
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
+		}
+		if _, ok := srcsByAssetID[*src.AssetID]; ok {
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting right asset appears twice as source")
+		}
+		srcsByAssetID[*src.AssetID] = src
+	}
+	for _, dst := range destinations {
+		if dst.AssetID == nil {
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
+		}
+		if _, ok := dstsByAssetID[*dst.AssetID]; ok {
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting right asset appears twice as destination")
+		}
+		dstsByAssetID[*dst.AssetID] = dst
+	}
+	if len(sources) != len(destinations) {
+		// Both the source and destination must be provided in the same build
+		// request. This is unavoidable because:
+		// - the output contract script requires knowledge of the input's chain of ownership
+		// - the sigscript needs to provide the new contract parameters
+		return nil, nil, errors.WithDetailf(ErrBadBuildRequest,
+			"voting right source and destinations must be provided in the same build request")
+	}
+
+	for assetID, src := range srcsByAssetID {
+		dst, ok := dstsByAssetID[assetID]
+		if !ok {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "unknown voting right destination")
+		}
+		if src.TxHash == nil {
+			src.TxHash = src.TxHashAsID
+		}
+		if src.TxHash == nil || src.Index == nil {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
+		}
+		if src.Amount != 1 || dst.Amount != 1 {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right amount can only be 1")
+		}
+		out := bc.Outpoint{Hash: *src.TxHash, Index: *src.Index}
+
+		// Lookup the voting right by the outpoint. We'll need some of its
+		// script data, such as the previous chain of ownership.
+		old, err := voting.FindRightForOutpoint(ctx, out)
+		if err == pg.ErrUserInputNotFound {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
+		} else if err != nil {
+			return nil, nil, err
+		}
+
+		var (
+			reserver txbuilder.Reserver
+			receiver txbuilder.Receiver
+		)
+		switch src.Type {
+		case "vrtoken-transfer":
+			script := dst.Script[:]
+			if script == nil {
+				addr, err := appdb.NewAddress(ctx, dst.AccountID, true)
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "generating address, accountID %s", src.AccountID)
+				}
+				script = addr.PKScript
+			}
+			reserver, receiver, err = voting.RightTransfer(ctx, old, script)
+			if err != nil {
+				return nil, nil, err
+			}
+		default:
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "`%s` source type unimplemented", src.Type)
+		}
+		srcs = append(srcs, &txbuilder.Source{
+			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},
+			Reserver:    reserver,
+		})
+		dsts = append(dsts, &txbuilder.Destination{
+			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},
+			Metadata:    dst.Metadata,
+			Receiver:    receiver,
+		})
+	}
+	return srcs, dsts, nil
 }

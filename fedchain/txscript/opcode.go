@@ -1078,7 +1078,7 @@ func opcodeIfDup(op *parsedOpcode, vm *Engine) error {
 	}
 
 	// Push copy of data iff it isn't zero
-	if asBool(so) {
+	if AsBool(so) {
 		vm.dstack.PushByteArray(so)
 	}
 
