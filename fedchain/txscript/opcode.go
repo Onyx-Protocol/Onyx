@@ -2477,7 +2477,9 @@ func opcodeCatPushData(op *parsedOpcode, vm *Engine) error {
 	if err != nil {
 		return err
 	}
-	result := AddDataToScript(existingData, pushData)
+	result := make([]byte, len(existingData))
+	copy(result, existingData)
+	result = AddDataToScript(result, pushData)
 	vm.dstack.PushByteArray(result)
 	return nil
 }
