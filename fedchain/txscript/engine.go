@@ -81,25 +81,27 @@ type (
 
 	// Engine is the virtual machine that executes scripts.
 	Engine struct {
-		estack     scriptStack // execution stack
-		dstack     stack       // data stack
-		astack     stack       // alternate data stack
-		tx         *bc.TxData
-		block      *bc.Block
-		hashCache  *bc.SigHashCache
-		txIdx      int
-		maxOps     int
-		numOps     int
-		flags      ScriptFlags
-		ctx        context.Context
-		viewReader viewReader
-		available  []uint64 // mutable copy of each output's Amount field, used for OP_REQUIREOUTPUT reservations
-		timestamp  int64    // Unix timestamp at Engine-creation time
+		scriptVersion    []byte
+		scriptVersionVal scriptNum   // optimization - the scriptNum value of scriptVersion
+		estack           scriptStack // execution stack
+		dstack           stack       // data stack
+		astack           stack       // alternate data stack
+		tx               *bc.TxData
+		block            *bc.Block
+		hashCache        *bc.SigHashCache
+		txIdx            int
+		maxOps           int
+		numOps           int
+		flags            ScriptFlags
+		ctx              context.Context
+		viewReader       viewReader
+		available        []uint64 // mutable copy of each output's Amount field, used for OP_REQUIREOUTPUT reservations
+		timestamp        int64    // Unix timestamp at Engine-creation time
 	}
 )
 
 func (vm *Engine) currentVersion() scriptNum {
-	return vm.estack.Peek().scriptVersionVal
+	return vm.scriptVersionVal
 }
 
 func (vm *Engine) currentTxInput() *bc.TxInput {
@@ -224,17 +226,8 @@ func (vm *Engine) CheckErrorCondition(finalScript bool) error {
 
 // PushScript is called by OP_EVAL. It adds a new stack frame to the top
 // of the execution stack.
-func (vm *Engine) PushScript(newScript []parsedOpcode, adoptScriptVersion bool) {
-
-	f := vm.newFrame(newScript)
-	if f.scriptVersion == nil && adoptScriptVersion {
-		// The new script doesn't have an explicit version number, so the version
-		// is inferred to be the same as the current version number. EVAL requires
-		// this behavior.
-		f.scriptVersion = vm.estack.Peek().scriptVersion
-		f.scriptVersionVal = vm.estack.Peek().scriptVersionVal
-	}
-	vm.estack.Push(f)
+func (vm *Engine) PushScript(newScript []parsedOpcode) {
+	vm.estack.Push(&stackFrame{script: newScript})
 }
 
 // Step will execute the next instruction and move the program counter to the
@@ -565,11 +558,14 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 	vm.dstack.Reset()
 	vm.estack.Reset()
 
+	vm.scriptVersion = parseScriptVersion(parsedScriptPubKey)
+	vm.scriptVersionVal, _ = makeScriptNum(vm.scriptVersion, false) // swallow errors
+
 	// The pkscript and the sigscript are executed in separate stack frames,
 	// because they may have separate script versions. The sigscript is added
 	// second so that it will execute first.
-	vm.PushScript(parsedScriptPubKey, false)
-	vm.PushScript(parsedScriptSig, false)
+	vm.PushScript(parsedScriptPubKey)
+	vm.PushScript(parsedScriptSig)
 
 	vm.numOps = 0
 	if isPayToContract, _, _ := testContract(parsedScriptPubKey); isPayToContract {
@@ -578,17 +574,6 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 		vm.maxOps = MaxOpsPerScript
 	}
 	return nil
-}
-
-// newFrame creates a new script stack frame from parsed opcodes. If the provided
-// script doesn't have an explicit version, the script will adopt the version of
-// the current top stack frame.
-func (vm *Engine) newFrame(script []parsedOpcode) *stackFrame {
-	f := &stackFrame{script: script}
-
-	f.scriptVersion = parseScriptVersion(script)
-	f.scriptVersionVal, _ = makeScriptNum(f.scriptVersion, false) // swallow errors
-	return f
 }
 
 // Allocates an Engine object that can execute scripts for every input

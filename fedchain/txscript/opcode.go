@@ -2427,7 +2427,7 @@ func opcodeEval(op *parsedOpcode, vm *Engine) error {
 	if err != nil {
 		return err
 	}
-	vm.PushScript(parsedScript, true)
+	vm.PushScript(parsedScript)
 	return nil
 }
 

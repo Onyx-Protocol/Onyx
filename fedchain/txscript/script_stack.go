@@ -95,11 +95,9 @@ func (ss *scriptStack) curPC() (frame int, pc int, err error) {
 // stackFrame represents a single stack frame on the execution stack. It
 // encompasses a script and its current state.
 type stackFrame struct {
-	scriptVersion    []byte
-	scriptVersionVal scriptNum // optimization - the scriptNum value of scriptVersion
-	script           []parsedOpcode
-	condStack        []int // conditional stack
-	pc               int
+	script    []parsedOpcode
+	condStack []int // conditional stack
+	pc        int
 }
 
 // clone makes a shallow copy of the stackFrame. It's used in the
