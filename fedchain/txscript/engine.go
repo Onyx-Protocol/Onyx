@@ -100,6 +100,10 @@ type (
 	}
 )
 
+func isKnownVersion(version int64) bool {
+	return version >= 0 && version <= 2
+}
+
 func (vm *Engine) currentVersion() scriptNum {
 	return vm.scriptVersionVal
 }
@@ -278,6 +282,11 @@ func (vm *Engine) Step() (done bool, err error) {
 // Execute will execute all scripts in the script engine and return either nil
 // for successful validation or an error if one occurred.
 func (vm *Engine) Execute() (err error) {
+	// treat unknown versions as anyone can spend
+	if !isKnownVersion(int64(vm.scriptVersionVal)) {
+		return nil
+	}
+
 	done := false
 
 	for done != true {

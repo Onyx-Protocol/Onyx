@@ -491,5 +491,9 @@
 ["1", "2 DROP WHILE IF ENDWHILE ENDIF 1", "STRICTENC", "intertwined WHILE and IF"],
 ["1", "WHILE 0 ENDWHILE DROP", "STRICTENC", "WHILE requires version 2"],
 
+["VERSION"],
+
+["", "1 DROP HASH160 EQUAL", "", "known versions are not anyone can spend"],
+
 ["The End"]
 ]

@@ -682,5 +682,9 @@
 ["0x00 PUSHDATA1 0x03 0xcccccc", "CATPUSHDATA PUSHDATA1 0x04 0x03cccccc EQUAL", "STRICTENC", ""],
 ["DATA_1 0x05 DATA_1 0x05 SWAP DATA_4 0xdeadbeef", "CATPUSHDATA DROP DATA_1 0x05 EQUAL", "STRICTENC", "CATPUSHDATA no mutation"],
 
+["VERSION"],
+
+["", "DATA_1 0xff DROP HASH160 EQUAL", "", "anyone can spend unknown versions"],
+
 ["The End"]
 ]
