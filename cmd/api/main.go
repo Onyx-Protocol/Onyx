@@ -297,42 +297,14 @@ func determineLeader(ctx context.Context) {
 		`
 	)
 
+	var deposed chan struct{}
+	leading := false
+
 	for range time.Tick(5 * time.Second) {
-		// Try to put this process's leaderKey into the leader table.  It
-		// succeeds if the table's empty or the existing row (there can be
-		// only one) is expired.  It fails otherwise.
-		//
-		// On success, this process's leadership expires in 10 seconds
-		// unless it's renewed using maintain_leadership() (which happens
-		// below).  That extends it for another 10 seconds.
-		res, err := pg.Exec(ctx, insertQ, leaderKey)
-		if err != nil {
-			chainlog.Error(ctx, err)
-			continue
-		}
-		rowsAffected, err := res.RowsAffected()
-		if err != nil {
-			chainlog.Error(ctx, err)
-			continue
-		}
-
-		if rowsAffected == 0 {
-			continue
-		}
-
-		log.Println("I am the core leader")
-
-		deposed := make(chan struct{})
-
-		go blockLoop(ctx, deposed)
-		if *isManager {
-			go utxodb.ExpireReservations(ctx, expireReservationsPeriod, deposed)
-		}
-
-		for range time.Tick(5 * time.Second) {
-			res, err = pg.Exec(ctx, updateQ, leaderKey)
+		if leading {
+			res, err := pg.Exec(ctx, updateQ, leaderKey)
 			if err == nil {
-				rowsAffected, err = res.RowsAffected()
+				rowsAffected, err := res.RowsAffected()
 				if err == nil && rowsAffected > 0 {
 					// still leading
 					continue
@@ -347,7 +319,39 @@ func determineLeader(ctx context.Context) {
 			}
 			log.Println("No longer core leader")
 			close(deposed)
-			break
+			leading = false
+		} else {
+			// Try to put this process's leaderKey into the leader table.  It
+			// succeeds if the table's empty or the existing row (there can be
+			// only one) is expired.  It fails otherwise.
+			//
+			// On success, this process's leadership expires in 10 seconds
+			// unless it's renewed using maintain_leadership() (which happens
+			// below).  That extends it for another 10 seconds.
+			res, err := pg.Exec(ctx, insertQ, leaderKey)
+			if err != nil {
+				chainlog.Error(ctx, err)
+				continue
+			}
+			rowsAffected, err := res.RowsAffected()
+			if err != nil {
+				chainlog.Error(ctx, err)
+				continue
+			}
+
+			if rowsAffected == 0 {
+				continue
+			}
+
+			log.Println("I am the core leader")
+
+			deposed = make(chan struct{})
+			leading = true
+
+			go blockLoop(ctx, deposed)
+			if *isManager {
+				go utxodb.ExpireReservations(ctx, expireReservationsPeriod, deposed)
+			}
 		}
 	}
 }
