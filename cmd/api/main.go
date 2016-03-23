@@ -288,8 +288,8 @@ func determineLeader(ctx context.Context) {
 	const (
 		insertQ = `
 			INSERT INTO leader (leader_key, expiry) VALUES ($1, CURRENT_TIMESTAMP + INTERVAL '10 seconds')
-			ON CONFLICT DO UPDATE SET leader_key = $1, expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
-				WHERE expiry < CURRENT_TIMESTAMP
+			ON CONFLICT (singleton) DO UPDATE SET leader_key = $1, expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
+				WHERE leader.expiry < CURRENT_TIMESTAMP
 		`
 		updateQ = `
 			UPDATE leader SET expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
