@@ -14,7 +14,7 @@ echo "Stopping API server..."
 ssh ubuntu@$API_HOST 'sudo stop chain'
 
 echo "Dumping from source database..."
-pg_dump -Ox $SRC_DB_URL > $DUMP_FILE
+pg_dump -Ox $SRC_DB_URL | grep -v "CREATE EXTENSION" | grep -v "COMMENT ON EXTENSION" > $DUMP_FILE
 
 echo "Applying dump to destination database..."
 psql $DST_DB_URL < $DUMP_FILE
