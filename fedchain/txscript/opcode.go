@@ -2401,8 +2401,9 @@ func opcodeOutputScript(op *parsedOpcode, vm *Engine) error {
 	return nil
 }
 
-// Pushes the current timestamp (as of when the interpreter was
-// instantiated) onto the stack.
+// opcodeTime pushes the current timestamp onto the stack.
+// The current timestamp is either the block timestamp, or
+// the timestamp when the Engine was instantiated if in the txpool context.
 func opcodeTime(op *parsedOpcode, vm *Engine) error {
 	vm.dstack.PushInt(scriptNum(vm.timestamp))
 	return nil

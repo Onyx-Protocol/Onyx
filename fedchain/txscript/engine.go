@@ -96,7 +96,7 @@ type (
 		ctx              context.Context
 		viewReader       viewReader
 		available        []uint64 // mutable copy of each output's Amount field, used for OP_REQUIREOUTPUT reservations
-		timestamp        int64    // Unix timestamp at Engine-creation time
+		timestamp        int64    // Unix timestamp of block or engine creation
 	}
 )
 
@@ -606,6 +606,11 @@ func NewReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData
 }
 
 func newReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData, block *bc.Block, flags ScriptFlags) (*Engine, error) {
+	timestamp := time.Now().Unix()
+	if block != nil {
+		timestamp = int64(block.Timestamp)
+	}
+
 	vm := &Engine{
 		ctx:        ctx,
 		viewReader: viewReader,
@@ -613,7 +618,7 @@ func newReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData
 		block:      block,
 		flags:      flags,
 		hashCache:  &bc.SigHashCache{},
-		timestamp:  time.Now().Unix(),
+		timestamp:  timestamp,
 	}
 
 	if vm.hasFlag(ScriptVerifyMinimalData) {

@@ -11,7 +11,14 @@ interface.  The functions are only exported while the tests are being run.
 
 package txscript
 
-import "testing"
+import (
+	"testing"
+	"time"
+
+	"golang.org/x/net/context"
+
+	"chain/fedchain/bc"
+)
 
 // TstMaxScriptSize makes the internal maxScriptSize constant available to the
 // test package.
@@ -111,6 +118,34 @@ func TestParseOpcode(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, 0x00}, &fakeArray)
 	if err == nil {
 		t.Errorf("no error with dodgy opcode array!")
+	}
+}
+
+func TestEngineBlockTimestamp(t *testing.T) {
+	block := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			Timestamp: 1458770791,
+		},
+	}
+	vm, err := NewEngineForBlock(context.Background(), []byte{}, block, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if int64(block.Timestamp) != vm.timestamp {
+		t.Errorf("got vm.timestamp = %d, want = %d", vm.timestamp, block.Timestamp)
+	}
+}
+
+func TestEngineTimestamp(t *testing.T) {
+	vm, err := NewEngine(context.Background(), nil, []byte{}, &bc.TxData{
+		Inputs: []*bc.TxInput{{SignatureScript: nil}},
+	}, 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().Unix()
+	if now-vm.timestamp > 1 {
+		t.Errorf("got vm.timestamp = %d, want = %d", vm.timestamp, now)
 	}
 }
 
