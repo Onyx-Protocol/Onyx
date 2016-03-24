@@ -11,7 +11,6 @@ TRUNCATE
 	utxos,
 	blocks_utxos,
 	account_utxos,
-	assets,
 	issuance_totals,
 	addresses,
 	pool_inputs,
