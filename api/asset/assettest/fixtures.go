@@ -247,19 +247,15 @@ func InitializeSigningGenerator(ctx context.Context) (*fedchain.FC, error) {
 		return nil, err
 	}
 	localSigner := signer.New(privkey, fc)
-	if generator.Enabled() {
-		// Don't call generator.Init() again, but do ensure the genesis
-		// block is present. (It might have been rolled back by a test
-		// transaction.)
-		_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
-		if err != nil {
-			return nil, err
-		}
-	} else {
+	if !generator.Enabled() {
 		err = generator.Init(ctx, fc, []*btcec.PublicKey{pubkey}, 1, 0, localSigner, nil)
 		if err != nil {
 			return nil, err
 		}
+	}
+	_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
+	if err != nil {
+		return nil, err
 	}
 	return fc, nil
 }

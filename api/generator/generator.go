@@ -28,6 +28,12 @@ var (
 
 	// the period at which blocks should be produced.
 	blockPeriod time.Duration
+
+	// the keys used for block scripts
+	blockKeys []*btcec.PublicKey
+
+	// the number of signatures required for block scripts
+	sigsRequired int
 )
 
 type RemoteSigner struct {
@@ -58,17 +64,22 @@ func Init(ctx context.Context, chain *fedchain.FC, blockPubkeys []*btcec.PublicK
 	}
 
 	fc = chain
+	blockKeys = blockPubkeys
+	sigsRequired = nSigs
 
-	_, err := fc.UpsertGenesisBlock(ctx, blockPubkeys, nSigs)
-	if err != nil {
-		return errors.Wrap(err)
-	}
 	remoteSigners = remote
 	localSigner = local
 	blockPeriod = period
 	enabled = true
 
 	return nil
+}
+
+// UpsertGenesisBlock upserts a genesis block using
+// the keys and signatures required provided to Init.
+func UpsertGenesisBlock(ctx context.Context) error {
+	_, err := fc.UpsertGenesisBlock(ctx, blockKeys, sigsRequired)
+	return errors.Wrap(err)
 }
 
 // Submit is an http handler for the generator submit transaction endpoint.

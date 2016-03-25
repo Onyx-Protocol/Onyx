@@ -360,6 +360,13 @@ func determineLeader(ctx context.Context) {
 }
 
 func blockLoop(ctx context.Context, deposed <-chan struct{}) {
+	if generator.Enabled() {
+		err := generator.UpsertGenesisBlock(ctx)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	ticks := time.Tick(blockPeriod)
 	for {
 		select {
