@@ -54,7 +54,8 @@ func insertVotingRight(ctx context.Context, assetID bc.AssetID, outpoint bc.Outp
 }
 
 type votingRightsQuery struct {
-	outpoint *bc.Outpoint
+	accountID string
+	outpoint  *bc.Outpoint
 }
 
 func (q votingRightsQuery) Where() (string, []interface{}) {
@@ -64,13 +65,22 @@ func (q votingRightsQuery) Where() (string, []interface{}) {
 		param       int = 1
 	)
 
-	// TODO(jackson): Add additional query parameters.
+	if q.accountID != "" {
+		whereClause = fmt.Sprintf("%s AND vr.account_id = $%d\n", whereClause, param)
+		values = append(values, q.accountID)
+		param++
+	}
 	if q.outpoint != nil {
 		whereClause = fmt.Sprintf("%s AND vr.tx_hash = $%d AND vr.index = $%d\n", whereClause, param, param+1)
 		values = append(values, q.outpoint.Hash, q.outpoint.Index)
 		param += 2
 	}
 	return whereClause, values
+}
+
+// FindRightsForAccount returns all voting rights belonging to the provided account.
+func FindRightsForAccount(ctx context.Context, accountID string) ([]*RightWithUTXO, error) {
+	return findVotingRights(ctx, votingRightsQuery{accountID: accountID})
 }
 
 // FindRightForOutpoint returns the voting right with the provided tx outpoint.

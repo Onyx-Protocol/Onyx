@@ -61,6 +61,32 @@ func findAccountOrders(ctx context.Context, accountID string) ([]*orderbook.Open
 	return orders, nil
 }
 
+func findAccountVotingRights(ctx context.Context, accountID string) ([]map[string]interface{}, error) {
+	rightsWithUTXOs, err := voting.FindRightsForAccount(ctx, accountID)
+	if err != nil {
+		return nil, errors.Wrap(err, "finding account voting rights")
+	}
+
+	rights := make([]map[string]interface{}, 0, len(rightsWithUTXOs))
+	for _, r := range rightsWithUTXOs {
+		var actionTypes []string
+		if r.Outpoint.Hash == r.UTXO.Hash && r.Outpoint.Index == r.UTXO.Index {
+			actionTypes = append(actionTypes, "vrtoken-transfer", "vrtoken-delegate")
+		} else {
+			actionTypes = append(actionTypes, "vrtoken-recall")
+		}
+
+		rightToken := map[string]interface{}{
+			"asset_id":       r.AssetID,
+			"action_types":   actionTypes,
+			"transaction_id": r.UTXO.Hash,
+			"index":          r.UTXO.Index,
+		}
+		rights = append(rights, rightToken)
+	}
+	return rights, nil
+}
+
 // parseVotingBuildRequest parses `vrtoken` BuildRequest sources and
 // destinations. Unlike other asset types, voting request inputs and
 // outputs need data from each other in order to build the correct

@@ -1338,6 +1338,13 @@ CREATE INDEX utxos_asset_id_idx ON utxos USING btree (asset_id);
 
 
 --
+-- Name: voting_right_txs_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX voting_right_txs_account_id ON voting_right_txs USING btree (account_id);
+
+
+--
 -- Name: account_utxos_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
