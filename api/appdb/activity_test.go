@@ -9,6 +9,7 @@ import (
 	. "chain/api/appdb"
 	"chain/api/asset/assettest"
 	"chain/api/generator"
+	"chain/api/txdb"
 	"chain/cos/bc"
 	"chain/database/pg/pgtest"
 	"chain/testutil"
@@ -16,7 +17,6 @@ import (
 
 func TestGetActUTXOs(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -66,6 +66,7 @@ func TestGetActUTXOs(t *testing.T) {
 		},
 	})
 
+	store := txdb.NewStore()
 	err = store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -128,7 +129,6 @@ func TestGetActUTXOs(t *testing.T) {
 
 func TestGetActUTXOsIssuance(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -149,6 +149,7 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 		}},
 	})
 
+	store := txdb.NewStore()
 	err = store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -181,7 +182,6 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 
 func TestGetActAssets(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -247,7 +247,6 @@ func (a byAssetID) Less(i, j int) bool { return a[i].ID < a[j].ID }
 
 func TestGetActAccounts(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {

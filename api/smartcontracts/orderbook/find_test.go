@@ -15,7 +15,6 @@ import (
 
 func TestFindOpenOrders(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	fc, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {

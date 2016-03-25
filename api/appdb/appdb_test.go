@@ -11,23 +11,20 @@ import (
 	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/testutil"
 )
 
-// Establish a context object with a new db transaction in which to
-// run the given callback function.
-func withContext(tb testing.TB, sql string, fn func(context.Context)) {
-	var ctx context.Context
-	if sql == "" {
-		ctx = pgtest.NewContext(tb)
-	} else {
-		ctx = pgtest.NewContext(tb, sql)
+// use this if you need exactly one dbtx for the whole test.
+func startContextDBTx(t testing.TB) context.Context {
+	ctx := pgtest.NewContext(t)
+	_, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
 	}
-	defer pgtest.Finish(ctx)
-	fn(ctx)
+	return ctx
 }
 
 func newTestUser(t *testing.T, ctx context.Context, email, password string) *User {
-	ensureInTransaction(ctx)
 	if email == "" {
 		email = "foo@bar.com"
 	}
@@ -42,7 +39,12 @@ func newTestUser(t *testing.T, ctx context.Context, email, password string) *Use
 }
 
 func newTestProject(t *testing.T, ctx context.Context, name string, user *User) *Project {
-	ensureInTransaction(ctx)
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	defer dbtx.Rollback(ctx)
+
 	if user == nil {
 		user = newTestUser(t, ctx, "", "")
 	}
@@ -50,11 +52,22 @@ func newTestProject(t *testing.T, ctx context.Context, name string, user *User) 
 	if err != nil {
 		t.Fatalf("trouble setting up project in newTestProject: %v", err)
 	}
+
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
 	return project
 }
 
 func newTestIssuerNode(t *testing.T, ctx context.Context, project *Project, label string) *IssuerNode {
-	ensureInTransaction(ctx)
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	defer dbtx.Rollback(ctx)
+
 	if project == nil {
 		project = newTestProject(t, ctx, "project-1", nil)
 	}
@@ -65,11 +78,22 @@ func newTestIssuerNode(t *testing.T, ctx context.Context, project *Project, labe
 	if issuerNode.ID == "" {
 		t.Fatal("got empty issuer node id in newTestIssuerNode")
 	}
+
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
 	return issuerNode
 }
 
 func newTestManagerNode(t *testing.T, ctx context.Context, project *Project, label string) *ManagerNode {
-	ensureInTransaction(ctx)
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	defer dbtx.Rollback(ctx)
+
 	if project == nil {
 		project = newTestProject(t, ctx, "project-1", nil)
 	}
@@ -80,11 +104,22 @@ func newTestManagerNode(t *testing.T, ctx context.Context, project *Project, lab
 	if managerNode.ID == "" {
 		t.Fatal("got empty manager node id in newTestManagerNode")
 	}
+
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
 	return managerNode
 }
 
 func newTestVarKeyManagerNode(t *testing.T, ctx context.Context, project *Project, label string, varKeys, sigsReq int) *ManagerNode {
-	ensureInTransaction(ctx)
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	defer dbtx.Rollback(ctx)
+
 	if project == nil {
 		project = newTestProject(t, ctx, "project-1", nil)
 	}
@@ -95,11 +130,16 @@ func newTestVarKeyManagerNode(t *testing.T, ctx context.Context, project *Projec
 	if managerNode.ID == "" {
 		t.Fatal("got empty manager node id in newTestVarKeyManagerNode")
 	}
+
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
 	return managerNode
 }
 
 func newTestAccount(t *testing.T, ctx context.Context, managerNode *ManagerNode, label string) *Account {
-	ensureInTransaction(ctx)
 	if managerNode == nil {
 		managerNode = newTestManagerNode(t, ctx, nil, "manager-node-1")
 	}
@@ -111,7 +151,6 @@ func newTestAccount(t *testing.T, ctx context.Context, managerNode *ManagerNode,
 }
 
 func newTestAsset(t *testing.T, ctx context.Context, issuerNode *IssuerNode) *Asset {
-	ensureInTransaction(ctx)
 	if issuerNode == nil {
 		issuerNode = newTestIssuerNode(t, ctx, nil, "issuer-node-1")
 	}
@@ -124,9 +163,4 @@ func newTestAsset(t *testing.T, ctx context.Context, issuerNode *IssuerNode) *As
 		t.Fatalf("trouble setting up asset in newTestAsset: %v", err)
 	}
 	return asset
-}
-
-// Panics if not in a transaction
-func ensureInTransaction(ctx context.Context) {
-	_ = pg.FromContext(ctx).(pg.Tx)
 }

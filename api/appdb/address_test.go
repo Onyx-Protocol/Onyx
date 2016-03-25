@@ -15,7 +15,6 @@ import (
 
 func TestAddressLoadNextIndex(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	ResetSeqs(ctx, t) // Force predictable values.
 	mn := assettest.CreateManagerNodeFixture(ctx, t, "", "", nil, nil)
@@ -53,7 +52,6 @@ func TestAddressLoadNextIndex(t *testing.T) {
 func TestAddressInsert(t *testing.T) {
 	t0 := time.Now()
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	ResetSeqs(ctx, t) // Force predictable values.
 	mn := assettest.CreateManagerNodeFixture(ctx, t, "", "", nil, nil)
@@ -92,7 +90,6 @@ var dummyXPub2, _ = hdkey.NewXKey("xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGv
 func TestCreateAddress(t *testing.T) {
 	t0 := time.Now()
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	ResetSeqs(ctx, t) // Force predictable values.
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "foo", []*hdkey.XKey{dummyXPub2}, nil)

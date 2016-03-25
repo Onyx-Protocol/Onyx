@@ -4,40 +4,14 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	. "chain/api/generator"
 	"chain/cos/bc"
 	"chain/database/pg/pgtest"
 )
-
-func init() {
-	u := "postgres:///api-test?sslmode=disable"
-	if s := os.Getenv("DB_URL_TEST"); s != "" {
-		u = s
-	}
-
-	ctx := context.Background()
-	pgtest.Open(ctx, u, "generatortest", "../appdb/schema.sql")
-}
-
-// Establish a context object with a new db transaction in which to
-// run the given callback function.
-func withContext(tb testing.TB, sql string, fn func(context.Context)) {
-	var ctx context.Context
-	if sql == "" {
-		ctx = pgtest.NewContext(tb)
-	} else {
-		ctx = pgtest.NewContext(tb, sql)
-	}
-	defer pgtest.Finish(ctx)
-	fn(ctx)
-}
 
 func hashForFixture(h bc.Hash) string {
 	return fmt.Sprintf("decode('%s', 'hex')", hex.EncodeToString(h[:]))
@@ -61,6 +35,7 @@ func txForFixture(tx *bc.TxData) string {
 }
 
 func TestGetSummary(t *testing.T) {
+	ctx := pgtest.NewContext(t)
 	b0 := bc.Block{BlockHeader: bc.BlockHeader{Height: 0}}
 	b1 := bc.Block{BlockHeader: bc.BlockHeader{Height: 1}}
 
@@ -70,7 +45,7 @@ func TestGetSummary(t *testing.T) {
 	t3 := bc.TxData{Metadata: []byte{3}}
 	t4 := bc.TxData{Metadata: []byte{4}}
 
-	var fix = `
+	pgtest.Exec(ctx, t, `
 		INSERT INTO projects
 			(id, name)
 		VALUES
@@ -94,53 +69,51 @@ func TestGetSummary(t *testing.T) {
 		INSERT INTO blocks
 			(block_hash, height, data, header)
 		VALUES
-			(` + hashForFixture(b0.Hash()) + `, ` + strconv.Itoa(int(b0.Height)) + `, ` + blockForFixture(&b0) + `, ''),
-			(` + hashForFixture(b1.Hash()) + `, ` + strconv.Itoa(int(b1.Height)) + `, ` + blockForFixture(&b1) + `, '');
+			(`+hashForFixture(b0.Hash())+`, `+strconv.Itoa(int(b0.Height))+`, `+blockForFixture(&b0)+`, ''),
+			(`+hashForFixture(b1.Hash())+`, `+strconv.Itoa(int(b1.Height))+`, `+blockForFixture(&b1)+`, '');
 
 		INSERT INTO blocks_txs
 			(block_hash, tx_hash, block_height, block_pos)
 		VALUES
-			(` + hashForFixture(b0.Hash()) + `, ` + hashForFixture(t0.Hash()) + `, 1, 0),
-			(` + hashForFixture(b1.Hash()) + `, ` + hashForFixture(t1.Hash()) + `, 1, 1),
-			(` + hashForFixture(b1.Hash()) + `, ` + hashForFixture(t2.Hash()) + `, 1, 2);
+			(`+hashForFixture(b0.Hash())+`, `+hashForFixture(t0.Hash())+`, 1, 0),
+			(`+hashForFixture(b1.Hash())+`, `+hashForFixture(t1.Hash())+`, 1, 1),
+			(`+hashForFixture(b1.Hash())+`, `+hashForFixture(t2.Hash())+`, 1, 2);
 
 		INSERT INTO pool_txs
 			(tx_hash, data)
 		VALUES
-			(` + hashForFixture(t3.Hash()) + `, ` + txForFixture(&t3) + `),
-			(` + hashForFixture(t4.Hash()) + `, ` + txForFixture(&t4) + `);
-	`
+			(`+hashForFixture(t3.Hash())+`, `+txForFixture(&t3)+`),
+			(`+hashForFixture(t4.Hash())+`, `+txForFixture(&t4)+`);
+	`)
 
-	withContext(t, fix, func(ctx context.Context) {
-		want := &Summary{
-			BlockFreqMs: 0,
-			BlockCount:  2,
-			TransactionCount: TxCount{
-				Confirmed:   3,
-				Unconfirmed: 2,
+	want := &Summary{
+		BlockFreqMs: 0,
+		BlockCount:  2,
+		TransactionCount: TxCount{
+			Confirmed:   3,
+			Unconfirmed: 2,
+		},
+		Permissions: NodePerms{
+			ManagerNodes: []NodePermStatus{
+				{"mn-id-0", "mn-label-0", true},
+				{"mn-id-1", "mn-label-1", true},
 			},
-			Permissions: NodePerms{
-				ManagerNodes: []NodePermStatus{
-					{"mn-id-0", "mn-label-0", true},
-					{"mn-id-1", "mn-label-1", true},
-				},
-				IssuerNodes: []NodePermStatus{
-					{"in-id-0", "in-label-0", true},
-					{"in-id-1", "in-label-1", true},
-				},
-				AuditorNodes: []NodePermStatus{
-					{"audnode-proj-id-0", "Auditor Node for proj-id-0", true},
-				},
+			IssuerNodes: []NodePermStatus{
+				{"in-id-0", "in-label-0", true},
+				{"in-id-1", "in-label-1", true},
 			},
-		}
+			AuditorNodes: []NodePermStatus{
+				{"audnode-proj-id-0", "Auditor Node for proj-id-0", true},
+			},
+		},
+	}
 
-		got, err := GetSummary(ctx, "proj-id-0")
-		if err != nil {
-			t.Fatal("unexpected error: ", err)
-		}
+	got, err := GetSummary(ctx, "proj-id-0")
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
 
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("summary:\ngot:  %v\nwant: %v", *got, *want)
-		}
-	})
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("summary:\ngot:  %v\nwant: %v", *got, *want)
+	}
 }

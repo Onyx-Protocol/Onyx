@@ -7,13 +7,18 @@ import (
 	. "chain/api/asset"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/testutil"
 )
 
 func TestCreateManagerNode(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
+	ctx := pgtest.NewContext(t)
+	_, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	pgtest.Exec(ctx, t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 	`)
-	defer pgtest.Finish(ctx)
 
 	req := &CreateNodeReq{
 		Label:        "foo",

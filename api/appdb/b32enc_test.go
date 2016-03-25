@@ -3,7 +3,8 @@ package appdb_test
 import (
 	"testing"
 
-	"golang.org/x/net/context"
+	"chain/database/pg"
+	"chain/database/pg/pgtest"
 )
 
 // Adapted from encoding/base32.
@@ -34,10 +35,10 @@ func TestB32encCrockford(t *testing.T) {
 		{"\x00\x11\x22\x33\x44\x55\x66\x77", "008J4CT4ANK7E"},
 	}
 
-	ctx := context.Background()
+	ctx := pgtest.NewContext(t)
 	for _, test := range cases {
 		var got string
-		err := db.QueryRow(ctx, `SELECT b32enc_crockford($1)`, test.decoded).Scan(&got)
+		err := pg.QueryRow(ctx, `SELECT b32enc_crockford($1)`, test.decoded).Scan(&got)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 			continue

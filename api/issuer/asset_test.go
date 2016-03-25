@@ -1,4 +1,4 @@
-package issuer_test
+package issuer
 
 import (
 	"bytes"
@@ -8,18 +8,17 @@ import (
 	"testing"
 
 	"chain/api/appdb"
-	. "chain/api/issuer"
 	"chain/database/pg/pgtest"
 )
 
 func TestCreateAsset(t *testing.T) {
-	ctx := pgtest.NewContext(t, `
+	ctx := pgtest.NewContext(t)
+	pgtest.Exec(ctx, t, `
 		ALTER SEQUENCE issuer_nodes_key_index_seq RESTART;
 		ALTER SEQUENCE assets_key_index_seq RESTART;
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
 		VALUES ('in1', 'a1', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 	`)
-	defer pgtest.Finish(ctx)
 
 	clientToken := "a-client-provided-unique-token"
 	definition := make(map[string]interface{})
@@ -85,8 +84,8 @@ func TestCreateDefs(t *testing.T) {
 		t.Log("Example", i)
 		clientToken := fmt.Sprintf("example-%d", i)
 
-		ctx := pgtest.NewContext(t, fix)
-		defer pgtest.Finish(ctx)
+		ctx := pgtest.NewContext(t)
+		pgtest.Exec(ctx, t, fix)
 		gotCreated, err := CreateAsset(ctx, "inode-0", "label", ex.def, &clientToken)
 		if err != nil {
 			t.Fatal("unexpected error: ", err)
@@ -104,6 +103,5 @@ func TestCreateDefs(t *testing.T) {
 		if !bytes.Equal(gotFetch.Definition, ex.want) {
 			t.Errorf("db fetch result:\ngot:  %s\nwant: %s", gotFetch.Definition, ex.want)
 		}
-		pgtest.Finish(ctx)
 	}
 }

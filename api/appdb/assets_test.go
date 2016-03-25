@@ -13,6 +13,7 @@ import (
 	. "chain/api/appdb"
 	"chain/api/asset/assettest"
 	"chain/api/generator"
+	"chain/api/txdb"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -22,7 +23,6 @@ import (
 
 func TestAssetByID(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	ResetSeqs(ctx, t)
 	xpubs := testutil.XPubs("xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd")
@@ -71,7 +71,6 @@ func getSortID(ctx context.Context, t testing.TB, assetID bc.AssetID) (sortID st
 
 func TestListAssets(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -181,7 +180,6 @@ func TestListAssets(t *testing.T) {
 
 func TestGetAssets(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -246,7 +244,6 @@ func TestGetAssets(t *testing.T) {
 
 func TestGetAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -288,7 +285,6 @@ func TestGetAsset(t *testing.T) {
 
 func TestUpdateAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 
@@ -316,7 +312,6 @@ func TestUpdateAsset(t *testing.T) {
 // Test that calling UpdateAsset with no new label is a no-op.
 func TestUpdateAssetNoUpdate(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 
@@ -342,7 +337,6 @@ func TestUpdateAssetNoUpdate(t *testing.T) {
 
 func TestArchiveAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 
@@ -365,7 +359,6 @@ func TestArchiveAsset(t *testing.T) {
 
 func TestAssetBalance(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -418,6 +411,7 @@ func TestAssetBalance(t *testing.T) {
 		},
 	})
 
+	store := txdb.NewStore()
 	err = store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -645,7 +639,6 @@ func (a balancesByAssetID) Less(i, j int) bool {
 
 func TestAccountBalanceByAssetID(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {

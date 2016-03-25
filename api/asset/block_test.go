@@ -27,7 +27,6 @@ import (
 
 func TestTransferConfirmed(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	info, err := bootdb(ctx)
 	if err != nil {
@@ -60,7 +59,6 @@ func TestGenSpendApply(t *testing.T) {
 	// Output should stay spent!
 
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	info, err := bootdb(ctx)
 	if err != nil {
@@ -107,33 +105,32 @@ func TestGenSpendApply(t *testing.T) {
 }
 
 func BenchmarkTransferWithBlocks(b *testing.B) {
-	withContext(b, "", func(ctx context.Context) {
-		info, err := bootdb(ctx)
+	ctx := pgtest.NewContext(b)
+	info, err := bootdb(ctx)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		tx, err := issue(ctx, b, info, info.acctA.ID, 10)
 		if err != nil {
 			b.Fatal(err)
 		}
+		b.Logf("finalized %v", tx.Hash)
 
-		for i := 0; i < b.N; i++ {
-			tx, err := issue(ctx, b, info, info.acctA.ID, 10)
+		tx, err = transfer(ctx, b, info, info.acctA.ID, info.acctB.ID, 10)
+		if err != nil {
+			b.Fatal(err)
+		}
+		b.Logf("finalized %v", tx.Hash)
+
+		if i%10 == 0 {
+			_, err = generator.MakeBlock(ctx)
 			if err != nil {
 				b.Fatal(err)
-			}
-			b.Logf("finalized %v", tx.Hash)
-
-			tx, err = transfer(ctx, b, info, info.acctA.ID, info.acctB.ID, 10)
-			if err != nil {
-				b.Fatal(err)
-			}
-			b.Logf("finalized %v", tx.Hash)
-
-			if i%10 == 0 {
-				_, err = generator.MakeBlock(ctx)
-				if err != nil {
-					b.Fatal(err)
-				}
 			}
 		}
-	})
+	}
 }
 
 func dumpState(ctx context.Context, t *testing.T) {
@@ -177,7 +174,9 @@ func BenchmarkGenerateBlock(b *testing.B) {
 }
 
 func benchGenBlock(b *testing.B) {
-	const fix = `
+	b.StopTimer()
+	ctx := pgtest.NewContext(b)
+	pgtest.Exec(ctx, b, `
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES(
 			'341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5',
@@ -196,18 +195,15 @@ func benchGenBlock(b *testing.B) {
 			decode('0000000101341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5ffffffff6e0046304402206ac2db5b49c8f9059d7ecad4f08a1d29e851e321720f590f5426cfbb19840d4402206aacef503d7c3cd065a17c2553b372ca2de0613eba3debc70896c9ab6545029b25512103b050bdde9880d9e8634f12798748cb26e9435a778305f3ae1ddba759d6479b2a51ae00015abad6dfb0de611046ebda5de05bfebc6a08d9a71831b43f2acd554bf54f33180000000000000001000000000000000000000474782d32', 'hex'),
 			2
 		);
-	`
+	`)
 
+	now := time.Now()
+	b.StartTimer()
+	_, _, err := FC().GenerateBlock(ctx, now)
 	b.StopTimer()
-	withContext(b, fix, func(ctx context.Context) {
-		now := time.Now()
-		b.StartTimer()
-		_, _, err := FC().GenerateBlock(ctx, now)
-		b.StopTimer()
-		if err != nil {
-			b.Fatal(err)
-		}
-	})
+	if err != nil {
+		b.Fatal(err)
+	}
 }
 
 type clientInfo struct {
@@ -221,7 +217,13 @@ type clientInfo struct {
 // TODO(kr): refactor this into new package api/apiutil
 // and consume it from cmd/bootdb.
 func bootdb(ctx context.Context) (*clientInfo, error) {
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer dbtx.Rollback(ctx)
+
+	_, err = assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -265,6 +267,11 @@ func bootdb(ctx context.Context) (*clientInfo, error) {
 	}
 
 	asset, err := issuer.CreateAsset(ctx, iNode.ID, "label", map[string]interface{}{}, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	err = dbtx.Commit(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +331,6 @@ func transfer(ctx context.Context, t testing.TB, info *clientInfo, srcAcctID, de
 
 func TestUpsertGenesisBlock(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	pubkey, err := testutil.TestXPub.ECPubKey()
 	if err != nil {
@@ -341,10 +347,14 @@ func TestUpsertGenesisBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	n := pgtest.Count(ctx, t, pg.FromContext(ctx), "blocks")
-	if n != 1 {
+	var n int64
+	err = pg.QueryRow(ctx, "SELECT count(*) FROM blocks").Scan(&n)
+	if err != nil {
+		t.Fatal("Count:", err)
+	} else if n != 1 {
 		t.Fatalf("count(*) FROM blocks = %d want 1", n)
 	}
+
 	var got bc.Hash
 	err = pg.QueryRow(ctx, `SELECT block_hash FROM blocks`).Scan(&got)
 	if err != nil {

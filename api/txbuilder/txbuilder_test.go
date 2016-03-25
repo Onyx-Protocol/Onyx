@@ -2,7 +2,6 @@ package txbuilder
 
 import (
 	"encoding/hex"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -15,16 +14,6 @@ import (
 	"chain/errors"
 	"chain/testutil"
 )
-
-func init() {
-	u := "postgres:///api-test?sslmode=disable"
-	if s := os.Getenv("DB_URL_TEST"); s != "" {
-		u = s
-	}
-
-	ctx := context.Background()
-	pgtest.Open(ctx, u, "txbuildertest", "../appdb/schema.sql")
-}
 
 type testRecv struct {
 	script []byte
@@ -54,8 +43,7 @@ func (tr *testReserver) Reserve(ctx context.Context, assetAmt *bc.AssetAmount, t
 }
 
 func TestBuild(t *testing.T) {
-	ctx := pgtest.NewContext(t, ``)
-	defer pgtest.Finish(ctx)
+	ctx := pgtest.NewContext(t)
 
 	err := txdb.NewStore().ApplyTx(ctx, &bc.Tx{Hash: [32]byte{255}, TxData: bc.TxData{
 		Outputs: []*bc.TxOutput{{

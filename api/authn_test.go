@@ -11,7 +11,6 @@ import (
 
 func TestAuthenticateToken(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	expires := time.Now().Add(-1 * time.Minute)
 	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")

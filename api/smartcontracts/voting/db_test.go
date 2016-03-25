@@ -2,11 +2,8 @@ package voting
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"chain/api/asset/assettest"
 	"chain/cos/bc"
@@ -15,22 +12,11 @@ import (
 	"chain/database/pg/pgtest"
 )
 
-func init() {
-	u := "postgres:///api-test?sslmode=disable"
-	if s := os.Getenv("DB_URL_TEST"); s != "" {
-		u = s
-	}
-
-	ctx := context.Background()
-	pgtest.Open(ctx, u, "votingsystemtest", "../../appdb/schema.sql")
-}
-
 // TestInsertVotingRightAccountID tests inserting a voting right into the
 // database with a holder script that is the address of an account. The
 // voting_rights_txs row should contain the correct account id.
 func TestInsertVotingRightAccountID(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	var (
 		accountID = assettest.CreateAccountFixture(ctx, t, "", "", nil)
@@ -68,7 +54,6 @@ func TestInsertVotingRightAccountID(t *testing.T) {
 // token from the database index.
 func TestUpsertVotingToken(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	var (
 		tokenAssetID = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -115,7 +100,6 @@ func TestUpsertVotingToken(t *testing.T) {
 
 func TestTallyVotes(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	type testVoteToken struct {
 		state  TokenState
@@ -248,7 +232,6 @@ func TestGetVotesSimple(t *testing.T) {
 	// TODO(jackson): Add additional tests for pagination, recalled voting
 	// rights, voided voting rights, etc.
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	// Initialize the generator.
 	fc, err := assettest.InitializeSigningGenerator(ctx)

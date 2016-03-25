@@ -1,7 +1,6 @@
 package orderbook
 
 import (
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -185,7 +184,6 @@ func TestCancel(t *testing.T) {
 
 func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo *orderbookFixtureInfo)) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	fc, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -373,14 +371,4 @@ func expectPaysToOrderbookContract(ctx context.Context, t *testing.T, openOrder 
 		testutil.FatalErr(t, err)
 	}
 	testutil.ExpectScriptEqual(t, script, expectedScript, msg)
-}
-
-func init() {
-	u := "postgres:///api-test?sslmode=disable"
-	if s := os.Getenv("DB_URL_TEST"); s != "" {
-		u = s
-	}
-
-	ctx := context.Background()
-	pgtest.Open(ctx, u, "orderbooktest", "../../appdb/schema.sql")
 }

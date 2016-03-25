@@ -42,7 +42,6 @@ func init() {
 
 func TestAuthenticateClause(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	var (
 		assetID     = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -203,7 +202,6 @@ func TestAuthenticateClause(t *testing.T) {
 
 func TestTransferClause(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	var (
 		assetID     = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -310,7 +308,6 @@ func TestTransferClause(t *testing.T) {
 
 func TestDelegateClause(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	var (
 		assetID     = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -462,7 +459,6 @@ func TestDelegateClause(t *testing.T) {
 
 func TestRecallClause(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	var (
 		assetID     = assettest.CreateAssetFixture(ctx, t, "", "", "")

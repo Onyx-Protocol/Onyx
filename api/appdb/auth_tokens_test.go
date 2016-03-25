@@ -49,7 +49,6 @@ func TestCreateAuthToken(t *testing.T) {
 
 		func() {
 			ctx := pgtest.NewContext(t)
-			defer pgtest.Finish(ctx)
 
 			uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 
@@ -92,7 +91,6 @@ func TestCreateAuthToken(t *testing.T) {
 
 func TestListAuthTokens(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	ts, err := time.Parse(time.RFC3339, "2000-01-01T00:00:00Z")
 	if err != nil {
@@ -166,7 +164,6 @@ func TestListAuthTokens(t *testing.T) {
 
 func TestDeleteAuthToken(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	ts, err := time.Parse(time.RFC3339, "2000-01-01T00:00:00Z")
 	if err != nil {

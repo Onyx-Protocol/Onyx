@@ -4,11 +4,10 @@ import (
 	"reflect"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	. "chain/api/appdb"
 	"chain/api/asset/assettest"
 	"chain/api/generator"
+	"chain/api/txdb"
 	"chain/cos/bc"
 	"chain/cos/hdkey"
 	"chain/database/pg"
@@ -18,107 +17,105 @@ import (
 )
 
 func TestInsertManagerNode(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		_ = newTestManagerNode(t, ctx, nil, "foo")
-	})
+	ctx := pgtest.NewContext(t)
+	newTestManagerNode(t, ctx, nil, "foo")
 }
 
 func TestInsertManagerNodeIdempotence(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		project1 := newTestProject(t, ctx, "project-1", nil)
-		project2 := newTestProject(t, ctx, "project-2", newTestUser(t, ctx, "two@user.com", "password"))
+	ctx := startContextDBTx(t)
 
-		idempotencyKey := "my-manager-node"
-		mn1, err := InsertManagerNode(ctx, project1.ID, "manager-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
-		if err != nil {
-			t.Fatalf("could not create manager node: %v", err)
-		}
-		if mn1.ID == "" {
-			t.Fatal("got empty manager node id")
-		}
+	project1 := newTestProject(t, ctx, "project-1", nil)
+	project2 := newTestProject(t, ctx, "project-2", newTestUser(t, ctx, "two@user.com", "password"))
 
-		mn2, err := InsertManagerNode(ctx, project1.ID, "manager-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
-		if err != nil {
-			t.Fatalf("failed on 2nd call to insert manager node: %s", err)
-		}
-		if !reflect.DeepEqual(mn1, mn2) {
-			t.Errorf("got=%#v\nwant=%#v", mn2, mn1)
-		}
+	idempotencyKey := "my-manager-node"
+	mn1, err := InsertManagerNode(ctx, project1.ID, "manager-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
+	if err != nil {
+		t.Fatalf("could not create manager node: %v", err)
+	}
+	if mn1.ID == "" {
+		t.Fatal("got empty manager node id")
+	}
 
-		mn3, err := InsertManagerNode(ctx, project2.ID, "manager-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
-		if err != nil {
-			t.Fatalf("failed on 3rd call to insert manager node: %s", err)
-		}
-		if mn3.ID == mn1.ID {
-			t.Error("client_token should be project-scoped")
-		}
+	mn2, err := InsertManagerNode(ctx, project1.ID, "manager-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
+	if err != nil {
+		t.Fatalf("failed on 2nd call to insert manager node: %s", err)
+	}
+	if !reflect.DeepEqual(mn1, mn2) {
+		t.Errorf("got=%#v\nwant=%#v", mn2, mn1)
+	}
 
-		newIdempotencyKey := "my-new-manager-node"
-		mn4, err := InsertManagerNode(ctx, project1.ID, "manager-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &newIdempotencyKey)
-		if err != nil {
-			t.Fatalf("failed on 4th call to insert manager node: %s", err)
-		}
-		if mn4.ID == mn1.ID {
-			t.Errorf("got=%#v want new manager node, not %#v", mn4, mn1)
-		}
-	})
+	mn3, err := InsertManagerNode(ctx, project2.ID, "manager-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
+	if err != nil {
+		t.Fatalf("failed on 3rd call to insert manager node: %s", err)
+	}
+	if mn3.ID == mn1.ID {
+		t.Error("client_token should be project-scoped")
+	}
+
+	newIdempotencyKey := "my-new-manager-node"
+	mn4, err := InsertManagerNode(ctx, project1.ID, "manager-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &newIdempotencyKey)
+	if err != nil {
+		t.Fatalf("failed on 4th call to insert manager node: %s", err)
+	}
+	if mn4.ID == mn1.ID {
+		t.Errorf("got=%#v want new manager node, not %#v", mn4, mn1)
+	}
 }
 
 func TestGetManagerNode(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		proj := newTestProject(t, ctx, "foo", nil)
-		mn, err := InsertManagerNode(ctx, proj.ID, "manager-node-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 0, 1, nil)
+	ctx := startContextDBTx(t)
 
-		if err != nil {
-			t.Fatalf("unexpected error on InsertManagerNode: %v", err)
-		}
-		examples := []struct {
-			id      string
-			want    *ManagerNode
-			wantErr error
-		}{
-			{
-				mn.ID,
-				&ManagerNode{
-					ID:    mn.ID,
-					Label: "manager-node-0",
-					Keys: []*NodeKey{
-						{
-							Type: "node",
-							XPub: dummyXPub,
-							XPrv: dummyXPrv,
-						},
+	proj := newTestProject(t, ctx, "foo", nil)
+	mn, err := InsertManagerNode(ctx, proj.ID, "manager-node-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 0, 1, nil)
+
+	if err != nil {
+		t.Fatalf("unexpected error on InsertManagerNode: %v", err)
+	}
+	examples := []struct {
+		id      string
+		want    *ManagerNode
+		wantErr error
+	}{
+		{
+			mn.ID,
+			&ManagerNode{
+				ID:    mn.ID,
+				Label: "manager-node-0",
+				Keys: []*NodeKey{
+					{
+						Type: "node",
+						XPub: dummyXPub,
+						XPrv: dummyXPrv,
 					},
-					SigsReqd: 1,
 				},
-				nil,
+				SigsReqd: 1,
 			},
-			{
-				"nonexistent",
-				nil,
-				pg.ErrUserInputNotFound,
-			},
+			nil,
+		},
+		{
+			"nonexistent",
+			nil,
+			pg.ErrUserInputNotFound,
+		},
+	}
+
+	for _, ex := range examples {
+		t.Log("Example:", ex.id)
+
+		got, gotErr := GetManagerNode(ctx, ex.id)
+
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("managerNode:\ngot:  %v\nwant: %v", got, ex.want)
 		}
 
-		for _, ex := range examples {
-			t.Log("Example:", ex.id)
-
-			got, gotErr := GetManagerNode(ctx, ex.id)
-
-			if !reflect.DeepEqual(got, ex.want) {
-				t.Errorf("managerNode:\ngot:  %v\nwant: %v", got, ex.want)
-			}
-
-			if errors.Root(gotErr) != ex.wantErr {
-				t.Errorf("get managerNode error:\ngot:  %v\nwant: %v", errors.Root(gotErr), ex.wantErr)
-			}
+		if errors.Root(gotErr) != ex.wantErr {
+			t.Errorf("get managerNode error:\ngot:  %v\nwant: %v", errors.Root(gotErr), ex.wantErr)
 		}
-	})
+	}
 }
 
 func TestAccountsWithAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -151,6 +148,7 @@ func TestAccountsWithAsset(t *testing.T) {
 		{Previous: out1.Outpoint},
 		{Previous: out2.Outpoint},
 	}}}
+	store := txdb.NewStore()
 	err = store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -218,7 +216,6 @@ func TestAccountsWithAsset(t *testing.T) {
 
 func TestListManagerNodes(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	proj0 := assettest.CreateProjectFixture(ctx, t, "", "")
 	proj1 := assettest.CreateProjectFixture(ctx, t, "", "")
@@ -260,66 +257,63 @@ func TestListManagerNodes(t *testing.T) {
 }
 
 func TestUpdateManagerNode(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, nil, "foo")
-		newLabel := "bar"
+	ctx := pgtest.NewContext(t)
+	managerNode := newTestManagerNode(t, ctx, nil, "foo")
+	newLabel := "bar"
 
-		err := UpdateManagerNode(ctx, managerNode.ID, &newLabel)
-		if err != nil {
-			t.Errorf("Unexpected error %v", err)
-		}
+	err := UpdateManagerNode(ctx, managerNode.ID, &newLabel)
+	if err != nil {
+		t.Errorf("Unexpected error %v", err)
+	}
 
-		managerNode, err = GetManagerNode(ctx, managerNode.ID)
-		if err != nil {
-			t.Errorf("Unexpected error %v", err)
-		}
-		if managerNode.Label != newLabel {
-			t.Errorf("Expected %s, got %s", newLabel, managerNode.Label)
-		}
-	})
+	managerNode, err = GetManagerNode(ctx, managerNode.ID)
+	if err != nil {
+		t.Errorf("Unexpected error %v", err)
+	}
+	if managerNode.Label != newLabel {
+		t.Errorf("Expected %s, got %s", newLabel, managerNode.Label)
+	}
 }
 
 // Test that calling UpdateManagerNode with no new label is a no-op.
 func TestUpdateManagerNodeNoUpdate(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, nil, "foo")
-		err := UpdateManagerNode(ctx, managerNode.ID, nil)
-		if err != nil {
-			t.Errorf("unexpected error %v", err)
-		}
+	ctx := pgtest.NewContext(t)
+	managerNode := newTestManagerNode(t, ctx, nil, "foo")
+	err := UpdateManagerNode(ctx, managerNode.ID, nil)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
 
-		managerNode, err = GetManagerNode(ctx, managerNode.ID)
-		if err != nil {
-			t.Errorf("Unexpected error %v", err)
-		}
-		if managerNode.Label != "foo" {
-			t.Errorf("Expected foo, got %s", managerNode.Label)
-		}
-	})
+	managerNode, err = GetManagerNode(ctx, managerNode.ID)
+	if err != nil {
+		t.Errorf("Unexpected error %v", err)
+	}
+	if managerNode.Label != "foo" {
+		t.Errorf("Expected foo, got %s", managerNode.Label)
+	}
 }
 
 func TestArchiveManagerNode(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, nil, "foo")
-		account := newTestAccount(t, ctx, managerNode, "bar")
-		err := ArchiveManagerNode(ctx, managerNode.ID)
-		if err != nil {
-			t.Errorf("could not archive manager node with id %s: %v", managerNode.ID, err)
-		}
+	ctx := startContextDBTx(t)
 
-		var archived bool
-		checkQ := `SELECT archived FROM manager_nodes WHERE id = $1`
-		err = pg.QueryRow(ctx, checkQ, managerNode.ID).Scan(&archived)
+	managerNode := newTestManagerNode(t, ctx, nil, "foo")
+	account := newTestAccount(t, ctx, managerNode, "bar")
+	err := ArchiveManagerNode(ctx, managerNode.ID)
+	if err != nil {
+		t.Errorf("could not archive manager node with id %s: %v", managerNode.ID, err)
+	}
 
-		if !archived {
-			t.Errorf("expected manager node %s to be archived", managerNode.ID)
-		}
+	var archived bool
+	checkQ := `SELECT archived FROM manager_nodes WHERE id = $1`
+	err = pg.QueryRow(ctx, checkQ, managerNode.ID).Scan(&archived)
 
-		checkAccountQ := `SELECT archived FROM accounts WHERE id = $1`
-		err = pg.QueryRow(ctx, checkAccountQ, account.ID).Scan(&archived)
-		if !archived {
-			t.Errorf("expected child account %s to be archived", account.ID)
-		}
+	if !archived {
+		t.Errorf("expected manager node %s to be archived", managerNode.ID)
+	}
 
-	})
+	checkAccountQ := `SELECT archived FROM accounts WHERE id = $1`
+	err = pg.QueryRow(ctx, checkAccountQ, account.ID).Scan(&archived)
+	if !archived {
+		t.Errorf("expected child account %s to be archived", account.ID)
+	}
 }

@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	. "chain/api/appdb"
 	"chain/api/asset/assettest"
 	"chain/cos/hdkey"
@@ -15,55 +13,53 @@ import (
 )
 
 func TestInsertIssuerNode(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		_ = newTestIssuerNode(t, ctx, nil, "foo")
-	})
+	ctx := pgtest.NewContext(t)
+	newTestIssuerNode(t, ctx, nil, "foo")
 }
 
 func TestInsertIssuerNodeIdempotence(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		project1 := newTestProject(t, ctx, "project-1", nil)
-		project2 := newTestProject(t, ctx, "project-2", newTestUser(t, ctx, "two@user.com", "password"))
+	ctx := startContextDBTx(t)
 
-		idempotencyKey := "my-issuer-node-client-token"
-		in1, err := InsertIssuerNode(ctx, project1.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 1, &idempotencyKey)
-		if err != nil {
-			t.Fatalf("could not create issuer node: %v", err)
-		}
-		if in1.ID == "" {
-			t.Fatal("got empty issuer node id")
-		}
+	project1 := newTestProject(t, ctx, "project-1", nil)
+	project2 := newTestProject(t, ctx, "project-2", newTestUser(t, ctx, "two@user.com", "password"))
 
-		in2, err := InsertIssuerNode(ctx, project1.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 1, &idempotencyKey)
-		if err != nil {
-			t.Fatalf("failed on 2nd call to insert issuer node: %s", err)
-		}
-		if !reflect.DeepEqual(in1, in2) {
-			t.Errorf("got=%#v\nwant=%#v", in2, in1)
-		}
+	idempotencyKey := "my-issuer-node-client-token"
+	in1, err := InsertIssuerNode(ctx, project1.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 1, &idempotencyKey)
+	if err != nil {
+		t.Fatalf("could not create issuer node: %v", err)
+	}
+	if in1.ID == "" {
+		t.Fatal("got empty issuer node id")
+	}
 
-		in3, err := InsertManagerNode(ctx, project2.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
-		if err != nil {
-			t.Fatalf("failed on 3rd call to insert issuer node: %s", err)
-		}
-		if in3.ID == in1.ID {
-			t.Error("client_token should be project-scoped")
-		}
+	in2, err := InsertIssuerNode(ctx, project1.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 1, &idempotencyKey)
+	if err != nil {
+		t.Fatalf("failed on 2nd call to insert issuer node: %s", err)
+	}
+	if !reflect.DeepEqual(in1, in2) {
+		t.Errorf("got=%#v\nwant=%#v", in2, in1)
+	}
 
-		newIdempotencyKey := "my-new-issuer-node"
-		in4, err := InsertManagerNode(ctx, project1.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &newIdempotencyKey)
-		if err != nil {
-			t.Fatalf("failed on 4th call to insert issuer node: %s", err)
-		}
-		if in4.ID == in1.ID {
-			t.Errorf("got=%#v want new issuer node, not %#v", in4, in1)
-		}
-	})
+	in3, err := InsertManagerNode(ctx, project2.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
+	if err != nil {
+		t.Fatalf("failed on 3rd call to insert issuer node: %s", err)
+	}
+	if in3.ID == in1.ID {
+		t.Error("client_token should be project-scoped")
+	}
+
+	newIdempotencyKey := "my-new-issuer-node"
+	in4, err := InsertManagerNode(ctx, project1.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &newIdempotencyKey)
+	if err != nil {
+		t.Fatalf("failed on 4th call to insert issuer node: %s", err)
+	}
+	if in4.ID == in1.ID {
+		t.Errorf("got=%#v want new issuer node, not %#v", in4, in1)
+	}
 }
 
 func TestListIssuerNodes(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
+	ctx := startContextDBTx(t)
 
 	proj0ID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
 	proj1ID := assettest.CreateProjectFixture(ctx, t, "", "proj-1")
@@ -107,8 +103,8 @@ func TestListIssuerNodes(t *testing.T) {
 }
 
 func TestGetIssuerNodes(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
+	ctx := startContextDBTx(t)
+
 	proj := newTestProject(t, ctx, "foo", nil)
 	in, err := InsertIssuerNode(ctx, proj.ID, "in-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 1, nil)
 	if err != nil {
@@ -159,7 +155,6 @@ func TestGetIssuerNodes(t *testing.T) {
 
 func TestUpdateIssuerNode(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 	issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
 
 	newLabel := "bar"
@@ -181,7 +176,6 @@ func TestUpdateIssuerNode(t *testing.T) {
 // Test that calling UpdateIssuerNode with no new label is a no-op.
 func TestUpdateIssuerNodeNoUpdate(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
 	err := UpdateIssuerNode(ctx, issuerNode.ID, nil)
@@ -199,8 +193,7 @@ func TestUpdateIssuerNodeNoUpdate(t *testing.T) {
 }
 
 func TestArchiveIssuerNode(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
+	ctx := startContextDBTx(t)
 
 	issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
 	asset := newTestAsset(t, ctx, issuerNode)

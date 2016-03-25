@@ -18,7 +18,6 @@ import (
 // transaction with voting right authentication from beginning to end.
 func TestAuthenticateEndToEnd(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	// Initialize the generator.
 	fc, err := assettest.InitializeSigningGenerator(ctx)

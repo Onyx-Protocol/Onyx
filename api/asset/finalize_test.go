@@ -15,7 +15,6 @@ import (
 
 func TestLoadAccountInfo(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	mnode := assettest.CreateManagerNodeFixture(ctx, t, "", "", nil, nil)
 	acc := assettest.CreateAccountFixture(ctx, t, mnode, "", nil)

@@ -13,7 +13,6 @@ import (
 
 func TestCreateManagerNodeBadXPub(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 	proj0 := assettest.CreateProjectFixture(ctx, t, uid, "x")
@@ -34,7 +33,6 @@ func TestCreateManagerNodeBadXPub(t *testing.T) {
 
 func TestCreateManagerNode(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 	proj0 := assettest.CreateProjectFixture(ctx, t, uid, "x")
@@ -65,7 +63,6 @@ func TestCreateManagerNode(t *testing.T) {
 
 func TestCreateManagerNodeDeprecated(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 	proj0 := assettest.CreateProjectFixture(ctx, t, uid, "x")

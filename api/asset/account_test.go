@@ -18,7 +18,6 @@ import (
 
 func TestAccountSourceReserve(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -84,7 +83,6 @@ func TestAccountSourceReserve(t *testing.T) {
 
 func TestAccountSourceReserveIdempotency(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -155,8 +153,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 }
 
 func TestAccountDestinationPKScript(t *testing.T) {
-	ctx := pgtest.NewContext(t, ``)
-	defer pgtest.Finish(ctx)
+	ctx := pgtest.NewContext(t)
 
 	acc := assettest.CreateAccountFixture(ctx, t, "", "", nil)
 
@@ -185,7 +182,6 @@ func TestAccountDestinationPKScript(t *testing.T) {
 
 func TestAccountSourceWithTxHash(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {

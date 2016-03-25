@@ -313,7 +313,6 @@ func callFindAccountOrders(ctx context.Context, accountID string) ([]*orderbook.
 
 func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtureInfo)) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	fc, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {

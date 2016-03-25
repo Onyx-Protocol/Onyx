@@ -1,137 +1,163 @@
 package pgtest
 
 import (
-	"fmt"
+	stdsql "database/sql"
 	"io/ioutil"
 	"log"
-	"strings"
+	"math/rand"
+	"net/url"
+	"os"
+	"runtime"
 	"testing"
-
-	"golang.org/x/net/context"
+	"time"
 
 	"github.com/lib/pq"
+	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/testutil"
 )
 
+var random = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+const DefaultURL = "postgres:///postgres?sslmode=disable"
+
 var (
-	db     *sql.DB
-	schema = "public"
+	DBURL      = os.Getenv("DB_URL_TEST")
+	SchemaPath = os.Getenv("CHAIN") + "/api/appdb/schema.sql"
 )
 
-// Open creates a sql.DB that is limited to a certain schema.
-// This is done by putting a wrapper around the postgres database driver.
-// Once the database is opened, Init is called, and the DB is returned.
-// dbURI is a standard database connection uri
-// schemaName is the name of the database schema to use. It will be created if necessary.
-// schemaSQLPath is the filepath to the sql dump of the database
-func Open(ctx context.Context, dbURI, schemaName, schemaSQLPath string) *sql.DB {
-	schema = schemaName
-	sql.Register("schemadb", pg.SchemaDriver(schemaName))
+const (
+	gcDur      = 3 * time.Minute
+	timeFormat = "20060102150405"
+)
 
-	var err error
-	db, err = sql.Open("schemadb", dbURI)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	Init(ctx, db, schemaSQLPath)
-
-	return db
+type DB struct {
+	URL     string // connection string of the form "postgres://..."
+	DBName  string // randomized database name
+	DB      *sql.DB
+	BaseURL string
 }
 
-// Init initializes the package to talk to the given database.
-// Any SQL statements in file schemaPath
-// will be executed before loading each set of fixtures.
-// If the db was opened using
-func Init(ctx context.Context, database *sql.DB, schemaSQLPath string) {
-	db = database
-
-	const reset = `
-		DROP SCHEMA IF EXISTS %s CASCADE;
-		CREATE SCHEMA %s;
-	`
-
-	quotedSchema := pq.QuoteIdentifier(schema)
-	_, err := db.Exec(ctx, fmt.Sprintf(reset, quotedSchema, quotedSchema))
-	if err != nil {
-		panic(err)
-	}
-
-	b, err := ioutil.ReadFile(schemaSQLPath)
-	if err != nil {
-		panic(err)
-	}
-	q := string(b)
-	if schema != "public" {
-		q = strings.Replace(q,
-			"public, pg_catalog",
-			pq.QuoteIdentifier(schema)+", public, pg_catalog",
-			-1,
-		)
-	}
-	_, err = db.Exec(ctx, q)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// txWithSQL begins a transaction in the connected database,
-// executes the given SQL statements inside the transaction,
-// and returns the in-progress transaction.
-// The returned transaction also has a Begin method
-// that returns itself, so it can be provided to
-// pg.NewContext.
-func txWithSQL(ctx context.Context, t testing.TB, sql ...string) pg.Tx {
-	tx, err := db.Begin(ctx)
+// NewContext calls Open using the background context,
+// DBURL, and SchemaPath.
+// It puts the resulting sql.DB into a context.
+//
+// It also registers a finalizer for the DB, so callers
+// can discard it without closing it explicitly, and the
+// test program is nevertheless unlikely to run out of
+// connection slots in the server.
+func NewContext(t testing.TB) context.Context {
+	ctx := context.Background()
+	s, err := Open(ctx, DBURL, SchemaPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, q := range sql {
-		_, err := tx.Exec(ctx, q)
-		if err != nil {
-			tx.Rollback(ctx)
-			t.Fatal(err)
-		}
+	runtime.SetFinalizer(s.DB, (*sql.DB).Close)
+	ctx = pg.NewContext(ctx, s.DB)
+	return ctx
+}
+
+// baseURL should be a URL of the form "postgres://.../postgres?...".
+// If it is the empty string, DefaultURL will be used.
+// The database name component will be replaced with a random name,
+// and the resulting URL will be in the returned DB.
+func Open(ctx context.Context, baseURL, schemaFile string) (*DB, error) {
+	if baseURL == "" {
+		baseURL = DefaultURL
 	}
-	return noCommitDB{tx}
-}
 
-// noCommitDB embeds sql.Tx but also
-// provides a Begin method that returns a noCommitTx.
-// It is used as a pg.DB in a test contexts so the
-// code under test doesn't commit or roll back, but
-// the test harness can still roll back.
-type noCommitDB struct {
-	*sql.Tx
-}
-
-// Begin satisfies the interface in the body of pg.Begin.
-func (tx noCommitDB) Begin(context.Context) (pg.Tx, error) {
-	return noCommitTx{tx.Tx}, nil
-}
-
-// Type noCommitTx is like sql.Tx but only pretends
-// to commit and roll back.
-type noCommitTx struct {
-	*sql.Tx
-}
-
-func (noCommitTx) Commit(context.Context) error   { return nil }
-func (noCommitTx) Rollback(context.Context) error { return nil }
-
-// Count returns the number of rows in 'table'.
-func Count(ctx context.Context, t *testing.T, db pg.DB, table string) int64 {
-	var n int64
-	err := db.QueryRow(ctx, "SELECT COUNT(*) FROM "+table).Scan(&n)
+	u, err := url.Parse(baseURL)
 	if err != nil {
-		t.Fatal("Count:", err)
+		return nil, err
 	}
-	return n
+
+	ctldb, err := stdsql.Open("postgres", baseURL)
+	if err != nil {
+		return nil, err
+	}
+	defer ctldb.Close()
+
+	err = gcdbs(ctldb)
+	if err != nil {
+		log.Println(err)
+	}
+
+	dbname := pickDBName()
+	u.Path = "/" + dbname
+	_, err = ctldb.Exec("CREATE DATABASE " + pq.QuoteIdentifier(dbname))
+	if err != nil {
+		return nil, err
+	}
+
+	schema, err := ioutil.ReadFile(schemaFile)
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open("postgres", u.String())
+	if err != nil {
+		return nil, err
+	}
+	_, err = db.Exec(ctx, string(schema))
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+	s := &DB{
+		URL:     u.String(),
+		DBName:  dbname,
+		DB:      db,
+		BaseURL: baseURL,
+	}
+	return s, nil
 }
 
+func gcdbs(db *stdsql.DB) error {
+	gcTime := time.Now().Add(-gcDur)
+	const q = `
+		SELECT datname FROM pg_database
+		WHERE datname LIKE 'pgtest_%' AND datname < $1
+	`
+	rows, err := db.Query(q, formatPrefix(gcTime))
+	if err != nil {
+		return err
+	}
+	var names []string
+	for rows.Next() {
+		var name string
+		err = rows.Scan(&name)
+		if err != nil {
+			return err
+		}
+		names = append(names, name)
+	}
+	if rows.Err() != nil {
+		return rows.Err()
+	}
+	for i, name := range names {
+		if i > 5 {
+			break // drop up to five databases per test
+		}
+		go db.Exec("DROP DATABASE " + pq.QuoteIdentifier(name))
+	}
+	return nil
+}
+
+func pickDBName() (s string) {
+	const chars = "abcdefghijklmnopqrstuvwxyz"
+	for i := 0; i < 10; i++ {
+		s += string(chars[random.Intn(len(chars))])
+	}
+	return formatPrefix(time.Now()) + s
+}
+
+func formatPrefix(t time.Time) string {
+	return "pgtest_" + t.UTC().Format(timeFormat) + "Z_"
+}
+
+// Exec executes q in the database or transaction in ctx.
+// If there is an error, it fails t.
 func Exec(ctx context.Context, t testing.TB, q string) {
 	_, err := pg.Exec(ctx, q)
 	if err != nil {

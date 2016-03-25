@@ -38,7 +38,6 @@ func TestAddIssuances(t *testing.T) {
 
 	for _, c := range cases {
 		ctx := pgtest.NewContext(t)
-		defer pgtest.Finish(ctx)
 
 		err := addIssuances(ctx, map[bc.AssetID]*state.AssetState{
 			aid: &state.AssetState{Issuance: c.issuedAmt1, Destroyed: c.destroyedAmt1},
@@ -61,14 +60,11 @@ func TestAddIssuances(t *testing.T) {
 
 		testutil.ExpectEqual(t, gotConf, c.confirmed, "confirmed issued")
 		testutil.ExpectEqual(t, gotTotal, c.total, "total issued")
-
-		pgtest.Finish(ctx)
 	}
 }
 
 func TestSetIssuances(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	aid := [32]byte{255}
 

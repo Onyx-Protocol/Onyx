@@ -18,7 +18,6 @@ import (
 
 func TestListUTXOsByAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {

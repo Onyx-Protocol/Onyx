@@ -2,13 +2,10 @@ package explorer
 
 import (
 	"encoding/json"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/api/asset/assettest"
 	"chain/api/generator"
@@ -23,29 +20,6 @@ import (
 	"chain/testutil"
 )
 
-func init() {
-	u := "postgres:///api-test?sslmode=disable"
-	if s := os.Getenv("DB_URL_TEST"); s != "" {
-		u = s
-	}
-
-	ctx := context.Background()
-	pgtest.Open(ctx, u, "explorertest", "../appdb/schema.sql")
-}
-
-// Establish a context object with a new db transaction in which to
-// run the given callback function.
-func withContext(tb testing.TB, sql string, fn func(context.Context)) {
-	var ctx context.Context
-	if sql == "" {
-		ctx = pgtest.NewContext(tb)
-	} else {
-		ctx = pgtest.NewContext(tb, sql)
-	}
-	defer pgtest.Finish(ctx)
-	fn(ctx)
-}
-
 func mustParseHash(str string) bc.Hash {
 	hash, err := bc.ParseHash(str)
 	if err != nil {
@@ -55,7 +29,8 @@ func mustParseHash(str string) bc.Hash {
 }
 
 func TestListBlocks(t *testing.T) {
-	const fix = `
+	ctx := pgtest.NewContext(t)
+	pgtest.Exec(ctx, t, `
 		INSERT INTO blocks(block_hash, height, data, header)
 		VALUES(
 			'9aa10b4210bf638c868c6696a91ad10eb4924818281394085d5768592cfcf742',
@@ -68,72 +43,72 @@ func TestListBlocks(t *testing.T) {
 			decode('010000000200000000000000b3431f1d6c5aa2746a08d933bab1c5e68df1b18f3a43010f6f247b839d89e1740069000000000000000000020701000000000000000000000000000374783207010000000000000000000000000003747833', 'hex'),
 			''
 		);
-	`
-	withContext(t, fix, func(ctx context.Context) {
-		cases := []struct {
-			prev     string
-			limit    int
-			want     []ListBlocksItem
-			wantLast string
-		}{{
-			prev:  "",
-			limit: 50,
-			want: []ListBlocksItem{{
-				ID:      mustParseHash("c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3"),
-				Height:  2,
-				Time:    time.Unix(105, 0).UTC(),
-				TxCount: 2,
-			}, {
-				ID:      mustParseHash("9aa10b4210bf638c868c6696a91ad10eb4924818281394085d5768592cfcf742"),
-				Height:  1,
-				Time:    time.Unix(100, 0).UTC(),
-				TxCount: 1,
-			}},
-			wantLast: "",
+	`)
+
+	cases := []struct {
+		prev     string
+		limit    int
+		want     []ListBlocksItem
+		wantLast string
+	}{{
+		prev:  "",
+		limit: 50,
+		want: []ListBlocksItem{{
+			ID:      mustParseHash("c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3"),
+			Height:  2,
+			Time:    time.Unix(105, 0).UTC(),
+			TxCount: 2,
 		}, {
-			prev:  "2",
-			limit: 50,
-			want: []ListBlocksItem{{
-				ID:      mustParseHash("9aa10b4210bf638c868c6696a91ad10eb4924818281394085d5768592cfcf742"),
-				Height:  1,
-				Time:    time.Unix(100, 0).UTC(),
-				TxCount: 1,
-			}},
-			wantLast: "",
-		}, {
-			prev:  "",
-			limit: 1,
-			want: []ListBlocksItem{{
-				ID:      mustParseHash("c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3"),
-				Height:  2,
-				Time:    time.Unix(105, 0).UTC(),
-				TxCount: 2,
-			}},
-			wantLast: "2",
-		}, {
-			prev:     "1",
-			limit:    50,
-			want:     nil,
-			wantLast: "",
-		}}
-		for _, c := range cases {
-			got, gotLast, err := ListBlocks(ctx, c.prev, c.limit)
-			if err != nil {
-				t.Errorf("ListBlocks(%v, %v) unexpected err = %q", c.prev, c.limit, err)
-				continue
-			}
-			if !reflect.DeepEqual(got, c.want) {
-				t.Errorf("got ListBlocks(%v, %v) = %+v want %+v", c.prev, c.limit, got, c.want)
-			}
-			if gotLast != c.wantLast {
-				t.Errorf("got ListBlocks(%v, %v) last = %q want %q", c.prev, c.limit, gotLast, c.wantLast)
-			}
+			ID:      mustParseHash("9aa10b4210bf638c868c6696a91ad10eb4924818281394085d5768592cfcf742"),
+			Height:  1,
+			Time:    time.Unix(100, 0).UTC(),
+			TxCount: 1,
+		}},
+		wantLast: "",
+	}, {
+		prev:  "2",
+		limit: 50,
+		want: []ListBlocksItem{{
+			ID:      mustParseHash("9aa10b4210bf638c868c6696a91ad10eb4924818281394085d5768592cfcf742"),
+			Height:  1,
+			Time:    time.Unix(100, 0).UTC(),
+			TxCount: 1,
+		}},
+		wantLast: "",
+	}, {
+		prev:  "",
+		limit: 1,
+		want: []ListBlocksItem{{
+			ID:      mustParseHash("c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3"),
+			Height:  2,
+			Time:    time.Unix(105, 0).UTC(),
+			TxCount: 2,
+		}},
+		wantLast: "2",
+	}, {
+		prev:     "1",
+		limit:    50,
+		want:     nil,
+		wantLast: "",
+	}}
+	for _, c := range cases {
+		got, gotLast, err := ListBlocks(ctx, c.prev, c.limit)
+		if err != nil {
+			t.Errorf("ListBlocks(%v, %v) unexpected err = %q", c.prev, c.limit, err)
+			continue
 		}
-	})
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("got ListBlocks(%v, %v) = %+v want %+v", c.prev, c.limit, got, c.want)
+		}
+		if gotLast != c.wantLast {
+			t.Errorf("got ListBlocks(%v, %v) last = %q want %q", c.prev, c.limit, gotLast, c.wantLast)
+		}
+	}
 }
 
 func TestGetBlockSummary(t *testing.T) {
-	const fix = `
+	ctx := pgtest.NewContext(t)
+	pgtest.Exec(ctx, t, `
 		INSERT INTO blocks(block_hash, height, data, header)
 		VALUES(
 			'c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3',
@@ -141,30 +116,30 @@ func TestGetBlockSummary(t *testing.T) {
 			decode('010000000200000000000000b3431f1d6c5aa2746a08d933bab1c5e68df1b18f3a43010f6f247b839d89e1740069000000000000000000020701000000000000000000000000000374783207010000000000000000000000000003747833', 'hex'),
 			''
 		);
-	`
-	withContext(t, fix, func(ctx context.Context) {
-		got, err := GetBlockSummary(ctx, "c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3")
-		if err != nil {
-			t.Fatal(err)
-		}
-		want := &BlockSummary{
-			ID:      mustParseHash("c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3"),
-			Height:  2,
-			Time:    time.Unix(105, 0).UTC(),
-			TxCount: 2,
-			TxHashes: []bc.Hash{
-				mustParseHash("c4bca11aefa0d71667eb50f7d775f33b7c0d8e435c09d07dbe2f71a78ec410c5"),
-				mustParseHash("353e45c66cc76674225fc037eb2103617cbc900f4c8b8b487f1edac8dd9764c1"),
-			},
-		}
+	`)
 
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got block header:\n\t%+v\nwant:\n\t%+v", got, want)
-		}
-	})
+	got, err := GetBlockSummary(ctx, "c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &BlockSummary{
+		ID:      mustParseHash("c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3"),
+		Height:  2,
+		Time:    time.Unix(105, 0).UTC(),
+		TxCount: 2,
+		TxHashes: []bc.Hash{
+			mustParseHash("c4bca11aefa0d71667eb50f7d775f33b7c0d8e435c09d07dbe2f71a78ec410c5"),
+			mustParseHash("353e45c66cc76674225fc037eb2103617cbc900f4c8b8b487f1edac8dd9764c1"),
+		},
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got block header:\n\t%+v\nwant:\n\t%+v", got, want)
+	}
 }
 
 func TestGetTxIssuance(t *testing.T) {
+	ctx := pgtest.NewContext(t)
 	assetID, sigScript := mockAssetIdAndSigScript()
 
 	tx := bc.NewTx(bc.TxData{
@@ -194,60 +169,59 @@ func TestGetTxIssuance(t *testing.T) {
 		Transactions: []*bc.Tx{tx},
 	}
 
-	withContext(t, "", func(ctx context.Context) {
-		err := txdb.NewStore().ApplyTx(ctx, tx, nil)
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
+	err := txdb.NewStore().ApplyTx(ctx, tx, nil)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
 
-		_, err = txdb.NewStore().ApplyBlock(ctx, blk, nil, nil, patricia.NewTree(nil))
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
+	_, err = txdb.NewStore().ApplyBlock(ctx, blk, nil, nil, patricia.NewTree(nil))
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
 
-		got, err := GetTx(ctx, tx.Hash.String())
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
+	got, err := GetTx(ctx, tx.Hash.String())
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
 
-		bh := blk.Hash()
+	bh := blk.Hash()
 
-		want := &Tx{
-			ID:          tx.Hash,
-			BlockID:     &bh,
-			BlockHeight: 1,
-			BlockTime:   now,
-			Metadata:    []byte{0},
-			Inputs: []*TxInput{{
-				Type:     "issuance",
-				AssetID:  assetID,
-				Metadata: []byte(`{"a":"b"}`),
-				AssetDef: []byte(`{"c":"d"}`),
-			}},
-			Outputs: []*TxOutput{{
-				AssetID:  assetID,
-				Amount:   5,
-				Address:  []byte("addr0"),
-				Script:   []byte("addr0"),
-				Metadata: []byte{2},
-			}, {
-				AssetID: assetID,
-				Amount:  6,
-				Address: []byte("addr1"),
-				Script:  []byte("addr1"),
-			}},
-		}
+	want := &Tx{
+		ID:          tx.Hash,
+		BlockID:     &bh,
+		BlockHeight: 1,
+		BlockTime:   now,
+		Metadata:    []byte{0},
+		Inputs: []*TxInput{{
+			Type:     "issuance",
+			AssetID:  assetID,
+			Metadata: []byte(`{"a":"b"}`),
+			AssetDef: []byte(`{"c":"d"}`),
+		}},
+		Outputs: []*TxOutput{{
+			AssetID:  assetID,
+			Amount:   5,
+			Address:  []byte("addr0"),
+			Script:   []byte("addr0"),
+			Metadata: []byte{2},
+		}, {
+			AssetID: assetID,
+			Amount:  6,
+			Address: []byte("addr1"),
+			Script:  []byte("addr1"),
+		}},
+	}
 
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, want)
-		}
-	})
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, want)
+	}
 }
 
 func TestGetTxTransfer(t *testing.T) {
+	ctx := pgtest.NewContext(t)
 	prevTxs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Outputs: []*bc.TxOutput{{
@@ -284,65 +258,62 @@ func TestGetTxTransfer(t *testing.T) {
 		Transactions: append(prevTxs, tx),
 	}
 
-	withContext(t, "", func(ctx context.Context) {
-		_, err := txdb.NewStore().ApplyBlock(ctx, blk, nil, nil, patricia.NewTree(nil))
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
+	_, err := txdb.NewStore().ApplyBlock(ctx, blk, nil, nil, patricia.NewTree(nil))
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
 
-		got, err := GetTx(ctx, tx.Hash.String())
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
+	got, err := GetTx(ctx, tx.Hash.String())
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
 
-		var blkHash = blk.Hash()
+	var blkHash = blk.Hash()
 
-		zero, one := uint32(0), uint32(1)
-		five, six := uint64(5), uint64(6)
-		h0, h1 := prevTxs[0].Hash, prevTxs[1].Hash
+	zero, one := uint32(0), uint32(1)
+	five, six := uint64(5), uint64(6)
+	h0, h1 := prevTxs[0].Hash, prevTxs[1].Hash
 
-		want := &Tx{
-			ID:          tx.Hash,
-			BlockID:     &blkHash,
-			BlockHeight: 1,
-			BlockTime:   now,
-			Inputs: []*TxInput{{
-				Type:    "transfer",
-				AssetID: bc.AssetID([32]byte{1}),
-				Amount:  &five,
-				TxHash:  &h0,
-				TxOut:   &zero,
-			}, {
-				Type:    "transfer",
-				AssetID: bc.AssetID([32]byte{2}),
-				Amount:  &six,
-				TxHash:  &h1,
-				TxOut:   &one,
-			}},
-			Outputs: []*TxOutput{{
-				AssetID: bc.AssetID([32]byte{1}),
-				Amount:  5,
-				Address: []byte("addr0"),
-				Script:  []byte("addr0"),
-			}, {
-				AssetID: bc.AssetID([32]byte{2}),
-				Amount:  6,
-				Address: []byte("addr1"),
-				Script:  []byte("addr1"),
-			}},
-		}
+	want := &Tx{
+		ID:          tx.Hash,
+		BlockID:     &blkHash,
+		BlockHeight: 1,
+		BlockTime:   now,
+		Inputs: []*TxInput{{
+			Type:    "transfer",
+			AssetID: bc.AssetID([32]byte{1}),
+			Amount:  &five,
+			TxHash:  &h0,
+			TxOut:   &zero,
+		}, {
+			Type:    "transfer",
+			AssetID: bc.AssetID([32]byte{2}),
+			Amount:  &six,
+			TxHash:  &h1,
+			TxOut:   &one,
+		}},
+		Outputs: []*TxOutput{{
+			AssetID: bc.AssetID([32]byte{1}),
+			Amount:  5,
+			Address: []byte("addr0"),
+			Script:  []byte("addr0"),
+		}, {
+			AssetID: bc.AssetID([32]byte{2}),
+			Amount:  6,
+			Address: []byte("addr1"),
+			Script:  []byte("addr1"),
+		}},
+	}
 
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, want)
-		}
-	})
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, want)
+	}
 }
 
 func TestGetAssets(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -415,7 +386,6 @@ func TestGetAssets(t *testing.T) {
 
 func TestGetAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -489,7 +459,6 @@ func TestGetAsset(t *testing.T) {
 
 func TestListUTXOsByAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {

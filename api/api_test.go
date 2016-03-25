@@ -37,8 +37,6 @@ func TestMux(t *testing.T) {
 
 func TestLogin(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
-
 	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 	ctx = authn.NewContext(ctx, uid)
 
@@ -59,7 +57,6 @@ func TestLogin(t *testing.T) {
 
 func TestIssue(t *testing.T) {
 	ctx := apiTest(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {
@@ -108,7 +105,6 @@ func TestIssue(t *testing.T) {
 
 func TestTransfer(t *testing.T) {
 	ctx := apiTest(t)
-	defer pgtest.Finish(ctx)
 
 	_, err := assettest.InitializeSigningGenerator(ctx)
 	if err != nil {

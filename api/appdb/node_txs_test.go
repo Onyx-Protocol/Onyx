@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	. "chain/api/appdb"
 	"chain/api/asset/assettest"
 	"chain/database/pg"
@@ -15,71 +13,68 @@ import (
 )
 
 func TestWriteManagerTx(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		accounts := []string{"account-1", "account-2"}
-		_, err := WriteManagerTx(ctx, "tx1", []byte(`{}`), "mnode-1", accounts)
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
+	ctx := pgtest.NewContext(t)
+	accounts := []string{"account-1", "account-2"}
+	_, err := WriteManagerTx(ctx, "tx1", []byte(`{}`), "mnode-1", accounts)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
 
-		txs, _, err := ManagerTxs(ctx, "mnode-1", "", 100)
+	txs, _, err := ManagerTxs(ctx, "mnode-1", "", 100)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	if len(txs) != 1 {
+		t.Fatal("expected manager tx to be in db")
+	}
+
+	for _, acc := range accounts {
+		txs, _, err = AccountTxs(ctx, acc, "", 100)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
 		if len(txs) != 1 {
-			t.Fatal("expected manager tx to be in db")
+			t.Errorf("expected account tx to be in db for %s", acc)
 		}
-
-		for _, acc := range accounts {
-			txs, _, err = AccountTxs(ctx, acc, "", 100)
-			if err != nil {
-				t.Log(errors.Stack(err))
-				t.Fatal(err)
-			}
-
-			if len(txs) != 1 {
-				t.Errorf("expected account tx to be in db for %s", acc)
-			}
-		}
-	})
+	}
 }
 
 func TestWriteIssuerTx(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		_, err := WriteIssuerTx(ctx, "tx1", []byte(`{}`), "inode-1", "asset-1")
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
+	ctx := pgtest.NewContext(t)
+	_, err := WriteIssuerTx(ctx, "tx1", []byte(`{}`), "inode-1", "asset-1")
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
 
-		txs, _, err := IssuerTxs(ctx, "inode-1", "", 100)
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
+	txs, _, err := IssuerTxs(ctx, "inode-1", "", 100)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
 
-		if len(txs) != 1 {
-			t.Fatal("expected issuer tx to be in db")
-		}
+	if len(txs) != 1 {
+		t.Fatal("expected issuer tx to be in db")
+	}
 
-		txs, _, err = AssetTxs(ctx, "asset-1", "", 100)
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
+	txs, _, err = AssetTxs(ctx, "asset-1", "", 100)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
 
-		if len(txs) != 1 {
-			t.Fatal("expected asset tx to be in db")
-		}
-	})
+	if len(txs) != 1 {
+		t.Fatal("expected asset tx to be in db")
+	}
 }
 
 func TestManagerTxs(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
 	mtx := assettest.ManagerTxFixture(ctx, t, "tx0", []byte(`{"outputs":"boop"}`), mn0, nil)
@@ -104,7 +99,6 @@ func TestManagerTxs(t *testing.T) {
 
 func TestManagerTxsLimit(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
 	assettest.ManagerTxFixture(ctx, t, "tx0", []byte(`{"outputs":"boop"}`), mn0, nil)
@@ -137,7 +131,6 @@ func TestManagerTxsLimit(t *testing.T) {
 
 func TestAccountTxs(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
 	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "foo", nil)
@@ -159,7 +152,6 @@ func TestAccountTxs(t *testing.T) {
 
 func TestAccountTxsLimit(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
 	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "foo", nil)
@@ -193,7 +185,6 @@ func TestAccountTxsLimit(t *testing.T) {
 
 func TestIssuerTxs(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	in1 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-1", nil, nil)
@@ -244,7 +235,6 @@ func TestIssuerTxs(t *testing.T) {
 
 func TestAssetTxs(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	in1 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-1", nil, nil)
@@ -299,7 +289,6 @@ func TestAssetTxs(t *testing.T) {
 
 func TestManagerTx(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
 	assettest.ManagerTxFixture(ctx, t, "tx0", []byte(`{"outputs":"boop"}`), mn0, nil)

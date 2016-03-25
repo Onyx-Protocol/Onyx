@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	. "chain/api/appdb"
 	"chain/api/asset/assettest"
 	"chain/database/pg"
@@ -14,90 +12,83 @@ import (
 )
 
 func TestCreateAccount(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, nil, "foo")
-		account, err := CreateAccount(ctx, managerNode.ID, "foo", nil, nil)
-		if err != nil {
-			t.Error("unexpected error", err)
-		}
-		if account == nil || account.ID == "" {
-			t.Error("got nil account or empty id")
-		}
-		if account.Label != "foo" {
-			t.Errorf("label = %q want foo", account.Label)
-		}
-	})
+	ctx := pgtest.NewContext(t)
+	managerNode := newTestManagerNode(t, ctx, nil, "foo")
+	account, err := CreateAccount(ctx, managerNode.ID, "foo", nil, nil)
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
+	if account == nil || account.ID == "" {
+		t.Error("got nil account or empty id")
+	}
+	if account.Label != "foo" {
+		t.Errorf("label = %q want foo", account.Label)
+	}
 }
 
 func TestCreateAccountBadLabel(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, nil, "foo")
-		_, err := CreateAccount(ctx, managerNode.ID, "", nil, nil)
-		if err == nil {
-			t.Error("err = nil, want error")
-		}
-	})
+	ctx := pgtest.NewContext(t)
+	managerNode := newTestManagerNode(t, ctx, nil, "foo")
+	_, err := CreateAccount(ctx, managerNode.ID, "", nil, nil)
+	if err == nil {
+		t.Error("err = nil, want error")
+	}
 }
 
 func TestCreateAccountWithKey(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
-		keys := []string{"keyo"}
-		_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, nil)
-		if err != nil {
-			t.Error("unexpected error", err)
-		}
-	})
+	ctx := pgtest.NewContext(t)
+	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
+	keys := []string{"keyo"}
+	_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, nil)
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
 }
 
 func TestCreateAccountWithMissingKey(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
-		_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", nil, nil)
-		if err == nil {
-			t.Error("err = nil, want error")
-		}
-	})
+	ctx := pgtest.NewContext(t)
+	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
+	_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", nil, nil)
+	if err == nil {
+		t.Error("err = nil, want error")
+	}
 }
 
 func TestCreateAccountWithTooManyKeys(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
-		keys := []string{"keyo", "keya", "keyeeeee"}
-		_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, nil)
-		if err == nil {
-			t.Error("err = nil, want error")
-		}
-	})
+	ctx := pgtest.NewContext(t)
+	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
+	keys := []string{"keyo", "keya", "keyeeeee"}
+	_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, nil)
+	if err == nil {
+		t.Error("err = nil, want error")
+	}
 }
 
 func TestCreateAccountIdempotency(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
-		keys := []string{"keyo"}
+	ctx := pgtest.NewContext(t)
+	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
+	keys := []string{"keyo"}
 
-		idempotencyKey := "an-idempotency-key-from-the-client"
-		acc1, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, &idempotencyKey)
-		if err != nil {
-			t.Error("unexpected error", err)
-		}
+	idempotencyKey := "an-idempotency-key-from-the-client"
+	acc1, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, &idempotencyKey)
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
 
-		// Re-use the same client token. CreateAccount should not create a new account,
-		// and should return acc1 again.
-		acc2, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, &idempotencyKey)
-		if err != nil {
-			t.Error("unexpected error", err)
-		}
+	// Re-use the same client token. CreateAccount should not create a new account,
+	// and should return acc1 again.
+	acc2, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, &idempotencyKey)
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
 
-		if !reflect.DeepEqual(acc1, acc2) {
-			t.Errorf("acc2 got=%#v  want=%#v", acc2, acc1)
-		}
-	})
+	if !reflect.DeepEqual(acc1, acc2) {
+		t.Errorf("acc2 got=%#v  want=%#v", acc2, acc1)
+	}
 }
 
 func TestListAccounts(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	manager1 := assettest.CreateManagerNodeFixture(ctx, t, "", "m1", nil, nil)
 	manager2 := assettest.CreateManagerNodeFixture(ctx, t, "", "m2", nil, nil)
@@ -188,7 +179,6 @@ func TestListAccounts(t *testing.T) {
 
 func TestGetAccount(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	acc0 := assettest.CreateAccountFixture(ctx, t, "", "account-0", nil)
 	examples := []struct {
@@ -224,82 +214,79 @@ func TestGetAccount(t *testing.T) {
 }
 
 func TestUpdateAccount(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, nil, "foo")
-		account, err := CreateAccount(ctx, managerNode.ID, "foo", nil, nil)
-		if err != nil {
-			t.Error("unexpected error", err)
-		}
-		if account == nil || account.ID == "" {
-			t.Error("got nil account or empty id")
-		}
-		if account.Label != "foo" {
-			t.Errorf("label = %q want foo", account.Label)
-		}
+	ctx := pgtest.NewContext(t)
+	managerNode := newTestManagerNode(t, ctx, nil, "foo")
+	account, err := CreateAccount(ctx, managerNode.ID, "foo", nil, nil)
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
+	if account == nil || account.ID == "" {
+		t.Error("got nil account or empty id")
+	}
+	if account.Label != "foo" {
+		t.Errorf("label = %q want foo", account.Label)
+	}
 
-		newLabel := "bar"
-		err = UpdateAccount(ctx, account.ID, &newLabel)
-		if err != nil {
-			t.Errorf("unexpected error %v", err)
-		}
+	newLabel := "bar"
+	err = UpdateAccount(ctx, account.ID, &newLabel)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
 
-		account, err = GetAccount(ctx, account.ID)
-		if err != nil {
-			t.Errorf("unexpected error %v", err)
-		}
-		if account.Label != newLabel {
-			t.Errorf("expected %s, got %s", newLabel, account.Label)
-		}
-	})
+	account, err = GetAccount(ctx, account.ID)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+	if account.Label != newLabel {
+		t.Errorf("expected %s, got %s", newLabel, account.Label)
+	}
 }
 
 // Test that calling UpdateManagerNode with no new label is a no-op.
 func TestUpdateAccountNoUpdate(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		managerNode := newTestManagerNode(t, ctx, nil, "foo")
-		account, err := CreateAccount(ctx, managerNode.ID, "foo", nil, nil)
-		if err != nil {
-			t.Fatalf("could not create account: %v", err)
-		}
-		if account == nil {
-			t.Fatal("could not create account (got nil)")
-		}
-		if account.ID == "" {
-			t.Fatal("got empty id when creating account")
-		}
-		if account.Label != "foo" {
-			t.Fatalf("wrong label when creating account, expected foo, got %q", account.Label)
-		}
+	ctx := pgtest.NewContext(t)
+	managerNode := newTestManagerNode(t, ctx, nil, "foo")
+	account, err := CreateAccount(ctx, managerNode.ID, "foo", nil, nil)
+	if err != nil {
+		t.Fatalf("could not create account: %v", err)
+	}
+	if account == nil {
+		t.Fatal("could not create account (got nil)")
+	}
+	if account.ID == "" {
+		t.Fatal("got empty id when creating account")
+	}
+	if account.Label != "foo" {
+		t.Fatalf("wrong label when creating account, expected foo, got %q", account.Label)
+	}
 
-		err = UpdateAccount(ctx, account.ID, nil)
-		if err != nil {
-			t.Errorf("unexpected error %v", err)
-		}
+	err = UpdateAccount(ctx, account.ID, nil)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
 
-		account, err = GetAccount(ctx, account.ID)
-		if err != nil {
-			t.Fatalf("could not get account with id %s", account.ID)
-		}
-		if account.Label != "foo" {
-			t.Errorf("expected foo, got %s", account.Label)
-		}
-	})
+	account, err = GetAccount(ctx, account.ID)
+	if err != nil {
+		t.Fatalf("could not get account with id %s", account.ID)
+	}
+	if account.Label != "foo" {
+		t.Errorf("expected foo, got %s", account.Label)
+	}
 }
 
 func TestArchiveAccount(t *testing.T) {
-	withContext(t, "", func(ctx context.Context) {
-		account := newTestAccount(t, ctx, nil, "account-1")
-		err := ArchiveAccount(ctx, account.ID)
-		if err != nil {
-			t.Errorf("could not archive account with id %s: %v", account.ID, err)
-		}
+	ctx := pgtest.NewContext(t)
+	account := newTestAccount(t, ctx, nil, "account-1")
+	err := ArchiveAccount(ctx, account.ID)
+	if err != nil {
+		t.Errorf("could not archive account with id %s: %v", account.ID, err)
+	}
 
-		var archived bool
-		checkQ := `SELECT archived FROM accounts WHERE id = $1`
-		err = pg.QueryRow(ctx, checkQ, account.ID).Scan(&archived)
+	var archived bool
+	checkQ := `SELECT archived FROM accounts WHERE id = $1`
+	err = pg.QueryRow(ctx, checkQ, account.ID).Scan(&archived)
 
-		if !archived {
-			t.Errorf("expected account %s to be archived", account.ID)
-		}
-	})
+	if !archived {
+		t.Errorf("expected account %s to be archived", account.ID)
+	}
 }

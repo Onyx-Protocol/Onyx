@@ -15,7 +15,6 @@ import (
 
 func TestRegisterToVoteClause(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	var (
 		rightAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -212,7 +211,6 @@ func TestRegisterToVoteClause(t *testing.T) {
 
 func TestVoteClause(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	var (
 		rightAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -433,7 +431,6 @@ func TestVoteClause(t *testing.T) {
 
 func TestFinishVoteClause(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	var (
 		rightAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")

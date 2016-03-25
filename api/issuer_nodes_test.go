@@ -12,7 +12,6 @@ import (
 
 func TestCreateIssuerNode(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 	proj0 := assettest.CreateProjectFixture(ctx, t, uid, "x")
@@ -43,7 +42,6 @@ func TestCreateIssuerNode(t *testing.T) {
 
 func TestCreateIssuerNodeDeprecated(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 	proj0 := assettest.CreateProjectFixture(ctx, t, uid, "x")
 

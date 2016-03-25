@@ -20,6 +20,7 @@ import (
 	"chain/cos/bc"
 	"chain/cos/hdkey"
 	"chain/cos/state"
+	"chain/database/pg"
 	"chain/errors"
 	"chain/testutil"
 )
@@ -51,6 +52,12 @@ func CreateAuthTokenFixture(ctx context.Context, t testing.TB, userID string, ty
 var projCounter = createCounter()
 
 func CreateProjectFixture(ctx context.Context, t testing.TB, userID, name string) string {
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	defer dbtx.Rollback(ctx)
+
 	if userID == "" {
 		userID = CreateUserFixture(ctx, t, "", "")
 	}
@@ -61,6 +68,12 @@ func CreateProjectFixture(ctx context.Context, t testing.TB, userID, name string
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
+
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
 	return proj.ID
 }
 
@@ -81,6 +94,11 @@ func CreateInvitationFixture(ctx context.Context, t testing.TB, projectID, email
 var issuerNodeCounter = createCounter()
 
 func CreateIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs, xprvs []*hdkey.XKey) string {
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	defer dbtx.Rollback(ctx)
 	if projectID == "" {
 		projectID = CreateProjectFixture(ctx, t, "", "")
 	}
@@ -95,6 +113,11 @@ func CreateIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
 	return issuerNode.ID
 }
 
@@ -111,6 +134,12 @@ func CreateArchivedIssuerNodeFixture(ctx context.Context, t testing.TB, projectI
 var managerNodeCounter = createCounter()
 
 func CreateManagerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs, xprvs []*hdkey.XKey) string {
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	defer dbtx.Rollback(ctx)
+
 	if projectID == "" {
 		projectID = CreateProjectFixture(ctx, t, "", "")
 	}
@@ -125,6 +154,11 @@ func CreateManagerNodeFixture(ctx context.Context, t testing.TB, projectID, labe
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
 	return managerNode.ID
 }
 

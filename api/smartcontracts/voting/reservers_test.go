@@ -16,7 +16,6 @@ import (
 
 func TestRightsReserver(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	var (
 		accountID = assettest.CreateAccountFixture(ctx, t, "", "", nil)
@@ -94,7 +93,6 @@ func TestRightsReserver(t *testing.T) {
 
 func TestTokenReserver(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	var (
 		assetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")

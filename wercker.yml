@@ -16,6 +16,7 @@ build:
           export GO15VENDOREXPERIMENT=1
           go version
           go env
+          export CHAIN=$GOPATH/src/chain
           PATH=$GOPATH/bin:$PATH
           cp -a $WERCKER_SOURCE_DIR $GOPATH/src/chain
           export WERCKER_SOURCE_DIR=$GOPATH/src/chain

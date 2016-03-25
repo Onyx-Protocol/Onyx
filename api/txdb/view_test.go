@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"chain/cos/bc"
 	"chain/cos/state"
 	"chain/database/pg/pgtest"
@@ -13,7 +11,8 @@ import (
 )
 
 func TestView(t *testing.T) {
-	const fix = `
+	ctx := pgtest.NewContext(t)
+	pgtest.Exec(ctx, t, `
 		INSERT INTO utxos
 			(tx_hash, index, asset_id, amount, script, metadata)
 		VALUES
@@ -24,7 +23,7 @@ func TestView(t *testing.T) {
 		VALUES
 			('1000000000000000000000000000000000000000000000000000000000000000', 1),
 			('2000000000000000000000000000000000000000000000000000000000000000', 2);
-	`
+	`)
 
 	examples := []struct {
 		op   bc.Outpoint
@@ -72,28 +71,24 @@ func TestView(t *testing.T) {
 			want: nil,
 		},
 	}
+	for i, ex := range examples {
+		t.Log("Example", i)
 
-	withContext(t, fix, func(ctx context.Context) {
-		for i, ex := range examples {
-			t.Log("Example", i)
-
-			v, err := newView(ctx, []bc.Outpoint{ex.op})
-			if err != nil {
-				t.Fatal("unexpected error:", err)
-			}
-
-			got := v.Output(ctx, ex.op)
-
-			if !reflect.DeepEqual(got, ex.want) {
-				t.Errorf("output:\ngot:  %v\nwant: %v", got, ex.want)
-			}
+		v, err := newView(ctx, []bc.Outpoint{ex.op})
+		if err != nil {
+			t.Fatal("unexpected error:", err)
 		}
-	})
+
+		got := v.Output(ctx, ex.op)
+
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("output:\ngot:  %v\nwant: %v", got, ex.want)
+		}
+	}
 }
 
 func TestViewForPrevoutsIgnoreIssuance(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	txs := []*bc.Tx{bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{{
@@ -115,7 +110,8 @@ func TestViewForPrevoutsIgnoreIssuance(t *testing.T) {
 }
 
 func TestPoolView(t *testing.T) {
-	const fix = `
+	ctx := pgtest.NewContext(t)
+	pgtest.Exec(ctx, t, `
 		INSERT INTO pool_txs
 			(tx_hash, data)
 		VALUES
@@ -135,7 +131,7 @@ func TestPoolView(t *testing.T) {
 		VALUES
 			('3000000000000000000000000000000000000000000000000000000000000000', 3),
 			('4000000000000000000000000000000000000000000000000000000000000000', 4);
-	`
+	`)
 
 	examples := []struct {
 		op   bc.Outpoint
@@ -215,26 +211,23 @@ func TestPoolView(t *testing.T) {
 		},
 	}
 
-	withContext(t, fix, func(ctx context.Context) {
-		for i, ex := range examples {
-			t.Log("Example", i)
+	for i, ex := range examples {
+		t.Log("Example", i)
 
-			v, err := newPoolView(ctx, []bc.Outpoint{ex.op})
-			if err != nil {
-				t.Fatal("unexpected error:", err)
-			}
-
-			got := v.Output(ctx, ex.op)
-			if !reflect.DeepEqual(got, ex.want) {
-				t.Errorf("output:\ngot:  %v\nwant: %v", got, ex.want)
-			}
+		v, err := newPoolView(ctx, []bc.Outpoint{ex.op})
+		if err != nil {
+			t.Fatal("unexpected error:", err)
 		}
-	})
+
+		got := v.Output(ctx, ex.op)
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("output:\ngot:  %v\nwant: %v", got, ex.want)
+		}
+	}
 }
 
 func TestViewCirculation(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	defer pgtest.Finish(ctx)
 
 	assets := []bc.AssetID{{1}, {2}, {3}, {4}, {5}}
 	err := addIssuances(ctx, map[bc.AssetID]*state.AssetState{
