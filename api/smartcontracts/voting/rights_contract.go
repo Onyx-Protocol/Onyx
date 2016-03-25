@@ -103,12 +103,11 @@ const (
 	//
 	// 1 - Authenticate (Unimplemented)
 	// 2 - Transfer
-	// 3 - Delegate     (Unimplemented)
+	// 3 - Delegate
 	// 4 - Recall       (Unimplemented)
 	// 5 - Override     (Unimplemented)
 	// 6 - Cancel       (Unimplemented)
 	rightsHoldingContractString = `
-		2 DROP
 		4 ROLL
 		DUP 2 EQUAL IF
 			DROP
@@ -124,6 +123,30 @@ const (
 			DATA_1 0x27 RIGHT
 			CAT
 			AMOUNT ASSET 2 ROLL
+			REQUIREOUTPUT VERIFY
+			EVAL
+		ENDIF
+		DUP 3 EQUAL IF
+			DROP
+			VERIFY
+			DUP TIME
+			GREATERTHAN VERIFY
+			DUP
+			6 PICK
+			GREATERTHANOREQUAL VERIFY
+			HASH256
+			2 PICK HASH256
+			SWAP CAT HASH256
+			SWAP CAT HASH256
+			DATA_2 0x5275
+			3 ROLL CATPUSHDATA
+			SWAP CATPUSHDATA
+			3 ROLL CATPUSHDATA
+			ROT CATPUSHDATA
+			OUTPUTSCRIPT
+			DATA_1 0x27 RIGHT
+			CAT
+			AMOUNT ASSET ROT
 			REQUIREOUTPUT VERIFY
 			EVAL
 		ENDIF
@@ -145,4 +168,17 @@ func init() {
 	// TODO(jackson): Before going to production, we'll probably want to hard-code the
 	// contract hash and panic if the contract changes.
 	rightsHoldingContractHash = hash256.Sum(rightsHoldingContract)
+}
+
+// calculateOwnershipChain extends the provided chain of ownership with the provided
+// holder and deadline using the formula:
+//
+//     Hash256(Hash256(Hash256(holder) + Hash256(deadline)) + oldchain)
+//
+func calculateOwnershipChain(oldChain bc.Hash, holder []byte, deadline int64) bc.Hash {
+	h1 := hash256.Sum(holder)
+	h2 := hash256.Sum(txscript.Int64ToScriptBytes(deadline))
+	hash := hash256.Sum(append(h1[:], h2[:]...))
+	data := append(hash[:], oldChain[:]...)
+	return hash256.Sum(data)
 }

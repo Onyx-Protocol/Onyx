@@ -18,7 +18,7 @@ import (
 const (
 	// mockTimeUnix is the unix timestamp to be used as the current
 	// time while running scripts in these tests.
-	mockTimeUnix = 1458585950
+	mockTimeUnix = 1
 )
 
 var (
@@ -151,39 +151,186 @@ func TestTransferClause(t *testing.T) {
 			AddData(tc.out.HolderScript).
 			AddInt64(int64(clauseTransfer)).
 			AddData(rightsHoldingContract)
-		sigScript, err := sigBuilder.Script()
+		sigscript, err := sigBuilder.Script()
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		newTx := bc.TxData{
-			Version: 0,
-			Inputs: []*bc.TxInput{
-				{
-					Previous:        bc.Outpoint{Hash: exampleHash, Index: 0},
-					SignatureScript: sigScript,
-				},
-			},
-			Outputs: []*bc.TxOutput{
-				{
-					AssetAmount: bc.AssetAmount{
-						AssetID: utxoTx.assetID,
-						Amount:  1,
-					},
-					Script: tc.out.PKScript(),
-				},
-			},
-		}
-		vm, err := txscript.NewEngine(ctx, utxoTx, utxoTx.p2cScript, &newTx, 0, 0)
-		if err != nil {
-			t.Fatal(err)
-		}
-		vm.SetTimestamp(time.Unix(mockTimeUnix, 0))
-		err = vm.Execute()
+		err = executeScript(ctx, utxoTx, sigscript, tc.out.PKScript())
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
 	}
+}
+
+func TestDelegateClause(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	var (
+		projectID    = assettest.CreateProjectFixture(ctx, t, "", "")
+		issuerNodeID = assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
+		assetID      = assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
+	)
+
+	testCases := []struct {
+		err  error
+		prev rightScriptData
+		out  rightScriptData
+	}{
+		{
+			// Simple delegate with exact same deadline and delegatable params
+			err: nil,
+			prev: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			out: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 3),
+				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
+			},
+		},
+		{
+			// Delegate with shorter deadline
+			err: nil,
+			prev: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			out: rightScriptData{
+				Deadline:       2,
+				Delegatable:    false,
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 3),
+				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
+			},
+		},
+		{
+			// Delegate but the deadline already passed
+			err: txscript.ErrStackVerifyFailed,
+			prev: rightScriptData{
+				Deadline:       0,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			out: rightScriptData{
+				Deadline:       0,
+				Delegatable:    true,
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 0),
+				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
+			},
+		},
+		{
+			// Shouldn't be able to delegate if the utxo script has
+			// Delegatable = false in its contract params.
+			err: txscript.ErrStackVerifyFailed,
+			prev: rightScriptData{
+				Deadline:       3,
+				Delegatable:    false,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			out: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 3),
+				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
+			},
+		},
+		{
+			// Delegating with a longer deadline should fail.
+			err: txscript.ErrStackVerifyFailed,
+			prev: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			out: rightScriptData{
+				Deadline:       4,
+				Delegatable:    true,
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 3),
+				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
+			},
+		},
+		{
+			// Delegating with a bad ownership chain should fail.
+			err: txscript.ErrStackVerifyFailed,
+			prev: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			out: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: calculateOwnershipChain(exampleHash, []byte{txscript.OP_1}, 3),
+				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
+			},
+		},
+	}
+
+	for i, tc := range testCases {
+		utxoTx := utxoTx{
+			assetID:    assetID,
+			hash:       exampleHash,
+			scriptData: tc.prev,
+			p2cScript:  tc.prev.PKScript(),
+		}
+
+		var delegatable int64 = 0
+		if tc.out.Delegatable {
+			delegatable = 1
+		}
+
+		sb := txscript.NewScriptBuilder().
+			AddInt64(tc.out.Deadline).
+			AddInt64(delegatable).
+			AddData(tc.out.HolderScript).
+			AddInt64(int64(clauseDelegate)).
+			AddData(rightsHoldingContract)
+		sigscript, err := sb.Script()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = executeScript(ctx, utxoTx, sigscript, tc.out.PKScript())
+		if !reflect.DeepEqual(err, tc.err) {
+			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
+		}
+	}
+}
+
+func executeScript(ctx context.Context, utxoTx utxoTx, sigscript, pkscript []byte) error {
+	newTx := bc.TxData{
+		Version: 0,
+		Inputs: []*bc.TxInput{
+			{
+				Previous:        bc.Outpoint{Hash: exampleHash, Index: 0},
+				SignatureScript: sigscript,
+			},
+		},
+		Outputs: []*bc.TxOutput{
+			{
+				AssetAmount: bc.AssetAmount{
+					AssetID: utxoTx.assetID,
+					Amount:  1,
+				},
+				Script: pkscript,
+			},
+		},
+	}
+	vm, err := txscript.NewEngine(ctx, utxoTx, utxoTx.p2cScript, &newTx, 0, 0)
+	if err != nil {
+		return err
+	}
+	vm.SetTimestamp(time.Unix(mockTimeUnix, 0))
+	return vm.Execute()
 }
 
 // TestRightsContractValidMatch tests generating a pkscript from a voting right.

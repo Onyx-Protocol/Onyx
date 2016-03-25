@@ -37,7 +37,13 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 		sb = sb.
 			AddData(r.holderAddr.RedeemScript).
 			AddData(r.output.HolderScript)
-	case clauseAuthenticate, clauseDelegate, clauseRecall, clauseOverride, clauseCancel:
+	case clauseDelegate:
+		sb = sb.
+			AddData(r.holderAddr.RedeemScript).
+			AddInt64(r.output.Deadline).
+			AddBool(r.output.Delegatable).
+			AddData(r.output.HolderScript)
+	case clauseAuthenticate, clauseRecall, clauseOverride, clauseCancel:
 		// TODO(jackson): Implement.
 		return nil, errors.New("unimplemented")
 	}

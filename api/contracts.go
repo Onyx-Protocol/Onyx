@@ -171,6 +171,36 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 			if err != nil {
 				return nil, nil, err
 			}
+		case "vrtoken-delegate":
+			if !old.Delegatable {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "delegating this voting right is prohibited")
+			}
+			if dst.Deadline.Unix() > old.Deadline {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "cannot extend deadline beyond current deadline")
+			}
+
+			script := dst.Script[:]
+			if script == nil {
+				addr, err := appdb.NewAddress(ctx, dst.AccountID, true)
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "generating address, accountID %s", src.AccountID)
+				}
+				script = addr.PKScript
+			}
+			var (
+				delegatable = old.Delegatable
+				deadline    = old.Deadline
+			)
+			if dst.Transferable != nil {
+				delegatable = *dst.Transferable
+			}
+			if !dst.Deadline.IsZero() {
+				deadline = dst.Deadline.Unix()
+			}
+			reserver, receiver, err = voting.RightDelegation(ctx, old, script, deadline, delegatable)
+			if err != nil {
+				return nil, nil, err
+			}
 		default:
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "`%s` source type unimplemented", src.Type)
 		}
