@@ -84,9 +84,9 @@ func voidRecalledVotingRights(ctx context.Context, out bc.Outpoint, ownershipHas
 	return nil
 }
 
-// voidTransferredVotingRight takes the outpoint of a voting right claim
+// voidVotingRight takes the outpoint of a voting right claim
 // and marks it as void.
-func voidTransferredVotingRight(ctx context.Context, prev bc.Outpoint) error {
+func voidVotingRight(ctx context.Context, prev bc.Outpoint) error {
 	const q = `
 		UPDATE voting_right_txs SET void = 't'
 		WHERE tx_hash = $1 AND index = $2

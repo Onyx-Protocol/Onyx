@@ -58,6 +58,9 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 
 	// Add clause-specific parameters:
 	switch r.clause {
+	case clauseAuthenticate:
+		sb = sb.
+			AddData(r.holderAddr.RedeemScript)
 	case clauseTransfer:
 		sb = sb.
 			AddData(r.holderAddr.RedeemScript).
@@ -80,7 +83,7 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 			AddData(r.output.HolderScript).
 			AddInt64(r.output.Deadline).
 			AddData(r.output.OwnershipChain[:])
-	case clauseAuthenticate, clauseOverride, clauseCancel:
+	case clauseOverride, clauseCancel:
 		// TODO(jackson): Implement.
 		return nil, errors.New("unimplemented")
 	}

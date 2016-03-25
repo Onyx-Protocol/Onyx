@@ -51,11 +51,16 @@ func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx
 
 		var err error
 		switch clause {
+		case clauseAuthenticate:
+			// Void the voting right claim at the previous outpoint.
+			// The holder will need to use the new tx's outpoint from
+			// now on.
+			err = voidVotingRight(ctx, in.Previous)
 		case clauseTransfer:
 			// Void the voting right claim at the previous outpoint.
 			// A transferred voting right cannot be recalled by the
 			// transferer.
-			err = voidTransferredVotingRight(ctx, in.Previous)
+			err = voidVotingRight(ctx, in.Previous)
 		case clauseRecall:
 			// Void all of the voting right claims for this token, starting
 			// at the recall point.

@@ -177,6 +177,8 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 			receiver txbuilder.Receiver
 		)
 		switch src.Type {
+		case "vrtoken-authenticate":
+			reserver, receiver, err = voting.RightAuthentication(ctx, old)
 		case "vrtoken-transfer":
 			script, err := dst.buildAddress(ctx)
 			if err != nil {

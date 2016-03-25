@@ -35,6 +35,167 @@ func init() {
 	}
 }
 
+func TestAuthenticateClause(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	var (
+		assetID     = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		assetAmount = bc.AssetAmount{AssetID: assetID, Amount: 1}
+	)
+
+	testCases := []struct {
+		err  error
+		prev rightScriptData
+		out  rightScriptData
+	}{
+		{
+			err: nil,
+			prev: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			out: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+		},
+		{
+			err: nil,
+			prev: rightScriptData{
+				Deadline:       infiniteDeadline,
+				Delegatable:    false,
+				OwnershipChain: exampleHash,
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			out: rightScriptData{
+				Deadline:       infiniteDeadline,
+				Delegatable:    false,
+				OwnershipChain: exampleHash,
+				HolderScript:   []byte{txscript.OP_1},
+			},
+		},
+		{
+			// Fails because the deadline is in the past.
+			err: txscript.ErrStackVerifyFailed,
+			prev: rightScriptData{
+				Deadline:       0,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			out: rightScriptData{
+				Deadline:       0,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+		},
+		{
+			// Fails because the deadline changed in the output.
+			err: txscript.ErrStackVerifyFailed,
+			prev: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			out: rightScriptData{
+				Deadline:       4,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+		},
+		{
+			// Fails because the delegatable field changed in the output.
+			err: txscript.ErrStackVerifyFailed,
+			prev: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			out: rightScriptData{
+				Deadline:       3,
+				Delegatable:    false,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+		},
+		{
+			// Fails because the ownership chain changed in the output.
+			err: txscript.ErrStackVerifyFailed,
+			prev: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			out: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: exampleHash,
+				HolderScript:   []byte{txscript.OP_1},
+			},
+		},
+		{
+			// Fails because the holder script changed in the output.
+			err: txscript.ErrStackVerifyFailed,
+			prev: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			out: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1, txscript.OP_1},
+			},
+		},
+		{
+			// Fails during the EVAL of the holder script because the
+			// holder script is an unspendable address.
+			err: txscript.ErrStackEarlyReturn,
+			prev: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_RETURN},
+			},
+			out: rightScriptData{
+				Deadline:       3,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_RETURN},
+			},
+		},
+	}
+
+	for i, tc := range testCases {
+		sb := txscript.NewScriptBuilder().
+			AddInt64(int64(clauseAuthenticate)).
+			AddData(rightsHoldingContract)
+		sigscript, err := sb.Script()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = txscripttest.NewTestTx(mockTimeFunc).
+			AddInput(assetAmount, tc.prev.PKScript(), sigscript).
+			AddOutput(assetAmount, tc.out.PKScript()).
+			Execute(ctx, 0)
+		if !reflect.DeepEqual(err, tc.err) {
+			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
+		}
+	}
+}
+
 func TestTransferClause(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)

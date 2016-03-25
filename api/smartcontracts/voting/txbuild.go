@@ -21,6 +21,27 @@ func RightIssuance(ctx context.Context, holderScript []byte) txbuilder.Receiver 
 	}
 }
 
+// RightAuthentication builds txbuilder Reserver and Receiver implementations
+// for passing a voting right token through a transaction unchanged. The
+// output voting right is identical to the input voting right. Its
+// presence in the transaction proves voting right ownership during
+// voting.
+func RightAuthentication(ctx context.Context, src *RightWithUTXO) (txbuilder.Reserver, txbuilder.Receiver, error) {
+	originalHolderAddr, err := appdb.GetAddress(ctx, src.HolderScript)
+	if err != nil {
+		holderScriptStr, _ := txscript.DisasmString(src.HolderScript)
+		return nil, nil, errors.Wrapf(err, "could not get address for holder script [%s]", holderScriptStr)
+	}
+
+	reserver := rightsReserver{
+		outpoint:   src.Outpoint,
+		clause:     clauseAuthenticate,
+		output:     src.rightScriptData, // unchanged
+		holderAddr: originalHolderAddr,
+	}
+	return reserver, reserver.output, nil
+}
+
 // RightTransfer builds txbuilder Reserver and Receiver implementations for
 // a voting right transfer.
 func RightTransfer(ctx context.Context, src *RightWithUTXO, newHolderScript []byte) (txbuilder.Reserver, txbuilder.Receiver, error) {

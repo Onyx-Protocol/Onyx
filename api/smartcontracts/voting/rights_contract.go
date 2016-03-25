@@ -143,7 +143,7 @@ const (
 	//
 	// TODO(jackson): Include and eval admin script too.
 	//
-	// 1 - Authenticate (Unimplemented)
+	// 1 - Authenticate
 	// 2 - Transfer
 	// 3 - Delegate
 	// 4 - Recall
@@ -151,6 +151,16 @@ const (
 	// 6 - Cancel       (Unimplemented)
 	rightsHoldingContractString = `
 		4 ROLL
+		DUP 1 EQUAL IF
+			DROP
+			SWAP
+			TIME
+			GREATERTHAN VERIFY
+			2DROP
+			AMOUNT ASSET OUTPUTSCRIPT
+			REQUIREOUTPUT VERIFY
+			EVAL
+		ENDIF
 		DUP 2 EQUAL IF
 			DROP
 			1 PICK
