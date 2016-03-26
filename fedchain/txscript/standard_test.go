@@ -122,16 +122,18 @@ func TestPayToAddrScript(t *testing.T) {
 	contractHash := decodeHex("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456")
 	p2cParams := make([][]byte, 0)
 
+	v1 := []byte{0x01}
+
 	// zero-param p2c addr
-	p2c0 := txscript.NewAddressContractHash(contractHash, p2cParams)
+	p2c0 := txscript.NewAddressContractHash(contractHash, v1, p2cParams)
 
 	// one-param p2c addr
 	p2cParams = append(p2cParams, decodeHex("61"))
-	p2c1 := txscript.NewAddressContractHash(contractHash, p2cParams)
+	p2c1 := txscript.NewAddressContractHash(contractHash, v1, p2cParams)
 
 	// two-param p2c addr
 	p2cParams = append(p2cParams, decodeHex("62"))
-	p2c2 := txscript.NewAddressContractHash(contractHash, p2cParams)
+	p2c2 := txscript.NewAddressContractHash(contractHash, v1, p2cParams)
 
 	tests := []struct {
 		in       btcutil.Address

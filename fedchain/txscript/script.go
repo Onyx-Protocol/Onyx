@@ -54,53 +54,55 @@ func IsPayToScriptHash(script []byte) bool {
 // Returns true if the parsed script is in p2c format, false
 // otherwise.
 func isContract(pops []parsedOpcode) bool {
-	result, _, _ := testContract(pops)
-	return result
+	c, _ := testContract(pops)
+	return c != nil
 }
 
-// Returns true, the contractHash, and the params if the parsed script
+type Contract struct {
+	Hash          bc.ContractHash
+	ScriptVersion []byte
+}
+
+func (c Contract) Match(hash bc.ContractHash, version []byte) bool {
+	return c.Hash == hash && bytes.Equal(c.ScriptVersion, version)
+}
+
+// Returns true, the contract, and the params if the parsed script
 // is in p2c format; false, nil, and nil otherwise.
 //
 // P2C format for N>=1 params is:
 //   1 DROP <paramN> <paramN-1> ... <param1> <N> ROLL DUP HASH256 <contractHash> EQUALVERIFY EVAL
 // For N=0 params it's just:
 //   1 DROP DUP HASH256 <contractHash> EQUALVERIFY EVAL
-func testContract(pops []parsedOpcode) (bool, *bc.ContractHash, [][]byte) {
+func testContract(pops []parsedOpcode) (*Contract, [][]byte) {
 	scriptVersionBytes := parseScriptVersion(pops)
-	scriptVersion, err := makeScriptNum(scriptVersionBytes, false)
-	if err != nil {
-		return false, nil, nil // swallow errors
-	}
-	if scriptVersion != scriptNum(1) {
-		return false, nil, nil
-	}
 
 	l := len(pops)
 	if l < 7 || (l > 7 && l < 10) {
 		// Zero-param form has exactly 7 opcodes.
 		// 1+ params has 10 or more opcodes.
-		return false, nil, nil
+		return nil, nil
 	}
 
 	if pops[l-1].opcode.value != OP_EVAL {
-		return false, nil, nil
+		return nil, nil
 	}
 	if pops[l-2].opcode.value != OP_EQUALVERIFY {
-		return false, nil, nil
+		return nil, nil
 	}
 
 	if !isPushdataOp(pops[l-3]) {
-		return false, nil, nil
+		return nil, nil
 	}
 	if len(pops[l-3].data) != 32 {
-		return false, nil, nil
+		return nil, nil
 	}
 
 	if pops[l-4].opcode.value != OP_HASH256 {
-		return false, nil, nil
+		return nil, nil
 	}
 	if pops[l-5].opcode.value != OP_DUP {
-		return false, nil, nil
+		return nil, nil
 	}
 
 	var params [][]byte
@@ -109,21 +111,21 @@ func testContract(pops []parsedOpcode) (bool, *bc.ContractHash, [][]byte) {
 		params = make([][]byte, 0, l-9)
 
 		if pops[l-6].opcode.value != OP_ROLL {
-			return false, nil, nil
+			return nil, nil
 		}
 		if !isPushdataOp(pops[l-7]) {
-			return false, nil, nil
+			return nil, nil
 		}
 		n, err := asScriptNum(pops[l-7], false)
 		if err != nil {
-			return false, nil, nil // swallow errors
+			return nil, nil // swallow errors
 		}
 		if n != scriptNum(l-9) {
-			return false, nil, nil
+			return nil, nil
 		}
 		for i := l - 8; i >= 2; i-- {
 			if !isPushdataOp(pops[i]) {
-				return false, nil, nil
+				return nil, nil
 			}
 			params = append(params, asPushdata(pops[i]))
 		}
@@ -132,22 +134,25 @@ func testContract(pops []parsedOpcode) (bool, *bc.ContractHash, [][]byte) {
 	var contractHash bc.ContractHash
 	copy(contractHash[:], pops[l-3].data)
 
-	return true, &contractHash, params
+	return &Contract{
+		Hash:          contractHash,
+		ScriptVersion: scriptVersionBytes,
+	}, params
 }
 
 // IsPayToContract returns true if the script is in the standard
 // pay-to-contract (P2C) format, false otherwise.
 func IsPayToContract(script []byte) bool {
-	result, _, _ := TestPayToContract(script)
-	return result
+	contract, _ := TestPayToContract(script)
+	return contract != nil
 }
 
-// TestPayToContract returns true, the contractHash, and the params if
-// the script is in p2c format; false, nil and nil otherwise.
-func TestPayToContract(script []byte) (bool, *bc.ContractHash, [][]byte) {
+// TestPayToContract returns a Contract struct and the params if
+// the script is in p2c format; nil and nil otherwise.
+func TestPayToContract(script []byte) (*Contract, [][]byte) {
 	pops, err := parseScript(script)
 	if err != nil {
-		return false, nil, nil
+		return nil, nil
 	}
 	return testContract(pops)
 }

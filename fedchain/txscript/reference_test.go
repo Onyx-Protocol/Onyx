@@ -330,7 +330,7 @@ func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([]by
 	}
 
 	contractHash := hash256.Sum(contractScript)
-	pkScript, err := TstPayToContractScript(contractHash[:], pkParams)
+	pkScript, err := TstPayToContractScript(contractHash[:], []byte{0x01}, pkParams)
 	if err != nil {
 		return nil, nil, err
 	}

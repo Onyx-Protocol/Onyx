@@ -202,9 +202,9 @@ func payToPubKeyHashScript(pubKeyHash []byte) ([]byte, error) {
 
 // payToContractScript creates a new script to pay a transaction
 // output to a contract.
-func payToContractScript(contractHash []byte, params [][]byte) ([]byte, error) {
+func payToContractScript(contractHash, scriptVersion []byte, params [][]byte) ([]byte, error) {
 	sb := NewScriptBuilder()
-	sb = sb.AddOp(OP_1).AddOp(OP_DROP) // script version
+	sb = sb.AddData(scriptVersion).AddOp(OP_DROP)
 
 	n := len(params)
 	if n > 0 {
@@ -234,8 +234,9 @@ func payToPubKeyScript(serializedPubKey []byte) ([]byte, error) {
 
 // Satisfies btcutil.Address
 type AddressContractHash struct {
-	params [][]byte
-	hash   bc.ContractHash
+	scriptVersion []byte
+	params        [][]byte
+	hash          bc.ContractHash
 }
 
 // String returns the string encoding of the transaction output
@@ -260,7 +261,7 @@ func (a *AddressContractHash) EncodeAddress() string {
 // ScriptAddress returns the raw bytes of the address to be used
 // when inserting the address into a txout's script.
 func (a *AddressContractHash) ScriptAddress() []byte {
-	result, _ := payToContractScript(a.hash[:], a.params)
+	result, _ := payToContractScript(a.hash[:], a.scriptVersion, a.params)
 	return result
 }
 
@@ -270,8 +271,8 @@ func (a *AddressContractHash) IsForNet(*chaincfg.Params) bool {
 	return true
 }
 
-func NewAddressContractHash(contractHash []byte, params [][]byte) *AddressContractHash {
-	result := AddressContractHash{params: params}
+func NewAddressContractHash(contractHash, scriptVersion []byte, params [][]byte) *AddressContractHash {
+	result := AddressContractHash{scriptVersion: scriptVersion, params: params}
 	copy(result.hash[:], contractHash)
 	return &result
 }
@@ -296,7 +297,7 @@ func PayToAddrScript(addr btcutil.Address) ([]byte, error) {
 		if addr == nil {
 			return nil, ErrUnsupportedAddress
 		}
-		return payToContractScript(addr.hash[:], addr.params)
+		return addr.ScriptAddress(), nil
 
 	case *btcutil.AddressPubKey:
 		if addr == nil {

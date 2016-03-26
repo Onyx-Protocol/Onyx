@@ -96,9 +96,9 @@ func addToUTXOSet(set *utxoSet, out *Output) {
 	set.script = append(set.script, out.Script)
 	set.metadata = append(set.metadata, out.Metadata)
 
-	isPayToContract, contractHash, _ := txscript.TestPayToContract(out.Script)
-	if isPayToContract {
-		set.contractHash = append(set.contractHash, contractHash[:])
+	contract, _ := txscript.TestPayToContract(out.Script)
+	if contract != nil {
+		set.contractHash = append(set.contractHash, contract.Hash[:])
 	} else {
 		set.contractHash = append(set.contractHash, nil)
 	}

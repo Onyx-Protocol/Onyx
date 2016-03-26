@@ -8,6 +8,10 @@ import (
 	"chain/fedchain/txscript"
 )
 
+// scriptVersion encodes the version of the scripting language required
+// for executing the voting rights contract.
+var scriptVersion = []byte{0x02}
+
 type rightsContractClause int64
 
 const (
@@ -41,18 +45,18 @@ func (r rightScriptData) PKScript() []byte {
 	params = append(params, r.OwnershipChain[:])
 	params = append(params, r.HolderScript)
 
-	addr := txscript.NewAddressContractHash(rightsHoldingContractHash[:], params)
+	addr := txscript.NewAddressContractHash(rightsHoldingContractHash[:], scriptVersion, params)
 	return addr.ScriptAddress()
 }
 
 // testRightsContract tests whether the given pkscript is a voting
 // rights holding contract.
 func testRightsContract(pkscript []byte) (*rightScriptData, error) {
-	match, contractHash, params := txscript.TestPayToContract(pkscript)
-	if !match {
+	contract, params := txscript.TestPayToContract(pkscript)
+	if contract == nil {
 		return nil, nil
 	}
-	if *contractHash != rightsHoldingContractHash {
+	if !contract.Match(rightsHoldingContractHash, scriptVersion) {
 		return nil, nil
 	}
 	if len(params) != 4 {
@@ -111,7 +115,7 @@ const (
 			1 PICK
 			TIME
 			GREATERTHAN VERIFY
-			DATA_2 0x5175
+			DATA_2 0x5275
 			5 ROLL CATPUSHDATA
 			3 ROLL CATPUSHDATA
 			2 ROLL CATPUSHDATA

@@ -15,6 +15,8 @@ import (
 	"chain/log"
 )
 
+var scriptVersion = []byte{0x01}
+
 type (
 	// Price says pay PaymentAmount units of AssetID to get OfferAmount
 	// units of the asset offered in an Orderbook contract.
@@ -125,7 +127,7 @@ func (info *OrderInfo) generateScript(ctx context.Context, sellerScript []byte) 
 	}
 	contractHash := hash256.Sum(contract)
 
-	addr := txscript.NewAddressContractHash(contractHash[:], params)
+	addr := txscript.NewAddressContractHash(contractHash[:], scriptVersion, params)
 	return addr.ScriptAddress(), contract, contractHash[:], nil
 }
 
@@ -139,11 +141,11 @@ func (openOrder *OpenOrder) SellerScript() ([]byte, error) {
 // orderbook contract.  Returns true, the seller script, and the list
 // of prices if so; false, nil, and nil otherwise.
 func testOrderbookScript(pkscript []byte) (isOrderbook bool, sellerScript []byte, prices []*Price, err error) {
-	isp2c, contractHash, params := txscript.TestPayToContract(pkscript)
-	if !isp2c {
+	contract, params := txscript.TestPayToContract(pkscript)
+	if contract == nil {
 		return false, nil, nil, nil
 	}
-	if *contractHash != onePriceContractHash {
+	if !contract.Match(onePriceContractHash, scriptVersion) {
 		return false, nil, nil, nil
 	}
 	if len(params) < 4 {

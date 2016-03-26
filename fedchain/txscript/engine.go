@@ -583,7 +583,7 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 	vm.PushScript(parsedScriptSig)
 
 	vm.numOps = 0
-	if isPayToContract, _, _ := testContract(parsedScriptPubKey); isPayToContract {
+	if isContract(parsedScriptPubKey) {
 		vm.maxOps = MaxOpsPerP2CScript
 	} else {
 		vm.maxOps = MaxOpsPerScript

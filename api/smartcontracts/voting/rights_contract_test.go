@@ -269,7 +269,7 @@ func TestRightsContractInvalidMatch(t *testing.T) {
 	}
 
 	for i, params := range testCaseScriptParams {
-		addr := txscript.NewAddressContractHash(rightsHoldingContractHash[:], params)
+		addr := txscript.NewAddressContractHash(rightsHoldingContractHash[:], scriptVersion, params)
 		script := addr.ScriptAddress()
 
 		data, err := testRightsContract(script)
