@@ -86,7 +86,7 @@ type Store interface {
 	// tx pool
 	GetTxs(context.Context, ...bc.Hash) (map[bc.Hash]*bc.Tx, error)
 	ApplyTx(context.Context, *bc.Tx, map[bc.AssetID]uint64) error
-	RemoveTxs(ctx context.Context, confirmed, conflicting []*bc.Tx, issued map[bc.AssetID]uint64) error
+	CleanPool(ctx context.Context, confirmed, conflicting []*bc.Tx, newIssued map[bc.AssetID]uint64) error
 	PoolTxs(context.Context) ([]*bc.Tx, error)
 	NewPoolViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error)
 

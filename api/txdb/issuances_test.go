@@ -60,7 +60,7 @@ func TestAddIssuances(t *testing.T) {
 	testutil.ExpectEqual(t, total, uint64(20), "total issued")
 }
 
-func TestRemoveIssuances(t *testing.T) {
+func TestSetIssuances(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
@@ -75,7 +75,7 @@ func TestRemoveIssuances(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	err = removeIssuances(ctx, map[bc.AssetID]uint64{aid: 5})
+	err = setIssuances(ctx, map[bc.AssetID]uint64{aid: 6})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -86,5 +86,5 @@ func TestRemoveIssuances(t *testing.T) {
 	}
 
 	testutil.ExpectEqual(t, conf, uint64(10), "confirmed issued")
-	testutil.ExpectEqual(t, total, uint64(15), "total issued")
+	testutil.ExpectEqual(t, total, uint64(16), "total issued")
 }

@@ -203,6 +203,11 @@ func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 		view.SaveOutput(o)
 	}
 
+	issued := sumIssued(ctx, view, tx)
+	for asset, amt := range issued {
+		view.SaveIssuance(asset, amt)
+	}
+
 	return nil
 }
 
@@ -213,4 +218,24 @@ func assetIDFromSigScript(script []byte) (bc.AssetID, error) {
 	}
 	pkScript := txscript.RedeemToPkScript(redeemScript)
 	return bc.ComputeAssetID(pkScript, [32]byte{}), nil // TODO(tessr): get genesis hash
+}
+
+// the amount of issued assets can be determined by
+// the sum of outputs minus the sum of non-issuance inputs
+func sumIssued(ctx context.Context, view state.ViewReader, tx *bc.Tx) map[bc.AssetID]uint64 {
+	issued := make(map[bc.AssetID]uint64)
+	if !tx.HasIssuance() {
+		return nil
+	}
+	for _, out := range tx.Outputs {
+		issued[out.AssetID] += out.Amount
+	}
+	for _, in := range tx.Inputs {
+		if in.IsIssuance() {
+			continue
+		}
+		prevout := view.Output(ctx, in.Previous)
+		issued[prevout.AssetID] -= prevout.Amount
+	}
+	return issued
 }

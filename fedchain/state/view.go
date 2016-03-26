@@ -35,6 +35,9 @@ type ViewWriter interface {
 
 	// SaveAssetDefinitionPointer updates the asset definition pointer.
 	SaveAssetDefinitionPointer(bc.AssetID, bc.Hash)
+
+	// SaveIssuance stores the amount of an asset issued
+	SaveIssuance(bc.AssetID, uint64)
 }
 
 // Output represents a spent or unspent output

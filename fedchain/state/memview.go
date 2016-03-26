@@ -6,17 +6,21 @@ import (
 	"chain/fedchain/bc"
 )
 
+var _ View = (*MemView)(nil)
+
 // MemView satisfies the View interface
 type MemView struct {
-	Outs map[bc.Outpoint]*Output
-	ADPs map[bc.AssetID]bc.Hash
+	Outs     map[bc.Outpoint]*Output
+	ADPs     map[bc.AssetID]bc.Hash
+	Issuance map[bc.AssetID]uint64
 }
 
 // NewMemView returns a new MemView
 func NewMemView() *MemView {
 	return &MemView{
-		Outs: make(map[bc.Outpoint]*Output),
-		ADPs: make(map[bc.AssetID]bc.Hash),
+		Outs:     make(map[bc.Outpoint]*Output),
+		ADPs:     make(map[bc.AssetID]bc.Hash),
+		Issuance: make(map[bc.AssetID]uint64),
 	}
 }
 
@@ -30,4 +34,8 @@ func (v *MemView) SaveOutput(o *Output) {
 
 func (v *MemView) SaveAssetDefinitionPointer(asset bc.AssetID, hash bc.Hash) {
 	v.ADPs[asset] = hash
+}
+
+func (v *MemView) SaveIssuance(asset bc.AssetID, amount uint64) {
+	v.Issuance[asset] += amount
 }

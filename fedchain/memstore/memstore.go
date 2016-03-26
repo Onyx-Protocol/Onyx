@@ -70,11 +70,11 @@ func (m *MemStore) ApplyTx(ctx context.Context, tx *bc.Tx, issued map[bc.AssetID
 	return nil
 }
 
-func (m *MemStore) RemoveTxs(
+func (m *MemStore) CleanPool(
 	ctx context.Context,
 	confirmed,
 	conflicting []*bc.Tx,
-	issued map[bc.AssetID]uint64,
+	newIssued map[bc.AssetID]uint64,
 ) error {
 	for _, tx := range append(confirmed, conflicting...) {
 		delete(m.poolMap, tx.Hash)

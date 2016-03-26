@@ -95,10 +95,10 @@ func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx, issued map[bc.AssetID]ui
 }
 
 // RemoveTxs removes confirmedTxs and conflictTxs from the pool.
-func (s *Store) RemoveTxs(
+func (s *Store) CleanPool(
 	ctx context.Context,
 	confirmedTxs, conflictTxs []*bc.Tx,
-	issued map[bc.AssetID]uint64,
+	newIssued map[bc.AssetID]uint64,
 ) error {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
@@ -159,7 +159,7 @@ func (s *Store) RemoveTxs(
 		return errors.Wrap(err, "delete from pool_inputs")
 	}
 
-	err = removeIssuances(ctx, issued)
+	err = setIssuances(ctx, newIssued)
 	if err != nil {
 		return errors.Wrap(err, "removing issuances")
 	}

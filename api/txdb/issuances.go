@@ -45,15 +45,16 @@ func addIssuances(ctx context.Context, issued map[bc.AssetID]uint64, confirmed b
 	return errors.Wrap(err, "inserting new issuance_totals")
 }
 
-func removeIssuances(ctx context.Context, issued map[bc.AssetID]uint64) error {
+func setIssuances(ctx context.Context, issued map[bc.AssetID]uint64) error {
 	assetIDs, amounts := collectIssuedArrays(issued)
 
 	const q = `
 		WITH issued AS (
 			SELECT * FROM unnest($1::text[], $2::bigint[]) AS t(asset_id, amount)
 		)
-		UPDATE issuance_totals it SET pool=pool-amount
-		FROM issued i WHERE it.asset_id=i.asset_id
+		UPDATE issuance_totals it
+		SET pool=amount
+		FROM issued i WHERE i.asset_id=it.asset_id
 	`
 	_, err := pg.Exec(ctx, q, pg.Strings(assetIDs), pg.Uint64s(amounts))
 

@@ -44,14 +44,20 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 		return errors.Wrap(err)
 	}
 
-	view := state.MultiReader(poolView, bcView)
+	mv := state.NewMemView()
+	view := state.Compose(mv, state.MultiReader(poolView, bcView))
 	err = validation.ValidateTx(ctx, view, tx, uint64(time.Now().Unix()))
 	if err != nil {
 		return errors.Wrap(err, "tx rejected")
 	}
 
+	err = validation.ApplyTx(ctx, view, tx)
+	if err != nil {
+		return errors.Wrap(err, "applying tx")
+	}
+
 	// Update persistent tx pool state
-	err = fc.applyTx(ctx, tx, sumIssued(ctx, view, tx))
+	err = fc.applyTx(ctx, tx, mv.Issuance)
 	if err != nil {
 		return errors.Wrap(err, "apply TX")
 	}
@@ -71,26 +77,4 @@ func (fc *FC) applyTx(ctx context.Context, tx *bc.Tx, issued map[bc.AssetID]uint
 
 	err = fc.store.ApplyTx(ctx, tx, issued)
 	return errors.Wrap(err, "applying tx to store")
-}
-
-// the amount of issued assets can be determined by
-// the sum of outputs minus the sum of non-issuance inputs
-func sumIssued(ctx context.Context, view state.ViewReader, txs ...*bc.Tx) map[bc.AssetID]uint64 {
-	issued := make(map[bc.AssetID]uint64)
-	for _, tx := range txs {
-		if !tx.HasIssuance() {
-			continue
-		}
-		for _, out := range tx.Outputs {
-			issued[out.AssetID] += out.Amount
-		}
-		for _, in := range tx.Inputs {
-			if in.IsIssuance() {
-				continue
-			}
-			prevout := view.Output(ctx, in.Previous)
-			issued[prevout.AssetID] -= prevout.Amount
-		}
-	}
-	return issued
 }
