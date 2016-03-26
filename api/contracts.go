@@ -183,9 +183,6 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 				return nil, nil, err
 			}
 			reserver, receiver, err = voting.RightTransfer(ctx, old, script)
-			if err != nil {
-				return nil, nil, err
-			}
 		case "vrtoken-delegate":
 			if !old.Delegatable {
 				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "delegating this voting right is prohibited")
@@ -208,11 +205,38 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 				deadline = dst.Deadline.Unix()
 			}
 			reserver, receiver, err = voting.RightDelegation(ctx, old, script, deadline, delegatable)
+		case "vrtoken-recall":
+			claims, err := voting.FindRightsForAsset(ctx, assetID)
 			if err != nil {
 				return nil, nil, err
 			}
+			if len(claims) < 2 {
+				// You need at least two claims to have a recallable voting right.
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
+			}
+
+			// Find the earliest, active voting right claim that this account
+			// has on this voting right token. We'll recall back to that point.
+			var (
+				recallPoint    *voting.RightWithUTXO
+				recallPointIdx int
+			)
+			for i, claim := range claims {
+				if claim.AccountID != nil && *claim.AccountID == dst.AccountID {
+					recallPoint = claim
+					recallPointIdx = i
+					break
+				}
+			}
+			if recallPoint == nil {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right not recallable")
+			}
+			reserver, receiver, err = voting.RightRecall(ctx, old, recallPoint, claims[recallPointIdx+1:len(claims)-1])
 		default:
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "`%s` source type unimplemented", src.Type)
+		}
+		if err != nil {
+			return nil, nil, err
 		}
 		srcs = append(srcs, &txbuilder.Source{
 			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},

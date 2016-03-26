@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"chain/api/asset/assettest"
+	"chain/crypto/hash256"
 	"chain/database/pg/pgtest"
 	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
@@ -39,10 +40,8 @@ func TestTransferClause(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	var (
-		projectID    = assettest.CreateProjectFixture(ctx, t, "", "")
-		issuerNodeID = assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
-		assetID      = assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
-		assetAmount  = bc.AssetAmount{AssetID: assetID, Amount: 1}
+		assetID     = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		assetAmount = bc.AssetAmount{AssetID: assetID, Amount: 1}
 	)
 
 	testCases := []struct {
@@ -140,10 +139,8 @@ func TestDelegateClause(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	var (
-		projectID    = assettest.CreateProjectFixture(ctx, t, "", "")
-		issuerNodeID = assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
-		assetID      = assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
-		assetAmount  = bc.AssetAmount{AssetID: assetID, Amount: 1}
+		assetID     = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		assetAmount = bc.AssetAmount{AssetID: assetID, Amount: 1}
 	)
 
 	testCases := []struct {
@@ -277,6 +274,189 @@ func TestDelegateClause(t *testing.T) {
 	}
 }
 
+func TestRecallClause(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	var (
+		assetID     = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		assetAmount = bc.AssetAmount{AssetID: assetID, Amount: 1}
+	)
+
+	testCases := []struct {
+		err          error
+		intermediate []bc.Hash
+		prev         rightScriptData
+		utxo         rightScriptData
+		out          rightScriptData
+	}{
+		{
+			// Direct recall
+			err:          nil,
+			intermediate: []bc.Hash{}, // no intermediate custodians
+			prev: rightScriptData{
+				Deadline:       1858259488,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			utxo: rightScriptData{
+				Deadline:       1700000000,
+				Delegatable:    false,
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 1858259488),
+				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
+			},
+			out: rightScriptData{
+				Deadline:       1858259488,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+		},
+		{
+			// One intermediate hash in chain of ownership
+			err: nil,
+			intermediate: []bc.Hash{
+				hash256.Sum(append(
+					asByteSlice(hash256.Sum(exampleHash[:])),
+					asByteSlice(hash256.Sum(txscript.Int64ToScriptBytes(0x7eeeeeee)))...,
+				)),
+			},
+			prev: rightScriptData{
+				Deadline:       0x7fffffff,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			utxo: rightScriptData{
+				Deadline:    0x7ddddddd,
+				Delegatable: false,
+				OwnershipChain: calculateOwnershipChain(
+					calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 0x7fffffff),
+					exampleHash[:],
+					0x7eeeeeee,
+				),
+				HolderScript: []byte{txscript.OP_RETURN},
+			},
+			out: rightScriptData{
+				Deadline:       0x7fffffff,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+		},
+		{
+			// Two intermediate hashes in chain of ownership
+			err: nil,
+			intermediate: []bc.Hash{
+				hash256.Sum(append(
+					asByteSlice(hash256.Sum([]byte("another holder script"))),
+					asByteSlice(hash256.Sum(txscript.Int64ToScriptBytes(0x7eeeeeee)))...,
+				)),
+				hash256.Sum(append(
+					asByteSlice(hash256.Sum(exampleHash[:])),
+					asByteSlice(hash256.Sum(txscript.Int64ToScriptBytes(0x7ddddddd)))...,
+				)),
+			},
+			prev: rightScriptData{
+				Deadline:       0x7fffffff,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			utxo: rightScriptData{
+				Deadline:    0x7ccccccc,
+				Delegatable: false,
+				OwnershipChain: calculateOwnershipChain(
+					calculateOwnershipChain(
+						calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 0x7fffffff),
+						exampleHash[:],
+						0x7ddddddd,
+					),
+					[]byte("another holder script"),
+					0x7eeeeeee,
+				),
+				HolderScript: []byte{txscript.OP_RETURN},
+			},
+			out: rightScriptData{
+				Deadline:       0x7fffffff,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+		},
+		{
+			// Different (earlier) deadline than recall point.
+			err: txscript.ErrStackVerifyFailed,
+			prev: rightScriptData{
+				Deadline:       0x6fffffff,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+			utxo: rightScriptData{
+				Deadline:       0x6ccccccc,
+				Delegatable:    false,
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 0x6fffffff),
+				HolderScript:   []byte{txscript.OP_RETURN},
+			},
+			out: rightScriptData{
+				Deadline:       0x7fffffff,
+				Delegatable:    true,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_1},
+			},
+		},
+		{
+			// Holder doesn't authorize.
+			err: txscript.ErrStackVerifyFailed,
+			prev: rightScriptData{
+				Deadline:       0x7fffffff,
+				Delegatable:    false,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_RETURN},
+			},
+			utxo: rightScriptData{
+				Deadline:       0x7ccccccc,
+				Delegatable:    false,
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_RETURN}, 0x7fffffff),
+				HolderScript:   []byte{txscript.OP_RETURN},
+			},
+			out: rightScriptData{
+				Deadline:       0x7fffffff,
+				Delegatable:    false,
+				OwnershipChain: bc.Hash{}, // 0x000...000
+				HolderScript:   []byte{txscript.OP_RETURN},
+			},
+		},
+	}
+
+	for i, tc := range testCases {
+		sb := txscript.NewScriptBuilder()
+		for _, h := range tc.intermediate {
+			sb.AddData(h[:])
+		}
+		sb = sb.
+			AddInt64(int64(len(tc.intermediate))).
+			AddData(tc.prev.HolderScript).
+			AddInt64(tc.prev.Deadline).
+			AddData(tc.prev.OwnershipChain[:]).
+			AddInt64(int64(clauseRecall)).
+			AddData(rightsHoldingContract)
+		sigscript, err := sb.Script()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = txscripttest.NewTestTx(mockTimeFunc).
+			AddInput(assetAmount, tc.utxo.PKScript(), sigscript).
+			AddOutput(assetAmount, tc.out.PKScript()).
+			Execute(ctx, 0)
+		if !reflect.DeepEqual(err, tc.err) {
+			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
+		}
+	}
+}
+
 // TestRightsContractValidMatch tests generating a pkscript from a voting right.
 // The generated pkscript is then used in the voting rights p2c detection
 // flow, where it should be found to match the contract. Then the decoded
@@ -374,4 +554,8 @@ func TestRightsContractInvalidMatch(t *testing.T) {
 			continue
 		}
 	}
+}
+
+func asByteSlice(h [hash256.Size]byte) []byte {
+	return h[:]
 }

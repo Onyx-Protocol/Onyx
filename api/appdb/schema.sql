@@ -843,7 +843,10 @@ CREATE TABLE voting_right_txs (
     holder bytea NOT NULL,
     deadline bigint,
     delegatable boolean NOT NULL,
-    ownership_chain bytea NOT NULL
+    ownership_chain bytea NOT NULL,
+    block_height bigint NOT NULL,
+    block_tx_index integer NOT NULL,
+    void boolean DEFAULT false NOT NULL
 );
 
 

@@ -1,6 +1,7 @@
 package voting
 
 import (
+	"bytes"
 	"crypto/sha256"
 
 	"chain/crypto/hash256"
@@ -94,6 +95,43 @@ func testRightsContract(pkscript []byte) (*rightScriptData, error) {
 	return &right, nil
 }
 
+// testRightsSigscript tests whether the given sigscript is redeeming a
+// voting rights holding contract. It will return the clause being used,
+// and the ownership hash to rewind to for recall clauses.
+func testRightsSigscript(sigscript []byte) (ok bool, c rightsContractClause, ownershipHash bc.Hash) {
+	data, err := txscript.PushedData(sigscript)
+	if err != nil {
+		return false, c, ownershipHash
+	}
+	if len(data) < 2 {
+		return false, c, ownershipHash
+	}
+	if !bytes.Equal(data[len(data)-1], rightsHoldingContract) {
+		return false, c, ownershipHash
+	}
+
+	clauseBytes := data[len(data)-2]
+	if len(clauseBytes) != 1 {
+		return false, c, ownershipHash
+	}
+	c = rightsContractClause(clauseBytes[0])
+	if c < clauseAuthenticate || c > clauseCancel {
+		return false, c, ownershipHash
+	}
+
+	// If it's not a recall, early exit.
+	if c != clauseRecall {
+		return true, c, ownershipHash
+	}
+
+	// Extract the ownership chain for the recall clause.
+	if len(data) < 3 || len(data[len(data)-3]) != cap(ownershipHash) {
+		return false, c, ownershipHash
+	}
+	copy(ownershipHash[:], data[len(data)-3])
+	return true, c, ownershipHash
+}
+
 const (
 	// rightsHoldingContractString contains the entire rights holding
 	// contract script. For now, it's structured as a series of IF...ENDIF
@@ -108,7 +146,7 @@ const (
 	// 1 - Authenticate (Unimplemented)
 	// 2 - Transfer
 	// 3 - Delegate
-	// 4 - Recall       (Unimplemented)
+	// 4 - Recall
 	// 5 - Override     (Unimplemented)
 	// 6 - Cancel       (Unimplemented)
 	rightsHoldingContractString = `
@@ -152,6 +190,33 @@ const (
 			CAT
 			AMOUNT ASSET ROT
 			REQUIREOUTPUT VERIFY
+			EVAL
+		ENDIF
+		DUP 4 EQUAL IF
+			DROP
+			4 ROLL SIZE
+			DATA_1 0x20 EQUALVERIFY
+			6 PICK HASH256
+			6 PICK HASH256 CAT
+			HASH256 1 PICK CAT HASH256
+			8 ROLL
+			WHILE
+				9 ROLL
+				ROT CAT HASH256
+				SWAP 1SUB
+			ENDWHILE DROP
+			4 ROLL EQUALVERIFY
+			DATA_2 0x5275
+			6 PICK CATPUSHDATA
+			SWAP CATPUSHDATA
+			4 ROLL CATPUSHDATA
+			1 CATPUSHDATA
+			OUTPUTSCRIPT
+			DATA_1 0x27 RIGHT
+			CAT
+			AMOUNT ASSET ROT
+			REQUIREOUTPUT VERIFY
+			2DROP DROP
 			EVAL
 		ENDIF
 		DEPTH 1 EQUALVERIFY

@@ -70,3 +70,30 @@ func RightDelegation(ctx context.Context, src *RightWithUTXO, newHolderScript []
 	}
 	return reserver, reserver.output, nil
 }
+
+// RightRecall builds txbuilder Reserver and Receiver implementations for
+// a voting right recall.
+func RightRecall(ctx context.Context, src, recallPoint *RightWithUTXO, intermediaryRights []*RightWithUTXO) (txbuilder.Reserver, txbuilder.Receiver, error) {
+	originalHolderAddr, err := appdb.GetAddress(ctx, recallPoint.HolderScript)
+	if err != nil {
+		holderScriptStr, _ := txscript.DisasmString(recallPoint.HolderScript)
+		return nil, nil, errors.Wrapf(err, "could not get address for holder script [%s]", holderScriptStr)
+	}
+
+	intermediaries := make([]intermediateHolder, 0, len(intermediaryRights))
+	for _, r := range intermediaryRights {
+		intermediaries = append(intermediaries, intermediateHolder{
+			script:   r.HolderScript,
+			deadline: r.Deadline,
+		})
+	}
+
+	reserver := rightsReserver{
+		outpoint:       src.Outpoint,
+		clause:         clauseRecall,
+		output:         recallPoint.rightScriptData,
+		intermediaries: intermediaries,
+		holderAddr:     originalHolderAddr,
+	}
+	return reserver, reserver.output, nil
+}

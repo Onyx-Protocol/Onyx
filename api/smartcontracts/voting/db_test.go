@@ -45,7 +45,7 @@ func TestInsertVotingRightAccountID(t *testing.T) {
 		Delegatable:    true,
 	}
 
-	err := insertVotingRight(ctx, assetID, bc.Outpoint{}, data)
+	err := insertVotingRight(ctx, assetID, 1, 0, bc.Outpoint{}, data)
 	if err != nil {
 		t.Fatal(err)
 	}
