@@ -79,8 +79,8 @@ type issuedTestStore struct {
 	f func(map[bc.AssetID]uint64)
 }
 
-func (i *issuedTestStore) ApplyTx(ctx context.Context, tx *bc.Tx, issued map[bc.AssetID]uint64) error {
-	err := i.MemStore.ApplyTx(ctx, tx, issued)
+func (i *issuedTestStore) ApplyTx(ctx context.Context, tx *bc.Tx, issued, destroyed map[bc.AssetID]uint64) error {
+	err := i.MemStore.ApplyTx(ctx, tx, issued, destroyed)
 	if i.f != nil {
 		i.f(issued)
 	}

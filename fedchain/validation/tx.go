@@ -195,6 +195,10 @@ func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 	}
 
 	for i, out := range tx.Outputs {
+		if txscript.IsUnspendable(out.Script) {
+			view.SaveDestruction(out.AssetID, out.Amount)
+			continue
+		}
 		o := &state.Output{
 			TxOutput: *out,
 			Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(i)},

@@ -13,6 +13,7 @@ import (
 	"chain/errors"
 	"chain/fedchain/bc"
 	"chain/fedchain/memstore"
+	"chain/fedchain/state"
 	"chain/fedchain/txscript"
 	"chain/testutil"
 )
@@ -22,7 +23,7 @@ func TestLatestBlock(t *testing.T) {
 
 	noBlocks := memstore.New()
 	oneBlock := memstore.New()
-	oneBlock.ApplyBlock(ctx, &bc.Block{}, nil, nil, nil)
+	oneBlock.ApplyBlock(ctx, &bc.Block{}, nil, nil, nil, nil)
 
 	cases := []struct {
 		store   Store
@@ -73,7 +74,7 @@ func TestWaitForBlock(t *testing.T) {
 			OutputScript:      []byte{txscript.OP_TRUE},
 		},
 	}
-	store.ApplyBlock(ctx, block0, nil, nil, nil)
+	store.ApplyBlock(ctx, block0, nil, nil, nil, nil)
 	fc, err := New(ctx, store, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -216,7 +217,7 @@ func TestGenerateBlock(t *testing.T) {
 		}),
 	}
 	for _, tx := range txs {
-		err := fc.applyTx(ctx, tx, nil)
+		err := fc.applyTx(ctx, tx, state.NewMemView())
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

@@ -3,6 +3,8 @@ package validation
 import (
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
+	"chain/fedchain/txscript"
+	"chain/testutil"
 	"testing"
 	"time"
 
@@ -21,6 +23,35 @@ func TestNoUpdateEmptyAD(t *testing.T) {
 		// If metadata field is empty, no update of ADP takes place.
 		// See https://github.com/chain-engineering/fedchain/blob/master/documentation/fedchain-specification.md#extract-asset-definition.
 		t.Fatal("apply tx should not save an empty asset definition")
+	}
+}
+
+func TestDestructionTracking(t *testing.T) {
+	ctx := context.Background()
+	view := state.NewMemView()
+	aid := [32]byte{1}
+	tx := bc.NewTx(bc.TxData{Outputs: []*bc.TxOutput{
+		{
+			AssetAmount: bc.AssetAmount{AssetID: aid, Amount: 5},
+			Script:      []byte{txscript.OP_RETURN},
+		},
+	}})
+	err := ApplyTx(ctx, view, tx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	if len(view.Destroyed) == 0 {
+		t.Fatal("no destruction was tracked")
+	}
+
+	var want uint64 = 5
+	if got := view.Destroyed[aid]; got != want {
+		t.Fatalf("got destroyed = %d want %d", got, want)
+	}
+
+	if len(view.Outs) > 0 {
+		t.Fatal("utxo should not be saved")
 	}
 }
 

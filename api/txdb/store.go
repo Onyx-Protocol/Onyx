@@ -37,7 +37,7 @@ func (s *Store) GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.
 }
 
 // ApplyTx adds tx to the pending pool.
-func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx, issued map[bc.AssetID]uint64) error {
+func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx, issued, destroyed map[bc.AssetID]uint64) error {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return errors.Wrap(err)
@@ -85,7 +85,7 @@ func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx, issued map[bc.AssetID]ui
 		return errors.Wrap(err, "insert into pool inputs")
 	}
 
-	err = addIssuances(ctx, issued, false)
+	err = addIssuances(ctx, issued, destroyed, false)
 	if err != nil {
 		return errors.Wrap(err, "adding issuances")
 	}
@@ -99,6 +99,7 @@ func (s *Store) CleanPool(
 	ctx context.Context,
 	confirmedTxs, conflictTxs []*bc.Tx,
 	newIssued map[bc.AssetID]uint64,
+	newDestroyed map[bc.AssetID]uint64,
 ) error {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
@@ -159,7 +160,7 @@ func (s *Store) CleanPool(
 		return errors.Wrap(err, "delete from pool_inputs")
 	}
 
-	err = setIssuances(ctx, newIssued)
+	err = setIssuances(ctx, newIssued, newDestroyed)
 	if err != nil {
 		return errors.Wrap(err, "removing issuances")
 	}
@@ -189,6 +190,7 @@ func (s *Store) ApplyBlock(
 	adps map[bc.AssetID]bc.Hash,
 	delta []*state.Output,
 	issued map[bc.AssetID]uint64,
+	destroyed map[bc.AssetID]uint64,
 ) ([]*bc.Tx, error) {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
@@ -235,7 +237,7 @@ func (s *Store) ApplyBlock(
 		return nil, errors.Wrap(err, "insert block outputs")
 	}
 
-	err = addIssuances(ctx, issued, true)
+	err = addIssuances(ctx, issued, destroyed, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "adding issuances")
 	}

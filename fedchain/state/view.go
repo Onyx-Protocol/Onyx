@@ -38,6 +38,9 @@ type ViewWriter interface {
 
 	// SaveIssuance stores the amount of an asset issued
 	SaveIssuance(bc.AssetID, uint64)
+
+	// SaveDestruction stores the amount of an asset destroyed
+	SaveDestruction(bc.AssetID, uint64)
 }
 
 // Output represents a spent or unspent output

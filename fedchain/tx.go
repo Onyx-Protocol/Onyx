@@ -57,7 +57,7 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 	}
 
 	// Update persistent tx pool state
-	err = fc.applyTx(ctx, tx, mv.Issuance)
+	err = fc.applyTx(ctx, tx, mv)
 	if err != nil {
 		return errors.Wrap(err, "apply TX")
 	}
@@ -72,9 +72,9 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 // the effects of tx. It deletes consumed utxos
 // and inserts newly-created outputs.
 // Must be called inside a transaction.
-func (fc *FC) applyTx(ctx context.Context, tx *bc.Tx, issued map[bc.AssetID]uint64) (err error) {
+func (fc *FC) applyTx(ctx context.Context, tx *bc.Tx, view *state.MemView) (err error) {
 	defer metrics.RecordElapsed(time.Now())
 
-	err = fc.store.ApplyTx(ctx, tx, issued)
+	err = fc.store.ApplyTx(ctx, tx, view.Issuance, view.Destroyed)
 	return errors.Wrap(err, "applying tx to store")
 }

@@ -10,17 +10,19 @@ var _ View = (*MemView)(nil)
 
 // MemView satisfies the View interface
 type MemView struct {
-	Outs     map[bc.Outpoint]*Output
-	ADPs     map[bc.AssetID]bc.Hash
-	Issuance map[bc.AssetID]uint64
+	Outs      map[bc.Outpoint]*Output
+	ADPs      map[bc.AssetID]bc.Hash
+	Issuance  map[bc.AssetID]uint64
+	Destroyed map[bc.AssetID]uint64
 }
 
 // NewMemView returns a new MemView
 func NewMemView() *MemView {
 	return &MemView{
-		Outs:     make(map[bc.Outpoint]*Output),
-		ADPs:     make(map[bc.AssetID]bc.Hash),
-		Issuance: make(map[bc.AssetID]uint64),
+		Outs:      make(map[bc.Outpoint]*Output),
+		ADPs:      make(map[bc.AssetID]bc.Hash),
+		Issuance:  make(map[bc.AssetID]uint64),
+		Destroyed: make(map[bc.AssetID]uint64),
 	}
 }
 
@@ -38,4 +40,8 @@ func (v *MemView) SaveAssetDefinitionPointer(asset bc.AssetID, hash bc.Hash) {
 
 func (v *MemView) SaveIssuance(asset bc.AssetID, amount uint64) {
 	v.Issuance[asset] += amount
+}
+
+func (v *MemView) SaveDestruction(asset bc.AssetID, amount uint64) {
+	v.Destroyed[asset] += amount
 }

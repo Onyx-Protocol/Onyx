@@ -43,7 +43,7 @@ func (m *MemStore) GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*
 	return txs, nil
 }
 
-func (m *MemStore) ApplyTx(ctx context.Context, tx *bc.Tx, issued map[bc.AssetID]uint64) error {
+func (m *MemStore) ApplyTx(ctx context.Context, tx *bc.Tx, issued, destroyed map[bc.AssetID]uint64) error {
 	m.poolMap[tx.Hash] = tx
 	m.pool = append(m.pool, tx)
 
@@ -75,6 +75,7 @@ func (m *MemStore) CleanPool(
 	confirmed,
 	conflicting []*bc.Tx,
 	newIssued map[bc.AssetID]uint64,
+	newDestroyed map[bc.AssetID]uint64,
 ) error {
 	for _, tx := range append(confirmed, conflicting...) {
 		delete(m.poolMap, tx.Hash)
@@ -121,6 +122,7 @@ func (m *MemStore) ApplyBlock(
 	adps map[bc.AssetID]bc.Hash,
 	utxos []*state.Output,
 	issued map[bc.AssetID]uint64,
+	destroyed map[bc.AssetID]uint64,
 ) ([]*bc.Tx, error) {
 	m.blocks = append(m.blocks, b)
 

@@ -213,7 +213,7 @@ func (fc *FC) applyBlock(ctx context.Context, block *bc.Block, mv *state.MemView
 		delta = append(delta, out)
 	}
 
-	newTxs, err = fc.store.ApplyBlock(ctx, block, mv.ADPs, delta, mv.Issuance)
+	newTxs, err = fc.store.ApplyBlock(ctx, block, mv.ADPs, delta, mv.Issuance, mv.Destroyed)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "storing block")
 	}
@@ -254,6 +254,9 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 			if _, ok := poolView.Issuance[out.AssetID]; !ok {
 				poolView.Issuance[out.AssetID] = 0
 			}
+			if _, ok := poolView.Destroyed[out.AssetID]; !ok {
+				poolView.Destroyed[out.AssetID] = 0
+			}
 		}
 
 		// Have to explicitly check that tx is not in block
@@ -284,7 +287,7 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		}
 	}
 
-	err = fc.store.CleanPool(ctx, confirmedTxs, conflictTxs, poolView.Issuance)
+	err = fc.store.CleanPool(ctx, confirmedTxs, conflictTxs, poolView.Issuance, poolView.Destroyed)
 	if err != nil {
 		return nil, errors.Wrap(err, "removing conflicting txs")
 	}
