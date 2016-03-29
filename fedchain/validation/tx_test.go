@@ -19,7 +19,7 @@ func TestNoUpdateEmptyAD(t *testing.T) {
 		Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
 	}}})
 	ApplyTx(ctx, view, tx)
-	if len(view.ADPs) > 0 {
+	if len(view.Assets) > 0 {
 		// If metadata field is empty, no update of ADP takes place.
 		// See https://github.com/chain-engineering/fedchain/blob/master/documentation/fedchain-specification.md#extract-asset-definition.
 		t.Fatal("apply tx should not save an empty asset definition")
@@ -41,12 +41,12 @@ func TestDestructionTracking(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	if len(view.Destroyed) == 0 {
+	if len(view.Assets) == 0 {
 		t.Fatal("no destruction was tracked")
 	}
 
 	var want uint64 = 5
-	if got := view.Destroyed[aid]; got != want {
+	if got := view.Assets[aid].Destroyed; got != want {
 		t.Fatalf("got destroyed = %d want %d", got, want)
 	}
 

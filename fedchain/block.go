@@ -213,7 +213,7 @@ func (fc *FC) applyBlock(ctx context.Context, block *bc.Block, mv *state.MemView
 		delta = append(delta, out)
 	}
 
-	newTxs, err = fc.store.ApplyBlock(ctx, block, mv.ADPs, delta, mv.Issuance, mv.Destroyed)
+	newTxs, err = fc.store.ApplyBlock(ctx, block, delta, mv.Assets)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "storing block")
 	}
@@ -251,11 +251,8 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		txErr := validation.ValidateTxInputs(ctx, view, tx)
 
 		for _, out := range tx.Outputs {
-			if _, ok := poolView.Issuance[out.AssetID]; !ok {
-				poolView.Issuance[out.AssetID] = 0
-			}
-			if _, ok := poolView.Destroyed[out.AssetID]; !ok {
-				poolView.Destroyed[out.AssetID] = 0
+			if _, ok := poolView.Assets[out.AssetID]; !ok {
+				poolView.Assets[out.AssetID] = &state.AssetState{}
 			}
 		}
 
@@ -287,7 +284,7 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		}
 	}
 
-	err = fc.store.CleanPool(ctx, confirmedTxs, conflictTxs, poolView.Issuance, poolView.Destroyed)
+	err = fc.store.CleanPool(ctx, confirmedTxs, conflictTxs, poolView.Assets)
 	if err != nil {
 		return nil, errors.Wrap(err, "removing conflicting txs")
 	}

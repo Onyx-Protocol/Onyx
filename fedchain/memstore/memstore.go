@@ -43,7 +43,7 @@ func (m *MemStore) GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*
 	return txs, nil
 }
 
-func (m *MemStore) ApplyTx(ctx context.Context, tx *bc.Tx, issued, destroyed map[bc.AssetID]uint64) error {
+func (m *MemStore) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*state.AssetState) error {
 	m.poolMap[tx.Hash] = tx
 	m.pool = append(m.pool, tx)
 
@@ -74,8 +74,7 @@ func (m *MemStore) CleanPool(
 	ctx context.Context,
 	confirmed,
 	conflicting []*bc.Tx,
-	newIssued map[bc.AssetID]uint64,
-	newDestroyed map[bc.AssetID]uint64,
+	assets map[bc.AssetID]*state.AssetState,
 ) error {
 	for _, tx := range append(confirmed, conflicting...) {
 		delete(m.poolMap, tx.Hash)
@@ -112,17 +111,14 @@ func (m *MemStore) PoolTxs(context.Context) ([]*bc.Tx, error) {
 func (m *MemStore) NewPoolViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error) {
 	return &state.MemView{
 		Outs: m.poolUTXOs,
-		ADPs: make(map[bc.AssetID]bc.Hash),
 	}, nil
 }
 
 func (m *MemStore) ApplyBlock(
 	ctx context.Context,
 	b *bc.Block,
-	adps map[bc.AssetID]bc.Hash,
 	utxos []*state.Output,
-	issued map[bc.AssetID]uint64,
-	destroyed map[bc.AssetID]uint64,
+	assets map[bc.AssetID]*state.AssetState,
 ) ([]*bc.Tx, error) {
 	m.blocks = append(m.blocks, b)
 
@@ -167,6 +163,5 @@ func (m *MemStore) LatestBlock(context.Context) (*bc.Block, error) {
 func (m *MemStore) NewViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error) {
 	return &state.MemView{
 		Outs: m.blockUTXOs,
-		ADPs: make(map[bc.AssetID]bc.Hash),
 	}, nil
 }

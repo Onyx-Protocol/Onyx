@@ -8,6 +8,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
+	"chain/fedchain/state"
 	"chain/net/trace/span"
 )
 
@@ -64,7 +65,7 @@ func DefinitionHashByAssetID(ctx context.Context, assetID string) (string, error
 
 // insertAssetDefinitionPointers writes the and asset id and the definition hash,
 // to the asset_definition_pointers table.
-func insertAssetDefinitionPointers(ctx context.Context, adps map[bc.AssetID]bc.Hash) error {
+func insertAssetDefinitionPointers(ctx context.Context, assets map[bc.AssetID]*state.AssetState) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -84,9 +85,12 @@ func insertAssetDefinitionPointers(ctx context.Context, adps map[bc.AssetID]bc.H
 	`
 
 	var aids, ptrs []string
-	for id, p := range adps {
+	for id, state := range assets {
+		if state.ADP == (bc.Hash{}) {
+			continue
+		}
 		aids = append(aids, id.String())
-		ptrs = append(ptrs, p.String())
+		ptrs = append(ptrs, state.ADP.String())
 	}
 
 	_, err := pg.Exec(ctx, q, pg.Strings(ptrs), pg.Strings(aids))

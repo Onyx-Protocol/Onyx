@@ -8,6 +8,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/fedchain/bc"
+	"chain/fedchain/state"
 )
 
 // circulation returns the confirmed and total
@@ -29,8 +30,8 @@ func circulation(ctx context.Context, assetID bc.AssetID) (confirmed, total uint
 	return confirmed, total, nil
 }
 
-func addIssuances(ctx context.Context, issued, destroyed map[bc.AssetID]uint64, confirmed bool) error {
-	assetIDs, issAmts, desAmts := collectIssuedArrays(issued, destroyed)
+func addIssuances(ctx context.Context, assets map[bc.AssetID]*state.AssetState, confirmed bool) error {
+	assetIDs, issued, destroyed := collectIssuedArrays(assets)
 
 	const insertQ = `
 		WITH issued AS (
@@ -50,12 +51,12 @@ func addIssuances(ctx context.Context, issued, destroyed map[bc.AssetID]uint64, 
 			destroyed_confirmed=issuance_totals.destroyed_confirmed+excluded.destroyed_confirmed,
 			destroyed_pool=issuance_totals.destroyed_pool+excluded.destroyed_pool
 	`
-	_, err := pg.Exec(ctx, insertQ, pg.Strings(assetIDs), pg.Uint64s(issAmts), pg.Uint64s(desAmts), confirmed)
+	_, err := pg.Exec(ctx, insertQ, pg.Strings(assetIDs), pg.Uint64s(issued), pg.Uint64s(destroyed), confirmed)
 	return errors.Wrap(err, "inserting new issuance_totals")
 }
 
-func setIssuances(ctx context.Context, issued, destroyed map[bc.AssetID]uint64) error {
-	assetIDs, issAmts, desAmts := collectIssuedArrays(issued, destroyed)
+func setIssuances(ctx context.Context, assets map[bc.AssetID]*state.AssetState) error {
+	assetIDs, issued, destroyed := collectIssuedArrays(assets)
 
 	const q = `
 		WITH issued AS (
@@ -65,27 +66,18 @@ func setIssuances(ctx context.Context, issued, destroyed map[bc.AssetID]uint64) 
 		SET pool=issued, destroyed_pool=destroyed
 		FROM issued i WHERE i.asset_id=it.asset_id
 	`
-	_, err := pg.Exec(ctx, q, pg.Strings(assetIDs), pg.Uint64s(issAmts), pg.Uint64s(desAmts))
+	_, err := pg.Exec(ctx, q, pg.Strings(assetIDs), pg.Uint64s(issued), pg.Uint64s(destroyed))
 
 	return errors.Wrap(err)
 }
 
 // collectIssuedArrays creates 3 parallel slices
 // to be used as inputs to sql unnest calls
-func collectIssuedArrays(issued, destroyed map[bc.AssetID]uint64) (assetIDs []string, iss []uint64, des []uint64) {
-	for aid, amt := range issued {
+func collectIssuedArrays(assets map[bc.AssetID]*state.AssetState) (assetIDs []string, issued []uint64, destroyed []uint64) {
+	for aid, state := range assets {
 		assetIDs = append(assetIDs, aid.String())
-		iss = append(iss, amt)
-		des = append(des, destroyed[aid])
+		issued = append(issued, state.Issuance)
+		destroyed = append(destroyed, state.Destroyed)
 	}
-	for aid, amt := range destroyed {
-		if _, ok := issued[aid]; ok {
-			continue
-		}
-		assetIDs = append(assetIDs, aid.String())
-		iss = append(iss, 0)
-		des = append(des, amt)
-	}
-
-	return assetIDs, iss, des
+	return assetIDs, issued, destroyed
 }

@@ -85,19 +85,13 @@ type TxCallback func(context.Context, *bc.Tx)
 type Store interface {
 	// tx pool
 	GetTxs(context.Context, ...bc.Hash) (map[bc.Hash]*bc.Tx, error)
-	ApplyTx(ctx context.Context, tx *bc.Tx, issued, destroyed map[bc.AssetID]uint64) error
-	CleanPool(ctx context.Context, confirmed, conflicting []*bc.Tx, newIssued, newDestroyed map[bc.AssetID]uint64) error
+	ApplyTx(context.Context, *bc.Tx, map[bc.AssetID]*state.AssetState) error
+	CleanPool(ctx context.Context, confirmed, conflicting []*bc.Tx, assets map[bc.AssetID]*state.AssetState) error
 	PoolTxs(context.Context) ([]*bc.Tx, error)
 	NewPoolViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error)
 
 	// blocks
-	ApplyBlock(
-		ctx context.Context,
-		block *bc.Block,
-		adps map[bc.AssetID]bc.Hash,
-		utxos []*state.Output,
-		issued, destroyed map[bc.AssetID]uint64,
-	) ([]*bc.Tx, error)
+	ApplyBlock(context.Context, *bc.Block, []*state.Output, map[bc.AssetID]*state.AssetState) ([]*bc.Tx, error)
 	LatestBlock(context.Context) (*bc.Block, error)
 	NewViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error)
 }

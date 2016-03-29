@@ -11,6 +11,7 @@ import (
 	"chain/fedchain/bc"
 	"chain/fedchain/fedtest"
 	"chain/fedchain/memstore"
+	"chain/fedchain/state"
 	"chain/fedchain/txscript"
 	"chain/fedchain/validation"
 	"chain/testutil"
@@ -76,13 +77,13 @@ func TestAddTx(t *testing.T) {
 
 type issuedTestStore struct {
 	memstore.MemStore
-	f func(map[bc.AssetID]uint64)
+	f func(map[bc.AssetID]*state.AssetState)
 }
 
-func (i *issuedTestStore) ApplyTx(ctx context.Context, tx *bc.Tx, issued, destroyed map[bc.AssetID]uint64) error {
-	err := i.MemStore.ApplyTx(ctx, tx, issued, destroyed)
+func (i *issuedTestStore) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*state.AssetState) error {
+	err := i.MemStore.ApplyTx(ctx, tx, assets)
 	if i.f != nil {
-		i.f(issued)
+		i.f(assets)
 	}
 	return err
 }
@@ -151,15 +152,23 @@ func TestAddTxIssued(t *testing.T) {
 
 	cases := []struct {
 		tx   *bc.Tx
-		want map[bc.AssetID]uint64
+		want map[bc.AssetID]*state.AssetState
 	}{
-		{tx: basicIssue, want: map[bc.AssetID]uint64{asset0.AssetID: 10}},
-		{tx: basicTransfer, want: map[bc.AssetID]uint64{}},
-		{tx: multiIssue, want: map[bc.AssetID]uint64{asset0.AssetID: 2, asset1.AssetID: 3}},
-		{tx: issueTransfer, want: map[bc.AssetID]uint64{asset0.AssetID: 4, asset1.AssetID: 0}},
+		{tx: basicIssue, want: map[bc.AssetID]*state.AssetState{
+			asset0.AssetID: &state.AssetState{Issuance: 10},
+		}},
+		{tx: basicTransfer, want: map[bc.AssetID]*state.AssetState{}},
+		{tx: multiIssue, want: map[bc.AssetID]*state.AssetState{
+			asset0.AssetID: &state.AssetState{Issuance: 2},
+			asset1.AssetID: &state.AssetState{Issuance: 3},
+		}},
+		{tx: issueTransfer, want: map[bc.AssetID]*state.AssetState{
+			asset0.AssetID: &state.AssetState{Issuance: 4},
+			asset1.AssetID: &state.AssetState{Issuance: 0},
+		}},
 	}
 	for _, c := range cases {
-		store.f = func(got map[bc.AssetID]uint64) {
+		store.f = func(got map[bc.AssetID]*state.AssetState) {
 			if !reflect.DeepEqual(got, c.want) {
 				t.Errorf("got issued = %+v want %+v", got, c.want)
 			}

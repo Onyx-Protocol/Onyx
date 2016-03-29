@@ -5,6 +5,7 @@ import (
 
 	"chain/database/pg/pgtest"
 	"chain/fedchain/bc"
+	"chain/fedchain/state"
 	"chain/testutil"
 )
 
@@ -39,12 +40,16 @@ func TestAddIssuances(t *testing.T) {
 		ctx := pgtest.NewContext(t)
 		defer pgtest.Finish(ctx)
 
-		err := addIssuances(ctx, amtMap(aid, c.issuedAmt1), amtMap(aid, c.destroyedAmt1), c.conf1)
+		err := addIssuances(ctx, map[bc.AssetID]*state.AssetState{
+			aid: &state.AssetState{Issuance: c.issuedAmt1, Destroyed: c.destroyedAmt1},
+		}, c.conf1)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
 
-		err = addIssuances(ctx, amtMap(aid, c.issuedAmt2), amtMap(aid, c.destroyedAmt2), c.conf2)
+		err = addIssuances(ctx, map[bc.AssetID]*state.AssetState{
+			aid: &state.AssetState{Issuance: c.issuedAmt2, Destroyed: c.destroyedAmt2},
+		}, c.conf2)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -61,29 +66,28 @@ func TestAddIssuances(t *testing.T) {
 	}
 }
 
-func amtMap(aid bc.AssetID, amt uint64) map[bc.AssetID]uint64 {
-	if amt == 0 {
-		return nil
-	}
-	return map[bc.AssetID]uint64{aid: amt}
-}
-
 func TestSetIssuances(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
 	aid := [32]byte{255}
 
-	err := addIssuances(ctx, map[bc.AssetID]uint64{aid: 10}, nil, true)
+	err := addIssuances(ctx, map[bc.AssetID]*state.AssetState{
+		aid: &state.AssetState{Issuance: 10},
+	}, true)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	err = addIssuances(ctx, map[bc.AssetID]uint64{aid: 10}, map[bc.AssetID]uint64{aid: 5}, false)
+	err = addIssuances(ctx, map[bc.AssetID]*state.AssetState{
+		aid: &state.AssetState{Issuance: 10, Destroyed: 5},
+	}, false)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	err = setIssuances(ctx, map[bc.AssetID]uint64{aid: 8}, map[bc.AssetID]uint64{aid: 2})
+	err = setIssuances(ctx, map[bc.AssetID]*state.AssetState{
+		aid: &state.AssetState{Issuance: 8, Destroyed: 2},
+	})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

@@ -75,6 +75,6 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 func (fc *FC) applyTx(ctx context.Context, tx *bc.Tx, view *state.MemView) (err error) {
 	defer metrics.RecordElapsed(time.Now())
 
-	err = fc.store.ApplyTx(ctx, tx, view.Issuance, view.Destroyed)
+	err = fc.store.ApplyTx(ctx, tx, view.Assets)
 	return errors.Wrap(err, "applying tx to store")
 }

@@ -58,7 +58,7 @@ func TestBuild(t *testing.T) {
 			AssetAmount: bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5},
 			Script:      []byte{},
 		}},
-	}}, nil, nil)
+	}}, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

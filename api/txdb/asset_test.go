@@ -9,6 +9,7 @@ import (
 
 	"chain/database/pg"
 	"chain/fedchain/bc"
+	"chain/fedchain/state"
 	"chain/testutil"
 )
 
@@ -72,11 +73,12 @@ func TestInsertAssetDefinitionPointers(t *testing.T) {
 		a1 := bc.AssetID(mustParseHash(a1str))
 		def1 := mustParseHash(def1str)
 
-		adps := make(map[bc.AssetID]bc.Hash)
-		adps[a0] = def0
-		adps[a1] = def1
+		assets := map[bc.AssetID]*state.AssetState{
+			a0: &state.AssetState{ADP: def0},
+			a1: &state.AssetState{ADP: def1},
+		}
 
-		err := insertAssetDefinitionPointers(ctx, adps)
+		err := insertAssetDefinitionPointers(ctx, assets)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -116,17 +118,18 @@ func TestInsertAssetDefinitionPointersWithUpdate(t *testing.T) {
 		a1 := bc.AssetID(mustParseHash(a1str))
 		def1 := mustParseHash(def1str)
 
-		adps := make(map[bc.AssetID]bc.Hash)
-		adps[a0] = def0
+		assets := map[bc.AssetID]*state.AssetState{
+			a0: &state.AssetState{ADP: def0},
+		}
 
-		err := insertAssetDefinitionPointers(ctx, adps)
+		err := insertAssetDefinitionPointers(ctx, assets)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
 
-		delete(adps, a0)
-		adps[a1] = def1
-		err = insertAssetDefinitionPointers(ctx, adps)
+		delete(assets, a0)
+		assets[a1] = &state.AssetState{ADP: def1}
+		err = insertAssetDefinitionPointers(ctx, assets)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
