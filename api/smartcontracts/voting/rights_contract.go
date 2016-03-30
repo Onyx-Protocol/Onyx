@@ -12,6 +12,10 @@ import (
 // for executing the voting rights contract.
 var scriptVersion = []byte{0x02}
 
+const (
+	infiniteDeadline = 0x7fffffff
+)
+
 type rightsContractClause int64
 
 const (

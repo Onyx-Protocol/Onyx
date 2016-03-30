@@ -6,8 +6,20 @@ import (
 	"chain/api/appdb"
 	"chain/api/txbuilder"
 	"chain/errors"
+	"chain/fedchain/bc"
 	"chain/fedchain/txscript"
 )
+
+// RightIssuance builds a txbuilder Receiver issuance for an asset that
+// is being issued into a voting right contract.
+func RightIssuance(ctx context.Context, holderScript []byte) txbuilder.Receiver {
+	return rightScriptData{
+		HolderScript:   holderScript,
+		Delegatable:    true,
+		Deadline:       infiniteDeadline,
+		OwnershipChain: bc.Hash{},
+	}
+}
 
 // RightTransfer builds txbuilder Reserver and Receiver implementations for
 // a voting right transfer.

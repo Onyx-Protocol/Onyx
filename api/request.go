@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/api/issuer"
 	"chain/api/smartcontracts/orderbook"
@@ -136,6 +137,20 @@ type Destination struct {
 	Transferable    *bool              `json:"transferable,omitempty"`
 	Deadline        time.Time          `json:"deadline,omitempty"`
 	Type            string
+}
+
+// buildAddress will return the destination's script, if populated. Otherwise,
+// it will create a new address for the destination's account ID.
+func (dest Destination) buildAddress(ctx context.Context) ([]byte, error) {
+	script := dest.Script[:]
+	if script != nil {
+		return script, nil
+	}
+	addr, err := appdb.NewAddress(ctx, dest.AccountID, true)
+	if err != nil {
+		return nil, errors.Wrapf(err, "generating address, accountID %s", dest.AccountID)
+	}
+	return addr.PKScript, nil
 }
 
 func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, error) {

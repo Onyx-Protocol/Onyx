@@ -3,7 +3,6 @@ package api
 import (
 	"golang.org/x/net/context"
 
-	"chain/api/appdb"
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/smartcontracts/voting"
 	"chain/api/txbuilder"
@@ -119,27 +118,47 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 		}
 		dstsByAssetID[*dst.AssetID] = dst
 	}
-	if len(sources) != len(destinations) {
+	if len(sources) > len(destinations) {
 		// Both the source and destination must be provided in the same build
 		// request. This is unavoidable because:
 		// - the output contract script requires knowledge of the input's chain of ownership
 		// - the sigscript needs to provide the new contract parameters
+		// The only exception is issuing new voting right tokens. Then there
+		// will be more destinations than sources.
 		return nil, nil, errors.WithDetailf(ErrBadBuildRequest,
 			"voting right source and destinations must be provided in the same build request")
 	}
 
-	for assetID, src := range srcsByAssetID {
-		dst, ok := dstsByAssetID[assetID]
-		if !ok {
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "unknown voting right destination")
+	for assetID, dst := range dstsByAssetID {
+		// Validate the destination.
+		if dst.Amount != 1 {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right amount can only be 1")
 		}
+
+		src, ok := srcsByAssetID[assetID]
+		if !ok {
+			// If there is no vrtoken source, then assume this is an attempt
+			// to issue into a new asset into a voting right contract.
+			holder, err := dst.buildAddress(ctx)
+			if err != nil {
+				return nil, nil, err
+			}
+			dsts = append(dsts, &txbuilder.Destination{
+				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},
+				Metadata:    dst.Metadata,
+				Receiver:    voting.RightIssuance(ctx, holder),
+			})
+			continue
+		}
+
+		// Validate the source.
 		if src.TxHash == nil {
 			src.TxHash = src.TxHashAsID
 		}
 		if src.TxHash == nil || src.Index == nil {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
 		}
-		if src.Amount != 1 || dst.Amount != 1 {
+		if src.Amount != 1 {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right amount can only be 1")
 		}
 		out := bc.Outpoint{Hash: *src.TxHash, Index: *src.Index}
@@ -159,13 +178,9 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 		)
 		switch src.Type {
 		case "vrtoken-transfer":
-			script := dst.Script[:]
-			if script == nil {
-				addr, err := appdb.NewAddress(ctx, dst.AccountID, true)
-				if err != nil {
-					return nil, nil, errors.Wrapf(err, "generating address, accountID %s", src.AccountID)
-				}
-				script = addr.PKScript
+			script, err := dst.buildAddress(ctx)
+			if err != nil {
+				return nil, nil, err
 			}
 			reserver, receiver, err = voting.RightTransfer(ctx, old, script)
 			if err != nil {
@@ -178,14 +193,9 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 			if dst.Deadline.Unix() > old.Deadline {
 				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "cannot extend deadline beyond current deadline")
 			}
-
-			script := dst.Script[:]
-			if script == nil {
-				addr, err := appdb.NewAddress(ctx, dst.AccountID, true)
-				if err != nil {
-					return nil, nil, errors.Wrapf(err, "generating address, accountID %s", src.AccountID)
-				}
-				script = addr.PKScript
+			script, err := dst.buildAddress(ctx)
+			if err != nil {
+				return nil, nil, err
 			}
 			var (
 				delegatable = old.Delegatable
