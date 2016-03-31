@@ -176,6 +176,8 @@ func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, erro
 		return asset.NewAccountDestination(ctx, assetAmount, dest.AccountID, dest.Metadata)
 	case "address":
 		return txbuilder.NewScriptDestination(ctx, assetAmount, dest.Address, dest.Metadata), nil
+	case "retire":
+		return txbuilder.NewRetireDestination(ctx, assetAmount, dest.Metadata), nil
 	case "orderbook":
 		orderInfo := &orderbook.OrderInfo{
 			SellerAccountID: dest.AccountID,
