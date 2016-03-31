@@ -134,6 +134,7 @@ type Destination struct {
 	Metadata        chainjson.HexBytes `json:"metadata,omitempty"`
 	OrderbookPrices []*orderbook.Price `json:"orderbook_prices,omitempty"`
 	Script          chainjson.HexBytes `json:"script,omitempty"`
+	AdminScript     chainjson.HexBytes `json:"admin_script,omitempty"`
 	Transferable    *bool              `json:"transferable,omitempty"`
 	Deadline        time.Time          `json:"deadline,omitempty"`
 	Type            string

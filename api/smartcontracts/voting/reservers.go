@@ -22,6 +22,7 @@ type rightsReserver struct {
 	output         rightScriptData
 	intermediaries []intermediateHolder
 	holderAddr     *appdb.Address
+	adminAddr      *appdb.Address
 }
 
 // intermediateHolder represents a previous holder. When recalling a token,
@@ -51,9 +52,6 @@ func (ih intermediateHolder) hash() bc.Hash {
 // the existing UTXO's right holding contract. Reserve satisfies the
 // txbuilder.Reserver interface.
 func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
-	// TODO(jackson): Include admin redeem script and admin signatures once
-	//                the contract supports admin scripts.
-
 	sb := txscript.NewScriptBuilder()
 
 	// Add clause-specific parameters:
@@ -64,16 +62,19 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 	case clauseTransfer:
 		sb = sb.
 			AddData(r.holderAddr.RedeemScript).
+			AddData(r.adminAddr.RedeemScript).
 			AddData(r.output.HolderScript)
 	case clauseDelegate:
 		sb = sb.
 			AddData(r.holderAddr.RedeemScript).
+			AddData(r.adminAddr.RedeemScript).
 			AddInt64(r.output.Deadline).
 			AddBool(r.output.Delegatable).
 			AddData(r.output.HolderScript)
 	case clauseRecall:
 		sb = sb.
-			AddData(r.holderAddr.RedeemScript)
+			AddData(r.holderAddr.RedeemScript).
+			AddData(r.adminAddr.RedeemScript)
 		for _, i := range r.intermediaries {
 			h := i.hash()
 			sb.AddData(h[:])
@@ -98,14 +99,25 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 	}
 
 	// Build the signatures required for this transaction.
-	var (
-		signatures []*txbuilder.Signature
-		holderKeys = hdkey.Derive(
+	var signatures []*txbuilder.Signature
+
+	if r.adminAddr != nil {
+		adminKeys := hdkey.Derive(
+			r.adminAddr.Keys,
+			appdb.ReceiverPath(r.adminAddr, r.adminAddr.Index),
+		)
+		for _, k := range adminKeys {
+			signatures = append(signatures, &txbuilder.Signature{
+				XPub:           k.Root.String(),
+				DerivationPath: k.Path,
+			})
+		}
+	}
+	if r.holderAddr != nil {
+		holderKeys := hdkey.Derive(
 			r.holderAddr.Keys,
 			appdb.ReceiverPath(r.holderAddr, r.holderAddr.Index),
 		)
-	)
-	if r.holderAddr != nil {
 		for _, k := range holderKeys {
 			signatures = append(signatures, &txbuilder.Signature{
 				XPub:           k.Root.String(),

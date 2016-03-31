@@ -12,8 +12,9 @@ import (
 
 // RightIssuance builds a txbuilder Receiver issuance for an asset that
 // is being issued into a voting right contract.
-func RightIssuance(ctx context.Context, holderScript []byte) txbuilder.Receiver {
+func RightIssuance(ctx context.Context, adminScript, holderScript []byte) txbuilder.Receiver {
 	return rightScriptData{
+		AdminScript:    adminScript,
 		HolderScript:   holderScript,
 		Delegatable:    true,
 		Deadline:       infiniteDeadline,
@@ -50,17 +51,24 @@ func RightTransfer(ctx context.Context, src *RightWithUTXO, newHolderScript []by
 		holderScriptStr, _ := txscript.DisasmString(src.HolderScript)
 		return nil, nil, errors.Wrapf(err, "could not get address for holder script [%s]", holderScriptStr)
 	}
+	adminAddr, err := appdb.GetAddress(ctx, src.AdminScript)
+	if err != nil {
+		adminScriptStr, _ := txscript.DisasmString(src.AdminScript)
+		return nil, nil, errors.Wrapf(err, "could not get address for admin script [%s]", adminScriptStr)
+	}
 
 	reserver := rightsReserver{
 		outpoint: src.Outpoint,
 		clause:   clauseTransfer,
 		output: rightScriptData{
+			AdminScript:    src.AdminScript, // unchanged
 			HolderScript:   newHolderScript,
-			Delegatable:    src.rightScriptData.Delegatable,    // unchanged
-			Deadline:       src.rightScriptData.Deadline,       // unchanged
-			OwnershipChain: src.rightScriptData.OwnershipChain, // unchanged
+			Delegatable:    src.Delegatable,    // unchanged
+			Deadline:       src.Deadline,       // unchanged
+			OwnershipChain: src.OwnershipChain, // unchanged
 		},
 		holderAddr: currentHolderAddr,
+		adminAddr:  adminAddr,
 	}
 	return reserver, reserver.output, nil
 }
@@ -73,11 +81,17 @@ func RightDelegation(ctx context.Context, src *RightWithUTXO, newHolderScript []
 		holderScriptStr, _ := txscript.DisasmString(src.HolderScript)
 		return nil, nil, errors.Wrapf(err, "could not get address for holder script [%s]", holderScriptStr)
 	}
+	adminAddr, err := appdb.GetAddress(ctx, src.AdminScript)
+	if err != nil {
+		adminScriptStr, _ := txscript.DisasmString(src.AdminScript)
+		return nil, nil, errors.Wrapf(err, "could not get address for admin script [%s]", adminScriptStr)
+	}
 
 	reserver := rightsReserver{
 		outpoint: src.Outpoint,
 		clause:   clauseDelegate,
 		output: rightScriptData{
+			AdminScript:  src.AdminScript,
 			HolderScript: newHolderScript,
 			Delegatable:  delegatable,
 			Deadline:     newDeadline,
@@ -88,6 +102,7 @@ func RightDelegation(ctx context.Context, src *RightWithUTXO, newHolderScript []
 			),
 		},
 		holderAddr: currentHolderAddr,
+		adminAddr:  adminAddr,
 	}
 	return reserver, reserver.output, nil
 }

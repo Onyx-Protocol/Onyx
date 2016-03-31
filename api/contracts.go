@@ -139,6 +139,9 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 		if !ok {
 			// If there is no vrtoken source, then assume this is an attempt
 			// to issue into a new asset into a voting right contract.
+			if dst.AdminScript == nil {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right issuance requires a voting system admin script")
+			}
 			holder, err := dst.buildAddress(ctx)
 			if err != nil {
 				return nil, nil, err
@@ -146,7 +149,7 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 			dsts = append(dsts, &txbuilder.Destination{
 				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},
 				Metadata:    dst.Metadata,
-				Receiver:    voting.RightIssuance(ctx, holder),
+				Receiver:    voting.RightIssuance(ctx, dst.AdminScript, holder),
 			})
 			continue
 		}
@@ -179,12 +182,18 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 		switch src.Type {
 		case "vrtoken-authenticate":
 			reserver, receiver, err = voting.RightAuthentication(ctx, old)
+			if err != nil {
+				return nil, nil, err
+			}
 		case "vrtoken-transfer":
 			script, err := dst.buildAddress(ctx)
 			if err != nil {
 				return nil, nil, err
 			}
 			reserver, receiver, err = voting.RightTransfer(ctx, old, script)
+			if err != nil {
+				return nil, nil, err
+			}
 		case "vrtoken-delegate":
 			if !old.Delegatable {
 				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "delegating this voting right is prohibited")
@@ -207,6 +216,9 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 				deadline = dst.Deadline.Unix()
 			}
 			reserver, receiver, err = voting.RightDelegation(ctx, old, script, deadline, delegatable)
+			if err != nil {
+				return nil, nil, err
+			}
 		case "vrtoken-recall":
 			claims, err := voting.FindRightsForAsset(ctx, assetID)
 			if err != nil {
@@ -234,11 +246,11 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right not recallable")
 			}
 			reserver, receiver, err = voting.RightRecall(ctx, old, recallPoint, claims[recallPointIdx+1:len(claims)-1])
+			if err != nil {
+				return nil, nil, err
+			}
 		default:
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "`%s` source type unimplemented", src.Type)
-		}
-		if err != nil {
-			return nil, nil, err
 		}
 		srcs = append(srcs, &txbuilder.Source{
 			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},

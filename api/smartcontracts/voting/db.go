@@ -38,12 +38,12 @@ type RightWithUTXO struct {
 func insertVotingRight(ctx context.Context, assetID bc.AssetID, blockHeight uint64, blockTxIndex int, outpoint bc.Outpoint, data rightScriptData) error {
 	const q = `
 		INSERT INTO voting_right_txs
-			(asset_id, account_id, tx_hash, index, block_height, block_tx_index, holder, deadline, delegatable, ownership_chain)
-			VALUES($1, (SELECT account_id FROM addresses WHERE pk_script=$6), $2, $3, $4, $5, $6, $7, $8, $9)
+			(asset_id, account_id, tx_hash, index, block_height, block_tx_index, holder, deadline, delegatable, ownership_chain, admin_script)
+			VALUES($1, (SELECT account_id FROM addresses WHERE pk_script=$6), $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		ON CONFLICT (tx_hash, index) DO NOTHING
 	`
 	_, err := pg.FromContext(ctx).Exec(ctx, q, assetID, outpoint.Hash, outpoint.Index, blockHeight, blockTxIndex,
-		data.HolderScript, data.Deadline, data.Delegatable, data.OwnershipChain[:])
+		data.HolderScript, data.Deadline, data.Delegatable, data.OwnershipChain[:], data.AdminScript)
 	return errors.Wrap(err, "inserting into voting_right_txs")
 }
 
@@ -175,7 +175,8 @@ func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*RightWithUTX
 			vr.holder,
 			vr.deadline,
 			vr.delegatable,
-			vr.ownership_chain
+			vr.ownership_chain,
+			vr.admin_script
 		FROM voting_right_txs vr
 		INNER JOIN utxos u ON vr.asset_id = u.asset_id
 		WHERE
@@ -201,7 +202,8 @@ func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*RightWithUTX
 			&right.Outpoint.Hash, &right.Outpoint.Index,
 			&right.BlockHeight, &right.BlockTxIndex,
 			&right.AssetID, &right.AccountID,
-			&right.HolderScript, &right.Deadline, &right.Delegatable, &ownershipChain)
+			&right.HolderScript, &right.Deadline, &right.Delegatable, &ownershipChain,
+			&right.AdminScript)
 		if err != nil {
 			return nil, errors.Wrap(err, "scanning RightWithUTXO")
 		}

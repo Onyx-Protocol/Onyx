@@ -31,6 +31,7 @@ const (
 // rightScriptData encapsulates all the data stored within the p2c script
 // for the voting rights holding contract.
 type rightScriptData struct {
+	AdminScript    []byte
 	HolderScript   []byte
 	OwnershipChain bc.Hash
 	Deadline       int64
@@ -49,6 +50,7 @@ func (r rightScriptData) PKScript() []byte {
 	params = append(params, txscript.Int64ToScriptBytes(r.Deadline))
 	params = append(params, r.OwnershipChain[:])
 	params = append(params, r.HolderScript)
+	params = append(params, r.AdminScript)
 
 	addr := txscript.NewAddressContractHash(rightsHoldingContractHash[:], scriptVersion, params)
 	return addr.ScriptAddress()
@@ -64,7 +66,7 @@ func testRightsContract(pkscript []byte) (*rightScriptData, error) {
 	if !contract.Match(rightsHoldingContractHash, scriptVersion) {
 		return nil, nil
 	}
-	if len(params) != 4 {
+	if len(params) != 5 {
 		return nil, nil
 	}
 
@@ -91,6 +93,10 @@ func testRightsContract(pkscript []byte) (*rightScriptData, error) {
 	// script identifying holder of the right
 	right.HolderScript = make([]byte, len(params[3]))
 	copy(right.HolderScript, params[3])
+
+	// script identifying the admin of the system
+	right.AdminScript = make([]byte, len(params[4]))
+	copy(right.AdminScript, params[4])
 
 	return &right, nil
 }
@@ -141,8 +147,6 @@ const (
 	// This script with documentation and comments is available here:
 	// https://gist.github.com/jbowens/ae16b535c856c137830e
 	//
-	// TODO(jackson): Include and eval admin script too.
-	//
 	// 1 - Authenticate
 	// 2 - Transfer
 	// 3 - Delegate
@@ -150,7 +154,7 @@ const (
 	// 5 - Override     (Unimplemented)
 	// 6 - Cancel       (Unimplemented)
 	rightsHoldingContractString = `
-		4 ROLL
+		5 ROLL
 		DUP 1 EQUAL IF
 			DROP
 			SWAP
@@ -160,6 +164,7 @@ const (
 			AMOUNT ASSET OUTPUTSCRIPT
 			REQUIREOUTPUT VERIFY
 			EVAL
+			NIP
 		ENDIF
 		DUP 2 EQUAL IF
 			DROP
@@ -167,7 +172,8 @@ const (
 			TIME
 			GREATERTHAN VERIFY
 			DATA_2 0x5275
-			5 ROLL CATPUSHDATA
+			5 PICK CATPUSHDATA
+			6 ROLL CATPUSHDATA
 			3 ROLL CATPUSHDATA
 			2 ROLL CATPUSHDATA
 			SWAP CATPUSHDATA
@@ -176,6 +182,7 @@ const (
 			CAT
 			AMOUNT ASSET 2 ROLL
 			REQUIREOUTPUT VERIFY
+			SWAP EVAL VERIFY
 			EVAL
 		ENDIF
 		DUP 3 EQUAL IF
@@ -184,42 +191,45 @@ const (
 			DUP TIME
 			GREATERTHAN VERIFY
 			DUP
-			6 PICK
+			7 PICK
 			GREATERTHANOREQUAL VERIFY
 			HASH256
 			2 PICK HASH256
 			SWAP CAT HASH256
 			SWAP CAT HASH256
 			DATA_2 0x5275
-			3 ROLL CATPUSHDATA
+			3 PICK CATPUSHDATA
+			4 ROLL CATPUSHDATA
 			SWAP CATPUSHDATA
+			4 ROLL CATPUSHDATA
 			3 ROLL CATPUSHDATA
-			ROT CATPUSHDATA
 			OUTPUTSCRIPT
 			DATA_1 0x27 RIGHT
 			CAT
 			AMOUNT ASSET ROT
 			REQUIREOUTPUT VERIFY
+			SWAP EVAL VERIFY
 			EVAL
 		ENDIF
 		DUP 4 EQUAL IF
 			DROP
-			4 ROLL SIZE
+			5 ROLL SIZE
 			DATA_1 0x20 EQUALVERIFY
-			6 PICK HASH256
-			6 PICK HASH256 CAT
+			7 PICK HASH256
+			7 PICK HASH256 CAT
 			HASH256 1 PICK CAT HASH256
-			8 ROLL
+			9 ROLL
 			WHILE
-				9 ROLL
+				10 ROLL
 				ROT CAT HASH256
 				SWAP 1SUB
 			ENDWHILE DROP
 			4 ROLL EQUALVERIFY
 			DATA_2 0x5275
-			6 PICK CATPUSHDATA
+			5 PICK CATPUSHDATA
+			7 PICK CATPUSHDATA
 			SWAP CATPUSHDATA
-			4 ROLL CATPUSHDATA
+			5 ROLL CATPUSHDATA
 			1 CATPUSHDATA
 			OUTPUTSCRIPT
 			DATA_1 0x27 RIGHT
@@ -227,9 +237,9 @@ const (
 			AMOUNT ASSET ROT
 			REQUIREOUTPUT VERIFY
 			2DROP DROP
+			EVAL VERIFY
 			EVAL
 		ENDIF
-		DEPTH 1 EQUALVERIFY
 	`
 )
 

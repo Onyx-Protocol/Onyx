@@ -846,7 +846,8 @@ CREATE TABLE voting_right_txs (
     ownership_chain bytea NOT NULL,
     block_height bigint NOT NULL,
     block_tx_index integer NOT NULL,
-    void boolean DEFAULT false NOT NULL
+    void boolean DEFAULT false NOT NULL,
+    admin_script bytea NOT NULL
 );
 
 
