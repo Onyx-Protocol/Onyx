@@ -5,7 +5,9 @@
 ["and also hashed and added to pubkeyScript"],
 ["(which also gets the p2c boilerplate)."],
 
-["TODO(bobg): test OP_CIRCULATION"],
+["Test OP_CIRCULATION"],
+["OP_CIRCULATION 5 OP_EQUAL", "DATA_32 0x0100000000000000000000000000000000000000000000000000000000000000", "", "defined asset circulation"],
+["OP_CIRCULATION 0 OP_EQUAL", "DATA_32 0x0200000000000000000000000000000000000000000000000000000000000000", "", "undefined asset circulation"],
 
 ["ADD 5 EQUAL", "3 2", "", "Zero params"],
 ["ADD 5 EQUAL", "3", "2", "One param"],

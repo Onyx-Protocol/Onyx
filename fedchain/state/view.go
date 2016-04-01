@@ -3,6 +3,7 @@ package state
 import (
 	"golang.org/x/net/context"
 
+	"chain/errors"
 	"chain/fedchain/bc"
 )
 
@@ -25,6 +26,10 @@ type ViewReader interface {
 	// Output loads the output from the view.
 	// It returns nil if output is not stored or does not exist.
 	Output(context.Context, bc.Outpoint) *Output
+
+	// Circulation returns the circulation
+	// for the given set of assets.
+	Circulation(context.Context, []bc.AssetID) (map[bc.AssetID]int64, error)
 }
 
 type ViewWriter interface {
@@ -95,4 +100,19 @@ func (v *multiReader) Output(ctx context.Context, p bc.Outpoint) *Output {
 		return o
 	}
 	return v.back.Output(ctx, p)
+}
+
+func (v *multiReader) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.AssetID]int64, error) {
+	front, err := v.front.Circulation(ctx, assets)
+	if err != nil {
+		return nil, errors.Wrap(err, "loading circulation from front")
+	}
+	back, err := v.back.Circulation(ctx, assets)
+	if err != nil {
+		return nil, errors.Wrap(err, "loading circulation from back")
+	}
+	for asset, amt := range back {
+		front[asset] += amt
+	}
+	return front, nil
 }

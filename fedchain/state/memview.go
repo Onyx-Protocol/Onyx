@@ -40,6 +40,16 @@ func (v *MemView) Output(ctx context.Context, p bc.Outpoint) *Output {
 	return v.Outs[p]
 }
 
+func (v *MemView) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.AssetID]int64, error) {
+	circs := make(map[bc.AssetID]int64)
+	for _, a := range assets {
+		if state := v.Assets[a]; state != nil {
+			circs[a] = int64(state.Issuance - state.Destroyed)
+		}
+	}
+	return circs, nil
+}
+
 func (v *MemView) SaveOutput(o *Output) {
 	v.Outs[o.Outpoint] = o
 }

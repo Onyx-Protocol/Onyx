@@ -74,11 +74,6 @@ const (
 var halfOrder = new(big.Int).Rsh(btcec.S256().N, 1)
 
 type (
-	// A subset of state.ViewReader, declared here to avoid a circular dependency
-	viewReader interface {
-		Output(context.Context, bc.Outpoint) *state.Output
-	}
-
 	// Engine is the virtual machine that executes scripts.
 	Engine struct {
 		scriptVersion    []byte
@@ -94,7 +89,7 @@ type (
 		numOps           int
 		flags            ScriptFlags
 		ctx              context.Context
-		viewReader       viewReader
+		viewReader       state.ViewReader
 		available        []uint64 // mutable copy of each output's Amount field, used for OP_REQUIREOUTPUT reservations
 		timestamp        int64    // Unix timestamp of block or engine creation
 	}
@@ -601,11 +596,11 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 //   }
 // Note: every call to Execute() must be preceded by a call to
 // Prepare() (including the first one).
-func NewReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
+func NewReusableEngine(ctx context.Context, viewReader state.ViewReader, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
 	return newReusableEngine(ctx, viewReader, tx, nil, flags)
 }
 
-func newReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData, block *bc.Block, flags ScriptFlags) (*Engine, error) {
+func newReusableEngine(ctx context.Context, viewReader state.ViewReader, tx *bc.TxData, block *bc.Block, flags ScriptFlags) (*Engine, error) {
 	timestamp := time.Now().Unix()
 	if block != nil {
 		timestamp = int64(block.Timestamp)
@@ -641,7 +636,7 @@ func newReusableEngine(ctx context.Context, viewReader viewReader, tx *bc.TxData
 //
 // This is equivalent to calling NewReusableEngine() followed by a
 // call to Prepare().
-func NewEngine(ctx context.Context, viewReader viewReader, scriptPubKey []byte, tx *bc.TxData, txIdx int, flags ScriptFlags) (*Engine, error) {
+func NewEngine(ctx context.Context, viewReader state.ViewReader, scriptPubKey []byte, tx *bc.TxData, txIdx int, flags ScriptFlags) (*Engine, error) {
 	vm, err := NewReusableEngine(ctx, viewReader, tx, flags)
 	if err != nil {
 		return nil, err

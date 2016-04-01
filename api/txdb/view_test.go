@@ -9,6 +9,7 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/fedchain/bc"
 	"chain/fedchain/state"
+	"chain/testutil"
 )
 
 func TestView(t *testing.T) {
@@ -229,4 +230,94 @@ func TestPoolView(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestViewCirculation(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	assets := []bc.AssetID{{1}, {2}, {3}, {4}, {5}}
+	err := addIssuances(ctx, map[bc.AssetID]*state.AssetState{
+		assets[0]: &state.AssetState{Issuance: 5},
+		assets[1]: &state.AssetState{Issuance: 9, Destroyed: 2},
+		assets[2]: &state.AssetState{Issuance: 8},
+	}, true)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	err = addIssuances(ctx, map[bc.AssetID]*state.AssetState{
+		assets[0]: &state.AssetState{Issuance: 5},
+		assets[1]: &state.AssetState{Issuance: 9, Destroyed: 2},
+		assets[2]: &state.AssetState{Destroyed: 3},
+		assets[3]: &state.AssetState{Issuance: 4},
+	}, false)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	cases := []struct {
+		aids   []bc.AssetID
+		isPool bool
+		want   map[bc.AssetID]int64
+	}{{
+		[]bc.AssetID{assets[0]},
+		false,
+		map[bc.AssetID]int64{assets[0]: 5},
+	}, {
+		[]bc.AssetID{assets[0]},
+		true,
+		map[bc.AssetID]int64{assets[0]: 5},
+	}, {
+		[]bc.AssetID{assets[1]},
+		false,
+		map[bc.AssetID]int64{assets[1]: 7},
+	}, {
+		[]bc.AssetID{assets[1]},
+		true,
+		map[bc.AssetID]int64{assets[1]: 7},
+	}, {
+		[]bc.AssetID{assets[2]},
+		false,
+		map[bc.AssetID]int64{assets[2]: 8},
+	}, {
+		[]bc.AssetID{assets[2]},
+		true,
+		map[bc.AssetID]int64{assets[2]: -3},
+	}, {
+		[]bc.AssetID{assets[0], assets[1], assets[2]},
+		false,
+		map[bc.AssetID]int64{assets[0]: 5, assets[1]: 7, assets[2]: 8},
+	}, {
+		[]bc.AssetID{assets[0], assets[1], assets[2]},
+		true,
+		map[bc.AssetID]int64{assets[0]: 5, assets[1]: 7, assets[2]: -3},
+	}, {
+		[]bc.AssetID{assets[0], assets[3], assets[4]},
+		false,
+		map[bc.AssetID]int64{assets[0]: 5},
+	}, {
+		[]bc.AssetID{assets[0], assets[3], assets[3]},
+		true,
+		map[bc.AssetID]int64{assets[0]: 5, assets[3]: 4},
+	}, {
+		[]bc.AssetID{assets[4]},
+		false,
+		map[bc.AssetID]int64{},
+	}, {
+		[]bc.AssetID{assets[4]},
+		true,
+		map[bc.AssetID]int64{},
+	}}
+
+	for _, c := range cases {
+		v := &view{isPool: c.isPool}
+		got, err := v.Circulation(ctx, c.aids)
+		if err != nil {
+			testutil.FatalErr(t, err)
+		}
+
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("got Circulation(%+v) = %+v want %+v", c.aids, got, c.want)
+		}
+	}
 }

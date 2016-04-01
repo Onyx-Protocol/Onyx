@@ -19,5 +19,9 @@
 
 ["If the asset id were correct, this should succeed, but it's not,"],
 ["so it should fail."],
-["2 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f21 DATA_6 0x007a76a9fe88 OP_REQUIREOUTPUT", "", "", "Wrong asset for REQUIREOUTPUT test"]
+["2 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f21 DATA_6 0x007a76a9fe88 OP_REQUIREOUTPUT", "", "", "Wrong asset for REQUIREOUTPUT test"],
+
+["Bad asset id does fails OP_CIRCULATION"],
+["OP_CIRCULATION 5 OP_EQUAL", "DATA_6 0x010101010101", "", "asset id length should be 32"]
+
 ]

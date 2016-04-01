@@ -2413,8 +2413,23 @@ func opcodeTime(op *parsedOpcode, vm *Engine) error {
 // Pushes the total amount of the given asset id presently in
 // circulation (issued minus destroyed).
 func opcodeCirculation(op *parsedOpcode, vm *Engine) error {
-	// TODO(bobg): implement
-	panic("unimplemented")
+	asset, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+	if len(asset) != len(bc.AssetID{}) {
+		return fmt.Errorf("invalid asset id on stack %x", asset)
+	}
+	assetID := bc.AssetID{}
+	copy(assetID[:], asset)
+
+	circ, err := vm.viewReader.Circulation(vm.ctx, []bc.AssetID{assetID})
+	if err != nil {
+		return err
+	}
+
+	vm.dstack.PushInt(scriptNum(circ[assetID]))
+	return nil
 }
 
 // SCRIPT EVAL

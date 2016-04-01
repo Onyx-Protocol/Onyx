@@ -355,6 +355,10 @@ func (viewReader testViewReader) Output(ctx context.Context, outpoint bc.Outpoin
 	return nil
 }
 
+func (viewReader testViewReader) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.AssetID]int64, error) {
+	return map[bc.AssetID]int64{bc.AssetID{1}: 5}, nil
+}
+
 func newReusableTestEngine(viewReader testViewReader, tx *bc.TxData) (*Engine, error) {
 	result, err := NewReusableEngine(nil, viewReader, tx, 0)
 	if err != nil {
