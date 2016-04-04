@@ -6,13 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"chain/api/asset/assettest"
 	"chain/database/pg/pgtest"
 	"chain/fedchain/bc"
-	"chain/fedchain/state"
 	"chain/fedchain/txscript"
+	"chain/fedchain/txscript/txscripttest"
 )
 
 const (
@@ -22,7 +20,10 @@ const (
 )
 
 var (
-	exampleHash bc.Hash
+	exampleHash  bc.Hash
+	mockTimeFunc = func(vm *txscript.Engine) {
+		vm.SetTimestamp(time.Unix(mockTimeUnix, 0))
+	}
 )
 
 func init() {
@@ -30,31 +31,6 @@ func init() {
 	exampleHash, err = bc.ParseHash("9414886b1ebf025db067a4cbd13a0903fbd9733a5372bba1b58bd72c1699b798")
 	if err != nil {
 		panic(err)
-	}
-}
-
-type utxoTx struct {
-	assetID    bc.AssetID
-	hash       bc.Hash
-	scriptData rightScriptData
-	p2cScript  []byte
-}
-
-// Output implements the fedchain/txscript.viewReader interface, returning
-// the output represented by utxoTx.
-func (o utxoTx) Output(ctx context.Context, outpoint bc.Outpoint) *state.Output {
-	if outpoint.Hash != o.hash || outpoint.Index != 0 {
-		return nil
-	}
-
-	return &state.Output{
-		TxOutput: bc.TxOutput{
-			AssetAmount: bc.AssetAmount{AssetID: o.assetID, Amount: 1},
-			Script:      o.p2cScript,
-			Metadata:    []byte("utxoTxal voting right outpoint"),
-		},
-		Outpoint: outpoint,
-		Spent:    false,
 	}
 }
 
@@ -66,6 +42,7 @@ func TestTransferClause(t *testing.T) {
 		projectID    = assettest.CreateProjectFixture(ctx, t, "", "")
 		issuerNodeID = assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
 		assetID      = assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
+		assetAmount  = bc.AssetAmount{AssetID: assetID, Amount: 1}
 	)
 
 	testCases := []struct {
@@ -139,13 +116,6 @@ func TestTransferClause(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		utxoTx := utxoTx{
-			assetID:    assetID,
-			hash:       exampleHash,
-			scriptData: tc.prev,
-			p2cScript:  tc.prev.PKScript(),
-		}
-
 		sigBuilder := txscript.NewScriptBuilder()
 		sigBuilder = sigBuilder.
 			AddData(tc.out.HolderScript).
@@ -155,7 +125,10 @@ func TestTransferClause(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = executeScript(ctx, utxoTx, sigscript, tc.out.PKScript())
+		err = txscripttest.NewTestTx(mockTimeFunc).
+			AddInput(assetAmount, tc.prev.PKScript(), sigscript).
+			AddOutput(assetAmount, tc.out.PKScript()).
+			Execute(ctx, 0)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -170,6 +143,7 @@ func TestDelegateClause(t *testing.T) {
 		projectID    = assettest.CreateProjectFixture(ctx, t, "", "")
 		issuerNodeID = assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
 		assetID      = assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
+		assetAmount  = bc.AssetAmount{AssetID: assetID, Amount: 1}
 	)
 
 	testCases := []struct {
@@ -277,13 +251,6 @@ func TestDelegateClause(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		utxoTx := utxoTx{
-			assetID:    assetID,
-			hash:       exampleHash,
-			scriptData: tc.prev,
-			p2cScript:  tc.prev.PKScript(),
-		}
-
 		var delegatable int64 = 0
 		if tc.out.Delegatable {
 			delegatable = 1
@@ -299,38 +266,15 @@ func TestDelegateClause(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = executeScript(ctx, utxoTx, sigscript, tc.out.PKScript())
+
+		err = txscripttest.NewTestTx(mockTimeFunc).
+			AddInput(assetAmount, tc.prev.PKScript(), sigscript).
+			AddOutput(assetAmount, tc.out.PKScript()).
+			Execute(ctx, 0)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
 	}
-}
-
-func executeScript(ctx context.Context, utxoTx utxoTx, sigscript, pkscript []byte) error {
-	newTx := bc.TxData{
-		Version: 0,
-		Inputs: []*bc.TxInput{
-			{
-				Previous:        bc.Outpoint{Hash: exampleHash, Index: 0},
-				SignatureScript: sigscript,
-			},
-		},
-		Outputs: []*bc.TxOutput{
-			{
-				AssetAmount: bc.AssetAmount{
-					AssetID: utxoTx.assetID,
-					Amount:  1,
-				},
-				Script: pkscript,
-			},
-		},
-	}
-	vm, err := txscript.NewEngine(ctx, utxoTx, utxoTx.p2cScript, &newTx, 0, 0)
-	if err != nil {
-		return err
-	}
-	vm.SetTimestamp(time.Unix(mockTimeUnix, 0))
-	return vm.Execute()
 }
 
 // TestRightsContractValidMatch tests generating a pkscript from a voting right.
