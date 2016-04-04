@@ -77,18 +77,33 @@ func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx
 	// For outputs that match one of the voting contracts' p2c script
 	// formats, index voting-specific info in the db.
 	for i, out := range tx.Outputs {
-		scriptData, err := testRightsContract(out.Script)
+		outpoint := bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
+
+		// If the output is a voting right, update the voting right index.
+		rightData, err := testRightsContract(out.Script)
 		if err != nil {
 			log.Error(ctx, errors.Wrap(err, "testing for voting rights output script"))
 			continue
 		}
-		if scriptData == nil {
+		if rightData != nil {
+			err = insertVotingRight(ctx, out.AssetID, blockHeight, blockTxIndex, outpoint, *rightData)
+			if err != nil {
+				log.Error(ctx, errors.Wrap(err, "upserting voting rights"))
+			}
 			continue
 		}
 
-		err = insertVotingRight(ctx, out.AssetID, blockHeight, blockTxIndex, bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}, *scriptData)
+		// If the output is a voting token, update the voting token index.
+		tokenData, err := testTokenContract(out.Script)
 		if err != nil {
-			log.Error(ctx, errors.Wrap(err, "upserting voting rights"))
+			log.Error(ctx, errors.Wrap(err, "testing for voting token output script"))
+			continue
+		}
+		if tokenData != nil {
+			err = upsertVotingToken(ctx, out.AssetID, outpoint, out.Amount, *tokenData)
+			if err != nil {
+				log.Error(ctx, errors.Wrap(err, "upserting voting token"))
+			}
 			continue
 		}
 	}

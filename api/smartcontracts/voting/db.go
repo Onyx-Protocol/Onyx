@@ -1,6 +1,7 @@
 package voting
 
 import (
+	"database/sql"
 	"fmt"
 
 	"golang.org/x/net/context"
@@ -35,6 +36,15 @@ type RightWithUTXO struct {
 	rightScriptData
 }
 
+// Token describes the state of a voting token. It's scoped to a particular
+// voting right and agenda item.
+type Token struct {
+	AssetID  bc.AssetID
+	Outpoint bc.Outpoint
+	Amount   int64
+	tokenScriptData
+}
+
 type cursor struct {
 	prevBlockHeight uint64
 	prevBlockPos    int
@@ -57,6 +67,20 @@ func insertVotingRight(ctx context.Context, assetID bc.AssetID, blockHeight uint
 	_, err := pg.FromContext(ctx).Exec(ctx, q, assetID, outpoint.Hash, outpoint.Index, blockHeight, blockTxIndex,
 		data.HolderScript, data.Deadline, data.Delegatable, data.OwnershipChain[:], data.AdminScript)
 	return errors.Wrap(err, "inserting into voting_right_txs")
+}
+
+func upsertVotingToken(ctx context.Context, assetID bc.AssetID, outpoint bc.Outpoint, amount uint64, data tokenScriptData) error {
+	const q = `
+		INSERT INTO voting_tokens
+			(asset_id, right_asset_id, tx_hash, index, state, closed, vote, option_count, secret_hash, admin_script, amount)
+			VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		ON CONFLICT (asset_id, right_asset_id) DO UPDATE
+		  SET tx_hash = $3, index = $4, state = $5, closed = $6, vote = $7, secret_hash = $9
+	`
+	_, err := pg.FromContext(ctx).Exec(ctx, q, assetID, data.Right,
+		outpoint.Hash, outpoint.Index, data.State.Base(), data.State.Finished(),
+		data.Vote, data.OptionCount, data.SecretHash, data.AdminScript, amount)
+	return errors.Wrap(err, "upserting into voting_tokens")
 }
 
 // voidRecalledVotingRights takes the outpoint of the contract being executed
@@ -267,4 +291,45 @@ func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*RightWithUTX
 		return nil, "", errors.Wrap(err, "end scan")
 	}
 	return results, cur.String(), nil
+}
+
+// FindTokenForAsset looks up the current state of the voting token with the
+// provided token asset ID and voting right asset ID.
+func FindTokenForAsset(ctx context.Context, tokenAssetID, rightAssetID bc.AssetID) (*Token, error) {
+	const sqlQ = `
+		SELECT
+			vt.asset_id,
+			vt.right_asset_id,
+			vt.tx_hash,
+			vt.index,
+			vt.state,
+			vt.closed,
+			vt.vote,
+			vt.option_count,
+			vt.secret_hash,
+			vt.admin_script,
+			vt.amount
+		FROM voting_tokens vt
+		WHERE
+			vt.asset_id = $1 AND vt.right_asset_id = $2
+	`
+	var (
+		tok       Token
+		baseState int64
+		closed    bool
+	)
+	err := pg.FromContext(ctx).QueryRow(ctx, sqlQ, tokenAssetID, rightAssetID).Scan(
+		&tok.AssetID, &tok.Right, &tok.Outpoint.Hash, &tok.Outpoint.Index, &baseState,
+		&closed, &tok.Vote, &tok.OptionCount, &tok.SecretHash, &tok.AdminScript, &tok.Amount)
+	if err == sql.ErrNoRows {
+		return nil, pg.ErrUserInputNotFound
+	} else if err != nil {
+		return nil, errors.Wrap(err, "looking up voting token by asset id")
+	}
+
+	tok.State = TokenState(baseState)
+	if closed {
+		tok.State = tok.State | stateFinished
+	}
+	return &tok, nil
 }

@@ -136,3 +136,73 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 	}
 	return result, nil
 }
+
+type tokenReserver struct {
+	outpoint    bc.Outpoint
+	clause      tokenContractClause
+	output      tokenScriptData
+	rightScript []byte
+	prevScript  []byte
+	adminAddr   *appdb.Address
+}
+
+// Reserve builds a ReserveResult including the sigscript suffix to satisfy
+// the existing UTXO's token holding contract. Reserve satisfies the
+// txbuilder.Reserver interface.
+func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
+	var sigscript []*txbuilder.SigScriptComponent
+
+	if r.adminAddr != nil {
+		sigscript = append(sigscript,
+			&txbuilder.SigScriptComponent{
+				Type:     "signature",
+				Required: r.adminAddr.SigsRequired,
+				Signatures: txbuilder.InputSigs(
+					hdkey.Derive(r.adminAddr.Keys, appdb.ReceiverPath(r.adminAddr, r.adminAddr.Index)),
+				),
+			}, &txbuilder.SigScriptComponent{
+				Type:   "script",
+				Script: txscript.AddDataToScript(nil, r.adminAddr.RedeemScript),
+			},
+		)
+	}
+
+	sb := txscript.NewScriptBuilder()
+	switch r.clause {
+	case clauseIntendToVote:
+		sb = sb.
+			AddData(r.rightScript)
+	case clauseVote, clauseFinish, clauseReset:
+		// TODO(jackson): Implement.
+		return nil, errors.New("unimplemented")
+	}
+	sb = sb.
+		AddInt64(int64(r.clause)).
+		AddData(tokenHoldingContract)
+	script, err := sb.Script()
+	if err != nil {
+		return nil, err
+	}
+
+	sigscript = append(sigscript, &txbuilder.SigScriptComponent{
+		Type:   "script",
+		Script: script,
+	})
+
+	result := &txbuilder.ReserveResult{
+		Items: []*txbuilder.ReserveResultItem{
+			{
+				TxInput: &bc.TxInput{
+					Previous:    r.outpoint,
+					AssetAmount: *assetAmount,
+					PrevScript:  r.prevScript,
+				},
+				TemplateInput: &txbuilder.Input{
+					AssetAmount:   *assetAmount,
+					SigComponents: sigscript,
+				},
+			},
+		},
+	}
+	return result, nil
+}

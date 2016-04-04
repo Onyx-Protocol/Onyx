@@ -2,6 +2,7 @@ package voting
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -30,12 +31,9 @@ func TestInsertVotingRightAccountID(t *testing.T) {
 	defer pgtest.Finish(ctx)
 
 	var (
-		projectID     = assettest.CreateProjectFixture(ctx, t, "", "")
-		managerNodeID = assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
-		issuerNodeID  = assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
-		accountID     = assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
-		assetID       = assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
-		address       = assettest.CreateAddressFixture(ctx, t, accountID)
+		accountID = assettest.CreateAccountFixture(ctx, t, "", "", nil)
+		assetID   = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		address   = assettest.CreateAddressFixture(ctx, t, accountID)
 	)
 
 	data := rightScriptData{
@@ -61,5 +59,54 @@ func TestInsertVotingRightAccountID(t *testing.T) {
 	// The voting_right_txs row should have the correct account ID.
 	if accountID != dbAccountID {
 		t.Errorf("got=%s, want=%s", dbAccountID, accountID)
+	}
+}
+
+// TestUpsertVotingToken tests inserting, updating and retrieving a voting
+// token from the database index.
+func TestUpsertVotingToken(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	var (
+		tokenAssetID = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		rightAssetID = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		out1         = bc.Outpoint{Hash: exampleHash, Index: 6}
+		out2         = bc.Outpoint{Hash: exampleHash2, Index: 22}
+	)
+	data := tokenScriptData{
+		Right:       rightAssetID,
+		AdminScript: []byte{0x01, 0x02, 0x03},
+		OptionCount: 10,
+		State:       stateDistributed,
+		SecretHash:  bc.Hash{},
+		Vote:        0,
+	}
+
+	err := upsertVotingToken(ctx, tokenAssetID, out1, 100, data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Modify the token state, and upsert it again.
+	data.State, data.Vote = stateVoted, 2
+	err = upsertVotingToken(ctx, tokenAssetID, out2, 100, data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Fetch the token from the db.
+	tok, err := FindTokenForAsset(ctx, tokenAssetID, rightAssetID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &Token{
+		AssetID:         tokenAssetID,
+		Outpoint:        out2,
+		Amount:          100,
+		tokenScriptData: data,
+	}
+	if !reflect.DeepEqual(tok, want) {
+		t.Errorf("got=%#v want=%#v", tok, want)
 	}
 }

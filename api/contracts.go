@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -127,53 +129,157 @@ func getVotingRightHistory(ctx context.Context, assetID string) ([]map[string]in
 	return rights, nil
 }
 
-// parseVotingBuildRequest parses `votingright` BuildRequest sources and
-// destinations. Unlike other asset types, voting request inputs and
-// outputs need data from each other in order to build the correct
+type votingToken struct {
+	token bc.AssetID
+	right bc.AssetID
+}
+
+// parseVotingBuildRequest parses `votingright` and `voting` BuildRequest
+// sources and destinations. Unlike other asset types, voting request inputs
+// and outputs need data from each other in order to build the correct
 // txbuilder.Reservers and txbuilder.Receivers.
-//
-// This function will pair the votingright sources and destinations up by
-// asset ID, and use the information from both to construct the
-// txbuilder.Sources and txbuilder.Destinations.
-func parseVotingBuildRequest(ctx context.Context, sources []*Source, destinations []*Destination) (srcs []*txbuilder.Source, dsts []*txbuilder.Destination, err error) {
+func parseVotingBuildRequest(ctx context.Context, sources []*Source, destinations []*Destination) (
+	srcs []*txbuilder.Source,
+	dsts []*txbuilder.Destination,
+	err error,
+) {
 	var (
-		srcsByAssetID = map[bc.AssetID]*Source{}
-		dstsByAssetID = map[bc.AssetID]*Destination{}
+		rightSrcsByAssetID  = map[bc.AssetID]*Source{}
+		rightDstsByAssetID  = map[bc.AssetID]*Destination{}
+		tokenSrcsByAssetIDs = map[votingToken]*Source{}
+		tokenDstsByAssetIDs = map[votingToken]*Destination{}
 	)
-	// Pair voting rights up by asset id.
+
+	// Pair sources and destinations by asset id, and split them into voting
+	// rights and voting tokens.
 	for _, src := range sources {
 		if src.AssetID == nil {
 			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
 		}
-		if _, ok := srcsByAssetID[*src.AssetID]; ok {
-			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting right asset appears twice as source")
+		if strings.HasPrefix(src.Type, "votingright-") {
+			rightSrcsByAssetID[*src.AssetID] = src
+			continue
 		}
-		srcsByAssetID[*src.AssetID] = src
+		if src.VotingRight == nil {
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting sources must include voting_right_asset_id")
+		}
+		vt := votingToken{token: *src.AssetID, right: *src.VotingRight}
+		tokenSrcsByAssetIDs[vt] = src
 	}
 	for _, dst := range destinations {
 		if dst.AssetID == nil {
 			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
 		}
-		if _, ok := dstsByAssetID[*dst.AssetID]; ok {
-			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting right asset appears twice as destination")
+		if dst.Type == "votingright" {
+			rightDstsByAssetID[*dst.AssetID] = dst
+			continue
 		}
-		dstsByAssetID[*dst.AssetID] = dst
+		if dst.VotingRight == nil {
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting destinations must include voting_right_asset_id")
+		}
+		vt := votingToken{token: *dst.AssetID, right: *dst.VotingRight}
+		tokenDstsByAssetIDs[vt] = dst
 	}
-	if len(sources) > len(destinations) {
+
+	// Parse the voting rights first. Some voting token clauses require
+	// knowledge of the voting right script.
+	srcs, dsts, rightsByAssetID, err := parseVotingRights(ctx, rightSrcsByAssetID, rightDstsByAssetID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Parse the voting tokens.
+	for assetIDs, dst := range tokenDstsByAssetIDs {
+		src, ok := tokenSrcsByAssetIDs[assetIDs]
+		if !ok {
+			// If there's no corresponding source with a `voting`
+			// type, then the destination should be a voting token
+			// issuance.
+			if dst.VotingRight == nil {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "new voting tokens must provide corresponding voting right")
+			}
+			if dst.AdminScript == nil {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "new voting tokens must provide the voting system admin script")
+			}
+			if dst.Options <= 0 {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "new voting tokens must have 1 or more voting options")
+			}
+			dsts = append(dsts, &txbuilder.Destination{
+				AssetAmount: bc.AssetAmount{AssetID: assetIDs.token, Amount: dst.Amount},
+				Metadata:    dst.Metadata,
+				Receiver:    voting.TokenIssuance(ctx, *dst.VotingRight, dst.AdminScript, dst.Options, dst.SecretHash),
+			})
+			continue
+		}
+
+		token, err := voting.FindTokenForAsset(ctx, assetIDs.token, assetIDs.right)
+		if err != nil {
+			return nil, nil, err
+		}
+		if token == nil {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "unknown voting token")
+		}
+
+		var (
+			reserver txbuilder.Reserver
+			receiver txbuilder.Receiver
+		)
+		switch src.Type {
+		case "voting-intent":
+			if !token.State.Distributed() {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting token must be in distributed state")
+			}
+			if token.State.Finished() {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has been closed")
+			}
+			reserver, receiver, err = voting.TokenIntent(ctx, token, rightsByAssetID[token.Right])
+			if err != nil {
+				return nil, nil, err
+			}
+		default:
+			// TODO(jackson): Implement all other voting token clauses
+			return nil, nil, fmt.Errorf("unimplemented src.type: %s", src.Type)
+		}
+		srcs = append(srcs, &txbuilder.Source{
+			AssetAmount: bc.AssetAmount{AssetID: assetIDs.token, Amount: src.Amount},
+			Reserver:    reserver,
+		})
+		dsts = append(dsts, &txbuilder.Destination{
+			AssetAmount: bc.AssetAmount{AssetID: assetIDs.token, Amount: dst.Amount},
+			Metadata:    dst.Metadata,
+			Receiver:    receiver,
+		})
+	}
+
+	return srcs, dsts, nil
+}
+
+// parseVotingRights will pair the vrtoken sources and destinations up by
+// asset ID, and use the information from both to construct the
+// txbuilder.Sources and txbuilder.Destinations.
+func parseVotingRights(ctx context.Context, srcsByAssetID map[bc.AssetID]*Source, dstsByAssetID map[bc.AssetID]*Destination) (
+	srcs []*txbuilder.Source,
+	dsts []*txbuilder.Destination,
+	byAssetID map[bc.AssetID]txbuilder.Receiver,
+	err error,
+) {
+	byAssetID = map[bc.AssetID]txbuilder.Receiver{}
+
+	if len(srcsByAssetID) > len(dstsByAssetID) {
 		// Both the source and destination must be provided in the same build
 		// request. This is unavoidable because:
 		// - the output contract script requires knowledge of the input's chain of ownership
 		// - the sigscript needs to provide the new contract parameters
 		// The only exception is issuing new voting right tokens. Then there
 		// will be more destinations than sources.
-		return nil, nil, errors.WithDetailf(ErrBadBuildRequest,
+		return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest,
 			"voting right source and destinations must be provided in the same build request")
 	}
 
 	for assetID, dst := range dstsByAssetID {
 		// Validate the destination.
 		if dst.Amount != 0 {
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right destinations do not take amounts")
+			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right destinations do not take amounts")
 		}
 
 		src, ok := srcsByAssetID[assetID]
@@ -181,17 +287,19 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 			// If there is no votingright source, then assume this is an attempt
 			// to issue into a new asset into a voting right contract.
 			if dst.AdminScript == nil {
-				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right issuance requires a voting system admin script")
+				return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right issuance requires a voting system admin script")
 			}
 			holder, err := dst.buildAddress(ctx)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
+			receiver := voting.RightIssuance(ctx, dst.AdminScript, holder)
 			dsts = append(dsts, &txbuilder.Destination{
 				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},
 				Metadata:    dst.Metadata,
-				Receiver:    voting.RightIssuance(ctx, dst.AdminScript, holder),
+				Receiver:    receiver,
 			})
+			byAssetID[assetID] = receiver
 			continue
 		}
 
@@ -200,10 +308,10 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 			src.TxHash = src.TxHashAsID
 		}
 		if src.TxHash == nil || src.Index == nil {
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
+			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
 		}
 		if src.Amount != 0 {
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right sources do not take amounts")
+			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right sources do not take amounts")
 		}
 		out := bc.Outpoint{Hash: *src.TxHash, Index: *src.Index}
 
@@ -211,9 +319,9 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 		// script data, such as the previous chain of ownership.
 		old, err := voting.FindRightForOutpoint(ctx, out)
 		if err == pg.ErrUserInputNotFound {
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
+			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
 		} else if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 
 		var (
@@ -224,27 +332,27 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 		case "votingright-authenticate":
 			reserver, receiver, err = voting.RightAuthentication(ctx, old)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 		case "votingright-transfer":
 			script, err := dst.buildAddress(ctx)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			reserver, receiver, err = voting.RightTransfer(ctx, old, script)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 		case "votingright-delegate":
 			if !old.Delegatable {
-				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "delegating this voting right is prohibited")
+				return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "delegating this voting right is prohibited")
 			}
 			if dst.Deadline.Unix() > old.Deadline {
-				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "cannot extend deadline beyond current deadline")
+				return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "cannot extend deadline beyond current deadline")
 			}
 			script, err := dst.buildAddress(ctx)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			var (
 				delegatable = old.Delegatable
@@ -258,16 +366,16 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 			}
 			reserver, receiver, err = voting.RightDelegation(ctx, old, script, deadline, delegatable)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 		case "votingright-recall":
 			claims, err := voting.FindRightsForAsset(ctx, assetID)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			if len(claims) < 2 {
 				// You need at least two claims to have a recallable voting right.
-				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
+				return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
 			}
 
 			// Find the earliest, active voting right claim that this account
@@ -284,14 +392,14 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 				}
 			}
 			if recallPoint == nil {
-				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right not recallable")
+				return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right not recallable")
 			}
 			reserver, receiver, err = voting.RightRecall(ctx, old, recallPoint, claims[recallPointIdx+1:len(claims)-1])
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 		default:
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "`%s` source type unimplemented", src.Type)
+			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "`%s` source type unimplemented", src.Type)
 		}
 		srcs = append(srcs, &txbuilder.Source{
 			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},
@@ -302,6 +410,7 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 			Metadata:    dst.Metadata,
 			Receiver:    receiver,
 		})
+		byAssetID[assetID] = receiver
 	}
-	return srcs, dsts, nil
+	return srcs, dsts, byAssetID, nil
 }

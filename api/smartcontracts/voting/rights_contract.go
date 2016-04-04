@@ -2,7 +2,6 @@ package voting
 
 import (
 	"bytes"
-	"crypto/sha256"
 
 	"chain/cos/bc"
 	"chain/cos/txscript"
@@ -251,7 +250,7 @@ const (
 
 var (
 	rightsHoldingContract     []byte
-	rightsHoldingContractHash [sha256.Size]byte
+	rightsHoldingContractHash [hash256.Size]byte
 )
 
 func init() {

@@ -34,6 +34,9 @@ type Source struct {
 	// TxHashAsID exists only to provide an alternate input alias
 	// ("transaction_id") for TxHash. This field should be treated as read-only.
 	TxHashAsID *bc.Hash `json:"transaction_id"`
+
+	// Voting system specific:
+	VotingRight *bc.AssetID `json:"voting_right_asset_id,omitempty"`
 }
 
 func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
@@ -134,10 +137,15 @@ type Destination struct {
 	Metadata        chainjson.HexBytes `json:"metadata,omitempty"`
 	OrderbookPrices []*orderbook.Price `json:"orderbook_prices,omitempty"`
 	Script          chainjson.HexBytes `json:"script,omitempty"`
-	AdminScript     chainjson.HexBytes `json:"admin_script,omitempty"`
-	Transferable    *bool              `json:"transferable,omitempty"`
-	Deadline        time.Time          `json:"deadline,omitempty"`
 	Type            string
+
+	// Voting system specific:
+	Transferable *bool              `json:"transferable,omitempty"`
+	Deadline     time.Time          `json:"deadline,omitempty"`
+	AdminScript  chainjson.HexBytes `json:"admin_script,omitempty"`
+	VotingRight  *bc.AssetID        `json:"voting_right_asset_id,omitempty"`
+	Options      int64              `json:"options,omitempty"`
+	SecretHash   bc.Hash            `json:"secret_hash,omitempty"`
 }
 
 // buildAddress will return the destination's script, if populated. Otherwise,
@@ -207,7 +215,7 @@ func (req *BuildRequest) parse(ctx context.Context) (*txbuilder.Template, []*txb
 
 	// Voting sources and destinations require custom parsing.
 	for _, source := range req.Sources {
-		if strings.HasPrefix(source.Type, "votingright-") {
+		if strings.HasPrefix(source.Type, "votingright-") || strings.HasPrefix(source.Type, "voting-") {
 			votingSources = append(votingSources, source)
 			continue
 		}
@@ -219,7 +227,7 @@ func (req *BuildRequest) parse(ctx context.Context) (*txbuilder.Template, []*txb
 		sources = append(sources, parsed)
 	}
 	for _, destination := range req.Dests {
-		if destination.Type == "votingright" {
+		if destination.Type == "votingright" || destination.Type == "voting" {
 			votingDestinations = append(votingDestinations, destination)
 			continue
 		}

@@ -137,3 +137,34 @@ func RightRecall(ctx context.Context, src, recallPoint *RightWithUTXO, intermedi
 	}
 	return reserver, reserver.output, nil
 }
+
+// TokenIssuance builds a txbuilder Receiver implementation
+// for a voting token issuance.
+func TokenIssuance(ctx context.Context, rightAssetID bc.AssetID, admin []byte, optionCount int64, secretHash bc.Hash) txbuilder.Receiver {
+	scriptData := tokenScriptData{
+		Right:       rightAssetID,
+		AdminScript: admin,
+		OptionCount: optionCount,
+		State:       stateDistributed,
+		SecretHash:  secretHash,
+		Vote:        0,
+	}
+	return scriptData
+}
+
+// TokenIntent builds txbuilder Reserver and Receiver implementations
+// for a voting token intent-to-vote transition.
+func TokenIntent(ctx context.Context, token *Token, right txbuilder.Receiver) (txbuilder.Reserver, txbuilder.Receiver, error) {
+	prevScript := token.tokenScriptData.PKScript()
+	intended := token.tokenScriptData
+	intended.State = stateIntended
+
+	reserver := tokenReserver{
+		outpoint:    token.Outpoint,
+		clause:      clauseIntendToVote,
+		output:      intended,
+		prevScript:  prevScript,
+		rightScript: right.PKScript(),
+	}
+	return reserver, intended, nil
+}

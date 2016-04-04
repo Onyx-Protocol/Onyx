@@ -863,6 +863,25 @@ CREATE TABLE voting_right_txs (
 
 
 --
+-- Name: voting_tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE voting_tokens (
+    asset_id text NOT NULL,
+    right_asset_id text NOT NULL,
+    tx_hash text NOT NULL,
+    index integer NOT NULL,
+    state smallint NOT NULL,
+    closed boolean NOT NULL,
+    vote smallint NOT NULL,
+    option_count integer NOT NULL,
+    secret_hash text NOT NULL,
+    admin_script bytea NOT NULL,
+    amount bigint NOT NULL
+);
+
+
+--
 -- Name: key_index; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1162,6 +1181,14 @@ ALTER TABLE ONLY utxos
 
 ALTER TABLE ONLY voting_right_txs
     ADD CONSTRAINT voting_right_txs_pkey PRIMARY KEY (tx_hash, index);
+
+
+--
+-- Name: voting_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY voting_tokens
+    ADD CONSTRAINT voting_tokens_pkey PRIMARY KEY (asset_id, right_asset_id);
 
 
 --
@@ -1490,3 +1517,4 @@ ALTER TABLE ONLY rotations
 --
 -- PostgreSQL database dump complete
 --
+

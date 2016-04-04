@@ -22,6 +22,7 @@ const (
 
 var (
 	exampleHash  bc.Hash
+	exampleHash2 bc.Hash
 	mockTimeFunc = func(vm *txscript.Engine) {
 		vm.SetTimestamp(time.Unix(mockTimeUnix, 0))
 	}
@@ -30,6 +31,10 @@ var (
 func init() {
 	var err error
 	exampleHash, err = bc.ParseHash("9414886b1ebf025db067a4cbd13a0903fbd9733a5372bba1b58bd72c1699b798")
+	if err != nil {
+		panic(err)
+	}
+	exampleHash2, err = bc.ParseHash("cbf9cf4baf8d5636383f5d1412e8ebecc977c1a855f70a63cca4ff7416128532")
 	if err != nil {
 		panic(err)
 	}
