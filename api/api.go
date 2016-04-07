@@ -147,7 +147,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/v3/contracts/orderbook/:accountID", findAccountOrders)
 
 	// Voting system endpoints
-	h.HandleFunc("GET", "/v3/accounts/:accountID/vrtokens", findAccountVotingRights)
+	h.HandleFunc("GET", "/v3/accounts/:accountID/voting-rights", findAccountVotingRights)
 
 	return h.ServeHTTPContext
 }

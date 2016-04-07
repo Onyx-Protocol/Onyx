@@ -12,6 +12,8 @@ import (
 	"chain/net/http/httpjson"
 )
 
+const votingRightsPageSize = 100
+
 type globalFindOrder struct {
 	OfferedAssetIDs []bc.AssetID `json:"offered_asset_ids"`
 	PaymentAssetIDs []bc.AssetID `json:"payment_asset_ids"`
@@ -60,8 +62,13 @@ func findAccountOrders(ctx context.Context, accountID string) ([]*orderbook.Open
 	return orders, nil
 }
 
-func findAccountVotingRights(ctx context.Context, accountID string) ([]map[string]interface{}, error) {
-	rightsWithUTXOs, err := voting.FindRightsForAccount(ctx, accountID)
+func findAccountVotingRights(ctx context.Context, accountID string) (map[string]interface{}, error) {
+	prev, limit, err := getPageData(ctx, votingRightsPageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	rightsWithUTXOs, last, err := voting.FindRightsForAccount(ctx, accountID, prev, limit)
 	if err != nil {
 		return nil, errors.Wrap(err, "finding account voting rights")
 	}
@@ -70,9 +77,9 @@ func findAccountVotingRights(ctx context.Context, accountID string) ([]map[strin
 	for _, r := range rightsWithUTXOs {
 		var actionTypes []string
 		if r.Outpoint.Hash == r.UTXO.Hash && r.Outpoint.Index == r.UTXO.Index {
-			actionTypes = append(actionTypes, "vrtoken-transfer", "vrtoken-delegate")
+			actionTypes = append(actionTypes, "votingright-authenticate", "votingright-transfer", "votingright-delegate")
 		} else {
-			actionTypes = append(actionTypes, "vrtoken-recall")
+			actionTypes = append(actionTypes, "votingright-recall")
 		}
 
 		rightToken := map[string]interface{}{
@@ -83,15 +90,18 @@ func findAccountVotingRights(ctx context.Context, accountID string) ([]map[strin
 		}
 		rights = append(rights, rightToken)
 	}
-	return rights, nil
+	return map[string]interface{}{
+		"balances": rights,
+		"last":     last,
+	}, nil
 }
 
-// parseVotingBuildRequest parses `vrtoken` BuildRequest sources and
+// parseVotingBuildRequest parses `votingright` BuildRequest sources and
 // destinations. Unlike other asset types, voting request inputs and
 // outputs need data from each other in order to build the correct
 // txbuilder.Reservers and txbuilder.Receivers.
 //
-// This function will pair the vrtoken sources and destinations up by
+// This function will pair the votingright sources and destinations up by
 // asset ID, and use the information from both to construct the
 // txbuilder.Sources and txbuilder.Destinations.
 func parseVotingBuildRequest(ctx context.Context, sources []*Source, destinations []*Destination) (srcs []*txbuilder.Source, dsts []*txbuilder.Destination, err error) {
@@ -137,7 +147,7 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 
 		src, ok := srcsByAssetID[assetID]
 		if !ok {
-			// If there is no vrtoken source, then assume this is an attempt
+			// If there is no votingright source, then assume this is an attempt
 			// to issue into a new asset into a voting right contract.
 			if dst.AdminScript == nil {
 				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right issuance requires a voting system admin script")
@@ -180,12 +190,12 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 			receiver txbuilder.Receiver
 		)
 		switch src.Type {
-		case "vrtoken-authenticate":
+		case "votingright-authenticate":
 			reserver, receiver, err = voting.RightAuthentication(ctx, old)
 			if err != nil {
 				return nil, nil, err
 			}
-		case "vrtoken-transfer":
+		case "votingright-transfer":
 			script, err := dst.buildAddress(ctx)
 			if err != nil {
 				return nil, nil, err
@@ -194,7 +204,7 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 			if err != nil {
 				return nil, nil, err
 			}
-		case "vrtoken-delegate":
+		case "votingright-delegate":
 			if !old.Delegatable {
 				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "delegating this voting right is prohibited")
 			}
@@ -219,7 +229,7 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 			if err != nil {
 				return nil, nil, err
 			}
-		case "vrtoken-recall":
+		case "votingright-recall":
 			claims, err := voting.FindRightsForAsset(ctx, assetID)
 			if err != nil {
 				return nil, nil, err

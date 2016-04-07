@@ -35,6 +35,18 @@ type RightWithUTXO struct {
 	rightScriptData
 }
 
+type cursor struct {
+	prevBlockHeight uint64
+	prevBlockPos    int
+}
+
+func (c cursor) String() string {
+	if c.prevBlockHeight == 0 && c.prevBlockPos == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d-%d", c.prevBlockHeight, c.prevBlockPos)
+}
+
 func insertVotingRight(ctx context.Context, assetID bc.AssetID, blockHeight uint64, blockTxIndex int, outpoint bc.Outpoint, data rightScriptData) error {
 	const q = `
 		INSERT INTO voting_right_txs
@@ -99,6 +111,16 @@ type votingRightsQuery struct {
 	accountID string
 	outpoint  *bc.Outpoint
 	assetID   *bc.AssetID
+
+	cursor *cursor
+	limit  int
+}
+
+func (q votingRightsQuery) Limit() string {
+	if q.limit == 0 {
+		return ""
+	}
+	return fmt.Sprintf(" LIMIT %d", q.limit)
 }
 
 func (q votingRightsQuery) Where() (string, []interface{}) {
@@ -123,18 +145,43 @@ func (q votingRightsQuery) Where() (string, []interface{}) {
 		values = append(values, *q.assetID)
 		param++
 	}
+	if q.cursor != nil {
+		whereClause = fmt.Sprintf("%s AND (vr.block_height, vr.block_tx_index) > ($%d, $%d)\n", whereClause, param, param+1)
+		values = append(values, q.cursor.prevBlockHeight, q.cursor.prevBlockPos)
+		param += 2
+	}
 	whereClause = fmt.Sprintf("%s AND vr.void = 'f'\n", whereClause)
 	return whereClause, values
 }
 
 // FindRightsForAccount returns all voting rights belonging to the provided account.
-func FindRightsForAccount(ctx context.Context, accountID string) ([]*RightWithUTXO, error) {
-	return findVotingRights(ctx, votingRightsQuery{accountID: accountID})
+func FindRightsForAccount(ctx context.Context, accountID string, prev string, limit int) ([]*RightWithUTXO, string, error) {
+	// Since the sort criteria is composite, the cursor is composite.
+	var (
+		prevBlockHeight uint64
+		prevBlockPos    int
+		cur             *cursor
+	)
+	_, err := fmt.Sscanf(prev, "%d-%d", &prevBlockHeight, &prevBlockPos)
+
+	// ignore malformed cursors
+	if err == nil {
+		cur = &cursor{
+			prevBlockHeight: prevBlockHeight,
+			prevBlockPos:    prevBlockPos,
+		}
+	}
+
+	return findVotingRights(ctx, votingRightsQuery{
+		accountID: accountID,
+		cursor:    cur,
+		limit:     limit,
+	})
 }
 
 // FindRightForOutpoint returns the voting right with the provided tx outpoint.
 func FindRightForOutpoint(ctx context.Context, out bc.Outpoint) (*RightWithUTXO, error) {
-	rights, err := findVotingRights(ctx, votingRightsQuery{outpoint: &out})
+	rights, _, err := findVotingRights(ctx, votingRightsQuery{outpoint: &out})
 	if err != nil {
 		return nil, err
 	}
@@ -150,15 +197,16 @@ func FindRightForOutpoint(ctx context.Context, out bc.Outpoint) (*RightWithUTXO,
 // this function returns the entire active chain of ownership for the
 // voting right token.
 func FindRightsForAsset(ctx context.Context, assetID bc.AssetID) ([]*RightWithUTXO, error) {
-	rights, err := findVotingRights(ctx, votingRightsQuery{assetID: &assetID})
+	rights, _, err := findVotingRights(ctx, votingRightsQuery{assetID: &assetID})
 	if err != nil {
 		return nil, err
 	}
 	return rights, nil
 }
 
-func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*RightWithUTXO, error) {
+func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*RightWithUTXO, string, error) {
 	var (
+		cur     cursor
 		results []*RightWithUTXO
 	)
 
@@ -183,11 +231,11 @@ func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*RightWithUTX
 			u.asset_id = vr.asset_id AND
 			NOT EXISTS (SELECT 1 FROM pool_inputs pi WHERE pi.tx_hash = u.tx_hash AND pi.index = u.index)
 	`
-	sqlSuffix, values := q.Where()
-
-	rows, err := pg.Query(ctx, sqlQ+sqlSuffix+` ORDER BY vr.block_height ASC, vr.block_tx_index ASC`, values...)
+	whereSQL, values := q.Where()
+	queryStr := fmt.Sprintf("%s%s ORDER BY vr.block_height ASC, vr.block_tx_index ASC%s", sqlQ, whereSQL, q.Limit())
+	rows, err := pg.Query(ctx, queryStr, values...)
 	if err != nil {
-		return nil, errors.Wrap(err, "query")
+		return nil, "", errors.Wrap(err, "query")
 	}
 	defer rows.Close()
 
@@ -205,14 +253,18 @@ func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*RightWithUTX
 			&right.HolderScript, &right.Deadline, &right.Delegatable, &ownershipChain,
 			&right.AdminScript)
 		if err != nil {
-			return nil, errors.Wrap(err, "scanning RightWithUTXO")
+			return nil, "", errors.Wrap(err, "scanning RightWithUTXO")
 		}
 		copy(right.OwnershipChain[:], ownershipChain)
 		results = append(results, &right)
+		cur = cursor{
+			prevBlockHeight: right.BlockHeight,
+			prevBlockPos:    right.BlockTxIndex,
+		}
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "end scan")
+		return nil, "", errors.Wrap(err, "end scan")
 	}
-	return results, nil
+	return results, cur.String(), nil
 }

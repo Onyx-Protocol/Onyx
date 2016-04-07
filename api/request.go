@@ -233,7 +233,7 @@ func (req *BuildRequest) parse(ctx context.Context) (*txbuilder.Template, []*txb
 
 	// Voting sources and destinations require custom parsing.
 	for _, source := range req.Sources {
-		if strings.HasPrefix(source.Type, "vrtoken-") {
+		if strings.HasPrefix(source.Type, "votingright-") {
 			votingSources = append(votingSources, source)
 			continue
 		}
@@ -245,7 +245,7 @@ func (req *BuildRequest) parse(ctx context.Context) (*txbuilder.Template, []*txb
 		sources = append(sources, parsed)
 	}
 	for _, destination := range req.Dests {
-		if destination.Type == "vrtoken" {
+		if destination.Type == "votingright" {
 			votingDestinations = append(votingDestinations, destination)
 			continue
 		}
