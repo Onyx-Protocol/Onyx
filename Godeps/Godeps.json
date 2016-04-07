@@ -170,6 +170,22 @@
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "7654728e381988afd88e58cabfd6363a5ea91810"
+		},
+		{
+			"ImportPath": "golang.org/x/tools/cmd/goimports",
+			"Rev": "093d7650abf0a26882924de03a6c840a00356572"
+		},
+		{
+			"ImportPath": "golang.org/x/tools/cmd/vet",
+			"Rev": "093d7650abf0a26882924de03a6c840a00356572"
+		},
+		{
+			"ImportPath": "golang.org/x/tools/go",
+			"Rev": "093d7650abf0a26882924de03a6c840a00356572"
+		},
+		{
+			"ImportPath": "golang.org/x/tools/imports",
+			"Rev": "093d7650abf0a26882924de03a6c840a00356572"
 		}
 	]
 }
