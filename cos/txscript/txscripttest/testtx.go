@@ -77,7 +77,7 @@ func (tx *TestTx) Execute(ctx context.Context, inputIndex int) error {
 
 	input := tx.data.Inputs[inputIndex]
 	utxo := tx.view.Output(ctx, input.Previous)
-	vm, err := txscript.NewEngine(ctx, tx.view, utxo.Script, &tx.data, inputIndex, 0)
+	vm, err := txscript.NewEngine(ctx, tx.view, utxo.Script, &tx.data, inputIndex, txscript.ScriptVerifyMinimalData)
 	if err != nil {
 		return err
 	}

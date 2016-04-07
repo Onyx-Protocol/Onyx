@@ -146,6 +146,8 @@ type Destination struct {
 	VotingRight  *bc.AssetID        `json:"voting_right_asset_id,omitempty"`
 	Options      int64              `json:"options,omitempty"`
 	SecretHash   bc.Hash            `json:"secret_hash,omitempty"`
+	QuorumSecret chainjson.HexBytes `json:"quorum_secret,omitempty"`
+	Vote         int64              `json:"vote,omitempty"`
 }
 
 // buildAddress will return the destination's script, if populated. Otherwise,

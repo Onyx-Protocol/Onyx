@@ -236,6 +236,17 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 			if err != nil {
 				return nil, nil, err
 			}
+		case "voting-vote":
+			if !token.State.Intended() {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting token must be in intended state")
+			}
+			if token.State.Finished() {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has been closed")
+			}
+			reserver, receiver, err = voting.TokenVote(ctx, token, rightsByAssetID[token.Right], dst.Vote, dst.QuorumSecret)
+			if err != nil {
+				return nil, nil, err
+			}
 		default:
 			// TODO(jackson): Implement all other voting token clauses
 			return nil, nil, fmt.Errorf("unimplemented src.type: %s", src.Type)

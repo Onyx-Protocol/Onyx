@@ -143,6 +143,7 @@ type tokenReserver struct {
 	output      tokenScriptData
 	rightScript []byte
 	prevScript  []byte
+	secret      []byte
 	adminAddr   *appdb.Address
 }
 
@@ -172,7 +173,12 @@ func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount,
 	case clauseIntendToVote:
 		sb = sb.
 			AddData(r.rightScript)
-	case clauseVote, clauseFinish, clauseReset:
+	case clauseVote:
+		sb = sb.
+			AddInt64(r.output.Vote).
+			AddData(r.secret).
+			AddData(r.rightScript)
+	case clauseFinish, clauseReset:
 		// TODO(jackson): Implement.
 		return nil, errors.New("unimplemented")
 	}

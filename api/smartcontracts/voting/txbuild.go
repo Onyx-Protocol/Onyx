@@ -168,3 +168,21 @@ func TokenIntent(ctx context.Context, token *Token, right txbuilder.Receiver) (t
 	}
 	return reserver, intended, nil
 }
+
+// TokenVote builds txbuilder Reserver and Receiver implementations
+// for a voting token vote transition.
+func TokenVote(ctx context.Context, token *Token, right txbuilder.Receiver, vote int64, secret []byte) (txbuilder.Reserver, txbuilder.Receiver, error) {
+	data := token.tokenScriptData
+	data.State = stateVoted
+	data.Vote = vote
+
+	reserver := tokenReserver{
+		outpoint:    token.Outpoint,
+		clause:      clauseVote,
+		output:      data,
+		prevScript:  token.tokenScriptData.PKScript(),
+		rightScript: right.PKScript(),
+		secret:      secret,
+	}
+	return reserver, data, nil
+}

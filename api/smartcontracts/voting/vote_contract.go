@@ -128,7 +128,7 @@ const (
 	// https://gist.github.com/jbowens/ae16b535c856c137830e
 	//
 	// 1 - Intend to vote
-	// 2 - Vote           (Unimplemented)
+	// 2 - Vote
 	// 3 - Finish         (Unimplemented)
 	// 4 - Reset          (Unimplemented)
 	tokenHoldingContractString = `
@@ -143,6 +143,28 @@ const (
 			4 ROLL CATPUSHDATA
 			3 ROLL CATPUSHDATA
 			1 CATPUSHDATA
+			ROT CATPUSHDATA
+			SWAP CATPUSHDATA
+			OUTPUTSCRIPT
+			DATA_1 0x27 RIGHT
+			CAT AMOUNT ASSET ROT
+			RESERVEOUTPUT
+		ENDIF
+		DUP 2 EQUAL IF
+			2DROP
+			7 ROLL
+			DUP 0 GREATERTHAN VERIFY
+			DUP 4 PICK LESSTHANOREQUAL VERIFY
+			ROT DUP 1 EQUAL SWAP 2 EQUAL BOOLOR VERIFY
+			1 5 PICK
+			7 ROLL FINDOUTPUT VERIFY
+			5 ROLL HASH256
+			2 PICK EQUALVERIFY
+			DATA_2 0x5275
+			5 ROLL CATPUSHDATA
+			4 ROLL CATPUSHDATA
+			3 ROLL CATPUSHDATA
+			2 CATPUSHDATA
 			ROT CATPUSHDATA
 			SWAP CATPUSHDATA
 			OUTPUTSCRIPT

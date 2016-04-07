@@ -9,6 +9,7 @@ import (
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/cos/txscript/txscripttest"
+	"chain/crypto/hash256"
 	"chain/database/pg/pgtest"
 )
 
@@ -196,6 +197,227 @@ func TestIntendToVoteClause(t *testing.T) {
 		r := right
 		if tc.right != nil {
 			r = *tc.right
+		}
+		err = txscripttest.NewTestTx(mockTimeFunc).
+			AddInput(rightAssetAmount, r.PKScript(), nil).
+			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
+			AddOutput(rightAssetAmount, r.PKScript()).
+			AddOutput(tokensAssetAmount, tc.out.PKScript()).
+			Execute(ctx, 1)
+		if !reflect.DeepEqual(err, tc.err) {
+			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
+		}
+	}
+}
+
+func TestVoteClause(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	var (
+		rightAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		otherRightAssetID = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		tokenAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		tokensAssetAmount = bc.AssetAmount{
+			AssetID: tokenAssetID,
+			Amount:  200,
+		}
+		rightAssetAmount = bc.AssetAmount{
+			AssetID: rightAssetID,
+			Amount:  1,
+		}
+		right = rightScriptData{
+			Deadline:       infiniteDeadline,
+			Delegatable:    true,
+			OwnershipChain: bc.Hash{}, // 0x000...000
+			HolderScript:   []byte{txscript.OP_1},
+		}
+		votingSecret     = []byte("an example voting secret")
+		votingSecretHash = hash256.Sum(votingSecret)
+	)
+
+	testCases := []struct {
+		err   error
+		right *rightScriptData
+		prev  tokenScriptData
+		out   tokenScriptData
+	}{
+		{
+			err: nil,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateIntended,
+				SecretHash:  votingSecretHash,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateVoted,
+				SecretHash:  votingSecretHash,
+				Vote:        2,
+			},
+		},
+		{
+			// Already voted, changing vote
+			err: nil,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 2,
+				State:       stateVoted,
+				SecretHash:  votingSecretHash,
+				Vote:        1,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 2,
+				State:       stateVoted,
+				SecretHash:  votingSecretHash,
+				Vote:        2,
+			},
+		},
+		{
+			// Wrong voting secret
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateIntended,
+				SecretHash:  exampleHash,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateVoted,
+				SecretHash:  exampleHash,
+				Vote:        2,
+			},
+		},
+		{
+			// Output has wrong voting right asset id.
+			err: txscript.ErrStackScriptFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateIntended,
+				SecretHash:  votingSecretHash,
+				Vote:        2,
+			},
+			out: tokenScriptData{
+				Right:       otherRightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateVoted,
+				SecretHash:  votingSecretHash,
+				Vote:        2,
+			},
+		},
+		{
+			// Cannot move from FINISHED even if INTENDED.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateIntended | stateFinished,
+				SecretHash:  votingSecretHash,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateVoted | stateFinished,
+				SecretHash:  votingSecretHash,
+				Vote:        2,
+			},
+		},
+		{
+			// Vote is outside the range of options.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateIntended,
+				SecretHash:  votingSecretHash,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateVoted,
+				SecretHash:  votingSecretHash,
+				Vote:        99999,
+			},
+		},
+		{
+			// Tx has a voting right, but it's the wrong voting
+			// right.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       otherRightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateIntended,
+				SecretHash:  votingSecretHash,
+			},
+			out: tokenScriptData{
+				Right:       otherRightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateVoted,
+				SecretHash:  votingSecretHash,
+				Vote:        2,
+			},
+		},
+		{
+			// Voting right output script doesn't match the token holding
+			// contract sigscript param.
+			err: txscript.ErrStackVerifyFailed,
+			right: &rightScriptData{
+				HolderScript: []byte{txscript.OP_2},
+			},
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateIntended,
+				SecretHash:  exampleHash,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				OptionCount: 3,
+				State:       stateVoted,
+				SecretHash:  exampleHash,
+				Vote:        2,
+			},
+		},
+	}
+
+	for i, tc := range testCases {
+		r := right
+		if tc.right != nil {
+			r = *tc.right
+		}
+
+		sb := txscript.NewScriptBuilder()
+		sb = sb.
+			AddInt64(tc.out.Vote).
+			AddData(votingSecret).
+			AddData(r.PKScript()).
+			AddInt64(int64(clauseVote)).
+			AddData(tokenHoldingContract)
+		sigscript, err := sb.Script()
+		if err != nil {
+			t.Fatal(err)
 		}
 		err = txscripttest.NewTestTx(mockTimeFunc).
 			AddInput(rightAssetAmount, r.PKScript(), nil).
