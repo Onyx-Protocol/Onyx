@@ -41,8 +41,7 @@ func (s *Signer) ComputeBlockSignature(b *bc.Block) (*btcec.Signature, error) {
 // is used as the httpjson handler for /rpc/signer/sign-block.
 //
 // This function fails if this node has ever signed a block at the
-// same height as that of the given block.  The heights of blocks it
-// has signed are stored in the FC object.
+// same height as b.
 func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) (*crypto.Signature, error) {
 	fc := s.fc
 	err := fc.WaitForBlock(ctx, b.Height-1)
