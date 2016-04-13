@@ -81,12 +81,10 @@ type BlockHeader struct {
 	// Hash of the previous block in the block chain.
 	PreviousBlockHash Hash
 
-	// Root of the block's transactions merkle tree.
-	TxRoot Hash
-
-	// Root of the state merkle tree after applying
-	// transactions in the block.
-	StateRoot Hash
+	// Commitment is the collection of state commitments
+	// this block includes. Currently this is made of
+	// the TxRoot and the StateRoot.
+	Commitment []byte
 
 	// Time of the block in seconds.
 	// Must grow monotonically and can be equal
@@ -144,12 +142,51 @@ func (bh *BlockHeader) HashForSig() Hash {
 	return v
 }
 
+// TxRoot returns the transaction merkle root
+// in the block Commitment field.
+func (bh *BlockHeader) TxRoot() Hash {
+	var hash Hash
+	if len(bh.Commitment) >= 32 {
+		copy(hash[:], bh.Commitment[0:32])
+	}
+	return hash
+}
+
+// SetTxRoot sets the transaction merkle root
+// in the block Commitment field.
+func (bh *BlockHeader) SetTxRoot(h Hash) {
+	if len(bh.Commitment) < 32 {
+		bh.Commitment = make([]byte, 32)
+	}
+	copy(bh.Commitment[0:32], h[:])
+}
+
+// StateRoot returns the state merkle root
+// in the block Commitment field.
+func (bh *BlockHeader) StateRoot() Hash {
+	var hash Hash
+	if len(bh.Commitment) >= 64 {
+		copy(hash[:], bh.Commitment[32:64])
+	}
+	return hash
+}
+
+// SetStateRoot sets the state merkle root
+// in the block Commitment field.
+func (bh *BlockHeader) SetStateRoot(h Hash) {
+	if len(bh.Commitment) < 64 {
+		newComm := make([]byte, 64)
+		copy(newComm, bh.Commitment)
+		bh.Commitment = newComm
+	}
+	copy(bh.Commitment[32:64], h[:])
+}
+
 func (bh *BlockHeader) readFrom(r *errors.Reader) {
 	bh.Version = blockchain.ReadUint32(r)
 	bh.Height = blockchain.ReadUint64(r)
 	io.ReadFull(r, bh.PreviousBlockHash[:])
-	io.ReadFull(r, bh.TxRoot[:])
-	io.ReadFull(r, bh.StateRoot[:])
+	blockchain.ReadBytes(r, &bh.Commitment)
 	bh.Timestamp = blockchain.ReadUint64(r)
 	blockchain.ReadBytes(r, (*[]byte)(&bh.SignatureScript))
 	blockchain.ReadBytes(r, (*[]byte)(&bh.OutputScript))
@@ -175,8 +212,7 @@ func (bh *BlockHeader) writeTo(w *errors.Writer, forSigning bool) {
 	blockchain.WriteUint32(w, bh.Version)
 	blockchain.WriteUint64(w, bh.Height)
 	w.Write(bh.PreviousBlockHash[:])
-	w.Write(bh.TxRoot[:])
-	w.Write(bh.StateRoot[:])
+	blockchain.WriteBytes(w, bh.Commitment)
 	blockchain.WriteUint64(w, bh.Timestamp)
 	if forSigning {
 		blockchain.WriteBytes(w, nil)

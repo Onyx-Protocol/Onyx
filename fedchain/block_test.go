@@ -236,10 +236,12 @@ func TestGenerateBlock(t *testing.T) {
 			Version:           bc.NewBlockVersion,
 			Height:            2,
 			PreviousBlockHash: latestBlock.Hash(),
-			TxRoot:            mustParseHash("221e04fdea661d26dbaef32df7b40fd93d97e359dcb9113c0fab763291a97a75"),
-			StateRoot:         mustParseHash("cec024dc67344514d290aba12a9f75cef530fbe15cbdef79033105f9aae23542"),
-			Timestamp:         uint64(now.Unix()),
-			OutputScript:      latestBlock.OutputScript,
+			Commitment: mustDecodeHex(
+				"221e04fdea661d26dbaef32df7b40fd93d97e359dcb9113c0fab763291a97a75" +
+					"cec024dc67344514d290aba12a9f75cef530fbe15cbdef79033105f9aae23542",
+			),
+			Timestamp:    uint64(now.Unix()),
+			OutputScript: latestBlock.OutputScript,
 		},
 		Transactions: txs,
 	}

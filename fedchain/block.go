@@ -56,11 +56,7 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 			Version:           bc.NewBlockVersion,
 			Height:            prev.Height + 1,
 			PreviousBlockHash: prev.Hash(),
-
-			// TODO: Calculate merkle hash of blockchain state.
-			//StateRoot:
-
-			Timestamp: ts,
+			Timestamp:         ts,
 
 			// TODO: Generate SignatureScript
 			OutputScript: prev.OutputScript,
@@ -87,11 +83,12 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 		}
 	}
 
-	b.StateRoot, err = view.StateRoot(ctx)
+	stateRoot, err := view.StateRoot(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-	b.TxRoot = validation.CalcMerkleRoot(b.Transactions)
+	b.SetStateRoot(stateRoot)
+	b.SetTxRoot(validation.CalcMerkleRoot(b.Transactions))
 
 	return b, prev, nil
 }

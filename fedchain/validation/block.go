@@ -66,7 +66,7 @@ func validateBlock(ctx context.Context, view state.View, prevBlock, block *bc.Bl
 	if err != nil {
 		return err
 	}
-	if block.StateRoot != viewRoot {
+	if block.StateRoot() != viewRoot {
 		return ErrBadStateRoot
 	}
 
@@ -111,7 +111,7 @@ func validateBlockHeader(ctx context.Context, prevBlock, block *bc.Block, runScr
 
 	txMerkleRoot := CalcMerkleRoot(block.Transactions)
 	// can be modified to allow soft fork
-	if !bytes.Equal(block.TxRoot[:], txMerkleRoot[:]) {
+	if block.TxRoot() != txMerkleRoot {
 		return ErrBadTxRoot
 	}
 
