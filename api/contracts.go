@@ -1,6 +1,8 @@
 package api
 
 import (
+	"time"
+
 	"golang.org/x/net/context"
 
 	"chain/api/smartcontracts/orderbook"
@@ -8,6 +10,7 @@ import (
 	"chain/api/txbuilder"
 	"chain/cos/bc"
 	"chain/database/pg"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/net/http/httpjson"
 )
@@ -94,6 +97,34 @@ func findAccountVotingRights(ctx context.Context, accountID string) (map[string]
 		"balances": rights,
 		"last":     last,
 	}, nil
+}
+
+func getVotingRightHistory(ctx context.Context, assetID string) ([]map[string]interface{}, error) {
+	var parsedAssetID bc.AssetID
+	err := parsedAssetID.UnmarshalText([]byte(assetID))
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing asset ID")
+	}
+
+	rightsWithUTXOs, err := voting.FindRightsForAsset(ctx, parsedAssetID)
+	if err != nil {
+		return nil, err
+	}
+
+	rights := make([]map[string]interface{}, 0, len(rightsWithUTXOs))
+	for _, r := range rightsWithUTXOs {
+		right := map[string]interface{}{
+			"asset_id":       r.AssetID,
+			"account_id":     r.AccountID,
+			"holder":         chainjson.HexBytes(r.HolderScript),
+			"transferable":   r.Delegatable,
+			"deadline":       time.Unix(r.Deadline, 0).Format(time.RFC3339),
+			"transaction_id": r.Outpoint.Hash,
+			"index":          r.Outpoint.Index,
+		}
+		rights = append(rights, right)
+	}
+	return rights, nil
 }
 
 // parseVotingBuildRequest parses `votingright` BuildRequest sources and
