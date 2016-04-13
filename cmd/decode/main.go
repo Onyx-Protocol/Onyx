@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"chain/fedchain/bc"
+	"chain/fedchain/txscript"
 )
 
 const help = `
@@ -21,6 +22,7 @@ On Mac OS X, to decode an item from the pasteboard,
 	pbpaste|decode tx
 	pbpaste|decode block
 	pbpaste|decode blockheader
+	pbpaste|decode script
 `
 
 func fatalf(format string, args ...interface{}) {
@@ -88,6 +90,18 @@ func main() {
 		// before pretty printing the block
 		fmt.Printf("Block Hash: %s\n", block.Hash())
 		prettyPrint(block)
+	case "script":
+		b := make([]byte, len(data)/2)
+		_, err := hex.Decode(b, data)
+		if err != nil {
+			fatalf("err decoding hex: %s", err)
+		}
+
+		s, err := txscript.DisasmString(b)
+		if err != nil {
+			fatalf("error decoding script: %s", err)
+		}
+		fmt.Println(s)
 	case "tx":
 		var tx bc.Tx
 		err := tx.UnmarshalText(data)
