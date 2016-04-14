@@ -179,7 +179,7 @@ func main() {
 		}
 	}
 
-	go determineLeader(ctx)
+	go determineLeaderPeriodically(ctx)
 
 	h := api.Handler(*nouserSecret, localSigner)
 	h = metrics.Handler{Handler: h}
@@ -280,7 +280,7 @@ func (w *errlog) Write(p []byte) (int, error) {
 //
 // The Chain Core has up to a 10-second refractory period after
 // shutdown, during which no process can become the new leader.
-func determineLeader(ctx context.Context) {
+func determineLeaderPeriodically(ctx context.Context) {
 	leaderKeyBytes := make([]byte, 32)
 	_, err := rand.Read(leaderKeyBytes)
 	if err != nil {
@@ -289,6 +289,18 @@ func determineLeader(ctx context.Context) {
 	leaderKey := hex.EncodeToString(leaderKeyBytes)
 	log.Println("Chose leaderKey:", leaderKey)
 
+	var (
+		leading bool
+		deposed chan struct{}
+	)
+
+	determineLeader(ctx, leaderKey, &leading, &deposed)
+	for range time.Tick(5 * time.Second) {
+		determineLeader(ctx, leaderKey, &leading, &deposed)
+	}
+}
+
+func determineLeader(ctx context.Context, leaderKey string, leading *bool, deposed *chan struct{}) {
 	const (
 		insertQ = `
 			INSERT INTO leader (leader_key, expiry) VALUES ($1, CURRENT_TIMESTAMP + INTERVAL '10 seconds')
@@ -301,61 +313,56 @@ func determineLeader(ctx context.Context) {
 		`
 	)
 
-	var deposed chan struct{}
-	leading := false
-
-	for range time.Tick(5 * time.Second) {
-		if leading {
-			res, err := pg.Exec(ctx, updateQ, leaderKey)
-			if err == nil {
-				rowsAffected, err := res.RowsAffected()
-				if err == nil && rowsAffected > 0 {
-					// still leading
-					continue
-				}
-			}
-
-			// Either the UPDATE affected no rows, or it (or RowsAffected)
-			// produced an error.
-
-			if err != nil {
-				chainlog.Error(ctx, err)
-			}
-			log.Println("No longer core leader")
-			close(deposed)
-			leading = false
-		} else {
-			// Try to put this process's leaderKey into the leader table.  It
-			// succeeds if the table's empty or the existing row (there can be
-			// only one) is expired.  It fails otherwise.
-			//
-			// On success, this process's leadership expires in 10 seconds
-			// unless it's renewed using maintain_leadership() (which happens
-			// below).  That extends it for another 10 seconds.
-			res, err := pg.Exec(ctx, insertQ, leaderKey)
-			if err != nil {
-				chainlog.Error(ctx, err)
-				continue
-			}
+	if *leading {
+		res, err := pg.Exec(ctx, updateQ, leaderKey)
+		if err == nil {
 			rowsAffected, err := res.RowsAffected()
-			if err != nil {
-				chainlog.Error(ctx, err)
-				continue
+			if err == nil && rowsAffected > 0 {
+				// still leading
+				return
 			}
+		}
 
-			if rowsAffected == 0 {
-				continue
-			}
+		// Either the UPDATE affected no rows, or it (or RowsAffected)
+		// produced an error.
 
-			log.Println("I am the core leader")
+		if err != nil {
+			chainlog.Error(ctx, err)
+		}
+		log.Println("No longer core leader")
+		close(*deposed)
+		*leading = false
+	} else {
+		// Try to put this process's leaderKey into the leader table.  It
+		// succeeds if the table's empty or the existing row (there can be
+		// only one) is expired.  It fails otherwise.
+		//
+		// On success, this process's leadership expires in 10 seconds
+		// unless it's renewed using maintain_leadership() (which happens
+		// below).  That extends it for another 10 seconds.
+		res, err := pg.Exec(ctx, insertQ, leaderKey)
+		if err != nil {
+			chainlog.Error(ctx, err)
+			return
+		}
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			chainlog.Error(ctx, err)
+			return
+		}
 
-			deposed = make(chan struct{})
-			leading = true
+		if rowsAffected == 0 {
+			return
+		}
 
-			go blockLoop(ctx, deposed)
-			if *isManager {
-				go utxodb.ExpireReservations(ctx, expireReservationsPeriod, deposed)
-			}
+		log.Println("I am the core leader")
+
+		*deposed = make(chan struct{})
+		*leading = true
+
+		go blockLoop(ctx, *deposed)
+		if *isManager {
+			go utxodb.ExpireReservations(ctx, expireReservationsPeriod, *deposed)
 		}
 	}
 }
