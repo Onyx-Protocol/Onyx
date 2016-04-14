@@ -8,10 +8,10 @@ import (
 
 	. "chain/api/appdb"
 	"chain/api/asset/assettest"
+	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain/hdkey"
 )
 
 func TestInsertIssuerNode(t *testing.T) {

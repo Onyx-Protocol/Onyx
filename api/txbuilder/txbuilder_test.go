@@ -10,9 +10,9 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/txdb"
+	"chain/cos/bc"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain/bc"
 	"chain/testutil"
 )
 

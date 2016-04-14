@@ -4,8 +4,8 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/explorer"
+	"chain/cos/bc"
 	"chain/errors"
-	"chain/fedchain/bc"
 	"chain/net/http/httpjson"
 )
 

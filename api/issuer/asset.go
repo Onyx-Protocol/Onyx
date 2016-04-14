@@ -9,10 +9,10 @@ import (
 	"github.com/btcsuite/btcutil"
 
 	"chain/api/appdb"
+	"chain/cos/bc"
+	"chain/cos/hdkey"
+	"chain/cos/txscript"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/hdkey"
-	"chain/fedchain/txscript"
 	"chain/metrics"
 )
 

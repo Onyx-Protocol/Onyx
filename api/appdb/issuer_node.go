@@ -6,9 +6,9 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/hdkey"
 	"chain/metrics"
 )
 

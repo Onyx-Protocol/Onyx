@@ -29,10 +29,10 @@ import (
 	"chain/api/smartcontracts/voting"
 	"chain/api/txdb"
 	"chain/api/utxodb"
+	"chain/cos"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
-	"chain/fedchain"
 	chainlog "chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
@@ -152,7 +152,7 @@ func main() {
 	db.SetMaxOpenConns(*maxDBConns)
 	db.SetMaxIdleConns(100)
 	ctx = pg.NewContext(ctx, db)
-	fc, err := fedchain.New(ctx, txdb.NewStore(), []*btcec.PublicKey{pubKey})
+	fc, err := cos.NewFC(ctx, txdb.NewStore(), []*btcec.PublicKey{pubKey})
 	if err != nil {
 		chainlog.Fatal(ctx, "error", err)
 	}
@@ -167,8 +167,8 @@ func main() {
 	asset.Init(fc, *isManager)
 
 	if *isManager {
-		orderbook.ConnectFedchain(fc)
-		voting.ConnectFedchain(fc)
+		orderbook.Connect(fc)
+		voting.Connect(fc)
 	}
 
 	if *isGenerator {

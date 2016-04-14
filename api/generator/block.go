@@ -10,10 +10,10 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/rpcclient"
+	"chain/cos"
+	"chain/cos/bc"
+	"chain/cos/txscript"
 	"chain/errors"
-	"chain/fedchain"
-	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
 	"chain/net/trace/span"
 )
 
@@ -137,7 +137,7 @@ func GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error
 					signatures = append(signatures, r)
 				}
 			}
-			return fedchain.AddSignaturesToBlock(b, signatures)
+			return cos.AddSignaturesToBlock(b, signatures)
 		}
 	}
 

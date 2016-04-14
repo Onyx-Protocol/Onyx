@@ -8,9 +8,9 @@ import (
 	"golang.org/x/net/context"
 
 	. "chain/api/appdb"
+	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/fedchain/hdkey"
 )
 
 // Establish a context object with a new db transaction in which to

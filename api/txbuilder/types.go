@@ -5,8 +5,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/cos/bc"
 	"chain/encoding/json"
-	"chain/fedchain/bc"
 )
 
 // TxTemplate represents a partially- or fully-signed transaction

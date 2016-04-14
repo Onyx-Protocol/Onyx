@@ -13,10 +13,10 @@ import (
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
+	"chain/cos"
+	"chain/cos/bc"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain"
-	"chain/fedchain/bc"
 	"chain/net/http/authn"
 	chaintest "chain/testutil"
 )
@@ -244,13 +244,13 @@ func toRequestTemplate(inp *txbuilder.Template) (*Template, error) {
 func apiTest(t testing.TB) context.Context {
 	ctx := pgtest.NewContext(t)
 
-	fc, err := fedchain.New(ctx, txdb.NewStore(), nil)
+	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	asset.Init(fc, true)
-	orderbook.ConnectFedchain(fc)
+	orderbook.Connect(fc)
 
 	return ctx
 }

@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/fedchain/bc"
+	"chain/cos/bc"
 	"chain/testutil"
 )
 

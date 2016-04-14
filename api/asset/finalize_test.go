@@ -7,9 +7,9 @@ import (
 	. "chain/api/asset"
 	"chain/api/asset/assettest"
 	"chain/api/txdb"
+	"chain/cos/bc"
+	"chain/cos/state"
 	"chain/database/pg/pgtest"
-	"chain/fedchain/bc"
-	"chain/fedchain/state"
 	"chain/testutil"
 )
 

@@ -3,7 +3,7 @@ package testutil
 import (
 	"github.com/btcsuite/btcutil/hdkeychain"
 
-	"chain/fedchain/hdkey"
+	"chain/cos/hdkey"
 )
 
 var (

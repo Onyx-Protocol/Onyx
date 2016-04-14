@@ -3,9 +3,9 @@ package txdb
 import (
 	"testing"
 
+	"chain/cos/bc"
+	"chain/cos/state"
 	"chain/database/pg/pgtest"
-	"chain/fedchain/bc"
-	"chain/fedchain/state"
 	"chain/testutil"
 )
 

@@ -6,12 +6,12 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	"chain/cos"
+	"chain/cos/bc"
+	"chain/cos/txscript"
 	"chain/crypto/hash256"
 	chainjson "chain/encoding/json"
 	"chain/errors"
-	"chain/fedchain"
-	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
 	"chain/log"
 )
 
@@ -71,9 +71,9 @@ var (
 // Maximum number of entries in an OrderInfo Prices list.
 const MaxPrices = 1 // TODO(bobg): Support multiple prices per order.
 
-var fc *fedchain.FC
+var fc *cos.FC
 
-func ConnectFedchain(chain *fedchain.FC) {
+func Connect(chain *cos.FC) {
 	if fc == chain {
 		// Silently ignore duplicate calls.
 		return

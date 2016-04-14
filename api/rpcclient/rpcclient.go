@@ -3,11 +3,11 @@ package rpcclient
 import (
 	"errors"
 
-	"chain/fedchain"
+	"chain/cos"
 )
 
 var (
-	fc           *fedchain.FC
+	fc           *cos.FC
 	generatorURL string
 )
 
@@ -16,7 +16,7 @@ var (
 var ErrNoGenerator = errors.New("no remote generator configured")
 
 // Init initializes the client package.
-func Init(chain *fedchain.FC, remoteGeneratorURL string) {
+func Init(chain *cos.FC, remoteGeneratorURL string) {
 	fc = chain
 	generatorURL = remoteGeneratorURL
 }

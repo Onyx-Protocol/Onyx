@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"chain/api/appdb"
+	"chain/cos/bc"
 	"chain/errors"
-	"chain/fedchain/bc"
 )
 
 func TestGenerateNodeTxTransfer(t *testing.T) {

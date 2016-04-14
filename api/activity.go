@@ -2,8 +2,8 @@ package api
 
 import (
 	"chain/api/asset/nodetxlog"
+	"chain/cos/bc"
 	chainjson "chain/encoding/json"
-	"chain/fedchain/bc"
 	"encoding/json"
 )
 

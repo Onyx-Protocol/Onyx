@@ -7,9 +7,9 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	"chain/cos/bc"
 	chainjson "chain/encoding/json"
 	"chain/errors"
-	"chain/fedchain/bc"
 )
 
 type NodeTx struct {

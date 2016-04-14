@@ -6,8 +6,8 @@ import (
 
 	"chain/api/asset/assettest"
 	. "chain/api/generator"
+	"chain/cos/txscript"
 	"chain/database/pg/pgtest"
-	"chain/fedchain/txscript"
 	"chain/testutil"
 )
 

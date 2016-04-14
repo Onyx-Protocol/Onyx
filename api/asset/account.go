@@ -9,10 +9,10 @@ import (
 	"chain/api/appdb"
 	"chain/api/txbuilder"
 	"chain/api/utxodb"
+	"chain/cos/bc"
+	"chain/cos/hdkey"
+	"chain/cos/txscript"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/hdkey"
-	"chain/fedchain/txscript"
 )
 
 type AccountReserver struct {

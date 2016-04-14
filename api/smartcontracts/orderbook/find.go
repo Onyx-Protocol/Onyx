@@ -1,9 +1,9 @@
 package orderbook
 
 import (
+	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/bc"
 
 	"golang.org/x/net/context"
 )

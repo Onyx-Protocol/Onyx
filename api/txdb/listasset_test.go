@@ -10,10 +10,10 @@ import (
 	"chain/api/generator"
 	"chain/api/txbuilder"
 	. "chain/api/txdb"
+	"chain/cos/bc"
+	"chain/cos/state"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/state"
 )
 
 func TestListUTXOsByAsset(t *testing.T) {

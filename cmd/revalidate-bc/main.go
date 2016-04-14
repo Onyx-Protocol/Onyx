@@ -15,12 +15,12 @@ import (
 	_ "github.com/lib/pq"
 	"golang.org/x/net/context"
 
+	"chain/cos"
+	"chain/cos/bc"
+	"chain/cos/memstore"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
-	"chain/fedchain"
-	"chain/fedchain/bc"
-	"chain/fedchain/memstore"
 )
 
 const (
@@ -94,13 +94,13 @@ func RevalidateBlockchain(db *sql.DB) (blocksValidated uint64, err error) {
 	dbCtx, cancel := context.WithCancel(pg.NewContext(context.Background(), db))
 	blocks := streamBlocks(dbCtx)
 
-	// Setup a fedchain backed with a memstore.
+	// Setup an FC backed with a memstore.
 	// TODO(jackson): Don't keep everything in memory so that we can validate
 	// larger blockchains in the future.
 	ctx := context.Background()
-	fc, err := fedchain.New(ctx, memstore.New(), []*btcec.PublicKey{})
+	fc, err := cos.NewFC(ctx, memstore.New(), []*btcec.PublicKey{})
 	if err != nil {
-		fatalf("unable to construct fedchain: %s\n", err)
+		fatalf("unable to construct FC: %s\n", err)
 	}
 
 	for b := range blocks {

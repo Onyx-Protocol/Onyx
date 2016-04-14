@@ -8,11 +8,11 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/txbuilder"
+	"chain/cos/bc"
+	"chain/cos/hdkey"
+	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/hdkey"
-	"chain/fedchain/txscript"
 )
 
 type redeemReserver struct {

@@ -4,23 +4,23 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"golang.org/x/net/context"
 
+	"chain/cos"
+	"chain/cos/bc"
 	"chain/crypto"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain"
-	"chain/fedchain/bc"
 )
 
 // Signer validates and signs blocks.
 type Signer struct {
 	key *btcec.PrivateKey
-	fc  *fedchain.FC
+	fc  *cos.FC
 }
 
 // New returns a new Signer
 // that validates blocks with fc
 // and signs them with k.
-func New(k *btcec.PrivateKey, fc *fedchain.FC) *Signer {
+func New(k *btcec.PrivateKey, fc *cos.FC) *Signer {
 	if k == nil {
 		panic("signer key is unset")
 	}
@@ -33,7 +33,7 @@ func New(k *btcec.PrivateKey, fc *fedchain.FC) *Signer {
 // ComputeBlockSignature computes the signature for the block using
 // the private key in s.  It does not validate the block.
 func (s *Signer) ComputeBlockSignature(b *bc.Block) (*btcec.Signature, error) {
-	return fedchain.ComputeBlockSignature(b, s.key)
+	return cos.ComputeBlockSignature(b, s.key)
 }
 
 // SignBlock validates the given block against the current blockchain

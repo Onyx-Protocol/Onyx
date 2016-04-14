@@ -16,8 +16,8 @@ import (
 	"chain/api/issuer"
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/txbuilder"
+	"chain/cos/bc"
 	"chain/database/pg/pgtest"
-	"chain/fedchain/bc"
 	"chain/net/http/httpjson"
 	"chain/testutil"
 )
@@ -319,7 +319,7 @@ func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtu
 	if err != nil {
 		t.Fatal(err)
 	}
-	orderbook.ConnectFedchain(fc)
+	orderbook.Connect(fc)
 
 	var fixtureInfo contractsFixtureInfo
 

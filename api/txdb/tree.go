@@ -3,10 +3,10 @@ package txdb
 import (
 	"golang.org/x/net/context"
 
+	"chain/cos/bc"
+	"chain/cos/patricia"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/patricia"
 )
 
 func stateTree(ctx context.Context) (*patricia.Tree, error) {

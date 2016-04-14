@@ -6,9 +6,9 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/bc"
 	chainlog "chain/log"
 	"chain/metrics"
 	"chain/net/trace/span"

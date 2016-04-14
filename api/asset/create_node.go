@@ -4,8 +4,8 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
+	"chain/cos/hdkey"
 	"chain/errors"
-	"chain/fedchain/hdkey"
 )
 
 // Errors returned by functions in this file.

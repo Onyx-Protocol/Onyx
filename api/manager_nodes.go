@@ -9,10 +9,10 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/asset"
+	"chain/cos/hdkey"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
-	"chain/fedchain/hdkey"
 	"chain/metrics"
 	"chain/net/http/httpjson"
 )

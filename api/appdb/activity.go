@@ -6,10 +6,10 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/txdb"
+	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
-	"chain/fedchain/bc"
 )
 
 func activityItemsFromRows(rows *sql.Rows) (items []*json.RawMessage, last string, err error) {

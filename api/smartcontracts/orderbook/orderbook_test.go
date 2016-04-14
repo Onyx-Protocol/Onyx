@@ -14,11 +14,11 @@ import (
 	"chain/api/generator"
 	"chain/api/issuer"
 	"chain/api/txbuilder"
+	"chain/cos/bc"
+	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
 	"chain/testutil"
 )
 
@@ -192,7 +192,7 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 		t.Fatal(err)
 	}
 
-	ConnectFedchain(fc)
+	Connect(fc)
 
 	var fixtureInfo orderbookFixtureInfo
 

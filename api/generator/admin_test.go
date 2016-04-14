@@ -12,8 +12,8 @@ import (
 	"golang.org/x/net/context"
 
 	. "chain/api/generator"
+	"chain/cos/bc"
 	"chain/database/pg/pgtest"
-	"chain/fedchain/bc"
 )
 
 func init() {

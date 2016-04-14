@@ -5,9 +5,9 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/txbuilder"
+	"chain/cos/bc"
+	"chain/cos/txscript"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
 )
 
 // RightIssuance builds a txbuilder Receiver issuance for an asset that

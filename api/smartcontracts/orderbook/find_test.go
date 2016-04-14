@@ -8,8 +8,8 @@ import (
 	"chain/api/asset/assettest"
 	"chain/api/issuer"
 	"chain/api/txbuilder"
+	"chain/cos/bc"
 	"chain/database/pg/pgtest"
-	"chain/fedchain/bc"
 	"chain/testutil"
 )
 
@@ -21,7 +21,7 @@ func TestFindOpenOrders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ConnectFedchain(fc)
+	Connect(fc)
 
 	projectID := assettest.CreateProjectFixture(ctx, t, "", "")
 	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)

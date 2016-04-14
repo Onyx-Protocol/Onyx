@@ -5,10 +5,10 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/cos/bc"
+	"chain/cos/hdkey"
+	"chain/cos/txscript"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/hdkey"
-	"chain/fedchain/txscript"
 )
 
 // Build builds or adds on to a transaction.

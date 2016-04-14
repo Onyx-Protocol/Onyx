@@ -8,8 +8,8 @@ import (
 
 	. "chain/api/appdb"
 	"chain/api/asset/assettest"
+	"chain/cos/hdkey"
 	"chain/database/pg/pgtest"
-	"chain/fedchain/hdkey"
 	"chain/testutil"
 )
 

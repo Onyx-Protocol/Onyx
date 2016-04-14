@@ -16,12 +16,12 @@ import (
 	"chain/api/txbuilder"
 	"chain/api/txdb"
 	"chain/api/utxodb"
+	"chain/cos"
+	"chain/cos/bc"
+	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain"
-	"chain/fedchain/bc"
-	"chain/fedchain/hdkey"
 	"chain/testutil"
 )
 
@@ -331,7 +331,7 @@ func TestUpsertGenesisBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fc, err := fedchain.New(ctx, txdb.NewStore(), nil)
+	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

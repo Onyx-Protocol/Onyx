@@ -6,11 +6,11 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/cos/bc"
+	"chain/cos/hdkey"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/hdkey"
 	"chain/metrics"
 )
 

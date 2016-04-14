@@ -11,10 +11,10 @@ import (
 	"chain/api/issuer"
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/txbuilder"
+	"chain/cos/bc"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
-	"chain/fedchain/bc"
 )
 
 // Data types and functions for marshaling/unmarshaling API requests

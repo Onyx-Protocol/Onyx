@@ -5,8 +5,8 @@ import (
 	"runtime"
 	"testing"
 
+	"chain/cos/txscript"
 	"chain/errors"
-	"chain/fedchain/txscript"
 )
 
 func ExpectEqual(t testing.TB, actual, expected interface{}, msg string) {

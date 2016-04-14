@@ -57,7 +57,7 @@ func GetSummary(ctx context.Context, projID string) (*Summary, error) {
 
 	res.BlockFreqMs = uint64(blockPeriod.Nanoseconds() / 1000000)
 
-	store := txdb.NewStore() // TODO(kr): probably should use fedchain.FC instead
+	store := txdb.NewStore() // TODO(kr): probably should use cos.FC instead
 	top, err := store.LatestBlock(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get latest block")

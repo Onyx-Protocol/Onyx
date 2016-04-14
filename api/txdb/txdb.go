@@ -9,10 +9,10 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/cos/bc"
+	"chain/cos/state"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/state"
 	"chain/metrics"
 	"chain/net/trace/span"
 	"chain/strings"

@@ -6,9 +6,9 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/cos/bc"
+	"chain/cos/state"
 	"chain/database/pg/pgtest"
-	"chain/fedchain/bc"
-	"chain/fedchain/state"
 	"chain/testutil"
 )
 

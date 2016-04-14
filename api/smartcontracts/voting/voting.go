@@ -3,18 +3,18 @@ package voting
 import (
 	"golang.org/x/net/context"
 
+	"chain/cos"
+	"chain/cos/bc"
 	"chain/errors"
-	"chain/fedchain"
-	"chain/fedchain/bc"
 	"chain/log"
 )
 
-var fc *fedchain.FC
+var fc *cos.FC
 
-// ConnectFedchain installs hooks to notify the voting package of new
+// Connect installs hooks to notify the voting package of new
 // transactions. The voting package compares all transaction outputs
 // to the voting contracts to update indexes appropriately.
-func ConnectFedchain(chain *fedchain.FC) {
+func Connect(chain *cos.FC) {
 	if fc == chain {
 		// Silently ignore duplicate calls.
 		return
@@ -26,7 +26,7 @@ func ConnectFedchain(chain *fedchain.FC) {
 	// ordering of transactions within the same block, and is used when
 	// reconstructing ownership chains.
 	//
-	// TODO(jackson): Ensure crash recovery handles fedchain callbacks.
+	// TODO(jackson): Ensure crash recovery handles cos callbacks.
 	fc.AddBlockCallback(func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx) {
 		for i, tx := range block.Transactions {
 			err := updateIndexes(ctx, block.Height, i, tx)

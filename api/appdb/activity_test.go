@@ -9,8 +9,8 @@ import (
 	. "chain/api/appdb"
 	"chain/api/asset/assettest"
 	"chain/api/generator"
+	"chain/cos/bc"
 	"chain/database/pg/pgtest"
-	"chain/fedchain/bc"
 	"chain/testutil"
 )
 

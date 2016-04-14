@@ -9,9 +9,9 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/txbuilder"
+	"chain/cos/bc"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain/bc"
 )
 
 func init() {

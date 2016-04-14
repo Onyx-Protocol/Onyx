@@ -3,8 +3,8 @@ package txbuilder
 import (
 	"golang.org/x/net/context"
 
-	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
+	"chain/cos/bc"
+	"chain/cos/txscript"
 )
 
 type retireReceiver struct{}

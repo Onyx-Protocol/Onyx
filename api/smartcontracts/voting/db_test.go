@@ -7,9 +7,9 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/asset/assettest"
+	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/fedchain/bc"
 )
 
 func init() {

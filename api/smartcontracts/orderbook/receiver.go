@@ -4,7 +4,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/txbuilder"
-	"chain/fedchain/bc"
+	"chain/cos/bc"
 )
 
 type orderbookReceiver struct {

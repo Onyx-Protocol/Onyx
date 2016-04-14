@@ -16,10 +16,10 @@ import (
 	"os"
 
 	"chain/api/appdb"
+	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
-	"chain/fedchain/hdkey"
 	"chain/log"
 
 	"golang.org/x/net/context"

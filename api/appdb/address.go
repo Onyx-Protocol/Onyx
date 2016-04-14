@@ -9,9 +9,9 @@ import (
 
 	"github.com/lib/pq"
 
+	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/hdkey"
 	"chain/metrics"
 )
 

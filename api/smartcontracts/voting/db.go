@@ -5,9 +5,9 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/bc"
 )
 
 // RightWithUTXO encapsulates a claim to a right token and the current UTXO

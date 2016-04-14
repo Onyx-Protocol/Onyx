@@ -5,14 +5,14 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/txdb"
-	"chain/fedchain"
+	"chain/cos"
 )
 
 func (ar *AccountReceiver) Addr() *appdb.Address {
 	return ar.addr
 }
 
-func FC() *fedchain.FC {
+func FC() *cos.FC {
 	return fc
 }
 

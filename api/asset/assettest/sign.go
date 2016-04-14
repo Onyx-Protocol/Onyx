@@ -6,7 +6,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 
 	"chain/api/txbuilder"
-	"chain/fedchain/hdkey"
+	"chain/cos/hdkey"
 	"chain/testutil"
 )
 

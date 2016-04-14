@@ -5,10 +5,10 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/cos/bc"
+	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/hdkey"
 )
 
 // NodeKey is represents a single key in a node's multi-sig configuration.

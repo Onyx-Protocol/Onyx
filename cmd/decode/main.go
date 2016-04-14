@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
+	"chain/cos/bc"
+	"chain/cos/txscript"
 )
 
 const help = `

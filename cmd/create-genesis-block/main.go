@@ -9,10 +9,10 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 
 	"chain/api/txdb"
+	"chain/cos"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
-	"chain/fedchain"
 )
 
 var (
@@ -38,7 +38,7 @@ func main() {
 	}
 	ctx := pg.NewContext(context.Background(), db)
 
-	fc, err := fedchain.New(ctx, txdb.NewStore(), nil)
+	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil)
 	if err != nil {
 		log.Fatalln("error:", err)
 	}

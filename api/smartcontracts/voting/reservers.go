@@ -8,10 +8,10 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/txbuilder"
+	"chain/cos/bc"
+	"chain/cos/hdkey"
+	"chain/cos/txscript"
 	"chain/crypto/hash256"
-	"chain/fedchain/bc"
-	"chain/fedchain/hdkey"
-	"chain/fedchain/txscript"
 )
 
 // rightsReserver implements txbuilder.Reserver for assets in the voting

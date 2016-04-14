@@ -8,11 +8,11 @@ import (
 	"chain/api/rpcclient"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
+	"chain/cos/bc"
+	"chain/cos/state"
+	"chain/cos/validation"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/state"
-	"chain/fedchain/validation"
 	chainlog "chain/log"
 	"chain/metrics"
 	"chain/net/trace/span"
@@ -58,7 +58,7 @@ func publishTx(ctx context.Context, msg *bc.Tx) error {
 		err = errors.Wrap(ErrBadTxTemplate, err)
 		return errors.WithDetail(err, detail)
 	} else if err != nil {
-		return errors.Wrap(err, "add tx to fedchain")
+		return errors.Wrap(err, "add tx to blockchain")
 	}
 
 	if Generator != nil && *Generator != "" {

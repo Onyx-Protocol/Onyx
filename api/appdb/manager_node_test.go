@@ -9,11 +9,11 @@ import (
 	. "chain/api/appdb"
 	"chain/api/asset/assettest"
 	"chain/api/generator"
+	"chain/cos/bc"
+	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/hdkey"
 	"chain/testutil"
 )
 

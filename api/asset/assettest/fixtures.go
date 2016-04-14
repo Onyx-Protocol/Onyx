@@ -16,11 +16,11 @@ import (
 	"chain/api/signer"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
+	"chain/cos"
+	"chain/cos/bc"
+	"chain/cos/hdkey"
+	"chain/cos/state"
 	"chain/errors"
-	"chain/fedchain"
-	"chain/fedchain/bc"
-	"chain/fedchain/hdkey"
-	"chain/fedchain/state"
 	"chain/testutil"
 )
 
@@ -232,12 +232,12 @@ func ManagerTxFixture(ctx context.Context, t testing.TB, txHash string, data []b
 	return id
 }
 
-func InitializeSigningGenerator(ctx context.Context) (*fedchain.FC, error) {
+func InitializeSigningGenerator(ctx context.Context) (*cos.FC, error) {
 	pubkey, err := testutil.TestXPub.ECPubKey()
 	if err != nil {
 		return nil, err
 	}
-	fc, err := fedchain.New(ctx, txdb.NewStore(), nil)
+	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil)
 	if err != nil {
 		return nil, err
 	}

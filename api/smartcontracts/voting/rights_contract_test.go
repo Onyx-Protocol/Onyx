@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"chain/api/asset/assettest"
+	"chain/cos/bc"
+	"chain/cos/txscript"
+	"chain/cos/txscript/txscripttest"
 	"chain/crypto/hash256"
 	"chain/database/pg/pgtest"
-	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
-	"chain/fedchain/txscript/txscripttest"
 )
 
 const (

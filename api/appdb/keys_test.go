@@ -7,8 +7,8 @@ import (
 	"golang.org/x/net/context"
 
 	. "chain/api/appdb"
+	"chain/cos/hdkey"
 	"chain/database/pg"
-	"chain/fedchain/hdkey"
 )
 
 var (

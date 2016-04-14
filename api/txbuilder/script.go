@@ -3,7 +3,7 @@ package txbuilder
 import (
 	"golang.org/x/net/context"
 
-	"chain/fedchain/bc"
+	"chain/cos/bc"
 )
 
 type scriptReceiver struct {

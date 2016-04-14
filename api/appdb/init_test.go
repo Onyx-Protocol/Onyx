@@ -6,14 +6,14 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/txdb"
+	"chain/cos"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
-	"chain/fedchain"
 )
 
 var (
 	db    *sql.DB
-	store fedchain.Store
+	store cos.Store
 )
 
 func init() {

@@ -5,12 +5,12 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/cos"
+	"chain/cos/bc"
+	"chain/cos/patricia"
+	"chain/cos/state"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain"
-	"chain/fedchain/bc"
-	"chain/fedchain/patricia"
-	"chain/fedchain/state"
 )
 
 type Store struct {
@@ -21,7 +21,7 @@ type Store struct {
 	}
 }
 
-var _ fedchain.Store = (*Store)(nil)
+var _ cos.Store = (*Store)(nil)
 
 // NewStore creates and returns a new Store object.
 func NewStore() *Store {

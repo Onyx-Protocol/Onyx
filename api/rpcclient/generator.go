@@ -3,9 +3,9 @@ package rpcclient
 import (
 	"golang.org/x/net/context"
 
+	"chain/cos"
+	"chain/cos/bc"
 	"chain/errors"
-	"chain/fedchain"
-	"chain/fedchain/bc"
 	"chain/net/rpc"
 )
 
@@ -26,7 +26,7 @@ func GetBlocks(ctx context.Context) error {
 	}
 
 	latestBlock, err := fc.LatestBlock(ctx)
-	if err != nil && errors.Root(err) != fedchain.ErrNoBlocks {
+	if err != nil && errors.Root(err) != cos.ErrNoBlocks {
 		return errors.Wrap(err, "looking up last-known block")
 	}
 

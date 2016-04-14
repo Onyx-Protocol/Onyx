@@ -5,10 +5,10 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
-	"chain/fedchain/bc"
 )
 
 // To avoid gaps in the backfill, please make sure you've migrated and deployed

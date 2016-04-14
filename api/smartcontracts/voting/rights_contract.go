@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"crypto/sha256"
 
+	"chain/cos/bc"
+	"chain/cos/txscript"
 	"chain/crypto/hash256"
-	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
 )
 
 // scriptVersion encodes the version of the scripting language required
@@ -142,7 +142,7 @@ const (
 	// rightsHoldingContractString contains the entire rights holding
 	// contract script. For now, it's structured as a series of IF...ENDIF
 	// clauses. In the future, we will use merkleized scripts, as documented in
-	// the fedchain p2c documentation.
+	// the Chain OS p2c documentation.
 	//
 	// This script with documentation and comments is available here:
 	// https://gist.github.com/jbowens/ae16b535c856c137830e

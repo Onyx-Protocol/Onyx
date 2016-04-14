@@ -3,9 +3,9 @@ package orderbook
 import (
 	"golang.org/x/net/context"
 
+	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/bc"
 )
 
 func addOrderbookUTXO(ctx context.Context, hash bc.Hash, index int, sellerScript []byte, prices []*Price) error {

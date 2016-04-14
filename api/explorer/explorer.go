@@ -8,11 +8,11 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/txdb"
+	"chain/cos/bc"
+	"chain/cos/txscript"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/txscript"
 )
 
 // ListBlocksItem is returned by ListBlocks

@@ -9,10 +9,10 @@ import (
 	. "chain/api/asset"
 	"chain/api/asset/assettest"
 	"chain/api/txbuilder"
+	"chain/cos/bc"
+	"chain/cos/hdkey"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/hdkey"
 	"chain/testutil"
 )
 

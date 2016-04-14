@@ -8,13 +8,13 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/api/signer"
+	"chain/cos"
+	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain"
-	"chain/fedchain/bc"
 )
 
-var fc *fedchain.FC
+var fc *cos.FC
 
 var (
 	// enabled records whether the generator component has been enabled.
@@ -55,7 +55,7 @@ func Enabled() bool {
 // longer launches a make-blocks goroutine.  (But for now it's used to
 // initialize a package-private copy of that value for use in
 // GetSummary.)
-func Init(ctx context.Context, chain *fedchain.FC, blockPubkeys []*btcec.PublicKey, nSigs int, period time.Duration, local *signer.Signer, remote []*RemoteSigner) error {
+func Init(ctx context.Context, chain *cos.FC, blockPubkeys []*btcec.PublicKey, nSigs int, period time.Duration, local *signer.Signer, remote []*RemoteSigner) error {
 	if enabled {
 		return errors.New("generator: Init called more than once")
 	}

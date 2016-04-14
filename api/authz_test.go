@@ -7,9 +7,9 @@ import (
 
 	"chain/api/appdb"
 	"chain/api/asset/assettest"
+	"chain/cos/bc"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain/bc"
 	"chain/net/http/authn"
 )
 

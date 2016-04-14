@@ -6,9 +6,9 @@ import (
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/smartcontracts/voting"
 	"chain/api/txbuilder"
+	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/fedchain/bc"
 	"chain/net/http/httpjson"
 )
 

@@ -14,12 +14,12 @@ import (
 	"chain/api/generator"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
+	"chain/cos/bc"
+	"chain/cos/patricia"
+	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/fedchain/bc"
-	"chain/fedchain/patricia"
-	"chain/fedchain/txscript"
 	"chain/testutil"
 )
 
