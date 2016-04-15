@@ -27,7 +27,7 @@ build:
           go install chain/cmd/vet
           vet .
           go install chain/log # needed before testing ./cmd/vet below
-          go test -cover $(go list ./...|grep -v vendor)
+          go test -cover $(go list ./...|grep -v vendor|egrep -v 'xprvseetool|thales')
           test -z "$(goimports -l .|grep -v vendor)"
           (cd migrations; ./check-names.bash)
           go generate $(go list ./...|grep -v vendor)
