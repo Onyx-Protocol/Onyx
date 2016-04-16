@@ -20,13 +20,23 @@ type Template struct {
 // Input is an input for a project TxTemplate.
 type Input struct {
 	bc.AssetAmount
+	SigComponents   []*SigScriptComponent `json:"signature_components,omitempty"`
+	SigScriptSuffix json.HexBytes         `json:"redeem_script"`  // deprecated
+	SignatureData   bc.Hash               `json:"signature_data"` // deprecated
+	Sigs            []*Signature          `json:"signatures"`     // deprecated
+}
 
-	// The serialized key "redeem_script" is not strictly correct. Changing it
-	// will require an update to the Java SDK.
-	SigScriptSuffix json.HexBytes `json:"redeem_script"`
-
-	SignatureData bc.Hash      `json:"signature_data"`
-	Sigs          []*Signature `json:"signatures"`
+// SigScriptComponent is an unserialized portion of the sigscript. When
+// a tx is finalized, all the sig script components for each input
+// are serialized and concatenated to make the final sigscripts. Type
+// must be one of 'script', 'data' or 'signature'.
+type SigScriptComponent struct {
+	Type          string        `json:"type"`           // required
+	Script        json.HexBytes `json:"script"`         // required for 'script'
+	Data          json.HexBytes `json:"data"`           // required for 'data'
+	Required      int           `json:"required"`       // required for 'signature'
+	SignatureData bc.Hash       `json:"signature_data"` // required for 'signature'
+	Signatures    []*Signature  `json:"signatures"`     // required for 'signature'
 }
 
 // Signature is an signature for a project TxTemplate.

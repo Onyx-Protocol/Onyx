@@ -1,6 +1,7 @@
 package txbuilder
 
 import (
+	"fmt"
 	"time"
 
 	"golang.org/x/net/context"
@@ -107,6 +108,9 @@ func setSignatureData(ctx context.Context, tpl *Template) error {
 	for i, in := range tpl.Inputs {
 		aa := in.AssetAmount
 		in.SignatureData = tpl.Unsigned.HashForSigCached(i, aa, bc.SigHashAll, hashCache)
+		for _, c := range in.SigComponents {
+			c.SignatureData = in.SignatureData
+		}
 	}
 	return nil
 }
@@ -117,29 +121,67 @@ func setSignatureData(ctx context.Context, tpl *Template) error {
 func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 	msg := txTemplate.Unsigned
 	for i, input := range txTemplate.Inputs {
-		sigsAdded := 0
-		sigsReqd, err := getSigsRequired(input.SigScriptSuffix)
-		if err != nil {
-			return nil, err
-		}
-		builder := txscript.NewScriptBuilder()
-		if len(input.Sigs) > 0 {
-			builder.AddOp(txscript.OP_FALSE)
-		}
-		for _, sig := range input.Sigs {
-			if len(sig.DER) > 0 {
-				builder.AddData(sig.DER)
-				sigsAdded++
-				if sigsAdded == sigsReqd {
-					break
-				}
+
+		components := input.SigComponents
+
+		// For backwards compatability, convert old input.Sigs to a signature
+		// sigscript component.
+		// TODO(jackson): Remove once all the SDKs are using the new format.
+		if len(input.Sigs) > 0 || len(input.SigComponents) == 0 {
+			sigsReqd, err := getSigsRequired(input.SigScriptSuffix)
+			if err != nil {
+				return nil, err
+			}
+
+			// Replace the existing components. Only SDKs that don't understand
+			// signature components will populate input.Sigs.
+			components = []*SigScriptComponent{
+				{
+					Type:          "signature",
+					Required:      sigsReqd,
+					SignatureData: input.SignatureData,
+					Signatures:    input.Sigs,
+				},
+				{
+					Type:   "script",
+					Script: input.SigScriptSuffix,
+				},
 			}
 		}
-		script, err := builder.Script()
+
+		sb := txscript.NewScriptBuilder()
+		for _, c := range components {
+			switch c.Type {
+			case "script":
+				sb.ConcatRawScript(c.Script)
+			case "data":
+				sb.AddData(c.Data)
+			case "signature":
+				if len(c.Signatures) == 0 {
+					break
+				}
+
+				sb.AddOp(txscript.OP_FALSE)
+				added := 0
+				for _, sig := range c.Signatures {
+					if len(sig.DER) == 0 {
+						continue
+					}
+					sb.AddData(sig.DER)
+					added++
+					if added == c.Required {
+						break
+					}
+				}
+			default:
+				return nil, fmt.Errorf("unknown sigscript component `%s`", c.Type)
+			}
+		}
+		script, err := sb.Script()
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
-		msg.Inputs[i].SignatureScript = append(script, input.SigScriptSuffix...)
+		msg.Inputs[i].SignatureScript = script
 	}
 	return bc.NewTx(*msg), nil
 }

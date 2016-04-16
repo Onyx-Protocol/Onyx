@@ -52,29 +52,47 @@ func (ih intermediateHolder) hash() bc.Hash {
 // the existing UTXO's right holding contract. Reserve satisfies the
 // txbuilder.Reserver interface.
 func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
+	var (
+		sigscript []*txbuilder.SigScriptComponent
+		addrs     []appdb.Address
+	)
+	if r.holderAddr != nil {
+		addrs = append(addrs, *r.holderAddr)
+	}
+	if r.adminAddr != nil {
+		addrs = append(addrs, *r.adminAddr)
+	}
+
+	for _, addr := range addrs {
+		sigscript = append(sigscript,
+			&txbuilder.SigScriptComponent{
+				Type:     "signature",
+				Required: addr.SigsRequired,
+				Signatures: txbuilder.InputSigs(
+					hdkey.Derive(addr.Keys, appdb.ReceiverPath(&addr, addr.Index)),
+				),
+			}, &txbuilder.SigScriptComponent{
+				Type:   "script",
+				Script: txscript.AddDataToScript(nil, addr.RedeemScript),
+			})
+	}
+
+	// Build up contract-specific sigscript data.
 	sb := txscript.NewScriptBuilder()
 
 	// Add clause-specific parameters:
 	switch r.clause {
 	case clauseAuthenticate:
-		sb = sb.
-			AddData(r.holderAddr.RedeemScript)
+		// No clause-specific parameters.
 	case clauseTransfer:
 		sb = sb.
-			AddData(r.holderAddr.RedeemScript).
-			AddData(r.adminAddr.RedeemScript).
 			AddData(r.output.HolderScript)
 	case clauseDelegate:
 		sb = sb.
-			AddData(r.holderAddr.RedeemScript).
-			AddData(r.adminAddr.RedeemScript).
 			AddInt64(r.output.Deadline).
 			AddBool(r.output.Delegatable).
 			AddData(r.output.HolderScript)
 	case clauseRecall:
-		sb = sb.
-			AddData(r.holderAddr.RedeemScript).
-			AddData(r.adminAddr.RedeemScript)
 		for _, i := range r.intermediaries {
 			h := i.hash()
 			sb.AddData(h[:])
@@ -88,43 +106,18 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 		// TODO(jackson): Implement.
 		return nil, errors.New("unimplemented")
 	}
-
 	sb = sb.
 		AddInt64(int64(r.clause)).
 		AddData(rightsHoldingContract)
-
-	sigScriptSuffix, err := sb.Script()
+	script, err := sb.Script()
 	if err != nil {
 		return nil, err
 	}
+	sigscript = append(sigscript, &txbuilder.SigScriptComponent{
+		Type:   "script",
+		Script: script,
+	})
 
-	// Build the signatures required for this transaction.
-	var signatures []*txbuilder.Signature
-
-	if r.adminAddr != nil {
-		adminKeys := hdkey.Derive(
-			r.adminAddr.Keys,
-			appdb.ReceiverPath(r.adminAddr, r.adminAddr.Index),
-		)
-		for _, k := range adminKeys {
-			signatures = append(signatures, &txbuilder.Signature{
-				XPub:           k.Root.String(),
-				DerivationPath: k.Path,
-			})
-		}
-	}
-	if r.holderAddr != nil {
-		holderKeys := hdkey.Derive(
-			r.holderAddr.Keys,
-			appdb.ReceiverPath(r.holderAddr, r.holderAddr.Index),
-		)
-		for _, k := range holderKeys {
-			signatures = append(signatures, &txbuilder.Signature{
-				XPub:           k.Root.String(),
-				DerivationPath: k.Path,
-			})
-		}
-	}
 	result := &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{
 			{
@@ -132,9 +125,8 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 					Previous: r.outpoint,
 				},
 				TemplateInput: &txbuilder.Input{
-					AssetAmount:     *assetAmount,
-					SigScriptSuffix: sigScriptSuffix,
-					Sigs:            signatures,
+					AssetAmount:   *assetAmount,
+					SigComponents: sigscript,
 				},
 			},
 		},
