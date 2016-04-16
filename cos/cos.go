@@ -66,6 +66,10 @@ var (
 	// ErrNoBlocks is returned when LatestBlock is called and the store
 	// contains no blocks.
 	ErrNoBlocks = errors.New("no blocks in the store")
+
+	// ErrBadStateHeight is returned from Store.StateTree when the
+	// height parameter does not match the latest block height.
+	ErrBadStateHeight = errors.New("requested block height does not match current state")
 )
 
 type BlockCallback func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx)

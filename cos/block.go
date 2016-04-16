@@ -156,7 +156,12 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	tree, err := fc.store.StateTree(ctx, block.Height-1)
+	prevBlock, err := fc.LatestBlock(ctx)
+	if err != nil && errors.Root(err) != ErrNoBlocks {
+		return errors.Wrap(err, "getting latest known block")
+	}
+
+	tree, err := fc.store.StateTree(ctx, prevBlock.Height)
 	if err != nil {
 		return errors.Wrap(err, "loading state tree")
 	}
@@ -166,11 +171,6 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 		return errors.Wrap(err, "txdb")
 	}
 	mv := state.NewMemView(tree)
-
-	prevBlock, err := fc.LatestBlock(ctx)
-	if err != nil && errors.Root(err) != ErrNoBlocks {
-		return errors.Wrap(err, "getting latest known block")
-	}
 
 	err = validation.ValidateBlockForSig(ctx, state.Compose(mv, bcView), prevBlock, block)
 	return errors.Wrap(err, "validation")

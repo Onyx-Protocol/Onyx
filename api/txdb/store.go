@@ -266,9 +266,17 @@ func (s *Store) NewViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.Vie
 	return newViewForPrevouts(ctx, txs)
 }
 
+// StateTree returns the state tree of the latest block.
+// It takes the height of the expected block, so that it can
+// return an error if the height does not match, preventing
+// race conditions.
 func (s *Store) StateTree(ctx context.Context, block uint64) (*patricia.Tree, error) {
 	s.latestBlockCache.mutex.Lock()
 	defer s.latestBlockCache.mutex.Unlock()
+
+	if block != 0 && (s.latestBlockCache.block == nil || s.latestBlockCache.block.Height != block) {
+		return nil, cos.ErrBadStateHeight
+	}
 
 	if s.latestBlockCache.stateTree == nil {
 		stateTree, err := stateTree(ctx)
