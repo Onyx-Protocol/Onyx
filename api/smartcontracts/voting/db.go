@@ -135,6 +135,7 @@ type votingRightsQuery struct {
 	accountID string
 	outpoint  *bc.Outpoint
 	assetID   *bc.AssetID
+	utxoOnly  bool
 
 	cursor *cursor
 	limit  int
@@ -168,6 +169,9 @@ func (q votingRightsQuery) Where() (string, []interface{}) {
 		whereClause = fmt.Sprintf("%s AND vr.asset_id = $%d\n", whereClause, param)
 		values = append(values, *q.assetID)
 		param++
+	}
+	if q.utxoOnly {
+		whereClause = whereClause + " AND (vr.tx_hash, vr.index) = (u.tx_hash, u.index)"
 	}
 	if q.cursor != nil {
 		whereClause = fmt.Sprintf("%s AND (vr.block_height, vr.block_tx_index) > ($%d, $%d)\n", whereClause, param, param+1)
@@ -226,6 +230,24 @@ func FindRightsForAsset(ctx context.Context, assetID bc.AssetID) ([]*RightWithUT
 		return nil, err
 	}
 	return rights, nil
+}
+
+// FindRightUTXO looks up the current utxo for the voting right with the
+// provided assetID.
+func FindRightUTXO(ctx context.Context, assetID bc.AssetID) (*RightWithUTXO, error) {
+	rights, _, err := findVotingRights(ctx, votingRightsQuery{
+		assetID:  &assetID,
+		utxoOnly: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(rights) == 0 {
+		return nil, pg.ErrUserInputNotFound
+	} else if len(rights) != 1 {
+		return nil, fmt.Errorf("expected 1 right, found %d", len(rights))
+	}
+	return rights[0], nil
 }
 
 func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*RightWithUTXO, string, error) {

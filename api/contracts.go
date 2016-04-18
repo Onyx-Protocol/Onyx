@@ -307,21 +307,30 @@ func parseVotingRights(ctx context.Context, srcsByAssetID map[bc.AssetID]*Source
 		if src.TxHash == nil {
 			src.TxHash = src.TxHashAsID
 		}
-		if src.TxHash == nil || src.Index == nil {
+		if (src.TxHash == nil || src.Index == nil) && src.AccountID == "" {
 			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
 		}
 		if src.Amount != 0 {
 			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right sources do not take amounts")
 		}
-		out := bc.Outpoint{Hash: *src.TxHash, Index: *src.Index}
 
-		// Lookup the voting right by the outpoint. We'll need some of its
+		// Lookup the voting right by the asset ID. We'll need some of its
 		// script data, such as the previous chain of ownership.
-		old, err := voting.FindRightForOutpoint(ctx, out)
+		old, err := voting.FindRightUTXO(ctx, *src.AssetID)
 		if err == pg.ErrUserInputNotFound {
 			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
 		} else if err != nil {
 			return nil, nil, nil, err
+		}
+
+		// If a src account ID was provided, ensure that it matches the current utxo.
+		if src.AccountID != "" && (old.AccountID == nil || *old.AccountID != src.AccountID) {
+			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
+		}
+		// If tx_hash and index were provided, ensure that they match the current utxo.
+		if (src.TxHash != nil && src.Index != nil) &&
+			(bc.Outpoint{Hash: *src.TxHash, Index: *src.Index}) != old.Outpoint {
+			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
 		}
 
 		var (
