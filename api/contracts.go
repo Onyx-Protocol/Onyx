@@ -141,8 +141,8 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 
 	for assetID, dst := range dstsByAssetID {
 		// Validate the destination.
-		if dst.Amount != 1 {
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right amount can only be 1")
+		if dst.Amount != 0 {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right destinations do not take amounts")
 		}
 
 		src, ok := srcsByAssetID[assetID]
@@ -171,8 +171,8 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 		if src.TxHash == nil || src.Index == nil {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
 		}
-		if src.Amount != 1 {
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right amount can only be 1")
+		if src.Amount != 0 {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right sources do not take amounts")
 		}
 		out := bc.Outpoint{Hash: *src.TxHash, Index: *src.Index}
 
