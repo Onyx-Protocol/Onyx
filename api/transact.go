@@ -123,17 +123,12 @@ func build(ctx context.Context, buildReqs []*BuildRequest) (interface{}, error) 
 
 // POST /v3/manager-nodes/transact/finalize
 // Idempotent
-func submitSingle(ctx context.Context, tpl *Template) (interface{}, error) {
+func submitSingle(ctx context.Context, tpl *txbuilder.Template) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	parsed, err := tpl.parse(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := asset.FinalizeTx(ctx, parsed)
+	tx, err := asset.FinalizeTx(ctx, tpl)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +153,7 @@ func cancelReservation(ctx context.Context, x struct{ Transaction bc.Tx }) error
 
 // POST /v3/transact/submit
 // Idempotent
-func submit(ctx context.Context, x struct{ Transactions []*Template }) interface{} {
+func submit(ctx context.Context, x struct{ Transactions []*txbuilder.Template }) interface{} {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)

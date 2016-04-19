@@ -182,12 +182,11 @@ func TestTransfer(t *testing.T) {
 	toSign := inspectTemplate(t, parsedResult[0], managerNodeID, account2ID)
 	txTemplate, err = toTxTemplate(ctx, toSign)
 	assettest.SignTxTemplate(t, txTemplate, chaintest.TestXPrv)
-	signedTemplate, err := toRequestTemplate(txTemplate)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	_, err = submitSingle(ctx, signedTemplate)
+	_, err = submitSingle(ctx, txTemplate)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -223,22 +222,9 @@ func toTxTemplate(ctx context.Context, inp map[string]interface{}) (*txbuilder.T
 	if err != nil {
 		return nil, err
 	}
-	var tpl Template
-	err = json.Unmarshal(jsonInp, &tpl)
-	if err != nil {
-		return nil, err
-	}
-	return tpl.parse(ctx)
-}
-
-func toRequestTemplate(inp *txbuilder.Template) (*Template, error) {
-	jsonInp, err := json.Marshal(inp)
-	if err != nil {
-		return nil, err
-	}
-	var tpl Template
-	err = json.Unmarshal(jsonInp, &tpl)
-	return &tpl, err
+	tpl := new(txbuilder.Template)
+	err = json.Unmarshal(jsonInp, tpl)
+	return tpl, err
 }
 
 func apiTest(t testing.TB) context.Context {

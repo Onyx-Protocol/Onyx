@@ -189,41 +189,15 @@ func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, erro
 	return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown destination type `%s`", dest.Type)
 }
 
-type Template struct {
-	Unsigned   *bc.TxData `json:"unsigned_hex"`
-	BlockChain string     `json:"block_chain"`
-	Inputs     []*txbuilder.Input
-}
-
-func (tpl *Template) parse(ctx context.Context) (*txbuilder.Template, error) {
-	result := &txbuilder.Template{
-		Unsigned:   tpl.Unsigned,
-		BlockChain: tpl.BlockChain,
-		Inputs:     tpl.Inputs,
-	}
-	return result, nil
-}
-
 type BuildRequest struct {
-	PrevTx   *Template          `json:"previous_transaction"`
-	Sources  []*Source          `json:"inputs"`
-	Dests    []*Destination     `json:"outputs"`
-	Metadata chainjson.HexBytes `json:"metadata"`
-	ResTime  time.Duration      `json:"reservation_duration"`
+	PrevTx   *txbuilder.Template `json:"previous_transaction"`
+	Sources  []*Source           `json:"inputs"`
+	Dests    []*Destination      `json:"outputs"`
+	Metadata chainjson.HexBytes  `json:"metadata"`
+	ResTime  time.Duration       `json:"reservation_duration"`
 }
 
 func (req *BuildRequest) parse(ctx context.Context) (*txbuilder.Template, []*txbuilder.Source, []*txbuilder.Destination, error) {
-	var (
-		prevTx *txbuilder.Template
-		err    error
-	)
-	if req.PrevTx != nil {
-		prevTx, err = req.PrevTx.parse(ctx)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-	}
-
 	var (
 		votingSources      = []*Source{}
 		votingDestinations = []*Destination{}
@@ -265,5 +239,5 @@ func (req *BuildRequest) parse(ctx context.Context) (*txbuilder.Template, []*txb
 		sources = append(sources, parsedVotingSources...)
 		destinations = append(destinations, parsedVotingDests...)
 	}
-	return prevTx, sources, destinations, nil
+	return req.PrevTx, sources, destinations, nil
 }
