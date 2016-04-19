@@ -138,15 +138,19 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 		cb(ctx, block, conflicts)
 	}
 
-	fc.height.cond.L.Lock()
-	defer fc.height.cond.L.Unlock()
-
-	fc.height.n = block.Height
-	fc.height.cond.Broadcast()
+	fc.setHeight(block.Height)
 
 	// TODO(kr): add WaitTx method and notify any waiting goroutines here.
 	// See https://github.com/chain-engineering/chain/pull/480 for a sketch.
 	return nil
+}
+
+func (fc *FC) setHeight(h uint64) {
+	fc.height.cond.L.Lock()
+	defer fc.height.cond.L.Unlock()
+
+	fc.height.n = h
+	fc.height.cond.Broadcast()
 }
 
 // ValidateBlockForSig performs validation on an incoming _unsigned_

@@ -124,7 +124,7 @@ type FC struct {
 // in trustedKeys. Typically, trustedKeys contains the public key
 // for the local block-signer process; the presence of its
 // signature indicates the block was already validated locally.
-func NewFC(ctx context.Context, store Store, trustedKeys []*btcec.PublicKey) (*FC, error) {
+func NewFC(ctx context.Context, store Store, trustedKeys []*btcec.PublicKey, heights <-chan uint64) (*FC, error) {
 	fc := &FC{store: store, trustedKeys: trustedKeys}
 
 	latestBlock, err := fc.LatestBlock(ctx)
@@ -137,6 +137,15 @@ func NewFC(ctx context.Context, store Store, trustedKeys []*btcec.PublicKey) (*F
 	// Now fc.height.n may still be zero because of ErrNoBlocks.
 
 	fc.height.cond.L = new(sync.Mutex)
+
+	if heights != nil {
+		go func() {
+			for h := range heights {
+				fc.setHeight(h)
+			}
+		}()
+	}
+
 	return fc, nil
 }
 

@@ -230,7 +230,7 @@ func toTxTemplate(ctx context.Context, inp map[string]interface{}) (*txbuilder.T
 func apiTest(t testing.TB) context.Context {
 	ctx := pgtest.NewContext(t)
 
-	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil)
+	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

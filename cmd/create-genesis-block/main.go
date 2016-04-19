@@ -38,7 +38,7 @@ func main() {
 	}
 	ctx := pg.NewContext(context.Background(), db)
 
-	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil)
+	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil, nil)
 	if err != nil {
 		log.Fatalln("error:", err)
 	}

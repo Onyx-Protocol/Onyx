@@ -331,7 +331,7 @@ func TestUpsertGenesisBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil)
+	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

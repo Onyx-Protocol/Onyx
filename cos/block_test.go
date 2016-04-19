@@ -36,7 +36,7 @@ func TestLatestBlock(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		fc, err := NewFC(ctx, c.store, nil)
+		fc, err := NewFC(ctx, c.store, nil, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -76,7 +76,7 @@ func TestWaitForBlock(t *testing.T) {
 		},
 	}
 	store.ApplyBlock(ctx, block0, nil, nil, patricia.NewTree(nil))
-	fc, err := NewFC(ctx, store, nil)
+	fc, err := NewFC(ctx, store, nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -306,7 +306,7 @@ func TestIsSignedByTrustedHost(t *testing.T) {
 
 func newContextFC(t testing.TB) (context.Context, *FC) {
 	ctx := context.Background()
-	fc, err := NewFC(ctx, memstore.New(), nil)
+	fc, err := NewFC(ctx, memstore.New(), nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

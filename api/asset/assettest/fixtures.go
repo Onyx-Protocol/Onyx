@@ -237,7 +237,7 @@ func InitializeSigningGenerator(ctx context.Context) (*cos.FC, error) {
 	if err != nil {
 		return nil, err
 	}
-	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil)
+	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil, nil)
 	if err != nil {
 		return nil, err
 	}

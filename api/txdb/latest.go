@@ -27,19 +27,27 @@ func (s *Store) LatestBlock(ctx context.Context) (*bc.Block, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
+	b, err := latestBlock(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting latest block from db")
+	}
+
+	s.setLatestBlockCache(b, nil, true)
+
+	return b, nil
+}
+
+func latestBlock(ctx context.Context) (*bc.Block, error) {
 	const q = `SELECT data FROM blocks ORDER BY height DESC LIMIT 1`
-	b := new(bc.Block)
-	err := pg.QueryRow(ctx, q).Scan(b)
+	var b bc.Block
+	err := pg.QueryRow(ctx, q).Scan(&b)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
-
-	s.setLatestBlockCache(b, nil, true)
-
-	return b, nil
+	return &b, nil
 }
 
 // setLatestValidBlock stores the given block as the head of the

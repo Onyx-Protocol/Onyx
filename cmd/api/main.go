@@ -152,7 +152,11 @@ func main() {
 	db.SetMaxOpenConns(*maxDBConns)
 	db.SetMaxIdleConns(100)
 	ctx = pg.NewContext(ctx, db)
-	fc, err := cos.NewFC(ctx, txdb.NewStore(), []*btcec.PublicKey{pubKey})
+	heights, err := txdb.ListenBlocks(ctx, *dbURL)
+	if err != nil {
+		chainlog.Fatal(ctx, "error", err)
+	}
+	fc, err := cos.NewFC(ctx, txdb.NewStore(), []*btcec.PublicKey{pubKey}, heights)
 	if err != nil {
 		chainlog.Fatal(ctx, "error", err)
 	}

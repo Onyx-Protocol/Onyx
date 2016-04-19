@@ -50,7 +50,7 @@ func TestIdempotentAddTx(t *testing.T) {
 func TestAddTx(t *testing.T) {
 	ctx := context.Background()
 	store := memstore.New()
-	fc, err := NewFC(ctx, store, nil)
+	fc, err := NewFC(ctx, store, nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -145,7 +145,7 @@ func TestAddTxIssued(t *testing.T) {
 	store := &issuedTestStore{
 		MemStore: *memstore,
 	}
-	fc, err := NewFC(ctx, store, nil)
+	fc, err := NewFC(ctx, store, nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
