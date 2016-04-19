@@ -167,7 +167,7 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 
 // Fatal is equivalent to Write() followed by a call to os.Exit(1).
 func Fatal(ctx context.Context, keyvals ...interface{}) {
-	Write(ctx, keyvals)
+	Write(ctx, keyvals...)
 	os.Exit(1)
 }
 
