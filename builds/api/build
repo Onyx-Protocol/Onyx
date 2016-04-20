@@ -13,14 +13,14 @@ ldflags="-X main.buildTag=$TAG -X main.buildCommit=$commit -X main.buildDate=$da
 /usr/local/go/bin/go build\
 	-tags prod\
 	-ldflags "$ldflags"\
-	-o builds/api/target/api\
-	chain/cmd/api
+	-o builds/api/target/cored\
+	chain/cmd/cored
 
 /usr/local/go/bin/go build\
 	-race\
 	-tags prod\
 	-ldflags "$ldflags"\
-	-o builds/api/target/api_race\
-	chain/cmd/api
+	-o builds/api/target/cored_race\
+	chain/cmd/cored
 
 tar cf - -C builds/api/target .
