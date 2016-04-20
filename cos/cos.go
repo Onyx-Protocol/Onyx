@@ -90,7 +90,7 @@ type TxCallback func(context.Context, *bc.Tx)
 // to commit the validated data.
 type Store interface {
 	// tx pool
-	GetTxs(context.Context, ...bc.Hash) (map[bc.Hash]*bc.Tx, error)
+	GetTxs(context.Context, ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]*bc.Tx, err error)
 	ApplyTx(context.Context, *bc.Tx, map[bc.AssetID]*state.AssetState) error
 	CleanPool(ctx context.Context, confirmed, conflicting []*bc.Tx, assets map[bc.AssetID]*state.AssetState) error
 	PoolTxs(context.Context) ([]*bc.Tx, error)
@@ -183,4 +183,8 @@ func (fc *FC) WaitForBlock(ctx context.Context, height uint64) error {
 	}
 
 	return nil
+}
+
+func (fc *FC) GetTxs(ctx context.Context, hashes ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]*bc.Tx, err error) {
+	return fc.store.GetTxs(ctx, hashes...)
 }

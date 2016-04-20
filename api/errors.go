@@ -1,6 +1,8 @@
 package api
 
 import (
+	"golang.org/x/net/context"
+
 	"chain/api/appdb"
 	"chain/api/asset"
 	"chain/api/smartcontracts/orderbook"
@@ -31,6 +33,7 @@ var (
 	// Missing entries will map to infoInternal.
 	// See chain.com/docs.
 	errorInfoTab = map[error]errorInfo{
+		context.DeadlineExceeded:    errorInfo{504, "CH504", "Request timed out."},
 		pg.ErrUserInputNotFound:     errorInfo{404, "CH005", "Not found."},
 		errNoAccessToResource:       errorInfo{404, "CH005", "Not found."},
 		httpjson.ErrBadRequest:      errorInfo{400, "CH007", "Invalid request body"},

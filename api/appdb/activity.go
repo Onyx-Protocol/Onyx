@@ -78,7 +78,7 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 		scripts = append(scripts, out.Script)
 	}
 
-	txs, err := txdb.GetTxs(ctx, hashes...) // modifies hashes
+	poolTxs, bcTxs, err := txdb.GetTxs(ctx, hashes...) // modifies hashes
 	if err != nil {
 		return nil, nil, err
 	}
@@ -86,7 +86,11 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 		if in.IsIssuance() {
 			continue
 		}
-		out := txs[in.Previous.Hash].Outputs[in.Previous.Index]
+		prevTx, ok := poolTxs[in.Previous.Hash]
+		if !ok {
+			prevTx = bcTxs[in.Previous.Hash]
+		}
+		out := prevTx.Outputs[in.Previous.Index]
 		all[in.Previous] = &ActUTXO{
 			Amount:  out.Amount,
 			AssetID: out.AssetID.String(),

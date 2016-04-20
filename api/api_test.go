@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -186,8 +187,8 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	_, err = submitSingle(ctx, txTemplate)
-	if err != nil {
+	_, err = submitSingle(ctx, submitSingleArg{tpl: txTemplate, wait: 10 * time.Millisecond})
+	if err != nil && err != context.DeadlineExceeded {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}

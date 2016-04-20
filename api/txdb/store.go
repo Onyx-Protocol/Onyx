@@ -30,12 +30,8 @@ func NewStore() *Store {
 
 // GetTxs looks up transactions by their hashes
 // in the block chain and in the pool.
-func (s *Store) GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
-	txs, err := GetTxs(ctx, hashes...)
-	if err != nil {
-		return nil, err
-	}
-	return txs, nil
+func (s *Store) GetTxs(ctx context.Context, hashes ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]*bc.Tx, err error) {
+	return GetTxs(ctx, hashes...)
 }
 
 // ApplyTx adds tx to the pending pool.

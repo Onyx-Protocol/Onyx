@@ -38,19 +38,31 @@ func poolTxs(ctx context.Context) ([]*bc.Tx, error) {
 
 // GetTxs looks up transactions by their hashes
 // in the block chain and in the pool.
-func GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
+func GetTxs(ctx context.Context, hashes ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]*bc.Tx, err error) {
 	hashStrings := make([]string, 0, len(hashes))
 	for _, h := range hashes {
 		hashStrings = append(hashStrings, h.String())
 	}
 	sort.Strings(hashStrings)
 	hashStrings = strings.Uniq(hashStrings)
-	const q = `SELECT tx_hash, data FROM txs WHERE tx_hash=ANY($1)`
-	txs := make(map[bc.Hash]*bc.Tx, len(hashes))
-	err := pg.ForQueryRows(ctx, q, pg.Strings(hashStrings), func(hash bc.Hash, data bc.TxData) {
-		txs[hash] = &bc.Tx{TxData: data, Hash: hash, Stored: true}
+	const q = `
+		SELECT t.tx_hash, t.data, p.tx_hash IS NOT NULL, b.tx_hash IS NOT NULL
+		FROM txs t
+			LEFT JOIN pool_txs p ON p.tx_hash = t.tx_hash
+			LEFT JOIN blocks_txs b ON b.tx_hash = t.tx_hash
+		WHERE t.tx_hash = ANY($1)
+	`
+	poolTxs = make(map[bc.Hash]*bc.Tx)
+	bcTxs = make(map[bc.Hash]*bc.Tx)
+	err = pg.ForQueryRows(ctx, q, pg.Strings(hashStrings), func(hash bc.Hash, data bc.TxData, p, b bool) {
+		tx := &bc.Tx{TxData: data, Hash: hash, Stored: true}
+		if p {
+			poolTxs[hash] = tx
+		} else if b {
+			bcTxs[hash] = tx
+		}
 	})
-	return txs, errors.Wrap(err, "get txs query")
+	return poolTxs, bcTxs, errors.Wrap(err, "get txs query")
 }
 
 func GetTxBlockHeader(ctx context.Context, hash bc.Hash) (*bc.BlockHeader, error) {

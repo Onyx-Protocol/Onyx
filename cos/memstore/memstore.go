@@ -33,17 +33,18 @@ func New() *MemStore {
 	}
 }
 
-func (m *MemStore) GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
-	txs := make(map[bc.Hash]*bc.Tx)
+func (m *MemStore) GetTxs(ctx context.Context, hashes ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]*bc.Tx, err error) {
+	poolTxs = make(map[bc.Hash]*bc.Tx)
+	bcTxs = make(map[bc.Hash]*bc.Tx)
 	for _, hash := range hashes {
 		if tx := m.blockTxs[hash]; tx != nil {
-			txs[hash] = m.blockTxs[hash]
+			bcTxs[hash] = m.blockTxs[hash]
 		}
 		if tx := m.poolMap[hash]; tx != nil {
-			txs[hash] = tx
+			poolTxs[hash] = tx
 		}
 	}
-	return txs, nil
+	return poolTxs, bcTxs, nil
 }
 
 func (m *MemStore) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*state.AssetState) error {

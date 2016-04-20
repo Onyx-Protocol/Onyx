@@ -18,8 +18,13 @@ import (
 	"chain/net/trace/span"
 )
 
-// ErrBadTxTemplate is returned by FinalizeTx
-var ErrBadTxTemplate = errors.New("bad transaction template")
+var (
+	// ErrBadTxTemplate is returned by FinalizeTx
+	ErrBadTxTemplate = errors.New("bad transaction template")
+
+	// ErrRejected means the network rejected a tx (as a double-spend)
+	ErrRejected = errors.New("transaction rejected")
+)
 
 var Generator *string
 
@@ -49,6 +54,71 @@ func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, er
 	}
 
 	return msg, nil
+}
+
+// FinalizeTxWait calls FinalizeTx and then waits for confirmation of
+// the transaction.  A nil error return means the transaction is
+// confirmed on the blockchain.  ErrRejected means a conflicting tx is
+// on the blockchain.  context.DeadlineExceeded means ctx is an
+// expiring context that timed out.
+func FinalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, error) {
+	var height uint64
+
+	// Avoid a race condition.  Calling LatestBlock here ensures that
+	// when we start waiting for blocks below, we don't begin waiting at
+	// block N+1 when the tx we want is in block N.
+	b, err := fc.LatestBlock(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting latest block")
+	}
+	if b != nil {
+		height = b.Height
+	}
+
+	tx, err := FinalizeTx(ctx, txTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		height++
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+
+		case err := <-waitBlock(ctx, height):
+			if err != nil {
+				// This should be impossible, since the only error produced by
+				// WaitForBlock is ErrTheDistantFuture, and height is known
+				// not to be in "the distant future."
+				return nil, errors.Wrapf(err, "waiting for block %d", height)
+			}
+			// TODO(bobg): This technique is not future-proof.  The database
+			// won't necessarily contain all the txs we might care about.
+			// An alternative approach will be to scan through each block as
+			// it lands, looking for the tx or a tx that conflicts with it.
+			// For now, though, this is probably faster and simpler.
+			poolTxs, bcTxs, err := fc.GetTxs(ctx, tx.Hash)
+			if err != nil {
+				return nil, errors.Wrap(err, "getting pool/bc txs")
+			}
+			if _, ok := bcTxs[tx.Hash]; ok {
+				// confirmed
+				return tx, nil
+			}
+			if _, ok := poolTxs[tx.Hash]; !ok {
+				// rejected
+				return nil, ErrRejected
+			}
+			// still in the pool; iterate
+		}
+	}
+}
+
+func waitBlock(ctx context.Context, height uint64) <-chan error {
+	c := make(chan error, 1)
+	go func() { c <- fc.WaitForBlock(ctx, height) }()
+	return c
 }
 
 func publishTx(ctx context.Context, msg *bc.Tx) error {

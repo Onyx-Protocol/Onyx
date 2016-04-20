@@ -80,29 +80,26 @@ func TestPoolTxs(t *testing.T) {
 
 func TestGetTxs(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
+		store := NewStore()
 		tx := bc.NewTx(bc.TxData{Metadata: []byte("tx")})
-		ok, err := insertTx(ctx, tx)
+		err := store.ApplyTx(ctx, tx, nil)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
-		if !ok {
-			t.Fatal("expected insertTx to be successful")
-		}
-
-		txs, err := GetTxs(ctx, tx.Hash)
+		poolTxs, _, err := GetTxs(ctx, tx.Hash)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
 		tx.Stored = true
-		if !reflect.DeepEqual(txs[tx.Hash], tx) {
-			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", txs[tx.Hash], tx)
+		if !reflect.DeepEqual(poolTxs[tx.Hash], tx) {
+			t.Errorf("got:\n\t%+v\nwant:\n\t%+v", poolTxs[tx.Hash], tx)
 		}
 
 		nonexistentHash := mustParseHash("beefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeef")
-		_, gotErr := GetTxs(ctx, tx.Hash, nonexistentHash)
+		_, _, gotErr := GetTxs(ctx, tx.Hash, nonexistentHash)
 		if gotErr != nil {
 			t.Errorf("got err=%v want nil", gotErr)
 		}
@@ -121,7 +118,7 @@ func TestInsertTx(t *testing.T) {
 			t.Fatal("expected insertTx to be successful")
 		}
 
-		_, err = GetTxs(ctx, tx.Hash)
+		_, _, err = GetTxs(ctx, tx.Hash)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -205,7 +202,7 @@ func TestInsertBlock(t *testing.T) {
 
 		// txs in database
 		txs := blk.Transactions
-		_, err = GetTxs(ctx, txs[0].Hash, txs[1].Hash)
+		_, _, err = GetTxs(ctx, txs[0].Hash, txs[1].Hash)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

@@ -119,13 +119,16 @@ func GetTx(ctx context.Context, txHashStr string) (*Tx, error) {
 		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
 
-	txs, err := txdb.GetTxs(ctx, hash)
+	poolTxs, bcTxs, err := txdb.GetTxs(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
-	tx, ok := txs[hash]
+	tx, ok := poolTxs[hash]
 	if !ok {
-		return nil, errors.Wrap(pg.ErrUserInputNotFound)
+		tx, ok = bcTxs[hash]
+		if !ok {
+			return nil, errors.Wrap(pg.ErrUserInputNotFound)
+		}
 	}
 
 	blockHeader, err := txdb.GetTxBlockHeader(ctx, hash)
@@ -140,13 +143,13 @@ func GetTx(ctx context.Context, txHashStr string) (*Tx, error) {
 		}
 		inHashes = append(inHashes, in.Previous.Hash)
 	}
-	prevTxs, err := txdb.GetTxs(ctx, inHashes...)
+	prevPoolTxs, prevBcTxs, err := txdb.GetTxs(ctx, inHashes...)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "fetching inputs")
 	}
 
-	return makeTx(tx, blockHeader, prevTxs)
+	return makeTx(tx, blockHeader, prevPoolTxs, prevBcTxs)
 }
 
 // Asset is returned by GetAsset
@@ -260,7 +263,7 @@ func ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limi
 	return res, last, nil
 }
 
-func makeTx(bcTx *bc.Tx, blockHeader *bc.BlockHeader, prevTxs map[bc.Hash]*bc.Tx) (*Tx, error) {
+func makeTx(bcTx *bc.Tx, blockHeader *bc.BlockHeader, prevPoolTxs, prevBcTxs map[bc.Hash]*bc.Tx) (*Tx, error) {
 	resp := &Tx{
 		ID:       bcTx.Hash,
 		Metadata: bcTx.Metadata,
@@ -287,9 +290,12 @@ func makeTx(bcTx *bc.Tx, blockHeader *bc.BlockHeader, prevTxs map[bc.Hash]*bc.Tx
 				AssetDef: in.AssetDefinition,
 			})
 		} else {
-			prevTx, ok := prevTxs[in.Previous.Hash]
+			prevTx, ok := prevPoolTxs[in.Previous.Hash]
 			if !ok {
-				return nil, errors.Wrap(fmt.Errorf("missing previous transaction %s", in.Previous.Hash))
+				prevTx, ok = prevBcTxs[in.Previous.Hash]
+				if !ok {
+					return nil, errors.Wrap(fmt.Errorf("missing previous transaction %s", in.Previous.Hash))
+				}
 			}
 
 			if in.Previous.Index >= uint32(len(prevTx.Outputs)) {
