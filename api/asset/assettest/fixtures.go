@@ -247,12 +247,12 @@ func InitializeSigningGenerator(ctx context.Context) (*cos.FC, error) {
 		return nil, err
 	}
 	localSigner := signer.New(privkey, fc)
-	if !generator.Enabled() {
-		err = generator.Init(ctx, fc, []*btcec.PublicKey{pubkey}, 1, 0, localSigner, nil)
-		if err != nil {
-			return nil, err
-		}
+
+	err = generator.Init(ctx, fc, []*btcec.PublicKey{pubkey}, 1, 0, localSigner, nil)
+	if err != nil {
+		return nil, err
 	}
+
 	_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
 	if err != nil {
 		return nil, err

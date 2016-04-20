@@ -56,9 +56,6 @@ func Enabled() bool {
 // initialize a package-private copy of that value for use in
 // GetSummary.)
 func Init(ctx context.Context, chain *cos.FC, blockPubkeys []*btcec.PublicKey, nSigs int, period time.Duration, local *signer.Signer, remote []*RemoteSigner) error {
-	if enabled {
-		return errors.New("generator: Init called more than once")
-	}
 	if len(remote) == 0 && local == nil {
 		return errors.New("generator: no signer configured")
 	}
