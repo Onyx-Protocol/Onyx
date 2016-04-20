@@ -30,9 +30,9 @@ func GetBlocks(ctx context.Context) error {
 		return errors.Wrap(err, "looking up last-known block")
 	}
 
-	var height *uint64
+	var height uint64
 	if latestBlock != nil {
-		height = &latestBlock.Height
+		height = latestBlock.Height
 	}
 
 	var blocks []*bc.Block

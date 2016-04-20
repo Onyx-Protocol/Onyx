@@ -91,34 +91,21 @@ func Submit(ctx context.Context, tx *bc.Tx) error {
 	return err
 }
 
-// GetBlocks returns blocks in block-height order.
-// If afterHeight is non-nil, GetBlocks only returns
-// blocks with a height larger than afterHeight.
-func GetBlocks(ctx context.Context, afterHeight *uint64) ([]*bc.Block, error) {
-	var startHeight uint64
-	if afterHeight != nil {
-		startHeight = *afterHeight + 1
-	}
-
-	q := `SELECT data FROM blocks WHERE height >= $1 ORDER BY height`
-	rows, err := pg.Query(ctx, q, startHeight)
+// GetBlocks returns blocks (with heights larger than afterHeight) in
+// block-height order.
+func GetBlocks(ctx context.Context, afterHeight uint64) ([]*bc.Block, error) {
+	err := fc.WaitForBlock(ctx, afterHeight+1)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "waiting for block at height %d", afterHeight+1)
 	}
-	defer rows.Close()
 
+	const q = `SELECT data FROM blocks WHERE height > $1 ORDER BY height`
 	var blocks []*bc.Block
-
-	for rows.Next() {
-		var block bc.Block
-		err = rows.Scan(&block)
-		if err != nil {
-			return nil, err
-		}
-		blocks = append(blocks, &block)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+	err = pg.ForQueryRows(ctx, q, afterHeight, func(b bc.Block) {
+		blocks = append(blocks, &b)
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "querying blocks from the db")
 	}
 
 	return blocks, nil
