@@ -32,11 +32,7 @@ func Build(ctx context.Context, prev *Template, sources []*Source, dests []*Dest
 		}
 	}
 
-	err = setSignatureData(ctx, tpl)
-	if err != nil {
-		return nil, err
-	}
-
+	ComputeSigHashes(ctx, tpl)
 	return tpl, nil
 }
 
@@ -103,7 +99,9 @@ func combine(txs ...*Template) (*Template, error) {
 	return complete, nil
 }
 
-func setSignatureData(ctx context.Context, tpl *Template) error {
+// ComputeSigHashes populates signature data for every input and sigscript
+// component.
+func ComputeSigHashes(ctx context.Context, tpl *Template) {
 	hashCache := &bc.SigHashCache{}
 	for i, in := range tpl.Inputs {
 		aa := in.AssetAmount
@@ -112,7 +110,6 @@ func setSignatureData(ctx context.Context, tpl *Template) error {
 			c.SignatureData = in.SignatureData
 		}
 	}
-	return nil
 }
 
 // AssembleSignatures takes a filled in Template

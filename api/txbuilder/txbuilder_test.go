@@ -100,11 +100,8 @@ func TestBuild(t *testing.T) {
 			SigScriptSuffix: []byte("redeem"),
 		}},
 	}
-	err = setSignatureData(ctx, want)
-	if err != nil {
-		t.Fatal(err)
-	}
 
+	ComputeSigHashes(ctx, want)
 	if !reflect.DeepEqual(got.Unsigned, want.Unsigned) {
 		t.Errorf("got tx:\n\t%#v\nwant tx:\n\t%#v", got.Unsigned, want.Unsigned)
 		t.Errorf("got tx inputs:\n\t%#v\nwant tx inputs:\n\t%#v", got.Unsigned.Inputs, want.Unsigned.Inputs)

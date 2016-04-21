@@ -185,10 +185,28 @@ func signTemplates(ctx context.Context, txs []*txbuilder.Template) interface{} {
 }
 
 func signTemplate(ctx context.Context, tpl *txbuilder.Template) error {
-	computeSigHashes(ctx, tpl) // don't trust the sighashes in the request
+	txbuilder.ComputeSigHashes(ctx, tpl) // don't trust the sighashes in the request
 	// TODO(kr): come up with some scheme to verify that the
 	// covered output scripts are what the client really wants.
 	for i, input := range tpl.Inputs {
+		if len(input.SigComponents) > 0 {
+			for c, component := range input.SigComponents {
+				for s, sig := range component.Signatures {
+					if sig.XPub == xpub {
+						sigdata, err := client.Sign(kd, sig.DerivationPath, component.SignatureData)
+						if err != nil {
+							return errors.Wrapf(err, "computing signature for input %d, sigscript component %d, sig %d", i, c, s)
+						}
+						sig.DER = append(sigdata, byte(bc.SigHashAll))
+					}
+				}
+			}
+
+			// If input.SigComponents are provided, ignore the deprecated
+			// input.Sigs.
+			continue
+		}
+
 		for j, sig := range input.Sigs {
 			if sig.XPub == xpub {
 				sigdata, err := client.Sign(kd, sig.DerivationPath, input.SignatureData)
@@ -198,15 +216,6 @@ func signTemplate(ctx context.Context, tpl *txbuilder.Template) error {
 				sig.DER = append(sigdata, byte(bc.SigHashAll))
 			}
 		}
-	}
-	return nil
-}
-
-func computeSigHashes(ctx context.Context, tpl *txbuilder.Template) error {
-	hashCache := &bc.SigHashCache{}
-	for i, in := range tpl.Inputs {
-		aa := in.AssetAmount
-		in.SignatureData = tpl.Unsigned.HashForSigCached(i, aa, bc.SigHashAll, hashCache)
 	}
 	return nil
 }
