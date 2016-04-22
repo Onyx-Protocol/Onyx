@@ -52,6 +52,42 @@ func TestLatestBlock(t *testing.T) {
 	}
 }
 
+func TestNoTimeTravel(t *testing.T) {
+	ctx := context.Background()
+	fc, err := NewFC(ctx, memstore.New(), nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fc.setHeight(1)
+	fc.setHeight(2)
+
+	fc.setHeight(1) // don't go backward
+	if fc.height.n != 2 {
+		t.Fatalf("fc.height.n = %d want 2", fc.height.n)
+	}
+}
+
+func TestContiguousHeight(t *testing.T) {
+	ctx := context.Background()
+	fc, err := NewFC(ctx, memstore.New(), nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fc.setHeight(1)
+	fc.setHeight(2)
+
+	defer func() {
+		if err := recover(); err != nil {
+			t.Log("recovered:", err)
+		}
+	}()
+
+	fc.setHeight(5) // don't skip any
+	t.Fatal("expected panic")
+}
+
 func TestWaitForBlock(t *testing.T) {
 	ctx := context.Background()
 	store := memstore.New()

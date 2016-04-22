@@ -1,6 +1,7 @@
 package cos
 
 import (
+	"fmt"
 	"time"
 
 	"golang.org/x/net/context"
@@ -146,9 +147,21 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 }
 
 func (fc *FC) setHeight(h uint64) {
+	// We call setHeight from two places independently:
+	// ApplyBlock and the Postgres LISTEN goroutine.
+	// This means we can get here twice for each block,
+	// and any of them might be arbitrarily delayed,
+	// which means h might be from the past.
+	// Detect and discard these duplicate calls.
+
 	fc.height.cond.L.Lock()
 	defer fc.height.cond.L.Unlock()
 
+	if h <= fc.height.n {
+		return
+	} else if h != fc.height.n+1 {
+		panic(fmt.Errorf("gap in block height sequence; %d should be %d", h, fc.height.n+1))
+	}
 	fc.height.n = h
 	fc.height.cond.Broadcast()
 }
