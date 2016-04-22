@@ -17,7 +17,10 @@ import (
 	"chain/net/http/httpjson"
 )
 
-const votingRightsPageSize = 100
+const (
+	votingRightsPageSize  = 100
+	votingTalliesPageSize = 50
+)
 
 type globalFindOrder struct {
 	OfferedAssetIDs []bc.AssetID `json:"offered_asset_ids"`
@@ -127,6 +130,43 @@ func getVotingRightHistory(ctx context.Context, assetID string) ([]map[string]in
 		rights = append(rights, right)
 	}
 	return rights, nil
+}
+
+type votingTallyRequest struct {
+	VotingTokenAssetIDs []bc.AssetID `json:"asset_ids"`
+	After               string       `json:"after,omitempty"`
+}
+
+// POST /v3/contracts/voting-tokens/tally
+func getVotingTokenTally(ctx context.Context, req votingTallyRequest) (map[string]interface{}, error) {
+	// TODO(jackson): Avoid calling voting.TallyVotes separately for each
+	// asset ID by modifying voting.TallyVotes() to query multiple asset IDs
+	// at once.
+	// TODO(jackson): Add real pagination. For now, we fake it.
+
+	last := ""
+	tallies := make([]voting.Tally, 0, len(req.VotingTokenAssetIDs))
+	for _, assetID := range req.VotingTokenAssetIDs {
+		if req.After != "" && assetID.String() <= req.After {
+			continue
+		}
+
+		tally, err := voting.TallyVotes(ctx, assetID)
+		if err != nil {
+			return nil, err
+		}
+		last = tally.AssetID.String()
+		tallies = append(tallies, tally)
+
+		if len(tallies) >= votingTalliesPageSize {
+			break
+		}
+	}
+
+	return map[string]interface{}{
+		"votingtokens": tallies,
+		"last":         last,
+	}, nil
 }
 
 type votingToken struct {

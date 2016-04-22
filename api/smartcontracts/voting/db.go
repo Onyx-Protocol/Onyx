@@ -315,6 +315,85 @@ func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*RightWithUTX
 	return results, cur.String(), nil
 }
 
+// Tally encapsulates statistics about the state of the voting tokens for
+// a particular agenda item.
+//
+// Note:
+//
+// * Every token must be in _one_ of the distributed, intended or voted
+//   states.
+//
+//   Circulation = Distributed + Intended + Voted
+//
+// * Every token in the voted state has a vote in the Votes slice.
+//
+//   Voted = Votes[0] + Votes[1] + ... + Votes[n-1]
+//
+// * Either none of the voting tokens are closed, or all of the voting tokens
+//   are closed.
+//
+//   Closed = 0 || Closed = Circulation
+//
+type Tally struct {
+	AssetID     bc.AssetID `json:"asset_id"`
+	Circulation int        `json:"circulation"`
+	Distributed int        `json:"distributed"`
+	Intended    int        `json:"intended"`
+	Voted       int        `json:"voted"`
+	Closed      int        `json:"closed"`
+	Votes       []int      `json:"votes"`
+}
+
+// TallyVotes looks up all voting tokens for the provided asset ID and
+// totals the number of tokens in each state and which have voted for
+// each possible option.
+func TallyVotes(ctx context.Context, tokenAssetID bc.AssetID) (tally Tally, err error) {
+	tally.AssetID = tokenAssetID
+	const (
+		stateQ = `
+			SELECT
+				option_count,
+				SUM(amount) AS total,
+				SUM(CASE WHEN state = $1 THEN amount ELSE 0 END) AS distributed,
+				SUM(CASE WHEN state = $2 THEN amount ELSE 0 END) AS intended,
+				SUM(CASE WHEN state = $3 THEN amount ELSE 0 END) AS voted,
+				SUM(CASE WHEN closed THEN amount ELSE 0 END) AS closed
+			FROM voting_tokens WHERE asset_id = $4
+			GROUP BY option_count
+		`
+		voteQ = `
+			SELECT vote, SUM(amount) AS total
+			FROM voting_tokens
+			WHERE asset_id = $1 AND state = $2
+			GROUP BY vote
+		`
+	)
+	var optionCount int
+	err = pg.FromContext(ctx).QueryRow(ctx, stateQ, stateDistributed, stateIntended, stateVoted, tokenAssetID).
+		Scan(&optionCount, &tally.Circulation, &tally.Distributed, &tally.Intended, &tally.Voted, &tally.Closed)
+	if err == sql.ErrNoRows {
+		return tally, pg.ErrUserInputNotFound
+	}
+	if err != nil {
+		return tally, err
+	}
+
+	tally.Votes = make([]int, optionCount)
+	err = pg.ForQueryRows(ctx, voteQ, tokenAssetID, stateVoted, func(vote int, total int) error {
+		if vote > len(tally.Votes) {
+			return fmt.Errorf("vote for option %d exceeds option count %d", vote, optionCount)
+		}
+		if vote <= 0 {
+			return errors.New("voting token in voted state but with nonpositive vote value")
+		}
+
+		// Votes are 1-indexed within the contract.
+		tally.Votes[vote-1] = total
+		return nil
+	})
+	return tally, err
+}
+
 // FindTokenForAsset looks up the current state of the voting token with the
 // provided token asset ID and voting right asset ID.
 func FindTokenForAsset(ctx context.Context, tokenAssetID, rightAssetID bc.AssetID) (*Token, error) {
