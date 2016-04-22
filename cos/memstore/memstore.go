@@ -179,3 +179,5 @@ func (m *MemStore) StateTree(context.Context, uint64) (*patricia.Tree, error) {
 	}
 	return patricia.Copy(m.stateTree), nil
 }
+
+func (m *MemStore) FinalizeBlock(context.Context, uint64) error { return nil }

@@ -98,6 +98,7 @@ type Store interface {
 
 	// blocks
 	ApplyBlock(context.Context, *bc.Block, []*state.Output, map[bc.AssetID]*state.AssetState, *patricia.Tree) ([]*bc.Tx, error)
+	FinalizeBlock(context.Context, uint64) error
 	LatestBlock(context.Context) (*bc.Block, error)
 	NewViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error)
 	StateTree(context.Context, uint64) (*patricia.Tree, error)

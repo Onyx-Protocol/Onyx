@@ -17,9 +17,9 @@ func TestWriteHTTPError(t *testing.T) {
 		code int
 	}{
 		{nil, `{"code":"CH000","message":"Chain API Error"}`, 500},
-		{pg.ErrUserInputNotFound, `{"code":"CH005","message":"Not found."}`, 404},
-		{errors.Wrap(pg.ErrUserInputNotFound, "foo"), `{"code":"CH005","message":"Not found."}`, 404},
-		{errors.WithDetail(pg.ErrUserInputNotFound, "foo"), `{"code":"CH005","message":"Not found.","detail":"foo"}`, 404},
+		{pg.ErrUserInputNotFound, `{"code":"CH005","message":"Not found"}`, 404},
+		{errors.Wrap(pg.ErrUserInputNotFound, "foo"), `{"code":"CH005","message":"Not found"}`, 404},
+		{errors.WithDetail(pg.ErrUserInputNotFound, "foo"), `{"code":"CH005","message":"Not found","detail":"foo"}`, 404},
 	}
 
 	for _, test := range cases {

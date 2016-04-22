@@ -284,3 +284,8 @@ func (s *Store) StateTree(ctx context.Context, block uint64) (*patricia.Tree, er
 	}
 	return patricia.Copy(s.latestBlockCache.stateTree), nil
 }
+
+func (s *Store) FinalizeBlock(ctx context.Context, height uint64) error {
+	_, err := pg.Exec(ctx, `SELECT pg_notify('newblock', $1)`, height)
+	return err
+}

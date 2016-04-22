@@ -425,10 +425,6 @@ CREATE TABLE blocks (
 );
 
 
-CREATE RULE block_notify AS
-    ON INSERT TO blocks DO SELECT pg_notify('newblock', NEW.height::text);
-
-
 --
 -- Name: blocks_txs; Type: TABLE; Schema: public; Owner: -
 --

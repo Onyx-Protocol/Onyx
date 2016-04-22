@@ -139,10 +139,20 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 		cb(ctx, block, conflicts)
 	}
 
+	err = fc.store.FinalizeBlock(ctx, block.Height)
+	if err != nil {
+		return errors.Wrap(err, "finalizing block")
+	}
+
+	// When fc.store is a txdb.Store, and fc has been initialized with a
+	// channel from txdb.ListenBlocks, then the above call to
+	// fc.store.FinalizeBlock will have done a postgresql NOTIFY and
+	// that will wake up the goroutine in NewFC, which also calls
+	// setHeight.  But duplicate calls with the same blockheight are
+	// harmless; and the following call is required in the cases where
+	// it's not redundant.
 	fc.setHeight(block.Height)
 
-	// TODO(kr): add WaitTx method and notify any waiting goroutines here.
-	// See https://github.com/chain-engineering/chain/pull/480 for a sketch.
 	return nil
 }
 
