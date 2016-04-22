@@ -10,10 +10,10 @@ Here are a few examples of typical full node types.
 
 Generator
 
-An generator has two basic jobs: collecting transactions from
+A generator has two basic jobs: collecting transactions from
 other nodes and putting them into blocks.
 
-To collect pending transactions, call InsertPendingTx for each one.
+To collect pending transactions, call AddTx for each one.
 
 To add a new block to the blockchain, call GenerateBlock, sign
 the block (possibly collecting signatures from other parties),
@@ -34,10 +34,11 @@ A manager's job is to select outputs for spending and to compose
 transactions.
 
 To publish a new transaction, prepare your transaction (select
-outputs, and compose and sign the tx), call InsertPendingTx and
-send the transaction to a generator node.
-(TODO(kr): Then call WaitTx; when it returns (with no error),
-the transaction has been confirmed.)
+outputs, and compose and sign the tx), call AddTx, and
+send the transaction to a generator node. To wait for confirmation,
+call WaitForBlock on successive block heights and inspect the
+blockchain state (using GetTxs or GetBlock) until you find that
+the transaction has been either confirmed or rejected.
 
 To ingest a block, call AddBlock.
 
