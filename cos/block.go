@@ -1,7 +1,6 @@
 package cos
 
 import (
-	"fmt"
 	"time"
 
 	"golang.org/x/net/context"
@@ -169,8 +168,6 @@ func (fc *FC) setHeight(h uint64) {
 
 	if h <= fc.height.n {
 		return
-	} else if h != fc.height.n+1 {
-		panic(fmt.Errorf("gap in block height sequence; %d should be %d", h, fc.height.n+1))
 	}
 	fc.height.n = h
 	fc.height.cond.Broadcast()
