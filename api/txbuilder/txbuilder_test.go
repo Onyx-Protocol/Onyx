@@ -37,7 +37,11 @@ type testReserver struct{}
 func (tr *testReserver) Reserve(ctx context.Context, assetAmt *bc.AssetAmount, ttl time.Duration) (*ReserveResult, error) {
 	return &ReserveResult{
 		Items: []*ReserveResultItem{{
-			TxInput: &bc.TxInput{Previous: bc.Outpoint{Hash: [32]byte{255}, Index: 0}},
+			TxInput: &bc.TxInput{
+				Previous:    bc.Outpoint{Hash: [32]byte{255}, Index: 0},
+				AssetAmount: *assetAmt,
+				PrevScript:  []byte{},
+			},
 			TemplateInput: &Input{
 				SigScriptSuffix: []byte("redeem"),
 			},
@@ -83,7 +87,9 @@ func TestBuild(t *testing.T) {
 		Unsigned: &bc.TxData{
 			Version: 1,
 			Inputs: []*bc.TxInput{{
-				Previous: bc.Outpoint{Hash: [32]byte{255}, Index: 0},
+				Previous:    bc.Outpoint{Hash: [32]byte{255}, Index: 0},
+				AssetAmount: bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5},
+				PrevScript:  []byte{},
 			}},
 			Outputs: []*bc.TxOutput{
 				{

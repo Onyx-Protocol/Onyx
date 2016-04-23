@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 
@@ -25,6 +26,7 @@ func ValidateTxInputs(ctx context.Context, view state.ViewReader, tx *bc.Tx) err
 		if txin.IsIssuance() {
 			continue
 		}
+		// TODO(kr): use the state tree instead of loading full UTXO data here
 		unspent := view.Output(ctx, txin.Previous)
 		// It's possible to load a spent output here because BackedView
 		// explicitly stores spent outputs in frontend to shadow unspent
@@ -32,8 +34,15 @@ func ValidateTxInputs(ctx context.Context, view state.ViewReader, tx *bc.Tx) err
 		if unspent == nil || unspent.Spent {
 			return errors.WithDetailf(ErrBadTx, "output %s for input %d is invalid or already spent", txin.Previous.String(), inIndex)
 		}
+		if !outputEqual(&unspent.TxOutput, txin) {
+			return errors.WithDetailf(ErrBadTx, "stored output %s doesn't match %x input %d", txin.Previous, tx.Hash, inIndex)
+		}
 	}
 	return nil
+}
+
+func outputEqual(to *bc.TxOutput, ti *bc.TxInput) bool {
+	return to.AssetAmount == ti.AssetAmount && bytes.Equal(to.Script, ti.PrevScript)
 }
 
 // ValidateTx validates the given transaction

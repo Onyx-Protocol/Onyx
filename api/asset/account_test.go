@@ -44,7 +44,9 @@ func TestAccountSourceReserve(t *testing.T) {
 	want := &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{{
 			TxInput: &bc.TxInput{
-				Previous: out.Outpoint,
+				Previous:    out.Outpoint,
+				AssetAmount: out.TxOutput.AssetAmount,
+				PrevScript:  out.TxOutput.Script,
 			},
 			TemplateInput: nil,
 		}},

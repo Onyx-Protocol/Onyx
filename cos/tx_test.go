@@ -123,7 +123,11 @@ func TestAddTxIssued(t *testing.T) {
 	issueTransferData := &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		Inputs: []*bc.TxInput{
-			{Previous: bc.Outpoint{Hash: multiIssue.Hash, Index: 1}},
+			{
+				Previous:    bc.Outpoint{Hash: multiIssue.Hash, Index: 1},
+				AssetAmount: bc.AssetAmount{AssetID: asset1.AssetID, Amount: 3},
+				PrevScript:  dest0.PKScript,
+			},
 			{Previous: bc.Outpoint{Index: bc.InvalidOutputIndex}},
 		},
 		Outputs: []*bc.TxOutput{

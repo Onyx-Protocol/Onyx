@@ -118,11 +118,8 @@ func findOpenOrdersHelper(ctx context.Context, q string, args ...interface{}) ([
 				OrderInfo: OrderInfo{
 					SellerAccountID: sellerAccountID,
 				},
-				AssetAmount: bc.AssetAmount{
-					AssetID: offeredAssetID,
-					Amount:  amount,
-				},
-				Script: script,
+				AssetAmount: bc.AssetAmount{AssetID: offeredAssetID, Amount: amount},
+				Script:      script,
 			}
 
 			// Make the seller script directly visible in API responses.

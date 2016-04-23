@@ -34,6 +34,7 @@ type (
 	UTXO struct {
 		bc.Outpoint
 		bc.AssetAmount
+		Script []byte
 
 		AccountID string
 		AddrIndex [2]uint32
@@ -96,9 +97,10 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 		    AS (reservation_id INT, already_existed BOOLEAN, existing_change BIGINT, amount BIGINT, insufficient BOOLEAN)
 		`
 		utxosQ = `
-		SELECT tx_hash, index, amount, key_index(addr_index)
-		    FROM account_utxos
-		    WHERE reservation_id = $1
+			SELECT a.tx_hash, a.index, a.amount, key_index(a.addr_index), script
+			FROM account_utxos a
+			JOIN utxos u ON ((a.tx_hash, a.index) = (u.tx_hash, u.index))
+			WHERE reservation_id = $1
 		`
 	)
 
@@ -150,9 +152,16 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 			change = append(change, Change{source, reservedAmount - source.Amount})
 		}
 
-		err = pg.ForQueryRows(ctx, utxosQ, reservationID, func(hash bc.Hash, index uint32, amount uint64, addrIndex pg.Uint32s) {
+		err = pg.ForQueryRows(ctx, utxosQ, reservationID, func(
+			hash bc.Hash,
+			index uint32,
+			amount uint64,
+			addrIndex pg.Uint32s,
+			script []byte,
+		) {
 			utxo := UTXO{
 				Outpoint:    bc.Outpoint{Hash: hash, Index: index},
+				Script:      script,
 				AssetAmount: bc.AssetAmount{AssetID: source.AssetID, Amount: amount},
 				AccountID:   source.AccountID,
 			}

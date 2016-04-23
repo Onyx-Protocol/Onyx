@@ -38,7 +38,9 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 	result := &txbuilder.ReserveResult{}
 	for _, r := range reserved {
 		txInput := &bc.TxInput{
-			Previous: r.Outpoint,
+			Previous:    r.Outpoint,
+			AssetAmount: r.AssetAmount,
+			PrevScript:  r.Script,
 		}
 
 		templateInput := &txbuilder.Input{}

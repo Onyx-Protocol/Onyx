@@ -61,8 +61,9 @@ type TxData struct {
 
 // TxInput encodes a single input in a transaction.
 type TxInput struct {
-	// TODO(bobg): replace Value and AssetID with AssetAmount
 	Previous        Outpoint
+	AssetAmount     AssetAmount
+	PrevScript      []byte
 	SignatureScript []byte
 	Metadata        []byte
 	AssetDefinition []byte
@@ -154,6 +155,8 @@ func (tx *TxData) readFrom(r *errors.Reader) {
 
 func (ti *TxInput) readFrom(r *errors.Reader) {
 	ti.Previous.readFrom(r)
+	ti.AssetAmount.readFrom(r)
+	blockchain.ReadBytes(r, &ti.PrevScript)
 	blockchain.ReadBytes(r, (*[]byte)(&ti.SignatureScript))
 	blockchain.ReadBytes(r, &ti.Metadata)
 	blockchain.ReadBytes(r, &ti.AssetDefinition)
@@ -340,6 +343,8 @@ func (ti *TxInput) writeTo(w *errors.Writer, forHashing bool) {
 	if forHashing {
 		blockchain.WriteBytes(w, nil)
 	} else {
+		ti.AssetAmount.writeTo(w)
+		blockchain.WriteBytes(w, ti.PrevScript)
 		blockchain.WriteBytes(w, ti.SignatureScript)
 	}
 	writeMetadata(w, ti.Metadata, forHashing)

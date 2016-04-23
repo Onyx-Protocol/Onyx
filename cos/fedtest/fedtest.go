@@ -102,7 +102,9 @@ func Transfer(t testing.TB, out *state.Output, from, to *TestDest) *bc.Tx {
 	tx := &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		Inputs: []*bc.TxInput{{
-			Previous: out.Outpoint,
+			Previous:    out.Outpoint,
+			AssetAmount: out.AssetAmount,
+			PrevScript:  out.Script,
 		}},
 		Outputs: []*bc.TxOutput{{
 			Script:      to.PKScript,
