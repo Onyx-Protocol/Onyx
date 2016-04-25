@@ -6,7 +6,7 @@ import (
 	"chain/crypto/hash256"
 )
 
-type TokenState int64
+type TokenState byte
 
 func (ts TokenState) Finished() bool    { return ts&stateFinished == stateFinished }
 func (ts TokenState) Base() TokenState  { return 0x0F & ts }
@@ -18,7 +18,7 @@ const (
 	stateDistributed TokenState = 0x00
 	stateIntended               = 0x01
 	stateVoted                  = 0x02
-	stateFinished               = 0xF0 // bit mask
+	stateFinished               = 0x10 // bit mask
 )
 
 type tokenContractClause int64
@@ -51,7 +51,7 @@ func (t tokenScriptData) PKScript() []byte {
 
 	params = append(params, txscript.Int64ToScriptBytes(t.Vote))
 	params = append(params, t.SecretHash[:])
-	params = append(params, txscript.Int64ToScriptBytes(int64(t.State)))
+	params = append(params, []byte{byte(t.State)})
 	params = append(params, txscript.Int64ToScriptBytes(t.OptionCount))
 	params = append(params, t.AdminScript)
 	params = append(params, t.Right[:])
@@ -129,7 +129,7 @@ const (
 	//
 	// 1 - Intend to vote
 	// 2 - Vote
-	// 3 - Finish         (Unimplemented)
+	// 3 - Finish
 	// 4 - Reset          (Unimplemented)
 	tokenHoldingContractString = `
 		6 ROLL
@@ -171,6 +171,23 @@ const (
 			DATA_1 0x27 RIGHT
 			CAT AMOUNT ASSET ROT
 			RESERVEOUTPUT
+		ENDIF
+		DUP 3 EQUAL IF
+			DROP
+			DATA_2 0x5275
+			6 ROLL CATPUSHDATA
+			5 PICK CATPUSHDATA
+			4 ROLL CATPUSHDATA
+			3 ROLL
+			DUP 16 LESSTHAN VERIFY
+			16 ADD CATPUSHDATA
+			ROT CATPUSHDATA
+			SWAP CATPUSHDATA
+			OUTPUTSCRIPT
+			DATA_1 0x27 RIGHT
+			CAT AMOUNT ASSET ROT
+			RESERVEOUTPUT VERIFY
+			EVAL
 		ENDIF
 	`
 )

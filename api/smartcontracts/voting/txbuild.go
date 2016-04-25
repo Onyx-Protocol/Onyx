@@ -186,3 +186,24 @@ func TokenVote(ctx context.Context, token *Token, right txbuilder.Receiver, vote
 	}
 	return reserver, data, nil
 }
+
+// TokenFinish builds txbuilder Reserve and Receiver implementations
+// for a voting token finish/close transition.
+func TokenFinish(ctx context.Context, token *Token) (txbuilder.Reserver, txbuilder.Receiver, error) {
+	data := token.tokenScriptData
+	data.State = data.State | stateFinished
+
+	adminAddr, err := appdb.GetAddress(ctx, token.AdminScript)
+	if err != nil {
+		adminAddr = nil
+	}
+
+	reserver := tokenReserver{
+		outpoint:   token.Outpoint,
+		clause:     clauseFinish,
+		output:     data,
+		prevScript: token.tokenScriptData.PKScript(),
+		adminAddr:  adminAddr,
+	}
+	return reserver, data, nil
+}

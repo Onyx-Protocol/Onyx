@@ -178,7 +178,9 @@ func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount,
 			AddInt64(r.output.Vote).
 			AddData(r.secret).
 			AddData(r.rightScript)
-	case clauseFinish, clauseReset:
+	case clauseFinish:
+		// No clause-specific parameters.
+	case clauseReset:
 		// TODO(jackson): Implement.
 		return nil, errors.New("unimplemented")
 	}

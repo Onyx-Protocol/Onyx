@@ -431,6 +431,178 @@ func TestVoteClause(t *testing.T) {
 	}
 }
 
+func TestFinishVoteClause(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	var (
+		rightAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		otherRightAssetID = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		tokenAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		tokensAssetAmount = bc.AssetAmount{
+			AssetID: tokenAssetID,
+			Amount:  200,
+		}
+	)
+
+	testCases := []struct {
+		err  error
+		prev tokenScriptData
+		out  tokenScriptData
+	}{
+		{
+			err: nil,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateDistributed,
+				SecretHash:  exampleHash,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateDistributed | stateFinished,
+				SecretHash:  exampleHash,
+			},
+		},
+		{
+			err: nil,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 10,
+				State:       stateVoted,
+				SecretHash:  exampleHash,
+				Vote:        8,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 10,
+				State:       stateVoted | stateFinished,
+				SecretHash:  exampleHash,
+				Vote:        8,
+			},
+		},
+		{
+			// Voting token state already finished.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateDistributed | stateFinished,
+				SecretHash:  exampleHash,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateDistributed | stateFinished,
+				SecretHash:  exampleHash,
+			},
+		},
+		{
+			// Admin script does not authorize.
+			err: txscript.ErrStackScriptFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1, txscript.OP_DROP, txscript.OP_0},
+				OptionCount: 3,
+				State:       stateDistributed,
+				SecretHash:  exampleHash,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1, txscript.OP_DROP, txscript.OP_0},
+				OptionCount: 3,
+				State:       stateDistributed + stateFinished,
+				SecretHash:  exampleHash,
+			},
+		},
+		{
+			// Output has wrong voting right asset id.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateVoted,
+				SecretHash:  exampleHash,
+				Vote:        2,
+			},
+			out: tokenScriptData{
+				Right:       otherRightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateVoted | stateFinished,
+				SecretHash:  exampleHash,
+				Vote:        2,
+			},
+		},
+		{
+			// Cannot change the base state at the same time.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateDistributed | stateFinished,
+				SecretHash:  exampleHash,
+				Vote:        2,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateIntended | stateFinished,
+				SecretHash:  exampleHash,
+				Vote:        2,
+			},
+		},
+		{
+			// Vote changed during closing
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateVoted,
+				SecretHash:  exampleHash,
+				Vote:        2,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateVoted | stateFinished,
+				SecretHash:  exampleHash,
+				Vote:        3,
+			},
+		},
+	}
+
+	for i, tc := range testCases {
+		sb := txscript.NewScriptBuilder()
+		sb = sb.
+			AddInt64(int64(clauseFinish)).
+			AddData(tokenHoldingContract)
+		sigscript, err := sb.Script()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = txscripttest.NewTestTx(mockTimeFunc).
+			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
+			AddOutput(tokensAssetAmount, tc.out.PKScript()).
+			Execute(ctx, 0)
+		if !reflect.DeepEqual(err, tc.err) {
+			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
+		}
+	}
+}
+
 // TestTokenContractValidMatch tests generating a pkscript from a voting token.
 // The generated pkscript is then used in the voting token p2c detection
 // flow, where it should be found to match the contract. Then the decoded

@@ -247,6 +247,14 @@ func parseVotingBuildRequest(ctx context.Context, sources []*Source, destination
 			if err != nil {
 				return nil, nil, err
 			}
+		case "voting-close":
+			if token.State.Finished() {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has already been closed")
+			}
+			reserver, receiver, err = voting.TokenFinish(ctx, token)
+			if err != nil {
+				return nil, nil, err
+			}
 		default:
 			// TODO(jackson): Implement all other voting token clauses
 			return nil, nil, fmt.Errorf("unimplemented src.type: %s", src.Type)
