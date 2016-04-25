@@ -231,7 +231,7 @@ const (
 
 	// p2c extensions
 	OP_EVAL          = 0xc0 // 192
-	OP_REQUIREOUTPUT = 0xc1 // 193
+	OP_RESERVEOUTPUT = 0xc1 // 193
 	OP_ASSET         = 0xc2 // 194
 	OP_AMOUNT        = 0xc3 // 195
 	OP_OUTPUTSCRIPT  = 0xc4 // 196
@@ -241,7 +241,7 @@ const (
 	OP_UNKNOWN200    = 0xc8 // 200
 	OP_UNKNOWN201    = 0xc9 // 201
 
-	OP_UNKNOWN202    = 0xca // 202
+	OP_FINDOUTPUT    = 0xca // 202
 	OP_UNKNOWN203    = 0xcb // 203
 	OP_UNKNOWN204    = 0xcc // 204
 	OP_UNKNOWN205    = 0xcd // 205
@@ -526,7 +526,7 @@ var opcodeArray = [256]opcode{
 
 	// p2c extensions
 	OP_EVAL:          {OP_EVAL, "OP_EVAL", 1, nil},                   // see init()
-	OP_REQUIREOUTPUT: {OP_REQUIREOUTPUT, "OP_REQUIREOUTPUT", 1, nil}, // see init()
+	OP_RESERVEOUTPUT: {OP_RESERVEOUTPUT, "OP_RESERVEOUTPUT", 1, nil}, // see init()
 	OP_ASSET:         {OP_ASSET, "OP_ASSET", 1, opcodeAsset},
 	OP_AMOUNT:        {OP_AMOUNT, "OP_AMOUNT", 1, opcodeAmount},
 	OP_OUTPUTSCRIPT:  {OP_OUTPUTSCRIPT, "OP_OUTPUTSCRIPT", 1, opcodeOutputScript},
@@ -536,7 +536,7 @@ var opcodeArray = [256]opcode{
 	OP_UNKNOWN200:    {OP_UNKNOWN200, "OP_UNKNOWN200", 1, opcodeInvalid},
 	OP_UNKNOWN201:    {OP_UNKNOWN201, "OP_UNKNOWN201", 1, opcodeInvalid},
 
-	OP_UNKNOWN202: {OP_UNKNOWN202, "OP_UNKNOWN202", 1, opcodeInvalid},
+	OP_FINDOUTPUT: {OP_FINDOUTPUT, "OP_FINDOUTPUT", 1, opcodeFindOutput},
 	OP_UNKNOWN203: {OP_UNKNOWN203, "OP_UNKNOWN203", 1, opcodeInvalid},
 	OP_UNKNOWN204: {OP_UNKNOWN204, "OP_UNKNOWN204", 1, opcodeInvalid},
 	OP_UNKNOWN205: {OP_UNKNOWN205, "OP_UNKNOWN205", 1, opcodeInvalid},
@@ -633,7 +633,7 @@ func (pop *parsedOpcode) isDisabled(scriptVersionVal int, isBlock bool) bool {
 	switch pop.opcode.value {
 	case OP_INVERT, OP_AND, OP_OR, OP_XOR:
 		return true
-	case OP_REQUIREOUTPUT:
+	case OP_RESERVEOUTPUT, OP_FINDOUTPUT:
 		return scriptVersionVal == 0
 	case OP_ASSET, OP_AMOUNT, OP_OUTPUTSCRIPT, OP_TIME, OP_CIRCULATION:
 		return isBlock
@@ -2305,11 +2305,11 @@ func popAssetID(stack *stack) (*bc.AssetID, error) {
 	return &result, nil
 }
 
-// AMOUNT ASSETID SCRIPT OP_REQUIREOUTPUT Checks whether AMOUNT units
+// AMOUNT ASSETID SCRIPT OP_RESERVEOUTPUT Checks whether AMOUNT units
 // of ASSETID paid to SCRIPT remain among this tx's outputs after
-// accounting for other OP_REQUIREOUTPUTs.  Pushes true if so, false
+// accounting for other OP_RESERVEOUTPUTs.  Pushes true if so, false
 // otherwise.
-func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
+func opcodeReserveOutput(op *parsedOpcode, vm *Engine) error {
 	script, err := vm.dstack.PopByteArray()
 	if err != nil {
 		return err
@@ -2323,9 +2323,8 @@ func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
 		return err
 	}
 	if amount < 0 {
-		return fmt.Errorf("OP_REQUIREOUTPUT amount %d, must be >= 0", amount)
+		return fmt.Errorf("OP_RESERVEOUTPUT amount %d, must be >= 0", amount)
 	}
-
 	if amount == 0 {
 		// Fast no-op.
 		vm.dstack.PushBool(true)
@@ -2336,7 +2335,7 @@ func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
 
 	for i, output := range vm.tx.Outputs {
 		available := vm.available[i]
-		if available <= 0 {
+		if available < needed {
 			continue
 		}
 		if output.AssetID != *assetID {
@@ -2345,16 +2344,55 @@ func opcodeRequireOutput(op *parsedOpcode, vm *Engine) error {
 		if !bytes.Equal(output.Script, script) {
 			continue
 		}
-		if available >= needed {
-			vm.available[i] -= needed
-			needed = 0
-			break
-		}
-		// 0 < available < needed
-		needed -= vm.available[i]
-		vm.available[i] = 0
+		vm.available[i] -= needed
+		vm.dstack.PushBool(true)
+		return nil
 	}
-	vm.dstack.PushBool(needed == 0)
+	vm.dstack.PushBool(false)
+	return nil
+}
+
+// opcodeFindOutput implements the OP_FINDOUTPUT opcode.
+//
+// AMOUNT ASSETID SCRIPT OP_FINDOUTPUT
+//
+// The opcode checks for the existence of a single output among the tx's
+// outputs that has greater than or equal to AMOUNT units of ASSETID
+// paid to SCRIPT. Unlike OP_FINDOUTPUT, this is irrespective of other
+// OP_FINDOUTPUTs or OP_RESERVEOUTPUTs.
+//
+// Pushes true if the output exists, false otherwise.
+func opcodeFindOutput(op *parsedOpcode, vm *Engine) error {
+	script, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+	assetID, err := popAssetID(&vm.dstack)
+	if err != nil {
+		return err
+	}
+	amount, err := vm.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+	if amount < 0 {
+		return fmt.Errorf("OP_REQUIRESINGLEOUTPUT amount %d, must be >= 0", amount)
+	}
+
+	for _, output := range vm.tx.Outputs {
+		if output.AssetID != *assetID {
+			continue
+		}
+		if !bytes.Equal(output.Script, script) {
+			continue
+		}
+		if output.Amount < uint64(amount) {
+			continue
+		}
+		vm.dstack.PushBool(true)
+		return nil
+	}
+	vm.dstack.PushBool(false)
 	return nil
 }
 
@@ -2574,6 +2612,6 @@ func init() {
 	OpcodeByName["OP_TRUE"] = OP_TRUE
 
 	// The following is placed here to break circular references.
-	opcodeArray[OP_REQUIREOUTPUT].opfunc = opcodeRequireOutput
+	opcodeArray[OP_RESERVEOUTPUT].opfunc = opcodeReserveOutput
 	opcodeArray[OP_EVAL].opfunc = opcodeEval
 }

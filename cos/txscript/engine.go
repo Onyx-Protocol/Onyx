@@ -90,7 +90,7 @@ type (
 		flags            ScriptFlags
 		ctx              context.Context
 		viewReader       state.ViewReader
-		available        []uint64 // mutable copy of each output's Amount field, used for OP_REQUIREOUTPUT reservations
+		available        []uint64 // mutable copy of each output's Amount field, used for OP_RESERVEOUTPUT reservations
 		timestamp        int64    // Unix timestamp of block or engine creation
 	}
 )
