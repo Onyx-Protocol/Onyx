@@ -79,7 +79,7 @@ func loadMigrations(db *sql.DB, migrationsDir string) ([]migration, error) {
 
 		// Pull in data from the database if the migration was applied.
 		if appliedMig, ok := applied[m.Filename]; ok {
-			if appliedMig.Hash != m.Hash {
+			if filepath.Ext(appliedMig.Filename) == ".sql" && appliedMig.Hash != m.Hash {
 				return nil, fmt.Errorf("%s: applied hash %s doesn't match %s",
 					m.Filename, appliedMig.Hash, m.Hash)
 			}
