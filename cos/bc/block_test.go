@@ -45,11 +45,11 @@ func TestSmallBlock(t *testing.T) {
 		BlockHeader: BlockHeader{
 			Version: NewBlockVersion,
 		},
-		Transactions: []*Tx{NewTx(TxData{Version: CurrentTransactionVersion})},
+		Transactions: []*Tx{NewTx(TxData{SerFlags: 0x7, Version: CurrentTransactionVersion})},
 	}
 
 	got := serialize(t, &block)
-	want, _ := hex.DecodeString("0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001010000000000000000000000000000")
+	want, _ := hex.DecodeString("010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000107010000000000000000000000000000")
 	if !bytes.Equal(got, want) {
 		t.Errorf("small block bytes = %x want %x", got, want)
 	}

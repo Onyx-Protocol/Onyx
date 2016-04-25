@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"strconv"
 
@@ -48,10 +49,24 @@ func NewTx(data TxData) *Tx {
 	}
 }
 
+// These flags are part of the wire protocol;
+// they must not change.
+const (
+	SerWitness uint8 = 1 << iota
+	SerPrevout
+	SerMetadata
+
+	// Bit mask for accepted serialization flags.
+	// All other flag bits must be 0.
+	SerValid    = 0x7
+	serRequired = 0x7 // we support only this combination of flags
+)
+
 // TxData encodes a transaction in the blockchain.
 // Most users will want to use Tx instead;
 // it includes the hash.
 type TxData struct {
+	SerFlags uint8
 	Version  uint32
 	Inputs   []*TxInput
 	Outputs  []*TxOutput
@@ -135,6 +150,14 @@ func (tx *TxData) Value() (driver.Value, error) {
 }
 
 func (tx *TxData) readFrom(r *errors.Reader) {
+	var serflags [1]byte
+	io.ReadFull(r, serflags[:])
+	tx.SerFlags = serflags[0]
+	if r.Err == nil && tx.SerFlags != serRequired {
+		r.Err = fmt.Errorf("unsupported serflags %#x", tx.SerFlags)
+		return
+	}
+
 	tx.Version = blockchain.ReadUint32(r)
 
 	for n := blockchain.ReadUvarint(r); n > 0; n-- {
@@ -182,7 +205,7 @@ func (p *Outpoint) readFrom(r *errors.Reader) (n int64, err error) {
 // and stores the result in Hash.
 func (tx *TxData) Hash() Hash {
 	h := hash256.New()
-	tx.writeTo(h, true) // error is impossible
+	tx.writeTo(h, 0) // error is impossible
 	var v Hash
 	h.Sum(v[:0])
 	return v
@@ -237,7 +260,7 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 		w := errors.NewWriter(h)
 		blockchain.WriteUvarint(w, uint64(len(tx.Inputs)))
 		for _, in := range tx.Inputs {
-			in.writeTo(w, true)
+			in.writeTo(w, 0)
 		}
 		h.Sum(inputsHash[:0])
 		if cache != nil {
@@ -253,7 +276,7 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 		h := hash256.New()
 		w := errors.NewWriter(h)
 		blockchain.WriteUvarint(w, 1)
-		tx.Outputs[idx].writeTo(w, true)
+		tx.Outputs[idx].writeTo(w, 0)
 		h.Sum(outputsHash[:0])
 	case SigHashNone:
 		break
@@ -265,7 +288,7 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 			w := errors.NewWriter(h)
 			blockchain.WriteUvarint(w, uint64(len(tx.Outputs)))
 			for _, out := range tx.Outputs {
-				out.writeTo(w, true)
+				out.writeTo(w, 0)
 			}
 			h.Sum(outputsHash[:0])
 			if cache != nil {
@@ -282,7 +305,7 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 	w.Write(inputsHash[:])
 
 	var buf bytes.Buffer
-	tx.Inputs[idx].writeTo(errors.NewWriter(&buf), true)
+	tx.Inputs[idx].writeTo(errors.NewWriter(&buf), 0)
 	blockchain.WriteBytes(w, buf.Bytes())
 
 	assetAmount.writeTo(w)
@@ -291,7 +314,7 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 
 	blockchain.WriteUint64(w, tx.LockTime)
 
-	writeMetadata(w, tx.Metadata, true)
+	writeMetadata(w, tx.Metadata, 0)
 
 	w.Write([]byte{byte(hashType)})
 
@@ -311,52 +334,57 @@ func (tx *TxData) MarshalText() ([]byte, error) {
 
 // WriteTo writes tx to w.
 func (tx *TxData) WriteTo(w io.Writer) (int64, error) {
-	return tx.writeTo(w, false)
+	return tx.writeTo(w, serRequired)
 }
 
-func (tx *TxData) writeTo(w io.Writer, forHashing bool) (n int64, err error) {
+func (tx *TxData) writeTo(w io.Writer, serflags byte) (n int64, err error) {
 	ew := errors.NewWriter(w)
+	ew.Write([]byte{serflags})
 	blockchain.WriteUint32(ew, tx.Version)
 
 	blockchain.WriteUvarint(ew, uint64(len(tx.Inputs)))
 	for _, ti := range tx.Inputs {
-		ti.writeTo(ew, forHashing)
+		ti.writeTo(ew, serflags)
 	}
 
 	blockchain.WriteUvarint(ew, uint64(len(tx.Outputs)))
 	for _, to := range tx.Outputs {
-		to.writeTo(ew, forHashing)
+		to.writeTo(ew, serflags)
 	}
 
 	blockchain.WriteUint64(ew, tx.LockTime)
-	writeMetadata(ew, tx.Metadata, forHashing)
+	writeMetadata(ew, tx.Metadata, serflags)
 	return ew.Written(), ew.Err()
 }
 
-func (ti *TxInput) writeTo(w *errors.Writer, forHashing bool) {
+func (ti *TxInput) writeTo(w *errors.Writer, serflags byte) {
 	ti.Previous.WriteTo(w)
+
+	if serflags&SerPrevout != 0 {
+		ti.AssetAmount.writeTo(w)
+		blockchain.WriteBytes(w, ti.PrevScript)
+	}
 
 	// Write the signature script or its hash depending on serialization mode.
 	// Hashing the hash of the sigscript allows us to prune signatures,
 	// redeem scripts and contracts to optimize memory/storage use.
 	// Write the metadata or its hash depending on serialization mode.
-	if forHashing {
-		blockchain.WriteBytes(w, nil)
-	} else {
-		ti.AssetAmount.writeTo(w)
-		blockchain.WriteBytes(w, ti.PrevScript)
+	if serflags&SerWitness != 0 {
 		blockchain.WriteBytes(w, ti.SignatureScript)
+	} else {
+		blockchain.WriteBytes(w, nil)
 	}
-	writeMetadata(w, ti.Metadata, forHashing)
-	writeMetadata(w, ti.AssetDefinition, forHashing)
+
+	writeMetadata(w, ti.Metadata, serflags)
+	writeMetadata(w, ti.AssetDefinition, serflags)
 }
 
-func (to *TxOutput) writeTo(w *errors.Writer, forHashing bool) {
+func (to *TxOutput) writeTo(w *errors.Writer, serflags byte) {
 	to.AssetAmount.writeTo(w)
 	blockchain.WriteBytes(w, to.Script)
 
 	// Write the metadata or its hash depending on serialization mode.
-	writeMetadata(w, to.Metadata, forHashing)
+	writeMetadata(w, to.Metadata, serflags)
 }
 
 // String returns the Outpoint in the human-readable form "hash:index".
@@ -385,11 +413,11 @@ func (a AssetAmount) writeTo(w *errors.Writer) {
 	blockchain.WriteUint64(w, a.Amount)
 }
 
-func writeMetadata(w *errors.Writer, data []byte, forHashing bool) {
-	if forHashing {
+func writeMetadata(w *errors.Writer, data []byte, serflags byte) {
+	if serflags&SerMetadata != 0 {
+		blockchain.WriteBytes(w, data)
+	} else {
 		h := fastHash(data)
 		blockchain.WriteBytes(w, h)
-	} else {
-		blockchain.WriteBytes(w, data)
 	}
 }

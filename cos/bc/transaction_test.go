@@ -23,19 +23,21 @@ func TestTransaction(t *testing.T) {
 	}{
 		{
 			tx: NewTx(TxData{
+				SerFlags: 0x7,
 				Version:  1,
 				Inputs:   nil,
 				Outputs:  nil,
 				LockTime: 0,
 				Metadata: nil,
 			}),
-			hex:         "010000000000000000000000000000",
-			hash:        mustDecodeHash("d64277a66bbd1a66e12ee31797f7b9d2487e056def294e5f5240e64e0324ad45"),
-			witnessHash: mustDecodeHash("bb0e9f24579bab40b88df4b409984ef7fdcb1a9416ba5d89e6009f6f7358214d"),
+			hex:         "07010000000000000000000000000000",
+			hash:        mustDecodeHash("2930180badc20224c5f32202956be228b0ec357ff85383fa5156d853cc7ae3d8"),
+			witnessHash: mustDecodeHash("874e1b9c1b97edd3c9014ed5a7e5e24134a5225425408b5305a4d711e37310dc"),
 		},
 		{
 			tx: NewTx(TxData{
-				Version: 1,
+				SerFlags: 0x7,
+				Version:  1,
 				Inputs: []*TxInput{
 					{
 						Previous: Outpoint{
@@ -56,13 +58,14 @@ func TestTransaction(t *testing.T) {
 				LockTime: 0,
 				Metadata: []byte("issuance"),
 			}),
-			hex:         "010000000103deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758dffffffff00000000000000000000000000000000000000000000000000000000000000000000000000000000000301020305696e707574000100000000000000000000000000000000000000000000000000000000000000000010a5d4e80000000101066f757470757400000000000000000869737375616e6365",
-			hash:        mustDecodeHash("cc8142e4584989fbbca4538ba49f75ce47d4b46dec3137a961fe25710dd3ee18"),
-			witnessHash: mustDecodeHash("f3f4bcfd88a683c99dbdde750cb14022faf5db62549bd8a4f42a4e3f6e20da97"),
+			hex:         "07010000000103deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758dffffffff00000000000000000000000000000000000000000000000000000000000000000000000000000000000301020305696e707574000100000000000000000000000000000000000000000000000000000000000000000010a5d4e80000000101066f757470757400000000000000000869737375616e6365",
+			hash:        mustDecodeHash("55d60826854a24357f3187795d2a08ea27ae1b5d845f06b329d21e0e37e34770"),
+			witnessHash: mustDecodeHash("162cf0a56439982e1d1aac2b3f02ace5540336cdd394b37aa75ddf783fa184c3"),
 		},
 		{
 			tx: NewTx(TxData{
-				Version: 1,
+				SerFlags: 0x7,
+				Version:  1,
 				Inputs: []*TxInput{
 					{
 						Previous: Outpoint{
@@ -91,9 +94,9 @@ func TestTransaction(t *testing.T) {
 				LockTime: 1492590591,
 				Metadata: []byte("distribution"),
 			}),
-			hex:         "0100000001dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d32920000000000000000000000000000000000000000000000000000000000000000000000000010a5d4e800000001010005696e707574086173736574646566028ff02bfb82be991185ea36426e233bb9d4b79797a669140b53ef21174fae43ad0070c9b28b0000000101008ff02bfb82be991185ea36426e233bb9d4b79797a669140b53ef21174fae43ad00a0db215d000000010200ff1ff758000000000c646973747269627574696f6e",
-			hash:        mustDecodeHash("1ba1c708f98c24f0fa49eca066c4f9f4add27f0f3d14ccc1cfe4e26958bac0c5"),
-			witnessHash: mustDecodeHash("30f68a7dd59556b0eea4c70ad29f8744ba8374f8ac600aaa43f32af6561ea737"),
+			hex:         "070100000001dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d32920000000000000000000000000000000000000000000000000000000000000000000000000010a5d4e800000001010005696e707574086173736574646566028ff02bfb82be991185ea36426e233bb9d4b79797a669140b53ef21174fae43ad0070c9b28b0000000101008ff02bfb82be991185ea36426e233bb9d4b79797a669140b53ef21174fae43ad00a0db215d000000010200ff1ff758000000000c646973747269627574696f6e",
+			hash:        mustDecodeHash("8c0643f219807f84f84e7b7d8d842898d5dc1248ec8153fbe68d0bcbb969a417"),
+			witnessHash: mustDecodeHash("b433907609c6a25ca5fdb4b2aa5a3b565479182f6230fc7c2cf427e31067d65d"),
 		},
 	}
 
@@ -199,7 +202,8 @@ func TestOutpointWriteErr(t *testing.T) {
 func TestTxHashForSig(t *testing.T) {
 	assetID := ComputeAssetID([]byte{1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"))
 	tx := &TxData{
-		Version: 1,
+		SerFlags: 0x7,
+		Version:  1,
 		Inputs: []*TxInput{{
 			Previous:        Outpoint{Hash: mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151")},
 			SignatureScript: []byte{1},
@@ -267,14 +271,14 @@ func BenchmarkTxHash(b *testing.B) {
 func BenchmarkTxWriteToTrue(b *testing.B) {
 	tx := &Tx{}
 	for i := 0; i < b.N; i++ {
-		tx.writeTo(ioutil.Discard, true)
+		tx.writeTo(ioutil.Discard, 0)
 	}
 }
 
 func BenchmarkTxWriteToFalse(b *testing.B) {
 	tx := &Tx{}
 	for i := 0; i < b.N; i++ {
-		tx.writeTo(ioutil.Discard, false)
+		tx.writeTo(ioutil.Discard, serRequired)
 	}
 }
 
@@ -285,7 +289,7 @@ func BenchmarkTxWriteToTrue200(b *testing.B) {
 		tx.Outputs = append(tx.Outputs, &TxOutput{})
 	}
 	for i := 0; i < b.N; i++ {
-		tx.writeTo(ioutil.Discard, true)
+		tx.writeTo(ioutil.Discard, 0)
 	}
 }
 
@@ -296,7 +300,7 @@ func BenchmarkTxWriteToFalse200(b *testing.B) {
 		tx.Outputs = append(tx.Outputs, &TxOutput{})
 	}
 	for i := 0; i < b.N; i++ {
-		tx.writeTo(ioutil.Discard, false)
+		tx.writeTo(ioutil.Discard, serRequired)
 	}
 }
 
@@ -304,7 +308,7 @@ func BenchmarkTxInputWriteToTrue(b *testing.B) {
 	input := &TxInput{}
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
-		input.writeTo(ew, true)
+		input.writeTo(ew, 0)
 	}
 }
 
@@ -312,7 +316,7 @@ func BenchmarkTxInputWriteToFalse(b *testing.B) {
 	input := &TxInput{}
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
-		input.writeTo(ew, false)
+		input.writeTo(ew, serRequired)
 	}
 }
 
@@ -320,7 +324,7 @@ func BenchmarkTxOutputWriteToTrue(b *testing.B) {
 	output := &TxOutput{}
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
-		output.writeTo(ew, true)
+		output.writeTo(ew, 0)
 	}
 }
 
@@ -328,6 +332,6 @@ func BenchmarkTxOutputWriteToFalse(b *testing.B) {
 	output := &TxOutput{}
 	ew := errors.NewWriter(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
-		output.writeTo(ew, false)
+		output.writeTo(ew, serRequired)
 	}
 }

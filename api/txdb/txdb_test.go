@@ -49,8 +49,8 @@ func TestPoolTxs(t *testing.T) {
 	const fix = `
 		INSERT INTO pool_txs (tx_hash, data)
 		VALUES (
-			'94fd998552e8ceceab82dd261f391bb2e4a1a08d8e9b624c5ca011d932d8b614',
-			decode('01000000000000000000000000000568656c6c6f', 'hex')
+			'6fb825e8419bd78a18f51002cf0e6bd7498c3ae5f3339a7c91e7be7af8ef381c',
+			decode('0701000000000000000000000000000568656c6c6f', 'hex')
 		);
 	`
 	withContext(t, fix, func(ctx context.Context) {
@@ -60,6 +60,7 @@ func TestPoolTxs(t *testing.T) {
 		}
 
 		wantTx := bc.NewTx(bc.TxData{
+			SerFlags: 0x7,
 			Version:  1,
 			Metadata: []byte("hello"),
 		})
@@ -81,7 +82,7 @@ func TestPoolTxs(t *testing.T) {
 func TestGetTxs(t *testing.T) {
 	withContext(t, "", func(ctx context.Context) {
 		store := NewStore()
-		tx := bc.NewTx(bc.TxData{Metadata: []byte("tx")})
+		tx := bc.NewTx(bc.TxData{SerFlags: 0x7, Metadata: []byte("tx")})
 		err := store.ApplyTx(ctx, tx, nil)
 		if err != nil {
 			t.Log(errors.Stack(err))
@@ -134,7 +135,7 @@ func TestLatestBlock(t *testing.T) {
 		(
 			'72a7766e340ce61838d88fbd2f3bcf6064b2d6a21596028d031c6a9d24dbd4af',
 			1,
-			decode('010000000100000000000000313233000000000000000000000000000000000000000000000000000000000040414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000064000000000000000f746573742d7369672d73637269707412746573742d6f75747075742d73637269707401010000000000000000000000000007746573742d7478', 'hex'),
+			decode('010000000100000000000000313233000000000000000000000000000000000000000000000000000000000040414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000064000000000000000f746573742d7369672d73637269707412746573742d6f75747075742d7363726970740107010000000000000000000000000007746573742d7478', 'hex'),
 			''
 		);
 	`
@@ -161,7 +162,7 @@ func TestLatestBlock(t *testing.T) {
 				OutputScript:    []byte("test-output-script"),
 			},
 			Transactions: []*bc.Tx{
-				bc.NewTx(bc.TxData{Version: 1, Metadata: []byte("test-tx")}),
+				bc.NewTx(bc.TxData{SerFlags: 0x7, Version: 1, Metadata: []byte("test-tx")}),
 			},
 		}
 
