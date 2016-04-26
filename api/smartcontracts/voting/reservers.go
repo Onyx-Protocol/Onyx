@@ -21,6 +21,7 @@ type rightsReserver struct {
 	clause         rightsContractClause
 	output         rightScriptData
 	intermediaries []intermediateHolder
+	prevScript     []byte
 	holderAddr     *appdb.Address
 	adminAddr      *appdb.Address
 }
@@ -122,7 +123,9 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 		Items: []*txbuilder.ReserveResultItem{
 			{
 				TxInput: &bc.TxInput{
-					Previous: r.outpoint,
+					Previous:    r.outpoint,
+					AssetAmount: *assetAmount,
+					PrevScript:  r.prevScript,
 				},
 				TemplateInput: &txbuilder.Input{
 					AssetAmount:   *assetAmount,

@@ -38,6 +38,7 @@ func RightAuthentication(ctx context.Context, src *RightWithUTXO) (txbuilder.Res
 		outpoint:   src.Outpoint,
 		clause:     clauseAuthenticate,
 		output:     src.rightScriptData, // unchanged
+		prevScript: src.PKScript(),
 		holderAddr: originalHolderAddr,
 	}
 	return reserver, reserver.output, nil
@@ -67,6 +68,7 @@ func RightTransfer(ctx context.Context, src *RightWithUTXO, newHolderScript []by
 			Deadline:       src.Deadline,       // unchanged
 			OwnershipChain: src.OwnershipChain, // unchanged
 		},
+		prevScript: src.PKScript(),
 		holderAddr: currentHolderAddr,
 		adminAddr:  adminAddr,
 	}
@@ -101,6 +103,7 @@ func RightDelegation(ctx context.Context, src *RightWithUTXO, newHolderScript []
 				src.Deadline,
 			),
 		},
+		prevScript: src.PKScript(),
 		holderAddr: currentHolderAddr,
 		adminAddr:  adminAddr,
 	}
@@ -129,6 +132,7 @@ func RightRecall(ctx context.Context, src, recallPoint *RightWithUTXO, intermedi
 		clause:         clauseRecall,
 		output:         recallPoint.rightScriptData,
 		intermediaries: intermediaries,
+		prevScript:     src.PKScript(),
 		holderAddr:     originalHolderAddr,
 	}
 	return reserver, reserver.output, nil
