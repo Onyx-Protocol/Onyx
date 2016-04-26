@@ -1,12 +1,10 @@
-package bc_test
+package bc
 
 import (
 	"bytes"
 	"encoding/hex"
 	"testing"
 	"time"
-
-	. "chain/cos/bc"
 )
 
 func TestEmptyBlock(t *testing.T) {

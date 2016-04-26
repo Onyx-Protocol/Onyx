@@ -1,4 +1,4 @@
-package bc_test
+package bc
 
 import (
 	"bytes"
