@@ -12,6 +12,20 @@ import (
 
 func SignTxTemplate(t testing.TB, template *txbuilder.Template, priv *hdkey.XKey) {
 	for _, input := range template.Inputs {
+		for _, component := range input.SigComponents {
+			for _, sig := range component.Signatures {
+				key, err := derive(priv, sig.DerivationPath)
+				if err != nil {
+					testutil.FatalErr(t, err)
+				}
+				dat, err := key.Sign(component.SignatureData[:])
+				if err != nil {
+					testutil.FatalErr(t, err)
+				}
+				sig.DER = append(dat.Serialize(), 1) // append hashtype SIGHASH_ALL
+			}
+		}
+
 		for _, sig := range input.Sigs {
 			key, err := derive(priv, sig.DerivationPath)
 			if err != nil {
