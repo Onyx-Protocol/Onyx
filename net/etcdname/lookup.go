@@ -122,7 +122,7 @@ func unmarshalFromPointer(data []byte, pointer string) (string, error) {
 		return "", errors.New("could not find value at that JSON pointer")
 	}
 
-	return "", nil
+	return res, nil
 }
 
 // followJSONPointer traverses the result of json.Unmarshal, looking for the value

@@ -13,9 +13,13 @@ import (
 
 // NewListener creates a new pq.Listener and begins listening.
 func NewListener(ctx context.Context, dbURL, channel string) (*pq.Listener, error) {
+	dbURL, err := resolveURI(dbURL)
+	if err != nil {
+		return nil, err
+	}
 	result := pq.NewListener(dbURL, 1*time.Second, 10*time.Second, func(ev pq.ListenerEventType, err error) {
 		log.Error(ctx, errors.Wrapf(err, "event in %s listener: %v", channel, ev))
 	})
-	err := result.Listen(channel)
+	err = result.Listen(channel)
 	return result, errors.Wrap(err, "listening to channel")
 }

@@ -85,6 +85,21 @@ func TestFollowJSONPointer(t *testing.T) {
 	}
 }
 
+func TestUnmarshalFromPointer(t *testing.T) {
+	jsonStr := "{\"Primary\":\"127.0.0.1:6434\",\"SyncPeer\":\"127.0.0.1:6432\"}"
+	pointer := "Primary"
+
+	addrs, err := unmarshalFromPointer([]byte(jsonStr), pointer)
+	if err != nil {
+		t.Fatal("unexpected error", err.Error())
+	}
+
+	if addrs != "127.0.0.1:6434" {
+		t.Fatalf("got addrs=%s, want=%q", addrs, "127.0.0.1:6434")
+	}
+
+}
+
 func TestSplitPointer(t *testing.T) {
 	cases := []struct {
 		original    string

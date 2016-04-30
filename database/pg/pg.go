@@ -79,7 +79,7 @@ func resolveURI(rawURI string) (string, error) {
 	addr := addrs[0] // there should only be one address
 
 	if port != "" {
-		addr = addr + ":" + port
+		addr = net.JoinHostPort(addr, port)
 	}
 
 	u.Host = addr
