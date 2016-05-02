@@ -125,9 +125,7 @@ func (tx *TxData) UnmarshalText(p []byte) error {
 	if err != nil {
 		return err
 	}
-	r := &errors.Reader{R: bytes.NewReader(b)}
-	tx.readFrom(r)
-	return r.Err
+	return tx.readFrom(bytes.NewReader(b))
 }
 
 func (tx *TxData) Scan(val interface{}) error {
@@ -135,9 +133,7 @@ func (tx *TxData) Scan(val interface{}) error {
 	if !ok {
 		return errors.New("Scan must receive a byte slice")
 	}
-	r := &errors.Reader{R: bytes.NewReader(b)}
-	tx.readFrom(r)
-	return r.Err
+	return tx.readFrom(bytes.NewReader(b))
 }
 
 func (tx *TxData) Value() (driver.Value, error) {
@@ -149,34 +145,35 @@ func (tx *TxData) Value() (driver.Value, error) {
 	return b.Bytes(), nil
 }
 
-func (tx *TxData) readFrom(r *errors.Reader) {
+// assumes r has sticky errors
+func (tx *TxData) readFrom(r io.Reader) error {
 	var serflags [1]byte
-	io.ReadFull(r, serflags[:])
+	_, err := io.ReadFull(r, serflags[:])
 	tx.SerFlags = serflags[0]
-	if r.Err == nil && tx.SerFlags != serRequired {
-		r.Err = fmt.Errorf("unsupported serflags %#x", tx.SerFlags)
-		return
+	if err == nil && tx.SerFlags != serRequired {
+		return fmt.Errorf("unsupported serflags %#x", tx.SerFlags)
 	}
 
-	tx.Version = blockchain.ReadUint32(r)
+	tx.Version, _ = blockchain.ReadUint32(r)
 
-	for n := blockchain.ReadUvarint(r); n > 0; n-- {
+	for n, _ := blockchain.ReadUvarint(r); n > 0; n-- {
 		ti := new(TxInput)
 		ti.readFrom(r)
 		tx.Inputs = append(tx.Inputs, ti)
 	}
 
-	for n := blockchain.ReadUvarint(r); n > 0; n-- {
+	for n, _ := blockchain.ReadUvarint(r); n > 0; n-- {
 		to := new(TxOutput)
 		to.readFrom(r)
 		tx.Outputs = append(tx.Outputs, to)
 	}
 
-	tx.LockTime = blockchain.ReadUint64(r)
-	blockchain.ReadBytes(r, &tx.Metadata)
+	tx.LockTime, _ = blockchain.ReadUint64(r)
+	return blockchain.ReadBytes(r, &tx.Metadata)
 }
 
-func (ti *TxInput) readFrom(r *errors.Reader) {
+// assumes r has sticky errors
+func (ti *TxInput) readFrom(r io.Reader) {
 	ti.Previous.readFrom(r)
 	ti.AssetAmount.readFrom(r)
 	blockchain.ReadBytes(r, &ti.PrevScript)
@@ -185,19 +182,17 @@ func (ti *TxInput) readFrom(r *errors.Reader) {
 	blockchain.ReadBytes(r, &ti.AssetDefinition)
 }
 
-func (to *TxOutput) readFrom(r *errors.Reader) {
+// assumes r has sticky errors
+func (to *TxOutput) readFrom(r io.Reader) {
 	to.AssetAmount.readFrom(r)
 	blockchain.ReadBytes(r, (*[]byte)(&to.Script))
 	blockchain.ReadBytes(r, &to.Metadata)
 }
 
-func (p *Outpoint) readFrom(r *errors.Reader) (n int64, err error) {
-	x, err := io.ReadFull(r, p.Hash[:])
-	if err != nil {
-		return int64(x), err
-	}
-	p.Index = blockchain.ReadUint32(r)
-	return 32 + 4, nil
+// assumes r has sticky errors
+func (p *Outpoint) readFrom(r io.Reader) {
+	io.ReadFull(r, p.Hash[:])
+	p.Index, _ = blockchain.ReadUint32(r)
 }
 
 // Hash computes the hash of the transaction with metadata fields
@@ -334,30 +329,32 @@ func (tx *TxData) MarshalText() ([]byte, error) {
 
 // WriteTo writes tx to w.
 func (tx *TxData) WriteTo(w io.Writer) (int64, error) {
-	return tx.writeTo(w, serRequired)
-}
-
-func (tx *TxData) writeTo(w io.Writer, serflags byte) (n int64, err error) {
 	ew := errors.NewWriter(w)
-	ew.Write([]byte{serflags})
-	blockchain.WriteUint32(ew, tx.Version)
-
-	blockchain.WriteUvarint(ew, uint64(len(tx.Inputs)))
-	for _, ti := range tx.Inputs {
-		ti.writeTo(ew, serflags)
-	}
-
-	blockchain.WriteUvarint(ew, uint64(len(tx.Outputs)))
-	for _, to := range tx.Outputs {
-		to.writeTo(ew, serflags)
-	}
-
-	blockchain.WriteUint64(ew, tx.LockTime)
-	writeMetadata(ew, tx.Metadata, serflags)
+	tx.writeTo(ew, serRequired)
 	return ew.Written(), ew.Err()
 }
 
-func (ti *TxInput) writeTo(w *errors.Writer, serflags byte) {
+// assumes w has sticky errors
+func (tx *TxData) writeTo(w io.Writer, serflags byte) {
+	w.Write([]byte{serflags})
+	blockchain.WriteUint32(w, tx.Version)
+
+	blockchain.WriteUvarint(w, uint64(len(tx.Inputs)))
+	for _, ti := range tx.Inputs {
+		ti.writeTo(w, serflags)
+	}
+
+	blockchain.WriteUvarint(w, uint64(len(tx.Outputs)))
+	for _, to := range tx.Outputs {
+		to.writeTo(w, serflags)
+	}
+
+	blockchain.WriteUint64(w, tx.LockTime)
+	writeMetadata(w, tx.Metadata, serflags)
+}
+
+// assumes w has sticky errors
+func (ti *TxInput) writeTo(w io.Writer, serflags byte) {
 	ti.Previous.WriteTo(w)
 
 	if serflags&SerPrevout != 0 {
@@ -379,7 +376,8 @@ func (ti *TxInput) writeTo(w *errors.Writer, serflags byte) {
 	writeMetadata(w, ti.AssetDefinition, serflags)
 }
 
-func (to *TxOutput) writeTo(w *errors.Writer, serflags byte) {
+// assumes r has sticky errors
+func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
 	to.AssetAmount.writeTo(w)
 	blockchain.WriteBytes(w, to.Script)
 
@@ -393,9 +391,14 @@ func (p Outpoint) String() string {
 }
 
 // WriteTo writes p to w.
-func (p Outpoint) WriteTo(ew *errors.Writer) {
-	ew.Write(p.Hash[:])
-	blockchain.WriteUint32(ew, p.Index)
+// It assumes w has sticky errors.
+func (p Outpoint) WriteTo(w io.Writer) (int64, error) {
+	n, err := w.Write(p.Hash[:])
+	if err != nil {
+		return int64(n), err
+	}
+	u, err := blockchain.WriteUint32(w, p.Index)
+	return int64(n + u), err
 }
 
 type AssetAmount struct {
@@ -403,17 +406,20 @@ type AssetAmount struct {
 	Amount  uint64  `json:"amount"`
 }
 
-func (a *AssetAmount) readFrom(r *errors.Reader) {
+// assumes r has sticky errors
+func (a *AssetAmount) readFrom(r io.Reader) {
 	io.ReadFull(r, a.AssetID[:])
-	a.Amount = blockchain.ReadUint64(r)
+	a.Amount, _ = blockchain.ReadUint64(r)
 }
 
-func (a AssetAmount) writeTo(w *errors.Writer) {
+// assumes w has sticky errors
+func (a AssetAmount) writeTo(w io.Writer) {
 	w.Write(a.AssetID[:])
 	blockchain.WriteUint64(w, a.Amount)
 }
 
-func writeMetadata(w *errors.Writer, data []byte, serflags byte) {
+// assumes w has sticky errors
+func writeMetadata(w io.Writer, data []byte, serflags byte) {
 	if serflags&SerMetadata != 0 {
 		blockchain.WriteBytes(w, data)
 	} else {

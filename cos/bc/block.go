@@ -23,9 +23,7 @@ func (b *Block) Scan(val interface{}) error {
 	if !ok {
 		return errors.New("Scan must receive a byte slice")
 	}
-	r := &errors.Reader{R: bytes.NewReader(buf)}
-	b.readFrom(r)
-	return r.Err
+	return b.readFrom(bytes.NewReader(buf))
 }
 
 func (b *Block) Value() (driver.Value, error) {
@@ -37,33 +35,42 @@ func (b *Block) Value() (driver.Value, error) {
 	return buf.Bytes(), nil
 }
 
-func (b *Block) readFrom(r *errors.Reader) {
-	b.BlockHeader.readFrom(r)
-	for n := blockchain.ReadUvarint(r); n > 0; n-- {
+// assumes r has sticky errors
+func (b *Block) readFrom(r io.Reader) error {
+	err := b.BlockHeader.readFrom(r)
+	if err != nil {
+		return err
+	}
+	for n, _ := blockchain.ReadUvarint(r); n > 0; n-- {
 		var data TxData
-		data.readFrom(r)
+		err := data.readFrom(r)
+		if err != nil {
+			return err
+		}
 		// TODO(kr): store/reload hashes;
 		// don't compute here if not necessary.
 		tx := NewTx(data)
 		b.Transactions = append(b.Transactions, tx)
 	}
+	return nil
 }
 
 // WriteTo satisfies interface io.WriterTo.
 func (b *Block) WriteTo(w io.Writer) (int64, error) {
-	return b.writeTo(w, false)
+	ew := errors.NewWriter(w)
+	b.writeTo(ew, false)
+	return ew.Written(), ew.Err()
 }
 
-func (b *Block) writeTo(w io.Writer, forSigning bool) (int64, error) {
-	ew := errors.NewWriter(w)
-	b.BlockHeader.writeTo(ew, forSigning)
+// assumes w has sticky errors
+func (b *Block) writeTo(w io.Writer, forSigning bool) {
+	b.BlockHeader.writeTo(w, forSigning)
 	if !forSigning {
-		blockchain.WriteUvarint(ew, uint64(len(b.Transactions)))
+		blockchain.WriteUvarint(w, uint64(len(b.Transactions)))
 		for _, tx := range b.Transactions {
-			tx.WriteTo(ew)
+			tx.WriteTo(w)
 		}
 	}
-	return ew.Written(), ew.Err()
 }
 
 // Block version to use when creating new blocks.
@@ -109,9 +116,7 @@ func (bh *BlockHeader) Scan(val interface{}) error {
 	if !ok {
 		return errors.New("Scan must receive a byte slice")
 	}
-	r := &errors.Reader{R: bytes.NewReader(buf)}
-	bh.readFrom(r)
-	return r.Err
+	return bh.readFrom(bytes.NewReader(buf))
 }
 
 func (bh *BlockHeader) Value() (driver.Value, error) {
@@ -182,14 +187,15 @@ func (bh *BlockHeader) SetStateRoot(h Hash) {
 	copy(bh.Commitment[32:64], h[:])
 }
 
-func (bh *BlockHeader) readFrom(r *errors.Reader) {
-	bh.Version = blockchain.ReadUint32(r)
-	bh.Height = blockchain.ReadUint64(r)
+// assumes r has sticky errors
+func (bh *BlockHeader) readFrom(r io.Reader) error {
+	bh.Version, _ = blockchain.ReadUint32(r)
+	bh.Height, _ = blockchain.ReadUint64(r)
 	io.ReadFull(r, bh.PreviousBlockHash[:])
 	blockchain.ReadBytes(r, &bh.Commitment)
-	bh.Timestamp = blockchain.ReadUint64(r)
+	bh.Timestamp, _ = blockchain.ReadUint64(r)
 	blockchain.ReadBytes(r, (*[]byte)(&bh.SignatureScript))
-	blockchain.ReadBytes(r, (*[]byte)(&bh.OutputScript))
+	return blockchain.ReadBytes(r, (*[]byte)(&bh.OutputScript))
 }
 
 // WriteTo satisfies interface io.WriterTo.
@@ -208,7 +214,8 @@ func (bh *BlockHeader) WriteForSigTo(w io.Writer) (int64, error) {
 
 // writeTo writes bh to w.
 // If forSigning is true, it writes an empty string instead of the signature script.
-func (bh *BlockHeader) writeTo(w *errors.Writer, forSigning bool) {
+// assumes w has sticky errors.
+func (bh *BlockHeader) writeTo(w io.Writer, forSigning bool) error {
 	blockchain.WriteUint32(w, bh.Version)
 	blockchain.WriteUint64(w, bh.Height)
 	w.Write(bh.PreviousBlockHash[:])
@@ -219,5 +226,5 @@ func (bh *BlockHeader) writeTo(w *errors.Writer, forSigning bool) {
 	} else {
 		blockchain.WriteBytes(w, bh.SignatureScript)
 	}
-	blockchain.WriteBytes(w, bh.OutputScript)
+	return blockchain.WriteBytes(w, bh.OutputScript)
 }
