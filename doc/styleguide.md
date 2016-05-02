@@ -189,8 +189,8 @@ worry too much.
 
 - Details. This is a long description of what the change is, why we
 need it, any necessary background information, relevant future plans,
-a rational for any technical tradeoffs or other choices made, what the
-alternatives were, or any other notes you think might be good to
+a rationale for any technical tradeoffs or other choices made, what
+the alternatives were, or any other notes you think might be good to
 include. This can be empty if everything is obvious<sup
 id=a3>[3](#f3)</sup> just from looking at the diff, or it can be very
 long. Hard wrap paragraphs to something reasonable (between 65-75
