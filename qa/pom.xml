@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>chain.qa.baseline</groupId>
-	<artifactId>chain-core-baseline-test</artifactId>
+	<groupId>chain.qa</groupId>
+	<artifactId>chain-core-qa</artifactId>
 	<packaging>jar</packaging>
 	<version>1.0.0</version>
 	<name>${project.groupId}:${project.artifactId}</name>
@@ -11,7 +11,12 @@
 		<dependency>
 			<groupId>com.chain</groupId>
 			<artifactId>chain-sdk-java</artifactId>
-			<version>1.0.9</version>
+			<version>1.0.10</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>1.7.21</version>
 		</dependency>
 	</dependencies>
 	<build>
@@ -38,6 +43,9 @@
 						<goals>
 							<goal>shade</goal>
 						</goals>
+						<configuration>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
