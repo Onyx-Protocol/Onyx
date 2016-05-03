@@ -10,7 +10,6 @@ import (
 
 	"chain/api/asset"
 	"chain/api/asset/assettest"
-	"chain/api/generator"
 	"chain/api/issuer"
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/txbuilder"
@@ -116,25 +115,6 @@ func TestTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	closed := make(chan struct{})
-	defer close(closed)
-
-	go func() {
-		// block-generating loop
-		ticks := time.Tick(100 * time.Millisecond)
-		for {
-			select {
-			case <-ticks:
-				_, err := generator.MakeBlock(ctx)
-				if err != nil {
-					t.Log(errors.Stack(err))
-				}
-			case <-closed:
-				return
-			}
-		}
-	}()
-
 	userID := assettest.CreateUserFixture(ctx, t, "", "")
 	projectID := assettest.CreateProjectFixture(ctx, t, userID, "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
@@ -208,8 +188,8 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	_, err = submitSingle(ctx, submitSingleArg{tpl: txTemplate, wait: 5 * time.Second})
-	if err != nil {
+	_, err = submitSingle(ctx, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
+	if err != nil && err != context.DeadlineExceeded {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
