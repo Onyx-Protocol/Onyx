@@ -154,7 +154,7 @@ func TokenIssuance(ctx context.Context, rightAssetID bc.AssetID, admin []byte, o
 
 // TokenIntent builds txbuilder Reserver and Receiver implementations
 // for a voting token intent-to-vote transition.
-func TokenIntent(ctx context.Context, token *Token, right txbuilder.Receiver) (txbuilder.Reserver, txbuilder.Receiver, error) {
+func TokenIntent(ctx context.Context, token *Token, rightScript []byte) (txbuilder.Reserver, txbuilder.Receiver, error) {
 	prevScript := token.tokenScriptData.PKScript()
 	intended := token.tokenScriptData
 	intended.State = stateIntended
@@ -164,14 +164,14 @@ func TokenIntent(ctx context.Context, token *Token, right txbuilder.Receiver) (t
 		clause:      clauseIntendToVote,
 		output:      intended,
 		prevScript:  prevScript,
-		rightScript: right.PKScript(),
+		rightScript: rightScript,
 	}
 	return reserver, intended, nil
 }
 
 // TokenVote builds txbuilder Reserver and Receiver implementations
 // for a voting token vote transition.
-func TokenVote(ctx context.Context, token *Token, right txbuilder.Receiver, vote int64, secret []byte) (txbuilder.Reserver, txbuilder.Receiver, error) {
+func TokenVote(ctx context.Context, token *Token, rightScript []byte, vote int64, secret []byte) (txbuilder.Reserver, txbuilder.Receiver, error) {
 	data := token.tokenScriptData
 	data.State = stateVoted
 	data.Vote = vote
@@ -181,7 +181,7 @@ func TokenVote(ctx context.Context, token *Token, right txbuilder.Receiver, vote
 		clause:      clauseVote,
 		output:      data,
 		prevScript:  token.tokenScriptData.PKScript(),
-		rightScript: right.PKScript(),
+		rightScript: rightScript,
 		secret:      secret,
 	}
 	return reserver, data, nil

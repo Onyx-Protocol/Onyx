@@ -1,7 +1,7 @@
 package api
 
 import (
-	"strings"
+	"encoding/json"
 	"time"
 
 	"golang.org/x/net/context"
@@ -34,9 +34,6 @@ type Source struct {
 	// TxHashAsID exists only to provide an alternate input alias
 	// ("transaction_id") for TxHash. This field should be treated as read-only.
 	TxHashAsID *bc.Hash `json:"transaction_id"`
-
-	// Voting system specific:
-	VotingRight *bc.AssetID `json:"voting_right_asset_id,omitempty"`
 }
 
 func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
@@ -138,28 +135,20 @@ type Destination struct {
 	OrderbookPrices []*orderbook.Price `json:"orderbook_prices,omitempty"`
 	Script          chainjson.HexBytes `json:"script,omitempty"`
 	Type            string
-
-	// Voting system specific:
-	Transferable *bool              `json:"transferable,omitempty"`
-	Deadline     time.Time          `json:"deadline,omitempty"`
-	AdminScript  chainjson.HexBytes `json:"admin_script,omitempty"`
-	VotingRight  *bc.AssetID        `json:"voting_right_asset_id,omitempty"`
-	Options      int64              `json:"options,omitempty"`
-	SecretHash   bc.Hash            `json:"secret_hash,omitempty"`
-	QuorumSecret chainjson.HexBytes `json:"quorum_secret,omitempty"`
-	Vote         int64              `json:"vote,omitempty"`
 }
 
 // buildAddress will return the destination's script, if populated. Otherwise,
 // it will create a new address for the destination's account ID.
-func (dest Destination) buildAddress(ctx context.Context) ([]byte, error) {
-	script := dest.Script[:]
+func buildAddress(ctx context.Context, script []byte, accountID string) ([]byte, error) {
 	if script != nil {
 		return script, nil
 	}
-	addr, err := appdb.NewAddress(ctx, dest.AccountID, true)
+	if accountID == "" {
+		return nil, errors.WithDetailf(ErrBadBuildRequest, "need either script or account id")
+	}
+	addr, err := appdb.NewAddress(ctx, accountID, true)
 	if err != nil {
-		return nil, errors.Wrapf(err, "generating address, accountID %s", dest.AccountID)
+		return nil, errors.Wrapf(err, "generating address, accountID %s", accountID)
 	}
 	return addr.PKScript, nil
 }
@@ -199,29 +188,59 @@ func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, erro
 	return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown destination type `%s`", dest.Type)
 }
 
+type actionDetails struct {
+	Contract    string
+	Type        string
+	Metadata    chainjson.HexBytes
+	ClientToken *string
+}
+
+type Action struct {
+	actionDetails
+	Raw json.RawMessage
+}
+
+func (a *Action) UnmarshalJSON(b []byte) error {
+	// Hold onto the original bytes for decoding action-specific fields.
+	a.Raw = json.RawMessage(b)
+
+	err := json.Unmarshal(b, &a.actionDetails)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *Action) UnmarshalInto(v interface{}) error {
+	return json.Unmarshal(a.Raw, v)
+}
+
+func (a *Action) parse(ctx context.Context) (srcs []*txbuilder.Source, dsts []*txbuilder.Destination, err error) {
+	switch a.Contract {
+	case "voting":
+		srcs, dsts, err = parseVotingAction(ctx, a)
+	default:
+		err = errors.WithDetailf(ErrBadBuildRequest, "unknown contract `%s`", a.Contract)
+	}
+	return srcs, dsts, err
+}
+
 type BuildRequest struct {
 	PrevTx   *txbuilder.Template `json:"previous_transaction"`
 	Sources  []*Source           `json:"inputs"`
 	Dests    []*Destination      `json:"outputs"`
+	Actions  []*Action           `json:"actions"`
 	Metadata chainjson.HexBytes  `json:"metadata"`
 	ResTime  time.Duration       `json:"reservation_duration"`
 }
 
 func (req *BuildRequest) parse(ctx context.Context) (*txbuilder.Template, []*txbuilder.Source, []*txbuilder.Destination, error) {
 	var (
-		votingSources      = []*Source{}
-		votingDestinations = []*Destination{}
-		sources            = make([]*txbuilder.Source, 0, len(req.Sources))
-		destinations       = make([]*txbuilder.Destination, 0, len(req.Dests))
+		sources      = make([]*txbuilder.Source, 0, len(req.Sources))
+		destinations = make([]*txbuilder.Destination, 0, len(req.Dests))
 	)
 
-	// Voting sources and destinations require custom parsing.
 	for _, source := range req.Sources {
-		if strings.HasPrefix(source.Type, "votingright-") || strings.HasPrefix(source.Type, "voting-") {
-			votingSources = append(votingSources, source)
-			continue
-		}
-
 		parsed, err := source.parse(ctx)
 		if err != nil {
 			return nil, nil, nil, err
@@ -229,25 +248,19 @@ func (req *BuildRequest) parse(ctx context.Context) (*txbuilder.Template, []*txb
 		sources = append(sources, parsed)
 	}
 	for _, destination := range req.Dests {
-		if destination.Type == "votingright" || destination.Type == "voting" {
-			votingDestinations = append(votingDestinations, destination)
-			continue
-		}
-
 		parsed, err := destination.parse(ctx)
 		if err != nil {
 			return nil, nil, nil, err
 		}
 		destinations = append(destinations, parsed)
 	}
-
-	if len(votingSources) > 0 || len(votingDestinations) > 0 {
-		parsedVotingSources, parsedVotingDests, err := parseVotingBuildRequest(ctx, votingSources, votingDestinations)
+	for _, action := range req.Actions {
+		srcs, dsts, err := action.parse(ctx)
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		sources = append(sources, parsedVotingSources...)
-		destinations = append(destinations, parsedVotingDests...)
+		sources = append(sources, srcs...)
+		destinations = append(destinations, dsts...)
 	}
 	return req.PrevTx, sources, destinations, nil
 }

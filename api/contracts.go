@@ -1,12 +1,12 @@
 package api
 
 import (
-	"fmt"
-	"strings"
+	"math"
 	"time"
 
 	"golang.org/x/net/context"
 
+	"chain/api/issuer"
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/smartcontracts/voting"
 	"chain/api/txbuilder"
@@ -86,9 +86,9 @@ func findAccountVotingRights(ctx context.Context, accountID string) (map[string]
 	for _, r := range rightsWithUTXOs {
 		var actionTypes []string
 		if r.Outpoint.Hash == r.UTXO.Hash && r.Outpoint.Index == r.UTXO.Index {
-			actionTypes = append(actionTypes, "votingright-authenticate", "votingright-transfer", "votingright-delegate")
+			actionTypes = append(actionTypes, "authenticate-votingright", "transfer-votingright", "delegate-votingright")
 		} else {
-			actionTypes = append(actionTypes, "votingright-recall")
+			actionTypes = append(actionTypes, "recall-votingright")
 		}
 
 		rightToken := map[string]interface{}{
@@ -212,22 +212,22 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 		if !t.State.Finished() {
 			switch {
 			case t.State.Distributed():
-				actionTypes = append(actionTypes, "voting-register")
+				actionTypes = append(actionTypes, "register-token")
 			case t.State.Intended(), t.State.Voted():
-				actionTypes = append(actionTypes, "voting-vote")
+				actionTypes = append(actionTypes, "vote")
 			}
-			actionTypes = append(actionTypes, "voting-close")
+			actionTypes = append(actionTypes, "close-vote")
 		}
 
 		votes = append(votes, map[string]interface{}{
-			"asset_id":              t.AssetID,
-			"amount":                t.Amount,
-			"voting_right_asset_id": t.Right,
-			"state":                 t.State.String(),
-			"closed":                t.State.Finished(),
-			"option":                t.Vote,
-			"holding_account_id":    t.AccountID,
-			"action_types":          actionTypes,
+			"asset_id":             t.AssetID,
+			"amount":               t.Amount,
+			"votingright_asset_id": t.Right,
+			"state":                t.State.String(),
+			"closed":               t.State.Finished(),
+			"option":               t.Vote,
+			"holding_account_id":   t.AccountID,
+			"action_types":         actionTypes,
 		})
 	}
 	return map[string]interface{}{
@@ -236,316 +236,299 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 	}, nil
 }
 
-type votingToken struct {
-	token bc.AssetID
-	right bc.AssetID
+type votingContractActionParams struct {
+	TokenAssetID     *bc.AssetID        `json:"token_asset_id,omitempty"`
+	RightAssetID     *bc.AssetID        `json:"votingright_asset_id,omitempty"`
+	AccountID        string             `json:"account_id,omitempty"`         // right issuance, delegate, transfer, recall
+	HolderScript     chainjson.HexBytes `json:"holder_script,omitempty"`      // right issuance, delegate, transfer
+	AdminScript      chainjson.HexBytes `json:"admin_script,omitempty"`       // right, token issuance
+	CanDelegate      *bool              `json:"can_delegate,omitempty"`       // delegate
+	Deadline         time.Time          `json:"deadline,omitempty"`           // delegate
+	Amount           uint64             `json:"amount,omitempty"`             // token issuance
+	OptionCount      int64              `json:"option_count,omitempty"`       // token issuance
+	QuorumSecretHash bc.Hash            `json:"quorum_secret_hash,omitempty"` // token issuance
+	Option           int64              `json:"option,omitempty"`             // vote
+	QuorumSecret     chainjson.HexBytes `json:"quorum_secret,omitempty"`      // vote
 }
 
-// parseVotingBuildRequest parses `votingright` and `voting` BuildRequest
-// sources and destinations. Unlike other asset types, voting request inputs
-// and outputs need data from each other in order to build the correct
-// txbuilder.Reservers and txbuilder.Receivers.
-func parseVotingBuildRequest(ctx context.Context, sources []*Source, destinations []*Destination) (
-	srcs []*txbuilder.Source,
-	dsts []*txbuilder.Destination,
-	err error,
-) {
-	var (
-		rightSrcsByAssetID  = map[bc.AssetID]*Source{}
-		rightDstsByAssetID  = map[bc.AssetID]*Destination{}
-		tokenSrcsByAssetIDs = map[votingToken]*Source{}
-		tokenDstsByAssetIDs = map[votingToken]*Destination{}
-	)
-
-	// Pair sources and destinations by asset id, and split them into voting
-	// rights and voting tokens.
-	for _, src := range sources {
-		if src.AssetID == nil {
-			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
-		}
-		if strings.HasPrefix(src.Type, "votingright-") {
-			rightSrcsByAssetID[*src.AssetID] = src
-			continue
-		}
-		if src.VotingRight == nil {
-			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting sources must include voting_right_asset_id")
-		}
-		vt := votingToken{token: *src.AssetID, right: *src.VotingRight}
-		tokenSrcsByAssetIDs[vt] = src
+func (params *votingContractActionParams) token(ctx context.Context) (*voting.Token, error) {
+	if params.RightAssetID == nil {
+		return nil, errors.WithDetail(ErrBadBuildRequest, "missing voting right asset id")
 	}
-	for _, dst := range destinations {
-		if dst.AssetID == nil {
-			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "asset type unspecified")
-		}
-		if dst.Type == "votingright" {
-			rightDstsByAssetID[*dst.AssetID] = dst
-			continue
-		}
-		if dst.VotingRight == nil {
-			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting destinations must include voting_right_asset_id")
-		}
-		vt := votingToken{token: *dst.AssetID, right: *dst.VotingRight}
-		tokenDstsByAssetIDs[vt] = dst
+	if params.TokenAssetID == nil {
+		return nil, errors.WithDetail(ErrBadBuildRequest, "missing voting token asset id")
 	}
-
-	// Parse the voting rights first. Some voting token clauses require
-	// knowledge of the voting right script.
-	srcs, dsts, rightsByAssetID, err := parseVotingRights(ctx, rightSrcsByAssetID, rightDstsByAssetID)
+	token, err := voting.FindTokenForAsset(ctx, *params.TokenAssetID, *params.RightAssetID)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
+	}
+	if token == nil {
+		return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown voting token")
+	}
+	return token, err
+}
+
+func (params *votingContractActionParams) right(ctx context.Context) (*voting.RightWithUTXO, error) {
+	if params.RightAssetID == nil {
+		return nil, errors.WithDetail(ErrBadBuildRequest, "missing voting right asset id")
+	}
+	old, err := voting.FindRightUTXO(ctx, *params.RightAssetID)
+	if err == pg.ErrUserInputNotFound {
+		return nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
+	}
+	return old, err
+}
+
+func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.Source, dsts []*txbuilder.Destination, err error) {
+	var params votingContractActionParams
+	err = action.UnmarshalInto(&params)
+	if err != nil {
+		return srcs, dsts, err
 	}
 
-	// Parse the voting tokens.
-	for assetIDs, dst := range tokenDstsByAssetIDs {
-		src, ok := tokenSrcsByAssetIDs[assetIDs]
-		if !ok {
-			// If there's no corresponding source with a `voting`
-			// type, then the destination should be a voting token
-			// issuance.
-			if dst.VotingRight == nil {
-				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "new voting tokens must provide corresponding voting right")
-			}
-			if dst.AdminScript == nil {
-				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "new voting tokens must provide the voting system admin script")
-			}
-			if dst.Options <= 0 {
-				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "new voting tokens must have 1 or more voting options")
-			}
-			dsts = append(dsts, &txbuilder.Destination{
-				AssetAmount: bc.AssetAmount{AssetID: assetIDs.token, Amount: dst.Amount},
-				Metadata:    dst.Metadata,
-				Receiver:    voting.TokenIssuance(ctx, *dst.VotingRight, dst.AdminScript, dst.Options, dst.SecretHash),
-			})
-			continue
+	switch action.Type {
+	case "issue-votingright":
+		if params.RightAssetID == nil {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "missing voting right asset id")
 		}
-
-		token, err := voting.FindTokenForAsset(ctx, assetIDs.token, assetIDs.right)
+		if params.AdminScript == nil {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right issuance requires a voting system admin script")
+		}
+		holder, err := buildAddress(ctx, params.HolderScript, params.AccountID)
 		if err != nil {
 			return nil, nil, err
 		}
-		if token == nil {
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "unknown voting token")
+		assetAmount := bc.AssetAmount{AssetID: *params.RightAssetID, Amount: 1}
+		srcs = append(srcs, issuer.NewIssueSource(ctx, &assetAmount))
+		dsts = append(dsts, &txbuilder.Destination{
+			AssetAmount: assetAmount,
+			Metadata:    action.Metadata,
+			Receiver:    voting.RightIssuance(ctx, params.AdminScript, holder),
+		})
+	case "authenticate-votingright":
+		right, err := params.right(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		reserver, receiver, err := voting.RightAuthentication(ctx, right)
+		if err != nil {
+			return nil, nil, err
+		}
+		srcs = append(srcs, &txbuilder.Source{
+			AssetAmount: bc.AssetAmount{AssetID: right.AssetID, Amount: 1},
+			Reserver:    reserver,
+		})
+		dsts = append(dsts, &txbuilder.Destination{
+			AssetAmount: bc.AssetAmount{AssetID: right.AssetID, Amount: 1},
+			Metadata:    action.Metadata,
+			Receiver:    receiver,
+		})
+	case "recall-votingright":
+		if params.AccountID == "" {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "recall requires account ID to recall to")
+		}
+		old, err := params.right(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		claims, err := voting.FindRightsForAsset(ctx, *params.RightAssetID)
+		if err != nil {
+			return nil, nil, err
+		}
+		if len(claims) < 2 {
+			// You need at least two claims to have a recallable voting right.
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
 		}
 
+		// Find the earliest, active voting right claim that this account
+		// has on this voting right token. We'll recall back to that point.
 		var (
-			reserver txbuilder.Reserver
-			receiver txbuilder.Receiver
+			recallPoint    *voting.RightWithUTXO
+			recallPointIdx int
 		)
-		switch src.Type {
-		case "voting-intent":
-			if !token.State.Distributed() {
-				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting token must be in distributed state")
+		for i, claim := range claims {
+			if claim.AccountID != nil && *claim.AccountID == params.AccountID {
+				recallPoint = claim
+				recallPointIdx = i
+				break
 			}
-			if token.State.Finished() {
-				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has been closed")
-			}
-			reserver, receiver, err = voting.TokenIntent(ctx, token, rightsByAssetID[token.Right])
-			if err != nil {
-				return nil, nil, err
-			}
-		case "voting-vote":
-			if !token.State.Intended() {
-				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting token must be in intended state")
-			}
-			if token.State.Finished() {
-				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has been closed")
-			}
-			reserver, receiver, err = voting.TokenVote(ctx, token, rightsByAssetID[token.Right], dst.Vote, dst.QuorumSecret)
-			if err != nil {
-				return nil, nil, err
-			}
-		case "voting-close":
-			if token.State.Finished() {
+		}
+		if recallPoint == nil {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right not recallable")
+		}
+		reserver, receiver, err := voting.RightRecall(ctx, old, recallPoint, claims[recallPointIdx+1:len(claims)-1])
+		if err != nil {
+			return nil, nil, err
+		}
+		srcs = append(srcs, &txbuilder.Source{
+			AssetAmount: bc.AssetAmount{AssetID: old.AssetID, Amount: 1},
+			Reserver:    reserver,
+		})
+		dsts = append(dsts, &txbuilder.Destination{
+			AssetAmount: bc.AssetAmount{AssetID: old.AssetID, Amount: 1},
+			Metadata:    action.Metadata,
+			Receiver:    receiver,
+		})
+	case "delegate-votingright":
+		old, err := params.right(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !old.Delegatable {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "delegating this voting right is prohibited")
+		}
+		if params.Deadline.Unix() > old.Deadline {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "cannot extend deadline beyond current deadline")
+		}
+		script, err := buildAddress(ctx, params.HolderScript, params.AccountID)
+		if err != nil {
+			return nil, nil, err
+		}
+		var (
+			delegatable = old.Delegatable
+			deadline    = old.Deadline
+		)
+		if params.CanDelegate != nil {
+			delegatable = *params.CanDelegate
+		}
+		if !params.Deadline.IsZero() {
+			deadline = params.Deadline.Unix()
+		}
+		reserver, receiver, err := voting.RightDelegation(ctx, old, script, deadline, delegatable)
+		if err != nil {
+			return nil, nil, err
+		}
+		srcs = append(srcs, &txbuilder.Source{
+			AssetAmount: bc.AssetAmount{AssetID: old.AssetID, Amount: 1},
+			Reserver:    reserver,
+		})
+		dsts = append(dsts, &txbuilder.Destination{
+			AssetAmount: bc.AssetAmount{AssetID: old.AssetID, Amount: 1},
+			Metadata:    action.Metadata,
+			Receiver:    receiver,
+		})
+	case "transfer-votingright":
+		old, err := params.right(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		script, err := buildAddress(ctx, params.HolderScript, params.AccountID)
+		if err != nil {
+			return nil, nil, err
+		}
+		reserver, receiver, err := voting.RightTransfer(ctx, old, script)
+		if err != nil {
+			return nil, nil, err
+		}
+		srcs = append(srcs, &txbuilder.Source{
+			AssetAmount: bc.AssetAmount{AssetID: old.AssetID, Amount: 1},
+			Reserver:    reserver,
+		})
+		dsts = append(dsts, &txbuilder.Destination{
+			AssetAmount: bc.AssetAmount{AssetID: old.AssetID, Amount: 1},
+			Metadata:    action.Metadata,
+			Receiver:    receiver,
+		})
+	case "issue-token":
+		if params.RightAssetID == nil {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "new voting tokens must provide corresponding voting right")
+		}
+		if params.AdminScript == nil {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "new voting tokens must provide the voting system admin script")
+		}
+		if params.OptionCount <= 0 {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "new voting tokens must have 1 or more voting options")
+		}
+
+		assetAmount := bc.AssetAmount{AssetID: *params.TokenAssetID, Amount: params.Amount}
+		srcs = append(srcs, issuer.NewIssueSource(ctx, &assetAmount))
+		dsts = append(dsts, &txbuilder.Destination{
+			AssetAmount: assetAmount,
+			Metadata:    action.Metadata,
+			Receiver:    voting.TokenIssuance(ctx, *params.RightAssetID, params.AdminScript, params.OptionCount, params.QuorumSecretHash),
+		})
+	case "register-token":
+		token, err := params.token(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		right, err := params.right(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !token.State.Distributed() {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting token must be in distributed state")
+		}
+		if token.State.Finished() {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has been closed")
+		}
+		tokenReserver, tokenReceiver, err := voting.TokenIntent(ctx, token, right.PKScript())
+		if err != nil {
+			return nil, nil, err
+		}
+		srcs = append(srcs, &txbuilder.Source{
+			AssetAmount: bc.AssetAmount{AssetID: token.AssetID, Amount: uint64(token.Amount)},
+			Reserver:    tokenReserver,
+		})
+		dsts = append(dsts, &txbuilder.Destination{
+			AssetAmount: bc.AssetAmount{AssetID: token.AssetID, Amount: uint64(token.Amount)},
+			Receiver:    tokenReceiver,
+		})
+	case "vote":
+		token, err := params.token(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		right, err := params.right(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !token.State.Intended() {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting token must be in intended state")
+		}
+		if token.State.Finished() {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has been closed")
+		}
+		tokenReserver, tokenReceiver, err := voting.TokenVote(ctx, token, right.PKScript(), params.Option, params.QuorumSecret)
+		if err != nil {
+			return nil, nil, err
+		}
+		srcs = append(srcs, &txbuilder.Source{
+			AssetAmount: bc.AssetAmount{AssetID: token.AssetID, Amount: uint64(token.Amount)},
+			Reserver:    tokenReserver,
+		})
+		dsts = append(dsts, &txbuilder.Destination{
+			AssetAmount: bc.AssetAmount{AssetID: token.AssetID, Amount: uint64(token.Amount)},
+			Receiver:    tokenReceiver,
+		})
+	case "close-vote":
+		if params.TokenAssetID == nil {
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "missing voting token asset id")
+		}
+		votes, _, err := voting.GetVotes(ctx, []bc.AssetID{*params.TokenAssetID}, "", "", math.MaxInt64)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "finding voting tokens to close")
+		}
+
+		for _, v := range votes {
+			if v.State.Finished() {
 				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has already been closed")
 			}
-			reserver, receiver, err = voting.TokenFinish(ctx, token)
+			reserver, receiver, err := voting.TokenFinish(ctx, v)
 			if err != nil {
 				return nil, nil, err
 			}
-		default:
-			// TODO(jackson): Implement all other voting token clauses
-			return nil, nil, fmt.Errorf("unimplemented src.type: %s", src.Type)
-		}
-		srcs = append(srcs, &txbuilder.Source{
-			AssetAmount: bc.AssetAmount{AssetID: assetIDs.token, Amount: src.Amount},
-			Reserver:    reserver,
-		})
-		dsts = append(dsts, &txbuilder.Destination{
-			AssetAmount: bc.AssetAmount{AssetID: assetIDs.token, Amount: dst.Amount},
-			Metadata:    dst.Metadata,
-			Receiver:    receiver,
-		})
-	}
-
-	return srcs, dsts, nil
-}
-
-// parseVotingRights will pair the vrtoken sources and destinations up by
-// asset ID, and use the information from both to construct the
-// txbuilder.Sources and txbuilder.Destinations.
-func parseVotingRights(ctx context.Context, srcsByAssetID map[bc.AssetID]*Source, dstsByAssetID map[bc.AssetID]*Destination) (
-	srcs []*txbuilder.Source,
-	dsts []*txbuilder.Destination,
-	byAssetID map[bc.AssetID]txbuilder.Receiver,
-	err error,
-) {
-	byAssetID = map[bc.AssetID]txbuilder.Receiver{}
-
-	if len(srcsByAssetID) > len(dstsByAssetID) {
-		// Both the source and destination must be provided in the same build
-		// request. This is unavoidable because:
-		// - the output contract script requires knowledge of the input's chain of ownership
-		// - the sigscript needs to provide the new contract parameters
-		// The only exception is issuing new voting right tokens. Then there
-		// will be more destinations than sources.
-		return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest,
-			"voting right source and destinations must be provided in the same build request")
-	}
-
-	for assetID, dst := range dstsByAssetID {
-		// Validate the destination.
-		if dst.Amount != 0 {
-			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right destinations do not take amounts")
-		}
-
-		src, ok := srcsByAssetID[assetID]
-		if !ok {
-			// If there is no votingright source, then assume this is an attempt
-			// to issue into a new asset into a voting right contract.
-			if dst.AdminScript == nil {
-				return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right issuance requires a voting system admin script")
-			}
-			holder, err := dst.buildAddress(ctx)
-			if err != nil {
-				return nil, nil, nil, err
-			}
-			receiver := voting.RightIssuance(ctx, dst.AdminScript, holder)
+			srcs = append(srcs, &txbuilder.Source{
+				AssetAmount: bc.AssetAmount{AssetID: v.AssetID, Amount: uint64(v.Amount)},
+				Reserver:    reserver,
+			})
 			dsts = append(dsts, &txbuilder.Destination{
-				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},
-				Metadata:    dst.Metadata,
+				AssetAmount: bc.AssetAmount{AssetID: v.AssetID, Amount: uint64(v.Amount)},
 				Receiver:    receiver,
 			})
-			byAssetID[assetID] = receiver
-			continue
 		}
-
-		// Validate the source.
-		if src.TxHash == nil {
-			src.TxHash = src.TxHashAsID
-		}
-		if (src.TxHash == nil || src.Index == nil) && src.AccountID == "" {
-			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
-		}
-		if src.Amount != 0 {
-			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right sources do not take amounts")
-		}
-
-		// Lookup the voting right by the asset ID. We'll need some of its
-		// script data, such as the previous chain of ownership.
-		old, err := voting.FindRightUTXO(ctx, *src.AssetID)
-		if err == pg.ErrUserInputNotFound {
-			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
-		} else if err != nil {
-			return nil, nil, nil, err
-		}
-
-		// If a src account ID was provided, ensure that it matches the current utxo.
-		if src.AccountID != "" && (old.AccountID == nil || *old.AccountID != src.AccountID) {
-			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
-		}
-		// If tx_hash and index were provided, ensure that they match the current utxo.
-		if (src.TxHash != nil && src.Index != nil) &&
-			(bc.Outpoint{Hash: *src.TxHash, Index: *src.Index}) != old.Outpoint {
-			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
-		}
-
-		var (
-			reserver txbuilder.Reserver
-			receiver txbuilder.Receiver
-		)
-		switch src.Type {
-		case "votingright-authenticate":
-			reserver, receiver, err = voting.RightAuthentication(ctx, old)
-			if err != nil {
-				return nil, nil, nil, err
-			}
-		case "votingright-transfer":
-			script, err := dst.buildAddress(ctx)
-			if err != nil {
-				return nil, nil, nil, err
-			}
-			reserver, receiver, err = voting.RightTransfer(ctx, old, script)
-			if err != nil {
-				return nil, nil, nil, err
-			}
-		case "votingright-delegate":
-			if !old.Delegatable {
-				return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "delegating this voting right is prohibited")
-			}
-			if dst.Deadline.Unix() > old.Deadline {
-				return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "cannot extend deadline beyond current deadline")
-			}
-			script, err := dst.buildAddress(ctx)
-			if err != nil {
-				return nil, nil, nil, err
-			}
-			var (
-				delegatable = old.Delegatable
-				deadline    = old.Deadline
-			)
-			if dst.Transferable != nil {
-				delegatable = *dst.Transferable
-			}
-			if !dst.Deadline.IsZero() {
-				deadline = dst.Deadline.Unix()
-			}
-			reserver, receiver, err = voting.RightDelegation(ctx, old, script, deadline, delegatable)
-			if err != nil {
-				return nil, nil, nil, err
-			}
-		case "votingright-recall":
-			claims, err := voting.FindRightsForAsset(ctx, assetID)
-			if err != nil {
-				return nil, nil, nil, err
-			}
-			if len(claims) < 2 {
-				// You need at least two claims to have a recallable voting right.
-				return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
-			}
-
-			// Find the earliest, active voting right claim that this account
-			// has on this voting right token. We'll recall back to that point.
-			var (
-				recallPoint    *voting.RightWithUTXO
-				recallPointIdx int
-			)
-			for i, claim := range claims {
-				if claim.AccountID != nil && *claim.AccountID == dst.AccountID {
-					recallPoint = claim
-					recallPointIdx = i
-					break
-				}
-			}
-			if recallPoint == nil {
-				return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting right not recallable")
-			}
-			reserver, receiver, err = voting.RightRecall(ctx, old, recallPoint, claims[recallPointIdx+1:len(claims)-1])
-			if err != nil {
-				return nil, nil, nil, err
-			}
-		default:
-			return nil, nil, nil, errors.WithDetailf(ErrBadBuildRequest, "`%s` source type unimplemented", src.Type)
-		}
-		srcs = append(srcs, &txbuilder.Source{
-			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},
-			Reserver:    reserver,
-		})
-		dsts = append(dsts, &txbuilder.Destination{
-			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},
-			Metadata:    dst.Metadata,
-			Receiver:    receiver,
-		})
-		byAssetID[assetID] = receiver
+	default:
+		err = errors.WithDetailf(ErrBadBuildRequest, "unknown voting action `%s`", action.Type)
 	}
-	return srcs, dsts, byAssetID, nil
+	return srcs, dsts, err
 }

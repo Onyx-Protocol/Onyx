@@ -41,7 +41,7 @@ func TestAuthenticateEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tokenReserver, tokenReceiver, err := TokenIntent(ctx, token, rightReceiver)
+	tokenReserver, tokenReceiver, err := TokenIntent(ctx, token, rightReceiver.PKScript())
 	if err != nil {
 		t.Fatal(err)
 	}
