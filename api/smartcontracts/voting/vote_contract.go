@@ -13,6 +13,17 @@ func (ts TokenState) Base() TokenState  { return 0x0F & ts }
 func (ts TokenState) Distributed() bool { return ts.Base() == stateDistributed }
 func (ts TokenState) Intended() bool    { return ts.Base() == stateIntended }
 func (ts TokenState) Voted() bool       { return ts.Base() == stateVoted }
+func (ts TokenState) String() string {
+	switch ts.Base() {
+	case stateDistributed:
+		return "distributed"
+	case stateIntended:
+		return "intended"
+	case stateVoted:
+		return "voted"
+	}
+	return ""
+}
 
 const (
 	stateDistributed TokenState = 0x00

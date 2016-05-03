@@ -19,6 +19,7 @@ import (
 
 const (
 	votingRightsPageSize  = 100
+	votingTokensPageSize  = 100
 	votingTalliesPageSize = 50
 )
 
@@ -166,6 +167,47 @@ func getVotingTokenTally(ctx context.Context, req votingTallyRequest) (map[strin
 	return map[string]interface{}{
 		"votingtokens": tallies,
 		"last":         last,
+	}, nil
+}
+
+// POST /v3/contracts/voting-tokens/votes
+func getVotingTokenVotes(ctx context.Context, req struct {
+	AssetIDs  []bc.AssetID `json:"asset_ids"`
+	AccountID string       `json:"account_id,omitempty"` // optional
+	After     string       `json:"after,omitempty"`      // optional, pagination cursor
+}) (map[string]interface{}, error) {
+	tokens, last, err := voting.GetVotes(ctx, req.AssetIDs, req.AccountID, req.After, votingTokensPageSize)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting voting token votes")
+	}
+
+	votes := []map[string]interface{}{}
+	for _, t := range tokens {
+		actionTypes := []string{}
+		if !t.State.Finished() {
+			switch {
+			case t.State.Distributed():
+				actionTypes = append(actionTypes, "voting-register")
+			case t.State.Intended(), t.State.Voted():
+				actionTypes = append(actionTypes, "voting-vote")
+			}
+			actionTypes = append(actionTypes, "voting-close")
+		}
+
+		votes = append(votes, map[string]interface{}{
+			"asset_id":              t.AssetID,
+			"amount":                t.Amount,
+			"voting_right_asset_id": t.Right,
+			"state":                 t.State.String(),
+			"closed":                t.State.Finished(),
+			"option":                t.Vote,
+			"holding_account_id":    t.AccountID,
+			"action_types":          actionTypes,
+		})
+	}
+	return map[string]interface{}{
+		"votes": votes,
+		"last":  last,
 	}, nil
 }
 

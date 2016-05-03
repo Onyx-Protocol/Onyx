@@ -3,6 +3,7 @@ package voting
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -39,9 +40,10 @@ type RightWithUTXO struct {
 // Token describes the state of a voting token. It's scoped to a particular
 // voting right and agenda item.
 type Token struct {
-	AssetID  bc.AssetID
-	Outpoint bc.Outpoint
-	Amount   int64
+	AssetID   bc.AssetID
+	Outpoint  bc.Outpoint
+	Amount    int64
+	AccountID string
 	tokenScriptData
 }
 
@@ -433,4 +435,105 @@ func FindTokenForAsset(ctx context.Context, tokenAssetID, rightAssetID bc.AssetI
 		tok.State = tok.State | stateFinished
 	}
 	return &tok, nil
+}
+
+// GetVotes looks up all of the issued voting tokens with any of the provided
+// asset IDs. It supports pagination. Optionally, an account ID can be provided
+// to filter the result to votes that have the provided account ID somewhere in
+// the vote's active chain of ownership. The account doesn't need to be the
+// current holder of the voting right, but it must at least have recall
+// privilege over the voting right.
+func GetVotes(ctx context.Context, assetIDs []bc.AssetID, accountID string, after string, limit int) ([]*Token, string, error) {
+	// Parse the compound cursor
+	var cursorToken, cursorRight string
+	if a := strings.SplitN(after, "-", 2); len(a) == 2 {
+		cursorToken, cursorRight = a[0], a[1]
+	}
+
+	// Convert assetIDs to a string slice and filter any asset IDs
+	// already eliminated by the cursor.
+	var tokenAssetIDs []string
+	for _, assetID := range assetIDs {
+		if s := assetID.String(); s >= cursorToken {
+			tokenAssetIDs = append(tokenAssetIDs, s)
+		}
+	}
+
+	const (
+		qFmt = `
+			SELECT
+				vt.asset_id,
+				vt.right_asset_id,
+				vt.tx_hash,
+				vt.index,
+				vt.state,
+				vt.closed,
+				vt.vote,
+				vt.option_count,
+				vt.secret_hash,
+				vt.admin_script,
+				vt.amount,
+				vr.account_id
+			FROM voting_tokens vt
+			INNER JOIN voting_right_txs vr ON vt.right_asset_id = vr.asset_id AND NOT vr.void
+			INNER JOIN utxos u ON (u.tx_hash, u.index) = (vr.tx_hash, vr.index)
+			WHERE
+				NOT EXISTS (SELECT 1 FROM pool_inputs pi WHERE (pi.tx_hash, pi.index) = (u.tx_hash, u.index))
+				AND vt.asset_id = ANY($1) AND (vt.asset_id, vt.right_asset_id) > ($2, $3) %s
+			ORDER BY vt.asset_id ASC, vt.right_asset_id ASC
+			LIMIT %d
+		`
+		qAccFilter = `
+			AND vt.right_asset_id IN (
+				SELECT asset_id FROM voting_right_txs WHERE NOT void AND account_id = $4
+			)
+		`
+	)
+
+	params := []interface{}{pg.Strings(tokenAssetIDs), cursorToken, cursorRight}
+
+	// Include an additional WHERE condition if we're filtering by account ID.
+	var additionalWhereQ string
+	if accountID != "" {
+		additionalWhereQ = qAccFilter
+		params = append(params, accountID)
+	}
+
+	q := fmt.Sprintf(qFmt, additionalWhereQ, limit)
+	rows, err := pg.Query(ctx, q, params...)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "querying voting tokens")
+	}
+	defer rows.Close()
+
+	var (
+		results []*Token
+		last    string
+	)
+	for rows.Next() {
+		var (
+			token     Token
+			baseState int64
+			closed    bool
+		)
+		err = rows.Scan(
+			&token.AssetID, &token.Right, &token.Outpoint.Hash, &token.Outpoint.Index,
+			&baseState, &closed, &token.Vote, &token.OptionCount, &token.SecretHash,
+			&token.AdminScript, &token.Amount, &token.AccountID,
+		)
+		if err != nil {
+			return nil, "", errors.Wrap(err, "scanning Token")
+		}
+		token.State = TokenState(baseState)
+		if closed {
+			token.State = token.State | stateFinished
+		}
+		results = append(results, &token)
+		last = fmt.Sprintf("%s-%s", token.AssetID, token.Right)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, "", errors.Wrap(err, "end scan")
+	}
+
+	return results, last, nil
 }

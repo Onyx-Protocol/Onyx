@@ -1,6 +1,7 @@
 package voting
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -240,5 +241,48 @@ func TestTallyVotes(t *testing.T) {
 		if !reflect.DeepEqual(got, tc.want) {
 			t.Errorf("test case %d:\ngot=%#v\nwant=%#v", i, got, tc.want)
 		}
+	}
+}
+
+func TestGetVotesSimple(t *testing.T) {
+	// TODO(jackson): Add additional tests for pagination, recalled voting
+	// rights, voided voting rights, etc.
+	ctx := pgtest.NewContext(t)
+	defer pgtest.Finish(ctx)
+
+	// Initialize the generator.
+	fc, err := assettest.InitializeSigningGenerator(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	Connect(fc)
+
+	var (
+		accountID1  = assettest.CreateAccountFixture(ctx, t, "", "", nil)
+		accountID2  = assettest.CreateAccountFixture(ctx, t, "", "", nil)
+		address1    = assettest.CreateAddressFixture(ctx, t, accountID1)
+		address2    = assettest.CreateAddressFixture(ctx, t, accountID2)
+		adminScript = assettest.CreateAddressFixture(ctx, t, accountID2).PKScript
+		right1      = createVotingRightFixture(ctx, t, address1.PKScript)
+		right2      = createVotingRightFixture(ctx, t, address2.PKScript)
+		token1      = createVotingTokenFixture(ctx, t, right1.AssetID, adminScript, 100)
+		token2      = createVotingTokenFixture(ctx, t, right2.AssetID, adminScript, 100)
+		_           = createVotingTokenFixture(ctx, t, right1.AssetID, adminScript, 100)
+	)
+
+	tokens, last, err := GetVotes(ctx, []bc.AssetID{token1.AssetID, token2.AssetID}, accountID1, "", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tokens) != 1 {
+		t.Errorf("got %v tokens, want 1", len(tokens))
+	}
+	wantLast := fmt.Sprintf("%s-%s", token1.AssetID, right1.AssetID)
+	if last != wantLast {
+		t.Errorf("last: got=%s, want=%s", last, wantLast)
+	}
+	token1.AccountID = accountID1
+	if !reflect.DeepEqual(tokens[0], token1) {
+		t.Errorf("tokens[0]: got=%#v, want=%#v", tokens[0], token1)
 	}
 }
