@@ -185,7 +185,7 @@ func (q votingRightsQuery) Where() (string, []interface{}) {
 }
 
 // FindRightsForAccount returns all voting rights belonging to the provided account.
-func FindRightsForAccount(ctx context.Context, accountID string, prev string, limit int) ([]*RightWithUTXO, string, error) {
+func FindRightsForAccount(ctx context.Context, accountID string, prev string, limit int) ([]*RightWithUTXO, map[bc.AssetID]string, string, error) {
 	// Since the sort criteria is composite, the cursor is composite.
 	var (
 		prevBlockHeight uint64
@@ -202,11 +202,35 @@ func FindRightsForAccount(ctx context.Context, accountID string, prev string, li
 		}
 	}
 
-	return findVotingRights(ctx, votingRightsQuery{
+	rights, next, err := findVotingRights(ctx, votingRightsQuery{
 		accountID: accountID,
 		cursor:    cur,
 		limit:     limit,
 	})
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	var assets []string
+	for _, right := range rights {
+		assets = append(assets, right.AssetID.String())
+	}
+	const holderQ = `
+		SELECT vr.asset_id, vr.account_id
+		FROM voting_right_txs vr
+		JOIN utxos u ON (vr.tx_hash, vr.index) = (u.tx_hash, u.index)
+		WHERE (vr.tx_hash, vr.index) NOT IN (TABLE pool_inputs)
+		AND vr.asset_id=ANY($1::text[])
+	`
+	holderMap := make(map[bc.AssetID]string)
+	err = pg.ForQueryRows(ctx, holderQ, pg.Strings(assets), func(asset bc.AssetID, account string) {
+		holderMap[asset] = account
+	})
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	return rights, holderMap, next, nil
 }
 
 // FindRightForOutpoint returns the voting right with the provided tx outpoint.

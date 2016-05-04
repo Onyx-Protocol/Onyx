@@ -77,7 +77,7 @@ func findAccountVotingRights(ctx context.Context, accountID string) (map[string]
 		return nil, err
 	}
 
-	rightsWithUTXOs, last, err := voting.FindRightsForAccount(ctx, accountID, prev, limit)
+	rightsWithUTXOs, holders, last, err := voting.FindRightsForAccount(ctx, accountID, prev, limit)
 	if err != nil {
 		return nil, errors.Wrap(err, "finding account voting rights")
 	}
@@ -92,10 +92,11 @@ func findAccountVotingRights(ctx context.Context, accountID string) (map[string]
 		}
 
 		rightToken := map[string]interface{}{
-			"asset_id":       r.AssetID,
-			"action_types":   actionTypes,
-			"transaction_id": r.UTXO.Hash,
-			"index":          r.UTXO.Index,
+			"asset_id":           r.AssetID,
+			"action_types":       actionTypes,
+			"transaction_id":     r.UTXO.Hash,
+			"index":              r.UTXO.Index,
+			"holding_account_id": holders[r.AssetID],
 		}
 		rights = append(rights, rightToken)
 	}
