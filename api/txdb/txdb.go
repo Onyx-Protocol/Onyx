@@ -268,12 +268,11 @@ func insertBlockOutputs(ctx context.Context, delta []*state.Output) error {
 				unnest($3::text[]),
 				unnest($4::bigint[]),
 				unnest($5::bytea[]),
-				unnest($6::bytea[]),
-				unnest($7::bytea[])
+				unnest($6::bytea[])
 		)
 		INSERT INTO utxos (
 			tx_hash, index, asset_id, amount,
-			script, contract_hash, metadata
+			script, metadata
 		)
 		SELECT * FROM new_utxos n WHERE NOT EXISTS
 			(SELECT 1 FROM utxos u WHERE (n.tx_hash, n.index) = (u.tx_hash, u.index))
@@ -285,7 +284,6 @@ func insertBlockOutputs(ctx context.Context, delta []*state.Output) error {
 		outs.assetID,
 		outs.amount,
 		outs.script,
-		outs.contractHash,
 		outs.metadata,
 	)
 	if err != nil {

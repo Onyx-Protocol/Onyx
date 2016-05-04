@@ -7,7 +7,6 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/state"
-	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/metrics"
@@ -82,7 +81,6 @@ type utxoSet struct {
 	aIndex        pg.Int64s
 	script        pg.Byteas
 	metadata      pg.Byteas
-	contractHash  pg.Byteas
 }
 
 func addToUTXOSet(set *utxoSet, out *Output) {
@@ -95,13 +93,6 @@ func addToUTXOSet(set *utxoSet, out *Output) {
 	set.aIndex = append(set.aIndex, toKeyIndex(out.AddrIndex[:]))
 	set.script = append(set.script, out.Script)
 	set.metadata = append(set.metadata, out.Metadata)
-
-	contract, _ := txscript.TestPayToContract(out.Script)
-	if contract != nil {
-		set.contractHash = append(set.contractHash, contract.Hash[:])
-	} else {
-		set.contractHash = append(set.contractHash, nil)
-	}
 }
 
 func insertPoolTx(ctx context.Context, tx *bc.Tx) error {
@@ -119,7 +110,7 @@ func insertPoolOutputs(ctx context.Context, insert []*Output) error {
 	const q1 = `
 		INSERT INTO utxos (
 			tx_hash, index, asset_id, amount,
-			script, contract_hash, metadata
+			script, metadata
 		)
 		SELECT
 			unnest($1::text[]),
@@ -127,8 +118,7 @@ func insertPoolOutputs(ctx context.Context, insert []*Output) error {
 			unnest($3::text[]),
 			unnest($4::bigint[]),
 			unnest($5::bytea[]),
-			unnest($6::bytea[]),
-			unnest($7::bytea[])
+			unnest($6::bytea[])
 	`
 	_, err := pg.Exec(ctx, q1,
 		outs.txHash,
@@ -136,7 +126,6 @@ func insertPoolOutputs(ctx context.Context, insert []*Output) error {
 		outs.assetID,
 		outs.amount,
 		outs.script,
-		outs.contractHash,
 		outs.metadata,
 	)
 	return err

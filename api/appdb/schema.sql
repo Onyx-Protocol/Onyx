@@ -817,7 +817,6 @@ CREATE TABLE utxos (
     index integer NOT NULL,
     asset_id text NOT NULL,
     amount bigint NOT NULL,
-    contract_hash text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     metadata bytea DEFAULT '\x'::bytea NOT NULL,
     script bytea DEFAULT '\x'::bytea NOT NULL
@@ -833,7 +832,6 @@ CREATE VIEW utxos_status AS
     u.index,
     u.asset_id,
     u.amount,
-    u.contract_hash,
     u.created_at,
     u.metadata,
     u.script,
@@ -1371,13 +1369,6 @@ CREATE UNIQUE INDEX signed_blocks_block_height_idx ON signed_blocks USING btree 
 --
 
 CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
-
-
---
--- Name: utxos_asset_id_contract_hash_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX utxos_asset_id_contract_hash_idx ON utxos USING btree (asset_id, contract_hash) WHERE (contract_hash IS NOT NULL);
 
 
 --
