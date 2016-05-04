@@ -18,9 +18,16 @@ Build the tests:
     $ cd $CHAIN/qa
     $ mvn package
 
-### Run single core tests
-> These tests exercise various, functional flows available within Chain Core.
+### Single core tests
+> These tests exercise various, functional flows available within a single core network.
 
 Run tests
 
     $ CHAIN_API_URL=<auth_url> java -ea -cp path/to/chain-core-qa.jar chain.qa.baseline.singlecore.Main
+
+### Multi-core tests
+> These tests exercise various, functional flows available within a multi-core network.
+
+Run tests
+
+    $ CHAIN_API_URL=<auth_url> SECOND_API_URL=<second_auth_url> java -ea -cp path/to/chain-core-qa.jar chain.qa.baseline.multicore.Main
