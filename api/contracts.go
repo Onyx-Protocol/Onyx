@@ -106,37 +106,52 @@ func findAccountVotingRights(ctx context.Context, accountID string) (map[string]
 	}, nil
 }
 
-func getVotingRightHistory(ctx context.Context, assetID string) ([]map[string]interface{}, error) {
+func getVotingRightHistory(ctx context.Context, assetID string) (map[string]interface{}, error) {
 	var parsedAssetID bc.AssetID
 	err := parsedAssetID.UnmarshalText([]byte(assetID))
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing asset ID")
 	}
 
-	rightsWithUTXOs, err := voting.FindRightsForAsset(ctx, parsedAssetID)
+	// This endpoint isn't paginated, but uses an envelope like other
+	// paginated endpoints. This gives us the flexibility to paginate
+	// it in the future.
+	prev, _, err := getPageData(ctx, votingRightsPageSize)
 	if err != nil {
 		return nil, err
 	}
 
+	rightsWithUTXOs := []*voting.RightWithUTXO{}
+	if prev == "" {
+		rightsWithUTXOs, err = voting.FindRightsForAsset(ctx, parsedAssetID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	last := ""
 	rights := make([]map[string]interface{}, 0, len(rightsWithUTXOs))
 	for _, r := range rightsWithUTXOs {
 		right := map[string]interface{}{
 			"asset_id":       r.AssetID,
 			"account_id":     r.AccountID,
-			"holder":         chainjson.HexBytes(r.HolderScript),
+			"holder_script":  chainjson.HexBytes(r.HolderScript),
 			"transferable":   r.Delegatable,
 			"deadline":       time.Unix(r.Deadline, 0).Format(time.RFC3339),
 			"transaction_id": r.Outpoint.Hash,
 			"index":          r.Outpoint.Index,
 		}
 		rights = append(rights, right)
+		last = r.Outpoint.Hash.String()
 	}
-	return rights, nil
+	return map[string]interface{}{
+		"owners": rights,
+		"last":   last,
+	}, nil
 }
 
 type votingTallyRequest struct {
 	VotingTokenAssetIDs []bc.AssetID `json:"asset_ids"`
-	After               string       `json:"after,omitempty"`
 }
 
 // POST /v3/contracts/voting-tokens/tally
@@ -146,10 +161,15 @@ func getVotingTokenTally(ctx context.Context, req votingTallyRequest) (map[strin
 	// at once.
 	// TODO(jackson): Add real pagination. For now, we fake it.
 
+	prev, limit, err := getPageData(ctx, votingTalliesPageSize)
+	if err != nil {
+		return nil, err
+	}
+
 	last := ""
 	tallies := make([]voting.Tally, 0, len(req.VotingTokenAssetIDs))
 	for _, assetID := range req.VotingTokenAssetIDs {
-		if req.After != "" && assetID.String() <= req.After {
+		if prev != "" && assetID.String() <= prev {
 			continue
 		}
 
@@ -160,7 +180,7 @@ func getVotingTokenTally(ctx context.Context, req votingTallyRequest) (map[strin
 		last = tally.AssetID.String()
 		tallies = append(tallies, tally)
 
-		if len(tallies) >= votingTalliesPageSize {
+		if len(tallies) >= limit {
 			break
 		}
 	}
@@ -175,9 +195,13 @@ func getVotingTokenTally(ctx context.Context, req votingTallyRequest) (map[strin
 func getVotingTokenVotes(ctx context.Context, req struct {
 	AssetIDs  []bc.AssetID `json:"asset_ids"`
 	AccountID string       `json:"account_id,omitempty"` // optional
-	After     string       `json:"after,omitempty"`      // optional, pagination cursor
 }) (map[string]interface{}, error) {
-	tokens, last, err := voting.GetVotes(ctx, req.AssetIDs, req.AccountID, req.After, votingTokensPageSize)
+	prev, limit, err := getPageData(ctx, votingTokensPageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	tokens, last, err := voting.GetVotes(ctx, req.AssetIDs, req.AccountID, prev, limit)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting voting token votes")
 	}
