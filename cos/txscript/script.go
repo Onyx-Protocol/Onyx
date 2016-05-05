@@ -17,8 +17,7 @@ import (
 
 // These are the constants specified for maximums in individual scripts.
 const (
-	MaxOpsPerScript       = 201  // Max number of non-push operations for non-P2C scripts.
-	MaxOpsPerP2CScript    = 1000 // Max number of non-push operations for P2C scripts.
+	MaxOpsPerScript       = 1000 // Max number of opcodes executed per script.
 	MaxPubKeysPerMultiSig = 20   // Multisig can't have more sigs than this.
 	MaxScriptElementSize  = 520  // Max bytes pushable to the stack.
 )

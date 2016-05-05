@@ -85,7 +85,6 @@ type (
 		block            *bc.Block
 		hashCache        *bc.SigHashCache
 		txIdx            int
-		maxOps           int
 		numOps           int
 		flags            ScriptFlags
 		ctx              context.Context
@@ -147,7 +146,7 @@ func (vm *Engine) executeOpcode(pop *parsedOpcode) error {
 	// Note that this includes OP_RESERVED which counts as a push operation.
 	if pop.opcode.value > OP_16 {
 		vm.numOps++
-		if vm.numOps > vm.maxOps {
+		if vm.numOps > MaxOpsPerScript {
 			return ErrStackTooManyOperations
 		}
 
@@ -578,11 +577,7 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 	vm.PushScript(parsedScriptSig)
 
 	vm.numOps = 0
-	if isContract(parsedScriptPubKey) {
-		vm.maxOps = MaxOpsPerP2CScript
-	} else {
-		vm.maxOps = MaxOpsPerScript
-	}
+
 	return nil
 }
 
