@@ -245,6 +245,28 @@ func (b *ScriptBuilder) ConcatRawScript(data []byte) *ScriptBuilder {
 	return b
 }
 
+type Item interface {
+	AddTo(*ScriptBuilder) *ScriptBuilder
+}
+
+type (
+	NumItem  int64
+	DataItem []byte
+	BoolItem bool
+)
+
+func (n NumItem) AddTo(sb *ScriptBuilder) *ScriptBuilder {
+	return sb.AddInt64(int64(n))
+}
+
+func (d DataItem) AddTo(sb *ScriptBuilder) *ScriptBuilder {
+	return sb.AddData([]byte(d))
+}
+
+func (b BoolItem) AddTo(sb *ScriptBuilder) *ScriptBuilder {
+	return sb.AddBool(bool(b))
+}
+
 // Reset resets the script so it has no content.
 func (b *ScriptBuilder) Reset() *ScriptBuilder {
 	b.script = b.script[0:0]

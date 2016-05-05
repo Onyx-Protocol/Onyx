@@ -68,18 +68,18 @@ func (t tokenScriptData) PKScript() []byte {
 	params = append(params, t.AdminScript)
 	params = append(params, t.Right[:])
 
-	addr := txscript.NewAddressContractHash(tokenHoldingContractHash[:], scriptVersion, params)
-	return addr.ScriptAddress()
+	script, err := txscript.PayToContractHash(tokenHoldingContractHash, params, scriptVersion)
+	if err != nil {
+		return nil
+	}
+	return script
 }
 
 // testTokenContract tests whether the given pkscript is a voting
 // token holding contract.
 func testTokenContract(pkscript []byte) (*tokenScriptData, error) {
-	contract, params := txscript.TestPayToContract(pkscript)
-	if contract == nil {
-		return nil, nil
-	}
-	if !contract.Match(tokenHoldingContractHash, scriptVersion) {
+	parsedScriptVersion, _, _, params := txscript.ParseP2C(pkscript, tokenHoldingContract)
+	if parsedScriptVersion == nil {
 		return nil, nil
 	}
 	if len(params) != 6 {

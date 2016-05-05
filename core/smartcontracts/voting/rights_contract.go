@@ -10,7 +10,7 @@ import (
 
 // scriptVersion encodes the version of the scripting language required
 // for executing the voting rights contract.
-var scriptVersion = []byte{0x02}
+var scriptVersion = txscript.ScriptVersion2
 
 const (
 	infiniteDeadline = 0x7fffffff
@@ -51,18 +51,18 @@ func (r rightScriptData) PKScript() []byte {
 	params = append(params, r.HolderScript)
 	params = append(params, r.AdminScript)
 
-	addr := txscript.NewAddressContractHash(rightsHoldingContractHash[:], scriptVersion, params)
-	return addr.ScriptAddress()
+	script, err := txscript.PayToContractHash(rightsHoldingContractHash, params, scriptVersion)
+	if err != nil {
+		return nil
+	}
+	return script
 }
 
 // testRightsContract tests whether the given pkscript is a voting
 // rights holding contract.
 func testRightsContract(pkscript []byte) (*rightScriptData, error) {
-	contract, params := txscript.TestPayToContract(pkscript)
-	if contract == nil {
-		return nil, nil
-	}
-	if !contract.Match(rightsHoldingContractHash, scriptVersion) {
+	parsedScriptVersion, _, _, params := txscript.ParseP2C(pkscript, rightsHoldingContract)
+	if parsedScriptVersion == nil {
 		return nil, nil
 	}
 	if len(params) != 5 {

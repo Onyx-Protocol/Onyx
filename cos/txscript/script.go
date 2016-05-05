@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"chain/cos/bc"
+	"chain/crypto/hash256"
 )
 
 // These are the constants specified for maximums in individual scripts.
@@ -20,6 +21,11 @@ const (
 	MaxOpsPerScript       = 1000 // Max number of opcodes executed per script.
 	MaxPubKeysPerMultiSig = 20   // Multisig can't have more sigs than this.
 	MaxScriptElementSize  = 520  // Max bytes pushable to the stack.
+)
+
+var (
+	ScriptVersion1 = []byte{0x1}
+	ScriptVersion2 = []byte{0x2}
 )
 
 // isSmallInt returns whether or not the opcode is considered a small integer,
@@ -50,110 +56,221 @@ func IsPayToScriptHash(script []byte) bool {
 	return isScriptHash(pops)
 }
 
-// Returns true if the parsed script is in p2c format, false
-// otherwise.
-func isContract(pops []parsedOpcode) bool {
-	c, _ := testContract(pops)
-	return c != nil
+// PayToContractHash builds a contracthash-style p2c pkscript.
+func PayToContractHash(contractHash bc.ContractHash, params [][]byte, scriptVersion []byte) ([]byte, error) {
+	sb := payToContractHelper(params, scriptVersion)
+	if len(params) > 0 {
+		sb = sb.AddInt64(int64(len(params))).AddOp(OP_ROLL)
+	}
+	sb = sb.AddOp(OP_DUP).AddOp(OP_HASH256).AddData(contractHash[:])
+	sb = sb.AddOp(OP_EQUALVERIFY).AddOp(OP_EVAL)
+	return sb.Script()
 }
 
-type Contract struct {
-	Hash          bc.ContractHash
-	ScriptVersion []byte
+// PayToContractInline builds an inline-style p2c pkscript.
+func PayToContractInline(contract []byte, params [][]byte, scriptVersion []byte) ([]byte, error) {
+	sb := payToContractHelper(params, scriptVersion)
+	sb = sb.ConcatRawScript(contract)
+	return sb.Script()
 }
 
-func (c Contract) Match(hash bc.ContractHash, version []byte) bool {
-	return c.Hash == hash && bytes.Equal(c.ScriptVersion, version)
+func payToContractHelper(params [][]byte, scriptVersion []byte) *ScriptBuilder {
+	sb := NewScriptBuilder()
+	sb = sb.AddData(scriptVersion).AddOp(OP_DROP)
+	for i := len(params) - 1; i >= 0; i-- {
+		sb = sb.AddData(params[i])
+	}
+	return sb
 }
 
-// Returns true, the contract, and the params if the parsed script
-// is in p2c format; false, nil, and nil otherwise.
+var (
+	ErrNotP2C      = errors.New("not in P2C format")
+	ErrP2CMismatch = errors.New("contract mismatch")
+)
+
+// RedeemP2C builds a sigscript for redeeming the given contract.
+func RedeemP2C(pkscript, contract []byte, inputs []Item) ([]byte, error) {
+	scriptVersion, pkscriptContract, pkscriptContractHash, _ := ParseP2C(pkscript, contract)
+	if scriptVersion == nil {
+		return nil, ErrNotP2C
+	}
+	if pkscriptContract != nil {
+		if !bytes.Equal(pkscriptContract, contract) {
+			return nil, ErrP2CMismatch
+		}
+	} else {
+		hash := hash256.Sum(contract)
+		if hash != pkscriptContractHash {
+			return nil, ErrP2CMismatch
+		}
+	}
+	sb := NewScriptBuilder()
+	for _, input := range inputs {
+		sb = input.AddTo(sb)
+	}
+	if pkscriptContract == nil {
+		sb = sb.AddData(contract)
+	}
+	return sb.Script()
+}
+
+// ParseP2C parses a p2c script.  It must have one of the following forms:
+//   <scriptversion> DROP [<param N> <param N-1> ... <param 1>] contract-script...
+//   <scriptversion> DROP [<param N> <param N-1> ... <param 1> <N> ROLL] DUP HASH256 <contract-hash> EQUALVERIFY EVAL
 //
-// P2C format for N>=1 params is:
-//   1 DROP <paramN> <paramN-1> ... <param1> <N> ROLL DUP HASH256 <contractHash> EQUALVERIFY EVAL
-// For N=0 params it's just:
-//   1 DROP DUP HASH256 <contractHash> EQUALVERIFY EVAL
-func testContract(pops []parsedOpcode) (*Contract, [][]byte) {
-	scriptVersionBytes := parseScriptVersion(pops)
+// Additionally, scriptversion must be a legal P2C version.
+//
+// If contractHint is non-nil, it's used as the expected contract to
+// find at the end of an inline-style script, to help the parser
+// distinguish the script from the params.  If contractHint is nil and
+// the input is inline-style, then (HEURISTIC ALERT) the contract
+// script must start with a non-pushdata op, again to distinguish the
+// contract script from the params.
+//
+// If script has the first form, the return value is:
+//   <scriptversion>, <the contract>, <a zero hash>, <the params>
+// If script has the second form, the return value is:
+//   <scriptversion>, nil, <the contract hash>, <the params>
+// Otherwise the first return value is nil.
+//
+// TODO(bobg): Per kr's comment at
+// https://github.com/chain-engineering/chain/pull/864#issuecomment-218553450,
+// split up txscript into two packages: one for script execution
+// semantics only, the other for script parsing and related functions.
+func ParseP2C(script, contractHint []byte) (scriptVersion, contract []byte, contractHash bc.ContractHash, params [][]byte) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, nil, contractHash, nil
+	}
+	return parseP2C(pops, script, contractHint)
+}
 
+var okVersions = [][]byte{ScriptVersion1, ScriptVersion2}
+
+func parseP2C(pops []parsedOpcode, script, contractHint []byte) (scriptVersion, contract []byte, contractHash bc.ContractHash, params [][]byte) {
+	scriptVersion = parseScriptVersion(pops)
+	okVersion := false
+	for _, v := range okVersions {
+		if bytes.Equal(v, scriptVersion) {
+			okVersion = true
+			break
+		}
+	}
+	if !okVersion {
+		return nil, nil, contractHash, nil
+	}
+
+	isHashForm, contractHash, params := parseP2CHashForm(pops)
+	if isHashForm {
+		if contractHint != nil {
+			expectedHash := hash256.Sum(contractHint)
+			if expectedHash != contractHash {
+				return nil, nil, contractHash, nil
+			}
+		}
+		return scriptVersion, nil, contractHash, params
+	}
+
+	isInlineForm, contract, params := parseP2CInlineForm(pops, script, contractHint)
+	if isInlineForm {
+		return scriptVersion, contract, contractHash, params
+	}
+
+	return nil, nil, contractHash, nil
+}
+
+// Helper function for parseP2C.  Assumes scriptversion is already checked.
+func parseP2CHashForm(pops []parsedOpcode) (isHashForm bool, contractHash bc.ContractHash, params [][]byte) {
 	l := len(pops)
-	if l < 7 || (l > 7 && l < 10) {
-		// Zero-param form has exactly 7 opcodes.
-		// 1+ params has 10 or more opcodes.
-		return nil, nil
-	}
 
-	if pops[l-1].opcode.value != OP_EVAL {
-		return nil, nil
+	if l < 7 ||
+		(l > 7 && l < 10) ||
+		pops[l-1].opcode.value != OP_EVAL ||
+		pops[l-2].opcode.value != OP_EQUALVERIFY ||
+		!isPushdataOp(pops[l-3]) ||
+		len(pops[l-3].data) != hash256.Size ||
+		pops[l-4].opcode.value != OP_HASH256 ||
+		pops[l-5].opcode.value != OP_DUP {
+		return false, contractHash, nil
 	}
-	if pops[l-2].opcode.value != OP_EQUALVERIFY {
-		return nil, nil
-	}
-
-	if !isPushdataOp(pops[l-3]) {
-		return nil, nil
-	}
-	if len(pops[l-3].data) != 32 {
-		return nil, nil
-	}
-
-	if pops[l-4].opcode.value != OP_HASH256 {
-		return nil, nil
-	}
-	if pops[l-5].opcode.value != OP_DUP {
-		return nil, nil
-	}
-
-	var params [][]byte
 
 	if l > 7 {
-		params = make([][]byte, 0, l-9)
-
-		if pops[l-6].opcode.value != OP_ROLL {
-			return nil, nil
-		}
-		if !isPushdataOp(pops[l-7]) {
-			return nil, nil
-		}
 		n, err := asScriptNum(pops[l-7], false)
-		if err != nil {
-			return nil, nil // swallow errors
+		if err != nil ||
+			n != scriptNum(l-9) ||
+			pops[l-6].opcode.value != OP_ROLL ||
+			!isPushdataOp(pops[l-7]) {
+			return false, contractHash, nil
 		}
-		if n != scriptNum(l-9) {
-			return nil, nil
-		}
+		params = make([][]byte, 0, l-9)
 		for i := l - 8; i >= 2; i-- {
 			if !isPushdataOp(pops[i]) {
-				return nil, nil
+				return false, contractHash, nil
 			}
 			params = append(params, asPushdata(pops[i]))
 		}
 	}
 
-	var contractHash bc.ContractHash
 	copy(contractHash[:], pops[l-3].data)
 
-	return &Contract{
-		Hash:          contractHash,
-		ScriptVersion: scriptVersionBytes,
-	}, params
+	return true, contractHash, params
 }
 
-// IsPayToContract returns true if the script is in the standard
-// pay-to-contract (P2C) format, false otherwise.
-func IsPayToContract(script []byte) bool {
-	contract, _ := TestPayToContract(script)
-	return contract != nil
-}
+// Helper function for parseP2C.  Assumes scriptversion is already checked.
+func parseP2CInlineForm(pops []parsedOpcode, script, contractHint []byte) (isInlineForm bool, contract []byte, params [][]byte) {
+	var nParams int
 
-// TestPayToContract returns a Contract struct and the params if
-// the script is in p2c format; nil and nil otherwise.
-func TestPayToContract(script []byte) (*Contract, [][]byte) {
-	pops, err := parseScript(script)
-	if err != nil {
-		return nil, nil
+	if contractHint != nil {
+		contractStart := len(script) - len(contractHint)
+		if !bytes.Equal(script[contractStart:], contractHint) {
+			return false, nil, nil
+		}
+		var err error
+		pops, err = parseScript(script[:contractStart])
+		if err != nil {
+			return false, nil, nil
+		}
+		if len(pops) < 2 {
+			return false, nil, nil
+		}
+		if pops[len(pops)-1].opcode.value == OP_NOP {
+			pops = pops[:len(pops)-1]
+		}
+		for i := 2; i < len(pops); i++ {
+			if !isPushdataOp(pops[i]) {
+				return false, nil, nil
+			}
+		}
+		nParams = len(pops) - 2
+		contract = contractHint
+	} else {
+		for i := 2; i < len(pops) && isPushdataOp(pops[i]); i++ {
+			nParams++
+		}
+		if nParams == len(pops)-2 {
+			// No non-pushdata ops found
+			return false, nil, nil
+		}
+		for i := 2 + nParams; i < len(pops); i++ {
+			unparsedOpcode, err := pops[i].bytes()
+			if err != nil {
+				return false, nil, nil
+			}
+			contract = append(contract, unparsedOpcode...)
+		}
+		if len(contract) > 0 && contract[0] == OP_NOP {
+			contract = contract[1:]
+		}
 	}
-	return testContract(pops)
+
+	if nParams > 0 {
+		params = make([][]byte, 0, nParams)
+		for i := 1 + nParams; i >= 2; i-- {
+			params = append(params, asPushdata(pops[i]))
+		}
+	}
+
+	return true, contract, params
 }
 
 // isPushOnly returns true if the script only pushes data, false otherwise.

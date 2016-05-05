@@ -33,7 +33,7 @@ func NewDestination(ctx context.Context, assetAmount *bc.AssetAmount, orderInfo 
 func NewDestinationWithScript(ctx context.Context, assetAmount *bc.AssetAmount, orderInfo *OrderInfo, metadata, pkscript []byte) (*txbuilder.Destination, error) {
 	if pkscript == nil {
 		var err error
-		pkscript, _, _, err = orderInfo.generateScript(ctx, nil)
+		pkscript, _, err = orderInfo.generateScript(ctx, nil)
 		if err != nil {
 			return nil, err
 		}

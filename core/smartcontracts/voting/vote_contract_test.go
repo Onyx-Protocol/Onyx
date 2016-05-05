@@ -970,8 +970,11 @@ func TestTokenContractInvalidMatch(t *testing.T) {
 	}
 
 	for i, params := range testCaseScriptParams {
-		addr := txscript.NewAddressContractHash(tokenHoldingContractHash[:], scriptVersion, params)
-		script := addr.ScriptAddress()
+		script, err := txscript.PayToContractHash(tokenHoldingContractHash, params, scriptVersion)
+		if err != nil {
+			t.Errorf("%d: building pkscript: %s", i, err)
+			continue
+		}
 
 		data, err := testTokenContract(script)
 		if err != nil {

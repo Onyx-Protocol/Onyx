@@ -6,10 +6,8 @@ package txscript
 
 import (
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 
-	"chain/cos/bc"
 	"chain/errors"
 )
 
@@ -178,24 +176,6 @@ func payToPubKeyHashScript(pubKeyHash []byte) ([]byte, error) {
 		Script()
 }
 
-// payToContractScript creates a new script to pay a transaction
-// output to a contract.
-func payToContractScript(contractHash, scriptVersion []byte, params [][]byte) ([]byte, error) {
-	sb := NewScriptBuilder()
-	sb = sb.AddData(scriptVersion).AddOp(OP_DROP)
-
-	n := len(params)
-	if n > 0 {
-		for i := n - 1; i >= 0; i-- {
-			sb = sb.AddData(params[i])
-		}
-		sb = sb.AddInt64(int64(n)).AddOp(OP_ROLL)
-	}
-
-	sb = sb.AddOp(OP_DUP).AddOp(OP_HASH256).AddData(contractHash).AddOp(OP_EQUALVERIFY).AddOp(OP_EVAL)
-	return sb.Script()
-}
-
 // payToScriptHashScript creates a new script to pay a transaction output to a
 // script hash. It is expected that the input is a valid hash.
 func payToScriptHashScript(scriptHash []byte) ([]byte, error) {
@@ -208,51 +188,6 @@ func payToScriptHashScript(scriptHash []byte) ([]byte, error) {
 func payToPubKeyScript(serializedPubKey []byte) ([]byte, error) {
 	return NewScriptBuilder().AddData(serializedPubKey).
 		AddOp(OP_CHECKSIG).Script()
-}
-
-// Satisfies btcutil.Address
-type AddressContractHash struct {
-	scriptVersion []byte
-	params        [][]byte
-	hash          bc.ContractHash
-}
-
-// String returns the string encoding of the transaction output
-// destination.
-//
-// Please note that String differs subtly from EncodeAddress: String
-// will return the value as a string without any conversion, while
-// EncodeAddress may convert destination types (for example,
-// converting pubkeys to P2PKH addresses) before encoding as a
-// payment address string.
-func (a *AddressContractHash) String() string {
-	return a.EncodeAddress()
-}
-
-// EncodeAddress returns the string encoding of the payment address
-// associated with the Address value.  See the comment on String
-// for how this method differs from String.
-func (a *AddressContractHash) EncodeAddress() string {
-	return string(a.ScriptAddress())
-}
-
-// ScriptAddress returns the raw bytes of the address to be used
-// when inserting the address into a txout's script.
-func (a *AddressContractHash) ScriptAddress() []byte {
-	result, _ := payToContractScript(a.hash[:], a.scriptVersion, a.params)
-	return result
-}
-
-// IsForNet returns whether or not the address is associated with the
-// passed bitcoin network.
-func (a *AddressContractHash) IsForNet(*chaincfg.Params) bool {
-	return true
-}
-
-func NewAddressContractHash(contractHash, scriptVersion []byte, params [][]byte) *AddressContractHash {
-	result := AddressContractHash{scriptVersion: scriptVersion, params: params}
-	copy(result.hash[:], contractHash)
-	return &result
 }
 
 // MultiSigScript returns a valid script for a multisignature redemption where

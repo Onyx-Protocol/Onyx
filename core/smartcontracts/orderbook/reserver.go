@@ -26,18 +26,23 @@ func (reserver *redeemReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 	openOrder := reserver.openOrder
 	changeAmount, err := reserveOrder(ctx, openOrder, assetAmount.Amount)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "reserving order")
 	}
 	contractScript, err := buildContract(len(openOrder.Prices))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "building contract")
 	}
-	sb := txscript.NewScriptBuilder()
-	sb = sb.AddInt64(int64(reserver.paymentAmount.Amount))
-	sb = sb.AddInt64(int64(changeAmount))
-	sb = sb.AddInt64(1)
-	sb = sb.AddData(contractScript)
-	sigScriptSuffix, err := sb.Script()
+
+	inputs := []txscript.Item{
+		txscript.NumItem(reserver.paymentAmount.Amount),
+		txscript.NumItem(changeAmount),
+		txscript.NumItem(1),
+	}
+	sigscript, err := txscript.RedeemP2C(openOrder.Script, contractScript, inputs)
+	if err != nil {
+		return nil, errors.Wrap(err, "building sigscript")
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +56,7 @@ func (reserver *redeemReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 				},
 				TemplateInput: &txbuilder.Input{
 					AssetAmount:     openOrder.AssetAmount,
-					SigScriptSuffix: sigScriptSuffix,
+					SigScriptSuffix: sigscript,
 				},
 			},
 		},
@@ -115,9 +120,11 @@ func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 		sellerScriptStr, _ := txscript.DisasmString(sellerScript)
 		return nil, errors.Wrapf(err, "could not get address for seller script [%s]", sellerScriptStr)
 	}
-	sb := txscript.NewScriptBuilder()
-	sb = sb.AddData(sellerAddr.RedeemScript).AddInt64(0).AddData(contractScript)
-	sigScriptSuffix, err := sb.Script()
+	inputs := []txscript.Item{
+		txscript.DataItem(sellerAddr.RedeemScript),
+		txscript.NumItem(0),
+	}
+	sigscript, err := txscript.RedeemP2C(openOrder.Script, contractScript, inputs)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +138,7 @@ func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 				},
 				TemplateInput: &txbuilder.Input{
 					AssetAmount:     openOrder.AssetAmount,
-					SigScriptSuffix: sigScriptSuffix,
+					SigScriptSuffix: sigscript,
 					Sigs:            txbuilder.InputSigs(hdkey.Derive(sellerAddr.Keys, appdb.ReceiverPath(sellerAddr, sellerAddr.Index))),
 				},
 			},

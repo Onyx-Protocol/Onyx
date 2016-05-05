@@ -139,10 +139,6 @@ var (
 	// the minimal opcode required.
 	ErrStackMinimalData = errors.New("non-minimally encoded script number")
 
-	// ErrContractHashLength is returned when trying to create a
-	// contract hash from the wrong number of bytes.
-	ErrContractHashLength = errors.New("wrong number of bytes for contract hash")
-
 	// ErrAssetIDLength is returned when trying to create an asset
 	// id from the wrong number of bytes.
 	ErrAssetIDLength = errors.New("wrong number of bytes for asset id")

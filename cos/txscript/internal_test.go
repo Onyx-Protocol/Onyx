@@ -32,10 +32,6 @@ var TstHasCanonicalPushes = canonicalPush
 // test package.
 var TstParseScript = parseScript
 
-// TstPayToContractScript makes the internal payToContractScript
-// function available to the test package.
-var TstPayToContractScript = payToContractScript
-
 // TstIsPushdataOp makes the internal isPushdataOp function available
 // to the test package.
 var TstIsPushdataOp = isPushdataOp

@@ -78,39 +78,35 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 			})
 	}
 
-	// Build up contract-specific sigscript data.
-	sb := txscript.NewScriptBuilder()
+	var inputs []txscript.Item
 
 	// Add clause-specific parameters:
 	switch r.clause {
 	case clauseAuthenticate:
 		// No clause-specific parameters.
 	case clauseTransfer:
-		sb = sb.
-			AddData(r.output.HolderScript)
+		inputs = append(inputs, txscript.DataItem(r.output.HolderScript))
 	case clauseDelegate:
-		sb = sb.
-			AddInt64(r.output.Deadline).
-			AddBool(r.output.Delegatable).
-			AddData(r.output.HolderScript)
+		inputs = append(inputs, txscript.NumItem(r.output.Deadline))
+		inputs = append(inputs, txscript.BoolItem(r.output.Delegatable))
+		inputs = append(inputs, txscript.DataItem(r.output.HolderScript))
 	case clauseRecall:
 		for _, i := range r.intermediaries {
 			h := i.hash()
-			sb.AddData(h[:])
+			inputs = append(inputs, txscript.DataItem(h[:]))
 		}
-		sb = sb.
-			AddInt64(int64(len(r.intermediaries))).
-			AddData(r.output.HolderScript).
-			AddInt64(r.output.Deadline).
-			AddData(r.output.OwnershipChain[:])
+		inputs = append(inputs, txscript.NumItem(int64(len(r.intermediaries))))
+		inputs = append(inputs, txscript.DataItem(r.output.HolderScript))
+		inputs = append(inputs, txscript.NumItem(r.output.Deadline))
+		inputs = append(inputs, txscript.DataItem(r.output.OwnershipChain[:]))
 	case clauseOverride, clauseCancel:
 		// TODO(jackson): Implement.
 		return nil, errors.New("unimplemented")
 	}
-	sb = sb.
-		AddInt64(int64(r.clause)).
-		AddData(rightsHoldingContract)
-	script, err := sb.Script()
+	inputs = append(inputs, txscript.NumItem(r.clause))
+
+	script, err := txscript.RedeemP2C(r.prevScript, rightsHoldingContract, inputs)
+
 	if err != nil {
 		return nil, err
 	}
@@ -168,27 +164,24 @@ func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount,
 		)
 	}
 
-	sb := txscript.NewScriptBuilder()
+	var inputs []txscript.Item
+
 	switch r.clause {
 	case clauseRegister:
-		sb = sb.
-			AddData(r.rightScript)
+		inputs = append(inputs, txscript.DataItem(r.rightScript))
 	case clauseVote:
-		sb = sb.
-			AddInt64(r.output.Vote).
-			AddData(r.secret).
-			AddData(r.rightScript)
+		inputs = append(inputs, txscript.NumItem(r.output.Vote))
+		inputs = append(inputs, txscript.DataItem(r.secret))
+		inputs = append(inputs, txscript.DataItem(r.rightScript))
 	case clauseFinish, clauseRetire:
 		// No clause-specific parameters.
 	case clauseReset:
-		sb = sb.
-			AddInt64(int64(r.output.State)).
-			AddData(r.output.SecretHash[:])
+		inputs = append(inputs, txscript.NumItem(r.output.State))
+		inputs = append(inputs, txscript.DataItem(r.output.SecretHash[:]))
 	}
-	sb = sb.
-		AddInt64(int64(r.clause)).
-		AddData(tokenHoldingContract)
-	script, err := sb.Script()
+	inputs = append(inputs, txscript.NumItem(int64(r.clause)))
+
+	script, err := txscript.RedeemP2C(r.prevScript, tokenHoldingContract, inputs)
 	if err != nil {
 		return nil, err
 	}

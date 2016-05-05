@@ -92,7 +92,7 @@ func TestBuy(t *testing.T) {
 			if !reflect.DeepEqual(fixtureInfo.openOrder.Outpoint, txInput.Previous) {
 				return false
 			}
-			if !redeemsOrderbookContract(ctx, &fixtureInfo.openOrder.OrderInfo, txInput.SignatureScript) {
+			if !redeemsOrderbookContract(ctx, fixtureInfo.openOrder, txInput.SignatureScript) {
 				return false
 			}
 			return true
@@ -343,8 +343,8 @@ func paysToScript(ctx context.Context, gotScript, expectedScript []byte) bool {
 	return reflect.DeepEqual(gotScript, expectedScript)
 }
 
-func redeemsOrderbookContract(ctx context.Context, orderInfo *OrderInfo, script []byte) bool {
-	_, contract, _, err := orderInfo.generateScript(ctx, nil)
+func redeemsOrderbookContract(ctx context.Context, openOrder *OpenOrder, script []byte) bool {
+	_, contract, err := openOrder.generateScript(ctx, nil)
 	if err != nil {
 		return false
 	}
@@ -352,11 +352,36 @@ func redeemsOrderbookContract(ctx context.Context, orderInfo *OrderInfo, script 
 	if err != nil {
 		return false
 	}
-	if len(pushedData) < 1 {
+	if len(pushedData) < 3 {
 		return false
 	}
-	actualContract := pushedData[len(pushedData)-1]
-	return reflect.DeepEqual(contract, actualContract)
+	paymentAmount, err := txscript.MakeScriptNumWithMaxLen(pushedData[0], false, 4)
+	if err != nil {
+		return false
+	}
+	offerChangeAmount, err := txscript.MakeScriptNumWithMaxLen(pushedData[1], false, 4)
+	if err != nil {
+		return false
+	}
+	offerAmount := openOrder.Amount - uint64(offerChangeAmount)
+	price := openOrder.Prices[0]
+	if uint64(paymentAmount)*price.OfferAmount != price.PaymentAmount*offerAmount {
+		return false
+	}
+	clause, err := txscript.MakeScriptNumWithMaxLen(pushedData[2], false, 4)
+	if err != nil {
+		return false
+	}
+	if clause != 1 {
+		return false
+	}
+	if len(pushedData)%3 == 1 {
+		actualContract := pushedData[len(pushedData)-1]
+		if !reflect.DeepEqual(contract, actualContract) {
+			return false
+		}
+	}
+	return true
 }
 
 func expectPaysToOrderbookContract(ctx context.Context, t *testing.T, openOrder *OpenOrder, script []byte, msg string) {
@@ -364,7 +389,7 @@ func expectPaysToOrderbookContract(ctx context.Context, t *testing.T, openOrder 
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	expectedScript, _, _, err := openOrder.generateScript(ctx, sellerScript)
+	expectedScript, _, err := openOrder.generateScript(ctx, sellerScript)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

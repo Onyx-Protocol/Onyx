@@ -15,7 +15,7 @@ import (
 	"chain/log"
 )
 
-var scriptVersion = []byte{0x01}
+var scriptVersion = txscript.ScriptVersion1
 
 type (
 	// Price says pay PaymentAmount units of AssetID to get OfferAmount
@@ -54,7 +54,6 @@ var (
 	ErrMixedPayment     = errors.New("attempt to buy order with multiple assets as payment")
 	ErrNoPayment        = errors.New("attempt to buy order with no payment")
 	ErrNoPrices         = errors.New("attempt to create order with zero prices")
-	ErrNonP2CScript     = errors.New("pkscript is not in p2c format")
 	ErrNumParams        = errors.New("wrong number of parameters for orderbook contract")
 	ErrOrderExceeded    = errors.New("attempt to buy more than is available from an order")
 	ErrSameAsset        = errors.New("attempt to create order offering an asset in exchange for the same asset")
@@ -101,18 +100,15 @@ func Connect(chain *cos.FC) {
 	})
 }
 
-func (info *OrderInfo) generateScript(ctx context.Context, sellerScript []byte) ([]byte, []byte, []byte, error) {
-	var (
-		params [][]byte
-		err    error
-	)
-
+func (info *OrderInfo) generateScript(ctx context.Context, sellerScript []byte) (pkscript, contract []byte, err error) {
 	if sellerScript == nil {
 		sellerScript, err = scriptFromAccountID(ctx, info.SellerAccountID)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, errors.Wrap(err, "getting account script")
 		}
 	}
+
+	params := make([][]byte, 0, 3*len(info.Prices)+1)
 
 	for _, price := range info.Prices {
 		params = append(params, txscript.Int64ToScriptBytes(int64(price.OfferAmount)))
@@ -121,14 +117,13 @@ func (info *OrderInfo) generateScript(ctx context.Context, sellerScript []byte) 
 	}
 	params = append(params, sellerScript)
 
-	contract, err := buildContract(len(info.Prices))
+	contract, err = buildContract(len(info.Prices))
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, errors.Wrap(err, "building contract")
 	}
-	contractHash := hash256.Sum(contract)
 
-	addr := txscript.NewAddressContractHash(contractHash[:], scriptVersion, params)
-	return addr.ScriptAddress(), contract, contractHash[:], nil
+	pkscript, err = txscript.PayToContractHash(hash256.Sum(contract), params, scriptVersion)
+	return pkscript, contract, errors.Wrap(err, "building pkscript")
 }
 
 // SellerScript returns the contract parameter indicating where
@@ -141,11 +136,8 @@ func (openOrder *OpenOrder) SellerScript() ([]byte, error) {
 // orderbook contract.  Returns true, the seller script, and the list
 // of prices if so; false, nil, and nil otherwise.
 func testOrderbookScript(pkscript []byte) (isOrderbook bool, sellerScript []byte, prices []*Price, err error) {
-	contract, params := txscript.TestPayToContract(pkscript)
-	if contract == nil {
-		return false, nil, nil, nil
-	}
-	if !contract.Match(onePriceContractHash, scriptVersion) {
+	scriptVersion, _, _, params := txscript.ParseP2C(pkscript, onePriceContract)
+	if scriptVersion == nil {
 		return false, nil, nil, nil
 	}
 	if len(params) < 4 {
