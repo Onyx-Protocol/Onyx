@@ -101,8 +101,7 @@
 		},
 		{
 			"ImportPath": "github.com/lib/pq",
-			"Comment": "go1.0-cutoff-59-gb269bd0",
-			"Rev": "b269bd035a727d6c1081f76e7a239a1b00674c40"
+			"Rev": "dd3290b2f71a8b30bee8e4e75a337a825263d26f"
 		},
 		{
 			"ImportPath": "github.com/lsegal/gucumber",
