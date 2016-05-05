@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,8 +9,10 @@ import (
 	"testing"
 
 	"github.com/lib/pq"
+	"golang.org/x/net/context"
 
 	"chain/database/pg"
+	"chain/database/sql"
 )
 
 const (
@@ -47,13 +48,14 @@ func testPath(filename string) string {
 // not using the same schema file consistently throughout this package's
 // tests.
 func resetSchema(db *sql.DB, schemaSQLPath string) {
+	ctx := context.Background()
 	const reset = `
 		DROP SCHEMA IF EXISTS %s CASCADE;
 		CREATE SCHEMA %s;
 	`
 
 	quotedSchema := pq.QuoteIdentifier(schema)
-	_, err := db.Exec(fmt.Sprintf(reset, quotedSchema, quotedSchema))
+	_, err := db.Exec(ctx, fmt.Sprintf(reset, quotedSchema, quotedSchema))
 	if err != nil {
 		panic(err)
 	}
@@ -61,7 +63,7 @@ func resetSchema(db *sql.DB, schemaSQLPath string) {
 	if err != nil {
 		panic(err)
 	}
-	_, err = db.Exec(string(b))
+	_, err = db.Exec(ctx, string(b))
 	if err != nil {
 		panic(err)
 	}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
@@ -12,6 +11,9 @@ import (
 	"sort"
 	"time"
 
+	"golang.org/x/net/context"
+
+	"chain/database/sql"
 	"chain/errors"
 )
 
@@ -47,8 +49,11 @@ func (m migration) String() string {
 
 // loadMigrations returns a slice of all the defined migrations.
 func loadMigrations(db *sql.DB, migrationsDir string) ([]migration, error) {
+	// ctx doesn't matter
+	ctx := context.Background()
+
 	// Create the migrations table if not yet created.
-	if _, err := db.Exec(createMigrationTableSQL); err != nil {
+	if _, err := db.Exec(ctx, createMigrationTableSQL); err != nil {
 		return nil, errors.Wrapf(err, "creating migration table")
 	}
 
@@ -114,9 +119,11 @@ func migrationFiles(migrationDirectory string) ([]string, error) {
 // appliedMigrations returns a map of  all migrations that have already
 // been applied. The keys to the map are the migration filenames.
 func appliedMigrations(db *sql.DB) (map[string]migration, error) {
+	// ctx doesn't matter
+	ctx := context.Background()
 	const q = `SELECT filename, hash, applied_at FROM migrations`
 
-	rows, err := db.Query(q)
+	rows, err := db.Query(ctx, q)
 	if err != nil {
 		return nil, err
 	}
@@ -155,12 +162,14 @@ func runGoMigration(db *sql.DB, dbURL, migrationDir string, m migration) error {
 }
 
 func runSQLMigration(db *sql.DB, migrationDir string, m migration) error {
+	// ctx doesn't matter
+	ctx := context.Background()
 	migration, err := ioutil.ReadFile(filepath.Join(migrationDir, m.Filename))
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(string(migration))
+	_, err = db.Exec(ctx, string(migration))
 	if err != nil {
 		return err
 	}
@@ -172,11 +181,14 @@ func runSQLMigration(db *sql.DB, migrationDir string, m migration) error {
 }
 
 func insertAppliedMigration(db *sql.DB, m migration) error {
+	//ctx doesn't matter
+	ctx := context.Background()
+
 	const q = `
 		INSERT INTO migrations (filename, hash, applied_at)
 		VALUES($1, $2, NOW())
 	`
-	_, err := db.Exec(q, m.Filename, m.Hash)
+	_, err := db.Exec(ctx, q, m.Filename, m.Hash)
 	if err != nil {
 		return errors.Wrap(err, "recording applied migration")
 	}

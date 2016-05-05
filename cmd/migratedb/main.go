@@ -3,7 +3,6 @@
 package main
 
 import (
-	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
@@ -16,6 +15,9 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+
+	"chain/database/pg"
+	"chain/database/sql"
 )
 
 const help = `
@@ -86,7 +88,8 @@ func main() {
 	}
 
 	// Create a database connection.
-	db, err := sql.Open("postgres", dbURL)
+	sql.Register("schemadb", pg.SchemaDriver("migratedb"))
+	db, err := sql.Open("schemadb", dbURL)
 	if err != nil {
 		fatalf("unable to connect to %s: %v\n", dbURL, err)
 	}
