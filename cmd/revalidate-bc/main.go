@@ -77,7 +77,8 @@ func main() {
 	}
 
 	// Create a database connection.
-	db, err := sql.Open("postgres", dbURL)
+	sql.Register("schemadb", pg.SchemaDriver("revalidate-bc"))
+	db, err := sql.Open("schemadb", dbURL)
 	if err != nil {
 		fatalf("unable to get target DB_URL: %v\n", err)
 	}
