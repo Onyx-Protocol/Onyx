@@ -1,6 +1,6 @@
 DROP INDEX utxos_asset_id_contract_hash_idx;
-ALTER TABLE utxos DROP contract_hash;
 DROP VIEW IF EXISTS utxos_status;
+ALTER TABLE utxos DROP contract_hash;
 CREATE VIEW utxos_status AS
  SELECT u.tx_hash,
     u.index,
