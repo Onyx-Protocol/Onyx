@@ -39,6 +39,7 @@ const (
 	clauseVote                         = 2
 	clauseFinish                       = 3
 	clauseReset                        = 4
+	clauseRetire                       = 5
 )
 
 // tokenScriptData encapsulates all the data stored within the p2c script
@@ -142,6 +143,7 @@ const (
 	// 2 - Vote
 	// 3 - Finish
 	// 4 - Reset
+	// 5 - Retire
 	tokenHoldingContractString = `
 		6 ROLL
 		DUP 1 EQUAL IF
@@ -212,6 +214,14 @@ const (
 			OUTPUTSCRIPT
 			DATA_1 0x27 RIGHT
 			CAT AMOUNT ASSET ROT
+			RESERVEOUTPUT VERIFY
+			EVAL
+		ENDIF
+		DUP 5 EQUAL IF
+			2DROP DROP
+			16 GREATERTHANOREQUAL VERIFY
+			DROP NIP
+			AMOUNT ASSET DATA_1 0x6a
 			RESERVEOUTPUT VERIFY
 			EVAL
 		ENDIF

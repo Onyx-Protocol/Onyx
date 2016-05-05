@@ -600,6 +600,113 @@ func TestFinishVoteClause(t *testing.T) {
 	}
 }
 
+func TestRetireClause(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+
+	var (
+		rightAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		tokenAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		tokensAssetAmount = bc.AssetAmount{
+			AssetID: tokenAssetID,
+			Amount:  200,
+		}
+	)
+
+	testCases := []struct {
+		err          error
+		prev         tokenScriptData
+		outputScript []byte
+	}{
+		{
+			err: nil,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateDistributed | stateFinished,
+				SecretHash:  exampleHash,
+			},
+			outputScript: []byte{txscript.OP_RETURN},
+		},
+		{
+			err: nil,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 10,
+				State:       stateVoted | stateFinished,
+				Vote:        2,
+				SecretHash:  exampleHash,
+			},
+			outputScript: []byte{txscript.OP_RETURN},
+		},
+		{
+			// Output sends back into the voting token contract.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateDistributed | stateFinished,
+				SecretHash:  exampleHash,
+				Vote:        2,
+			},
+			outputScript: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateDistributed | stateFinished,
+				SecretHash:  exampleHash,
+				Vote:        1,
+			}.PKScript(),
+		},
+		{
+			// Token must be FINISHED to be retired.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				OptionCount: 3,
+				State:       stateVoted,
+				SecretHash:  exampleHash,
+				Vote:        2,
+			},
+			outputScript: []byte{txscript.OP_RETURN},
+		},
+		{
+			// Admin script must authorize token retirement.
+			err: txscript.ErrStackScriptFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1, txscript.OP_DROP, txscript.OP_0},
+				OptionCount: 3,
+				State:       stateVoted | stateFinished,
+				SecretHash:  exampleHash,
+				Vote:        2,
+			},
+			outputScript: []byte{txscript.OP_RETURN},
+		},
+	}
+
+	for i, tc := range testCases {
+		sb := txscript.NewScriptBuilder()
+		sb = sb.
+			AddInt64(int64(clauseRetire)).
+			AddData(tokenHoldingContract)
+		sigscript, err := sb.Script()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = txscripttest.NewTestTx(mockTimeFunc).
+			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
+			AddOutput(tokensAssetAmount, tc.outputScript).
+			Execute(ctx, 0)
+		if !reflect.DeepEqual(err, tc.err) {
+			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
+		}
+	}
+}
+
 // TestTokenContractValidMatch tests generating a pkscript from a voting token.
 // The generated pkscript is then used in the voting token p2c detection
 // flow, where it should be found to match the contract. Then the decoded

@@ -552,6 +552,31 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 				Receiver:    receiver,
 			})
 		}
+	case "retire-voting-token":
+		if params.TokenAssetID == nil {
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "missing voting token asset id")
+		}
+		votes, _, err := voting.GetVotes(ctx, []bc.AssetID{*params.TokenAssetID}, "", "", math.MaxInt64)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "finding voting tokens to retire")
+		}
+
+		var totalAmount uint64
+		for _, v := range votes {
+			if !v.State.Finished() {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting must be closed to retire tokens")
+			}
+			reserver, err := voting.TokenRetire(ctx, v)
+			if err != nil {
+				return nil, nil, err
+			}
+			srcs = append(srcs, &txbuilder.Source{
+				AssetAmount: bc.AssetAmount{AssetID: v.AssetID, Amount: uint64(v.Amount)},
+				Reserver:    reserver,
+			})
+			totalAmount += uint64(v.Amount)
+		}
+		dsts = append(dsts, txbuilder.NewRetireDestination(ctx, &bc.AssetAmount{AssetID: *params.TokenAssetID, Amount: totalAmount}, action.Metadata))
 	default:
 		err = errors.WithDetailf(ErrBadBuildRequest, "unknown voting action `%s`", action.Type)
 	}

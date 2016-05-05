@@ -241,3 +241,20 @@ func TokenReset(ctx context.Context, token *Token, preserveRegistration bool, qu
 	}
 	return reserver, data, nil
 }
+
+// TokenRetire builds a txbuilder Reserver implementation for retiring a
+// voting token.
+func TokenRetire(ctx context.Context, token *Token) (txbuilder.Reserver, error) {
+	adminAddr, err := appdb.GetAddress(ctx, token.AdminScript)
+	if err != nil {
+		adminAddr = nil
+	}
+
+	reserver := tokenReserver{
+		outpoint:   token.Outpoint,
+		clause:     clauseRetire,
+		prevScript: token.tokenScriptData.PKScript(),
+		adminAddr:  adminAddr,
+	}
+	return reserver, nil
+}
