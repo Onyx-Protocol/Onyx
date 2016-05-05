@@ -13,7 +13,7 @@ import (
 	"chain/database/pg/pgtest"
 )
 
-func TestIntendToVoteClause(t *testing.T) {
+func TestRegisterToVoteClause(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	defer pgtest.Finish(ctx)
 
@@ -56,7 +56,7 @@ func TestIntendToVoteClause(t *testing.T) {
 				Right:       rightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				OptionCount: 3,
-				State:       stateIntended,
+				State:       stateRegistered,
 				SecretHash:  exampleHash,
 			},
 		},
@@ -73,7 +73,7 @@ func TestIntendToVoteClause(t *testing.T) {
 				Right:       rightAssetID,
 				AdminScript: exampleHash[:],
 				OptionCount: 10,
-				State:       stateIntended,
+				State:       stateRegistered,
 				SecretHash:  exampleHash,
 			},
 		},
@@ -92,7 +92,7 @@ func TestIntendToVoteClause(t *testing.T) {
 				Right:       otherRightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				OptionCount: 3,
-				State:       stateIntended,
+				State:       stateRegistered,
 				SecretHash:  exampleHash,
 				Vote:        2,
 			},
@@ -112,13 +112,13 @@ func TestIntendToVoteClause(t *testing.T) {
 				Right:       rightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				OptionCount: 3,
-				State:       stateIntended | stateFinished,
+				State:       stateRegistered | stateFinished,
 				SecretHash:  exampleHash,
 				Vote:        2,
 			},
 		},
 		{
-			// State changed to VOTED, not INTENDED.
+			// State changed to VOTED, not REGISTERED.
 			err: txscript.ErrStackScriptFailed,
 			prev: tokenScriptData{
 				Right:       rightAssetID,
@@ -153,7 +153,7 @@ func TestIntendToVoteClause(t *testing.T) {
 				Right:       otherRightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				OptionCount: 3,
-				State:       stateIntended,
+				State:       stateRegistered,
 				SecretHash:  exampleHash,
 				Vote:        2,
 			},
@@ -177,7 +177,7 @@ func TestIntendToVoteClause(t *testing.T) {
 				Right:       rightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				OptionCount: 3,
-				State:       stateIntended,
+				State:       stateRegistered,
 				SecretHash:  exampleHash,
 				Vote:        2,
 			},
@@ -188,7 +188,7 @@ func TestIntendToVoteClause(t *testing.T) {
 		sb := txscript.NewScriptBuilder()
 		sb = sb.
 			AddData(right.PKScript()).
-			AddInt64(int64(clauseIntendToVote)).
+			AddInt64(int64(clauseRegister)).
 			AddData(tokenHoldingContract)
 		sigscript, err := sb.Script()
 		if err != nil {
@@ -248,7 +248,7 @@ func TestVoteClause(t *testing.T) {
 				Right:       rightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				OptionCount: 3,
-				State:       stateIntended,
+				State:       stateRegistered,
 				SecretHash:  votingSecretHash,
 			},
 			out: tokenScriptData{
@@ -287,7 +287,7 @@ func TestVoteClause(t *testing.T) {
 				Right:       rightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				OptionCount: 3,
-				State:       stateIntended,
+				State:       stateRegistered,
 				SecretHash:  exampleHash,
 			},
 			out: tokenScriptData{
@@ -306,7 +306,7 @@ func TestVoteClause(t *testing.T) {
 				Right:       rightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				OptionCount: 3,
-				State:       stateIntended,
+				State:       stateRegistered,
 				SecretHash:  votingSecretHash,
 				Vote:        2,
 			},
@@ -320,13 +320,13 @@ func TestVoteClause(t *testing.T) {
 			},
 		},
 		{
-			// Cannot move from FINISHED even if INTENDED.
+			// Cannot move from FINISHED even if REGISTERED.
 			err: txscript.ErrStackVerifyFailed,
 			prev: tokenScriptData{
 				Right:       rightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				OptionCount: 3,
-				State:       stateIntended | stateFinished,
+				State:       stateRegistered | stateFinished,
 				SecretHash:  votingSecretHash,
 			},
 			out: tokenScriptData{
@@ -345,7 +345,7 @@ func TestVoteClause(t *testing.T) {
 				Right:       rightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				OptionCount: 3,
-				State:       stateIntended,
+				State:       stateRegistered,
 				SecretHash:  votingSecretHash,
 			},
 			out: tokenScriptData{
@@ -365,7 +365,7 @@ func TestVoteClause(t *testing.T) {
 				Right:       otherRightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				OptionCount: 3,
-				State:       stateIntended,
+				State:       stateRegistered,
 				SecretHash:  votingSecretHash,
 			},
 			out: tokenScriptData{
@@ -388,7 +388,7 @@ func TestVoteClause(t *testing.T) {
 				Right:       rightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				OptionCount: 3,
-				State:       stateIntended,
+				State:       stateRegistered,
 				SecretHash:  exampleHash,
 			},
 			out: tokenScriptData{
@@ -557,7 +557,7 @@ func TestFinishVoteClause(t *testing.T) {
 				Right:       rightAssetID,
 				AdminScript: []byte{txscript.OP_1},
 				OptionCount: 3,
-				State:       stateIntended | stateFinished,
+				State:       stateRegistered | stateFinished,
 				SecretHash:  exampleHash,
 				Vote:        2,
 			},
@@ -613,7 +613,7 @@ func TestTokenContractValidMatch(t *testing.T) {
 			Right:       bc.AssetID{},
 			AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 			OptionCount: 10,
-			State:       stateIntended,
+			State:       stateRegistered,
 			SecretHash:  exampleHash,
 			Vote:        5,
 		},
@@ -672,21 +672,21 @@ func TestTokenContractInvalidMatch(t *testing.T) {
 			[]byte{}, []byte{}, []byte{}, []byte{}, []byte{}, []byte{},
 		},
 		{ // asset id not long enough
-			[]byte{0x01},                     // voting right asset id = 0x01
-			[]byte{0xde, 0xad, 0xbe, 0xef},   // admin script = 0xdeadbeef
-			[]byte{0x52},                     // option count = 2
-			[]byte{byte(clauseIntendToVote)}, // state = INTEND_TO_VOTE
-			exampleHash[:],                   // secret hash = example hash
-			[]byte{0x51},                     // vote = 1
+			[]byte{0x01},                   // voting right asset id = 0x01
+			[]byte{0xde, 0xad, 0xbe, 0xef}, // admin script = 0xdeadbeef
+			[]byte{0x52},                   // option count = 2
+			[]byte{byte(clauseRegister)},   // state = REGISTERED
+			exampleHash[:],                 // secret hash = example hash
+			[]byte{0x51},                   // vote = 1
 		},
 		{ // too many parameters
-			exampleHash[:],                   // voting right asset id = example hash
-			[]byte{0xde, 0xad, 0xbe, 0xef},   // admin script = 0xdeadbeef
-			[]byte{0x52},                     // option count = 2
-			[]byte{byte(clauseIntendToVote)}, // state = INTEND_TO_VOTE
-			exampleHash[:],                   // secret hash = example hash
-			[]byte{0x51},                     // vote = 1
-			[]byte{0x00, 0x01},               // garbage parameter
+			exampleHash[:],                 // voting right asset id = example hash
+			[]byte{0xde, 0xad, 0xbe, 0xef}, // admin script = 0xdeadbeef
+			[]byte{0x52},                   // option count = 2
+			[]byte{byte(clauseRegister)},   // state = REGISTERED
+			exampleHash[:],                 // secret hash = example hash
+			[]byte{0x51},                   // vote = 1
+			[]byte{0x00, 0x01},             // garbage parameter
 		},
 	}
 

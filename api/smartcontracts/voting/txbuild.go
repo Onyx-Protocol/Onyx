@@ -152,21 +152,21 @@ func TokenIssuance(ctx context.Context, rightAssetID bc.AssetID, admin []byte, o
 	return scriptData
 }
 
-// TokenIntent builds txbuilder Reserver and Receiver implementations
-// for a voting token intent-to-vote transition.
-func TokenIntent(ctx context.Context, token *Token, rightScript []byte) (txbuilder.Reserver, txbuilder.Receiver, error) {
+// TokenRegister builds txbuilder Reserver and Receiver implementations
+// for a voting token registration transition.
+func TokenRegistration(ctx context.Context, token *Token, rightScript []byte) (txbuilder.Reserver, txbuilder.Receiver, error) {
 	prevScript := token.tokenScriptData.PKScript()
-	intended := token.tokenScriptData
-	intended.State = stateIntended
+	registered := token.tokenScriptData
+	registered.State = stateRegistered
 
 	reserver := tokenReserver{
 		outpoint:    token.Outpoint,
-		clause:      clauseIntendToVote,
-		output:      intended,
+		clause:      clauseRegister,
+		output:      registered,
 		prevScript:  prevScript,
 		rightScript: rightScript,
 	}
-	return reserver, intended, nil
+	return reserver, registered, nil
 }
 
 // TokenVote builds txbuilder Reserver and Receiver implementations

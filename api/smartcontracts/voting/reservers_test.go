@@ -115,7 +115,7 @@ func TestTokenReserver(t *testing.T) {
 		},
 	}
 	rightData := rightScriptData{}
-	reserver, _, err := TokenIntent(ctx, prev, rightData.PKScript())
+	reserver, _, err := TokenRegistration(ctx, prev, rightData.PKScript())
 	if err != nil {
 		t.Fatal(err)
 	}

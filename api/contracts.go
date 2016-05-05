@@ -86,17 +86,17 @@ func findAccountVotingRights(ctx context.Context, accountID string) (map[string]
 	for _, r := range rightsWithUTXOs {
 		var actionTypes []string
 		if r.Outpoint.Hash == r.UTXO.Hash && r.Outpoint.Index == r.UTXO.Index {
-			actionTypes = append(actionTypes, "authenticate-votingright", "transfer-votingright", "delegate-votingright")
+			actionTypes = append(actionTypes, "authenticate-voting-right", "transfer-voting-right", "delegate-voting-right")
 		} else {
-			actionTypes = append(actionTypes, "recall-votingright")
+			actionTypes = append(actionTypes, "recall-voting-right")
 		}
 
 		rightToken := map[string]interface{}{
-			"asset_id":           r.AssetID,
-			"action_types":       actionTypes,
-			"transaction_id":     r.UTXO.Hash,
-			"index":              r.UTXO.Index,
-			"holding_account_id": holders[r.AssetID],
+			"voting_right_asset_id": r.AssetID,
+			"action_types":          actionTypes,
+			"transaction_id":        r.UTXO.Hash,
+			"index":                 r.UTXO.Index,
+			"holding_account_id":    holders[r.AssetID],
 		}
 		rights = append(rights, rightToken)
 	}
@@ -133,13 +133,13 @@ func getVotingRightHistory(ctx context.Context, assetID string) (map[string]inte
 	rights := make([]map[string]interface{}, 0, len(rightsWithUTXOs))
 	for _, r := range rightsWithUTXOs {
 		right := map[string]interface{}{
-			"asset_id":       r.AssetID,
-			"account_id":     r.AccountID,
-			"holder_script":  chainjson.HexBytes(r.HolderScript),
-			"transferable":   r.Delegatable,
-			"deadline":       time.Unix(r.Deadline, 0).Format(time.RFC3339),
-			"transaction_id": r.Outpoint.Hash,
-			"index":          r.Outpoint.Index,
+			"voting_right_asset_id": r.AssetID,
+			"account_id":            r.AccountID,
+			"holder_script":         chainjson.HexBytes(r.HolderScript),
+			"transferable":          r.Delegatable,
+			"deadline":              time.Unix(r.Deadline, 0).Format(time.RFC3339),
+			"transaction_id":        r.Outpoint.Hash,
+			"index":                 r.Outpoint.Index,
 		}
 		rights = append(rights, right)
 		last = r.Outpoint.Hash.String()
@@ -151,7 +151,7 @@ func getVotingRightHistory(ctx context.Context, assetID string) (map[string]inte
 }
 
 type votingTallyRequest struct {
-	VotingTokenAssetIDs []bc.AssetID `json:"asset_ids"`
+	VotingTokenAssetIDs []bc.AssetID `json:"voting_token_asset_ids"`
 }
 
 // POST /v3/contracts/voting-tokens/tally
@@ -186,14 +186,14 @@ func getVotingTokenTally(ctx context.Context, req votingTallyRequest) (map[strin
 	}
 
 	return map[string]interface{}{
-		"votingtokens": tallies,
-		"last":         last,
+		"voting-tokens": tallies,
+		"last":          last,
 	}, nil
 }
 
 // POST /v3/contracts/voting-tokens/votes
 func getVotingTokenVotes(ctx context.Context, req struct {
-	AssetIDs  []bc.AssetID `json:"asset_ids"`
+	AssetIDs  []bc.AssetID `json:"voting_token_asset_ids"`
 	AccountID string       `json:"account_id,omitempty"` // optional
 }) (map[string]interface{}, error) {
 	prev, limit, err := getPageData(ctx, votingTokensPageSize)
@@ -213,21 +213,21 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 			switch {
 			case t.State.Distributed():
 				actionTypes = append(actionTypes, "register-token")
-			case t.State.Intended(), t.State.Voted():
+			case t.State.Registered(), t.State.Voted():
 				actionTypes = append(actionTypes, "vote")
 			}
 			actionTypes = append(actionTypes, "close-vote")
 		}
 
 		votes = append(votes, map[string]interface{}{
-			"asset_id":             t.AssetID,
-			"amount":               t.Amount,
-			"votingright_asset_id": t.Right,
-			"state":                t.State.String(),
-			"closed":               t.State.Finished(),
-			"option":               t.Vote,
-			"holding_account_id":   t.AccountID,
-			"action_types":         actionTypes,
+			"voting_token_asset_id": t.AssetID,
+			"voting_right_asset_id": t.Right,
+			"amount":                t.Amount,
+			"state":                 t.State.String(),
+			"closed":                t.State.Finished(),
+			"option":                t.Vote,
+			"holding_account_id":    t.AccountID,
+			"action_types":          actionTypes,
 		})
 	}
 	return map[string]interface{}{
@@ -237,8 +237,8 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 }
 
 type votingContractActionParams struct {
-	TokenAssetID     *bc.AssetID        `json:"token_asset_id,omitempty"`
-	RightAssetID     *bc.AssetID        `json:"votingright_asset_id,omitempty"`
+	TokenAssetID     *bc.AssetID        `json:"voting_token_asset_id,omitempty"`
+	RightAssetID     *bc.AssetID        `json:"voting_right_asset_id,omitempty"`
 	AccountID        string             `json:"account_id,omitempty"`         // right issuance, delegate, transfer, recall
 	HolderScript     chainjson.HexBytes `json:"holder_script,omitempty"`      // right issuance, delegate, transfer
 	AdminScript      chainjson.HexBytes `json:"admin_script,omitempty"`       // right, token issuance
@@ -287,7 +287,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 	}
 
 	switch action.Type {
-	case "issue-votingright":
+	case "issue-voting-right":
 		if params.RightAssetID == nil {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "missing voting right asset id")
 		}
@@ -305,7 +305,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 			Metadata:    action.Metadata,
 			Receiver:    voting.RightIssuance(ctx, params.AdminScript, holder),
 		})
-	case "authenticate-votingright":
+	case "authenticate-voting-right":
 		right, err := params.right(ctx)
 		if err != nil {
 			return nil, nil, err
@@ -323,7 +323,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 			Metadata:    action.Metadata,
 			Receiver:    receiver,
 		})
-	case "recall-votingright":
+	case "recall-voting-right":
 		if params.AccountID == "" {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "recall requires account ID to recall to")
 		}
@@ -369,7 +369,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 			Metadata:    action.Metadata,
 			Receiver:    receiver,
 		})
-	case "delegate-votingright":
+	case "delegate-voting-right":
 		old, err := params.right(ctx)
 		if err != nil {
 			return nil, nil, err
@@ -407,7 +407,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 			Metadata:    action.Metadata,
 			Receiver:    receiver,
 		})
-	case "transfer-votingright":
+	case "transfer-voting-right":
 		old, err := params.right(ctx)
 		if err != nil {
 			return nil, nil, err
@@ -462,7 +462,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		if token.State.Finished() {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has been closed")
 		}
-		tokenReserver, tokenReceiver, err := voting.TokenIntent(ctx, token, right.PKScript())
+		tokenReserver, tokenReceiver, err := voting.TokenRegistration(ctx, token, right.PKScript())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -483,8 +483,8 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		if err != nil {
 			return nil, nil, err
 		}
-		if !token.State.Intended() {
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting token must be in intended state")
+		if !token.State.Registered() {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting token must be in registered state")
 		}
 		if token.State.Finished() {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has been closed")

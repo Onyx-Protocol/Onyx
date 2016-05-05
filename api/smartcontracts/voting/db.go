@@ -346,10 +346,10 @@ func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*RightWithUTX
 //
 // Note:
 //
-// * Every token must be in _one_ of the distributed, intended or voted
+// * Every token must be in _one_ of the distributed, registered or voted
 //   states.
 //
-//   Circulation = Distributed + Intended + Voted
+//   Circulation = Distributed + Registered + Voted
 //
 // * Every token in the voted state has a vote in the Votes slice.
 //
@@ -361,10 +361,10 @@ func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*RightWithUTX
 //   Closed = 0 || Closed = Circulation
 //
 type Tally struct {
-	AssetID     bc.AssetID `json:"asset_id"`
+	AssetID     bc.AssetID `json:"voting_token_asset_id"`
 	Circulation int        `json:"circulation"`
 	Distributed int        `json:"distributed"`
-	Intended    int        `json:"intended"`
+	Registered  int        `json:"registered"`
 	Voted       int        `json:"voted"`
 	Closed      int        `json:"closed"`
 	Votes       []int      `json:"votes"`
@@ -381,7 +381,7 @@ func TallyVotes(ctx context.Context, tokenAssetID bc.AssetID) (tally Tally, err 
 				option_count,
 				SUM(amount) AS total,
 				SUM(CASE WHEN state = $1 THEN amount ELSE 0 END) AS distributed,
-				SUM(CASE WHEN state = $2 THEN amount ELSE 0 END) AS intended,
+				SUM(CASE WHEN state = $2 THEN amount ELSE 0 END) AS registered,
 				SUM(CASE WHEN state = $3 THEN amount ELSE 0 END) AS voted,
 				SUM(CASE WHEN closed THEN amount ELSE 0 END) AS closed
 			FROM voting_tokens WHERE asset_id = $4
@@ -395,8 +395,8 @@ func TallyVotes(ctx context.Context, tokenAssetID bc.AssetID) (tally Tally, err 
 		`
 	)
 	var optionCount int
-	err = pg.FromContext(ctx).QueryRow(ctx, stateQ, stateDistributed, stateIntended, stateVoted, tokenAssetID).
-		Scan(&optionCount, &tally.Circulation, &tally.Distributed, &tally.Intended, &tally.Voted, &tally.Closed)
+	err = pg.FromContext(ctx).QueryRow(ctx, stateQ, stateDistributed, stateRegistered, stateVoted, tokenAssetID).
+		Scan(&optionCount, &tally.Circulation, &tally.Distributed, &tally.Registered, &tally.Voted, &tally.Closed)
 	if err == sql.ErrNoRows {
 		return tally, pg.ErrUserInputNotFound
 	}

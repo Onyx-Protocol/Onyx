@@ -14,7 +14,7 @@ import (
 	"chain/testutil"
 )
 
-// TestAuthenticateEndToEnd tests building and submitting an intend-to-vote
+// TestAuthenticateEndToEnd tests building and submitting a register-to-vote
 // transaction with voting right authentication from beginning to end.
 func TestAuthenticateEndToEnd(t *testing.T) {
 	ctx := pgtest.NewContext(t)
@@ -41,7 +41,7 @@ func TestAuthenticateEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tokenReserver, tokenReceiver, err := TokenIntent(ctx, token, rightReceiver.PKScript())
+	tokenReserver, tokenReceiver, err := TokenRegistration(ctx, token, rightReceiver.PKScript())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func TestAuthenticateEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantToken := token.tokenScriptData
-	wantToken.State = stateIntended
+	wantToken.State = stateRegistered
 	if !reflect.DeepEqual(gotToken.tokenScriptData, wantToken) {
 		t.Errorf("token data, got=%#v want=%#v", gotToken.tokenScriptData, wantToken)
 	}

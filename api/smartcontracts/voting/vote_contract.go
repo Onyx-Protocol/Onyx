@@ -11,14 +11,14 @@ type TokenState byte
 func (ts TokenState) Finished() bool    { return ts&stateFinished == stateFinished }
 func (ts TokenState) Base() TokenState  { return 0x0F & ts }
 func (ts TokenState) Distributed() bool { return ts.Base() == stateDistributed }
-func (ts TokenState) Intended() bool    { return ts.Base() == stateIntended }
+func (ts TokenState) Registered() bool  { return ts.Base() == stateRegistered }
 func (ts TokenState) Voted() bool       { return ts.Base() == stateVoted }
 func (ts TokenState) String() string {
 	switch ts.Base() {
 	case stateDistributed:
 		return "distributed"
-	case stateIntended:
-		return "intended"
+	case stateRegistered:
+		return "registered"
 	case stateVoted:
 		return "voted"
 	}
@@ -27,7 +27,7 @@ func (ts TokenState) String() string {
 
 const (
 	stateDistributed TokenState = 0x00
-	stateIntended               = 0x01
+	stateRegistered             = 0x01
 	stateVoted                  = 0x02
 	stateFinished               = 0x10 // bit mask
 )
@@ -35,10 +35,10 @@ const (
 type tokenContractClause int64
 
 const (
-	clauseIntendToVote tokenContractClause = 1
-	clauseVote                             = 2
-	clauseFinish                           = 3
-	clauseReset                            = 4
+	clauseRegister tokenContractClause = 1
+	clauseVote                         = 2
+	clauseFinish                       = 3
+	clauseReset                        = 4
 )
 
 // tokenScriptData encapsulates all the data stored within the p2c script
@@ -138,7 +138,7 @@ const (
 	// This script with documentation and comments is available here:
 	// https://gist.github.com/jbowens/ae16b535c856c137830e
 	//
-	// 1 - Intend to vote
+	// 1 - Register to vote
 	// 2 - Vote
 	// 3 - Finish
 	// 4 - Reset          (Unimplemented)

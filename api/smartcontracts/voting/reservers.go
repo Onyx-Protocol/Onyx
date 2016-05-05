@@ -170,7 +170,7 @@ func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount,
 
 	sb := txscript.NewScriptBuilder()
 	switch r.clause {
-	case clauseIntendToVote:
+	case clauseRegister:
 		sb = sb.
 			AddData(r.rightScript)
 	case clauseVote:

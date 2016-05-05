@@ -143,30 +143,30 @@ func TestTallyVotes(t *testing.T) {
 			},
 		},
 		{
-			// All tokens distributed or intended.
+			// All tokens distributed or registered.
 			options: 5,
 			seed: []testVoteToken{
 				{state: stateDistributed, amount: 100, vote: 0},
-				{state: stateIntended, amount: 200, vote: 0},
-				{state: stateIntended, amount: 10, vote: 0},
+				{state: stateRegistered, amount: 200, vote: 0},
+				{state: stateRegistered, amount: 10, vote: 0},
 				{state: stateDistributed, amount: 300, vote: 0},
 				{state: stateDistributed, amount: 500, vote: 0},
-				{state: stateIntended, amount: 1, vote: 0},
+				{state: stateRegistered, amount: 1, vote: 0},
 			},
 			want: Tally{
 				Circulation: 1111,
 				Distributed: 900,
-				Intended:    211,
+				Registered:  211,
 				Votes:       []int{0, 0, 0, 0, 0},
 			},
 		},
 		{
-			// Mix of voted, distributed and intended.
+			// Mix of voted, distributed and registered.
 			options: 2,
 			seed: []testVoteToken{
 				{state: stateDistributed, amount: 100, vote: 0},
 				{state: stateVoted, amount: 200, vote: 1},
-				{state: stateIntended, amount: 10, vote: 0},
+				{state: stateRegistered, amount: 10, vote: 0},
 				{state: stateDistributed, amount: 300, vote: 0},
 				{state: stateVoted, amount: 500, vote: 2},
 				{state: stateVoted, amount: 1, vote: 1},
@@ -174,7 +174,7 @@ func TestTallyVotes(t *testing.T) {
 			want: Tally{
 				Circulation: 1111,
 				Distributed: 400,
-				Intended:    10,
+				Registered:  10,
 				Voted:       701,
 				Votes:       []int{201, 500},
 			},
@@ -201,14 +201,14 @@ func TestTallyVotes(t *testing.T) {
 				{state: stateVoted | stateFinished, amount: 100, vote: 1},
 				{state: stateDistributed | stateFinished, amount: 10, vote: 0},
 				{state: stateVoted | stateFinished, amount: 10000, vote: 2},
-				{state: stateIntended | stateFinished, amount: 3, vote: 0},
+				{state: stateRegistered | stateFinished, amount: 3, vote: 0},
 				{state: stateVoted | stateFinished, amount: 1000, vote: 1},
 				{state: stateVoted | stateFinished, amount: 100, vote: 2},
 			},
 			want: Tally{
 				Circulation: 11213,
 				Distributed: 10,
-				Intended:    3,
+				Registered:  3,
 				Voted:       11200,
 				Closed:      11213,
 				Votes:       []int{1100, 10100},
