@@ -1,0 +1,17 @@
+# Loan with collateral
+# (https://github.com/chain-engineering/chainos/blob/master/docs/spec/p2c.md#loan-with-a-collateral)
+
+contract loan(price, currency, deadline, creditorScript, debtorScript) {
+  clause keep() {
+    time() >= deadline && eval(creditorScript)
+  }
+  clause repurchase() {
+    reserveoutput(price, currency, creditorScript) && eval(debtorScript)
+  }
+  clause mutual() {
+    eval(debtorScript) && eval(creditorScript)
+  }
+  clause sell(newCreditorScript) {
+    reserveoutput(amount(), asset(), loan(price, currency, deadline, newCreditorScript, debtorScript)) && eval(creditorScript)
+  }
+}

@@ -1,0 +1,6 @@
+contract decl() {
+  clause x() {
+    var i 7;
+    i
+  }
+}

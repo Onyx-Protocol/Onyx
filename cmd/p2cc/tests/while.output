@@ -1,0 +1,25 @@
+Contract w:
+                 # <top> s n
+1 PICK           # <top> n s n
+0                # <top> [0] n s n
+GREATERTHAN      # <top> [n > [0]] s n
+WHILE DROP       # <top> s n
+DUP              # <top> s s n
+DUP              # <top> s s s n
+CAT              # <top> [cat(s, s)] s n
+NIP              # <top> [cat(s, s)] n
+1                # <top> [1] s n
+SWAP TOALTSTACK  # <top> [1] n
+SUB              # <top> [SUB([1], n)]
+FROMALTSTACK     # <top> s n
+1 PICK           # <top> n s n
+0                # <top> [0] n s n
+GREATERTHAN      # <top> [n > [0]] s n
+ENDWHILE         # <top> s n
+DUP              # <top> s s n
+
+Contract hex:
+517900a0d07576767e77517c6b946c517900a0d176
+
+Pkscript:
+0175<s>517a76aa35e7662e5125c31a6b15a1f12375c53b4f2ce1d91008d608d57e94b707e199ff88c0

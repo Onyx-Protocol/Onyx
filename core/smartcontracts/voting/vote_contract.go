@@ -2,6 +2,7 @@ package voting
 
 import (
 	"bytes"
+
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/crypto/hash256"

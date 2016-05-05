@@ -1,0 +1,5 @@
+contract bytesequal(a) {
+  clause x(b) {
+    a == b
+  }
+}

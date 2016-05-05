@@ -1,0 +1,44 @@
+Contract "orderbook":
+                        # <top> sellerScript currencyAssetID priceX priceY [clause selector] ...clause args...
+4 ROLL                  # <top> [clause selector] sellerScript currencyAssetID priceX priceY
+DUP 1 NUMEQUAL IF       # <top> [clause selector] sellerScript currencyAssetID priceX priceY
+4 PICK                  # <top> priceY [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+6 PICK                  # <top> cashAmount priceY [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+MUL                     # <top> [priceY * cashAmount] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+4 PICK                  # <top> priceX [priceY * cashAmount] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+8 PICK                  # <top> changeAmount priceX [priceY * cashAmount] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+MUL                     # <top> [priceX * changeAmount] [priceY * cashAmount] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+ADD                     # <top> [[priceY * cashAmount] + [priceX * changeAmount]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+4 PICK                  # <top> priceX [[priceY * cashAmount] + [priceX * changeAmount]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+AMOUNT                  # <top> [amount()] priceX [[priceY * cashAmount] + [priceX * changeAmount]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+MUL                     # <top> [priceX * [amount()]] [[priceY * cashAmount] + [priceX * changeAmount]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+NUMEQUAL                # <top> [[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+6 PICK                  # <top> cashAmount [[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+4 PICK                  # <top> currencyAssetID cashAmount [[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+4 PICK                  # <top> sellerScript currencyAssetID cashAmount [[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+RESERVEOUTPUT           # <top> [reserveoutput(cashAmount, currencyAssetID, sellerScript)] [[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+BOOLAND                 # <top> [[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+7 PICK                  # <top> changeAmount [[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+ASSET                   # <top> [asset()] changeAmount [[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+OUTPUTSCRIPT            # <top> [outputscript()] [asset()] changeAmount [[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+RESERVEOUTPUT           # <top> [reserveoutput(changeAmount, [asset()], [outputscript()])] [[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+BOOLAND                 # <top> [[[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] && [reserveoutput(changeAmount, [asset()], [outputscript()])]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+ELSE DUP 2 NUMEQUAL IF  # <top> [clause selector] sellerScript currencyAssetID priceX priceY
+1 PICK                  # <top> sellerScript [clause selector] sellerScript currencyAssetID priceX priceY
+EVAL                    # <top> [eval(sellerScript)] [clause selector] sellerScript currencyAssetID priceX priceY
+ENDIF ENDIF             # <top> [clause selector] sellerScript currencyAssetID priceX priceY
+
+Contract hex:
+547a76519c6354795679955479587995935479c3959c567954795479c19a5779c2c4c19a6776529c635179c06868
+
+Contracthash hex:
+4f55fa726190a29a401e42dd3cb9e6cca23e98ade484df7a98a391e21479bc87
+
+Pkscript hex:
+5175<priceY><priceX><currencyAssetID><sellerScript>547a76aa204f55fa726190a29a401e42dd3cb9e6cca23e98ade484df7a98a391e21479bc8788c0
+
+Redeem orderbook.trade:
+<changeAmount><cashAmount>512e547a76519c6354795679955479587995935479c3959c567954795479c19a5779c2c4c19a6776529c635179c06868
+
+Redeem orderbook.cancel:
+522e547a76519c6354795679955479587995935479c3959c567954795479c19a5779c2c4c19a6776529c635179c06868

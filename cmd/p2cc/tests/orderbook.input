@@ -1,0 +1,13 @@
+# Decentralized order book
+# https://github.com/chain-engineering/chainos/blob/master/docs/spec/p2c.md#decentralized-order-book
+
+contract orderbook(sellerScript, currencyAssetID, priceX, priceY) {
+  clause trade(cashAmount, changeAmount) {
+    priceY * cashAmount + priceX * changeAmount == priceX * amount()
+      && reserveoutput(cashAmount, currencyAssetID, sellerScript)
+      && reserveoutput(changeAmount, asset(), outputscript())
+  }
+  clause cancel() {
+    eval(sellerScript)
+  }
+}

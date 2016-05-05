@@ -1,0 +1,10 @@
+        # <top> a [clause selector]
+DUP     # <top> a a b
+2 PICK  # <top> b a a b
+EQUAL   # <top> [a == b] a b
+
+Contract hex:
+76527987
+
+Pkscript:
+0175<a>517a76aaa7dc3e5f827c465085f36347134a9ab40fb3e3a0dad1462706e32aefacb9c18488c0

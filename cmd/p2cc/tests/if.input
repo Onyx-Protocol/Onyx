@@ -1,0 +1,10 @@
+contract i(a) {
+  clause x(b) {
+    if a > b {
+      verify b;
+    } else {
+      verify a;
+    }
+    1;
+  }
+}

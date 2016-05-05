@@ -1,0 +1,18 @@
+             # <top> a b
+DUP          # <top> a a b
+2 PICK       # <top> b a a b
+GREATERTHAN  # <top> [a > b] a b
+IF           # <top> a b
+1 PICK       # <top> b a b
+VERIFY       # <top> a b
+ELSE         # <top> a b
+DUP          # <top> a a b
+VERIFY       # <top> a b
+ENDIF        # <top> a b
+1            # <top> [1] a b
+
+Contract hex:
+765279a0635179696776696851
+
+Pkscript:
+0175<a>517a76aa7338af6648bd69fb80ba1c1a0cf735bb312dbf04b59d75e7e9611b25c4c2ae8988c0

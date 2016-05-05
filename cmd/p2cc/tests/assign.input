@@ -1,0 +1,6 @@
+contract assign(a) {
+  clause x(b) {
+    b = a + b;
+    b
+  }
+}

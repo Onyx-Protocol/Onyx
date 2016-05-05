@@ -1,0 +1,5 @@
+contract numequal(a num) {
+  clause x(b) {
+    a == b
+  }
+}

@@ -1,0 +1,15 @@
+Contract assign:
+                 # <top> a b
+DUP              # <top> a a b
+2 PICK           # <top> b a a b
+ADD              # <top> [a + b] a b
+SWAP TOALTSTACK  # <top> [a + b] b
+NIP              # <top> [a + b]
+FROMALTSTACK     # <top> a b
+1 PICK           # <top> b a b
+
+Contract hex:
+765279937c6b776c5179
+
+Pkscript:
+0175<a>517a76aacb0af81df6f75668d439f319dbb5dfb5d054f32ca9eb5add9ea7231ffde5ed7c88c0

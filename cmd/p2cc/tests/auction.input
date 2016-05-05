@@ -1,0 +1,37 @@
+# Auctions! (minus "max price" logic)
+# https://github.com/chain-engineering/chainos/blob/master/docs/spec/p2c.md#auction-contract
+
+contract AuctionAsset(priceAsset, bidPrice, sellerScript, bidderScript, deadline) {
+  clause refund() {
+    verify bidderScript == '';
+    verify time() >= deadline;
+    eval(sellerScript);
+  }
+  clause bid(price, newBidderScript) {
+    verify price > bidPrice;
+    verify time() < deadline;
+    if bidderScript != '' {
+      verify reserveoutput(bidPrice, priceAsset, bidderScript);
+    }
+    verify reserveoutput(price, priceAsset, BidContract(asset(), amount(), sellerScript, newBidderScript, deadline));
+    verify reserveoutput(amount(), asset(), AuctionAsset(priceAsset, price, sellerScript, newBidderScript, deadline));
+  }
+  clause claim() {
+    verify time() >= deadline;
+    verify reserveoutput(bidPrice, priceAsset, sellerScript);
+    verify reserveoutput(amount(), asset(), bidderScript);
+  }
+}
+
+contract BidContract(assetID, assetAmount, sellerScript, bidderScript, deadline) {
+  clause release(newBidPrice) {
+    verify time() < deadline;
+    verify reserveoutput(amount(), asset(), bidderScript);
+    verify newBidPrice > amount();
+    verify reserveoutput(newBidPrice, asset(), BidContract(assetID, assetAmount, sellerScript, bidderScript, deadline));
+  }
+  clause pay() {
+    verify reserveoutput(amount(), asset(), sellerScript);
+    verify reserveoutput(assetAmount, assetID, bidderScript);
+  }
+}

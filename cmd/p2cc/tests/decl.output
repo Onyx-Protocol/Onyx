@@ -1,0 +1,11 @@
+Contract decl:
+     # <top> 
+7    # <top> [7]
+DUP  # <top> i i
+NIP  # <top> i
+
+Contract hex:
+577677
+
+Pkscript:
+017576aaba866f4a2fd64a0088a21f1dea7d6af25abe3dff86be573090e917b02b07994c88c0
