@@ -3,6 +3,7 @@ package etcdname
 import (
 	"encoding/json"
 	"errors"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -93,7 +94,14 @@ func LookupHost(host string) ([]string, error) {
 		return nil, err
 	}
 
-	return strings.Split(addrs, ","), nil
+	as := strings.Split(addrs, ",")
+	for _, a := range as {
+		if net.ParseIP(a) == nil {
+			return nil, errors.New("bad address: " + a)
+		}
+	}
+
+	return as, nil
 }
 
 // splitPointer splits a response from etcd's services directory into
