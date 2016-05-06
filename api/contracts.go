@@ -212,7 +212,7 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 		if !t.State.Finished() {
 			switch {
 			case t.State.Distributed():
-				actionTypes = append(actionTypes, "register-token")
+				actionTypes = append(actionTypes, "register-voting-token")
 			case t.State.Registered(), t.State.Voted():
 				actionTypes = append(actionTypes, "vote")
 			}
@@ -429,7 +429,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 			Metadata:    action.Metadata,
 			Receiver:    receiver,
 		})
-	case "issue-token":
+	case "issue-voting-token":
 		if params.RightAssetID == nil {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "new voting tokens must provide corresponding voting right")
 		}
@@ -447,7 +447,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 			Metadata:    action.Metadata,
 			Receiver:    voting.TokenIssuance(ctx, *params.RightAssetID, params.AdminScript, params.OptionCount, params.QuorumSecretHash),
 		})
-	case "register-token":
+	case "register-voting-token":
 		token, err := params.token(ctx)
 		if err != nil {
 			return nil, nil, err
