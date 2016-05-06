@@ -101,7 +101,7 @@
 		},
 		{
 			"ImportPath": "github.com/lib/pq",
-			"Rev": "dd3290b2f71a8b30bee8e4e75a337a825263d26f"
+			"Rev": "48fc08417c3844a9b79cc7a0343e6e7810b292a1"
 		},
 		{
 			"ImportPath": "github.com/lsegal/gucumber",

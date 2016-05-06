@@ -9,6 +9,7 @@ import (
 
 	"chain/errors"
 	"chain/log"
+	"chain/net"
 )
 
 // NewListener creates a new pq.Listener and begins listening.
@@ -17,7 +18,10 @@ func NewListener(ctx context.Context, dbURL, channel string) (*pq.Listener, erro
 	if err != nil {
 		return nil, err
 	}
-	result := pq.NewListener(dbURL, 1*time.Second, 10*time.Second, func(ev pq.ListenerEventType, err error) {
+
+	// We want etcd name lookups so we use our own Dialer.
+	d := new(net.Dialer)
+	result := pq.NewDialListener(d, dbURL, 1*time.Second, 10*time.Second, func(ev pq.ListenerEventType, err error) {
 		log.Error(ctx, errors.Wrapf(err, "event in %s listener: %v", channel, ev))
 	})
 	err = result.Listen(channel)
