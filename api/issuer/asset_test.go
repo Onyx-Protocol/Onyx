@@ -7,12 +7,16 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/api/appdb"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
 )
 
 func TestCreateAsset(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	pgtest.Exec(ctx, t, `
 		ALTER SEQUENCE issuer_nodes_key_index_seq RESTART;
 		ALTER SEQUENCE assets_key_index_seq RESTART;
@@ -84,7 +88,8 @@ func TestCreateDefs(t *testing.T) {
 		t.Log("Example", i)
 		clientToken := fmt.Sprintf("example-%d", i)
 
-		ctx := pgtest.NewContext(t)
+		dbtx := pgtest.NewTx(t)
+		ctx := pg.NewContext(context.Background(), dbtx)
 		pgtest.Exec(ctx, t, fix)
 		gotCreated, err := CreateAsset(ctx, "inode-0", "label", ex.def, &clientToken)
 		if err != nil {
