@@ -198,7 +198,7 @@ func InputSigs(keys []*hdkey.Key) (sigs []*Signature) {
 
 func getSigsRequired(script []byte) (sigsReqd int, err error) {
 	sigsReqd = 1
-	if txscript.GetScriptClass(script) == txscript.MultiSigTy {
+	if txscript.IsMultiSig(script) {
 		_, sigsReqd, err = txscript.CalcMultiSigStats(script)
 		if err != nil {
 			return 0, err

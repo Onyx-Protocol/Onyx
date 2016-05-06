@@ -92,6 +92,14 @@ func isPubkeyHash(pops []parsedOpcode) bool {
 
 }
 
+func IsMultiSig(script []byte) bool {
+	pops, err := parseScript(script)
+	if err != nil {
+		return false
+	}
+	return isMultiSig(pops)
+}
+
 // isMultiSig returns true if the passed script is a multisig transaction, false
 // otherwise.
 func isMultiSig(pops []parsedOpcode) bool {
@@ -134,36 +142,6 @@ func isNullData(pops []parsedOpcode) bool {
 		pops[0].opcode.value == OP_RETURN &&
 		pops[1].opcode.value <= OP_PUSHDATA4 &&
 		len(pops[1].data) <= MaxDataCarrierSize
-}
-
-// scriptType returns the type of the script being inspected from the known
-// standard types.
-func typeOfScript(pops []parsedOpcode) ScriptClass {
-	if isPubkey(pops) {
-		return PubKeyTy
-	} else if isPubkeyHash(pops) {
-		return PubKeyHashTy
-	} else if isContract(pops) {
-		return ContractTy
-	} else if isScriptHash(pops) {
-		return ScriptHashTy
-	} else if isMultiSig(pops) {
-		return MultiSigTy
-	} else if isNullData(pops) {
-		return NullDataTy
-	}
-	return NonStandardTy
-}
-
-// GetScriptClass returns the class of the script passed.
-//
-// NonStandardTy will be returned when the script does not parse.
-func GetScriptClass(script []byte) ScriptClass {
-	pops, err := parseScript(script)
-	if err != nil {
-		return NonStandardTy
-	}
-	return typeOfScript(pops)
 }
 
 // CalcMultiSigStats returns the number of public keys and signatures from
@@ -275,38 +253,6 @@ func NewAddressContractHash(contractHash, scriptVersion []byte, params [][]byte)
 	result := AddressContractHash{scriptVersion: scriptVersion, params: params}
 	copy(result.hash[:], contractHash)
 	return &result
-}
-
-// PayToAddrScript creates a new script to pay a transaction output to
-// the specified address.
-func PayToAddrScript(addr btcutil.Address) ([]byte, error) {
-	switch addr := addr.(type) {
-	case *btcutil.AddressPubKeyHash:
-		if addr == nil {
-			return nil, ErrUnsupportedAddress
-		}
-		return payToPubKeyHashScript(addr.ScriptAddress())
-
-	case *btcutil.AddressScriptHash:
-		if addr == nil {
-			return nil, ErrUnsupportedAddress
-		}
-		return payToScriptHashScript(addr.ScriptAddress())
-
-	case *AddressContractHash:
-		if addr == nil {
-			return nil, ErrUnsupportedAddress
-		}
-		return addr.ScriptAddress(), nil
-
-	case *btcutil.AddressPubKey:
-		if addr == nil {
-			return nil, ErrUnsupportedAddress
-		}
-		return payToPubKeyScript(addr.ScriptAddress())
-	}
-
-	return nil, ErrUnsupportedAddress
 }
 
 // MultiSigScript returns a valid script for a multisignature redemption where
