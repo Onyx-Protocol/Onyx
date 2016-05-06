@@ -106,7 +106,7 @@ func findAccountVotingRights(ctx context.Context, accountID string) (map[string]
 	}, nil
 }
 
-func getVotingRightHistory(ctx context.Context, assetID string) (map[string]interface{}, error) {
+func getVotingRightOwners(ctx context.Context, assetID string) (map[string]interface{}, error) {
 	var parsedAssetID bc.AssetID
 	err := parsedAssetID.UnmarshalText([]byte(assetID))
 	if err != nil {
