@@ -14,12 +14,13 @@ import (
 	"chain/api/smartcontracts/orderbook"
 	"chain/api/txbuilder"
 	"chain/api/txdb"
-	"chain/cos"
 	"chain/cos/bc"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/net/http/authn"
-	chaintest "chain/testutil"
+	"chain/testutil"
 )
 
 func TestMux(t *testing.T) {
@@ -32,7 +33,7 @@ func TestMux(t *testing.T) {
 			t.Fatal("unexpected panic:", err)
 		}
 	}()
-	Handler("", nil)
+	Handler("", nil, nil)
 }
 
 func TestLogin(t *testing.T) {
@@ -56,12 +57,15 @@ func TestLogin(t *testing.T) {
 }
 
 func TestIssue(t *testing.T) {
-	ctx := apiTest(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	ctx := pgtest.NewContext(t)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	fc, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	asset.Init(fc, true)
+	orderbook.Connect(fc)
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "")
 	projectID := assettest.CreateProjectFixture(ctx, t, userID, "")
@@ -104,12 +108,15 @@ func TestIssue(t *testing.T) {
 }
 
 func TestTransfer(t *testing.T) {
-	ctx := apiTest(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	ctx := pgtest.NewContext(t)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	fc, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	asset.Init(fc, true)
+	orderbook.Connect(fc)
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "")
 	projectID := assettest.CreateProjectFixture(ctx, t, userID, "")
@@ -179,15 +186,14 @@ func TestTransfer(t *testing.T) {
 	}
 	toSign := inspectTemplate(t, parsedResult[0], managerNodeID, account2ID)
 	txTemplate, err = toTxTemplate(ctx, toSign)
-	assettest.SignTxTemplate(t, txTemplate, chaintest.TestXPrv)
+	assettest.SignTxTemplate(t, txTemplate, testutil.TestXPrv)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 	_, err = submitSingle(ctx, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
 	if err != nil && err != context.DeadlineExceeded {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
 }
 
@@ -223,18 +229,4 @@ func toTxTemplate(ctx context.Context, inp map[string]interface{}) (*txbuilder.T
 	tpl := new(txbuilder.Template)
 	err = json.Unmarshal(jsonInp, tpl)
 	return tpl, err
-}
-
-func apiTest(t testing.TB) context.Context {
-	ctx := pgtest.NewContext(t)
-
-	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	asset.Init(fc, true)
-	orderbook.Connect(fc)
-
-	return ctx
 }

@@ -9,8 +9,11 @@ import (
 	"chain/api/asset/assettest"
 	"chain/api/generator"
 	"chain/api/txbuilder"
+	"chain/api/txdb"
 	"chain/cos/bc"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/testutil"
 )
 
@@ -18,9 +21,8 @@ import (
 // transaction with voting right authentication from beginning to end.
 func TestAuthenticateEndToEnd(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	// Initialize the generator.
-	fc, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	fc, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}

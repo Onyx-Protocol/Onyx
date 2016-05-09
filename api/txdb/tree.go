@@ -6,14 +6,15 @@ import (
 	"chain/cos/bc"
 	"chain/cos/patricia"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/errors"
 )
 
-func stateTree(ctx context.Context) (*patricia.Tree, error) {
+func stateTree(ctx context.Context, db pg.DB) (*patricia.Tree, error) {
 	const q = `
 		SELECT key, hash, leaf FROM state_trees ORDER BY LENGTH(key) ASC
 	`
-	rows, err := pg.Query(ctx, q)
+	rows, err := db.Query(ctx, q)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -39,9 +40,7 @@ func stateTree(ctx context.Context) (*patricia.Tree, error) {
 	return patricia.NewTree(nodes), nil
 }
 
-func writeStateTree(ctx context.Context, tree *patricia.Tree) error {
-	_ = pg.FromContext(ctx).(pg.Tx)
-
+func writeStateTree(ctx context.Context, dbtx *sql.Tx, tree *patricia.Tree) error {
 	deletes, inserts, updates := tree.Delta()
 
 	var keys []string
@@ -55,7 +54,7 @@ func writeStateTree(ctx context.Context, tree *patricia.Tree) error {
 		DELETE FROM state_trees
 		WHERE key IN (TABLE dels)
 	`
-	_, err := pg.Exec(ctx, deleteQ, pg.Strings(keys))
+	_, err := dbtx.Exec(ctx, deleteQ, pg.Strings(keys))
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -78,7 +77,7 @@ func writeStateTree(ctx context.Context, tree *patricia.Tree) error {
 		hashes = append(hashes, n.Hash().String())
 		leafs = append(leafs, n.IsLeaf())
 	}
-	_, err = pg.Exec(
+	_, err = dbtx.Exec(
 		ctx,
 		insertQ,
 		pg.Strings(keys),
@@ -105,7 +104,7 @@ func writeStateTree(ctx context.Context, tree *patricia.Tree) error {
 		hashes = append(hashes, n.Hash().String())
 		leafs = append(leafs, n.IsLeaf())
 	}
-	_, err = pg.Exec(
+	_, err = dbtx.Exec(
 		ctx,
 		updateQ,
 		pg.Strings(keys),

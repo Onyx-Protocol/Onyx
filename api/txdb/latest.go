@@ -15,6 +15,7 @@ import (
 // LatestBlock returns the most recent block.  It is not an error (at
 // this layer) to have an empty blocks table.
 func (s *Store) LatestBlock(ctx context.Context) (*bc.Block, error) {
+	// TODO(kr): ctx = pg.NewContext(ctx, s.db)
 	s.latestBlockCache.mutex.Lock()
 	defer s.latestBlockCache.mutex.Unlock()
 
@@ -27,7 +28,7 @@ func (s *Store) LatestBlock(ctx context.Context) (*bc.Block, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	b, err := latestBlock(ctx)
+	b, err := latestBlock(ctx, s.db)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting latest block from db")
 	}
@@ -37,10 +38,11 @@ func (s *Store) LatestBlock(ctx context.Context) (*bc.Block, error) {
 	return b, nil
 }
 
-func latestBlock(ctx context.Context) (*bc.Block, error) {
+func latestBlock(ctx context.Context, db pg.DB) (*bc.Block, error) {
+	// TODO(kr): ctx = pg.NewContext(ctx, s.db)
 	const q = `SELECT data FROM blocks ORDER BY height DESC LIMIT 1`
 	var b bc.Block
-	err := pg.QueryRow(ctx, q).Scan(&b)
+	err := db.QueryRow(ctx, q).Scan(&b)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}

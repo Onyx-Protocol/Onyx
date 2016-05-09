@@ -10,15 +10,18 @@ import (
 	"chain/api/asset/assettest"
 	"chain/api/generator"
 	"chain/api/txdb"
+	"chain/cos"
 	"chain/cos/bc"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/testutil"
 )
 
 func TestGetActUTXOs(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	var store cos.Store = txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +69,6 @@ func TestGetActUTXOs(t *testing.T) {
 		},
 	})
 
-	store := txdb.NewStore()
 	err = store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -129,8 +131,8 @@ func TestGetActUTXOs(t *testing.T) {
 
 func TestGetActUTXOsIssuance(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	var store cos.Store = txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +151,6 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 		}},
 	})
 
-	store := txdb.NewStore()
 	err = store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -182,8 +183,8 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 
 func TestGetActAssets(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,8 +248,8 @@ func (a byAssetID) Less(i, j int) bool { return a[i].ID < a[j].ID }
 
 func TestGetActAccounts(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}

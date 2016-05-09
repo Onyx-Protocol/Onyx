@@ -12,7 +12,6 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/net/http/authn"
-	"chain/testutil"
 )
 
 type fixtureInfo struct {
@@ -324,13 +323,10 @@ func TestBuildAuthz(t *testing.T) {
 }
 
 func withCommonFixture(t *testing.T, fn func(context.Context, *fixtureInfo)) {
-	ctx := pgtest.NewContext(t)
-	_, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 
-	_, err = assettest.InitializeSigningGenerator(ctx)
+	_, err := assettest.InitializeSigningGenerator(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

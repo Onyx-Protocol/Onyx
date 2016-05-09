@@ -8,15 +8,18 @@ import (
 	"chain/api/asset/assettest"
 	"chain/api/issuer"
 	"chain/api/txbuilder"
+	"chain/api/txdb"
 	"chain/cos/bc"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/testutil"
 )
 
 func TestFindOpenOrders(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	fc, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	fc, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}

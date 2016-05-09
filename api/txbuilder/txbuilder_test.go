@@ -10,7 +10,9 @@ import (
 
 	"chain/api/txdb"
 	"chain/cos/bc"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/testutil"
 )
@@ -44,8 +46,9 @@ func (tr *testReserver) Reserve(ctx context.Context, assetAmt *bc.AssetAmount, t
 
 func TestBuild(t *testing.T) {
 	ctx := pgtest.NewContext(t)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
 
-	err := txdb.NewStore().ApplyTx(ctx, &bc.Tx{Hash: [32]byte{255}, TxData: bc.TxData{
+	err := store.ApplyTx(ctx, &bc.Tx{Hash: [32]byte{255}, TxData: bc.TxData{
 		Outputs: []*bc.TxOutput{{
 			AssetAmount: bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5},
 			Script:      []byte{},

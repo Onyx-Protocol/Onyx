@@ -10,10 +10,16 @@ import (
 	"chain/cos/patricia"
 	"chain/cos/state"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/errors"
 )
 
+// A Store encapsulates storage for blockchain validation.
+// It satisfies the interface cos.Store, and provides additional
+// methods for querying current and historical data.
 type Store struct {
+	db *sql.DB
+
 	latestBlockCache struct {
 		mutex     sync.Mutex
 		block     *bc.Block
@@ -24,25 +30,31 @@ type Store struct {
 var _ cos.Store = (*Store)(nil)
 
 // NewStore creates and returns a new Store object.
-func NewStore() *Store {
-	return &Store{}
+//
+// A Store manages its own database transactions, so
+// it requires a handle to a SQL database.
+// For testing purposes, it is usually much faster
+// and more convenient to use package chain/cos/memstore
+// instead.
+func NewStore(db *sql.DB) *Store {
+	return &Store{db: db}
 }
 
 // GetTxs looks up transactions by their hashes
 // in the block chain and in the pool.
 func (s *Store) GetTxs(ctx context.Context, hashes ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]*bc.Tx, err error) {
-	return GetTxs(ctx, hashes...)
+	return getTxs(ctx, s.db, hashes...)
 }
 
 // ApplyTx adds tx to the pending pool.
 func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*state.AssetState) error {
-	dbtx, ctx, err := pg.Begin(ctx)
+	dbtx, err := s.db.Begin(ctx)
 	if err != nil {
 		return errors.Wrap(err)
 	}
 	defer dbtx.Rollback(ctx)
 
-	inserted, err := insertTx(ctx, tx)
+	inserted, err := insertTx(ctx, dbtx, tx)
 	if err != nil {
 		return errors.Wrap(err, "insert into txs")
 	}
@@ -52,7 +64,7 @@ func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*s
 		return nil
 	}
 
-	err = insertPoolTx(ctx, tx)
+	err = insertPoolTx(ctx, dbtx, tx)
 	if err != nil {
 		return errors.Wrap(err, "insert into pool txs")
 	}
@@ -66,7 +78,7 @@ func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*s
 			},
 		})
 	}
-	err = insertPoolOutputs(ctx, outputs)
+	err = insertPoolOutputs(ctx, dbtx, outputs)
 	if err != nil {
 		return errors.Wrap(err, "insert into utxos")
 	}
@@ -78,12 +90,12 @@ func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*s
 		}
 		deleted = append(deleted, in.Previous)
 	}
-	err = insertPoolInputs(ctx, deleted)
+	err = insertPoolInputs(ctx, dbtx, deleted)
 	if err != nil {
 		return errors.Wrap(err, "insert into pool inputs")
 	}
 
-	err = addIssuances(ctx, assets, false)
+	err = addIssuances(ctx, dbtx, assets, false)
 	if err != nil {
 		return errors.Wrap(err, "adding issuances")
 	}
@@ -98,9 +110,9 @@ func (s *Store) CleanPool(
 	confirmedTxs, conflictTxs []*bc.Tx,
 	assets map[bc.AssetID]*state.AssetState,
 ) error {
-	dbtx, ctx, err := pg.Begin(ctx)
+	dbtx, err := s.db.Begin(ctx)
 	if err != nil {
-		return errors.Wrap(err, "pool update dbtx begin")
+		return errors.Wrap(err)
 	}
 	defer dbtx.Rollback(ctx)
 
@@ -131,7 +143,7 @@ func (s *Store) CleanPool(
 
 	// Delete pool_txs
 	const txq = `DELETE FROM pool_txs WHERE tx_hash IN (SELECT unnest($1::text[]))`
-	_, err = pg.Exec(ctx, txq, pg.Strings(deleteTxHashes))
+	_, err = dbtx.Exec(ctx, txq, pg.Strings(deleteTxHashes))
 	if err != nil {
 		return errors.Wrap(err, "delete from pool_txs")
 	}
@@ -140,7 +152,7 @@ func (s *Store) CleanPool(
 	const outq = `
 		DELETE FROM utxos u WHERE tx_hash IN (SELECT unnest($1::text[]))
 	`
-	_, err = pg.Exec(ctx, outq, pg.Strings(conflictTxHashes))
+	_, err = dbtx.Exec(ctx, outq, pg.Strings(conflictTxHashes))
 	if err != nil {
 		return errors.Wrap(err, "delete from utxos")
 	}
@@ -152,12 +164,12 @@ func (s *Store) CleanPool(
 			SELECT unnest($1::text[]), unnest($2::integer[])
 		)
 	`
-	_, err = pg.Exec(ctx, inq, pg.Strings(deleteInputHashes), pg.Uint32s(deleteInputIndexes))
+	_, err = dbtx.Exec(ctx, inq, pg.Strings(deleteInputHashes), pg.Uint32s(deleteInputIndexes))
 	if err != nil {
 		return errors.Wrap(err, "delete from pool_inputs")
 	}
 
-	err = setIssuances(ctx, assets)
+	err = setIssuances(ctx, dbtx, assets)
 	if err != nil {
 		return errors.Wrap(err, "removing issuances")
 	}
@@ -170,7 +182,7 @@ func (s *Store) CleanPool(
 func (s *Store) PoolTxs(ctx context.Context) ([]*bc.Tx, error) {
 	// TODO(jeffomatic) - at some point in the future, will we want to keep this
 	// cached in an in-memory pool, a la btcd's TxMemPool?
-	return poolTxs(ctx)
+	return poolTxs(ctx, s.db)
 }
 
 // NewPoolViewForPrevouts returns a new state view on the pool
@@ -178,7 +190,7 @@ func (s *Store) PoolTxs(ctx context.Context) ([]*bc.Tx, error) {
 // It loads the prevouts for transactions in txs;
 // all other outputs will be omitted from the view.
 func (s *Store) NewPoolViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
-	return newPoolViewForPrevouts(ctx, txs)
+	return newPoolViewForPrevouts(ctx, s.db, txs)
 }
 
 func (s *Store) ApplyBlock(
@@ -188,13 +200,14 @@ func (s *Store) ApplyBlock(
 	assets map[bc.AssetID]*state.AssetState,
 	state *patricia.Tree,
 ) ([]*bc.Tx, error) {
-	dbtx, ctx, err := pg.Begin(ctx)
+	dbtx, err := s.db.Begin(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
+	ctx = pg.NewContext(ctx, dbtx)
 	defer dbtx.Rollback(ctx)
 
-	newHashes, err := insertBlock(ctx, block)
+	newHashes, err := insertBlock(ctx, dbtx, block)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert block")
 	}
@@ -213,32 +226,32 @@ func (s *Store) ApplyBlock(
 		oldTxs = append(oldTxs, tx)
 	}
 
-	err = insertAssetDefinitionPointers(ctx, assets)
+	err = insertAssetDefinitionPointers(ctx, dbtx, assets)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert ADPs")
 	}
 
-	err = insertAssetDefinitions(ctx, block)
+	err = insertAssetDefinitions(ctx, dbtx, block)
 	if err != nil {
 		return nil, errors.Wrap(err, "writing asset definitions")
 	}
 
-	err = removeBlockSpentOutputs(ctx, delta)
+	err = removeBlockSpentOutputs(ctx, dbtx, delta)
 	if err != nil {
 		return nil, errors.Wrap(err, "remove block spent outputs")
 	}
 
-	err = insertBlockOutputs(ctx, delta)
+	err = insertBlockOutputs(ctx, dbtx, delta)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert block outputs")
 	}
 
-	err = addIssuances(ctx, assets, true)
+	err = addIssuances(ctx, dbtx, assets, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "adding issuances")
 	}
 
-	err = writeStateTree(ctx, state)
+	err = writeStateTree(ctx, dbtx, state)
 	if err != nil {
 		return nil, errors.Wrap(err, "updating state tree")
 	}
@@ -259,7 +272,7 @@ func (s *Store) ApplyBlock(
 // It loads the prevouts for transactions in txs;
 // all other outputs will be omitted from the view.
 func (s *Store) NewViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
-	return newViewForPrevouts(ctx, txs)
+	return newViewForPrevouts(ctx, s.db, txs)
 }
 
 // StateTree returns the state tree of the latest block.
@@ -275,7 +288,7 @@ func (s *Store) StateTree(ctx context.Context, block uint64) (*patricia.Tree, er
 	}
 
 	if s.latestBlockCache.stateTree == nil {
-		stateTree, err := stateTree(ctx)
+		stateTree, err := stateTree(ctx, s.db)
 		if err != nil {
 			return nil, err
 		}
@@ -286,6 +299,6 @@ func (s *Store) StateTree(ctx context.Context, block uint64) (*patricia.Tree, er
 }
 
 func (s *Store) FinalizeBlock(ctx context.Context, height uint64) error {
-	_, err := pg.Exec(ctx, `SELECT pg_notify('newblock', $1)`, height)
+	_, err := s.db.Exec(ctx, `SELECT pg_notify('newblock', $1)`, height)
 	return err
 }

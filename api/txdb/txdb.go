@@ -2,7 +2,6 @@ package txdb
 
 import (
 	"bytes"
-	"database/sql"
 	"fmt"
 	"sort"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	"chain/cos/bc"
 	"chain/cos/state"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/log"
 	"chain/metrics"
@@ -20,13 +20,13 @@ import (
 	"chain/strings"
 )
 
-func poolTxs(ctx context.Context) ([]*bc.Tx, error) {
+func poolTxs(ctx context.Context, db pg.DB) ([]*bc.Tx, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
 	const q = `SELECT tx_hash, data FROM pool_txs ORDER BY sort_id`
 	var txs []*bc.Tx
-	err := pg.ForQueryRows(ctx, q, func(hash bc.Hash, data bc.TxData) {
+	err := pg.ForQueryRows(pg.NewContext(ctx, db), q, func(hash bc.Hash, data bc.TxData) {
 		txs = append(txs, &bc.Tx{TxData: data, Hash: hash, Stored: true})
 	})
 	if err != nil {
@@ -36,9 +36,9 @@ func poolTxs(ctx context.Context) ([]*bc.Tx, error) {
 	return txs, nil
 }
 
-// GetTxs looks up transactions by their hashes
+// getTxs looks up transactions by their hashes
 // in the block chain and in the pool.
-func GetTxs(ctx context.Context, hashes ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]*bc.Tx, err error) {
+func getTxs(ctx context.Context, db pg.DB, hashes ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]*bc.Tx, err error) {
 	hashStrings := make([]string, 0, len(hashes))
 	for _, h := range hashes {
 		hashStrings = append(hashStrings, h.String())
@@ -54,7 +54,7 @@ func GetTxs(ctx context.Context, hashes ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]
 	`
 	poolTxs = make(map[bc.Hash]*bc.Tx)
 	bcTxs = make(map[bc.Hash]*bc.Tx)
-	err = pg.ForQueryRows(ctx, q, pg.Strings(hashStrings), func(hash bc.Hash, data bc.TxData, p, b bool) {
+	err = pg.ForQueryRows(pg.NewContext(ctx, db), q, pg.Strings(hashStrings), func(hash bc.Hash, data bc.TxData, p, b bool) {
 		tx := &bc.Tx{TxData: data, Hash: hash, Stored: true}
 		if p {
 			poolTxs[hash] = tx
@@ -65,7 +65,7 @@ func GetTxs(ctx context.Context, hashes ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]
 	return poolTxs, bcTxs, errors.Wrap(err, "get txs query")
 }
 
-func GetTxBlockHeader(ctx context.Context, hash bc.Hash) (*bc.BlockHeader, error) {
+func (s *Store) GetTxBlockHeader(ctx context.Context, hash bc.Hash) (*bc.BlockHeader, error) {
 	const q = `
 		SELECT header
 		FROM blocks b
@@ -73,7 +73,7 @@ func GetTxBlockHeader(ctx context.Context, hash bc.Hash) (*bc.BlockHeader, error
 		WHERE bt.tx_hash=$1
 	`
 	b := new(bc.BlockHeader)
-	err := pg.QueryRow(ctx, q, hash).Scan(b)
+	err := s.db.QueryRow(ctx, q, hash).Scan(b)
 	if err == sql.ErrNoRows {
 		return nil, nil // tx "not being in a block" is not an error
 	}
@@ -83,9 +83,9 @@ func GetTxBlockHeader(ctx context.Context, hash bc.Hash) (*bc.BlockHeader, error
 // insertTx inserts tx into txs. It returns true if the insert query inserted the
 // transaction. It returns false if the transaction already existed and the query
 // had no effect.
-func insertTx(ctx context.Context, tx *bc.Tx) (bool, error) {
+func insertTx(ctx context.Context, dbtx *sql.Tx, tx *bc.Tx) (bool, error) {
 	const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2) ON CONFLICT DO NOTHING`
-	res, err := pg.Exec(ctx, q, tx.Hash, tx)
+	res, err := dbtx.Exec(ctx, q, tx.Hash, tx)
 	if err != nil {
 		return false, errors.Wrap(err, "insert query")
 	}
@@ -97,7 +97,7 @@ func insertTx(ctx context.Context, tx *bc.Tx) (bool, error) {
 	return affected > 0, nil
 }
 
-func insertBlock(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
+func insertBlock(ctx context.Context, dbtx *sql.Tx, block *bc.Block) ([]bc.Hash, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -105,16 +105,16 @@ func insertBlock(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES ($1, $2, $3, $4)
 	`
-	_, err := pg.Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
+	_, err := dbtx.Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert query")
 	}
 
-	newHashes, err := insertBlockTxs(ctx, block)
+	newHashes, err := insertBlockTxs(ctx, dbtx, block)
 	return newHashes, errors.Wrap(err, "inserting txs")
 }
 
-func insertBlockTxs(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
+func insertBlockTxs(ctx context.Context, dbtx *sql.Tx, block *bc.Block) ([]bc.Hash, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -148,7 +148,7 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 	var (
 		newHashes []bc.Hash
 	)
-	err := pg.ForQueryRows(ctx, txQ, pg.Strings(hashHist), pg.Byteas(data), func(hash bc.Hash) {
+	err := pg.ForQueryRows(pg.NewContext(ctx, dbtx), txQ, pg.Strings(hashHist), pg.Byteas(data), func(hash bc.Hash) {
 		newHashes = append(newHashes, hash)
 	})
 	if err != nil {
@@ -159,7 +159,7 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 		INSERT INTO blocks_txs (tx_hash, block_pos, block_hash, block_height)
 		SELECT unnest($1::text[]), unnest($2::int[]), $3, $4;
 	`
-	_, err = pg.Exec(
+	_, err = dbtx.Exec(
 		ctx,
 		blockTxQ,
 		pg.Strings(hashInBlock),
@@ -175,30 +175,38 @@ func insertBlockTxs(ctx context.Context, block *bc.Block) ([]bc.Hash, error) {
 
 // ListBlocks returns a list of the most recent blocks,
 // potentially offset by a previous query's results.
-func ListBlocks(ctx context.Context, prev string, limit int) ([]*bc.Block, error) {
+func (s *Store) ListBlocks(ctx context.Context, prev string, limit int) ([]*bc.Block, error) {
+	return listBlocks(ctx, s.db, prev, limit)
+}
+
+func listBlocks(ctx context.Context, db pg.DB, prev string, limit int) ([]*bc.Block, error) {
 	const q = `
 		SELECT data FROM blocks WHERE ($1='' OR height<$1::bigint)
 		ORDER BY height DESC LIMIT $2
 	`
 	var blocks []*bc.Block
-	err := pg.ForQueryRows(ctx, q, prev, limit, func(b bc.Block) {
+	err := pg.ForQueryRows(pg.NewContext(ctx, db), q, prev, limit, func(b bc.Block) {
 		blocks = append(blocks, &b)
 	})
 	return blocks, err
 }
 
 // GetBlock fetches a block by its hash
-func GetBlock(ctx context.Context, hash string) (*bc.Block, error) {
+func (s *Store) GetBlock(ctx context.Context, hash string) (*bc.Block, error) {
+	return getBlock(ctx, s.db, hash)
+}
+
+func getBlock(ctx context.Context, db pg.DB, hash string) (*bc.Block, error) {
 	const q = `SELECT data FROM blocks WHERE block_hash=$1`
 	block := new(bc.Block)
-	err := pg.QueryRow(ctx, q, hash).Scan(block)
+	err := db.QueryRow(ctx, q, hash).Scan(block)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
 	return block, errors.WithDetailf(err, "block hash=%v", hash)
 }
 
-func removeBlockSpentOutputs(ctx context.Context, delta []*state.Output) error {
+func removeBlockSpentOutputs(ctx context.Context, dbtx *sql.Tx, delta []*state.Output) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -214,14 +222,10 @@ func removeBlockSpentOutputs(ctx context.Context, delta []*state.Output) error {
 		ids = append(ids, out.Outpoint.Index)
 	}
 
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return errors.Wrap(err, "begin db transaction for deleting utxos")
-	}
-	defer dbtx.Rollback(ctx)
-
 	// account_utxos are deleted by a foreign key constraint
-	_, err = pg.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
+	// TODO(kr): we should probably release this lock more quickly!
+	// Find a way to reduce the scope of this dbtx.
+	_, err := dbtx.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
 	if err != nil {
 		return errors.Wrap(err, "acquire lock for deleting utxos")
 	}
@@ -230,12 +234,8 @@ func removeBlockSpentOutputs(ctx context.Context, delta []*state.Output) error {
 		DELETE FROM utxos
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	_, err = pg.Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(ids))
-	if err != nil {
-		return errors.Wrap(err, "delete query")
-	}
-
-	return errors.Wrap(dbtx.Commit(ctx), "commit transaction for deleting utxos")
+	_, err = dbtx.Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(ids))
+	return errors.Wrap(err, "delete query")
 }
 
 // insertBlockOutputs updates utxos to mark
@@ -246,7 +246,7 @@ func removeBlockSpentOutputs(ctx context.Context, delta []*state.Output) error {
 // It returns a new list containing all spent items
 // from delta, plus all newly-inserted unspent outputs
 // from delta, omitting the updated items.
-func insertBlockOutputs(ctx context.Context, delta []*state.Output) error {
+func insertBlockOutputs(ctx context.Context, dbtx *sql.Tx, delta []*state.Output) error {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -278,7 +278,7 @@ func insertBlockOutputs(ctx context.Context, delta []*state.Output) error {
 			(SELECT 1 FROM utxos u WHERE (n.tx_hash, n.index) = (u.tx_hash, u.index))
 	`
 
-	_, err := pg.Exec(ctx, insertQ1,
+	_, err := dbtx.Exec(ctx, insertQ1,
 		outs.txHash,
 		outs.index,
 		outs.assetID,
@@ -294,21 +294,27 @@ func insertBlockOutputs(ctx context.Context, delta []*state.Output) error {
 		INSERT INTO blocks_utxos (tx_hash, index)
 		    SELECT unnest($1::text[]), unnest($2::bigint[])
 	`
-	_, err = pg.Exec(ctx, insertQ2, outs.txHash, outs.index)
+	_, err = dbtx.Exec(ctx, insertQ2, outs.txHash, outs.index)
 	return errors.Wrap(err, "insert into blocks_utxos")
 }
 
 // CountBlockTxs returns the total number of confirmed transactions.
 // TODO: Instead running a count query, we should increment a value each time a
 // new block lands.
-func CountBlockTxs(ctx context.Context) (uint64, error) {
+func (s *Store) CountBlockTxs(ctx context.Context) (uint64, error) {
 	const q = `SELECT count(tx_hash) FROM blocks_txs`
 	var res uint64
-	err := pg.QueryRow(ctx, q).Scan(&res)
+	err := s.db.QueryRow(ctx, q).Scan(&res)
 	return res, errors.Wrap(err)
 }
 
-func ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limit int) ([]*state.Output, string, error) {
+// ListUTXOsByAsset lists a page of UTXOs for the given asset ID in order
+// of blockchain position.
+//
+// If prev is the empty string, it returns the first page.
+// Otherwise, prev should be a string previously returned by
+// ListUTXOsByAsset, in which case it will return the next page.
+func (s *Store) ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limit int) ([]*state.Output, string, error) {
 	const q = `
 		SELECT blocks_txs.block_height,
 			blocks_txs.block_pos,
@@ -348,7 +354,7 @@ func ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limi
 		res  []*state.Output
 		last string
 	)
-	err = pg.ForQueryRows(ctx, q, assetID, prevBlock, prevBlockPos, prevOutIndex, limit, func(bh int64, bpos int, hash bc.Hash, index uint32, assetID bc.AssetID, amount uint64, metadata, script []byte) {
+	err = pg.ForQueryRows(pg.NewContext(ctx, s.db), q, assetID, prevBlock, prevBlockPos, prevOutIndex, limit, func(bh int64, bpos int, hash bc.Hash, index uint32, assetID bc.AssetID, amount uint64, metadata, script []byte) {
 		o := &state.Output{
 			Outpoint: bc.Outpoint{Hash: hash, Index: index},
 			TxOutput: bc.TxOutput{

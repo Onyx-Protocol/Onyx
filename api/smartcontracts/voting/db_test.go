@@ -6,10 +6,12 @@ import (
 	"testing"
 
 	"chain/api/asset/assettest"
+	"chain/api/txdb"
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 )
 
 // TestInsertVotingRightAccountID tests inserting a voting right into the
@@ -232,9 +234,8 @@ func TestGetVotesSimple(t *testing.T) {
 	// TODO(jackson): Add additional tests for pagination, recalled voting
 	// rights, voided voting rights, etc.
 	ctx := pgtest.NewContext(t)
-
-	// Initialize the generator.
-	fc, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	fc, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}

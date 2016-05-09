@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/api/asset"
 	"chain/api/asset/assettest"
 	"chain/api/generator"
@@ -12,43 +14,46 @@ import (
 	. "chain/api/txdb"
 	"chain/cos/bc"
 	"chain/cos/state"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/errors"
 )
 
 func TestListUTXOsByAsset(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	ctx := context.Background()
+	dbctx := pgtest.NewContext(t)
+	store := NewStore(pg.FromContext(dbctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	projectID := assettest.CreateProjectFixture(ctx, t, "", "")
-	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
-	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
-	assetID1 := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
-	assetID2 := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
-	accountID1 := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
-	accountID2 := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
+	projectID := assettest.CreateProjectFixture(dbctx, t, "", "")
+	issuerNodeID := assettest.CreateIssuerNodeFixture(dbctx, t, projectID, "", nil, nil)
+	managerNodeID := assettest.CreateManagerNodeFixture(dbctx, t, projectID, "", nil, nil)
+	assetID1 := assettest.CreateAssetFixture(dbctx, t, issuerNodeID, "", "")
+	assetID2 := assettest.CreateAssetFixture(dbctx, t, issuerNodeID, "", "")
+	accountID1 := assettest.CreateAccountFixture(dbctx, t, managerNodeID, "", nil)
+	accountID2 := assettest.CreateAccountFixture(dbctx, t, managerNodeID, "", nil)
 
-	tx0 := assettest.Issue(ctx, t, assetID1, []*txbuilder.Destination{
-		assettest.AccountDest(ctx, t, accountID1, assetID1, 1),
-		assettest.AccountDest(ctx, t, accountID2, assetID1, 1),
+	tx0 := assettest.Issue(dbctx, t, assetID1, []*txbuilder.Destination{
+		assettest.AccountDest(dbctx, t, accountID1, assetID1, 1),
+		assettest.AccountDest(dbctx, t, accountID2, assetID1, 1),
 	})
-	tx1 := assettest.Issue(ctx, t, assetID2, []*txbuilder.Destination{
-		assettest.AccountDest(ctx, t, accountID1, assetID2, 1),
-		assettest.AccountDest(ctx, t, accountID2, assetID2, 1),
+	tx1 := assettest.Issue(dbctx, t, assetID2, []*txbuilder.Destination{
+		assettest.AccountDest(dbctx, t, accountID1, assetID2, 1),
+		assettest.AccountDest(dbctx, t, accountID2, assetID2, 1),
 	})
 
 	tx2 := assettest.Transfer(
-		ctx,
+		dbctx,
 		t,
 		[]*txbuilder.Source{asset.NewAccountSource(ctx, &bc.AssetAmount{
 			AssetID: assetID2,
 			Amount:  1,
 		}, accountID2, nil, nil)},
-		[]*txbuilder.Destination{assettest.AccountDest(ctx, t, accountID1, assetID2, 1)},
+		[]*txbuilder.Destination{assettest.AccountDest(dbctx, t, accountID1, assetID2, 1)},
 	)
 
 	_, err = generator.MakeBlock(ctx)
@@ -59,13 +64,13 @@ func TestListUTXOsByAsset(t *testing.T) {
 
 	// this tx should not affect the results
 	assettest.Transfer(
-		ctx,
+		dbctx,
 		t,
 		[]*txbuilder.Source{asset.NewAccountSource(ctx, &bc.AssetAmount{
 			AssetID: assetID1,
 			Amount:  1,
 		}, accountID1, nil, nil)},
-		[]*txbuilder.Destination{assettest.AccountDest(ctx, t, accountID2, assetID1, 1)},
+		[]*txbuilder.Destination{assettest.AccountDest(dbctx, t, accountID2, assetID1, 1)},
 	)
 
 	out0_0 := &state.Output{
@@ -170,7 +175,7 @@ func TestListUTXOsByAsset(t *testing.T) {
 	for i, ex := range examples {
 		t.Log("Example:", i)
 
-		gotUTXOs, gotLast, err := ListUTXOsByAsset(ctx, ex.assetID, ex.prev, ex.limit)
+		gotUTXOs, gotLast, err := store.ListUTXOsByAsset(ctx, ex.assetID, ex.prev, ex.limit)
 		if err != nil {
 			t.Fatal("unexpected error: ", err)
 		}

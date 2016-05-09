@@ -16,6 +16,7 @@ import (
 	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/testutil"
 )
@@ -30,6 +31,7 @@ func mustParseHash(str string) bc.Hash {
 
 func TestListBlocks(t *testing.T) {
 	ctx := pgtest.NewContext(t)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
 	pgtest.Exec(ctx, t, `
 		INSERT INTO blocks(block_hash, height, data, header)
 		VALUES(
@@ -92,7 +94,7 @@ func TestListBlocks(t *testing.T) {
 		wantLast: "",
 	}}
 	for _, c := range cases {
-		got, gotLast, err := ListBlocks(ctx, c.prev, c.limit)
+		got, gotLast, err := ListBlocks(ctx, store, c.prev, c.limit)
 		if err != nil {
 			t.Errorf("ListBlocks(%v, %v) unexpected err = %q", c.prev, c.limit, err)
 			continue
@@ -108,6 +110,7 @@ func TestListBlocks(t *testing.T) {
 
 func TestGetBlockSummary(t *testing.T) {
 	ctx := pgtest.NewContext(t)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
 	pgtest.Exec(ctx, t, `
 		INSERT INTO blocks(block_hash, height, data, header)
 		VALUES(
@@ -118,7 +121,7 @@ func TestGetBlockSummary(t *testing.T) {
 		);
 	`)
 
-	got, err := GetBlockSummary(ctx, "c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3")
+	got, err := GetBlockSummary(ctx, store, "c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,19 +172,21 @@ func TestGetTxIssuance(t *testing.T) {
 		Transactions: []*bc.Tx{tx},
 	}
 
-	err := txdb.NewStore().ApplyTx(ctx, tx, nil)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+
+	err := store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	_, err = txdb.NewStore().ApplyBlock(ctx, blk, nil, nil, patricia.NewTree(nil))
+	_, err = store.ApplyBlock(ctx, blk, nil, nil, patricia.NewTree(nil))
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	got, err := GetTx(ctx, tx.Hash.String())
+	got, err := GetTx(ctx, store, tx.Hash.String())
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -258,13 +263,14 @@ func TestGetTxTransfer(t *testing.T) {
 		Transactions: append(prevTxs, tx),
 	}
 
-	_, err := txdb.NewStore().ApplyBlock(ctx, blk, nil, nil, patricia.NewTree(nil))
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := store.ApplyBlock(ctx, blk, nil, nil, patricia.NewTree(nil))
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	got, err := GetTx(ctx, tx.Hash.String())
+	got, err := GetTx(ctx, store, tx.Hash.String())
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -314,8 +320,8 @@ func TestGetTxTransfer(t *testing.T) {
 
 func TestGetAssets(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -338,7 +344,7 @@ func TestGetAssets(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
 	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
 
-	got, err := GetAssets(ctx, []string{
+	got, err := GetAssets(ctx, store, []string{
 		asset0.String(),
 		asset1.String(),
 		"other-asset-id",
@@ -386,8 +392,8 @@ func TestGetAssets(t *testing.T) {
 
 func TestGetAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -446,7 +452,7 @@ func TestGetAsset(t *testing.T) {
 	for _, ex := range examples {
 		t.Log("Example", ex.id)
 
-		got, err := GetAsset(ctx, ex.id)
+		got, err := GetAsset(ctx, store, ex.id)
 		if errors.Root(err) != ex.wantErr {
 			t.Fatalf("error:\ngot:  %v\nwant: %v", errors.Root(err), ex.wantErr)
 		}
@@ -459,8 +465,8 @@ func TestGetAsset(t *testing.T) {
 
 func TestListUTXOsByAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -493,7 +499,7 @@ func TestListUTXOsByAsset(t *testing.T) {
 		Metadata: []byte{},
 	}}
 
-	got, gotLast, err := ListUTXOsByAsset(ctx, assetID, "", 10000)
+	got, gotLast, err := ListUTXOsByAsset(ctx, store, assetID, "", 10000)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}

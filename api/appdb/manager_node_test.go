@@ -8,10 +8,12 @@ import (
 	"chain/api/asset/assettest"
 	"chain/api/generator"
 	"chain/api/txdb"
+	"chain/cos"
 	"chain/cos/bc"
 	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/testutil"
 )
@@ -116,8 +118,8 @@ func TestGetManagerNode(t *testing.T) {
 
 func TestAccountsWithAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	var store cos.Store = txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +150,6 @@ func TestAccountsWithAsset(t *testing.T) {
 		{Previous: out1.Outpoint},
 		{Previous: out2.Outpoint},
 	}}}
-	store := txdb.NewStore()
 	err = store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)

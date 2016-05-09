@@ -26,8 +26,8 @@ type ListBlocksItem struct {
 // ListBlocks returns an array of ListBlocksItems
 // as well as a pagination pointer for the last item
 // in the list.
-func ListBlocks(ctx context.Context, prev string, limit int) ([]ListBlocksItem, string, error) {
-	blocks, err := txdb.ListBlocks(ctx, prev, limit)
+func ListBlocks(ctx context.Context, store *txdb.Store, prev string, limit int) ([]ListBlocksItem, string, error) {
+	blocks, err := store.ListBlocks(ctx, prev, limit)
 	if err != nil {
 		return nil, "", err
 	}
@@ -56,8 +56,8 @@ type BlockSummary struct {
 }
 
 // GetBlockSummary returns header data for the requested block.
-func GetBlockSummary(ctx context.Context, hash string) (*BlockSummary, error) {
-	block, err := txdb.GetBlock(ctx, hash)
+func GetBlockSummary(ctx context.Context, store *txdb.Store, hash string) (*BlockSummary, error) {
+	block, err := store.GetBlock(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -113,13 +113,13 @@ type TxOutput struct {
 }
 
 // GetTx returns a transaction with additional details added.
-func GetTx(ctx context.Context, txHashStr string) (*Tx, error) {
+func GetTx(ctx context.Context, store *txdb.Store, txHashStr string) (*Tx, error) {
 	hash, err := bc.ParseHash(txHashStr)
 	if err != nil {
 		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
 
-	poolTxs, bcTxs, err := txdb.GetTxs(ctx, hash)
+	poolTxs, bcTxs, err := store.GetTxs(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func GetTx(ctx context.Context, txHashStr string) (*Tx, error) {
 		}
 	}
 
-	blockHeader, err := txdb.GetTxBlockHeader(ctx, hash)
+	blockHeader, err := store.GetTxBlockHeader(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func GetTx(ctx context.Context, txHashStr string) (*Tx, error) {
 		}
 		inHashes = append(inHashes, in.Previous.Hash)
 	}
-	prevPoolTxs, prevBcTxs, err := txdb.GetTxs(ctx, inHashes...)
+	prevPoolTxs, prevBcTxs, err := store.GetTxs(ctx, inHashes...)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "fetching inputs")
@@ -163,7 +163,7 @@ type Asset struct {
 // GetAssets returns data about the specified assets, including the most recent
 // asset definition submitted for each asset. If a given asset ID is not found,
 // that asset will not be included in the response.
-func GetAssets(ctx context.Context, assetIDs []string) (map[string]*Asset, error) {
+func GetAssets(ctx context.Context, store *txdb.Store, assetIDs []string) (map[string]*Asset, error) {
 	// TODO(jeffomatic): This function makes use of the assets and
 	// issuance_totals tables, which technically violates the line between
 	// issuer nodes and explorer nodes.
@@ -191,7 +191,7 @@ func GetAssets(ctx context.Context, assetIDs []string) (map[string]*Asset, error
 		}
 	}
 
-	defs, err := txdb.AssetDefinitions(ctx, assetIDs)
+	defs, err := store.AssetDefinitions(ctx, assetIDs)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetch txdb asset def")
 	}
@@ -227,8 +227,8 @@ func GetAssets(ctx context.Context, assetIDs []string) (map[string]*Asset, error
 
 // GetAsset returns the most recent asset definition stored in
 // the blockchain, for the given asset.
-func GetAsset(ctx context.Context, assetID string) (*Asset, error) {
-	assets, err := GetAssets(ctx, []string{assetID})
+func GetAsset(ctx context.Context, store *txdb.Store, assetID string) (*Asset, error) {
+	assets, err := GetAssets(ctx, store, []string{assetID})
 	if err != nil {
 		return nil, err
 	}
@@ -241,8 +241,8 @@ func GetAsset(ctx context.Context, assetID string) (*Asset, error) {
 	return a, nil
 }
 
-func ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limit int) ([]*TxOutput, string, error) {
-	stateOuts, last, err := txdb.ListUTXOsByAsset(ctx, assetID, prev, limit)
+func ListUTXOsByAsset(ctx context.Context, store *txdb.Store, assetID bc.AssetID, prev string, limit int) ([]*TxOutput, string, error) {
+	stateOuts, last, err := store.ListUTXOsByAsset(ctx, assetID, prev, limit)
 	if err != nil {
 		return nil, "", err
 	}

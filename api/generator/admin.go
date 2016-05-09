@@ -52,24 +52,23 @@ func newSummary() *Summary {
 }
 
 // GetSummary returns a Summary from the perspective of the given project.
-func GetSummary(ctx context.Context, projID string) (*Summary, error) {
+func GetSummary(ctx context.Context, store *txdb.Store, projID string) (*Summary, error) {
 	res := newSummary()
 
 	res.BlockFreqMs = uint64(blockPeriod.Nanoseconds() / 1000000)
 
-	store := txdb.NewStore() // TODO(kr): probably should use cos.FC instead
 	top, err := store.LatestBlock(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get latest block")
 	}
 	res.BlockCount = top.Height + 1 // Height 0 is the genesis block
 
-	res.TransactionCount.Confirmed, err = txdb.CountBlockTxs(ctx)
+	res.TransactionCount.Confirmed, err = store.CountBlockTxs(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "count block txs")
 	}
 
-	res.TransactionCount.Unconfirmed, err = txdb.CountPoolTxs(ctx)
+	res.TransactionCount.Unconfirmed, err = store.CountPoolTxs(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "count pool txs")
 	}

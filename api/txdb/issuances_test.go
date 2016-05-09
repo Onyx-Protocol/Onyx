@@ -3,9 +3,13 @@ package txdb
 import (
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/cos/bc"
 	"chain/cos/state"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
+	"chain/errors"
 	"chain/testutil"
 )
 
@@ -37,23 +41,24 @@ func TestAddIssuances(t *testing.T) {
 	aid := [32]byte{255}
 
 	for _, c := range cases {
-		ctx := pgtest.NewContext(t)
+		ctx := context.Background()
+		dbtx := pgtest.NewTx(t)
 
-		err := addIssuances(ctx, map[bc.AssetID]*state.AssetState{
+		err := addIssuances(ctx, dbtx, map[bc.AssetID]*state.AssetState{
 			aid: &state.AssetState{Issuance: c.issuedAmt1, Destroyed: c.destroyedAmt1},
 		}, c.conf1)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
 
-		err = addIssuances(ctx, map[bc.AssetID]*state.AssetState{
+		err = addIssuances(ctx, dbtx, map[bc.AssetID]*state.AssetState{
 			aid: &state.AssetState{Issuance: c.issuedAmt2, Destroyed: c.destroyedAmt2},
 		}, c.conf2)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
 
-		gotConf, gotTotal, err := circulation(ctx, aid)
+		gotConf, gotTotal, err := circulationForTest(ctx, dbtx, aid)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -64,35 +69,53 @@ func TestAddIssuances(t *testing.T) {
 }
 
 func TestSetIssuances(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
 
 	aid := [32]byte{255}
 
-	err := addIssuances(ctx, map[bc.AssetID]*state.AssetState{
+	err := addIssuances(ctx, dbtx, map[bc.AssetID]*state.AssetState{
 		aid: &state.AssetState{Issuance: 10},
 	}, true)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	err = addIssuances(ctx, map[bc.AssetID]*state.AssetState{
+	err = addIssuances(ctx, dbtx, map[bc.AssetID]*state.AssetState{
 		aid: &state.AssetState{Issuance: 10, Destroyed: 5},
 	}, false)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	err = setIssuances(ctx, map[bc.AssetID]*state.AssetState{
+	err = setIssuances(ctx, dbtx, map[bc.AssetID]*state.AssetState{
 		aid: &state.AssetState{Issuance: 8, Destroyed: 2},
 	})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	conf, total, err := circulation(ctx, aid)
+	conf, total, err := circulationForTest(ctx, dbtx, aid)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
 	testutil.ExpectEqual(t, conf, uint64(10), "confirmed issued")
 	testutil.ExpectEqual(t, total, uint64(16), "total issued")
+}
+
+// circulationForTest returns the confirmed and total
+// circulationForTest amounts for the given asset.
+func circulationForTest(ctx context.Context, dbtx *sql.Tx, assetID bc.AssetID) (confirmed, total uint64, err error) {
+	const q = `
+		SELECT (confirmed - destroyed_confirmed),
+		(confirmed + pool - destroyed_confirmed - destroyed_pool)
+		FROM issuance_totals WHERE asset_id=$1
+	`
+	err = dbtx.QueryRow(ctx, q, assetID).Scan(&confirmed, &total)
+	if err == sql.ErrNoRows {
+		return 0, 0, nil
+	} else if err != nil {
+		return 0, 0, errors.Wrap(err, "loading issued and destroyed amounts")
+	}
+	return confirmed, total, nil
 }

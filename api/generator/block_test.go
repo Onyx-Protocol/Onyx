@@ -6,16 +6,19 @@ import (
 
 	"chain/api/asset/assettest"
 	. "chain/api/generator"
+	"chain/api/txdb"
 	"chain/cos/bc"
 	"chain/cos/txscript"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/testutil"
 )
 
 func TestGetAndAddBlockSignatures(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	fc, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	fc, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -43,8 +46,8 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 
 func TestGetBlocks(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}

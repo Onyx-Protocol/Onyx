@@ -9,15 +9,16 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/state"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/testutil"
 )
 
 func TestAssetDefinitions(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	createAssetDefFixture(ctx, t, "asset-1", []byte("asset-1-def"))
-	createAssetDefFixture(ctx, t, "asset-2", []byte("asset-2-def"))
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
+	createAssetDefFixture(ctx, dbtx, t, "asset-1", []byte("asset-1-def"))
+	createAssetDefFixture(ctx, dbtx, t, "asset-2", []byte("asset-2-def"))
 
 	examples := []struct {
 		assetIDs []string
@@ -49,7 +50,7 @@ func TestAssetDefinitions(t *testing.T) {
 	for _, ex := range examples {
 		t.Log("Example:", ex.assetIDs)
 
-		got, err := AssetDefinitions(ctx, ex.assetIDs)
+		got, err := assetDefinitions(ctx, dbtx, ex.assetIDs)
 		if err != nil {
 			t.Fatal("unexpected error: ", err)
 		}
@@ -61,7 +62,8 @@ func TestAssetDefinitions(t *testing.T) {
 }
 
 func TestInsertAssetDefinitionPointers(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
 	// These hash values are arbitrary.
 	a0str := "a55e710000000000000000000000000000000000000000000000000000000000"
 	def0str := "341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5"
@@ -78,7 +80,7 @@ func TestInsertAssetDefinitionPointers(t *testing.T) {
 		a1: &state.AssetState{ADP: def1},
 	}
 
-	err := insertAssetDefinitionPointers(ctx, assets)
+	err := insertAssetDefinitionPointers(ctx, dbtx, assets)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -87,14 +89,14 @@ func TestInsertAssetDefinitionPointers(t *testing.T) {
 	const checkQ = `
 			SELECT asset_definition_hash FROM asset_definition_pointers WHERE asset_id=$1
 		`
-	err = pg.QueryRow(ctx, checkQ, a0str).Scan(&resID)
+	err = dbtx.QueryRow(ctx, checkQ, a0str).Scan(&resID)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
 	if resID != def0str {
 		t.Fatalf("checking inputs, want=%s, got=%s", def0str, resID)
 	}
-	err = pg.QueryRow(ctx, checkQ, a1str).Scan(&resID)
+	err = dbtx.QueryRow(ctx, checkQ, a1str).Scan(&resID)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -104,7 +106,8 @@ func TestInsertAssetDefinitionPointers(t *testing.T) {
 }
 
 func TestInsertAssetDefinitionPointersWithUpdate(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
 	// These hash values are arbitrary.
 	a0str := "a55e710000000000000000000000000000000000000000000000000000000000"
 	def0str := "341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5"
@@ -121,14 +124,14 @@ func TestInsertAssetDefinitionPointersWithUpdate(t *testing.T) {
 		a0: &state.AssetState{ADP: def0},
 	}
 
-	err := insertAssetDefinitionPointers(ctx, assets)
+	err := insertAssetDefinitionPointers(ctx, dbtx, assets)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
 
 	delete(assets, a0)
 	assets[a1] = &state.AssetState{ADP: def1}
-	err = insertAssetDefinitionPointers(ctx, assets)
+	err = insertAssetDefinitionPointers(ctx, dbtx, assets)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -137,7 +140,7 @@ func TestInsertAssetDefinitionPointersWithUpdate(t *testing.T) {
 	const checkQ = `
 			SELECT COUNT(*) FROM asset_definition_pointers
 		`
-	err = pg.QueryRow(ctx, checkQ).Scan(&count)
+	err = dbtx.QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -170,16 +173,17 @@ func TestInsertAssetDefinitions(t *testing.T) {
 		txs = append(txs, tx)
 	}
 
-	ctx := pgtest.NewContext(t)
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
 	block := &bc.Block{Transactions: txs}
-	err := insertAssetDefinitions(ctx, block)
+	err := insertAssetDefinitions(ctx, dbtx, block)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
 
 	var count int
 	var checkQ = `SELECT COUNT(*) FROM asset_definitions`
-	err = pg.QueryRow(ctx, checkQ).Scan(&count)
+	err = dbtx.QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -190,7 +194,7 @@ func TestInsertAssetDefinitions(t *testing.T) {
 	for i := range defs {
 		var got []byte
 		const selectQ = `SELECT definition FROM asset_definitions WHERE hash=$1`
-		err = pg.QueryRow(ctx, selectQ, hashes[i]).Scan(&got)
+		err = dbtx.QueryRow(ctx, selectQ, hashes[i]).Scan(&got)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -204,7 +208,8 @@ func TestInsertAssetDefinitionsIdempotent(t *testing.T) {
 	def := []byte("{'key': 'im totally json'}")
 	hash := bc.HashAssetDefinition(def).String()
 
-	ctx := pgtest.NewContext(t)
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
 	block := &bc.Block{
 		Transactions: []*bc.Tx{
 			bc.NewTx(bc.TxData{Inputs: []*bc.TxInput{
@@ -215,12 +220,12 @@ func TestInsertAssetDefinitionsIdempotent(t *testing.T) {
 			}}),
 		},
 	}
-	err := insertAssetDefinitions(ctx, block)
+	err := insertAssetDefinitions(ctx, dbtx, block)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
 	// Just do it again
-	err = insertAssetDefinitions(ctx, block)
+	err = insertAssetDefinitions(ctx, dbtx, block)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -229,7 +234,7 @@ func TestInsertAssetDefinitionsIdempotent(t *testing.T) {
 	var checkQ = `
 			SELECT COUNT(*) FROM asset_definitions
 		`
-	err = pg.QueryRow(ctx, checkQ).Scan(&count)
+	err = dbtx.QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -239,7 +244,7 @@ func TestInsertAssetDefinitionsIdempotent(t *testing.T) {
 
 	var got []byte
 	const selectQ = `SELECT definition FROM asset_definitions WHERE hash=$1`
-	err = pg.QueryRow(ctx, selectQ, hash).Scan(&got)
+	err = dbtx.QueryRow(ctx, selectQ, hash).Scan(&got)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -252,7 +257,8 @@ func TestInsertAssetDefinitionsDuplicates(t *testing.T) {
 	def := []byte("{'key': 'im totally json'}")
 	hash := bc.HashAssetDefinition(def).String()
 
-	ctx := pgtest.NewContext(t)
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
 	block := &bc.Block{
 		Transactions: []*bc.Tx{
 			bc.NewTx(bc.TxData{Inputs: []*bc.TxInput{
@@ -267,7 +273,7 @@ func TestInsertAssetDefinitionsDuplicates(t *testing.T) {
 			}}),
 		},
 	}
-	err := insertAssetDefinitions(ctx, block)
+	err := insertAssetDefinitions(ctx, dbtx, block)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -276,7 +282,7 @@ func TestInsertAssetDefinitionsDuplicates(t *testing.T) {
 	var checkQ = `
 			SELECT COUNT(*) FROM asset_definitions
 		`
-	err = pg.QueryRow(ctx, checkQ).Scan(&count)
+	err = dbtx.QueryRow(ctx, checkQ).Scan(&count)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -286,7 +292,7 @@ func TestInsertAssetDefinitionsDuplicates(t *testing.T) {
 
 	var got []byte
 	const selectQ = `SELECT definition FROM asset_definitions WHERE hash=$1`
-	err = pg.QueryRow(ctx, selectQ, hash).Scan(&got)
+	err = dbtx.QueryRow(ctx, selectQ, hash).Scan(&got)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -295,14 +301,14 @@ func TestInsertAssetDefinitionsDuplicates(t *testing.T) {
 	}
 }
 
-func createAssetDefFixture(ctx context.Context, t *testing.T, assetID string, def []byte) {
+func createAssetDefFixture(ctx context.Context, dbtx *sql.Tx, t *testing.T, assetID string, def []byte) {
 	h := bc.HashAssetDefinition(def)
 
 	const q1 = `
 		INSERT INTO asset_definition_pointers (asset_id, asset_definition_hash)
 		VALUES ($1, $2)
 	`
-	_, err := pg.Exec(ctx, q1, assetID, h)
+	_, err := dbtx.Exec(ctx, q1, assetID, h)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -311,7 +317,7 @@ func createAssetDefFixture(ctx context.Context, t *testing.T, assetID string, de
 		INSERT INTO asset_definitions (hash, definition)
 		VALUES ($1, $2)
 	`
-	_, err = pg.Exec(ctx, q2, h, def)
+	_, err = dbtx.Exec(ctx, q2, h, def)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

@@ -156,7 +156,8 @@ func main() {
 	if err != nil {
 		chainlog.Fatal(ctx, "error", err)
 	}
-	fc, err := cos.NewFC(ctx, txdb.NewStore(), []*btcec.PublicKey{pubKey}, heights)
+	store := txdb.NewStore(db)
+	fc, err := cos.NewFC(ctx, store, []*btcec.PublicKey{pubKey}, heights)
 	if err != nil {
 		chainlog.Fatal(ctx, "error", err)
 	}
@@ -185,7 +186,7 @@ func main() {
 
 	go determineLeaderPeriodically(ctx)
 
-	h := api.Handler(*nouserSecret, localSigner)
+	h := api.Handler(*nouserSecret, localSigner, store)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}

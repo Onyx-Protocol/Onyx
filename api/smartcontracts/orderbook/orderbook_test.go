@@ -13,10 +13,12 @@ import (
 	"chain/api/generator"
 	"chain/api/issuer"
 	"chain/api/txbuilder"
+	"chain/api/txdb"
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/testutil"
 )
@@ -184,8 +186,8 @@ func TestCancel(t *testing.T) {
 
 func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo *orderbookFixtureInfo)) {
 	ctx := pgtest.NewContext(t)
-
-	fc, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	fc, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}

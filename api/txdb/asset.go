@@ -1,20 +1,23 @@
 package txdb
 
 import (
-	"database/sql"
-
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/cos/state"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/net/trace/span"
 )
 
 // GetAssetDefs retrieves a list of asset definitions matching assetIDs. The
 // results are returned as a map from an ID to the definition.
-func AssetDefinitions(ctx context.Context, assetIDs []string) (map[string][]byte, error) {
+func (s *Store) AssetDefinitions(ctx context.Context, assetIDs []string) (map[string][]byte, error) {
+	return assetDefinitions(ctx, s.db, assetIDs)
+}
+
+func assetDefinitions(ctx context.Context, db pg.DB, assetIDs []string) (map[string][]byte, error) {
 	const q = `
 		SELECT adp.asset_id, ad.definition
 		FROM asset_definition_pointers adp
@@ -22,13 +25,13 @@ func AssetDefinitions(ctx context.Context, assetIDs []string) (map[string][]byte
 		WHERE adp.asset_id IN (SELECT unnest($1::text[]))
 	`
 	res := make(map[string][]byte)
-	err := pg.ForQueryRows(ctx, q, pg.Strings(assetIDs), func(id string, def []byte) {
+	err := pg.ForQueryRows(pg.NewContext(ctx, db), q, pg.Strings(assetIDs), func(id string, def []byte) {
 		res[id] = def
 	})
 	return res, err
 }
 
-func AssetDefinition(ctx context.Context, assetID string) (string, []byte, error) {
+func (s *Store) AssetDefinition(ctx context.Context, assetID string) (string, []byte, error) {
 	const q = `
 		SELECT hash, definition
 		FROM asset_definition_pointers adp
@@ -39,7 +42,7 @@ func AssetDefinition(ctx context.Context, assetID string) (string, []byte, error
 		hash     string
 		defBytes []byte
 	)
-	err := pg.QueryRow(ctx, q, assetID).Scan(&hash, &defBytes)
+	err := s.db.QueryRow(ctx, q, assetID).Scan(&hash, &defBytes)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
@@ -51,7 +54,7 @@ func AssetDefinition(ctx context.Context, assetID string) (string, []byte, error
 
 // insertAssetDefinitionPointers writes the and asset id and the definition hash,
 // to the asset_definition_pointers table.
-func insertAssetDefinitionPointers(ctx context.Context, assets map[bc.AssetID]*state.AssetState) error {
+func insertAssetDefinitionPointers(ctx context.Context, dbtx *sql.Tx, assets map[bc.AssetID]*state.AssetState) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -79,13 +82,13 @@ func insertAssetDefinitionPointers(ctx context.Context, assets map[bc.AssetID]*s
 		ptrs = append(ptrs, state.ADP.String())
 	}
 
-	_, err := pg.Exec(ctx, q, pg.Strings(ptrs), pg.Strings(aids))
+	_, err := dbtx.Exec(ctx, q, pg.Strings(ptrs), pg.Strings(aids))
 	return errors.Wrap(err)
 }
 
 // insertAssetDefinitions inserts a record for each asset definition
 // in block. The record maps the hash to the data of the definition.
-func insertAssetDefinitions(ctx context.Context, block *bc.Block) error {
+func insertAssetDefinitions(ctx context.Context, dbtx *sql.Tx, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -120,6 +123,6 @@ func insertAssetDefinitions(ctx context.Context, block *bc.Block) error {
 		)
 		INSERT INTO asset_definitions (hash, definition) TABLE filtered_defs
 	`
-	_, err := pg.Exec(ctx, q, pg.Strings(hash), pg.Byteas(defn))
+	_, err := dbtx.Exec(ctx, q, pg.Strings(hash), pg.Byteas(defn))
 	return errors.Wrap(err)
 }

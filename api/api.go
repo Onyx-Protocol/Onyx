@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"chain/api/appdb"
-	"chain/api/explorer"
 	"chain/api/generator"
 	"chain/api/signer"
+	"chain/api/txdb"
 	chainhttp "chain/net/http"
 	"chain/net/http/httpjson"
 	"chain/net/http/pat"
@@ -23,8 +23,9 @@ const (
 
 // Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
 // will be used as the password for routes starting with /nouser/.
-func Handler(nouserSecret string, signer *signer.Signer) chainhttp.Handler {
+func Handler(nouserSecret string, signer *signer.Signer, store *txdb.Store) chainhttp.Handler {
 	h := pat.New()
+	a := &api{store}
 
 	pwHandler := httpjson.NewServeMux(writeHTTPError)
 	pwHandler.HandleFunc("POST", "/v3/login", login)
@@ -36,7 +37,7 @@ func Handler(nouserSecret string, signer *signer.Signer) chainhttp.Handler {
 	h.Add("POST", "/nouser/", nouserHandler)
 	h.Add("DELETE", "/nouser/", nouserHandler)
 
-	tokenHandler := chainhttp.HandlerFunc(tokenAuthn(tokenAuthedHandler()))
+	tokenHandler := chainhttp.HandlerFunc(tokenAuthn(a.tokenAuthedHandler()))
 	h.Add("GET", "/", tokenHandler)
 	h.Add("PUT", "/", tokenHandler)
 	h.Add("POST", "/", tokenHandler)
@@ -66,7 +67,11 @@ func nouserHandler() chainhttp.HandlerFunc {
 	return h.ServeHTTPContext
 }
 
-func tokenAuthedHandler() chainhttp.HandlerFunc {
+type api struct {
+	store *txdb.Store
+}
+
+func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
 	h.HandleFunc("GET", "/v3/projects", listProjects)
 	h.HandleFunc("POST", "/v3/projects", createProject)
@@ -78,7 +83,7 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/v3/projects/:projID/members", addMember)
 	h.HandleFunc("PUT", "/v3/projects/:projID/members/:userID", updateMember)
 	h.HandleFunc("DELETE", "/v3/projects/:projID/members/:userID", removeMember)
-	h.HandleFunc("GET", "/v3/projects/:projID/admin-node/summary", getAdminNodeSummary)
+	h.HandleFunc("GET", "/v3/projects/:projID/admin-node/summary", a.getAdminNodeSummary)
 	h.HandleFunc("GET", "/v3/projects/:projID/manager-nodes", listManagerNodes)
 	h.HandleFunc("POST", "/v3/projects/:projID/manager-nodes", createManagerNode)
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID", getManagerNode)
@@ -128,19 +133,19 @@ func tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("DELETE", "/v3/api-tokens/:tokenID", appdb.DeleteAuthToken)
 
 	// Auditor node endpoints -- DEPRECATED: use explorer endpoints instead
-	h.HandleFunc("GET", "/v3/auditor/blocks", listBlocks)
-	h.HandleFunc("GET", "/v3/auditor/blocks/:blockID/summary", explorer.GetBlockSummary)
-	h.HandleFunc("GET", "/v3/auditor/transactions/:txID", explorer.GetTx)
-	h.HandleFunc("GET", "/v3/auditor/assets/:assetID", explorer.GetAsset)
-	h.HandleFunc("POST", "/v3/auditor/get-assets", getExplorerAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
+	h.HandleFunc("GET", "/v3/auditor/blocks", a.listBlocks)
+	h.HandleFunc("GET", "/v3/auditor/blocks/:blockID/summary", a.getBlockSummary)
+	h.HandleFunc("GET", "/v3/auditor/transactions/:txID", a.getTx)
+	h.HandleFunc("GET", "/v3/auditor/assets/:assetID", a.getAsset)
+	h.HandleFunc("POST", "/v3/auditor/get-assets", a.getExplorerAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
 
 	// Explorer node endpoints
-	h.HandleFunc("GET", "/v3/explorer/blocks", listBlocks)
-	h.HandleFunc("GET", "/v3/explorer/blocks/:blockID/summary", explorer.GetBlockSummary)
-	h.HandleFunc("GET", "/v3/explorer/transactions/:txID", explorer.GetTx)
-	h.HandleFunc("GET", "/v3/explorer/assets/:assetID", explorer.GetAsset)
-	h.HandleFunc("GET", "/v3/explorer/assets/:assetID/utxos", listExplorerUTXOsByAsset)
-	h.HandleFunc("POST", "/v3/explorer/get-assets", getExplorerAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
+	h.HandleFunc("GET", "/v3/explorer/blocks", a.listBlocks)
+	h.HandleFunc("GET", "/v3/explorer/blocks/:blockID/summary", a.getBlockSummary)
+	h.HandleFunc("GET", "/v3/explorer/transactions/:txID", a.getTx)
+	h.HandleFunc("GET", "/v3/explorer/assets/:assetID", a.getAsset)
+	h.HandleFunc("GET", "/v3/explorer/assets/:assetID/utxos", a.listExplorerUTXOsByAsset)
+	h.HandleFunc("POST", "/v3/explorer/get-assets", a.getExplorerAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
 
 	// Orderbook endpoints
 	h.HandleFunc("POST", "/v3/contracts/orderbook", findOrders)

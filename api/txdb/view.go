@@ -6,6 +6,7 @@ import (
 	"chain/cos/bc"
 	"chain/cos/state"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/errors"
 )
 
@@ -13,9 +14,12 @@ type view struct {
 	isPool bool
 	outs   map[bc.Outpoint]*state.Output
 	err    *error
+
+	// TODO(kr): preload circulation and delete this field
+	db pg.DB // for circulation
 }
 
-func newPoolViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
+func newPoolViewForPrevouts(ctx context.Context, db *sql.DB, txs []*bc.Tx) (state.ViewReader, error) {
 	var p []bc.Outpoint
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
@@ -25,15 +29,34 @@ func newPoolViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader
 			p = append(p, in.Previous)
 		}
 	}
-	return newPoolView(ctx, p)
+
+	dbtx, err := db.Begin(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	ctx = pg.NewContext(ctx, dbtx)
+	defer dbtx.Rollback(ctx)
+
+	v, err := newPoolView(ctx, dbtx, db, p)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	return v, nil
 }
 
 // newPoolView returns a new state view on the pool
 // of unconfirmed transactions.
 // It loads the outpoints identified in p;
 // all other outputs will be omitted from the view.
-func newPoolView(ctx context.Context, p []bc.Outpoint) (state.ViewReader, error) {
-	outs, err := loadPoolOutputs(ctx, p)
+// Parameter db is used only for Circulation.
+func newPoolView(ctx context.Context, dbtx *sql.Tx, db *sql.DB, p []bc.Outpoint) (state.ViewReader, error) {
+	outs, err := loadPoolOutputs(ctx, dbtx, p)
 	if err != nil {
 		return nil, err
 	}
@@ -42,11 +65,12 @@ func newPoolView(ctx context.Context, p []bc.Outpoint) (state.ViewReader, error)
 		isPool: true,
 		outs:   outs,
 		err:    &errbuf,
+		db:     db, // TODO(kr): preload circulation and delete this field
 	}
 	return result, nil
 }
 
-func newViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
+func newViewForPrevouts(ctx context.Context, db pg.DB, txs []*bc.Tx) (state.ViewReader, error) {
 	var p []bc.Outpoint
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
@@ -56,14 +80,14 @@ func newViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, er
 			p = append(p, in.Previous)
 		}
 	}
-	return newView(ctx, p)
+	return newView(ctx, db, p)
 }
 
 // newView returns a new state view on the blockchain.
 // It loads the outpoints identified in p;
 // all other outputs will be omitted from the view.
-func newView(ctx context.Context, p []bc.Outpoint) (state.ViewReader, error) {
-	outs, err := loadOutputs(ctx, p)
+func newView(ctx context.Context, db pg.DB, p []bc.Outpoint) (state.ViewReader, error) {
+	outs, err := loadOutputs(ctx, db, p)
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +95,7 @@ func newView(ctx context.Context, p []bc.Outpoint) (state.ViewReader, error) {
 	result := &view{
 		outs: outs,
 		err:  &errbuf,
+		db:   db, // TODO(kr): preload circulation and delete this field
 	}
 	return result, nil
 }
@@ -83,6 +108,10 @@ func (v *view) Output(ctx context.Context, p bc.Outpoint) *state.Output {
 }
 
 func (v *view) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.AssetID]int64, error) {
+	return circulation(ctx, v.db, v.isPool, assets)
+}
+
+func circulation(ctx context.Context, db pg.DB, inPool bool, assets []bc.AssetID) (map[bc.AssetID]int64, error) {
 	const q = `
 		SELECT asset_id, (CASE WHEN $2
 			THEN confirmed - destroyed_confirmed
@@ -97,7 +126,9 @@ func (v *view) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.Ass
 
 	circ := make(map[bc.AssetID]int64, len(assets))
 
-	err := pg.ForQueryRows(ctx, q, pg.Strings(assetStrs), !v.isPool, func(aid bc.AssetID, amt int64) {
+	// NOTE(kr): querying circulation here is a bug.
+	// See https://github.com/chain-engineering/chain/issues/916.
+	err := pg.ForQueryRows(pg.NewContext(ctx, db), q, pg.Strings(assetStrs), !inPool, func(aid bc.AssetID, amt int64) {
 		if amt != 0 {
 			circ[aid] = amt
 		}

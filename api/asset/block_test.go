@@ -21,6 +21,7 @@ import (
 	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/testutil"
 )
@@ -28,7 +29,7 @@ import (
 func TestTransferConfirmed(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 
-	info, err := bootdb(ctx)
+	info, err := bootdb(ctx, t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +61,7 @@ func TestGenSpendApply(t *testing.T) {
 
 	ctx := pgtest.NewContext(t)
 
-	info, err := bootdb(ctx)
+	info, err := bootdb(ctx, t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +107,7 @@ func TestGenSpendApply(t *testing.T) {
 
 func BenchmarkTransferWithBlocks(b *testing.B) {
 	ctx := pgtest.NewContext(b)
-	info, err := bootdb(ctx)
+	info, err := bootdb(ctx, b)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -216,17 +217,18 @@ type clientInfo struct {
 
 // TODO(kr): refactor this into new package api/apiutil
 // and consume it from cmd/bootdb.
-func bootdb(ctx context.Context) (*clientInfo, error) {
+func bootdb(ctx context.Context, t testing.TB) (*clientInfo, error) {
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	if err != nil {
+		return nil, err
+	}
+
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer dbtx.Rollback(ctx)
-
-	_, err = assettest.InitializeSigningGenerator(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	u, err := appdb.CreateUser(ctx, "user@example.com", "password")
 	if err != nil {
@@ -337,7 +339,8 @@ func TestUpsertGenesisBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil, nil)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	fc, err := cos.NewFC(ctx, store, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

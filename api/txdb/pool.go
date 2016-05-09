@@ -8,6 +8,7 @@ import (
 	"chain/cos/bc"
 	"chain/cos/state"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/metrics"
 	"chain/net/trace/span"
@@ -18,7 +19,7 @@ import (
 // outputs (rather than pool outputs) will have a zero value bc.Output field.
 // If some are not found, they will be absent from the map
 // (not an error).
-func loadPoolOutputs(ctx context.Context, load []bc.Outpoint) (map[bc.Outpoint]*state.Output, error) {
+func loadPoolOutputs(ctx context.Context, dbtx *sql.Tx, load []bc.Outpoint) (map[bc.Outpoint]*state.Output, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -38,7 +39,7 @@ func loadPoolOutputs(ctx context.Context, load []bc.Outpoint) (map[bc.Outpoint]*
 		    AND (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
 	outs := make(map[bc.Outpoint]*state.Output)
-	err := pg.ForQueryRows(ctx, loadQ, pg.Strings(txHashes), pg.Uint32s(indexes), func(hash bc.Hash, index uint32, assetID bc.AssetID, amount uint64, script, metadata []byte) {
+	err := pg.ForQueryRows(pg.NewContext(ctx, dbtx), loadQ, pg.Strings(txHashes), pg.Uint32s(indexes), func(hash bc.Hash, index uint32, assetID bc.AssetID, amount uint64, script, metadata []byte) {
 		o := &state.Output{
 			Outpoint: bc.Outpoint{Hash: hash, Index: index},
 			TxOutput: bc.TxOutput{
@@ -57,7 +58,7 @@ func loadPoolOutputs(ctx context.Context, load []bc.Outpoint) (map[bc.Outpoint]*
 		SELECT tx_hash, index FROM pool_inputs
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	err = pg.ForQueryRows(ctx, spentQ, pg.Strings(txHashes), pg.Uint32s(indexes), func(hash bc.Hash, index uint32) {
+	err = pg.ForQueryRows(pg.NewContext(ctx, dbtx), spentQ, pg.Strings(txHashes), pg.Uint32s(indexes), func(hash bc.Hash, index uint32) {
 		p := bc.Outpoint{Hash: hash, Index: index}
 		if o := outs[p]; o != nil {
 			o.Spent = true
@@ -88,13 +89,13 @@ func addToUTXOSet(set *utxoSet, out *Output) {
 	set.metadata = append(set.metadata, out.Metadata)
 }
 
-func insertPoolTx(ctx context.Context, tx *bc.Tx) error {
+func insertPoolTx(ctx context.Context, db pg.DB, tx *bc.Tx) error {
 	const q = `INSERT INTO pool_txs (tx_hash, data) VALUES ($1, $2)`
-	_, err := pg.Exec(ctx, q, tx.Hash, tx)
+	_, err := db.Exec(ctx, q, tx.Hash, tx)
 	return errors.Wrap(err)
 }
 
-func insertPoolOutputs(ctx context.Context, insert []*Output) error {
+func insertPoolOutputs(ctx context.Context, db pg.DB, insert []*Output) error {
 	var outs utxoSet
 	for _, o := range insert {
 		addToUTXOSet(&outs, o)
@@ -113,7 +114,7 @@ func insertPoolOutputs(ctx context.Context, insert []*Output) error {
 			unnest($5::bytea[]),
 			unnest($6::bytea[])
 	`
-	_, err := pg.Exec(ctx, q1,
+	_, err := db.Exec(ctx, q1,
 		outs.txHash,
 		outs.index,
 		outs.assetID,
@@ -125,7 +126,7 @@ func insertPoolOutputs(ctx context.Context, insert []*Output) error {
 }
 
 // insertPoolInputs inserts outpoints into pool_inputs.
-func insertPoolInputs(ctx context.Context, outs []bc.Outpoint) error {
+func insertPoolInputs(ctx context.Context, db pg.DB, outs []bc.Outpoint) error {
 	defer metrics.RecordElapsed(time.Now())
 	var (
 		txHashes []string
@@ -140,15 +141,15 @@ func insertPoolInputs(ctx context.Context, outs []bc.Outpoint) error {
 		INSERT INTO pool_inputs (tx_hash, index)
 		SELECT unnest($1::text[]), unnest($2::bigint[])
 	`
-	_, err := pg.Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(index))
+	_, err := db.Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(index))
 	return errors.Wrap(err)
 }
 
 // CountPoolTxs returns the total number of unconfirmed transactions.
-func CountPoolTxs(ctx context.Context) (uint64, error) {
+func (s *Store) CountPoolTxs(ctx context.Context) (uint64, error) {
 	const q = `SELECT count(tx_hash) FROM pool_txs`
 	var res uint64
-	err := pg.QueryRow(ctx, q).Scan(&res)
+	err := s.db.QueryRow(ctx, q).Scan(&res)
 	return res, errors.Wrap(err)
 }
 

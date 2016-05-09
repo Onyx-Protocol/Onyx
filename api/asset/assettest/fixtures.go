@@ -15,10 +15,10 @@ import (
 	"chain/api/issuer"
 	"chain/api/signer"
 	"chain/api/txbuilder"
-	"chain/api/txdb"
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/cos/hdkey"
+	"chain/cos/memstore"
 	"chain/cos/state"
 	"chain/database/pg"
 	"chain/errors"
@@ -266,12 +266,16 @@ func ManagerTxFixture(ctx context.Context, t testing.TB, txHash string, data []b
 	return id
 }
 
-func InitializeSigningGenerator(ctx context.Context) (*cos.FC, error) {
+// store can be nil, in which case it will use memstore.
+func InitializeSigningGenerator(ctx context.Context, store cos.Store) (*cos.FC, error) {
 	pubkey, err := testutil.TestXPub.ECPubKey()
 	if err != nil {
 		return nil, err
 	}
-	fc, err := cos.NewFC(ctx, txdb.NewStore(), nil, nil)
+	if store == nil {
+		store = memstore.New()
+	}
+	fc, err := cos.NewFC(ctx, store, nil, nil)
 	if err != nil {
 		return nil, err
 	}

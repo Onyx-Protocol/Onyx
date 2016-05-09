@@ -14,9 +14,11 @@ import (
 	"chain/api/asset/assettest"
 	"chain/api/generator"
 	"chain/api/txdb"
+	"chain/cos"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/testutil"
 )
@@ -71,8 +73,8 @@ func getSortID(ctx context.Context, t testing.TB, assetID bc.AssetID) (sortID st
 
 func TestListAssets(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,8 +182,8 @@ func TestListAssets(t *testing.T) {
 
 func TestGetAssets(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,8 +246,8 @@ func TestGetAssets(t *testing.T) {
 
 func TestGetAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -359,8 +361,8 @@ func TestArchiveAsset(t *testing.T) {
 
 func TestAssetBalance(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	var store cos.Store = txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -411,7 +413,6 @@ func TestAssetBalance(t *testing.T) {
 		},
 	})
 
-	store := txdb.NewStore()
 	err = store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -639,8 +640,8 @@ func (a balancesByAssetID) Less(i, j int) bool {
 
 func TestAccountBalanceByAssetID(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}

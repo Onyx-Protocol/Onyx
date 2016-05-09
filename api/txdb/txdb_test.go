@@ -10,7 +10,9 @@ import (
 	"chain/cos/state"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/errors"
+	"chain/testutil"
 )
 
 func mustParseHash(s string) bc.Hash {
@@ -22,16 +24,21 @@ func mustParseHash(s string) bc.Hash {
 }
 
 func TestPoolTxs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	pgtest.Exec(ctx, t, `
+	dbtx := pgtest.NewTx(t)
+	ctx := context.Background()
+
+	_, err := dbtx.Exec(ctx, `
 		INSERT INTO pool_txs (tx_hash, data)
 		VALUES (
 			'6fb825e8419bd78a18f51002cf0e6bd7498c3ae5f3339a7c91e7be7af8ef381c',
 			decode('0701000000000000000000000000000568656c6c6f', 'hex')
 		);
 	`)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
 
-	got, err := poolTxs(ctx)
+	got, err := poolTxs(ctx, dbtx)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
@@ -56,15 +63,17 @@ func TestPoolTxs(t *testing.T) {
 }
 
 func TestGetTxs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store := NewStore()
+	dbctx := pgtest.NewContext(t)
+	store := NewStore(pg.FromContext(dbctx).(*sql.DB))
+	ctx := context.Background()
+
 	tx := bc.NewTx(bc.TxData{SerFlags: 0x7, Metadata: []byte("tx")})
 	err := store.ApplyTx(ctx, tx, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	poolTxs, _, err := GetTxs(ctx, tx.Hash)
+	poolTxs, _, err := store.GetTxs(ctx, tx.Hash)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -76,16 +85,17 @@ func TestGetTxs(t *testing.T) {
 	}
 
 	nonexistentHash := mustParseHash("beefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeef")
-	_, _, gotErr := GetTxs(ctx, tx.Hash, nonexistentHash)
+	_, _, gotErr := store.GetTxs(ctx, tx.Hash, nonexistentHash)
 	if gotErr != nil {
 		t.Errorf("got err=%v want nil", gotErr)
 	}
 }
 
 func TestInsertTx(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	dbtx := pgtest.NewTx(t)
+	ctx := context.Background()
 	tx := bc.NewTx(bc.TxData{Metadata: []byte("tx")})
-	ok, err := insertTx(ctx, tx)
+	ok, err := insertTx(ctx, dbtx, tx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -94,7 +104,7 @@ func TestInsertTx(t *testing.T) {
 		t.Fatal("expected insertTx to be successful")
 	}
 
-	_, _, err = GetTxs(ctx, tx.Hash)
+	_, _, err = getTxs(ctx, dbtx, tx.Hash)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -102,8 +112,8 @@ func TestInsertTx(t *testing.T) {
 }
 
 func TestLatestBlock(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	pgtest.Exec(ctx, t, `
+	dbctx := pgtest.NewContext(t)
+	pgtest.Exec(dbctx, t, `
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES
 		('0000000000000000000000000000000000000000000000000000000000000000', 0, '', ''),
@@ -114,7 +124,8 @@ func TestLatestBlock(t *testing.T) {
 			''
 		);
 	`)
-	store := NewStore()
+	store := NewStore(pg.FromContext(dbctx).(*sql.DB))
+	ctx := context.Background()
 	got, err := store.LatestBlock(ctx)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
@@ -146,7 +157,8 @@ func TestLatestBlock(t *testing.T) {
 }
 
 func TestInsertBlock(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	dbtx := pgtest.NewTx(t)
+	ctx := context.Background()
 	blk := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Version: 1,
@@ -161,14 +173,14 @@ func TestInsertBlock(t *testing.T) {
 			}),
 		},
 	}
-	_, err := insertBlock(ctx, blk)
+	_, err := insertBlock(ctx, dbtx, blk)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
 	// block in database
-	_, err = GetBlock(ctx, blk.Hash().String())
+	_, err = getBlock(ctx, dbtx, blk.Hash().String())
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -176,7 +188,7 @@ func TestInsertBlock(t *testing.T) {
 
 	// txs in database
 	txs := blk.Transactions
-	_, _, err = GetTxs(ctx, txs[0].Hash, txs[1].Hash)
+	_, _, err = getTxs(ctx, dbtx, txs[0].Hash, txs[1].Hash)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -184,20 +196,21 @@ func TestInsertBlock(t *testing.T) {
 }
 
 func TestGetBlock(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	dbtx := pgtest.NewTx(t)
+	ctx := context.Background()
 	blk := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Version: 1,
 			Height:  1,
 		},
 	}
-	_, err := insertBlock(ctx, blk)
+	_, err := insertBlock(ctx, dbtx, blk)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	got, err := GetBlock(ctx, blk.Hash().String())
+	got, err := getBlock(ctx, dbtx, blk.Hash().String())
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -207,20 +220,21 @@ func TestGetBlock(t *testing.T) {
 		t.Errorf("got:\n\t%+v\nwant:\n\t:%+v", got, blk)
 	}
 
-	_, gotErr := GetBlock(ctx, "nonexistent")
+	_, gotErr := getBlock(ctx, dbtx, "nonexistent")
 	if errors.Root(gotErr) != pg.ErrUserInputNotFound {
 		t.Errorf("got err=%q want %q", errors.Root(gotErr), pg.ErrUserInputNotFound)
 	}
 }
 
 func TestListBlocks(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	dbtx := pgtest.NewTx(t)
+	ctx := context.Background()
 	blks := []*bc.Block{
 		{BlockHeader: bc.BlockHeader{Height: 1}},
 		{BlockHeader: bc.BlockHeader{Height: 0}},
 	}
 	for _, blk := range blks {
-		_, err := insertBlock(ctx, blk)
+		_, err := insertBlock(ctx, dbtx, blk)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -249,7 +263,7 @@ func TestListBlocks(t *testing.T) {
 	}}
 
 	for _, c := range cases {
-		got, err := ListBlocks(ctx, c.prev, c.limit)
+		got, err := listBlocks(ctx, dbtx, c.prev, c.limit)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Errorf("ListBlocks(%q, %d) error = %q", c.prev, c.limit, err)
@@ -263,7 +277,8 @@ func TestListBlocks(t *testing.T) {
 }
 
 func TestRemoveBlockOutputs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	dbtx := pgtest.NewTx(t)
+	ctx := context.Background()
 
 	out := &state.Output{
 		TxOutput: bc.TxOutput{
@@ -273,20 +288,21 @@ func TestRemoveBlockOutputs(t *testing.T) {
 		},
 		Outpoint: bc.Outpoint{},
 	}
-	err := insertBlockOutputs(ctx, []*state.Output{out})
+	err := insertBlockOutputs(ctx, dbtx, []*state.Output{out})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
 	out.Spent = true
-	err = removeBlockSpentOutputs(ctx, []*state.Output{out})
+
+	err = removeBlockSpentOutputs(ctx, dbtx, []*state.Output{out})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	gotOut, err := loadOutput(ctx, out.Outpoint)
+	gotOut, err := loadOutput(ctx, dbtx, out.Outpoint)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -298,7 +314,8 @@ func TestRemoveBlockOutputs(t *testing.T) {
 }
 
 func TestInsertBlockOutputs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	dbtx := pgtest.NewTx(t)
+	ctx := context.Background()
 	out := &state.Output{
 		TxOutput: bc.TxOutput{
 			AssetAmount: bc.AssetAmount{AssetID: bc.AssetID{}, Amount: 5},
@@ -307,13 +324,13 @@ func TestInsertBlockOutputs(t *testing.T) {
 		},
 		Outpoint: bc.Outpoint{},
 	}
-	err := insertBlockOutputs(ctx, []*state.Output{out})
+	err := insertBlockOutputs(ctx, dbtx, []*state.Output{out})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	_, err = loadOutput(ctx, out.Outpoint)
+	_, err = loadOutput(ctx, dbtx, out.Outpoint)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -323,7 +340,7 @@ func TestInsertBlockOutputs(t *testing.T) {
 // Helper function just for testing.
 // In production, we ~never want to load a single output;
 // we always load in batches.
-func loadOutput(ctx context.Context, p bc.Outpoint) (*state.Output, error) {
-	m, err := loadOutputs(ctx, []bc.Outpoint{p})
+func loadOutput(ctx context.Context, dbtx *sql.Tx, p bc.Outpoint) (*state.Output, error) {
+	m, err := loadOutputs(ctx, dbtx, []bc.Outpoint{p})
 	return m[p], err
 }

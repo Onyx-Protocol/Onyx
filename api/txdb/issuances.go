@@ -1,36 +1,16 @@
 package txdb
 
 import (
-	"database/sql"
-
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/cos/state"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/errors"
 )
 
-// circulation returns the confirmed and total
-// circulation amounts for the given asset.
-// TODO: export this function and use in other packages
-// instead of directly querying
-func circulation(ctx context.Context, assetID bc.AssetID) (confirmed, total uint64, err error) {
-	const q = `
-		SELECT (confirmed - destroyed_confirmed),
-		(confirmed + pool - destroyed_confirmed - destroyed_pool)
-		FROM issuance_totals WHERE asset_id=$1
-	`
-	err = pg.QueryRow(ctx, q, assetID).Scan(&confirmed, &total)
-	if err == sql.ErrNoRows {
-		return 0, 0, nil
-	} else if err != nil {
-		return 0, 0, errors.Wrap(err, "loading issued and destroyed amounts")
-	}
-	return confirmed, total, nil
-}
-
-func addIssuances(ctx context.Context, assets map[bc.AssetID]*state.AssetState, confirmed bool) error {
+func addIssuances(ctx context.Context, dbtx *sql.Tx, assets map[bc.AssetID]*state.AssetState, confirmed bool) error {
 	assetIDs, issued, destroyed := collectIssuedArrays(assets)
 
 	const insertQ = `
@@ -51,11 +31,11 @@ func addIssuances(ctx context.Context, assets map[bc.AssetID]*state.AssetState, 
 			destroyed_confirmed=issuance_totals.destroyed_confirmed+excluded.destroyed_confirmed,
 			destroyed_pool=issuance_totals.destroyed_pool+excluded.destroyed_pool
 	`
-	_, err := pg.Exec(ctx, insertQ, pg.Strings(assetIDs), pg.Uint64s(issued), pg.Uint64s(destroyed), confirmed)
+	_, err := dbtx.Exec(ctx, insertQ, pg.Strings(assetIDs), pg.Uint64s(issued), pg.Uint64s(destroyed), confirmed)
 	return errors.Wrap(err, "inserting new issuance_totals")
 }
 
-func setIssuances(ctx context.Context, assets map[bc.AssetID]*state.AssetState) error {
+func setIssuances(ctx context.Context, dbtx *sql.Tx, assets map[bc.AssetID]*state.AssetState) error {
 	assetIDs, issued, destroyed := collectIssuedArrays(assets)
 
 	const q = `
@@ -66,7 +46,7 @@ func setIssuances(ctx context.Context, assets map[bc.AssetID]*state.AssetState) 
 		SET pool=issued, destroyed_pool=destroyed
 		FROM issued i WHERE i.asset_id=it.asset_id
 	`
-	_, err := pg.Exec(ctx, q, pg.Strings(assetIDs), pg.Uint64s(issued), pg.Uint64s(destroyed))
+	_, err := dbtx.Exec(ctx, q, pg.Strings(assetIDs), pg.Uint64s(issued), pg.Uint64s(destroyed))
 
 	return errors.Wrap(err)
 }

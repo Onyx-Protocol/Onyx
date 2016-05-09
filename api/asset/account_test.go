@@ -9,17 +9,20 @@ import (
 	. "chain/api/asset"
 	"chain/api/asset/assettest"
 	"chain/api/txbuilder"
+	"chain/api/txdb"
 	"chain/cos/bc"
 	"chain/cos/hdkey"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/database/sql"
 	"chain/errors"
 	"chain/testutil"
 )
 
 func TestAccountSourceReserve(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,8 +86,8 @@ func TestAccountSourceReserve(t *testing.T) {
 
 func TestAccountSourceReserveIdempotency(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,8 +185,8 @@ func TestAccountDestinationPKScript(t *testing.T) {
 
 func TestAccountSourceWithTxHash(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-
-	_, err := assettest.InitializeSigningGenerator(ctx)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -21,7 +21,7 @@ type IssuanceReserver bc.AssetID
 func (ir IssuanceReserver) Reserve(ctx context.Context, amt *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
 	asset, err := appdb.AssetByID(ctx, bc.AssetID(ir))
 	if err != nil {
-		return nil, errors.WithDetailf(err, "get asset with ID %q", ir)
+		return nil, errors.WithDetailf(err, "get asset with ID %q", bc.AssetID(ir))
 	}
 
 	in := &bc.TxInput{

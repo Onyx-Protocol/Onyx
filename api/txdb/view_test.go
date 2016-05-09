@@ -4,15 +4,19 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/cos/bc"
 	"chain/cos/state"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/testutil"
 )
 
 func TestView(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	pgtest.Exec(ctx, t, `
+	dbtx := pgtest.NewTx(t)
+	ctx := context.Background()
+	pgtest.Exec(pg.NewContext(ctx, dbtx), t, `
 		INSERT INTO utxos
 			(tx_hash, index, asset_id, amount, script, metadata)
 		VALUES
@@ -74,7 +78,7 @@ func TestView(t *testing.T) {
 	for i, ex := range examples {
 		t.Log("Example", i)
 
-		v, err := newView(ctx, []bc.Outpoint{ex.op})
+		v, err := newView(ctx, dbtx, []bc.Outpoint{ex.op})
 		if err != nil {
 			t.Fatal("unexpected error:", err)
 		}
@@ -88,8 +92,8 @@ func TestView(t *testing.T) {
 }
 
 func TestViewForPrevoutsIgnoreIssuance(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-
+	dbtx := pgtest.NewTx(t)
+	ctx := context.Background()
 	txs := []*bc.Tx{bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{{
 			Previous: bc.Outpoint{
@@ -98,7 +102,7 @@ func TestViewForPrevoutsIgnoreIssuance(t *testing.T) {
 		}},
 	})}
 
-	v, err := newViewForPrevouts(ctx, txs)
+	v, err := newViewForPrevouts(ctx, dbtx, txs)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -110,8 +114,9 @@ func TestViewForPrevoutsIgnoreIssuance(t *testing.T) {
 }
 
 func TestPoolView(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	pgtest.Exec(ctx, t, `
+	dbtx := pgtest.NewTx(t)
+	ctx := context.Background()
+	pgtest.Exec(pg.NewContext(ctx, dbtx), t, `
 		INSERT INTO pool_txs
 			(tx_hash, data)
 		VALUES
@@ -214,7 +219,8 @@ func TestPoolView(t *testing.T) {
 	for i, ex := range examples {
 		t.Log("Example", i)
 
-		v, err := newPoolView(ctx, []bc.Outpoint{ex.op})
+		// The "db" parameter is used only by Circulation.
+		v, err := newPoolView(ctx, dbtx, nil, []bc.Outpoint{ex.op})
 		if err != nil {
 			t.Fatal("unexpected error:", err)
 		}
@@ -227,10 +233,11 @@ func TestPoolView(t *testing.T) {
 }
 
 func TestViewCirculation(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	dbtx := pgtest.NewTx(t)
+	ctx := context.Background()
 
 	assets := []bc.AssetID{{1}, {2}, {3}, {4}, {5}}
-	err := addIssuances(ctx, map[bc.AssetID]*state.AssetState{
+	err := addIssuances(ctx, dbtx, map[bc.AssetID]*state.AssetState{
 		assets[0]: &state.AssetState{Issuance: 5},
 		assets[1]: &state.AssetState{Issuance: 9, Destroyed: 2},
 		assets[2]: &state.AssetState{Issuance: 8},
@@ -238,7 +245,7 @@ func TestViewCirculation(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	err = addIssuances(ctx, map[bc.AssetID]*state.AssetState{
+	err = addIssuances(ctx, dbtx, map[bc.AssetID]*state.AssetState{
 		assets[0]: &state.AssetState{Issuance: 5},
 		assets[1]: &state.AssetState{Issuance: 9, Destroyed: 2},
 		assets[2]: &state.AssetState{Destroyed: 3},
@@ -303,8 +310,7 @@ func TestViewCirculation(t *testing.T) {
 	}}
 
 	for _, c := range cases {
-		v := &view{isPool: c.isPool}
-		got, err := v.Circulation(ctx, c.aids)
+		got, err := circulation(ctx, dbtx, c.isPool, c.aids)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
