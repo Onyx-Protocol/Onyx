@@ -53,7 +53,7 @@ type ActAccount struct {
 	ProjID        string
 }
 
-// GetActUTXOs returns information about outputs from both sides of a transaciton.
+// GetActUTXOs returns information about outputs from both sides of a transaction.
 func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err error) {
 	all := make(map[bc.Outpoint]*ActUTXO)
 	scriptMap := make(map[string]bc.Outpoint)
