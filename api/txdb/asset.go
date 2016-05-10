@@ -49,20 +49,6 @@ func AssetDefinition(ctx context.Context, assetID string) (string, []byte, error
 	return hash, defBytes, nil
 }
 
-func DefinitionHashByAssetID(ctx context.Context, assetID string) (string, error) {
-	const q = `
-		SELECT asset_definition_hash FROM asset_definition_pointers WHERE asset_id=$1
-	`
-
-	var hash string
-	err := pg.QueryRow(ctx, q, assetID).Scan(&hash)
-	if err != nil {
-		return "", errors.Wrapf(err, "fetching definition for asset %s", assetID)
-	}
-
-	return hash, nil
-}
-
 // insertAssetDefinitionPointers writes the and asset id and the definition hash,
 // to the asset_definition_pointers table.
 func insertAssetDefinitionPointers(ctx context.Context, assets map[bc.AssetID]*state.AssetState) error {

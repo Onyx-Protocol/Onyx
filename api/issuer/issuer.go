@@ -1,14 +1,12 @@
 package issuer
 
 import (
-	"database/sql"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/api/appdb"
 	"chain/api/txbuilder"
-	"chain/api/txdb"
 	"chain/cos/bc"
 	"chain/cos/hdkey"
 	"chain/cos/txscript"
@@ -33,15 +31,7 @@ func (ir IssuanceReserver) Reserve(ctx context.Context, amt *bc.AssetAmount, ttl
 		},
 	}
 	if len(asset.Definition) != 0 {
-		defHash, err := txdb.DefinitionHashByAssetID(ctx, asset.Hash.String())
-		if err != nil && errors.Root(err) != sql.ErrNoRows {
-			return nil, errors.WithDetailf(err, "get asset definition pointer for %s", asset.Hash)
-		}
-
-		newDefHash := bc.HashAssetDefinition(asset.Definition).String()
-		if defHash != newDefHash {
-			in.AssetDefinition = asset.Definition
-		}
+		in.AssetDefinition = asset.Definition
 	}
 	return &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{{
