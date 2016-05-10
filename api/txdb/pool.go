@@ -71,16 +71,12 @@ func loadPoolOutputs(ctx context.Context, load []bc.Outpoint) (map[bc.Outpoint]*
 // utxoSet holds a set of utxo record values
 // to be inserted into the db.
 type utxoSet struct {
-	txHash        pg.Strings
-	index         pg.Uint32s
-	assetID       pg.Strings
-	amount        pg.Int64s
-	addr          pg.Strings
-	accountID     pg.Strings
-	managerNodeID pg.Strings
-	aIndex        pg.Int64s
-	script        pg.Byteas
-	metadata      pg.Byteas
+	txHash   pg.Strings
+	index    pg.Uint32s
+	assetID  pg.Strings
+	amount   pg.Int64s
+	script   pg.Byteas
+	metadata pg.Byteas
 }
 
 func addToUTXOSet(set *utxoSet, out *Output) {
@@ -88,9 +84,6 @@ func addToUTXOSet(set *utxoSet, out *Output) {
 	set.index = append(set.index, out.Outpoint.Index)
 	set.assetID = append(set.assetID, out.AssetID.String())
 	set.amount = append(set.amount, int64(out.Amount))
-	set.accountID = append(set.accountID, out.AccountID)
-	set.managerNodeID = append(set.managerNodeID, out.ManagerNodeID)
-	set.aIndex = append(set.aIndex, toKeyIndex(out.AddrIndex[:]))
 	set.script = append(set.script, out.Script)
 	set.metadata = append(set.metadata, out.Metadata)
 }
@@ -129,37 +122,6 @@ func insertPoolOutputs(ctx context.Context, insert []*Output) error {
 		outs.metadata,
 	)
 	return err
-}
-
-// InsertAccountOutputs records the account data for utxos
-// TODO: move this function outside of the txdb package
-func InsertAccountOutputs(ctx context.Context, outs []*Output) error {
-	var set utxoSet
-	for _, out := range outs {
-		addToUTXOSet(&set, out)
-	}
-
-	const q = `
-		WITH outputs AS (
-			SELECT t.* FROM unnest($1::text[], $2::bigint[], $3::text[], $4::bigint[], $5::text[], $6::text[], $7::bigint[])
-			AS t(tx_hash, index, asset_id, amount, mnode, acc, addr_index)
-			LEFT JOIN account_utxos a ON (t.tx_hash, t.index) = (a.tx_hash, a.index)
-			WHERE a.tx_hash IS NULL
-		)
-		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, manager_node_id, account_id, addr_index)
-		SELECT * FROM outputs o
-	`
-	_, err := pg.Exec(ctx, q,
-		set.txHash,
-		set.index,
-		set.assetID,
-		set.amount,
-		set.managerNodeID,
-		set.accountID,
-		set.aIndex,
-	)
-
-	return errors.Wrap(err)
 }
 
 // insertPoolInputs inserts outpoints into pool_inputs.

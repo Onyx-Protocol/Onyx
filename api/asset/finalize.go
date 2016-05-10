@@ -162,8 +162,57 @@ func addAccountData(ctx context.Context, tx *bc.Tx) error {
 		return errors.Wrap(err, "loading account info from addresses")
 	}
 
-	err = txdb.InsertAccountOutputs(ctx, addrOuts)
+	err = insertAccountOutputs(ctx, addrOuts)
 	return errors.Wrap(err, "updating pool outputs")
+}
+
+// insertAccountOutputs records the account data for utxos
+func insertAccountOutputs(ctx context.Context, outs []*txdb.Output) error {
+	var (
+		txHash        pg.Strings
+		index         pg.Uint32s
+		assetID       pg.Strings
+		amount        pg.Int64s
+		accountID     pg.Strings
+		managerNodeID pg.Strings
+		aIndex        pg.Int64s
+		script        pg.Byteas
+		metadata      pg.Byteas
+	)
+	for _, out := range outs {
+		txHash = append(txHash, out.Outpoint.Hash.String())
+		index = append(index, out.Outpoint.Index)
+		assetID = append(assetID, out.AssetID.String())
+		amount = append(amount, int64(out.Amount))
+		accountID = append(accountID, out.AccountID)
+		managerNodeID = append(managerNodeID, out.ManagerNodeID)
+		aIndex = append(aIndex, toKeyIndex(out.AddrIndex[:]))
+		script = append(script, out.Script)
+		metadata = append(metadata, out.Metadata)
+	}
+
+	const q = `
+		WITH outputs AS (
+			SELECT t.* FROM unnest($1::text[], $2::bigint[], $3::text[], $4::bigint[], $5::text[], $6::text[], $7::bigint[])
+			AS t(tx_hash, index, asset_id, amount, mnode, acc, addr_index)
+			LEFT JOIN account_utxos a ON (t.tx_hash, t.index) = (a.tx_hash, a.index)
+			WHERE a.tx_hash IS NULL
+		)
+		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, manager_node_id, account_id, addr_index)
+		SELECT * FROM outputs o
+	`
+	_, err := pg.Exec(ctx, q,
+		txHash,
+		index,
+		assetID,
+		amount,
+		managerNodeID,
+		accountID,
+		aIndex,
+		// TODO(kr): denormalize script and metadata into acount_utxos; insert here
+	)
+
+	return errors.Wrap(err)
 }
 
 // loadAccountInfo queries the addresses table
@@ -214,4 +263,8 @@ func loadAccountInfo(ctx context.Context, outs []*txdb.Output) ([]*txdb.Output, 
 		return nil, errors.Wrap(rows.Err(), "addresses end row scan loop")
 	}
 	return addrOuts, nil
+}
+
+func toKeyIndex(i []uint32) int64 {
+	return int64(i[0])<<31 | int64(i[1]&0x7fffffff)
 }
