@@ -63,14 +63,19 @@ func (d *Dialer) DialTimeout(network, addr string, timeout time.Duration) (net.C
 // uses package etcdname in addition to the local resolver.
 // See func Dial for a description of the network and addr parameters.
 func (d *Dialer) Dial(network, addr string) (net.Conn, error) {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return nil, err
+	}
+
 	if knownNetworks[network] {
-		addrs, source, err := lookupHost(addr)
+		addrs, source, err := lookupHost(host)
 		if err != nil {
 			return nil, err
 		}
 		if source == "etcd" || len(addrs) == 1 {
 			// net.Dial iterates through the list of all possible addrs, but we don't need to yet.
-			addr = addrs[0]
+			addr = net.JoinHostPort(addrs[0], port)
 		}
 
 		// Note: If addr didn't come from etcd AND if there were multiple addrs, this will do
