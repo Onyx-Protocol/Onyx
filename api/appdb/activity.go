@@ -5,7 +5,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/api/txdb"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/sql"
@@ -56,17 +55,9 @@ type ActAccount struct {
 
 // GetActUTXOs returns information about outputs from both sides of a transaciton.
 func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err error) {
-	var hashes []bc.Hash
-
 	all := make(map[bc.Outpoint]*ActUTXO)
 	scriptMap := make(map[string]bc.Outpoint)
 	var scripts [][]byte
-
-	for _, in := range tx.Inputs {
-		if !in.IsIssuance() {
-			hashes = append(hashes, in.Previous.Hash)
-		}
-	}
 
 	for i, out := range tx.Outputs {
 		all[bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}] = &ActUTXO{
@@ -78,26 +69,17 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 		scripts = append(scripts, out.Script)
 	}
 
-	poolTxs, bcTxs, err := txdb.GetTxs(ctx, hashes...) // modifies hashes
-	if err != nil {
-		return nil, nil, err
-	}
 	for _, in := range tx.Inputs {
 		if in.IsIssuance() {
 			continue
 		}
-		prevTx, ok := poolTxs[in.Previous.Hash]
-		if !ok {
-			prevTx = bcTxs[in.Previous.Hash]
-		}
-		out := prevTx.Outputs[in.Previous.Index]
 		all[in.Previous] = &ActUTXO{
-			Amount:  out.Amount,
-			AssetID: out.AssetID.String(),
-			Script:  out.Script,
+			Amount:  in.AssetAmount.Amount,
+			AssetID: in.AssetAmount.AssetID.String(),
+			Script:  in.PrevScript,
 		}
-		scriptMap[string(out.Script)] = in.Previous
-		scripts = append(scripts, out.Script)
+		scriptMap[string(in.PrevScript)] = in.Previous
+		scripts = append(scripts, in.PrevScript)
 	}
 
 	const scriptQ = `

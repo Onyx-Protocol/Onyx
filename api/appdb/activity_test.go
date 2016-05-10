@@ -50,9 +50,9 @@ func TestGetActUTXOs(t *testing.T) {
 
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{
-			{Previous: out0.Outpoint},
-			{Previous: out1.Outpoint},
-			{Previous: out2.Outpoint},
+			{Previous: out0.Outpoint, AssetAmount: out0.AssetAmount, PrevScript: out0.Script},
+			{Previous: out1.Outpoint, AssetAmount: out1.AssetAmount, PrevScript: out1.Script},
+			{Previous: out2.Outpoint, AssetAmount: out2.AssetAmount, PrevScript: out2.Script},
 		},
 		Outputs: []*bc.TxOutput{
 			{
