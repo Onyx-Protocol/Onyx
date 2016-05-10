@@ -181,8 +181,9 @@ func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount,
 	case clauseFinish:
 		// No clause-specific parameters.
 	case clauseReset:
-		// TODO(jackson): Implement.
-		return nil, errors.New("unimplemented")
+		sb = sb.
+			AddInt64(int64(r.output.State)).
+			AddData(r.output.SecretHash[:])
 	}
 	sb = sb.
 		AddInt64(int64(r.clause)).

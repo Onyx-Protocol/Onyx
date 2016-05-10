@@ -237,18 +237,19 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 }
 
 type votingContractActionParams struct {
-	TokenAssetID     *bc.AssetID        `json:"voting_token_asset_id,omitempty"`
-	RightAssetID     *bc.AssetID        `json:"voting_right_asset_id,omitempty"`
-	AccountID        string             `json:"account_id,omitempty"`         // right issuance, delegate, transfer, recall
-	HolderScript     chainjson.HexBytes `json:"holder_script,omitempty"`      // right issuance, delegate, transfer
-	AdminScript      chainjson.HexBytes `json:"admin_script,omitempty"`       // right, token issuance
-	CanDelegate      *bool              `json:"can_delegate,omitempty"`       // delegate
-	Deadline         time.Time          `json:"deadline,omitempty"`           // delegate
-	Amount           uint64             `json:"amount,omitempty"`             // token issuance
-	OptionCount      int64              `json:"option_count,omitempty"`       // token issuance
-	QuorumSecretHash bc.Hash            `json:"quorum_secret_hash,omitempty"` // token issuance
-	Option           int64              `json:"option,omitempty"`             // vote
-	QuorumSecret     chainjson.HexBytes `json:"quorum_secret,omitempty"`      // vote
+	TokenAssetID      *bc.AssetID        `json:"voting_token_asset_id,omitempty"`
+	RightAssetID      *bc.AssetID        `json:"voting_right_asset_id,omitempty"`
+	AccountID         string             `json:"account_id,omitempty"`         // right issuance, delegate, transfer, recall
+	HolderScript      chainjson.HexBytes `json:"holder_script,omitempty"`      // right issuance, delegate, transfer
+	AdminScript       chainjson.HexBytes `json:"admin_script,omitempty"`       // right, token issuance
+	CanDelegate       *bool              `json:"can_delegate,omitempty"`       // delegate
+	Deadline          time.Time          `json:"deadline,omitempty"`           // delegate
+	Amount            uint64             `json:"amount,omitempty"`             // token issuance
+	OptionCount       int64              `json:"option_count,omitempty"`       // token issuance
+	QuorumSecretHash  bc.Hash            `json:"quorum_secret_hash,omitempty"` // token issuance, reset
+	Option            int64              `json:"option,omitempty"`             // vote
+	QuorumSecret      chainjson.HexBytes `json:"quorum_secret,omitempty"`      // vote
+	ResetRegistration bool               `json:"reset_registration,omitempty"` // reset
 }
 
 func (params *votingContractActionParams) token(ctx context.Context) (*voting.Token, error) {
@@ -524,6 +525,30 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 			})
 			dsts = append(dsts, &txbuilder.Destination{
 				AssetAmount: bc.AssetAmount{AssetID: v.AssetID, Amount: uint64(v.Amount)},
+				Receiver:    receiver,
+			})
+		}
+	case "reset-voting-token":
+		if params.TokenAssetID == nil {
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "missing voting token asset id")
+		}
+		votes, _, err := voting.GetVotes(ctx, []bc.AssetID{*params.TokenAssetID}, "", "", math.MaxInt64)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "finding voting tokens to reset")
+		}
+
+		for _, v := range votes {
+			reserver, receiver, err := voting.TokenReset(ctx, v, !params.ResetRegistration, params.QuorumSecretHash)
+			if err != nil {
+				return nil, nil, err
+			}
+			srcs = append(srcs, &txbuilder.Source{
+				AssetAmount: bc.AssetAmount{AssetID: v.AssetID, Amount: uint64(v.Amount)},
+				Reserver:    reserver,
+			})
+			dsts = append(dsts, &txbuilder.Destination{
+				AssetAmount: bc.AssetAmount{AssetID: v.AssetID, Amount: uint64(v.Amount)},
+				Metadata:    action.Metadata,
 				Receiver:    receiver,
 			})
 		}
