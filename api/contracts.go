@@ -483,7 +483,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		if err != nil {
 			return nil, nil, err
 		}
-		if !token.State.Registered() {
+		if !token.State.Registered() && !token.State.Voted() {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting token must be in registered state")
 		}
 		if token.State.Finished() {
