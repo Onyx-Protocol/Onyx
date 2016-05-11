@@ -115,8 +115,11 @@ func RightDelegation(ctx context.Context, src *RightWithUTXO, newHolderScript []
 func RightRecall(ctx context.Context, src, recallPoint *RightWithUTXO, intermediaryRights []*RightWithUTXO) (txbuilder.Reserver, txbuilder.Receiver, error) {
 	originalHolderAddr, err := appdb.GetAddress(ctx, recallPoint.HolderScript)
 	if err != nil {
-		holderScriptStr, _ := txscript.DisasmString(recallPoint.HolderScript)
-		return nil, nil, errors.Wrapf(err, "could not get address for holder script [%s]", holderScriptStr)
+		originalHolderAddr = nil
+	}
+	adminAddr, err := appdb.GetAddress(ctx, src.AdminScript)
+	if err != nil {
+		adminAddr = nil
 	}
 
 	intermediaries := make([]intermediateHolder, 0, len(intermediaryRights))
@@ -134,6 +137,7 @@ func RightRecall(ctx context.Context, src, recallPoint *RightWithUTXO, intermedi
 		intermediaries: intermediaries,
 		prevScript:     src.PKScript(),
 		holderAddr:     originalHolderAddr,
+		adminAddr:      adminAddr,
 	}
 	return reserver, reserver.output, nil
 }
