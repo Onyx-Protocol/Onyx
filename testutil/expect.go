@@ -31,11 +31,11 @@ func ExpectError(t testing.TB, expected error, msg string, fn func() error) {
 }
 
 func FatalErr(t testing.TB, err error) {
-	t.Log(err)
+	args := []interface{}{err}
 	for _, frame := range errors.Stack(err) {
-		t.Log(frame)
+		args = append(args, "\n"+frame.String())
 	}
-	t.FailNow()
+	t.Fatal(args...)
 }
 
 func stackTrace() []byte {
