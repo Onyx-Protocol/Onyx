@@ -57,6 +57,9 @@ type DB struct {
 // work in exactly one transaction.
 func NewContext(t testing.TB) context.Context {
 	ctx := context.Background()
+	if os.Getenv("CHAIN") == "" {
+		t.Log("warning: $CHAIN not set; probably can't find schema")
+	}
 	s, err := Open(ctx, DBURL, SchemaPath)
 	if err != nil {
 		t.Fatal(err)
@@ -75,6 +78,9 @@ func NewContext(t testing.TB) context.Context {
 // connection slots in the server.
 func NewTx(t testing.TB) *sql.Tx {
 	ctx := context.Background()
+	if os.Getenv("CHAIN") == "" {
+		t.Log("warning: $CHAIN not set; probably can't find schema")
+	}
 	db, err := dbpool.get(ctx, DBURL, SchemaPath)
 	if err != nil {
 		t.Fatal(err)
