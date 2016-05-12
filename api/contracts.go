@@ -186,8 +186,8 @@ func getVotingTokenTally(ctx context.Context, req votingTallyRequest) (map[strin
 	}
 
 	return map[string]interface{}{
-		"voting-tokens": tallies,
-		"last":          last,
+		"tallies": tallies,
+		"last":    last,
 	}, nil
 }
 
