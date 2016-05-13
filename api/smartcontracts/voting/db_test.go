@@ -149,11 +149,11 @@ func TestTallyVotes(t *testing.T) {
 			options: 2,
 			seed: []testVoteToken{
 				{state: stateDistributed, amount: 100, vote: 0},
-				{state: stateVoted, amount: 200, vote: 1},
+				{state: stateVoted, amount: 200, vote: 0},
 				{state: stateRegistered, amount: 10, vote: 0},
 				{state: stateDistributed, amount: 300, vote: 0},
-				{state: stateVoted, amount: 500, vote: 2},
-				{state: stateVoted, amount: 1, vote: 1},
+				{state: stateVoted, amount: 500, vote: 1},
+				{state: stateVoted, amount: 1, vote: 0},
 			},
 			want: Tally{
 				Circulation: 1111,
@@ -168,8 +168,8 @@ func TestTallyVotes(t *testing.T) {
 			// not be tallied.
 			options: 2,
 			seed: []testVoteToken{
-				{state: stateDistributed, amount: 499, vote: 2},
-				{state: stateVoted, amount: 1, vote: 1},
+				{state: stateDistributed, amount: 499, vote: 1},
+				{state: stateVoted, amount: 1, vote: 0},
 			},
 			want: Tally{
 				Circulation: 500,
@@ -182,12 +182,12 @@ func TestTallyVotes(t *testing.T) {
 			// Closed vote
 			options: 2,
 			seed: []testVoteToken{
-				{state: stateVoted | stateFinished, amount: 100, vote: 1},
+				{state: stateVoted | stateFinished, amount: 100, vote: 0},
 				{state: stateDistributed | stateFinished, amount: 10, vote: 0},
-				{state: stateVoted | stateFinished, amount: 10000, vote: 2},
+				{state: stateVoted | stateFinished, amount: 10000, vote: 1},
 				{state: stateRegistered | stateFinished, amount: 3, vote: 0},
-				{state: stateVoted | stateFinished, amount: 1000, vote: 1},
-				{state: stateVoted | stateFinished, amount: 100, vote: 2},
+				{state: stateVoted | stateFinished, amount: 1000, vote: 0},
+				{state: stateVoted | stateFinished, amount: 100, vote: 1},
 			},
 			want: Tally{
 				Circulation: 11213,

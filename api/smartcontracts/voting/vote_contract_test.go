@@ -267,7 +267,7 @@ func TestVoteClause(t *testing.T) {
 				OptionCount: 2,
 				State:       stateVoted,
 				SecretHash:  votingSecretHash,
-				Vote:        1,
+				Vote:        0,
 			},
 			out: tokenScriptData{
 				Right:       rightAssetID,
@@ -275,7 +275,7 @@ func TestVoteClause(t *testing.T) {
 				OptionCount: 2,
 				State:       stateVoted,
 				SecretHash:  votingSecretHash,
-				Vote:        2,
+				Vote:        1,
 			},
 		},
 		{

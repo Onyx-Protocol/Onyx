@@ -406,15 +406,15 @@ func TallyVotes(ctx context.Context, tokenAssetID bc.AssetID) (tally Tally, err 
 
 	tally.Votes = make([]int, optionCount)
 	err = pg.ForQueryRows(ctx, voteQ, tokenAssetID, stateVoted, func(vote int, total int) error {
-		if vote > len(tally.Votes) {
+		if vote >= len(tally.Votes) {
 			return fmt.Errorf("vote for option %d exceeds option count %d", vote, optionCount)
 		}
-		if vote <= 0 {
-			return errors.New("voting token in voted state but with nonpositive vote value")
+		if vote < 0 {
+			return errors.New("voting token in voted state but with negative vote value")
 		}
 
 		// Votes are 1-indexed within the contract.
-		tally.Votes[vote-1] = total
+		tally.Votes[vote] = total
 		return nil
 	})
 	return tally, err
