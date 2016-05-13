@@ -15,7 +15,7 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/kr/secureheader"
 
-	"chain/api/txbuilder"
+	"chain/core/txbuilder"
 	"chain/cos/bc"
 	"chain/crypto/hash256"
 	"chain/crypto/hsm/thales/see"

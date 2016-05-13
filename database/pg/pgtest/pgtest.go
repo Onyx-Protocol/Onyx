@@ -29,7 +29,7 @@ const DefaultURL = "postgres:///postgres?sslmode=disable"
 
 var (
 	DBURL      = os.Getenv("DB_URL_TEST")
-	SchemaPath = os.Getenv("CHAIN") + "/api/appdb/schema.sql"
+	SchemaPath = os.Getenv("CHAIN") + "/core/appdb/schema.sql"
 )
 
 const (

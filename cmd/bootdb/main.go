@@ -15,7 +15,7 @@ import (
 	"io"
 	"os"
 
-	"chain/api/appdb"
+	"chain/core/appdb"
 	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/database/sql"

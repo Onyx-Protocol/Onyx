@@ -14,7 +14,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/api/appdb"
+	"chain/core/appdb"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"

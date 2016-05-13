@@ -20,15 +20,15 @@ import (
 	"github.com/resonancelabs/go-pub/instrument/client"
 	"golang.org/x/net/context"
 
-	"chain/api"
-	"chain/api/asset"
-	"chain/api/generator"
-	"chain/api/rpcclient"
-	"chain/api/signer"
-	"chain/api/smartcontracts/orderbook"
-	"chain/api/smartcontracts/voting"
-	"chain/api/txdb"
-	"chain/api/utxodb"
+	"chain/core"
+	"chain/core/asset"
+	"chain/core/generator"
+	"chain/core/rpcclient"
+	"chain/core/signer"
+	"chain/core/smartcontracts/orderbook"
+	"chain/core/smartcontracts/voting"
+	"chain/core/txdb"
+	"chain/core/utxodb"
 	"chain/cos"
 	"chain/database/pg"
 	"chain/database/sql"
@@ -186,7 +186,7 @@ func main() {
 
 	go determineLeaderPeriodically(ctx)
 
-	h := api.Handler(*nouserSecret, localSigner, store)
+	h := core.Handler(*nouserSecret, localSigner, store)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}
@@ -195,7 +195,7 @@ func main() {
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
-	api.EnableCrossProjectXferHack = *enableCrossProjectXferHack
+	core.EnableCrossProjectXferHack = *enableCrossProjectXferHack
 
 	server := &http.Server{
 		Addr:    *listenAddr,

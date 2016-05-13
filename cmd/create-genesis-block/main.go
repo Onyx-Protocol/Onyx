@@ -8,7 +8,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 
-	"chain/api/txdb"
+	"chain/core/txdb"
 	"chain/cos"
 	"chain/database/pg"
 	"chain/database/sql"

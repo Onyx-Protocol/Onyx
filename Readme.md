@@ -42,7 +42,7 @@ Next, run all migrations, including your new migrations:
 
 Finally, dump the database schema, filtering any extension statements:
 
-	$ pg_dump -sOx api | grep -v "CREATE EXTENSION" | grep -v "COMMENT ON EXTENSION" > api/appdb/schema.sql
+	$ pg_dump -sOx api | grep -v "CREATE EXTENSION" | grep -v "COMMENT ON EXTENSION" > core/appdb/schema.sql
 
 ## Provisioning
 
