@@ -26,7 +26,6 @@ Create a development database:
 
 ## Testing
 
-    $ createdb api-test
     $ go test $(go list ./... | grep -v vendor)
 
 ## Updating the schema with migrations
