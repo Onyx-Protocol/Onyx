@@ -16,7 +16,7 @@ import (
 
 // TestInsertVotingRightAccountID tests inserting a voting right into the
 // database with a holder script that is the address of an account. The
-// voting_rights_txs row should contain the correct account id.
+// voting_rights row should contain the correct account id.
 func TestInsertVotingRightAccountID(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 
@@ -33,20 +33,20 @@ func TestInsertVotingRightAccountID(t *testing.T) {
 		Delegatable:    true,
 	}
 
-	err := insertVotingRight(ctx, assetID, 1, 0, bc.Outpoint{}, data)
+	err := insertVotingRight(ctx, assetID, 0, 0, bc.Outpoint{}, data)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Look up the inserted voting right.
 	var dbAccountID string
-	err = pg.QueryRow(ctx, "SELECT account_id FROM voting_right_txs WHERE tx_hash = $1 AND index = $2", bc.Hash{}, 0).
+	err = pg.QueryRow(ctx, "SELECT account_id FROM voting_rights WHERE tx_hash = $1 AND index = $2", bc.Hash{}, 0).
 		Scan(&dbAccountID)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// The voting_right_txs row should have the correct account ID.
+	// The voting_rights row should have the correct account ID.
 	if accountID != dbAccountID {
 		t.Errorf("got=%s, want=%s", dbAccountID, accountID)
 	}
@@ -72,14 +72,14 @@ func TestUpsertVotingToken(t *testing.T) {
 		Vote:        0,
 	}
 
-	err := upsertVotingToken(ctx, tokenAssetID, out1, 100, data)
+	err := upsertVotingToken(ctx, tokenAssetID, 0, out1, 100, data)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Modify the token state, and upsert it again.
 	data.State, data.Vote = stateVoted, 2
-	err = upsertVotingToken(ctx, tokenAssetID, out2, 100, data)
+	err = upsertVotingToken(ctx, tokenAssetID, 1, out2, 100, data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +207,7 @@ func TestTallyVotes(t *testing.T) {
 
 		for j, vt := range tc.seed {
 			rightAssetID := assettest.CreateAssetFixture(ctx, t, "", "", "")
-			err := upsertVotingToken(ctx, assetID, bc.Outpoint{Index: uint32(i)}, vt.amount, tokenScriptData{
+			err := upsertVotingToken(ctx, assetID, 1, bc.Outpoint{Index: uint32(i)}, vt.amount, tokenScriptData{
 				Right:       rightAssetID,
 				AdminScript: []byte{txscript.OP_1},
 				OptionCount: tc.options,

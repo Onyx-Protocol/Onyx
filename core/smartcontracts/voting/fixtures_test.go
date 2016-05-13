@@ -42,7 +42,7 @@ func createVotingTokenFixture(ctx context.Context, t *testing.T, right bc.AssetI
 	return token
 }
 
-func createVotingRightFixture(ctx context.Context, t *testing.T, holder []byte) *RightWithUTXO {
+func createVotingRightFixture(ctx context.Context, t *testing.T, holder []byte) *Right {
 	assetID := assettest.CreateAssetFixture(ctx, t, "", "", "")
 
 	issueTxTemplate, err := issuer.Issue(ctx, assetID, []*txbuilder.Destination{
@@ -54,7 +54,7 @@ func createVotingRightFixture(ctx context.Context, t *testing.T, holder []byte) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	holdingTx, err := asset.FinalizeTx(ctx, issueTxTemplate)
+	_, err = asset.FinalizeTx(ctx, issueTxTemplate)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func createVotingRightFixture(ctx context.Context, t *testing.T, holder []byte) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	right, err := FindRightForOutpoint(ctx, bc.Outpoint{Hash: holdingTx.Hash, Index: 0})
+	right, err := GetCurrentHolder(ctx, assetID)
 	if err != nil {
 		t.Fatal(err)
 	}

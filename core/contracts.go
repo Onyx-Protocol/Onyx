@@ -77,15 +77,15 @@ func findAccountVotingRights(ctx context.Context, accountID string) (map[string]
 		return nil, err
 	}
 
-	rightsWithUTXOs, holders, last, err := voting.FindRightsForAccount(ctx, accountID, prev, limit)
+	accRights, holders, last, err := voting.FindRightsForAccount(ctx, accountID, prev, limit)
 	if err != nil {
 		return nil, errors.Wrap(err, "finding account voting rights")
 	}
 
-	rights := make([]map[string]interface{}, 0, len(rightsWithUTXOs))
-	for _, r := range rightsWithUTXOs {
+	rights := make([]map[string]interface{}, 0, len(accRights))
+	for _, r := range accRights {
 		var actionTypes []string
-		if r.Outpoint.Hash == r.UTXO.Hash && r.Outpoint.Index == r.UTXO.Index {
+		if accountID == holders[r.AssetID] {
 			actionTypes = append(actionTypes, "authenticate-voting-right", "transfer-voting-right", "delegate-voting-right")
 		} else {
 			actionTypes = append(actionTypes, "recall-voting-right")
@@ -94,8 +94,6 @@ func findAccountVotingRights(ctx context.Context, accountID string) (map[string]
 		rightToken := map[string]interface{}{
 			"voting_right_asset_id": r.AssetID,
 			"action_types":          actionTypes,
-			"transaction_id":        r.UTXO.Hash,
-			"index":                 r.UTXO.Index,
 			"holding_account_id":    holders[r.AssetID],
 		}
 		rights = append(rights, rightToken)
@@ -121,7 +119,7 @@ func getVotingRightOwners(ctx context.Context, assetID string) (map[string]inter
 		return nil, err
 	}
 
-	rightsWithUTXOs := []*voting.RightWithUTXO{}
+	rightsWithUTXOs := []*voting.Right{}
 	if prev == "" {
 		rightsWithUTXOs, err = voting.FindRightsForAsset(ctx, parsedAssetID)
 		if err != nil {
@@ -269,11 +267,11 @@ func (params *votingContractActionParams) token(ctx context.Context) (*voting.To
 	return token, err
 }
 
-func (params *votingContractActionParams) right(ctx context.Context) (*voting.RightWithUTXO, error) {
+func (params *votingContractActionParams) right(ctx context.Context) (*voting.Right, error) {
 	if params.RightAssetID == nil {
 		return nil, errors.WithDetail(ErrBadBuildRequest, "missing voting right asset id")
 	}
-	old, err := voting.FindRightUTXO(ctx, *params.RightAssetID)
+	old, err := voting.GetCurrentHolder(ctx, *params.RightAssetID)
 	if err == pg.ErrUserInputNotFound {
 		return nil, errors.WithDetailf(ErrBadBuildRequest, "bad voting right source")
 	}
@@ -344,7 +342,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		// Find the earliest, active voting right claim that this account
 		// has on this voting right token. We'll recall back to that point.
 		var (
-			recallPoint    *voting.RightWithUTXO
+			recallPoint    *voting.Right
 			recallPointIdx int
 		)
 		for i, claim := range claims {

@@ -846,10 +846,10 @@ CREATE VIEW utxos_status AS
 
 
 --
--- Name: voting_right_txs; Type: TABLE; Schema: public; Owner: -
+-- Name: voting_rights; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE voting_right_txs (
+CREATE TABLE voting_rights (
     tx_hash text NOT NULL,
     index integer NOT NULL,
     asset_id text NOT NULL,
@@ -859,9 +859,9 @@ CREATE TABLE voting_right_txs (
     delegatable boolean NOT NULL,
     ownership_chain bytea NOT NULL,
     block_height bigint NOT NULL,
-    block_tx_index integer NOT NULL,
-    void boolean DEFAULT false NOT NULL,
-    admin_script bytea NOT NULL
+    admin_script bytea NOT NULL,
+    void_block_height integer,
+    ordinal integer NOT NULL
 );
 
 
@@ -880,7 +880,8 @@ CREATE TABLE voting_tokens (
     option_count integer NOT NULL,
     secret_hash text NOT NULL,
     admin_script bytea NOT NULL,
-    amount bigint NOT NULL
+    amount bigint NOT NULL,
+    block_height integer NOT NULL
 );
 
 
@@ -1182,8 +1183,8 @@ ALTER TABLE ONLY utxos
 -- Name: voting_right_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY voting_right_txs
-    ADD CONSTRAINT voting_right_txs_pkey PRIMARY KEY (tx_hash, index);
+ALTER TABLE ONLY voting_rights
+    ADD CONSTRAINT voting_right_txs_pkey PRIMARY KEY (asset_id, ordinal);
 
 
 --
@@ -1387,7 +1388,7 @@ CREATE INDEX utxos_asset_id_idx ON utxos USING btree (asset_id);
 -- Name: voting_right_txs_account_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX voting_right_txs_account_id ON voting_right_txs USING btree (account_id);
+CREATE INDEX voting_right_txs_account_id ON voting_rights USING btree (account_id);
 
 
 --

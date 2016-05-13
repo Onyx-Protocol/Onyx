@@ -103,38 +103,35 @@ func testRightsContract(pkscript []byte) (*rightScriptData, error) {
 // testRightsSigscript tests whether the given sigscript is redeeming a
 // voting rights holding contract. It will return the clause being used,
 // and the ownership hash to rewind to for recall clauses.
-func testRightsSigscript(sigscript []byte) (ok bool, c rightsContractClause, ownershipHash bc.Hash) {
+func testRightsSigscript(sigscript []byte) (ok bool, c rightsContractClause, params [][]byte) {
 	data, err := txscript.PushedData(sigscript)
 	if err != nil {
-		return false, c, ownershipHash
+		return false, c, nil
 	}
 	if len(data) < 2 {
-		return false, c, ownershipHash
+		return false, c, nil
 	}
 	if !bytes.Equal(data[len(data)-1], rightsHoldingContract) {
-		return false, c, ownershipHash
+		return false, c, nil
 	}
 
 	clauseBytes := data[len(data)-2]
 	if len(clauseBytes) != 1 {
-		return false, c, ownershipHash
+		return false, c, nil
 	}
 	c = rightsContractClause(clauseBytes[0])
 	if c < clauseAuthenticate || c > clauseCancel {
-		return false, c, ownershipHash
+		return false, c, nil
 	}
+	return true, c, data[:len(data)-2]
+}
 
-	// If it's not a recall, early exit.
-	if c != clauseRecall {
-		return true, c, ownershipHash
+func paramsPopHash(inParams [][]byte) (outParams [][]byte, hash bc.Hash, ok bool) {
+	if len(inParams) < 1 {
+		return outParams, hash, false
 	}
-
-	// Extract the ownership chain for the recall clause.
-	if len(data) < 3 || len(data[len(data)-3]) != cap(ownershipHash) {
-		return false, c, ownershipHash
-	}
-	copy(ownershipHash[:], data[len(data)-3])
-	return true, c, ownershipHash
+	copy(hash[:], inParams[len(inParams)-1])
+	return inParams[:len(inParams)-1], hash, true
 }
 
 const (

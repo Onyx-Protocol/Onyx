@@ -5,7 +5,6 @@ import (
 
 	"chain/cos"
 	"chain/cos/bc"
-	"chain/errors"
 	"chain/log"
 )
 
@@ -37,40 +36,68 @@ func Connect(chain *cos.FC) {
 	})
 }
 
-// TODO(jackson): Ensure that updateIndexes is idempotent. There might be
-// tricky cases for recall and override.
 func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx *bc.Tx) error {
-	// For inputs that redeem an existing voting rights contract, void any
-	// voting right claims that we've indexed which were voided by a recall,
-	// transfer or override.
+
+	// We iterate through all the inputs, finding any sigscripts that redeem
+	// an existing voting right contract. For each input, we void any previous
+	// voting right owners that are no longer applicable. We also save the
+	// ordinal of the consumed voting right output so that we know what ordinal
+	// to use when inserting the new output.
+	votingRightOrdinals := map[bc.AssetID]int{}
 	for _, in := range tx.Inputs {
-		ok, clause, ownershipHash := testRightsSigscript(in.SignatureScript)
+		ok, clause, params := testRightsSigscript(in.SignatureScript)
 		if !ok {
 			continue
 		}
 
-		var err error
+		// Look up the current state of the voting right by finding the voting
+		// right at the previous outpoint with the highest ordinal.
+		prev, err := FindRightPrevout(ctx, in.AssetAmount.AssetID, in.Previous)
+		if err != nil {
+			return err
+		}
+
 		switch clause {
 		case clauseAuthenticate:
 			// Void the voting right claim at the previous outpoint.
-			// The holder will need to use the new tx's outpoint from
-			// now on.
-			err = voidVotingRight(ctx, in.Previous)
+			// The holder will need to use the new tx's outpoint from now on.
+			err = voidVotingRights(ctx, prev.AssetID, blockHeight, prev.Ordinal, prev.Ordinal)
+			if err != nil {
+				return err
+			}
+			votingRightOrdinals[prev.AssetID] = prev.Ordinal + 1
 		case clauseTransfer:
 			// Void the voting right claim at the previous outpoint.
-			// A transferred voting right cannot be recalled by the
-			// transferer.
-			err = voidVotingRight(ctx, in.Previous)
+			// A transferred voting right cannot be recalled by the transferer
+			err = voidVotingRights(ctx, prev.AssetID, blockHeight, prev.Ordinal, prev.Ordinal)
+			if err != nil {
+				return err
+			}
+			votingRightOrdinals[prev.AssetID] = prev.Ordinal + 1
+		case clauseDelegate:
+			// Nothing to void, just increment the ordinal.
+			votingRightOrdinals[prev.AssetID] = prev.Ordinal + 1
 		case clauseRecall:
-			// Void all of the voting right claims for this token, starting
-			// at the recall point.
-			err = voidRecalledVotingRights(ctx, in.Previous, ownershipHash)
+			// Use the ownership chain to find the recall point.
+			var recallChain bc.Hash
+			params, recallChain, ok = paramsPopHash(params)
+			if !ok {
+				continue
+			}
+
+			recallOrdinal, err := findRecallOrdinal(ctx, prev.AssetID, prev.Ordinal, recallChain)
+			if err != nil {
+				return err
+			}
+
+			err = voidVotingRights(ctx, prev.AssetID, blockHeight, recallOrdinal, prev.Ordinal)
+			if err != nil {
+				return err
+			}
+			votingRightOrdinals[prev.AssetID] = prev.Ordinal + 1
 		case clauseOverride:
 			// TODO(jackson): The override clause will require us to void
 			// previous voting right claims as well.
-		}
-		if err != nil {
-			log.Error(ctx, err)
 		}
 	}
 
@@ -79,16 +106,16 @@ func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx
 	for i, out := range tx.Outputs {
 		outpoint := bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
 
-		// If the output is a voting right, update the voting right index.
+		// Newly issued voting rights will be indexed here.
 		rightData, err := testRightsContract(out.Script)
 		if err != nil {
-			log.Error(ctx, errors.Wrap(err, "testing for voting rights output script"))
-			continue
+			return err
 		}
 		if rightData != nil {
-			err = insertVotingRight(ctx, out.AssetID, blockHeight, blockTxIndex, outpoint, *rightData)
+			ordinal := votingRightOrdinals[out.AssetID]
+			err = insertVotingRight(ctx, out.AssetID, ordinal, blockHeight, outpoint, *rightData)
 			if err != nil {
-				log.Error(ctx, errors.Wrap(err, "upserting voting rights"))
+				return err
 			}
 			continue
 		}
@@ -96,13 +123,12 @@ func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx
 		// If the output is a voting token, update the voting token index.
 		tokenData, err := testTokenContract(out.Script)
 		if err != nil {
-			log.Error(ctx, errors.Wrap(err, "testing for voting token output script"))
-			continue
+			return err
 		}
 		if tokenData != nil {
-			err = upsertVotingToken(ctx, out.AssetID, outpoint, out.Amount, *tokenData)
+			err = upsertVotingToken(ctx, out.AssetID, blockHeight, outpoint, out.Amount, *tokenData)
 			if err != nil {
-				log.Error(ctx, errors.Wrap(err, "upserting voting token"))
+				return err
 			}
 			continue
 		}

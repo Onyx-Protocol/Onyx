@@ -23,13 +23,11 @@ func TestRightsReserver(t *testing.T) {
 		address   = assettest.CreateAddressFixture(ctx, t, accountID)
 	)
 
-	prev := &RightWithUTXO{
-		UTXO:         bc.Outpoint{Hash: exampleHash, Index: 1},
-		Outpoint:     bc.Outpoint{Hash: exampleHash, Index: 1},
-		BlockHeight:  2,
-		BlockTxIndex: 43,
-		AssetID:      assetID,
-		AccountID:    &accountID,
+	prev := &Right{
+		AssetID:   assetID,
+		Ordinal:   0,
+		Outpoint:  bc.Outpoint{Hash: exampleHash, Index: 1},
+		AccountID: &accountID,
 		rightScriptData: rightScriptData{
 			AdminScript:    []byte{0x01, 0x01},
 			HolderScript:   address.PKScript,

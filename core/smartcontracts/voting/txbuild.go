@@ -27,7 +27,7 @@ func RightIssuance(ctx context.Context, adminScript, holderScript []byte) txbuil
 // output voting right is identical to the input voting right. Its
 // presence in the transaction proves voting right ownership during
 // voting.
-func RightAuthentication(ctx context.Context, src *RightWithUTXO) (txbuilder.Reserver, txbuilder.Receiver, error) {
+func RightAuthentication(ctx context.Context, src *Right) (txbuilder.Reserver, txbuilder.Receiver, error) {
 	originalHolderAddr, err := appdb.GetAddress(ctx, src.HolderScript)
 	if err != nil {
 		holderScriptStr, _ := txscript.DisasmString(src.HolderScript)
@@ -46,7 +46,7 @@ func RightAuthentication(ctx context.Context, src *RightWithUTXO) (txbuilder.Res
 
 // RightTransfer builds txbuilder Reserver and Receiver implementations for
 // a voting right transfer.
-func RightTransfer(ctx context.Context, src *RightWithUTXO, newHolderScript []byte) (txbuilder.Reserver, txbuilder.Receiver, error) {
+func RightTransfer(ctx context.Context, src *Right, newHolderScript []byte) (txbuilder.Reserver, txbuilder.Receiver, error) {
 	currentHolderAddr, err := appdb.GetAddress(ctx, src.HolderScript)
 	if err != nil {
 		holderScriptStr, _ := txscript.DisasmString(src.HolderScript)
@@ -77,7 +77,7 @@ func RightTransfer(ctx context.Context, src *RightWithUTXO, newHolderScript []by
 
 // RightDelegation builds txbuilder Reserver and Receiver implementations for
 // delegating a voting right to another party.
-func RightDelegation(ctx context.Context, src *RightWithUTXO, newHolderScript []byte, newDeadline int64, delegatable bool) (txbuilder.Reserver, txbuilder.Receiver, error) {
+func RightDelegation(ctx context.Context, src *Right, newHolderScript []byte, newDeadline int64, delegatable bool) (txbuilder.Reserver, txbuilder.Receiver, error) {
 	currentHolderAddr, err := appdb.GetAddress(ctx, src.HolderScript)
 	if err != nil {
 		holderScriptStr, _ := txscript.DisasmString(src.HolderScript)
@@ -112,7 +112,7 @@ func RightDelegation(ctx context.Context, src *RightWithUTXO, newHolderScript []
 
 // RightRecall builds txbuilder Reserver and Receiver implementations for
 // a voting right recall.
-func RightRecall(ctx context.Context, src, recallPoint *RightWithUTXO, intermediaryRights []*RightWithUTXO) (txbuilder.Reserver, txbuilder.Receiver, error) {
+func RightRecall(ctx context.Context, src, recallPoint *Right, intermediaryRights []*Right) (txbuilder.Reserver, txbuilder.Receiver, error) {
 	originalHolderAddr, err := appdb.GetAddress(ctx, recallPoint.HolderScript)
 	if err != nil {
 		originalHolderAddr = nil

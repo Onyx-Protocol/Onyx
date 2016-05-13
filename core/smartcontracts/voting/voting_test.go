@@ -61,7 +61,7 @@ func TestAuthenticateEndToEnd(t *testing.T) {
 	}
 	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
 
-	authTx, err := asset.FinalizeTx(ctx, tmpl)
+	_, err = asset.FinalizeTx(ctx, tmpl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestAuthenticateEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gotRight, err := FindRightForOutpoint(ctx, bc.Outpoint{Hash: authTx.Hash, Index: 0})
+	gotRight, err := GetCurrentHolder(ctx, right.AssetID)
 	if err != nil {
 		t.Fatal(err)
 	}
