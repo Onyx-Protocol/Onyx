@@ -98,14 +98,22 @@ fi
 
 prurl=https://api.github.com/repos/$proj/issues/$pr
 mfile=$(mktemp -t gitland)
-trap "rm $mfile" EXIT
+cfile=$(mktemp -t gitland)
+trap "rm $mfile $cfile" EXIT
 curl -sn $prurl|jq -r '.title+"\n\n"+.body+"\n"' >$mfile
 echo Closes "#$pr." >>$mfile
 echo Reviewers: $reviewby >>$mfile
 
+if ! awk <$mfile 'length > 75 {exit 1}'
+then
+	echo '# Hey! Maybe you need to line-wrap this message perhaps?' >$cfile
+	echo >>$cfile
+fi
+cat $mfile >>$cfile
+
 GIT_EDITOR='sed -i "" 1!s/pick/fixup/' \
 	git rebase --interactive origin/$onto
-git commit -F $mfile --amend # use PR message
+git commit -F $cfile --amend # use PR message
 git commit --amend           # let the human edit it
 git push origin $branch:$onto
 git push origin :$branch
