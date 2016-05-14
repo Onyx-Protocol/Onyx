@@ -4,7 +4,7 @@
 //
 // api-add-user should be called with two command-line arguments, an email
 // address and a password. The database connection can be configured using the
-// DB_URL environment variable; the default is to connect to the "api" database
+// DB_URL environment variable; the default is to connect to the "core" database
 // on localhost.
 package main
 
@@ -20,7 +20,7 @@ import (
 	"chain/env"
 )
 
-var dbURL = env.String("DB_URL", "postgres:///api?sslmode=disable")
+var dbURL = env.String("DB_URL", "postgres:///core?sslmode=disable")
 
 func main() {
 	log.SetFlags(0)

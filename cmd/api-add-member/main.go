@@ -5,7 +5,7 @@
 // api-add-member should be called with three command-line arguments, an email
 // address, a project ID, and a role (either "admin" or "developer"). The
 // database connection can be configured using the DB_URL environment variable;
-// the default is to connect to the "api" database on localhost.
+// the default is to connect to the "core" database on localhost.
 package main
 
 import (
@@ -20,7 +20,7 @@ import (
 	"chain/env"
 )
 
-var dbURL = env.String("DB_URL", "postgres:///api?sslmode=disable")
+var dbURL = env.String("DB_URL", "postgres:///core?sslmode=disable")
 
 func main() {
 	log.SetFlags(0)

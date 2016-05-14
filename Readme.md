@@ -22,7 +22,7 @@ Get and and compile the source:
 
 Create a development database:
 
-	$ createdb api
+	$ createdb core
 
 ## Testing
 
@@ -32,17 +32,17 @@ Create a development database:
 
 First, drop and recreate your database:
 
-	$ dropdb api
-	$ createdb api
+	$ dropdb core
+	$ createdb core
 
 Next, run all migrations, including your new migrations:
 
-	$ migratedb -d postgres:///api?sslmode=disable
+	$ migratedb -d postgres:///core?sslmode=disable
 	$ ...
 
 Finally, dump the database schema, filtering any extension statements:
 
-	$ pg_dump -sOx api | grep -v "CREATE EXTENSION" | grep -v "COMMENT ON EXTENSION" > core/appdb/schema.sql
+	$ pg_dump -sOx core | grep -v "CREATE EXTENSION" | grep -v "COMMENT ON EXTENSION" > core/appdb/schema.sql
 
 ## Provisioning
 
@@ -72,14 +72,14 @@ From your local machine, create an API user:
 From your local machine, create an API project and make the new user an admin:
 
 	$ psql `appenv -t <target> DB_URL`
-	api=# -- create a project
-	api=# INSERT INTO projects (name) VALUES ('<project-name>'');
-	api=# -- get the project ID
-	api=# SELECT id FROM projects;
-	api=# -- get your user ID
-	api=# SELECT id FROM users;
-	api=# -- make yourself an admin of the project
-	api=# INSERT INTO members (project_id, user_id, role) VALUES ('<project-id>', '<user-id>', 'admin');
+	core=# -- create a project
+	core=# INSERT INTO projects (name) VALUES ('<project-name>'');
+	core=# -- get the project ID
+	core=# SELECT id FROM projects;
+	core=# -- get your user ID
+	core=# SELECT id FROM users;
+	core=# -- make yourself an admin of the project
+	core=# INSERT INTO members (project_id, user_id, role) VALUES ('<project-id>', '<user-id>', 'admin');
 
 Finally, try logging into the dashboard at `https://<target>.chain.com`.
 
