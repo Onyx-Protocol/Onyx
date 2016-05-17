@@ -170,6 +170,41 @@ func TestCombine(t *testing.T) {
 	}
 }
 
+func TestCombineMetadata(t *testing.T) {
+	cases := []struct {
+		m1, m2 []byte
+		want   error
+	}{
+		{
+			m1: nil,
+			m2: nil,
+		},
+		{
+			m1: nil,
+			m2: []byte("test"),
+		},
+		{
+			m1: []byte("test"),
+			m2: nil,
+		},
+		{
+			m1:   []byte("test"),
+			m2:   []byte("diff"),
+			want: ErrBadBuildRequest,
+		},
+	}
+
+	for _, c := range cases {
+		tpl1 := &Template{Unsigned: &bc.TxData{Metadata: c.m1}}
+		tpl2 := &Template{Unsigned: &bc.TxData{Metadata: c.m2}}
+
+		_, err := combine(tpl1, tpl2)
+		if errors.Root(err) != c.want {
+			t.Fatalf("got err = %v want %v", errors.Root(err), c.want)
+		}
+	}
+}
+
 func TestAssembleSignatures(t *testing.T) {
 	outscript := mustDecodeHex("a9140ac9c982fd389181752e5a414045dd424a10754b87")
 	unsigned := &bc.TxData{

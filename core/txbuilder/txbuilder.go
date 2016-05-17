@@ -1,6 +1,7 @@
 package txbuilder
 
 import (
+	"bytes"
 	"fmt"
 	"time"
 
@@ -11,6 +12,10 @@ import (
 	"chain/cos/txscript"
 	"chain/errors"
 )
+
+// ErrBadBuildRequest is returned from Build when the
+// arguments are invalid.
+var ErrBadBuildRequest = errors.New("bad build request")
 
 // Build builds or adds on to a transaction.
 // Initially, inputs are left unconsumed, and destinations unsatisfied.
@@ -93,6 +98,12 @@ func combine(txs ...*Template) (*Template, error) {
 		if tx.BlockChain != complete.BlockChain {
 			return nil, errors.New("all txs must be the same BlockChain")
 		}
+
+		if len(tx.Unsigned.Metadata) != 0 && len(complete.Unsigned.Metadata) != 0 &&
+			!bytes.Equal(tx.Unsigned.Metadata, complete.Unsigned.Metadata) {
+			return nil, errors.WithDetail(ErrBadBuildRequest, "transaction metadata does not match previous template's metadata")
+		}
+		complete.Unsigned.Metadata = tx.Unsigned.Metadata
 
 		complete.Inputs = append(complete.Inputs, tx.Inputs...)
 
