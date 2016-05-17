@@ -38,7 +38,7 @@ func TestCreateAccountBadLabel(t *testing.T) {
 func TestCreateAccountWithKey(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
-	keys := []string{"keyo"}
+	keys := []string{"xpub6AqXYTtDPZ5NYt1xwRWRojirrYTHxyGnv3HHzeXTuJdAznKWVtEhj7sVzyMuJMn1E65uhw7pozjFsFaa4nRJBiDijr7do4zZ1CwM8TjTP3G"}
 	_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, nil)
 	if err != nil {
 		t.Error("unexpected error", err)
@@ -49,6 +49,16 @@ func TestCreateAccountWithMissingKey(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
 	_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", nil, nil)
+	if err == nil {
+		t.Error("err = nil, want error")
+	}
+}
+
+func TestCreateAccountWithInvalidKey(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
+	keys := []string{"keyo"}
+	_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, nil)
 	if err == nil {
 		t.Error("err = nil, want error")
 	}
@@ -67,7 +77,7 @@ func TestCreateAccountWithTooManyKeys(t *testing.T) {
 func TestCreateAccountIdempotency(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
-	keys := []string{"keyo"}
+	keys := []string{"xpub6AqXYTtDPZ5NYt1xwRWRojirrYTHxyGnv3HHzeXTuJdAznKWVtEhj7sVzyMuJMn1E65uhw7pozjFsFaa4nRJBiDijr7do4zZ1CwM8TjTP3G"}
 
 	idempotencyKey := "an-idempotency-key-from-the-client"
 	acc1, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, &idempotencyKey)

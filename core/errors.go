@@ -46,6 +46,7 @@ var (
 		appdb.ErrBadLabel:            errorInfo{400, "CH704", "Invalid label"},
 		asset.ErrBadSigsRequired:     errorInfo{400, "CH712", "signatures_required must be at least 1"},
 		asset.ErrBadKeySpec:          errorInfo{400, "CH713", "Invalid xpub"},
+		appdb.ErrInvalidAccountKey:   errorInfo{400, "CH713", "Invalid xpub"},
 		asset.ErrTooFewKeys:          errorInfo{400, "CH715", "Cannot have more signatures required than keys"},
 		appdb.ErrBadAccountKeyCount:  errorInfo{400, "CH716", "Accounts must provide the correct number of keys for a manager node"},
 		appdb.ErrPastExpires:         errorInfo{400, "CH720", "Expires, if set, must be in the future"},

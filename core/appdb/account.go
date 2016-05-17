@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
@@ -16,6 +17,10 @@ import (
 // number of keys provided doesn't match the number required by
 // the manager node.
 var ErrBadAccountKeyCount = errors.New("account has provided wrong number of keys")
+
+// ErrInvalidAccountKey is returned by CreateAccount when the
+// key provided isn't valid
+var ErrInvalidAccountKey = errors.New("account has provided invalid key")
 
 // Account represents an indexed namespace inside of a manager node
 type Account struct {
@@ -45,6 +50,15 @@ func CreateAccount(ctx context.Context, managerNodeID, label string, keys []stri
 
 	if keyCount != len(keys) {
 		return nil, ErrBadAccountKeyCount
+	}
+
+	for i, key := range keys {
+		xpub, err := hdkey.NewXKey(key)
+		if err != nil {
+			return nil, errors.WithDetailf(ErrInvalidAccountKey, "key %d: xpub is not valid", i)
+		} else if xpub.IsPrivate() {
+			return nil, errors.WithDetailf(ErrInvalidAccountKey, "key %d: is xpriv, not xpub", i)
+		}
 	}
 
 	if len(keys) > 0 {
