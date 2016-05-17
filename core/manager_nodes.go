@@ -286,6 +286,12 @@ func createAccount(ctx context.Context, managerNodeID string, in struct {
 	if err := managerAuthz(ctx, managerNodeID); err != nil {
 		return nil, err
 	}
+	for _, k := range in.Keys {
+		_, err := hdkey.NewXKey(k)
+		if err != nil {
+			return nil, asset.ErrBadKeySpec
+		}
+	}
 	return appdb.CreateAccount(ctx, managerNodeID, in.Label, in.Keys, in.ClientToken)
 }
 
