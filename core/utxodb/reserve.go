@@ -98,9 +98,8 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 		    AS (reservation_id INT, already_existed BOOLEAN, existing_change BIGINT, amount BIGINT, insufficient BOOLEAN)
 		`
 		utxosQ = `
-			SELECT a.tx_hash, a.index, a.amount, key_index(a.addr_index), script
+			SELECT a.tx_hash, a.index, a.amount, key_index(a.addr_index), a.script
 			FROM account_utxos a
-			JOIN utxos u ON ((a.tx_hash, a.index) = (u.tx_hash, u.index))
 			WHERE reservation_id = $1
 		`
 	)

@@ -291,7 +291,9 @@ CREATE TABLE account_utxos (
     manager_node_id text NOT NULL,
     account_id text NOT NULL,
     addr_index bigint NOT NULL,
-    reservation_id integer
+    reservation_id integer,
+    script bytea NOT NULL,
+    metadata bytea NOT NULL
 );
 
 

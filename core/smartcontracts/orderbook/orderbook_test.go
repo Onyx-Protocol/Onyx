@@ -316,11 +316,7 @@ func expectPaysToAccount(ctx context.Context, t *testing.T, accountID string, sc
 
 func paysToAccount(ctx context.Context, t testing.TB, accountID string, script []byte) bool {
 	// first check utxos
-	const q = `
-		SELECT account_id=$1 FROM utxos u
-		JOIN account_utxos a ON (u.tx_hash, u.index) = (a.tx_hash, a.index)
-		WHERE script=$2
-	`
+	const q = `SELECT account_id=$1 FROM account_utxos a WHERE script=$2`
 	var utxoMatch bool
 	err := pg.QueryRow(ctx, q, accountID, script).Scan(&utxoMatch)
 	if err != nil {

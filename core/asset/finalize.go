@@ -193,13 +193,12 @@ func insertAccountOutputs(ctx context.Context, outs []*txdb.Output) error {
 
 	const q = `
 		WITH outputs AS (
-			SELECT t.* FROM unnest($1::text[], $2::bigint[], $3::text[], $4::bigint[], $5::text[], $6::text[], $7::bigint[])
-			AS t(tx_hash, index, asset_id, amount, mnode, acc, addr_index)
-			LEFT JOIN account_utxos a ON (t.tx_hash, t.index) = (a.tx_hash, a.index)
-			WHERE a.tx_hash IS NULL
+			SELECT t.* FROM unnest($1::text[], $2::bigint[], $3::text[], $4::bigint[], $5::text[], $6::text[], $7::bigint[], $8::bytea[], $9::bytea[])
+			AS t(tx_hash, index, asset_id, amount, mnode, acc, addr_index, script, metadata)
 		)
-		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, manager_node_id, account_id, addr_index)
+		INSERT INTO account_utxos (tx_hash, index, asset_id, amount, manager_node_id, account_id, addr_index, script, metadata)
 		SELECT * FROM outputs o
+		ON CONFLICT (tx_hash, index) DO NOTHING
 	`
 	_, err := pg.Exec(ctx, q,
 		txHash,
@@ -209,7 +208,8 @@ func insertAccountOutputs(ctx context.Context, outs []*txdb.Output) error {
 		managerNodeID,
 		accountID,
 		aIndex,
-		// TODO(kr): denormalize script and metadata into acount_utxos; insert here
+		script,
+		metadata,
 	)
 
 	return errors.Wrap(err)
