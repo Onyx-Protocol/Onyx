@@ -132,7 +132,7 @@ func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 				TemplateInput: &txbuilder.Input{
 					AssetAmount:     openOrder.AssetAmount,
 					SigScriptSuffix: sigScriptSuffix,
-					Sigs:            inputSigs(hdkey.Derive(sellerAddr.Keys, appdb.ReceiverPath(sellerAddr, sellerAddr.Index))),
+					Sigs:            txbuilder.InputSigs(hdkey.Derive(sellerAddr.Keys, appdb.ReceiverPath(sellerAddr, sellerAddr.Index))),
 				},
 			},
 		},
@@ -174,16 +174,4 @@ func NewCancelSource(openOrder *OpenOrder) *txbuilder.Source {
 			openOrder: openOrder,
 		},
 	}
-}
-
-// TODO(bobg): refactor to not duplicate this function from
-// core/asset/asset.go
-func inputSigs(keys []*hdkey.Key) (sigs []*txbuilder.Signature) {
-	for _, k := range keys {
-		sigs = append(sigs, &txbuilder.Signature{
-			XPub:           k.Root.String(),
-			DerivationPath: k.Path,
-		})
-	}
-	return sigs
 }

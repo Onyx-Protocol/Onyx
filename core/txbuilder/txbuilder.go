@@ -50,6 +50,14 @@ func build(ctx context.Context, sources []*Source, dests []*Destination, metadat
 			return nil, errors.Wrap(err, "reserve")
 		}
 		for _, item := range reserveResult.Items {
+			// Empty signature arrays should be serialized as empty arrays, not null.
+			if item.TemplateInput.Sigs == nil {
+				item.TemplateInput.Sigs = []*Signature{}
+			}
+			if item.TemplateInput.SigComponents == nil {
+				item.TemplateInput.SigComponents = []*SigScriptComponent{}
+			}
+
 			tx.Inputs = append(tx.Inputs, item.TxInput)
 			inputs = append(inputs, item.TemplateInput)
 		}
@@ -187,6 +195,7 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 // and creates a matching set of Input Signatures
 // for a Template
 func InputSigs(keys []*hdkey.Key) (sigs []*Signature) {
+	sigs = []*Signature{}
 	for _, k := range keys {
 		sigs = append(sigs, &Signature{
 			XPub:           k.Root.String(),

@@ -95,6 +95,8 @@ func TestBuild(t *testing.T) {
 		},
 		Inputs: []*Input{{
 			SigScriptSuffix: []byte("redeem"),
+			Sigs:            []*Signature{},
+			SigComponents:   []*SigScriptComponent{},
 		}},
 	}
 
