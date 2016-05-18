@@ -36,7 +36,7 @@ instead print out the status of each migration.
 `
 
 var (
-	flagD      = flag.String("d", "", "database")
+	flagD      = flag.String("d", "postgres:///core?sslmode=disable", "database")
 	flagT      = flag.String("t", "", "target")
 	flagStatus = flag.Bool("status", false, "print all migrations and their status")
 	flagDry    = flag.Bool("dryrun", false, "print but don't execute migrations")
