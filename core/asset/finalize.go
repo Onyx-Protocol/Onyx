@@ -145,6 +145,35 @@ func publishTx(ctx context.Context, msg *bc.Tx) error {
 	return nil
 }
 
+// Note, FC guarantees it will call the tx callback
+// for every tx in b before we get here.
+func addBlock(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
+	var (
+		pos    []int32
+		txhash []string
+	)
+	for i, tx := range b.Transactions {
+		pos = append(pos, int32(i))
+		txhash = append(txhash, tx.Hash.String())
+	}
+
+	const q = `
+		UPDATE account_utxos SET confirmed_in=$3, block_pos=pos
+		FROM (SELECT unnest($1::text[]) AS txhash, unnest($2::integer[]) AS pos) t
+		WHERE tx_hash=txhash
+	`
+	_, err := pg.Exec(
+		ctx,
+		q,
+		pg.Strings(txhash),
+		pg.Int32s(pos),
+		b.Height,
+	)
+	if err != nil {
+		chainlog.Write(ctx, "at", "account utxos indexing block", "block", b.Height, "error", errors.Wrap(err))
+	}
+}
+
 func addAccountData(ctx context.Context, tx *bc.Tx) error {
 	var outs []*txdb.Output
 	for i, out := range tx.Outputs {

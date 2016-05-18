@@ -293,7 +293,9 @@ CREATE TABLE account_utxos (
     addr_index bigint NOT NULL,
     reservation_id integer,
     script bytea NOT NULL,
-    metadata bytea NOT NULL
+    metadata bytea NOT NULL,
+    confirmed_in bigint,
+    block_pos integer
 );
 
 
