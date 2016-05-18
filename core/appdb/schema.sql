@@ -201,10 +201,10 @@ $$;
 
 
 --
--- Name: reserve_utxos(text, text, text, bigint, timestamp with time zone, text); Type: FUNCTION; Schema: public; Owner: -
+-- Name: reserve_utxos(text, text, text, bigint, bigint, timestamp with time zone, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION reserve_utxos(inp_asset_id text, inp_account_id text, inp_tx_hash text, inp_amt bigint, inp_expiry timestamp with time zone, inp_idempotency_key text) RETURNS record
+CREATE FUNCTION reserve_utxos(inp_asset_id text, inp_account_id text, inp_tx_hash text, inp_out_index bigint, inp_amt bigint, inp_expiry timestamp with time zone, inp_idempotency_key text) RETURNS record
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -226,6 +226,7 @@ BEGIN
             WHERE asset_id = inp_asset_id
                   AND inp_account_id = account_id
                   AND (inp_tx_hash IS NULL OR inp_tx_hash = tx_hash)
+                  AND (inp_out_index IS NULL OR inp_out_index = index)
                   AND reservation_id IS NULL
                   AND (tx_hash, index) NOT IN (TABLE pool_inputs)
             LIMIT 1

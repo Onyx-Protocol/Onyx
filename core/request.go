@@ -63,7 +63,7 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 			AssetID: *source.AssetID,
 			Amount:  source.Amount,
 		}
-		return asset.NewAccountSource(ctx, assetAmount, source.AccountID, source.TxHash, source.ClientToken), nil
+		return asset.NewAccountSource(ctx, assetAmount, source.AccountID, source.TxHash, source.Index, source.ClientToken), nil
 	case "issue":
 		if source.AssetID == nil {
 			return nil, errors.WithDetail(ErrBadBuildRequest, "asset_id is not specified on the issuance input")

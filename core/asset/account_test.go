@@ -35,7 +35,72 @@ func TestAccountSourceReserve(t *testing.T) {
 		AssetID: asset,
 		Amount:  1,
 	}
-	source := NewAccountSource(ctx, assetAmount1, accID, nil, nil)
+	source := NewAccountSource(ctx, assetAmount1, accID, nil, nil, nil)
+
+	got, err := source.Reserver.Reserve(ctx, assetAmount1, time.Minute)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	want := &txbuilder.ReserveResult{
+		Items: []*txbuilder.ReserveResultItem{{
+			TxInput: &bc.TxInput{
+				Previous:    out.Outpoint,
+				AssetAmount: out.TxOutput.AssetAmount,
+				PrevScript:  out.TxOutput.Script,
+			},
+			TemplateInput: nil,
+		}},
+		Change: []*txbuilder.Destination{{
+			AssetAmount: bc.AssetAmount{AssetID: asset, Amount: 1},
+		}},
+	}
+
+	if len(got.Items) != 1 {
+		t.Fatalf("expected 1 result utxo")
+	}
+
+	// generated address can change based on test ordering, so ignore in comparison
+	got.Items[0].TemplateInput = nil
+
+	ar, ok := got.Change[0].Receiver.(*AccountReceiver)
+	if !ok {
+		t.Fatalf("expected change destination to have AccountReceiver")
+	}
+
+	if ar.Addr().AccountID != accID {
+		t.Errorf("got receiver addr account = %v want %v", ar.Addr().AccountID, accID)
+	}
+
+	// clear out to not compare generated addresses
+	got.Change[0].Receiver = nil
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("reserve result\ngot:\n\t%+v\nwant:\n\t%+v", got, want)
+		t.Errorf("reserve item\ngot:\n\t%+v\nwant:\n\t%+v", got.Items[0], want.Items[0])
+		t.Errorf("reserve txin\ngot:\n\t%+v\nwant:\n\t%+v", got.Items[0].TxInput, want.Items[0].TxInput)
+		t.Errorf("reserve change\ngot:\n\t%+v\nwant:\n\t%+v", got.Change, want.Change)
+	}
+}
+
+func TestAccountSourceUTXOReserve(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	accID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
+	asset := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
+	out := assettest.IssueAssetsFixture(ctx, t, asset, 2, accID)
+
+	assetAmount1 := &bc.AssetAmount{
+		AssetID: asset,
+		Amount:  1,
+	}
+	source := NewAccountSource(ctx, assetAmount1, accID, &out.Outpoint.Hash, &out.Outpoint.Index, nil)
 
 	got, err := source.Reserver.Reserve(ctx, assetAmount1, time.Minute)
 	if err != nil {
@@ -105,9 +170,9 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		// An idempotency key that both reservations should use.
 		clientToken1 = "a-unique-idempotency-key"
 		clientToken2 = "another-unique-idempotency-key"
-		wantSrc      = NewAccountSource(ctx, assetAmount1, accID, nil, &clientToken1)
-		gotSrc       = NewAccountSource(ctx, assetAmount1, accID, nil, &clientToken1)
-		separateSrc  = NewAccountSource(ctx, assetAmount1, accID, nil, &clientToken2)
+		wantSrc      = NewAccountSource(ctx, assetAmount1, accID, nil, nil, &clientToken1)
+		gotSrc       = NewAccountSource(ctx, assetAmount1, accID, nil, nil, &clientToken1)
+		separateSrc  = NewAccountSource(ctx, assetAmount1, accID, nil, nil, &clientToken2)
 	)
 
 	reserveFunc := func(source *txbuilder.Source) *txbuilder.ReserveResult {
@@ -206,7 +271,7 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 
 	for i := 0; i < utxos; i++ {
 		theTxHash := srcTxs[i]
-		source := NewAccountSource(ctx, &assetAmt, acc, &theTxHash, nil)
+		source := NewAccountSource(ctx, &assetAmt, acc, &theTxHash, nil, nil)
 
 		gotRes, err := source.Reserver.Reserve(ctx, &assetAmt, time.Minute)
 		if err != nil {

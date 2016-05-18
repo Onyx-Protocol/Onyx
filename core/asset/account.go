@@ -18,6 +18,7 @@ import (
 type AccountReserver struct {
 	AccountID   string
 	TxHash      *bc.Hash // optional filter
+	OutputIndex *uint32  // optional filter
 	ClientToken *string
 }
 
@@ -27,6 +28,7 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 		Amount:      assetAmount.Amount,
 		AccountID:   reserver.AccountID,
 		TxHash:      reserver.TxHash,
+		OutputIndex: reserver.OutputIndex,
 		ClientToken: reserver.ClientToken,
 	}
 	utxodbSources := []utxodb.Source{utxodbSource}
@@ -96,12 +98,13 @@ func breakupChange(total uint64) (amounts []uint64) {
 	return amounts
 }
 
-func NewAccountSource(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, txHash *bc.Hash, clientToken *string) *txbuilder.Source {
+func NewAccountSource(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, txHash *bc.Hash, outputIndex *uint32, clientToken *string) *txbuilder.Source {
 	return &txbuilder.Source{
 		AssetAmount: *assetAmount,
 		Reserver: &AccountReserver{
 			AccountID:   accountID,
 			TxHash:      txHash,
+			OutputIndex: outputIndex,
 			ClientToken: clientToken,
 		},
 	}

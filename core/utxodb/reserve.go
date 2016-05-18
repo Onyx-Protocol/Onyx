@@ -57,6 +57,7 @@ type (
 		AssetID     bc.AssetID `json:"asset_id"`
 		AccountID   string     `json:"account_id"`
 		TxHash      *bc.Hash
+		OutputIndex *uint32
 		Amount      uint64
 		ClientToken *string `json:"client_token"`
 	}
@@ -93,7 +94,7 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 
 	const (
 		reserveQ = `
-		SELECT * FROM reserve_utxos($1, $2, $3, $4, $5, $6)
+		SELECT * FROM reserve_utxos($1, $2, $3, $4, $5, $6, $7)
 		    AS (reservation_id INT, already_existed BOOLEAN, existing_change BIGINT, amount BIGINT, insufficient BOOLEAN)
 		`
 		utxosQ = `
@@ -106,7 +107,8 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 
 	for _, source := range sources {
 		var (
-			txHash sql.NullString
+			txHash   sql.NullString
+			outIndex sql.NullInt64
 
 			reservationID  int32
 			alreadyExisted bool
@@ -120,13 +122,18 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 			txHash.String = source.TxHash.String()
 		}
 
+		if source.OutputIndex != nil {
+			outIndex.Valid = true
+			outIndex.Int64 = int64(*source.OutputIndex)
+		}
+
 		// Create a reservation row and reserve the utxos. If this reservation
 		// has alredy been processed in a previous request:
 		//  * the existing reservation ID will be returned
 		//  * already_existed will be TRUE
 		//  * existing_change will be the change value for the existing
 		//    reservation row.
-		err = pg.QueryRow(ctx, reserveQ, source.AssetID, source.AccountID, txHash, source.Amount, exp, source.ClientToken).Scan(
+		err = pg.QueryRow(ctx, reserveQ, source.AssetID, source.AccountID, txHash, outIndex, source.Amount, exp, source.ClientToken).Scan(
 			&reservationID,
 			&alreadyExisted,
 			&existingChange,
