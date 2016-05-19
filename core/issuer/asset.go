@@ -23,7 +23,7 @@ import (
 func CreateAsset(ctx context.Context, inodeID, label string, definition map[string]interface{}, clientToken *string) (*appdb.Asset, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if label == "" {
-		return nil, appdb.ErrBadLabel
+		return nil, errors.WithDetail(appdb.ErrBadLabel, "missing/null value")
 	}
 
 	asset, sigsReq, err := appdb.NextAsset(ctx, inodeID)

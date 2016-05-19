@@ -38,7 +38,7 @@ type Account struct {
 func CreateAccount(ctx context.Context, managerNodeID, label string, keys []string, clientToken *string) (*Account, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if label == "" {
-		return nil, ErrBadLabel
+		return nil, errors.WithDetail(ErrBadLabel, "missing/null value")
 	}
 
 	account := &Account{Label: label}

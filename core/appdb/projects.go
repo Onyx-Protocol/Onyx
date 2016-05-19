@@ -42,7 +42,7 @@ func CreateProject(ctx context.Context, name string, userID string) (*Project, e
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
 	if name == "" {
-		return nil, errors.Wrap(ErrBadProjectName)
+		return nil, errors.WithDetail(ErrBadProjectName, "missing/null value")
 	}
 
 	var (

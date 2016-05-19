@@ -67,7 +67,7 @@ type CreateNodeKeySpec struct {
 // CreateNode is used to create manager and issuer nodes
 func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNodeReq) (interface{}, error) {
 	if req.Label == "" {
-		return nil, appdb.ErrBadLabel
+		return nil, errors.WithDetail(appdb.ErrBadLabel, "missing/null value")
 	}
 
 	if req.SigsRequired < 1 {
