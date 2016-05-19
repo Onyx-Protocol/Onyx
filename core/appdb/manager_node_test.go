@@ -5,10 +5,11 @@ import (
 	"testing"
 
 	. "chain/core/appdb"
+	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
+	"chain/core/txbuilder"
 	"chain/core/txdb"
-	"chain/cos"
 	"chain/cos/bc"
 	"chain/cos/hdkey"
 	"chain/database/pg"
@@ -118,7 +119,7 @@ func TestGetManagerNode(t *testing.T) {
 
 func TestAccountsWithAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	var store cos.Store = txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
 	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
@@ -145,15 +146,14 @@ func TestAccountsWithAsset(t *testing.T) {
 
 	assettest.IssueAssetsFixture(ctx, t, asset1, 1, acc0)
 	out2 := assettest.IssueAssetsFixture(ctx, t, asset1, 1, acc0)
+	assettest.Transfer(ctx, t, []*txbuilder.Source{
+		asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: asset2, Amount: 5}, acc1, &out1.Outpoint.Hash, &out1.Outpoint.Index, nil),
+		asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: asset1, Amount: 1}, acc0, &out2.Outpoint.Hash, &out2.Outpoint.Index, nil),
+	}, []*txbuilder.Destination{
+		txbuilder.NewScriptDestination(ctx, &bc.AssetAmount{AssetID: asset2, Amount: 5}, nil, nil),
+		txbuilder.NewScriptDestination(ctx, &bc.AssetAmount{AssetID: asset1, Amount: 1}, nil, nil),
+	})
 
-	tx := &bc.Tx{TxData: bc.TxData{Inputs: []*bc.TxInput{
-		{Previous: out1.Outpoint},
-		{Previous: out2.Outpoint},
-	}}}
-	err = store.ApplyTx(ctx, tx, nil)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
 	cases := []struct {
 		assetID  bc.AssetID
 		prev     string

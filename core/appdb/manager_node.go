@@ -231,9 +231,8 @@ func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit
 			SELECT a.amount, a.asset_id, a.tx_hash, a.index,
 			manager_node_id, account_id,
 			confirmed_in IS NOT NULL as confirmed,
-			pi.tx_hash IS NOT NULL as spent_in_pool
+			spent_in_pool
 			FROM account_utxos a
-			LEFT JOIN pool_inputs pi ON (a.tx_hash, a.index) = (pi.tx_hash, pi.index)
 			WHERE manager_node_id=$1 AND a.asset_id=$2 AND ($3='' OR account_id>$3)
 		), amounts AS (
 			SELECT

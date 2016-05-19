@@ -172,9 +172,27 @@ func addBlock(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
 	if err != nil {
 		chainlog.Write(ctx, "at", "account utxos indexing block", "block", b.Height, "error", errors.Wrap(err))
 	}
+
+	// For any outputs spent by a rejected tx, mark them as
+	// unspent again. If they were also spent by a confirmed
+	// tx, they have already been deleted by now.
+	err = markPrevSpentInPool(ctx, false, conflicts...)
+	if err != nil {
+		chainlog.Write(ctx, "block", b.Height, "error", errors.Wrap(err))
+	}
 }
 
 func addAccountData(ctx context.Context, tx *bc.Tx) error {
+	// Even if tx is already in a block by now,
+	// it doesn't hurt (other than performance)
+	// to mark its prevouts as "spent in pool" here.
+	// TODO(kr): avoid doing this if tx is
+	// confirmed at this point.
+	err := markPrevSpentInPool(ctx, true, tx)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
 	var outs []*txdb.Output
 	for i, out := range tx.Outputs {
 		txdbOutput := &txdb.Output{
@@ -193,6 +211,28 @@ func addAccountData(ctx context.Context, tx *bc.Tx) error {
 
 	err = insertAccountOutputs(ctx, addrOuts)
 	return errors.Wrap(err, "updating pool outputs")
+}
+
+func markPrevSpentInPool(ctx context.Context, spent bool, txs ...*bc.Tx) error {
+	var (
+		txhash []string
+		index  []uint32
+	)
+	for _, tx := range txs {
+		for _, in := range tx.Inputs {
+			if in.IsIssuance() {
+				continue
+			}
+			txhash = append(txhash, in.Previous.Hash.String())
+			index = append(index, in.Previous.Index)
+		}
+	}
+	const q = `
+		UPDATE account_utxos SET spent_in_pool=$1
+		WHERE (tx_hash, index) IN (SELECT unnest($2::text[]), unnest($3::integer[]))
+	`
+	_, err := pg.Exec(ctx, q, spent, pg.Strings(txhash), pg.Uint32s(index))
+	return err
 }
 
 // insertAccountOutputs records the account data for utxos

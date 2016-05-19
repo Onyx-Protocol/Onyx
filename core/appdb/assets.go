@@ -331,9 +331,8 @@ func AssetBalance(ctx context.Context, abq *AssetBalQuery) ([]*Balance, string, 
 			SELECT a.amount, a.asset_id, a.tx_hash, a.index,
 			manager_node_id, account_id,
 			confirmed_in IS NOT NULL as confirmed,
-			pi.tx_hash IS NOT NULL as spent_in_pool
+			spent_in_pool
 			FROM account_utxos a
-			LEFT JOIN pool_inputs pi ON (a.tx_hash, a.index) = (pi.tx_hash, pi.index)
 			WHERE ` + field + `=$1 AND ` + filter + `
 		), amounts AS (
 			SELECT

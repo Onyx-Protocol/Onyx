@@ -228,7 +228,7 @@ BEGIN
                   AND (inp_tx_hash IS NULL OR inp_tx_hash = tx_hash)
                   AND (inp_out_index IS NULL OR inp_out_index = index)
                   AND reservation_id IS NULL
-                  AND (tx_hash, index) NOT IN (TABLE pool_inputs)
+                  AND NOT spent_in_pool
             LIMIT 1
             FOR UPDATE
             SKIP LOCKED;
@@ -295,7 +295,8 @@ CREATE TABLE account_utxos (
     script bytea NOT NULL,
     metadata bytea NOT NULL,
     confirmed_in bigint,
-    block_pos integer
+    block_pos integer,
+    spent_in_pool boolean DEFAULT false NOT NULL
 );
 
 

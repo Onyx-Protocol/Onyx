@@ -11,10 +11,11 @@ import (
 	"golang.org/x/net/context"
 
 	. "chain/core/appdb"
+	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
+	"chain/core/txbuilder"
 	"chain/core/txdb"
-	"chain/cos"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -361,7 +362,7 @@ func TestArchiveAsset(t *testing.T) {
 
 func TestAssetBalance(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	var store cos.Store = txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
 	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
@@ -404,19 +405,15 @@ func TestAssetBalance(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, assets[4], 1, acc1)
 	out4 := assettest.IssueAssetsFixture(ctx, t, assets[5], 1, acc1)
 
-	tx := bc.NewTx(bc.TxData{
-		Inputs: []*bc.TxInput{
-			{Previous: out1.Outpoint},
-			{Previous: out2.Outpoint},
-			{Previous: out3.Outpoint},
-			{Previous: out4.Outpoint},
-		},
+	assettest.Transfer(ctx, t, []*txbuilder.Source{
+		asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: assets[5], Amount: 1}, acc0, &out1.Outpoint.Hash, &out1.Outpoint.Index, nil),
+		asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: assets[5], Amount: 1}, acc0, &out2.Outpoint.Hash, &out2.Outpoint.Index, nil),
+		asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: assets[1], Amount: 1}, acc0, &out3.Outpoint.Hash, &out3.Outpoint.Index, nil),
+		asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: assets[5], Amount: 1}, acc1, &out4.Outpoint.Hash, &out4.Outpoint.Index, nil),
+	}, []*txbuilder.Destination{
+		txbuilder.NewScriptDestination(ctx, &bc.AssetAmount{AssetID: assets[1], Amount: 1}, nil, nil),
+		txbuilder.NewScriptDestination(ctx, &bc.AssetAmount{AssetID: assets[5], Amount: 3}, nil, nil),
 	})
-
-	err = store.ApplyTx(ctx, tx, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	cases := []struct {
 		owner     AssetOwner
