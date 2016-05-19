@@ -23,6 +23,9 @@ func Read(ctx context.Context, r io.Reader, v interface{}) error {
 	err := json.NewDecoder(r).Decode(v)
 	if err != nil {
 		detail := errors.Detail(err)
+		if detail == "" {
+			detail = "check request parameters for missing and/or incorrect values"
+		}
 		userErr := errors.Wrap(ErrBadRequest, err)
 		return errors.WithDetail(userErr, detail)
 	}
