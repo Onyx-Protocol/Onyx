@@ -32,15 +32,15 @@ func projectAdminAuthz(ctx context.Context, project string) error {
 
 func projectAuthz(ctx context.Context, projects ...string) error {
 	if len(projects) != 1 {
-		return errNoAccessToResource
+		return errors.WithDetailf(errNoAccessToResource, "project IDs: %+v", projects)
 	}
 
 	hasAccess, err := appdb.IsMember(ctx, authn.GetAuthID(ctx), projects[0])
 	if err != nil {
-		return err
+		return errors.WithDetailf(err, "project ID: %v", projects[0])
 	}
 	if !hasAccess {
-		return errNoAccessToResource
+		return errors.WithDetailf(errNoAccessToResource, "project ID: %v", projects[0])
 	}
 	return nil
 }
@@ -52,7 +52,7 @@ func managerAuthz(ctx context.Context, managerID string) error {
 	if err != nil {
 		return err
 	}
-	return errors.WithDetailf(projectAuthz(ctx, project), "manager node %v", managerID)
+	return errors.WithDetailf(projectAuthz(ctx, project), "manager node ID: %v", managerID)
 }
 
 // accountAuthz will verify whether this request has access to the provided account. If
@@ -62,7 +62,7 @@ func accountAuthz(ctx context.Context, accountID string) error {
 	if err != nil {
 		return err
 	}
-	return errors.WithDetailf(projectAuthz(ctx, projects...), "account %v", accountID)
+	return errors.WithDetailf(projectAuthz(ctx, projects...), "account ID: %v", accountID)
 }
 
 // issuerAuthz will verify whether this request has access to the provided issuer node.
@@ -72,7 +72,7 @@ func issuerAuthz(ctx context.Context, issuerID string) error {
 	if err != nil {
 		return err
 	}
-	return errors.WithDetailf(projectAuthz(ctx, project), "issuer node %v", issuerID)
+	return errors.WithDetailf(projectAuthz(ctx, project), "issuer node ID: %v", issuerID)
 }
 
 // assetAuthz will verify whether this request has access to the provided asset.
@@ -82,7 +82,7 @@ func assetAuthz(ctx context.Context, assetID string) error {
 	if err != nil {
 		return err
 	}
-	return errors.WithDetailf(projectAuthz(ctx, projects...), "asset %v", assetID)
+	return errors.WithDetailf(projectAuthz(ctx, projects...), "asset ID: %v", assetID)
 }
 
 func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
@@ -111,7 +111,7 @@ func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
 
 	accountProjects, err := appdb.ProjectsByActiveAccount(ctx, accountIDs...)
 	if errors.Root(err) == pg.ErrUserInputNotFound || errors.Root(err) == appdb.ErrArchived {
-		return errors.WithDetailf(errNoAccessToResource, "accounts %+v", accountIDs)
+		return errors.WithDetailf(errNoAccessToResource, "account IDs: %+v", accountIDs)
 	}
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
 
 	assetProjects, err := appdb.ProjectsByActiveAsset(ctx, assetIDs...)
 	if errors.Root(err) == pg.ErrUserInputNotFound || errors.Root(err) == appdb.ErrArchived {
-		return errors.WithDetailf(errNoAccessToResource, "accounts %+v", accountIDs)
+		return errors.WithDetailf(errNoAccessToResource, "account IDs: %+v", accountIDs)
 	}
 	if err != nil {
 		return err

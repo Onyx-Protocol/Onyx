@@ -103,7 +103,7 @@ func GetProject(ctx context.Context, projID string) (*Project, error) {
 	)
 	err := pg.QueryRow(ctx, q, projID).Scan(&name)
 	if err == sql.ErrNoRows {
-		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "project id: %v", projID)
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "project ID: %v", projID)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
@@ -332,7 +332,7 @@ func ProjectByActiveManager(ctx context.Context, managerID string) (string, erro
 	if archived {
 		err = ErrArchived
 	}
-	return project, errors.WithDetailf(err, "manager node %v", managerID)
+	return project, errors.WithDetailf(err, "manager node ID: %v", managerID)
 }
 
 // ProjectsByActiveAccount returns all project IDs associated with a set of active accounts.
@@ -361,7 +361,7 @@ func ProjectsByActiveAccount(ctx context.Context, accountIDs ...string) ([]strin
 	} else if accountsArchived > 0 {
 		err = ErrArchived
 	}
-	return projects, errors.Wrap(err)
+	return projects, errors.WithDetailf(err, "account IDs: %+v", accountIDs)
 }
 
 // ProjectByActiveIssuer returns the project ID associated with an active issuer node. If the
@@ -382,7 +382,7 @@ func ProjectByActiveIssuer(ctx context.Context, issuerID string) (string, error)
 	if archived {
 		err = ErrArchived
 	}
-	return project, errors.WithDetailf(err, "issuer node %v", issuerID)
+	return project, errors.WithDetailf(err, "issuer node ID: %v", issuerID)
 }
 
 // ProjectsByActiveAsset returns all project IDs associated with a set of active assets.
@@ -414,5 +414,5 @@ func ProjectsByActiveAsset(ctx context.Context, assetIDs ...string) ([]string, e
 	} else if assetsArchived > 0 {
 		err = ErrArchived
 	}
-	return projects, errors.Wrap(err)
+	return projects, errors.WithDetailf(err, "asset IDs: %+v", assetIDs)
 }
