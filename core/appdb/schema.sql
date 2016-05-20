@@ -1393,14 +1393,6 @@ CREATE INDEX voting_right_txs_account_id ON voting_rights USING btree (account_i
 
 
 --
--- Name: account_utxos_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY account_utxos
-    ADD CONSTRAINT account_utxos_fkey FOREIGN KEY (tx_hash, index) REFERENCES utxos(tx_hash, index) ON DELETE CASCADE;
-
-
---
 -- Name: account_utxos_reservation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 

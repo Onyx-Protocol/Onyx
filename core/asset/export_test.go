@@ -6,6 +6,7 @@ import (
 	"chain/core/appdb"
 	"chain/core/txdb"
 	"chain/cos"
+	"chain/cos/bc"
 )
 
 func (ar *AccountReceiver) Addr() *appdb.Address {
@@ -21,3 +22,7 @@ func LoadAccountInfo(ctx context.Context, outs []*txdb.Output) ([]*txdb.Output, 
 }
 
 var BreakupChange = breakupChange
+
+func AddBlock(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
+	addBlock(ctx, b, conflicts)
+}

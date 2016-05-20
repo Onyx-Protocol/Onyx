@@ -170,14 +170,27 @@ func addBlock(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
 		b.Height,
 	)
 	if err != nil {
+		// TODO(kr): make these errors stop log replay (e.g. crash the process)
 		chainlog.Write(ctx, "at", "account utxos indexing block", "block", b.Height, "error", errors.Wrap(err))
+	}
+
+	deltxhash, delindex := prevoutDBKeys(b.Transactions...)
+	const delQ = `
+		DELETE FROM account_utxos
+		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+	`
+	_, err = pg.Exec(ctx, delQ, deltxhash, delindex)
+	if err != nil {
+		chainlog.Write(ctx, "block", b.Height, "error", errors.Wrap(err))
+		panic(err)
 	}
 
 	// For any outputs spent by a rejected tx, mark them as
 	// unspent again. If they were also spent by a confirmed
-	// tx, they have already been deleted by now.
+	// tx, they were deleted just above.
 	err = markPrevSpentInPool(ctx, false, conflicts...)
 	if err != nil {
+		// TODO(kr): make these errors stop log replay (e.g. crash the process)
 		chainlog.Write(ctx, "block", b.Height, "error", errors.Wrap(err))
 	}
 }
@@ -214,10 +227,16 @@ func addAccountData(ctx context.Context, tx *bc.Tx) error {
 }
 
 func markPrevSpentInPool(ctx context.Context, spent bool, txs ...*bc.Tx) error {
-	var (
-		txhash []string
-		index  []uint32
-	)
+	txhash, index := prevoutDBKeys(txs...)
+	const q = `
+		UPDATE account_utxos SET spent_in_pool=$1
+		WHERE (tx_hash, index) IN (SELECT unnest($2::text[]), unnest($3::integer[]))
+	`
+	_, err := pg.Exec(ctx, q, spent, txhash, index)
+	return err
+}
+
+func prevoutDBKeys(txs ...*bc.Tx) (txhash pg.Strings, index pg.Uint32s) {
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
 			if in.IsIssuance() {
@@ -227,12 +246,7 @@ func markPrevSpentInPool(ctx context.Context, spent bool, txs ...*bc.Tx) error {
 			index = append(index, in.Previous.Index)
 		}
 	}
-	const q = `
-		UPDATE account_utxos SET spent_in_pool=$1
-		WHERE (tx_hash, index) IN (SELECT unnest($2::text[]), unnest($3::integer[]))
-	`
-	_, err := pg.Exec(ctx, q, spent, pg.Strings(txhash), pg.Uint32s(index))
-	return err
+	return
 }
 
 // insertAccountOutputs records the account data for utxos

@@ -222,19 +222,11 @@ func removeBlockSpentOutputs(ctx context.Context, dbtx *sql.Tx, delta []*state.O
 		ids = append(ids, out.Outpoint.Index)
 	}
 
-	// account_utxos are deleted by a foreign key constraint
-	// TODO(kr): we should probably release this lock more quickly!
-	// Find a way to reduce the scope of this dbtx.
-	_, err := dbtx.Exec(ctx, `LOCK TABLE account_utxos IN EXCLUSIVE MODE`)
-	if err != nil {
-		return errors.Wrap(err, "acquire lock for deleting utxos")
-	}
-
 	const q = `
 		DELETE FROM utxos
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	_, err = dbtx.Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(ids))
+	_, err := dbtx.Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(ids))
 	return errors.Wrap(err, "delete query")
 }
 
