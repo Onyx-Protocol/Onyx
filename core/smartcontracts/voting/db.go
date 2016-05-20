@@ -2,6 +2,7 @@ package voting
 
 import (
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"strings"
 
@@ -129,7 +130,7 @@ func (q votingRightsQuery) Where() (string, []interface{}) {
 		param++
 	}
 	if q.cursor != nil {
-		whereClauses = append(whereClauses, fmt.Sprintf("(vr.asset_id, vr.ordinal) < ($%d, $%d)\n", param, param+1))
+		whereClauses = append(whereClauses, fmt.Sprintf("(vr.asset_id, vr.ordinal) > ($%d, $%d)\n", param, param+1))
 		values = append(values, q.cursor.prevAssetID, q.cursor.prevOrdinal)
 		param += 2
 	}
@@ -147,14 +148,14 @@ func (q votingRightsQuery) Where() (string, []interface{}) {
 func FindRightsForAccount(ctx context.Context, accountID string, prev string, limit int) ([]*Right, map[bc.AssetID]string, string, error) {
 	// Since the sort criteria is composite, the cursor is composite.
 	var (
-		prevAssetID string
+		prevAssetID []byte
 		prevOrdinal int
 		cur         cursor
 	)
-	_, err := fmt.Sscanf(prev, "%s-%d", &prevAssetID, &prevOrdinal)
+	_, err := fmt.Sscanf(prev, "%x-%d", &prevAssetID, &prevOrdinal)
 	if err == nil { // ignore malformed cursors
 		cur = cursor{
-			prevAssetID: prevAssetID,
+			prevAssetID: hex.EncodeToString(prevAssetID),
 			prevOrdinal: prevOrdinal,
 		}
 	}
