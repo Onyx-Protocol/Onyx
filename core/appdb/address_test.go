@@ -6,15 +6,18 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	. "chain/core/appdb"
 	"chain/core/asset/assettest"
 	"chain/cos/hdkey"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/testutil"
 )
 
 func TestAddressLoadNextIndex(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	ResetSeqs(ctx, t) // Force predictable values.
 	mn := assettest.CreateManagerNodeFixture(ctx, t, "", "", nil, nil)
@@ -51,7 +54,7 @@ func TestAddressLoadNextIndex(t *testing.T) {
 
 func TestAddressInsert(t *testing.T) {
 	t0 := time.Now()
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	ResetSeqs(ctx, t) // Force predictable values.
 	mn := assettest.CreateManagerNodeFixture(ctx, t, "", "", nil, nil)
@@ -89,7 +92,7 @@ var dummyXPub2, _ = hdkey.NewXKey("xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGv
 
 func TestCreateAddress(t *testing.T) {
 	t0 := time.Now()
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	ResetSeqs(ctx, t) // Force predictable values.
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "foo", []*hdkey.XKey{dummyXPub2}, nil)

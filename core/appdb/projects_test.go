@@ -16,7 +16,7 @@ import (
 )
 
 func TestCreateProject(t *testing.T) {
-	ctx := startContextDBTx(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	userID := assettest.CreateUserFixture(ctx, t, "user@chain.com", "password")
 	p, err := CreateProject(ctx, "new-proj", userID)
@@ -42,7 +42,7 @@ func TestCreateProject(t *testing.T) {
 }
 
 func TestListProjects(t *testing.T) {
-	ctx := startContextDBTx(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	userID1 := assettest.CreateUserFixture(ctx, t, "foo@chain.com", "password")
 	userID2 := assettest.CreateUserFixture(ctx, t, "bar@chain.com", "password")
@@ -94,7 +94,7 @@ func TestListProjects(t *testing.T) {
 }
 
 func TestGetProject(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	projectID1 := assettest.CreateProjectFixture(ctx, t, "", "first project")
 	projectID2 := assettest.CreateProjectFixture(ctx, t, "", "second project")
@@ -122,7 +122,7 @@ func TestGetProject(t *testing.T) {
 }
 
 func TestUpdateProject(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	projectID1 := assettest.CreateProjectFixture(ctx, t, "", "first project")
 
@@ -153,7 +153,7 @@ func TestUpdateProject(t *testing.T) {
 }
 
 func TestArchiveProject(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	userID1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "password")
 	userID2 := assettest.CreateUserFixture(ctx, t, "baz@bar.com", "password")
@@ -253,7 +253,7 @@ func TestArchiveProject(t *testing.T) {
 }
 
 func TestListMembers(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	userID1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "password")
 	userID2 := assettest.CreateUserFixture(ctx, t, "baz@bar.com", "password")
@@ -294,7 +294,7 @@ func TestListMembers(t *testing.T) {
 }
 
 func TestAddMember(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	userID1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "password")
 	userID2 := assettest.CreateUserFixture(ctx, t, "baz@bar.com", "password")
@@ -327,7 +327,7 @@ func TestAddMember(t *testing.T) {
 }
 
 func TestUpdateMember(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	userID1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "password")
 	projectID1 := assettest.CreateProjectFixture(ctx, t, userID1, "")
@@ -359,7 +359,7 @@ func TestUpdateMember(t *testing.T) {
 }
 
 func TestRemoveMember(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	userID1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "password")
 	userID2 := assettest.CreateUserFixture(ctx, t, "baz@bar.com", "password")

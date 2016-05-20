@@ -41,7 +41,7 @@ func getUserByCreds(ctx context.Context, email, password string) (*User, error) 
 }
 
 func TestCreateUser(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	u1, err := CreateUser(ctx, "foo@bar.com", "abracadabra")
 	if err != nil {
@@ -74,7 +74,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestCreateUserPreserveCase(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	u1, err := CreateUser(ctx, "Foo@Bar.com", "abracadabra")
 	if err != nil {
@@ -111,7 +111,7 @@ func TestCreateUserNoDupes(t *testing.T) {
 		t.Log("Example", ex.email0, ex.email1)
 
 		func() {
-			ctx := pgtest.NewContext(t)
+			ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 			_, err := CreateUser(ctx, ex.email0, "abracadabra")
 			if err != nil {
@@ -142,7 +142,7 @@ func TestCreateUserInvalid(t *testing.T) {
 
 	for _, test := range cases {
 		func() {
-			ctx := pgtest.NewContext(t)
+			ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 			_, err := CreateUser(ctx, test.email, test.password)
 			if err == nil {
@@ -153,7 +153,7 @@ func TestCreateUserInvalid(t *testing.T) {
 }
 
 func TestAuthenticateUserCreds(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	u, err := CreateUser(ctx, "foo@bar.com", "abracadabra")
 	if err != nil {
@@ -200,7 +200,7 @@ func TestAuthenticateUserCreds(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	id := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 
@@ -229,7 +229,7 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetUserByEmail(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	id := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 
@@ -278,7 +278,7 @@ func TestUpdateUserEmail(t *testing.T) {
 		func() {
 			t.Log("Example", i)
 
-			ctx := pgtest.NewContext(t)
+			ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 			id1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 			assettest.CreateUserFixture(ctx, t, "foo2@bar.com", "abracadabra")
@@ -313,7 +313,7 @@ func TestUpdateUserPassword(t *testing.T) {
 		func() {
 			t.Log("Example", i)
 
-			ctx := pgtest.NewContext(t)
+			ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 			id1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 
@@ -333,7 +333,7 @@ func TestUpdateUserPassword(t *testing.T) {
 }
 
 func TestPasswordResetFlow(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	id1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 
@@ -366,7 +366,7 @@ func TestPasswordResetFlow(t *testing.T) {
 }
 
 func TestStartPasswordResetErrs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	gotSecret, gotErr := StartPasswordReset(ctx, "foo@bar.com", time.Now())
 
 	if gotSecret != "" {
@@ -379,7 +379,7 @@ func TestStartPasswordResetErrs(t *testing.T) {
 }
 
 func TestCheckPasswordReset(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	assettest.CreateUserFixture(ctx, t, "foo@bar.com", "anything")
 	assettest.CreateUserFixture(ctx, t, "bar@foo.com", "anything")
@@ -449,7 +449,7 @@ func TestFinishPasswordResetErrs(t *testing.T) {
 		t.Logf("Example: %s:%v", ex.email, ex.useSecret)
 
 		func() {
-			ctx := pgtest.NewContext(t)
+			ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 			assettest.CreateUserFixture(ctx, t, "foo@bar.com", "anything")
 			secret1, err := StartPasswordReset(ctx, "foo@bar.com", ex.resetTime)

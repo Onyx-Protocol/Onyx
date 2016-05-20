@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	. "chain/core/appdb"
 	"chain/core/asset/assettest"
 	"chain/cos/hdkey"
@@ -13,12 +15,12 @@ import (
 )
 
 func TestInsertIssuerNode(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	newTestIssuerNode(t, ctx, nil, "foo")
 }
 
 func TestInsertIssuerNodeIdempotence(t *testing.T) {
-	ctx := startContextDBTx(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	project1 := newTestProject(t, ctx, "project-1", nil)
 	project2 := newTestProject(t, ctx, "project-2", newTestUser(t, ctx, "two@user.com", "password"))
@@ -59,7 +61,7 @@ func TestInsertIssuerNodeIdempotence(t *testing.T) {
 }
 
 func TestListIssuerNodes(t *testing.T) {
-	ctx := startContextDBTx(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	proj0ID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
 	proj1ID := assettest.CreateProjectFixture(ctx, t, "", "proj-1")
@@ -103,7 +105,7 @@ func TestListIssuerNodes(t *testing.T) {
 }
 
 func TestGetIssuerNodes(t *testing.T) {
-	ctx := startContextDBTx(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	proj := newTestProject(t, ctx, "foo", nil)
 	in, err := InsertIssuerNode(ctx, proj.ID, "in-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 1, nil)
@@ -154,7 +156,7 @@ func TestGetIssuerNodes(t *testing.T) {
 }
 
 func TestUpdateIssuerNode(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
 
 	newLabel := "bar"
@@ -175,7 +177,7 @@ func TestUpdateIssuerNode(t *testing.T) {
 
 // Test that calling UpdateIssuerNode with no new label is a no-op.
 func TestUpdateIssuerNodeNoUpdate(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
 	err := UpdateIssuerNode(ctx, issuerNode.ID, nil)
@@ -193,7 +195,7 @@ func TestUpdateIssuerNodeNoUpdate(t *testing.T) {
 }
 
 func TestArchiveIssuerNode(t *testing.T) {
-	ctx := startContextDBTx(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	issuerNode := newTestIssuerNode(t, ctx, nil, "foo")
 	asset := newTestAsset(t, ctx, issuerNode)

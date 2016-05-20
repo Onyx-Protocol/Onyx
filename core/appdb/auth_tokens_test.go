@@ -48,7 +48,7 @@ func TestCreateAuthToken(t *testing.T) {
 		t.Log("expiresAt:", expiresAt)
 
 		func() {
-			ctx := pgtest.NewContext(t)
+			ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 			uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 
@@ -90,7 +90,7 @@ func TestCreateAuthToken(t *testing.T) {
 }
 
 func TestListAuthTokens(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	ts, err := time.Parse(time.RFC3339, "2000-01-01T00:00:00Z")
 	if err != nil {
@@ -163,7 +163,7 @@ func TestListAuthTokens(t *testing.T) {
 }
 
 func TestDeleteAuthToken(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	ts, err := time.Parse(time.RFC3339, "2000-01-01T00:00:00Z")
 	if err != nil {

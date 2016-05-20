@@ -10,19 +10,8 @@ import (
 	. "chain/core/appdb"
 	"chain/cos/hdkey"
 	"chain/database/pg"
-	"chain/database/pg/pgtest"
 	"chain/testutil"
 )
-
-// use this if you need exactly one dbtx for the whole test.
-func startContextDBTx(t testing.TB) context.Context {
-	ctx := pgtest.NewContext(t)
-	_, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	return ctx
-}
 
 func newTestUser(t *testing.T, ctx context.Context, email, password string) *User {
 	if email == "" {

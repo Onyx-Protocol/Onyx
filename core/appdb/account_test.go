@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	. "chain/core/appdb"
 	"chain/core/asset/assettest"
 	"chain/database/pg"
@@ -12,7 +14,7 @@ import (
 )
 
 func TestCreateAccount(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestManagerNode(t, ctx, nil, "foo")
 	account, err := CreateAccount(ctx, managerNode.ID, "foo", nil, nil)
 	if err != nil {
@@ -27,7 +29,7 @@ func TestCreateAccount(t *testing.T) {
 }
 
 func TestCreateAccountBadLabel(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestManagerNode(t, ctx, nil, "foo")
 	_, err := CreateAccount(ctx, managerNode.ID, "", nil, nil)
 	if err == nil {
@@ -36,7 +38,7 @@ func TestCreateAccountBadLabel(t *testing.T) {
 }
 
 func TestCreateAccountWithKey(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
 	keys := []string{"xpub6AqXYTtDPZ5NYt1xwRWRojirrYTHxyGnv3HHzeXTuJdAznKWVtEhj7sVzyMuJMn1E65uhw7pozjFsFaa4nRJBiDijr7do4zZ1CwM8TjTP3G"}
 	_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, nil)
@@ -46,7 +48,7 @@ func TestCreateAccountWithKey(t *testing.T) {
 }
 
 func TestCreateAccountWithMissingKey(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
 	_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", nil, nil)
 	if err == nil {
@@ -55,7 +57,7 @@ func TestCreateAccountWithMissingKey(t *testing.T) {
 }
 
 func TestCreateAccountWithInvalidKey(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
 	keys := []string{"keyo"}
 	_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, nil)
@@ -65,7 +67,7 @@ func TestCreateAccountWithInvalidKey(t *testing.T) {
 }
 
 func TestCreateAccountWithTooManyKeys(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
 	keys := []string{"keyo", "keya", "keyeeeee"}
 	_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, nil)
@@ -75,7 +77,7 @@ func TestCreateAccountWithTooManyKeys(t *testing.T) {
 }
 
 func TestCreateAccountIdempotency(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
 	keys := []string{"xpub6AqXYTtDPZ5NYt1xwRWRojirrYTHxyGnv3HHzeXTuJdAznKWVtEhj7sVzyMuJMn1E65uhw7pozjFsFaa4nRJBiDijr7do4zZ1CwM8TjTP3G"}
 
@@ -98,7 +100,7 @@ func TestCreateAccountIdempotency(t *testing.T) {
 }
 
 func TestListAccounts(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	manager1 := assettest.CreateManagerNodeFixture(ctx, t, "", "m1", nil, nil)
 	manager2 := assettest.CreateManagerNodeFixture(ctx, t, "", "m2", nil, nil)
@@ -188,7 +190,7 @@ func TestListAccounts(t *testing.T) {
 }
 
 func TestGetAccount(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	acc0 := assettest.CreateAccountFixture(ctx, t, "", "account-0", nil)
 	examples := []struct {
@@ -224,7 +226,7 @@ func TestGetAccount(t *testing.T) {
 }
 
 func TestUpdateAccount(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestManagerNode(t, ctx, nil, "foo")
 	account, err := CreateAccount(ctx, managerNode.ID, "foo", nil, nil)
 	if err != nil {
@@ -254,7 +256,7 @@ func TestUpdateAccount(t *testing.T) {
 
 // Test that calling UpdateManagerNode with no new label is a no-op.
 func TestUpdateAccountNoUpdate(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestManagerNode(t, ctx, nil, "foo")
 	account, err := CreateAccount(ctx, managerNode.ID, "foo", nil, nil)
 	if err != nil {
@@ -285,7 +287,7 @@ func TestUpdateAccountNoUpdate(t *testing.T) {
 }
 
 func TestArchiveAccount(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	account := newTestAccount(t, ctx, nil, "account-1")
 	err := ArchiveAccount(ctx, account.ID)
 	if err != nil {

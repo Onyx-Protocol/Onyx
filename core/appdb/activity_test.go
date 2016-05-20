@@ -6,21 +6,22 @@ import (
 	"sort"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	. "chain/core/appdb"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
-	"chain/core/txdb"
 	"chain/cos"
 	"chain/cos/bc"
+	"chain/cos/memstore"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 	"chain/testutil"
 )
 
 func TestGetActUTXOs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	var store cos.Store = txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	var store cos.Store = memstore.New()
 	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
@@ -130,8 +131,8 @@ func TestGetActUTXOs(t *testing.T) {
 }
 
 func TestGetActUTXOsIssuance(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	var store cos.Store = txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	var store cos.Store = memstore.New()
 	_, err := assettest.InitializeSigningGenerator(ctx, store)
 	if err != nil {
 		t.Fatal(err)
@@ -182,9 +183,8 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 }
 
 func TestGetActAssets(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
-	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, err := assettest.InitializeSigningGenerator(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,9 +247,8 @@ func (a byAssetID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byAssetID) Less(i, j int) bool { return a[i].ID < a[j].ID }
 
 func TestGetActAccounts(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
-	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, err := assettest.InitializeSigningGenerator(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

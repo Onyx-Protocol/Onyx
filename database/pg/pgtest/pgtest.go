@@ -77,6 +77,7 @@ func NewContext(t testing.TB) context.Context {
 // test program is nevertheless unlikely to run out of
 // connection slots in the server.
 func NewTx(t testing.TB) *sql.Tx {
+	runtime.GC() // give the finalizers a better chance to run
 	ctx := context.Background()
 	if os.Getenv("CHAIN") == "" {
 		t.Log("warning: $CHAIN not set; probably can't find schema")

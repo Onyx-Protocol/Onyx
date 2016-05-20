@@ -25,7 +25,7 @@ import (
 )
 
 func TestAssetByID(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	ResetSeqs(ctx, t)
 	xpubs := testutil.XPubs("xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd")
@@ -287,7 +287,7 @@ func TestGetAsset(t *testing.T) {
 }
 
 func TestUpdateAsset(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 
@@ -314,7 +314,7 @@ func TestUpdateAsset(t *testing.T) {
 
 // Test that calling UpdateAsset with no new label is a no-op.
 func TestUpdateAssetNoUpdate(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 
@@ -339,7 +339,7 @@ func TestUpdateAssetNoUpdate(t *testing.T) {
 }
 
 func TestArchiveAsset(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 
@@ -361,9 +361,8 @@ func TestArchiveAsset(t *testing.T) {
 }
 
 func TestAssetBalance(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
-	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, err := assettest.InitializeSigningGenerator(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -636,9 +635,8 @@ func (a balancesByAssetID) Less(i, j int) bool {
 }
 
 func TestAccountBalanceByAssetID(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
-	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, err := assettest.InitializeSigningGenerator(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

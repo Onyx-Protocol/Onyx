@@ -5,10 +5,16 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
+
+	"chain/database/pg/pgtest"
 )
 
 func ResetSeqs(ctx context.Context, t testing.TB) {
 	addrIndexNext, addrIndexCap = 1, 100
+	pgtest.Exec(ctx, t, `ALTER SEQUENCE address_index_seq RESTART`)
+	pgtest.Exec(ctx, t, `ALTER SEQUENCE assets_key_index_seq RESTART`)
+	pgtest.Exec(ctx, t, `ALTER SEQUENCE issuer_nodes_key_index_seq RESTART`)
+	pgtest.Exec(ctx, t, `ALTER SEQUENCE manager_nodes_key_index_seq RESTART`)
 }
 
 func DeleteInvitation(ctx context.Context, invID string) error {

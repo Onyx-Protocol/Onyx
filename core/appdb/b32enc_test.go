@@ -3,6 +3,8 @@ package appdb_test
 import (
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 )
@@ -35,7 +37,7 @@ func TestB32encCrockford(t *testing.T) {
 		{"\x00\x11\x22\x33\x44\x55\x66\x77", "008J4CT4ANK7E"},
 	}
 
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	for _, test := range cases {
 		var got string
 		err := pg.QueryRow(ctx, `SELECT b32enc_crockford($1)`, test.decoded).Scan(&got)

@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	. "chain/core/appdb"
 	"chain/cos/hdkey"
 	"chain/database/pg"
@@ -28,7 +30,7 @@ func TestKeyIndexSQL(t *testing.T) {
 		{0x100000000, []uint32{2, 0}},
 	}
 
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	for _, pair := range pairs {
 		var got []uint32
 

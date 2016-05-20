@@ -4,28 +4,28 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	. "chain/core/appdb"
 	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
 	"chain/core/txbuilder"
-	"chain/core/txdb"
 	"chain/cos/bc"
 	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/testutil"
 )
 
 func TestInsertManagerNode(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	newTestManagerNode(t, ctx, nil, "foo")
 }
 
 func TestInsertManagerNodeIdempotence(t *testing.T) {
-	ctx := startContextDBTx(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	project1 := newTestProject(t, ctx, "project-1", nil)
 	project2 := newTestProject(t, ctx, "project-2", newTestUser(t, ctx, "two@user.com", "password"))
@@ -66,7 +66,7 @@ func TestInsertManagerNodeIdempotence(t *testing.T) {
 }
 
 func TestGetManagerNode(t *testing.T) {
-	ctx := startContextDBTx(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	proj := newTestProject(t, ctx, "foo", nil)
 	mn, err := InsertManagerNode(ctx, proj.ID, "manager-node-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 0, 1, nil)
@@ -118,9 +118,8 @@ func TestGetManagerNode(t *testing.T) {
 }
 
 func TestAccountsWithAsset(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
-	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, err := assettest.InitializeSigningGenerator(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,7 +215,7 @@ func TestAccountsWithAsset(t *testing.T) {
 }
 
 func TestListManagerNodes(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	proj0 := assettest.CreateProjectFixture(ctx, t, "", "")
 	proj1 := assettest.CreateProjectFixture(ctx, t, "", "")
@@ -258,7 +257,7 @@ func TestListManagerNodes(t *testing.T) {
 }
 
 func TestUpdateManagerNode(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestManagerNode(t, ctx, nil, "foo")
 	newLabel := "bar"
 
@@ -278,7 +277,7 @@ func TestUpdateManagerNode(t *testing.T) {
 
 // Test that calling UpdateManagerNode with no new label is a no-op.
 func TestUpdateManagerNodeNoUpdate(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestManagerNode(t, ctx, nil, "foo")
 	err := UpdateManagerNode(ctx, managerNode.ID, nil)
 	if err != nil {
@@ -295,7 +294,7 @@ func TestUpdateManagerNodeNoUpdate(t *testing.T) {
 }
 
 func TestArchiveManagerNode(t *testing.T) {
-	ctx := startContextDBTx(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	managerNode := newTestManagerNode(t, ctx, nil, "foo")
 	account := newTestAccount(t, ctx, managerNode, "bar")

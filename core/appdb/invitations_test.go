@@ -16,7 +16,7 @@ import (
 )
 
 func TestCreateInvitation(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
 	inv, err := CreateInvitation(ctx, projID, "foo@bar.com", "developer")
@@ -50,7 +50,7 @@ func TestCreateInvitation(t *testing.T) {
 }
 
 func TestCreateInvitationEmailWhitespace(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
 	inv, err := CreateInvitation(ctx, projID, "  foo@bar.com  ", "developer")
@@ -76,7 +76,7 @@ func TestCreateInvitationEmailWhitespace(t *testing.T) {
 }
 
 func TestCreateInvitationErrs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	userID := assettest.CreateUserFixture(ctx, t, "bar@foo.com", "")
 	projID := assettest.CreateProjectFixture(ctx, t, userID, "proj-0")
@@ -108,7 +108,7 @@ func TestCreateInvitationErrs(t *testing.T) {
 }
 
 func TestGetInvitation(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	user0ID := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "")
 	user1ID := assettest.CreateUserFixture(ctx, t, "bar@foo.com", "")
@@ -185,7 +185,7 @@ func TestGetInvitation(t *testing.T) {
 }
 
 func TestCreateUserFromInvitation(t *testing.T) {
-	ctx := startContextDBTx(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
 	invID := assettest.CreateInvitationFixture(ctx, t, projID, "foo@bar.com", "admin")
@@ -216,7 +216,7 @@ func TestCreateUserFromInvitation(t *testing.T) {
 }
 
 func TestCreateUserFromInvitationErrs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
 	invID := assettest.CreateInvitationFixture(ctx, t, projID, "foo@bar.com", "admin")
 	assettest.CreateUserFixture(ctx, t, "foo@bar.com", "")
@@ -254,7 +254,7 @@ func TestCreateUserFromInvitationErrs(t *testing.T) {
 }
 
 func TestAddMemberFromInvitation(t *testing.T) {
-	ctx := startContextDBTx(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
 	userID := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "")
@@ -282,7 +282,7 @@ func TestAddMemberFromInvitation(t *testing.T) {
 }
 
 func TestAddMemberFromInvitationErrs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
 	invID := assettest.CreateInvitationFixture(ctx, t, projID, "foo@bar.com", "admin")
@@ -312,7 +312,7 @@ func TestAddMemberFromInvitationErrs(t *testing.T) {
 }
 
 func TestDeleteInvitation(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	projID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
 	inv0ID := assettest.CreateInvitationFixture(ctx, t, projID, "foo@bar.com", "admin")
