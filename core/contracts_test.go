@@ -143,7 +143,7 @@ func TestFindAndBuyContract(t *testing.T) {
 					PaymentAssetID: &fixtureInfo.usdAssetID,
 					PaymentAmount:  2200, // USD
 					TxHash:         &openOrder.Hash,
-					Index:          &openOrder.Index,
+					TxOutput:       &openOrder.Index,
 					Type:           "orderbook-redeem",
 				},
 			},
@@ -238,9 +238,9 @@ func TestFindAndCancelContract(t *testing.T) {
 		buildRequest := &BuildRequest{
 			Sources: []*Source{
 				&Source{
-					TxHash: &openOrder.Hash,
-					Index:  &openOrder.Index,
-					Type:   "orderbook-cancel",
+					TxHash:   &openOrder.Hash,
+					TxOutput: &openOrder.Index,
+					Type:     "orderbook-cancel",
 				},
 			},
 			Dests: []*Destination{

@@ -26,7 +26,7 @@ type Source struct {
 	PaymentAmount  uint64      `json:"payment_amount"`
 	AccountID      string      `json:"account_id"`
 	TxHash         *bc.Hash    `json:"transaction_hash"`
-	Index          *uint32     `json:"index"`
+	TxOutput       *uint32     `json:"transaction_output"`
 	Type           string
 	// ClientToken is an idempotency key to guarantee one-time reservation.
 	ClientToken *string `json:"client_token"`
@@ -63,7 +63,7 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 			AssetID: *source.AssetID,
 			Amount:  source.Amount,
 		}
-		return asset.NewAccountSource(ctx, assetAmount, source.AccountID, source.TxHash, source.Index, source.ClientToken), nil
+		return asset.NewAccountSource(ctx, assetAmount, source.AccountID, source.TxHash, source.TxOutput, source.ClientToken), nil
 	case "issue":
 		if source.AssetID == nil {
 			return nil, errors.WithDetail(ErrBadBuildRequest, "asset_id is not specified on the issuance input")
@@ -84,12 +84,12 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 		if source.TxHash == nil {
 			return nil, errors.WithDetailf(ErrBadBuildRequest, "transaction_id is not specified on the orderbook-redeem input")
 		}
-		if source.Index == nil {
+		if source.TxOutput == nil {
 			return nil, errors.WithDetailf(ErrBadBuildRequest, "index is not specified on the orderbook-redeem input")
 		}
 		outpoint := &bc.Outpoint{
 			Hash:  *source.TxHash,
-			Index: *source.Index,
+			Index: *source.TxOutput,
 		}
 		openOrder, err := orderbook.FindOpenOrderByOutpoint(ctx, outpoint)
 		if err != nil {
@@ -107,12 +107,12 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 		if source.TxHash == nil {
 			return nil, errors.WithDetailf(ErrBadBuildRequest, "transaction_id is not specified on the orderbook-cancel input")
 		}
-		if source.Index == nil {
+		if source.TxOutput == nil {
 			return nil, errors.WithDetailf(ErrBadBuildRequest, "index is not specified on the orderbook-cancel input")
 		}
 		outpoint := &bc.Outpoint{
 			Hash:  *source.TxHash,
-			Index: *source.Index,
+			Index: *source.TxOutput,
 		}
 		openOrder, err := orderbook.FindOpenOrderByOutpoint(ctx, outpoint)
 		if err != nil {
