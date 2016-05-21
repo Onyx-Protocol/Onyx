@@ -52,11 +52,6 @@ func RightTransfer(ctx context.Context, src *Right, newHolderScript []byte) (txb
 		holderScriptStr, _ := txscript.DisasmString(src.HolderScript)
 		return nil, nil, errors.Wrapf(err, "could not get address for holder script [%s]", holderScriptStr)
 	}
-	adminAddr, err := appdb.GetAddress(ctx, src.AdminScript)
-	if err != nil {
-		adminScriptStr, _ := txscript.DisasmString(src.AdminScript)
-		return nil, nil, errors.Wrapf(err, "could not get address for admin script [%s]", adminScriptStr)
-	}
 
 	reserver := rightsReserver{
 		outpoint: src.Outpoint,
@@ -70,7 +65,6 @@ func RightTransfer(ctx context.Context, src *Right, newHolderScript []byte) (txb
 		},
 		prevScript: src.PKScript(),
 		holderAddr: currentHolderAddr,
-		adminAddr:  adminAddr,
 	}
 	return reserver, reserver.output, nil
 }
@@ -82,11 +76,6 @@ func RightDelegation(ctx context.Context, src *Right, newHolderScript []byte, ne
 	if err != nil {
 		holderScriptStr, _ := txscript.DisasmString(src.HolderScript)
 		return nil, nil, errors.Wrapf(err, "could not get address for holder script [%s]", holderScriptStr)
-	}
-	adminAddr, err := appdb.GetAddress(ctx, src.AdminScript)
-	if err != nil {
-		adminScriptStr, _ := txscript.DisasmString(src.AdminScript)
-		return nil, nil, errors.Wrapf(err, "could not get address for admin script [%s]", adminScriptStr)
 	}
 
 	reserver := rightsReserver{
@@ -105,7 +94,6 @@ func RightDelegation(ctx context.Context, src *Right, newHolderScript []byte, ne
 		},
 		prevScript: src.PKScript(),
 		holderAddr: currentHolderAddr,
-		adminAddr:  adminAddr,
 	}
 	return reserver, reserver.output, nil
 }
@@ -116,10 +104,6 @@ func RightRecall(ctx context.Context, src, recallPoint *Right, intermediaryRight
 	originalHolderAddr, err := appdb.GetAddress(ctx, recallPoint.HolderScript)
 	if err != nil {
 		originalHolderAddr = nil
-	}
-	adminAddr, err := appdb.GetAddress(ctx, src.AdminScript)
-	if err != nil {
-		adminAddr = nil
 	}
 
 	intermediaries := make([]intermediateHolder, 0, len(intermediaryRights))
@@ -137,7 +121,6 @@ func RightRecall(ctx context.Context, src, recallPoint *Right, intermediaryRight
 		intermediaries: intermediaries,
 		prevScript:     src.PKScript(),
 		holderAddr:     originalHolderAddr,
-		adminAddr:      adminAddr,
 	}
 	return reserver, reserver.output, nil
 }
