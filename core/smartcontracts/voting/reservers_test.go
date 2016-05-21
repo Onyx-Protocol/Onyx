@@ -104,9 +104,7 @@ func TestTokenReserver(t *testing.T) {
 		tokenScriptData: tokenScriptData{
 			Right:       rightAssetID,
 			AdminScript: []byte{txscript.OP_1},
-			OptionCount: 3,
 			State:       stateDistributed,
-			SecretHash:  exampleHash2,
 			Vote:        2,
 		},
 	}

@@ -127,13 +127,11 @@ func RightRecall(ctx context.Context, src, recallPoint *Right, intermediaryRight
 
 // TokenIssuance builds a txbuilder Receiver implementation
 // for a voting token issuance.
-func TokenIssuance(ctx context.Context, rightAssetID bc.AssetID, admin []byte, optionCount int64, secretHash bc.Hash) txbuilder.Receiver {
+func TokenIssuance(ctx context.Context, rightAssetID bc.AssetID, admin []byte) txbuilder.Receiver {
 	scriptData := tokenScriptData{
 		Right:       rightAssetID,
 		AdminScript: admin,
-		OptionCount: optionCount,
 		State:       stateDistributed,
-		SecretHash:  secretHash,
 		Vote:        0,
 	}
 	return scriptData
@@ -158,7 +156,7 @@ func TokenRegistration(ctx context.Context, token *Token, rightScript []byte) (t
 
 // TokenVote builds txbuilder Reserver and Receiver implementations
 // for a voting token vote transition.
-func TokenVote(ctx context.Context, token *Token, rightScript []byte, vote int64, secret []byte) (txbuilder.Reserver, txbuilder.Receiver, error) {
+func TokenVote(ctx context.Context, token *Token, rightScript []byte, vote int64) (txbuilder.Reserver, txbuilder.Receiver, error) {
 	data := token.tokenScriptData
 	data.State = stateVoted
 	data.Vote = vote
@@ -169,7 +167,6 @@ func TokenVote(ctx context.Context, token *Token, rightScript []byte, vote int64
 		output:      data,
 		prevScript:  token.tokenScriptData.PKScript(),
 		rightScript: rightScript,
-		secret:      secret,
 	}
 	return reserver, data, nil
 }
@@ -197,13 +194,11 @@ func TokenFinish(ctx context.Context, token *Token) (txbuilder.Reserver, txbuild
 
 // TokenReset builds txbuilder.Reserve and Receiver implementations
 // to reset a voting token.
-func TokenReset(ctx context.Context, token *Token, preserveRegistration bool, quorumSecretHash bc.Hash) (txbuilder.Reserver, txbuilder.Receiver, error) {
+func TokenReset(ctx context.Context, token *Token, preserveRegistration bool) (txbuilder.Reserver, txbuilder.Receiver, error) {
 	data := tokenScriptData{
 		Right:       token.Right,
 		AdminScript: token.AdminScript,
-		OptionCount: token.OptionCount,
 		State:       stateDistributed,
-		SecretHash:  quorumSecretHash,
 		Vote:        0, // unset vote
 	}
 	if preserveRegistration && (token.State.Registered() || token.State.Voted()) {

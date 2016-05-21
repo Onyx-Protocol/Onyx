@@ -243,10 +243,7 @@ type votingContractActionParams struct {
 	CanDelegate       *bool              `json:"can_delegate,omitempty"`       // delegate
 	Deadline          time.Time          `json:"deadline,omitempty"`           // delegate
 	Amount            uint64             `json:"amount,omitempty"`             // token issuance
-	OptionCount       int64              `json:"option_count,omitempty"`       // token issuance
-	QuorumSecretHash  bc.Hash            `json:"quorum_secret_hash,omitempty"` // token issuance, reset
 	Option            int64              `json:"option,omitempty"`             // vote
-	QuorumSecret      chainjson.HexBytes `json:"quorum_secret,omitempty"`      // vote
 	ResetRegistration bool               `json:"reset_registration,omitempty"` // reset
 }
 
@@ -435,16 +432,13 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		if params.AdminScript == nil {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "new voting tokens must provide the voting system admin script")
 		}
-		if params.OptionCount <= 0 {
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "new voting tokens must have 1 or more voting options")
-		}
 
 		assetAmount := bc.AssetAmount{AssetID: *params.TokenAssetID, Amount: params.Amount}
 		srcs = append(srcs, issuer.NewIssueSource(ctx, &assetAmount))
 		dsts = append(dsts, &txbuilder.Destination{
 			AssetAmount: assetAmount,
 			Metadata:    action.Metadata,
-			Receiver:    voting.TokenIssuance(ctx, *params.RightAssetID, params.AdminScript, params.OptionCount, params.QuorumSecretHash),
+			Receiver:    voting.TokenIssuance(ctx, *params.RightAssetID, params.AdminScript),
 		})
 	case "register-voting-token":
 		token, err := params.token(ctx)
@@ -488,7 +482,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		if token.State.Finished() {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has been closed")
 		}
-		tokenReserver, tokenReceiver, err := voting.TokenVote(ctx, token, right.PKScript(), params.Option, params.QuorumSecret)
+		tokenReserver, tokenReceiver, err := voting.TokenVote(ctx, token, right.PKScript(), params.Option)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -536,7 +530,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		}
 
 		for _, v := range votes {
-			reserver, receiver, err := voting.TokenReset(ctx, v, !params.ResetRegistration, params.QuorumSecretHash)
+			reserver, receiver, err := voting.TokenReset(ctx, v, !params.ResetRegistration)
 			if err != nil {
 				return nil, nil, err
 			}

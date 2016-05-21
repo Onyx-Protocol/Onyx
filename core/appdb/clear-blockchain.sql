@@ -26,7 +26,9 @@ TRUNCATE
 	issuer_txs,
 	reservations,
 	signed_blocks,
-	state_trees;
+	state_trees,
+	voting_rights,
+	voting_tokens;
 
 ALTER SEQUENCE address_index_seq RESTART;
 ALTER SEQUENCE pool_tx_sort_id_seq RESTART;

@@ -878,8 +878,6 @@ CREATE TABLE voting_tokens (
     state smallint NOT NULL,
     closed boolean NOT NULL,
     vote smallint NOT NULL,
-    option_count integer NOT NULL,
-    secret_hash text NOT NULL,
     admin_script bytea NOT NULL,
     amount bigint NOT NULL,
     block_height integer NOT NULL

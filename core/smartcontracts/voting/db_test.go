@@ -66,9 +66,7 @@ func TestUpsertVotingToken(t *testing.T) {
 	data := tokenScriptData{
 		Right:       rightAssetID,
 		AdminScript: []byte{0x01, 0x02, 0x03},
-		OptionCount: 10,
 		State:       stateDistributed,
-		SecretHash:  bc.Hash{},
 		Vote:        0,
 	}
 
@@ -125,7 +123,7 @@ func TestTallyVotes(t *testing.T) {
 			want: Tally{
 				Circulation: 1000,
 				Distributed: 1000,
-				Votes:       []int{0, 0},
+				Votes:       map[string]int{},
 			},
 		},
 		{
@@ -143,7 +141,7 @@ func TestTallyVotes(t *testing.T) {
 				Circulation: 1111,
 				Distributed: 900,
 				Registered:  211,
-				Votes:       []int{0, 0, 0, 0, 0},
+				Votes:       map[string]int{},
 			},
 		},
 		{
@@ -162,7 +160,7 @@ func TestTallyVotes(t *testing.T) {
 				Distributed: 400,
 				Registered:  10,
 				Voted:       701,
-				Votes:       []int{201, 500},
+				Votes:       map[string]int{"0": 201, "1": 500},
 			},
 		},
 		{
@@ -177,7 +175,7 @@ func TestTallyVotes(t *testing.T) {
 				Circulation: 500,
 				Distributed: 499,
 				Voted:       1,
-				Votes:       []int{1, 0},
+				Votes:       map[string]int{"0": 1},
 			},
 		},
 		{
@@ -197,7 +195,7 @@ func TestTallyVotes(t *testing.T) {
 				Registered:  3,
 				Voted:       11200,
 				Closed:      11213,
-				Votes:       []int{1100, 10100},
+				Votes:       map[string]int{"0": 1100, "1": 10100},
 			},
 		},
 	}
@@ -210,7 +208,6 @@ func TestTallyVotes(t *testing.T) {
 			err := upsertVotingToken(ctx, assetID, 1, bc.Outpoint{Index: uint32(i)}, vt.amount, tokenScriptData{
 				Right:       rightAssetID,
 				AdminScript: []byte{txscript.OP_1},
-				OptionCount: tc.options,
 				State:       vt.state,
 				Vote:        vt.vote,
 			})

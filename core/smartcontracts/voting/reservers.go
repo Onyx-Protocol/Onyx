@@ -139,7 +139,6 @@ type tokenReserver struct {
 	output      tokenScriptData
 	rightScript []byte
 	prevScript  []byte
-	secret      []byte
 	adminAddr   *appdb.Address
 }
 
@@ -171,13 +170,9 @@ func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount,
 		inputs = append(inputs, txscript.DataItem(r.rightScript))
 	case clauseVote:
 		inputs = append(inputs, txscript.NumItem(r.output.Vote))
-		inputs = append(inputs, txscript.DataItem(r.secret))
 		inputs = append(inputs, txscript.DataItem(r.rightScript))
-	case clauseFinish, clauseRetire:
-		// No clause-specific parameters.
 	case clauseReset:
 		inputs = append(inputs, txscript.NumItem(r.output.State))
-		inputs = append(inputs, txscript.DataItem(r.output.SecretHash[:]))
 	}
 	inputs = append(inputs, txscript.NumItem(int64(r.clause)))
 

@@ -47,9 +47,7 @@ const (
 type tokenScriptData struct {
 	Right       bc.AssetID
 	AdminScript []byte
-	OptionCount int64
 	State       TokenState
-	SecretHash  bc.Hash
 	Vote        int64
 }
 
@@ -62,9 +60,7 @@ func (t tokenScriptData) PKScript() []byte {
 	)
 
 	params = append(params, txscript.Int64ToScriptBytes(t.Vote))
-	params = append(params, t.SecretHash[:])
 	params = append(params, []byte{byte(t.State)})
-	params = append(params, txscript.Int64ToScriptBytes(t.OptionCount))
 	params = append(params, t.AdminScript)
 	params = append(params, t.Right[:])
 
@@ -82,7 +78,7 @@ func testTokenContract(pkscript []byte) (*tokenScriptData, error) {
 	if parsedScriptVersion == nil {
 		return nil, nil
 	}
-	if len(params) != 6 {
+	if len(params) != 4 {
 		return nil, nil
 	}
 
@@ -92,35 +88,22 @@ func testTokenContract(pkscript []byte) (*tokenScriptData, error) {
 	)
 
 	// Corresponding voting right's asset ID.
-	if cap(token.Right) != len(params[5]) {
+	if cap(token.Right) != len(params[3]) {
 		return nil, nil
 	}
-	copy(token.Right[:], params[5])
+	copy(token.Right[:], params[3])
 
 	// Voting system administrator script
-	token.AdminScript = make([]byte, len(params[4]))
-	copy(token.AdminScript, params[4])
-
-	// The number of possible options to vote for.
-	token.OptionCount, err = txscript.AsInt64(params[3])
-	if err != nil {
-		return nil, err
-	}
+	token.AdminScript = make([]byte, len(params[2]))
+	copy(token.AdminScript, params[2])
 
 	// The current state of the token.
 	var state int64
-	state, err = txscript.AsInt64(params[2])
+	state, err = txscript.AsInt64(params[1])
 	if err != nil {
 		return nil, err
 	}
 	token.State = TokenState(state)
-
-	// The hash of the voting secret that isn't released until quorum has
-	// been reached.
-	if cap(token.SecretHash) != len(params[1]) {
-		return nil, nil
-	}
-	copy(token.SecretHash[:], params[1])
 
 	// The currently selected option, if any.
 	token.Vote, err = txscript.AsInt64(params[0])
@@ -145,18 +128,16 @@ const (
 	// 4 - Reset
 	// 5 - Retire
 	tokenHoldingContractString = `
-		6 ROLL
+		4 ROLL
 		DUP 1 EQUAL IF
-			DROP
-			ROT 0 NUMEQUALVERIFY
-			OP_1 5 PICK
-			7 ROLL FINDOUTPUT VERIFY
+			DROP SWAP
+			0 NUMEQUALVERIFY
+			OP_1 3 PICK
+			5 ROLL FINDOUTPUT VERIFY
 			DATA_2 0x5275
-			5 ROLL CATPUSHDATA
-			4 ROLL CATPUSHDATA
 			3 ROLL CATPUSHDATA
-			1 CATPUSHDATA
 			ROT CATPUSHDATA
+			1 CATPUSHDATA
 			SWAP CATPUSHDATA
 			OUTPUTSCRIPT
 			DATA_1 0x27 RIGHT
@@ -165,20 +146,14 @@ const (
 		ENDIF
 		DUP 2 EQUAL IF
 			2DROP
-			7 ROLL
-			DUP 0 GREATERTHANOREQUAL VERIFY
-			DUP 4 PICK LESSTHAN VERIFY
-			ROT DUP 1 EQUAL SWAP 2 EQUAL BOOLOR VERIFY
-			1 5 PICK
-			7 ROLL FINDOUTPUT VERIFY
-			5 ROLL HASH256
-			2 PICK EQUALVERIFY
+			4 ROLL
+			SWAP DUP 1 EQUAL SWAP 2 EQUAL BOOLOR VERIFY
+			1 3 PICK
+			5 ROLL FINDOUTPUT VERIFY
 			DATA_2 0x5275
-			5 ROLL CATPUSHDATA
-			4 ROLL CATPUSHDATA
 			3 ROLL CATPUSHDATA
-			2 CATPUSHDATA
 			ROT CATPUSHDATA
+			2 CATPUSHDATA
 			SWAP CATPUSHDATA
 			OUTPUTSCRIPT
 			DATA_1 0x27 RIGHT
@@ -188,13 +163,11 @@ const (
 		DUP 3 EQUAL IF
 			DROP
 			DATA_2 0x5275
-			6 ROLL CATPUSHDATA
-			5 PICK CATPUSHDATA
 			4 ROLL CATPUSHDATA
-			3 ROLL
+			3 PICK CATPUSHDATA
+			ROT
 			DUP 16 LESSTHAN VERIFY
 			16 ADD CATPUSHDATA
-			ROT CATPUSHDATA
 			SWAP CATPUSHDATA
 			OUTPUTSCRIPT
 			DATA_1 0x27 RIGHT
@@ -203,12 +176,10 @@ const (
 			EVAL
 		ENDIF
 		DUP 4 EQUAL IF
-			2DROP 2DROP
+			2DROP DROP
 			DATA_2 0x5275
-			3 ROLL CATPUSHDATA
-			2 PICK CATPUSHDATA
-			SWAP CATPUSHDATA
-			3 ROLL CATPUSHDATA
+			ROT CATPUSHDATA
+			OVER CATPUSHDATA
 			ROT CATPUSHDATA
 			0 CATPUSHDATA
 			OUTPUTSCRIPT
@@ -218,9 +189,9 @@ const (
 			EVAL
 		ENDIF
 		DUP 5 EQUAL IF
-			2DROP DROP
+			2DROP
 			16 GREATERTHANOREQUAL VERIFY
-			DROP NIP
+			NIP
 			AMOUNT ASSET DATA_1 0x6a
 			RESERVEOUTPUT VERIFY
 			EVAL

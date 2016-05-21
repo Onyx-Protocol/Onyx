@@ -11,7 +11,6 @@ import (
 	"chain/core/issuer"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
-	"chain/crypto/hash256"
 )
 
 func createVotingTokenFixture(ctx context.Context, t *testing.T, right bc.AssetID, admin []byte, amount uint64) *Token {
@@ -20,7 +19,7 @@ func createVotingTokenFixture(ctx context.Context, t *testing.T, right bc.AssetI
 	issueTxTemplate, err := issuer.Issue(ctx, assetID, []*txbuilder.Destination{
 		{
 			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: amount},
-			Receiver:    TokenIssuance(ctx, right, admin, 2, hash256.Sum(right[:])),
+			Receiver:    TokenIssuance(ctx, right, admin),
 		},
 	})
 	if err != nil {

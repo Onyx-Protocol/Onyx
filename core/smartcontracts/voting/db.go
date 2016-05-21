@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -66,15 +67,15 @@ func insertVotingRight(ctx context.Context, assetID bc.AssetID, ordinal int, blo
 func upsertVotingToken(ctx context.Context, assetID bc.AssetID, blockHeight uint64, outpoint bc.Outpoint, amount uint64, data tokenScriptData) error {
 	const q = `
 		INSERT INTO voting_tokens
-			(asset_id, right_asset_id, tx_hash, index, state, closed, vote, option_count, secret_hash, admin_script, amount, block_height)
-			VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			(asset_id, right_asset_id, tx_hash, index, state, closed, vote, admin_script, amount, block_height)
+			VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		ON CONFLICT (asset_id, right_asset_id) DO UPDATE
-		  SET tx_hash = $3, index = $4, state = $5, closed = $6, vote = $7, secret_hash = $9, block_height = $12
+		  SET tx_hash = $3, index = $4, state = $5, closed = $6, vote = $7, block_height = $10
 		  WHERE voting_tokens.block_height <= excluded.block_height
 	`
 	_, err := pg.FromContext(ctx).Exec(ctx, q, assetID, data.Right,
 		outpoint.Hash, outpoint.Index, data.State.Base(), data.State.Finished(),
-		data.Vote, data.OptionCount, data.SecretHash, data.AdminScript, amount, blockHeight)
+		data.Vote, data.AdminScript, amount, blockHeight)
 	return errors.Wrap(err, "upserting into voting_tokens")
 }
 
@@ -334,13 +335,13 @@ func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*Right, strin
 //   Closed = 0 || Closed = Circulation
 //
 type Tally struct {
-	AssetID     bc.AssetID `json:"voting_token_asset_id"`
-	Circulation int        `json:"circulation"`
-	Distributed int        `json:"distributed"`
-	Registered  int        `json:"registered"`
-	Voted       int        `json:"voted"`
-	Closed      int        `json:"closed"`
-	Votes       []int      `json:"votes"`
+	AssetID     bc.AssetID     `json:"voting_token_asset_id"`
+	Circulation int            `json:"circulation"`
+	Distributed int            `json:"distributed"`
+	Registered  int            `json:"registered"`
+	Voted       int            `json:"voted"`
+	Closed      int            `json:"closed"`
+	Votes       map[string]int `json:"votes"`
 }
 
 // TallyVotes looks up all voting tokens for the provided asset ID and
@@ -351,14 +352,12 @@ func TallyVotes(ctx context.Context, tokenAssetID bc.AssetID) (tally Tally, err 
 	const (
 		stateQ = `
 			SELECT
-				option_count,
 				SUM(amount) AS total,
 				SUM(CASE WHEN state = $1 THEN amount ELSE 0 END) AS distributed,
 				SUM(CASE WHEN state = $2 THEN amount ELSE 0 END) AS registered,
 				SUM(CASE WHEN state = $3 THEN amount ELSE 0 END) AS voted,
 				SUM(CASE WHEN closed THEN amount ELSE 0 END) AS closed
 			FROM voting_tokens WHERE asset_id = $4
-			GROUP BY option_count
 		`
 		voteQ = `
 			SELECT vote, SUM(amount) AS total
@@ -367,9 +366,8 @@ func TallyVotes(ctx context.Context, tokenAssetID bc.AssetID) (tally Tally, err 
 			GROUP BY vote
 		`
 	)
-	var optionCount int
 	err = pg.FromContext(ctx).QueryRow(ctx, stateQ, stateDistributed, stateRegistered, stateVoted, tokenAssetID).
-		Scan(&optionCount, &tally.Circulation, &tally.Distributed, &tally.Registered, &tally.Voted, &tally.Closed)
+		Scan(&tally.Circulation, &tally.Distributed, &tally.Registered, &tally.Voted, &tally.Closed)
 	if err == sql.ErrNoRows {
 		return tally, nil
 	}
@@ -377,17 +375,14 @@ func TallyVotes(ctx context.Context, tokenAssetID bc.AssetID) (tally Tally, err 
 		return tally, err
 	}
 
-	tally.Votes = make([]int, optionCount)
+	tally.Votes = map[string]int{}
 	err = pg.ForQueryRows(ctx, voteQ, tokenAssetID, stateVoted, func(vote int, total int) error {
-		if vote >= len(tally.Votes) {
-			return fmt.Errorf("vote for option %d exceeds option count %d", vote, optionCount)
-		}
 		if vote < 0 {
 			return errors.New("voting token in voted state but with negative vote value")
 		}
 
-		// Votes are 1-indexed within the contract.
-		tally.Votes[vote] = total
+		s := strconv.Itoa(vote)
+		tally.Votes[s] = total
 		return nil
 	})
 	return tally, err
@@ -405,8 +400,6 @@ func FindTokenForAsset(ctx context.Context, tokenAssetID, rightAssetID bc.AssetI
 			vt.state,
 			vt.closed,
 			vt.vote,
-			vt.option_count,
-			vt.secret_hash,
 			vt.admin_script,
 			vt.amount
 		FROM voting_tokens vt
@@ -420,7 +413,7 @@ func FindTokenForAsset(ctx context.Context, tokenAssetID, rightAssetID bc.AssetI
 	)
 	err := pg.FromContext(ctx).QueryRow(ctx, sqlQ, tokenAssetID, rightAssetID).Scan(
 		&tok.AssetID, &tok.Right, &tok.Outpoint.Hash, &tok.Outpoint.Index, &baseState,
-		&closed, &tok.Vote, &tok.OptionCount, &tok.SecretHash, &tok.AdminScript, &tok.Amount)
+		&closed, &tok.Vote, &tok.AdminScript, &tok.Amount)
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
 	} else if err != nil {
@@ -466,8 +459,6 @@ func GetVotes(ctx context.Context, assetIDs []bc.AssetID, accountID string, afte
 				vt.state,
 				vt.closed,
 				vt.vote,
-				vt.option_count,
-				vt.secret_hash,
 				vt.admin_script,
 				vt.amount,
 				vr.account_id
@@ -520,8 +511,8 @@ func GetVotes(ctx context.Context, assetIDs []bc.AssetID, accountID string, afte
 		)
 		err = rows.Scan(
 			&token.AssetID, &token.Right, &token.Outpoint.Hash, &token.Outpoint.Index,
-			&baseState, &closed, &token.Vote, &token.OptionCount, &token.SecretHash,
-			&token.AdminScript, &token.Amount, &token.AccountID,
+			&baseState, &closed, &token.Vote, &token.AdminScript, &token.Amount,
+			&token.AccountID,
 		)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "scanning Token")
