@@ -245,6 +245,12 @@ type votingContractActionParams struct {
 	Amount            uint64             `json:"amount,omitempty"`             // token issuance
 	Option            int64              `json:"option,omitempty"`             // vote
 	ResetRegistration bool               `json:"reset_registration,omitempty"` // reset
+	RecallAccountID   *string            `json:"recall_account_id,omitempty"`  // override
+	Delegates         []struct {
+		HolderScript chainjson.HexBytes `json:"holder_script,omitempty"`
+		AccountID    string             `json:"account_id,omitempty"`
+		Deadline     time.Time          `json:"deadline,omitempty"`
+	} `json:"override_delegates,omitempty"` // override
 }
 
 func (params *votingContractActionParams) token(ctx context.Context) (*voting.Token, error) {
@@ -422,6 +428,73 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		})
 		dsts = append(dsts, &txbuilder.Destination{
 			AssetAmount: bc.AssetAmount{AssetID: old.AssetID, Amount: 1},
+			Metadata:    action.Metadata,
+			Receiver:    receiver,
+		})
+	case "override-voting-right":
+		if params.RightAssetID == nil {
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "missing voting right asset id")
+		}
+		// retrieve the entire current history
+		history, err := voting.FindRightsForAsset(ctx, *params.RightAssetID)
+		if err != nil {
+			return nil, nil, err
+		}
+		if len(history) < 1 {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "cannot find voting right with asset id %s", *params.RightAssetID)
+		}
+
+		var (
+			forkPoint          *voting.Right
+			delegates          []voting.RightHolder
+			intermediaryRights []*voting.Right
+		)
+
+		forkPoint = history[len(history)-1]
+		// Find the recall point in the voting right history. Use that as the
+		// fork point if provided.
+		if params.RecallAccountID != nil {
+			for idx, r := range history {
+				if r.AccountID != nil && *r.AccountID == *params.RecallAccountID {
+					forkPoint, intermediaryRights = r, history[idx+1:len(history)-1]
+					break
+				}
+			}
+			if forkPoint == history[len(history)-1] {
+				return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting right not recallable")
+			}
+		}
+
+		tip := voting.RightHolder{Script: forkPoint.HolderScript, Deadline: forkPoint.Deadline}
+		for _, d := range params.Delegates {
+			script, err := buildAddress(ctx, d.HolderScript, d.AccountID)
+			if err != nil {
+				return nil, nil, err
+			}
+			if d.Deadline.Unix() > tip.Deadline {
+				return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting right deadlines must be monotonically decreasing")
+			}
+
+			rh := voting.RightHolder{
+				Script:   script,
+				Deadline: d.Deadline.Unix(),
+			}
+			if d.Deadline.IsZero() {
+				rh.Deadline = tip.Deadline
+			}
+			delegates = append(delegates, rh)
+			tip = rh
+		}
+		reserver, receiver, err := voting.RightOverride(ctx, history[len(history)-1], forkPoint, intermediaryRights, delegates)
+		if err != nil {
+			return nil, nil, err
+		}
+		srcs = append(srcs, &txbuilder.Source{
+			AssetAmount: bc.AssetAmount{AssetID: forkPoint.AssetID, Amount: 1},
+			Reserver:    reserver,
+		})
+		dsts = append(dsts, &txbuilder.Destination{
+			AssetAmount: bc.AssetAmount{AssetID: forkPoint.AssetID, Amount: 1},
 			Metadata:    action.Metadata,
 			Receiver:    receiver,
 		})

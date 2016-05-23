@@ -36,23 +36,56 @@ func Connect(chain *cos.FC) {
 	})
 }
 
-func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx *bc.Tx) error {
+func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx *bc.Tx) (err error) {
+	var (
+		votingRightInputs    = map[bc.AssetID]bc.TxInput{}
+		votingRightOutputs   = map[bc.AssetID]rightScriptData{}
+		votingRightOutpoints = map[bc.AssetID]bc.Outpoint{}
+	)
 
-	// We iterate through all the inputs, finding any sigscripts that redeem
-	// an existing voting right contract. For each input, we void any previous
-	// voting right owners that are no longer applicable. We also save the
-	// ordinal of the consumed voting right output so that we know what ordinal
-	// to use when inserting the new output.
-	votingRightOrdinals := map[bc.AssetID]int{}
+	// Collect all of the voting right inputs into the maps.
 	for _, in := range tx.Inputs {
-		ok, clause, params := testRightsSigscript(in.SignatureScript)
-		if !ok {
+		if ok, _, _ := testRightsSigscript(in.SignatureScript); ok {
+			votingRightInputs[in.AssetAmount.AssetID] = *in
+		}
+	}
+
+	// Collect all of the voting right outputs. Also, index all of the voting
+	// token outputs.
+	for i, out := range tx.Outputs {
+		outpoint := bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
+
+		if rightData, err := testRightsContract(out.Script); rightData != nil && err == nil {
+			votingRightOutputs[out.AssetID] = *rightData
+			votingRightOutpoints[out.AssetID] = outpoint
 			continue
 		}
 
+		// If the output is a voting token, update the voting token index.
+		if tokenData, err := testTokenContract(out.Script); tokenData != nil && err == nil {
+			err = upsertVotingToken(ctx, out.AssetID, blockHeight, outpoint, out.Amount, *tokenData)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Index all of the changes to voting rights.
+	for assetID, data := range votingRightOutputs {
+		// If there is no voting right input, then this is a voting right issuance.
+		if _, ok := votingRightInputs[assetID]; !ok {
+			err = insertVotingRight(ctx, assetID, 0, blockHeight, votingRightOutpoints[assetID], data)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		in := votingRightInputs[assetID]
+		_, clause, params := testRightsSigscript(in.SignatureScript)
+
 		// Look up the current state of the voting right by finding the voting
 		// right at the previous outpoint with the highest ordinal.
-		prev, err := FindRightPrevout(ctx, in.AssetAmount.AssetID, in.Previous)
+		prev, err := FindRightPrevout(ctx, assetID, in.Previous)
 		if err != nil {
 			return err
 		}
@@ -61,76 +94,103 @@ func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx
 		case clauseAuthenticate:
 			// Void the voting right claim at the previous outpoint.
 			// The holder will need to use the new tx's outpoint from now on.
-			err = voidVotingRights(ctx, prev.AssetID, blockHeight, prev.Ordinal, prev.Ordinal)
+			err = voidVotingRights(ctx, assetID, blockHeight, prev.Ordinal, prev.Ordinal)
 			if err != nil {
 				return err
 			}
-			votingRightOrdinals[prev.AssetID] = prev.Ordinal + 1
+			err = insertVotingRight(ctx, assetID, prev.Ordinal+1, blockHeight, votingRightOutpoints[assetID], data)
+			if err != nil {
+				return err
+			}
 		case clauseTransfer:
 			// Void the voting right claim at the previous outpoint.
 			// A transferred voting right cannot be recalled by the transferer
-			err = voidVotingRights(ctx, prev.AssetID, blockHeight, prev.Ordinal, prev.Ordinal)
+			err = voidVotingRights(ctx, assetID, blockHeight, prev.Ordinal, prev.Ordinal)
 			if err != nil {
 				return err
 			}
-			votingRightOrdinals[prev.AssetID] = prev.Ordinal + 1
+			err = insertVotingRight(ctx, assetID, prev.Ordinal+1, blockHeight, votingRightOutpoints[assetID], data)
+			if err != nil {
+				return err
+			}
 		case clauseDelegate:
-			// Nothing to void, just increment the ordinal.
-			votingRightOrdinals[prev.AssetID] = prev.Ordinal + 1
+			// Nothing to void, just increment the ordinal on the new right.
+			err = insertVotingRight(ctx, assetID, prev.Ordinal+1, blockHeight, votingRightOutpoints[assetID], data)
+			if err != nil {
+				return err
+			}
 		case clauseRecall:
 			// Use the ownership chain to find the recall point.
 			var recallChain bc.Hash
-			params, recallChain, ok = paramsPopHash(params)
+			ok := true
+			params, recallChain = paramsPopHash(params, &ok)
 			if !ok {
 				continue
 			}
 
-			recallOrdinal, err := findRecallOrdinal(ctx, prev.AssetID, prev.Ordinal, recallChain)
+			recallPoint, err := findRecallPoint(ctx, assetID, prev.Ordinal, recallChain)
 			if err != nil {
 				return err
 			}
-
-			err = voidVotingRights(ctx, prev.AssetID, blockHeight, recallOrdinal, prev.Ordinal)
+			err = voidVotingRights(ctx, assetID, blockHeight, recallPoint.Ordinal, prev.Ordinal)
 			if err != nil {
 				return err
 			}
-			votingRightOrdinals[prev.AssetID] = prev.Ordinal + 1
+			err = insertVotingRight(ctx, assetID, prev.Ordinal+1, blockHeight, votingRightOutpoints[assetID], data)
+			if err != nil {
+				return err
+			}
 		case clauseOverride:
-			// TODO(jackson): The override clause will require us to void
-			// previous voting right claims as well.
-		}
-	}
+			// Pull all of the override data out of the sigscript parameters.
+			valid := true
+			params, delegatable := paramsPopBool(params, &valid)
+			params, forkHash := paramsPopHash(params, &valid)
 
-	// For outputs that match one of the voting contracts' p2c script
-	// formats, index voting-specific info in the db.
-	for i, out := range tx.Outputs {
-		outpoint := bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
+			// Pop off and discard all of the proof hashes. We don't need
+			// them for indexing.
+			params, proofHashCount := paramsPopInt64(params, &valid)
+			for i := int64(0); i < proofHashCount; i++ {
+				params, _ = paramsPopHash(params, &valid)
+			}
 
-		// Newly issued voting rights will be indexed here.
-		rightData, err := testRightsContract(out.Script)
-		if err != nil {
-			return err
-		}
-		if rightData != nil {
-			ordinal := votingRightOrdinals[out.AssetID]
-			err = insertVotingRight(ctx, out.AssetID, ordinal, blockHeight, outpoint, *rightData)
+			params, newHolderCount := paramsPopInt64(params, &valid)
+			newHolders := make([]RightHolder, newHolderCount)
+			for i := range newHolders {
+				params, newHolders[i].Deadline = paramsPopInt64(params, &valid)
+				params, newHolders[i].Script = paramsPopBytes(params, &valid)
+			}
+
+			// If any one of the sigscript parameters failed to decode, this
+			// sigscript doesn't match.
+			if !valid {
+				continue
+			}
+
+			// Void all of the voting rights from [forkHash, ..., ..., prevOut] inclusive.
+			recallPoint, err := findRecallPoint(ctx, assetID, prev.Ordinal, forkHash)
 			if err != nil {
 				return err
 			}
-			continue
-		}
-
-		// If the output is a voting token, update the voting token index.
-		tokenData, err := testTokenContract(out.Script)
-		if err != nil {
-			return err
-		}
-		if tokenData != nil {
-			err = upsertVotingToken(ctx, out.AssetID, blockHeight, outpoint, out.Amount, *tokenData)
+			err = voidVotingRights(ctx, assetID, blockHeight, recallPoint.Ordinal, prev.Ordinal)
 			if err != nil {
 				return err
 			}
-			continue
+
+			// Insert all of the new voting right holders.
+			prevData := recallPoint.rightScriptData
+			prevData.Delegatable = delegatable
+			nextOrdinal := prev.Ordinal + 1
+			for _, nh := range newHolders {
+				prevData.HolderScript = nh.Script
+				prevData.Deadline = nh.Deadline
+
+				err = insertVotingRight(ctx, assetID, nextOrdinal, blockHeight, votingRightOutpoints[assetID], prevData)
+				if err != nil {
+					return err
+				}
+				nextOrdinal++
+				prevData.OwnershipChain = calculateOwnershipChain(prevData.OwnershipChain, prevData.HolderScript, prevData.Deadline)
+			}
 		}
 	}
 	return nil

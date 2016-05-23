@@ -106,11 +106,11 @@ func RightRecall(ctx context.Context, src, recallPoint *Right, intermediaryRight
 		originalHolderAddr = nil
 	}
 
-	intermediaries := make([]intermediateHolder, 0, len(intermediaryRights))
+	intermediaries := make([]RightHolder, 0, len(intermediaryRights))
 	for _, r := range intermediaryRights {
-		intermediaries = append(intermediaries, intermediateHolder{
-			script:   r.HolderScript,
-			deadline: r.Deadline,
+		intermediaries = append(intermediaries, RightHolder{
+			Script:   r.HolderScript,
+			Deadline: r.Deadline,
 		})
 	}
 
@@ -123,6 +123,48 @@ func RightRecall(ctx context.Context, src, recallPoint *Right, intermediaryRight
 		holderAddr:     originalHolderAddr,
 	}
 	return reserver, reserver.output, nil
+}
+
+// RightOverride builds txbuilder Reserver and Receiver implementations for
+// a voting right override.
+func RightOverride(ctx context.Context, src, forkPoint *Right, intermediaryRights []*Right, delegates []RightHolder) (txbuilder.Reserver, txbuilder.Receiver, error) {
+	adminAddr, err := appdb.GetAddress(ctx, src.AdminScript)
+	if err != nil {
+		adminAddr = nil
+	}
+
+	proofHashes := make([]RightHolder, 0, len(intermediaryRights)+1)
+	proofHashes = append(proofHashes, RightHolder{Script: forkPoint.HolderScript, Deadline: forkPoint.Deadline})
+	for _, r := range intermediaryRights {
+		proofHashes = append(proofHashes, RightHolder{
+			Script:   r.HolderScript,
+			Deadline: r.Deadline,
+		})
+	}
+
+	// Build up the new ownership hash.
+	output := forkPoint.rightScriptData
+	for _, d := range delegates {
+		output.OwnershipChain = calculateOwnershipChain(output.OwnershipChain, output.HolderScript, output.Deadline)
+		output.HolderScript = d.Script
+		output.Deadline = d.Deadline
+	}
+
+	// The contract expects the holder at the fork point too.
+	newHolders := append([]RightHolder{
+		{Script: forkPoint.HolderScript, Deadline: forkPoint.Deadline},
+	}, delegates...)
+
+	reserver := rightsReserver{
+		outpoint:    src.Outpoint,
+		clause:      clauseOverride,
+		output:      output,
+		proofHashes: proofHashes,
+		newHolders:  newHolders,
+		prevScript:  src.PKScript(),
+		adminAddr:   adminAddr,
+	}
+	return reserver, output, nil
 }
 
 // TokenIssuance builds a txbuilder Receiver implementation

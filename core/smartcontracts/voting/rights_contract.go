@@ -126,12 +126,40 @@ func testRightsSigscript(sigscript []byte) (ok bool, c rightsContractClause, par
 	return true, c, data[:len(data)-2]
 }
 
-func paramsPopHash(inParams [][]byte) (outParams [][]byte, hash bc.Hash, ok bool) {
-	if len(inParams) < 1 {
-		return outParams, hash, false
+func paramsPopInt64(params [][]byte, valid *bool) ([][]byte, int64) {
+	if len(params) < 1 {
+		*valid = false
+		return params, 0
 	}
-	copy(hash[:], inParams[len(inParams)-1])
-	return inParams[:len(inParams)-1], hash, true
+	v, err := txscript.AsInt64(params[len(params)-1])
+	*valid = *valid && err == nil
+	return params[:len(params)-1], v
+}
+
+func paramsPopBool(params [][]byte, valid *bool) ([][]byte, bool) {
+	if len(params) < 1 {
+		*valid = false
+		return params, false
+	}
+	return params[:len(params)-1], txscript.AsBool(params[len(params)-1])
+}
+
+func paramsPopBytes(params [][]byte, valid *bool) ([][]byte, []byte) {
+	if len(params) < 1 {
+		*valid = false
+		return params, nil
+	}
+	return params[:len(params)-1], params[len(params)-1]
+}
+
+func paramsPopHash(params [][]byte, valid *bool) ([][]byte, bc.Hash) {
+	if len(params) < 1 {
+		*valid = false
+		return nil, bc.Hash{}
+	}
+	var hash bc.Hash
+	copy(hash[:], params[len(params)-1])
+	return params[:len(params)-1], hash
 }
 
 const (
@@ -147,7 +175,7 @@ const (
 	// 2 - Transfer
 	// 3 - Delegate
 	// 4 - Recall
-	// 5 - Override     (Unimplemented)
+	// 5 - Override
 	// 6 - Cancel       (Unimplemented)
 	rightsHoldingContractString = `
 		5 ROLL
@@ -233,6 +261,56 @@ const (
 			2DROP 2DROP
 			EVAL
 		ENDIF
+	DUP 5 EQUAL IF
+		DROP
+		8 PICK 7 PICK
+		9 ROLL
+		WHILE
+			SWAP 10 ROLL SWAP
+			CAT HASH256
+			SWAP 1SUB
+		ENDWHILE DROP
+		4 PICK EQUALVERIFY
+		7 PICK NOTIF
+			9 PICK
+			11 PICK
+			5 PICK NOTIF
+				6 ROLL EQUALVERIFY
+				3 ROLL EQUALVERIFY
+				DROP
+			ELSE
+				HASH256 SWAP
+				HASH256 CAT HASH256
+				EQUALVERIFY
+				NIP ROT DROP
+			ENDIF
+		ELSE
+			DROP NIP ROT DROP
+		ENDIF
+		5 ROLL
+		1SUB DUP 2MUL 6 ADD ROLL
+		OVER 2MUL 7 ADD ROLL
+		7 ROLL
+		3 ROLL
+		WHILE
+			8 ROLL HASH256
+			9 ROLL HASH256
+			SWAP CAT HASH256
+			ROT CAT HASH256
+			SWAP 1SUB
+		ENDWHILE DROP
+		DATA_2 0x5275
+		6 PICK CATPUSHDATA
+		ROT CATPUSHDATA
+		SWAP CATPUSHDATA
+		SWAP CATPUSHDATA
+		4 ROLL CATPUSHDATA
+		OUTPUTSCRIPT
+		DATA_1 0x27 RIGHT CAT
+		AMOUNT ASSET ROT
+		RESERVEOUTPUT VERIFY
+		2DROP EVAL
+	ENDIF
 	`
 )
 

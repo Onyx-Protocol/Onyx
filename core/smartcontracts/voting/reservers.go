@@ -20,18 +20,21 @@ type rightsReserver struct {
 	outpoint       bc.Outpoint
 	clause         rightsContractClause
 	output         rightScriptData
-	intermediaries []intermediateHolder
+	intermediaries []RightHolder // recall clause
+	proofHashes    []RightHolder // override clause
+	newHolders     []RightHolder // override clause
+	forkHash       bc.Hash       // override clause
 	prevScript     []byte
 	holderAddr     *appdb.Address
 	adminAddr      *appdb.Address
 }
 
-// intermediateHolder represents a previous holder. When recalling a token,
-// you must provide all intermediate holders between the recall point and the
-// current utxo.
-type intermediateHolder struct {
-	script   []byte
-	deadline int64
+// RightHolder represents a (script, deadline) tuple with ownership over a
+// voting right. When recalling a token, you must provide all intermediate
+// holders between the recall point and the current utxo.
+type RightHolder struct {
+	Script   []byte
+	Deadline int64
 }
 
 // hash returns Hash256(Hash256(script) + Hash256(deadline)). This hash is
@@ -39,9 +42,9 @@ type intermediateHolder struct {
 // clause of the contract, it's necessary to provide these hashes for all
 // intermediate holders between the recall holder and the current holder
 // to prove prior ownership.
-func (ih intermediateHolder) hash() bc.Hash {
-	scriptHash := hash256.Sum(ih.script)
-	deadlineHash := hash256.Sum(txscript.Int64ToScriptBytes(ih.deadline))
+func (rh RightHolder) hash() bc.Hash {
+	scriptHash := hash256.Sum(rh.Script)
+	deadlineHash := hash256.Sum(txscript.Int64ToScriptBytes(rh.Deadline))
 
 	data := make([]byte, 0, len(scriptHash)+len(deadlineHash))
 	data = append(data, scriptHash[:]...)
@@ -99,7 +102,20 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 		inputs = append(inputs, txscript.DataItem(r.output.HolderScript))
 		inputs = append(inputs, txscript.NumItem(r.output.Deadline))
 		inputs = append(inputs, txscript.DataItem(r.output.OwnershipChain[:]))
-	case clauseOverride, clauseCancel:
+	case clauseOverride:
+		for _, h := range r.newHolders {
+			inputs = append(inputs, txscript.DataItem(h.Script))
+			inputs = append(inputs, txscript.NumItem(r.output.Deadline))
+		}
+		inputs = append(inputs, txscript.NumItem(len(r.newHolders)))
+		for _, ph := range r.proofHashes {
+			h := ph.hash()
+			inputs = append(inputs, txscript.DataItem(h[:]))
+		}
+		inputs = append(inputs, txscript.NumItem(len(r.proofHashes)))
+		inputs = append(inputs, txscript.DataItem(r.forkHash[:]))
+		inputs = append(inputs, txscript.BoolItem(r.output.Delegatable))
+	case clauseCancel:
 		// TODO(jackson): Implement.
 		return nil, errors.New("unimplemented")
 	}

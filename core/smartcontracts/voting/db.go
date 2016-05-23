@@ -92,10 +92,12 @@ func voidVotingRights(ctx context.Context, assetID bc.AssetID, blockHeight uint6
 }
 
 type votingRightsQuery struct {
-	accountID   string
-	outpoint    *bc.Outpoint
-	assetID     *bc.AssetID
-	includeVoid bool
+	accountID      string
+	outpoint       *bc.Outpoint
+	assetID        *bc.AssetID
+	ownershipChain []byte
+	ordinalMax     *int
+	includeVoid    bool
 
 	cursor *cursor
 	limit  int
@@ -134,6 +136,16 @@ func (q votingRightsQuery) Where() (string, []interface{}) {
 		whereClauses = append(whereClauses, fmt.Sprintf("(vr.asset_id, vr.ordinal) > ($%d, $%d)\n", param, param+1))
 		values = append(values, q.cursor.prevAssetID, q.cursor.prevOrdinal)
 		param += 2
+	}
+	if q.ordinalMax != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("vr.ordinal <= $%d\n", param))
+		values = append(values, *q.ordinalMax)
+		param++
+	}
+	if q.ownershipChain != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("vr.ownership_chain = $%d\n", param))
+		values = append(values, q.ownershipChain)
+		param++
 	}
 	if !q.includeVoid {
 		whereClauses = append(whereClauses, "vr.void_block_height IS NULL\n")
@@ -243,20 +255,23 @@ func GetCurrentHolder(ctx context.Context, assetID bc.AssetID) (*Right, error) {
 	return rights[len(rights)-1], nil
 }
 
-// findRecallOrdinal looks up the ordinal of a recall point. It's used during
+// findRecallPoint looks up the voting right for a recall. It's used during
 // voting right indexing and will look up the largest ordinal still less than
 // the previous outpoint's ordinal that has a matching ownership chain.
-func findRecallOrdinal(ctx context.Context, assetID bc.AssetID, prevoutOrdinal int, recallChain bc.Hash) (recallOrdinal int, err error) {
-	const sqlQ = `
-		SELECT ordinal FROM voting_rights vr
-		WHERE asset_id = $1 AND ordinal < $2 AND ownership_chain = $3
-		ORDER BY ordinal DESC LIMIT 1
-	`
-	err = pg.QueryRow(ctx, sqlQ, assetID, prevoutOrdinal, recallChain[:]).Scan(&recallOrdinal)
-	if err == sql.ErrNoRows {
-		return 0, pg.ErrUserInputNotFound
+func findRecallPoint(ctx context.Context, assetID bc.AssetID, prevoutOrdinal int, recallChain bc.Hash) (r *Right, err error) {
+	rights, _, err := findVotingRights(ctx, votingRightsQuery{
+		assetID:        &assetID,
+		ordinalMax:     &prevoutOrdinal,
+		ownershipChain: recallChain[:],
+		includeVoid:    true,
+	})
+	if err != nil {
+		return nil, err
 	}
-	return recallOrdinal, err
+	if len(rights) == 0 {
+		return nil, pg.ErrUserInputNotFound
+	}
+	return rights[len(rights)-1], nil
 }
 
 func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*Right, string, error) {
