@@ -172,10 +172,11 @@ func StringVar(p *string, name string, value string) {
 // of strings. It expects env var name to
 // be a list of items delimited by commas.
 // If env var name is missing, StringSlice
-// returns a pointer to an empty slice.
-func StringSlice(name string) *[]string {
+// returns a pointer to a slice of the value
+// strings.
+func StringSlice(name string, value ...string) *[]string {
 	p := new([]string)
-	StringSliceVar(p, name)
+	StringSliceVar(p, name, value...)
 	return p
 }
 
@@ -183,7 +184,8 @@ func StringSlice(name string) *[]string {
 // with the specified name. The argument p
 // points to a string slice variable in which
 // to store the value of the environment var.
-func StringSliceVar(p *[]string, name string) {
+func StringSliceVar(p *[]string, name string, value ...string) {
+	*p = value
 	funcs = append(funcs, func() bool {
 		if s := os.Getenv(name); s != "" {
 			a := strings.Split(s, ",")

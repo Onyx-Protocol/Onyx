@@ -228,11 +228,12 @@ func TestStringVar(t *testing.T) {
 }
 
 func TestStringSlice(t *testing.T) {
-	result := StringSlice("empty")
+	result := StringSlice("empty", "hi")
 	Parse()
 
-	if len(*result) != 0 {
-		t.Fatalf("expected empty slice, got slice of len %d", len(*result))
+	exp := []string{"hi"}
+	if !reflect.DeepEqual(exp, *result) {
+		t.Fatalf("expected %v, got %v", exp, *result)
 	}
 
 	err := os.Setenv("string-slice-key", "hello,world")
@@ -240,10 +241,10 @@ func TestStringSlice(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	result = StringSlice("string-slice-key")
+	result = StringSlice("string-slice-key", "hi")
 	Parse()
 
-	exp := []string{"hello", "world"}
+	exp = []string{"hello", "world"}
 	if !reflect.DeepEqual(exp, *result) {
 		t.Fatalf("expected %v, got %v", exp, *result)
 	}
@@ -251,11 +252,12 @@ func TestStringSlice(t *testing.T) {
 
 func TestStringSliceVar(t *testing.T) {
 	var result []string
-	StringSliceVar(&result, "empty")
+	StringSliceVar(&result, "empty", "hi")
 	Parse()
 
-	if len(result) != 0 {
-		t.Fatalf("expected empty slice, got slice of len %d", len(result))
+	exp := []string{"hi"}
+	if !reflect.DeepEqual(exp, result) {
+		t.Fatalf("expected %v, got %v", exp, result)
 	}
 
 	err := os.Setenv("string-slice-key", "hello,world")
@@ -263,10 +265,10 @@ func TestStringSliceVar(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	StringSliceVar(&result, "string-slice-key")
+	StringSliceVar(&result, "string-slice-key", "hi", "there")
 	Parse()
 
-	exp := []string{"hello", "world"}
+	exp = []string{"hello", "world"}
 	if !reflect.DeepEqual(exp, result) {
 		t.Fatalf("expected %v, got %v", exp, result)
 	}
