@@ -371,7 +371,7 @@ func TallyVotes(ctx context.Context, tokenAssetID bc.AssetID) (tally Tally, err 
 	err = pg.FromContext(ctx).QueryRow(ctx, stateQ, stateDistributed, stateRegistered, stateVoted, tokenAssetID).
 		Scan(&optionCount, &tally.Circulation, &tally.Distributed, &tally.Registered, &tally.Voted, &tally.Closed)
 	if err == sql.ErrNoRows {
-		return tally, pg.ErrUserInputNotFound
+		return tally, nil
 	}
 	if err != nil {
 		return tally, err
