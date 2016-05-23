@@ -69,6 +69,7 @@ var (
 	remoteGeneratorURL = env.String("REMOTE_GENERATOR_URL", "")
 	remoteSignerURLs   = env.StringSlice("REMOTE_SIGNER_URLS")
 	remoteSignerKeys   = env.StringSlice("REMOTE_SIGNER_KEYS")
+	sigsRequired       = env.Int("SIGS_REQUIRED", 1)
 
 	// optional features
 	historicalOutputs = env.Bool("HISTORICAL_OUTPUTS", false)
@@ -181,7 +182,21 @@ func main() {
 
 	if *isGenerator {
 		remotes := remoteSignerInfo(ctx)
-		err := generator.Init(ctx, fc, []*btcec.PublicKey{pubKey}, 1, blockPeriod, localSigner, remotes)
+		nSigners := len(remotes)
+		if *isSigner {
+			nSigners++
+		}
+		if nSigners < *sigsRequired {
+			chainlog.Fatal(ctx, "error", "too few signers configured")
+		}
+		pubKeys := make([]*btcec.PublicKey, nSigners)
+		for i, key := range remotes {
+			pubKeys[i] = key.Key
+		}
+		if *isSigner {
+			pubKeys[nSigners-1] = pubKey
+		}
+		err := generator.Init(ctx, fc, pubKeys, *sigsRequired, blockPeriod, localSigner, remotes)
 		if err != nil {
 			chainlog.Fatal(ctx, "error", err)
 		}
