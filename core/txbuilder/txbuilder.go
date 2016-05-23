@@ -99,11 +99,14 @@ func combine(txs ...*Template) (*Template, error) {
 			return nil, errors.New("all txs must be the same BlockChain")
 		}
 
-		if len(tx.Unsigned.Metadata) != 0 && len(complete.Unsigned.Metadata) != 0 &&
-			!bytes.Equal(tx.Unsigned.Metadata, complete.Unsigned.Metadata) {
-			return nil, errors.WithDetail(ErrBadBuildRequest, "transaction metadata does not match previous template's metadata")
+		if len(tx.Unsigned.Metadata) != 0 {
+			if len(complete.Unsigned.Metadata) != 0 &&
+				!bytes.Equal(tx.Unsigned.Metadata, complete.Unsigned.Metadata) {
+				return nil, errors.WithDetail(ErrBadBuildRequest, "transaction metadata does not match previous template's metadata")
+			}
+
+			complete.Unsigned.Metadata = tx.Unsigned.Metadata
 		}
-		complete.Unsigned.Metadata = tx.Unsigned.Metadata
 
 		complete.Inputs = append(complete.Inputs, tx.Inputs...)
 
