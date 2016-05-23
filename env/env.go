@@ -21,6 +21,15 @@ var funcs []func() bool
 // will be assigned to the returned location.
 func Int(name string, value int) *int {
 	p := new(int)
+	IntVar(p, name, value)
+	return p
+}
+
+// IntVar defines an int var with the specified
+// name and default value. The argument p points
+// to an int variable in which to store the
+// value of the environment var.
+func IntVar(p *int, name string, value int) {
 	*p = value
 	funcs = append(funcs, func() bool {
 		if s := os.Getenv(name); s != "" {
@@ -33,7 +42,6 @@ func Int(name string, value int) *int {
 		}
 		return true
 	})
-	return p
 }
 
 // Bool returns a new bool pointer.
@@ -44,6 +52,15 @@ func Int(name string, value int) *int {
 // Parsing uses strconv.ParseBool.
 func Bool(name string, value bool) *bool {
 	p := new(bool)
+	BoolVar(p, name, value)
+	return p
+}
+
+// BoolVar defines a bool var with the specified
+// name and default value. The argument p points
+// to a bool variable in which to store the value
+// of the environment variable.
+func BoolVar(p *bool, name string, value bool) {
 	*p = value
 	funcs = append(funcs, func() bool {
 		if s := os.Getenv(name); s != "" {
@@ -56,7 +73,6 @@ func Bool(name string, value bool) *bool {
 		}
 		return true
 	})
-	return p
 }
 
 // Duration returns a new time.Duration pointer.
@@ -66,6 +82,16 @@ func Bool(name string, value bool) *bool {
 // will be assigned to the returned location.
 func Duration(name string, value time.Duration) *time.Duration {
 	p := new(time.Duration)
+	DurationVar(p, name, value)
+	return p
+}
+
+// DurationVar defines a time.Duration var with
+// the specified name and default value. The
+// argument p points to a time.Duration variable
+// in which to store the value of the environment
+// variable.
+func DurationVar(p *time.Duration, name string, value time.Duration) {
 	*p = value
 	funcs = append(funcs, func() bool {
 		if s := os.Getenv(name); s != "" {
@@ -78,7 +104,6 @@ func Duration(name string, value time.Duration) *time.Duration {
 		}
 		return true
 	})
-	return p
 }
 
 // URL returns a new url.URL pointer.
@@ -90,6 +115,16 @@ func Duration(name string, value time.Duration) *time.Duration {
 // the given default value.
 func URL(name string, value string) *url.URL {
 	p := new(url.URL)
+	URLVar(p, name, value)
+	return p
+}
+
+// URLVar defines a url.URL variable with
+// the specified name ande default value.
+// The argument p points to a url.URL variable
+// in which to store the value of the enviroment
+// variable.
+func URLVar(p *url.URL, name string, value string) {
 	v, err := url.Parse(value)
 	if err != nil {
 		panic(err)
@@ -106,7 +141,6 @@ func URL(name string, value string) *url.URL {
 		}
 		return true
 	})
-	return p
 }
 
 // String returns a new string pointer.
@@ -115,6 +149,16 @@ func URL(name string, value string) *url.URL {
 // to the returned location.
 func String(name string, value string) *string {
 	p := new(string)
+	StringVar(p, name, value)
+	return p
+}
+
+// StringVar defines a string with the
+// specified name and default value. The
+// argument p points to a string variable in
+// which to store the value of the environment
+// var.
+func StringVar(p *string, name string, value string) {
 	*p = value
 	funcs = append(funcs, func() bool {
 		if s := os.Getenv(name); s != "" {
@@ -122,7 +166,6 @@ func String(name string, value string) *string {
 		}
 		return true
 	})
-	return p
 }
 
 // StringSlice returns a pointer to a slice
@@ -132,15 +175,22 @@ func String(name string, value string) *string {
 // returns a pointer to an empty slice.
 func StringSlice(name string) *[]string {
 	p := new([]string)
+	StringSliceVar(p, name)
+	return p
+}
+
+// StringSliceVar defines a new string slice
+// with the specified name. The argument p
+// points to a string slice variable in which
+// to store the value of the environment var.
+func StringSliceVar(p *[]string, name string) {
 	funcs = append(funcs, func() bool {
 		if s := os.Getenv(name); s != "" {
 			a := strings.Split(s, ",")
-			log.Println(a)
 			*p = a
 		}
 		return true
 	})
-	return p
 }
 
 // Parse parses known env vars
