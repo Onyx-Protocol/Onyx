@@ -367,11 +367,11 @@ func TallyVotes(ctx context.Context, tokenAssetID bc.AssetID) (tally Tally, err 
 	const (
 		stateQ = `
 			SELECT
-				SUM(amount) AS total,
-				SUM(CASE WHEN state = $1 THEN amount ELSE 0 END) AS distributed,
-				SUM(CASE WHEN state = $2 THEN amount ELSE 0 END) AS registered,
-				SUM(CASE WHEN state = $3 THEN amount ELSE 0 END) AS voted,
-				SUM(CASE WHEN closed THEN amount ELSE 0 END) AS closed
+				COALESCE(SUM(amount), 0) AS total,
+				COALESCE(SUM(CASE WHEN state = $1 THEN amount ELSE 0 END), 0) AS distributed,
+				COALESCE(SUM(CASE WHEN state = $2 THEN amount ELSE 0 END), 0) AS registered,
+				COALESCE(SUM(CASE WHEN state = $3 THEN amount ELSE 0 END), 0) AS voted,
+				COALESCE(SUM(CASE WHEN closed THEN amount ELSE 0 END), 0) AS closed
 			FROM voting_tokens WHERE asset_id = $4
 		`
 		voteQ = `
@@ -383,9 +383,6 @@ func TallyVotes(ctx context.Context, tokenAssetID bc.AssetID) (tally Tally, err 
 	)
 	err = pg.FromContext(ctx).QueryRow(ctx, stateQ, stateDistributed, stateRegistered, stateVoted, tokenAssetID).
 		Scan(&tally.Circulation, &tally.Distributed, &tally.Registered, &tally.Voted, &tally.Closed)
-	if err == sql.ErrNoRows {
-		return tally, nil
-	}
 	if err != nil {
 		return tally, err
 	}
