@@ -90,7 +90,7 @@ func Connect(chain *cos.FC) {
 				return
 			}
 			if isOrderbook {
-				err = addOrderbookUTXO(ctx, tx.Hash, i, sellerScript, prices)
+				err = addOrderbookUTXO(ctx, tx, i, sellerScript, prices)
 				if err != nil {
 					log.Error(ctx, errors.Wrap(err, "adding orderbook utxo"))
 					return

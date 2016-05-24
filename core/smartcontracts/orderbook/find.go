@@ -31,7 +31,7 @@ func FindOpenOrders(ctx context.Context, offeredAssetIDs []bc.AssetID, paymentAs
 		extra = `p.asset_id IN (SELECT unnest($1::text[]))`
 		extraParams = append(extraParams, makeAssetIDStrs(paymentAssetIDs))
 	} else {
-		extra = `u.asset_id IN (SELECT unnest($1::text[]))`
+		extra = `o.asset_id IN (SELECT unnest($1::text[]))`
 		extraParams = append(extraParams, makeAssetIDStrs(offeredAssetIDs))
 		if len(paymentAssetIDs) > 0 {
 			extra += ` AND p.asset_id IN (SELECT unnest($2::text[]))`
@@ -43,7 +43,7 @@ func FindOpenOrders(ctx context.Context, offeredAssetIDs []bc.AssetID, paymentAs
 
 // FindOpenOrdersBySeller find open orders from the given seller account.
 func FindOpenOrdersBySeller(ctx context.Context, accountID string) ([]*OpenOrder, error) {
-	return findOpenOrdersHelper(ctx, makeQuery(`ou.seller_id = $1`), accountID)
+	return findOpenOrdersHelper(ctx, makeQuery(`o.seller_id = $1`), accountID)
 }
 
 // FindOpenOrdersBySellerAndAsset find open orders from the given
@@ -52,13 +52,13 @@ func FindOpenOrdersBySellerAndAsset(ctx context.Context, accountID string, asset
 	if len(assetIDs) == 0 {
 		return FindOpenOrdersBySeller(ctx, accountID)
 	}
-	return findOpenOrdersHelper(ctx, makeQuery(`ou.seller_id = $1 AND u.asset_id IN (SELECT unnest($2::text[]))`), accountID, makeAssetIDStrs(assetIDs))
+	return findOpenOrdersHelper(ctx, makeQuery(`o.seller_id = $1 AND o.asset_id IN (SELECT unnest($2::text[]))`), accountID, makeAssetIDStrs(assetIDs))
 }
 
 // FindOpenOrderByOutpoint finds the open order with the given
 // outpoint, if one exists.  Returns nil (no error) if it doesn't.
 func FindOpenOrderByOutpoint(ctx context.Context, outpoint *bc.Outpoint) (*OpenOrder, error) {
-	openOrders, err := findOpenOrdersHelper(ctx, makeQuery(`u.tx_hash = $1 AND u.index = $2`), outpoint.Hash, outpoint.Index)
+	openOrders, err := findOpenOrdersHelper(ctx, makeQuery(`o.tx_hash = $1 AND o.index = $2`), outpoint.Hash, outpoint.Index)
 	if err != nil {
 		return nil, err
 	}
@@ -158,14 +158,12 @@ func makeAssetIDStrs(assetIDs []bc.AssetID) pg.Strings {
 
 func makeQuery(extra string) string {
 	const baseQuery = `
-		SELECT u.tx_hash, u.index, u.asset_id, u.amount, u.script, ou.seller_id, p.asset_id, p.offer_amount, p.payment_amount
-		    FROM utxos u, orderbook_utxos ou, orderbook_prices p
-		    WHERE u.tx_hash = ou.tx_hash
-		        AND u.index = ou.index
-		        AND u.tx_hash = p.tx_hash
-		        AND u.index = p.index
-		        AND NOT EXISTS (SELECT 1 FROM pool_inputs pi WHERE pi.tx_hash = u.tx_hash AND pi.index = u.index)
+		SELECT o.tx_hash, o.index, o.asset_id, o.amount, o.script, o.seller_id, p.asset_id, p.offer_amount, p.payment_amount
+		    FROM orderbook_utxos o, orderbook_prices p
+		    WHERE o.tx_hash = p.tx_hash
+		        AND o.index = p.index
+		        AND NOT EXISTS (SELECT 1 FROM pool_inputs pi WHERE pi.tx_hash = o.tx_hash AND pi.index = o.index)
 		        AND 
 	`
-	return baseQuery + extra + ` ORDER BY u.tx_hash, u.index`
+	return baseQuery + extra + ` ORDER BY o.tx_hash, o.index`
 }

@@ -682,7 +682,10 @@ CREATE TABLE orderbook_prices (
 CREATE TABLE orderbook_utxos (
     tx_hash text NOT NULL,
     index integer NOT NULL,
-    seller_id text NOT NULL
+    seller_id text NOT NULL,
+    asset_id text NOT NULL,
+    amount bigint NOT NULL,
+    script bytea NOT NULL
 );
 
 

@@ -149,7 +149,7 @@ func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 
 func reserveOrder(ctx context.Context, openOrder *OpenOrder, amount uint64) (changeAmount uint64, err error) {
 	const q = `
-		SELECT COUNT(*) FROM utxos
+		SELECT COUNT(*) FROM orderbook_utxos
 		  WHERE (tx_hash, index) = ($1, $2)
 		  AND (tx_hash, index) NOT IN (TABLE pool_inputs)
 	`

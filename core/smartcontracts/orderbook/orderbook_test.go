@@ -315,7 +315,7 @@ func expectPaysToAccount(ctx context.Context, t *testing.T, accountID string, sc
 }
 
 func paysToAccount(ctx context.Context, t testing.TB, accountID string, script []byte) bool {
-	// first check utxos
+	// first check account_utxos
 	const q = `SELECT account_id=$1 FROM account_utxos a WHERE script=$2`
 	var utxoMatch bool
 	err := pg.QueryRow(ctx, q, accountID, script).Scan(&utxoMatch)
