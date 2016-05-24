@@ -12,6 +12,159 @@ import (
 	"chain/database/pg/pgtest"
 )
 
+func TestRedistributeClause(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+
+	var (
+		rightA  = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		rightB  = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		rightC  = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		rightD  = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		rightE  = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		assetID = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		right   = rightScriptData{
+			Deadline:       infiniteDeadline,
+			Delegatable:    true,
+			OwnershipChain: bc.Hash{}, // 0x000...000
+			HolderScript:   []byte{txscript.OP_1},
+		}
+	)
+
+	testCases := []struct {
+		err           error
+		amount        uint64
+		distributions map[bc.AssetID]uint64
+		prev          tokenScriptData
+		outs          map[*tokenScriptData]uint64
+	}{
+		{
+			// Redistribute to four different voting rights.
+			amount: 10000,
+			distributions: map[bc.AssetID]uint64{
+				rightB: 1000,
+				rightC: 500,
+				rightD: 500,
+				rightE: 4000,
+			},
+			prev: tokenScriptData{
+				Right: rightA,
+				State: stateDistributed,
+			},
+			outs: map[*tokenScriptData]uint64{
+				&tokenScriptData{Right: rightB}: 1000,
+				&tokenScriptData{Right: rightC}: 500,
+				&tokenScriptData{Right: rightD}: 500,
+				&tokenScriptData{Right: rightE}: 4000,
+				&tokenScriptData{Right: rightA}: 4000,
+			},
+		},
+		{
+			// Redistribute nothing, everything is change.
+			amount:        10000,
+			distributions: map[bc.AssetID]uint64{},
+			prev: tokenScriptData{
+				Right: rightA,
+				State: stateDistributed,
+			},
+			outs: map[*tokenScriptData]uint64{
+				&tokenScriptData{Right: rightA}: 10000,
+			},
+		},
+		{
+			// Token must be in distributed state.
+			err:    txscript.ErrStackVerifyFailed,
+			amount: 10000,
+			distributions: map[bc.AssetID]uint64{
+				rightB: 1000,
+				rightC: 500,
+				rightD: 500,
+				rightE: 4000,
+			},
+			prev: tokenScriptData{
+				Right: rightA,
+				State: stateRegistered,
+			},
+			outs: map[*tokenScriptData]uint64{
+				&tokenScriptData{Right: rightB}: 1000,
+				&tokenScriptData{Right: rightC}: 500,
+				&tokenScriptData{Right: rightD}: 500,
+				&tokenScriptData{Right: rightE}: 4000,
+				&tokenScriptData{Right: rightA}: 4000,
+			},
+		},
+		{
+			// Distribution amounts don't match outputs.
+			err:    txscript.ErrStackVerifyFailed,
+			amount: 10000,
+			distributions: map[bc.AssetID]uint64{
+				rightB: 1000,
+				rightC: 500,
+				rightD: 500,
+				rightE: 4000,
+			},
+			prev: tokenScriptData{
+				Right: rightA,
+				State: stateDistributed,
+			},
+			outs: map[*tokenScriptData]uint64{
+				&tokenScriptData{Right: rightB}: 1001,
+				&tokenScriptData{Right: rightC}: 499,
+				&tokenScriptData{Right: rightD}: 500,
+				&tokenScriptData{Right: rightE}: 4000,
+				&tokenScriptData{Right: rightA}: 4000,
+			},
+		},
+		{
+			// Change goes to a voting right different from the input.
+			err:    txscript.ErrStackScriptFailed,
+			amount: 10000,
+			distributions: map[bc.AssetID]uint64{
+				rightB: 1000,
+				rightC: 500,
+				rightD: 500,
+				rightE: 4000,
+			},
+			prev: tokenScriptData{
+				Right: rightA,
+				State: stateDistributed,
+			},
+			outs: map[*tokenScriptData]uint64{
+				&tokenScriptData{Right: rightB}: 1000,
+				&tokenScriptData{Right: rightC}: 500,
+				&tokenScriptData{Right: rightD}: 500,
+				&tokenScriptData{Right: rightE}: 4000,
+				&tokenScriptData{Right: rightB}: 4000,
+			},
+		},
+	}
+	for i, tc := range testCases {
+		sb := txscript.NewScriptBuilder()
+		for r, amt := range tc.distributions {
+			sb = sb.AddInt64(int64(amt)).AddData(r[:])
+		}
+		sb = sb.
+			AddInt64(int64(len(tc.distributions))).
+			AddData(right.PKScript()).
+			AddInt64(int64(clauseRedistribute)).
+			AddData(tokenHoldingContract)
+		sigscript, err := sb.Script()
+		if err != nil {
+			t.Fatal(err)
+		}
+		tx := txscripttest.NewTestTx(mockTimeFunc).
+			AddInput(bc.AssetAmount{AssetID: rightA, Amount: 1}, right.PKScript(), nil).
+			AddInput(bc.AssetAmount{AssetID: assetID, Amount: tc.amount}, tc.prev.PKScript(), sigscript).
+			AddOutput(bc.AssetAmount{AssetID: rightA, Amount: 1}, right.PKScript())
+		for tok, amount := range tc.outs {
+			tx = tx.AddOutput(bc.AssetAmount{AssetID: assetID, Amount: amount}, tok.PKScript())
+		}
+		err = tx.Execute(ctx, 1)
+		if !reflect.DeepEqual(err, tc.err) {
+			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
+		}
+	}
+}
+
 func TestRegisterToVoteClause(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 

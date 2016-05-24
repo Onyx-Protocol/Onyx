@@ -43,18 +43,25 @@ func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx
 		votingRightOutpoints = map[bc.AssetID]bc.Outpoint{}
 	)
 
-	// Collect all of the voting right inputs into the maps.
 	for _, in := range tx.Inputs {
+		// Collect all of the voting right inputs into the maps.
 		if ok, _, _ := testRightsSigscript(in.SignatureScript); ok {
 			votingRightInputs[in.AssetAmount.AssetID] = *in
 		}
+
+		// Delete any voting tokens that are consumed.
+		if ok, _, _ := testTokensSigscript(in.SignatureScript); ok {
+			err := voidVotingTokens(ctx, in.Previous)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
-	// Collect all of the voting right outputs. Also, index all of the voting
-	// token outputs.
 	for i, out := range tx.Outputs {
 		outpoint := bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
 
+		// Collect all of the voting right outputs.
 		if rightData, err := testRightsContract(out.Script); rightData != nil && err == nil {
 			votingRightOutputs[out.AssetID] = *rightData
 			votingRightOutpoints[out.AssetID] = outpoint
@@ -63,7 +70,7 @@ func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx
 
 		// If the output is a voting token, update the voting token index.
 		if tokenData, err := testTokenContract(out.Script); tokenData != nil && err == nil {
-			err = upsertVotingToken(ctx, out.AssetID, blockHeight, outpoint, out.Amount, *tokenData)
+			err = insertVotingToken(ctx, out.AssetID, blockHeight, outpoint, out.Amount, *tokenData)
 			if err != nil {
 				return err
 			}

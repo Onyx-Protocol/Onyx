@@ -52,44 +52,36 @@ func TestInsertVotingRightAccountID(t *testing.T) {
 	}
 }
 
-// TestUpsertVotingToken tests inserting, updating and retrieving a voting
+// TestInsertVotingToken tests inserting, updating and retrieving a voting
 // token from the database index.
-func TestUpsertVotingToken(t *testing.T) {
+func TestInsertVotingToken(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 
 	var (
 		tokenAssetID = assettest.CreateAssetFixture(ctx, t, "", "", "")
 		rightAssetID = assettest.CreateAssetFixture(ctx, t, "", "", "")
 		out1         = bc.Outpoint{Hash: exampleHash, Index: 6}
-		out2         = bc.Outpoint{Hash: exampleHash2, Index: 22}
+		data         = tokenScriptData{
+			Right:       rightAssetID,
+			AdminScript: []byte{0x01, 0x02, 0x03},
+			State:       stateDistributed,
+			Vote:        0,
+		}
 	)
-	data := tokenScriptData{
-		Right:       rightAssetID,
-		AdminScript: []byte{0x01, 0x02, 0x03},
-		State:       stateDistributed,
-		Vote:        0,
-	}
 
-	err := upsertVotingToken(ctx, tokenAssetID, 0, out1, 100, data)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Modify the token state, and upsert it again.
-	data.State, data.Vote = stateVoted, 2
-	err = upsertVotingToken(ctx, tokenAssetID, 1, out2, 100, data)
+	err := insertVotingToken(ctx, tokenAssetID, 0, out1, 100, data)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Fetch the token from the db.
-	tok, err := FindTokenForAsset(ctx, tokenAssetID, rightAssetID)
+	tok, err := FindTokenForOutpoint(ctx, out1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := &Token{
 		AssetID:         tokenAssetID,
-		Outpoint:        out2,
+		Outpoint:        out1,
 		Amount:          100,
 		tokenScriptData: data,
 	}
@@ -205,7 +197,7 @@ func TestTallyVotes(t *testing.T) {
 
 		for j, vt := range tc.seed {
 			rightAssetID := assettest.CreateAssetFixture(ctx, t, "", "", "")
-			err := upsertVotingToken(ctx, assetID, 1, bc.Outpoint{Index: uint32(i)}, vt.amount, tokenScriptData{
+			err := insertVotingToken(ctx, assetID, 1, bc.Outpoint{Hash: bc.Hash{0: byte(i)}, Index: uint32(j)}, vt.amount, tokenScriptData{
 				Right:       rightAssetID,
 				AdminScript: []byte{txscript.OP_1},
 				State:       vt.state,

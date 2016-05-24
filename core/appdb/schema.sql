@@ -1191,7 +1191,7 @@ ALTER TABLE ONLY voting_rights
 --
 
 ALTER TABLE ONLY voting_tokens
-    ADD CONSTRAINT voting_tokens_pkey PRIMARY KEY (asset_id, right_asset_id);
+    ADD CONSTRAINT voting_tokens_pkey PRIMARY KEY (tx_hash, index);
 
 
 --

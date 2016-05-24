@@ -210,7 +210,7 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 		if !t.State.Finished() {
 			switch {
 			case t.State.Distributed():
-				actionTypes = append(actionTypes, "register-voting-token")
+				actionTypes = append(actionTypes, "register-voting-token", "redistribute-voting-token")
 			case t.State.Registered(), t.State.Voted():
 				actionTypes = append(actionTypes, "vote")
 			}
@@ -218,6 +218,8 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 		}
 
 		votes = append(votes, map[string]interface{}{
+			"transaction_id":        t.Outpoint.Hash,
+			"transaction_output":    t.Outpoint.Index,
 			"voting_token_asset_id": t.AssetID,
 			"voting_right_asset_id": t.Right,
 			"amount":                t.Amount,
@@ -237,6 +239,8 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 type votingContractActionParams struct {
 	TokenAssetID      *bc.AssetID        `json:"voting_token_asset_id,omitempty"`
 	RightAssetID      *bc.AssetID        `json:"voting_right_asset_id,omitempty"`
+	TxHash            *bc.Hash           `json:"transaction_id,omitempty"`
+	TxIndex           *uint32            `json:"transaction_output,omitempty"`
 	AccountID         string             `json:"account_id,omitempty"`         // right issuance, delegate, transfer, recall
 	HolderScript      chainjson.HexBytes `json:"holder_script,omitempty"`      // right issuance, delegate, transfer
 	AdminScript       chainjson.HexBytes `json:"admin_script,omitempty"`       // right, token issuance
@@ -251,16 +255,20 @@ type votingContractActionParams struct {
 		AccountID    string             `json:"account_id,omitempty"`
 		Deadline     time.Time          `json:"deadline,omitempty"`
 	} `json:"override_delegates,omitempty"` // override
+	Distributions []struct {
+		RightAssetID *bc.AssetID `json:"voting_right_asset_id,omitempty"`
+		Amount       uint64      `json:"amount,omitempty"`
+	} `json:"distributions,omitempty"` // redistribute
 }
 
 func (params *votingContractActionParams) token(ctx context.Context) (*voting.Token, error) {
-	if params.RightAssetID == nil {
-		return nil, errors.WithDetail(ErrBadBuildRequest, "missing voting right asset id")
+	if params.TxHash == nil {
+		return nil, errors.WithDetail(ErrBadBuildRequest, "missing voting token lot transaction_id")
 	}
-	if params.TokenAssetID == nil {
-		return nil, errors.WithDetail(ErrBadBuildRequest, "missing voting token asset id")
+	if params.TxIndex == nil {
+		return nil, errors.WithDetail(ErrBadBuildRequest, "missing voting token lot transaction_output")
 	}
-	token, err := voting.FindTokenForAsset(ctx, *params.TokenAssetID, *params.RightAssetID)
+	token, err := voting.FindTokenForOutpoint(ctx, bc.Outpoint{Hash: *params.TxHash, Index: *params.TxIndex})
 	if err != nil {
 		return nil, err
 	}
@@ -513,12 +521,49 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 			Metadata:    action.Metadata,
 			Receiver:    voting.TokenIssuance(ctx, *params.RightAssetID, params.AdminScript),
 		})
+	case "redistribute-voting-token":
+		token, err := params.token(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		right, err := voting.GetCurrentHolder(ctx, token.Right)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !token.State.Distributed() {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting token must be in distributed state to be redistributed")
+		}
+		if params.Distributions == nil {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "missing distribution mapping")
+		}
+		remaining := token.Amount
+		distributions := make(map[bc.AssetID]uint64, len(params.Distributions))
+		for _, d := range params.Distributions {
+			if d.RightAssetID == nil {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "distribution without a voting right asset ID")
+			}
+			distributions[*d.RightAssetID] = d.Amount
+			remaining = remaining - int64(d.Amount)
+		}
+		if remaining < 0 {
+			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "distribution total exceeds voting token lot's amount")
+		}
+
+		tokenReserver, redistributeDsts, err := voting.TokenRedistribution(ctx, token, right.PKScript(), distributions)
+		if err != nil {
+			return nil, nil, err
+		}
+		srcs = append(srcs, &txbuilder.Source{
+			AssetAmount: bc.AssetAmount{AssetID: token.AssetID, Amount: uint64(token.Amount)},
+			Reserver:    tokenReserver,
+		})
+		dsts = append(dsts, redistributeDsts...)
 	case "register-voting-token":
 		token, err := params.token(ctx)
 		if err != nil {
 			return nil, nil, err
 		}
-		right, err := params.right(ctx)
+		right, err := voting.GetCurrentHolder(ctx, token.Right)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -545,7 +590,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		if err != nil {
 			return nil, nil, err
 		}
-		right, err := params.right(ctx)
+		right, err := voting.GetCurrentHolder(ctx, token.Right)
 		if err != nil {
 			return nil, nil, err
 		}

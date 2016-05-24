@@ -102,7 +102,7 @@ func testRightsContract(pkscript []byte) (*rightScriptData, error) {
 
 // testRightsSigscript tests whether the given sigscript is redeeming a
 // voting rights holding contract. It will return the clause being used,
-// and the ownership hash to rewind to for recall clauses.
+// and a slice of the other clause parameters.
 func testRightsSigscript(sigscript []byte) (ok bool, c rightsContractClause, params [][]byte) {
 	data, err := txscript.PushedData(sigscript)
 	if err != nil {

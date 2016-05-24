@@ -1,6 +1,7 @@
 package voting
 
 import (
+	"bytes"
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/crypto/hash256"
@@ -35,11 +36,12 @@ const (
 type tokenContractClause int64
 
 const (
-	clauseRegister tokenContractClause = 1
-	clauseVote                         = 2
-	clauseFinish                       = 3
-	clauseReset                        = 4
-	clauseRetire                       = 5
+	clauseRedistribute tokenContractClause = 1
+	clauseRegister                         = 2
+	clauseVote                             = 3
+	clauseFinish                           = 4
+	clauseReset                            = 5
+	clauseRetire                           = 6
 )
 
 // tokenScriptData encapsulates all the data stored within the p2c script
@@ -113,6 +115,32 @@ func testTokenContract(pkscript []byte) (*tokenScriptData, error) {
 	return &token, nil
 }
 
+// testTokensSigscript tests whether the given sigscript is redeeming a
+// voting token holding contract. It will return the clause being used,
+// and a slice of the other clause parameters.
+func testTokensSigscript(sigscript []byte) (ok bool, c tokenContractClause, params [][]byte) {
+	data, err := txscript.PushedData(sigscript)
+	if err != nil {
+		return false, c, nil
+	}
+	if len(data) < 2 {
+		return false, c, nil
+	}
+	if !bytes.Equal(data[len(data)-1], tokenHoldingContract) {
+		return false, c, nil
+	}
+
+	clauseBytes := data[len(data)-2]
+	if len(clauseBytes) != 1 {
+		return false, c, nil
+	}
+	c = tokenContractClause(clauseBytes[0])
+	if c < clauseRedistribute || c > clauseRetire {
+		return false, c, nil
+	}
+	return true, c, data[:len(data)-2]
+}
+
 const (
 	// tokenHoldingContractString contains the entire voting token holding
 	// contract script. For now, it's structured as a series of IF...ENDIF
@@ -122,14 +150,44 @@ const (
 	// This script with documentation and comments is available here:
 	// https://gist.github.com/jbowens/ae16b535c856c137830e
 	//
-	// 1 - Register to vote
-	// 2 - Vote
-	// 3 - Finish
-	// 4 - Reset
-	// 5 - Retire
+	// 1 - Redistribute
+	// 2 - Register to vote
+	// 3 - Vote
+	// 4 - Finish
+	// 5 - Reset
+	// 6 - Retire
 	tokenHoldingContractString = `
 		4 ROLL
 		DUP 1 EQUAL IF
+			DROP
+			OVER 0 EQUALVERIFY
+			1 4 PICK 6 ROLL
+			FINDOUTPUT VERIFY
+			AMOUNT
+			5 ROLL
+			WHILE
+				DATA_2 0x5275
+				7 ROLL CATPUSHDATA
+				5 PICK CATPUSHDATA
+				0x00 CATPUSHDATA
+				0x00 CATPUSHDATA
+				OUTPUTSCRIPT
+				DATA_1 0x27 RIGHT CAT
+				7 PICK ASSET
+				ROT RESERVEOUTPUT VERIFY
+				SWAP 6 ROLL SUB
+				SWAP 1SUB
+			ENDWHILE DROP
+			DATA_2 0x5275
+			5 ROLL CATPUSHDATA
+			4 ROLL CATPUSHDATA
+			3 ROLL CATPUSHDATA
+			ROT CATPUSHDATA
+			OUTPUTSCRIPT
+			DATA_1 0x27 RIGHT CAT
+			ASSET SWAP RESERVEOUTPUT
+		ENDIF
+		DUP 2 EQUAL IF
 			DROP SWAP
 			0 NUMEQUALVERIFY
 			OP_1 3 PICK
@@ -144,7 +202,7 @@ const (
 			CAT AMOUNT ASSET ROT
 			RESERVEOUTPUT
 		ENDIF
-		DUP 2 EQUAL IF
+		DUP 3 EQUAL IF
 			2DROP
 			4 ROLL
 			SWAP DUP 1 EQUAL SWAP 2 EQUAL BOOLOR VERIFY
@@ -160,7 +218,7 @@ const (
 			CAT AMOUNT ASSET ROT
 			RESERVEOUTPUT
 		ENDIF
-		DUP 3 EQUAL IF
+		DUP 4 EQUAL IF
 			DROP
 			DATA_2 0x5275
 			4 ROLL CATPUSHDATA
@@ -175,7 +233,7 @@ const (
 			RESERVEOUTPUT VERIFY
 			EVAL
 		ENDIF
-		DUP 4 EQUAL IF
+		DUP 5 EQUAL IF
 			2DROP DROP
 			DATA_2 0x5275
 			ROT CATPUSHDATA
@@ -188,7 +246,7 @@ const (
 			RESERVEOUTPUT VERIFY
 			EVAL
 		ENDIF
-		DUP 5 EQUAL IF
+		DUP 6 EQUAL IF
 			2DROP
 			16 GREATERTHANOREQUAL VERIFY
 			NIP

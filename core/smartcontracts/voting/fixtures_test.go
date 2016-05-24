@@ -25,7 +25,7 @@ func createVotingTokenFixture(ctx context.Context, t *testing.T, right bc.AssetI
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = asset.FinalizeTx(ctx, issueTxTemplate)
+	tx, err := asset.FinalizeTx(ctx, issueTxTemplate)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +34,7 @@ func createVotingTokenFixture(ctx context.Context, t *testing.T, right bc.AssetI
 	if err != nil {
 		t.Fatal(err)
 	}
-	token, err := FindTokenForAsset(ctx, assetID, right)
+	token, err := FindTokenForOutpoint(ctx, bc.Outpoint{Hash: tx.Hash, Index: 0})
 	if err != nil {
 		t.Fatal(err)
 	}

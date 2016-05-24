@@ -61,7 +61,7 @@ func TestAuthenticateEndToEnd(t *testing.T) {
 	}
 	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
 
-	_, err = asset.FinalizeTx(ctx, tmpl)
+	tx, err := asset.FinalizeTx(ctx, tmpl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func TestAuthenticateEndToEnd(t *testing.T) {
 		t.Errorf("script data, got=%#v want=%#v", gotRight.rightScriptData, right.rightScriptData)
 	}
 
-	gotToken, err := FindTokenForAsset(ctx, token.AssetID, token.Right)
+	gotToken, err := FindTokenForOutpoint(ctx, bc.Outpoint{Hash: tx.Hash, Index: 1})
 	if err != nil {
 		t.Fatal(err)
 	}

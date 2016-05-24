@@ -64,19 +64,27 @@ func insertVotingRight(ctx context.Context, assetID bc.AssetID, ordinal int, blo
 	return errors.Wrap(err, "inserting into voting_rights")
 }
 
-func upsertVotingToken(ctx context.Context, assetID bc.AssetID, blockHeight uint64, outpoint bc.Outpoint, amount uint64, data tokenScriptData) error {
+func insertVotingToken(ctx context.Context, assetID bc.AssetID, blockHeight uint64, outpoint bc.Outpoint, amount uint64, data tokenScriptData) error {
 	const q = `
 		INSERT INTO voting_tokens
 			(asset_id, right_asset_id, tx_hash, index, state, closed, vote, admin_script, amount, block_height)
 			VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		ON CONFLICT (asset_id, right_asset_id) DO UPDATE
-		  SET tx_hash = $3, index = $4, state = $5, closed = $6, vote = $7, block_height = $10
-		  WHERE voting_tokens.block_height <= excluded.block_height
+		ON CONFLICT (tx_hash, index) DO NOTHING
 	`
 	_, err := pg.FromContext(ctx).Exec(ctx, q, assetID, data.Right,
 		outpoint.Hash, outpoint.Index, data.State.Base(), data.State.Finished(),
 		data.Vote, data.AdminScript, amount, blockHeight)
 	return errors.Wrap(err, "upserting into voting_tokens")
+}
+
+// voidVotingTokens takes a voting token outpoint and deletes the indexed voting token at that
+// index.
+func voidVotingTokens(ctx context.Context, outpoint bc.Outpoint) error {
+	const q = `
+		DELETE FROM voting_tokens WHERE (tx_hash, index) = ($1, $2)
+	`
+	_, err := pg.Exec(ctx, q, outpoint.Hash, outpoint.Index)
+	return errors.Wrap(err, "deleting voting_tokens")
 }
 
 // voidVotingRights takes an ordinal interval for a voting right asset, and
@@ -400,9 +408,9 @@ func TallyVotes(ctx context.Context, tokenAssetID bc.AssetID) (tally Tally, err 
 	return tally, err
 }
 
-// FindTokenForAsset looks up the current state of the voting token with the
-// provided token asset ID and voting right asset ID.
-func FindTokenForAsset(ctx context.Context, tokenAssetID, rightAssetID bc.AssetID) (*Token, error) {
+// FindTokenForOutpoint looks up the current state of the voting token lot
+// at the provided outpoint.
+func FindTokenForOutpoint(ctx context.Context, outpoint bc.Outpoint) (*Token, error) {
 	const sqlQ = `
 		SELECT
 			vt.asset_id,
@@ -416,14 +424,14 @@ func FindTokenForAsset(ctx context.Context, tokenAssetID, rightAssetID bc.AssetI
 			vt.amount
 		FROM voting_tokens vt
 		WHERE
-			vt.asset_id = $1 AND vt.right_asset_id = $2
+			vt.tx_hash = $1 AND vt.index = $2
 	`
 	var (
 		tok       Token
 		baseState int64
 		closed    bool
 	)
-	err := pg.FromContext(ctx).QueryRow(ctx, sqlQ, tokenAssetID, rightAssetID).Scan(
+	err := pg.FromContext(ctx).QueryRow(ctx, sqlQ, outpoint.Hash, outpoint.Index).Scan(
 		&tok.AssetID, &tok.Right, &tok.Outpoint.Hash, &tok.Outpoint.Index, &baseState,
 		&closed, &tok.Vote, &tok.AdminScript, &tok.Amount)
 	if err == sql.ErrNoRows {

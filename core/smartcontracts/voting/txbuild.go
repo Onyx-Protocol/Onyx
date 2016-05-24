@@ -179,6 +179,45 @@ func TokenIssuance(ctx context.Context, rightAssetID bc.AssetID, admin []byte) t
 	return scriptData
 }
 
+// TokenRedistribution builds txbuilder Reserver and Destination implementations
+// for a voting token redistribution.
+func TokenRedistribution(ctx context.Context, token *Token, rightScript []byte, distributions map[bc.AssetID]uint64) (txbuilder.Reserver, []*txbuilder.Destination, error) {
+	tok := tokenScriptData{
+		Right:       token.Right,
+		AdminScript: token.AdminScript,
+		State:       stateDistributed,
+		Vote:        0,
+	}
+
+	reserver := tokenReserver{
+		outpoint:      token.Outpoint,
+		clause:        clauseRedistribute,
+		output:        tok,
+		prevScript:    token.tokenScriptData.PKScript(),
+		rightScript:   rightScript,
+		distributions: distributions,
+	}
+
+	change := uint64(token.Amount)
+	destinations := make([]*txbuilder.Destination, 0, len(distributions))
+	for assetID, amount := range distributions {
+		output := tok
+		output.Right = assetID
+		destinations = append(destinations, &txbuilder.Destination{
+			AssetAmount: bc.AssetAmount{AssetID: token.AssetID, Amount: amount},
+			Receiver:    output,
+		})
+		change = change - amount
+	}
+	if change > 0 {
+		destinations = append(destinations, &txbuilder.Destination{
+			AssetAmount: bc.AssetAmount{AssetID: token.AssetID, Amount: change},
+			Receiver:    token.tokenScriptData,
+		})
+	}
+	return reserver, destinations, nil
+}
+
 // TokenRegister builds txbuilder Reserver and Receiver implementations
 // for a voting token registration transition.
 func TokenRegistration(ctx context.Context, token *Token, rightScript []byte) (txbuilder.Reserver, txbuilder.Receiver, error) {

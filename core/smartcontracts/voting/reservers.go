@@ -150,12 +150,13 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 }
 
 type tokenReserver struct {
-	outpoint    bc.Outpoint
-	clause      tokenContractClause
-	output      tokenScriptData
-	rightScript []byte
-	prevScript  []byte
-	adminAddr   *appdb.Address
+	outpoint      bc.Outpoint
+	clause        tokenContractClause
+	output        tokenScriptData
+	distributions map[bc.AssetID]uint64
+	rightScript   []byte
+	prevScript    []byte
+	adminAddr     *appdb.Address
 }
 
 // Reserve builds a ReserveResult including the sigscript suffix to satisfy
@@ -182,6 +183,12 @@ func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount,
 	var inputs []txscript.Item
 
 	switch r.clause {
+	case clauseRedistribute:
+		for rightAssetID, amount := range r.distributions {
+			inputs = append(inputs, txscript.NumItem(int64(amount)), txscript.DataItem(rightAssetID[:]))
+		}
+		inputs = append(inputs, txscript.NumItem(int64(len(r.distributions))))
+		inputs = append(inputs, txscript.DataItem(r.rightScript))
 	case clauseRegister:
 		inputs = append(inputs, txscript.DataItem(r.rightScript))
 	case clauseVote:

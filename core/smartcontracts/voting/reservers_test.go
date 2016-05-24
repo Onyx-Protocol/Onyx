@@ -121,7 +121,7 @@ func TestTokenReserver(t *testing.T) {
 
 	var sigscript []byte
 	sigscript = txscript.AddDataToScript(sigscript, rightData.PKScript())
-	sigscript = append(sigscript, txscript.OP_1)
+	sigscript = append(sigscript, txscript.OP_2)
 	sigscript = txscript.AddDataToScript(sigscript, tokenHoldingContract)
 
 	want := &txbuilder.ReserveResult{
