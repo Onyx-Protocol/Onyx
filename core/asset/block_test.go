@@ -216,7 +216,7 @@ type clientInfo struct {
 }
 
 // TODO(kr): refactor this into new package core/coreutil
-// and consume it from cmd/bootdb.
+// and consume it from cmd/corectl.
 func bootdb(ctx context.Context, t testing.TB) (*clientInfo, error) {
 	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
 	_, err := assettest.InitializeSigningGenerator(ctx, store)

@@ -48,9 +48,7 @@ Finally, dump the database schema, filtering any extension statements:
 
 First, make sure the following commands have been installed on your local machine:
 
-- `api-add-user`
-- `appenv`
-- `migratedb`
+	$ go install chain/cmd/{appenv,corectl,migratedb}
 
 From #devlog, provision the AWS resources:
 
@@ -60,16 +58,16 @@ From your local machine, check out your desired branch for the `chain` project, 
 
 	$ migratedb -t <target>
 
-From #devlog, build and deploy the API server:
+From #devlog, build and deploy the Core server:
 
 	/build [-t <git-branch>] api
 	/deploy [-t <build-tag>] api <target>
 
-From your local machine, create an API user:
+From your local machine, create a Core user:
 
-	$ DB_URL=`appenv -t <target> DB_URL` api-add-user <email> <password>
+	$ DB_URL=`appenv -t <target> DB_URL` corectl adduser <email> <password>
 
-From your local machine, create an API project and make the new user an admin:
+From your local machine, create a Core project and make the new user an admin:
 
 	$ psql `appenv -t <target> DB_URL`
 	core=# -- create a project
