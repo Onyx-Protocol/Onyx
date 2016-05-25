@@ -48,10 +48,11 @@ const (
 // tokenScriptData encapsulates all the data stored within the p2c script
 // for the voting token holding contract.
 type tokenScriptData struct {
-	Right       bc.AssetID
-	AdminScript []byte
-	State       TokenState
-	Vote        int64
+	RegistrationID []byte
+	Right          bc.AssetID
+	AdminScript    []byte
+	State          TokenState
+	Vote           int64
 }
 
 // PKScript constructs a script address to pay into the holding
@@ -66,6 +67,7 @@ func (t tokenScriptData) PKScript() []byte {
 	params = append(params, []byte{byte(t.State)})
 	params = append(params, t.AdminScript)
 	params = append(params, t.Right[:])
+	params = append(params, t.RegistrationID)
 
 	script, err := txscript.PayToContractHash(tokenHoldingContractHash, params, scriptVersion)
 	if err != nil {
@@ -81,7 +83,7 @@ func testTokenContract(pkscript []byte) (*tokenScriptData, error) {
 	if parsedScriptVersion == nil {
 		return nil, nil
 	}
-	if len(params) != 4 {
+	if len(params) != 5 {
 		return nil, nil
 	}
 
@@ -89,6 +91,10 @@ func testTokenContract(pkscript []byte) (*tokenScriptData, error) {
 		err   error
 		token tokenScriptData
 	)
+
+	// Registration ID
+	token.RegistrationID = make([]byte, len(params[4]))
+	copy(token.RegistrationID, params[4])
 
 	// Corresponding voting right's asset ID.
 	if cap(token.Right) != len(params[3]) {
@@ -142,6 +148,11 @@ func testTokensSigscript(sigscript []byte) (ok bool, c tokenContractClause, para
 	return true, c, data[:len(data)-2]
 }
 
+type Registration struct {
+	ID     []byte
+	Amount uint64
+}
+
 const (
 	// tokenHoldingContractString contains the entire voting token holding
 	// contract script. For now, it's structured as a series of IF...ENDIF
@@ -158,28 +169,30 @@ const (
 	// 5 - Reset
 	// 6 - Retire
 	tokenHoldingContractString = `
-		4 ROLL
+		5 ROLL
 		DUP 1 EQUAL IF
 			DROP
 			OVER 0 EQUALVERIFY
-			1 4 PICK 6 ROLL
+			1 4 PICK 7 ROLL
 			FINDOUTPUT VERIFY
 			AMOUNT
-			5 ROLL
+			6 ROLL
 			WHILE
 				DATA_2 0x5275
-				7 ROLL CATPUSHDATA
+				7 PICK CATPUSHDATA
+				8 ROLL CATPUSHDATA
 				5 PICK CATPUSHDATA
 				0x00 CATPUSHDATA
 				0x00 CATPUSHDATA
 				OUTPUTSCRIPT
 				DATA_1 0x27 RIGHT CAT
-				7 PICK ASSET
+				8 PICK ASSET
 				ROT RESERVEOUTPUT VERIFY
-				SWAP 6 ROLL SUB
+				SWAP 7 ROLL SUB
 				SWAP 1SUB
 			ENDWHILE
 			DATA_2 0x5275
+			6 ROLL CATPUSHDATA
 			5 ROLL CATPUSHDATA
 			4 ROLL CATPUSHDATA
 			3 ROLL CATPUSHDATA
@@ -189,27 +202,44 @@ const (
 			ASSET SWAP RESERVEOUTPUT
 		ENDIF
 		DUP 2 EQUAL IF
-			DROP SWAP
-			0 NUMEQUALVERIFY
-			OP_1 3 PICK
-			5 ROLL FINDOUTPUT VERIFY
+			DROP
+			OVER 0 EQUALVERIFY
+			1 4 PICK 7 ROLL
+			FINDOUTPUT VERIFY
+			AMOUNT
+			6 ROLL
+			WHILE
+				DATA_2 0x5275
+				8 ROLL CATPUSHDATA
+				6 PICK CATPUSHDATA
+				5 PICK CATPUSHDATA
+				1 CATPUSHDATA
+				0 CATPUSHDATA
+				OUTPUTSCRIPT
+				DATA_1 0x27 RIGHT CAT
+				8 PICK ASSET
+				ROT RESERVEOUTPUT VERIFY
+				SWAP 7 ROLL SUB
+				SWAP 1SUB
+			ENDWHILE
 			DATA_2 0x5275
+			6 ROLL CATPUSHDATA
+			5 ROLL CATPUSHDATA
+			4 ROLL CATPUSHDATA
 			3 ROLL CATPUSHDATA
 			ROT CATPUSHDATA
-			1 CATPUSHDATA
-			SWAP CATPUSHDATA
 			OUTPUTSCRIPT
-			DATA_1 0x27 RIGHT
-			CAT AMOUNT ASSET ROT
-			RESERVEOUTPUT
+			DATA_1 0x27 RIGHT CAT
+			ASSET SWAP RESERVEOUTPUT
 		ENDIF
 		DUP 3 EQUAL IF
 			2DROP
-			4 ROLL
+			5 ROLL
 			SWAP DUP 1 EQUAL SWAP 2 EQUAL BOOLOR VERIFY
 			1 3 PICK
-			5 ROLL FINDOUTPUT VERIFY
+			6 ROLL FINDOUTPUT VERIFY
 			DATA_2 0x5275
+			4 ROLL CATPUSHDATA
 			3 ROLL CATPUSHDATA
 			ROT CATPUSHDATA
 			2 CATPUSHDATA
@@ -222,6 +252,7 @@ const (
 		DUP 4 EQUAL IF
 			DROP
 			DATA_2 0x5275
+			5 ROLL CATPUSHDATA
 			4 ROLL CATPUSHDATA
 			3 PICK CATPUSHDATA
 			ROT
@@ -237,6 +268,11 @@ const (
 		DUP 5 EQUAL IF
 			2DROP DROP
 			DATA_2 0x5275
+			3 ROLL
+			4 PICK NOTIF
+				DROP 0
+			ENDIF
+			CATPUSHDATA
 			ROT CATPUSHDATA
 			OVER CATPUSHDATA
 			ROT CATPUSHDATA
@@ -250,7 +286,7 @@ const (
 		DUP 6 EQUAL IF
 			2DROP
 			16 GREATERTHANOREQUAL VERIFY
-			NIP
+			NIP NIP
 			AMOUNT ASSET DATA_1 0x6a
 			RESERVEOUTPUT VERIFY
 			EVAL

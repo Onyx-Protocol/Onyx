@@ -109,7 +109,9 @@ func TestTokenReserver(t *testing.T) {
 		},
 	}
 	rightData := rightScriptData{}
-	reserver, _, err := TokenRegistration(ctx, prev, rightData.PKScript())
+	reserver, _, err := TokenRegistration(ctx, prev, rightData.PKScript(), []Registration{
+		{ID: []byte{0xc0, 0x01}, Amount: 300},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,6 +122,9 @@ func TestTokenReserver(t *testing.T) {
 	}
 
 	var sigscript []byte
+	sigscript = txscript.AddInt64ToScript(sigscript, 300)
+	sigscript = txscript.AddDataToScript(sigscript, []byte{0xc0, 0x01})
+	sigscript = append(sigscript, txscript.OP_1)
 	sigscript = txscript.AddDataToScript(sigscript, rightData.PKScript())
 	sigscript = append(sigscript, txscript.OP_2)
 	sigscript = txscript.AddDataToScript(sigscript, tokenHoldingContract)

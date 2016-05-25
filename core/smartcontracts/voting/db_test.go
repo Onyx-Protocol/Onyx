@@ -62,10 +62,11 @@ func TestInsertVotingToken(t *testing.T) {
 		rightAssetID = assettest.CreateAssetFixture(ctx, t, "", "", "")
 		out1         = bc.Outpoint{Hash: exampleHash, Index: 6}
 		data         = tokenScriptData{
-			Right:       rightAssetID,
-			AdminScript: []byte{0x01, 0x02, 0x03},
-			State:       stateDistributed,
-			Vote:        0,
+			RegistrationID: []byte{},
+			Right:          rightAssetID,
+			AdminScript:    []byte{0x01, 0x02, 0x03},
+			State:          stateDistributed,
+			Vote:           0,
 		}
 	)
 

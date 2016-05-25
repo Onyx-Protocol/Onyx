@@ -199,7 +199,7 @@ func TokenRedistribution(ctx context.Context, token *Token, rightScript []byte, 
 	}
 
 	change := uint64(token.Amount)
-	destinations := make([]*txbuilder.Destination, 0, len(distributions))
+	destinations := make([]*txbuilder.Destination, 0, len(distributions)+1)
 	for assetID, amount := range distributions {
 		output := tok
 		output.Right = assetID
@@ -218,21 +218,41 @@ func TokenRedistribution(ctx context.Context, token *Token, rightScript []byte, 
 	return reserver, destinations, nil
 }
 
-// TokenRegister builds txbuilder Reserver and Receiver implementations
+// TokenRegister builds txbuilder Reserver and Destination implementations
 // for a voting token registration transition.
-func TokenRegistration(ctx context.Context, token *Token, rightScript []byte) (txbuilder.Reserver, txbuilder.Receiver, error) {
+func TokenRegistration(ctx context.Context, token *Token, rightScript []byte, registrations []Registration) (txbuilder.Reserver, []*txbuilder.Destination, error) {
 	prevScript := token.tokenScriptData.PKScript()
 	registered := token.tokenScriptData
 	registered.State = stateRegistered
 
 	reserver := tokenReserver{
-		outpoint:    token.Outpoint,
-		clause:      clauseRegister,
-		output:      registered,
-		prevScript:  prevScript,
-		rightScript: rightScript,
+		outpoint:      token.Outpoint,
+		clause:        clauseRegister,
+		output:        registered,
+		registrations: registrations,
+		prevScript:    prevScript,
+		rightScript:   rightScript,
 	}
-	return reserver, registered, nil
+
+	change := uint64(token.Amount)
+	destinations := make([]*txbuilder.Destination, 0, len(registrations)+1)
+	for _, r := range registrations {
+		output := registered
+		output.RegistrationID = r.ID
+		destinations = append(destinations, &txbuilder.Destination{
+			AssetAmount: bc.AssetAmount{AssetID: token.AssetID, Amount: r.Amount},
+			Receiver:    output,
+		})
+		change = change - r.Amount
+	}
+	if change > 0 {
+		destinations = append(destinations, &txbuilder.Destination{
+			AssetAmount: bc.AssetAmount{AssetID: token.AssetID, Amount: change},
+			Receiver:    token.tokenScriptData,
+		})
+	}
+
+	return reserver, destinations, nil
 }
 
 // TokenVote builds txbuilder Reserver and Receiver implementations

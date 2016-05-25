@@ -225,6 +225,7 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 			"amount":                t.Amount,
 			"state":                 t.State.String(),
 			"closed":                t.State.Finished(),
+			"registration_id":       chainjson.HexBytes(t.RegistrationID),
 			"option":                t.Vote,
 			"holding_account_id":    t.AccountID,
 			"action_types":          actionTypes,
@@ -259,6 +260,10 @@ type votingContractActionParams struct {
 		RightAssetID *bc.AssetID `json:"voting_right_asset_id,omitempty"`
 		Amount       uint64      `json:"amount,omitempty"`
 	} `json:"distributions,omitempty"` // redistribute
+	Registrations []struct {
+		ID     chainjson.HexBytes `json:"id,omitempty"`
+		Amount uint64             `json:"amount"`
+	} `json:"registrations,omitempty"` // register
 }
 
 func (params *votingContractActionParams) token(ctx context.Context) (*voting.Token, error) {
@@ -568,12 +573,22 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 			return nil, nil, err
 		}
 		if !token.State.Distributed() {
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting token must be in distributed state")
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting token must be in distributed state")
 		}
 		if token.State.Finished() {
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has been closed")
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting has been closed")
 		}
-		tokenReserver, tokenReceiver, err := voting.TokenRegistration(ctx, token, right.PKScript())
+		registrations := make([]voting.Registration, 0, len(params.Registrations))
+		change := token.Amount
+		for _, r := range params.Registrations {
+			registrations = append(registrations, voting.Registration{ID: r.ID, Amount: r.Amount})
+			change = change - int64(r.Amount)
+		}
+		// Validate the registrations. The amounts should not exceed the lot amount.
+		if change < 0 {
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting token registration amounts exceed lot amount")
+		}
+		tokenReserver, registerDsts, err := voting.TokenRegistration(ctx, token, right.PKScript(), registrations)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -581,10 +596,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 			AssetAmount: bc.AssetAmount{AssetID: token.AssetID, Amount: uint64(token.Amount)},
 			Reserver:    tokenReserver,
 		})
-		dsts = append(dsts, &txbuilder.Destination{
-			AssetAmount: bc.AssetAmount{AssetID: token.AssetID, Amount: uint64(token.Amount)},
-			Receiver:    tokenReceiver,
-		})
+		dsts = append(dsts, registerDsts...)
 	case "vote":
 		token, err := params.token(ctx)
 		if err != nil {

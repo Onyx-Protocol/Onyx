@@ -67,14 +67,14 @@ func insertVotingRight(ctx context.Context, assetID bc.AssetID, ordinal int, blo
 func insertVotingToken(ctx context.Context, assetID bc.AssetID, blockHeight uint64, outpoint bc.Outpoint, amount uint64, data tokenScriptData) error {
 	const q = `
 		INSERT INTO voting_tokens
-			(asset_id, right_asset_id, tx_hash, index, state, closed, vote, admin_script, amount, block_height)
-			VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			(asset_id, right_asset_id, tx_hash, index, state, closed, vote, admin_script, amount, block_height, registration_id)
+			VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		ON CONFLICT (tx_hash, index) DO NOTHING
 	`
 	_, err := pg.FromContext(ctx).Exec(ctx, q, assetID, data.Right,
 		outpoint.Hash, outpoint.Index, data.State.Base(), data.State.Finished(),
-		data.Vote, data.AdminScript, amount, blockHeight)
-	return errors.Wrap(err, "upserting into voting_tokens")
+		data.Vote, data.AdminScript, amount, blockHeight, data.RegistrationID)
+	return errors.Wrap(err, "inserting into voting_tokens")
 }
 
 // voidVotingTokens takes a voting token outpoint and deletes the indexed voting token at that
@@ -421,7 +421,8 @@ func FindTokenForOutpoint(ctx context.Context, outpoint bc.Outpoint) (*Token, er
 			vt.closed,
 			vt.vote,
 			vt.admin_script,
-			vt.amount
+			vt.amount,
+			vt.registration_id
 		FROM voting_tokens vt
 		WHERE
 			vt.tx_hash = $1 AND vt.index = $2
@@ -433,7 +434,7 @@ func FindTokenForOutpoint(ctx context.Context, outpoint bc.Outpoint) (*Token, er
 	)
 	err := pg.FromContext(ctx).QueryRow(ctx, sqlQ, outpoint.Hash, outpoint.Index).Scan(
 		&tok.AssetID, &tok.Right, &tok.Outpoint.Hash, &tok.Outpoint.Index, &baseState,
-		&closed, &tok.Vote, &tok.AdminScript, &tok.Amount)
+		&closed, &tok.Vote, &tok.AdminScript, &tok.Amount, &tok.RegistrationID)
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
 	} else if err != nil {
@@ -481,6 +482,7 @@ func GetVotes(ctx context.Context, assetIDs []bc.AssetID, accountID string, afte
 				vt.vote,
 				vt.admin_script,
 				vt.amount,
+				vt.registration_id,
 				vr.account_id
 			FROM voting_tokens vt
 			INNER JOIN voting_rights vr ON vt.right_asset_id = vr.asset_id AND vr.void_block_height IS NULL
@@ -532,7 +534,7 @@ func GetVotes(ctx context.Context, assetIDs []bc.AssetID, accountID string, afte
 		err = rows.Scan(
 			&token.AssetID, &token.Right, &token.Outpoint.Hash, &token.Outpoint.Index,
 			&baseState, &closed, &token.Vote, &token.AdminScript, &token.Amount,
-			&token.AccountID,
+			&token.RegistrationID, &token.AccountID,
 		)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "scanning Token")

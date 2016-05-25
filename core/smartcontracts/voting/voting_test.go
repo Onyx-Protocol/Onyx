@@ -42,7 +42,9 @@ func TestAuthenticateEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tokenReserver, tokenReceiver, err := TokenRegistration(ctx, token, rightReceiver.PKScript())
+	tokenReserver, tokenDestinations, err := TokenRegistration(ctx, token, rightReceiver.PKScript(), []Registration{
+		{ID: []byte{0x4e, 0x61, 0x51, 0x34, 0x3d}, Amount: 100},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,10 +53,9 @@ func TestAuthenticateEndToEnd(t *testing.T) {
 		{Reserver: rightReserver, AssetAmount: rightAmount},
 		{Reserver: tokenReserver, AssetAmount: tokenAmount},
 	}
-	destinations := []*txbuilder.Destination{
+	destinations := append([]*txbuilder.Destination{
 		{Receiver: rightReceiver, AssetAmount: rightAmount},
-		{Receiver: tokenReceiver, AssetAmount: tokenAmount},
-	}
+	}, tokenDestinations...)
 	tmpl, err := txbuilder.Build(ctx, nil, sources, destinations, nil, time.Minute)
 	if err != nil {
 		t.Fatal(err)
@@ -87,6 +88,7 @@ func TestAuthenticateEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantToken := token.tokenScriptData
+	wantToken.RegistrationID = []byte{0x4e, 0x61, 0x51, 0x34, 0x3d}
 	wantToken.State = stateRegistered
 	if !reflect.DeepEqual(gotToken.tokenScriptData, wantToken) {
 		t.Errorf("token data, got=%#v want=%#v", gotToken.tokenScriptData, wantToken)

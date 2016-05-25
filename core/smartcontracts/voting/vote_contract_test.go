@@ -172,11 +172,7 @@ func TestRegisterToVoteClause(t *testing.T) {
 		rightAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
 		otherRightAssetID = assettest.CreateAssetFixture(ctx, t, "", "", "")
 		tokenAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
-		tokensAssetAmount = bc.AssetAmount{
-			AssetID: tokenAssetID,
-			Amount:  200,
-		}
-		rightAssetAmount = bc.AssetAmount{
+		rightAssetAmount  = bc.AssetAmount{
 			AssetID: rightAssetID,
 			Amount:  1,
 		}
@@ -189,127 +185,192 @@ func TestRegisterToVoteClause(t *testing.T) {
 	)
 
 	testCases := []struct {
-		err   error
-		right *rightScriptData
-		prev  tokenScriptData
-		out   tokenScriptData
+		err           error
+		right         *rightScriptData
+		amount        uint64
+		registrations []Registration
+		prev          tokenScriptData
+		outs          map[*tokenScriptData]uint64
 	}{
 		{
-			err: nil,
+			// single-party registration, entire lot
+			amount: 200,
+			registrations: []Registration{
+				{ID: []byte{0xde, 0xad, 0xbe, 0xef}, Amount: 200},
+			},
 			prev: tokenScriptData{
 				Right:       rightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				State:       stateDistributed,
 			},
-			out: tokenScriptData{
-				Right:       rightAssetID,
-				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
-				State:       stateRegistered,
+			outs: map[*tokenScriptData]uint64{
+				&tokenScriptData{
+					RegistrationID: []byte{0xde, 0xad, 0xbe, 0xef},
+					Right:          rightAssetID,
+					AdminScript:    []byte{0xde, 0xad, 0xbe, 0xef},
+					State:          stateRegistered,
+				}: 200,
 			},
 		},
 		{
-			err: nil,
+			// single-party registration, no ID, entire lot
+			amount: 200,
+			registrations: []Registration{
+				{ID: nil, Amount: 200},
+			},
 			prev: tokenScriptData{
 				Right:       rightAssetID,
-				AdminScript: exampleHash[:],
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				State:       stateDistributed,
 			},
-			out: tokenScriptData{
+			outs: map[*tokenScriptData]uint64{
+				&tokenScriptData{
+					RegistrationID: nil,
+					Right:          rightAssetID,
+					AdminScript:    []byte{0xde, 0xad, 0xbe, 0xef},
+					State:          stateRegistered,
+				}: 200,
+			},
+		},
+		{
+			// multi-party registration with change.
+			amount: 1000,
+			registrations: []Registration{
+				{ID: []byte{0xde, 0xad, 0xbe, 0xef}, Amount: 200},
+				{ID: []byte{0xCA, 0xFE, 0xD0, 0x0D}, Amount: 100},
+				{ID: []byte{0xC0, 0x00, 0x10, 0xFF}, Amount: 500},
+			},
+			prev: tokenScriptData{
 				Right:       rightAssetID,
-				AdminScript: exampleHash[:],
-				State:       stateRegistered,
+				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+				State:       stateDistributed,
+			},
+			outs: map[*tokenScriptData]uint64{
+				&tokenScriptData{
+					RegistrationID: []byte{0xde, 0xad, 0xbe, 0xef},
+					Right:          rightAssetID,
+					AdminScript:    []byte{0xde, 0xad, 0xbe, 0xef},
+					State:          stateRegistered,
+				}: 200,
+				&tokenScriptData{
+					RegistrationID: []byte{0xca, 0xfe, 0xd0, 0x0d},
+					Right:          rightAssetID,
+					AdminScript:    []byte{0xde, 0xad, 0xbe, 0xef},
+					State:          stateRegistered,
+				}: 100,
+				&tokenScriptData{
+					RegistrationID: []byte{0xC0, 0x00, 0x10, 0xFF},
+					Right:          rightAssetID,
+					AdminScript:    []byte{0xde, 0xad, 0xbe, 0xef},
+					State:          stateRegistered,
+				}: 500,
+				&tokenScriptData{
+					Right:       rightAssetID,
+					AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
+					State:       stateDistributed,
+				}: 300,
 			},
 		},
 		{
 			// Output has wrong voting right asset id.
-			err: txscript.ErrStackScriptFailed,
+			err:    txscript.ErrStackVerifyFailed,
+			amount: 200,
+			registrations: []Registration{
+				{ID: []byte{0xde, 0xad, 0xbe, 0xef}, Amount: 200},
+			},
 			prev: tokenScriptData{
 				Right:       rightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				State:       stateDistributed,
 				Vote:        2,
 			},
-			out: tokenScriptData{
-				Right:       otherRightAssetID,
-				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
-				State:       stateRegistered,
-				Vote:        2,
+			outs: map[*tokenScriptData]uint64{
+				&tokenScriptData{
+					RegistrationID: []byte{0xde, 0xad, 0xbe, 0xef},
+					Right:          otherRightAssetID,
+					AdminScript:    []byte{0xde, 0xad, 0xbe, 0xef},
+					State:          stateRegistered,
+					Vote:           2,
+				}: 200,
 			},
 		},
 		{
 			// Cannot move from FINISHED even if distributed.
-			err: txscript.ErrStackVerifyFailed,
+			err:    txscript.ErrStackVerifyFailed,
+			amount: 200,
+			registrations: []Registration{
+				{ID: []byte{0xde, 0xad, 0xbe, 0xef}, Amount: 200},
+			},
 			prev: tokenScriptData{
 				Right:       rightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				State:       stateDistributed | stateFinished,
 				Vote:        2,
 			},
-			out: tokenScriptData{
-				Right:       rightAssetID,
-				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
-				State:       stateRegistered | stateFinished,
-				Vote:        2,
+			outs: map[*tokenScriptData]uint64{
+				&tokenScriptData{
+					RegistrationID: []byte{0xde, 0xad, 0xbe, 0xef},
+					Right:          rightAssetID,
+					AdminScript:    []byte{0xde, 0xad, 0xbe, 0xef},
+					State:          stateRegistered | stateFinished,
+					Vote:           2,
+				}: 200,
 			},
 		},
 		{
 			// State changed to VOTED, not REGISTERED.
-			err: txscript.ErrStackScriptFailed,
+			err:    txscript.ErrStackVerifyFailed,
+			amount: 100,
+			registrations: []Registration{
+				{ID: []byte{0xde, 0xad, 0xbe, 0xef}, Amount: 100},
+			},
 			prev: tokenScriptData{
 				Right:       rightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				State:       stateDistributed,
 				Vote:        2,
 			},
-			out: tokenScriptData{
-				Right:       rightAssetID,
-				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
-				State:       stateVoted,
-				Vote:        2,
+			outs: map[*tokenScriptData]uint64{
+				&tokenScriptData{
+					RegistrationID: []byte{0xde, 0xad, 0xbe, 0xef},
+					Right:          rightAssetID,
+					AdminScript:    []byte{0xde, 0xad, 0xbe, 0xef},
+					State:          stateVoted,
+					Vote:           2,
+				}: 100,
 			},
 		},
 		{
 			// Tx has a voting right, but it's the wrong voting
 			// right.
-			err: txscript.ErrStackVerifyFailed,
+			err:    txscript.ErrStackVerifyFailed,
+			amount: 200,
+			registrations: []Registration{
+				{ID: []byte{0xde, 0xad, 0xbe, 0xef}, Amount: 200},
+			},
 			prev: tokenScriptData{
 				Right:       otherRightAssetID,
 				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
 				State:       stateDistributed,
-				Vote:        2,
 			},
-			out: tokenScriptData{
-				Right:       otherRightAssetID,
-				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
-				State:       stateRegistered,
-				Vote:        2,
-			},
-		},
-		{
-			// Voting right output script doesn't match the token holding
-			// contract sigscript param.
-			err: txscript.ErrStackVerifyFailed,
-			right: &rightScriptData{
-				HolderScript: []byte{txscript.OP_2},
-			},
-			prev: tokenScriptData{
-				Right:       rightAssetID,
-				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
-				State:       stateDistributed,
-				Vote:        2,
-			},
-			out: tokenScriptData{
-				Right:       rightAssetID,
-				AdminScript: []byte{0xde, 0xad, 0xbe, 0xef},
-				State:       stateRegistered,
-				Vote:        2,
+			outs: map[*tokenScriptData]uint64{
+				&tokenScriptData{
+					RegistrationID: []byte{0xde, 0xad, 0xbe, 0xef},
+					Right:          otherRightAssetID,
+					AdminScript:    []byte{0xde, 0xad, 0xbe, 0xef},
+					State:          stateRegistered,
+				}: 200,
 			},
 		},
 	}
 
 	for i, tc := range testCases {
 		sb := txscript.NewScriptBuilder()
+		for _, r := range tc.registrations {
+			sb = sb.AddInt64(int64(r.Amount)).AddData(r.ID)
+		}
 		sb = sb.
+			AddInt64(int64(len(tc.registrations))).
 			AddData(right.PKScript()).
 			AddInt64(int64(clauseRegister)).
 			AddData(tokenHoldingContract)
@@ -321,12 +382,14 @@ func TestRegisterToVoteClause(t *testing.T) {
 		if tc.right != nil {
 			r = *tc.right
 		}
-		err = txscripttest.NewTestTx(mockTimeFunc).
+		tx := txscripttest.NewTestTx(mockTimeFunc).
 			AddInput(rightAssetAmount, r.PKScript(), nil).
-			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
-			AddOutput(rightAssetAmount, r.PKScript()).
-			AddOutput(tokensAssetAmount, tc.out.PKScript()).
-			Execute(ctx, 1)
+			AddInput(bc.AssetAmount{AssetID: tokenAssetID, Amount: tc.amount}, tc.prev.PKScript(), sigscript).
+			AddOutput(rightAssetAmount, r.PKScript())
+		for out, amt := range tc.outs {
+			tx = tx.AddOutput(bc.AssetAmount{AssetID: tokenAssetID, Amount: amt}, out.PKScript())
+		}
+		err = tx.Execute(ctx, 1)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -790,17 +853,19 @@ func TestResetClause(t *testing.T) {
 		out  tokenScriptData
 	}{
 		{
-			// Reset secret hash only
+			// Reset registration ID too
 			err: nil,
 			prev: tokenScriptData{
-				Right:       rightAssetID,
-				AdminScript: []byte{txscript.OP_1},
-				State:       stateDistributed,
+				RegistrationID: []byte{0xc0, 0x01, 0xbe, 0xef},
+				Right:          rightAssetID,
+				AdminScript:    []byte{txscript.OP_1},
+				State:          stateRegistered,
 			},
 			out: tokenScriptData{
-				Right:       rightAssetID,
-				AdminScript: []byte{txscript.OP_1},
-				State:       stateDistributed,
+				RegistrationID: []byte{},
+				Right:          rightAssetID,
+				AdminScript:    []byte{txscript.OP_1},
+				State:          stateDistributed,
 			},
 		},
 		{

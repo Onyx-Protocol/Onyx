@@ -884,7 +884,8 @@ CREATE TABLE voting_tokens (
     vote smallint NOT NULL,
     admin_script bytea NOT NULL,
     amount bigint NOT NULL,
-    block_height integer NOT NULL
+    block_height integer NOT NULL,
+    registration_id bytea DEFAULT '\x'::bytea NOT NULL
 );
 
 

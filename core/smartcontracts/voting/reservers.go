@@ -153,6 +153,7 @@ type tokenReserver struct {
 	outpoint      bc.Outpoint
 	clause        tokenContractClause
 	output        tokenScriptData
+	registrations []Registration
 	distributions map[bc.AssetID]uint64
 	rightScript   []byte
 	prevScript    []byte
@@ -190,6 +191,10 @@ func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount,
 		inputs = append(inputs, txscript.NumItem(int64(len(r.distributions))))
 		inputs = append(inputs, txscript.DataItem(r.rightScript))
 	case clauseRegister:
+		for _, registration := range r.registrations {
+			inputs = append(inputs, txscript.NumItem(int64(registration.Amount)), txscript.DataItem(registration.ID))
+		}
+		inputs = append(inputs, txscript.NumItem(int64(len(r.registrations))))
 		inputs = append(inputs, txscript.DataItem(r.rightScript))
 	case clauseVote:
 		inputs = append(inputs, txscript.NumItem(r.output.Vote))
