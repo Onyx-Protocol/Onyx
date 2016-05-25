@@ -12,8 +12,8 @@ public class Main {
 		System.out.println("Multi-core tests:");
 		TestClient client = new TestClient(new URL(System.getenv("CHAIN_API_URL")));
 		TestClient secondClient = new TestClient(new URL(System.getenv("SECOND_API_URL")));
-		String project = TestUtils.createProject(client, "Multi-core QA Test");
-		String secondProject = TestUtils.createProject(secondClient, "Multi-core QA Test");
+		String project = TestUtils.createProject(client, "QA Test");
+		String secondProject = TestUtils.createProject(secondClient, "QA Test");
 		AssetIssuance.runTests(client, project, secondClient, secondProject);
 		AssetTransaction.runTests(client, project, secondClient, secondProject);
 		System.out.println("finished");

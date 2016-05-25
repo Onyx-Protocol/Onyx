@@ -2,6 +2,8 @@ package chain.qa.baseline.singlecore;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 import chain.qa.*;
@@ -65,20 +67,14 @@ public class AssetTransaction {
 		System.out.printf("Executed a one-way transaction. ID=%s\n", resp.transactionID);
 
 		// validate sender balance
-		Asset.BalancePage abp = c.listAccountBalances(sndrID);
-		List<Asset.Balance> sndr = abp.balances;
-		int size = sndr.size();
-		int confirmed = sndr.get(0).confirmed.intValue();
-		assert size == 1 : TestUtils.fail("# of assets", size, 1);
-		assert confirmed == 400 : TestUtils.fail("balance", confirmed, 400);
+		Map<String, Integer> balances = new HashMap<String, Integer>();
+		balances.put(assetID, 400);
+		TestUtils.validateAccountBalance(c, sndrID, balances);
 
 		// validate receiver balance
-		abp = c.listAccountBalances(rcvrID);
-		List<Asset.Balance> rcvr = abp.balances;
-		size = rcvr.size();
-		confirmed = rcvr.get(0).confirmed.intValue();
-		assert size == 1 : TestUtils.fail("# of assets", size, 1);
-		assert confirmed == 600 : TestUtils.fail("balance", confirmed, 600);
+		balances = new HashMap<String, Integer>();
+		balances.put(assetID, 600);
+		TestUtils.validateAccountBalance(c, rcvrID, balances);
 		return true;
 	}
 
@@ -121,24 +117,16 @@ public class AssetTransaction {
 		System.out.printf("Executed an atomic swap transaction. ID=%s\n", resp.transactionID);
 
 		// validate sndr balances
-		Asset.BalancePage abp = c.listAccountBalances(sndrID);
-		List<Asset.Balance> sndr = abp.balances;
-		int size = sndr.size();
-		int assetBal = TestUtils.getAssetBalance(sndr, assetID).confirmed.intValue();
-		int secondAssetBal = TestUtils.getAssetBalance(sndr, secondAssetID).confirmed.intValue();
-		assert size == 2 : TestUtils.fail("# of assets", size, 2);
-		assert assetBal == 250 : TestUtils.fail("balance", assetBal, 250);
-		assert secondAssetBal == 250 : TestUtils.fail("balance", secondAssetBal, 250);
+		Map<String, Integer> balances = new HashMap<String, Integer>();
+		balances.put(assetID, 250);
+		balances.put(secondAssetID, 250);
+		TestUtils.validateAccountBalance(c, sndrID, balances);
 
 		// validate rcvr balances
-		abp = c.listAccountBalances(rcvrID);
-		List<Asset.Balance> rcvr = abp.balances;
-		size = rcvr.size();
-		assetBal = TestUtils.getAssetBalance(rcvr, assetID).confirmed.intValue();
-		secondAssetBal = TestUtils.getAssetBalance(rcvr, secondAssetID).confirmed.intValue();
-		assert size == 2 : TestUtils.fail("# of assets", size, 2);
-		assert assetBal == 750 : TestUtils.fail("balance", assetBal, 750);
-		assert secondAssetBal == 750 : TestUtils.fail("balance", secondAssetBal, 750);
+		balances = new HashMap<String, Integer>();
+		balances.put(assetID, 750);
+		balances.put(secondAssetID, 750);
+		TestUtils.validateAccountBalance(c, rcvrID, balances);
 		return true;
 	}
 
@@ -160,7 +148,7 @@ public class AssetTransaction {
 		// issue 500 units of asset to sndr
 		build.addIssueInput(assetID);
 		build.addAddressOutput(assetID, sndrAddr, BigInteger.valueOf(500));
-		// send 500 untis of asset from sndr to rcvr
+		// send 500 units of asset from sndr to rcvr
 		build.addInput(assetID, sndrID, BigInteger.valueOf(500));
 		build.addAddressOutput(assetID, rcvrAddr, BigInteger.valueOf(500));
 		Transactor.Transaction partialTx = c.buildTransaction(build);
@@ -182,20 +170,14 @@ public class AssetTransaction {
 		System.out.printf("Executed a simultaneous issue/transaction. ID=%s\n", resp.transactionID);
 
 		// validate sndr balances
-		Asset.BalancePage abp = c.listAccountBalances(sndrID);
-		List<Asset.Balance> sndr = abp.balances;
-		int size = sndr.size();
-		int confirmed = sndr.get(0).confirmed.intValue();
-		assert size == 1 : TestUtils.fail("# of assets", size, 1);
-		assert confirmed == 1000 : TestUtils.fail("balance", confirmed, 1000);
+		Map<String, Integer> balances = new HashMap<String, Integer>();
+		balances.put(assetID, 1000);
+		TestUtils.validateAccountBalance(c, sndrID, balances);
 
 		// validate rcvr balances
-		abp = c.listAccountBalances(rcvrID);
-		List<Asset.Balance> rcvr = abp.balances;
-		size = rcvr.size();
-		confirmed = rcvr.get(0).confirmed.intValue();
-		assert size == 1 : TestUtils.fail("# of assets", size, 1);
-		assert confirmed == 1000 : TestUtils.fail("balance", confirmed, 1000);
+		balances = new HashMap<String, Integer>();
+		balances.put(assetID, 1000);
+		TestUtils.validateAccountBalance(c, rcvrID, balances);
 		return true;
 	}
 }

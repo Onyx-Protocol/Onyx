@@ -1,5 +1,6 @@
 package chain.qa;
 
+import java.util.concurrent.Callable;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.concurrent.TimeoutException;
@@ -181,29 +182,6 @@ public class TestUtils {
 	}
 
 	/**
-	 * Waits for blockchain updates to propagate across network.
-	 */
-	public static void waitForPropagation(Client c, String txID)
-	throws Exception {
-		// TODO(boymanjor): Update timeout to reasonable, baseline after benchmarking.
-		long start = System.currentTimeMillis();
-		long end = start + 500;
-
-		while (System.currentTimeMillis() < end) {
-			try {
-				// Check that tx can be looked up on client's copy of blockchain data.
-				c.getAuditorNodeTransaction(txID);
-				return;
-			} catch (Exception e) {
-				// If it cannot, try again in 25ms.
-				Thread.sleep(25);
-			}
-		}
-
-		throw new TimeoutException("Blockchain data was not found on second core.");
-	}
-
-	/**
 	 * Searches a list of Asset.Balances on assetID. Throws an Exception if the
 	 * assetID is not found.
 	 */
@@ -218,24 +196,58 @@ public class TestUtils {
 	}
 
 	/**
+	 * Retries task until successful or timeout
+	 */
+	public static void retry(Callable<Void> task)
+	throws Exception {
+		// TODO(boymanjor): Update timeout to reasonable baseline after benchmarking
+		long start = System.currentTimeMillis();
+		long end = start + 500;
+
+		while (System.currentTimeMillis() < end) {
+			try {
+				task.call();
+				return;
+			} catch (Exception | AssertionError e) {
+				Thread.sleep(25);
+			}
+		}
+		// final call will succeed or throw the Exception or AssertionError
+		task.call();
+	}
+
+	/**
+	 * Waits for blockchain updates to propagate across network.
+	 */
+	public static void waitForPropagation(Client c, String txID)
+	throws Exception {
+		retry(() -> {
+			c.getAuditorNodeTransaction(txID);
+			return null;
+		});
+	}
+
+	/**
 	 * Validates account balance.
 	 */
 	public static void validateAccountBalance(Client c, String acctID, Map<String, Integer> balances)
 	throws Exception {
-		Asset.BalancePage abp = c.listAccountBalances(acctID);
-		List<Asset.Balance> acct = abp.balances;
+		retry(() -> {
+			Asset.BalancePage abp = c.listAccountBalances(acctID);
+			List<Asset.Balance> acct = abp.balances;
+			// assert amount of assets held
+			int actualSz = acct.size();
+			int expectedSz = balances.size();
+			assert actualSz == expectedSz : TestUtils.fail("# of assets", actualSz, expectedSz);
 
-		// assert amount of assets held
-		int actualSz = acct.size();
-		int expectedSz = balances.size();
-		assert actualSz == expectedSz : TestUtils.fail("# of assets", actualSz, expectedSz);
-
-		// assert individual asset balances
-		for (Asset.Balance asset : acct) {
-			int actualBal = asset.confirmed.intValue();
-			int expectedBal = balances.get(asset.assetID);
-			assert actualBal == expectedBal : TestUtils.fail("balance", actualBal, expectedBal);
-		}
+			// assert individual asset balances
+			for (Asset.Balance asset : acct) {
+				int actualBal = asset.confirmed.intValue();
+				int expectedBal = balances.get(asset.assetID);
+				assert actualBal == expectedBal : TestUtils.fail("balance", actualBal, expectedBal);
+			}
+			return null;
+		});
 	}
 
 	/**
@@ -243,11 +255,14 @@ public class TestUtils {
 	 */
 	public static void validateAssetIssuance(Client c, String assetID, int amount)
 	throws Exception {
-		Asset check = c.getAsset(assetID);
-		int total = check.issued.total.intValue();
-		int confirmed = check.issued.confirmed.intValue();
-		assert total == 1000 : TestUtils.fail("total", total, 1000);
-		assert confirmed == 1000 : TestUtils.fail("confirmed", confirmed, 1000);
+		retry(() -> {
+			Asset check = c.getAsset(assetID);
+			int total = check.issued.total.intValue();
+			int confirmed = check.issued.confirmed.intValue();
+			assert total == amount : TestUtils.fail("total", total, amount);
+			assert confirmed == amount : TestUtils.fail("confirmed", confirmed, amount);
+			return null;
+		});
 	}
 
 	/**
@@ -255,8 +270,11 @@ public class TestUtils {
 	 */
 	public static void validateAssetDefinition(Client c, String assetID, String defCheck)
 	throws Exception {
-		String definition = TestUtils.getAssetDefinition(c, assetID);
-		assert definition.equals(defCheck) : TestUtils.fail("asset definition", definition, defCheck);
+		retry(() -> {
+			String definition = TestUtils.getAssetDefinition(c, assetID);
+			assert definition.equals(defCheck) : TestUtils.fail("asset definition", definition, defCheck);
+			return null;
+		});
 	}
 
 	/**

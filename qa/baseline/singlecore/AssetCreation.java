@@ -69,14 +69,14 @@ public class AssetCreation {
 
 		System.out.printf("Created an asset with a definition. ID=%s\n", asset.ID);
 
-		// Retrieve asset definition from the blockchain (w/ whitespace stripped)
-		String definition = TestUtils.getAssetDefinition(c, asset.ID);
-		String defCheck = "{\"Asset\":\"Definition\"}";
-
 		// validate asset w/ definition
 		assert asset.ID != null : "ID should not equal null.";
 		assert asset.label.equals("Asset w/ Definition") : TestUtils.fail("label", asset.label, label);
-		assert definition.equals(defCheck) : TestUtils.fail("asset definition", definition, defCheck);
+
+		// validate core can lookup asset definition
+		// represented as json string with whitespace stripped
+		String defCheck = "{\"Asset\":\"Definition\"}";
+		TestUtils.validateAssetDefinition(c, asset.ID, defCheck);
 		return true;
 	}
 }

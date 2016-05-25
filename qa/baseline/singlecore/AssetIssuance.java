@@ -2,6 +2,8 @@ package chain.qa.baseline.singlecore;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 import chain.qa.*;
@@ -52,19 +54,12 @@ public class AssetIssuance {
 		System.out.printf("Issued to an account. ID=%s\n", issue.transactionID);
 
 		// validate issuance
-		Asset check = c.getAsset(assetID);
-		int total = check.issued.total.intValue();
-		int confirmed = check.issued.confirmed.intValue();
-		assert total == 1000 : TestUtils.fail("total", total, 1000);
-		assert confirmed == 1000 : TestUtils.fail("confirmed", confirmed, 1000);
+		TestUtils.validateAssetIssuance(c, assetID, 1000);
 
 		// validate account balance
-		Asset.BalancePage abp = c.listAccountBalances(acctID);
-		List<Asset.Balance> acct = abp.balances;
-		int size = acct.size();
-		int balance = acct.get(0).confirmed.intValue();
-		assert size == 1 : TestUtils.fail("# of assets", size, 1);
-		assert balance == 1000 : TestUtils.fail("balance", balance, 1000);
+		Map<String, Integer> balances = new HashMap<String, Integer>();
+		balances.put(assetID, 1000);
+		TestUtils.validateAccountBalance(c, acctID, balances);
 		return true;
 	}
 
@@ -88,19 +83,12 @@ public class AssetIssuance {
 		System.out.printf("Issued to an address. ID=%s\n", issue.transactionID);
 
 		// validate issuance
-		Asset check = c.getAsset(assetID);
-		int total = check.issued.total.intValue();
-		int confirmed = check.issued.confirmed.intValue();
-		assert total == 1000 : TestUtils.fail("total amount", total, 1000);
-		assert confirmed == 1000 : TestUtils.fail("confirmed amount", confirmed, 1000);
+		TestUtils.validateAssetIssuance(c, assetID, 1000);
 
 		// validate account balance
-		Asset.BalancePage abp = c.listAccountBalances(acctID);
-		List<Asset.Balance> acct = abp.balances;
-		int size = acct.size();
-		int balance = acct.get(0).confirmed.intValue();
-		assert size == 1 : TestUtils.fail("# of assets", size, 1);
-		assert balance == 1000 : TestUtils.fail("balance", balance, 1000);
+		Map<String, Integer> balances = new HashMap<String, Integer>();
+		balances.put(assetID, 1000);
+		TestUtils.validateAccountBalance(c, acctID, balances);
 		return true;
 	}
 }
