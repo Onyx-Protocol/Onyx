@@ -664,13 +664,13 @@
 
 ["WHILE loop conditionals"],
 
-["1", "2 DROP WHILE 0 ENDWHILE DROP", "STRICTENC", "succeeded WHILE test condition"],
+["1", "2 DROP WHILE 0 ENDWHILE", "STRICTENC", "succeeded WHILE test condition"],
 ["0", "2 DROP WHILE 0 ENDWHILE 1", "STRICTENC", "failed WHILE test condition"],
-["1", "2 DROP WHILE IF 1 0 ELSE 1 ENDIF ENDWHILE DROP", "STRICTENC", "IF... ELSE conditional within WHILE loop"],
-["0 1", "2 DROP WHILE DROP 1ADD DUP 10 LESSTHAN ENDWHILE DROP 10 NUMEQUAL", "STRICTENC", "count to 10 in WHILE loop"],
+["1", "2 DROP WHILE IF 1 0 ELSE 1 ENDIF ENDWHILE", "STRICTENC", "IF... ELSE conditional within WHILE loop"],
+["0 1", "2 DROP WHILE DROP 1ADD DUP 10 LESSTHAN ENDWHILE 10 NUMEQUAL", "STRICTENC", "count to 10 in WHILE loop"],
 ["0 1 2 3 4 5 6", "2 DROP WHILE DROP ENDWHILE 1", "STRICTENC", "tight WHILE... ENDWHILE loop"],
 ["0 1", "2 DROP WHILE DROP 1ADD TOALTSTACK 0 ENDWHILE FROMALTSTACK", "STRICTENC", "shared alt stack in WHILE loop"],
-["1", "2 DROP WHILE WHILE 0 ENDWHILE ENDWHILE DROP", "STRICTENC", "nested while loops"],
+["1", "2 DROP WHILE WHILE 0 ENDWHILE 0 ENDWHILE", "STRICTENC", "nested while loops"],
 
 ["CATPUSHDATA"],
 

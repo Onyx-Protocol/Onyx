@@ -2588,7 +2588,15 @@ func opcodeEndwhile(op *parsedOpcode, vm *Engine) error {
 		originalFrame := vm.estack.Peek()
 		originalFrame.pc--
 
-	case OpCondWhileFalse, OpCondWhileSkip:
+	case OpCondWhileFalse:
+		// Once the condition is false, the value should be removed from
+		// the data stack.
+		_, err := vm.dstack.PopBool()
+		if err != nil {
+			return err
+		}
+
+	case OpCondWhileSkip:
 		// Nothing to do after popping from the cond stack.
 	default:
 		// The most nested conditional is not a WHILE conditional.
