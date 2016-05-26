@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -295,9 +295,9 @@ CREATE TABLE account_utxos (
     script bytea NOT NULL,
     metadata bytea NOT NULL,
     confirmed_in bigint,
-    block_timestamp bigint,
     block_pos integer,
-    spent_in_pool boolean DEFAULT false NOT NULL
+    spent_in_pool boolean DEFAULT false NOT NULL,
+    block_timestamp bigint
 );
 
 
@@ -464,6 +464,20 @@ CREATE SEQUENCE chain_id_seq
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
+
+
+--
+-- Name: historical_account_outputs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE historical_account_outputs (
+    tx_hash text NOT NULL,
+    index integer NOT NULL,
+    asset_id text NOT NULL,
+    amount bigint NOT NULL,
+    account_id text NOT NULL,
+    timespan int8range NOT NULL
+);
 
 
 --
@@ -1288,6 +1302,27 @@ CREATE INDEX auth_tokens_user_id_idx ON auth_tokens USING btree (user_id);
 --
 
 CREATE UNIQUE INDEX blocks_txs_block_height_block_pos_key ON blocks_txs USING btree (block_height, block_pos);
+
+
+--
+-- Name: historical_account_outputs_account_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX historical_account_outputs_account_id_idx ON historical_account_outputs USING btree (account_id);
+
+
+--
+-- Name: historical_account_outputs_asset_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX historical_account_outputs_asset_id_idx ON historical_account_outputs USING btree (asset_id);
+
+
+--
+-- Name: historical_account_outputs_timespan_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX historical_account_outputs_timespan_idx ON historical_account_outputs USING gist (timespan);
 
 
 --
