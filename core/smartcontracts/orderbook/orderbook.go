@@ -10,6 +10,7 @@ import (
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/crypto/hash256"
+	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/log"
@@ -98,6 +99,44 @@ func Connect(chain *cos.FC) {
 			}
 		}
 	})
+	fc.AddBlockCallback(addBlock)
+}
+
+// Note, FC guarantees it will call the tx callback
+// for every tx in b before we get here.
+func addBlock(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
+	deltxhash, delindex := prevoutDBKeys(b.Transactions...)
+	const utxoDelQ = `
+		DELETE FROM orderbook_utxos
+		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+	`
+	_, err := pg.Exec(ctx, utxoDelQ, deltxhash, delindex)
+	if err != nil {
+		log.Write(ctx, "block", b.Height, "error", errors.Wrap(err))
+		panic(err)
+	}
+	const priceDelQ = `
+		DELETE FROM orderbook_prices
+		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+	`
+	_, err = pg.Exec(ctx, priceDelQ, deltxhash, delindex)
+	if err != nil {
+		log.Write(ctx, "block", b.Height, "error", errors.Wrap(err))
+		panic(err)
+	}
+}
+
+func prevoutDBKeys(txs ...*bc.Tx) (txhash pg.Strings, index pg.Uint32s) {
+	for _, tx := range txs {
+		for _, in := range tx.Inputs {
+			if in.IsIssuance() {
+				continue
+			}
+			txhash = append(txhash, in.Previous.Hash.String())
+			index = append(index, in.Previous.Index)
+		}
+	}
+	return
 }
 
 func (info *OrderInfo) generateScript(ctx context.Context, sellerScript []byte) (pkscript, contract []byte, err error) {

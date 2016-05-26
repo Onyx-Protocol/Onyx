@@ -1511,14 +1511,6 @@ ALTER TABLE ONLY orderbook_prices
 
 
 --
--- Name: orderbook_utxos_tx_hash_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY orderbook_utxos
-    ADD CONSTRAINT orderbook_utxos_tx_hash_fkey FOREIGN KEY (tx_hash, index) REFERENCES utxos(tx_hash, index) ON DELETE CASCADE;
-
-
---
 -- Name: rotations_manager_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 

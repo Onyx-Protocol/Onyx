@@ -1,0 +1,2 @@
+ALTER TABLE orderbook_utxos DROP CONSTRAINT orderbook_utxos_tx_hash_fkey;
+ALTER TABLE orderbook_prices DROP CONSTRAINT orderbook_prices_tx_hash_fkey;
