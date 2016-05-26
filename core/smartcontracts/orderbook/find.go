@@ -162,7 +162,6 @@ func makeQuery(extra string) string {
 		    FROM orderbook_utxos o, orderbook_prices p
 		    WHERE o.tx_hash = p.tx_hash
 		        AND o.index = p.index
-		        AND NOT EXISTS (SELECT 1 FROM pool_inputs pi WHERE pi.tx_hash = o.tx_hash AND pi.index = o.index)
 		        AND 
 	`
 	return baseQuery + extra + ` ORDER BY o.tx_hash, o.index`

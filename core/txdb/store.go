@@ -83,18 +83,6 @@ func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*s
 		return errors.Wrap(err, "insert into utxos")
 	}
 
-	var deleted []bc.Outpoint
-	for _, in := range tx.Inputs {
-		if in.IsIssuance() {
-			continue
-		}
-		deleted = append(deleted, in.Previous)
-	}
-	err = insertPoolInputs(ctx, dbtx, deleted)
-	if err != nil {
-		return errors.Wrap(err, "insert into pool inputs")
-	}
-
 	err = addIssuances(ctx, dbtx, assets, false)
 	if err != nil {
 		return errors.Wrap(err, "adding issuances")
@@ -117,20 +105,11 @@ func (s *Store) CleanPool(
 	defer dbtx.Rollback(ctx)
 
 	var (
-		deleteTxHashes     []string
-		deleteInputHashes  []string
-		deleteInputIndexes []uint32
-		conflictTxHashes   []string
+		deleteTxHashes   []string
+		conflictTxHashes []string
 	)
 	for _, tx := range append(confirmedTxs, conflictTxs...) {
 		deleteTxHashes = append(deleteTxHashes, tx.Hash.String())
-		for _, in := range tx.Inputs {
-			if in.IsIssuance() {
-				continue
-			}
-			deleteInputHashes = append(deleteInputHashes, in.Previous.Hash.String())
-			deleteInputIndexes = append(deleteInputIndexes, in.Previous.Index)
-		}
 	}
 	// TODO(kr): ideally there is no distinction between confirmedTxs
 	// and conflictTxs here. We currently need to know the difference,
@@ -155,18 +134,6 @@ func (s *Store) CleanPool(
 	_, err = dbtx.Exec(ctx, outq, pg.Strings(conflictTxHashes))
 	if err != nil {
 		return errors.Wrap(err, "delete from utxos")
-	}
-
-	// Delete pool_inputs
-	const inq = `
-		DELETE FROM pool_inputs
-		WHERE (tx_hash, index) IN (
-			SELECT unnest($1::text[]), unnest($2::integer[])
-		)
-	`
-	_, err = dbtx.Exec(ctx, inq, pg.Strings(deleteInputHashes), pg.Uint32s(deleteInputIndexes))
-	if err != nil {
-		return errors.Wrap(err, "delete from pool_inputs")
 	}
 
 	err = setIssuances(ctx, dbtx, assets)

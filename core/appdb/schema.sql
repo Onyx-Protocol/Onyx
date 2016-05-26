@@ -707,16 +707,6 @@ CREATE TABLE orderbook_utxos (
 
 
 --
--- Name: pool_inputs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE pool_inputs (
-    tx_hash text NOT NULL,
-    index integer NOT NULL
-);
-
-
---
 -- Name: pool_tx_sort_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1109,14 +1099,6 @@ ALTER TABLE ONLY migrations
 
 ALTER TABLE ONLY orderbook_utxos
     ADD CONSTRAINT orderbook_utxos_pkey PRIMARY KEY (tx_hash, index);
-
-
---
--- Name: pool_inputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY pool_inputs
-    ADD CONSTRAINT pool_inputs_pkey PRIMARY KEY (tx_hash, index);
 
 
 --

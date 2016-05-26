@@ -21,9 +21,8 @@ import (
 // It is okay to add the same transaction more than once; subsequent
 // attempts will have no effect and return a nil error.
 //
-// TODO(kr): accept tx if it is valid for any *subset* of the pool.
-// This means accepting conflicting transactions in the same pool
-// at the same time.
+// It is okay to add conflicting transactions to the pool. The conflict
+// will be resolved when a block lands.
 func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 	poolView, err := fc.store.NewPoolViewForPrevouts(ctx, []*bc.Tx{tx})
 	if err != nil {

@@ -13,7 +13,6 @@ TRUNCATE
 	account_utxos,
 	issuance_totals,
 	addresses,
-	pool_inputs,
 	pool_txs,
 	blocks_txs,
 	blocks,

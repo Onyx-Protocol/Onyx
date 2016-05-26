@@ -1,8 +1,6 @@
 package txdb
 
 import (
-	"time"
-
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
@@ -10,13 +8,10 @@ import (
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
-	"chain/metrics"
 	"chain/net/trace/span"
 )
 
 // loadPoolOutputs returns the outputs in 'load' that can be found.
-// Entries from table pool_inputs that are spending blockchain
-// outputs (rather than pool outputs) will have a zero value bc.Output field.
 // If some are not found, they will be absent from the map
 // (not an error).
 func loadPoolOutputs(ctx context.Context, dbtx *sql.Tx, load []bc.Outpoint) (map[bc.Outpoint]*state.Output, error) {
@@ -53,19 +48,6 @@ func loadPoolOutputs(ctx context.Context, dbtx *sql.Tx, load []bc.Outpoint) (map
 	if err != nil {
 		return nil, err
 	}
-
-	const spentQ = `
-		SELECT tx_hash, index FROM pool_inputs
-		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
-	`
-	err = pg.ForQueryRows(pg.NewContext(ctx, dbtx), spentQ, pg.Strings(txHashes), pg.Uint32s(indexes), func(hash bc.Hash, index uint32) {
-		p := bc.Outpoint{Hash: hash, Index: index}
-		if o := outs[p]; o != nil {
-			o.Spent = true
-		} else {
-			outs[p] = &state.Output{Outpoint: p, Spent: true}
-		}
-	})
 	return outs, err
 }
 
@@ -123,26 +105,6 @@ func insertPoolOutputs(ctx context.Context, db pg.DB, insert []*Output) error {
 		outs.metadata,
 	)
 	return err
-}
-
-// insertPoolInputs inserts outpoints into pool_inputs.
-func insertPoolInputs(ctx context.Context, db pg.DB, outs []bc.Outpoint) error {
-	defer metrics.RecordElapsed(time.Now())
-	var (
-		txHashes []string
-		index    []uint32
-	)
-	for _, o := range outs {
-		txHashes = append(txHashes, o.Hash.String())
-		index = append(index, o.Index)
-	}
-
-	const q = `
-		INSERT INTO pool_inputs (tx_hash, index)
-		SELECT unnest($1::text[]), unnest($2::bigint[])
-	`
-	_, err := db.Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(index))
-	return errors.Wrap(err)
 }
 
 // CountPoolTxs returns the total number of unconfirmed transactions.

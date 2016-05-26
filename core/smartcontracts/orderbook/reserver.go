@@ -151,7 +151,6 @@ func reserveOrder(ctx context.Context, openOrder *OpenOrder, amount uint64) (cha
 	const q = `
 		SELECT COUNT(*) FROM orderbook_utxos
 		  WHERE (tx_hash, index) = ($1, $2)
-		  AND (tx_hash, index) NOT IN (TABLE pool_inputs)
 	`
 
 	var cnt int

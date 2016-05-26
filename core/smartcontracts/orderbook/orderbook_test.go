@@ -165,22 +165,16 @@ func TestCancel(t *testing.T) {
 
 		expectPaysToAccount(ctx, t, fixtureInfo.sellerAccountID, output.Script)
 
-		found, err := FindOpenOrders(ctx, []bc.AssetID{fixtureInfo.aaplAssetID}, nil)
-		if err != nil {
-			testutil.FatalErr(t, err)
-		}
-		testutil.ExpectEqual(t, len(found), 0, "expected no cancelable orders [1]")
-
 		_, err = generator.MakeBlock(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		found, err = FindOpenOrders(ctx, []bc.AssetID{fixtureInfo.aaplAssetID}, nil)
+		found, err := FindOpenOrders(ctx, []bc.AssetID{fixtureInfo.aaplAssetID}, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		testutil.ExpectEqual(t, len(found), 0, "expected no cancelable orders [2]")
+		testutil.ExpectEqual(t, len(found), 0, "expected no cancelable orders")
 	})
 }
 
