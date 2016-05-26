@@ -191,22 +191,22 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 // If any do not exist (if they've already been consumed
 // or canceled), it silently ignores them.
 func Cancel(ctx context.Context, outpoints []bc.Outpoint) error {
-	txHashes := make([]bc.Hash, 0, len(outpoints))
-	indexes := make([]uint32, 0, len(outpoints))
+	txHashes := make([]string, 0, len(outpoints))
+	indexes := make([]int32, 0, len(outpoints))
 	for _, outpoint := range outpoints {
-		txHashes = append(txHashes, outpoint.Hash)
-		indexes = append(indexes, outpoint.Index)
+		txHashes = append(txHashes, outpoint.Hash.String())
+		indexes = append(indexes, int32(outpoint.Index))
 	}
 
 	const query = `
 		WITH reservation_ids AS (
-		    SELECT DISTINCT reservation_id FROM utxos
+		    SELECT DISTINCT reservation_id FROM account_utxos
 		        WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::bigint[]))
 		)
 		SELECT cancel_reservation(reservation_id) FROM reservation_ids
 	`
 
-	_, err := pg.Exec(ctx, query, txHashes, indexes)
+	_, err := pg.Exec(ctx, query, pg.Strings(txHashes), pg.Int32s(indexes))
 	return err
 }
 
