@@ -158,7 +158,7 @@ func addBlock(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
 	}
 
 	const q = `
-		UPDATE account_utxos SET confirmed_in=$3, block_pos=pos
+		UPDATE account_utxos SET confirmed_in=$3, block_timestamp=$4, block_pos=pos
 		FROM (SELECT unnest($1::text[]) AS txhash, unnest($2::integer[]) AS pos) t
 		WHERE tx_hash=txhash
 	`
@@ -168,6 +168,7 @@ func addBlock(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
 		pg.Strings(txhash),
 		pg.Int32s(pos),
 		b.Height,
+		b.Timestamp,
 	)
 	if err != nil {
 		// TODO(kr): make these errors stop log replay (e.g. crash the process)

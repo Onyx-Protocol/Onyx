@@ -295,6 +295,7 @@ CREATE TABLE account_utxos (
     script bytea NOT NULL,
     metadata bytea NOT NULL,
     confirmed_in bigint,
+    block_timestamp bigint,
     block_pos integer,
     spent_in_pool boolean DEFAULT false NOT NULL
 );
