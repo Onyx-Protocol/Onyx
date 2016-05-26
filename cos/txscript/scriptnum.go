@@ -4,13 +4,12 @@
 
 package txscript
 
-const (
-	maxInt32 = 1<<31 - 1
-	minInt32 = -1 << 31
+import "math"
 
+const (
 	// maxScriptNumLen is the maximum number of bytes data being interpreted
 	// as an integer may be.
-	maxScriptNumLen = 4
+	maxScriptNumLen = 8
 )
 
 // scriptNum represents a numeric value used in the scripting engine with
@@ -18,27 +17,11 @@ const (
 //
 // All numbers are stored on the data and alternate stacks encoded as little
 // endian with a sign bit.  All numeric opcodes such as OP_ADD, OP_SUB,
-// and OP_MUL, are only allowed to operate on 4-byte integers in the range
-// [-2^31 + 1, 2^31 - 1], however the results of numeric operations may overflow
-// and remain valid so long as they are not used as inputs to other numeric
-// operations or otherwise interpreted as an integer.
+// and OP_MUL, are only allowed to operate on 8-byte integers. Each numeric
+// opcode has its own limits on its operands to prevent overflow.
 //
-// For example, it is possible for OP_ADD to have 2^31 - 1 for its two operands
-// resulting 2^32 - 2, which overflows, but is still pushed to the stack as the
-// result of the addition.  That value can then be used as input to OP_VERIFY
-// which will succeed because the data is being interpreted as a boolean.
-// However, if that same value were to be used as input to another numeric
-// opcode, such as OP_SUB, it must fail.
-//
-// This type handles the aforementioned requirements by storing all numeric
-// operation results as an int64 to handle overflow and provides the Bytes
-// method to get the serialized representation (including values that overflow).
-//
-// Then, whenever data is interpreted as an integer, it is converted to this
-// type by using the makeScriptNum function which will return an error if the
-// number is out of range (or not minimally encoded depending on a flag).  Since
-// all numeric opcodes involve pulling data from the stack and interpreting it
-// as an integer, it provides the required behavior.
+// This type stores all integers as an int64. It is the responsibility of the
+// individual opcodes to perform bounds checking to prevent overflow.
 type scriptNum int64
 
 // checkMinimalDataEncoding returns whether or not the passed byte array adheres
@@ -64,7 +47,6 @@ func checkMinimalDataEncoding(v []byte) error {
 			return ErrStackMinimalData
 		}
 	}
-
 	return nil
 }
 
@@ -136,25 +118,14 @@ func BoolToScriptBytes(b bool) []byte {
 	return Int64ToScriptBytes(0)
 }
 
-// Int32 returns the script number clamped to a valid int32.  That is to say
-// when the script number is higher than the max allowed int32, the max int32
-// value is returned and vice versa for the minimum value.  Note that this
-// behavior is different from a simple int32 cast because that truncates
-// and the consensus rules dictate numbers which are directly cast to ints
-// provide this behavior.
-//
-// In practice, the number should never really be out of range since it will
-// have been created with makeScriptNum which rejects them, but in case
-// something in the future ends up calling this function against the result
-// of some arithmetic, which IS allowed to be out of range before being
-// reinterpreted as an integer, this will provide the correct behavior.
+// Int32 returns the script number clamped to a valid int32.
 func (n scriptNum) Int32() int32 {
-	if n > maxInt32 {
-		return maxInt32
+	if n > math.MaxInt32 {
+		return math.MaxInt32
 	}
 
-	if n < minInt32 {
-		return minInt32
+	if n < math.MinInt32 {
+		return math.MinInt32
 	}
 
 	return int32(n)

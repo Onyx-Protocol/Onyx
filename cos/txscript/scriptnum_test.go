@@ -128,23 +128,28 @@ func TestMakeScriptNum(t *testing.T) {
 		{hexToBytes("ffffff7f"), 2147483647, true, nil},
 		{hexToBytes("ffffffff"), -2147483647, true, nil},
 
+		// Minimally-encoded values that would be out of range for
+		// 32-bit integers, but is within range for our 64-bit integers.
+		{hexToBytes("0000008000"), 2147483648, true, nil},
+		{hexToBytes("0000008080"), -2147483648, true, nil},
+		{hexToBytes("0000009000"), 2415919104, true, nil},
+		{hexToBytes("0000009080"), -2415919104, true, nil},
+		{hexToBytes("ffffffff00"), 4294967295, true, nil},
+		{hexToBytes("ffffffff80"), -4294967295, true, nil},
+		{hexToBytes("0000000001"), 4294967296, true, nil},
+		{hexToBytes("0000000081"), -4294967296, true, nil},
+		{hexToBytes("ffffffffffff00"), 281474976710655, true, nil},
+		{hexToBytes("ffffffffffff80"), -281474976710655, true, nil},
+		{hexToBytes("ffffffffffffff00"), 72057594037927935, true, nil},
+		{hexToBytes("ffffffffffffff80"), -72057594037927935, true, nil},
+		{hexToBytes("ffffffffffffff7f"), 9223372036854775807, true, nil},
+		{hexToBytes("ffffffffffffffff"), -9223372036854775807, true, nil},
+
 		// Minimally encoded values that are out of range for data that
 		// is interpreted as script numbers with the minimal encoding
 		// flag set.  Should error and return 0.
-		{hexToBytes("0000008000"), 0, true, ErrStackNumberTooBig},
-		{hexToBytes("0000008080"), 0, true, ErrStackNumberTooBig},
-		{hexToBytes("0000009000"), 0, true, ErrStackNumberTooBig},
-		{hexToBytes("0000009080"), 0, true, ErrStackNumberTooBig},
-		{hexToBytes("ffffffff00"), 0, true, ErrStackNumberTooBig},
-		{hexToBytes("ffffffff80"), 0, true, ErrStackNumberTooBig},
-		{hexToBytes("0000000001"), 0, true, ErrStackNumberTooBig},
-		{hexToBytes("0000000081"), 0, true, ErrStackNumberTooBig},
-		{hexToBytes("ffffffffffff00"), 0, true, ErrStackNumberTooBig},
-		{hexToBytes("ffffffffffff80"), 0, true, ErrStackNumberTooBig},
-		{hexToBytes("ffffffffffffff00"), 0, true, ErrStackNumberTooBig},
-		{hexToBytes("ffffffffffffff80"), 0, true, ErrStackNumberTooBig},
-		{hexToBytes("ffffffffffffff7f"), 0, true, ErrStackNumberTooBig},
-		{hexToBytes("ffffffffffffffff"), 0, true, ErrStackNumberTooBig},
+		{hexToBytes("ffffffffffffffff7f"), 0, true, ErrStackNumberTooBig},
+		{hexToBytes("ffffffffffffffffff"), 0, true, ErrStackNumberTooBig},
 
 		// Non-minimally encoded, but otherwise valid values with
 		// minimal encoding flag.  Should error and return 0.

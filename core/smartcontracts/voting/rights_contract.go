@@ -2,6 +2,7 @@ package voting
 
 import (
 	"bytes"
+	"math"
 
 	"chain/cos/bc"
 	"chain/cos/txscript"
@@ -13,7 +14,7 @@ import (
 var scriptVersion = txscript.ScriptVersion2
 
 const (
-	infiniteDeadline = 0x7fffffff
+	infiniteDeadline = math.MaxInt64
 )
 
 type rightsContractClause int64
