@@ -476,7 +476,9 @@ CREATE TABLE historical_account_outputs (
     asset_id text NOT NULL,
     amount bigint NOT NULL,
     account_id text NOT NULL,
-    timespan int8range NOT NULL
+    timespan int8range NOT NULL,
+    script bytea DEFAULT '\x'::bytea NOT NULL,
+    metadata bytea DEFAULT '\x'::bytea NOT NULL
 );
 
 
