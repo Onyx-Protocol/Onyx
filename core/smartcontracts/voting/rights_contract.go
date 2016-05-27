@@ -2,6 +2,7 @@ package voting
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 
 	"chain/cos/bc"
@@ -15,6 +16,10 @@ var scriptVersion = txscript.ScriptVersion2
 
 const (
 	infiniteDeadline = math.MaxInt64
+
+	// pinnedRightsContractHash stores the hash of the voting rights contract.
+	// Changes to the the contract will require updating the hash.
+	pinnedRightsContractHash = "d27b4dc74b1f383b12cc522f2ee92cc31f63d33f7280810ef31772450f1f3659"
 )
 
 type rightsContractClause int64
@@ -326,9 +331,12 @@ func init() {
 	if err != nil {
 		panic("failed parsing voting rights holding script: " + err.Error())
 	}
-	// TODO(jackson): Before going to production, we'll probably want to hard-code the
-	// contract hash and panic if the contract changes.
 	rightsHoldingContractHash = hash256.Sum(rightsHoldingContract)
+
+	if pinnedRightsContractHash != bc.Hash(rightsHoldingContractHash).String() {
+		panic(fmt.Sprintf("Expected right contract hash %s, current contract has hash %x",
+			pinnedRightsContractHash, rightsHoldingContractHash[:]))
+	}
 }
 
 // calculateOwnershipChain extends the provided chain of ownership with the provided

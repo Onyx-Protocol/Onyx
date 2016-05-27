@@ -2,10 +2,17 @@ package voting
 
 import (
 	"bytes"
+	"fmt"
 
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/crypto/hash256"
+)
+
+const (
+	// pinnedTokenContractHash stores the hash of the voting token contract.
+	// Changes to the contract will require updating the hash.
+	pinnedTokenContractHash = "7659a7102446ace00ca187998852db6c37c8e96ae5a21f77eb36efa2673d3e11"
 )
 
 type TokenState byte
@@ -305,7 +312,10 @@ func init() {
 	if err != nil {
 		panic("failed parsing voting token holding script: " + err.Error())
 	}
-	// TODO(jackson): Before going to production, we'll probably want to hard-code the
-	// contract hash and panic if the contract changes.
 	tokenHoldingContractHash = hash256.Sum(tokenHoldingContract)
+
+	if pinnedTokenContractHash != bc.Hash(tokenHoldingContractHash).String() {
+		panic(fmt.Sprintf("Expected token contract hash %s, current contract has hash %x",
+			pinnedTokenContractHash, tokenHoldingContractHash))
+	}
 }
