@@ -35,7 +35,7 @@ func TestHistoricalOutput(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, assetID, 100, account1ID)
 
 	count := func() int64 {
-		const q = `SELECT amount FROM historical_account_outputs WHERE asset_id = $1 AND account_id = $2`
+		const q = `SELECT amount FROM historical_outputs WHERE asset_id = $1 AND account_id = $2`
 
 		var n int64
 		err := pg.ForQueryRows(ctx, q, assetID, account1ID, func(amt int64) {

@@ -467,15 +467,15 @@ CREATE SEQUENCE chain_id_seq
 
 
 --
--- Name: historical_account_outputs; Type: TABLE; Schema: public; Owner: -
+-- Name: historical_outputs; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE historical_account_outputs (
+CREATE TABLE historical_outputs (
     tx_hash text NOT NULL,
     index integer NOT NULL,
     asset_id text NOT NULL,
     amount bigint NOT NULL,
-    account_id text NOT NULL,
+    account_id text,
     timespan int8range NOT NULL,
     script bytea DEFAULT '\x'::bytea NOT NULL,
     metadata bytea DEFAULT '\x'::bytea NOT NULL
@@ -1289,24 +1289,24 @@ CREATE UNIQUE INDEX blocks_txs_block_height_block_pos_key ON blocks_txs USING bt
 
 
 --
--- Name: historical_account_outputs_account_id_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: historical_outputs_account_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX historical_account_outputs_account_id_idx ON historical_account_outputs USING btree (account_id);
-
-
---
--- Name: historical_account_outputs_asset_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX historical_account_outputs_asset_id_idx ON historical_account_outputs USING btree (asset_id);
+CREATE INDEX historical_outputs_account_id_idx ON historical_outputs USING btree (account_id) WHERE (account_id IS NOT NULL);
 
 
 --
--- Name: historical_account_outputs_timespan_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: historical_outputs_asset_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX historical_account_outputs_timespan_idx ON historical_account_outputs USING gist (timespan);
+CREATE INDEX historical_outputs_asset_id ON historical_outputs USING btree (asset_id);
+
+
+--
+-- Name: historical_outputs_timespan_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX historical_outputs_timespan_idx ON historical_outputs USING gist (timespan);
 
 
 --

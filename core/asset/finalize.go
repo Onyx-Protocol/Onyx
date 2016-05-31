@@ -177,9 +177,9 @@ func addBlock(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
 
 	deltxhash, delindex := prevoutDBKeys(b.Transactions...)
 
-	// Before deleting rows from account_utxos, archive them to historical_account_outputs.
+	// Before deleting rows from account_utxos, archive them to historical_outputs.
 	const histQ = `
-		INSERT INTO historical_account_outputs (tx_hash, index, asset_id, amount, account_id, timespan, script, metadata)
+		INSERT INTO historical_outputs (tx_hash, index, asset_id, amount, account_id, timespan, script, metadata)
 			SELECT tx_hash, index, asset_id, amount, account_id, int8range(block_timestamp, $3), script, metadata
 				FROM account_utxos
 				WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
