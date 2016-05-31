@@ -46,7 +46,7 @@ ASSET                                                                           
 CATPUSHDATA                                                                       # <top> [building pkscript] priceAsset price [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
 DATA_2 0x557a CAT                                                                 # <top> [building pkscript] priceAsset price [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
 DATA_2 0x76aa CAT                                                                 # <top> [building pkscript] priceAsset price [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
-DATA_33 0x20779bac70df3c11be3b65adde960007f8176ce67ead687d7e4d87a73228d51fb3 CAT  # <top> [building pkscript] priceAsset price [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
+DATA_33 0x20be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa0 CAT  # <top> [building pkscript] priceAsset price [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
 DATA_2 0x88c0 CAT                                                                 # <top> [BidContract([asset()], [amount()], sellerScript, newBidderScript, deadline)] priceAsset price [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
 RESERVEOUTPUT                                                                     # <top> [reserveoutput(price, priceAsset, [BidContract([asset()], [amount()], sellerScript, newBidderScript, deadline)])] [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
 VERIFY                                                                            # <top> [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
@@ -68,8 +68,6 @@ DATA_2 0x76aa CAT                                                               
 OUTPUTSCRIPT SIZE 34 SUB 32 SUBSTR CATPUSHDATA                                    # <top> [building pkscript] [asset()] [amount()] [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
 DATA_2 0x88c0 CAT                                                                 # <top> [AuctionAsset(priceAsset, price, sellerScript, newBidderScript, deadline)] [asset()] [amount()] [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
 RESERVEOUTPUT                                                                     # <top> [reserveoutput([amount()], [asset()], [AuctionAsset(priceAsset, price, sellerScript, newBidderScript, deadline)])] [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
-VERIFY                                                                            # <top> [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
-TRUE                                                                              # <top> TRUE [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
 ELSE DUP 3 NUMEQUAL IF                                                            # <top> [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
 TIME                                                                              # <top> [time()] [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
 6 PICK                                                                            # <top> deadline [time()] [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
@@ -84,27 +82,25 @@ AMOUNT                                                                          
 ASSET                                                                             # <top> [asset()] [amount()] [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
 6 PICK                                                                            # <top> bidderScript [asset()] [amount()] [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
 RESERVEOUTPUT                                                                     # <top> [reserveoutput([amount()], [asset()], bidderScript)] [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
-VERIFY                                                                            # <top> [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
-TRUE                                                                              # <top> TRUE [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
 ENDIF ENDIF ENDIF                                                                 # <top> [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
 
 Contract hex:
-557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e2120779bac70df3c11be3b65adde960007f8176ce67ead687d7e4d87a73228d51fb37e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec169516776539c63c55679a269527952795579c169c3c25679c16951686868
+557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e2120be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa07e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776539c63c55679a269527952795579c169c3c25679c1686868
 
 Contracthash hex:
-dd3cd977820e9df4e5fab86ff82bd320546f503336871d618d6d0f0ce4ebb7a3
+dd542d40f5c684c613e492d883661698c59df6e1929732bb011512f7a751efb7
 
 Pkscript hex:
-5175<deadline><bidderScript><sellerScript><bidPrice><priceAsset>557a76aa20dd3cd977820e9df4e5fab86ff82bd320546f503336871d618d6d0f0ce4ebb7a388c0
+5175<deadline><bidderScript><sellerScript><bidPrice><priceAsset>557a76aa20dd542d40f5c684c613e492d883661698c59df6e1929732bb011512f7a751efb788c0
 
 Redeem AuctionAsset.refund:
-514cbf557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e2120779bac70df3c11be3b65adde960007f8176ce67ead687d7e4d87a73228d51fb37e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec169516776539c63c55679a269527952795579c169c3c25679c16951686868
+514cbb557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e2120be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa07e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776539c63c55679a269527952795579c169c3c25679c1686868
 
 Redeem AuctionAsset.bid:
-<newBidderScript><price>524cbf557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e2120779bac70df3c11be3b65adde960007f8176ce67ead687d7e4d87a73228d51fb37e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec169516776539c63c55679a269527952795579c169c3c25679c16951686868
+<newBidderScript><price>524cbb557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e2120be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa07e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776539c63c55679a269527952795579c169c3c25679c1686868
 
 Redeem AuctionAsset.claim:
-534cbf557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e2120779bac70df3c11be3b65adde960007f8176ce67ead687d7e4d87a73228d51fb37e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec169516776539c63c55679a269527952795579c169c3c25679c16951686868
+534cbb557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e2120be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa07e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776539c63c55679a269527952795579c169c3c25679c1686868
 
 Contract "BidContract":
                                                 # <top> assetID assetAmount sellerScript bidderScript deadline [clause selector] ...clause args...
@@ -141,8 +137,6 @@ DATA_2 0x76aa CAT                               # <top> [building pkscript] [ass
 OUTPUTSCRIPT SIZE 34 SUB 32 SUBSTR CATPUSHDATA  # <top> [building pkscript] [asset()] newBidPrice [clause selector] assetID assetAmount sellerScript bidderScript deadline newBidPrice
 DATA_2 0x88c0 CAT                               # <top> [BidContract(assetID, assetAmount, sellerScript, bidderScript, deadline)] [asset()] newBidPrice [clause selector] assetID assetAmount sellerScript bidderScript deadline newBidPrice
 RESERVEOUTPUT                                   # <top> [reserveoutput(newBidPrice, [asset()], [BidContract(assetID, assetAmount, sellerScript, bidderScript, deadline)])] [clause selector] assetID assetAmount sellerScript bidderScript deadline newBidPrice
-VERIFY                                          # <top> [clause selector] assetID assetAmount sellerScript bidderScript deadline newBidPrice
-TRUE                                            # <top> TRUE [clause selector] assetID assetAmount sellerScript bidderScript deadline
 ELSE DUP 2 NUMEQUAL IF                          # <top> [clause selector] assetID assetAmount sellerScript bidderScript deadline
 AMOUNT                                          # <top> [amount()] [clause selector] assetID assetAmount sellerScript bidderScript deadline
 ASSET                                           # <top> [asset()] [amount()] [clause selector] assetID assetAmount sellerScript bidderScript deadline
@@ -153,21 +147,19 @@ VERIFY                                          # <top> [clause selector] assetI
 2 PICK                                          # <top> assetID assetAmount [clause selector] assetID assetAmount sellerScript bidderScript deadline
 6 PICK                                          # <top> bidderScript assetID assetAmount [clause selector] assetID assetAmount sellerScript bidderScript deadline
 RESERVEOUTPUT                                   # <top> [reserveoutput(assetAmount, assetID, bidderScript)] [clause selector] assetID assetAmount sellerScript bidderScript deadline
-VERIFY                                          # <top> [clause selector] assetID assetAmount sellerScript bidderScript deadline
-TRUE                                            # <top> TRUE [clause selector] assetID assetAmount sellerScript bidderScript deadline
 ENDIF ENDIF                                     # <top> [clause selector] assetID assetAmount sellerScript bidderScript deadline
 
 Contract hex:
-557a76519c63c556799f69c3c25679c1695679c3a0695679c20251755879c75779c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec169516776529c63c3c25579c169527952795679c169516868
+557a76519c63c556799f69c3c25679c1695679c3a0695679c20251755879c75779c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776529c63c3c25579c169527952795679c16868
 
 Contracthash hex:
-779bac70df3c11be3b65adde960007f8176ce67ead687d7e4d87a73228d51fb3
+be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa0
 
 Pkscript hex:
-5175<deadline><bidderScript><sellerScript><assetAmount><assetID>557a76aa20779bac70df3c11be3b65adde960007f8176ce67ead687d7e4d87a73228d51fb388c0
+5175<deadline><bidderScript><sellerScript><assetAmount><assetID>557a76aa20be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa088c0
 
 Redeem BidContract.release:
-<newBidPrice>514c59557a76519c63c556799f69c3c25679c1695679c3a0695679c20251755879c75779c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec169516776529c63c3c25579c169527952795679c169516868
+<newBidPrice>514c55557a76519c63c556799f69c3c25679c1695679c3a0695679c20251755879c75779c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776529c63c3c25579c169527952795679c16868
 
 Redeem BidContract.pay:
-524c59557a76519c63c556799f69c3c25679c1695679c3a0695679c20251755879c75779c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec169516776529c63c3c25579c169527952795679c169516868
+524c55557a76519c63c556799f69c3c25679c1695679c3a0695679c20251755879c75779c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776529c63c3c25579c169527952795679c16868

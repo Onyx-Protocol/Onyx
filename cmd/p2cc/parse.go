@@ -106,9 +106,16 @@ func parseBlock(buf []byte, offset int, forClause bool) (*block, int) {
 			if len(stmts) == 0 {
 				panic(parseErr(buf, offset, "empty clause body"))
 			}
-			if _, ok := stmts[len(stmts)-1].(*verifyStmt); !ok {
+			v, ok := stmts[len(stmts)-1].(*verifyStmt)
+			if !ok {
 				panic(parseErr(buf, offset, "clause must end with expr or verify statement"))
 			}
+			// The final statement of the clause block is a verify.  Convert
+			// it to a bare expr so it's left on the stack after the
+			// contract runs (saving two opcodes: VERIFY and TRUE [because
+			// something true has to be left on the stack]).
+			block.stmts = block.stmts[:len(stmts)-1]
+			block.expr = v.expr
 		}
 	}
 	newOffset = parseStr(buf, offset, "}")
@@ -427,8 +434,8 @@ func parseLiteralExpr(buf []byte, offset int) (*literal, int) {
 	return nil, -1
 }
 
-func parseParam(buf []byte, offset int) (stackItem, int) {
-	var param stackItem
+func parseParam(buf []byte, offset int) (typedName, int) {
+	var param typedName
 	id, newOffset := parseIdentifier(buf, offset)
 	if newOffset < 0 {
 		return param, -1
@@ -443,13 +450,13 @@ func parseParam(buf []byte, offset int) (stackItem, int) {
 	return param, offset
 }
 
-func parseParams(buf []byte, offset int) ([]stackItem, int) {
+func parseParams(buf []byte, offset int) ([]typedName, int) {
 	newOffset := parseStr(buf, offset, "(")
 	if newOffset < 0 {
 		return nil, -1
 	}
 	offset = newOffset
-	var params []stackItem
+	var params []typedName
 	first := true
 	for {
 		newOffset = parseStr(buf, offset, ")")

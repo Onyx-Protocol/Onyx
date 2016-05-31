@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"chain/cos/txscript"
-	"chain/crypto/hash256"
 )
 
 var flagDebug = flag.Bool("debug", false, "run in debug mode")
@@ -44,15 +43,11 @@ func main() {
 			fmt.Printf("\n")
 		}
 		fmt.Printf("Contract \"%s\":\n", contract.name)
-		var (
-			longest int
-			allOps  []string
-		)
-		for _, translation := range res {
-			if len(translation.ops) > longest {
-				longest = len(translation.ops)
+		var longest int
+		for _, step := range res.steps {
+			if len(step.ops) > longest {
+				longest = len(step.ops)
 			}
-			allOps = append(allOps, translation.ops)
 		}
 		f := fmt.Sprintf("%%-%d.%ds  # <top> %%s\n", longest, longest)
 		var initStack []string
@@ -67,27 +62,30 @@ func main() {
 			}
 		}
 		fmt.Printf(f, "", strings.Join(initStack, " "))
-		for _, translation := range res {
-			ops := translation.ops
-			stack := translation.stack
+		for _, step := range res.steps {
+			ops := step.ops
+			stack := step.stack
 			strs := make([]string, 0, len(stack))
-			for _, item := range stack {
-				strs = append(strs, item.name)
+			for _, step := range stack {
+				strs = append(strs, step.name)
 			}
 			fmt.Printf(f, ops, strings.Join(strs, " "))
 		}
 
-		parsed, err := txscript.ParseScriptString(strings.Join(allOps, " "))
+		bytes, err := res.getBytes()
 		if err != nil {
 			panic(err)
 		}
 
-		contractHex := hex.EncodeToString(parsed)
+		contractHex := hex.EncodeToString(bytes)
 
 		fmt.Println("\nContract hex:")
 		fmt.Println(contractHex)
 
-		hash := hash256.Sum(parsed)
+		hash, err := res.getHash()
+		if err != nil {
+			panic(err)
+		}
 
 		fmt.Println("\nContracthash hex:")
 		fmt.Println(hex.EncodeToString(hash[:]))
@@ -124,7 +122,7 @@ func main() {
 			if len(contract.clauses) > 1 {
 				redeem = txscript.AddInt64ToScript(nil, int64(i+1))
 			}
-			redeem = txscript.AddDataToScript(redeem, parsed)
+			redeem = txscript.AddDataToScript(redeem, bytes)
 			fmt.Printf("%s\n", hex.EncodeToString(redeem))
 		}
 		first = false

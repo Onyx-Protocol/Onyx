@@ -7,8 +7,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"chain/cos/txscript"
 )
 
 func TestCompiler(t *testing.T) {
@@ -39,11 +37,7 @@ func TestCompiler(t *testing.T) {
 				t.Errorf("translating %s: %s", name, err)
 				continue
 			}
-			allOps := make([]string, 0, len(translated))
-			for _, t := range translated {
-				allOps = append(allOps, t.ops)
-			}
-			parsed, err := txscript.ParseScriptString(strings.Join(allOps, " "))
+			bytes, err := translated.getBytes()
 			if err != nil {
 				t.Errorf("parsing opcodes from %s: %s", name, err)
 			}
@@ -70,7 +64,7 @@ func TestCompiler(t *testing.T) {
 						contractHexNext = true
 					}
 				}
-				gotHex := hex.EncodeToString(parsed)
+				gotHex := hex.EncodeToString(bytes)
 				if gotHex != expectedHex {
 					t.Errorf("mismatch in %s: got %s, expected %s", name, gotHex, expectedHex)
 				}

@@ -55,10 +55,10 @@ var binaryOps = []*binaryOp{
 	{op: "||", precedence: 1, translation: "BOOLOR", canAssign: true, t: boolType},
 }
 
-func (v varref) translate(stack []stackItem, context *context) ([]translation, error) {
-	varDepth, err := lookup(string(v), stack)
-	if err != nil {
-		return nil, errors.Wrap(err, "translating varref %s", string(v))
+func (v varref) translate(stk stack, context *context) (*translation, error) {
+	varDepth := stk.lookup(string(v))
+	if varDepth < 0 {
+		return nil, fmt.Errorf("unknown variable %s", string(v))
 	}
 	var ops string
 	if varDepth > 0 {
@@ -66,33 +66,31 @@ func (v varref) translate(stack []stackItem, context *context) ([]translation, e
 	} else {
 		ops = "DUP"
 	}
-	s := []stackItem{{name: string(v)}}
-	s = append(s, stack...)
-	return []translation{{ops, s}}, nil
+	s := stk.push(typedName{name: string(v)})
+	var result translation
+	return result.add(ops, s), nil
 }
 
-func (v varref) typ(stack []stackItem) int {
-	varDepth, err := lookup(string(v), stack)
-	if err != nil {
+func (v varref) typ(stk stack) int {
+	varDepth := stk.lookup(string(v))
+	if varDepth < 0 {
 		return unknownType
 	}
-	return stack[varDepth].typ
+	return stk[varDepth].typ
 }
 
-func (b binaryExpr) translate(stack []stackItem, context *context) ([]translation, error) {
-	lhs, err := b.lhs.translate(stack, context)
+func (b binaryExpr) translate(stk stack, context *context) (*translation, error) {
+	lhs, err := b.lhs.translate(stk, context)
 	if err != nil {
 		return nil, errors.Wrap(err, "translating binaryExpr lhs %+v", b.lhs)
 	}
-	stackWithLHS := []stackItem{lhs[len(lhs)-1].stack[0]}
-	stackWithLHS = append(stackWithLHS, stack...)
-	rhs, err := b.rhs.translate(stackWithLHS, context)
+	stkWithLHS := stk.push(lhs.finalStackTop())
+	rhs, err := b.rhs.translate(stkWithLHS, context)
 	if err != nil {
 		return nil, errors.Wrap(err, "translating binaryExpr rhs %+v", b.rhs)
 	}
-	result := append(lhs, rhs...)
-	s := []stackItem{{name: fmt.Sprintf("[%s %s %s]", lhs[len(lhs)-1].stack[0], b.op.op, rhs[len(rhs)-1].stack[0])}}
-	s = append(s, stack...)
+	result := lhs.addMany(rhs.steps)
+	s := stk.push(typedName{name: fmt.Sprintf("[%s %s %s]", lhs.finalStackTop(), b.op.op, rhs.finalStackTop())})
 
 	var opcodes string
 	if b.op.translation == "" {
@@ -100,11 +98,11 @@ func (b binaryExpr) translate(stack []stackItem, context *context) ([]translatio
 		// determine whether to treat this as numeric (in)equality or
 		// bytewise (in)equality.
 		var numeric bool
-		if b.lhs.typ(stack) == numType && b.rhs.typ(stack) == numType {
+		if b.lhs.typ(stk) == numType && b.rhs.typ(stk) == numType {
 			numeric = true
-		} else if b.lhs.typ(stack) == numType && b.rhs.typ(stack) == unknownType {
+		} else if b.lhs.typ(stk) == numType && b.rhs.typ(stk) == unknownType {
 			numeric = true
-		} else if b.lhs.typ(stack) == unknownType && b.rhs.typ(stack) == numType {
+		} else if b.lhs.typ(stk) == unknownType && b.rhs.typ(stk) == numType {
 			numeric = true
 		}
 		if numeric {
@@ -124,11 +122,10 @@ func (b binaryExpr) translate(stack []stackItem, context *context) ([]translatio
 		opcodes = b.op.translation
 	}
 
-	result = append(result, translation{opcodes, s})
-	return result, nil
+	return result.add(opcodes, s), nil
 }
 
-func (b binaryExpr) typ(stack []stackItem) int {
+func (b binaryExpr) typ(stk stack) int {
 	return b.op.t
 }
 
@@ -149,18 +146,16 @@ var unaryOps = []*unaryOp{
 	{"^", "INVERT", bytesType},
 }
 
-func (u unaryExpr) translate(stack []stackItem, context *context) ([]translation, error) {
-	result, err := u.expr.translate(stack, context)
+func (u unaryExpr) translate(stk stack, context *context) (*translation, error) {
+	result, err := u.expr.translate(stk, context)
 	if err != nil {
 		return nil, errors.Wrap(err, "translating unaryExpr %+v", u.expr)
 	}
-	s := []stackItem{{name: fmt.Sprintf("[%s(%s)]", u.op.translation, result[len(result)-1].stack[0])}}
-	s = append(s, stack...)
-	result = append(result, translation{u.op.translation, s})
-	return result, nil
+	s := stk.push(typedName{name: fmt.Sprintf("[%s(%s)]", u.op.translation, result.finalStackTop())})
+	return result.add(u.op.translation, s), nil
 }
 
-func (u unaryExpr) typ(stack []stackItem) int {
+func (u unaryExpr) typ(stk stack) int {
 	return u.op.typ
 }
 
@@ -191,13 +186,13 @@ var calls = []struct {
 
 var errNumArgs = errors.New("number of args")
 
-func (call callExpr) translate(stack []stackItem, context *context) ([]translation, error) {
+func (call callExpr) translate(stk stack, context *context) (*translation, error) {
 	if call.name == context.currentContract.name {
-		return call.contractCall(stack, context, context.currentContract, true)
+		return call.contractCall(stk, context, context.currentContract, true)
 	}
 	for _, c := range context.allContracts {
 		if call.name == c.name {
-			return call.contractCall(stack, context, c, false)
+			return call.contractCall(stk, context, c, false)
 		}
 	}
 	for _, c := range calls {
@@ -205,77 +200,77 @@ func (call callExpr) translate(stack []stackItem, context *context) ([]translati
 			if len(call.actuals) != c.args {
 				return nil, errors.Wrap(errNumArgs, "calling %s: expected %d arg(s), got %d", call.name, c.args, len(call.actuals))
 			}
-			var output []translation
+			var output *translation
 			var argdescs []string
 			for i, a := range call.actuals {
-				t, err := a.translate(stack, context)
+				t, err := a.translate(stk, context)
 				if err != nil {
 					return nil, errors.Wrap(err, "translating arg %d in call to %s", i, call.name)
 				}
-				argdesc := t[len(t)-1].stack[0].name
-				output = append(output, t...)
-				stack = append([]stackItem{{name: argdesc}}, stack...)
+				argdesc := t.finalStackTop().name
+				output = output.addMany(t.steps)
+				stk = stk.push(typedName{name: argdesc})
 				argdescs = append(argdescs, argdesc)
 			}
-			s := []stackItem{{name: fmt.Sprintf("[%s(%s)]", call.name, strings.Join(argdescs, ", "))}}
-			s = append(s, stack[c.args:]...)
+			s := stk.dropN(c.args)
+			s = s.push(typedName{name: fmt.Sprintf("[%s(%s)]", call.name, strings.Join(argdescs, ", "))})
 			opcodes := strings.ToUpper(call.name)
 			if call.name == "size" {
 				// Special case: SIZE does not consume its argument, so rejigger the stack to get rid of it
 				opcodes += " NIP"
 			}
-			output = append(output, translation{opcodes, s})
-			return output, nil
+			return output.add(opcodes, s), nil
 		}
 	}
 	return nil, fmt.Errorf("unknown function %s", call.name)
 }
 
-func (call callExpr) typ(stack []stackItem) int {
+func (call callExpr) typ(stk stack) int {
 	return call.t
 }
 
-func (call callExpr) contractCall(stack []stackItem, context *context, contract *contract, isSelf bool) ([]translation, error) {
+func (call callExpr) contractCall(stk stack, context *context, contract *contract, isSelf bool) (*translation, error) {
 	if len(call.actuals) != len(contract.params) {
 		return nil, fmt.Errorf("contract %s requires %d param(s), got %d", contract.name, len(contract.params), len(call.actuals))
 	}
-	stack = append([]stackItem{{name: "[building pkscript]", typ: bytesType}}, stack...)
+	stk = stk.push(typedName{name: "[building pkscript]", typ: bytesType})
 	b := txscript.AddDataToScript(nil, txscript.ScriptVersion1)
 	b = append(b, txscript.OP_DROP)
-	output := []translation{{ops: fmt.Sprintf("DATA_%d 0x%s", len(b), hex.EncodeToString(b)), stack: stack}}
+	var output *translation
+	output = output.add(fmt.Sprintf("DATA_%d 0x%s", len(b), hex.EncodeToString(b)), stk)
 	var argdescs []string
 	for n := len(call.actuals) - 1; n >= 0; n-- {
 		actual := call.actuals[n]
-		t, err := actual.translate(stack, context)
+		t, err := actual.translate(stk, context)
 		if err != nil {
 			return nil, errors.Wrap(err, "translating arg %d in call to %s", n, call.name)
 		}
-		argdesc := t[len(t)-1].stack[0].name
-		output = append(output, t...)
-		output = append(output, translation{ops: "CATPUSHDATA", stack: stack})
+		argdesc := t.finalStackTop().name
+		output = output.addMany(t.steps)
+		output = output.add("CATPUSHDATA", stk)
 		argdescs = append(argdescs, argdesc)
 	}
 	if len(call.actuals) > 0 {
 		b = txscript.AddInt64ToScript(nil, int64(len(call.actuals)))
 		b = append(b, txscript.OP_ROLL)
-		output = append(output, translation{ops: fmt.Sprintf("DATA_%d 0x%s CAT", len(b), hex.EncodeToString(b)), stack: stack})
+		output = output.add(fmt.Sprintf("DATA_%d 0x%s CAT", len(b), hex.EncodeToString(b)), stk)
 	}
 	b = []byte{txscript.OP_DUP, txscript.OP_HASH256}
-	output = append(output, translation{ops: fmt.Sprintf("DATA_2 0x%s CAT", hex.EncodeToString(b)), stack: stack})
+	output = output.add(fmt.Sprintf("DATA_2 0x%s CAT", hex.EncodeToString(b)), stk)
 
 	if isSelf {
-		output = append(output, translation{ops: "OUTPUTSCRIPT SIZE 34 SUB 32 SUBSTR CATPUSHDATA", stack: stack})
+		output = output.add("OUTPUTSCRIPT SIZE 34 SUB 32 SUBSTR CATPUSHDATA", stk)
 	} else {
 		t, err := translate(contract, context.allContracts)
 		if err != nil {
 			return nil, err
 		}
-		hash, err := translationToContractHash(t)
+		hash, err := t.getHash()
 		if err != nil {
 			return nil, err
 		}
 		b = txscript.AddDataToScript(nil, hash[:])
-		output = append(output, translation{ops: fmt.Sprintf("DATA_%d 0x%s CAT", len(b), hex.EncodeToString(b)), stack: stack})
+		output = output.add(fmt.Sprintf("DATA_%d 0x%s CAT", len(b), hex.EncodeToString(b)), stk)
 	}
 
 	b = []byte{txscript.OP_EQUALVERIFY, txscript.OP_EVAL}
@@ -284,9 +279,9 @@ func (call callExpr) contractCall(stack []stackItem, context *context, contract 
 		other := len(argdescs) - i - 1
 		argdescs[i], argdescs[other] = argdescs[other], argdescs[i]
 	}
-	s := []stackItem{{name: fmt.Sprintf("[%s(%s)]", call.name, strings.Join(argdescs, ", "))}}
-	s = append(s, stack[1:]...)
-	output = append(output, translation{ops: fmt.Sprintf("DATA_2 0x%s CAT", hex.EncodeToString(b)), stack: s})
+	s := stk.drop()
+	s = s.push(typedName{name: fmt.Sprintf("[%s(%s)]", call.name, strings.Join(argdescs, ", "))})
+	output = output.add(fmt.Sprintf("DATA_2 0x%s CAT", hex.EncodeToString(b)), s)
 	return output, nil
 }
 
@@ -295,14 +290,14 @@ type literal struct {
 	t int
 }
 
-func (l literal) translate(stack []stackItem, context *context) ([]translation, error) {
+func (l literal) translate(stk stack, context *context) (*translation, error) {
 	ops := string(l.b)
-	s := []stackItem{{name: fmt.Sprintf("[%s]", string(l.b))}}
-	s = append(s, stack...)
-	return []translation{{ops, s}}, nil
+	s := stk.push(typedName{name: fmt.Sprintf("[%s]", string(l.b))})
+	var result translation
+	return result.add(ops, s), nil
 }
 
-func (l literal) typ(stack []stackItem) int {
+func (l literal) typ(stk stack) int {
 	return l.t
 }
 
