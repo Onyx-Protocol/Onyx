@@ -159,27 +159,21 @@ func getVotingTokenTally(ctx context.Context, req votingTallyRequest) (map[strin
 	// at once.
 	// TODO(jackson): Add real pagination. For now, we fake it.
 
-	prev, limit, err := getPageData(ctx, votingTalliesPageSize)
+	prev, _, err := getPageData(ctx, votingTalliesPageSize)
 	if err != nil {
 		return nil, err
 	}
 
 	last := ""
 	tallies := make([]voting.Tally, 0, len(req.VotingTokenAssetIDs))
-	for _, assetID := range req.VotingTokenAssetIDs {
-		if prev != "" && assetID.String() <= prev {
-			continue
-		}
-
-		tally, err := voting.TallyVotes(ctx, assetID)
-		if err != nil {
-			return nil, err
-		}
-		last = tally.AssetID.String()
-		tallies = append(tallies, tally)
-
-		if len(tallies) >= limit {
-			break
+	if prev == "" {
+		for _, assetID := range req.VotingTokenAssetIDs {
+			tally, err := voting.TallyVotes(ctx, assetID)
+			if err != nil {
+				return nil, err
+			}
+			last = tally.AssetID.String()
+			tallies = append(tallies, tally)
 		}
 	}
 
