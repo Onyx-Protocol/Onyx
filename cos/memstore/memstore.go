@@ -94,6 +94,9 @@ func (m *MemStore) CleanPool(
 				continue
 			}
 			out := m.poolUTXOs[in.Previous]
+			if out == nil {
+				continue
+			}
 			out.Spent = false
 			if out.AssetID == (bc.AssetID{}) {
 				delete(m.poolUTXOs, in.Previous)
