@@ -43,6 +43,7 @@ type AssetResponse struct {
 	Label      string             `json:"label"`
 	Definition chainjson.HexBytes `json:"definition"`
 	Issued     AssetAmount        `json:"issued"`
+	Retired    AssetAmount        `json:"retired"`
 
 	// Deprecated in its current form, which is equivalent to Issued.Total
 	Circulation uint64 `json:"circulation"`
@@ -182,7 +183,9 @@ func InsertAsset(ctx context.Context, asset *Asset) (*Asset, error) {
 // for last asset, used to retrieve the next page.
 func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]*AssetResponse, string, error) {
 	q := `
-		SELECT id, label, COALESCE(t.confirmed, 0), COALESCE(t.confirmed + t.pool, 0), definition, sort_id
+		SELECT id, label, definition, sort_id,
+			COALESCE(t.confirmed, 0), COALESCE(t.confirmed + t.pool, 0),
+			COALESCE(t.destroyed_confirmed, 0), COALESCE(t.destroyed_confirmed + t.destroyed_pool, 0)
 		FROM assets
 		LEFT JOIN issuance_totals t ON (asset_id=assets.id)
 		WHERE issuer_node_id = $1 AND ($2='' OR sort_id<$2) AND NOT archived
@@ -193,11 +196,21 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 		assets  []*AssetResponse
 		lastOut string
 	)
-	err := pg.ForQueryRows(ctx, q, inodeID, prev, limit, func(id bc.AssetID, label string, issuedConfirmed, issuedTotal uint64, definition []byte, last string) {
+	err := pg.ForQueryRows(ctx, q, inodeID, prev, limit, func(
+		id bc.AssetID,
+		label string,
+		definition []byte,
+		last string,
+		issuedConfirmed,
+		issuedTotal,
+		destroyedConfirmed,
+		destroyedTotal uint64,
+	) {
 		a := &AssetResponse{
 			ID:          id,
 			Label:       label,
 			Issued:      AssetAmount{Confirmed: issuedConfirmed, Total: issuedTotal},
+			Retired:     AssetAmount{Confirmed: destroyedConfirmed, Total: destroyedTotal},
 			Circulation: issuedTotal,
 			Definition:  definition,
 		}
@@ -215,7 +228,9 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 // asset IDs are not found, they will not be included in the response.
 func GetAssets(ctx context.Context, assetIDs []string) (map[string]*AssetResponse, error) {
 	const q = `
-		SELECT id, label, COALESCE(t.confirmed, 0), COALESCE(t.confirmed + t.pool, 0), definition
+		SELECT id, label, definition,
+			COALESCE(t.confirmed, 0), COALESCE(t.confirmed + t.pool, 0),
+			COALESCE(t.destroyed_confirmed, 0), COALESCE(t.destroyed_confirmed + t.destroyed_pool, 0)
 		FROM assets
 		LEFT JOIN issuance_totals t ON (asset_id=assets.id)
 		WHERE id IN (SELECT unnest($1::text[]))
@@ -234,9 +249,11 @@ func GetAssets(ctx context.Context, assetIDs []string) (map[string]*AssetRespons
 		err := rows.Scan(
 			&a.ID,
 			&a.Label,
+			(*[]byte)(&a.Definition),
 			&a.Issued.Confirmed,
 			&a.Issued.Total,
-			(*[]byte)(&a.Definition),
+			&a.Retired.Confirmed,
+			&a.Retired.Total,
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "row scan")

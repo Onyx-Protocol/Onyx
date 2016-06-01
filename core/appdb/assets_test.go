@@ -80,6 +80,8 @@ func TestListAssets(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	acc := assettest.CreateAccountFixture(ctx, t, "", "toretire", nil)
+
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	in1 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-1", nil, nil)
 
@@ -90,13 +92,21 @@ func TestListAssets(t *testing.T) {
 
 	assettest.IssueAssetsFixture(ctx, t, asset0, 1, "")
 	assettest.IssueAssetsFixture(ctx, t, asset1, 3, "")
-	assettest.IssueAssetsFixture(ctx, t, asset2, 5, "")
+	assettest.IssueAssetsFixture(ctx, t, asset2, 5, acc)
 	assettest.IssueAssetsFixture(ctx, t, asset3, 7, "")
+
+	src := asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: asset2, Amount: 1}, acc, nil, nil, nil)
+	dest := txbuilder.NewRetireDestination(ctx, &bc.AssetAmount{AssetID: asset2, Amount: 1}, nil)
+	assettest.Transfer(ctx, t, []*txbuilder.Source{src}, []*txbuilder.Destination{dest})
 
 	_, err = generator.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	src = asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: asset2, Amount: 3}, acc, nil, nil, nil)
+	dest = txbuilder.NewRetireDestination(ctx, &bc.AssetAmount{AssetID: asset2, Amount: 3}, nil)
+	assettest.Transfer(ctx, t, []*txbuilder.Source{src}, []*txbuilder.Destination{dest})
 
 	assettest.IssueAssetsFixture(ctx, t, asset0, 2, "")
 	assettest.IssueAssetsFixture(ctx, t, asset1, 4, "")
@@ -132,7 +142,7 @@ func TestListAssets(t *testing.T) {
 			"",
 			5,
 			[]*AssetResponse{
-				{ID: asset2, Label: "asset-2", Issued: AssetAmount{5, 11}, Definition: def2, Circulation: 11},
+				{ID: asset2, Label: "asset-2", Issued: AssetAmount{5, 11}, Retired: AssetAmount{1, 4}, Definition: def2, Circulation: 11},
 			},
 		},
 		{
