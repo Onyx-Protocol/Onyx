@@ -4,7 +4,9 @@ import (
 	"chain/cos/bc"
 	"chain/cos/state"
 	"chain/cos/txscript"
+	"chain/errors"
 	"chain/testutil"
+	"fmt"
 	"testing"
 	"time"
 
@@ -52,6 +54,171 @@ func TestDestructionTracking(t *testing.T) {
 
 	if len(view.Outs) > 0 {
 		t.Fatal("utxo should not be saved")
+	}
+}
+
+func TestTxIsWellFormed(t *testing.T) {
+	aid1, aid2 := bc.AssetID([32]byte{1}), bc.AssetID([32]byte{2})
+	prevout1 := bc.Outpoint{Hash: [32]byte{10}, Index: 0}
+	prevout2 := bc.Outpoint{Hash: [32]byte{11}, Index: 0}
+	issuance := bc.Outpoint{Index: bc.InvalidOutputIndex}
+
+	testCases := []struct {
+		badTx  bool
+		detail string
+		tx     bc.Tx
+	}{
+		{
+			badTx:  true,
+			detail: "inputs are missing",
+			tx:     bc.Tx{}, // empty
+		},
+		{
+			badTx:  true,
+			detail: fmt.Sprintf("amounts for asset %s are not balanced on inputs and outputs", aid1),
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					Inputs: []*bc.TxInput{
+						{
+							Previous:    prevout1,
+							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000},
+						},
+					},
+					Outputs: []*bc.TxOutput{
+						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 999}},
+					},
+				},
+			},
+		},
+		{
+			badTx:  true,
+			detail: fmt.Sprintf("amounts for asset %s are not balanced on inputs and outputs", aid2),
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					Inputs: []*bc.TxInput{
+						{
+							Previous:    prevout1,
+							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 500},
+						},
+						{
+							Previous:    prevout2,
+							AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 500},
+						},
+					},
+					Outputs: []*bc.TxOutput{
+						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 500}},
+						{AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 1000}},
+					},
+				},
+			},
+		},
+		{
+			// can have zero-amount outputs to re-publish asset definitions
+			badTx: false,
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					Inputs: []*bc.TxInput{
+						{
+							Previous:    issuance,
+							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 0},
+						},
+					},
+					Outputs: []*bc.TxOutput{
+						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 0}},
+					},
+				},
+			},
+		},
+		{
+			badTx:  true,
+			detail: "non-issuance output value must be greater than 0",
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					Inputs: []*bc.TxInput{
+						{
+							Previous:    issuance,
+							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 0},
+						},
+						{
+							Previous:    prevout1,
+							AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 0},
+						},
+					},
+					Outputs: []*bc.TxOutput{
+						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 0}},
+						{AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 0}},
+					},
+				},
+			},
+		},
+		{
+			badTx: false,
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					Inputs: []*bc.TxInput{
+						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000}},
+					},
+					Outputs: []*bc.TxOutput{
+						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000}},
+					},
+				},
+			},
+		},
+		{
+			badTx: false,
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					Inputs: []*bc.TxInput{
+						{
+							Previous:    prevout1,
+							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 500},
+						},
+						{
+							Previous:    prevout2,
+							AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 500},
+						},
+					},
+					Outputs: []*bc.TxOutput{
+						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 500}},
+						{AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 100}},
+						{AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 200}},
+						{AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 200}},
+					},
+				},
+			},
+		},
+		{
+			badTx: false,
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					Inputs: []*bc.TxInput{
+						{
+							Previous:    prevout1,
+							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 500},
+						},
+						{
+							Previous:    prevout2,
+							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 500},
+						},
+					},
+					Outputs: []*bc.TxOutput{
+						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000}},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		err := txIsWellFormed(&tc.tx)
+		if tc.badTx && errors.Root(err) != ErrBadTx {
+			t.Errorf("got = %s, want ErrBadTx", err)
+			continue
+		}
+
+		if tc.detail != "" && tc.detail != errors.Detail(err) {
+			t.Errorf("errors.Detail: got = %s, want = %s", errors.Detail(err), tc.detail)
+		}
 	}
 }
 

@@ -77,11 +77,6 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 		return errors.Wrap(err, "validating inputs")
 	}
 
-	err = validateTxBalance(ctx, view, tx)
-	if err != nil {
-		return errors.Wrap(err, "validating balance")
-	}
-
 	engine, err := txscript.NewReusableEngine(ctx, view, &tx.TxData, txscript.StandardVerifyFlags)
 	if err != nil {
 		return fmt.Errorf("cannot create script engine: %s", err)
@@ -113,20 +108,36 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 	return nil
 }
 
-// txIsWellFormed checks whether tx passes context-free validation.
-// If tx is well formed, it returns a nil error;
-// otherwise, it returns an error describing why tx is invalid.
+// txIsWellFormed checks whether tx passes context-free validation:
+// - inputs and outputs balance
+// - no duplicate prevouts
+// If tx is well formed, it returns a nil error; otherwise, it
+// returns an error describing why tx is invalid.
 func txIsWellFormed(tx *bc.Tx) error {
 	if len(tx.Inputs) == 0 {
 		return errors.WithDetail(ErrBadTx, "inputs are missing")
 	}
 
-	// Check for duplicate inputs
-	uniqueFilter := map[bc.Outpoint]bool{}
+	parity := make(map[bc.AssetID]int64)
+	issued := make(map[bc.AssetID]bool)
+	uniqueFilter := make(map[bc.Outpoint]bool)
+
 	for _, txin := range tx.Inputs {
 		if txin.IsIssuance() {
+			assetID, err := assetIDFromSigScript(txin.SignatureScript)
+			if err != nil {
+				return err
+			}
+			issued[assetID] = true
 			continue
 		}
+		assetID := txin.AssetAmount.AssetID
+		if assetID == (bc.AssetID{}) {
+			assetID = bc.ComputeAssetID(txin.PrevScript, stubGenesisHash)
+		}
+		parity[assetID] += int64(txin.AssetAmount.Amount)
+
+		// Check for duplicate inputs
 		if uniqueFilter[txin.Previous] {
 			return errors.WithDetailf(ErrBadTx, "duplicated input for %s", txin.Previous.String())
 		}
@@ -139,38 +150,12 @@ func txIsWellFormed(tx *bc.Tx) error {
 		// asset definition using issuance transactions.
 		// Non-issuance transactions cannot have zero-value outputs.
 		// If all inputs have zero value, tx therefore must have no outputs.
-		// TODO: check that output asset id is an asset being issued
-		if txout.Amount == 0 && !tx.HasIssuance() {
+		if txout.Amount == 0 && !issued[txout.AssetID] {
 			return errors.WithDetailf(ErrBadTx, "non-issuance output value must be greater than 0")
 		}
+		parity[txout.AssetID] -= int64(txout.Amount)
 	}
-	return nil
-}
 
-// validateTxBalance ensures that non-issuance transactions
-// have the exact same input and output asset amounts.
-func validateTxBalance(ctx context.Context, view state.ViewReader, tx *bc.Tx) error {
-	parity := make(map[bc.AssetID]int64)
-	issued := make(map[bc.AssetID]bool)
-	for _, out := range tx.Outputs {
-		parity[out.AssetID] -= int64(out.Amount)
-	}
-	for _, in := range tx.Inputs {
-		if in.IsIssuance() {
-			assetID, err := assetIDFromSigScript(in.SignatureScript)
-			if err != nil {
-				return err
-			}
-			issued[assetID] = true
-			continue
-		}
-		unspent := view.Output(ctx, in.Previous)
-		assetID := unspent.AssetID
-		if assetID == (bc.AssetID{}) {
-			assetID = bc.ComputeAssetID(unspent.Script, stubGenesisHash)
-		}
-		parity[assetID] += int64(unspent.Amount)
-	}
 	for asset, val := range parity {
 		if val > 0 || (val < 0 && !issued[asset]) {
 			return errors.WithDetailf(ErrBadTx, "amounts for asset %s are not balanced on inputs and outputs", asset)

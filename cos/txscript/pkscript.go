@@ -27,6 +27,9 @@ func RedeemScriptFromP2SHSigScript(sigScript []byte) ([]byte, error) {
 		return nil, errors.Wrap(err, "decoding redeem script from sig script")
 	}
 
+	if len(opCodes) == 0 {
+		return nil, nil
+	}
 	return opCodes[len(opCodes)-1].data, nil
 }
 
