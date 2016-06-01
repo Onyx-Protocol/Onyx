@@ -106,6 +106,32 @@ func (t *Tree) trackInsert(n *Node) {
 	t.inserts[string(n.key)] = n
 }
 
+// Lookup looks up a key and returns a Node with the provided key.
+// If the key is not present in the tree, nil is returned.
+func (t *Tree) Lookup(bkey []byte) *Node {
+	if t.root == nil {
+		return nil
+	}
+
+	key := bitKey(bkey)
+	return t.lookup(t.root, key)
+}
+
+func (t *Tree) lookup(n *Node, key []uint8) *Node {
+	if bytes.Equal(n.key, key) {
+		if !n.isLeaf {
+			return nil
+		}
+		return n
+	}
+	if !bytes.HasPrefix(key, n.key) {
+		return nil
+	}
+
+	bit := key[len(n.key)]
+	return t.lookup(n.children[bit], key)
+}
+
 // Insert enters data into the tree.
 // If the key is not already present in the tree,
 // a new node will be created and inserted,

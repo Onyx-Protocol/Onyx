@@ -52,6 +52,10 @@ func TestAddTx(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
+	_, err = fc.UpsertGenesisBlock(ctx, nil, 0)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
 
 	issueTx, _, dest1 := fedtest.Issue(t, nil, nil, 1)
 	err = fc.AddTx(ctx, issueTx)
@@ -140,7 +144,12 @@ func TestAddTxIssued(t *testing.T) {
 	store := &issuedTestStore{
 		MemStore: *memstore,
 	}
+
 	fc, err := NewFC(ctx, store, nil, nil)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	_, err = fc.UpsertGenesisBlock(ctx, nil, 0)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

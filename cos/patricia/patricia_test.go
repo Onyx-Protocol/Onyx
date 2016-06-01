@@ -16,6 +16,62 @@ func simpleValue(s string) Valuer {
 	return BytesValuer([]byte(s))
 }
 
+func TestLookup(t *testing.T) {
+	vals := makeVals(5)
+	tr := &Tree{
+		root: &Node{key: bools("11111111"), val: vals[0], isLeaf: true},
+	}
+	got := tr.Lookup(bits("11111111"))
+	if !reflect.DeepEqual(got, tr.root) {
+		t.Log("lookup on 1-node tree")
+		t.Fatalf("got:\n%swant:\n%s", prettyNode(got, 0), prettyNode(tr.root, 0))
+	}
+
+	tr = &Tree{
+		root: &Node{key: bools("11111110"), val: vals[1], isLeaf: true},
+	}
+	got = tr.Lookup(bits("11111111"))
+	if got != nil {
+		t.Log("lookup nonexistent key on 1-node tree")
+		t.Fatalf("got:\n%swant nil", prettyNode(got, 0))
+	}
+
+	tr = &Tree{
+		root: &Node{
+			key: bools("1111"),
+			children: [2]*Node{
+				{key: bools("11110000"), val: vals[2], isLeaf: true},
+				{key: bools("11111111"), val: vals[1], isLeaf: true},
+			},
+		},
+	}
+	got = tr.Lookup(bits("11110000"))
+	if !reflect.DeepEqual(got, tr.root.children[0]) {
+		t.Log("lookup root's first child")
+		t.Fatalf("got:\n%swant:\n%s", prettyNode(got, 0), prettyNode(tr.root.children[0], 0))
+	}
+
+	tr = &Tree{
+		root: &Node{
+			key: bools("1111"),
+			children: [2]*Node{
+				{key: bools("11110000"), val: vals[2], isLeaf: true},
+				{
+					key: bools("111111"),
+					children: [2]*Node{
+						{key: bools("11111100"), val: vals[3], isLeaf: true},
+						{key: bools("11111111"), val: vals[1], isLeaf: true},
+					},
+				},
+			},
+		},
+	}
+	got = tr.Lookup(bits("11111100"))
+	if !reflect.DeepEqual(got, tr.root.children[1].children[0]) {
+		t.Fatalf("got:\n%swant:\n%s", prettyNode(got, 0), prettyNode(tr.root.children[1].children[0], 0))
+	}
+}
+
 func TestInsert(t *testing.T) {
 	tr := NewTree(nil)
 	vals := makeVals(6)

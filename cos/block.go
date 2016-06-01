@@ -68,12 +68,7 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 		return nil, nil, errors.Wrap(err, "loading state tree")
 	}
 
-	bcView, err := fc.store.NewViewForPrevouts(ctx, txs)
-	if err != nil {
-		return nil, nil, errors.Wrap(err)
-	}
-	view := state.NewMemView(tree, bcView)
-
+	view := state.NewMemView(tree, nil)
 	ctx = span.NewContextSuffix(ctx, "-validate-all")
 	defer span.Finish(ctx)
 	for _, tx := range txs {
@@ -107,12 +102,7 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 		return errors.Wrap(err, "loading state tree")
 	}
 
-	bcView, err := fc.store.NewViewForPrevouts(ctx, block.Transactions)
-	if err != nil {
-		return errors.Wrap(err, "txdb")
-	}
-	mv := state.NewMemView(tree, bcView)
-
+	mv := state.NewMemView(tree, nil)
 	err = fc.validateBlock(ctx, block, mv)
 	if err != nil {
 		return errors.Wrap(err, "block validation")
@@ -189,12 +179,7 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 		return errors.Wrap(err, "loading state tree")
 	}
 
-	bcView, err := fc.store.NewViewForPrevouts(ctx, block.Transactions)
-	if err != nil {
-		return errors.Wrap(err, "txdb")
-	}
-	mv := state.NewMemView(tree, bcView)
-
+	mv := state.NewMemView(tree, nil)
 	err = validation.ValidateBlockForSig(ctx, mv, prevBlock, block)
 	return errors.Wrap(err, "validation")
 }
@@ -292,11 +277,12 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		return nil, errors.Wrap(err, "")
 	}
 
-	bcView, err := fc.store.NewViewForPrevouts(ctx, txs)
+	tree, err := fc.store.StateTree(ctx, block.Height)
 	if err != nil {
-		return nil, errors.Wrap(err, "blockchain view")
+		return nil, errors.Wrap(err, "loading state tree")
 	}
-	view := state.NewMemView(nil, bcView)
+
+	view := state.NewMemView(tree, nil)
 	for _, tx := range txs {
 		for _, out := range tx.Outputs {
 			if _, ok := view.Assets[out.AssetID]; !ok {

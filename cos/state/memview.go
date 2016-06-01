@@ -15,13 +15,13 @@ type AssetState struct {
 	Issuance, Destroyed uint64
 }
 
-// MemView satisfies the View interface
+// MemView satisfies the View interface. It supports reading from
+// in-memory UTXOs, a state tree and optionally another ViewReader.
 type MemView struct {
-	Added    map[bc.Outpoint]*Output
-	Consumed map[bc.Outpoint]*Output
-	Assets   map[bc.AssetID]*AssetState
-	Back     ViewReader
-
+	Added     map[bc.Outpoint]*Output
+	Consumed  map[bc.Outpoint]*Output
+	Assets    map[bc.AssetID]*AssetState
+	Back      ViewReader
 	StateTree *patricia.Tree
 }
 
@@ -50,16 +50,20 @@ func (v *MemView) asset(asset bc.AssetID) *AssetState {
 }
 
 func (v *MemView) IsUTXO(ctx context.Context, o *Output) bool {
-	// Note: This implementation assumes the validity of Output's
-	// other fields (AssetAmount, Script). The implementation that
-	// is backed by the state tree will need to validate the
-	// other fields by the comparing with the hash in the state tree.
 	if _, ok := v.Consumed[o.Outpoint]; ok {
 		return false
 	}
 	if _, ok := v.Added[o.Outpoint]; ok {
 		return true
 	}
+	if v.StateTree != nil {
+		k, val := OutputTreeItem(o)
+		n := v.StateTree.Lookup(k)
+		if n != nil {
+			return n.Hash() == val.Value().Hash()
+		}
+	}
+
 	if v.Back == nil {
 		return false
 	}
@@ -73,6 +77,11 @@ func (v *MemView) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.
 	for _, a := range assets {
 		if state := v.Assets[a]; state != nil {
 			circs[a] = int64(state.Issuance - state.Destroyed)
+		}
+	}
+	if v.StateTree != nil {
+		for _, a := range assets {
+			circs[a] += int64(GetCirculation(v.StateTree, a))
 		}
 	}
 	if v.Back != nil {

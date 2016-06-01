@@ -34,6 +34,20 @@ func CirculationTreeItem(assetID bc.AssetID, amt uint64) ([]byte, patricia.Value
 	return append(assetID[:], byte('c')), uint64Valuer(amt)
 }
 
+// GetCirculation extracts the circulation for the provided asset from
+// the state tree.
+func GetCirculation(tree *patricia.Tree, assetID bc.AssetID) uint64 {
+	k := append(assetID[:], byte('c'))
+	n := tree.Lookup(k)
+	if n == nil {
+		return 0
+	}
+
+	r := bytes.NewReader(n.Value().Bytes)
+	v, _ := blockchain.ReadUint64(r)
+	return v
+}
+
 type uint64Valuer uint64
 
 func (v uint64Valuer) Value() patricia.Value {

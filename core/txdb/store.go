@@ -258,13 +258,6 @@ func (s *Store) ApplyBlock(
 	return newTxs, nil
 }
 
-// NewViewForPrevouts returns a new state view on the blockchain.
-// It loads the prevouts for transactions in txs;
-// all other outputs will be omitted from the view.
-func (s *Store) NewViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
-	return newViewForPrevouts(ctx, s.db, txs)
-}
-
 // StateTree returns the state tree of the latest block.
 // It takes the height of the expected block, so that it can
 // return an error if the height does not match, preventing

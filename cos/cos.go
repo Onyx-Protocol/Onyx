@@ -101,7 +101,6 @@ type Store interface {
 	ApplyBlock(ctx context.Context, b *bc.Block, addedUTXOs, removedUTXOs []*state.Output, assets map[bc.AssetID]*state.AssetState, tree *patricia.Tree) ([]*bc.Tx, error)
 	FinalizeBlock(context.Context, uint64) error
 	LatestBlock(context.Context) (*bc.Block, error)
-	NewViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error)
 	StateTree(context.Context, uint64) (*patricia.Tree, error)
 }
 

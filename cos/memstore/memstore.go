@@ -142,10 +142,6 @@ func (m *MemStore) LatestBlock(context.Context) (*bc.Block, error) {
 	return m.blocks[len(m.blocks)-1], nil
 }
 
-func (m *MemStore) NewViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error) {
-	return &state.MemView{Added: m.blockUTXOs}, nil
-}
-
 func (m *MemStore) StateTree(context.Context, uint64) (*patricia.Tree, error) {
 	if m.stateTree == nil {
 		m.stateTree = patricia.NewTree(nil)

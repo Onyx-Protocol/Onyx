@@ -24,13 +24,17 @@ import (
 // It is okay to add conflicting transactions to the pool. The conflict
 // will be resolved when a block lands.
 func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
-	bcView, err := fc.store.NewViewForPrevouts(ctx, []*bc.Tx{tx})
+	prev, err := fc.store.LatestBlock(ctx)
 	if err != nil {
-		return errors.Wrap(err)
+		return errors.Wrap(err, "fetch latest block")
+	}
+	tree, err := fc.store.StateTree(ctx, prev.Height)
+	if err != nil {
+		return errors.Wrap(err, "loading state tree")
 	}
 
-	poolView := state.NewMemView(nil, bcView)
-	poolView.Added, err = fc.store.GetPoolPrevouts(ctx, []*bc.Tx{tx})
+	view := state.NewMemView(tree, nil)
+	view.Added, err = fc.store.GetPoolPrevouts(ctx, []*bc.Tx{tx})
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -47,7 +51,7 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 		return errors.Wrap(err)
 	}
 
-	mv := state.NewMemView(nil, poolView)
+	mv := state.NewMemView(nil, view)
 	err = validation.ValidateTx(ctx, mv, tx, uint64(time.Now().Unix()))
 	if err != nil {
 		return errors.Wrap(err, "tx rejected")
