@@ -585,6 +585,121 @@ func TestListUTXOsByAsset(t *testing.T) {
 	}
 }
 
+func TestListHistoricalOutputsByAsset(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // should this use memstore? per TODO above.
+	fc, err := assettest.InitializeSigningGenerator(ctx, store)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	InitHistoricalOutputs(fc, true)
+	projectID := assettest.CreateProjectFixture(ctx, t, "", "")
+	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
+	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
+	uncountedAssetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "") // this asset should never show up.
+	account1ID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
+	account2ID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
+	tx := assettest.Issue(ctx, t, assetID, []*txbuilder.Destination{
+		assettest.AccountDest(ctx, t, account1ID, assetID, 100),
+	})
+	assettest.IssueAssetsFixture(ctx, t, uncountedAssetID, 200, account1ID)
+
+	check := func(got []*TxOutput, gotLast string) {
+		zero := uint32(0)
+		want := []*TxOutput{{
+			TxHash:   &tx.Hash,
+			TxIndex:  &zero,
+			AssetID:  assetID,
+			Amount:   100,
+			Address:  tx.Outputs[0].Script,
+			Script:   tx.Outputs[0].Script,
+			Metadata: []byte{},
+		}}
+		if !reflect.DeepEqual(got, want) {
+			gotStr, err := json.MarshalIndent(got, "", "  ")
+			if err != nil {
+				t.Fatal("unexpected error: ", err)
+			}
+
+			wantStr, err := json.MarshalIndent(want, "", "  ")
+			if err != nil {
+				t.Fatal("unexpected error: ", err)
+			}
+
+			t.Errorf("txs:\ngot:\n%s\nwant:\n%s", string(gotStr), string(wantStr))
+		}
+
+		wantLast := tx.Hash.String() + ":0"
+		if gotLast != wantLast {
+			t.Fatalf("last:\ngot:\n%s\nwant:\n%s", gotLast, wantLast)
+		}
+	}
+
+	checkEmpty := func(got []*TxOutput) {
+		if len(got) != 0 {
+			t.Errorf("expected 0 historical outputs, got %d", len(got))
+		}
+	}
+
+	// before we make a block, we shouldn't have any historical outputs
+	got, _, err := ListHistoricalOutputsByAsset(ctx, assetID, time.Now(), "", 10000)
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+	checkEmpty(got)
+
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	ownershipTime := time.Now()
+	got, gotLast, err := ListHistoricalOutputsByAsset(ctx, assetID, ownershipTime, "", 10000)
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+	check(got, gotLast)
+
+	// sleep, so that we can be sure the next block isn't in the same second (sorry everyone)
+	time.Sleep(time.Second)
+
+	// spend that UTXO, and make sure it comes back at ownershipTime.
+	assettest.Transfer(ctx, t, []*txbuilder.Source{
+		asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: assetID, Amount: 100}, account1ID, nil, nil, nil),
+	}, []*txbuilder.Destination{
+		assettest.AccountDest(ctx, t, account2ID, assetID, 100),
+	})
+
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	got, gotLast, err = ListHistoricalOutputsByAsset(ctx, assetID, ownershipTime, "", 10000)
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+	check(got, gotLast)
+
+	// issue another 200 units of the first asset. This shouldn't change the results of our query.
+	assettest.IssueAssetsFixture(ctx, t, assetID, 200, account1ID)
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	got, gotLast, err = ListHistoricalOutputsByAsset(ctx, assetID, ownershipTime, "", 10000)
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+	check(got, gotLast)
+}
+
 func mockAssetIdAndSigScript() (bc.AssetID, []byte) {
 	builder := txscript.NewScriptBuilder()
 	builder.AddOp(txscript.OP_FALSE)

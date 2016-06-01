@@ -9,6 +9,7 @@ import (
 	"chain/core/appdb"
 	"chain/core/txdb"
 	"chain/cos/bc"
+	"chain/cos/state"
 	"chain/cos/txscript"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
@@ -247,6 +248,10 @@ func ListUTXOsByAsset(ctx context.Context, store *txdb.Store, assetID bc.AssetID
 		return nil, "", err
 	}
 
+	return stateOutsToTxOuts(stateOuts), last, nil
+}
+
+func stateOutsToTxOuts(stateOuts []*state.Output) []*TxOutput {
 	var res []*TxOutput
 	for _, sOut := range stateOuts {
 		res = append(res, &TxOutput{
@@ -260,7 +265,7 @@ func ListUTXOsByAsset(ctx context.Context, store *txdb.Store, assetID bc.AssetID
 		})
 	}
 
-	return res, last, nil
+	return res
 }
 
 func makeTx(bcTx *bc.Tx, blockHeader *bc.BlockHeader, prevPoolTxs, prevBcTxs map[bc.Hash]*bc.Tx) (*Tx, error) {

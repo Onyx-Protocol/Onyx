@@ -3,6 +3,10 @@
 package explorer
 
 import (
+	"strconv"
+	"strings"
+	"time"
+
 	"golang.org/x/net/context"
 
 	"chain/core/asset"
@@ -12,9 +16,13 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	chainlog "chain/log"
+	"chain/net/http/httpjson"
 )
 
+var historicalOutputs bool
+
 func InitHistoricalOutputs(fc *cos.FC, isManager bool) {
+	historicalOutputs = true
 	// TODO(bobg): Launch a goroutine that prunes old data from
 	// historical_outputs
 	fc.AddBlockCallback(func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx) {
@@ -110,4 +118,68 @@ func InitHistoricalOutputs(fc *cos.FC, isManager bool) {
 			}
 		}
 	})
+}
+
+// ListHistoricalOutputsByAsset returns an array of every UTXO that contains assetID at timestamp.
+// When paginating, it takes a limit as well as `prev`, the last UTXO returned on the previous call.
+// ListHistoricalOutputsByAsset expects prev to be of the format "hash:index".
+func ListHistoricalOutputsByAsset(ctx context.Context, assetID bc.AssetID, timestamp time.Time, prev string, limit int) ([]*TxOutput, string, error) {
+	if !historicalOutputs {
+		return nil, "", errors.WithDetail(httpjson.ErrBadRequest, "historical outputs aren't enabled on this core")
+	}
+	ts := timestamp.Unix()
+	prevs := strings.Split(prev, ":")
+	var (
+		prevHash  string
+		prevIndex int64
+		err       error
+	)
+
+	if len(prevs) != 2 {
+		// tolerate malformed/empty cursors
+		prevHash = ""
+		prevIndex = -1
+	} else {
+		prevHash = prevs[0]
+		prevIndex, err = strconv.ParseInt(prevs[1], 10, 64)
+		if err != nil {
+			prevIndex = -1
+		}
+	}
+
+	const q = `
+		SELECT tx_hash, index, amount, script, metadata
+		FROM historical_outputs
+		WHERE asset_id = $1
+			AND timespan @> $2::int8
+			AND tx_hash >= $3
+			-- prev index only matters if we're in the same tx
+			AND (tx_hash != $3 OR index > $4)
+		LIMIT $5
+	`
+
+	var (
+		res  []*state.Output
+		last string
+	)
+	err = pg.ForQueryRows(ctx, q, assetID, ts, prevHash, prevIndex, limit, func(hash bc.Hash, index uint32, amount uint64, script, metadata []byte) {
+		outpt := bc.Outpoint{Hash: hash, Index: index}
+		o := &state.Output{
+			Outpoint: outpt,
+			TxOutput: bc.TxOutput{
+				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: amount},
+				Script:      script,
+				Metadata:    metadata,
+			},
+		}
+		res = append(res, o)
+	})
+	if err != nil {
+		return nil, "", err
+	}
+
+	if len(res) > 0 {
+		last = res[len(res)-1].Outpoint.String()
+	}
+	return stateOutsToTxOuts(res), last, nil
 }
