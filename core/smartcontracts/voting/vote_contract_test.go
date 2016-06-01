@@ -5,15 +5,18 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/core/asset/assettest"
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/cos/txscript/txscripttest"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
 )
 
 func TestRedistributeClause(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		rightA  = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -166,7 +169,7 @@ func TestRedistributeClause(t *testing.T) {
 }
 
 func TestRegisterToVoteClause(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		rightAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -397,7 +400,7 @@ func TestRegisterToVoteClause(t *testing.T) {
 }
 
 func TestVoteClause(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		rightAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -552,7 +555,7 @@ func TestVoteClause(t *testing.T) {
 }
 
 func TestFinishVoteClause(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		rightAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -695,7 +698,7 @@ func TestFinishVoteClause(t *testing.T) {
 }
 
 func TestRetireClause(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		rightAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -835,7 +838,7 @@ func TestTokenContractValidMatch(t *testing.T) {
 }
 
 func TestResetClause(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		rightAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")

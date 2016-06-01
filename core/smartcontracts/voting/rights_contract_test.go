@@ -6,11 +6,14 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"chain/core/asset/assettest"
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/cos/txscript/txscripttest"
 	"chain/crypto/hash256"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
 )
 
@@ -41,7 +44,7 @@ func init() {
 }
 
 func TestAuthenticateClause(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		assetID     = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -201,7 +204,7 @@ func TestAuthenticateClause(t *testing.T) {
 }
 
 func TestTransferClause(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		assetID     = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -307,7 +310,7 @@ func TestTransferClause(t *testing.T) {
 }
 
 func TestDelegateClause(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		assetID     = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -458,7 +461,7 @@ func TestDelegateClause(t *testing.T) {
 }
 
 func TestRecallClause(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		assetID     = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -655,7 +658,7 @@ func TestRecallClause(t *testing.T) {
 }
 
 func TestOverrideClause(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		assetID     = assettest.CreateAssetFixture(ctx, t, "", "", "")

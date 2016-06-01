@@ -5,17 +5,20 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/core/appdb"
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
 	"chain/cos/hdkey"
 	"chain/cos/txscript"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
 )
 
 func TestRightsReserver(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		accountID = assettest.CreateAccountFixture(ctx, t, "", "", nil)
@@ -90,7 +93,7 @@ func TestRightsReserver(t *testing.T) {
 }
 
 func TestTokenReserver(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		assetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")

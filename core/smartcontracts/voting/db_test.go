@@ -5,20 +5,20 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/core/asset/assettest"
-	"chain/core/txdb"
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 )
 
 // TestInsertVotingRightAccountID tests inserting a voting right into the
 // database with a holder script that is the address of an account. The
 // voting_rights row should contain the correct account id.
 func TestInsertVotingRightAccountID(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		accountID = assettest.CreateAccountFixture(ctx, t, "", "", nil)
@@ -55,7 +55,7 @@ func TestInsertVotingRightAccountID(t *testing.T) {
 // TestInsertVotingToken tests inserting, updating and retrieving a voting
 // token from the database index.
 func TestInsertVotingToken(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	var (
 		tokenAssetID = assettest.CreateAssetFixture(ctx, t, "", "", "")
@@ -92,7 +92,7 @@ func TestInsertVotingToken(t *testing.T) {
 }
 
 func TestTallyVotes(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	type testVoteToken struct {
 		state  TokenState
@@ -223,9 +223,8 @@ func TestTallyVotes(t *testing.T) {
 func TestGetVotesSimple(t *testing.T) {
 	// TODO(jackson): Add additional tests for pagination, recalled voting
 	// rights, voided voting rights, etc.
-	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
-	fc, err := assettest.InitializeSigningGenerator(ctx, store)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	fc, err := assettest.InitializeSigningGenerator(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
