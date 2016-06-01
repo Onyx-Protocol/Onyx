@@ -15,7 +15,6 @@ import (
 	"chain/errors"
 	chainlog "chain/log"
 	"chain/metrics"
-	"chain/net/trace/span"
 )
 
 var (
@@ -177,19 +176,6 @@ func addBlock(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
 
 	deltxhash, delindex := prevoutDBKeys(b.Transactions...)
 
-	// Before deleting rows from account_utxos, archive them to historical_outputs.
-	const histQ = `
-		INSERT INTO historical_outputs (tx_hash, index, asset_id, amount, account_id, timespan, script, metadata)
-			SELECT tx_hash, index, asset_id, amount, account_id, int8range(block_timestamp, $3), script, metadata
-				FROM account_utxos
-				WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
-	`
-	_, err = pg.Exec(ctx, histQ, deltxhash, delindex, b.Timestamp)
-	if err != nil {
-		chainlog.Write(ctx, "block", b.Height, "error", errors.Wrap(err))
-		panic(err)
-	}
-
 	const delQ = `
 		DELETE FROM account_utxos
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
@@ -221,18 +207,16 @@ func addAccountData(ctx context.Context, tx *bc.Tx) error {
 		return errors.Wrap(err)
 	}
 
-	var outs []*txdb.Output
+	var outs []*state.Output
 	for i, out := range tx.Outputs {
-		txdbOutput := &txdb.Output{
-			Output: state.Output{
-				TxOutput: *out,
-				Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(i)},
-			},
+		stateOutput := &state.Output{
+			TxOutput: *out,
+			Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(i)},
 		}
-		outs = append(outs, txdbOutput)
+		outs = append(outs, stateOutput)
 	}
 
-	addrOuts, err := loadAccountInfo(ctx, outs)
+	addrOuts, err := LoadAccountInfo(ctx, outs)
 	if err != nil {
 		return errors.Wrap(err, "loading account info from addresses")
 	}
@@ -311,56 +295,6 @@ func insertAccountOutputs(ctx context.Context, outs []*txdb.Output) error {
 	)
 
 	return errors.Wrap(err)
-}
-
-// loadAccountInfo queries the addresses table
-// to load account information using output scripts
-func loadAccountInfo(ctx context.Context, outs []*txdb.Output) ([]*txdb.Output, error) {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
-	var (
-		scripts      [][]byte
-		outsByScript = make(map[string][]*txdb.Output)
-	)
-	for _, out := range outs {
-		scripts = append(scripts, out.Script)
-		outsByScript[string(out.Script)] = append(outsByScript[string(out.Script)], out)
-	}
-
-	const addrq = `
-		SELECT pk_script, manager_node_id, account_id, key_index(key_index)
-		FROM addresses
-		WHERE pk_script IN (SELECT unnest($1::bytea[]))
-	`
-	rows, err := pg.Query(ctx, addrq, pg.Byteas(scripts))
-	if err != nil {
-		return nil, errors.Wrap(err, "addresses select query")
-	}
-	defer rows.Close()
-
-	var addrOuts []*txdb.Output
-	for rows.Next() {
-		var (
-			script         []byte
-			mnodeID, accID string
-			addrIndex      []uint32
-		)
-		err := rows.Scan(&script, &mnodeID, &accID, (*pg.Uint32s)(&addrIndex))
-		if err != nil {
-			return nil, errors.Wrap(err, "addresses row scan")
-		}
-		for _, out := range outsByScript[string(script)] {
-			out.ManagerNodeID = mnodeID
-			out.AccountID = accID
-			copy(out.AddrIndex[:], addrIndex)
-			addrOuts = append(addrOuts, out)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(rows.Err(), "addresses end row scan loop")
-	}
-	return addrOuts, nil
 }
 
 func toKeyIndex(i []uint32) int64 {

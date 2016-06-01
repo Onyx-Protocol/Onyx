@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/core"
 	"chain/core/appdb"
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
@@ -29,13 +30,21 @@ import (
 func TestHistoricalOutput(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	fc, err := assettest.InitializeSigningGenerator(ctx, store)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	core.InitHistoricalOutputs(fc, true)
+
 	account1ID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
 	account2ID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
 	assetID := assettest.CreateAssetFixture(ctx, t, "", "", "")
 	assettest.IssueAssetsFixture(ctx, t, assetID, 100, account1ID)
 
 	count := func() int64 {
-		const q = `SELECT amount FROM historical_outputs WHERE asset_id = $1 AND account_id = $2`
+		const q = `SELECT amount FROM historical_outputs WHERE asset_id = $1 AND account_id = $2 AND NOT UPPER_INF(timespan)`
 
 		var n int64
 		err := pg.ForQueryRows(ctx, q, assetID, account1ID, func(amt int64) {
@@ -51,7 +60,7 @@ func TestHistoricalOutput(t *testing.T) {
 		t.Errorf("expected 0 historical units, got %d", n)
 	}
 
-	_, err := generator.MakeBlock(ctx)
+	_, err = generator.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

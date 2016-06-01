@@ -108,10 +108,10 @@ func TestLoadAccountInfo(t *testing.T) {
 	acc := assettest.CreateAccountFixture(ctx, t, mnode, "", nil)
 	addr := assettest.CreateAddressFixture(ctx, t, acc)
 
-	outs := []*txdb.Output{{
-		Output: state.Output{TxOutput: bc.TxOutput{Script: addr.PKScript}},
+	outs := []*state.Output{{
+		TxOutput: bc.TxOutput{Script: addr.PKScript},
 	}, {
-		Output: state.Output{TxOutput: bc.TxOutput{Script: []byte("notfound")}},
+		TxOutput: bc.TxOutput{Script: []byte("notfound")},
 	}}
 
 	got, err := LoadAccountInfo(ctx, outs)

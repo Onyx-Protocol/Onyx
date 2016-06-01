@@ -70,6 +70,9 @@ var (
 	remoteSignerURLs   = env.StringSlice("REMOTE_SIGNER_URLS")
 	remoteSignerKeys   = env.StringSlice("REMOTE_SIGNER_KEYS")
 
+	// optional features
+	historicalOutputs = env.Bool("HISTORICAL_OUTPUTS", false)
+
 	// build vars; initialized by the linker
 	buildTag    = "dev"
 	buildCommit = "?"
@@ -216,6 +219,10 @@ func main() {
 	}
 	if err != nil {
 		chainlog.Fatal(ctx, "error", "ListenAndServe", err.Error())
+	}
+
+	if *historicalOutputs {
+		core.InitHistoricalOutputs(fc, *isManager)
 	}
 }
 

@@ -8,11 +8,15 @@ import (
 
 	"chain/core/appdb"
 	"chain/core/txbuilder"
+	"chain/core/txdb"
 	"chain/core/utxodb"
 	"chain/cos/bc"
 	"chain/cos/hdkey"
+	"chain/cos/state"
 	"chain/cos/txscript"
+	"chain/database/pg"
 	"chain/errors"
+	"chain/net/trace/span"
 )
 
 type AccountReserver struct {
@@ -138,4 +142,48 @@ func NewAccountDestination(ctx context.Context, assetAmount *bc.AssetAmount, acc
 // for the given outpoints.
 func CancelReservations(ctx context.Context, outpoints []bc.Outpoint) error {
 	return utxodb.Cancel(ctx, outpoints)
+}
+
+// LoadAccountInfo turns a set of state.Outputs into a set of
+// txdb.Outputs by adding account annotations.  Outputs that can't be
+// annotated are excluded from the result.
+func LoadAccountInfo(ctx context.Context, outs []*state.Output) ([]*txdb.Output, error) {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
+	outsByScript := make(map[string][]*state.Output, len(outs))
+	for _, out := range outs {
+		scriptStr := string(out.Script)
+		outsByScript[scriptStr] = append(outsByScript[scriptStr], out)
+	}
+
+	var scripts pg.Byteas
+	for s, _ := range outsByScript {
+		scripts = append(scripts, []byte(s))
+	}
+
+	result := make([]*txdb.Output, 0, len(outs))
+
+	const q = `
+		SELECT pk_script, manager_node_id, account_id, key_index(key_index)
+			FROM addresses
+			WHERE pk_script IN (SELECT unnest($1::bytea[]))
+	`
+
+	err := pg.ForQueryRows(ctx, q, scripts, func(script []byte, mnodeID, accountID string, addrIndex pg.Uint32s) {
+		for _, out := range outsByScript[string(script)] {
+			newOut := &txdb.Output{
+				Output:        *out,
+				ManagerNodeID: mnodeID,
+				AccountID:     accountID,
+			}
+			copy(newOut.AddrIndex[:], addrIndex)
+			result = append(result, newOut)
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

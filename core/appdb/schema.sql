@@ -1310,6 +1310,13 @@ CREATE INDEX historical_outputs_timespan_idx ON historical_outputs USING gist (t
 
 
 --
+-- Name: historical_outputs_tx_hash_index_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX historical_outputs_tx_hash_index_idx ON historical_outputs USING btree (tx_hash, index);
+
+
+--
 -- Name: issuer_nodes_project_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
