@@ -12,6 +12,7 @@ interface.  The functions are only exported while the tests are being run.
 package txscript
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -3776,4 +3777,69 @@ func TestUnparsingInvalidOpcodes(t *testing.T) {
 			t.Error(err, test.expectedErr)
 		}
 	}
+}
+
+// canonicalPush returns true if the object is either not a push instruction
+// or the push instruction contained wherein is matches the canonical form
+// or using the smallest instruction to do the job. False otherwise.
+func canonicalPush(pop parsedOpcode) bool {
+	opcode := pop.opcode.value
+	data := pop.data
+	dataLen := len(pop.data)
+	if opcode > OP_16 {
+		return true
+	}
+
+	if opcode < OP_PUSHDATA1 && opcode > OP_0 && (dataLen == 1 && data[0] <= 16) {
+		return false
+	}
+	if opcode == OP_PUSHDATA1 && dataLen < OP_PUSHDATA1 {
+		return false
+	}
+	if opcode == OP_PUSHDATA2 && dataLen <= 0xff {
+		return false
+	}
+	if opcode == OP_PUSHDATA4 && dataLen <= 0xffff {
+		return false
+	}
+	return true
+}
+
+// removeOpcode will remove any opcode matching ``opcode'' from the opcode
+// stream in pkscript
+func removeOpcode(pkscript []parsedOpcode, opcode byte) []parsedOpcode {
+	retScript := make([]parsedOpcode, 0, len(pkscript))
+	for _, pop := range pkscript {
+		if pop.opcode.value != opcode {
+			retScript = append(retScript, pop)
+		}
+	}
+	return retScript
+}
+
+// removeOpcodeByData will return the script minus any opcodes that would push
+// the passed data to the stack.
+func removeOpcodeByData(pkscript []parsedOpcode, data []byte) []parsedOpcode {
+	retScript := make([]parsedOpcode, 0, len(pkscript))
+	for _, pop := range pkscript {
+		if !canonicalPush(pop) || !bytes.Contains(pop.data, data) {
+			retScript = append(retScript, pop)
+		}
+	}
+	return retScript
+
+}
+
+// unparseScript reversed the action of parseScript and returns the
+// parsedOpcodes as a list of bytes
+func unparseScript(pops []parsedOpcode) ([]byte, error) {
+	script := make([]byte, 0, len(pops))
+	for _, pop := range pops {
+		b, err := pop.bytes()
+		if err != nil {
+			return nil, err
+		}
+		script = append(script, b...)
+	}
+	return script, nil
 }

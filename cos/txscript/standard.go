@@ -69,27 +69,6 @@ func (t ScriptClass) String() string {
 	return scriptClassToName[t]
 }
 
-// isPubkey returns true if the script passed is a pay-to-pubkey transaction,
-// false otherwise.
-func isPubkey(pops []parsedOpcode) bool {
-	// Valid pubkeys are either 33 or 65 bytes.
-	return len(pops) == 2 &&
-		(len(pops[0].data) == 33 || len(pops[0].data) == 65) &&
-		pops[1].opcode.value == OP_CHECKSIG
-}
-
-// isPubkeyHash returns true if the script passed is a pay-to-pubkey-hash
-// transaction, false otherwise.
-func isPubkeyHash(pops []parsedOpcode) bool {
-	return len(pops) == 5 &&
-		pops[0].opcode.value == OP_DUP &&
-		pops[1].opcode.value == OP_HASH160 &&
-		pops[2].opcode.value == OP_DATA_20 &&
-		pops[3].opcode.value == OP_EQUALVERIFY &&
-		pops[4].opcode.value == OP_CHECKSIG
-
-}
-
 func IsMultiSig(script []byte) bool {
 	pops, err := parseScript(script)
 	if err != nil {
@@ -125,23 +104,6 @@ func isMultiSig(pops []parsedOpcode) bool {
 	return true
 }
 
-// isNullData returns true if the passed script is a null data transaction,
-// false otherwise.
-func isNullData(pops []parsedOpcode) bool {
-	// A nulldata transaction is either a single OP_RETURN or an
-	// OP_RETURN SMALLDATA (where SMALLDATA is a data push up to
-	// MaxDataCarrierSize bytes).
-	l := len(pops)
-	if l == 1 && pops[0].opcode.value == OP_RETURN {
-		return true
-	}
-
-	return l == 2 &&
-		pops[0].opcode.value == OP_RETURN &&
-		pops[1].opcode.value <= OP_PUSHDATA4 &&
-		len(pops[1].data) <= MaxDataCarrierSize
-}
-
 // CalcMultiSigStats returns the number of public keys and signatures from
 // a multi-signature transaction script.  The passed script MUST already be
 // known to be a multi-signature script.
@@ -165,29 +127,6 @@ func CalcMultiSigStats(script []byte) (int, int, error) {
 	numSigs := asSmallInt(pops[0].opcode)
 	numPubKeys := asSmallInt(pops[len(pops)-2].opcode)
 	return numPubKeys, numSigs, nil
-}
-
-// payToPubKeyHashScript creates a new script to pay a transaction
-// output to a 20-byte pubkey hash. It is expected that the input is a valid
-// hash.
-func payToPubKeyHashScript(pubKeyHash []byte) ([]byte, error) {
-	return NewScriptBuilder().AddOp(OP_DUP).AddOp(OP_HASH160).
-		AddData(pubKeyHash).AddOp(OP_EQUALVERIFY).AddOp(OP_CHECKSIG).
-		Script()
-}
-
-// payToScriptHashScript creates a new script to pay a transaction output to a
-// script hash. It is expected that the input is a valid hash.
-func payToScriptHashScript(scriptHash []byte) ([]byte, error) {
-	return NewScriptBuilder().AddOp(OP_HASH160).AddData(scriptHash).
-		AddOp(OP_EQUAL).Script()
-}
-
-// payToPubkeyScript creates a new script to pay a transaction output to a
-// public key. It is expected that the input is a valid pubkey.
-func payToPubKeyScript(serializedPubKey []byte) ([]byte, error) {
-	return NewScriptBuilder().AddData(serializedPubKey).
-		AddOp(OP_CHECKSIG).Script()
 }
 
 // MultiSigScript returns a valid script for a multisignature redemption where
