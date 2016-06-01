@@ -14,7 +14,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/state"
 	. "chain/cos/txscript"
 	"chain/crypto/hash256"
 )
@@ -75,17 +74,18 @@ func newCoinbaseTx(val uint64, pkScript []byte, assetID bc.AssetID) *bc.TxData {
 	if pkScript == nil {
 		pkScript = []byte{OP_TRUE}
 	}
+	aa := bc.AssetAmount{Amount: val, AssetID: assetID}
 	return &bc.TxData{
 		Version:  bc.CurrentTransactionVersion,
-		Inputs:   []*bc.TxInput{{SignatureScript: []byte{OP_0, OP_0}}},
-		Outputs:  []*bc.TxOutput{{AssetAmount: bc.AssetAmount{Amount: val, AssetID: assetID}, Script: pkScript}},
+		Inputs:   []*bc.TxInput{{AssetAmount: aa, SignatureScript: []byte{OP_0, OP_0}}},
+		Outputs:  []*bc.TxOutput{{AssetAmount: aa, Script: pkScript}},
 		LockTime: 2e9,
 	}
 }
 
 // createSpendTx generates a basic spending transaction given the passed
 // signature and public key scripts.
-func createSpendingTx(sigScript, pkScript []byte) (*bc.TxData, *testViewReader) {
+func createSpendingTx(sigScript, pkScript []byte) *bc.TxData {
 	coinbaseTx1 := newCoinbaseTx(3, pkScript, testAssetID)
 	coinbaseTx2 := newCoinbaseTx(4, pkScript, testAssetID)
 	coinbaseTx3 := newCoinbaseTx(5, nil, testAssetID2)
@@ -95,14 +95,20 @@ func createSpendingTx(sigScript, pkScript []byte) (*bc.TxData, *testViewReader) 
 		Inputs: []*bc.TxInput{
 			{
 				Previous:        bc.Outpoint{Hash: coinbaseTx1.Hash(), Index: 0},
+				PrevScript:      coinbaseTx1.Outputs[0].Script,
+				AssetAmount:     coinbaseTx1.Outputs[0].AssetAmount,
 				SignatureScript: sigScript,
 			},
 			{
 				Previous:        bc.Outpoint{Hash: coinbaseTx2.Hash(), Index: 0},
+				PrevScript:      coinbaseTx2.Outputs[0].Script,
+				AssetAmount:     coinbaseTx2.Outputs[0].AssetAmount,
 				SignatureScript: sigScript,
 			},
 			{
-				Previous: bc.Outpoint{Hash: coinbaseTx3.Hash(), Index: 0},
+				Previous:    bc.Outpoint{Hash: coinbaseTx3.Hash(), Index: 0},
+				PrevScript:  coinbaseTx3.Outputs[0].Script,
+				AssetAmount: coinbaseTx3.Outputs[0].AssetAmount,
 			},
 		},
 		Outputs: []*bc.TxOutput{
@@ -116,8 +122,7 @@ func createSpendingTx(sigScript, pkScript []byte) (*bc.TxData, *testViewReader) 
 		},
 		LockTime: 2e9,
 	}
-
-	return spendingTx, &testViewReader{spendingTx: spendingTx, coinbaseTxs: []*bc.TxData{coinbaseTx1, coinbaseTx2, coinbaseTx3}}
+	return spendingTx
 }
 
 // TestScriptInvalidTests ensures all of the tests in script_invalid.json fail
@@ -139,8 +144,8 @@ func TestScriptInvalidTests(t *testing.T) {
 			t.Errorf("%s: %v", name, err)
 			return
 		}
-		tx, viewReader := createSpendingTx(scriptSig, scriptPubKey)
-		vm, err := newTestEngine(*viewReader, scriptPubKey, tx, flags)
+		tx := createSpendingTx(scriptSig, scriptPubKey)
+		vm, err := newTestEngine(scriptPubKey, tx, flags)
 		if err == nil {
 			if err := vm.Execute(); err == nil {
 				t.Errorf("%s test succeeded when it "+
@@ -170,8 +175,8 @@ func TestScriptValidTests(t *testing.T) {
 			t.Errorf("%s: %v", name, err)
 			return
 		}
-		tx, viewReader := createSpendingTx(scriptSig, scriptPubKey)
-		vm, err := newTestEngine(*viewReader, scriptPubKey, tx, flags)
+		tx := createSpendingTx(scriptSig, scriptPubKey)
+		vm, err := newTestEngine(scriptPubKey, tx, flags)
 		if err != nil {
 			t.Errorf("%s failed to create script: %v", name, err)
 			return
@@ -194,9 +199,9 @@ func TestP2CValidTests(t *testing.T) {
 			return
 		}
 
-		tx, viewReader := createSpendingTx(scriptSig, scriptPubKey)
+		tx := createSpendingTx(scriptSig, scriptPubKey)
 
-		vm, err := newReusableTestEngine(*viewReader, tx)
+		vm, err := newReusableTestEngine(tx)
 		if err != nil {
 			t.Errorf("TestP2CValidTests: test %d (%s) failed to create engine: %v\n", testNum, name, err)
 			return
@@ -236,9 +241,9 @@ func TestP2CInvalidTests(t *testing.T) {
 			return
 		}
 
-		tx, viewReader := createSpendingTx(scriptSig, scriptPubKey)
+		tx := createSpendingTx(scriptSig, scriptPubKey)
 
-		vm, err := newReusableTestEngine(*viewReader, tx)
+		vm, err := newReusableTestEngine(tx)
 		if err != nil {
 			t.Errorf("TestP2CInvalidTests: test %d (%s) failed to create engine: %v\n", testNum, name, err)
 			return
@@ -338,31 +343,12 @@ func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([]by
 	return scriptSig, pkScript, nil
 }
 
-type testViewReader struct {
-	spendingTx  *bc.TxData
-	coinbaseTxs []*bc.TxData
-}
-
-func (viewReader testViewReader) Output(ctx context.Context, outpoint bc.Outpoint) *state.Output {
-	if outpoint.Hash == viewReader.spendingTx.Hash() {
-		return state.NewOutput(*viewReader.spendingTx.Outputs[outpoint.Index], outpoint, false)
-	}
-	for _, coinbaseTx := range viewReader.coinbaseTxs {
-		if outpoint.Hash == coinbaseTx.Hash() {
-			return state.NewOutput(*coinbaseTx.Outputs[outpoint.Index], outpoint, true)
-		}
-	}
-	return nil
-}
-
-func (viewReader testViewReader) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.AssetID]int64, error) {
+func testCircFunc(ctx context.Context, assets []bc.AssetID) (map[bc.AssetID]int64, error) {
 	return map[bc.AssetID]int64{bc.AssetID{1}: 5}, nil
 }
 
-func (viewReader testViewReader) StateRoot(context.Context) (bc.Hash, error) { return bc.Hash{}, nil }
-
-func newReusableTestEngine(viewReader testViewReader, tx *bc.TxData) (*Engine, error) {
-	result, err := NewReusableEngine(nil, viewReader, tx, 0)
+func newReusableTestEngine(tx *bc.TxData) (*Engine, error) {
+	result, err := NewReusableEngine(nil, testCircFunc, tx, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -370,8 +356,8 @@ func newReusableTestEngine(viewReader testViewReader, tx *bc.TxData) (*Engine, e
 	return result, nil
 }
 
-func newTestEngine(viewReader testViewReader, scriptPubKey []byte, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
-	result, err := NewEngine(nil, viewReader, scriptPubKey, tx, 0, flags)
+func newTestEngine(scriptPubKey []byte, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
+	result, err := NewEngine(nil, testCircFunc, scriptPubKey, tx, 0, flags)
 	if err != nil {
 		return nil, err
 	}

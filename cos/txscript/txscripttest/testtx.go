@@ -54,6 +54,8 @@ func (tx *TestTx) AddInput(assetAmount bc.AssetAmount, pkscript, sigscript []byt
 	// Add the tx input to the current transaction.
 	tx.data.Inputs = append(tx.data.Inputs, &bc.TxInput{
 		Previous:        prevOutpoint,
+		AssetAmount:     assetAmount,
+		PrevScript:      pkscript,
 		SignatureScript: sigscript,
 	})
 	return tx
@@ -77,7 +79,7 @@ func (tx *TestTx) Execute(ctx context.Context, inputIndex int) error {
 
 	input := tx.data.Inputs[inputIndex]
 	utxo := tx.view.Output(ctx, input.Previous)
-	vm, err := txscript.NewEngine(ctx, tx.view, utxo.Script, &tx.data, inputIndex, txscript.ScriptVerifyMinimalData)
+	vm, err := txscript.NewEngine(ctx, tx.view.Circulation, utxo.Script, &tx.data, inputIndex, txscript.ScriptVerifyMinimalData)
 	if err != nil {
 		return err
 	}

@@ -77,7 +77,7 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 		return errors.Wrap(err, "validating inputs")
 	}
 
-	engine, err := txscript.NewReusableEngine(ctx, view, &tx.TxData, txscript.StandardVerifyFlags)
+	engine, err := txscript.NewReusableEngine(ctx, view.Circulation, &tx.TxData, txscript.StandardVerifyFlags)
 	if err != nil {
 		return fmt.Errorf("cannot create script engine: %s", err)
 	}

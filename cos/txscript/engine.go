@@ -14,7 +14,6 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 
 	"chain/cos/bc"
-	"chain/cos/state"
 	"chain/errors"
 )
 
@@ -88,11 +87,16 @@ type (
 		numOps           int
 		flags            ScriptFlags
 		ctx              context.Context
-		viewReader       state.ViewReader
 		available        []uint64 // mutable copy of each output's Amount field, used for OP_RESERVEOUTPUT reservations
 		timestamp        int64    // Unix timestamp of block or engine creation
+
+		// TODO(jackson): Replace circulation with a *patricia.Tree or a
+		// better defined interface backed by the state tree.
+		circulation CirculationFunc
 	}
 )
+
+type CirculationFunc func(context.Context, []bc.AssetID) (map[bc.AssetID]int64, error)
 
 func isKnownVersion(version int64) bool {
 	return version >= 0 && version <= 2
@@ -104,11 +108,6 @@ func (vm *Engine) currentVersion() scriptNum {
 
 func (vm *Engine) currentTxInput() *bc.TxInput {
 	return vm.tx.Inputs[vm.txIdx]
-}
-
-func (vm *Engine) currentPrevOut() *state.Output {
-	txInput := vm.currentTxInput()
-	return vm.viewReader.Output(vm.ctx, txInput.Previous)
 }
 
 // hasFlag returns whether the script engine instance has the passed flag set.
@@ -584,31 +583,31 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 // Allocates an Engine object that can execute scripts for every input
 // of a transaction.  Illustration (with error-checking elided for
 // clarity):
-//   engine, err := NewReusableEngine(ctx, viewReader, tx, flags)
+//   engine, err := NewReusableEngine(ctx, viewReader.Circulation, tx, flags)
 //   for i, txin := range tx.Inputs {
 //     err = engine.Prepare(scriptPubKey, i)
 //     err = engine.Execute()
 //   }
 // Note: every call to Execute() must be preceded by a call to
 // Prepare() (including the first one).
-func NewReusableEngine(ctx context.Context, viewReader state.ViewReader, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
-	return newReusableEngine(ctx, viewReader, tx, nil, flags)
+func NewReusableEngine(ctx context.Context, circ CirculationFunc, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
+	return newReusableEngine(ctx, circ, tx, nil, flags)
 }
 
-func newReusableEngine(ctx context.Context, viewReader state.ViewReader, tx *bc.TxData, block *bc.Block, flags ScriptFlags) (*Engine, error) {
+func newReusableEngine(ctx context.Context, circ CirculationFunc, tx *bc.TxData, block *bc.Block, flags ScriptFlags) (*Engine, error) {
 	timestamp := time.Now().Unix()
 	if block != nil {
 		timestamp = int64(block.Timestamp)
 	}
 
 	vm := &Engine{
-		ctx:        ctx,
-		viewReader: viewReader,
-		tx:         tx,
-		block:      block,
-		flags:      flags,
-		hashCache:  &bc.SigHashCache{},
-		timestamp:  timestamp,
+		ctx:         ctx,
+		circulation: circ,
+		tx:          tx,
+		block:       block,
+		flags:       flags,
+		hashCache:   &bc.SigHashCache{},
+		timestamp:   timestamp,
 	}
 
 	if vm.hasFlag(ScriptVerifyMinimalData) {
@@ -631,8 +630,8 @@ func newReusableEngine(ctx context.Context, viewReader state.ViewReader, tx *bc.
 //
 // This is equivalent to calling NewReusableEngine() followed by a
 // call to Prepare().
-func NewEngine(ctx context.Context, viewReader state.ViewReader, scriptPubKey []byte, tx *bc.TxData, txIdx int, flags ScriptFlags) (*Engine, error) {
-	vm, err := NewReusableEngine(ctx, viewReader, tx, flags)
+func NewEngine(ctx context.Context, circ CirculationFunc, scriptPubKey []byte, tx *bc.TxData, txIdx int, flags ScriptFlags) (*Engine, error) {
+	vm, err := NewReusableEngine(ctx, circ, tx, flags)
 	if err != nil {
 		return nil, err
 	}

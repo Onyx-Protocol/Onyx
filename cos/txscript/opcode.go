@@ -2044,7 +2044,7 @@ func opcodeCheckSig(op *parsedOpcode, vm *Engine) error {
 	if vm.block != nil {
 		hash = vm.block.HashForSig()
 	} else {
-		hash = vm.tx.HashForSigCached(vm.txIdx, vm.currentPrevOut().AssetAmount, hashType, vm.hashCache)
+		hash = vm.tx.HashForSigCached(vm.txIdx, vm.currentTxInput().AssetAmount, hashType, vm.hashCache)
 	}
 
 	pubKey, err := btcec.ParsePubKey(pkBytes, btcec.S256())
@@ -2260,7 +2260,7 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 		if vm.block != nil {
 			hash = vm.block.HashForSig()
 		} else {
-			hash = vm.tx.HashForSigCached(vm.txIdx, vm.currentPrevOut().AssetAmount, hashType, vm.hashCache)
+			hash = vm.tx.HashForSigCached(vm.txIdx, vm.currentTxInput().AssetAmount, hashType, vm.hashCache)
 		}
 
 		if parsedSig.Verify(hash[:], parsedPubKey) {
@@ -2420,22 +2420,22 @@ func opcodeCheckLockTimeVerify(op *parsedOpcode, vm *Engine) error {
 
 // Pushes the current txin's assetid onto the stack.
 func opcodeAsset(op *parsedOpcode, vm *Engine) error {
-	prevOut := vm.currentPrevOut()
-	vm.dstack.PushByteArray(prevOut.AssetID[:])
+	in := vm.currentTxInput()
+	vm.dstack.PushByteArray(in.AssetAmount.AssetID[:])
 	return nil
 }
 
 // Pushes the current txin's amount onto the stack.
 func opcodeAmount(op *parsedOpcode, vm *Engine) error {
-	prevOut := vm.currentPrevOut()
-	vm.dstack.PushInt(scriptNum(prevOut.Amount))
+	in := vm.currentTxInput()
+	vm.dstack.PushInt(scriptNum(in.AssetAmount.Amount))
 	return nil
 }
 
 // Pushes the current txin's pkscript onto the stack.
 func opcodeOutputScript(op *parsedOpcode, vm *Engine) error {
-	prevOut := vm.currentPrevOut()
-	vm.dstack.PushByteArray(prevOut.Script)
+	in := vm.currentTxInput()
+	vm.dstack.PushByteArray(in.PrevScript)
 	return nil
 }
 
@@ -2461,7 +2461,7 @@ func opcodeCirculation(op *parsedOpcode, vm *Engine) error {
 	assetID := bc.AssetID{}
 	copy(assetID[:], asset)
 
-	circ, err := vm.viewReader.Circulation(vm.ctx, []bc.AssetID{assetID})
+	circ, err := vm.circulation(vm.ctx, []bc.AssetID{assetID})
 	if err != nil {
 		return err
 	}
