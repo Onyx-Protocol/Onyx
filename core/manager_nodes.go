@@ -9,6 +9,7 @@ import (
 
 	"chain/core/appdb"
 	"chain/core/asset"
+	"chain/cos/bc"
 	"chain/cos/hdkey"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
@@ -459,4 +460,28 @@ func optionalTime(t time.Time) *time.Time {
 		return nil
 	}
 	return &t
+}
+
+func listAccountUTXOs(ctx context.Context, accountID string, in struct {
+	AssetIDs []bc.AssetID `json:"asset_ids"`
+}) (interface{}, error) {
+	if err := accountAuthz(ctx, accountID); err != nil {
+		return nil, err
+	}
+
+	cursor, limit, err := getPageData(ctx, defGenericPageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	utxos, last, err := appdb.ListAccountUTXOs(ctx, accountID, in.AssetIDs, cursor, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := map[string]interface{}{
+		"last":         last,
+		"transactions": httpjson.Array(utxos),
+	}
+	return ret, nil
 }

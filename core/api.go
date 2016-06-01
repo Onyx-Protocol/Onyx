@@ -19,6 +19,7 @@ const (
 	defAccountPageSize   = 100
 	defBalancePageSize   = 100
 	defAssetPageSize     = 100
+	defGenericPageSize   = 100
 )
 
 // Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
@@ -111,6 +112,7 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/accounts/:accountID/activity", getAccountActivity)
 	h.HandleFunc("GET", "/v3/accounts/:accountID/transactions", getAccountTxs)
 	h.HandleFunc("POST", "/v3/accounts/:accountID/addresses", createAddr)
+	h.HandleFunc("POST", "/v3/accounts/:accountID/utxos", listAccountUTXOs)
 	h.HandleFunc("PUT", "/v3/accounts/:accountID", updateAccount)
 	h.HandleFunc("DELETE", "/v3/accounts/:accountID", archiveAccount)
 	h.HandleFunc("GET", "/v3/assets/:assetID", getAsset)
