@@ -3,13 +3,16 @@ package core
 import (
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/core/asset/assettest"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/net/http/authn"
 )
 
 func TestCreateAPIToken(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 	ctx = authn.NewContext(ctx, uid)

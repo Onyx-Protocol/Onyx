@@ -3,6 +3,8 @@ package core
 import (
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/database/pg"
@@ -11,7 +13,7 @@ import (
 )
 
 func TestCreateIssuerNode(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 	proj0 := assettest.CreateProjectFixture(ctx, t, uid, "x")
@@ -41,7 +43,7 @@ func TestCreateIssuerNode(t *testing.T) {
 }
 
 func TestCreateIssuerNodeDeprecated(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 	proj0 := assettest.CreateProjectFixture(ctx, t, uid, "x")
 

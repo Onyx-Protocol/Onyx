@@ -5,14 +5,17 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/core/txbuilder"
 	"chain/cos/bc"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 )
 
 func TestIssue(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	pgtest.Exec(ctx, t, `
 		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
 		INSERT INTO issuer_nodes (id, project_id, label, keyset, key_index)

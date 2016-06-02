@@ -4,13 +4,16 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"chain/core/asset/assettest"
+	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/net/http/authn"
 )
 
 func TestAuthenticateToken(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	expires := time.Now().Add(-1 * time.Minute)
 	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")

@@ -8,11 +8,10 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/txdb"
 	"chain/cos/bc"
+	"chain/cos/memstore"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/testutil"
 )
@@ -45,8 +44,8 @@ func (tr *testReserver) Reserve(ctx context.Context, assetAmt *bc.AssetAmount, t
 }
 
 func TestBuild(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	store := memstore.New()
 
 	err := store.ApplyTx(ctx, &bc.Tx{Hash: [32]byte{255}, TxData: bc.TxData{
 		Outputs: []*bc.TxOutput{{

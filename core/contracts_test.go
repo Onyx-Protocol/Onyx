@@ -16,11 +16,9 @@ import (
 	"chain/core/issuer"
 	"chain/core/smartcontracts/orderbook"
 	"chain/core/txbuilder"
-	"chain/core/txdb"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 	"chain/net/http/httpjson"
 	"chain/testutil"
 )
@@ -315,9 +313,8 @@ func callFindAccountOrders(ctx context.Context, accountID string) ([]*orderbook.
 }
 
 func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtureInfo)) {
-	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	fc, err := assettest.InitializeSigningGenerator(ctx, store)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	fc, err := assettest.InitializeSigningGenerator(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

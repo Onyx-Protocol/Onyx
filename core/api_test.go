@@ -13,11 +13,9 @@ import (
 	"chain/core/issuer"
 	"chain/core/smartcontracts/orderbook"
 	"chain/core/txbuilder"
-	"chain/core/txdb"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/net/http/authn"
 	"chain/testutil"
@@ -37,7 +35,7 @@ func TestMux(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
 	ctx = authn.NewContext(ctx, uid)
 
@@ -57,9 +55,8 @@ func TestLogin(t *testing.T) {
 }
 
 func TestIssue(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	fc, err := assettest.InitializeSigningGenerator(ctx, store)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	fc, err := assettest.InitializeSigningGenerator(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,9 +105,8 @@ func TestIssue(t *testing.T) {
 }
 
 func TestTransfer(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	fc, err := assettest.InitializeSigningGenerator(ctx, store)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	fc, err := assettest.InitializeSigningGenerator(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
