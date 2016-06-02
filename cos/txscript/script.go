@@ -57,7 +57,7 @@ func IsPayToScriptHash(script []byte) bool {
 }
 
 // PayToContractHash builds a contracthash-style p2c pkscript.
-func PayToContractHash(contractHash bc.ContractHash, params [][]byte, scriptVersion []byte) ([]byte, error) {
+func PayToContractHash(contractHash bc.ContractHash, params []Item, scriptVersion []byte) ([]byte, error) {
 	sb := payToContractHelper(params, scriptVersion)
 	if len(params) > 0 {
 		sb = sb.AddInt64(int64(len(params))).AddOp(OP_ROLL)
@@ -68,17 +68,17 @@ func PayToContractHash(contractHash bc.ContractHash, params [][]byte, scriptVers
 }
 
 // PayToContractInline builds an inline-style p2c pkscript.
-func PayToContractInline(contract []byte, params [][]byte, scriptVersion []byte) ([]byte, error) {
+func PayToContractInline(contract []byte, params []Item, scriptVersion []byte) ([]byte, error) {
 	sb := payToContractHelper(params, scriptVersion)
 	sb = sb.ConcatRawScript(contract)
 	return sb.Script()
 }
 
-func payToContractHelper(params [][]byte, scriptVersion []byte) *ScriptBuilder {
+func payToContractHelper(params []Item, scriptVersion []byte) *ScriptBuilder {
 	sb := NewScriptBuilder()
 	sb = sb.AddData(scriptVersion).AddOp(OP_DROP)
 	for i := len(params) - 1; i >= 0; i-- {
-		sb = sb.AddData(params[i])
+		sb = params[i].AddTo(sb)
 	}
 	return sb
 }

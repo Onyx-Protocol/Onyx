@@ -326,12 +326,12 @@ func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([]by
 		return nil, nil, err
 	}
 
-	pkParams := make([][]byte, 0, len(pkParamsPops))
+	pkParams := make([]Item, 0, len(pkParamsPops))
 	for _, pkParamsPop := range pkParamsPops {
 		if !TstIsPushdataOp(pkParamsPop) {
 			return nil, nil, ErrStackNonPushOnly
 		}
-		pkParams = append(pkParams, TstPopData(pkParamsPop))
+		pkParams = append(pkParams, DataItem(TstPopData(pkParamsPop)))
 	}
 
 	contractHash := hash256.Sum(contractScript)

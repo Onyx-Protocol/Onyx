@@ -999,29 +999,29 @@ func TestRightsContractValidMatch(t *testing.T) {
 // fails on pkscripts that are paid to the rights contract but are
 // improperly formatted.
 func TestRightsContractInvalidMatch(t *testing.T) {
-	testCaseScriptParams := [][][]byte{
+	testCaseScriptParams := [][]txscript.Item{
 		{ // no parameters
 		},
 		{ // not enough parameters
-			[]byte{}, []byte{}, []byte{},
+			txscript.DataItem(nil), txscript.DataItem(nil), txscript.DataItem(nil),
 		},
 		{ // enough parameters, but all empty
-			[]byte{}, []byte{}, []byte{}, []byte{}, []byte{},
+			txscript.DataItem(nil), txscript.DataItem(nil), txscript.DataItem(nil), txscript.DataItem(nil), txscript.DataItem(nil),
 		},
 		{ // chain of ownership hash not long enough
-			[]byte{0x01},                   // delegatable = true
-			[]byte{0x56, 0xE7, 0x2C, 0xC8}, // deadline = 1457990856
-			[]byte{0xde, 0xad, 0xbe, 0xef}, // ownership chain hash = 0xdeadbeef
-			[]byte{0xde, 0xad, 0xbe, 0xef}, // holding script = 0xdeadbeef
-			[]byte{0xde, 0xad, 0xbe, 0xef}, // admin script = 0xdeadbeef
+			txscript.BoolItem(true),                           // delegatable = true
+			txscript.NumItem(int64(1457990856)),               // deadline = 1457990856
+			txscript.DataItem([]byte{0xde, 0xad, 0xbe, 0xef}), // ownership chain hash = 0xdeadbeef
+			txscript.DataItem([]byte{0xde, 0xad, 0xbe, 0xef}), // holding script = 0xdeadbeef
+			txscript.DataItem([]byte{0xde, 0xad, 0xbe, 0xef}), // admin script = 0xdeadbeef
 		},
 		{ // five parameter input
-			[]byte{0x00},                   // delegatable = false
-			[]byte{0x56, 0xE7, 0x2C, 0xC8}, // deadline = 1457990856
-			exampleHash[:],                 // ownership chain hash = 0x9414..98
-			[]byte{0xde, 0xad, 0xbe, 0xef}, // holding script = 0xdeadbeef
-			[]byte{0xde, 0xad, 0xbe, 0xef}, // admin script = 0xdeadbeef
-			[]byte{0x02},                   // extra parameter on the end
+			txscript.BoolItem(false),                          // delegatable = false
+			txscript.NumItem(int64(1457990856)),               // deadline = 1457990856
+			txscript.DataItem(exampleHash[:]),                 // ownership chain hash = 0x9414..98
+			txscript.DataItem([]byte{0xde, 0xad, 0xbe, 0xef}), // holding script = 0xdeadbeef
+			txscript.DataItem([]byte{0xde, 0xad, 0xbe, 0xef}), // admin script = 0xdeadbeef
+			txscript.DataItem([]byte{0x02}),                   // extra parameter on the end
 		},
 	}
 

@@ -147,14 +147,14 @@ func (info *OrderInfo) generateScript(ctx context.Context, sellerScript []byte) 
 		}
 	}
 
-	params := make([][]byte, 0, 3*len(info.Prices)+1)
+	params := make([]txscript.Item, 0, 3*len(info.Prices)+1)
 
 	for _, price := range info.Prices {
-		params = append(params, txscript.Int64ToScriptBytes(int64(price.OfferAmount)))
-		params = append(params, txscript.Int64ToScriptBytes(int64(price.PaymentAmount)))
-		params = append(params, price.AssetID[:])
+		params = append(params, txscript.NumItem(int64(price.OfferAmount)))
+		params = append(params, txscript.NumItem(int64(price.PaymentAmount)))
+		params = append(params, txscript.DataItem(price.AssetID[:]))
 	}
-	params = append(params, sellerScript)
+	params = append(params, txscript.DataItem(sellerScript))
 
 	contract, err = buildContract(len(info.Prices))
 	if err != nil {

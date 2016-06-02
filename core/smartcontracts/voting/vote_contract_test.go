@@ -989,27 +989,27 @@ func TestResetClause(t *testing.T) {
 // fails on pkscripts that are paid to the token contract but are
 // improperly formatted.
 func TestTokenContractInvalidMatch(t *testing.T) {
-	testCaseScriptParams := [][][]byte{
+	testCaseScriptParams := [][]txscript.Item{
 		{ // no parameters
 		},
 		{ // not enough parameters
-			[]byte{}, []byte{}, []byte{},
+			txscript.DataItem(nil), txscript.DataItem(nil), txscript.DataItem(nil),
 		},
 		{ // enough parameters, but all empty
-			[]byte{}, []byte{}, []byte{}, []byte{},
+			txscript.DataItem(nil), txscript.DataItem(nil), txscript.DataItem(nil), txscript.DataItem(nil),
 		},
 		{ // asset id not long enough
-			[]byte{0x01},                   // voting right asset id = 0x01
-			[]byte{0xde, 0xad, 0xbe, 0xef}, // admin script = 0xdeadbeef
-			[]byte{byte(clauseRegister)},   // state = REGISTERED
-			[]byte{0x51},                   // vote = 1
+			txscript.DataItem([]byte{0x01}),                   // voting right asset id = 0x01
+			txscript.DataItem([]byte{0xde, 0xad, 0xbe, 0xef}), // admin script = 0xdeadbeef
+			txscript.DataItem([]byte{byte(clauseRegister)}),   // state = REGISTERED
+			txscript.NumItem(int64(1)),                        // vote = 1
 		},
 		{ // too many parameters
-			exampleHash[:],                 // voting right asset id = example hash
-			[]byte{0xde, 0xad, 0xbe, 0xef}, // admin script = 0xdeadbeef
-			[]byte{byte(clauseRegister)},   // state = REGISTERED
-			[]byte{0x51},                   // vote = 1
-			[]byte{0x00, 0x01},             // garbage parameter
+			txscript.DataItem(exampleHash[:]),                 // voting right asset id = example hash
+			txscript.DataItem([]byte{0xde, 0xad, 0xbe, 0xef}), // admin script = 0xdeadbeef
+			txscript.DataItem([]byte{byte(clauseRegister)}),   // state = REGISTERED
+			txscript.NumItem(int64(1)),                        // vote = 1
+			txscript.DataItem([]byte{0x00, 0x01}),             // garbage parameter
 		},
 	}
 

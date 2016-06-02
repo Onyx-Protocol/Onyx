@@ -471,10 +471,10 @@ func TestPayToContract(t *testing.T) {
 	t.Parallel()
 
 	contract := mustParseScriptString("'abc' OP_DROP")
-	params := [][]byte{
-		mustParseScriptString("1"),
-		mustParseScriptString("2"),
-		mustParseScriptString("3"),
+	params := []Item{
+		DataItem(mustParseScriptString("1")),
+		DataItem(mustParseScriptString("2")),
+		DataItem(mustParseScriptString("3")),
 	}
 
 	script, err := PayToContractInline(contract, params, ScriptVersion1)
@@ -504,7 +504,7 @@ func TestPayToContract(t *testing.T) {
 		t.Errorf("expected %d parsed params, got %d", len(params), len(parsedParams))
 	}
 	for i, param := range params {
-		if !bytes.Equal(param, parsedParams[i]) {
+		if !bytes.Equal(param.(DataItem), parsedParams[i]) {
 			t.Errorf("expected param %d to be %v, got %v", i, param, parsedParams[i])
 		}
 	}
@@ -541,7 +541,7 @@ func TestPayToContract(t *testing.T) {
 			t.Errorf("[%s] expected %d parsed params, got %d", desc, len(params), len(parsedParams))
 		}
 		for i, param := range params {
-			if !bytes.Equal(param, parsedParams[i]) {
+			if !bytes.Equal(param.(DataItem), parsedParams[i]) {
 				t.Errorf("[%s] expected param %d to be %v, got %v", desc, i, param, parsedParams[i])
 			}
 		}

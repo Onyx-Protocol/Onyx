@@ -47,15 +47,13 @@ type rightScriptData struct {
 // contract for this voting right. It implements the txbuilder.Receiver
 // interface.
 func (r rightScriptData) PKScript() []byte {
-	var (
-		params [][]byte
-	)
+	params := make([]txscript.Item, 0, 5)
 
-	params = append(params, txscript.BoolToScriptBytes(r.Delegatable))
-	params = append(params, txscript.Int64ToScriptBytes(r.Deadline))
-	params = append(params, r.OwnershipChain[:])
-	params = append(params, r.HolderScript)
-	params = append(params, r.AdminScript)
+	params = append(params, txscript.BoolItem(r.Delegatable))
+	params = append(params, txscript.NumItem(r.Deadline))
+	params = append(params, txscript.DataItem(r.OwnershipChain[:]))
+	params = append(params, txscript.DataItem(r.HolderScript))
+	params = append(params, txscript.DataItem(r.AdminScript))
 
 	script, err := txscript.PayToContractHash(rightsHoldingContractHash, params, scriptVersion)
 	if err != nil {

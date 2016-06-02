@@ -66,15 +66,13 @@ type tokenScriptData struct {
 // contract for this voting token. It implements the txbuilder.Receiver
 // interface.
 func (t tokenScriptData) PKScript() []byte {
-	var (
-		params [][]byte
-	)
+	params := make([]txscript.Item, 0, 5)
 
-	params = append(params, txscript.Int64ToScriptBytes(t.Vote))
-	params = append(params, []byte{byte(t.State)})
-	params = append(params, t.AdminScript)
-	params = append(params, t.Right[:])
-	params = append(params, t.RegistrationID)
+	params = append(params, txscript.NumItem(t.Vote))
+	params = append(params, txscript.DataItem([]byte{byte(t.State)}))
+	params = append(params, txscript.DataItem(t.AdminScript))
+	params = append(params, txscript.DataItem(t.Right[:]))
+	params = append(params, txscript.DataItem(t.RegistrationID))
 
 	script, err := txscript.PayToContractHash(tokenHoldingContractHash, params, scriptVersion)
 	if err != nil {
