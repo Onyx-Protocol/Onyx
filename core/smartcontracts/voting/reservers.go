@@ -121,7 +121,7 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 	}
 	inputs = append(inputs, txscript.NumItem(r.clause))
 
-	script, err := txscript.RedeemP2C(r.prevScript, rightsHoldingContract, inputs)
+	script, err := txscript.CheckRedeemP2C(r.prevScript, rightsHoldingContract, inputs)
 
 	if err != nil {
 		return nil, err
@@ -205,7 +205,7 @@ func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount,
 	}
 	inputs = append(inputs, txscript.NumItem(int64(r.clause)))
 
-	script, err := txscript.RedeemP2C(r.prevScript, tokenHoldingContract, inputs)
+	script, err := txscript.CheckRedeemP2C(r.prevScript, tokenHoldingContract, inputs)
 	if err != nil {
 		return nil, err
 	}

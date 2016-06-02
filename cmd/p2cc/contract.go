@@ -118,6 +118,24 @@ func (contract *contract) translate(stk stack, context *context) (*translation, 
 	return contract.translation, nil
 }
 
+// initStack produces a depiction of the stack before the first opcode
+// runs.
+func (c contract) initStackStr() string {
+	var strs []string
+
+	for _, p := range c.params {
+		strs = append(strs, p.name)
+	}
+	if len(c.clauses) > 1 {
+		strs = append(strs, "[clause selector] ...clause args...")
+	} else {
+		for _, p := range c.clauses[0].params {
+			strs = append(strs, p.name)
+		}
+	}
+	return strings.Join(strs, " ")
+}
+
 func (c clause) translate(stk stack, context *context) (*translation, error) {
 	return c.block.translate(stk.bottomAddMany(c.params), context)
 }

@@ -88,8 +88,10 @@ var (
 	ErrP2CMismatch = errors.New("contract mismatch")
 )
 
-// RedeemP2C builds a sigscript for redeeming the given contract.
-func RedeemP2C(pkscript, contract []byte, inputs []Item) ([]byte, error) {
+// CheckRedeemP2C builds a sigscript for redeeming the given contract
+// as required by the given pkscript (which could be in contracthash
+// or non-contracthash form).
+func CheckRedeemP2C(pkscript, contract []byte, inputs []Item) ([]byte, error) {
 	scriptVersion, pkscriptContract, pkscriptContractHash, _ := ParseP2C(pkscript, contract)
 	if scriptVersion == nil {
 		return nil, ErrNotP2C
@@ -98,17 +100,23 @@ func RedeemP2C(pkscript, contract []byte, inputs []Item) ([]byte, error) {
 		if !bytes.Equal(pkscriptContract, contract) {
 			return nil, ErrP2CMismatch
 		}
+		contract = nil // contract is in pkscript, exclude it from sigscript
 	} else {
 		hash := hash256.Sum(contract)
 		if hash != pkscriptContractHash {
 			return nil, ErrP2CMismatch
 		}
 	}
+	return RedeemP2C(contract, inputs)
+}
+
+// RedeemP2C builds a sigscript for redeeming a contract.
+func RedeemP2C(contract []byte, inputs []Item) ([]byte, error) {
 	sb := NewScriptBuilder()
 	for _, input := range inputs {
 		sb = input.AddTo(sb)
 	}
-	if pkscriptContract == nil {
+	if contract != nil {
 		sb = sb.AddData(contract)
 	}
 	return sb.Script()

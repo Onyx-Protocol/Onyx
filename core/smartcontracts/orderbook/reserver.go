@@ -38,7 +38,7 @@ func (reserver *redeemReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 		txscript.NumItem(changeAmount),
 		txscript.NumItem(1),
 	}
-	sigscript, err := txscript.RedeemP2C(openOrder.Script, contractScript, inputs)
+	sigscript, err := txscript.CheckRedeemP2C(openOrder.Script, contractScript, inputs)
 	if err != nil {
 		return nil, errors.Wrap(err, "building sigscript")
 	}
@@ -124,7 +124,7 @@ func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 		txscript.DataItem(sellerAddr.RedeemScript),
 		txscript.NumItem(0),
 	}
-	sigscript, err := txscript.RedeemP2C(openOrder.Script, contractScript, inputs)
+	sigscript, err := txscript.CheckRedeemP2C(openOrder.Script, contractScript, inputs)
 	if err != nil {
 		return nil, err
 	}

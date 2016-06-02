@@ -95,3 +95,23 @@ func (t translation) getHash() (bc.ContractHash, error) {
 	}
 	return t.hash, nil
 }
+
+// longestStep returns the length of the longest step.ops in t
+func (t translation) opsWidth() (res int) {
+	for _, s := range t.steps {
+		if len(s.ops) > res {
+			res = len(s.ops)
+		}
+	}
+	return res
+}
+
+// stackStr produces a string depiction of the stack at the given step
+func (s step) stackStr() string {
+	strs := make([]string, 1, 1+len(s.stack))
+	strs[0] = "<top>"
+	for _, item := range s.stack {
+		strs = append(strs, item.name)
+	}
+	return strings.Join(strs, " ")
+}

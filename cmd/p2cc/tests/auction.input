@@ -1,13 +1,13 @@
 # Auctions! (minus "max price" logic)
 # https://github.com/chain-engineering/chainos/blob/master/docs/spec/p2c.md#auction-contract
 
-contract AuctionAsset(priceAsset, bidPrice, sellerScript, bidderScript, deadline) {
+contract AuctionAsset(priceAsset, bidPrice num, sellerScript, bidderScript, deadline num) {
   clause refund() {
     verify bidderScript == '';
     verify time() >= deadline;
     eval(sellerScript);
   }
-  clause bid(price, newBidderScript) {
+  clause bid(price num, newBidderScript) {
     verify price > bidPrice;
     verify time() < deadline;
     if bidderScript != '' {
@@ -23,8 +23,8 @@ contract AuctionAsset(priceAsset, bidPrice, sellerScript, bidderScript, deadline
   }
 }
 
-contract BidContract(assetID, assetAmount, sellerScript, bidderScript, deadline) {
-  clause release(newBidPrice) {
+contract BidContract(assetID, assetAmount num, sellerScript, bidderScript, deadline num) {
+  clause release(newBidPrice num) {
     verify time() < deadline;
     verify reserveoutput(amount(), asset(), bidderScript);
     verify newBidPrice > amount();
