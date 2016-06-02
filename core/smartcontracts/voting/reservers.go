@@ -186,7 +186,8 @@ func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount,
 	switch r.clause {
 	case clauseRedistribute:
 		for rightAssetID, amount := range r.distributions {
-			inputs = append(inputs, txscript.NumItem(int64(amount)), txscript.DataItem(rightAssetID[:]))
+			asset := rightAssetID
+			inputs = append(inputs, txscript.NumItem(int64(amount)), txscript.DataItem(asset[:]))
 		}
 		inputs = append(inputs, txscript.NumItem(int64(len(r.distributions))))
 		inputs = append(inputs, txscript.DataItem(r.rightScript))
