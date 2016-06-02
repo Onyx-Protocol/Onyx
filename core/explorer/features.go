@@ -1,6 +1,6 @@
 // Optional features
 
-package core
+package explorer
 
 import (
 	"golang.org/x/net/context"

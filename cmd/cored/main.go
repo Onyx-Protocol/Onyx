@@ -22,6 +22,7 @@ import (
 
 	"chain/core"
 	"chain/core/asset"
+	"chain/core/explorer"
 	"chain/core/generator"
 	"chain/core/rpcclient"
 	"chain/core/signer"
@@ -237,7 +238,7 @@ func main() {
 	}
 
 	if *historicalOutputs {
-		core.InitHistoricalOutputs(fc, *isManager)
+		explorer.InitHistoricalOutputs(fc, *isManager)
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
 	"chain/core/txbuilder"
@@ -27,6 +28,66 @@ func mustParseHash(str string) bc.Hash {
 		panic(err)
 	}
 	return hash
+}
+
+func TestHistoricalOutput(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+
+	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	fc, err := assettest.InitializeSigningGenerator(ctx, store)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	InitHistoricalOutputs(fc, true)
+
+	account1ID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
+	account2ID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, "", "", "")
+	assettest.IssueAssetsFixture(ctx, t, assetID, 100, account1ID)
+
+	count := func() int64 {
+		const q = `SELECT amount FROM historical_outputs WHERE asset_id = $1 AND account_id = $2 AND NOT UPPER_INF(timespan)`
+
+		var n int64
+		err := pg.ForQueryRows(ctx, q, assetID, account1ID, func(amt int64) {
+			n += amt
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+
+	if n := count(); n != 0 {
+		t.Errorf("expected 0 historical units, got %d", n)
+	}
+
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if n := count(); n != 0 {
+		t.Errorf("expected 0 historical units, got %d", n)
+	}
+
+	srcs := []*txbuilder.Source{asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: assetID, Amount: 10}, account1ID, nil, nil, nil)}
+	dests := []*txbuilder.Destination{assettest.AccountDest(ctx, t, account2ID, assetID, 10)}
+	assettest.Transfer(ctx, t, srcs, dests)
+
+	if n := count(); n != 0 {
+		t.Errorf("expected 0 historical units, got %d", n)
+	}
+
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if n := count(); n != 100 {
+		t.Errorf("expected 100 historical units, got %d", n)
+	}
 }
 
 func TestListBlocks(t *testing.T) {
