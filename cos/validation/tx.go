@@ -92,14 +92,13 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 			// TODO: implement issuance scheme
 			continue
 		}
-		unspent := view.Output(ctx, input.Previous)
-		err = engine.Prepare(unspent.Script, i)
+		err = engine.Prepare(input.PrevScript, i)
 		if err != nil {
 			err = errors.Wrapf(ErrBadTx, "cannot prepare script engine to process input %d: %s", i, err)
 			return errors.WithDetailf(err, "invalid script on input %d", i)
 		}
 		if err = engine.Execute(); err != nil {
-			pkScriptStr, _ := txscript.DisasmString(unspent.Script)
+			pkScriptStr, _ := txscript.DisasmString(input.PrevScript)
 			sigScriptStr, _ := txscript.DisasmString(input.SignatureScript)
 			return errors.WithDetailf(ErrBadTx, "validation failed in script execution, input %d (sigscript[%s] pkscript[%s])", i, sigScriptStr, pkScriptStr)
 		}
@@ -201,7 +200,7 @@ func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 		view.SaveOutput(o)
 	}
 
-	issued := sumIssued(ctx, view, tx)
+	issued := sumIssued(ctx, tx)
 	for asset, amt := range issued {
 		view.SaveIssuance(asset, amt)
 	}
@@ -220,7 +219,7 @@ func assetIDFromSigScript(script []byte) (bc.AssetID, error) {
 
 // the amount of issued assets can be determined by
 // the sum of outputs minus the sum of non-issuance inputs
-func sumIssued(ctx context.Context, view state.ViewReader, tx *bc.Tx) map[bc.AssetID]uint64 {
+func sumIssued(ctx context.Context, tx *bc.Tx) map[bc.AssetID]uint64 {
 	issued := make(map[bc.AssetID]uint64)
 	if !tx.HasIssuance() {
 		return nil
@@ -232,8 +231,7 @@ func sumIssued(ctx context.Context, view state.ViewReader, tx *bc.Tx) map[bc.Ass
 		if in.IsIssuance() {
 			continue
 		}
-		prevout := view.Output(ctx, in.Previous)
-		issued[prevout.AssetID] -= prevout.Amount
+		issued[in.AssetAmount.AssetID] -= in.AssetAmount.Amount
 	}
 	return issued
 }
