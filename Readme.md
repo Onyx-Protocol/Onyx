@@ -40,9 +40,9 @@ Next, run all migrations, including your new migrations:
 	$ migratedb -d postgres:///core?sslmode=disable
 	$ ...
 
-Finally, dump the database schema, filtering any extension statements:
+Finally, dump the database schema:
 
-	$ pg_dump -sOx core | grep -v "CREATE EXTENSION" | grep -v "COMMENT ON EXTENSION" > core/appdb/schema.sql
+	$ pg_dump -sOx core > core/appdb/schema.sql
 
 ## Provisioning
 
