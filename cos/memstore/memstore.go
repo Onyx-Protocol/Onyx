@@ -117,7 +117,7 @@ func (m *MemStore) PoolTxs(context.Context) ([]*bc.Tx, error) {
 
 func (m *MemStore) NewPoolViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error) {
 	return &state.MemView{
-		Outs: m.poolUTXOs,
+		Outs: cloneUTXOs(m.poolUTXOs),
 	}, nil
 }
 
@@ -172,7 +172,7 @@ func (m *MemStore) LatestBlock(context.Context) (*bc.Block, error) {
 
 func (m *MemStore) NewViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error) {
 	return &state.MemView{
-		Outs: m.blockUTXOs,
+		Outs: cloneUTXOs(m.blockUTXOs),
 	}, nil
 }
 
@@ -184,3 +184,12 @@ func (m *MemStore) StateTree(context.Context, uint64) (*patricia.Tree, error) {
 }
 
 func (m *MemStore) FinalizeBlock(context.Context, uint64) error { return nil }
+
+func cloneUTXOs(utxos map[bc.Outpoint]*state.Output) map[bc.Outpoint]*state.Output {
+	outs := make(map[bc.Outpoint]*state.Output, len(utxos))
+	for outpoint, output := range utxos {
+		clone := *output
+		outs[outpoint] = &clone
+	}
+	return outs
+}
