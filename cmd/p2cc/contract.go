@@ -27,6 +27,7 @@ type (
 	expr interface {
 		translatable
 		typ(stack) int
+		String() string
 	}
 
 	decl struct {

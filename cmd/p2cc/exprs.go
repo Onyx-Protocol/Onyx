@@ -79,6 +79,10 @@ func (v varref) typ(stk stack) int {
 	return stk[varDepth].typ
 }
 
+func (v varref) String() string {
+	return string(v)
+}
+
 func (b binaryExpr) translate(stk stack, context *context) (*translation, error) {
 	lhs, err := b.lhs.translate(stk, context)
 	if err != nil {
@@ -129,6 +133,10 @@ func (b binaryExpr) typ(stk stack) int {
 	return b.op.t
 }
 
+func (b binaryExpr) String() string {
+	return fmt.Sprintf("binaryExpr{lhs: %s, rhs: %s, op: %s}", b.lhs, b.rhs, b.op.op)
+}
+
 type (
 	unaryOp struct {
 		op, translation string
@@ -157,6 +165,10 @@ func (u unaryExpr) translate(stk stack, context *context) (*translation, error) 
 
 func (u unaryExpr) typ(stk stack) int {
 	return u.op.typ
+}
+
+func (u unaryExpr) String() string {
+	return fmt.Sprintf("unaryExpr{expr: %s, op: %s}", u.expr, u.op.op)
 }
 
 var calls = []struct {
@@ -229,6 +241,10 @@ func (call callExpr) typ(stk stack) int {
 	return call.t
 }
 
+func (call callExpr) String() string {
+	return fmt.Sprintf("callExpr{name: %s, actuals: %s, t: %d}", call.name, call.actuals, call.t)
+}
+
 func (call callExpr) contractCall(stk stack, context *context, contract *contract, isSelf bool) (*translation, error) {
 	if len(call.actuals) != len(contract.params) {
 		return nil, fmt.Errorf("contract %s requires %d param(s), got %d", contract.name, len(contract.params), len(call.actuals))
@@ -299,6 +315,10 @@ func (l literal) translate(stk stack, context *context) (*translation, error) {
 
 func (l literal) typ(stk stack) int {
 	return l.t
+}
+
+func (l literal) String() string {
+	return string(l.b)
 }
 
 func newLiteral(b []byte, typ int) *literal {

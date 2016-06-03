@@ -6,6 +6,25 @@ import (
 	"unicode"
 )
 
+// We have some function naming conventions.
+//
+// For terminals:
+//   scanX     takes buf and position, returns new position (and maybe a value)
+//   peekX     takes *parser, returns bool
+//   consumeX  takes *parser and maybe a required literal, maybe returns value
+//             also updates the parser position
+//
+// For nonterminals:
+//   parseX    takes *parser, returns AST node, updates parser position
+type parser struct {
+	buf []byte
+	pos int
+}
+
+func (p *parser) errorf(format string, args ...interface{}) {
+	panic(parserErr{buf: p.buf, offset: p.pos, format: format, args: args})
+}
+
 func parse(buf []byte) (contracts []*contract, err error) {
 	defer func() {
 		if val := recover(); val != nil {
@@ -17,15 +36,16 @@ func parse(buf []byte) (contracts []*contract, err error) {
 		}
 	}()
 
-	contracts, _ = parseContracts(buf, 0)
+	p := &parser{buf: buf}
+	contracts = parseContracts(p)
 	return
 }
 
-func parseAssignOp(buf []byte, offset int) (string, int) {
+func scanAssignOp(buf []byte, offset int) (string, int) {
 	offset = skipWsAndComments(buf, offset)
 	for _, op := range binaryOps {
 		if op.canAssign {
-			newOffset := parseStr(buf, offset, op.op)
+			newOffset := scanTok(buf, offset, op.op)
 			if newOffset >= 0 && newOffset < len(buf) && buf[newOffset] == '=' {
 				return op.op + "=", newOffset + 1
 			}
@@ -37,37 +57,26 @@ func parseAssignOp(buf []byte, offset int) (string, int) {
 	return "", -1
 }
 
-func parseAssignStmt(buf []byte, offset int) (*assignStmt, int) {
-	id, newOffset := parseIdentifier(buf, offset)
-	if newOffset < 0 {
-		return nil, -1
+func parseAssignStmt(p *parser) *assignStmt {
+	id := consumeIdentifier(p)
+	op, pos := scanAssignOp(p.buf, p.pos)
+	if pos < 0 {
+		p.errorf("expected assignment operator")
 	}
-	offset = newOffset
-	op, newOffset := parseAssignOp(buf, offset)
-	if newOffset < 0 {
-		return nil, -1
-	}
-	offset = newOffset
-	expr, newOffset := parseExpr(buf, offset)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected rhs expr for assignment"))
-	}
-	offset = newOffset
-	newOffset = parseStr(buf, offset, ";")
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected semicolon"))
-	}
-	return &assignStmt{name: id, expr: expr, op: op}, newOffset
+	p.pos = pos
+	expr := parseExpr(p)
+	consumeTok(p, ";")
+	return &assignStmt{name: id, expr: expr, op: op}
 }
 
-func parseBinaryOp(buf []byte, offset int) (*binaryOp, int) {
+func scanBinaryOp(buf []byte, offset int) (*binaryOp, int) {
 	offset = skipWsAndComments(buf, offset)
 	var (
 		found     *binaryOp
 		newOffset = -1
 	)
 	for _, op := range binaryOps {
-		offset2 := parseStr(buf, offset, op.op)
+		offset2 := scanTok(buf, offset, op.op)
 		if offset2 >= 0 {
 			if found == nil || len(op.op) > len(found.op) {
 				found = op
@@ -78,54 +87,40 @@ func parseBinaryOp(buf []byte, offset int) (*binaryOp, int) {
 	return found, newOffset
 }
 
-func parseBlock(buf []byte, offset int, forClause bool) (*block, int) {
-	newOffset := parseStr(buf, offset, "{")
-	if newOffset < 0 {
-		return nil, -1
-	}
-	offset = newOffset
-	decls, newOffset := parseDecls(buf, offset)
-	if newOffset >= 0 {
-		offset = newOffset
-	}
-	stmts, newOffset := parseStmts(buf, offset)
-	if newOffset >= 0 {
-		offset = newOffset
-	}
+func parseBlock(p *parser, forClause bool) *block {
+	consumeTok(p, "{")
+	decls := parseDecls(p)
+	stmts := parseStmts(p)
 	block := &block{decls: decls, stmts: stmts}
-	if forClause {
-		block.expr, newOffset = parseExpr(buf, offset)
-		if newOffset >= 0 {
-			newOffset2 := parseStr(buf, newOffset, ";") // optional trailing semicolon
-			if newOffset2 >= 0 {
-				offset = newOffset2
-			} else {
-				offset = newOffset
-			}
-		} else {
-			if len(stmts) == 0 {
-				panic(parseErr(buf, offset, "empty clause body"))
-			}
-			v, ok := stmts[len(stmts)-1].(*verifyStmt)
-			if !ok {
-				panic(parseErr(buf, offset, "clause must end with expr or verify statement"))
-			}
-			// The final statement of the clause block is a verify.  Convert
-			// it to a bare expr so it's left on the stack after the
-			// contract runs (saving two opcodes: VERIFY and TRUE [because
-			// something true has to be left on the stack]).
-			block.stmts = block.stmts[:len(stmts)-1]
-			block.expr = v.expr
+
+	// TODO(kr): don't do this in the grammar,
+	// check for it in a separate pass.
+	if forClause && peekTok(p, "}") {
+		if len(stmts) == 0 {
+			p.errorf("empty clause body")
+		}
+		v, ok := stmts[len(stmts)-1].(*verifyStmt)
+		if !ok {
+			p.errorf("clause must end with expr or verify statement")
+		}
+		// The final statement of the clause block is a verify.  Convert
+		// it to a bare expr so it's left on the stack after the
+		// contract runs (saving two opcodes: VERIFY and TRUE [because
+		// something true has to be left on the stack]).
+		block.stmts = block.stmts[:len(stmts)-1]
+		block.expr = v.expr
+	} else if forClause {
+		block.expr = parseExpr(p)
+		if peekTok(p, ";") { // optional trailing semicolon
+			consumeTok(p, ";")
 		}
 	}
-	newOffset = parseStr(buf, offset, "}")
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected close brace"))
-	}
-	return block, newOffset
+
+	consumeTok(p, "}")
+	return block
 }
 
-func parseBytesLiteral(buf []byte, offset int) (*literal, int) {
+func scanBytesLiteral(buf []byte, offset int) (*literal, int) {
 	offset = skipWsAndComments(buf, offset)
 	if offset+4 >= len(buf) {
 		return nil, -1
@@ -151,208 +146,122 @@ func parseBytesLiteral(buf []byte, offset int) (*literal, int) {
 	return newLiteral(buf[offset:i], bytesType), i
 }
 
-func parseCallExpr(buf []byte, offset int) (*callExpr, int) {
-	name, newOffset := parseIdentifier(buf, offset)
-	if newOffset < 0 {
-		return nil, -1
+func parseCallExpr(p *parser) expr {
+	name := consumeIdentifier(p)
+	if !peekTok(p, "(") {
+		return varref(name)
 	}
-	offset = newOffset
-	newOffset = parseStr(buf, offset, "(")
-	if newOffset < 0 {
-		return nil, -1
-	}
-	offset = newOffset
+	consumeTok(p, "(")
+
 	var actuals []expr
 	first := true
-	for {
-		newOffset = parseStr(buf, offset, ")")
-		if newOffset >= 0 {
-			var t int
-			for _, c := range calls {
-				if name == c.name {
-					t = c.typ
-					break
-				}
-			}
-			return &callExpr{name: name, actuals: actuals, t: t}, newOffset
-		}
+	for !peekTok(p, ")") {
 		if !first {
-			newOffset = parseStr(buf, offset, ",")
-			if newOffset < 0 {
-				panic(parseErr(buf, offset, "expected comma in parameter list"))
-			}
-			offset = newOffset
+			consumeTok(p, ",")
 		}
-		expr, newOffset := parseExpr(buf, offset)
-		if newOffset < 0 {
-			panic(parseErr(buf, offset, "expected actual argument"))
-		}
-		offset = newOffset
+		expr := parseExpr(p)
 		actuals = append(actuals, expr)
 		first = false
 	}
-}
-
-func parseContract(buf []byte, offset int) (*contract, int) {
-	newOffset := parseKeyword(buf, offset, "contract")
-	if newOffset < 0 {
-		return nil, -1
-	}
-	offset = newOffset
-	name, newOffset := parseIdentifier(buf, offset)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected identifier after 'contract'"))
-	}
-	offset = newOffset
-	params, newOffset := parseParams(buf, offset)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected contract parameter list"))
-	}
-	offset = newOffset
-	clauses, newOffset := parseClauses(buf, offset)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected contract clauses"))
-	}
-	return &contract{name: name, params: params, clauses: clauses}, newOffset
-}
-
-func parseContracts(buf []byte, offset int) ([]*contract, int) {
-	var contracts []*contract
-	for {
-		contract, newOffset := parseContract(buf, offset)
-		if newOffset < 0 {
-			return contracts, offset
-		}
-		contracts = append(contracts, contract)
-		offset = newOffset
-	}
-}
-
-func parseClause(buf []byte, offset int) (*clause, int) {
-	newOffset := parseKeyword(buf, offset, "clause")
-	if newOffset < 0 {
-		return nil, -1
-	}
-	offset = newOffset
-	name, newOffset := parseIdentifier(buf, offset)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected clause name"))
-	}
-	offset = newOffset
-	params, newOffset := parseParams(buf, offset)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected clause params"))
-	}
-	offset = newOffset
-	block, newOffset := parseBlock(buf, offset, true)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected clause body"))
-	}
-	return &clause{name: name, params: params, block: block}, newOffset
-}
-
-func parseClauses(buf []byte, offset int) ([]*clause, int) {
-	newOffset := parseStr(buf, offset, "{")
-	if newOffset < 0 {
-		return nil, -1
-	}
-	offset = newOffset
-	var clauses []*clause
-	for {
-		newOffset = parseStr(buf, offset, "}")
-		if newOffset >= 0 {
-			return clauses, newOffset
-		}
-		clause, newOffset := parseClause(buf, offset)
-		if newOffset < 0 {
-			panic(parseErr(buf, offset, "expected a clause"))
-		}
-		clauses = append(clauses, clause)
-		offset = newOffset
-	}
-}
-
-func parseDecl(buf []byte, offset int) (*decl, int) {
-	newOffset := parseKeyword(buf, offset, "var")
-	if newOffset < 0 {
-		return nil, -1
-	}
-	offset = newOffset
-	id, newOffset := parseIdentifier(buf, offset)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected var name"))
-	}
-	offset = newOffset
-	val, newOffset := parseExpr(buf, offset)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected initializer expression"))
-	}
-	offset = newOffset
-	newOffset = parseStr(buf, offset, ";")
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected semicolon"))
-	}
-	return &decl{name: id, val: val}, newOffset
-}
-
-func parseDecls(buf []byte, offset int) ([]*decl, int) {
-	var decls []*decl
-	for {
-		decl, newOffset := parseDecl(buf, offset)
-		if newOffset < 0 {
-			return decls, offset
-		}
-		offset = newOffset
-		decls = append(decls, decl)
-	}
-}
-
-func parseExpr(buf []byte, offset int) (expr, int) {
-	// Uses the precedence-climbing algorithm
-	// <https://en.wikipedia.org/wiki/Operator-precedence_parser#Precedence_climbing_method>
-	expr, newOffset := parsePrimaryExpr(buf, offset)
-	if newOffset < 0 {
-		return nil, -1
-	}
-	offset = newOffset
-	expr2, newOffset := parseExprCont(buf, offset, expr, 0)
-	if newOffset < 0 {
-		return nil, -1
-	}
-	return expr2, newOffset
-}
-
-func parseExprCont(buf []byte, offset int, lhs expr, minPrecedence int) (expr, int) {
-	for {
-		op, offset2 := parseBinaryOp(buf, offset)
-		if offset2 < 0 || op.precedence < minPrecedence {
+	consumeTok(p, ")")
+	var t int
+	for _, c := range calls {
+		if name == c.name {
+			t = c.typ
 			break
 		}
-		offset = offset2
+	}
+	return &callExpr{name: name, actuals: actuals, t: t}
+}
 
-		var rhs expr
-		rhs, offset2 = parsePrimaryExpr(buf, offset)
-		if offset2 < 0 {
-			panic(parseErr(buf, offset, "expected rhs expr after binary operator %s", op.op))
+func parseContract(p *parser) *contract {
+	consumeKeyword(p, "contract")
+	name := consumeIdentifier(p)
+	params := parseParams(p)
+	clauses := parseClauses(p)
+	return &contract{name: name, params: params, clauses: clauses}
+}
+
+func parseContracts(p *parser) (contracts []*contract) {
+	for peekKeyword(p) == "contract" {
+		c := parseContract(p)
+		contracts = append(contracts, c)
+	}
+	return contracts
+}
+
+func parseClause(p *parser) *clause {
+	consumeKeyword(p, "clause")
+	name := consumeIdentifier(p)
+	params := parseParams(p)
+	block := parseBlock(p, true)
+	return &clause{name: name, params: params, block: block}
+}
+
+func parseClauses(p *parser) (clauses []*clause) {
+	consumeTok(p, "{")
+	for !peekTok(p, "}") {
+		c := parseClause(p)
+		clauses = append(clauses, c)
+	}
+	consumeTok(p, "}")
+	return clauses
+}
+
+func parseDecl(p *parser) *decl {
+	consumeKeyword(p, "var")
+	id := consumeIdentifier(p)
+	val := parseExpr(p)
+	consumeTok(p, ";")
+	return &decl{name: id, val: val}
+}
+
+func parseDecls(p *parser) (decls []*decl) {
+	for peekKeyword(p) == "var" {
+		decl := parseDecl(p)
+		decls = append(decls, decl)
+	}
+	return decls
+}
+
+func parseExpr(p *parser) expr {
+	// Uses the precedence-climbing algorithm
+	// <https://en.wikipedia.org/wiki/Operator-precedence_parser#Precedence_climbing_method>
+	expr := parseUnaryExpr(p)
+	expr2, pos := parseExprCont(p, expr, 0)
+	if pos < 0 {
+		p.errorf("expected expression")
+	}
+	p.pos = pos
+	return expr2
+}
+
+func parseExprCont(p *parser, lhs expr, minPrecedence int) (expr, int) {
+	for {
+		op, pos := scanBinaryOp(p.buf, p.pos)
+		if pos < 0 || op.precedence < minPrecedence {
+			break
 		}
-		offset = offset2
+		p.pos = pos
+
+		rhs := parseUnaryExpr(p)
 
 		for {
-			op2, offset3 := parseBinaryOp(buf, offset)
-			if offset3 < 0 || op2.precedence <= op.precedence {
+			op2, pos2 := scanBinaryOp(p.buf, p.pos)
+			if pos2 < 0 || op2.precedence <= op.precedence {
 				break
 			}
-			rhs, offset = parseExprCont(buf, offset, rhs, op2.precedence)
-			if offset < 0 {
+			rhs, p.pos = parseExprCont(p, rhs, op2.precedence)
+			if p.pos < 0 {
 				return nil, -1 // or is this an error?
 			}
 		}
 		lhs = &binaryExpr{lhs: lhs, rhs: rhs, op: *op}
 	}
-	return lhs, offset
+	return lhs, p.pos
 }
 
-func parseIdentifier(buf []byte, offset int) (string, int) {
+func scanIdentifier(buf []byte, offset int) (string, int) {
 	offset = skipWsAndComments(buf, offset)
 	i := offset
 	for ; i < len(buf) && isIDChar(buf[i], i == offset); i++ {
@@ -363,35 +272,29 @@ func parseIdentifier(buf []byte, offset int) (string, int) {
 	return string(buf[offset:i]), i
 }
 
-func parseIfStmt(buf []byte, offset int) (*ifStmt, int) {
-	newOffset := parseKeyword(buf, offset, "if")
-	if newOffset < 0 {
-		return nil, -1
+func consumeIdentifier(p *parser) string {
+	name, pos := scanIdentifier(p.buf, p.pos)
+	if pos < 0 {
+		p.errorf("expected identifier")
 	}
-	offset = newOffset
-	condExpr, newOffset := parseExpr(buf, offset)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected 'if' condition"))
-	}
-	offset = newOffset
-	consequent, newOffset := parseBlock(buf, offset, false)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected 'if' body"))
-	}
-	offset = newOffset
-	ifstmt := &ifStmt{condExpr: condExpr, consequent: consequent}
-	newOffset = parseKeyword(buf, offset, "else")
-	if newOffset >= 0 {
-		ifstmt.alternate, newOffset = parseBlock(buf, newOffset, false)
-		if newOffset < 0 {
-			panic(parseErr(buf, offset, "expected 'else' body"))
-		}
-		offset = newOffset
-	}
-	return ifstmt, offset
+	p.pos = pos
+	return name
 }
 
-func parseIntLiteral(buf []byte, offset int) (*literal, int) {
+func parseIfStmt(p *parser) *ifStmt {
+	consumeKeyword(p, "if")
+	condExpr := parseExpr(p)
+	consequent := parseBlock(p, false)
+
+	ifstmt := &ifStmt{condExpr: condExpr, consequent: consequent}
+	if peekKeyword(p) == "else" {
+		consumeKeyword(p, "else")
+		ifstmt.alternate = parseBlock(p, false)
+	}
+	return ifstmt
+}
+
+func scanIntLiteral(buf []byte, offset int) (*literal, int) {
 	offset = skipWsAndComments(buf, offset)
 	start := offset
 	if offset < len(buf) && buf[offset] == '-' {
@@ -406,8 +309,8 @@ func parseIntLiteral(buf []byte, offset int) (*literal, int) {
 	return nil, -1
 }
 
-func parseKeyword(buf []byte, offset int, keyword string) int {
-	id, newOffset := parseIdentifier(buf, offset)
+func scanKeyword(buf []byte, offset int, keyword string) int {
+	id, newOffset := scanIdentifier(buf, offset)
 	if newOffset < 0 {
 		return -1
 	}
@@ -417,147 +320,114 @@ func parseKeyword(buf []byte, offset int, keyword string) int {
 	return newOffset
 }
 
-func parseLiteralExpr(buf []byte, offset int) (*literal, int) {
+func consumeKeyword(p *parser, keyword string) {
+	pos := scanKeyword(p.buf, p.pos, keyword)
+	if pos < 0 {
+		p.errorf("expected keyword %s", keyword)
+	}
+	p.pos = pos
+}
+
+// Special case: returns the keyword rather than a bool,
+// because it's just so darn useful.
+func peekKeyword(p *parser) string {
+	name, _ := scanIdentifier(p.buf, p.pos)
+	return name
+}
+
+func scanLiteralExpr(buf []byte, offset int) (*literal, int) {
 	offset = skipWsAndComments(buf, offset)
-	intliteral, newOffset := parseIntLiteral(buf, offset)
+	intliteral, newOffset := scanIntLiteral(buf, offset)
 	if newOffset >= 0 {
 		return intliteral, newOffset
 	}
-	strliteral, newOffset := parseStrLiteral(buf, offset)
+	strliteral, newOffset := scanStrLiteral(buf, offset)
 	if newOffset >= 0 {
 		return strliteral, newOffset
 	}
-	bytesliteral, newOffset := parseBytesLiteral(buf, offset) // 0x6c249a...
+	bytesliteral, newOffset := scanBytesLiteral(buf, offset) // 0x6c249a...
 	if newOffset >= 0 {
 		return bytesliteral, newOffset
 	}
 	return nil, -1
 }
 
-func parseParam(buf []byte, offset int) (typedName, int) {
-	var param typedName
-	id, newOffset := parseIdentifier(buf, offset)
-	if newOffset < 0 {
-		return param, -1
-	}
-	offset = newOffset
-	param.name = id
-	t, newOffset := parseTypeKeyword(buf, offset)
-	if newOffset >= 0 {
+func parseParam(p *parser) (param typedName) {
+	param.name = consumeIdentifier(p)
+	if t, pos := scanTypeKeyword(p.buf, p.pos); pos >= 0 {
+		p.pos = pos
 		param.typ = t
-		offset = newOffset
 	}
-	return param, offset
+	return param
 }
 
-func parseParams(buf []byte, offset int) ([]typedName, int) {
-	newOffset := parseStr(buf, offset, "(")
-	if newOffset < 0 {
-		return nil, -1
-	}
-	offset = newOffset
-	var params []typedName
+func parseParams(p *parser) (params []typedName) {
+	consumeTok(p, "(")
 	first := true
-	for {
-		newOffset = parseStr(buf, offset, ")")
-		if newOffset >= 0 {
-			return params, newOffset
-		}
+	for !peekTok(p, ")") {
 		if !first {
-			newOffset = parseStr(buf, offset, ",")
-			if newOffset < 0 {
-				panic(parseErr(buf, offset, "expected comma in parameter list"))
-			}
-			offset = newOffset
+			consumeTok(p, ",")
 		}
-		param, newOffset := parseParam(buf, offset)
-		if newOffset < 0 {
-			panic(parseErr(buf, offset, "expected parameter"))
-		}
+		param := parseParam(p)
 		params = append(params, param)
-		offset = newOffset
 		first = false
 	}
+	consumeTok(p, ")")
+	return params
 }
 
-func parseParenExpr(buf []byte, offset int) (expr, int) {
-	newOffset := parseStr(buf, offset, "(")
-	if newOffset < 0 {
-		return nil, -1
+func parsePrimaryExpr(p *parser) expr {
+	if peekTok(p, "(") {
+		consumeTok(p, "(")
+		expr := parseExpr(p)
+		consumeTok(p, ")")
+		return expr
 	}
-	offset = newOffset
-	expr, newOffset := parseExpr(buf, offset)
-	if newOffset < 0 {
-		return nil, -1 // or is this an error?
+	if expr, pos := scanLiteralExpr(p.buf, p.pos); pos >= 0 {
+		p.pos = pos
+		return expr
 	}
-	offset = newOffset
-	newOffset = parseStr(buf, offset, ")")
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected close paren"))
-	}
-	return expr, newOffset
+	return parseCallExpr(p)
 }
 
-func parsePrimaryExpr(buf []byte, offset int) (expr, int) {
-	offset = skipWsAndComments(buf, offset)
-
-	parenexpr, newOffset := parseParenExpr(buf, offset)
-	if newOffset >= 0 {
-		return parenexpr, newOffset
+func parseStmt(p *parser) translatable {
+	switch peekKeyword(p) {
+	case "if":
+		return parseIfStmt(p)
+	case "while":
+		return parseWhileStmt(p)
+	case "verify":
+		return parseVerifyStmt(p)
 	}
-	unaryexpr, newOffset := parseUnaryExpr(buf, offset)
-	if newOffset >= 0 {
-		return unaryexpr, newOffset
-	}
-	callexpr, newOffset := parseCallExpr(buf, offset)
-	if newOffset >= 0 {
-		return callexpr, newOffset
-	}
-	varrefexpr, newOffset := parseVarRefExpr(buf, offset)
-	if newOffset >= 0 {
-		return varrefexpr, newOffset
-	}
-	literalexpr, newOffset := parseLiteralExpr(buf, offset)
-	if newOffset >= 0 {
-		return literalexpr, newOffset
-	}
-	return nil, -1
+	return parseAssignStmt(p)
 }
 
-func parseStmt(buf []byte, offset int) (translatable, int) {
-	offset = skipWsAndComments(buf, offset)
-	ifstmt, newOffset := parseIfStmt(buf, offset)
-	if newOffset >= 0 {
-		return ifstmt, newOffset
-	}
-	whilestmt, newOffset := parseWhileStmt(buf, offset)
-	if newOffset >= 0 {
-		return whilestmt, newOffset
-	}
-	verifystmt, newOffset := parseVerifyStmt(buf, offset)
-	if newOffset >= 0 {
-		return verifystmt, newOffset
-	}
-	assignstmt, newOffset := parseAssignStmt(buf, offset)
-	if newOffset >= 0 {
-		return assignstmt, newOffset
-	}
-	return nil, -1
-}
-
-func parseStmts(buf []byte, offset int) ([]translatable, int) {
-	var stmts []translatable
-	for {
-		stmt, newOffset := parseStmt(buf, offset)
-		if newOffset < 0 {
-			return stmts, offset
+func parseStmts(p *parser) (stmts []translatable) {
+	peekStmt := func() bool {
+		if kw := peekKeyword(p); kw == "if" || kw == "while" || kw == "verify" {
+			return true
 		}
-		offset = newOffset
+		// no keyword, so check for assignment
+		if _, pos := scanIdentifier(p.buf, p.pos); pos < 0 {
+			return false
+		}
+		// (hack to look ahead by an extra token)
+		p1 := new(parser)
+		*p1 = *p
+		consumeIdentifier(p1)
+		_, pos := scanAssignOp(p1.buf, p1.pos)
+		return pos >= 0
+	}
+	// TODO(kr): it would be better to check for '}' here,
+	// but the grammar doesn't quite let us do that.
+	for peekStmt() {
+		stmt := parseStmt(p)
 		stmts = append(stmts, stmt)
 	}
+	return stmts
 }
 
-func parseStr(buf []byte, offset int, s string) int {
+func scanTok(buf []byte, offset int, s string) int {
 	offset = skipWsAndComments(buf, offset)
 	prefix := []byte(s)
 	if bytes.HasPrefix(buf[offset:], prefix) {
@@ -566,7 +436,20 @@ func parseStr(buf []byte, offset int, s string) int {
 	return -1
 }
 
-func parseStrLiteral(buf []byte, offset int) (*literal, int) {
+func consumeTok(p *parser, token string) {
+	pos := scanTok(p.buf, p.pos, token)
+	if pos < 0 {
+		p.errorf("expected %s token", token)
+	}
+	p.pos = pos
+}
+
+func peekTok(p *parser, token string) bool {
+	pos := scanTok(p.buf, p.pos, token)
+	return pos >= 0
+}
+
+func scanStrLiteral(buf []byte, offset int) (*literal, int) {
 	offset = skipWsAndComments(buf, offset)
 	if offset >= len(buf) || buf[offset] != '\'' {
 		return nil, -1
@@ -582,39 +465,41 @@ func parseStrLiteral(buf []byte, offset int) (*literal, int) {
 	panic(parseErr(buf, offset, "unterminated string literal"))
 }
 
-func parseTypeKeyword(buf []byte, offset int) (int, int) {
+func scanTypeKeyword(buf []byte, offset int) (int, int) {
 	offset = skipWsAndComments(buf, offset)
-	newOffset := parseKeyword(buf, offset, "num")
+	newOffset := scanKeyword(buf, offset, "num")
 	if newOffset >= 0 {
 		return numType, newOffset
 	}
-	newOffset = parseKeyword(buf, offset, "bool")
+	newOffset = scanKeyword(buf, offset, "bool")
 	if newOffset >= 0 {
 		return boolType, newOffset
 	}
-	newOffset = parseKeyword(buf, offset, "bytes")
+	newOffset = scanKeyword(buf, offset, "bytes")
 	if newOffset >= 0 {
 		return bytesType, newOffset
 	}
 	return unknownType, -1
 }
 
-func parseUnaryExpr(buf []byte, offset int) (*unaryExpr, int) {
-	op, newOffset := parseUnaryOp(buf, offset)
-	if newOffset < 0 {
-		return nil, -1
+func parseUnaryExpr(p *parser) expr {
+	op, pos := scanUnaryOp(p.buf, p.pos)
+	if pos < 0 {
+		return parsePrimaryExpr(p)
 	}
-	offset = newOffset
-	expr, newOffset := parseExpr(buf, offset)
-	if newOffset < 0 {
-		return nil, -1 // or is this an error?
-	}
-	return &unaryExpr{expr: expr, op: *op}, newOffset
+	p.pos = pos
+	expr := parseUnaryExpr(p)
+	return &unaryExpr{expr: expr, op: *op}
 }
 
-func parseUnaryOp(buf []byte, offset int) (*unaryOp, int) {
+func scanUnaryOp(buf []byte, offset int) (*unaryOp, int) {
+	// Maximum munch. Make sure "-3" scans as ("-3"), not ("-", "3").
+	if _, pos := scanIntLiteral(buf, offset); pos >= 0 {
+		return nil, -1
+	}
+
 	for _, op := range unaryOps {
-		newOffset := parseStr(buf, offset, op.op)
+		newOffset := scanTok(buf, offset, op.op)
 		if newOffset >= 0 {
 			return op, newOffset
 		}
@@ -622,49 +507,17 @@ func parseUnaryOp(buf []byte, offset int) (*unaryOp, int) {
 	return nil, -1
 }
 
-func parseVarRefExpr(buf []byte, offset int) (*varref, int) {
-	name, newOffset := parseIdentifier(buf, offset)
-	if newOffset >= 0 {
-		v := varref(name)
-		return &v, newOffset
-	}
-	return nil, -1
+func parseVerifyStmt(p *parser) *verifyStmt {
+	consumeKeyword(p, "verify")
+	expr := parseExpr(p)
+	consumeTok(p, ";")
+	return &verifyStmt{expr: expr}
 }
 
-func parseVerifyStmt(buf []byte, offset int) (*verifyStmt, int) {
-	newOffset := parseKeyword(buf, offset, "verify")
-	if newOffset < 0 {
-		return nil, -1
-	}
-	offset = newOffset
-	expr, newOffset := parseExpr(buf, offset)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected expression for 'verify'"))
-	}
-	offset = newOffset
-	newOffset = parseStr(buf, offset, ";")
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected semicolon"))
-	}
-	return &verifyStmt{expr: expr}, newOffset
-}
-
-func parseWhileStmt(buf []byte, offset int) (*whileStmt, int) {
-	newOffset := parseKeyword(buf, offset, "while")
-	if newOffset < 0 {
-		return nil, -1
-	}
-	offset = newOffset
-	condExpr, newOffset := parseExpr(buf, offset)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected 'while' condition"))
-	}
-	offset = newOffset
-	body, newOffset := parseBlock(buf, offset, false)
-	if newOffset < 0 {
-		panic(parseErr(buf, offset, "expected 'while' body"))
-	}
-
+func parseWhileStmt(p *parser) *whileStmt {
+	consumeKeyword(p, "while")
+	condExpr := parseExpr(p)
+	body := parseBlock(p, false)
 	whilestmt := &whileStmt{condExpr: condExpr, body: body}
 
 	// Hark, a hack!  The translation of while <expr> { ...body... } is
@@ -678,7 +531,7 @@ func parseWhileStmt(buf []byte, offset int) (*whileStmt, int) {
 	// while condition and at translation time it will all Just Work.
 	whilestmt.body.expr = whilestmt.condExpr
 
-	return whilestmt, newOffset
+	return whilestmt
 }
 
 func skipWsAndComments(buf []byte, offset int) int {
