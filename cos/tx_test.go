@@ -12,8 +12,6 @@ import (
 	"chain/cos/memstore"
 	"chain/cos/state"
 	"chain/cos/txscript"
-	"chain/cos/validation"
-	"chain/errors"
 	"chain/testutil"
 )
 
@@ -65,13 +63,6 @@ func TestAddTx(t *testing.T) {
 	err = fc.AddTx(ctx, transferTx)
 	if err != nil {
 		testutil.FatalErr(t, err)
-	}
-
-	invalidTransfer := fedtest.Transfer(t, fedtest.StateOut(issueTx, 0), dest1, fedtest.Dest(t))
-
-	err = fc.AddTx(ctx, invalidTransfer)
-	if errors.Root(err) != validation.ErrBadTx {
-		t.Fatalf("got err = %q want %q", errors.Root(err), validation.ErrBadTx)
 	}
 }
 

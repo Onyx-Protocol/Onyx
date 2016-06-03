@@ -51,18 +51,6 @@ func (m *MemStore) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID
 	m.poolMap[tx.Hash] = tx
 	m.pool = append(m.pool, tx)
 
-	for _, in := range tx.Inputs {
-		if in.IsIssuance() {
-			continue
-		}
-		out := m.poolUTXOs[in.Previous]
-		if out == nil {
-			out = &state.Output{Outpoint: in.Previous}
-			m.poolUTXOs[in.Previous] = out
-		}
-		out.Spent = true
-	}
-
 	for i, out := range tx.Outputs {
 		op := bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
 		m.poolUTXOs[op] = &state.Output{
@@ -70,7 +58,6 @@ func (m *MemStore) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID
 			TxOutput: *out,
 		}
 	}
-
 	return nil
 }
 
@@ -88,21 +75,6 @@ func (m *MemStore) CleanPool(
 				break
 			}
 		}
-
-		for _, in := range tx.Inputs {
-			if in.IsIssuance() {
-				continue
-			}
-			out := m.poolUTXOs[in.Previous]
-			if out == nil {
-				continue
-			}
-			out.Spent = false
-			if out.AssetID == (bc.AssetID{}) {
-				delete(m.poolUTXOs, in.Previous)
-			}
-		}
-
 		for i := range tx.Outputs {
 			delete(m.poolUTXOs, bc.Outpoint{Hash: tx.Hash, Index: uint32(i)})
 		}
