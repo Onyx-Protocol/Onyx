@@ -215,9 +215,6 @@ func removeBlockSpentOutputs(ctx context.Context, dbtx *sql.Tx, delta []*state.O
 		ids      []uint32
 	)
 	for _, out := range delta {
-		if !out.Spent {
-			continue
-		}
 		txHashes = append(txHashes, out.Outpoint.Hash.String())
 		ids = append(ids, out.Outpoint.Index)
 	}
@@ -245,9 +242,6 @@ func insertBlockOutputs(ctx context.Context, dbtx *sql.Tx, delta []*state.Output
 
 	var outs utxoSet
 	for _, out := range delta {
-		if out.Spent {
-			continue
-		}
 		addToUTXOSet(&outs, &Output{Output: *out})
 	}
 

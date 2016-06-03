@@ -4,7 +4,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/errors"
 )
 
 // View provides access to a consistent snapshot of the blockchain state.
@@ -23,9 +22,9 @@ type View interface {
 // view will pre-load or pre-cache many objects in a batch
 // so as to avoid multiple round trips.
 type ViewReader interface {
-	// Output loads the output from the view.
-	// It returns nil if output is not stored or does not exist.
-	Output(context.Context, bc.Outpoint) *Output
+	// IsUTXO returns true if the provided output is a valid, unspent
+	// output in the view.
+	IsUTXO(context.Context, *Output) bool
 
 	// Circulation returns the circulation
 	// for the given set of assets.
@@ -36,10 +35,12 @@ type ViewReader interface {
 }
 
 type ViewWriter interface {
-	// SaveOutput stores output in the view.
-	// Saving a spent output may, depending on the type of the view,
-	// either erase an existing output or overwrite it with a "spent" flag.
-	SaveOutput(*Output)
+	// ConsumeUTXO marks the provided utxo as spent.
+	ConsumeUTXO(o *Output)
+
+	// AddUTXO adds a new unspent output to the set of available
+	// utxos.
+	AddUTXO(o *Output)
 
 	// SaveAssetDefinitionPointer updates the asset definition pointer.
 	SaveAssetDefinitionPointer(bc.AssetID, bc.Hash)
@@ -53,88 +54,27 @@ type ViewWriter interface {
 
 // Output represents a spent or unspent output
 // for the validation process.
-// In contrast with bc.TxOutput,
-// this stores mandatory extra information
-// such as output index and spent flag.
 type Output struct {
+	bc.Outpoint
 	bc.TxOutput
-	Outpoint bc.Outpoint
-	Spent    bool
 }
 
-func NewOutput(o bc.TxOutput, p bc.Outpoint, spent bool) *Output {
+func NewOutput(o bc.TxOutput, p bc.Outpoint) *Output {
 	return &Output{
 		TxOutput: o,
 		Outpoint: p,
-		Spent:    spent,
 	}
 }
 
-type compositeView struct {
-	ViewWriter
-	multiReader
-}
-
-// Compose returns a view that combines v
-// with the readonly view in r.
-// Calls to Output try v
-// followed by r.
-// Calls to SetOutput go to v.
-func Compose(v View, r ViewReader) View {
-	return &compositeView{v, multiReader{v, r}}
-}
-
-// multiReader
-
-type multiReader struct {
-	ViewReader
-	back ViewReader
-}
-
-// MultiReader returns a view that reads from
-// a and then b.
-func MultiReader(a, b ViewReader) ViewReader {
-	return &multiReader{a, b}
-}
-
-func (v *multiReader) Output(ctx context.Context, p bc.Outpoint) *Output {
-	o := v.ViewReader.Output(ctx, p)
-	if o != nil {
-		return o
+// Prevout returns the Output consumed by the provided tx input. It
+// only includes the output data that is embedded within inputs (ex,
+// excludes metadata).
+func Prevout(in *bc.TxInput) *Output {
+	return &Output{
+		Outpoint: in.Previous,
+		TxOutput: bc.TxOutput{
+			AssetAmount: in.AssetAmount,
+			Script:      in.PrevScript,
+		},
 	}
-	return v.back.Output(ctx, p)
-}
-
-func (v *multiReader) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.AssetID]int64, error) {
-	front, err := v.ViewReader.Circulation(ctx, assets)
-	if err != nil {
-		return nil, errors.Wrap(err, "loading circulation from front")
-	}
-	back, err := v.back.Circulation(ctx, assets)
-	if err != nil {
-		return nil, errors.Wrap(err, "loading circulation from back")
-	}
-	for asset, amt := range back {
-		front[asset] += amt
-	}
-	return front, nil
-}
-
-func (v *multiReader) StateRoot(ctx context.Context) (bc.Hash, error) {
-	if mv, ok := v.ViewReader.(*MemView); ok {
-		var assets []bc.AssetID
-		for asset, amts := range mv.Assets {
-			if amts.Issuance+amts.Destroyed > 0 {
-				assets = append(assets, asset)
-			}
-		}
-		circs, err := v.Circulation(ctx, assets)
-		if err != nil {
-			return bc.Hash{}, err
-		}
-		for asset, amt := range circs {
-			mv.StateTree.Insert(CirculationTreeItem(asset, uint64(amt)))
-		}
-	}
-	return v.ViewReader.StateRoot(ctx)
 }

@@ -1,7 +1,6 @@
 package validation
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 
@@ -21,35 +20,19 @@ var ErrBadTx = errors.New("invalid transaction")
 // ValidateTxInputs just validates that the tx inputs are present
 // and unspent in the view.
 func ValidateTxInputs(ctx context.Context, view state.ViewReader, tx *bc.Tx) error {
-	// Verify inputs for double-spends and update ADPs on the view.
 	for inIndex, txin := range tx.Inputs {
 		if txin.IsIssuance() {
 			continue
 		}
-		// TODO(kr): use the state tree instead of loading full UTXO data here
-		unspent := view.Output(ctx, txin.Previous)
-		// It's possible to load a spent output here because BackedView
-		// explicitly stores spent outputs in frontend to shadow unspent
-		// outputs in backend.
-		if unspent == nil || unspent.Spent {
+		if !view.IsUTXO(ctx, state.Prevout(txin)) {
 			return errors.WithDetailf(ErrBadTx, "output %s for input %d is invalid or already spent", txin.Previous.String(), inIndex)
-		}
-		if !outputEqual(&unspent.TxOutput, txin) {
-			return errors.WithDetailf(ErrBadTx, "stored output %s doesn't match %x input %d", txin.Previous, tx.Hash, inIndex)
 		}
 	}
 	return nil
 }
 
-func outputEqual(to *bc.TxOutput, ti *bc.TxInput) bool {
-	return to.AssetAmount == ti.AssetAmount && bytes.Equal(to.Script, ti.PrevScript)
-}
-
-// ValidateTx validates the given transaction
-// against the given state and applies its
-// changes to the view.
-// If tx is invalid,
-// it returns a non-nil error describing why.
+// ValidateTx validates the given transaction against the given state.
+// If tx is invalid, it returns a non-nil error describing why.
 func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp uint64) error {
 	// Don't make a span here, because there are too many of them
 	// to comfortably fit in a single trace for processing (creating
@@ -61,7 +44,6 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 		return errors.Wrap(err, "well-formed test")
 	}
 
-	// Check time
 	if tx.LockTime > timestamp {
 		return errors.WithDetail(ErrBadTx, "transaction lock time is in the future")
 	}
@@ -103,7 +85,6 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 			return errors.WithDetailf(ErrBadTx, "validation failed in script execution, input %d (sigscript[%s] pkscript[%s])", i, sigScriptStr, pkScriptStr)
 		}
 	}
-
 	return nil
 }
 
@@ -163,15 +144,14 @@ func txIsWellFormed(tx *bc.Tx) error {
 	return nil
 }
 
-// ApplyTx updates the view with all the changes to the ledger
+// ApplyTx updates the view with all the changes to the ledger.
 func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 	for _, in := range tx.Inputs {
 		if in.IsIssuance() {
 			continue
 		}
-		o := view.Output(ctx, in.Previous)
-		o.Spent = true
-		view.SaveOutput(o)
+		o := state.Prevout(in)
+		view.ConsumeUTXO(o)
 	}
 
 	for _, in := range tx.Inputs {
@@ -192,12 +172,8 @@ func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 			view.SaveDestruction(out.AssetID, out.Amount)
 			continue
 		}
-		o := &state.Output{
-			TxOutput: *out,
-			Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(i)},
-			Spent:    false,
-		}
-		view.SaveOutput(o)
+		o := state.NewOutput(*out, bc.Outpoint{Hash: tx.Hash, Index: uint32(i)})
+		view.AddUTXO(o)
 	}
 
 	issued := sumIssued(ctx, tx)

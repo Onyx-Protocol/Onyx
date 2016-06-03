@@ -95,10 +95,10 @@ type Store interface {
 	ApplyTx(context.Context, *bc.Tx, map[bc.AssetID]*state.AssetState) error
 	CleanPool(ctx context.Context, confirmed, conflicting []*bc.Tx, assets map[bc.AssetID]*state.AssetState) error
 	PoolTxs(context.Context) ([]*bc.Tx, error)
-	NewPoolViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error)
+	GetPoolPrevouts(context.Context, []*bc.Tx) (map[bc.Outpoint]*state.Output, error)
 
 	// blocks
-	ApplyBlock(context.Context, *bc.Block, []*state.Output, map[bc.AssetID]*state.AssetState, *patricia.Tree) ([]*bc.Tx, error)
+	ApplyBlock(ctx context.Context, b *bc.Block, addedUTXOs, removedUTXOs []*state.Output, assets map[bc.AssetID]*state.AssetState, tree *patricia.Tree) ([]*bc.Tx, error)
 	FinalizeBlock(context.Context, uint64) error
 	LatestBlock(context.Context) (*bc.Block, error)
 	NewViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error)

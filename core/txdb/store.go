@@ -92,6 +92,33 @@ func (s *Store) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*s
 	return errors.Wrap(err, "committing database transaction")
 }
 
+// GetPoolPrevouts looks up all of the transaction's prevouts in the
+// pool and returns any of the outputs that exist in the pool.
+func (s *Store) GetPoolPrevouts(ctx context.Context, txs []*bc.Tx) (map[bc.Outpoint]*state.Output, error) {
+	dbtx, err := s.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ctx = pg.NewContext(ctx, dbtx)
+	defer dbtx.Rollback(ctx)
+
+	var prevouts []bc.Outpoint
+	for _, tx := range txs {
+		for _, in := range tx.Inputs {
+			if in.IsIssuance() {
+				continue
+			}
+			prevouts = append(prevouts, in.Previous)
+		}
+	}
+
+	outs, err := loadPoolOutputs(ctx, dbtx, prevouts)
+	if err != nil {
+		return outs, err
+	}
+	return outs, dbtx.Commit(ctx)
+}
+
 // RemoveTxs removes confirmedTxs and conflictTxs from the pool.
 func (s *Store) CleanPool(
 	ctx context.Context,
@@ -152,18 +179,11 @@ func (s *Store) PoolTxs(ctx context.Context) ([]*bc.Tx, error) {
 	return poolTxs(ctx, s.db)
 }
 
-// NewPoolViewForPrevouts returns a new state view on the pool
-// of unconfirmed transactions.
-// It loads the prevouts for transactions in txs;
-// all other outputs will be omitted from the view.
-func (s *Store) NewPoolViewForPrevouts(ctx context.Context, txs []*bc.Tx) (state.ViewReader, error) {
-	return newPoolViewForPrevouts(ctx, s.db, txs)
-}
-
 func (s *Store) ApplyBlock(
 	ctx context.Context,
 	block *bc.Block,
-	delta []*state.Output,
+	addedUTXOs []*state.Output,
+	removedUTXOs []*state.Output,
 	assets map[bc.AssetID]*state.AssetState,
 	state *patricia.Tree,
 ) ([]*bc.Tx, error) {
@@ -203,14 +223,17 @@ func (s *Store) ApplyBlock(
 		return nil, errors.Wrap(err, "writing asset definitions")
 	}
 
-	err = removeBlockSpentOutputs(ctx, dbtx, delta)
-	if err != nil {
-		return nil, errors.Wrap(err, "remove block spent outputs")
-	}
-
-	err = insertBlockOutputs(ctx, dbtx, delta)
+	// Note: the order of inserting and removing UTXOs is important,
+	// otherwise, we'll fail to remove outputs that were added and spent
+	// within the same block.
+	err = insertBlockOutputs(ctx, dbtx, addedUTXOs)
 	if err != nil {
 		return nil, errors.Wrap(err, "insert block outputs")
+	}
+
+	err = removeBlockSpentOutputs(ctx, dbtx, removedUTXOs)
+	if err != nil {
+		return nil, errors.Wrap(err, "remove block spent outputs")
 	}
 
 	err = addIssuances(ctx, dbtx, assets, true)

@@ -1,12 +1,13 @@
 package txdb
 
 import (
+	"bytes"
+
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/cos/state"
 	"chain/database/pg"
-	"chain/database/sql"
 	"chain/errors"
 )
 
@@ -17,57 +18,6 @@ type view struct {
 
 	// TODO(kr): preload circulation and delete this field
 	db pg.DB // for circulation
-}
-
-func newPoolViewForPrevouts(ctx context.Context, db *sql.DB, txs []*bc.Tx) (state.ViewReader, error) {
-	var p []bc.Outpoint
-	for _, tx := range txs {
-		for _, in := range tx.Inputs {
-			if in.IsIssuance() {
-				continue
-			}
-			p = append(p, in.Previous)
-		}
-	}
-
-	dbtx, err := db.Begin(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	ctx = pg.NewContext(ctx, dbtx)
-	defer dbtx.Rollback(ctx)
-
-	v, err := newPoolView(ctx, dbtx, db, p)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-
-	return v, nil
-}
-
-// newPoolView returns a new state view on the pool
-// of unconfirmed transactions.
-// It loads the outpoints identified in p;
-// all other outputs will be omitted from the view.
-// Parameter db is used only for Circulation.
-func newPoolView(ctx context.Context, dbtx *sql.Tx, db *sql.DB, p []bc.Outpoint) (state.ViewReader, error) {
-	outs, err := loadPoolOutputs(ctx, dbtx, p)
-	if err != nil {
-		return nil, err
-	}
-	var errbuf error
-	result := &view{
-		isPool: true,
-		outs:   outs,
-		err:    &errbuf,
-		db:     db, // TODO(kr): preload circulation and delete this field
-	}
-	return result, nil
 }
 
 func newViewForPrevouts(ctx context.Context, db pg.DB, txs []*bc.Tx) (state.ViewReader, error) {
@@ -100,11 +50,15 @@ func newView(ctx context.Context, db pg.DB, p []bc.Outpoint) (state.ViewReader, 
 	return result, nil
 }
 
-func (v *view) Output(ctx context.Context, p bc.Outpoint) *state.Output {
+func (v *view) IsUTXO(ctx context.Context, o *state.Output) bool {
 	if *v.err != nil {
-		return nil
+		return false
 	}
-	return v.outs[p]
+	viewOutput := v.outs[o.Outpoint]
+	if viewOutput == nil {
+		return false
+	}
+	return viewOutput.AssetAmount == o.AssetAmount && bytes.Equal(viewOutput.Script, o.Script)
 }
 
 func (v *view) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.AssetID]int64, error) {

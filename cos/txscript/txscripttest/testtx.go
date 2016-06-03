@@ -16,7 +16,7 @@ var testTxHash = bc.Hash{}
 // to modify the txscript.Engine before executing a script.
 func NewTestTx(engineFuncs ...func(vm *txscript.Engine)) *TestTx {
 	return &TestTx{
-		view:        state.NewMemView(nil),
+		view:        state.NewMemView(nil, nil),
 		engineFuncs: engineFuncs,
 	}
 }
@@ -43,7 +43,7 @@ func (tx *TestTx) AddInput(assetAmount bc.AssetAmount, pkscript, sigscript []byt
 	tx.utxoIndex++
 
 	// Save the utxo outpoint to the view.
-	tx.view.SaveOutput(&state.Output{
+	tx.view.AddUTXO(&state.Output{
 		TxOutput: bc.TxOutput{
 			AssetAmount: assetAmount,
 			Script:      pkscript,

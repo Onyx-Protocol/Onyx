@@ -53,10 +53,7 @@ func (m *MemStore) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID
 
 	for i, out := range tx.Outputs {
 		op := bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
-		m.poolUTXOs[op] = &state.Output{
-			Outpoint: op,
-			TxOutput: *out,
-		}
+		m.poolUTXOs[op] = state.NewOutput(*out, op)
 	}
 	return nil
 }
@@ -87,51 +84,54 @@ func (m *MemStore) PoolTxs(context.Context) ([]*bc.Tx, error) {
 	return m.pool[:len(m.pool):len(m.pool)], nil
 }
 
-func (m *MemStore) NewPoolViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error) {
-	return &state.MemView{
-		Outs: cloneUTXOs(m.poolUTXOs),
-	}, nil
+func (m *MemStore) GetPoolPrevouts(ctx context.Context, txs []*bc.Tx) (map[bc.Outpoint]*state.Output, error) {
+	prevouts := map[bc.Outpoint]*state.Output{}
+	for _, tx := range txs {
+		for _, in := range tx.Inputs {
+			if in.IsIssuance() {
+				continue
+			}
+			if o, ok := m.poolUTXOs[in.Previous]; ok {
+				prevouts[in.Previous] = o
+			}
+		}
+	}
+	return prevouts, nil
 }
 
 func (m *MemStore) ApplyBlock(
 	ctx context.Context,
 	b *bc.Block,
-	utxos []*state.Output,
+	addedUTXOs []*state.Output,
+	consumedUTXOs []*state.Output,
 	assets map[bc.AssetID]*state.AssetState,
 	stateTree *patricia.Tree,
 ) ([]*bc.Tx, error) {
 	m.blocks = append(m.blocks, b)
 
+	// Record all the new transactions.
 	var newTxs []*bc.Tx
 	for _, tx := range b.Transactions {
 		if m.poolMap[tx.Hash] == nil {
 			newTxs = append(newTxs, tx)
 		}
 		m.blockTxs[tx.Hash] = tx
+	}
 
-		for _, in := range tx.Inputs {
-			if in.IsIssuance() {
-				continue
-			}
-			out := m.poolUTXOs[in.Previous]
-			if out == nil {
-				out = &state.Output{Outpoint: in.Previous}
-				m.blockUTXOs[in.Previous] = out
-			}
-			out.Spent = true
-		}
+	// Add in all of the new UTXOs.
+	for _, out := range addedUTXOs {
+		m.blockUTXOs[out.Outpoint] = out
+	}
 
-		for i, out := range tx.Outputs {
-			op := bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
-			m.blockUTXOs[op] = &state.Output{
-				Outpoint: op,
-				TxOutput: *out,
-			}
-		}
+	// Now mark all prevouts in consumed, both in the bc and the pool. The
+	// order of adding UTXOs and consuming them is important for txs that
+	// consume the outputs of other pool txs.
+	for _, out := range consumedUTXOs {
+		delete(m.poolUTXOs, out.Outpoint)
+		delete(m.blockUTXOs, out.Outpoint)
 	}
 
 	m.stateTree = patricia.Copy(stateTree)
-
 	return newTxs, nil
 }
 
@@ -143,9 +143,7 @@ func (m *MemStore) LatestBlock(context.Context) (*bc.Block, error) {
 }
 
 func (m *MemStore) NewViewForPrevouts(context.Context, []*bc.Tx) (state.ViewReader, error) {
-	return &state.MemView{
-		Outs: cloneUTXOs(m.blockUTXOs),
-	}, nil
+	return &state.MemView{Added: m.blockUTXOs}, nil
 }
 
 func (m *MemStore) StateTree(context.Context, uint64) (*patricia.Tree, error) {
@@ -156,12 +154,3 @@ func (m *MemStore) StateTree(context.Context, uint64) (*patricia.Tree, error) {
 }
 
 func (m *MemStore) FinalizeBlock(context.Context, uint64) error { return nil }
-
-func cloneUTXOs(utxos map[bc.Outpoint]*state.Output) map[bc.Outpoint]*state.Output {
-	outs := make(map[bc.Outpoint]*state.Output, len(utxos))
-	for outpoint, output := range utxos {
-		clone := *output
-		outs[outpoint] = &clone
-	}
-	return outs
-}

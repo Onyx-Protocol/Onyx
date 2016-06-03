@@ -68,12 +68,12 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 		return nil, nil, errors.Wrap(err, "loading state tree")
 	}
 
-	poolView := state.NewMemView(tree)
 	bcView, err := fc.store.NewViewForPrevouts(ctx, txs)
 	if err != nil {
 		return nil, nil, errors.Wrap(err)
 	}
-	view := state.Compose(poolView, bcView)
+	view := state.NewMemView(tree, bcView)
+
 	ctx = span.NewContextSuffix(ctx, "-validate-all")
 	defer span.Finish(ctx)
 	for _, tx := range txs {
@@ -111,14 +111,13 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 	if err != nil {
 		return errors.Wrap(err, "txdb")
 	}
-	mv := state.NewMemView(tree)
+	mv := state.NewMemView(tree, bcView)
 
-	view := state.Compose(mv, bcView)
-	err = fc.validateBlock(ctx, block, view)
+	err = fc.validateBlock(ctx, block, mv)
 	if err != nil {
 		return errors.Wrap(err, "block validation")
 	}
-	_, err = view.StateRoot(ctx)
+	_, err = mv.StateRoot(ctx)
 	if err != nil {
 		return errors.Wrap(err, "adding circulation to state tree")
 	}
@@ -194,9 +193,9 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	if err != nil {
 		return errors.Wrap(err, "txdb")
 	}
-	mv := state.NewMemView(tree)
+	mv := state.NewMemView(tree, bcView)
 
-	err = validation.ValidateBlockForSig(ctx, state.Compose(mv, bcView), prevBlock, block)
+	err = validation.ValidateBlockForSig(ctx, mv, prevBlock, block)
 	return errors.Wrap(err, "validation")
 }
 
@@ -256,12 +255,16 @@ func (fc *FC) applyBlock(
 	block *bc.Block,
 	mv *state.MemView,
 ) (newTxs []*bc.Tx, conflictingTxs []*bc.Tx, err error) {
-	delta := make([]*state.Output, 0, len(mv.Outs))
-	for _, out := range mv.Outs {
-		delta = append(delta, out)
+	added := make([]*state.Output, 0, len(mv.Added))
+	for _, out := range mv.Added {
+		added = append(added, out)
+	}
+	consumed := make([]*state.Output, 0, len(mv.Consumed))
+	for _, out := range mv.Consumed {
+		consumed = append(consumed, out)
 	}
 
-	newTxs, err = fc.store.ApplyBlock(ctx, block, delta, mv.Assets, mv.StateTree)
+	newTxs, err = fc.store.ApplyBlock(ctx, block, added, consumed, mv.Assets, mv.StateTree)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "storing block")
 	}
@@ -289,24 +292,22 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		return nil, errors.Wrap(err, "")
 	}
 
-	poolView := state.NewMemView(nil)
 	bcView, err := fc.store.NewViewForPrevouts(ctx, txs)
 	if err != nil {
 		return nil, errors.Wrap(err, "blockchain view")
 	}
-	view := state.Compose(poolView, bcView)
+	view := state.NewMemView(nil, bcView)
 	for _, tx := range txs {
-		txErr := validation.ValidateTxInputs(ctx, view, tx)
-
 		for _, out := range tx.Outputs {
-			if _, ok := poolView.Assets[out.AssetID]; !ok {
-				poolView.Assets[out.AssetID] = &state.AssetState{}
+			if _, ok := view.Assets[out.AssetID]; !ok {
+				view.Assets[out.AssetID] = &state.AssetState{}
 			}
 		}
 
 		// Have to explicitly check that tx is not in block
 		// because issuance transactions are always valid, even duplicates.
 		// TODO(erykwalder): Remove this check when issuances become unique
+		txErr := validation.ValidateTxInputs(ctx, view, tx)
 		if txErr == nil && !txInBlock[tx.Hash] {
 			validation.ApplyTx(ctx, view, tx)
 		} else {
@@ -319,20 +320,14 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 			// before the original tx was finalized.
 			log.Messagef(ctx, "deleting conflict tx %v because %q", tx.Hash, txErr)
 			for i, in := range tx.Inputs {
-				out := view.Output(ctx, in.Previous)
-				if out == nil {
-					log.Messagef(ctx, "conflict tx %v missing input %d (%v)", tx.Hash, in.Previous)
-					continue
-				}
-				if out.Spent {
-					log.Messagef(ctx, "conflict tx %v spent input %d (%v) inblock=%v inpool=%v",
-						tx.Hash, i, in.Previous, bcView.Output(ctx, in.Previous), poolView.Output(ctx, in.Previous))
+				if !view.IsUTXO(ctx, state.Prevout(in)) {
+					log.Messagef(ctx, "conflict tx %v missing or spent input %d (%v)", tx.Hash, i, in.Previous)
 				}
 			}
 		}
 	}
 
-	err = fc.store.CleanPool(ctx, confirmedTxs, conflictTxs, poolView.Assets)
+	err = fc.store.CleanPool(ctx, confirmedTxs, conflictTxs, view.Assets)
 	if err != nil {
 		return nil, errors.Wrap(err, "removing conflicting txs")
 	}

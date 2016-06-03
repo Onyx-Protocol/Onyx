@@ -241,7 +241,7 @@ func TestGetTxIssuance(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = store.ApplyBlock(ctx, blk, nil, nil, patricia.NewTree(nil))
+	_, err = store.ApplyBlock(ctx, blk, nil, nil, nil, patricia.NewTree(nil))
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -325,7 +325,7 @@ func TestGetTxTransfer(t *testing.T) {
 	}
 
 	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
-	_, err := store.ApplyBlock(ctx, blk, nil, nil, patricia.NewTree(nil))
+	_, err := store.ApplyBlock(ctx, blk, nil, nil, nil, patricia.NewTree(nil))
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

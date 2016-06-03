@@ -5,6 +5,7 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/patricia"
+	"chain/errors"
 )
 
 var _ View = (*MemView)(nil)
@@ -16,21 +17,25 @@ type AssetState struct {
 
 // MemView satisfies the View interface
 type MemView struct {
-	Outs   map[bc.Outpoint]*Output
-	Assets map[bc.AssetID]*AssetState
+	Added    map[bc.Outpoint]*Output
+	Consumed map[bc.Outpoint]*Output
+	Assets   map[bc.AssetID]*AssetState
+	Back     ViewReader
 
 	StateTree *patricia.Tree
 }
 
-// NewMemView returns a new MemView. It takes an
-// existing state tree. As ViewWriter functions
-// are called, the tree will update such that it
-// reflects the composite tree of the what was
-// entered and the updates that have been made.
-func NewMemView(stateTree *patricia.Tree) *MemView {
+// NewMemView returns a new MemView. It takes an existing state tree,
+// and optionally another ViewReader, to read from. As actions are
+// are called, the backing tree will update such that it reflects
+// the composite tree of the what was entered and the updates that
+// have been made.
+func NewMemView(stateTree *patricia.Tree, back ViewReader) *MemView {
 	return &MemView{
-		Outs:      make(map[bc.Outpoint]*Output),
+		Added:     make(map[bc.Outpoint]*Output),
+		Consumed:  make(map[bc.Outpoint]*Output),
 		Assets:    make(map[bc.AssetID]*AssetState),
+		Back:      back,
 		StateTree: stateTree,
 	}
 }
@@ -44,8 +49,23 @@ func (v *MemView) asset(asset bc.AssetID) *AssetState {
 	return state
 }
 
-func (v *MemView) Output(ctx context.Context, p bc.Outpoint) *Output {
-	return v.Outs[p]
+func (v *MemView) IsUTXO(ctx context.Context, o *Output) bool {
+	// Note: This implementation assumes the validity of Output's
+	// other fields (AssetAmount, Script). The implementation that
+	// is backed by the state tree will need to validate the
+	// other fields by the comparing with the hash in the state tree.
+	if _, ok := v.Consumed[o.Outpoint]; ok {
+		return false
+	}
+	if _, ok := v.Added[o.Outpoint]; ok {
+		return true
+	}
+	if v.Back == nil {
+		return false
+	}
+	// If this view didn't spend it, the utxo is valid as long as it's
+	// unspent in the backing view.
+	return v.Back.IsUTXO(ctx, o)
 }
 
 func (v *MemView) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.AssetID]int64, error) {
@@ -55,19 +75,33 @@ func (v *MemView) Circulation(ctx context.Context, assets []bc.AssetID) (map[bc.
 			circs[a] = int64(state.Issuance - state.Destroyed)
 		}
 	}
+	if v.Back != nil {
+		back, err := v.Back.Circulation(ctx, assets)
+		if err != nil {
+			return nil, errors.Wrap(err, "loading circulation from back")
+		}
+		for asset, amt := range back {
+			circs[asset] += amt
+		}
+	}
 	return circs, nil
 }
 
-func (v *MemView) SaveOutput(o *Output) {
-	v.Outs[o.Outpoint] = o
-	if v.StateTree != nil {
-		k, hasher := OutputTreeItem(o)
-		if o.Spent {
-			v.StateTree.Delete(k)
-			return
+func (v *MemView) StateRoot(ctx context.Context) (bc.Hash, error) {
+	var assets []bc.AssetID
+	for asset, amts := range v.Assets {
+		if amts.Issuance+amts.Destroyed > 0 {
+			assets = append(assets, asset)
 		}
-		v.StateTree.Insert(k, hasher)
 	}
+	circs, err := v.Circulation(ctx, assets)
+	if err != nil {
+		return bc.Hash{}, err
+	}
+	for asset, amt := range circs {
+		v.StateTree.Insert(CirculationTreeItem(asset, uint64(amt)))
+	}
+	return v.StateTree.RootHash(), nil
 }
 
 func (v *MemView) SaveAssetDefinitionPointer(asset bc.AssetID, hash bc.Hash) {
@@ -77,8 +111,20 @@ func (v *MemView) SaveAssetDefinitionPointer(asset bc.AssetID, hash bc.Hash) {
 	}
 }
 
-func (v *MemView) StateRoot(context.Context) (bc.Hash, error) {
-	return v.StateTree.RootHash(), nil
+func (v *MemView) ConsumeUTXO(o *Output) {
+	v.Consumed[o.Outpoint] = o
+	if v.StateTree != nil {
+		k, _ := OutputTreeItem(o)
+		v.StateTree.Delete(k)
+	}
+}
+
+func (v *MemView) AddUTXO(o *Output) {
+	v.Added[o.Outpoint] = o
+	if v.StateTree != nil {
+		k, hasher := OutputTreeItem(o)
+		v.StateTree.Insert(k, hasher)
+	}
 }
 
 func (v *MemView) SaveIssuance(asset bc.AssetID, amount uint64) {

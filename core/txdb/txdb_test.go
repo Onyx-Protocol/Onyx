@@ -294,8 +294,6 @@ func TestRemoveBlockOutputs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	out.Spent = true
-
 	err = removeBlockSpentOutputs(ctx, dbtx, []*state.Output{out})
 	if err != nil {
 		t.Log(errors.Stack(err))

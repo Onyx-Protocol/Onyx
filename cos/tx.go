@@ -24,12 +24,13 @@ import (
 // It is okay to add conflicting transactions to the pool. The conflict
 // will be resolved when a block lands.
 func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
-	poolView, err := fc.store.NewPoolViewForPrevouts(ctx, []*bc.Tx{tx})
+	bcView, err := fc.store.NewViewForPrevouts(ctx, []*bc.Tx{tx})
 	if err != nil {
 		return errors.Wrap(err)
 	}
 
-	bcView, err := fc.store.NewViewForPrevouts(ctx, []*bc.Tx{tx})
+	poolView := state.NewMemView(nil, bcView)
+	poolView.Added, err = fc.store.GetPoolPrevouts(ctx, []*bc.Tx{tx})
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -46,14 +47,13 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 		return errors.Wrap(err)
 	}
 
-	mv := state.NewMemView(nil)
-	view := state.Compose(mv, state.MultiReader(poolView, bcView))
-	err = validation.ValidateTx(ctx, view, tx, uint64(time.Now().Unix()))
+	mv := state.NewMemView(nil, poolView)
+	err = validation.ValidateTx(ctx, mv, tx, uint64(time.Now().Unix()))
 	if err != nil {
 		return errors.Wrap(err, "tx rejected")
 	}
 
-	err = validation.ApplyTx(ctx, view, tx)
+	err = validation.ApplyTx(ctx, mv, tx)
 	if err != nil {
 		return errors.Wrap(err, "applying tx")
 	}
