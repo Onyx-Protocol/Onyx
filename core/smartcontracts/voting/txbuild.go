@@ -17,7 +17,7 @@ func RightIssuance(ctx context.Context, adminScript, holderScript []byte) txbuil
 		AdminScript:    adminScript,
 		HolderScript:   holderScript,
 		Delegatable:    true,
-		Deadline:       infiniteDeadline,
+		Deadline:       InfiniteDeadline,
 		OwnershipChain: bc.Hash{},
 	}
 }

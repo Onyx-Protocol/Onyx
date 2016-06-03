@@ -15,7 +15,10 @@ import (
 var scriptVersion = txscript.ScriptVersion2
 
 const (
-	infiniteDeadline = math.MaxInt64
+	// InfiniteDeadline is a sentinel deadline value to denote infinity.
+	// It's value is the max int64 so that the contract byte code can
+	// perform ordinary <= comparisons.
+	InfiniteDeadline = math.MaxInt64
 
 	// pinnedRightsContractHash stores the hash of the voting rights contract.
 	// Changes to the the contract will require updating the hash.

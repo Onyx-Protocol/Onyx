@@ -135,9 +135,11 @@ func getVotingRightOwners(ctx context.Context, assetID string) (map[string]inter
 			"account_id":            r.AccountID,
 			"holder_script":         chainjson.HexBytes(r.HolderScript),
 			"transferable":          r.Delegatable,
-			"deadline":              time.Unix(r.Deadline, 0).Format(time.RFC3339),
 			"transaction_id":        r.Outpoint.Hash,
 			"index":                 r.Outpoint.Index,
+		}
+		if r.Deadline != voting.InfiniteDeadline {
+			right["deadline"] = time.Unix(r.Deadline, 0).Format(time.RFC3339)
 		}
 		rights = append(rights, right)
 		last = r.Outpoint.Hash.String()
