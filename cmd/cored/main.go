@@ -73,7 +73,8 @@ var (
 	sigsRequired       = env.Int("SIGS_REQUIRED", 1)
 
 	// optional features
-	historicalOutputs = env.Bool("HISTORICAL_OUTPUTS", false)
+	historicalOutputs           = env.Bool("HISTORICAL_OUTPUTS", false)
+	historicalOutputsMaxAgeDays = env.Int("HISTORICAL_OUTPUTS_MAX_AGE_DAYS", 0)
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -238,7 +239,7 @@ func main() {
 	}
 
 	if *historicalOutputs {
-		explorer.InitHistoricalOutputs(fc, *isManager)
+		explorer.InitHistoricalOutputs(ctx, fc, *historicalOutputsMaxAgeDays, *isManager)
 	}
 }
 

@@ -39,7 +39,7 @@ func TestHistoricalOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	InitHistoricalOutputs(fc, true)
+	InitHistoricalOutputs(ctx, fc, 0, true)
 
 	account1ID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
 	account2ID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
@@ -593,7 +593,7 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	InitHistoricalOutputs(fc, true)
+	InitHistoricalOutputs(ctx, fc, 0, true)
 	projectID := assettest.CreateProjectFixture(ctx, t, "", "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
 	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)

@@ -21,10 +21,16 @@ import (
 
 var historicalOutputs bool
 
-func InitHistoricalOutputs(fc *cos.FC, isManager bool) {
+// InitHistoricalOutputs adds a block callback for indexing historical
+// utxos in the historical_outputs table and occasionally pruning the
+// ones spent more than maxAgeDays ago.  (If maxAgeDays is <= 0, no
+// pruning is done.)
+func InitHistoricalOutputs(ctx context.Context, fc *cos.FC, maxAgeDays int, isManager bool) {
 	historicalOutputs = true
-	// TODO(bobg): Launch a goroutine that prunes old data from
-	// historical_outputs
+
+	maxAge := time.Duration(maxAgeDays*24) * time.Hour
+	var lastPrune time.Time
+
 	fc.AddBlockCallback(func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx) {
 		var (
 			newTxHashes   pg.Strings
@@ -115,6 +121,16 @@ func InitHistoricalOutputs(fc *cos.FC, isManager bool) {
 			if err != nil {
 				chainlog.Error(ctx, errors.Wrap(err, "annotating historical_outputs with account info"))
 				return // or panic?
+			}
+		}
+
+		if maxAge > 0 && time.Since(lastPrune) >= 24*time.Hour {
+			now := time.Now()
+			_, err := pg.Exec(ctx, "DELETE FROM historical_outputs WHERE UPPER(timespan) < $1", now.Add(-maxAge))
+			if err == nil {
+				lastPrune = now
+			} else {
+				chainlog.Error(ctx, errors.Wrap(err, "pruning historical_outputs"))
 			}
 		}
 	})
