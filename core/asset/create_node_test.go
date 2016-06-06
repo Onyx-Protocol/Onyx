@@ -24,7 +24,7 @@ func TestCreateManagerNode(t *testing.T) {
 		Label:        "foo",
 		SigsRequired: 1,
 		Keys: []*CreateNodeKeySpec{
-			{Type: "node", Generate: true},
+			{Type: "service", Generate: true},
 		},
 	}
 	node, err := CreateNode(ctx, ManagerNode, "proj-id-0", req)

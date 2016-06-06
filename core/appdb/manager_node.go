@@ -42,7 +42,7 @@ func buildNodeKeys(xpubs, xprvs []*hdkey.XKey) ([]*NodeKey, error) {
 
 	var res []*NodeKey
 	for _, xpub := range xpubs {
-		k := &NodeKey{Type: "node", XPub: xpub}
+		k := &NodeKey{Type: "service", XPub: xpub}
 
 		s := xpub.String()
 		if xprv := pubToPrv[s]; xprv != nil {

@@ -51,9 +51,9 @@ type DeprecatedCreateNodeReq struct {
 
 // CreateNodeKeySpec describes a single key in a node's multi-sig configuration.
 // It consists of a type, plus parameters depending on that type.
-// Valid manager node types include "node" and "account". For issuer nodes,
-// only "node" is valid.
-// For node-type keys, either the XPub field is explicitly provided, or the
+// Valid manager node types include "service" and "account". For issuer nodes,
+// only "service" is valid.
+// For service-type keys, either the XPub field is explicitly provided, or the
 // Generate flag is set to true, in which case the xprv/xpub will be generated
 // on the server side.
 type CreateNodeKeySpec struct {
@@ -83,6 +83,9 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 	for i, k := range req.Keys {
 		switch k.Type {
 		case "node":
+			// For backward compatibility, we allow "node" as an alias for "service".
+			fallthrough
+		case "service":
 			if k.XPub != "" {
 				xpub, err := hdkey.NewXKey(k.XPub)
 				if err != nil {
@@ -99,7 +102,7 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 				xpubs = append(xpubs, xpub)
 				gennedXprvs = append(gennedXprvs, xprv)
 			} else {
-				return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: node key must be generated, or an explicit xpub", i)
+				return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: service key must be generated, or an explicit xpub", i)
 			}
 		case "account":
 			if node != ManagerNode {

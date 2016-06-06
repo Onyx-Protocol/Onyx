@@ -86,7 +86,7 @@ func TestGetManagerNode(t *testing.T) {
 				Label: "manager-node-0",
 				Keys: []*NodeKey{
 					{
-						Type: "node",
+						Type: "service",
 						XPub: dummyXPub,
 						XPrv: dummyXPrv,
 					},

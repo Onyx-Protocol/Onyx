@@ -46,12 +46,12 @@ func createManagerNode(ctx context.Context, projID string, req map[string]interf
 		}
 
 		for _, xp := range depReq.XPubs {
-			key := &asset.CreateNodeKeySpec{Type: "node", XPub: xp}
+			key := &asset.CreateNodeKeySpec{Type: "service", XPub: xp}
 			cnReq.Keys = append(cnReq.Keys, key)
 		}
 
 		if depReq.GenerateKey {
-			key := &asset.CreateNodeKeySpec{Type: "node", Generate: true}
+			key := &asset.CreateNodeKeySpec{Type: "service", Generate: true}
 			cnReq.Keys = append(cnReq.Keys, key)
 		}
 

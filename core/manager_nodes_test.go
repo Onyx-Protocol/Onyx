@@ -24,7 +24,7 @@ func TestCreateManagerNodeBadXPub(t *testing.T) {
 	req := map[string]interface{}{
 		"label":               "node",
 		"signatures_required": 1,
-		"keys":                []*asset.CreateNodeKeySpec{{Type: "node", XPub: "badxpub"}},
+		"keys":                []*asset.CreateNodeKeySpec{{Type: "service", XPub: "badxpub"}},
 	}
 
 	_, err := createManagerNode(ctx, proj0, req)
@@ -43,7 +43,7 @@ func TestCreateManagerNode(t *testing.T) {
 
 	req := map[string]interface{}{
 		"label":               "node",
-		"keys":                []*asset.CreateNodeKeySpec{{Type: "node", Generate: true}},
+		"keys":                []*asset.CreateNodeKeySpec{{Type: "service", Generate: true}},
 		"signatures_required": 1,
 	}
 

@@ -124,7 +124,7 @@ func TestGetIssuerNodes(t *testing.T) {
 				Label: "in-0",
 				Keys: []*NodeKey{
 					{
-						Type: "node",
+						Type: "service",
 						XPub: dummyXPub,
 						XPrv: dummyXPrv,
 					},
