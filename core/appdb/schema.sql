@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -798,7 +798,8 @@ CREATE TABLE signed_blocks (
 CREATE TABLE state_trees (
     key text NOT NULL,
     hash text NOT NULL,
-    leaf boolean NOT NULL
+    leaf boolean NOT NULL,
+    value bytea
 );
 
 

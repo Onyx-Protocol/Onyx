@@ -12,13 +12,6 @@ import (
 // the key provided is a prefix to existing nodes.
 var ErrPrefix = errors.New("key provided is a prefix to other keys")
 
-// Hasher is the interface used for values inserted
-// into the tree. Since this tree is used to create
-// a merkle root, each item must be hashable.
-type Hasher interface {
-	Hash() bc.Hash
-}
-
 // Tree is a patricia tree implementation, or a radix tree
 // with a radix of 2 -- creating an uneven binary tree.
 // Each entry is a key value pair. The key determines
@@ -120,7 +113,7 @@ func (t *Tree) trackInsert(n *Node) {
 // If the key is present, the existing node is found
 // and its value is updated, leaving the structure of
 // the tree alone.
-func (t *Tree) Insert(bkey []byte, val Hasher) error {
+func (t *Tree) Insert(bkey []byte, val Valuer) error {
 	key := bitKey(bkey)
 
 	if t.root == nil {
@@ -135,7 +128,7 @@ func (t *Tree) Insert(bkey []byte, val Hasher) error {
 	return err
 }
 
-func (t *Tree) insert(n *Node, key []uint8, val Hasher) (*Node, error) {
+func (t *Tree) insert(n *Node, key []uint8, val Valuer) (*Node, error) {
 	if bytes.Equal(n.key, key) {
 		if !n.isLeaf {
 			return n, errors.Wrap(ErrPrefix)
@@ -267,12 +260,30 @@ type Node struct {
 	hash     *bc.Hash
 	isLeaf   bool
 	children [2]*Node
-	val      Hasher
+	val      Valuer
+}
+
+// Value encapsulates a value stored in the tree. The value may
+// be a precomputed hash or an abritrary byte slice that will be
+// hashed when necessary.
+type Value struct {
+	Bytes  []byte
+	IsHash bool
+}
+
+func (v Value) Hash() bc.Hash {
+	if !v.IsHash {
+		return hash256.Sum(v.Bytes)
+	}
+
+	var h bc.Hash
+	copy(h[:], v.Bytes)
+	return h
 }
 
 // NewNode returns a node with the given key and hash
-func NewNode(key []uint8, hash bc.Hash, isLeaf bool) *Node {
-	return &Node{key: key, hash: &hash, isLeaf: isLeaf}
+func NewNode(key []uint8, v Valuer, isLeaf bool) *Node {
+	return &Node{key: key, val: v, isLeaf: isLeaf}
 }
 
 // Key returns the key for the current node
@@ -280,6 +291,14 @@ func (n *Node) Key() []uint8 { return n.key }
 
 // IsLeaf returns whether the current node is a leaf node
 func (n *Node) IsLeaf() bool { return n.isLeaf }
+
+// Value returns the raw Value for this node.
+func (n *Node) Value() Value {
+	if n.val == nil {
+		return Value{}
+	}
+	return n.val.Value()
+}
 
 // Hash will return a cached hash if available,
 // if not it will calculate a new hash and cache it.
@@ -296,7 +315,7 @@ func (n *Node) Hash() bc.Hash {
 
 func (n *Node) calcHash() bc.Hash {
 	if n.isLeaf {
-		return n.val.Hash()
+		return n.val.Value().Hash()
 	}
 
 	var data []byte
@@ -307,3 +326,22 @@ func (n *Node) calcHash() bc.Hash {
 
 	return hash256.Sum(data)
 }
+
+// Valuer describes types that can produce a patricia tree value.
+type Valuer interface {
+	Value() Value
+}
+
+// HashValue returns a Value representing a precomputed hash.
+func HashValuer(h bc.Hash) Valuer {
+	return literalValuer(Value{Bytes: h[:], IsHash: true})
+}
+
+// BytesValue returns a Value representing the provided bytes.
+func BytesValuer(b []byte) Valuer {
+	return literalValuer(Value{Bytes: b, IsHash: false})
+}
+
+type literalValuer Value
+
+func (v literalValuer) Value() Value { return Value(v) }

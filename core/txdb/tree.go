@@ -12,7 +12,7 @@ import (
 
 func stateTree(ctx context.Context, db pg.DB) (*patricia.Tree, error) {
 	const q = `
-		SELECT key, hash, leaf FROM state_trees ORDER BY LENGTH(key) ASC
+		SELECT key, hash, leaf, value FROM state_trees ORDER BY LENGTH(key) ASC
 	`
 	rows, err := db.Query(ctx, q)
 	if err != nil {
@@ -26,12 +26,20 @@ func stateTree(ctx context.Context, db pg.DB) (*patricia.Tree, error) {
 			keyStr string
 			hash   bc.Hash
 			isLeaf bool
+			value  []byte
 		)
-		err := rows.Scan(&keyStr, &hash, &isLeaf)
+		err := rows.Scan(&keyStr, &hash, &isLeaf, &value)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
-		nodes = append(nodes, patricia.NewNode(strTreeKey(keyStr), hash, isLeaf))
+
+		var v patricia.Valuer
+		if value == nil {
+			v = patricia.HashValuer(hash)
+		} else if value != nil {
+			v = patricia.BytesValuer(value)
+		}
+		nodes = append(nodes, patricia.NewNode(strTreeKey(keyStr), v, isLeaf))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrap(err)
@@ -61,21 +69,29 @@ func writeStateTree(ctx context.Context, dbtx *sql.Tx, tree *patricia.Tree) erro
 
 	const insertQ = `
 		WITH nodes AS (
-			SELECT * FROM unnest($1::text[], $2::text[], $3::bool[])
-				AS t(key, hash, leaf)
+			SELECT * FROM unnest($1::text[], $2::text[], $3::bool[], $4::bytea[])
+				AS t(key, hash, leaf, value)
 		)
-		INSERT INTO state_trees (key, hash, leaf)
+		INSERT INTO state_trees (key, hash, leaf, value)
 		SELECT * FROM Nodes
 	`
 	var (
 		hashes []string
 		leafs  []bool
+		values [][]byte
 	)
 	keys = nil
 	for _, n := range inserts {
 		keys = append(keys, treeKeyStr(n.Key()))
 		hashes = append(hashes, n.Hash().String())
 		leafs = append(leafs, n.IsLeaf())
+
+		// Values are omitted if the node is only a hash.
+		if n.Value().IsHash {
+			values = append(values, nil)
+		} else {
+			values = append(values, n.Value().Bytes)
+		}
 	}
 	_, err = dbtx.Exec(
 		ctx,
@@ -83,6 +99,7 @@ func writeStateTree(ctx context.Context, dbtx *sql.Tx, tree *patricia.Tree) erro
 		pg.Strings(keys),
 		pg.Strings(hashes),
 		pg.Bools(leafs),
+		pg.Byteas(values),
 	)
 	if err != nil {
 		return errors.Wrap(err)
@@ -90,19 +107,26 @@ func writeStateTree(ctx context.Context, dbtx *sql.Tx, tree *patricia.Tree) erro
 
 	const updateQ = `
 		WITH nodes AS (
-			SELECT * FROM unnest($1::text[], $2::text[], $3::bool[])
-				AS t(key, hash, leaf)
+			SELECT * FROM unnest($1::text[], $2::text[], $3::bool[], $4::bytea[])
+				AS t(key, hash, leaf, value)
 		)
 		UPDATE state_trees s
-		SET hash=n.hash, leaf=n.leaf
+		SET hash=n.hash, leaf=n.leaf, value=n.value
 		FROM nodes n
 		WHERE s.key = n.key
 	`
-	keys, hashes, leafs = nil, nil, nil
+	keys, hashes, leafs, values = nil, nil, nil, nil
 	for _, n := range updates {
 		keys = append(keys, treeKeyStr(n.Key()))
 		hashes = append(hashes, n.Hash().String())
 		leafs = append(leafs, n.IsLeaf())
+
+		// Values are omitted if the node is only a hash.
+		if n.Value().IsHash {
+			values = append(values, nil)
+		} else {
+			values = append(values, n.Value().Bytes)
+		}
 	}
 	_, err = dbtx.Exec(
 		ctx,
@@ -110,6 +134,7 @@ func writeStateTree(ctx context.Context, dbtx *sql.Tx, tree *patricia.Tree) erro
 		pg.Strings(keys),
 		pg.Strings(hashes),
 		pg.Bools(leafs),
+		pg.Byteas(values),
 	)
 	if err != nil {
 		return errors.Wrap(err)

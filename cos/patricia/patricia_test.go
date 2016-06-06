@@ -12,10 +12,8 @@ import (
 	"chain/crypto/hash256"
 )
 
-type simpleHasher []byte
-
-func (s simpleHasher) Hash() bc.Hash {
-	return hash256.Sum(s)
+func simpleValue(s string) Valuer {
+	return BytesValuer([]byte(s))
 }
 
 func TestInsert(t *testing.T) {
@@ -223,14 +221,14 @@ func TestRootHash(t *testing.T) {
 		want: bc.Hash{},
 	}, {
 		tree: &Tree{root: &Node{val: vals[0], isLeaf: true}},
-		want: vals[0].Hash(),
+		want: vals[0].Value().Hash(),
 	}, {
 		tree: &Tree{
 			root: &Node{
 				children: [2]*Node{{val: vals[0], isLeaf: true}, {val: vals[1], isLeaf: true}},
 			},
 		},
-		want: hash(vals[0].Hash(), vals[1].Hash()),
+		want: hash(vals[0].Value().Hash(), vals[1].Value().Hash()),
 	}, {
 		tree: &Tree{
 			root: &Node{
@@ -242,7 +240,7 @@ func TestRootHash(t *testing.T) {
 				},
 			},
 		},
-		want: hash(hash(vals[0].Hash(), vals[1].Hash()), vals[2].Hash()),
+		want: hash(hash(vals[0].Value().Hash(), vals[1].Value().Hash()), vals[2].Value().Hash()),
 	}}
 	for _, c := range cases {
 		got := c.tree.RootHash()
@@ -280,12 +278,12 @@ func TestBoolKey(t *testing.T) {
 func TestTracking(t *testing.T) {
 	tree := NewTree(nil)
 	// insert root
-	tree.Insert(bits("11111111"), simpleHasher("a"))
+	tree.Insert(bits("11111111"), simpleValue("a"))
 
 	wantInserts := map[string]*Node{
 		string(bools("11111111")): &Node{
 			key:    bools("11111111"),
-			val:    simpleHasher("a"),
+			val:    simpleValue("a"),
 			isLeaf: true,
 		},
 	}
@@ -296,13 +294,13 @@ func TestTracking(t *testing.T) {
 
 	// insert and fork
 	tree = NewTree([]*Node{
-		{key: bools("11111111"), val: simpleHasher("a"), isLeaf: true},
+		{key: bools("11111111"), val: simpleValue("a"), isLeaf: true},
 	})
-	tree.Insert(bits("11110000"), simpleHasher("b"))
+	tree.Insert(bits("11110000"), simpleValue("b"))
 	wantInserts = map[string]*Node{
 		string(bools("11110000")): &Node{
 			key:    bools("11110000"),
-			val:    simpleHasher("b"),
+			val:    simpleValue("b"),
 			isLeaf: true,
 		},
 		string(bools("1111")): &Node{
@@ -317,7 +315,7 @@ func TestTracking(t *testing.T) {
 
 	// delete root node
 	tree = NewTree([]*Node{
-		{key: bools("11111111"), val: simpleHasher("a"), isLeaf: true},
+		{key: bools("11111111"), val: simpleValue("a"), isLeaf: true},
 	})
 	tree.Delete(bits("11111111"))
 
@@ -331,8 +329,8 @@ func TestTracking(t *testing.T) {
 	// delete branched node
 	tree = NewTree([]*Node{
 		{key: bools("1111")},
-		{key: bools("11111111"), val: simpleHasher("a"), isLeaf: true},
-		{key: bools("11110000"), val: simpleHasher("b"), isLeaf: true},
+		{key: bools("11111111"), val: simpleValue("a"), isLeaf: true},
+		{key: bools("11110000"), val: simpleValue("b"), isLeaf: true},
 	})
 	tree.Delete(bits("11110000"))
 
@@ -351,14 +349,14 @@ func TestTracking(t *testing.T) {
 
 	// update
 	tree = NewTree([]*Node{
-		{key: bools("11111111"), val: simpleHasher("a"), isLeaf: true},
+		{key: bools("11111111"), val: simpleValue("a"), isLeaf: true},
 	})
-	tree.Insert(bits("11111111"), simpleHasher("b"))
+	tree.Insert(bits("11111111"), simpleValue("b"))
 
 	wantUpdates = map[string]*Node{
 		string(bools("11111111")): &Node{
 			key:    bools("11111111"),
-			val:    simpleHasher("b"),
+			val:    simpleValue("b"),
 			isLeaf: true,
 		},
 	}
@@ -368,8 +366,8 @@ func TestTracking(t *testing.T) {
 
 	// inserted nodes are not marked updates
 	tree = NewTree(nil)
-	tree.Insert(bits("11111111"), simpleHasher("a"))
-	tree.Insert(bits("11111111"), simpleHasher("b"))
+	tree.Insert(bits("11111111"), simpleValue("a"))
+	tree.Insert(bits("11111111"), simpleValue("b"))
 
 	wantUpdates = map[string]*Node{}
 	if !reflect.DeepEqual(tree.updates, wantUpdates) {
@@ -379,7 +377,7 @@ func TestTracking(t *testing.T) {
 	wantInserts = map[string]*Node{
 		string(bools("11111111")): &Node{
 			key:    bools("11111111"),
-			val:    simpleHasher("b"),
+			val:    simpleValue("b"),
 			isLeaf: true,
 		},
 	}
@@ -390,15 +388,15 @@ func TestTracking(t *testing.T) {
 	// deleted nodes are marked updates, not inserts, when re-inserted
 	tree = NewTree([]*Node{
 		{key: bools("1111")},
-		{key: bools("11111111"), val: simpleHasher("a"), isLeaf: true},
-		{key: bools("11110000"), val: simpleHasher("b"), isLeaf: true},
+		{key: bools("11111111"), val: simpleValue("a"), isLeaf: true},
+		{key: bools("11110000"), val: simpleValue("b"), isLeaf: true},
 	})
 	tree.Delete(bits("11110000"))
-	tree.Insert(bits("11110100"), simpleHasher("c"))
+	tree.Insert(bits("11110100"), simpleValue("c"))
 	wantInserts = map[string]*Node{
 		string(bools("11110100")): &Node{
 			key:    bools("11110100"),
-			val:    simpleHasher("c"),
+			val:    simpleValue("c"),
 			isLeaf: true,
 		},
 	}
@@ -418,7 +416,7 @@ func TestTracking(t *testing.T) {
 
 	// inserted nodes are not marked deleted
 	tree = NewTree(nil)
-	tree.Insert(bits("11111111"), simpleHasher("a"))
+	tree.Insert(bits("11111111"), simpleValue("a"))
 	tree.Delete(bits("11111111"))
 
 	wantDeletes = map[string]bool{}
@@ -435,11 +433,11 @@ func TestTracking(t *testing.T) {
 	tree = NewTree([]*Node{
 		{key: bools("1111")},
 		{key: bools("111111")},
-		{key: bools("11110000"), val: simpleHasher("a"), isLeaf: true},
-		{key: bools("11111100"), val: simpleHasher("b"), isLeaf: true},
-		{key: bools("11111111"), val: simpleHasher("c"), isLeaf: true},
+		{key: bools("11110000"), val: simpleValue("a"), isLeaf: true},
+		{key: bools("11111100"), val: simpleValue("b"), isLeaf: true},
+		{key: bools("11111111"), val: simpleValue("c"), isLeaf: true},
 	})
-	tree.Insert(bits("11111110"), simpleHasher("d"))
+	tree.Insert(bits("11111110"), simpleValue("d"))
 
 	wantUpdates = map[string]*Node{
 		string(bools("1111")): &Node{
@@ -458,10 +456,10 @@ func TestTracking(t *testing.T) {
 	// deleting marks all ancestors as updated
 	tree = NewTree([]*Node{
 		{key: bools("1111")},
-		{key: bools("11110000"), val: simpleHasher("a"), isLeaf: true},
+		{key: bools("11110000"), val: simpleValue("a"), isLeaf: true},
 		{key: bools("111111")},
-		{key: bools("11111100"), val: simpleHasher("b"), isLeaf: true},
-		{key: bools("11111111"), val: simpleHasher("c"), isLeaf: true},
+		{key: bools("11111100"), val: simpleValue("b"), isLeaf: true},
+		{key: bools("11111111"), val: simpleValue("c"), isLeaf: true},
 	})
 	tree.Delete(bits("11111111"))
 
@@ -476,10 +474,10 @@ func TestTracking(t *testing.T) {
 	}
 }
 
-func makeVals(num int) []Hasher {
-	var vals []Hasher
+func makeVals(num int) []Valuer {
+	var vals []Valuer
 	for i := 0; i < num; i++ {
-		vals = append(vals, simpleHasher{byte(i)})
+		vals = append(vals, BytesValuer([]byte{byte(i)}))
 	}
 	return vals
 }
