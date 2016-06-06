@@ -3,6 +3,7 @@
 package explorer
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -136,10 +137,40 @@ func InitHistoricalOutputs(ctx context.Context, fc *cos.FC, maxAgeDays int, isMa
 	})
 }
 
+// HistoricalBalancesByAccount queries the historical_outputs table
+// for outputs in the given account at the given time and sums them by
+// assetID.  If the assetID parameter is non-nil, the output is
+// constrained to the balance of that asset only.
+func HistoricalBalancesByAccount(ctx context.Context, accountID string, timestamp time.Time, assetID *bc.AssetID) ([]bc.AssetAmount, error) {
+	q := "SELECT asset_id, SUM(amount) FROM historical_outputs WHERE account_id = $1 AND timespan @> $2::int8"
+	args := []interface{}{
+		accountID,
+		timestamp.Unix(),
+	}
+	if assetID != nil {
+		q += " AND asset_id = $3"
+		args = append(args, *assetID)
+	}
+	q += " GROUP BY asset_id"
+	var output []bc.AssetAmount
+	args = append(args, func(assetID bc.AssetID, amount uint64) {
+		output = append(output, bc.AssetAmount{assetID, amount})
+	})
+	err := pg.ForQueryRows(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	return output, nil
+}
+
 // ListHistoricalOutputsByAsset returns an array of every UTXO that contains assetID at timestamp.
 // When paginating, it takes a limit as well as `prev`, the last UTXO returned on the previous call.
 // ListHistoricalOutputsByAsset expects prev to be of the format "hash:index".
 func ListHistoricalOutputsByAsset(ctx context.Context, assetID bc.AssetID, timestamp time.Time, prev string, limit int) ([]*TxOutput, string, error) {
+	return listHistoricalOutputsByAssetAndAccount(ctx, assetID, "", timestamp, prev, limit)
+}
+
+func listHistoricalOutputsByAssetAndAccount(ctx context.Context, assetID bc.AssetID, accountID string, timestamp time.Time, prev string, limit int) ([]*TxOutput, string, error) {
 	if !historicalOutputs {
 		return nil, "", errors.WithDetail(httpjson.ErrBadRequest, "historical outputs aren't enabled on this core")
 	}
@@ -163,22 +194,30 @@ func ListHistoricalOutputsByAsset(ctx context.Context, assetID bc.AssetID, times
 		}
 	}
 
-	const q = `
-		SELECT tx_hash, index, amount, script, metadata
-		FROM historical_outputs
-		WHERE asset_id = $1
-			AND timespan @> $2::int8
-			AND tx_hash >= $3
-			-- prev index only matters if we're in the same tx
-			AND (tx_hash != $3 OR index > $4)
-		LIMIT $5
-	`
+	conditions := []string{
+		"asset_id = $1",
+		"timespan @> $2::int8",
+		"tx_hash >= $3",
+		"(tx_hash != $3 OR index > $4)", // prev index only matters if we're in the same tx
+	}
+	args := []interface{}{
+		assetID, ts, prevHash, prevIndex,
+	}
+	if accountID != "" {
+		conditions = append(conditions, "account_id = $5")
+		args = append(args, accountID)
+	}
+
+	var limitClause string
+	if limit > 0 {
+		limitClause = fmt.Sprintf("LIMIT %d", limit)
+	}
 
 	var (
 		res  []*state.Output
 		last string
 	)
-	err = pg.ForQueryRows(ctx, q, assetID, ts, prevHash, prevIndex, limit, func(hash bc.Hash, index uint32, amount uint64, script, metadata []byte) {
+	args = append(args, func(hash bc.Hash, index uint32, amount uint64, script, metadata []byte) {
 		outpt := bc.Outpoint{Hash: hash, Index: index}
 		o := &state.Output{
 			Outpoint: outpt,
@@ -190,6 +229,9 @@ func ListHistoricalOutputsByAsset(ctx context.Context, assetID bc.AssetID, times
 		}
 		res = append(res, o)
 	})
+	q := fmt.Sprintf("SELECT tx_hash, index, amount, script, metadata FROM historical_outputs WHERE %s %s", strings.Join(conditions, " AND "), limitClause)
+
+	err = pg.ForQueryRows(ctx, q, args...)
 	if err != nil {
 		return nil, "", err
 	}
