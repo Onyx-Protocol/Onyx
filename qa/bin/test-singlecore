@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -euo pipefail
+
+cleanup() {
+	printf "*Cleanup:*\n" 1>&2
+	# kill cored process
+	for pid in $(ps aux | grep [c]ored$ | awk {'print $2'}); do kill -9 $pid; done
+	wait
+
+	# clear blockchain
+	cat core/appdb/clear-blockchain.sql | psql $DB1_URL
+}
+trap 'cleanup' EXIT
+
+printf "\n*Testing 1 generator+signer:*\n" 1>&2
+LOGFILE=$CORE1_LOG cored &
+sleep 1
+
+CHAIN_API_URL=$CORE1_AUTH_URL java -ea -cp qa/tests/target/chain-core-qa.jar \
+	chain.qa.baseline.singlecore.Main

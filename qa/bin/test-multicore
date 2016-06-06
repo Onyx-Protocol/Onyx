@@ -1,0 +1,82 @@
+#!/bin/bash
+
+set -euo pipefail
+
+cleanup() {
+	printf "\n*Cleanup:*\n" 1>&2
+	# kill cored processes
+	for pid in $(ps aux | grep [c]ored$ | awk {'print $2'}); do kill -9 $pid; done
+	wait
+
+	# clear blockchains
+	cat core/appdb/clear-blockchain.sql | psql $DB1_URL
+	cat core/appdb/clear-blockchain.sql | psql $DB2_URL
+	cat core/appdb/clear-blockchain.sql | psql $DB3_URL
+}
+trap 'cleanup' EXIT
+
+runTests() {
+	# run multi-core tests
+	CHAIN_API_URL=$CORE1_AUTH_URL SECOND_API_URL=$CORE2_AUTH_URL java -ea -cp \
+		qa/tests/target/chain-core-qa.jar chain.qa.baseline.multicore.Main
+}
+
+printf "\n*Testing 1-of-1 sigs required; 1 generator, 1 detached signer*\n" 1>&2
+GENERATOR=0 REMOTE_GENERATOR_URL=$CORE1_URL LISTEN=$CORE2_LISTEN \
+	BLOCK_KEY=$PRIV1 DB_URL=$DB2_URL LOGFILE=$CORE2_LOG cored &
+
+SIGNER=0 REMOTE_SIGNER_URLS=$CORE2_URL REMOTE_SIGNER_KEYS=$PUB1 \
+	LOGFILE=$CORE1_LOG cored &
+sleep 15
+
+runTests
+cleanup
+
+printf "\n*Testing 1-of-2 sigs required; 1 generator+signer, 1 remote signer*\n" 1>&2
+GENERATOR=0 REMOTE_GENERATOR_URL=$CORE1_URL LISTEN=$CORE2_LISTEN \
+	BLOCK_KEY=$PRIV1 DB_URL=$DB2_URL LOGFILE=$CORE2_LOG cored &
+
+REMOTE_SIGNER_URLS=$CORE2_URL REMOTE_SIGNER_KEYS=$PUB1 \
+	LOGFILE=$CORE1_LOG cored &
+sleep 15
+
+runTests
+cleanup
+
+printf "\n*Testing 1-of-2 sigs required; 1 generator, 2 remote signers*\n" 1>&2
+GENERATOR=0 REMOTE_GENERATOR_URL=$CORE1_URL LISTEN=$CORE2_LISTEN \
+	BLOCK_KEY=$PRIV1 DB_URL=$DB2_URL LOGFILE=$CORE2_LOG cored &
+
+GENERATOR=0 REMOTE_GENERATOR_URL=$CORE1_URL LISTEN=$CORE3_LISTEN \
+	BLOCK_KEY=$PRIV2 DB_URL=$DB3_URL LOGFILE=$CORE3_LOG cored &
+
+SIGNER=0 REMOTE_SIGNER_URLS=$CORE2_URL,$CORE3_URL \
+	REMOTE_SIGNER_KEYS=$PUB1,$PUB2 LOGFILE=$CORE1_LOG cored &
+sleep 15
+
+runTests
+cleanup
+
+printf "\n*Testing 2-of-2 sigs required; 1 generator+signer, 1 signer*\n" 1>&2
+GENERATOR=0 REMOTE_GENERATOR_URL=$CORE1_URL LISTEN=$CORE2_LISTEN \
+	BLOCK_KEY=$PRIV1 DB_URL=$DB2_URL LOGFILE=$CORE2_LOG cored &
+
+REMOTE_SIGNER_URLS=$CORE2_URL REMOTE_SIGNER_KEYS=$PUB1 \
+	SIGS_REQUIRED=2 LOGFILE=$CORE1_LOG cored &
+sleep 15
+
+runTests
+cleanup
+
+printf "\n*Testing 2-of-2 sigs required; 1 generator, 2 remote signers*\n" 1>&2
+GENERATOR=0 REMOTE_GENERATOR_URL=$CORE1_URL LISTEN=$CORE2_LISTEN \
+	BLOCK_KEY=$PRIV1 DB_URL=$DB2_URL LOGFILE=$CORE2_LOG cored &
+
+GENERATOR=0 REMOTE_GENERATOR_URL=$CORE1_URL LISTEN=$CORE3_LISTEN \
+	BLOCK_KEY=$PRIV2 DB_URL=$DB3_URL LOGFILE=$CORE3_LOG cored &
+
+SIGNER=0 REMOTE_SIGNER_URLS=$CORE2_URL,$CORE3_URL \
+	REMOTE_SIGNER_KEYS=$PUB1,$PUB2 SIGS_REQUIRED=2 LOGFILE=$CORE1_LOG cored &
+sleep 15
+
+runTests
