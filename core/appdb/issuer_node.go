@@ -45,15 +45,15 @@ func InsertIssuerNode(ctx context.Context, projID, label string, xpubs, gennedKe
 		// an issuer node because there was a conflict on the client token.
 		// A previous request to create this issuer node succeeded.
 		in, err := getIssuerNodeByClientToken(ctx, projID, *clientToken)
-		return in, errors.Wrap(err, "looking up existing issuer node")
+		return in, errors.Wrap(err, "looking up existing asset issuser")
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "insert issuer node")
+		return nil, errors.Wrap(err, "insert asset issuer")
 	}
 
 	keys, err := buildNodeKeys(xpubs, gennedKeys)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating node key list")
+		return nil, errors.Wrap(err, "generating asset issuer key list")
 	}
 
 	return &IssuerNode{
@@ -93,7 +93,7 @@ func NextAsset(ctx context.Context, inodeID string) (asset *Asset, sigsRequired 
 		err = pg.ErrUserInputNotFound
 	}
 	if err != nil {
-		return nil, 0, errors.WithDetailf(err, "issuer node %v: get key info", inodeID)
+		return nil, 0, errors.WithDetailf(err, "asset issuer %v: get key info", inodeID)
 	}
 
 	asset.Keys, err = stringsToKeys(xpubs)
@@ -153,7 +153,7 @@ func GetIssuerNode(ctx context.Context, issuerNodeID string) (*IssuerNode, error
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
-	return issuerNode, errors.WithDetailf(err, "issuer node ID: %v", issuerNodeID)
+	return issuerNode, errors.WithDetailf(err, "asset issuer ID: %v", issuerNodeID)
 }
 
 type issuerNodeQuery struct {
@@ -212,7 +212,7 @@ func lookupIssuerNode(ctx context.Context, inq issuerNodeQuery) (*IssuerNode, er
 
 	keys, err := buildNodeKeys(xpubs, xprvs)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating node key list")
+		return nil, errors.Wrap(err, "generating asset issuer key list")
 	}
 
 	return &IssuerNode{

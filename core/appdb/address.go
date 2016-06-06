@@ -94,7 +94,7 @@ func AddrInfo(ctx context.Context, accountID string) (*Address, error) {
 
 		ai.Keys, err = stringsToKeys(nodeXPubs)
 		if err != nil {
-			return nil, errors.Wrap(err, "parsing node keys")
+			return nil, errors.Wrap(err, "parsing service keys")
 		}
 
 		if len(accXPubs) > 0 {

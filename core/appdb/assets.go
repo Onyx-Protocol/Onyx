@@ -81,7 +81,7 @@ func AssetByClientToken(ctx context.Context, issuerNodeID string, clientToken st
 		clientToken:  clientToken,
 	}
 	asset, err := lookupAsset(ctx, query)
-	return asset, errors.WithDetailf(err, "issuer node id=%s, client token=%s", issuerNodeID, clientToken)
+	return asset, errors.WithDetailf(err, "asset issuer id=%s, client token=%s", issuerNodeID, clientToken)
 }
 
 func lookupAsset(ctx context.Context, query assetLookupQuery) (*Asset, error) {

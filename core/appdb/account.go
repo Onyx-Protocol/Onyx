@@ -55,7 +55,7 @@ func CreateAccount(ctx context.Context, managerNodeID, label string, keys []stri
 
 	keyCount, err := managerNodeVariableKeys(ctx, managerNodeID)
 	if err != nil {
-		return nil, errors.Wrap(err, "fetching variable key count for manager node")
+		return nil, errors.Wrap(err, "fetching variable key count for account manager")
 	}
 
 	if keyCount != len(keys) {

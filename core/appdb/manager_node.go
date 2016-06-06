@@ -83,10 +83,10 @@ func InsertManagerNode(ctx context.Context, projID, label string, xpubs, gennedK
 		// a manager node because there was a conflict on the client token.
 		// A previous request to create this manager node succeeded.
 		mn, err := getManagerNodeByClientToken(ctx, projID, *clientToken)
-		return mn, errors.Wrap(err, "looking up existing manager node")
+		return mn, errors.Wrap(err, "looking up existing account manager")
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "insert manager node")
+		return nil, errors.Wrap(err, "insert account manager")
 	}
 
 	err = createRotation(ctx, id, keysToStrings(xpubs)...)
@@ -96,7 +96,7 @@ func InsertManagerNode(ctx context.Context, projID, label string, xpubs, gennedK
 
 	keys, err := buildNodeKeys(xpubs, gennedKeys)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating node key list")
+		return nil, errors.Wrap(err, "generating account manager key list")
 	}
 
 	for i := 0; i < variableKeys; i++ {
@@ -145,7 +145,7 @@ func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, er
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
-	return managerNode, errors.WithDetailf(err, "manager node ID: %v", managerNodeID)
+	return managerNode, errors.WithDetailf(err, "account manager ID: %v", managerNodeID)
 }
 
 type managerNodeQuery struct {
@@ -206,7 +206,7 @@ func lookupManagerNode(ctx context.Context, mnq managerNodeQuery) (*ManagerNode,
 
 	keys, err := buildNodeKeys(xpubs, xprvs)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating node key list")
+		return nil, errors.Wrap(err, "generating account manager key list")
 	}
 
 	for i := 0; i < varKeys; i++ {

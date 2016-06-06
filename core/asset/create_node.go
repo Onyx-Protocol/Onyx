@@ -106,7 +106,7 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 			}
 		case "account":
 			if node != ManagerNode {
-				return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: account keys are only valid for manager nodes", i)
+				return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: account keys are only valid for account managers", i)
 			}
 			variableKeyCount++
 		default:

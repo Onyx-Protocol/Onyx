@@ -52,7 +52,7 @@ func managerAuthz(ctx context.Context, managerID string) error {
 	if err != nil {
 		return err
 	}
-	return errors.WithDetailf(projectAuthz(ctx, project), "manager node ID: %v", managerID)
+	return errors.WithDetailf(projectAuthz(ctx, project), "account manager ID: %v", managerID)
 }
 
 // accountAuthz will verify whether this request has access to the provided account. If
@@ -72,7 +72,7 @@ func issuerAuthz(ctx context.Context, issuerID string) error {
 	if err != nil {
 		return err
 	}
-	return errors.WithDetailf(projectAuthz(ctx, project), "issuer node ID: %v", issuerID)
+	return errors.WithDetailf(projectAuthz(ctx, project), "asset issuer ID: %v", issuerID)
 }
 
 // assetAuthz will verify whether this request has access to the provided asset.

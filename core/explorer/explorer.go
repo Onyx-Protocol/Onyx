@@ -192,7 +192,7 @@ func GetAssets(ctx context.Context, store *txdb.Store, assetIDs []string) (map[s
 
 	withCirc, err := appdb.GetAssets(ctx, assetIDs)
 	if err != nil {
-		return nil, errors.Wrap(err, "fetch issuer node asset data")
+		return nil, errors.Wrap(err, "fetch asset issuer asset data")
 	}
 
 	for id, inodeAsset := range withCirc {

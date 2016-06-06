@@ -38,7 +38,7 @@ func createIssuerNode(ctx context.Context, projID string, req map[string]interfa
 		var depReq asset.DeprecatedCreateNodeReq
 		err = json.Unmarshal(bReq, &depReq)
 		if err != nil {
-			return nil, errors.Wrap(err, "invalid node creation request")
+			return nil, errors.Wrap(err, "invalid asset issuer creation request")
 		}
 
 		for _, xp := range depReq.XPubs {
@@ -56,7 +56,7 @@ func createIssuerNode(ctx context.Context, projID string, req map[string]interfa
 	} else {
 		err = json.Unmarshal(bReq, &cnReq)
 		if err != nil {
-			return nil, errors.Wrap(err, "invalid node creation request")
+			return nil, errors.Wrap(err, "invalid asset issuer creation request")
 		}
 	}
 

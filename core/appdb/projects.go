@@ -144,12 +144,12 @@ func ArchiveProject(ctx context.Context, projID string) error {
 
 	const mnQ = `UPDATE manager_nodes SET archived = true WHERE project_id = $1`
 	if _, err := pg.Exec(ctx, mnQ, projID); err != nil {
-		return errors.Wrap(err, "archive manager nodes query")
+		return errors.Wrap(err, "archive account managers query")
 	}
 
 	const inQ = `UPDATE issuer_nodes SET archived = true WHERE project_id = $1`
 	if _, err := pg.Exec(ctx, inQ, projID); err != nil {
-		return errors.Wrap(err, "archive issuer nodes query")
+		return errors.Wrap(err, "archive asset issuers query")
 	}
 
 	const accountQ = `
@@ -332,7 +332,7 @@ func ProjectByActiveManager(ctx context.Context, managerID string) (string, erro
 	if archived {
 		err = ErrArchived
 	}
-	return project, errors.WithDetailf(err, "manager node ID: %v", managerID)
+	return project, errors.WithDetailf(err, "account manager ID: %v", managerID)
 }
 
 // ProjectsByActiveAccount returns all project IDs associated with a set of active accounts.

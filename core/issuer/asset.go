@@ -45,7 +45,7 @@ func CreateAsset(ctx context.Context, inodeID, label string, definition map[stri
 
 	asset.RedeemScript, err = txscript.MultiSigScript(pubkeys, sigsReq)
 	if err != nil {
-		return nil, errors.Wrapf(err, "creating asset: issuer node id %v sigsReq %v", inodeID, sigsReq)
+		return nil, errors.Wrapf(err, "creating asset: asset issuer id %v sigsReq %v", inodeID, sigsReq)
 	}
 	pkScript := txscript.RedeemToPkScript(asset.RedeemScript)
 	asset.Hash = bc.ComputeAssetID(pkScript, [32]byte{}) // TODO(kr): get genesis hash from config
