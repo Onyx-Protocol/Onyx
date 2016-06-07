@@ -93,19 +93,26 @@ func Write(ctx context.Context, tx *bc.Tx, ts time.Time) error {
 		return errors.Wrap(err, "generating principal nodetx")
 	}
 
+	issuerAssets := make(map[string][]string)
 	if tx.HasIssuance() && len(assets) > 0 {
-		filteredTx, err := json.Marshal(filterAccounts(nodeTx, ""))
-		if err != nil {
-			return errors.Wrap(err, "filtering tx")
+		for _, asset := range issuedAssets(tx) {
+			actAsset := assetMap[asset.String()]
+			issuerAssets[actAsset.IssuerNodeID] = append(issuerAssets[actAsset.IssuerNodeID], asset.String())
 		}
-		_, err = appdb.WriteIssuerTx(ctx, tx.Hash.String(), filteredTx, assets[0].IssuerNodeID, assets[0].ID)
+	}
+	filteredTx, err := json.Marshal(filterAccounts(nodeTx, ""))
+	if err != nil {
+		return errors.Wrap(err, "filtering tx")
+	}
+	for issuer, assetIDs := range issuerAssets {
+		_, err = appdb.WriteIssuerTx(ctx, tx.Hash.String(), filteredTx, issuer, assetIDs)
 		if err != nil {
 			return errors.Wrap(err, "writing issuer tx")
 		}
 	}
 
 	for nodeID, accountIDs := range nodeAccounts {
-		filteredTx, err := json.Marshal(filterAccounts(nodeTx, nodeID))
+		filteredTx, err = json.Marshal(filterAccounts(nodeTx, nodeID))
 		if err != nil {
 			return errors.Wrap(err, "filtering tx")
 		}
@@ -217,6 +224,25 @@ func generateNodeTx(
 		})
 	}
 	return actTx, nil
+}
+
+func issuedAssets(tx *bc.Tx) []bc.AssetID {
+	assets := make(map[bc.AssetID]int64)
+	for _, input := range tx.Inputs {
+		if !input.IsIssuance() {
+			assets[input.AssetAmount.AssetID] -= int64(input.AssetAmount.Amount)
+		}
+	}
+	for _, output := range tx.Outputs {
+		assets[output.AssetID] += int64(output.Amount)
+	}
+	var issuedAssets []bc.AssetID
+	for asset, amount := range assets {
+		if amount > 0 {
+			issuedAssets = append(issuedAssets, asset)
+		}
+	}
+	return issuedAssets
 }
 
 func filterAccounts(tx *NodeTx, keepID string) *NodeTx {

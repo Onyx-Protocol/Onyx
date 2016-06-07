@@ -11,7 +11,7 @@ import (
 	"chain/errors"
 )
 
-func WriteIssuerTx(ctx context.Context, txHash string, data []byte, iNodeID string, asset string) (id string, err error) {
+func WriteIssuerTx(ctx context.Context, txHash string, data []byte, iNodeID string, assetIDs []string) (id string, err error) {
 	issuerQ := `
 		INSERT INTO issuer_txs (issuer_node_id, tx_hash, data)
 		VALUES ($1, $2, $3)
@@ -24,10 +24,10 @@ func WriteIssuerTx(ctx context.Context, txHash string, data []byte, iNodeID stri
 
 	assetQ := `
 		INSERT INTO issuer_txs_assets (issuer_tx_id, asset_id)
-		VALUES ($1, $2)
+		VALUES ($1, unnest($2::text[]))
 	`
-	_, err = pg.Exec(ctx, assetQ, id, asset)
-	return id, errors.Wrap(err, "insert issuer tx for asset")
+	_, err = pg.Exec(ctx, assetQ, id, pg.Strings(assetIDs))
+	return id, errors.Wrap(err, "insert issuer tx for assets")
 }
 
 func WriteManagerTx(ctx context.Context, txHash string, data []byte, mNodeID string, accounts []string) (id string, err error) {

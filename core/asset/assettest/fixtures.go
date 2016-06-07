@@ -251,8 +251,8 @@ func AccountDestinationFixture(ctx context.Context, t testing.TB, assetID bc.Ass
 	return dest
 }
 
-func IssuerTxFixture(ctx context.Context, t testing.TB, txHash string, data []byte, iNodeID string, asset string) (id string) {
-	id, err := appdb.WriteIssuerTx(ctx, txHash, data, iNodeID, asset)
+func IssuerTxFixture(ctx context.Context, t testing.TB, txHash string, data []byte, iNodeID string, assets []string) (id string) {
+	id, err := appdb.WriteIssuerTx(ctx, txHash, data, iNodeID, assets)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

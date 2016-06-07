@@ -47,7 +47,8 @@ func TestWriteManagerTx(t *testing.T) {
 
 func TestWriteIssuerTx(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	_, err := WriteIssuerTx(ctx, "tx1", []byte(`{}`), "inode-1", "asset-1")
+	assets := []string{"asset-1", "asset-2"}
+	_, err := WriteIssuerTx(ctx, "tx1", []byte(`{}`), "inode-1", assets)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -63,14 +64,16 @@ func TestWriteIssuerTx(t *testing.T) {
 		t.Fatal("expected issuer tx to be in db")
 	}
 
-	txs, _, err = AssetTxs(ctx, "asset-1", "", 100)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
+	for _, asset := range assets {
+		txs, _, err = AssetTxs(ctx, asset, "", 100)
+		if err != nil {
+			t.Log(errors.Stack(err))
+			t.Fatal(err)
+		}
 
-	if len(txs) != 1 {
-		t.Fatal("expected asset tx to be in db")
+		if len(txs) != 1 {
+			t.Fatal("expected asset tx to be in db")
+		}
 	}
 }
 
@@ -190,9 +193,9 @@ func TestIssuerTxs(t *testing.T) {
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	in1 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-1", nil, nil)
 
-	itx0 := assettest.IssuerTxFixture(ctx, t, "tx-id-0", []byte(`{"transaction_id": "tx-id-0"}`), in0, "asset-id-0")
-	itx1 := assettest.IssuerTxFixture(ctx, t, "tx-id-1", []byte(`{"transaction_id": "tx-id-1"}`), in1, "asset-id-1")
-	assettest.IssuerTxFixture(ctx, t, "tx-id-2", []byte(`{"transaction_id": "tx-id-2"}`), in0, "asset-id-0")
+	itx0 := assettest.IssuerTxFixture(ctx, t, "tx-id-0", []byte(`{"transaction_id": "tx-id-0"}`), in0, []string{"asset-id-0"})
+	itx1 := assettest.IssuerTxFixture(ctx, t, "tx-id-1", []byte(`{"transaction_id": "tx-id-1"}`), in1, []string{"asset-id-1"})
+	assettest.IssuerTxFixture(ctx, t, "tx-id-2", []byte(`{"transaction_id": "tx-id-2"}`), in0, []string{"asset-id-0"})
 
 	examples := []struct {
 		inodeID  string
@@ -240,9 +243,9 @@ func TestAssetTxs(t *testing.T) {
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	in1 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-1", nil, nil)
 
-	itx0 := assettest.IssuerTxFixture(ctx, t, "tx-id-0", []byte(`{"transaction_id": "tx-id-0"}`), in0, "asset-id-0")
-	itx1 := assettest.IssuerTxFixture(ctx, t, "tx-id-1", []byte(`{"transaction_id": "tx-id-1"}`), in1, "asset-id-1")
-	assettest.IssuerTxFixture(ctx, t, "tx-id-2", []byte(`{"transaction_id": "tx-id-2"}`), in0, "asset-id-0")
+	itx0 := assettest.IssuerTxFixture(ctx, t, "tx-id-0", []byte(`{"transaction_id": "tx-id-0"}`), in0, []string{"asset-id-0"})
+	itx1 := assettest.IssuerTxFixture(ctx, t, "tx-id-1", []byte(`{"transaction_id": "tx-id-1"}`), in1, []string{"asset-id-1"})
+	assettest.IssuerTxFixture(ctx, t, "tx-id-2", []byte(`{"transaction_id": "tx-id-2"}`), in0, []string{"asset-id-0"})
 
 	stringsToRawJSON := func(strs ...string) []*json.RawMessage {
 		var res []*json.RawMessage
