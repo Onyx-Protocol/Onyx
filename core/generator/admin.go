@@ -52,7 +52,7 @@ func newSummary() *Summary {
 }
 
 // GetSummary returns a Summary from the perspective of the given project.
-func GetSummary(ctx context.Context, store *txdb.Store, projID string) (*Summary, error) {
+func GetSummary(ctx context.Context, store *txdb.Store, pool *txdb.Pool, projID string) (*Summary, error) {
 	res := newSummary()
 
 	res.BlockFreqMs = uint64(blockPeriod.Nanoseconds() / 1000000)
@@ -68,7 +68,7 @@ func GetSummary(ctx context.Context, store *txdb.Store, projID string) (*Summary
 		return nil, errors.Wrap(err, "count block txs")
 	}
 
-	res.TransactionCount.Unconfirmed, err = store.CountPoolTxs(ctx)
+	res.TransactionCount.Unconfirmed, err = pool.CountTxs(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "count pool txs")
 	}

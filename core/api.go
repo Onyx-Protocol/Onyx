@@ -24,9 +24,9 @@ const (
 
 // Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
 // will be used as the password for routes starting with /nouser/.
-func Handler(nouserSecret string, signer *signer.Signer, store *txdb.Store) chainhttp.Handler {
+func Handler(nouserSecret string, signer *signer.Signer, store *txdb.Store, pool *txdb.Pool) chainhttp.Handler {
 	h := pat.New()
-	a := &api{store}
+	a := &api{store: store, pool: pool}
 
 	pwHandler := httpjson.NewServeMux(writeHTTPError)
 	pwHandler.HandleFunc("POST", "/v3/login", login)
@@ -70,6 +70,7 @@ func nouserHandler() chainhttp.HandlerFunc {
 
 type api struct {
 	store *txdb.Store
+	pool  *txdb.Pool
 }
 
 func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {

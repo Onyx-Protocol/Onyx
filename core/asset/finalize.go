@@ -97,18 +97,24 @@ func FinalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx
 			// An alternative approach will be to scan through each block as
 			// it lands, looking for the tx or a tx that conflicts with it.
 			// For now, though, this is probably faster and simpler.
-			poolTxs, bcTxs, err := fc.GetTxs(ctx, tx.Hash)
+			bcTxs, err := fc.ConfirmedTxs(ctx, tx.Hash)
 			if err != nil {
-				return nil, errors.Wrap(err, "getting pool/bc txs")
+				return nil, errors.Wrap(err, "getting bc txs")
 			}
 			if _, ok := bcTxs[tx.Hash]; ok {
 				// confirmed
 				return tx, nil
 			}
+
+			poolTxs, err := fc.PendingTxs(ctx, tx.Hash)
+			if err != nil {
+				return nil, errors.Wrap(err, "getting pool txs")
+			}
 			if _, ok := poolTxs[tx.Hash]; !ok {
 				// rejected
 				return nil, ErrRejected
 			}
+
 			// still in the pool; iterate
 		}
 	}

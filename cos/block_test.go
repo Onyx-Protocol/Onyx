@@ -11,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 
 	"chain/cos/bc"
+	"chain/cos/mempool"
 	"chain/cos/memstore"
 	"chain/cos/patricia"
 	"chain/cos/state"
@@ -22,6 +23,7 @@ import (
 func TestLatestBlock(t *testing.T) {
 	ctx := context.Background()
 
+	emptyPool := mempool.New()
 	noBlocks := memstore.New()
 	oneBlock := memstore.New()
 	oneBlock.ApplyBlock(ctx, &bc.Block{}, nil, nil, nil, patricia.NewTree(nil))
@@ -36,7 +38,7 @@ func TestLatestBlock(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		fc, err := NewFC(ctx, c.store, nil, nil)
+		fc, err := NewFC(ctx, c.store, emptyPool, nil, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -54,7 +56,7 @@ func TestLatestBlock(t *testing.T) {
 
 func TestNoTimeTravel(t *testing.T) {
 	ctx := context.Background()
-	fc, err := NewFC(ctx, memstore.New(), nil, nil)
+	fc, err := NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +94,7 @@ func TestWaitForBlock(t *testing.T) {
 		},
 	}
 	store.ApplyBlock(ctx, block0, nil, nil, nil, patricia.NewTree(nil))
-	fc, err := NewFC(ctx, store, nil, nil)
+	fc, err := NewFC(ctx, store, mempool.New(), nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -322,7 +324,7 @@ func TestIsSignedByTrustedHost(t *testing.T) {
 
 func newContextFC(t testing.TB) (context.Context, *FC) {
 	ctx := context.Background()
-	fc, err := NewFC(ctx, memstore.New(), nil, nil)
+	fc, err := NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

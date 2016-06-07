@@ -114,22 +114,28 @@ type TxOutput struct {
 }
 
 // GetTx returns a transaction with additional details added.
-func GetTx(ctx context.Context, store *txdb.Store, txHashStr string) (*Tx, error) {
+// TODO(jackson): Explorer should do its own indexing of transactions
+// and not rely on the Store or Pool.
+func GetTx(ctx context.Context, store *txdb.Store, pool *txdb.Pool, txHashStr string) (*Tx, error) {
 	hash, err := bc.ParseHash(txHashStr)
 	if err != nil {
 		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
 
-	poolTxs, bcTxs, err := store.GetTxs(ctx, hash)
+	poolTxs, err := pool.GetTxs(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+	bcTxs, err := store.GetTxs(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
 	tx, ok := poolTxs[hash]
 	if !ok {
 		tx, ok = bcTxs[hash]
-		if !ok {
-			return nil, errors.Wrap(pg.ErrUserInputNotFound)
-		}
+	}
+	if !ok {
+		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
 
 	blockHeader, err := store.GetTxBlockHeader(ctx, hash)
@@ -144,10 +150,14 @@ func GetTx(ctx context.Context, store *txdb.Store, txHashStr string) (*Tx, error
 		}
 		inHashes = append(inHashes, in.Previous.Hash)
 	}
-	prevPoolTxs, prevBcTxs, err := store.GetTxs(ctx, inHashes...)
 
+	prevPoolTxs, err := pool.GetTxs(ctx, inHashes...)
 	if err != nil {
-		return nil, errors.Wrap(err, "fetching inputs")
+		return nil, errors.Wrap(err, "fetching pool inputs")
+	}
+	prevBcTxs, err := store.GetTxs(ctx, inHashes...)
+	if err != nil {
+		return nil, errors.Wrap(err, "fetching bc inputs")
 	}
 
 	return makeTx(tx, blockHeader, prevPoolTxs, prevBcTxs)

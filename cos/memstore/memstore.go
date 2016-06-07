@@ -15,10 +15,6 @@ type MemStore struct {
 	blockTxs   map[bc.Hash]*bc.Tx
 	blockUTXOs map[bc.Outpoint]*state.Output
 
-	pool      []*bc.Tx // used for keeping topological order
-	poolMap   map[bc.Hash]*bc.Tx
-	poolUTXOs map[bc.Outpoint]*state.Output
-
 	stateTree *patricia.Tree
 }
 
@@ -27,76 +23,17 @@ func New() *MemStore {
 	return &MemStore{
 		blockTxs:   make(map[bc.Hash]*bc.Tx),
 		blockUTXOs: make(map[bc.Outpoint]*state.Output),
-
-		poolMap:   make(map[bc.Hash]*bc.Tx),
-		poolUTXOs: make(map[bc.Outpoint]*state.Output),
 	}
 }
 
-func (m *MemStore) GetTxs(ctx context.Context, hashes ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]*bc.Tx, err error) {
-	poolTxs = make(map[bc.Hash]*bc.Tx)
+func (m *MemStore) GetTxs(ctx context.Context, hashes ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error) {
 	bcTxs = make(map[bc.Hash]*bc.Tx)
 	for _, hash := range hashes {
 		if tx := m.blockTxs[hash]; tx != nil {
 			bcTxs[hash] = m.blockTxs[hash]
 		}
-		if tx := m.poolMap[hash]; tx != nil {
-			poolTxs[hash] = tx
-		}
 	}
-	return poolTxs, bcTxs, nil
-}
-
-func (m *MemStore) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*state.AssetState) error {
-	m.poolMap[tx.Hash] = tx
-	m.pool = append(m.pool, tx)
-
-	for i, out := range tx.Outputs {
-		op := bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
-		m.poolUTXOs[op] = state.NewOutput(*out, op)
-	}
-	return nil
-}
-
-func (m *MemStore) CleanPool(
-	ctx context.Context,
-	confirmed,
-	conflicting []*bc.Tx,
-	assets map[bc.AssetID]*state.AssetState,
-) error {
-	for _, tx := range append(confirmed, conflicting...) {
-		delete(m.poolMap, tx.Hash)
-		for i := range m.pool {
-			if m.pool[i].Hash == tx.Hash {
-				m.pool = append(m.pool[:i], m.pool[i+1:]...)
-				break
-			}
-		}
-		for i := range tx.Outputs {
-			delete(m.poolUTXOs, bc.Outpoint{Hash: tx.Hash, Index: uint32(i)})
-		}
-	}
-
-	return nil
-}
-
-func (m *MemStore) PoolTxs(context.Context) ([]*bc.Tx, error) {
-	return m.pool[:len(m.pool):len(m.pool)], nil
-}
-
-func (m *MemStore) GetPoolPrevouts(ctx context.Context, txs []*bc.Tx) (map[bc.Outpoint]*state.Output, error) {
-	prevouts := map[bc.Outpoint]*state.Output{}
-	for _, tx := range txs {
-		for _, in := range tx.Inputs {
-			if in.IsIssuance() {
-				continue
-			}
-			if o, ok := m.poolUTXOs[in.Previous]; ok {
-				prevouts[in.Previous] = o
-			}
-		}
-	}
-	return prevouts, nil
+	return bcTxs, nil
 }
 
 func (m *MemStore) ApplyBlock(
@@ -112,9 +49,7 @@ func (m *MemStore) ApplyBlock(
 	// Record all the new transactions.
 	var newTxs []*bc.Tx
 	for _, tx := range b.Transactions {
-		if m.poolMap[tx.Hash] == nil {
-			newTxs = append(newTxs, tx)
-		}
+		newTxs = append(newTxs, tx)
 		m.blockTxs[tx.Hash] = tx
 	}
 
@@ -127,7 +62,6 @@ func (m *MemStore) ApplyBlock(
 	// order of adding UTXOs and consuming them is important for txs that
 	// consume the outputs of other pool txs.
 	for _, out := range consumedUTXOs {
-		delete(m.poolUTXOs, out.Outpoint)
 		delete(m.blockUTXOs, out.Outpoint)
 	}
 

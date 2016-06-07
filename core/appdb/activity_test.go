@@ -11,8 +11,8 @@ import (
 	. "chain/core/appdb"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
-	"chain/cos"
 	"chain/cos/bc"
+	"chain/cos/mempool"
 	"chain/cos/memstore"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -21,8 +21,8 @@ import (
 
 func TestGetActUTXOs(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	var store cos.Store = memstore.New()
-	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	store, pool := memstore.New(), mempool.New()
+	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestGetActUTXOs(t *testing.T) {
 		},
 	})
 
-	err = store.ApplyTx(ctx, tx, nil)
+	err = pool.Insert(ctx, tx, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -132,8 +132,8 @@ func TestGetActUTXOs(t *testing.T) {
 
 func TestGetActUTXOsIssuance(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	var store cos.Store = memstore.New()
-	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	store, pool := memstore.New(), mempool.New()
+	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +152,7 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 		}},
 	})
 
-	err = store.ApplyTx(ctx, tx, nil)
+	err = pool.Insert(ctx, tx, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -184,7 +184,7 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 
 func TestGetActAssets(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil)
+	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ func (a byAssetID) Less(i, j int) bool { return a[i].ID < a[j].ID }
 
 func TestGetActAccounts(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil)
+	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

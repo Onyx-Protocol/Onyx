@@ -20,7 +20,57 @@ import (
 	"chain/strings"
 )
 
-func poolTxs(ctx context.Context, db pg.DB) ([]*bc.Tx, error) {
+// New creates a Store and Pool backed by the txdb with the provided
+// db handle.
+func New(db *sql.DB) (*Store, *Pool) {
+	return NewStore(db), NewPool(db)
+}
+
+// getBlockchainTxs looks up transactions by their hashes in the blockchain.
+func getBlockchainTxs(ctx context.Context, db pg.DB, hashes ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error) {
+	hashStrings := make([]string, 0, len(hashes))
+	for _, h := range hashes {
+		hashStrings = append(hashStrings, h.String())
+	}
+	sort.Strings(hashStrings)
+	hashStrings = strings.Uniq(hashStrings)
+	const q = `
+		SELECT t.tx_hash, t.data
+		FROM txs t
+		INNER JOIN blocks_txs b ON b.tx_hash = t.tx_hash
+		WHERE t.tx_hash = ANY($1)
+	`
+	bcTxs = make(map[bc.Hash]*bc.Tx, len(hashes))
+	err = pg.ForQueryRows(pg.NewContext(ctx, db), q, pg.Strings(hashStrings), func(hash bc.Hash, data bc.TxData) {
+		tx := &bc.Tx{TxData: data, Hash: hash, Stored: true}
+		bcTxs[hash] = tx
+	})
+	return bcTxs, errors.Wrap(err, "get txs query")
+}
+
+// getPoolTxs looks up transactions by their hashes in the pending tx pool.
+func getPoolTxs(ctx context.Context, db pg.DB, hashes ...bc.Hash) (poolTxs map[bc.Hash]*bc.Tx, err error) {
+	hashStrings := make([]string, 0, len(hashes))
+	for _, h := range hashes {
+		hashStrings = append(hashStrings, h.String())
+	}
+	sort.Strings(hashStrings)
+	hashStrings = strings.Uniq(hashStrings)
+	const q = `
+		SELECT t.tx_hash, t.data
+		FROM pool_txs t
+		WHERE t.tx_hash = ANY($1)
+	`
+	poolTxs = make(map[bc.Hash]*bc.Tx, len(hashes))
+	err = pg.ForQueryRows(pg.NewContext(ctx, db), q, pg.Strings(hashStrings), func(hash bc.Hash, data bc.TxData) {
+		tx := &bc.Tx{TxData: data, Hash: hash, Stored: true}
+		poolTxs[hash] = tx
+	})
+	return poolTxs, errors.Wrap(err, "get txs query")
+}
+
+// dumpPoolTxs returns all of the pending transactions in the pool.
+func dumpPoolTxs(ctx context.Context, db pg.DB) ([]*bc.Tx, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -34,35 +84,6 @@ func poolTxs(ctx context.Context, db pg.DB) ([]*bc.Tx, error) {
 	}
 	txs = topSort(ctx, txs)
 	return txs, nil
-}
-
-// getTxs looks up transactions by their hashes
-// in the block chain and in the pool.
-func getTxs(ctx context.Context, db pg.DB, hashes ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]*bc.Tx, err error) {
-	hashStrings := make([]string, 0, len(hashes))
-	for _, h := range hashes {
-		hashStrings = append(hashStrings, h.String())
-	}
-	sort.Strings(hashStrings)
-	hashStrings = strings.Uniq(hashStrings)
-	const q = `
-		SELECT t.tx_hash, t.data, p.tx_hash IS NOT NULL, b.tx_hash IS NOT NULL
-		FROM txs t
-			LEFT JOIN pool_txs p ON p.tx_hash = t.tx_hash
-			LEFT JOIN blocks_txs b ON b.tx_hash = t.tx_hash
-		WHERE t.tx_hash = ANY($1)
-	`
-	poolTxs = make(map[bc.Hash]*bc.Tx)
-	bcTxs = make(map[bc.Hash]*bc.Tx)
-	err = pg.ForQueryRows(pg.NewContext(ctx, db), q, pg.Strings(hashStrings), func(hash bc.Hash, data bc.TxData, p, b bool) {
-		tx := &bc.Tx{TxData: data, Hash: hash, Stored: true}
-		if p {
-			poolTxs[hash] = tx
-		} else if b {
-			bcTxs[hash] = tx
-		}
-	})
-	return poolTxs, bcTxs, errors.Wrap(err, "get txs query")
 }
 
 func (s *Store) GetTxBlockHeader(ctx context.Context, hash bc.Hash) (*bc.BlockHeader, error) {

@@ -24,7 +24,8 @@ func TestListUTXOsByAsset(t *testing.T) {
 	ctx := context.Background()
 	dbctx := pgtest.NewContext(t)
 	store := NewStore(pg.FromContext(dbctx).(*sql.DB))
-	_, err := assettest.InitializeSigningGenerator(dbctx, store)
+	pool := NewPool(pg.FromContext(dbctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(dbctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}

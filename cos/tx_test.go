@@ -9,6 +9,7 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/fedtest"
+	"chain/cos/mempool"
 	"chain/cos/memstore"
 	"chain/cos/state"
 	"chain/cos/txscript"
@@ -47,8 +48,7 @@ func TestIdempotentAddTx(t *testing.T) {
 
 func TestAddTx(t *testing.T) {
 	ctx := context.Background()
-	store := memstore.New()
-	fc, err := NewFC(ctx, store, nil, nil)
+	fc, err := NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -70,13 +70,13 @@ func TestAddTx(t *testing.T) {
 	}
 }
 
-type issuedTestStore struct {
-	memstore.MemStore
+type issuedTestPool struct {
+	mempool.MemPool
 	f func(map[bc.AssetID]*state.AssetState)
 }
 
-func (i *issuedTestStore) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*state.AssetState) error {
-	err := i.MemStore.ApplyTx(ctx, tx, assets)
+func (i *issuedTestPool) ApplyTx(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*state.AssetState) error {
+	err := i.MemPool.Insert(ctx, tx, assets)
 	if i.f != nil {
 		i.f(assets)
 	}
@@ -140,12 +140,12 @@ func TestAddTxIssued(t *testing.T) {
 	asset0.Sign(t, issueTransferData, 1, bc.AssetAmount{})
 	issueTransfer := bc.NewTx(*issueTransferData)
 
-	memstore := memstore.New()
-	store := &issuedTestStore{
-		MemStore: *memstore,
+	memstore, mempool := memstore.New(), mempool.New()
+	pool := &issuedTestPool{
+		MemPool: *mempool,
 	}
 
-	fc, err := NewFC(ctx, store, nil, nil)
+	fc, err := NewFC(ctx, memstore, pool, nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -172,7 +172,7 @@ func TestAddTxIssued(t *testing.T) {
 		}},
 	}
 	for _, c := range cases {
-		store.f = func(got map[bc.AssetID]*state.AssetState) {
+		pool.f = func(got map[bc.AssetID]*state.AssetState) {
 			if !reflect.DeepEqual(got, c.want) {
 				t.Errorf("got issued = %+v want %+v", got, c.want)
 			}

@@ -24,7 +24,7 @@ import (
 func TestHistoricalOutputs(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	fc, err := assettest.InitializeSigningGenerator(ctx, store)
+	fc, err := assettest.InitializeSigningGenerator(ctx, store, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

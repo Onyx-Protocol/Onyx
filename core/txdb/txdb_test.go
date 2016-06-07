@@ -38,7 +38,7 @@ func TestPoolTxs(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	got, err := poolTxs(ctx, dbtx)
+	got, err := dumpPoolTxs(ctx, dbtx)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
@@ -64,16 +64,16 @@ func TestPoolTxs(t *testing.T) {
 
 func TestGetTxs(t *testing.T) {
 	dbctx := pgtest.NewContext(t)
-	store := NewStore(pg.FromContext(dbctx).(*sql.DB))
+	pool := NewPool(pg.FromContext(dbctx).(*sql.DB))
 	ctx := context.Background()
 
 	tx := bc.NewTx(bc.TxData{SerFlags: 0x7, Metadata: []byte("tx")})
-	err := store.ApplyTx(ctx, tx, nil)
+	err := pool.Insert(ctx, tx, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	poolTxs, _, err := store.GetTxs(ctx, tx.Hash)
+	poolTxs, err := pool.GetTxs(ctx, tx.Hash)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -85,7 +85,7 @@ func TestGetTxs(t *testing.T) {
 	}
 
 	nonexistentHash := mustParseHash("beefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeef")
-	_, _, gotErr := store.GetTxs(ctx, tx.Hash, nonexistentHash)
+	_, gotErr := pool.GetTxs(ctx, tx.Hash, nonexistentHash)
 	if gotErr != nil {
 		t.Errorf("got err=%v want nil", gotErr)
 	}
@@ -104,7 +104,7 @@ func TestInsertTx(t *testing.T) {
 		t.Fatal("expected insertTx to be successful")
 	}
 
-	_, _, err = getTxs(ctx, dbtx, tx.Hash)
+	_, err = getBlockchainTxs(ctx, dbtx, tx.Hash)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -188,7 +188,7 @@ func TestInsertBlock(t *testing.T) {
 
 	// txs in database
 	txs := blk.Transactions
-	_, _, err = getTxs(ctx, dbtx, txs[0].Hash, txs[1].Hash)
+	_, err = getBlockchainTxs(ctx, dbtx, txs[0].Hash, txs[1].Hash)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

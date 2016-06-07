@@ -77,7 +77,7 @@ type BlockCallback func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx
 type TxCallback func(context.Context, *bc.Tx)
 
 // Store provides storage for blockchain data: blocks, asset
-// definition pointers, and pending transactions.
+// definition pointers and confirmed transactions.
 //
 // Note, this is different from state.View. A View provides
 // access to the state at a given point in time -- outputs and
@@ -90,18 +90,20 @@ type TxCallback func(context.Context, *bc.Tx)
 // uses those views to validate a tx or block, then uses Store
 // to commit the validated data.
 type Store interface {
-	// tx pool
-	GetTxs(context.Context, ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]*bc.Tx, err error)
-	ApplyTx(context.Context, *bc.Tx, map[bc.AssetID]*state.AssetState) error
-	CleanPool(ctx context.Context, confirmed, conflicting []*bc.Tx, assets map[bc.AssetID]*state.AssetState) error
-	PoolTxs(context.Context) ([]*bc.Tx, error)
-	GetPoolPrevouts(context.Context, []*bc.Tx) (map[bc.Outpoint]*state.Output, error)
-
-	// blocks
+	GetTxs(context.Context, ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error)
 	ApplyBlock(ctx context.Context, b *bc.Block, addedUTXOs, removedUTXOs []*state.Output, assets map[bc.AssetID]*state.AssetState, tree *patricia.Tree) ([]*bc.Tx, error)
 	FinalizeBlock(context.Context, uint64) error
 	LatestBlock(context.Context) (*bc.Block, error)
 	StateTree(context.Context, uint64) (*patricia.Tree, error)
+}
+
+// Pool provides storage for transactions in the pending tx pool.
+type Pool interface {
+	Insert(context.Context, *bc.Tx, map[bc.AssetID]*state.AssetState) error
+	GetTxs(context.Context, ...bc.Hash) (map[bc.Hash]*bc.Tx, error)
+	GetPrevouts(ctx context.Context, txs []*bc.Tx) (map[bc.Outpoint]*state.Output, error)
+	Clean(ctx context.Context, confirmed, conflicting []*bc.Tx, assets map[bc.AssetID]*state.AssetState) error
+	Dump(context.Context) ([]*bc.Tx, error)
 }
 
 // FC provides a complete, minimal blockchain database. It
@@ -117,6 +119,7 @@ type FC struct {
 		n    uint64
 	}
 	store Store
+	pool  Pool
 }
 
 // NewFC returns a new FC using store as the underlying storage.
@@ -125,8 +128,8 @@ type FC struct {
 // in trustedKeys. Typically, trustedKeys contains the public key
 // for the local block-signer process; the presence of its
 // signature indicates the block was already validated locally.
-func NewFC(ctx context.Context, store Store, trustedKeys []*btcec.PublicKey, heights <-chan uint64) (*FC, error) {
-	fc := &FC{store: store, trustedKeys: trustedKeys}
+func NewFC(ctx context.Context, store Store, pool Pool, trustedKeys []*btcec.PublicKey, heights <-chan uint64) (*FC, error) {
+	fc := &FC{store: store, pool: pool, trustedKeys: trustedKeys}
 
 	latestBlock, err := fc.LatestBlock(ctx)
 	if err != nil && errors.Root(err) != ErrNoBlocks {
@@ -186,6 +189,12 @@ func (fc *FC) WaitForBlock(ctx context.Context, height uint64) error {
 	return nil
 }
 
-func (fc *FC) GetTxs(ctx context.Context, hashes ...bc.Hash) (poolTxs, bcTxs map[bc.Hash]*bc.Tx, err error) {
+// ConfirmedTxs looks up the provided hases in the confirmed blockchain.
+func (fc *FC) ConfirmedTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
 	return fc.store.GetTxs(ctx, hashes...)
+}
+
+// PendingTxs looks up the provided hashes in the tx pool.
+func (fc *FC) PendingTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
+	return fc.pool.GetTxs(ctx, hashes...)
 }

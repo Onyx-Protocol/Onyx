@@ -11,6 +11,167 @@ import (
 	"chain/net/trace/span"
 )
 
+// A Pool encapsulates storage of the pending transaction pool.
+type Pool struct {
+	db *sql.DB
+}
+
+// NewPool creates and returns a new Pool object.
+//
+// A Pool manages its own database transactions, so
+// it requires a handle to a SQL database.
+// For testing purposes, it is usually much faster
+// and more convenient to use package chain/cos/mempool
+// instead.
+func NewPool(db *sql.DB) *Pool {
+	return &Pool{db: db}
+}
+
+// GetTxs looks up transactions by their hashes in the pool.
+func (p *Pool) GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
+	return getPoolTxs(ctx, p.db, hashes...)
+}
+
+// Insert adds the transaction to the pending pool.
+func (p *Pool) Insert(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*state.AssetState) error {
+	dbtx, err := p.db.Begin(ctx)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	defer dbtx.Rollback(ctx)
+
+	inserted, err := insertTx(ctx, dbtx, tx)
+	if err != nil {
+		return errors.Wrap(err, "insert into txs")
+	}
+	if !inserted {
+		// Another SQL transaction already succeeded in applying the tx,
+		// so there's no need to do anything else.
+		return nil
+	}
+
+	err = insertPoolTx(ctx, dbtx, tx)
+	if err != nil {
+		return errors.Wrap(err, "insert into pool txs")
+	}
+
+	var outputs []*Output
+	for i, out := range tx.Outputs {
+		outputs = append(outputs, &Output{
+			Output: state.Output{
+				Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(i)},
+				TxOutput: *out,
+			},
+		})
+	}
+	err = insertPoolOutputs(ctx, dbtx, outputs)
+	if err != nil {
+		return errors.Wrap(err, "insert into utxos")
+	}
+
+	err = addIssuances(ctx, dbtx, assets, false)
+	if err != nil {
+		return errors.Wrap(err, "adding issuances")
+	}
+
+	err = dbtx.Commit(ctx)
+	return errors.Wrap(err, "committing database transaction")
+}
+
+// Dump returns the pooled transactions in topological order.
+func (p *Pool) Dump(ctx context.Context) ([]*bc.Tx, error) {
+	return dumpPoolTxs(ctx, p.db)
+}
+
+// GetPrevouts looks up all of the transaction's prevouts in the
+// pool and returns any of the outputs that exist in the pool.
+func (p *Pool) GetPrevouts(ctx context.Context, txs []*bc.Tx) (map[bc.Outpoint]*state.Output, error) {
+	dbtx, err := p.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ctx = pg.NewContext(ctx, dbtx)
+	defer dbtx.Rollback(ctx)
+
+	var prevouts []bc.Outpoint
+	for _, tx := range txs {
+		for _, in := range tx.Inputs {
+			if in.IsIssuance() {
+				continue
+			}
+			prevouts = append(prevouts, in.Previous)
+		}
+	}
+
+	outs, err := loadPoolOutputs(ctx, dbtx, prevouts)
+	if err != nil {
+		return outs, err
+	}
+	return outs, dbtx.Commit(ctx)
+}
+
+// Clean removes confirmedTxs and conflictTxs from the pending tx pool.
+func (p *Pool) Clean(
+	ctx context.Context,
+	confirmedTxs, conflictTxs []*bc.Tx,
+	assets map[bc.AssetID]*state.AssetState,
+) error {
+	dbtx, err := p.db.Begin(ctx)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	defer dbtx.Rollback(ctx)
+
+	var (
+		deleteTxHashes   []string
+		conflictTxHashes []string
+	)
+	for _, tx := range append(confirmedTxs, conflictTxs...) {
+		deleteTxHashes = append(deleteTxHashes, tx.Hash.String())
+	}
+	// TODO(kr): ideally there is no distinction between confirmedTxs
+	// and conflictTxs here. We currently need to know the difference,
+	// because we mix pool outputs with blockchain outputs in postgres,
+	// and this means we have to take extra care not to delete confirmed
+	// outputs.
+	for _, tx := range conflictTxs {
+		conflictTxHashes = append(conflictTxHashes, tx.Hash.String())
+	}
+
+	// Delete pool_txs
+	const txq = `DELETE FROM pool_txs WHERE tx_hash IN (SELECT unnest($1::text[]))`
+	_, err = dbtx.Exec(ctx, txq, pg.Strings(deleteTxHashes))
+	if err != nil {
+		return errors.Wrap(err, "delete from pool_txs")
+	}
+
+	// Delete pool outputs
+	const outq = `
+		DELETE FROM utxos u WHERE tx_hash IN (SELECT unnest($1::text[]))
+	`
+	_, err = dbtx.Exec(ctx, outq, pg.Strings(conflictTxHashes))
+	if err != nil {
+		return errors.Wrap(err, "delete from utxos")
+	}
+
+	err = setIssuances(ctx, dbtx, assets)
+	if err != nil {
+		return errors.Wrap(err, "removing issuances")
+	}
+
+	err = dbtx.Commit(ctx)
+	return errors.Wrap(err, "pool update dbtx commit")
+}
+
+// CountTxs returns the total number of unconfirmed transactions. It
+// is not a part of the cos.Pool interface.
+func (p *Pool) CountTxs(ctx context.Context) (uint64, error) {
+	const q = `SELECT count(tx_hash) FROM pool_txs`
+	var res uint64
+	err := p.db.QueryRow(ctx, q).Scan(&res)
+	return res, errors.Wrap(err)
+}
+
 // loadPoolOutputs returns the outputs in 'load' that can be found.
 // If some are not found, they will be absent from the map
 // (not an error).
@@ -105,12 +266,4 @@ func insertPoolOutputs(ctx context.Context, db pg.DB, insert []*Output) error {
 		outs.metadata,
 	)
 	return err
-}
-
-// CountPoolTxs returns the total number of unconfirmed transactions.
-func (s *Store) CountPoolTxs(ctx context.Context) (uint64, error) {
-	const q = `SELECT count(tx_hash) FROM pool_txs`
-	var res uint64
-	err := s.db.QueryRow(ctx, q).Scan(&res)
-	return res, errors.Wrap(err)
 }

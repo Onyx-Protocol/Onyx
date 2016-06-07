@@ -21,8 +21,8 @@ import (
 
 func TestAccountSourceReserve(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,8 +86,8 @@ func TestAccountSourceReserve(t *testing.T) {
 
 func TestAccountSourceUTXOReserve(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,8 +151,8 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 func TestAccountSourceReserveIdempotency(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -250,8 +250,8 @@ func TestAccountDestinationPKScript(t *testing.T) {
 
 func TestAccountSourceWithTxHash(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}

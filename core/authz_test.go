@@ -326,7 +326,7 @@ func withCommonFixture(t *testing.T, fn func(context.Context, *fixtureInfo)) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
 
-	_, err := assettest.InitializeSigningGenerator(ctx, nil)
+	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

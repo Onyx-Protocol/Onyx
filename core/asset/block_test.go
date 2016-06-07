@@ -218,8 +218,8 @@ type clientInfo struct {
 // TODO(kr): refactor this into new package core/coreutil
 // and consume it from cmd/corectl.
 func bootdb(ctx context.Context, t testing.TB) (*clientInfo, error) {
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		return nil, err
 	}
@@ -339,8 +339,8 @@ func TestUpsertGenesisBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	fc, err := cos.NewFC(ctx, store, nil, nil)
+	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
+	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

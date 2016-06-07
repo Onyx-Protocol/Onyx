@@ -9,7 +9,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/memstore"
+	"chain/cos/mempool"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -45,9 +45,9 @@ func (tr *testReserver) Reserve(ctx context.Context, assetAmt *bc.AssetAmount, t
 
 func TestBuild(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	store := memstore.New()
+	pool := mempool.New()
 
-	err := store.ApplyTx(ctx, &bc.Tx{Hash: [32]byte{255}, TxData: bc.TxData{
+	err := pool.Insert(ctx, &bc.Tx{Hash: [32]byte{255}, TxData: bc.TxData{
 		Outputs: []*bc.TxOutput{{
 			AssetAmount: bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5},
 			Script:      []byte{},

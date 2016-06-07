@@ -39,7 +39,7 @@ func txForFixture(tx *bc.TxData) string {
 
 func TestGetSummary(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
 
 	b0 := bc.Block{BlockHeader: bc.BlockHeader{Height: 0}}
 	b1 := bc.Block{BlockHeader: bc.BlockHeader{Height: 1}}
@@ -113,7 +113,7 @@ func TestGetSummary(t *testing.T) {
 		},
 	}
 
-	got, err := GetSummary(ctx, store, "proj-id-0")
+	got, err := GetSummary(ctx, store, pool, "proj-id-0")
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}

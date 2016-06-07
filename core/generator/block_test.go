@@ -17,8 +17,8 @@ import (
 
 func TestGetAndAddBlockSignatures(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	fc, err := assettest.InitializeSigningGenerator(ctx, store)
+	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
+	fc, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -46,8 +46,8 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 
 func TestGetBlocks(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	_, err := assettest.InitializeSigningGenerator(ctx, store)
+	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
+	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}

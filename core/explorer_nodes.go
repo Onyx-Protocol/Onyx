@@ -17,7 +17,7 @@ func (a *api) getBlockSummary(ctx context.Context, hash string) (*explorer.Block
 }
 
 func (a *api) getTx(ctx context.Context, txHashStr string) (*explorer.Tx, error) {
-	return explorer.GetTx(ctx, a.store, txHashStr)
+	return explorer.GetTx(ctx, a.store, a.pool, txHashStr)
 }
 
 func (a *api) getAsset(ctx context.Context, assetID string) (*explorer.Asset, error) {

@@ -11,5 +11,5 @@ func (a *api) getAdminNodeSummary(ctx context.Context, projID string) (interface
 	if err := projectAuthz(ctx, projID); err != nil {
 		return nil, err
 	}
-	return generator.GetSummary(ctx, a.store, projID)
+	return generator.GetSummary(ctx, a.store, a.pool, projID)
 }

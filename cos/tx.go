@@ -34,21 +34,26 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 	}
 
 	view := state.NewMemView(tree, nil)
-	view.Added, err = fc.store.GetPoolPrevouts(ctx, []*bc.Tx{tx})
+	view.Added, err = fc.pool.GetPrevouts(ctx, []*bc.Tx{tx})
 	if err != nil {
 		return errors.Wrap(err)
 	}
 
-	// Check if the transaction already exists in the blockchain.
-	poolTxs, bcTxs, err := fc.store.GetTxs(ctx, tx.Hash)
+	// Check if the transaction already exists in the tx pool.
+	poolTxs, err := fc.pool.GetTxs(ctx, tx.Hash)
+	if err != nil {
+		return errors.Wrap(err)
+	}
 	if _, ok := poolTxs[tx.Hash]; ok {
 		return nil
 	}
-	if _, ok := bcTxs[tx.Hash]; ok {
-		return nil
-	}
+	// Check if the transaction already exists in the blockchain.
+	bcTxs, err := fc.store.GetTxs(ctx, tx.Hash)
 	if err != nil {
 		return errors.Wrap(err)
+	}
+	if _, ok := bcTxs[tx.Hash]; ok {
+		return nil
 	}
 
 	mv := state.NewMemView(nil, view)
@@ -81,6 +86,6 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 func (fc *FC) applyTx(ctx context.Context, tx *bc.Tx, view *state.MemView) (err error) {
 	defer metrics.RecordElapsed(time.Now())
 
-	err = fc.store.ApplyTx(ctx, tx, view.Assets)
+	err = fc.pool.Insert(ctx, tx, view.Assets)
 	return errors.Wrap(err, "applying tx to store")
 }

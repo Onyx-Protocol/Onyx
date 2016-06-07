@@ -18,6 +18,7 @@ import (
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/cos/hdkey"
+	"chain/cos/mempool"
 	"chain/cos/memstore"
 	"chain/cos/state"
 	"chain/database/pg"
@@ -268,7 +269,7 @@ func ManagerTxFixture(ctx context.Context, t testing.TB, txHash string, data []b
 
 // InitializeSigningGenerator initiaizes a generator fixture with the
 // provided store. Store can be nil, in which case it will use memstore.
-func InitializeSigningGenerator(ctx context.Context, store cos.Store) (*cos.FC, error) {
+func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.Pool) (*cos.FC, error) {
 	pubkey, err := testutil.TestXPub.ECPubKey()
 	if err != nil {
 		return nil, err
@@ -276,7 +277,10 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store) (*cos.FC, 
 	if store == nil {
 		store = memstore.New()
 	}
-	fc, err := cos.NewFC(ctx, store, nil, nil)
+	if pool == nil {
+		pool = mempool.New()
+	}
+	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
 	if err != nil {
 		return nil, err
 	}

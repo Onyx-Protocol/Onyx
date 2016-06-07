@@ -43,7 +43,7 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 		return nil, nil, errors.New("timestamp is earlier than prevblock timestamp")
 	}
 
-	txs, err := fc.store.PoolTxs(ctx)
+	txs, err := fc.pool.Dump(ctx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "get pool TXs")
 	}
@@ -272,7 +272,7 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		confirmedTxs []*bc.Tx
 	)
 
-	txs, err := fc.store.PoolTxs(ctx)
+	txs, err := fc.pool.Dump(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "")
 	}
@@ -313,7 +313,7 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		}
 	}
 
-	err = fc.store.CleanPool(ctx, confirmedTxs, conflictTxs, view.Assets)
+	err = fc.pool.Clean(ctx, confirmedTxs, conflictTxs, view.Assets)
 	if err != nil {
 		return nil, errors.Wrap(err, "removing conflicting txs")
 	}

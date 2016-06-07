@@ -224,7 +224,7 @@ func TestGetVotesSimple(t *testing.T) {
 	// TODO(jackson): Add additional tests for pagination, recalled voting
 	// rights, voided voting rights, etc.
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	fc, err := assettest.InitializeSigningGenerator(ctx, nil)
+	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

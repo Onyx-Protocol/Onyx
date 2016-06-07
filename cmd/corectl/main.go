@@ -107,8 +107,8 @@ func genesis(db *sql.DB, args []string) {
 
 	ctx := pg.NewContext(context.Background(), db)
 
-	store := txdb.NewStore(db)
-	fc, err := cos.NewFC(ctx, store, nil, nil)
+	store, pool := txdb.New(db)
+	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
 	if err != nil {
 		fatalln("error:", err)
 	}
