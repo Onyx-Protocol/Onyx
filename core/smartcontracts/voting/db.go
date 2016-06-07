@@ -122,7 +122,7 @@ func (q votingRightsQuery) Where() (string, []interface{}) {
 	var (
 		whereClauses []string
 		values       []interface{}
-		param        int = 1
+		param        = 1
 	)
 
 	if q.accountID != "" {

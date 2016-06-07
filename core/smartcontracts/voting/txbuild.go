@@ -218,8 +218,8 @@ func TokenRedistribution(ctx context.Context, token *Token, rightScript []byte, 
 	return reserver, destinations, nil
 }
 
-// TokenRegister builds txbuilder Reserver and Destination implementations
-// for a voting token registration transition.
+// TokenRegistration builds txbuilder Reserver and Destination
+// implementations for a voting token registration transition.
 func TokenRegistration(ctx context.Context, token *Token, rightScript []byte, registrations []Registration) (txbuilder.Reserver, []*txbuilder.Destination, error) {
 	prevScript := token.tokenScriptData.PKScript()
 	registered := token.tokenScriptData

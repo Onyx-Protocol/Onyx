@@ -434,7 +434,7 @@ func TestDelegateClause(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		var delegatable int64 = 0
+		var delegatable int64
 		if tc.out.Delegatable {
 			delegatable = 1
 		}

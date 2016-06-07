@@ -210,7 +210,7 @@ func (vm *Engine) CheckErrorCondition(finalScript bool) error {
 	if err != nil {
 		return err
 	}
-	if v == false {
+	if !v {
 		// Log interesting data.
 		log.Tracef("%v", newLogClosure(func() string {
 			dis, _ := vm.DisasmScript()
@@ -282,7 +282,7 @@ func (vm *Engine) Execute() (err error) {
 
 	done := false
 
-	for done != true {
+	for !done {
 		log.Tracef("%v", newLogClosure(func() string {
 			dis, err := vm.DisasmPC()
 			if err != nil {
@@ -527,7 +527,7 @@ func (vm *Engine) SetTimestamp(t time.Time) {
 	vm.timestamp = t.Unix()
 }
 
-// This function prepares a previously allocated Engine for reuse with
+// Prepare prepares a previously allocated Engine for reuse with
 // another txin, preserving state (to wit, vm.available) that P2C
 // wants to save between txins.
 func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
@@ -580,9 +580,9 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 	return nil
 }
 
-// Allocates an Engine object that can execute scripts for every input
-// of a transaction.  Illustration (with error-checking elided for
-// clarity):
+// NewReusableEngine allocates an Engine object that can execute scripts
+// for every input  of a transaction.  Illustration (with error-checking
+// elided for clarity):
 //   engine, err := NewReusableEngine(ctx, viewReader.Circulation, tx, flags)
 //   for i, txin := range tx.Inputs {
 //     err = engine.Prepare(scriptPubKey, i)
@@ -640,7 +640,7 @@ func NewEngine(ctx context.Context, circ CirculationFunc, scriptPubKey []byte, t
 	return vm, err
 }
 
-// NewEngingeForBlock returns a new script engine for the provided block
+// NewEngineForBlock returns a new script engine for the provided block
 // and its script. The flags modify the behavior of the script engine
 // according to the description provided by each flag.
 func NewEngineForBlock(ctx context.Context, scriptPubKey []byte, block *bc.Block, flags ScriptFlags) (*Engine, error) {

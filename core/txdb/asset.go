@@ -11,8 +11,8 @@ import (
 	"chain/net/trace/span"
 )
 
-// GetAssetDefs retrieves a list of asset definitions matching assetIDs. The
-// results are returned as a map from an ID to the definition.
+// AssetDefinitions retrieves a list of asset definitions matching
+// assetIDs. The results are returned as a map from an ID to the definition.
 func (s *Store) AssetDefinitions(ctx context.Context, assetIDs []string) (map[string][]byte, error) {
 	return assetDefinitions(ctx, s.db, assetIDs)
 }

@@ -158,7 +158,7 @@ func LoadAccountInfo(ctx context.Context, outs []*state.Output) ([]*txdb.Output,
 	}
 
 	var scripts pg.Byteas
-	for s, _ := range outsByScript {
+	for s := range outsByScript {
 		scripts = append(scripts, []byte(s))
 	}
 

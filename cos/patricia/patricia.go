@@ -297,6 +297,7 @@ type Value struct {
 	IsHash bool
 }
 
+// Hash returns a hash of the value.
 func (v Value) Hash() bc.Hash {
 	if !v.IsHash {
 		return hash256.Sum(v.Bytes)
@@ -358,12 +359,12 @@ type Valuer interface {
 	Value() Value
 }
 
-// HashValue returns a Value representing a precomputed hash.
+// HashValuer returns a Valuer representing a precomputed hash.
 func HashValuer(h bc.Hash) Valuer {
 	return literalValuer(Value{Bytes: h[:], IsHash: true})
 }
 
-// BytesValue returns a Value representing the provided bytes.
+// BytesValuer returns a Valuer representing the provided bytes.
 func BytesValuer(b []byte) Valuer {
 	return literalValuer(Value{Bytes: b, IsHash: false})
 }

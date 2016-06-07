@@ -95,7 +95,7 @@ type cancelReserver struct {
 	openOrder *OpenOrder
 }
 
-// cancelReserver error.
+// ErrUnexpectedChange is a cancelReserver error.
 var ErrUnexpectedChange = errors.New("unexpected change")
 
 func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {

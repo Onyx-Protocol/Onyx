@@ -68,8 +68,8 @@ func ParseHash(s string) (h Hash, err error) {
 	return h, errors.Wrap(err, "decode hex")
 }
 
-// A 256-bit hash.  By convention, Hash objects are typically passed
-// as values, not as pointers.
+// ContractHash is a 256-bit hash of a contract script. By convention, Hash
+// objects are typically passed as values, not as pointers.
 type ContractHash [32]byte
 
 func fastHash(d []byte) []byte {

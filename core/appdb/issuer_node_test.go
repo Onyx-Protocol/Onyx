@@ -214,6 +214,9 @@ func TestArchiveIssuerNode(t *testing.T) {
 
 	checkAssetQ := `SELECT archived FROM assets WHERE id = $1`
 	err = pg.QueryRow(ctx, checkAssetQ, asset.Hash.String()).Scan(&archived)
+	if err != nil {
+		t.Error(err)
+	}
 	if !archived {
 		t.Errorf("expected child asset %s to be archived", asset.Hash.String())
 	}

@@ -210,7 +210,7 @@ func createCounter() <-chan int {
 	result := make(chan int)
 	go func() {
 		var n int
-		for true {
+		for {
 			n++
 			result <- n
 		}
@@ -266,7 +266,8 @@ func ManagerTxFixture(ctx context.Context, t testing.TB, txHash string, data []b
 	return id
 }
 
-// store can be nil, in which case it will use memstore.
+// InitializeSigningGenerator initiaizes a generator fixture with the
+// provided store. Store can be nil, in which case it will use memstore.
 func InitializeSigningGenerator(ctx context.Context, store cos.Store) (*cos.FC, error) {
 	pubkey, err := testutil.TestXPub.ECPubKey()
 	if err != nil {

@@ -64,59 +64,59 @@ func translate(contract *contract, contracts []*contract) (*translation, error) 
 
 // The contract translate function expects the stack to be empty.
 // Contract declarations are only valid at the top level.
-func (contract *contract) translate(stk stack, context *context) (*translation, error) {
+func (c *contract) translate(stk stack, context *context) (*translation, error) {
 	if len(stk) > 0 {
 		return nil, fmt.Errorf("stack depth is %d but contract must appear at top level", len(stk))
 	}
 
-	if contract.translation == nil {
+	if c.translation == nil {
 		// Actual stack will be:
 		//   [BOTTOM] clauseArgN clauseArgN-1 ... clauseArg1 [clauseSelector] contractArgN contractArgN-1 ... contractArg1 [TOP]
 		// (Exactly which clauseArgs are present will depend on the clause selected.)
 		// Here we assume the clauseSelector will appear on top of the
 		// stack; below, we emit some stack manipulations to make it true.
-		if len(contract.clauses) > 1 {
+		if len(c.clauses) > 1 {
 			// Unnamed clauseSelector at top of stack after the ROLL operation
 			// emitted below.
 			stk = stk.bottomAdd(typedName{name: "[clause selector]", typ: numType})
 		}
-		stk = stk.bottomAddMany(contract.params)
+		stk = stk.bottomAddMany(c.params)
 
 		// Stack: [BOTTOM] clauseArgN clauseArgN-1 ... clauseArg1 contractArgN contractArgN-1 ... contractArg1 [clauseSelector] [TOP]
-		translated0, err := contract.clauses[0].translate(stk, context)
+		translated0, err := c.clauses[0].translate(stk, context)
 		if err != nil {
 			return nil, err
 		}
 
-		if len(contract.clauses) == 1 {
+		if len(c.clauses) == 1 {
 			return translated0, nil
 		}
 
 		var result *translation
 
-		if len(contract.params) > 0 {
+		if len(c.params) > 0 {
 			// gets the clause selector to the top of the stack
-			result = result.add(fmt.Sprintf("%d ROLL", len(contract.params)), stk)
+			result = result.add(fmt.Sprintf("%d ROLL", len(c.params)), stk)
 		}
 
 		result = result.add("DUP 1 NUMEQUAL IF", stk)
 		result = result.addMany(translated0.steps)
 
-		for i := 1; i < len(contract.clauses); i++ {
-			translated, err := contract.clauses[i].translate(stk, context)
+		for i := 1; i < len(c.clauses); i++ {
+			translated, err := c.clauses[i].translate(stk, context)
 			if err != nil {
 				return nil, err
 			}
 			result = result.add(fmt.Sprintf("ELSE DUP %d NUMEQUAL IF", i+1), stk)
 			result = result.addMany(translated.steps)
 		}
-		endif := strings.TrimSuffix(strings.Repeat("ENDIF ", len(contract.clauses)), " ")
+		endif := strings.TrimSuffix(strings.Repeat("ENDIF ", len(c.clauses)), " ")
 		result = result.add(endif, stk)
 
-		contract.translation = result
+		c.translation = result
 	}
 
-	return contract.translation, nil
+	return c.translation, nil
 }
 
 // initStack produces a depiction of the stack before the first opcode

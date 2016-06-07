@@ -93,9 +93,9 @@ func canonicalDataSize(data []byte) int {
 	return 5 + dataLen
 }
 
-// Add data to script using canonical opcodes.  A zero length buffer
-// will lead to a push of empty data onto the stack (OP_0).  No data
-// limits are enforced with this function.
+// AddDataToScript adds data to script using canonical opcodes.  A zero
+// length buffer will lead to a push of empty data onto the stack (OP_0).
+// No data limits are enforced with this function.
 func AddDataToScript(script, data []byte) []byte {
 	dataLen := len(data)
 
@@ -136,8 +136,8 @@ func AddDataToScript(script, data []byte) []byte {
 	return append(script, data...)
 }
 
-// Canonically add an integer to the script.  No length checks are
-// performed.
+// AddInt64ToScript canonically adds an integer to the script.  No length
+// checks are performed.
 func AddInt64ToScript(script []byte, val int64) []byte {
 	// Fast path for small integers and OP_1NEGATE.
 	if val == 0 {

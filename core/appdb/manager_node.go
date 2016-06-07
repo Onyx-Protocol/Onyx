@@ -221,10 +221,10 @@ func lookupManagerNode(ctx context.Context, mnq managerNodeQuery) (*ManagerNode,
 	}, nil
 }
 
-// EXPERIMENTAL - implemented for Glitterco
-//
 // AccountsWithAsset fetches the balance of a particular asset
 // within a manager node, grouped and sorted by individual accounts.
+//
+// EXPERIMENTAL - implemented for Glitterco
 func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit int) ([]*AccountBalanceItem, string, error) {
 	const q = `
 		WITH combined_utxos AS (

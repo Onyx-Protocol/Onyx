@@ -1,4 +1,4 @@
-// Package api provides http handlers for all Chain operations.
+// Package core provides http handlers for all Chain operations.
 package core
 
 import (

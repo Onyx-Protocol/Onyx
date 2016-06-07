@@ -204,7 +204,7 @@ func TestGetBlockSummary(t *testing.T) {
 
 func TestGetTxIssuance(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	assetID, sigScript := mockAssetIdAndSigScript()
+	assetID, sigScript := mockAssetIDAndSigScript()
 
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{{
@@ -700,7 +700,7 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 	check(got, gotLast)
 }
 
-func mockAssetIdAndSigScript() (bc.AssetID, []byte) {
+func mockAssetIDAndSigScript() (bc.AssetID, []byte) {
 	builder := txscript.NewScriptBuilder()
 	builder.AddOp(txscript.OP_FALSE)
 	script, err := builder.Script()

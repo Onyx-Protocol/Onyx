@@ -124,7 +124,7 @@ func recordGC(period time.Duration) {
 		igc uint32
 		m   runtime.MemStats
 	)
-	for _ = range time.Tick(period) {
+	for range time.Tick(period) {
 		runtime.ReadMemStats(&m)
 		for ; igc < m.NumGC; igc++ {
 			err := gcpause.RecordValue(int64(m.PauseNs[igc%256]))

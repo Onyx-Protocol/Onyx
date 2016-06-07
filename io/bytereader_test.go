@@ -16,7 +16,7 @@ func TestByteReader(t *testing.T) {
 	if c != 1 {
 		t.Errorf("c = %d want 1", c)
 	}
-	c, err = r.ReadByte()
+	_, err = r.ReadByte()
 	if err != io.EOF {
 		t.Errorf("err = %v want %v", err, io.EOF)
 	}
@@ -31,7 +31,7 @@ func TestDataErrByteReader(t *testing.T) {
 	if c != 1 {
 		t.Errorf("c = %d want 1", c)
 	}
-	c, err = r.ReadByte()
+	_, err = r.ReadByte()
 	if err != io.EOF {
 		t.Errorf("err = %v want %v", err, io.EOF)
 	}

@@ -49,10 +49,5 @@ func addMemberFromInvitation(ctx context.Context, invID string) error {
 		return err
 	}
 
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return dbtx.Commit(ctx)
 }

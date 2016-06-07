@@ -162,11 +162,7 @@ func TestStack(t *testing.T) {
 			nil,
 			func(s *stack) error {
 				_, err := s.PopBool()
-				if err != nil {
-					return err
-				}
-
-				return nil
+				return err
 			},
 			ErrStackUnderflow,
 			nil,
@@ -361,12 +357,7 @@ func TestStack(t *testing.T) {
 			"dup",
 			[][]byte{{1}},
 			func(s *stack) error {
-				err := s.DupN(1)
-				if err != nil {
-					return err
-				}
-
-				return nil
+				return s.DupN(1)
 			},
 			nil,
 			[][]byte{{1}, {1}},
@@ -375,12 +366,7 @@ func TestStack(t *testing.T) {
 			"dup2",
 			[][]byte{{1}, {2}},
 			func(s *stack) error {
-				err := s.DupN(2)
-				if err != nil {
-					return err
-				}
-
-				return nil
+				return s.DupN(2)
 			},
 			nil,
 			[][]byte{{1}, {2}, {1}, {2}},
@@ -389,12 +375,7 @@ func TestStack(t *testing.T) {
 			"dup3",
 			[][]byte{{1}, {2}, {3}},
 			func(s *stack) error {
-				err := s.DupN(3)
-				if err != nil {
-					return err
-				}
-
-				return nil
+				return s.DupN(3)
 			},
 			nil,
 			[][]byte{{1}, {2}, {3}, {1}, {2}, {3}},
@@ -403,12 +384,7 @@ func TestStack(t *testing.T) {
 			"dup0",
 			[][]byte{{1}},
 			func(s *stack) error {
-				err := s.DupN(0)
-				if err != nil {
-					return err
-				}
-
-				return nil
+				return s.DupN(0)
 			},
 			ErrStackInvalidArgs,
 			nil,
@@ -417,12 +393,7 @@ func TestStack(t *testing.T) {
 			"dup-1",
 			[][]byte{{1}},
 			func(s *stack) error {
-				err := s.DupN(-1)
-				if err != nil {
-					return err
-				}
-
-				return nil
+				return s.DupN(-1)
 			},
 			ErrStackInvalidArgs,
 			nil,
@@ -431,12 +402,7 @@ func TestStack(t *testing.T) {
 			"dup too much",
 			[][]byte{{1}},
 			func(s *stack) error {
-				err := s.DupN(2)
-				if err != nil {
-					return err
-				}
-
-				return nil
+				return s.DupN(2)
 			},
 			ErrStackUnderflow,
 			nil,
@@ -445,12 +411,7 @@ func TestStack(t *testing.T) {
 			"dup-1",
 			[][]byte{{1}},
 			func(s *stack) error {
-				err := s.DupN(-1)
-				if err != nil {
-					return err
-				}
-
-				return nil
+				return s.DupN(-1)
 			},
 			ErrStackInvalidArgs,
 			nil,

@@ -9,10 +9,10 @@ import (
 	"hash"
 )
 
-// The blocksize of Hash256 in bytes.
+// BlockSize is the block size of Hash256 in bytes.
 const BlockSize = sha256.BlockSize
 
-// The size of a Hash256 checksum in bytes.
+// Size is the size of a Hash256 checksum in bytes.
 const Size = sha256.Size
 
 // New returns a new hash.Hash computing the Hash256 checksum.

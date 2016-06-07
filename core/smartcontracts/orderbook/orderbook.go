@@ -68,7 +68,7 @@ var (
 	onePriceContractHash bc.ContractHash
 )
 
-// Maximum number of entries in an OrderInfo Prices list.
+// MaxPrices is the maximum number of entries in an OrderInfo Prices list.
 const MaxPrices = 1 // TODO(bobg): Support multiple prices per order.
 
 var fc *cos.FC

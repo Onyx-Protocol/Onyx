@@ -97,6 +97,7 @@ func NewTx(t testing.TB) *sql.Tx {
 	return tx
 }
 
+// Open opens a connection to the test database.
 // baseURL should be a URL of the form "postgres://.../postgres?...".
 // If it is the empty string, DefaultURL will be used.
 // The database name component will be replaced with a random name,

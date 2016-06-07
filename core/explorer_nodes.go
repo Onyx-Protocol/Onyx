@@ -76,10 +76,12 @@ func (a *api) listExplorerUTXOsByAsset(ctx context.Context, assetID string) (int
 	if timestamps, ok := qvals["timestamp"]; ok {
 		timestamp := timestamps[0]
 		// is the timestamp in RFC3339?
-		ts, err := time.Parse(time.RFC3339, timestamp)
+		var ts time.Time
+		ts, err = time.Parse(time.RFC3339, timestamp)
 		if err != nil {
 			// maybe it's a unix timestamp instead?
-			intTime, err := strconv.ParseInt(timestamp, 10, 64)
+			var intTime int64
+			intTime, err = strconv.ParseInt(timestamp, 10, 64)
 			if err != nil {
 				return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid timestamp: %q", timestamp)
 			}

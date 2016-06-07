@@ -9,8 +9,7 @@ import (
 	"chain/encoding/json"
 )
 
-// TxTemplate represents a partially- or fully-signed transaction
-// belonging to a Chain project.
+// Template represents a partially- or fully-signed transaction.
 type Template struct {
 	Unsigned   *bc.TxData `json:"unsigned_hex"`
 	BlockChain string     `json:"block_chain"`

@@ -306,13 +306,18 @@ func TestArchiveManagerNode(t *testing.T) {
 	var archived bool
 	checkQ := `SELECT archived FROM manager_nodes WHERE id = $1`
 	err = pg.QueryRow(ctx, checkQ, managerNode.ID).Scan(&archived)
-
+	if err != nil {
+		t.Error(err)
+	}
 	if !archived {
 		t.Errorf("expected manager node %s to be archived", managerNode.ID)
 	}
 
 	checkAccountQ := `SELECT archived FROM accounts WHERE id = $1`
 	err = pg.QueryRow(ctx, checkAccountQ, account.ID).Scan(&archived)
+	if err != nil {
+		t.Error(err)
+	}
 	if !archived {
 		t.Errorf("expected child account %s to be archived", account.ID)
 	}

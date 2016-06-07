@@ -119,7 +119,7 @@ func (s *Store) GetPoolPrevouts(ctx context.Context, txs []*bc.Tx) (map[bc.Outpo
 	return outs, dbtx.Commit(ctx)
 }
 
-// RemoveTxs removes confirmedTxs and conflictTxs from the pool.
+// CleanPool removes confirmedTxs and conflictTxs from the pool.
 func (s *Store) CleanPool(
 	ctx context.Context,
 	confirmedTxs, conflictTxs []*bc.Tx,

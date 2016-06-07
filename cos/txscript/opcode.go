@@ -16,6 +16,7 @@ import (
 	"github.com/btcsuite/golangcrypto/ripemd160"
 
 	"chain/cos/bc"
+	"chain/crypto/hash160"
 	"chain/crypto/hash256"
 )
 
@@ -982,7 +983,7 @@ func opcodeVerify(op *parsedOpcode, vm *Engine) error {
 		return err
 	}
 
-	if verified != true {
+	if !verified {
 		return ErrStackVerifyFailed
 	}
 	return nil
@@ -1941,12 +1942,6 @@ func opcodeSha256(op *parsedOpcode, vm *Engine) error {
 	return nil
 }
 
-// Compute ripemd160(sha256(buf)).
-func Hash160(buf []byte) []byte {
-	hash1 := fastsha256.Sum256(buf)
-	return calcHash(hash1[:], ripemd160.New())
-}
-
 // opcodeHash160 treats the top item of the data stack as raw bytes and replaces
 // it with ripemd160(sha256(data)).
 //
@@ -1956,7 +1951,8 @@ func opcodeHash160(op *parsedOpcode, vm *Engine) error {
 	if err != nil {
 		return err
 	}
-	vm.dstack.PushByteArray(Hash160(buf))
+	h := hash160.Sum(buf)
+	vm.dstack.PushByteArray(h[:])
 	return nil
 }
 

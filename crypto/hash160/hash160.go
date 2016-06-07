@@ -11,10 +11,10 @@ import (
 	"golang.org/x/crypto/ripemd160"
 )
 
-// The blocksize of Hash160 in bytes.
+// BlockSize is the block size of Hash160 in bytes.
 const BlockSize = sha256.BlockSize
 
-// The size of a Hash160 checksum in bytes.
+// Size is the size of a Hash160 checksum in bytes.
 const Size = ripemd160.Size
 
 // New returns a new hash.Hash computing the Hash160 checksum.

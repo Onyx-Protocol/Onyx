@@ -11,11 +11,11 @@ import (
 
 type Byteas [][]byte
 
-// it currently only handles simple values exlcuding commas and quotes
 func (a *Byteas) Scan(val interface{}) error {
 	panic("unimplemented")
 }
 
+// Value encodes the slice of byte slices as a psql array of bytea.
 // Go value: Byteas{{'f', 'o', 'o'}, {'b', 'a', 'r'}}
 // Postgres syntax: {\\x666f6f,\\x626172}
 func (a Byteas) Value() (driver.Value, error) {
@@ -33,7 +33,7 @@ func (a Byteas) Value() (driver.Value, error) {
 
 type Strings []string
 
-// it currently only handles simple values exlcuding commas and quotes
+// Scan currently only handles simple values exlcuding commas and quotes.
 func (a *Strings) Scan(val interface{}) error {
 	*a = nil
 	if val == nil {

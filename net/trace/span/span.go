@@ -32,7 +32,7 @@ func newContextSuffix(ctx context.Context, suffix string) context.Context {
 	return NewContextName(ctx, name+suffix)
 }
 
-// NewContext starts a new span for the named operation
+// NewContextName starts a new span for the named operation
 // and returns it in a new context.
 // If ctx already contains a span,
 // the new span will set the old span as its parent,

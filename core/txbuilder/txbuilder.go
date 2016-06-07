@@ -109,13 +109,8 @@ func combine(txs ...*Template) (*Template, error) {
 		}
 
 		complete.Inputs = append(complete.Inputs, tx.Inputs...)
-
-		for _, txin := range tx.Unsigned.Inputs {
-			completeWire.Inputs = append(completeWire.Inputs, txin)
-		}
-		for _, txout := range tx.Unsigned.Outputs {
-			completeWire.Outputs = append(completeWire.Outputs, txout)
-		}
+		completeWire.Inputs = append(completeWire.Inputs, tx.Unsigned.Inputs...)
+		completeWire.Outputs = append(completeWire.Outputs, tx.Unsigned.Outputs...)
 	}
 
 	return complete, nil

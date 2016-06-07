@@ -204,11 +204,7 @@ func (a *Action) UnmarshalJSON(b []byte) error {
 	// Hold onto the original bytes for decoding action-specific fields.
 	a.Raw = json.RawMessage(b)
 
-	err := json.Unmarshal(b, &a.actionDetails)
-	if err != nil {
-		return err
-	}
-	return nil
+	return json.Unmarshal(b, &a.actionDetails)
 }
 
 func (a *Action) UnmarshalInto(v interface{}) error {

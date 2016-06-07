@@ -24,7 +24,7 @@ func TestRedeemToPkScript(t *testing.T) {
 	}
 
 	got := RedeemToPkScript(redeem)
-	if bytes.Compare(got, want) != 0 {
+	if !bytes.Equal(got, want) {
 		t.Errorf("got pkscript = %x want %x", got, want)
 	}
 }
