@@ -1,0 +1,5 @@
+ALTER TABLE historical_outputs RENAME TO explorer_outputs;
+ALTER INDEX IF EXISTS historical_outputs_tx_hash_index_idx RENAME TO explorer_outputs_tx_hash_index_idx;
+ALTER INDEX IF EXISTS historical_outputs_timespan_idx RENAME TO explorer_outputs_timespan_idx;
+ALTER INDEX IF EXISTS historical_outputs_asset_id RENAME TO explorer_outputs_asset_id;
+ALTER INDEX IF EXISTS historical_outputs_account_id_idx RENAME TO explorer_outputs_account_id_idx;

@@ -29,7 +29,7 @@ func TestHistoricalOutputs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	InitHistoricalOutputs(ctx, fc, 0, true)
+	Connect(ctx, fc, true, 0, true)
 
 	// TODO(bobg): The dataset-loading code here has broader
 	// applicability for testing and benchmarking.  Migrate it to

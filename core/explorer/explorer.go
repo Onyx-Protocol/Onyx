@@ -252,13 +252,8 @@ func GetAsset(ctx context.Context, store *txdb.Store, assetID string) (*Asset, e
 	return a, nil
 }
 
-func ListUTXOsByAsset(ctx context.Context, store *txdb.Store, assetID bc.AssetID, prev string, limit int) ([]*TxOutput, string, error) {
-	stateOuts, last, err := store.ListUTXOsByAsset(ctx, assetID, prev, limit)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return stateOutsToTxOuts(stateOuts), last, nil
+func ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limit int) ([]*TxOutput, string, error) {
+	return listHistoricalOutputsByAssetAndAccount(ctx, assetID, "", time.Now(), prev, limit)
 }
 
 func stateOutsToTxOuts(stateOuts []*state.Output) []*TxOutput {

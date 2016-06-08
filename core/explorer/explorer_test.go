@@ -3,7 +3,6 @@ package explorer
 import (
 	"encoding/json"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
@@ -39,7 +38,7 @@ func TestHistoricalOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	InitHistoricalOutputs(ctx, fc, 0, true)
+	Connect(ctx, fc, true, 0, true)
 
 	account1ID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
 	account2ID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
@@ -47,7 +46,7 @@ func TestHistoricalOutput(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, assetID, 100, account1ID)
 
 	count := func() int64 {
-		const q = `SELECT amount FROM historical_outputs WHERE asset_id = $1 AND account_id = $2 AND NOT UPPER_INF(timespan)`
+		const q = `SELECT amount FROM explorer_outputs WHERE asset_id = $1 AND account_id = $2 AND NOT UPPER_INF(timespan)`
 
 		var n int64
 		err := pg.ForQueryRows(ctx, q, assetID, account1ID, func(amt int64) {
@@ -527,10 +526,11 @@ func TestGetAsset(t *testing.T) {
 func TestListUTXOsByAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore and mempool
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	fc, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}
+	Connect(ctx, fc, true, 0, true)
 
 	projectID := assettest.CreateProjectFixture(ctx, t, "", "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
@@ -560,7 +560,7 @@ func TestListUTXOsByAsset(t *testing.T) {
 		Metadata: []byte{},
 	}}
 
-	got, gotLast, err := ListUTXOsByAsset(ctx, store, assetID, "", 10000)
+	got, _, err := ListUTXOsByAsset(ctx, assetID, "", 10000)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
@@ -578,11 +578,6 @@ func TestListUTXOsByAsset(t *testing.T) {
 
 		t.Errorf("txs:\ngot:\n%s\nwant:\n%s", string(gotStr), string(wantStr))
 	}
-
-	// block height is unpredictable in this test file
-	if !strings.HasSuffix(gotLast, "-0-0") {
-		t.Errorf("last: got=%s should-end-with= -0-0", gotLast)
-	}
 }
 
 func TestListHistoricalOutputsByAsset(t *testing.T) {
@@ -593,7 +588,7 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	InitHistoricalOutputs(ctx, fc, 0, true)
+	Connect(ctx, fc, true, 0, true)
 	projectID := assettest.CreateProjectFixture(ctx, t, "", "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
 	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)

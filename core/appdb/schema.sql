@@ -459,10 +459,10 @@ CREATE SEQUENCE chain_id_seq
 
 
 --
--- Name: historical_outputs; Type: TABLE; Schema: public; Owner: -
+-- Name: explorer_outputs; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE historical_outputs (
+CREATE TABLE explorer_outputs (
     tx_hash text NOT NULL,
     index integer NOT NULL,
     asset_id text NOT NULL,
@@ -1257,31 +1257,31 @@ CREATE UNIQUE INDEX blocks_txs_block_height_block_pos_key ON blocks_txs USING bt
 
 
 --
--- Name: historical_outputs_account_id_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: explorer_outputs_account_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX historical_outputs_account_id_idx ON historical_outputs USING btree (account_id) WHERE (account_id IS NOT NULL);
-
-
---
--- Name: historical_outputs_asset_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX historical_outputs_asset_id ON historical_outputs USING btree (asset_id);
+CREATE INDEX explorer_outputs_account_id_idx ON explorer_outputs USING btree (account_id) WHERE (account_id IS NOT NULL);
 
 
 --
--- Name: historical_outputs_timespan_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: explorer_outputs_asset_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX historical_outputs_timespan_idx ON historical_outputs USING gist (timespan);
+CREATE INDEX explorer_outputs_asset_id ON explorer_outputs USING btree (asset_id);
 
 
 --
--- Name: historical_outputs_tx_hash_index_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: explorer_outputs_timespan_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX historical_outputs_tx_hash_index_idx ON historical_outputs USING btree (tx_hash, index);
+CREATE INDEX explorer_outputs_timespan_idx ON explorer_outputs USING gist (timespan);
+
+
+--
+-- Name: explorer_outputs_tx_hash_index_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX explorer_outputs_tx_hash_index_idx ON explorer_outputs USING btree (tx_hash, index);
 
 
 --
@@ -1529,3 +1529,4 @@ insert into migrations (filename, hash) values ('2016-05-31.0.appdb.optional-acc
 insert into migrations (filename, hash) values ('2016-06-01.0.core.historical-outputs-outpoint-index.sql', 'f805f273b80affc6e0034cb6cd978ba2f6f1d33bee761ccbe1f3c2d06ad09a39');
 insert into migrations (filename, hash) values ('2016-06-06.0.txdb.state-tree-values.sql', 'aa69e9db24b5cc612183af35452d9f3ac9d8442674a5e7823ba88c12cb388624');
 insert into migrations (filename, hash) values ('2016-06-09.0.txdb.drop-blocks-utxos.sql', '168a86e8699218b502a06b26f7634d85c72677f26570791d5bc26a894d26127f');
+insert into migrations (filename, hash) values ('2016-06-09.1.core.rename-explorer-outputs.sql', 'c09b0b75562e5c53852cc84f96f24063eea6b46129f21e8f29b98953e2fb1deb');

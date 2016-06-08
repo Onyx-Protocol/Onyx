@@ -2,7 +2,6 @@ package txdb
 
 import (
 	"bytes"
-	"fmt"
 	"sort"
 	"strconv"
 	"time"
@@ -311,71 +310,6 @@ func (s *Store) CountBlockTxs(ctx context.Context) (uint64, error) {
 	var res uint64
 	err := s.db.QueryRow(ctx, q).Scan(&res)
 	return res, errors.Wrap(err)
-}
-
-// ListUTXOsByAsset lists a page of UTXOs for the given asset ID in order
-// of blockchain position.
-//
-// If prev is the empty string, it returns the first page.
-// Otherwise, prev should be a string previously returned by
-// ListUTXOsByAsset, in which case it will return the next page.
-func (s *Store) ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limit int) ([]*state.Output, string, error) {
-	const q = `
-		SELECT blocks_txs.block_height,
-			blocks_txs.block_pos,
-			utxos.tx_hash,
-			utxos.index,
-			utxos.asset_id,
-			utxos.amount,
-			utxos.metadata,
-			utxos.script
-		FROM utxos
-		JOIN blocks_txs ON utxos.tx_hash = blocks_txs.tx_hash
-		WHERE utxos.asset_id = $1
-		AND blocks_txs.block_height >= $2
-		-- Block pos only matters if we're in the same block
-		AND (blocks_txs.block_height != $2 OR blocks_txs.block_pos >= $3)
-		-- Output index only matters if we're in the same block and the same transaction
-		AND (blocks_txs.block_height != $2 OR blocks_txs.block_pos != $3 OR utxos.index > $4)
-		ORDER BY blocks_txs.block_height, blocks_txs.block_pos, utxos.index
-		LIMIT $5
-	`
-
-	// Since the sort criteria is composite, the cursor is composite.
-	var (
-		prevBlock    int64
-		prevBlockPos int
-		prevOutIndex int
-	)
-	_, err := fmt.Sscanf(prev, "%d-%d-%d", &prevBlock, &prevBlockPos, &prevOutIndex)
-	if err != nil {
-		// tolerate malformed cursors
-		prevBlock = 0
-		prevBlockPos = -1
-		prevOutIndex = -1
-	}
-
-	var (
-		res  []*state.Output
-		last string
-	)
-	err = pg.ForQueryRows(pg.NewContext(ctx, s.db), q, assetID, prevBlock, prevBlockPos, prevOutIndex, limit, func(bh int64, bpos int, hash bc.Hash, index uint32, assetID bc.AssetID, amount uint64, metadata, script []byte) {
-		o := &state.Output{
-			Outpoint: bc.Outpoint{Hash: hash, Index: index},
-			TxOutput: bc.TxOutput{
-				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: amount},
-				Script:      script,
-				Metadata:    metadata,
-			},
-		}
-		res = append(res, o)
-		last = fmt.Sprintf("%d-%d-%d", bh, bpos, index)
-	})
-	if err != nil {
-		return nil, "", err
-	}
-
-	return res, last, nil
 }
 
 func ListenBlocks(ctx context.Context, dbURL string) (<-chan uint64, error) {

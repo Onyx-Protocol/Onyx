@@ -22,12 +22,12 @@ import (
 
 var historicalOutputs bool
 
-// InitHistoricalOutputs adds a block callback for indexing historical
-// utxos in the historical_outputs table and occasionally pruning the
-// ones spent more than maxAgeDays ago.  (If maxAgeDays is <= 0, no
+// Connect adds a block callback for indexing utxos in the
+// explorer_outputs table and occasionally pruning ones spent
+// spent more than maxAgeDays ago.  (If maxAgeDays is <= 0, no
 // pruning is done.)
-func InitHistoricalOutputs(ctx context.Context, fc *cos.FC, maxAgeDays int, isManager bool) {
-	historicalOutputs = true
+func Connect(ctx context.Context, fc *cos.FC, historical bool, maxAgeDays int, isManager bool) {
+	historicalOutputs = historical
 
 	maxAge := time.Duration(maxAgeDays*24) * time.Hour
 	var lastPrune time.Time
@@ -45,11 +45,15 @@ func InitHistoricalOutputs(ctx context.Context, fc *cos.FC, maxAgeDays int, isMa
 		)
 
 		const insertQ = `
-			INSERT INTO historical_outputs (tx_hash, index, asset_id, amount, script, metadata, timespan)
+			INSERT INTO explorer_outputs (tx_hash, index, asset_id, amount, script, metadata, timespan)
 				SELECT UNNEST($1::TEXT[]), UNNEST($2::INTEGER[]), UNNEST($3::TEXT[]), UNNEST($4::BIGINT[]), UNNEST($5::BYTEA[]), UNNEST($6::BYTEA[]), INT8RANGE($7, NULL)
 		`
 		const updateQ = `
-			UPDATE historical_outputs SET timespan = INT8RANGE(LOWER(timespan), $3)
+			UPDATE explorer_outputs SET timespan = INT8RANGE(LOWER(timespan), $3)
+				WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
+		`
+		const deleteQ = `
+			DELETE FROM explorer_outputs
 				WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 		`
 
@@ -87,19 +91,27 @@ func InitHistoricalOutputs(ctx context.Context, fc *cos.FC, maxAgeDays int, isMa
 		}
 		_, err := pg.Exec(ctx, insertQ, newTxHashes, newIndexes, newAssetIDs, newAmounts, newScripts, newMetadatas, block.Timestamp)
 		if err != nil {
-			chainlog.Error(ctx, errors.Wrap(err, "inserting to historical_outputs"))
+			chainlog.Error(ctx, errors.Wrap(err, "inserting to explorer_outputs"))
 			return // or panic?
 		}
-		_, err = pg.Exec(ctx, updateQ, spentTxHashes, spentIndexes, block.Timestamp)
-		if err != nil {
-			chainlog.Error(ctx, errors.Wrap(err, "updating historical_outputs"))
-			return // or panic?
+		if historical {
+			_, err = pg.Exec(ctx, updateQ, spentTxHashes, spentIndexes, block.Timestamp)
+			if err != nil {
+				chainlog.Error(ctx, errors.Wrap(err, "updating explorer_outputs"))
+				return // or panic?
+			}
+		} else {
+			_, err = pg.Exec(ctx, deleteQ, spentTxHashes, spentIndexes)
+			if err != nil {
+				chainlog.Error(ctx, errors.Wrap(err, "deleting explorer_outputs"))
+				return // or panic?
+			}
 		}
 
 		if isManager {
 			txdbOutputs, err := asset.LoadAccountInfo(ctx, stateOuts)
 			if err != nil {
-				chainlog.Error(ctx, errors.Wrap(err, "loading account info for historical_outputs"))
+				chainlog.Error(ctx, errors.Wrap(err, "loading account info for explorer_outputs"))
 				return // or panic?
 			}
 			var (
@@ -114,35 +126,35 @@ func InitHistoricalOutputs(ctx context.Context, fc *cos.FC, maxAgeDays int, isMa
 			}
 
 			const annotateQ = `
-				UPDATE historical_outputs h SET account_id = t.account_id
+				UPDATE explorer_outputs h SET account_id = t.account_id
 					FROM (SELECT unnest($1::text[]) AS account_id, unnest($2::text[]) AS tx_hash, unnest($3::integer[]) AS index) t
 					WHERE h.tx_hash = t.tx_hash AND h.index = t.index
 			`
 			_, err = pg.Exec(ctx, annotateQ, accountIDs, txHashes, indexes)
 			if err != nil {
-				chainlog.Error(ctx, errors.Wrap(err, "annotating historical_outputs with account info"))
+				chainlog.Error(ctx, errors.Wrap(err, "annotating explorer_outputs with account info"))
 				return // or panic?
 			}
 		}
 
-		if maxAge > 0 && time.Since(lastPrune) >= 24*time.Hour {
+		if historical && maxAge > 0 && time.Since(lastPrune) >= 24*time.Hour {
 			now := time.Now()
-			_, err := pg.Exec(ctx, "DELETE FROM historical_outputs WHERE UPPER(timespan) < $1", now.Add(-maxAge))
+			_, err := pg.Exec(ctx, "DELETE FROM explorer_outputs WHERE UPPER(timespan) < $1", now.Add(-maxAge))
 			if err == nil {
 				lastPrune = now
 			} else {
-				chainlog.Error(ctx, errors.Wrap(err, "pruning historical_outputs"))
+				chainlog.Error(ctx, errors.Wrap(err, "pruning explorer_outputs"))
 			}
 		}
 	})
 }
 
-// HistoricalBalancesByAccount queries the historical_outputs table
+// HistoricalBalancesByAccount queries the explorer_outputs table
 // for outputs in the given account at the given time and sums them by
 // assetID.  If the assetID parameter is non-nil, the output is
 // constrained to the balance of that asset only.
 func HistoricalBalancesByAccount(ctx context.Context, accountID string, timestamp time.Time, assetID *bc.AssetID) ([]bc.AssetAmount, error) {
-	q := "SELECT asset_id, SUM(amount) FROM historical_outputs WHERE account_id = $1 AND timespan @> $2::int8"
+	q := "SELECT asset_id, SUM(amount) FROM explorer_outputs WHERE account_id = $1 AND timespan @> $2::int8"
 	args := []interface{}{
 		accountID,
 		timestamp.Unix(),
@@ -167,13 +179,13 @@ func HistoricalBalancesByAccount(ctx context.Context, accountID string, timestam
 // When paginating, it takes a limit as well as `prev`, the last UTXO returned on the previous call.
 // ListHistoricalOutputsByAsset expects prev to be of the format "hash:index".
 func ListHistoricalOutputsByAsset(ctx context.Context, assetID bc.AssetID, timestamp time.Time, prev string, limit int) ([]*TxOutput, string, error) {
+	if !historicalOutputs {
+		return nil, "", errors.WithDetail(httpjson.ErrBadRequest, "historical outputs aren't enabled on this core")
+	}
 	return listHistoricalOutputsByAssetAndAccount(ctx, assetID, "", timestamp, prev, limit)
 }
 
 func listHistoricalOutputsByAssetAndAccount(ctx context.Context, assetID bc.AssetID, accountID string, timestamp time.Time, prev string, limit int) ([]*TxOutput, string, error) {
-	if !historicalOutputs {
-		return nil, "", errors.WithDetail(httpjson.ErrBadRequest, "historical outputs aren't enabled on this core")
-	}
 	ts := timestamp.Unix()
 	prevs := strings.Split(prev, ":")
 	var (
@@ -229,7 +241,7 @@ func listHistoricalOutputsByAssetAndAccount(ctx context.Context, assetID bc.Asse
 		}
 		res = append(res, o)
 	})
-	q := fmt.Sprintf("SELECT tx_hash, index, amount, script, metadata FROM historical_outputs WHERE %s %s", strings.Join(conditions, " AND "), limitClause)
+	q := fmt.Sprintf("SELECT tx_hash, index, amount, script, metadata FROM explorer_outputs WHERE %s %s", strings.Join(conditions, " AND "), limitClause)
 
 	err = pg.ForQueryRows(ctx, q, args...)
 	if err != nil {

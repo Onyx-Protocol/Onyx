@@ -181,7 +181,11 @@ func main() {
 		orderbook.Connect(fc)
 		voting.Connect(fc)
 	}
+	explorer.Connect(ctx, fc, *historicalOutputs, *historicalOutputsMaxAgeDays, *isManager)
 
+	// Note, it's important for any services that will install blockchain
+	// callbacks to be initialized before the generator and the http server,
+	// otherwise there's a race condition.
 	if *isGenerator {
 		remotes := remoteSignerInfo(ctx)
 		nSigners := len(remotes)
@@ -236,10 +240,6 @@ func main() {
 	}
 	if err != nil {
 		chainlog.Fatal(ctx, "error", "ListenAndServe", err.Error())
-	}
-
-	if *historicalOutputs {
-		explorer.InitHistoricalOutputs(ctx, fc, *historicalOutputsMaxAgeDays, *isManager)
 	}
 }
 
