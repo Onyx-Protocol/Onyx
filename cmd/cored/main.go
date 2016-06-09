@@ -81,7 +81,8 @@ var (
 	buildCommit = "?"
 	buildDate   = "?"
 
-	race []interface{} // initialized in race.go
+	race          []interface{} // initialized in race.go
+	httpsRedirect = true        // initialized in insecure.go
 
 	blockPeriod              = 1 * time.Second
 	expireReservationsPeriod = time.Minute
@@ -219,6 +220,7 @@ func main() {
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
+	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
 	core.EnableCrossProjectXferHack = *enableCrossProjectXferHack
 
 	server := &http.Server{
