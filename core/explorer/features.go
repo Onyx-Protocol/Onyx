@@ -153,26 +153,48 @@ func Connect(ctx context.Context, fc *cos.FC, historical bool, maxAgeDays int, i
 // for outputs in the given account at the given time and sums them by
 // assetID.  If the assetID parameter is non-nil, the output is
 // constrained to the balance of that asset only.
-func HistoricalBalancesByAccount(ctx context.Context, accountID string, timestamp time.Time, assetID *bc.AssetID) ([]bc.AssetAmount, error) {
+func HistoricalBalancesByAccount(ctx context.Context, accountID string, timestamp time.Time, assetID *bc.AssetID, prev string, limit int) ([]bc.AssetAmount, string, error) {
+	if limit > 0 && assetID != nil {
+		return nil, "", errors.New("cannot set both pagination and asset id filter")
+	}
+
 	q := "SELECT asset_id, SUM(amount) FROM explorer_outputs WHERE account_id = $1 AND timespan @> $2::int8"
 	args := []interface{}{
 		accountID,
 		timestamp.Unix(),
 	}
+
 	if assetID != nil {
 		q += " AND asset_id = $3"
 		args = append(args, *assetID)
+	} else if limit > 0 {
+		q += " AND asset_id>$3"
+		args = append(args, *assetID)
+		q += fmt.Sprintf("LIMIT %d", limit)
 	}
+
 	q += " GROUP BY asset_id"
-	var output []bc.AssetAmount
+	if limit > 0 {
+		q += " ORDER BY asset_id"
+	}
+
+	var (
+		output []bc.AssetAmount
+		last   string
+	)
 	args = append(args, func(assetID bc.AssetID, amount uint64) {
 		output = append(output, bc.AssetAmount{assetID, amount})
+
 	})
 	err := pg.ForQueryRows(ctx, q, args...)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return output, nil
+
+	if limit > 0 || len(output) > 0 {
+		last = output[len(output)-1].AssetID.String()
+	}
+	return output, last, nil
 }
 
 // ListHistoricalOutputsByAsset returns an array of every UTXO that contains assetID at timestamp.

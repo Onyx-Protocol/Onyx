@@ -220,7 +220,7 @@ func TestHistoricalOutputs(t *testing.T) {
 
 	for i, s := range spotChecks {
 		ts := time.Unix(int64(s.timestamp), 0)
-		sums, err := HistoricalBalancesByAccount(ctx, s.accountID, ts, &s.assetID)
+		sums, _, err := HistoricalBalancesByAccount(ctx, s.accountID, ts, &s.assetID, "", 0)
 		if err != nil {
 			t.Fatal(err)
 		}
