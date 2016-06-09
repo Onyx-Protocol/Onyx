@@ -299,16 +299,6 @@ func TestRemoveBlockOutputs(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-
-	gotOut, err := loadOutput(ctx, dbtx, out.Outpoint)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	if gotOut != nil {
-		t.Fatal("expected out to be removed from database")
-	}
 }
 
 func TestInsertBlockOutputs(t *testing.T) {
@@ -327,18 +317,4 @@ func TestInsertBlockOutputs(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-
-	_, err = loadOutput(ctx, dbtx, out.Outpoint)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-}
-
-// Helper function just for testing.
-// In production, we ~never want to load a single output;
-// we always load in batches.
-func loadOutput(ctx context.Context, dbtx *sql.Tx, p bc.Outpoint) (*state.Output, error) {
-	m, err := loadOutputs(ctx, dbtx, []bc.Outpoint{p})
-	return m[p], err
 }

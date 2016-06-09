@@ -447,16 +447,6 @@ CREATE TABLE blocks_txs (
 
 
 --
--- Name: blocks_utxos; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE blocks_utxos (
-    tx_hash text NOT NULL,
-    index integer NOT NULL
-);
-
-
---
 -- Name: chain_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -843,23 +833,6 @@ CREATE TABLE utxos (
 
 
 --
--- Name: utxos_status; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW utxos_status AS
- SELECT u.tx_hash,
-    u.index,
-    u.asset_id,
-    u.amount,
-    u.created_at,
-    u.metadata,
-    u.script,
-    (b.tx_hash IS NOT NULL) AS confirmed
-   FROM (utxos u
-     LEFT JOIN blocks_utxos b ON (((u.tx_hash = b.tx_hash) AND (u.index = b.index))));
-
-
---
 -- Name: voting_rights; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -998,14 +971,6 @@ ALTER TABLE ONLY blocks
 
 ALTER TABLE ONLY blocks_txs
     ADD CONSTRAINT blocks_txs_tx_hash_block_hash_key UNIQUE (tx_hash, block_hash);
-
-
---
--- Name: blocks_utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY blocks_utxos
-    ADD CONSTRAINT blocks_utxos_pkey PRIMARY KEY (tx_hash, index);
 
 
 --
@@ -1473,14 +1438,6 @@ ALTER TABLE ONLY auth_tokens
 
 
 --
--- Name: blocks_utxos_tx_hash_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY blocks_utxos
-    ADD CONSTRAINT blocks_utxos_tx_hash_fkey FOREIGN KEY (tx_hash, index) REFERENCES utxos(tx_hash, index) ON DELETE CASCADE;
-
-
---
 -- Name: invitations_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1571,3 +1528,4 @@ insert into migrations (filename, hash) values ('2016-05-27.1.txdb.drop-pool-inp
 insert into migrations (filename, hash) values ('2016-05-31.0.appdb.optional-accounts-historical-outputs.sql', '1b590e145f7bfd72acae5e78ff33163727b044360541cc1e68453c86e8f5fd0d');
 insert into migrations (filename, hash) values ('2016-06-01.0.core.historical-outputs-outpoint-index.sql', 'f805f273b80affc6e0034cb6cd978ba2f6f1d33bee761ccbe1f3c2d06ad09a39');
 insert into migrations (filename, hash) values ('2016-06-06.0.txdb.state-tree-values.sql', 'aa69e9db24b5cc612183af35452d9f3ac9d8442674a5e7823ba88c12cb388624');
+insert into migrations (filename, hash) values ('2016-06-09.0.txdb.drop-blocks-utxos.sql', '168a86e8699218b502a06b26f7634d85c72677f26570791d5bc26a894d26127f');

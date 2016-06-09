@@ -1,6 +1,8 @@
 package state
 
 import (
+	"bytes"
+
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
@@ -53,8 +55,8 @@ func (v *MemView) IsUTXO(ctx context.Context, o *Output) bool {
 	if _, ok := v.Consumed[o.Outpoint]; ok {
 		return false
 	}
-	if _, ok := v.Added[o.Outpoint]; ok {
-		return true
+	if added, ok := v.Added[o.Outpoint]; ok {
+		return bytes.Equal(o.Script, added.Script) && o.AssetAmount == added.AssetAmount
 	}
 	if v.StateTree != nil {
 		k, val := OutputTreeItem(o)

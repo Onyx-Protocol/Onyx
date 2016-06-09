@@ -101,7 +101,6 @@ type Store interface {
 type Pool interface {
 	Insert(context.Context, *bc.Tx, map[bc.AssetID]*state.AssetState) error
 	GetTxs(context.Context, ...bc.Hash) (map[bc.Hash]*bc.Tx, error)
-	GetPrevouts(ctx context.Context, txs []*bc.Tx) (map[bc.Outpoint]*state.Output, error)
 	Clean(ctx context.Context, confirmed, conflicting []*bc.Tx, assets map[bc.AssetID]*state.AssetState) error
 	Dump(context.Context) ([]*bc.Tx, error)
 }

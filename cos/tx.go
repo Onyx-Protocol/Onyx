@@ -34,7 +34,7 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 	}
 
 	view := state.NewMemView(tree, nil)
-	view.Added, err = fc.pool.GetPrevouts(ctx, []*bc.Tx{tx})
+	view.Added, err = fc.getPoolPrevouts(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -88,4 +88,35 @@ func (fc *FC) applyTx(ctx context.Context, tx *bc.Tx, view *state.MemView) (err 
 
 	err = fc.pool.Insert(ctx, tx, view.Assets)
 	return errors.Wrap(err, "applying tx to store")
+}
+
+// getPoolPrevouts takes a transaction and looks up all of its prevouts
+// in the pool. It returns all of the matching outpoints that it finds
+// in the pool.
+//
+// It does not verify that the outputs are unspent in the pool.
+func (fc *FC) getPoolPrevouts(ctx context.Context, tx *bc.Tx) (map[bc.Outpoint]*state.Output, error) {
+	hashes := make([]bc.Hash, 0, len(tx.Inputs))
+	for _, txin := range tx.Inputs {
+		hashes = append(hashes, txin.Previous.Hash)
+	}
+
+	txs, err := fc.pool.GetTxs(ctx, hashes...)
+	if err != nil {
+		return nil, err
+	}
+
+	poolPrevouts := map[bc.Outpoint]*state.Output{}
+	for _, txin := range tx.Inputs {
+		prevTx, ok := txs[txin.Previous.Hash]
+		if !ok {
+			continue
+		}
+		if txin.Previous.Index >= uint32(len(prevTx.Outputs)) {
+			continue
+		}
+		o := prevTx.Outputs[txin.Previous.Index]
+		poolPrevouts[txin.Previous] = state.NewOutput(*o, txin.Previous)
+	}
+	return poolPrevouts, nil
 }

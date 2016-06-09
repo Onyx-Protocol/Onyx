@@ -26,6 +26,13 @@ func New(db *sql.DB) (*Store, *Pool) {
 	return NewStore(db), NewPool(db)
 }
 
+type Output struct {
+	state.Output
+	ManagerNodeID string
+	AccountID     string
+	AddrIndex     [2]uint32
+}
+
 // getBlockchainTxs looks up transactions by their hashes in the blockchain.
 func getBlockchainTxs(ctx context.Context, db pg.DB, hashes ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error) {
 	hashStrings := make([]string, 0, len(hashes))
@@ -293,16 +300,7 @@ func insertBlockOutputs(ctx context.Context, dbtx *sql.Tx, delta []*state.Output
 		outs.script,
 		outs.metadata,
 	)
-	if err != nil {
-		return errors.Wrap(err, "insert into utxos")
-	}
-
-	const insertQ2 = `
-		INSERT INTO blocks_utxos (tx_hash, index)
-		    SELECT unnest($1::text[]), unnest($2::bigint[])
-	`
-	_, err = dbtx.Exec(ctx, insertQ2, outs.txHash, outs.index)
-	return errors.Wrap(err, "insert into blocks_utxos")
+	return errors.Wrap(err, "insert into utxos")
 }
 
 // CountBlockTxs returns the total number of confirmed transactions.

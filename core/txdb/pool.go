@@ -8,7 +8,6 @@ import (
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
-	"chain/net/trace/span"
 )
 
 // A Pool encapsulates storage of the pending transaction pool.
@@ -83,33 +82,6 @@ func (p *Pool) Dump(ctx context.Context) ([]*bc.Tx, error) {
 	return dumpPoolTxs(ctx, p.db)
 }
 
-// GetPrevouts looks up all of the transaction's prevouts in the
-// pool and returns any of the outputs that exist in the pool.
-func (p *Pool) GetPrevouts(ctx context.Context, txs []*bc.Tx) (map[bc.Outpoint]*state.Output, error) {
-	dbtx, err := p.db.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ctx = pg.NewContext(ctx, dbtx)
-	defer dbtx.Rollback(ctx)
-
-	var prevouts []bc.Outpoint
-	for _, tx := range txs {
-		for _, in := range tx.Inputs {
-			if in.IsIssuance() {
-				continue
-			}
-			prevouts = append(prevouts, in.Previous)
-		}
-	}
-
-	outs, err := loadPoolOutputs(ctx, dbtx, prevouts)
-	if err != nil {
-		return outs, err
-	}
-	return outs, dbtx.Commit(ctx)
-}
-
 // Clean removes confirmedTxs and conflictTxs from the pending tx pool.
 func (p *Pool) Clean(
 	ctx context.Context,
@@ -170,46 +142,6 @@ func (p *Pool) CountTxs(ctx context.Context) (uint64, error) {
 	var res uint64
 	err := p.db.QueryRow(ctx, q).Scan(&res)
 	return res, errors.Wrap(err)
-}
-
-// loadPoolOutputs returns the outputs in 'load' that can be found.
-// If some are not found, they will be absent from the map
-// (not an error).
-func loadPoolOutputs(ctx context.Context, dbtx *sql.Tx, load []bc.Outpoint) (map[bc.Outpoint]*state.Output, error) {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
-	var (
-		txHashes []string
-		indexes  []uint32
-	)
-	for _, p := range load {
-		txHashes = append(txHashes, p.Hash.String())
-		indexes = append(indexes, p.Index)
-	}
-
-	const loadQ = `
-		SELECT tx_hash, index, asset_id, amount, script, metadata
-		  FROM utxos_status
-		  WHERE NOT confirmed
-		    AND (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
-	`
-	outs := make(map[bc.Outpoint]*state.Output)
-	err := pg.ForQueryRows(pg.NewContext(ctx, dbtx), loadQ, pg.Strings(txHashes), pg.Uint32s(indexes), func(hash bc.Hash, index uint32, assetID bc.AssetID, amount uint64, script, metadata []byte) {
-		o := &state.Output{
-			Outpoint: bc.Outpoint{Hash: hash, Index: index},
-			TxOutput: bc.TxOutput{
-				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: amount},
-				Script:      script,
-				Metadata:    metadata,
-			},
-		}
-		outs[o.Outpoint] = o
-	})
-	if err != nil {
-		return nil, err
-	}
-	return outs, err
 }
 
 // utxoSet holds a set of utxo record values

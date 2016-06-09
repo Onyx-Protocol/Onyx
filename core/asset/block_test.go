@@ -137,13 +137,12 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 func dumpState(ctx context.Context, t *testing.T) {
 	t.Log("pool")
 	dumpTab(ctx, t, `
-		SELECT tx_hash, index, script FROM utxos_status
-		WHERE NOT confirmed
+		SELECT tx_hash, data FROM pool_txs
 	`)
 	t.Log("blockchain")
 	dumpTab(ctx, t, `
-		SELECT tx_hash, index, script FROM utxos_status
-		WHERE confirmed
+		SELECT blocks_txs.tx_hash, txs.data FROM blocks_txs
+		INNER JOIN txs ON blocks_txs.tx_hash = txs.tx_hash
 	`)
 }
 
@@ -155,13 +154,14 @@ func dumpTab(ctx context.Context, t *testing.T, q string) {
 	defer rows.Close()
 	for rows.Next() {
 		var hash bc.Hash
-		var index int32
-		var script []byte
-		err = rows.Scan(&hash, &index, &script)
+		var tx bc.TxData
+		err = rows.Scan(&hash, &tx)
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Logf("hash: %s index: %d pkscript: %x", hash, index, script)
+		for index, o := range tx.Outputs {
+			t.Logf("hash: %s index: %d pkscript: %x", hash, index, o.Script)
+		}
 	}
 	if rows.Err() != nil {
 		t.Fatal(rows.Err())
