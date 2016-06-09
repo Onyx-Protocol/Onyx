@@ -2,6 +2,11 @@ Chain 🍭
 
 ## Getting Started
 
+First, make sure you have the dependencies installed:
+
+* [Go](https://golang.org/doc/install), with $GOPATH set to your preferred directory
+* Postgres (we suggest [Postgres.app](http://postgresapp.com/)), along with the [command line tools](http://postgresapp.com/documentation/cli-tools.html)
+
 ### Environment
 
 Set the `CHAIN` environment variable, in `.profile` in your home
@@ -9,6 +14,10 @@ directory, to point to the root of the Chain source code repo:
 
 	export CHAIN
 	CHAIN=$GOPATH/src/chain
+
+You should also add `$CHAIN/bin` to your path (as well as `$GOPATH/bin`, if it isn't already):
+
+	export PATH=$GOPATH/bin:$CHAIN/bin:$PATH
 
 You might want to open a new Terminal window to pick up the change.
 
