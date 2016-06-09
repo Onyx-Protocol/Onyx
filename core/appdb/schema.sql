@@ -671,6 +671,17 @@ CREATE TABLE members (
 
 
 --
+-- Name: migrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE migrations (
+    filename text NOT NULL,
+    hash text NOT NULL,
+    applied_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: orderbook_prices; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1075,6 +1086,14 @@ ALTER TABLE ONLY manager_txs
 
 ALTER TABLE ONLY members
     ADD CONSTRAINT members_project_id_user_id_key UNIQUE (project_id, user_id);
+
+
+--
+-- Name: migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY migrations
+    ADD CONSTRAINT migrations_pkey PRIMARY KEY (filename);
 
 
 --
@@ -1505,100 +1524,50 @@ ALTER TABLE ONLY rotations
 -- PostgreSQL database dump complete
 --
 
---
--- PostgreSQL database dump
---
-
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SET check_function_bodies = false;
-SET client_min_messages = warning;
-SET row_security = off;
-
-SET search_path = public, pg_catalog;
-
-SET default_tablespace = '';
-
-SET default_with_oids = false;
-
---
--- Name: migrations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE migrations (
-    filename text NOT NULL,
-    hash text NOT NULL,
-    applied_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Data for Name: migrations; Type: TABLE DATA; Schema: public; Owner: -
---
-
-INSERT INTO migrations VALUES ('2016-01-20.0.api.schema-snapshot.sql', '82e95b4385631ffb68e674dc9c48309bac2bb1350e0d9cb7d1599ca5ea7ce83b', '2016-06-09 12:15:36.169756-07');
-INSERT INTO migrations VALUES ('2016-01-25.0.api.orderbook.sql', '75a159160218af51005eadcc4320549d499dc966fbc37d63039f6c6ddc7cd59e', '2016-06-09 12:15:36.18427-07');
-INSERT INTO migrations VALUES ('2016-01-27.0.api.archive-items.sql', '17d0e2c3cab3f5f819a88a70d6f3189a56cf14ad0d0466598afbbe5535ca5801', '2016-06-09 12:15:36.217139-07');
-INSERT INTO migrations VALUES ('2016-02-08.0.txdb.separate-utxos-table.sql', 'af9b21b4cff5327d45135a716af499ee1613741473ec948be1c5a9edb209e377', '2016-06-09 12:15:36.236806-07');
-INSERT INTO migrations VALUES ('2016-02-12.0.api.dbonly-utxos.sql', '3d6b0347d7b2a27e250b18a99a3a70e47bba1b5d018e864bc71a796a6646b637', '2016-06-09 12:15:36.247664-07');
-INSERT INTO migrations VALUES ('2016-02-18.0.api.asset-client-token.sql', 'f06be0b26d6445c6140ac7842baffdf933794cbe33eae039259de407c8b57bdb', '2016-06-09 12:15:36.24973-07');
-INSERT INTO migrations VALUES ('2016-02-19.0.api.accounts-client-token.sql', '838af44c35a9380fcfce6acdc04fe9d08d44de6de51b3fa760634c24c7e3ea5d', '2016-06-09 12:15:36.251821-07');
-INSERT INTO migrations VALUES ('2016-02-22.0.txdb.signed-blocks.sql', '3c78428297cdc542e80f3d736c77a01779ef86d39c76d95da2dc31f8a0bb4d5f', '2016-06-09 12:15:36.255833-07');
-INSERT INTO migrations VALUES ('2016-02-23.0.api.blocks-txs-block-pos.sql', 'ec296d93e7560fe487d694b109ae19ff465479ffa403f53ce51d230d56a3cd0b', '2016-06-09 12:15:36.256982-07');
-INSERT INTO migrations VALUES ('2016-02-23.1.api.backfill-block-pos.go', '65c1a1ca38ad01dd0d302c38fa4178a585a38fe9970014ee5d127a767399807f', '2016-06-09 12:15:38.315874-07');
-INSERT INTO migrations VALUES ('2016-02-23.3.api.blocks-txs-constraints.sql', 'cd1e6a80cc7d8429314b8925e4acce2cc19f794d33ac98fdb89c74e812beacac', '2016-06-09 12:15:38.316855-07');
-INSERT INTO migrations VALUES ('2016-02-23.4.api.blocks-txs-sort-index.sql', 'eaa748bd2bf7072e0bc18a411ddd4792e85fc031f126d1347199532b781181ba', '2016-06-09 12:15:38.318683-07');
-INSERT INTO migrations VALUES ('2016-02-24.5.api.utxos-asset-id-index.sql', 'fcd117dde2bd2684c2130ca45966c6a5717faa3eccc947d1f22456a615c59e7e', '2016-06-09 12:15:38.320382-07');
-INSERT INTO migrations VALUES ('2016-02-25.0.utxodb.idempotency-key.sql', '1d0b97503128690fffc1bd9f8f29c7542ecd8d6d404ff0719f9319d1dba43d1f', '2016-06-09 12:15:38.322799-07');
-INSERT INTO migrations VALUES ('2016-02-26.0.api.nodes-client-token.sql', '6ee4a8fc86c631d48bfba95be788926d8847cd457cbb9d56362cec4fac4574e5', '2016-06-09 12:15:38.325187-07');
-INSERT INTO migrations VALUES ('2016-03-01.0.appdb.noactivity.sql', '06caafe93fdef520c98b333730242df41c448f8fbd802e591358b4c45b5839c8', '2016-06-09 12:15:38.331747-07');
-INSERT INTO migrations VALUES ('2016-03-01.1.appdb.notxids.sql', 'f218dd07bb3b795365af69d6739ac089cf896daac166df8b895ac77920636aac', '2016-06-09 12:15:38.332684-07');
-INSERT INTO migrations VALUES ('2016-03-04.0.utxodb.reserve-utxos-by-tx-hash.sql', 'c5530a9ed1aaeb88b0e27367e4f695b84bd5108478b7510368c5a2e293777cd6', '2016-06-09 12:15:38.335567-07');
-INSERT INTO migrations VALUES ('2016-03-17.0.txdb.add-state-trees.sql', '6265013d655390a89f6c2fa594d2be8caad3e20c8cdf1ea67641b0d907e2ffac', '2016-06-09 12:15:38.338522-07');
-INSERT INTO migrations VALUES ('2016-03-18.0.api.leader-election.sql', 'a871c63bdc1259405a84d2eb08176e263fea39d00b2372832d64d2a9fabd8eaa', '2016-06-09 12:15:38.3417-07');
-INSERT INTO migrations VALUES ('2016-03-22.0.api.voting.sql', 'b997861457d0716881b84b2737568506961734579bda392d4331c45a63a2e4eb', '2016-06-09 12:15:38.345327-07');
-INSERT INTO migrations VALUES ('2016-03-25.0.api.voting-account-id-index.sql', '7240ae32c08b6de39fa9abfb91cbe4323ec7a06a955d7ad29a77162063ee44e3', '2016-06-09 12:15:38.346891-07');
-INSERT INTO migrations VALUES ('2016-03-29.0.api.voting-void.sql', '9396e28ea8aa057395f1e0a6a939c2a3e3a390137bb00943fb3e39b1e380f58c', '2016-06-09 12:15:38.353507-07');
-INSERT INTO migrations VALUES ('2016-03-31.0.api.voting-admin.sql', 'cc1b7a4149a7010c281e5e2a0d67a9156c99edce1396f841f79490ab187b6fdd', '2016-06-09 12:15:38.354862-07');
-INSERT INTO migrations VALUES ('2016-04-19.0.txdb.notifyblocks.sql', '5b080e150c0ac6327f3da5153e37930f7a083e6879cc3cf1532178889d25f631', '2016-06-09 12:15:38.356128-07');
-INSERT INTO migrations VALUES ('2016-04-20.0.api.voting-tokens.sql', '117b3786ba5e21b1519e8bb850220f765728033643f7458879d4132d8f6332fe', '2016-06-09 12:15:38.359311-07');
-INSERT INTO migrations VALUES ('2016-04-22.0.txdb.notifyblocks.sql', '07f8cdc28d850c9c7b972ab99f94a69c28aff705d0d516e4c177e0d3a4cbcaf7', '2016-06-09 12:15:38.360083-07');
-INSERT INTO migrations VALUES ('2016-05-04.0.txdb.nocontracthash.sql', '8828fd884809a321d8e844f8602234f4518cfe5fddbf2a419074ad4b02058455', '2016-06-09 12:15:38.36394-07');
-INSERT INTO migrations VALUES ('2016-05-17.0.utxodb.reserve-by-index.sql', '4e5b2e5804092c2b32f960ed9112ffeea0809c4c674882089f3e9324f3efe42c', '2016-06-09 12:15:38.365357-07');
-INSERT INTO migrations VALUES ('2016-05-18.0.appdb.acct-utxos-denorm.sql', '77e6093753e1b1229f336298d33ab0285993a2bc1004ddc631f8937b9d23334d', '2016-06-09 12:15:38.367481-07');
-INSERT INTO migrations VALUES ('2016-05-18.1.appdb.acct-utxos-denorm-height.sql', '1cad82c9ca061409a362170522bc1bf1bccd18600f8c06d6832cce47c9f4c04b', '2016-06-09 12:15:38.368904-07');
-INSERT INTO migrations VALUES ('2016-05-18.2.api.voting-right-index.sql', '77fed0a2776e297a51d4472f6ea4fe7c86f987af892c8032c3dc871587cf64bd', '2016-06-09 12:15:38.371539-07');
-INSERT INTO migrations VALUES ('2016-05-19.0.utxodb.denorm-pool-spent.sql', '84b06cfed624e3ece0cbe8b323f46c48f3799f3a0be9ad68cf6f84f882085f66', '2016-06-09 12:15:38.379391-07');
-INSERT INTO migrations VALUES ('2016-05-20.0.utxodb.remove-acct-fk.sql', 'd3cb2753b8834d611e4c4ca26dc75609841e3ae938871414c55adea3de0b2236', '2016-06-09 12:15:38.380675-07');
-INSERT INTO migrations VALUES ('2016-05-23.0.api.drop-voting-option-count.sql', 'fdd3fda84e6b2a0c78456e50790842aade84d4b2a794a6abb166856869aa413c', '2016-06-09 12:15:38.381732-07');
-INSERT INTO migrations VALUES ('2016-05-24.0.utxodb.denorm-ob.sql', 'f1b2cee039887f705e5dc38ceb055135b51385fb54d7f4b1c72da12d50f22510', '2016-06-09 12:15:38.383838-07');
-INSERT INTO migrations VALUES ('2016-05-25.0.api.voting-token-lots.sql', 'd997c322e1f41c83cbd5a6c160f6e3171a8b9215e1c213282d209ce9356b899c', '2016-06-09 12:15:38.386113-07');
-INSERT INTO migrations VALUES ('2016-05-25.1.utxodb.remove-ob-fk.sql', '83d7fb0b72219115bc591c2b261f0d0ab313658e1507ab8a7ce85f313803d0f5', '2016-06-09 12:15:38.387672-07');
-INSERT INTO migrations VALUES ('2016-05-26.0.appdb.acct-utxos-block-timestamp.sql', 'f4ebe7c313d074caad151cc774fc2ce83aa402f6a1130af42f6295f37f54fc68', '2016-06-09 12:15:38.388686-07');
-INSERT INTO migrations VALUES ('2016-05-26.1.appdb.backfill-acct-utxos-block-timestamp.go', 'd2dd1eac7d3d744fe77db8c579db7784b0031c3d8db88d3414a88728a5d0acf5', '2016-06-09 12:15:40.141885-07');
-INSERT INTO migrations VALUES ('2016-05-26.2.api.add-voting-registration-id.sql', 'e7c1388c31afc622132bfb8927db77700a504abd387afdd454c19fe762bb50c7', '2016-06-09 12:15:40.146609-07');
-INSERT INTO migrations VALUES ('2016-05-26.3.appdb.historical-outputs.sql', '29a80558a5dde5ed85b1a157221e6441ea73dac718ea5587f92be666ef286d97', '2016-06-09 12:15:40.150877-07');
-INSERT INTO migrations VALUES ('2016-05-27.0.appdb.historical-metadata.sql', 'e53e310b8861b359086ba6201c17655c98dde8e13f0ba919b1abdc2a5b1822d3', '2016-06-09 12:15:40.152215-07');
-INSERT INTO migrations VALUES ('2016-05-27.1.txdb.drop-pool-inputs.sql', 'b30335266d56167fffb8577dbd890057b2200b5eb0e0b0a80b9f397c58423c43', '2016-06-09 12:15:40.153995-07');
-INSERT INTO migrations VALUES ('2016-05-31.0.appdb.optional-accounts-historical-outputs.sql', '1b590e145f7bfd72acae5e78ff33163727b044360541cc1e68453c86e8f5fd0d', '2016-06-09 12:15:40.156004-07');
-INSERT INTO migrations VALUES ('2016-06-01.0.core.historical-outputs-outpoint-index.sql', 'f805f273b80affc6e0034cb6cd978ba2f6f1d33bee761ccbe1f3c2d06ad09a39', '2016-06-09 12:15:40.157251-07');
-INSERT INTO migrations VALUES ('2016-06-06.0.txdb.state-tree-values.sql', 'aa69e9db24b5cc612183af35452d9f3ac9d8442674a5e7823ba88c12cb388624', '2016-06-09 12:15:40.158056-07');
-
-
---
--- Name: migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY migrations
-    ADD CONSTRAINT migrations_pkey PRIMARY KEY (filename);
-
-
---
--- PostgreSQL database dump complete
---
-
+insert into migrations (filename, hash) values ('2016-01-20.0.api.schema-snapshot.sql', '82e95b4385631ffb68e674dc9c48309bac2bb1350e0d9cb7d1599ca5ea7ce83b');
+insert into migrations (filename, hash) values ('2016-01-25.0.api.orderbook.sql', '75a159160218af51005eadcc4320549d499dc966fbc37d63039f6c6ddc7cd59e');
+insert into migrations (filename, hash) values ('2016-01-27.0.api.archive-items.sql', '17d0e2c3cab3f5f819a88a70d6f3189a56cf14ad0d0466598afbbe5535ca5801');
+insert into migrations (filename, hash) values ('2016-02-08.0.txdb.separate-utxos-table.sql', 'af9b21b4cff5327d45135a716af499ee1613741473ec948be1c5a9edb209e377');
+insert into migrations (filename, hash) values ('2016-02-12.0.api.dbonly-utxos.sql', '3d6b0347d7b2a27e250b18a99a3a70e47bba1b5d018e864bc71a796a6646b637');
+insert into migrations (filename, hash) values ('2016-02-18.0.api.asset-client-token.sql', 'f06be0b26d6445c6140ac7842baffdf933794cbe33eae039259de407c8b57bdb');
+insert into migrations (filename, hash) values ('2016-02-19.0.api.accounts-client-token.sql', '838af44c35a9380fcfce6acdc04fe9d08d44de6de51b3fa760634c24c7e3ea5d');
+insert into migrations (filename, hash) values ('2016-02-22.0.txdb.signed-blocks.sql', '3c78428297cdc542e80f3d736c77a01779ef86d39c76d95da2dc31f8a0bb4d5f');
+insert into migrations (filename, hash) values ('2016-02-23.0.api.blocks-txs-block-pos.sql', 'ec296d93e7560fe487d694b109ae19ff465479ffa403f53ce51d230d56a3cd0b');
+insert into migrations (filename, hash) values ('2016-02-23.1.api.backfill-block-pos.go', '65c1a1ca38ad01dd0d302c38fa4178a585a38fe9970014ee5d127a767399807f');
+insert into migrations (filename, hash) values ('2016-02-23.3.api.blocks-txs-constraints.sql', 'cd1e6a80cc7d8429314b8925e4acce2cc19f794d33ac98fdb89c74e812beacac');
+insert into migrations (filename, hash) values ('2016-02-23.4.api.blocks-txs-sort-index.sql', 'eaa748bd2bf7072e0bc18a411ddd4792e85fc031f126d1347199532b781181ba');
+insert into migrations (filename, hash) values ('2016-02-24.5.api.utxos-asset-id-index.sql', 'fcd117dde2bd2684c2130ca45966c6a5717faa3eccc947d1f22456a615c59e7e');
+insert into migrations (filename, hash) values ('2016-02-25.0.utxodb.idempotency-key.sql', '1d0b97503128690fffc1bd9f8f29c7542ecd8d6d404ff0719f9319d1dba43d1f');
+insert into migrations (filename, hash) values ('2016-02-26.0.api.nodes-client-token.sql', '6ee4a8fc86c631d48bfba95be788926d8847cd457cbb9d56362cec4fac4574e5');
+insert into migrations (filename, hash) values ('2016-03-01.0.appdb.noactivity.sql', '06caafe93fdef520c98b333730242df41c448f8fbd802e591358b4c45b5839c8');
+insert into migrations (filename, hash) values ('2016-03-01.1.appdb.notxids.sql', 'f218dd07bb3b795365af69d6739ac089cf896daac166df8b895ac77920636aac');
+insert into migrations (filename, hash) values ('2016-03-04.0.utxodb.reserve-utxos-by-tx-hash.sql', 'c5530a9ed1aaeb88b0e27367e4f695b84bd5108478b7510368c5a2e293777cd6');
+insert into migrations (filename, hash) values ('2016-03-17.0.txdb.add-state-trees.sql', '6265013d655390a89f6c2fa594d2be8caad3e20c8cdf1ea67641b0d907e2ffac');
+insert into migrations (filename, hash) values ('2016-03-18.0.api.leader-election.sql', 'a871c63bdc1259405a84d2eb08176e263fea39d00b2372832d64d2a9fabd8eaa');
+insert into migrations (filename, hash) values ('2016-03-22.0.api.voting.sql', 'b997861457d0716881b84b2737568506961734579bda392d4331c45a63a2e4eb');
+insert into migrations (filename, hash) values ('2016-03-25.0.api.voting-account-id-index.sql', '7240ae32c08b6de39fa9abfb91cbe4323ec7a06a955d7ad29a77162063ee44e3');
+insert into migrations (filename, hash) values ('2016-03-29.0.api.voting-void.sql', '9396e28ea8aa057395f1e0a6a939c2a3e3a390137bb00943fb3e39b1e380f58c');
+insert into migrations (filename, hash) values ('2016-03-31.0.api.voting-admin.sql', 'cc1b7a4149a7010c281e5e2a0d67a9156c99edce1396f841f79490ab187b6fdd');
+insert into migrations (filename, hash) values ('2016-04-19.0.txdb.notifyblocks.sql', '5b080e150c0ac6327f3da5153e37930f7a083e6879cc3cf1532178889d25f631');
+insert into migrations (filename, hash) values ('2016-04-20.0.api.voting-tokens.sql', '117b3786ba5e21b1519e8bb850220f765728033643f7458879d4132d8f6332fe');
+insert into migrations (filename, hash) values ('2016-04-22.0.txdb.notifyblocks.sql', '07f8cdc28d850c9c7b972ab99f94a69c28aff705d0d516e4c177e0d3a4cbcaf7');
+insert into migrations (filename, hash) values ('2016-05-04.0.txdb.nocontracthash.sql', '8828fd884809a321d8e844f8602234f4518cfe5fddbf2a419074ad4b02058455');
+insert into migrations (filename, hash) values ('2016-05-17.0.utxodb.reserve-by-index.sql', '4e5b2e5804092c2b32f960ed9112ffeea0809c4c674882089f3e9324f3efe42c');
+insert into migrations (filename, hash) values ('2016-05-18.0.appdb.acct-utxos-denorm.sql', '77e6093753e1b1229f336298d33ab0285993a2bc1004ddc631f8937b9d23334d');
+insert into migrations (filename, hash) values ('2016-05-18.1.appdb.acct-utxos-denorm-height.sql', '1cad82c9ca061409a362170522bc1bf1bccd18600f8c06d6832cce47c9f4c04b');
+insert into migrations (filename, hash) values ('2016-05-18.2.api.voting-right-index.sql', '77fed0a2776e297a51d4472f6ea4fe7c86f987af892c8032c3dc871587cf64bd');
+insert into migrations (filename, hash) values ('2016-05-19.0.utxodb.denorm-pool-spent.sql', '84b06cfed624e3ece0cbe8b323f46c48f3799f3a0be9ad68cf6f84f882085f66');
+insert into migrations (filename, hash) values ('2016-05-20.0.utxodb.remove-acct-fk.sql', 'd3cb2753b8834d611e4c4ca26dc75609841e3ae938871414c55adea3de0b2236');
+insert into migrations (filename, hash) values ('2016-05-23.0.api.drop-voting-option-count.sql', 'fdd3fda84e6b2a0c78456e50790842aade84d4b2a794a6abb166856869aa413c');
+insert into migrations (filename, hash) values ('2016-05-24.0.utxodb.denorm-ob.sql', 'f1b2cee039887f705e5dc38ceb055135b51385fb54d7f4b1c72da12d50f22510');
+insert into migrations (filename, hash) values ('2016-05-25.0.api.voting-token-lots.sql', 'd997c322e1f41c83cbd5a6c160f6e3171a8b9215e1c213282d209ce9356b899c');
+insert into migrations (filename, hash) values ('2016-05-25.1.utxodb.remove-ob-fk.sql', '83d7fb0b72219115bc591c2b261f0d0ab313658e1507ab8a7ce85f313803d0f5');
+insert into migrations (filename, hash) values ('2016-05-26.0.appdb.acct-utxos-block-timestamp.sql', 'f4ebe7c313d074caad151cc774fc2ce83aa402f6a1130af42f6295f37f54fc68');
+insert into migrations (filename, hash) values ('2016-05-26.1.appdb.backfill-acct-utxos-block-timestamp.go', 'd2dd1eac7d3d744fe77db8c579db7784b0031c3d8db88d3414a88728a5d0acf5');
+insert into migrations (filename, hash) values ('2016-05-26.2.api.add-voting-registration-id.sql', 'e7c1388c31afc622132bfb8927db77700a504abd387afdd454c19fe762bb50c7');
+insert into migrations (filename, hash) values ('2016-05-26.3.appdb.historical-outputs.sql', '29a80558a5dde5ed85b1a157221e6441ea73dac718ea5587f92be666ef286d97');
+insert into migrations (filename, hash) values ('2016-05-27.0.appdb.historical-metadata.sql', 'e53e310b8861b359086ba6201c17655c98dde8e13f0ba919b1abdc2a5b1822d3');
+insert into migrations (filename, hash) values ('2016-05-27.1.txdb.drop-pool-inputs.sql', 'b30335266d56167fffb8577dbd890057b2200b5eb0e0b0a80b9f397c58423c43');
+insert into migrations (filename, hash) values ('2016-05-31.0.appdb.optional-accounts-historical-outputs.sql', '1b590e145f7bfd72acae5e78ff33163727b044360541cc1e68453c86e8f5fd0d');
+insert into migrations (filename, hash) values ('2016-06-01.0.core.historical-outputs-outpoint-index.sql', 'f805f273b80affc6e0034cb6cd978ba2f6f1d33bee761ccbe1f3c2d06ad09a39');
+insert into migrations (filename, hash) values ('2016-06-06.0.txdb.state-tree-values.sql', 'aa69e9db24b5cc612183af35452d9f3ac9d8442674a5e7823ba88c12cb388624');
