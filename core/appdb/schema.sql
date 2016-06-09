@@ -818,21 +818,6 @@ CREATE TABLE users (
 
 
 --
--- Name: utxos; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE utxos (
-    tx_hash text NOT NULL,
-    index integer NOT NULL,
-    asset_id text NOT NULL,
-    amount bigint NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    metadata bytea DEFAULT '\x'::bytea NOT NULL,
-    script bytea DEFAULT '\x'::bytea NOT NULL
-);
-
-
---
 -- Name: voting_rights; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1142,14 +1127,6 @@ ALTER TABLE ONLY users
 
 
 --
--- Name: utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY utxos
-    ADD CONSTRAINT utxos_pkey PRIMARY KEY (tx_hash, index);
-
-
---
 -- Name: voting_right_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1376,13 +1353,6 @@ CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
 
 
 --
--- Name: utxos_asset_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX utxos_asset_id_idx ON utxos USING btree (asset_id);
-
-
---
 -- Name: voting_right_txs_account_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1530,3 +1500,4 @@ insert into migrations (filename, hash) values ('2016-06-01.0.core.historical-ou
 insert into migrations (filename, hash) values ('2016-06-06.0.txdb.state-tree-values.sql', 'aa69e9db24b5cc612183af35452d9f3ac9d8442674a5e7823ba88c12cb388624');
 insert into migrations (filename, hash) values ('2016-06-09.0.txdb.drop-blocks-utxos.sql', '168a86e8699218b502a06b26f7634d85c72677f26570791d5bc26a894d26127f');
 insert into migrations (filename, hash) values ('2016-06-09.1.core.rename-explorer-outputs.sql', 'c09b0b75562e5c53852cc84f96f24063eea6b46129f21e8f29b98953e2fb1deb');
+insert into migrations (filename, hash) values ('2016-06-09.2.txdb.drop-utxos.sql', 'a6d94f3afeae6145caef7fe5919aaacb5050ce68b312e53461b109ada88e382e');

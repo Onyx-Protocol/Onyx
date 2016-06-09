@@ -63,10 +63,6 @@ func (p *Pool) Insert(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*sta
 			},
 		})
 	}
-	err = insertPoolOutputs(ctx, dbtx, outputs)
-	if err != nil {
-		return errors.Wrap(err, "insert into utxos")
-	}
 
 	err = addIssuances(ctx, dbtx, assets, false)
 	if err != nil {
@@ -117,15 +113,6 @@ func (p *Pool) Clean(
 		return errors.Wrap(err, "delete from pool_txs")
 	}
 
-	// Delete pool outputs
-	const outq = `
-		DELETE FROM utxos u WHERE tx_hash IN (SELECT unnest($1::text[]))
-	`
-	_, err = dbtx.Exec(ctx, outq, pg.Strings(conflictTxHashes))
-	if err != nil {
-		return errors.Wrap(err, "delete from utxos")
-	}
-
 	err = setIssuances(ctx, dbtx, assets)
 	if err != nil {
 		return errors.Wrap(err, "removing issuances")
@@ -168,34 +155,4 @@ func insertPoolTx(ctx context.Context, db pg.DB, tx *bc.Tx) error {
 	const q = `INSERT INTO pool_txs (tx_hash, data) VALUES ($1, $2)`
 	_, err := db.Exec(ctx, q, tx.Hash, tx)
 	return errors.Wrap(err)
-}
-
-func insertPoolOutputs(ctx context.Context, db pg.DB, insert []*Output) error {
-	var outs utxoSet
-	for _, o := range insert {
-		addToUTXOSet(&outs, o)
-	}
-
-	const q1 = `
-		INSERT INTO utxos (
-			tx_hash, index, asset_id, amount,
-			script, metadata
-		)
-		SELECT
-			unnest($1::text[]),
-			unnest($2::bigint[]),
-			unnest($3::text[]),
-			unnest($4::bigint[]),
-			unnest($5::bytea[]),
-			unnest($6::bytea[])
-	`
-	_, err := db.Exec(ctx, q1,
-		outs.txHash,
-		outs.index,
-		outs.assetID,
-		outs.amount,
-		outs.script,
-		outs.metadata,
-	)
-	return err
 }

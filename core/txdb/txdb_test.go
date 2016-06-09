@@ -7,7 +7,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/state"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
@@ -273,48 +272,5 @@ func TestListBlocks(t *testing.T) {
 		if !reflect.DeepEqual(got, c.want) {
 			t.Errorf("got ListBlocks(%q, %d):\n\t%+v\nwant:\n\t%+v", c.prev, c.limit, got, c.want)
 		}
-	}
-}
-
-func TestRemoveBlockOutputs(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := context.Background()
-
-	out := &state.Output{
-		TxOutput: bc.TxOutput{
-			AssetAmount: bc.AssetAmount{AssetID: bc.AssetID{}, Amount: 5},
-			Script:      []byte("a"),
-			Metadata:    []byte("b"),
-		},
-		Outpoint: bc.Outpoint{},
-	}
-	err := insertBlockOutputs(ctx, dbtx, []*state.Output{out})
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	err = removeBlockSpentOutputs(ctx, dbtx, []*state.Output{out})
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-}
-
-func TestInsertBlockOutputs(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := context.Background()
-	out := &state.Output{
-		TxOutput: bc.TxOutput{
-			AssetAmount: bc.AssetAmount{AssetID: bc.AssetID{}, Amount: 5},
-			Script:      []byte("a"),
-			Metadata:    []byte("b"),
-		},
-		Outpoint: bc.Outpoint{},
-	}
-	err := insertBlockOutputs(ctx, dbtx, []*state.Output{out})
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
 	}
 }

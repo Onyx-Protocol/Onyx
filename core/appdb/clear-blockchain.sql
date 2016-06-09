@@ -9,7 +9,6 @@ TRUNCATE
 	orderbook_prices,
 	orderbook_utxos,
 	explorer_outputs,
-	utxos,
 	account_utxos,
 	issuance_totals,
 	addresses,

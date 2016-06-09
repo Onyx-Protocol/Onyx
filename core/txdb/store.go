@@ -89,19 +89,6 @@ func (s *Store) ApplyBlock(
 		return nil, errors.Wrap(err, "writing asset definitions")
 	}
 
-	// Note: the order of inserting and removing UTXOs is important,
-	// otherwise, we'll fail to remove outputs that were added and spent
-	// within the same block.
-	err = insertBlockOutputs(ctx, dbtx, addedUTXOs)
-	if err != nil {
-		return nil, errors.Wrap(err, "insert block outputs")
-	}
-
-	err = removeBlockSpentOutputs(ctx, dbtx, removedUTXOs)
-	if err != nil {
-		return nil, errors.Wrap(err, "remove block spent outputs")
-	}
-
 	err = addIssuances(ctx, dbtx, assets, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "adding issuances")

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"sort"
 	"strconv"
-	"time"
 
 	"golang.org/x/net/context"
 
@@ -14,7 +13,6 @@ import (
 	"chain/database/sql"
 	"chain/errors"
 	"chain/log"
-	"chain/metrics"
 	"chain/net/trace/span"
 	"chain/strings"
 )
@@ -231,75 +229,6 @@ func getBlock(ctx context.Context, db pg.DB, hash string) (*bc.Block, error) {
 		err = pg.ErrUserInputNotFound
 	}
 	return block, errors.WithDetailf(err, "block hash=%v", hash)
-}
-
-func removeBlockSpentOutputs(ctx context.Context, dbtx *sql.Tx, delta []*state.Output) error {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
-	var (
-		txHashes []string
-		ids      []uint32
-	)
-	for _, out := range delta {
-		txHashes = append(txHashes, out.Outpoint.Hash.String())
-		ids = append(ids, out.Outpoint.Index)
-	}
-
-	const q = `
-		DELETE FROM utxos
-		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
-	`
-	_, err := dbtx.Exec(ctx, q, pg.Strings(txHashes), pg.Uint32s(ids))
-	return errors.Wrap(err, "delete query")
-}
-
-// insertBlockOutputs updates utxos to mark
-// unconfirmed records as confirmed and to insert new
-// records as necessary, one for each unspent item
-// in delta.
-//
-// It returns a new list containing all spent items
-// from delta, plus all newly-inserted unspent outputs
-// from delta, omitting the updated items.
-func insertBlockOutputs(ctx context.Context, dbtx *sql.Tx, delta []*state.Output) error {
-	defer metrics.RecordElapsed(time.Now())
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
-	var outs utxoSet
-	for _, out := range delta {
-		addToUTXOSet(&outs, &Output{Output: *out})
-	}
-
-	// Insert the ones not upgraded above.
-	const insertQ1 = `
-		WITH new_utxos AS (
-			SELECT
-				unnest($1::text[]) AS tx_hash,
-				unnest($2::bigint[]) AS index,
-				unnest($3::text[]),
-				unnest($4::bigint[]),
-				unnest($5::bytea[]),
-				unnest($6::bytea[])
-		)
-		INSERT INTO utxos (
-			tx_hash, index, asset_id, amount,
-			script, metadata
-		)
-		SELECT * FROM new_utxos n WHERE NOT EXISTS
-			(SELECT 1 FROM utxos u WHERE (n.tx_hash, n.index) = (u.tx_hash, u.index))
-	`
-
-	_, err := dbtx.Exec(ctx, insertQ1,
-		outs.txHash,
-		outs.index,
-		outs.assetID,
-		outs.amount,
-		outs.script,
-		outs.metadata,
-	)
-	return errors.Wrap(err, "insert into utxos")
 }
 
 // CountBlockTxs returns the total number of confirmed transactions.
