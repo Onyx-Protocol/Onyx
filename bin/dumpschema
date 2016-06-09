@@ -1,0 +1,16 @@
+#!/bin/bash
+set -eo pipefail
+
+if [ -z "$CHAIN" ]
+then
+	echo >&2 env var '$CHAIN' is unset
+	exit 1
+fi
+
+db=tmp_db_for_dump_schema
+dropdb --if-exists $db
+createdb $db
+migratedb -d postgres:///$db?sslmode=disable
+pg_dump -sOx --exclude-table migrations $db >$CHAIN/core/appdb/schema.sql
+pg_dump -Ox --table migrations --inserts $db >>$CHAIN/core/appdb/schema.sql
+dropdb $db

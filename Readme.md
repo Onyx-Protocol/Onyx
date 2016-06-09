@@ -30,19 +30,7 @@ Create a development database:
 
 ## Updating the schema with migrations
 
-First, drop and recreate your database:
-
-	$ dropdb core
-	$ createdb core
-
-Next, run all migrations, including your new migrations:
-
-	$ migratedb -d postgres:///core?sslmode=disable
-	$ ...
-
-Finally, dump the database schema:
-
-	$ pg_dump -sOx core > core/appdb/schema.sql
+	$ dumpschema
 
 ## Provisioning
 
