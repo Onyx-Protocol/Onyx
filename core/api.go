@@ -2,6 +2,7 @@
 package core
 
 import (
+	"strconv"
 	"time"
 
 	"chain/core/appdb"
@@ -175,4 +176,18 @@ func rpcAuthedHandler(signer *signer.Signer) chainhttp.HandlerFunc {
 	}
 
 	return h.ServeHTTPContext
+}
+
+// For time query-params that can be in either RFC3339 or
+// Unix-timestamp form.
+func parseTime(s string) (t time.Time, err error) {
+	t, err = time.Parse(time.RFC3339, s)
+	if err != nil {
+		i, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return t, err
+		}
+		t = time.Unix(i, 0)
+	}
+	return t, nil
 }

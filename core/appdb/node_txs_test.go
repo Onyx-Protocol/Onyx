@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 
 	. "chain/core/appdb"
 	"chain/core/asset/assettest"
@@ -32,7 +33,7 @@ func TestWriteManagerTx(t *testing.T) {
 	}
 
 	for _, acc := range accounts {
-		txs, _, err = AccountTxs(ctx, acc, "", 100)
+		txs, _, err = AccountTxs(ctx, acc, time.Time{}, time.Now(), "", 100)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
@@ -136,7 +137,7 @@ func TestAccountTxs(t *testing.T) {
 	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "foo", nil)
 	mtx := assettest.ManagerTxFixture(ctx, t, "tx0", []byte(`{"outputs":"boop"}`), mn0, []string{acc0})
 
-	txs, last, err := AccountTxs(ctx, acc0, "", 1)
+	txs, last, err := AccountTxs(ctx, acc0, time.Time{}, time.Now(), "", 1)
 	if err != nil {
 		t.Fatalf("unexpected err %v", err)
 	}
@@ -160,7 +161,7 @@ func TestAccountTxsLimit(t *testing.T) {
 	mtx2 := assettest.ManagerTxFixture(ctx, t, "tx2", []byte(`{"outputs":"doop"}`), mn0, []string{acc0})
 	assettest.ManagerTxFixture(ctx, t, "tx3", []byte(`{"outputs":"foop"}`), mn0, []string{acc0})
 
-	txs, last, err := AccountTxs(ctx, acc0, "", 2)
+	txs, last, err := AccountTxs(ctx, acc0, time.Time{}, time.Now(), "", 2)
 	if err != nil {
 		t.Fatalf("unexpected err %v", err)
 	}

@@ -299,35 +299,17 @@ func getAccount(ctx context.Context, accountID string) (interface{}, error) {
 }
 
 // GET /v3/accounts/:accountID/activity
-func getAccountActivity(ctx context.Context, bid string) (interface{}, error) {
-	if err := accountAuthz(ctx, bid); err != nil {
-		return nil, err
-	}
-	prev, limit, err := getPageData(ctx, defActivityPageSize)
-	if err != nil {
-		return nil, err
-	}
-
-	nodeTxs, last, err := appdb.AccountTxs(ctx, bid, prev, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	activity, err := nodeTxsToActivity(nodeTxs)
-	if err != nil {
-		return nil, err
-	}
-
-	ret := map[string]interface{}{
-		"last":       last,
-		"activities": httpjson.Array(activity),
-	}
-	return ret, nil
+func getAccountActivity(ctx context.Context, accountID string) (interface{}, error) {
+	return getAccountTxsOrActivity(ctx, accountID, true)
 }
 
 // GET /v3/accounts/:accountID/transactions
-func getAccountTxs(ctx context.Context, bid string) (interface{}, error) {
-	if err := accountAuthz(ctx, bid); err != nil {
+func getAccountTxs(ctx context.Context, accountID string) (interface{}, error) {
+	return getAccountTxsOrActivity(ctx, accountID, false)
+}
+
+func getAccountTxsOrActivity(ctx context.Context, accountID string, doActivity bool) (interface{}, error) {
+	if err := accountAuthz(ctx, accountID); err != nil {
 		return nil, err
 	}
 	prev, limit, err := getPageData(ctx, defActivityPageSize)
@@ -335,14 +317,48 @@ func getAccountTxs(ctx context.Context, bid string) (interface{}, error) {
 		return nil, err
 	}
 
-	txs, last, err := appdb.AccountTxs(ctx, bid, prev, limit)
+	// Defaults: startTime is the "beginning of time," endTime is now
+	var startTime time.Time
+	endTime := time.Now()
+
+	qvals := httpjson.Request(ctx).URL.Query()
+	if t, ok := qvals["start_time"]; ok {
+		startTime, err = parseTime(t[0])
+		if err != nil {
+			return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid timestamp: %q", t[0])
+		}
+	}
+	if t, ok := qvals["end_time"]; ok {
+		endTime, err = parseTime(t[0])
+		if err != nil {
+			return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid timestamp: %q", t[0])
+		}
+	}
+
+	txs, last, err := appdb.AccountTxs(ctx, accountID, startTime, endTime, prev, limit)
 	if err != nil {
 		return nil, err
 	}
 
+	var (
+		key   string
+		items interface{}
+	)
+	if doActivity {
+		key = "activities"
+		activity, err := nodeTxsToActivity(txs)
+		if err != nil {
+			return nil, err
+		}
+		items = activity
+	} else {
+		key = "transactions"
+		items = txs
+	}
+
 	ret := map[string]interface{}{
-		"last":         last,
-		"transactions": httpjson.Array(txs),
+		"last": last,
+		key:    httpjson.Array(items),
 	}
 	return ret, nil
 }

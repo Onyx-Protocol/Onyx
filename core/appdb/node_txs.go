@@ -3,6 +3,7 @@ package appdb
 import (
 	"database/sql"
 	"encoding/json"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -64,17 +65,18 @@ func ManagerTxs(ctx context.Context, managerNodeID string, prev string, limit in
 	return activityItemsFromRows(rows)
 }
 
-func AccountTxs(ctx context.Context, accountID string, prev string, limit int) ([]*json.RawMessage, string, error) {
+func AccountTxs(ctx context.Context, accountID string, startTime, endTime time.Time, prev string, limit int) ([]*json.RawMessage, string, error) {
 	q := `
 		SELECT mt.id, mt.data
 		FROM manager_txs AS mt
 		LEFT JOIN manager_txs_accounts AS a
 		ON mt.id=a.manager_tx_id
 		WHERE a.account_id=$1 AND (($2 = '') OR (mt.id < $2))
+			AND mt.created_at >= $4 AND mt.created_at <= $5
 		ORDER BY mt.id DESC LIMIT $3
 	`
 
-	rows, err := pg.Query(ctx, q, accountID, prev, limit)
+	rows, err := pg.Query(ctx, q, accountID, prev, limit, startTime, endTime)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "query")
 	}

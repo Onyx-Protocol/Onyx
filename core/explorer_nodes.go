@@ -1,9 +1,6 @@
 package core
 
 import (
-	"strconv"
-	"time"
-
 	"golang.org/x/net/context"
 
 	"chain/core/explorer"
@@ -75,17 +72,9 @@ func (a *api) listExplorerUTXOsByAsset(ctx context.Context, assetID string) (int
 	qvals := httpjson.Request(ctx).URL.Query()
 	if timestamps, ok := qvals["timestamp"]; ok {
 		timestamp := timestamps[0]
-		// is the timestamp in RFC3339?
-		var ts time.Time
-		ts, err = time.Parse(time.RFC3339, timestamp)
+		ts, err := parseTime(timestamp)
 		if err != nil {
-			// maybe it's a unix timestamp instead?
-			var intTime int64
-			intTime, err = strconv.ParseInt(timestamp, 10, 64)
-			if err != nil {
-				return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid timestamp: %q", timestamp)
-			}
-			ts = time.Unix(intTime, 0)
+			return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid timestamp: %q", timestamp)
 		}
 		list, last, err = explorer.ListHistoricalOutputsByAsset(ctx, bc.AssetID(h), ts, prev, limit)
 	} else {
