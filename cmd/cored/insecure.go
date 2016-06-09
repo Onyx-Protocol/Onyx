@@ -1,4 +1,4 @@
-//+build insecure-disable-https-redirect
+//+build insecure_disable_https_redirect
 
 package main
 

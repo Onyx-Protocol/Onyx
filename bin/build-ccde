@@ -1,0 +1,26 @@
+#!/bin/sh
+set -xe
+
+# Disable cgo entirely.
+# We have seen one too many problems with cgo,
+# including an occasional (rare) malloc failure.
+# See https://github.com/lib/pq/issues/395.
+export CGO_ENABLED=0
+
+tag=`git describe --tags`
+commit=`git rev-parse HEAD`
+date=`date +%s`
+ldflags="-X main.buildTag=$tag -X main.buildCommit=$commit -X main.buildDate=$date"
+
+GOOS=linux GOARCH=amd64 go build\
+  -tags 'insecure_disable_https_redirect'\
+  -ldflags "$ldflags"\
+  -o $CHAIN/docker/de/cored\
+  chain/cmd/cored
+
+cp $CHAIN/core/appdb/schema.sql $CHAIN/docker/de/schema.sql
+
+docker build --tag chain-core-de:$tag $CHAIN/docker/de/
+
+rm -f $CHAIN/docker/de/cored
+rm -f $CHAIN/docker/de/schema.sql
