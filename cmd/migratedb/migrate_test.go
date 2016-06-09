@@ -3,15 +3,15 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/lib/pq"
 	"golang.org/x/net/context"
 
-	"chain/database/pg"
+	"chain/database/pg/pgtest"
 	"chain/database/sql"
 )
 
@@ -20,23 +20,17 @@ const (
 	schema  = "migratetest"
 )
 
-var (
-	testDB string
-	db     *sql.DB
-)
-
-func init() {
-	sql.Register("schemadb", pg.SchemaDriver(schema))
-	testDB = "postgres:///api-test?sslmode=disable"
-	if s := os.Getenv("DB_URL_TEST"); s != "" {
-		testDB = s
+func newDB(t testing.TB, schemaPath string) (*sql.DB, string) {
+	ctx := context.Background()
+	if os.Getenv("CHAIN") == "" {
+		t.Log("warning: $CHAIN not set; probably can't find schema")
 	}
-
-	var err error
-	db, err = sql.Open("schemadb", testDB)
+	s, err := pgtest.Open(ctx, pgtest.DBURL, schemaPath)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
+	runtime.SetFinalizer(s.DB, (*sql.DB).Close)
+	return s.DB, s.URL
 }
 
 func testPath(filename string) string {
@@ -123,7 +117,7 @@ func TestLoadMigrations(t *testing.T) {
 	}
 
 	for testNum, tc := range testCases {
-		resetSchema(db, testPath(tc.schemaFile))
+		db, _ := newDB(t, testPath(tc.schemaFile))
 		migrations, err := loadMigrations(db, testPath(tc.migrationDir))
 		if err != nil {
 			t.Error(err)
@@ -146,7 +140,7 @@ func TestLoadMigrations(t *testing.T) {
 }
 
 func TestApplyMigrationSQL(t *testing.T) {
-	resetSchema(db, testPath("empty.sql"))
+	db, url := newDB(t, "testfiles/empty.sql")
 	migrations, err := loadMigrations(db, testPath("one-migration"))
 	if err != nil {
 		t.Fatal(err)
@@ -154,14 +148,14 @@ func TestApplyMigrationSQL(t *testing.T) {
 	if len(migrations) != 1 {
 		t.Errorf("len(migrations) = %d; want=1", len(migrations))
 	}
-	err = runMigration(db, testDB, testPath("one-migration"), migrations[0])
+	err = runMigration(db, url, testPath("one-migration"), migrations[0])
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestApplyMigrationGo(t *testing.T) {
-	resetSchema(db, testPath("empty.sql"))
+	db, url := newDB(t, "testfiles/empty.sql")
 	migrations, err := loadMigrations(db, testPath("go-migration"))
 	if err != nil {
 		t.Fatal(err)
@@ -169,7 +163,7 @@ func TestApplyMigrationGo(t *testing.T) {
 	if len(migrations) != 1 {
 		t.Errorf("len(migrations) = %d; want=1", len(migrations))
 	}
-	err = runMigration(db, testDB, testPath("go-migration"), migrations[0])
+	err = runMigration(db, url, testPath("go-migration"), migrations[0])
 	if err != nil {
 		t.Error(err)
 	}
