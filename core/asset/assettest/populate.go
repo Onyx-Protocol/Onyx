@@ -76,11 +76,11 @@ func (cb *PopulateCallbacks) doAfterIssue(nTrades int) {
 // The filename parameter is the name of a CSV file relative to
 // $CHAIN/core/asset/assettest/testdata.
 // Various callbacks can be specified via cb.
-func Populate(ctx context.Context, t *testing.T, filename string, cb *PopulateCallbacks) {
+func Populate(ctx context.Context, tb testing.TB, filename string, cb *PopulateCallbacks) {
 	fullpath := os.Getenv("CHAIN") + "/core/asset/assettest/testdata/" + filename
 	f, err := os.Open(fullpath)
 	if err != nil {
-		t.Fatal(err)
+		tb.Fatal(err)
 	}
 	defer f.Close()
 
@@ -97,11 +97,11 @@ func Populate(ctx context.Context, t *testing.T, filename string, cb *PopulateCa
 		balanceMap map[accountAssetPair]int64
 	)
 
-	inodeID := CreateIssuerNodeFixture(ctx, t, "", "", nil, nil)
-	mnodeID := CreateManagerNodeFixture(ctx, t, "", "", nil, nil)
+	inodeID := CreateIssuerNodeFixture(ctx, tb, "", "", nil, nil)
+	mnodeID := CreateManagerNodeFixture(ctx, tb, "", "", nil, nil)
 
 	// We call them dollars but it could be anything.
-	usdAssetID := CreateAssetFixture(ctx, t, inodeID, "", "")
+	usdAssetID := CreateAssetFixture(ctx, tb, inodeID, "", "")
 
 	// Maps input "buyer" and "seller" ids to Chain accountIDs.
 	accountMap := make(map[string]string)
@@ -133,7 +133,7 @@ func Populate(ctx context.Context, t *testing.T, filename string, cb *PopulateCa
 			break
 		}
 		if err != nil {
-			t.Fatal(err)
+			tb.Fatal(err)
 		}
 
 		rawPrice := mustParseInt(rawitem[0])
@@ -151,14 +151,14 @@ func Populate(ctx context.Context, t *testing.T, filename string, cb *PopulateCa
 			ok      bool
 		)
 		if assetID, ok = assetMap[rawStockID]; !ok {
-			assetID = CreateAssetFixture(ctx, t, inodeID, "", "")
+			assetID = CreateAssetFixture(ctx, tb, inodeID, "", "")
 			assetMap[rawStockID] = assetID
 			cb.doAsset(assetID)
 		}
 
 		var sellerAccountID string
 		if sellerAccountID, ok = accountMap[rawSeller]; !ok {
-			sellerAccountID = CreateAccountFixture(ctx, t, mnodeID, rawSeller, nil)
+			sellerAccountID = CreateAccountFixture(ctx, tb, mnodeID, rawSeller, nil)
 			accountMap[rawSeller] = sellerAccountID
 			cb.doAccount(sellerAccountID)
 		}
@@ -171,7 +171,7 @@ func Populate(ctx context.Context, t *testing.T, filename string, cb *PopulateCa
 
 		var buyerAccountID string
 		if buyerAccountID, ok = accountMap[rawBuyer]; !ok {
-			buyerAccountID = CreateAccountFixture(ctx, t, mnodeID, rawBuyer, nil)
+			buyerAccountID = CreateAccountFixture(ctx, tb, mnodeID, rawBuyer, nil)
 			accountMap[rawBuyer] = buyerAccountID
 			cb.doAccount(buyerAccountID)
 		}
@@ -197,7 +197,7 @@ func Populate(ctx context.Context, t *testing.T, filename string, cb *PopulateCa
 			continue
 		}
 		amount := uint64(-lowWaterMark)
-		IssueAssetsFixture(ctx, t, accountAsset.assetID, amount, accountAsset.accountID)
+		IssueAssetsFixture(ctx, tb, accountAsset.assetID, amount, accountAsset.accountID)
 		cb.doIssue(accountAsset.assetID, accountAsset.accountID, amount)
 	}
 
@@ -210,10 +210,10 @@ func Populate(ctx context.Context, t *testing.T, filename string, cb *PopulateCa
 			asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: usdAssetID, Amount: trade.dollars}, trade.shareBuyerID, nil, nil, nil),
 		}
 		d := []*txbuilder.Destination{
-			AccountDest(ctx, t, trade.shareSellerID, usdAssetID, trade.dollars),
-			AccountDest(ctx, t, trade.shareBuyerID, trade.shareAssetID, trade.shares),
+			AccountDest(ctx, tb, trade.shareSellerID, usdAssetID, trade.dollars),
+			AccountDest(ctx, tb, trade.shareBuyerID, trade.shareAssetID, trade.shares),
 		}
-		Transfer(ctx, t, s, d)
+		Transfer(ctx, tb, s, d)
 		cb.doTrade(trade.shareSellerID, trade.shareBuyerID, trade.shareAssetID, usdAssetID, trade.shares, trade.dollars)
 	}
 }

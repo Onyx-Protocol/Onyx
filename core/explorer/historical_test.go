@@ -15,6 +15,42 @@ import (
 	"chain/database/sql"
 )
 
+func BenchmarkWithHistoricalOutputs(b *testing.B) {
+	benchmarkHistoricalOutputs(b, true)
+}
+
+func BenchmarkWithoutHistoricalOutputs(b *testing.B) {
+	benchmarkHistoricalOutputs(b, false)
+}
+
+func benchmarkHistoricalOutputs(b *testing.B, historicalOutputs bool) {
+	for n := 0; n < b.N; n++ {
+		ctx := pgtest.NewContext(b)
+		store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+		fc, err := assettest.InitializeSigningGenerator(ctx, store, nil)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		Connect(ctx, fc, historicalOutputs, 0, true)
+
+		n := 0
+
+		populateCallbacks := &assettest.PopulateCallbacks{
+			Trade: func(sellerID, buyerID string, shareAssetID, usdAssetID bc.AssetID, shares, dollars uint64) {
+				n++
+				if n%10 == 0 {
+					_, err := generator.MakeBlock(ctx)
+					if err != nil {
+						b.Fatal(err)
+					}
+				}
+			},
+		}
+		assettest.Populate(ctx, b, "glittercosmall.csv", populateCallbacks)
+	}
+}
+
 func TestHistoricalOutputs(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
