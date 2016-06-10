@@ -61,7 +61,7 @@ func GetSummary(ctx context.Context, store *txdb.Store, pool *txdb.Pool, projID 
 	if err != nil {
 		return nil, errors.Wrap(err, "get latest block")
 	}
-	res.BlockCount = top.Height + 1 // Height 0 is the genesis block
+	res.BlockCount = top.Height // genesis block is at height 1
 
 	res.TransactionCount.Confirmed, err = store.CountBlockTxs(ctx)
 	if err != nil {

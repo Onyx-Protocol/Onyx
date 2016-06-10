@@ -41,8 +41,8 @@ func TestGetSummary(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
 
-	b0 := bc.Block{BlockHeader: bc.BlockHeader{Height: 0}}
 	b1 := bc.Block{BlockHeader: bc.BlockHeader{Height: 1}}
+	b2 := bc.Block{BlockHeader: bc.BlockHeader{Height: 2}}
 
 	t0 := bc.TxData{Metadata: []byte{0}}
 	t1 := bc.TxData{Metadata: []byte{1}}
@@ -74,15 +74,15 @@ func TestGetSummary(t *testing.T) {
 		INSERT INTO blocks
 			(block_hash, height, data, header)
 		VALUES
-			(`+hashForFixture(b0.Hash())+`, `+strconv.Itoa(int(b0.Height))+`, `+blockForFixture(&b0)+`, ''),
-			(`+hashForFixture(b1.Hash())+`, `+strconv.Itoa(int(b1.Height))+`, `+blockForFixture(&b1)+`, '');
+			(`+hashForFixture(b1.Hash())+`, `+strconv.Itoa(int(b1.Height))+`, `+blockForFixture(&b1)+`, ''),
+			(`+hashForFixture(b2.Hash())+`, `+strconv.Itoa(int(b2.Height))+`, `+blockForFixture(&b2)+`, '');
 
 		INSERT INTO blocks_txs
 			(block_hash, tx_hash, block_height, block_pos)
 		VALUES
-			(`+hashForFixture(b0.Hash())+`, `+hashForFixture(t0.Hash())+`, 1, 0),
-			(`+hashForFixture(b1.Hash())+`, `+hashForFixture(t1.Hash())+`, 1, 1),
-			(`+hashForFixture(b1.Hash())+`, `+hashForFixture(t2.Hash())+`, 1, 2);
+			(`+hashForFixture(b1.Hash())+`, `+hashForFixture(t0.Hash())+`, 1, 0),
+			(`+hashForFixture(b2.Hash())+`, `+hashForFixture(t1.Hash())+`, 1, 1),
+			(`+hashForFixture(b2.Hash())+`, `+hashForFixture(t2.Hash())+`, 1, 2);
 
 		INSERT INTO pool_txs
 			(tx_hash, data)
