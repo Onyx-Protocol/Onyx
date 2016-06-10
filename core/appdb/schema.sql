@@ -847,12 +847,12 @@ CREATE TABLE voting_tokens (
     tx_hash text NOT NULL,
     index integer NOT NULL,
     state smallint NOT NULL,
-    closed boolean NOT NULL,
     vote smallint NOT NULL,
     admin_script bytea NOT NULL,
     amount bigint NOT NULL,
     block_height integer NOT NULL,
-    registration_id bytea DEFAULT '\x'::bytea NOT NULL
+    registration_id bytea DEFAULT '\x'::bytea NOT NULL,
+    admin_state smallint NOT NULL
 );
 
 
@@ -1501,3 +1501,4 @@ insert into migrations (filename, hash) values ('2016-06-06.0.txdb.state-tree-va
 insert into migrations (filename, hash) values ('2016-06-09.0.txdb.drop-blocks-utxos.sql', '168a86e8699218b502a06b26f7634d85c72677f26570791d5bc26a894d26127f');
 insert into migrations (filename, hash) values ('2016-06-09.1.core.rename-explorer-outputs.sql', 'c09b0b75562e5c53852cc84f96f24063eea6b46129f21e8f29b98953e2fb1deb');
 insert into migrations (filename, hash) values ('2016-06-09.2.txdb.drop-utxos.sql', 'a6d94f3afeae6145caef7fe5919aaacb5050ce68b312e53461b109ada88e382e');
+insert into migrations (filename, hash) values ('2016-06-10.0.voting.change-closed-column.sql', '93487fb8edd612a79da022aa9b17b2a94e121c4facb3199c7edd0ce12248389a');

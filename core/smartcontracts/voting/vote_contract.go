@@ -12,13 +12,14 @@ import (
 const (
 	// pinnedTokenContractHash stores the hash of the voting token contract.
 	// Changes to the contract will require updating the hash.
-	pinnedTokenContractHash = "7659a7102446ace00ca187998852db6c37c8e96ae5a21f77eb36efa2673d3e11"
+	pinnedTokenContractHash = "9e1f94ba804623386a7f7868c411de99f277f5aaf7e87292a1fab2e913d6e542"
 )
 
 type TokenState byte
 
-func (ts TokenState) Finished() bool    { return ts&stateFinished == stateFinished }
-func (ts TokenState) Base() TokenState  { return 0x0F & ts }
+func (ts TokenState) Open() bool        { return ts&stateAdmin == stateOpen }
+func (ts TokenState) Base() TokenState  { return stateUser & ts }
+func (ts TokenState) Admin() TokenState { return stateAdmin & ts }
 func (ts TokenState) Distributed() bool { return ts.Base() == stateDistributed }
 func (ts TokenState) Registered() bool  { return ts.Base() == stateRegistered }
 func (ts TokenState) Voted() bool       { return ts.Base() == stateVoted }
@@ -38,7 +39,12 @@ const (
 	stateDistributed TokenState = 0x00
 	stateRegistered             = 0x01
 	stateVoted                  = 0x02
-	stateFinished               = 0x10 // bit mask
+	stateUser                   = 0x0f // bit mask
+
+	stateOpen     = 0x00
+	stateFinished = 0x10
+	stateInvalid  = 0x20
+	stateAdmin    = 0xf0 // bit mask
 )
 
 type tokenContractClause int64
@@ -50,6 +56,7 @@ const (
 	clauseFinish                           = 4
 	clauseReset                            = 5
 	clauseRetire                           = 6
+	clauseInvalidate                       = 7
 )
 
 // tokenScriptData encapsulates all the data stored within the p2c script
@@ -261,8 +268,8 @@ const (
 			4 ROLL CATPUSHDATA
 			3 PICK CATPUSHDATA
 			ROT
-			DUP 16 LESSTHAN VERIFY
-			16 ADD CATPUSHDATA
+			DUP DATA_1 0xf0 AND 0 EQUALVERIFY
+			16 OR CATPUSHDATA
 			SWAP CATPUSHDATA
 			OUTPUTSCRIPT
 			DATA_1 0x27 RIGHT
@@ -271,7 +278,8 @@ const (
 			EVAL
 		ENDIF
 		DUP 5 EQUAL IF
-			2DROP DROP
+			2DROP
+			DATA_1 0xf0 AND 0 EQUALVERIFY
 			DATA_2 0x5275
 			3 ROLL
 			4 PICK NOTIF
@@ -290,9 +298,25 @@ const (
 		ENDIF
 		DUP 6 EQUAL IF
 			2DROP
-			16 GREATERTHANOREQUAL VERIFY
+			DATA_1 0xf0 AND 0 GREATERTHAN VERIFY
 			NIP NIP
 			AMOUNT ASSET DATA_1 0x6a
+			RESERVEOUTPUT VERIFY
+			EVAL
+		ENDIF
+		DUP 7 EQUAL IF
+			DROP
+			DATA_2 0x5275
+			5 ROLL CATPUSHDATA
+			4 ROLL CATPUSHDATA
+			3 PICK CATPUSHDATA
+			ROT
+			DUP DATA_1 0xf0 AND DATA_1 0x20 LESSTHAN VERIFY
+			15 AND DATA_1 0x20 OR CATPUSHDATA
+			SWAP CATPUSHDATA
+			OUTPUTSCRIPT
+			DATA_1 0x27 RIGHT
+			CAT AMOUNT ASSET ROT
 			RESERVEOUTPUT VERIFY
 			EVAL
 		ENDIF

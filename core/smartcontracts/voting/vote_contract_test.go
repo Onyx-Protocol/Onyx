@@ -615,6 +615,20 @@ func TestFinishVoteClause(t *testing.T) {
 			},
 		},
 		{
+			// Voting token state invalid.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateDistributed | stateInvalid,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateDistributed | stateFinished,
+			},
+		},
+		{
 			// Admin script does not authorize.
 			err: txscript.ErrStackScriptFailed,
 			prev: tokenScriptData{
@@ -792,6 +806,163 @@ func TestRetireClause(t *testing.T) {
 	}
 }
 
+func TestInvalidateVoteClause(t *testing.T) {
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+
+	var (
+		rightAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		otherRightAssetID = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		tokenAssetID      = assettest.CreateAssetFixture(ctx, t, "", "", "")
+		tokensAssetAmount = bc.AssetAmount{
+			AssetID: tokenAssetID,
+			Amount:  200,
+		}
+	)
+
+	testCases := []struct {
+		err  error
+		prev tokenScriptData
+		out  tokenScriptData
+	}{
+		{
+			err: nil,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateDistributed,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateDistributed | stateInvalid,
+			},
+		},
+		{
+			err: nil,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateVoted,
+				Vote:        8,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateVoted | stateInvalid,
+				Vote:        8,
+			},
+		},
+		{
+			// Voting token state already invalid.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateDistributed | stateInvalid,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateDistributed | stateInvalid,
+			},
+		},
+		{
+			// Voting token state finished.
+			err: nil,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateDistributed | stateFinished,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateDistributed | stateInvalid,
+			},
+		},
+		{
+			// Admin script does not authorize.
+			err: txscript.ErrStackScriptFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1, txscript.OP_DROP, txscript.OP_0},
+				State:       stateDistributed,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1, txscript.OP_DROP, txscript.OP_0},
+				State:       stateDistributed | stateInvalid,
+			},
+		},
+		{
+			// Output has wrong voting right asset id.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateVoted,
+				Vote:        2,
+			},
+			out: tokenScriptData{
+				Right:       otherRightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateVoted | stateInvalid,
+				Vote:        2,
+			},
+		},
+		{
+			// Cannot change the base state at the same time.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateDistributed | stateInvalid,
+				Vote:        2,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateRegistered | stateInvalid,
+				Vote:        2,
+			},
+		},
+		{
+			// Vote changed during closing
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateVoted,
+				Vote:        2,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateVoted | stateInvalid,
+				Vote:        3,
+			},
+		},
+	}
+
+	for i, tc := range testCases {
+		sb := txscript.NewScriptBuilder()
+		sb = sb.
+			AddInt64(int64(clauseInvalidate)).
+			AddData(tokenHoldingContract)
+		sigscript, err := sb.Script()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = txscripttest.NewTestTx(mockTimeFunc).
+			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
+			AddOutput(tokensAssetAmount, tc.out.PKScript()).
+			Execute(ctx, 0)
+		if !reflect.DeepEqual(err, tc.err) {
+			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
+		}
+	}
+}
+
 // TestTokenContractValidMatch tests generating a pkscript from a voting token.
 // The generated pkscript is then used in the voting token p2c detection
 // flow, where it should be found to match the contract. Then the decoded
@@ -872,18 +1043,48 @@ func TestResetClause(t *testing.T) {
 			},
 		},
 		{
-			// Move from voted | closed, to registered
+			// Move from voted to registered
 			err: nil,
 			prev: tokenScriptData{
 				Right:       rightAssetID,
 				AdminScript: []byte{txscript.OP_1},
-				State:       stateVoted | stateFinished,
+				State:       stateVoted,
 				Vote:        8,
 			},
 			out: tokenScriptData{
 				Right:       rightAssetID,
 				AdminScript: []byte{txscript.OP_1},
 				State:       stateRegistered,
+			},
+		},
+		{
+			// Cannot reset once finished.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateDistributed | stateFinished,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateDistributed | stateFinished,
+				Vote:        1,
+			},
+		},
+		{
+			// Cannot reset if invalid.
+			err: txscript.ErrStackVerifyFailed,
+			prev: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateDistributed | stateInvalid,
+			},
+			out: tokenScriptData{
+				Right:       rightAssetID,
+				AdminScript: []byte{txscript.OP_1},
+				State:       stateDistributed | stateInvalid,
+				Vote:        1,
 			},
 		},
 		{
@@ -937,7 +1138,7 @@ func TestResetClause(t *testing.T) {
 			prev: tokenScriptData{
 				Right:       rightAssetID,
 				AdminScript: []byte{txscript.OP_1},
-				State:       stateDistributed | stateFinished,
+				State:       stateDistributed,
 				Vote:        2,
 			},
 			out: tokenScriptData{

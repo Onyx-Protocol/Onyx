@@ -67,12 +67,12 @@ func insertVotingRight(ctx context.Context, assetID bc.AssetID, ordinal int, blo
 func insertVotingToken(ctx context.Context, assetID bc.AssetID, blockHeight uint64, outpoint bc.Outpoint, amount uint64, data tokenScriptData) error {
 	const q = `
 		INSERT INTO voting_tokens
-			(asset_id, right_asset_id, tx_hash, index, state, closed, vote, admin_script, amount, block_height, registration_id)
+			(asset_id, right_asset_id, tx_hash, index, state, admin_state, vote, admin_script, amount, block_height, registration_id)
 			VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		ON CONFLICT (tx_hash, index) DO NOTHING
 	`
 	_, err := pg.FromContext(ctx).Exec(ctx, q, assetID, data.Right,
-		outpoint.Hash, outpoint.Index, data.State.Base(), data.State.Finished(),
+		outpoint.Hash, outpoint.Index, data.State.Base(), data.State.Admin(),
 		data.Vote, data.AdminScript, amount, blockHeight, data.RegistrationID)
 	return errors.Wrap(err, "inserting into voting_tokens")
 }
@@ -379,24 +379,24 @@ func TallyVotes(ctx context.Context, tokenAssetID bc.AssetID) (tally Tally, err 
 				COALESCE(SUM(CASE WHEN state = $1 THEN amount ELSE 0 END), 0) AS distributed,
 				COALESCE(SUM(CASE WHEN state = $2 THEN amount ELSE 0 END), 0) AS registered,
 				COALESCE(SUM(CASE WHEN state = $3 THEN amount ELSE 0 END), 0) AS voted,
-				COALESCE(SUM(CASE WHEN closed THEN amount ELSE 0 END), 0) AS closed
-			FROM voting_tokens WHERE asset_id = $4
+				COALESCE(SUM(CASE WHEN admin_state = $4 THEN amount ELSE 0 END), 0) AS closed
+			FROM voting_tokens WHERE admin_state != $5 AND asset_id = $6
 		`
 		voteQ = `
 			SELECT vote, SUM(amount) AS total
 			FROM voting_tokens
-			WHERE asset_id = $1 AND state = $2
+			WHERE asset_id = $1 AND state = $2 AND admin_state != $3
 			GROUP BY vote
 		`
 	)
-	err = pg.FromContext(ctx).QueryRow(ctx, stateQ, stateDistributed, stateRegistered, stateVoted, tokenAssetID).
+	err = pg.FromContext(ctx).QueryRow(ctx, stateQ, stateDistributed, stateRegistered, stateVoted, stateFinished, stateInvalid, tokenAssetID).
 		Scan(&tally.Circulation, &tally.Distributed, &tally.Registered, &tally.Voted, &tally.Closed)
 	if err != nil {
 		return tally, err
 	}
 
 	tally.Votes = map[string]int{}
-	err = pg.ForQueryRows(ctx, voteQ, tokenAssetID, stateVoted, func(vote int, total int) error {
+	err = pg.ForQueryRows(ctx, voteQ, tokenAssetID, stateVoted, stateInvalid, func(vote int, total int) error {
 		if vote < 0 {
 			return errors.New("voting token in voted state but with negative vote value")
 		}
@@ -418,7 +418,7 @@ func FindTokenForOutpoint(ctx context.Context, outpoint bc.Outpoint) (*Token, er
 			vt.tx_hash,
 			vt.index,
 			vt.state,
-			vt.closed,
+			vt.admin_state,
 			vt.vote,
 			vt.admin_script,
 			vt.amount,
@@ -428,23 +428,19 @@ func FindTokenForOutpoint(ctx context.Context, outpoint bc.Outpoint) (*Token, er
 			vt.tx_hash = $1 AND vt.index = $2
 	`
 	var (
-		tok       Token
-		baseState int64
-		closed    bool
+		tok                   Token
+		baseState, adminState int64
 	)
 	err := pg.FromContext(ctx).QueryRow(ctx, sqlQ, outpoint.Hash, outpoint.Index).Scan(
 		&tok.AssetID, &tok.Right, &tok.Outpoint.Hash, &tok.Outpoint.Index, &baseState,
-		&closed, &tok.Vote, &tok.AdminScript, &tok.Amount, &tok.RegistrationID)
+		&adminState, &tok.Vote, &tok.AdminScript, &tok.Amount, &tok.RegistrationID)
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
 	} else if err != nil {
 		return nil, errors.Wrap(err, "looking up voting token by asset id")
 	}
 
-	tok.State = TokenState(baseState)
-	if closed {
-		tok.State = tok.State | stateFinished
-	}
+	tok.State = TokenState(baseState | adminState)
 	return &tok, nil
 }
 
@@ -478,7 +474,7 @@ func GetVotes(ctx context.Context, assetIDs []bc.AssetID, accountID string, afte
 				vt.tx_hash,
 				vt.index,
 				vt.state,
-				vt.closed,
+				vt.admin_state,
 				vt.vote,
 				vt.admin_script,
 				vt.amount,
@@ -527,22 +523,18 @@ func GetVotes(ctx context.Context, assetIDs []bc.AssetID, accountID string, afte
 	)
 	for rows.Next() {
 		var (
-			token     Token
-			baseState int64
-			closed    bool
+			token                 Token
+			baseState, adminState int64
 		)
 		err = rows.Scan(
 			&token.AssetID, &token.Right, &token.Outpoint.Hash, &token.Outpoint.Index,
-			&baseState, &closed, &token.Vote, &token.AdminScript, &token.Amount,
+			&baseState, &adminState, &token.Vote, &token.AdminScript, &token.Amount,
 			&token.RegistrationID, &token.AccountID,
 		)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "scanning Token")
 		}
-		token.State = TokenState(baseState)
-		if closed {
-			token.State = token.State | stateFinished
-		}
+		token.State = TokenState(baseState | adminState)
 		results = append(results, &token)
 		last = fmt.Sprintf("%s-%s", token.AssetID, token.Right)
 	}

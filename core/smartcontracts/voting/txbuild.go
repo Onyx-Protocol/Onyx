@@ -293,6 +293,25 @@ func TokenFinish(ctx context.Context, token *Token) (txbuilder.Reserver, txbuild
 	return reserver, data, nil
 }
 
+func TokenInvalidate(ctx context.Context, token *Token) (txbuilder.Reserver, txbuilder.Receiver, error) {
+	data := token.tokenScriptData
+	data.State = data.State | stateInvalid
+
+	adminAddr, err := appdb.GetAddress(ctx, token.AdminScript)
+	if err != nil {
+		adminAddr = nil
+	}
+
+	reserver := tokenReserver{
+		outpoint:   token.Outpoint,
+		clause:     clauseInvalidate,
+		output:     data,
+		prevScript: token.tokenScriptData.PKScript(),
+		adminAddr:  adminAddr,
+	}
+	return reserver, data, nil
+}
+
 // TokenReset builds txbuilder.Reserve and Receiver implementations
 // to reset a voting token.
 func TokenReset(ctx context.Context, token *Token, preserveRegistration bool) (txbuilder.Reserver, txbuilder.Receiver, error) {

@@ -203,7 +203,7 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 	votes := []map[string]interface{}{}
 	for _, t := range tokens {
 		actionTypes := []string{}
-		if !t.State.Finished() {
+		if t.State.Open() {
 			switch {
 			case t.State.Distributed():
 				actionTypes = append(actionTypes, "register-voting-token", "redistribute-voting-token")
@@ -211,6 +211,7 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 				actionTypes = append(actionTypes, "vote")
 			}
 			actionTypes = append(actionTypes, "close-vote")
+			actionTypes = append(actionTypes, "invalidate-vote")
 		}
 
 		votes = append(votes, map[string]interface{}{
@@ -220,7 +221,7 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 			"voting_right_asset_id": t.Right,
 			"amount":                t.Amount,
 			"state":                 t.State.String(),
-			"closed":                t.State.Finished(),
+			"closed":                !t.State.Open(),
 			"registration_id":       chainjson.HexBytes(t.RegistrationID),
 			"option":                t.Vote,
 			"holding_account_id":    t.AccountID,
@@ -571,7 +572,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		if !token.State.Distributed() {
 			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting token must be in distributed state")
 		}
-		if token.State.Finished() {
+		if !token.State.Open() {
 			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting has been closed")
 		}
 		registrations := make([]voting.Registration, 0, len(params.Registrations))
@@ -605,7 +606,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		if !token.State.Registered() && !token.State.Voted() {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting token must be in registered state")
 		}
-		if token.State.Finished() {
+		if !token.State.Open() {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has been closed")
 		}
 		tokenReserver, tokenReceiver, err := voting.TokenVote(ctx, token, right.PKScript(), params.Option)
@@ -630,7 +631,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		}
 
 		for _, v := range votes {
-			if v.State.Finished() {
+			if !v.State.Open() {
 				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting has already been closed")
 			}
 			reserver, receiver, err := voting.TokenFinish(ctx, v)
@@ -681,7 +682,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 
 		var totalAmount uint64
 		for _, v := range votes {
-			if !v.State.Finished() {
+			if v.State.Open() {
 				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting must be closed to retire tokens")
 			}
 			reserver, err := voting.TokenRetire(ctx, v)
@@ -695,6 +696,32 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 			totalAmount += uint64(v.Amount)
 		}
 		dsts = append(dsts, txbuilder.NewRetireDestination(ctx, &bc.AssetAmount{AssetID: *params.TokenAssetID, Amount: totalAmount}, action.Metadata))
+	case "invalidate-voting-token":
+		if params.TokenAssetID == nil {
+			return nil, nil, errors.WithDetail(ErrBadBuildRequest, "missing voting token asset id")
+		}
+		votes, _, err := voting.GetVotes(ctx, []bc.AssetID{*params.TokenAssetID}, "", "", math.MaxInt64)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "finding voting tokens to invalidate")
+		}
+
+		for _, v := range votes {
+			if v.State.Open() {
+				return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "voting must be closed to retire tokens")
+			}
+			reserver, receiver, err := voting.TokenInvalidate(ctx, v)
+			if err != nil {
+				return nil, nil, err
+			}
+			srcs = append(srcs, &txbuilder.Source{
+				AssetAmount: bc.AssetAmount{AssetID: v.AssetID, Amount: uint64(v.Amount)},
+				Reserver:    reserver,
+			})
+			dsts = append(dsts, &txbuilder.Destination{
+				AssetAmount: bc.AssetAmount{AssetID: v.AssetID, Amount: uint64(v.Amount)},
+				Receiver:    receiver,
+			})
+		}
 	default:
 		err = errors.WithDetailf(ErrBadBuildRequest, "unknown voting action `%s`", action.Type)
 	}
