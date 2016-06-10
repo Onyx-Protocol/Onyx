@@ -102,6 +102,7 @@ func TestHistoricalOutputs(t *testing.T) {
 	}
 	assettest.Populate(ctx, t, "glittercosmall.csv", populateCallbacks)
 
+	// Perform spot-checks
 	for i, s := range spotChecks {
 		ts := time.Unix(int64(s.timestamp), 0)
 		sums, _, err := HistoricalBalancesByAccount(ctx, s.accountID, ts, &s.assetID, "", 0)
@@ -116,6 +117,61 @@ func TestHistoricalOutputs(t *testing.T) {
 		}
 		if sum != s.amount {
 			t.Errorf("Spot check %d of %d: Got %d units of %s in account %s at time %s, expected %d", i+1, len(spotChecks), sum, s.assetID, s.accountID, ts, s.amount)
+		}
+	}
+
+	// Finally, find an account with multiple assets and check that pagination in HistoricalBalancesByAccount works
+	assetCountByAccount := make(map[string]int)
+	for accountAsset, amount := range currentBalances {
+		if amount > 0 {
+			accountID := accountAsset.accountID
+			assetCountByAccount[accountID]++
+			if assetCountByAccount[accountID] > 1 {
+				var (
+					last  string
+					found []bc.AssetAmount
+				)
+				for {
+					var sums []bc.AssetAmount
+
+					sums, last, err = HistoricalBalancesByAccount(ctx, accountID, time.Now(), nil, last, 1)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if len(sums) == 0 {
+						break
+					}
+					if len(sums) > 1 {
+						t.Fatalf("got %d results from HistoricalBalancesByAccount with a limit of 1", len(sums))
+					}
+					found = append(found, sums[0])
+				}
+				// Make sure everything in found is in currentBalances and vice versa
+				for _, f := range found {
+					accAsset := accountAssetPair{accountID, f.AssetID}
+					if f.Amount != currentBalances[accAsset] {
+						t.Errorf("found %d units of %s for account %s in database but %d in currentBalances", f.Amount, f.AssetID, accountID, currentBalances[accAsset])
+					}
+				}
+				for accAsset, amt := range currentBalances {
+					if amt > 0 && accAsset.accountID == accountID {
+						seen := false
+						for _, f := range found {
+							if f.AssetID == accAsset.assetID {
+								seen = true
+								if f.Amount != amt {
+									t.Errorf("found %d units of %s for account %s in currentBalances but %d in database", amt, f.AssetID, accountID, f.Amount)
+								}
+								break
+							}
+						}
+						if !seen {
+							t.Errorf("found %d units of %s for account %s in currentBalances but nothing in database", amt, accAsset.assetID, accountID)
+						}
+					}
+				}
+				break
+			}
 		}
 	}
 }

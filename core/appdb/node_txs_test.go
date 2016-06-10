@@ -7,7 +7,11 @@ import (
 	"time"
 
 	. "chain/core/appdb"
+	"chain/core/asset"
 	"chain/core/asset/assettest"
+	"chain/core/asset/nodetxlog"
+	"chain/core/txbuilder"
+	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -184,6 +188,72 @@ func TestAccountTxsLimit(t *testing.T) {
 
 	if string(*txs[1]) != `{"outputs":"doop"}` {
 		t.Fatalf("want={outputs: doop}, got=%v", *txs[1])
+	}
+}
+
+func TestAccountTxsTimeLimit(t *testing.T) {
+	ctx := pgtest.NewContext(t)
+	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assetID := assettest.CreateAssetFixture(ctx, t, "", "", "")
+	mnodeID := assettest.CreateManagerNodeFixture(ctx, t, "", "", nil, nil)
+	acct1ID := assettest.CreateAccountFixture(ctx, t, mnodeID, "", nil)
+	acct2ID := assettest.CreateAccountFixture(ctx, t, mnodeID, "", nil)
+
+	assettest.IssueAssetsFixture(ctx, t, assetID, 100, acct1ID)
+
+	srcs := func(n uint64) []*txbuilder.Source {
+		return []*txbuilder.Source{
+			asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: assetID, Amount: n}, acct1ID, nil, nil, nil),
+		}
+	}
+	dests := func(n uint64) []*txbuilder.Destination {
+		return []*txbuilder.Destination{
+			assettest.AccountDest(ctx, t, acct2ID, assetID, n),
+		}
+	}
+
+	// Don't include this transfer in the output
+	assettest.Transfer(ctx, t, srcs(1), dests(1))
+
+	startTime := time.Now()
+
+	// Do include this transfer in the output
+	assettest.Transfer(ctx, t, srcs(2), dests(2))
+
+	// Do include this transfer in the output too
+	assettest.Transfer(ctx, t, srcs(4), dests(4))
+
+	endTime := time.Now()
+
+	// Don't include this transfer in the output
+	assettest.Transfer(ctx, t, srcs(8), dests(8))
+
+	txs, _, err := AccountTxs(ctx, acct1ID, startTime, endTime, "", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(txs) != 2 {
+		t.Fatalf("expected 2 txs, got %d", len(txs))
+	}
+
+	var sum uint64
+	for _, tx := range txs {
+		var nodeTx nodetxlog.NodeTx
+		err = json.Unmarshal([]byte(*tx), &nodeTx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, o := range nodeTx.Outputs {
+			if o.AccountID == acct2ID {
+				sum += o.Amount
+			}
+		}
+	}
+	if sum != 6 {
+		t.Errorf("expected transfers of 6 units, got a transfer of %d", sum)
 	}
 }
 

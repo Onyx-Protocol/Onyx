@@ -168,14 +168,12 @@ func HistoricalBalancesByAccount(ctx context.Context, accountID string, timestam
 		q += " AND asset_id = $3"
 		args = append(args, *assetID)
 	} else if limit > 0 {
-		q += " AND asset_id>$3"
-		args = append(args, *assetID)
-		q += fmt.Sprintf("LIMIT %d", limit)
+		q += " AND asset_id > $3"
+		args = append(args, prev)
 	}
-
 	q += " GROUP BY asset_id"
 	if limit > 0 {
-		q += " ORDER BY asset_id"
+		q += fmt.Sprintf(" ORDER BY asset_id LIMIT %d", limit)
 	}
 
 	var (
@@ -191,7 +189,7 @@ func HistoricalBalancesByAccount(ctx context.Context, accountID string, timestam
 		return nil, "", err
 	}
 
-	if limit > 0 || len(output) > 0 {
+	if limit > 0 && len(output) > 0 {
 		last = output[len(output)-1].AssetID.String()
 	}
 	return output, last, nil

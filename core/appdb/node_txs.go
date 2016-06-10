@@ -3,6 +3,7 @@ package appdb
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"golang.org/x/net/context"
@@ -72,11 +73,15 @@ func AccountTxs(ctx context.Context, accountID string, startTime, endTime time.T
 		LEFT JOIN manager_txs_accounts AS a
 		ON mt.id=a.manager_tx_id
 		WHERE a.account_id=$1 AND (($2 = '') OR (mt.id < $2))
-			AND mt.created_at >= $4 AND mt.created_at <= $5
-		ORDER BY mt.id DESC LIMIT $3
+			AND mt.created_at >= $3 AND mt.created_at <= $4
+		ORDER BY mt.id DESC
 	`
 
-	rows, err := pg.Query(ctx, q, accountID, prev, limit, startTime, endTime)
+	if limit > 0 {
+		q += fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	rows, err := pg.Query(ctx, q, accountID, prev, startTime, endTime)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "query")
 	}
