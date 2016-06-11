@@ -297,10 +297,11 @@ func TokenFinish(ctx context.Context, token *Token) (txbuilder.Reserver, txbuild
 // to reset a voting token.
 func TokenReset(ctx context.Context, token *Token, preserveRegistration bool) (txbuilder.Reserver, txbuilder.Receiver, error) {
 	data := tokenScriptData{
-		Right:       token.Right,
-		AdminScript: token.AdminScript,
-		State:       stateDistributed,
-		Vote:        0, // unset vote
+		Right:          token.Right,
+		AdminScript:    token.AdminScript,
+		State:          stateDistributed,
+		Vote:           0, // unset vote
+		RegistrationID: token.RegistrationID,
 	}
 	if preserveRegistration && (token.State.Registered() || token.State.Voted()) {
 		data.State = stateRegistered
