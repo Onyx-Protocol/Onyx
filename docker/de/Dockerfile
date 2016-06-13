@@ -2,6 +2,7 @@ FROM alpine
 
 RUN apk --no-cache add postgresql
 VOLUME /var/lib/postgresql/data
+VOLUME /var/log/chain
 
 COPY cored /usr/bin/chain/cored
 COPY corectl /usr/bin/chain/corectl
@@ -15,7 +16,8 @@ RUN apk --no-cache add $BUILD_PACKAGES $RUNTIME_PACKAGES \
 && bundle install --gemfile=/srv/chain/dashboard/Gemfile \
 && apk del $BUILD_PACKAGES
 
-ENV DB_URL=postgres://postgres:@localhost/core?sslmode=disable
 ENV CHAIN_API_URL=http://localhost:8080
+ENV DB_URL=postgres://postgres:@localhost/core?sslmode=disable
+ENV LOGFILE=/var/log/chain/cored.log
 ENTRYPOINT /usr/bin/chain/startup.sh
 EXPOSE 8080 8081
