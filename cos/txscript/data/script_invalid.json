@@ -127,11 +127,6 @@
 
 ["NOP", "SIZE 1", "STRICTENC"],
 
-["'abc'", "IF INVERT ELSE 1 ENDIF", "STRICTENC", "INVERT disabled"],
-["1 2 0 IF AND ELSE 1 ENDIF", "NOP", "STRICTENC", "AND disabled"],
-["1 2 0 IF OR ELSE 1 ENDIF", "NOP", "STRICTENC", "OR disabled"],
-["1 2 0 IF XOR ELSE 1 ENDIF", "NOP", "STRICTENC", "XOR disabled"],
-
 ["", "EQUAL NOT", "STRICTENC", "EQUAL must error when there are no stack items"],
 ["0", "EQUAL NOT", "STRICTENC", "EQUAL must error when there are not 2 stack items"],
 ["0 1","EQUAL", "STRICTENC"],

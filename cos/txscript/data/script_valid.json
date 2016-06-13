@@ -685,5 +685,14 @@
 
 ["", "DATA_1 0xff DROP HASH160 EQUAL", "", "anyone can spend unknown versions"],
 
+["BITWISE operators"],
+["DATA_1 0x7f DATA_1 0xf0", "AND DATA_1 0x70 EQUAL", "STRICTENC", ""],
+["DATA_2 0x7fde DATA_1 0xf0", "AND DATA_1 0x70 EQUAL", "STRICTENC", "AND truncates"],
+["DATA_1 0x7f DATA_1 0xf0", "OR DATA_1 0xff EQUAL", "STRICTENC", ""],
+["DATA_2 0x7fde DATA_1 0xf0", "OR DATA_2 0xffde EQUAL", "STRICTENC", "OR pads"],
+["DATA_1 0x7f DATA_1 0xf0", "XOR DATA_1 0x8f EQUAL", "STRICTENC", ""],
+["DATA_2 0x7fde DATA_1 0xf0", "XOR DATA_2 0x8fde EQUAL", "STRICTENC", "XOR pads"],
+["DATA_1 0x7f", "INVERT DATA_1 0x80 EQUAL", "STRICTENC", ""],
+
 ["The End"]
 ]

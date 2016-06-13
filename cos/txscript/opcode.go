@@ -452,10 +452,10 @@ var opcodeArray = [256]opcode{
 	OP_SIZE:   {OP_SIZE, "OP_SIZE", 1, opcodeSize},
 
 	// Bitwise logic opcodes.
-	OP_INVERT:      {OP_INVERT, "OP_INVERT", 1, nil}, // disabled
-	OP_AND:         {OP_AND, "OP_AND", 1, nil},       // disabled
-	OP_OR:          {OP_OR, "OP_OR", 1, nil},         // disabled
-	OP_XOR:         {OP_XOR, "OP_XOR", 1, nil},       // disabled
+	OP_INVERT:      {OP_INVERT, "OP_INVERT", 1, opcodeInvert},
+	OP_AND:         {OP_AND, "OP_AND", 1, opcodeAnd},
+	OP_OR:          {OP_OR, "OP_OR", 1, opcodeOr},
+	OP_XOR:         {OP_XOR, "OP_XOR", 1, opcodeXor},
 	OP_EQUAL:       {OP_EQUAL, "OP_EQUAL", 1, opcodeEqual},
 	OP_EQUALVERIFY: {OP_EQUALVERIFY, "OP_EQUALVERIFY", 1, opcodeEqualVerify},
 	OP_RESERVED1:   {OP_RESERVED1, "OP_RESERVED1", 1, opcodeReserved},
@@ -632,8 +632,6 @@ type parsedOpcode struct {
 // bad to see in the instruction stream (even if turned off by a conditional).
 func (pop *parsedOpcode) isDisabled(scriptVersionVal int, isBlock bool) bool {
 	switch pop.opcode.value {
-	case OP_INVERT, OP_AND, OP_OR, OP_XOR:
-		return true
 	case OP_RESERVEOUTPUT, OP_FINDOUTPUT:
 		return scriptVersionVal == 0
 	case OP_ASSET, OP_AMOUNT, OP_OUTPUTSCRIPT, OP_TIME, OP_CIRCULATION:
@@ -1281,6 +1279,114 @@ func opcodeSize(op *parsedOpcode, vm *Engine) error {
 	}
 
 	vm.dstack.PushInt(scriptNum(len(so)))
+	return nil
+}
+
+func opcodeInvert(op *parsedOpcode, vm *Engine) error {
+	res, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	for i := range res {
+		res[i] = ^res[i]
+	}
+
+	if bytes.Equal(res, []byte{0}) {
+		res = nil
+	}
+
+	vm.dstack.PushByteArray(res)
+	return nil
+}
+
+func opcodeAnd(op *parsedOpcode, vm *Engine) error {
+	a, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	b, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	if len(a) > len(b) {
+		a = a[:len(b)]
+	} else {
+		b = b[:len(a)]
+	}
+
+	res := make([]byte, len(a))
+	for i := range a {
+		res[i] = a[i] & b[i]
+	}
+
+	if bytes.Equal(res, []byte{0}) {
+		res = nil
+	}
+
+	vm.dstack.PushByteArray(res)
+	return nil
+}
+
+func opcodeOr(op *parsedOpcode, vm *Engine) error {
+	a, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	b, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	if len(a) > len(b) {
+		b = append(b, bytes.Repeat([]byte{0}, len(a)-len(b))...)
+	} else {
+		a = append(a, bytes.Repeat([]byte{0}, len(b)-len(a))...)
+	}
+
+	res := make([]byte, len(a))
+	for i := range a {
+		res[i] = a[i] | b[i]
+	}
+
+	if bytes.Equal(res, []byte{0}) {
+		res = nil
+	}
+
+	vm.dstack.PushByteArray(res)
+	return nil
+}
+
+func opcodeXor(op *parsedOpcode, vm *Engine) error {
+	a, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	b, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+
+	if len(a) > len(b) {
+		b = append(b, bytes.Repeat([]byte{0}, len(a)-len(b))...)
+	} else {
+		a = append(a, bytes.Repeat([]byte{0}, len(b)-len(a))...)
+	}
+
+	res := make([]byte, len(a))
+	for i := range a {
+		res[i] = a[i] ^ b[i]
+	}
+
+	if bytes.Equal(res, []byte{0}) {
+		res = nil
+	}
+
+	vm.dstack.PushByteArray(res)
 	return nil
 }
 
