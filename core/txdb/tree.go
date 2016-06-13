@@ -34,9 +34,9 @@ func stateTree(ctx context.Context, db pg.DB) (*patricia.Tree, error) {
 		}
 
 		var v patricia.Valuer
-		if value == nil {
+		if len(value) == 0 {
 			v = patricia.HashValuer(hash)
-		} else if value != nil {
+		} else {
 			v = patricia.BytesValuer(value)
 		}
 		nodes = append(nodes, patricia.NewNode(strTreeKey(keyStr), v, isLeaf))
