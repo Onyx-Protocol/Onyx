@@ -1,12 +1,13 @@
 package txdb
 
 import (
-	"chain/cos/bc"
-	"chain/cos/patricia"
-	"chain/database/pg/pgtest"
 	"testing"
 
 	"golang.org/x/net/context"
+
+	"chain/cos/bc"
+	"chain/cos/patricia"
+	"chain/database/pg/pgtest"
 )
 
 type pair struct {
@@ -75,19 +76,20 @@ func TestReadWriteStateTree(t *testing.T) {
 			}
 		}
 
-		err := writeStateTree(ctx, dbtx, tree)
+		err := storeStateTreeSnapshot(ctx, dbtx, tree, uint64(i))
 		if err != nil {
 			t.Fatalf("Error writing state tree to db: %s\n", err)
 		}
 
-		newTree, err := stateTree(ctx, dbtx)
+		loadedTree, err := getStateTreeSnapshot(ctx, dbtx, uint64(i))
 		if err != nil {
 			t.Fatalf("Error reading state tree from db: %s\n", err)
 		}
-		if newTree.RootHash() != tree.RootHash() {
-			t.Fatalf("%d: Wrote %s to db, read %s from db\n", i, tree.RootHash(), newTree.RootHash())
+
+		if loadedTree.RootHash() != tree.RootHash() {
+			t.Fatalf("%d: Wrote %s to db, read %s from db\n", i, tree.RootHash(), loadedTree.RootHash())
 		}
-		tree = newTree
+		tree = loadedTree
 	}
 
 }

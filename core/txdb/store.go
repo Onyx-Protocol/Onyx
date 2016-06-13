@@ -92,7 +92,7 @@ func (s *Store) ApplyBlock(
 		return nil, errors.Wrap(err, "adding issuances")
 	}
 
-	err = writeStateTree(ctx, dbtx, state)
+	err = storeStateTreeSnapshot(ctx, dbtx, state, block.Height)
 	if err != nil {
 		return nil, errors.Wrap(err, "updating state tree")
 	}
@@ -122,11 +122,10 @@ func (s *Store) StateTree(ctx context.Context, block uint64) (*patricia.Tree, er
 	}
 
 	if s.latestBlockCache.stateTree == nil {
-		stateTree, err := stateTree(ctx, s.db)
+		stateTree, err := getStateTreeSnapshot(ctx, pg.FromContext(ctx), block)
 		if err != nil {
 			return nil, err
 		}
-
 		s.setLatestBlockCache(s.latestBlockCache.block, stateTree, true)
 	}
 	return patricia.Copy(s.latestBlockCache.stateTree), nil

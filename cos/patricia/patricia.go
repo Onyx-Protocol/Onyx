@@ -21,10 +21,7 @@ var ErrPrefix = errors.New("key provided is a prefix to other keys")
 // The nodes in the tree form an immutable persistent
 // data structure, therefore Copy is a O(1) operation.
 type Tree struct {
-	root    *Node
-	deletes map[string]bool
-	updates map[string]*Node
-	inserts map[string]*Node
+	root *Node
 }
 
 // NewTree assembles a tree using a slice of nodes.
@@ -32,11 +29,7 @@ type Tree struct {
 // breadth-first traversal of the entire tree, including
 // interior nodes.
 func NewTree(nodes []*Node) *Tree {
-	tree := &Tree{
-		deletes: make(map[string]bool),
-		updates: make(map[string]*Node),
-		inserts: make(map[string]*Node),
-	}
+	tree := &Tree{}
 
 	for _, node := range nodes {
 		if tree.root == nil {
@@ -64,46 +57,37 @@ func Copy(t *Tree) *Tree {
 	return newT
 }
 
-// Delta returns all of the deletes, inserts, and updates
-// that have occurred on the tree.
-func (t *Tree) Delta() (deletes [][]uint8, inserts, updates []*Node) {
-	for k := range t.deletes {
-		deletes = append(deletes, []uint8(k))
-	}
-	for _, node := range t.inserts {
-		inserts = append(inserts, node)
-	}
-	for _, node := range t.updates {
-		updates = append(updates, node)
-	}
+// WalkFunc is the type of the function called for each node visited by
+// Walk. If an error is returned, processing stops.
+type WalkFunc func(n *Node) error
 
-	return deletes, inserts, updates
+// Walk walks the patricia tree calling walkFn for each node in the tree,
+// including root, in a pre-order traversal.
+func Walk(t *Tree, walkFn WalkFunc) error {
+	if t.root == nil {
+		return nil
+	}
+	return walk(t.root, walkFn)
 }
 
-func (t *Tree) trackDelete(key []uint8) {
-	if t.inserts[string(key)] != nil {
-		delete(t.inserts, string(key))
-		return
+func walk(n *Node, walkFn WalkFunc) error {
+	err := walkFn(n)
+	if err != nil {
+		return err
 	}
-	delete(t.updates, string(key))
-	t.deletes[string(key)] = true
-}
 
-func (t *Tree) trackUpdate(n *Node) {
-	if t.inserts[string(n.key)] != nil {
-		t.inserts[string(n.key)] = n
-		return
-	}
-	t.updates[string(n.key)] = n
-}
+	if !n.isLeaf {
+		err = walk(n.children[0], walkFn)
+		if err != nil {
+			return err
+		}
 
-func (t *Tree) trackInsert(n *Node) {
-	if t.deletes[string(n.key)] {
-		delete(t.deletes, string(n.key))
-		t.updates[string(n.key)] = n
-		return
+		err = walk(n.children[1], walkFn)
+		if err != nil {
+			return err
+		}
 	}
-	t.inserts[string(n.key)] = n
+	return nil
 }
 
 // Lookup looks up a key and returns a Node with the provided key.
@@ -144,7 +128,6 @@ func (t *Tree) Insert(bkey []byte, val Valuer) error {
 
 	if t.root == nil {
 		t.root = &Node{key: key, val: val, isLeaf: true}
-		t.trackInsert(t.root)
 		return nil
 	}
 
@@ -164,7 +147,6 @@ func (t *Tree) insert(n *Node, key []uint8, val Valuer) (*Node, error) {
 			key:    n.key,
 			val:    val,
 		}
-		t.trackUpdate(n)
 		return n, nil
 	}
 
@@ -182,7 +164,6 @@ func (t *Tree) insert(n *Node, key []uint8, val Valuer) (*Node, error) {
 		newNode := new(Node)
 		*newNode = *n
 		newNode.children[bit] = child // mutation is ok because newNode hasn't escaped yet
-		t.trackUpdate(newNode)
 		return newNode, nil
 	}
 
@@ -196,8 +177,6 @@ func (t *Tree) insert(n *Node, key []uint8, val Valuer) (*Node, error) {
 		isLeaf: true,
 	}
 	newNode.children[1-key[common]] = n
-	t.trackInsert(newNode)
-	t.trackInsert(newNode.children[key[common]])
 	return newNode, nil
 }
 
@@ -221,7 +200,6 @@ func (t *Tree) delete(n *Node, key []uint8) (*Node, error) {
 		if !n.isLeaf {
 			return n, errors.Wrap(ErrPrefix)
 		}
-		t.trackDelete(key)
 		return nil, nil
 	}
 
@@ -236,7 +214,6 @@ func (t *Tree) delete(n *Node, key []uint8) (*Node, error) {
 	}
 
 	if newChild == nil {
-		t.trackDelete(n.key)
 		return n.children[1-bit], nil
 	}
 
@@ -244,7 +221,6 @@ func (t *Tree) delete(n *Node, key []uint8) (*Node, error) {
 	*newNode = *n
 	newNode.children[bit] = newChild
 
-	t.trackUpdate(newNode)
 	return newNode, nil
 }
 

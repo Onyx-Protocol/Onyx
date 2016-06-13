@@ -1,0 +1,18 @@
+syntax = "proto3";
+option go_package = "storage";
+package chain.core.txdb.internal.storage;
+
+// StateTree represents a snapshot of the blockchain state tree.
+message StateTree {
+  // Nodes contains every node within the state tree, including interior nodes.
+  // The nodes are ordered according to a pre-order traversal.
+  repeated Node nodes = 1;
+
+  message Node {
+    bytes key = 1;
+    bool leaf = 2;
+    bytes hash = 3;
+    bytes value = 4;
+  }
+}
+

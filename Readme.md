@@ -6,6 +6,7 @@ First, make sure you have the dependencies installed:
 
 * [Go](https://golang.org/doc/install), with $GOPATH set to your preferred directory
 * Postgres (we suggest [Postgres.app](http://postgresapp.com/)), along with the [command line tools](http://postgresapp.com/documentation/cli-tools.html)
+* [protoc](https://github.com/google/protobuf#protocol-compiler-installation), if you need to compile protos
 
 ### Environment
 

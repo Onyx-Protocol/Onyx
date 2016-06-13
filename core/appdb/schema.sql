@@ -786,10 +786,8 @@ CREATE TABLE signed_blocks (
 --
 
 CREATE TABLE state_trees (
-    key text NOT NULL,
-    hash text NOT NULL,
-    leaf boolean NOT NULL,
-    value bytea
+    height bigint NOT NULL,
+    data bytea NOT NULL
 );
 
 
@@ -1107,7 +1105,7 @@ ALTER TABLE ONLY rotations
 --
 
 ALTER TABLE ONLY state_trees
-    ADD CONSTRAINT state_trees_pkey PRIMARY KEY (key);
+    ADD CONSTRAINT state_trees_pkey PRIMARY KEY (height);
 
 
 --
@@ -1502,3 +1500,4 @@ insert into migrations (filename, hash) values ('2016-06-09.0.txdb.drop-blocks-u
 insert into migrations (filename, hash) values ('2016-06-09.1.core.rename-explorer-outputs.sql', 'c09b0b75562e5c53852cc84f96f24063eea6b46129f21e8f29b98953e2fb1deb');
 insert into migrations (filename, hash) values ('2016-06-09.2.txdb.drop-utxos.sql', 'a6d94f3afeae6145caef7fe5919aaacb5050ce68b312e53461b109ada88e382e');
 insert into migrations (filename, hash) values ('2016-06-10.0.voting.change-closed-column.sql', '93487fb8edd612a79da022aa9b17b2a94e121c4facb3199c7edd0ce12248389a');
+insert into migrations (filename, hash) values ('2016-06-13.0.txdb.state-tree-snapshots.sql', 'de6000306a774d97fd46a095559643231f0db786ece08a89fb913c087b4babd7');
