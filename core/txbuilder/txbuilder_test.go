@@ -205,7 +205,7 @@ func TestCombineMetadata(t *testing.T) {
 }
 
 func TestAssembleSignatures(t *testing.T) {
-	outscript := mustDecodeHex("a9140ac9c982fd389181752e5a414045dd424a10754b87")
+	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := &bc.TxData{
 		Version: 1,
 		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Index: bc.InvalidOutputIndex}}},
@@ -214,17 +214,18 @@ func TestAssembleSignatures(t *testing.T) {
 			Script:      outscript,
 		}},
 	}
-	sigHash, _ := bc.ParseHash("78e437f627019fc270bbe9ed309291d0a5f6bf98bfae0f750538ba56646f7327")
+	sigData, _ := bc.ParseHash("b64d968745f18a5da6d5dd4ec750f7e6da5204000a9ee90ba9187ec85c25032c")
 
 	tpl := &Template{
 		Unsigned: unsigned,
 		Inputs: []*Input{{
-			SignatureData: sigHash,
+			SignatureData: sigData,
 			Sigs: []*Signature{{
-				XPub:           "xpub661MyMwAqRbcGiDB8FQvHnDAZyaGUyzm3qN1Q3NDJz1PgAWCfyi9WRCS7Z9HyM5QNEh45fMyoaBMqjfoWPdnktcN8chJYB57D2Y7QtNmadr",
+				XPub:           "xpub661MyMwAqRbcGZNqeB27ae2nQLWoWd9Ffx8NEXrVDFgFPe6Jdzw53p5m3ewA3K2z5nPmcJK7r1nykAwkoNHWgHr5kLCWi777ShtKwLdy55a",
 				DerivationPath: []uint32{0, 0, 0, 0},
-				DER:            mustDecodeHex("3044022004da5732f6c988b9e2882f5ca4f569b9525d313940e0372d6a84fef73be78f8f02204656916481dc573d771ec42923a8f5af31ae634241a4cb30ea5b359363cf064d"),
+				DER:            mustDecodeHex("304402202ece2c2dfd0ca44b27c5e03658c7eaac4d61d5c2668940da1bdcf53b312db0fc0220670c520b67b6fd4f4efcfbe55e82dc4a4624059b51594889d664bea445deee6b01"),
 			}},
+			SigScriptSuffix: mustDecodeHex("4c695221033dda0a756db51f76a4f394161614f01df4061644c514fde3994adbe4a3a2d21621038a0f0a8d593773abcd8c878f8777c57986f9f84886c8dde0cf00fdc2c89f0c592103b9e805011523bb28eedb3fcfff8924684a91116a76408fe0972805295e50e15d53ae"),
 		}},
 	}
 
@@ -233,7 +234,7 @@ func TestAssembleSignatures(t *testing.T) {
 		t.Fatal(withStack(err))
 	}
 
-	want := "3d8cc3226186daa9f510d47dc737378633a9005baf091d3f02827672dc895c94"
+	want := "4036d534757b141ae7b9f9fa98ab3b1054ee3a39f34e8a8008ce4bfeab4fa6ea"
 	if got := tx.WitnessHash().String(); got != want {
 		t.Errorf("got tx witness hash = %v want %v", got, want)
 	}

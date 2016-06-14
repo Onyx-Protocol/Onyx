@@ -142,9 +142,17 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 		// sigscript component.
 		// TODO(jackson): Remove once all the SDKs are using the new format.
 		if len(input.Sigs) > 0 || len(input.SigComponents) == 0 {
-			sigsReqd, err := getSigsRequired(input.SigScriptSuffix)
+			pushed, err := txscript.PushedData(input.SigScriptSuffix)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrap(err)
+			}
+			if len(pushed) == 0 {
+				return nil, errors.New("script should contain pushdata")
+			}
+
+			sigsReqd, err := getSigsRequired(pushed[0])
+			if err != nil {
+				return nil, errors.Wrap(err)
 			}
 
 			// Replace the existing components. Only SDKs that don't understand
