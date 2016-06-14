@@ -131,26 +131,6 @@ func (p *Pool) CountTxs(ctx context.Context) (uint64, error) {
 	return res, errors.Wrap(err)
 }
 
-// utxoSet holds a set of utxo record values
-// to be inserted into the db.
-type utxoSet struct {
-	txHash   pg.Strings
-	index    pg.Uint32s
-	assetID  pg.Strings
-	amount   pg.Int64s
-	script   pg.Byteas
-	metadata pg.Byteas
-}
-
-func addToUTXOSet(set *utxoSet, out *Output) {
-	set.txHash = append(set.txHash, out.Outpoint.Hash.String())
-	set.index = append(set.index, out.Outpoint.Index)
-	set.assetID = append(set.assetID, out.AssetID.String())
-	set.amount = append(set.amount, int64(out.Amount))
-	set.script = append(set.script, out.Script)
-	set.metadata = append(set.metadata, out.Metadata)
-}
-
 func insertPoolTx(ctx context.Context, db pg.DB, tx *bc.Tx) error {
 	const q = `INSERT INTO pool_txs (tx_hash, data) VALUES ($1, $2)`
 	_, err := db.Exec(ctx, q, tx.Hash, tx)

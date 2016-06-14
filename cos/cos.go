@@ -91,7 +91,7 @@ type TxCallback func(context.Context, *bc.Tx)
 // to commit the validated data.
 type Store interface {
 	GetTxs(context.Context, ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error)
-	ApplyBlock(ctx context.Context, b *bc.Block, addedUTXOs, removedUTXOs []*state.Output, assets map[bc.AssetID]*state.AssetState, tree *patricia.Tree) ([]*bc.Tx, error)
+	ApplyBlock(ctx context.Context, b *bc.Block, assets map[bc.AssetID]*state.AssetState, tree *patricia.Tree) ([]*bc.Tx, error)
 	FinalizeBlock(context.Context, uint64) error
 	LatestBlock(context.Context) (*bc.Block, error)
 	StateTree(context.Context, uint64) (*patricia.Tree, error)

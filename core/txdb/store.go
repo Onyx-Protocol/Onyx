@@ -48,8 +48,6 @@ func (s *Store) GetTxs(ctx context.Context, hashes ...bc.Hash) (bcTxs map[bc.Has
 func (s *Store) ApplyBlock(
 	ctx context.Context,
 	block *bc.Block,
-	addedUTXOs []*state.Output,
-	removedUTXOs []*state.Output,
 	assets map[bc.AssetID]*state.AssetState,
 	state *patricia.Tree,
 ) ([]*bc.Tx, error) {

@@ -240,16 +240,7 @@ func (fc *FC) applyBlock(
 	block *bc.Block,
 	mv *state.MemView,
 ) (newTxs []*bc.Tx, conflictingTxs []*bc.Tx, err error) {
-	added := make([]*state.Output, 0, len(mv.Added))
-	for _, out := range mv.Added {
-		added = append(added, out)
-	}
-	consumed := make([]*state.Output, 0, len(mv.Consumed))
-	for _, out := range mv.Consumed {
-		consumed = append(consumed, out)
-	}
-
-	newTxs, err = fc.store.ApplyBlock(ctx, block, added, consumed, mv.Assets, mv.StateTree)
+	newTxs, err = fc.store.ApplyBlock(ctx, block, mv.Assets, mv.StateTree)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "storing block")
 	}
