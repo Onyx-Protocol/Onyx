@@ -405,13 +405,17 @@ func accountBalance(ctx context.Context, accountID string) (interface{}, error) 
 			return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid timestamp: %q", timestamp)
 		}
 
-		h, err := bc.ParseHash(query.AssetIDs[0])
-		if err != nil {
-			return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid asset ID: %q", query.AssetIDs[0])
+		var assetID *bc.AssetID
+		if len(query.AssetIDs) > 0 {
+			h, err := bc.ParseHash(query.AssetIDs[0])
+			if err != nil {
+				return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid asset ID: %q", query.AssetIDs[0])
+			}
+			aid := bc.AssetID(h)
+			assetID = &aid
 		}
-		assetID := bc.AssetID(h)
 
-		amts, last, err = explorer.HistoricalBalancesByAccount(ctx, accountID, timestamp, &assetID, query.Prev, query.Limit)
+		amts, last, err = explorer.HistoricalBalancesByAccount(ctx, accountID, timestamp, assetID, query.Prev, query.Limit)
 		if err != nil {
 			return nil, err
 		}
