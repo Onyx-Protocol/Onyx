@@ -29,6 +29,7 @@ func (ir IssuanceReserver) Reserve(ctx context.Context, amt *bc.AssetAmount, ttl
 			Index: bc.InvalidOutputIndex,
 			Hash:  bc.Hash{}, // TODO(kr): figure out anti-replay for issuance
 		},
+		AssetAmount: *amt,
 	}
 	if len(asset.Definition) != 0 {
 		in.AssetDefinition = asset.Definition
@@ -53,11 +54,12 @@ func NewIssueSource(ctx context.Context, assetAmount *bc.AssetAmount) *txbuilder
 // issues new units of an asset
 // distributed to the outputs provided.
 // DEPRECATED
-func Issue(ctx context.Context, assetID bc.AssetID, dests []*txbuilder.Destination) (*txbuilder.Template, error) {
+func Issue(ctx context.Context, assetAmount bc.AssetAmount, dests []*txbuilder.Destination) (*txbuilder.Template, error) {
 	defer metrics.RecordElapsed(time.Now())
 
 	sources := []*txbuilder.Source{{
-		Reserver: IssuanceReserver(assetID),
+		AssetAmount: assetAmount,
+		Reserver:    IssuanceReserver(assetAmount.AssetID),
 	}}
 
 	return txbuilder.Build(ctx, nil, sources, dests, nil, time.Minute)

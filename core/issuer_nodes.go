@@ -9,7 +9,9 @@ import (
 	"chain/core/appdb"
 	"chain/core/asset"
 	"chain/core/issuer"
+	"chain/cos/bc"
 	"chain/database/pg"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/httpjson"
@@ -120,8 +122,69 @@ func archiveIssuerNode(ctx context.Context, inodeID string) error {
 	return dbtx.Commit(ctx)
 }
 
+// assetResponse is a JSON-serializable representation of an asset for
+// API responses.
+type assetResponse struct {
+	ID         bc.AssetID         `json:"id"`
+	Label      string             `json:"label"`
+	Definition chainjson.HexBytes `json:"definition"`
+	Issued     assetAmount        `json:"issued"`
+	Retired    assetAmount        `json:"retired"`
+
+	// Deprecated in its current form, which is equivalent to Issued.Total
+	Circulation uint64 `json:"circulation"`
+}
+
+type assetAmount struct {
+	Confirmed uint64 `json:"confirmed"`
+	Total     uint64 `json:"total"`
+}
+
+func (a *api) issuanceAmounts(ctx context.Context, assetIDs []bc.AssetID) (confirmed, unconfirmed asset.Issuances, err error) {
+	confirmed, err = asset.Circulation(ctx, assetIDs...)
+	if err != nil {
+		return confirmed, unconfirmed, errors.Wrap(err, "fetch asset circulation data")
+	}
+	unconfirmed, err = asset.PoolIssuances(ctx, a.pool)
+	if err != nil {
+		return confirmed, unconfirmed, errors.Wrap(err, "fetch asset pool circulation data")
+	}
+	return confirmed, unconfirmed, nil
+}
+
+// GET /v3/assets/:assetID
+func (a *api) getIssuerAsset(ctx context.Context, assetID string) (interface{}, error) {
+	if err := assetAuthz(ctx, assetID); err != nil {
+		return nil, err
+	}
+	asset, err := appdb.GetAsset(ctx, assetID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Pull in the issuance amounts for the asset too.
+	confirmed, unconfirmed, err := a.issuanceAmounts(ctx, []bc.AssetID{asset.ID})
+	if err != nil {
+		return nil, err
+	}
+	return assetResponse{
+		ID:         asset.ID,
+		Label:      asset.Label,
+		Definition: asset.Definition,
+		Issued: assetAmount{
+			Confirmed: confirmed.Assets[asset.ID].Issued,
+			Total:     confirmed.Assets[asset.ID].Issued + unconfirmed.Assets[asset.ID].Issued,
+		},
+		Retired: assetAmount{
+			Confirmed: confirmed.Assets[asset.ID].Destroyed,
+			Total:     confirmed.Assets[asset.ID].Destroyed + unconfirmed.Assets[asset.ID].Destroyed,
+		},
+		Circulation: confirmed.Assets[asset.ID].Issued + unconfirmed.Assets[asset.ID].Issued,
+	}, nil
+}
+
 // GET /v3/issuer-nodes/:inodeID/assets
-func listAssets(ctx context.Context, inodeID string) (interface{}, error) {
+func (a *api) listAssets(ctx context.Context, inodeID string) (interface{}, error) {
 	if err := issuerAuthz(ctx, inodeID); err != nil {
 		return nil, err
 	}
@@ -129,15 +192,42 @@ func listAssets(ctx context.Context, inodeID string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	assets, last, err := appdb.ListAssets(ctx, inodeID, prev, limit)
 	if err != nil {
 		return nil, err
 	}
 
+	// Query the issuance totals indexes for circulation data.
+	assetIDs := make([]bc.AssetID, len(assets))
+	for i, a := range assets {
+		assetIDs[i] = a.ID
+	}
+	confirmed, unconfirmed, err := a.issuanceAmounts(ctx, assetIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	responses := make([]assetResponse, 0, len(assets))
+	for _, a := range assets {
+		resp := assetResponse{
+			ID:         a.ID,
+			Label:      a.Label,
+			Definition: a.Definition,
+			Issued: assetAmount{
+				Confirmed: confirmed.Assets[a.ID].Issued,
+				Total:     confirmed.Assets[a.ID].Issued + unconfirmed.Assets[a.ID].Issued,
+			},
+			Retired: assetAmount{
+				Confirmed: confirmed.Assets[a.ID].Destroyed,
+				Total:     confirmed.Assets[a.ID].Destroyed + unconfirmed.Assets[a.ID].Destroyed,
+			},
+			Circulation: confirmed.Assets[a.ID].Issued + unconfirmed.Assets[a.ID].Issued,
+		}
+		responses = append(responses, resp)
+	}
 	ret := map[string]interface{}{
 		"last":   last,
-		"assets": httpjson.Array(assets),
+		"assets": httpjson.Array(responses),
 	}
 	return ret, nil
 }
@@ -170,14 +260,6 @@ func createAsset(ctx context.Context, inodeID string, in struct {
 		"label":          ast.Label,
 	}
 	return ret, nil
-}
-
-// GET /v3/assets/:assetID
-func getAsset(ctx context.Context, assetID string) (interface{}, error) {
-	if err := assetAuthz(ctx, assetID); err != nil {
-		return nil, err
-	}
-	return appdb.GetAsset(ctx, assetID)
 }
 
 // PUT /v3/assets/:assetID

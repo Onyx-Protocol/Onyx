@@ -225,7 +225,7 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, a
 	}
 	dest := AccountDestinationFixture(ctx, t, assetID, amount, accountID)
 
-	tpl, err := issuer.Issue(ctx, assetID, []*txbuilder.Destination{dest})
+	tpl, err := issuer.Issue(ctx, bc.AssetAmount{AssetID: assetID, Amount: amount}, []*txbuilder.Destination{dest})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -304,7 +304,15 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 }
 
 func Issue(ctx context.Context, t testing.TB, assetID bc.AssetID, dests []*txbuilder.Destination) *bc.Tx {
-	txTemplate, err := issuer.Issue(ctx, assetID, dests)
+	var issueAmount uint64
+	for _, dst := range dests {
+		if dst.AssetID != assetID {
+			continue
+		}
+		issueAmount += dst.Amount
+	}
+
+	txTemplate, err := issuer.Issue(ctx, bc.AssetAmount{AssetID: assetID, Amount: issueAmount}, dests)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

@@ -127,16 +127,16 @@ func TestTransfer(t *testing.T) {
 	ctx = authn.NewContext(ctx, userID)
 
 	// Preface: issue some asset for account1ID to transfer to account2ID
-	issueAssetAmount := &bc.AssetAmount{
+	issueAssetAmount := bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
 	}
-	issueDest, err := asset.NewAccountDestination(ctx, issueAssetAmount, account1ID, nil)
+	issueDest, err := asset.NewAccountDestination(ctx, &issueAssetAmount, account1ID, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	txTemplate, err := issuer.Issue(ctx, assetID, []*txbuilder.Destination{issueDest})
+	txTemplate, err := issuer.Issue(ctx, issueAssetAmount, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

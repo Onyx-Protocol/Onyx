@@ -46,15 +46,15 @@ func TestBuy(t *testing.T) {
 	withOrderbookFixture(t, func(ctx context.Context, fixtureInfo *orderbookFixtureInfo) {
 		buyerAccountID := assettest.CreateAccountFixture(ctx, t, fixtureInfo.managerNodeID, "buyer", nil)
 
-		usd2200 := &bc.AssetAmount{
+		usd2200 := bc.AssetAmount{
 			AssetID: fixtureInfo.usdAssetID,
 			Amount:  2200,
 		}
-		issueDest, err := asset.NewAccountDestination(ctx, usd2200, buyerAccountID, nil)
+		issueDest, err := asset.NewAccountDestination(ctx, &usd2200, buyerAccountID, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		issueTxTemplate, err := issuer.Issue(ctx, fixtureInfo.usdAssetID, []*txbuilder.Destination{issueDest})
+		issueTxTemplate, err := issuer.Issue(ctx, usd2200, []*txbuilder.Destination{issueDest})
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -62,7 +62,7 @@ func TestBuy(t *testing.T) {
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		funds := asset.NewAccountSource(ctx, usd2200, buyerAccountID, nil, nil, nil)
+		funds := asset.NewAccountSource(ctx, &usd2200, buyerAccountID, nil, nil, nil)
 
 		aapl20 := &bc.AssetAmount{
 			AssetID: fixtureInfo.aaplAssetID,
@@ -194,16 +194,16 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 	fixtureInfo.aaplAssetID = assettest.CreateAssetFixture(ctx, t, fixtureInfo.issuerNodeID, "", "")
 	fixtureInfo.usdAssetID = assettest.CreateAssetFixture(ctx, t, fixtureInfo.issuerNodeID, "", "")
 
-	aapl100 := &bc.AssetAmount{
+	aapl100 := bc.AssetAmount{
 		AssetID: fixtureInfo.aaplAssetID,
 		Amount:  100,
 	}
 
-	issueDest, err := asset.NewAccountDestination(ctx, aapl100, fixtureInfo.sellerAccountID, nil)
+	issueDest, err := asset.NewAccountDestination(ctx, &aapl100, fixtureInfo.sellerAccountID, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	issueTxTemplate, err := issuer.Issue(ctx, fixtureInfo.aaplAssetID, []*txbuilder.Destination{issueDest})
+	issueTxTemplate, err := issuer.Issue(ctx, aapl100, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -220,7 +220,7 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 		},
 	}
 
-	offerTxTemplate, err := offer(ctx, fixtureInfo.sellerAccountID, aapl100, prices, ttl)
+	offerTxTemplate, err := offer(ctx, fixtureInfo.sellerAccountID, &aapl100, prices, ttl)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -237,7 +237,7 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 			Hash:  fixtureInfo.offerTx.Hash,
 			Index: 0,
 		},
-		AssetAmount: *aapl100,
+		AssetAmount: aapl100,
 		OrderInfo: OrderInfo{
 			SellerAccountID: fixtureInfo.sellerAccountID,
 			Prices:          prices,

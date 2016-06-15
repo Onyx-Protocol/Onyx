@@ -111,15 +111,15 @@ func TestFindAndBuyContract(t *testing.T) {
 		buyerAccountID := assettest.CreateAccountFixture(ctx, t, fixtureInfo.managerNodeID, "buyer", nil)
 
 		// Issue USD assets to buy with
-		usd2200 := &bc.AssetAmount{
+		usd2200 := bc.AssetAmount{
 			AssetID: fixtureInfo.usdAssetID,
 			Amount:  2200,
 		}
-		issueDest, err := asset.NewAccountDestination(ctx, usd2200, buyerAccountID, nil)
+		issueDest, err := asset.NewAccountDestination(ctx, &usd2200, buyerAccountID, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
-		issueTxTemplate, err := issuer.Issue(ctx, fixtureInfo.usdAssetID, []*txbuilder.Destination{issueDest})
+		issueTxTemplate, err := issuer.Issue(ctx, usd2200, []*txbuilder.Destination{issueDest})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -336,15 +336,15 @@ func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtu
 		},
 	}
 
-	aapl100 := &bc.AssetAmount{
+	aapl100 := bc.AssetAmount{
 		AssetID: fixtureInfo.aaplAssetID,
 		Amount:  100,
 	}
-	issueDest, err := asset.NewAccountDestination(ctx, aapl100, fixtureInfo.sellerAccountID, nil)
+	issueDest, err := asset.NewAccountDestination(ctx, &aapl100, fixtureInfo.sellerAccountID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-	txTemplate, err := issuer.Issue(ctx, fixtureInfo.aaplAssetID, []*txbuilder.Destination{issueDest})
+	txTemplate, err := issuer.Issue(ctx, aapl100, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}

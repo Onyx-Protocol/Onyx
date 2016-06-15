@@ -289,16 +289,15 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, error) {
 }
 
 func issue(ctx context.Context, t testing.TB, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
-	assetID := info.asset.Hash
-	assetAmount := &bc.AssetAmount{
+	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.Hash,
 		Amount:  amount,
 	}
-	issueDest, err := NewAccountDestination(ctx, assetAmount, destAcctID, nil)
+	issueDest, err := NewAccountDestination(ctx, &assetAmount, destAcctID, nil)
 	if err != nil {
 		return nil, err
 	}
-	issueTx, err := issuer.Issue(ctx, assetID, []*txbuilder.Destination{issueDest})
+	issueTx, err := issuer.Issue(ctx, assetAmount, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		return nil, err
 	}

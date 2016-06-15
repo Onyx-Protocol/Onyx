@@ -413,7 +413,7 @@ func TestGetAssets(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
 	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
 
-	got, err := GetAssets(ctx, []bc.AssetID{
+	assets, err := GetAssets(ctx, []bc.AssetID{
 		asset0,
 		asset1,
 		otherAssetID,
@@ -422,32 +422,27 @@ func TestGetAssets(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	want := map[bc.AssetID]*Asset{
-		asset0: &Asset{
+	got := make(map[string]*Asset, len(assets))
+	for id, asset := range assets {
+		got[id.String()] = asset
+	}
+	want := map[string]*Asset{
+		asset0.String(): &Asset{
 			ID:            asset0,
 			DefinitionPtr: defPtr0,
 			Definition:    def0,
 			Issued:        58,
 		},
-		asset1: &Asset{
-			ID:            asset1,
-			DefinitionPtr: "",
-			Definition:    nil,
-			Issued:        0,
-		},
 	}
-
 	if !reflect.DeepEqual(got, want) {
 		g, err := json.MarshalIndent(got, "", "  ")
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-
 		w, err := json.MarshalIndent(want, "", "  ")
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-
 		t.Errorf("assets:\ngot:  %v\nwant: %v", string(g), string(w))
 	}
 }
@@ -493,15 +488,10 @@ func TestGetAsset(t *testing.T) {
 			},
 		},
 
-		// Blank definition
+		// Issued, but not landed in block yet
 		{
-			id: asset1,
-			want: &Asset{
-				ID:            asset1,
-				DefinitionPtr: "",
-				Definition:    nil,
-				Issued:        0,
-			},
+			id:      asset1,
+			wantErr: pg.ErrUserInputNotFound,
 		},
 
 		// Missing asset

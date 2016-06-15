@@ -28,25 +28,12 @@ type Asset struct {
 	ClientToken     *string
 }
 
-// AssetAmount is a composite representation of a sum of an asset.
-// Confirmed reflects the amount of the asset present in blocks.
-// Total includes amounts from unconfirmed transactions.
-type AssetAmount struct {
-	Confirmed uint64 `json:"confirmed"`
-	Total     uint64 `json:"total"`
-}
-
-// AssetResponse is a JSON-serializable version of Asset, intended for use in
-// API responses.
-type AssetResponse struct {
-	ID         bc.AssetID         `json:"id"`
-	Label      string             `json:"label"`
-	Definition chainjson.HexBytes `json:"definition"`
-	Issued     AssetAmount        `json:"issued"`
-	Retired    AssetAmount        `json:"retired"`
-
-	// Deprecated in its current form, which is equivalent to Issued.Total
-	Circulation uint64 `json:"circulation"`
+// AssetSummary is a summary of an Asset, including data commonly exposed
+// via API responses.
+type AssetSummary struct {
+	ID         bc.AssetID
+	Label      string
+	Definition chainjson.HexBytes
 }
 
 // AssetOwner indicates either an account or a manager node.
@@ -178,22 +165,19 @@ func InsertAsset(ctx context.Context, asset *Asset) (*Asset, error) {
 	return asset, err
 }
 
-// ListAssets returns a paginated list of AssetResponses
+// ListAssets returns a paginated list of AssetSummaries
 // belonging to the given issuer node, along with a sortable id
 // for last asset, used to retrieve the next page.
-func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]*AssetResponse, string, error) {
+func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]*AssetSummary, string, error) {
 	q := `
-		SELECT id, label, definition, sort_id,
-			COALESCE(t.confirmed, 0), COALESCE(t.confirmed + t.pool, 0),
-			COALESCE(t.destroyed_confirmed, 0), COALESCE(t.destroyed_confirmed + t.destroyed_pool, 0)
+		SELECT id, label, definition, sort_id
 		FROM assets
-		LEFT JOIN issuance_totals t ON (asset_id=assets.id)
 		WHERE issuer_node_id = $1 AND ($2='' OR sort_id<$2) AND NOT archived
 		ORDER BY sort_id DESC
 		LIMIT $3
 	`
 	var (
-		assets  []*AssetResponse
+		assets  []*AssetSummary
 		lastOut string
 	)
 	err := pg.ForQueryRows(ctx, q, inodeID, prev, limit, func(
@@ -201,87 +185,52 @@ func ListAssets(ctx context.Context, inodeID string, prev string, limit int) ([]
 		label string,
 		definition []byte,
 		last string,
-		issuedConfirmed,
-		issuedTotal,
-		destroyedConfirmed,
-		destroyedTotal uint64,
 	) {
-		a := &AssetResponse{
-			ID:          id,
-			Label:       label,
-			Issued:      AssetAmount{Confirmed: issuedConfirmed, Total: issuedTotal},
-			Retired:     AssetAmount{Confirmed: destroyedConfirmed, Total: destroyedTotal},
-			Circulation: issuedTotal,
-			Definition:  definition,
-		}
-		assets = append(assets, a)
+		assets = append(assets, &AssetSummary{
+			ID:         id,
+			Label:      label,
+			Definition: definition,
+		})
 		lastOut = last
 	})
 	if err != nil {
 		return nil, "", err
 	}
-
 	return assets, lastOut, nil
 }
 
-// GetAssets returns an AssetResponse for the given asset IDs. If the given
+// GetAssets returns an AssetSummary for the given asset IDs. If the given
 // asset IDs are not found, they will not be included in the response.
-func GetAssets(ctx context.Context, assetIDs []string) (map[string]*AssetResponse, error) {
+func GetAssets(ctx context.Context, assetIDs []string) (map[string]*AssetSummary, error) {
 	const q = `
-		SELECT id, label, definition,
-			COALESCE(t.confirmed, 0), COALESCE(t.confirmed + t.pool, 0),
-			COALESCE(t.destroyed_confirmed, 0), COALESCE(t.destroyed_confirmed + t.destroyed_pool, 0)
+		SELECT id, label, definition
 		FROM assets
-		LEFT JOIN issuance_totals t ON (asset_id=assets.id)
 		WHERE id IN (SELECT unnest($1::text[]))
 	`
 
-	rows, err := pg.Query(ctx, q, pg.Strings(assetIDs))
-	if err != nil {
-		return nil, errors.Wrap(err, "select query")
-	}
-	defer rows.Close()
-
-	res := make(map[string]*AssetResponse)
-	for rows.Next() {
-		a := new(AssetResponse)
-
-		err := rows.Scan(
-			&a.ID,
-			&a.Label,
-			(*[]byte)(&a.Definition),
-			&a.Issued.Confirmed,
-			&a.Issued.Total,
-			&a.Retired.Confirmed,
-			&a.Retired.Total,
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
+	res := make(map[string]*AssetSummary)
+	err := pg.ForQueryRows(ctx, q, pg.Strings(assetIDs), func(id bc.AssetID, label string, def chainjson.HexBytes) {
+		assetDefinition := make([]byte, len(def))
+		copy(assetDefinition, def[:])
+		res[id.String()] = &AssetSummary{
+			ID:         id,
+			Label:      label,
+			Definition: assetDefinition,
 		}
-
-		a.Circulation = a.Issued.Total // populate deprecated field
-		res[a.ID.String()] = a
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "end row scan loop")
-	}
-
-	return res, nil
+	})
+	return res, errors.Wrap(err)
 }
 
-// GetAsset returns an AssetResponse for the given asset id.
-func GetAsset(ctx context.Context, assetID string) (*AssetResponse, error) {
+// GetAsset returns an AssetSummary for the given asset id.
+func GetAsset(ctx context.Context, assetID string) (*AssetSummary, error) {
 	assets, err := GetAssets(ctx, []string{assetID})
 	if err != nil {
 		return nil, err
 	}
-
 	a, ok := assets[assetID]
 	if !ok {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "asset ID: %q", assetID)
 	}
-
 	return a, nil
 }
 

@@ -6,7 +6,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/appdb"
 	"chain/core/asset"
 	"chain/core/txdb"
 	"chain/cos/bc"
@@ -176,35 +175,9 @@ type Asset struct {
 // asset definition submitted for each asset. If a given asset ID is not found,
 // that asset will not be included in the response.
 func GetAssets(ctx context.Context, assetIDs []bc.AssetID) (map[bc.AssetID]*Asset, error) {
-	// TODO(jeffomatic): This function makes use of the assets and
-	// issuance_totals tables, which technically violates the line between
-	// issuer nodes and explorer nodes.
-	//
-	// We do this because we require issued totals, which are only tracked in
-	// the issuance_totals table.
-	//
-	// As a result, the explorer node will return entries for assets that have
-	// not yet been issued, or whose issuances have not yet landed in a block.
-	// For these results, the asset definition will appear to be blank.
-
-	res := make(map[bc.AssetID]*Asset)
-
-	assetIDStrs := make([]string, len(assetIDs))
-	for i, aid := range assetIDs {
-		assetIDStrs[i] = aid.String()
-	}
-	// TODO(jackson): Update appdb.GetAssets to take []bc.AssetID.
-
-	withCirc, err := appdb.GetAssets(ctx, assetIDStrs)
+	circ, err := asset.Circulation(ctx, assetIDs...)
 	if err != nil {
-		return nil, errors.Wrap(err, "fetch asset issuer asset data")
-	}
-
-	for _, inodeAsset := range withCirc {
-		res[inodeAsset.ID] = &Asset{
-			ID:     inodeAsset.ID,
-			Issued: inodeAsset.Issued.Confirmed,
-		}
+		return nil, errors.Wrap(err, "fetch asset circulation data")
 	}
 
 	defs, err := asset.Definitions(ctx, assetIDs)
@@ -212,6 +185,13 @@ func GetAssets(ctx context.Context, assetIDs []bc.AssetID) (map[bc.AssetID]*Asse
 		return nil, errors.Wrap(err, "fetch txdb asset def")
 	}
 
+	res := make(map[bc.AssetID]*Asset)
+	for assetID, amount := range circ.Assets {
+		res[assetID] = &Asset{
+			ID:     assetID,
+			Issued: amount.Issued,
+		}
+	}
 	for id, def := range defs {
 		p := bc.HashAssetDefinition(def).String()
 		d := chainjson.HexBytes(def)
@@ -220,8 +200,7 @@ func GetAssets(ctx context.Context, assetIDs []bc.AssetID) (map[bc.AssetID]*Asse
 			a.DefinitionPtr = p
 			a.Definition = d
 		} else {
-			// Ignore missing asset defs. It could mean the asset hasn't
-			// landed yet,
+			// Ignore missing asset defs.
 			res[id] = &Asset{
 				ID:            id,
 				DefinitionPtr: p,

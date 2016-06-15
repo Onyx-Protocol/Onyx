@@ -38,6 +38,7 @@ func issueAsset(ctx context.Context, assetIDStr string, reqDests []*Destination)
 		dest.AssetID = &assetID
 	}
 
+	var amount uint64
 	dests := make([]*txbuilder.Destination, 0, len(reqDests))
 	for _, reqDest := range reqDests {
 		parsed, err := reqDest.parse(ctx)
@@ -45,9 +46,11 @@ func issueAsset(ctx context.Context, assetIDStr string, reqDests []*Destination)
 			return nil, err
 		}
 		dests = append(dests, parsed)
+		amount += reqDest.Amount
 	}
 
-	template, err := issuer.Issue(ctx, assetID, dests)
+	aa := bc.AssetAmount{AssetID: assetID, Amount: amount}
+	template, err := issuer.Issue(ctx, aa, dests)
 	if err != nil {
 		return nil, err
 	}

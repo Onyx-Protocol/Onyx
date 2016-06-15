@@ -46,16 +46,16 @@ func TestFindOpenOrders(t *testing.T) {
 		},
 	}
 
-	asset1x100 := &bc.AssetAmount{
+	asset1x100 := bc.AssetAmount{
 		AssetID: assetID1,
 		Amount:  100,
 	}
 
-	issueDest, err := asset.NewAccountDestination(ctx, asset1x100, accountID, nil)
+	issueDest, err := asset.NewAccountDestination(ctx, &asset1x100, accountID, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	txTemplate, err := issuer.Issue(ctx, assetID1, []*txbuilder.Destination{issueDest})
+	txTemplate, err := issuer.Issue(ctx, asset1x100, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -64,7 +64,7 @@ func TestFindOpenOrders(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	offerTxTemplate, err := offer(ctx, accountID, asset1x100, prices, ttl)
+	offerTxTemplate, err := offer(ctx, accountID, &asset1x100, prices, ttl)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -117,16 +117,16 @@ func TestFindOpenOrders(t *testing.T) {
 	}
 	testutil.ExpectEqual(t, len(openOrders), 0, "expected no results from FindOpenOrders({}, {assetID1})")
 
-	asset3x100 := &bc.AssetAmount{
+	asset3x100 := bc.AssetAmount{
 		AssetID: assetID3,
 		Amount:  100,
 	}
 
-	issueDest, err = asset.NewAccountDestination(ctx, asset3x100, accountID, nil)
+	issueDest, err = asset.NewAccountDestination(ctx, &asset3x100, accountID, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	txTemplate, err = issuer.Issue(ctx, assetID3, []*txbuilder.Destination{issueDest})
+	txTemplate, err = issuer.Issue(ctx, asset3x100, []*txbuilder.Destination{issueDest})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -135,7 +135,7 @@ func TestFindOpenOrders(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	offerTxTemplate, err = offer(ctx, accountID, asset3x100, prices, ttl)
+	offerTxTemplate, err = offer(ctx, accountID, &asset3x100, prices, ttl)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

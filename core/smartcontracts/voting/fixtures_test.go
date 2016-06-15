@@ -16,9 +16,10 @@ import (
 func createVotingTokenFixture(ctx context.Context, t *testing.T, right bc.AssetID, admin []byte, amount uint64) *Token {
 	assetID := assettest.CreateAssetFixture(ctx, t, "", "", "")
 
-	issueTxTemplate, err := issuer.Issue(ctx, assetID, []*txbuilder.Destination{
+	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
+	issueTxTemplate, err := issuer.Issue(ctx, assetAmount, []*txbuilder.Destination{
 		{
-			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: amount},
+			AssetAmount: assetAmount,
 			Receiver:    TokenIssuance(ctx, right, admin),
 		},
 	})
@@ -44,9 +45,10 @@ func createVotingTokenFixture(ctx context.Context, t *testing.T, right bc.AssetI
 func createVotingRightFixture(ctx context.Context, t *testing.T, holder []byte) *Right {
 	assetID := assettest.CreateAssetFixture(ctx, t, "", "", "")
 
-	issueTxTemplate, err := issuer.Issue(ctx, assetID, []*txbuilder.Destination{
+	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: 1}
+	issueTxTemplate, err := issuer.Issue(ctx, assetAmount, []*txbuilder.Destination{
 		{
-			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},
+			AssetAmount: assetAmount,
 			Receiver:    RightIssuance(ctx, holder, holder),
 		},
 	})

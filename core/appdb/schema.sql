@@ -494,14 +494,11 @@ CREATE TABLE invitations (
 
 CREATE TABLE issuance_totals (
     asset_id text NOT NULL,
-    pool bigint DEFAULT 0 NOT NULL,
-    confirmed bigint DEFAULT 0 NOT NULL,
-    destroyed_pool bigint DEFAULT 0 NOT NULL,
-    destroyed_confirmed bigint DEFAULT 0 NOT NULL,
-    CONSTRAINT issuance_totals_confirmed_check CHECK ((confirmed >= 0)),
-    CONSTRAINT issuance_totals_pool_check CHECK ((pool >= 0)),
-    CONSTRAINT positive_destroyed_confirmed CHECK ((destroyed_confirmed >= 0)),
-    CONSTRAINT positive_destroyed_pool CHECK ((destroyed_pool >= 0))
+    issued bigint DEFAULT 0 NOT NULL,
+    destroyed bigint DEFAULT 0 NOT NULL,
+    height bigint NOT NULL,
+    CONSTRAINT issuance_totals_confirmed_check CHECK ((issued >= 0)),
+    CONSTRAINT positive_destroyed_confirmed CHECK ((destroyed >= 0))
 );
 
 
@@ -1500,4 +1497,5 @@ insert into migrations (filename, hash) values ('2016-06-09.1.core.rename-explor
 insert into migrations (filename, hash) values ('2016-06-09.2.txdb.drop-utxos.sql', 'a6d94f3afeae6145caef7fe5919aaacb5050ce68b312e53461b109ada88e382e');
 insert into migrations (filename, hash) values ('2016-06-10.0.voting.change-closed-column.sql', '93487fb8edd612a79da022aa9b17b2a94e121c4facb3199c7edd0ce12248389a');
 insert into migrations (filename, hash) values ('2016-06-13.0.txdb.state-tree-snapshots.sql', 'de6000306a774d97fd46a095559643231f0db786ece08a89fb913c087b4babd7');
-insert into migrations (filename, hash) values ('2016.06.20.0.voting.remove-deadline.sql', '96d0e78feca6917e329c6dfea7c3a581b98732f303d83c25376cf2727cd8faf6');
+insert into migrations (filename, hash) values ('2016-06-20.0.voting.remove-deadline.sql', '96d0e78feca6917e329c6dfea7c3a581b98732f303d83c25376cf2727cd8faf6');
+insert into migrations (filename, hash) values ('2016-07-07.0.asset.issuance-totals-block.sql', 'be9df7c943c20c8a8231145fa73f6df029eec678a21115682d94e65858372b01');

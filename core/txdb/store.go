@@ -77,11 +77,6 @@ func (s *Store) ApplyBlock(
 		oldTxs = append(oldTxs, tx)
 	}
 
-	err = addIssuances(ctx, dbtx, assets, true)
-	if err != nil {
-		return nil, errors.Wrap(err, "adding issuances")
-	}
-
 	err = storeStateTreeSnapshot(ctx, dbtx, state, block.Height)
 	if err != nil {
 		return nil, errors.Wrap(err, "updating state tree")

@@ -80,38 +80,12 @@ func TestListAssets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	acc := assettest.CreateAccountFixture(ctx, t, "", "toretire", nil)
-
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	in1 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-1", nil, nil)
-
 	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
 	asset1 := assettest.CreateAssetFixture(ctx, t, in0, "asset-1", "def-1")
 	asset2 := assettest.CreateAssetFixture(ctx, t, in1, "asset-2", "def-2")
 	asset3 := assettest.CreateAssetFixture(ctx, t, in0, "asset-3", "def-3")
-
-	assettest.IssueAssetsFixture(ctx, t, asset0, 1, "")
-	assettest.IssueAssetsFixture(ctx, t, asset1, 3, "")
-	assettest.IssueAssetsFixture(ctx, t, asset2, 5, acc)
-	assettest.IssueAssetsFixture(ctx, t, asset3, 7, "")
-
-	src := asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: asset2, Amount: 1}, acc, nil, nil, nil)
-	dest := txbuilder.NewRetireDestination(ctx, &bc.AssetAmount{AssetID: asset2, Amount: 1}, nil)
-	assettest.Transfer(ctx, t, []*txbuilder.Source{src}, []*txbuilder.Destination{dest})
-
-	_, err = generator.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	src = asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: asset2, Amount: 3}, acc, nil, nil, nil)
-	dest = txbuilder.NewRetireDestination(ctx, &bc.AssetAmount{AssetID: asset2, Amount: 3}, nil)
-	assettest.Transfer(ctx, t, []*txbuilder.Source{src}, []*txbuilder.Destination{dest})
-
-	assettest.IssueAssetsFixture(ctx, t, asset0, 2, "")
-	assettest.IssueAssetsFixture(ctx, t, asset1, 4, "")
-	assettest.IssueAssetsFixture(ctx, t, asset2, 6, "")
-	assettest.IssueAssetsFixture(ctx, t, asset3, 8, "")
 
 	err = ArchiveAsset(ctx, asset3.String())
 	if err != nil {
@@ -126,39 +100,39 @@ func TestListAssets(t *testing.T) {
 		inodeID string
 		prev    string
 		limit   int
-		want    []*AssetResponse
+		want    []*AssetSummary
 	}{
 		{
 			in0,
 			"",
 			5,
-			[]*AssetResponse{
-				{ID: asset1, Label: "asset-1", Issued: AssetAmount{3, 7}, Definition: def1, Circulation: 7},
-				{ID: asset0, Label: "asset-0", Issued: AssetAmount{1, 3}, Definition: def0, Circulation: 3},
+			[]*AssetSummary{
+				{ID: asset1, Label: "asset-1", Definition: def1},
+				{ID: asset0, Label: "asset-0", Definition: def0},
 			},
 		},
 		{
 			in1,
 			"",
 			5,
-			[]*AssetResponse{
-				{ID: asset2, Label: "asset-2", Issued: AssetAmount{5, 11}, Retired: AssetAmount{1, 4}, Definition: def2, Circulation: 11},
+			[]*AssetSummary{
+				{ID: asset2, Label: "asset-2", Definition: def2},
 			},
 		},
 		{
 			in0,
 			"",
 			1,
-			[]*AssetResponse{
-				{ID: asset1, Label: "asset-1", Issued: AssetAmount{3, 7}, Definition: def1, Circulation: 7},
+			[]*AssetSummary{
+				{ID: asset1, Label: "asset-1", Definition: def1},
 			},
 		},
 		{
 			in0,
 			getSortID(ctx, t, asset1),
 			5,
-			[]*AssetResponse{
-				{ID: asset0, Label: "asset-0", Issued: AssetAmount{1, 3}, Definition: def0, Circulation: 3},
+			[]*AssetSummary{
+				{ID: asset0, Label: "asset-0", Definition: def0},
 			},
 		},
 		{
@@ -223,20 +197,16 @@ func TestGetAssets(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	want := map[string]*AssetResponse{
-		asset0.String(): &AssetResponse{
-			ID:          asset0,
-			Label:       "asset-0",
-			Definition:  []byte("{\n  \"s\": \"def-0\"\n}"),
-			Issued:      AssetAmount{58, 70},
-			Circulation: 70,
+	want := map[string]*AssetSummary{
+		asset0.String(): &AssetSummary{
+			ID:         asset0,
+			Label:      "asset-0",
+			Definition: []byte("{\n  \"s\": \"def-0\"\n}"),
 		},
-		asset1.String(): &AssetResponse{
-			ID:          asset1,
-			Label:       "asset-1",
-			Definition:  []byte("{\n  \"s\": \"def-1\"\n}"),
-			Issued:      AssetAmount{0, 10},
-			Circulation: 10,
+		asset1.String(): &AssetSummary{
+			ID:         asset1,
+			Label:      "asset-1",
+			Definition: []byte("{\n  \"s\": \"def-1\"\n}"),
 		},
 	}
 
@@ -257,34 +227,17 @@ func TestGetAssets(t *testing.T) {
 
 func TestGetAsset(t *testing.T) {
 	ctx := pgtest.NewContext(t)
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore and mempool
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
-	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
-	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
-
-	_, err = generator.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
+	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "def-0")
 
 	got, err := GetAsset(ctx, asset0.String())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	want := &AssetResponse{
-		ID:          asset0,
-		Label:       "asset-0",
-		Definition:  []byte("{\n  \"s\": \"def-0\"\n}"),
-		Issued:      AssetAmount{58, 70},
-		Circulation: 70,
+	want := &AssetSummary{
+		ID:         asset0,
+		Label:      "asset-0",
+		Definition: []byte("{\n  \"s\": \"def-0\"\n}"),
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("GetAsset(%s) = %+v want %+v", asset0, got, want)
@@ -298,59 +251,54 @@ func TestGetAsset(t *testing.T) {
 
 func TestUpdateAsset(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-
 	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 
-	assetResponse, err := GetAsset(ctx, asset0.String())
+	assetSummary, err := GetAsset(ctx, asset0.String())
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
 	newLabel := "bar"
-	err = UpdateAsset(ctx, assetResponse.ID.String(), &newLabel)
+	err = UpdateAsset(ctx, assetSummary.ID.String(), &newLabel)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
 
-	assetResponse, err = GetAsset(ctx, asset0.String())
+	assetSummary, err = GetAsset(ctx, asset0.String())
 	if err != nil {
 		t.Fatalf("could not get asset with id %v: %v", asset0, err)
 	}
-	if assetResponse.Label != newLabel {
-		t.Errorf("expected %s, got %s", newLabel, assetResponse.Label)
+	if assetSummary.Label != newLabel {
+		t.Errorf("expected %s, got %s", newLabel, assetSummary.Label)
 	}
 }
 
 // Test that calling UpdateAsset with no new label is a no-op.
 func TestUpdateAssetNoUpdate(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-
 	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 
-	assetResponse, err := GetAsset(ctx, asset0.String())
+	assetSummary, err := GetAsset(ctx, asset0.String())
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-
-	err = UpdateAsset(ctx, assetResponse.ID.String(), nil)
+	err = UpdateAsset(ctx, assetSummary.ID.String(), nil)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
-
-	assetResponse, err = GetAsset(ctx, asset0.String())
+	assetSummary, err = GetAsset(ctx, asset0.String())
 	if err != nil {
 		t.Fatalf("could not get asset with id asset-id-0: %v", err)
 	}
-	if assetResponse.Label != "asset-0" {
-		t.Errorf("expected asset-0, got %s", assetResponse.Label)
+	if assetSummary.Label != "asset-0" {
+		t.Errorf("expected asset-0, got %s", assetSummary.Label)
 	}
 }
 
 func TestArchiveAsset(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-
 	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 
 	err := ArchiveAsset(ctx, asset0.String())

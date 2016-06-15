@@ -64,11 +64,6 @@ func (p *Pool) Insert(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*sta
 		})
 	}
 
-	err = addIssuances(ctx, dbtx, assets, false)
-	if err != nil {
-		return errors.Wrap(err, "adding issuances")
-	}
-
 	err = dbtx.Commit(ctx)
 	return errors.Wrap(err, "committing database transaction")
 }
@@ -100,11 +95,6 @@ func (p *Pool) Clean(
 	_, err = dbtx.Exec(ctx, txq, pg.Strings(deleteTxHashes))
 	if err != nil {
 		return errors.Wrap(err, "delete from pool_txs")
-	}
-
-	err = setIssuances(ctx, dbtx, assets)
-	if err != nil {
-		return errors.Wrap(err, "removing issuances")
 	}
 
 	err = dbtx.Commit(ctx)

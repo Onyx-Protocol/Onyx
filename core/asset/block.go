@@ -34,6 +34,7 @@ func Init(chain *cos.FC, isManager bool) {
 		fc.AddBlockCallback(func(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
 			indexAccountUTXOs(ctx, b, conflicts)
 			saveAssetDefinitions(ctx, b)
+			recordIssuances(ctx, b, conflicts)
 		})
 		fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
 			err := nodetxlog.Write(ctx, tx, time.Now())
