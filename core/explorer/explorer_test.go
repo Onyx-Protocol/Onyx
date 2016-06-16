@@ -26,6 +26,10 @@ const (
 	blockHash1 = "9fb204c8a1f9192987352938d9d410f117c398dff23b03867223c65754325dc8"
 )
 
+var (
+	otherAssetID = bc.AssetID{0xde, 0xad, 0xbe, 0xef}
+)
+
 func mustParseHash(str string) bc.Hash {
 	hash, err := bc.ParseHash(str)
 	if err != nil {
@@ -409,30 +413,23 @@ func TestGetAssets(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
 	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
 
-	got, err := GetAssets(ctx, store, []string{
-		asset0.String(),
-		asset1.String(),
-		"other-asset-id",
+	got, err := GetAssets(ctx, []bc.AssetID{
+		asset0,
+		asset1,
+		otherAssetID,
 	})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	want := map[string]*Asset{
-		asset0.String(): &Asset{
+	want := map[bc.AssetID]*Asset{
+		asset0: &Asset{
 			ID:            asset0,
 			DefinitionPtr: defPtr0,
 			Definition:    def0,
 			Issued:        58,
 		},
-
-		// Strictly speaking, asset1 should not be returned yet, since it has
-		// not landed in a block, so we shouldn't return it. However, we are
-		// including it here, since there is no easy way to know which asset
-		// issuances have landed, and which haven't. We can fix this by always
-		// writing asset definition pointers, even for issuances that have a
-		// blank asset definition.
-		asset1.String(): &Asset{
+		asset1: &Asset{
 			ID:            asset1,
 			DefinitionPtr: "",
 			Definition:    nil,
@@ -482,12 +479,12 @@ func TestGetAsset(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
 
 	examples := []struct {
-		id      string
+		id      bc.AssetID
 		wantErr error
 		want    *Asset
 	}{
 		{
-			id: asset0.String(),
+			id: asset0,
 			want: &Asset{
 				ID:            asset0,
 				DefinitionPtr: defPtr0,
@@ -498,7 +495,7 @@ func TestGetAsset(t *testing.T) {
 
 		// Blank definition
 		{
-			id: asset1.String(),
+			id: asset1,
 			want: &Asset{
 				ID:            asset1,
 				DefinitionPtr: "",
@@ -509,13 +506,15 @@ func TestGetAsset(t *testing.T) {
 
 		// Missing asset
 		{
-			id:      "other-asset-id",
+			id:      otherAssetID,
 			wantErr: pg.ErrUserInputNotFound,
 		},
 	}
 
 	for _, ex := range examples {
-		got, err := GetAsset(ctx, store, ex.id)
+		t.Log("Example", ex.id)
+
+		got, err := GetAsset(ctx, ex.id)
 		if errors.Root(err) != ex.wantErr {
 			t.Fatalf("error:\ngot:  %v\nwant: %v", errors.Root(err), ex.wantErr)
 		}

@@ -104,7 +104,7 @@ func txIsWellFormed(tx *bc.Tx) error {
 
 	for _, txin := range tx.Inputs {
 		if txin.IsIssuance() {
-			assetID, err := assetIDFromSigScript(txin.SignatureScript)
+			assetID, err := AssetIDFromSigScript(txin.SignatureScript)
 			if err != nil {
 				return err
 			}
@@ -158,7 +158,7 @@ func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 		// If metadata field is empty, no update of ADP takes place.
 		// See https://github.com/chain-engineering/fedchain/blob/master/documentation/fedchain-specification.md#extract-asset-definition.
 		if in.IsIssuance() && len(in.AssetDefinition) > 0 {
-			assetID, err := assetIDFromSigScript(in.SignatureScript)
+			assetID, err := AssetIDFromSigScript(in.SignatureScript)
 			if err != nil {
 				return err
 			}
@@ -184,7 +184,9 @@ func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 	return nil
 }
 
-func assetIDFromSigScript(script []byte) (bc.AssetID, error) {
+// AssetIDFromSigScript takes an issuance sigscript and computes the
+// associated Asset ID from it.
+func AssetIDFromSigScript(script []byte) (bc.AssetID, error) {
 	redeemScript, err := txscript.RedeemScriptFromP2SHSigScript(script)
 	if err != nil {
 		return bc.AssetID{}, errors.Wrap(err, "extracting redeem script from sigscript")

@@ -19,5 +19,5 @@ func FC() *cos.FC {
 var BreakupChange = breakupChange
 
 func AddBlock(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
-	addBlock(ctx, b, conflicts)
+	indexAccountUTXOs(ctx, b, conflicts)
 }

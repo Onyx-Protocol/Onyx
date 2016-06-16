@@ -20,7 +20,12 @@ func (a *api) getTx(ctx context.Context, txHashStr string) (*explorer.Tx, error)
 }
 
 func (a *api) getAsset(ctx context.Context, assetID string) (*explorer.Asset, error) {
-	return explorer.GetAsset(ctx, a.store, assetID)
+	var decodedAssetID bc.AssetID
+	err := decodedAssetID.UnmarshalText([]byte(assetID))
+	if err != nil {
+		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "%q is an invalid asset ID", assetID)
+	}
+	return explorer.GetAsset(ctx, decodedAssetID)
 }
 
 func (a *api) listBlocks(ctx context.Context) (interface{}, error) {
@@ -43,18 +48,16 @@ func (a *api) listBlocks(ctx context.Context) (interface{}, error) {
 // EXPERIMENTAL(jeffomatic), implemented for R3 demo. Before baking it into the
 // public API, we should decide whether this style of API querying is desirable.
 func (a *api) getExplorerAssets(ctx context.Context, req struct {
-	AssetIDs []string `json:"asset_ids"`
+	AssetIDs []bc.AssetID `json:"asset_ids"`
 }) (interface{}, error) {
-	assets, err := explorer.GetAssets(ctx, a.store, req.AssetIDs)
+	assets, err := explorer.GetAssets(ctx, req.AssetIDs)
 	if err != nil {
 		return nil, err
 	}
-
 	var res []*explorer.Asset
 	for _, a := range assets {
 		res = append(res, a)
 	}
-
 	return res, nil
 }
 

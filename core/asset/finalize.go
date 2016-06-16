@@ -152,7 +152,7 @@ func publishTx(ctx context.Context, msg *bc.Tx) error {
 
 // Note, FC guarantees it will call the tx callback
 // for every tx in b before we get here.
-func addBlock(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
+func indexAccountUTXOs(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
 	var (
 		pos    []int32
 		txhash []string

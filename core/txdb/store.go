@@ -77,16 +77,6 @@ func (s *Store) ApplyBlock(
 		oldTxs = append(oldTxs, tx)
 	}
 
-	err = insertAssetDefinitionPointers(ctx, dbtx, assets)
-	if err != nil {
-		return nil, errors.Wrap(err, "insert ADPs")
-	}
-
-	err = insertAssetDefinitions(ctx, dbtx, block)
-	if err != nil {
-		return nil, errors.Wrap(err, "writing asset definitions")
-	}
-
 	err = addIssuances(ctx, dbtx, assets, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "adding issuances")

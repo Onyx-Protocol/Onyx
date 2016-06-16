@@ -31,7 +31,10 @@ func Init(chain *cos.FC, isManager bool) {
 				log.Error(ctx, errors.Wrap(err, "adding account data"))
 			}
 		})
-		fc.AddBlockCallback(addBlock)
+		fc.AddBlockCallback(func(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
+			indexAccountUTXOs(ctx, b, conflicts)
+			saveAssetDefinitions(ctx, b)
+		})
 		fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
 			err := nodetxlog.Write(ctx, tx, time.Now())
 			if err != nil {

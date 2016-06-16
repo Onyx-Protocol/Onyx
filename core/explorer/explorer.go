@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/appdb"
+	"chain/core/asset"
 	"chain/core/txdb"
 	"chain/cos/bc"
 	"chain/cos/state"
@@ -174,35 +175,39 @@ type Asset struct {
 // GetAssets returns data about the specified assets, including the most recent
 // asset definition submitted for each asset. If a given asset ID is not found,
 // that asset will not be included in the response.
-func GetAssets(ctx context.Context, store *txdb.Store, assetIDs []string) (map[string]*Asset, error) {
+func GetAssets(ctx context.Context, assetIDs []bc.AssetID) (map[bc.AssetID]*Asset, error) {
 	// TODO(jeffomatic): This function makes use of the assets and
 	// issuance_totals tables, which technically violates the line between
 	// issuer nodes and explorer nodes.
 	//
-	// We do this because we require:
-	// 1. issued totals, which are only tracked in the issuance_totals table.
-	// 2. assets with blank asset defs, which appear in the assets table, but
-	//    not the asset_definition_pointers table. This is a bug.
+	// We do this because we require issued totals, which are only tracked in
+	// the issuance_totals table.
 	//
 	// As a result, the explorer node will return entries for assets that have
 	// not yet been issued, or whose issuances have not yet landed in a block.
 	// For these results, the asset definition will appear to be blank.
 
-	res := make(map[string]*Asset)
+	res := make(map[bc.AssetID]*Asset)
 
-	withCirc, err := appdb.GetAssets(ctx, assetIDs)
+	assetIDStrs := make([]string, len(assetIDs))
+	for i, aid := range assetIDs {
+		assetIDStrs[i] = aid.String()
+	}
+	// TODO(jackson): Update appdb.GetAssets to take []bc.AssetID.
+
+	withCirc, err := appdb.GetAssets(ctx, assetIDStrs)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetch asset issuer asset data")
 	}
 
-	for id, inodeAsset := range withCirc {
-		res[id] = &Asset{
+	for _, inodeAsset := range withCirc {
+		res[inodeAsset.ID] = &Asset{
 			ID:     inodeAsset.ID,
 			Issued: inodeAsset.Issued.Confirmed,
 		}
 	}
 
-	defs, err := store.AssetDefinitions(ctx, assetIDs)
+	defs, err := asset.Definitions(ctx, assetIDs)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetch txdb asset def")
 	}
@@ -216,39 +221,28 @@ func GetAssets(ctx context.Context, store *txdb.Store, assetIDs []string) (map[s
 			a.Definition = d
 		} else {
 			// Ignore missing asset defs. It could mean the asset hasn't
-			// landed yet, or it could mean that the asset def was blank.
-
-			aid := new(bc.AssetID)
-			err := aid.UnmarshalText([]byte(id))
-			if err != nil {
-				// should never happen
-				return nil, errors.Wrap(err, "invalid asset id:", id)
-			}
-
+			// landed yet,
 			res[id] = &Asset{
-				ID:            *aid,
+				ID:            id,
 				DefinitionPtr: p,
 				Definition:    d,
 			}
 		}
 	}
-
 	return res, nil
 }
 
 // GetAsset returns the most recent asset definition stored in
 // the blockchain, for the given asset.
-func GetAsset(ctx context.Context, store *txdb.Store, assetID string) (*Asset, error) {
-	assets, err := GetAssets(ctx, store, []string{assetID})
+func GetAsset(ctx context.Context, assetID bc.AssetID) (*Asset, error) {
+	assets, err := GetAssets(ctx, []bc.AssetID{assetID})
 	if err != nil {
 		return nil, err
 	}
-
 	a, ok := assets[assetID]
 	if !ok {
-		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "asset ID: %q", assetID)
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "asset ID: %q", assetID.String())
 	}
-
 	return a, nil
 }
 

@@ -181,8 +181,7 @@ func HistoricalBalancesByAccount(ctx context.Context, accountID string, timestam
 		last   string
 	)
 	args = append(args, func(assetID bc.AssetID, amount uint64) {
-		output = append(output, bc.AssetAmount{assetID, amount})
-
+		output = append(output, bc.AssetAmount{AssetID: assetID, Amount: amount})
 	})
 	err := pg.ForQueryRows(ctx, q, args...)
 	if err != nil {
