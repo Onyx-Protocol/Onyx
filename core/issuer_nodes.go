@@ -172,10 +172,9 @@ func createAsset(ctx context.Context, inodeID string, in struct {
 	}
 
 	ret := map[string]interface{}{
-		"id":              ast.Hash.String(),
-		"asset_issuer_id": ast.IssuerNodeID,
-		"issuer_node_id":  ast.IssuerNodeID, // deprecated
-		"label":           ast.Label,
+		"id":             ast.Hash.String(),
+		"issuer_node_id": ast.IssuerNodeID, // deprecated
+		"label":          ast.Label,
 	}
 	return ret, nil
 }
