@@ -235,20 +235,19 @@ func getVotingTokenVotes(ctx context.Context, req struct {
 }
 
 type votingContractActionParams struct {
-	TokenAssetID      *bc.AssetID        `json:"voting_token_asset_id,omitempty"`
-	RightAssetID      *bc.AssetID        `json:"voting_right_asset_id,omitempty"`
-	TxHash            *bc.Hash           `json:"transaction_id,omitempty"`
-	TxIndex           *uint32            `json:"transaction_output,omitempty"`
-	AccountID         string             `json:"account_id,omitempty"`         // right issuance, delegate, transfer, recall
-	HolderScript      chainjson.HexBytes `json:"holder_script,omitempty"`      // right issuance, delegate, transfer
-	AdminScript       chainjson.HexBytes `json:"admin_script,omitempty"`       // right, token issuance
-	CanDelegate       *bool              `json:"can_delegate,omitempty"`       // delegate
-	Deadline          time.Time          `json:"deadline,omitempty"`           // delegate
-	Amount            uint64             `json:"amount,omitempty"`             // token issuance
-	Option            int64              `json:"option,omitempty"`             // vote
-	ResetRegistration bool               `json:"reset_registration,omitempty"` // reset
-	RecallAccountID   *string            `json:"recall_account_id,omitempty"`  // override
-	Delegates         []struct {
+	TokenAssetID    *bc.AssetID        `json:"voting_token_asset_id,omitempty"`
+	RightAssetID    *bc.AssetID        `json:"voting_right_asset_id,omitempty"`
+	TxHash          *bc.Hash           `json:"transaction_id,omitempty"`
+	TxIndex         *uint32            `json:"transaction_output,omitempty"`
+	AccountID       string             `json:"account_id,omitempty"`        // right issuance, delegate, transfer, recall
+	HolderScript    chainjson.HexBytes `json:"holder_script,omitempty"`     // right issuance, delegate, transfer
+	AdminScript     chainjson.HexBytes `json:"admin_script,omitempty"`      // right, token issuance
+	CanDelegate     *bool              `json:"can_delegate,omitempty"`      // delegate
+	Deadline        time.Time          `json:"deadline,omitempty"`          // delegate
+	Amount          uint64             `json:"amount,omitempty"`            // token issuance
+	Option          int64              `json:"option,omitempty"`            // vote
+	RecallAccountID *string            `json:"recall_account_id,omitempty"` // override
+	Delegates       []struct {
 		HolderScript chainjson.HexBytes `json:"holder_script,omitempty"`
 		AccountID    string             `json:"account_id,omitempty"`
 		Deadline     time.Time          `json:"deadline,omitempty"`
@@ -657,7 +656,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		}
 
 		for _, v := range votes {
-			reserver, receiver, err := voting.TokenReset(ctx, v, !params.ResetRegistration)
+			reserver, receiver, err := voting.TokenReset(ctx, v)
 			if err != nil {
 				return nil, nil, err
 			}

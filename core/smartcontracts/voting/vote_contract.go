@@ -12,7 +12,7 @@ import (
 const (
 	// pinnedTokenContractHash stores the hash of the voting token contract.
 	// Changes to the contract will require updating the hash.
-	pinnedTokenContractHash = "9e1f94ba804623386a7f7868c411de99f277f5aaf7e87292a1fab2e913d6e542"
+	pinnedTokenContractHash = "5d96e39531fdea4413300f505b14cd08e9b7fdec88ea3580efe5650f5ee6d594"
 )
 
 type TokenState byte
@@ -282,9 +282,6 @@ const (
 			DATA_1 0xf0 AND 0 EQUALVERIFY
 			DATA_2 0x5275
 			3 ROLL
-			4 PICK NOTIF
-				DROP 0
-			ENDIF
 			CATPUSHDATA
 			ROT CATPUSHDATA
 			OVER CATPUSHDATA

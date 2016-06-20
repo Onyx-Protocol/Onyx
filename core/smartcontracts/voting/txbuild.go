@@ -314,15 +314,15 @@ func TokenInvalidate(ctx context.Context, token *Token) (txbuilder.Reserver, txb
 
 // TokenReset builds txbuilder.Reserve and Receiver implementations
 // to reset a voting token.
-func TokenReset(ctx context.Context, token *Token, preserveRegistration bool) (txbuilder.Reserver, txbuilder.Receiver, error) {
+func TokenReset(ctx context.Context, token *Token) (txbuilder.Reserver, txbuilder.Receiver, error) {
 	data := tokenScriptData{
-		Right:       token.Right,
-		AdminScript: token.AdminScript,
-		State:       stateDistributed,
-		Vote:        0, // unset vote
+		Right:          token.Right,
+		AdminScript:    token.AdminScript,
+		State:          stateDistributed,
+		Vote:           0, // unset vote
+		RegistrationID: token.RegistrationID,
 	}
-	if preserveRegistration && (token.State.Registered() || token.State.Voted()) {
-		data.RegistrationID = token.RegistrationID
+	if token.State.Registered() || token.State.Voted() {
 		data.State = stateRegistered
 	}
 

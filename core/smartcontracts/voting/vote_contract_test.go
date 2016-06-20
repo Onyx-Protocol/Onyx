@@ -1027,22 +1027,6 @@ func TestResetClause(t *testing.T) {
 		out  tokenScriptData
 	}{
 		{
-			// Reset registration ID too
-			err: nil,
-			prev: tokenScriptData{
-				RegistrationID: []byte{0xc0, 0x01, 0xbe, 0xef},
-				Right:          rightAssetID,
-				AdminScript:    []byte{txscript.OP_1},
-				State:          stateRegistered,
-			},
-			out: tokenScriptData{
-				RegistrationID: []byte{},
-				Right:          rightAssetID,
-				AdminScript:    []byte{txscript.OP_1},
-				State:          stateDistributed,
-			},
-		},
-		{
 			// Move from voted to registered
 			err: nil,
 			prev: tokenScriptData{
