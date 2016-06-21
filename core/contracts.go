@@ -2,7 +2,6 @@ package core
 
 import (
 	"math"
-	"time"
 
 	"golang.org/x/net/context"
 
@@ -138,9 +137,6 @@ func getVotingRightOwners(ctx context.Context, assetID string) (map[string]inter
 			"transaction_id":        r.Outpoint.Hash,
 			"index":                 r.Outpoint.Index,
 		}
-		if r.Deadline != voting.InfiniteDeadline {
-			right["deadline"] = time.Unix(r.Deadline, 0).Format(time.RFC3339)
-		}
 		rights = append(rights, right)
 		last = r.Outpoint.Hash.String()
 	}
@@ -243,14 +239,12 @@ type votingContractActionParams struct {
 	HolderScript    chainjson.HexBytes `json:"holder_script,omitempty"`     // right issuance, delegate, transfer
 	AdminScript     chainjson.HexBytes `json:"admin_script,omitempty"`      // right, token issuance
 	CanDelegate     *bool              `json:"can_delegate,omitempty"`      // delegate
-	Deadline        time.Time          `json:"deadline,omitempty"`          // delegate
 	Amount          uint64             `json:"amount,omitempty"`            // token issuance
 	Option          int64              `json:"option,omitempty"`            // vote
 	RecallAccountID *string            `json:"recall_account_id,omitempty"` // override
 	Delegates       []struct {
 		HolderScript chainjson.HexBytes `json:"holder_script,omitempty"`
 		AccountID    string             `json:"account_id,omitempty"`
-		Deadline     time.Time          `json:"deadline,omitempty"`
 	} `json:"override_delegates,omitempty"` // override
 	Distributions []struct {
 		RightAssetID *bc.AssetID `json:"voting_right_asset_id,omitempty"`
@@ -388,24 +382,15 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		if !old.Delegatable {
 			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "delegating this voting right is prohibited")
 		}
-		if params.Deadline.Unix() > old.Deadline {
-			return nil, nil, errors.WithDetailf(ErrBadBuildRequest, "cannot extend deadline beyond current deadline")
-		}
 		script, err := buildAddress(ctx, params.HolderScript, params.AccountID)
 		if err != nil {
 			return nil, nil, err
 		}
-		var (
-			delegatable = old.Delegatable
-			deadline    = old.Deadline
-		)
+		var delegatable = old.Delegatable
 		if params.CanDelegate != nil {
 			delegatable = *params.CanDelegate
 		}
-		if !params.Deadline.IsZero() {
-			deadline = params.Deadline.Unix()
-		}
-		reserver, receiver, err := voting.RightDelegation(ctx, old, script, deadline, delegatable)
+		reserver, receiver, err := voting.RightDelegation(ctx, old, script, delegatable)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -474,25 +459,16 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 			}
 		}
 
-		tip := voting.RightHolder{Script: forkPoint.HolderScript, Deadline: forkPoint.Deadline}
 		for _, d := range params.Delegates {
 			script, err := buildAddress(ctx, d.HolderScript, d.AccountID)
 			if err != nil {
 				return nil, nil, err
 			}
-			if d.Deadline.Unix() > tip.Deadline {
-				return nil, nil, errors.WithDetail(ErrBadBuildRequest, "voting right deadlines must be monotonically decreasing")
-			}
 
 			rh := voting.RightHolder{
-				Script:   script,
-				Deadline: d.Deadline.Unix(),
-			}
-			if d.Deadline.IsZero() {
-				rh.Deadline = tip.Deadline
+				Script: script,
 			}
 			delegates = append(delegates, rh)
-			tip = rh
 		}
 		reserver, receiver, err := voting.RightOverride(ctx, history[len(history)-1], forkPoint, intermediaryRights, delegates)
 		if err != nil {

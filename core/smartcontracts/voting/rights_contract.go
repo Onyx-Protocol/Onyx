@@ -3,7 +3,6 @@ package voting
 import (
 	"bytes"
 	"fmt"
-	"math"
 
 	"chain/cos/bc"
 	"chain/cos/txscript"
@@ -15,14 +14,9 @@ import (
 var scriptVersion = txscript.ScriptVersion2
 
 const (
-	// InfiniteDeadline is a sentinel deadline value to denote infinity.
-	// It's value is the max int64 so that the contract byte code can
-	// perform ordinary <= comparisons.
-	InfiniteDeadline = math.MaxInt64
-
 	// pinnedRightsContractHash stores the hash of the voting rights contract.
 	// Changes to the the contract will require updating the hash.
-	pinnedRightsContractHash = "d27b4dc74b1f383b12cc522f2ee92cc31f63d33f7280810ef31772450f1f3659"
+	pinnedRightsContractHash = "0d65d1da4fe83ce1182c211f449d646a1e598e5b44ca683daae7d9146ba9551b"
 )
 
 type rightsContractClause int64
@@ -42,7 +36,6 @@ type rightScriptData struct {
 	AdminScript    []byte
 	HolderScript   []byte
 	OwnershipChain bc.Hash
-	Deadline       int64
 	Delegatable    bool
 }
 
@@ -50,10 +43,9 @@ type rightScriptData struct {
 // contract for this voting right. It implements the txbuilder.Receiver
 // interface.
 func (r rightScriptData) PKScript() []byte {
-	params := make([]txscript.Item, 0, 5)
+	params := make([]txscript.Item, 0, 4)
 
 	params = append(params, txscript.BoolItem(r.Delegatable))
-	params = append(params, txscript.NumItem(r.Deadline))
 	params = append(params, txscript.DataItem(r.OwnershipChain[:]))
 	params = append(params, txscript.DataItem(r.HolderScript))
 	params = append(params, txscript.DataItem(r.AdminScript))
@@ -72,37 +64,28 @@ func testRightsContract(pkscript []byte) (*rightScriptData, error) {
 	if parsedScriptVersion == nil {
 		return nil, nil
 	}
-	if len(params) != 5 {
+	if len(params) != 4 {
 		return nil, nil
 	}
 
-	var (
-		err   error
-		right rightScriptData
-	)
+	var right rightScriptData
 
 	// delegatable bool
 	right.Delegatable = txscript.AsBool(params[0])
 
-	// deadline in unix secs
-	right.Deadline, err = txscript.AsInt64(params[1])
-	if err != nil {
-		return nil, err
-	}
-
 	// chain of ownership hash
-	if cap(right.OwnershipChain) != len(params[2]) {
+	if cap(right.OwnershipChain) != len(params[1]) {
 		return nil, nil
 	}
-	copy(right.OwnershipChain[:], params[2])
+	copy(right.OwnershipChain[:], params[1])
 
 	// script identifying holder of the right
-	right.HolderScript = make([]byte, len(params[3]))
-	copy(right.HolderScript, params[3])
+	right.HolderScript = make([]byte, len(params[2]))
+	copy(right.HolderScript, params[2])
 
 	// script identifying the admin of the system
-	right.AdminScript = make([]byte, len(params[4]))
-	copy(right.AdminScript, params[4])
+	right.AdminScript = make([]byte, len(params[3]))
+	copy(right.AdminScript, params[3])
 
 	return &right, nil
 }
@@ -176,7 +159,7 @@ const (
 	// the Chain OS p2c documentation.
 	//
 	// This script with documentation and comments is available here:
-	// https://gist.github.com/jbowens/ae16b535c856c137830e
+	// https://gist.github.com/erykwalder/ea68d529631731e6586685869e7bb747
 	//
 	// 1 - Authenticate
 	// 2 - Transfer
@@ -185,13 +168,9 @@ const (
 	// 5 - Override
 	// 6 - Cancel       (Unimplemented)
 	rightsHoldingContractString = `
-		5 ROLL
+		4 ROLL
 		DUP 1 EQUAL IF
-			DROP
-			SWAP
-			TIME
-			GREATERTHAN VERIFY
-			2DROP
+			DROP 2DROP
 			AMOUNT ASSET OUTPUTSCRIPT
 			RESERVEOUTPUT VERIFY
 			NIP
@@ -199,13 +178,9 @@ const (
 		ENDIF
 		DUP 2 EQUAL IF
 			DROP
-			1 PICK
-			TIME
-			GREATERTHAN VERIFY
 			DATA_2 0x5275
-			5 PICK CATPUSHDATA
-			6 ROLL CATPUSHDATA
-			3 ROLL CATPUSHDATA
+			4 PICK CATPUSHDATA
+			5 ROLL CATPUSHDATA
 			2 ROLL CATPUSHDATA
 			SWAP CATPUSHDATA
 			OUTPUTSCRIPT
@@ -213,103 +188,89 @@ const (
 			CAT
 			AMOUNT ASSET 2 ROLL
 			RESERVEOUTPUT VERIFY
-			NIP EVAL
+			NIP
+			EVAL
 		ENDIF
 		DUP 3 EQUAL IF
 			DROP
 			VERIFY
-			DUP TIME
-			GREATERTHAN VERIFY
-			DUP
-			7 PICK
-			GREATERTHANOREQUAL VERIFY
-			HASH256
-			2 PICK HASH256
-			SWAP CAT HASH256
+			1 PICK HASH256
 			SWAP CAT HASH256
 			DATA_2 0x5275
 			3 PICK CATPUSHDATA
 			4 ROLL CATPUSHDATA
 			SWAP CATPUSHDATA
-			4 ROLL CATPUSHDATA
 			3 ROLL CATPUSHDATA
 			OUTPUTSCRIPT
 			DATA_1 0x27 RIGHT
 			CAT
 			AMOUNT ASSET ROT
 			RESERVEOUTPUT VERIFY
-			NIP EVAL
+			NIP
+			EVAL
 		ENDIF
 		DUP 4 EQUAL IF
 			DROP
-			5 ROLL SIZE
+			4 ROLL SIZE
 			DATA_1 0x20 EQUALVERIFY
-			7 PICK HASH256
-			7 PICK HASH256 CAT
-			HASH256 1 PICK CAT HASH256
-			9 ROLL
+			5 PICK HASH256
+			1 PICK CAT HASH256
+			7 ROLL
 			WHILE
-				10 ROLL
+				8 ROLL
 				ROT CAT HASH256
 				SWAP 1SUB
 			ENDWHILE
-			4 ROLL EQUALVERIFY
+			3 ROLL EQUALVERIFY
 			DATA_2 0x5275
+			4 PICK CATPUSHDATA
 			5 PICK CATPUSHDATA
-			7 PICK CATPUSHDATA
 			SWAP CATPUSHDATA
-			5 ROLL CATPUSHDATA
 			1 CATPUSHDATA
 			OUTPUTSCRIPT
 			DATA_1 0x27 RIGHT
 			CAT
 			AMOUNT ASSET ROT
 			RESERVEOUTPUT VERIFY
-			2DROP 2DROP
+			2DROP DROP
 			EVAL
 		ENDIF
 	DUP 5 EQUAL IF
 		DROP
-		8 PICK 7 PICK
-		9 ROLL
+		7 PICK
+		6 PICK
+		8 ROLL
 		WHILE
-			SWAP 10 ROLL SWAP
+			SWAP 9 ROLL SWAP
 			CAT HASH256
 			SWAP 1SUB
 		ENDWHILE
-		4 PICK EQUALVERIFY
-		7 PICK NOTIF
-			9 PICK
-			11 PICK
-			5 PICK NOTIF
-				6 ROLL EQUALVERIFY
-				3 ROLL EQUALVERIFY
+		3 PICK EQUALVERIFY
+		6 PICK NOTIF
+			8 PICK
+			3 PICK NOTIF
+				4 ROLL EQUALVERIFY
 				DROP
 			ELSE
-				HASH256 SWAP
-				HASH256 CAT HASH256
+				HASH256
 				EQUALVERIFY
-				NIP ROT DROP
+				ROT DROP
 			ENDIF
 		ELSE
-			DROP NIP ROT DROP
+			DROP ROT DROP
 		ENDIF
 		5 ROLL
-		1SUB DUP 2MUL 6 ADD ROLL
-		OVER 2MUL 7 ADD ROLL
-		7 ROLL
-		3 ROLL
+		1SUB DUP 6 ADD ROLL
+		6 ROLL
+		2 ROLL
 		WHILE
-			8 ROLL HASH256
-			9 ROLL HASH256
-			SWAP CAT HASH256
+			7 ROLL HASH256
 			ROT CAT HASH256
 			SWAP 1SUB
 		ENDWHILE
 		DATA_2 0x5275
-		6 PICK CATPUSHDATA
+		5 PICK CATPUSHDATA
 		ROT CATPUSHDATA
-		SWAP CATPUSHDATA
 		SWAP CATPUSHDATA
 		4 ROLL CATPUSHDATA
 		OUTPUTSCRIPT
@@ -341,14 +302,12 @@ func init() {
 }
 
 // calculateOwnershipChain extends the provided chain of ownership with the provided
-// holder and deadline using the formula:
+// holder using the formula:
 //
-//     Hash256(Hash256(Hash256(holder) + Hash256(deadline)) + oldchain)
+//     Hash256(Hash256(holder) + oldchain)
 //
-func calculateOwnershipChain(oldChain bc.Hash, holder []byte, deadline int64) bc.Hash {
-	h1 := hash256.Sum(holder)
-	h2 := hash256.Sum(txscript.Int64ToScriptBytes(deadline))
-	hash := hash256.Sum(append(h1[:], h2[:]...))
+func calculateOwnershipChain(oldChain bc.Hash, holder []byte) bc.Hash {
+	hash := hash256.Sum(holder)
 	data := append(hash[:], oldChain[:]...)
 	return hash256.Sum(data)
 }

@@ -26,7 +26,6 @@ func TestRedistributeClause(t *testing.T) {
 		rightE  = assettest.CreateAssetFixture(ctx, t, "", "", "")
 		assetID = assettest.CreateAssetFixture(ctx, t, "", "", "")
 		right   = rightScriptData{
-			Deadline:       InfiniteDeadline,
 			Delegatable:    true,
 			OwnershipChain: bc.Hash{}, // 0x000...000
 			HolderScript:   []byte{txscript.OP_1},
@@ -180,7 +179,6 @@ func TestRegisterToVoteClause(t *testing.T) {
 			Amount:  1,
 		}
 		right = rightScriptData{
-			Deadline:       InfiniteDeadline,
 			Delegatable:    true,
 			OwnershipChain: bc.Hash{}, // 0x000...000
 			HolderScript:   []byte{txscript.OP_1},
@@ -415,7 +413,6 @@ func TestVoteClause(t *testing.T) {
 			Amount:  1,
 		}
 		right = rightScriptData{
-			Deadline:       InfiniteDeadline,
 			Delegatable:    true,
 			OwnershipChain: bc.Hash{}, // 0x000...000
 			HolderScript:   []byte{txscript.OP_1},

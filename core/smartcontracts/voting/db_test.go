@@ -29,7 +29,6 @@ func TestInsertVotingRightAccountID(t *testing.T) {
 	data := rightScriptData{
 		HolderScript:   address.PKScript,
 		OwnershipChain: bc.Hash{},
-		Deadline:       1458172911,
 		Delegatable:    true,
 	}
 

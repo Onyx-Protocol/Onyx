@@ -29,27 +29,20 @@ type rightsReserver struct {
 	adminAddr      *appdb.Address
 }
 
-// RightHolder represents a (script, deadline) tuple with ownership over a
+// RightHolder represents a script with ownership over a
 // voting right. When recalling a token, you must provide all intermediate
 // holders between the recall point and the current utxo.
 type RightHolder struct {
-	Script   []byte
-	Deadline int64
+	Script []byte
 }
 
-// hash returns Hash256(Hash256(script) + Hash256(deadline)). This hash is
+// hash returns Hash256(script). This hash is
 // used within the chain of ownership hash chain. When invoking the recall
 // clause of the contract, it's necessary to provide these hashes for all
 // intermediate holders between the recall holder and the current holder
 // to prove prior ownership.
 func (rh RightHolder) hash() bc.Hash {
-	scriptHash := hash256.Sum(rh.Script)
-	deadlineHash := hash256.Sum(txscript.Int64ToScriptBytes(rh.Deadline))
-
-	data := make([]byte, 0, len(scriptHash)+len(deadlineHash))
-	data = append(data, scriptHash[:]...)
-	data = append(data, deadlineHash[:]...)
-	return hash256.Sum(data)
+	return hash256.Sum(rh.Script)
 }
 
 // Reserve builds a ReserveResult including the sigscript suffix to satisfy
@@ -90,7 +83,6 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 	case clauseTransfer:
 		inputs = append(inputs, txscript.DataItem(r.output.HolderScript))
 	case clauseDelegate:
-		inputs = append(inputs, txscript.NumItem(r.output.Deadline))
 		inputs = append(inputs, txscript.BoolItem(r.output.Delegatable))
 		inputs = append(inputs, txscript.DataItem(r.output.HolderScript))
 	case clauseRecall:
@@ -100,12 +92,10 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 		}
 		inputs = append(inputs, txscript.NumItem(int64(len(r.intermediaries))))
 		inputs = append(inputs, txscript.DataItem(r.output.HolderScript))
-		inputs = append(inputs, txscript.NumItem(r.output.Deadline))
 		inputs = append(inputs, txscript.DataItem(r.output.OwnershipChain[:]))
 	case clauseOverride:
 		for _, h := range r.newHolders {
 			inputs = append(inputs, txscript.DataItem(h.Script))
-			inputs = append(inputs, txscript.NumItem(r.output.Deadline))
 		}
 		inputs = append(inputs, txscript.NumItem(len(r.newHolders)))
 		for _, ph := range r.proofHashes {

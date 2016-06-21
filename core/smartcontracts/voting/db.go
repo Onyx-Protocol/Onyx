@@ -55,12 +55,12 @@ func (c cursor) String() string {
 func insertVotingRight(ctx context.Context, assetID bc.AssetID, ordinal int, blockHeight uint64, outpoint bc.Outpoint, data rightScriptData) error {
 	const q = `
 		INSERT INTO voting_rights
-			(asset_id, ordinal, account_id, tx_hash, index, holder, deadline, delegatable, ownership_chain, admin_script, block_height)
-			VALUES($1, $2, (SELECT account_id FROM addresses WHERE pk_script=$5), $3, $4, $5, $6, $7, $8, $9, $10)
+			(asset_id, ordinal, account_id, tx_hash, index, holder, delegatable, ownership_chain, admin_script, block_height)
+			VALUES($1, $2, (SELECT account_id FROM addresses WHERE pk_script=$5), $3, $4, $5, $6, $7, $8, $9)
 		ON CONFLICT (asset_id, ordinal) DO NOTHING
 	`
 	_, err := pg.FromContext(ctx).Exec(ctx, q, assetID, ordinal, outpoint.Hash, outpoint.Index,
-		data.HolderScript, data.Deadline, data.Delegatable, data.OwnershipChain[:], data.AdminScript, blockHeight)
+		data.HolderScript, data.Delegatable, data.OwnershipChain[:], data.AdminScript, blockHeight)
 	return errors.Wrap(err, "inserting into voting_rights")
 }
 
@@ -296,7 +296,6 @@ func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*Right, strin
 			vr.index,
 			vr.account_id,
 			vr.holder,
-			vr.deadline,
 			vr.delegatable,
 			vr.ownership_chain,
 			vr.admin_script
@@ -319,7 +318,7 @@ func findVotingRights(ctx context.Context, q votingRightsQuery) ([]*Right, strin
 		err = rows.Scan(
 			&right.AssetID, &right.Ordinal,
 			&right.Outpoint.Hash, &right.Outpoint.Index,
-			&right.AccountID, &right.HolderScript, &right.Deadline,
+			&right.AccountID, &right.HolderScript,
 			&right.Delegatable, &ownershipChain, &right.AdminScript)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "scanning Right")

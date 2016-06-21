@@ -163,7 +163,6 @@ func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx
 			params, newHolderCount := paramsPopInt64(params, &valid)
 			newHolders := make([]RightHolder, newHolderCount)
 			for i := range newHolders {
-				params, newHolders[i].Deadline = paramsPopInt64(params, &valid)
 				params, newHolders[i].Script = paramsPopBytes(params, &valid)
 			}
 
@@ -189,14 +188,13 @@ func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx
 			nextOrdinal := prev.Ordinal + 1
 			for _, nh := range newHolders {
 				prevData.HolderScript = nh.Script
-				prevData.Deadline = nh.Deadline
 
 				err = insertVotingRight(ctx, assetID, nextOrdinal, blockHeight, votingRightOutpoints[assetID], prevData)
 				if err != nil {
 					return err
 				}
 				nextOrdinal++
-				prevData.OwnershipChain = calculateOwnershipChain(prevData.OwnershipChain, prevData.HolderScript, prevData.Deadline)
+				prevData.OwnershipChain = calculateOwnershipChain(prevData.OwnershipChain, prevData.HolderScript)
 			}
 		}
 	}

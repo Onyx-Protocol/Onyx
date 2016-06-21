@@ -59,13 +59,11 @@ func TestAuthenticateClause(t *testing.T) {
 		{
 			err: nil,
 			prev: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
@@ -74,47 +72,13 @@ func TestAuthenticateClause(t *testing.T) {
 		{
 			err: nil,
 			prev: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    false,
 				OwnershipChain: exampleHash,
 				HolderScript:   []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    false,
 				OwnershipChain: exampleHash,
-				HolderScript:   []byte{txscript.OP_1},
-			},
-		},
-		{
-			// Fails because the deadline is in the past.
-			err: txscript.ErrStackVerifyFailed,
-			prev: rightScriptData{
-				Deadline:       0,
-				Delegatable:    true,
-				OwnershipChain: bc.Hash{}, // 0x000...000
-				HolderScript:   []byte{txscript.OP_1},
-			},
-			out: rightScriptData{
-				Deadline:       0,
-				Delegatable:    true,
-				OwnershipChain: bc.Hash{}, // 0x000...000
-				HolderScript:   []byte{txscript.OP_1},
-			},
-		},
-		{
-			// Fails because the deadline changed in the output.
-			err: txscript.ErrStackVerifyFailed,
-			prev: rightScriptData{
-				Deadline:       3,
-				Delegatable:    true,
-				OwnershipChain: bc.Hash{}, // 0x000...000
-				HolderScript:   []byte{txscript.OP_1},
-			},
-			out: rightScriptData{
-				Deadline:       4,
-				Delegatable:    true,
-				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 			},
 		},
@@ -122,13 +86,11 @@ func TestAuthenticateClause(t *testing.T) {
 			// Fails because the delegatable field changed in the output.
 			err: txscript.ErrStackVerifyFailed,
 			prev: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       3,
 				Delegatable:    false,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
@@ -138,13 +100,11 @@ func TestAuthenticateClause(t *testing.T) {
 			// Fails because the ownership chain changed in the output.
 			err: txscript.ErrStackVerifyFailed,
 			prev: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
 				OwnershipChain: exampleHash,
 				HolderScript:   []byte{txscript.OP_1},
@@ -154,13 +114,11 @@ func TestAuthenticateClause(t *testing.T) {
 			// Fails because the holder script changed in the output.
 			err: txscript.ErrStackVerifyFailed,
 			prev: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1, txscript.OP_1},
@@ -171,13 +129,11 @@ func TestAuthenticateClause(t *testing.T) {
 			// holder script is an unspendable address.
 			err: txscript.ErrStackEarlyReturn,
 			prev: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_RETURN},
 			},
 			out: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_RETURN},
@@ -219,14 +175,12 @@ func TestTransferClause(t *testing.T) {
 		{
 			err: nil,
 			prev: rightScriptData{
-				Deadline:       1858259488,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       1858259488,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
@@ -237,14 +191,12 @@ func TestTransferClause(t *testing.T) {
 			// Transferring to yourself is OK but pointless.
 			err: nil,
 			prev: rightScriptData{
-				Deadline:       1858259488,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       1858259488,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
@@ -255,14 +207,12 @@ func TestTransferClause(t *testing.T) {
 			// The parameters of the contract can't change during transfer.
 			err: txscript.ErrStackVerifyFailed,
 			prev: rightScriptData{
-				Deadline:       1858259488,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       190000000,
 				Delegatable:    false,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
@@ -273,14 +223,12 @@ func TestTransferClause(t *testing.T) {
 			// The ownership chain shouldn't change during transfer.
 			err: txscript.ErrStackVerifyFailed,
 			prev: rightScriptData{
-				Deadline:       1858259488,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       1858259488,
 				Delegatable:    true,
 				OwnershipChain: exampleHash,
 				HolderScript:   []byte{txscript.OP_1},
@@ -323,55 +271,17 @@ func TestDelegateClause(t *testing.T) {
 		out  rightScriptData
 	}{
 		{
-			// Simple delegate with exact same deadline and delegatable params
+			// Simple delegate with exact same delegatable params
 			err: nil,
 			prev: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
-				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 3),
-				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
-				AdminScript:    []byte{txscript.OP_1},
-			},
-		},
-		{
-			// Delegate with shorter deadline
-			err: nil,
-			prev: rightScriptData{
-				Deadline:       3,
-				Delegatable:    true,
-				OwnershipChain: bc.Hash{}, // 0x000...000
-				HolderScript:   []byte{txscript.OP_1},
-				AdminScript:    []byte{txscript.OP_1},
-			},
-			out: rightScriptData{
-				Deadline:       2,
-				Delegatable:    false,
-				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 3),
-				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
-				AdminScript:    []byte{txscript.OP_1},
-			},
-		},
-		{
-			// Delegate but the deadline already passed
-			err: txscript.ErrStackVerifyFailed,
-			prev: rightScriptData{
-				Deadline:       0,
-				Delegatable:    true,
-				OwnershipChain: bc.Hash{}, // 0x000...000
-				HolderScript:   []byte{txscript.OP_1},
-				AdminScript:    []byte{txscript.OP_1},
-			},
-			out: rightScriptData{
-				Deadline:       0,
-				Delegatable:    true,
-				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 0),
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
 				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
 				AdminScript:    []byte{txscript.OP_1},
 			},
@@ -381,34 +291,14 @@ func TestDelegateClause(t *testing.T) {
 			// Delegatable = false in its contract params.
 			err: txscript.ErrStackVerifyFailed,
 			prev: rightScriptData{
-				Deadline:       3,
 				Delegatable:    false,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
-				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 3),
-				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
-				AdminScript:    []byte{txscript.OP_1},
-			},
-		},
-		{
-			// Delegating with a longer deadline should fail.
-			err: txscript.ErrStackVerifyFailed,
-			prev: rightScriptData{
-				Deadline:       3,
-				Delegatable:    true,
-				OwnershipChain: bc.Hash{}, // 0x000...000
-				HolderScript:   []byte{txscript.OP_1},
-				AdminScript:    []byte{txscript.OP_1},
-			},
-			out: rightScriptData{
-				Deadline:       4,
-				Delegatable:    true,
-				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 3),
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
 				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
 				AdminScript:    []byte{txscript.OP_1},
 			},
@@ -417,16 +307,14 @@ func TestDelegateClause(t *testing.T) {
 			// Delegating with a bad ownership chain should fail.
 			err: txscript.ErrStackVerifyFailed,
 			prev: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       3,
 				Delegatable:    true,
-				OwnershipChain: calculateOwnershipChain(exampleHash, []byte{txscript.OP_1}, 3),
+				OwnershipChain: calculateOwnershipChain(exampleHash, []byte{txscript.OP_1}),
 				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
 				AdminScript:    []byte{txscript.OP_1},
 			},
@@ -440,7 +328,6 @@ func TestDelegateClause(t *testing.T) {
 		}
 
 		sb := txscript.NewScriptBuilder().
-			AddInt64(tc.out.Deadline).
 			AddInt64(delegatable).
 			AddData(tc.out.HolderScript).
 			AddInt64(int64(clauseDelegate)).
@@ -480,21 +367,18 @@ func TestRecallClause(t *testing.T) {
 			err:          nil,
 			intermediate: []bc.Hash{}, // no intermediate custodians
 			prev: rightScriptData{
-				Deadline:       1858259488,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			utxo: rightScriptData{
-				Deadline:       1700000000,
 				Delegatable:    false,
-				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 1858259488),
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
 				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_VERIFY},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       1858259488,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
@@ -505,31 +389,24 @@ func TestRecallClause(t *testing.T) {
 			// One intermediate hash in chain of ownership
 			err: nil,
 			intermediate: []bc.Hash{
-				hash256.Sum(append(
-					asByteSlice(hash256.Sum(exampleHash[:])),
-					asByteSlice(hash256.Sum(txscript.Int64ToScriptBytes(0x7eeeeeee)))...,
-				)),
+				hash256.Sum(exampleHash[:]),
 			},
 			prev: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			utxo: rightScriptData{
-				Deadline:    0x7ddddddd,
 				Delegatable: false,
 				OwnershipChain: calculateOwnershipChain(
-					calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, InfiniteDeadline),
+					calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
 					exampleHash[:],
-					0x7eeeeeee,
 				),
 				HolderScript: []byte{txscript.OP_RETURN},
 				AdminScript:  []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
@@ -540,64 +417,28 @@ func TestRecallClause(t *testing.T) {
 			// Two intermediate hashes in chain of ownership
 			err: nil,
 			intermediate: []bc.Hash{
-				hash256.Sum(append(
-					asByteSlice(hash256.Sum([]byte("another holder script"))),
-					asByteSlice(hash256.Sum(txscript.Int64ToScriptBytes(0x7eeeeeee)))...,
-				)),
-				hash256.Sum(append(
-					asByteSlice(hash256.Sum(exampleHash[:])),
-					asByteSlice(hash256.Sum(txscript.Int64ToScriptBytes(0x7ddddddd)))...,
-				)),
+				hash256.Sum([]byte("another holder script")),
+				hash256.Sum(exampleHash[:]),
 			},
 			prev: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			utxo: rightScriptData{
-				Deadline:    0x7ccccccc,
 				Delegatable: false,
 				OwnershipChain: calculateOwnershipChain(
 					calculateOwnershipChain(
-						calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, InfiniteDeadline),
+						calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
 						exampleHash[:],
-						0x7ddddddd,
 					),
 					[]byte("another holder script"),
-					0x7eeeeeee,
 				),
 				HolderScript: []byte{txscript.OP_RETURN},
 				AdminScript:  []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       InfiniteDeadline,
-				Delegatable:    true,
-				OwnershipChain: bc.Hash{}, // 0x000...000
-				HolderScript:   []byte{txscript.OP_1},
-				AdminScript:    []byte{txscript.OP_1},
-			},
-		},
-		{
-			// Different (earlier) deadline than recall point.
-			err: txscript.ErrStackVerifyFailed,
-			prev: rightScriptData{
-				Deadline:       0x6fffffff,
-				Delegatable:    true,
-				OwnershipChain: bc.Hash{}, // 0x000...000
-				HolderScript:   []byte{txscript.OP_1},
-				AdminScript:    []byte{txscript.OP_1},
-			},
-			utxo: rightScriptData{
-				Deadline:       0x6ccccccc,
-				Delegatable:    false,
-				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, 0x6fffffff),
-				HolderScript:   []byte{txscript.OP_RETURN},
-				AdminScript:    []byte{txscript.OP_1},
-			},
-			out: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
@@ -608,21 +449,18 @@ func TestRecallClause(t *testing.T) {
 			// Holder doesn't authorize.
 			err: txscript.ErrStackVerifyFailed,
 			prev: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    false,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_RETURN},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			utxo: rightScriptData{
-				Deadline:       0x7ccccccc,
 				Delegatable:    false,
-				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_RETURN}, InfiniteDeadline),
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_RETURN}),
 				HolderScript:   []byte{txscript.OP_RETURN},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    false,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_RETURN},
@@ -639,7 +477,6 @@ func TestRecallClause(t *testing.T) {
 		sb = sb.
 			AddInt64(int64(len(tc.intermediate))).
 			AddData(tc.prev.HolderScript).
-			AddInt64(tc.prev.Deadline).
 			AddData(tc.prev.OwnershipChain[:]).
 			AddInt64(int64(clauseRecall)).
 			AddData(rightsHoldingContract)
@@ -677,22 +514,20 @@ func TestOverrideClause(t *testing.T) {
 			// 1-level delegate from original holder
 			err: nil,
 			newHolders: []RightHolder{
-				{Script: []byte{txscript.OP_1, txscript.OP_1, txscript.OP_DROP}, Deadline: InfiniteDeadline}, // new holder
-				{Script: []byte{txscript.OP_1}, Deadline: InfiniteDeadline},                                  // original holder
+				{Script: []byte{txscript.OP_1, txscript.OP_1, txscript.OP_DROP}}, // new holder
+				{Script: []byte{txscript.OP_1}},                                  // original holder
 			},
 			proofHashes: []bc.Hash{},
 			forkHash:    bc.Hash{}, // 0x00...00
 			utxo: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    true,
-				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, InfiniteDeadline),
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
 				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_DROP},
 				AdminScript:    []byte{txscript.OP_1},
 			},
@@ -701,23 +536,21 @@ func TestOverrideClause(t *testing.T) {
 			// 2-level delegate from original holder
 			err: nil,
 			newHolders: []RightHolder{
-				{Script: []byte{txscript.OP_1, txscript.OP_1, txscript.OP_DROP}, Deadline: 100}, // new holder
-				{Script: []byte{txscript.OP_RETURN}, Deadline: 1000},                            // intermediate holder
-				{Script: []byte{txscript.OP_1}, Deadline: InfiniteDeadline},                     // original holder
+				{Script: []byte{txscript.OP_1, txscript.OP_1, txscript.OP_DROP}}, // new holder
+				{Script: []byte{txscript.OP_RETURN}},                             // intermediate holder
+				{Script: []byte{txscript.OP_1}},                                  // original holder
 			},
 			proofHashes: []bc.Hash{},
 			forkHash:    bc.Hash{}, // 0x00...00
 			utxo: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       100,
 				Delegatable:    true,
-				OwnershipChain: calculateOwnershipChain(calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, InfiniteDeadline), []byte{txscript.OP_RETURN}, 1000),
+				OwnershipChain: calculateOwnershipChain(calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}), []byte{txscript.OP_RETURN}),
 				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_DROP},
 				AdminScript:    []byte{txscript.OP_1},
 			},
@@ -726,21 +559,19 @@ func TestOverrideClause(t *testing.T) {
 			// recall to original holder
 			err: nil,
 			newHolders: []RightHolder{
-				{Script: []byte{txscript.OP_1}, Deadline: InfiniteDeadline}, // original holder
+				{Script: []byte{txscript.OP_1}}, // original holder
 			},
 			proofHashes: []bc.Hash{
-				RightHolder{Script: []byte{txscript.OP_1}, Deadline: InfiniteDeadline}.hash(),
+				RightHolder{Script: []byte{txscript.OP_1}}.hash(),
 			},
 			forkHash: bc.Hash{}, // 0x00...00
 			utxo: rightScriptData{
-				Deadline:       1000,
 				Delegatable:    false,
-				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, InfiniteDeadline),
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
 				HolderScript:   []byte{txscript.OP_RETURN},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
@@ -751,24 +582,22 @@ func TestOverrideClause(t *testing.T) {
 			// recall to not original holder
 			err: nil,
 			newHolders: []RightHolder{
-				{Script: []byte{txscript.OP_0, txscript.OP_DROP, txscript.OP_1}, Deadline: 1000}, // recall holder
+				{Script: []byte{txscript.OP_0, txscript.OP_DROP, txscript.OP_1}}, // recall holder
 			},
 			proofHashes: []bc.Hash{
-				RightHolder{Script: []byte{txscript.OP_0, txscript.OP_DROP, txscript.OP_1}, Deadline: 1000}.hash(), // recall holder
+				RightHolder{Script: []byte{txscript.OP_0, txscript.OP_DROP, txscript.OP_1}}.hash(), // recall holder
 			},
-			forkHash: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, InfiniteDeadline),
+			forkHash: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
 			utxo: rightScriptData{
-				Deadline:    100,
 				Delegatable: false,
-				OwnershipChain: calculateOwnershipChain(calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, InfiniteDeadline),
-					[]byte{txscript.OP_0, txscript.OP_DROP, txscript.OP_1}, 1000),
+				OwnershipChain: calculateOwnershipChain(calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
+					[]byte{txscript.OP_0, txscript.OP_DROP, txscript.OP_1}),
 				HolderScript: []byte{txscript.OP_RETURN},
 				AdminScript:  []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       1000,
 				Delegatable:    true,
-				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, InfiniteDeadline),
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
 				HolderScript:   []byte{txscript.OP_0, txscript.OP_DROP, txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
@@ -783,24 +612,22 @@ func TestOverrideClause(t *testing.T) {
 			//              +------------------------> OP_0 OP_1ADD (new holder)
 			err: nil,
 			newHolders: []RightHolder{
-				{Script: []byte{txscript.OP_0, txscript.OP_1ADD}, Deadline: 1000}, // new holder
+				{Script: []byte{txscript.OP_0, txscript.OP_1ADD}}, // new holder
 			},
 			proofHashes: []bc.Hash{},
-			forkHash: calculateOwnershipChain(calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, InfiniteDeadline),
-				[]byte{txscript.OP_0, txscript.OP_DROP, txscript.OP_1}, 1000),
+			forkHash: calculateOwnershipChain(calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
+				[]byte{txscript.OP_0, txscript.OP_DROP, txscript.OP_1}),
 			utxo: rightScriptData{
-				Deadline:    100,
 				Delegatable: false,
-				OwnershipChain: calculateOwnershipChain(calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, InfiniteDeadline),
-					[]byte{txscript.OP_0, txscript.OP_DROP, txscript.OP_1}, 1000),
+				OwnershipChain: calculateOwnershipChain(calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
+					[]byte{txscript.OP_0, txscript.OP_DROP, txscript.OP_1}),
 				HolderScript: []byte{txscript.OP_RETURN},
 				AdminScript:  []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:    1000,
 				Delegatable: true,
-				OwnershipChain: calculateOwnershipChain(calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, InfiniteDeadline),
-					[]byte{txscript.OP_0, txscript.OP_DROP, txscript.OP_1}, 1000),
+				OwnershipChain: calculateOwnershipChain(calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
+					[]byte{txscript.OP_0, txscript.OP_DROP, txscript.OP_1}),
 				HolderScript: []byte{txscript.OP_0, txscript.OP_1ADD},
 				AdminScript:  []byte{txscript.OP_1},
 			},
@@ -815,42 +642,40 @@ func TestOverrideClause(t *testing.T) {
 			//           +------------> OP_5 -> OP_6 (new holder)
 			err: nil,
 			newHolders: []RightHolder{
-				{Script: []byte{txscript.OP_6}, Deadline: 10},  // new holder
-				{Script: []byte{txscript.OP_5}, Deadline: 100}, // new intermediary holder
+				{Script: []byte{txscript.OP_6}}, // new holder
+				{Script: []byte{txscript.OP_5}}, // new intermediary holder
 			},
 			proofHashes: []bc.Hash{
-				RightHolder{Script: []byte{txscript.OP_3}, Deadline: 10}.hash(),
-				RightHolder{Script: []byte{txscript.OP_2}, Deadline: 100}.hash(),
+				RightHolder{Script: []byte{txscript.OP_3}}.hash(),
+				RightHolder{Script: []byte{txscript.OP_2}}.hash(),
 			},
 			forkHash: calculateOwnershipChain(
-				calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_0}, InfiniteDeadline),
-				[]byte{txscript.OP_1}, 1000,
+				calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_0}),
+				[]byte{txscript.OP_1},
 			),
 			utxo: rightScriptData{
-				Deadline:    1,
 				Delegatable: false,
 				OwnershipChain: calculateOwnershipChain(
 					calculateOwnershipChain(
 						calculateOwnershipChain(
-							calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_0}, InfiniteDeadline),
-							[]byte{txscript.OP_1}, 1000,
+							calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_0}),
+							[]byte{txscript.OP_1},
 						),
-						[]byte{txscript.OP_2}, 100,
+						[]byte{txscript.OP_2},
 					),
-					[]byte{txscript.OP_3}, 10,
+					[]byte{txscript.OP_3},
 				),
 				HolderScript: []byte{txscript.OP_4},
 				AdminScript:  []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:    10,
 				Delegatable: true,
 				OwnershipChain: calculateOwnershipChain(
 					calculateOwnershipChain(
-						calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_0}, InfiniteDeadline),
-						[]byte{txscript.OP_1}, 1000,
+						calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_0}),
+						[]byte{txscript.OP_1},
 					),
-					[]byte{txscript.OP_5}, 100,
+					[]byte{txscript.OP_5},
 				),
 				HolderScript: []byte{txscript.OP_6},
 				AdminScript:  []byte{txscript.OP_1},
@@ -860,22 +685,20 @@ func TestOverrideClause(t *testing.T) {
 			// admin must authorize override
 			err: txscript.ErrStackScriptFailed,
 			newHolders: []RightHolder{
-				{Script: []byte{txscript.OP_1, txscript.OP_1, txscript.OP_DROP}, Deadline: InfiniteDeadline}, // new holder
-				{Script: []byte{txscript.OP_1}, Deadline: InfiniteDeadline},                                  // original holder
+				{Script: []byte{txscript.OP_1, txscript.OP_1, txscript.OP_DROP}}, // new holder
+				{Script: []byte{txscript.OP_1}},                                  // original holder
 			},
 			proofHashes: []bc.Hash{},
 			forkHash:    bc.Hash{}, // 0x00...00
 			utxo: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_0, txscript.OP_0},
 			},
 			out: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    true,
-				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}, InfiniteDeadline),
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_1}),
 				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_DROP},
 				AdminScript:    []byte{txscript.OP_0, txscript.OP_0},
 			},
@@ -884,22 +707,20 @@ func TestOverrideClause(t *testing.T) {
 			// can't change original holder
 			err: txscript.ErrStackVerifyFailed,
 			newHolders: []RightHolder{
-				{Script: []byte{txscript.OP_1, txscript.OP_1, txscript.OP_DROP}, Deadline: InfiniteDeadline}, // new holder
-				{Script: []byte{txscript.OP_RETURN}, Deadline: InfiniteDeadline},                             // original holder
+				{Script: []byte{txscript.OP_1, txscript.OP_1, txscript.OP_DROP}}, // new holder
+				{Script: []byte{txscript.OP_RETURN}},                             // original holder
 			},
 			proofHashes: []bc.Hash{},
 			forkHash:    bc.Hash{}, // 0x00...00
 			utxo: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    true,
 				OwnershipChain: bc.Hash{}, // 0x000...000
 				HolderScript:   []byte{txscript.OP_1},
 				AdminScript:    []byte{txscript.OP_1},
 			},
 			out: rightScriptData{
-				Deadline:       InfiniteDeadline,
 				Delegatable:    true,
-				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_RETURN}, InfiniteDeadline),
+				OwnershipChain: calculateOwnershipChain(bc.Hash{}, []byte{txscript.OP_RETURN}),
 				HolderScript:   []byte{txscript.OP_1, txscript.OP_1, txscript.OP_DROP},
 				AdminScript:    []byte{txscript.OP_1},
 			},
@@ -910,7 +731,6 @@ func TestOverrideClause(t *testing.T) {
 		sb := txscript.NewScriptBuilder()
 		for _, h := range tc.newHolders {
 			sb.AddData(h.Script)
-			sb.AddInt64(h.Deadline)
 		}
 		sb.AddInt64(int64(len(tc.newHolders)))
 		for _, h := range tc.proofHashes {
@@ -945,21 +765,18 @@ func TestRightsContractValidMatch(t *testing.T) {
 			AdminScript:    []byte{txscript.OP_1},
 			HolderScript:   []byte{0xde, 0xad, 0xbe, 0xef},
 			OwnershipChain: exampleHash,
-			Deadline:       1457988220,
 			Delegatable:    true,
 		},
 		{
 			AdminScript:    []byte{txscript.OP_1},
 			HolderScript:   []byte{},
 			OwnershipChain: exampleHash,
-			Deadline:       1457988221,
 			Delegatable:    false,
 		},
 		{
 			AdminScript:    []byte{txscript.OP_1},
 			HolderScript:   exampleHash[:],
-			OwnershipChain: bc.Hash{}, // 0x00 ... 0x00
-			Deadline:       time.Unix(1457988221, 0).AddDate(5, 0, 0).Unix(),
+			OwnershipChain: bc.Hash{}, // 0x00 ... 0x00 0).AddDate(5, 0, 0).Unix(),
 			Delegatable:    true,
 		},
 	}
@@ -986,9 +803,6 @@ func TestRightsContractValidMatch(t *testing.T) {
 		if got.OwnershipChain != want.OwnershipChain {
 			t.Errorf("%d: Right.OwnershipChain, got=%#v want=%#v", i, got.OwnershipChain, want.OwnershipChain)
 		}
-		if got.Deadline != want.Deadline {
-			t.Errorf("%d: Right.Deadline, got=%#v want=%#v", i, got.Deadline, want.Deadline)
-		}
 		if got.Delegatable != want.Delegatable {
 			t.Errorf("%d: Right.Delegatable, got=%#v want=%#v", i, got.Delegatable, want.Delegatable)
 		}
@@ -1010,14 +824,12 @@ func TestRightsContractInvalidMatch(t *testing.T) {
 		},
 		{ // chain of ownership hash not long enough
 			txscript.BoolItem(true),                           // delegatable = true
-			txscript.NumItem(int64(1457990856)),               // deadline = 1457990856
 			txscript.DataItem([]byte{0xde, 0xad, 0xbe, 0xef}), // ownership chain hash = 0xdeadbeef
 			txscript.DataItem([]byte{0xde, 0xad, 0xbe, 0xef}), // holding script = 0xdeadbeef
 			txscript.DataItem([]byte{0xde, 0xad, 0xbe, 0xef}), // admin script = 0xdeadbeef
 		},
-		{ // five parameter input
+		{ // four parameter input
 			txscript.BoolItem(false),                          // delegatable = false
-			txscript.NumItem(int64(1457990856)),               // deadline = 1457990856
 			txscript.DataItem(exampleHash[:]),                 // ownership chain hash = 0x9414..98
 			txscript.DataItem([]byte{0xde, 0xad, 0xbe, 0xef}), // holding script = 0xdeadbeef
 			txscript.DataItem([]byte{0xde, 0xad, 0xbe, 0xef}), // admin script = 0xdeadbeef

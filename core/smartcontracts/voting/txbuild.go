@@ -17,7 +17,6 @@ func RightIssuance(ctx context.Context, adminScript, holderScript []byte) txbuil
 		AdminScript:    adminScript,
 		HolderScript:   holderScript,
 		Delegatable:    true,
-		Deadline:       InfiniteDeadline,
 		OwnershipChain: bc.Hash{},
 	}
 }
@@ -60,7 +59,6 @@ func RightTransfer(ctx context.Context, src *Right, newHolderScript []byte) (txb
 			AdminScript:    src.AdminScript, // unchanged
 			HolderScript:   newHolderScript,
 			Delegatable:    src.Delegatable,    // unchanged
-			Deadline:       src.Deadline,       // unchanged
 			OwnershipChain: src.OwnershipChain, // unchanged
 		},
 		prevScript: src.PKScript(),
@@ -71,7 +69,7 @@ func RightTransfer(ctx context.Context, src *Right, newHolderScript []byte) (txb
 
 // RightDelegation builds txbuilder Reserver and Receiver implementations for
 // delegating a voting right to another party.
-func RightDelegation(ctx context.Context, src *Right, newHolderScript []byte, newDeadline int64, delegatable bool) (txbuilder.Reserver, txbuilder.Receiver, error) {
+func RightDelegation(ctx context.Context, src *Right, newHolderScript []byte, delegatable bool) (txbuilder.Reserver, txbuilder.Receiver, error) {
 	currentHolderAddr, err := appdb.GetAddress(ctx, src.HolderScript)
 	if err != nil {
 		holderScriptStr, _ := txscript.DisasmString(src.HolderScript)
@@ -85,11 +83,9 @@ func RightDelegation(ctx context.Context, src *Right, newHolderScript []byte, ne
 			AdminScript:  src.AdminScript,
 			HolderScript: newHolderScript,
 			Delegatable:  delegatable,
-			Deadline:     newDeadline,
 			OwnershipChain: calculateOwnershipChain(
 				src.OwnershipChain,
 				src.HolderScript,
-				src.Deadline,
 			),
 		},
 		prevScript: src.PKScript(),
@@ -109,8 +105,7 @@ func RightRecall(ctx context.Context, src, recallPoint *Right, intermediaryRight
 	intermediaries := make([]RightHolder, 0, len(intermediaryRights))
 	for _, r := range intermediaryRights {
 		intermediaries = append(intermediaries, RightHolder{
-			Script:   r.HolderScript,
-			Deadline: r.Deadline,
+			Script: r.HolderScript,
 		})
 	}
 
@@ -134,25 +129,23 @@ func RightOverride(ctx context.Context, src, forkPoint *Right, intermediaryRight
 	}
 
 	proofHashes := make([]RightHolder, 0, len(intermediaryRights)+1)
-	proofHashes = append(proofHashes, RightHolder{Script: forkPoint.HolderScript, Deadline: forkPoint.Deadline})
+	proofHashes = append(proofHashes, RightHolder{Script: forkPoint.HolderScript})
 	for _, r := range intermediaryRights {
 		proofHashes = append(proofHashes, RightHolder{
-			Script:   r.HolderScript,
-			Deadline: r.Deadline,
+			Script: r.HolderScript,
 		})
 	}
 
 	// Build up the new ownership hash.
 	output := forkPoint.rightScriptData
 	for _, d := range delegates {
-		output.OwnershipChain = calculateOwnershipChain(output.OwnershipChain, output.HolderScript, output.Deadline)
+		output.OwnershipChain = calculateOwnershipChain(output.OwnershipChain, output.HolderScript)
 		output.HolderScript = d.Script
-		output.Deadline = d.Deadline
 	}
 
 	// The contract expects the holder at the fork point too.
 	newHolders := append([]RightHolder{
-		{Script: forkPoint.HolderScript, Deadline: forkPoint.Deadline},
+		{Script: forkPoint.HolderScript},
 	}, delegates...)
 
 	reserver := rightsReserver{

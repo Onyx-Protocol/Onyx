@@ -35,7 +35,6 @@ func TestRightsReserver(t *testing.T) {
 			AdminScript:    []byte{0x01, 0x01},
 			HolderScript:   address.PKScript,
 			OwnershipChain: exampleHash2,
-			Deadline:       10000,
 			Delegatable:    true,
 		},
 	}
