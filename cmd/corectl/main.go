@@ -39,10 +39,11 @@ type command struct {
 }
 
 var commands = map[string]*command{
-	"adduser":   {addUser, "adduser [email] [password]"},
-	"addmember": {addMember, "addmember [email] [projectID] [role]"},
-	"genesis":   {genesis, "genesis"},
-	"boot":      {boot, "boot [email] [password]"},
+	"adduser":    {addUser, "adduser [email] [password]"},
+	"addmember":  {addMember, "addmember [email] [projectID] [role]"},
+	"addproject": {addProject, "addproject [name] [admin-user-email]"},
+	"genesis":    {genesis, "genesis"},
+	"boot":       {boot, "boot [email] [password]"},
 }
 
 func main() {
@@ -95,6 +96,34 @@ func addMember(db *sql.DB, args []string) {
 	}
 
 	fmt.Printf("%s (%s) added to project %s with role %s\n", u.Email, u.ID, projID, role)
+}
+
+func addProject(db *sql.DB, args []string) {
+	prjname, email := args[0], args[1]
+
+	ctx := pg.NewContext(context.Background(), db)
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		fatalln("begin")
+	}
+	defer dbtx.Rollback(ctx)
+
+	u, err := appdb.GetUserByEmail(ctx, email)
+	if err != nil {
+		fatalln("error:", err)
+	}
+
+	proj, err := appdb.CreateProject(ctx, prjname, u.ID)
+	if err != nil {
+		fatalln("error:", err)
+	}
+
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		fatalln("error:", err)
+	}
+
+	fmt.Printf("project created: %+v\n", *proj)
 }
 
 func genesis(db *sql.DB, args []string) {
