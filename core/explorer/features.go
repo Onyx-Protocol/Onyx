@@ -199,8 +199,10 @@ func HistoricalBalancesByAccount(ctx context.Context, accountID string, timestam
 // When paginating, it takes a limit as well as `prev`, the last UTXO returned on the previous call.
 // ListHistoricalOutputsByAsset expects prev to be of the format "hash:index".
 func ListHistoricalOutputsByAsset(ctx context.Context, assetID bc.AssetID, timestamp time.Time, prev string, limit int) ([]*TxOutput, string, error) {
-	if !historicalOutputs {
+	if !historicalOutputs && !timestamp.IsZero() {
 		return nil, "", errors.WithDetail(httpjson.ErrBadRequest, "historical outputs aren't enabled on this core")
+	} else if timestamp.IsZero() {
+		timestamp = time.Now()
 	}
 	return listHistoricalOutputsByAssetAndAccount(ctx, assetID, "", timestamp, prev, limit)
 }

@@ -69,7 +69,7 @@ func (a *api) listExplorerUTXOsByAsset(ctx context.Context, assetID string) (int
 		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid asset ID: %q", assetID)
 	}
 
-	ts := time.Now()
+	var ts time.Time
 	qvals := httpjson.Request(ctx).URL.Query()
 	if timestamps, ok := qvals["timestamp"]; ok {
 		timestamp := timestamps[0]

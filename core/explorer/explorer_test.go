@@ -645,6 +645,13 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 	}
 	checkEmpty(got)
 
+	// for non-historical queries, we should check that we have the same result
+	got, _, err = ListHistoricalOutputsByAsset(ctx, assetID, time.Time{}, "", 10000)
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+	checkEmpty(got)
+
 	_, err = generator.MakeBlock(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
