@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"golang.org/x/crypto/sha3"
 	"golang.org/x/net/context"
 
 	"chain/core/appdb"
@@ -11,7 +12,6 @@ import (
 	"chain/cos/bc"
 	"chain/cos/hdkey"
 	"chain/cos/txscript"
-	"chain/crypto/hash256"
 )
 
 // rightsReserver implements txbuilder.Reserver for assets in the voting
@@ -42,7 +42,7 @@ type RightHolder struct {
 // intermediate holders between the recall holder and the current holder
 // to prove prior ownership.
 func (rh RightHolder) hash() bc.Hash {
-	return hash256.Sum(rh.Script)
+	return sha3.Sum256(rh.Script)
 }
 
 // Reserve builds a ReserveResult including the sigscript suffix to satisfy

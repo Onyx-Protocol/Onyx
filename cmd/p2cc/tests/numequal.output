@@ -1,4 +1,5 @@
-          # <top> a [clause selector]
+Contract "numequal":
+          # a b
 DUP       # <top> a a b
 2 PICK    # <top> b a a b
 NUMEQUAL  # <top> [a == b] a b
@@ -6,5 +7,11 @@ NUMEQUAL  # <top> [a == b] a b
 Contract hex:
 7652799c
 
-Pkscript:
-0175<a>517a76aae51ccfacd25920ec2c78ae68fdeed087c7cf72fa82ac1eac5071897710517a8188c0
+Contracthash hex:
+0b44375c7516970b859ca96b68029c1db3c61e044ad79ae23405f59826ef2aa9
+
+Pkscript hex:
+5175<a>517a76aa200b44375c7516970b859ca96b68029c1db3c61e044ad79ae23405f59826ef2aa988c0
+
+Redeem numequal.x:
+<b>047652799c

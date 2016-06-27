@@ -208,7 +208,7 @@ func main() {
 			pkscriptSuffix = txscript.AddInt64ToScript(nil, int64(len(pair.parsed.params)))
 			pkscriptSuffix = append(pkscriptSuffix, txscript.OP_ROLL)
 		}
-		pkscriptSuffix = append(pkscriptSuffix, pkscript[2:]...) // DUP HASH256 <hash> EQUALVERIFY EVAL
+		pkscriptSuffix = append(pkscriptSuffix, pkscript[2:]...) // DUP SHA3 <hash> EQUALVERIFY EVAL
 
 		fmt.Println("\nPkscript hex:")
 		fmt.Printf("%s", hex.EncodeToString(pkscriptPrefix))

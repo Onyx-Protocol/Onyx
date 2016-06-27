@@ -21,6 +21,11 @@ import (
 	"chain/testutil"
 )
 
+const (
+	blockHash2 = "4ed21dc46ca2604ffad188813c7edd593aac37401d7cfd2f46f939488c2bd62a"
+	blockHash1 = "9fb204c8a1f9192987352938d9d410f117c398dff23b03867223c65754325dc8"
+)
+
 func mustParseHash(str string) bc.Hash {
 	hash, err := bc.ParseHash(str)
 	if err != nil {
@@ -95,17 +100,17 @@ func TestListBlocks(t *testing.T) {
 	pgtest.Exec(ctx, t, `
 		INSERT INTO blocks(block_hash, height, data, header)
 		VALUES(
-			'9aa10b4210bf638c868c6696a91ad10eb4924818281394085d5768592cfcf742',
+			$1,
 			1,
 			decode('010000000100000000000000000000000000000000000000000000000000000000000000000000000000000000640000000000000000000107010000000000000000000000000003747831', 'hex'),
 			''
 		), (
-			'c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3',
+			$2,
 			2,
 			decode('010000000200000000000000b3431f1d6c5aa2746a08d933bab1c5e68df1b18f3a43010f6f247b839d89e1740069000000000000000000020701000000000000000000000000000374783207010000000000000000000000000003747833', 'hex'),
 			''
 		);
-	`)
+	`, blockHash1, blockHash2)
 
 	cases := []struct {
 		prev     string
@@ -116,12 +121,12 @@ func TestListBlocks(t *testing.T) {
 		prev:  "",
 		limit: 50,
 		want: []ListBlocksItem{{
-			ID:      mustParseHash("c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3"),
+			ID:      mustParseHash(blockHash2),
 			Height:  2,
 			Time:    time.Unix(105, 0).UTC(),
 			TxCount: 2,
 		}, {
-			ID:      mustParseHash("9aa10b4210bf638c868c6696a91ad10eb4924818281394085d5768592cfcf742"),
+			ID:      mustParseHash(blockHash1),
 			Height:  1,
 			Time:    time.Unix(100, 0).UTC(),
 			TxCount: 1,
@@ -131,7 +136,7 @@ func TestListBlocks(t *testing.T) {
 		prev:  "2",
 		limit: 50,
 		want: []ListBlocksItem{{
-			ID:      mustParseHash("9aa10b4210bf638c868c6696a91ad10eb4924818281394085d5768592cfcf742"),
+			ID:      mustParseHash(blockHash1),
 			Height:  1,
 			Time:    time.Unix(100, 0).UTC(),
 			TxCount: 1,
@@ -141,7 +146,7 @@ func TestListBlocks(t *testing.T) {
 		prev:  "",
 		limit: 1,
 		want: []ListBlocksItem{{
-			ID:      mustParseHash("c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3"),
+			ID:      mustParseHash(blockHash2),
 			Height:  2,
 			Time:    time.Unix(105, 0).UTC(),
 			TxCount: 2,
@@ -174,25 +179,25 @@ func TestGetBlockSummary(t *testing.T) {
 	pgtest.Exec(ctx, t, `
 		INSERT INTO blocks(block_hash, height, data, header)
 		VALUES(
-			'c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3',
+			$1,
 			2,
 			decode('010000000200000000000000b3431f1d6c5aa2746a08d933bab1c5e68df1b18f3a43010f6f247b839d89e1740069000000000000000000020701000000000000000000000000000374783207010000000000000000000000000003747833', 'hex'),
 			''
 		);
-	`)
+	`, blockHash2)
 
-	got, err := GetBlockSummary(ctx, store, "c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3")
+	got, err := GetBlockSummary(ctx, store, blockHash2)
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := &BlockSummary{
-		ID:      mustParseHash("c1b9e92a70a1ce5f837d0c9258318291924dbe3ebc29c5a74aa942db58e697a3"),
+		ID:      mustParseHash(blockHash2),
 		Height:  2,
 		Time:    time.Unix(105, 0).UTC(),
 		TxCount: 2,
 		TxHashes: []bc.Hash{
-			mustParseHash("c4bca11aefa0d71667eb50f7d775f33b7c0d8e435c09d07dbe2f71a78ec410c5"),
-			mustParseHash("353e45c66cc76674225fc037eb2103617cbc900f4c8b8b487f1edac8dd9764c1"),
+			mustParseHash("eab6e202aa8dc87455612d083d6e2f43ff29d73925f474c605d5fee1655df877"),
+			mustParseHash("b205613526f7cf8d56c93fcf4dd9ee8782c86c45dd06a1ac594969164dd18975"),
 		},
 	}
 
@@ -510,8 +515,6 @@ func TestGetAsset(t *testing.T) {
 	}
 
 	for _, ex := range examples {
-		t.Log("Example", ex.id)
-
 		got, err := GetAsset(ctx, store, ex.id)
 		if errors.Root(err) != ex.wantErr {
 			t.Fatalf("error:\ngot:  %v\nwant: %v", errors.Root(err), ex.wantErr)

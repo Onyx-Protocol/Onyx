@@ -8,8 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/crypto/sha3"
+
 	"chain/cos/bc"
-	"chain/crypto/hash256"
 )
 
 func simpleValue(s string) Valuer {
@@ -386,5 +387,5 @@ func hash(a, b bc.Hash) bc.Hash {
 	var d []byte
 	d = append(d, a[:]...)
 	d = append(d, b[:]...)
-	return hash256.Sum(d)
+	return sha3.Sum256(d)
 }

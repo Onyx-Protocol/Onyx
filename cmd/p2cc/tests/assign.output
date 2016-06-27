@@ -1,5 +1,5 @@
-Contract assign:
-                 # <top> a b
+Contract "assign":
+                 # a b
 DUP              # <top> a a b
 2 PICK           # <top> b a a b
 ADD              # <top> [a + b] a b
@@ -11,5 +11,11 @@ FROMALTSTACK     # <top> a b
 Contract hex:
 765279937c6b776c5179
 
-Pkscript:
-0175<a>517a76aacb0af81df6f75668d439f319dbb5dfb5d054f32ca9eb5add9ea7231ffde5ed7c88c0
+Contracthash hex:
+e4268e6df27f5df8e98f77951ecaf08eb555da43a7884f75281391a75f4cb991
+
+Pkscript hex:
+5175<a>517a76aa20e4268e6df27f5df8e98f77951ecaf08eb555da43a7884f75281391a75f4cb99188c0
+
+Redeem assign.x:
+<b>0a765279937c6b776c5179

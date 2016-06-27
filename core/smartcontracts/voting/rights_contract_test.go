@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/crypto/sha3"
 	"golang.org/x/net/context"
 
 	"chain/core/asset/assettest"
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/cos/txscript/txscripttest"
-	"chain/crypto/hash256"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 )
@@ -389,7 +389,7 @@ func TestRecallClause(t *testing.T) {
 			// One intermediate hash in chain of ownership
 			err: nil,
 			intermediate: []bc.Hash{
-				hash256.Sum(exampleHash[:]),
+				sha3.Sum256(exampleHash[:]),
 			},
 			prev: rightScriptData{
 				Delegatable:    true,
@@ -417,8 +417,8 @@ func TestRecallClause(t *testing.T) {
 			// Two intermediate hashes in chain of ownership
 			err: nil,
 			intermediate: []bc.Hash{
-				hash256.Sum([]byte("another holder script")),
-				hash256.Sum(exampleHash[:]),
+				sha3.Sum256([]byte("another holder script")),
+				sha3.Sum256(exampleHash[:]),
 			},
 			prev: rightScriptData{
 				Delegatable:    true,
@@ -857,6 +857,6 @@ func TestRightsContractInvalidMatch(t *testing.T) {
 	}
 }
 
-func asByteSlice(h [hash256.Size]byte) []byte {
+func asByteSlice(h [32]byte) []byte {
 	return h[:]
 }

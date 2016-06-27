@@ -3,8 +3,9 @@ package validation
 import (
 	"math"
 
+	"golang.org/x/crypto/sha3"
+
 	"chain/cos/bc"
-	"chain/crypto/hash256"
 )
 
 // CalcMerkleRoot creates a merkle tree from a slice of transactions
@@ -55,7 +56,7 @@ func hashMerkleBranches(left, right *bc.Hash) *bc.Hash {
 	copy(data[0:32], left[:])
 	copy(data[32:64], right[:])
 
-	hash := bc.Hash(hash256.Sum(data[:]))
+	hash := bc.Hash(sha3.Sum256(data[:]))
 	return &hash
 }
 

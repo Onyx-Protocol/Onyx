@@ -31,7 +31,7 @@ func TestCreateAsset(t *testing.T) {
 		t.Fatal("unexpected error:", err)
 	}
 
-	wantID := "b8388779c192ec2a88a53df39c7ac8fc396ca9387eec60ddc88585b1b09dc477"
+	wantID := "f6a4694e2aa22acc5856d866c7ad924b67e5c3e7c57ad962589c46e9de3858a0"
 	if asset.Hash.String() != wantID {
 		t.Errorf("got asset id = %v want %v", asset.Hash.String(), wantID)
 	}
@@ -85,7 +85,6 @@ func TestCreateDefs(t *testing.T) {
 	}
 
 	for i, ex := range examples {
-		t.Log("Example", i)
 		clientToken := fmt.Sprintf("example-%d", i)
 
 		dbtx := pgtest.NewTx(t)

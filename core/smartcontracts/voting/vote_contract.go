@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"fmt"
 
+	"golang.org/x/crypto/sha3"
+
 	"chain/cos/bc"
 	"chain/cos/txscript"
-	"chain/crypto/hash256"
 )
 
 const (
 	// pinnedTokenContractHash stores the hash of the voting token contract.
 	// Changes to the contract will require updating the hash.
-	pinnedTokenContractHash = "5d96e39531fdea4413300f505b14cd08e9b7fdec88ea3580efe5650f5ee6d594"
+	pinnedTokenContractHash = "a77de2177329b1dd95a9a132e452fa319bed1df6aec557aa37e12a1d9e7c8a2d"
 )
 
 type TokenState byte
@@ -322,7 +323,7 @@ const (
 
 var (
 	tokenHoldingContract     []byte
-	tokenHoldingContractHash [hash256.Size]byte
+	tokenHoldingContractHash [32]byte
 )
 
 func init() {
@@ -331,7 +332,7 @@ func init() {
 	if err != nil {
 		panic("failed parsing voting token holding script: " + err.Error())
 	}
-	tokenHoldingContractHash = hash256.Sum(tokenHoldingContract)
+	tokenHoldingContractHash = sha3.Sum256(tokenHoldingContract)
 
 	if pinnedTokenContractHash != bc.Hash(tokenHoldingContractHash).String() {
 		panic(fmt.Sprintf("Expected token contract hash %s, current contract has hash %x",

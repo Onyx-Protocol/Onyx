@@ -234,7 +234,7 @@ func TestAssembleSignatures(t *testing.T) {
 		t.Fatal(withStack(err))
 	}
 
-	want := "4036d534757b141ae7b9f9fa98ab3b1054ee3a39f34e8a8008ce4bfeab4fa6ea"
+	want := "e410c4bcd2b3dfa0086e0d418fcba3e411b084581add4b062092e6aeddc600dc"
 	if got := tx.WitnessHash().String(); got != want {
 		t.Errorf("got tx witness hash = %v want %v", got, want)
 	}

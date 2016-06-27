@@ -5,7 +5,8 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"chain/crypto/hash256"
+	"golang.org/x/crypto/sha3"
+
 	"chain/errors"
 )
 
@@ -76,6 +77,6 @@ func fastHash(d []byte) []byte {
 	if len(d) == 0 {
 		return nil
 	}
-	h := hash256.Sum(d)
+	h := sha3.Sum256(d)
 	return h[:]
 }

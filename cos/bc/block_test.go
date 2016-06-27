@@ -26,7 +26,7 @@ func TestEmptyBlock(t *testing.T) {
 		t.Errorf("empty block header bytes = %x want %x", got, want)
 	}
 
-	wantHash := mustDecodeHash("1662f18f468120bd14718fe7389cb6c2594aed5e166df2bed9cba8d64adc0fdc")
+	wantHash := mustDecodeHash("55a2e2cff0fa4b44bca37badd5c2ed7d1414bc1c9532a20d9dcd6b4abf101345")
 	if h := block.Hash(); h != wantHash {
 		t.Errorf("empty block has incorrect hash %s", h)
 	}

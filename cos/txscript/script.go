@@ -12,8 +12,9 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/crypto/sha3"
+
 	"chain/cos/bc"
-	"chain/crypto/hash256"
 )
 
 // These are the constants specified for maximums in individual scripts.
@@ -62,7 +63,7 @@ func PayToContractHash(contractHash bc.ContractHash, params []Item, scriptVersio
 	if len(params) > 0 {
 		sb = sb.AddInt64(int64(len(params))).AddOp(OP_ROLL)
 	}
-	sb = sb.AddOp(OP_DUP).AddOp(OP_HASH256).AddData(contractHash[:])
+	sb = sb.AddOp(OP_DUP).AddOp(OP_SHA3).AddData(contractHash[:])
 	sb = sb.AddOp(OP_EQUALVERIFY).AddOp(OP_EVAL)
 	return sb.Script()
 }
@@ -102,7 +103,7 @@ func CheckRedeemP2C(pkscript, contract []byte, inputs []Item) ([]byte, error) {
 		}
 		contract = nil // contract is in pkscript, exclude it from sigscript
 	} else {
-		hash := hash256.Sum(contract)
+		hash := sha3.Sum256(contract)
 		if hash != pkscriptContractHash {
 			return nil, ErrP2CMismatch
 		}
@@ -124,7 +125,7 @@ func RedeemP2C(contract []byte, inputs []Item) ([]byte, error) {
 
 // ParseP2C parses a p2c script.  It must have one of the following forms:
 //   <scriptversion> DROP [<param N> <param N-1> ... <param 1>] contract-script...
-//   <scriptversion> DROP [<param N> <param N-1> ... <param 1> <N> ROLL] DUP HASH256 <contract-hash> EQUALVERIFY EVAL
+//   <scriptversion> DROP [<param N> <param N-1> ... <param 1> <N> ROLL] DUP SHA3 <contract-hash> EQUALVERIFY EVAL
 //
 // Additionally, scriptversion must be a legal P2C version.
 //
@@ -171,7 +172,7 @@ func parseP2C(pops []parsedOpcode, script, contractHint []byte) (scriptVersion, 
 	isHashForm, contractHash, params := parseP2CHashForm(pops)
 	if isHashForm {
 		if contractHint != nil {
-			expectedHash := hash256.Sum(contractHint)
+			expectedHash := sha3.Sum256(contractHint)
 			if expectedHash != contractHash {
 				return nil, nil, contractHash, nil
 			}
@@ -196,8 +197,8 @@ func parseP2CHashForm(pops []parsedOpcode) (isHashForm bool, contractHash bc.Con
 		pops[l-1].opcode.value != OP_EVAL ||
 		pops[l-2].opcode.value != OP_EQUALVERIFY ||
 		!isPushdataOp(pops[l-3]) ||
-		len(pops[l-3].data) != hash256.Size ||
-		pops[l-4].opcode.value != OP_HASH256 ||
+		len(pops[l-3].data) != 32 ||
+		pops[l-4].opcode.value != OP_SHA3 ||
 		pops[l-5].opcode.value != OP_DUP {
 		return false, contractHash, nil
 	}

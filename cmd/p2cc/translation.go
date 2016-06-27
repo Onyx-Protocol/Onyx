@@ -3,9 +3,10 @@ package main
 import (
 	"strings"
 
+	"golang.org/x/crypto/sha3"
+
 	"chain/cos/bc"
 	"chain/cos/txscript"
-	"chain/crypto/hash256"
 )
 
 type (
@@ -90,7 +91,7 @@ func (t translation) getHash() (bc.ContractHash, error) {
 		if err != nil {
 			return zeroHash, err
 		}
-		h := hash256.Sum(b)
+		h := sha3.Sum256(b)
 		copy(t.hash[:], h[:])
 	}
 	return t.hash, nil

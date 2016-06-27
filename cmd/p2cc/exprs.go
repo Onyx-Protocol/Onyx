@@ -271,7 +271,7 @@ func (call callExpr) contractCall(stk stack, context *context, contract *contrac
 		b = append(b, txscript.OP_ROLL)
 		output = output.add(fmt.Sprintf("DATA_%d 0x%s CAT", len(b), hex.EncodeToString(b)), stk)
 	}
-	b = []byte{txscript.OP_DUP, txscript.OP_HASH256}
+	b = []byte{txscript.OP_DUP, txscript.OP_SHA3}
 	output = output.add(fmt.Sprintf("DATA_2 0x%s CAT", hex.EncodeToString(b)), stk)
 
 	if isSelf {

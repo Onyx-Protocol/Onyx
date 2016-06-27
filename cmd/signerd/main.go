@@ -10,14 +10,13 @@ import (
 	"os"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/kr/secureheader"
+	"golang.org/x/crypto/sha3"
+	"golang.org/x/net/context"
 
 	"chain/core/txbuilder"
 	"chain/cos/bc"
-	"chain/crypto/hash256"
 	"chain/crypto/hsm/thales/see"
 	"chain/crypto/hsm/thales/xprvseeclient"
 	"chain/env"
@@ -137,7 +136,7 @@ func loadKey(ctx context.Context) error {
 	}
 
 	if len(xpubBytes) == 78 {
-		checkSum := hash256.Sum(xpubBytes)
+		checkSum := sha3.Sum256(xpubBytes)
 		xpubBytes = append(xpubBytes, checkSum[:4]...)
 	}
 

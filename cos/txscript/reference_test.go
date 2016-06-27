@@ -11,11 +11,11 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/crypto/sha3"
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	. "chain/cos/txscript"
-	"chain/crypto/hash256"
 )
 
 // testName returns a descriptive test name for the given reference test data.
@@ -334,7 +334,7 @@ func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([]by
 		pkParams = append(pkParams, DataItem(TstPopData(pkParamsPop)))
 	}
 
-	contractHash := hash256.Sum(contractScript)
+	contractHash := sha3.Sum256(contractScript)
 	pkScript, err := PayToContractHash(contractHash, pkParams, ScriptVersion1)
 	if err != nil {
 		return nil, nil, err

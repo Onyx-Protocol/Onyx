@@ -1,5 +1,5 @@
 Contract "orderbook":
-                        # <top> sellerScript currencyAssetID priceX priceY [clause selector] ...clause args...
+                        # sellerScript currencyAssetID priceX priceY [clause selector] ...clause args...
 4 ROLL                  # <top> [clause selector] sellerScript currencyAssetID priceX priceY
 DUP 1 NUMEQUAL IF       # <top> [clause selector] sellerScript currencyAssetID priceX priceY
 4 PICK                  # <top> priceY [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
@@ -32,10 +32,10 @@ Contract hex:
 547a76519c6354795679955479587995935479c3959c567954795479c19a5779c2c4c19a6776529c635179c06868
 
 Contracthash hex:
-4f55fa726190a29a401e42dd3cb9e6cca23e98ade484df7a98a391e21479bc87
+ab298e00663f9794f83c680b205c6600b66d455d14921da26377041e9d8b979d
 
 Pkscript hex:
-5175<priceY><priceX><currencyAssetID><sellerScript>547a76aa204f55fa726190a29a401e42dd3cb9e6cca23e98ade484df7a98a391e21479bc8788c0
+5175<priceY><priceX><currencyAssetID><sellerScript>547a76aa20ab298e00663f9794f83c680b205c6600b66d455d14921da26377041e9d8b979d88c0
 
 Redeem orderbook.trade:
 <changeAmount><cashAmount>512e547a76519c6354795679955479587995935479c3959c567954795479c19a5779c2c4c19a6776529c635179c06868

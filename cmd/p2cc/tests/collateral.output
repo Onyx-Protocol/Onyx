@@ -1,5 +1,5 @@
 Contract "loan":
-                                                # <top> price currency deadline creditorScript debtorScript [clause selector] ...clause args...
+                                                # price currency deadline creditorScript debtorScript [clause selector] ...clause args...
 5 ROLL                                          # <top> [clause selector] price currency deadline creditorScript debtorScript
 DUP 1 NUMEQUAL IF                               # <top> [clause selector] price currency deadline creditorScript debtorScript
 TIME                                            # <top> [time()] [clause selector] price currency deadline creditorScript debtorScript
@@ -50,10 +50,10 @@ Contract hex:
 557a76519c63c55479a25579c09a6776529c63517953795679c15679c09a6776539c635579c05579c09a6776549c63c3c20251755879c75979c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec15579c09a68686868
 
 Contracthash hex:
-1af0ff2a4507bd2bff5e51dd90b8af9be3401c451ad9c57a9e306b199fa987ad
+fa6e8f67d40a907fb98b7ddf3f9db55ff0f1a4467d6843d63dec81cda5afe605
 
 Pkscript hex:
-5175<debtorScript><creditorScript><deadline><currency><price>557a76aa201af0ff2a4507bd2bff5e51dd90b8af9be3401c451ad9c57a9e306b199fa987ad88c0
+5175<debtorScript><creditorScript><deadline><currency><price>557a76aa20fa6e8f67d40a907fb98b7ddf3f9db55ff0f1a4467d6843d63dec81cda5afe60588c0
 
 Redeem loan.keep:
 514c61557a76519c63c55479a25579c09a6776529c63517953795679c15679c09a6776539c635579c05579c09a6776549c63c3c20251755879c75979c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec15579c09a68686868

@@ -9,7 +9,8 @@ import (
 	"io"
 	"strconv"
 
-	"chain/crypto/hash256"
+	"golang.org/x/crypto/sha3"
+
 	"chain/encoding/blockchain"
 	"chain/errors"
 )
@@ -199,7 +200,7 @@ func (p *Outpoint) readFrom(r io.Reader) {
 // replaced by their hashes,
 // and stores the result in Hash.
 func (tx *TxData) Hash() Hash {
-	h := hash256.New()
+	h := sha3.New256()
 	tx.writeTo(h, 0) // error is impossible
 	var v Hash
 	h.Sum(v[:0])
@@ -217,14 +218,14 @@ func (tx *TxData) WitnessHash() Hash {
 	data = append(data, lenBytes[:n]...)
 
 	for _, in := range tx.Inputs {
-		sigHash := hash256.Sum(in.SignatureScript)
+		sigHash := sha3.Sum256(in.SignatureScript)
 		data = append(data, sigHash[:]...)
 	}
 
 	txHash := tx.Hash()
-	dataHash := hash256.Sum(data)
+	dataHash := sha3.Sum256(data)
 
-	return hash256.Sum(append(txHash[:], dataHash[:]...))
+	return sha3.Sum256(append(txHash[:], dataHash[:]...))
 }
 
 // HashForSig generates the hash required for the
@@ -251,7 +252,7 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 		if cache != nil && cache.inputsHash != nil {
 			inputsHash = *cache.inputsHash
 		}
-		h := hash256.New()
+		h := sha3.New256()
 		w := errors.NewWriter(h)
 		blockchain.WriteUvarint(w, uint64(len(tx.Inputs)))
 		for _, in := range tx.Inputs {
@@ -268,7 +269,7 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 		if idx >= len(tx.Outputs) {
 			break
 		}
-		h := hash256.New()
+		h := sha3.New256()
 		w := errors.NewWriter(h)
 		blockchain.WriteUvarint(w, 1)
 		tx.Outputs[idx].writeTo(w, 0)
@@ -279,7 +280,7 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 		if cache != nil && cache.outputsHash != nil {
 			outputsHash = *cache.outputsHash
 		} else {
-			h := hash256.New()
+			h := sha3.New256()
 			w := errors.NewWriter(h)
 			blockchain.WriteUvarint(w, uint64(len(tx.Outputs)))
 			for _, out := range tx.Outputs {
@@ -292,7 +293,7 @@ func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType Si
 		}
 	}
 
-	h := hash256.New()
+	h := sha3.New256()
 	w := errors.NewWriter(h)
 
 	blockchain.WriteUint32(w, tx.Version)

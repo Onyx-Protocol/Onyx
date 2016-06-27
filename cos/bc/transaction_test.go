@@ -31,8 +31,8 @@ func TestTransaction(t *testing.T) {
 				Metadata: nil,
 			}),
 			hex:         "07010000000000000000000000000000",
-			hash:        mustDecodeHash("2930180badc20224c5f32202956be228b0ec357ff85383fa5156d853cc7ae3d8"),
-			witnessHash: mustDecodeHash("874e1b9c1b97edd3c9014ed5a7e5e24134a5225425408b5305a4d711e37310dc"),
+			hash:        mustDecodeHash("1165aef97cc72a200ef401440c7ce03514c0e2df74bf25e450cfe2da0ef99897"),
+			witnessHash: mustDecodeHash("42a6d66913142d80deabee63cddd87408b6959f4b80dc559ab892fe0ba21631c"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -59,8 +59,8 @@ func TestTransaction(t *testing.T) {
 				Metadata: []byte("issuance"),
 			}),
 			hex:         "07010000000103deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758dffffffff00000000000000000000000000000000000000000000000000000000000000000000000000000000000301020305696e707574000100000000000000000000000000000000000000000000000000000000000000000010a5d4e80000000101066f757470757400000000000000000869737375616e6365",
-			hash:        mustDecodeHash("55d60826854a24357f3187795d2a08ea27ae1b5d845f06b329d21e0e37e34770"),
-			witnessHash: mustDecodeHash("162cf0a56439982e1d1aac2b3f02ace5540336cdd394b37aa75ddf783fa184c3"),
+			hash:        mustDecodeHash("39d3ac49f3a3c3dbcd8c780ddac4a37d84a40c194b80ae0267df61120844fbba"),
+			witnessHash: mustDecodeHash("0e495e4ef07e208123aa90090f224360809b4447236be4c0217e31c907cf9ecf"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -94,15 +94,13 @@ func TestTransaction(t *testing.T) {
 				LockTime: 1492590591,
 				Metadata: []byte("distribution"),
 			}),
-			hex:         "070100000001dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d32920000000000000000000000000000000000000000000000000000000000000000000000000010a5d4e800000001010005696e707574086173736574646566028ff02bfb82be991185ea36426e233bb9d4b79797a669140b53ef21174fae43ad0070c9b28b0000000101008ff02bfb82be991185ea36426e233bb9d4b79797a669140b53ef21174fae43ad00a0db215d000000010200ff1ff758000000000c646973747269627574696f6e",
-			hash:        mustDecodeHash("8c0643f219807f84f84e7b7d8d842898d5dc1248ec8153fbe68d0bcbb969a417"),
-			witnessHash: mustDecodeHash("b433907609c6a25ca5fdb4b2aa5a3b565479182f6230fc7c2cf427e31067d65d"),
+			hex:         "070100000001dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d32920000000000000000000000000000000000000000000000000000000000000000000000000010a5d4e800000001010005696e707574086173736574646566028ce7bfa83eeb157470101b2c40d528335bf9e98c9383f6f6e575bee3e21312360070c9b28b0000000101008ce7bfa83eeb157470101b2c40d528335bf9e98c9383f6f6e575bee3e213123600a0db215d000000010200ff1ff758000000000c646973747269627574696f6e",
+			hash:        mustDecodeHash("138c6a817b6bbd1fd4cbbb570f72b434e9e2e06a77655377e76b273a0047c5b0"),
+			witnessHash: mustDecodeHash("b501ae20c7894b623d5e3b802b48f307d80d7ad06a5d3eb8bbc064fed40c0009"),
 		},
 	}
 
 	for _, test := range cases {
-		t.Logf("metadata %q", test.tx.Metadata)
-
 		got := serialize(t, test.tx)
 		want, _ := hex.DecodeString(test.hex)
 		if !bytes.Equal(got, want) {
@@ -223,19 +221,19 @@ func TestTxHashForSig(t *testing.T) {
 		hashType SigHashType
 		wantHash string
 	}{
-		{0, SigHashAll, "0c7be972bdade58ee65d67572436ea1fc7d180f57d5a4facecdf9d00959fce0d"},
-		{0, SigHashSingle, "fd10b4b679f36587adf80d1438ae909e8327f052854f7270fed58bb6b4ffc011"},
-		{0, SigHashNone, "11417ff3e229e0f3c5a33906a3e7b2e32a3ec73a74e51255123026060818216e"},
-		{0, SigHashAll | SigHashAnyOneCanPay, "d793e83a6124f30ab1a7b3311e25a78abeedb72e0e139d8bde7a60927793631d"},
-		{0, SigHashSingle | SigHashAnyOneCanPay, "04c7bb5e754d96a896eb2f425b2458a0de2a6a1a77c28e1ac0015501c87cacee"},
-		{0, SigHashNone | SigHashAnyOneCanPay, "852a61a9994cfb8249c3574ed16d14a22a92d90dfcec51d8d4284095ac29b421"},
+		{0, SigHashAll, "430e75052c90f33e4807686121bfc17581e0be3866a0ff58b5dfdd6a4a8029bc"},
+		{0, SigHashSingle, "3db7d7862203283f580af3537236de5f441a719be729fea72784b269f6b5cb3b"},
+		{0, SigHashNone, "8480138fe11e262a564fe0eb1de5211a9d2d09ec252d24ca858bf63713881947"},
+		{0, SigHashAll | SigHashAnyOneCanPay, "c0cd6a4e3e24b01d60ec1068b01a8dbb4da19f9fdaf4acce6c287d1dd70a66ff"},
+		{0, SigHashSingle | SigHashAnyOneCanPay, "039f3ca883a560b289ec46c674187b674335f6931b04f995d22215142e3bcca0"},
+		{0, SigHashNone | SigHashAnyOneCanPay, "0f8d6c5db0df50a33862213fd88481cbc7eacdebe4fa23451ca05f58eae58b39"},
 
-		{1, SigHashAll, "078e85551c1c757c9dbd64fd9427d206a2512697bc9a9c7cc0264a6c83584f3e"},
-		{1, SigHashSingle, "a5b1d4786ecf02eefd939e0308466517d8cc0c41ea811f616867c2d9a14ad577"},
-		{1, SigHashNone, "232fb5c2557b993b528e477f1ef41c83e5a9e5eaa0942cd7c2395822b092823e"},
-		{1, SigHashAll | SigHashAnyOneCanPay, "be91a5dc2b421cfecdd237a2c9c3f869e044c709bf3781c229839f8477bfdb02"},
-		{1, SigHashSingle | SigHashAnyOneCanPay, "7a26e6428495349a7d017cd6f18dad1644438fba8172f88b48d21d9dfb977e74"},
-		{1, SigHashNone | SigHashAnyOneCanPay, "88a34a6d44f1375d5d2ed42c28f559b5d69febb301430b3982d8a4d83502012f"},
+		{1, SigHashAll, "c40b81bea7844263fcde2b8422d00c9bcb0f25c4941966525d9bdd7ed437f183"},
+		{1, SigHashSingle, "34c8dd47876128e0953f70e39fdc5d63899e26d58476de1a805e6c5b8e816736"},
+		{1, SigHashNone, "b949a7a3b31ec61d5cf936a854407ada15361cc6f2c0ffb76c1438c9c981a2d5"},
+		{1, SigHashAll | SigHashAnyOneCanPay, "55ed3c3a309524b3432d0be4ad4e87ad2f38f289d72de8e2cf75c4a0b0ae220f"},
+		{1, SigHashSingle | SigHashAnyOneCanPay, "b05b520c7ecac7dc4393415c27390d148384540eb52f8cf05f67d830015c88a1"},
+		{1, SigHashNone | SigHashAnyOneCanPay, "96daba78e127d90a2dd52b29d1527aa2dca7b0e1c59aac000fb21e64b58f4f7f"},
 	}
 	assetAmount := tx.Outputs[0].AssetAmount
 	cache := &SigHashCache{}

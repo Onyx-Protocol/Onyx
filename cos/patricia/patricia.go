@@ -3,8 +3,9 @@ package patricia
 import (
 	"bytes"
 
+	"golang.org/x/crypto/sha3"
+
 	"chain/cos/bc"
-	"chain/crypto/hash256"
 	"chain/errors"
 )
 
@@ -276,7 +277,7 @@ type Value struct {
 // Hash returns a hash of the value.
 func (v Value) Hash() bc.Hash {
 	if !v.IsHash {
-		return hash256.Sum(v.Bytes)
+		return sha3.Sum256(v.Bytes)
 	}
 
 	var h bc.Hash
@@ -327,7 +328,7 @@ func (n *Node) calcHash() bc.Hash {
 		data = append(data, h[:]...)
 	}
 
-	return hash256.Sum(data)
+	return sha3.Sum256(data)
 }
 
 // Valuer describes types that can produce a patricia tree value.

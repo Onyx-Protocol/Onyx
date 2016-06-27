@@ -3,13 +3,13 @@ package orderbook
 import (
 	"fmt"
 
+	"golang.org/x/crypto/sha3"
 	"golang.org/x/net/context"
 
 	"chain/core/appdb"
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/cos/txscript"
-	"chain/crypto/hash256"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
@@ -161,7 +161,7 @@ func (info *OrderInfo) generateScript(ctx context.Context, sellerScript []byte) 
 		return nil, nil, errors.Wrap(err, "building contract")
 	}
 
-	pkscript, err = txscript.PayToContractHash(hash256.Sum(contract), params, scriptVersion)
+	pkscript, err = txscript.PayToContractHash(sha3.Sum256(contract), params, scriptVersion)
 	return pkscript, contract, errors.Wrap(err, "building pkscript")
 }
 
@@ -269,5 +269,5 @@ func buildContract(n int) ([]byte, error) {
 
 func init() {
 	onePriceContract, _ = buildContract(1)
-	onePriceContractHash = hash256.Sum(onePriceContract)
+	onePriceContractHash = sha3.Sum256(onePriceContract)
 }

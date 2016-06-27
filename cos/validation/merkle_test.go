@@ -20,14 +20,14 @@ func TestCalcMerkleRoot(t *testing.T) {
 			mustParseHash("9c2e4d8fe97d881430de4e754b4205b9c27ce96715231cffc4337340cb110280"),
 			mustParseHash("0c08173828583fc6ecd6ecdbcca7b6939c49c242ad5107e39deb7b0a5996b903"),
 		},
-		want: mustParseHash("7de236613dd3d9fa1d86054a84952f1e0df2f130546b394a4d4dd7b76997f607"),
+		want: mustParseHash("3209f27d2c5800f7c6efd2b488498624d18896c4796cf0a5721b0b918e8b6c5b"),
 	}, {
 		hashes: []bc.Hash{
 			mustParseHash("9c2e4d8fe97d881430de4e754b4205b9c27ce96715231cffc4337340cb110280"),
 			mustParseHash("0c08173828583fc6ecd6ecdbcca7b6939c49c242ad5107e39deb7b0a5996b903"),
 			mustParseHash("80903da4e6bbdf96e8ff6fc3966b0cfd355c7e860bdd1caa8e4722d9230e40ac"),
 		},
-		want: mustParseHash("5b7534123197114fa7e7459075f39d89ffab74b5c3f31fad48a025b931ff5a01"),
+		want: mustParseHash("c4ae6d8297d908b4f1acc68ee8ed73d64e925f2bbd2494400592ddc2319dda7e"),
 	}}
 
 	for _, c := range cases {

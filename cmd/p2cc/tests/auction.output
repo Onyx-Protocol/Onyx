@@ -1,5 +1,5 @@
 Contract "AuctionAsset":
-                                                                                  # <top> priceAsset bidPrice sellerScript bidderScript deadline [clause selector] ...clause args...
+                                                                                  # priceAsset bidPrice sellerScript bidderScript deadline [clause selector] ...clause args...
 5 ROLL                                                                            # <top> [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
 DUP 1 NUMEQUAL IF                                                                 # <top> [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
 4 PICK                                                                            # <top> bidderScript [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
@@ -46,7 +46,7 @@ ASSET                                                                           
 CATPUSHDATA                                                                       # <top> [building pkscript] priceAsset price [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
 DATA_2 0x557a CAT                                                                 # <top> [building pkscript] priceAsset price [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
 DATA_2 0x76aa CAT                                                                 # <top> [building pkscript] priceAsset price [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
-DATA_33 0x20be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa0 CAT  # <top> [building pkscript] priceAsset price [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
+DATA_33 0x208b2d54e4df90433a5ae580a2b6c3faaf69e2654c055eb0c258c70eacf0183449 CAT  # <top> [building pkscript] priceAsset price [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
 DATA_2 0x88c0 CAT                                                                 # <top> [BidContract([asset()], [amount()], sellerScript, newBidderScript, deadline)] priceAsset price [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
 RESERVEOUTPUT                                                                     # <top> [reserveoutput(price, priceAsset, [BidContract([asset()], [amount()], sellerScript, newBidderScript, deadline)])] [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
 VERIFY                                                                            # <top> [clause selector] priceAsset bidPrice sellerScript bidderScript deadline price newBidderScript
@@ -85,25 +85,25 @@ RESERVEOUTPUT                                                                   
 ENDIF ENDIF ENDIF                                                                 # <top> [clause selector] priceAsset bidPrice sellerScript bidderScript deadline
 
 Contract hex:
-557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e2120be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa07e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776539c63c55679a269527952795579c169c3c25679c1686868
+557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e21208b2d54e4df90433a5ae580a2b6c3faaf69e2654c055eb0c258c70eacf01834497e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776539c63c55679a269527952795579c169c3c25679c1686868
 
 Contracthash hex:
-dd542d40f5c684c613e492d883661698c59df6e1929732bb011512f7a751efb7
+64bd56e2de3b242c84d73772739addf2c20391d80314e914688decab6aa9f42f
 
 Pkscript hex:
-5175<deadline><bidderScript><sellerScript><bidPrice><priceAsset>557a76aa20dd542d40f5c684c613e492d883661698c59df6e1929732bb011512f7a751efb788c0
+5175<deadline><bidderScript><sellerScript><bidPrice><priceAsset>557a76aa2064bd56e2de3b242c84d73772739addf2c20391d80314e914688decab6aa9f42f88c0
 
 Redeem AuctionAsset.refund:
-514cbb557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e2120be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa07e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776539c63c55679a269527952795579c169c3c25679c1686868
+514cbb557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e21208b2d54e4df90433a5ae580a2b6c3faaf69e2654c055eb0c258c70eacf01834497e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776539c63c55679a269527952795579c169c3c25679c1686868
 
 Redeem AuctionAsset.bid:
-<newBidderScript><price>524cbb557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e2120be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa07e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776539c63c55679a269527952795579c169c3c25679c1686868
+<newBidderScript><price>524cbb557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e21208b2d54e4df90433a5ae580a2b6c3faaf69e2654c055eb0c258c70eacf01834497e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776539c63c55679a269527952795579c169c3c25679c1686868
 
 Redeem AuctionAsset.claim:
-534cbb557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e2120be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa07e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776539c63c55679a269527952795579c169c3c25679c1686868
+534cbb557a76519c635479008769c55679a2695379c06776529c6356795379a069c556799f69547900879163527952795679c16968567952790251755879c75a79c75679c7c3c7c2c702557a7e0276aa7e21208b2d54e4df90433a5ae580a2b6c3faaf69e2654c055eb0c258c70eacf01834497e0288c07ec169c3c20251755879c75a79c75679c75979c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776539c63c55679a269527952795579c169c3c25679c1686868
 
 Contract "BidContract":
-                                                # <top> assetID assetAmount sellerScript bidderScript deadline [clause selector] ...clause args...
+                                                # assetID assetAmount sellerScript bidderScript deadline [clause selector] ...clause args...
 5 ROLL                                          # <top> [clause selector] assetID assetAmount sellerScript bidderScript deadline
 DUP 1 NUMEQUAL IF                               # <top> [clause selector] assetID assetAmount sellerScript bidderScript deadline
 TIME                                            # <top> [time()] [clause selector] assetID assetAmount sellerScript bidderScript deadline newBidPrice
@@ -153,10 +153,10 @@ Contract hex:
 557a76519c63c556799f69c3c25679c1695679c3a0695679c20251755879c75779c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776529c63c3c25579c169527952795679c16868
 
 Contracthash hex:
-be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa0
+8b2d54e4df90433a5ae580a2b6c3faaf69e2654c055eb0c258c70eacf0183449
 
 Pkscript hex:
-5175<deadline><bidderScript><sellerScript><assetAmount><assetID>557a76aa20be1a2d11ba6be6d1b090bd65c1416229bc84df41e7b75810512922127d1f2fa088c0
+5175<deadline><bidderScript><sellerScript><assetAmount><assetID>557a76aa208b2d54e4df90433a5ae580a2b6c3faaf69e2654c055eb0c258c70eacf018344988c0
 
 Redeem BidContract.release:
 <newBidPrice>514c55557a76519c63c556799f69c3c25679c1695679c3a0695679c20251755879c75779c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec16776529c63c3c25579c169527952795679c16868

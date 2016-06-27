@@ -1,5 +1,5 @@
-Contract decl:
-     # <top> 
+Contract "decl":
+     # 
 7    # <top> [7]
 DUP  # <top> i i
 NIP  # <top> i
@@ -7,5 +7,11 @@ NIP  # <top> i
 Contract hex:
 577677
 
-Pkscript:
-017576aaba866f4a2fd64a0088a21f1dea7d6af25abe3dff86be573090e917b02b07994c88c0
+Contracthash hex:
+87424d41d106fc989bdce5eae9a8e674bda25e78f88ba1ced1079636653ff103
+
+Pkscript hex:
+517576aa2087424d41d106fc989bdce5eae9a8e674bda25e78f88ba1ced1079636653ff10388c0
+
+Redeem decl.x:
+03577677

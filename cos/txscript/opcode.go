@@ -14,10 +14,10 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/fastsha256"
 	"github.com/btcsuite/golangcrypto/ripemd160"
+	"golang.org/x/crypto/sha3"
 
 	"chain/cos/bc"
 	"chain/crypto/hash160"
-	"chain/crypto/hash256"
 )
 
 // An opcode defines the information related to a txscript opcode.  opfunc if
@@ -207,7 +207,7 @@ const (
 	OP_SHA1                = 0xa7 // 167
 	OP_SHA256              = 0xa8 // 168
 	OP_HASH160             = 0xa9 // 169
-	OP_HASH256             = 0xaa // 170
+	OP_SHA3                = 0xaa // 170
 	OP_CODESEPARATOR       = 0xab // 171
 	OP_CHECKSIG            = 0xac // 172
 	OP_CHECKSIGVERIFY      = 0xad // 173
@@ -495,7 +495,7 @@ var opcodeArray = [256]opcode{
 	OP_SHA1:                {OP_SHA1, "OP_SHA1", 1, opcodeSha1},
 	OP_SHA256:              {OP_SHA256, "OP_SHA256", 1, opcodeSha256},
 	OP_HASH160:             {OP_HASH160, "OP_HASH160", 1, opcodeHash160},
-	OP_HASH256:             {OP_HASH256, "OP_HASH256", 1, opcodeHash256},
+	OP_SHA3:                {OP_SHA3, "OP_SHA3", 1, opcodeSha3},
 	OP_CODESEPARATOR:       {OP_CODESEPARATOR, "OP_CODESEPARATOR", 1, opcodeCodeSeparator},
 	OP_CHECKSIG:            {OP_CHECKSIG, "OP_CHECKSIG", 1, opcodeCheckSig},
 	OP_CHECKSIGVERIFY:      {OP_CHECKSIGVERIFY, "OP_CHECKSIGVERIFY", 1, opcodeCheckSigVerify},
@@ -2062,17 +2062,17 @@ func opcodeHash160(op *parsedOpcode, vm *Engine) error {
 	return nil
 }
 
-// opcodeHash256 treats the top item of the data stack as raw bytes and replaces
+// opcodeSha3 treats the top item of the data stack as raw bytes and replaces
 // it with sha256(sha256(data)).
 //
-// Stack transformation: [... x1] -> [... sha256(sha256(x1))]
-func opcodeHash256(op *parsedOpcode, vm *Engine) error {
+// Stack transformation: [... x1] -> [... sha3-256(x1)]
+func opcodeSha3(op *parsedOpcode, vm *Engine) error {
 	buf, err := vm.dstack.PopByteArray()
 	if err != nil {
 		return err
 	}
 
-	hash := hash256.Sum(buf)
+	hash := sha3.Sum256(buf)
 
 	vm.dstack.PushByteArray(hash[:])
 	return nil

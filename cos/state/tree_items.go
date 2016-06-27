@@ -3,9 +3,10 @@ package state
 import (
 	"bytes"
 
+	"golang.org/x/crypto/sha3"
+
 	"chain/cos/bc"
 	"chain/cos/patricia"
-	"chain/crypto/hash256"
 	"chain/encoding/blockchain"
 	"chain/errors"
 )
@@ -63,7 +64,7 @@ func (o outputValuer) Value() patricia.Value {
 	o.Outpoint.WriteTo(&buf)
 	blockchain.WriteUint64(&buf, o.Amount)
 	blockchain.WriteBytes(&buf, o.Script)
-	h := hash256.Sum(buf.Bytes())
+	h := sha3.Sum256(buf.Bytes())
 	return patricia.Value{
 		Bytes:  h[:],
 		IsHash: true,

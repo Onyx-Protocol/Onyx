@@ -255,8 +255,7 @@ func TestGenerateBlock(t *testing.T) {
 			Height:            2,
 			PreviousBlockHash: latestBlock.Hash(),
 			Commitment: mustDecodeHex(
-				"c6fbe50a4f5dc8a6dc9549cd8ae373231733377ccd295acaf8b48381e8d3674b" +
-					"c177e3ee77737c01b857c95ea97f31f7d4237d6ae11b6c90b92477a840359d92",
+				"e484c77162c132d2420bb93f9a1e1da21f8850063fa93832fbc724df2dae99f5e6992337545c93e09b82a74a4e465e28046af8b3bf9c127d920d41cd9033bd49",
 			),
 			Timestamp:    uint64(now.Unix()),
 			OutputScript: latestBlock.OutputScript,
@@ -269,6 +268,7 @@ func TestGenerateBlock(t *testing.T) {
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("generated block:\ngot:  %+v\nwant: %+v", got, want)
+		t.Logf("got.Commitment: %s\nwant.Commitment: %s\n", hex.EncodeToString(got.BlockHeader.Commitment), hex.EncodeToString(want.BlockHeader.Commitment))
 	}
 
 }

@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"fmt"
 
+	"golang.org/x/crypto/sha3"
+
 	"chain/cos/bc"
 	"chain/cos/txscript"
-	"chain/crypto/hash256"
 )
 
 // scriptVersion encodes the version of the scripting language required
@@ -16,7 +17,7 @@ var scriptVersion = txscript.ScriptVersion2
 const (
 	// pinnedRightsContractHash stores the hash of the voting rights contract.
 	// Changes to the the contract will require updating the hash.
-	pinnedRightsContractHash = "0d65d1da4fe83ce1182c211f449d646a1e598e5b44ca683daae7d9146ba9551b"
+	pinnedRightsContractHash = "292d0b53628f4be2e2441de50863474c124a9e9dafc2574b1903586cbb0d9bf3"
 )
 
 type rightsContractClause int64
@@ -194,8 +195,8 @@ const (
 		DUP 3 EQUAL IF
 			DROP
 			VERIFY
-			1 PICK HASH256
-			SWAP CAT HASH256
+			1 PICK SHA3
+			SWAP CAT SHA3
 			DATA_2 0x5275
 			3 PICK CATPUSHDATA
 			4 ROLL CATPUSHDATA
@@ -213,12 +214,12 @@ const (
 			DROP
 			4 ROLL SIZE
 			DATA_1 0x20 EQUALVERIFY
-			5 PICK HASH256
-			1 PICK CAT HASH256
+			5 PICK SHA3
+			1 PICK CAT SHA3
 			7 ROLL
 			WHILE
 				8 ROLL
-				ROT CAT HASH256
+				ROT CAT SHA3
 				SWAP 1SUB
 			ENDWHILE
 			3 ROLL EQUALVERIFY
@@ -242,7 +243,7 @@ const (
 		8 ROLL
 		WHILE
 			SWAP 9 ROLL SWAP
-			CAT HASH256
+			CAT SHA3
 			SWAP 1SUB
 		ENDWHILE
 		3 PICK EQUALVERIFY
@@ -252,7 +253,7 @@ const (
 				4 ROLL EQUALVERIFY
 				DROP
 			ELSE
-				HASH256
+				SHA3
 				EQUALVERIFY
 				ROT DROP
 			ENDIF
@@ -264,8 +265,8 @@ const (
 		6 ROLL
 		2 ROLL
 		WHILE
-			7 ROLL HASH256
-			ROT CAT HASH256
+			7 ROLL SHA3
+			ROT CAT SHA3
 			SWAP 1SUB
 		ENDWHILE
 		DATA_2 0x5275
@@ -284,7 +285,7 @@ const (
 
 var (
 	rightsHoldingContract     []byte
-	rightsHoldingContractHash [hash256.Size]byte
+	rightsHoldingContractHash [32]byte
 )
 
 func init() {
@@ -293,7 +294,7 @@ func init() {
 	if err != nil {
 		panic("failed parsing voting rights holding script: " + err.Error())
 	}
-	rightsHoldingContractHash = hash256.Sum(rightsHoldingContract)
+	rightsHoldingContractHash = sha3.Sum256(rightsHoldingContract)
 
 	if pinnedRightsContractHash != bc.Hash(rightsHoldingContractHash).String() {
 		panic(fmt.Sprintf("Expected right contract hash %s, current contract has hash %x",
@@ -304,10 +305,10 @@ func init() {
 // calculateOwnershipChain extends the provided chain of ownership with the provided
 // holder using the formula:
 //
-//     Hash256(Hash256(holder) + oldchain)
+//     Sha3(Sha3(holder) + oldchain)
 //
 func calculateOwnershipChain(oldChain bc.Hash, holder []byte) bc.Hash {
-	hash := hash256.Sum(holder)
+	hash := sha3.Sum256(holder)
 	data := append(hash[:], oldChain[:]...)
-	return hash256.Sum(data)
+	return sha3.Sum256(data)
 }

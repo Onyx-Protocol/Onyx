@@ -3,7 +3,7 @@ package bc
 import (
 	"database/sql/driver"
 
-	"chain/crypto/hash256"
+	"golang.org/x/crypto/sha3"
 )
 
 // AssetID is the Hash256 of the issuance script for the asset and the
@@ -20,12 +20,12 @@ func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
 // the given issuance script and genesis block hash.
 func ComputeAssetID(issuanceScript []byte, genesis [32]byte) AssetID {
 	buf := append([]byte{}, genesis[:]...)
-	sh := hash256.Sum(issuanceScript)
+	sh := sha3.Sum256(issuanceScript)
 	buf = append(buf, sh[:]...)
-	return hash256.Sum(buf)
+	return sha3.Sum256(buf)
 }
 
 // HashAssetDefinition calculates an asset definition's hash.
 func HashAssetDefinition(def []byte) Hash {
-	return Hash(hash256.Sum(def))
+	return Hash(sha3.Sum256(def))
 }

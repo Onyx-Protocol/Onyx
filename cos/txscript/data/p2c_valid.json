@@ -16,7 +16,7 @@
 ["The serialized script used by EVAL here is <2 3 ADD>"],
 ["DATA_3 0x525393 EVAL 4 ADD 9 EQUAL", "", "", "Simple EVAL test"],
 
-["OUTPUTSCRIPT EQUAL", "DATA_39 0x517576aa20c5fd8a0d0c9adf6b92ce40f278d0a4d5814faa43486f0fdc44eec6eca493c77288c0", ""],
+["OUTPUTSCRIPT EQUAL", "DATA_39 0x517576aa201635b121178a46ea1aa968815d8492b146e26fb5abd01b84c3e95bc25ed1f0d488c0", ""],
 
 ["There is a total of 7 units of this asset in the sample tx"],
 ["used for testing.  This script is executed twice, once each"],

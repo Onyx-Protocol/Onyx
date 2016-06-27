@@ -9,8 +9,9 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/crypto/sha3"
+
 	. "chain/cos/txscript"
-	"chain/crypto/hash256"
 )
 
 // TestPushedData ensured the PushedData function extracts the expected data out
@@ -509,13 +510,13 @@ func TestPayToContract(t *testing.T) {
 		}
 	}
 
-	contractHash := hash256.Sum(contract)
+	contractHash := sha3.Sum256(contract)
 	script, err = PayToContractHash(contractHash, params, ScriptVersion1)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expected = []byte{OP_1, OP_DROP, OP_DATA_1, OP_3, OP_DATA_1, OP_2, OP_DATA_1, OP_1, OP_3, OP_ROLL, OP_DUP, OP_HASH256, OP_DATA_32}
+	expected = []byte{OP_1, OP_DROP, OP_DATA_1, OP_3, OP_DATA_1, OP_2, OP_DATA_1, OP_1, OP_3, OP_ROLL, OP_DUP, OP_SHA3, OP_DATA_32}
 	expected = append(expected, contractHash[:]...)
 	expected = append(expected, []byte{OP_EQUALVERIFY, OP_EVAL}...)
 	if !bytes.Equal(script, expected) {

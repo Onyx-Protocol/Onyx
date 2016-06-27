@@ -29,7 +29,7 @@ func TestPoolTxs(t *testing.T) {
 	_, err := dbtx.Exec(ctx, `
 		INSERT INTO pool_txs (tx_hash, data)
 		VALUES (
-			'6fb825e8419bd78a18f51002cf0e6bd7498c3ae5f3339a7c91e7be7af8ef381c',
+			'25b3a991ec29e67dcefe42ee8251a1ff53deb92a513411cd3973269b1b9f7183',
 			decode('0701000000000000000000000000000568656c6c6f', 'hex')
 		);
 	`)
