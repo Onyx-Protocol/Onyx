@@ -259,8 +259,8 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 	}
 
 	var (
-		conflictTxs  []*bc.Tx
-		confirmedTxs []*bc.Tx
+		deleteTxs   []*bc.Tx
+		conflictTxs []*bc.Tx
 	)
 
 	txs, err := fc.pool.Dump(ctx)
@@ -288,8 +288,8 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		if txErr == nil && !txInBlock[tx.Hash] {
 			validation.ApplyTx(ctx, view, tx)
 		} else {
+			deleteTxs = append(deleteTxs, tx)
 			if txInBlock[tx.Hash] {
-				confirmedTxs = append(confirmedTxs, tx)
 				continue
 			}
 			conflictTxs = append(conflictTxs, tx)
@@ -304,7 +304,7 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		}
 	}
 
-	err = fc.pool.Clean(ctx, confirmedTxs, conflictTxs, view.Assets)
+	err = fc.pool.Clean(ctx, deleteTxs, view.Assets)
 	if err != nil {
 		return nil, errors.Wrap(err, "removing conflicting txs")
 	}

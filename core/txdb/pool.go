@@ -78,10 +78,10 @@ func (p *Pool) Dump(ctx context.Context) ([]*bc.Tx, error) {
 	return dumpPoolTxs(ctx, p.db)
 }
 
-// Clean removes confirmedTxs and conflictTxs from the pending tx pool.
+// Clean removes txs from the pending tx pool.
 func (p *Pool) Clean(
 	ctx context.Context,
-	confirmedTxs, conflictTxs []*bc.Tx,
+	txs []*bc.Tx,
 	assets map[bc.AssetID]*state.AssetState,
 ) error {
 	dbtx, err := p.db.Begin(ctx)
@@ -90,20 +90,9 @@ func (p *Pool) Clean(
 	}
 	defer dbtx.Rollback(ctx)
 
-	var (
-		deleteTxHashes   []string
-		conflictTxHashes []string
-	)
-	for _, tx := range append(confirmedTxs, conflictTxs...) {
+	var deleteTxHashes []string
+	for _, tx := range txs {
 		deleteTxHashes = append(deleteTxHashes, tx.Hash.String())
-	}
-	// TODO(kr): ideally there is no distinction between confirmedTxs
-	// and conflictTxs here. We currently need to know the difference,
-	// because we mix pool outputs with blockchain outputs in postgres,
-	// and this means we have to take extra care not to delete confirmed
-	// outputs.
-	for _, tx := range conflictTxs {
-		conflictTxHashes = append(conflictTxHashes, tx.Hash.String())
 	}
 
 	// Delete pool_txs

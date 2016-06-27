@@ -44,14 +44,13 @@ func (m *MemPool) Dump(context.Context) ([]*bc.Tx, error) {
 	return m.pool[:len(m.pool):len(m.pool)], nil
 }
 
-// Clean removes confirmed or conflicting transactions from the pool.
+// Clean removes txs from the pool.
 func (m *MemPool) Clean(
 	ctx context.Context,
-	confirmed,
-	conflicting []*bc.Tx,
+	txs []*bc.Tx,
 	assets map[bc.AssetID]*state.AssetState,
 ) error {
-	for _, tx := range append(confirmed, conflicting...) {
+	for _, tx := range txs {
 		delete(m.poolMap, tx.Hash)
 		for i := range m.pool {
 			if m.pool[i].Hash == tx.Hash {
