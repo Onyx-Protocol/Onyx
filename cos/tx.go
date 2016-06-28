@@ -23,6 +23,9 @@ import (
 //
 // It is okay to add conflicting transactions to the pool. The conflict
 // will be resolved when a block lands.
+//
+// It is an error to call AddTx before the genesis block has landed.
+// Use WaitForBlock to guarantee this.
 func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 	prev, err := fc.store.LatestBlock(ctx)
 	if err != nil {

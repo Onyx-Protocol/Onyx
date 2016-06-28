@@ -61,8 +61,6 @@ func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, er
 // on the blockchain.  context.DeadlineExceeded means ctx is an
 // expiring context that timed out.
 func FinalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, error) {
-	var height uint64
-
 	// Avoid a race condition.  Calling LatestBlock here ensures that
 	// when we start waiting for blocks below, we don't begin waiting at
 	// block N+1 when the tx we want is in block N.
@@ -70,9 +68,8 @@ func FinalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx
 	if err != nil {
 		return nil, errors.Wrap(err, "getting latest block")
 	}
-	if b != nil {
-		height = b.Height
-	}
+
+	height := b.Height
 
 	tx, err := FinalizeTx(ctx, txTemplate)
 	if err != nil {
@@ -127,6 +124,9 @@ func waitBlock(ctx context.Context, height uint64) <-chan error {
 }
 
 func publishTx(ctx context.Context, msg *bc.Tx) error {
+	// Make sure there is atleast one block in case client is
+	// trying to finalize a tx before the genesis block has landed
+	fc.WaitForBlock(ctx, 1)
 	err := fc.AddTx(ctx, msg)
 	if errors.Root(err) == validation.ErrBadTx {
 		detail := errors.Detail(err)
