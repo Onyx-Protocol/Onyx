@@ -129,17 +129,14 @@ type FC struct {
 // signature indicates the block was already validated locally.
 func NewFC(ctx context.Context, store Store, pool Pool, trustedKeys []*btcec.PublicKey, heights <-chan uint64) (*FC, error) {
 	fc := &FC{store: store, pool: pool, trustedKeys: trustedKeys}
-
-	latestBlock, err := fc.LatestBlock(ctx)
-	if err != nil && errors.Root(err) != ErrNoBlocks {
-		return nil, errors.Wrap(err, "looking up latest block")
-	}
-	if latestBlock != nil {
-		fc.height.n = latestBlock.Height
-	}
-	// Now fc.height.n may still be zero because of ErrNoBlocks.
-
 	fc.height.cond.L = new(sync.Mutex)
+
+	if b, err := store.LatestBlock(ctx); err != nil {
+		return nil, errors.Wrap(err, "looking up latest block")
+	} else if b != nil {
+		fc.height.n = b.Height
+	}
+	// Note that fc.height.n may still be zero here.
 
 	if heights != nil {
 		go func() {
