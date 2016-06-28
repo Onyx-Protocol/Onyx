@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcutil"
 
 	"chain/cos/bc"
+	"chain/cos/patricia"
 	"chain/cos/state"
 	"chain/cos/txscript"
 	"chain/cos/validation"
@@ -169,18 +170,26 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	prevBlock, err := fc.LatestBlock(ctx)
-	if err != nil && errors.Root(err) != ErrNoBlocks {
-		return errors.Wrap(err, "getting latest known block")
-	}
+	var (
+		prevBlock *bc.Block
+		tree      = patricia.NewTree(nil)
+	)
 
-	tree, err := fc.store.StateTree(ctx, prevBlock.Height)
-	if err != nil {
-		return errors.Wrap(err, "loading state tree")
+	if block.Height > 1 {
+		var err error
+		prevBlock, err = fc.LatestBlock(ctx) // TODO(kr): GetBlock(block.Height-1)
+		if err != nil {
+			return errors.Wrap(err, "getting latest known block")
+		}
+
+		tree, err = fc.store.StateTree(ctx, prevBlock.Height)
+		if err != nil {
+			return errors.Wrap(err, "loading state tree")
+		}
 	}
 
 	mv := state.NewMemView(tree, nil)
-	err = validation.ValidateBlockForSig(ctx, mv, prevBlock, block)
+	err := validation.ValidateBlockForSig(ctx, mv, prevBlock, block)
 	return errors.Wrap(err, "validation")
 }
 
@@ -361,17 +370,9 @@ func GenerateBlockScript(keys []*btcec.PublicKey, nSigs int) ([]byte, error) {
 func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []*btcec.PublicKey, nSigs int) (*bc.Block, error) {
 	// TODO(bobg): Cache the genesis block if it exists and return it
 	// rather than always consing up a new one.
-	script, err := GenerateBlockScript(pubkeys, nSigs)
+	b, err := NewGenesisBlock(pubkeys, nSigs)
 	if err != nil {
 		return nil, err
-	}
-	b := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Version:      bc.NewBlockVersion,
-			Height:       1,
-			Timestamp:    uint64(time.Now().Unix()),
-			OutputScript: script,
-		},
 	}
 
 	latestBlock, err := fc.store.LatestBlock(ctx)
@@ -385,5 +386,21 @@ func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []*btcec.PublicKey
 		}
 	}
 
+	return b, nil
+}
+
+func NewGenesisBlock(pubkeys []*btcec.PublicKey, nSigs int) (*bc.Block, error) {
+	script, err := GenerateBlockScript(pubkeys, nSigs)
+	if err != nil {
+		return nil, err
+	}
+	b := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			Version:      bc.NewBlockVersion,
+			Height:       1,
+			Timestamp:    uint64(time.Now().Unix()),
+			OutputScript: script,
+		},
+	}
 	return b, nil
 }

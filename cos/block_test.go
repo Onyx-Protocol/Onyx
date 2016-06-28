@@ -273,6 +273,24 @@ func TestGenerateBlock(t *testing.T) {
 
 }
 
+func TestValidateGenesisBlockForSig(t *testing.T) {
+	genesis, err := NewGenesisBlock(nil, 0)
+	if err != nil {
+		t.Fatal("unexpected error ", err)
+	}
+
+	ctx := context.Background()
+	fc, err := NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
+	if err != nil {
+		t.Fatal("unexpected error ", err)
+	}
+
+	err = fc.ValidateBlockForSig(ctx, genesis)
+	if err != nil {
+		t.Error("unexpected error ", err)
+	}
+}
+
 func TestIsSignedByTrustedHost(t *testing.T) {
 	privKey, err := testutil.TestXPrv.ECPrivKey()
 	if err != nil {
