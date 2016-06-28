@@ -1,0 +1,14 @@
+Chain Docker images
+
+Each subdirectory represents a Docker build context. Any file in
+a build context is available to commands in its corresponding
+Dockerfile. This allows the Dockerfile to copy these files into
+the image. All files within a context will be used inside its
+resultant container.
+
+`startup.sh` is used as the ENTRYPOINT to its corresponding Dockerfile.
+This shell script will be the first command run on container startup.
+
+Each container may have an accompanying shell script in `chain/bin`.
+This script builds other assets (for example, the cored binary) and
+copies them into the build context before building the image.

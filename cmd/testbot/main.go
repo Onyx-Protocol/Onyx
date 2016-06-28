@@ -16,9 +16,6 @@ import (
 
 var (
 	listen    = env.String("LISTEN", ":4567")
-	db1URL    = env.String("DB1_URL", "postgres:///core?sslmode=disable")
-	db2URL    = env.String("DB2_URL", "postgres:///core-2?sslmode=disable")
-	db3URL    = env.String("DB3_URL", "postgres:///core-3?sslmode=disable")
 	slackURL  = os.Getenv("SLACK_WEBHOOK_URL")
 	sourcedir = os.Getenv("CHAIN")
 	mu        sync.Mutex
@@ -75,14 +72,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			runIn(sourcedir, exec.Command("git", "clean", "-xdf"), req)
 			runIn(sourcedir, exec.Command("git", "checkout", req.After), req)
 			runIn(sourcedir, exec.Command("git", "reset", "--hard", req.After), req)
-			runIn(sourcedir, exec.Command("go", "install", "./cmd/cored"), req)
-			runIn(sourcedir, exec.Command("go", "install", "./cmd/migratedb"), req)
-			runIn(sourcedir, exec.Command("migratedb", "-d", *db1URL), req)
-			runIn(sourcedir, exec.Command("migratedb", "-d", *db2URL), req)
-			runIn(sourcedir, exec.Command("migratedb", "-d", *db3URL), req)
-			runIn(sourcedir+"/qa/tests", exec.Command("mvn", "package"), req)
-			runIn(sourcedir, exec.Command("./qa/bin/test-singlecore"), req)
-			runIn(sourcedir, exec.Command("./qa/bin/test-multicore"), req)
+			runIn(sourcedir, exec.Command("./bin/run-tests"), req)
 			postToSlack(buildBody(req))
 		}()
 	}
@@ -147,7 +137,7 @@ func runIn(dir string, c *exec.Cmd, req Req) {
 	c.Stdout = &outbuf
 	c.Stderr = &errbuf
 	if err := c.Run(); err != nil {
-		req.Log = fmt.Sprintf("*Command run: *`%s`\n%s", strings.Join(c.Args, " "), errbuf.String())
+		req.Log = fmt.Sprintf("Command run: `%s`\n%s", strings.Join(c.Args, " "), errbuf.String())
 		panic(buildBody(req))
 	}
 }
