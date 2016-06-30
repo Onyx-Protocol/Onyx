@@ -119,10 +119,9 @@ func combine(txs ...*Template) (*Template, error) {
 // ComputeSigHashes populates signature data for every input and sigscript
 // component.
 func ComputeSigHashes(ctx context.Context, tpl *Template) {
-	hashCache := &bc.SigHashCache{}
+	sigHasher := bc.NewSigHasher(tpl.Unsigned)
 	for i, in := range tpl.Inputs {
-		aa := in.AssetAmount
-		in.SignatureData = tpl.Unsigned.HashForSigCached(i, aa, bc.SigHashAll, hashCache)
+		in.SignatureData = sigHasher.Hash(i, bc.SigHashAll)
 		for _, c := range in.SigComponents {
 			c.SignatureData = in.SignatureData
 		}

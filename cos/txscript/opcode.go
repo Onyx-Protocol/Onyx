@@ -2146,7 +2146,7 @@ func opcodeCheckSig(op *parsedOpcode, vm *Engine) error {
 	if vm.block != nil {
 		hash = vm.block.HashForSig()
 	} else {
-		hash = vm.tx.HashForSigCached(vm.txIdx, vm.currentTxInput().AssetAmount, hashType, vm.hashCache)
+		hash = vm.sigHasher.Hash(vm.txIdx, hashType)
 	}
 
 	pubKey, err := btcec.ParsePubKey(pkBytes, btcec.S256())
@@ -2362,7 +2362,7 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 		if vm.block != nil {
 			hash = vm.block.HashForSig()
 		} else {
-			hash = vm.tx.HashForSigCached(vm.txIdx, vm.currentTxInput().AssetAmount, hashType, vm.hashCache)
+			hash = vm.sigHasher.Hash(vm.txIdx, hashType)
 		}
 
 		if parsedSig.Verify(hash[:], parsedPubKey) {

@@ -111,8 +111,8 @@ func TestAddTxIssued(t *testing.T) {
 			},
 		},
 	}
-	asset0.Sign(t, multiIssueData, 0, bc.AssetAmount{})
-	asset1.Sign(t, multiIssueData, 1, bc.AssetAmount{})
+	asset0.Sign(t, multiIssueData, 0)
+	asset1.Sign(t, multiIssueData, 1)
 	multiIssue := bc.NewTx(*multiIssueData)
 
 	issueTransferData := &bc.TxData{
@@ -136,8 +136,8 @@ func TestAddTxIssued(t *testing.T) {
 			},
 		},
 	}
-	dest0.Sign(t, issueTransferData, 0, multiIssue.Outputs[1].AssetAmount)
-	asset0.Sign(t, issueTransferData, 1, bc.AssetAmount{})
+	dest0.Sign(t, issueTransferData, 0)
+	asset0.Sign(t, issueTransferData, 1)
 	issueTransfer := bc.NewTx(*issueTransferData)
 
 	memstore, mempool := memstore.New(), mempool.New()

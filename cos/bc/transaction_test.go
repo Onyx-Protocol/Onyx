@@ -202,18 +202,23 @@ func TestTxHashForSig(t *testing.T) {
 	tx := &TxData{
 		SerFlags: 0x7,
 		Version:  1,
-		Inputs: []*TxInput{{
-			Previous:        Outpoint{Hash: mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151")},
-			SignatureScript: []byte{1},
-			Metadata:        []byte("input1"),
-		}, {
-			Previous:        Outpoint{Hash: mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151"), Index: 1},
-			SignatureScript: []byte{2},
-		}},
-		Outputs: []*TxOutput{{
-			AssetAmount: AssetAmount{AssetID: assetID, Amount: 1000000000000},
-			Script:      []byte{3},
-		}},
+		Inputs: []*TxInput{
+			{
+				Previous:        Outpoint{Hash: mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151")},
+				SignatureScript: []byte{1},
+				Metadata:        []byte("input1"),
+			},
+			{
+				Previous:        Outpoint{Hash: mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151"), Index: 1},
+				SignatureScript: []byte{2},
+			},
+		},
+		Outputs: []*TxOutput{
+			{
+				AssetAmount: AssetAmount{AssetID: assetID, Amount: 1000000000000},
+				Script:      []byte{3},
+			},
+		},
 		Metadata: []byte("transfer"),
 	}
 	cases := []struct {
@@ -221,34 +226,35 @@ func TestTxHashForSig(t *testing.T) {
 		hashType SigHashType
 		wantHash string
 	}{
-		{0, SigHashAll, "430e75052c90f33e4807686121bfc17581e0be3866a0ff58b5dfdd6a4a8029bc"},
-		{0, SigHashSingle, "3db7d7862203283f580af3537236de5f441a719be729fea72784b269f6b5cb3b"},
-		{0, SigHashNone, "8480138fe11e262a564fe0eb1de5211a9d2d09ec252d24ca858bf63713881947"},
-		{0, SigHashAll | SigHashAnyOneCanPay, "c0cd6a4e3e24b01d60ec1068b01a8dbb4da19f9fdaf4acce6c287d1dd70a66ff"},
-		{0, SigHashSingle | SigHashAnyOneCanPay, "039f3ca883a560b289ec46c674187b674335f6931b04f995d22215142e3bcca0"},
-		{0, SigHashNone | SigHashAnyOneCanPay, "0f8d6c5db0df50a33862213fd88481cbc7eacdebe4fa23451ca05f58eae58b39"},
+		// TODO(bobg): Update all these hashes to pass under new serialization logic in PR 1070 (and possibly others)
+		{0, SigHashAll, "85b62dc7b0352882940a2589b0117a391efb424080f0d58436d00fda785cade7"},
+		{0, SigHashSingle, "a39a403c0662acce9dc61c2ba0502cfd038ae127408830567775cfd7d506fbf2"},
+		{0, SigHashNone, "dd7965880364b729f751bc9f285d63048fb558387e6bcea5f0a63f1bd1f8b2f8"},
+		{0, SigHashAll | SigHashAnyOneCanPay, "309f36191b469d9d022694cf3d3c951741c298d753e1b41faa1877fa09bf4f1d"},
+		{0, SigHashSingle | SigHashAnyOneCanPay, "329d5bbcb374be8783e4a77f90314d0d83d119b51b8e99a6e3df0e0a8e36ba20"},
+		{0, SigHashNone | SigHashAnyOneCanPay, "bf3e1991bf2c176d06fb4c049aa7825146fb5e6d2eda4af0dac584a2376af5f1"},
 
-		{1, SigHashAll, "c40b81bea7844263fcde2b8422d00c9bcb0f25c4941966525d9bdd7ed437f183"},
-		{1, SigHashSingle, "34c8dd47876128e0953f70e39fdc5d63899e26d58476de1a805e6c5b8e816736"},
-		{1, SigHashNone, "b949a7a3b31ec61d5cf936a854407ada15361cc6f2c0ffb76c1438c9c981a2d5"},
-		{1, SigHashAll | SigHashAnyOneCanPay, "55ed3c3a309524b3432d0be4ad4e87ad2f38f289d72de8e2cf75c4a0b0ae220f"},
-		{1, SigHashSingle | SigHashAnyOneCanPay, "b05b520c7ecac7dc4393415c27390d148384540eb52f8cf05f67d830015c88a1"},
-		{1, SigHashNone | SigHashAnyOneCanPay, "96daba78e127d90a2dd52b29d1527aa2dca7b0e1c59aac000fb21e64b58f4f7f"},
+		{1, SigHashAll, "c637509cc4e166848f25ab5cfef5cb35e46961042bd020f05be94f98ef2f75f5"},
+		{1, SigHashSingle, "d778f3b77c562d621e9ce443d3a93d86776538316ddb2bef8885efb729ee2c66"},
+		{1, SigHashNone, "8823a53ba361d73e86adb042104ca46c38bd3c5597fee4ea5f2b3d2c47edd152"},
+		{1, SigHashAll | SigHashAnyOneCanPay, "3a9493f33b36a907ff38db9fafbacb06afcc99d2b5152de850e94172d004c99c"},
+		{1, SigHashSingle | SigHashAnyOneCanPay, "b9529009522ab8923755b598b59f0b7e42a2042a0a6f4749c409192fed1c5141"},
+		{1, SigHashNone | SigHashAnyOneCanPay, "c97f85e80ed62dd775f41b145ec4a94829352df1eef8cbf7e7f785fc7c508929"},
 	}
-	assetAmount := tx.Outputs[0].AssetAmount
-	cache := &SigHashCache{}
+
+	sigHasher := NewSigHasher(tx)
 
 	for _, c := range cases {
-		hash := tx.HashForSig(c.idx, assetAmount, c.hashType)
+		hash := tx.HashForSig(c.idx, c.hashType)
 
 		if hash.String() != c.wantHash {
 			t.Errorf("HashForSig(%d, %v) = %s want %s", c.idx, c.hashType, hash.String(), c.wantHash)
 		}
 
-		cachedHash := tx.HashForSigCached(c.idx, assetAmount, c.hashType, cache)
+		cachedHash := sigHasher.Hash(c.idx, c.hashType)
 
 		if cachedHash.String() != c.wantHash {
-			t.Errorf("HashForSigCached(%d, %v) = %s want %s", c.idx, c.hashType, hash.String(), c.wantHash)
+			t.Errorf("sigHasher.Hash(%d, %v) = %s want %s", c.idx, c.hashType, hash.String(), c.wantHash)
 		}
 	}
 }

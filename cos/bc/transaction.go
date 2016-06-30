@@ -22,6 +22,8 @@ const (
 
 	// InvalidOutputIndex indicates issuance transaction.
 	InvalidOutputIndex uint32 = 0xffffffff
+
+	VMVersion = 1
 )
 
 // Tx holds a transaction along with its hash.
@@ -228,94 +230,112 @@ func (tx *TxData) WitnessHash() Hash {
 	return sha3.Sum256(append(txHash[:], dataHash[:]...))
 }
 
-// HashForSig generates the hash required for the
-// specified input's signature, given the AssetAmount
-// of its matching previous output.
-func (tx *TxData) HashForSig(idx int, assetAmount AssetAmount, hashType SigHashType) Hash {
-	return tx.HashForSigCached(idx, assetAmount, hashType, nil)
+// HashForSig generates the hash required for the specified input's
+// signature.
+func (tx *TxData) HashForSig(idx int, hashType SigHashType) Hash {
+	return NewSigHasher(tx).Hash(idx, hashType)
 }
 
-// SigHashCache is used to reduce redundant work
-// in consecutive HashForSigCached calls.
-type SigHashCache struct {
-	inputsHash, outputsHash *Hash
+type SigHasher struct {
+	tx             *TxData
+	inputsHash     *Hash
+	allOutputsHash *Hash
 }
 
-// HashForSigCached is the same operation as HashForSig,
-// but it also stores some of the intermediate hashes
-// in order to reduce work in consecutive calls for the
-// same transaction.
-func (tx *TxData) HashForSigCached(idx int, assetAmount AssetAmount, hashType SigHashType, cache *SigHashCache) Hash {
-	var hash, inputsHash, outputsHash Hash
+func NewSigHasher(tx *TxData) *SigHasher {
+	return &SigHasher{tx: tx}
+}
 
-	if (hashType & SigHashAnyOneCanPay) == 0 {
-		if cache != nil && cache.inputsHash != nil {
-			inputsHash = *cache.inputsHash
-		}
+func (s *SigHasher) writeInput(w io.Writer, idx int) {
+	s.tx.Inputs[idx].writeTo(w, 0)
+}
+
+func (s *SigHasher) writeOutput(w io.Writer, idx int) {
+	s.tx.Outputs[idx].writeTo(w, 0)
+}
+
+// Use only when hashtype is not "anyone can pay"
+func (s *SigHasher) getInputsHash() *Hash {
+	if s.inputsHash == nil {
+		var hash Hash
 		h := sha3.New256()
 		w := errors.NewWriter(h)
-		blockchain.WriteUvarint(w, uint64(len(tx.Inputs)))
-		for _, in := range tx.Inputs {
-			in.writeTo(w, 0)
+
+		blockchain.WriteUvarint(w, uint64(len(s.tx.Inputs)))
+		for i := 0; i < len(s.tx.Inputs); i++ {
+			s.writeInput(w, i)
 		}
-		h.Sum(inputsHash[:0])
-		if cache != nil {
-			cache.inputsHash = &inputsHash
+		h.Sum(hash[:0])
+		s.inputsHash = &hash
+	}
+	return s.inputsHash
+}
+
+func (s *SigHasher) getAllOutputsHash() *Hash {
+	if s.allOutputsHash == nil {
+		var hash Hash
+		h := sha3.New256()
+		w := errors.NewWriter(h)
+		blockchain.WriteUvarint(w, uint64(len(s.tx.Outputs)))
+		for i := 0; i < len(s.tx.Outputs); i++ {
+			s.writeOutput(w, i)
 		}
+		h.Sum(hash[:0])
+		s.allOutputsHash = &hash
+	}
+	return s.allOutputsHash
+}
+
+func (s *SigHasher) Hash(idx int, hashType SigHashType) (hash Hash) {
+	var inputsHash *Hash
+	if hashType&SigHashAnyOneCanPay == 0 {
+		inputsHash = s.getInputsHash()
+	} else {
+		inputsHash = &Hash{}
 	}
 
+	var outputCommitment []byte
+	if !s.tx.Inputs[idx].IsIssuance() {
+		var buf bytes.Buffer
+		buf.Write(s.tx.Inputs[idx].AssetAmount.AssetID[:])
+		blockchain.WriteUint64(&buf, s.tx.Inputs[idx].AssetAmount.Amount)
+		blockchain.WriteUvarint(&buf, VMVersion)
+		blockchain.WriteBytes(&buf, s.tx.Inputs[idx].PrevScript)
+		outputCommitment = buf.Bytes()
+	}
+
+	var outputsHash *Hash
 	switch hashType & sigHashMask {
-	case SigHashSingle:
-		if idx >= len(tx.Outputs) {
-			break
-		}
-		h := sha3.New256()
-		w := errors.NewWriter(h)
-		blockchain.WriteUvarint(w, 1)
-		tx.Outputs[idx].writeTo(w, 0)
-		h.Sum(outputsHash[:0])
+	case SigHashAll:
+		outputsHash = s.getAllOutputsHash()
 	case SigHashNone:
-		break
-	default:
-		if cache != nil && cache.outputsHash != nil {
-			outputsHash = *cache.outputsHash
+		outputsHash = &Hash{}
+	case SigHashSingle:
+		if idx >= len(s.tx.Outputs) {
+			outputsHash = &Hash{}
 		} else {
 			h := sha3.New256()
 			w := errors.NewWriter(h)
-			blockchain.WriteUvarint(w, uint64(len(tx.Outputs)))
-			for _, out := range tx.Outputs {
-				out.writeTo(w, 0)
-			}
-			h.Sum(outputsHash[:0])
-			if cache != nil {
-				cache.outputsHash = &outputsHash
-			}
+			blockchain.WriteUvarint(w, 1)
+			s.writeOutput(w, idx)
+			var hash Hash
+			h.Sum(hash[:0])
+			outputsHash = &hash
 		}
 	}
 
 	h := sha3.New256()
 	w := errors.NewWriter(h)
-
-	blockchain.WriteUint32(w, tx.Version)
-
+	blockchain.WriteUint32(w, s.tx.Version)
 	w.Write(inputsHash[:])
-
-	var buf bytes.Buffer
-	tx.Inputs[idx].writeTo(errors.NewWriter(&buf), 0)
-	blockchain.WriteBytes(w, buf.Bytes())
-
-	assetAmount.writeTo(w)
-
+	s.writeInput(w, idx)
+	blockchain.WriteBytes(w, outputCommitment)
 	w.Write(outputsHash[:])
-
-	blockchain.WriteUint64(w, tx.LockTime)
-
-	writeMetadata(w, tx.Metadata, 0)
-
+	blockchain.WriteUint64(w, s.tx.LockTime) // TODO(bobg): must replace with MinTime+MaxTime per the latest spec
+	writeMetadata(w, s.tx.Metadata, 0)
 	w.Write([]byte{byte(hashType)})
 
 	h.Sum(hash[:0])
-
 	return hash
 }
 

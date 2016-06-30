@@ -34,8 +34,8 @@ func Dest(t testing.TB) *TestDest {
 	}
 }
 
-func (d *TestDest) Sign(t testing.TB, tx *bc.TxData, index int, assetAmount bc.AssetAmount) {
-	hash := tx.HashForSig(index, assetAmount, bc.SigHashAll)
+func (d *TestDest) Sign(t testing.TB, tx *bc.TxData, index int) {
+	hash := tx.HashForSig(index, bc.SigHashAll)
 
 	ecPriv, err := d.PrivKey.ECPrivKey()
 	if err != nil {
@@ -93,7 +93,7 @@ func Issue(t testing.TB, asset *TestAsset, dest *TestDest, amount uint64) (*bc.T
 			},
 		}},
 	}
-	asset.Sign(t, tx, 0, bc.AssetAmount{})
+	asset.Sign(t, tx, 0)
 
 	return bc.NewTx(*tx), asset, dest
 }
@@ -111,7 +111,7 @@ func Transfer(t testing.TB, out *state.Output, from, to *TestDest) *bc.Tx {
 			AssetAmount: out.AssetAmount,
 		}},
 	}
-	from.Sign(t, tx, 0, out.AssetAmount)
+	from.Sign(t, tx, 0)
 
 	return bc.NewTx(*tx)
 }

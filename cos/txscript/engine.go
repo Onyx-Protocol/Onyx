@@ -82,7 +82,7 @@ type (
 		astack           stack       // alternate data stack
 		tx               *bc.TxData
 		block            *bc.Block
-		hashCache        *bc.SigHashCache
+		sigHasher        *bc.SigHasher
 		txIdx            int
 		numOps           int
 		flags            ScriptFlags
@@ -606,8 +606,10 @@ func newReusableEngine(ctx context.Context, circ CirculationFunc, tx *bc.TxData,
 		tx:          tx,
 		block:       block,
 		flags:       flags,
-		hashCache:   &bc.SigHashCache{},
 		timestamp:   timestamp,
+	}
+	if tx != nil {
+		vm.sigHasher = bc.NewSigHasher(tx)
 	}
 
 	if vm.hasFlag(ScriptVerifyMinimalData) {
