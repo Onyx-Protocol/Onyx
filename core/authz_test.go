@@ -42,42 +42,22 @@ func TestProjectAdminAuthz(t *testing.T) {
 	})
 }
 
-func TestProjectAuthz(t *testing.T) {
-	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
-		cases := []struct {
-			userID string
-			projID []string
-			want   error
-		}{
-			{fixtureInfo.u1ID, []string{fixtureInfo.proj1ID}, nil},                                        // admin
-			{fixtureInfo.u2ID, []string{fixtureInfo.proj1ID}, nil},                                        // member
-			{fixtureInfo.u3ID, []string{fixtureInfo.proj1ID}, errNoAccessToResource},                      // not a member
-			{fixtureInfo.u1ID, []string{fixtureInfo.proj1ID, fixtureInfo.proj2ID}, errNoAccessToResource}, // two projects
-			{fixtureInfo.u4ID, []string{fixtureInfo.proj4ID}, errNoAccessToResource},                      // project archived
-		}
-
-		for _, c := range cases {
-			ctx := authn.NewContext(ctx, c.userID)
-			got := projectAuthz(ctx, c.projID...)
-			if errors.Root(got) != c.want {
-				t.Errorf("projectAuthz(%s, %v) = %q want %q", c.userID, c.projID, got, c.want)
-			}
-		}
-	})
-}
-
 func TestManagerAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
 		mn1ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
 		mn2ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		mn3ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
+		mn3ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
+		err := appdb.ArchiveManagerNode(ctx, mn3ID)
+		if err != nil {
+			panic(err)
+		}
 
 		cases := []struct {
 			userID        string
 			managerNodeID string
 			want          error
 		}{
-			{fixtureInfo.u2ID, mn1ID, nil}, {fixtureInfo.u2ID, mn2ID, nil}, {fixtureInfo.u2ID, mn3ID, errNoAccessToResource},
+			{fixtureInfo.u2ID, mn1ID, nil}, {fixtureInfo.u2ID, mn2ID, nil}, {fixtureInfo.u2ID, mn3ID, appdb.ErrArchived},
 		}
 
 		for _, c := range cases {
@@ -94,18 +74,21 @@ func TestAccountAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
 		mn1ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
 		mn2ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		mn3ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
 		acc1ID := assettest.CreateAccountFixture(ctx, t, mn1ID, "", nil)
 		acc2ID := assettest.CreateAccountFixture(ctx, t, mn2ID, "", nil)
-		acc3ID := assettest.CreateAccountFixture(ctx, t, mn3ID, "", nil)
+		acc3ID := assettest.CreateAccountFixture(ctx, t, mn2ID, "", nil)
+		err := appdb.ArchiveAccount(ctx, acc3ID)
+		if err != nil {
+			panic(err)
+		}
 
 		cases := []struct {
 			userID    string
 			accountID string
 			want      error
 		}{
-			{fixtureInfo.u2ID, acc1ID, nil}, {fixtureInfo.u2ID, acc2ID, nil}, {fixtureInfo.u2ID, acc3ID, errNoAccessToResource},
+			{fixtureInfo.u2ID, acc1ID, nil}, {fixtureInfo.u2ID, acc2ID, nil}, {fixtureInfo.u2ID, acc3ID, appdb.ErrArchived},
 		}
 
 		for _, c := range cases {
@@ -122,14 +105,18 @@ func TestIssuerAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
 		in1ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
 		in2ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		in3ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
+		in3ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
+		err := appdb.ArchiveIssuerNode(ctx, in3ID)
+		if err != nil {
+			panic(err)
+		}
 
 		cases := []struct {
 			userID  string
 			inodeID string
 			want    error
 		}{
-			{fixtureInfo.u2ID, in1ID, nil}, {fixtureInfo.u2ID, in2ID, nil}, {fixtureInfo.u2ID, in3ID, errNoAccessToResource},
+			{fixtureInfo.u2ID, in1ID, nil}, {fixtureInfo.u2ID, in2ID, nil}, {fixtureInfo.u2ID, in3ID, appdb.ErrArchived},
 		}
 
 		for _, c := range cases {
@@ -146,18 +133,21 @@ func TestAssetAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
 		in1ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
 		in2ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		in3ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
 		a1ID := assettest.CreateAssetFixture(ctx, t, in1ID, "", "")
 		a2ID := assettest.CreateAssetFixture(ctx, t, in2ID, "", "")
-		a3ID := assettest.CreateAssetFixture(ctx, t, in3ID, "", "")
+		a3ID := assettest.CreateAssetFixture(ctx, t, in2ID, "", "")
+		err := appdb.ArchiveAsset(ctx, a3ID.String())
+		if err != nil {
+			panic(err)
+		}
 
 		cases := []struct {
 			userID  string
 			assetID bc.AssetID
 			want    error
 		}{
-			{fixtureInfo.u2ID, a1ID, nil}, {fixtureInfo.u2ID, a2ID, nil}, {fixtureInfo.u2ID, a3ID, errNoAccessToResource},
+			{fixtureInfo.u2ID, a1ID, nil}, {fixtureInfo.u2ID, a2ID, nil}, {fixtureInfo.u2ID, a3ID, appdb.ErrArchived},
 		}
 
 		for _, c := range cases {
@@ -173,15 +163,9 @@ func TestAssetAuthz(t *testing.T) {
 func TestBuildAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
 		mn1ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
-		mn2ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		mn3ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj3ID, "", nil, nil)
 
 		acc1ID := assettest.CreateAccountFixture(ctx, t, mn1ID, "", nil)
-		acc2ID := assettest.CreateAccountFixture(ctx, t, mn2ID, "", nil)
-		// acc3ID := assettest.CreateAccountFixture(ctx, t, mn3ID, "", nil)
-		acc4ID := assettest.CreateAccountFixture(ctx, t, mn1ID, "", nil)
-		// acc5ID := assettest.CreateAccountFixture(ctx, t, mn2ID, "", nil)
-		acc6ID := assettest.CreateAccountFixture(ctx, t, mn3ID, "", nil)
+		acc2ID := assettest.CreateAccountFixture(ctx, t, mn1ID, "", nil)
 
 		assetIDPtr := &bc.AssetID{}
 
@@ -203,7 +187,7 @@ func TestBuildAuthz(t *testing.T) {
 						Dests: []*Destination{
 							&Destination{
 								AssetID:   assetIDPtr,
-								AccountID: acc4ID,
+								AccountID: acc2ID,
 							},
 						},
 					},
@@ -223,7 +207,7 @@ func TestBuildAuthz(t *testing.T) {
 						Dests: []*Destination{
 							&Destination{
 								AssetID:   assetIDPtr,
-								AccountID: acc4ID,
+								AccountID: acc2ID,
 							},
 						},
 					},
@@ -231,84 +215,12 @@ func TestBuildAuthz(t *testing.T) {
 						Sources: []*Source{
 							&Source{
 								AssetID:   assetIDPtr,
-								AccountID: acc4ID,
+								AccountID: acc2ID,
 							},
 						},
 					},
 				},
 				want: nil,
-			},
-			{
-				userID: fixtureInfo.u2ID,
-				request: []*BuildRequest{
-					&BuildRequest{
-						Sources: []*Source{
-							{
-								AssetID:   assetIDPtr,
-								AccountID: acc1ID,
-							},
-							{
-								AssetID:   assetIDPtr,
-								AccountID: "fake-account",
-							},
-						},
-						Dests: []*Destination{
-							&Destination{
-								AssetID:   assetIDPtr,
-								AccountID: acc4ID,
-							},
-						},
-					},
-					&BuildRequest{
-						Sources: []*Source{
-							&Source{
-								AssetID:   assetIDPtr,
-								AccountID: acc4ID,
-							},
-						},
-					},
-				},
-				want: errNoAccessToResource,
-			},
-			{
-				userID: fixtureInfo.u2ID,
-				request: []*BuildRequest{
-					&BuildRequest{
-						Sources: []*Source{
-							&Source{
-								AssetID:   assetIDPtr,
-								AccountID: acc2ID,
-							},
-						},
-						Dests: []*Destination{
-							&Destination{
-								AssetID:   assetIDPtr,
-								AccountID: acc6ID,
-							},
-						},
-					},
-				},
-				want: errNoAccessToResource,
-			},
-			{
-				userID: fixtureInfo.u2ID,
-				request: []*BuildRequest{
-					&BuildRequest{
-						Sources: []*Source{
-							&Source{
-								AssetID:   assetIDPtr,
-								AccountID: acc1ID,
-							},
-						},
-						Dests: []*Destination{
-							&Destination{
-								AssetID:   assetIDPtr,
-								AccountID: acc2ID,
-							},
-						},
-					},
-				},
-				want: errNoAccessToResource,
 			},
 		}
 

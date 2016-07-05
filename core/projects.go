@@ -11,9 +11,6 @@ import (
 
 // GET /v3/projects/:projID
 func getProject(ctx context.Context, projID string) (*appdb.Project, error) {
-	if err := projectAuthz(ctx, projID); err != nil {
-		return nil, err
-	}
 	return appdb.GetProject(ctx, projID)
 }
 
@@ -80,9 +77,6 @@ func archiveProject(ctx context.Context, projID string) error {
 
 // GET /v3/projects/:projID/members
 func listMembers(ctx context.Context, projID string) (interface{}, error) {
-	if err := projectAuthz(ctx, projID); err != nil {
-		return nil, err
-	}
 	return appdb.ListMembers(ctx, projID)
 }
 

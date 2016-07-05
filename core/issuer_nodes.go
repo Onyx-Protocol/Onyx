@@ -17,10 +17,6 @@ import (
 
 // POST /v3/projects/:projID/issuer-nodes
 func createIssuerNode(ctx context.Context, projID string, req map[string]interface{}) (interface{}, error) {
-	if err := projectAuthz(ctx, projID); err != nil {
-		return nil, err
-	}
-
 	_, ok := req["keys"]
 	isDeprecated := !ok
 
@@ -81,9 +77,6 @@ func createIssuerNode(ctx context.Context, projID string, req map[string]interfa
 
 // GET /v3/projects/:projID/issuer-nodes
 func listIssuerNodes(ctx context.Context, projID string) (interface{}, error) {
-	if err := projectAuthz(ctx, projID); err != nil {
-		return nil, err
-	}
 	return appdb.ListIssuerNodes(ctx, projID)
 }
 

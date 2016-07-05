@@ -1,22 +1,17 @@
 package core
 
 import (
-	"sort"
-
 	"golang.org/x/net/context"
 
 	"chain/core/appdb"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/authn"
-	"chain/strings"
 )
 
 var (
 	errNoAccessToResource = errors.New("Resources are not available to user")
 	errNotAdmin           = errors.New("Resource is only available to admins")
-
-	EnableCrossProjectXferHack = false
 )
 
 func projectAdminAuthz(ctx context.Context, project string) error {
@@ -30,59 +25,28 @@ func projectAdminAuthz(ctx context.Context, project string) error {
 	return nil
 }
 
-func projectAuthz(ctx context.Context, projects ...string) error {
-	if len(projects) != 1 {
-		return errors.WithDetailf(errNoAccessToResource, "project IDs: %+v", projects)
-	}
-
-	hasAccess, err := appdb.IsMember(ctx, authn.GetAuthID(ctx), projects[0])
-	if err != nil {
-		return errors.WithDetailf(err, "project ID: %v", projects[0])
-	}
-	if !hasAccess {
-		return errors.WithDetailf(errNoAccessToResource, "project ID: %v", projects[0])
-	}
-	return nil
-}
-
-// managerAuthz will verify whether this request has access to the provided manager
-// node. If the manager node is archived, managerAuthz will return ErrArchived.
+// managerAuthz will verify whether this request has access to the provided account
+// manager. If the account manager is archived, managerAuthz will return ErrArchived.
 func managerAuthz(ctx context.Context, managerID string) error {
-	project, err := appdb.ProjectByActiveManager(ctx, managerID)
-	if err != nil {
-		return err
-	}
-	return errors.WithDetailf(projectAuthz(ctx, project), "account manager ID: %v", managerID)
+	return appdb.CheckActiveManager(ctx, managerID)
 }
 
-// accountAuthz will verify whether this request has access to the provided account. If
-// the account is archived, accountAuthz will return ErrArchived.
+// accountAuthz will verify whether this request has access to the provided
+// account. If the account is archived, accountAuthz will return ErrArchived.
 func accountAuthz(ctx context.Context, accountID string) error {
-	projects, err := appdb.ProjectsByActiveAccount(ctx, accountID)
-	if err != nil {
-		return err
-	}
-	return errors.WithDetailf(projectAuthz(ctx, projects...), "account ID: %v", accountID)
+	return appdb.CheckActiveAccount(ctx, accountID)
 }
 
-// issuerAuthz will verify whether this request has access to the provided issuer node.
-// If the issuer node is archived, issuerAuthz will return ErrArchived.
+// issuerAuthz will verify whether this request has access to the provided asset
+// issuer. If the asset issuer is archived, issuerAuthz will return ErrArchived.
 func issuerAuthz(ctx context.Context, issuerID string) error {
-	project, err := appdb.ProjectByActiveIssuer(ctx, issuerID)
-	if err != nil {
-		return err
-	}
-	return errors.WithDetailf(projectAuthz(ctx, project), "asset issuer ID: %v", issuerID)
+	return appdb.CheckActiveIssuer(ctx, issuerID)
 }
 
-// assetAuthz will verify whether this request has access to the provided asset.
-// If the asset is archived, assetAuthz will return ErrArchived.
+// assetAuthz will verify whether this request has access to the provided
+// asset. If the asset is archived, assetAuthz will return ErrArchived.
 func assetAuthz(ctx context.Context, assetID string) error {
-	projects, err := appdb.ProjectsByActiveAsset(ctx, assetID)
-	if err != nil {
-		return err
-	}
-	return errors.WithDetailf(projectAuthz(ctx, projects...), "asset ID: %v", assetID)
+	return appdb.CheckActiveAsset(ctx, assetID)
 }
 
 func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
@@ -109,7 +73,7 @@ func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
 		return nil
 	}
 
-	accountProjects, err := appdb.ProjectsByActiveAccount(ctx, accountIDs...)
+	err := appdb.CheckActiveAccount(ctx, accountIDs...)
 	if errors.Root(err) == pg.ErrUserInputNotFound || errors.Root(err) == appdb.ErrArchived {
 		return errors.WithDetailf(errNoAccessToResource, "account IDs: %+v", accountIDs)
 	}
@@ -117,24 +81,9 @@ func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
 		return err
 	}
 
-	assetProjects, err := appdb.ProjectsByActiveAsset(ctx, assetIDs...)
+	err = appdb.CheckActiveAsset(ctx, assetIDs...)
 	if errors.Root(err) == pg.ErrUserInputNotFound || errors.Root(err) == appdb.ErrArchived {
-		return errors.WithDetailf(errNoAccessToResource, "account IDs: %+v", accountIDs)
+		return errors.WithDetailf(errNoAccessToResource, "asset IDs: %+v", assetIDs)
 	}
-	if err != nil {
-		return err
-	}
-
-	// If EnableCrossProjectXferHack is set, we can ignore authz constraints on
-	// number of projects and project membership. As a practical concession,
-	// this hack does not account for projects that have been archived.
-	if EnableCrossProjectXferHack {
-		return nil
-	}
-
-	projects := append(accountProjects, assetProjects...)
-	sort.Strings(projects)
-	projects = strings.Uniq(projects)
-
-	return errors.WithDetail(projectAuthz(ctx, projects...), "invalid combination of accounts or assets")
+	return err
 }

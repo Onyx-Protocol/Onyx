@@ -21,10 +21,6 @@ import (
 
 // POST /v3/projects/:projID/manager-nodes
 func createManagerNode(ctx context.Context, projID string, req map[string]interface{}) (interface{}, error) {
-	if err := projectAuthz(ctx, projID); err != nil {
-		return nil, err
-	}
-
 	_, ok := req["keys"]
 	isDeprecated := !ok
 
@@ -117,9 +113,6 @@ func archiveManagerNode(ctx context.Context, mnodeID string) error {
 
 // GET /v3/projects/:projID/manager-nodes
 func listManagerNodes(ctx context.Context, projID string) (interface{}, error) {
-	if err := projectAuthz(ctx, projID); err != nil {
-		return nil, err
-	}
 	return appdb.ListManagerNodes(ctx, projID)
 }
 

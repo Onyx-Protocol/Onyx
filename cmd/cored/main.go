@@ -86,8 +86,6 @@ var (
 
 	blockPeriod              = 1 * time.Second
 	expireReservationsPeriod = time.Minute
-
-	enableCrossProjectXferHack = env.Bool("ENABLE_CROSS_PROJECT_XFER_HACK", false)
 )
 
 func init() {
@@ -221,7 +219,6 @@ func main() {
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
 	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
-	core.EnableCrossProjectXferHack = *enableCrossProjectXferHack
 
 	server := &http.Server{
 		Addr:    *listenAddr,

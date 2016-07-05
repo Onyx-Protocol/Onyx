@@ -313,106 +313,95 @@ func IsAdmin(ctx context.Context, userID string, project string) (bool, error) {
 	return isAdmin, errors.Wrap(err)
 }
 
-// ProjectByActiveManager returns the project ID associated with
-// a manager node. If the manager node is archived, this function
-// will return ErrArchived.
-func ProjectByActiveManager(ctx context.Context, managerID string) (string, error) {
+// CheckActiveManager returns nil if the account manager is active.
+// If the account manager is archived, this function will return ErrArchived.
+func CheckActiveManager(ctx context.Context, managerID string) error {
 	const q = `
-		SELECT project_id, archived
+		SELECT archived
 		FROM manager_nodes WHERE id=$1
 	`
-	var (
-		project  string
-		archived bool
-	)
-	err := pg.QueryRow(ctx, q, managerID).Scan(&project, &archived)
+	var archived bool
+	err := pg.QueryRow(ctx, q, managerID).Scan(&archived)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
 	if archived {
 		err = ErrArchived
 	}
-	return project, errors.WithDetailf(err, "account manager ID: %v", managerID)
+	return errors.WithDetailf(err, "account manager ID: %v", managerID)
 }
 
-// ProjectsByActiveAccount returns all project IDs associated with a set of active accounts.
+// CheckActiveAccount returns nil if the provided accounts are active.
 // If any of the accounts are archived, this function returns ErrArchived.
-func ProjectsByActiveAccount(ctx context.Context, accountIDs ...string) ([]string, error) {
+func CheckActiveAccount(ctx context.Context, accountIDs ...string) error {
 	// Remove duplicates so that we know how many accounts to expect.
 	sort.Strings(accountIDs)
 	accountIDs = strings.Uniq(accountIDs)
 
 	const q = `
-		SELECT COUNT(acc.id), array_agg(DISTINCT project_id),
-		       COUNT(CASE WHEN acc.archived THEN 1 ELSE NULL END) AS archived
-		FROM accounts acc
-		JOIN manager_nodes mn ON acc.manager_node_id=mn.id
-		WHERE acc.id=ANY($1)
+		SELECT COUNT(id),
+		       COUNT(CASE WHEN archived THEN 1 ELSE NULL END) AS archived
+		FROM accounts
+		WHERE id=ANY($1)
 	`
 	var (
 		accountsArchived int
 		accountsFound    int
-		projects         []string
 	)
 	err := pg.QueryRow(ctx, q, pg.Strings(accountIDs)).
-		Scan(&accountsFound, (*pg.Strings)(&projects), &accountsArchived)
+		Scan(&accountsFound, &accountsArchived)
 	if accountsFound != len(accountIDs) {
 		err = pg.ErrUserInputNotFound
 	} else if accountsArchived > 0 {
 		err = ErrArchived
 	}
-	return projects, errors.WithDetailf(err, "account IDs: %+v", accountIDs)
+	return errors.WithDetailf(err, "account IDs: %+v", accountIDs)
 }
 
-// ProjectByActiveIssuer returns the project ID associated with an active issuer node. If the
-// issuer node has been archived, ProjectByIssuer returns ErrArchived.
-func ProjectByActiveIssuer(ctx context.Context, issuerID string) (string, error) {
+// CheckActiveIssuer returns nil if the provided asset issuer is active.
+// If the asset issuer has been archived, this function returns ErrArchived.
+func CheckActiveIssuer(ctx context.Context, issuerID string) error {
 	const q = `
-		SELECT project_id, archived
+		SELECT archived
 		FROM issuer_nodes WHERE id=$1
 	`
-	var (
-		project  string
-		archived bool
-	)
-	err := pg.QueryRow(ctx, q, issuerID).Scan(&project, &archived)
+	var archived bool
+	err := pg.QueryRow(ctx, q, issuerID).Scan(&archived)
 	if err == sql.ErrNoRows {
 		err = pg.ErrUserInputNotFound
 	}
 	if archived {
 		err = ErrArchived
 	}
-	return project, errors.WithDetailf(err, "issuer node ID: %v", issuerID)
+	return errors.WithDetailf(err, "issuer node ID: %v", issuerID)
 }
 
-// ProjectsByActiveAsset returns all project IDs associated with a set of active assets.
+// CheckActiveAsset returns nil if the provided assets are active.
 // If any of the assets are archived, this function returns ErrArchived.
-func ProjectsByActiveAsset(ctx context.Context, assetIDs ...string) ([]string, error) {
+func CheckActiveAsset(ctx context.Context, assetIDs ...string) error {
 	// Remove duplicates so that we know how many assets to expect.
 	sort.Strings(assetIDs)
 	assetIDs = strings.Uniq(assetIDs)
 
 	const q = `
-		SELECT COUNT(assets.id), array_agg(DISTINCT project_id),
-		       COUNT(CASE WHEN assets.archived THEN 1 ELSE NULL END) AS archived
+		SELECT COUNT(id),
+		       COUNT(CASE WHEN archived THEN 1 ELSE NULL END) AS archived
 		FROM assets
-		JOIN issuer_nodes ON assets.issuer_node_id=issuer_nodes.id
-		WHERE assets.id=ANY($1)
+		WHERE id=ANY($1)
 	`
 	var (
 		assetsArchived int
 		assetsFound    int
-		projects       []string
 	)
 	err := pg.QueryRow(ctx, q, pg.Strings(assetIDs)).
-		Scan(&assetsFound, (*pg.Strings)(&projects), &assetsArchived)
+		Scan(&assetsFound, &assetsArchived)
 	if err != nil {
-		return nil, errors.Wrap(err)
+		return errors.Wrap(err)
 	}
 	if assetsFound != len(assetIDs) {
 		err = pg.ErrUserInputNotFound
 	} else if assetsArchived > 0 {
 		err = ErrArchived
 	}
-	return projects, errors.WithDetailf(err, "asset IDs: %+v", assetIDs)
+	return errors.WithDetailf(err, "asset IDs: %+v", assetIDs)
 }
