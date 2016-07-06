@@ -4,6 +4,7 @@ package blockchain
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 
 	chainio "chain/io"
@@ -35,14 +36,19 @@ func WriteBytes(w io.Writer, data []byte) error {
 	return err
 }
 
-// ReadBytes reads the length of the byte slice,
-// then reads the bytes.
-func ReadBytes(r io.Reader, b *[]byte) error {
+// ReadBytes reads the length of the byte slice, then reads the bytes.
+// If the byte slice exceeds the provided max, ReadBytes returns an error.
+// Since max errors are not I/O related, they will not be captured by an
+// io.Reader with sticky errors and must be handled by the caller.
+func ReadBytes(r io.Reader, max uint64) ([]byte, error) {
 	n, err := ReadUvarint(r)
 	if n < 1 || err != nil {
-		return err // can be successful read of 0
+		return nil, err // can be successful read of 0
 	}
-	*b = make([]byte, n)
-	_, err = io.ReadFull(r, *b)
-	return err
+	if n > max {
+		return nil, fmt.Errorf("cannot read %d bytes; max is %d", n, max)
+	}
+	b := make([]byte, n)
+	_, err = io.ReadFull(r, b)
+	return b, err
 }

@@ -12,6 +12,15 @@ import (
 	"chain/errors"
 )
 
+const (
+	commitmentMaxByteLength = 1000000 // 1mb
+
+	// scriptMaxByteLength is the maximum length in bytes of a COS program.
+	// Its value is txscript.MaxOpsPerScript * txscript.MaxScriptElementSize
+	// which should be an upper bound for program length.
+	scriptMaxByteLength = 1000 * 520
+)
+
 // Block describes a complete block, including its header
 // and the transactions it contains.
 type Block struct {
@@ -189,15 +198,25 @@ func (bh *BlockHeader) SetStateRoot(h Hash) {
 }
 
 // assumes r has sticky errors
-func (bh *BlockHeader) readFrom(r io.Reader) error {
+func (bh *BlockHeader) readFrom(r io.Reader) (err error) {
 	v, _ := blockchain.ReadUvarint(r)
 	bh.Version = uint32(v)
 	bh.Height, _ = blockchain.ReadUvarint(r)
 	io.ReadFull(r, bh.PreviousBlockHash[:])
-	blockchain.ReadBytes(r, &bh.Commitment)
+	bh.Commitment, err = blockchain.ReadBytes(r, commitmentMaxByteLength)
+	if err != nil {
+		return err
+	}
 	bh.Timestamp, _ = blockchain.ReadUvarint(r)
-	blockchain.ReadBytes(r, (*[]byte)(&bh.SignatureScript))
-	return blockchain.ReadBytes(r, (*[]byte)(&bh.OutputScript))
+	bh.SignatureScript, err = blockchain.ReadBytes(r, scriptMaxByteLength)
+	if err != nil {
+		return err
+	}
+	bh.OutputScript, err = blockchain.ReadBytes(r, scriptMaxByteLength)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // WriteTo satisfies interface io.WriterTo.

@@ -26,6 +26,11 @@ const (
 	VMVersion = 1
 )
 
+const (
+	assetDefinitionMaxByteLength = 5000000 // 5 mb
+	metadataMaxByteLength        = 500000  // 500 kb
+)
+
 // Tx holds a transaction along with its hash.
 type Tx struct {
 	TxData
@@ -162,35 +167,64 @@ func (tx *TxData) readFrom(r io.Reader) error {
 
 	for n, _ := blockchain.ReadUvarint(r); n > 0; n-- {
 		ti := new(TxInput)
-		ti.readFrom(r)
+		err = ti.readFrom(r)
+		if err != nil {
+			return err
+		}
 		tx.Inputs = append(tx.Inputs, ti)
 	}
 
 	for n, _ := blockchain.ReadUvarint(r); n > 0; n-- {
 		to := new(TxOutput)
-		to.readFrom(r)
+		err = to.readFrom(r)
+		if err != nil {
+			return err
+		}
 		tx.Outputs = append(tx.Outputs, to)
 	}
 
 	tx.LockTime, _ = blockchain.ReadUvarint(r)
-	return blockchain.ReadBytes(r, &tx.Metadata)
+	tx.Metadata, err = blockchain.ReadBytes(r, metadataMaxByteLength)
+	return err
 }
 
 // assumes r has sticky errors
-func (ti *TxInput) readFrom(r io.Reader) {
+func (ti *TxInput) readFrom(r io.Reader) (err error) {
 	ti.Previous.readFrom(r)
 	ti.AssetAmount.readFrom(r)
-	blockchain.ReadBytes(r, &ti.PrevScript)
-	blockchain.ReadBytes(r, (*[]byte)(&ti.SignatureScript))
-	blockchain.ReadBytes(r, &ti.Metadata)
-	blockchain.ReadBytes(r, &ti.AssetDefinition)
+
+	ti.PrevScript, err = blockchain.ReadBytes(r, scriptMaxByteLength)
+	if err != nil {
+		return err
+	}
+	ti.SignatureScript, err = blockchain.ReadBytes(r, scriptMaxByteLength)
+	if err != nil {
+		return err
+	}
+	ti.Metadata, err = blockchain.ReadBytes(r, metadataMaxByteLength)
+	if err != nil {
+		return err
+	}
+	ti.AssetDefinition, err = blockchain.ReadBytes(r, assetDefinitionMaxByteLength)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // assumes r has sticky errors
-func (to *TxOutput) readFrom(r io.Reader) {
+func (to *TxOutput) readFrom(r io.Reader) (err error) {
 	to.AssetAmount.readFrom(r)
-	blockchain.ReadBytes(r, (*[]byte)(&to.Script))
-	blockchain.ReadBytes(r, &to.Metadata)
+
+	to.Script, err = blockchain.ReadBytes(r, scriptMaxByteLength)
+	if err != nil {
+		return err
+	}
+	to.Metadata, err = blockchain.ReadBytes(r, metadataMaxByteLength)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // assumes r has sticky errors
