@@ -190,11 +190,12 @@ func (bh *BlockHeader) SetStateRoot(h Hash) {
 
 // assumes r has sticky errors
 func (bh *BlockHeader) readFrom(r io.Reader) error {
-	bh.Version, _ = blockchain.ReadUint32(r)
-	bh.Height, _ = blockchain.ReadUint64(r)
+	v, _ := blockchain.ReadUvarint(r)
+	bh.Version = uint32(v)
+	bh.Height, _ = blockchain.ReadUvarint(r)
 	io.ReadFull(r, bh.PreviousBlockHash[:])
 	blockchain.ReadBytes(r, &bh.Commitment)
-	bh.Timestamp, _ = blockchain.ReadUint64(r)
+	bh.Timestamp, _ = blockchain.ReadUvarint(r)
 	blockchain.ReadBytes(r, (*[]byte)(&bh.SignatureScript))
 	return blockchain.ReadBytes(r, (*[]byte)(&bh.OutputScript))
 }
@@ -217,11 +218,11 @@ func (bh *BlockHeader) WriteForSigTo(w io.Writer) (int64, error) {
 // If forSigning is true, it writes an empty string instead of the signature script.
 // assumes w has sticky errors.
 func (bh *BlockHeader) writeTo(w io.Writer, forSigning bool) error {
-	blockchain.WriteUint32(w, bh.Version)
-	blockchain.WriteUint64(w, bh.Height)
+	blockchain.WriteUvarint(w, uint64(bh.Version))
+	blockchain.WriteUvarint(w, bh.Height)
 	w.Write(bh.PreviousBlockHash[:])
 	blockchain.WriteBytes(w, bh.Commitment)
-	blockchain.WriteUint64(w, bh.Timestamp)
+	blockchain.WriteUvarint(w, bh.Timestamp)
 	if forSigning {
 		blockchain.WriteBytes(w, nil)
 	} else {

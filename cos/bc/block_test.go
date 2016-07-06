@@ -15,18 +15,18 @@ func TestEmptyBlock(t *testing.T) {
 	}
 
 	got := serialize(t, &block)
-	want, _ := hex.DecodeString("0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+	want, _ := hex.DecodeString("010000000000000000000000000000000000000000000000000000000000000000000000000000")
 	if !bytes.Equal(got, want) {
 		t.Errorf("empty block bytes = %x want %x", got, want)
 	}
 
 	got = serialize(t, &block.BlockHeader)
-	want, _ = hex.DecodeString("01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+	want, _ = hex.DecodeString("0100000000000000000000000000000000000000000000000000000000000000000000000000")
 	if !bytes.Equal(got, want) {
 		t.Errorf("empty block header bytes = %x want %x", got, want)
 	}
 
-	wantHash := mustDecodeHash("55a2e2cff0fa4b44bca37badd5c2ed7d1414bc1c9532a20d9dcd6b4abf101345")
+	wantHash := mustDecodeHash("9116f324f0ba5ed8af7433e4de34335f264012db33bd887a6e31ec52bf38f0fe")
 	if h := block.Hash(); h != wantHash {
 		t.Errorf("empty block has incorrect hash %s", h)
 	}
@@ -49,7 +49,7 @@ func TestSmallBlock(t *testing.T) {
 	}
 
 	got := serialize(t, &block)
-	want, _ := hex.DecodeString("010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000107010000000000000000000000000000")
+	want, _ := hex.DecodeString("010000000000000000000000000000000000000000000000000000000000000000000000000001070100000000")
 	if !bytes.Equal(got, want) {
 		t.Errorf("small block bytes = %x want %x", got, want)
 	}

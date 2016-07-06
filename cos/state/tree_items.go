@@ -45,7 +45,7 @@ func GetCirculation(tree *patricia.Tree, assetID bc.AssetID) uint64 {
 	}
 
 	r := bytes.NewReader(n.Value().Bytes)
-	v, _ := blockchain.ReadUint64(r)
+	v, _ := blockchain.ReadUvarint(r)
 	return v
 }
 
@@ -53,7 +53,7 @@ type uint64Valuer uint64
 
 func (v uint64Valuer) Value() patricia.Value {
 	var buf bytes.Buffer
-	blockchain.WriteUint64(&buf, uint64(v))
+	blockchain.WriteUvarint(&buf, uint64(v))
 	return patricia.Value{Bytes: buf.Bytes()}
 }
 
@@ -62,7 +62,7 @@ type outputValuer Output
 func (o outputValuer) Value() patricia.Value {
 	var buf bytes.Buffer
 	o.Outpoint.WriteTo(&buf)
-	blockchain.WriteUint64(&buf, o.Amount)
+	blockchain.WriteUvarint(&buf, o.Amount)
 	blockchain.WriteBytes(&buf, o.Script)
 	h := sha3.Sum256(buf.Bytes())
 	return patricia.Value{
