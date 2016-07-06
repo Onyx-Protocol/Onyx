@@ -129,6 +129,9 @@ func ComputeSigHashes(ctx context.Context, tpl *Template) {
 func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 	msg := txTemplate.Unsigned
 	for i, input := range txTemplate.Inputs {
+		if msg.Inputs[i] == nil {
+			return nil, fmt.Errorf("unsigned tx missing input %d", i)
+		}
 
 		components := input.SigComponents
 

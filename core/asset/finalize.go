@@ -34,6 +34,10 @@ var Generator *string
 func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
 
+	if txTemplate.Unsigned == nil {
+		return nil, errors.WithDetail(ErrBadTxTemplate, "missing unsigned tx")
+	}
+
 	if len(txTemplate.Inputs) > len(txTemplate.Unsigned.Inputs) {
 		return nil, errors.WithDetail(ErrBadTxTemplate, "too many inputs in template")
 	}
