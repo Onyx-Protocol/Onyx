@@ -230,12 +230,7 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, error) {
 	}
 	defer dbtx.Rollback(ctx)
 
-	u, err := appdb.CreateUser(ctx, "user@example.com", "password")
-	if err != nil {
-		return nil, err
-	}
-
-	proj, err := appdb.CreateProject(ctx, "proj", u.ID)
+	proj, err := appdb.CreateProject(ctx, "proj")
 	if err != nil {
 		return nil, err
 	}

@@ -18,27 +18,16 @@ type Project struct {
 	Name string `json:"name"`
 }
 
-// Member represents a member of a project. It contains information
-// for populating a member list in the UI, including the user's identity
-// and their role in the project.
-type Member struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
-}
-
-// Errors returned from project- and membership-related functions.
+// Errors returned from project- and user-related functions.
 var (
 	ErrBadProjectName = errors.New("invalid project name")
 	ErrBadRole        = errors.New("invalid role")
-	ErrAlreadyMember  = errors.New("user is already a member of the project")
 )
 
-// CreateProject creates a new project and adds the given user as its
-// initial admin member.
+// CreateProject creates a new project.
 //
 // Must be called inside a database transaction.
-func CreateProject(ctx context.Context, name string, userID string) (*Project, error) {
+func CreateProject(ctx context.Context, name string) (*Project, error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 
 	if name == "" {
@@ -54,25 +43,18 @@ func CreateProject(ctx context.Context, name string, userID string) (*Project, e
 		return nil, errors.Wrap(err, "insert query")
 	}
 
-	err = AddMember(ctx, id, userID, "admin")
-	if err != nil {
-		return nil, errors.Wrap(err, "add project creator as member")
-	}
-
 	return &Project{ID: id, Name: name}, nil
 }
 
-// ListProjects returns a list of active projects that the given user is a
-// member of.
-func ListProjects(ctx context.Context, userID string) ([]*Project, error) {
+// ListProjects returns a list of active projects.
+func ListProjects(ctx context.Context) ([]*Project, error) {
 	q := `
-		SELECT p.id, p.name
-		FROM projects p
-		JOIN members m ON p.id = m.project_id
-		WHERE m.user_id = $1 AND NOT p.archived
-		ORDER BY p.name
+		SELECT id, name
+		FROM projects
+		WHERE NOT archived
+		ORDER BY name
 	`
-	rows, err := pg.Query(ctx, q, userID)
+	rows, err := pg.Query(ctx, q)
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
@@ -173,143 +155,15 @@ func ArchiveProject(ctx context.Context, projID string) error {
 	return nil
 }
 
-// ListMembers returns a list of members of the given the given project.
-// Member data includes each member's user information and their role within
-// the project.
-func ListMembers(ctx context.Context, projID string) ([]*Member, error) {
-	q := `
-		SELECT u.id, u.email, m.role
-		FROM users u
-		JOIN members m ON u.id = m.user_id
-		WHERE m.project_id = $1
-		ORDER BY u.email
-	`
-	rows, err := pg.Query(ctx, q, projID)
-	if err != nil {
-		return nil, errors.Wrap(err, "select query")
-	}
-	defer rows.Close()
-
-	var members []*Member
-	for rows.Next() {
-		m := new(Member)
-		err := rows.Scan(&m.ID, &m.Email, &m.Role)
-		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
-		}
-		members = append(members, m)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "end row scan loop")
-	}
-
-	return members, nil
-}
-
-// AddMember adds a new member to an project with a specific role. If the
-// role is not valid, ErrBadRole will be returned. If the user is already a
-// member of the project, ErrAlreadyMember is returned.
-func AddMember(ctx context.Context, projID, userID, role string) error {
-	if err := validateRole(role); err != nil {
-		return err
-	}
-
-	q := `
-		INSERT INTO members (project_id, user_id, role)
-		SELECT $1, $2, $3
-	`
-	_, err := pg.Exec(ctx, q, projID, userID, role)
-	if pg.IsUniqueViolation(err) {
-		return ErrAlreadyMember
-	}
-	if err != nil {
-		return errors.Wrap(err, "insert query")
-	}
-
-	return nil
-}
-
-// UpdateMember changes the role of a user within an project. If the
-// role is not valid, ErrBadRole will be returned. If the user is not a member
-// of the project, an error with pg.ErrUserInputNotFound as its root will be
-// returned.
-func UpdateMember(ctx context.Context, projID, userID, role string) error {
-	if err := validateRole(role); err != nil {
-		return err
-	}
-
-	q := `
-		UPDATE members SET role = $1
-		WHERE project_id = $2 AND user_id = $3
-		RETURNING 1
-	`
-	err := pg.QueryRow(ctx, q, role, projID, userID).Scan(new(int))
-	if err == sql.ErrNoRows {
-		return errors.WithDetailf(
-			pg.ErrUserInputNotFound,
-			"project id: %v, user id: %v", projID, userID,
-		)
-	}
-	if err != nil {
-		return errors.Wrap(err, "update query")
-	}
-	return nil
-}
-
-// RemoveMember removes a member from the project.
-func RemoveMember(ctx context.Context, projID string, userID string) error {
-	q := `
-		DELETE FROM members
-		WHERE project_id = $1 AND user_id = $2
-	`
-	_, err := pg.Exec(ctx, q, projID, userID)
-	if err != nil {
-		return errors.Wrap(err, "delete query")
-	}
-	return nil
-}
-
-// validateRole checks whether the provided role is one of the valid roles,
-// either "admin" or "developer". If the role is invalid, an error with
-// ErrBadRole as its root is returned.
-func validateRole(role string) error {
-	if role != "admin" && role != "developer" {
-		return errors.WithDetailf(ErrBadRole, "role: %v", role)
-	}
-	return nil
-}
-
-// IsMember returns true if the user is a member of the project
-func IsMember(ctx context.Context, userID string, project string) (bool, error) {
+// IsAdmin returns true if the user is an admin.
+func IsAdmin(ctx context.Context, userID string) (bool, error) {
 	const q = `
-		SELECT COUNT(*)=1 FROM members
-		INNER JOIN projects ON projects.id = members.project_id
-		WHERE user_id=$1 AND project_id=$2 AND NOT projects.archived
+		SELECT COUNT(*)=1 FROM users
+		WHERE id=$1 AND role='admin'
 	`
-	var isMember bool
-	row := pg.QueryRow(ctx, q, userID, project)
-	err := row.Scan(&isMember)
-	return isMember, errors.Wrap(err)
-}
-
-// IsAdmin returns true if the user is an admin of the project. If the project
-// is archived, IsAdmin will return ErrArchived.
-func IsAdmin(ctx context.Context, userID string, project string) (bool, error) {
-	const q = `
-		SELECT COUNT(*)=1, COUNT(CASE WHEN projects.archived THEN 1 ELSE NULL END) AS archived
-		FROM members INNER JOIN projects ON projects.id = members.project_id
-		WHERE user_id=$1 AND project_id=$2 AND role='admin'
-	`
-	var (
-		isAdmin  bool
-		archived bool
-	)
-	row := pg.QueryRow(ctx, q, userID, project)
-	err := row.Scan(&isAdmin, &archived)
-	if err == nil && archived {
-		err = ErrArchived
-	}
+	var isAdmin bool
+	row := pg.QueryRow(ctx, q, userID)
+	err := row.Scan(&isAdmin)
 	return isAdmin, errors.Wrap(err)
 }
 

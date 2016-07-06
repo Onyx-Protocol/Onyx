@@ -34,6 +34,19 @@ func updateUserPassword(ctx context.Context, in struct{ Current, New string }) e
 	return appdb.UpdateUserPassword(ctx, uid, in.Current, in.New)
 }
 
+// PUT /v3/user/role
+func updateUserRole(ctx context.Context, userID string, in struct{ Role string }) error {
+	if err := adminAuthz(ctx); err != nil {
+		return err
+	}
+	return appdb.UpdateUserRole(ctx, userID, in.Role)
+}
+
+// GET /v3/users
+func listUsers(ctx context.Context) (interface{}, error) {
+	return appdb.ListUsers(ctx)
+}
+
 // POST /nouser/password-reset/start
 func startPasswordReset(ctx context.Context, in struct{ Email string }) (interface{}, error) {
 	secret, err := appdb.StartPasswordReset(ctx, in.Email, time.Now())

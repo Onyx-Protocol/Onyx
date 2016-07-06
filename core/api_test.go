@@ -36,7 +36,7 @@ func TestMux(t *testing.T) {
 
 func TestLogin(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra", "developer")
 	ctx = authn.NewContext(ctx, uid)
 
 	tok, err := login(ctx)
@@ -64,8 +64,8 @@ func TestIssue(t *testing.T) {
 	asset.Init(fc, true)
 	orderbook.Connect(fc)
 
-	userID := assettest.CreateUserFixture(ctx, t, "", "")
-	projectID := assettest.CreateProjectFixture(ctx, t, userID, "")
+	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
+	projectID := assettest.CreateProjectFixture(ctx, t, "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
 	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
 	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
@@ -114,8 +114,8 @@ func TestTransfer(t *testing.T) {
 	asset.Init(fc, true)
 	orderbook.Connect(fc)
 
-	userID := assettest.CreateUserFixture(ctx, t, "", "")
-	projectID := assettest.CreateProjectFixture(ctx, t, userID, "")
+	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
+	projectID := assettest.CreateProjectFixture(ctx, t, "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
 	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
 	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")

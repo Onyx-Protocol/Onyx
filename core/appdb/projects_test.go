@@ -1,7 +1,6 @@
 package appdb_test
 
 import (
-	"database/sql"
 	"reflect"
 	"testing"
 
@@ -18,8 +17,7 @@ import (
 func TestCreateProject(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	userID := assettest.CreateUserFixture(ctx, t, "user@chain.com", "password")
-	p, err := CreateProject(ctx, "new-proj", userID)
+	p, err := CreateProject(ctx, "new-proj")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,59 +28,31 @@ func TestCreateProject(t *testing.T) {
 	if p.Name != "new-proj" {
 		t.Errorf("project name = %v want new-proj", p.Name)
 	}
-
-	// Make sure the user was set as an admin.
-	role, err := checkRole(ctx, p.ID, userID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if role != "admin" {
-		t.Errorf("user role = %v want admin", role)
-	}
 }
 
 func TestListProjects(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	userID1 := assettest.CreateUserFixture(ctx, t, "foo@chain.com", "password")
-	userID2 := assettest.CreateUserFixture(ctx, t, "bar@chain.com", "password")
-	userID3 := assettest.CreateUserFixture(ctx, t, "baz@chain.com", "password")
-	projectID1 := assettest.CreateProjectFixture(ctx, t, userID1, "first project")
-	projectID2 := assettest.CreateProjectFixture(ctx, t, userID1, "second project")
-	projectID3 := assettest.CreateProjectFixture(ctx, t, userID3, "third project")
-	assettest.CreateMemberFixture(ctx, t, userID1, projectID3, "developer")
-	assettest.CreateMemberFixture(ctx, t, userID2, projectID1, "developer")
+	projectID1 := assettest.CreateProjectFixture(ctx, t, "first project")
+	projectID2 := assettest.CreateProjectFixture(ctx, t, "second project")
+	projectID3 := assettest.CreateProjectFixture(ctx, t, "third project")
 	if err := ArchiveProject(ctx, projectID3); err != nil {
 		t.Fatal(err)
 	}
 
 	examples := []struct {
-		userID string
-		want   []*Project
+		want []*Project
 	}{
 		{
-			userID1,
 			[]*Project{
 				{projectID1, "first project"},
 				{projectID2, "second project"},
 			},
 		},
-		{
-			userID2,
-			[]*Project{
-				{projectID1, "first project"},
-			},
-		},
-		{
-			userID3,
-			nil,
-		},
 	}
 
 	for _, ex := range examples {
-		t.Log("user:", ex.userID)
-
-		got, err := ListProjects(ctx, ex.userID)
+		got, err := ListProjects(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -96,8 +66,8 @@ func TestListProjects(t *testing.T) {
 func TestGetProject(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	projectID1 := assettest.CreateProjectFixture(ctx, t, "", "first project")
-	projectID2 := assettest.CreateProjectFixture(ctx, t, "", "second project")
+	projectID1 := assettest.CreateProjectFixture(ctx, t, "first project")
+	projectID2 := assettest.CreateProjectFixture(ctx, t, "second project")
 	examples := []struct {
 		id          string
 		wantProject *Project
@@ -124,7 +94,7 @@ func TestGetProject(t *testing.T) {
 func TestUpdateProject(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	projectID1 := assettest.CreateProjectFixture(ctx, t, "", "first project")
+	projectID1 := assettest.CreateProjectFixture(ctx, t, "first project")
 
 	examples := []struct {
 		id      string
@@ -155,14 +125,8 @@ func TestUpdateProject(t *testing.T) {
 func TestArchiveProject(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	userID1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "password")
-	userID2 := assettest.CreateUserFixture(ctx, t, "baz@bar.com", "password")
-	projectID1 := assettest.CreateProjectFixture(ctx, t, userID1, "first project")
-	projectID2 := assettest.CreateProjectFixture(ctx, t, "", "second project")
-	projectID3 := assettest.CreateProjectFixture(ctx, t, "", "third project")
-	assettest.CreateMemberFixture(ctx, t, userID1, projectID2, "developer")
-	assettest.CreateMemberFixture(ctx, t, userID1, projectID3, "developer")
-	assettest.CreateMemberFixture(ctx, t, userID2, projectID1, "developer")
+	projectID1 := assettest.CreateProjectFixture(ctx, t, "first project")
+	projectID2 := assettest.CreateProjectFixture(ctx, t, "second project")
 	inodeID1 := assettest.CreateIssuerNodeFixture(ctx, t, projectID1, "", nil, nil)
 	inodeID2 := assettest.CreateIssuerNodeFixture(ctx, t, projectID1, "", nil, nil)
 	mnodeID1 := assettest.CreateManagerNodeFixture(ctx, t, projectID1, "", nil, nil)
@@ -250,164 +214,4 @@ func TestArchiveProject(t *testing.T) {
 			}
 		}
 	}
-}
-
-func TestListMembers(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-
-	userID1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "password")
-	userID2 := assettest.CreateUserFixture(ctx, t, "baz@bar.com", "password")
-	projectID1 := assettest.CreateProjectFixture(ctx, t, userID1, "")
-	projectID2 := assettest.CreateProjectFixture(ctx, t, userID2, "")
-	assettest.CreateMemberFixture(ctx, t, userID2, projectID1, "developer")
-
-	examples := []struct {
-		projectID string
-		want      []*Member
-	}{
-		{
-			projectID1,
-			[]*Member{
-				{userID2, "baz@bar.com", "developer"},
-				{userID1, "foo@bar.com", "admin"},
-			},
-		},
-		{
-			projectID2,
-			[]*Member{
-				{userID2, "baz@bar.com", "admin"},
-			},
-		},
-	}
-
-	for _, ex := range examples {
-		t.Log("project:", ex.projectID)
-
-		got, err := ListMembers(ctx, ex.projectID)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !reflect.DeepEqual(got, ex.want) {
-			t.Errorf("members:\ngot:  %v\nwant: %v", got, ex.want)
-		}
-	}
-}
-
-func TestAddMember(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-
-	userID1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "password")
-	userID2 := assettest.CreateUserFixture(ctx, t, "baz@bar.com", "password")
-	userID3 := assettest.CreateUserFixture(ctx, t, "mrbenevolent@dictators.com", "password")
-	projectID1 := assettest.CreateProjectFixture(ctx, t, userID1, "")
-
-	if err := AddMember(ctx, projectID1, userID2, "developer"); err != nil {
-		t.Fatal(err)
-	}
-
-	role, err := checkRole(ctx, projectID1, userID2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if role != "developer" {
-		t.Errorf("role = %v want developer", role)
-	}
-
-	// Repeated attempts result in error.
-	err = AddMember(ctx, projectID1, userID2, "developer")
-	if errors.Root(err) != ErrAlreadyMember {
-		t.Errorf("error:\ngot:  %v\nwant: %v", errors.Root(err), ErrAlreadyMember)
-	}
-
-	// Invalid roles result in error
-	err = AddMember(ctx, projectID1, userID3, "benevolent-dictator")
-	if errors.Root(err) != ErrBadRole {
-		t.Errorf("error:\ngot:  %v\nwant: %v", errors.Root(err), ErrBadRole)
-	}
-}
-
-func TestUpdateMember(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-
-	userID1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "password")
-	projectID1 := assettest.CreateProjectFixture(ctx, t, userID1, "")
-
-	err := UpdateMember(ctx, projectID1, userID1, "developer")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	role, err := checkRole(ctx, projectID1, userID1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if role != "developer" {
-		t.Errorf("role = %v want developer", role)
-	}
-
-	// Updates for non-existing users result in error.
-	err = UpdateMember(ctx, projectID1, "not-a-user-id", "developer")
-	if errors.Root(err) != pg.ErrUserInputNotFound {
-		t.Errorf("error:\ngot:  %v\nwant: %v", errors.Root(err), pg.ErrUserInputNotFound)
-	}
-
-	// Invalid roles result in error
-	err = UpdateMember(ctx, projectID1, userID1, "benevolent-dictator")
-	if errors.Root(err) != ErrBadRole {
-		t.Errorf("error:\ngot:  %v\nwant: %v", errors.Root(err), ErrBadRole)
-	}
-}
-
-func TestRemoveMember(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-
-	userID1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "password")
-	userID2 := assettest.CreateUserFixture(ctx, t, "baz@bar.com", "password")
-
-	projectID1 := assettest.CreateProjectFixture(ctx, t, userID1, "a new project")
-	assettest.CreateMemberFixture(ctx, t, userID2, projectID1, "developer")
-
-	projectID2 := assettest.CreateProjectFixture(ctx, t, "", "another project")
-	assettest.CreateMemberFixture(ctx, t, userID1, projectID2, "developer")
-
-	err := RemoveMember(ctx, projectID1, userID1)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = checkRole(ctx, projectID1, userID1)
-	if err != sql.ErrNoRows {
-		t.Errorf("error = %v want %v", err, sql.ErrNoRows)
-	}
-
-	// Shouldn't affect other members
-	role, err := checkRole(ctx, projectID1, userID2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if role != "developer" {
-		t.Errorf("user2 role in proj1 = %v want developer", role)
-	}
-
-	// Shouldn't affect other projects
-	role, err = checkRole(ctx, projectID2, userID1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if role != "developer" {
-		t.Errorf("user 1 role in project 2 = %v want developer", role)
-	}
-}
-
-func checkRole(ctx context.Context, projID, userID string) (string, error) {
-	var (
-		q = `
-			SELECT role
-			FROM members
-			WHERE project_id = $1 AND user_id = $2
-		`
-		role string
-	)
-	err := pg.QueryRow(ctx, q, projID, userID).Scan(&role)
-	return role, err
 }

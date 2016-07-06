@@ -28,14 +28,17 @@ import (
 
 var userCounter = createCounter()
 
-func CreateUserFixture(ctx context.Context, t testing.TB, email, password string) string {
+func CreateUserFixture(ctx context.Context, t testing.TB, email, password, role string) string {
 	if email == "" {
 		email = fmt.Sprintf("user-%d@domain.tld", <-userCounter)
 	}
 	if password == "" {
 		password = "drowssap"
 	}
-	user, err := appdb.CreateUser(ctx, email, password)
+	if role == "" {
+		role = "developer"
+	}
+	user, err := appdb.CreateUser(ctx, email, password, role)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -52,20 +55,17 @@ func CreateAuthTokenFixture(ctx context.Context, t testing.TB, userID string, ty
 
 var projCounter = createCounter()
 
-func CreateProjectFixture(ctx context.Context, t testing.TB, userID, name string) string {
+func CreateProjectFixture(ctx context.Context, t testing.TB, name string) string {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 	defer dbtx.Rollback(ctx)
 
-	if userID == "" {
-		userID = CreateUserFixture(ctx, t, "", "")
-	}
 	if name == "" {
 		name = fmt.Sprintf("proj-%d", <-projCounter)
 	}
-	proj, err := appdb.CreateProject(ctx, name, userID)
+	proj, err := appdb.CreateProject(ctx, name)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -78,14 +78,8 @@ func CreateProjectFixture(ctx context.Context, t testing.TB, userID, name string
 	return proj.ID
 }
 
-func CreateMemberFixture(ctx context.Context, t testing.TB, userID, projectID, role string) {
-	if err := appdb.AddMember(ctx, projectID, userID, role); err != nil {
-		testutil.FatalErr(t, err)
-	}
-}
-
-func CreateInvitationFixture(ctx context.Context, t testing.TB, projectID, email, role string) string {
-	invitation, err := appdb.CreateInvitation(ctx, projectID, email, role)
+func CreateInvitationFixture(ctx context.Context, t testing.TB, email, role string) string {
+	invitation, err := appdb.CreateInvitation(ctx, email, role)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -101,7 +95,7 @@ func CreateIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label
 	}
 	defer dbtx.Rollback(ctx)
 	if projectID == "" {
-		projectID = CreateProjectFixture(ctx, t, "", "")
+		projectID = CreateProjectFixture(ctx, t, "")
 	}
 	if label == "" {
 		label = fmt.Sprintf("inode-%d", <-issuerNodeCounter)
@@ -142,7 +136,7 @@ func CreateManagerNodeFixture(ctx context.Context, t testing.TB, projectID, labe
 	defer dbtx.Rollback(ctx)
 
 	if projectID == "" {
-		projectID = CreateProjectFixture(ctx, t, "", "")
+		projectID = CreateProjectFixture(ctx, t, "")
 	}
 	if label == "" {
 		label = fmt.Sprintf("mnode-%d", <-managerNodeCounter)

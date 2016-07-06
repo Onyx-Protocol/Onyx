@@ -14,8 +14,8 @@ var (
 	errNotAdmin           = errors.New("Resource is only available to admins")
 )
 
-func projectAdminAuthz(ctx context.Context, project string) error {
-	hasAccess, err := appdb.IsAdmin(ctx, authn.GetAuthID(ctx), project)
+func adminAuthz(ctx context.Context) error {
+	hasAccess, err := appdb.IsAdmin(ctx, authn.GetAuthID(ctx))
 	if err != nil {
 		return err
 	}

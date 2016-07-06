@@ -24,7 +24,7 @@ func TestFindOpenOrders(t *testing.T) {
 	}
 	Connect(fc)
 
-	projectID := assettest.CreateProjectFixture(ctx, t, "", "")
+	projectID := assettest.CreateProjectFixture(ctx, t, "")
 	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
 	accountID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)

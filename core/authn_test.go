@@ -16,7 +16,7 @@ func TestAuthenticateToken(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	expires := time.Now().Add(-1 * time.Minute)
-	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra", "developer")
 	tok0 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-0", nil)
 	tok1 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-0", &expires)
 

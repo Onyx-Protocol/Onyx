@@ -32,11 +32,12 @@ var (
 type User struct {
 	ID    string `json:"id"`
 	Email string `json:"email"`
+	Role  string `json:"role"`
 }
 
 // CreateUser creates a new row in the users table corresponding to the provided
 // credentials.
-func CreateUser(ctx context.Context, email, password string) (*User, error) {
+func CreateUser(ctx context.Context, email, password, role string) (*User, error) {
 	email = strings.TrimSpace(email)
 	if err := validateEmail(email); err != nil {
 		return nil, err
@@ -46,17 +47,21 @@ func CreateUser(ctx context.Context, email, password string) (*User, error) {
 		return nil, err
 	}
 
+	if err := validateRole(role); err != nil {
+		return nil, err
+	}
+
 	phash, err := bcrypt.GenerateFromPassword([]byte(password), passwordBcryptCost)
 	if err != nil {
 		return nil, errors.Wrap(err, "password hash")
 	}
 
 	q := `
-		INSERT INTO users (email, password_hash) VALUES ($1, $2)
+		INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3)
 		RETURNING id
 	`
 	var id string
-	err = pg.QueryRow(ctx, q, email, phash).Scan(&id)
+	err = pg.QueryRow(ctx, q, email, phash, role).Scan(&id)
 	if pg.IsUniqueViolation(err) {
 		return nil, ErrUserAlreadyExists
 	}
@@ -64,7 +69,7 @@ func CreateUser(ctx context.Context, email, password string) (*User, error) {
 		return nil, errors.Wrap(err, "insert query")
 	}
 
-	return &User{id, email}, nil
+	return &User{id, email, role}, nil
 }
 
 // AuthenticateUserCreds takes an email and password and returns a user ID
@@ -98,11 +103,11 @@ func AuthenticateUserCreds(ctx context.Context, email, password string) (userID 
 // it will return an error with pg.ErrUserInputNotFound as its root.
 func GetUser(ctx context.Context, id string) (*User, error) {
 	var (
-		q = `SELECT email FROM users WHERE id = $1`
+		q = `SELECT email, role FROM users WHERE id = $1`
 		u = &User{ID: id}
 	)
 
-	err := pg.QueryRow(ctx, q, id).Scan(&u.Email)
+	err := pg.QueryRow(ctx, q, id).Scan(&u.Email, &u.Role)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "ID: %v", id)
 	}
@@ -120,11 +125,11 @@ func GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	email = strings.TrimSpace(email)
 
 	var (
-		q = `SELECT id, email FROM users WHERE lower(email) = lower($1)`
+		q = `SELECT id, email, role FROM users WHERE lower(email) = lower($1)`
 		u = new(User)
 	)
 
-	err := pg.QueryRow(ctx, q, email).Scan(&u.ID, &u.Email)
+	err := pg.QueryRow(ctx, q, email).Scan(&u.ID, &u.Email, &u.Role)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "email: %v", email)
 	}
@@ -187,6 +192,62 @@ func UpdateUserPassword(ctx context.Context, id, password, newpass string) error
 	}
 
 	return nil
+}
+
+// UpdateUserRole changes the role of a user. If the role is not valid,
+// ErrBadRole will be returned. If the user is not a part of the core
+// an error with pg.ErrUserInputNotFound as its root will be returned.
+func UpdateUserRole(ctx context.Context, userID, role string) error {
+	if err := validateRole(role); err != nil {
+		return err
+	}
+
+	q := `
+		UPDATE users SET role = $1
+		WHERE id = $2
+		RETURNING 1
+	`
+	err := pg.QueryRow(ctx, q, role, userID).Scan(new(int))
+	if err == sql.ErrNoRows {
+		return errors.WithDetailf(
+			pg.ErrUserInputNotFound,
+			"user id: %v", userID,
+		)
+	}
+	if err != nil {
+		return errors.Wrap(err, "update query")
+	}
+	return nil
+}
+
+// ListUsers returns a list of users on the core.
+func ListUsers(ctx context.Context) ([]*User, error) {
+	q := `
+		SELECT id, email, role
+		FROM users
+		ORDER BY email
+	`
+	rows, err := pg.Query(ctx, q)
+	if err != nil {
+		return nil, errors.Wrap(err, "select query")
+	}
+	defer rows.Close()
+
+	var users []*User
+	for rows.Next() {
+		u := new(User)
+		err := rows.Scan(&u.ID, &u.Email, &u.Role)
+		if err != nil {
+			return nil, errors.Wrap(err, "row scan")
+		}
+		users = append(users, u)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "end row scan loop")
+	}
+
+	return users, nil
 }
 
 // StartPasswordReset generates an expiring secret token that can be used to
@@ -313,6 +374,16 @@ func validatePassword(password string) error {
 		return errors.WithDetail(ErrBadPassword, "too short")
 	case 255 < len(password):
 		return errors.WithDetail(ErrBadPassword, "too long")
+	}
+	return nil
+}
+
+// validateRole checks whether the provided role is one of the valid roles,
+// either "admin" or "developer". If the role is invalid, an error with
+// ErrBadRole as its root is returned.
+func validateRole(role string) error {
+	if role != "admin" && role != "developer" {
+		return errors.WithDetailf(ErrBadRole, "role: %v", role)
 	}
 	return nil
 }

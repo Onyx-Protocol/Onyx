@@ -14,7 +14,7 @@ import (
 func TestCreateAPIToken(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra", "developer")
 	ctx = authn.NewContext(ctx, uid)
 
 	tok, err := createAPIToken(ctx)

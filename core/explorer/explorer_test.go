@@ -526,7 +526,7 @@ func TestListUTXOsByAsset(t *testing.T) {
 	}
 	Connect(ctx, fc, true, 0, true)
 
-	projectID := assettest.CreateProjectFixture(ctx, t, "", "")
+	projectID := assettest.CreateProjectFixture(ctx, t, "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
 	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
 	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
@@ -583,7 +583,7 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 	}
 
 	Connect(ctx, fc, true, 0, true)
-	projectID := assettest.CreateProjectFixture(ctx, t, "", "")
+	projectID := assettest.CreateProjectFixture(ctx, t, "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
 	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
 	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")

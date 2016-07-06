@@ -23,12 +23,13 @@ func init() {
 }
 
 func getUserByCreds(ctx context.Context, email, password string) (*User, error) {
-	q := `SELECT id, password_hash FROM users WHERE lower(email) = lower($1)`
+	q := `SELECT id, password_hash, role FROM users WHERE lower(email) = lower($1)`
 	var (
 		id    string
 		phash []byte
+		role  string
 	)
-	err := pg.QueryRow(ctx, q, email).Scan(&id, &phash)
+	err := pg.QueryRow(ctx, q, email).Scan(&id, &phash, &role)
 	if err != nil {
 		return nil, errors.Wrap(err, "user lookup")
 	}
@@ -37,19 +38,23 @@ func getUserByCreds(ctx context.Context, email, password string) (*User, error) 
 		return nil, errors.New("password does not match")
 	}
 
-	return &User{id, email}, nil
+	return &User{id, email, role}, nil
 }
 
 func TestCreateUser(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	u1, err := CreateUser(ctx, "foo@bar.com", "abracadabra")
+	u1, err := CreateUser(ctx, "foo@bar.com", "abracadabra", "developer")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if u1.Email != "foo@bar.com" {
 		t.Errorf("email = %v want foo@bar.com", u1.Email)
+	}
+
+	if u1.Role != "developer" {
+		t.Errorf("role = %v want developer", u1.Role)
 	}
 
 	if len(u1.ID) == 0 {
@@ -76,7 +81,7 @@ func TestCreateUser(t *testing.T) {
 func TestCreateUserPreserveCase(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	u1, err := CreateUser(ctx, "Foo@Bar.com", "abracadabra")
+	u1, err := CreateUser(ctx, "Foo@Bar.com", "abracadabra", "developer")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,12 +118,12 @@ func TestCreateUserNoDupes(t *testing.T) {
 		func() {
 			ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-			_, err := CreateUser(ctx, ex.email0, "abracadabra")
+			_, err := CreateUser(ctx, ex.email0, "abracadabra", "developer")
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			_, err = CreateUser(ctx, ex.email1, "abracadabra")
+			_, err = CreateUser(ctx, ex.email1, "abracadabra", "developer")
 			if errors.Root(err) != ErrUserAlreadyExists {
 				t.Errorf("error = %v want %v", err, ErrUserAlreadyExists)
 			}
@@ -127,24 +132,24 @@ func TestCreateUserNoDupes(t *testing.T) {
 }
 
 func TestCreateUserInvalid(t *testing.T) {
-	cases := []struct{ email, password string }{
+	cases := []struct{ email, password, role string }{
 		// missing password
-		{"foo@bar.com", ""},
+		{"foo@bar.com", "", ""},
 		// password too short
-		{"foo@bar.com", "12345"},
+		{"foo@bar.com", "12345", ""},
 		// password too long
-		{"foo@bar.com", "123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890"},
+		{"foo@bar.com", "123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890", ""},
 		// missing email
-		{"", "abracadabra"},
+		{"", "abracadabra", ""},
 		// email too long
-		{"123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890@bar.com", "abracadabra"},
+		{"123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890123457890@bar.com", "abracadabra", ""},
 	}
 
 	for _, test := range cases {
 		func() {
 			ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-			_, err := CreateUser(ctx, test.email, test.password)
+			_, err := CreateUser(ctx, test.email, test.password, test.role)
 			if err == nil {
 				t.Errorf("CreateUser(%q, %q) err = nil want error", test.email, test.password)
 			}
@@ -155,7 +160,7 @@ func TestCreateUserInvalid(t *testing.T) {
 func TestAuthenticateUserCreds(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	u, err := CreateUser(ctx, "foo@bar.com", "abracadabra")
+	u, err := CreateUser(ctx, "foo@bar.com", "abracadabra", "developer")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,14 +207,14 @@ func TestAuthenticateUserCreds(t *testing.T) {
 func TestGetUser(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	id := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	id := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra", "developer")
 
 	examples := []struct {
 		id       string
 		wantUser *User
 		wantErr  error
 	}{
-		{id, &User{ID: id, Email: "foo@bar.com"}, nil},
+		{id, &User{ID: id, Email: "foo@bar.com", Role: "developer"}, nil},
 		{"nonexistent", nil, pg.ErrUserInputNotFound},
 	}
 
@@ -231,16 +236,16 @@ func TestGetUser(t *testing.T) {
 func TestGetUserByEmail(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	id := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	id := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra", "")
 
 	examples := []struct {
 		email    string
 		wantUser *User
 		wantErr  error
 	}{
-		{"foo@bar.com", &User{ID: id, Email: "foo@bar.com"}, nil},
-		{"Foo@Bar.com", &User{ID: id, Email: "foo@bar.com"}, nil},
-		{"  foo@bar.com  ", &User{ID: id, Email: "foo@bar.com"}, nil},
+		{"foo@bar.com", &User{ID: id, Email: "foo@bar.com", Role: "developer"}, nil},
+		{"Foo@Bar.com", &User{ID: id, Email: "foo@bar.com", Role: "developer"}, nil},
+		{"  foo@bar.com  ", &User{ID: id, Email: "foo@bar.com", Role: "developer"}, nil},
 		{"baz@bar.com", nil, pg.ErrUserInputNotFound},
 	}
 
@@ -255,6 +260,34 @@ func TestGetUserByEmail(t *testing.T) {
 
 		if errors.Root(gotErr) != ex.wantErr {
 			t.Errorf("error:\ngot:  %v\nwant: %v", gotErr, ex.wantErr)
+		}
+	}
+}
+
+func TestListUsers(t *testing.T) {
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+
+	userID1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "password", "developer")
+	userID2 := assettest.CreateUserFixture(ctx, t, "baz@bar.com", "password", "developer")
+
+	examples := []struct {
+		want []*User
+	}{
+		{
+			[]*User{
+				{userID2, "baz@bar.com", "developer"},
+				{userID1, "foo@bar.com", "developer"},
+			},
+		},
+	}
+
+	for _, ex := range examples {
+		got, err := ListUsers(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(got, ex.want) {
+			t.Errorf("users:\ngot:  %v\nwant: %v", got, ex.want)
 		}
 	}
 }
@@ -280,8 +313,8 @@ func TestUpdateUserEmail(t *testing.T) {
 
 			ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-			id1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
-			assettest.CreateUserFixture(ctx, t, "foo2@bar.com", "abracadabra")
+			id1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra", "")
+			assettest.CreateUserFixture(ctx, t, "foo2@bar.com", "abracadabra", "")
 
 			err := UpdateUserEmail(ctx, id1, ex.password, ex.email)
 			if errors.Root(err) != ex.want {
@@ -315,7 +348,7 @@ func TestUpdateUserPassword(t *testing.T) {
 
 			ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-			id1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+			id1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra", "")
 
 			err := UpdateUserPassword(ctx, id1, ex.password, ex.newpass)
 			if errors.Root(err) != ex.want {
@@ -332,10 +365,41 @@ func TestUpdateUserPassword(t *testing.T) {
 	}
 }
 
+func TestUpdateUserRole(t *testing.T) {
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+
+	userID1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "password", "admin")
+
+	err := UpdateUserRole(ctx, userID1, "developer")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	role, err := checkRole(ctx, userID1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if role != "developer" {
+		t.Errorf("role = %v want developer", role)
+	}
+
+	// Updates for non-existing users result in error.
+	err = UpdateUserRole(ctx, "not-a-user-id", "developer")
+	if errors.Root(err) != pg.ErrUserInputNotFound {
+		t.Errorf("error:\ngot:  %v\nwant: %v", errors.Root(err), pg.ErrUserInputNotFound)
+	}
+
+	// Invalid roles result in error
+	err = UpdateUserRole(ctx, userID1, "benevolent-dictator")
+	if errors.Root(err) != ErrBadRole {
+		t.Errorf("error:\ngot:  %v\nwant: %v", errors.Root(err), ErrBadRole)
+	}
+}
+
 func TestPasswordResetFlow(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	id1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	id1 := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra", "")
 
 	secret, err := StartPasswordReset(ctx, "foo@bar.com", time.Now())
 	if err != nil {
@@ -381,8 +445,8 @@ func TestStartPasswordResetErrs(t *testing.T) {
 func TestCheckPasswordReset(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	assettest.CreateUserFixture(ctx, t, "foo@bar.com", "anything")
-	assettest.CreateUserFixture(ctx, t, "bar@foo.com", "anything")
+	assettest.CreateUserFixture(ctx, t, "foo@bar.com", "anything", "")
+	assettest.CreateUserFixture(ctx, t, "bar@foo.com", "anything", "")
 
 	secret1, err := StartPasswordReset(ctx, "foo@bar.com", time.Now())
 	if err != nil {
@@ -451,7 +515,7 @@ func TestFinishPasswordResetErrs(t *testing.T) {
 		func() {
 			ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-			assettest.CreateUserFixture(ctx, t, "foo@bar.com", "anything")
+			assettest.CreateUserFixture(ctx, t, "foo@bar.com", "anything", "")
 			secret1, err := StartPasswordReset(ctx, "foo@bar.com", ex.resetTime)
 			if err != nil {
 				testutil.FatalErr(t, err)
@@ -468,4 +532,11 @@ func TestFinishPasswordResetErrs(t *testing.T) {
 			}
 		}()
 	}
+}
+
+func checkRole(ctx context.Context, userID string) (string, error) {
+	const q = `SELECT role FROM users WHERE id = $1`
+	var role string
+	err := pg.QueryRow(ctx, q, userID).Scan(&role)
+	return role, err
 }

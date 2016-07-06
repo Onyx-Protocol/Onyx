@@ -16,8 +16,8 @@ import (
 func TestCreateManagerNodeBadXPub(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
-	proj0 := assettest.CreateProjectFixture(ctx, t, uid, "x")
+	uid := assettest.CreateUserFixture(ctx, t, "", "", "")
+	proj0 := assettest.CreateProjectFixture(ctx, t, "x")
 
 	ctx = authn.NewContext(ctx, uid)
 
@@ -36,8 +36,8 @@ func TestCreateManagerNodeBadXPub(t *testing.T) {
 func TestCreateManagerNode(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
-	proj0 := assettest.CreateProjectFixture(ctx, t, uid, "x")
+	uid := assettest.CreateUserFixture(ctx, t, "", "", "")
+	proj0 := assettest.CreateProjectFixture(ctx, t, "x")
 
 	ctx = authn.NewContext(ctx, uid)
 
@@ -66,8 +66,8 @@ func TestCreateManagerNode(t *testing.T) {
 func TestCreateManagerNodeDeprecated(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
-	proj0 := assettest.CreateProjectFixture(ctx, t, uid, "x")
+	uid := assettest.CreateUserFixture(ctx, t, "", "", "")
+	proj0 := assettest.CreateProjectFixture(ctx, t, "x")
 
 	ctx = authn.NewContext(ctx, uid)
 

@@ -187,7 +187,7 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 
 	var fixtureInfo orderbookFixtureInfo
 
-	fixtureInfo.projectID = assettest.CreateProjectFixture(ctx, t, "", "")
+	fixtureInfo.projectID = assettest.CreateProjectFixture(ctx, t, "")
 	fixtureInfo.managerNodeID = assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.projectID, "", nil, nil)
 	fixtureInfo.issuerNodeID = assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.projectID, "", nil, nil)
 	fixtureInfo.sellerAccountID = assettest.CreateAccountFixture(ctx, t, fixtureInfo.managerNodeID, "seller", nil)

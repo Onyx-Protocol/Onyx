@@ -59,9 +59,9 @@ var (
 		txbuilder.ErrBadBuildRequest: errorInfo{400, "CH756", "Invalid build transaction request"},
 		orderbook.ErrNoAssets:        errorInfo{400, "CH757", "No assets specified"},
 		appdb.ErrBadProjectName:      errorInfo{400, "CH770", "Invalid project name"},
-		errNotAdmin:                  errorInfo{403, "CH781", "Admin privileges are required perform this action"},
-		appdb.ErrBadRole:             errorInfo{400, "CH800", "Member role must be \"developer\" or \"admin\""},
-		appdb.ErrAlreadyMember:       errorInfo{400, "CH801", "User is already a member of the project"},
+		errNotAdmin:                  errorInfo{403, "CH781", "Admin privileges are required to perform this action"},
+		appdb.ErrBadRole:             errorInfo{400, "CH800", "User role must be \"developer\" or \"admin\""},
+		appdb.ErrUserAlreadyExists:   errorInfo{400, "CH801", "User already exists on the core"},
 		appdb.ErrCannotDelete:        errorInfo{400, "CH901", "Cannot delete non-empty object"},
 		appdb.ErrArchived:            errorInfo{404, "CH902", "Item has been archived"},
 	}

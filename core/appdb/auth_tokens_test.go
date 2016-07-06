@@ -50,7 +50,7 @@ func TestCreateAuthToken(t *testing.T) {
 		func() {
 			ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-			uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+			uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra", "admin")
 
 			tok, err := CreateAuthToken(ctx, uid, "sample-type-0", expiresAt)
 			if err != nil {
@@ -97,7 +97,7 @@ func TestListAuthTokens(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra", "admin")
 	tok0 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-0", nil)
 	tok1 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-0", &ts)
 	tok2 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-1", nil)
@@ -170,7 +170,7 @@ func TestDeleteAuthToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra")
+	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra", "admin")
 	tok0 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-0", nil)
 	tok1 := assettest.CreateAuthTokenFixture(ctx, t, uid, "sample-type-0", &ts)
 

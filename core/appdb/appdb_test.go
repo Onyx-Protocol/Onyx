@@ -13,31 +13,31 @@ import (
 	"chain/testutil"
 )
 
-func newTestUser(t *testing.T, ctx context.Context, email, password string) *User {
+func newTestUser(t *testing.T, ctx context.Context, email, password, role string) *User {
 	if email == "" {
 		email = "foo@bar.com"
 	}
 	if password == "" {
 		password = "a valid password"
 	}
-	user, err := CreateUser(ctx, email, password)
+	if role == "" {
+		role = "developer"
+	}
+	user, err := CreateUser(ctx, email, password, role)
 	if err != nil {
 		t.Fatalf("trouble setting up user in newTestUser: %v", err)
 	}
 	return user
 }
 
-func newTestProject(t *testing.T, ctx context.Context, name string, user *User) *Project {
+func newTestProject(t *testing.T, ctx context.Context, name string) *Project {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 	defer dbtx.Rollback(ctx)
 
-	if user == nil {
-		user = newTestUser(t, ctx, "", "")
-	}
-	project, err := CreateProject(ctx, name, user.ID)
+	project, err := CreateProject(ctx, name)
 	if err != nil {
 		t.Fatalf("trouble setting up project in newTestProject: %v", err)
 	}
@@ -58,7 +58,7 @@ func newTestIssuerNode(t *testing.T, ctx context.Context, project *Project, labe
 	defer dbtx.Rollback(ctx)
 
 	if project == nil {
-		project = newTestProject(t, ctx, "project-1", nil)
+		project = newTestProject(t, ctx, "project-1")
 	}
 	issuerNode, err := InsertIssuerNode(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil, 1, nil)
 	if err != nil {
@@ -84,7 +84,7 @@ func newTestManagerNode(t *testing.T, ctx context.Context, project *Project, lab
 	defer dbtx.Rollback(ctx)
 
 	if project == nil {
-		project = newTestProject(t, ctx, "project-1", nil)
+		project = newTestProject(t, ctx, "project-1")
 	}
 	managerNode, err := InsertManagerNode(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil, 0, 1, nil)
 	if err != nil {
@@ -110,7 +110,7 @@ func newTestVarKeyManagerNode(t *testing.T, ctx context.Context, project *Projec
 	defer dbtx.Rollback(ctx)
 
 	if project == nil {
-		project = newTestProject(t, ctx, "project-1", nil)
+		project = newTestProject(t, ctx, "project-1")
 	}
 	managerNode, err := InsertManagerNode(ctx, project.ID, label, []*hdkey.XKey{dummyXPub}, nil, varKeys, sigsReq, nil)
 	if err != nil {

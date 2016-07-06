@@ -322,7 +322,7 @@ func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtu
 
 	var fixtureInfo contractsFixtureInfo
 
-	fixtureInfo.projectID = assettest.CreateProjectFixture(ctx, t, "", "")
+	fixtureInfo.projectID = assettest.CreateProjectFixture(ctx, t, "")
 	fixtureInfo.managerNodeID = assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.projectID, "", nil, nil)
 	fixtureInfo.issuerNodeID = assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.projectID, "", nil, nil)
 	fixtureInfo.sellerAccountID = assettest.CreateAccountFixture(ctx, t, fixtureInfo.managerNodeID, "seller", nil)

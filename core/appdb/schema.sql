@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.1
+-- Dumped by pg_dump version 9.5.1
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -480,7 +480,6 @@ CREATE TABLE explorer_outputs (
 
 CREATE TABLE invitations (
     id text NOT NULL,
-    project_id text NOT NULL,
     email text NOT NULL,
     role text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -645,19 +644,6 @@ CREATE TABLE manager_txs_accounts (
 
 
 --
--- Name: members; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE members (
-    project_id text NOT NULL,
-    user_id text NOT NULL,
-    role text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT members_role_check CHECK (((role = 'developer'::text) OR (role = 'admin'::text)))
-);
-
-
---
 -- Name: migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -808,7 +794,9 @@ CREATE TABLE users (
     password_hash bytea NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     pwreset_secret_hash bytea,
-    pwreset_expires_at timestamp with time zone
+    pwreset_expires_at timestamp with time zone,
+    role text DEFAULT 'developer'::text NOT NULL,
+    CONSTRAINT users_role_check CHECK (((role = 'developer'::text) OR (role = 'admin'::text)))
 );
 
 
@@ -1022,14 +1010,6 @@ ALTER TABLE ONLY manager_nodes
 
 ALTER TABLE ONLY manager_txs
     ADD CONSTRAINT manager_txs_add_pkey PRIMARY KEY (id);
-
-
---
--- Name: members_project_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY members
-    ADD CONSTRAINT members_project_id_user_id_key UNIQUE (project_id, user_id);
 
 
 --
@@ -1298,13 +1278,6 @@ CREATE INDEX manager_txs_manager_node_id_id_idx ON manager_txs USING btree (mana
 
 
 --
--- Name: members_user_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX members_user_id_idx ON members USING btree (user_id);
-
-
---
 -- Name: orderbook_prices_asset_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1402,35 +1375,11 @@ ALTER TABLE ONLY auth_tokens
 
 
 --
--- Name: invitations_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY invitations
-    ADD CONSTRAINT invitations_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id);
-
-
---
 -- Name: manager_nodes_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY manager_nodes
     ADD CONSTRAINT manager_nodes_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id);
-
-
---
--- Name: members_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY members
-    ADD CONSTRAINT members_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id);
-
-
---
--- Name: members_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY members
-    ADD CONSTRAINT members_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 
 
 --
@@ -1499,3 +1448,4 @@ insert into migrations (filename, hash) values ('2016-06-10.0.voting.change-clos
 insert into migrations (filename, hash) values ('2016-06-13.0.txdb.state-tree-snapshots.sql', 'de6000306a774d97fd46a095559643231f0db786ece08a89fb913c087b4babd7');
 insert into migrations (filename, hash) values ('2016-06-20.0.voting.remove-deadline.sql', '96d0e78feca6917e329c6dfea7c3a581b98732f303d83c25376cf2727cd8faf6');
 insert into migrations (filename, hash) values ('2016-07-07.0.asset.issuance-totals-block.sql', 'be9df7c943c20c8a8231145fa73f6df029eec678a21115682d94e65858372b01');
+insert into migrations (filename, hash) values ('2016-07-08.0.core.drop-members.sql', '3fac6b9ad710c286e47aee3748e321902ceca3c80aaf1525c7d0934e762c53aa');

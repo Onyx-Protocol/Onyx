@@ -39,9 +39,8 @@ type command struct {
 }
 
 var commands = map[string]*command{
-	"adduser":    {addUser, "adduser [email] [password]"},
-	"addmember":  {addMember, "addmember [email] [projectID] [role]"},
-	"addproject": {addProject, "addproject [name] [admin-user-email]"},
+	"adduser":    {addUser, "adduser [email] [password] [role]"},
+	"addproject": {addProject, "addproject [name]"},
 	"genesis":    {genesis, "genesis"},
 	"boot":       {boot, "boot [email] [password]"},
 }
@@ -75,32 +74,14 @@ func main() {
 
 func addUser(db *sql.DB, args []string) {
 	ctx := pg.NewContext(context.Background(), db)
-	u, err := appdb.CreateUser(ctx, args[0], args[1])
+	u, err := appdb.CreateUser(ctx, args[0], args[1], args[2])
 	if err != nil {
 		fatalln("error:", err)
 	}
 	fmt.Printf("user created: %+v\n", *u)
 }
 
-func addMember(db *sql.DB, args []string) {
-	ctx := pg.NewContext(context.Background(), db)
-	email, projID, role := args[0], args[1], args[2]
-	u, err := appdb.GetUserByEmail(ctx, email)
-	if err != nil {
-		fatalln("error:", err)
-	}
-
-	err = appdb.AddMember(ctx, projID, u.ID, role)
-	if err != nil {
-		fatalln("error:", err)
-	}
-
-	fmt.Printf("%s (%s) added to project %s with role %s\n", u.Email, u.ID, projID, role)
-}
-
 func addProject(db *sql.DB, args []string) {
-	prjname, email := args[0], args[1]
-
 	ctx := pg.NewContext(context.Background(), db)
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
@@ -108,12 +89,7 @@ func addProject(db *sql.DB, args []string) {
 	}
 	defer dbtx.Rollback(ctx)
 
-	u, err := appdb.GetUserByEmail(ctx, email)
-	if err != nil {
-		fatalln("error:", err)
-	}
-
-	proj, err := appdb.CreateProject(ctx, prjname, u.ID)
+	proj, err := appdb.CreateProject(ctx, args[0])
 	if err != nil {
 		fatalln("error:", err)
 	}
@@ -157,7 +133,7 @@ func boot(db *sql.DB, args []string) {
 	}
 	defer dbtx.Rollback(ctx)
 
-	u, err := appdb.CreateUser(ctx, args[0], args[1])
+	u, err := appdb.CreateUser(ctx, args[0], args[1], "admin")
 	if err != nil {
 		fatalln(err)
 	}
@@ -167,7 +143,7 @@ func boot(db *sql.DB, args []string) {
 		fatalln(err)
 	}
 
-	proj, err := appdb.CreateProject(ctx, "proj", u.ID)
+	proj, err := appdb.CreateProject(ctx, "proj")
 	if err != nil {
 		fatalln(err)
 	}

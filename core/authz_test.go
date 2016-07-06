@@ -15,28 +15,25 @@ import (
 )
 
 type fixtureInfo struct {
-	u1ID, u2ID, u3ID, u4ID             string
-	proj1ID, proj2ID, proj3ID, proj4ID string
+	u1ID, u2ID       string
+	proj1ID, proj2ID string
 }
 
-func TestProjectAdminAuthz(t *testing.T) {
+func TestAdminAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
 		cases := []struct {
 			userID string
-			projID string
 			want   error
 		}{
-			{fixtureInfo.u1ID, fixtureInfo.proj1ID, nil},               // admin
-			{fixtureInfo.u2ID, fixtureInfo.proj1ID, errNotAdmin},       // not an admin
-			{fixtureInfo.u3ID, fixtureInfo.proj1ID, errNotAdmin},       // not a member
-			{fixtureInfo.u4ID, fixtureInfo.proj4ID, appdb.ErrArchived}, // project archived
+			{fixtureInfo.u1ID, nil},         // admin
+			{fixtureInfo.u2ID, errNotAdmin}, // not an admin
 		}
 
 		for _, c := range cases {
 			ctx := authn.NewContext(ctx, c.userID)
-			got := errors.Root(projectAdminAuthz(ctx, c.projID))
+			got := errors.Root(adminAuthz(ctx))
 			if got != c.want {
-				t.Errorf("projectAdminAuthz(%s, %s) = %q want %q", c.userID, c.projID, got, c.want)
+				t.Errorf("adminAuthz(%s) = %q want %q", c.userID, got, c.want)
 			}
 		}
 	})
@@ -245,30 +242,11 @@ func withCommonFixture(t *testing.T, fn func(context.Context, *fixtureInfo)) {
 
 	var fixtureInfo fixtureInfo
 
-	fixtureInfo.u1ID = assettest.CreateUserFixture(ctx, t, "", "")
-	fixtureInfo.u2ID = assettest.CreateUserFixture(ctx, t, "", "")
-	fixtureInfo.u3ID = assettest.CreateUserFixture(ctx, t, "", "")
-	fixtureInfo.u4ID = assettest.CreateUserFixture(ctx, t, "", "")
+	fixtureInfo.u1ID = assettest.CreateUserFixture(ctx, t, "", "", "admin")
+	fixtureInfo.u2ID = assettest.CreateUserFixture(ctx, t, "", "", "developer")
 
-	fixtureInfo.proj1ID = assettest.CreateProjectFixture(ctx, t, fixtureInfo.u1ID, "")
-	err = appdb.AddMember(ctx, fixtureInfo.proj1ID, fixtureInfo.u2ID, "developer")
-	if err != nil {
-		panic(err)
-	}
-
-	fixtureInfo.proj2ID = assettest.CreateProjectFixture(ctx, t, fixtureInfo.u1ID, "")
-	err = appdb.AddMember(ctx, fixtureInfo.proj2ID, fixtureInfo.u2ID, "admin")
-	if err != nil {
-		panic(err)
-	}
-
-	fixtureInfo.proj3ID = assettest.CreateProjectFixture(ctx, t, "", "")
-
-	fixtureInfo.proj4ID = assettest.CreateProjectFixture(ctx, t, fixtureInfo.u4ID, "")
-	err = appdb.ArchiveProject(ctx, fixtureInfo.proj4ID)
-	if err != nil {
-		panic(err)
-	}
+	fixtureInfo.proj1ID = assettest.CreateProjectFixture(ctx, t, "")
+	fixtureInfo.proj2ID = assettest.CreateProjectFixture(ctx, t, "")
 
 	fn(ctx, &fixtureInfo)
 }

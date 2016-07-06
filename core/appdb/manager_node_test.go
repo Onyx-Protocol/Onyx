@@ -27,8 +27,8 @@ func TestInsertManagerNode(t *testing.T) {
 func TestInsertManagerNodeIdempotence(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	project1 := newTestProject(t, ctx, "project-1", nil)
-	project2 := newTestProject(t, ctx, "project-2", newTestUser(t, ctx, "two@user.com", "password"))
+	project1 := newTestProject(t, ctx, "project-1")
+	project2 := newTestProject(t, ctx, "project-2")
 
 	idempotencyKey := "my-manager-node"
 	mn1, err := InsertManagerNode(ctx, project1.ID, "manager-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
@@ -68,7 +68,7 @@ func TestInsertManagerNodeIdempotence(t *testing.T) {
 func TestGetManagerNode(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	proj := newTestProject(t, ctx, "foo", nil)
+	proj := newTestProject(t, ctx, "foo")
 	mn, err := InsertManagerNode(ctx, proj.ID, "manager-node-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 0, 1, nil)
 
 	if err != nil {
@@ -217,8 +217,8 @@ func TestAccountsWithAsset(t *testing.T) {
 func TestListManagerNodes(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	proj0 := assettest.CreateProjectFixture(ctx, t, "", "")
-	proj1 := assettest.CreateProjectFixture(ctx, t, "", "")
+	proj0 := assettest.CreateProjectFixture(ctx, t, "")
+	proj1 := assettest.CreateProjectFixture(ctx, t, "")
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, proj0, "manager-node-0", nil, nil)
 	mn1 := assettest.CreateManagerNodeFixture(ctx, t, proj0, "manager-node-1", nil, nil)
 	mn2 := assettest.CreateManagerNodeFixture(ctx, t, proj1, "manager-node-2", nil, nil)

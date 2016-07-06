@@ -22,8 +22,8 @@ func TestInsertIssuerNode(t *testing.T) {
 func TestInsertIssuerNodeIdempotence(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	project1 := newTestProject(t, ctx, "project-1", nil)
-	project2 := newTestProject(t, ctx, "project-2", newTestUser(t, ctx, "two@user.com", "password"))
+	project1 := newTestProject(t, ctx, "project-1")
+	project2 := newTestProject(t, ctx, "project-2")
 
 	idempotencyKey := "my-issuer-node-client-token"
 	in1, err := InsertIssuerNode(ctx, project1.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 1, &idempotencyKey)
@@ -63,8 +63,8 @@ func TestInsertIssuerNodeIdempotence(t *testing.T) {
 func TestListIssuerNodes(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	proj0ID := assettest.CreateProjectFixture(ctx, t, "", "proj-0")
-	proj1ID := assettest.CreateProjectFixture(ctx, t, "", "proj-1")
+	proj0ID := assettest.CreateProjectFixture(ctx, t, "proj-0")
+	proj1ID := assettest.CreateProjectFixture(ctx, t, "proj-1")
 
 	in0ID := assettest.CreateIssuerNodeFixture(ctx, t, proj0ID, "in-0", nil, nil)
 	in1ID := assettest.CreateIssuerNodeFixture(ctx, t, proj0ID, "in-1", nil, nil)
@@ -107,7 +107,7 @@ func TestListIssuerNodes(t *testing.T) {
 func TestGetIssuerNodes(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	proj := newTestProject(t, ctx, "foo", nil)
+	proj := newTestProject(t, ctx, "foo")
 	in, err := InsertIssuerNode(ctx, proj.ID, "in-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 1, nil)
 	if err != nil {
 		t.Fatalf("unexpected error on InsertIssuerNode: %v", err)

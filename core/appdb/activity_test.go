@@ -189,7 +189,7 @@ func TestGetActAssets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	proj0 := assettest.CreateProjectFixture(ctx, t, "", "proj0")
+	proj0 := assettest.CreateProjectFixture(ctx, t, "proj0")
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, proj0, "in-0", nil, nil)
 	in1 := assettest.CreateIssuerNodeFixture(ctx, t, proj0, "in-1", nil, nil)
 	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "")
@@ -253,7 +253,7 @@ func TestGetActAccounts(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	proj0 := assettest.CreateProjectFixture(ctx, t, "", "proj0")
+	proj0 := assettest.CreateProjectFixture(ctx, t, "proj0")
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, proj0, "in-0", nil, nil)
 	mn1 := assettest.CreateManagerNodeFixture(ctx, t, proj0, "in-1", nil, nil)
 	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "asset-0", nil)
