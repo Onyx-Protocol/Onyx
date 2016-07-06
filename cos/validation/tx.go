@@ -33,7 +33,7 @@ func ValidateTxInputs(ctx context.Context, view state.ViewReader, tx *bc.Tx) err
 
 // ValidateTx validates the given transaction against the given state.
 // If tx is invalid, it returns a non-nil error describing why.
-func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp uint64) error {
+func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestampMS uint64) error {
 	// Don't make a span here, because there are too many of them
 	// to comfortably fit in a single trace for processing (creating
 	// or applying) a block.
@@ -44,8 +44,12 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 		return errors.Wrap(err, "well-formed test")
 	}
 
-	if tx.LockTime > timestamp {
-		return errors.WithDetail(ErrBadTx, "transaction lock time is in the future")
+	if timestampMS < tx.MinTime {
+		return errors.WithDetail(ErrBadTx, "block or current time is before transaction min time")
+	}
+
+	if tx.MaxTime > 0 && timestampMS > tx.MaxTime {
+		return errors.WithDetail(ErrBadTx, "block or current time is after transaction max time")
 	}
 
 	// If this is an issuance tx, check its prevout hash against the
@@ -59,7 +63,7 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 		return errors.Wrap(err, "validating inputs")
 	}
 
-	engine, err := txscript.NewReusableEngine(ctx, view.Circulation, &tx.TxData, txscript.StandardVerifyFlags)
+	engine, err := txscript.NewReusableEngine(ctx, &tx.TxData, txscript.StandardVerifyFlags)
 	if err != nil {
 		return fmt.Errorf("cannot create script engine: %s", err)
 	}
@@ -96,6 +100,10 @@ func ValidateTx(ctx context.Context, view state.ViewReader, tx *bc.Tx, timestamp
 func txIsWellFormed(tx *bc.Tx) error {
 	if len(tx.Inputs) == 0 {
 		return errors.WithDetail(ErrBadTx, "inputs are missing")
+	}
+
+	if tx.MaxTime > 0 && tx.MaxTime < tx.MinTime {
+		return errors.WithDetail(ErrBadTx, "positive maxtime must be >= mintime")
 	}
 
 	parity := make(map[bc.AssetID]int64)
@@ -169,16 +177,10 @@ func ApplyTx(ctx context.Context, view state.View, tx *bc.Tx) error {
 
 	for i, out := range tx.Outputs {
 		if txscript.IsUnspendable(out.Script) {
-			view.SaveDestruction(out.AssetID, out.Amount)
 			continue
 		}
 		o := state.NewOutput(*out, bc.Outpoint{Hash: tx.Hash, Index: uint32(i)})
 		view.AddUTXO(o)
-	}
-
-	issued := sumIssued(ctx, tx)
-	for asset, amt := range issued {
-		view.SaveIssuance(asset, amt)
 	}
 
 	return nil

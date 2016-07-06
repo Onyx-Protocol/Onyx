@@ -153,7 +153,7 @@ func TestRedistributeClause(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		tx := txscripttest.NewTestTx(mockTimeFunc).
+		tx := txscripttest.NewTestTx().
 			AddInput(bc.AssetAmount{AssetID: rightA, Amount: 1}, right.PKScript(), nil).
 			AddInput(bc.AssetAmount{AssetID: assetID, Amount: tc.amount}, tc.prev.PKScript(), sigscript).
 			AddOutput(bc.AssetAmount{AssetID: rightA, Amount: 1}, right.PKScript())
@@ -383,7 +383,7 @@ func TestRegisterToVoteClause(t *testing.T) {
 		if tc.right != nil {
 			r = *tc.right
 		}
-		tx := txscripttest.NewTestTx(mockTimeFunc).
+		tx := txscripttest.NewTestTx().
 			AddInput(rightAssetAmount, r.PKScript(), nil).
 			AddInput(bc.AssetAmount{AssetID: tokenAssetID, Amount: tc.amount}, tc.prev.PKScript(), sigscript).
 			AddOutput(rightAssetAmount, r.PKScript())
@@ -539,7 +539,7 @@ func TestVoteClause(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = txscripttest.NewTestTx(mockTimeFunc).
+		err = txscripttest.NewTestTx().
 			AddInput(rightAssetAmount, right.PKScript(), nil).
 			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(rightAssetAmount, right.PKScript()).
@@ -698,7 +698,7 @@ func TestFinishVoteClause(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = txscripttest.NewTestTx(mockTimeFunc).
+		err = txscripttest.NewTestTx().
 			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(tokensAssetAmount, tc.out.PKScript()).
 			Execute(ctx, 0)
@@ -793,7 +793,7 @@ func TestRetireClause(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = txscripttest.NewTestTx(mockTimeFunc).
+		err = txscripttest.NewTestTx().
 			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(tokensAssetAmount, tc.outputScript).
 			Execute(ctx, 0)
@@ -950,7 +950,7 @@ func TestInvalidateVoteClause(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = txscripttest.NewTestTx(mockTimeFunc).
+		err = txscripttest.NewTestTx().
 			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(tokensAssetAmount, tc.out.PKScript()).
 			Execute(ctx, 0)
@@ -1157,7 +1157,7 @@ func TestResetClause(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = txscripttest.NewTestTx(mockTimeFunc).
+		err = txscripttest.NewTestTx().
 			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(tokensAssetAmount, tc.out.PKScript()).
 			Execute(ctx, 0)

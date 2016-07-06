@@ -3,9 +3,7 @@ package validation
 import (
 	"chain/cos/bc"
 	"chain/cos/state"
-	"chain/cos/txscript"
 	"chain/errors"
-	"chain/testutil"
 	"fmt"
 	"testing"
 	"time"
@@ -25,35 +23,6 @@ func TestNoUpdateEmptyAD(t *testing.T) {
 		// If metadata field is empty, no update of ADP takes place.
 		// See https://github.com/chain-engineering/fedchain/blob/master/documentation/fedchain-specification.md#extract-asset-definition.
 		t.Fatal("apply tx should not save an empty asset definition")
-	}
-}
-
-func TestDestructionTracking(t *testing.T) {
-	ctx := context.Background()
-	view := state.NewMemView(nil, nil)
-	aid := [32]byte{1}
-	tx := bc.NewTx(bc.TxData{Outputs: []*bc.TxOutput{
-		{
-			AssetAmount: bc.AssetAmount{AssetID: aid, Amount: 5},
-			Script:      []byte{txscript.OP_RETURN},
-		},
-	}})
-	err := ApplyTx(ctx, view, tx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	if len(view.Assets) == 0 {
-		t.Fatal("no destruction was tracked")
-	}
-
-	var want uint64 = 5
-	if got := view.Assets[aid].Destroyed; got != want {
-		t.Fatalf("got destroyed = %d want %d", got, want)
-	}
-
-	if len(view.Added) > 0 {
-		t.Fatal("utxo should not be saved")
 	}
 }
 
@@ -207,6 +176,22 @@ func TestTxIsWellFormed(t *testing.T) {
 				},
 			},
 		},
+		{
+			badTx:  true,
+			detail: "positive maxtime must be >= mintime",
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					MinTime: 2,
+					MaxTime: 1,
+					Inputs: []*bc.TxInput{
+						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000}},
+					},
+					Outputs: []*bc.TxOutput{
+						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000}},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -218,6 +203,85 @@ func TestTxIsWellFormed(t *testing.T) {
 
 		if tc.detail != "" && tc.detail != errors.Detail(err) {
 			t.Errorf("errors.Detail: got = %s, want = %s", errors.Detail(err), tc.detail)
+		}
+	}
+}
+
+func TestValidateInvalidTimestamps(t *testing.T) {
+	aid := bc.AssetID(mustParseHash("59999b124d0787b27f6ac4aeecb08dda3021720081c98988c074b5a8bc2e9c41"))
+	cases := []struct {
+		ok        bool
+		tx        bc.Tx
+		timestamp uint64
+	}{
+		{
+			ok: true,
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					MinTime: 1,
+					MaxTime: 100,
+					Inputs: []*bc.TxInput{
+						{
+							Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
+						},
+					},
+					Outputs: []*bc.TxOutput{
+						{AssetAmount: bc.AssetAmount{AssetID: aid, Amount: 1000}},
+					},
+				},
+			},
+			timestamp: 50,
+		},
+		{
+			ok: false,
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					MinTime: 1,
+					MaxTime: 100,
+					Inputs: []*bc.TxInput{
+						{
+							Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
+						},
+					},
+					Outputs: []*bc.TxOutput{
+						{AssetAmount: bc.AssetAmount{AssetID: aid, Amount: 1000}},
+					},
+				},
+			},
+			timestamp: 150,
+		},
+		{
+			ok: false,
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					MinTime: 100,
+					MaxTime: 200,
+					Inputs: []*bc.TxInput{
+						{
+							Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
+						},
+					},
+					Outputs: []*bc.TxOutput{
+						{AssetAmount: bc.AssetAmount{AssetID: aid, Amount: 1000}},
+					},
+				},
+			},
+			timestamp: 50,
+		},
+	}
+
+	for i, c := range cases {
+		ctx := context.Background()
+		view := state.NewMemView(nil, nil)
+		err := ValidateTx(ctx, view, &c.tx, c.timestamp)
+		if !c.ok && errors.Root(err) != ErrBadTx {
+			t.Errorf("test %d: got = %s, want ErrBadTx", i, err)
+			continue
+		}
+
+		if c.ok && err != nil {
+			t.Errorf("test %d: unexpected error: %s", i, err.Error())
+			continue
 		}
 	}
 }

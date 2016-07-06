@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"reflect"
 	"testing"
-	"time"
 
 	"golang.org/x/crypto/sha3"
 	"golang.org/x/net/context"
@@ -17,18 +16,9 @@ import (
 	"chain/database/pg/pgtest"
 )
 
-const (
-	// mockTimeUnix is the unix timestamp to be used as the current
-	// time while running scripts in these tests.
-	mockTimeUnix = 1
-)
-
 var (
 	exampleHash  bc.Hash
 	exampleHash2 bc.Hash
-	mockTimeFunc = func(vm *txscript.Engine) {
-		vm.SetTimestamp(time.Unix(mockTimeUnix, 0))
-	}
 )
 
 func init() {
@@ -149,7 +139,7 @@ func TestAuthenticateClause(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = txscripttest.NewTestTx(mockTimeFunc).
+		err = txscripttest.NewTestTx().
 			AddInput(assetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(assetAmount, tc.out.PKScript()).
 			Execute(ctx, 0)
@@ -247,7 +237,7 @@ func TestTransferClause(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = txscripttest.NewTestTx(mockTimeFunc).
+		err = txscripttest.NewTestTx().
 			AddInput(assetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(assetAmount, tc.out.PKScript()).
 			Execute(ctx, 0)
@@ -337,7 +327,7 @@ func TestDelegateClause(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = txscripttest.NewTestTx(mockTimeFunc).
+		err = txscripttest.NewTestTx().
 			AddInput(assetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(assetAmount, tc.out.PKScript()).
 			Execute(ctx, 0)
@@ -484,7 +474,7 @@ func TestRecallClause(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = txscripttest.NewTestTx(mockTimeFunc).
+		err = txscripttest.NewTestTx().
 			AddInput(assetAmount, tc.utxo.PKScript(), sigscript).
 			AddOutput(assetAmount, tc.out.PKScript()).
 			Execute(ctx, 0)
@@ -745,7 +735,7 @@ func TestOverrideClause(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = txscripttest.NewTestTx(mockTimeFunc).
+		err = txscripttest.NewTestTx().
 			AddInput(assetAmount, tc.utxo.PKScript(), sigscript).
 			AddOutput(assetAmount, tc.out.PKScript()).
 			Execute(ctx, 0)

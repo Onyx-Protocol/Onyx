@@ -78,7 +78,8 @@ type TxData struct {
 	Version  uint32
 	Inputs   []*TxInput
 	Outputs  []*TxOutput
-	LockTime uint64
+	MinTime  uint64
+	MaxTime  uint64
 	Metadata []byte
 }
 
@@ -183,7 +184,8 @@ func (tx *TxData) readFrom(r io.Reader) error {
 		tx.Outputs = append(tx.Outputs, to)
 	}
 
-	tx.LockTime, _ = blockchain.ReadUvarint(r)
+	tx.MinTime, _ = blockchain.ReadUvarint(r)
+	tx.MaxTime, _ = blockchain.ReadUvarint(r)
 	tx.Metadata, err = blockchain.ReadBytes(r, metadataMaxByteLength)
 	return err
 }
@@ -367,7 +369,8 @@ func (s *SigHasher) Hash(idx int, hashType SigHashType) (hash Hash) {
 	s.writeInput(w, idx)
 	blockchain.WriteBytes(w, outputCommitment)
 	w.Write(outputsHash[:])
-	blockchain.WriteUvarint(w, s.tx.LockTime) // TODO(bobg): must replace with MinTime+MaxTime per the latest spec
+	blockchain.WriteUvarint(w, s.tx.MinTime)
+	blockchain.WriteUvarint(w, s.tx.MaxTime)
 	writeMetadata(w, s.tx.Metadata, 0)
 	w.Write([]byte{byte(hashType)})
 
@@ -406,7 +409,8 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) {
 		to.writeTo(w, serflags)
 	}
 
-	blockchain.WriteUvarint(w, tx.LockTime)
+	blockchain.WriteUvarint(w, tx.MinTime)
+	blockchain.WriteUvarint(w, tx.MaxTime)
 	writeMetadata(w, tx.Metadata, serflags)
 }
 

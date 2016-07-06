@@ -49,7 +49,7 @@ func TestSmallBlock(t *testing.T) {
 	}
 
 	got := serialize(t, &block)
-	want, _ := hex.DecodeString("010000000000000000000000000000000000000000000000000000000000000000000000000001070100000000")
+	want, _ := hex.DecodeString("01000000000000000000000000000000000000000000000000000000000000000000000000000107010000000000")
 	if !bytes.Equal(got, want) {
 		t.Errorf("small block bytes = %x want %x", got, want)
 	}

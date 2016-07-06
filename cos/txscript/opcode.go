@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"hash"
+	"math"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/fastsha256"
@@ -213,7 +214,7 @@ const (
 	OP_CHECKMULTISIG       = 0xae // 174
 	OP_CHECKMULTISIGVERIFY = 0xaf // 175
 	OP_NOP1                = 0xb0 // 176
-	OP_CHECKLOCKTIMEVERIFY = 0xb1 // 177
+	OP_NOP2                = 0xb1 // 177
 	OP_NOP3                = 0xb2 // 178
 	OP_NOP4                = 0xb3 // 179
 	OP_NOP5                = 0xb4 // 180
@@ -235,8 +236,8 @@ const (
 	OP_ASSET         = 0xc2 // 194
 	OP_AMOUNT        = 0xc3 // 195
 	OP_OUTPUTSCRIPT  = 0xc4 // 196
-	OP_TIME          = 0xc5 // 197
-	OP_CIRCULATION   = 0xc6 // 198
+	OP_MINTIME       = 0xc5 // 197
+	OP_MAXTIME       = 0xc6 // 198
 	OP_CATPUSHDATA   = 0xc7 // 199
 	OP_UNKNOWN200    = 0xc8 // 200
 	OP_UNKNOWN201    = 0xc9 // 201
@@ -501,8 +502,8 @@ var opcodeArray = [256]opcode{
 	OP_CHECKMULTISIGVERIFY: {OP_CHECKMULTISIGVERIFY, "OP_CHECKMULTISIGVERIFY", 1, opcodeCheckMultiSigVerify},
 
 	// Reserved opcodes.
-	OP_NOP1: {OP_NOP1, "OP_NOP1", 1, opcodeNop},
-	// OP_NOP2 replaced with OP_CHECKLOCKTIMEVERIFY
+	OP_NOP1:  {OP_NOP1, "OP_NOP1", 1, opcodeNop},
+	OP_NOP2:  {OP_NOP2, "OP_NOP2", 1, opcodeNop},
 	OP_NOP3:  {OP_NOP3, "OP_NOP3", 1, opcodeNop},
 	OP_NOP4:  {OP_NOP4, "OP_NOP4", 1, opcodeNop},
 	OP_NOP5:  {OP_NOP5, "OP_NOP5", 1, opcodeNop},
@@ -521,17 +522,14 @@ var opcodeArray = [256]opcode{
 	OP_UNKNOWN190: {OP_UNKNOWN190, "OP_UNKNOWN190", 1, opcodeInvalid},
 	OP_UNKNOWN191: {OP_UNKNOWN191, "OP_UNKNOWN191", 1, opcodeInvalid},
 
-	// BIP65
-	OP_CHECKLOCKTIMEVERIFY: {OP_CHECKLOCKTIMEVERIFY, "OP_CHECKLOCKTIMEVERIFY", 1, opcodeCheckLockTimeVerify},
-
 	// p2c extensions
 	OP_EVAL:          {OP_EVAL, "OP_EVAL", 1, nil},                   // see init()
 	OP_RESERVEOUTPUT: {OP_RESERVEOUTPUT, "OP_RESERVEOUTPUT", 1, nil}, // see init()
 	OP_ASSET:         {OP_ASSET, "OP_ASSET", 1, opcodeAsset},
 	OP_AMOUNT:        {OP_AMOUNT, "OP_AMOUNT", 1, opcodeAmount},
 	OP_OUTPUTSCRIPT:  {OP_OUTPUTSCRIPT, "OP_OUTPUTSCRIPT", 1, opcodeOutputScript},
-	OP_TIME:          {OP_TIME, "OP_TIME", 1, opcodeTime},
-	OP_CIRCULATION:   {OP_CIRCULATION, "OP_CIRCULATION", 1, opcodeCirculation},
+	OP_MINTIME:       {OP_MINTIME, "OP_MINTIME", 1, opcodeMinTime},
+	OP_MAXTIME:       {OP_MAXTIME, "OP_MAXTIME", 1, opcodeMaxTime},
 	OP_CATPUSHDATA:   {OP_CATPUSHDATA, "OP_CATPUSHDATA", 1, opcodeCatPushData},
 	OP_UNKNOWN200:    {OP_UNKNOWN200, "OP_UNKNOWN200", 1, opcodeInvalid},
 	OP_UNKNOWN201:    {OP_UNKNOWN201, "OP_UNKNOWN201", 1, opcodeInvalid},
@@ -633,7 +631,7 @@ func (pop *parsedOpcode) isDisabled(scriptVersionVal int, isBlock bool) bool {
 	switch pop.opcode.value {
 	case OP_RESERVEOUTPUT, OP_FINDOUTPUT:
 		return scriptVersionVal == 0
-	case OP_ASSET, OP_AMOUNT, OP_OUTPUTSCRIPT, OP_TIME, OP_CIRCULATION:
+	case OP_ASSET, OP_AMOUNT, OP_OUTPUTSCRIPT, OP_MINTIME, OP_MAXTIME:
 		return isBlock
 	case OP_WHILE, OP_ENDWHILE:
 		return scriptVersionVal == 0 || scriptVersionVal == 1
@@ -847,7 +845,7 @@ func opcodeN(op *parsedOpcode, vm *Engine) error {
 // the flag to discourage use of NOPs is set for select opcodes.
 func opcodeNop(op *parsedOpcode, vm *Engine) error {
 	switch op.opcode.value {
-	case OP_NOP1, OP_NOP3, OP_NOP4, OP_NOP5,
+	case OP_NOP1, OP_NOP2, OP_NOP3, OP_NOP4, OP_NOP5,
 		OP_NOP6, OP_NOP7, OP_NOP8, OP_NOP9, OP_NOP10:
 		if vm.hasFlag(ScriptDiscourageUpgradableNops) {
 			return fmt.Errorf("OP_NOP%d reserved for soft-fork "+
@@ -2483,28 +2481,6 @@ func opcodeFindOutput(op *parsedOpcode, vm *Engine) error {
 	return nil
 }
 
-// timestamp CHECKLOCKTIMEVERIFY
-// Produces an error unless the timestamp in the current tx is >= the
-// timestamp on the stack.
-func opcodeCheckLockTimeVerify(op *parsedOpcode, vm *Engine) error {
-	timestamp, err := vm.dstack.PeekIntWithSize(5) // permit 5-byte ints for CLTV
-	if err != nil {
-		return err
-	}
-
-	// In Bitcoin, CHECKLOCKTIMEVERIFY values below this threshold are
-	// block heights rather than Unix timestamps.  In Chain OS, block
-	// heights aren't very useful, so we disallow values below this
-	// threshold.
-	if timestamp < scriptNum(LockTimeThreshold) {
-		return ErrEarlyTimestamp
-	}
-	if vm.tx.LockTime < uint64(timestamp) {
-		return ErrStackVerifyFailed
-	}
-	return nil
-}
-
 // Pushes the current txin's assetid onto the stack.
 func opcodeAsset(op *parsedOpcode, vm *Engine) error {
 	in := vm.currentTxInput()
@@ -2526,34 +2502,25 @@ func opcodeOutputScript(op *parsedOpcode, vm *Engine) error {
 	return nil
 }
 
-// opcodeTime pushes the current timestamp onto the stack.
-// The current timestamp is either the block timestamp, or
-// the timestamp when the Engine was instantiated if in the txpool context.
-func opcodeTime(op *parsedOpcode, vm *Engine) error {
-	vm.dstack.PushInt(scriptNum(vm.timestamp))
+// opcodeMinTime pushes the transaction minimum time in milliseconds
+// onto the data stack.
+func opcodeMinTime(op *parsedOpcode, vm *Engine) error {
+	t := vm.tx.MinTime
+	if t > math.MaxInt64 {
+		t = math.MaxInt64
+	}
+	vm.dstack.PushInt(scriptNum(t))
 	return nil
 }
 
-// ASSETID CIRCULATION
-// Pushes the total amount of the given asset id presently in
-// circulation (issued minus destroyed).
-func opcodeCirculation(op *parsedOpcode, vm *Engine) error {
-	asset, err := vm.dstack.PopByteArray()
-	if err != nil {
-		return err
+// opcodeMaxTime pushes the transaction maximum time in milliseconds
+// onto the data stack.
+func opcodeMaxTime(op *parsedOpcode, vm *Engine) error {
+	t := vm.tx.MaxTime
+	if t == 0 || t > math.MaxInt64 {
+		t = math.MaxInt64
 	}
-	if len(asset) != len(bc.AssetID{}) {
-		return fmt.Errorf("invalid asset id on stack %x", asset)
-	}
-	assetID := bc.AssetID{}
-	copy(assetID[:], asset)
-
-	circ, err := vm.circulation(vm.ctx, []bc.AssetID{assetID})
-	if err != nil {
-		return err
-	}
-
-	vm.dstack.PushInt(scriptNum(circ[assetID]))
+	vm.dstack.PushInt(scriptNum(t))
 	return nil
 }
 

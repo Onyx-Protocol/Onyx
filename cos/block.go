@@ -108,10 +108,6 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 	if err != nil {
 		return errors.Wrap(err, "block validation")
 	}
-	_, err = mv.StateRoot(ctx)
-	if err != nil {
-		return errors.Wrap(err, "adding circulation to state tree")
-	}
 
 	newTxs, conflicts, err := fc.applyBlock(ctx, block, mv)
 	if err != nil {

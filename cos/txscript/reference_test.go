@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"golang.org/x/crypto/sha3"
-	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	. "chain/cos/txscript"
@@ -76,10 +75,10 @@ func newCoinbaseTx(val uint64, pkScript []byte, assetID bc.AssetID) *bc.TxData {
 	}
 	aa := bc.AssetAmount{Amount: val, AssetID: assetID}
 	return &bc.TxData{
-		Version:  bc.CurrentTransactionVersion,
-		Inputs:   []*bc.TxInput{{AssetAmount: aa, SignatureScript: []byte{OP_0, OP_0}}},
-		Outputs:  []*bc.TxOutput{{AssetAmount: aa, Script: pkScript}},
-		LockTime: 2e9,
+		Version: bc.CurrentTransactionVersion,
+		Inputs:  []*bc.TxInput{{AssetAmount: aa, SignatureScript: []byte{OP_0, OP_0}}},
+		Outputs: []*bc.TxOutput{{AssetAmount: aa, Script: pkScript}},
+		MinTime: 2e9,
 	}
 }
 
@@ -120,7 +119,8 @@ func createSpendingTx(sigScript, pkScript []byte) *bc.TxData {
 				AssetAmount: bc.AssetAmount{AssetID: testAssetID2, Amount: 5},
 			},
 		},
-		LockTime: 2e9,
+		MinTime: 11,
+		MaxTime: 12,
 	}
 	return spendingTx
 }
@@ -343,25 +343,19 @@ func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([]by
 	return scriptSig, pkScript, nil
 }
 
-func testCircFunc(ctx context.Context, assets []bc.AssetID) (map[bc.AssetID]int64, error) {
-	return map[bc.AssetID]int64{bc.AssetID{1}: 5}, nil
-}
-
 func newReusableTestEngine(tx *bc.TxData) (*Engine, error) {
-	result, err := NewReusableEngine(nil, testCircFunc, tx, 0)
+	result, err := NewReusableEngine(nil, tx, 0)
 	if err != nil {
 		return nil, err
 	}
-	result.TstSetTimestamp(11)
 	return result, nil
 }
 
 func newTestEngine(scriptPubKey []byte, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
-	result, err := NewEngine(nil, testCircFunc, scriptPubKey, tx, 0, flags)
+	result, err := NewEngine(nil, scriptPubKey, tx, 0, flags)
 	if err != nil {
 		return nil, err
 	}
-	result.TstSetTimestamp(11)
 	return result, nil
 }
 

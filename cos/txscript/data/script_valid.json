@@ -6,13 +6,12 @@
 ["correct prevout hash), using the given scriptSig. All nLockTimes are 2e9, all"],
 ["nSequences are max."],
 
-["1000000000 CHECKLOCKTIMEVERIFY", "", "STRICTENC", "CHECKLOCKTIMEVERIFY"],
-
 ["36028797018963967 0 ADD", "NOP", "STRICTENC", "arithmetic operands must be in range [-2^55...2^55] (exclusive)"],
 ["-36028797018963967 0 ADD", "NOP", "STRICTENC", "arithmetic operands must be in range [-2^55...2^55] (exclusive)"],
 
 ["", "ASSET DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 EQUAL", "STRICTENC", "Test ASSET opcode"],
-["", "TIME 11 EQUAL", "STRICTENC", "Test TIME opcode"],
+["", "MINTIME 11 EQUAL", "STRICTENC", "Test MINTIME opcode"],
+["", "MAXTIME 12 EQUAL", "STRICTENC", "Test MAXTIME opcode"],
 
 ["", "DEPTH 0 EQUAL", "STRICTENC", "Test the test: we should have an empty stack after scriptSig evaluation"],
 ["  ", "DEPTH 0 EQUAL", "STRICTENC", "and multiple spaces should not change that."],

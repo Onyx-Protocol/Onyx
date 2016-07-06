@@ -103,7 +103,7 @@ type BlockHeader struct {
 	// the TxRoot and the StateRoot.
 	Commitment []byte
 
-	// Time of the block in seconds.
+	// Time of the block in milliseconds.
 	// Must grow monotonically and can be equal
 	// to the time in the previous block.
 	Timestamp uint64
@@ -118,7 +118,8 @@ type BlockHeader struct {
 
 // Time returns the time represented by the Timestamp in bh.
 func (bh *BlockHeader) Time() time.Time {
-	return time.Unix(int64(bh.Timestamp), 0).UTC()
+	tsNano := bh.Timestamp * uint64(time.Millisecond)
+	return time.Unix(0, int64(tsNano)).UTC()
 }
 
 func (bh *BlockHeader) Scan(val interface{}) error {

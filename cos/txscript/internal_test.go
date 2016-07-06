@@ -14,11 +14,6 @@ package txscript
 import (
 	"bytes"
 	"testing"
-	"time"
-
-	"golang.org/x/net/context"
-
-	"chain/cos/bc"
 )
 
 // TstMaxScriptSize makes the internal maxScriptSize constant available to the
@@ -96,12 +91,6 @@ func (vm *Engine) TstSetFrame(frame int) {
 	vm.estack.frames = vm.estack.frames[:frame+1]
 }
 
-// TstSetTimestamp allows the test modules to set the interpreter's
-// timestamp.
-func (vm *Engine) TstSetTimestamp(timestamp int64) {
-	vm.timestamp = timestamp
-}
-
 // Internal tests for opcode parsing with bad data templates.
 func TestParseOpcode(t *testing.T) {
 	// Deep copy the array and make one of the opcodes invalid by setting it
@@ -115,34 +104,6 @@ func TestParseOpcode(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, 0x00}, &fakeArray)
 	if err == nil {
 		t.Errorf("no error with dodgy opcode array!")
-	}
-}
-
-func TestEngineBlockTimestamp(t *testing.T) {
-	block := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Timestamp: 1458770791,
-		},
-	}
-	vm, err := NewEngineForBlock(context.Background(), []byte{}, block, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if int64(block.Timestamp) != vm.timestamp {
-		t.Errorf("got vm.timestamp = %d, want = %d", vm.timestamp, block.Timestamp)
-	}
-}
-
-func TestEngineTimestamp(t *testing.T) {
-	vm, err := NewEngine(context.Background(), nil, []byte{}, &bc.TxData{
-		Inputs: []*bc.TxInput{{SignatureScript: nil}},
-	}, 0, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	now := time.Now().Unix()
-	if now-vm.timestamp > 1 {
-		t.Errorf("got vm.timestamp = %d, want = %d", vm.timestamp, now)
 	}
 }
 
@@ -3572,6 +3533,22 @@ func TestUnparsingInvalidOpcodes(t *testing.T) {
 			name: "OP_NOP1 long",
 			pop: &parsedOpcode{
 				opcode: &opcodeArray[OP_NOP1],
+				data:   make([]byte, 1),
+			},
+			expectedErr: ErrStackInvalidOpcode,
+		},
+		{
+			name: "OP_NOP2",
+			pop: &parsedOpcode{
+				opcode: &opcodeArray[OP_NOP2],
+				data:   nil,
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "OP_NOP2 long",
+			pop: &parsedOpcode{
+				opcode: &opcodeArray[OP_NOP2],
 				data:   make([]byte, 1),
 			},
 			expectedErr: ErrStackInvalidOpcode,

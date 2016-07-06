@@ -143,10 +143,6 @@ var (
 	// id from the wrong number of bytes.
 	ErrAssetIDLength = errors.New("wrong number of bytes for asset id")
 
-	// ErrEarlyTimestamp is returned when OP_CHECKLOCKTIMEVERIFY is
-	// given a timestamp below 5e8.
-	ErrEarlyTimestamp = errors.New("early CHECKLOCKTIMEVERIFY timestamp")
-
 	// ErrDivideByZero is returned when OP_DIV or OP_MOD tries to divide
 	// by zero.
 	ErrDivideByZero = errors.New("divide by zero")

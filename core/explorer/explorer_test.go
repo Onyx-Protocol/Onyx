@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	blockHash2 = "a704e7f7ed80a2367bc8d1483ddb97176f1423dee5170cc1e20c38dce6cbccec"
+	blockHash2 = "4aa7e0df4a7332ad09039ca7bbc7298de74d4f28792042dbc12140ee2c71f9ac"
 	blockHash1 = "3250d2426527ad63fcbdde790fd92d5b50f53a8aeb1f25179ae6dbf958684592"
 )
 
@@ -106,12 +106,12 @@ func TestListBlocks(t *testing.T) {
 		VALUES(
 			$1,
 			1,
-			decode('010100000000000000000000000000000000000000000000000000000000000000000064000001070100000003747831', 'hex'),
+			decode('01010000000000000000000000000000000000000000000000000000000000000000006400000107000000000000', 'hex'),
 			''
 		), (
 			$2,
 			2,
-			decode('0102b3431f1d6c5aa2746a08d933bab1c5e68df1b18f3a43010f6f247b839d89e1740069000002070100000003747832070100000003747833', 'hex'),
+			decode('0102000000000000000000000000000000000000000000000000000000000000000000690000020700000000000007000000000000', 'hex'),
 			''
 		);
 	`, blockHash1, blockHash2)
@@ -127,12 +127,12 @@ func TestListBlocks(t *testing.T) {
 		want: []ListBlocksItem{{
 			ID:      mustParseHash(blockHash2),
 			Height:  2,
-			Time:    time.Unix(105, 0).UTC(),
+			Time:    time.Unix(0, 105*int64(time.Millisecond)).UTC(),
 			TxCount: 2,
 		}, {
 			ID:      mustParseHash(blockHash1),
 			Height:  1,
-			Time:    time.Unix(100, 0).UTC(),
+			Time:    time.Unix(0, 100*int64(time.Millisecond)).UTC(),
 			TxCount: 1,
 		}},
 		wantLast: "",
@@ -142,7 +142,7 @@ func TestListBlocks(t *testing.T) {
 		want: []ListBlocksItem{{
 			ID:      mustParseHash(blockHash1),
 			Height:  1,
-			Time:    time.Unix(100, 0).UTC(),
+			Time:    time.Unix(0, 100*int64(time.Millisecond)).UTC(),
 			TxCount: 1,
 		}},
 		wantLast: "",
@@ -152,7 +152,7 @@ func TestListBlocks(t *testing.T) {
 		want: []ListBlocksItem{{
 			ID:      mustParseHash(blockHash2),
 			Height:  2,
-			Time:    time.Unix(105, 0).UTC(),
+			Time:    time.Unix(0, 105*int64(time.Millisecond)).UTC(),
 			TxCount: 2,
 		}},
 		wantLast: "2",
@@ -168,6 +168,7 @@ func TestListBlocks(t *testing.T) {
 			t.Errorf("ListBlocks(%v, %v) unexpected err = %q", c.prev, c.limit, err)
 			continue
 		}
+
 		if !reflect.DeepEqual(got, c.want) {
 			t.Errorf("got ListBlocks(%v, %v) = %+v want %+v", c.prev, c.limit, got, c.want)
 		}
@@ -180,28 +181,29 @@ func TestListBlocks(t *testing.T) {
 func TestGetBlockSummary(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	blockHash := "4aa7e0df4a7332ad09039ca7bbc7298de74d4f28792042dbc12140ee2c71f9ac"
 	pgtest.Exec(ctx, t, `
 		INSERT INTO blocks(block_hash, height, data, header)
 		VALUES(
 			$1,
 			2,
-			decode('0102b3431f1d6c5aa2746a08d933bab1c5e68df1b18f3a43010f6f247b839d89e1740069000002070100000003747832070100000003747833', 'hex'),
+			decode('0102000000000000000000000000000000000000000000000000000000000000000000690000020700000000000007000000000000', 'hex'),
 			''
 		);
-	`, blockHash2)
+	`, blockHash)
 
-	got, err := GetBlockSummary(ctx, store, blockHash2)
+	got, err := GetBlockSummary(ctx, store, blockHash)
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := &BlockSummary{
-		ID:      mustParseHash(blockHash2),
+		ID:      mustParseHash(blockHash),
 		Height:  2,
-		Time:    time.Unix(105, 0).UTC(),
+		Time:    time.Unix(0, 105*int64(time.Millisecond)).UTC(),
 		TxCount: 2,
 		TxHashes: []bc.Hash{
-			mustParseHash("6dd15ec9e85508b14e1b77ed952e3dddc36a62ada30116cba47f2138f333e896"),
-			mustParseHash("c710227b2f40e14e5da6daa908133430f9cf9f2416453fe59c2c200499c842e8"),
+			mustParseHash("39e746dc19f9ee593d9f5b776c8f08bac2181c6375a21522cd99149f4260bbd9"),
+			mustParseHash("39e746dc19f9ee593d9f5b776c8f08bac2181c6375a21522cd99149f4260bbd9"),
 		},
 	}
 
@@ -232,11 +234,11 @@ func TestGetTxIssuance(t *testing.T) {
 		Metadata: []byte{0},
 	})
 
-	now := time.Now().UTC().Truncate(time.Second)
+	now := time.Now().UTC()
 	blk := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Height:    1,
-			Timestamp: uint64(now.Unix()),
+			Timestamp: uint64(now.UnixNano() / int64(time.Millisecond)),
 		},
 		Transactions: []*bc.Tx{tx},
 	}
@@ -267,7 +269,7 @@ func TestGetTxIssuance(t *testing.T) {
 		ID:          tx.Hash,
 		BlockID:     &bh,
 		BlockHeight: 1,
-		BlockTime:   now,
+		BlockTime:   now.Truncate(time.Millisecond),
 		Metadata:    []byte{0},
 		Inputs: []*TxInput{{
 			Type:     "issuance",
@@ -323,11 +325,11 @@ func TestGetTxTransfer(t *testing.T) {
 		}},
 	})
 
-	now := time.Now().UTC().Truncate(time.Second)
+	now := time.Now().UTC()
 	blk := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Height:    1,
-			Timestamp: uint64(now.Unix()),
+			Timestamp: uint64(now.UnixNano() / int64(time.Millisecond)),
 		},
 		Transactions: append(prevTxs, tx),
 	}
@@ -355,7 +357,7 @@ func TestGetTxTransfer(t *testing.T) {
 		ID:          tx.Hash,
 		BlockID:     &blkHash,
 		BlockHeight: 1,
-		BlockTime:   now,
+		BlockTime:   now.Truncate(time.Millisecond),
 		Inputs: []*TxInput{{
 			Type:    "transfer",
 			AssetID: bc.AssetID([32]byte{1}),

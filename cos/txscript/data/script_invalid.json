@@ -10,9 +10,6 @@
 ["4 DATA_3 0x935587", "1 DROP 3 1 ROLL DUP SHA3 DATA_32 0xb247a162c6981184e520a18d5cb321d42434f187aca2602b8c784982c4f1e971 EQUALVERIFY EVAL", "STRICTENC", "Simple 1-param P2C script"],
 ["DATA_3 0x935587", "1 DROP 4 3 2 ROLL DUP SHA3 DATA_32 0xb247a162c6981184e520a18d5cb321d42434f187aca2602b8c784982c4f1e971 EQUALVERIFY EVAL", "STRICTENC", "Simple 2-param P2C script"],
 
-["100 CHECKLOCKTIMEVERIFY", "", "STRICTENC", "CHECKLOCKTIMEVERIFY does not take params below 5e8"],
-["3000000000 CHECKLOCKTIMEVERIFY", "", "STRICTENC", "CHECKLOCKTIMEVERIFY time in the 'future'"],
-
 ["", "DEPTH", "STRICTENC",   "Test the test: we should have an empty stack after scriptSig evaluation"],
 ["  ", "DEPTH", "STRICTENC", "and multiple spaces should not change that."],
 ["   ", "DEPTH", "STRICTENC"],
@@ -143,7 +140,7 @@
 
 ["Ensure 100% coverage of discouraged NOPS"],
 ["1", "NOP1",  "DISCOURAGE_UPGRADABLE_NOPS"],
-["     NOP2 replaced with CHECKLOCKTIMEVERIFY"],
+["1", "NOP2",  "DISCOURAGE_UPGRADABLE_NOPS"],
 ["1", "NOP3",  "DISCOURAGE_UPGRADABLE_NOPS"],
 ["1", "NOP4",  "DISCOURAGE_UPGRADABLE_NOPS"],
 ["1", "NOP5",  "DISCOURAGE_UPGRADABLE_NOPS"],

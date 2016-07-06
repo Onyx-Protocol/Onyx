@@ -7,7 +7,6 @@ package txscript
 import (
 	"fmt"
 	"math/big"
-	"time"
 
 	"golang.org/x/net/context"
 
@@ -88,15 +87,8 @@ type (
 		flags            ScriptFlags
 		ctx              context.Context
 		available        []uint64 // mutable copy of each output's Amount field, used for OP_RESERVEOUTPUT reservations
-		timestamp        int64    // Unix timestamp of block or engine creation
-
-		// TODO(jackson): Replace circulation with a *patricia.Tree or a
-		// better defined interface backed by the state tree.
-		circulation CirculationFunc
 	}
 )
-
-type CirculationFunc func(context.Context, []bc.AssetID) (map[bc.AssetID]int64, error)
 
 func isKnownVersion(version int64) bool {
 	return version >= 0 && version <= 2
@@ -521,12 +513,6 @@ func (vm *Engine) SetAltStack(data [][]byte) {
 	setStack(&vm.astack, data)
 }
 
-// SetTimestamp sets the engine's timestamp. Some opcodes read the engine's
-// timestamp during execution.
-func (vm *Engine) SetTimestamp(t time.Time) {
-	vm.timestamp = t.Unix()
-}
-
 // Prepare prepares a previously allocated Engine for reuse with
 // another txin, preserving state (to wit, vm.available) that P2C
 // wants to save between txins.
@@ -583,30 +569,23 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 // NewReusableEngine allocates an Engine object that can execute scripts
 // for every input  of a transaction.  Illustration (with error-checking
 // elided for clarity):
-//   engine, err := NewReusableEngine(ctx, viewReader.Circulation, tx, flags)
+//   engine, err := NewReusableEngine(ctx, tx, flags)
 //   for i, txin := range tx.Inputs {
 //     err = engine.Prepare(scriptPubKey, i)
 //     err = engine.Execute()
 //   }
 // Note: every call to Execute() must be preceded by a call to
 // Prepare() (including the first one).
-func NewReusableEngine(ctx context.Context, circ CirculationFunc, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
-	return newReusableEngine(ctx, circ, tx, nil, flags)
+func NewReusableEngine(ctx context.Context, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
+	return newReusableEngine(ctx, tx, nil, flags)
 }
 
-func newReusableEngine(ctx context.Context, circ CirculationFunc, tx *bc.TxData, block *bc.Block, flags ScriptFlags) (*Engine, error) {
-	timestamp := time.Now().Unix()
-	if block != nil {
-		timestamp = int64(block.Timestamp)
-	}
-
+func newReusableEngine(ctx context.Context, tx *bc.TxData, block *bc.Block, flags ScriptFlags) (*Engine, error) {
 	vm := &Engine{
-		ctx:         ctx,
-		circulation: circ,
-		tx:          tx,
-		block:       block,
-		flags:       flags,
-		timestamp:   timestamp,
+		ctx:   ctx,
+		tx:    tx,
+		block: block,
+		flags: flags,
 	}
 	if tx != nil {
 		vm.sigHasher = bc.NewSigHasher(tx)
@@ -632,8 +611,8 @@ func newReusableEngine(ctx context.Context, circ CirculationFunc, tx *bc.TxData,
 //
 // This is equivalent to calling NewReusableEngine() followed by a
 // call to Prepare().
-func NewEngine(ctx context.Context, circ CirculationFunc, scriptPubKey []byte, tx *bc.TxData, txIdx int, flags ScriptFlags) (*Engine, error) {
-	vm, err := NewReusableEngine(ctx, circ, tx, flags)
+func NewEngine(ctx context.Context, scriptPubKey []byte, tx *bc.TxData, txIdx int, flags ScriptFlags) (*Engine, error) {
+	vm, err := NewReusableEngine(ctx, tx, flags)
 	if err != nil {
 		return nil, err
 	}
@@ -646,7 +625,7 @@ func NewEngine(ctx context.Context, circ CirculationFunc, scriptPubKey []byte, t
 // and its script. The flags modify the behavior of the script engine
 // according to the description provided by each flag.
 func NewEngineForBlock(ctx context.Context, scriptPubKey []byte, block *bc.Block, flags ScriptFlags) (*Engine, error) {
-	vm, err := newReusableEngine(ctx, nil, nil, block, flags)
+	vm, err := newReusableEngine(ctx, nil, block, flags)
 	if err != nil {
 		return nil, err
 	}

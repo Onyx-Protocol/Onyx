@@ -29,7 +29,7 @@ func TestOpcodeIsDisabled(t *testing.T) {
 		{OP_ENDWHILE, 1, true},
 		{OP_ENDWHILE, 2, false},
 		{OP_ENDWHILE, 3, false},
-		{OP_CIRCULATION, 1, false},
+		{OP_MAXTIME, 1, false},
 		{OP_RESERVEOUTPUT, 0, true},
 		{OP_RESERVEOUTPUT, 1, false},
 		{OP_RESERVEOUTPUT, 2, false},
@@ -87,11 +87,10 @@ func TestOpcodeDisasm(t *testing.T) {
 		0xaa: "OP_SHA3", 0xab: "OP_CODESEPARATOR",
 		0xac: "OP_CHECKSIG", 0xad: "OP_CHECKSIGVERIFY",
 		0xae: "OP_CHECKMULTISIG", 0xaf: "OP_CHECKMULTISIGVERIFY",
-		0xb1: "OP_CHECKLOCKTIMEVERIFY",
 		0xc0: "OP_EVAL", 0xc1: "OP_RESERVEOUTPUT",
 		0xc2: "OP_ASSET", 0xc3: "OP_AMOUNT",
-		0xc4: "OP_OUTPUTSCRIPT", 0xc5: "OP_TIME",
-		0xc6: "OP_CIRCULATION", 0xc7: "OP_CATPUSHDATA",
+		0xc4: "OP_OUTPUTSCRIPT", 0xc5: "OP_MINTIME",
+		0xc6: "OP_MAXTIME", 0xc7: "OP_CATPUSHDATA",
 		0xca: "OP_FINDOUTPUT",
 		0xd0: "OP_WHILE", 0xd1: "OP_ENDWHILE",
 		0xf9: "OP_SMALLDATA", 0xfa: "OP_SMALLINTEGER",
@@ -206,7 +205,7 @@ func TestOpcodeDisasm(t *testing.T) {
 }
 
 func isNop(opcodeVal int) bool {
-	return opcodeVal >= 0xb0 && opcodeVal <= 0xb9 && opcodeVal != OP_CHECKLOCKTIMEVERIFY
+	return opcodeVal >= 0xb0 && opcodeVal <= 0xb9
 }
 
 func isUnknownOpcode(opcodeVal int) bool {

@@ -60,7 +60,8 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 	}
 
 	mv := state.NewMemView(nil, view)
-	err = validation.ValidateTx(ctx, mv, tx, uint64(time.Now().Unix()))
+	tsMS := time.Now().UnixNano() / int64(time.Millisecond)
+	err = validation.ValidateTx(ctx, mv, tx, uint64(tsMS))
 	if err != nil {
 		return errors.Wrap(err, "tx rejected")
 	}

@@ -12,12 +12,10 @@ import (
 
 var testTxHash = bc.Hash{}
 
-// NewTestTx constructs a fresh TestTx. It optionally takes function(s)
-// to modify the txscript.Engine before executing a script.
-func NewTestTx(engineFuncs ...func(vm *txscript.Engine)) *TestTx {
+// NewTestTx constructs a fresh TestTx.
+func NewTestTx() *TestTx {
 	return &TestTx{
-		view:        state.NewMemView(nil, nil),
-		engineFuncs: engineFuncs,
+		view: state.NewMemView(nil, nil),
 	}
 }
 
@@ -27,10 +25,6 @@ type TestTx struct {
 	view      *state.MemView
 	data      bc.TxData
 	utxoIndex uint32
-
-	// engineFuncs are a list of functions to execute when seting up
-	// the Engine. They can be used to configure options on the Engine.
-	engineFuncs []func(vm *txscript.Engine)
 }
 
 // AddInput adds a new input to the transaction and adds a corresponding
@@ -78,12 +72,9 @@ func (tx *TestTx) Execute(ctx context.Context, inputIndex int) error {
 	}
 
 	input := tx.data.Inputs[inputIndex]
-	vm, err := txscript.NewEngine(ctx, tx.view.Circulation, input.PrevScript, &tx.data, inputIndex, txscript.ScriptVerifyMinimalData)
+	vm, err := txscript.NewEngine(ctx, input.PrevScript, &tx.data, inputIndex, txscript.ScriptVerifyMinimalData)
 	if err != nil {
 		return err
-	}
-	for _, f := range tx.engineFuncs {
-		f(vm)
 	}
 	return vm.Execute()
 }

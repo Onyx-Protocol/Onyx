@@ -26,9 +26,5 @@
 ["7 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f21 DATA_6 0x007a76a9fe88 OP_FINDOUTPUT", "", "", "Wrong asset for FINDOUTPUT test"],
 
 ["If the script were correct, this should succeed, but it's not."],
-["7 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 DATA_6 0x123456789abc OP_FINDOUTPUT", "", "", "Wrong script for FINDOUTPUT"],
-
-["Bad asset id does fails OP_CIRCULATION"],
-["OP_CIRCULATION 5 OP_EQUAL", "DATA_6 0x010101010101", "", "asset id length should be 32"]
-
+["7 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 DATA_6 0x123456789abc OP_FINDOUTPUT", "", "", "Wrong script for FINDOUTPUT"]
 ]
