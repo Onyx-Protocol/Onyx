@@ -38,7 +38,7 @@ func TestPushedData(t *testing.T) {
 			true,
 		},
 		{
-			"DUP HASH160 '17VZNX1SN5NtKa8UQFxwQbFeFc3iqRYhem' EQUALVERIFY CHECKSIG",
+			"DUP SHA3 '17VZNX1SN5NtKa8UQFxwQbFeFc3iqRYhem' EQUALVERIFY CHECKSIG",
 			[][]byte{
 				// 17VZNX1SN5NtKa8UQFxwQbFeFc3iqRYhem
 				{

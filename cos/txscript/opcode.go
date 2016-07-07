@@ -17,7 +17,6 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/cos/bc"
-	"chain/crypto/hash160"
 )
 
 // An opcode defines the information related to a txscript opcode.  opfunc if
@@ -206,7 +205,7 @@ const (
 	OP_RIPEMD160           = 0xa6 // 166
 	OP_SHA1                = 0xa7 // 167
 	OP_SHA256              = 0xa8 // 168
-	OP_HASH160             = 0xa9 // 169
+	OP_UNKNOWN169          = 0xa9 // 169
 	OP_SHA3                = 0xaa // 170
 	OP_CODESEPARATOR       = 0xab // 171
 	OP_CHECKSIG            = 0xac // 172
@@ -494,7 +493,6 @@ var opcodeArray = [256]opcode{
 	OP_RIPEMD160:           {OP_RIPEMD160, "OP_RIPEMD160", 1, opcodeRipemd160},
 	OP_SHA1:                {OP_SHA1, "OP_SHA1", 1, opcodeSha1},
 	OP_SHA256:              {OP_SHA256, "OP_SHA256", 1, opcodeSha256},
-	OP_HASH160:             {OP_HASH160, "OP_HASH160", 1, opcodeHash160},
 	OP_SHA3:                {OP_SHA3, "OP_SHA3", 1, opcodeSha3},
 	OP_CODESEPARATOR:       {OP_CODESEPARATOR, "OP_CODESEPARATOR", 1, opcodeCodeSeparator},
 	OP_CHECKSIG:            {OP_CHECKSIG, "OP_CHECKSIG", 1, opcodeCheckSig},
@@ -515,6 +513,7 @@ var opcodeArray = [256]opcode{
 	OP_NOP10: {OP_NOP10, "OP_NOP10", 1, opcodeNop},
 
 	// Undefined opcodes.
+	OP_UNKNOWN169: {OP_UNKNOWN169, "OP_UNKNOWN169", 1, opcodeInvalid},
 	OP_UNKNOWN186: {OP_UNKNOWN186, "OP_UNKNOWN186", 1, opcodeInvalid},
 	OP_UNKNOWN187: {OP_UNKNOWN187, "OP_UNKNOWN187", 1, opcodeInvalid},
 	OP_UNKNOWN188: {OP_UNKNOWN188, "OP_UNKNOWN188", 1, opcodeInvalid},
@@ -2045,20 +2044,6 @@ func opcodeSha256(op *parsedOpcode, vm *Engine) error {
 
 	hash := fastsha256.Sum256(buf)
 	vm.dstack.PushByteArray(hash[:])
-	return nil
-}
-
-// opcodeHash160 treats the top item of the data stack as raw bytes and replaces
-// it with ripemd160(sha256(data)).
-//
-// Stack transformation: [... x1] -> [... ripemd160(sha256(x1))]
-func opcodeHash160(op *parsedOpcode, vm *Engine) error {
-	buf, err := vm.dstack.PopByteArray()
-	if err != nil {
-		return err
-	}
-	h := hash160.Sum(buf)
-	vm.dstack.PushByteArray(h[:])
 	return nil
 }
 

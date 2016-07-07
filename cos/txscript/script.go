@@ -42,7 +42,7 @@ func isSmallInt(op *opcode) bool {
 // transaction, false otherwise.
 func isScriptHash(pops []parsedOpcode) bool {
 	return len(pops) == 3 &&
-		pops[0].opcode.value == OP_HASH160 &&
+		pops[0].opcode.value == OP_SHA3 &&
 		pops[1].opcode.value == OP_DATA_20 &&
 		pops[2].opcode.value == OP_EQUAL
 }

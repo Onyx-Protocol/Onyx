@@ -2,6 +2,7 @@ package txscript
 
 import (
 	"bytes"
+	"encoding/hex"
 	"testing"
 )
 
@@ -18,9 +19,9 @@ func TestRedeemToPkScript(t *testing.T) {
 		192, 138, 143, 251, 198, 230, 98, 172, 82, 174,
 	}
 
-	want := []byte{
-		118, 169, 20, 10, 63, 117, 193, 26, 249, 104, 211, 169, 228, 39, 135,
-		197, 179, 65, 183, 169, 3, 163, 165, 136, 192,
+	want, err := hex.DecodeString("76aa206f4542e942575f6d882ae45f7a98e6d2c88e3ea218afb16c41fee743f667783288c0")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	got := RedeemToPkScript(redeem)

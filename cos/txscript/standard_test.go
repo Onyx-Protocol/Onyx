@@ -246,13 +246,6 @@ var scriptClassTests = []scriptClassTest{
 			"0bfa9b8b64f9d4c03f999b8643f656b412a3 CHECKSIG",
 		class: txscript.PubKeyTy,
 	},
-	// tx 599e47a8114fe098103663029548811d2651991b62397e057f0c863c2bc9f9ea
-	{
-		name: "Pay PubkeyHash",
-		script: "DUP HASH160 DATA_20 0x660d4ef3a743e3e696ad990364e555" +
-			"c271ad504b EQUALVERIFY CHECKSIG",
-		class: txscript.PubKeyHashTy,
-	},
 	// part of tx 6d36bc17e947ce00bb6f12f8e7a56a1585c5a36188ffa2b05e10b4743273a74b
 	// codeseparator parts have been elided. (bitcoin core's checks for
 	// multisig type doesn't have codesep either).
@@ -261,13 +254,6 @@ var scriptClassTests = []scriptClassTest{
 		script: "1 DATA_33 0x0232abdc893e7f0631364d7fd01cb33d24da4" +
 			"5329a00357b3a7886211ab414d55a 1 CHECKMULTISIG",
 		class: txscript.MultiSigTy,
-	},
-	// tx e5779b9e78f9650debc2893fd9636d827b26b4ddfa6a8172fe8708c924f5c39d
-	{
-		name: "P2SH",
-		script: "HASH160 DATA_20 0x433ec2ac1ffa1b7b7d027f564529c57197f" +
-			"9ae88 EQUAL",
-		class: txscript.ScriptHashTy,
 	},
 	{
 		// Nulldata with no data at all.

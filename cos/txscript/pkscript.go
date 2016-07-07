@@ -1,17 +1,18 @@
 package txscript
 
 import (
-	"chain/crypto/hash160"
+	"golang.org/x/crypto/sha3"
+
 	"chain/errors"
 )
 
 // RedeemToPkScript takes a redeem script
 // and calculates its corresponding pk script
 func RedeemToPkScript(redeem []byte) []byte {
-	hash := hash160.Sum(redeem)
+	hash := sha3.Sum256(redeem)
 	builder := NewScriptBuilder()
 	builder.AddOp(OP_DUP)
-	builder.AddOp(OP_HASH160)
+	builder.AddOp(OP_SHA3)
 	builder.AddData(hash[:])
 	builder.AddOp(OP_EQUALVERIFY)
 	builder.AddOp(OP_EVAL)

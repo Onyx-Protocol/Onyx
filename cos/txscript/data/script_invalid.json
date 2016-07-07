@@ -231,7 +231,6 @@
 ["NOP", "RIPEMD160", "STRICTENC"],
 ["NOP", "SHA1", "STRICTENC"],
 ["NOP", "SHA256", "STRICTENC"],
-["NOP", "HASH160", "STRICTENC"],
 ["NOP", "SHA3", "STRICTENC"],
 
 ["NOP",
@@ -337,7 +336,6 @@
 ["NOP", "RIPEMD160 1", "STRICTENC"],
 ["NOP", "SHA1 1", "STRICTENC"],
 ["NOP", "SHA256 1", "STRICTENC"],
-["NOP", "HASH160 1", "STRICTENC"],
 ["NOP", "SHA3 1", "STRICTENC"],
 
 ["Increase CHECKSIG and CHECKMULTISIG negative test coverage"],
@@ -474,8 +472,6 @@
 ["1", "WHILE 0 ENDWHILE", "STRICTENC", "WHILE requires version 2"],
 
 ["VERSION"],
-
-["", "1 DROP HASH160 EQUAL", "", "known versions are not anyone can spend"],
 
 ["The End"]
 ]

@@ -84,7 +84,7 @@ func TestOpcodeDisasm(t *testing.T) {
 		0xa1: "OP_LESSTHANOREQUAL", 0xa2: "OP_GREATERTHANOREQUAL",
 		0xa3: "OP_MIN", 0xa4: "OP_MAX", 0xa5: "OP_WITHIN",
 		0xa6: "OP_RIPEMD160", 0xa7: "OP_SHA1", 0xa8: "OP_SHA256",
-		0xa9: "OP_HASH160", 0xaa: "OP_SHA3", 0xab: "OP_CODESEPARATOR",
+		0xaa: "OP_SHA3", 0xab: "OP_CODESEPARATOR",
 		0xac: "OP_CHECKSIG", 0xad: "OP_CHECKSIGVERIFY",
 		0xae: "OP_CHECKMULTISIG", 0xaf: "OP_CHECKMULTISIGVERIFY",
 		0xb1: "OP_CHECKLOCKTIMEVERIFY",
@@ -211,6 +211,7 @@ func isNop(opcodeVal int) bool {
 
 func isUnknownOpcode(opcodeVal int) bool {
 	return (opcodeVal >= 0xb2 && opcodeVal <= 0xbf) ||
+		(opcodeVal == 0xa9) || // formerly HASH160
 		(opcodeVal == 0xc8) ||
 		(opcodeVal == 0xc9) ||
 		(opcodeVal >= 0xcb && opcodeVal <= 0xcf) ||

@@ -31,11 +31,6 @@ func TestScriptBuilderAddOp(t *testing.T) {
 			opcodes:  []byte{txscript.OP_1, txscript.OP_2},
 			expected: []byte{txscript.OP_1, txscript.OP_2},
 		},
-		{
-			name:     "push OP_HASH160 OP_EQUAL",
-			opcodes:  []byte{txscript.OP_HASH160, txscript.OP_EQUAL},
-			expected: []byte{txscript.OP_HASH160, txscript.OP_EQUAL},
-		},
 	}
 
 	builder := txscript.NewScriptBuilder()
