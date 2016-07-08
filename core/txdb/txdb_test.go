@@ -67,7 +67,7 @@ func TestGetTxs(t *testing.T) {
 	ctx := context.Background()
 
 	tx := bc.NewTx(bc.TxData{SerFlags: 0x7, Metadata: []byte("tx")})
-	err := pool.Insert(ctx, tx, nil)
+	err := pool.Insert(ctx, tx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

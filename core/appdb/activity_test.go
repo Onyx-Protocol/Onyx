@@ -70,7 +70,7 @@ func TestGetActUTXOs(t *testing.T) {
 		},
 	})
 
-	err = pool.Insert(ctx, tx, nil)
+	err = pool.Insert(ctx, tx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -152,7 +152,7 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 		}},
 	})
 
-	err = pool.Insert(ctx, tx, nil)
+	err = pool.Insert(ctx, tx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

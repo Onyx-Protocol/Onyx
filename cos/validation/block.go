@@ -6,6 +6,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
+	"chain/cos/patricia"
 	"chain/cos/state"
 	"chain/cos/txscript"
 	"chain/errors"
@@ -23,60 +24,53 @@ var (
 	ErrBadStateRoot = errors.New("invalid state merkle root")
 )
 
-// ValidateAndApplyBlock validates the given block
-// against the given state and applies its
-// changes to the view.
-// If block is invalid,
-// it returns a non-nil error describing why.
-func ValidateAndApplyBlock(ctx context.Context, view state.View, prevBlock, block *bc.Block) error {
-	return validateBlock(ctx, view, prevBlock, block, true)
+// ValidateAndApplyBlock validates the given block against the given
+// state tree and applies its changes to the state tree.
+// If block is invalid, it returns a non-nil error describing why.
+func ValidateAndApplyBlock(ctx context.Context, tree *patricia.Tree, prevBlock, block *bc.Block) error {
+	return validateBlock(ctx, tree, prevBlock, block, true)
 }
 
 // ValidateBlockForSig performs validation on an incoming _unsigned_
 // block in preparation for signing it.  By definition it does not
 // execute the sigscript.
-func ValidateBlockForSig(ctx context.Context, view state.View, prevBlock, block *bc.Block) error {
-	return validateBlock(ctx, view, prevBlock, block, false)
+func ValidateBlockForSig(ctx context.Context, tree *patricia.Tree, prevBlock, block *bc.Block) error {
+	return validateBlock(ctx, tree, prevBlock, block, false)
 }
 
-func validateBlock(ctx context.Context, view state.View, prevBlock, block *bc.Block, runScript bool) error {
+func validateBlock(ctx context.Context, tree *patricia.Tree, prevBlock, block *bc.Block, runScript bool) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	err := validateBlockHeader(ctx, prevBlock, block, runScript)
+	err := validateBlockHeader(prevBlock, block, runScript)
 	if err != nil {
 		return err
 	}
 
 	// TODO: Check that other block headers are valid.
-	// TODO(erywalder): consider writing to a temporary view instead
+	// TODO(erywalder): consider writing to a copy of the state tree
 	// of the one provided and make the caller call ApplyBlock as well
 	for _, tx := range block.Transactions {
-		err := ValidateTx(ctx, view, tx, block.Timestamp)
+		err := ValidateTx(tree, state.OutputSet{}, tx, block.Timestamp)
 		if err != nil {
 			return err
 		}
-		err = ApplyTx(ctx, view, tx)
+		err = ApplyTx(tree, tx)
 		if err != nil {
 			return err
 		}
 	}
 
-	viewRoot, err := view.StateRoot(ctx)
-	if err != nil {
-		return err
-	}
-	if block.StateRoot() != viewRoot {
+	if block.StateRoot() != tree.RootHash() {
 		return ErrBadStateRoot
 	}
-
 	return nil
 }
 
-// ApplyBlock applies the transactions in the block to the view.
-func ApplyBlock(ctx context.Context, view state.View, block *bc.Block) error {
+// ApplyBlock applies the transactions in the block to the state tree.
+func ApplyBlock(tree *patricia.Tree, block *bc.Block) error {
 	for _, tx := range block.Transactions {
-		err := ApplyTx(ctx, view, tx)
+		err := ApplyTx(tree, tx)
 		if err != nil {
 			return err
 		}
@@ -88,11 +82,11 @@ func ApplyBlock(ctx context.Context, view state.View, block *bc.Block) error {
 // that can be checked before processing the transactions.
 // This includes the previous block hash, height, timestamp,
 // output script, and signature script.
-func ValidateBlockHeader(ctx context.Context, prevBlock, block *bc.Block) error {
-	return validateBlockHeader(ctx, prevBlock, block, true)
+func ValidateBlockHeader(prevBlock, block *bc.Block) error {
+	return validateBlockHeader(prevBlock, block, true)
 }
 
-func validateBlockHeader(ctx context.Context, prevBlock, block *bc.Block, runScript bool) error {
+func validateBlockHeader(prevBlock, block *bc.Block, runScript bool) error {
 	if prevBlock == nil && block.Height != 1 {
 		return ErrBadHeight
 	}
@@ -120,7 +114,7 @@ func validateBlockHeader(ctx context.Context, prevBlock, block *bc.Block, runScr
 	}
 
 	if runScript && prevBlock != nil {
-		engine, err := txscript.NewEngineForBlock(ctx, prevBlock.OutputScript, block, txscript.StandardVerifyFlags)
+		engine, err := txscript.NewEngineForBlock(prevBlock.OutputScript, block, txscript.StandardVerifyFlags)
 		if err != nil {
 			return err
 		}

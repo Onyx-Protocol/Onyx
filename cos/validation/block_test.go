@@ -3,15 +3,12 @@ package validation
 import (
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/errors"
 )
 
 func TestValidateBlockHeader(t *testing.T) {
-	ctx := context.Background()
 	prevBlock := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Height:       1,
@@ -88,7 +85,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	}}
 	for _, c := range cases {
 		block := &bc.Block{BlockHeader: c.header}
-		got := ValidateBlockHeader(ctx, prevBlock, block)
+		got := ValidateBlockHeader(prevBlock, block)
 
 		if errors.Root(got) != c.want {
 			t.Errorf("%s: got %q want %q", c.desc, got, c.want)

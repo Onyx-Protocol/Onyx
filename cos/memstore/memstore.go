@@ -5,7 +5,6 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/patricia"
-	"chain/cos/state"
 )
 
 // MemStore satisfies the cos.Store interface.
@@ -35,7 +34,6 @@ func (m *MemStore) GetTxs(ctx context.Context, hashes ...bc.Hash) (bcTxs map[bc.
 func (m *MemStore) ApplyBlock(
 	ctx context.Context,
 	b *bc.Block,
-	assets map[bc.AssetID]*state.AssetState,
 	stateTree *patricia.Tree,
 ) ([]*bc.Tx, error) {
 	m.blocks = append(m.blocks, b)

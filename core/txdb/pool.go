@@ -32,7 +32,7 @@ func (p *Pool) GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.T
 }
 
 // Insert adds the transaction to the pending pool.
-func (p *Pool) Insert(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*state.AssetState) error {
+func (p *Pool) Insert(ctx context.Context, tx *bc.Tx) error {
 	dbtx, err := p.db.Begin(ctx)
 	if err != nil {
 		return errors.Wrap(err)
@@ -74,11 +74,7 @@ func (p *Pool) Dump(ctx context.Context) ([]*bc.Tx, error) {
 }
 
 // Clean removes txs from the pending tx pool.
-func (p *Pool) Clean(
-	ctx context.Context,
-	txs []*bc.Tx,
-	assets map[bc.AssetID]*state.AssetState,
-) error {
+func (p *Pool) Clean(ctx context.Context, txs []*bc.Tx) error {
 	dbtx, err := p.db.Begin(ctx)
 	if err != nil {
 		return errors.Wrap(err)

@@ -142,7 +142,7 @@ func TestAuthenticateClause(t *testing.T) {
 		err = txscripttest.NewTestTx().
 			AddInput(assetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(assetAmount, tc.out.PKScript()).
-			Execute(ctx, 0)
+			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -240,7 +240,7 @@ func TestTransferClause(t *testing.T) {
 		err = txscripttest.NewTestTx().
 			AddInput(assetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(assetAmount, tc.out.PKScript()).
-			Execute(ctx, 0)
+			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -330,7 +330,7 @@ func TestDelegateClause(t *testing.T) {
 		err = txscripttest.NewTestTx().
 			AddInput(assetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(assetAmount, tc.out.PKScript()).
-			Execute(ctx, 0)
+			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -477,7 +477,7 @@ func TestRecallClause(t *testing.T) {
 		err = txscripttest.NewTestTx().
 			AddInput(assetAmount, tc.utxo.PKScript(), sigscript).
 			AddOutput(assetAmount, tc.out.PKScript()).
-			Execute(ctx, 0)
+			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -738,7 +738,7 @@ func TestOverrideClause(t *testing.T) {
 		err = txscripttest.NewTestTx().
 			AddInput(assetAmount, tc.utxo.PKScript(), sigscript).
 			AddOutput(assetAmount, tc.out.PKScript()).
-			Execute(ctx, 0)
+			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}

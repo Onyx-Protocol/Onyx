@@ -160,7 +160,7 @@ func TestRedistributeClause(t *testing.T) {
 		for tok, amount := range tc.outs {
 			tx = tx.AddOutput(bc.AssetAmount{AssetID: assetID, Amount: amount}, tok.PKScript())
 		}
-		err = tx.Execute(ctx, 1)
+		err = tx.Execute(1)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -390,7 +390,7 @@ func TestRegisterToVoteClause(t *testing.T) {
 		for out, amt := range tc.outs {
 			tx = tx.AddOutput(bc.AssetAmount{AssetID: tokenAssetID, Amount: amt}, out.PKScript())
 		}
-		err = tx.Execute(ctx, 1)
+		err = tx.Execute(1)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -544,7 +544,7 @@ func TestVoteClause(t *testing.T) {
 			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(rightAssetAmount, right.PKScript()).
 			AddOutput(tokensAssetAmount, tc.out.PKScript()).
-			Execute(ctx, 1)
+			Execute(1)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -701,7 +701,7 @@ func TestFinishVoteClause(t *testing.T) {
 		err = txscripttest.NewTestTx().
 			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(tokensAssetAmount, tc.out.PKScript()).
-			Execute(ctx, 0)
+			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -796,7 +796,7 @@ func TestRetireClause(t *testing.T) {
 		err = txscripttest.NewTestTx().
 			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(tokensAssetAmount, tc.outputScript).
-			Execute(ctx, 0)
+			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -953,7 +953,7 @@ func TestInvalidateVoteClause(t *testing.T) {
 		err = txscripttest.NewTestTx().
 			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(tokensAssetAmount, tc.out.PKScript()).
-			Execute(ctx, 0)
+			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -1160,7 +1160,7 @@ func TestResetClause(t *testing.T) {
 		err = txscripttest.NewTestTx().
 			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
 			AddOutput(tokensAssetAmount, tc.out.PKScript()).
-			Execute(ctx, 0)
+			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}

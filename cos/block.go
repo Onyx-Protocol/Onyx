@@ -69,21 +69,16 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 		return nil, nil, errors.Wrap(err, "loading state tree")
 	}
 
-	view := state.NewMemView(tree, nil)
 	ctx = span.NewContextSuffix(ctx, "-validate-all")
 	defer span.Finish(ctx)
 	for _, tx := range txs {
-		if validation.ValidateTxInputs(ctx, view, tx) == nil {
-			validation.ApplyTx(ctx, view, tx)
+		if validation.ValidateTxInputs(tree, state.OutputSet{}, tx) == nil {
+			validation.ApplyTx(tree, tx)
 			b.Transactions = append(b.Transactions, tx)
 		}
 	}
 
-	stateRoot, err := view.StateRoot(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	b.SetStateRoot(stateRoot)
+	b.SetStateRoot(tree.RootHash())
 	b.SetTxRoot(validation.CalcMerkleRoot(b.Transactions))
 
 	return b, prev, nil
@@ -103,13 +98,12 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 		return errors.Wrap(err, "loading state tree")
 	}
 
-	mv := state.NewMemView(tree, nil)
-	err = fc.validateBlock(ctx, block, mv)
+	err = fc.validateBlock(ctx, block, tree)
 	if err != nil {
 		return errors.Wrap(err, "block validation")
 	}
 
-	newTxs, conflicts, err := fc.applyBlock(ctx, block, mv)
+	newTxs, conflicts, err := fc.applyBlock(ctx, block, tree)
 	if err != nil {
 		return errors.Wrap(err, "applying block")
 	}
@@ -184,14 +178,13 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 		}
 	}
 
-	mv := state.NewMemView(tree, nil)
-	err := validation.ValidateBlockForSig(ctx, mv, prevBlock, block)
+	err := validation.ValidateBlockForSig(ctx, tree, prevBlock, block)
 	return errors.Wrap(err, "validation")
 }
 
 // validateBlock performs validation on an incoming block, in advance of
 // applying the block to the store.
-func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, view state.View) error {
+func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, tree *patricia.Tree) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -199,15 +192,15 @@ func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, view state.Vie
 	if err != nil {
 		return errors.Wrap(err, "loading previous block")
 	}
-	err = validation.ValidateBlockHeader(ctx, prevBlock, block)
+	err = validation.ValidateBlockHeader(prevBlock, block)
 	if err != nil {
 		return errors.Wrap(err, "validating block header")
 	}
 
 	if isSignedByTrustedHost(block, fc.trustedKeys) {
-		err = validation.ApplyBlock(ctx, view, block)
+		err = validation.ApplyBlock(tree, block)
 	} else {
-		err = validation.ValidateAndApplyBlock(ctx, view, prevBlock, block)
+		err = validation.ValidateAndApplyBlock(ctx, tree, prevBlock, block)
 	}
 	if err != nil {
 		return errors.Wrapf(ErrBadBlock, "validate block: %v", err)
@@ -243,9 +236,9 @@ func isSignedByTrustedHost(block *bc.Block, trustedKeys []*btcec.PublicKey) bool
 func (fc *FC) applyBlock(
 	ctx context.Context,
 	block *bc.Block,
-	mv *state.MemView,
+	tree *patricia.Tree,
 ) (newTxs []*bc.Tx, conflictingTxs []*bc.Tx, err error) {
-	newTxs, err = fc.store.ApplyBlock(ctx, block, mv.Assets, mv.StateTree)
+	newTxs, err = fc.store.ApplyBlock(ctx, block, tree)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "storing block")
 	}
@@ -278,38 +271,27 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		return nil, errors.Wrap(err, "loading state tree")
 	}
 
-	view := state.NewMemView(tree, nil)
 	for _, tx := range txs {
-		for _, out := range tx.Outputs {
-			if _, ok := view.Assets[out.AssetID]; !ok {
-				view.Assets[out.AssetID] = &state.AssetState{}
-			}
-		}
-
 		// Have to explicitly check that tx is not in block
 		// because issuance transactions are always valid, even duplicates.
 		// TODO(erykwalder): Remove this check when issuances become unique
-		txErr := validation.ValidateTxInputs(ctx, view, tx)
+		txErr := validation.ValidateTxInputs(tree, state.OutputSet{}, tx)
 		if txErr == nil && !txInBlock[tx.Hash] {
-			validation.ApplyTx(ctx, view, tx)
+			validation.ApplyTx(tree, tx)
 		} else {
 			deleteTxs = append(deleteTxs, tx)
 			if txInBlock[tx.Hash] {
 				continue
 			}
-			conflictTxs = append(conflictTxs, tx)
+
 			// This should never happen in sandbox, unless a reservation expired
 			// before the original tx was finalized.
 			log.Messagef(ctx, "deleting conflict tx %v because %q", tx.Hash, txErr)
-			for i, in := range tx.Inputs {
-				if !view.IsUTXO(ctx, state.Prevout(in)) {
-					log.Messagef(ctx, "conflict tx %v missing or spent input %d (%v)", tx.Hash, i, in.Previous)
-				}
-			}
+			conflictTxs = append(conflictTxs, tx)
 		}
 	}
 
-	err = fc.pool.Clean(ctx, deleteTxs, view.Assets)
+	err = fc.pool.Clean(ctx, deleteTxs)
 	if err != nil {
 		return nil, errors.Wrap(err, "removing conflicting txs")
 	}

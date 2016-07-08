@@ -28,35 +28,6 @@ func OutputTreeItem(o *Output) ([]byte, patricia.Valuer) {
 	return b.Bytes(), outputValuer(*o)
 }
 
-// CirculationTreeItem returns the key for circulation
-// of an asset in the state tree, as well as a patricia.Valuer
-// for Inserts into the state tree.
-func CirculationTreeItem(assetID bc.AssetID, amt uint64) ([]byte, patricia.Valuer) {
-	return append(assetID[:], byte('c')), uint64Valuer(amt)
-}
-
-// GetCirculation extracts the circulation for the provided asset from
-// the state tree.
-func GetCirculation(tree *patricia.Tree, assetID bc.AssetID) uint64 {
-	k := append(assetID[:], byte('c'))
-	n := tree.Lookup(k)
-	if n == nil {
-		return 0
-	}
-
-	r := bytes.NewReader(n.Value().Bytes)
-	v, _ := blockchain.ReadUvarint(r)
-	return v
-}
-
-type uint64Valuer uint64
-
-func (v uint64Valuer) Value() patricia.Value {
-	var buf bytes.Buffer
-	blockchain.WriteUvarint(&buf, uint64(v))
-	return patricia.Value{Bytes: buf.Bytes()}
-}
-
 type outputValuer Output
 
 func (o outputValuer) Value() patricia.Value {

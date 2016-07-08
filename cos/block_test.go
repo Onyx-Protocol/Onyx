@@ -14,7 +14,6 @@ import (
 	"chain/cos/mempool"
 	"chain/cos/memstore"
 	"chain/cos/patricia"
-	"chain/cos/state"
 	"chain/cos/txscript"
 	"chain/errors"
 	"chain/testutil"
@@ -26,7 +25,7 @@ func TestLatestBlock(t *testing.T) {
 	emptyPool := mempool.New()
 	noBlocks := memstore.New()
 	oneBlock := memstore.New()
-	oneBlock.ApplyBlock(ctx, &bc.Block{}, nil, patricia.NewTree(nil))
+	oneBlock.ApplyBlock(ctx, &bc.Block{}, patricia.NewTree(nil))
 
 	cases := []struct {
 		store   Store
@@ -93,7 +92,7 @@ func TestWaitForBlock(t *testing.T) {
 			OutputScript:      []byte{txscript.OP_TRUE},
 		},
 	}
-	store.ApplyBlock(ctx, block0, nil, patricia.NewTree(nil))
+	store.ApplyBlock(ctx, block0, patricia.NewTree(nil))
 	fc, err := NewFC(ctx, store, mempool.New(), nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -236,7 +235,7 @@ func TestGenerateBlock(t *testing.T) {
 		}),
 	}
 	for _, tx := range txs {
-		err := fc.applyTx(ctx, tx, state.NewMemView(nil, nil))
+		err := fc.applyTx(ctx, tx)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

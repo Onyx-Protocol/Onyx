@@ -2,7 +2,6 @@ package mempool
 
 import (
 	"chain/cos/bc"
-	"chain/cos/state"
 
 	"golang.org/x/net/context"
 )
@@ -22,7 +21,7 @@ func New() *MemPool {
 }
 
 // Insert adds a new pending tx to the pending tx pool.
-func (m *MemPool) Insert(ctx context.Context, tx *bc.Tx, assets map[bc.AssetID]*state.AssetState) error {
+func (m *MemPool) Insert(ctx context.Context, tx *bc.Tx) error {
 	m.poolMap[tx.Hash] = tx
 	m.pool = append(m.pool, tx)
 	return nil
@@ -48,7 +47,6 @@ func (m *MemPool) Dump(context.Context) ([]*bc.Tx, error) {
 func (m *MemPool) Clean(
 	ctx context.Context,
 	txs []*bc.Tx,
-	assets map[bc.AssetID]*state.AssetState,
 ) error {
 	for _, tx := range txs {
 		delete(m.poolMap, tx.Hash)

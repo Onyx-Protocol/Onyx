@@ -36,8 +36,10 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 		return errors.Wrap(err, "loading state tree")
 	}
 
-	view := state.NewMemView(tree, nil)
-	view.Added, err = fc.getPoolPrevouts(ctx, tx)
+	// tx's prevouts may consume outputs from other transactions
+	// in the pool. We load any applicable pool prevouts to supplement
+	// the state tree.
+	poolPrevouts, err := fc.getPoolPrevouts(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -59,22 +61,21 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 		return nil
 	}
 
-	mv := state.NewMemView(nil, view)
 	tsMS := time.Now().UnixNano() / int64(time.Millisecond)
-	err = validation.ValidateTx(ctx, mv, tx, uint64(tsMS))
+	err = validation.ValidateTx(tree, poolPrevouts, tx, uint64(tsMS))
 	if err != nil {
 		return errors.Wrap(err, "tx rejected")
 	}
 
-	err = validation.ApplyTx(ctx, mv, tx)
+	err = validation.ApplyTx(tree, tx)
 	if err != nil {
 		return errors.Wrap(err, "applying tx")
 	}
 
 	// Update persistent tx pool state
-	err = fc.applyTx(ctx, tx, mv)
+	err = fc.applyTx(ctx, tx)
 	if err != nil {
-		return errors.Wrap(err, "apply TX")
+		return errors.Wrap(err, "apply tx")
 	}
 
 	for _, cb := range fc.txCallbacks {
@@ -83,14 +84,11 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 	return nil
 }
 
-// applyTx updates the output set to reflect
-// the effects of tx. It deletes consumed utxos
-// and inserts newly-created outputs.
-// Must be called inside a transaction.
-func (fc *FC) applyTx(ctx context.Context, tx *bc.Tx, view *state.MemView) (err error) {
+// applyTx updates the pool to contain the provided tx.
+func (fc *FC) applyTx(ctx context.Context, tx *bc.Tx) (err error) {
 	defer metrics.RecordElapsed(time.Now())
 
-	err = fc.pool.Insert(ctx, tx, view.Assets)
+	err = fc.pool.Insert(ctx, tx)
 	return errors.Wrap(err, "applying tx to store")
 }
 
@@ -99,7 +97,7 @@ func (fc *FC) applyTx(ctx context.Context, tx *bc.Tx, view *state.MemView) (err 
 // in the pool.
 //
 // It does not verify that the outputs are unspent in the pool.
-func (fc *FC) getPoolPrevouts(ctx context.Context, tx *bc.Tx) (map[bc.Outpoint]*state.Output, error) {
+func (fc *FC) getPoolPrevouts(ctx context.Context, tx *bc.Tx) (prevouts state.OutputSet, err error) {
 	hashes := make([]bc.Hash, 0, len(tx.Inputs))
 	for _, txin := range tx.Inputs {
 		hashes = append(hashes, txin.Previous.Hash)
@@ -107,10 +105,10 @@ func (fc *FC) getPoolPrevouts(ctx context.Context, tx *bc.Tx) (map[bc.Outpoint]*
 
 	txs, err := fc.pool.GetTxs(ctx, hashes...)
 	if err != nil {
-		return nil, err
+		return prevouts, err
 	}
 
-	poolPrevouts := map[bc.Outpoint]*state.Output{}
+	var poolPrevouts []*state.Output
 	for _, txin := range tx.Inputs {
 		prevTx, ok := txs[txin.Previous.Hash]
 		if !ok {
@@ -120,7 +118,7 @@ func (fc *FC) getPoolPrevouts(ctx context.Context, tx *bc.Tx) (map[bc.Outpoint]*
 			continue
 		}
 		o := prevTx.Outputs[txin.Previous.Index]
-		poolPrevouts[txin.Previous] = state.NewOutput(*o, txin.Previous)
+		poolPrevouts = append(poolPrevouts, state.NewOutput(*o, txin.Previous))
 	}
-	return poolPrevouts, nil
+	return state.NewOutputSet(poolPrevouts...), nil
 }

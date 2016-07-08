@@ -344,7 +344,7 @@ func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([]by
 }
 
 func newReusableTestEngine(tx *bc.TxData) (*Engine, error) {
-	result, err := NewReusableEngine(nil, tx, 0)
+	result, err := NewReusableEngine(tx, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +352,7 @@ func newReusableTestEngine(tx *bc.TxData) (*Engine, error) {
 }
 
 func newTestEngine(scriptPubKey []byte, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
-	result, err := NewEngine(nil, scriptPubKey, tx, 0, flags)
+	result, err := NewEngine(scriptPubKey, tx, 0, flags)
 	if err != nil {
 		return nil, err
 	}

@@ -33,7 +33,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	engine, err := txscript.NewEngineForBlock(ctx, prev.OutputScript, block, txscript.StandardVerifyFlags)
+	engine, err := txscript.NewEngineForBlock(prev.OutputScript, block, txscript.StandardVerifyFlags)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

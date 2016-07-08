@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"golang.org/x/net/context"
-
 	"github.com/btcsuite/btcd/btcec"
 
 	"chain/cos/bc"
@@ -85,7 +83,6 @@ type (
 		txIdx            int
 		numOps           int
 		flags            ScriptFlags
-		ctx              context.Context
 		available        []uint64 // mutable copy of each output's Amount field, used for OP_RESERVEOUTPUT reservations
 	}
 )
@@ -569,20 +566,19 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 // NewReusableEngine allocates an Engine object that can execute scripts
 // for every input  of a transaction.  Illustration (with error-checking
 // elided for clarity):
-//   engine, err := NewReusableEngine(ctx, tx, flags)
+//   engine, err := NewReusableEngine(tx, flags)
 //   for i, txin := range tx.Inputs {
 //     err = engine.Prepare(scriptPubKey, i)
 //     err = engine.Execute()
 //   }
 // Note: every call to Execute() must be preceded by a call to
 // Prepare() (including the first one).
-func NewReusableEngine(ctx context.Context, tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
-	return newReusableEngine(ctx, tx, nil, flags)
+func NewReusableEngine(tx *bc.TxData, flags ScriptFlags) (*Engine, error) {
+	return newReusableEngine(tx, nil, flags)
 }
 
-func newReusableEngine(ctx context.Context, tx *bc.TxData, block *bc.Block, flags ScriptFlags) (*Engine, error) {
+func newReusableEngine(tx *bc.TxData, block *bc.Block, flags ScriptFlags) (*Engine, error) {
 	vm := &Engine{
-		ctx:   ctx,
 		tx:    tx,
 		block: block,
 		flags: flags,
@@ -611,8 +607,8 @@ func newReusableEngine(ctx context.Context, tx *bc.TxData, block *bc.Block, flag
 //
 // This is equivalent to calling NewReusableEngine() followed by a
 // call to Prepare().
-func NewEngine(ctx context.Context, scriptPubKey []byte, tx *bc.TxData, txIdx int, flags ScriptFlags) (*Engine, error) {
-	vm, err := NewReusableEngine(ctx, tx, flags)
+func NewEngine(scriptPubKey []byte, tx *bc.TxData, txIdx int, flags ScriptFlags) (*Engine, error) {
+	vm, err := NewReusableEngine(tx, flags)
 	if err != nil {
 		return nil, err
 	}
@@ -624,8 +620,8 @@ func NewEngine(ctx context.Context, scriptPubKey []byte, tx *bc.TxData, txIdx in
 // NewEngineForBlock returns a new script engine for the provided block
 // and its script. The flags modify the behavior of the script engine
 // according to the description provided by each flag.
-func NewEngineForBlock(ctx context.Context, scriptPubKey []byte, block *bc.Block, flags ScriptFlags) (*Engine, error) {
-	vm, err := newReusableEngine(ctx, nil, block, flags)
+func NewEngineForBlock(scriptPubKey []byte, block *bc.Block, flags ScriptFlags) (*Engine, error) {
+	vm, err := newReusableEngine(nil, block, flags)
 	if err != nil {
 		return nil, err
 	}

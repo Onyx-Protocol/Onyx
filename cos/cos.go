@@ -54,7 +54,6 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/patricia"
-	"chain/cos/state"
 	"chain/errors"
 )
 
@@ -79,19 +78,13 @@ type TxCallback func(context.Context, *bc.Tx)
 // Store provides storage for blockchain data: blocks, asset
 // definition pointers and confirmed transactions.
 //
-// Note, this is different from state.View. A View provides
+// Note, this is different from a state tree. A state tree provides
 // access to the state at a given point in time -- outputs and
-// ADPs. It doesn't distinguish between blockchain outputs and
-// pool outputs; a View instance might provide either, or both.
-// Store, by contrast, provides lower-level access to the
-// concrete blockchain. It can insert raw block data, add and
-// remove pending txs from the pool, and update the UTXO state
-// directly. An FC uses Store to create a set of Views,
-// uses those views to validate a tx or block, then uses Store
-// to commit the validated data.
+// ADPs. An FC uses Store to load state trees from storage and
+// persist validated data.
 type Store interface {
 	GetTxs(context.Context, ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error)
-	ApplyBlock(ctx context.Context, b *bc.Block, assets map[bc.AssetID]*state.AssetState, tree *patricia.Tree) ([]*bc.Tx, error)
+	ApplyBlock(ctx context.Context, b *bc.Block, tree *patricia.Tree) ([]*bc.Tx, error)
 	FinalizeBlock(context.Context, uint64) error
 	LatestBlock(context.Context) (*bc.Block, error)
 	StateTree(context.Context, uint64) (*patricia.Tree, error)
@@ -99,9 +92,9 @@ type Store interface {
 
 // Pool provides storage for transactions in the pending tx pool.
 type Pool interface {
-	Insert(context.Context, *bc.Tx, map[bc.AssetID]*state.AssetState) error
+	Insert(context.Context, *bc.Tx) error
 	GetTxs(context.Context, ...bc.Hash) (map[bc.Hash]*bc.Tx, error)
-	Clean(ctx context.Context, txs []*bc.Tx, assets map[bc.AssetID]*state.AssetState) error
+	Clean(ctx context.Context, txs []*bc.Tx) error
 	Dump(context.Context) ([]*bc.Tx, error)
 }
 

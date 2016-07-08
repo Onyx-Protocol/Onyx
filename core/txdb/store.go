@@ -8,7 +8,6 @@ import (
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/cos/patricia"
-	"chain/cos/state"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
@@ -45,12 +44,7 @@ func (s *Store) GetTxs(ctx context.Context, hashes ...bc.Hash) (bcTxs map[bc.Has
 	return getBlockchainTxs(ctx, s.db, hashes...)
 }
 
-func (s *Store) ApplyBlock(
-	ctx context.Context,
-	block *bc.Block,
-	assets map[bc.AssetID]*state.AssetState,
-	state *patricia.Tree,
-) ([]*bc.Tx, error) {
+func (s *Store) ApplyBlock(ctx context.Context, block *bc.Block, state *patricia.Tree) ([]*bc.Tx, error) {
 	dbtx, err := s.db.Begin(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err)
