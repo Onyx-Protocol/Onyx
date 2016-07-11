@@ -169,7 +169,7 @@ func TestFindAndBuyContract(t *testing.T) {
 			}
 
 			assettest.ExpectMatchingOutputs(t, buyTx, 1, "sending payment to seller", func(t *testing.T, txOutput *bc.TxOutput) bool {
-				return reflect.DeepEqual(txOutput.Script, []byte(openOrder.OrderInfo.SellerScript))
+				return reflect.DeepEqual(txOutput.ControlProgram, []byte(openOrder.OrderInfo.SellerScript))
 			})
 		})
 	})

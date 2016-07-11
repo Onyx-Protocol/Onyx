@@ -153,7 +153,7 @@ func LoadAccountInfo(ctx context.Context, outs []*state.Output) ([]*txdb.Output,
 
 	outsByScript := make(map[string][]*state.Output, len(outs))
 	for _, out := range outs {
-		scriptStr := string(out.Script)
+		scriptStr := string(out.ControlProgram)
 		outsByScript[scriptStr] = append(outsByScript[scriptStr], out)
 	}
 

@@ -34,7 +34,7 @@ func (o outputValuer) Value() patricia.Value {
 	var buf bytes.Buffer
 	o.Outpoint.WriteTo(&buf)
 	blockchain.WriteUvarint(&buf, o.Amount)
-	blockchain.WriteBytes(&buf, o.Script)
+	blockchain.WriteBytes(&buf, o.ControlProgram)
 	h := sha3.Sum256(buf.Bytes())
 	return patricia.Value{
 		Bytes:  h[:],

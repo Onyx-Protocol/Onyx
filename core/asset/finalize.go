@@ -285,8 +285,8 @@ func insertAccountOutputs(ctx context.Context, outs []*txdb.Output) error {
 		accountID = append(accountID, out.AccountID)
 		managerNodeID = append(managerNodeID, out.ManagerNodeID)
 		aIndex = append(aIndex, toKeyIndex(out.AddrIndex[:]))
-		script = append(script, out.Script)
-		metadata = append(metadata, out.Metadata)
+		script = append(script, out.ControlProgram)
+		metadata = append(metadata, out.ReferenceData)
 	}
 
 	const q = `

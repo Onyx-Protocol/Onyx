@@ -104,7 +104,7 @@ func calcIssuances(txs ...*bc.Tx) Issuances {
 		}
 
 		for _, txout := range tx.Outputs {
-			if txscript.IsUnspendable(txout.Script) {
+			if txscript.IsUnspendable(txout.ControlProgram) {
 				amt := assets[txout.AssetID]
 				amt.Destroyed = amt.Destroyed + txout.Amount
 				assets[txout.AssetID] = amt

@@ -25,12 +25,10 @@ func NewOutput(o bc.TxOutput, p bc.Outpoint) *Output {
 // only includes the output data that is embedded within inputs (ex,
 // excludes metadata).
 func Prevout(in *bc.TxInput) *Output {
+	t := bc.NewTxOutput(in.AssetAmount.AssetID, in.AssetAmount.Amount, in.PrevScript, nil)
 	return &Output{
 		Outpoint: in.Previous,
-		TxOutput: bc.TxOutput{
-			AssetAmount: in.AssetAmount,
-			Script:      in.PrevScript,
-		},
+		TxOutput: *t,
 	}
 }
 
@@ -46,7 +44,7 @@ func (os OutputSet) Contains(o *Output) bool {
 	if !ok {
 		return false
 	}
-	return output.AssetAmount == o.AssetAmount && bytes.Equal(output.Script, o.Script)
+	return output.AssetAmount == o.AssetAmount && bytes.Equal(output.ControlProgram, o.ControlProgram)
 }
 
 // NewOutputSet constructs a new OutputSet from the provided

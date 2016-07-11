@@ -108,10 +108,13 @@ func TestLoadAccountInfo(t *testing.T) {
 	acc := assettest.CreateAccountFixture(ctx, t, mnode, "", nil)
 	addr := assettest.CreateAddressFixture(ctx, t, acc)
 
+	to1 := bc.NewTxOutput(bc.AssetID{}, 0, addr.PKScript, nil)
+	to2 := bc.NewTxOutput(bc.AssetID{}, 0, []byte("notfound"), nil)
+
 	outs := []*state.Output{{
-		TxOutput: bc.TxOutput{Script: addr.PKScript},
+		TxOutput: *to1,
 	}, {
-		TxOutput: bc.TxOutput{Script: []byte("notfound")},
+		TxOutput: *to2,
 	}}
 
 	got, err := LoadAccountInfo(ctx, outs)
@@ -120,7 +123,7 @@ func TestLoadAccountInfo(t *testing.T) {
 	}
 
 	want := []*txdb.Output{{
-		Output:        state.Output{TxOutput: bc.TxOutput{Script: addr.PKScript}},
+		Output:        state.Output{TxOutput: *to1},
 		ManagerNodeID: mnode,
 		AccountID:     acc,
 	}}

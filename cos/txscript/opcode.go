@@ -2426,7 +2426,7 @@ func opcodeReserveOutput(op *parsedOpcode, vm *Engine) error {
 		if output.AssetID != *assetID {
 			continue
 		}
-		if !bytes.Equal(output.Script, script) {
+		if !bytes.Equal(output.ControlProgram, script) {
 			continue
 		}
 		vm.available[i] -= needed
@@ -2468,7 +2468,7 @@ func opcodeFindOutput(op *parsedOpcode, vm *Engine) error {
 		if output.AssetID != *assetID {
 			continue
 		}
-		if !bytes.Equal(output.Script, script) {
+		if !bytes.Equal(output.ControlProgram, script) {
 			continue
 		}
 		if output.Amount < uint64(amount) {

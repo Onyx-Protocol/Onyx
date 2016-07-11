@@ -56,7 +56,7 @@ func TestTxIsWellFormed(t *testing.T) {
 						},
 					},
 					Outputs: []*bc.TxOutput{
-						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 999}},
+						bc.NewTxOutput(aid1, 999, nil, nil),
 					},
 				},
 			},
@@ -77,8 +77,8 @@ func TestTxIsWellFormed(t *testing.T) {
 						},
 					},
 					Outputs: []*bc.TxOutput{
-						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 500}},
-						{AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 1000}},
+						bc.NewTxOutput(aid1, 500, nil, nil),
+						bc.NewTxOutput(aid2, 1000, nil, nil),
 					},
 				},
 			},
@@ -95,7 +95,7 @@ func TestTxIsWellFormed(t *testing.T) {
 						},
 					},
 					Outputs: []*bc.TxOutput{
-						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 0}},
+						bc.NewTxOutput(aid1, 0, nil, nil),
 					},
 				},
 			},
@@ -116,8 +116,8 @@ func TestTxIsWellFormed(t *testing.T) {
 						},
 					},
 					Outputs: []*bc.TxOutput{
-						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 0}},
-						{AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 0}},
+						bc.NewTxOutput(aid1, 0, nil, nil),
+						bc.NewTxOutput(aid2, 0, nil, nil),
 					},
 				},
 			},
@@ -130,7 +130,7 @@ func TestTxIsWellFormed(t *testing.T) {
 						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000}},
 					},
 					Outputs: []*bc.TxOutput{
-						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000}},
+						bc.NewTxOutput(aid1, 1000, nil, nil),
 					},
 				},
 			},
@@ -150,10 +150,10 @@ func TestTxIsWellFormed(t *testing.T) {
 						},
 					},
 					Outputs: []*bc.TxOutput{
-						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 500}},
-						{AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 100}},
-						{AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 200}},
-						{AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 200}},
+						bc.NewTxOutput(aid1, 500, nil, nil),
+						bc.NewTxOutput(aid2, 100, nil, nil),
+						bc.NewTxOutput(aid2, 200, nil, nil),
+						bc.NewTxOutput(aid2, 200, nil, nil),
 					},
 				},
 			},
@@ -173,7 +173,7 @@ func TestTxIsWellFormed(t *testing.T) {
 						},
 					},
 					Outputs: []*bc.TxOutput{
-						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000}},
+						bc.NewTxOutput(aid1, 1000, nil, nil),
 					},
 				},
 			},
@@ -189,7 +189,7 @@ func TestTxIsWellFormed(t *testing.T) {
 						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000}},
 					},
 					Outputs: []*bc.TxOutput{
-						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000}},
+						bc.NewTxOutput(aid1, 1000, nil, nil),
 					},
 				},
 			},
@@ -228,7 +228,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 						},
 					},
 					Outputs: []*bc.TxOutput{
-						{AssetAmount: bc.AssetAmount{AssetID: aid, Amount: 1000}},
+						bc.NewTxOutput(aid, 1000, nil, nil),
 					},
 				},
 			},
@@ -246,7 +246,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 						},
 					},
 					Outputs: []*bc.TxOutput{
-						{AssetAmount: bc.AssetAmount{AssetID: aid, Amount: 1000}},
+						bc.NewTxOutput(aid, 1000, nil, nil),
 					},
 				},
 			},
@@ -264,7 +264,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 						},
 					},
 					Outputs: []*bc.TxOutput{
-						{AssetAmount: bc.AssetAmount{AssetID: aid, Amount: 1000}},
+						bc.NewTxOutput(aid, 1000, nil, nil),
 					},
 				},
 			},

@@ -85,13 +85,9 @@ func Issue(t testing.TB, asset *TestAsset, dest *TestDest, amount uint64) (*bc.T
 		Inputs: []*bc.TxInput{{
 			Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
 		}},
-		Outputs: []*bc.TxOutput{{
-			Script: dest.PKScript,
-			AssetAmount: bc.AssetAmount{
-				AssetID: asset.AssetID,
-				Amount:  amount,
-			},
-		}},
+		Outputs: []*bc.TxOutput{
+			bc.NewTxOutput(asset.AssetID, amount, dest.PKScript, nil),
+		},
 	}
 	asset.Sign(t, tx, 0)
 
@@ -104,12 +100,11 @@ func Transfer(t testing.TB, out *state.Output, from, to *TestDest) *bc.Tx {
 		Inputs: []*bc.TxInput{{
 			Previous:    out.Outpoint,
 			AssetAmount: out.AssetAmount,
-			PrevScript:  out.Script,
+			PrevScript:  out.ControlProgram,
 		}},
-		Outputs: []*bc.TxOutput{{
-			Script:      to.PKScript,
-			AssetAmount: out.AssetAmount,
-		}},
+		Outputs: []*bc.TxOutput{
+			bc.NewTxOutput(out.AssetID, out.Amount, to.PKScript, nil),
+		},
 	}
 	from.Sign(t, tx, 0)
 

@@ -215,11 +215,11 @@ func generateNodeTx(
 			AssetID:      out.AssetID,
 			AssetLabel:   assetLabel,
 			Amount:       out.Amount,
-			Address:      out.Script,
-			Script:       out.Script,
+			Address:      out.ControlProgram,
+			Script:       out.ControlProgram,
 			AccountID:    outs[i].AccountID,
 			AccountLabel: accountLabel,
-			Metadata:     out.Metadata,
+			Metadata:     out.ReferenceData,
 			mNodeID:      mNodeID,
 		})
 	}

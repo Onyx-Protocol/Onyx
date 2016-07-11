@@ -56,11 +56,7 @@ func TestTransaction(t *testing.T) {
 					},
 				},
 				Outputs: []*TxOutput{
-					{
-						AssetAmount: AssetAmount{AssetID: AssetID{}, Amount: 1000000000000},
-						Script:      []byte{1},
-						Metadata:    []byte("output"),
-					},
+					NewTxOutput(AssetID{}, 1000000000000, []byte{1}, []byte("output")),
 				},
 				MinTime:  0,
 				MaxTime:  0,
@@ -78,15 +74,19 @@ func TestTransaction(t *testing.T) {
 				"05696e707574" + // input 0, reference data
 				"00" + // input 0, asset definition
 				"01" + // outputs count
+				"01" + // output 0, asset version
+				"29" + // output 0, output commitment length
 				"0000000000000000000000000000000000000000000000000000000000000000" + // output 0, output commitment, asset id
 				"80a094a58d1d" + // output 0, output commitment, amount
+				"01" + // output 0, output commitment, vm version
 				"0101" + // output 0, output commitment, control program
 				"066f7574707574" + // output 0, reference data
+				"00" + // output 0, output witness
 				"00" + // mintime
 				"00" + // maxtime
 				"0869737375616e6365"), // reference data
-			hash:        mustDecodeHash("d13bbc2c411c470c335a8be5f11e4d97badbd98e54a27250701af73723bd4671"),
-			witnessHash: mustDecodeHash("a0ad9dbe92de70ac361e097053fda7080bd31652c1d545573032bb7de8779d27"),
+			hash:        mustDecodeHash("7b4546b194d722cc627a9c171e4fcbbe69dc597bcf7c4836b4fb30321a8b5521"),
+			witnessHash: mustDecodeHash("3d61998c5fccbe613381d3aae9b7cfc8d785593b843af20a4388df4de71ad475"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -106,16 +106,8 @@ func TestTransaction(t *testing.T) {
 					},
 				},
 				Outputs: []*TxOutput{
-					{
-						AssetAmount: AssetAmount{AssetID: ComputeAssetID(issuanceScript, genesisHash), Amount: 600000000000},
-						Script:      []byte{1},
-						Metadata:    nil,
-					},
-					{
-						AssetAmount: AssetAmount{AssetID: ComputeAssetID(issuanceScript, genesisHash), Amount: 400000000000},
-						Script:      []byte{2},
-						Metadata:    nil,
-					},
+					NewTxOutput(ComputeAssetID(issuanceScript, genesisHash), 600000000000, []byte{1}, nil),
+					NewTxOutput(ComputeAssetID(issuanceScript, genesisHash), 400000000000, []byte{2}, nil),
 				},
 				MinTime:  1492590000,
 				MaxTime:  1492590591,
@@ -133,53 +125,61 @@ func TestTransaction(t *testing.T) {
 				"05696e707574" + // input 0, reference data
 				"086173736574646566" + // input 0, asset definition
 				"02" + // outputs count
+				"01" + // output 0, asset version
+				"29" + // output 0, output commitment length
 				"8ce7bfa83eeb157470101b2c40d528335bf9e98c9383f6f6e575bee3e2131236" + // output 0, output commitment, asset id
 				"80e0a596bb11" + // output 0, output commitment, amount
+				"01" + // output 0, output commitment, vm version
 				"0101" + // output 0, output commitment, control program
 				"00" + // output 0, reference data
+				"00" + // output 0, output witness
+				"01" + // output 1, asset version
+				"29" + // output 1, output commitment length
 				"8ce7bfa83eeb157470101b2c40d528335bf9e98c9383f6f6e575bee3e2131236" + // output 1, output commitment, asset id
 				"80c0ee8ed20b" + // output 1, output commitment, amount
+				"01" + // output 1, vm version
 				"0102" + // output 1, output commitment, control program
 				"00" + // output 1, reference data
+				"00" + // output 1, output witness
 				"b0bbdcc705" + // mintime
 				"ffbfdcc705" + // maxtime
 				"0c646973747269627574696f6e"), // reference data
-			hash:        mustDecodeHash("ce3ec06d9bd26c5ff2c6ec47314312f8cfea809a37c12beb14a6e98315e02de0"),
-			witnessHash: mustDecodeHash("1996737c639822f3d15d70e425df2f77697f29bc61f686264a1059a9e4634e54"),
+			hash:        mustDecodeHash("362bf48768eba1e50489238e6ebba683dc8cbf1cdbcb6db3de08032857709b8f"),
+			witnessHash: mustDecodeHash("78fbf61210197fd083eb92f30bf236e44bf951d06930688f5131e968ab042da4"),
 		},
 	}
 
-	for _, test := range cases {
+	for i, test := range cases {
 		got := serialize(t, test.tx)
 		want, _ := hex.DecodeString(test.hex)
 		if !bytes.Equal(got, want) {
-			t.Errorf("bytes = %x want %x", got, want)
+			t.Errorf("test %d: bytes = %x want %x", i, got, want)
 		}
 		if test.tx.Hash != test.hash {
-			t.Errorf("hash = %s want %x", test.tx.Hash, test.hash)
+			t.Errorf("test %d: hash = %s want %x", i, test.tx.Hash, test.hash)
 		}
 		if g := test.tx.WitnessHash(); g != test.witnessHash {
-			t.Errorf("witness hash = %s want %x", g, test.witnessHash)
+			t.Errorf("test %d: witness hash = %s want %x", i, g, test.witnessHash)
 		}
 
 		txJSON, err := json.Marshal(test.tx)
 		if err != nil {
-			t.Errorf("error marshaling tx to json: %s", err)
+			t.Errorf("test %d: error marshaling tx to json: %s", i, err)
 		}
 		var txFromJSON Tx
 		if err := json.Unmarshal(txJSON, &txFromJSON); err != nil {
-			t.Errorf("error unmarshaling tx from json: %s", err)
+			t.Errorf("test %d: error unmarshaling tx from json: %s", i, err)
 		}
 		if !reflect.DeepEqual(test.tx, &txFromJSON) {
-			t.Errorf("bc.Tx -> json -> bc.Tx: got=%#v want=%#v", &txFromJSON, test.tx)
+			t.Errorf("test %d: bc.Tx -> json -> bc.Tx: got=%#v want=%#v", i, &txFromJSON, test.tx)
 		}
 
 		tx1 := new(TxData)
 		if err := tx1.UnmarshalText([]byte(test.hex)); err != nil {
-			t.Errorf("unexpected err %v", err)
+			t.Errorf("test %d: unexpected err %v", i, err)
 		}
 		if !reflect.DeepEqual(*tx1, test.tx.TxData) {
-			t.Errorf("tx1 = %v want %v", *tx1, test.tx.TxData)
+			t.Errorf("test %d: tx1 = %v want %v", i, *tx1, test.tx.TxData)
 		}
 	}
 }
@@ -263,10 +263,7 @@ func TestTxHashForSig(t *testing.T) {
 			},
 		},
 		Outputs: []*TxOutput{
-			{
-				AssetAmount: AssetAmount{AssetID: assetID, Amount: 1000000000000},
-				Script:      []byte{3},
-			},
+			NewTxOutput(assetID, 1000000000000, []byte{3}, nil),
 		},
 		Metadata: []byte("transfer"),
 	}
@@ -276,17 +273,17 @@ func TestTxHashForSig(t *testing.T) {
 		wantHash string
 	}{
 		// TODO(bobg): Update all these hashes to pass under new serialization logic in PR 1070 (and possibly others)
-		{0, SigHashAll, "ad34a69f12985aef8d54cd5159d3048f7737bed6c2f023a38243fc69503b78b5"},
-		{0, SigHashSingle, "a5eb4219eb97a38c8cb10c9cb5c62d5b7f168b15a197074195b1b10e40da57de"},
+		{0, SigHashAll, "099a620876e9492ff822d487bc9f8e59f29fc924b0e323cee2e361af9b344013"},
+		{0, SigHashSingle, "c236a33975d2fafe685b6ce9f0b7479f4984ba9f64ea8f3bae2dfefd883d01df"},
 		{0, SigHashNone, "afcfc807b05ba0359425bed9cbc134e816cdd9fde6ecc264d0ac1a2c77687377"},
-		{0, SigHashAll | SigHashAnyOneCanPay, "c2e337650b6ab02f900a6431185741824f7398cbd03e44dc481368549bef1820"},
-		{0, SigHashSingle | SigHashAnyOneCanPay, "ee4170aaf0557225e087c563f437770445be7cbdcb6465b25d5c2c9f27508aca"},
+		{0, SigHashAll | SigHashAnyOneCanPay, "3e909ae3bd40842ec1e115ec8c1553e068efa44e21c450cfac908a1b982fd5dd"},
+		{0, SigHashSingle | SigHashAnyOneCanPay, "db40af62c0f927293ee5fd8a9772639ab44eea57049c1f934d2478292c8cc2b2"},
 		{0, SigHashNone | SigHashAnyOneCanPay, "76d02d4c31c4feea2a90a541ec3614871ecd2be8e0bb977c5b7f803fa13ad9bc"},
 
-		{1, SigHashAll, "4b65fbebc2a929dff3a0e39a9ea93334cfad82f21d52681b1f549827025c82c4"},
+		{1, SigHashAll, "6c311896caa12dc3d0c12533bdf39b14a133157ad7d2d589e8b66e18b681440a"},
 		{1, SigHashSingle, "5660dc159e5c893085b214b96d9f557b4ef66ecf26b22efdead512578a001998"},
 		{1, SigHashNone, "6a705d7618f2b1f56b4f07c765ffb1fa63e9ae1fe81ecd106454e6c267e1ba84"},
-		{1, SigHashAll | SigHashAnyOneCanPay, "c20e235eb69149b3ea980be67fee440ecd260b4331551519463eab1bbd44106f"},
+		{1, SigHashAll | SigHashAnyOneCanPay, "d3e479f4f37a105051b5985b6d6f6ddf2d47cfc41b79637c371328d5a6000ee8"},
 		{1, SigHashSingle | SigHashAnyOneCanPay, "81deccfe443e8c150307727337c16427a6140583a9172e3c0be65fb57a695a14"},
 		{1, SigHashNone | SigHashAnyOneCanPay, "e8fd4239f7ee14c9e464ca8b2c154e1367993b0bb38b569adbda14886aeff149"},
 	}

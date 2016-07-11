@@ -74,8 +74,8 @@ func Connect(ctx context.Context, fc *cos.FC, historical bool, maxAgeDays int, i
 				newIndexes = append(newIndexes, uint32(index))
 				newAssetIDs = append(newAssetIDs, txout.AssetID.String())
 				newAmounts = append(newAmounts, txout.Amount)
-				newScripts = append(newScripts, txout.Script)
-				newMetadatas = append(newMetadatas, txout.Metadata)
+				newScripts = append(newScripts, txout.ControlProgram)
+				newMetadatas = append(newMetadatas, txout.ReferenceData)
 
 				if isManager {
 					stateOut := &state.Output{
@@ -252,13 +252,10 @@ func listHistoricalOutputsByAssetAndAccount(ctx context.Context, assetID bc.Asse
 	)
 	args = append(args, func(hash bc.Hash, index uint32, amount uint64, script, metadata []byte) {
 		outpt := bc.Outpoint{Hash: hash, Index: index}
+		t := bc.NewTxOutput(assetID, amount, script, metadata)
 		o := &state.Output{
 			Outpoint: outpt,
-			TxOutput: bc.TxOutput{
-				AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: amount},
-				Script:      script,
-				Metadata:    metadata,
-			},
+			TxOutput: *t,
 		}
 		res = append(res, o)
 	})

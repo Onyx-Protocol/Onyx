@@ -21,7 +21,7 @@ func addOrderbookUTXO(ctx context.Context, tx *bc.Tx, index int, sellerScript []
 		INSERT INTO orderbook_utxos (tx_hash, index, seller_id, asset_id, amount, script)
 		SELECT $1, $2, (SELECT account_id FROM addresses WHERE pk_script=$3), $4, $5, $6
 	`
-	_, err = pg.Exec(ctx, q1, tx.Hash, index, sellerScript, out.AssetID, out.Amount, out.Script)
+	_, err = pg.Exec(ctx, q1, tx.Hash, index, sellerScript, out.AssetID, out.Amount, out.ControlProgram)
 	if err != nil {
 		return errors.Wrap(err, "inserting into orderbook_utxos")
 	}

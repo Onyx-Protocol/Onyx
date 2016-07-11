@@ -160,7 +160,7 @@ func dumpTab(ctx context.Context, t *testing.T, q string) {
 			t.Fatal(err)
 		}
 		for index, o := range tx.Outputs {
-			t.Logf("hash: %s index: %d pkscript: %x", hash, index, o.Script)
+			t.Logf("hash: %s index: %d pkscript: %x", hash, index, o.ControlProgram)
 		}
 	}
 	if rows.Err() != nil {

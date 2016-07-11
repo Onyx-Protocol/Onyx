@@ -62,14 +62,14 @@ func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx
 		outpoint := bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
 
 		// Collect all of the voting right outputs.
-		if rightData, err := testRightsContract(out.Script); rightData != nil && err == nil {
+		if rightData, err := testRightsContract(out.ControlProgram); rightData != nil && err == nil {
 			votingRightOutputs[out.AssetID] = *rightData
 			votingRightOutpoints[out.AssetID] = outpoint
 			continue
 		}
 
 		// If the output is a voting token, update the voting token index.
-		if tokenData, err := testTokenContract(out.Script); tokenData != nil && err == nil {
+		if tokenData, err := testTokenContract(out.ControlProgram); tokenData != nil && err == nil {
 			err = insertVotingToken(ctx, out.AssetID, blockHeight, outpoint, out.Amount, *tokenData)
 			if err != nil {
 				return err

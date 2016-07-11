@@ -41,10 +41,7 @@ func (tx *TestTx) AddInput(assetAmount bc.AssetAmount, pkscript, sigscript []byt
 
 // AddOutput adds a new output to the transaction.
 func (tx *TestTx) AddOutput(assetAmount bc.AssetAmount, pkscript []byte) *TestTx {
-	tx.data.Outputs = append(tx.data.Outputs, &bc.TxOutput{
-		AssetAmount: assetAmount,
-		Script:      pkscript,
-	})
+	tx.data.Outputs = append(tx.data.Outputs, bc.NewTxOutput(assetAmount.AssetID, assetAmount.Amount, pkscript, nil))
 	return tx
 }
 

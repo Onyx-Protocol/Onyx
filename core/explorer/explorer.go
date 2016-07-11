@@ -237,9 +237,9 @@ func stateOutsToTxOuts(stateOuts []*state.Output) []*TxOutput {
 			TxIndex:  &sOut.Outpoint.Index,
 			AssetID:  sOut.AssetID,
 			Amount:   sOut.Amount,
-			Address:  sOut.Script,
-			Script:   sOut.Script,
-			Metadata: sOut.Metadata,
+			Address:  sOut.ControlProgram,
+			Script:   sOut.ControlProgram,
+			Metadata: sOut.ReferenceData,
 		})
 	}
 
@@ -301,9 +301,9 @@ func makeTx(bcTx *bc.Tx, blockHeader *bc.BlockHeader, prevPoolTxs, prevBcTxs map
 		resp.Outputs = append(resp.Outputs, &TxOutput{
 			AssetID:  out.AssetID,
 			Amount:   out.Amount,
-			Address:  out.Script,
-			Script:   out.Script,
-			Metadata: out.Metadata,
+			Address:  out.ControlProgram,
+			Script:   out.ControlProgram,
+			Metadata: out.ReferenceData,
 		})
 	}
 

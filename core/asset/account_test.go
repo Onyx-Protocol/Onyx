@@ -48,7 +48,7 @@ func TestAccountSourceReserve(t *testing.T) {
 			TxInput: &bc.TxInput{
 				Previous:    out.Outpoint,
 				AssetAmount: out.TxOutput.AssetAmount,
-				PrevScript:  out.TxOutput.Script,
+				PrevScript:  out.TxOutput.ControlProgram,
 			},
 			TemplateInput: nil,
 		}},
@@ -113,7 +113,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 			TxInput: &bc.TxInput{
 				Previous:    out.Outpoint,
 				AssetAmount: out.TxOutput.AssetAmount,
-				PrevScript:  out.TxOutput.Script,
+				PrevScript:  out.TxOutput.ControlProgram,
 			},
 			TemplateInput: nil,
 		}},

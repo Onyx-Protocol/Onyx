@@ -85,7 +85,7 @@ func Connect(chain *cos.FC) {
 		// For outputs that match the orderbook p2c script format, index
 		// orderbook-specific info in the db.
 		for i, out := range tx.Outputs {
-			isOrderbook, sellerScript, prices, err := testOrderbookScript(out.Script)
+			isOrderbook, sellerScript, prices, err := testOrderbookScript(out.ControlProgram)
 			if err != nil {
 				log.Error(ctx, errors.Wrap(err, "testing for orderbook output script"))
 				return

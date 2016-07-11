@@ -47,10 +47,7 @@ func TestBadPC(t *testing.T) {
 			},
 		},
 		Outputs: []*bc.TxOutput{
-			{
-				AssetAmount: bc.AssetAmount{Amount: 1000000000},
-				Script:      nil,
-			},
+			bc.NewTxOutput(bc.AssetID{}, 1000000000, nil, nil),
 		},
 	}
 	pkScript := []byte{txscript.OP_NOP}
@@ -106,10 +103,7 @@ func TestCheckErrorCondition(t *testing.T) {
 			},
 		},
 		Outputs: []*bc.TxOutput{
-			{
-				AssetAmount: bc.AssetAmount{Amount: 1000000000},
-				Script:      nil,
-			},
+			bc.NewTxOutput(bc.AssetID{}, 1000000000, nil, nil),
 		},
 	}
 	pkScript := []byte{

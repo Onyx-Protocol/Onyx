@@ -38,7 +38,7 @@ func TestOffer(t *testing.T) {
 		txOutput := fixtureInfo.offerTx.Outputs[0]
 		testutil.ExpectEqual(t, txOutput.AssetID, fixtureInfo.aaplAssetID, "wrong asset id")
 		testutil.ExpectEqual(t, txOutput.Amount, uint64(100), "wrong amount")
-		expectPaysToOrderbookContract(ctx, t, fixtureInfo.openOrder, txOutput.Script, "does not pay to contract")
+		expectPaysToOrderbookContract(ctx, t, fixtureInfo.openOrder, txOutput.ControlProgram, "does not pay to contract")
 	})
 }
 
@@ -105,7 +105,7 @@ func TestBuy(t *testing.T) {
 			if txOutput.Amount != 20 {
 				return false
 			}
-			if !paysToAccount(ctx, t, buyerAccountID, txOutput.Script) {
+			if !paysToAccount(ctx, t, buyerAccountID, txOutput.ControlProgram) {
 				return false
 			}
 			return true
@@ -121,7 +121,7 @@ func TestBuy(t *testing.T) {
 			if err != nil {
 				return false
 			}
-			if !paysToScript(ctx, txOutput.Script, sellerScript) {
+			if !paysToScript(ctx, txOutput.ControlProgram, sellerScript) {
 				return false
 			}
 			return true
@@ -133,7 +133,7 @@ func TestBuy(t *testing.T) {
 			if txOutput.Amount != 80 {
 				return false
 			}
-			if !reflect.DeepEqual(txOutput.Script, []byte(fixtureInfo.openOrder.Script)) {
+			if !reflect.DeepEqual(txOutput.ControlProgram, []byte(fixtureInfo.openOrder.Script)) {
 				return false
 			}
 			return true
@@ -161,7 +161,7 @@ func TestCancel(t *testing.T) {
 		testutil.ExpectEqual(t, output.AssetID, fixtureInfo.aaplAssetID, "wrong cancelTx asset")
 		testutil.ExpectEqual(t, output.Amount, uint64(100), "wrong cancelTx amount")
 
-		expectPaysToAccount(ctx, t, fixtureInfo.sellerAccountID, output.Script)
+		expectPaysToAccount(ctx, t, fixtureInfo.sellerAccountID, output.ControlProgram)
 
 		_, err = generator.MakeBlock(ctx)
 		if err != nil {
@@ -242,7 +242,7 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 			SellerAccountID: fixtureInfo.sellerAccountID,
 			Prices:          prices,
 		},
-		Script: fixtureInfo.offerTx.Outputs[0].Script,
+		Script: fixtureInfo.offerTx.Outputs[0].ControlProgram,
 	}
 
 	fn(ctx, &fixtureInfo)

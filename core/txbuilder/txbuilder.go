@@ -70,12 +70,7 @@ func build(ctx context.Context, sources []*Source, dests []*Destination, metadat
 	}
 
 	for _, dest := range dests {
-		output := &bc.TxOutput{
-			AssetAmount: bc.AssetAmount{AssetID: dest.AssetID, Amount: dest.Amount},
-			Script:      dest.PKScript(),
-			Metadata:    dest.Metadata,
-		}
-		tx.Outputs = append(tx.Outputs, output)
+		tx.Outputs = append(tx.Outputs, bc.NewTxOutput(dest.AssetID, dest.Amount, dest.PKScript(), dest.Metadata))
 	}
 
 	appTx := &Template{

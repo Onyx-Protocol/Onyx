@@ -21,11 +21,9 @@ func TestGenerateNodeTxTransfer(t *testing.T) {
 				Previous: bc.Outpoint{Hash: bc.Hash([32]byte{255}), Index: 1},
 				Metadata: []byte("input"),
 			}},
-			Outputs: []*bc.TxOutput{{
-				AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{1}), Amount: 987},
-				Script:      []byte{1, 1},
-				Metadata:    []byte("output"),
-			}},
+			Outputs: []*bc.TxOutput{
+				bc.NewTxOutput(bc.AssetID([32]byte{1}), 987, []byte{1, 1}, []byte("output")),
+			},
 			Metadata: []byte("tx"),
 		},
 	}
@@ -106,9 +104,9 @@ func TestGenerateNodeTxIssuance(t *testing.T) {
 				Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
 				AssetDefinition: []byte(`{"name": "asset 1"}`),
 			}},
-			Outputs: []*bc.TxOutput{{
-				AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{1}), Amount: 543},
-			}},
+			Outputs: []*bc.TxOutput{
+				bc.NewTxOutput(bc.AssetID([32]byte{1}), 543, nil, nil),
+			},
 		},
 	}
 	ins := []*appdb.ActUTXO{nil}

@@ -57,7 +57,9 @@ func TestIssue(t *testing.T) {
 				AssetAmount: assetAmount,
 			},
 		},
-		Outputs: []*bc.TxOutput{{AssetAmount: assetAmount, Script: outScript}},
+		Outputs: []*bc.TxOutput{
+			bc.NewTxOutput(assetAmount.AssetID, assetAmount.Amount, outScript, nil),
+		},
 	}
 
 	if !reflect.DeepEqual(resp.Unsigned, want) {

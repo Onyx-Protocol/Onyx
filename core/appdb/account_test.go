@@ -340,8 +340,8 @@ func TestListAccountUTXOs(t *testing.T) {
 		next       []string
 	)
 	for i, iss := range issuances {
-		if iss.Metadata == nil {
-			iss.Metadata = []byte{}
+		if iss.ReferenceData == nil {
+			iss.ReferenceData = []byte{}
 		}
 
 		wantTxOuts = append(wantTxOuts, &TxOutput{
@@ -349,9 +349,9 @@ func TestListAccountUTXOs(t *testing.T) {
 			TxIndex:  iss.Outpoint.Index,
 			AssetID:  iss.AssetID,
 			Amount:   iss.Amount,
-			Script:   iss.Script,
-			Address:  iss.Script,
-			Metadata: iss.Metadata,
+			Script:   iss.ControlProgram,
+			Address:  iss.ControlProgram,
+			Metadata: iss.ReferenceData,
 		})
 
 		next = append(next, fmt.Sprintf("2-%d-%d", i, iss.Outpoint.Index))

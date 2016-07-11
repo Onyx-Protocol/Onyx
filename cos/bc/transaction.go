@@ -93,11 +93,37 @@ type TxInput struct {
 	AssetDefinition []byte
 }
 
-// TxOutput encodes a single output in a transaction.
-type TxOutput struct {
-	AssetAmount
-	Script   []byte
-	Metadata []byte
+type (
+	TxOutput struct {
+		AssetVersion uint32
+		OutputCommitment
+		ReferenceData []byte
+	}
+
+	// TODO(bobg): On input, preserve the raw bytes of the output
+	// commitment for forward-compatibility.  That will allow us to
+	// re-serialize it even if it contains unknown extension fields.
+	// (https://github.com/chain-engineering/chain/pull/1093#discussion_r70508484)
+	OutputCommitment struct {
+		AssetAmount
+		VMVersion      uint32
+		ControlProgram []byte
+	}
+)
+
+func NewTxOutput(assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxOutput {
+	return &TxOutput{
+		AssetVersion: 1,
+		OutputCommitment: OutputCommitment{
+			AssetAmount: AssetAmount{
+				AssetID: assetID,
+				Amount:  amount,
+			},
+			VMVersion:      1,
+			ControlProgram: controlProgram,
+		},
+		ReferenceData: referenceData,
+	}
 }
 
 // Outpoint defines a bitcoin data type that is used to track previous
@@ -216,13 +242,37 @@ func (ti *TxInput) readFrom(r io.Reader) (err error) {
 
 // assumes r has sticky errors
 func (to *TxOutput) readFrom(r io.Reader) (err error) {
-	to.AssetAmount.readFrom(r)
-
-	to.Script, err = blockchain.ReadBytes(r, scriptMaxByteLength)
+	assetVersion, _ := blockchain.ReadUvarint(r)
+	to.AssetVersion = uint32(assetVersion)
+	err = to.OutputCommitment.readFrom(r, to.AssetVersion)
 	if err != nil {
 		return err
 	}
-	to.Metadata, err = blockchain.ReadBytes(r, metadataMaxByteLength)
+	to.ReferenceData, err = blockchain.ReadBytes(r, metadataMaxByteLength)
+	if err != nil {
+		return err
+	}
+	// read and ignore the (empty) output witness
+	_, err = blockchain.ReadBytes(r, commitmentMaxByteLength) // TODO(bobg): What's the right limit here?
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (oc *OutputCommitment) readFrom(r io.Reader, assetVersion uint32) (err error) {
+	b, err := blockchain.ReadBytes(r, commitmentMaxByteLength) // TODO(bobg): Is this the right limit here?
+	if err != nil {
+		return err
+	}
+	if assetVersion != 1 {
+		return nil
+	}
+	rb := bytes.NewBuffer(b)
+	oc.AssetAmount.readFrom(rb)
+	vmVersion, _ := blockchain.ReadUvarint(rb)
+	oc.VMVersion = uint32(vmVersion)
+	oc.ControlProgram, err = blockchain.ReadBytes(rb, scriptMaxByteLength)
 	if err != nil {
 		return err
 	}
@@ -439,11 +489,20 @@ func (ti *TxInput) writeTo(w io.Writer, serflags byte) {
 
 // assumes r has sticky errors
 func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
-	to.AssetAmount.writeTo(w)
-	blockchain.WriteBytes(w, to.Script)
+	blockchain.WriteUvarint(w, uint64(to.AssetVersion))
+	to.OutputCommitment.writeTo(w, to.AssetVersion)
+	writeMetadata(w, to.ReferenceData, serflags)
+	blockchain.WriteBytes(w, nil) // empty output witness
+}
 
-	// Write the metadata or its hash depending on serialization mode.
-	writeMetadata(w, to.Metadata, serflags)
+func (oc OutputCommitment) writeTo(w io.Writer, assetVersion uint32) {
+	var b bytes.Buffer
+	if assetVersion == 1 {
+		oc.AssetAmount.writeTo(&b)
+		blockchain.WriteUvarint(&b, uint64(oc.VMVersion))
+		blockchain.WriteBytes(&b, oc.ControlProgram)
+	}
+	blockchain.WriteBytes(w, b.Bytes())
 }
 
 // String returns the Outpoint in the human-readable form "hash:index".

@@ -54,19 +54,13 @@ func TestGetActUTXOs(t *testing.T) {
 
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{
-			{Previous: out0.Outpoint, AssetAmount: out0.AssetAmount, PrevScript: out0.Script},
-			{Previous: out1.Outpoint, AssetAmount: out1.AssetAmount, PrevScript: out1.Script},
-			{Previous: out2.Outpoint, AssetAmount: out2.AssetAmount, PrevScript: out2.Script},
+			{Previous: out0.Outpoint, AssetAmount: out0.AssetAmount, PrevScript: out0.ControlProgram},
+			{Previous: out1.Outpoint, AssetAmount: out1.AssetAmount, PrevScript: out1.ControlProgram},
+			{Previous: out2.Outpoint, AssetAmount: out2.AssetAmount, PrevScript: out2.ControlProgram},
 		},
 		Outputs: []*bc.TxOutput{
-			{
-				AssetAmount: bc.AssetAmount{AssetID: asset0, Amount: 3},
-				Script:      dest0.Receiver.PKScript(),
-			},
-			{
-				AssetAmount: bc.AssetAmount{AssetID: asset1, Amount: 3},
-				Script:      dest1.Receiver.PKScript(),
-			},
+			bc.NewTxOutput(asset0, 3, dest0.Receiver.PKScript(), nil),
+			bc.NewTxOutput(asset1, 3, dest1.Receiver.PKScript(), nil),
 		},
 	})
 
@@ -86,21 +80,21 @@ func TestGetActUTXOs(t *testing.T) {
 			Amount:        1,
 			ManagerNodeID: mn0,
 			AccountID:     acc0,
-			Script:        out0.Script,
+			Script:        out0.ControlProgram,
 		},
 		{
 			AssetID:       asset0.String(),
 			Amount:        2,
 			ManagerNodeID: mn0,
 			AccountID:     acc1,
-			Script:        out1.Script,
+			Script:        out1.ControlProgram,
 		},
 		{
 			AssetID:       asset1.String(),
 			Amount:        3,
 			ManagerNodeID: mn2,
 			AccountID:     acc2,
-			Script:        out2.Script,
+			Script:        out2.ControlProgram,
 		},
 	}
 
@@ -146,10 +140,9 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{{Previous: bc.Outpoint{Index: bc.InvalidOutputIndex}}},
-		Outputs: []*bc.TxOutput{{
-			AssetAmount: bc.AssetAmount{AssetID: asset0, Amount: 1},
-			Script:      dest0.Receiver.PKScript(),
-		}},
+		Outputs: []*bc.TxOutput{
+			bc.NewTxOutput(asset0, 1, dest0.Receiver.PKScript(), nil),
+		},
 	})
 
 	err = pool.Insert(ctx, tx)

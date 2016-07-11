@@ -186,7 +186,7 @@ func ApplyTx(tree *patricia.Tree, tx *bc.Tx) error {
 	}
 
 	for i, out := range tx.Outputs {
-		if txscript.IsUnspendable(out.Script) {
+		if txscript.IsUnspendable(out.ControlProgram) {
 			continue
 		}
 		// Insert new outputs into the state tree.

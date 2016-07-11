@@ -63,10 +63,10 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 		all[bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}] = &ActUTXO{
 			AssetID: out.AssetID.String(),
 			Amount:  out.Amount,
-			Script:  out.Script,
+			Script:  out.ControlProgram,
 		}
-		scriptMap[string(out.Script)] = bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
-		scripts = append(scripts, out.Script)
+		scriptMap[string(out.ControlProgram)] = bc.Outpoint{Hash: tx.Hash, Index: uint32(i)}
+		scripts = append(scripts, out.ControlProgram)
 	}
 
 	for _, in := range tx.Inputs {

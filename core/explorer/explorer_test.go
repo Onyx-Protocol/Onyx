@@ -223,14 +223,10 @@ func TestGetTxIssuance(t *testing.T) {
 			Metadata:        []byte(`{"a":"b"}`),
 			AssetDefinition: []byte(`{"c":"d"}`),
 		}},
-		Outputs: []*bc.TxOutput{{
-			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 5},
-			Metadata:    []byte{2},
-			Script:      []byte("addr0"),
-		}, {
-			AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 6},
-			Script:      []byte("addr1"),
-		}},
+		Outputs: []*bc.TxOutput{
+			bc.NewTxOutput(assetID, 5, []byte("addr0"), []byte{2}),
+			bc.NewTxOutput(assetID, 6, []byte("addr1"), nil),
+		},
 		Metadata: []byte{0},
 	})
 
@@ -300,14 +296,15 @@ func TestGetTxTransfer(t *testing.T) {
 	ctx := pgtest.NewContext(t)
 	prevTxs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
-			Outputs: []*bc.TxOutput{{
-				AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{1}), Amount: 5},
-			}},
+			Outputs: []*bc.TxOutput{
+				bc.NewTxOutput(bc.AssetID([32]byte{1}), 5, nil, nil),
+			},
 		}),
 		bc.NewTx(bc.TxData{
-			Outputs: []*bc.TxOutput{{}, {
-				AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{2}), Amount: 6},
-			}},
+			Outputs: []*bc.TxOutput{
+				{},
+				bc.NewTxOutput(bc.AssetID([32]byte{2}), 6, nil, nil),
+			},
 		}),
 	}
 	tx := bc.NewTx(bc.TxData{
@@ -316,13 +313,10 @@ func TestGetTxTransfer(t *testing.T) {
 		}, {
 			Previous: bc.Outpoint{Hash: prevTxs[1].Hash, Index: 1},
 		}},
-		Outputs: []*bc.TxOutput{{
-			AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{1}), Amount: 5},
-			Script:      []byte("addr0"),
-		}, {
-			AssetAmount: bc.AssetAmount{AssetID: bc.AssetID([32]byte{2}), Amount: 6},
-			Script:      []byte("addr1"),
-		}},
+		Outputs: []*bc.TxOutput{
+			bc.NewTxOutput(bc.AssetID([32]byte{1}), 5, []byte("addr0"), nil),
+			bc.NewTxOutput(bc.AssetID([32]byte{2}), 6, []byte("addr1"), nil),
+		},
 	})
 
 	now := time.Now().UTC()
@@ -549,8 +543,8 @@ func TestListUTXOsByAsset(t *testing.T) {
 		TxIndex:  &zero,
 		AssetID:  assetID,
 		Amount:   1,
-		Address:  tx.Outputs[0].Script,
-		Script:   tx.Outputs[0].Script,
+		Address:  tx.Outputs[0].ControlProgram,
+		Script:   tx.Outputs[0].ControlProgram,
 		Metadata: []byte{},
 	}}
 
@@ -602,8 +596,8 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 			TxIndex:  &zero,
 			AssetID:  assetID,
 			Amount:   100,
-			Address:  tx.Outputs[0].Script,
-			Script:   tx.Outputs[0].Script,
+			Address:  tx.Outputs[0].ControlProgram,
+			Script:   tx.Outputs[0].ControlProgram,
 			Metadata: []byte{},
 		}}
 		if !reflect.DeepEqual(got, want) {

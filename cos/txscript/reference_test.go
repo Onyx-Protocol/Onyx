@@ -77,7 +77,7 @@ func newCoinbaseTx(val uint64, pkScript []byte, assetID bc.AssetID) *bc.TxData {
 	return &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		Inputs:  []*bc.TxInput{{AssetAmount: aa, SignatureScript: []byte{OP_0, OP_0}}},
-		Outputs: []*bc.TxOutput{{AssetAmount: aa, Script: pkScript}},
+		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, val, pkScript, nil)},
 		MinTime: 2e9,
 	}
 }
@@ -94,30 +94,25 @@ func createSpendingTx(sigScript, pkScript []byte) *bc.TxData {
 		Inputs: []*bc.TxInput{
 			{
 				Previous:        bc.Outpoint{Hash: coinbaseTx1.Hash(), Index: 0},
-				PrevScript:      coinbaseTx1.Outputs[0].Script,
+				PrevScript:      coinbaseTx1.Outputs[0].ControlProgram,
 				AssetAmount:     coinbaseTx1.Outputs[0].AssetAmount,
 				SignatureScript: sigScript,
 			},
 			{
 				Previous:        bc.Outpoint{Hash: coinbaseTx2.Hash(), Index: 0},
-				PrevScript:      coinbaseTx2.Outputs[0].Script,
+				PrevScript:      coinbaseTx2.Outputs[0].ControlProgram,
 				AssetAmount:     coinbaseTx2.Outputs[0].AssetAmount,
 				SignatureScript: sigScript,
 			},
 			{
 				Previous:    bc.Outpoint{Hash: coinbaseTx3.Hash(), Index: 0},
-				PrevScript:  coinbaseTx3.Outputs[0].Script,
+				PrevScript:  coinbaseTx3.Outputs[0].ControlProgram,
 				AssetAmount: coinbaseTx3.Outputs[0].AssetAmount,
 			},
 		},
 		Outputs: []*bc.TxOutput{
-			{
-				AssetAmount: bc.AssetAmount{AssetID: testAssetID, Amount: 7},
-				Script:      pkScript,
-			},
-			{
-				AssetAmount: bc.AssetAmount{AssetID: testAssetID2, Amount: 5},
-			},
+			bc.NewTxOutput(testAssetID, 7, pkScript, nil),
+			bc.NewTxOutput(testAssetID2, 5, nil, nil),
 		},
 		MinTime: 11,
 		MaxTime: 12,
