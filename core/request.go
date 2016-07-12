@@ -68,6 +68,9 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 		if source.AssetID == nil {
 			return nil, errors.WithDetail(ErrBadBuildRequest, "asset_id is not specified on the issuance input")
 		}
+		if source.Amount == 0 {
+			return nil, errors.WithDetailf(ErrBadBuildRequest, "issuance input for asset %s has zero amount", source.AssetID)
+		}
 		assetAmount := &bc.AssetAmount{
 			AssetID: *source.AssetID,
 			Amount:  source.Amount,

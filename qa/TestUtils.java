@@ -118,7 +118,7 @@ public class TestUtils {
 	throws ChainException {
 		// build transaction
 		Transactor.BuildRequest build = new Transactor.BuildRequest();
-		build.addIssueInput(assetID);
+		build.addIssueInput(assetID, Big);
 		build.addAccountOutput(assetID, acctID, BigInteger.valueOf(amount));
 		Transactor.Transaction tx = c.buildTransaction(build);
 

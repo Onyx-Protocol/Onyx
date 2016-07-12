@@ -146,7 +146,7 @@ public class AssetTransaction {
 		// build first part of the transaction
 		Transactor.BuildRequest build = new Transactor.BuildRequest();
 		// issue 500 units of asset to sndr
-		build.addIssueInput(assetID);
+		build.addIssueInput(assetID, BigInteger.valueOf(500));
 		build.addAddressOutput(assetID, sndrAddr, BigInteger.valueOf(500));
 		// send 500 units of asset from sndr to rcvr
 		build.addInput(assetID, sndrID, BigInteger.valueOf(500));
@@ -158,7 +158,7 @@ public class AssetTransaction {
 		List<Transactor.BuildRequest.Output> outputs = new ArrayList<Transactor.BuildRequest.Output>();
 		build = new Transactor.BuildRequest(partialTx, inputs, outputs);
 		// issue 500 units of asset to rcvr
-		build.addIssueInput(assetID);
+		build.addIssueInput(assetID, BigInteger.valueOf(500));
 		build.addAddressOutput(assetID, rcvrAddr, BigInteger.valueOf(500));
 		// send 500 units of asset from rcvr to sndr
 		build.addInput(assetID, rcvrID, BigInteger.valueOf(500));

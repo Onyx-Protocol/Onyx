@@ -45,7 +45,7 @@ public class AssetIssuance {
 
 		// issue asset using an account ID
 		Transactor.BuildRequest build = new Transactor.BuildRequest();
-		build.addIssueInput(assetID);
+		build.addIssueInput(assetID, BigInteger.valueOf(1000));
 		build.addAccountOutput(assetID, acctID, BigInteger.valueOf(1000));
 		Transactor.Transaction tx = c.buildTransaction(build);
 		c.signTransaction(tx);
@@ -74,7 +74,7 @@ public class AssetIssuance {
 
 		// issue assetID using an address
 		Transactor.BuildRequest build = new Transactor.BuildRequest();
-		build.addIssueInput(assetID);
+		build.addIssueInput(assetID, BigInteger.valueOf(1000));
 		build.addAddressOutput(assetID, addr, BigInteger.valueOf(1000));
 		Transactor.Transaction tx = c.buildTransaction(build);
 		c.signTransaction(tx);
