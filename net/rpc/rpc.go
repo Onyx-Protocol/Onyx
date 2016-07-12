@@ -92,7 +92,6 @@ func Call(ctx context.Context, address, path string, request, response interface
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", LocalNode.String())
 
-	// TODO(jackson): Add automatic retries (with exponential backoff?)
 	resp, err := ctxhttp.Do(ctx, nil, req)
 	if err != nil {
 		return err

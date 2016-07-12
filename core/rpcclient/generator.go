@@ -1,12 +1,18 @@
 package rpcclient
 
 import (
+	"time"
+
 	"golang.org/x/net/context"
 
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/errors"
 	"chain/net/rpc"
+)
+
+const (
+	getBlocksTimeout = 3 * time.Second
 )
 
 // Submit sends a submit RPC request to the generator for inclusion of
@@ -35,10 +41,11 @@ func GetBlocks(ctx context.Context) error {
 		height = latestBlock.Height
 	}
 
-	var blocks []*bc.Block
-	err = rpc.Call(ctx, generatorURL, "/rpc/generator/get-blocks", height, &blocks)
-	if err != nil {
-		return errors.Wrap(err, "calling generator")
+	blocks, err := getBlocks(ctx, height)
+	if err == context.DeadlineExceeded {
+		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "get blocks rpc")
 	}
 
 	for _, b := range blocks {
@@ -47,6 +54,14 @@ func GetBlocks(ctx context.Context) error {
 			return errors.Wrapf(err, "applying block at height %d", b.Height)
 		}
 	}
-
 	return nil
+}
+
+func getBlocks(ctx context.Context, height uint64) ([]*bc.Block, error) {
+	ctx, cancel := context.WithTimeout(ctx, getBlocksTimeout)
+	defer cancel()
+
+	var blocks []*bc.Block
+	err := rpc.Call(ctx, generatorURL, "/rpc/generator/get-blocks", height, &blocks)
+	return blocks, errors.Wrap(err, "calling generator")
 }
