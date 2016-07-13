@@ -9,23 +9,24 @@ import (
 
 // MemStore satisfies the cos.Store interface.
 // It is used by tests to avoid needing a database.
+// All its fields are exported
+// so tests can directly inspect their values.
 type MemStore struct {
-	blocks   []*bc.Block
-	blockTxs map[bc.Hash]*bc.Tx
-
-	stateTree *patricia.Tree
+	Blocks   []*bc.Block
+	BlockTxs map[bc.Hash]*bc.Tx
+	State    *patricia.Tree
 }
 
 // New returns a new MemStore
 func New() *MemStore {
-	return &MemStore{blockTxs: make(map[bc.Hash]*bc.Tx)}
+	return &MemStore{BlockTxs: make(map[bc.Hash]*bc.Tx)}
 }
 
 func (m *MemStore) GetTxs(ctx context.Context, hashes ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error) {
 	bcTxs = make(map[bc.Hash]*bc.Tx)
 	for _, hash := range hashes {
-		if tx := m.blockTxs[hash]; tx != nil {
-			bcTxs[hash] = m.blockTxs[hash]
+		if tx := m.BlockTxs[hash]; tx != nil {
+			bcTxs[hash] = m.BlockTxs[hash]
 		}
 	}
 	return bcTxs, nil
@@ -36,31 +37,31 @@ func (m *MemStore) ApplyBlock(
 	b *bc.Block,
 	stateTree *patricia.Tree,
 ) ([]*bc.Tx, error) {
-	m.blocks = append(m.blocks, b)
+	m.Blocks = append(m.Blocks, b)
 
 	// Record all the new transactions.
 	var newTxs []*bc.Tx
 	for _, tx := range b.Transactions {
 		newTxs = append(newTxs, tx)
-		m.blockTxs[tx.Hash] = tx
+		m.BlockTxs[tx.Hash] = tx
 	}
 
-	m.stateTree = patricia.Copy(stateTree)
+	m.State = patricia.Copy(stateTree)
 	return newTxs, nil
 }
 
 func (m *MemStore) LatestBlock(context.Context) (*bc.Block, error) {
-	if len(m.blocks) == 0 {
+	if len(m.Blocks) == 0 {
 		return nil, nil
 	}
-	return m.blocks[len(m.blocks)-1], nil
+	return m.Blocks[len(m.Blocks)-1], nil
 }
 
 func (m *MemStore) StateTree(context.Context, uint64) (*patricia.Tree, error) {
-	if m.stateTree == nil {
-		m.stateTree = patricia.NewTree(nil)
+	if m.State == nil {
+		m.State = patricia.NewTree(nil)
 	}
-	return patricia.Copy(m.stateTree), nil
+	return patricia.Copy(m.State), nil
 }
 
 func (m *MemStore) FinalizeBlock(context.Context, uint64) error { return nil }
