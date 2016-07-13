@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	. "chain/core/appdb"
 	"chain/core/asset"
 	"chain/core/asset/assettest"
@@ -18,7 +20,7 @@ import (
 )
 
 func TestWriteManagerTx(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	accounts := []string{"account-1", "account-2"}
 	_, err := WriteManagerTx(ctx, "tx1", []byte(`{}`), "mnode-1", accounts)
 	if err != nil {
@@ -50,7 +52,7 @@ func TestWriteManagerTx(t *testing.T) {
 }
 
 func TestWriteIssuerTx(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	assets := []string{"asset-1", "asset-2"}
 	_, err := WriteIssuerTx(ctx, "tx1", []byte(`{}`), "inode-1", assets)
 	if err != nil {
@@ -82,7 +84,7 @@ func TestWriteIssuerTx(t *testing.T) {
 }
 
 func TestManagerTxs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
 	mtx := assettest.ManagerTxFixture(ctx, t, "tx0", []byte(`{"outputs":"boop"}`), mn0, nil)
@@ -106,7 +108,7 @@ func TestManagerTxs(t *testing.T) {
 }
 
 func TestManagerTxsLimit(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
 	assettest.ManagerTxFixture(ctx, t, "tx0", []byte(`{"outputs":"boop"}`), mn0, nil)
@@ -138,7 +140,7 @@ func TestManagerTxsLimit(t *testing.T) {
 }
 
 func TestAccountTxs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
 	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "foo", nil)
@@ -159,7 +161,7 @@ func TestAccountTxs(t *testing.T) {
 }
 
 func TestAccountTxsLimit(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
 	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "foo", nil)
@@ -258,7 +260,7 @@ func TestAccountTxsTimeLimit(t *testing.T) {
 }
 
 func TestIssuerTxs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	in1 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-1", nil, nil)
@@ -308,7 +310,7 @@ func TestIssuerTxs(t *testing.T) {
 }
 
 func TestAssetTxs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
 	in1 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-1", nil, nil)
@@ -362,7 +364,7 @@ func TestAssetTxs(t *testing.T) {
 }
 
 func TestManagerTx(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "x", nil, nil)
 	assettest.ManagerTxFixture(ctx, t, "tx0", []byte(`{"outputs":"boop"}`), mn0, nil)

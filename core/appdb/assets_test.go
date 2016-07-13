@@ -15,11 +15,9 @@ import (
 	"chain/core/asset/assettest"
 	"chain/core/generator"
 	"chain/core/txbuilder"
-	"chain/core/txdb"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/testutil"
 )
@@ -73,9 +71,8 @@ func getSortID(ctx context.Context, t testing.TB, assetID bc.AssetID) (sortID st
 }
 
 func TestListAssets(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore & mempool
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,9 +163,8 @@ func TestListAssets(t *testing.T) {
 }
 
 func TestGetAssets(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore and mempool
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,7 +222,7 @@ func TestGetAssets(t *testing.T) {
 }
 
 func TestGetAsset(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	asset0 := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "def-0")
 
 	got, err := GetAsset(ctx, asset0.String())
