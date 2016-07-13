@@ -1,8 +1,7 @@
-package chain.qa.baseline.singlecore;
-
-import chain.qa.*;
+package com.chain.qa.singlecore;
 
 import com.chain.*;
+import com.chain.qa.*;
 
 /**
  * AccountCreation tests the creation of accounts.
@@ -17,12 +16,9 @@ public class AccountCreation {
 	 */
 	public static void runTests(TestClient client, String pID)
 	throws Exception {
-		// setup
 		c = client;
 		projectID = pID;
 		managerID = TestUtils.createManager(c, projectID, "Account Creation");
-
-		// assertions
 		assert testAccountCreation();
 	}
 
@@ -31,13 +27,9 @@ public class AccountCreation {
 	 */
 	private static boolean testAccountCreation()
 	throws ChainException {
-		// create account
 		String label = "Account Creation";
 		Account acct = c.createAccount(managerID, label);
-
 		System.out.printf("Created an account. ID=%s\n", acct.ID);
-
-		// validate account
 		assert acct.ID != null : "ID should not equal null.";
 		assert acct.label.equals(label) : TestUtils.fail("label", acct.label, label);
 		return true;

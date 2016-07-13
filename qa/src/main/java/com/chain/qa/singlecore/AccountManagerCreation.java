@@ -1,11 +1,11 @@
-package chain.qa.baseline.singlecore;
+package com.chain.qa.singlecore;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import chain.qa.*;
-
 import com.chain.*;
+import com.chain.qa.*;
+
 
 /**
  * AccountManagerCreation tests different setup configurations for managers
@@ -20,11 +20,8 @@ public class AccountManagerCreation {
 	 */
 	public static void runTests(TestClient client, String pID)
 	throws ChainException {
-		// setup
 		c = client;
 		projectID = pID;
-
-		// assertions
 		assert testGeneratedKeys();
 		assert testProvidedKeys();
 		assert testAccountProvidedKeys();
@@ -35,13 +32,11 @@ public class AccountManagerCreation {
 	 */
 	private static boolean testGeneratedKeys()
 	throws ChainException {
-		// create manager with generated keys
 		String label = "Key Generated";
-		List<ManagerNode.CreateRequest.Key> keys = new ArrayList<>();
-		keys.add(ManagerNode.CreateRequest.Key.Generated());
-		ManagerNode.CreateRequest req = new ManagerNode.CreateRequest(label, 1, keys);
-		ManagerNode mgr = c.createManagerNode(projectID, req);
-
+		List<AccountManager.CreateRequest.Key> keys = new ArrayList<>();
+		keys.add(AccountManager.CreateRequest.Key.Generated());
+		AccountManager.CreateRequest req = new AccountManager.CreateRequest(label, 1, keys);
+		AccountManager mgr = c.createAccountManager(projectID, req);
 		System.out.printf("Created manager with generated keys. ID=%s\n", mgr.ID);
 
 		// validate manager with generated keys
@@ -59,17 +54,15 @@ public class AccountManagerCreation {
 	 */
 	private static boolean testProvidedKeys()
 	throws ChainException {
-		// create manager with provided keys
 		String label = "Key Provided";
 		String xpub = TestUtils.XPUB[0];
-		List<ManagerNode.CreateRequest.Key> keys = new ArrayList<>();
-		keys.add(ManagerNode.CreateRequest.Key.XPub(xpub));
-		ManagerNode.CreateRequest req = new ManagerNode.CreateRequest(label, 1, keys);
-		ManagerNode mgr = c.createManagerNode(projectID, req);
-
+		List<AccountManager.CreateRequest.Key> keys = new ArrayList<>();
+		keys.add(AccountManager.CreateRequest.Key.XPub(xpub));
+		AccountManager.CreateRequest req = new AccountManager.CreateRequest(label, 1, keys);
+		AccountManager mgr = c.createAccountManager(projectID, req);
 		System.out.printf("Created manager with provided keys. ID=%s\n", mgr.ID);
 
-		// validate manager with provided keys
+		// validate manager
 		int sigsReq = mgr.signaturesRequired.intValue();
 		assert mgr.ID != null : "ID should not equal null.";
 		assert mgr.label.equals(label) : TestUtils.fail("label", mgr.label, label);
@@ -85,17 +78,15 @@ public class AccountManagerCreation {
 	 */
 	private static boolean testAccountProvidedKeys()
 	throws ChainException {
-		// create manager with provided keys
 		String label = "Account Key";
 		String xpub = TestUtils.XPUB[0];
-		List<ManagerNode.CreateRequest.Key> keys = new ArrayList<>();
-		keys.add(ManagerNode.CreateRequest.Key.Account());
-		ManagerNode.CreateRequest req = new ManagerNode.CreateRequest(label, 1, keys);
-		ManagerNode mgr = c.createManagerNode(projectID, req);
-
+		List<AccountManager.CreateRequest.Key> keys = new ArrayList<>();
+		keys.add(AccountManager.CreateRequest.Key.Account());
+		AccountManager.CreateRequest req = new AccountManager.CreateRequest(label, 1, keys);
+		AccountManager mgr = c.createAccountManager(projectID, req);
 		System.out.printf("Created manager with account provided keys. ID=%s\n", mgr.ID);
 
-		// validate manager with provided keys
+		// validate manager
 		int sigsReq = mgr.signaturesRequired.intValue();
 		assert mgr.ID != null : "ID should not equal null.";
 		assert mgr.label.equals(label) : TestUtils.fail("label", mgr.label, label);

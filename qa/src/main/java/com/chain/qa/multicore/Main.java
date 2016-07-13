@@ -1,8 +1,8 @@
-package chain.qa.baseline.multicore;
+package com.chain.qa.multicore;
 
 import java.net.URL;
 
-import chain.qa.*;
+import com.chain.qa.*;
 
 import com.chain.*;
 

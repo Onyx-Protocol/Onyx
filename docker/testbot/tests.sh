@@ -23,7 +23,7 @@ trap 'cleanup' EXIT
 
 runTests() {
 	# run multi-core tests
-	java -ea -cp /usr/bin/chain/chain-core-qa.jar chain.qa.baseline.multicore.Main
+	java -ea -cp /usr/bin/chain/chain-core-qa.jar com.chain.qa.multicore.Main
 }
 
 # waitForGenerator blocks the script and greps
@@ -48,7 +48,7 @@ echo "Config: 1 generator+signer"
 /usr/bin/chain/cored 2>&1 | tee $initlog &
 
 waitForGenerator
-java -ea -cp /usr/bin/chain/chain-core-qa.jar chain.qa.baseline.singlecore.Main
+java -ea -cp /usr/bin/chain/chain-core-qa.jar com.chain.qa.singlecore.Main
 cleanup
 
 echo "Config: 1-of-1 sigs required; 1 generator, 1 remote signer"

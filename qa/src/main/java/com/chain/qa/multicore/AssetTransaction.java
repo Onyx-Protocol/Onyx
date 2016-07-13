@@ -1,6 +1,4 @@
-package chain.qa.baseline.multicore;
-
-import java.net.URL;
+package com.chain.qa.multicore;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -15,7 +13,7 @@ import java.util.Map;
 
 import com.chain.*;
 
-import chain.qa.*;
+import com.chain.qa.*;
 
 /**
  * AssetTransaction tests asset transactions on a multi-core network.
@@ -42,13 +40,11 @@ public class AssetTransaction {
 		issuerID = TestUtils.createIssuer(c, pID, "Transaction");
 		managerID = TestUtils.createManager(c, pID, "Transaction");
 		assetID = TestUtils.createAsset(c, issuerID, "Transaction");
-
 		// setup second core
 		sc = secondClient;
 		secondIssuerID = TestUtils.createIssuer(sc, spID, "Transaction Second");
 		secondManagerID = TestUtils.createManager(sc, spID, "Transaction Second");
 		secondAssetID = TestUtils.createAsset(sc, secondIssuerID, "Transaction");
-
 		// assertions
 		assert testOneWayCrossCore();
 		assert testAtomicSwapCrossCore();
@@ -71,7 +67,7 @@ public class AssetTransaction {
 		String addr = TestUtils.createAddress(sc, secondAcctID);
 
 		// issue 1000 units of asset to first core's account
-		String issueID = TestUtils.issue(c, assetID, acctID, 1000);
+		TestUtils.issue(c, assetID, acctID, 1000);
 
 		// transfer 600 units of asset to second core's account
 		String txID = TestUtils.transact(c, assetID, acctID, addr, 600);
@@ -80,12 +76,12 @@ public class AssetTransaction {
 
 
 		// validate first core's account balance
-		Map<String, Integer> balances = new HashMap<String, Integer>();
+		Map<String, Integer> balances = new HashMap<>();
 		balances.put(assetID, 400);
 		TestUtils.validateAccountBalance(c, acctID, balances);
 
 		// validate second core's account balance
-		balances = new HashMap<String, Integer>();
+		balances = new HashMap<>();
 		balances.put(assetID, 600);
 		TestUtils.validateAccountBalance(sc, secondAcctID, balances);
 		return true;
@@ -107,10 +103,10 @@ public class AssetTransaction {
 		String secondAddr = TestUtils.createAddress(sc, secondAcctID);
 
 		// issue 1000 units of asset
-		String issueID = TestUtils.issue(c, assetID, acctID, 1000);
+		TestUtils.issue(c, assetID, acctID, 1000);
 
 		// issue 1000 units of secondAsset
-		issueID = TestUtils.issue(sc, secondAssetID, secondAcctID, 1000);
+		TestUtils.issue(sc, secondAssetID, secondAcctID, 1000);
 
 		// build first part of transaction
 		// send 750 units of asset to second core's account
@@ -121,8 +117,8 @@ public class AssetTransaction {
 
 		// build second part of transaction
 		// send 250 units of secondAsset to first core's account
-		List<Transactor.BuildRequest.Input> inputs = new ArrayList<Transactor.BuildRequest.Input>();
-		List<Transactor.BuildRequest.Output> outputs = new ArrayList<Transactor.BuildRequest.Output>();
+		List<Transactor.BuildRequest.Input> inputs = new ArrayList<>();
+		List<Transactor.BuildRequest.Output> outputs = new ArrayList<>();
 		build = new Transactor.BuildRequest(partialTx, inputs, outputs);
 		build.addInput(secondAssetID, secondAcctID, BigInteger.valueOf(250));
 		build.addAddressOutput(secondAssetID, addr, BigInteger.valueOf(250));
@@ -136,13 +132,13 @@ public class AssetTransaction {
 
 
 		// validate first core's account balances
-		Map<String, Integer> balances = new HashMap<String, Integer>();
+		Map<String, Integer> balances = new HashMap<>();
 		balances.put(assetID, 250);
 		balances.put(secondAssetID, 250);
 		TestUtils.validateAccountBalance(c, acctID, balances);
 
 		// validate second core's account balances
-		balances = new HashMap<String, Integer>();
+		balances = new HashMap<>();
 		balances.put(assetID, 750);
 		balances.put(secondAssetID, 750);
 		TestUtils.validateAccountBalance(sc, secondAcctID, balances);
@@ -174,12 +170,12 @@ public class AssetTransaction {
 
 
 		// validate sender's balance
-		Map<String, Integer> balances = new HashMap<String, Integer>();
+		Map<String, Integer> balances = new HashMap<>();
 		balances.put(assetID, 400);
 		TestUtils.validateAccountBalance(sc, sndrID, balances);
 
 		// validate receiver's balance
-		balances = new HashMap<String, Integer>();
+		balances = new HashMap<>();
 		balances.put(assetID, 600);
 		TestUtils.validateAccountBalance(sc, rcvrID, balances);
 		return true;
@@ -203,7 +199,7 @@ public class AssetTransaction {
 		String secondAddr = TestUtils.createAddress(sc, secondRcvrID);
 
 		// issue 1000 units of asset to sender
-		String issueID = TestUtils.issue(c, assetID, sndrID, 1000);
+		TestUtils.issue(c, assetID, sndrID, 1000);
 		System.out.println("Attempting a double spend:");
 
 		// create a thread pool
@@ -215,7 +211,7 @@ public class AssetTransaction {
 				String txID = TestUtils.transact(c, assetID, sndrID, addr, 1000);
 				System.out.printf("\tID=%s\n", txID);
 				// validate account balances
-				Map<String, Integer> balances = new HashMap<String, Integer>();
+				Map<String, Integer> balances = new HashMap<>();
 				balances.put(assetID, 1000);
 				TestUtils.validateAccountBalance(c, rcvrID, balances);
 				return 1;
@@ -225,7 +221,7 @@ public class AssetTransaction {
 				TestUtils.waitForPropagation(sc, txID);
 				System.out.printf("\tID=%s\n", txID);
 				// validate account balances
-				Map<String, Integer> balances = new HashMap<String, Integer>();
+				Map<String, Integer> balances = new HashMap<>();
 				balances.put(assetID, 1000);
 				TestUtils.validateAccountBalance(sc, secondRcvrID, balances);
 				return 1;

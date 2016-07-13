@@ -1,1 +1,8 @@
-/target
+.idea/
+.metadata/
+*.iml
+target/
+out/
+*.class
+classes/
+META-INF/

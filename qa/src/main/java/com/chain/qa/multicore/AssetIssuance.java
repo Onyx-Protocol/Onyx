@@ -1,12 +1,9 @@
-package chain.qa.baseline.multicore;
+package com.chain.qa.multicore;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.List;
 
-import com.chain.*;
-
-import chain.qa.*;
+import com.chain.qa.*;
 
 /**
  * AssetIssuance tests asset issuance in a multi-core network.
@@ -29,11 +26,9 @@ public class AssetIssuance {
 		c = client;
 		issuerID = TestUtils.createIssuer(c, pID, "Issuance");
 		managerID = TestUtils.createManager(c, pID, "Issuance");
-
 		// setup second core
 		sc = secondClient;
 		secondManagerID = TestUtils.createManager(sc, spID, "Issuance Second");
-
 		// assertions
 		assert testCrossCoreIssue();
 	}
@@ -46,9 +41,8 @@ public class AssetIssuance {
 	 */
 	public static boolean testCrossCoreIssue()
 	throws Exception {
-		// create asset
 		String label = "Cross Core Asset";
-		HashMap<String, Object> def = new HashMap<String, Object>();
+		HashMap<String, Object> def = new HashMap<>();
 		def.put("Asset", "Definition");
 		String assetID = TestUtils.createAsset(c, issuerID, label, def);
 
@@ -72,7 +66,7 @@ public class AssetIssuance {
 		TestUtils.validateAssetDefinition(sc, assetID, defCheck);
 
 		// validate the second core's manager accounts for the issuance
-		Map<String, Integer> balances = new HashMap<String, Integer>();
+		Map<String, Integer> balances = new HashMap<>();
 		balances.put(assetID, 1000);
 		TestUtils.validateAccountBalance(sc, acctID, balances);
 		return true;

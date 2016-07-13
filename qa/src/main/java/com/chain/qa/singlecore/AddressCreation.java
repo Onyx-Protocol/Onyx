@@ -1,8 +1,7 @@
-package chain.qa.baseline.singlecore;
-
-import chain.qa.*;
+package com.chain.qa.singlecore;
 
 import com.chain.*;
+import com.chain.qa.*;
 
 /**
  * AddressCreation tests the creation of account address.
@@ -18,13 +17,10 @@ public class AddressCreation {
 	 */
 	public static void runTests(TestClient client, String pID)
 	throws Exception {
-		// setup
 		c = client;
 		projectID = pID;
 		managerID = TestUtils.createManager(c, projectID, "Address Creation");
 		acctID = TestUtils.createAccount(c, managerID, "Address Creation");
-
-		// assertions
 		assert testAddressCreation();
 		assert testAddressDuplication();
 	}
@@ -34,12 +30,8 @@ public class AddressCreation {
 	 */
 	private static boolean testAddressCreation()
 	throws ChainException {
-		// create address
 		Address addr = c.createAddress(acctID);
-
 		System.out.printf("Created an account address. accountID=%s\n", acctID);
-
-		// validate address
 		assert addr.address != null : "address should not equal null.";
 		return true;
 	}
@@ -49,13 +41,9 @@ public class AddressCreation {
 	 */
 	private static boolean testAddressDuplication()
 	throws ChainException {
-		// create addresses
 		Address addr1 = c.createAddress(acctID);
 		Address addr2 = c.createAddress(acctID);
-
 		System.out.printf("Created two account address. accountID=%s \n", acctID);
-
-		// validate address
 		assert !addr1.address.equals(addr2.address) : "addresses should be unique.";
 		return true;
 	}

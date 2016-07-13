@@ -1,4 +1,4 @@
-package chain.qa;
+package com.chain.qa;
 
 import java.util.concurrent.Callable;
 import java.math.BigInteger;
@@ -25,18 +25,6 @@ public class TestUtils {
 	};
 
 	/**
-	 * RetireOutput is used to build asset retirement outputs.
-	 */
-	public static class RetireOutput extends Transactor.BuildRequest.Output {
-		public String type;
-
-		public RetireOutput(String assetID, BigInteger amount) {
-			super(assetID, null, null, amount);
-			this.type = "retire";
-		}
-	}
-
-	/**
 	 * Creates a project.
 	 */
 	public static String createProject(TestClient c, String name)
@@ -46,14 +34,14 @@ public class TestUtils {
 
 	/**
 	 * Creates a 1 of 1 issuer, with generated keys, and adds its xprv
-	 * to the Chain c key store.
+	 * to the client key store.
 	 */
 	public static String createIssuer(Client c, String projID, String label)
 	throws ChainException {
-		List<IssuerNode.CreateRequest.Key> keys = new ArrayList<>();
-		keys.add(IssuerNode.CreateRequest.Key.Generated());
-		IssuerNode.CreateRequest req = new IssuerNode.CreateRequest(label, 1, keys);
-		IssuerNode isr = c.createIssuerNode(projID, req);
+		List<AssetIssuer.CreateRequest.Key> keys = new ArrayList<>();
+		keys.add(AssetIssuer.CreateRequest.Key.Generated());
+		AssetIssuer.CreateRequest req = new AssetIssuer.CreateRequest(label, 1, keys);
+		AssetIssuer isr = c.createAssetIssuer(projID, req);
 		c.getKeyStore().add(new XPrvKey(isr.keys[0].xprv, true));
 		c.setSigner(new MemorySigner(c.getKeyStore()));
 		return isr.ID;
@@ -61,14 +49,14 @@ public class TestUtils {
 
 	/**
 	 * Creates a 1 of 1 manager, with generated keys, and adds its xprv
-	 * to the Chain c key store.
+	 * to the client key store.
 	 */
 	public static String createManager(Client c, String projID, String label)
 	throws ChainException {
-		List<ManagerNode.CreateRequest.Key> keys = new ArrayList<>();
-		keys.add(ManagerNode.CreateRequest.Key.Generated());
-		ManagerNode.CreateRequest req = new ManagerNode.CreateRequest(label, 1, keys);
-		ManagerNode mgr = c.createManagerNode(projID, req);
+		List<AccountManager.CreateRequest.Key> keys = new ArrayList<>();
+		keys.add(AccountManager.CreateRequest.Key.Generated());
+		AccountManager.CreateRequest req = new AccountManager.CreateRequest(label, 1, keys);
+		AccountManager mgr = c.createAccountManager(projID, req);
 		c.getKeyStore().add(new XPrvKey(mgr.keys[0].xprv, true));
 		c.setSigner(new MemorySigner(c.getKeyStore()));
 		return mgr.ID;
@@ -116,16 +104,11 @@ public class TestUtils {
 	 */
 	public static String issue(Client c, String assetID, String acctID, int amount)
 	throws ChainException {
-		// build transaction
 		Transactor.BuildRequest build = new Transactor.BuildRequest();
-		build.addIssueInput(assetID, Big);
+		build.addIssueInput(assetID, BigInteger.valueOf(amount));
 		build.addAccountOutput(assetID, acctID, BigInteger.valueOf(amount));
 		Transactor.Transaction tx = c.buildTransaction(build);
-
-		// sign transaction
 		c.signTransaction(tx);
-
-		// submit transaction
 		Transactor.SubmitResponse resp = c.submitTransaction(tx);
 		return resp.transactionID;
 	}
@@ -135,16 +118,11 @@ public class TestUtils {
 	 */
 	public static String issueToAddress(Client c, String assetID, String addr, int amount)
 	throws ChainException {
-		// build transaction
 		Transactor.BuildRequest build = new Transactor.BuildRequest();
-		build.addIssueInput(assetID);
+		build.addIssueInput(assetID, BigInteger.valueOf(amount));
 		build.addAddressOutput(assetID, addr, BigInteger.valueOf(amount));
 		Transactor.Transaction tx = c.buildTransaction(build);
-
-		// sign transaction
 		c.signTransaction(tx);
-
-		// submit transaction
 		Transactor.SubmitResponse resp = c.submitTransaction(tx);
 		return resp.transactionID;
 	}
@@ -154,16 +132,11 @@ public class TestUtils {
 	 */
 	public static String transact(Client c, String assetID, String sndrID, String rcvrAddr, int amount)
 	throws ChainException {
-		// build transaction
 		Transactor.BuildRequest build = new Transactor.BuildRequest();
 		build.addInput(assetID, sndrID, BigInteger.valueOf(amount));
 		build.addAddressOutput(assetID, rcvrAddr, BigInteger.valueOf(amount));
 		Transactor.Transaction tx = c.buildTransaction(build);
-
-		// sign transaction
 		c.signTransaction(tx);
-
-		// submit transaction
 		Transactor.SubmitResponse resp = c.submitTransaction(tx);
 		return resp.transactionID;
 	}
@@ -174,10 +147,8 @@ public class TestUtils {
 	public static String getAssetDefinition(Client c, String assetID)
 	throws ChainException {
 		// TODO(boymanjor): replace with a non-naive implementation if asset definitions might contain whitespace
-		AuditorNode.Asset check = c.getAuditorNodeAsset(assetID);
+		BlockchainData.Asset check = c.getBlockchainAsset(assetID);
 		String definition = new String(check.definition);
-
-		// return defintion with whitespace stripped
 		return definition.replaceAll("\\s+", "");
 	}
 
@@ -202,7 +173,7 @@ public class TestUtils {
 	throws Exception {
 		// TODO(boymanjor): Update timeout to reasonable baseline after benchmarking
 		long start = System.currentTimeMillis();
-		long end = start + 500;
+		long end = start + 5000;
 
 		while (System.currentTimeMillis() < end) {
 			try {
@@ -222,7 +193,7 @@ public class TestUtils {
 	public static void waitForPropagation(Client c, String txID)
 	throws Exception {
 		retry(() -> {
-			c.getAuditorNodeTransaction(txID);
+			c.getBlockchainTransaction(txID);
 			return null;
 		});
 	}

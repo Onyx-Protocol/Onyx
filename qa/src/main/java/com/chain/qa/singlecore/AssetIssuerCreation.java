@@ -1,11 +1,10 @@
-package chain.qa.baseline.singlecore;
+package com.chain.qa.singlecore;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import chain.qa.*;
-
 import com.chain.*;
+import com.chain.qa.*;
 
 /**
  * AssetIssuerCreation tests different setup configurations for issuers
@@ -20,11 +19,8 @@ public class AssetIssuerCreation {
 	 */
 	public static void runTests(TestClient client, String pID)
 	throws Exception {
-		// setup
 		c = client;
 		projectID = pID;
-
-		// assertions
 		assert testGeneratedKeys();
 		assert testProvidedKeys();
 	}
@@ -34,16 +30,14 @@ public class AssetIssuerCreation {
 	 */
 	private static boolean testGeneratedKeys()
 	throws ChainException {
-		// create issuer with generated keys
 		String label = "Key Generated";
-		List<IssuerNode.CreateRequest.Key> keys = new ArrayList<>();
-		keys.add(IssuerNode.CreateRequest.Key.Generated());
-		IssuerNode.CreateRequest req = new IssuerNode.CreateRequest(label, 1, keys);
-		IssuerNode isr = c.createIssuerNode(projectID, req);
-
+		List<AssetIssuer.CreateRequest.Key> keys = new ArrayList<>();
+		keys.add(AssetIssuer.CreateRequest.Key.Generated());
+		AssetIssuer.CreateRequest req = new AssetIssuer.CreateRequest(label, 1, keys);
+		AssetIssuer isr = c.createAssetIssuer(projectID, req);
 		System.out.printf("Created issuer with generated keys. ID=%s\n", isr.ID);
 
-		// validate issuer with generated keys
+		// validate issuer
 		int sigsReq = isr.signaturesRequired.intValue();
 		assert isr.ID != null : "ID should not equal null";
 		assert isr.label.equals(label) : TestUtils.fail("label", isr.label, label);
@@ -58,17 +52,15 @@ public class AssetIssuerCreation {
 	 */
 	private static boolean testProvidedKeys()
 	throws ChainException {
-		// create issuer with provided keys
 		String label = "Key Provided";
 		String xpub = TestUtils.XPUB[0];
-		List <IssuerNode.CreateRequest.Key> keys = new ArrayList<>();
-		keys.add(IssuerNode.CreateRequest.Key.XPub(xpub));
-		IssuerNode.CreateRequest req = new IssuerNode.CreateRequest(label, 1, keys);
-		IssuerNode isr = c.createIssuerNode(projectID, req);
-
+		List <AssetIssuer.CreateRequest.Key> keys = new ArrayList<>();
+		keys.add(AssetIssuer.CreateRequest.Key.XPub(xpub));
+		AssetIssuer.CreateRequest req = new AssetIssuer.CreateRequest(label, 1, keys);
+		AssetIssuer isr = c.createAssetIssuer(projectID, req);
 		System.out.printf("Created issuer with provided keys. ID=%s\n", isr.ID);
 
-		// validate issuer with provided keys
+		// validate issuer
 		int sigsReq = isr.signaturesRequired.intValue();
 		assert isr.ID != null : "ID should not equal null.";
 		assert isr.label.equals(label) : TestUtils.fail("label", isr.label, label);

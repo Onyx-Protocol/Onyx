@@ -1,4 +1,4 @@
-package chain.qa;
+package com.chain.qa;
 
 import java.net.*;
 
@@ -18,7 +18,6 @@ public class TestClient extends Client {
 	 */
 	private class Project {
 		public String id;
-		public String name;
 	}
 
 	/**

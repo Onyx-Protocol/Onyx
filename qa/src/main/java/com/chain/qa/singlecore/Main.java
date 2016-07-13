@@ -1,8 +1,8 @@
-package chain.qa.baseline.singlecore;
+package com.chain.qa.singlecore;
 
 import java.net.URL;
 
-import chain.qa.*;
+import com.chain.qa.*;
 
 public class Main {
 	public static void main(String [] args)
@@ -17,6 +17,7 @@ public class Main {
 		AssetCreation.runTests(client, project);
 		AssetIssuance.runTests(client, project);
 		AssetTransaction.runTests(client, project);
+		AssetRetirement.runTests(client, project);
 		System.out.println("Finished.");
 	}
 }
