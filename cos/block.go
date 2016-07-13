@@ -103,12 +103,12 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 		return errors.Wrap(err, "block validation")
 	}
 
-	newTxs, conflicts, err := fc.applyBlock(ctx, block, tree)
+	conflicts, err := fc.applyBlock(ctx, block, tree)
 	if err != nil {
 		return errors.Wrap(err, "applying block")
 	}
 
-	for _, tx := range newTxs {
+	for _, tx := range block.Transactions {
 		for _, cb := range fc.txCallbacks {
 			cb(ctx, tx)
 		}
@@ -237,14 +237,18 @@ func (fc *FC) applyBlock(
 	ctx context.Context,
 	block *bc.Block,
 	tree *patricia.Tree,
-) (newTxs []*bc.Tx, conflictingTxs []*bc.Tx, err error) {
-	newTxs, err = fc.store.ApplyBlock(ctx, block, tree)
+) (conflictingTxs []*bc.Tx, err error) {
+	err = fc.store.SaveBlock(ctx, block)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "storing block")
+		return nil, errors.Wrap(err, "storing block")
+	}
+	err = fc.store.SaveStateTree(ctx, block.Height, tree)
+	if err != nil {
+		return nil, errors.Wrap(err, "storing state tree")
 	}
 
 	conflicts, err := fc.rebuildPool(ctx, block)
-	return newTxs, conflicts, errors.Wrap(err, "rebuilding pool")
+	return conflicts, errors.Wrap(err, "rebuilding pool")
 }
 
 func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {

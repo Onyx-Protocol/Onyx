@@ -12,7 +12,7 @@ import (
 	"chain/errors"
 )
 
-func storeStateTreeSnapshot(ctx context.Context, dbtx *sql.Tx, pt *patricia.Tree, blockHeight uint64) error {
+func storeStateTreeSnapshot(ctx context.Context, db pg.DB, pt *patricia.Tree, blockHeight uint64) error {
 	var snapshot storage.StateTree
 	err := patricia.Walk(pt, func(n *patricia.Node) error {
 		hash := n.Hash()
@@ -43,7 +43,7 @@ func storeStateTreeSnapshot(ctx context.Context, dbtx *sql.Tx, pt *patricia.Tree
 		ON CONFLICT (height) DO UPDATE SET data = $2
 	`
 
-	_, err = dbtx.Exec(ctx, insertQ, blockHeight, b)
+	_, err = db.Exec(ctx, insertQ, blockHeight, b)
 	return errors.Wrap(err, "writing state tree to database")
 }
 

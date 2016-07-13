@@ -122,7 +122,7 @@ func insertTx(ctx context.Context, dbtx *sql.Tx, tx *bc.Tx) (bool, error) {
 	return affected > 0, nil
 }
 
-func insertBlock(ctx context.Context, dbtx *sql.Tx, block *bc.Block) ([]bc.Hash, error) {
+func insertBlock(ctx context.Context, dbtx *sql.Tx, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -132,52 +132,42 @@ func insertBlock(ctx context.Context, dbtx *sql.Tx, block *bc.Block) ([]bc.Hash,
 	`
 	_, err := dbtx.Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
 	if err != nil {
-		return nil, errors.Wrap(err, "insert query")
+		return errors.Wrap(err, "insert query")
 	}
 
-	newHashes, err := insertBlockTxs(ctx, dbtx, block)
-	return newHashes, errors.Wrap(err, "inserting txs")
+	err = insertBlockTxs(ctx, dbtx, block)
+	return errors.Wrap(err, "inserting txs")
 }
 
-func insertBlockTxs(ctx context.Context, dbtx *sql.Tx, block *bc.Block) ([]bc.Hash, error) {
+func insertBlockTxs(ctx context.Context, dbtx *sql.Tx, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
 	var (
-		hashInBlock []string // all txs in block
-		blockPos    []int32  // position of txs in block
-		hashHist    []string // historical txs not already stored
-		data        [][]byte // parallel with hashHist
+		hashes   []string // all txs in block
+		blockPos []int32  // position of txs in block
+		data     [][]byte // parallel with hashes
 	)
 	for i, tx := range block.Transactions {
+		hashes = append(hashes, tx.Hash.String())
 		blockPos = append(blockPos, int32(i))
-		hashInBlock = append(hashInBlock, tx.Hash.String())
-		if !tx.Stored {
-			var buf bytes.Buffer
-			_, err := tx.WriteTo(&buf)
-			if err != nil {
-				return nil, errors.Wrap(err, "serializing tx")
-			}
-			data = append(data, buf.Bytes())
-			hashHist = append(hashHist, tx.Hash.String())
+		var buf bytes.Buffer
+		_, err := tx.WriteTo(&buf)
+		if err != nil {
+			return errors.Wrap(err, "serializing tx")
 		}
+		data = append(data, buf.Bytes())
 	}
 
 	const txQ = `
 		WITH t AS (SELECT unnest($1::text[]) tx_hash, unnest($2::bytea[]) dat)
 		INSERT INTO txs (tx_hash, data)
 		SELECT tx_hash, dat FROM t
-		WHERE t.tx_hash NOT IN (SELECT tx_hash FROM txs)
-		RETURNING tx_hash;
+		ON CONFLICT DO NOTHING;
 	`
-	var (
-		newHashes []bc.Hash
-	)
-	err := pg.ForQueryRows(pg.NewContext(ctx, dbtx), txQ, pg.Strings(hashHist), pg.Byteas(data), func(hash bc.Hash) {
-		newHashes = append(newHashes, hash)
-	})
+	_, err := pg.Exec(pg.NewContext(ctx, dbtx), txQ, pg.Strings(hashes), pg.Byteas(data))
 	if err != nil {
-		return nil, errors.Wrap(err, "insert txs")
+		return errors.Wrap(err, "insert txs")
 	}
 
 	const blockTxQ = `
@@ -187,15 +177,12 @@ func insertBlockTxs(ctx context.Context, dbtx *sql.Tx, block *bc.Block) ([]bc.Ha
 	_, err = dbtx.Exec(
 		ctx,
 		blockTxQ,
-		pg.Strings(hashInBlock),
+		pg.Strings(hashes),
 		pg.Int32s(blockPos),
 		block.Hash(),
 		block.Height,
 	)
-	if err != nil {
-		return nil, errors.Wrap(err, "insert block txs")
-	}
-	return newHashes, nil
+	return errors.Wrap(err, "insert block txs")
 }
 
 // ListBlocks returns a list of the most recent blocks,

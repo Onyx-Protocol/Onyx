@@ -32,8 +32,7 @@ func (s *Store) LatestBlock(ctx context.Context) (*bc.Block, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getting latest block from db")
 	}
-
-	s.setLatestBlockCache(b, nil, true)
+	s.setLatestBlockCache(b, true)
 
 	return b, nil
 }
@@ -55,7 +54,7 @@ func latestBlock(ctx context.Context, db pg.DB) (*bc.Block, error) {
 // setLatestValidBlock stores the given block as the head of the
 // blockchain.  It also wakes up any threads waiting in
 // waitForNewValidBlock.
-func (s *Store) setLatestBlockCache(b *bc.Block, stateTree *patricia.Tree, cacheLocked bool) {
+func (s *Store) setLatestBlockCache(b *bc.Block, cacheLocked bool) {
 	if !cacheLocked {
 		s.latestBlockCache.mutex.Lock()
 		defer s.latestBlockCache.mutex.Unlock()
@@ -65,5 +64,16 @@ func (s *Store) setLatestBlockCache(b *bc.Block, stateTree *patricia.Tree, cache
 	// when another process has landed a block and we should
 	// invalidate this cache.
 	s.latestBlockCache.block = b
-	s.latestBlockCache.stateTree = stateTree
+}
+
+// setLatestStateTreeCache stores the given patricia tree as the most recent
+// state tree in the cache.
+func (s *Store) setLatestStateTreeCache(tree *patricia.Tree, height uint64, cacheLocked bool) {
+	if !cacheLocked {
+		s.latestBlockCache.mutex.Lock()
+		defer s.latestBlockCache.mutex.Unlock()
+	}
+
+	s.latestStateTreeCache.height = height
+	s.latestStateTreeCache.tree = tree
 }

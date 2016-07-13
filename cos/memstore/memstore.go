@@ -32,22 +32,19 @@ func (m *MemStore) GetTxs(ctx context.Context, hashes ...bc.Hash) (bcTxs map[bc.
 	return bcTxs, nil
 }
 
-func (m *MemStore) ApplyBlock(
-	ctx context.Context,
-	b *bc.Block,
-	stateTree *patricia.Tree,
-) ([]*bc.Tx, error) {
+func (m *MemStore) SaveBlock(ctx context.Context, b *bc.Block) error {
 	m.Blocks = append(m.Blocks, b)
 
 	// Record all the new transactions.
-	var newTxs []*bc.Tx
 	for _, tx := range b.Transactions {
-		newTxs = append(newTxs, tx)
 		m.BlockTxs[tx.Hash] = tx
 	}
+	return nil
+}
 
-	m.State = patricia.Copy(stateTree)
-	return newTxs, nil
+func (m *MemStore) SaveStateTree(ctx context.Context, height uint64, tree *patricia.Tree) error {
+	m.State = patricia.Copy(tree)
+	return nil
 }
 
 func (m *MemStore) LatestBlock(context.Context) (*bc.Block, error) {

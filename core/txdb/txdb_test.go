@@ -172,7 +172,7 @@ func TestInsertBlock(t *testing.T) {
 			}),
 		},
 	}
-	_, err := insertBlock(ctx, dbtx, blk)
+	err := insertBlock(ctx, dbtx, blk)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -203,7 +203,7 @@ func TestGetBlock(t *testing.T) {
 			Height:  1,
 		},
 	}
-	_, err := insertBlock(ctx, dbtx, blk)
+	err := insertBlock(ctx, dbtx, blk)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -233,7 +233,7 @@ func TestListBlocks(t *testing.T) {
 		{BlockHeader: bc.BlockHeader{Height: 0}},
 	}
 	for _, blk := range blks {
-		_, err := insertBlock(ctx, dbtx, blk)
+		err := insertBlock(ctx, dbtx, blk)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

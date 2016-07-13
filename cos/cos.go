@@ -84,10 +84,12 @@ type TxCallback func(context.Context, *bc.Tx)
 // persist validated data.
 type Store interface {
 	GetTxs(context.Context, ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error)
-	ApplyBlock(ctx context.Context, b *bc.Block, tree *patricia.Tree) ([]*bc.Tx, error)
-	FinalizeBlock(context.Context, uint64) error
 	LatestBlock(context.Context) (*bc.Block, error)
 	StateTree(context.Context, uint64) (*patricia.Tree, error)
+
+	SaveBlock(context.Context, *bc.Block) error
+	FinalizeBlock(context.Context, uint64) error
+	SaveStateTree(context.Context, uint64, *patricia.Tree) error
 }
 
 // Pool provides storage for transactions in the pending tx pool.

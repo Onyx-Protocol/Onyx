@@ -12,7 +12,6 @@ import (
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/cos/bc"
-	"chain/cos/patricia"
 	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -247,7 +246,7 @@ func TestGetTxIssuance(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = store.ApplyBlock(ctx, blk, patricia.NewTree(nil))
+	err = store.SaveBlock(ctx, blk)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -329,7 +328,7 @@ func TestGetTxTransfer(t *testing.T) {
 	}
 
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
-	_, err := store.ApplyBlock(ctx, blk, patricia.NewTree(nil))
+	err := store.SaveBlock(ctx, blk)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

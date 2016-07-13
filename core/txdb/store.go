@@ -20,9 +20,13 @@ type Store struct {
 	db *sql.DB
 
 	latestBlockCache struct {
-		mutex     sync.Mutex
-		block     *bc.Block
-		stateTree *patricia.Tree
+		mutex sync.Mutex
+		block *bc.Block
+	}
+	latestStateTreeCache struct {
+		mutex  sync.Mutex
+		height uint64
+		tree   *patricia.Tree
 	}
 }
 
@@ -44,70 +48,54 @@ func (s *Store) GetTxs(ctx context.Context, hashes ...bc.Hash) (bcTxs map[bc.Has
 	return getBlockchainTxs(ctx, s.db, hashes...)
 }
 
-func (s *Store) ApplyBlock(ctx context.Context, block *bc.Block, state *patricia.Tree) ([]*bc.Tx, error) {
+// SaveBlock persists a new block in the database.
+func (s *Store) SaveBlock(ctx context.Context, block *bc.Block) error {
 	dbtx, err := s.db.Begin(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err)
+		return errors.Wrap(err)
 	}
 	ctx = pg.NewContext(ctx, dbtx)
 	defer dbtx.Rollback(ctx)
 
-	newHashes, err := insertBlock(ctx, dbtx, block)
+	err = insertBlock(ctx, dbtx, block)
 	if err != nil {
-		return nil, errors.Wrap(err, "insert block")
-	}
-
-	newMap := make(map[bc.Hash]bool, len(newHashes))
-	newTxs := make([]*bc.Tx, 0, len(newHashes))
-	oldTxs := make([]*bc.Tx, 0, len(block.Transactions)-len(newHashes))
-	for _, hash := range newHashes {
-		newMap[hash] = true
-	}
-	for _, tx := range block.Transactions {
-		if newMap[tx.Hash] {
-			newTxs = append(newTxs, tx)
-			continue
-		}
-		oldTxs = append(oldTxs, tx)
-	}
-
-	err = storeStateTreeSnapshot(ctx, dbtx, state, block.Height)
-	if err != nil {
-		return nil, errors.Wrap(err, "updating state tree")
+		return errors.Wrap(err, "insert block")
 	}
 
 	err = dbtx.Commit(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "committing db transaction")
+		return errors.Wrap(err, "committing db transaction")
 	}
 
-	// Note: this is done last so that callers of LatestBlock
-	// can safely assume the block they get has been applied.
-	s.setLatestBlockCache(block, patricia.Copy(state), false)
-
-	return newTxs, nil
+	s.setLatestBlockCache(block, false)
+	return nil
 }
 
-// StateTree returns the state tree of the latest block.
-// It takes the height of the expected block, so that it can
-// return an error if the height does not match, preventing
-// race conditions.
-func (s *Store) StateTree(ctx context.Context, block uint64) (*patricia.Tree, error) {
-	s.latestBlockCache.mutex.Lock()
-	defer s.latestBlockCache.mutex.Unlock()
-
-	if block != 0 && (s.latestBlockCache.block == nil || s.latestBlockCache.block.Height != block) {
-		return nil, cos.ErrBadStateHeight
+// SaveStateTree saves a state tree snapshot to the database.
+func (s *Store) SaveStateTree(ctx context.Context, height uint64, tree *patricia.Tree) error {
+	err := storeStateTreeSnapshot(ctx, s.db, tree, height)
+	if err != nil {
+		return errors.Wrap(err, "saving state tree")
 	}
+	s.setLatestStateTreeCache(patricia.Copy(tree), height, false)
+	return nil
+}
 
-	if s.latestBlockCache.stateTree == nil {
-		stateTree, err := getStateTreeSnapshot(ctx, pg.FromContext(ctx), block)
+// StateTree returns the state tree of the block at the provided height.
+// It will cache the most recently requested state tree, which should be
+// the most recent one.
+func (s *Store) StateTree(ctx context.Context, height uint64) (*patricia.Tree, error) {
+	s.latestStateTreeCache.mutex.Lock()
+	defer s.latestStateTreeCache.mutex.Unlock()
+
+	if s.latestStateTreeCache.tree == nil || s.latestStateTreeCache.height != height {
+		tree, err := getStateTreeSnapshot(ctx, pg.FromContext(ctx), height)
 		if err != nil {
 			return nil, err
 		}
-		s.setLatestBlockCache(s.latestBlockCache.block, stateTree, true)
+		s.setLatestStateTreeCache(tree, height, true)
 	}
-	return patricia.Copy(s.latestBlockCache.stateTree), nil
+	return patricia.Copy(s.latestStateTreeCache.tree), nil
 }
 
 func (s *Store) FinalizeBlock(ctx context.Context, height uint64) error {
