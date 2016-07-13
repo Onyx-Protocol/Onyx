@@ -112,20 +112,31 @@ func txIsWellFormed(tx *bc.Tx) error {
 		return errors.WithDetail(ErrBadTx, "positive maxtime must be >= mintime")
 	}
 
-	parity := make(map[bc.AssetID]int64)
+	// Older clients may submit issuance txs that have zero-amount issuances,
+	// expecting the issuance total to be inferred by the output balance. We
+	// allow these assets to have imbalanced parity.
+	// TODO(jackson): Remove once older clients have been updated.
+	wildcardIssuance := make(map[bc.AssetID]bool)
+
 	issued := make(map[bc.AssetID]bool)
+	parity := make(map[bc.AssetID]int64)
 	uniqueFilter := make(map[bc.Outpoint]bool)
 
 	for _, txin := range tx.Inputs {
+		assetID := txin.AssetAmount.AssetID
 		if txin.IsIssuance() {
-			assetID, err := AssetIDFromSigScript(txin.SignatureScript)
+			var err error
+			assetID, err = AssetIDFromSigScript(txin.SignatureScript)
 			if err != nil {
 				return err
 			}
+
 			issued[assetID] = true
-			continue
+			if txin.AssetAmount.Amount == 0 {
+				wildcardIssuance[assetID] = true
+				continue
+			}
 		}
-		assetID := txin.AssetAmount.AssetID
 		if assetID == (bc.AssetID{}) {
 			assetID = bc.ComputeAssetID(txin.PrevScript, stubGenesisHash)
 		}
@@ -151,7 +162,7 @@ func txIsWellFormed(tx *bc.Tx) error {
 	}
 
 	for asset, val := range parity {
-		if val > 0 || (val < 0 && !issued[asset]) {
+		if val > 0 || (val < 0 && !wildcardIssuance[asset]) {
 			return errors.WithDetailf(ErrBadTx, "amounts for asset %s are not balanced on inputs and outputs", asset)
 		}
 	}

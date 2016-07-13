@@ -80,10 +80,10 @@ func recordIssuances(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
 		FROM block_issued
 		ON CONFLICT (asset_id) DO UPDATE
 		SET
-			height    = excluded.height,
+			height    = $4,
 			issued    = issuance_totals.issued + excluded.issued,
 			destroyed = issuance_totals.destroyed + excluded.destroyed
-		WHERE issuance_totals.height = excluded.height - 1
+		WHERE issuance_totals.height <= $4 - 1
 	`
 	_, err := pg.Exec(ctx, updateQ, pg.Strings(assetIDs), pg.Uint64s(issued), pg.Uint64s(destroyed), b.Height)
 	if err != nil {
@@ -95,8 +95,21 @@ func recordIssuances(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
 func calcIssuances(txs ...*bc.Tx) Issuances {
 	assets := map[bc.AssetID]IssuanceAmount{}
 	for _, tx := range txs {
+		wildcardIssuances := map[bc.AssetID]bool{}
+		parity := map[bc.AssetID]int64{}
+
 		for _, txin := range tx.Inputs {
+			parity[txin.AssetAmount.AssetID] += int64(txin.AssetAmount.Amount)
+
 			if txin.IsIssuance() {
+				// If the issuance is an old, zero-amount issuance, we need
+				// to to infer its amount based on the outputs.
+				// TODO(jackson): Remove once this style of issuance is prohibited.
+				if txin.AssetAmount.Amount == 0 {
+					wildcardIssuances[txin.AssetAmount.AssetID] = true
+					continue
+				}
+
 				amt := assets[txin.AssetAmount.AssetID]
 				amt.Issued = amt.Issued + txin.AssetAmount.Amount
 				assets[txin.AssetAmount.AssetID] = amt
@@ -104,11 +117,20 @@ func calcIssuances(txs ...*bc.Tx) Issuances {
 		}
 
 		for _, txout := range tx.Outputs {
+			parity[txout.AssetAmount.AssetID] -= int64(txout.AssetAmount.Amount)
+
 			if txscript.IsUnspendable(txout.ControlProgram) {
 				amt := assets[txout.AssetID]
 				amt.Destroyed = amt.Destroyed + txout.Amount
 				assets[txout.AssetID] = amt
 			}
+		}
+
+		// Add issuance totals for wildcard-amount issuances.
+		for assetID := range wildcardIssuances {
+			amt := assets[assetID]
+			amt.Issued = uint64(int64(amt.Issued) + -1*parity[assetID])
+			assets[assetID] = amt
 		}
 	}
 	return Issuances{Assets: assets}
