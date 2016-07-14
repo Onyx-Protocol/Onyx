@@ -210,14 +210,15 @@ func Cancel(ctx context.Context, outpoints []bc.Outpoint) error {
 	return err
 }
 
-// ExpireReservations is meant to be run as a goroutine. It loops
-// forever, calling the expire_reservations() pl/pgsql function to
+// ExpireReservations is meant to be run as a goroutine. It loops,
+// calling the expire_reservations() pl/pgsql function to
 // remove expired reservations from the reservations table.
-func ExpireReservations(ctx context.Context, period time.Duration, deposed <-chan struct{}) {
+// It returns when its context is canceled.
+func ExpireReservations(ctx context.Context, period time.Duration) {
 	ticks := time.Tick(period)
 	for {
 		select {
-		case <-deposed:
+		case <-ctx.Done():
 			chainlog.Messagef(ctx, "Deposed, ExpireReservations exiting")
 			return
 		case <-ticks:

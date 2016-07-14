@@ -12,6 +12,7 @@ import (
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
+	"chain/log"
 )
 
 var fc *cos.FC
@@ -70,6 +71,30 @@ func Init(ctx context.Context, chain *cos.FC, blockPubkeys []*btcec.PublicKey, n
 	enabled = true
 
 	return nil
+}
+
+// Generate runs in a loop, making one new block
+// every block period. It returns when its context
+// is canceled.
+func Generate(ctx context.Context) {
+	err := UpsertGenesisBlock(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	ticks := time.Tick(blockPeriod)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Messagef(ctx, "Deposed, Generate exiting")
+			return
+		case <-ticks:
+			_, err := MakeBlock(ctx)
+			if err != nil {
+				log.Error(ctx, err)
+			}
+		}
+	}
 }
 
 // UpsertGenesisBlock upserts a genesis block using
