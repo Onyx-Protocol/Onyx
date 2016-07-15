@@ -3,6 +3,8 @@ package asset_test
 import (
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/core/appdb"
 	. "chain/core/asset"
 	"chain/database/pg"
@@ -11,7 +13,7 @@ import (
 )
 
 func TestCreateManagerNode(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	_, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)

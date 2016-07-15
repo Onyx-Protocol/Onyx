@@ -102,7 +102,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 }
 
 func TestLoadAccountInfo(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	mnode := assettest.CreateManagerNodeFixture(ctx, t, "", "", nil, nil)
 	acc := assettest.CreateAccountFixture(ctx, t, mnode, "", nil)

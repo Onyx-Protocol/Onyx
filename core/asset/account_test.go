@@ -5,24 +5,23 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"chain/core/appdb"
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
-	"chain/core/txdb"
 	"chain/cos/bc"
 	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/testutil"
 )
 
 func TestAccountSourceReserve(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,9 +84,8 @@ func TestAccountSourceReserve(t *testing.T) {
 }
 
 func TestAccountSourceUTXOReserve(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,9 +148,8 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 }
 
 func TestAccountSourceReserveIdempotency(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,7 +218,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 }
 
 func TestAccountDestinationPKScript(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	acc := assettest.CreateAccountFixture(ctx, t, "", "", nil)
 
@@ -249,9 +246,8 @@ func TestAccountDestinationPKScript(t *testing.T) {
 }
 
 func TestAccountSourceWithTxHash(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
