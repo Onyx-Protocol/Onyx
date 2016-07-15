@@ -20,10 +20,17 @@ func addOrderbookUTXO(ctx context.Context, tx *bc.Tx, index int, sellerScript []
 	const q1 = `
 		INSERT INTO orderbook_utxos (tx_hash, index, seller_id, asset_id, amount, script)
 		SELECT $1, $2, (SELECT account_id FROM addresses WHERE pk_script=$3), $4, $5, $6
+		ON CONFLICT (tx_hash, index) DO NOTHING
 	`
-	_, err = pg.Exec(ctx, q1, tx.Hash, index, sellerScript, out.AssetID, out.Amount, out.ControlProgram)
+	res, err := pg.Exec(ctx, q1, tx.Hash, index, sellerScript, out.AssetID, out.Amount, out.ControlProgram)
 	if err != nil {
 		return errors.Wrap(err, "inserting into orderbook_utxos")
+	}
+
+	// If no row was inserted, this utxo was already indexed. Return
+	// without inserting the prices.
+	if affected, err := res.RowsAffected(); err != nil || affected == 0 {
+		return errors.Wrap(err, "querying affected row count")
 	}
 
 	const q2 = `INSERT INTO orderbook_prices (tx_hash, index, asset_id, offer_amount, payment_amount) VALUES ($1, $2, $3, $4, $5)`
