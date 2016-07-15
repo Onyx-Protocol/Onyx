@@ -173,7 +173,7 @@ func main() {
 		localSigner = signer.New(privKey, db, fc)
 	}
 
-	rpcclient.Init(fc, *remoteGeneratorURL)
+	rpcclient.Init(*remoteGeneratorURL)
 
 	asset.Init(fc, *isManager)
 
@@ -216,7 +216,7 @@ func main() {
 		if *isGenerator {
 			go generator.Generate(ctx)
 		} else {
-			go fetch.Fetch(ctx)
+			go fetch.Fetch(ctx, fc)
 		}
 	})
 

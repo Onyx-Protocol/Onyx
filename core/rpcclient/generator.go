@@ -26,7 +26,7 @@ func Submit(ctx context.Context, tx *bc.Tx) error {
 
 // GetBlocks sends a get-blocks RPC request to the generator for all
 // blocks since the highest-known one and adds them to the blockchain.
-func GetBlocks(ctx context.Context) error {
+func GetBlocks(ctx context.Context, fc *cos.FC) error {
 	if generatorURL == "" {
 		return ErrNoGenerator
 	}

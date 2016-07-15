@@ -4,6 +4,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/rpcclient"
+	"chain/cos"
 	"chain/log"
 )
 
@@ -12,7 +13,7 @@ import (
 // FC.
 //
 // It returns when its context is canceled.
-func Fetch(ctx context.Context) {
+func Fetch(ctx context.Context, fc *cos.FC) {
 	// TODO(kr): take explicit DB and/or FC here,
 	// plus maybe the peer's URL.
 	for {
@@ -21,7 +22,7 @@ func Fetch(ctx context.Context) {
 			log.Messagef(ctx, "Deposed, Fetch exiting")
 			return
 		default:
-			err := rpcclient.GetBlocks(ctx)
+			err := rpcclient.GetBlocks(ctx, fc)
 			if err != nil {
 				log.Error(ctx, err)
 			}
