@@ -85,7 +85,10 @@ func findAccountVotingRights(ctx context.Context, accountID string) (map[string]
 	for _, r := range accRights {
 		var actionTypes []string
 		if accountID == holders[r.AssetID] {
-			actionTypes = append(actionTypes, "authenticate-voting-right", "transfer-voting-right", "delegate-voting-right")
+			actionTypes = append(actionTypes, "authenticate-voting-right", "transfer-voting-right")
+			if r.Delegatable {
+				actionTypes = append(actionTypes, "delegate-voting-right")
+			}
 		} else {
 			actionTypes = append(actionTypes, "recall-voting-right")
 		}
@@ -133,7 +136,8 @@ func getVotingRightOwners(ctx context.Context, assetID string) (map[string]inter
 			"voting_right_asset_id": r.AssetID,
 			"account_id":            r.AccountID,
 			"holder_script":         chainjson.HexBytes(r.HolderScript),
-			"transferable":          r.Delegatable,
+			"transferable":          r.Delegatable, // DEPRECATED
+			"can_delegate":          r.Delegatable,
 			"transaction_id":        r.Outpoint.Hash,
 			"index":                 r.Outpoint.Index,
 		}
