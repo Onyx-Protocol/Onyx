@@ -170,7 +170,7 @@ func main() {
 
 	var localSigner *signer.Signer
 	if *isSigner {
-		localSigner = signer.New(privKey, fc)
+		localSigner = signer.New(privKey, db, fc)
 	}
 
 	rpcclient.Init(fc, *remoteGeneratorURL)

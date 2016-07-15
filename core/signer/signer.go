@@ -14,18 +14,20 @@ import (
 // Signer validates and signs blocks.
 type Signer struct {
 	key *btcec.PrivateKey
+	db  pg.DB
 	fc  *cos.FC
 }
 
 // New returns a new Signer
 // that validates blocks with fc
 // and signs them with k.
-func New(k *btcec.PrivateKey, fc *cos.FC) *Signer {
+func New(k *btcec.PrivateKey, db pg.DB, fc *cos.FC) *Signer {
 	if k == nil {
 		panic("signer key is unset")
 	}
 	return &Signer{
 		key: k,
+		db:  db,
 		fc:  fc,
 	}
 }
@@ -52,7 +54,7 @@ func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) (*crypto.Signature,
 	if err != nil {
 		return nil, errors.Wrap(err, "validating block for signature")
 	}
-	err = lockBlockHeight(ctx, b)
+	err = lockBlockHeight(ctx, s.db, b)
 	if err != nil {
 		return nil, errors.Wrap(err, "lock block height")
 	}
@@ -71,13 +73,13 @@ func (s *Signer) PublicKey() *btcec.PublicKey {
 // lockBlockHeight records a signer's intention to sign a given block
 // at a given height.  It's an error if a different block at the same
 // height has previously been signed.
-func lockBlockHeight(ctx context.Context, b *bc.Block) error {
+func lockBlockHeight(ctx context.Context, db pg.DB, b *bc.Block) error {
 	const q = `
 		INSERT INTO signed_blocks (block_height, block_hash)
 		SELECT $1, $2
 		    WHERE NOT EXISTS (SELECT 1 FROM signed_blocks
 		                      WHERE block_height = $1 AND block_hash = $2)
 	`
-	_, err := pg.Exec(ctx, q, b.Height, b.HashForSig())
+	_, err := db.Exec(ctx, q, b.Height, b.HashForSig())
 	return err
 }

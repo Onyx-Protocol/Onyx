@@ -283,7 +283,7 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 	if err != nil {
 		return nil, err
 	}
-	localSigner := signer.New(privkey, fc)
+	localSigner := signer.New(privkey, pg.FromContext(ctx), fc)
 
 	err = generator.Init(ctx, fc, []*btcec.PublicKey{pubkey}, 1, 0, localSigner, nil)
 	if err != nil {
