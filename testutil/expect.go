@@ -1,13 +1,19 @@
 package testutil
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"runtime"
+	"strings"
 	"testing"
 
 	"chain/cos/txscript"
 	"chain/errors"
 )
+
+var wd, _ = os.Getwd()
 
 func ExpectEqual(t testing.TB, actual, expected interface{}, msg string) {
 	if !reflect.DeepEqual(actual, expected) {
@@ -33,7 +39,13 @@ func ExpectError(t testing.TB, expected error, msg string, fn func() error) {
 func FatalErr(t testing.TB, err error) {
 	args := []interface{}{err}
 	for _, frame := range errors.Stack(err) {
-		args = append(args, "\n"+frame.String())
+		file := frame.File
+		if rel, err := filepath.Rel(wd, file); err == nil && !strings.HasPrefix(rel, "../") {
+			file = rel
+		}
+		funcname := frame.Func[strings.IndexByte(frame.Func, '.')+1:]
+		s := fmt.Sprintf("\n%s:%d: %s", file, frame.Line, funcname)
+		args = append(args, s)
 	}
 	t.Fatal(args...)
 }
