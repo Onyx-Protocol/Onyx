@@ -290,7 +290,7 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 		return nil, err
 	}
 
-	_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
+	_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1, time.Now())
 	if err != nil {
 		return nil, err
 	}

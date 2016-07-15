@@ -339,7 +339,7 @@ func TestUpsertGenesisBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
+	b, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1, time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}

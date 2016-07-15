@@ -11,10 +11,7 @@ var (
 )
 
 func init() {
-	seed, err := hdkeychain.GenerateSeed(hdkeychain.RecommendedSeedLen)
-	if err != nil {
-		panic(err)
-	}
+	seed := []byte("thirty-six bytes of seed on the wall")
 	xprv, err := hdkeychain.NewMaster(seed)
 	if err != nil {
 		panic(err)

@@ -349,10 +349,10 @@ func GenerateBlockScript(keys []*btcec.PublicKey, nSigs int) ([]byte, error) {
 }
 
 // UpsertGenesisBlock creates a genesis block iff it does not exist.
-func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []*btcec.PublicKey, nSigs int) (*bc.Block, error) {
+func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []*btcec.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
 	// TODO(bobg): Cache the genesis block if it exists and return it
 	// rather than always consing up a new one.
-	b, err := NewGenesisBlock(pubkeys, nSigs)
+	b, err := NewGenesisBlock(pubkeys, nSigs, timestamp)
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +371,7 @@ func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []*btcec.PublicKey
 	return b, nil
 }
 
-func NewGenesisBlock(pubkeys []*btcec.PublicKey, nSigs int) (*bc.Block, error) {
+func NewGenesisBlock(pubkeys []*btcec.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
 	script, err := GenerateBlockScript(pubkeys, nSigs)
 	if err != nil {
 		return nil, err
@@ -380,7 +380,7 @@ func NewGenesisBlock(pubkeys []*btcec.PublicKey, nSigs int) (*bc.Block, error) {
 		BlockHeader: bc.BlockHeader{
 			Version:      bc.NewBlockVersion,
 			Height:       1,
-			Timestamp:    uint64(time.Now().Unix()),
+			Timestamp:    uint64(timestamp.Unix()),
 			OutputScript: script,
 		},
 	}

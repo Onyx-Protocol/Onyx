@@ -171,7 +171,7 @@ func TestIdempotentUpsert(t *testing.T) {
 	// InitializeSigningGenerator added a genesis block.  Calling
 	// UpsertGenesisBlock again should be a no-op, not produce an error.
 	for i := 0; i < 2; i++ {
-		_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
+		_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1, time.Now())
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -186,7 +186,9 @@ func TestGenerateBlock(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	latestBlock, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1)
+	now := time.Unix(233400000, 0)
+
+	latestBlock, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1, now)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -233,7 +235,6 @@ func TestGenerateBlock(t *testing.T) {
 		}
 	}
 
-	now := time.Now()
 	got, _, err := fc.GenerateBlock(ctx, now)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
@@ -264,7 +265,7 @@ func TestGenerateBlock(t *testing.T) {
 }
 
 func TestValidateGenesisBlockForSig(t *testing.T) {
-	genesis, err := NewGenesisBlock(nil, 0)
+	genesis, err := NewGenesisBlock(nil, 0, time.Now())
 	if err != nil {
 		t.Fatal("unexpected error ", err)
 	}

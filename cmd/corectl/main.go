@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -118,7 +119,7 @@ func genesis(db *sql.DB, args []string) {
 		fatalln("error:", err)
 	}
 
-	b, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubKey}, 1)
+	b, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubKey}, 1, time.Now())
 	if err != nil {
 		fatalln("error:", err)
 	}

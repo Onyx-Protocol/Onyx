@@ -100,7 +100,7 @@ func Generate(ctx context.Context) {
 // UpsertGenesisBlock upserts a genesis block using
 // the keys and signatures required provided to Init.
 func UpsertGenesisBlock(ctx context.Context) error {
-	_, err := fc.UpsertGenesisBlock(ctx, blockKeys, sigsRequired)
+	_, err := fc.UpsertGenesisBlock(ctx, blockKeys, sigsRequired, time.Now())
 	return errors.Wrap(err)
 }
 

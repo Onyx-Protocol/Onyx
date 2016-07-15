@@ -15,7 +15,7 @@ import (
 
 func TestIdempotentAddTx(t *testing.T) {
 	ctx, fc := newContextFC(t)
-	_, err := fc.UpsertGenesisBlock(ctx, nil, 0)
+	_, err := fc.UpsertGenesisBlock(ctx, nil, 0, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -49,7 +49,7 @@ func TestAddTx(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	_, err = fc.UpsertGenesisBlock(ctx, nil, 0)
+	_, err = fc.UpsertGenesisBlock(ctx, nil, 0, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
