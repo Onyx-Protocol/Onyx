@@ -5,7 +5,7 @@ contract orderbook(sellerScript, currencyAssetID, priceX num, priceY num) {
   clause trade(cashAmount num, changeAmount num) {
     priceY * cashAmount + priceX * changeAmount == priceX * amount()
       && reserveoutput(cashAmount, currencyAssetID, sellerScript)
-      && reserveoutput(changeAmount, asset(), outputscript())
+      && reserveoutput(changeAmount, asset(), program())
   }
   clause cancel() {
     eval(sellerScript)

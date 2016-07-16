@@ -235,7 +235,7 @@ const (
 	OP_RESERVEOUTPUT = 0xc1 // 193
 	OP_ASSET         = 0xc2 // 194
 	OP_AMOUNT        = 0xc3 // 195
-	OP_OUTPUTSCRIPT  = 0xc4 // 196
+	OP_PROGRAM       = 0xc4 // 196
 	OP_MINTIME       = 0xc5 // 197
 	OP_MAXTIME       = 0xc6 // 198
 	OP_CATPUSHDATA   = 0xc7 // 199
@@ -527,7 +527,7 @@ var opcodeArray = [256]opcode{
 	OP_RESERVEOUTPUT: {OP_RESERVEOUTPUT, "OP_RESERVEOUTPUT", 1, nil}, // see init()
 	OP_ASSET:         {OP_ASSET, "OP_ASSET", 1, opcodeAsset},
 	OP_AMOUNT:        {OP_AMOUNT, "OP_AMOUNT", 1, opcodeAmount},
-	OP_OUTPUTSCRIPT:  {OP_OUTPUTSCRIPT, "OP_OUTPUTSCRIPT", 1, opcodeOutputScript},
+	OP_PROGRAM:       {OP_PROGRAM, "OP_PROGRAM", 1, opcodeProgram},
 	OP_MINTIME:       {OP_MINTIME, "OP_MINTIME", 1, opcodeMinTime},
 	OP_MAXTIME:       {OP_MAXTIME, "OP_MAXTIME", 1, opcodeMaxTime},
 	OP_CATPUSHDATA:   {OP_CATPUSHDATA, "OP_CATPUSHDATA", 1, opcodeCatPushData},
@@ -631,7 +631,7 @@ func (pop *parsedOpcode) isDisabled(scriptVersionVal int, isBlock bool) bool {
 	switch pop.opcode.value {
 	case OP_RESERVEOUTPUT, OP_FINDOUTPUT:
 		return scriptVersionVal == 0
-	case OP_ASSET, OP_AMOUNT, OP_OUTPUTSCRIPT, OP_MINTIME, OP_MAXTIME:
+	case OP_ASSET, OP_AMOUNT, OP_PROGRAM, OP_MINTIME, OP_MAXTIME:
 		return isBlock
 	case OP_WHILE, OP_ENDWHILE:
 		return scriptVersionVal == 0 || scriptVersionVal == 1
@@ -2496,7 +2496,7 @@ func opcodeAmount(op *parsedOpcode, vm *Engine) error {
 }
 
 // Pushes the current txin's pkscript onto the stack.
-func opcodeOutputScript(op *parsedOpcode, vm *Engine) error {
+func opcodeProgram(op *parsedOpcode, vm *Engine) error {
 	in := vm.currentTxInput()
 	vm.dstack.PushByteArray(in.PrevScript)
 	return nil

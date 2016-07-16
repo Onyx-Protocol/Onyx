@@ -257,7 +257,7 @@ func buildContract(n int) ([]byte, error) {
 			RESERVEOUTPUT VERIFY
 			ASSET
 			SWAP
-			DROP OUTPUTSCRIPT
+			DROP PROGRAM
 			RESERVEOUTPUT
 		ELSE
 			DROP DROP DROP

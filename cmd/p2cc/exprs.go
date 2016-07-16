@@ -177,7 +177,7 @@ var calls = []struct {
 }{
 	{"asset", 0, bytesType},
 	{"amount", 0, numType},
-	{"outputscript", 0, bytesType},
+	{"program", 0, bytesType},
 	{"time", 0, numType},
 	{"circulation", 1, numType},
 	{"abs", 1, numType},

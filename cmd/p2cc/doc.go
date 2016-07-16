@@ -79,7 +79,7 @@ Function calls are:
 
   asset()
   amount()
-  outputscript()
+  program()
   time()
   circulation(assetID)
   abs(num)
@@ -111,7 +111,7 @@ FINDOUTPUT.
 Caveat: The contracthash is needed for this to work, and when a
 contract refers to itself in this way, the contracthash is not known
 at translation time.  But it is known at runtime, so the emitted code
-performs manipulations on OUTPUTSCRIPT, therefore it assumes that the
+performs manipulations on PROGRAM, therefore it assumes that the
 contract was invoked with p2c contracthash style (and not p2c inline
 style).
 

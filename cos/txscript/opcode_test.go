@@ -89,7 +89,7 @@ func TestOpcodeDisasm(t *testing.T) {
 		0xae: "OP_CHECKMULTISIG", 0xaf: "OP_CHECKMULTISIGVERIFY",
 		0xc0: "OP_EVAL", 0xc1: "OP_RESERVEOUTPUT",
 		0xc2: "OP_ASSET", 0xc3: "OP_AMOUNT",
-		0xc4: "OP_OUTPUTSCRIPT", 0xc5: "OP_MINTIME",
+		0xc4: "OP_PROGRAM", 0xc5: "OP_MINTIME",
 		0xc6: "OP_MAXTIME", 0xc7: "OP_CATPUSHDATA",
 		0xca: "OP_FINDOUTPUT",
 		0xd0: "OP_WHILE", 0xd1: "OP_ENDWHILE",

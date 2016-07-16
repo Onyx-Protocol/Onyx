@@ -12,24 +12,24 @@
 ["The serialized script used by EVAL here is <2 3 ADD>"],
 ["DATA_3 0x525393 EVAL 4 ADD 9 EQUAL", "", "", "Simple EVAL test"],
 
-["OUTPUTSCRIPT EQUAL", "DATA_39 0x517576aa201635b121178a46ea1aa968815d8492b146e26fb5abd01b84c3e95bc25ed1f0d488c0", ""],
+["PROGRAM EQUAL", "DATA_39 0x517576aa201635b121178a46ea1aa968815d8492b146e26fb5abd01b84c3e95bc25ed1f0d488c0", ""],
 
 ["There is a total of 7 units of this asset in the sample tx"],
 ["used for testing.  This script is executed twice, once each"],
 ["for two of the tx's inputs.  Requiring 3 units of the asset"],
 ["twice should not deplete it."],
-["1 DROP 3 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 OUTPUTSCRIPT RESERVEOUTPUT", "", "", "Simple RESERVEOUTPUT test"],
+["1 DROP 3 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 PROGRAM RESERVEOUTPUT", "", "", "Simple RESERVEOUTPUT test"],
 
 ["There is a total of 7 units of this asset in the sample tx "],
 ["used for testing.  This script is executed twice, once each"],
 ["for two of the tx's inputs.  Despite being run twice, both "],
 ["inputs should be able to find the output."],
-["1 DROP 7 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 OUTPUTSCRIPT FINDOUTPUT", "", "", "Simple FINDOUTPUT test"],
+["1 DROP 7 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 PROGRAM FINDOUTPUT", "", "", "Simple FINDOUTPUT test"],
 
 ["There is a total of 7 units of this asset in the sample tx "],
 ["used for testing.  This script is executed twice, once each"],
 ["for two of the tx's inputs. "],
-["1 DROP 1 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 OUTPUTSCRIPT FINDOUTPUT", "", "", "Simple FINDOUTPUT with lower amount test"],
+["1 DROP 1 DATA_32 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 PROGRAM FINDOUTPUT", "", "", "Simple FINDOUTPUT with lower amount test"],
 
 ["Opcodes enabled only in the P2C context."],
 ["CAT DATA_5 0x0102030405 EQUAL", "DATA_3 0x010203 DATA_2 0x0405", "", "CAT"],
