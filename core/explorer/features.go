@@ -47,6 +47,7 @@ func Connect(ctx context.Context, fc *cos.FC, historical bool, maxAgeDays int, i
 		const insertQ = `
 			INSERT INTO explorer_outputs (tx_hash, index, asset_id, amount, script, metadata, timespan)
 				SELECT UNNEST($1::TEXT[]), UNNEST($2::INTEGER[]), UNNEST($3::TEXT[]), UNNEST($4::BIGINT[]), UNNEST($5::BYTEA[]), UNNEST($6::BYTEA[]), INT8RANGE($7, NULL)
+				ON CONFLICT (tx_hash, index) DO NOTHING
 		`
 		const updateQ = `
 			UPDATE explorer_outputs SET timespan = INT8RANGE(LOWER(timespan), $3)
