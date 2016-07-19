@@ -98,7 +98,12 @@ fi
 
 msg="$(jq -sR . <$cfile)"
 mergeurl=https://api.github.com/repos/$proj/pulls/$pr/merge
-mergejson='{"commit_title": '"$msg"', "sha": "'$commit'", "squash": true}'
+mergejson='{
+	"commit_title": '"$msg"',
+	"commit_message": "",
+	"sha": "'$commit'",
+	"squash": true
+}'
 accept="Accept: application/vnd.github.polaris-preview+json"
 
 mergestatus="$(echo "$mergejson"|curl -snT - -H"$accept" $mergeurl)"
