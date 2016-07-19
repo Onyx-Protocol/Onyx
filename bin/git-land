@@ -41,27 +41,6 @@ proj=$(
 	sed s,.git,,
 )
 
-state=`curl -sn https://api.github.com/repos/$proj/pulls/$pr|jq -r .state`
-if [ "$state" = closed ]
-then
-	echo >&2 "pull request $pr is not open"
-	exit 1
-elif [ "$state" != open ]
-then
-	echo >&2 "cannot access GitHub API (bad netrc?)"
-	exit 1
-fi
-
-buildstatus="$(curl -sn https://api.github.com/repos/$proj/commits/$commit/status)"
-combinedstate=`echo "$buildstatus"|jq -r .state`
-ntest=`echo "$buildstatus"|jq '.statuses|length'`
-if [ "$combinedstate" != success -a "$ntest" -gt 0 ]
-then
-	echo >&2 "build state is $combinedstate"
-	echo "$buildstatus" | jq >&2 -r '.statuses[]|.context+" "+.state+": "+.description'
-	exit 1
-fi
-
 jqprg='
 	map(select(.body|contains("LGTM"))) |
 	reduce .[] as $c
@@ -88,14 +67,6 @@ then
 	exit 1
 fi
 
-git fetch origin
-n=`git rev-list --count origin/$onto ^HEAD`
-if [ $n -ne 0 ]
-then
-	echo >&2 "branch $branch is behind $onto; please rebase"
-	exit 1
-fi
-
 prurl=https://api.github.com/repos/$proj/issues/$pr
 mfile=$(mktemp -t gitland)
 cfile=$(mktemp -t gitland)
@@ -110,12 +81,37 @@ then
 	echo >>$cfile
 fi
 cat $mfile >>$cfile
+cat >>$cfile <<EOF
 
-GIT_EDITOR='sed -i "" 1!s/pick/fixup/' \
-	git rebase --interactive origin/$onto
-git commit -eF $cfile --amend # use PR message; let the human edit it
-git push origin $branch:$onto
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+EOF
+
+${EDITOR:-nano} $cfile
+sed -i '' '/^#/d' $cfile                 # strip comments
+sed -i '' -n '/[^[:space:]]/,$p' $cfile  # strip leading blank lines
+if ! [ -s $cfile ]
+then
+	echo >&2 'empty commit message; aborting'
+	exit 2
+fi
+
+msg="$(jq -sR . <$cfile)"
+mergeurl=https://api.github.com/repos/$proj/pulls/$pr/merge
+mergejson='{"commit_title": '"$msg"', "sha": "'$commit'", "squash": true}'
+accept="Accept: application/vnd.github.polaris-preview+json"
+
+mergestatus="$(echo "$mergejson"|curl -snT - -H"$accept" $mergeurl)"
+if test "`echo "$mergestatus"|jq -r .merged`" != true
+then
+	printf >&2 '%s' 'GitHub API said: '
+	echo "$mergestatus"|jq >&2 -r '.message'
+	echo >&2 'Status checks failed? Merge conflict? ¯\_(ツ)_/¯'
+	exit 1
+fi
+
 git push origin :$branch
 git checkout $onto
+git fetch origin
 git merge --ff-only origin/$onto
-git branch -d $branch
+git branch -D $branch
