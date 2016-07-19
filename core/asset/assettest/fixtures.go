@@ -246,7 +246,7 @@ func AccountDestinationFixture(ctx context.Context, t testing.TB, assetID bc.Ass
 }
 
 func IssuerTxFixture(ctx context.Context, t testing.TB, txHash string, data []byte, iNodeID string, assets []string) (id string) {
-	id, err := appdb.WriteIssuerTx(ctx, txHash, data, iNodeID, assets)
+	id, err := appdb.WriteIssuerTx(ctx, txHash, data, iNodeID, time.Now(), assets)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -254,7 +254,7 @@ func IssuerTxFixture(ctx context.Context, t testing.TB, txHash string, data []by
 }
 
 func ManagerTxFixture(ctx context.Context, t testing.TB, txHash string, data []byte, mNodeID string, accounts []string) (id string) {
-	id, err := appdb.WriteManagerTx(ctx, txHash, data, mNodeID, accounts)
+	id, err := appdb.WriteManagerTx(ctx, txHash, data, mNodeID, time.Now(), accounts)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

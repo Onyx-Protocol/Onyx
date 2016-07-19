@@ -12,6 +12,7 @@ import (
 	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/asset/nodetxlog"
+	"chain/core/generator"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
 	"chain/database/pg"
@@ -22,7 +23,7 @@ import (
 func TestWriteManagerTx(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	accounts := []string{"account-1", "account-2"}
-	_, err := WriteManagerTx(ctx, "tx1", []byte(`{}`), "mnode-1", accounts)
+	_, err := WriteManagerTx(ctx, "tx1", []byte(`{}`), "mnode-1", time.Now(), accounts)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -54,7 +55,7 @@ func TestWriteManagerTx(t *testing.T) {
 func TestWriteIssuerTx(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	assets := []string{"asset-1", "asset-2"}
-	_, err := WriteIssuerTx(ctx, "tx1", []byte(`{}`), "inode-1", assets)
+	_, err := WriteIssuerTx(ctx, "tx1", []byte(`{}`), "inode-1", time.Now(), assets)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -220,6 +221,11 @@ func TestAccountTxsTimeLimit(t *testing.T) {
 	// Don't include this transfer in the output
 	assettest.Transfer(ctx, t, srcs(1), dests(1))
 
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	startTime := time.Now()
 
 	// Do include this transfer in the output
@@ -228,10 +234,20 @@ func TestAccountTxsTimeLimit(t *testing.T) {
 	// Do include this transfer in the output too
 	assettest.Transfer(ctx, t, srcs(4), dests(4))
 
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	endTime := time.Now()
 
 	// Don't include this transfer in the output
 	assettest.Transfer(ctx, t, srcs(8), dests(8))
+
+	_, err = generator.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	txs, _, err := AccountTxs(ctx, acct1ID, startTime, endTime, "", 0)
 	if err != nil {

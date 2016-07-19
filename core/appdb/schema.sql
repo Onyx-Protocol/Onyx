@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.1
--- Dumped by pg_dump version 9.5.1
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1257,6 +1257,13 @@ CREATE INDEX issuer_txs_issuer_node_id_id_idx ON issuer_txs USING btree (issuer_
 
 
 --
+-- Name: issuer_txs_node_hash; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX issuer_txs_node_hash ON issuer_txs USING btree (issuer_node_id, tx_hash);
+
+
+--
 -- Name: manager_nodes_project_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1275,6 +1282,13 @@ CREATE UNIQUE INDEX manager_txs_accounts_account_id_manager_tx_id_idx ON manager
 --
 
 CREATE INDEX manager_txs_manager_node_id_id_idx ON manager_txs USING btree (manager_node_id, id DESC);
+
+
+--
+-- Name: manager_txs_node_hash; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX manager_txs_node_hash ON manager_txs USING btree (manager_node_id, tx_hash);
 
 
 --
@@ -1449,3 +1463,4 @@ insert into migrations (filename, hash) values ('2016-06-13.0.txdb.state-tree-sn
 insert into migrations (filename, hash) values ('2016-06-20.0.voting.remove-deadline.sql', '96d0e78feca6917e329c6dfea7c3a581b98732f303d83c25376cf2727cd8faf6');
 insert into migrations (filename, hash) values ('2016-07-07.0.asset.issuance-totals-block.sql', 'be9df7c943c20c8a8231145fa73f6df029eec678a21115682d94e65858372b01');
 insert into migrations (filename, hash) values ('2016-07-08.0.core.drop-members.sql', '3fac6b9ad710c286e47aee3748e321902ceca3c80aaf1525c7d0934e762c53aa');
+insert into migrations (filename, hash) values ('2016-07-19.0.core.node-txs-unique.sql', 'e8a337edc26bb4c37d97b084f0e3167b8e7900e4dc676b3ffe90544376dc147d');

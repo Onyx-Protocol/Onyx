@@ -12,39 +12,46 @@ import (
 	"chain/errors"
 )
 
-func WriteIssuerTx(ctx context.Context, txHash string, data []byte, iNodeID string, assetIDs []string) (id string, err error) {
-	issuerQ := `
-		INSERT INTO issuer_txs (issuer_node_id, tx_hash, data)
-		VALUES ($1, $2, $3)
+// WriteIssuerTx records an issuance tx for this issuer to the database.
+func WriteIssuerTx(ctx context.Context, txHash string, data []byte, iNodeID string, ts time.Time, assetIDs []string) (id string, err error) {
+	const issuerQ = `
+		INSERT INTO issuer_txs (issuer_node_id, tx_hash, data, created_at)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (issuer_node_id, tx_hash) DO UPDATE SET data = excluded.data
 		RETURNING id
 	`
-	err = pg.QueryRow(ctx, issuerQ, iNodeID, txHash, data).Scan(&id)
+	err = pg.QueryRow(ctx, issuerQ, iNodeID, txHash, data, ts).Scan(&id)
 	if err != nil {
 		return "", errors.Wrap(err, "insert issuer tx")
 	}
 
-	assetQ := `
+	const assetQ = `
 		INSERT INTO issuer_txs_assets (issuer_tx_id, asset_id)
 		VALUES ($1, unnest($2::text[]))
+		ON CONFLICT (issuer_tx_id, asset_id) DO NOTHING
 	`
 	_, err = pg.Exec(ctx, assetQ, id, pg.Strings(assetIDs))
 	return id, errors.Wrap(err, "insert issuer tx for assets")
 }
 
-func WriteManagerTx(ctx context.Context, txHash string, data []byte, mNodeID string, accounts []string) (id string, err error) {
-	managerQ := `
-		INSERT INTO manager_txs (manager_node_id, tx_hash, data)
-		VALUES ($1, $2, $3)
+// WriteManagerTx records a transaction for this account manager to the
+// database.
+func WriteManagerTx(ctx context.Context, txHash string, data []byte, mNodeID string, ts time.Time, accounts []string) (id string, err error) {
+	const managerQ = `
+		INSERT INTO manager_txs (manager_node_id, tx_hash, data, created_at)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (manager_node_id, tx_hash) DO UPDATE SET data = excluded.data
 		RETURNING id
 	`
-	err = pg.QueryRow(ctx, managerQ, mNodeID, txHash, data).Scan(&id)
+	err = pg.QueryRow(ctx, managerQ, mNodeID, txHash, data, ts).Scan(&id)
 	if err != nil {
 		return "", errors.Wrap(err, "insert manager tx")
 	}
 
-	accountQ := `
+	const accountQ = `
 		INSERT INTO manager_txs_accounts (manager_tx_id, account_id)
 		VALUES ($1, unnest($2::text[]))
+		ON CONFLICT (manager_tx_id, account_id) DO NOTHING
 	`
 	_, err = pg.Exec(ctx, accountQ, id, pg.Strings(accounts))
 	return id, errors.Wrap(err, "insert manager tx for account")

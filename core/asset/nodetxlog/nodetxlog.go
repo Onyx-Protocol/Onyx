@@ -105,7 +105,7 @@ func Write(ctx context.Context, tx *bc.Tx, ts time.Time) error {
 		return errors.Wrap(err, "filtering tx")
 	}
 	for issuer, assetIDs := range issuerAssets {
-		_, err = appdb.WriteIssuerTx(ctx, tx.Hash.String(), filteredTx, issuer, assetIDs)
+		_, err = appdb.WriteIssuerTx(ctx, tx.Hash.String(), filteredTx, issuer, ts, assetIDs)
 		if err != nil {
 			return errors.Wrap(err, "writing issuer tx")
 		}
@@ -116,7 +116,7 @@ func Write(ctx context.Context, tx *bc.Tx, ts time.Time) error {
 		if err != nil {
 			return errors.Wrap(err, "filtering tx")
 		}
-		_, err = appdb.WriteManagerTx(ctx, tx.Hash.String(), filteredTx, nodeID, accountIDs)
+		_, err = appdb.WriteManagerTx(ctx, tx.Hash.String(), filteredTx, nodeID, ts, accountIDs)
 		if err != nil {
 			return errors.Wrap(err, "writing manager tx")
 		}
