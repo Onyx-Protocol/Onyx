@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
@@ -38,10 +40,8 @@ func mustParseHash(str string) bc.Hash {
 }
 
 func TestHistoricalOutput(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	fc, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -383,9 +383,8 @@ func TestGetTxTransfer(t *testing.T) {
 }
 
 func TestGetAssets(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore and mempool
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -443,9 +442,8 @@ func TestGetAssets(t *testing.T) {
 }
 
 func TestGetAsset(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore and mempool
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -511,9 +509,8 @@ func TestGetAsset(t *testing.T) {
 }
 
 func TestListUTXOsByAsset(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore and mempool
-	fc, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -568,9 +565,8 @@ func TestListUTXOsByAsset(t *testing.T) {
 }
 
 func TestListHistoricalOutputsByAsset(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB)) // should this use memstore? per TODO above.
-	fc, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

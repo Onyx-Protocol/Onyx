@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"chain/core/asset/assettest"
 	"chain/core/generator"
-	"chain/core/txdb"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 )
 
 func BenchmarkWithHistoricalOutputs(b *testing.B) {
@@ -25,9 +25,8 @@ func BenchmarkWithoutHistoricalOutputs(b *testing.B) {
 
 func benchmarkHistoricalOutputs(b *testing.B, historicalOutputs bool) {
 	for n := 0; n < b.N; n++ {
-		ctx := pgtest.NewContext(b)
-		store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-		fc, err := assettest.InitializeSigningGenerator(ctx, store, nil)
+		ctx := pg.NewContext(context.Background(), pgtest.NewTx(b))
+		fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -52,9 +51,8 @@ func benchmarkHistoricalOutputs(b *testing.B, historicalOutputs bool) {
 }
 
 func TestHistoricalOutputs(t *testing.T) {
-	ctx := pgtest.NewContext(t)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	fc, err := assettest.InitializeSigningGenerator(ctx, store, nil)
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
