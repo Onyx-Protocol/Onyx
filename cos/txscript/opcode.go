@@ -2208,7 +2208,7 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 		return ErrStackTooManyPubKeys
 	}
 	vm.numOps += numPubKeys
-	if vm.numOps > MaxOpsPerScript {
+	if vm.numOps > maxOpsPerScript {
 		return ErrStackTooManyOperations
 	}
 

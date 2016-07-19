@@ -32,6 +32,7 @@ import (
 	"chain/core/txdb"
 	"chain/core/utxodb"
 	"chain/cos"
+	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
@@ -76,6 +77,10 @@ var (
 	// optional features
 	historicalOutputs           = env.Bool("HISTORICAL_OUTPUTS", false)
 	historicalOutputsMaxAgeDays = env.Int("HISTORICAL_OUTPUTS_MAX_AGE_DAYS", 0)
+
+	// blockchain parameters
+	maxProgramOps       = env.Int("MAX_PROGRAM_OPS", 1000)
+	maxProgramStackSize = env.Int("MAX_PROGRAM_STACK", 1000)
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -149,6 +154,10 @@ func main() {
 			"buildcommit": buildCommit,
 		},
 	}))
+
+	// TODO(jackson): Propagate blockchain parameters to txscript via cos.FC.
+	txscript.SetMaxStackSize(*maxProgramStackSize)
+	txscript.SetMaxOpsPerScript(*maxProgramOps)
 
 	sql.EnableQueryLogging(*logQueries)
 	db, err := sql.Open("schemadb", *dbURL)

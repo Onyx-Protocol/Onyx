@@ -54,16 +54,9 @@ const (
 )
 
 const (
-	// maxStackSize is the maximum combined height of stack and alt stack
-	// during execution.
-	maxStackSize = 1000
-
 	// maxExecutionStackSize is the maximum number of stack frames that
 	// can be on the execution stack.
 	maxExecutionStackSize = 10
-
-	// maxScriptSize is the maximum allowed length of a raw script.
-	maxScriptSize = 10000
 )
 
 // halforder is used to tame ECDSA malleability (see BIP0062).
@@ -134,7 +127,7 @@ func (vm *Engine) executeOpcode(pop *parsedOpcode) error {
 	// Note that this includes OP_RESERVED which counts as a push operation.
 	if pop.opcode.value > OP_16 {
 		vm.numOps++
-		if vm.numOps > MaxOpsPerScript {
+		if vm.numOps > maxOpsPerScript {
 			return ErrStackTooManyOperations
 		}
 
@@ -242,7 +235,7 @@ func (vm *Engine) Step() (done bool, err error) {
 
 	// The number of elements in the combination of the data and alt stacks
 	// must not exceed the maximum number of stack elements allowed.
-	if vm.dstack.Depth()+vm.astack.Depth() > maxStackSize {
+	if int(vm.dstack.Depth()+vm.astack.Depth()) > maxStackSize {
 		return false, ErrStackOverflow
 	}
 	// The number of stack frames is also limited.
@@ -534,7 +527,7 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 		return errors.Wrapf(ErrStackNonPushOnly, "scriptSig: %s", scriptSigStr)
 	}
 
-	if len(scriptSig) > maxScriptSize || len(scriptPubKey) > maxScriptSize {
+	if len(scriptSig) > bc.MaxProgramByteLength || len(scriptPubKey) > bc.MaxProgramByteLength {
 		return ErrStackLongScript
 	}
 	parsedScriptSig, err := parseScript(scriptSig)

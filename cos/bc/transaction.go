@@ -221,11 +221,11 @@ func (ti *TxInput) readFrom(r io.Reader) (err error) {
 	ti.Previous.readFrom(r)
 	ti.AssetAmount.readFrom(r)
 
-	ti.PrevScript, err = blockchain.ReadBytes(r, scriptMaxByteLength)
+	ti.PrevScript, err = blockchain.ReadBytes(r, MaxProgramByteLength)
 	if err != nil {
 		return err
 	}
-	ti.SignatureScript, err = blockchain.ReadBytes(r, scriptMaxByteLength)
+	ti.SignatureScript, err = blockchain.ReadBytes(r, MaxProgramByteLength)
 	if err != nil {
 		return err
 	}
@@ -272,7 +272,7 @@ func (oc *OutputCommitment) readFrom(r io.Reader, assetVersion uint32) (err erro
 	oc.AssetAmount.readFrom(rb)
 	vmVersion, _ := blockchain.ReadUvarint(rb)
 	oc.VMVersion = uint32(vmVersion)
-	oc.ControlProgram, err = blockchain.ReadBytes(rb, scriptMaxByteLength)
+	oc.ControlProgram, err = blockchain.ReadBytes(rb, MaxProgramByteLength)
 	if err != nil {
 		return err
 	}

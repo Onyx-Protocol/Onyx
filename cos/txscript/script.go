@@ -19,10 +19,25 @@ import (
 
 // These are the constants specified for maximums in individual scripts.
 const (
-	MaxOpsPerScript       = 1000 // Max number of opcodes executed per script.
-	MaxPubKeysPerMultiSig = 20   // Multisig can't have more sigs than this.
-	MaxScriptElementSize  = 520  // Max bytes pushable to the stack.
+	MaxPubKeysPerMultiSig = 20  // Multisig can't have more sigs than this.
+	MaxScriptElementSize  = 520 // Max bytes pushable to the stack.
 )
+
+var (
+	maxStackSize    = 1000
+	maxOpsPerScript = 1000
+)
+
+// SetMaxStackSize sets the maximum combined height of stack and alt stack
+// during execution.
+func SetMaxStackSize(size int) {
+	maxStackSize = size
+}
+
+// SetMaxOpsPerScript sets the maximum number of opcodes executed per script.
+func SetMaxOpsPerScript(ops int) {
+	maxOpsPerScript = ops
+}
 
 var (
 	ScriptVersion1 = []byte{0x1}

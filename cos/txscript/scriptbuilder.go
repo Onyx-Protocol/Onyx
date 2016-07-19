@@ -5,6 +5,7 @@
 package txscript
 
 import (
+	"chain/cos/bc"
 	"encoding/binary"
 	"fmt"
 )
@@ -198,7 +199,7 @@ func (b *ScriptBuilder) AddData(data []byte) *ScriptBuilder {
 	if dataLen > MaxScriptElementSize {
 		str := fmt.Sprintf("adding a data element of %d bytes would "+
 			"exceed the maximum allowed script element size of %d",
-			dataLen, maxScriptSize)
+			dataLen, MaxScriptElementSize)
 		b.err = ErrScriptNotCanonical(str)
 		return b
 	}
@@ -282,8 +283,8 @@ func (b *ScriptBuilder) Script() ([]byte, error) {
 }
 
 func (b *ScriptBuilder) checkLen(l int) bool {
-	if l > maxScriptSize {
-		str := fmt.Sprintf("exceeded the maximum allowed canonical script length of %d", maxScriptSize)
+	if l > bc.MaxProgramByteLength {
+		str := fmt.Sprintf("exceeded the maximum allowed canonical script length of %d", bc.MaxProgramByteLength)
 		b.err = ErrScriptNotCanonical(str)
 		return false
 	}

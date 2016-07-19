@@ -15,10 +15,8 @@ import (
 const (
 	commitmentMaxByteLength = 1000000 // 1mb
 
-	// scriptMaxByteLength is the maximum length in bytes of a COS program.
-	// Its value is txscript.MaxOpsPerScript * txscript.MaxScriptElementSize
-	// which should be an upper bound for program length.
-	scriptMaxByteLength = 1000 * 520
+	// MaxProgramByteLength is the maximum length in bytes of a COS program.
+	MaxProgramByteLength = 1000000
 )
 
 // Block describes a complete block, including its header
@@ -209,11 +207,11 @@ func (bh *BlockHeader) readFrom(r io.Reader) (err error) {
 		return err
 	}
 	bh.Timestamp, _ = blockchain.ReadUvarint(r)
-	bh.SignatureScript, err = blockchain.ReadBytes(r, scriptMaxByteLength)
+	bh.SignatureScript, err = blockchain.ReadBytes(r, MaxProgramByteLength)
 	if err != nil {
 		return err
 	}
-	bh.OutputScript, err = blockchain.ReadBytes(r, scriptMaxByteLength)
+	bh.OutputScript, err = blockchain.ReadBytes(r, MaxProgramByteLength)
 	if err != nil {
 		return err
 	}

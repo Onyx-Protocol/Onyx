@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"testing"
 
+	"chain/cos/bc"
 	"chain/cos/txscript"
 )
 
@@ -267,7 +268,7 @@ func TestExceedMaxScriptSize(t *testing.T) {
 	t.Parallel()
 
 	// Start off by constructing a max size script.
-	maxScriptSize := txscript.TstMaxScriptSize
+	maxScriptSize := bc.MaxProgramByteLength
 	builder := txscript.NewScriptBuilder()
 	builder.Reset().AddFullData(make([]byte, maxScriptSize-3))
 	origScript, err := builder.Script()
@@ -322,7 +323,7 @@ func TestErroredScript(t *testing.T) {
 	// Start off by constructing a near max size script that has enough
 	// space left to add each data type without an error and force an
 	// initial error condition.
-	maxScriptSize := txscript.TstMaxScriptSize
+	maxScriptSize := bc.MaxProgramByteLength
 	builder := txscript.NewScriptBuilder()
 	builder.Reset().AddFullData(make([]byte, maxScriptSize-8))
 	origScript, err := builder.Script()
