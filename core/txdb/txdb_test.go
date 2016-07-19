@@ -62,7 +62,8 @@ func TestPoolTxs(t *testing.T) {
 }
 
 func TestGetTxs(t *testing.T) {
-	dbctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	dbctx := pg.NewContext(context.Background(), db)
 	pool := NewPool(pg.FromContext(dbctx).(*sql.DB))
 	ctx := context.Background()
 
@@ -111,7 +112,8 @@ func TestInsertTx(t *testing.T) {
 }
 
 func TestLatestBlock(t *testing.T) {
-	dbctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	dbctx := pg.NewContext(context.Background(), db)
 	pgtest.Exec(dbctx, t, `
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES

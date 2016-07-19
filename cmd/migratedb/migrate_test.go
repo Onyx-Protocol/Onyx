@@ -3,9 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/lib/pq"
@@ -19,19 +17,6 @@ const (
 	testDir = "testfiles"
 	schema  = "migratetest"
 )
-
-func newDB(t testing.TB, schemaPath string) (*sql.DB, string) {
-	ctx := context.Background()
-	if os.Getenv("CHAIN") == "" {
-		t.Log("warning: $CHAIN not set; probably can't find schema")
-	}
-	s, err := pgtest.Open(ctx, pgtest.DBURL, schemaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	runtime.SetFinalizer(s.DB, (*sql.DB).Close)
-	return s.DB, s.URL
-}
 
 func testPath(filename string) string {
 	return filepath.Join(testDir, filename)
@@ -117,7 +102,7 @@ func TestLoadMigrations(t *testing.T) {
 	}
 
 	for testNum, tc := range testCases {
-		db, _ := newDB(t, testPath(tc.schemaFile))
+		_, db := pgtest.NewDB(t, testPath(tc.schemaFile))
 		migrations, err := loadMigrations(db, testPath(tc.migrationDir))
 		if err != nil {
 			t.Error(err)
@@ -140,7 +125,7 @@ func TestLoadMigrations(t *testing.T) {
 }
 
 func TestApplyMigrationSQL(t *testing.T) {
-	db, url := newDB(t, "testfiles/empty.sql")
+	url, db := pgtest.NewDB(t, "testfiles/empty.sql")
 	migrations, err := loadMigrations(db, testPath("one-migration"))
 	if err != nil {
 		t.Fatal(err)
@@ -155,7 +140,7 @@ func TestApplyMigrationSQL(t *testing.T) {
 }
 
 func TestApplyMigrationGo(t *testing.T) {
-	db, url := newDB(t, "testfiles/empty.sql")
+	url, db := pgtest.NewDB(t, "testfiles/empty.sql")
 	migrations, err := loadMigrations(db, testPath("go-migration"))
 	if err != nil {
 		t.Fatal(err)

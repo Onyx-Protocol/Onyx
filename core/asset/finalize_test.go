@@ -27,7 +27,8 @@ import (
 // source, and then building two different txs with that same source,
 // but destinations w/ different addresses.
 func TestConflictingTxsInPool(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 
 	info, err := bootdb(ctx, t)
 	if err != nil {

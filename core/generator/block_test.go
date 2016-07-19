@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"chain/core/asset/assettest"
 	. "chain/core/generator"
 	"chain/core/txdb"
@@ -16,7 +18,8 @@ import (
 )
 
 func TestGetAndAddBlockSignatures(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
 	fc, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
@@ -45,7 +48,8 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 }
 
 func TestGetBlocks(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
 	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {

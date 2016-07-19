@@ -27,7 +27,8 @@ import (
 )
 
 func TestTransferConfirmed(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 
 	info, err := bootdb(ctx, t)
 	if err != nil {
@@ -59,7 +60,8 @@ func TestGenSpendApply(t *testing.T) {
 	// 4. Apply the block.
 	// Output should stay spent!
 
-	ctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 
 	info, err := bootdb(ctx, t)
 	if err != nil {
@@ -106,7 +108,8 @@ func TestGenSpendApply(t *testing.T) {
 }
 
 func BenchmarkTransferWithBlocks(b *testing.B) {
-	ctx := pgtest.NewContext(b)
+	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	info, err := bootdb(ctx, b)
 	if err != nil {
 		b.Fatal(err)
@@ -176,7 +179,8 @@ func BenchmarkGenerateBlock(b *testing.B) {
 
 func benchGenBlock(b *testing.B) {
 	b.StopTimer()
-	ctx := pgtest.NewContext(b)
+	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	pgtest.Exec(ctx, b, `
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES(
@@ -326,7 +330,8 @@ func transfer(ctx context.Context, t testing.TB, info *clientInfo, srcAcctID, de
 }
 
 func TestUpsertGenesisBlock(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 
 	pubkey, err := testutil.TestXPub.ECPubKey()
 	if err != nil {

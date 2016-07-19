@@ -98,7 +98,8 @@ func TestHistoricalOutput(t *testing.T) {
 }
 
 func TestListBlocks(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
 	pgtest.Exec(ctx, t, `
 		INSERT INTO blocks(block_hash, height, data, header)
@@ -178,7 +179,8 @@ func TestListBlocks(t *testing.T) {
 }
 
 func TestGetBlockSummary(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
 	blockHash := "4aa7e0df4a7332ad09039ca7bbc7298de74d4f28792042dbc12140ee2c71f9ac"
 	pgtest.Exec(ctx, t, `
@@ -212,7 +214,8 @@ func TestGetBlockSummary(t *testing.T) {
 }
 
 func TestGetTxIssuance(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	assetID, sigScript := mockAssetIDAndSigScript()
 
 	tx := bc.NewTx(bc.TxData{
@@ -292,7 +295,8 @@ func TestGetTxIssuance(t *testing.T) {
 }
 
 func TestGetTxTransfer(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	prevTxs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Outputs: []*bc.TxOutput{

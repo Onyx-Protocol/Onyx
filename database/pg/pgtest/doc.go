@@ -1,7 +1,7 @@
 /*
 
 Package pgtest provides support functions for tests that need to
-use Postgres. Most clients will just call NewTx or NewContext;
+use Postgres. Most clients will just call NewTx or NewDB;
 those that need more control can start a DB directly.
 
     func TestSimple(t *testing.T) {
@@ -10,15 +10,15 @@ those that need more control can start a DB directly.
     }
 
     func TestComplex(t *testing.T) {
-        ctx := pgtest.NewContext(t)
+        _, db := pgtest.NewDB(t, pgtest.SchemaPath)
         ...
-        dbtx, ctx, err := pg.Begin(ctx)
+        dbtx, err := db.Begin(ctx)
         ...
     }
 
 Prefer NewTx when the caller (usually a test function)
 can run in exactly one transaction.
-It's significantly faster than NewContext.
+It's significantly faster than NewDB.
 
 */
 package pgtest

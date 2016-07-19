@@ -44,9 +44,9 @@ type DB struct {
 	BaseURL string
 }
 
-// NewContext calls Open using the background context,
-// DBURL, and SchemaPath.
-// It puts the resulting sql.DB into a context.
+// NewDB calls Open using the background context,
+// DBURL, and schemaPath.
+// It returns the resulting sql.DB with its URL.
 //
 // It also registers a finalizer for the DB, so callers
 // can discard it without closing it explicitly, and the
@@ -55,18 +55,17 @@ type DB struct {
 //
 // Prefer NewTx whenever the caller can do its
 // work in exactly one transaction.
-func NewContext(t testing.TB) context.Context {
+func NewDB(t testing.TB, schemaPath string) (url string, db *sql.DB) {
 	ctx := context.Background()
 	if os.Getenv("CHAIN") == "" {
 		t.Log("warning: $CHAIN not set; probably can't find schema")
 	}
-	s, err := Open(ctx, DBURL, SchemaPath)
+	s, err := Open(ctx, DBURL, schemaPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	runtime.SetFinalizer(s.DB, (*sql.DB).Close)
-	ctx = pg.NewContext(ctx, s.DB)
-	return ctx
+	return s.URL, s.DB
 }
 
 // NewTx begins a new transaction on a database

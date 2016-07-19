@@ -195,7 +195,8 @@ func TestAccountTxsLimit(t *testing.T) {
 }
 
 func TestAccountTxsTimeLimit(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)

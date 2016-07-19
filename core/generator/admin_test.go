@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	. "chain/core/generator"
 	"chain/core/txdb"
 	"chain/cos/bc"
@@ -38,7 +40,8 @@ func txForFixture(tx *bc.TxData) string {
 }
 
 func TestGetSummary(t *testing.T) {
-	ctx := pgtest.NewContext(t)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
 
 	b1 := bc.Block{BlockHeader: bc.BlockHeader{Height: 1}}
