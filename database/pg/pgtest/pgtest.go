@@ -25,10 +25,19 @@ var (
 	dbpool pool
 )
 
+// DefaultURL is used by NewTX and NewDB if DBURL is the empty string.
 const DefaultURL = "postgres:///postgres?sslmode=disable"
 
 var (
-	DBURL      = os.Getenv("DB_URL_TEST")
+	// DBURL should be a URL of the form "postgres://...".
+	// If it is the empty string, DefaultURL will be used.
+	// The functions NewTx and NewDB use it to create and connect
+	// to new databases by replacing the database name component
+	// with a randomized name.
+	DBURL = os.Getenv("DB_URL_TEST")
+
+	// SchemaPath is a file containing a schema to initialize
+	// a database in NewTx.
 	SchemaPath = os.Getenv("CHAIN") + "/core/appdb/schema.sql"
 )
 
@@ -37,16 +46,9 @@ const (
 	timeFormat = "20060102150405"
 )
 
-type DB struct {
-	URL     string // connection string of the form "postgres://..."
-	DBName  string // randomized database name
-	DB      *sql.DB
-	BaseURL string
-}
-
-// NewDB calls Open using the background context,
-// DBURL, and schemaPath.
-// It returns the resulting sql.DB with its URL.
+// NewDB creates a database initialized
+// with the schema in schemaPath.
+// It returns the resulting *sql.DB with its URL.
 //
 // It also registers a finalizer for the DB, so callers
 // can discard it without closing it explicitly, and the
@@ -60,21 +62,24 @@ func NewDB(t testing.TB, schemaPath string) (url string, db *sql.DB) {
 	if os.Getenv("CHAIN") == "" {
 		t.Log("warning: $CHAIN not set; probably can't find schema")
 	}
-	s, err := Open(ctx, DBURL, schemaPath)
+	url, db, err := open(ctx, DBURL, schemaPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	runtime.SetFinalizer(s.DB, (*sql.DB).Close)
-	return s.URL, s.DB
+	runtime.SetFinalizer(db, (*sql.DB).Close)
+	return url, db
 }
 
-// NewTx begins a new transaction on a database
-// opened with Open, using DBURL and SchemaPath.
+// NewTx returns a new transaction on a database
+// initialized with the schema in SchemaPath.
 //
 // It also registers a finalizer for the Tx, so callers
-// can discard it without closing it explicitly, and the
+// can discard it without rolling back explicitly, and the
 // test program is nevertheless unlikely to run out of
 // connection slots in the server.
+// The caller should not commit the returned Tx; doing so
+// will prevent the underlying database from being reused
+// and so cause future calls to NewTx to be slower.
 func NewTx(t testing.TB) *sql.Tx {
 	runtime.GC() // give the finalizers a better chance to run
 	ctx := context.Background()
@@ -85,35 +90,32 @@ func NewTx(t testing.TB) *sql.Tx {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx, err := db.DB.Begin(ctx)
+	tx, err := db.Begin(ctx)
 	if err != nil {
-		db.DB.Close()
+		db.Close()
 		t.Fatal(err)
 	}
 	// NOTE(kr): we do not set a finalizer on the DB.
 	// It is closed explicitly, if necessary, by finalizeTx.
-	runtime.SetFinalizer(tx, db.finalizeTx)
+	runtime.SetFinalizer(tx, finaldb{db}.finalizeTx)
 	return tx
 }
 
-// Open opens a connection to the test database.
-// baseURL should be a URL of the form "postgres://.../postgres?...".
-// If it is the empty string, DefaultURL will be used.
-// The database name component will be replaced with a random name,
-// and the resulting URL will be in the returned DB.
-func Open(ctx context.Context, baseURL, schemaFile string) (*DB, error) {
+// open derives a new randomized test database name from baseURL,
+// initializes it with schemaFile, and opens it.
+func open(ctx context.Context, baseURL, schemaFile string) (newurl string, db *sql.DB, err error) {
 	if baseURL == "" {
 		baseURL = DefaultURL
 	}
 
 	u, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
 	ctldb, err := stdsql.Open("postgres", baseURL)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 	defer ctldb.Close()
 
@@ -126,42 +128,38 @@ func Open(ctx context.Context, baseURL, schemaFile string) (*DB, error) {
 	u.Path = "/" + dbname
 	_, err = ctldb.Exec("CREATE DATABASE " + pq.QuoteIdentifier(dbname))
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
 	schema, err := ioutil.ReadFile(schemaFile)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
-	db, err := sql.Open("postgres", u.String())
+	db, err = sql.Open("postgres", u.String())
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 	_, err = db.Exec(ctx, string(schema))
 	if err != nil {
 		db.Close()
-		return nil, err
+		return "", nil, err
 	}
-	s := &DB{
-		URL:     u.String(),
-		DBName:  dbname,
-		DB:      db,
-		BaseURL: baseURL,
-	}
-	return s, nil
+	return u.String(), db, nil
 }
 
-func (db *DB) finalizeTx(tx *sql.Tx) {
+type finaldb struct{ db *sql.DB }
+
+func (f finaldb) finalizeTx(tx *sql.Tx) {
 	ctx := context.Background()
 	go func() { // don't block the finalizer goroutine for too long
 		err := tx.Rollback(ctx)
 		if err != nil {
 			// If the tx has been committed (or if anything
 			// else goes wrong), we can't reuse db.
-			db.DB.Close()
+			f.db.Close()
 			return
 		}
-		dbpool.put(db)
+		dbpool.put(f.db)
 	}()
 }
 
@@ -197,16 +195,16 @@ func gcdbs(db *stdsql.DB) error {
 }
 
 // A pool contains initialized, pristine databases,
-// as returned from Open. It is the client's job to
+// as returned from open. It is the client's job to
 // make sure a database is in this state
 // (for example, by rolling back a transaction)
 // before returning it to the pool.
 type pool struct {
 	mu  sync.Mutex // protects dbs
-	dbs []*DB
+	dbs []*sql.DB
 }
 
-func (p *pool) get(ctx context.Context, url, path string) (*DB, error) {
+func (p *pool) get(ctx context.Context, url, path string) (*sql.DB, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -216,10 +214,11 @@ func (p *pool) get(ctx context.Context, url, path string) (*DB, error) {
 		return db, nil
 	}
 
-	return Open(ctx, url, path)
+	_, db, err := open(ctx, url, path)
+	return db, err
 }
 
-func (p *pool) put(db *DB) {
+func (p *pool) put(db *sql.DB) {
 	p.mu.Lock()
 	p.dbs = append(p.dbs, db)
 	p.mu.Unlock()

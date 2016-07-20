@@ -1,8 +1,8 @@
 /*
 
 Package pgtest provides support functions for tests that need to
-use Postgres. Most clients will just call NewTx or NewDB;
-those that need more control can start a DB directly.
+use Postgres. Most clients will just call NewTx;
+those that need more control can call NewDB.
 
     func TestSimple(t *testing.T) {
         dbtx := pgtest.NewTx(t)
