@@ -230,7 +230,6 @@ BEGIN
                   AND (inp_tx_hash IS NULL OR inp_tx_hash = tx_hash)
                   AND (inp_out_index IS NULL OR inp_out_index = index)
                   AND reservation_id IS NULL
-                  AND NOT spent_in_pool
             LIMIT 1
             FOR UPDATE
             SKIP LOCKED;
@@ -298,7 +297,6 @@ CREATE TABLE account_utxos (
     metadata bytea NOT NULL,
     confirmed_in bigint,
     block_pos integer,
-    spent_in_pool boolean DEFAULT false NOT NULL,
     block_timestamp bigint
 );
 
@@ -1464,3 +1462,4 @@ insert into migrations (filename, hash) values ('2016-06-20.0.voting.remove-dead
 insert into migrations (filename, hash) values ('2016-07-07.0.asset.issuance-totals-block.sql', 'be9df7c943c20c8a8231145fa73f6df029eec678a21115682d94e65858372b01');
 insert into migrations (filename, hash) values ('2016-07-08.0.core.drop-members.sql', '3fac6b9ad710c286e47aee3748e321902ceca3c80aaf1525c7d0934e762c53aa');
 insert into migrations (filename, hash) values ('2016-07-19.0.core.node-txs-unique.sql', 'e8a337edc26bb4c37d97b084f0e3167b8e7900e4dc676b3ffe90544376dc147d');
+insert into migrations (filename, hash) values ('2016-07-19.1.asset.drop-spent-in-pool.sql', 'a1543793493f0d100352e66bf27979ee34298459c975fae70d6cb53c49955b67');

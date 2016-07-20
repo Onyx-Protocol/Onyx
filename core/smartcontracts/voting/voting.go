@@ -26,7 +26,7 @@ func Connect(chain *cos.FC) {
 	// reconstructing ownership chains.
 	//
 	// TODO(jackson): Ensure crash recovery handles cos callbacks.
-	fc.AddBlockCallback(func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx) {
+	fc.AddBlockCallback(func(ctx context.Context, block *bc.Block) {
 		for i, tx := range block.Transactions {
 			err := updateIndexes(ctx, block.Height, i, tx)
 			if err != nil {

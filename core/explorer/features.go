@@ -32,7 +32,7 @@ func Connect(ctx context.Context, fc *cos.FC, historical bool, maxAgeDays int, i
 	maxAge := time.Duration(maxAgeDays*24) * time.Hour
 	var lastPrune time.Time
 
-	fc.AddBlockCallback(func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx) {
+	fc.AddBlockCallback(func(ctx context.Context, block *bc.Block) {
 		var (
 			newTxHashes   pg.Strings
 			newIndexes    pg.Uint32s

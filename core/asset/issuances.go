@@ -57,7 +57,7 @@ func PoolIssuances(ctx context.Context, pool *txdb.Pool) (Issuances, error) {
 
 // recordIssuances is a cos block callback that updates the issuance_totals
 // table with all issuances within the provided block.
-func recordIssuances(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
+func recordIssuances(ctx context.Context, b *bc.Block) {
 	issuances := calcIssuances(b.Transactions...)
 
 	var (

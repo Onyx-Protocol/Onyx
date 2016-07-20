@@ -72,7 +72,7 @@ var (
 	ErrBadStateHeight = errors.New("requested block height does not match current state")
 )
 
-type BlockCallback func(ctx context.Context, block *bc.Block, conflicts []*bc.Tx)
+type BlockCallback func(ctx context.Context, block *bc.Block)
 type TxCallback func(context.Context, *bc.Tx)
 
 // Store provides storage for blockchain data: blocks, asset

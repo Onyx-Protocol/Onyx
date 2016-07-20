@@ -104,7 +104,7 @@ func Connect(chain *cos.FC) {
 
 // Note, FC guarantees it will call the tx callback
 // for every tx in b before we get here.
-func addBlock(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
+func addBlock(ctx context.Context, b *bc.Block) {
 	deltxhash, delindex := prevoutDBKeys(b.Transactions...)
 	const utxoDelQ = `
 		DELETE FROM orderbook_utxos

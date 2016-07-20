@@ -103,7 +103,7 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 		return errors.Wrap(err, "block validation")
 	}
 
-	conflicts, err := fc.applyBlock(ctx, block, tree)
+	_, err = fc.applyBlock(ctx, block, tree)
 	if err != nil {
 		return errors.Wrap(err, "applying block")
 	}
@@ -115,7 +115,7 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 	}
 
 	for _, cb := range fc.blockCallbacks {
-		cb(ctx, block, conflicts)
+		cb(ctx, block)
 	}
 
 	err = fc.store.FinalizeBlock(ctx, block.Height)
@@ -246,7 +246,6 @@ func (fc *FC) applyBlock(
 	if err != nil {
 		return nil, errors.Wrap(err, "storing state tree")
 	}
-
 	conflicts, err := fc.rebuildPool(ctx, block)
 	return conflicts, errors.Wrap(err, "rebuilding pool")
 }

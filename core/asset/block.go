@@ -31,10 +31,10 @@ func Init(chain *cos.FC, isManager bool) {
 				log.Error(ctx, errors.Wrap(err, "adding account data"))
 			}
 		})
-		fc.AddBlockCallback(func(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
-			indexAccountUTXOs(ctx, b, conflicts)
+		fc.AddBlockCallback(func(ctx context.Context, b *bc.Block) {
+			indexAccountUTXOs(ctx, b)
 			saveAssetDefinitions(ctx, b)
-			recordIssuances(ctx, b, conflicts)
+			recordIssuances(ctx, b)
 			for _, tx := range b.Transactions {
 				// TODO(jackson): Once block timestamps are correctly populated
 				// in milliseconds, Write() should use b.Time().

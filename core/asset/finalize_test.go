@@ -151,7 +151,7 @@ func TestDeleteUTXOs(t *testing.T) {
 			},
 		}),
 	}}
-	AddBlock(ctx, block, nil) // actually addBlock; see export_test.go (ugh)
+	AddBlock(ctx, block) // actually addBlock; see export_test.go (ugh)
 
 	var n int
 	err = pg.QueryRow(ctx, `SELECT count(*) FROM account_utxos`).Scan(&n)

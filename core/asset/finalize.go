@@ -166,7 +166,7 @@ func publishTx(ctx context.Context, msg *bc.Tx) error {
 
 // Note, FC guarantees it will call the tx callback
 // for every tx in b before we get here.
-func indexAccountUTXOs(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
+func indexAccountUTXOs(ctx context.Context, b *bc.Block) {
 	var (
 		pos    []int32
 		txhash []string
@@ -205,28 +205,9 @@ func indexAccountUTXOs(ctx context.Context, b *bc.Block, conflicts []*bc.Tx) {
 		chainlog.Write(ctx, "block", b.Height, "error", errors.Wrap(err))
 		panic(err)
 	}
-
-	// For any outputs spent by a rejected tx, mark them as
-	// unspent again. If they were also spent by a confirmed
-	// tx, they were deleted just above.
-	err = markPrevSpentInPool(ctx, false, conflicts...)
-	if err != nil {
-		// TODO(kr): make these errors stop log replay (e.g. crash the process)
-		chainlog.Write(ctx, "block", b.Height, "error", errors.Wrap(err))
-	}
 }
 
 func addAccountData(ctx context.Context, tx *bc.Tx) error {
-	// Even if tx is already in a block by now,
-	// it doesn't hurt (other than performance)
-	// to mark its prevouts as "spent in pool" here.
-	// TODO(kr): avoid doing this if tx is
-	// confirmed at this point.
-	err := markPrevSpentInPool(ctx, true, tx)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
 	var outs []*state.Output
 	for i, out := range tx.Outputs {
 		stateOutput := &state.Output{
@@ -243,16 +224,6 @@ func addAccountData(ctx context.Context, tx *bc.Tx) error {
 
 	err = insertAccountOutputs(ctx, addrOuts)
 	return errors.Wrap(err, "updating pool outputs")
-}
-
-func markPrevSpentInPool(ctx context.Context, spent bool, txs ...*bc.Tx) error {
-	txhash, index := prevoutDBKeys(txs...)
-	const q = `
-		UPDATE account_utxos SET spent_in_pool=$1
-		WHERE (tx_hash, index) IN (SELECT unnest($2::text[]), unnest($3::integer[]))
-	`
-	_, err := pg.Exec(ctx, q, spent, txhash, index)
-	return err
 }
 
 func prevoutDBKeys(txs ...*bc.Tx) (txhash pg.Strings, index pg.Uint32s) {
