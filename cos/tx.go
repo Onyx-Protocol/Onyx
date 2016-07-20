@@ -61,8 +61,7 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 		return nil
 	}
 
-	tsMS := time.Now().UnixNano() / int64(time.Millisecond)
-	err = validation.ValidateTx(tree, poolPrevouts, tx, uint64(tsMS))
+	err = validation.ValidateTx(tree, poolPrevouts, tx, bc.NowMillis())
 	if err != nil {
 		return errors.Wrap(err, "tx rejected")
 	}
