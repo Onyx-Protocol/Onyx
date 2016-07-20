@@ -1190,12 +1190,13 @@ func opcodeCat(op *parsedOpcode, vm *Engine) error {
 }
 
 // DATA BEGIN SIZE OP_SUBSTR -> DATA[BEGIN:BEGIN+SIZE]
+// DATA OFFSET SIZE OP_SUBSTR -> DATA[OFFSET:OFFSET+SIZE]
 func opcodeSubstr(op *parsedOpcode, vm *Engine) error {
 	size, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
-	begin, err := vm.dstack.PopInt()
+	offset, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
@@ -1204,22 +1205,15 @@ func opcodeSubstr(op *parsedOpcode, vm *Engine) error {
 		return err
 	}
 
-	// Oleg's reference implementation silently clamps BEGIN and SIZE to
-	// the length of DATA, I'll do the same. --bg
-	if begin < 0 {
-		begin = 0
-	}
-	if begin > scriptNum(len(data)) {
-		begin = scriptNum(len(data))
-	}
-	if size < 0 {
-		size = 0
-	}
-	if begin+size > scriptNum(len(data)) {
-		size = scriptNum(len(data)) - begin
+	if offset < 0 || offset+size > scriptNum(len(data)) {
+		return ErrStackInvalidArgs
 	}
 
-	vm.dstack.PushByteArray(data[begin : begin+size])
+	if size < 0 {
+		return ErrStackInvalidArgs
+	}
+
+	vm.dstack.PushByteArray(data[offset : offset+size])
 	return nil
 }
 
@@ -1234,10 +1228,8 @@ func opcodeLeft(op *parsedOpcode, vm *Engine) error {
 		return err
 	}
 
-	// Oleg's reference implementation silently clamps SIZE to the
-	// length of DATA, I'll do the same.  -bg
-	if size > scriptNum(len(data)) {
-		size = scriptNum(len(data))
+	if size < 0 || size > scriptNum(len(data)) {
+		return ErrStackInvalidArgs
 	}
 
 	vm.dstack.PushByteArray(data[:size])
@@ -1255,9 +1247,7 @@ func opcodeRight(op *parsedOpcode, vm *Engine) error {
 		return err
 	}
 
-	// Oleg's reference implementation silently clamps SIZE to the
-	// length of DATA, I'll do the same.  -bg
-	if size > scriptNum(len(data)) {
+	if size < 0 || size > scriptNum(len(data)) {
 		size = scriptNum(len(data))
 	}
 
