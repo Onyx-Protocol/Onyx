@@ -1493,7 +1493,7 @@ func opcodeAbs(op *parsedOpcode, vm *Engine) error {
 }
 
 // opcodeNot treats the top item on the data stack as an integer and replaces
-// it with its "inverted" value (0 becomes 1, non-zero becomes 0).
+// it with true if it equals 0, and false otherwise.
 //
 // NOTE: While it would probably make more sense to treat the top item as a
 // boolean, and push the opposite, which is really what the intention of this
@@ -1509,17 +1509,12 @@ func opcodeNot(op *parsedOpcode, vm *Engine) error {
 	if err != nil {
 		return err
 	}
-
-	if m == 0 {
-		vm.dstack.PushInt(scriptNum(1))
-	} else {
-		vm.dstack.PushInt(scriptNum(0))
-	}
+	vm.dstack.PushBool(m == 0)
 	return nil
 }
 
 // opcode0NotEqual treats the top item on the data stack as an integer and
-// replaces it with either a 0 if it is zero, or a 1 if it is not zero.
+// replaces it with either false if it is zero, or true if it is not zero.
 //
 // Stack transformation (x2==0): [... x1 0] -> [... x1 0]
 // Stack transformation (x2!=0): [... x1 1] -> [... x1 1]
@@ -1529,11 +1524,7 @@ func opcode0NotEqual(op *parsedOpcode, vm *Engine) error {
 	if err != nil {
 		return err
 	}
-
-	if m != 0 {
-		m = 1
-	}
-	vm.dstack.PushInt(m)
+	vm.dstack.PushBool(m != 0)
 	return nil
 }
 
@@ -1627,64 +1618,79 @@ func opcodeMod(op *parsedOpcode, vm *Engine) error {
 	return nil
 }
 
-// N B OP_LSHIFT -> N << B (preserving sign)
+// X Y OP_LSHIFT -> X << Y (preserving sign)
 func opcodeLShift(op *parsedOpcode, vm *Engine) error {
-	b, _, err := vm.dstack.PopIntWithSize(1)
+	y, _, err := vm.dstack.PopIntWithSize(1)
 	if err != nil {
 		return err
 	}
-	if b < 0 {
-		return ErrNegativeShift
-	}
-	n, nbytes, err := vm.dstack.PopIntWithSize(8)
-	if nbytes*8+int(b) > 63 {
+
+	x, xbytes, err := vm.dstack.PopIntWithSize(8)
+	if xbytes*8+int(y) > 63 {
 		return ErrShiftOverflow
 	}
 	if err != nil {
 		return err
 	}
-	var isNegative bool
-	if n < 0 {
-		isNegative = true
-		n = -n
+
+	// If y is negative, LSHIFT behaves as RSHIFT with –y value.
+	if y < 0 {
+		x = rshift(x, uint(-y))
+	} else {
+		x = lshift(x, uint(y))
 	}
-	n <<= uint(b)
-	if isNegative {
-		n = -n
-	}
-	vm.dstack.PushInt(n)
+
+	vm.dstack.PushInt(x)
 	return nil
 }
 
-func rshift(n scriptNum, b uint) scriptNum {
-	var isNegative bool
-	if n < 0 {
-		isNegative = true
-		n = -n
-	}
-	n >>= b
-	if isNegative {
-		n = -n
-	}
-	return n
-}
-
-// N B OP_RSHIFT -> N >> B (preserving sign)
+// X Y OP_RSHIFT -> X >> Y (preserving sign)
 func opcodeRShift(op *parsedOpcode, vm *Engine) error {
-	b, _, err := vm.dstack.PopIntWithSize(8)
+	y, _, err := vm.dstack.PopIntWithSize(8)
 	if err != nil {
 		return err
 	}
-	if b < 0 {
-		return ErrNegativeShift
-	}
-	n, _, err := vm.dstack.PopIntWithSize(8)
+
+	x, _, err := vm.dstack.PopIntWithSize(8)
 	if err != nil {
 		return err
 	}
-	n = rshift(n, uint(b))
-	vm.dstack.PushInt(n)
+
+	// If y is negative, RSHIFT behaves as LSHIFT with –y value.
+	if y < 0 {
+		x = lshift(x, uint(-y))
+	} else {
+		x = rshift(x, uint(y))
+	}
+
+	vm.dstack.PushInt(x)
 	return nil
+}
+
+func rshift(x scriptNum, y uint) scriptNum {
+	var isNegative bool
+	if x < 0 {
+		isNegative = true
+		x = -x
+	}
+	x >>= y
+	if isNegative {
+		x = -x
+	}
+	return x
+}
+
+func lshift(x scriptNum, y uint) scriptNum {
+	var isNegative bool
+	if x < 0 {
+		isNegative = true
+		x = -x
+	}
+	x <<= y
+	if isNegative {
+		x = -x
+	}
+	return x
 }
 
 // opcodeBoolAnd treats the top two items on the data stack as integers.  When
@@ -1742,26 +1748,22 @@ func opcodeBoolOr(op *parsedOpcode, vm *Engine) error {
 }
 
 // opcodeNumEqual treats the top two items on the data stack as integers.  When
-// they are equal, they are replaced with a 1, otherwise a 0.
+// they are equal, they are replaced with true, otherwise false.
 //
-// Stack transformation (x1==x2): [... 5 5] -> [... 1]
-// Stack transformation (x1!=x2): [... 5 7] -> [... 0]
+// Stack transformation (x==y): [... 5 5] -> [... 1]
+// Stack transformation (x!=y): [... 5 7] -> [... 0]
 func opcodeNumEqual(op *parsedOpcode, vm *Engine) error {
-	v0, err := vm.dstack.PopInt()
+	y, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
 
-	v1, err := vm.dstack.PopInt()
+	x, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
 
-	if v0 == v1 {
-		vm.dstack.PushInt(scriptNum(1))
-	} else {
-		vm.dstack.PushInt(scriptNum(0))
-	}
+	vm.dstack.PushBool(x == y)
 
 	return nil
 }
@@ -1773,7 +1775,7 @@ func opcodeNumEqual(op *parsedOpcode, vm *Engine) error {
 // the top item on the data stack as a boolean value and verifies it evaluates
 // to true.  An error is returned if it does not.
 //
-// Stack transformation: [... x1 x2] -> [... bool] -> [...]
+// Stack transformation: [... x y] -> [... bool] -> [...]
 func opcodeNumEqualVerify(op *parsedOpcode, vm *Engine) error {
 	err := opcodeNumEqual(op, vm)
 	if err == nil {
@@ -1783,125 +1785,102 @@ func opcodeNumEqualVerify(op *parsedOpcode, vm *Engine) error {
 }
 
 // opcodeNumNotEqual treats the top two items on the data stack as integers.
-// When they are NOT equal, they are replaced with a 1, otherwise a 0.
+// When they are NOT equal, they are replaced with true, otherwise false.
 //
-// Stack transformation (x1==x2): [... 5 5] -> [... 0]
-// Stack transformation (x1!=x2): [... 5 7] -> [... 1]
+// Stack transformation (x==y): [... 5 5] -> [... 0]
+// Stack transformation (x!=y): [... 5 7] -> [... 1]
 func opcodeNumNotEqual(op *parsedOpcode, vm *Engine) error {
-	v0, err := vm.dstack.PopInt()
+	y, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
 
-	v1, err := vm.dstack.PopInt()
+	x, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
 
-	if v0 != v1 {
-		vm.dstack.PushInt(scriptNum(1))
-	} else {
-		vm.dstack.PushInt(scriptNum(0))
-	}
-
+	vm.dstack.PushBool(x != y)
 	return nil
 }
 
 // opcodeLessThan treats the top two items on the data stack as integers.  When
-// the second-to-top item is less than the top item, they are replaced with a 1,
-// otherwise a 0.
+// the second-to-top item is less than the top item, they are replaced with true,
+// otherwise false.
 //
-// Stack transformation: [... x1 x2] -> [... bool]
+// Stack transformation: [... x y] -> [... bool]
 func opcodeLessThan(op *parsedOpcode, vm *Engine) error {
-	v0, err := vm.dstack.PopInt()
+	y, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
 
-	v1, err := vm.dstack.PopInt()
+	x, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
 
-	if v1 < v0 {
-		vm.dstack.PushInt(scriptNum(1))
-	} else {
-		vm.dstack.PushInt(scriptNum(0))
-	}
-
+	vm.dstack.PushBool(x < y)
 	return nil
 }
 
 // opcodeGreaterThan treats the top two items on the data stack as integers.
 // When the second-to-top item is greater than the top item, they are replaced
-// with a 1, otherwise a 0.
+// with true, otherwise false.
 //
-// Stack transformation: [... x1 x2] -> [... bool]
+// Stack transformation: [... x y] -> [... bool]
 func opcodeGreaterThan(op *parsedOpcode, vm *Engine) error {
-	v0, err := vm.dstack.PopInt()
+	y, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
 
-	v1, err := vm.dstack.PopInt()
+	x, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
 
-	if v1 > v0 {
-		vm.dstack.PushInt(scriptNum(1))
-	} else {
-		vm.dstack.PushInt(scriptNum(0))
-	}
+	vm.dstack.PushBool(x > y)
 	return nil
 }
 
 // opcodeLessThanOrEqual treats the top two items on the data stack as integers.
 // When the second-to-top item is less than or equal to the top item, they are
-// replaced with a 1, otherwise a 0.
+// replaced with true, otherwise false.
 //
-// Stack transformation: [... x1 x2] -> [... bool]
+// Stack transformation: [... x y] -> [... bool]
 func opcodeLessThanOrEqual(op *parsedOpcode, vm *Engine) error {
-	v0, err := vm.dstack.PopInt()
+	y, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
 
-	v1, err := vm.dstack.PopInt()
+	x, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
 
-	if v1 <= v0 {
-		vm.dstack.PushInt(scriptNum(1))
-	} else {
-		vm.dstack.PushInt(scriptNum(0))
-	}
+	vm.dstack.PushBool(x <= y)
 	return nil
 }
 
 // opcodeGreaterThanOrEqual treats the top two items on the data stack as
 // integers.  When the second-to-top item is greater than or equal to the top
-// item, they are replaced with a 1, otherwise a 0.
+// item, they are replaced with true, otherwise false.
 //
-// Stack transformation: [... x1 x2] -> [... bool]
+// Stack transformation: [... x y] -> [... bool]
 func opcodeGreaterThanOrEqual(op *parsedOpcode, vm *Engine) error {
-	v0, err := vm.dstack.PopInt()
+	y, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
 
-	v1, err := vm.dstack.PopInt()
+	x, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
 	}
 
-	if v1 >= v0 {
-		vm.dstack.PushInt(scriptNum(1))
-	} else {
-		vm.dstack.PushInt(scriptNum(0))
-	}
-
+	vm.dstack.PushBool(x >= y)
 	return nil
 }
 
