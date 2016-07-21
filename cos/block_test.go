@@ -228,7 +228,7 @@ func TestGenerateBlock(t *testing.T) {
 		}),
 	}
 	for _, tx := range txs {
-		err := fc.applyTx(ctx, tx)
+		err := fc.pool.Insert(ctx, tx)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

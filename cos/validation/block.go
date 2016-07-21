@@ -7,7 +7,6 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/patricia"
-	"chain/cos/state"
 	"chain/cos/txscript"
 	"chain/errors"
 	"chain/net/trace/span"
@@ -51,7 +50,14 @@ func validateBlock(ctx context.Context, tree *patricia.Tree, prevBlock, block *b
 	// TODO(erywalder): consider writing to a copy of the state tree
 	// of the one provided and make the caller call ApplyBlock as well
 	for _, tx := range block.Transactions {
-		err := ValidateTx(tree, state.OutputSet{}, tx, block.Timestamp)
+		// TODO(jackson): This ValidateTx call won't be necessary if this
+		// tx is in the pool. It'll be cleaner to implement once prevout
+		// commitments are up to spec.
+		err := ValidateTx(tx)
+		if err != nil {
+			return err
+		}
+		err = ConfirmTx(tree, tx, block.Timestamp)
 		if err != nil {
 			return err
 		}

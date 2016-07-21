@@ -16,9 +16,20 @@ var stubGenesisHash = bc.Hash{}
 // ErrBadTx is returned for transactions failing validation
 var ErrBadTx = errors.New("invalid transaction")
 
-// ValidateTxInputs just validates that the tx inputs are present
-// and unspent in the state tree or pool.
-func ValidateTxInputs(tree *patricia.Tree, poolOutputs state.OutputSet, tx *bc.Tx) error {
+// ConfirmTx validates the given transaction against the given state tree
+// before it's added to a block. If tx is invalid, it returns a non-nil
+// error describing why.
+//
+// Tx should have already been validated (with `ValidateTx`) when the tx
+// was added to the pool.
+func ConfirmTx(tree *patricia.Tree, tx *bc.Tx, timestampMS uint64) error {
+	if timestampMS < tx.MinTime {
+		return errors.WithDetail(ErrBadTx, "block time is before transaction min time")
+	}
+	if tx.MaxTime > 0 && timestampMS > tx.MaxTime {
+		return errors.WithDetail(ErrBadTx, "block time is after transaction max time")
+	}
+
 	for inIndex, txin := range tx.Inputs {
 		if txin.IsIssuance() {
 			continue
@@ -27,83 +38,21 @@ func ValidateTxInputs(tree *patricia.Tree, poolOutputs state.OutputSet, tx *bc.T
 		// Lookup the prevout in the blockchain state tree.
 		k, val := state.OutputTreeItem(state.Prevout(txin))
 		n := tree.Lookup(k)
-		if n != nil {
-			if n.Hash() != val.Value().Hash() {
-				return errors.WithDetailf(ErrBadTx, "output %s for input %d is invalid", txin.Previous.String(), inIndex)
-			}
-			continue
-		}
-
-		// Check if the prevout exists in the tx pool.
-		if !poolOutputs.Contains(state.Prevout(txin)) {
-			return errors.WithDetailf(ErrBadTx, "output %s for input %d is invalid or already spent", txin.Previous.String(), inIndex)
+		if n == nil || n.Hash() != val.Value().Hash() {
+			return errors.WithDetailf(ErrBadTx, "output %s for input %d is invalid", txin.Previous.String(), inIndex)
 		}
 	}
 	return nil
 }
 
-// ValidateTx validates the given transaction against the given state tree.
-// If tx is invalid, it returns a non-nil error describing why.
-func ValidateTx(tree *patricia.Tree, poolOutputs state.OutputSet, tx *bc.Tx, timestampMS uint64) error {
-	err := txIsWellFormed(tx)
-	if err != nil {
-		return errors.Wrap(err, "well-formed test")
-	}
-
-	if timestampMS < tx.MinTime {
-		return errors.WithDetail(ErrBadTx, "block or current time is before transaction min time")
-	}
-
-	if tx.MaxTime > 0 && timestampMS > tx.MaxTime {
-		return errors.WithDetail(ErrBadTx, "block or current time is after transaction max time")
-	}
-
-	// If this is an issuance tx, check its prevout hash against the
-	// previous block hash if we have one.
-	// NOTE: review this when we implement import inputs.
-	// Maybe we'll need to have undo ADP.
-	// TODO(erykwalder): some type of uniqueness check
-
-	err = ValidateTxInputs(tree, poolOutputs, tx)
-	if err != nil {
-		return errors.Wrap(err, "validating inputs")
-	}
-
-	engine, err := txscript.NewReusableEngine(&tx.TxData, txscript.StandardVerifyFlags)
-	if err != nil {
-		return fmt.Errorf("cannot create script engine: %s", err)
-	}
-
-	if false { // change to true for quick debug tracing
-		txscript.SetLogWriter(os.Stdout, "trace")
-		defer txscript.DisableLog()
-	}
-
-	for i, input := range tx.Inputs {
-		if input.IsIssuance() {
-			// TODO: implement issuance scheme
-			continue
-		}
-		err = engine.Prepare(input.PrevScript, i)
-		if err != nil {
-			err = errors.Wrapf(ErrBadTx, "cannot prepare script engine to process input %d: %s", i, err)
-			return errors.WithDetailf(err, "invalid script on input %d", i)
-		}
-		if err = engine.Execute(); err != nil {
-			pkScriptStr, _ := txscript.DisasmString(input.PrevScript)
-			sigScriptStr, _ := txscript.DisasmString(input.SignatureScript)
-			return errors.WithDetailf(ErrBadTx, "validation failed in script execution, input %d (sigscript[%s] pkscript[%s])", i, sigScriptStr, pkScriptStr)
-		}
-	}
-	return nil
-}
-
-// txIsWellFormed checks whether tx passes context-free validation:
+// ValidateTx checks whether tx passes context-free validation:
 // - inputs and outputs balance
 // - no duplicate prevouts
-// If tx is well formed, it returns a nil error; otherwise, it
+// - input scripts pass
+//
+// If tx is well formed and valid, it returns a nil error; otherwise, it
 // returns an error describing why tx is invalid.
-func txIsWellFormed(tx *bc.Tx) error {
+func ValidateTx(tx *bc.Tx) error {
 	if len(tx.Inputs) == 0 {
 		return errors.WithDetail(ErrBadTx, "inputs are missing")
 	}
@@ -164,6 +113,31 @@ func txIsWellFormed(tx *bc.Tx) error {
 	for asset, val := range parity {
 		if val > 0 || (val < 0 && !wildcardIssuance[asset]) {
 			return errors.WithDetailf(ErrBadTx, "amounts for asset %s are not balanced on inputs and outputs", asset)
+		}
+	}
+
+	engine, err := txscript.NewReusableEngine(&tx.TxData, txscript.StandardVerifyFlags)
+	if err != nil {
+		return fmt.Errorf("cannot create script engine: %s", err)
+	}
+	if false { // change to true for quick debug tracing
+		txscript.SetLogWriter(os.Stdout, "trace")
+		defer txscript.DisableLog()
+	}
+	for i, input := range tx.Inputs {
+		if input.IsIssuance() {
+			// TODO: implement issuance scheme
+			continue
+		}
+		err = engine.Prepare(input.PrevScript, i)
+		if err != nil {
+			err = errors.Wrapf(ErrBadTx, "cannot prepare script engine to process input %d: %s", i, err)
+			return errors.WithDetailf(err, "invalid script on input %d", i)
+		}
+		if err = engine.Execute(); err != nil {
+			pkScriptStr, _ := txscript.DisasmString(input.PrevScript)
+			sigScriptStr, _ := txscript.DisasmString(input.SignatureScript)
+			return errors.WithDetailf(ErrBadTx, "validation failed in script execution, input %d (sigscript[%s] pkscript[%s])", i, sigScriptStr, pkScriptStr)
 		}
 	}
 	return nil

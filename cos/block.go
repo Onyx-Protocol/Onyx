@@ -11,7 +11,6 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/patricia"
-	"chain/cos/state"
 	"chain/cos/txscript"
 	"chain/cos/validation"
 	"chain/errors"
@@ -72,7 +71,7 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 	ctx = span.NewContextSuffix(ctx, "-validate-all")
 	defer span.Finish(ctx)
 	for _, tx := range txs {
-		if validation.ValidateTxInputs(tree, state.OutputSet{}, tx) == nil {
+		if validation.ConfirmTx(tree, tx, b.Timestamp) == nil {
 			validation.ApplyTx(tree, tx)
 			b.Transactions = append(b.Transactions, tx)
 		}
@@ -278,7 +277,7 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		// Have to explicitly check that tx is not in block
 		// because issuance transactions are always valid, even duplicates.
 		// TODO(erykwalder): Remove this check when issuances become unique
-		txErr := validation.ValidateTxInputs(tree, state.OutputSet{}, tx)
+		txErr := validation.ConfirmTx(tree, tx, block.Timestamp)
 		if txErr == nil && !txInBlock[tx.Hash] {
 			validation.ApplyTx(tree, tx)
 		} else {

@@ -1,15 +1,11 @@
 package cos
 
 import (
-	"time"
-
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/state"
 	"chain/cos/validation"
 	"chain/errors"
-	"chain/metrics"
 )
 
 // AddTx inserts tx into the set of "pending" transactions available
@@ -27,23 +23,6 @@ import (
 // It is an error to call AddTx before the genesis block has landed.
 // Use WaitForBlock to guarantee this.
 func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
-	prev, err := fc.store.LatestBlock(ctx)
-	if err != nil {
-		return errors.Wrap(err, "fetch latest block")
-	}
-	tree, err := fc.store.StateTree(ctx, prev.Height)
-	if err != nil {
-		return errors.Wrap(err, "loading state tree")
-	}
-
-	// tx's prevouts may consume outputs from other transactions
-	// in the pool. We load any applicable pool prevouts to supplement
-	// the state tree.
-	poolPrevouts, err := fc.getPoolPrevouts(ctx, tx)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
 	// Check if the transaction already exists in the tx pool.
 	poolTxs, err := fc.pool.GetTxs(ctx, tx.Hash)
 	if err != nil {
@@ -61,63 +40,26 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 		return nil
 	}
 
-	err = validation.ValidateTx(tree, poolPrevouts, tx, bc.NowMillis())
+	// Check if this transaction's max time has already elapsed.
+	// We purposely do not check the min time, because we can still
+	// add it to the pool if it hasn't been reached yet.
+	if tx.MaxTime > 0 && bc.NowMillis() > tx.MaxTime {
+		return errors.WithDetail(validation.ErrBadTx, "transaction max time has passed")
+	}
+
+	err = validation.ValidateTx(tx)
 	if err != nil {
 		return errors.Wrap(err, "tx rejected")
 	}
 
-	err = validation.ApplyTx(tree, tx)
+	// Update persistent tx pool state.
+	err = fc.pool.Insert(ctx, tx)
 	if err != nil {
-		return errors.Wrap(err, "applying tx")
-	}
-
-	// Update persistent tx pool state
-	err = fc.applyTx(ctx, tx)
-	if err != nil {
-		return errors.Wrap(err, "apply tx")
+		return errors.Wrap(err, "applying tx to store")
 	}
 
 	for _, cb := range fc.txCallbacks {
 		cb(ctx, tx)
 	}
 	return nil
-}
-
-// applyTx updates the pool to contain the provided tx.
-func (fc *FC) applyTx(ctx context.Context, tx *bc.Tx) (err error) {
-	defer metrics.RecordElapsed(time.Now())
-
-	err = fc.pool.Insert(ctx, tx)
-	return errors.Wrap(err, "applying tx to store")
-}
-
-// getPoolPrevouts takes a transaction and looks up all of its prevouts
-// in the pool. It returns all of the matching outpoints that it finds
-// in the pool.
-//
-// It does not verify that the outputs are unspent in the pool.
-func (fc *FC) getPoolPrevouts(ctx context.Context, tx *bc.Tx) (prevouts state.OutputSet, err error) {
-	hashes := make([]bc.Hash, 0, len(tx.Inputs))
-	for _, txin := range tx.Inputs {
-		hashes = append(hashes, txin.Previous.Hash)
-	}
-
-	txs, err := fc.pool.GetTxs(ctx, hashes...)
-	if err != nil {
-		return prevouts, err
-	}
-
-	var poolPrevouts []*state.Output
-	for _, txin := range tx.Inputs {
-		prevTx, ok := txs[txin.Previous.Hash]
-		if !ok {
-			continue
-		}
-		if txin.Previous.Index >= uint32(len(prevTx.Outputs)) {
-			continue
-		}
-		o := prevTx.Outputs[txin.Previous.Index]
-		poolPrevouts = append(poolPrevouts, state.NewOutput(*o, txin.Previous))
-	}
-	return state.NewOutputSet(poolPrevouts...), nil
 }
