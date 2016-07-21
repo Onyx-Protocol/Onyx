@@ -68,9 +68,10 @@ then
 fi
 
 prurl=https://api.github.com/repos/$proj/issues/$pr
-mfile=$(mktemp -t gitland)
-cfile=$(mktemp -t gitland)
-trap "rm $mfile $cfile" EXIT
+wdir=$(mktemp -d -t gitland)
+mfile=$wdir/message
+cfile=$wdir/COMMIT_EDITMSG
+trap "rm $mfile $cfile && rmdir $wdir" EXIT
 curl -sn $prurl|jq -r '.title+"\n\n"+.body+"\n"' >$mfile
 echo Closes "#$pr." >>$mfile
 echo Reviewers: $reviewby >>$mfile
