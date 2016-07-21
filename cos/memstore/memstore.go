@@ -12,9 +12,10 @@ import (
 // All its fields are exported
 // so tests can directly inspect their values.
 type MemStore struct {
-	Blocks   []*bc.Block
-	BlockTxs map[bc.Hash]*bc.Tx
-	State    *patricia.Tree
+	Blocks      []*bc.Block
+	BlockTxs    map[bc.Hash]*bc.Tx
+	State       *patricia.Tree
+	StateHeight uint64
 }
 
 // New returns a new MemStore
@@ -44,6 +45,7 @@ func (m *MemStore) SaveBlock(ctx context.Context, b *bc.Block) error {
 
 func (m *MemStore) SaveStateTree(ctx context.Context, height uint64, tree *patricia.Tree) error {
 	m.State = patricia.Copy(tree)
+	m.StateHeight = height
 	return nil
 }
 
@@ -54,11 +56,11 @@ func (m *MemStore) LatestBlock(context.Context) (*bc.Block, error) {
 	return m.Blocks[len(m.Blocks)-1], nil
 }
 
-func (m *MemStore) StateTree(context.Context, uint64) (*patricia.Tree, error) {
+func (m *MemStore) LatestStateTree(context.Context) (*patricia.Tree, uint64, error) {
 	if m.State == nil {
 		m.State = patricia.NewTree(nil)
 	}
-	return patricia.Copy(m.State), nil
+	return patricia.Copy(m.State), m.StateHeight, nil
 }
 
 func (m *MemStore) FinalizeBlock(context.Context, uint64) error { return nil }

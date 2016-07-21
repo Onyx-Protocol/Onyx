@@ -6,7 +6,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/patricia"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/trace/span"
@@ -64,16 +63,4 @@ func (s *Store) setLatestBlockCache(b *bc.Block, cacheLocked bool) {
 	// when another process has landed a block and we should
 	// invalidate this cache.
 	s.latestBlockCache.block = b
-}
-
-// setLatestStateTreeCache stores the given patricia tree as the most recent
-// state tree in the cache.
-func (s *Store) setLatestStateTreeCache(tree *patricia.Tree, height uint64, cacheLocked bool) {
-	if !cacheLocked {
-		s.latestBlockCache.mutex.Lock()
-		defer s.latestBlockCache.mutex.Unlock()
-	}
-
-	s.latestStateTreeCache.height = height
-	s.latestStateTreeCache.tree = tree
 }

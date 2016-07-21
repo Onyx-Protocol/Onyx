@@ -47,23 +47,26 @@ func storeStateTreeSnapshot(ctx context.Context, db pg.DB, pt *patricia.Tree, bl
 	return errors.Wrap(err, "writing state tree to database")
 }
 
-func getStateTreeSnapshot(ctx context.Context, db pg.DB, blockHeight uint64) (*patricia.Tree, error) {
+func getStateTreeSnapshot(ctx context.Context, db pg.DB) (*patricia.Tree, uint64, error) {
 	const q = `
-		SELECT data FROM state_trees WHERE height = $1
+		SELECT data, height FROM state_trees ORDER BY height DESC LIMIT 1
 	`
-	var data []byte
-	var snapshot storage.StateTree
+	var (
+		data     []byte
+		height   uint64
+		snapshot storage.StateTree
+	)
 
-	err := db.QueryRow(ctx, q, blockHeight).Scan(&data)
+	err := db.QueryRow(ctx, q).Scan(&data, &height)
 	if err == sql.ErrNoRows {
-		return patricia.NewTree(nil), nil
+		return patricia.NewTree(nil), 0, nil
 	} else if err != nil {
-		return nil, errors.Wrap(err, "retrieving state tree blob")
+		return nil, height, errors.Wrap(err, "retrieving state tree blob")
 	}
 
 	err = proto.Unmarshal(data, &snapshot)
 	if err != nil {
-		return nil, errors.Wrap(err, "unmarshaling state tree proto")
+		return nil, height, errors.Wrap(err, "unmarshaling state tree proto")
 	}
 
 	nodes := make([]*patricia.Node, 0, len(snapshot.Nodes))
@@ -78,5 +81,5 @@ func getStateTreeSnapshot(ctx context.Context, db pg.DB, blockHeight uint64) (*p
 		}
 		nodes = append(nodes, patricia.NewNode(node.Key, v, node.Leaf))
 	}
-	return patricia.NewTree(nodes), nil
+	return patricia.NewTree(nodes), height, nil
 }

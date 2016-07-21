@@ -85,7 +85,7 @@ type TxCallback func(context.Context, *bc.Tx)
 type Store interface {
 	GetTxs(context.Context, ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error)
 	LatestBlock(context.Context) (*bc.Block, error)
-	StateTree(context.Context, uint64) (*patricia.Tree, error)
+	LatestStateTree(context.Context) (*patricia.Tree, uint64, error)
 
 	SaveBlock(context.Context, *bc.Block) error
 	FinalizeBlock(context.Context, uint64) error

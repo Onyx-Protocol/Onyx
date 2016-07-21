@@ -81,15 +81,17 @@ func TestReadWriteStateTree(t *testing.T) {
 			t.Fatalf("Error writing state tree to db: %s\n", err)
 		}
 
-		loadedTree, err := getStateTreeSnapshot(ctx, dbtx, uint64(i))
+		loadedTree, height, err := getStateTreeSnapshot(ctx, dbtx)
 		if err != nil {
 			t.Fatalf("Error reading state tree from db: %s\n", err)
 		}
 
+		if height != uint64(i) {
+			t.Fatalf("%d: state tree height got=%d want=%d", i, height, uint64(i))
+		}
 		if loadedTree.RootHash() != tree.RootHash() {
 			t.Fatalf("%d: Wrote %s to db, read %s from db\n", i, tree.RootHash(), loadedTree.RootHash())
 		}
 		tree = loadedTree
 	}
-
 }

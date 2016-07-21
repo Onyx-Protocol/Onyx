@@ -23,11 +23,6 @@ type Store struct {
 		mutex sync.Mutex
 		block *bc.Block
 	}
-	latestStateTreeCache struct {
-		mutex  sync.Mutex
-		height uint64
-		tree   *patricia.Tree
-	}
 }
 
 var _ cos.Store = (*Store)(nil)
@@ -74,28 +69,13 @@ func (s *Store) SaveBlock(ctx context.Context, block *bc.Block) error {
 // SaveStateTree saves a state tree snapshot to the database.
 func (s *Store) SaveStateTree(ctx context.Context, height uint64, tree *patricia.Tree) error {
 	err := storeStateTreeSnapshot(ctx, s.db, tree, height)
-	if err != nil {
-		return errors.Wrap(err, "saving state tree")
-	}
-	s.setLatestStateTreeCache(patricia.Copy(tree), height, false)
-	return nil
+	return errors.Wrap(err, "saving state tree")
 }
 
-// StateTree returns the state tree of the block at the provided height.
-// It will cache the most recently requested state tree, which should be
-// the most recent one.
-func (s *Store) StateTree(ctx context.Context, height uint64) (*patricia.Tree, error) {
-	s.latestStateTreeCache.mutex.Lock()
-	defer s.latestStateTreeCache.mutex.Unlock()
-
-	if s.latestStateTreeCache.tree == nil || s.latestStateTreeCache.height != height {
-		tree, err := getStateTreeSnapshot(ctx, pg.FromContext(ctx), height)
-		if err != nil {
-			return nil, err
-		}
-		s.setLatestStateTreeCache(tree, height, true)
-	}
-	return patricia.Copy(s.latestStateTreeCache.tree), nil
+// LatestStateTree returns the most recent state tree stored in
+// the database and its corresponding block height.
+func (s *Store) LatestStateTree(ctx context.Context) (*patricia.Tree, uint64, error) {
+	return getStateTreeSnapshot(ctx, s.db)
 }
 
 func (s *Store) FinalizeBlock(ctx context.Context, height uint64) error {

@@ -63,9 +63,9 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 		},
 	}
 
-	tree, err := fc.store.StateTree(ctx, prev.Height)
+	tree, err := fc.stateTree(ctx, prev.Height)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "loading state tree")
+		return nil, nil, err
 	}
 
 	ctx = span.NewContextSuffix(ctx, "-validate-all")
@@ -92,9 +92,9 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	tree, err := fc.store.StateTree(ctx, block.Height-1)
+	tree, err := fc.stateTree(ctx, block.Height-1)
 	if err != nil {
-		return errors.Wrap(err, "loading state tree")
+		return err
 	}
 
 	err = fc.validateBlock(ctx, block, tree)
@@ -152,6 +152,18 @@ func (fc *FC) setHeight(h uint64) {
 	fc.height.cond.Broadcast()
 }
 
+func (fc *FC) stateTree(ctx context.Context, expectedHeight uint64) (*patricia.Tree, error) {
+	// TODO(jackson): Store the state tree on FC.
+	tree, height, err := fc.store.LatestStateTree(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "loading state tree")
+	}
+	if height != expectedHeight {
+		return nil, errors.New("missing state tree for block")
+	}
+	return tree, nil
+}
+
 // ValidateBlockForSig performs validation on an incoming _unsigned_
 // block in preparation for signing it.  By definition it does not
 // execute the sigscript.
@@ -160,24 +172,24 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	defer span.Finish(ctx)
 
 	var (
-		prevBlock *bc.Block
-		tree      = patricia.NewTree(nil)
+		prev *bc.Block
+		tree = patricia.NewTree(nil)
 	)
 
 	if block.Height > 1 {
 		var err error
-		prevBlock, err = fc.LatestBlock(ctx) // TODO(kr): GetBlock(block.Height-1)
+		prev, err = fc.LatestBlock(ctx) // TODO(kr): GetBlock(block.Height-1)
 		if err != nil {
 			return errors.Wrap(err, "getting latest known block")
 		}
 
-		tree, err = fc.store.StateTree(ctx, prevBlock.Height)
+		tree, err = fc.stateTree(ctx, prev.Height)
 		if err != nil {
-			return errors.Wrap(err, "loading state tree")
+			return err
 		}
 	}
 
-	err := validation.ValidateBlockForSig(ctx, tree, prevBlock, block)
+	err := validation.ValidateBlockForSig(ctx, tree, prev, block)
 	return errors.Wrap(err, "validation")
 }
 
@@ -268,9 +280,9 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		return nil, errors.Wrap(err, "")
 	}
 
-	tree, err := fc.store.StateTree(ctx, block.Height)
+	tree, err := fc.stateTree(ctx, block.Height)
 	if err != nil {
-		return nil, errors.Wrap(err, "loading state tree")
+		return nil, err
 	}
 
 	for _, tx := range txs {
