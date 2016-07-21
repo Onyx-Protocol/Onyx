@@ -49,6 +49,7 @@ var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
 // single error-type value.  If any invocation yields a non-nil
 // result, ForQueryRows will abort and return it.
 func ForQueryRows(ctx context.Context, query string, args ...interface{}) error {
+	// TODO(kr): take a pg.DB here: ForQueryRows(context.Context, pg.DB, string, ...)
 	if len(args) == 0 {
 		return errors.Wrap(ErrBadRequest, "too few arguments")
 	}

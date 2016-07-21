@@ -9,7 +9,6 @@ import (
 
 	"chain/core/appdb"
 	"chain/core/asset"
-	"chain/core/explorer"
 	"chain/cos/bc"
 	"chain/cos/hdkey"
 	"chain/database/pg"
@@ -358,7 +357,7 @@ func getAccountTxsOrActivity(ctx context.Context, accountID string, doActivity b
 }
 
 // GET /v3/accounts/:accountID/balance
-func accountBalance(ctx context.Context, accountID string) (interface{}, error) {
+func (a *api) accountBalance(ctx context.Context, accountID string) (interface{}, error) {
 	var err error
 	if err := accountAuthz(ctx, accountID); err != nil {
 		return nil, err
@@ -408,7 +407,7 @@ func accountBalance(ctx context.Context, accountID string) (interface{}, error) 
 			assetID = &aid
 		}
 
-		amts, last, err = explorer.HistoricalBalancesByAccount(ctx, accountID, timestamp, assetID, query.Prev, query.Limit)
+		amts, last, err = a.explorer.HistoricalBalancesByAccount(ctx, accountID, timestamp, assetID, query.Prev, query.Limit)
 		if err != nil {
 			return nil, err
 		}

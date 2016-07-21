@@ -76,7 +76,7 @@ var (
 
 	// optional features
 	historicalOutputs           = env.Bool("HISTORICAL_OUTPUTS", false)
-	historicalOutputsMaxAgeDays = env.Int("HISTORICAL_OUTPUTS_MAX_AGE_DAYS", 0)
+	historicalOutputsMaxAgeDays = env.Int("HISTORICAL_OUTPUTS_MAX_AGE_DAYS", 0) // TODO(kr): use env.Duration
 
 	// blockchain parameters
 	maxProgramOps       = env.Int("MAX_PROGRAM_OPS", 1000)
@@ -190,7 +190,8 @@ func main() {
 		orderbook.Connect(fc)
 		voting.Connect(fc)
 	}
-	explorer.Connect(ctx, fc, *historicalOutputs, *historicalOutputsMaxAgeDays, *isManager)
+	historicalOutputsMaxAge := time.Duration(*historicalOutputsMaxAgeDays) * 24 * time.Hour // TODO(kr): use env.Duration
+	explorer := explorer.New(fc, db, store, pool, historicalOutputsMaxAge, *historicalOutputs, *isManager)
 
 	// Note, it's important for any services that will install blockchain
 	// callbacks to be initialized before the generator and the http server,
@@ -229,7 +230,7 @@ func main() {
 		}
 	})
 
-	h := core.Handler(*nouserSecret, localSigner, store, pool)
+	h := core.Handler(*nouserSecret, localSigner, store, pool, explorer)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}

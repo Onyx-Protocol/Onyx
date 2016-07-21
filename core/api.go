@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"chain/core/appdb"
+	"chain/core/explorer"
 	"chain/core/generator"
 	"chain/core/signer"
 	"chain/core/txdb"
@@ -25,9 +26,9 @@ const (
 
 // Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
 // will be used as the password for routes starting with /nouser/.
-func Handler(nouserSecret string, signer *signer.Signer, store *txdb.Store, pool *txdb.Pool) chainhttp.Handler {
+func Handler(nouserSecret string, signer *signer.Signer, store *txdb.Store, pool *txdb.Pool, explorer *explorer.Explorer) chainhttp.Handler {
 	h := pat.New()
-	a := &api{store: store, pool: pool}
+	a := &api{store: store, pool: pool, explorer: explorer}
 
 	pwHandler := httpjson.NewServeMux(writeHTTPError)
 	pwHandler.HandleFunc("POST", "/v3/login", login)
@@ -69,8 +70,9 @@ func nouserHandler() chainhttp.HandlerFunc {
 }
 
 type api struct {
-	store *txdb.Store
-	pool  *txdb.Pool
+	store    *txdb.Store
+	pool     *txdb.Pool
+	explorer *explorer.Explorer
 }
 
 func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
@@ -105,7 +107,7 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/issuer-nodes/:inodeID/activity", getIssuerNodeActivity)
 	h.HandleFunc("GET", "/v3/issuer-nodes/:inodeID/transactions", getIssuerNodeTxs)
 	h.HandleFunc("GET", "/v3/accounts/:accountID", getAccount)
-	h.HandleFunc("GET", "/v3/accounts/:accountID/balance", accountBalance)
+	h.HandleFunc("GET", "/v3/accounts/:accountID/balance", a.accountBalance)
 	h.HandleFunc("GET", "/v3/accounts/:accountID/activity", getAccountActivity)
 	h.HandleFunc("GET", "/v3/accounts/:accountID/transactions", getAccountTxs)
 	h.HandleFunc("POST", "/v3/accounts/:accountID/addresses", createAddr)

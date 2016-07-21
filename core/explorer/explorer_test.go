@@ -13,11 +13,11 @@ import (
 	"chain/core/generator"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
+	"chain/cos"
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/testutil"
 )
@@ -40,26 +40,25 @@ func mustParseHash(str string) bc.Hash {
 }
 
 func TestHistoricalOutput(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
+	dbctx := pg.NewContext(ctx, dbtx)
+	fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	Connect(ctx, fc, true, 0, true)
+	// side effect: register Explorer as a fc block callback
+	New(fc, dbtx, nil, nil, 0, true, true)
 
-	account1ID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
-	account2ID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
-	assetID := assettest.CreateAssetFixture(ctx, t, "", "", "")
-	assettest.IssueAssetsFixture(ctx, t, assetID, 100, account1ID)
+	account1ID := assettest.CreateAccountFixture(dbctx, t, "", "", nil)
+	account2ID := assettest.CreateAccountFixture(dbctx, t, "", "", nil)
+	assetID := assettest.CreateAssetFixture(dbctx, t, "", "", "")
+	assettest.IssueAssetsFixture(dbctx, t, assetID, 100, account1ID)
 
-	count := func() int64 {
-		const q = `SELECT amount FROM explorer_outputs WHERE asset_id = $1 AND account_id = $2 AND NOT UPPER_INF(timespan)`
-
-		var n int64
-		err := pg.ForQueryRows(ctx, q, assetID, account1ID, func(amt int64) {
-			n += amt
-		})
+	count := func() (n int64) {
+		const q = `SELECT coalesce(sum(amount), 0) FROM explorer_outputs WHERE asset_id = $1 AND account_id = $2 AND NOT UPPER_INF(timespan)`
+		err := dbtx.QueryRow(ctx, q, assetID, account1ID).Scan(&n)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -70,7 +69,7 @@ func TestHistoricalOutput(t *testing.T) {
 		t.Errorf("expected 0 historical units, got %d", n)
 	}
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = generator.MakeBlock(dbctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,14 +79,14 @@ func TestHistoricalOutput(t *testing.T) {
 	}
 
 	srcs := []*txbuilder.Source{asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: assetID, Amount: 10}, account1ID, nil, nil, nil)}
-	dests := []*txbuilder.Destination{assettest.AccountDest(ctx, t, account2ID, assetID, 10)}
-	assettest.Transfer(ctx, t, srcs, dests)
+	dests := []*txbuilder.Destination{assettest.AccountDest(dbctx, t, account2ID, assetID, 10)}
+	assettest.Transfer(dbctx, t, srcs, dests)
 
 	if n := count(); n != 0 {
 		t.Errorf("expected 0 historical units, got %d", n)
 	}
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = generator.MakeBlock(dbctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,10 +97,16 @@ func TestHistoricalOutput(t *testing.T) {
 }
 
 func TestListBlocks(t *testing.T) {
+	ctx := context.Background()
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
-	pgtest.Exec(ctx, t, `
+	store, pool := txdb.New(db)
+	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := New(fc, db, store, pool, 0, true, true)
+
+	pgtest.Exec(pg.NewContext(ctx, db), t, `
 		INSERT INTO blocks(block_hash, height, data, header)
 		VALUES(
 			$1,
@@ -163,7 +168,7 @@ func TestListBlocks(t *testing.T) {
 		wantLast: "",
 	}}
 	for _, c := range cases {
-		got, gotLast, err := ListBlocks(ctx, store, c.prev, c.limit)
+		got, gotLast, err := e.ListBlocks(ctx, c.prev, c.limit)
 		if err != nil {
 			t.Errorf("ListBlocks(%v, %v) unexpected err = %q", c.prev, c.limit, err)
 			continue
@@ -179,11 +184,18 @@ func TestListBlocks(t *testing.T) {
 }
 
 func TestGetBlockSummary(t *testing.T) {
+	ctx := context.Background()
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
-	store := txdb.NewStore(pg.FromContext(ctx).(*sql.DB))
+	store, pool := txdb.New(db)
+	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e := New(fc, db, store, pool, 0, true, true)
+
 	blockHash := "4aa7e0df4a7332ad09039ca7bbc7298de74d4f28792042dbc12140ee2c71f9ac"
-	pgtest.Exec(ctx, t, `
+	pgtest.Exec(pg.NewContext(ctx, db), t, `
 		INSERT INTO blocks(block_hash, height, data, header)
 		VALUES(
 			$1,
@@ -193,7 +205,7 @@ func TestGetBlockSummary(t *testing.T) {
 		);
 	`, blockHash)
 
-	got, err := GetBlockSummary(ctx, store, blockHash)
+	got, err := e.GetBlockSummary(ctx, blockHash)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,8 +226,16 @@ func TestGetBlockSummary(t *testing.T) {
 }
 
 func TestGetTxIssuance(t *testing.T) {
+	ctx := context.Background()
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	store, pool := txdb.New(db) // TODO(kr): use memstore and mempool
+	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e := New(fc, db, store, pool, 0, true, true)
+
 	assetID, sigScript := mockAssetIDAndSigScript()
 
 	tx := bc.NewTx(bc.TxData{
@@ -241,9 +261,7 @@ func TestGetTxIssuance(t *testing.T) {
 		Transactions: []*bc.Tx{tx},
 	}
 
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore and mempool
-
-	err := pool.Insert(ctx, tx)
+	err = pool.Insert(ctx, tx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -255,7 +273,7 @@ func TestGetTxIssuance(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := GetTx(ctx, store, pool, tx.Hash.String())
+	got, err := e.GetTx(ctx, tx.Hash.String())
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -295,8 +313,16 @@ func TestGetTxIssuance(t *testing.T) {
 }
 
 func TestGetTxTransfer(t *testing.T) {
+	ctx := context.Background()
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	store, pool := txdb.New(db) // TODO(kr): use memstore and mempool
+	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e := New(fc, db, store, pool, 0, true, true)
+
 	prevTxs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Outputs: []*bc.TxOutput{
@@ -331,14 +357,13 @@ func TestGetTxTransfer(t *testing.T) {
 		Transactions: append(prevTxs, tx),
 	}
 
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB)) // TODO(kr): use memstore
-	err := store.SaveBlock(ctx, blk)
+	err = store.SaveBlock(ctx, blk)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	got, err := GetTx(ctx, store, pool, tx.Hash.String())
+	got, err := e.GetTx(ctx, tx.Hash.String())
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -387,31 +412,35 @@ func TestGetTxTransfer(t *testing.T) {
 }
 
 func TestGetAssets(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
+	dbctx := pg.NewContext(ctx, dbtx)
+	fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
+	e := New(fc, dbtx, nil, nil, 0, true, true)
 
-	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
-	asset1 := assettest.CreateAssetFixture(ctx, t, in0, "asset-1", "def-1")
+	in0 := assettest.CreateIssuerNodeFixture(dbctx, t, "", "in-0", nil, nil)
+
+	asset0 := assettest.CreateAssetFixture(dbctx, t, in0, "asset-0", "def-0")
+	asset1 := assettest.CreateAssetFixture(dbctx, t, in0, "asset-1", "def-1")
 
 	def0 := []byte("{\n  \"s\": \"def-0\"\n}")
 	defPtr0 := bc.HashAssetDefinition(def0).String()
 
-	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
+	assettest.IssueAssetsFixture(dbctx, t, asset0, 58, "")
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = generator.MakeBlock(dbctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
-	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
+	assettest.IssueAssetsFixture(dbctx, t, asset0, 12, "")
+	assettest.IssueAssetsFixture(dbctx, t, asset1, 10, "")
 
-	assets, err := GetAssets(ctx, []bc.AssetID{
+	assets, err := e.GetAssets(ctx, []bc.AssetID{
 		asset0,
 		asset1,
 		otherAssetID,
@@ -446,29 +475,33 @@ func TestGetAssets(t *testing.T) {
 }
 
 func TestGetAsset(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
+	dbctx := pg.NewContext(ctx, dbtx)
+	fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", nil, nil)
+	e := New(fc, dbtx, nil, nil, 0, true, true)
 
-	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "def-0")
-	asset1 := assettest.CreateAssetFixture(ctx, t, in0, "asset-1", "def-1")
+	in0 := assettest.CreateIssuerNodeFixture(dbctx, t, "", "in-0", nil, nil)
+
+	asset0 := assettest.CreateAssetFixture(dbctx, t, in0, "asset-0", "def-0")
+	asset1 := assettest.CreateAssetFixture(dbctx, t, in0, "asset-1", "def-1")
 
 	def0 := []byte("{\n  \"s\": \"def-0\"\n}")
 	defPtr0 := bc.HashAssetDefinition(def0).String()
 
-	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
+	assettest.IssueAssetsFixture(dbctx, t, asset0, 58, "")
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = generator.MakeBlock(dbctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assettest.IssueAssetsFixture(ctx, t, asset0, 12, "")
-	assettest.IssueAssetsFixture(ctx, t, asset1, 10, "")
+	assettest.IssueAssetsFixture(dbctx, t, asset0, 12, "")
+	assettest.IssueAssetsFixture(dbctx, t, asset1, 10, "")
 
 	examples := []struct {
 		id      bc.AssetID
@@ -501,7 +534,7 @@ func TestGetAsset(t *testing.T) {
 	for _, ex := range examples {
 		t.Log("Example", ex.id)
 
-		got, err := GetAsset(ctx, ex.id)
+		got, err := e.GetAsset(ctx, ex.id)
 		if errors.Root(err) != ex.wantErr {
 			t.Fatalf("error:\ngot:  %v\nwant: %v", errors.Root(err), ex.wantErr)
 		}
@@ -513,24 +546,27 @@ func TestGetAsset(t *testing.T) {
 }
 
 func TestListUTXOsByAsset(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	dbtx := pgtest.NewTx(t)
+	ctx := context.Background()
+	dbctx := pg.NewContext(ctx, dbtx)
+	fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	Connect(ctx, fc, true, 0, true)
 
-	projectID := assettest.CreateProjectFixture(ctx, t, "")
-	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
-	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
-	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
-	accountID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
+	e := New(fc, dbtx, nil, nil, 0, true, true)
 
-	tx := assettest.Issue(ctx, t, assetID, []*txbuilder.Destination{
-		assettest.AccountDest(ctx, t, accountID, assetID, 1),
+	projectID := assettest.CreateProjectFixture(dbctx, t, "")
+	issuerNodeID := assettest.CreateIssuerNodeFixture(dbctx, t, projectID, "", nil, nil)
+	managerNodeID := assettest.CreateManagerNodeFixture(dbctx, t, projectID, "", nil, nil)
+	assetID := assettest.CreateAssetFixture(dbctx, t, issuerNodeID, "", "")
+	accountID := assettest.CreateAccountFixture(dbctx, t, managerNodeID, "", nil)
+
+	tx := assettest.Issue(dbctx, t, assetID, []*txbuilder.Destination{
+		assettest.AccountDest(dbctx, t, accountID, assetID, 1),
 	})
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = generator.MakeBlock(dbctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -548,7 +584,7 @@ func TestListUTXOsByAsset(t *testing.T) {
 		Metadata: []byte{},
 	}}
 
-	got, _, err := ListUTXOsByAsset(ctx, assetID, "", 10000)
+	got, _, err := e.ListUTXOsByAsset(ctx, assetID, "", 10000)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
@@ -569,24 +605,26 @@ func TestListUTXOsByAsset(t *testing.T) {
 }
 
 func TestListHistoricalOutputsByAsset(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
+	dbctx := pg.NewContext(ctx, dbtx)
+	fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	Connect(ctx, fc, true, 0, true)
-	projectID := assettest.CreateProjectFixture(ctx, t, "")
-	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
-	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
-	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
-	uncountedAssetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "") // this asset should never show up.
-	account1ID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
-	account2ID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
-	tx := assettest.Issue(ctx, t, assetID, []*txbuilder.Destination{
-		assettest.AccountDest(ctx, t, account1ID, assetID, 100),
+	e := New(fc, dbtx, nil, nil, 0, true, true)
+	projectID := assettest.CreateProjectFixture(dbctx, t, "")
+	issuerNodeID := assettest.CreateIssuerNodeFixture(dbctx, t, projectID, "", nil, nil)
+	managerNodeID := assettest.CreateManagerNodeFixture(dbctx, t, projectID, "", nil, nil)
+	assetID := assettest.CreateAssetFixture(dbctx, t, issuerNodeID, "", "")
+	uncountedAssetID := assettest.CreateAssetFixture(dbctx, t, issuerNodeID, "", "") // this asset should never show up.
+	account1ID := assettest.CreateAccountFixture(dbctx, t, managerNodeID, "", nil)
+	account2ID := assettest.CreateAccountFixture(dbctx, t, managerNodeID, "", nil)
+	tx := assettest.Issue(dbctx, t, assetID, []*txbuilder.Destination{
+		assettest.AccountDest(dbctx, t, account1ID, assetID, 100),
 	})
-	assettest.IssueAssetsFixture(ctx, t, uncountedAssetID, 200, account1ID)
+	assettest.IssueAssetsFixture(dbctx, t, uncountedAssetID, 200, account1ID)
 
 	check := func(got []*TxOutput, gotLast string) {
 		zero := uint32(0)
@@ -626,27 +664,27 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 	}
 
 	// before we make a block, we shouldn't have any historical outputs
-	got, _, err := ListHistoricalOutputsByAsset(ctx, assetID, time.Now(), "", 10000)
+	got, _, err := e.ListHistoricalOutputsByAsset(ctx, assetID, time.Now(), "", 10000)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
 	checkEmpty(got)
 
 	// for non-historical queries, we should check that we have the same result
-	got, _, err = ListHistoricalOutputsByAsset(ctx, assetID, time.Time{}, "", 10000)
+	got, _, err = e.ListHistoricalOutputsByAsset(ctx, assetID, time.Time{}, "", 10000)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
 	checkEmpty(got)
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = generator.MakeBlock(dbctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
 	ownershipTime := time.Now()
-	got, gotLast, err := ListHistoricalOutputsByAsset(ctx, assetID, ownershipTime, "", 10000)
+	got, gotLast, err := e.ListHistoricalOutputsByAsset(ctx, assetID, ownershipTime, "", 10000)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
@@ -656,33 +694,33 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// spend that UTXO, and make sure it comes back at ownershipTime.
-	assettest.Transfer(ctx, t, []*txbuilder.Source{
+	assettest.Transfer(dbctx, t, []*txbuilder.Source{
 		asset.NewAccountSource(ctx, &bc.AssetAmount{AssetID: assetID, Amount: 100}, account1ID, nil, nil, nil),
 	}, []*txbuilder.Destination{
-		assettest.AccountDest(ctx, t, account2ID, assetID, 100),
+		assettest.AccountDest(dbctx, t, account2ID, assetID, 100),
 	})
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = generator.MakeBlock(dbctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	got, gotLast, err = ListHistoricalOutputsByAsset(ctx, assetID, ownershipTime, "", 10000)
+	got, gotLast, err = e.ListHistoricalOutputsByAsset(ctx, assetID, ownershipTime, "", 10000)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
 	check(got, gotLast)
 
 	// issue another 200 units of the first asset. This shouldn't change the results of our query.
-	assettest.IssueAssetsFixture(ctx, t, assetID, 200, account1ID)
-	_, err = generator.MakeBlock(ctx)
+	assettest.IssueAssetsFixture(dbctx, t, assetID, 200, account1ID)
+	_, err = generator.MakeBlock(dbctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	got, gotLast, err = ListHistoricalOutputsByAsset(ctx, assetID, ownershipTime, "", 10000)
+	got, gotLast, err = e.ListHistoricalOutputsByAsset(ctx, assetID, ownershipTime, "", 10000)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}

@@ -12,11 +12,11 @@ import (
 )
 
 func (a *api) getBlockSummary(ctx context.Context, hash string) (*explorer.BlockSummary, error) {
-	return explorer.GetBlockSummary(ctx, a.store, hash)
+	return a.explorer.GetBlockSummary(ctx, hash)
 }
 
 func (a *api) getTx(ctx context.Context, txHashStr string) (*explorer.Tx, error) {
-	return explorer.GetTx(ctx, a.store, a.pool, txHashStr)
+	return a.explorer.GetTx(ctx, txHashStr)
 }
 
 func (a *api) getAsset(ctx context.Context, assetID string) (*explorer.Asset, error) {
@@ -25,7 +25,7 @@ func (a *api) getAsset(ctx context.Context, assetID string) (*explorer.Asset, er
 	if err != nil {
 		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "%q is an invalid asset ID", assetID)
 	}
-	return explorer.GetAsset(ctx, decodedAssetID)
+	return a.explorer.GetAsset(ctx, decodedAssetID)
 }
 
 func (a *api) listBlocks(ctx context.Context) (interface{}, error) {
@@ -34,7 +34,7 @@ func (a *api) listBlocks(ctx context.Context) (interface{}, error) {
 		return nil, err
 	}
 
-	list, last, err := explorer.ListBlocks(ctx, a.store, prev, limit)
+	list, last, err := a.explorer.ListBlocks(ctx, prev, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (a *api) listBlocks(ctx context.Context) (interface{}, error) {
 func (a *api) getExplorerAssets(ctx context.Context, req struct {
 	AssetIDs []bc.AssetID `json:"asset_ids"`
 }) (interface{}, error) {
-	assets, err := explorer.GetAssets(ctx, req.AssetIDs)
+	assets, err := a.explorer.GetAssets(ctx, req.AssetIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (a *api) listExplorerUTXOsByAsset(ctx context.Context, assetID string) (int
 			return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid timestamp: %q", timestamp)
 		}
 	}
-	list, last, err := explorer.ListHistoricalOutputsByAsset(ctx, bc.AssetID(h), ts, prev, limit)
+	list, last, err := a.explorer.ListHistoricalOutputsByAsset(ctx, bc.AssetID(h), ts, prev, limit)
 	if err != nil {
 		return nil, err
 	}

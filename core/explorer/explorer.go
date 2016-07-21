@@ -8,6 +8,7 @@ import (
 
 	"chain/core/asset"
 	"chain/core/txdb"
+	"chain/cos"
 	"chain/cos/bc"
 	"chain/cos/state"
 	"chain/cos/txscript"
@@ -15,6 +16,42 @@ import (
 	chainjson "chain/encoding/json"
 	"chain/errors"
 )
+
+// Explorer records blockchain history
+// and provides functions to look up
+// blocks, transactions, and other records.
+type Explorer struct {
+	db         pg.DB
+	store      *txdb.Store // TODO(kr): get rid of this
+	pool       *txdb.Pool  // TODO(kr): get rid of this
+	maxAge     time.Duration
+	historical bool
+	isManager  bool
+
+	lastPrune time.Time
+}
+
+// New makes a new Explorer storing its state in db,
+// with a block callback in fc for indexing utxos in the
+// explorer_outputs table and occasionally pruning ones spent
+// spent more than maxAgeDays ago.  (If maxAgeDays is <= 0, no
+// pruning is done.)
+func New(fc *cos.FC, db pg.DB, store *txdb.Store, pool *txdb.Pool, maxAge time.Duration, historical, isManager bool) *Explorer {
+	e := &Explorer{
+		db:         db,
+		store:      store,
+		pool:       pool,
+		historical: historical,
+		maxAge:     maxAge,
+		isManager:  isManager,
+	}
+	fc.AddBlockCallback(e.addBlock)
+	return e
+}
+
+func (e *Explorer) addBlock(ctx context.Context, block *bc.Block) {
+	e.indexHistoricalBlock(ctx, block)
+}
 
 // ListBlocksItem is returned by ListBlocks
 type ListBlocksItem struct {
@@ -27,8 +64,8 @@ type ListBlocksItem struct {
 // ListBlocks returns an array of ListBlocksItems
 // as well as a pagination pointer for the last item
 // in the list.
-func ListBlocks(ctx context.Context, store *txdb.Store, prev string, limit int) ([]ListBlocksItem, string, error) {
-	blocks, err := store.ListBlocks(ctx, prev, limit)
+func (e *Explorer) ListBlocks(ctx context.Context, prev string, limit int) ([]ListBlocksItem, string, error) {
+	blocks, err := e.store.ListBlocks(ctx, prev, limit)
 	if err != nil {
 		return nil, "", err
 	}
@@ -57,8 +94,8 @@ type BlockSummary struct {
 }
 
 // GetBlockSummary returns header data for the requested block.
-func GetBlockSummary(ctx context.Context, store *txdb.Store, hash string) (*BlockSummary, error) {
-	block, err := store.GetBlock(ctx, hash)
+func (e *Explorer) GetBlockSummary(ctx context.Context, hash string) (*BlockSummary, error) {
+	block, err := e.store.GetBlock(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -116,17 +153,17 @@ type TxOutput struct {
 // GetTx returns a transaction with additional details added.
 // TODO(jackson): Explorer should do its own indexing of transactions
 // and not rely on the Store or Pool.
-func GetTx(ctx context.Context, store *txdb.Store, pool *txdb.Pool, txHashStr string) (*Tx, error) {
+func (e *Explorer) GetTx(ctx context.Context, txHashStr string) (*Tx, error) {
 	hash, err := bc.ParseHash(txHashStr)
 	if err != nil {
 		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
 
-	poolTxs, err := pool.GetTxs(ctx, hash)
+	poolTxs, err := e.pool.GetTxs(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
-	bcTxs, err := store.GetTxs(ctx, hash)
+	bcTxs, err := e.store.GetTxs(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +175,7 @@ func GetTx(ctx context.Context, store *txdb.Store, pool *txdb.Pool, txHashStr st
 		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
 
-	blockHeader, err := store.GetTxBlockHeader(ctx, hash)
+	blockHeader, err := e.store.GetTxBlockHeader(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -151,11 +188,11 @@ func GetTx(ctx context.Context, store *txdb.Store, pool *txdb.Pool, txHashStr st
 		inHashes = append(inHashes, in.Previous.Hash)
 	}
 
-	prevPoolTxs, err := pool.GetTxs(ctx, inHashes...)
+	prevPoolTxs, err := e.pool.GetTxs(ctx, inHashes...)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetching pool inputs")
 	}
-	prevBcTxs, err := store.GetTxs(ctx, inHashes...)
+	prevBcTxs, err := e.store.GetTxs(ctx, inHashes...)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetching bc inputs")
 	}
@@ -174,13 +211,13 @@ type Asset struct {
 // GetAssets returns data about the specified assets, including the most recent
 // asset definition submitted for each asset. If a given asset ID is not found,
 // that asset will not be included in the response.
-func GetAssets(ctx context.Context, assetIDs []bc.AssetID) (map[bc.AssetID]*Asset, error) {
-	circ, err := asset.Circulation(ctx, assetIDs...)
+func (e *Explorer) GetAssets(ctx context.Context, assetIDs []bc.AssetID) (map[bc.AssetID]*Asset, error) {
+	circ, err := asset.Circulation(pg.NewContext(ctx, e.db), assetIDs...)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetch asset circulation data")
 	}
 
-	defs, err := asset.Definitions(ctx, assetIDs)
+	defs, err := asset.Definitions(pg.NewContext(ctx, e.db), assetIDs)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetch txdb asset def")
 	}
@@ -213,8 +250,8 @@ func GetAssets(ctx context.Context, assetIDs []bc.AssetID) (map[bc.AssetID]*Asse
 
 // GetAsset returns the most recent asset definition stored in
 // the blockchain, for the given asset.
-func GetAsset(ctx context.Context, assetID bc.AssetID) (*Asset, error) {
-	assets, err := GetAssets(ctx, []bc.AssetID{assetID})
+func (e *Explorer) GetAsset(ctx context.Context, assetID bc.AssetID) (*Asset, error) {
+	assets, err := e.GetAssets(ctx, []bc.AssetID{assetID})
 	if err != nil {
 		return nil, err
 	}
@@ -225,8 +262,8 @@ func GetAsset(ctx context.Context, assetID bc.AssetID) (*Asset, error) {
 	return a, nil
 }
 
-func ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limit int) ([]*TxOutput, string, error) {
-	return listHistoricalOutputsByAssetAndAccount(ctx, assetID, "", time.Now(), prev, limit)
+func (e *Explorer) ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limit int) ([]*TxOutput, string, error) {
+	return e.listHistoricalOutputsByAssetAndAccount(ctx, assetID, "", time.Now(), prev, limit)
 }
 
 func stateOutsToTxOuts(stateOuts []*state.Output) []*TxOutput {

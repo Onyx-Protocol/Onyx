@@ -25,13 +25,16 @@ func BenchmarkWithoutHistoricalOutputs(b *testing.B) {
 
 func benchmarkHistoricalOutputs(b *testing.B, historicalOutputs bool) {
 	for n := 0; n < b.N; n++ {
-		ctx := pg.NewContext(context.Background(), pgtest.NewTx(b))
-		fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+		ctx := context.Background()
+		dbtx := pgtest.NewTx(b)
+		dbctx := pg.NewContext(ctx, dbtx)
+		fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 		if err != nil {
 			b.Fatal(err)
 		}
 
-		Connect(ctx, fc, historicalOutputs, 0, true)
+		// side effect: register Explorer as a fc block callback
+		New(fc, dbtx, nil, nil, 0, historicalOutputs, true)
 
 		n := 0
 
@@ -39,25 +42,27 @@ func benchmarkHistoricalOutputs(b *testing.B, historicalOutputs bool) {
 			Trade: func(sellerID, buyerID string, shareAssetID, usdAssetID bc.AssetID, shares, dollars uint64) {
 				n++
 				if n%10 == 0 {
-					_, err := generator.MakeBlock(ctx)
+					_, err := generator.MakeBlock(dbctx)
 					if err != nil {
 						b.Fatal(err)
 					}
 				}
 			},
 		}
-		assettest.Populate(ctx, b, "glittercosmall.csv", populateCallbacks)
+		assettest.Populate(dbctx, b, "glittercosmall.csv", populateCallbacks)
 	}
 }
 
 func TestHistoricalOutputs(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	ctx := context.Background()
+	dbtx := pgtest.NewTx(t)
+	dbctx := pg.NewContext(ctx, dbtx)
+	fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	Connect(ctx, fc, true, 0, true)
+	e := New(fc, dbtx, nil, nil, 0, true, true)
 
 	type (
 		spotCheck struct {
@@ -94,7 +99,7 @@ func TestHistoricalOutputs(t *testing.T) {
 		},
 		AfterIssue: func(n int) {
 			nTrades = n
-			b, err := generator.MakeBlock(ctx)
+			b, err := generator.MakeBlock(dbctx)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -109,7 +114,7 @@ func TestHistoricalOutputs(t *testing.T) {
 			currentBalances[accountAssetPair{buyerID, usdAssetID}] -= dollars
 
 			if tradeNum == nTrades || rand.Intn(10) == 0 {
-				b, err := generator.MakeBlock(ctx)
+				b, err := generator.MakeBlock(dbctx)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -134,12 +139,12 @@ func TestHistoricalOutputs(t *testing.T) {
 			}
 		},
 	}
-	assettest.Populate(ctx, t, "glittercosmall.csv", populateCallbacks)
+	assettest.Populate(dbctx, t, "glittercosmall.csv", populateCallbacks)
 
 	// Perform spot-checks
 	for i, s := range spotChecks {
 		ts := time.Unix(int64(s.timestamp), 0)
-		sums, _, err := HistoricalBalancesByAccount(ctx, s.accountID, ts, &s.assetID, "", 0)
+		sums, _, err := e.HistoricalBalancesByAccount(ctx, s.accountID, ts, &s.assetID, "", 0)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -168,7 +173,7 @@ func TestHistoricalOutputs(t *testing.T) {
 				for {
 					var sums []bc.AssetAmount
 
-					sums, last, err = HistoricalBalancesByAccount(ctx, accountID, time.Now(), nil, last, 1)
+					sums, last, err = e.HistoricalBalancesByAccount(ctx, accountID, time.Now(), nil, last, 1)
 					if err != nil {
 						t.Fatal(err)
 					}
