@@ -57,7 +57,11 @@ func GetSummary(ctx context.Context, store *txdb.Store, pool *txdb.Pool, projID 
 
 	res.BlockFreqMs = uint64(blockPeriod.Nanoseconds() / 1000000)
 
-	top, err := store.LatestBlock(ctx)
+	height, err := store.Height(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get blockchain height")
+	}
+	top, err := store.GetBlock(ctx, height)
 	if err != nil {
 		return nil, errors.Wrap(err, "get latest block")
 	}

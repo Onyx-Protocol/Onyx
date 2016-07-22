@@ -92,7 +92,7 @@ type BlockSummary struct {
 
 // GetBlockSummary returns header data for the requested block.
 func (e *Explorer) GetBlockSummary(ctx context.Context, hash string) (*BlockSummary, error) {
-	block, err := e.store.GetBlock(ctx, hash)
+	block, err := e.store.GetBlockByHash(ctx, hash)
 	if err != nil {
 		return nil, err
 	}

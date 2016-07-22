@@ -267,11 +267,11 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, error) {
 		return nil, err
 	}
 
-	genesisHash, err := store.InitialBlockHash(ctx)
+	genesis, err := store.GetBlock(ctx, 1)
 	if err != nil {
 		return nil, err
 	}
-	asset, err := issuer.CreateAsset(ctx, iNode.ID, "label", genesisHash, map[string]interface{}{}, nil)
+	asset, err := issuer.CreateAsset(ctx, iNode.ID, "label", genesis.Hash(), map[string]interface{}{}, nil)
 	if err != nil {
 		return nil, err
 	}

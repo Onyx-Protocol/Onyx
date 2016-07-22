@@ -111,7 +111,7 @@ func TestInsertTx(t *testing.T) {
 	}
 }
 
-func TestLatestBlock(t *testing.T) {
+func TestGetBlock(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	dbctx := pg.NewContext(context.Background(), db)
 	pgtest.Exec(dbctx, t, `
@@ -127,7 +127,7 @@ func TestLatestBlock(t *testing.T) {
 	`)
 	store := NewStore(pg.FromContext(dbctx).(*sql.DB))
 	ctx := context.Background()
-	got, err := store.LatestBlock(ctx)
+	got, err := store.GetBlock(ctx, 1)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
@@ -181,7 +181,7 @@ func TestInsertBlock(t *testing.T) {
 	}
 
 	// block in database
-	_, err = getBlock(ctx, dbtx, blk.Hash().String())
+	_, err = getBlockByHash(ctx, dbtx, blk.Hash().String())
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -196,7 +196,7 @@ func TestInsertBlock(t *testing.T) {
 	}
 }
 
-func TestGetBlock(t *testing.T) {
+func TestGetBlockByHash(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 	blk := &bc.Block{
@@ -211,7 +211,7 @@ func TestGetBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := getBlock(ctx, dbtx, blk.Hash().String())
+	got, err := getBlockByHash(ctx, dbtx, blk.Hash().String())
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -221,7 +221,7 @@ func TestGetBlock(t *testing.T) {
 		t.Errorf("got:\n\t%+v\nwant:\n\t:%+v", got, blk)
 	}
 
-	_, gotErr := getBlock(ctx, dbtx, "nonexistent")
+	_, gotErr := getBlockByHash(ctx, dbtx, "nonexistent")
 	if errors.Root(gotErr) != pg.ErrUserInputNotFound {
 		t.Errorf("got err=%q want %q", errors.Root(gotErr), pg.ErrUserInputNotFound)
 	}

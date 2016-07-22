@@ -249,11 +249,12 @@ func (a *api) createAsset(ctx context.Context, inodeID string, in struct {
 		return nil, err
 	}
 
-	genesisHash, err := a.store.InitialBlockHash(ctx)
+	genesis, err := a.store.GetBlock(ctx, 1)
 	if err != nil {
 		return nil, err
 	}
-	ast, err := issuer.CreateAsset(ctx, inodeID, in.Label, genesisHash, in.Definition, in.ClientToken)
+
+	ast, err := issuer.CreateAsset(ctx, inodeID, in.Label, genesis.Hash(), in.Definition, in.ClientToken)
 	if err != nil {
 		return nil, err
 	}

@@ -1,8 +1,6 @@
 package txdb
 
 import (
-	"sync"
-
 	"golang.org/x/net/context"
 
 	"chain/cos"
@@ -18,13 +16,6 @@ import (
 // methods for querying current and historical data.
 type Store struct {
 	db *sql.DB
-
-	latestBlockCache struct {
-		mutex sync.Mutex
-		block *bc.Block
-	}
-
-	initialBlockHash bc.Hash
 }
 
 var _ cos.Store = (*Store)(nil)
@@ -40,9 +31,37 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
+// Height returns the height of the blockchain.
+func (s *Store) Height(ctx context.Context) (uint64, error) {
+	const q = `SELECT COALESCE(MAX(height), 0) FROM blocks`
+	var height uint64
+	err := s.db.QueryRow(ctx, q).Scan(&height)
+	return height, errors.Wrap(err, "max height sql query")
+}
+
 // GetTxs looks up transactions in the blockchain by their hashes.
 func (s *Store) GetTxs(ctx context.Context, hashes ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error) {
 	return getBlockchainTxs(ctx, s.db, hashes...)
+}
+
+// GetBlock looks up the block with the provided block height.
+func (s *Store) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) {
+	const q = `SELECT data FROM blocks WHERE height = $1`
+	var b bc.Block
+	err := s.db.QueryRow(ctx, q, height).Scan(&b)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "select query")
+	}
+	return &b, nil
+}
+
+// LatestStateTree returns the most recent state tree stored in
+// the database and its corresponding block height.
+func (s *Store) LatestStateTree(ctx context.Context) (*patricia.Tree, uint64, error) {
+	return getStateTreeSnapshot(ctx, s.db)
 }
 
 // SaveBlock persists a new block in the database.
@@ -60,19 +79,7 @@ func (s *Store) SaveBlock(ctx context.Context, block *bc.Block) error {
 	}
 
 	err = dbtx.Commit(ctx)
-	if err != nil {
-		return errors.Wrap(err, "committing db transaction")
-	}
-
-	if block.Height == 1 {
-		s.initialBlockHash = block.Hash()
-	}
-
-	// Note: this is done last so that callers of LatestBlock
-	// can safely assume the block they get has been applied.
-	s.setLatestBlockCache(block, false)
-
-	return nil
+	return errors.Wrap(err, "committing db transaction")
 }
 
 // SaveStateTree saves a state tree snapshot to the database.
@@ -81,33 +88,7 @@ func (s *Store) SaveStateTree(ctx context.Context, height uint64, tree *patricia
 	return errors.Wrap(err, "saving state tree")
 }
 
-// LatestStateTree returns the most recent state tree stored in
-// the database and its corresponding block height.
-func (s *Store) LatestStateTree(ctx context.Context) (*patricia.Tree, uint64, error) {
-	return getStateTreeSnapshot(ctx, s.db)
-}
-
 func (s *Store) FinalizeBlock(ctx context.Context, height uint64) error {
 	_, err := s.db.Exec(ctx, `SELECT pg_notify('newblock', $1)`, height)
 	return err
-}
-
-func (s *Store) InitialBlockHash(ctx context.Context) (bc.Hash, error) {
-	if s.initialBlockHash == (bc.Hash{}) {
-		// Calling LatestBlock is a simple way to block until there's at
-		// least one block in the blockchain.
-		b, err := s.LatestBlock(ctx)
-		if err != nil {
-			return bc.Hash{}, err
-		}
-		if b.Height == 1 {
-			s.initialBlockHash = b.Hash()
-		} else {
-			err = s.db.QueryRow(ctx, "SELECT block_hash FROM blocks WHERE height = 1").Scan(&s.initialBlockHash)
-			if err != nil {
-				return bc.Hash{}, err
-			}
-		}
-	}
-	return s.initialBlockHash, nil
 }

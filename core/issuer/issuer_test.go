@@ -30,7 +30,7 @@ func TestIssue(t *testing.T) {
 	}
 
 	now := time.Unix(233400000, 0)
-	_, err = fc.UpsertGenesisBlock(ctx, nil, 0, now)
+	b, err := fc.UpsertGenesisBlock(ctx, nil, 0, now)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,11 +43,7 @@ func TestIssue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	genesisHash, err := store.InitialBlockHash(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assetObj, err := CreateAsset(ctx, inode.ID, "test", genesisHash, nil, nil)
+	assetObj, err := CreateAsset(ctx, inode.ID, "test", b.Hash(), nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +64,7 @@ func TestIssue(t *testing.T) {
 	want := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(minTime, maxTime, genesisHash, amount, assetObj.IssuanceScript, nil, nil, nil),
+			bc.NewIssuanceInput(minTime, maxTime, b.Hash(), amount, assetObj.IssuanceScript, nil, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, amount, outScript, nil),

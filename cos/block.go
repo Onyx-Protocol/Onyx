@@ -35,7 +35,9 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 
 	timestampMS := uint64(now.UnixNano()) / uint64(time.Millisecond)
 
-	prev, err = fc.store.LatestBlock(ctx)
+	// TODO(jackson): The leader process should store its own in-memory
+	// copy of the current state tree and latest block on FC instead.
+	prev, err = fc.LatestBlock(ctx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "fetch latest block")
 	}
@@ -179,9 +181,9 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 
 	if block.Height > 1 {
 		var err error
-		prev, err = fc.LatestBlock(ctx) // TODO(kr): GetBlock(block.Height-1)
+		prev, err = fc.store.GetBlock(ctx, block.Height-1)
 		if err != nil {
-			return errors.Wrap(err, "getting latest known block")
+			return errors.Wrap(err, "getting previous block")
 		}
 
 		tree, err = fc.stateTree(ctx, prev.Height)
@@ -200,11 +202,11 @@ func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, tree *patricia
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	prevBlock, err := fc.store.LatestBlock(ctx)
+	prev, err := fc.store.GetBlock(ctx, block.Height-1)
 	if err != nil {
 		return errors.Wrap(err, "loading previous block")
 	}
-	err = validation.ValidateBlockHeader(prevBlock, block)
+	err = validation.ValidateBlockHeader(prev, block)
 	if err != nil {
 		return errors.Wrap(err, "validating block header")
 	}
@@ -212,7 +214,7 @@ func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, tree *patricia
 	if isSignedByTrustedHost(block, fc.trustedKeys) {
 		err = validation.ApplyBlock(tree, block)
 	} else {
-		err = validation.ValidateAndApplyBlock(ctx, tree, prevBlock, block)
+		err = validation.ValidateAndApplyBlock(ctx, tree, prev, block)
 	}
 	if err != nil {
 		return errors.Wrapf(ErrBadBlock, "validate block: %v", err)
@@ -367,17 +369,16 @@ func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []*btcec.PublicKey
 		return nil, err
 	}
 
-	latestBlock, err := fc.store.LatestBlock(ctx)
+	h, err := fc.store.Height(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting latest block")
+		return nil, errors.Wrap(err, "getting blockchain height")
 	}
-	if latestBlock == nil {
+	if h == 0 {
 		err = fc.AddBlock(ctx, b)
 		if err != nil {
 			return nil, errors.Wrap(err, "adding genesis block")
 		}
 	}
-
 	return b, nil
 }
 

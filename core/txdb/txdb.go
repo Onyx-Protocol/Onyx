@@ -203,12 +203,12 @@ func listBlocks(ctx context.Context, db pg.DB, prev string, limit int) ([]*bc.Bl
 	return blocks, err
 }
 
-// GetBlock fetches a block by its hash
-func (s *Store) GetBlock(ctx context.Context, hash string) (*bc.Block, error) {
-	return getBlock(ctx, s.db, hash)
+// GetBlockByHash fetches a block by its hash.
+func (s *Store) GetBlockByHash(ctx context.Context, hash string) (*bc.Block, error) {
+	return getBlockByHash(ctx, s.db, hash)
 }
 
-func getBlock(ctx context.Context, db pg.DB, hash string) (*bc.Block, error) {
+func getBlockByHash(ctx context.Context, db pg.DB, hash string) (*bc.Block, error) {
 	const q = `SELECT data FROM blocks WHERE block_hash=$1`
 	block := new(bc.Block)
 	err := db.QueryRow(ctx, q, hash).Scan(block)

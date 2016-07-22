@@ -13,6 +13,7 @@ import (
 	"chain/cos/bc"
 	"chain/cos/mempool"
 	"chain/cos/memstore"
+	"chain/cos/patricia"
 	"chain/cos/txscript"
 	"chain/errors"
 	"chain/testutil"
@@ -25,6 +26,7 @@ func TestLatestBlock(t *testing.T) {
 	noBlocks := memstore.New()
 	oneBlock := memstore.New()
 	oneBlock.SaveBlock(ctx, &bc.Block{})
+	oneBlock.SaveStateTree(ctx, 1, patricia.NewTree(nil))
 
 	cases := []struct {
 		store   Store
@@ -71,17 +73,10 @@ func TestNoTimeTravel(t *testing.T) {
 func TestWaitForBlock(t *testing.T) {
 	ctx := context.Background()
 	store := memstore.New()
-	block0 := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Height:       0,
-			OutputScript: []byte{txscript.OP_TRUE},
-		},
-	}
 	block1 := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			PreviousBlockHash: block0.Hash(),
-			Height:            1,
-			OutputScript:      []byte{txscript.OP_TRUE},
+			Height:       1,
+			OutputScript: []byte{txscript.OP_TRUE},
 		},
 	}
 	block2 := &bc.Block{
@@ -91,13 +86,21 @@ func TestWaitForBlock(t *testing.T) {
 			OutputScript:      []byte{txscript.OP_TRUE},
 		},
 	}
-	store.SaveBlock(ctx, block0)
+	block3 := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			PreviousBlockHash: block2.Hash(),
+			Height:            3,
+			OutputScript:      []byte{txscript.OP_TRUE},
+		},
+	}
+	store.SaveBlock(ctx, block1)
+	store.SaveStateTree(ctx, 1, patricia.NewTree(nil))
 	fc, err := NewFC(ctx, store, mempool.New(), nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	ch := waitForBlockChan(ctx, fc, 0)
+	ch := waitForBlockChan(ctx, fc, 1)
 	select {
 	case err := <-ch:
 		if err != nil {
@@ -107,28 +110,17 @@ func TestWaitForBlock(t *testing.T) {
 		t.Errorf("timed out waiting for block 0")
 	}
 
-	ch = waitForBlockChan(ctx, fc, 4)
+	ch = waitForBlockChan(ctx, fc, 5)
 	select {
 	case err := <-ch:
 		if err != ErrTheDistantFuture {
-			t.Errorf("got %q waiting for block 4, expected %q", err, ErrTheDistantFuture)
+			t.Errorf("got %q waiting for block 5, expected %q", err, ErrTheDistantFuture)
 		}
 	case <-time.After(10 * time.Millisecond):
-		t.Errorf("timed out waiting for block 0")
+		t.Errorf("timed out waiting for block 5")
 	}
 
 	ch = waitForBlockChan(ctx, fc, 2)
-
-	select {
-	case <-ch:
-		t.Errorf("WaitForBlock should wait")
-	default:
-	}
-
-	err = fc.AddBlock(ctx, block1)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
 
 	select {
 	case <-ch:
@@ -142,12 +134,23 @@ func TestWaitForBlock(t *testing.T) {
 	}
 
 	select {
+	case <-ch:
+		t.Errorf("WaitForBlock should wait")
+	default:
+	}
+
+	err = fc.AddBlock(ctx, block3)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	select {
 	case err := <-ch:
 		if err != nil {
-			t.Errorf("got err %q waiting for block 2", err)
+			t.Errorf("got err %q waiting for block 3", err)
 		}
 	case <-time.After(10 * time.Millisecond):
-		t.Errorf("timed out waiting for block 2")
+		t.Errorf("timed out waiting for block 3")
 	}
 }
 

@@ -83,14 +83,14 @@ type TxCallback func(context.Context, *bc.Tx)
 // ADPs. An FC uses Store to load state trees from storage and
 // persist validated data.
 type Store interface {
+	Height(context.Context) (uint64, error)
 	GetTxs(context.Context, ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error)
-	LatestBlock(context.Context) (*bc.Block, error)
+	GetBlock(context.Context, uint64) (*bc.Block, error)
 	LatestStateTree(context.Context) (*patricia.Tree, uint64, error)
 
 	SaveBlock(context.Context, *bc.Block) error
 	FinalizeBlock(context.Context, uint64) error
 	SaveStateTree(context.Context, uint64, *patricia.Tree) error
-	InitialBlockHash(context.Context) (bc.Hash, error)
 }
 
 // Pool provides storage for transactions in the pending tx pool.
@@ -127,13 +127,13 @@ func NewFC(ctx context.Context, store Store, pool Pool, trustedKeys []*btcec.Pub
 	fc := &FC{store: store, pool: pool, trustedKeys: trustedKeys}
 	fc.height.cond.L = new(sync.Mutex)
 
-	if b, err := store.LatestBlock(ctx); err != nil {
-		return nil, errors.Wrap(err, "looking up latest block")
-	} else if b != nil {
-		fc.height.n = b.Height
+	var err error
+	fc.height.n, err = store.Height(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "looking up blockchain height")
 	}
-	// Note that fc.height.n may still be zero here.
 
+	// Note that fc.height.n may still be zero here.
 	if heights != nil {
 		go func() {
 			for h := range heights {
@@ -154,7 +154,11 @@ func (fc *FC) AddTxCallback(f TxCallback) {
 }
 
 func (fc *FC) LatestBlock(ctx context.Context) (*bc.Block, error) {
-	b, err := fc.store.LatestBlock(ctx)
+	fc.height.cond.L.Lock()
+	height := fc.height.n
+	fc.height.cond.L.Unlock()
+
+	b, err := fc.store.GetBlock(ctx, height)
 	if err != nil {
 		return nil, err
 	}

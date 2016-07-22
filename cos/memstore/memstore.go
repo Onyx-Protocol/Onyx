@@ -1,8 +1,6 @@
 package memstore
 
 import (
-	"errors"
-
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
@@ -23,6 +21,10 @@ type MemStore struct {
 // New returns a new MemStore
 func New() *MemStore {
 	return &MemStore{BlockTxs: make(map[bc.Hash]*bc.Tx)}
+}
+
+func (m *MemStore) Height(context.Context) (uint64, error) {
+	return uint64(len(m.Blocks)), nil
 }
 
 func (m *MemStore) GetTxs(ctx context.Context, hashes ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error) {
@@ -51,11 +53,12 @@ func (m *MemStore) SaveStateTree(ctx context.Context, height uint64, tree *patri
 	return nil
 }
 
-func (m *MemStore) LatestBlock(context.Context) (*bc.Block, error) {
-	if len(m.Blocks) == 0 {
+func (m *MemStore) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) {
+	index := height - 1
+	if index < 0 || index >= uint64(len(m.Blocks)) {
 		return nil, nil
 	}
-	return m.Blocks[len(m.Blocks)-1], nil
+	return m.Blocks[index], nil
 }
 
 func (m *MemStore) LatestStateTree(context.Context) (*patricia.Tree, uint64, error) {
@@ -66,10 +69,3 @@ func (m *MemStore) LatestStateTree(context.Context) (*patricia.Tree, uint64, err
 }
 
 func (m *MemStore) FinalizeBlock(context.Context, uint64) error { return nil }
-
-func (m MemStore) InitialBlockHash(context.Context) (bc.Hash, error) {
-	if len(m.Blocks) == 0 {
-		return bc.Hash{}, errors.New("empty blockchain")
-	}
-	return m.Blocks[0].Hash(), nil
-}
