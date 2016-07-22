@@ -22,7 +22,6 @@ import (
 type Explorer struct {
 	db         pg.DB
 	store      *txdb.Store // TODO(kr): get rid of this
-	pool       *txdb.Pool  // TODO(kr): get rid of this
 	maxAge     time.Duration
 	historical bool
 	isManager  bool
@@ -35,11 +34,10 @@ type Explorer struct {
 // explorer_outputs table and occasionally pruning ones spent
 // spent more than maxAgeDays ago.  (If maxAgeDays is <= 0, no
 // pruning is done.)
-func New(fc *cos.FC, db pg.DB, store *txdb.Store, pool *txdb.Pool, maxAge time.Duration, historical, isManager bool) *Explorer {
+func New(fc *cos.FC, db pg.DB, store *txdb.Store, maxAge time.Duration, historical, isManager bool) *Explorer {
 	e := &Explorer{
 		db:         db,
 		store:      store,
-		pool:       pool,
 		historical: historical,
 		maxAge:     maxAge,
 		isManager:  isManager,
@@ -151,25 +149,18 @@ type TxOutput struct {
 
 // GetTx returns a transaction with additional details added.
 // TODO(jackson): Explorer should do its own indexing of transactions
-// and not rely on the Store or Pool.
+// and not rely on the Store.
 func (e *Explorer) GetTx(ctx context.Context, txHashStr string) (*Tx, error) {
 	hash, err := bc.ParseHash(txHashStr)
 	if err != nil {
 		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
 
-	poolTxs, err := e.pool.GetTxs(ctx, hash)
+	txs, err := e.store.GetTxs(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
-	bcTxs, err := e.store.GetTxs(ctx, hash)
-	if err != nil {
-		return nil, err
-	}
-	tx, ok := poolTxs[hash]
-	if !ok {
-		tx, ok = bcTxs[hash]
-	}
+	tx, ok := txs[hash]
 	if !ok {
 		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
@@ -187,16 +178,12 @@ func (e *Explorer) GetTx(ctx context.Context, txHashStr string) (*Tx, error) {
 		inHashes = append(inHashes, in.Outpoint().Hash)
 	}
 
-	prevPoolTxs, err := e.pool.GetTxs(ctx, inHashes...)
-	if err != nil {
-		return nil, errors.Wrap(err, "fetching pool inputs")
-	}
-	prevBcTxs, err := e.store.GetTxs(ctx, inHashes...)
+	prevTxs, err := e.store.GetTxs(ctx, inHashes...)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetching bc inputs")
 	}
 
-	return makeTx(tx, blockHeader, prevPoolTxs, prevBcTxs)
+	return makeTx(tx, blockHeader, prevTxs)
 }
 
 // Asset is returned by GetAsset
@@ -282,7 +269,7 @@ func stateOutsToTxOuts(stateOuts []*state.Output) []*TxOutput {
 	return res
 }
 
-func makeTx(bcTx *bc.Tx, blockHeader *bc.BlockHeader, prevPoolTxs, prevBcTxs map[bc.Hash]*bc.Tx) (*Tx, error) {
+func makeTx(bcTx *bc.Tx, blockHeader *bc.BlockHeader, prevTxs map[bc.Hash]*bc.Tx) (*Tx, error) {
 	resp := &Tx{
 		ID:       bcTx.Hash,
 		Metadata: bcTx.Metadata,
@@ -303,12 +290,9 @@ func makeTx(bcTx *bc.Tx, blockHeader *bc.BlockHeader, prevPoolTxs, prevBcTxs map
 			})
 		} else {
 			o := in.Outpoint()
-			prevTx, ok := prevPoolTxs[o.Hash]
+			prevTx, ok := prevTxs[o.Hash]
 			if !ok {
-				prevTx, ok = prevBcTxs[o.Hash]
-				if !ok {
-					return nil, errors.Wrap(fmt.Errorf("missing previous transaction %s", o.Hash))
-				}
+				return nil, errors.Wrap(fmt.Errorf("missing previous transaction %s", o.Hash))
 			}
 
 			if o.Index >= uint32(len(prevTx.Outputs)) {

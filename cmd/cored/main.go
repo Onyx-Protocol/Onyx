@@ -191,7 +191,7 @@ func main() {
 		voting.Connect(fc)
 	}
 	historicalOutputsMaxAge := time.Duration(*historicalOutputsMaxAgeDays) * 24 * time.Hour // TODO(kr): use env.Duration
-	explorer := explorer.New(fc, db, store, pool, historicalOutputsMaxAge, *historicalOutputs, *isManager)
+	explorer := explorer.New(fc, db, store, historicalOutputsMaxAge, *historicalOutputs, *isManager)
 
 	// Note, it's important for any services that will install blockchain
 	// callbacks to be initialized before the generator and the http server,

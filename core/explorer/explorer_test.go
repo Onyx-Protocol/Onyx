@@ -50,7 +50,7 @@ func TestHistoricalOutput(t *testing.T) {
 	}
 
 	// side effect: register Explorer as a fc block callback
-	New(fc, dbtx, nil, nil, 0, true, true)
+	New(fc, dbtx, nil, 0, true, true)
 
 	account1ID := assettest.CreateAccountFixture(dbctx, t, "", "", nil)
 	account2ID := assettest.CreateAccountFixture(dbctx, t, "", "", nil)
@@ -105,7 +105,7 @@ func TestListBlocks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e := New(fc, db, store, pool, 0, true, true)
+	e := New(fc, db, store, 0, true, true)
 
 	pgtest.Exec(pg.NewContext(ctx, db), t, `
 		INSERT INTO blocks(block_hash, height, data, header)
@@ -193,7 +193,7 @@ func TestGetBlockSummary(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	e := New(fc, db, store, pool, 0, true, true)
+	e := New(fc, db, store, 0, true, true)
 
 	blockHash := "4aa7e0df4a7332ad09039ca7bbc7298de74d4f28792042dbc12140ee2c71f9ac"
 	pgtest.Exec(pg.NewContext(ctx, db), t, `
@@ -235,7 +235,7 @@ func TestGetTxIssuance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e := New(fc, db, store, pool, 0, true, true)
+	e := New(fc, db, store, 0, true, true)
 	inodeID := assettest.CreateIssuerNodeFixture(dbctx, t, "", "", nil, nil)
 	assetDef := map[string]interface{}{"c": "d"}
 	assetObj, err := issuer.CreateAsset(dbctx, inodeID, "label", bc.Hash{}, assetDef, nil)
@@ -330,7 +330,7 @@ func TestGetTxTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	e := New(fc, db, store, pool, 0, true, true)
+	e := New(fc, db, store, 0, true, true)
 
 	assetID1 := bc.AssetID([32]byte{1})
 	assetID2 := bc.AssetID([32]byte{2})
@@ -431,7 +431,7 @@ func TestGetAssets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	e := New(fc, dbtx, nil, nil, 0, true, true)
+	e := New(fc, dbtx, nil, 0, true, true)
 
 	in0 := assettest.CreateIssuerNodeFixture(dbctx, t, "", "in-0", nil, nil)
 
@@ -494,7 +494,7 @@ func TestGetAsset(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	e := New(fc, dbtx, nil, nil, 0, true, true)
+	e := New(fc, dbtx, nil, 0, true, true)
 
 	in0 := assettest.CreateIssuerNodeFixture(dbctx, t, "", "in-0", nil, nil)
 
@@ -565,7 +565,7 @@ func TestListUTXOsByAsset(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	e := New(fc, dbtx, nil, nil, 0, true, true)
+	e := New(fc, dbtx, nil, 0, true, true)
 
 	projectID := assettest.CreateProjectFixture(dbctx, t, "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(dbctx, t, projectID, "", nil, nil)
@@ -624,7 +624,7 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	e := New(fc, dbtx, nil, nil, 0, true, true)
+	e := New(fc, dbtx, nil, 0, true, true)
 	projectID := assettest.CreateProjectFixture(dbctx, t, "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(dbctx, t, projectID, "", nil, nil)
 	managerNodeID := assettest.CreateManagerNodeFixture(dbctx, t, projectID, "", nil, nil)

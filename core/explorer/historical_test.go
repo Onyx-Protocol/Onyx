@@ -34,7 +34,7 @@ func benchmarkHistoricalOutputs(b *testing.B, historicalOutputs bool) {
 		}
 
 		// side effect: register Explorer as a fc block callback
-		New(fc, dbtx, nil, nil, 0, historicalOutputs, true)
+		New(fc, dbtx, nil, 0, historicalOutputs, true)
 
 		n := 0
 
@@ -62,7 +62,7 @@ func TestHistoricalOutputs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	e := New(fc, dbtx, nil, nil, 0, true, true)
+	e := New(fc, dbtx, nil, 0, true, true)
 
 	type (
 		spotCheck struct {
