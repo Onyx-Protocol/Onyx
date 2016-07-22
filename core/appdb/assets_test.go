@@ -13,7 +13,6 @@ import (
 	. "chain/core/appdb"
 	"chain/core/asset"
 	"chain/core/asset/assettest"
-	"chain/core/generator"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
 	"chain/database/pg"
@@ -72,7 +71,7 @@ func getSortID(ctx context.Context, t testing.TB, assetID bc.AssetID) (sortID st
 
 func TestListAssets(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +163,7 @@ func TestListAssets(t *testing.T) {
 
 func TestGetAssets(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,7 +175,7 @@ func TestGetAssets(t *testing.T) {
 
 	assettest.IssueAssetsFixture(ctx, t, asset0, 58, "")
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -316,7 +315,7 @@ func TestArchiveAsset(t *testing.T) {
 
 func TestAssetBalance(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -345,7 +344,7 @@ func TestAssetBalance(t *testing.T) {
 	out1 := assettest.IssueAssetsFixture(ctx, t, assets[5], 1, acc0)
 	out2 := assettest.IssueAssetsFixture(ctx, t, assets[5], 1, acc0)
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -590,7 +589,7 @@ func (a balancesByAssetID) Less(i, j int) bool {
 
 func TestAccountBalanceByAssetID(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -611,7 +610,7 @@ func TestAccountBalanceByAssetID(t *testing.T) {
 	assettest.IssueAssetsFixture(ctx, t, assets[2], 2, account1)
 	assettest.IssueAssetsFixture(ctx, t, assets[3], 3, account2)
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

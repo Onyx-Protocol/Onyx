@@ -13,7 +13,7 @@ import (
 	"chain/cos/bc"
 )
 
-func createVotingTokenFixture(ctx context.Context, t *testing.T, right bc.AssetID, admin []byte, amount uint64) *Token {
+func createVotingTokenFixture(ctx context.Context, t *testing.T, g *generator.Generator, right bc.AssetID, admin []byte, amount uint64) *Token {
 	assetID := assettest.CreateAssetFixture(ctx, t, "", "", "")
 
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
@@ -31,7 +31,7 @@ func createVotingTokenFixture(ctx context.Context, t *testing.T, right bc.AssetI
 		t.Fatal(err)
 	}
 	// Confirm it in a block
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func createVotingTokenFixture(ctx context.Context, t *testing.T, right bc.AssetI
 	return token
 }
 
-func createVotingRightFixture(ctx context.Context, t *testing.T, holder []byte) *Right {
+func createVotingRightFixture(ctx context.Context, t *testing.T, g *generator.Generator, holder []byte) *Right {
 	assetID := assettest.CreateAssetFixture(ctx, t, "", "", "")
 
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: 1}
@@ -60,7 +60,7 @@ func createVotingRightFixture(ctx context.Context, t *testing.T, holder []byte) 
 		t.Fatal(err)
 	}
 	// Confirm it in a block
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

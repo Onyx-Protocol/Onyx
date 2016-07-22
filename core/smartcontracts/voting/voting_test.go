@@ -9,7 +9,6 @@ import (
 
 	"chain/core/asset"
 	"chain/core/asset/assettest"
-	"chain/core/generator"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
 	"chain/database/pg"
@@ -21,7 +20,7 @@ import (
 // transaction with voting right authentication from beginning to end.
 func TestAuthenticateEndToEnd(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,8 +29,8 @@ func TestAuthenticateEndToEnd(t *testing.T) {
 	var (
 		accountID   = assettest.CreateAccountFixture(ctx, t, "", "", nil)
 		holderAddr  = assettest.CreateAddressFixture(ctx, t, accountID)
-		right       = createVotingRightFixture(ctx, t, holderAddr.PKScript)
-		token       = createVotingTokenFixture(ctx, t, right.AssetID, holderAddr.PKScript, 100)
+		right       = createVotingRightFixture(ctx, t, g, holderAddr.PKScript)
+		token       = createVotingTokenFixture(ctx, t, g, right.AssetID, holderAddr.PKScript, 100)
 		rightAmount = bc.AssetAmount{AssetID: right.AssetID, Amount: 1}
 		tokenAmount = bc.AssetAmount{AssetID: token.AssetID, Amount: 100}
 	)
@@ -67,7 +66,7 @@ func TestAuthenticateEndToEnd(t *testing.T) {
 	}
 
 	// Make a block to ensure that the resulting tx gets indexed.
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

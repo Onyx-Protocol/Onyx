@@ -9,7 +9,6 @@ import (
 	. "chain/core/appdb"
 	"chain/core/asset"
 	"chain/core/asset/assettest"
-	"chain/core/generator"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
 	"chain/cos/hdkey"
@@ -119,7 +118,7 @@ func TestGetManagerNode(t *testing.T) {
 
 func TestAccountsWithAsset(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +137,7 @@ func TestAccountsWithAsset(t *testing.T) {
 	out1 := assettest.IssueAssetsFixture(ctx, t, asset2, 5, acc1)
 	assettest.IssueAssetsFixture(ctx, t, asset1, 5, acc2)
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

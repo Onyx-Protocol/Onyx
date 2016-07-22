@@ -26,9 +26,14 @@ const (
 
 // Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
 // will be used as the password for routes starting with /nouser/.
-func Handler(nouserSecret string, signer *signer.Signer, store *txdb.Store, pool *txdb.Pool, explorer *explorer.Explorer) chainhttp.Handler {
+func Handler(nouserSecret string, generatorConfig *generator.Config, signer *signer.Signer, store *txdb.Store, pool *txdb.Pool, explorer *explorer.Explorer) chainhttp.Handler {
 	h := pat.New()
-	a := &api{store: store, pool: pool, explorer: explorer}
+	a := &api{
+		store:     store,
+		pool:      pool,
+		explorer:  explorer,
+		generator: generatorConfig,
+	}
 
 	pwHandler := httpjson.NewServeMux(writeHTTPError)
 	pwHandler.HandleFunc("POST", "/v3/login", login)
@@ -46,7 +51,7 @@ func Handler(nouserSecret string, signer *signer.Signer, store *txdb.Store, pool
 	h.Add("POST", "/", tokenHandler)
 	h.Add("DELETE", "/", tokenHandler)
 
-	rpcHandler := chainhttp.HandlerFunc(rpcAuthn(rpcAuthedHandler(signer)))
+	rpcHandler := chainhttp.HandlerFunc(rpcAuthn(rpcAuthedHandler(generatorConfig, signer)))
 	h.Add("GET", "/rpc/", rpcHandler)
 	h.Add("PUT", "/rpc/", rpcHandler)
 	h.Add("POST", "/rpc/", rpcHandler)
@@ -70,9 +75,10 @@ func nouserHandler() chainhttp.HandlerFunc {
 }
 
 type api struct {
-	store    *txdb.Store
-	pool     *txdb.Pool
-	explorer *explorer.Explorer
+	store     *txdb.Store
+	pool      *txdb.Pool
+	explorer  *explorer.Explorer
+	generator *generator.Config
 }
 
 func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
@@ -164,10 +170,10 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	return h.ServeHTTPContext
 }
 
-func rpcAuthedHandler(signer *signer.Signer) chainhttp.HandlerFunc {
+func rpcAuthedHandler(generator *generator.Config, signer *signer.Signer) chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
 
-	if generator.Enabled() {
+	if generator != nil {
 		h.HandleFunc("POST", "/rpc/generator/submit", generator.Submit)
 		h.HandleFunc("POST", "/rpc/generator/get-blocks", generator.GetBlocks)
 	}

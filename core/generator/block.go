@@ -30,11 +30,11 @@ var (
 )
 
 // MakeBlock creates a new bc.Block and updates the txpool/utxo state.
-func MakeBlock(ctx context.Context) (*bc.Block, error) {
+func (g *Generator) MakeBlock(ctx context.Context) (*bc.Block, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	b, prevBlock, err := fc.GenerateBlock(ctx, time.Now())
+	b, prevBlock, err := g.FC.GenerateBlock(ctx, time.Now())
 	if err != nil {
 		return nil, errors.Wrap(err, "generate")
 	}
@@ -42,26 +42,26 @@ func MakeBlock(ctx context.Context) (*bc.Block, error) {
 		return nil, nil // don't bother making an empty block
 	}
 
-	err = GetAndAddBlockSignatures(ctx, b, prevBlock)
+	err = g.GetAndAddBlockSignatures(ctx, b, prevBlock)
 	if err != nil {
 		return nil, errors.Wrap(err, "sign")
 	}
 
-	err = fc.AddBlock(ctx, b)
+	err = g.FC.AddBlock(ctx, b)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply")
 	}
 	return b, nil
 }
 
-func GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error {
+func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error {
 	pubkeys, nrequired, err := txscript.ParseMultiSigScript(prevBlock.OutputScript)
 	if err != nil {
 		return errors.Wrap(err, "parsing prevblock output script")
 	}
 
-	signersConfigured := len(remoteSigners)
-	if localSigner != nil {
+	signersConfigured := len(g.RemoteSigners)
+	if g.LocalSigner != nil {
 		signersConfigured++
 	}
 	if signersConfigured < nrequired {
@@ -69,11 +69,11 @@ func GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error
 	}
 
 	signersByPubkey := make(map[string]*RemoteSigner, signersConfigured)
-	for _, remoteSigner := range remoteSigners {
+	for _, remoteSigner := range g.RemoteSigners {
 		signersByPubkey[pubkeyString(remoteSigner.Key)] = remoteSigner
 	}
-	if localSigner != nil {
-		signersByPubkey[pubkeyString(localSigner.PublicKey())] = nil
+	if g.LocalSigner != nil {
+		signersByPubkey[pubkeyString(g.LocalSigner.PublicKey())] = nil
 	}
 
 	type response struct {
@@ -83,12 +83,11 @@ func GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error
 		pos       int
 	}
 
-	var serializedBlock []byte
-
-	responses := make(chan *response, len(pubkeys))
-
-	var nrequests int
-
+	var (
+		nrequests       int
+		serializedBlock []byte
+		responses       = make(chan *response, len(pubkeys))
+	)
 	for i, pubkey := range pubkeys {
 		signer, ok := signersByPubkey[pubkeyString(pubkey)]
 		if !ok {
@@ -110,7 +109,7 @@ func GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error
 				pos:    pos,
 			}
 			if signer == nil {
-				r.signature, r.err = localSigner.ComputeBlockSignature(b)
+				r.signature, r.err = g.LocalSigner.ComputeBlockSignature(b)
 			} else {
 				r.signature, r.err = rpcclient.GetSignatureForSerializedBlock(ctx, signer.URL.String(), serializedBlock)
 			}

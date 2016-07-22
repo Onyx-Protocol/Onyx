@@ -7,7 +7,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/asset/assettest"
-	. "chain/core/generator"
 	"chain/core/txdb"
 	"chain/cos/bc"
 	"chain/cos/txscript"
@@ -21,7 +20,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	fc, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -31,7 +30,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	err = GetAndAddBlockSignatures(ctx, block, prev)
+	err = g.GetAndAddBlockSignatures(ctx, block, prev)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -51,12 +50,12 @@ func TestGetBlocks(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	_, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	blocks, err := GetBlocks(ctx, 0)
+	blocks, err := g.GetBlocks(ctx, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +72,7 @@ func TestGetBlocks(t *testing.T) {
 		defer close(c)
 
 		// expect this will wait until block 2 is ready
-		blocks, err := GetBlocks(ctx, 1)
+		blocks, err := g.GetBlocks(ctx, 1)
 		if err == nil {
 			c <- blocks
 		} else {
@@ -87,7 +86,7 @@ func TestGetBlocks(t *testing.T) {
 	// Hopefully force the GetBlocks call to wait
 	time.Sleep(10 * time.Millisecond)
 
-	_, err = MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

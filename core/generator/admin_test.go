@@ -7,11 +7,13 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
 	. "chain/core/generator"
 	"chain/core/txdb"
+	"chain/cos"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -43,6 +45,19 @@ func TestGetSummary(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
+	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	generator := Generator{
+		Config: Config{
+			BlockPeriod: time.Second,
+			FC:          fc,
+		},
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	b1 := bc.Block{BlockHeader: bc.BlockHeader{Height: 1}}
 	b2 := bc.Block{BlockHeader: bc.BlockHeader{Height: 2}}
@@ -95,7 +110,7 @@ func TestGetSummary(t *testing.T) {
 	`)
 
 	want := &Summary{
-		BlockFreqMs: 0,
+		BlockFreqMs: 1000,
 		BlockCount:  2,
 		TransactionCount: TxCount{
 			Confirmed:   3,
@@ -116,11 +131,10 @@ func TestGetSummary(t *testing.T) {
 		},
 	}
 
-	got, err := GetSummary(ctx, store, pool, "proj-id-0")
+	got, err := generator.GetSummary(ctx, store, pool, "proj-id-0")
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
-
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("summary:\ngot:  %v\nwant: %v", *got, *want)
 	}

@@ -9,7 +9,6 @@ import (
 
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
-	"chain/core/generator"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/cos/bc"
@@ -29,8 +28,7 @@ import (
 func TestConflictingTxsInPool(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-
-	info, err := bootdb(ctx, t)
+	info, g, err := bootdb(ctx, t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +39,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	dumpState(ctx, t)
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +90,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 
 	// Make a block, which should reject one of the txs.
 	dumpState(ctx, t)
-	b, err := generator.MakeBlock(ctx)
+	b, err := g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +135,7 @@ func TestLoadAccountInfo(t *testing.T) {
 
 func TestDeleteUTXOs(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

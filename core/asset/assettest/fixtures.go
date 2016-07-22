@@ -270,10 +270,10 @@ func ManagerTxFixture(ctx context.Context, t testing.TB, txHash string, data []b
 
 // InitializeSigningGenerator initiaizes a generator fixture with the
 // provided store. Store can be nil, in which case it will use memstore.
-func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.Pool) (*cos.FC, error) {
+func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.Pool) (*cos.FC, *generator.Generator, error) {
 	pubkey, err := testutil.TestXPub.ECPubKey()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if store == nil {
 		store = memstore.New()
@@ -283,26 +283,31 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 	}
 	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	asset.Init(fc, true)
 	privkey, err := testutil.TestXPrv.ECPrivKey()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	localSigner := signer.New(privkey, pg.FromContext(ctx), fc)
-
-	err = generator.Init(ctx, fc, []*btcec.PublicKey{pubkey}, 1, 0, localSigner, nil)
-	if err != nil {
-		return nil, err
+	g := &generator.Generator{
+		Config: generator.Config{
+			LocalSigner:  localSigner,
+			BlockPeriod:  time.Second,
+			BlockKeys:    []*btcec.PublicKey{pubkey},
+			SigsRequired: 1,
+			FC:           fc,
+		},
 	}
-
-	_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1, time.Now())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-
-	return fc, nil
+	err = g.UpsertGenesisBlock(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	return fc, g, nil
 }
 
 func Issue(ctx context.Context, t testing.TB, assetID bc.AssetID, dests []*txbuilder.Destination) *bc.Tx {

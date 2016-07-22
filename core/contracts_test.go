@@ -32,7 +32,7 @@ type contractsFixtureInfo struct {
 var ttl = time.Hour
 
 func TestOfferContract(t *testing.T) {
-	withContractsFixture(t, func(ctx context.Context, fixtureInfo *contractsFixtureInfo) {
+	withContractsFixture(t, func(ctx context.Context, g *generator.Generator, fixtureInfo *contractsFixtureInfo) {
 		buildRequest := &BuildRequest{
 			Sources: []*Source{
 				&Source{
@@ -102,7 +102,7 @@ func callBuildSingle(t *testing.T, ctx context.Context, request *BuildRequest, c
 }
 
 func TestFindAndBuyContract(t *testing.T) {
-	withContractsFixture(t, func(ctx context.Context, fixtureInfo *contractsFixtureInfo) {
+	withContractsFixture(t, func(ctx context.Context, g *generator.Generator, fixtureInfo *contractsFixtureInfo) {
 		openOrder, err := offerAndFind(ctx, t, fixtureInfo)
 		if err != nil {
 			t.Fatal(err)
@@ -228,7 +228,7 @@ func offerAndFind(ctx context.Context, t testing.TB, fixtureInfo *contractsFixtu
 }
 
 func TestFindAndCancelContract(t *testing.T) {
-	withContractsFixture(t, func(ctx context.Context, fixtureInfo *contractsFixtureInfo) {
+	withContractsFixture(t, func(ctx context.Context, g *generator.Generator, fixtureInfo *contractsFixtureInfo) {
 		openOrder, err := offerAndFind(ctx, t, fixtureInfo)
 		if err != nil {
 			t.Fatal(err)
@@ -259,7 +259,7 @@ func TestFindAndCancelContract(t *testing.T) {
 			}
 
 			// Make a block so the order should go away
-			_, err = generator.MakeBlock(ctx)
+			_, err = g.MakeBlock(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -277,7 +277,7 @@ func TestFindAndCancelContract(t *testing.T) {
 }
 
 func TestFindBySeller(t *testing.T) {
-	withContractsFixture(t, func(ctx context.Context, fixtureInfo *contractsFixtureInfo) {
+	withContractsFixture(t, func(ctx context.Context, g *generator.Generator, fixtureInfo *contractsFixtureInfo) {
 		order, err := offerAndFind(ctx, t, fixtureInfo)
 		if err != nil {
 			t.Fatal(err)
@@ -312,9 +312,9 @@ func callFindAccountOrders(ctx context.Context, accountID string) ([]*orderbook.
 	return findAccountOrders(ctx, accountID)
 }
 
-func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtureInfo)) {
+func withContractsFixture(t *testing.T, fn func(context.Context, *generator.Generator, *contractsFixtureInfo)) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -353,5 +353,5 @@ func withContractsFixture(t *testing.T, fn func(context.Context, *contractsFixtu
 		t.Fatalf("unexpected error %v", err)
 	}
 
-	fn(ctx, &fixtureInfo)
+	fn(ctx, g, &fixtureInfo)
 }

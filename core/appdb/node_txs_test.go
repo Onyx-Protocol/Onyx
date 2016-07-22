@@ -12,7 +12,6 @@ import (
 	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/asset/nodetxlog"
-	"chain/core/generator"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
 	"chain/database/pg"
@@ -197,7 +196,7 @@ func TestAccountTxsLimit(t *testing.T) {
 func TestAccountTxsTimeLimit(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +221,7 @@ func TestAccountTxsTimeLimit(t *testing.T) {
 	// Don't include this transfer in the output
 	assettest.Transfer(ctx, t, srcs(1), dests(1))
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -235,7 +234,7 @@ func TestAccountTxsTimeLimit(t *testing.T) {
 	// Do include this transfer in the output too
 	assettest.Transfer(ctx, t, srcs(4), dests(4))
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -245,7 +244,7 @@ func TestAccountTxsTimeLimit(t *testing.T) {
 	// Don't include this transfer in the output
 	assettest.Transfer(ctx, t, srcs(8), dests(8))
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

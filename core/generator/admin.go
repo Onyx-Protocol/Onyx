@@ -52,10 +52,10 @@ func newSummary() *Summary {
 }
 
 // GetSummary returns a Summary from the perspective of the given project.
-func GetSummary(ctx context.Context, store *txdb.Store, pool *txdb.Pool, projID string) (*Summary, error) {
+func (g *Config) GetSummary(ctx context.Context, store *txdb.Store, pool *txdb.Pool, projID string) (*Summary, error) {
 	res := newSummary()
 
-	res.BlockFreqMs = uint64(blockPeriod.Nanoseconds() / 1000000)
+	res.BlockFreqMs = uint64(g.BlockPeriod.Nanoseconds() / 1000000)
 
 	height, err := store.Height(ctx)
 	if err != nil {

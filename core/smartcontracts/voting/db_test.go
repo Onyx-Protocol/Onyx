@@ -223,7 +223,7 @@ func TestGetVotesSimple(t *testing.T) {
 	// TODO(jackson): Add additional tests for pagination, recalled voting
 	// rights, voided voting rights, etc.
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -235,11 +235,11 @@ func TestGetVotesSimple(t *testing.T) {
 		address1    = assettest.CreateAddressFixture(ctx, t, accountID1)
 		address2    = assettest.CreateAddressFixture(ctx, t, accountID2)
 		adminScript = assettest.CreateAddressFixture(ctx, t, accountID2).PKScript
-		right1      = createVotingRightFixture(ctx, t, address1.PKScript)
-		right2      = createVotingRightFixture(ctx, t, address2.PKScript)
-		token1      = createVotingTokenFixture(ctx, t, right1.AssetID, adminScript, 100)
-		token2      = createVotingTokenFixture(ctx, t, right2.AssetID, adminScript, 100)
-		_           = createVotingTokenFixture(ctx, t, right1.AssetID, adminScript, 100)
+		right1      = createVotingRightFixture(ctx, t, g, address1.PKScript)
+		right2      = createVotingRightFixture(ctx, t, g, address2.PKScript)
+		token1      = createVotingTokenFixture(ctx, t, g, right1.AssetID, adminScript, 100)
+		token2      = createVotingTokenFixture(ctx, t, g, right2.AssetID, adminScript, 100)
+		_           = createVotingTokenFixture(ctx, t, g, right1.AssetID, adminScript, 100)
 	)
 
 	tokens, last, err := GetVotes(ctx, []bc.AssetID{token1.AssetID, token2.AssetID}, accountID1, "", 10)

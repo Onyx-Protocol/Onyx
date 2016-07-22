@@ -21,7 +21,7 @@ import (
 
 func TestAccountSourceReserve(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestAccountSourceReserve(t *testing.T) {
 
 func TestAccountSourceUTXOReserve(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +141,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 func TestAccountSourceReserveIdempotency(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +239,7 @@ func TestAccountDestinationPKScript(t *testing.T) {
 
 func TestAccountSourceWithTxHash(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

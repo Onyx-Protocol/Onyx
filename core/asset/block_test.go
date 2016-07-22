@@ -30,7 +30,7 @@ func TestTransferConfirmed(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 
-	info, err := bootdb(ctx, t)
+	info, g, err := bootdb(ctx, t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func TestTransferConfirmed(t *testing.T) {
 	}
 
 	dumpState(ctx, t)
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestGenSpendApply(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 
-	info, err := bootdb(ctx, t)
+	info, g, err := bootdb(ctx, t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestGenSpendApply(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = generator.GetAndAddBlockSignatures(ctx, block, prevBlock)
+	err = g.GetAndAddBlockSignatures(ctx, block, prevBlock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestGenSpendApply(t *testing.T) {
 func BenchmarkTransferWithBlocks(b *testing.B) {
 	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	info, err := bootdb(ctx, b)
+	info, g, err := bootdb(ctx, b)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -129,7 +129,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 		b.Logf("finalized %v", tx.Hash)
 
 		if i%10 == 0 {
-			_, err = generator.MakeBlock(ctx)
+			_, err = g.MakeBlock(ctx)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -221,64 +221,64 @@ type clientInfo struct {
 
 // TODO(kr): refactor this into new package core/coreutil
 // and consume it from cmd/corectl.
-func bootdb(ctx context.Context, t testing.TB) (*clientInfo, error) {
+func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *generator.Generator, error) {
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	_, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer dbtx.Rollback(ctx)
 
 	proj, err := appdb.CreateProject(ctx, "proj")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	manPub, manPriv, err := hdkey.New()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hdkey.XKey{manPub}, []*hdkey.XKey{manPriv}, 0, 1, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	acctA, err := appdb.CreateAccount(ctx, manager.ID, "label", nil, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	acctB, err := appdb.CreateAccount(ctx, manager.ID, "label", nil, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	issPub, issPriv, err := hdkey.New()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	iNode, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv}, 1, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	genesis, err := store.GetBlock(ctx, 1)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	asset, err := issuer.CreateAsset(ctx, iNode.ID, "label", genesis.Hash(), map[string]interface{}{}, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	err = dbtx.Commit(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	info := &clientInfo{
@@ -288,7 +288,7 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, error) {
 		privKeyIssuer:  issPriv,
 		privKeyManager: manPriv,
 	}
-	return info, nil
+	return info, g, nil
 }
 
 func issue(ctx context.Context, t testing.TB, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {

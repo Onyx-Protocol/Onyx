@@ -193,9 +193,7 @@ func main() {
 	historicalOutputsMaxAge := time.Duration(*historicalOutputsMaxAgeDays) * 24 * time.Hour // TODO(kr): use env.Duration
 	explorer := explorer.New(fc, db, store, historicalOutputsMaxAge, *historicalOutputs, *isManager)
 
-	// Note, it's important for any services that will install blockchain
-	// callbacks to be initialized before the generator and the http server,
-	// otherwise there's a race condition.
+	var generatorConfig *generator.Config
 	if *isGenerator {
 		remotes := remoteSignerInfo(ctx)
 		nSigners := len(remotes)
@@ -212,25 +210,33 @@ func main() {
 		if *isSigner {
 			pubKeys[nSigners-1] = pubKey
 		}
-		err := generator.Init(ctx, fc, pubKeys, *sigsRequired, blockPeriod, localSigner, remotes)
-		if err != nil {
-			chainlog.Fatal(ctx, "error", err)
+
+		generatorConfig = &generator.Config{
+			RemoteSigners: remotes,
+			LocalSigner:   localSigner,
+			BlockPeriod:   blockPeriod,
+			BlockKeys:     pubKeys,
+			SigsRequired:  *sigsRequired,
+			FC:            fc,
 		}
 	}
 
+	// Note, it's important for any services that will install blockchain
+	// callbacks to be initialized before leader.Run() and the http server,
+	// otherwise there's a data race within cos.FC.
 	go leader.Run(db, func(ctx context.Context) {
 		ctx = pg.NewContext(ctx, db)
 		if *isManager {
 			go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
 		}
 		if *isGenerator {
-			go generator.Generate(ctx)
+			go generator.Generate(ctx, *generatorConfig)
 		} else {
 			go fetch.Fetch(ctx, fc)
 		}
 	})
 
-	h := core.Handler(*nouserSecret, localSigner, store, pool, explorer)
+	h := core.Handler(*nouserSecret, generatorConfig, localSigner, store, pool, explorer)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}

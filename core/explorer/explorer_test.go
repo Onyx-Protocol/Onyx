@@ -11,7 +11,6 @@ import (
 
 	"chain/core/asset"
 	"chain/core/asset/assettest"
-	"chain/core/generator"
 	"chain/core/issuer"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
@@ -44,7 +43,7 @@ func TestHistoricalOutput(t *testing.T) {
 	ctx := context.Background()
 	dbtx := pgtest.NewTx(t)
 	dbctx := pg.NewContext(ctx, dbtx)
-	fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +69,7 @@ func TestHistoricalOutput(t *testing.T) {
 		t.Errorf("expected 0 historical units, got %d", n)
 	}
 
-	_, err = generator.MakeBlock(dbctx)
+	_, err = g.MakeBlock(dbctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +86,7 @@ func TestHistoricalOutput(t *testing.T) {
 		t.Errorf("expected 0 historical units, got %d", n)
 	}
 
-	_, err = generator.MakeBlock(dbctx)
+	_, err = g.MakeBlock(dbctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -426,7 +425,7 @@ func TestGetAssets(t *testing.T) {
 	ctx := context.Background()
 	dbtx := pgtest.NewTx(t)
 	dbctx := pg.NewContext(ctx, dbtx)
-	fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -443,7 +442,7 @@ func TestGetAssets(t *testing.T) {
 
 	assettest.IssueAssetsFixture(dbctx, t, asset0, 58, "")
 
-	_, err = generator.MakeBlock(dbctx)
+	_, err = g.MakeBlock(dbctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -489,7 +488,7 @@ func TestGetAsset(t *testing.T) {
 	ctx := context.Background()
 	dbtx := pgtest.NewTx(t)
 	dbctx := pg.NewContext(ctx, dbtx)
-	fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -506,7 +505,7 @@ func TestGetAsset(t *testing.T) {
 
 	assettest.IssueAssetsFixture(dbctx, t, asset0, 58, "")
 
-	_, err = generator.MakeBlock(dbctx)
+	_, err = g.MakeBlock(dbctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -560,7 +559,7 @@ func TestListUTXOsByAsset(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 	dbctx := pg.NewContext(ctx, dbtx)
-	fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -577,7 +576,7 @@ func TestListUTXOsByAsset(t *testing.T) {
 		assettest.AccountDest(dbctx, t, accountID, assetID, 1),
 	})
 
-	_, err = generator.MakeBlock(dbctx)
+	_, err = g.MakeBlock(dbctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -619,7 +618,7 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 	ctx := context.Background()
 	dbtx := pgtest.NewTx(t)
 	dbctx := pg.NewContext(ctx, dbtx)
-	fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -688,7 +687,7 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 	}
 	checkEmpty(got)
 
-	_, err = generator.MakeBlock(dbctx)
+	_, err = g.MakeBlock(dbctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -711,7 +710,7 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 		assettest.AccountDest(dbctx, t, account2ID, assetID, 100),
 	})
 
-	_, err = generator.MakeBlock(dbctx)
+	_, err = g.MakeBlock(dbctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -725,7 +724,7 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 
 	// issue another 200 units of the first asset. This shouldn't change the results of our query.
 	assettest.IssueAssetsFixture(dbctx, t, assetID, 200, account1ID)
-	_, err = generator.MakeBlock(dbctx)
+	_, err = g.MakeBlock(dbctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

@@ -18,7 +18,7 @@ import (
 
 func TestFindOpenOrders(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	fc, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

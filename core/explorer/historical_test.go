@@ -9,7 +9,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/asset/assettest"
-	"chain/core/generator"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -28,7 +27,7 @@ func benchmarkHistoricalOutputs(b *testing.B, historicalOutputs bool) {
 		ctx := context.Background()
 		dbtx := pgtest.NewTx(b)
 		dbctx := pg.NewContext(ctx, dbtx)
-		fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
+		fc, g, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -42,7 +41,7 @@ func benchmarkHistoricalOutputs(b *testing.B, historicalOutputs bool) {
 			Trade: func(sellerID, buyerID string, shareAssetID, usdAssetID bc.AssetID, shares, dollars uint64) {
 				n++
 				if n%10 == 0 {
-					_, err := generator.MakeBlock(dbctx)
+					_, err := g.MakeBlock(dbctx)
 					if err != nil {
 						b.Fatal(err)
 					}
@@ -57,7 +56,7 @@ func TestHistoricalOutputs(t *testing.T) {
 	ctx := context.Background()
 	dbtx := pgtest.NewTx(t)
 	dbctx := pg.NewContext(ctx, dbtx)
-	fc, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(dbctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +98,7 @@ func TestHistoricalOutputs(t *testing.T) {
 		},
 		AfterIssue: func(n int) {
 			nTrades = n
-			b, err := generator.MakeBlock(dbctx)
+			b, err := g.MakeBlock(dbctx)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -114,7 +113,7 @@ func TestHistoricalOutputs(t *testing.T) {
 			currentBalances[accountAssetPair{buyerID, usdAssetID}] -= dollars
 
 			if tradeNum == nTrades || rand.Intn(10) == 0 {
-				b, err := generator.MakeBlock(dbctx)
+				b, err := g.MakeBlock(dbctx)
 				if err != nil {
 					t.Fatal(err)
 				}

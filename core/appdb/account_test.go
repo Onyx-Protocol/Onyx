@@ -10,7 +10,6 @@ import (
 
 	. "chain/core/appdb"
 	"chain/core/asset/assettest"
-	"chain/core/generator"
 	"chain/cos/bc"
 	"chain/cos/state"
 	"chain/database/pg"
@@ -313,7 +312,7 @@ func TestArchiveAccount(t *testing.T) {
 
 func TestListAccountUTXOs(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -330,7 +329,7 @@ func TestListAccountUTXOs(t *testing.T) {
 	issuances = append(issuances, assettest.IssueAssetsFixture(ctx, t, asset1, 3, acc0))
 	issuances = append(issuances, assettest.IssueAssetsFixture(ctx, t, asset1, 4, acc1))
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

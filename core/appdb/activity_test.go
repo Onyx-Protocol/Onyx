@@ -11,7 +11,6 @@ import (
 
 	. "chain/core/appdb"
 	"chain/core/asset/assettest"
-	"chain/core/generator"
 	"chain/cos/bc"
 	"chain/cos/mempool"
 	"chain/cos/memstore"
@@ -23,7 +22,7 @@ import (
 func TestGetActUTXOs(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	store, pool := memstore.New(), mempool.New()
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	_, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +43,7 @@ func TestGetActUTXOs(t *testing.T) {
 	out0 := assettest.IssueAssetsFixture(ctx, t, asset0, 1, acc0)
 	out1 := assettest.IssueAssetsFixture(ctx, t, asset0, 2, acc1)
 
-	_, err = generator.MakeBlock(ctx)
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +127,7 @@ func TestGetActUTXOs(t *testing.T) {
 func TestGetActUTXOsIssuance(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	store, pool := memstore.New(), mempool.New()
-	_, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	_, _, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +184,7 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 
 func TestGetActAssets(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -249,7 +248,7 @@ func (a byAssetID) Less(i, j int) bool { return a[i].ID < a[j].ID }
 
 func TestGetActAccounts(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	_, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

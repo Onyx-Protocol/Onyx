@@ -31,7 +31,7 @@ type orderbookFixtureInfo struct {
 var ttl = time.Hour
 
 func TestOffer(t *testing.T) {
-	withOrderbookFixture(t, func(ctx context.Context, fixtureInfo *orderbookFixtureInfo) {
+	withOrderbookFixture(t, func(ctx context.Context, g *generator.Generator, fixtureInfo *orderbookFixtureInfo) {
 		numOutputs := len(fixtureInfo.offerTx.Outputs)
 		testutil.ExpectEqual(t, numOutputs, 1, "wrong number of outputs")
 
@@ -43,7 +43,7 @@ func TestOffer(t *testing.T) {
 }
 
 func TestBuy(t *testing.T) {
-	withOrderbookFixture(t, func(ctx context.Context, fixtureInfo *orderbookFixtureInfo) {
+	withOrderbookFixture(t, func(ctx context.Context, g *generator.Generator, fixtureInfo *orderbookFixtureInfo) {
 		buyerAccountID := assettest.CreateAccountFixture(ctx, t, fixtureInfo.managerNodeID, "buyer", nil)
 
 		usd2200 := bc.AssetAmount{
@@ -142,7 +142,7 @@ func TestBuy(t *testing.T) {
 }
 
 func TestCancel(t *testing.T) {
-	withOrderbookFixture(t, func(ctx context.Context, fixtureInfo *orderbookFixtureInfo) {
+	withOrderbookFixture(t, func(ctx context.Context, g *generator.Generator, fixtureInfo *orderbookFixtureInfo) {
 		cancelTxTemplate, err := cancel(ctx, fixtureInfo.openOrder, ttl)
 		if err != nil {
 			testutil.FatalErr(t, err)
@@ -163,7 +163,7 @@ func TestCancel(t *testing.T) {
 
 		expectPaysToAccount(ctx, t, fixtureInfo.sellerAccountID, output.ControlProgram)
 
-		_, err = generator.MakeBlock(ctx)
+		_, err = g.MakeBlock(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -176,9 +176,9 @@ func TestCancel(t *testing.T) {
 	})
 }
 
-func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo *orderbookFixtureInfo)) {
+func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, g *generator.Generator, fixtureInfo *orderbookFixtureInfo)) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	fc, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -245,7 +245,7 @@ func withOrderbookFixture(t *testing.T, fn func(ctx context.Context, fixtureInfo
 		Script: fixtureInfo.offerTx.Outputs[0].ControlProgram,
 	}
 
-	fn(ctx, &fixtureInfo)
+	fn(ctx, g, &fixtureInfo)
 }
 
 func offer(ctx context.Context, sellerAccountID string, assetAmount *bc.AssetAmount, prices []*Price, ttl time.Duration) (*txbuilder.Template, error) {
