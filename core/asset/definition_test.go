@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"reflect"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -79,10 +80,7 @@ func TestInsertAssetDefinitions(t *testing.T) {
 
 		tx := bc.NewTx(bc.TxData{
 			Inputs: []*bc.TxInput{
-				{
-					AssetDefinition: d,
-					Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
-				},
+				bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), bc.Hash{}, 0, nil, d, nil, nil),
 			},
 		})
 		txs = append(txs, tx)
@@ -126,10 +124,7 @@ func TestInsertAssetDefinitionsIdempotent(t *testing.T) {
 	block := &bc.Block{
 		Transactions: []*bc.Tx{
 			bc.NewTx(bc.TxData{Inputs: []*bc.TxInput{
-				{
-					AssetDefinition: def,
-					Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
-				},
+				bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), bc.Hash{}, 0, nil, def, nil, nil),
 			}}),
 		},
 	}
@@ -171,17 +166,12 @@ func TestInsertAssetDefinitionsDuplicates(t *testing.T) {
 	hash := bc.HashAssetDefinition(def).String()
 
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	now := time.Now()
 	block := &bc.Block{
 		Transactions: []*bc.Tx{
 			bc.NewTx(bc.TxData{Inputs: []*bc.TxInput{
-				{
-					AssetDefinition: def,
-					Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
-				},
-				{
-					AssetDefinition: def, // duplicate
-					Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
-				},
+				bc.NewIssuanceInput(now, now.Add(time.Hour), bc.Hash{}, 0, nil, def, nil, nil),
+				bc.NewIssuanceInput(now, now.Add(time.Hour), bc.Hash{}, 0, nil, def, nil, nil),
 			}}),
 		},
 	}

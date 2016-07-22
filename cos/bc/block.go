@@ -104,7 +104,7 @@ type BlockHeader struct {
 	// Time of the block in milliseconds.
 	// Must grow monotonically and can be equal
 	// to the time in the previous block.
-	Timestamp uint64
+	TimestampMS uint64
 
 	// Signature script authenticates the block against
 	// the output script from the previous block.
@@ -116,7 +116,7 @@ type BlockHeader struct {
 
 // Time returns the time represented by the Timestamp in bh.
 func (bh *BlockHeader) Time() time.Time {
-	tsNano := bh.Timestamp * uint64(time.Millisecond)
+	tsNano := bh.TimestampMS * uint64(time.Millisecond)
 	return time.Unix(0, int64(tsNano)).UTC()
 }
 
@@ -206,7 +206,7 @@ func (bh *BlockHeader) readFrom(r io.Reader) (err error) {
 	if err != nil {
 		return err
 	}
-	bh.Timestamp, _ = blockchain.ReadUvarint(r)
+	bh.TimestampMS, _ = blockchain.ReadUvarint(r)
 	bh.SignatureScript, err = blockchain.ReadBytes(r, MaxProgramByteLength)
 	if err != nil {
 		return err
@@ -240,7 +240,7 @@ func (bh *BlockHeader) writeTo(w io.Writer, forSigning bool) error {
 	blockchain.WriteUvarint(w, bh.Height)
 	w.Write(bh.PreviousBlockHash[:])
 	blockchain.WriteBytes(w, bh.Commitment)
-	blockchain.WriteUvarint(w, bh.Timestamp)
+	blockchain.WriteUvarint(w, bh.TimestampMS)
 	if forSigning {
 		blockchain.WriteBytes(w, nil)
 	} else {

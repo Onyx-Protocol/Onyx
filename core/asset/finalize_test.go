@@ -147,7 +147,7 @@ func TestDeleteUTXOs(t *testing.T) {
 	block := &bc.Block{Transactions: []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Inputs: []*bc.TxInput{
-				{Previous: out.Outpoint},
+				bc.NewSpendInput(out.Hash, out.Index, nil, asset, 1, nil, nil),
 			},
 		}),
 	}}

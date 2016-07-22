@@ -91,14 +91,10 @@ func testRightsContract(pkscript []byte) (*rightScriptData, error) {
 	return &right, nil
 }
 
-// testRightsSigscript tests whether the given sigscript is redeeming a
-// voting rights holding contract. It will return the clause being used,
-// and a slice of the other clause parameters.
-func testRightsSigscript(sigscript []byte) (ok bool, c rightsContractClause, params [][]byte) {
-	data, err := txscript.PushedData(sigscript)
-	if err != nil {
-		return false, c, nil
-	}
+// testRightsWitness tests whether the given input witness is
+// redeeming a voting rights holding contract. It will return the
+// clause being used, and a slice of the other clause parameters.
+func testRightsWitness(data [][]byte) (ok bool, c rightsContractClause, params [][]byte) {
 	if len(data) < 2 {
 		return false, c, nil
 	}
@@ -310,5 +306,6 @@ func init() {
 func calculateOwnershipChain(oldChain bc.Hash, holder []byte) bc.Hash {
 	hash := sha3.Sum256(holder)
 	data := append(hash[:], oldChain[:]...)
-	return sha3.Sum256(data)
+	res := sha3.Sum256(data)
+	return res
 }

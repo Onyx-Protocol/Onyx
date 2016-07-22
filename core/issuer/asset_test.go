@@ -10,6 +10,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/appdb"
+	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 )
@@ -26,7 +27,7 @@ func TestCreateAsset(t *testing.T) {
 
 	clientToken := "a-client-provided-unique-token"
 	definition := make(map[string]interface{})
-	asset, err := CreateAsset(ctx, "in1", "fooAsset", definition, &clientToken)
+	asset, err := CreateAsset(ctx, "in1", "fooAsset", bc.Hash{}, definition, &clientToken)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -52,7 +53,7 @@ func TestCreateAsset(t *testing.T) {
 
 	// Try to create the same asset again, and ensure that it returns the
 	// original asset.
-	newAsset, err := CreateAsset(ctx, "in1", "fooAsset2", definition, &clientToken)
+	newAsset, err := CreateAsset(ctx, "in1", "fooAsset2", bc.Hash{}, definition, &clientToken)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -90,7 +91,7 @@ func TestCreateDefs(t *testing.T) {
 		dbtx := pgtest.NewTx(t)
 		ctx := pg.NewContext(context.Background(), dbtx)
 		pgtest.Exec(ctx, t, fix)
-		gotCreated, err := CreateAsset(ctx, "inode-0", "label", ex.def, &clientToken)
+		gotCreated, err := CreateAsset(ctx, "inode-0", "label", bc.Hash{}, ex.def, &clientToken)
 		if err != nil {
 			t.Fatal("unexpected error: ", err)
 		}

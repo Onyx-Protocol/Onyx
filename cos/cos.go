@@ -90,6 +90,7 @@ type Store interface {
 	SaveBlock(context.Context, *bc.Block) error
 	FinalizeBlock(context.Context, uint64) error
 	SaveStateTree(context.Context, uint64, *patricia.Tree) error
+	InitialBlockHash(context.Context) (bc.Hash, error)
 }
 
 // Pool provides storage for transactions in the pending tx pool.

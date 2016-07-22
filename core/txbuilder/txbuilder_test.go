@@ -27,15 +27,13 @@ type testReserver struct{}
 func (tr *testReserver) Reserve(ctx context.Context, assetAmt *bc.AssetAmount, ttl time.Duration) (*ReserveResult, error) {
 	return &ReserveResult{
 		Items: []*ReserveResultItem{{
-			TxInput: &bc.TxInput{
-				Previous:    bc.Outpoint{Hash: [32]byte{255}, Index: 0},
-				AssetAmount: *assetAmt,
-				PrevScript:  []byte{},
-			},
+			TxInput: bc.NewSpendInput([32]byte{255}, 0, nil, assetAmt.AssetID, assetAmt.Amount, nil, nil),
 			TemplateInput: &Input{
-				SigScriptSuffix: []byte("redeem"),
-			},
-		}},
+				SigComponents: []*SigScriptComponent{{
+					Type: "data",
+					Data: []byte("redeem"),
+				}}}},
+		},
 		Change: []*Destination{{
 			AssetAmount: *assetAmt,
 			Receiver:    &testRecv{script: []byte("change")},
@@ -78,20 +76,21 @@ func TestBuild(t *testing.T) {
 		BlockChain: "sandbox",
 		Unsigned: &bc.TxData{
 			Version: 1,
-			Inputs: []*bc.TxInput{{
-				Previous:    bc.Outpoint{Hash: [32]byte{255}, Index: 0},
-				AssetAmount: bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5},
-				PrevScript:  []byte{},
-			}},
+			Inputs: []*bc.TxInput{
+				bc.NewSpendInput([32]byte{255}, 0, nil, [32]byte{1}, 5, nil, nil),
+			},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput([32]byte{2}, 6, []byte("dest"), nil),
 				bc.NewTxOutput([32]byte{1}, 5, []byte("change"), nil),
 			},
 		},
 		Inputs: []*Input{{
-			SigScriptSuffix: []byte("redeem"),
-			Sigs:            []*Signature{},
-			SigComponents:   []*SigScriptComponent{},
+			SigComponents: []*SigScriptComponent{
+				{
+					Type: "data",
+					Data: []byte("redeem"),
+				},
+			},
 		}},
 	}
 
@@ -110,7 +109,9 @@ func TestBuild(t *testing.T) {
 func TestCombine(t *testing.T) {
 	unsigned1 := &bc.TxData{
 		Version: 1,
-		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}}},
+		Inputs: []*bc.TxInput{
+			bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{}, 0, nil, nil),
+		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput([32]byte{254}, 5, nil, nil),
 		},
@@ -118,7 +119,9 @@ func TestCombine(t *testing.T) {
 
 	unsigned2 := &bc.TxData{
 		Version: 1,
-		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}}},
+		Inputs: []*bc.TxInput{
+			bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{}, 0, nil, nil),
+		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput([32]byte{255}, 6, nil, nil),
 		},
@@ -127,8 +130,8 @@ func TestCombine(t *testing.T) {
 	combined := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}},
-			{Previous: bc.Outpoint{Hash: bc.Hash{}, Index: 0}},
+			bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{}, 0, nil, nil),
+			bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{}, 0, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput([32]byte{254}, 5, nil, nil),
@@ -201,12 +204,18 @@ func TestCombineMetadata(t *testing.T) {
 }
 
 func TestAssembleSignatures(t *testing.T) {
+	var genesisHash bc.Hash
+	issuanceProg := []byte{1}
+	assetID := bc.ComputeAssetID(issuanceProg, genesisHash)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
+	now := time.Unix(233400000, 0)
 	unsigned := &bc.TxData{
 		Version: 1,
-		Inputs:  []*bc.TxInput{{Previous: bc.Outpoint{Index: bc.InvalidOutputIndex}}},
+		Inputs: []*bc.TxInput{
+			bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 5, issuanceProg, nil, nil, nil),
+		},
 		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput([32]byte{255}, 5, outscript, nil),
+			bc.NewTxOutput(assetID, 5, outscript, nil),
 		},
 	}
 	sigData, _ := bc.ParseHash("b64d968745f18a5da6d5dd4ec750f7e6da5204000a9ee90ba9187ec85c25032c")
@@ -214,13 +223,22 @@ func TestAssembleSignatures(t *testing.T) {
 	tpl := &Template{
 		Unsigned: unsigned,
 		Inputs: []*Input{{
-			SignatureData: sigData,
-			Sigs: []*Signature{{
-				XPub:           "xpub661MyMwAqRbcGZNqeB27ae2nQLWoWd9Ffx8NEXrVDFgFPe6Jdzw53p5m3ewA3K2z5nPmcJK7r1nykAwkoNHWgHr5kLCWi777ShtKwLdy55a",
-				DerivationPath: []uint32{0, 0, 0, 0},
-				DER:            mustDecodeHex("304402202ece2c2dfd0ca44b27c5e03658c7eaac4d61d5c2668940da1bdcf53b312db0fc0220670c520b67b6fd4f4efcfbe55e82dc4a4624059b51594889d664bea445deee6b01"),
-			}},
-			SigScriptSuffix: mustDecodeHex("4c695221033dda0a756db51f76a4f394161614f01df4061644c514fde3994adbe4a3a2d21621038a0f0a8d593773abcd8c878f8777c57986f9f84886c8dde0cf00fdc2c89f0c592103b9e805011523bb28eedb3fcfff8924684a91116a76408fe0972805295e50e15d53ae"),
+			SigComponents: []*SigScriptComponent{
+				{
+					Type:          "signature",
+					Required:      2,
+					SignatureData: sigData,
+					Signatures: []*Signature{{
+						XPub:           "xpub661MyMwAqRbcGZNqeB27ae2nQLWoWd9Ffx8NEXrVDFgFPe6Jdzw53p5m3ewA3K2z5nPmcJK7r1nykAwkoNHWgHr5kLCWi777ShtKwLdy55a",
+						DerivationPath: []uint32{0, 0, 0, 0},
+						DER:            mustDecodeHex("304402202ece2c2dfd0ca44b27c5e03658c7eaac4d61d5c2668940da1bdcf53b312db0fc0220670c520b67b6fd4f4efcfbe55e82dc4a4624059b51594889d664bea445deee6b01"),
+					}},
+				},
+				{
+					Type: "data",
+					Data: mustDecodeHex("5221033dda0a756db51f76a4f394161614f01df4061644c514fde3994adbe4a3a2d21621038a0f0a8d593773abcd8c878f8777c57986f9f84886c8dde0cf00fdc2c89f0c592103b9e805011523bb28eedb3fcfff8924684a91116a76408fe0972805295e50e15d53ae"),
+				},
+			},
 		}},
 	}
 
@@ -229,7 +247,7 @@ func TestAssembleSignatures(t *testing.T) {
 		t.Fatal(withStack(err))
 	}
 
-	want := "563350e56f596b093d0b7b8503f1cbf0854ed10956798e67992035b4b602ce98" // TODO(bobg): verify this is the right hash
+	want := "13590d7034f3a591fcff06f91520cfda8f43dfdba66fbce92fe05f1276c4ac8f" // TODO(bobg): verify this is the right hash
 	if got := tx.WitnessHash().String(); got != want {
 		t.Errorf("got tx witness hash = %v want %v", got, want)
 	}

@@ -385,6 +385,7 @@ CREATE TABLE assets (
     definition_mutable boolean DEFAULT false NOT NULL,
     definition bytea,
     redeem_script bytea NOT NULL,
+    genesis_hash text NOT NULL,
     label text NOT NULL,
     sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL,
     inner_asset_id text,

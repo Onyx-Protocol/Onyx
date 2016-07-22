@@ -247,7 +247,7 @@ func (b *ScriptBuilder) ConcatRawScript(data []byte) *ScriptBuilder {
 }
 
 type Item interface {
-	AddTo(*ScriptBuilder) *ScriptBuilder
+	Bytes() []byte
 }
 
 type (
@@ -256,16 +256,20 @@ type (
 	BoolItem bool
 )
 
-func (n NumItem) AddTo(sb *ScriptBuilder) *ScriptBuilder {
-	return sb.AddInt64(int64(n))
+func (n NumItem) Bytes() []byte {
+	return scriptNum(n).Bytes()
 }
 
-func (d DataItem) AddTo(sb *ScriptBuilder) *ScriptBuilder {
-	return sb.AddData([]byte(d))
+func (d DataItem) Bytes() []byte {
+	return []byte(d)
 }
 
-func (b BoolItem) AddTo(sb *ScriptBuilder) *ScriptBuilder {
-	return sb.AddBool(bool(b))
+func (b BoolItem) Bytes() []byte {
+	var v int64
+	if bool(b) {
+		v = 1
+	}
+	return scriptNum(v).Bytes()
 }
 
 // Reset resets the script so it has no content.

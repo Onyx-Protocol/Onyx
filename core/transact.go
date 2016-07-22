@@ -165,7 +165,9 @@ func submitSingle(ctx context.Context, x submitSingleArg) (interface{}, error) {
 func cancelReservation(ctx context.Context, x struct{ Transaction bc.Tx }) error {
 	var outpoints []bc.Outpoint
 	for _, input := range x.Transaction.Inputs {
-		outpoints = append(outpoints, input.Previous)
+		if !input.IsIssuance() {
+			outpoints = append(outpoints, input.Outpoint())
+		}
 	}
 	return asset.CancelReservations(ctx, outpoints)
 }

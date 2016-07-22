@@ -308,7 +308,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 			return nil, nil, err
 		}
 		assetAmount := bc.AssetAmount{AssetID: *params.RightAssetID, Amount: 1}
-		srcs = append(srcs, issuer.NewIssueSource(ctx, &assetAmount))
+		srcs = append(srcs, issuer.NewIssueSource(ctx, assetAmount, nil, nil))
 		dsts = append(dsts, &txbuilder.Destination{
 			AssetAmount: assetAmount,
 			Metadata:    action.Metadata,
@@ -496,7 +496,7 @@ func parseVotingAction(ctx context.Context, action *Action) (srcs []*txbuilder.S
 		}
 
 		assetAmount := bc.AssetAmount{AssetID: *params.TokenAssetID, Amount: params.Amount}
-		srcs = append(srcs, issuer.NewIssueSource(ctx, &assetAmount))
+		srcs = append(srcs, issuer.NewIssueSource(ctx, assetAmount, nil, nil))
 		dsts = append(dsts, &txbuilder.Destination{
 			AssetAmount: assetAmount,
 			Metadata:    action.Metadata,

@@ -44,14 +44,18 @@ func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx
 	)
 
 	for _, in := range tx.Inputs {
+		if in.IsIssuance() {
+			continue
+		}
+
 		// Collect all of the voting right inputs into the maps.
-		if ok, _, _ := testRightsSigscript(in.SignatureScript); ok {
-			votingRightInputs[in.AssetAmount.AssetID] = *in
+		if ok, _, _ := testRightsWitness(in.InputWitness); ok {
+			votingRightInputs[in.AssetID()] = *in
 		}
 
 		// Delete any voting tokens that are consumed.
-		if ok, _, _ := testTokensSigscript(in.SignatureScript); ok {
-			err := voidVotingTokens(ctx, in.Previous)
+		if ok, _, _ := testTokensWitness(in.InputWitness); ok {
+			err := voidVotingTokens(ctx, in.Outpoint())
 			if err != nil {
 				return err
 			}
@@ -88,11 +92,11 @@ func updateIndexes(ctx context.Context, blockHeight uint64, blockTxIndex int, tx
 			continue
 		}
 		in := votingRightInputs[assetID]
-		_, clause, params := testRightsSigscript(in.SignatureScript)
+		_, clause, params := testRightsWitness(in.InputWitness)
 
 		// Look up the current state of the voting right by finding the voting
 		// right at the previous outpoint with the highest ordinal.
-		prev, err := FindRightPrevout(ctx, assetID, in.Previous)
+		prev, err := FindRightPrevout(ctx, assetID, in.Outpoint())
 		if err != nil {
 			return err
 		}

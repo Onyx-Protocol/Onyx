@@ -4,7 +4,10 @@
 
 package txscript
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+	"fmt"
+)
 
 // AsBool gets the boolean value of the byte array.
 func AsBool(t []byte) bool {
@@ -350,11 +353,15 @@ func (s *stack) RollN(n int32) error {
 // String returns the stack in a readable format.
 func (s *stack) String() string {
 	var result string
-	for _, stack := range s.stk {
-		if len(stack) == 0 {
-			result += "00000000  <empty>\n"
+	for i := 0; i < len(s.stk); i++ {
+		item := s.stk[len(s.stk)-1-i]
+		var s string
+		if len(item) == 0 {
+			s = "<empty>"
+		} else {
+			s = hex.EncodeToString(item)
 		}
-		result += hex.Dump(stack)
+		result += fmt.Sprintf("%3d  %s\n", i, s)
 	}
 
 	return result

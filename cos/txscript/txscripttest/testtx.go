@@ -22,20 +22,11 @@ type TestTx struct {
 }
 
 // AddInput adds a new input to the transaction.
-func (tx *TestTx) AddInput(assetAmount bc.AssetAmount, pkscript, sigscript []byte) *TestTx {
-	prevOutpoint := bc.Outpoint{
-		Hash:  testTxHash,
-		Index: tx.utxoIndex,
-	}
+func (tx *TestTx) AddInput(assetAmount bc.AssetAmount, pkscript []byte, inputWitness [][]byte) *TestTx {
 	tx.utxoIndex++
 
 	// Add the tx input to the current transaction.
-	tx.data.Inputs = append(tx.data.Inputs, &bc.TxInput{
-		Previous:        prevOutpoint,
-		AssetAmount:     assetAmount,
-		PrevScript:      pkscript,
-		SignatureScript: sigscript,
-	})
+	tx.data.Inputs = append(tx.data.Inputs, bc.NewSpendInput(testTxHash, tx.utxoIndex, inputWitness, assetAmount.AssetID, assetAmount.Amount, pkscript, nil))
 	return tx
 }
 
@@ -53,7 +44,7 @@ func (tx *TestTx) Execute(inputIndex int) error {
 	}
 
 	input := tx.data.Inputs[inputIndex]
-	vm, err := txscript.NewEngine(input.PrevScript, &tx.data, inputIndex, txscript.ScriptVerifyMinimalData)
+	vm, err := txscript.NewEngine(input.ControlProgram(), &tx.data, inputIndex, 0)
 	if err != nil {
 		return err
 	}

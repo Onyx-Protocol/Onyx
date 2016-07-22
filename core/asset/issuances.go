@@ -99,20 +99,14 @@ func calcIssuances(txs ...*bc.Tx) Issuances {
 		parity := map[bc.AssetID]int64{}
 
 		for _, txin := range tx.Inputs {
-			parity[txin.AssetAmount.AssetID] += int64(txin.AssetAmount.Amount)
+			assetAmount := txin.AssetAmount()
+			parity[assetAmount.AssetID] += int64(assetAmount.Amount)
 
 			if txin.IsIssuance() {
-				// If the issuance is an old, zero-amount issuance, we need
-				// to to infer its amount based on the outputs.
-				// TODO(jackson): Remove once this style of issuance is prohibited.
-				if txin.AssetAmount.Amount == 0 {
-					wildcardIssuances[txin.AssetAmount.AssetID] = true
-					continue
-				}
-
-				amt := assets[txin.AssetAmount.AssetID]
-				amt.Issued = amt.Issued + txin.AssetAmount.Amount
-				assets[txin.AssetAmount.AssetID] = amt
+				assetAmount := txin.AssetAmount()
+				amt := assets[assetAmount.AssetID]
+				amt.Issued += assetAmount.Amount
+				assets[assetAmount.AssetID] = amt
 			}
 		}
 

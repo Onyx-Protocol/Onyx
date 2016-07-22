@@ -20,7 +20,7 @@ import (
 // and id inside of an issuer node.
 // TODO(jackson): Once SDKs have been adopted and everyone has updated,
 // we should make clientToken required.
-func CreateAsset(ctx context.Context, inodeID, label string, definition map[string]interface{}, clientToken *string) (*appdb.Asset, error) {
+func CreateAsset(ctx context.Context, inodeID, label string, genesisHash bc.Hash, definition map[string]interface{}, clientToken *string) (*appdb.Asset, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if label == "" {
 		return nil, errors.WithDetail(appdb.ErrBadLabel, "missing/null value")
@@ -48,8 +48,9 @@ func CreateAsset(ctx context.Context, inodeID, label string, definition map[stri
 		return nil, errors.Wrapf(err, "creating asset: asset issuer id %v sigsReq %v", inodeID, sigsReq)
 	}
 	pkScript := txscript.RedeemToPkScript(asset.RedeemScript)
-	asset.Hash = bc.ComputeAssetID(pkScript, [32]byte{}) // TODO(kr): get genesis hash from config
 	asset.IssuanceScript = pkScript
+	asset.GenesisHash = genesisHash
+	asset.Hash = bc.ComputeAssetID(pkScript, genesisHash)
 
 	asset, err = appdb.InsertAsset(ctx, asset)
 	if err != nil {

@@ -61,6 +61,7 @@ func TestAddTx(t *testing.T) {
 	}
 
 	transferTx := fedtest.Transfer(t, fedtest.StateOut(issueTx, 0), dest1, fedtest.Dest(t))
+
 	err = fc.AddTx(ctx, transferTx)
 	if err != nil {
 		testutil.FatalErr(t, err)

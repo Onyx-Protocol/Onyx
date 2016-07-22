@@ -66,10 +66,10 @@ func TestHistoricalOutputs(t *testing.T) {
 
 	type (
 		spotCheck struct {
-			timestamp uint64
-			assetID   bc.AssetID
-			accountID string
-			amount    uint64
+			timestampMS uint64
+			assetID     bc.AssetID
+			accountID   string
+			amount      uint64
 		}
 		accountAssetPair struct {
 			accountID string
@@ -78,9 +78,9 @@ func TestHistoricalOutputs(t *testing.T) {
 		balanceMap map[accountAssetPair]uint64
 	)
 	var (
-		spotChecks         []*spotCheck
-		prevBlockTimestamp uint64
-		nTrades            int
+		spotChecks           []*spotCheck
+		prevBlockTimestampMS uint64
+		nTrades              int
 	)
 
 	// Only updates after landing a block
@@ -103,7 +103,7 @@ func TestHistoricalOutputs(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			prevBlockTimestamp = b.Timestamp
+			prevBlockTimestampMS = b.TimestampMS
 		},
 		Trade: func(sellerID, buyerID string, shareAssetID, usdAssetID bc.AssetID, shares, dollars uint64) {
 			tradeNum++
@@ -118,21 +118,21 @@ func TestHistoricalOutputs(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if b.Timestamp > prevBlockTimestamp {
+				if b.TimestampMS > prevBlockTimestampMS {
 					// Now safe to snapshot balances as of prevBlockTimestamp
 					for accountAsset, balance := range prevBlockBalances {
 						if rand.Intn(len(prevBlockBalances)) < 4 {
 							s := &spotCheck{
-								timestamp: prevBlockTimestamp,
-								assetID:   accountAsset.assetID,
-								accountID: accountAsset.accountID,
-								amount:    balance,
+								timestampMS: prevBlockTimestampMS,
+								assetID:     accountAsset.assetID,
+								accountID:   accountAsset.accountID,
+								amount:      balance,
 							}
 							spotChecks = append(spotChecks, s)
 						}
 					}
 				}
-				prevBlockTimestamp = b.Timestamp
+				prevBlockTimestampMS = b.TimestampMS
 				for k, v := range currentBalances {
 					prevBlockBalances[k] = v
 				}
@@ -143,7 +143,7 @@ func TestHistoricalOutputs(t *testing.T) {
 
 	// Perform spot-checks
 	for i, s := range spotChecks {
-		ts := time.Unix(int64(s.timestamp), 0)
+		ts := time.Unix(0, int64(s.timestampMS)*int64(time.Millisecond))
 		sums, _, err := e.HistoricalBalancesByAccount(ctx, s.accountID, ts, &s.assetID, "", 0)
 		if err != nil {
 			t.Fatal(err)

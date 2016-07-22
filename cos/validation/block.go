@@ -57,7 +57,7 @@ func validateBlock(ctx context.Context, tree *patricia.Tree, prevBlock, block *b
 		if err != nil {
 			return err
 		}
-		err = ConfirmTx(tree, tx, block.Timestamp)
+		err = ConfirmTx(tree, tx, block.TimestampMS)
 		if err != nil {
 			return err
 		}
@@ -104,7 +104,7 @@ func validateBlockHeader(prevBlock, block *bc.Block, runScript bool) error {
 		if block.Height != prevBlock.Height+1 {
 			return ErrBadHeight
 		}
-		if block.Timestamp < prevBlock.Timestamp {
+		if block.TimestampMS < prevBlock.TimestampMS {
 			return ErrBadTimestamp
 		}
 	}

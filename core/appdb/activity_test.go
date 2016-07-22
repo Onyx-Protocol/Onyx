@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -54,9 +55,9 @@ func TestGetActUTXOs(t *testing.T) {
 
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{
-			{Previous: out0.Outpoint, AssetAmount: out0.AssetAmount, PrevScript: out0.ControlProgram},
-			{Previous: out1.Outpoint, AssetAmount: out1.AssetAmount, PrevScript: out1.ControlProgram},
-			{Previous: out2.Outpoint, AssetAmount: out2.AssetAmount, PrevScript: out2.ControlProgram},
+			bc.NewSpendInput(out0.Hash, out0.Index, nil, out0.AssetID, out0.Amount, out0.ControlProgram, nil),
+			bc.NewSpendInput(out1.Hash, out1.Index, nil, out1.AssetID, out1.Amount, out1.ControlProgram, nil),
+			bc.NewSpendInput(out2.Hash, out2.Index, nil, out2.AssetID, out2.Amount, out2.ControlProgram, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(asset0, 3, dest0.Receiver.PKScript(), nil),
@@ -138,8 +139,15 @@ func TestGetActUTXOsIssuance(t *testing.T) {
 
 	dest0 := assettest.AccountDestinationFixture(ctx, t, asset0, 1, acc0)
 
+	assetObj, err := AssetByID(ctx, asset0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tx := bc.NewTx(bc.TxData{
-		Inputs: []*bc.TxInput{{Previous: bc.Outpoint{Index: bc.InvalidOutputIndex}}},
+		Inputs: []*bc.TxInput{
+			bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), bc.Hash{}, 0, assetObj.IssuanceScript, nil, nil, nil),
+		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(asset0, 1, dest0.Receiver.PKScript(), nil),
 		},

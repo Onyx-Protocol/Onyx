@@ -11,7 +11,6 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 
 	"chain/cos/bc"
-	"chain/errors"
 )
 
 // ScriptFlags is a bitmask defining additional operations or tests that will be
@@ -39,10 +38,6 @@ const (
 	// the DER format and whose S value is <= order / 2.  This is rule 5
 	// of BIP0062.
 	ScriptVerifyLowS
-
-	// ScriptVerifyMinimalData defines that signatures must use the smallest
-	// push operator. This is both rules 3 and 4 of BIP0062.
-	ScriptVerifyMinimalData
 
 	// ScriptVerifySigPushOnly defines that signature scripts must contain
 	// only pushed data.  This is rule 2 of BIP0062.
@@ -139,16 +134,6 @@ func (vm *Engine) executeOpcode(pop *parsedOpcode) error {
 	// not in an executing branch.
 	if !vm.isBranchExecuting() && !pop.isConditional() {
 		return nil
-	}
-
-	// Ensure all executed data push opcodes use the minimal encoding when
-	// the minimal data verification flag is set.
-	if vm.dstack.verifyMinimalData && vm.isBranchExecuting() &&
-		pop.opcode.value >= 0 && pop.opcode.value <= OP_PUSHDATA4 {
-
-		if err := pop.checkMinimalDataPush(); err != nil {
-			return err
-		}
 	}
 
 	return pop.opcode.opfunc(pop, vm)
@@ -270,7 +255,11 @@ func (vm *Engine) Execute() (err error) {
 			if err != nil {
 				return fmt.Sprintf("stepping (%v)", err)
 			}
-			return fmt.Sprintf("stepping %v", dis)
+			var execflag string
+			if !vm.isBranchExecuting() {
+				execflag = "!"
+			}
+			return fmt.Sprintf("%sstepping %v", execflag, dis)
 		}))
 
 		done, err = vm.Step()
@@ -506,50 +495,32 @@ func (vm *Engine) SetAltStack(data [][]byte) {
 // Prepare prepares a previously allocated Engine for reuse with
 // another txin, preserving state (to wit, vm.available) that P2C
 // wants to save between txins.
-func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
+func (vm *Engine) Prepare(script []byte, args [][]byte, txIdx int) error {
 	// The provided transaction input index must refer to a valid input.
 	if txIdx < 0 || (vm.tx != nil && txIdx >= len(vm.tx.Inputs)) {
 		return ErrInvalidIndex
 	}
 	vm.txIdx = txIdx
 
-	var scriptSig []byte
-	if vm.tx != nil {
-		scriptSig = vm.tx.Inputs[txIdx].SignatureScript
-	} else {
-		scriptSig = vm.block.SignatureScript
-	}
-
-	// The signature script must only contain data pushes when the
-	// associated flag is set.
-	if vm.hasFlag(ScriptVerifySigPushOnly) && !IsPushOnlyScript(scriptSig) {
-		scriptSigStr, _ := DisasmString(scriptSig)
-		return errors.Wrapf(ErrStackNonPushOnly, "scriptSig: %s", scriptSigStr)
-	}
-
-	if len(scriptSig) > bc.MaxProgramByteLength || len(scriptPubKey) > bc.MaxProgramByteLength {
-		return ErrStackLongScript
-	}
-	parsedScriptSig, err := parseScript(scriptSig)
-	if err != nil {
-		return err
-	}
-	parsedScriptPubKey, err := parseScript(scriptPubKey)
-	if err != nil {
-		return err
-	}
-
 	vm.dstack.Reset()
 	vm.estack.Reset()
 
-	vm.scriptVersion = parseScriptVersion(parsedScriptPubKey)
+	for _, arg := range args {
+		vm.dstack.PushByteArray(arg)
+	}
+
+	if len(script) > bc.MaxProgramByteLength {
+		return ErrStackLongScript
+	}
+	parsedScript, err := parseScript(script)
+	if err != nil {
+		return err
+	}
+
+	vm.scriptVersion = parseScriptVersion(parsedScript)
 	vm.scriptVersionVal, _ = makeScriptNum(vm.scriptVersion, false) // swallow errors
 
-	// The pkscript and the sigscript are executed in separate stack frames,
-	// because they may have separate script versions. The sigscript is added
-	// second so that it will execute first.
-	vm.PushScript(parsedScriptPubKey)
-	vm.PushScript(parsedScriptSig)
+	vm.PushScript(parsedScript)
 
 	vm.numOps = 0
 
@@ -561,7 +532,7 @@ func (vm *Engine) Prepare(scriptPubKey []byte, txIdx int) error {
 // elided for clarity):
 //   engine, err := NewReusableEngine(tx, flags)
 //   for i, txin := range tx.Inputs {
-//     err = engine.Prepare(scriptPubKey, i)
+//     err = engine.Prepare(scriptPubKey, args, i)
 //     err = engine.Execute()
 //   }
 // Note: every call to Execute() must be preceded by a call to
@@ -578,10 +549,6 @@ func newReusableEngine(tx *bc.TxData, block *bc.Block, flags ScriptFlags) (*Engi
 	}
 	if tx != nil {
 		vm.sigHasher = bc.NewSigHasher(tx)
-	}
-
-	if vm.hasFlag(ScriptVerifyMinimalData) {
-		vm.dstack.verifyMinimalData = true
 	}
 
 	if vm.tx != nil {
@@ -606,7 +573,7 @@ func NewEngine(scriptPubKey []byte, tx *bc.TxData, txIdx int, flags ScriptFlags)
 		return nil, err
 	}
 
-	err = vm.Prepare(scriptPubKey, txIdx)
+	err = vm.Prepare(scriptPubKey, tx.Inputs[txIdx].InputWitness, txIdx)
 	return vm, err
 }
 
@@ -618,7 +585,10 @@ func NewEngineForBlock(scriptPubKey []byte, block *bc.Block, flags ScriptFlags) 
 	if err != nil {
 		return nil, err
 	}
-
-	err = vm.Prepare(scriptPubKey, 0)
+	pushed, err := PushedData(block.SignatureScript)
+	if err != nil {
+		return nil, err
+	}
+	err = vm.Prepare(scriptPubKey, pushed, 0)
 	return vm, err
 }

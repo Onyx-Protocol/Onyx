@@ -72,7 +72,7 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 			AssetID: *source.AssetID,
 			Amount:  source.Amount,
 		}
-		return issuer.NewIssueSource(ctx, assetAmount), nil
+		return issuer.NewIssueSource(ctx, *assetAmount, nil, nil), nil // TODO: allow specifying updated asset definition and reference data
 	case "orderbook-redeem":
 		if source.PaymentAssetID == nil {
 			return nil, errors.WithDetail(ErrBadBuildRequest, "asset_id is not specified on the orderbook-redeem input")

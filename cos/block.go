@@ -1,6 +1,7 @@
 package cos
 
 import (
+	"fmt"
 	"time"
 
 	"golang.org/x/net/context"
@@ -32,15 +33,15 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	ts := uint64(now.Unix())
+	timestampMS := uint64(now.UnixNano()) / uint64(time.Millisecond)
 
 	prev, err = fc.store.LatestBlock(ctx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "fetch latest block")
 	}
 
-	if ts < prev.Timestamp {
-		return nil, nil, errors.New("timestamp is earlier than prevblock timestamp")
+	if timestampMS < prev.TimestampMS {
+		return nil, nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
 	}
 
 	txs, err := fc.pool.Dump(ctx)
@@ -56,10 +57,8 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 			Version:           bc.NewBlockVersion,
 			Height:            prev.Height + 1,
 			PreviousBlockHash: prev.Hash(),
-			Timestamp:         ts,
-
-			// TODO: Generate SignatureScript
-			OutputScript: prev.OutputScript,
+			TimestampMS:       timestampMS,
+			OutputScript:      prev.OutputScript,
 		},
 	}
 
@@ -71,14 +70,16 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 	ctx = span.NewContextSuffix(ctx, "-validate-all")
 	defer span.Finish(ctx)
 	for _, tx := range txs {
-		if validation.ConfirmTx(tree, tx, b.Timestamp) == nil {
+		if validation.ConfirmTx(tree, tx, b.TimestampMS) == nil {
 			validation.ApplyTx(tree, tx)
 			b.Transactions = append(b.Transactions, tx)
 		}
 	}
 
-	b.SetStateRoot(tree.RootHash())
-	b.SetTxRoot(validation.CalcMerkleRoot(b.Transactions))
+	stateRoot := tree.RootHash()
+	b.SetStateRoot(stateRoot)
+	txRoot := validation.CalcMerkleRoot(b.Transactions)
+	b.SetTxRoot(txRoot)
 
 	return b, prev, nil
 }
@@ -289,7 +290,7 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		// Have to explicitly check that tx is not in block
 		// because issuance transactions are always valid, even duplicates.
 		// TODO(erykwalder): Remove this check when issuances become unique
-		txErr := validation.ConfirmTx(tree, tx, block.Timestamp)
+		txErr := validation.ConfirmTx(tree, tx, block.TimestampMS)
 		if txErr == nil && !txInBlock[tx.Hash] {
 			validation.ApplyTx(tree, tx)
 		} else {
@@ -327,7 +328,6 @@ func ComputeBlockSignature(b *bc.Block, key *btcec.PrivateKey) (*btcec.Signature
 func AddSignaturesToBlock(b *bc.Block, signatures []*btcec.Signature) error {
 	// assumes multisig output script
 	builder := txscript.NewScriptBuilder()
-	builder.AddOp(txscript.OP_0) // required because of bug in OP_CHECKMULTISIG
 	for _, signature := range signatures {
 		serialized := signature.Serialize()
 		serialized = append(serialized, 1) // append hashtype -- unused for blocks
@@ -390,7 +390,7 @@ func NewGenesisBlock(pubkeys []*btcec.PublicKey, nSigs int, timestamp time.Time)
 		BlockHeader: bc.BlockHeader{
 			Version:      bc.NewBlockVersion,
 			Height:       1,
-			Timestamp:    uint64(timestamp.Unix()),
+			TimestampMS:  uint64(timestamp.UnixNano()) / uint64(time.Millisecond),
 			OutputScript: script,
 		},
 	}

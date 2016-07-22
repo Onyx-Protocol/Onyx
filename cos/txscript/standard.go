@@ -28,7 +28,6 @@ const (
 	// package.
 	StandardVerifyFlags = ScriptVerifyDERSignatures |
 		ScriptVerifyStrictEncoding |
-		ScriptVerifyMinimalData |
 		ScriptStrictMultiSig |
 		ScriptDiscourageUpgradableNops
 )
@@ -198,6 +197,17 @@ func ParseMultiSigScript(script []byte) ([]*btcec.PublicKey, int, error) {
 		pubkeys = append(pubkeys, pubkey)
 	}
 	return pubkeys, nrequired, nil
+}
+
+// SigsRequired returns the number of signatures required by
+// script. Result is 1 unless script parses as a multisig script, in
+// which case it's the number of sigs required by that.
+func SigsRequired(script []byte) int {
+	_, nsigs, err := ParseMultiSigScript(script)
+	if err == nil {
+		return nsigs
+	}
+	return 1
 }
 
 // PushedData returns an array of byte slices containing any pushed data found

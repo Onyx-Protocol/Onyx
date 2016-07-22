@@ -29,6 +29,8 @@ func (e *Explorer) indexHistoricalBlock(ctx context.Context, block *bc.Block) {
 		spentIndexes  pg.Uint32s
 	)
 
+	// TODO(bobg): Rename timespan to timespanMS.
+
 	const insertQ = `
 			INSERT INTO explorer_outputs (tx_hash, index, asset_id, amount, script, metadata, timespan)
 				SELECT UNNEST($1::TEXT[]), UNNEST($2::INTEGER[]), UNNEST($3::TEXT[]), UNNEST($4::BIGINT[]), UNNEST($5::BYTEA[]), UNNEST($6::BYTEA[]), INT8RANGE($7, NULL)
@@ -52,8 +54,9 @@ func (e *Explorer) indexHistoricalBlock(ctx context.Context, block *bc.Block) {
 			if txin.IsIssuance() {
 				continue
 			}
-			spentTxHashes = append(spentTxHashes, txin.Previous.Hash.String())
-			spentIndexes = append(spentIndexes, txin.Previous.Index)
+			outpoint := txin.Outpoint()
+			spentTxHashes = append(spentTxHashes, outpoint.Hash.String())
+			spentIndexes = append(spentIndexes, outpoint.Index)
 		}
 		for index, txout := range tx.Outputs {
 			newTxHashes = append(newTxHashes, txHashStr)
@@ -75,13 +78,13 @@ func (e *Explorer) indexHistoricalBlock(ctx context.Context, block *bc.Block) {
 			}
 		}
 	}
-	_, err := pg.Exec(ctx, insertQ, newTxHashes, newIndexes, newAssetIDs, newAmounts, newScripts, newMetadatas, block.Timestamp)
+	_, err := pg.Exec(ctx, insertQ, newTxHashes, newIndexes, newAssetIDs, newAmounts, newScripts, newMetadatas, block.TimestampMS)
 	if err != nil {
 		chainlog.Error(ctx, errors.Wrap(err, "inserting to explorer_outputs"))
 		return // or panic?
 	}
 	if e.historical {
-		_, err = pg.Exec(ctx, updateQ, spentTxHashes, spentIndexes, block.Timestamp)
+		_, err = pg.Exec(ctx, updateQ, spentTxHashes, spentIndexes, block.TimestampMS)
 		if err != nil {
 			chainlog.Error(ctx, errors.Wrap(err, "updating explorer_outputs"))
 			return // or panic?
@@ -125,7 +128,9 @@ func (e *Explorer) indexHistoricalBlock(ctx context.Context, block *bc.Block) {
 
 	if e.historical && e.maxAge > 0 && time.Since(e.lastPrune) >= 24*time.Hour {
 		now := time.Now()
-		_, err := pg.Exec(ctx, "DELETE FROM explorer_outputs WHERE UPPER(timespan) < $1", now.Add(-e.maxAge))
+		before := now.Add(-e.maxAge)
+		beforeMillis := before.UnixNano() / int64(time.Millisecond)
+		_, err := pg.Exec(ctx, "DELETE FROM explorer_outputs WHERE UPPER(timespan) < $1", beforeMillis)
 		if err == nil {
 			e.lastPrune = now
 		} else {
@@ -146,7 +151,7 @@ func (e *Explorer) HistoricalBalancesByAccount(ctx context.Context, accountID st
 	q := "SELECT asset_id, SUM(amount) FROM explorer_outputs WHERE account_id = $1 AND timespan @> $2::int8"
 	args := []interface{}{
 		accountID,
-		timestamp.Unix(),
+		int64(timestamp.UnixNano() / int64(time.Millisecond)),
 	}
 
 	if assetID != nil {
@@ -192,7 +197,7 @@ func (e *Explorer) ListHistoricalOutputsByAsset(ctx context.Context, assetID bc.
 }
 
 func (e *Explorer) listHistoricalOutputsByAssetAndAccount(ctx context.Context, assetID bc.AssetID, accountID string, timestamp time.Time, prev string, limit int) ([]*TxOutput, string, error) {
-	ts := timestamp.Unix()
+	tsMillis := timestamp.UnixNano() / int64(time.Millisecond)
 	prevs := strings.Split(prev, ":")
 	var (
 		prevHash  string
@@ -219,7 +224,7 @@ func (e *Explorer) listHistoricalOutputsByAssetAndAccount(ctx context.Context, a
 		"(tx_hash != $3 OR index > $4)", // prev index only matters if we're in the same tx
 	}
 	args := []interface{}{
-		assetID, ts, prevHash, prevIndex,
+		assetID, tsMillis, prevHash, prevIndex,
 	}
 	if accountID != "" {
 		conditions = append(conditions, "account_id = $5")

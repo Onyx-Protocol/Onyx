@@ -193,7 +193,7 @@ func CreateAssetFixture(ctx context.Context, t testing.TB, issuerNodeID, label, 
 	if label == "" {
 		label = fmt.Sprintf("inode-%d", <-assetCounter)
 	}
-	asset, err := issuer.CreateAsset(ctx, issuerNodeID, label, map[string]interface{}{"s": def}, nil)
+	asset, err := issuer.CreateAsset(ctx, issuerNodeID, label, bc.Hash{}, map[string]interface{}{"s": def}, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -219,7 +219,14 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, a
 	}
 	dest := AccountDestinationFixture(ctx, t, assetID, amount, accountID)
 
-	tpl, err := issuer.Issue(ctx, bc.AssetAmount{AssetID: assetID, Amount: amount}, []*txbuilder.Destination{dest})
+	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
+	asst, err := appdb.AssetByID(ctx, assetID)
+	if err != nil {
+		testutil.FatalErr(t, errors.WithDetailf(err, "get asset with ID %q", assetID))
+	}
+
+	src := issuer.NewIssueSource(ctx, assetAmount, asst.Definition, nil) // does not support reference data
+	tpl, err := txbuilder.Build(ctx, nil, []*txbuilder.Source{src}, []*txbuilder.Destination{dest}, nil, time.Minute)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -294,6 +301,7 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 	if err != nil {
 		return nil, err
 	}
+
 	return fc, nil
 }
 

@@ -94,7 +94,7 @@ func payToContractHelper(params []Item, scriptVersion []byte) *ScriptBuilder {
 	sb := NewScriptBuilder()
 	sb = sb.AddData(scriptVersion).AddOp(OP_DROP)
 	for i := len(params) - 1; i >= 0; i-- {
-		sb = params[i].AddTo(sb)
+		sb.AddData(params[i].Bytes())
 	}
 	return sb
 }
@@ -104,10 +104,10 @@ var (
 	ErrP2CMismatch = errors.New("contract mismatch")
 )
 
-// CheckRedeemP2C builds a sigscript for redeeming the given contract
+// CheckRedeemP2C builds program args for redeeming the given contract
 // as required by the given pkscript (which could be in contracthash
 // or non-contracthash form).
-func CheckRedeemP2C(pkscript, contract []byte, inputs []Item) ([]byte, error) {
+func CheckRedeemP2C(pkscript, contract []byte, inputs []Item) ([][]byte, error) {
 	scriptVersion, pkscriptContract, pkscriptContractHash, _ := ParseP2C(pkscript, contract)
 	if scriptVersion == nil {
 		return nil, ErrNotP2C
@@ -123,19 +123,19 @@ func CheckRedeemP2C(pkscript, contract []byte, inputs []Item) ([]byte, error) {
 			return nil, ErrP2CMismatch
 		}
 	}
-	return RedeemP2C(contract, inputs)
+	return RedeemP2C(contract, inputs), nil
 }
 
-// RedeemP2C builds a sigscript for redeeming a contract.
-func RedeemP2C(contract []byte, inputs []Item) ([]byte, error) {
-	sb := NewScriptBuilder()
-	for _, input := range inputs {
-		sb = input.AddTo(sb)
+// RedeemP2C builds program args for redeeming a contract.
+func RedeemP2C(contract []byte, inputs []Item) [][]byte {
+	args := make([][]byte, 0, len(inputs)+1)
+	for _, inp := range inputs {
+		args = append(args, inp.Bytes())
 	}
 	if contract != nil {
-		sb = sb.AddData(contract)
+		args = append(args, contract)
 	}
-	return sb.Script()
+	return args
 }
 
 // ParseP2C parses a p2c script.  It must have one of the following forms:

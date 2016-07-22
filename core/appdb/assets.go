@@ -23,6 +23,7 @@ type Asset struct {
 	Keys            []*hdkey.XKey
 	INIndex, AIndex []uint32
 	RedeemScript    []byte
+	GenesisHash     bc.Hash // TODO: Normalize field names to match spec? ("InitialBlock" and "IssuanceProgram")
 	IssuanceScript  []byte
 	Definition      []byte
 	ClientToken     *string
@@ -73,7 +74,7 @@ func AssetByClientToken(ctx context.Context, issuerNodeID string, clientToken st
 
 func lookupAsset(ctx context.Context, query assetLookupQuery) (*Asset, error) {
 	const baseQ = `
-		SELECT assets.id, assets.keyset, redeem_script, assets.label, issuer_node_id,
+		SELECT assets.id, assets.keyset, redeem_script, genesis_hash, assets.label, issuer_node_id,
 			key_index(issuer_nodes.key_index), key_index(assets.key_index), definition,
 			issuance_script, assets.archived, assets.client_token
 		FROM assets
@@ -100,6 +101,7 @@ func lookupAsset(ctx context.Context, query assetLookupQuery) (*Asset, error) {
 		&a.Hash,
 		(*pg.Strings)(&xpubs),
 		&a.RedeemScript,
+		&a.GenesisHash,
 		&a.Label,
 		&a.IssuerNodeID,
 		(*pg.Uint32s)(&a.INIndex),
@@ -133,8 +135,8 @@ func lookupAsset(ctx context.Context, query assetLookupQuery) (*Asset, error) {
 func InsertAsset(ctx context.Context, asset *Asset) (*Asset, error) {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
-		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label, definition, client_token)
-		VALUES($1, $2, to_key_index($3), $4, $5, $6, $7, $8, $9)
+		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, genesis_hash, issuance_script, label, definition, client_token)
+		VALUES($1, $2, to_key_index($3), $4, $5, $6, $7, $8, $9, $10)
 		ON CONFLICT DO NOTHING
 	`
 
@@ -144,6 +146,7 @@ func InsertAsset(ctx context.Context, asset *Asset) (*Asset, error) {
 		pg.Uint32s(asset.AIndex),
 		pg.Strings(keysToStrings(asset.Keys)),
 		asset.RedeemScript,
+		asset.GenesisHash,
 		asset.IssuanceScript,
 		asset.Label,
 		asset.Definition,

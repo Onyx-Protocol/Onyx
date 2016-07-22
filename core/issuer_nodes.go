@@ -233,7 +233,7 @@ func (a *api) listAssets(ctx context.Context, inodeID string) (interface{}, erro
 }
 
 // POST /v3/issuer-nodes/:inodeID/assets
-func createAsset(ctx context.Context, inodeID string, in struct {
+func (a *api) createAsset(ctx context.Context, inodeID string, in struct {
 	Label      string
 	Definition map[string]interface{}
 
@@ -249,7 +249,11 @@ func createAsset(ctx context.Context, inodeID string, in struct {
 		return nil, err
 	}
 
-	ast, err := issuer.CreateAsset(ctx, inodeID, in.Label, in.Definition, in.ClientToken)
+	genesisHash, err := a.store.InitialBlockHash(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ast, err := issuer.CreateAsset(ctx, inodeID, in.Label, genesisHash, in.Definition, in.ClientToken)
 	if err != nil {
 		return nil, err
 	}

@@ -21,9 +21,10 @@ func NewOutput(o bc.TxOutput, p bc.Outpoint) *Output {
 // only includes the output data that is embedded within inputs (ex,
 // excludes metadata).
 func Prevout(in *bc.TxInput) *Output {
-	t := bc.NewTxOutput(in.AssetAmount.AssetID, in.AssetAmount.Amount, in.PrevScript, nil)
+	assetAmount := in.AssetAmount()
+	t := bc.NewTxOutput(assetAmount.AssetID, assetAmount.Amount, in.ControlProgram(), nil)
 	return &Output{
-		Outpoint: in.Previous,
+		Outpoint: in.Outpoint(),
 		TxOutput: *t,
 	}
 }

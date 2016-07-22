@@ -135,14 +135,10 @@ func testTokenContract(pkscript []byte) (*tokenScriptData, error) {
 	return &token, nil
 }
 
-// testTokensSigscript tests whether the given sigscript is redeeming a
+// testTokensWitness tests whether the given input witness is redeeming a
 // voting token holding contract. It will return the clause being used,
 // and a slice of the other clause parameters.
-func testTokensSigscript(sigscript []byte) (ok bool, c tokenContractClause, params [][]byte) {
-	data, err := txscript.PushedData(sigscript)
-	if err != nil {
-		return false, c, nil
-	}
+func testTokensWitness(data [][]byte) (ok bool, c tokenContractClause, params [][]byte) {
 	if len(data) < 2 {
 		return false, c, nil
 	}

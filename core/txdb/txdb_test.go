@@ -143,7 +143,7 @@ func TestLatestBlock(t *testing.T) {
 				'X', 'Y', 'Z', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			},
-			Timestamp:       100,
+			TimestampMS:     100,
 			SignatureScript: []byte("test-sig-script"),
 			OutputScript:    []byte("test-output-script"),
 		},

@@ -87,10 +87,10 @@ func TestBuy(t *testing.T) {
 		testutil.ExpectEqual(t, len(buyTx.Inputs), 2, "wrong number of buyTx inputs")
 
 		assettest.ExpectMatchingInputs(t, buyTx, 1, "redeeming p2c asset", func(t *testing.T, txInput *bc.TxInput) bool {
-			if !reflect.DeepEqual(fixtureInfo.openOrder.Outpoint, txInput.Previous) {
+			if !reflect.DeepEqual(fixtureInfo.openOrder.Outpoint, txInput.Outpoint()) {
 				return false
 			}
-			if !redeemsOrderbookContract(ctx, fixtureInfo.openOrder, txInput.SignatureScript) {
+			if !redeemsOrderbookContract(ctx, fixtureInfo.openOrder, txInput.InputWitness) {
 				return false
 			}
 			return true
@@ -154,7 +154,7 @@ func TestCancel(t *testing.T) {
 		}
 
 		testutil.ExpectEqual(t, len(cancelTx.Inputs), 1, "wrong number of cancelTx inputs")
-		testutil.ExpectEqual(t, cancelTx.Inputs[0].Previous, fixtureInfo.openOrder.Outpoint, "wrong cancelTx prevout")
+		testutil.ExpectEqual(t, cancelTx.Inputs[0].Outpoint(), fixtureInfo.openOrder.Outpoint, "wrong cancelTx prevout")
 
 		testutil.ExpectEqual(t, len(cancelTx.Outputs), 1, "wrong number of cancelTx outputs")
 		output := cancelTx.Outputs[0]
@@ -334,23 +334,19 @@ func paysToScript(ctx context.Context, gotScript, expectedScript []byte) bool {
 	return reflect.DeepEqual(gotScript, expectedScript)
 }
 
-func redeemsOrderbookContract(ctx context.Context, openOrder *OpenOrder, script []byte) bool {
+func redeemsOrderbookContract(ctx context.Context, openOrder *OpenOrder, inputWitness [][]byte) bool {
 	_, contract, err := openOrder.generateScript(ctx, nil)
 	if err != nil {
 		return false
 	}
-	pushedData, err := txscript.PushedData(script)
+	if len(inputWitness) < 3 {
+		return false
+	}
+	paymentAmount, err := txscript.MakeScriptNumWithMaxLen(inputWitness[0], false, 4)
 	if err != nil {
 		return false
 	}
-	if len(pushedData) < 3 {
-		return false
-	}
-	paymentAmount, err := txscript.MakeScriptNumWithMaxLen(pushedData[0], false, 4)
-	if err != nil {
-		return false
-	}
-	offerChangeAmount, err := txscript.MakeScriptNumWithMaxLen(pushedData[1], false, 4)
+	offerChangeAmount, err := txscript.MakeScriptNumWithMaxLen(inputWitness[1], false, 4)
 	if err != nil {
 		return false
 	}
@@ -359,15 +355,15 @@ func redeemsOrderbookContract(ctx context.Context, openOrder *OpenOrder, script 
 	if uint64(paymentAmount)*price.OfferAmount != price.PaymentAmount*offerAmount {
 		return false
 	}
-	clause, err := txscript.MakeScriptNumWithMaxLen(pushedData[2], false, 4)
+	clause, err := txscript.MakeScriptNumWithMaxLen(inputWitness[2], false, 4)
 	if err != nil {
 		return false
 	}
 	if clause != 1 {
 		return false
 	}
-	if len(pushedData)%3 == 1 {
-		actualContract := pushedData[len(pushedData)-1]
+	if len(inputWitness)%3 == 1 {
+		actualContract := inputWitness[len(inputWitness)-1]
 		if !reflect.DeepEqual(contract, actualContract) {
 			return false
 		}

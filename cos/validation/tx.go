@@ -32,6 +32,8 @@ func ConfirmTx(tree *patricia.Tree, tx *bc.Tx, timestampMS uint64) error {
 
 	for inIndex, txin := range tx.Inputs {
 		if txin.IsIssuance() {
+			// TODO(bobg): dedupe this input against others whose [MinTime,MaxTime] windows haven't closed
+			// TODO(bobg): run issuance program with args from input witness
 			continue
 		}
 
@@ -39,7 +41,7 @@ func ConfirmTx(tree *patricia.Tree, tx *bc.Tx, timestampMS uint64) error {
 		k, val := state.OutputTreeItem(state.Prevout(txin))
 		n := tree.Lookup(k)
 		if n == nil || n.Hash() != val.Value().Hash() {
-			return errors.WithDetailf(ErrBadTx, "output %s for input %d is invalid", txin.Previous.String(), inIndex)
+			return errors.WithDetailf(ErrBadTx, "output %s for input %d is invalid", txin.Outpoint().String(), inIndex)
 		}
 	}
 	return nil
@@ -61,41 +63,28 @@ func ValidateTx(tx *bc.Tx) error {
 		return errors.WithDetail(ErrBadTx, "positive maxtime must be >= mintime")
 	}
 
-	// Older clients may submit issuance txs that have zero-amount issuances,
-	// expecting the issuance total to be inferred by the output balance. We
-	// allow these assets to have imbalanced parity.
-	// TODO(jackson): Remove once older clients have been updated.
-	wildcardIssuance := make(map[bc.AssetID]bool)
-
 	issued := make(map[bc.AssetID]bool)
 	parity := make(map[bc.AssetID]int64)
 	uniqueFilter := make(map[bc.Outpoint]bool)
 
 	for _, txin := range tx.Inputs {
-		assetID := txin.AssetAmount.AssetID
+		assetID := txin.AssetID()
+		parity[assetID] += int64(txin.Amount())
 		if txin.IsIssuance() {
-			var err error
-			assetID, err = AssetIDFromSigScript(txin.SignatureScript)
-			if err != nil {
-				return err
-			}
-
 			issued[assetID] = true
-			if txin.AssetAmount.Amount == 0 {
-				wildcardIssuance[assetID] = true
-				continue
-			}
+			// TODO(bobg): count the issuance's amount in the parity map too
+			// TODO(bobg): test that issuance maxtime >= issuance mintime (if this is input 0)
+			// TODO(bobg): test that issuance maxtime - issuance mintime <= issuance window limit
+			continue
 		}
-		if assetID == (bc.AssetID{}) {
-			assetID = bc.ComputeAssetID(txin.PrevScript, stubGenesisHash)
-		}
-		parity[assetID] += int64(txin.AssetAmount.Amount)
 
 		// Check for duplicate inputs
-		if uniqueFilter[txin.Previous] {
-			return errors.WithDetailf(ErrBadTx, "duplicated input for %s", txin.Previous.String())
+		// TODO(bobg): with issuance inputs too
+		previous := txin.Outpoint()
+		if uniqueFilter[previous] {
+			return errors.WithDetailf(ErrBadTx, "duplicated input for %s", previous.String())
 		}
-		uniqueFilter[txin.Previous] = true
+		uniqueFilter[previous] = true
 	}
 
 	// Check that every output has a valid value.
@@ -111,7 +100,7 @@ func ValidateTx(tx *bc.Tx) error {
 	}
 
 	for asset, val := range parity {
-		if val > 0 || (val < 0 && !wildcardIssuance[asset]) {
+		if val != 0 {
 			return errors.WithDetailf(ErrBadTx, "amounts for asset %s are not balanced on inputs and outputs", asset)
 		}
 	}
@@ -129,15 +118,14 @@ func ValidateTx(tx *bc.Tx) error {
 			// TODO: implement issuance scheme
 			continue
 		}
-		err = engine.Prepare(input.PrevScript, i)
+		err = engine.Prepare(input.ControlProgram(), input.InputWitness, i)
 		if err != nil {
 			err = errors.Wrapf(ErrBadTx, "cannot prepare script engine to process input %d: %s", i, err)
 			return errors.WithDetailf(err, "invalid script on input %d", i)
 		}
 		if err = engine.Execute(); err != nil {
-			pkScriptStr, _ := txscript.DisasmString(input.PrevScript)
-			sigScriptStr, _ := txscript.DisasmString(input.SignatureScript)
-			return errors.WithDetailf(ErrBadTx, "validation failed in script execution, input %d (sigscript[%s] pkscript[%s])", i, sigScriptStr, pkScriptStr)
+			pkScriptStr, _ := txscript.DisasmString(input.ControlProgram())
+			return errors.WithDetailf(ErrBadTx, "validation failed in script execution, input %d (args [%v] program [%s])", i, input.InputWitness, pkScriptStr)
 		}
 	}
 	return nil
@@ -148,13 +136,11 @@ func ApplyTx(tree *patricia.Tree, tx *bc.Tx) error {
 	for _, in := range tx.Inputs {
 		if in.IsIssuance() {
 			// If asset definition field is empty, no update of ADP takes place.
-			if len(in.AssetDefinition) > 0 {
-				assetID, err := AssetIDFromSigScript(in.SignatureScript)
-				if err != nil {
-					return err
-				}
-				defHash := bc.HashAssetDefinition(in.AssetDefinition)
-				err = tree.Insert(state.ADPTreeItem(assetID, defHash))
+			ad := in.AssetDefinition()
+			if len(ad) > 0 {
+				assetID := in.AssetID()
+				defHash := bc.HashAssetDefinition(ad)
+				err := tree.Insert(state.ADPTreeItem(assetID, defHash))
 				if err != nil {
 					return err
 				}

@@ -13,7 +13,6 @@ import (
 	"chain/cos/bc"
 	"chain/cos/hdkey"
 	"chain/cos/state"
-	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/trace/span"
@@ -43,11 +42,7 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 
 	result := &txbuilder.ReserveResult{}
 	for _, r := range reserved {
-		txInput := &bc.TxInput{
-			Previous:    r.Outpoint,
-			AssetAmount: r.AssetAmount,
-			PrevScript:  r.Script,
-		}
+		txInput := bc.NewSpendInput(r.Hash, r.Index, nil, r.AssetID, r.Amount, r.Script, nil)
 
 		templateInput := &txbuilder.Input{}
 		addrInfo, err := appdb.AddrInfo(ctx, r.AccountID)
@@ -61,8 +56,8 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 		}
 		templateInput.AssetID = r.AssetID
 		templateInput.Amount = r.Amount
-		templateInput.SigScriptSuffix = txscript.AddDataToScript(nil, redeemScript)
-		templateInput.Sigs = txbuilder.InputSigs(signers)
+		templateInput.AddWitnessSigs(txbuilder.InputSigs(signers), addrInfo.SigsRequired, nil)
+		templateInput.AddWitnessData(redeemScript)
 
 		item := &txbuilder.ReserveResultItem{
 			TxInput:       txInput,

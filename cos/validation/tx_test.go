@@ -12,10 +12,11 @@ import (
 
 func TestNoUpdateEmptyAD(t *testing.T) {
 	tree := patricia.NewTree(nil)
-	tx := bc.NewTx(bc.TxData{Inputs: []*bc.TxInput{{
-		SignatureScript: []byte("foo"),
-		Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
-	}}})
+	tx := bc.NewTx(bc.TxData{
+		Inputs: []*bc.TxInput{
+			bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), bc.Hash{}, 1000, []byte{1}, nil, nil, nil),
+		},
+	})
 	err := ApplyTx(tree, tx)
 	if err != nil {
 		t.Fatal(err)
@@ -29,10 +30,12 @@ func TestNoUpdateEmptyAD(t *testing.T) {
 }
 
 func TestTxIsWellFormed(t *testing.T) {
-	aid1, aid2 := bc.AssetID([32]byte{1}), bc.AssetID([32]byte{2})
-	prevout1 := bc.Outpoint{Hash: [32]byte{10}, Index: 0}
-	prevout2 := bc.Outpoint{Hash: [32]byte{11}, Index: 0}
-	issuance := bc.Outpoint{Index: bc.InvalidOutputIndex}
+	var genesisHash bc.Hash
+	issuanceProg := []byte{1}
+	aid1 := bc.ComputeAssetID(issuanceProg, genesisHash)
+	aid2 := bc.AssetID([32]byte{2})
+	txhash1 := bc.Hash{10}
+	txhash2 := bc.Hash{11}
 
 	testCases := []struct {
 		badTx  bool
@@ -50,10 +53,7 @@ func TestTxIsWellFormed(t *testing.T) {
 			tx: bc.Tx{
 				TxData: bc.TxData{
 					Inputs: []*bc.TxInput{
-						{
-							Previous:    prevout1,
-							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000},
-						},
+						bc.NewSpendInput(txhash1, 0, nil, aid1, 1000, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid1, 999, nil, nil),
@@ -67,14 +67,8 @@ func TestTxIsWellFormed(t *testing.T) {
 			tx: bc.Tx{
 				TxData: bc.TxData{
 					Inputs: []*bc.TxInput{
-						{
-							Previous:    prevout1,
-							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 500},
-						},
-						{
-							Previous:    prevout2,
-							AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 500},
-						},
+						bc.NewSpendInput(txhash1, 0, nil, aid1, 500, nil, nil),
+						bc.NewSpendInput(txhash2, 0, nil, aid2, 500, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid1, 500, nil, nil),
@@ -89,10 +83,7 @@ func TestTxIsWellFormed(t *testing.T) {
 			tx: bc.Tx{
 				TxData: bc.TxData{
 					Inputs: []*bc.TxInput{
-						{
-							Previous:    issuance,
-							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 0},
-						},
+						bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), genesisHash, 0, issuanceProg, nil, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid1, 0, nil, nil),
@@ -106,14 +97,8 @@ func TestTxIsWellFormed(t *testing.T) {
 			tx: bc.Tx{
 				TxData: bc.TxData{
 					Inputs: []*bc.TxInput{
-						{
-							Previous:    issuance,
-							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 0},
-						},
-						{
-							Previous:    prevout1,
-							AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 0},
-						},
+						bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), genesisHash, 0, issuanceProg, nil, nil, nil),
+						bc.NewSpendInput(txhash1, 0, nil, aid2, 0, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid1, 0, nil, nil),
@@ -127,7 +112,7 @@ func TestTxIsWellFormed(t *testing.T) {
 			tx: bc.Tx{
 				TxData: bc.TxData{
 					Inputs: []*bc.TxInput{
-						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000}},
+						bc.NewSpendInput(bc.Hash{}, 0, nil, aid1, 1000, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -140,14 +125,8 @@ func TestTxIsWellFormed(t *testing.T) {
 			tx: bc.Tx{
 				TxData: bc.TxData{
 					Inputs: []*bc.TxInput{
-						{
-							Previous:    prevout1,
-							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 500},
-						},
-						{
-							Previous:    prevout2,
-							AssetAmount: bc.AssetAmount{AssetID: aid2, Amount: 500},
-						},
+						bc.NewSpendInput(txhash1, 0, nil, aid1, 500, nil, nil),
+						bc.NewSpendInput(txhash2, 0, nil, aid2, 500, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid1, 500, nil, nil),
@@ -163,14 +142,8 @@ func TestTxIsWellFormed(t *testing.T) {
 			tx: bc.Tx{
 				TxData: bc.TxData{
 					Inputs: []*bc.TxInput{
-						{
-							Previous:    prevout1,
-							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 500},
-						},
-						{
-							Previous:    prevout2,
-							AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 500},
-						},
+						bc.NewSpendInput(txhash1, 0, nil, aid1, 500, nil, nil),
+						bc.NewSpendInput(txhash2, 0, nil, aid1, 500, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -186,7 +159,7 @@ func TestTxIsWellFormed(t *testing.T) {
 					MinTime: 2,
 					MaxTime: 1,
 					Inputs: []*bc.TxInput{
-						{AssetAmount: bc.AssetAmount{AssetID: aid1, Amount: 1000}},
+						bc.NewSpendInput(bc.Hash{}, 0, nil, aid1, 1000, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid1, 1000, nil, nil),
@@ -196,10 +169,10 @@ func TestTxIsWellFormed(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
+	for i, tc := range testCases {
 		err := ValidateTx(&tc.tx)
 		if tc.badTx && errors.Root(err) != ErrBadTx {
-			t.Errorf("got = %s, want ErrBadTx", err)
+			t.Errorf("test %d: got = %s, want ErrBadTx", i, err)
 			continue
 		}
 
@@ -210,7 +183,9 @@ func TestTxIsWellFormed(t *testing.T) {
 }
 
 func TestValidateInvalidTimestamps(t *testing.T) {
-	aid := bc.AssetID(mustParseHash("59999b124d0787b27f6ac4aeecb08dda3021720081c98988c074b5a8bc2e9c41"))
+	var genesisHash bc.Hash
+	issuanceProg := []byte{1}
+	aid := bc.ComputeAssetID(issuanceProg, genesisHash)
 	cases := []struct {
 		ok        bool
 		tx        bc.Tx
@@ -223,9 +198,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 					MinTime: 1,
 					MaxTime: 100,
 					Inputs: []*bc.TxInput{
-						{
-							Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
-						},
+						bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), genesisHash, 1000, issuanceProg, nil, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid, 1000, nil, nil),
@@ -241,9 +214,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 					MinTime: 1,
 					MaxTime: 100,
 					Inputs: []*bc.TxInput{
-						{
-							Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
-						},
+						bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), genesisHash, 1000, issuanceProg, nil, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid, 1000, nil, nil),
@@ -259,9 +230,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 					MinTime: 100,
 					MaxTime: 200,
 					Inputs: []*bc.TxInput{
-						{
-							Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
-						},
+						bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), genesisHash, 1000, issuanceProg, nil, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid, 1000, nil, nil),

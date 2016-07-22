@@ -6,16 +6,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"golang.org/x/net/context"
 
 	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
+	"chain/core/issuer"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/cos"
 	"chain/cos/bc"
-	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -228,35 +229,43 @@ func TestGetBlockSummary(t *testing.T) {
 func TestGetTxIssuance(t *testing.T) {
 	ctx := context.Background()
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	dbctx := pg.NewContext(ctx, db)
 	store, pool := txdb.New(db) // TODO(kr): use memstore and mempool
 	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	e := New(fc, db, store, pool, 0, true, true)
+	inodeID := assettest.CreateIssuerNodeFixture(dbctx, t, "", "", nil, nil)
+	assetDef := map[string]interface{}{"c": "d"}
+	assetObj, err := issuer.CreateAsset(dbctx, inodeID, "label", bc.Hash{}, assetDef, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	assetID, sigScript := mockAssetIDAndSigScript()
+	assetDefStr, err := json.Marshal(assetDef)
+	if err != nil {
+		t.Fatal(err)
+	}
+	refData := []byte(`{"a":"b"}`)
+
+	now := time.Now().UTC()
 
 	tx := bc.NewTx(bc.TxData{
-		Inputs: []*bc.TxInput{{
-			Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
-			SignatureScript: sigScript,
-			Metadata:        []byte(`{"a":"b"}`),
-			AssetDefinition: []byte(`{"c":"d"}`),
-		}},
+		Inputs: []*bc.TxInput{
+			bc.NewIssuanceInput(now, now.Add(time.Hour), bc.Hash{}, 0, assetObj.IssuanceScript, assetDefStr, refData, [][]byte{assetObj.RedeemScript}),
+		},
 		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(assetID, 5, []byte("addr0"), []byte{2}),
-			bc.NewTxOutput(assetID, 6, []byte("addr1"), nil),
+			bc.NewTxOutput(assetObj.Hash, 5, []byte("addr0"), []byte{2}),
+			bc.NewTxOutput(assetObj.Hash, 6, []byte("addr1"), nil),
 		},
 		Metadata: []byte{0},
 	})
 
-	now := time.Now().UTC()
 	blk := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Height:    1,
-			Timestamp: uint64(now.UnixNano() / int64(time.Millisecond)),
+			Height:      1,
+			TimestampMS: uint64(now.UnixNano() / int64(time.Millisecond)),
 		},
 		Transactions: []*bc.Tx{tx},
 	}
@@ -289,18 +298,18 @@ func TestGetTxIssuance(t *testing.T) {
 		Metadata:    []byte{0},
 		Inputs: []*TxInput{{
 			Type:     "issuance",
-			AssetID:  assetID,
+			AssetID:  assetObj.Hash,
 			Metadata: []byte(`{"a":"b"}`),
 			AssetDef: []byte(`{"c":"d"}`),
 		}},
 		Outputs: []*TxOutput{{
-			AssetID:  assetID,
+			AssetID:  assetObj.Hash,
 			Amount:   5,
 			Address:  []byte("addr0"),
 			Script:   []byte("addr0"),
 			Metadata: []byte{2},
 		}, {
-			AssetID: assetID,
+			AssetID: assetObj.Hash,
 			Amount:  6,
 			Address: []byte("addr1"),
 			Script:  []byte("addr1"),
@@ -308,7 +317,7 @@ func TestGetTxIssuance(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got:\n\t%+v\nwant:\n\t%+v", got, want)
+		t.Errorf("got:\n%s\nwant:\n%s", spew.Sdump(got), spew.Sdump(want))
 	}
 }
 
@@ -323,25 +332,27 @@ func TestGetTxTransfer(t *testing.T) {
 
 	e := New(fc, db, store, pool, 0, true, true)
 
+	assetID1 := bc.AssetID([32]byte{1})
+	assetID2 := bc.AssetID([32]byte{2})
+
 	prevTxs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(bc.AssetID([32]byte{1}), 5, nil, nil),
+				bc.NewTxOutput(assetID1, 5, nil, nil),
 			},
 		}),
 		bc.NewTx(bc.TxData{
 			Outputs: []*bc.TxOutput{
 				{},
-				bc.NewTxOutput(bc.AssetID([32]byte{2}), 6, nil, nil),
+				bc.NewTxOutput(assetID2, 6, nil, nil),
 			},
 		}),
 	}
 	tx := bc.NewTx(bc.TxData{
-		Inputs: []*bc.TxInput{{
-			Previous: bc.Outpoint{Hash: prevTxs[0].Hash, Index: 0},
-		}, {
-			Previous: bc.Outpoint{Hash: prevTxs[1].Hash, Index: 1},
-		}},
+		Inputs: []*bc.TxInput{
+			bc.NewSpendInput(prevTxs[0].Hash, 0, nil, assetID1, 5, nil, nil),
+			bc.NewSpendInput(prevTxs[1].Hash, 1, nil, assetID2, 6, nil, nil),
+		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(bc.AssetID([32]byte{1}), 5, []byte("addr0"), nil),
 			bc.NewTxOutput(bc.AssetID([32]byte{2}), 6, []byte("addr1"), nil),
@@ -351,8 +362,8 @@ func TestGetTxTransfer(t *testing.T) {
 	now := time.Now().UTC()
 	blk := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Height:    1,
-			Timestamp: uint64(now.UnixNano() / int64(time.Millisecond)),
+			Height:      1,
+			TimestampMS: uint64(now.UnixNano() / int64(time.Millisecond)),
 		},
 		Transactions: append(prevTxs, tx),
 	}
@@ -725,22 +736,4 @@ func TestListHistoricalOutputsByAsset(t *testing.T) {
 		t.Fatal("unexpected error: ", err)
 	}
 	check(got, gotLast)
-}
-
-func mockAssetIDAndSigScript() (bc.AssetID, []byte) {
-	builder := txscript.NewScriptBuilder()
-	builder.AddOp(txscript.OP_FALSE)
-	script, err := builder.Script()
-	if err != nil {
-		panic(err)
-	}
-
-	redeemScript, err := txscript.RedeemScriptFromP2SHSigScript(script)
-	if err != nil {
-		panic(err)
-	}
-	pkScript := txscript.RedeemToPkScript(redeemScript)
-	assetID := bc.ComputeAssetID(pkScript, [32]byte{})
-
-	return assetID, script
 }

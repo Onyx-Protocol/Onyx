@@ -192,38 +192,37 @@ func TestGenerateBlock(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
+	genesisHash := latestBlock.Hash()
+	assetID := bc.ComputeAssetID(nil, genesisHash)
+
+	assetDef := []byte(`{
+"key": "clam"
+}`)
 
 	txs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Version: 1,
-			Inputs: []*bc.TxInput{{
-				Previous: bc.Outpoint{
-					Hash:  mustParseHash("92b34025babea306bdf67cfe9a2576d8475ea9476caeb1fbdea43bf3d56d011a"),
-					Index: bc.InvalidOutputIndex,
-				},
-				SignatureScript: mustDecodeHex("004830450221009037e1d39b7d59d24eba8012baddd5f4ab886a51b46f52b7c479ddfa55eeb5c5022076008409243475b25dfba6db85e15cf3d74561a147375941e4830baa69769b51012551210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae"),
-				AssetDefinition: []byte(`{
-"key": "clam"
-}`),
-			}},
+			Inputs: []*bc.TxInput{
+				bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 50, nil, assetDef, nil, [][]byte{
+					nil,
+					mustDecodeHex("30450221009037e1d39b7d59d24eba8012baddd5f4ab886a51b46f52b7c479ddfa55eeb5c5022076008409243475b25dfba6db85e15cf3d74561a147375941e4830baa69769b5101"),
+					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae")}),
+			},
 			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(mustParseHash("25fbb43a93c290fde3997d92c416d3cc7ff40a13aa309d051406978635085c8d"), 50, mustDecodeHex("a9145881cd104f8d64635751ac0f3c0decf9150c110687"), nil),
+				bc.NewTxOutput(assetID, 50, mustDecodeHex("a9145881cd104f8d64635751ac0f3c0decf9150c110687"), nil),
 			},
 		}),
 		bc.NewTx(bc.TxData{
 			Version: 1,
-			Inputs: []*bc.TxInput{{
-				Previous: bc.Outpoint{
-					Hash:  mustParseHash("92b34025babea306bdf67cfe9a2576d8475ea9476caeb1fbdea43bf3d56d011a"),
-					Index: bc.InvalidOutputIndex,
-				},
-				SignatureScript: mustDecodeHex("00483045022100f3bcffcfd6a1ce9542b653500386cd0ee7b9c86c59390ca0fc0238c0ebe3f1d6022065ac468a51a016842660c3a616c99a9aa5109a3bad1877ba3e0f010f3972472e012551210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae"),
-				AssetDefinition: []byte(`{
-"key": "clam"
-}`),
-			}},
+			Inputs: []*bc.TxInput{
+				bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 50, nil, assetDef, nil, [][]byte{
+					nil,
+					mustDecodeHex("3045022100f3bcffcfd6a1ce9542b653500386cd0ee7b9c86c59390ca0fc0238c0ebe3f1d6022065ac468a51a016842660c3a616c99a9aa5109a3bad1877ba3e0f010f3972472e01"),
+					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae"),
+				}),
+			},
 			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(mustParseHash("25fbb43a93c290fde3997d92c416d3cc7ff40a13aa309d051406978635085c8d"), 50, mustDecodeHex("a914c171e443e05b953baa7b7d834028ed91e47b4d0b87"), nil),
+				bc.NewTxOutput(assetID, 50, mustDecodeHex("a914c171e443e05b953baa7b7d834028ed91e47b4d0b87"), nil),
 			},
 		}),
 	}
@@ -246,9 +245,9 @@ func TestGenerateBlock(t *testing.T) {
 			Height:            2,
 			PreviousBlockHash: latestBlock.Hash(),
 			Commitment: mustDecodeHex(
-				"e2f0ee335c24af356c0dc0792e12cf607fc16fa2733292feb22726f7a8784dc7da0e6f10f1ecf27c06561f900c5bae406138a17b15d3be27f92c256f2e3de4de", // TODO(bobg): verify this is the right value
+				"c4890ce0e5d7cd9c0571c08c2c72107a8c5d0203066d5dde75662543a2e2421287698a9a425ae661655c9102d58abf342994a42be88b21197923d5d08a872caf", // TODO(bobg): verify this is the right value
 			),
-			Timestamp:    uint64(now.Unix()),
+			TimestampMS:  uint64(now.UnixNano() / 1000000),
 			OutputScript: latestBlock.OutputScript,
 		},
 		Transactions: txs,

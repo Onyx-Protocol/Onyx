@@ -19,10 +19,7 @@ type Template struct {
 // Input is an input for a project TxTemplate.
 type Input struct {
 	bc.AssetAmount
-	SigComponents   []*SigScriptComponent `json:"signature_components,omitempty"`
-	SigScriptSuffix json.HexBytes         `json:"redeem_script"`  // deprecated
-	SignatureData   bc.Hash               `json:"signature_data"` // deprecated
-	Sigs            []*Signature          `json:"signatures"`     // deprecated
+	SigComponents []*SigScriptComponent `json:"signature_components,omitempty"`
 }
 
 // SigScriptComponent is an unserialized portion of the sigscript. When
@@ -31,7 +28,6 @@ type Input struct {
 // must be one of 'script', 'data' or 'signature'.
 type SigScriptComponent struct {
 	Type          string        `json:"type"`           // required
-	Script        json.HexBytes `json:"script"`         // required for 'script'
 	Data          json.HexBytes `json:"data"`           // required for 'data'
 	Required      int           `json:"required"`       // required for 'signature'
 	SignatureData bc.Hash       `json:"signature_data"` // required for 'signature'
@@ -82,4 +78,23 @@ func (source *Source) Reserve(ctx context.Context, ttl time.Duration) (*ReserveR
 
 func (dest *Destination) PKScript() []byte {
 	return dest.Receiver.PKScript()
+}
+
+func (inp *Input) AddWitnessData(data []byte) {
+	inp.SigComponents = append(inp.SigComponents, &SigScriptComponent{
+		Type: "data",
+		Data: data,
+	})
+}
+
+func (inp *Input) AddWitnessSigs(sigs []*Signature, nreq int, sigData *bc.Hash) {
+	c := &SigScriptComponent{
+		Type:       "signature",
+		Required:   nreq,
+		Signatures: sigs,
+	}
+	if sigData != nil {
+		copy(c.SignatureData[:], (*sigData)[:])
+	}
+	inp.SigComponents = append(inp.SigComponents, c)
 }

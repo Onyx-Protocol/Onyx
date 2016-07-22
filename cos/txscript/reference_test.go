@@ -50,8 +50,6 @@ func parseScriptFlags(flagStr string) (ScriptFlags, error) {
 			flags |= ScriptDiscourageUpgradableNops
 		case "LOW_S":
 			flags |= ScriptVerifyLowS
-		case "MINIMALDATA":
-			flags |= ScriptVerifyMinimalData
 		case "NONE":
 			// Nothing.
 		case "NULLDUMMY":
@@ -76,7 +74,9 @@ func newCoinbaseTx(val uint64, pkScript []byte, assetID bc.AssetID) *bc.TxData {
 	aa := bc.AssetAmount{Amount: val, AssetID: assetID}
 	return &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
-		Inputs:  []*bc.TxInput{{AssetAmount: aa, SignatureScript: []byte{OP_0, OP_0}}},
+		Inputs: []*bc.TxInput{
+			bc.NewSpendInput(bc.Hash{}, 0, [][]byte{nil, nil}, aa.AssetID, aa.Amount, nil, nil),
+		},
 		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, val, pkScript, nil)},
 		MinTime: 2e9,
 	}
@@ -84,7 +84,7 @@ func newCoinbaseTx(val uint64, pkScript []byte, assetID bc.AssetID) *bc.TxData {
 
 // createSpendTx generates a basic spending transaction given the passed
 // signature and public key scripts.
-func createSpendingTx(sigScript, pkScript []byte) *bc.TxData {
+func createSpendingTx(inputWitness [][]byte, pkScript []byte) *bc.TxData {
 	coinbaseTx1 := newCoinbaseTx(3, pkScript, testAssetID)
 	coinbaseTx2 := newCoinbaseTx(4, pkScript, testAssetID)
 	coinbaseTx3 := newCoinbaseTx(5, nil, testAssetID2)
@@ -92,23 +92,9 @@ func createSpendingTx(sigScript, pkScript []byte) *bc.TxData {
 	spendingTx := &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		Inputs: []*bc.TxInput{
-			{
-				Previous:        bc.Outpoint{Hash: coinbaseTx1.Hash(), Index: 0},
-				PrevScript:      coinbaseTx1.Outputs[0].ControlProgram,
-				AssetAmount:     coinbaseTx1.Outputs[0].AssetAmount,
-				SignatureScript: sigScript,
-			},
-			{
-				Previous:        bc.Outpoint{Hash: coinbaseTx2.Hash(), Index: 0},
-				PrevScript:      coinbaseTx2.Outputs[0].ControlProgram,
-				AssetAmount:     coinbaseTx2.Outputs[0].AssetAmount,
-				SignatureScript: sigScript,
-			},
-			{
-				Previous:    bc.Outpoint{Hash: coinbaseTx3.Hash(), Index: 0},
-				PrevScript:  coinbaseTx3.Outputs[0].ControlProgram,
-				AssetAmount: coinbaseTx3.Outputs[0].AssetAmount,
-			},
+			bc.NewSpendInput(coinbaseTx1.Hash(), 0, inputWitness, coinbaseTx1.Outputs[0].AssetID, coinbaseTx1.Outputs[0].Amount, coinbaseTx1.Outputs[0].ControlProgram, nil),
+			bc.NewSpendInput(coinbaseTx2.Hash(), 0, inputWitness, coinbaseTx2.Outputs[0].AssetID, coinbaseTx2.Outputs[0].Amount, coinbaseTx2.Outputs[0].ControlProgram, nil),
+			bc.NewSpendInput(coinbaseTx3.Hash(), 0, nil, coinbaseTx3.Outputs[0].AssetID, coinbaseTx3.Outputs[0].Amount, coinbaseTx3.Outputs[0].ControlProgram, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(testAssetID, 7, pkScript, nil),
@@ -129,17 +115,29 @@ func TestScriptInvalidTests(t *testing.T) {
 			t.Errorf("%s: can't parse scriptSig; %v", name, err)
 			return
 		}
+		if !IsPushOnlyScript(scriptSig) {
+			t.Logf("%s (%d): non-pushdata-only sigscript, skipping", name, testNum)
+			return
+		}
+		witnessData, err := PushedData(scriptSig)
+		if err != nil {
+			t.Errorf("%s (%d): can't parse pushed data from sigscript (%s)", name, testNum, err)
+			return
+		}
 		scriptPubKey, err := ParseScriptString(test[1])
 		if err != nil {
 			t.Errorf("%s: can't parse scriptPubkey; %v", name, err)
 			return
+		}
+		if len(scriptPubKey) == 0 {
+			scriptPubKey = []byte{OP_NOP}
 		}
 		flags, err := parseScriptFlags(test[2])
 		if err != nil {
 			t.Errorf("%s: %v", name, err)
 			return
 		}
-		tx := createSpendingTx(scriptSig, scriptPubKey)
+		tx := createSpendingTx(witnessData, scriptPubKey)
 		vm, err := newTestEngine(scriptPubKey, tx, flags)
 		if err == nil {
 			if err := vm.Execute(); err == nil {
@@ -160,17 +158,29 @@ func TestScriptValidTests(t *testing.T) {
 			t.Errorf("%s: can't parse scriptSig; %v", name, err)
 			return
 		}
+		if !IsPushOnlyScript(scriptSig) {
+			t.Logf("%s (%d): non-pushdata-only sigscript, skipping", name, testNum)
+			return
+		}
+		witnessData, err := PushedData(scriptSig)
+		if err != nil {
+			t.Errorf("%s (%d): can't parse pushed data from sigscript (%s)", name, testNum, err)
+			return
+		}
 		scriptPubKey, err := ParseScriptString(test[1])
 		if err != nil {
 			t.Errorf("%s: can't parse scriptPubkey; %v", name, err)
 			return
+		}
+		if len(scriptPubKey) == 0 {
+			scriptPubKey = []byte{OP_NOP}
 		}
 		flags, err := parseScriptFlags(test[2])
 		if err != nil {
 			t.Errorf("%s: %v", name, err)
 			return
 		}
-		tx := createSpendingTx(scriptSig, scriptPubKey)
+		tx := createSpendingTx(witnessData, scriptPubKey)
 		vm, err := newTestEngine(scriptPubKey, tx, flags)
 		if err != nil {
 			t.Errorf("%s failed to create script: %v", name, err)
@@ -188,13 +198,17 @@ func TestScriptValidTests(t *testing.T) {
 // as expected.
 func TestP2CValidTests(t *testing.T) {
 	testHelper(t, "p2c_valid.json", func(t *testing.T, test []string, name string, testNum int) {
-		scriptSig, scriptPubKey, err := prepareP2CTest(t, test, name, testNum)
+		witnessData, scriptPubKey, err := prepareP2CTest(t, test, name, testNum)
 		if err != nil {
 			t.Errorf("Could not prepare P2C valid test %d (%s): %v\n", testNum, name, err)
 			return
 		}
+		if len(scriptPubKey) == 0 {
+			t.Logf("%s (%d): skipping", name, testNum)
+			return
+		}
 
-		tx := createSpendingTx(scriptSig, scriptPubKey)
+		tx := createSpendingTx(witnessData, scriptPubKey)
 
 		vm, err := newReusableTestEngine(tx)
 		if err != nil {
@@ -202,7 +216,7 @@ func TestP2CValidTests(t *testing.T) {
 			return
 		}
 
-		err = vm.Prepare(scriptPubKey, 0)
+		err = vm.Prepare(scriptPubKey, witnessData, 0)
 		if err != nil {
 			t.Errorf("TestP2CValidTests: Could not prepare engine for test %d (%s), input 0: %v\n", testNum, name, err)
 			return
@@ -213,7 +227,7 @@ func TestP2CValidTests(t *testing.T) {
 			return
 		}
 
-		err = vm.Prepare(scriptPubKey, 1)
+		err = vm.Prepare(scriptPubKey, witnessData, 1)
 		if err != nil {
 			t.Errorf("TestP2CValidTests: Could not prepare engine for test %d (%s), input 1: %v\n", testNum, name, err)
 			return
@@ -230,13 +244,17 @@ func TestP2CValidTests(t *testing.T) {
 // as expected.
 func TestP2CInvalidTests(t *testing.T) {
 	testHelper(t, "p2c_invalid.json", func(t *testing.T, test []string, name string, testNum int) {
-		scriptSig, scriptPubKey, err := prepareP2CTest(t, test, name, testNum)
+		witnessData, scriptPubKey, err := prepareP2CTest(t, test, name, testNum)
 		if err != nil {
 			t.Errorf("Could not prepare P2C invalid test %d (%s): %v\n", testNum, name, err)
 			return
 		}
+		if scriptPubKey == nil {
+			t.Logf("%s (%d): skipping", name, testNum)
+			return
+		}
 
-		tx := createSpendingTx(scriptSig, scriptPubKey)
+		tx := createSpendingTx(witnessData, scriptPubKey)
 
 		vm, err := newReusableTestEngine(tx)
 		if err != nil {
@@ -244,7 +262,7 @@ func TestP2CInvalidTests(t *testing.T) {
 			return
 		}
 
-		err = vm.Prepare(scriptPubKey, 0)
+		err = vm.Prepare(scriptPubKey, witnessData, 0)
 		if err != nil {
 			t.Errorf("TestP2CInvalidTests: Could not prepare engine for test %d (%s), input 0: %v\n", testNum, name, err)
 			return
@@ -255,7 +273,7 @@ func TestP2CInvalidTests(t *testing.T) {
 			return
 		}
 
-		err = vm.Prepare(scriptPubKey, 1)
+		err = vm.Prepare(scriptPubKey, witnessData, 1)
 		if err != nil {
 			t.Errorf("TestP2CInvalidTests: Could not prepare engine for test %d (%s), input 1: %v\n", testNum, name, err)
 			return
@@ -300,7 +318,7 @@ func testHelper(t *testing.T, filename string, cb func(*testing.T, []string, str
 	}
 }
 
-func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([]byte, []byte, error) {
+func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([][]byte, []byte, error) {
 	contractScript, err := ParseScriptString(test[0])
 	if err != nil {
 		return nil, nil, err
@@ -309,12 +327,19 @@ func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([]by
 	if err != nil {
 		return nil, nil, err
 	}
+	if !IsPushOnlyScript(scriptSig) {
+		t.Logf("%s (%d): non-pushdata-only sigscript, skipping", name, testNum)
+		return nil, nil, nil
+	}
+	scriptSig = AddDataToScript(scriptSig, contractScript)
+	witnessData, err := PushedData(scriptSig)
+	if err != nil {
+		return nil, nil, err
+	}
 	pkParamsBytes, err := ParseScriptString(test[2])
 	if err != nil {
 		return nil, nil, err
 	}
-
-	scriptSig = AddDataToScript(scriptSig, contractScript)
 
 	pkParamsPops, err := TstParseScript(pkParamsBytes)
 	if err != nil {
@@ -335,7 +360,7 @@ func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([]by
 		return nil, nil, err
 	}
 
-	return scriptSig, pkScript, nil
+	return witnessData, pkScript, nil
 }
 
 func newReusableTestEngine(tx *bc.TxData) (*Engine, error) {

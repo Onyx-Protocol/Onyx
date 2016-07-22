@@ -44,11 +44,7 @@ func TestAccountSourceReserve(t *testing.T) {
 
 	want := &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{{
-			TxInput: &bc.TxInput{
-				Previous:    out.Outpoint,
-				AssetAmount: out.TxOutput.AssetAmount,
-				PrevScript:  out.TxOutput.ControlProgram,
-			},
+			TxInput:       bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil),
 			TemplateInput: nil,
 		}},
 		Change: []*txbuilder.Destination{{
@@ -108,11 +104,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 	want := &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{{
-			TxInput: &bc.TxInput{
-				Previous:    out.Outpoint,
-				AssetAmount: out.TxOutput.AssetAmount,
-				PrevScript:  out.TxOutput.ControlProgram,
-			},
+			TxInput:       bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil),
 			TemplateInput: nil,
 		}},
 		Change: []*txbuilder.Destination{{
@@ -279,7 +271,7 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 			t.Fatalf("expected 1 result utxo")
 		}
 
-		got := gotRes.Items[0].TxInput.Previous
+		got := gotRes.Items[0].TxInput.Outpoint()
 		want := bc.Outpoint{Hash: theTxHash, Index: 0}
 		if got != want {
 			t.Errorf("reserved utxo outpoint got=%v want=%v", got, want)

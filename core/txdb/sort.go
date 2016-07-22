@@ -30,7 +30,10 @@ func topSort(ctx context.Context, txs []*bc.Tx) []*bc.Tx {
 	children := make(map[bc.Hash][]bc.Hash)
 	for node, tx := range nodes {
 		for _, in := range tx.Inputs {
-			if prev := in.Previous.Hash; nodes[prev] != nil {
+			if in.IsIssuance() {
+				continue
+			}
+			if prev := in.Outpoint().Hash; nodes[prev] != nil {
 				if children[prev] == nil {
 					children[prev] = make([]bc.Hash, 0, 1)
 				}
@@ -81,7 +84,11 @@ func isTopSorted(ctx context.Context, txs []*bc.Tx) bool {
 	}
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
-			if exists[in.Previous.Hash] && !seen[in.Previous.Hash] {
+			if in.IsIssuance() {
+				continue
+			}
+			h := in.Outpoint().Hash
+			if exists[h] && !seen[h] {
 				return false
 			}
 		}

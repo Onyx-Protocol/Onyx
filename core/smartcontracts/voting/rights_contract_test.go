@@ -132,15 +132,12 @@ func TestAuthenticateClause(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		sb := txscript.NewScriptBuilder().
-			AddInt64(int64(clauseAuthenticate)).
-			AddData(rightsHoldingContract)
-		sigscript, err := sb.Script()
-		if err != nil {
-			t.Fatal(err)
+		inputWitness := [][]byte{
+			txscript.NumItem(clauseAuthenticate).Bytes(),
+			rightsHoldingContract,
 		}
-		err = txscripttest.NewTestTx().
-			AddInput(assetAmount, tc.prev.PKScript(), sigscript).
+		err := txscripttest.NewTestTx().
+			AddInput(assetAmount, tc.prev.PKScript(), inputWitness).
 			AddOutput(assetAmount, tc.out.PKScript()).
 			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
@@ -228,17 +225,13 @@ func TestTransferClause(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		sigBuilder := txscript.NewScriptBuilder()
-		sigBuilder = sigBuilder.
-			AddData(tc.out.HolderScript).
-			AddInt64(int64(clauseTransfer)).
-			AddData(rightsHoldingContract)
-		sigscript, err := sigBuilder.Script()
-		if err != nil {
-			t.Fatal(err)
+		inputWitness := [][]byte{
+			tc.out.HolderScript,
+			txscript.NumItem(clauseTransfer).Bytes(),
+			rightsHoldingContract,
 		}
-		err = txscripttest.NewTestTx().
-			AddInput(assetAmount, tc.prev.PKScript(), sigscript).
+		err := txscripttest.NewTestTx().
+			AddInput(assetAmount, tc.prev.PKScript(), inputWitness).
 			AddOutput(assetAmount, tc.out.PKScript()).
 			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
@@ -317,18 +310,14 @@ func TestDelegateClause(t *testing.T) {
 			delegatable = 1
 		}
 
-		sb := txscript.NewScriptBuilder().
-			AddInt64(delegatable).
-			AddData(tc.out.HolderScript).
-			AddInt64(int64(clauseDelegate)).
-			AddData(rightsHoldingContract)
-		sigscript, err := sb.Script()
-		if err != nil {
-			t.Fatal(err)
+		inputWitness := [][]byte{
+			txscript.NumItem(delegatable).Bytes(),
+			tc.out.HolderScript,
+			txscript.NumItem(clauseDelegate).Bytes(),
+			rightsHoldingContract,
 		}
-
-		err = txscripttest.NewTestTx().
-			AddInput(assetAmount, tc.prev.PKScript(), sigscript).
+		err := txscripttest.NewTestTx().
+			AddInput(assetAmount, tc.prev.PKScript(), inputWitness).
 			AddOutput(assetAmount, tc.out.PKScript()).
 			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
@@ -460,27 +449,25 @@ func TestRecallClause(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		sb := txscript.NewScriptBuilder()
+		var inputWitness [][]byte
 		for _, h := range tc.intermediate {
-			sb.AddData(h[:])
+			inputWitness = append(inputWitness, append([]byte{}, h[:]...))
 		}
-		sb = sb.
-			AddInt64(int64(len(tc.intermediate))).
-			AddData(tc.prev.HolderScript).
-			AddData(tc.prev.OwnershipChain[:]).
-			AddInt64(int64(clauseRecall)).
-			AddData(rightsHoldingContract)
-		sigscript, err := sb.Script()
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = txscripttest.NewTestTx().
-			AddInput(assetAmount, tc.utxo.PKScript(), sigscript).
-			AddOutput(assetAmount, tc.out.PKScript()).
-			Execute(0)
-		if !reflect.DeepEqual(err, tc.err) {
-			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
-		}
+		inputWitness = append(inputWitness, txscript.NumItem(len(tc.intermediate)).Bytes())
+		inputWitness = append(inputWitness, tc.prev.HolderScript)
+		inputWitness = append(inputWitness, tc.prev.OwnershipChain[:])
+		inputWitness = append(inputWitness, txscript.NumItem(clauseRecall).Bytes())
+		inputWitness = append(inputWitness, rightsHoldingContract)
+
+		func() {
+			err := txscripttest.NewTestTx().
+				AddInput(assetAmount, tc.utxo.PKScript(), inputWitness).
+				AddOutput(assetAmount, tc.out.PKScript()).
+				Execute(0)
+			if !reflect.DeepEqual(err, tc.err) {
+				t.Errorf("%d: got=%s want=%s", i, err, tc.err)
+			}
+		}()
 	}
 }
 
@@ -718,25 +705,21 @@ func TestOverrideClause(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		sb := txscript.NewScriptBuilder()
+		var inputWitness [][]byte
 		for _, h := range tc.newHolders {
-			sb.AddData(h.Script)
+			inputWitness = append(inputWitness, h.Script)
 		}
-		sb.AddInt64(int64(len(tc.newHolders)))
+		inputWitness = append(inputWitness, txscript.NumItem(len(tc.newHolders)).Bytes())
 		for _, h := range tc.proofHashes {
-			sb.AddData(h[:])
+			inputWitness = append(inputWitness, append([]byte{}, h[:]...))
 		}
-		sb.AddInt64(int64(len(tc.proofHashes))).
-			AddData(tc.forkHash[:]).
-			AddBool(tc.out.Delegatable).
-			AddInt64(int64(clauseOverride)).
-			AddData(rightsHoldingContract)
-		sigscript, err := sb.Script()
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = txscripttest.NewTestTx().
-			AddInput(assetAmount, tc.utxo.PKScript(), sigscript).
+		inputWitness = append(inputWitness, txscript.NumItem(len(tc.proofHashes)).Bytes())
+		inputWitness = append(inputWitness, tc.forkHash[:])
+		inputWitness = append(inputWitness, txscript.BoolItem(tc.out.Delegatable).Bytes())
+		inputWitness = append(inputWitness, txscript.NumItem(clauseOverride).Bytes())
+		inputWitness = append(inputWitness, rightsHoldingContract)
+		err := txscripttest.NewTestTx().
+			AddInput(assetAmount, tc.utxo.PKScript(), inputWitness).
 			AddOutput(assetAmount, tc.out.PKScript()).
 			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {

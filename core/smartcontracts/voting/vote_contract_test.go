@@ -140,27 +140,23 @@ func TestRedistributeClause(t *testing.T) {
 		},
 	}
 	for i, tc := range testCases {
-		sb := txscript.NewScriptBuilder()
+		var inputWitness [][]byte
 		for r, amt := range tc.distributions {
-			sb = sb.AddInt64(int64(amt)).AddData(r[:])
+			inputWitness = append(inputWitness, txscript.NumItem(amt).Bytes())
+			inputWitness = append(inputWitness, append([]byte{}, r[:]...))
 		}
-		sb = sb.
-			AddInt64(int64(len(tc.distributions))).
-			AddData(right.PKScript()).
-			AddInt64(int64(clauseRedistribute)).
-			AddData(tokenHoldingContract)
-		sigscript, err := sb.Script()
-		if err != nil {
-			t.Fatal(err)
-		}
+		inputWitness = append(inputWitness, txscript.NumItem(len(tc.distributions)).Bytes())
+		inputWitness = append(inputWitness, right.PKScript())
+		inputWitness = append(inputWitness, txscript.NumItem(clauseRedistribute).Bytes())
+		inputWitness = append(inputWitness, tokenHoldingContract)
 		tx := txscripttest.NewTestTx().
 			AddInput(bc.AssetAmount{AssetID: rightA, Amount: 1}, right.PKScript(), nil).
-			AddInput(bc.AssetAmount{AssetID: assetID, Amount: tc.amount}, tc.prev.PKScript(), sigscript).
+			AddInput(bc.AssetAmount{AssetID: assetID, Amount: tc.amount}, tc.prev.PKScript(), inputWitness).
 			AddOutput(bc.AssetAmount{AssetID: rightA, Amount: 1}, right.PKScript())
 		for tok, amount := range tc.outs {
 			tx = tx.AddOutput(bc.AssetAmount{AssetID: assetID, Amount: amount}, tok.PKScript())
 		}
-		err = tx.Execute(1)
+		err := tx.Execute(1)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -366,31 +362,27 @@ func TestRegisterToVoteClause(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		sb := txscript.NewScriptBuilder()
+		var inputWitness [][]byte
 		for _, r := range tc.registrations {
-			sb = sb.AddInt64(int64(r.Amount)).AddData(r.ID)
+			inputWitness = append(inputWitness, txscript.NumItem(r.Amount).Bytes())
+			inputWitness = append(inputWitness, r.ID)
 		}
-		sb = sb.
-			AddInt64(int64(len(tc.registrations))).
-			AddData(right.PKScript()).
-			AddInt64(int64(clauseRegister)).
-			AddData(tokenHoldingContract)
-		sigscript, err := sb.Script()
-		if err != nil {
-			t.Fatal(err)
-		}
+		inputWitness = append(inputWitness, txscript.NumItem(len(tc.registrations)).Bytes())
+		inputWitness = append(inputWitness, right.PKScript())
+		inputWitness = append(inputWitness, txscript.NumItem(clauseRegister).Bytes())
+		inputWitness = append(inputWitness, tokenHoldingContract)
 		r := right
 		if tc.right != nil {
 			r = *tc.right
 		}
 		tx := txscripttest.NewTestTx().
 			AddInput(rightAssetAmount, r.PKScript(), nil).
-			AddInput(bc.AssetAmount{AssetID: tokenAssetID, Amount: tc.amount}, tc.prev.PKScript(), sigscript).
+			AddInput(bc.AssetAmount{AssetID: tokenAssetID, Amount: tc.amount}, tc.prev.PKScript(), inputWitness).
 			AddOutput(rightAssetAmount, r.PKScript())
 		for out, amt := range tc.outs {
 			tx = tx.AddOutput(bc.AssetAmount{AssetID: tokenAssetID, Amount: amt}, out.PKScript())
 		}
-		err = tx.Execute(1)
+		err := tx.Execute(1)
 		if !reflect.DeepEqual(err, tc.err) {
 			t.Errorf("%d: got=%s want=%s", i, err, tc.err)
 		}
@@ -529,19 +521,15 @@ func TestVoteClause(t *testing.T) {
 			r = *tc.right
 		}
 
-		sb := txscript.NewScriptBuilder()
-		sb = sb.
-			AddInt64(tc.out.Vote).
-			AddData(r.PKScript()).
-			AddInt64(int64(clauseVote)).
-			AddData(tokenHoldingContract)
-		sigscript, err := sb.Script()
-		if err != nil {
-			t.Fatal(err)
+		inputWitness := [][]byte{
+			txscript.NumItem(tc.out.Vote).Bytes(),
+			r.PKScript(),
+			txscript.NumItem(clauseVote).Bytes(),
+			tokenHoldingContract,
 		}
-		err = txscripttest.NewTestTx().
+		err := txscripttest.NewTestTx().
 			AddInput(rightAssetAmount, right.PKScript(), nil).
-			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
+			AddInput(tokensAssetAmount, tc.prev.PKScript(), inputWitness).
 			AddOutput(rightAssetAmount, right.PKScript()).
 			AddOutput(tokensAssetAmount, tc.out.PKScript()).
 			Execute(1)
@@ -690,16 +678,12 @@ func TestFinishVoteClause(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		sb := txscript.NewScriptBuilder()
-		sb = sb.
-			AddInt64(int64(clauseFinish)).
-			AddData(tokenHoldingContract)
-		sigscript, err := sb.Script()
-		if err != nil {
-			t.Fatal(err)
+		inputWitness := [][]byte{
+			txscript.NumItem(clauseFinish).Bytes(),
+			tokenHoldingContract,
 		}
-		err = txscripttest.NewTestTx().
-			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
+		err := txscripttest.NewTestTx().
+			AddInput(tokensAssetAmount, tc.prev.PKScript(), inputWitness).
 			AddOutput(tokensAssetAmount, tc.out.PKScript()).
 			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
@@ -785,16 +769,12 @@ func TestRetireClause(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		sb := txscript.NewScriptBuilder()
-		sb = sb.
-			AddInt64(int64(clauseRetire)).
-			AddData(tokenHoldingContract)
-		sigscript, err := sb.Script()
-		if err != nil {
-			t.Fatal(err)
+		inputWitness := [][]byte{
+			txscript.NumItem(clauseRetire).Bytes(),
+			tokenHoldingContract,
 		}
-		err = txscripttest.NewTestTx().
-			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
+		err := txscripttest.NewTestTx().
+			AddInput(tokensAssetAmount, tc.prev.PKScript(), inputWitness).
 			AddOutput(tokensAssetAmount, tc.outputScript).
 			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
@@ -942,16 +922,12 @@ func TestInvalidateVoteClause(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		sb := txscript.NewScriptBuilder()
-		sb = sb.
-			AddInt64(int64(clauseInvalidate)).
-			AddData(tokenHoldingContract)
-		sigscript, err := sb.Script()
-		if err != nil {
-			t.Fatal(err)
+		inputWitness := [][]byte{
+			txscript.NumItem(clauseInvalidate).Bytes(),
+			tokenHoldingContract,
 		}
-		err = txscripttest.NewTestTx().
-			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
+		err := txscripttest.NewTestTx().
+			AddInput(tokensAssetAmount, tc.prev.PKScript(), inputWitness).
 			AddOutput(tokensAssetAmount, tc.out.PKScript()).
 			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {
@@ -1148,17 +1124,13 @@ func TestResetClause(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		sb := txscript.NewScriptBuilder()
-		sb = sb.
-			AddInt64(int64(tc.out.State)).
-			AddInt64(int64(clauseReset)).
-			AddData(tokenHoldingContract)
-		sigscript, err := sb.Script()
-		if err != nil {
-			t.Fatal(err)
+		inputWitness := [][]byte{
+			txscript.NumItem(tc.out.State).Bytes(),
+			txscript.NumItem(clauseReset).Bytes(),
+			tokenHoldingContract,
 		}
-		err = txscripttest.NewTestTx().
-			AddInput(tokensAssetAmount, tc.prev.PKScript(), sigscript).
+		err := txscripttest.NewTestTx().
+			AddInput(tokensAssetAmount, tc.prev.PKScript(), inputWitness).
 			AddOutput(tokensAssetAmount, tc.out.PKScript()).
 			Execute(0)
 		if !reflect.DeepEqual(err, tc.err) {

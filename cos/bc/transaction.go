@@ -3,7 +3,6 @@ package bc
 import (
 	"bytes"
 	"database/sql/driver"
-	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -20,15 +19,13 @@ const (
 	// supported transaction version.
 	CurrentTransactionVersion = 1
 
-	// InvalidOutputIndex indicates issuance transaction.
-	InvalidOutputIndex uint32 = 0xffffffff
-
 	VMVersion = 1
 )
 
 const (
 	assetDefinitionMaxByteLength = 5000000 // 5 mb
 	metadataMaxByteLength        = 500000  // 500 kb
+	witnessMaxByteLength         = 500000  // 500 kb
 )
 
 // Tx holds a transaction along with its hash.
@@ -83,49 +80,6 @@ type TxData struct {
 	Metadata []byte
 }
 
-// TxInput encodes a single input in a transaction.
-type TxInput struct {
-	Previous        Outpoint
-	AssetAmount     AssetAmount
-	PrevScript      []byte
-	SignatureScript []byte
-	Metadata        []byte
-	AssetDefinition []byte
-}
-
-type (
-	TxOutput struct {
-		AssetVersion uint32
-		OutputCommitment
-		ReferenceData []byte
-	}
-
-	// TODO(bobg): On input, preserve the raw bytes of the output
-	// commitment for forward-compatibility.  That will allow us to
-	// re-serialize it even if it contains unknown extension fields.
-	// (https://github.com/chain-engineering/chain/pull/1093#discussion_r70508484)
-	OutputCommitment struct {
-		AssetAmount
-		VMVersion      uint32
-		ControlProgram []byte
-	}
-)
-
-func NewTxOutput(assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxOutput {
-	return &TxOutput{
-		AssetVersion: 1,
-		OutputCommitment: OutputCommitment{
-			AssetAmount: AssetAmount{
-				AssetID: assetID,
-				Amount:  amount,
-			},
-			VMVersion:      1,
-			ControlProgram: controlProgram,
-		},
-		ReferenceData: referenceData,
-	}
-}
-
 // Outpoint defines a bitcoin data type that is used to track previous
 // transaction outputs.
 type Outpoint struct {
@@ -147,11 +101,6 @@ func (tx *TxData) HasIssuance() bool {
 		}
 	}
 	return false
-}
-
-// IsIssuance returns true if input's index is 0xffffffff.
-func (ti *TxInput) IsIssuance() bool {
-	return ti.Previous.Index == InvalidOutputIndex
 }
 
 func (tx *TxData) UnmarshalText(p []byte) error {
@@ -217,69 +166,6 @@ func (tx *TxData) readFrom(r io.Reader) error {
 }
 
 // assumes r has sticky errors
-func (ti *TxInput) readFrom(r io.Reader) (err error) {
-	ti.Previous.readFrom(r)
-	ti.AssetAmount.readFrom(r)
-
-	ti.PrevScript, err = blockchain.ReadBytes(r, MaxProgramByteLength)
-	if err != nil {
-		return err
-	}
-	ti.SignatureScript, err = blockchain.ReadBytes(r, MaxProgramByteLength)
-	if err != nil {
-		return err
-	}
-	ti.Metadata, err = blockchain.ReadBytes(r, metadataMaxByteLength)
-	if err != nil {
-		return err
-	}
-	ti.AssetDefinition, err = blockchain.ReadBytes(r, assetDefinitionMaxByteLength)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// assumes r has sticky errors
-func (to *TxOutput) readFrom(r io.Reader) (err error) {
-	assetVersion, _ := blockchain.ReadUvarint(r)
-	to.AssetVersion = uint32(assetVersion)
-	err = to.OutputCommitment.readFrom(r, to.AssetVersion)
-	if err != nil {
-		return err
-	}
-	to.ReferenceData, err = blockchain.ReadBytes(r, metadataMaxByteLength)
-	if err != nil {
-		return err
-	}
-	// read and ignore the (empty) output witness
-	_, err = blockchain.ReadBytes(r, commitmentMaxByteLength) // TODO(bobg): What's the right limit here?
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (oc *OutputCommitment) readFrom(r io.Reader, assetVersion uint32) (err error) {
-	b, err := blockchain.ReadBytes(r, commitmentMaxByteLength) // TODO(bobg): Is this the right limit here?
-	if err != nil {
-		return err
-	}
-	if assetVersion != 1 {
-		return nil
-	}
-	rb := bytes.NewBuffer(b)
-	oc.AssetAmount.readFrom(rb)
-	vmVersion, _ := blockchain.ReadUvarint(rb)
-	oc.VMVersion = uint32(vmVersion)
-	oc.ControlProgram, err = blockchain.ReadBytes(rb, MaxProgramByteLength)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// assumes r has sticky errors
 func (p *Outpoint) readFrom(r io.Reader) {
 	io.ReadFull(r, p.Hash[:])
 	index, _ := blockchain.ReadUvarint(r)
@@ -301,21 +187,24 @@ func (tx *TxData) Hash() Hash {
 // transactions hash and signature data hash.
 // It is used to compute the TxRoot of a block.
 func (tx *TxData) WitnessHash() Hash {
-	var data []byte
+	var b bytes.Buffer
 
-	var lenBytes [9]byte
-	n := binary.PutUvarint(lenBytes[:], uint64(len(tx.Inputs)))
-	data = append(data, lenBytes[:n]...)
+	txhash := tx.Hash()
+	b.Write(txhash[:])
 
-	for _, in := range tx.Inputs {
-		sigHash := sha3.Sum256(in.SignatureScript)
-		data = append(data, sigHash[:]...)
+	blockchain.WriteUvarint(&b, uint64(len(tx.Inputs)))
+	for _, txin := range tx.Inputs {
+		h := txin.WitnessHash()
+		b.Write(h[:])
 	}
 
-	txHash := tx.Hash()
-	dataHash := sha3.Sum256(data)
+	blockchain.WriteUvarint(&b, uint64(len(tx.Outputs)))
+	for _, txout := range tx.Outputs {
+		h := txout.WitnessHash()
+		b.Write(h[:])
+	}
 
-	return sha3.Sum256(append(txHash[:], dataHash[:]...))
+	return sha3.Sum256(b.Bytes())
 }
 
 // HashForSig generates the hash required for the specified input's
@@ -385,10 +274,11 @@ func (s *SigHasher) Hash(idx int, hashType SigHashType) (hash Hash) {
 	var outputCommitment []byte
 	if !s.tx.Inputs[idx].IsIssuance() {
 		var buf bytes.Buffer
-		buf.Write(s.tx.Inputs[idx].AssetAmount.AssetID[:])
-		blockchain.WriteUvarint(&buf, s.tx.Inputs[idx].AssetAmount.Amount)
+		assetAmount := s.tx.Inputs[idx].AssetAmount()
+		buf.Write(assetAmount.AssetID[:])
+		blockchain.WriteUvarint(&buf, assetAmount.Amount)
 		blockchain.WriteUvarint(&buf, VMVersion)
-		blockchain.WriteBytes(&buf, s.tx.Inputs[idx].PrevScript)
+		blockchain.WriteBytes(&buf, s.tx.Inputs[idx].ControlProgram())
 		outputCommitment = buf.Bytes()
 	}
 
@@ -462,47 +352,6 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) {
 	blockchain.WriteUvarint(w, tx.MinTime)
 	blockchain.WriteUvarint(w, tx.MaxTime)
 	writeMetadata(w, tx.Metadata, serflags)
-}
-
-// assumes w has sticky errors
-func (ti *TxInput) writeTo(w io.Writer, serflags byte) {
-	ti.Previous.WriteTo(w)
-
-	if serflags&SerPrevout != 0 {
-		ti.AssetAmount.writeTo(w)
-		blockchain.WriteBytes(w, ti.PrevScript)
-	}
-
-	// Write the signature script or its hash depending on serialization mode.
-	// Hashing the hash of the sigscript allows us to prune signatures,
-	// redeem scripts and contracts to optimize memory/storage use.
-	// Write the metadata or its hash depending on serialization mode.
-	if serflags&SerWitness != 0 {
-		blockchain.WriteBytes(w, ti.SignatureScript)
-	} else {
-		blockchain.WriteBytes(w, nil)
-	}
-
-	writeMetadata(w, ti.Metadata, serflags)
-	writeMetadata(w, ti.AssetDefinition, serflags)
-}
-
-// assumes r has sticky errors
-func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
-	blockchain.WriteUvarint(w, uint64(to.AssetVersion))
-	to.OutputCommitment.writeTo(w, to.AssetVersion)
-	writeMetadata(w, to.ReferenceData, serflags)
-	blockchain.WriteBytes(w, nil) // empty output witness
-}
-
-func (oc OutputCommitment) writeTo(w io.Writer, assetVersion uint32) {
-	var b bytes.Buffer
-	if assetVersion == 1 {
-		oc.AssetAmount.writeTo(&b)
-		blockchain.WriteUvarint(&b, uint64(oc.VMVersion))
-		blockchain.WriteBytes(&b, oc.ControlProgram)
-	}
-	blockchain.WriteBytes(w, b.Bytes())
 }
 
 // String returns the Outpoint in the human-readable form "hash:index".

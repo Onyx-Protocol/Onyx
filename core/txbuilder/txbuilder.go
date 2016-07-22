@@ -13,9 +13,13 @@ import (
 	"chain/errors"
 )
 
-// ErrBadBuildRequest is returned from Build when the
-// arguments are invalid.
-var ErrBadBuildRequest = errors.New("bad build request")
+var (
+	// ErrBadBuildRequest is returned from Build when the arguments are
+	// invalid.
+	ErrBadBuildRequest = errors.New("bad build request")
+
+	ErrNoSigScript = errors.New("data only for redeeming, not scripts")
+)
 
 // Build builds or adds on to a transaction.
 // Initially, inputs are left unconsumed, and destinations unsatisfied.
@@ -56,9 +60,6 @@ func build(ctx context.Context, sources []*Source, dests []*Destination, metadat
 		}
 		for _, item := range reserveResult.Items {
 			// Empty signature arrays should be serialized as empty arrays, not null.
-			if item.TemplateInput.Sigs == nil {
-				item.TemplateInput.Sigs = []*Signature{}
-			}
 			if item.TemplateInput.SigComponents == nil {
 				item.TemplateInput.SigComponents = []*SigScriptComponent{}
 			}
@@ -116,9 +117,9 @@ func combine(txs ...*Template) (*Template, error) {
 func ComputeSigHashes(ctx context.Context, tpl *Template) {
 	sigHasher := bc.NewSigHasher(tpl.Unsigned)
 	for i, in := range tpl.Inputs {
-		in.SignatureData = sigHasher.Hash(i, bc.SigHashAll)
+		h := sigHasher.Hash(i, bc.SigHashAll)
 		for _, c := range in.SigComponents {
-			c.SignatureData = in.SignatureData
+			c.SignatureData = h
 		}
 	}
 }
@@ -135,58 +136,21 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 
 		components := input.SigComponents
 
-		// For backwards compatability, convert old input.Sigs to a signature
-		// sigscript component.
-		// TODO(jackson): Remove once all the SDKs are using the new format.
-		if len(input.Sigs) > 0 || len(input.SigComponents) == 0 {
-			pushed, err := txscript.PushedData(input.SigScriptSuffix)
-			if err != nil {
-				return nil, errors.Wrap(err)
-			}
-			if len(pushed) == 0 {
-				return nil, errors.New("script should contain pushdata")
-			}
+		witness := make([][]byte, 0, len(components))
 
-			sigsReqd, err := getSigsRequired(pushed[0])
-			if err != nil {
-				return nil, errors.Wrap(err)
-			}
-
-			// Replace the existing components. Only SDKs that don't understand
-			// signature components will populate input.Sigs.
-			components = []*SigScriptComponent{
-				{
-					Type:          "signature",
-					Required:      sigsReqd,
-					SignatureData: input.SignatureData,
-					Signatures:    input.Sigs,
-				},
-				{
-					Type:   "script",
-					Script: input.SigScriptSuffix,
-				},
-			}
-		}
-
-		sb := txscript.NewScriptBuilder()
 		for _, c := range components {
 			switch c.Type {
 			case "script":
-				sb.ConcatRawScript(c.Script)
+				return nil, ErrNoSigScript
 			case "data":
-				sb.AddData(c.Data)
+				witness = append(witness, c.Data)
 			case "signature":
-				if len(c.Signatures) == 0 {
-					break
-				}
-
-				sb.AddOp(txscript.OP_FALSE)
 				added := 0
 				for _, sig := range c.Signatures {
 					if len(sig.DER) == 0 {
 						continue
 					}
-					sb.AddData(sig.DER)
+					witness = append(witness, sig.DER)
 					added++
 					if added == c.Required {
 						break
@@ -196,12 +160,9 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 				return nil, fmt.Errorf("unknown sigscript component `%s`", c.Type)
 			}
 		}
-		script, err := sb.Script()
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-		msg.Inputs[i].SignatureScript = script
+		msg.Inputs[i].InputWitness = witness
 	}
+
 	return bc.NewTx(*msg), nil
 }
 

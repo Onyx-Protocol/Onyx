@@ -200,20 +200,6 @@ func signTemplate(ctx context.Context, tpl *txbuilder.Template) error {
 					}
 				}
 			}
-
-			// If input.SigComponents are provided, ignore the deprecated
-			// input.Sigs.
-			continue
-		}
-
-		for j, sig := range input.Sigs {
-			if sig.XPub == xpub {
-				sigdata, err := client.Sign(kd, sig.DerivationPath, input.SignatureData)
-				if err != nil {
-					return errors.Wrapf(err, "computing signature for input %d sig %d", i, j)
-				}
-				sig.DER = append(sigdata, byte(bc.SigHashAll))
-			}
 		}
 	}
 	return nil

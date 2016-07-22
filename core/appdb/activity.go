@@ -73,13 +73,13 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 		if in.IsIssuance() {
 			continue
 		}
-		all[in.Previous] = &ActUTXO{
-			Amount:  in.AssetAmount.Amount,
-			AssetID: in.AssetAmount.AssetID.String(),
-			Script:  in.PrevScript,
+		all[in.Outpoint()] = &ActUTXO{
+			Amount:  in.Amount(),
+			AssetID: in.AssetID().String(),
+			Script:  in.ControlProgram(),
 		}
-		scriptMap[string(in.PrevScript)] = in.Previous
-		scripts = append(scripts, in.PrevScript)
+		scriptMap[string(in.ControlProgram())] = in.Outpoint()
+		scripts = append(scripts, in.ControlProgram())
 	}
 
 	const scriptQ = `
@@ -95,7 +95,11 @@ func GetActUTXOs(ctx context.Context, tx *bc.Tx) (ins, outs []*ActUTXO, err erro
 	}
 
 	for _, in := range tx.Inputs {
-		ins = append(ins, all[in.Previous]) // nil for issuance
+		var actUTXO *ActUTXO
+		if !in.IsIssuance() {
+			actUTXO = all[in.Outpoint()]
+		}
+		ins = append(ins, actUTXO)
 	}
 
 	for i := range tx.Outputs {

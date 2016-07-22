@@ -25,18 +25,6 @@ func SignTxTemplate(t testing.TB, template *txbuilder.Template, priv *hdkey.XKey
 				sig.DER = append(dat.Serialize(), 1) // append hashtype SIGHASH_ALL
 			}
 		}
-
-		for _, sig := range input.Sigs {
-			key, err := derive(priv, sig.DerivationPath)
-			if err != nil {
-				testutil.FatalErr(t, err)
-			}
-			dat, err := key.Sign(input.SignatureData[:])
-			if err != nil {
-				testutil.FatalErr(t, err)
-			}
-			sig.DER = append(dat.Serialize(), 1) // append hashtype SIGHASH_ALL
-		}
 	}
 }
 

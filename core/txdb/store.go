@@ -23,6 +23,8 @@ type Store struct {
 		mutex sync.Mutex
 		block *bc.Block
 	}
+
+	initialBlockHash bc.Hash
 }
 
 var _ cos.Store = (*Store)(nil)
@@ -62,7 +64,14 @@ func (s *Store) SaveBlock(ctx context.Context, block *bc.Block) error {
 		return errors.Wrap(err, "committing db transaction")
 	}
 
+	if block.Height == 1 {
+		s.initialBlockHash = block.Hash()
+	}
+
+	// Note: this is done last so that callers of LatestBlock
+	// can safely assume the block they get has been applied.
 	s.setLatestBlockCache(block, false)
+
 	return nil
 }
 
@@ -81,4 +90,24 @@ func (s *Store) LatestStateTree(ctx context.Context) (*patricia.Tree, uint64, er
 func (s *Store) FinalizeBlock(ctx context.Context, height uint64) error {
 	_, err := s.db.Exec(ctx, `SELECT pg_notify('newblock', $1)`, height)
 	return err
+}
+
+func (s *Store) InitialBlockHash(ctx context.Context) (bc.Hash, error) {
+	if s.initialBlockHash == (bc.Hash{}) {
+		// Calling LatestBlock is a simple way to block until there's at
+		// least one block in the blockchain.
+		b, err := s.LatestBlock(ctx)
+		if err != nil {
+			return bc.Hash{}, err
+		}
+		if b.Height == 1 {
+			s.initialBlockHash = b.Hash()
+		} else {
+			err = s.db.QueryRow(ctx, "SELECT block_hash FROM blocks WHERE height = 1").Scan(&s.initialBlockHash)
+			if err != nil {
+				return bc.Hash{}, err
+			}
+		}
+	}
+	return s.initialBlockHash, nil
 }

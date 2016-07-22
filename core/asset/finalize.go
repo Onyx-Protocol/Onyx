@@ -187,7 +187,7 @@ func indexAccountUTXOs(ctx context.Context, b *bc.Block) {
 		pg.Strings(txhash),
 		pg.Int32s(pos),
 		b.Height,
-		b.Timestamp,
+		b.TimestampMS,
 	)
 	if err != nil {
 		// TODO(kr): make these errors stop log replay (e.g. crash the process)
@@ -232,8 +232,9 @@ func prevoutDBKeys(txs ...*bc.Tx) (txhash pg.Strings, index pg.Uint32s) {
 			if in.IsIssuance() {
 				continue
 			}
-			txhash = append(txhash, in.Previous.Hash.String())
-			index = append(index, in.Previous.Index)
+			o := in.Outpoint()
+			txhash = append(txhash, o.Hash.String())
+			index = append(index, o.Index)
 		}
 	}
 	return

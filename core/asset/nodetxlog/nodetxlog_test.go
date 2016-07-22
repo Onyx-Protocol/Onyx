@@ -17,10 +17,9 @@ func TestGenerateNodeTxTransfer(t *testing.T) {
 	tx := &bc.Tx{
 		Hash: bc.Hash{},
 		TxData: bc.TxData{
-			Inputs: []*bc.TxInput{{
-				Previous: bc.Outpoint{Hash: bc.Hash([32]byte{255}), Index: 1},
-				Metadata: []byte("input"),
-			}},
+			Inputs: []*bc.TxInput{
+				bc.NewSpendInput(bc.Hash([32]byte{255}), 1, nil, bc.AssetID{}, 0, nil, []byte("input")),
+			},
 			Outputs: []*bc.TxOutput{
 				bc.NewTxOutput(bc.AssetID([32]byte{1}), 987, []byte{1, 1}, []byte("output")),
 			},
@@ -95,17 +94,19 @@ func TestGenerateNodeTxTransfer(t *testing.T) {
 }
 
 func TestGenerateNodeTxIssuance(t *testing.T) {
-	asset1 := bc.AssetID([32]byte{1})
+	var genesisHash bc.Hash
+	issuanceProg := []byte{1}
+	assetID := bc.ComputeAssetID(issuanceProg, genesisHash)
+
 	txTime := time.Now()
 	tx := &bc.Tx{
 		Hash: bc.Hash{},
 		TxData: bc.TxData{
-			Inputs: []*bc.TxInput{{
-				Previous:        bc.Outpoint{Index: bc.InvalidOutputIndex},
-				AssetDefinition: []byte(`{"name": "asset 1"}`),
-			}},
+			Inputs: []*bc.TxInput{
+				bc.NewIssuanceInput(txTime, txTime.Add(time.Hour), genesisHash, 543, issuanceProg, []byte(`{"name": "asset 1"}`), nil, nil),
+			},
 			Outputs: []*bc.TxOutput{
-				bc.NewTxOutput(bc.AssetID([32]byte{1}), 543, nil, nil),
+				bc.NewTxOutput(assetID, 543, nil, nil),
 			},
 		},
 	}
@@ -114,7 +115,7 @@ func TestGenerateNodeTxIssuance(t *testing.T) {
 		AccountID: "acc-1",
 	}}
 	assetMap := map[string]*appdb.ActAsset{
-		asset1.String(): &appdb.ActAsset{Label: "asset1"},
+		assetID.String(): &appdb.ActAsset{Label: "asset1"},
 	}
 	accountMap := map[string]*appdb.ActAccount{
 		"acc-1": &appdb.ActAccount{
@@ -133,13 +134,13 @@ func TestGenerateNodeTxIssuance(t *testing.T) {
 		Time: txTime,
 		Inputs: []nodeTxInput{{
 			Type:            "issuance",
-			AssetID:         asset1,
+			AssetID:         assetID,
 			AssetLabel:      "asset1",
 			AssetDefinition: []byte(`{"name": "asset 1"}`),
 			Amount:          543,
 		}},
 		Outputs: []nodeTxOutput{{
-			AssetID:      asset1,
+			AssetID:      assetID,
 			AssetLabel:   "asset1",
 			Amount:       543,
 			AccountID:    "acc-1",

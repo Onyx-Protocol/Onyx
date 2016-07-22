@@ -50,11 +50,7 @@ func TestRightsReserver(t *testing.T) {
 	want := &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{
 			{
-				TxInput: &bc.TxInput{
-					Previous:    bc.Outpoint{Hash: exampleHash, Index: 1},
-					AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},
-					PrevScript:  prev.PKScript(),
-				},
+				TxInput: bc.NewSpendInput(exampleHash, 1, nil, assetID, 1, prev.PKScript(), nil),
 				TemplateInput: &txbuilder.Input{
 					AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},
 					SigComponents: []*txbuilder.SigScriptComponent{
@@ -65,12 +61,16 @@ func TestRightsReserver(t *testing.T) {
 							),
 						},
 						{
-							Type:   "script",
-							Script: txscript.AddDataToScript(nil, address.RedeemScript),
+							Type: "data",
+							Data: address.RedeemScript,
 						},
 						{
-							Type:   "script",
-							Script: txscript.AddDataToScript([]byte{txscript.OP_1}, rightsHoldingContract),
+							Type: "data",
+							Data: txscript.NumItem(1).Bytes(),
+						},
+						{
+							Type: "data",
+							Data: rightsHoldingContract,
 						},
 					},
 				},
@@ -123,31 +123,19 @@ func TestTokenReserver(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var sigscript []byte
-	sigscript = txscript.AddInt64ToScript(sigscript, 300)
-	sigscript = txscript.AddDataToScript(sigscript, []byte{0xc0, 0x01})
-	sigscript = append(sigscript, txscript.OP_1)
-	sigscript = txscript.AddDataToScript(sigscript, rightData.PKScript())
-	sigscript = append(sigscript, txscript.OP_2)
-	sigscript = txscript.AddDataToScript(sigscript, tokenHoldingContract)
+	tmplIn := &txbuilder.Input{AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 300}}
+	tmplIn.AddWitnessData(txscript.NumItem(300).Bytes())
+	tmplIn.AddWitnessData([]byte{0xc0, 0x01})
+	tmplIn.AddWitnessData(txscript.NumItem(1).Bytes())
+	tmplIn.AddWitnessData(rightData.PKScript())
+	tmplIn.AddWitnessData(txscript.NumItem(2).Bytes())
+	tmplIn.AddWitnessData(tokenHoldingContract)
 
 	want := &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{
 			{
-				TxInput: &bc.TxInput{
-					Previous:    bc.Outpoint{Hash: exampleHash, Index: 1},
-					AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 300},
-					PrevScript:  prev.PKScript(),
-				},
-				TemplateInput: &txbuilder.Input{
-					AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 300},
-					SigComponents: []*txbuilder.SigScriptComponent{
-						{
-							Type:   "script",
-							Script: sigscript,
-						},
-					},
-				},
+				TxInput:       bc.NewSpendInput(exampleHash, 1, nil, assetID, 300, prev.PKScript(), nil),
+				TemplateInput: tmplIn,
 			},
 		},
 	}

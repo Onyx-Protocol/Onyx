@@ -4,66 +4,78 @@ import (
 	"encoding/hex"
 	"reflect"
 	"testing"
+	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"golang.org/x/net/context"
 
+	"chain/core/appdb"
 	"chain/core/txbuilder"
+	"chain/cos"
 	"chain/cos/bc"
+	"chain/cos/hdkey"
+	"chain/cos/mempool"
+	"chain/cos/memstore"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/errors"
+	"chain/testutil"
 )
 
 func TestIssue(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	pgtest.Exec(ctx, t, `
-		INSERT INTO projects (id, name) VALUES ('proj-id-0', 'proj-0');
-		INSERT INTO issuer_nodes (id, project_id, label, keyset, key_index)
-			VALUES ('in1', 'proj-id-0', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}', 0);
-		INSERT INTO assets (id, issuer_node_id, key_index, keyset, redeem_script, issuance_script, label)
-		VALUES(
-			'0000000000000000000000000000000000000000000000000000000000000000',
-			'in1',
-			0,
-			'{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}',
-			decode('51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae', 'hex'),
-			'\x'::bytea,
-			'foo'
-		);
-		INSERT INTO blocks (block_hash, height, data, header)
-		VALUES(
-			'341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5',
-			1,
-			decode('0000000100000000000000013132330000000000000000000000000000000000000000000000000000000000414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000000000000000000640f746573742d7369672d73637269707412746573742d6f75747075742d73637269707401000000010000000000000000000007746573742d7478', 'hex'),
-			''
-		);
-	`)
-
-	outScript := mustDecodeHex("a9140ac9c982fd389181752e5a414045dd424a10754b87")
-	assetAmount := bc.AssetAmount{Amount: 123}
-	dest := txbuilder.NewScriptDestination(ctx, &assetAmount, outScript, nil)
-	outs := []*txbuilder.Destination{dest}
-	resp, err := Issue(ctx, assetAmount, outs)
+	store := memstore.New()
+	fc, err := cos.NewFC(ctx, store, mempool.New(), nil, nil)
 	if err != nil {
-		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
+	now := time.Unix(233400000, 0)
+	_, err = fc.UpsertGenesisBlock(ctx, nil, 0, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	proj, err := appdb.CreateProject(ctx, "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	inode, err := appdb.InsertIssuerNode(ctx, proj.ID, "test", []*hdkey.XKey{testutil.TestXPub}, []*hdkey.XKey{testutil.TestXPrv}, 1, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	genesisHash, err := store.InitialBlockHash(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assetObj, err := CreateAsset(ctx, inode.ID, "test", genesisHash, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assetID := assetObj.Hash
+	amount := uint64(123)
+	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
+	outScript := mustDecodeHex("a9140ac9c982fd389181752e5a414045dd424a10754b87")
+	dest := txbuilder.NewScriptDestination(ctx, &assetAmount, outScript, nil)
+	resp, err := Issue(ctx, assetAmount, []*txbuilder.Destination{dest})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ic := resp.Unsigned.Inputs[0].InputCommitment.(*bc.IssuanceInputCommitment)
+
+	minTime := time.Unix(0, int64(ic.MinTimeMS)*int64(time.Millisecond))
+	maxTime := time.Unix(0, int64(ic.MaxTimeMS)*int64(time.Millisecond))
 	want := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			{
-				Previous:    bc.Outpoint{Index: bc.InvalidOutputIndex, Hash: bc.Hash{}},
-				AssetAmount: assetAmount,
-			},
+			bc.NewIssuanceInput(minTime, maxTime, genesisHash, amount, assetObj.IssuanceScript, nil, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(assetAmount.AssetID, assetAmount.Amount, outScript, nil),
+			bc.NewTxOutput(assetID, amount, outScript, nil),
 		},
 	}
-
 	if !reflect.DeepEqual(resp.Unsigned, want) {
-		t.Errorf("got tx = %+v want %+v", resp.Unsigned, want)
+		t.Errorf("got tx:\n%s\nwant tx:\n%s", spew.Sdump(resp.Unsigned), spew.Sdump(want))
 	}
 }
 

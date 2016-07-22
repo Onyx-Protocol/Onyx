@@ -4,7 +4,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/validation"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/trace/span"
@@ -48,18 +47,14 @@ func saveAssetDefinitions(ctx context.Context, block *bc.Block) error {
 			if !in.IsIssuance() {
 				continue
 			}
-
-			assetID, err := validation.AssetIDFromSigScript(in.SignatureScript)
-			if err != nil {
-				return err
-			}
-			h := bc.HashAssetDefinition(in.AssetDefinition)
+			assetID := in.AssetID()
+			ad := in.AssetDefinition()
+			h := bc.HashAssetDefinition(ad)
 			adps[assetID] = h
-
 			if !seen[h] {
 				seen[h] = true
 				hash = append(hash, h.String())
-				defn = append(defn, in.AssetDefinition)
+				defn = append(defn, ad)
 			}
 		}
 	}

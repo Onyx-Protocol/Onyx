@@ -38,26 +38,19 @@ func (reserver *redeemReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 		txscript.NumItem(changeAmount),
 		txscript.NumItem(1),
 	}
-	sigscript, err := txscript.CheckRedeemP2C(openOrder.Script, contractScript, inputs)
+	programArgs, err := txscript.CheckRedeemP2C(openOrder.Script, contractScript, inputs)
 	if err != nil {
-		return nil, errors.Wrap(err, "building sigscript")
+		return nil, errors.Wrap(err, "building program args")
 	}
-
-	if err != nil {
-		return nil, err
+	tmplInp := &txbuilder.Input{AssetAmount: openOrder.AssetAmount}
+	for _, arg := range programArgs {
+		tmplInp.AddWitnessData(arg)
 	}
 	result := &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{
 			{
-				TxInput: &bc.TxInput{
-					Previous:    openOrder.Outpoint,
-					AssetAmount: openOrder.AssetAmount,
-					PrevScript:  openOrder.Script,
-				},
-				TemplateInput: &txbuilder.Input{
-					AssetAmount:     openOrder.AssetAmount,
-					SigScriptSuffix: sigscript,
-				},
+				TxInput:       bc.NewSpendInput(openOrder.Hash, openOrder.Index, nil, openOrder.AssetID, openOrder.Amount, openOrder.Script, nil),
+				TemplateInput: tmplInp,
 			},
 		},
 	}
@@ -124,25 +117,21 @@ func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 		txscript.DataItem(sellerAddr.RedeemScript),
 		txscript.NumItem(0),
 	}
-	sigscript, err := txscript.CheckRedeemP2C(openOrder.Script, contractScript, inputs)
+	programArgs, err := txscript.CheckRedeemP2C(openOrder.Script, contractScript, inputs)
 	if err != nil {
 		return nil, err
 	}
+	tmplIn := &txbuilder.Input{AssetAmount: openOrder.AssetAmount}
+	sigs := txbuilder.InputSigs(hdkey.Derive(sellerAddr.Keys, appdb.ReceiverPath(sellerAddr, sellerAddr.Index)))
+	tmplIn.AddWitnessSigs(sigs, txscript.SigsRequired(contractScript), nil)
+	for _, arg := range programArgs {
+		tmplIn.AddWitnessData(arg)
+	}
 	result := &txbuilder.ReserveResult{
-		Items: []*txbuilder.ReserveResultItem{
-			{
-				TxInput: &bc.TxInput{
-					Previous:    openOrder.Outpoint,
-					AssetAmount: openOrder.AssetAmount,
-					PrevScript:  openOrder.Script,
-				},
-				TemplateInput: &txbuilder.Input{
-					AssetAmount:     openOrder.AssetAmount,
-					SigScriptSuffix: sigscript,
-					Sigs:            txbuilder.InputSigs(hdkey.Derive(sellerAddr.Keys, appdb.ReceiverPath(sellerAddr, sellerAddr.Index))),
-				},
-			},
-		},
+		Items: []*txbuilder.ReserveResultItem{{
+			TxInput:       bc.NewSpendInput(openOrder.Hash, openOrder.Index, nil, openOrder.AssetID, openOrder.Amount, openOrder.Script, nil),
+			TemplateInput: tmplIn,
+		}},
 	}
 	return result, nil
 }

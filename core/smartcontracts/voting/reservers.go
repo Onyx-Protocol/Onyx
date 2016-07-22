@@ -69,8 +69,8 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 					hdkey.Derive(addr.Keys, appdb.ReceiverPath(&addr, addr.Index)),
 				),
 			}, &txbuilder.SigScriptComponent{
-				Type:   "script",
-				Script: txscript.AddDataToScript(nil, addr.RedeemScript),
+				Type: "data",
+				Data: addr.RedeemScript,
 			})
 	}
 
@@ -111,24 +111,22 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 	}
 	inputs = append(inputs, txscript.NumItem(r.clause))
 
-	script, err := txscript.CheckRedeemP2C(r.prevScript, rightsHoldingContract, inputs)
-
+	programArgs, err := txscript.CheckRedeemP2C(r.prevScript, rightsHoldingContract, inputs)
 	if err != nil {
 		return nil, err
 	}
-	sigscript = append(sigscript, &txbuilder.SigScriptComponent{
-		Type:   "script",
-		Script: script,
-	})
+
+	for _, arg := range programArgs {
+		sigscript = append(sigscript, &txbuilder.SigScriptComponent{
+			Type: "data",
+			Data: arg,
+		})
+	}
 
 	result := &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{
 			{
-				TxInput: &bc.TxInput{
-					Previous:    r.outpoint,
-					AssetAmount: *assetAmount,
-					PrevScript:  r.prevScript,
-				},
+				TxInput: bc.NewSpendInput(r.outpoint.Hash, r.outpoint.Index, nil, assetAmount.AssetID, assetAmount.Amount, r.prevScript, nil),
 				TemplateInput: &txbuilder.Input{
 					AssetAmount:   *assetAmount,
 					SigComponents: sigscript,
@@ -165,8 +163,8 @@ func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount,
 					hdkey.Derive(r.adminAddr.Keys, appdb.ReceiverPath(r.adminAddr, r.adminAddr.Index)),
 				),
 			}, &txbuilder.SigScriptComponent{
-				Type:   "script",
-				Script: txscript.AddDataToScript(nil, r.adminAddr.RedeemScript),
+				Type: "data",
+				Data: r.adminAddr.RedeemScript,
 			},
 		)
 	}
@@ -195,24 +193,22 @@ func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount,
 	}
 	inputs = append(inputs, txscript.NumItem(int64(r.clause)))
 
-	script, err := txscript.CheckRedeemP2C(r.prevScript, tokenHoldingContract, inputs)
+	programArgs, err := txscript.CheckRedeemP2C(r.prevScript, tokenHoldingContract, inputs)
 	if err != nil {
 		return nil, err
 	}
 
-	sigscript = append(sigscript, &txbuilder.SigScriptComponent{
-		Type:   "script",
-		Script: script,
-	})
+	for _, arg := range programArgs {
+		sigscript = append(sigscript, &txbuilder.SigScriptComponent{
+			Type: "data",
+			Data: arg,
+		})
+	}
 
 	result := &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{
 			{
-				TxInput: &bc.TxInput{
-					Previous:    r.outpoint,
-					AssetAmount: *assetAmount,
-					PrevScript:  r.prevScript,
-				},
+				TxInput: bc.NewSpendInput(r.outpoint.Hash, r.outpoint.Index, nil, assetAmount.AssetID, assetAmount.Amount, r.prevScript, nil),
 				TemplateInput: &txbuilder.Input{
 					AssetAmount:   *assetAmount,
 					SigComponents: sigscript,

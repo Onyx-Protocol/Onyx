@@ -132,8 +132,9 @@ func prevoutDBKeys(txs ...*bc.Tx) (txhash pg.Strings, index pg.Uint32s) {
 			if in.IsIssuance() {
 				continue
 			}
-			txhash = append(txhash, in.Previous.Hash.String())
-			index = append(index, in.Previous.Index)
+			o := in.Outpoint()
+			txhash = append(txhash, o.Hash.String())
+			index = append(index, o.Index)
 		}
 	}
 	return

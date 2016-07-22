@@ -2,11 +2,11 @@ package fedtest
 
 import (
 	"testing"
+	"time"
 
 	"chain/cos/bc"
 	"chain/cos/hdkey"
 	"chain/cos/state"
-	"chain/cos/txscript"
 	"chain/testutil"
 )
 
@@ -47,15 +47,7 @@ func (d *TestDest) Sign(t testing.TB, tx *bc.TxData, index int) {
 		testutil.FatalErr(t, err)
 	}
 	der := append(sig.Serialize(), byte(bc.SigHashAll))
-
-	builder := txscript.NewScriptBuilder()
-	builder.AddOp(txscript.OP_FALSE)
-	builder.AddData(der)
-	builder.AddData(d.RedeemScript)
-	tx.Inputs[index].SignatureScript, err = builder.Script()
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
+	tx.Inputs[index].InputWitness = [][]byte{der, d.RedeemScript}
 }
 
 type TestAsset struct {
@@ -82,9 +74,9 @@ func Issue(t testing.TB, asset *TestAsset, dest *TestDest, amount uint64) (*bc.T
 	}
 	tx := &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
-		Inputs: []*bc.TxInput{{
-			Previous: bc.Outpoint{Index: bc.InvalidOutputIndex},
-		}},
+		Inputs: []*bc.TxInput{
+			bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), bc.Hash{}, amount, asset.PKScript, nil, nil, nil),
+		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(asset.AssetID, amount, dest.PKScript, nil),
 		},
@@ -97,11 +89,9 @@ func Issue(t testing.TB, asset *TestAsset, dest *TestDest, amount uint64) (*bc.T
 func Transfer(t testing.TB, out *state.Output, from, to *TestDest) *bc.Tx {
 	tx := &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
-		Inputs: []*bc.TxInput{{
-			Previous:    out.Outpoint,
-			AssetAmount: out.AssetAmount,
-			PrevScript:  out.ControlProgram,
-		}},
+		Inputs: []*bc.TxInput{
+			bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil),
+		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(out.AssetID, out.Amount, to.PKScript, nil),
 		},

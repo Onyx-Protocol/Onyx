@@ -11,7 +11,6 @@ import (
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/cos/state"
-	"chain/cos/txscript"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
@@ -185,7 +184,7 @@ func (e *Explorer) GetTx(ctx context.Context, txHashStr string) (*Tx, error) {
 		if in.IsIssuance() {
 			continue
 		}
-		inHashes = append(inHashes, in.Previous.Hash)
+		inHashes = append(inHashes, in.Outpoint().Hash)
 	}
 
 	prevPoolTxs, err := e.pool.GetTxs(ctx, inHashes...)
@@ -296,39 +295,33 @@ func makeTx(bcTx *bc.Tx, blockHeader *bc.BlockHeader, prevPoolTxs, prevBcTxs map
 
 	for _, in := range bcTx.Inputs {
 		if in.IsIssuance() {
-			redeemScript, err := txscript.RedeemScriptFromP2SHSigScript(in.SignatureScript)
-			if err != nil {
-				return nil, errors.Wrap(err, "extracting redeem script from sigscript")
-			}
-			pkScript := txscript.RedeemToPkScript(redeemScript)
-			assetID := bc.ComputeAssetID(pkScript, [32]byte{}) // TODO(tessr): get genesis hash
-
 			resp.Inputs = append(resp.Inputs, &TxInput{
 				Type:     "issuance",
-				AssetID:  assetID,
-				Metadata: in.Metadata,
-				AssetDef: in.AssetDefinition,
+				AssetID:  in.AssetID(),
+				Metadata: in.ReferenceData,
+				AssetDef: in.AssetDefinition(),
 			})
 		} else {
-			prevTx, ok := prevPoolTxs[in.Previous.Hash]
+			o := in.Outpoint()
+			prevTx, ok := prevPoolTxs[o.Hash]
 			if !ok {
-				prevTx, ok = prevBcTxs[in.Previous.Hash]
+				prevTx, ok = prevBcTxs[o.Hash]
 				if !ok {
-					return nil, errors.Wrap(fmt.Errorf("missing previous transaction %s", in.Previous.Hash))
+					return nil, errors.Wrap(fmt.Errorf("missing previous transaction %s", o.Hash))
 				}
 			}
 
-			if in.Previous.Index >= uint32(len(prevTx.Outputs)) {
-				return nil, errors.Wrap(fmt.Errorf("transaction %s missing output %d", in.Previous.Hash, in.Previous.Index))
+			if o.Index >= uint32(len(prevTx.Outputs)) {
+				return nil, errors.Wrap(fmt.Errorf("transaction %s missing output %d", o.Hash, o.Index))
 			}
 
 			resp.Inputs = append(resp.Inputs, &TxInput{
 				Type:     "transfer",
-				AssetID:  prevTx.Outputs[in.Previous.Index].AssetID,
-				Amount:   &prevTx.Outputs[in.Previous.Index].Amount,
-				TxHash:   &in.Previous.Hash,
-				TxOut:    &in.Previous.Index,
-				Metadata: in.Metadata,
+				AssetID:  prevTx.Outputs[o.Index].AssetID,
+				Amount:   &prevTx.Outputs[o.Index].Amount,
+				TxHash:   &o.Hash,
+				TxOut:    &o.Index,
+				Metadata: in.ReferenceData,
 			})
 		}
 

@@ -157,9 +157,9 @@ func generateNodeTx(
 				Type:            "issuance",
 				AssetID:         assetID,
 				AssetLabel:      label,
-				AssetDefinition: in.AssetDefinition,
+				AssetDefinition: in.AssetDefinition(),
 				Amount:          amt,
-				Metadata:        in.Metadata,
+				Metadata:        in.ReferenceData,
 			})
 			continue
 		}
@@ -181,10 +181,12 @@ func generateNodeTx(
 			mNodeID = account.ManagerNodeID
 		}
 
+		o := in.Outpoint()
+
 		actTx.Inputs = append(actTx.Inputs, nodeTxInput{
 			Type:         "transfer",
-			TxHash:       &in.Previous.Hash,
-			TxOut:        &in.Previous.Index,
+			TxHash:       &o.Hash,
+			TxOut:        &o.Index,
 			AssetID:      bc.AssetID(assetID),
 			AssetLabel:   assetLabel,
 			Amount:       ins[i].Amount,
@@ -192,7 +194,7 @@ func generateNodeTx(
 			AccountLabel: accountLabel,
 			Address:      ins[i].Script,
 			Script:       ins[i].Script,
-			Metadata:     in.Metadata,
+			Metadata:     in.ReferenceData,
 			mNodeID:      mNodeID,
 		})
 	}
@@ -230,7 +232,8 @@ func issuedAssets(tx *bc.Tx) []bc.AssetID {
 	assets := make(map[bc.AssetID]int64)
 	for _, input := range tx.Inputs {
 		if !input.IsIssuance() {
-			assets[input.AssetAmount.AssetID] -= int64(input.AssetAmount.Amount)
+			assetAmount := input.AssetAmount()
+			assets[assetAmount.AssetID] -= int64(assetAmount.Amount)
 		}
 	}
 	for _, output := range tx.Outputs {

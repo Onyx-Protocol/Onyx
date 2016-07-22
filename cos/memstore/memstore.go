@@ -1,6 +1,8 @@
 package memstore
 
 import (
+	"errors"
+
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
@@ -64,3 +66,10 @@ func (m *MemStore) LatestStateTree(context.Context) (*patricia.Tree, uint64, err
 }
 
 func (m *MemStore) FinalizeBlock(context.Context, uint64) error { return nil }
+
+func (m MemStore) InitialBlockHash(context.Context) (bc.Hash, error) {
+	if len(m.Blocks) == 0 {
+		return bc.Hash{}, errors.New("empty blockchain")
+	}
+	return m.Blocks[0].Hash(), nil
+}
