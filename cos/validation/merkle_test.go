@@ -3,42 +3,67 @@ package validation
 import (
 	"bytes"
 	"chain/cos/bc"
+	"chain/cos/txscript"
 	"testing"
 )
 
 func TestCalcMerkleRoot(t *testing.T) {
 	cases := []struct {
-		hashes []bc.Hash
-		want   bc.Hash
+		witnesses [][][]byte
+		want      bc.Hash
 	}{{
-		hashes: []bc.Hash{
-			mustParseHash("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456"),
+		witnesses: [][][]byte{
+			[][]byte{
+				txscript.NumItem(1).Bytes(),
+				[]byte("00000"),
+			},
 		},
-		want: mustParseHash("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456"),
+		want: mustParseHash("108bfcf00f2d5a5b4d0dee0c4292e4175aec4c84a858b3e09dfcdf7fa8ab44a5"),
 	}, {
-		hashes: []bc.Hash{
-			mustParseHash("9c2e4d8fe97d881430de4e754b4205b9c27ce96715231cffc4337340cb110280"),
-			mustParseHash("0c08173828583fc6ecd6ecdbcca7b6939c49c242ad5107e39deb7b0a5996b903"),
+		witnesses: [][][]byte{
+			[][]byte{
+				txscript.NumItem(1).Bytes(),
+				[]byte("000000"),
+			},
+			[][]byte{
+				txscript.NumItem(1).Bytes(),
+				[]byte("111111"),
+			},
 		},
-		want: mustParseHash("3209f27d2c5800f7c6efd2b488498624d18896c4796cf0a5721b0b918e8b6c5b"),
+		want: mustParseHash("143a6b821416aae42b8ea24a92530dff4fc0b94d19db134870a8cd1007c316ea"),
 	}, {
-		hashes: []bc.Hash{
-			mustParseHash("9c2e4d8fe97d881430de4e754b4205b9c27ce96715231cffc4337340cb110280"),
-			mustParseHash("0c08173828583fc6ecd6ecdbcca7b6939c49c242ad5107e39deb7b0a5996b903"),
-			mustParseHash("80903da4e6bbdf96e8ff6fc3966b0cfd355c7e860bdd1caa8e4722d9230e40ac"),
+		witnesses: [][][]byte{
+			[][]byte{
+				txscript.NumItem(1).Bytes(),
+				[]byte("000000"),
+			},
+			[][]byte{
+				txscript.NumItem(2).Bytes(),
+				[]byte("111111"),
+				[]byte("222222"),
+			},
 		},
-		want: mustParseHash("c4ae6d8297d908b4f1acc68ee8ed73d64e925f2bbd2494400592ddc2319dda7e"),
+		want: mustParseHash("1e625cf93dde38aafa0232c41229e01ffe2083a4612cf3679b5e1149e88c62b4"),
 	}}
 
 	for _, c := range cases {
 		var txs []*bc.Tx
-		for _, h := range c.hashes {
-			txs = append(txs, &bc.Tx{Hash: h})
+		for _, wit := range c.witnesses {
+			txs = append(txs, &bc.Tx{
+				TxData: bc.TxData{
+					Inputs: []*bc.TxInput{
+						&bc.TxInput{
+							AssetVersion:    1,
+							InputCommitment: &bc.SpendInputCommitment{},
+							InputWitness:    wit,
+						},
+					},
+				},
+			})
 		}
 		got := CalcMerkleRoot(txs)
-
 		if !bytes.Equal(got[:], c.want[:]) {
-			t.Log("hashes", c.hashes)
+			t.Log("witnesses", c.witnesses)
 			t.Errorf("got merkle root = %s want %s", got, c.want)
 		}
 	}

@@ -79,7 +79,8 @@ func buildMerkleTreeStore(transactions []*bc.Tx) []*bc.Hash {
 
 	// Create the base transaction shas and populate the array with them.
 	for i, tx := range transactions {
-		merkles[i] = &tx.Hash
+		witHash := tx.WitnessHash()
+		merkles[i] = &witHash
 	}
 
 	// Start the array offset after the last transaction and adjusted to the
