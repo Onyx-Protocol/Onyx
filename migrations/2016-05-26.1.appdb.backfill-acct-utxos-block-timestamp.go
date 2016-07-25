@@ -35,7 +35,7 @@ func main() {
 		panic(err)
 	}
 	err = pg.ForQueryRows(ctx, "SELECT data FROM blocks WHERE height IN (SELECT unnest($1::bigint[]))", pg.Uint64s(heights), func(b bc.Block) {
-		_, err := pg.Exec(ctx, "UPDATE account_utxos SET block_timestamp = $1 WHERE confirmed_in = $2", b.Timestamp, b.Height)
+		_, err := pg.Exec(ctx, "UPDATE account_utxos SET block_timestamp = $1 WHERE confirmed_in = $2", b.TimestampMS, b.Height)
 		if err != nil {
 			panic(err)
 		}
