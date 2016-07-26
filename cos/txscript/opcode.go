@@ -2033,6 +2033,9 @@ func opcodeSha3(op *parsedOpcode, vm *Engine) error {
 // opcodeCodeSeparator is currently a NOP for us. It might
 // be used in the future, but for now it does nothing.
 func opcodeCodeSeparator(op *parsedOpcode, vm *Engine) error {
+	if vm.hasFlag(ScriptDiscourageUpgradableNops) {
+		return fmt.Errorf("OP_CODESEPARATOR reserved for soft-fork upgrades")
+	}
 	return nil
 }
 
