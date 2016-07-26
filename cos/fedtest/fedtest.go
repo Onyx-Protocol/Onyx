@@ -57,7 +57,7 @@ type TestAsset struct {
 
 func Asset(t testing.TB) *TestAsset {
 	dest := Dest(t)
-	assetID := bc.ComputeAssetID(dest.PKScript, bc.Hash{})
+	assetID := bc.ComputeAssetID(dest.PKScript, bc.Hash{}, 1)
 
 	return &TestAsset{
 		AssetID:  assetID,

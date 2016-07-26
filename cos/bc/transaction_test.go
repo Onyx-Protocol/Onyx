@@ -101,8 +101,8 @@ func TestTransaction(t *testing.T) {
 					NewSpendInput(mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), 0, nil, AssetID{}, 1000000000000, []byte{1}, []byte("input")),
 				},
 				Outputs: []*TxOutput{
-					NewTxOutput(ComputeAssetID(issuanceScript, genesisHash), 600000000000, []byte{1}, nil),
-					NewTxOutput(ComputeAssetID(issuanceScript, genesisHash), 400000000000, []byte{2}, nil),
+					NewTxOutput(ComputeAssetID(issuanceScript, genesisHash, 1), 600000000000, []byte{1}, nil),
+					NewTxOutput(ComputeAssetID(issuanceScript, genesisHash, 1), 400000000000, []byte{2}, nil),
 				},
 				MinTime:  1492590000,
 				MaxTime:  1492590591,
@@ -127,7 +127,7 @@ func TestTransaction(t *testing.T) {
 				"02" + // outputs count
 				"01" + // output 0, asset version
 				"29" + // output 0, output commitment length
-				"8ce7bfa83eeb157470101b2c40d528335bf9e98c9383f6f6e575bee3e2131236" + // output 0, output commitment, asset id
+				"9ed3e85a8c2d3717b5c94bd2db2ab9cab56955b2c4fb4696f345ca97aaab82d6" + // output 0, output commitment, asset id
 				"80e0a596bb11" + // output 0, output commitment, amount
 				"01" + // output 0, output commitment, vm version
 				"0101" + // output 0, output commitment, control program
@@ -135,7 +135,7 @@ func TestTransaction(t *testing.T) {
 				"00" + // output 0, output witness
 				"01" + // output 1, asset version
 				"29" + // output 1, output commitment length
-				"8ce7bfa83eeb157470101b2c40d528335bf9e98c9383f6f6e575bee3e2131236" + // output 1, output commitment, asset id
+				"9ed3e85a8c2d3717b5c94bd2db2ab9cab56955b2c4fb4696f345ca97aaab82d6" + // output 1, output commitment, asset id
 				"80c0ee8ed20b" + // output 1, output commitment, amount
 				"01" + // output 1, vm version
 				"0102" + // output 1, output commitment, control program
@@ -144,8 +144,8 @@ func TestTransaction(t *testing.T) {
 				"b0bbdcc705" + // mintime
 				"ffbfdcc705" + // maxtime
 				"0c646973747269627574696f6e"), // reference data
-			hash:        mustDecodeHash("1bf6c2bea485bc79bab135b5f15da6b900bcea3adde080291de6dc34841c19f3"),
-			witnessHash: mustDecodeHash("72e496878eebd0930b5e5d80e2e35f93d6552b2ebfca749a219c667a3c5f9542"),
+			hash:        mustDecodeHash("fcbd7e149d5db32bc7635cd313e9de37fcd24e01492f057ece36a799555c5dee"),
+			witnessHash: mustDecodeHash("615689585f1f882d76e1d50f2fd719bb433c25992d4833f4de696824b792a8f2"),
 		},
 	}
 
@@ -252,7 +252,7 @@ func TestOutpointWriteErr(t *testing.T) {
 }
 
 func TestTxHashForSig(t *testing.T) {
-	assetID := ComputeAssetID([]byte{1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"))
+	assetID := ComputeAssetID([]byte{1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"), 1)
 	tx := &TxData{
 		SerFlags: 0x7,
 		Version:  1,
@@ -271,17 +271,17 @@ func TestTxHashForSig(t *testing.T) {
 		wantHash string
 	}{
 		// TODO(bobg): Update all these hashes to pass under new serialization logic in PR 1070 (and possibly others)
-		{0, SigHashAll, "9b13c237b64ce187e3a01544e143853e2d5601abf030ddcb998c085149dc7a03"},
-		{0, SigHashSingle, "2ba8edd090e05e246dbc9beb5747c5fd7987f502cc4ed552161ee660075fe0ab"},
+		{0, SigHashAll, "f63aea25b373b683c367f3dbc94c25ac86b374e2e6f9d01c7e0f4f7465ff48f4"},
+		{0, SigHashSingle, "cd9cb71dd1adf22afc0b4c5eed82b35cd33fdb2cc0e86bbe52e86e0801f90caa"},
 		{0, SigHashNone, "46d93487fcd01b528d0eecab1b22c7e5eef29e63cccc7285be666b6f3c90ab20"},
-		{0, SigHashAll | SigHashAnyOneCanPay, "4bed69242a84bd99350f2119b97c513a67b2410487706ff4c8fbf4d2c2da649a"},
-		{0, SigHashSingle | SigHashAnyOneCanPay, "85575cb67261d56debc2b6b7d8d2f4705f177241ef3f1a0468a43293af3819c1"},
+		{0, SigHashAll | SigHashAnyOneCanPay, "8d273a2c1a78129aa87dd914e5ea7b90f15946d7b7cf91e95177f1c53593a685"},
+		{0, SigHashSingle | SigHashAnyOneCanPay, "cdb627c065ebb30de501d8b159038b5ae98fc404219ad53731b7ac1a91bd0ff4"},
 		{0, SigHashNone | SigHashAnyOneCanPay, "e79409194a99fc3d5af4eea63ea1d4fca8fa14306eb1702ee09b05fc3d04ee3f"},
 
-		{1, SigHashAll, "61ad0a678c4edc3c03d4432e8e3c51af34fe5d798a13dac8a3180d2e2984356a"},
+		{1, SigHashAll, "95f89e47c7ae3eed075763a2363e846e3450ae32267286126462adf03a054748"},
 		{1, SigHashSingle, "332a73ae16be1233c22d5756f5982640a03fd6eb3f8473801d92ff3a3c78015c"},
 		{1, SigHashNone, "8355a71b8a2aa9b8b5f8959bb3201365536112ded1f8c4706722918e68ab1b41"},
-		{1, SigHashAll | SigHashAnyOneCanPay, "1cb3e4b792d6fff2abfbc60d3c0231c351780e7554dce219fa6e59dd0c17943a"},
+		{1, SigHashAll | SigHashAnyOneCanPay, "c9550b707b5d71d5b9fa9fc8a738cc79282e489478e292094cf07a56eb4975b9"},
 		{1, SigHashSingle | SigHashAnyOneCanPay, "13e3f0ccaa667b723494dfd253e0a7f43c40f781586e8325f8fbafcf8f6a934e"},
 		{1, SigHashNone | SigHashAnyOneCanPay, "13c2071104b0409cd6d73acd8d291d7c79745d5799969e113dadb7cc8c2fecb7"},
 	}

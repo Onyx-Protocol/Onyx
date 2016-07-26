@@ -32,7 +32,7 @@ func TestNoUpdateEmptyAD(t *testing.T) {
 func TestTxIsWellFormed(t *testing.T) {
 	var genesisHash bc.Hash
 	issuanceProg := []byte{1}
-	aid1 := bc.ComputeAssetID(issuanceProg, genesisHash)
+	aid1 := bc.ComputeAssetID(issuanceProg, genesisHash, 1)
 	aid2 := bc.AssetID([32]byte{2})
 	txhash1 := bc.Hash{10}
 	txhash2 := bc.Hash{11}
@@ -185,7 +185,7 @@ func TestTxIsWellFormed(t *testing.T) {
 func TestValidateInvalidTimestamps(t *testing.T) {
 	var genesisHash bc.Hash
 	issuanceProg := []byte{1}
-	aid := bc.ComputeAssetID(issuanceProg, genesisHash)
+	aid := bc.ComputeAssetID(issuanceProg, genesisHash, 1)
 	cases := []struct {
 		ok        bool
 		tx        bc.Tx

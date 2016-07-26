@@ -96,7 +96,7 @@ func TestGenerateNodeTxTransfer(t *testing.T) {
 func TestGenerateNodeTxIssuance(t *testing.T) {
 	var genesisHash bc.Hash
 	issuanceProg := []byte{1}
-	assetID := bc.ComputeAssetID(issuanceProg, genesisHash)
+	assetID := bc.ComputeAssetID(issuanceProg, genesisHash, 1)
 
 	txTime := time.Now()
 	tx := &bc.Tx{

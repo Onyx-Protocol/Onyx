@@ -206,7 +206,7 @@ func TestCombineMetadata(t *testing.T) {
 func TestAssembleSignatures(t *testing.T) {
 	var genesisHash bc.Hash
 	issuanceProg := []byte{1}
-	assetID := bc.ComputeAssetID(issuanceProg, genesisHash)
+	assetID := bc.ComputeAssetID(issuanceProg, genesisHash, 1)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	now := time.Unix(233400000, 0)
 	unsigned := &bc.TxData{
@@ -247,7 +247,7 @@ func TestAssembleSignatures(t *testing.T) {
 		t.Fatal(withStack(err))
 	}
 
-	want := "13590d7034f3a591fcff06f91520cfda8f43dfdba66fbce92fe05f1276c4ac8f" // TODO(bobg): verify this is the right hash
+	want := "0111d0e8b5ca73721f92f86f5e472891efffeb24729fbb59d7f0f3791e1e91be" // TODO(bobg): verify this is the right hash
 	if got := tx.WitnessHash().String(); got != want {
 		t.Errorf("got tx witness hash = %v want %v", got, want)
 	}

@@ -196,7 +196,7 @@ func TestGenerateBlock(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 	genesisHash := latestBlock.Hash()
-	assetID := bc.ComputeAssetID(nil, genesisHash)
+	assetID := bc.ComputeAssetID(nil, genesisHash, 1)
 
 	assetDef := []byte(`{
 "key": "clam"
@@ -248,7 +248,7 @@ func TestGenerateBlock(t *testing.T) {
 			Height:            2,
 			PreviousBlockHash: latestBlock.Hash(),
 			Commitment: mustDecodeHex(
-				"9a8d1b028e0d66d39eabb3f964356520047ad603aac3a48637c00da6c4a6054687698a9a425ae661655c9102d58abf342994a42be88b21197923d5d08a872caf", // TODO(bobg): verify this is the right value
+				"6a948c28e0991ae41c63dd3f2c0366b9d8cfd62c8d8166aa2e4bf76c1a4922dea49e884c4aa0e1d6d61412fe0c5f5f4faa20d1550d8821f198f2224e07f0701a", // TODO(bobg): verify this is the right value
 			),
 			TimestampMS:  uint64(now.UnixNano() / 1000000),
 			OutputScript: latestBlock.OutputScript,

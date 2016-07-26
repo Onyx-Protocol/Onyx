@@ -50,7 +50,7 @@ func CreateAsset(ctx context.Context, inodeID, label string, genesisHash bc.Hash
 	pkScript := txscript.RedeemToPkScript(asset.RedeemScript)
 	asset.IssuanceScript = pkScript
 	asset.GenesisHash = genesisHash
-	asset.Hash = bc.ComputeAssetID(pkScript, genesisHash)
+	asset.Hash = bc.ComputeAssetID(pkScript, genesisHash, 1)
 
 	asset, err = appdb.InsertAsset(ctx, asset)
 	if err != nil {

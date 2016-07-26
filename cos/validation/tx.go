@@ -169,14 +169,3 @@ func ApplyTx(tree *patricia.Tree, tx *bc.Tx) error {
 	}
 	return nil
 }
-
-// AssetIDFromSigScript takes an issuance sigscript and computes the
-// associated Asset ID from it.
-func AssetIDFromSigScript(script []byte) (bc.AssetID, error) {
-	redeemScript, err := txscript.RedeemScriptFromP2SHSigScript(script)
-	if err != nil {
-		return bc.AssetID{}, errors.Wrap(err, "extracting redeem script from sigscript")
-	}
-	pkScript := txscript.RedeemToPkScript(redeemScript)
-	return bc.ComputeAssetID(pkScript, [32]byte{}), nil // TODO(tessr): get genesis hash
-}

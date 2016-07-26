@@ -237,7 +237,7 @@ func (sc SpendInputCommitment) writeTo(w io.Writer, assetVersion uint32, serflag
 }
 
 func (ic IssuanceInputCommitment) AssetID() AssetID {
-	return ComputeAssetID(ic.IssuanceProgram, ic.InitialBlock)
+	return ComputeAssetID(ic.IssuanceProgram, ic.InitialBlock, ic.VMVersion)
 }
 
 func (ic IssuanceInputCommitment) IsIssuance() bool { return true }
