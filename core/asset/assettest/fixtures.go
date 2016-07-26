@@ -252,22 +252,6 @@ func AccountDestinationFixture(ctx context.Context, t testing.TB, assetID bc.Ass
 	return dest
 }
 
-func IssuerTxFixture(ctx context.Context, t testing.TB, txHash string, data []byte, iNodeID string, assets []string) (id string) {
-	id, err := appdb.WriteIssuerTx(ctx, txHash, data, iNodeID, time.Now(), assets)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	return id
-}
-
-func ManagerTxFixture(ctx context.Context, t testing.TB, txHash string, data []byte, mNodeID string, accounts []string) (id string) {
-	id, err := appdb.WriteManagerTx(ctx, txHash, data, mNodeID, time.Now(), accounts)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	return id
-}
-
 // InitializeSigningGenerator initiaizes a generator fixture with the
 // provided store. Store can be nil, in which case it will use memstore.
 func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.Pool) (*cos.FC, *generator.Generator, error) {

@@ -1,11 +1,8 @@
 package asset
 
 import (
-	"time"
-
 	"golang.org/x/net/context"
 
-	"chain/core/asset/nodetxlog"
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/errors"
@@ -35,14 +32,6 @@ func Init(chain *cos.FC, isManager bool) {
 			indexAccountUTXOs(ctx, b)
 			saveAssetDefinitions(ctx, b)
 			recordIssuances(ctx, b)
-			for _, tx := range b.Transactions {
-				// TODO(jackson): Once block timestamps are correctly populated
-				// in milliseconds, Write() should use b.Time().
-				err := nodetxlog.Write(ctx, tx, time.Now())
-				if err != nil {
-					log.Error(ctx, errors.Wrap(err, "writing activity"))
-				}
-			}
 		})
 	}
 }

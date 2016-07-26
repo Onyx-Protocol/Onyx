@@ -17,7 +17,6 @@ import (
 
 const (
 	sessionTokenLifetime = 2 * 7 * 24 * time.Hour
-	defActivityPageSize  = 50
 	defAccountPageSize   = 100
 	defBalancePageSize   = 100
 	defAssetPageSize     = 100
@@ -97,10 +96,6 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/v3/manager-nodes/:mnodeID/accounts", createAccount)
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/balance", managerNodeBalance)
 	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/assets/:assetID/balances", listAccountsWithAsset) // EXPERIMENTAL - implemented for Glitterco
-	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/activity", getManagerNodeActivity)
-	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/transactions", getManagerNodeTxs)
-	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/transactions/:txID", managerNodeTxActivity)
-	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/transactions-new/:txID", managerNodeTx) // We'll remove the '-new' when all clients have migrated to new SDKs.
 	h.HandleFunc("PUT", "/v3/manager-nodes/:mnodeID", updateManagerNode)
 	h.HandleFunc("DELETE", "/v3/manager-nodes/:mnodeID", archiveManagerNode)
 	h.HandleFunc("GET", "/v3/projects/:projID/issuer-nodes", listIssuerNodes)
@@ -110,19 +105,13 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("DELETE", "/v3/issuer-nodes/:inodeID", archiveIssuerNode)
 	h.HandleFunc("GET", "/v3/issuer-nodes/:inodeID/assets", a.listAssets)
 	h.HandleFunc("POST", "/v3/issuer-nodes/:inodeID/assets", a.createAsset)
-	h.HandleFunc("GET", "/v3/issuer-nodes/:inodeID/activity", getIssuerNodeActivity)
-	h.HandleFunc("GET", "/v3/issuer-nodes/:inodeID/transactions", getIssuerNodeTxs)
 	h.HandleFunc("GET", "/v3/accounts/:accountID", getAccount)
 	h.HandleFunc("GET", "/v3/accounts/:accountID/balance", a.accountBalance)
-	h.HandleFunc("GET", "/v3/accounts/:accountID/activity", getAccountActivity)
-	h.HandleFunc("GET", "/v3/accounts/:accountID/transactions", getAccountTxs)
 	h.HandleFunc("POST", "/v3/accounts/:accountID/addresses", createAddr)
 	h.HandleFunc("POST", "/v3/accounts/:accountID/utxos", listAccountUTXOs)
 	h.HandleFunc("PUT", "/v3/accounts/:accountID", updateAccount)
 	h.HandleFunc("DELETE", "/v3/accounts/:accountID", archiveAccount)
 	h.HandleFunc("GET", "/v3/assets/:assetID", a.getIssuerAsset)
-	h.HandleFunc("GET", "/v3/assets/:assetID/activity", getAssetActivity)
-	h.HandleFunc("GET", "/v3/assets/:assetID/transactions", getAssetTxs)
 	h.HandleFunc("PUT", "/v3/assets/:assetID", updateAsset)
 	h.HandleFunc("DELETE", "/v3/assets/:assetID", archiveAsset)
 	h.HandleFunc("POST", "/v3/assets/:assetID/issue", issueAsset) // DEPRECATED
