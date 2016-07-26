@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -385,13 +385,13 @@ CREATE TABLE assets (
     definition_mutable boolean DEFAULT false NOT NULL,
     definition bytea,
     redeem_script bytea NOT NULL,
-    genesis_hash text NOT NULL,
     label text NOT NULL,
     sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL,
     inner_asset_id text,
     issuance_script bytea NOT NULL,
     archived boolean DEFAULT false NOT NULL,
-    client_token text
+    client_token text,
+    genesis_hash text NOT NULL
 );
 
 
@@ -542,29 +542,6 @@ ALTER SEQUENCE issuer_nodes_key_index_seq OWNED BY issuer_nodes.key_index;
 
 
 --
--- Name: issuer_txs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE issuer_txs (
-    id text DEFAULT next_chain_id('itx'::text) NOT NULL,
-    issuer_node_id text NOT NULL,
-    data json NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    tx_hash text NOT NULL
-);
-
-
---
--- Name: issuer_txs_assets; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE issuer_txs_assets (
-    issuer_tx_id text NOT NULL,
-    asset_id text NOT NULL
-);
-
-
---
 -- Name: leader; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -617,29 +594,6 @@ CREATE SEQUENCE manager_nodes_key_index_seq
 --
 
 ALTER SEQUENCE manager_nodes_key_index_seq OWNED BY manager_nodes.key_index;
-
-
---
--- Name: manager_txs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE manager_txs (
-    id text DEFAULT next_chain_id('mtx'::text) NOT NULL,
-    manager_node_id text NOT NULL,
-    data json NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    tx_hash text NOT NULL
-);
-
-
---
--- Name: manager_txs_accounts; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE manager_txs_accounts (
-    manager_tx_id text NOT NULL,
-    account_id text NOT NULL
-);
 
 
 --
@@ -972,14 +926,6 @@ ALTER TABLE ONLY issuer_nodes
 
 
 --
--- Name: issuer_txs_add_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY issuer_txs
-    ADD CONSTRAINT issuer_txs_add_pkey PRIMARY KEY (id);
-
-
---
 -- Name: leader_singleton_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1001,14 +947,6 @@ ALTER TABLE ONLY manager_nodes
 
 ALTER TABLE ONLY manager_nodes
     ADD CONSTRAINT manager_nodes_project_id_client_token_key UNIQUE (project_id, client_token);
-
-
---
--- Name: manager_txs_add_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY manager_txs
-    ADD CONSTRAINT manager_txs_add_pkey PRIMARY KEY (id);
 
 
 --
@@ -1242,52 +1180,10 @@ CREATE INDEX issuer_nodes_project_id_idx ON issuer_nodes USING btree (project_id
 
 
 --
--- Name: issuer_txs_assets_asset_id_issuer_tx_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX issuer_txs_assets_asset_id_issuer_tx_id_idx ON issuer_txs_assets USING btree (asset_id, issuer_tx_id DESC);
-
-
---
--- Name: issuer_txs_issuer_node_id_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX issuer_txs_issuer_node_id_id_idx ON issuer_txs USING btree (issuer_node_id, id DESC);
-
-
---
--- Name: issuer_txs_node_hash; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX issuer_txs_node_hash ON issuer_txs USING btree (issuer_node_id, tx_hash);
-
-
---
 -- Name: manager_nodes_project_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX manager_nodes_project_id_idx ON manager_nodes USING btree (project_id);
-
-
---
--- Name: manager_txs_accounts_account_id_manager_tx_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX manager_txs_accounts_account_id_manager_tx_id_idx ON manager_txs_accounts USING btree (account_id, manager_tx_id DESC);
-
-
---
--- Name: manager_txs_manager_node_id_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX manager_txs_manager_node_id_id_idx ON manager_txs USING btree (manager_node_id, id DESC);
-
-
---
--- Name: manager_txs_node_hash; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX manager_txs_node_hash ON manager_txs USING btree (manager_node_id, tx_hash);
 
 
 --
@@ -1446,7 +1342,7 @@ insert into migrations (filename, hash) values ('2016-05-24.0.utxodb.denorm-ob.s
 insert into migrations (filename, hash) values ('2016-05-25.0.api.voting-token-lots.sql', 'd997c322e1f41c83cbd5a6c160f6e3171a8b9215e1c213282d209ce9356b899c');
 insert into migrations (filename, hash) values ('2016-05-25.1.utxodb.remove-ob-fk.sql', '83d7fb0b72219115bc591c2b261f0d0ab313658e1507ab8a7ce85f313803d0f5');
 insert into migrations (filename, hash) values ('2016-05-26.0.appdb.acct-utxos-block-timestamp.sql', 'f4ebe7c313d074caad151cc774fc2ce83aa402f6a1130af42f6295f37f54fc68');
-insert into migrations (filename, hash) values ('2016-05-26.1.appdb.backfill-acct-utxos-block-timestamp.go', 'd2dd1eac7d3d744fe77db8c579db7784b0031c3d8db88d3414a88728a5d0acf5');
+insert into migrations (filename, hash) values ('2016-05-26.1.appdb.backfill-acct-utxos-block-timestamp.go', '319115b880b8eaf6c14d705c1705ba5f6665189561655a35607e664beaee70b4');
 insert into migrations (filename, hash) values ('2016-05-26.2.api.add-voting-registration-id.sql', 'e7c1388c31afc622132bfb8927db77700a504abd387afdd454c19fe762bb50c7');
 insert into migrations (filename, hash) values ('2016-05-26.3.appdb.historical-outputs.sql', '29a80558a5dde5ed85b1a157221e6441ea73dac718ea5587f92be666ef286d97');
 insert into migrations (filename, hash) values ('2016-05-27.0.appdb.historical-metadata.sql', 'e53e310b8861b359086ba6201c17655c98dde8e13f0ba919b1abdc2a5b1822d3');
@@ -1464,3 +1360,5 @@ insert into migrations (filename, hash) values ('2016-07-07.0.asset.issuance-tot
 insert into migrations (filename, hash) values ('2016-07-08.0.core.drop-members.sql', '3fac6b9ad710c286e47aee3748e321902ceca3c80aaf1525c7d0934e762c53aa');
 insert into migrations (filename, hash) values ('2016-07-19.0.core.node-txs-unique.sql', 'e8a337edc26bb4c37d97b084f0e3167b8e7900e4dc676b3ffe90544376dc147d');
 insert into migrations (filename, hash) values ('2016-07-19.1.asset.drop-spent-in-pool.sql', 'a1543793493f0d100352e66bf27979ee34298459c975fae70d6cb53c49955b67');
+insert into migrations (filename, hash) values ('2016-07-21.0.core.asset-genesis-hash.sql', '45642a9fd2d033208f78dafffaaab99fb7e9dfbb7b15224d254b283fa9db416b');
+insert into migrations (filename, hash) values ('2016-07-26.0.api.drop-manager-issuer-txs.sql', '2f7b14ce50118f1effcf153bf8c8f5cc7859af45487a383df6a7c8e3f5e8f15b');
