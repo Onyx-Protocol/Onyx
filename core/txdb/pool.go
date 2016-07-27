@@ -4,7 +4,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/state"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
@@ -52,16 +51,6 @@ func (p *Pool) Insert(ctx context.Context, tx *bc.Tx) error {
 	err = insertPoolTx(ctx, dbtx, tx)
 	if err != nil {
 		return errors.Wrap(err, "insert into pool txs")
-	}
-
-	var outputs []*Output
-	for i, out := range tx.Outputs {
-		outputs = append(outputs, &Output{
-			Output: state.Output{
-				Outpoint: bc.Outpoint{Hash: tx.Hash, Index: uint32(i)},
-				TxOutput: *out,
-			},
-		})
 	}
 
 	err = dbtx.Commit(ctx)
