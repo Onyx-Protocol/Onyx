@@ -26,8 +26,6 @@ import (
 	"chain/core/leader"
 	"chain/core/rpcclient"
 	"chain/core/signer"
-	"chain/core/smartcontracts/orderbook"
-	"chain/core/smartcontracts/voting"
 	"chain/core/txdb"
 	"chain/core/utxodb"
 	"chain/cos"
@@ -191,10 +189,6 @@ func main() {
 
 	asset.Init(fc, *isManager)
 
-	if *isManager {
-		orderbook.Connect(fc)
-		voting.Connect(fc)
-	}
 	historicalOutputsMaxAge := time.Duration(*historicalOutputsMaxAgeDays) * 24 * time.Hour // TODO(kr): use env.Duration
 	explorer := explorer.New(fc, db, store, historicalOutputsMaxAge, *historicalOutputs, *isManager)
 

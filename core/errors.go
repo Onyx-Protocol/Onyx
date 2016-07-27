@@ -5,7 +5,6 @@ import (
 
 	"chain/core/appdb"
 	"chain/core/asset"
-	"chain/core/smartcontracts/orderbook"
 	"chain/core/txbuilder"
 	"chain/core/utxodb"
 	"chain/database/pg"
@@ -57,7 +56,6 @@ var (
 		asset.ErrBadTxTemplate:       errorInfo{400, "CH755", "Invalid transaction template"},
 		ErrBadBuildRequest:           errorInfo{400, "CH756", "Invalid build transaction request"},
 		txbuilder.ErrBadBuildRequest: errorInfo{400, "CH756", "Invalid build transaction request"},
-		orderbook.ErrNoAssets:        errorInfo{400, "CH757", "No assets specified"},
 		appdb.ErrBadProjectName:      errorInfo{400, "CH770", "Invalid project name"},
 		errNotAdmin:                  errorInfo{403, "CH781", "Admin privileges are required to perform this action"},
 		appdb.ErrBadRole:             errorInfo{400, "CH800", "User role must be \"developer\" or \"admin\""},

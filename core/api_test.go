@@ -11,7 +11,6 @@ import (
 	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/issuer"
-	"chain/core/smartcontracts/orderbook"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
 	"chain/database/pg"
@@ -62,7 +61,6 @@ func TestIssue(t *testing.T) {
 	}
 
 	asset.Init(fc, true)
-	orderbook.Connect(fc)
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
 	projectID := assettest.CreateProjectFixture(ctx, t, "")
@@ -112,7 +110,6 @@ func TestTransfer(t *testing.T) {
 	}
 
 	asset.Init(fc, true)
-	orderbook.Connect(fc)
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
 	projectID := assettest.CreateProjectFixture(ctx, t, "")

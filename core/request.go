@@ -1,7 +1,6 @@
 package core
 
 import (
-	"encoding/json"
 	"time"
 
 	"golang.org/x/net/context"
@@ -9,10 +8,8 @@ import (
 	"chain/core/appdb"
 	"chain/core/asset"
 	"chain/core/issuer"
-	"chain/core/smartcontracts/orderbook"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
-	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
 )
@@ -73,68 +70,18 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 			Amount:  source.Amount,
 		}
 		return issuer.NewIssueSource(ctx, *assetAmount, nil, nil), nil // TODO: allow specifying updated asset definition and reference data
-	case "orderbook-redeem":
-		if source.PaymentAssetID == nil {
-			return nil, errors.WithDetail(ErrBadBuildRequest, "asset_id is not specified on the orderbook-redeem input")
-		}
-		if source.PaymentAmount == 0 {
-			return nil, errors.WithDetailf(ErrBadBuildRequest,
-				"input for asset %s has zero amount", *source.PaymentAssetID)
-		}
-		if source.TxHash == nil {
-			return nil, errors.WithDetailf(ErrBadBuildRequest, "transaction_id is not specified on the orderbook-redeem input")
-		}
-		if source.TxOutput == nil {
-			return nil, errors.WithDetailf(ErrBadBuildRequest, "index is not specified on the orderbook-redeem input")
-		}
-		outpoint := &bc.Outpoint{
-			Hash:  *source.TxHash,
-			Index: *source.TxOutput,
-		}
-		openOrder, err := orderbook.FindOpenOrderByOutpoint(ctx, outpoint)
-		if err != nil {
-			return nil, err
-		}
-		if openOrder == nil {
-			return nil, pg.ErrUserInputNotFound
-		}
-		paymentAmount := &bc.AssetAmount{
-			AssetID: *source.PaymentAssetID,
-			Amount:  source.PaymentAmount,
-		}
-		return orderbook.NewRedeemSource(openOrder, source.Amount, paymentAmount), nil
-	case "orderbook-cancel":
-		if source.TxHash == nil {
-			return nil, errors.WithDetailf(ErrBadBuildRequest, "transaction_id is not specified on the orderbook-cancel input")
-		}
-		if source.TxOutput == nil {
-			return nil, errors.WithDetailf(ErrBadBuildRequest, "index is not specified on the orderbook-cancel input")
-		}
-		outpoint := &bc.Outpoint{
-			Hash:  *source.TxHash,
-			Index: *source.TxOutput,
-		}
-		openOrder, err := orderbook.FindOpenOrderByOutpoint(ctx, outpoint)
-		if err != nil {
-			return nil, err
-		}
-		if openOrder == nil {
-			return nil, pg.ErrUserInputNotFound
-		}
-		return orderbook.NewCancelSource(openOrder), nil
 	}
 	return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown source type `%s`", source.Type)
 }
 
 type Destination struct {
-	AssetID         *bc.AssetID `json:"asset_id"`
-	Amount          uint64
-	AccountID       string             `json:"account_id,omitempty"`
-	Address         chainjson.HexBytes `json:"address,omitempty"`
-	Metadata        chainjson.HexBytes `json:"metadata,omitempty"`
-	OrderbookPrices []*orderbook.Price `json:"orderbook_prices,omitempty"`
-	Script          chainjson.HexBytes `json:"script,omitempty"`
-	Type            string
+	AssetID   *bc.AssetID `json:"asset_id"`
+	Amount    uint64
+	AccountID string             `json:"account_id,omitempty"`
+	Address   chainjson.HexBytes `json:"address,omitempty"`
+	Metadata  chainjson.HexBytes `json:"metadata,omitempty"`
+	Script    chainjson.HexBytes `json:"script,omitempty"`
+	Type      string
 }
 
 // buildAddress will return the destination's script, if populated. Otherwise,
@@ -178,54 +125,14 @@ func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, erro
 		return txbuilder.NewScriptDestination(ctx, assetAmount, dest.Address, dest.Metadata), nil
 	case "retire":
 		return txbuilder.NewRetireDestination(ctx, assetAmount, dest.Metadata), nil
-	case "orderbook":
-		orderInfo := &orderbook.OrderInfo{
-			SellerAccountID: dest.AccountID,
-			Prices:          dest.OrderbookPrices,
-		}
-		return orderbook.NewDestinationWithScript(ctx, assetAmount, orderInfo, dest.Metadata, dest.Script)
 	}
 	return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown destination type `%s`", dest.Type)
-}
-
-type actionDetails struct {
-	Contract    string
-	Type        string
-	Metadata    chainjson.HexBytes
-	ClientToken *string
-}
-
-type Action struct {
-	actionDetails
-	Raw json.RawMessage
-}
-
-func (a *Action) UnmarshalJSON(b []byte) error {
-	// Hold onto the original bytes for decoding action-specific fields.
-	a.Raw = json.RawMessage(b)
-
-	return json.Unmarshal(b, &a.actionDetails)
-}
-
-func (a *Action) UnmarshalInto(v interface{}) error {
-	return json.Unmarshal(a.Raw, v)
-}
-
-func (a *Action) parse(ctx context.Context) (srcs []*txbuilder.Source, dsts []*txbuilder.Destination, err error) {
-	switch a.Contract {
-	case "voting":
-		srcs, dsts, err = parseVotingAction(ctx, a)
-	default:
-		err = errors.WithDetailf(ErrBadBuildRequest, "unknown contract `%s`", a.Contract)
-	}
-	return srcs, dsts, err
 }
 
 type BuildRequest struct {
 	PrevTx   *txbuilder.Template `json:"previous_transaction"`
 	Sources  []*Source           `json:"inputs"`
 	Dests    []*Destination      `json:"outputs"`
-	Actions  []*Action           `json:"actions"`
 	Metadata chainjson.HexBytes  `json:"metadata"`
 	ResTime  time.Duration       `json:"reservation_duration"`
 }
@@ -249,14 +156,6 @@ func (req *BuildRequest) parse(ctx context.Context) (*txbuilder.Template, []*txb
 			return nil, nil, nil, err
 		}
 		destinations = append(destinations, parsed)
-	}
-	for _, action := range req.Actions {
-		srcs, dsts, err := action.parse(ctx)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		sources = append(sources, srcs...)
-		destinations = append(destinations, dsts...)
 	}
 	return req.PrevTx, sources, destinations, nil
 }

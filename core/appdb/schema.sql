@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -608,33 +608,6 @@ CREATE TABLE migrations (
 
 
 --
--- Name: orderbook_prices; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE orderbook_prices (
-    tx_hash text NOT NULL,
-    index integer NOT NULL,
-    asset_id text NOT NULL,
-    offer_amount bigint NOT NULL,
-    payment_amount bigint NOT NULL
-);
-
-
---
--- Name: orderbook_utxos; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE orderbook_utxos (
-    tx_hash text NOT NULL,
-    index integer NOT NULL,
-    seller_id text NOT NULL,
-    asset_id text NOT NULL,
-    amount bigint NOT NULL,
-    script bytea NOT NULL
-);
-
-
---
 -- Name: pool_tx_sort_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -750,44 +723,6 @@ CREATE TABLE users (
     pwreset_expires_at timestamp with time zone,
     role text DEFAULT 'developer'::text NOT NULL,
     CONSTRAINT users_role_check CHECK (((role = 'developer'::text) OR (role = 'admin'::text)))
-);
-
-
---
--- Name: voting_rights; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE voting_rights (
-    tx_hash text NOT NULL,
-    index integer NOT NULL,
-    asset_id text NOT NULL,
-    account_id text,
-    holder bytea NOT NULL,
-    delegatable boolean NOT NULL,
-    ownership_chain bytea NOT NULL,
-    block_height bigint NOT NULL,
-    admin_script bytea NOT NULL,
-    void_block_height integer,
-    ordinal integer NOT NULL
-);
-
-
---
--- Name: voting_tokens; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE voting_tokens (
-    asset_id text NOT NULL,
-    right_asset_id text NOT NULL,
-    tx_hash text NOT NULL,
-    index integer NOT NULL,
-    state smallint NOT NULL,
-    vote smallint NOT NULL,
-    admin_script bytea NOT NULL,
-    amount bigint NOT NULL,
-    block_height integer NOT NULL,
-    registration_id bytea DEFAULT '\x'::bytea NOT NULL,
-    admin_state smallint NOT NULL
 );
 
 
@@ -958,14 +893,6 @@ ALTER TABLE ONLY migrations
 
 
 --
--- Name: orderbook_utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY orderbook_utxos
-    ADD CONSTRAINT orderbook_utxos_pkey PRIMARY KEY (tx_hash, index);
-
-
---
 -- Name: pool_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1035,22 +962,6 @@ ALTER TABLE ONLY txs
 
 ALTER TABLE ONLY users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
-
-
---
--- Name: voting_right_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY voting_rights
-    ADD CONSTRAINT voting_right_txs_pkey PRIMARY KEY (asset_id, ordinal);
-
-
---
--- Name: voting_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY voting_tokens
-    ADD CONSTRAINT voting_tokens_pkey PRIMARY KEY (tx_hash, index);
 
 
 --
@@ -1187,20 +1098,6 @@ CREATE INDEX manager_nodes_project_id_idx ON manager_nodes USING btree (project_
 
 
 --
--- Name: orderbook_prices_asset_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX orderbook_prices_asset_id_idx ON orderbook_prices USING btree (asset_id);
-
-
---
--- Name: orderbook_utxos_seller_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX orderbook_utxos_seller_id_idx ON orderbook_utxos USING btree (seller_id);
-
-
---
 -- Name: reservations_asset_id_account_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1226,13 +1123,6 @@ CREATE UNIQUE INDEX signed_blocks_block_height_idx ON signed_blocks USING btree 
 --
 
 CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
-
-
---
--- Name: voting_right_txs_account_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX voting_right_txs_account_id ON voting_rights USING btree (account_id);
 
 
 --
@@ -1362,3 +1252,4 @@ insert into migrations (filename, hash) values ('2016-07-19.0.core.node-txs-uniq
 insert into migrations (filename, hash) values ('2016-07-19.1.asset.drop-spent-in-pool.sql', 'a1543793493f0d100352e66bf27979ee34298459c975fae70d6cb53c49955b67');
 insert into migrations (filename, hash) values ('2016-07-21.0.core.asset-genesis-hash.sql', '45642a9fd2d033208f78dafffaaab99fb7e9dfbb7b15224d254b283fa9db416b');
 insert into migrations (filename, hash) values ('2016-07-26.0.api.drop-manager-issuer-txs.sql', '2f7b14ce50118f1effcf153bf8c8f5cc7859af45487a383df6a7c8e3f5e8f15b');
+insert into migrations (filename, hash) values ('2016-07-27.0.core.drop-smartcontract-tables.sql', '56b09b59392114eff794db343e0a045f8648db77bd086159dba4fe9eafea2dc6');

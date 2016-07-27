@@ -6,8 +6,6 @@
 --   psql -f clear-blockchain.sql $DBURL
 
 TRUNCATE
-	orderbook_prices,
-	orderbook_utxos,
 	explorer_outputs,
 	account_utxos,
 	issuance_totals,
@@ -20,9 +18,7 @@ TRUNCATE
 	asset_definition_pointers,
 	reservations,
 	signed_blocks,
-	state_trees,
-	voting_rights,
-	voting_tokens;
+	state_trees;
 
 ALTER SEQUENCE address_index_seq RESTART;
 ALTER SEQUENCE pool_tx_sort_id_seq RESTART;

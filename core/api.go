@@ -141,16 +141,6 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/explorer/assets/:assetID/utxos", a.listExplorerUTXOsByAsset)
 	h.HandleFunc("POST", "/v3/explorer/get-assets", a.getExplorerAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
 
-	// Orderbook endpoints
-	h.HandleFunc("POST", "/v3/contracts/orderbook", findOrders)
-	h.HandleFunc("POST", "/v3/contracts/orderbook/:accountID", findAccountOrders)
-
-	// Voting system endpoints
-	h.HandleFunc("GET", "/v3/accounts/:accountID/voting-rights", findAccountVotingRights)
-	h.HandleFunc("GET", "/v3/contracts/voting-rights/:assetID/owners", getVotingRightOwners)
-	h.HandleFunc("POST", "/v3/contracts/voting-tokens/tally", getVotingTokenTally)
-	h.HandleFunc("POST", "/v3/contracts/voting-tokens/votes", getVotingTokenVotes)
-
 	return h.ServeHTTPContext
 }
 
