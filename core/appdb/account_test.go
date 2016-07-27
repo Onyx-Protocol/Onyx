@@ -259,7 +259,7 @@ func TestUpdateAccount(t *testing.T) {
 	}
 }
 
-// Test that calling UpdateManagerNode with no new label is a no-op.
+// Test that calling UpdateAccount with no new label is a no-op.
 func TestUpdateAccountNoUpdate(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestManagerNode(t, ctx, nil, "foo")

@@ -77,18 +77,6 @@ func (g *Config) GetSummary(ctx context.Context, store *txdb.Store, pool *txdb.P
 		return nil, errors.Wrap(err, "count pool txs")
 	}
 
-	mnodes, err := appdb.ListManagerNodes(ctx, projID)
-	if err != nil {
-		return nil, errors.Wrap(err, "list manager nodes")
-	}
-	for _, n := range mnodes {
-		res.Permissions.ManagerNodes = append(res.Permissions.ManagerNodes, NodePermStatus{
-			ID:      n.ID,
-			Label:   n.Label,
-			Enabled: true, // this is spoofed
-		})
-	}
-
 	inodes, err := appdb.ListIssuerNodes(ctx, projID)
 	if err != nil {
 		return nil, errors.Wrap(err, "list issuer nodes")

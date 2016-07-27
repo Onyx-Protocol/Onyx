@@ -43,18 +43,12 @@ func TestManagerAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
 		mn1ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
 		mn2ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		mn3ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		err := appdb.ArchiveManagerNode(ctx, mn3ID)
-		if err != nil {
-			panic(err)
-		}
-
 		cases := []struct {
 			userID        string
 			managerNodeID string
 			want          error
 		}{
-			{fixtureInfo.u2ID, mn1ID, nil}, {fixtureInfo.u2ID, mn2ID, nil}, {fixtureInfo.u2ID, mn3ID, appdb.ErrArchived},
+			{fixtureInfo.u2ID, mn1ID, nil}, {fixtureInfo.u2ID, mn2ID, nil},
 		}
 
 		for _, c := range cases {

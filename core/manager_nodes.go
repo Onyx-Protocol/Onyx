@@ -78,78 +78,6 @@ func createManagerNode(ctx context.Context, projID string, req map[string]interf
 	return managerNode, nil
 }
 
-// PUT /v3/manager-nodes/:mnodeID
-func updateManagerNode(ctx context.Context, mnodeID string, in struct{ Label *string }) error {
-	if err := managerAuthz(ctx, mnodeID); err != nil {
-		return err
-	}
-	return appdb.UpdateManagerNode(ctx, mnodeID, in.Label)
-}
-
-// DELETE /v3/manager-nodes/:mnodeID
-// Idempotent
-func archiveManagerNode(ctx context.Context, mnodeID string) error {
-	if err := managerAuthz(ctx, mnodeID); errors.Root(err) == appdb.ErrArchived {
-		// This manager node was already archived. Return success.
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer dbtx.Rollback(ctx)
-
-	err = appdb.ArchiveManagerNode(ctx, mnodeID)
-	if err != nil {
-		return err
-	}
-
-	return dbtx.Commit(ctx)
-}
-
-// GET /v3/projects/:projID/manager-nodes
-func listManagerNodes(ctx context.Context, projID string) (interface{}, error) {
-	return appdb.ListManagerNodes(ctx, projID)
-}
-
-// GET /v3/manager-nodes/:mnodeID
-func getManagerNode(ctx context.Context, mnodeID string) (interface{}, error) {
-	if err := managerAuthz(ctx, mnodeID); err != nil {
-		return nil, err
-	}
-	return appdb.GetManagerNode(ctx, mnodeID)
-}
-
-// GET /v3/manager-nodes/:mnodeID/balance
-func managerNodeBalance(ctx context.Context, managerNodeID string) (interface{}, error) {
-	if err := managerAuthz(ctx, managerNodeID); err != nil {
-		return nil, err
-	}
-	prev, limit, err := getPageData(ctx, defBalancePageSize)
-	if err != nil {
-		return nil, err
-	}
-
-	balances, last, err := appdb.AssetBalance(ctx, &appdb.AssetBalQuery{
-		Owner:   appdb.OwnerManagerNode,
-		OwnerID: managerNodeID,
-		Prev:    prev,
-		Limit:   limit,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	ret := map[string]interface{}{
-		"last":     last,
-		"balances": httpjson.Array(balances),
-	}
-	return ret, nil
-}
-
 // EXPERIMENTAL - implemented for Glitterco
 func listAccountsWithAsset(ctx context.Context, mnodeID, assetID string) (interface{}, error) {
 	if err := managerAuthz(ctx, mnodeID); err != nil {
@@ -230,8 +158,8 @@ func (a *api) accountBalance(ctx context.Context, accountID string) (interface{}
 	}
 
 	query := &appdb.AssetBalQuery{
-		Owner:   appdb.OwnerAccount,
-		OwnerID: accountID,
+		Owner:     appdb.OwnerAccount,
+		AccountID: accountID,
 	}
 
 	qvals := httpjson.Request(ctx).URL.Query()

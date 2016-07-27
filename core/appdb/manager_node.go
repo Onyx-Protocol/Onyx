@@ -82,8 +82,7 @@ func InsertManagerNode(ctx context.Context, projID, label string, xpubs, gennedK
 		// A sql.ErrNoRows error here indicates that we failed to insert
 		// a manager node because there was a conflict on the client token.
 		// A previous request to create this manager node succeeded.
-		mn, err := getManagerNodeByClientToken(ctx, projID, *clientToken)
-		return mn, errors.Wrap(err, "looking up existing account manager")
+		return nil, errors.Wrap(err, "looking up existing account manager")
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "insert account manager")
@@ -124,101 +123,6 @@ type AccountBalanceItem struct {
 	AccountID string `json:"account_id"`
 	Confirmed int64  `json:"confirmed"`
 	Total     int64  `json:"total"`
-}
-
-// getManagerNodeByClientToken returns basic information about a single manager node,
-// looking up the manager node by its project ID and its client token.
-func getManagerNodeByClientToken(ctx context.Context, projID, clientToken string) (*ManagerNode, error) {
-	mnq := managerNodeQuery{
-		projectID:   projID,
-		clientToken: clientToken,
-	}
-
-	managerNode, err := lookupManagerNode(ctx, mnq)
-	return managerNode, errors.WithDetailf(err, "project ID: %s, client token: %s", projID, clientToken)
-}
-
-// GetManagerNode returns basic information about a single manager node, looking
-// up the manager node by its unique ID.
-func GetManagerNode(ctx context.Context, managerNodeID string) (*ManagerNode, error) {
-	managerNode, err := lookupManagerNode(ctx, managerNodeQuery{id: managerNodeID})
-	if err == sql.ErrNoRows {
-		err = pg.ErrUserInputNotFound
-	}
-	return managerNode, errors.WithDetailf(err, "account manager ID: %v", managerNodeID)
-}
-
-type managerNodeQuery struct {
-	id          string
-	projectID   string
-	clientToken string
-}
-
-func lookupManagerNode(ctx context.Context, mnq managerNodeQuery) (*ManagerNode, error) {
-	const (
-		baseQ = `
-			SELECT mn.id, label, keyset, generated_keys, variable_keys, sigs_required
-			FROM manager_nodes mn
-			JOIN rotations r ON r.id=mn.current_rotation
-		`
-	)
-	var (
-		queryArgs []interface{}
-		q         string
-	)
-	if mnq.projectID != "" && mnq.clientToken != "" {
-		q = baseQ + "WHERE mn.project_id = $1 AND client_token = $2"
-		queryArgs = []interface{}{mnq.projectID, mnq.clientToken}
-	} else {
-		q = baseQ + "WHERE mn.id = $1"
-		queryArgs = []interface{}{mnq.id}
-	}
-
-	var (
-		id          string
-		label       string
-		pubKeyStrs  []string
-		privKeyStrs []string
-		varKeys     int
-		sigsReqd    int
-	)
-	err := pg.QueryRow(ctx, q, queryArgs...).Scan(
-		&id,
-		&label,
-		(*pg.Strings)(&pubKeyStrs),
-		(*pg.Strings)(&privKeyStrs),
-		&varKeys,
-		&sigsReqd,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	xpubs, err := stringsToKeys(pubKeyStrs)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing pub keys")
-	}
-
-	xprvs, err := stringsToKeys(privKeyStrs)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing private keys")
-	}
-
-	keys, err := buildNodeKeys(xpubs, xprvs)
-	if err != nil {
-		return nil, errors.Wrap(err, "generating account manager key list")
-	}
-
-	for i := 0; i < varKeys; i++ {
-		keys = append(keys, &NodeKey{Type: "account"})
-	}
-
-	return &ManagerNode{
-		ID:       id,
-		Label:    label,
-		Keys:     keys,
-		SigsReqd: sigsReqd,
-	}, nil
 }
 
 // AccountsWithAsset fetches the balance of a particular asset
@@ -277,72 +181,6 @@ func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit
 	}
 
 	return bals, last, nil
-}
-
-// ListManagerNodes returns a list of active manager nodes contained in the given project.
-func ListManagerNodes(ctx context.Context, projID string) ([]*ManagerNode, error) {
-	q := `
-		SELECT id, label
-		FROM manager_nodes
-		WHERE project_id = $1 AND NOT archived
-		ORDER BY id
-	`
-	rows, err := pg.Query(ctx, q, projID)
-	if err != nil {
-		return nil, errors.Wrap(err, "select query")
-	}
-	defer rows.Close()
-
-	var managerNodes []*ManagerNode
-	for rows.Next() {
-		m := new(ManagerNode)
-		err := rows.Scan(&m.ID, &m.Label)
-		if err != nil {
-			return nil, errors.Wrap(err, "row scan")
-		}
-		managerNodes = append(managerNodes, m)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "end row scan loop")
-	}
-
-	return managerNodes, nil
-}
-
-// UpdateManagerNode updates the label of a manager node.
-func UpdateManagerNode(ctx context.Context, mnodeID string, label *string) error {
-	if label == nil {
-		return nil
-	}
-	const q = `UPDATE manager_nodes SET label = $2 WHERE id = $1`
-	_, err := pg.Exec(ctx, q, mnodeID, *label)
-	return errors.Wrap(err, "update query")
-}
-
-// ArchiveManagerNode marks a manager node as archived.
-// Archived manager nodes do not appear for their parent projects,
-// in the dashboard or for listManagerNodes. They cannot create new
-// accounts or initiate or receive transactions, and their preexisting
-// accounts become archived.
-//
-// Must be called inside a database transaction.
-func ArchiveManagerNode(ctx context.Context, mnodeID string) error {
-	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
-
-	const accountQ = `UPDATE accounts SET archived = true WHERE manager_node_id = $1`
-	_, err := pg.Exec(ctx, accountQ, mnodeID)
-	if err != nil {
-		return errors.Wrap(err, "archiving accounts")
-	}
-
-	const mnQ = `UPDATE manager_nodes SET archived = true WHERE id = $1`
-	_, err = pg.Exec(ctx, mnQ, mnodeID)
-	if err != nil {
-		return errors.Wrap(err, "archive query")
-	}
-
-	return nil
 }
 
 func createRotation(ctx context.Context, managerNodeID string, xpubs ...string) error {

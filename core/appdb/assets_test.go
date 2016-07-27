@@ -493,57 +493,14 @@ func TestAssetBalance(t *testing.T) {
 			},
 			wantLast: "",
 		},
-
-		{
-			owner:     OwnerManagerNode,
-			accountID: mn0,
-			prev:      "",
-			limit:     9999,
-			want: []*Balance{
-				{AssetID: assets[0], Confirmed: 2, Total: 2},
-				{AssetID: assets[1], Confirmed: 0, Total: 2},
-				{AssetID: assets[2], Confirmed: 1, Total: 2},
-				{AssetID: assets[3], Confirmed: 1, Total: 1},
-				{AssetID: assets[4], Confirmed: 0, Total: 1},
-				{AssetID: assets[5], Confirmed: 3, Total: 1},
-			},
-			wantLast: "",
-		},
-		{
-			owner:     OwnerManagerNode,
-			accountID: mn0,
-			prev:      assets[5].String(),
-			limit:     9999,
-			want:      nil,
-			wantLast:  "",
-		},
-		{
-			owner:     OwnerManagerNode,
-			accountID: mn1,
-			prev:      "",
-			limit:     9999,
-			want: []*Balance{
-				{AssetID: assets[0], Confirmed: 1, Total: 1},
-				{AssetID: assets[4], Confirmed: 0, Total: 1},
-			},
-			wantLast: "",
-		},
-		{
-			owner:     OwnerManagerNode,
-			accountID: mn1,
-			prev:      assets[4].String(),
-			limit:     9999,
-			want:      nil,
-			wantLast:  "",
-		},
 	}
 
 	for _, c := range cases {
 		got, gotLast, err := AssetBalance(ctx, &AssetBalQuery{
-			Owner:   c.owner,
-			OwnerID: c.accountID,
-			Prev:    c.prev,
-			Limit:   c.limit,
+			Owner:     c.owner,
+			AccountID: c.accountID,
+			Prev:      c.prev,
+			Limit:     c.limit,
 		})
 		if err != nil {
 			t.Errorf("AssetBalance(%s, %s, %d): unexpected error %v", c.accountID, c.prev, c.limit, err)
@@ -664,9 +621,9 @@ func TestAccountBalanceByAssetID(t *testing.T) {
 		t.Log("Example", i)
 
 		got, last, err := AssetBalance(ctx, &AssetBalQuery{
-			Owner:    OwnerAccount,
-			OwnerID:  ex.accountID,
-			AssetIDs: ex.assetIDs,
+			Owner:     OwnerAccount,
+			AccountID: ex.accountID,
+			AssetIDs:  ex.assetIDs,
 		})
 		if err != nil {
 			t.Fatal("unexpected error:", err)

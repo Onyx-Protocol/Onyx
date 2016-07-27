@@ -257,8 +257,8 @@ func ArchiveAsset(ctx context.Context, assetID string) error {
 
 // AssetBalQuery is a parameter struct passed in to AssetBalance
 type AssetBalQuery struct {
-	Owner   AssetOwner
-	OwnerID string
+	Owner     AssetOwner
+	AccountID string
 	// Set the following for the full paginated list
 	Prev  string
 	Limit int
@@ -268,8 +268,7 @@ type AssetBalQuery struct {
 	AssetIDs []string
 }
 
-// AssetBalance fetches the balances of assets contained in an asset owner
-// (either an account or a manager node).
+// AssetBalance fetches the balances of assets contained in an account.
 // It returns a slice of Balances and the last asset ID in the page.
 // Each Balance contains an asset ID, a confirmed balance,
 // and a total balance. Assets are sorted by their IDs.
@@ -281,18 +280,13 @@ func AssetBalance(ctx context.Context, abq *AssetBalQuery) ([]*Balance, string, 
 		return nil, "", errors.New("must have limit or asset id filter")
 	}
 
-	field := "account_id"
-	if abq.Owner == OwnerManagerNode {
-		field = "manager_node_id"
-	}
-
 	filter := "a.asset_id=ANY($2)"
 	limitQ := ""
-	params := []interface{}{abq.OwnerID, pg.Strings(abq.AssetIDs)}
+	params := []interface{}{abq.AccountID, pg.Strings(abq.AssetIDs)}
 	if paginating {
 		filter = "($2='' OR a.asset_id>$2)"
 		limitQ = "LIMIT $3"
-		params = []interface{}{abq.OwnerID, abq.Prev, abq.Limit}
+		params = []interface{}{abq.AccountID, abq.Prev, abq.Limit}
 	}
 
 	q := `
@@ -302,7 +296,7 @@ func AssetBalance(ctx context.Context, abq *AssetBalQuery) ([]*Balance, string, 
 			confirmed_in IS NOT NULL as confirmed,
 			reservation_id IS NOT NULL as spent_in_pool
 			FROM account_utxos a
-			WHERE ` + field + `=$1 AND ` + filter + `
+			WHERE account_id=$1 AND ` + filter + `
 		), amounts AS (
 			SELECT
 				(CASE WHEN confirmed THEN amount ELSE 0 END) as confirmed_amount,
