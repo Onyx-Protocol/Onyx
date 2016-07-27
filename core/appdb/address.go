@@ -9,7 +9,8 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/cos/hdkey"
+	"chain/cos/txscript"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/metrics"
@@ -36,7 +37,7 @@ type Address struct {
 	AccountIndex     []uint32
 	Index            []uint32
 	SigsRequired     int
-	Keys             []*hdkey.XKey
+	Keys             []*hd25519.XPub
 }
 
 var (
@@ -92,13 +93,13 @@ func AddrInfo(ctx context.Context, accountID string) (*Address, error) {
 			return nil, errors.WithDetailf(err, "account %s", accountID)
 		}
 
-		ai.Keys, err = stringsToKeys(nodeXPubs)
+		ai.Keys, err = stringsToXPubs(nodeXPubs)
 		if err != nil {
 			return nil, errors.Wrap(err, "parsing service keys")
 		}
 
 		if len(accXPubs) > 0 {
-			accKeys, err := stringsToKeys(accXPubs)
+			accKeys, err := stringsToXPubs(accXPubs)
 			if err != nil {
 				return nil, errors.Wrap(err, "parsing accountkeys")
 			}
@@ -190,7 +191,7 @@ func (a *Address) Insert(ctx context.Context) error {
 		a.PKScript,
 		a.ManagerNodeID,
 		a.AccountID,
-		pg.Strings(keysToStrings(a.Keys)),
+		pg.Strings(xpubsToStrings(a.Keys)),
 		pq.NullTime{Time: a.Expires, Valid: !a.Expires.IsZero()},
 		a.Amount,
 		pg.Uint32s(a.Index),
@@ -215,7 +216,7 @@ func GetAddress(ctx context.Context, pkScript []byte) (*Address, error) {
 		return nil, errors.Wrap(err, "loading address")
 	}
 	a.PKScript = pkScript
-	a.Keys, err = stringsToKeys(keys)
+	a.Keys, err = stringsToXPubs(keys)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing address keys")
 	}
@@ -246,7 +247,10 @@ func CreateAddress(ctx context.Context, addr *Address, save bool) error {
 		return errors.Wrap(err, "load")
 	}
 
-	addr.PKScript, addr.RedeemScript, err = hdkey.Scripts(addr.Keys, ReceiverPath(addr, addr.Index), addr.SigsRequired)
+	path := ReceiverPath(addr, addr.Index)
+	derivedXPubs := hd25519.DeriveXPubs(addr.Keys, path)
+	derivedPKs := hd25519.XPubKeys(derivedXPubs)
+	addr.PKScript, addr.RedeemScript, err = txscript.Scripts(derivedPKs, addr.SigsRequired)
 	if err != nil {
 		return errors.Wrap(err, "compute scripts")
 	}

@@ -15,6 +15,7 @@ import (
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -25,7 +26,7 @@ func TestAssetByID(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	ResetSeqs(ctx, t)
-	xpubs := testutil.XPubs("xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd")
+	xpubs := []*hd25519.XPub{testutil.TestXPub}
 	in0 := assettest.CreateIssuerNodeFixture(ctx, t, "", "in-0", xpubs, nil)
 	asset0 := assettest.CreateAssetFixture(ctx, t, in0, "asset-0", "")
 
@@ -35,8 +36,8 @@ func TestAssetByID(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	redeem, _ := hex.DecodeString("51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae")
-	issuance, _ := hex.DecodeString("76aa20f8c27803cac149439efc99a919da089d76e5044210fc68b07b1bbcb04cf4cdc188c0")
+	redeem, _ := hex.DecodeString("5120ca7313d5998f6005cf5a9c29677c31adfc163f599412a6ba4e9bb19d361bf4f451ae")
+	issuance, _ := hex.DecodeString("76aa20d576c32879648a54df281c7839ff77a0e8315ed8fa3d34a3eb7dce22634f3d1288c0")
 	want := &Asset{
 		Hash:           asset0,
 		IssuerNodeID:   in0,
@@ -50,6 +51,8 @@ func TestAssetByID(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(got, want) {
+		t.Logf("got redeemscript %x, want %x", got.RedeemScript, want.RedeemScript)
+		t.Logf("got issuancescript %x, want %x", got.IssuanceScript, want.IssuanceScript)
 		t.Errorf("asset = %#v want %#v", got, want)
 	}
 

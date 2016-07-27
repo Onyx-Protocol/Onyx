@@ -6,14 +6,11 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
-
 	"chain/cos/bc"
 	"chain/cos/patricia"
 	"chain/cos/txscript"
 	"chain/cos/validation"
+	"chain/crypto/ed25519"
 	"chain/errors"
 	"chain/log"
 	"chain/net/trace/span"
@@ -222,7 +219,7 @@ func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, tree *patricia
 	return nil
 }
 
-func isSignedByTrustedHost(block *bc.Block, trustedKeys []*btcec.PublicKey) bool {
+func isSignedByTrustedHost(block *bc.Block, trustedKeys []ed25519.PublicKey) bool {
 	sigs, err := txscript.PushedData(block.SignatureScript)
 	if err != nil {
 		return false
@@ -233,12 +230,8 @@ func isSignedByTrustedHost(block *bc.Block, trustedKeys []*btcec.PublicKey) bool
 		if len(sig) == 0 {
 			continue
 		}
-		parsedSig, err := btcec.ParseSignature(sig, btcec.S256())
-		if err != nil { // could be arbitrary push data
-			continue
-		}
 		for _, pubk := range trustedKeys {
-			if parsedSig.Verify(hash[:], pubk) {
+			if ed25519.Verify(pubk, hash[:], sig) {
 				return true
 			}
 		}
@@ -318,22 +311,20 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 
 // ComputeBlockSignature signs a block with the given key.  It does
 // not validate the block.
-func ComputeBlockSignature(b *bc.Block, key *btcec.PrivateKey) (*btcec.Signature, error) {
+func ComputeBlockSignature(b *bc.Block, key ed25519.PrivateKey) []byte {
 	hash := b.HashForSig()
-	return key.Sign(hash[:])
+	return ed25519.Sign(key, hash[:])
 }
 
 // AddSignaturesToBlock adds signatures to a block, replacing the
 // block's SignatureScript.  The signatures must be in the correct
 // order, to wit: matching the order of pubkeys in the previous
 // block's output script.
-func AddSignaturesToBlock(b *bc.Block, signatures []*btcec.Signature) error {
+func AddSignaturesToBlock(b *bc.Block, signatures [][]byte) error {
 	// assumes multisig output script
 	builder := txscript.NewScriptBuilder()
 	for _, signature := range signatures {
-		serialized := signature.Serialize()
-		serialized = append(serialized, 1) // append hashtype -- unused for blocks
-		builder.AddData(serialized)
+		builder.AddData(signature)
 	}
 	script, err := builder.Script()
 	if err != nil {
@@ -347,21 +338,12 @@ func AddSignaturesToBlock(b *bc.Block, signatures []*btcec.Signature) error {
 
 // GenerateBlockScript generates a predicate script
 // requiring nSigs signatures from the given keys.
-func GenerateBlockScript(keys []*btcec.PublicKey, nSigs int) ([]byte, error) {
-	var addrs []*btcutil.AddressPubKey
-	for _, key := range keys {
-		keyData := key.SerializeCompressed()
-		addr, err := btcutil.NewAddressPubKey(keyData, &chaincfg.MainNetParams)
-		if err != nil {
-			return nil, err
-		}
-		addrs = append(addrs, addr)
-	}
-	return txscript.MultiSigScript(addrs, nSigs)
+func GenerateBlockScript(keys []ed25519.PublicKey, nSigs int) ([]byte, error) {
+	return txscript.MultiSigScript(keys, nSigs)
 }
 
 // UpsertGenesisBlock creates a genesis block iff it does not exist.
-func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []*btcec.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
+func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
 	// TODO(bobg): Cache the genesis block if it exists and return it
 	// rather than always consing up a new one.
 	b, err := NewGenesisBlock(pubkeys, nSigs, timestamp)
@@ -382,7 +364,7 @@ func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []*btcec.PublicKey
 	return b, nil
 }
 
-func NewGenesisBlock(pubkeys []*btcec.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
+func NewGenesisBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
 	script, err := GenerateBlockScript(pubkeys, nSigs)
 	if err != nil {
 		return nil, err

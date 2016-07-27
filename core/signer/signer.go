@@ -1,19 +1,18 @@
 package signer
 
 import (
-	"github.com/btcsuite/btcd/btcec"
 	"golang.org/x/net/context"
 
 	"chain/cos"
 	"chain/cos/bc"
-	"chain/crypto"
+	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/errors"
 )
 
 // Signer validates and signs blocks.
 type Signer struct {
-	key *btcec.PrivateKey
+	key ed25519.PrivateKey
 	db  pg.DB
 	fc  *cos.FC
 }
@@ -21,7 +20,7 @@ type Signer struct {
 // New returns a new Signer
 // that validates blocks with fc
 // and signs them with k.
-func New(k *btcec.PrivateKey, db pg.DB, fc *cos.FC) *Signer {
+func New(k ed25519.PrivateKey, db pg.DB, fc *cos.FC) *Signer {
 	if k == nil {
 		panic("signer key is unset")
 	}
@@ -34,7 +33,7 @@ func New(k *btcec.PrivateKey, db pg.DB, fc *cos.FC) *Signer {
 
 // ComputeBlockSignature computes the signature for the block using
 // the private key in s.  It does not validate the block.
-func (s *Signer) ComputeBlockSignature(b *bc.Block) (*btcec.Signature, error) {
+func (s *Signer) ComputeBlockSignature(b *bc.Block) []byte {
 	return cos.ComputeBlockSignature(b, s.key)
 }
 
@@ -44,7 +43,7 @@ func (s *Signer) ComputeBlockSignature(b *bc.Block) (*btcec.Signature, error) {
 //
 // This function fails if this node has ever signed a block at the
 // same height as b.
-func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) (*crypto.Signature, error) {
+func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	fc := s.fc
 	err := fc.WaitForBlock(ctx, b.Height-1)
 	if err != nil {
@@ -58,16 +57,12 @@ func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) (*crypto.Signature,
 	if err != nil {
 		return nil, errors.Wrap(err, "lock block height")
 	}
-	signature, err := s.ComputeBlockSignature(b)
-	if err != nil {
-		return nil, err
-	}
-	return (*crypto.Signature)(signature), nil
+	return s.ComputeBlockSignature(b), nil
 }
 
 // PublicKey gets the public key for the signer's private key.
-func (s *Signer) PublicKey() *btcec.PublicKey {
-	return s.key.PubKey()
+func (s *Signer) PublicKey() ed25519.PublicKey {
+	return s.key.Public().(ed25519.PublicKey)
 }
 
 // lockBlockHeight records a signer's intention to sign a given block

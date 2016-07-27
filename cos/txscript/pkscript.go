@@ -3,6 +3,7 @@ package txscript
 import (
 	"golang.org/x/crypto/sha3"
 
+	"chain/crypto/ed25519"
 	"chain/errors"
 )
 
@@ -18,6 +19,14 @@ func RedeemToPkScript(redeem []byte) []byte {
 	builder.AddOp(OP_EVAL)
 	script, _ := builder.Script()
 	return script
+}
+
+func Scripts(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, []byte, error) {
+	redeem, err := MultiSigScript(pubkeys, nrequired)
+	if err != nil {
+		return nil, nil, err
+	}
+	return RedeemToPkScript(redeem), redeem, nil
 }
 
 // RedeemScriptFromP2SHSigScript parses the signature script and returns the

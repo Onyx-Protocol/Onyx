@@ -10,7 +10,6 @@ import (
 	"chain/core/appdb"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
-	"chain/cos/hdkey"
 	"chain/cos/txscript"
 )
 
@@ -63,11 +62,9 @@ func (r rightsReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount
 	for _, addr := range addrs {
 		sigscript = append(sigscript,
 			&txbuilder.SigScriptComponent{
-				Type:     "signature",
-				Required: addr.SigsRequired,
-				Signatures: txbuilder.InputSigs(
-					hdkey.Derive(addr.Keys, appdb.ReceiverPath(&addr, addr.Index)),
-				),
+				Type:       "signature",
+				Required:   addr.SigsRequired,
+				Signatures: txbuilder.InputSigs(addr.Keys, appdb.ReceiverPath(&addr, addr.Index)),
 			}, &txbuilder.SigScriptComponent{
 				Type: "data",
 				Data: addr.RedeemScript,
@@ -157,11 +154,9 @@ func (r tokenReserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount,
 	if r.adminAddr != nil {
 		sigscript = append(sigscript,
 			&txbuilder.SigScriptComponent{
-				Type:     "signature",
-				Required: r.adminAddr.SigsRequired,
-				Signatures: txbuilder.InputSigs(
-					hdkey.Derive(r.adminAddr.Keys, appdb.ReceiverPath(r.adminAddr, r.adminAddr.Index)),
-				),
+				Type:       "signature",
+				Required:   r.adminAddr.SigsRequired,
+				Signatures: txbuilder.InputSigs(r.adminAddr.Keys, appdb.ReceiverPath(r.adminAddr, r.adminAddr.Index)),
 			}, &txbuilder.SigScriptComponent{
 				Type: "data",
 				Data: r.adminAddr.RedeemScript,

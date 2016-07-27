@@ -13,9 +13,9 @@ import (
 	"chain/core/txbuilder"
 	"chain/cos"
 	"chain/cos/bc"
-	"chain/cos/hdkey"
 	"chain/cos/mempool"
 	"chain/cos/memstore"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/testutil"
@@ -39,7 +39,7 @@ func TestIssue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	inode, err := appdb.InsertIssuerNode(ctx, proj.ID, "test", []*hdkey.XKey{testutil.TestXPub}, []*hdkey.XKey{testutil.TestXPrv}, 1, nil)
+	inode, err := appdb.InsertIssuerNode(ctx, proj.ID, "test", []*hd25519.XPub{testutil.TestXPub}, []*hd25519.XPrv{testutil.TestXPrv}, 1, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

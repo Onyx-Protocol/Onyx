@@ -13,6 +13,7 @@ import (
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/testutil"
 )
 
 func TestCreateAsset(t *testing.T) {
@@ -21,9 +22,11 @@ func TestCreateAsset(t *testing.T) {
 	pgtest.Exec(ctx, t, `
 		ALTER SEQUENCE issuer_nodes_key_index_seq RESTART;
 		ALTER SEQUENCE assets_key_index_seq RESTART;
-		INSERT INTO issuer_nodes (id, project_id, label, keyset)
-		VALUES ('in1', 'a1', 'foo', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
 	`)
+	pgtest.Exec(ctx, t, fmt.Sprintf(`
+		INSERT INTO issuer_nodes (id, project_id, label, keyset)
+		VALUES ('in1', 'a1', 'foo', '{%s}');
+	`, testutil.TestXPub.String()))
 
 	clientToken := "a-client-provided-unique-token"
 	definition := make(map[string]interface{})
@@ -32,12 +35,12 @@ func TestCreateAsset(t *testing.T) {
 		t.Fatal("unexpected error:", err)
 	}
 
-	wantID := "671f5205c4602ea52b7be4b1fc740cde70cc131e233282ef2f0ec386d0ab42c3"
+	wantID := "dee458a07746e7b1131cb9f7c3daac9f841116c8672e4365a8fc52139dabebd5"
 	if asset.Hash.String() != wantID {
 		t.Errorf("got asset id = %v want %v", asset.Hash.String(), wantID)
 	}
 
-	wantRedeem := "51210371fe1fe0352f0cea91344d06c9d9b16e394e1945ee0f3063c2f9891d163f0f5551ae"
+	wantRedeem := "5120ca7313d5998f6005cf5a9c29677c31adfc163f599412a6ba4e9bb19d361bf4f451ae"
 	if hex.EncodeToString(asset.RedeemScript) != wantRedeem {
 		t.Errorf("got redeem script = %x want %v", asset.RedeemScript, wantRedeem)
 	}
@@ -46,7 +49,7 @@ func TestCreateAsset(t *testing.T) {
 		t.Errorf("got label = %v want %v", asset.Label, "fooAsset")
 	}
 
-	wantIssuance := "76aa20f8c27803cac149439efc99a919da089d76e5044210fc68b07b1bbcb04cf4cdc188c0"
+	wantIssuance := "76aa20d576c32879648a54df281c7839ff77a0e8315ed8fa3d34a3eb7dce22634f3d1288c0"
 	if hex.EncodeToString(asset.IssuanceScript) != wantIssuance {
 		t.Errorf("got issuance script=%x want=%v", asset.IssuanceScript, wantIssuance)
 	}
@@ -63,10 +66,10 @@ func TestCreateAsset(t *testing.T) {
 }
 
 func TestCreateDefs(t *testing.T) {
-	const fix = `
+	fix := fmt.Sprintf(`
 		INSERT INTO issuer_nodes (id, project_id, label, keyset)
-		VALUES ('inode-0', 'proj-0', 'label-0', '{xpub661MyMwAqRbcGKBeRA9p52h7EueXnRWuPxLz4Zoo1ZCtX8CJR5hrnwvSkWCDf7A9tpEZCAcqex6KDuvzLxbxNZpWyH6hPgXPzji9myeqyHd}');
-	`
+		VALUES ('inode-0', 'proj-0', 'label-0', '{%s}');
+	`, testutil.TestXPub.String())
 
 	examples := []struct {
 		def  map[string]interface{}

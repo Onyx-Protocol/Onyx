@@ -4,7 +4,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/appdb"
-	"chain/cos/hdkey"
+	"chain/crypto/ed25519/hd25519"
 	"chain/errors"
 )
 
@@ -75,8 +75,8 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 	}
 
 	var (
-		xpubs       []*hdkey.XKey
-		gennedXprvs []*hdkey.XKey
+		xpubs       []*hd25519.XPub
+		gennedXprvs []*hd25519.XPrv
 	)
 
 	variableKeyCount := 0
@@ -87,15 +87,13 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 			fallthrough
 		case "service":
 			if k.XPub != "" {
-				xpub, err := hdkey.NewXKey(k.XPub)
+				xpub, err := hd25519.XPubFromString(k.XPub)
 				if err != nil {
 					return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: xpub is not valid", i)
-				} else if xpub.IsPrivate() {
-					return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: is xpriv, not xpub", i)
 				}
 				xpubs = append(xpubs, xpub)
 			} else if k.Generate {
-				xpub, xprv, err := hdkey.New()
+				xprv, xpub, err := hd25519.NewXKeys(nil)
 				if err != nil {
 					return nil, err
 				}

@@ -6,7 +6,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/hdkey"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
 )
@@ -24,20 +24,15 @@ type NodeKey struct {
 	Type string `json:"type"`
 
 	// Parameters for type "node"
-	XPub *hdkey.XKey `json:"xpub,omitempty"`
-	XPrv *hdkey.XKey `json:"xprv,omitempty"`
+	XPub *hd25519.XPub `json:"xpub,omitempty"`
+	XPrv *hd25519.XPrv `json:"xprv,omitempty"`
 }
 
-func buildNodeKeys(xpubs, xprvs []*hdkey.XKey) ([]*NodeKey, error) {
-	pubToPrv := make(map[string]*hdkey.XKey)
-	for i, xprv := range xprvs {
-		xpub, err := xprv.Neuter()
-		if err != nil {
-			return nil, errors.Wrapf(err, "cannot extract xpub from xprv: %d", i)
-		}
-
-		k := &hdkey.XKey{ExtendedKey: *xpub}
-		pubToPrv[k.String()] = xprv
+func buildNodeKeys(xpubs []*hd25519.XPub, xprvs []*hd25519.XPrv) ([]*NodeKey, error) {
+	pubToPrv := make(map[string]*hd25519.XPrv)
+	for _, xprv := range xprvs {
+		xpub := xprv.Public()
+		pubToPrv[xpub.String()] = xprv
 	}
 
 	var res []*NodeKey
@@ -67,7 +62,7 @@ type ManagerNode struct {
 // InsertManagerNode inserts a new manager node into the database. If a manager node
 // already exists with the provided project ID and client token, this function will
 // return the existing manager node.
-func InsertManagerNode(ctx context.Context, projID, label string, xpubs, gennedKeys []*hdkey.XKey, variableKeys, sigsRequired int, clientToken *string) (w *ManagerNode, err error) {
+func InsertManagerNode(ctx context.Context, projID, label string, xpubs []*hd25519.XPub, gennedKeys []*hd25519.XPrv, variableKeys, sigsRequired int, clientToken *string) (w *ManagerNode, err error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 	const q = `
 		INSERT INTO manager_nodes (label, project_id, generated_keys, variable_keys, sigs_required, client_token)
@@ -76,7 +71,7 @@ func InsertManagerNode(ctx context.Context, projID, label string, xpubs, gennedK
 		RETURNING id
 	`
 	var id string
-	xprvs := keysToStrings(gennedKeys)
+	xprvs := xprvsToStrings(gennedKeys)
 	err = pg.QueryRow(ctx, q, label, projID, pg.Strings(xprvs), variableKeys, sigsRequired, clientToken).Scan(&id)
 	if err == sql.ErrNoRows && clientToken != nil {
 		// A sql.ErrNoRows error here indicates that we failed to insert
@@ -88,7 +83,7 @@ func InsertManagerNode(ctx context.Context, projID, label string, xpubs, gennedK
 		return nil, errors.Wrap(err, "insert account manager")
 	}
 
-	err = createRotation(ctx, id, keysToStrings(xpubs)...)
+	err = createRotation(ctx, id, xpubsToStrings(xpubs)...)
 	if err != nil {
 		return nil, errors.Wrap(err, "create rotation")
 	}

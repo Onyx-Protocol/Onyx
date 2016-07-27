@@ -12,7 +12,8 @@ import (
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
-	"chain/cos/hdkey"
+	"chain/cos/txscript"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -229,7 +230,8 @@ func TestAccountDestinationPKScript(t *testing.T) {
 		t.Fatal("receiver is not an AccountReceiver")
 	}
 	addr := accountReceiver.Addr()
-	want, _, err := hdkey.Scripts(addr.Keys, appdb.ReceiverPath(addr, addr.Index), addr.SigsRequired)
+	derivedPKs := hd25519.XPubKeys(hd25519.DeriveXPubs(addr.Keys, appdb.ReceiverPath(addr, addr.Index)))
+	want, _, err := txscript.Scripts(derivedPKs, addr.SigsRequired)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

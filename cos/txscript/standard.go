@@ -5,9 +5,8 @@
 package txscript
 
 import (
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcutil"
-
+	"chain/crypto/ed25519"
+	"chain/crypto/ed25519/hd25519"
 	"chain/errors"
 )
 
@@ -132,14 +131,14 @@ func CalcMultiSigStats(script []byte) (int, int, error) {
 // nrequired of the keys in pubkeys are required to have signed the transaction
 // for success.  An ErrBadNumRequired will be returned if nrequired is larger
 // than the number of keys provided.
-func MultiSigScript(pubkeys []*btcutil.AddressPubKey, nrequired int) ([]byte, error) {
+func MultiSigScript(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
 	if len(pubkeys) < nrequired {
 		return nil, ErrBadNumRequired
 	}
 
 	builder := NewScriptBuilder().AddInt64(int64(nrequired))
 	for _, key := range pubkeys {
-		builder.AddData(key.ScriptAddress())
+		builder.AddData(hd25519.PubBytes(key))
 	}
 	builder.AddInt64(int64(len(pubkeys)))
 	builder.AddOp(OP_CHECKMULTISIG)
@@ -147,12 +146,10 @@ func MultiSigScript(pubkeys []*btcutil.AddressPubKey, nrequired int) ([]byte, er
 	return builder.Script()
 }
 
-// ParseMultiSigScript is (almost) the inverse of MultiSigScript().
-// It parses the script to produce the list of PublicKeys and
-// nrequired values encoded within.  (The "almost" is because
-// MultiSigScript takes btcutil.AddressPubKeys, but this function
-// gives back btcec.PublicKeys.)
-func ParseMultiSigScript(script []byte) ([]*btcec.PublicKey, int, error) {
+// ParseMultiSigScript is the inverse of MultiSigScript().  It parses
+// the script to produce the list of PublicKeys and nrequired values
+// encoded within.
+func ParseMultiSigScript(script []byte) ([]ed25519.PublicKey, int, error) {
 	pops, err := parseScript(script)
 	if err != nil {
 		return nil, 0, err
@@ -187,12 +184,11 @@ func ParseMultiSigScript(script []byte) ([]*btcec.PublicKey, int, error) {
 	if !isPushOnly(pubkeyPops) {
 		return nil, 0, errors.Wrap(ErrScriptFormat, "not push-only")
 	}
-	pubkeys := make([]*btcec.PublicKey, 0, len(pubkeyPops))
+	pubkeys := make([]ed25519.PublicKey, 0, len(pubkeyPops))
 	for _, pop := range pubkeyPops {
-		pubkeyData := pop.data
-		pubkey, err := btcec.ParsePubKey(pubkeyData, btcec.S256())
+		pubkey, err := hd25519.PubFromBytes(pop.data)
 		if err != nil {
-			return nil, 0, errors.Wrap(err, "parsing pubkey")
+			return nil, 0, errors.Wrap(ErrScriptFormat, "could not parse pubkey")
 		}
 		pubkeys = append(pubkeys, pubkey)
 	}

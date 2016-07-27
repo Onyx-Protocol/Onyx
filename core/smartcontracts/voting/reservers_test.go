@@ -11,7 +11,6 @@ import (
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
-	"chain/cos/hdkey"
 	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -55,10 +54,8 @@ func TestRightsReserver(t *testing.T) {
 					AssetAmount: bc.AssetAmount{AssetID: assetID, Amount: 1},
 					SigComponents: []*txbuilder.SigScriptComponent{
 						{
-							Type: "signature",
-							Signatures: txbuilder.InputSigs(
-								hdkey.Derive(address.Keys, appdb.ReceiverPath(address, address.Index)),
-							),
+							Type:       "signature",
+							Signatures: txbuilder.InputSigs(address.Keys, appdb.ReceiverPath(address, address.Index)),
 						},
 						{
 							Type: "data",

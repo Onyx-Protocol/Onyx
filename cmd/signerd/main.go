@@ -196,7 +196,7 @@ func signTemplate(ctx context.Context, tpl *txbuilder.Template) error {
 						if err != nil {
 							return errors.Wrapf(err, "computing signature for input %d, sigscript component %d, sig %d", i, c, s)
 						}
-						sig.DER = append(sigdata, byte(bc.SigHashAll))
+						sig.Bytes = append(sigdata, byte(bc.SigHashAll))
 					}
 				}
 			}

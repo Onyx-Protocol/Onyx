@@ -10,9 +10,7 @@ import (
 	"testing"
 
 	"chain/cos/txscript"
-
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
+	"chain/crypto/ed25519"
 )
 
 // decodeHex decodes the passed hex string and returns the resulting bytes.  It
@@ -58,11 +56,6 @@ func (b *bogusAddress) ScriptAddress() []byte {
 	return nil
 }
 
-// IsForNet lies blatantly to satisfy the btcutil.Address interface.
-func (b *bogusAddress) IsForNet(chainParams *chaincfg.Params) bool {
-	return true // why not?
-}
-
 // String simply returns an empty string.  It exists to satsify the
 // btcutil.Address interface.
 func (b *bogusAddress) String() string {
@@ -74,98 +67,18 @@ func (b *bogusAddress) String() string {
 func TestMultiSigScript(t *testing.T) {
 	t.Parallel()
 
-	//  mainnet p2pk 13CG6SJ3yHUXo4Cr2RY4THLLJrNFuG3gUg
-	p2pkCompressedMain, err := btcutil.NewAddressPubKey(decodeHex("02192d7"+
-		"4d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4"),
-		&chaincfg.MainNetParams)
-	if err != nil {
-		t.Errorf("Unable to create pubkey address (compressed): %v",
-			err)
-		return
-	}
-	p2pkCompressed2Main, err := btcutil.NewAddressPubKey(decodeHex("03b0bd"+
-		"634234abbb1ba1e986e884185c61cf43e001f9137f23c2c409273eb16e65"),
-		&chaincfg.MainNetParams)
-	if err != nil {
-		t.Errorf("Unable to create pubkey address (compressed 2): %v",
-			err)
-		return
-	}
-
-	p2pkUncompressedMain, err := btcutil.NewAddressPubKey(decodeHex("0411d"+
-		"b93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5c"+
-		"b2e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b41"+
-		"2a3"), &chaincfg.MainNetParams)
-	if err != nil {
-		t.Errorf("Unable to create pubkey address (uncompressed): %v",
-			err)
-		return
-	}
-
 	tests := []struct {
-		keys      []*btcutil.AddressPubKey
+		keys      []ed25519.PublicKey
 		nrequired int
 		expected  string
 		err       error
 	}{
-		{
-			[]*btcutil.AddressPubKey{
-				p2pkCompressedMain,
-				p2pkCompressed2Main,
-			},
-			1,
-			"1 DATA_33 0x02192d74d0cb94344c9569c2e77901573d8d7903c" +
-				"3ebec3a957724895dca52c6b4 DATA_33 0x03b0bd634" +
-				"234abbb1ba1e986e884185c61cf43e001f9137f23c2c4" +
-				"09273eb16e65 2 CHECKMULTISIG",
-			nil,
-		},
-		{
-			[]*btcutil.AddressPubKey{
-				p2pkCompressedMain,
-				p2pkCompressed2Main,
-			},
-			2,
-			"2 DATA_33 0x02192d74d0cb94344c9569c2e77901573d8d7903c" +
-				"3ebec3a957724895dca52c6b4 DATA_33 0x03b0bd634" +
-				"234abbb1ba1e986e884185c61cf43e001f9137f23c2c4" +
-				"09273eb16e65 2 CHECKMULTISIG",
-			nil,
-		},
-		{
-			[]*btcutil.AddressPubKey{
-				p2pkCompressedMain,
-				p2pkCompressed2Main,
-			},
-			3,
-			"",
-			txscript.ErrBadNumRequired,
-		},
-		{
-			[]*btcutil.AddressPubKey{
-				p2pkUncompressedMain,
-			},
-			1,
-			"1 DATA_65 0x0411db93e1dcdb8a016b49840f8c53bc1eb68a382" +
-				"e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf97444" +
-				"64f82e160bfa9b8b64f9d4c03f999b8643f656b412a3 " +
-				"1 CHECKMULTISIG",
-			nil,
-		},
-		{
-			[]*btcutil.AddressPubKey{
-				p2pkUncompressedMain,
-			},
-			2,
-			"",
-			txscript.ErrBadNumRequired,
-		},
+	// TODO(bobg): Add test cases
 	}
 
 	t.Logf("Running %d tests", len(tests))
 	for i, test := range tests {
-		script, err := txscript.MultiSigScript(test.keys,
-			test.nrequired)
+		script, err := txscript.MultiSigScript(test.keys, test.nrequired)
 		if err != test.err {
 			t.Errorf("MultiSigScript #%d unexpected error - "+
 				"got %v, want %v", i, err, test.err)

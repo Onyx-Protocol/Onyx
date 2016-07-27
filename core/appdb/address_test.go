@@ -10,7 +10,7 @@ import (
 
 	. "chain/core/appdb"
 	"chain/core/asset/assettest"
-	"chain/cos/hdkey"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/testutil"
@@ -44,7 +44,7 @@ func TestAddressLoadNextIndex(t *testing.T) {
 		AccountIndex:     []uint32{0, 0},
 		Index:            []uint32{0, 1},
 		SigsRequired:     1,
-		Keys:             []*hdkey.XKey{testutil.TestXPub},
+		Keys:             []*hd25519.XPub{testutil.TestXPub},
 	}
 
 	if !reflect.DeepEqual(addr, want) {
@@ -69,7 +69,7 @@ func TestAddressInsert(t *testing.T) {
 		AccountIndex:     []uint32{0, 0},
 		Index:            []uint32{0, 0},
 		SigsRequired:     1,
-		Keys:             []*hdkey.XKey{testutil.TestXPub},
+		Keys:             []*hd25519.XPub{testutil.TestXPub},
 
 		RedeemScript: []byte{},
 		PKScript:     []byte{},
@@ -88,14 +88,12 @@ func TestAddressInsert(t *testing.T) {
 	}
 }
 
-var dummyXPub2, _ = hdkey.NewXKey("xpub661MyMwAqRbcFoBSqmqxsAGLAgoLBDHXgZutXooGvHGKXgqPK9HYiVZNoqhGuwzeFW27JBpgZZEabMZhFHkxehJmT8H3AfmfD4zhniw5jcw")
-
 func TestCreateAddress(t *testing.T) {
 	t0 := time.Now()
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	ResetSeqs(ctx, t) // Force predictable values.
-	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "foo", []*hdkey.XKey{dummyXPub2}, nil)
+	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "foo", []*hd25519.XPub{testutil.TestXPub}, nil)
 	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "foo", nil)
 
 	exp := t0.Add(5 * time.Minute)
@@ -119,17 +117,17 @@ func TestCreateAddress(t *testing.T) {
 		AccountIndex:     []uint32{0, 0},
 		Index:            []uint32{0, 1},
 		SigsRequired:     1,
-		Keys:             []*hdkey.XKey{dummyXPub2},
+		Keys:             []*hd25519.XPub{testutil.TestXPub},
 
 		RedeemScript: []byte{
-			81, 33, 2, 241, 154, 202, 111, 123, 48, 123, 116, 244, 53,
-			11, 207, 218, 165, 175, 26, 38, 65, 147, 76, 125, 77, 183,
-			254, 50, 18, 62, 238, 216, 139, 92, 16, 81, 174,
+			81, 32, 145, 4, 99, 242, 165, 102, 205, 231, 173, 30, 202, 60,
+			176, 127, 164, 227, 232, 113, 220, 22, 170, 18, 111, 160, 212,
+			1, 7, 154, 68, 185, 145, 112, 81, 174,
 		},
 		PKScript: []byte{
-			118, 170, 32, 32, 59, 30, 153, 16, 50, 1, 223, 236, 114,
-			205, 130, 253, 2, 58, 48, 142, 77, 234, 145, 6, 144, 123,
-			206, 31, 225, 30, 176, 79, 92, 107, 62, 136, 192,
+			118, 170, 32, 251, 181, 160, 192, 129, 19, 82, 90, 4, 19, 222,
+			81, 180, 133, 153, 189, 154, 134, 109, 209, 156, 20, 45, 31, 20,
+			110, 160, 218, 13, 252, 206, 245, 136, 192,
 		},
 	}
 

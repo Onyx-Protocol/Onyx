@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/cos/hdkey"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/metrics"
@@ -22,7 +22,7 @@ type IssuerNode struct {
 }
 
 // InsertIssuerNode adds the issuer node to the database
-func InsertIssuerNode(ctx context.Context, projID, label string, xpubs, gennedKeys []*hdkey.XKey, sigsRequired int, clientToken *string) (*IssuerNode, error) {
+func InsertIssuerNode(ctx context.Context, projID, label string, xpubs []*hd25519.XPub, gennedKeys []*hd25519.XPrv, sigsRequired int, clientToken *string) (*IssuerNode, error) {
 	_ = pg.FromContext(ctx).(pg.Tx) // panic if not in a db transaction
 
 	const q = `
@@ -35,8 +35,8 @@ func InsertIssuerNode(ctx context.Context, projID, label string, xpubs, gennedKe
 	err := pg.QueryRow(ctx, q,
 		label,
 		projID,
-		pg.Strings(keysToStrings(xpubs)),
-		pg.Strings(keysToStrings(gennedKeys)),
+		pg.Strings(xpubsToStrings(xpubs)),
+		pg.Strings(xprvsToStrings(gennedKeys)),
 		sigsRequired,
 		clientToken,
 	).Scan(&id)
@@ -96,7 +96,7 @@ func NextAsset(ctx context.Context, inodeID string) (asset *Asset, sigsRequired 
 		return nil, 0, errors.WithDetailf(err, "asset issuer %v: get key info", inodeID)
 	}
 
-	asset.Keys, err = stringsToKeys(xpubs)
+	asset.Keys, err = stringsToXPubs(xpubs)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "parsing keys")
 	}
@@ -200,12 +200,12 @@ func lookupIssuerNode(ctx context.Context, inq issuerNodeQuery) (*IssuerNode, er
 		return nil, err
 	}
 
-	xpubs, err := stringsToKeys(pubKeyStrs)
+	xpubs, err := stringsToXPubs(pubKeyStrs)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing pub keys")
 	}
 
-	xprvs, err := stringsToKeys(privKeyStrs)
+	xprvs, err := stringsToXPrvs(privKeyStrs)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing private keys")
 	}

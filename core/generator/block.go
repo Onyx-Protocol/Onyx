@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
-
 	"golang.org/x/net/context"
 
 	"chain/core/rpcclient"
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/cos/txscript"
+	"chain/crypto/ed25519"
+	"chain/crypto/ed25519/hd25519"
 	"chain/errors"
 	"chain/net/trace/span"
 )
@@ -70,14 +70,14 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 
 	signersByPubkey := make(map[string]*RemoteSigner, signersConfigured)
 	for _, remoteSigner := range g.RemoteSigners {
-		signersByPubkey[pubkeyString(remoteSigner.Key)] = remoteSigner
+		signersByPubkey[keystr(remoteSigner.Key)] = remoteSigner
 	}
 	if g.LocalSigner != nil {
-		signersByPubkey[pubkeyString(g.LocalSigner.PublicKey())] = nil
+		signersByPubkey[keystr(g.LocalSigner.PublicKey())] = nil
 	}
 
 	type response struct {
-		signature *btcec.Signature
+		signature []byte
 		signer    *RemoteSigner
 		err       error
 		pos       int
@@ -89,7 +89,7 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 		responses       = make(chan *response, len(pubkeys))
 	)
 	for i, pubkey := range pubkeys {
-		signer, ok := signersByPubkey[pubkeyString(pubkey)]
+		signer, ok := signersByPubkey[keystr(pubkey)]
 		if !ok {
 			return ErrUnknownPubkey
 		}
@@ -109,7 +109,7 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 				pos:    pos,
 			}
 			if signer == nil {
-				r.signature, r.err = g.LocalSigner.ComputeBlockSignature(b)
+				r.signature = g.LocalSigner.ComputeBlockSignature(b)
 			} else {
 				r.signature, r.err = rpcclient.GetSignatureForSerializedBlock(ctx, signer.URL.String(), serializedBlock)
 			}
@@ -118,7 +118,7 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 		nrequests++
 	}
 
-	ready := make([]*btcec.Signature, nrequests)
+	ready := make([][]byte, nrequests)
 	var nready int
 	var errResponses []*response
 
@@ -130,7 +130,7 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 		ready[response.pos] = response.signature
 		nready++
 		if nready >= nrequired {
-			signatures := make([]*btcec.Signature, 0, nready)
+			signatures := make([][]byte, 0, nready)
 			for _, r := range ready {
 				if r != nil {
 					signatures = append(signatures, r)
@@ -154,6 +154,6 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 	return errors.New(errMsg)
 }
 
-func pubkeyString(pubkey *btcec.PublicKey) string {
-	return string(pubkey.SerializeCompressed())
+func keystr(k ed25519.PublicKey) string {
+	return string(hd25519.PubBytes(k))
 }

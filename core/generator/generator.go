@@ -4,12 +4,12 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
 	"golang.org/x/net/context"
 
 	"chain/core/signer"
 	"chain/cos"
 	"chain/cos/bc"
+	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
@@ -20,8 +20,8 @@ type Config struct {
 	RemoteSigners []*RemoteSigner
 	LocalSigner   *signer.Signer
 	BlockPeriod   time.Duration
-	BlockKeys     []*btcec.PublicKey // keys for block scripts
-	SigsRequired  int                // sigs required for block scripts
+	BlockKeys     []ed25519.PublicKey // keys for block scripts
+	SigsRequired  int                 // sigs required for block scripts
 	FC            *cos.FC
 }
 
@@ -35,7 +35,7 @@ type Generator struct {
 // that may sign blocks produced by this generator.
 type RemoteSigner struct {
 	URL *url.URL
-	Key *btcec.PublicKey
+	Key ed25519.PublicKey
 }
 
 // Generate runs in a loop, making one new block

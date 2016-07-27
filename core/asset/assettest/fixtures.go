@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
-
 	"golang.org/x/net/context"
 
 	"chain/core/appdb"
@@ -17,10 +15,11 @@ import (
 	"chain/core/txbuilder"
 	"chain/cos"
 	"chain/cos/bc"
-	"chain/cos/hdkey"
 	"chain/cos/mempool"
 	"chain/cos/memstore"
 	"chain/cos/state"
+	"chain/crypto/ed25519"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/testutil"
@@ -88,7 +87,7 @@ func CreateInvitationFixture(ctx context.Context, t testing.TB, email, role stri
 
 var issuerNodeCounter = createCounter()
 
-func CreateIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs, xprvs []*hdkey.XKey) string {
+func CreateIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs []*hd25519.XPub, xprvs []*hd25519.XPrv) string {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -116,7 +115,7 @@ func CreateIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label
 	return issuerNode.ID
 }
 
-func CreateArchivedIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs, xprvs []*hdkey.XKey) string {
+func CreateArchivedIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs []*hd25519.XPub, xprvs []*hd25519.XPrv) string {
 	inodeID := CreateIssuerNodeFixture(ctx, t, projectID, label, xpubs, xprvs)
 	err := appdb.ArchiveIssuerNode(ctx, inodeID)
 	if err != nil {
@@ -128,7 +127,7 @@ func CreateArchivedIssuerNodeFixture(ctx context.Context, t testing.TB, projectI
 
 var managerNodeCounter = createCounter()
 
-func CreateManagerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs, xprvs []*hdkey.XKey) string {
+func CreateManagerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs []*hd25519.XPub, xprvs []*hd25519.XPrv) string {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -255,10 +254,6 @@ func AccountDestinationFixture(ctx context.Context, t testing.TB, assetID bc.Ass
 // InitializeSigningGenerator initiaizes a generator fixture with the
 // provided store. Store can be nil, in which case it will use memstore.
 func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.Pool) (*cos.FC, *generator.Generator, error) {
-	pubkey, err := testutil.TestXPub.ECPubKey()
-	if err != nil {
-		return nil, nil, err
-	}
 	if store == nil {
 		store = memstore.New()
 	}
@@ -270,16 +265,13 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 		return nil, nil, err
 	}
 	asset.Init(fc, true)
-	privkey, err := testutil.TestXPrv.ECPrivKey()
-	if err != nil {
-		return nil, nil, err
-	}
+	privkey := testutil.TestPrv
 	localSigner := signer.New(privkey, pg.FromContext(ctx), fc)
 	g := &generator.Generator{
 		Config: generator.Config{
 			LocalSigner:  localSigner,
 			BlockPeriod:  time.Second,
-			BlockKeys:    []*btcec.PublicKey{pubkey},
+			BlockKeys:    []ed25519.PublicKey{testutil.TestPub},
 			SigsRequired: 1,
 			FC:           fc,
 		},

@@ -6,9 +6,6 @@ package txscript
 
 import (
 	"fmt"
-	"math/big"
-
-	"github.com/btcsuite/btcd/btcec"
 
 	"chain/cos/bc"
 )
@@ -53,9 +50,6 @@ const (
 	// can be on the execution stack.
 	maxExecutionStackSize = 10
 )
-
-// halforder is used to tame ECDSA malleability (see BIP0062).
-var halfOrder = new(big.Int).Rsh(btcec.S256().N, 1)
 
 type (
 	// Engine is the virtual machine that executes scripts.
@@ -295,155 +289,6 @@ func (vm *Engine) checkHashTypeEncoding(hashType bc.SigHashType) error {
 	if sigHashType < bc.SigHashAll || sigHashType > bc.SigHashSingle {
 		return fmt.Errorf("invalid hashtype: 0x%x\n", hashType)
 	}
-	return nil
-}
-
-// checkPubKeyEncoding returns whether or not the passed public key adheres to
-// the strict encoding requirements if enabled.
-func (vm *Engine) checkPubKeyEncoding(pubKey []byte) error {
-	if !vm.hasFlag(ScriptVerifyStrictEncoding) {
-		return nil
-	}
-
-	if len(pubKey) == 33 && (pubKey[0] == 0x02 || pubKey[0] == 0x03) {
-		// Compressed
-		return nil
-	}
-	if len(pubKey) == 65 && pubKey[0] == 0x04 {
-		// Uncompressed
-		return nil
-	}
-	return ErrStackInvalidPubKey
-}
-
-// checkSignatureEncoding returns whether or not the passed signature adheres to
-// the strict encoding requirements if enabled.
-func (vm *Engine) checkSignatureEncoding(sig []byte) error {
-	if !vm.hasFlag(ScriptVerifyDERSignatures) &&
-		!vm.hasFlag(ScriptVerifyLowS) &&
-		!vm.hasFlag(ScriptVerifyStrictEncoding) {
-
-		return nil
-	}
-
-	// The format of a DER encoded signature is as follows:
-	//
-	// 0x30 <total length> 0x02 <length of R> <R> 0x02 <length of S> <S>
-	//   - 0x30 is the ASN.1 identifier for a sequence
-	//   - Total length is 1 byte and specifies length of all remaining data
-	//   - 0x02 is the ASN.1 identifier that specifies an integer follows
-	//   - Length of R is 1 byte and specifies how many bytes R occupies
-	//   - R is the arbitrary length big-endian encoded number which
-	//     represents the R value of the signature.  DER encoding dictates
-	//     that the value must be encoded using the minimum possible number
-	//     of bytes.  This implies the first byte can only be null if the
-	//     highest bit of the next byte is set in order to prevent it from
-	//     being interpreted as a negative number.
-	//   - 0x02 is once again the ASN.1 integer identifier
-	//   - Length of S is 1 byte and specifies how many bytes S occupies
-	//   - S is the arbitrary length big-endian encoded number which
-	//     represents the S value of the signature.  The encoding rules are
-	//     identical as those for R.
-
-	// Minimum length is when both numbers are 1 byte each.
-	// 0x30 + <1-byte> + 0x02 + 0x01 + <byte> + 0x2 + 0x01 + <byte>
-	if len(sig) < 8 {
-		// Too short
-		return fmt.Errorf("malformed signature: too short: %d < 8",
-			len(sig))
-	}
-
-	// Maximum length is when both numbers are 33 bytes each.  It is 33
-	// bytes because a 256-bit integer requires 32 bytes and an additional
-	// leading null byte might required if the high bit is set in the value.
-	// 0x30 + <1-byte> + 0x02 + 0x21 + <33 bytes> + 0x2 + 0x21 + <33 bytes>
-	if len(sig) > 72 {
-		// Too long
-		return fmt.Errorf("malformed signature: too long: %d > 72",
-			len(sig))
-	}
-	if sig[0] != 0x30 {
-		// Wrong type
-		return fmt.Errorf("malformed signature: format has wrong type: 0x%x",
-			sig[0])
-	}
-	if int(sig[1]) != len(sig)-2 {
-		// Invalid length
-		return fmt.Errorf("malformed signature: bad length: %d != %d",
-			sig[1], len(sig)-2)
-	}
-
-	rLen := int(sig[3])
-
-	// Make sure S is inside the signature.
-	if rLen+5 > len(sig) {
-		return fmt.Errorf("malformed signature: S out of bounds")
-	}
-
-	sLen := int(sig[rLen+5])
-
-	// The length of the elements does not match the length of the
-	// signature.
-	if rLen+sLen+6 != len(sig) {
-		return fmt.Errorf("malformed signature: invalid R length")
-	}
-
-	// R elements must be integers.
-	if sig[2] != 0x02 {
-		return fmt.Errorf("malformed signature: missing first integer marker")
-	}
-
-	// Zero-length integers are not allowed for R.
-	if rLen == 0 {
-		return fmt.Errorf("malformed signature: R length is zero")
-	}
-
-	// R must not be negative.
-	if sig[4]&0x80 != 0 {
-		return fmt.Errorf("malformed signature: R value is negative")
-	}
-
-	// Null bytes at the start of R are not allowed, unless R would
-	// otherwise be interpreted as a negative number.
-	if rLen > 1 && sig[4] == 0x00 && sig[5]&0x80 == 0 {
-		return fmt.Errorf("malformed signature: invalid R value")
-	}
-
-	// S elements must be integers.
-	if sig[rLen+4] != 0x02 {
-		return fmt.Errorf("malformed signature: missing second integer marker")
-	}
-
-	// Zero-length integers are not allowed for S.
-	if sLen == 0 {
-		return fmt.Errorf("malformed signature: S length is zero")
-	}
-
-	// S must not be negative.
-	if sig[rLen+6]&0x80 != 0 {
-		return fmt.Errorf("malformed signature: S value is negative")
-	}
-
-	// Null bytes at the start of S are not allowed, unless S would
-	// otherwise be interpreted as a negative number.
-	if sLen > 1 && sig[rLen+6] == 0x00 && sig[rLen+7]&0x80 == 0 {
-		return fmt.Errorf("malformed signature: invalid S value")
-	}
-
-	// Verify the S value is <= half the order of the curve.  This check is
-	// done because when it is higher, the complement modulo the order can
-	// be used instead which is a shorter encoding by 1 byte.  Further,
-	// without enforcing this, it is possible to replace a signature in a
-	// valid transaction with the complement while still being a valid
-	// signature that verifies.  This would result in changing the
-	// transaction hash and thus is source of malleability.
-	if vm.hasFlag(ScriptVerifyLowS) {
-		sValue := new(big.Int).SetBytes(sig[rLen+6 : rLen+6+sLen])
-		if sValue.Cmp(halfOrder) > 0 {
-			return ErrStackInvalidLowSSignature
-		}
-	}
-
 	return nil
 }
 

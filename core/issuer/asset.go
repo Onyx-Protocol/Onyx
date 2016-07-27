@@ -6,12 +6,10 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/btcsuite/btcutil"
-
 	"chain/core/appdb"
 	"chain/cos/bc"
-	"chain/cos/hdkey"
 	"chain/cos/txscript"
+	"chain/crypto/ed25519/hd25519"
 	"chain/errors"
 	"chain/metrics"
 )
@@ -38,17 +36,14 @@ func CreateAsset(ctx context.Context, inodeID, label string, genesisHash bc.Hash
 		return nil, errors.Wrap(err, "serializing asset definition")
 	}
 
-	var pubkeys []*btcutil.AddressPubKey
-	for _, key := range hdkey.Derive(asset.Keys, appdb.IssuancePath(asset)) {
-		pubkeys = append(pubkeys, key.Address)
-	}
-
-	asset.RedeemScript, err = txscript.MultiSigScript(pubkeys, sigsReq)
+	derivedXPubs := hd25519.DeriveXPubs(asset.Keys, appdb.IssuancePath(asset))
+	derivedPubs := hd25519.XPubKeys(derivedXPubs)
+	pkScript, redeem, err := txscript.Scripts(derivedPubs, sigsReq)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating asset: asset issuer id %v sigsReq %v", inodeID, sigsReq)
 	}
-	pkScript := txscript.RedeemToPkScript(asset.RedeemScript)
 	asset.IssuanceScript = pkScript
+	asset.RedeemScript = redeem
 	asset.GenesisHash = genesisHash
 	asset.Hash = bc.ComputeAssetID(pkScript, genesisHash, 1)
 

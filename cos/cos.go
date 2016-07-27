@@ -50,10 +50,9 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/btcsuite/btcd/btcec"
-
 	"chain/cos/bc"
 	"chain/cos/patricia"
+	"chain/crypto/ed25519"
 	"chain/errors"
 )
 
@@ -108,7 +107,7 @@ type Pool interface {
 type FC struct {
 	blockCallbacks []BlockCallback
 	txCallbacks    []TxCallback
-	trustedKeys    []*btcec.PublicKey
+	trustedKeys    []ed25519.PublicKey
 	height         struct {
 		cond sync.Cond // protects n
 		n    uint64
@@ -123,7 +122,7 @@ type FC struct {
 // in trustedKeys. Typically, trustedKeys contains the public key
 // for the local block-signer process; the presence of its
 // signature indicates the block was already validated locally.
-func NewFC(ctx context.Context, store Store, pool Pool, trustedKeys []*btcec.PublicKey, heights <-chan uint64) (*FC, error) {
+func NewFC(ctx context.Context, store Store, pool Pool, trustedKeys []ed25519.PublicKey, heights <-chan uint64) (*FC, error) {
 	fc := &FC{store: store, pool: pool, trustedKeys: trustedKeys}
 	fc.height.cond.L = new(sync.Mutex)
 

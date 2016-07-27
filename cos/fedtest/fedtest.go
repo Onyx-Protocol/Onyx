@@ -5,48 +5,39 @@ import (
 	"time"
 
 	"chain/cos/bc"
-	"chain/cos/hdkey"
 	"chain/cos/state"
+	"chain/cos/txscript"
+	"chain/crypto/ed25519"
 	"chain/testutil"
 )
 
 type TestDest struct {
-	PrivKey                *hdkey.XKey
+	PrivKey                ed25519.PrivateKey
 	PKScript, RedeemScript []byte
 }
 
 func Dest(t testing.TB) *TestDest {
-	var priv *hdkey.XKey
-	_, priv, err := hdkey.New()
+	pub, priv, err := ed25519.GenerateKey(nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	pk, redeem, err := hdkey.Scripts([]*hdkey.XKey{priv}, nil, 1)
+	pkScript, redeem, err := txscript.Scripts([]ed25519.PublicKey{pub}, 1)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
 	return &TestDest{
 		PrivKey:      priv,
-		PKScript:     pk,
+		PKScript:     pkScript,
 		RedeemScript: redeem,
 	}
 }
 
 func (d *TestDest) Sign(t testing.TB, tx *bc.TxData, index int) {
 	hash := tx.HashForSig(index, bc.SigHashAll)
-
-	ecPriv, err := d.PrivKey.ECPrivKey()
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	sig, err := ecPriv.Sign(hash[:])
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	der := append(sig.Serialize(), byte(bc.SigHashAll))
+	sig := ed25519.Sign(d.PrivKey, hash[:])
+	der := append(sig, byte(bc.SigHashAll))
 	tx.Inputs[index].InputWitness = [][]byte{der, d.RedeemScript}
 }
 

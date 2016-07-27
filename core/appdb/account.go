@@ -9,7 +9,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/hdkey"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
@@ -45,7 +45,7 @@ type Account struct {
 // Parameter keys will be concatenated with the manager node's
 // keys when creating redeem scripts for this account.
 // The len(keys) must equal variable_keys in the manager node.
-func CreateAccount(ctx context.Context, managerNodeID, label string, keys []string, clientToken *string) (*Account, error) {
+func CreateAccount(ctx context.Context, managerNodeID, label string, pubkeyStrs []string, clientToken *string) (*Account, error) {
 	defer metrics.RecordElapsed(time.Now())
 	if label == "" {
 		return nil, errors.WithDetail(ErrBadLabel, "missing/null value")
@@ -58,21 +58,19 @@ func CreateAccount(ctx context.Context, managerNodeID, label string, keys []stri
 		return nil, errors.Wrap(err, "fetching variable key count for account manager")
 	}
 
-	if keyCount != len(keys) {
+	if keyCount != len(pubkeyStrs) {
 		return nil, ErrBadAccountKeyCount
 	}
 
-	for i, key := range keys {
-		xpub, err := hdkey.NewXKey(key)
+	for i, pubkeyStr := range pubkeyStrs {
+		_, err := hd25519.XPubFromString(pubkeyStr)
 		if err != nil {
 			return nil, errors.WithDetailf(ErrInvalidAccountKey, "key %d: xpub is not valid", i)
-		} else if xpub.IsPrivate() {
-			return nil, errors.WithDetailf(ErrInvalidAccountKey, "key %d: is xpriv, not xpub", i)
 		}
 	}
 
-	if len(keys) > 0 {
-		account.Keys = keys
+	if len(pubkeyStrs) > 0 {
+		account.Keys = pubkeyStrs
 	}
 
 	const attempts = 3
@@ -91,7 +89,7 @@ func CreateAccount(ctx context.Context, managerNodeID, label string, keys []stri
 			ON CONFLICT (manager_node_id, client_token) DO NOTHING
 			RETURNING id, key_index(key_index)
 		`
-		err := pg.QueryRow(ctx, q, managerNodeID, label, pg.Strings(keys), clientToken).Scan(
+		err := pg.QueryRow(ctx, q, managerNodeID, label, pg.Strings(pubkeyStrs), clientToken).Scan(
 			&account.ID,
 			(*pg.Uint32s)(&account.Index),
 		)

@@ -1,8 +1,8 @@
 package appdb
 
-import "chain/cos/hdkey"
+import "chain/crypto/ed25519/hd25519"
 
-func keysToStrings(keys []*hdkey.XKey) []string {
+func xpubsToStrings(keys []*hd25519.XPub) []string {
 	var strings []string
 	for _, k := range keys {
 		strings = append(strings, k.String())
@@ -10,14 +10,34 @@ func keysToStrings(keys []*hdkey.XKey) []string {
 	return strings
 }
 
-func stringsToKeys(strings []string) ([]*hdkey.XKey, error) {
-	var keys []*hdkey.XKey
-	for _, x := range strings {
-		key, err := hdkey.NewXKey(x)
+func xprvsToStrings(keys []*hd25519.XPrv) []string {
+	var strings []string
+	for _, k := range keys {
+		strings = append(strings, k.String())
+	}
+	return strings
+}
+
+func stringsToXPubs(strings []string) ([]*hd25519.XPub, error) {
+	res := make([]*hd25519.XPub, 0, len(strings))
+	for _, s := range strings {
+		xpub, err := hd25519.XPubFromString(s)
 		if err != nil {
 			return nil, err
 		}
-		keys = append(keys, key)
+		res = append(res, xpub)
 	}
-	return keys, nil
+	return res, nil
+}
+
+func stringsToXPrvs(strings []string) ([]*hd25519.XPrv, error) {
+	res := make([]*hd25519.XPrv, 0, len(strings))
+	for _, s := range strings {
+		xprv, err := hd25519.XPrvFromString(s)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, xprv)
+	}
+	return res, nil
 }

@@ -12,12 +12,13 @@ import (
 	"hash"
 	"math"
 
-	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/fastsha256"
 	"github.com/btcsuite/golangcrypto/ripemd160"
 	"golang.org/x/crypto/sha3"
 
 	"chain/cos/bc"
+	"chain/crypto/ed25519"
+	"chain/crypto/ed25519/hd25519"
 )
 
 // An opcode defines the information related to a txscript opcode.  opfunc if
@@ -2089,12 +2090,6 @@ func opcodeCheckSig(op *parsedOpcode, vm *Engine) error {
 	if err := vm.checkHashTypeEncoding(hashType); err != nil {
 		return err
 	}
-	if err := vm.checkSignatureEncoding(sigBytes); err != nil {
-		return err
-	}
-	if err := vm.checkPubKeyEncoding(pkBytes); err != nil {
-		return err
-	}
 
 	// Generate the signature hash based on the signature hash type.
 	var hash bc.Hash
@@ -2104,26 +2099,11 @@ func opcodeCheckSig(op *parsedOpcode, vm *Engine) error {
 		hash = vm.sigHasher.Hash(vm.txIdx, hashType)
 	}
 
-	pubKey, err := btcec.ParsePubKey(pkBytes, btcec.S256())
+	pubkey, err := hd25519.PubFromBytes(pkBytes)
 	if err != nil {
-		vm.dstack.PushBool(false)
-		return nil
+		return err
 	}
-
-	var signature *btcec.Signature
-	if vm.hasFlag(ScriptVerifyStrictEncoding) ||
-		vm.hasFlag(ScriptVerifyDERSignatures) {
-
-		signature, err = btcec.ParseDERSignature(sigBytes, btcec.S256())
-	} else {
-		signature, err = btcec.ParseSignature(sigBytes, btcec.S256())
-	}
-	if err != nil {
-		vm.dstack.PushBool(false)
-		return nil
-	}
-
-	ok := signature.Verify(hash[:], pubKey)
+	ok := ed25519.Verify(pubkey, hash[:], sigBytes)
 	vm.dstack.PushBool(ok)
 	return nil
 }
@@ -2139,15 +2119,6 @@ func opcodeCheckSigVerify(op *parsedOpcode, vm *Engine) error {
 		err = opcodeVerify(op, vm)
 	}
 	return err
-}
-
-// parsedSigInfo houses a raw signature along with its parsed form and a flag
-// for whether or not it has already been parsed.  It is used to prevent parsing
-// the same signature multiple times when verify a multisig.
-type parsedSigInfo struct {
-	signature       []byte
-	parsedSignature *btcec.Signature
-	parsed          bool
 }
 
 // opcodeCheckMultiSig treats the top item on the stack as an integer number of
@@ -2201,14 +2172,13 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 			numSignatures, numPubKeys)
 	}
 
-	signatures := make([]*parsedSigInfo, 0, numSignatures)
+	signatures := make([][]byte, 0, numSignatures)
 	for i := 0; i < numSignatures; i++ {
 		signature, err := vm.dstack.PopByteArray()
 		if err != nil {
 			return err
 		}
-		sigInfo := &parsedSigInfo{signature: signature}
-		signatures = append(signatures, sigInfo)
+		signatures = append(signatures, signature)
 	}
 
 	success := true
@@ -2226,66 +2196,15 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 			break
 		}
 
-		sigInfo := signatures[signatureIdx]
-		pubKey := pubKeys[pubKeyIdx]
+		signature := signatures[signatureIdx]
+		pubKeyBytes := pubKeys[pubKeyIdx]
 
 		// The order of the signature and public key evaluation is
 		// important here since it can be distinguished by an
 		// OP_CHECKMULTISIG NOT when the strict encoding flag is set.
 
-		rawSig := sigInfo.signature
-		if len(rawSig) == 0 {
+		if len(signature) == 0 {
 			// Skip to the next pubkey if signature is empty.
-			continue
-		}
-
-		// Split the signature into hash type and signature components.
-		hashType := bc.SigHashType(rawSig[len(rawSig)-1])
-		signature := rawSig[:len(rawSig)-1]
-
-		// Only parse and check the signature encoding once.
-		var parsedSig *btcec.Signature
-		if !sigInfo.parsed {
-			if err := vm.checkHashTypeEncoding(hashType); err != nil {
-				return err
-			}
-			if err := vm.checkSignatureEncoding(signature); err != nil {
-				return err
-			}
-
-			// Parse the signature.
-			var err error
-			if vm.hasFlag(ScriptVerifyStrictEncoding) ||
-				vm.hasFlag(ScriptVerifyDERSignatures) {
-
-				parsedSig, err = btcec.ParseDERSignature(signature,
-					btcec.S256())
-			} else {
-				parsedSig, err = btcec.ParseSignature(signature,
-					btcec.S256())
-			}
-			sigInfo.parsed = true
-			if err != nil {
-				continue
-			}
-			sigInfo.parsedSignature = parsedSig
-		} else {
-			// Skip to the next pubkey if the signature is invalid.
-			if sigInfo.parsedSignature == nil {
-				continue
-			}
-
-			// Use the already parsed signature.
-			parsedSig = sigInfo.parsedSignature
-		}
-
-		if err := vm.checkPubKeyEncoding(pubKey); err != nil {
-			return err
-		}
-
-		// Parse the pubkey.
-		parsedPubKey, err := btcec.ParsePubKey(pubKey, btcec.S256())
-		if err != nil {
 			continue
 		}
 
@@ -2294,10 +2213,17 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 		if vm.block != nil {
 			hash = vm.block.HashForSig()
 		} else {
+			// Split the signature into hash type and signature components.
+			hashType := bc.SigHashType(signature[len(signature)-1])
+			signature = signature[:len(signature)-1]
 			hash = vm.sigHasher.Hash(vm.txIdx, hashType)
 		}
 
-		if parsedSig.Verify(hash[:], parsedPubKey) {
+		pubkey, err := hd25519.PubFromBytes(pubKeyBytes)
+		if err != nil {
+			return err
+		}
+		if ed25519.Verify(pubkey, hash[:], signature) {
 			// PubKey verified, move on to the next signature.
 			signatureIdx++
 			numSignatures--

@@ -13,7 +13,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
 	"github.com/kr/secureheader"
 	"github.com/resonancelabs/go-pub/instrument"
 	"github.com/resonancelabs/go-pub/instrument/client"
@@ -33,6 +32,8 @@ import (
 	"chain/core/utxodb"
 	"chain/cos"
 	"chain/cos/txscript"
+	"chain/crypto/ed25519"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
@@ -132,7 +133,11 @@ func main() {
 
 	asset.Generator = remoteGeneratorURL
 
-	privKey, pubKey := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
+	privKey, err := hd25519.PrvFromBytes(keyBytes)
+	if err != nil {
+		panic(err)
+	}
+	pubKey := privKey.Public().(ed25519.PublicKey)
 
 	if librato.URL.Host != "" {
 		librato.Source = *target
@@ -172,7 +177,7 @@ func main() {
 		chainlog.Fatal(ctx, "error", err)
 	}
 	store, pool := txdb.New(db)
-	fc, err := cos.NewFC(ctx, store, pool, []*btcec.PublicKey{pubKey}, heights)
+	fc, err := cos.NewFC(ctx, store, pool, []ed25519.PublicKey{pubKey}, heights)
 	if err != nil {
 		chainlog.Fatal(ctx, "error", err)
 	}
@@ -203,7 +208,7 @@ func main() {
 		if nSigners < *sigsRequired {
 			chainlog.Fatal(ctx, "error", "too few signers configured")
 		}
-		pubKeys := make([]*btcec.PublicKey, nSigners)
+		pubKeys := make([]ed25519.PublicKey, nSigners)
 		for i, key := range remotes {
 			pubKeys[i] = key.Key
 		}
@@ -281,13 +286,13 @@ func remoteSignerInfo(ctx context.Context) (a []*generator.RemoteSigner) {
 		if err != nil {
 			chainlog.Fatal(ctx, "error", err)
 		}
-		b, err := hex.DecodeString((*remoteSignerKeys)[i])
+		kbytes, err := hex.DecodeString((*remoteSignerKeys)[i])
+		if err != nil {
+			chainlog.Fatal(ctx, "error", err)
+		}
+		k, err := hd25519.PubFromBytes(kbytes)
 		if err != nil {
 			chainlog.Fatal(ctx, "error", err, "at", "decoding signer public key")
-		}
-		k, err := btcec.ParsePubKey(b, btcec.S256())
-		if err != nil {
-			chainlog.Fatal(ctx, "error", err, "at", "parsing signer public key")
 		}
 		a = append(a, &generator.RemoteSigner{URL: u, Key: k})
 	}

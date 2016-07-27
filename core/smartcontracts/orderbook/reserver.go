@@ -9,7 +9,6 @@ import (
 	"chain/core/appdb"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
-	"chain/cos/hdkey"
 	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/errors"
@@ -122,7 +121,7 @@ func (reserver *cancelReserver) Reserve(ctx context.Context, assetAmount *bc.Ass
 		return nil, err
 	}
 	tmplIn := &txbuilder.Input{AssetAmount: openOrder.AssetAmount}
-	sigs := txbuilder.InputSigs(hdkey.Derive(sellerAddr.Keys, appdb.ReceiverPath(sellerAddr, sellerAddr.Index)))
+	sigs := txbuilder.InputSigs(sellerAddr.Keys, appdb.ReceiverPath(sellerAddr, sellerAddr.Index))
 	tmplIn.AddWitnessSigs(sigs, txscript.SigsRequired(contractScript), nil)
 	for _, arg := range programArgs {
 		tmplIn.AddWitnessData(arg)

@@ -12,12 +12,11 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/btcsuite/btcd/btcec"
-
 	"chain/core/appdb"
 	"chain/core/txdb"
 	"chain/cos"
-	"chain/cos/hdkey"
+	"chain/crypto/ed25519"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
@@ -109,7 +108,11 @@ func genesis(db *sql.DB, args []string) {
 		fatalln("error:", err)
 	}
 
-	_, pubKey := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
+	privKey, err := hd25519.PrvFromBytes(keyBytes)
+	if err != nil {
+		fatalln("error:", err)
+	}
+	pubKey := privKey.Public().(ed25519.PublicKey)
 
 	ctx := pg.NewContext(context.Background(), db)
 
@@ -119,7 +122,7 @@ func genesis(db *sql.DB, args []string) {
 		fatalln("error:", err)
 	}
 
-	b, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubKey}, 1, time.Now())
+	b, err := fc.UpsertGenesisBlock(ctx, []ed25519.PublicKey{pubKey}, 1, time.Now())
 	if err != nil {
 		fatalln("error:", err)
 	}
@@ -179,13 +182,13 @@ func boot(db *sql.DB, args []string) {
 	fmt.Printf("%s\n", result)
 }
 
-func genKey() (pub, priv []*hdkey.XKey) {
-	pk, sk, err := hdkey.New()
+func genKey() (pub []*hd25519.XPub, priv []*hd25519.XPrv) {
+	xprv, xpub, err := hd25519.NewXKeys(nil)
 	if err != nil {
 		fatalln(err)
 	}
-	pub = append(pub, pk)
-	priv = append(priv, sk)
+	pub = append(pub, xpub)
+	priv = append(priv, xprv)
 	return
 }
 

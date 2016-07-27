@@ -10,7 +10,6 @@ import (
 	"chain/core/appdb"
 	"chain/core/asset"
 	"chain/cos/bc"
-	"chain/cos/hdkey"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
@@ -265,12 +264,19 @@ func createAddr(ctx context.Context, accountID string, in struct {
 		return nil, err
 	}
 
-	signers := hdkey.Derive(addr.Keys, appdb.ReceiverPath(addr, addr.Index))
+	path := appdb.ReceiverPath(addr, addr.Index)
+	addrSigners := make([]map[string]interface{}, 0, len(addr.Keys))
+	for _, k := range addr.Keys {
+		addrSigners = append(addrSigners, map[string]interface{}{
+			"xpub":            k.String(),
+			"derivation_path": path,
+		})
+	}
 	ret := map[string]interface{}{
 		"address":             chainjson.HexBytes(addr.PKScript), // deprecated
 		"script":              chainjson.HexBytes(addr.PKScript),
 		"signatures_required": addr.SigsRequired,
-		"signers":             addrSigners(signers),
+		"signers":             addrSigners,
 		"block_chain":         "sandbox",
 		"created":             addr.Created.UTC(),
 		"expires":             optionalTime(addr.Expires),
@@ -278,17 +284,6 @@ func createAddr(ctx context.Context, accountID string, in struct {
 		"index":               addr.Index[:],
 	}
 	return ret, nil
-}
-
-func addrSigners(signers []*hdkey.Key) (v []interface{}) {
-	for _, s := range signers {
-		v = append(v, map[string]interface{}{
-			"pubkey":          s.Address.String(),
-			"derivation_path": s.Path,
-			"xpub":            s.Root.String(),
-		})
-	}
-	return v
 }
 
 // optionalTime returns a pointer to t or nil, if t is zero.

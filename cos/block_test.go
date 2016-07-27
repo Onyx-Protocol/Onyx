@@ -8,13 +8,12 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/btcsuite/btcd/btcec"
-
 	"chain/cos/bc"
 	"chain/cos/mempool"
 	"chain/cos/memstore"
 	"chain/cos/patricia"
 	"chain/cos/txscript"
+	"chain/crypto/ed25519"
 	"chain/errors"
 	"chain/testutil"
 )
@@ -166,15 +165,11 @@ func waitForBlockChan(ctx context.Context, fc *FC, height uint64) chan error {
 func TestIdempotentUpsert(t *testing.T) {
 	ctx, fc := newContextFC(t)
 
-	pubkey, err := testutil.TestXPub.ECPubKey()
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
 	// InitializeSigningGenerator added a genesis block.  Calling
 	// UpsertGenesisBlock again should be a no-op, not produce an error.
 	for i := 0; i < 2; i++ {
-		_, err = fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1, time.Now())
+		var err error
+		_, err = fc.UpsertGenesisBlock(ctx, []ed25519.PublicKey{testutil.TestPub}, 1, time.Now())
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -184,14 +179,9 @@ func TestIdempotentUpsert(t *testing.T) {
 func TestGenerateBlock(t *testing.T) {
 	ctx, fc := newContextFC(t)
 
-	pubkey, err := testutil.TestXPub.ECPubKey()
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
 	now := time.Unix(233400000, 0)
 
-	latestBlock, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1, now)
+	latestBlock, err := fc.UpsertGenesisBlock(ctx, []ed25519.PublicKey{testutil.TestPub}, 1, now)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -248,7 +238,7 @@ func TestGenerateBlock(t *testing.T) {
 			Height:            2,
 			PreviousBlockHash: latestBlock.Hash(),
 			Commitment: mustDecodeHex(
-				"6a948c28e0991ae41c63dd3f2c0366b9d8cfd62c8d8166aa2e4bf76c1a4922dea49e884c4aa0e1d6d61412fe0c5f5f4faa20d1550d8821f198f2224e07f0701a", // TODO(bobg): verify this is the right value
+				"29b6f11ef8e406e56ce2a9da1315e058272e1aee6335667a40d0456b69e6199daf31977371c7497342246145fb0710877ea2888c7909e06a27d66b6a130989ba", // TODO(bobg): verify this is the right value
 			),
 			TimestampMS:  uint64(now.UnixNano() / 1000000),
 			OutputScript: latestBlock.OutputScript,
@@ -285,41 +275,37 @@ func TestValidateGenesisBlockForSig(t *testing.T) {
 }
 
 func TestIsSignedByTrustedHost(t *testing.T) {
-	privKey, err := testutil.TestXPrv.ECPrivKey()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	keys := []*btcec.PrivateKey{privKey}
+	privKey := testutil.TestPrv
+	privKeys := []ed25519.PrivateKey{privKey}
 
 	block := &bc.Block{}
-	signBlock(t, block, keys)
+	signBlock(t, block, privKeys)
 	sig := block.SignatureScript
 
 	cases := []struct {
 		desc        string
 		sigScript   []byte
-		trustedKeys []*btcec.PublicKey
+		trustedKeys []ed25519.PublicKey
 		want        bool
 	}{{
 		desc:        "empty sig",
 		sigScript:   nil,
-		trustedKeys: privToPub(keys),
+		trustedKeys: privToPub(privKeys),
 		want:        false,
 	}, {
 		desc:        "wrong trusted keys",
 		sigScript:   sig,
-		trustedKeys: privToPub([]*btcec.PrivateKey{newPrivKey(t)}),
+		trustedKeys: privToPub([]ed25519.PrivateKey{newPrivKey(t)}),
 		want:        false,
 	}, {
 		desc:        "one-of-one trusted keys",
 		sigScript:   sig,
-		trustedKeys: privToPub(keys),
+		trustedKeys: privToPub(privKeys),
 		want:        true,
 	}, {
 		desc:        "one-of-two trusted keys",
 		sigScript:   sig,
-		trustedKeys: privToPub(append(keys, newPrivKey(t))),
+		trustedKeys: privToPub(append(privKeys, newPrivKey(t))),
 		want:        true,
 	}}
 
@@ -343,13 +329,10 @@ func newContextFC(t testing.TB) (context.Context, *FC) {
 	return ctx, fc
 }
 
-func signBlock(t testing.TB, b *bc.Block, keys []*btcec.PrivateKey) {
-	var sigs []*btcec.Signature
+func signBlock(t testing.TB, b *bc.Block, keys []ed25519.PrivateKey) {
+	var sigs [][]byte
 	for _, key := range keys {
-		sig, err := ComputeBlockSignature(b, key)
-		if err != nil {
-			testutil.FatalErr(t, err)
-		}
+		sig := ComputeBlockSignature(b, key)
 		sigs = append(sigs, sig)
 	}
 	err := AddSignaturesToBlock(b, sigs)
@@ -358,20 +341,20 @@ func signBlock(t testing.TB, b *bc.Block, keys []*btcec.PrivateKey) {
 	}
 }
 
-func privToPub(privs []*btcec.PrivateKey) []*btcec.PublicKey {
-	var public []*btcec.PublicKey
+func privToPub(privs []ed25519.PrivateKey) []ed25519.PublicKey {
+	var public []ed25519.PublicKey
 	for _, priv := range privs {
-		public = append(public, priv.PubKey())
+		public = append(public, priv.Public().(ed25519.PublicKey))
 	}
 	return public
 }
 
-func newPrivKey(t *testing.T) *btcec.PrivateKey {
-	key, err := btcec.NewPrivateKey(btcec.S256())
+func newPrivKey(t *testing.T) ed25519.PrivateKey {
+	_, priv, err := ed25519.GenerateKey(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return key
+	return priv
 }
 
 func mustParseHash(s string) [32]byte {

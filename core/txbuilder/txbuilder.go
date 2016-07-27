@@ -8,8 +8,8 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/hdkey"
 	"chain/cos/txscript"
+	"chain/crypto/ed25519/hd25519"
 	"chain/errors"
 )
 
@@ -147,10 +147,10 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 			case "signature":
 				added := 0
 				for _, sig := range c.Signatures {
-					if len(sig.DER) == 0 {
+					if len(sig.Bytes) == 0 {
 						continue
 					}
-					witness = append(witness, sig.DER)
+					witness = append(witness, sig.Bytes)
 					added++
 					if added == c.Required {
 						break
@@ -169,12 +169,12 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 // InputSigs takes a set of keys
 // and creates a matching set of Input Signatures
 // for a Template
-func InputSigs(keys []*hdkey.Key) (sigs []*Signature) {
+func InputSigs(keys []*hd25519.XPub, path []uint32) (sigs []*Signature) {
 	sigs = []*Signature{}
 	for _, k := range keys {
 		sigs = append(sigs, &Signature{
-			XPub:           k.Root.String(),
-			DerivationPath: k.Path,
+			XPub:           k.String(),
+			DerivationPath: path,
 		})
 	}
 	return sigs

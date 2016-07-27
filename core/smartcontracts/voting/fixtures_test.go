@@ -59,6 +59,7 @@ func createVotingRightFixture(ctx context.Context, t *testing.T, g *generator.Ge
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	// Confirm it in a block
 	_, err = g.MakeBlock(ctx)
 	if err != nil {

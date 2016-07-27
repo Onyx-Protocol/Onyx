@@ -4,11 +4,12 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"golang.org/x/net/context"
 
 	. "chain/core/appdb"
 	"chain/core/asset/assettest"
-	"chain/cos/hdkey"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -26,7 +27,7 @@ func TestInsertIssuerNodeIdempotence(t *testing.T) {
 	project2 := newTestProject(t, ctx, "project-2")
 
 	idempotencyKey := "my-issuer-node-client-token"
-	in1, err := InsertIssuerNode(ctx, project1.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 1, &idempotencyKey)
+	in1, err := InsertIssuerNode(ctx, project1.ID, "issuer-node", []*hd25519.XPub{dummyXPub}, nil, 1, &idempotencyKey)
 	if err != nil {
 		t.Fatalf("could not create issuer node: %v", err)
 	}
@@ -34,7 +35,7 @@ func TestInsertIssuerNodeIdempotence(t *testing.T) {
 		t.Fatal("got empty issuer node id")
 	}
 
-	in2, err := InsertIssuerNode(ctx, project1.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 1, &idempotencyKey)
+	in2, err := InsertIssuerNode(ctx, project1.ID, "issuer-node", []*hd25519.XPub{dummyXPub}, nil, 1, &idempotencyKey)
 	if err != nil {
 		t.Fatalf("failed on 2nd call to insert issuer node: %s", err)
 	}
@@ -42,7 +43,7 @@ func TestInsertIssuerNodeIdempotence(t *testing.T) {
 		t.Errorf("got=%#v\nwant=%#v", in2, in1)
 	}
 
-	in3, err := InsertManagerNode(ctx, project2.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &idempotencyKey)
+	in3, err := InsertManagerNode(ctx, project2.ID, "issuer-node", []*hd25519.XPub{dummyXPub}, nil, 0, 1, &idempotencyKey)
 	if err != nil {
 		t.Fatalf("failed on 3rd call to insert issuer node: %s", err)
 	}
@@ -51,7 +52,7 @@ func TestInsertIssuerNodeIdempotence(t *testing.T) {
 	}
 
 	newIdempotencyKey := "my-new-issuer-node"
-	in4, err := InsertManagerNode(ctx, project1.ID, "issuer-node", []*hdkey.XKey{dummyXPub}, nil, 0, 1, &newIdempotencyKey)
+	in4, err := InsertManagerNode(ctx, project1.ID, "issuer-node", []*hd25519.XPub{dummyXPub}, nil, 0, 1, &newIdempotencyKey)
 	if err != nil {
 		t.Fatalf("failed on 4th call to insert issuer node: %s", err)
 	}
@@ -108,7 +109,7 @@ func TestGetIssuerNodes(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	proj := newTestProject(t, ctx, "foo")
-	in, err := InsertIssuerNode(ctx, proj.ID, "in-0", []*hdkey.XKey{dummyXPub}, []*hdkey.XKey{dummyXPrv}, 1, nil)
+	in, err := InsertIssuerNode(ctx, proj.ID, "in-0", []*hd25519.XPub{dummyXPub}, []*hd25519.XPrv{dummyXPrv}, 1, nil)
 	if err != nil {
 		t.Fatalf("unexpected error on InsertIssuerNode: %v", err)
 	}
@@ -146,7 +147,7 @@ func TestGetIssuerNodes(t *testing.T) {
 		got, gotErr := GetIssuerNode(ctx, ex.id)
 
 		if !reflect.DeepEqual(got, ex.want) {
-			t.Errorf("issuer node:\ngot:  %v\nwant: %v", got, ex.want)
+			t.Errorf("issuer node:\ngot:\n%s\nwant:\n%s", spew.Sdump(got), spew.Sdump(ex.want))
 		}
 
 		if errors.Root(gotErr) != ex.wantErr {

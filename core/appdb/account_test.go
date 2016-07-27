@@ -12,6 +12,7 @@ import (
 	"chain/core/asset/assettest"
 	"chain/cos/bc"
 	"chain/cos/state"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -45,8 +46,11 @@ func TestCreateAccountBadLabel(t *testing.T) {
 func TestCreateAccountWithKey(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
-	keys := []string{"xpub6AqXYTtDPZ5NYt1xwRWRojirrYTHxyGnv3HHzeXTuJdAznKWVtEhj7sVzyMuJMn1E65uhw7pozjFsFaa4nRJBiDijr7do4zZ1CwM8TjTP3G"}
-	_, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, nil)
+	_, xpub, err := hd25519.NewXKeys(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", []string{xpub.String()}, nil)
 	if err != nil {
 		t.Error("unexpected error", err)
 	}
@@ -84,8 +88,12 @@ func TestCreateAccountWithTooManyKeys(t *testing.T) {
 func TestCreateAccountIdempotency(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	managerNode := newTestVarKeyManagerNode(t, ctx, nil, "varfoo", 1, 1)
-	keys := []string{"xpub6AqXYTtDPZ5NYt1xwRWRojirrYTHxyGnv3HHzeXTuJdAznKWVtEhj7sVzyMuJMn1E65uhw7pozjFsFaa4nRJBiDijr7do4zZ1CwM8TjTP3G"}
+	_, xpub, err := hd25519.NewXKeys(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
+	keys := []string{xpub.String()}
 	idempotencyKey := "an-idempotency-key-from-the-client"
 	acc1, err := CreateAccount(ctx, managerNode.ID, "varfootooyoutoo", keys, &idempotencyKey)
 	if err != nil {

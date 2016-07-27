@@ -1,38 +1,45 @@
 package testutil
 
 import (
-	"github.com/btcsuite/btcutil/hdkeychain"
-
-	"chain/cos/hdkey"
+	"chain/crypto/ed25519"
+	"chain/crypto/ed25519/hd25519"
 )
 
 var (
-	TestXPub, TestXPrv *hdkey.XKey
+	TestXPub *hd25519.XPub
+	TestXPrv *hd25519.XPrv
+	TestPub  ed25519.PublicKey
+	TestPrv  ed25519.PrivateKey
 )
 
+type zeroReader struct{}
+
+func (z zeroReader) Read(buf []byte) (int, error) {
+	for i := range buf {
+		buf[i] = 0
+	}
+	return len(buf), nil
+}
+
 func init() {
-	seed := []byte("thirty-six bytes of seed on the wall")
-	xprv, err := hdkeychain.NewMaster(seed)
+	var err error
+	TestXPrv, TestXPub, err = hd25519.NewXKeys(zeroReader{})
 	if err != nil {
 		panic(err)
 	}
-	xpub, err := xprv.Neuter()
-	if err != nil {
-		panic(err)
-	}
-	TestXPub = &hdkey.XKey{ExtendedKey: *xpub}
-	TestXPrv = &hdkey.XKey{ExtendedKey: *xprv}
+	TestPrv = TestXPrv.Key
+	TestPub = TestXPub.Key
 }
 
 // XPubs parses the serialized xpubs in a.
 // If there is a parsing error, it panics.
-func XPubs(a ...string) (ks []*hdkey.XKey) {
+func XPubs(a ...string) (ks []*hd25519.XPub) {
 	for _, s := range a {
-		xk, err := hdkey.NewXKey(s)
+		pk, err := hd25519.XPubFromString(s)
 		if err != nil {
 			panic(err)
 		}
-		ks = append(ks, xk)
+		ks = append(ks, pk)
 	}
 	return ks
 }

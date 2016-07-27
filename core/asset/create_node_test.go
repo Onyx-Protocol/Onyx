@@ -41,16 +41,4 @@ func TestCreateManagerNode(t *testing.T) {
 	if mnode.ID == "" {
 		t.Errorf("got empty managerNode id")
 	}
-
-	var valid bool
-	const checkQ = `
-		SELECT SUBSTR(generated_keys[1], 1, 4)='xprv' FROM manager_nodes LIMIT 1
-	`
-	err = pg.QueryRow(ctx, checkQ).Scan(&valid)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !valid {
-		t.Errorf("private key not stored")
-	}
 }

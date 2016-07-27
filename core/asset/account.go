@@ -11,8 +11,9 @@ import (
 	"chain/core/txdb"
 	"chain/core/utxodb"
 	"chain/cos/bc"
-	"chain/cos/hdkey"
 	"chain/cos/state"
+	"chain/cos/txscript"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/trace/span"
@@ -49,14 +50,16 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 		if err != nil {
 			return nil, errors.Wrap(err, "get addr info")
 		}
-		signers := hdkey.Derive(addrInfo.Keys, appdb.ReceiverPath(addrInfo, r.AddrIndex[:]))
-		redeemScript, err := hdkey.RedeemScript(signers, addrInfo.SigsRequired)
+		path := appdb.ReceiverPath(addrInfo, r.AddrIndex[:])
+		signers := hd25519.DeriveXPubs(addrInfo.Keys, path)
+		signerPKs := hd25519.XPubKeys(signers)
+		redeemScript, err := txscript.MultiSigScript(signerPKs, addrInfo.SigsRequired)
 		if err != nil {
 			return nil, errors.Wrap(err, "compute redeem script")
 		}
 		templateInput.AssetID = r.AssetID
 		templateInput.Amount = r.Amount
-		templateInput.AddWitnessSigs(txbuilder.InputSigs(signers), addrInfo.SigsRequired, nil)
+		templateInput.AddWitnessSigs(txbuilder.InputSigs(addrInfo.Keys, path), addrInfo.SigsRequired, nil)
 		templateInput.AddWitnessData(redeemScript)
 
 		item := &txbuilder.ReserveResultItem{

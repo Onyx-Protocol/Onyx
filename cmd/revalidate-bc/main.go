@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/btcsuite/btcd/btcec"
 	_ "github.com/lib/pq"
 	"golang.org/x/net/context"
 
@@ -100,7 +99,7 @@ func RevalidateBlockchain(db *sql.DB) (blocksValidated uint64, err error) {
 	// TODO(jackson): Don't keep everything in memory so that we can validate
 	// larger blockchains in the future.
 	ctx := context.Background()
-	fc, err := cos.NewFC(ctx, memstore.New(), mempool.New(), []*btcec.PublicKey{}, nil)
+	fc, err := cos.NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
 	if err != nil {
 		fatalf("unable to construct FC: %s\n", err)
 	}

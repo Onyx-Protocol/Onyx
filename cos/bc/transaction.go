@@ -300,6 +300,8 @@ func (s *SigHasher) Hash(idx int, hashType SigHashType) (hash Hash) {
 			h.Sum(hash[:0])
 			outputsHash = &hash
 		}
+	default:
+		return Hash{}
 	}
 
 	h := sha3.New256()

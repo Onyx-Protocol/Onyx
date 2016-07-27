@@ -4,8 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
-
 	"golang.org/x/net/context"
 
 	"chain/core/appdb"
@@ -18,7 +16,8 @@ import (
 	"chain/core/utxodb"
 	"chain/cos"
 	"chain/cos/bc"
-	"chain/cos/hdkey"
+	"chain/crypto/ed25519"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
@@ -215,8 +214,8 @@ type clientInfo struct {
 	asset          *appdb.Asset
 	acctA          *appdb.Account
 	acctB          *appdb.Account
-	privKeyIssuer  *hdkey.XKey
-	privKeyManager *hdkey.XKey
+	privKeyIssuer  *hd25519.XPrv
+	privKeyManager *hd25519.XPrv
 }
 
 // TODO(kr): refactor this into new package core/coreutil
@@ -239,11 +238,11 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *generator.Generato
 		return nil, nil, err
 	}
 
-	manPub, manPriv, err := hdkey.New()
+	manPriv, manPub, err := hd25519.NewXKeys(nil)
 	if err != nil {
 		return nil, nil, err
 	}
-	manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hdkey.XKey{manPub}, []*hdkey.XKey{manPriv}, 0, 1, nil)
+	manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hd25519.XPub{manPub}, []*hd25519.XPrv{manPriv}, 0, 1, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -258,11 +257,11 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *generator.Generato
 		return nil, nil, err
 	}
 
-	issPub, issPriv, err := hdkey.New()
+	issPriv, issPub, err := hd25519.NewXKeys(nil)
 	if err != nil {
 		return nil, nil, err
 	}
-	iNode, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hdkey.XKey{issPub}, []*hdkey.XKey{issPriv}, 1, nil)
+	iNode, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hd25519.XPub{issPub}, []*hd25519.XPrv{issPriv}, 1, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -337,10 +336,7 @@ func TestUpsertGenesisBlock(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 
-	pubkey, err := testutil.TestXPub.ECPubKey()
-	if err != nil {
-		t.Fatal(err)
-	}
+	pubkey := testutil.TestPub
 
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
 	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
@@ -348,7 +344,7 @@ func TestUpsertGenesisBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b, err := fc.UpsertGenesisBlock(ctx, []*btcec.PublicKey{pubkey}, 1, time.Now())
+	b, err := fc.UpsertGenesisBlock(ctx, []ed25519.PublicKey{pubkey}, 1, time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}

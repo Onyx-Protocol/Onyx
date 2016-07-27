@@ -38,7 +38,7 @@ type SigScriptComponent struct {
 type Signature struct {
 	XPub           string        `json:"xpub"`
 	DerivationPath []uint32      `json:"derivation_path"`
-	DER            json.HexBytes `json:"signature"`
+	Bytes          json.HexBytes `json:"signature"`
 }
 
 type ReserveResultItem struct {

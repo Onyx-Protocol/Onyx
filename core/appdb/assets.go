@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/hdkey"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	chainjson "chain/encoding/json"
 	"chain/errors"
@@ -20,7 +20,7 @@ type Asset struct {
 	Hash            bc.AssetID // the raw Asset ID
 	IssuerNodeID    string
 	Label           string
-	Keys            []*hdkey.XKey
+	Keys            []*hd25519.XPub
 	INIndex, AIndex []uint32
 	RedeemScript    []byte
 	GenesisHash     bc.Hash // TODO: Normalize field names to match spec? ("InitialBlock" and "IssuanceProgram")
@@ -121,7 +121,7 @@ func lookupAsset(ctx context.Context, query assetLookupQuery) (*Asset, error) {
 		return nil, err
 	}
 
-	a.Keys, err = stringsToKeys(xpubs)
+	a.Keys, err = stringsToXPubs(xpubs)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing keys")
 	}
@@ -144,7 +144,7 @@ func InsertAsset(ctx context.Context, asset *Asset) (*Asset, error) {
 		asset.Hash.String(),
 		asset.IssuerNodeID,
 		pg.Uint32s(asset.AIndex),
-		pg.Strings(keysToStrings(asset.Keys)),
+		pg.Strings(xpubsToStrings(asset.Keys)),
 		asset.RedeemScript,
 		asset.GenesisHash,
 		asset.IssuanceScript,

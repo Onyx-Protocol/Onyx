@@ -8,7 +8,6 @@ import (
 	"chain/core/appdb"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
-	"chain/cos/hdkey"
 	"chain/cos/txscript"
 	"chain/errors"
 	"chain/metrics"
@@ -67,7 +66,7 @@ func Issue(ctx context.Context, assetAmount bc.AssetAmount, dests []*txbuilder.D
 // to issue units of asset 'a'.
 func issuanceInput(a *appdb.Asset, aa bc.AssetAmount) *txbuilder.Input {
 	tmplInp := &txbuilder.Input{AssetAmount: aa}
-	sigs := txbuilder.InputSigs(hdkey.Derive(a.Keys, appdb.IssuancePath(a)))
+	sigs := txbuilder.InputSigs(a.Keys, appdb.IssuancePath(a))
 	tmplInp.AddWitnessSigs(sigs, txscript.SigsRequired(a.RedeemScript), nil)
 	tmplInp.AddWitnessData(a.RedeemScript)
 	return tmplInp

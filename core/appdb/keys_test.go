@@ -7,15 +7,14 @@ import (
 	"golang.org/x/net/context"
 
 	. "chain/core/appdb"
-	"chain/cos/hdkey"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/testutil"
 )
 
 var (
-	dummyXPrv, _       = hdkey.NewXKey("xprv9s21ZrQH143K2qkz3k2KKrCuhFmqSz7d6sH2ZkXBpUUCgGiAC9Rca59jS9CLNnx4Sgi4uXH2WzLaZ49hmjM8EHZGC1FJEN1VEbtaw6JmSqo")
-	dummyXPubExtKey, _ = dummyXPrv.Neuter()
-	dummyXPub          = &hdkey.XKey{ExtendedKey: *dummyXPubExtKey}
+	dummyXPrv = testutil.TestXPrv
+	dummyXPub = testutil.TestXPub
 )
 
 func TestKeyIndexSQL(t *testing.T) {

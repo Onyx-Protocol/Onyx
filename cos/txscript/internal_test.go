@@ -37,23 +37,6 @@ func TstPopData(pop parsedOpcode) []byte {
 	return pop.data
 }
 
-// TstCheckPubKeyEncoding makes the internal checkPubKeyEncoding function
-// available to the test package.  Since it only really needs from the engine
-// for the flags, just accept the flags and create a new engine skeleton.
-func TstCheckPubKeyEncoding(pubKey []byte, flags ScriptFlags) error {
-	vm := Engine{flags: flags}
-	return vm.checkPubKeyEncoding(pubKey)
-}
-
-// TstCheckSignatureEncoding makes the internal checkSignatureEncoding function
-// available to the test package.  Since it only really needs from the engine
-// for the flags, just accept the flags and create a new engine skeleton with
-// them.
-func TstCheckSignatureEncoding(sig []byte, flags ScriptFlags) error {
-	vm := Engine{flags: flags}
-	return vm.checkSignatureEncoding(sig)
-}
-
 // TstRemoveOpcode makes the internal removeOpcode function available to the
 // test package.
 func TstRemoveOpcode(pkscript []byte, opcode byte) ([]byte, error) {
