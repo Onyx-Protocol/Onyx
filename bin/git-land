@@ -55,7 +55,7 @@ jqprg='
 		"not-ok"
 	end
 '
-comurl=https://api.github.com/repos/$proj/issues/$pr/comments
+comurl=https://api.github.com/repos/$proj/issues/$pr/comments'?per_page=100'
 reviewby=$(curl -sn $comurl|jq -r "$jqprg")
 if [ "$reviewby" = "" ]
 then
