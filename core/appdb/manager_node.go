@@ -5,7 +5,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/cos/bc"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
@@ -103,79 +102,6 @@ func InsertManagerNode(ctx context.Context, projID, label string, xpubs []*hd255
 		Keys:     keys,
 		SigsReqd: sigsRequired,
 	}, nil
-}
-
-// Balance is a struct describing the balance of
-// an asset that a manager node or account has.
-type Balance struct {
-	AssetID   bc.AssetID `json:"asset_id"`
-	Confirmed int64      `json:"confirmed"`
-	Total     int64      `json:"total"`
-}
-
-// AccountBalanceItem is returned by AccountsWithAsset
-type AccountBalanceItem struct {
-	AccountID string `json:"account_id"`
-	Confirmed int64  `json:"confirmed"`
-	Total     int64  `json:"total"`
-}
-
-// AccountsWithAsset fetches the balance of a particular asset
-// within a manager node, grouped and sorted by individual accounts.
-//
-// EXPERIMENTAL - implemented for Glitterco
-func AccountsWithAsset(ctx context.Context, mnodeID, assetID, prev string, limit int) ([]*AccountBalanceItem, string, error) {
-	const q = `
-		WITH combined_utxos AS (
-			SELECT a.amount, a.asset_id, a.tx_hash, a.index,
-			manager_node_id, account_id,
-			confirmed_in IS NOT NULL as confirmed,
-			reservation_id IS NOT NULL as spent_in_pool
-			FROM account_utxos a
-			WHERE manager_node_id=$1 AND a.asset_id=$2 AND ($3='' OR account_id>$3)
-		), amounts AS (
-			SELECT
-				(CASE WHEN confirmed THEN amount ELSE 0 END) as confirmed_amount,
-				(CASE WHEN NOT spent_in_pool THEN amount ELSE 0 END) as total_amount,
-				account_id FROM combined_utxos
-				WHERE confirmed OR NOT spent_in_pool
-		)
-
-		SELECT sum(confirmed_amount), sum(total_amount), account_id
-		FROM amounts
-		JOIN accounts ON accounts.id = account_id
-		WHERE NOT accounts.archived
-		GROUP BY account_id
-		ORDER BY account_id ASC
-		LIMIT $4
-	`
-	rows, err := pg.Query(ctx, q, mnodeID, assetID, prev, limit)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "balances query")
-	}
-	defer rows.Close()
-
-	var (
-		bals []*AccountBalanceItem
-		last string
-	)
-	for rows.Next() {
-		var item AccountBalanceItem
-		err = rows.Scan(&item.Confirmed, &item.Total, &item.AccountID)
-		if err != nil {
-			return nil, "", errors.Wrap(err, "rows scan")
-		}
-		bals = append(bals, &item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, "", errors.Wrap(err, "rows error")
-	}
-
-	if len(bals) > 0 {
-		last = bals[len(bals)-1].AccountID
-	}
-
-	return bals, last, nil
 }
 
 func createRotation(ctx context.Context, managerNodeID string, xpubs ...string) error {

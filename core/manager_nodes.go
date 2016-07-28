@@ -2,7 +2,6 @@ package core
 
 import (
 	"encoding/json"
-	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -77,27 +76,6 @@ func createManagerNode(ctx context.Context, projID string, req map[string]interf
 	return managerNode, nil
 }
 
-// EXPERIMENTAL - implemented for Glitterco
-func listAccountsWithAsset(ctx context.Context, mnodeID, assetID string) (interface{}, error) {
-	if err := managerAuthz(ctx, mnodeID); err != nil {
-		return nil, err
-	}
-	prev, limit, err := getPageData(ctx, defBalancePageSize)
-	if err != nil {
-		return nil, err
-	}
-
-	balances, last, err := appdb.AccountsWithAsset(ctx, mnodeID, assetID, prev, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"balances": httpjson.Array(balances),
-		"last":     last,
-	}, nil
-}
-
 // GET /v3/manager-nodes/:mnodeID/accounts
 func listAccounts(ctx context.Context, managerNodeID string) (interface{}, error) {
 	if err := managerAuthz(ctx, managerNodeID); err != nil {
@@ -147,47 +125,6 @@ func getAccount(ctx context.Context, accountID string) (interface{}, error) {
 		return nil, err
 	}
 	return appdb.GetAccount(ctx, accountID)
-}
-
-// GET /v3/accounts/:accountID/balance
-func (a *api) accountBalance(ctx context.Context, accountID string) (interface{}, error) {
-	var err error
-	if err := accountAuthz(ctx, accountID); err != nil {
-		return nil, err
-	}
-
-	query := &appdb.AssetBalQuery{
-		Owner:     appdb.OwnerAccount,
-		AccountID: accountID,
-	}
-
-	qvals := httpjson.Request(ctx).URL.Query()
-	if aidList, ok := qvals["asset_ids"]; ok {
-		// EXPERIMENTAL - implemented for Glitterco
-		//
-		// Mode 1: filter by list of asset IDs
-		// Asset IDs are serialized as a comma-separated list.
-		query.AssetIDs = strings.Split(aidList[0], ",")
-		if len(query.AssetIDs) == 0 {
-			return map[string]interface{}{"balances": []string{}, "last": ""}, nil
-		}
-	} else {
-		// Mode 2: return all assets, paginated by asset ID
-		query.Prev, query.Limit, err = getPageData(ctx, defBalancePageSize)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	balances, last, err := appdb.AssetBalance(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"last":     last,
-		"balances": httpjson.Array(balances),
-	}, nil
 }
 
 // PUT /v3/accounts/:accountID
