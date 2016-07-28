@@ -1,8 +1,6 @@
 package core
 
 import (
-	"time"
-
 	"golang.org/x/net/context"
 
 	"chain/core/explorer"
@@ -59,35 +57,4 @@ func (a *api) getExplorerAssets(ctx context.Context, req struct {
 		res = append(res, a)
 	}
 	return res, nil
-}
-
-func (a *api) listExplorerUTXOsByAsset(ctx context.Context, assetID string) (interface{}, error) {
-	prev, limit, err := getPageData(ctx, 50)
-	if err != nil {
-		return nil, err
-	}
-
-	h, err := bc.ParseHash(assetID)
-	if err != nil {
-		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid asset ID: %q", assetID)
-	}
-
-	var ts time.Time
-	qvals := httpjson.Request(ctx).URL.Query()
-	if timestamps, ok := qvals["timestamp"]; ok {
-		timestamp := timestamps[0]
-		ts, err = parseTime(timestamp)
-		if err != nil {
-			return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid timestamp: %q", timestamp)
-		}
-	}
-	list, last, err := a.explorer.ListHistoricalOutputsByAsset(ctx, bc.AssetID(h), ts, prev, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"utxos": httpjson.Array(list),
-		"last":  last,
-	}, nil
 }

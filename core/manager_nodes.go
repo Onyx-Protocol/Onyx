@@ -179,45 +179,9 @@ func (a *api) accountBalance(ctx context.Context, accountID string) (interface{}
 		}
 	}
 
-	var (
-		amts     []bc.AssetAmount
-		balances []*appdb.Balance
-		last     string
-	)
-	if tsList, ok := qvals["timestamp"]; ok {
-		timestamp, err := parseTime(tsList[0])
-		if err != nil {
-			return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid timestamp: %q", timestamp)
-		}
-
-		var assetID *bc.AssetID
-		if len(query.AssetIDs) > 0 {
-			h, err := bc.ParseHash(query.AssetIDs[0])
-			if err != nil {
-				return nil, errors.WithDetailf(httpjson.ErrBadRequest, "invalid asset ID: %q", query.AssetIDs[0])
-			}
-			aid := bc.AssetID(h)
-			assetID = &aid
-		}
-
-		amts, last, err = a.explorer.HistoricalBalancesByAccount(ctx, accountID, timestamp, assetID, query.Prev, query.Limit)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, a := range amts {
-			balances = append(balances, &appdb.Balance{
-				AssetID:   a.AssetID,
-				Confirmed: int64(a.Amount),
-				Total:     int64(a.Amount),
-			})
-		}
-	} else {
-		balances, last, err = appdb.AssetBalance(ctx, query)
-		if err != nil {
-			return nil, err
-		}
-
+	balances, last, err := appdb.AssetBalance(ctx, query)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{

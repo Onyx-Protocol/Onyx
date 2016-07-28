@@ -73,10 +73,6 @@ var (
 	remoteSignerKeys   = env.StringSlice("REMOTE_SIGNER_KEYS")
 	sigsRequired       = env.Int("SIGS_REQUIRED", 1)
 
-	// optional features
-	historicalOutputs           = env.Bool("HISTORICAL_OUTPUTS", false)
-	historicalOutputsMaxAgeDays = env.Int("HISTORICAL_OUTPUTS_MAX_AGE_DAYS", 0) // TODO(kr): use env.Duration
-
 	// blockchain parameters
 	maxProgramOps       = env.Int("MAX_PROGRAM_OPS", 1000)
 	maxProgramStackSize = env.Int("MAX_PROGRAM_STACK", 1000)
@@ -189,8 +185,7 @@ func main() {
 
 	asset.Init(fc, *isManager)
 
-	historicalOutputsMaxAge := time.Duration(*historicalOutputsMaxAgeDays) * 24 * time.Hour // TODO(kr): use env.Duration
-	explorer := explorer.New(fc, db, store, historicalOutputsMaxAge, *historicalOutputs, *isManager)
+	explorer := explorer.New(fc, db, store, *isManager)
 
 	var generatorConfig *generator.Config
 	if *isGenerator {

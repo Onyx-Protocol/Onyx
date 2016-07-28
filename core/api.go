@@ -130,7 +130,6 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/auditor/blocks/:blockID/summary", a.getBlockSummary)
 	h.HandleFunc("GET", "/v3/auditor/transactions/:txID", a.getTx)
 	h.HandleFunc("GET", "/v3/auditor/assets/:assetID", a.getAsset)
-	h.HandleFunc("GET", "/v3/auditor/assets/:assetID/utxos", a.listExplorerUTXOsByAsset)
 	h.HandleFunc("POST", "/v3/auditor/get-assets", a.getExplorerAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
 
 	// Explorer node endpoints
@@ -138,7 +137,6 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/explorer/blocks/:blockID/summary", a.getBlockSummary)
 	h.HandleFunc("GET", "/v3/explorer/transactions/:txID", a.getTx)
 	h.HandleFunc("GET", "/v3/explorer/assets/:assetID", a.getAsset)
-	h.HandleFunc("GET", "/v3/explorer/assets/:assetID/utxos", a.listExplorerUTXOsByAsset)
 	h.HandleFunc("POST", "/v3/explorer/get-assets", a.getExplorerAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
 
 	return h.ServeHTTPContext

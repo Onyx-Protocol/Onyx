@@ -458,22 +458,6 @@ CREATE SEQUENCE chain_id_seq
 
 
 --
--- Name: explorer_outputs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE explorer_outputs (
-    tx_hash text NOT NULL,
-    index integer NOT NULL,
-    asset_id text NOT NULL,
-    amount bigint NOT NULL,
-    account_id text,
-    timespan int8range NOT NULL,
-    script bytea DEFAULT '\x'::bytea NOT NULL,
-    metadata bytea DEFAULT '\x'::bytea NOT NULL
-);
-
-
---
 -- Name: invitations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1074,34 +1058,6 @@ CREATE UNIQUE INDEX blocks_txs_block_height_block_pos_key ON blocks_txs USING bt
 
 
 --
--- Name: explorer_outputs_account_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX explorer_outputs_account_id_idx ON explorer_outputs USING btree (account_id) WHERE (account_id IS NOT NULL);
-
-
---
--- Name: explorer_outputs_asset_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX explorer_outputs_asset_id ON explorer_outputs USING btree (asset_id);
-
-
---
--- Name: explorer_outputs_timespan_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX explorer_outputs_timespan_idx ON explorer_outputs USING gist (timespan);
-
-
---
--- Name: explorer_outputs_tx_hash_index_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX explorer_outputs_tx_hash_index_idx ON explorer_outputs USING btree (tx_hash, index);
-
-
---
 -- Name: issuer_nodes_project_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1272,3 +1228,4 @@ insert into migrations (filename, hash) values ('2016-07-21.0.core.asset-genesis
 insert into migrations (filename, hash) values ('2016-07-26.0.api.drop-manager-issuer-txs.sql', '2f7b14ce50118f1effcf153bf8c8f5cc7859af45487a383df6a7c8e3f5e8f15b');
 insert into migrations (filename, hash) values ('2016-07-27.0.core.drop-smartcontract-tables.sql', '56b09b59392114eff794db343e0a045f8648db77bd086159dba4fe9eafea2dc6');
 insert into migrations (filename, hash) values ('2016-07-28.0.core.mockhsm.sql', '4f8c1a90f2789b5db62bdf6cd94255e6e41cce1f78e3254643032d1d6a53438c');
+insert into migrations (filename, hash) values ('2016-07-28.1.explorer.drop-explorer-outputs.sql', '99d36e88d57cc4405a0bec300fe6b88675278b9aad91a83d1d1fe50533355adb');

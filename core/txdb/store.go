@@ -13,7 +13,7 @@ import (
 
 // A Store encapsulates storage for blockchain validation.
 // It satisfies the interface cos.Store, and provides additional
-// methods for querying current and historical data.
+// methods for querying current data.
 type Store struct {
 	db *sql.DB
 }

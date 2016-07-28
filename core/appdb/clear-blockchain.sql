@@ -6,7 +6,6 @@
 --   psql -f clear-blockchain.sql $DBURL
 
 TRUNCATE
-	explorer_outputs,
 	account_utxos,
 	issuance_totals,
 	addresses,

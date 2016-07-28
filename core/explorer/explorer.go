@@ -20,34 +20,19 @@ import (
 // and provides functions to look up
 // blocks, transactions, and other records.
 type Explorer struct {
-	db         pg.DB
-	store      *txdb.Store // TODO(kr): get rid of this
-	maxAge     time.Duration
-	historical bool
-	isManager  bool
-
-	lastPrune time.Time
+	db        pg.DB
+	store     *txdb.Store // TODO(kr): get rid of this
+	isManager bool
 }
 
 // New makes a new Explorer storing its state in db,
-// with a block callback in fc for indexing utxos in the
-// explorer_outputs table and occasionally pruning ones spent
-// spent more than maxAgeDays ago.  (If maxAgeDays is <= 0, no
-// pruning is done.)
-func New(fc *cos.FC, db pg.DB, store *txdb.Store, maxAge time.Duration, historical, isManager bool) *Explorer {
+func New(fc *cos.FC, db pg.DB, store *txdb.Store, isManager bool) *Explorer {
 	e := &Explorer{
-		db:         db,
-		store:      store,
-		historical: historical,
-		maxAge:     maxAge,
-		isManager:  isManager,
+		db:        db,
+		store:     store,
+		isManager: isManager,
 	}
-	fc.AddBlockCallback(e.addBlock)
 	return e
-}
-
-func (e *Explorer) addBlock(ctx context.Context, block *bc.Block) {
-	e.indexHistoricalBlock(ctx, block)
 }
 
 // ListBlocksItem is returned by ListBlocks
@@ -246,10 +231,6 @@ func (e *Explorer) GetAsset(ctx context.Context, assetID bc.AssetID) (*Asset, er
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "asset ID: %q", assetID.String())
 	}
 	return a, nil
-}
-
-func (e *Explorer) ListUTXOsByAsset(ctx context.Context, assetID bc.AssetID, prev string, limit int) ([]*TxOutput, string, error) {
-	return e.listHistoricalOutputsByAssetAndAccount(ctx, assetID, "", time.Now(), prev, limit)
 }
 
 func stateOutsToTxOuts(stateOuts []*state.Output) []*TxOutput {
