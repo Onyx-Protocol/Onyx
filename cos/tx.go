@@ -1,6 +1,8 @@
 package cos
 
 import (
+	"time"
+
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
@@ -43,7 +45,7 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 	// Check if this transaction's max time has already elapsed.
 	// We purposely do not check the min time, because we can still
 	// add it to the pool if it hasn't been reached yet.
-	if tx.MaxTime > 0 && bc.NowMillis() > tx.MaxTime {
+	if tx.MaxTime > 0 && bc.Millis(time.Now()) > tx.MaxTime {
 		return errors.WithDetail(validation.ErrBadTx, "transaction max time has passed")
 	}
 

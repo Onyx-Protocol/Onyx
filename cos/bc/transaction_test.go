@@ -29,7 +29,6 @@ func TestTransaction(t *testing.T) {
 	}{
 		{
 			tx: NewTx(TxData{
-				SerFlags: 0x7,
 				Version:  1,
 				Inputs:   nil,
 				Outputs:  nil,
@@ -49,8 +48,7 @@ func TestTransaction(t *testing.T) {
 		},
 		{
 			tx: NewTx(TxData{
-				SerFlags: 0x7,
-				Version:  1,
+				Version: 1,
 				Inputs: []*TxInput{
 					NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1000000000000, issuanceScript, nil, []byte("input"), [][]byte{[]byte{1, 2, 3}}),
 				},
@@ -95,8 +93,7 @@ func TestTransaction(t *testing.T) {
 		},
 		{
 			tx: NewTx(TxData{
-				SerFlags: 0x7,
-				Version:  1,
+				Version: 1,
 				Inputs: []*TxInput{
 					NewSpendInput(mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), 0, nil, AssetID{}, 1000000000000, []byte{1}, []byte("input")),
 				},
@@ -254,8 +251,7 @@ func TestOutpointWriteErr(t *testing.T) {
 func TestTxHashForSig(t *testing.T) {
 	assetID := ComputeAssetID([]byte{1}, mustDecodeHash("03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"), 1)
 	tx := &TxData{
-		SerFlags: 0x7,
-		Version:  1,
+		Version: 1,
 		Inputs: []*TxInput{
 			NewSpendInput(mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151"), 0, [][]byte{[]byte{1}}, AssetID{}, 0, nil, []byte("input1")),
 			NewSpendInput(mustDecodeHash("d250fa36f2813ddb8aed0fc66790ee58121bcbe88909bf88be12083d45320151"), 1, [][]byte{[]byte{2}}, AssetID{}, 0, nil, nil),

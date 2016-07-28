@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"time"
+
 	"golang.org/x/net/context"
 
 	"chain/core/appdb"
@@ -55,7 +57,7 @@ func newSummary() *Summary {
 func (g *Config) GetSummary(ctx context.Context, store *txdb.Store, pool *txdb.Pool, projID string) (*Summary, error) {
 	res := newSummary()
 
-	res.BlockFreqMs = uint64(g.BlockPeriod.Nanoseconds() / 1000000)
+	res.BlockFreqMs = uint64(g.BlockPeriod / time.Millisecond)
 
 	height, err := store.Height(ctx)
 	if err != nil {

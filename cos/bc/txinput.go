@@ -68,8 +68,8 @@ func NewIssuanceInput(minTime, maxTime time.Time, initialBlock Hash, amount uint
 	return &TxInput{
 		AssetVersion: 1,
 		InputCommitment: &IssuanceInputCommitment{
-			MinTimeMS:       uint64(minTime.UnixNano()) / uint64(time.Millisecond),
-			MaxTimeMS:       uint64(maxTime.UnixNano()) / uint64(time.Millisecond),
+			MinTimeMS:       Millis(minTime),
+			MaxTimeMS:       Millis(maxTime),
 			InitialBlock:    initialBlock,
 			Amount:          amount,
 			VMVersion:       1,
@@ -118,6 +118,13 @@ func (t TxInput) AssetDefinition() []byte {
 func (t TxInput) ControlProgram() []byte {
 	if sc, ok := t.InputCommitment.(*SpendInputCommitment); ok {
 		return sc.ControlProgram
+	}
+	return nil
+}
+
+func (t TxInput) IssuanceProgram() []byte {
+	if ic, ok := t.InputCommitment.(*IssuanceInputCommitment); ok {
+		return ic.IssuanceProgram
 	}
 	return nil
 }
@@ -236,11 +243,11 @@ func (sc SpendInputCommitment) writeTo(w io.Writer, assetVersion uint32, serflag
 	blockchain.WriteBytes(w, b.Bytes())
 }
 
+func (ic IssuanceInputCommitment) IsIssuance() bool { return true }
+
 func (ic IssuanceInputCommitment) AssetID() AssetID {
 	return ComputeAssetID(ic.IssuanceProgram, ic.InitialBlock, ic.VMVersion)
 }
-
-func (ic IssuanceInputCommitment) IsIssuance() bool { return true }
 
 // Parsing within the Extensible String; the spend/issuance byte has
 // already been consumed.

@@ -43,7 +43,6 @@ func TestPoolTxs(t *testing.T) {
 	}
 
 	wantTx := bc.NewTx(bc.TxData{
-		SerFlags: 0x7,
 		Version:  1,
 		Metadata: []byte("hello"),
 	})
@@ -67,7 +66,7 @@ func TestGetTxs(t *testing.T) {
 	pool := NewPool(pg.FromContext(dbctx).(*sql.DB))
 	ctx := context.Background()
 
-	tx := bc.NewTx(bc.TxData{SerFlags: 0x7, Metadata: []byte("tx")})
+	tx := bc.NewTx(bc.TxData{Metadata: []byte("tx")})
 	err := pool.Insert(ctx, tx)
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -148,7 +147,7 @@ func TestGetBlock(t *testing.T) {
 			OutputScript:    []byte("test-output-script"),
 		},
 		Transactions: []*bc.Tx{
-			bc.NewTx(bc.TxData{SerFlags: 0x7, Version: 1, Metadata: []byte("test-tx")}),
+			bc.NewTx(bc.TxData{Version: 1, Metadata: []byte("test-tx")}),
 		},
 	}
 

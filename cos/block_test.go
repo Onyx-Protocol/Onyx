@@ -240,7 +240,7 @@ func TestGenerateBlock(t *testing.T) {
 			Commitment: mustDecodeHex(
 				"29b6f11ef8e406e56ce2a9da1315e058272e1aee6335667a40d0456b69e6199daf31977371c7497342246145fb0710877ea2888c7909e06a27d66b6a130989ba", // TODO(bobg): verify this is the right value
 			),
-			TimestampMS:  uint64(now.UnixNano() / 1000000),
+			TimestampMS:  bc.Millis(now),
 			OutputScript: latestBlock.OutputScript,
 		},
 		Transactions: txs,

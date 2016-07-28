@@ -26,18 +26,18 @@ var (
 // ValidateAndApplyBlock validates the given block against the given
 // state tree and applies its changes to the state tree.
 // If block is invalid, it returns a non-nil error describing why.
-func ValidateAndApplyBlock(ctx context.Context, tree *patricia.Tree, prevBlock, block *bc.Block) error {
-	return validateBlock(ctx, tree, prevBlock, block, true)
+func ValidateAndApplyBlock(ctx context.Context, tree *patricia.Tree, priorIssuances PriorIssuances, prevBlock, block *bc.Block) error {
+	return validateBlock(ctx, tree, priorIssuances, prevBlock, block, true)
 }
 
 // ValidateBlockForSig performs validation on an incoming _unsigned_
 // block in preparation for signing it.  By definition it does not
 // execute the sigscript.
-func ValidateBlockForSig(ctx context.Context, tree *patricia.Tree, prevBlock, block *bc.Block) error {
-	return validateBlock(ctx, tree, prevBlock, block, false)
+func ValidateBlockForSig(ctx context.Context, tree *patricia.Tree, priorIssuances PriorIssuances, prevBlock, block *bc.Block) error {
+	return validateBlock(ctx, tree, priorIssuances, prevBlock, block, false)
 }
 
-func validateBlock(ctx context.Context, tree *patricia.Tree, prevBlock, block *bc.Block, runScript bool) error {
+func validateBlock(ctx context.Context, tree *patricia.Tree, priorIssuances PriorIssuances, prevBlock, block *bc.Block, runScript bool) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -57,11 +57,11 @@ func validateBlock(ctx context.Context, tree *patricia.Tree, prevBlock, block *b
 		if err != nil {
 			return err
 		}
-		err = ConfirmTx(tree, tx, block.TimestampMS)
+		err = ConfirmTx(tree, priorIssuances, tx, block.TimestampMS)
 		if err != nil {
 			return err
 		}
-		err = ApplyTx(tree, tx)
+		err = ApplyTx(tree, priorIssuances, tx)
 		if err != nil {
 			return err
 		}
@@ -74,9 +74,9 @@ func validateBlock(ctx context.Context, tree *patricia.Tree, prevBlock, block *b
 }
 
 // ApplyBlock applies the transactions in the block to the state tree.
-func ApplyBlock(tree *patricia.Tree, block *bc.Block) error {
+func ApplyBlock(tree *patricia.Tree, priorIssuances PriorIssuances, block *bc.Block) error {
 	for _, tx := range block.Transactions {
-		err := ApplyTx(tree, tx)
+		err := ApplyTx(tree, priorIssuances, tx)
 		if err != nil {
 			return err
 		}

@@ -1,8 +1,11 @@
 package validation
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 
 	"chain/cos/bc"
 	"chain/cos/patricia"
@@ -10,6 +13,11 @@ import (
 	"chain/cos/txscript"
 	"chain/errors"
 )
+
+// PriorIssuances maps a tx hash (of a tx containing an issuance) to
+// the time (in Unix millis) at which it should expire from the
+// issuance memory.
+type PriorIssuances map[bc.Hash]uint64
 
 var stubGenesisHash = bc.Hash{}
 
@@ -22,20 +30,40 @@ var ErrBadTx = errors.New("invalid transaction")
 //
 // Tx should have already been validated (with `ValidateTx`) when the tx
 // was added to the pool.
-func ConfirmTx(tree *patricia.Tree, tx *bc.Tx, timestampMS uint64) error {
+//
+// TODO(bobg): Combine the "tree" and "priorIssuances" arguments taken
+// by ConfirmTx and ValidateTx into a single "state" object.
+func ConfirmTx(tree *patricia.Tree, priorIssuances PriorIssuances, tx *bc.Tx, timestampMS uint64) error {
 	if timestampMS < tx.MinTime {
 		return errors.WithDetail(ErrBadTx, "block time is before transaction min time")
 	}
 	if tx.MaxTime > 0 && timestampMS > tx.MaxTime {
 		return errors.WithDetail(ErrBadTx, "block time is after transaction max time")
 	}
-
 	for inIndex, txin := range tx.Inputs {
-		if txin.IsIssuance() {
-			// TODO(bobg): dedupe this input against others whose [MinTime,MaxTime] windows haven't closed
-			// TODO(bobg): run issuance program with args from input witness
+		if ic, ok := txin.InputCommitment.(*bc.IssuanceInputCommitment); ok {
+			// txin is an issuance
+
+			if inIndex == 0 {
+				if ic.MinTimeMS > timestampMS || ic.MaxTimeMS < timestampMS {
+					return errors.WithDetailf(ErrBadTx, "block time is outside issuance time window (input %d)", inIndex)
+				}
+				if priorIssuances != nil {
+					// prune
+					for txhash, expireMS := range priorIssuances {
+						if timestampMS > expireMS {
+							delete(priorIssuances, txhash)
+						}
+					}
+					if _, ok2 := priorIssuances[tx.Hash]; ok2 {
+						return errors.WithDetail(ErrBadTx, "duplicate issuance transaction")
+					}
+				}
+			}
 			continue
 		}
+
+		// txin is a spend
 
 		// Lookup the prevout in the blockchain state tree.
 		k, val := state.OutputTreeItem(state.Prevout(txin))
@@ -65,26 +93,27 @@ func ValidateTx(tx *bc.Tx) error {
 
 	issued := make(map[bc.AssetID]bool)
 	parity := make(map[bc.AssetID]int64)
-	uniqueFilter := make(map[bc.Outpoint]bool)
 
-	for _, txin := range tx.Inputs {
+	for i, txin := range tx.Inputs {
 		assetID := txin.AssetID()
 		parity[assetID] += int64(txin.Amount())
 		if txin.IsIssuance() {
 			issued[assetID] = true
-			// TODO(bobg): count the issuance's amount in the parity map too
-			// TODO(bobg): test that issuance maxtime >= issuance mintime (if this is input 0)
-			// TODO(bobg): test that issuance maxtime - issuance mintime <= issuance window limit
-			continue
+			if i == 0 {
+				ic := txin.InputCommitment.(*bc.IssuanceInputCommitment)
+				if ic.MaxTimeMS < ic.MinTimeMS {
+					return errors.WithDetail(ErrBadTx, "input 0 is an issuance with maxtime < mintime")
+				}
+				// TODO(bobg): test that issuance maxtime - issuance mintime <= issuance window limit
+			}
 		}
 
-		// Check for duplicate inputs
-		// TODO(bobg): with issuance inputs too
-		previous := txin.Outpoint()
-		if uniqueFilter[previous] {
-			return errors.WithDetailf(ErrBadTx, "duplicated input for %s", previous.String())
+		for j := 0; j < i; j++ {
+			other := tx.Inputs[j]
+			if reflect.DeepEqual(txin.InputCommitment, other.InputCommitment) {
+				return errors.WithDetailf(ErrBadTx, "input %d is a duplicate of %d", j, i)
+			}
 		}
-		uniqueFilter[previous] = true
 	}
 
 	// Check that every output has a valid value.
@@ -114,27 +143,35 @@ func ValidateTx(tx *bc.Tx) error {
 		defer txscript.DisableLog()
 	}
 	for i, input := range tx.Inputs {
+		var program []byte
 		if input.IsIssuance() {
-			// TODO: implement issuance scheme
-			continue
+			program = input.IssuanceProgram()
+		} else {
+			program = input.ControlProgram()
 		}
-		err = engine.Prepare(input.ControlProgram(), input.InputWitness, i)
+		err = engine.Prepare(program, input.InputWitness, i)
 		if err != nil {
-			err = errors.Wrapf(ErrBadTx, "cannot prepare script engine to process input %d: %s", i, err)
-			return errors.WithDetailf(err, "invalid script on input %d", i)
+			err = errors.Wrapf(ErrBadTx, "cannot prepare VM to process input %d: %s", i, err)
+			return errors.WithDetailf(err, "invalid program on input %d", i)
 		}
 		if err = engine.Execute(); err != nil {
-			pkScriptStr, _ := txscript.DisasmString(input.ControlProgram())
-			return errors.WithDetailf(ErrBadTx, "validation failed in script execution, input %d (args [%v] program [%s])", i, input.InputWitness, pkScriptStr)
+			scriptStr, _ := txscript.DisasmString(program)
+			hexArgs := make([]string, 0, len(input.InputWitness))
+			for _, arg := range input.InputWitness {
+				hexArgs = append(hexArgs, hex.EncodeToString(arg))
+			}
+			return errors.WithDetailf(ErrBadTx, "validation failed in script execution, input %d (args [%s] program [%s])", i, strings.Join(hexArgs, " "), scriptStr)
 		}
 	}
 	return nil
 }
 
 // ApplyTx updates the state tree with all the changes to the ledger.
-func ApplyTx(tree *patricia.Tree, tx *bc.Tx) error {
-	for _, in := range tx.Inputs {
-		if in.IsIssuance() {
+func ApplyTx(tree *patricia.Tree, priorIssuances PriorIssuances, tx *bc.Tx) error {
+	for i, in := range tx.Inputs {
+		if ic, ok := in.InputCommitment.(*bc.IssuanceInputCommitment); ok {
+			// issuance input
+
 			// If asset definition field is empty, no update of ADP takes place.
 			ad := in.AssetDefinition()
 			if len(ad) > 0 {
@@ -144,6 +181,9 @@ func ApplyTx(tree *patricia.Tree, tx *bc.Tx) error {
 				if err != nil {
 					return err
 				}
+			}
+			if i == 0 && priorIssuances != nil {
+				priorIssuances[tx.Hash] = ic.MaxTimeMS
 			}
 			continue
 		}

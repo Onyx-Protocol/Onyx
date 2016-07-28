@@ -45,7 +45,7 @@ func TestSmallBlock(t *testing.T) {
 		BlockHeader: BlockHeader{
 			Version: NewBlockVersion,
 		},
-		Transactions: []*Tx{NewTx(TxData{SerFlags: 0x7, Version: CurrentTransactionVersion})},
+		Transactions: []*Tx{NewTx(TxData{Version: CurrentTransactionVersion})},
 	}
 
 	got := serialize(t, &block)

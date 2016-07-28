@@ -4,11 +4,110 @@ import (
 	"chain/cos/bc"
 	"chain/cos/patricia"
 	"chain/cos/state"
+	"chain/cos/txscript"
 	"chain/errors"
 	"fmt"
 	"testing"
 	"time"
 )
+
+func TestUniqueIssuance(t *testing.T) {
+	var genesisHash bc.Hash
+	trueProg := []byte{txscript.OP_TRUE}
+	assetID := bc.ComputeAssetID(trueProg, genesisHash, 1)
+	now := time.Now()
+	issuanceInp := bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1, trueProg, nil, nil, nil)
+
+	// Transaction with the issuance twice is invalid
+	tx := bc.NewTx(bc.TxData{
+		Version: 1,
+		Inputs:  []*bc.TxInput{issuanceInp, issuanceInp},
+		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 2, trueProg, nil)},
+	})
+	if ValidateTx(tx) == nil {
+		t.Errorf("expected tx with duplicate inputs to fail validation")
+	}
+
+	// Transaction with the issuance just once is valid
+	tx = bc.NewTx(bc.TxData{
+		Version: 1,
+		Inputs:  []*bc.TxInput{issuanceInp},
+		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 1, trueProg, nil)},
+	})
+	err := ValidateTx(tx)
+	if err != nil {
+		t.Errorf("expected tx with unique issuance to pass validation, got: %s", err)
+	}
+
+	tree := patricia.NewTree(nil)
+
+	// Add tx to the state tree so we can spend it in the next tx
+	err = ApplyTx(tree, nil, tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	priorIssuances := make(PriorIssuances)
+
+	true2Prog := []byte{txscript.OP_TRUE, txscript.OP_TRUE}
+	asset2ID := bc.ComputeAssetID(true2Prog, genesisHash, 1)
+	issuance2Inp := bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1, true2Prog, nil, nil, nil)
+
+	// Transaction with issuance in second slot does not get added to issuance memory
+	tx = bc.NewTx(bc.TxData{
+		Version: 1,
+		Inputs: []*bc.TxInput{
+			bc.NewSpendInput(tx.Hash, 0, nil, assetID, 1, trueProg, nil),
+			issuance2Inp,
+		},
+		Outputs: []*bc.TxOutput{
+			bc.NewTxOutput(assetID, 1, trueProg, nil),
+			bc.NewTxOutput(asset2ID, 1, trueProg, nil),
+		},
+	})
+	err = ValidateTx(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ConfirmTx(tree, priorIssuances, tx, bc.Millis(now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(priorIssuances) > 0 {
+		t.Errorf("expected tx with non-issuance first input to be omitted from issuance memory")
+	}
+
+	// This one _is_ added to the issuance memory
+	tx = bc.NewTx(bc.TxData{
+		Version: 1,
+		Inputs: []*bc.TxInput{
+			issuance2Inp,
+		},
+		Outputs: []*bc.TxOutput{
+			bc.NewTxOutput(asset2ID, 1, trueProg, nil),
+		},
+	})
+	err = ValidateTx(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ConfirmTx(tree, priorIssuances, tx, bc.Millis(now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ApplyTx(tree, priorIssuances, tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(priorIssuances) < 1 {
+		t.Errorf("expected tx with issuance first input to be added to issuance memory")
+	}
+
+	// Adding it again should fail
+	if ConfirmTx(tree, priorIssuances, tx, bc.Millis(now)) == nil {
+		t.Errorf("expected adding duplicate issuance tx to fail")
+	}
+}
 
 func TestNoUpdateEmptyAD(t *testing.T) {
 	tree := patricia.NewTree(nil)
@@ -17,7 +116,7 @@ func TestNoUpdateEmptyAD(t *testing.T) {
 			bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), bc.Hash{}, 1000, []byte{1}, nil, nil, nil),
 		},
 	})
-	err := ApplyTx(tree, tx)
+	err := ApplyTx(tree, nil, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,6 +285,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 	var genesisHash bc.Hash
 	issuanceProg := []byte{1}
 	aid := bc.ComputeAssetID(issuanceProg, genesisHash, 1)
+	now := time.Now()
 	cases := []struct {
 		ok        bool
 		tx        bc.Tx
@@ -195,40 +295,40 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 			ok: true,
 			tx: bc.Tx{
 				TxData: bc.TxData{
-					MinTime: 1,
-					MaxTime: 100,
+					MinTime: bc.Millis(now),
+					MaxTime: bc.Millis(now.Add(time.Hour)),
 					Inputs: []*bc.TxInput{
-						bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), genesisHash, 1000, issuanceProg, nil, nil, nil),
+						bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1000, issuanceProg, nil, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid, 1000, nil, nil),
 					},
 				},
 			},
-			timestamp: 50,
+			timestamp: bc.Millis(now.Add(time.Minute)),
 		},
 		{
 			ok: false,
 			tx: bc.Tx{
 				TxData: bc.TxData{
-					MinTime: 1,
-					MaxTime: 100,
+					MinTime: bc.Millis(now),
+					MaxTime: bc.Millis(now.Add(time.Minute)),
 					Inputs: []*bc.TxInput{
-						bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), genesisHash, 1000, issuanceProg, nil, nil, nil),
+						bc.NewIssuanceInput(now, now.Add(time.Minute), genesisHash, 1000, issuanceProg, nil, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid, 1000, nil, nil),
 					},
 				},
 			},
-			timestamp: 150,
+			timestamp: bc.Millis(now.Add(time.Hour)),
 		},
 		{
 			ok: false,
 			tx: bc.Tx{
 				TxData: bc.TxData{
-					MinTime: 100,
-					MaxTime: 200,
+					MinTime: bc.Millis(now),
+					MaxTime: bc.Millis(now.Add(time.Minute)),
 					Inputs: []*bc.TxInput{
 						bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), genesisHash, 1000, issuanceProg, nil, nil, nil),
 					},
@@ -237,12 +337,12 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 					},
 				},
 			},
-			timestamp: 50,
+			timestamp: bc.Millis(now.Add(-time.Hour)),
 		},
 	}
 
 	for i, c := range cases {
-		err := ConfirmTx(patricia.NewTree(nil), &c.tx, c.timestamp)
+		err := ConfirmTx(patricia.NewTree(nil), nil, &c.tx, c.timestamp)
 		if !c.ok && errors.Root(err) != ErrBadTx {
 			t.Errorf("test %d: got = %s, want ErrBadTx", i, err)
 			continue
@@ -260,7 +360,7 @@ func BenchmarkConfirmTx(b *testing.B) {
 	tx := txFromHex("0000000101341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5ffffffff6f00473045022100c561a9b4854742bc36c805513b872b2c0a1a367da24710eadd4f3fbc3b1ab41302207cf9eec4e5db694831fe43cf193f23d869291025ac6062199dd6b8998e93e15825512103623fb1fe38ce7e43cf407ec99b061c6d2da0278e80ce094393875c5b94f1ed9051ae0001df03f294bd08930f542a42b91199a8afe1b45c28eeb058cc5e8c8d600e0dd42f0000000000000001000000000000000000000474782d31")
 	ts := uint64(time.Now().Unix())
 	for i := 0; i < b.N; i++ {
-		ConfirmTx(tree, tx, ts)
+		ConfirmTx(tree, nil, tx, ts)
 	}
 }
 

@@ -22,14 +22,11 @@ func TestIdempotentAddTx(t *testing.T) {
 
 	issueTx, _, _ := fedtest.Issue(t, nil, nil, 1)
 
-	for i := 0; i < 2; i++ {
-		err := fc.AddTx(ctx, issueTx)
-		if err != nil {
-			testutil.FatalErr(t, err)
-		}
+	err = fc.AddTx(ctx, issueTx)
+	if err != nil {
+		testutil.FatalErr(t, err)
 	}
 
-	// still idempotent after block lands
 	block, _, err := fc.GenerateBlock(ctx, time.Now())
 	block.SignatureScript = []byte{txscript.OP_0}
 	err = fc.AddBlock(ctx, block)

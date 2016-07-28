@@ -300,6 +300,7 @@ func Issue(ctx context.Context, t testing.TB, assetID bc.AssetID, dests []*txbui
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
+	SignTxTemplate(t, txTemplate, nil)
 	tx, err := asset.FinalizeTx(ctx, txTemplate)
 	if err != nil {
 		t.Log(errors.Stack(err))

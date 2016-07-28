@@ -139,6 +139,8 @@ func TestTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	assettest.SignTxTemplate(t, txTemplate, nil)
+
 	_, err = asset.FinalizeTx(ctx, txTemplate)
 	if err != nil {
 		t.Log(errors.Stack(err))

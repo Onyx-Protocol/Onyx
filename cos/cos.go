@@ -52,6 +52,7 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/patricia"
+	"chain/cos/validation"
 	"chain/crypto/ed25519"
 	"chain/errors"
 )
@@ -108,6 +109,7 @@ type FC struct {
 	blockCallbacks []BlockCallback
 	txCallbacks    []TxCallback
 	trustedKeys    []ed25519.PublicKey
+	priorIssuances validation.PriorIssuances
 	height         struct {
 		cond sync.Cond // protects n
 		n    uint64
@@ -123,7 +125,12 @@ type FC struct {
 // for the local block-signer process; the presence of its
 // signature indicates the block was already validated locally.
 func NewFC(ctx context.Context, store Store, pool Pool, trustedKeys []ed25519.PublicKey, heights <-chan uint64) (*FC, error) {
-	fc := &FC{store: store, pool: pool, trustedKeys: trustedKeys}
+	fc := &FC{
+		store:          store,
+		pool:           pool,
+		trustedKeys:    trustedKeys,
+		priorIssuances: make(validation.PriorIssuances),
+	}
 	fc.height.cond.L = new(sync.Mutex)
 
 	var err error

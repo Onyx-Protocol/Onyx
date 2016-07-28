@@ -30,7 +30,7 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	timestampMS := uint64(now.UnixNano()) / uint64(time.Millisecond)
+	timestampMS := bc.Millis(now)
 
 	// TODO(jackson): The leader process should store its own in-memory
 	// copy of the current state tree and latest block on FC instead.
@@ -66,11 +66,16 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 		return nil, nil, err
 	}
 
+	priorIssuances := make(validation.PriorIssuances)
+	for k, v := range fc.priorIssuances {
+		priorIssuances[k] = v
+	}
+
 	ctx = span.NewContextSuffix(ctx, "-validate-all")
 	defer span.Finish(ctx)
 	for _, tx := range txs {
-		if validation.ConfirmTx(tree, tx, b.TimestampMS) == nil {
-			validation.ApplyTx(tree, tx)
+		if validation.ConfirmTx(tree, priorIssuances, tx, b.TimestampMS) == nil {
+			validation.ApplyTx(tree, priorIssuances, tx)
 			b.Transactions = append(b.Transactions, tx)
 		}
 	}
@@ -189,7 +194,7 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 		}
 	}
 
-	err := validation.ValidateBlockForSig(ctx, tree, prev, block)
+	err := validation.ValidateBlockForSig(ctx, tree, fc.priorIssuances, prev, block)
 	return errors.Wrap(err, "validation")
 }
 
@@ -209,9 +214,9 @@ func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, tree *patricia
 	}
 
 	if isSignedByTrustedHost(block, fc.trustedKeys) {
-		err = validation.ApplyBlock(tree, block)
+		err = validation.ApplyBlock(tree, fc.priorIssuances, block)
 	} else {
-		err = validation.ValidateAndApplyBlock(ctx, tree, prev, block)
+		err = validation.ValidateAndApplyBlock(ctx, tree, fc.priorIssuances, prev, block)
 	}
 	if err != nil {
 		return errors.Wrapf(ErrBadBlock, "validate block: %v", err)
@@ -282,12 +287,9 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 	}
 
 	for _, tx := range txs {
-		// Have to explicitly check that tx is not in block
-		// because issuance transactions are always valid, even duplicates.
-		// TODO(erykwalder): Remove this check when issuances become unique
-		txErr := validation.ConfirmTx(tree, tx, block.TimestampMS)
-		if txErr == nil && !txInBlock[tx.Hash] {
-			validation.ApplyTx(tree, tx)
+		txErr := validation.ConfirmTx(tree, fc.priorIssuances, tx, block.TimestampMS)
+		if txErr == nil {
+			validation.ApplyTx(tree, fc.priorIssuances, tx)
 		} else {
 			deleteTxs = append(deleteTxs, tx)
 			if txInBlock[tx.Hash] {
@@ -373,7 +375,7 @@ func NewGenesisBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time
 		BlockHeader: bc.BlockHeader{
 			Version:      bc.NewBlockVersion,
 			Height:       1,
-			TimestampMS:  uint64(timestamp.UnixNano()) / uint64(time.Millisecond),
+			TimestampMS:  bc.Millis(timestamp),
 			OutputScript: script,
 		},
 	}

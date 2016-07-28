@@ -71,7 +71,6 @@ const (
 // Most users will want to use Tx instead;
 // it includes the hash.
 type TxData struct {
-	SerFlags uint8
 	Version  uint32
 	Inputs   []*TxInput
 	Outputs  []*TxOutput
@@ -133,9 +132,8 @@ func (tx *TxData) Value() (driver.Value, error) {
 func (tx *TxData) readFrom(r io.Reader) error {
 	var serflags [1]byte
 	_, err := io.ReadFull(r, serflags[:])
-	tx.SerFlags = serflags[0]
-	if err == nil && tx.SerFlags != serRequired {
-		return fmt.Errorf("unsupported serflags %#x", tx.SerFlags)
+	if err == nil && serflags[0] != serRequired {
+		return fmt.Errorf("unsupported serflags %#x", serflags[0])
 	}
 
 	v, _ := blockchain.ReadUvarint(r)

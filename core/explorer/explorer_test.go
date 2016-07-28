@@ -205,7 +205,7 @@ func TestGetTxIssuance(t *testing.T) {
 	blk := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Height:      1,
-			TimestampMS: uint64(now.UnixNano() / int64(time.Millisecond)),
+			TimestampMS: bc.Millis(now),
 		},
 		Transactions: []*bc.Tx{tx},
 	}
@@ -303,7 +303,7 @@ func TestGetTxTransfer(t *testing.T) {
 	blk := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Height:      1,
-			TimestampMS: uint64(now.UnixNano() / int64(time.Millisecond)),
+			TimestampMS: bc.Millis(now),
 		},
 		Transactions: append(prevTxs, tx),
 	}

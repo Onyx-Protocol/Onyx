@@ -2,9 +2,7 @@ package bc
 
 import "time"
 
-// NowMillis returns the current time in milliseconds,
-// as defined by the protocol.
-func NowMillis() uint64 {
-	ms := time.Now().UnixNano() / int64(time.Millisecond)
-	return uint64(ms)
+// Millis converts a time.Time to a number of milliseconds since 1970.
+func Millis(t time.Time) uint64 {
+	return uint64(t.UnixNano()) / uint64(time.Millisecond)
 }
