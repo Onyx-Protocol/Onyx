@@ -608,6 +608,16 @@ CREATE TABLE migrations (
 
 
 --
+-- Name: mockhsm; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE mockhsm (
+    xpub bytea NOT NULL,
+    xprv bytea NOT NULL
+);
+
+
+--
 -- Name: pool_tx_sort_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -890,6 +900,14 @@ ALTER TABLE ONLY manager_nodes
 
 ALTER TABLE ONLY migrations
     ADD CONSTRAINT migrations_pkey PRIMARY KEY (filename);
+
+
+--
+-- Name: mockhsm_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY mockhsm
+    ADD CONSTRAINT mockhsm_pkey PRIMARY KEY (xpub);
 
 
 --
@@ -1253,3 +1271,4 @@ insert into migrations (filename, hash) values ('2016-07-19.1.asset.drop-spent-i
 insert into migrations (filename, hash) values ('2016-07-21.0.core.asset-genesis-hash.sql', '45642a9fd2d033208f78dafffaaab99fb7e9dfbb7b15224d254b283fa9db416b');
 insert into migrations (filename, hash) values ('2016-07-26.0.api.drop-manager-issuer-txs.sql', '2f7b14ce50118f1effcf153bf8c8f5cc7859af45487a383df6a7c8e3f5e8f15b');
 insert into migrations (filename, hash) values ('2016-07-27.0.core.drop-smartcontract-tables.sql', '56b09b59392114eff794db343e0a045f8648db77bd086159dba4fe9eafea2dc6');
+insert into migrations (filename, hash) values ('2016-07-28.0.core.mockhsm.sql', '4f8c1a90f2789b5db62bdf6cd94255e6e41cce1f78e3254643032d1d6a53438c');
