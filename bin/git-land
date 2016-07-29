@@ -88,7 +88,7 @@ cat >>$cfile <<EOF
 # with '#' will be ignored, and an empty message aborts the commit.
 EOF
 
-${EDITOR:-nano} $cfile
+${EDITOR:-vi} $cfile
 sed -i '' '/^#/d' $cfile                 # strip comments
 sed -i '' -n '/[^[:space:]]/,$p' $cfile  # strip leading blank lines
 if ! [ -s $cfile ]
