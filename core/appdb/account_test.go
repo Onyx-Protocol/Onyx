@@ -1,8 +1,6 @@
 package appdb_test
 
 import (
-	"encoding/json"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -10,13 +8,10 @@ import (
 
 	. "chain/core/appdb"
 	"chain/core/asset/assettest"
-	"chain/cos/bc"
-	"chain/cos/state"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/testutil"
 )
 
 func TestCreateAccount(t *testing.T) {
@@ -315,161 +310,5 @@ func TestArchiveAccount(t *testing.T) {
 	}
 	if !archived {
 		t.Errorf("expected account %s to be archived", account.ID)
-	}
-}
-
-func TestListAccountUTXOs(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	asset0 := assettest.CreateAssetFixture(ctx, t, "", "", "")
-	asset1 := assettest.CreateAssetFixture(ctx, t, "", "", "")
-	mn0 := assettest.CreateManagerNodeFixture(ctx, t, "", "manager-node-0", nil, nil)
-	acc0 := assettest.CreateAccountFixture(ctx, t, mn0, "account-0", nil)
-	acc1 := assettest.CreateAccountFixture(ctx, t, mn0, "account-1", nil)
-
-	var issuances []state.Output
-	issuances = append(issuances, assettest.IssueAssetsFixture(ctx, t, asset0, 1, acc0))
-	issuances = append(issuances, assettest.IssueAssetsFixture(ctx, t, asset0, 2, acc1))
-	issuances = append(issuances, assettest.IssueAssetsFixture(ctx, t, asset1, 3, acc0))
-	issuances = append(issuances, assettest.IssueAssetsFixture(ctx, t, asset1, 4, acc1))
-
-	_, err = g.MakeBlock(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	var (
-		wantTxOuts []*TxOutput
-		next       []string
-	)
-	for i, iss := range issuances {
-		if iss.ReferenceData == nil {
-			iss.ReferenceData = []byte{}
-		}
-
-		wantTxOuts = append(wantTxOuts, &TxOutput{
-			TxHash:   iss.Outpoint.Hash,
-			TxIndex:  iss.Outpoint.Index,
-			AssetID:  iss.AssetID,
-			Amount:   iss.Amount,
-			Script:   iss.ControlProgram,
-			Address:  iss.ControlProgram,
-			Metadata: iss.ReferenceData,
-		})
-
-		next = append(next, fmt.Sprintf("2-%d-%d", i, iss.Outpoint.Index))
-	}
-
-	examples := []struct {
-		accountID string
-		assetIDs  []bc.AssetID
-		prev      string
-		limit     int
-
-		want     []*TxOutput
-		wantNext string
-		wantErr  error
-	}{
-		// acc0, no asset ID filter
-		{
-			acc0,
-			nil,
-			"",
-			50,
-
-			[]*TxOutput{wantTxOuts[0], wantTxOuts[2]},
-			"2-2-0",
-			nil,
-		},
-		// acc1, no asset ID filter
-		{
-			acc1,
-			nil,
-			"",
-			50,
-
-			[]*TxOutput{wantTxOuts[1], wantTxOuts[3]},
-			"2-3-0",
-			nil,
-		},
-		// acc0, filter by existing asset
-		{
-			acc0,
-			[]bc.AssetID{asset0},
-			"",
-			50,
-
-			[]*TxOutput{wantTxOuts[0]},
-			"2-0-0",
-			nil,
-		},
-		// acc0, filter by unrecognized asset
-		{
-			acc0,
-			[]bc.AssetID{bc.AssetID{}},
-			"",
-			50,
-
-			nil,
-			"",
-			nil,
-		},
-		// acc0, pagination 1/3
-		{
-			acc0,
-			nil,
-			"",
-			1,
-
-			[]*TxOutput{wantTxOuts[0]},
-			"2-0-0",
-			nil,
-		},
-		// acc0, pagination 2/3
-		{
-			acc0,
-			nil,
-			"2-0-0",
-			1,
-
-			[]*TxOutput{wantTxOuts[2]},
-			"2-2-0",
-			nil,
-		},
-		// acc0, pagination 3/3
-		{
-			acc0,
-			nil,
-			"2-2-0",
-			1,
-
-			nil,
-			"",
-			nil,
-		},
-	}
-
-	for i, ex := range examples {
-		t.Logf("Example %d", i+1)
-
-		got, gotNext, gotErr := ListAccountUTXOs(ctx, ex.accountID, ex.assetIDs, ex.prev, ex.limit)
-
-		if !reflect.DeepEqual(got, ex.want) {
-			g, _ := json.Marshal(got)
-			w, _ := json.Marshal(ex.want)
-			t.Errorf("results:\ngot:  %s\nwant: %s", g, w)
-		}
-
-		if gotNext != ex.wantNext {
-			t.Errorf("next cursor:\ngot:  %v\nwant: %v", gotNext, ex.wantNext)
-		}
-
-		if gotErr != errors.Root(ex.wantErr) {
-			t.Errorf("error:\ngot:  %v\nwant: %v", gotErr, ex.wantErr)
-		}
 	}
 }

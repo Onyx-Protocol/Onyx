@@ -2,16 +2,12 @@ package appdb
 
 import (
 	"database/sql"
-	"fmt"
-	"strings"
 	"time"
 
 	"golang.org/x/net/context"
 
-	"chain/cos/bc"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
-	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/log"
 	"chain/metrics"
@@ -26,10 +22,6 @@ var (
 	// ErrInvalidAccountKey is returned by CreateAccount when the
 	// key provided isn't valid
 	ErrInvalidAccountKey = errors.New("account has provided invalid key")
-
-	// ErrBadCursor is returned by functions that receive an invalid
-	// pagination cursor.
-	ErrBadCursor = errors.New("invalid pagination cursor")
 )
 
 // Account represents an indexed namespace inside of a manager node
@@ -201,123 +193,4 @@ func ArchiveAccount(ctx context.Context, accountID string) error {
 	const q = `UPDATE accounts SET archived = true WHERE id = $1`
 	_, err := pg.Exec(ctx, q, accountID)
 	return errors.Wrap(err, "archive query")
-}
-
-// TxOutput describes a single transaction output, and is intended for use in
-// API responses.
-type TxOutput struct {
-	TxHash   bc.Hash            `json:"transaction_id"`
-	TxIndex  uint32             `json:"transaction_output"`
-	AssetID  bc.AssetID         `json:"asset_id"`
-	Amount   uint64             `json:"amount"`
-	Address  chainjson.HexBytes `json:"address"` // deprecated
-	Script   chainjson.HexBytes `json:"script"`
-	Metadata chainjson.HexBytes `json:"metadata"`
-}
-
-// ListAccountUTXOs returns UTXOs held by the specified account, optionally
-// filtered by a list of assets. In order to simplify ordered pagination, only
-// UTXOs in blocks are considered.
-func ListAccountUTXOs(ctx context.Context, accountID string, assetIDs []bc.AssetID, cursor string, limit int) ([]*TxOutput, string, error) {
-	q := `
-		SELECT tx_hash, index, asset_id, amount, script, metadata,
-		       confirmed_in, block_pos
-		FROM account_utxos
-	`
-
-	qparams := []interface{}{accountID}
-	criteria := []string{
-		"confirmed_in IS NOT NULL", // Only examine UTXOs in blocks
-		"account_id = $1",          // filter by the specified account
-	}
-
-	// Add asset ID filter, if necessary.
-	if len(assetIDs) > 0 {
-		var s []string
-		for _, id := range assetIDs {
-			s = append(s, id.String())
-		}
-		qparams = append(qparams, pg.Strings(s))
-		criteria = append(criteria, fmt.Sprintf("asset_id = ANY($%d)", len(qparams)))
-	}
-
-	// Handle pagination, if necessary. We paginate over UTXOs, which are
-	// ordered by a compound cursor (confirmed_in, block_pos, index).
-	if len(cursor) > 0 {
-		var (
-			block    int64
-			blockPos int
-			index    int
-		)
-		_, err := fmt.Sscanf(cursor, "%d-%d-%d", &block, &blockPos, &index)
-		if err != nil {
-			return nil, "", errors.WithDetailf(ErrBadCursor, "cursor: %q", cursor)
-		}
-
-		qparams = append(qparams, block, blockPos, index)
-		criteria = append(
-			criteria,
-			fmt.Sprintf(
-				`(confirmed_in, block_pos, index) > ($%d, $%d, $%d)`,
-				len(qparams)-2, len(qparams)-1, len(qparams), // block, block_pos, index
-			),
-		)
-	}
-
-	// Add all criteria to query as a WHERE clause.
-	q += " WHERE " + strings.Join(criteria, " AND ")
-
-	// Ensure consistent ordering.
-	q += " ORDER BY confirmed_in, block_pos, index"
-
-	// Limit responses based on user input.
-	qparams = append(qparams, limit)
-	q += fmt.Sprintf(" LIMIT $%d", len(qparams))
-
-	rows, err := pg.Query(ctx, q, qparams...)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "select query")
-	}
-
-	var (
-		res        []*TxOutput
-		nextCursor string
-	)
-	for rows.Next() {
-		var (
-			o        TxOutput
-			block    int64
-			blockPos int
-		)
-		err = rows.Scan(
-			&o.TxHash,
-			&o.TxIndex,
-			&o.AssetID,
-			&o.Amount,
-			(*[]byte)(&o.Script),
-			(*[]byte)(&o.Metadata),
-			&block,
-			&blockPos,
-		)
-		if err != nil {
-			return nil, "", errors.Wrap(err, "row scan")
-		}
-
-		// For backward compatibility
-		o.Address = o.Script
-
-		// Ensure non-nil empty object for metadata
-		if o.Metadata == nil {
-			o.Metadata = chainjson.HexBytes{}
-		}
-
-		res = append(res, &o)
-		nextCursor = fmt.Sprintf("%d-%d-%d", block, blockPos, o.TxIndex)
-	}
-
-	if err = rows.Close(); err != nil {
-		return nil, "", errors.Wrap(err, "end row scan loop")
-	}
-
-	return res, nextCursor, nil
 }

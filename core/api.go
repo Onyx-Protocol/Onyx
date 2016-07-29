@@ -96,7 +96,6 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/v3/issuer-nodes/:inodeID/assets", a.createAsset)
 	h.HandleFunc("GET", "/v3/accounts/:accountID", getAccount)
 	h.HandleFunc("POST", "/v3/accounts/:accountID/addresses", createAddr)
-	h.HandleFunc("POST", "/v3/accounts/:accountID/utxos", listAccountUTXOs)
 	h.HandleFunc("PUT", "/v3/accounts/:accountID", updateAccount)
 	h.HandleFunc("DELETE", "/v3/accounts/:accountID", archiveAccount)
 	h.HandleFunc("GET", "/v3/assets/:assetID", a.getIssuerAsset)
