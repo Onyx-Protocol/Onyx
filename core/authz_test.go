@@ -96,18 +96,13 @@ func TestIssuerAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
 		in1ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
 		in2ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		in3ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		err := appdb.ArchiveIssuerNode(ctx, in3ID)
-		if err != nil {
-			panic(err)
-		}
 
 		cases := []struct {
 			userID  string
 			inodeID string
 			want    error
 		}{
-			{fixtureInfo.u2ID, in1ID, nil}, {fixtureInfo.u2ID, in2ID, nil}, {fixtureInfo.u2ID, in3ID, appdb.ErrArchived},
+			{fixtureInfo.u2ID, in1ID, nil}, {fixtureInfo.u2ID, in2ID, nil},
 		}
 
 		for _, c := range cases {

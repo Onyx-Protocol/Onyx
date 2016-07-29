@@ -115,16 +115,6 @@ func CreateIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label
 	return issuerNode.ID
 }
 
-func CreateArchivedIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs []*hd25519.XPub, xprvs []*hd25519.XPrv) string {
-	inodeID := CreateIssuerNodeFixture(ctx, t, projectID, label, xpubs, xprvs)
-	err := appdb.ArchiveIssuerNode(ctx, inodeID)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	return inodeID
-}
-
 var managerNodeCounter = createCounter()
 
 func CreateManagerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs []*hd25519.XPub, xprvs []*hd25519.XPrv) string {

@@ -118,10 +118,7 @@ func TestGetSummary(t *testing.T) {
 		},
 		Permissions: NodePerms{
 			ManagerNodes: []NodePermStatus{},
-			IssuerNodes: []NodePermStatus{
-				{"in-id-0", "in-label-0", true},
-				{"in-id-1", "in-label-1", true},
-			},
+			IssuerNodes:  []NodePermStatus{},
 			AuditorNodes: []NodePermStatus{
 				{"audnode-proj-id-0", "Auditor Node for proj-id-0", true},
 			},

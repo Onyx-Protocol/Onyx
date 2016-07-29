@@ -77,51 +77,6 @@ func createIssuerNode(ctx context.Context, projID string, req map[string]interfa
 	return issuerNode, nil
 }
 
-// GET /v3/projects/:projID/issuer-nodes
-func listIssuerNodes(ctx context.Context, projID string) (interface{}, error) {
-	return appdb.ListIssuerNodes(ctx, projID)
-}
-
-// GET /v3/issuer-nodes/:inodeID
-func getIssuerNode(ctx context.Context, inodeID string) (interface{}, error) {
-	if err := issuerAuthz(ctx, inodeID); err != nil {
-		return nil, err
-	}
-	return appdb.GetIssuerNode(ctx, inodeID)
-}
-
-// PUT /v3/issuer-nodes/:inodeID
-func updateIssuerNode(ctx context.Context, inodeID string, in struct{ Label *string }) error {
-	if err := issuerAuthz(ctx, inodeID); err != nil {
-		return err
-	}
-	return appdb.UpdateIssuerNode(ctx, inodeID, in.Label)
-}
-
-// DELETE /v3/issuer-nodes/:inodeID
-// Idempotent
-func archiveIssuerNode(ctx context.Context, inodeID string) error {
-	if err := issuerAuthz(ctx, inodeID); errors.Root(err) == appdb.ErrArchived {
-		// This issuer node was already archived. Return success.
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer dbtx.Rollback(ctx)
-
-	err = appdb.ArchiveIssuerNode(ctx, inodeID)
-	if err != nil {
-		return err
-	}
-
-	return dbtx.Commit(ctx)
-}
-
 // assetResponse is a JSON-serializable representation of an asset for
 // API responses.
 type assetResponse struct {

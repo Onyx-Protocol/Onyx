@@ -5,7 +5,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/appdb"
 	"chain/core/txdb"
 	"chain/errors"
 )
@@ -77,18 +76,6 @@ func (g *Config) GetSummary(ctx context.Context, store *txdb.Store, pool *txdb.P
 	res.TransactionCount.Unconfirmed, err = pool.CountTxs(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "count pool txs")
-	}
-
-	inodes, err := appdb.ListIssuerNodes(ctx, projID)
-	if err != nil {
-		return nil, errors.Wrap(err, "list issuer nodes")
-	}
-	for _, n := range inodes {
-		res.Permissions.IssuerNodes = append(res.Permissions.IssuerNodes, NodePermStatus{
-			ID:      n.ID,
-			Label:   n.Label,
-			Enabled: true, // this is spoofed
-		})
 	}
 
 	// Spoof an auditor node
