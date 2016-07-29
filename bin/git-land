@@ -81,7 +81,7 @@ then
 	echo '# Hey! Maybe you need to line-wrap this message perhaps?' >$cfile
 	echo >>$cfile
 fi
-cat $mfile >>$cfile
+tr -d '\r' <$mfile >>$cfile
 cat >>$cfile <<EOF
 
 # Please enter the commit message for your changes. Lines starting
