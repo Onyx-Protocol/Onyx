@@ -129,7 +129,7 @@ type submitSingleArg struct {
 	wait time.Duration
 }
 
-// POST /v3/manager-nodes/transact/finalize
+// POST /v3/transact/finalize
 // Idempotent
 func submitSingle(ctx context.Context, x submitSingleArg) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())

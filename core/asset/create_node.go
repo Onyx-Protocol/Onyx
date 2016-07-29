@@ -19,12 +19,11 @@ type nodeType int
 
 // Node types used for CreateNode
 const (
-	ManagerNode nodeType = iota
-	IssuerNode  nodeType = iota
+	IssuerNode nodeType = iota
 )
 
 // CreateNodeReq is a user filled struct
-// passed into CreateManagerNode or CreateIssuerNode
+// passed into CreateIssuerNode
 // TODO(jackson): ClientToken should become required once
 // all the SDKs have been updated.
 type CreateNodeReq struct {
@@ -41,7 +40,7 @@ type CreateNodeReq struct {
 }
 
 // DeprecatedCreateNodeReq is a user filled struct
-// passed into CreateManagerNode or CreateIssuerNode.
+// passed into CreateIssuerNode.
 // It is deprecated in favor of CreateNodeReq.
 type DeprecatedCreateNodeReq struct {
 	Label       string
@@ -51,8 +50,7 @@ type DeprecatedCreateNodeReq struct {
 
 // CreateNodeKeySpec describes a single key in a node's multi-sig configuration.
 // It consists of a type, plus parameters depending on that type.
-// Valid manager node types include "service" and "account". For issuer nodes,
-// only "service" is valid.
+// For issuer nodes, only "service" type is valid.
 // For service-type keys, either the XPub field is explicitly provided, or the
 // Generate flag is set to true, in which case the xprv/xpub will be generated
 // on the server side.
@@ -64,7 +62,7 @@ type CreateNodeKeySpec struct {
 	Generate bool
 }
 
-// CreateNode is used to create manager and issuer nodes
+// CreateNode is used to create issuer nodes
 func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNodeReq) (interface{}, error) {
 	if req.Label == "" {
 		return nil, errors.WithDetail(appdb.ErrBadLabel, "missing/null value")
@@ -102,11 +100,6 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 			} else {
 				return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: service key must be generated, or an explicit xpub", i)
 			}
-		case "account":
-			if node != ManagerNode {
-				return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: account keys are only valid for account managers", i)
-			}
-			variableKeyCount++
 		default:
 			return nil, errors.WithDetailf(ErrBadKeySpec, "key %d: invalid type %s", i, k.Type)
 		}
@@ -114,10 +107,6 @@ func CreateNode(ctx context.Context, node nodeType, projID string, req *CreateNo
 
 	if len(xpubs)+variableKeyCount < req.SigsRequired {
 		return nil, ErrTooFewKeys
-	}
-
-	if node == ManagerNode {
-		return appdb.InsertManagerNode(ctx, projID, req.Label, xpubs, gennedXprvs, variableKeyCount, req.SigsRequired, req.ClientToken)
 	}
 
 	// Do nothing with variable keys for Issuer Nodes since they can't have variable keys yet.

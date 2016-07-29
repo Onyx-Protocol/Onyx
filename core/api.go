@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"chain/core/appdb"
+	"chain/core/blocksigner"
 	"chain/core/explorer"
 	"chain/core/generator"
-	"chain/core/signer"
 	"chain/core/txdb"
 	chainhttp "chain/net/http"
 	"chain/net/http/httpjson"
@@ -24,7 +24,7 @@ const (
 
 // Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
 // will be used as the password for routes starting with /nouser/.
-func Handler(nouserSecret string, generatorConfig *generator.Config, signer *signer.Signer, store *txdb.Store, pool *txdb.Pool, explorer *explorer.Explorer) chainhttp.Handler {
+func Handler(nouserSecret string, generatorConfig *generator.Config, signer *blocksigner.Signer, store *txdb.Store, pool *txdb.Pool, explorer *explorer.Explorer) chainhttp.Handler {
 	h := pat.New()
 	a := &api{
 		store:     store,
@@ -88,15 +88,13 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("DELETE", "/v3/projects/:projID", archiveProject)
 	h.HandleFunc("POST", "/v3/invitations", createInvitation)
 	h.HandleFunc("GET", "/v3/projects/:projID/admin-node/summary", a.getAdminNodeSummary)
-	h.HandleFunc("POST", "/v3/projects/:projID/manager-nodes", createManagerNode)
-	h.HandleFunc("GET", "/v3/manager-nodes/:mnodeID/accounts", listAccounts)
-	h.HandleFunc("POST", "/v3/manager-nodes/:mnodeID/accounts", createAccount)
+	h.HandleFunc("GET", "/v3/accounts", listAccounts)
+	h.HandleFunc("POST", "/v3/accounts", createAccount)
 	h.HandleFunc("POST", "/v3/projects/:projID/issuer-nodes", createIssuerNode)
 	h.HandleFunc("GET", "/v3/issuer-nodes/:inodeID/assets", a.listAssets)
 	h.HandleFunc("POST", "/v3/issuer-nodes/:inodeID/assets", a.createAsset)
 	h.HandleFunc("GET", "/v3/accounts/:accountID", getAccount)
-	h.HandleFunc("POST", "/v3/accounts/:accountID/addresses", createAddr)
-	h.HandleFunc("PUT", "/v3/accounts/:accountID", updateAccount)
+	h.HandleFunc("POST", "/v3/accounts/:accountID/control-programs", createAccountControlProgram)
 	h.HandleFunc("DELETE", "/v3/accounts/:accountID", archiveAccount)
 	h.HandleFunc("GET", "/v3/assets/:assetID", a.getIssuerAsset)
 	h.HandleFunc("PUT", "/v3/assets/:assetID", updateAsset)
@@ -134,7 +132,7 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	return h.ServeHTTPContext
 }
 
-func rpcAuthedHandler(generator *generator.Config, signer *signer.Signer) chainhttp.HandlerFunc {
+func rpcAuthedHandler(generator *generator.Config, signer *blocksigner.Signer) chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
 
 	if generator != nil {

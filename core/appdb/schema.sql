@@ -276,9 +276,34 @@ END;
 $$;
 
 
+--
+-- Name: account_control_program_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE account_control_program_seq
+    START WITH 10001
+    INCREMENT BY 10000
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
+
+--
+-- Name: account_control_programs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE account_control_programs (
+    id text DEFAULT next_chain_id('acp'::text) NOT NULL,
+    signer_id text NOT NULL,
+    key_index bigint NOT NULL,
+    control_program bytea NOT NULL,
+    redeem_program bytea NOT NULL
+);
+
 
 --
 -- Name: account_utxos; Type: TABLE; Schema: public; Owner: -
@@ -289,66 +314,14 @@ CREATE TABLE account_utxos (
     index integer NOT NULL,
     asset_id text NOT NULL,
     amount bigint NOT NULL,
-    manager_node_id text NOT NULL,
     account_id text NOT NULL,
-    addr_index bigint NOT NULL,
+    control_program_index bigint NOT NULL,
     reservation_id integer,
-    script bytea NOT NULL,
+    control_program bytea NOT NULL,
     metadata bytea NOT NULL,
     confirmed_in bigint,
     block_pos integer,
     block_timestamp bigint
-);
-
-
---
--- Name: accounts; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE accounts (
-    id text DEFAULT next_chain_id('acc'::text) NOT NULL,
-    manager_node_id text NOT NULL,
-    key_index bigint NOT NULL,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    next_address_index bigint DEFAULT 0 NOT NULL,
-    label text,
-    keys text[] DEFAULT '{}'::text[] NOT NULL,
-    archived boolean DEFAULT false NOT NULL,
-    client_token text
-);
-
-
---
--- Name: address_index_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE address_index_seq
-    START WITH 10001
-    INCREMENT BY 10000
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: addresses; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE addresses (
-    id text DEFAULT next_chain_id('a'::text) NOT NULL,
-    manager_node_id text NOT NULL,
-    account_id text NOT NULL,
-    keyset text[] NOT NULL,
-    key_index bigint NOT NULL,
-    memo text,
-    amount bigint,
-    is_change boolean DEFAULT false NOT NULL,
-    expiration timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    redeem_script bytea NOT NULL,
-    pk_script bytea NOT NULL
 );
 
 
@@ -538,49 +511,6 @@ CREATE TABLE leader (
 
 
 --
--- Name: manager_nodes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE manager_nodes (
-    id text DEFAULT next_chain_id('mn'::text) NOT NULL,
-    project_id text NOT NULL,
-    block_chain text DEFAULT 'sandbox'::text NOT NULL,
-    sigs_required integer DEFAULT 1 NOT NULL,
-    key_index bigint NOT NULL,
-    label text NOT NULL,
-    current_rotation text,
-    next_asset_index bigint DEFAULT 0 NOT NULL,
-    next_account_index bigint DEFAULT 0 NOT NULL,
-    accounts_count bigint DEFAULT 0,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    generated_keys text[] DEFAULT '{}'::text[] NOT NULL,
-    variable_keys integer DEFAULT 0 NOT NULL,
-    archived boolean DEFAULT false NOT NULL,
-    client_token text
-);
-
-
---
--- Name: manager_nodes_key_index_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE manager_nodes_key_index_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: manager_nodes_key_index_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE manager_nodes_key_index_seq OWNED BY manager_nodes.key_index;
-
-
---
 -- Name: migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -663,18 +593,6 @@ CREATE TABLE reservations (
 
 
 --
--- Name: rotations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE rotations (
-    id text DEFAULT next_chain_id('rot'::text) NOT NULL,
-    manager_node_id text NOT NULL,
-    keyset text[] NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
 -- Name: signed_blocks; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -682,6 +600,40 @@ CREATE TABLE signed_blocks (
     block_height bigint NOT NULL,
     block_hash text NOT NULL
 );
+
+
+--
+-- Name: signers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE signers (
+    id text NOT NULL,
+    type text NOT NULL,
+    key_index bigint NOT NULL,
+    xpubs text[] NOT NULL,
+    quorum integer NOT NULL,
+    client_token text,
+    archived boolean DEFAULT false NOT NULL
+);
+
+
+--
+-- Name: signers_key_index_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE signers_key_index_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: signers_key_index_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE signers_key_index_seq OWNED BY signers.key_index;
 
 
 --
@@ -731,7 +683,7 @@ ALTER TABLE ONLY issuer_nodes ALTER COLUMN key_index SET DEFAULT nextval('issuer
 -- Name: key_index; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY manager_nodes ALTER COLUMN key_index SET DEFAULT nextval('manager_nodes_key_index_seq'::regclass);
+ALTER TABLE ONLY signers ALTER COLUMN key_index SET DEFAULT nextval('signers_key_index_seq'::regclass);
 
 
 --
@@ -740,30 +692,6 @@ ALTER TABLE ONLY manager_nodes ALTER COLUMN key_index SET DEFAULT nextval('manag
 
 ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_pkey PRIMARY KEY (tx_hash, index);
-
-
---
--- Name: accounts_manager_node_id_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY accounts
-    ADD CONSTRAINT accounts_manager_node_id_client_token_key UNIQUE (manager_node_id, client_token);
-
-
---
--- Name: accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY accounts
-    ADD CONSTRAINT accounts_pkey PRIMARY KEY (id);
-
-
---
--- Name: addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY addresses
-    ADD CONSTRAINT addresses_pkey PRIMARY KEY (id);
 
 
 --
@@ -863,22 +791,6 @@ ALTER TABLE ONLY leader
 
 
 --
--- Name: manager_nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY manager_nodes
-    ADD CONSTRAINT manager_nodes_pkey PRIMARY KEY (id);
-
-
---
--- Name: manager_nodes_project_id_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY manager_nodes
-    ADD CONSTRAINT manager_nodes_project_id_client_token_key UNIQUE (project_id, client_token);
-
-
---
 -- Name: migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -935,11 +847,19 @@ ALTER TABLE ONLY reservations
 
 
 --
--- Name: rotations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: signers_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY rotations
-    ADD CONSTRAINT rotations_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY signers
+    ADD CONSTRAINT signers_client_token_key UNIQUE (client_token);
+
+
+--
+-- Name: signers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY signers
+    ADD CONSTRAINT signers_pkey PRIMARY KEY (id);
 
 
 --
@@ -967,6 +887,13 @@ ALTER TABLE ONLY users
 
 
 --
+-- Name: account_control_programs_control_program_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX account_control_programs_control_program_idx ON account_control_programs USING btree (control_program);
+
+
+--
 -- Name: account_utxos_account_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -981,52 +908,10 @@ CREATE INDEX account_utxos_account_id_asset_id_tx_hash_idx ON account_utxos USIN
 
 
 --
--- Name: account_utxos_manager_node_id_asset_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX account_utxos_manager_node_id_asset_id_idx ON account_utxos USING btree (manager_node_id, asset_id);
-
-
---
 -- Name: account_utxos_reservation_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX account_utxos_reservation_id_idx ON account_utxos USING btree (reservation_id);
-
-
---
--- Name: accounts_manager_node_path; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX accounts_manager_node_path ON accounts USING btree (manager_node_id, key_index);
-
-
---
--- Name: addresses_account_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX addresses_account_id_idx ON addresses USING btree (account_id);
-
-
---
--- Name: addresses_account_id_key_index_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX addresses_account_id_key_index_idx ON addresses USING btree (account_id, key_index);
-
-
---
--- Name: addresses_manager_node_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX addresses_manager_node_id_idx ON addresses USING btree (manager_node_id);
-
-
---
--- Name: addresses_pk_script_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX addresses_pk_script_idx ON addresses USING btree (pk_script);
 
 
 --
@@ -1065,13 +950,6 @@ CREATE INDEX issuer_nodes_project_id_idx ON issuer_nodes USING btree (project_id
 
 
 --
--- Name: manager_nodes_project_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX manager_nodes_project_id_idx ON manager_nodes USING btree (project_id);
-
-
---
 -- Name: reservations_asset_id_account_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1093,6 +971,13 @@ CREATE UNIQUE INDEX signed_blocks_block_height_idx ON signed_blocks USING btree 
 
 
 --
+-- Name: signers_type_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX signers_type_id_idx ON signers USING btree (type, id);
+
+
+--
 -- Name: users_lower_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1105,30 +990,6 @@ CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
 
 ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id) ON DELETE SET NULL;
-
-
---
--- Name: accounts_manager_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY accounts
-    ADD CONSTRAINT accounts_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
-
-
---
--- Name: addresses_account_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY addresses
-    ADD CONSTRAINT addresses_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id);
-
-
---
--- Name: addresses_manager_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY addresses
-    ADD CONSTRAINT addresses_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id);
 
 
 --
@@ -1145,22 +1006,6 @@ ALTER TABLE ONLY assets
 
 ALTER TABLE ONLY auth_tokens
     ADD CONSTRAINT auth_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
-
-
---
--- Name: manager_nodes_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY manager_nodes
-    ADD CONSTRAINT manager_nodes_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id);
-
-
---
--- Name: rotations_manager_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY rotations
-    ADD CONSTRAINT rotations_manager_node_id_fkey FOREIGN KEY (manager_node_id) REFERENCES manager_nodes(id) ON DELETE CASCADE;
 
 
 --
@@ -1229,3 +1074,4 @@ insert into migrations (filename, hash) values ('2016-07-26.0.api.drop-manager-i
 insert into migrations (filename, hash) values ('2016-07-27.0.core.drop-smartcontract-tables.sql', '56b09b59392114eff794db343e0a045f8648db77bd086159dba4fe9eafea2dc6');
 insert into migrations (filename, hash) values ('2016-07-28.0.core.mockhsm.sql', '4f8c1a90f2789b5db62bdf6cd94255e6e41cce1f78e3254643032d1d6a53438c');
 insert into migrations (filename, hash) values ('2016-07-28.1.explorer.drop-explorer-outputs.sql', '99d36e88d57cc4405a0bec300fe6b88675278b9aad91a83d1d1fe50533355adb');
+insert into migrations (filename, hash) values ('2016-07-29.0.signer.add-signers.sql', '31585f1d6d2c1cf2f3157929b355e2b81f9da6e117b58c21c47b2ba3f9194a0a');

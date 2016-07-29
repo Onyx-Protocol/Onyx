@@ -7,17 +7,13 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/appdb"
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
-	"chain/cos/txscript"
-	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/testutil"
 )
 
 func TestAccountSourceReserve(t *testing.T) {
@@ -27,7 +23,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	accID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
+	accID := assettest.CreateAccountFixture(ctx, t, nil, 0)
 	asset := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 	out := assettest.IssueAssetsFixture(ctx, t, asset, 2, accID)
 
@@ -65,8 +61,8 @@ func TestAccountSourceReserve(t *testing.T) {
 		t.Fatalf("expected change destination to have AccountReceiver")
 	}
 
-	if ar.Addr().AccountID != accID {
-		t.Errorf("got receiver addr account = %v want %v", ar.Addr().AccountID, accID)
+	if ar.AccountID() != accID {
+		t.Errorf("got receiver addr account = %v want %v", ar.AccountID(), accID)
 	}
 
 	// clear out to not compare generated addresses
@@ -87,7 +83,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	accID := assettest.CreateAccountFixture(ctx, t, "", "", nil)
+	accID := assettest.CreateAccountFixture(ctx, t, nil, 0)
 	asset := assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 	out := assettest.IssueAssetsFixture(ctx, t, asset, 2, accID)
 
@@ -125,8 +121,8 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		t.Fatalf("expected change destination to have AccountReceiver")
 	}
 
-	if ar.Addr().AccountID != accID {
-		t.Errorf("got receiver addr account = %v want %v", ar.Addr().AccountID, accID)
+	if ar.AccountID() != accID {
+		t.Errorf("got receiver account id = %v want %v", ar.AccountID(), accID)
 	}
 
 	// clear out to not compare generated addresses
@@ -148,7 +144,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	}
 
 	var (
-		accID        = assettest.CreateAccountFixture(ctx, t, "", "", nil)
+		accID        = assettest.CreateAccountFixture(ctx, t, nil, 0)
 		asset        = assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 		_            = assettest.IssueAssetsFixture(ctx, t, asset, 2, accID)
 		_            = assettest.IssueAssetsFixture(ctx, t, asset, 2, accID)
@@ -181,8 +177,8 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected change destination to have AccountReceiver")
 		}
-		if ar.Addr().AccountID != accID {
-			t.Errorf("got receiver addr account = %v want %v", ar.Addr().AccountID, accID)
+		if ar.AccountID() != accID {
+			t.Errorf("got receiver addr account = %v want %v", ar.AccountID(), accID)
 		}
 		// clear out to not compare generated addresses
 		got.Change[0].Receiver = nil
@@ -210,35 +206,6 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	}
 }
 
-func TestAccountDestinationPKScript(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-
-	acc := assettest.CreateAccountFixture(ctx, t, "", "", nil)
-
-	// Test account output pk script (address creation)
-	dest, err := NewAccountDestination(ctx, &bc.AssetAmount{Amount: 1}, acc, nil)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-	got := dest.PKScript()
-
-	receiver := dest.Receiver
-	accountReceiver, ok := receiver.(*AccountReceiver)
-	if !ok {
-		t.Log(errors.Stack(err))
-		t.Fatal("receiver is not an AccountReceiver")
-	}
-	addr := accountReceiver.Addr()
-	derivedPKs := hd25519.XPubKeys(hd25519.DeriveXPubs(addr.Keys, appdb.ReceiverPath(addr, addr.Index)))
-	want, _, err := txscript.Scripts(derivedPKs, addr.SigsRequired)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-	testutil.ExpectScriptEqual(t, got, want, "AccountDestination pk script")
-}
-
 func TestAccountSourceWithTxHash(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	_, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
@@ -247,7 +214,7 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 	}
 
 	var (
-		acc      = assettest.CreateAccountFixture(ctx, t, "", "", nil)
+		acc      = assettest.CreateAccountFixture(ctx, t, nil, 0)
 		asset    = assettest.CreateAssetFixture(ctx, t, "", "asset-0", "")
 		assetAmt = bc.AssetAmount{AssetID: asset, Amount: 1}
 		utxos    = 4

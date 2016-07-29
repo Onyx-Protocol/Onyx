@@ -5,7 +5,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/appdb"
 	"chain/core/asset"
 	"chain/core/issuer"
 	"chain/core/txbuilder"
@@ -82,22 +81,6 @@ type Destination struct {
 	Metadata  chainjson.HexBytes `json:"metadata,omitempty"`
 	Script    chainjson.HexBytes `json:"script,omitempty"`
 	Type      string
-}
-
-// buildAddress will return the destination's script, if populated. Otherwise,
-// it will create a new address for the destination's account ID.
-func buildAddress(ctx context.Context, script []byte, accountID string) ([]byte, error) {
-	if script != nil {
-		return script, nil
-	}
-	if accountID == "" {
-		return nil, errors.WithDetailf(ErrBadBuildRequest, "need either script or account id")
-	}
-	addr, err := appdb.NewAddress(ctx, accountID, true)
-	if err != nil {
-		return nil, errors.Wrapf(err, "generating address, accountID %s", accountID)
-	}
-	return addr.PKScript, nil
 }
 
 func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, error) {

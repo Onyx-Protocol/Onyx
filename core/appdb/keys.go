@@ -41,3 +41,10 @@ func stringsToXPrvs(strings []string) ([]*hd25519.XPrv, error) {
 	}
 	return res, nil
 }
+
+func keyIndex(n int64) []uint32 {
+	index := make([]uint32, 2)
+	index[0] = uint32(n >> 31)
+	index[1] = uint32(n & 0x7fffffff)
+	return index
+}

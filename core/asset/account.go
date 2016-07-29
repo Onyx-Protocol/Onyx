@@ -6,9 +6,9 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/appdb"
+	"chain/core/accounts"
+	"chain/core/signers"
 	"chain/core/txbuilder"
-	"chain/core/txdb"
 	"chain/core/utxodb"
 	"chain/cos/bc"
 	"chain/cos/state"
@@ -46,20 +46,22 @@ func (reserver *AccountReserver) Reserve(ctx context.Context, assetAmount *bc.As
 		txInput := bc.NewSpendInput(r.Hash, r.Index, nil, r.AssetID, r.Amount, r.Script, nil)
 
 		templateInput := &txbuilder.Input{}
-		addrInfo, err := appdb.AddrInfo(ctx, r.AccountID)
+		inputAccount, err := accounts.Find(ctx, r.AccountID)
 		if err != nil {
-			return nil, errors.Wrap(err, "get addr info")
+			return nil, errors.Wrap(err, "get account info")
 		}
-		path := appdb.ReceiverPath(addrInfo, r.AddrIndex[:])
-		signers := hd25519.DeriveXPubs(addrInfo.Keys, path)
-		signerPKs := hd25519.XPubKeys(signers)
-		redeemScript, err := txscript.MultiSigScript(signerPKs, addrInfo.SigsRequired)
+
+		path := signers.Path(inputAccount, signers.AccountKeySpace, r.ControlProgramIndex[:])
+		derivedXPubs := hd25519.DeriveXPubs(inputAccount.XPubs, path)
+		derivedPKs := hd25519.XPubKeys(derivedXPubs)
+
+		redeemScript, err := txscript.MultiSigScript(derivedPKs, inputAccount.Quorum)
 		if err != nil {
 			return nil, errors.Wrap(err, "compute redeem script")
 		}
 		templateInput.AssetID = r.AssetID
 		templateInput.Amount = r.Amount
-		templateInput.AddWitnessSigs(txbuilder.InputSigs(addrInfo.Keys, path), addrInfo.SigsRequired, nil)
+		templateInput.AddWitnessSigs(txbuilder.InputSigs(inputAccount.XPubs, path), inputAccount.Quorum, nil)
 		templateInput.AddWitnessData(redeemScript)
 
 		item := &txbuilder.ReserveResultItem{
@@ -113,27 +115,27 @@ func NewAccountSource(ctx context.Context, assetAmount *bc.AssetAmount, accountI
 }
 
 type AccountReceiver struct {
-	addr *appdb.Address
+	controlProgram []byte
+	accountID      string
 }
 
-func (receiver *AccountReceiver) PKScript() []byte { return receiver.addr.PKScript }
+func (receiver *AccountReceiver) PKScript() []byte { return receiver.controlProgram }
 
-func NewAccountReceiver(addr *appdb.Address) *AccountReceiver {
-	return &AccountReceiver{addr: addr}
+func NewAccountReceiver(controlProgram []byte, accountID string) *AccountReceiver {
+	return &AccountReceiver{controlProgram: controlProgram, accountID: accountID}
 }
 
 func NewAccountDestination(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, metadata []byte) (*txbuilder.Destination, error) {
-	addr, err := appdb.NewAddress(ctx, accountID, true)
+	acp, err := accounts.CreateControlProgram(ctx, accountID)
 	if err != nil {
 		return nil, err
 	}
-	receiver := NewAccountReceiver(addr)
-	result := &txbuilder.Destination{
+
+	return &txbuilder.Destination{
 		AssetAmount: *assetAmount,
 		Metadata:    metadata,
-		Receiver:    receiver,
-	}
-	return result, nil
+		Receiver:    NewAccountReceiver(acp, accountID),
+	}, nil
 }
 
 // CancelReservations cancels any existing reservations
@@ -143,9 +145,9 @@ func CancelReservations(ctx context.Context, outpoints []bc.Outpoint) error {
 }
 
 // LoadAccountInfo turns a set of state.Outputs into a set of
-// txdb.Outputs by adding account annotations.  Outputs that can't be
+// outputs by adding account annotations.  Outputs that can't be
 // annotated are excluded from the result.
-func LoadAccountInfo(ctx context.Context, outs []*state.Output) ([]*txdb.Output, error) {
+func LoadAccountInfo(ctx context.Context, outs []*state.Output) ([]*output, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -160,22 +162,21 @@ func LoadAccountInfo(ctx context.Context, outs []*state.Output) ([]*txdb.Output,
 		scripts = append(scripts, []byte(s))
 	}
 
-	result := make([]*txdb.Output, 0, len(outs))
+	result := make([]*output, 0, len(outs))
 
 	const q = `
-		SELECT pk_script, manager_node_id, account_id, key_index(key_index)
-			FROM addresses
-			WHERE pk_script IN (SELECT unnest($1::bytea[]))
+		SELECT signer_id, key_index(key_index), control_program
+		FROM account_control_programs
+		WHERE control_program IN (SELECT unnest($1::bytea[]))
 	`
 
-	err := pg.ForQueryRows(ctx, q, scripts, func(script []byte, mnodeID, accountID string, addrIndex pg.Uint32s) {
-		for _, out := range outsByScript[string(script)] {
-			newOut := &txdb.Output{
-				Output:        *out,
-				ManagerNodeID: mnodeID,
-				AccountID:     accountID,
+	err := pg.ForQueryRows(ctx, q, scripts, func(accountID string, keyIndex pg.Uint32s, program []byte) {
+		for _, out := range outsByScript[string(program)] {
+			newOut := &output{
+				Output:    *out,
+				AccountID: accountID,
 			}
-			copy(newOut.AddrIndex[:], addrIndex)
+			copy(newOut.keyIndex[:], keyIndex)
 			result = append(result, newOut)
 		}
 	})

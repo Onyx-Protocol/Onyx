@@ -5,6 +5,7 @@ import (
 
 	"chain/core/appdb"
 	"chain/core/asset"
+	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/core/utxodb"
 	"chain/database/pg"
@@ -45,10 +46,7 @@ var (
 		appdb.ErrBadLabel:            errorInfo{400, "CH704", "Invalid label"},
 		asset.ErrBadSigsRequired:     errorInfo{400, "CH712", "signatures_required must be at least 1"},
 		asset.ErrBadKeySpec:          errorInfo{400, "CH713", "Invalid xpub"},
-		appdb.ErrInvalidAccountKey:   errorInfo{400, "CH713", "Invalid xpub"},
 		asset.ErrTooFewKeys:          errorInfo{400, "CH715", "Cannot have more signatures required than keys"},
-		appdb.ErrBadAccountKeyCount:  errorInfo{400, "CH716", "Accounts must provide the correct number of keys for an account manager"},
-		appdb.ErrPastExpires:         errorInfo{400, "CH720", "Expires, if set, must be in the future"},
 		utxodb.ErrInsufficient:       errorInfo{400, "CH733", "Insufficient funds for tx"},
 		utxodb.ErrReserved:           errorInfo{400, "CH743", "Some outputs are reserved; try again"},
 		asset.ErrRejected:            errorInfo{400, "CH744", "Transaction rejected"},
@@ -61,6 +59,13 @@ var (
 		appdb.ErrUserAlreadyExists:   errorInfo{400, "CH801", "User already exists on the core"},
 		appdb.ErrCannotDelete:        errorInfo{400, "CH901", "Cannot delete non-empty object"},
 		appdb.ErrArchived:            errorInfo{404, "CH902", "Item has been archived"},
+
+		// Signers error namespace (2xx)
+		signers.ErrBadQuorum: errorInfo{400, "CH200", "Quorum must be greater than 1 and less than or equal to the length of xpubs"},
+		signers.ErrBadXPub:   errorInfo{400, "CH200", "Invalid xpub format"},
+		signers.ErrNoXPubs:   errorInfo{400, "CH200", "At least one xpub is required"},
+		signers.ErrBadType:   errorInfo{400, "CH200", "Retrieved type does not match expected type"},
+		signers.ErrArchived:  errorInfo{400, "CH200", "Item has been archived"},
 	}
 )
 

@@ -152,32 +152,16 @@ func boot(db *sql.DB, args []string) {
 		fatalln(err)
 	}
 
-	mpub, mpriv := genKey()
-	mn, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", mpub, mpriv, 0, 1, nil)
-	if err != nil {
-		fatalln(err)
-	}
-
-	ipub, ipriv := genKey()
-	in, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", ipub, ipriv, 1, nil)
-	if err != nil {
-		fatalln(err)
-	}
-
 	err = dbtx.Commit(ctx)
 	if err != nil {
 		fatalln(err)
 	}
 
 	result, _ := json.MarshalIndent(map[string]string{
-		"userID":        u.ID,
-		"tokenID":       tok.ID,
-		"tokenSecret":   tok.Secret,
-		"projectID":     proj.ID,
-		"managerXPRV":   mpriv[0].String(),
-		"managerNodeID": mn.ID,
-		"issuerXPRV":    ipriv[0].String(),
-		"issuerNodeID":  in.ID,
+		"userID":      u.ID,
+		"tokenID":     tok.ID,
+		"tokenSecret": tok.Secret,
+		"projectID":   proj.ID,
 	}, "", "  ")
 	fmt.Printf("%s\n", result)
 }

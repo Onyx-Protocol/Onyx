@@ -32,8 +32,6 @@ Boot bootstraps the database to a minimal functional state:
     auth token
     project (with membership)
     admin node
-    manager node (with keys)
-    issuer node (with keys)
 
 */
 package main

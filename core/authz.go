@@ -25,18 +25,6 @@ func adminAuthz(ctx context.Context) error {
 	return nil
 }
 
-// managerAuthz will verify whether this request has access to the provided account
-// manager. If the account manager is archived, managerAuthz will return ErrArchived.
-func managerAuthz(ctx context.Context, managerID string) error {
-	return appdb.CheckActiveManager(ctx, managerID)
-}
-
-// accountAuthz will verify whether this request has access to the provided
-// account. If the account is archived, accountAuthz will return ErrArchived.
-func accountAuthz(ctx context.Context, accountID string) error {
-	return appdb.CheckActiveAccount(ctx, accountID)
-}
-
 // issuerAuthz will verify whether this request has access to the provided asset
 // issuer. If the asset issuer is archived, issuerAuthz will return ErrArchived.
 func issuerAuthz(ctx context.Context, issuerID string) error {
@@ -51,37 +39,20 @@ func assetAuthz(ctx context.Context, assetID string) error {
 
 func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
 	var (
-		accountIDs []string
-		assetIDs   []string
+		assetIDs []string
 	)
 	for _, req := range reqs {
 		for _, source := range req.Sources {
-			if source.AccountID != "" {
-				accountIDs = append(accountIDs, source.AccountID)
-			}
 			if source.Type == "issue" && source.AssetID != nil {
 				assetIDs = append(assetIDs, source.AssetID.String())
 			}
 		}
-		for _, dest := range req.Dests {
-			if dest.AccountID != "" {
-				accountIDs = append(accountIDs, dest.AccountID)
-			}
-		}
 	}
-	if len(accountIDs) == 0 {
+	if len(assetIDs) == 0 {
 		return nil
 	}
 
-	err := appdb.CheckActiveAccount(ctx, accountIDs...)
-	if errors.Root(err) == pg.ErrUserInputNotFound || errors.Root(err) == appdb.ErrArchived {
-		return errors.WithDetailf(errNoAccessToResource, "account IDs: %+v", accountIDs)
-	}
-	if err != nil {
-		return err
-	}
-
-	err = appdb.CheckActiveAsset(ctx, assetIDs...)
+	err := appdb.CheckActiveAsset(ctx, assetIDs...)
 	if errors.Root(err) == pg.ErrUserInputNotFound || errors.Root(err) == appdb.ErrArchived {
 		return errors.WithDetailf(errNoAccessToResource, "asset IDs: %+v", assetIDs)
 	}

@@ -1,4 +1,4 @@
-package signer
+package blocksigner
 
 import (
 	"golang.org/x/net/context"

@@ -36,14 +36,14 @@ type (
 		bc.AssetAmount
 		Script []byte
 
-		AccountID string
-		AddrIndex [2]uint32
+		AccountID           string
+		ControlProgramIndex [2]uint32
 	}
 
 	Receiver struct {
-		ManagerNodeID string   `json:"manager_node_id"`
-		AccountID     string   `json:"account_id"`
-		AddrIndex     []uint32 `json:"address_index"`
+		ManagerNodeID       string   `json:"manager_node_id"`
+		AccountID           string   `json:"account_id"`
+		ControlProgramIndex []uint32 `json:"control_program_index"`
 	}
 
 	// Change represents reserved units beyond what was asked for.
@@ -98,7 +98,7 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 		    AS (reservation_id INT, already_existed BOOLEAN, existing_change BIGINT, amount BIGINT, insufficient BOOLEAN)
 		`
 		utxosQ = `
-			SELECT a.tx_hash, a.index, a.amount, key_index(a.addr_index), a.script
+			SELECT a.tx_hash, a.index, a.amount, key_index(a.control_program_index), a.control_program
 			FROM account_utxos a
 			WHERE reservation_id = $1
 		`
@@ -162,7 +162,7 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 			hash bc.Hash,
 			index uint32,
 			amount uint64,
-			addrIndex pg.Uint32s,
+			programIndex pg.Uint32s,
 			script []byte,
 		) {
 			utxo := UTXO{
@@ -171,7 +171,7 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 				AssetAmount: bc.AssetAmount{AssetID: source.AssetID, Amount: amount},
 				AccountID:   source.AccountID,
 			}
-			copy(utxo.AddrIndex[:], addrIndex)
+			copy(utxo.ControlProgramIndex[:], programIndex)
 			reserved = append(reserved, &utxo)
 		})
 		if err != nil {

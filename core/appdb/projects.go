@@ -109,7 +109,7 @@ func UpdateProject(ctx context.Context, projID, name string) error {
 }
 
 // ArchiveProject marks a project as archived, hiding it from listProjects and
-// archiving all of its managers, issuers, accounts and assets.
+// archiving all of its issuers and assets.
 //
 // Must be called inside a database transaction.
 func ArchiveProject(ctx context.Context, projID string) error {
@@ -124,23 +124,9 @@ func ArchiveProject(ctx context.Context, projID string) error {
 		return errors.Wrap(err, "archive query")
 	}
 
-	const mnQ = `UPDATE manager_nodes SET archived = true WHERE project_id = $1`
-	if _, err := pg.Exec(ctx, mnQ, projID); err != nil {
-		return errors.Wrap(err, "archive account managers query")
-	}
-
 	const inQ = `UPDATE issuer_nodes SET archived = true WHERE project_id = $1`
 	if _, err := pg.Exec(ctx, inQ, projID); err != nil {
 		return errors.Wrap(err, "archive asset issuers query")
-	}
-
-	const accountQ = `
-		UPDATE accounts SET archived = true WHERE manager_node_id IN (
-			SELECT id FROM manager_nodes WHERE project_id = $1
-		)
-	`
-	if _, err := pg.Exec(ctx, accountQ, projID); err != nil {
-		return errors.Wrap(err, "archive accounts query")
 	}
 
 	const assetQ = `
@@ -165,51 +151,6 @@ func IsAdmin(ctx context.Context, userID string) (bool, error) {
 	row := pg.QueryRow(ctx, q, userID)
 	err := row.Scan(&isAdmin)
 	return isAdmin, errors.Wrap(err)
-}
-
-// CheckActiveManager returns nil if the account manager is active.
-// If the account manager is archived, this function will return ErrArchived.
-func CheckActiveManager(ctx context.Context, managerID string) error {
-	const q = `
-		SELECT archived
-		FROM manager_nodes WHERE id=$1
-	`
-	var archived bool
-	err := pg.QueryRow(ctx, q, managerID).Scan(&archived)
-	if err == sql.ErrNoRows {
-		err = pg.ErrUserInputNotFound
-	}
-	if archived {
-		err = ErrArchived
-	}
-	return errors.WithDetailf(err, "account manager ID: %v", managerID)
-}
-
-// CheckActiveAccount returns nil if the provided accounts are active.
-// If any of the accounts are archived, this function returns ErrArchived.
-func CheckActiveAccount(ctx context.Context, accountIDs ...string) error {
-	// Remove duplicates so that we know how many accounts to expect.
-	sort.Strings(accountIDs)
-	accountIDs = strings.Uniq(accountIDs)
-
-	const q = `
-		SELECT COUNT(id),
-		       COUNT(CASE WHEN archived THEN 1 ELSE NULL END) AS archived
-		FROM accounts
-		WHERE id=ANY($1)
-	`
-	var (
-		accountsArchived int
-		accountsFound    int
-	)
-	err := pg.QueryRow(ctx, q, pg.Strings(accountIDs)).
-		Scan(&accountsFound, &accountsArchived)
-	if accountsFound != len(accountIDs) {
-		err = pg.ErrUserInputNotFound
-	} else if accountsArchived > 0 {
-		err = ErrArchived
-	}
-	return errors.WithDetailf(err, "account IDs: %+v", accountIDs)
 }
 
 // CheckActiveIssuer returns nil if the provided asset issuer is active.

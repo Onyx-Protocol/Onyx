@@ -3,13 +3,23 @@ package asset
 import (
 	"golang.org/x/net/context"
 
-	"chain/core/appdb"
 	"chain/cos"
 	"chain/cos/bc"
+	"chain/cos/state"
 )
 
-func (ar *AccountReceiver) Addr() *appdb.Address {
-	return ar.addr
+func (ar *AccountReceiver) AccountID() string {
+	return ar.accountID
+}
+
+func Output(out state.Output, accountID string, keyIndex []uint32) *output {
+	ret := output{
+		Output:    out,
+		AccountID: accountID,
+	}
+
+	copy(ret.keyIndex[:], keyIndex)
+	return &ret
 }
 
 func FC() *cos.FC {

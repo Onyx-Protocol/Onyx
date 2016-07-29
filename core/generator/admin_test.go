@@ -75,13 +75,6 @@ func TestGetSummary(t *testing.T) {
 			('proj-id-0', 'proj-name-0'),
 			('proj-id-other', 'proj-name-other');
 
-		INSERT INTO manager_nodes
-			(id, project_id, key_index, label)
-		VALUES
-			('mn-id-0', 'proj-id-0', 0, 'mn-label-0'),
-			('mn-id-1', 'proj-id-0', 1, 'mn-label-1'),
-			('mn-id-other', 'proj-id-other', 2, 'mn-label-other');
-
 		INSERT INTO issuer_nodes
 			(id, project_id, key_index, label, keyset)
 		VALUES

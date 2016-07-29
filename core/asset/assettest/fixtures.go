@@ -7,11 +7,12 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/core/accounts"
 	"chain/core/appdb"
 	"chain/core/asset"
+	"chain/core/blocksigner"
 	"chain/core/generator"
 	"chain/core/issuer"
-	"chain/core/signer"
 	"chain/core/txbuilder"
 	"chain/cos"
 	"chain/cos/bc"
@@ -115,62 +116,29 @@ func CreateIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label
 	return issuerNode.ID
 }
 
-var managerNodeCounter = createCounter()
-
-func CreateManagerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs []*hd25519.XPub, xprvs []*hd25519.XPrv) string {
-	dbtx, ctx, err := pg.Begin(ctx)
+func CreateAccountFixture(ctx context.Context, t testing.TB, keys []string, quorum int) string {
+	if keys == nil {
+		keys = []string{testutil.TestXPub.String()}
+	}
+	if quorum == 0 {
+		quorum = len(keys)
+	}
+	acc, err := accounts.Create(ctx, keys, quorum, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	defer dbtx.Rollback(ctx)
-
-	if projectID == "" {
-		projectID = CreateProjectFixture(ctx, t, "")
-	}
-	if label == "" {
-		label = fmt.Sprintf("mnode-%d", <-managerNodeCounter)
-	}
-	if len(xpubs) == 0 && len(xprvs) == 0 {
-		xpubs = append(xpubs, testutil.TestXPub)
-		xprvs = append(xprvs, testutil.TestXPrv)
-	}
-	managerNode, err := appdb.InsertManagerNode(ctx, projectID, label, xpubs, xprvs, 0, 1, nil)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	return managerNode.ID
+	return acc.ID
 }
 
-var accountCounter = createCounter()
-
-func CreateAccountFixture(ctx context.Context, t testing.TB, managerNodeID, label string, keys []string) string {
-	if managerNodeID == "" {
-		managerNodeID = CreateManagerNodeFixture(ctx, t, "", "", nil, nil)
-	}
-	if label == "" {
-		label = fmt.Sprintf("acct-%d", <-accountCounter)
-	}
-	account, err := appdb.CreateAccount(ctx, managerNodeID, label, keys, nil)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	return account.ID
-}
-
-func CreateAddressFixture(ctx context.Context, t testing.TB, accID string) *appdb.Address {
+func CreateAccountControlProgramFixture(ctx context.Context, t testing.TB, accID string) []byte {
 	if accID == "" {
-		accID = CreateAccountFixture(ctx, t, "", "", nil)
+		accID = CreateAccountFixture(ctx, t, nil, 0)
 	}
-	addr, err := appdb.NewAddress(ctx, accID, true)
+	controlProgram, err := accounts.CreateControlProgram(ctx, accID)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	return addr
+	return controlProgram
 }
 
 var assetCounter = createCounter()
@@ -204,7 +172,7 @@ func createCounter() <-chan int {
 
 func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64, accountID string) state.Output {
 	if accountID == "" {
-		accountID = CreateAccountFixture(ctx, t, "", "foo", nil)
+		accountID = CreateAccountFixture(ctx, t, nil, 0)
 	}
 	dest := AccountDestinationFixture(ctx, t, assetID, amount, accountID)
 
@@ -256,7 +224,7 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 	}
 	asset.Init(fc, true)
 	privkey := testutil.TestPrv
-	localSigner := signer.New(privkey, pg.FromContext(ctx), fc)
+	localSigner := blocksigner.New(privkey, pg.FromContext(ctx), fc)
 	g := &generator.Generator{
 		Config: generator.Config{
 			LocalSigner:  localSigner,

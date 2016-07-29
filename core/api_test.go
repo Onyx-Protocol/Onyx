@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/core/accounts"
 	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/issuer"
@@ -19,6 +20,54 @@ import (
 	"chain/net/http/authn"
 	"chain/testutil"
 )
+
+func TestAccountTransfer(t *testing.T) {
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assetID := assettest.CreateAssetFixture(ctx, t, "", "", "")
+	assetAmt := bc.AssetAmount{
+		AssetID: assetID,
+		Amount:  100,
+	}
+	sources := issuer.NewIssueSource(ctx, assetAmt, nil, nil)
+	dests, err := asset.NewAccountDestination(ctx, &assetAmt, acc.ID, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpl, err := txbuilder.Build(ctx, nil, []*txbuilder.Source{sources}, []*txbuilder.Destination{dests}, nil, time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
+	_, err = asset.FinalizeTx(ctx, tmpl)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// new source
+	sources = asset.NewAccountSource(ctx, &assetAmt, acc.ID, nil, nil, nil)
+	tmpl, err = txbuilder.Build(ctx, nil, []*txbuilder.Source{sources}, []*txbuilder.Destination{dests}, nil, time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
+	_, err = asset.FinalizeTx(ctx, tmpl)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestMux(t *testing.T) {
 	// Handler calls httpjson.HandleFunc, which panics
@@ -65,9 +114,8 @@ func TestIssue(t *testing.T) {
 	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
 	projectID := assettest.CreateProjectFixture(ctx, t, "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
-	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
 	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
-	account1ID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
+	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0)
 
 	ctx = authn.NewContext(ctx, userID)
 
@@ -99,7 +147,7 @@ func TestIssue(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	inspectTemplate(t, parsedResult, managerNodeID, account1ID)
+	inspectTemplate(t, parsedResult, account1ID)
 }
 
 func TestTransfer(t *testing.T) {
@@ -114,10 +162,9 @@ func TestTransfer(t *testing.T) {
 	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
 	projectID := assettest.CreateProjectFixture(ctx, t, "")
 	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
-	managerNodeID := assettest.CreateManagerNodeFixture(ctx, t, projectID, "", nil, nil)
 	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
-	account1ID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
-	account2ID := assettest.CreateAccountFixture(ctx, t, managerNodeID, "", nil)
+	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0)
+	account2ID := assettest.CreateAccountFixture(ctx, t, nil, 0)
 
 	assetIDStr := assetID.String()
 
@@ -179,7 +226,7 @@ func TestTransfer(t *testing.T) {
 	if len(parsedResult) != 1 {
 		t.Errorf("expected build result to have length 1, got %d", len(parsedResult))
 	}
-	toSign := inspectTemplate(t, parsedResult[0], managerNodeID, account2ID)
+	toSign := inspectTemplate(t, parsedResult[0], account2ID)
 	txTemplate, err = toTxTemplate(ctx, toSign)
 	assettest.SignTxTemplate(t, txTemplate, testutil.TestXPrv)
 	if err != nil {
@@ -193,7 +240,7 @@ func TestTransfer(t *testing.T) {
 }
 
 // expects inp to have one "template" member, with one input and one output
-func inspectTemplate(t *testing.T, inp map[string]interface{}, expectedReceiverManagerNodeID, expectedReceiverAccountID string) map[string]interface{} {
+func inspectTemplate(t *testing.T, inp map[string]interface{}, expectedReceiverAccountID string) map[string]interface{} {
 	member, ok := inp["template"]
 	if !ok {
 		t.Errorf("expected \"template\" in result")

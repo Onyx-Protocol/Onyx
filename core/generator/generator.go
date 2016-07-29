@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/signer"
+	"chain/core/blocksigner"
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/crypto/ed25519"
@@ -18,7 +18,7 @@ import (
 // Config encapsulates generator configuration options.
 type Config struct {
 	RemoteSigners []*RemoteSigner
-	LocalSigner   *signer.Signer
+	LocalSigner   *blocksigner.Signer
 	BlockPeriod   time.Duration
 	BlockKeys     []ed25519.PublicKey // keys for block scripts
 	SigsRequired  int                 // sigs required for block scripts

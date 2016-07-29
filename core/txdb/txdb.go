@@ -8,7 +8,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/state"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
@@ -21,13 +20,6 @@ import (
 // db handle.
 func New(db *sql.DB) (*Store, *Pool) {
 	return NewStore(db), NewPool(db)
-}
-
-type Output struct {
-	state.Output
-	ManagerNodeID string
-	AccountID     string
-	AddrIndex     [2]uint32
 }
 
 // getBlockchainTxs looks up transactions by their hashes in the blockchain.

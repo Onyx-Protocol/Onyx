@@ -76,69 +76,6 @@ func newTestIssuerNode(t *testing.T, ctx context.Context, project *Project, labe
 	return issuerNode
 }
 
-func newTestManagerNode(t *testing.T, ctx context.Context, project *Project, label string) *ManagerNode {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	defer dbtx.Rollback(ctx)
-
-	if project == nil {
-		project = newTestProject(t, ctx, "project-1")
-	}
-	managerNode, err := InsertManagerNode(ctx, project.ID, label, []*hd25519.XPub{dummyXPub}, nil, 0, 1, nil)
-	if err != nil {
-		t.Fatalf("could not create manager node in newTestManagerNode: %v", err)
-	}
-	if managerNode.ID == "" {
-		t.Fatal("got empty manager node id in newTestManagerNode")
-	}
-
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	return managerNode
-}
-
-func newTestVarKeyManagerNode(t *testing.T, ctx context.Context, project *Project, label string, varKeys, sigsReq int) *ManagerNode {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	defer dbtx.Rollback(ctx)
-
-	if project == nil {
-		project = newTestProject(t, ctx, "project-1")
-	}
-	managerNode, err := InsertManagerNode(ctx, project.ID, label, []*hd25519.XPub{dummyXPub}, nil, varKeys, sigsReq, nil)
-	if err != nil {
-		t.Fatalf("could not create manager node in newTestVarKeyManagerNode: %v", err)
-	}
-	if managerNode.ID == "" {
-		t.Fatal("got empty manager node id in newTestVarKeyManagerNode")
-	}
-
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	return managerNode
-}
-
-func newTestAccount(t *testing.T, ctx context.Context, managerNode *ManagerNode, label string) *Account {
-	if managerNode == nil {
-		managerNode = newTestManagerNode(t, ctx, nil, "manager-node-1")
-	}
-	account, err := CreateAccount(ctx, managerNode.ID, label, nil, nil)
-	if err != nil {
-		t.Fatalf("could not create account in newTestAccount: %v", err)
-	}
-	return account
-}
-
 func newTestAsset(t *testing.T, ctx context.Context, issuerNode *IssuerNode) *Asset {
 	if issuerNode == nil {
 		issuerNode = newTestIssuerNode(t, ctx, nil, "issuer-node-1")

@@ -39,59 +39,6 @@ func TestAdminAuthz(t *testing.T) {
 	})
 }
 
-func TestManagerAuthz(t *testing.T) {
-	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
-		mn1ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
-		mn2ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-		cases := []struct {
-			userID        string
-			managerNodeID string
-			want          error
-		}{
-			{fixtureInfo.u2ID, mn1ID, nil}, {fixtureInfo.u2ID, mn2ID, nil},
-		}
-
-		for _, c := range cases {
-			ctx := authn.NewContext(ctx, c.userID)
-			got := managerAuthz(ctx, c.managerNodeID)
-			if errors.Root(got) != c.want {
-				t.Errorf("managerAuthz(%s, %v) = %q want %q", c.userID, c.managerNodeID, got, c.want)
-			}
-		}
-	})
-}
-
-func TestAccountAuthz(t *testing.T) {
-	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
-		mn1ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
-		mn2ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-
-		acc1ID := assettest.CreateAccountFixture(ctx, t, mn1ID, "", nil)
-		acc2ID := assettest.CreateAccountFixture(ctx, t, mn2ID, "", nil)
-		acc3ID := assettest.CreateAccountFixture(ctx, t, mn2ID, "", nil)
-		err := appdb.ArchiveAccount(ctx, acc3ID)
-		if err != nil {
-			panic(err)
-		}
-
-		cases := []struct {
-			userID    string
-			accountID string
-			want      error
-		}{
-			{fixtureInfo.u2ID, acc1ID, nil}, {fixtureInfo.u2ID, acc2ID, nil}, {fixtureInfo.u2ID, acc3ID, appdb.ErrArchived},
-		}
-
-		for _, c := range cases {
-			ctx := authn.NewContext(ctx, c.userID)
-			got := accountAuthz(ctx, c.accountID)
-			if errors.Root(got) != c.want {
-				t.Errorf("accountAuthz(%s, %v) = %q want %q", c.userID, c.accountID, got, c.want)
-			}
-		}
-	})
-}
-
 func TestIssuerAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
 		in1ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
@@ -148,10 +95,8 @@ func TestAssetAuthz(t *testing.T) {
 
 func TestBuildAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
-		mn1ID := assettest.CreateManagerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
-
-		acc1ID := assettest.CreateAccountFixture(ctx, t, mn1ID, "", nil)
-		acc2ID := assettest.CreateAccountFixture(ctx, t, mn1ID, "", nil)
+		acc1ID := assettest.CreateAccountFixture(ctx, t, nil, 0)
+		acc2ID := assettest.CreateAccountFixture(ctx, t, nil, 0)
 
 		assetIDPtr := &bc.AssetID{}
 

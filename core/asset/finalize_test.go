@@ -10,7 +10,6 @@ import (
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
-	"chain/core/txdb"
 	"chain/cos/bc"
 	"chain/cos/state"
 	"chain/database/pg"
@@ -67,7 +66,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	assettest.SignTxTemplate(t, firstTemplate, info.privKeyManager)
+	assettest.SignTxTemplate(t, firstTemplate, info.privKeyAccounts)
 	_, err = FinalizeTx(ctx, firstTemplate)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -82,7 +81,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	assettest.SignTxTemplate(t, secondTemplate, info.privKeyManager)
+	assettest.SignTxTemplate(t, secondTemplate, info.privKeyAccounts)
 	_, err = FinalizeTx(ctx, secondTemplate)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -103,11 +102,10 @@ func TestConflictingTxsInPool(t *testing.T) {
 func TestLoadAccountInfo(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	mnode := assettest.CreateManagerNodeFixture(ctx, t, "", "", nil, nil)
-	acc := assettest.CreateAccountFixture(ctx, t, mnode, "", nil)
-	addr := assettest.CreateAddressFixture(ctx, t, acc)
+	acc := assettest.CreateAccountFixture(ctx, t, nil, 0)
+	addr := assettest.CreateAccountControlProgramFixture(ctx, t, acc)
 
-	to1 := bc.NewTxOutput(bc.AssetID{}, 0, addr.PKScript, nil)
+	to1 := bc.NewTxOutput(bc.AssetID{}, 0, addr, nil)
 	to2 := bc.NewTxOutput(bc.AssetID{}, 0, []byte("notfound"), nil)
 
 	outs := []*state.Output{{
@@ -121,16 +119,11 @@ func TestLoadAccountInfo(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	want := []*txdb.Output{{
-		Output:        state.Output{TxOutput: *to1},
-		ManagerNodeID: mnode,
-		AccountID:     acc,
-	}}
-	copy(want[0].AddrIndex[:], addr.Index)
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got = %+v want %+v", got, want)
+	if !reflect.DeepEqual(got[0].AccountID, acc) {
+		t.Errorf("got = %+v want %+v", got[0].AccountID, acc)
 	}
+
+	_ = got
 }
 
 func TestDeleteUTXOs(t *testing.T) {

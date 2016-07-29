@@ -12,6 +12,44 @@ import (
 	"chain/metrics"
 )
 
+// NodeKey is represents a single key in a node's multi-sig configuration.
+// It is used as a return value when nodes are created.
+//
+// A NodeKey consists of a type, plus parameters depending on that type. Valid
+// node types include "node".
+//
+// For node-type keys, XPrv will be populated only if it was generated
+// server-side when the node was created.
+type NodeKey struct {
+	Type string `json:"type"`
+
+	// Parameters for type "node"
+	XPub *hd25519.XPub `json:"xpub,omitempty"`
+	XPrv *hd25519.XPrv `json:"xprv,omitempty"`
+}
+
+func buildNodeKeys(xpubs []*hd25519.XPub, xprvs []*hd25519.XPrv) ([]*NodeKey, error) {
+	pubToPrv := make(map[string]*hd25519.XPrv)
+	for _, xprv := range xprvs {
+		xpub := xprv.Public()
+		pubToPrv[xpub.String()] = xprv
+	}
+
+	var res []*NodeKey
+	for _, xpub := range xpubs {
+		k := &NodeKey{Type: "service", XPub: xpub}
+
+		s := xpub.String()
+		if xprv := pubToPrv[s]; xprv != nil {
+			k.XPrv = xprv
+		}
+
+		res = append(res, k)
+	}
+
+	return res, nil
+}
+
 // IssuerNode represents a single issuer ndoe. It is intended to be used wth API
 // responses.
 type IssuerNode struct {

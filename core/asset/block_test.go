@@ -6,11 +6,13 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/core/accounts"
 	"chain/core/appdb"
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
 	"chain/core/issuer"
+	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/core/utxodb"
@@ -211,11 +213,11 @@ func benchGenBlock(b *testing.B) {
 }
 
 type clientInfo struct {
-	asset          *appdb.Asset
-	acctA          *appdb.Account
-	acctB          *appdb.Account
-	privKeyIssuer  *hd25519.XPrv
-	privKeyManager *hd25519.XPrv
+	asset           *appdb.Asset
+	acctA           *signers.Signer
+	acctB           *signers.Signer
+	privKeyIssuer   *hd25519.XPrv
+	privKeyAccounts *hd25519.XPrv
 }
 
 // TODO(kr): refactor this into new package core/coreutil
@@ -238,21 +240,17 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *generator.Generato
 		return nil, nil, err
 	}
 
-	manPriv, manPub, err := hd25519.NewXKeys(nil)
-	if err != nil {
-		return nil, nil, err
-	}
-	manager, err := appdb.InsertManagerNode(ctx, proj.ID, "manager", []*hd25519.XPub{manPub}, []*hd25519.XPrv{manPriv}, 0, 1, nil)
+	accPriv, accPub, err := hd25519.NewXKeys(nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	acctA, err := appdb.CreateAccount(ctx, manager.ID, "label", nil, nil)
+	acctA, err := accounts.Create(ctx, []string{accPub.String()}, 1, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	acctB, err := appdb.CreateAccount(ctx, manager.ID, "label", nil, nil)
+	acctB, err := accounts.Create(ctx, []string{accPub.String()}, 1, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -281,11 +279,11 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *generator.Generato
 	}
 
 	info := &clientInfo{
-		asset:          asset,
-		acctA:          acctA,
-		acctB:          acctB,
-		privKeyIssuer:  issPriv,
-		privKeyManager: manPriv,
+		asset:           asset,
+		acctA:           acctA,
+		acctB:           acctB,
+		privKeyIssuer:   issPriv,
+		privKeyAccounts: accPriv,
 	}
 	return info, g, nil
 }
@@ -326,7 +324,7 @@ func transfer(ctx context.Context, t testing.TB, info *clientInfo, srcAcctID, de
 		return nil, errors.Wrap(err)
 	}
 
-	assettest.SignTxTemplate(t, xferTx, info.privKeyManager)
+	assettest.SignTxTemplate(t, xferTx, info.privKeyAccounts)
 
 	tx, err := FinalizeTx(ctx, xferTx)
 	return tx, errors.Wrap(err)

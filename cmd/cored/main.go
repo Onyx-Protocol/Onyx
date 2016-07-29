@@ -20,12 +20,12 @@ import (
 
 	"chain/core"
 	"chain/core/asset"
+	"chain/core/blocksigner"
 	"chain/core/explorer"
 	"chain/core/fetch"
 	"chain/core/generator"
 	"chain/core/leader"
 	"chain/core/rpcclient"
-	"chain/core/signer"
 	"chain/core/txdb"
 	"chain/core/utxodb"
 	"chain/cos"
@@ -176,9 +176,9 @@ func main() {
 		chainlog.Fatal(ctx, "error", err)
 	}
 
-	var localSigner *signer.Signer
+	var localSigner *blocksigner.Signer
 	if *isSigner {
-		localSigner = signer.New(privKey, db, fc)
+		localSigner = blocksigner.New(privKey, db, fc)
 	}
 
 	rpcclient.Init(*remoteGeneratorURL)

@@ -37,15 +37,6 @@ type AssetSummary struct {
 	Definition chainjson.HexBytes
 }
 
-// AssetOwner indicates either an account or a manager node.
-type AssetOwner int
-
-// Valid values for AssetOwner.
-const (
-	OwnerAccount AssetOwner = iota
-	OwnerManagerNode
-)
-
 type assetLookupQuery struct {
 	hash         bc.AssetID
 	issuerNodeID string

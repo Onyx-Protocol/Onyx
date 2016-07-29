@@ -8,7 +8,7 @@
 TRUNCATE
 	account_utxos,
 	issuance_totals,
-	addresses,
+	account_control_programs,
 	pool_txs,
 	blocks_txs,
 	blocks,
