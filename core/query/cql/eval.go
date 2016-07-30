@@ -1,0 +1,107 @@
+package cql
+
+import (
+	"fmt"
+	"sort"
+	"strconv"
+)
+
+// Eval evaluates the provided query against the provided environment.
+func Eval(env map[string]interface{}, q Query) (s Set, err error) {
+	if q.Parameters > 1 {
+		return s, fmt.Errorf("multiple parameters are not yet supported")
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("preparing query: %s", r)
+		}
+	}()
+
+	v := eval(mapEnv(env), q.expr)
+	if !v.is(boolTyp) {
+		return s, fmt.Errorf("query `%s` does not evaluate to a boolean", q.expr.String())
+	}
+
+	// Always sort the return set so Eval(...) returns a
+	// consistent, canonical representation of a set.
+	sort.Strings(s.Values)
+	return v.set, nil
+}
+
+type typ int
+
+const (
+	boolTyp typ = iota
+	stringTyp
+	integerTyp
+	listTyp
+	placeholderTyp
+)
+
+// value represents the result of evaluating an expression against an
+// environment (a transaction, an unspent output, etc).
+//
+// Boolean values are represented as the set of parameter values that
+// satisfy the expression:
+// - true is represented as the complement of the empty set because
+//   all parameter values satisfy the expression.
+// - false is represented as the empty set because there are no possible
+//   parameter values that could satisfy the expression.
+type value struct {
+	t       typ
+	set     Set      // boolTyp
+	list    []string // listTyp
+	str     string   // stringTyp
+	integer int      // integerTyp
+}
+
+func (v value) is(t typ) bool {
+	return v.t == t
+}
+
+func eval(env environment, expr expr) value {
+	switch e := expr.(type) {
+	case notExpr:
+		v := eval(env, e.inner)
+		if !v.is(boolTyp) {
+			panic("NOT requires a boolean operand")
+		}
+		return value{t: boolTyp, set: complement(v.set)}
+	case binaryExpr:
+		lv, rv := eval(env, e.l), eval(env, e.r)
+		return e.op.apply(lv, rv)
+	case attrExpr:
+		return env.Get(e.attr)
+	case parenExpr:
+		return eval(env, e.inner)
+	case valueExpr:
+		switch e.typ {
+		case tokString:
+			return value{t: stringTyp, str: e.value[1 : len(e.value)-1]}
+		case tokInteger:
+			v, err := strconv.Atoi(e.value)
+			if err != nil {
+				panic(err) // can't happen; caught during parsing
+			}
+			return value{t: integerTyp, integer: v}
+		default:
+			panic(fmt.Errorf("value expr with invalid token type: %s", e.typ))
+		}
+	case envExpr:
+		subenvs := env.Environments(e.ident)
+		var set Set
+		for _, subenv := range subenvs {
+			v := eval(subenv, e.expr)
+			if !v.is(boolTyp) {
+				panic(e.ident + "(...) body must have type bool")
+			}
+			set = union(set, v.set)
+		}
+		return value{t: boolTyp, set: set}
+	case placeholderExpr:
+		return value{t: placeholderTyp}
+	default:
+		panic(fmt.Errorf("unrecognized expr type %T", expr))
+	}
+}
