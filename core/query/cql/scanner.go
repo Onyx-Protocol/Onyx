@@ -123,7 +123,7 @@ func (s *scanner) scanNumber() {
 				// only scanned "0x" or "0X"
 				s.error(offs, "illegal hexadecimal number")
 			}
-		} else {
+		} else if digitVal(s.ch) < 10 {
 			s.error(offs, "illegal leading 0 in number")
 		}
 	} else {

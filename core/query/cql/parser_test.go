@@ -19,6 +19,10 @@ func TestParseValid(t *testing.T) {
 			expr: valueExpr{typ: tokInteger, value: "2000"},
 		},
 		{
+			q:    "0",
+			expr: valueExpr{typ: tokInteger, value: "0"},
+		},
+		{
 			q:    "0xff",
 			expr: valueExpr{typ: tokInteger, value: "255"},
 		},
