@@ -5,8 +5,6 @@ import (
 
 	"chain/cos"
 	"chain/cos/bc"
-	"chain/errors"
-	"chain/log"
 )
 
 var fc *cos.FC
@@ -22,14 +20,7 @@ func Init(chain *cos.FC, isManager bool) {
 
 	fc = chain
 	if isManager {
-		fc.AddTxCallback(func(ctx context.Context, tx *bc.Tx) {
-			err := addAccountData(ctx, tx)
-			if err != nil {
-				log.Error(ctx, errors.Wrap(err, "adding account data"))
-			}
-		})
 		fc.AddBlockCallback(func(ctx context.Context, b *bc.Block) {
-			indexAccountUTXOs(ctx, b)
 			saveAssetDefinitions(ctx, b)
 			recordIssuances(ctx, b)
 		})

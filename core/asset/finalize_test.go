@@ -1,17 +1,16 @@
 package asset_test
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
 	"golang.org/x/net/context"
 
+	"chain/core/accounts"
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
-	"chain/cos/state"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/testutil"
@@ -50,7 +49,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 		Amount:  10,
 	}
 	sources := []*txbuilder.Source{
-		NewAccountSource(ctx, assetAmount, info.acctA.ID, nil, nil, nil),
+		accounts.NewSource(ctx, assetAmount, info.acctA.ID, nil, nil, nil),
 	}
 	srcTmpl, err := txbuilder.Build(ctx, nil, sources, nil, []byte{}, time.Minute)
 	if err != nil {
@@ -58,7 +57,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	// Build the first tx
-	dest1, err := NewAccountDestination(ctx, assetAmount, info.acctB.ID, nil)
+	dest1, err := accounts.NewDestination(ctx, assetAmount, info.acctB.ID, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -73,7 +72,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	// Build the second tx
-	dest2, err := NewAccountDestination(ctx, assetAmount, info.acctB.ID, nil)
+	dest2, err := accounts.NewDestination(ctx, assetAmount, info.acctB.ID, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -96,60 +95,5 @@ func TestConflictingTxsInPool(t *testing.T) {
 	dumpState(ctx, t)
 	if len(b.Transactions) != 1 {
 		t.Errorf("got block.Transactions = %#v\n, want exactly one tx", b.Transactions)
-	}
-}
-
-func TestLoadAccountInfo(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-
-	acc := assettest.CreateAccountFixture(ctx, t, nil, 0)
-	addr := assettest.CreateAccountControlProgramFixture(ctx, t, acc)
-
-	to1 := bc.NewTxOutput(bc.AssetID{}, 0, addr, nil)
-	to2 := bc.NewTxOutput(bc.AssetID{}, 0, []byte("notfound"), nil)
-
-	outs := []*state.Output{{
-		TxOutput: *to1,
-	}, {
-		TxOutput: *to2,
-	}}
-
-	got, err := LoadAccountInfo(ctx, outs)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	if !reflect.DeepEqual(got[0].AccountID, acc) {
-		t.Errorf("got = %+v want %+v", got[0].AccountID, acc)
-	}
-
-	_ = got
-}
-
-func TestDeleteUTXOs(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	_, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	asset := assettest.CreateAssetFixture(ctx, t, "", "", "")
-	out := assettest.IssueAssetsFixture(ctx, t, asset, 1, "")
-
-	block := &bc.Block{Transactions: []*bc.Tx{
-		bc.NewTx(bc.TxData{
-			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(out.Hash, out.Index, nil, asset, 1, nil, nil),
-			},
-		}),
-	}}
-	AddBlock(ctx, block) // actually addBlock; see export_test.go (ugh)
-
-	var n int
-	err = pg.QueryRow(ctx, `SELECT count(*) FROM account_utxos`).Scan(&n)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != 0 {
-		t.Errorf("count(account_utxos) = %d want 0", n)
 	}
 }

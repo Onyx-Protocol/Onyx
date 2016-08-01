@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/core/signers"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/testutil"
@@ -42,4 +43,26 @@ func TestCreateControlProgram(t *testing.T) {
 	if !bytes.Equal(got, want) {
 		t.Errorf("got control program = %x want %x", got, want)
 	}
+}
+
+func createTestAccount(ctx context.Context, t testing.TB) *signers.Signer {
+	account, err := Create(ctx, []string{dummyXPub}, 1, nil)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	return account
+}
+
+func createTestControlProgram(ctx context.Context, t testing.TB, accountID string) []byte {
+	if accountID == "" {
+		account := createTestAccount(ctx, t)
+		accountID = account.ID
+	}
+
+	acp, err := CreateControlProgram(ctx, accountID)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	return acp
 }

@@ -202,7 +202,7 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, a
 }
 
 func AccountDestinationFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64, accountID string) *txbuilder.Destination {
-	dest, err := asset.NewAccountDestination(ctx, &bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil)
+	dest, err := accounts.NewDestination(ctx, &bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -223,6 +223,7 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 		return nil, nil, err
 	}
 	asset.Init(fc, true)
+	accounts.Init(fc)
 	privkey := testutil.TestPrv
 	localSigner := blocksigner.New(privkey, pg.FromContext(ctx), fc)
 	g := &generator.Generator{
@@ -287,7 +288,7 @@ func Transfer(ctx context.Context, t testing.TB, srcs []*txbuilder.Source, dests
 }
 
 func AccountDest(ctx context.Context, t testing.TB, accountID string, assetID bc.AssetID, amount uint64) *txbuilder.Destination {
-	d, err := asset.NewAccountDestination(ctx, &bc.AssetAmount{
+	d, err := accounts.NewDestination(ctx, &bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  amount,
 	}, accountID, nil)

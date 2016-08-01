@@ -39,7 +39,7 @@ func TestAccountTransfer(t *testing.T) {
 		Amount:  100,
 	}
 	sources := issuer.NewIssueSource(ctx, assetAmt, nil, nil)
-	dests, err := asset.NewAccountDestination(ctx, &assetAmt, acc.ID, nil)
+	dests, err := accounts.NewDestination(ctx, &assetAmt, acc.ID, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	// new source
-	sources = asset.NewAccountSource(ctx, &assetAmt, acc.ID, nil, nil, nil)
+	sources = accounts.NewSource(ctx, &assetAmt, acc.ID, nil, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []*txbuilder.Source{sources}, []*txbuilder.Destination{dests}, nil, time.Minute)
 	if err != nil {
 		t.Fatal(err)
@@ -110,6 +110,7 @@ func TestIssue(t *testing.T) {
 	}
 
 	asset.Init(fc, true)
+	accounts.Init(fc)
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
 	projectID := assettest.CreateProjectFixture(ctx, t, "")
@@ -158,6 +159,7 @@ func TestTransfer(t *testing.T) {
 	}
 
 	asset.Init(fc, true)
+	accounts.Init(fc)
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
 	projectID := assettest.CreateProjectFixture(ctx, t, "")
@@ -175,7 +177,7 @@ func TestTransfer(t *testing.T) {
 		AssetID: assetID,
 		Amount:  100,
 	}
-	issueDest, err := asset.NewAccountDestination(ctx, &issueAssetAmount, account1ID, nil)
+	issueDest, err := accounts.NewDestination(ctx, &issueAssetAmount, account1ID, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

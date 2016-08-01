@@ -293,7 +293,7 @@ func issue(ctx context.Context, t testing.TB, info *clientInfo, destAcctID strin
 		AssetID: info.asset.Hash,
 		Amount:  amount,
 	}
-	issueDest, err := NewAccountDestination(ctx, &assetAmount, destAcctID, nil)
+	issueDest, err := accounts.NewDestination(ctx, &assetAmount, destAcctID, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -310,10 +310,10 @@ func transfer(ctx context.Context, t testing.TB, info *clientInfo, srcAcctID, de
 		AssetID: info.asset.Hash,
 		Amount:  amount,
 	}
-	source := NewAccountSource(ctx, assetAmount, srcAcctID, nil, nil, nil)
+	source := accounts.NewSource(ctx, assetAmount, srcAcctID, nil, nil, nil)
 	sources := []*txbuilder.Source{source}
 
-	dest, err := NewAccountDestination(ctx, assetAmount, destAcctID, nil)
+	dest, err := accounts.NewDestination(ctx, assetAmount, destAcctID, nil)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

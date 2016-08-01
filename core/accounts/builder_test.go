@@ -1,4 +1,4 @@
-package asset_test
+package accounts_test
 
 import (
 	"reflect"
@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	. "chain/core/asset"
+	. "chain/core/accounts"
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
@@ -31,7 +31,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		AssetID: asset,
 		Amount:  1,
 	}
-	source := NewAccountSource(ctx, assetAmount1, accID, nil, nil, nil)
+	source := NewSource(ctx, assetAmount1, accID, nil, nil, nil)
 
 	got, err := source.Reserver.Reserve(ctx, assetAmount1, time.Minute)
 	if err != nil {
@@ -56,9 +56,9 @@ func TestAccountSourceReserve(t *testing.T) {
 	// generated address can change based on test ordering, so ignore in comparison
 	got.Items[0].TemplateInput = nil
 
-	ar, ok := got.Change[0].Receiver.(*AccountReceiver)
+	ar, ok := got.Change[0].Receiver.(*Receiver)
 	if !ok {
-		t.Fatalf("expected change destination to have AccountReceiver")
+		t.Fatalf("expected change destination to have Receiver")
 	}
 
 	if ar.AccountID() != accID {
@@ -91,7 +91,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		AssetID: asset,
 		Amount:  1,
 	}
-	source := NewAccountSource(ctx, assetAmount1, accID, &out.Outpoint.Hash, &out.Outpoint.Index, nil)
+	source := NewSource(ctx, assetAmount1, accID, &out.Outpoint.Hash, &out.Outpoint.Index, nil)
 
 	got, err := source.Reserver.Reserve(ctx, assetAmount1, time.Minute)
 	if err != nil {
@@ -116,9 +116,9 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	// generated address can change based on test ordering, so ignore in comparison
 	got.Items[0].TemplateInput = nil
 
-	ar, ok := got.Change[0].Receiver.(*AccountReceiver)
+	ar, ok := got.Change[0].Receiver.(*Receiver)
 	if !ok {
-		t.Fatalf("expected change destination to have AccountReceiver")
+		t.Fatalf("expected change destination to have Receiver")
 	}
 
 	if ar.AccountID() != accID {
@@ -156,9 +156,9 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		// An idempotency key that both reservations should use.
 		clientToken1 = "a-unique-idempotency-key"
 		clientToken2 = "another-unique-idempotency-key"
-		wantSrc      = NewAccountSource(ctx, assetAmount1, accID, nil, nil, &clientToken1)
-		gotSrc       = NewAccountSource(ctx, assetAmount1, accID, nil, nil, &clientToken1)
-		separateSrc  = NewAccountSource(ctx, assetAmount1, accID, nil, nil, &clientToken2)
+		wantSrc      = NewSource(ctx, assetAmount1, accID, nil, nil, &clientToken1)
+		gotSrc       = NewSource(ctx, assetAmount1, accID, nil, nil, &clientToken1)
+		separateSrc  = NewSource(ctx, assetAmount1, accID, nil, nil, &clientToken2)
 	)
 
 	reserveFunc := func(source *txbuilder.Source) *txbuilder.ReserveResult {
@@ -173,9 +173,9 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		// generated address can change based on test ordering, so ignore in comparison
 		got.Items[0].TemplateInput = nil
 
-		ar, ok := got.Change[0].Receiver.(*AccountReceiver)
+		ar, ok := got.Change[0].Receiver.(*Receiver)
 		if !ok {
-			t.Fatalf("expected change destination to have AccountReceiver")
+			t.Fatalf("expected change destination to have Receiver")
 		}
 		if ar.AccountID() != accID {
 			t.Errorf("got receiver addr account = %v want %v", ar.AccountID(), accID)
@@ -228,7 +228,7 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 
 	for i := 0; i < utxos; i++ {
 		theTxHash := srcTxs[i]
-		source := NewAccountSource(ctx, &assetAmt, acc, &theTxHash, nil, nil)
+		source := NewSource(ctx, &assetAmt, acc, &theTxHash, nil, nil)
 
 		gotRes, err := source.Reserver.Reserve(ctx, &assetAmt, time.Minute)
 		if err != nil {
@@ -245,35 +245,5 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 		if got != want {
 			t.Errorf("reserved utxo outpoint got=%v want=%v", got, want)
 		}
-	}
-}
-
-func TestBreakupChange(t *testing.T) {
-	got := BreakupChange(1)
-	want := []uint64{1}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("expected %v, got %v", want, got)
-	}
-
-	// Now do a lot of BreakupChange calls and expect that at least one
-	// of them will create two or more pieces.  Check that in all cases
-	// the pieces add up to the input.
-	var anyMultiples bool
-	for i := 0; i < 100; i++ {
-		got := BreakupChange(100)
-		var sum uint64
-		for _, n := range got {
-			sum += n
-		}
-		if sum != 100 {
-			t.Errorf("sum of %v is %d, not 100", got, sum)
-		}
-		if len(got) > 1 {
-			anyMultiples = true
-		}
-	}
-
-	if !anyMultiples {
-		t.Errorf("no calls produced multiple change pieces, that's very unlikely")
 	}
 }

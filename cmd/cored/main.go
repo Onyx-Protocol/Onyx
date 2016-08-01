@@ -19,6 +19,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core"
+	"chain/core/accounts"
 	"chain/core/asset"
 	"chain/core/blocksigner"
 	"chain/core/explorer"
@@ -185,6 +186,7 @@ func main() {
 	rpcclient.Init(*remoteGeneratorURL)
 
 	asset.Init(fc, *isManager)
+	accounts.Init(fc)
 
 	explorer := explorer.New(fc, db, store, *isManager)
 
