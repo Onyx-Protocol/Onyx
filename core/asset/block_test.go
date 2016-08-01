@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/accounts"
+	"chain/core/account"
 	"chain/core/appdb"
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
@@ -245,12 +245,12 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *generator.Generato
 		return nil, nil, err
 	}
 
-	acctA, err := accounts.Create(ctx, []string{accPub.String()}, 1, nil)
+	acctA, err := account.Create(ctx, []string{accPub.String()}, 1, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	acctB, err := accounts.Create(ctx, []string{accPub.String()}, 1, nil)
+	acctB, err := account.Create(ctx, []string{accPub.String()}, 1, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -293,7 +293,7 @@ func issue(ctx context.Context, t testing.TB, info *clientInfo, destAcctID strin
 		AssetID: info.asset.Hash,
 		Amount:  amount,
 	}
-	issueDest, err := accounts.NewDestination(ctx, &assetAmount, destAcctID, nil)
+	issueDest, err := account.NewDestination(ctx, &assetAmount, destAcctID, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -310,10 +310,10 @@ func transfer(ctx context.Context, t testing.TB, info *clientInfo, srcAcctID, de
 		AssetID: info.asset.Hash,
 		Amount:  amount,
 	}
-	source := accounts.NewSource(ctx, assetAmount, srcAcctID, nil, nil, nil)
+	source := account.NewSource(ctx, assetAmount, srcAcctID, nil, nil, nil)
 	sources := []*txbuilder.Source{source}
 
-	dest, err := accounts.NewDestination(ctx, assetAmount, destAcctID, nil)
+	dest, err := account.NewDestination(ctx, assetAmount, destAcctID, nil)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

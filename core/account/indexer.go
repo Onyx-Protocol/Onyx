@@ -1,4 +1,4 @@
-package accounts
+package account
 
 import (
 	"golang.org/x/net/context"

@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/accounts"
+	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/issuer"
 	"chain/core/txbuilder"
@@ -170,7 +170,7 @@ func cancelReservation(ctx context.Context, x struct{ Transaction bc.Tx }) error
 			outpoints = append(outpoints, input.Outpoint())
 		}
 	}
-	return accounts.CancelReservations(ctx, outpoints)
+	return account.CancelReservations(ctx, outpoints)
 }
 
 type submitArg struct {

@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/accounts"
+	"chain/core/account"
 	"chain/core/appdb"
 	"chain/core/asset"
 	"chain/core/blocksigner"
@@ -123,7 +123,7 @@ func CreateAccountFixture(ctx context.Context, t testing.TB, keys []string, quor
 	if quorum == 0 {
 		quorum = len(keys)
 	}
-	acc, err := accounts.Create(ctx, keys, quorum, nil)
+	acc, err := account.Create(ctx, keys, quorum, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -134,7 +134,7 @@ func CreateAccountControlProgramFixture(ctx context.Context, t testing.TB, accID
 	if accID == "" {
 		accID = CreateAccountFixture(ctx, t, nil, 0)
 	}
-	controlProgram, err := accounts.CreateControlProgram(ctx, accID)
+	controlProgram, err := account.CreateControlProgram(ctx, accID)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -202,7 +202,7 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, a
 }
 
 func AccountDestinationFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64, accountID string) *txbuilder.Destination {
-	dest, err := accounts.NewDestination(ctx, &bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil)
+	dest, err := account.NewDestination(ctx, &bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -223,7 +223,7 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 		return nil, nil, err
 	}
 	asset.Init(fc, true)
-	accounts.Init(fc)
+	account.Init(fc)
 	privkey := testutil.TestPrv
 	localSigner := blocksigner.New(privkey, pg.FromContext(ctx), fc)
 	g := &generator.Generator{
@@ -288,7 +288,7 @@ func Transfer(ctx context.Context, t testing.TB, srcs []*txbuilder.Source, dests
 }
 
 func AccountDest(ctx context.Context, t testing.TB, accountID string, assetID bc.AssetID, amount uint64) *txbuilder.Destination {
-	d, err := accounts.NewDestination(ctx, &bc.AssetAmount{
+	d, err := account.NewDestination(ctx, &bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  amount,
 	}, accountID, nil)

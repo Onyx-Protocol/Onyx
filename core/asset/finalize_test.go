@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/accounts"
+	"chain/core/account"
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
@@ -49,7 +49,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 		Amount:  10,
 	}
 	sources := []*txbuilder.Source{
-		accounts.NewSource(ctx, assetAmount, info.acctA.ID, nil, nil, nil),
+		account.NewSource(ctx, assetAmount, info.acctA.ID, nil, nil, nil),
 	}
 	srcTmpl, err := txbuilder.Build(ctx, nil, sources, nil, []byte{}, time.Minute)
 	if err != nil {
@@ -57,7 +57,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	// Build the first tx
-	dest1, err := accounts.NewDestination(ctx, assetAmount, info.acctB.ID, nil)
+	dest1, err := account.NewDestination(ctx, assetAmount, info.acctB.ID, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -72,7 +72,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	// Build the second tx
-	dest2, err := accounts.NewDestination(ctx, assetAmount, info.acctB.ID, nil)
+	dest2, err := account.NewDestination(ctx, assetAmount, info.acctB.ID, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

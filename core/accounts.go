@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/accounts"
+	"chain/core/account"
 	"chain/metrics"
 	"chain/net/http/httpjson"
 )
@@ -17,7 +17,7 @@ func listAccounts(ctx context.Context) (interface{}, error) {
 		return nil, err
 	}
 
-	accounts, last, err := accounts.List(ctx, prev, limit)
+	accounts, last, err := account.List(ctx, prev, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -44,23 +44,23 @@ func createAccount(ctx context.Context, in struct {
 }) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 
-	return accounts.Create(ctx, in.XPubs, in.Quorum, in.ClientToken)
+	return account.Create(ctx, in.XPubs, in.Quorum, in.ClientToken)
 }
 
 // GET /v3/accounts/:accountID
 func getAccount(ctx context.Context, accountID string) (interface{}, error) {
-	return accounts.Find(ctx, accountID)
+	return account.Find(ctx, accountID)
 }
 
 // DELETE /v3/accounts/:accountID
 // Idempotent
 func archiveAccount(ctx context.Context, accountID string) error {
-	return accounts.Archive(ctx, accountID)
+	return account.Archive(ctx, accountID)
 }
 
 // POST /v3/accounts/:accountID/control-programs
 func createAccountControlProgram(ctx context.Context, accountID string) (interface{}, error) {
-	controlProgram, err := accounts.CreateControlProgram(ctx, accountID)
+	controlProgram, err := account.CreateControlProgram(ctx, accountID)
 	if err != nil {
 		return nil, err
 	}

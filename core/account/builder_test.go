@@ -1,4 +1,4 @@
-package accounts_test
+package account_test
 
 import (
 	"reflect"
@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	. "chain/core/accounts"
+	. "chain/core/account"
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
 	"chain/cos/bc"

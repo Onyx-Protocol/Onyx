@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/accounts"
+	"chain/core/account"
 	"chain/core/issuer"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
@@ -59,7 +59,7 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 			AssetID: *source.AssetID,
 			Amount:  source.Amount,
 		}
-		return accounts.NewSource(ctx, assetAmount, source.AccountID, source.TxHash, source.TxOutput, source.ClientToken), nil
+		return account.NewSource(ctx, assetAmount, source.AccountID, source.TxHash, source.TxOutput, source.ClientToken), nil
 	case "issue":
 		if source.AssetID == nil {
 			return nil, errors.WithDetail(ErrBadBuildRequest, "asset_id is not specified on the issuance input")
@@ -103,7 +103,7 @@ func (dest Destination) parse(ctx context.Context) (*txbuilder.Destination, erro
 		if dest.AccountID == "" {
 			return nil, errors.WithDetail(ErrBadBuildRequest, "account_id is not specified on output")
 		}
-		return accounts.NewDestination(ctx, assetAmount, dest.AccountID, dest.Metadata)
+		return account.NewDestination(ctx, assetAmount, dest.AccountID, dest.Metadata)
 	case "address":
 		return txbuilder.NewScriptDestination(ctx, assetAmount, dest.Address, dest.Metadata), nil
 	case "retire":
