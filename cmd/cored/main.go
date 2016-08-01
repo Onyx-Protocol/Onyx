@@ -61,7 +61,7 @@ var (
 	logSize      = env.Int("LOGSIZE", 5e6) // 5MB
 	logCount     = env.Int("LOGCOUNT", 9)
 	logQueries   = env.Bool("LOG_QUERIES", false)
-	blockKey     = env.String("BLOCK_KEY", "2c1f68880327212b6aa71d7c8e0a9375451143352d5c760dc38559f1159c84ce")
+	blockKey     = env.String("BLOCK_KEY", "7a99f72169fad2d3a75aa36c550f60ee3a10f947ab5e4d38d5823667333d7e811af6c3e2396e20cab40770a8d8d5a906cb147539f390b57364b99b767d0b1418")
 	// for config var LIBRATO_URL, see func init below
 	traceguideToken    = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns         = env.Int("MAXDBCONNS", 10) // set to 100 in prod
