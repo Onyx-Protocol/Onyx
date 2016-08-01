@@ -105,21 +105,23 @@ func TestParseValid(t *testing.T) {
 
 func TestParseInvalid(t *testing.T) {
 	testCases := []string{
-		"123!",                               // illegal !
-		"INPUTS()",                           // missing scope expr
-		"INPUTS(account_tags CONTAINS $a)",   // invalid placeholder num
-		"0000124",                            // no integer leading zeros
-		`"double quotes"`,                    // double quotes not allowed
-		"5 = $",                              // $ without number
-		"'unterminated string",               // unterminated string
-		`'strings do not allow \ backslash'`, // illegal backslash
-		"0x = 420",                           // 0x without number
+		"123!",                                         // illegal !
+		"INPUTS()",                                     // missing scope expr
+		"INPUTS(account_tags CONTAINS $a)",             // invalid placeholder num
+		"0000124",                                      // no integer leading zeros
+		`"double quotes"`,                              // double quotes not allowed
+		"5 = $",                                        // $ without number
+		"'unterminated string",                         // unterminated string
+		`'strings do not allow \ backslash'`,           // illegal backslash
+		"0x = 420",                                     // 0x without number
+		"an_identifier another_identifier",             // two identifiers w/o an operator (trailing garbage)
+		"inputs(account_tags CONTAINS $1) or (1 == 1)", // lowercase 'or' (trailing garbage)
 	}
 	for _, tc := range testCases {
 		t.Log(tc)
-		_, err := Parse(tc)
+		q, err := Parse(tc)
 		if err == nil {
-			t.Errorf("expected parse error while parsing query %q", tc)
+			t.Errorf("Parse(%q) = %#v want error", tc, q.expr)
 		}
 	}
 }

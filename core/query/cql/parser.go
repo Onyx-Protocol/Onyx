@@ -25,6 +25,8 @@ func Parse(query string) (q Query, err error) {
 
 	parser := newParser([]byte(query))
 	expr := parseExpr(parser)
+	parser.parseTok(tokEOF)
+
 	// TODO: static type checking
 
 	q = Query{
