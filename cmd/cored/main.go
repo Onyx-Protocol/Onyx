@@ -25,6 +25,7 @@ import (
 	"chain/core/fetch"
 	"chain/core/generator"
 	"chain/core/leader"
+	"chain/core/mockhsm"
 	"chain/core/rpcclient"
 	"chain/core/txdb"
 	"chain/core/utxodb"
@@ -230,7 +231,9 @@ func main() {
 		}
 	})
 
-	h := core.Handler(*nouserSecret, generatorConfig, localSigner, store, pool, explorer)
+	hsm := mockhsm.New(db)
+
+	h := core.Handler(*nouserSecret, generatorConfig, localSigner, store, pool, explorer, hsm)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}

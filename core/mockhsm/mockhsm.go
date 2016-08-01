@@ -55,3 +55,8 @@ func (h *HSM) Sign(ctx context.Context, xpub *hd25519.XPub, path []uint32, msg [
 	}
 	return xprv.Sign(msg), nil
 }
+
+func (h *HSM) DelKey(ctx context.Context, xpub *hd25519.XPub) error {
+	_, err := h.db.Exec(ctx, "DELETE FROM mockhsm WHERE xpub = $1", xpub.Bytes())
+	return err
+}

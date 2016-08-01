@@ -16,7 +16,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/txbuilder"
-	"chain/cos/bc"
 	"chain/crypto/hsm/thales/see"
 	"chain/crypto/hsm/thales/xprvseeclient"
 	"chain/env"
@@ -183,26 +182,12 @@ func signTemplates(ctx context.Context, txs []*txbuilder.Template) interface{} {
 	return resp
 }
 
+func clientSigner(_ context.Context, sigComponent *txbuilder.SigScriptComponent, sig *txbuilder.Signature) ([]byte, error) {
+	return client.Sign(kd, sig.DerivationPath, sigComponent.SignatureData)
+}
+
 func signTemplate(ctx context.Context, tpl *txbuilder.Template) error {
-	txbuilder.ComputeSigHashes(ctx, tpl) // don't trust the sighashes in the request
-	// TODO(kr): come up with some scheme to verify that the
-	// covered output scripts are what the client really wants.
-	for i, input := range tpl.Inputs {
-		if len(input.SigComponents) > 0 {
-			for c, component := range input.SigComponents {
-				for s, sig := range component.Signatures {
-					if sig.XPub == xpub {
-						sigdata, err := client.Sign(kd, sig.DerivationPath, component.SignatureData)
-						if err != nil {
-							return errors.Wrapf(err, "computing signature for input %d, sigscript component %d, sig %d", i, c, s)
-						}
-						sig.Bytes = append(sigdata, byte(bc.SigHashAll))
-					}
-				}
-			}
-		}
-	}
-	return nil
+	return txbuilder.Sign(ctx, tpl, clientSigner)
 }
 
 // TODO(kr): more flexible/secure authentication (e.g. kerberos style)

@@ -190,3 +190,26 @@ func getSigsRequired(script []byte) (sigsReqd int, err error) {
 	}
 	return sigsReqd, nil
 }
+
+func Sign(ctx context.Context, tpl *Template, signFn func(context.Context, *SigScriptComponent, *Signature) ([]byte, error)) error {
+	ComputeSigHashes(ctx, tpl)
+	// TODO(kr): come up with some scheme to verify that the
+	// covered output scripts are what the client really wants.
+	for i, input := range tpl.Inputs {
+		if len(input.SigComponents) > 0 {
+			for c, component := range input.SigComponents {
+				if component.Type != "signature" {
+					continue
+				}
+				for s, sig := range component.Signatures {
+					sigBytes, err := signFn(ctx, component, sig)
+					if err != nil {
+						return errors.Wrapf(err, "computing signature for input %d, sigscript component %d, sig %d", i, c, s)
+					}
+					sig.Bytes = append(sigBytes, byte(bc.SigHashAll))
+				}
+			}
+		}
+	}
+	return nil
+}

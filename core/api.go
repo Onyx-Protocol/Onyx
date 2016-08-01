@@ -9,6 +9,7 @@ import (
 	"chain/core/blocksigner"
 	"chain/core/explorer"
 	"chain/core/generator"
+	"chain/core/mockhsm"
 	"chain/core/txdb"
 	chainhttp "chain/net/http"
 	"chain/net/http/httpjson"
@@ -24,13 +25,14 @@ const (
 
 // Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
 // will be used as the password for routes starting with /nouser/.
-func Handler(nouserSecret string, generatorConfig *generator.Config, signer *blocksigner.Signer, store *txdb.Store, pool *txdb.Pool, explorer *explorer.Explorer) chainhttp.Handler {
+func Handler(nouserSecret string, generatorConfig *generator.Config, signer *blocksigner.Signer, store *txdb.Store, pool *txdb.Pool, explorer *explorer.Explorer, hsm *mockhsm.HSM) chainhttp.Handler {
 	h := pat.New()
 	a := &api{
 		store:     store,
 		pool:      pool,
 		explorer:  explorer,
 		generator: generatorConfig,
+		hsm:       hsm,
 	}
 
 	pwHandler := httpjson.NewServeMux(writeHTTPError)
@@ -77,6 +79,7 @@ type api struct {
 	pool      *txdb.Pool
 	explorer  *explorer.Explorer
 	generator *generator.Config
+	hsm       *mockhsm.HSM
 }
 
 func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
@@ -128,6 +131,11 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/explorer/transactions/:txID", a.getTx)
 	h.HandleFunc("GET", "/v3/explorer/assets/:assetID", a.getAsset)
 	h.HandleFunc("POST", "/v3/explorer/get-assets", a.getExplorerAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
+
+	// MockHSM endpoints
+	h.HandleFunc("GET", "/mockhsm/genkey", a.mockhsmGenKey)
+	h.HandleFunc("POST", "/mockhsm/delkey", a.mockhsmDelKey)
+	h.HandleFunc("POST", "/mockhsm/signtemplates", a.mockhsmSignTemplates)
 
 	return h.ServeHTTPContext
 }
