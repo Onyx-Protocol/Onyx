@@ -3,11 +3,11 @@ package core
 import (
 	"golang.org/x/net/context"
 
+	"chain/core/account/utxodb"
 	"chain/core/appdb"
 	"chain/core/asset"
 	"chain/core/signers"
 	"chain/core/txbuilder"
-	"chain/core/utxodb"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/httpjson"

@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/account"
+	"chain/core/account/utxodb"
 	"chain/core/appdb"
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
@@ -15,7 +16,6 @@ import (
 	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
-	"chain/core/utxodb"
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/crypto/ed25519"

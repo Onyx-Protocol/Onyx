@@ -20,6 +20,7 @@ import (
 
 	"chain/core"
 	"chain/core/account"
+	"chain/core/account/utxodb"
 	"chain/core/asset"
 	"chain/core/blocksigner"
 	"chain/core/explorer"
@@ -29,7 +30,6 @@ import (
 	"chain/core/mockhsm"
 	"chain/core/rpcclient"
 	"chain/core/txdb"
-	"chain/core/utxodb"
 	"chain/cos"
 	"chain/cos/txscript"
 	"chain/crypto/ed25519"

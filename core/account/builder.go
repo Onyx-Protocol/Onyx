@@ -6,9 +6,9 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/core/account/utxodb"
 	"chain/core/signers"
 	"chain/core/txbuilder"
-	"chain/core/utxodb"
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/crypto/ed25519/hd25519"
