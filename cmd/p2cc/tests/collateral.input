@@ -3,15 +3,15 @@
 
 contract loan(price, currency, deadline, creditorScript, debtorScript) {
   clause keep() {
-    time() >= deadline && eval(creditorScript)
+    time() >= deadline && checkpredicate(creditorScript)
   }
   clause repurchase() {
-    reserveoutput(price, currency, creditorScript) && eval(debtorScript)
+    reserveoutput(price, currency, creditorScript) && checkpredicate(debtorScript)
   }
   clause mutual() {
-    eval(debtorScript) && eval(creditorScript)
+    checkpredicate(debtorScript) && checkpredicate(creditorScript)
   }
   clause sell(newCreditorScript) {
-    reserveoutput(amount(), asset(), loan(price, currency, deadline, newCreditorScript, debtorScript)) && eval(creditorScript)
+    reserveoutput(amount(), asset(), loan(price, currency, deadline, newCreditorScript, debtorScript)) && checkpredicate(creditorScript)
   }
 }

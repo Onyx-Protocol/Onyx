@@ -6,9 +6,9 @@
 ["correct prevout hash), using the given scriptSig. All nLockTimes are 2e9, all"],
 ["nSequences are max."],
 
-["3 4 DATA_3 0x935587", "1 DROP DUP SHA3 DATA_32 0xb247a162c6981184e520a18d5cb321d42434f187aca2602b8c784982c4f1e971 EQUALVERIFY EVAL", "STRICTENC", "Simple 0-param P2C script"],
-["4 DATA_3 0x935587", "1 DROP 3 1 ROLL DUP SHA3 DATA_32 0xb247a162c6981184e520a18d5cb321d42434f187aca2602b8c784982c4f1e971 EQUALVERIFY EVAL", "STRICTENC", "Simple 1-param P2C script"],
-["DATA_3 0x935587", "1 DROP 4 3 2 ROLL DUP SHA3 DATA_32 0xb247a162c6981184e520a18d5cb321d42434f187aca2602b8c784982c4f1e971 EQUALVERIFY EVAL", "STRICTENC", "Simple 2-param P2C script"],
+["3 4 DATA_3 0x935587", "1 DROP DUP SHA3 DATA_32 0xb247a162c6981184e520a18d5cb321d42434f187aca2602b8c784982c4f1e971 EQUALVERIFY 0 CHECKPREDICATE", "STRICTENC", "Simple 0-param P2C script"],
+["4 DATA_3 0x935587", "1 DROP 3 1 ROLL DUP SHA3 DATA_32 0xb247a162c6981184e520a18d5cb321d42434f187aca2602b8c784982c4f1e971 EQUALVERIFY 0 CHECKPREDICATE", "STRICTENC", "Simple 1-param P2C script"],
+["DATA_3 0x935587", "1 DROP 4 3 2 ROLL DUP SHA3 DATA_32 0xb247a162c6981184e520a18d5cb321d42434f187aca2602b8c784982c4f1e971 EQUALVERIFY 0 CHECKPREDICATE", "STRICTENC", "Simple 2-param P2C script"],
 
 ["", "DEPTH", "STRICTENC",   "Test the test: we should have an empty stack after scriptSig evaluation"],
 ["  ", "DEPTH", "STRICTENC", "and multiple spaces should not change that."],
@@ -369,6 +369,10 @@
 ["1", "2 DROP WHILE 1", "STRICTENC", "while loop not terminated"],
 ["1", "2 DROP WHILE IF ENDWHILE ENDIF 1", "STRICTENC", "intertwined WHILE and IF"],
 ["1", "WHILE 0 ENDWHILE", "STRICTENC", "WHILE requires version 2"],
+
+["The serialized script used by CHECKPREDICATE here is <3 ADD 7 NUMEQUAL>"],
+["5 DATA_3 0x5393579c 0 CHECKPREDICATE", "", "", "5+3 != 8"],
+["DATA_3 0x5393579c 0 CHECKPREDICATE", "", "", "stack underflow in child vm"],
 
 ["VERSION"],
 

@@ -35,7 +35,7 @@ func TestCreateAsset(t *testing.T) {
 		t.Fatal("unexpected error:", err)
 	}
 
-	wantID := "dee458a07746e7b1131cb9f7c3daac9f841116c8672e4365a8fc52139dabebd5"
+	wantID := "d214945af36ad07cc9738ecdbd5a4f2da59a5ffe1ba03e0bd44b663b2a88c695"
 	if asset.Hash.String() != wantID {
 		t.Errorf("got asset id = %v want %v", asset.Hash.String(), wantID)
 	}
@@ -49,7 +49,7 @@ func TestCreateAsset(t *testing.T) {
 		t.Errorf("got label = %v want %v", asset.Label, "fooAsset")
 	}
 
-	wantIssuance := "76aa20d576c32879648a54df281c7839ff77a0e8315ed8fa3d34a3eb7dce22634f3d1288c0"
+	wantIssuance := "76aa20d576c32879648a54df281c7839ff77a0e8315ed8fa3d34a3eb7dce22634f3d128800c0"
 	if hex.EncodeToString(asset.IssuanceScript) != wantIssuance {
 		t.Errorf("got issuance script=%x want=%v", asset.IssuanceScript, wantIssuance)
 	}

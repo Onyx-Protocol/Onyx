@@ -19,7 +19,7 @@ func TestRedeemToPkScript(t *testing.T) {
 		192, 138, 143, 251, 198, 230, 98, 172, 82, 174,
 	}
 
-	want, err := hex.DecodeString("76aa206f4542e942575f6d882ae45f7a98e6d2c88e3ea218afb16c41fee743f667783288c0")
+	want, err := hex.DecodeString("76aa206f4542e942575f6d882ae45f7a98e6d2c88e3ea218afb16c41fee743f66778328800c0")
 	if err != nil {
 		t.Fatal(err)
 	}

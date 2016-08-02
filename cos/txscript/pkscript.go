@@ -16,7 +16,8 @@ func RedeemToPkScript(redeem []byte) []byte {
 	builder.AddOp(OP_SHA3)
 	builder.AddData(hash[:])
 	builder.AddOp(OP_EQUALVERIFY)
-	builder.AddOp(OP_EVAL)
+	builder.AddOp(OP_0)
+	builder.AddOp(OP_CHECKPREDICATE)
 	script, _ := builder.Script()
 	return script
 }

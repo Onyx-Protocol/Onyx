@@ -182,7 +182,7 @@ var calls = []struct {
 	{"circulation", 1, numType},
 	{"abs", 1, numType},
 	{"hash256", 1, bytesType},
-	{"eval", 1, unknownType},
+	{"checkpredicate", 1, unknownType},
 	{"size", 1, numType},
 	{"min", 2, numType},
 	{"max", 2, numType},
@@ -217,7 +217,7 @@ func (call callExpr) translate(stk stack, context *context) (*translation, error
 			for i, a := range call.actuals {
 				t, err := a.translate(stk, context)
 				if err != nil {
-					return nil, errors.Wrap(err, "translating arg %d in call to %s", i, call.name)
+					return nil, errors.Wrapf(err, "translating arg %d in call to %s", i, call.name)
 				}
 				argdesc := t.finalStackTop().name
 				output = output.addMany(t.steps)
@@ -259,7 +259,7 @@ func (call callExpr) contractCall(stk stack, context *context, contract *contrac
 		actual := call.actuals[n]
 		t, err := actual.translate(stk, context)
 		if err != nil {
-			return nil, errors.Wrap(err, "translating arg %d in call to %s", n, call.name)
+			return nil, errors.Wrapf(err, "translating arg %d in call to %s", n, call.name)
 		}
 		argdesc := t.finalStackTop().name
 		output = output.addMany(t.steps)
@@ -289,7 +289,7 @@ func (call callExpr) contractCall(stk stack, context *context, contract *contrac
 		output = output.add(fmt.Sprintf("DATA_%d 0x%s CAT", len(b), hex.EncodeToString(b)), stk)
 	}
 
-	b = []byte{txscript.OP_EQUALVERIFY, txscript.OP_EVAL}
+	b = []byte{txscript.OP_EQUALVERIFY, txscript.OP_0, txscript.OP_CHECKPREDICATE}
 	// reverse argdescs
 	for i := 0; i < len(argdescs)/2; i++ {
 		other := len(argdescs) - i - 1

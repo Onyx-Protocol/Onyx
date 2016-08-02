@@ -8,6 +8,6 @@ contract orderbook(sellerScript, currencyAssetID, priceX num, priceY num) {
       && reserveoutput(changeAmount, asset(), program())
   }
   clause cancel() {
-    eval(sellerScript)
+    checkpredicate(sellerScript)
   }
 }

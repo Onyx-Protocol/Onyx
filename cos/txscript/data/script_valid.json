@@ -623,5 +623,8 @@
 ["DATA_2 0x7fde DATA_1 0xf0", "XOR DATA_2 0x8fde EQUAL", "STRICTENC", "XOR pads"],
 ["DATA_1 0x7f", "INVERT DATA_1 0x80 EQUAL", "STRICTENC", ""],
 
+["The serialized script used by CHECKPREDICATE here is <3 ADD 7 NUMEQUAL>"],
+["4 DATA_3 0x5393579c 0 CHECKPREDICATE", "", "", "Simple EVAL test"],
+
 ["The End"]
 ]

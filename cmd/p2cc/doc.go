@@ -84,7 +84,7 @@ Function calls are:
   circulation(assetID)
   abs(num)
   hash256(bytes)
-  eval(bytes)
+  checkpredicate(bytes)
   size(bytes)
   min(num1, num2)
   max(num1, num2)

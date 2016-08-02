@@ -231,17 +231,16 @@ const (
 	OP_UNKNOWN190          = 0xbe // 190
 	OP_UNKNOWN191          = 0xbf // 191
 
-	// p2c extensions
-	OP_EVAL          = 0xc0 // 192
-	OP_RESERVEOUTPUT = 0xc1 // 193
-	OP_ASSET         = 0xc2 // 194
-	OP_AMOUNT        = 0xc3 // 195
-	OP_PROGRAM       = 0xc4 // 196
-	OP_MINTIME       = 0xc5 // 197
-	OP_MAXTIME       = 0xc6 // 198
-	OP_CATPUSHDATA   = 0xc7 // 199
-	OP_UNKNOWN200    = 0xc8 // 200
-	OP_UNKNOWN201    = 0xc9 // 201
+	OP_CHECKPREDICATE = 0xc0 // 192
+	OP_RESERVEOUTPUT  = 0xc1 // 193
+	OP_ASSET          = 0xc2 // 194
+	OP_AMOUNT         = 0xc3 // 195
+	OP_PROGRAM        = 0xc4 // 196
+	OP_MINTIME        = 0xc5 // 197
+	OP_MAXTIME        = 0xc6 // 198
+	OP_CATPUSHDATA    = 0xc7 // 199
+	OP_UNKNOWN200     = 0xc8 // 200
+	OP_UNKNOWN201     = 0xc9 // 201
 
 	OP_FINDOUTPUT    = 0xca // 202
 	OP_UNKNOWN203    = 0xcb // 203
@@ -524,16 +523,16 @@ var opcodeArray = [256]opcode{
 	OP_UNKNOWN191: {OP_UNKNOWN191, "OP_UNKNOWN191", 1, opcodeInvalid},
 
 	// p2c extensions
-	OP_EVAL:          {OP_EVAL, "OP_EVAL", 1, nil},                   // see init()
-	OP_RESERVEOUTPUT: {OP_RESERVEOUTPUT, "OP_RESERVEOUTPUT", 1, nil}, // see init()
-	OP_ASSET:         {OP_ASSET, "OP_ASSET", 1, opcodeAsset},
-	OP_AMOUNT:        {OP_AMOUNT, "OP_AMOUNT", 1, opcodeAmount},
-	OP_PROGRAM:       {OP_PROGRAM, "OP_PROGRAM", 1, opcodeProgram},
-	OP_MINTIME:       {OP_MINTIME, "OP_MINTIME", 1, opcodeMinTime},
-	OP_MAXTIME:       {OP_MAXTIME, "OP_MAXTIME", 1, opcodeMaxTime},
-	OP_CATPUSHDATA:   {OP_CATPUSHDATA, "OP_CATPUSHDATA", 1, opcodeCatPushData},
-	OP_UNKNOWN200:    {OP_UNKNOWN200, "OP_UNKNOWN200", 1, opcodeInvalid},
-	OP_UNKNOWN201:    {OP_UNKNOWN201, "OP_UNKNOWN201", 1, opcodeInvalid},
+	OP_CHECKPREDICATE: {OP_CHECKPREDICATE, "OP_CHECKPREDICATE", 1, nil}, // see init()
+	OP_RESERVEOUTPUT:  {OP_RESERVEOUTPUT, "OP_RESERVEOUTPUT", 1, nil},   // see init()
+	OP_ASSET:          {OP_ASSET, "OP_ASSET", 1, opcodeAsset},
+	OP_AMOUNT:         {OP_AMOUNT, "OP_AMOUNT", 1, opcodeAmount},
+	OP_PROGRAM:        {OP_PROGRAM, "OP_PROGRAM", 1, opcodeProgram},
+	OP_MINTIME:        {OP_MINTIME, "OP_MINTIME", 1, opcodeMinTime},
+	OP_MAXTIME:        {OP_MAXTIME, "OP_MAXTIME", 1, opcodeMaxTime},
+	OP_CATPUSHDATA:    {OP_CATPUSHDATA, "OP_CATPUSHDATA", 1, opcodeCatPushData},
+	OP_UNKNOWN200:     {OP_UNKNOWN200, "OP_UNKNOWN200", 1, opcodeInvalid},
+	OP_UNKNOWN201:     {OP_UNKNOWN201, "OP_UNKNOWN201", 1, opcodeInvalid},
 
 	OP_FINDOUTPUT: {OP_FINDOUTPUT, "OP_FINDOUTPUT", 1, opcodeFindOutput},
 	OP_UNKNOWN203: {OP_UNKNOWN203, "OP_UNKNOWN203", 1, opcodeInvalid},
@@ -2400,9 +2399,15 @@ func opcodeMaxTime(op *parsedOpcode, vm *Engine) error {
 	return nil
 }
 
-// SCRIPT EVAL
-// Interprets SCRIPT
-func opcodeEval(op *parsedOpcode, vm *Engine) error {
+// SCRIPT LIMIT CHECKPREDICATE
+// Interprets SCRIPT in a child VM, produces true if the child
+// produces a true result, false otherwise (including if the child
+// errors out).
+func opcodeCheckpredicate(op *parsedOpcode, vm *Engine) error {
+	_, err := vm.dstack.PopInt() // runlimit (ignored for now)
+	if err != nil {
+		return err
+	}
 	script, err := vm.dstack.PopByteArray()
 	if err != nil {
 		return err
@@ -2411,7 +2416,21 @@ func opcodeEval(op *parsedOpcode, vm *Engine) error {
 	if err != nil {
 		return err
 	}
-	vm.PushScript(parsedScript)
+	childVM := &Engine{
+		scriptVersion:    vm.scriptVersion,
+		scriptVersionVal: vm.scriptVersionVal,
+		tx:               vm.tx,
+		block:            vm.block,
+		sigHasher:        vm.sigHasher,
+		txIdx:            vm.txIdx,
+		flags:            vm.flags,
+		available:        append([]uint64{}, vm.available...),
+	}
+	childVM.dstack.verifyMinimalData = vm.dstack.verifyMinimalData
+	childVM.dstack.stk = append([][]byte{}, vm.dstack.stk...)
+	childVM.PushScript(parsedScript)
+	err = childVM.Execute()
+	vm.dstack.PushBool(err == nil)
 	return nil
 }
 
@@ -2551,5 +2570,5 @@ func init() {
 
 	// The following is placed here to break circular references.
 	opcodeArray[OP_RESERVEOUTPUT].opfunc = opcodeReserveOutput
-	opcodeArray[OP_EVAL].opfunc = opcodeEval
+	opcodeArray[OP_CHECKPREDICATE].opfunc = opcodeCheckpredicate
 }

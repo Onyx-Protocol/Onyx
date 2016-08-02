@@ -5,7 +5,7 @@ contract AuctionAsset(priceAsset, bidPrice num, sellerScript, bidderScript, dead
   clause refund() {
     verify bidderScript == '';
     verify time() >= deadline;
-    eval(sellerScript);
+    checkpredicate(sellerScript);
   }
   clause bid(price num, newBidderScript) {
     verify price > bidPrice;

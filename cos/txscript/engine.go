@@ -182,8 +182,8 @@ func (vm *Engine) CheckErrorCondition(finalScript bool) error {
 	return nil
 }
 
-// PushScript is called by OP_EVAL. It adds a new stack frame to the top
-// of the execution stack.
+// PushScript is called by OP_CHECKPREDICATE. It adds a new stack
+// frame to the top of the execution stack.
 func (vm *Engine) PushScript(newScript []parsedOpcode) {
 	vm.estack.Push(&stackFrame{script: newScript})
 }

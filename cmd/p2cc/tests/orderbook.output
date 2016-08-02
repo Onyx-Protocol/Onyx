@@ -20,12 +20,12 @@ RESERVEOUTPUT           # <top> [reserveoutput(cashAmount, currencyAssetID, sell
 BOOLAND                 # <top> [[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
 7 PICK                  # <top> changeAmount [[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
 ASSET                   # <top> [asset()] changeAmount [[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
-OUTPUTSCRIPT            # <top> [outputscript()] [asset()] changeAmount [[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
-RESERVEOUTPUT           # <top> [reserveoutput(changeAmount, [asset()], [outputscript()])] [[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
-BOOLAND                 # <top> [[[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] && [reserveoutput(changeAmount, [asset()], [outputscript()])]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+PROGRAM                 # <top> [program()] [asset()] changeAmount [[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+RESERVEOUTPUT           # <top> [reserveoutput(changeAmount, [asset()], [program()])] [[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
+BOOLAND                 # <top> [[[[[priceY * cashAmount] + [priceX * changeAmount]] == [priceX * [amount()]]] && [reserveoutput(cashAmount, currencyAssetID, sellerScript)]] && [reserveoutput(changeAmount, [asset()], [program()])]] [clause selector] sellerScript currencyAssetID priceX priceY cashAmount changeAmount
 ELSE DUP 2 NUMEQUAL IF  # <top> [clause selector] sellerScript currencyAssetID priceX priceY
 1 PICK                  # <top> sellerScript [clause selector] sellerScript currencyAssetID priceX priceY
-EVAL                    # <top> [eval(sellerScript)] [clause selector] sellerScript currencyAssetID priceX priceY
+CHECKPREDICATE          # <top> [checkpredicate(sellerScript)] [clause selector] sellerScript currencyAssetID priceX priceY
 ENDIF ENDIF             # <top> [clause selector] sellerScript currencyAssetID priceX priceY
 
 Contract hex:
@@ -35,7 +35,7 @@ Contracthash hex:
 ab298e00663f9794f83c680b205c6600b66d455d14921da26377041e9d8b979d
 
 Pkscript hex:
-5175<priceY><priceX><currencyAssetID><sellerScript>547a76aa20ab298e00663f9794f83c680b205c6600b66d455d14921da26377041e9d8b979d88c0
+5175<priceY><priceX><currencyAssetID><sellerScript>547a76aa20ab298e00663f9794f83c680b205c6600b66d455d14921da26377041e9d8b979d8800c0
 
 Redeem orderbook.trade:
 <changeAmount><cashAmount>512e547a76519c6354795679955479587995935479c3959c567954795479c19a5779c2c4c19a6776529c635179c06868

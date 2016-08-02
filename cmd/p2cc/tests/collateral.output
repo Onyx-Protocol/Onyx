@@ -6,22 +6,22 @@ TIME                                            # <top> [time()] [clause selecto
 4 PICK                                          # <top> deadline [time()] [clause selector] price currency deadline creditorScript debtorScript
 GREATERTHANOREQUAL                              # <top> [[time()] >= deadline] [clause selector] price currency deadline creditorScript debtorScript
 5 PICK                                          # <top> creditorScript [[time()] >= deadline] [clause selector] price currency deadline creditorScript debtorScript
-EVAL                                            # <top> [eval(creditorScript)] [[time()] >= deadline] [clause selector] price currency deadline creditorScript debtorScript
-BOOLAND                                         # <top> [[[time()] >= deadline] && [eval(creditorScript)]] [clause selector] price currency deadline creditorScript debtorScript
+CHECKPREDICATE                                  # <top> [checkpredicate(creditorScript)] [[time()] >= deadline] [clause selector] price currency deadline creditorScript debtorScript
+BOOLAND                                         # <top> [[[time()] >= deadline] && [checkpredicate(creditorScript)]] [clause selector] price currency deadline creditorScript debtorScript
 ELSE DUP 2 NUMEQUAL IF                          # <top> [clause selector] price currency deadline creditorScript debtorScript
 1 PICK                                          # <top> price [clause selector] price currency deadline creditorScript debtorScript
 3 PICK                                          # <top> currency price [clause selector] price currency deadline creditorScript debtorScript
 6 PICK                                          # <top> creditorScript currency price [clause selector] price currency deadline creditorScript debtorScript
 RESERVEOUTPUT                                   # <top> [reserveoutput(price, currency, creditorScript)] [clause selector] price currency deadline creditorScript debtorScript
 6 PICK                                          # <top> debtorScript [reserveoutput(price, currency, creditorScript)] [clause selector] price currency deadline creditorScript debtorScript
-EVAL                                            # <top> [eval(debtorScript)] [reserveoutput(price, currency, creditorScript)] [clause selector] price currency deadline creditorScript debtorScript
-BOOLAND                                         # <top> [[reserveoutput(price, currency, creditorScript)] && [eval(debtorScript)]] [clause selector] price currency deadline creditorScript debtorScript
+CHECKPREDICATE                                  # <top> [checkpredicate(debtorScript)] [reserveoutput(price, currency, creditorScript)] [clause selector] price currency deadline creditorScript debtorScript
+BOOLAND                                         # <top> [[reserveoutput(price, currency, creditorScript)] && [checkpredicate(debtorScript)]] [clause selector] price currency deadline creditorScript debtorScript
 ELSE DUP 3 NUMEQUAL IF                          # <top> [clause selector] price currency deadline creditorScript debtorScript
 5 PICK                                          # <top> debtorScript [clause selector] price currency deadline creditorScript debtorScript
-EVAL                                            # <top> [eval(debtorScript)] [clause selector] price currency deadline creditorScript debtorScript
-5 PICK                                          # <top> creditorScript [eval(debtorScript)] [clause selector] price currency deadline creditorScript debtorScript
-EVAL                                            # <top> [eval(creditorScript)] [eval(debtorScript)] [clause selector] price currency deadline creditorScript debtorScript
-BOOLAND                                         # <top> [[eval(debtorScript)] && [eval(creditorScript)]] [clause selector] price currency deadline creditorScript debtorScript
+CHECKPREDICATE                                  # <top> [checkpredicate(debtorScript)] [clause selector] price currency deadline creditorScript debtorScript
+5 PICK                                          # <top> creditorScript [checkpredicate(debtorScript)] [clause selector] price currency deadline creditorScript debtorScript
+CHECKPREDICATE                                  # <top> [checkpredicate(creditorScript)] [checkpredicate(debtorScript)] [clause selector] price currency deadline creditorScript debtorScript
+BOOLAND                                         # <top> [[checkpredicate(debtorScript)] && [checkpredicate(creditorScript)]] [clause selector] price currency deadline creditorScript debtorScript
 ELSE DUP 4 NUMEQUAL IF                          # <top> [clause selector] price currency deadline creditorScript debtorScript
 AMOUNT                                          # <top> [amount()] [clause selector] price currency deadline creditorScript debtorScript newCreditorScript
 ASSET                                           # <top> [asset()] [amount()] [clause selector] price currency deadline creditorScript debtorScript newCreditorScript
@@ -39,30 +39,9 @@ CATPUSHDATA                                     # <top> [building pkscript] [ass
 DATA_2 0x557a CAT                               # <top> [building pkscript] [asset()] [amount()] [clause selector] price currency deadline creditorScript debtorScript newCreditorScript
 DATA_2 0x76aa CAT                               # <top> [building pkscript] [asset()] [amount()] [clause selector] price currency deadline creditorScript debtorScript newCreditorScript
 OUTPUTSCRIPT SIZE 34 SUB 32 SUBSTR CATPUSHDATA  # <top> [building pkscript] [asset()] [amount()] [clause selector] price currency deadline creditorScript debtorScript newCreditorScript
-DATA_2 0x88c0 CAT                               # <top> [loan(price, currency, deadline, newCreditorScript, debtorScript)] [asset()] [amount()] [clause selector] price currency deadline creditorScript debtorScript newCreditorScript
+DATA_2 0x8800c0 CAT                             # <top> [loan(price, currency, deadline, newCreditorScript, debtorScript)] [asset()] [amount()] [clause selector] price currency deadline creditorScript debtorScript newCreditorScript
 RESERVEOUTPUT                                   # <top> [reserveoutput([amount()], [asset()], [loan(price, currency, deadline, newCreditorScript, debtorScript)])] [clause selector] price currency deadline creditorScript debtorScript newCreditorScript
 5 PICK                                          # <top> creditorScript [reserveoutput([amount()], [asset()], [loan(price, currency, deadline, newCreditorScript, debtorScript)])] [clause selector] price currency deadline creditorScript debtorScript newCreditorScript
-EVAL                                            # <top> [eval(creditorScript)] [reserveoutput([amount()], [asset()], [loan(price, currency, deadline, newCreditorScript, debtorScript)])] [clause selector] price currency deadline creditorScript debtorScript newCreditorScript
-BOOLAND                                         # <top> [[reserveoutput([amount()], [asset()], [loan(price, currency, deadline, newCreditorScript, debtorScript)])] && [eval(creditorScript)]] [clause selector] price currency deadline creditorScript debtorScript newCreditorScript
+CHECKPREDICATE                                  # <top> [checkpredicate(creditorScript)] [reserveoutput([amount()], [asset()], [loan(price, currency, deadline, newCreditorScript, debtorScript)])] [clause selector] price currency deadline creditorScript debtorScript newCreditorScript
+BOOLAND                                         # <top> [[reserveoutput([amount()], [asset()], [loan(price, currency, deadline, newCreditorScript, debtorScript)])] && [checkpredicate(creditorScript)]] [clause selector] price currency deadline creditorScript debtorScript newCreditorScript
 ENDIF ENDIF ENDIF ENDIF                         # <top> [clause selector] price currency deadline creditorScript debtorScript
-
-Contract hex:
-557a76519c63c55479a25579c09a6776529c63517953795679c15679c09a6776539c635579c05579c09a6776549c63c3c20251755879c75979c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec15579c09a68686868
-
-Contracthash hex:
-fa6e8f67d40a907fb98b7ddf3f9db55ff0f1a4467d6843d63dec81cda5afe605
-
-Pkscript hex:
-5175<debtorScript><creditorScript><deadline><currency><price>557a76aa20fa6e8f67d40a907fb98b7ddf3f9db55ff0f1a4467d6843d63dec81cda5afe60588c0
-
-Redeem loan.keep:
-514c61557a76519c63c55479a25579c09a6776529c63517953795679c15679c09a6776539c635579c05579c09a6776549c63c3c20251755879c75979c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec15579c09a68686868
-
-Redeem loan.repurchase:
-524c61557a76519c63c55479a25579c09a6776529c63517953795679c15679c09a6776539c635579c05579c09a6776549c63c3c20251755879c75979c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec15579c09a68686868
-
-Redeem loan.mutual:
-534c61557a76519c63c55479a25579c09a6776529c63517953795679c15679c09a6776539c635579c05579c09a6776549c63c3c20251755879c75979c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec15579c09a68686868
-
-Redeem loan.sell:
-<newCreditorScript>544c61557a76519c63c55479a25579c09a6776529c63517953795679c15679c09a6776539c635579c05579c09a6776549c63c3c20251755879c75979c75679c75579c75479c702557a7e0276aa7ec48201229401207fc70288c07ec15579c09a68686868

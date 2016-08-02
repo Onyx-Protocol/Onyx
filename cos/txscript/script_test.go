@@ -518,7 +518,7 @@ func TestPayToContract(t *testing.T) {
 
 	expected = []byte{OP_1, OP_DROP, OP_DATA_1, OP_3, OP_DATA_1, OP_2, OP_DATA_1, OP_1, OP_3, OP_ROLL, OP_DUP, OP_SHA3, OP_DATA_32}
 	expected = append(expected, contractHash[:]...)
-	expected = append(expected, []byte{OP_EQUALVERIFY, OP_EVAL}...)
+	expected = append(expected, []byte{OP_EQUALVERIFY, OP_0, OP_CHECKPREDICATE}...)
 	if !bytes.Equal(script, expected) {
 		t.Errorf("expected %v, got %v", expected, script)
 	}

@@ -33,7 +33,7 @@ func TestAssetByID(t *testing.T) {
 	}
 
 	redeem, _ := hex.DecodeString("5120ca7313d5998f6005cf5a9c29677c31adfc163f599412a6ba4e9bb19d361bf4f451ae")
-	issuance, _ := hex.DecodeString("76aa20d576c32879648a54df281c7839ff77a0e8315ed8fa3d34a3eb7dce22634f3d1288c0")
+	issuance, _ := hex.DecodeString("76aa20d576c32879648a54df281c7839ff77a0e8315ed8fa3d34a3eb7dce22634f3d128800c0")
 	want := &Asset{
 		Hash:           asset0,
 		IssuerNodeID:   in0,

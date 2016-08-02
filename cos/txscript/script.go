@@ -79,7 +79,7 @@ func PayToContractHash(contractHash bc.ContractHash, params []Item, scriptVersio
 		sb = sb.AddInt64(int64(len(params))).AddOp(OP_ROLL)
 	}
 	sb = sb.AddOp(OP_DUP).AddOp(OP_SHA3).AddData(contractHash[:])
-	sb = sb.AddOp(OP_EQUALVERIFY).AddOp(OP_EVAL)
+	sb = sb.AddOp(OP_EQUALVERIFY).AddOp(OP_0).AddOp(OP_CHECKPREDICATE)
 	return sb.Script()
 }
 
@@ -140,7 +140,7 @@ func RedeemP2C(contract []byte, inputs []Item) [][]byte {
 
 // ParseP2C parses a p2c script.  It must have one of the following forms:
 //   <scriptversion> DROP [<param N> <param N-1> ... <param 1>] contract-script...
-//   <scriptversion> DROP [<param N> <param N-1> ... <param 1> <N> ROLL] DUP SHA3 <contract-hash> EQUALVERIFY EVAL
+//   <scriptversion> DROP [<param N> <param N-1> ... <param 1> <N> ROLL] DUP SHA3 <contract-hash> EQUALVERIFY 0 EVAL
 //
 // Additionally, scriptversion must be a legal P2C version.
 //
@@ -207,27 +207,28 @@ func parseP2C(pops []parsedOpcode, script, contractHint []byte) (scriptVersion, 
 func parseP2CHashForm(pops []parsedOpcode) (isHashForm bool, contractHash bc.ContractHash, params [][]byte) {
 	l := len(pops)
 
-	if l < 7 ||
-		(l > 7 && l < 10) ||
-		pops[l-1].opcode.value != OP_EVAL ||
-		pops[l-2].opcode.value != OP_EQUALVERIFY ||
-		!isPushdataOp(pops[l-3]) ||
-		len(pops[l-3].data) != 32 ||
-		pops[l-4].opcode.value != OP_SHA3 ||
-		pops[l-5].opcode.value != OP_DUP {
+	if l < 8 ||
+		(l > 8 && l < 11) ||
+		pops[l-1].opcode.value != OP_CHECKPREDICATE ||
+		pops[l-2].opcode.value != OP_0 ||
+		pops[l-3].opcode.value != OP_EQUALVERIFY ||
+		!isPushdataOp(pops[l-4]) ||
+		len(pops[l-4].data) != 32 ||
+		pops[l-5].opcode.value != OP_SHA3 ||
+		pops[l-6].opcode.value != OP_DUP {
 		return false, contractHash, nil
 	}
 
-	if l > 7 {
-		n, err := asScriptNum(pops[l-7], false)
+	if l > 8 {
+		n, err := asScriptNum(pops[l-8], false)
 		if err != nil ||
-			n != scriptNum(l-9) ||
-			pops[l-6].opcode.value != OP_ROLL ||
-			!isPushdataOp(pops[l-7]) {
+			n != scriptNum(l-10) ||
+			pops[l-7].opcode.value != OP_ROLL ||
+			!isPushdataOp(pops[l-8]) {
 			return false, contractHash, nil
 		}
-		params = make([][]byte, 0, l-9)
-		for i := l - 8; i >= 2; i-- {
+		params = make([][]byte, 0, l-10)
+		for i := l - 9; i >= 2; i-- {
 			if !isPushdataOp(pops[i]) {
 				return false, contractHash, nil
 			}
@@ -235,7 +236,7 @@ func parseP2CHashForm(pops []parsedOpcode) (isHashForm bool, contractHash bc.Con
 		}
 	}
 
-	copy(contractHash[:], pops[l-3].data)
+	copy(contractHash[:], pops[l-4].data)
 
 	return true, contractHash, params
 }

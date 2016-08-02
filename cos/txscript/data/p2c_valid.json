@@ -9,10 +9,7 @@
 ["ADD 5 EQUAL", "3", "2", "One param"],
 ["ADD 5 EQUAL", "", "3 2", "Two params"],
 
-["The serialized script used by EVAL here is <2 3 ADD>"],
-["DATA_3 0x525393 EVAL 4 ADD 9 EQUAL", "", "", "Simple EVAL test"],
-
-["PROGRAM EQUAL", "DATA_39 0x517576aa201635b121178a46ea1aa968815d8492b146e26fb5abd01b84c3e95bc25ed1f0d488c0", ""],
+["PROGRAM EQUAL", "DATA_40 0x517576aa201635b121178a46ea1aa968815d8492b146e26fb5abd01b84c3e95bc25ed1f0d48800c0", ""],
 
 ["There is a total of 7 units of this asset in the sample tx"],
 ["used for testing.  This script is executed twice, once each"],
