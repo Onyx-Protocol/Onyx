@@ -7,7 +7,6 @@ import (
 
 	"chain/core/appdb"
 	"chain/core/blocksigner"
-	"chain/core/explorer"
 	"chain/core/generator"
 	"chain/core/mockhsm"
 	"chain/core/txdb"
@@ -25,12 +24,11 @@ const (
 
 // Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
 // will be used as the password for routes starting with /nouser/.
-func Handler(nouserSecret string, generatorConfig *generator.Config, signer *blocksigner.Signer, store *txdb.Store, pool *txdb.Pool, explorer *explorer.Explorer, hsm *mockhsm.HSM) chainhttp.Handler {
+func Handler(nouserSecret string, generatorConfig *generator.Config, signer *blocksigner.Signer, store *txdb.Store, pool *txdb.Pool, hsm *mockhsm.HSM) chainhttp.Handler {
 	h := pat.New()
 	a := &api{
 		store:     store,
 		pool:      pool,
-		explorer:  explorer,
 		generator: generatorConfig,
 		hsm:       hsm,
 	}
@@ -77,7 +75,6 @@ func nouserHandler() chainhttp.HandlerFunc {
 type api struct {
 	store     *txdb.Store
 	pool      *txdb.Pool
-	explorer  *explorer.Explorer
 	generator *generator.Config
 	hsm       *mockhsm.HSM
 }
@@ -117,20 +114,6 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/v3/api-tokens", listAPITokens)
 	h.HandleFunc("POST", "/v3/api-tokens", createAPIToken)
 	h.HandleFunc("DELETE", "/v3/api-tokens/:tokenID", appdb.DeleteAuthToken)
-
-	// Auditor node endpoints -- DEPRECATED: use explorer endpoints instead
-	h.HandleFunc("GET", "/v3/auditor/blocks", a.listBlocks)
-	h.HandleFunc("GET", "/v3/auditor/blocks/:blockID/summary", a.getBlockSummary)
-	h.HandleFunc("GET", "/v3/auditor/transactions/:txID", a.getTx)
-	h.HandleFunc("GET", "/v3/auditor/assets/:assetID", a.getAsset)
-	h.HandleFunc("POST", "/v3/auditor/get-assets", a.getExplorerAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
-
-	// Explorer node endpoints
-	h.HandleFunc("GET", "/v3/explorer/blocks", a.listBlocks)
-	h.HandleFunc("GET", "/v3/explorer/blocks/:blockID/summary", a.getBlockSummary)
-	h.HandleFunc("GET", "/v3/explorer/transactions/:txID", a.getTx)
-	h.HandleFunc("GET", "/v3/explorer/assets/:assetID", a.getAsset)
-	h.HandleFunc("POST", "/v3/explorer/get-assets", a.getExplorerAssets) // EXPERIMENTAL(jeffomatic), implemented for R3 demo
 
 	// MockHSM endpoints
 	h.HandleFunc("GET", "/mockhsm/genkey", a.mockhsmGenKey)

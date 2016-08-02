@@ -23,7 +23,6 @@ import (
 	"chain/core/account/utxodb"
 	"chain/core/asset"
 	"chain/core/blocksigner"
-	"chain/core/explorer"
 	"chain/core/fetch"
 	"chain/core/generator"
 	"chain/core/leader"
@@ -188,8 +187,6 @@ func main() {
 	asset.Init(fc, *isManager)
 	account.Init(fc)
 
-	explorer := explorer.New(fc, db, store, *isManager)
-
 	var generatorConfig *generator.Config
 	if *isGenerator {
 		remotes := remoteSignerInfo(ctx)
@@ -235,7 +232,7 @@ func main() {
 
 	hsm := mockhsm.New(db)
 
-	h := core.Handler(*nouserSecret, generatorConfig, localSigner, store, pool, explorer, hsm)
+	h := core.Handler(*nouserSecret, generatorConfig, localSigner, store, pool, hsm)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}
