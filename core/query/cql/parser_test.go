@@ -89,16 +89,13 @@ func TestParseValid(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		t.Log(tc.q)
-
-		q, err := Parse(tc.q)
+		expr, _, err := parse(tc.q)
 		if err != nil {
 			t.Errorf("%d: %s", i, err)
 			continue
 		}
-		if !reflect.DeepEqual(q.expr, tc.expr) {
-			t.Log(q.expr.String())
-			t.Errorf("%d: parsing %q\ngot=\n%#v\nwant=\n%#v\n", i, tc.q, q.expr, tc.expr)
+		if !reflect.DeepEqual(expr, tc.expr) {
+			t.Errorf("%d: parsing %q\ngot=\n%#v\nwant=\n%#v\n", i, tc.q, expr, tc.expr)
 		}
 	}
 }
@@ -118,10 +115,9 @@ func TestParseInvalid(t *testing.T) {
 		"inputs(account_tags CONTAINS $1) or (1 == 1)", // lowercase 'or' (trailing garbage)
 	}
 	for _, tc := range testCases {
-		t.Log(tc)
-		q, err := Parse(tc)
+		expr, _, err := parse(tc)
 		if err == nil {
-			t.Errorf("Parse(%q) = %#v want error", tc, q.expr)
+			t.Errorf("parse(%q) = %#v want error", tc, expr)
 		}
 	}
 }

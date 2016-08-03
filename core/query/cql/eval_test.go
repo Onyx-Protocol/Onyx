@@ -15,101 +15,101 @@ func TestEval(t *testing.T) {
 	}{
 		{
 			query:    `'hello'`,
-			expected: value{t: stringTyp, str: "hello"},
+			expected: value{t: String, str: "hello"},
 		},
 		{
 			query:    `'hello' = 'hello'`,
-			expected: value{t: boolTyp, set: Set{Invert: true}},
+			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
 			query:    `'hello' = 'world'`,
-			expected: value{t: boolTyp, set: Set{}},
+			expected: value{t: Bool, set: Set{}},
 		},
 		{
 			query:    `0xFF = 255`,
-			expected: value{t: boolTyp, set: Set{Invert: true}},
+			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
 			query:    `0xFF != 255`,
-			expected: value{t: boolTyp, set: Set{}},
+			expected: value{t: Bool, set: Set{}},
 		},
 		{
 			query:    `10 < 9`,
-			expected: value{t: boolTyp, set: Set{}},
+			expected: value{t: Bool, set: Set{}},
 		},
 		{
 			query:    `'10' < '9'`,
-			expected: value{t: boolTyp, set: Set{Invert: true}},
+			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
 			query:    `$1 = 'hello' OR account_tags CONTAINS $1`,
 			data:     `{"account_tags": ["world"]}`,
-			expected: value{t: boolTyp, set: Set{Values: []string{"hello", "world"}}},
+			expected: value{t: Bool, set: Set{Values: []string{"hello", "world"}}},
 		},
 		{
 			query:    `0xA >= 10`,
-			expected: value{t: boolTyp, set: Set{Invert: true}},
+			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
 			query:    `0xA <= 10`,
-			expected: value{t: boolTyp, set: Set{Invert: true}},
+			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
 			query:    `0xB > 10`,
-			expected: value{t: boolTyp, set: Set{Invert: true}},
+			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
 			query:    `0xA < 10`,
-			expected: value{t: boolTyp, set: Set{}},
+			expected: value{t: Bool, set: Set{}},
 		},
 		{
 			query:    `account_tags CONTAINS 'bank-b'`,
 			data:     `{"account_tags": ["bank-a", "bank-b", "international"]}`,
-			expected: value{t: boolTyp, set: Set{Invert: true}},
+			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
 			query: `account_tags CONTAINS $1`,
 			data:  `{"account_tags": ["bank-a", "bank-b", "international"]}`,
 			expected: value{
-				t:   boolTyp,
+				t:   Bool,
 				set: Set{Values: []string{"bank-a", "bank-b", "international"}},
 			},
 		},
 		{
 			query:    `('hello' = 'hello') = ('hello' = 'hello')`,
-			expected: value{t: boolTyp, set: Set{Invert: true}},
+			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
 			query:    `('hello' = 'hello') != ('hello' = 'hello')`,
-			expected: value{t: boolTyp, set: Set{}},
+			expected: value{t: Bool, set: Set{}},
 		},
 		{
 			query:    `($1 = 'hello') = ($1 = 'hello')`,
-			expected: value{t: boolTyp, set: Set{Invert: true}},
+			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
 			query:    `($1 = 'hello') = ($1 != 'hello')`,
-			expected: value{t: boolTyp, set: Set{}},
+			expected: value{t: Bool, set: Set{}},
 		},
 		{
 			query:    `account_tags CONTAINS $1 AND $1 != 'b'`,
 			data:     `{"account_tags": ["a", "b", "c"]}`,
-			expected: value{t: boolTyp, set: Set{Values: []string{"a", "c"}}},
+			expected: value{t: Bool, set: Set{Values: []string{"a", "c"}}},
 		},
 		{
 			query:    `NOT (account_tags CONTAINS $1) AND $1 != 'c'`,
 			data:     `{"account_tags": ["a", "b"]}`,
-			expected: value{t: boolTyp, set: Set{Invert: true, Values: []string{"a", "b", "c"}}},
+			expected: value{t: Bool, set: Set{Invert: true, Values: []string{"a", "b", "c"}}},
 		},
 		{
 			query:    `issuance`,
 			data:     `{"issuance": true}`,
-			expected: value{t: boolTyp, set: Set{Invert: true}},
+			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
 			query:    `action = 'issue'`,
 			data:     `{"action": "issue"}`,
-			expected: value{t: boolTyp, set: Set{Invert: true}},
+			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
 			query: `inputs(account_tags CONTAINS 'domestic' AND account_tags CONTAINS 'revolving')`,
@@ -119,7 +119,7 @@ func TestEval(t *testing.T) {
 					{ "account_tags": ["domestic", "revolving"] }
 				]
 			}`,
-			expected: value{t: boolTyp, set: Set{Invert: true}},
+			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
 			query: `inputs(account_tags CONTAINS 'domestic' AND account_tags CONTAINS 'revolving')`,
@@ -129,7 +129,7 @@ func TestEval(t *testing.T) {
 					{ "account_tags": ["revolving", "international"] }
 				]
 			}`,
-			expected: value{t: boolTyp, set: Set{}},
+			expected: value{t: Bool, set: Set{}},
 		},
 		{
 			query: `NOT inputs(account_tags CONTAINS 'domestic' AND account_tags CONTAINS 'revolving')`,
@@ -139,13 +139,11 @@ func TestEval(t *testing.T) {
 					{ "account_tags": ["revolving", "international"] }
 				]
 			}`,
-			expected: value{t: boolTyp, set: Set{Invert: true}},
+			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 	}
 
 	for i, tc := range testCases {
-		t.Log(tc.query)
-
 		var obj map[string]interface{}
 		if tc.data != "" {
 			err := json.Unmarshal([]byte(tc.data), &obj)
@@ -154,16 +152,16 @@ func TestEval(t *testing.T) {
 			}
 		}
 
-		q, err := Parse(tc.query)
+		expr, _, err := parse(tc.query)
 		if err != nil {
 			t.Fatalf("error while parsing %s: %s", tc.query, err)
 		}
 
-		v := eval(mapEnv(obj), q.expr)
+		v := eval(mapEnv(obj), expr)
 		sort.Strings(tc.expected.set.Values)
 		sort.Strings(v.set.Values)
 		if !reflect.DeepEqual(v, tc.expected) {
-			t.Errorf("%d: got=%#v, want=%#v for query %s", i, v, tc.expected, q.expr.String())
+			t.Errorf("%d: got=%#v, want=%#v for query %s", i, v, tc.expected, expr.String())
 		}
 	}
 }

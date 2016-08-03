@@ -26,6 +26,23 @@ func (q Query) MarshalText() ([]byte, error) {
 // Parse parses a query and returns an internal representation of the
 // query or an error if it fails to parse.
 func Parse(query string) (q Query, err error) {
+	expr, parser, err := parse(query)
+	if err != nil {
+		return q, err
+	}
+	err = typeCheck(expr, nil)
+	if err != nil {
+		return q, err
+	}
+
+	q = Query{
+		Parameters: parser.maxPlaceholder,
+		expr:       expr,
+	}
+	return q, err
+}
+
+func parse(exprString string) (expr expr, parser *parser, err error) {
 	defer func() {
 		r := recover()
 		if perr, ok := r.(parseError); ok {
@@ -35,17 +52,10 @@ func Parse(query string) (q Query, err error) {
 		}
 	}()
 
-	parser := newParser([]byte(query))
-	expr := parseExpr(parser)
+	parser = newParser([]byte(exprString))
+	expr = parseExpr(parser)
 	parser.parseTok(tokEOF)
-
-	// TODO: static type checking
-
-	q = Query{
-		Parameters: parser.maxPlaceholder,
-		expr:       expr,
-	}
-	return q, err
+	return expr, parser, err
 }
 
 func newParser(src []byte) *parser {

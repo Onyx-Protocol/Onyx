@@ -15,11 +15,11 @@ func (m mapEnv) Get(name string) value {
 
 	switch v := val.(type) {
 	case bool:
-		return value{t: boolTyp, set: Set{Invert: v}}
+		return value{t: Bool, set: Set{Invert: v}}
 	case int:
-		return value{t: integerTyp, integer: v}
+		return value{t: Integer, integer: v}
 	case string:
-		return value{t: stringTyp, str: v}
+		return value{t: String, str: v}
 	case []interface{}:
 		var strs []string
 		for _, v := range v {
@@ -29,7 +29,7 @@ func (m mapEnv) Get(name string) value {
 			}
 			strs = append(strs, s)
 		}
-		return value{t: listTyp, list: strs}
+		return value{t: List, list: strs}
 	default:
 		panic("invalid type for attribute `" + name + "`")
 	}

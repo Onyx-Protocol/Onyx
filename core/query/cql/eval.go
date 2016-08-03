@@ -19,7 +19,7 @@ func Eval(env map[string]interface{}, q Query) (s Set, err error) {
 	}()
 
 	v := eval(mapEnv(env), q.expr)
-	if !v.is(boolTyp) {
+	if !v.is(Bool) {
 		return s, fmt.Errorf("query `%s` does not evaluate to a boolean", q.expr.String())
 	}
 
@@ -29,15 +29,32 @@ func Eval(env map[string]interface{}, q Query) (s Set, err error) {
 	return v.set, nil
 }
 
-type typ int
+// Type defines the value types of CQL.
+type Type int
 
 const (
-	boolTyp typ = iota
-	stringTyp
-	integerTyp
-	listTyp
-	placeholderTyp
+	Any Type = iota
+	Bool
+	String
+	Integer
+	List
 )
+
+func (t Type) String() string {
+	switch t {
+	case Any:
+		return "any"
+	case Bool:
+		return "bool"
+	case String:
+		return "string"
+	case Integer:
+		return "integer"
+	case List:
+		return "list"
+	}
+	panic("unknown cql type")
+}
 
 // value represents the result of evaluating an expression against an
 // environment (a transaction, an unspent output, etc).
@@ -49,14 +66,14 @@ const (
 // - false is represented as the empty set because there are no possible
 //   parameter values that could satisfy the expression.
 type value struct {
-	t       typ
-	set     Set      // boolTyp
-	list    []string // listTyp
-	str     string   // stringTyp
-	integer int      // integerTyp
+	t       Type
+	set     Set      // Bool
+	list    []string // List
+	str     string   // String
+	integer int      // Integer
 }
 
-func (v value) is(t typ) bool {
+func (v value) is(t Type) bool {
 	return v.t == t
 }
 
@@ -64,10 +81,10 @@ func eval(env environment, expr expr) value {
 	switch e := expr.(type) {
 	case notExpr:
 		v := eval(env, e.inner)
-		if !v.is(boolTyp) {
+		if !v.is(Bool) {
 			panic("NOT requires a boolean operand")
 		}
-		return value{t: boolTyp, set: complement(v.set)}
+		return value{t: Bool, set: complement(v.set)}
 	case binaryExpr:
 		lv, rv := eval(env, e.l), eval(env, e.r)
 		return e.op.apply(lv, rv)
@@ -78,13 +95,13 @@ func eval(env environment, expr expr) value {
 	case valueExpr:
 		switch e.typ {
 		case tokString:
-			return value{t: stringTyp, str: e.value[1 : len(e.value)-1]}
+			return value{t: String, str: e.value[1 : len(e.value)-1]}
 		case tokInteger:
 			v, err := strconv.Atoi(e.value)
 			if err != nil {
 				panic(err) // can't happen; caught during parsing
 			}
-			return value{t: integerTyp, integer: v}
+			return value{t: Integer, integer: v}
 		default:
 			panic(fmt.Errorf("value expr with invalid token type: %s", e.typ))
 		}
@@ -93,14 +110,14 @@ func eval(env environment, expr expr) value {
 		var set Set
 		for _, subenv := range subenvs {
 			v := eval(subenv, e.expr)
-			if !v.is(boolTyp) {
+			if !v.is(Bool) {
 				panic(e.ident + "(...) body must have type bool")
 			}
 			set = union(set, v.set)
 		}
-		return value{t: boolTyp, set: set}
+		return value{t: Bool, set: set}
 	case placeholderExpr:
-		return value{t: placeholderTyp}
+		return value{t: Any}
 	default:
 		panic(fmt.Errorf("unrecognized expr type %T", expr))
 	}

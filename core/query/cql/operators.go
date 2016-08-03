@@ -21,41 +21,41 @@ var binaryOps = map[string]*binaryOp{
 }
 
 func applyOr(lv, rv value) value {
-	if !lv.is(boolTyp) || !rv.is(boolTyp) {
+	if !lv.is(Bool) || !rv.is(Bool) {
 		panic("OR requires boolean operands")
 	}
-	return value{t: boolTyp, set: union(lv.set, rv.set)}
+	return value{t: Bool, set: union(lv.set, rv.set)}
 }
 
 func applyAnd(lv, rv value) value {
-	if !lv.is(boolTyp) || !rv.is(boolTyp) {
+	if !lv.is(Bool) || !rv.is(Bool) {
 		panic("AND requires boolean operands")
 	}
-	return value{t: boolTyp, set: intersection(lv.set, rv.set)}
+	return value{t: Bool, set: intersection(lv.set, rv.set)}
 }
 
 func applyLessThan(lv, rv value) value {
-	if lv.is(placeholderTyp) || rv.is(placeholderTyp) {
+	if lv.is(Any) || rv.is(Any) {
 		panic("inequality comparison does not support parameterized expressions")
 	}
-	if lv.is(integerTyp) && rv.is(integerTyp) {
-		return value{t: boolTyp, set: Set{Invert: lv.integer < rv.integer}}
+	if lv.is(Integer) && rv.is(Integer) {
+		return value{t: Bool, set: Set{Invert: lv.integer < rv.integer}}
 	}
-	if lv.is(stringTyp) && rv.is(stringTyp) {
-		return value{t: boolTyp, set: Set{Invert: lv.str < rv.str}}
+	if lv.is(String) && rv.is(String) {
+		return value{t: Bool, set: Set{Invert: lv.str < rv.str}}
 	}
 	panic("inequality comparison requires scalar operands")
 }
 
 func applyLessThanEqual(lv, rv value) value {
-	if lv.is(placeholderTyp) || rv.is(placeholderTyp) {
+	if lv.is(Any) || rv.is(Any) {
 		panic("inequality comparison does not support parameterized expressions")
 	}
-	if lv.is(integerTyp) && rv.is(integerTyp) {
-		return value{t: boolTyp, set: Set{Invert: lv.integer <= rv.integer}}
+	if lv.is(Integer) && rv.is(Integer) {
+		return value{t: Bool, set: Set{Invert: lv.integer <= rv.integer}}
 	}
-	if lv.is(stringTyp) && rv.is(stringTyp) {
-		return value{t: boolTyp, set: Set{Invert: lv.str <= rv.str}}
+	if lv.is(String) && rv.is(String) {
+		return value{t: Bool, set: Set{Invert: lv.str <= rv.str}}
 	}
 	panic("inequality comparison requires scalar operands")
 }
@@ -76,36 +76,36 @@ func applyEqual(lv, rv value) value {
 	var set Set
 	switch {
 	// static, known-value cases
-	case lv.is(boolTyp) && rv.is(boolTyp):
+	case lv.is(Bool) && rv.is(Bool):
 		// (A ∩ B) ∪ (A ∪ B)´
 		set = union(
 			intersection(lv.set, rv.set),
 			complement(union(lv.set, rv.set)),
 		)
-	case lv.is(integerTyp) && rv.is(integerTyp):
+	case lv.is(Integer) && rv.is(Integer):
 		set = Set{Invert: lv.integer == rv.integer}
-	case lv.is(stringTyp) && rv.is(stringTyp):
+	case lv.is(String) && rv.is(String):
 		set = Set{Invert: lv.str == rv.str}
 
 	// dynamic, placeholder cases
-	case lv.is(placeholderTyp) && rv.is(stringTyp):
+	case lv.is(Any) && rv.is(String):
 		set = Set{Values: []string{rv.str}}
-	case lv.is(stringTyp) && rv.is(placeholderTyp):
+	case lv.is(String) && rv.is(Any):
 		set = Set{Values: []string{lv.str}}
-	case lv.is(placeholderTyp) && rv.is(integerTyp):
+	case lv.is(Any) && rv.is(Integer):
 		set = Set{Values: []string{strconv.Itoa(rv.integer)}}
-	case lv.is(integerTyp) && rv.is(placeholderTyp):
+	case lv.is(Integer) && rv.is(Any):
 		set = Set{Values: []string{strconv.Itoa(lv.integer)}}
 
 	// error cases
-	case lv.is(placeholderTyp) && rv.is(placeholderTyp):
+	case lv.is(Any) && rv.is(Any):
 		panic("placeholders cannot be compared")
-	case lv.is(listTyp) && rv.is(listTyp):
+	case lv.is(List) && rv.is(List):
 		panic("lists cannot be compared with comparison operators")
 	default:
 		panic("mismatched types for comparison operator")
 	}
-	return value{t: boolTyp, set: set}
+	return value{t: Bool, set: set}
 }
 
 func applyNotEqual(lv, rv value) value {
@@ -115,13 +115,13 @@ func applyNotEqual(lv, rv value) value {
 }
 
 func applyContains(lv, rv value) value {
-	if !lv.is(listTyp) {
+	if !lv.is(List) {
 		panic("CONTAINS requires left operand to be list")
 	}
-	if rv.is(placeholderTyp) {
-		return value{t: boolTyp, set: Set{Values: lv.list}}
+	if rv.is(Any) {
+		return value{t: Bool, set: Set{Values: lv.list}}
 	}
-	if !rv.is(stringTyp) {
+	if !rv.is(String) {
 		panic("CONTAINS requires right operand to be string")
 	}
 
@@ -129,5 +129,5 @@ func applyContains(lv, rv value) value {
 	for _, v := range lv.list {
 		found = found || v == rv.str
 	}
-	return value{t: boolTyp, set: Set{Invert: found}}
+	return value{t: Bool, set: Set{Invert: found}}
 }
