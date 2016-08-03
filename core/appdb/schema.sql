@@ -567,6 +567,38 @@ CREATE TABLE projects (
 
 
 --
+-- Name: query_indexes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE query_indexes (
+    internal_id integer NOT NULL,
+    id text NOT NULL,
+    type text NOT NULL,
+    query text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: query_indexes_internal_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE query_indexes_internal_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: query_indexes_internal_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE query_indexes_internal_id_seq OWNED BY query_indexes.internal_id;
+
+
+--
 -- Name: reservation_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -677,6 +709,13 @@ CREATE TABLE users (
 --
 
 ALTER TABLE ONLY issuer_nodes ALTER COLUMN key_index SET DEFAULT nextval('issuer_nodes_key_index_seq'::regclass);
+
+
+--
+-- Name: internal_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY query_indexes ALTER COLUMN internal_id SET DEFAULT nextval('query_indexes_internal_id_seq'::regclass);
 
 
 --
@@ -828,6 +867,22 @@ ALTER TABLE ONLY pool_txs
 
 ALTER TABLE ONLY projects
     ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: query_indexes_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY query_indexes
+    ADD CONSTRAINT query_indexes_id_key UNIQUE (id);
+
+
+--
+-- Name: query_indexes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY query_indexes
+    ADD CONSTRAINT query_indexes_pkey PRIMARY KEY (internal_id);
 
 
 --
@@ -1075,3 +1130,4 @@ insert into migrations (filename, hash) values ('2016-07-27.0.core.drop-smartcon
 insert into migrations (filename, hash) values ('2016-07-28.0.core.mockhsm.sql', '4f8c1a90f2789b5db62bdf6cd94255e6e41cce1f78e3254643032d1d6a53438c');
 insert into migrations (filename, hash) values ('2016-07-28.1.explorer.drop-explorer-outputs.sql', '99d36e88d57cc4405a0bec300fe6b88675278b9aad91a83d1d1fe50533355adb');
 insert into migrations (filename, hash) values ('2016-07-29.0.signer.add-signers.sql', '31585f1d6d2c1cf2f3157929b355e2b81f9da6e117b58c21c47b2ba3f9194a0a');
+insert into migrations (filename, hash) values ('2016-08-02.0.query.indexes.sql', '9f50b380a05e7b1d65cf10a8339b5be52aebbcfac1266ef5f55edd312d3b067c');

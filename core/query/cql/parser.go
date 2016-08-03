@@ -11,6 +11,18 @@ type Query struct {
 	Parameters int
 }
 
+// String returns a cleaned, canonical representation of the
+// CQL query string.
+func (q Query) String() string {
+	return q.expr.String()
+}
+
+// MarshalText implements the encoding.TextMarshaler interface and
+// returns a cleaned, canonical representation of the CQL query.
+func (q Query) MarshalText() ([]byte, error) {
+	return []byte(q.expr.String()), nil
+}
+
 // Parse parses a query and returns an internal representation of the
 // query or an error if it fails to parse.
 func Parse(query string) (q Query, err error) {

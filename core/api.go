@@ -9,6 +9,7 @@ import (
 	"chain/core/blocksigner"
 	"chain/core/generator"
 	"chain/core/mockhsm"
+	"chain/core/query"
 	"chain/core/txdb"
 	chainhttp "chain/net/http"
 	"chain/net/http/httpjson"
@@ -24,13 +25,22 @@ const (
 
 // Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
 // will be used as the password for routes starting with /nouser/.
-func Handler(nouserSecret string, generatorConfig *generator.Config, signer *blocksigner.Signer, store *txdb.Store, pool *txdb.Pool, hsm *mockhsm.HSM) chainhttp.Handler {
+func Handler(
+	nouserSecret string,
+	generatorConfig *generator.Config,
+	signer *blocksigner.Signer,
+	store *txdb.Store,
+	pool *txdb.Pool,
+	hsm *mockhsm.HSM,
+	indexer *query.Indexer,
+) chainhttp.Handler {
 	h := pat.New()
 	a := &api{
 		store:     store,
 		pool:      pool,
 		generator: generatorConfig,
 		hsm:       hsm,
+		indexer:   indexer,
 	}
 
 	pwHandler := httpjson.NewServeMux(writeHTTPError)
@@ -77,6 +87,7 @@ type api struct {
 	pool      *txdb.Pool
 	generator *generator.Config
 	hsm       *mockhsm.HSM
+	indexer   *query.Indexer
 }
 
 func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
@@ -119,6 +130,10 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("GET", "/mockhsm/genkey", a.mockhsmGenKey)
 	h.HandleFunc("POST", "/mockhsm/delkey", a.mockhsmDelKey)
 	h.HandleFunc("POST", "/mockhsm/signtemplates", a.mockhsmSignTemplates)
+
+	// Transaction indexes & querying
+	h.HandleFunc("POST", "/create-index", a.createIndex)
+	h.HandleFunc("POST", "/list-indexes", a.listIndexes)
 
 	return h.ServeHTTPContext
 }

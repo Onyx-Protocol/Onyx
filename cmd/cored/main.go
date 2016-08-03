@@ -27,6 +27,7 @@ import (
 	"chain/core/generator"
 	"chain/core/leader"
 	"chain/core/mockhsm"
+	"chain/core/query"
 	"chain/core/rpcclient"
 	"chain/core/txdb"
 	"chain/cos"
@@ -215,6 +216,9 @@ func main() {
 		}
 	}
 
+	// Setup the transaction query indexer to index every transaction.
+	indexer := query.NewIndexer(db)
+
 	// Note, it's important for any services that will install blockchain
 	// callbacks to be initialized before leader.Run() and the http server,
 	// otherwise there's a data race within cos.FC.
@@ -232,7 +236,7 @@ func main() {
 
 	hsm := mockhsm.New(db)
 
-	h := core.Handler(*nouserSecret, generatorConfig, localSigner, store, pool, hsm)
+	h := core.Handler(*nouserSecret, generatorConfig, localSigner, store, pool, hsm, indexer)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}

@@ -6,6 +6,7 @@ import (
 	"chain/core/account/utxodb"
 	"chain/core/appdb"
 	"chain/core/asset"
+	"chain/core/query"
 	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/database/pg"
@@ -54,6 +55,8 @@ var (
 		ErrBadBuildRequest:           errorInfo{400, "CH756", "Invalid build transaction request"},
 		txbuilder.ErrBadBuildRequest: errorInfo{400, "CH756", "Invalid build transaction request"},
 		appdb.ErrBadProjectName:      errorInfo{400, "CH770", "Invalid project name"},
+		query.ErrParsingQuery:        errorInfo{400, "CH771", "Invalid CQL query"},
+		query.ErrTooManyParameters:   errorInfo{400, "CH771", "Invalid CQL query"},
 		errNotAdmin:                  errorInfo{403, "CH781", "Admin privileges are required to perform this action"},
 		appdb.ErrBadRole:             errorInfo{400, "CH800", "User role must be \"developer\" or \"admin\""},
 		appdb.ErrUserAlreadyExists:   errorInfo{400, "CH801", "User already exists on the core"},
