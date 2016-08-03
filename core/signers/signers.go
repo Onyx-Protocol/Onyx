@@ -139,8 +139,7 @@ func Find(ctx context.Context, typ, id string) (*Signer, error) {
 		archived bool
 		xpubStrs []string
 	)
-	err := pg.QueryRow(ctx, q, id).
-		Scan(
+	err := pg.QueryRow(ctx, q, id).Scan(
 		&signer.ID,
 		&signer.Type,
 		(*pg.Strings)(&xpubStrs),
