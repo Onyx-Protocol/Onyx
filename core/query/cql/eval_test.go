@@ -76,6 +76,30 @@ func TestEval(t *testing.T) {
 			},
 		},
 		{
+			query: `reference.recipient.email_address`,
+			data:  `{"reference": {"recipient": {"id": 25356, "email_address": "hello@chain.com"}}}`,
+			expected: value{
+				t:   String,
+				str: "hello@chain.com",
+			},
+		},
+		{
+			query: `(reference).recipient.email_address`,
+			data:  `{"reference": {"recipient": {"id": 25356, "email_address": "hello@chain.com"}}}`,
+			expected: value{
+				t:   String,
+				str: "hello@chain.com",
+			},
+		},
+		{
+			query: `reference.recipient.id`,
+			data:  `{"reference": {"recipient": {"id": 25356, "email_address": "hello@chain.com"}}}`,
+			expected: value{
+				t:       Integer,
+				integer: 25356,
+			},
+		},
+		{
 			query:    `('hello' = 'hello') = ('hello' = 'hello')`,
 			expected: value{t: Bool, set: Set{Invert: true}},
 		},

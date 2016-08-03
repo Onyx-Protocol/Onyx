@@ -1,5 +1,7 @@
 package cql
 
+import "fmt"
+
 type environment interface {
 	Get(name string) value
 	Environments(name string) []environment
@@ -20,6 +22,9 @@ func (m mapEnv) Get(name string) value {
 		return value{t: Integer, integer: v}
 	case string:
 		return value{t: String, str: v}
+	case float64:
+		// encoding/json will unmarshal json numbers as float64s.
+		return value{t: Integer, integer: int(v)}
 	case []interface{}:
 		var strs []string
 		for _, v := range v {
@@ -30,8 +35,10 @@ func (m mapEnv) Get(name string) value {
 			strs = append(strs, s)
 		}
 		return value{t: List, list: strs}
+	case map[string]interface{}:
+		return value{t: Object, obj: v}
 	default:
-		panic("invalid type for attribute `" + name + "`")
+		panic(fmt.Errorf("invalid type for attribute %q: %T", name, v))
 	}
 }
 

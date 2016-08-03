@@ -31,6 +31,15 @@ func (e attrExpr) String() string {
 	return e.attr
 }
 
+type selectorExpr struct {
+	ident   string
+	objExpr expr
+}
+
+func (e selectorExpr) String() string {
+	return e.objExpr.String() + "." + e.ident
+}
+
 type parenExpr struct {
 	inner expr
 }

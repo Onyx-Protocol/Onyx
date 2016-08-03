@@ -22,6 +22,7 @@ Expressions in CQL have the following forms:
   expr1 "<" expr2          bool     int, int
   expr1 ">=" expr2         bool     int, int
   expr1 "<=" expr2         bool     int, int
+  expr "." ident           any      object
   "(" expr ")"             any      any
   ident                    any      n/a
   placeholder              scalar   n/a

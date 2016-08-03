@@ -141,18 +141,25 @@ func parseExprCont(p *parser, lhs expr, minPrecedence int) expr {
 }
 
 func parsePrimaryExpr(p *parser) expr {
-	if p.lit == "(" {
+	x := parseOperand(p)
+	for p.lit == "." {
+		x = parseSelectorExpr(p, x)
+	}
+	return x
+}
+
+func parseOperand(p *parser) expr {
+	switch {
+	case p.lit == "(":
 		p.next()
 		expr := parseExpr(p)
 		p.parseLit(")")
 		return parenExpr{inner: expr}
-	}
-	if p.tok == tokString {
+	case p.tok == tokString:
 		v := valueExpr{typ: p.tok, value: p.lit}
 		p.next()
 		return v
-	}
-	if p.tok == tokInteger {
+	case p.tok == tokInteger:
 		// Parse the literal into an integer so that we store the string
 		// representation of the *decimal* value, never the hex.
 		integer, err := strconv.ParseInt(p.lit, 0, 64)
@@ -163,8 +170,7 @@ func parsePrimaryExpr(p *parser) expr {
 		v := valueExpr{typ: p.tok, value: strconv.Itoa(int(integer))}
 		p.next()
 		return v
-	}
-	if p.tok == tokPlaceholder {
+	case p.tok == tokPlaceholder:
 		num, err := strconv.Atoi(p.lit[1:])
 		if err != nil || num <= 0 {
 			p.errorf("invalid placeholder: %q", p.lit)
@@ -176,8 +182,20 @@ func parsePrimaryExpr(p *parser) expr {
 			p.maxPlaceholder = num
 		}
 		return v
+	default:
+		return parseEnvironmentExpr(p)
 	}
-	return parseEnvironmentExpr(p)
+}
+
+func parseSelectorExpr(p *parser, objExpr expr) expr {
+	p.next() // move past the '.'
+
+	ident := p.lit
+	p.parseTok(tokIdent)
+	return selectorExpr{
+		ident:   ident,
+		objExpr: objExpr,
+	}
 }
 
 func parseEnvironmentExpr(p *parser) expr {

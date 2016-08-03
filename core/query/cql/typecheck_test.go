@@ -9,6 +9,7 @@ var tbl = SQLTable{
 	"amount":          {"amount", Integer},
 	"account_tags":    {"account_tags", List},
 	"account_numbers": {"account_numbers", List},
+	"reference":       {"reference_data", Object},
 }
 
 func TestTypeCheckInvalid(t *testing.T) {
@@ -20,6 +21,7 @@ func TestTypeCheckInvalid(t *testing.T) {
 		{cql: `NOT 1`},
 		{cql: `'chain' >= 1`},
 		{cql: `INPUTS('hello')`},
+		{cql: `foo(1=1).bar`},
 		{cql: `'hello' CONTAINS 'ello'`},
 		{cql: `asset_id >= 5`, table: tbl},
 		{cql: `is_issuance AND amount`, table: tbl},
@@ -63,6 +65,7 @@ func TestTypeCheckValid(t *testing.T) {
 		{cql: `asset_id`, typ: String, table: tbl},
 		{cql: `account_tags`, typ: List, table: tbl},
 		{cql: `amount >= 5`, typ: Bool, table: tbl},
+		{cql: `reference.recipient.id`, typ: Any, table: tbl},
 	}
 
 	for _, tc := range testCases {

@@ -27,6 +27,28 @@ func TestParseValid(t *testing.T) {
 			expr: valueExpr{typ: tokInteger, value: "255"},
 		},
 		{
+			q: "reference.recipient.email_address",
+			expr: selectorExpr{
+				ident: "email_address",
+				objExpr: selectorExpr{
+					ident:   "recipient",
+					objExpr: attrExpr{attr: "reference"},
+				},
+			},
+		},
+		{
+			q: "(reference.recipient).email_address",
+			expr: selectorExpr{
+				ident: "email_address",
+				objExpr: parenExpr{
+					inner: selectorExpr{
+						ident:   "recipient",
+						objExpr: attrExpr{attr: "reference"},
+					},
+				},
+			},
+		},
+		{
 			q: "2000 = 1000",
 			expr: binaryExpr{
 				op: binaryOps["="],
@@ -113,6 +135,7 @@ func TestParseInvalid(t *testing.T) {
 		"0x = 420",                                     // 0x without number
 		"an_identifier another_identifier",             // two identifiers w/o an operator (trailing garbage)
 		"inputs(account_tags CONTAINS $1) or (1 == 1)", // lowercase 'or' (trailing garbage)
+		"reference.(recipient.email_address)`",         // expected ident, got paren expr
 	}
 	for _, tc := range testCases {
 		expr, _, err := parse(tc)

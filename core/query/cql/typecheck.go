@@ -10,7 +10,7 @@ func isType(got Type, want Type) bool {
 }
 
 func knownType(t Type) bool {
-	return t == Bool || t == String || t == Integer || t == List
+	return t == Bool || t == String || t == Integer || t == List || t == Object
 }
 
 func typeCheck(expr expr, t SQLTable) error {
@@ -96,6 +96,15 @@ func typeCheckExpr(expr expr, t SQLTable) (typ Type, err error) {
 		default:
 			panic(fmt.Errorf("value expr with invalid token type: %s", e.typ))
 		}
+	case selectorExpr:
+		typ, err = typeCheckExpr(e.objExpr, t)
+		if err != nil {
+			return typ, err
+		}
+		if !isType(typ, Object) {
+			return typ, errors.New("selector `.` can only be used on objects")
+		}
+		return Any, nil
 	case envExpr:
 		typ, err = typeCheckExpr(e.expr, t)
 		if err != nil {

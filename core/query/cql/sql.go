@@ -148,6 +148,9 @@ func translateToSQL(w *SQLExpr, t SQLTable, expr expr) {
 		default:
 			panic(fmt.Errorf("value expr with invalid token type: %s", e.typ))
 		}
+	case selectorExpr:
+		// TODO(jackson): implement
+		panic("not yet implemented")
 	case envExpr:
 		panic("environment expressions unsupported")
 	default:

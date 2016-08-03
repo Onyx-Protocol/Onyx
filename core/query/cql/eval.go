@@ -38,6 +38,7 @@ const (
 	String
 	Integer
 	List
+	Object
 )
 
 func (t Type) String() string {
@@ -52,6 +53,8 @@ func (t Type) String() string {
 		return "integer"
 	case List:
 		return "list"
+	case Object:
+		return "object"
 	}
 	panic("unknown cql type")
 }
@@ -67,10 +70,11 @@ func (t Type) String() string {
 //   parameter values that could satisfy the expression.
 type value struct {
 	t       Type
-	set     Set      // Bool
-	list    []string // List
-	str     string   // String
-	integer int      // Integer
+	set     Set                    // Bool
+	list    []string               // List
+	str     string                 // String
+	integer int                    // Integer
+	obj     map[string]interface{} // Object
 }
 
 func (v value) is(t Type) bool {
@@ -116,6 +120,14 @@ func eval(env environment, expr expr) value {
 			set = union(set, v.set)
 		}
 		return value{t: Bool, set: set}
+	case selectorExpr:
+		v := eval(env, e.objExpr)
+		if !v.is(Object) {
+			panic("selector `.` can only be used on objects")
+		}
+
+		m := mapEnv(v.obj)
+		return m.Get(e.ident)
 	case placeholderExpr:
 		return value{t: Any}
 	default:
