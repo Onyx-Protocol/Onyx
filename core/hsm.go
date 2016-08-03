@@ -9,12 +9,35 @@ import (
 	"chain/errors"
 )
 
-func (a *api) mockhsmGenKey(ctx context.Context) (result struct{ XPub json.HexBytes }, err error) {
-	xpub, err := a.hsm.GenKey(ctx)
+func (a *api) mockhsmCreateKey(ctx context.Context) (result struct {
+	XPub json.HexBytes `json:"xpub"`
+}, err error) {
+	xpub, err := a.hsm.CreateKey(ctx)
 	if err != nil {
 		return result, err
 	}
 	result.XPub = xpub.Bytes()
+	return result, nil
+}
+
+func (a *api) mockhsmListKeys(ctx context.Context, in struct{ Cursor string }) (result page, err error) {
+	limit := defGenericPageSize
+
+	xpubs, cursor, err := a.hsm.ListKeys(ctx, in.Cursor, limit)
+	if err != nil {
+		return result, err
+	}
+	result.LastPage = len(xpubs) < limit
+
+	for _, xpub := range xpubs {
+		item := struct {
+			XPub json.HexBytes `json:"xpub"`
+		}{
+			xpub.Bytes(),
+		}
+		result.Items = append(result.Items, item)
+	}
+	result.Query.Cursor = cursor
 	return result, nil
 }
 

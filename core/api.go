@@ -90,6 +90,19 @@ type api struct {
 	indexer   *query.Indexer
 }
 
+// Used as return a object for list* handlers
+type page struct {
+	Items    []interface{} `json:"items"`
+	LastPage bool          `json:"last_page"`
+	Query    struct {
+		Cursor    string   `json:"cursor"`
+		Index     string   `json:"index,omitempty"`
+		StartTime uint64   `json:"start_time,omitempty"`
+		EndTime   uint64   `json:"end_time,omitempty"`
+		Params    []string `json:"params,omitempty"`
+	} `json:"query"`
+}
+
 func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
 	h.HandleFunc("POST", "/v3/invitations", createInvitation)
@@ -119,7 +132,8 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("DELETE", "/v3/api-tokens/:tokenID", appdb.DeleteAuthToken)
 
 	// MockHSM endpoints
-	h.HandleFunc("GET", "/mockhsm/genkey", a.mockhsmGenKey)
+	h.HandleFunc("POST", "/mockhsm/create-key", a.mockhsmCreateKey)
+	h.HandleFunc("POST", "/mockhsm/list-keys", a.mockhsmListKeys)
 	h.HandleFunc("POST", "/mockhsm/delkey", a.mockhsmDelKey)
 	h.HandleFunc("POST", "/mockhsm/signtemplates", a.mockhsmSignTemplates)
 

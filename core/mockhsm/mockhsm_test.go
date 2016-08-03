@@ -13,11 +13,11 @@ func TestMockHSM(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	hsm := New(db)
-	xpub, err := hsm.GenKey(ctx)
+	xpub, err := hsm.CreateKey(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	xpub2, err := hsm.GenKey(ctx)
+	xpub2, err := hsm.CreateKey(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,5 +42,12 @@ func TestMockHSM(t *testing.T) {
 	}
 	if !xpub2.Derive(path).Verify(msg, sig) {
 		t.Error("expected verify with derived pubkey of sig from derived privkey to succeed")
+	}
+	xpubs, _, err := hsm.ListKeys(ctx, "", 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(xpubs) != 2 {
+		t.Error("expected 2 entries in the db")
 	}
 }
