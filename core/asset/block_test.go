@@ -8,7 +8,6 @@ import (
 
 	"chain/core/account"
 	"chain/core/account/utxodb"
-	"chain/core/appdb"
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
@@ -95,7 +94,7 @@ func TestGenSpendApply(t *testing.T) {
 	}
 
 	inputs := []utxodb.Source{{
-		AssetID:   info.asset.Hash,
+		AssetID:   info.asset.AssetID,
 		AccountID: info.acctA.ID,
 		Amount:    10,
 	}}
@@ -213,10 +212,10 @@ func benchGenBlock(b *testing.B) {
 }
 
 type clientInfo struct {
-	asset           *appdb.Asset
+	asset           *Asset
 	acctA           *signers.Signer
 	acctB           *signers.Signer
-	privKeyIssuer   *hd25519.XPrv
+	privKeyAsset    *hd25519.XPrv
 	privKeyAccounts *hd25519.XPrv
 }
 
@@ -235,11 +234,6 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *generator.Generato
 	}
 	defer dbtx.Rollback(ctx)
 
-	proj, err := appdb.CreateProject(ctx, "proj")
-	if err != nil {
-		return nil, nil, err
-	}
-
 	accPriv, accPub, err := hd25519.NewXKeys(nil)
 	if err != nil {
 		return nil, nil, err
@@ -255,20 +249,17 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *generator.Generato
 		return nil, nil, err
 	}
 
-	issPriv, issPub, err := hd25519.NewXKeys(nil)
-	if err != nil {
-		return nil, nil, err
-	}
-	iNode, err := appdb.InsertIssuerNode(ctx, proj.ID, "issuer", []*hd25519.XPub{issPub}, []*hd25519.XPrv{issPriv}, 1, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	genesis, err := store.GetBlock(ctx, 1)
 	if err != nil {
 		return nil, nil, err
 	}
-	asset, err := issuer.CreateAsset(ctx, iNode.ID, "label", genesis.Hash(), map[string]interface{}{}, nil)
+
+	assetPriv, assetPub, err := hd25519.NewXKeys(nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	asset, err := Define(ctx, []string{assetPub.String()}, 1, nil, genesis.Hash(), nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -282,7 +273,7 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *generator.Generato
 		asset:           asset,
 		acctA:           acctA,
 		acctB:           acctB,
-		privKeyIssuer:   issPriv,
+		privKeyAsset:    assetPriv,
 		privKeyAccounts: accPriv,
 	}
 	return info, g, nil
@@ -290,7 +281,7 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *generator.Generato
 
 func issue(ctx context.Context, t testing.TB, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := bc.AssetAmount{
-		AssetID: info.asset.Hash,
+		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}
 	issueDest, err := account.NewDestination(ctx, &assetAmount, destAcctID, nil)
@@ -301,13 +292,13 @@ func issue(ctx context.Context, t testing.TB, info *clientInfo, destAcctID strin
 	if err != nil {
 		return nil, err
 	}
-	assettest.SignTxTemplate(t, issueTx, info.privKeyIssuer)
+	assettest.SignTxTemplate(t, issueTx, info.privKeyAsset)
 	return FinalizeTx(ctx, issueTx)
 }
 
 func transfer(ctx context.Context, t testing.TB, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := &bc.AssetAmount{
-		AssetID: info.asset.Hash,
+		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}
 	source := account.NewSource(ctx, assetAmount, srcAcctID, nil, nil, nil)

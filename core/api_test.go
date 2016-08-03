@@ -33,11 +33,12 @@ func TestAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assetID := assettest.CreateAssetFixture(ctx, t, "", "", "")
+	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil)
 	assetAmt := bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
 	}
+
 	sources := issuer.NewIssueSource(ctx, assetAmt, nil, nil)
 	dests, err := account.NewDestination(ctx, &assetAmt, acc.ID, nil)
 	if err != nil {
@@ -113,9 +114,7 @@ func TestIssue(t *testing.T) {
 	account.Init(fc)
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
-	projectID := assettest.CreateProjectFixture(ctx, t, "")
-	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
-	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
+	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil)
 	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0)
 
 	ctx = authn.NewContext(ctx, userID)
@@ -162,9 +161,7 @@ func TestTransfer(t *testing.T) {
 	account.Init(fc)
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
-	projectID := assettest.CreateProjectFixture(ctx, t, "")
-	issuerNodeID := assettest.CreateIssuerNodeFixture(ctx, t, projectID, "", nil, nil)
-	assetID := assettest.CreateAssetFixture(ctx, t, issuerNodeID, "", "")
+	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil)
 	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0)
 	account2ID := assettest.CreateAccountFixture(ctx, t, nil, 0)
 

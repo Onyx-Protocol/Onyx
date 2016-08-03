@@ -45,7 +45,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 
 	// Build a transaction template with a reservation, no destination.
 	assetAmount := &bc.AssetAmount{
-		AssetID: info.asset.Hash,
+		AssetID: info.asset.AssetID,
 		Amount:  10,
 	}
 	sources := []*txbuilder.Source{

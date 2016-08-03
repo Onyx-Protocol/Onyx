@@ -45,9 +45,6 @@ var (
 		appdb.ErrPasswordCheck:       errorInfo{400, "CH103", "Unable to verify password"},
 		appdb.ErrNoUserForEmail:      errorInfo{400, "CH104", "No user corresponds to the provided email address"},
 		appdb.ErrBadLabel:            errorInfo{400, "CH704", "Invalid label"},
-		asset.ErrBadSigsRequired:     errorInfo{400, "CH712", "signatures_required must be at least 1"},
-		asset.ErrBadKeySpec:          errorInfo{400, "CH713", "Invalid xpub"},
-		asset.ErrTooFewKeys:          errorInfo{400, "CH715", "Cannot have more signatures required than keys"},
 		utxodb.ErrInsufficient:       errorInfo{400, "CH733", "Insufficient funds for tx"},
 		utxodb.ErrReserved:           errorInfo{400, "CH743", "Some outputs are reserved; try again"},
 		asset.ErrRejected:            errorInfo{400, "CH744", "Transaction rejected"},
@@ -68,7 +65,10 @@ var (
 		signers.ErrBadXPub:   errorInfo{400, "CH200", "Invalid xpub format"},
 		signers.ErrNoXPubs:   errorInfo{400, "CH200", "At least one xpub is required"},
 		signers.ErrBadType:   errorInfo{400, "CH200", "Retrieved type does not match expected type"},
-		signers.ErrArchived:  errorInfo{400, "CH200", "Item has been archived"},
+		signers.ErrArchived:  errorInfo{404, "CH200", "Item has been archived"},
+
+		// Assets error namespace (2xx)
+		asset.ErrArchived: errorInfo{404, "CH200", "Item has been archived"},
 	}
 )
 

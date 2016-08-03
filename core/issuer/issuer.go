@@ -5,7 +5,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/appdb"
+	"chain/core/asset"
+	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
 	"chain/cos/txscript"
@@ -22,11 +23,12 @@ type IssuanceReserver struct {
 }
 
 func (ir IssuanceReserver) Reserve(ctx context.Context, amt *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
-	asset, err := appdb.AssetByID(ctx, ir.AssetID)
+	asset, err := asset.Find(ctx, ir.AssetID)
 	if err != nil {
-		return nil, errors.WithDetailf(err, "get asset with ID %q", ir.AssetID)
+		return nil, errors.WithDetailf(err, "find asset with ID %q", ir.AssetID)
 	}
-	in := bc.NewIssuanceInput(time.Now(), time.Now().Add(ttl), asset.GenesisHash, amt.Amount, asset.IssuanceScript, ir.AssetDefinition, ir.ReferenceData, nil)
+
+	in := bc.NewIssuanceInput(time.Now(), time.Now().Add(ttl), asset.GenesisHash, amt.Amount, asset.IssuanceProgram, ir.AssetDefinition, ir.ReferenceData, nil)
 	return &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{{
 			TxInput:       in,
@@ -64,10 +66,11 @@ func Issue(ctx context.Context, assetAmount bc.AssetAmount, dests []*txbuilder.D
 
 // issuanceInput returns an Input that can be used
 // to issue units of asset 'a'.
-func issuanceInput(a *appdb.Asset, aa bc.AssetAmount) *txbuilder.Input {
+func issuanceInput(a *asset.Asset, aa bc.AssetAmount) *txbuilder.Input {
 	tmplInp := &txbuilder.Input{AssetAmount: aa}
-	sigs := txbuilder.InputSigs(a.Keys, appdb.IssuancePath(a))
-	tmplInp.AddWitnessSigs(sigs, txscript.SigsRequired(a.RedeemScript), nil)
-	tmplInp.AddWitnessData(a.RedeemScript)
+	path := signers.Path(a.Signer, signers.AssetKeySpace, a.KeyIndex) // is this the right key index?
+	sigs := txbuilder.InputSigs(a.Signer.XPubs, path)
+	tmplInp.AddWitnessSigs(sigs, txscript.SigsRequired(a.RedeemProgram), nil)
+	tmplInp.AddWitnessData(a.RedeemProgram)
 	return tmplInp
 }

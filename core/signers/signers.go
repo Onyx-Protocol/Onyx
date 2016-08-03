@@ -13,11 +13,13 @@ import (
 type keySpace uint32
 
 const (
-	AccountKeySpace keySpace = 1
+	AssetKeySpace   keySpace = 0
+	AccountKeySpace          = 1
 )
 
 var typeIDMap = map[string]string{
 	"account": "acc",
+	"asset":   "asset",
 }
 
 var (
@@ -168,7 +170,6 @@ func Find(ctx context.Context, typ, id string) (*Signer, error) {
 	}
 
 	signer.XPubs = keys
-
 	return &signer, nil
 }
 

@@ -75,13 +75,6 @@ func TestGetSummary(t *testing.T) {
 			('proj-id-0', 'proj-name-0'),
 			('proj-id-other', 'proj-name-other');
 
-		INSERT INTO issuer_nodes
-			(id, project_id, key_index, label, keyset)
-		VALUES
-			('in-id-0', 'proj-id-0', 3, 'in-label-0', '{}'),
-			('in-id-1', 'proj-id-0', 4, 'in-label-1', '{}'),
-			('mn-id-other', 'proj-id-other', 5, 'in-label-other', '{}');
-
 		INSERT INTO blocks
 			(block_hash, height, data, header)
 		VALUES

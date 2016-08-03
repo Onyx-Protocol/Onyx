@@ -23,9 +23,6 @@ func issueAsset(ctx context.Context, assetIDStr string, reqDests []*Destination)
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
-	if err := assetAuthz(ctx, assetIDStr); err != nil {
-		return nil, err
-	}
 
 	var assetID bc.AssetID
 	err := assetID.UnmarshalText([]byte(assetIDStr))

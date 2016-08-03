@@ -20,7 +20,6 @@ import (
 	"chain/cos/memstore"
 	"chain/cos/state"
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/testutil"
@@ -86,36 +85,6 @@ func CreateInvitationFixture(ctx context.Context, t testing.TB, email, role stri
 	return invitation.ID
 }
 
-var issuerNodeCounter = createCounter()
-
-func CreateIssuerNodeFixture(ctx context.Context, t testing.TB, projectID, label string, xpubs []*hd25519.XPub, xprvs []*hd25519.XPrv) string {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	defer dbtx.Rollback(ctx)
-	if projectID == "" {
-		projectID = CreateProjectFixture(ctx, t, "")
-	}
-	if label == "" {
-		label = fmt.Sprintf("inode-%d", <-issuerNodeCounter)
-	}
-	if len(xpubs) == 0 && len(xprvs) == 0 {
-		xpubs = append(xpubs, testutil.TestXPub)
-		xprvs = append(xprvs, testutil.TestXPrv)
-	}
-	issuerNode, err := appdb.InsertIssuerNode(ctx, projectID, label, xpubs, xprvs, 1, nil)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	return issuerNode.ID
-}
-
 func CreateAccountFixture(ctx context.Context, t testing.TB, keys []string, quorum int) string {
 	if keys == nil {
 		keys = []string{testutil.TestXPub.String()}
@@ -143,18 +112,22 @@ func CreateAccountControlProgramFixture(ctx context.Context, t testing.TB, accID
 
 var assetCounter = createCounter()
 
-func CreateAssetFixture(ctx context.Context, t testing.TB, issuerNodeID, label, def string) bc.AssetID {
-	if issuerNodeID == "" {
-		issuerNodeID = CreateIssuerNodeFixture(ctx, t, "", "", nil, nil)
+func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum int, def map[string]interface{}) bc.AssetID {
+	if len(keys) == 0 {
+		keys = []string{testutil.TestXPub.String()}
 	}
-	if label == "" {
-		label = fmt.Sprintf("inode-%d", <-assetCounter)
+
+	if quorum == 0 {
+		quorum = len(keys)
 	}
-	asset, err := issuer.CreateAsset(ctx, issuerNodeID, label, bc.Hash{}, map[string]interface{}{"s": def}, nil)
+	var genesisHash bc.Hash
+
+	asset, err := asset.Define(ctx, keys, quorum, def, genesisHash, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	return asset.Hash
+
+	return asset.AssetID
 }
 
 // Creates an infinite stream of integers counting up from 1
@@ -177,7 +150,7 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, a
 	dest := AccountDestinationFixture(ctx, t, assetID, amount, accountID)
 
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
-	asst, err := appdb.AssetByID(ctx, assetID)
+	asst, err := asset.Find(ctx, assetID)
 	if err != nil {
 		testutil.FatalErr(t, errors.WithDetailf(err, "get asset with ID %q", assetID))
 	}

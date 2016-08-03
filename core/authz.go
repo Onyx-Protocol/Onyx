@@ -25,18 +25,6 @@ func adminAuthz(ctx context.Context) error {
 	return nil
 }
 
-// issuerAuthz will verify whether this request has access to the provided asset
-// issuer. If the asset issuer is archived, issuerAuthz will return ErrArchived.
-func issuerAuthz(ctx context.Context, issuerID string) error {
-	return appdb.CheckActiveIssuer(ctx, issuerID)
-}
-
-// assetAuthz will verify whether this request has access to the provided
-// asset. If the asset is archived, assetAuthz will return ErrArchived.
-func assetAuthz(ctx context.Context, assetID string) error {
-	return appdb.CheckActiveAsset(ctx, assetID)
-}
-
 func buildAuthz(ctx context.Context, reqs ...*BuildRequest) error {
 	var (
 		assetIDs []string

@@ -153,24 +153,6 @@ func IsAdmin(ctx context.Context, userID string) (bool, error) {
 	return isAdmin, errors.Wrap(err)
 }
 
-// CheckActiveIssuer returns nil if the provided asset issuer is active.
-// If the asset issuer has been archived, this function returns ErrArchived.
-func CheckActiveIssuer(ctx context.Context, issuerID string) error {
-	const q = `
-		SELECT archived
-		FROM issuer_nodes WHERE id=$1
-	`
-	var archived bool
-	err := pg.QueryRow(ctx, q, issuerID).Scan(&archived)
-	if err == sql.ErrNoRows {
-		err = pg.ErrUserInputNotFound
-	}
-	if archived {
-		err = ErrArchived
-	}
-	return errors.WithDetailf(err, "issuer node ID: %v", issuerID)
-}
-
 // CheckActiveAsset returns nil if the provided assets are active.
 // If any of the assets are archived, this function returns ErrArchived.
 func CheckActiveAsset(ctx context.Context, assetIDs ...string) error {

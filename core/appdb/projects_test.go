@@ -29,39 +29,6 @@ func TestCreateProject(t *testing.T) {
 	}
 }
 
-func TestListProjects(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-
-	projectID1 := assettest.CreateProjectFixture(ctx, t, "first project")
-	projectID2 := assettest.CreateProjectFixture(ctx, t, "second project")
-	projectID3 := assettest.CreateProjectFixture(ctx, t, "third project")
-	if err := ArchiveProject(ctx, projectID3); err != nil {
-		t.Fatal(err)
-	}
-
-	examples := []struct {
-		want []*Project
-	}{
-		{
-			[]*Project{
-				{projectID1, "first project"},
-				{projectID2, "second project"},
-			},
-		},
-	}
-
-	for _, ex := range examples {
-		got, err := ListProjects(ctx)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if !reflect.DeepEqual(got, ex.want) {
-			t.Errorf("projects:\ngot:  %v\nwant: %v", got, ex.want)
-		}
-	}
-}
-
 func TestGetProject(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 

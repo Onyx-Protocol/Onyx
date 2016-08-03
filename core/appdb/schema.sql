@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -351,20 +351,17 @@ CREATE TABLE asset_definitions (
 
 CREATE TABLE assets (
     id text NOT NULL,
-    issuer_node_id text NOT NULL,
     key_index bigint NOT NULL,
-    keyset text[] DEFAULT '{}'::text[] NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     definition_mutable boolean DEFAULT false NOT NULL,
     definition bytea,
-    redeem_script bytea NOT NULL,
-    label text NOT NULL,
+    redeem_program bytea NOT NULL,
     sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL,
-    inner_asset_id text,
-    issuance_script bytea NOT NULL,
+    issuance_program bytea NOT NULL,
     archived boolean DEFAULT false NOT NULL,
     client_token text,
-    genesis_hash text NOT NULL
+    genesis_hash text NOT NULL,
+    signer_id text NOT NULL
 );
 
 
@@ -455,47 +452,6 @@ CREATE TABLE issuance_totals (
     CONSTRAINT issuance_totals_confirmed_check CHECK ((issued >= 0)),
     CONSTRAINT positive_destroyed_confirmed CHECK ((destroyed >= 0))
 );
-
-
---
--- Name: issuer_nodes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE issuer_nodes (
-    id text DEFAULT next_chain_id('in'::text) NOT NULL,
-    project_id text NOT NULL,
-    block_chain text DEFAULT 'sandbox'::text NOT NULL,
-    sigs_required integer DEFAULT 1 NOT NULL,
-    key_index bigint NOT NULL,
-    label text NOT NULL,
-    keyset text[] NOT NULL,
-    next_asset_index bigint DEFAULT 0 NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    generated_keys text[] DEFAULT '{}'::text[] NOT NULL,
-    variable_keys integer DEFAULT 0 NOT NULL,
-    archived boolean DEFAULT false NOT NULL,
-    client_token text
-);
-
-
---
--- Name: issuer_nodes_key_index_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE issuer_nodes_key_index_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: issuer_nodes_key_index_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE issuer_nodes_key_index_seq OWNED BY issuer_nodes.key_index;
 
 
 --
@@ -705,13 +661,6 @@ CREATE TABLE users (
 
 
 --
--- Name: key_index; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY issuer_nodes ALTER COLUMN key_index SET DEFAULT nextval('issuer_nodes_key_index_seq'::regclass);
-
-
---
 -- Name: internal_id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -750,11 +699,11 @@ ALTER TABLE ONLY asset_definitions
 
 
 --
--- Name: assets_issuer_node_id_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: assets_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY assets
-    ADD CONSTRAINT assets_issuer_node_id_client_token_key UNIQUE (issuer_node_id, client_token);
+    ADD CONSTRAINT assets_client_token_key UNIQUE (client_token);
 
 
 --
@@ -803,22 +752,6 @@ ALTER TABLE ONLY invitations
 
 ALTER TABLE ONLY issuance_totals
     ADD CONSTRAINT issuance_totals_pkey PRIMARY KEY (asset_id);
-
-
---
--- Name: issuer_nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY issuer_nodes
-    ADD CONSTRAINT issuer_nodes_pkey PRIMARY KEY (id);
-
-
---
--- Name: issuer_nodes_project_id_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY issuer_nodes
-    ADD CONSTRAINT issuer_nodes_project_id_client_token_key UNIQUE (project_id, client_token);
 
 
 --
@@ -970,13 +903,6 @@ CREATE INDEX account_utxos_reservation_id_idx ON account_utxos USING btree (rese
 
 
 --
--- Name: assets_issuer_node_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX assets_issuer_node_id_idx ON assets USING btree (issuer_node_id);
-
-
---
 -- Name: assets_sort_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -995,13 +921,6 @@ CREATE INDEX auth_tokens_user_id_idx ON auth_tokens USING btree (user_id);
 --
 
 CREATE UNIQUE INDEX blocks_txs_block_height_block_pos_key ON blocks_txs USING btree (block_height, block_pos);
-
-
---
--- Name: issuer_nodes_project_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX issuer_nodes_project_id_idx ON issuer_nodes USING btree (project_id);
 
 
 --
@@ -1045,14 +964,6 @@ CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
 
 ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id) ON DELETE SET NULL;
-
-
---
--- Name: assets_issuer_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY assets
-    ADD CONSTRAINT assets_issuer_node_id_fkey FOREIGN KEY (issuer_node_id) REFERENCES issuer_nodes(id);
 
 
 --
@@ -1131,3 +1042,4 @@ insert into migrations (filename, hash) values ('2016-07-28.0.core.mockhsm.sql',
 insert into migrations (filename, hash) values ('2016-07-28.1.explorer.drop-explorer-outputs.sql', '99d36e88d57cc4405a0bec300fe6b88675278b9aad91a83d1d1fe50533355adb');
 insert into migrations (filename, hash) values ('2016-07-29.0.signer.add-signers.sql', '31585f1d6d2c1cf2f3157929b355e2b81f9da6e117b58c21c47b2ba3f9194a0a');
 insert into migrations (filename, hash) values ('2016-08-02.0.query.indexes.sql', '9f50b380a05e7b1d65cf10a8339b5be52aebbcfac1266ef5f55edd312d3b067c');
+insert into migrations (filename, hash) values ('2016-08-03.0.assets.use-signers.sql', '5e1d674c4f61f6b2f238e8600b145e44a819827be3a8b79764c432540c49f051');

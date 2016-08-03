@@ -5,7 +5,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/appdb"
 	"chain/core/asset/assettest"
 	"chain/cos/bc"
 	"chain/database/pg"
@@ -34,60 +33,6 @@ func TestAdminAuthz(t *testing.T) {
 			got := errors.Root(adminAuthz(ctx))
 			if got != c.want {
 				t.Errorf("adminAuthz(%s) = %q want %q", c.userID, got, c.want)
-			}
-		}
-	})
-}
-
-func TestIssuerAuthz(t *testing.T) {
-	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
-		in1ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
-		in2ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-
-		cases := []struct {
-			userID  string
-			inodeID string
-			want    error
-		}{
-			{fixtureInfo.u2ID, in1ID, nil}, {fixtureInfo.u2ID, in2ID, nil},
-		}
-
-		for _, c := range cases {
-			ctx := authn.NewContext(ctx, c.userID)
-			got := issuerAuthz(ctx, c.inodeID)
-			if errors.Root(got) != c.want {
-				t.Errorf("issuerAuthz(%s, %v) = %q want %q", c.userID, c.inodeID, got, c.want)
-			}
-		}
-	})
-}
-
-func TestAssetAuthz(t *testing.T) {
-	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
-		in1ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj1ID, "", nil, nil)
-		in2ID := assettest.CreateIssuerNodeFixture(ctx, t, fixtureInfo.proj2ID, "", nil, nil)
-
-		a1ID := assettest.CreateAssetFixture(ctx, t, in1ID, "", "")
-		a2ID := assettest.CreateAssetFixture(ctx, t, in2ID, "", "")
-		a3ID := assettest.CreateAssetFixture(ctx, t, in2ID, "", "")
-		err := appdb.ArchiveAsset(ctx, a3ID.String())
-		if err != nil {
-			panic(err)
-		}
-
-		cases := []struct {
-			userID  string
-			assetID bc.AssetID
-			want    error
-		}{
-			{fixtureInfo.u2ID, a1ID, nil}, {fixtureInfo.u2ID, a2ID, nil}, {fixtureInfo.u2ID, a3ID, appdb.ErrArchived},
-		}
-
-		for _, c := range cases {
-			ctx := authn.NewContext(ctx, c.userID)
-			got := assetAuthz(ctx, c.assetID.String())
-			if errors.Root(got) != c.want {
-				t.Errorf("assetAuthz(%s, %v) = %q want %q", c.userID, c.assetID, got, c.want)
 			}
 		}
 	})
