@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -781,6 +781,7 @@ ALTER TABLE ONLY pool_txs
 ALTER TABLE ONLY pool_txs
     ADD CONSTRAINT pool_txs_sort_id_key UNIQUE (sort_id);
 
+
 --
 -- Name: query_indexes_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
@@ -1022,4 +1023,4 @@ insert into migrations (filename, hash) values ('2016-07-28.1.explorer.drop-expl
 insert into migrations (filename, hash) values ('2016-07-29.0.signer.add-signers.sql', '31585f1d6d2c1cf2f3157929b355e2b81f9da6e117b58c21c47b2ba3f9194a0a');
 insert into migrations (filename, hash) values ('2016-08-02.0.query.indexes.sql', '9f50b380a05e7b1d65cf10a8339b5be52aebbcfac1266ef5f55edd312d3b067c');
 insert into migrations (filename, hash) values ('2016-08-03.0.assets.use-signers.sql', '5e1d674c4f61f6b2f238e8600b145e44a819827be3a8b79764c432540c49f051');
-insert into migrations (filename, hash) values ('2016-07-28.2.core.remove-projects.sql', 'c147bcf11d4ccb0a63883e40157e1ef95a0c9f1ae76c85f9c974e7bf9ead189d');
+insert into migrations (filename, hash) values ('2016-08-03.1.core.remove-projects.sql', '801a54a49cdde74e5d8995a91be1ca0d4aa0715374a088fe4d2fe041d19cd09d');
