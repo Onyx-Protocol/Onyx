@@ -92,13 +92,7 @@ type api struct {
 
 func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
-	h.HandleFunc("GET", "/v3/projects", listProjects)
-	h.HandleFunc("POST", "/v3/projects", createProject)
-	h.HandleFunc("GET", "/v3/projects/:projID", getProject)
-	h.HandleFunc("PUT", "/v3/projects/:projID", updateProject)
-	h.HandleFunc("DELETE", "/v3/projects/:projID", archiveProject)
 	h.HandleFunc("POST", "/v3/invitations", createInvitation)
-	h.HandleFunc("GET", "/v3/projects/:projID/admin-node/summary", a.getAdminNodeSummary)
 	h.HandleFunc("GET", "/v3/accounts", listAccounts)
 	h.HandleFunc("POST", "/v3/accounts", createAccount)
 	h.HandleFunc("GET", "/v3/assets", a.listAssets)

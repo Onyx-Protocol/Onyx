@@ -52,31 +52,6 @@ func CreateAuthTokenFixture(ctx context.Context, t testing.TB, userID string, ty
 	return token
 }
 
-var projCounter = createCounter()
-
-func CreateProjectFixture(ctx context.Context, t testing.TB, name string) string {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	defer dbtx.Rollback(ctx)
-
-	if name == "" {
-		name = fmt.Sprintf("proj-%d", <-projCounter)
-	}
-	proj, err := appdb.CreateProject(ctx, name)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	return proj.ID
-}
-
 func CreateInvitationFixture(ctx context.Context, t testing.TB, email, role string) string {
 	invitation, err := appdb.CreateInvitation(ctx, email, role)
 	if err != nil {

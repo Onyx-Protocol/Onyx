@@ -16,7 +16,7 @@ type Template struct {
 	Inputs     []*Input   `json:"inputs"`
 }
 
-// Input is an input for a project TxTemplate.
+// Input is an input for a TxTemplate.
 type Input struct {
 	bc.AssetAmount
 	SigComponents []*SigScriptComponent `json:"signature_components,omitempty"`
@@ -34,7 +34,7 @@ type SigScriptComponent struct {
 	Signatures    []*Signature  `json:"signatures"`     // required for 'signature'
 }
 
-// Signature is an signature for a project TxTemplate.
+// Signature is an signature for a TxTemplate.
 type Signature struct {
 	XPub           string        `json:"xpub"`
 	DerivationPath []uint32      `json:"derivation_path"`

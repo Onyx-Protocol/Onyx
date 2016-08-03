@@ -237,10 +237,9 @@ func TestDeleteInvitation(t *testing.T) {
 }
 
 type testInvitation struct {
-	id     string
-	projID string
-	email  string
-	role   string
+	id    string
+	email string
+	role  string
 }
 
 func getTestInvitation(ctx context.Context, id string) (testInvitation, error) {

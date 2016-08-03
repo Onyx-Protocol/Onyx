@@ -69,12 +69,6 @@ func TestGetSummary(t *testing.T) {
 	t4 := bc.TxData{Metadata: []byte{4}}
 
 	pgtest.Exec(ctx, t, `
-		INSERT INTO projects
-			(id, name)
-		VALUES
-			('proj-id-0', 'proj-name-0'),
-			('proj-id-other', 'proj-name-other');
-
 		INSERT INTO blocks
 			(block_hash, height, data, header)
 		VALUES
@@ -106,12 +100,12 @@ func TestGetSummary(t *testing.T) {
 			ManagerNodes: []NodePermStatus{},
 			IssuerNodes:  []NodePermStatus{},
 			AuditorNodes: []NodePermStatus{
-				{"audnode-proj-id-0", "Auditor Node for proj-id-0", true},
+				{"audnode", "Auditor Node", true},
 			},
 		},
 	}
 
-	got, err := generator.GetSummary(ctx, store, pool, "proj-id-0")
+	got, err := generator.GetSummary(ctx, store, pool)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}

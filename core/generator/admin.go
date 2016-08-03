@@ -52,8 +52,8 @@ func newSummary() *Summary {
 	return &Summary{Permissions: *newNodePerms()}
 }
 
-// GetSummary returns a Summary from the perspective of the given project.
-func (g *Config) GetSummary(ctx context.Context, store *txdb.Store, pool *txdb.Pool, projID string) (*Summary, error) {
+// GetSummary returns a Summary of running nodes.
+func (g *Config) GetSummary(ctx context.Context, store *txdb.Store, pool *txdb.Pool) (*Summary, error) {
 	res := newSummary()
 
 	res.BlockFreqMs = uint64(g.BlockPeriod / time.Millisecond)
@@ -80,8 +80,8 @@ func (g *Config) GetSummary(ctx context.Context, store *txdb.Store, pool *txdb.P
 
 	// Spoof an auditor node
 	res.Permissions.AuditorNodes = append(res.Permissions.AuditorNodes, NodePermStatus{
-		ID:      "audnode-" + projID,
-		Label:   "Auditor Node for " + projID,
+		ID:      "audnode",
+		Label:   "Auditor Node",
 		Enabled: true,
 	})
 

@@ -25,6 +25,7 @@ var (
 	ErrPasswordCheck     = errors.New("password does not match")
 	ErrUserAlreadyExists = errors.New("user already exists")
 	ErrNoUserForEmail    = errors.New("no user for that email")
+	ErrBadRole           = errors.New("invalid role")
 )
 
 // User represents a single user. Instances should be safe to deliver in API

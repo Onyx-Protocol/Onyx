@@ -1,5 +1,5 @@
 -- This file will reset the blockchain data, while leaving
--- platform-specific data (projects, accounts, etc) intact.
+-- platform-specific data (nodes, accounts, etc) intact.
 --
 -- To run it:
 --

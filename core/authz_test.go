@@ -14,8 +14,7 @@ import (
 )
 
 type fixtureInfo struct {
-	u1ID, u2ID       string
-	proj1ID, proj2ID string
+	u1ID, u2ID string
 }
 
 func TestAdminAuthz(t *testing.T) {
@@ -123,9 +122,6 @@ func withCommonFixture(t *testing.T, fn func(context.Context, *fixtureInfo)) {
 
 	fixtureInfo.u1ID = assettest.CreateUserFixture(ctx, t, "", "", "admin")
 	fixtureInfo.u2ID = assettest.CreateUserFixture(ctx, t, "", "", "developer")
-
-	fixtureInfo.proj1ID = assettest.CreateProjectFixture(ctx, t, "")
-	fixtureInfo.proj2ID = assettest.CreateProjectFixture(ctx, t, "")
 
 	fn(ctx, &fixtureInfo)
 }

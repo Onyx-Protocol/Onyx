@@ -39,10 +39,9 @@ type command struct {
 }
 
 var commands = map[string]*command{
-	"adduser":    {addUser, "adduser [email] [password] [role]"},
-	"addproject": {addProject, "addproject [name]"},
-	"genesis":    {genesis, "genesis"},
-	"boot":       {boot, "boot [email] [password]"},
+	"adduser": {addUser, "adduser [email] [password] [role]"},
+	"genesis": {genesis, "genesis"},
+	"boot":    {boot, "boot [email] [password]"},
 }
 
 func main() {
@@ -79,27 +78,6 @@ func addUser(db *sql.DB, args []string) {
 		fatalln("error:", err)
 	}
 	fmt.Printf("user created: %+v\n", *u)
-}
-
-func addProject(db *sql.DB, args []string) {
-	ctx := pg.NewContext(context.Background(), db)
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		fatalln("begin")
-	}
-	defer dbtx.Rollback(ctx)
-
-	proj, err := appdb.CreateProject(ctx, args[0])
-	if err != nil {
-		fatalln("error:", err)
-	}
-
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		fatalln("error:", err)
-	}
-
-	fmt.Printf("project created: %+v\n", *proj)
 }
 
 func genesis(db *sql.DB, args []string) {
@@ -147,11 +125,6 @@ func boot(db *sql.DB, args []string) {
 		fatalln(err)
 	}
 
-	proj, err := appdb.CreateProject(ctx, "proj")
-	if err != nil {
-		fatalln(err)
-	}
-
 	err = dbtx.Commit(ctx)
 	if err != nil {
 		fatalln(err)
@@ -161,19 +134,8 @@ func boot(db *sql.DB, args []string) {
 		"userID":      u.ID,
 		"tokenID":     tok.ID,
 		"tokenSecret": tok.Secret,
-		"projectID":   proj.ID,
 	}, "", "  ")
 	fmt.Printf("%s\n", result)
-}
-
-func genKey() (pub []*hd25519.XPub, priv []*hd25519.XPrv) {
-	xprv, xpub, err := hd25519.NewXKeys(nil)
-	if err != nil {
-		fatalln(err)
-	}
-	pub = append(pub, xpub)
-	priv = append(priv, xprv)
-	return
 }
 
 func fatalln(v ...interface{}) {

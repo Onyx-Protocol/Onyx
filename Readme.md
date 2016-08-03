@@ -65,18 +65,6 @@ From your local machine, create a Core user:
 
 	$ DB_URL=`appenv -t <target> DB_URL` corectl adduser <email> <password>
 
-From your local machine, create a Core project and make the new user an admin:
-
-	$ psql `appenv -t <target> DB_URL`
-	core=# -- create a project
-	core=# INSERT INTO projects (name) VALUES ('<project-name>'');
-	core=# -- get the project ID
-	core=# SELECT id FROM projects;
-	core=# -- get your user ID
-	core=# SELECT id FROM users;
-	core=# -- make yourself an admin of the project
-	core=# INSERT INTO members (project_id, user_id, role) VALUES ('<project-id>', '<user-id>', 'admin');
-
 Finally, try logging into the dashboard at `https://<target>.chain.com`.
 
 ##### Provisioning TODO:
