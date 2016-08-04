@@ -35,6 +35,7 @@ func listAccounts(ctx context.Context) (interface{}, error) {
 func createAccount(ctx context.Context, in struct {
 	XPubs  []string
 	Quorum int
+	Tags   map[string]interface{}
 
 	// ClientToken is the application's unique token for the account. Every account
 	// should have a unique client token. The client token s used to ensure
@@ -44,7 +45,7 @@ func createAccount(ctx context.Context, in struct {
 }) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 
-	return account.Create(ctx, in.XPubs, in.Quorum, in.ClientToken)
+	return account.Create(ctx, in.XPubs, in.Quorum, in.Tags, in.ClientToken)
 }
 
 // GET /v3/accounts/:accountID

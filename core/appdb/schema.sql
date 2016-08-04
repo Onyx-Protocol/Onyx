@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.1
--- Dumped by pg_dump version 9.5.1
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -590,7 +590,8 @@ CREATE TABLE signers (
     xpubs text[] NOT NULL,
     quorum integer NOT NULL,
     client_token text,
-    archived boolean DEFAULT false NOT NULL
+    archived boolean DEFAULT false NOT NULL,
+    tags jsonb
 );
 
 
@@ -1026,3 +1027,4 @@ insert into migrations (filename, hash) values ('2016-08-02.0.query.indexes.sql'
 insert into migrations (filename, hash) values ('2016-08-03.0.assets.use-signers.sql', '5e1d674c4f61f6b2f238e8600b145e44a819827be3a8b79764c432540c49f051');
 insert into migrations (filename, hash) values ('2016-08-03.1.core.remove-projects.sql', '801a54a49cdde74e5d8995a91be1ca0d4aa0715374a088fe4d2fe041d19cd09d');
 insert into migrations (filename, hash) values ('2016-08-03.2.mockhsm.add-xpub-hash.sql', '70cb6105554a3691c485edcc9472fe4823297fa6fdf0ea7e46bb8dbebe32a076');
+insert into migrations (filename, hash) values ('2016-08-03.3.signer.add-tags-to-signers.sql', '96d4fca692e5eedbc7c2a65e993936717cdbb09bd3f0b220ee862cc1aec1b5a9');

@@ -28,7 +28,7 @@ func TestAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	acc, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, nil)
+	acc, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +115,7 @@ func TestIssue(t *testing.T) {
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
 	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil)
-	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0)
+	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
 
 	ctx = authn.NewContext(ctx, userID)
 
@@ -162,8 +162,8 @@ func TestTransfer(t *testing.T) {
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
 	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil)
-	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0)
-	account2ID := assettest.CreateAccountFixture(ctx, t, nil, 0)
+	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
+	account2ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
 
 	assetIDStr := assetID.String()
 

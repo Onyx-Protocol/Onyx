@@ -39,8 +39,8 @@ func TestAdminAuthz(t *testing.T) {
 
 func TestBuildAuthz(t *testing.T) {
 	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
-		acc1ID := assettest.CreateAccountFixture(ctx, t, nil, 0)
-		acc2ID := assettest.CreateAccountFixture(ctx, t, nil, 0)
+		acc1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
+		acc2ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
 
 		assetIDPtr := &bc.AssetID{}
 

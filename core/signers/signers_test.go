@@ -22,6 +22,7 @@ func TestCreate(t *testing.T) {
 		typ    string
 		xpubs  []string
 		quorum int
+		tags   map[string]interface{}
 		want   error
 	}{{
 		typ:    "account",
@@ -80,13 +81,25 @@ func TestCreate(t *testing.T) {
 		},
 		quorum: 2,
 		want:   nil,
+	}, {
+		typ:    "account",
+		xpubs:  []string{testutil.TestXPub.String()},
+		quorum: 1,
+		tags:   map[string]interface{}{"one": "foo"},
+		want:   nil,
+	}, {
+		typ:    "account",
+		xpubs:  []string{testutil.TestXPub.String()},
+		quorum: 1,
+		tags:   map[string]interface{}{"one": "foo", "two": "bar"},
+		want:   nil,
 	}}
 
 	for _, c := range cases {
-		_, got := Create(ctx, c.typ, c.xpubs, c.quorum, nil)
+		_, got := Create(ctx, c.typ, c.xpubs, c.quorum, c.tags, nil)
 
 		if errors.Root(got) != c.want {
-			t.Errorf("Create(%s, %v, %d) = %q want %q", c.typ, c.xpubs, c.quorum, errors.Root(got), c.want)
+			t.Errorf("Create(%s, %v, %d, %v) = %q want %q", c.typ, c.xpubs, c.quorum, c.tags, errors.Root(got), c.want)
 		}
 	}
 }
@@ -100,6 +113,7 @@ func TestCreateIdempotency(t *testing.T) {
 		"account",
 		[]string{testutil.TestXPub.String()},
 		1,
+		nil,
 		&clientToken,
 	)
 
@@ -112,6 +126,7 @@ func TestCreateIdempotency(t *testing.T) {
 		"account",
 		[]string{testutil.TestXPub.String()},
 		1,
+		nil,
 		&clientToken,
 	)
 
@@ -231,6 +246,7 @@ func createFixture(ctx context.Context, t testing.TB) *Signer {
 		"account",
 		[]string{testutil.TestXPub.String()},
 		1,
+		nil,
 		&clientToken,
 	)
 

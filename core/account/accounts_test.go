@@ -25,7 +25,7 @@ func TestCreateControlProgram(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	resetSeqs(ctx, t)
 
-	account, err := Create(ctx, []string{dummyXPub}, 1, nil)
+	account, err := Create(ctx, []string{dummyXPub}, 1, nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -46,7 +46,7 @@ func TestCreateControlProgram(t *testing.T) {
 }
 
 func createTestAccount(ctx context.Context, t testing.TB) *signers.Signer {
-	account, err := Create(ctx, []string{dummyXPub}, 1, nil)
+	account, err := Create(ctx, []string{dummyXPub}, 1, nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

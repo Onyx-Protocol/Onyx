@@ -21,8 +21,8 @@ var (
 )
 
 // Create creates a new Account.
-func Create(ctx context.Context, xpubs []string, quorum int, clientToken *string) (*signers.Signer, error) {
-	return signers.Create(ctx, "account", xpubs, quorum, clientToken)
+func Create(ctx context.Context, xpubs []string, quorum int, tags map[string]interface{}, clientToken *string) (*signers.Signer, error) {
+	return signers.Create(ctx, "account", xpubs, quorum, tags, clientToken)
 }
 
 // Find retrieves an Account record from signer

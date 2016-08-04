@@ -2,6 +2,7 @@ package signers
 
 import (
 	"database/sql"
+	"encoding/json"
 
 	"golang.org/x/net/context"
 
@@ -49,10 +50,11 @@ var (
 // which is composed of a set of keys as well as
 // the amount of signatures needed for quorum.
 type Signer struct {
-	ID       string          `json:"id"`
-	Type     string          `json:"-"`
-	XPubs    []*hd25519.XPub `json:"xpubs"`
-	Quorum   int             `json:"quorum"`
+	ID       string                 `json:"id"`
+	Type     string                 `json:"-"`
+	XPubs    []*hd25519.XPub        `json:"xpubs"`
+	Quorum   int                    `json:"quorum"`
+	Tags     map[string]interface{} `json:"tags"`
 	keyIndex []uint32
 }
 
@@ -62,7 +64,7 @@ func Path(s *Signer, ks keySpace, itemIndex []uint32) []uint32 {
 }
 
 // Create creates and stores a Signer in the database
-func Create(ctx context.Context, typ string, xpubs []string, quorum int, clientToken *string) (*Signer, error) {
+func Create(ctx context.Context, typ string, xpubs []string, quorum int, tags map[string]interface{}, clientToken *string) (*Signer, error) {
 	if len(xpubs) == 0 {
 		return nil, errors.Wrap(ErrNoXPubs)
 	}
@@ -77,17 +79,24 @@ func Create(ctx context.Context, typ string, xpubs []string, quorum int, clientT
 	}
 
 	const q = `
-		INSERT INTO signers (id, type, xpubs, quorum, client_token)
-		VALUES (next_chain_id($1::text), $2, $3, $4, $5)
+		INSERT INTO signers (id, type, xpubs, quorum, tags, client_token)
+		VALUES (next_chain_id($1::text), $2, $3, $4, $5, $6)
 		ON CONFLICT (client_token) DO NOTHING
 		RETURNING id, key_index(key_index)
   `
 
+	var tagsJSON []byte
+	if len(tags) != 0 {
+		tagsJSON, err = json.Marshal(tags)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+	}
 	var (
 		id       string
 		keyIndex []uint32
 	)
-	err = pg.QueryRow(ctx, q, typeIDMap[typ], typ, pg.Strings(xpubs), quorum, clientToken).
+	err = pg.QueryRow(ctx, q, typeIDMap[typ], typ, pg.Strings(xpubs), quorum, sql.NullString{String: string(tagsJSON), Valid: len(tagsJSON) > 0}, clientToken).
 		Scan(&id, (*pg.Uint32s)(&keyIndex))
 	if err == sql.ErrNoRows && clientToken != nil {
 		return findByClientToken(ctx, clientToken)
@@ -106,16 +115,27 @@ func Create(ctx context.Context, typ string, xpubs []string, quorum int, clientT
 }
 
 func findByClientToken(ctx context.Context, clientToken *string) (*Signer, error) {
-	const q = `SELECT id, type, xpubs, quorum, key_index(key_index) FROM signers WHERE client_token=$1`
+	const q = `
+		SELECT id, type, xpubs, quorum, key_index(key_index), tags
+		FROM signers WHERE client_token=$1
+	`
 
 	var (
-		signer   Signer
+		s        Signer
 		xpubStrs []string
+		tags     []byte
 	)
 	err := pg.QueryRow(ctx, q, clientToken).
-		Scan(&signer.ID, &signer.Type, (*pg.Strings)(&xpubStrs), &signer.Quorum, (*pg.Uint32s)(&signer.keyIndex))
+		Scan(&s.ID, &s.Type, (*pg.Strings)(&xpubStrs), &s.Quorum, (*pg.Uint32s)(&s.keyIndex), &tags)
 	if err != nil {
 		return nil, errors.Wrap(err)
+	}
+
+	if len(tags) > 0 {
+		err := json.Unmarshal(tags, &s.Tags)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
 	}
 
 	keys, err := convertKeys(xpubStrs)
@@ -123,30 +143,32 @@ func findByClientToken(ctx context.Context, clientToken *string) (*Signer, error
 		return nil, errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
 	}
 
-	signer.XPubs = keys
+	s.XPubs = keys
 
-	return &signer, nil
+	return &s, nil
 }
 
 // Find retrieves a Signer from the database
 // using the type and id.
 func Find(ctx context.Context, typ, id string) (*Signer, error) {
 	const q = `
-		SELECT id, type, xpubs, quorum, key_index(key_index), archived
+		SELECT id, type, xpubs, quorum, key_index(key_index), tags, archived
 		FROM signers WHERE id=$1
 	`
 
 	var (
-		signer   Signer
+		s        Signer
 		archived bool
 		xpubStrs []string
+		tags     []byte
 	)
 	err := pg.QueryRow(ctx, q, id).Scan(
-		&signer.ID,
-		&signer.Type,
+		&s.ID,
+		&s.Type,
 		(*pg.Strings)(&xpubStrs),
-		&signer.Quorum,
-		(*pg.Uint32s)(&signer.keyIndex),
+		&s.Quorum,
+		(*pg.Uint32s)(&s.keyIndex),
+		&tags,
 		&archived,
 	)
 	if err == sql.ErrNoRows {
@@ -160,8 +182,15 @@ func Find(ctx context.Context, typ, id string) (*Signer, error) {
 		return nil, errors.Wrap(ErrArchived)
 	}
 
-	if signer.Type != typ {
+	if s.Type != typ {
 		return nil, errors.Wrap(ErrBadType)
+	}
+
+	if len(tags) > 0 {
+		err := json.Unmarshal(tags, &s.Tags)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
 	}
 
 	keys, err := convertKeys(xpubStrs)
@@ -169,8 +198,9 @@ func Find(ctx context.Context, typ, id string) (*Signer, error) {
 		return nil, errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
 	}
 
-	signer.XPubs = keys
-	return &signer, nil
+	s.XPubs = keys
+
+	return &s, nil
 }
 
 // Archive marks a Signer as archived in the database
@@ -190,17 +220,25 @@ func Archive(ctx context.Context, typ, id string) error {
 // the provided type.
 func List(ctx context.Context, typ, prev string, limit int) ([]*Signer, string, error) {
 	const q = `
-		SELECT id, type, xpubs, quorum, key_index(key_index)
+		SELECT id, type, xpubs, quorum, key_index(key_index), tags
 		FROM signers WHERE type=$1 AND ($2='' OR $2<id)
 		ORDER BY id ASC LIMIT $3
 	`
 
 	var signers []*Signer
 	err := pg.ForQueryRows(ctx, q, typ, prev, limit,
-		func(id, typ string, xpubs pg.Strings, quorum int, keyIndex pg.Uint32s) error {
+		func(id, typ string, xpubs pg.Strings, quorum int, keyIndex pg.Uint32s, tagBytes []byte) error {
 			keys, err := convertKeys(xpubs)
 			if err != nil {
 				return errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
+			}
+
+			var tags map[string]interface{}
+			if len(tags) > 0 {
+				err := json.Unmarshal(tagBytes, &tags)
+				if err != nil {
+					return errors.Wrap(err)
+				}
 			}
 
 			signers = append(signers, &Signer{
@@ -208,6 +246,7 @@ func List(ctx context.Context, typ, prev string, limit int) ([]*Signer, string, 
 				Type:     typ,
 				XPubs:    keys,
 				Quorum:   quorum,
+				Tags:     tags,
 				keyIndex: keyIndex,
 			})
 			return nil
