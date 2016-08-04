@@ -10,7 +10,7 @@ func isType(got Type, want Type) bool {
 }
 
 func knownType(t Type) bool {
-	return t == Bool || t == String || t == Integer || t == List || t == Object
+	return t == Bool || t == String || t == Integer || t == Object
 }
 
 func typeCheck(expr expr, t SQLTable) error {
@@ -62,14 +62,6 @@ func typeCheckExpr(expr expr, t SQLTable) (typ Type, err error) {
 			}
 			if knownType(rightTyp) && knownType(leftTyp) && leftTyp != rightTyp {
 				return typ, fmt.Errorf("%s expects operands of matching types", e.op.name)
-			}
-			return Bool, nil
-		case "CONTAINS":
-			if !isType(leftTyp, List) {
-				return typ, fmt.Errorf("CONTAINS expects left operand to be a list")
-			}
-			if !isType(rightTyp, String) {
-				return typ, fmt.Errorf("CONTAINS expects right operand to be a string")
 			}
 			return Bool, nil
 		default:

@@ -9,15 +9,14 @@ type binaryOp struct {
 }
 
 var binaryOps = map[string]*binaryOp{
-	"OR":       {1, "OR", applyOr},
-	"AND":      {2, "AND", applyAnd},
-	"<":        {3, "<", applyLessThan},
-	">":        {3, ">", applyGreaterThan},
-	"<=":       {3, "<=", applyLessThanEqual},
-	">=":       {3, ">=", applyGreaterThanEqual},
-	"=":        {3, "=", applyEqual},
-	"!=":       {3, "!=", applyNotEqual},
-	"CONTAINS": {4, "CONTAINS", applyContains},
+	"OR":  {1, "OR", applyOr},
+	"AND": {2, "AND", applyAnd},
+	"<":   {3, "<", applyLessThan},
+	">":   {3, ">", applyGreaterThan},
+	"<=":  {3, "<=", applyLessThanEqual},
+	">=":  {3, ">=", applyGreaterThanEqual},
+	"=":   {3, "=", applyEqual},
+	"!=":  {3, "!=", applyNotEqual},
 }
 
 func applyOr(lv, rv value) value {
@@ -100,8 +99,8 @@ func applyEqual(lv, rv value) value {
 	// error cases
 	case lv.is(Any) && rv.is(Any):
 		panic("placeholders cannot be compared")
-	case lv.is(List) && rv.is(List):
-		panic("lists cannot be compared with comparison operators")
+	case lv.is(Object) && rv.is(Object):
+		panic("objects cannot be compared with comparison operators")
 	default:
 		panic("mismatched types for comparison operator")
 	}
@@ -112,22 +111,4 @@ func applyNotEqual(lv, rv value) value {
 	neq := applyEqual(lv, rv)
 	neq.set.Invert = !neq.set.Invert
 	return neq
-}
-
-func applyContains(lv, rv value) value {
-	if !lv.is(List) {
-		panic("CONTAINS requires left operand to be list")
-	}
-	if rv.is(Any) {
-		return value{t: Bool, set: Set{Values: lv.list}}
-	}
-	if !rv.is(String) {
-		panic("CONTAINS requires right operand to be string")
-	}
-
-	found := false
-	for _, v := range lv.list {
-		found = found || v == rv.str
-	}
-	return value{t: Bool, set: Set{Invert: found}}
 }

@@ -169,7 +169,7 @@ func (s *scanner) Scan() (pos int, tok token, lit string) {
 	case isLetter(ch):
 		lit = s.scanIdentifier()
 		switch lit {
-		case "AND", "OR", "CONTAINS", "NOT":
+		case "AND", "OR", "NOT":
 			tok = tokKeyword
 		default:
 			tok = tokIdent

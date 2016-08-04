@@ -7,8 +7,8 @@ var tbl = SQLTable{
 	"asset_id":        {"asset_id", String},
 	"account_id":      {"account_id", String},
 	"amount":          {"amount", Integer},
-	"account_tags":    {"account_tags", List},
-	"account_numbers": {"account_numbers", List},
+	"account_tags":    {"account_tags", Object},
+	"account_numbers": {"account_numbers", Object},
 	"reference":       {"reference_data", Object},
 }
 
@@ -22,12 +22,12 @@ func TestTypeCheckInvalid(t *testing.T) {
 		{cql: `'chain' >= 1`},
 		{cql: `INPUTS('hello')`},
 		{cql: `foo(1=1).bar`},
-		{cql: `'hello' CONTAINS 'ello'`},
+		{cql: `'hello'.foo`},
 		{cql: `asset_id >= 5`, table: tbl},
 		{cql: `is_issuance AND amount`, table: tbl},
 		{cql: `account_tags > 'world'`, table: tbl},
-		{cql: `account_tags CONTAINS account_tags`, table: tbl},
-		{cql: `'hello' OR account_tags CONTAINS $1`, table: tbl},
+		{cql: `account_tags = account_tags`, table: tbl},
+		{cql: `'hello' OR account_tags.foo = $1`, table: tbl},
 	}
 
 	for _, tc := range testCases {
@@ -58,12 +58,12 @@ func TestTypeCheckValid(t *testing.T) {
 		{cql: `NOT is_issuance`, typ: Bool, table: tbl},
 		{cql: `'hello' = 'world'`, typ: Bool},
 		{cql: `'hello' > 'world'`, typ: Bool},
-		{cql: `$1 = 'hello' OR account_tags CONTAINS $1`, typ: Bool},
-		{cql: `($1 = 'hello') OR (account_tags CONTAINS $1)`, typ: Bool},
-		{cql: `inputs(account_tags CONTAINS 'domestic' AND account_tags CONTAINS 'revolving')`, typ: Bool},
+		{cql: `$1 = 'hello' OR account_tags.something = $1`, typ: Bool},
+		{cql: `($1 = 'hello') OR (account_tags.something = $1)`, typ: Bool},
+		{cql: `inputs(account_tags.domestic AND account_tags.type = 'revolving')`, typ: Bool},
 		{cql: `is_issuance`, typ: Bool, table: tbl},
 		{cql: `asset_id`, typ: String, table: tbl},
-		{cql: `account_tags`, typ: List, table: tbl},
+		{cql: `account_tags`, typ: Object, table: tbl},
 		{cql: `amount >= 5`, typ: Bool, table: tbl},
 		{cql: `reference.recipient.id`, typ: Any, table: tbl},
 	}

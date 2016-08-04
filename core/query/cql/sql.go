@@ -96,9 +96,8 @@ func translateToSQL(w *SQLExpr, t SQLTable, expr expr) {
 		translateToSQL(w, t, e.inner)
 		w.buf.WriteString(")")
 	case binaryExpr:
-		w.buf.WriteString("(")
-
 		// translate the left operand
+		w.buf.WriteString("(")
 		translateToSQL(w, t, e.l)
 
 		// translate the operator itself
@@ -106,22 +105,13 @@ func translateToSQL(w *SQLExpr, t SQLTable, expr expr) {
 		switch e.op.name {
 		case "OR", "AND", "<", "<=", ">", ">=", "=", "!=":
 			w.buf.WriteString(e.op.name)
-		case "CONTAINS":
-			w.buf.WriteString("@>")
 		default:
 			panic(fmt.Errorf("unsupported operator: %s", e.op.name))
 		}
 		w.buf.WriteString(" ")
 
 		// translate the right operand
-		if e.op.name == "CONTAINS" {
-			w.buf.WriteString("ARRAY[")
-		}
 		translateToSQL(w, t, e.r)
-		if e.op.name == "CONTAINS" {
-			w.buf.WriteString("]")
-		}
-
 		w.buf.WriteString(")")
 	case placeholderExpr:
 		w.placeholderCount++

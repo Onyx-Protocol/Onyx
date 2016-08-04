@@ -25,16 +25,6 @@ func (m mapEnv) Get(name string) value {
 	case float64:
 		// encoding/json will unmarshal json numbers as float64s.
 		return value{t: Integer, integer: int(v)}
-	case []interface{}:
-		var strs []string
-		for _, v := range v {
-			s, ok := v.(string)
-			if !ok {
-				panic("invalid type for attribute `" + name + "`")
-			}
-			strs = append(strs, s)
-		}
-		return value{t: List, list: strs}
 	case map[string]interface{}:
 		return value{t: Object, obj: v}
 	default:

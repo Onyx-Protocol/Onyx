@@ -37,7 +37,6 @@ const (
 	Bool
 	String
 	Integer
-	List
 	Object
 )
 
@@ -51,8 +50,6 @@ func (t Type) String() string {
 		return "string"
 	case Integer:
 		return "integer"
-	case List:
-		return "list"
 	case Object:
 		return "object"
 	}
@@ -71,7 +68,6 @@ func (t Type) String() string {
 type value struct {
 	t       Type
 	set     Set                    // Bool
-	list    []string               // List
 	str     string                 // String
 	integer int                    // Integer
 	obj     map[string]interface{} // Object

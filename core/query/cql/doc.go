@@ -17,7 +17,6 @@ Expressions in CQL have the following forms:
   ident "(" expr ")"       bool     list, bool
   expr1 "=" expr2          bool     any (must match)
   expr1 "!=" expr2         bool     any (must match)
-  expr1 "CONTAINS" expr2   bool     set, string
   expr1 ">" expr2          bool     int, int
   expr1 "<" expr2          bool     int, int
   expr1 ">=" expr2         bool     int, int

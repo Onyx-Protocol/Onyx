@@ -42,11 +42,6 @@ func TestEval(t *testing.T) {
 			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
-			query:    `$1 = 'hello' OR account_tags CONTAINS $1`,
-			data:     `{"account_tags": ["world"]}`,
-			expected: value{t: Bool, set: Set{Values: []string{"hello", "world"}}},
-		},
-		{
 			query:    `0xA >= 10`,
 			expected: value{t: Bool, set: Set{Invert: true}},
 		},
@@ -61,19 +56,6 @@ func TestEval(t *testing.T) {
 		{
 			query:    `0xA < 10`,
 			expected: value{t: Bool, set: Set{}},
-		},
-		{
-			query:    `account_tags CONTAINS 'bank-b'`,
-			data:     `{"account_tags": ["bank-a", "bank-b", "international"]}`,
-			expected: value{t: Bool, set: Set{Invert: true}},
-		},
-		{
-			query: `account_tags CONTAINS $1`,
-			data:  `{"account_tags": ["bank-a", "bank-b", "international"]}`,
-			expected: value{
-				t:   Bool,
-				set: Set{Values: []string{"bank-a", "bank-b", "international"}},
-			},
 		},
 		{
 			query: `reference.recipient.email_address`,
@@ -116,16 +98,6 @@ func TestEval(t *testing.T) {
 			expected: value{t: Bool, set: Set{}},
 		},
 		{
-			query:    `account_tags CONTAINS $1 AND $1 != 'b'`,
-			data:     `{"account_tags": ["a", "b", "c"]}`,
-			expected: value{t: Bool, set: Set{Values: []string{"a", "c"}}},
-		},
-		{
-			query:    `NOT (account_tags CONTAINS $1) AND $1 != 'c'`,
-			data:     `{"account_tags": ["a", "b"]}`,
-			expected: value{t: Bool, set: Set{Invert: true, Values: []string{"a", "b", "c"}}},
-		},
-		{
 			query:    `issuance`,
 			data:     `{"issuance": true}`,
 			expected: value{t: Bool, set: Set{Invert: true}},
@@ -136,31 +108,31 @@ func TestEval(t *testing.T) {
 			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
-			query: `inputs(account_tags CONTAINS 'domestic' AND account_tags CONTAINS 'revolving')`,
+			query: `inputs(account_tags.domestic AND account_tags.revolving)`,
 			data: `{
 				"inputs": [
-					{ "account_tags": ["domestic", "priority-client"] },
-					{ "account_tags": ["domestic", "revolving"] }
+					{ "account_tags": {"domestic": true, "priority_client": true, "revolving": false} },
+					{ "account_tags": {"domestic": true, "revolving": true} }
 				]
 			}`,
 			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
-			query: `inputs(account_tags CONTAINS 'domestic' AND account_tags CONTAINS 'revolving')`,
+			query: `inputs(account_tags.domestic AND account_tags.revolving)`,
 			data: `{
 				"inputs": [
-					{ "account_tags": ["domestic", "priority-client"] },
-					{ "account_tags": ["revolving", "international"] }
+					{ "account_tags": {"revolving": false, "domestic": true, "priority_client": true} },
+					{ "account_tags": {"revolving": true, "domestic": false, "international": true} }
 				]
 			}`,
 			expected: value{t: Bool, set: Set{}},
 		},
 		{
-			query: `NOT inputs(account_tags CONTAINS 'domestic' AND account_tags CONTAINS 'revolving')`,
+			query: `NOT inputs(account_tags.domestic AND account_tags.revolving)`,
 			data: `{
 				"inputs": [
-					{ "account_tags": ["domestic", "priority-client"] },
-					{ "account_tags": ["revolving", "international"] }
+					{ "account_tags": {"revolving": false, "domestic": true, "priority_client": true} },
+					{ "account_tags": {"revolving": true, "domestic": false, "international": true} }
 				]
 			}`,
 			expected: value{t: Bool, set: Set{Invert: true}},

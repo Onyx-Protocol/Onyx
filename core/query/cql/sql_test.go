@@ -10,8 +10,8 @@ func TestTranslateToSQL(t *testing.T) {
 		"asset_id":        {"asset_id", String},
 		"amount":          {"amount", Integer},
 		"account_id":      {"account_id", String},
-		"account_tags":    {"account_tags", List},
-		"account_numbers": {"account_numbers", List},
+		"account_tags":    {"account_tags", Object},
+		"account_numbers": {"account_numbers", Object},
 	}
 
 	testCases := []struct {
@@ -31,17 +31,6 @@ func TestTranslateToSQL(t *testing.T) {
 		{cql: `4 = 5`, sql: `(4 = 5)`},
 		{cql: `4 != 5`, sql: `(4 != 5)`},
 		{cql: `asset_id`, sql: `"asset_id"`},
-		{cql: `account_numbers CONTAINS 20525`, sql: `("account_numbers" @> ARRAY[20525])`},
-		{
-			cql:  `account_tags CONTAINS 'high-roller'`,
-			sql:  `("account_tags" @> ARRAY[$1])`,
-			vals: []sqlPlaceholder{{value: "high-roller"}},
-		},
-		{
-			cql:  `account_id = 'abc' OR account_tags CONTAINS $1`,
-			sql:  `(("account_id" = $1) OR ("account_tags" @> ARRAY[$2]))`,
-			vals: []sqlPlaceholder{{value: "abc"}, {number: 1}},
-		},
 		{
 			cql:  `(account_id = $1) AND (amount > 2000) AND (asset_id = $2)`,
 			sql:  `((("account_id" = $1) AND ("amount" > 2000)) AND ("asset_id" = $2))`,
