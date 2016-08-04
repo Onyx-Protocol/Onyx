@@ -293,7 +293,7 @@ func nextIndex(ctx context.Context) ([]uint32, error) {
 }
 
 func scripts(pubkeys []ed25519.PublicKey, nrequired int, definition []byte) ([]byte, []byte, error) {
-	redeem, err := txscript.MultiSigScript(pubkeys, nrequired)
+	redeem, err := txscript.TxMultiSigScript(pubkeys, nrequired)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -306,14 +306,12 @@ func scripts(pubkeys []ed25519.PublicKey, nrequired int, definition []byte) ([]b
 func redeemToPkScriptWithDefinition(redeem, definition []byte) []byte {
 	hash := sha3.Sum256(redeem)
 	builder := txscript.NewScriptBuilder()
-	builder.AddData(definition)
-	builder.AddOp(txscript.OP_DROP)
+	builder.AddData(definition).AddOp(txscript.OP_DROP)
 	builder.AddOp(txscript.OP_DUP)
 	builder.AddOp(txscript.OP_SHA3)
 	builder.AddData(hash[:])
 	builder.AddOp(txscript.OP_EQUALVERIFY)
-	builder.AddOp(txscript.OP_0)
-	builder.AddOp(txscript.OP_CHECKPREDICATE)
+	builder.AddOp(txscript.OP_0).AddOp(txscript.OP_CHECKPREDICATE)
 	script, _ := builder.Script()
 	return script
 }

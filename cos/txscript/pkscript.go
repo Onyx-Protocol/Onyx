@@ -22,8 +22,8 @@ func RedeemToPkScript(redeem []byte) []byte {
 	return script
 }
 
-func Scripts(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, []byte, error) {
-	redeem, err := MultiSigScript(pubkeys, nrequired)
+func TxScripts(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, []byte, error) {
+	redeem, err := TxMultiSigScript(pubkeys, nrequired)
 	if err != nil {
 		return nil, nil, err
 	}

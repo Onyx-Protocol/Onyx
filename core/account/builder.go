@@ -54,7 +54,7 @@ func (reserver *Reserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmou
 		derivedXPubs := hd25519.DeriveXPubs(inputAccount.XPubs, path)
 		derivedPKs := hd25519.XPubKeys(derivedXPubs)
 
-		redeemScript, err := txscript.MultiSigScript(derivedPKs, inputAccount.Quorum)
+		redeemScript, err := txscript.TxMultiSigScript(derivedPKs, inputAccount.Quorum)
 		if err != nil {
 			return nil, errors.Wrap(err, "compute redeem script")
 		}

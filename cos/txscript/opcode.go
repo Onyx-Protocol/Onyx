@@ -36,200 +36,200 @@ type opcode struct {
 // in bitcoin core and in most if not all other references and software related
 // to handling BTC scripts.
 const (
-	OP_0                   = 0x00 // 0
-	OP_FALSE               = 0x00 // 0 - AKA OP_0
-	OP_DATA_1              = 0x01 // 1
-	OP_DATA_2              = 0x02 // 2
-	OP_DATA_3              = 0x03 // 3
-	OP_DATA_4              = 0x04 // 4
-	OP_DATA_5              = 0x05 // 5
-	OP_DATA_6              = 0x06 // 6
-	OP_DATA_7              = 0x07 // 7
-	OP_DATA_8              = 0x08 // 8
-	OP_DATA_9              = 0x09 // 9
-	OP_DATA_10             = 0x0a // 10
-	OP_DATA_11             = 0x0b // 11
-	OP_DATA_12             = 0x0c // 12
-	OP_DATA_13             = 0x0d // 13
-	OP_DATA_14             = 0x0e // 14
-	OP_DATA_15             = 0x0f // 15
-	OP_DATA_16             = 0x10 // 16
-	OP_DATA_17             = 0x11 // 17
-	OP_DATA_18             = 0x12 // 18
-	OP_DATA_19             = 0x13 // 19
-	OP_DATA_20             = 0x14 // 20
-	OP_DATA_21             = 0x15 // 21
-	OP_DATA_22             = 0x16 // 22
-	OP_DATA_23             = 0x17 // 23
-	OP_DATA_24             = 0x18 // 24
-	OP_DATA_25             = 0x19 // 25
-	OP_DATA_26             = 0x1a // 26
-	OP_DATA_27             = 0x1b // 27
-	OP_DATA_28             = 0x1c // 28
-	OP_DATA_29             = 0x1d // 29
-	OP_DATA_30             = 0x1e // 30
-	OP_DATA_31             = 0x1f // 31
-	OP_DATA_32             = 0x20 // 32
-	OP_DATA_33             = 0x21 // 33
-	OP_DATA_34             = 0x22 // 34
-	OP_DATA_35             = 0x23 // 35
-	OP_DATA_36             = 0x24 // 36
-	OP_DATA_37             = 0x25 // 37
-	OP_DATA_38             = 0x26 // 38
-	OP_DATA_39             = 0x27 // 39
-	OP_DATA_40             = 0x28 // 40
-	OP_DATA_41             = 0x29 // 41
-	OP_DATA_42             = 0x2a // 42
-	OP_DATA_43             = 0x2b // 43
-	OP_DATA_44             = 0x2c // 44
-	OP_DATA_45             = 0x2d // 45
-	OP_DATA_46             = 0x2e // 46
-	OP_DATA_47             = 0x2f // 47
-	OP_DATA_48             = 0x30 // 48
-	OP_DATA_49             = 0x31 // 49
-	OP_DATA_50             = 0x32 // 50
-	OP_DATA_51             = 0x33 // 51
-	OP_DATA_52             = 0x34 // 52
-	OP_DATA_53             = 0x35 // 53
-	OP_DATA_54             = 0x36 // 54
-	OP_DATA_55             = 0x37 // 55
-	OP_DATA_56             = 0x38 // 56
-	OP_DATA_57             = 0x39 // 57
-	OP_DATA_58             = 0x3a // 58
-	OP_DATA_59             = 0x3b // 59
-	OP_DATA_60             = 0x3c // 60
-	OP_DATA_61             = 0x3d // 61
-	OP_DATA_62             = 0x3e // 62
-	OP_DATA_63             = 0x3f // 63
-	OP_DATA_64             = 0x40 // 64
-	OP_DATA_65             = 0x41 // 65
-	OP_DATA_66             = 0x42 // 66
-	OP_DATA_67             = 0x43 // 67
-	OP_DATA_68             = 0x44 // 68
-	OP_DATA_69             = 0x45 // 69
-	OP_DATA_70             = 0x46 // 70
-	OP_DATA_71             = 0x47 // 71
-	OP_DATA_72             = 0x48 // 72
-	OP_DATA_73             = 0x49 // 73
-	OP_DATA_74             = 0x4a // 74
-	OP_DATA_75             = 0x4b // 75
-	OP_PUSHDATA1           = 0x4c // 76
-	OP_PUSHDATA2           = 0x4d // 77
-	OP_PUSHDATA4           = 0x4e // 78
-	OP_1NEGATE             = 0x4f // 79
-	OP_RESERVED            = 0x50 // 80
-	OP_1                   = 0x51 // 81 - AKA OP_TRUE
-	OP_TRUE                = 0x51 // 81
-	OP_2                   = 0x52 // 82
-	OP_3                   = 0x53 // 83
-	OP_4                   = 0x54 // 84
-	OP_5                   = 0x55 // 85
-	OP_6                   = 0x56 // 86
-	OP_7                   = 0x57 // 87
-	OP_8                   = 0x58 // 88
-	OP_9                   = 0x59 // 89
-	OP_10                  = 0x5a // 90
-	OP_11                  = 0x5b // 91
-	OP_12                  = 0x5c // 92
-	OP_13                  = 0x5d // 93
-	OP_14                  = 0x5e // 94
-	OP_15                  = 0x5f // 95
-	OP_16                  = 0x60 // 96
-	OP_NOP                 = 0x61 // 97
-	OP_VER                 = 0x62 // 98
-	OP_IF                  = 0x63 // 99
-	OP_NOTIF               = 0x64 // 100
-	OP_VERIF               = 0x65 // 101
-	OP_VERNOTIF            = 0x66 // 102
-	OP_ELSE                = 0x67 // 103
-	OP_ENDIF               = 0x68 // 104
-	OP_VERIFY              = 0x69 // 105
-	OP_RETURN              = 0x6a // 106
-	OP_TOALTSTACK          = 0x6b // 107
-	OP_FROMALTSTACK        = 0x6c // 108
-	OP_2DROP               = 0x6d // 109
-	OP_2DUP                = 0x6e // 110
-	OP_3DUP                = 0x6f // 111
-	OP_2OVER               = 0x70 // 112
-	OP_2ROT                = 0x71 // 113
-	OP_2SWAP               = 0x72 // 114
-	OP_IFDUP               = 0x73 // 115
-	OP_DEPTH               = 0x74 // 116
-	OP_DROP                = 0x75 // 117
-	OP_DUP                 = 0x76 // 118
-	OP_NIP                 = 0x77 // 119
-	OP_OVER                = 0x78 // 120
-	OP_PICK                = 0x79 // 121
-	OP_ROLL                = 0x7a // 122
-	OP_ROT                 = 0x7b // 123
-	OP_SWAP                = 0x7c // 124
-	OP_TUCK                = 0x7d // 125
-	OP_CAT                 = 0x7e // 126
-	OP_SUBSTR              = 0x7f // 127
-	OP_LEFT                = 0x80 // 128
-	OP_RIGHT               = 0x81 // 129
-	OP_SIZE                = 0x82 // 130
-	OP_INVERT              = 0x83 // 131
-	OP_AND                 = 0x84 // 132
-	OP_OR                  = 0x85 // 133
-	OP_XOR                 = 0x86 // 134
-	OP_EQUAL               = 0x87 // 135
-	OP_EQUALVERIFY         = 0x88 // 136
-	OP_RESERVED1           = 0x89 // 137
-	OP_RESERVED2           = 0x8a // 138
-	OP_1ADD                = 0x8b // 139
-	OP_1SUB                = 0x8c // 140
-	OP_2MUL                = 0x8d // 141
-	OP_2DIV                = 0x8e // 142
-	OP_NEGATE              = 0x8f // 143
-	OP_ABS                 = 0x90 // 144
-	OP_NOT                 = 0x91 // 145
-	OP_0NOTEQUAL           = 0x92 // 146
-	OP_ADD                 = 0x93 // 147
-	OP_SUB                 = 0x94 // 148
-	OP_MUL                 = 0x95 // 149
-	OP_DIV                 = 0x96 // 150
-	OP_MOD                 = 0x97 // 151
-	OP_LSHIFT              = 0x98 // 152
-	OP_RSHIFT              = 0x99 // 153
-	OP_BOOLAND             = 0x9a // 154
-	OP_BOOLOR              = 0x9b // 155
-	OP_NUMEQUAL            = 0x9c // 156
-	OP_NUMEQUALVERIFY      = 0x9d // 157
-	OP_NUMNOTEQUAL         = 0x9e // 158
-	OP_LESSTHAN            = 0x9f // 159
-	OP_GREATERTHAN         = 0xa0 // 160
-	OP_LESSTHANOREQUAL     = 0xa1 // 161
-	OP_GREATERTHANOREQUAL  = 0xa2 // 162
-	OP_MIN                 = 0xa3 // 163
-	OP_MAX                 = 0xa4 // 164
-	OP_WITHIN              = 0xa5 // 165
-	OP_RIPEMD160           = 0xa6 // 166
-	OP_SHA1                = 0xa7 // 167
-	OP_SHA256              = 0xa8 // 168
-	OP_UNKNOWN169          = 0xa9 // 169
-	OP_SHA3                = 0xaa // 170
-	OP_CODESEPARATOR       = 0xab // 171
-	OP_CHECKSIG            = 0xac // 172
-	OP_CHECKSIGVERIFY      = 0xad // 173
-	OP_CHECKMULTISIG       = 0xae // 174
-	OP_CHECKMULTISIGVERIFY = 0xaf // 175
-	OP_NOP1                = 0xb0 // 176
-	OP_NOP2                = 0xb1 // 177
-	OP_NOP3                = 0xb2 // 178
-	OP_NOP4                = 0xb3 // 179
-	OP_NOP5                = 0xb4 // 180
-	OP_NOP6                = 0xb5 // 181
-	OP_NOP7                = 0xb6 // 182
-	OP_NOP8                = 0xb7 // 183
-	OP_NOP9                = 0xb8 // 184
-	OP_NOP10               = 0xb9 // 185
-	OP_UNKNOWN186          = 0xba // 186
-	OP_UNKNOWN187          = 0xbb // 187
-	OP_UNKNOWN188          = 0xbc // 188
-	OP_UNKNOWN189          = 0xbd // 189
-	OP_UNKNOWN190          = 0xbe // 190
-	OP_UNKNOWN191          = 0xbf // 191
+	OP_0                  = 0x00 // 0
+	OP_FALSE              = 0x00 // 0 - AKA OP_0
+	OP_DATA_1             = 0x01 // 1
+	OP_DATA_2             = 0x02 // 2
+	OP_DATA_3             = 0x03 // 3
+	OP_DATA_4             = 0x04 // 4
+	OP_DATA_5             = 0x05 // 5
+	OP_DATA_6             = 0x06 // 6
+	OP_DATA_7             = 0x07 // 7
+	OP_DATA_8             = 0x08 // 8
+	OP_DATA_9             = 0x09 // 9
+	OP_DATA_10            = 0x0a // 10
+	OP_DATA_11            = 0x0b // 11
+	OP_DATA_12            = 0x0c // 12
+	OP_DATA_13            = 0x0d // 13
+	OP_DATA_14            = 0x0e // 14
+	OP_DATA_15            = 0x0f // 15
+	OP_DATA_16            = 0x10 // 16
+	OP_DATA_17            = 0x11 // 17
+	OP_DATA_18            = 0x12 // 18
+	OP_DATA_19            = 0x13 // 19
+	OP_DATA_20            = 0x14 // 20
+	OP_DATA_21            = 0x15 // 21
+	OP_DATA_22            = 0x16 // 22
+	OP_DATA_23            = 0x17 // 23
+	OP_DATA_24            = 0x18 // 24
+	OP_DATA_25            = 0x19 // 25
+	OP_DATA_26            = 0x1a // 26
+	OP_DATA_27            = 0x1b // 27
+	OP_DATA_28            = 0x1c // 28
+	OP_DATA_29            = 0x1d // 29
+	OP_DATA_30            = 0x1e // 30
+	OP_DATA_31            = 0x1f // 31
+	OP_DATA_32            = 0x20 // 32
+	OP_DATA_33            = 0x21 // 33
+	OP_DATA_34            = 0x22 // 34
+	OP_DATA_35            = 0x23 // 35
+	OP_DATA_36            = 0x24 // 36
+	OP_DATA_37            = 0x25 // 37
+	OP_DATA_38            = 0x26 // 38
+	OP_DATA_39            = 0x27 // 39
+	OP_DATA_40            = 0x28 // 40
+	OP_DATA_41            = 0x29 // 41
+	OP_DATA_42            = 0x2a // 42
+	OP_DATA_43            = 0x2b // 43
+	OP_DATA_44            = 0x2c // 44
+	OP_DATA_45            = 0x2d // 45
+	OP_DATA_46            = 0x2e // 46
+	OP_DATA_47            = 0x2f // 47
+	OP_DATA_48            = 0x30 // 48
+	OP_DATA_49            = 0x31 // 49
+	OP_DATA_50            = 0x32 // 50
+	OP_DATA_51            = 0x33 // 51
+	OP_DATA_52            = 0x34 // 52
+	OP_DATA_53            = 0x35 // 53
+	OP_DATA_54            = 0x36 // 54
+	OP_DATA_55            = 0x37 // 55
+	OP_DATA_56            = 0x38 // 56
+	OP_DATA_57            = 0x39 // 57
+	OP_DATA_58            = 0x3a // 58
+	OP_DATA_59            = 0x3b // 59
+	OP_DATA_60            = 0x3c // 60
+	OP_DATA_61            = 0x3d // 61
+	OP_DATA_62            = 0x3e // 62
+	OP_DATA_63            = 0x3f // 63
+	OP_DATA_64            = 0x40 // 64
+	OP_DATA_65            = 0x41 // 65
+	OP_DATA_66            = 0x42 // 66
+	OP_DATA_67            = 0x43 // 67
+	OP_DATA_68            = 0x44 // 68
+	OP_DATA_69            = 0x45 // 69
+	OP_DATA_70            = 0x46 // 70
+	OP_DATA_71            = 0x47 // 71
+	OP_DATA_72            = 0x48 // 72
+	OP_DATA_73            = 0x49 // 73
+	OP_DATA_74            = 0x4a // 74
+	OP_DATA_75            = 0x4b // 75
+	OP_PUSHDATA1          = 0x4c // 76
+	OP_PUSHDATA2          = 0x4d // 77
+	OP_PUSHDATA4          = 0x4e // 78
+	OP_1NEGATE            = 0x4f // 79
+	OP_RESERVED           = 0x50 // 80
+	OP_1                  = 0x51 // 81 - AKA OP_TRUE
+	OP_TRUE               = 0x51 // 81
+	OP_2                  = 0x52 // 82
+	OP_3                  = 0x53 // 83
+	OP_4                  = 0x54 // 84
+	OP_5                  = 0x55 // 85
+	OP_6                  = 0x56 // 86
+	OP_7                  = 0x57 // 87
+	OP_8                  = 0x58 // 88
+	OP_9                  = 0x59 // 89
+	OP_10                 = 0x5a // 90
+	OP_11                 = 0x5b // 91
+	OP_12                 = 0x5c // 92
+	OP_13                 = 0x5d // 93
+	OP_14                 = 0x5e // 94
+	OP_15                 = 0x5f // 95
+	OP_16                 = 0x60 // 96
+	OP_NOP                = 0x61 // 97
+	OP_VER                = 0x62 // 98
+	OP_IF                 = 0x63 // 99
+	OP_NOTIF              = 0x64 // 100
+	OP_VERIF              = 0x65 // 101
+	OP_VERNOTIF           = 0x66 // 102
+	OP_ELSE               = 0x67 // 103
+	OP_ENDIF              = 0x68 // 104
+	OP_VERIFY             = 0x69 // 105
+	OP_RETURN             = 0x6a // 106
+	OP_TOALTSTACK         = 0x6b // 107
+	OP_FROMALTSTACK       = 0x6c // 108
+	OP_2DROP              = 0x6d // 109
+	OP_2DUP               = 0x6e // 110
+	OP_3DUP               = 0x6f // 111
+	OP_2OVER              = 0x70 // 112
+	OP_2ROT               = 0x71 // 113
+	OP_2SWAP              = 0x72 // 114
+	OP_IFDUP              = 0x73 // 115
+	OP_DEPTH              = 0x74 // 116
+	OP_DROP               = 0x75 // 117
+	OP_DUP                = 0x76 // 118
+	OP_NIP                = 0x77 // 119
+	OP_OVER               = 0x78 // 120
+	OP_PICK               = 0x79 // 121
+	OP_ROLL               = 0x7a // 122
+	OP_ROT                = 0x7b // 123
+	OP_SWAP               = 0x7c // 124
+	OP_TUCK               = 0x7d // 125
+	OP_CAT                = 0x7e // 126
+	OP_SUBSTR             = 0x7f // 127
+	OP_LEFT               = 0x80 // 128
+	OP_RIGHT              = 0x81 // 129
+	OP_SIZE               = 0x82 // 130
+	OP_INVERT             = 0x83 // 131
+	OP_AND                = 0x84 // 132
+	OP_OR                 = 0x85 // 133
+	OP_XOR                = 0x86 // 134
+	OP_EQUAL              = 0x87 // 135
+	OP_EQUALVERIFY        = 0x88 // 136
+	OP_RESERVED1          = 0x89 // 137
+	OP_RESERVED2          = 0x8a // 138
+	OP_1ADD               = 0x8b // 139
+	OP_1SUB               = 0x8c // 140
+	OP_2MUL               = 0x8d // 141
+	OP_2DIV               = 0x8e // 142
+	OP_NEGATE             = 0x8f // 143
+	OP_ABS                = 0x90 // 144
+	OP_NOT                = 0x91 // 145
+	OP_0NOTEQUAL          = 0x92 // 146
+	OP_ADD                = 0x93 // 147
+	OP_SUB                = 0x94 // 148
+	OP_MUL                = 0x95 // 149
+	OP_DIV                = 0x96 // 150
+	OP_MOD                = 0x97 // 151
+	OP_LSHIFT             = 0x98 // 152
+	OP_RSHIFT             = 0x99 // 153
+	OP_BOOLAND            = 0x9a // 154
+	OP_BOOLOR             = 0x9b // 155
+	OP_NUMEQUAL           = 0x9c // 156
+	OP_NUMEQUALVERIFY     = 0x9d // 157
+	OP_NUMNOTEQUAL        = 0x9e // 158
+	OP_LESSTHAN           = 0x9f // 159
+	OP_GREATERTHAN        = 0xa0 // 160
+	OP_LESSTHANOREQUAL    = 0xa1 // 161
+	OP_GREATERTHANOREQUAL = 0xa2 // 162
+	OP_MIN                = 0xa3 // 163
+	OP_MAX                = 0xa4 // 164
+	OP_WITHIN             = 0xa5 // 165
+	OP_RIPEMD160          = 0xa6 // 166
+	OP_SHA1               = 0xa7 // 167
+	OP_SHA256             = 0xa8 // 168
+	OP_UNKNOWN169         = 0xa9 // 169
+	OP_SHA3               = 0xaa // 170
+	OP_CODESEPARATOR      = 0xab // 171
+	OP_CHECKSIG           = 0xac // 172
+	OP_CHECKMULTISIG      = 0xad // 173
+	OP_TXSIGHASH          = 0xae // 174
+	OP_BLOCKSIGHASH       = 0xaf // 175
+	OP_NOP1               = 0xb0 // 176
+	OP_NOP2               = 0xb1 // 177
+	OP_NOP3               = 0xb2 // 178
+	OP_NOP4               = 0xb3 // 179
+	OP_NOP5               = 0xb4 // 180
+	OP_NOP6               = 0xb5 // 181
+	OP_NOP7               = 0xb6 // 182
+	OP_NOP8               = 0xb7 // 183
+	OP_NOP9               = 0xb8 // 184
+	OP_NOP10              = 0xb9 // 185
+	OP_UNKNOWN186         = 0xba // 186
+	OP_UNKNOWN187         = 0xbb // 187
+	OP_UNKNOWN188         = 0xbc // 188
+	OP_UNKNOWN189         = 0xbd // 189
+	OP_UNKNOWN190         = 0xbe // 190
+	OP_UNKNOWN191         = 0xbf // 191
 
 	OP_CHECKPREDICATE = 0xc0 // 192
 	OP_RESERVEOUTPUT  = 0xc1 // 193
@@ -491,15 +491,15 @@ var opcodeArray = [256]opcode{
 	OP_WITHIN:             {OP_WITHIN, "OP_WITHIN", 1, opcodeWithin},
 
 	// Crypto opcodes.
-	OP_RIPEMD160:           {OP_RIPEMD160, "OP_RIPEMD160", 1, opcodeRipemd160},
-	OP_SHA1:                {OP_SHA1, "OP_SHA1", 1, opcodeSha1},
-	OP_SHA256:              {OP_SHA256, "OP_SHA256", 1, opcodeSha256},
-	OP_SHA3:                {OP_SHA3, "OP_SHA3", 1, opcodeSha3},
-	OP_CODESEPARATOR:       {OP_CODESEPARATOR, "OP_CODESEPARATOR", 1, opcodeCodeSeparator},
-	OP_CHECKSIG:            {OP_CHECKSIG, "OP_CHECKSIG", 1, opcodeCheckSig},
-	OP_CHECKSIGVERIFY:      {OP_CHECKSIGVERIFY, "OP_CHECKSIGVERIFY", 1, opcodeCheckSigVerify},
-	OP_CHECKMULTISIG:       {OP_CHECKMULTISIG, "OP_CHECKMULTISIG", 1, opcodeCheckMultiSig},
-	OP_CHECKMULTISIGVERIFY: {OP_CHECKMULTISIGVERIFY, "OP_CHECKMULTISIGVERIFY", 1, opcodeCheckMultiSigVerify},
+	OP_RIPEMD160:     {OP_RIPEMD160, "OP_RIPEMD160", 1, opcodeRipemd160},
+	OP_SHA1:          {OP_SHA1, "OP_SHA1", 1, opcodeSha1},
+	OP_SHA256:        {OP_SHA256, "OP_SHA256", 1, opcodeSha256},
+	OP_SHA3:          {OP_SHA3, "OP_SHA3", 1, opcodeSha3},
+	OP_CODESEPARATOR: {OP_CODESEPARATOR, "OP_CODESEPARATOR", 1, opcodeCodeSeparator},
+	OP_CHECKSIG:      {OP_CHECKSIG, "OP_CHECKSIG", 1, opcodeCheckSig},
+	OP_CHECKMULTISIG: {OP_CHECKMULTISIG, "OP_CHECKMULTISIG", 1, opcodeCheckMultiSig},
+	OP_TXSIGHASH:     {OP_TXSIGHASH, "OP_TXSIGHASH", 1, opcodeTxSighash},
+	OP_BLOCKSIGHASH:  {OP_BLOCKSIGHASH, "OP_BLOCKSIGHASH", 1, opcodeBlockSighash},
 
 	// Reserved opcodes.
 	OP_NOP1:  {OP_NOP1, "OP_NOP1", 1, opcodeNop},
@@ -2039,101 +2039,57 @@ func opcodeCodeSeparator(op *parsedOpcode, vm *Engine) error {
 	return nil
 }
 
-// opcodeCheckSig treats the top 2 items on the stack as a public key and a
-// signature and replaces them with a bool which indicates if the signature was
-// successfully verified.
+// opcodeCheckSig treats the top 3 items on the stack as a public key,
+// a hash, and a signature and replaces them with a bool which
+// indicates if the signature was successfully verified against the
+// pubkey and the hash.
 //
-// The process of verifying a signature requires calculating a signature hash in
-// the same way the transaction signer did.  It involves hashing portions of the
-// transaction based on the hash type byte (which is the final byte of the
-// signature) and the portion of the script starting from the most recent
-// OP_CODESEPARATOR (or the beginning of the script if there are none) to the
-// end of the script (with any other OP_CODESEPARATORs removed).  Once this
-// "script hash" is calculated, the signature is checked using standard
-// cryptographic methods against the provided public key.
-//
-// Stack transformation: [... signature pubkey] -> [... bool]
+// Stack transformation: [... signature hash pubkey] -> [... bool]
 func opcodeCheckSig(op *parsedOpcode, vm *Engine) error {
 	pkBytes, err := vm.dstack.PopByteArray()
 	if err != nil {
 		return err
 	}
-
-	fullSigBytes, err := vm.dstack.PopByteArray()
-	if err != nil {
-		return err
-	}
-
-	// The signature actually needs needs to be longer than this, but at
-	// least 1 byte is needed for the hash type below.  The full length is
-	// checked depending on the script flags and upon parsing the signature.
-	if len(fullSigBytes) < 1 {
-		vm.dstack.PushBool(false)
-		return nil
-	}
-
-	// Trim off hashtype from the signature string and check if the
-	// signature and pubkey conform to the strict encoding requirements
-	// depending on the flags.
-	//
-	// NOTE: When the strict encoding flags are set, any errors in the
-	// signature or public encoding here result in an immediate script error
-	// (and thus no result bool is pushed to the data stack).  This differs
-	// from the logic below where any errors in parsing the signature is
-	// treated as the signature failure resulting in false being pushed to
-	// the data stack.  This is required because the more general script
-	// validation consensus rules do not have the new strict encoding
-	// requirements enabled by the flags.
-	hashType := bc.SigHashType(fullSigBytes[len(fullSigBytes)-1])
-	sigBytes := fullSigBytes[:len(fullSigBytes)-1]
-	if err := vm.checkHashTypeEncoding(hashType); err != nil {
-		return err
-	}
-
-	// Generate the signature hash based on the signature hash type.
-	var hash bc.Hash
-	if vm.block != nil {
-		hash = vm.block.HashForSig()
-	} else {
-		hash = vm.sigHasher.Hash(vm.txIdx, hashType)
-	}
-
 	pubkey, err := hd25519.PubFromBytes(pkBytes)
 	if err != nil {
 		return err
 	}
-	ok := ed25519.Verify(pubkey, hash[:], sigBytes)
-	vm.dstack.PushBool(ok)
+	hashBytes, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+	if len(hashBytes) != 32 {
+		return ErrBadHash
+	}
+	sigBytes, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+	vm.dstack.PushBool(ed25519.Verify(pubkey, hashBytes, sigBytes))
 	return nil
 }
 
-// opcodeCheckSigVerify is a combination of opcodeCheckSig and opcodeVerify.
-// The opcodeCheckSig function is invoked followed by opcodeVerify.  See the
-// documentation for each of those opcodes for more details.
+// opcodeCheckMultiSig treats the top item on the stack as a hash,
+// followed by an integer number of public keys, followed by that many
+// entries as raw data representing the public keys, followed by the
+// integer number of signatures, followed by that many entries as raw
+// data representing the signatures.
 //
-// Stack transformation: signature pubkey] -> [... bool] -> [...]
-func opcodeCheckSigVerify(op *parsedOpcode, vm *Engine) error {
-	err := opcodeCheckSig(op, vm)
-	if err == nil {
-		err = opcodeVerify(op, vm)
-	}
-	return err
-}
-
-// opcodeCheckMultiSig treats the top item on the stack as an integer number of
-// public keys, followed by that many entries as raw data representing the public
-// keys, followed by the integer number of signatures, followed by that many
-// entries as raw data representing the signatures.
-//
-// All of the aforementioned stack items are replaced with a bool which
-// indicates if the requisite number of signatures were successfully verified.
-//
-// See the opcodeCheckSigVerify documentation for more details about the process
-// for verifying each signature.
+// All of the aforementioned stack items are replaced with a bool
+// which indicates if the requisite number of signatures were
+// successfully verified against the hash and the public keys.
 //
 // Stack transformation:
-// [... [sig ...] numsigs [pubkey ...] numpubkeys] -> [... bool]
+// [... [sig ...] numsigs [pubkey ...] numpubkeys hash] -> [... bool]
 func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
+	hashBytes, err := vm.dstack.PopByteArray()
+	if err != nil {
+		return err
+	}
+	if len(hashBytes) != 32 {
+		return ErrBadHash
+	}
+
 	numKeys, err := vm.dstack.PopInt()
 	if err != nil {
 		return err
@@ -2207,22 +2163,11 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 			continue
 		}
 
-		// Generate the signature hash based on the signature hash type.
-		var hash bc.Hash
-		if vm.block != nil {
-			hash = vm.block.HashForSig()
-		} else {
-			// Split the signature into hash type and signature components.
-			hashType := bc.SigHashType(signature[len(signature)-1])
-			signature = signature[:len(signature)-1]
-			hash = vm.sigHasher.Hash(vm.txIdx, hashType)
-		}
-
 		pubkey, err := hd25519.PubFromBytes(pubKeyBytes)
 		if err != nil {
 			return err
 		}
-		if ed25519.Verify(pubkey, hash[:], signature) {
+		if ed25519.Verify(pubkey, hashBytes, signature) {
 			// PubKey verified, move on to the next signature.
 			signatureIdx++
 			numSignatures--
@@ -2233,21 +2178,41 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 	return nil
 }
 
-// opcodeCheckMultiSigVerify is a combination of opcodeCheckMultiSig and
-// opcodeVerify.  The opcodeCheckMultiSig is invoked followed by opcodeVerify.
-// See the documentation for each of those opcodes for more details.
-//
-// Stack transformation:
-// [... [sig ...] numsigs [pubkey ...] numpubkeys] -> [... bool] -> [...]
-func opcodeCheckMultiSigVerify(op *parsedOpcode, vm *Engine) error {
-	err := opcodeCheckMultiSig(op, vm)
-	if err == nil {
-		err = opcodeVerify(op, vm)
+// opcodeTxSighash pops a hash type off the stack (1, 2, 3, or 80, see
+// https://github.com/chain/cp1/blob/main/spec.md#transaction-signature-hash-type),
+// uses it to compute the hash of the current transaction, and places
+// that onto the stack. Fails if executed in a block context.
+// HASHTYPE -> HASH
+func opcodeTxSighash(op *parsedOpcode, vm *Engine) error {
+	if vm.tx == nil {
+		return ErrBlockContext
 	}
-	return err
+	hashType, err := vm.dstack.PopInt()
+	if err != nil {
+		return err
+	}
+	if hashType < 0 || hashType > 255 {
+		return ErrUnknownHashType
+	}
+	switch bc.SigHashType(hashType) {
+	case bc.SigHashAll, bc.SigHashNone, bc.SigHashSingle, bc.SigHashAnyOneCanPay:
+		hash := vm.sigHasher.Hash(vm.txIdx, bc.SigHashType(hashType))
+		vm.dstack.PushByteArray(hash[:])
+		return nil
+	}
+	return ErrUnknownHashType
 }
 
-// P2C extensions
+// opcodeBlockSighash places the hash of the current block on the
+// stack.
+func opcodeBlockSighash(op *parsedOpcode, vm *Engine) error {
+	if vm.block == nil {
+		return ErrTxContext
+	}
+	hash := vm.block.HashForSig()
+	vm.dstack.PushByteArray(hash[:])
+	return nil
+}
 
 // Pop data off the stack and return it as an AssetID, if
 // possible.

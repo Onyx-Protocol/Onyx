@@ -22,7 +22,7 @@ func Dest(t testing.TB) *TestDest {
 		testutil.FatalErr(t, err)
 	}
 
-	pkScript, redeem, err := txscript.Scripts([]ed25519.PublicKey{pub}, 1)
+	pkScript, redeem, err := txscript.TxScripts([]ed25519.PublicKey{pub}, 1)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -37,8 +37,7 @@ func Dest(t testing.TB) *TestDest {
 func (d *TestDest) Sign(t testing.TB, tx *bc.TxData, index int) {
 	hash := tx.HashForSig(index, bc.SigHashAll)
 	sig := ed25519.Sign(d.PrivKey, hash[:])
-	der := append(sig, byte(bc.SigHashAll))
-	tx.Inputs[index].InputWitness = [][]byte{der, d.RedeemScript}
+	tx.Inputs[index].InputWitness = [][]byte{sig, d.RedeemScript}
 }
 
 type TestAsset struct {

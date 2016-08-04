@@ -341,7 +341,7 @@ func AddSignaturesToBlock(b *bc.Block, signatures [][]byte) error {
 // GenerateBlockScript generates a predicate script
 // requiring nSigs signatures from the given keys.
 func GenerateBlockScript(keys []ed25519.PublicKey, nSigs int) ([]byte, error) {
-	return txscript.MultiSigScript(keys, nSigs)
+	return txscript.BlockMultiSigScript(keys, nSigs)
 }
 
 // UpsertGenesisBlock creates a genesis block iff it does not exist.

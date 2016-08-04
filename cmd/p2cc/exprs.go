@@ -186,7 +186,7 @@ var calls = []struct {
 	{"size", 1, numType},
 	{"min", 2, numType},
 	{"max", 2, numType},
-	{"checksig", 2, boolType},
+	{"checksig", 3, boolType},
 	{"cat", 2, bytesType},
 	{"catpushdata", 2, bytesType},
 	{"left", 2, bytesType},

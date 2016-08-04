@@ -67,41 +67,6 @@ func (t ScriptClass) String() string {
 	return scriptClassToName[t]
 }
 
-func IsMultiSig(script []byte) bool {
-	pops, err := parseScript(script)
-	if err != nil {
-		return false
-	}
-	return isMultiSig(pops)
-}
-
-// isMultiSig returns true if the passed script is a multisig transaction, false
-// otherwise.
-func isMultiSig(pops []parsedOpcode) bool {
-	// The absolute minimum is 1 pubkey:
-	// OP_0/OP_1-16 <pubkey> OP_1 OP_CHECKMULTISIG
-	l := len(pops)
-	if l < 4 {
-		return false
-	}
-	if !isSmallInt(pops[0].opcode) {
-		return false
-	}
-	if !isSmallInt(pops[l-2].opcode) {
-		return false
-	}
-	if pops[l-1].opcode.value != OP_CHECKMULTISIG {
-		return false
-	}
-	for _, pop := range pops[1 : l-2] {
-		// Valid pubkeys are either 33 or 65 bytes.
-		if len(pop.data) != 33 && len(pop.data) != 65 {
-			return false
-		}
-	}
-	return true
-}
-
 // CalcMultiSigStats returns the number of public keys and signatures from
 // a multi-signature transaction script.  The passed script MUST already be
 // known to be a multi-signature script.
@@ -127,37 +92,72 @@ func CalcMultiSigStats(script []byte) (int, int, error) {
 	return numPubKeys, numSigs, nil
 }
 
-// MultiSigScript returns a valid script for a multisignature redemption where
-// nrequired of the keys in pubkeys are required to have signed the transaction
-// for success.  An ErrBadNumRequired will be returned if nrequired is larger
-// than the number of keys provided.
-func MultiSigScript(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
+// TxMultiSigScript returns a valid script for a multisignature
+// redemption where nrequired of the keys in pubkeys are required to
+// have signed the transaction for success.  An ErrBadNumRequired will
+// be returned if nrequired is larger than the number of keys
+// provided.
+// The result is: <nrequired> <pubkey>... <npubkeys> 1 TXSIGHASH CHECKMULTISIG
+func TxMultiSigScript(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
+	return doMultiSigScript(pubkeys, nrequired, false)
+}
+
+// BlockMultiSigScript is like TxMultiSigScript but for blocks.
+// The result is: <nrequired> <pubkey>... <npubkeys> BLOCKSIGHASH CHECKMULTISIG
+func BlockMultiSigScript(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
+	return doMultiSigScript(pubkeys, nrequired, true)
+}
+
+func doMultiSigScript(pubkeys []ed25519.PublicKey, nrequired int, isBlock bool) ([]byte, error) {
 	if len(pubkeys) < nrequired {
 		return nil, ErrBadNumRequired
 	}
-
 	builder := NewScriptBuilder().AddInt64(int64(nrequired))
 	for _, key := range pubkeys {
 		builder.AddData(hd25519.PubBytes(key))
 	}
 	builder.AddInt64(int64(len(pubkeys)))
+	if isBlock {
+		builder.AddOp(OP_BLOCKSIGHASH)
+	} else {
+		builder.AddInt64(1).AddOp(OP_TXSIGHASH)
+	}
 	builder.AddOp(OP_CHECKMULTISIG)
-
 	return builder.Script()
 }
 
-// ParseMultiSigScript is the inverse of MultiSigScript().  It parses
+// ParseTxMultiSigScript is the inverse of TxMultiSigScript().  It parses
 // the script to produce the list of PublicKeys and nrequired values
 // encoded within.
-func ParseMultiSigScript(script []byte) ([]ed25519.PublicKey, int, error) {
+func ParseTxMultiSigScript(script []byte) ([]ed25519.PublicKey, int, error) {
+	return doParseMultiSigScript(script, false)
+}
+
+func ParseBlockMultiSigScript(script []byte) ([]ed25519.PublicKey, int, error) {
+	return doParseMultiSigScript(script, true)
+}
+
+func doParseMultiSigScript(script []byte, isBlock bool) ([]ed25519.PublicKey, int, error) {
 	pops, err := parseScript(script)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	if len(pops) < 4 {
+	var minLen int
+	if isBlock {
+		minLen = 4
+	} else {
+		minLen = 5
+	}
+
+	if len(pops) < minLen {
 		return nil, 0, ErrStackShortScript // overloading this error code
 	}
+
+	if pops[len(pops)-1].opcode.value != OP_CHECKMULTISIG {
+		return nil, 0, errors.Wrap(ErrScriptFormat, "no OP_CHECKMULTISIG")
+	}
+
 	nrequiredOp := pops[0].opcode
 	if !isSmallInt(nrequiredOp) {
 		return nil, 0, errors.Wrap(ErrScriptFormat, "nrequired not small int")
@@ -166,21 +166,25 @@ func ParseMultiSigScript(script []byte) ([]ed25519.PublicKey, int, error) {
 	if nrequired < 1 {
 		return nil, 0, errors.Wrap(ErrScriptFormat, "nrequired < 1")
 	}
-	if pops[len(pops)-1].opcode.value != OP_CHECKMULTISIG {
-		return nil, 0, errors.Wrap(ErrScriptFormat, "no OP_CHECKMULTISIG")
+
+	var npubkeysOpIndex int
+	if isBlock {
+		npubkeysOpIndex = len(pops) - 3
+	} else {
+		npubkeysOpIndex = len(pops) - 4
 	}
-	npubkeysOp := pops[len(pops)-2].opcode
+	npubkeysOp := pops[npubkeysOpIndex].opcode
 	if !isSmallInt(npubkeysOp) {
 		return nil, 0, errors.Wrap(ErrScriptFormat, "npubkeys not small int")
 	}
 	npubkeys := asSmallInt(npubkeysOp)
-	if npubkeys != len(pops)-3 {
+	if npubkeys != len(pops)-minLen {
 		return nil, 0, errors.Wrap(ErrScriptFormat, "npubkeys has wrong value")
 	}
 	if nrequired > npubkeys {
 		return nil, 0, errors.Wrap(ErrScriptFormat, "nrequired > npubkeys")
 	}
-	pubkeyPops := pops[1 : len(pops)-2]
+	pubkeyPops := pops[1:npubkeysOpIndex]
 	if !isPushOnly(pubkeyPops) {
 		return nil, 0, errors.Wrap(ErrScriptFormat, "not push-only")
 	}
@@ -199,7 +203,7 @@ func ParseMultiSigScript(script []byte) ([]ed25519.PublicKey, int, error) {
 // script. Result is 1 unless script parses as a multisig script, in
 // which case it's the number of sigs required by that.
 func SigsRequired(script []byte) int {
-	_, nsigs, err := ParseMultiSigScript(script)
+	_, nsigs, err := ParseTxMultiSigScript(script)
 	if err == nil {
 		return nsigs
 	}

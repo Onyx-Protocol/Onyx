@@ -8,7 +8,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/txscript"
 	"chain/crypto/ed25519/hd25519"
 	"chain/errors"
 )
@@ -178,17 +177,6 @@ func InputSigs(keys []*hd25519.XPub, path []uint32) (sigs []*Signature) {
 		})
 	}
 	return sigs
-}
-
-func getSigsRequired(script []byte) (sigsReqd int, err error) {
-	sigsReqd = 1
-	if txscript.IsMultiSig(script) {
-		_, sigsReqd, err = txscript.CalcMultiSigStats(script)
-		if err != nil {
-			return 0, err
-		}
-	}
-	return sigsReqd, nil
 }
 
 func Sign(ctx context.Context, tpl *Template, signFn func(context.Context, *SigScriptComponent, *Signature) ([]byte, error)) error {

@@ -181,4 +181,20 @@ var (
 	// ErrBadNumRequired is returned from MultiSigScript when nrequired is
 	// larger than the number of provided public keys.
 	ErrBadNumRequired = errors.New("more signatures required than keys present")
+
+	// ErrBadHash is when CHECKSIG or CHECKMULTISIG encounters a hash
+	// with length other than 32.
+	ErrBadHash = errors.New("bad hash")
+
+	// ErrBlockContext is when a transaction-specific opcode is executed
+	// in block context.
+	ErrBlockContext = errors.New("block context")
+
+	// ErrUnknownHashType is when TXHASHSIG gets a value that's not a
+	// legal bc.SigHashType.
+	ErrUnknownHashType = errors.New("unknown hash type")
+
+	// ErrTxContext is when a block-specific opcode is executed in
+	// transaction context.
+	ErrTxContext = errors.New("transaction context")
 )

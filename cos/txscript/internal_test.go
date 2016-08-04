@@ -3453,22 +3453,6 @@ func TestUnparsingInvalidOpcodes(t *testing.T) {
 			expectedErr: ErrStackInvalidOpcode,
 		},
 		{
-			name: "OP_CHECKSIGVERIFY",
-			pop: &parsedOpcode{
-				opcode: &opcodeArray[OP_CHECKSIGVERIFY],
-				data:   nil,
-			},
-			expectedErr: nil,
-		},
-		{
-			name: "OP_CHECKSIGVERIFY long",
-			pop: &parsedOpcode{
-				opcode: &opcodeArray[OP_CHECKSIGVERIFY],
-				data:   make([]byte, 1),
-			},
-			expectedErr: ErrStackInvalidOpcode,
-		},
-		{
 			name: "OP_CHECKMULTISIG",
 			pop: &parsedOpcode{
 				opcode: &opcodeArray[OP_CHECKMULTISIG],
@@ -3485,17 +3469,29 @@ func TestUnparsingInvalidOpcodes(t *testing.T) {
 			expectedErr: ErrStackInvalidOpcode,
 		},
 		{
-			name: "OP_CHECKMULTISIGVERIFY",
+			name: "OP_TXSIGHASH",
 			pop: &parsedOpcode{
-				opcode: &opcodeArray[OP_CHECKMULTISIGVERIFY],
-				data:   nil,
+				opcode: &opcodeArray[OP_TXSIGHASH],
 			},
-			expectedErr: nil,
 		},
 		{
-			name: "OP_CHECKMULTISIGVERIFY long",
+			name: "OP_TXSIGHASH long",
 			pop: &parsedOpcode{
-				opcode: &opcodeArray[OP_CHECKMULTISIGVERIFY],
+				opcode: &opcodeArray[OP_TXSIGHASH],
+				data:   make([]byte, 1),
+			},
+			expectedErr: ErrStackInvalidOpcode,
+		},
+		{
+			name: "OP_BLOCKSIGHASH",
+			pop: &parsedOpcode{
+				opcode: &opcodeArray[OP_BLOCKSIGHASH],
+			},
+		},
+		{
+			name: "OP_BLOCKSIGHASH long",
+			pop: &parsedOpcode{
+				opcode: &opcodeArray[OP_BLOCKSIGHASH],
 				data:   make([]byte, 1),
 			},
 			expectedErr: ErrStackInvalidOpcode,

@@ -116,7 +116,6 @@ func TestScriptInvalidTests(t *testing.T) {
 			return
 		}
 		if !IsPushOnlyScript(scriptSig) {
-			t.Logf("%s (%d): non-pushdata-only sigscript, skipping", name, testNum)
 			return
 		}
 		witnessData, err := PushedData(scriptSig)
@@ -159,7 +158,6 @@ func TestScriptValidTests(t *testing.T) {
 			return
 		}
 		if !IsPushOnlyScript(scriptSig) {
-			t.Logf("%s (%d): non-pushdata-only sigscript, skipping", name, testNum)
 			return
 		}
 		witnessData, err := PushedData(scriptSig)
@@ -204,7 +202,6 @@ func TestP2CValidTests(t *testing.T) {
 			return
 		}
 		if len(scriptPubKey) == 0 {
-			t.Logf("%s (%d): skipping", name, testNum)
 			return
 		}
 
@@ -250,7 +247,6 @@ func TestP2CInvalidTests(t *testing.T) {
 			return
 		}
 		if scriptPubKey == nil {
-			t.Logf("%s (%d): skipping", name, testNum)
 			return
 		}
 
@@ -328,7 +324,6 @@ func prepareP2CTest(t *testing.T, test []string, name string, testNum int) ([][]
 		return nil, nil, err
 	}
 	if !IsPushOnlyScript(scriptSig) {
-		t.Logf("%s (%d): non-pushdata-only sigscript, skipping", name, testNum)
 		return nil, nil, nil
 	}
 	scriptSig = AddDataToScript(scriptSig, contractScript)

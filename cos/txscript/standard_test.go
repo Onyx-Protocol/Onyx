@@ -78,7 +78,7 @@ func TestMultiSigScript(t *testing.T) {
 
 	t.Logf("Running %d tests", len(tests))
 	for i, test := range tests {
-		script, err := txscript.MultiSigScript(test.keys, test.nrequired)
+		script, err := txscript.TxMultiSigScript(test.keys, test.nrequired)
 		if err != test.err {
 			t.Errorf("MultiSigScript #%d unexpected error - "+
 				"got %v, want %v", i, err, test.err)
@@ -235,7 +235,7 @@ var scriptClassTests = []scriptClassTest{
 		// Multisig but with multisigverify.
 		name: "strange 4",
 		script: "1 DATA_33 0x0232abdc893e7f0631364d7fd01cb33d24da4532" +
-			"9a00357b3a7886211ab414d55a 1 CHECKMULTISIGVERIFY",
+			"9a00357b3a7886211ab414d55a 1 CHECKMULTISIG VERIFY",
 		class: txscript.NonStandardTy,
 	},
 	{

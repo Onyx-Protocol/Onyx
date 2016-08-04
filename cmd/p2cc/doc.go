@@ -88,7 +88,7 @@ Function calls are:
   size(bytes)
   min(num1, num2)
   max(num1, num2)
-  checksig(signature, pubkey)
+  checksig(signature, hash, pubkey)
   cat(bytes1, bytes2)
   catpushdata(bytes1, bytes2)
   left(bytes, num)

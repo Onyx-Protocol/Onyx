@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/signers"
+	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/testutil"
@@ -34,10 +35,9 @@ func TestCreateControlProgram(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	want := []byte{
-		118, 170, 32, 123, 19, 122, 245, 23, 227, 191, 180, 205, 25, 60,
-		39, 118, 189, 113, 236, 68, 161, 78, 45, 172, 155, 195, 153, 145,
-		125, 247, 89, 148, 224, 23, 127, 136, 0, 192,
+	want, err := txscript.ParseScriptString("OP_DUP OP_SHA3 OP_DATA_32 0x4a3663784142075fc63c53bcbbe4745e82de6a1b6142337f7673c7eb8e8a18d9 OP_EQUALVERIFY 0 OP_CHECKPREDICATE")
+	if err != nil {
+		testutil.FatalErr(t, err)
 	}
 
 	if !bytes.Equal(got, want) {

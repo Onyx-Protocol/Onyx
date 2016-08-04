@@ -57,7 +57,7 @@ func CreateControlProgram(ctx context.Context, accountID string) ([]byte, error)
 	path := signers.Path(account, signers.AccountKeySpace, idx)
 	derivedXPubs := hd25519.DeriveXPubs(account.XPubs, path)
 	derivedPKs := hd25519.XPubKeys(derivedXPubs)
-	control, redeem, err := txscript.Scripts(derivedPKs, account.Quorum)
+	control, redeem, err := txscript.TxScripts(derivedPKs, account.Quorum)
 	if err != nil {
 		return nil, err
 	}
