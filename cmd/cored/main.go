@@ -224,6 +224,13 @@ func main() {
 	// otherwise there's a data race within cos.FC.
 	go leader.Run(db, func(ctx context.Context) {
 		ctx = pg.NewContext(ctx, db)
+
+		// Must setup the indexer before generating or fetching blocks.
+		err := indexer.BeginIndexing(ctx)
+		if err != nil {
+			chainlog.Fatal(ctx, err)
+		}
+
 		if *isManager {
 			go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
 		}

@@ -1,6 +1,7 @@
 package query
 
 import (
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -8,6 +9,11 @@ import (
 	"chain/core/query/cql"
 	"chain/database/pg"
 	"chain/errors"
+	chainlog "chain/log"
+)
+
+const (
+	indexRefreshPeriod = time.Minute
 )
 
 var (
@@ -22,7 +28,35 @@ func NewIndexer(db pg.DB) *Indexer {
 
 // Indexer creates, updates and queries against CQL indexes.
 type Indexer struct {
-	db pg.DB
+	db      pg.DB
+	mu      sync.Mutex // protects indexes
+	indexes map[string]*Index
+}
+
+// BeginIndexing must be called before blocks are processed to refresh
+// the indexes.
+func (i *Indexer) BeginIndexing(ctx context.Context) error {
+	err := i.refreshIndexes(ctx)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		ticker := time.NewTicker(indexRefreshPeriod)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				err := i.refreshIndexes(ctx)
+				if err != nil {
+					chainlog.Error(ctx, err)
+				}
+			}
+		}
+	}()
+	return nil
 }
 
 // Index represents a transaction index on a particular CQL query.
@@ -80,6 +114,44 @@ func (i *Indexer) ListIndexes(ctx context.Context) ([]*Index, error) {
 		}
 	}
 	return indexes, nil
+}
+
+func (i *Indexer) isIndexActive(id string) bool {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	_, ok := i.indexes[id]
+	return ok
+}
+
+func (i *Indexer) setupIndex(idx *Index) (err error) {
+	idx.Query, err = cql.Parse(idx.rawQuery)
+	if err != nil {
+		return errors.Wrap(err, "parsing raw query for index", idx.ID)
+	}
+
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	i.indexes[idx.ID] = idx
+	return nil
+}
+
+func (i *Indexer) refreshIndexes(ctx context.Context) error {
+	indexes, err := i.getIndexes(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, index := range indexes {
+		if i.isIndexActive(index.ID) {
+			continue
+		}
+
+		err := i.setupIndex(index)
+		if err != nil {
+			chainlog.Fatal(ctx, err)
+		}
+	}
+	return nil
 }
 
 // getIndexes queries the database for all active indexes.
