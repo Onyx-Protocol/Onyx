@@ -90,27 +90,30 @@ type api struct {
 	indexer   *query.Indexer
 }
 
-// Used as return a object for list* handlers
+// Used as a request object for api queries
+type requestQuery struct {
+	Cursor    string   `json:"cursor"`
+	Index     string   `json:"index,omitempty"`
+	StartTime uint64   `json:"start_time,omitempty"`
+	EndTime   uint64   `json:"end_time,omitempty"`
+	Params    []string `json:"params,omitempty"`
+}
+
+// Used as a response object for api queries
 type page struct {
 	Items    []interface{} `json:"items"`
 	LastPage bool          `json:"last_page"`
-	Query    struct {
-		Cursor    string   `json:"cursor"`
-		Index     string   `json:"index,omitempty"`
-		StartTime uint64   `json:"start_time,omitempty"`
-		EndTime   uint64   `json:"end_time,omitempty"`
-		Params    []string `json:"params,omitempty"`
-	} `json:"query"`
+	Query    requestQuery  `json:"query"`
 }
 
 func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
 	h.HandleFunc("POST", "/v3/invitations", createInvitation)
-	h.HandleFunc("GET", "/v3/accounts", listAccounts)
-	h.HandleFunc("POST", "/v3/accounts", createAccount)
+	h.HandleFunc("POST", "/list-accounts", listAccounts)
+	h.HandleFunc("POST", "/create-account", createAccount)
+	h.HandleFunc("POST", "/get-account", getAccount)
 	h.HandleFunc("GET", "/v3/assets", a.listAssets)
 	h.HandleFunc("POST", "/v3/assets", a.defineAsset)
-	h.HandleFunc("GET", "/v3/accounts/:accountID", getAccount)
 	h.HandleFunc("POST", "/v3/accounts/:accountID/control-programs", createAccountControlProgram)
 	h.HandleFunc("DELETE", "/v3/accounts/:accountID", archiveAccount)
 	h.HandleFunc("GET", "/v3/assets/:assetID", a.getAsset)

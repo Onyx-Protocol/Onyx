@@ -7,38 +7,34 @@ import (
 
 	"chain/core/account"
 	"chain/metrics"
-	"chain/net/http/httpjson"
 )
 
-// GET /v3/accounts
-func listAccounts(ctx context.Context) (interface{}, error) {
-	prev, limit, err := getPageData(ctx, defAccountPageSize)
+// POST /list-accounts
+func listAccounts(ctx context.Context, in requestQuery) (result page, err error) {
+	limit := defAccountPageSize
+
+	accounts, cursor, err := account.List(ctx, in.Cursor, limit)
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 
-	accounts, last, err := account.List(ctx, prev, limit)
-	if err != nil {
-		return nil, err
+	for _, account := range accounts {
+		result.Items = append(result.Items, account)
 	}
-
-	ret := map[string]interface{}{
-		"last":     last,
-		"accounts": httpjson.Array(accounts),
-	}
-	return ret, nil
+	result.LastPage = len(accounts) < limit
+	result.Query.Cursor = cursor
+	return result, nil
 }
 
-// POST /v3/accounts
-// TODO(jackson): ClientToken should become required once all SDKs
-// have been updated.
+// POST /create-account
+// TODO(boymanjor): Refactor for batch creation
 func createAccount(ctx context.Context, in struct {
 	XPubs  []string
 	Quorum int
 	Tags   map[string]interface{}
 
 	// ClientToken is the application's unique token for the account. Every account
-	// should have a unique client token. The client token s used to ensure
+	// should have a unique client token. The client token is used to ensure
 	// idempotency of create account requests. Duplicate create account requests
 	// with the same client_token will only create one account.
 	ClientToken *string `json:"client_token"`
@@ -48,9 +44,10 @@ func createAccount(ctx context.Context, in struct {
 	return account.Create(ctx, in.XPubs, in.Quorum, in.Tags, in.ClientToken)
 }
 
-// GET /v3/accounts/:accountID
-func getAccount(ctx context.Context, accountID string) (interface{}, error) {
-	return account.Find(ctx, accountID)
+// POST /get-account
+// TODO(boymanjor): Refactor for batch retrieval
+func getAccount(ctx context.Context, in struct{ ID string }) (interface{}, error) {
+	return account.Find(ctx, in.ID)
 }
 
 // DELETE /v3/accounts/:accountID

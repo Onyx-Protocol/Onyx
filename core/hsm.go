@@ -27,16 +27,16 @@ func (a *api) mockhsmListKeys(ctx context.Context, in struct{ Cursor string }) (
 	if err != nil {
 		return result, err
 	}
-	result.LastPage = len(xpubs) < limit
 
 	for _, xpub := range xpubs {
 		item := struct {
-			XPub json.HexBytes `json:"xpub"`
+			XPub *hd25519.XPub `json:"xpub"`
 		}{
-			xpub.Bytes(),
+			xpub,
 		}
 		result.Items = append(result.Items, item)
 	}
+	result.LastPage = len(xpubs) < limit
 	result.Query.Cursor = cursor
 	return result, nil
 }

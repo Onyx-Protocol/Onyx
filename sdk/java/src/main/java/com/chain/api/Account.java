@@ -5,10 +5,7 @@ import com.chain.http.Context;
 import com.chain.signing.KeyHandle;
 import com.google.gson.annotations.SerializedName;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A single Account on the Chain Core, capable of spending or receiving assets in a transaction
@@ -27,13 +24,16 @@ public class Account {
     /**
      * The list of public keys attached to the account
      */
-    @SerializedName("xpubs")
     public List<String> xpubs;
 
     /**
      * List of user-specified tags on the object
      */
-    public List<String> tags;
+    public Map<String, Object> tags;
+
+    /**
+     *
+     */
 
     /**
      * A single page of Account objects returned from a search query, with a pointer to the next page of results
@@ -71,15 +71,17 @@ public class Account {
         private String id;
         private int quorum;
         private List<String> xpubs;
-        private List<String> tags;
+        private Map<String, Object> tags;
+        @SerializedName("client_token")
+        private String clientToken;
 
         public Builder() {
             this.xpubs = new ArrayList<>();
-            this.tags = new ArrayList<>();
         }
 
         public Account create(Context ctx)
         throws ChainException {
+            this.clientToken = UUID.randomUUID().toString();
             return ctx.request("create-account", this, Account.class);
         }
 
@@ -93,12 +95,12 @@ public class Account {
             return this;
         }
 
-        public Builder addKey(KeyHandle key) {
+        public Builder addXpub(KeyHandle key) {
             this.xpubs.add(key.getXPub());
             return this;
         }
 
-        public Builder setKey(List<KeyHandle> keys) {
+        public Builder setXpubs(List<KeyHandle> keys) {
             this.xpubs = new ArrayList<>();
             for (KeyHandle key : keys) {
                 this.xpubs.add(key.getXPub());
@@ -106,12 +108,7 @@ public class Account {
             return this;
         }
 
-        public Builder addTag(String tag) {
-            this.tags.add(tag);
-            return this;
-        }
-
-        public Builder setTags(List<String> tags) {
+        public Builder setTags(Map<String, Object> tags) {
             this.tags = tags;
             return this;
         }

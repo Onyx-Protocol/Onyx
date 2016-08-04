@@ -22,6 +22,5 @@ public class KeyHandleTest extends BaseTest {
     }
 
     @Test public void queryList() throws Exception {
-
     }
 }

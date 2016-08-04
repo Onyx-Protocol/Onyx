@@ -32,8 +32,10 @@ public class KeyHandle {
         public Page next(Context ctx)
         throws ChainException {
             Page page = ctx.request("list-keys", this.queryPointer, Page.class);
-            for (KeyHandle key : page.items) {
-                key.setHsmUrl(ctx.getUrl());
+            if (page.items != null) {
+                for (KeyHandle key : page.items) {
+                    key.setHsmUrl(ctx.getUrl());
+                }
             }
             return page;
         }
@@ -43,8 +45,10 @@ public class KeyHandle {
         public Page search(Context ctx)
         throws ChainException {
             Page page = ctx.request("list-keys", this.queryPointer, Page.class);
-            for (KeyHandle key : page.items) {
-                key.setHsmUrl(ctx.getUrl());
+            if (page.items != null) {
+                for (KeyHandle key : page.items) {
+                    key.setHsmUrl(ctx.getUrl());
+                }
             }
             return page;
         }

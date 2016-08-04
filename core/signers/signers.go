@@ -110,6 +110,7 @@ func Create(ctx context.Context, typ string, xpubs []string, quorum int, tags ma
 		Type:     typ,
 		XPubs:    keys,
 		Quorum:   quorum,
+		Tags:     tags,
 		keyIndex: keyIndex,
 	}, nil
 }
@@ -234,7 +235,7 @@ func List(ctx context.Context, typ, prev string, limit int) ([]*Signer, string, 
 			}
 
 			var tags map[string]interface{}
-			if len(tags) > 0 {
+			if len(tagBytes) > 0 {
 				err := json.Unmarshal(tagBytes, &tags)
 				if err != nil {
 					return errors.Wrap(err)
