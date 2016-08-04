@@ -20,16 +20,12 @@ var binaryOps = map[string]*binaryOp{
 }
 
 func applyOr(lv, rv value) value {
-	if !lv.is(Bool) || !rv.is(Bool) {
-		panic("OR requires boolean operands")
-	}
+	// non-bool operands will have empty sets
 	return value{t: Bool, set: union(lv.set, rv.set)}
 }
 
 func applyAnd(lv, rv value) value {
-	if !lv.is(Bool) || !rv.is(Bool) {
-		panic("AND requires boolean operands")
-	}
+	// non-bool operands will have empty sets
 	return value{t: Bool, set: intersection(lv.set, rv.set)}
 }
 
@@ -43,7 +39,7 @@ func applyLessThan(lv, rv value) value {
 	if lv.is(String) && rv.is(String) {
 		return value{t: Bool, set: Set{Invert: lv.str < rv.str}}
 	}
-	panic("inequality comparison requires scalar operands")
+	return value{t: Bool, set: Set{}} // type error; return false
 }
 
 func applyLessThanEqual(lv, rv value) value {
@@ -56,7 +52,7 @@ func applyLessThanEqual(lv, rv value) value {
 	if lv.is(String) && rv.is(String) {
 		return value{t: Bool, set: Set{Invert: lv.str <= rv.str}}
 	}
-	panic("inequality comparison requires scalar operands")
+	return value{t: Bool, set: Set{}} // type error; return false
 }
 
 func applyGreaterThan(lv, rv value) value {
@@ -100,9 +96,9 @@ func applyEqual(lv, rv value) value {
 	case lv.is(Any) && rv.is(Any):
 		panic("placeholders cannot be compared")
 	case lv.is(Object) && rv.is(Object):
-		panic("objects cannot be compared with comparison operators")
+		set = Set{} // objects are never equal
 	default:
-		panic("mismatched types for comparison operator")
+		set = Set{} // different types are never equal
 	}
 	return value{t: Bool, set: set}
 }

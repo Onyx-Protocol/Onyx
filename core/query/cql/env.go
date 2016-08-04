@@ -12,7 +12,8 @@ type mapEnv map[string]interface{}
 func (m mapEnv) Get(name string) value {
 	val, ok := m[name]
 	if !ok {
-		panic("unknown attribute `" + name + "`")
+		// field doesn't exist; return false
+		return value{t: Bool, set: Set{}}
 	}
 
 	switch v := val.(type) {
@@ -27,6 +28,8 @@ func (m mapEnv) Get(name string) value {
 		return value{t: Integer, integer: int(v)}
 	case map[string]interface{}:
 		return value{t: Object, obj: v}
+	case []interface{}:
+		return value{t: Bool, set: Set{}}
 	default:
 		panic(fmt.Errorf("invalid type for attribute %q: %T", name, v))
 	}

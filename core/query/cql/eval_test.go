@@ -26,6 +26,24 @@ func TestEval(t *testing.T) {
 			expected: value{t: Bool, set: Set{}},
 		},
 		{
+			query:    `1 OR 'world'`,
+			expected: value{t: Bool, set: Set{}},
+		},
+		{
+			query:    `1 OR is_issuance`,
+			data:     `{"is_issuance": true}`,
+			expected: value{t: Bool, set: Set{Invert: true}},
+		},
+		{
+			query:    `1 AND is_issuance`,
+			data:     `{"is_issuance": true}`,
+			expected: value{t: Bool, set: Set{}},
+		},
+		{
+			query:    `1 <= '1'`,
+			expected: value{t: Bool, set: Set{}},
+		},
+		{
 			query:    `0xFF = 255`,
 			expected: value{t: Bool, set: Set{Invert: true}},
 		},
@@ -98,6 +116,10 @@ func TestEval(t *testing.T) {
 			expected: value{t: Bool, set: Set{}},
 		},
 		{
+			query:    `1 = 'hello'`,
+			expected: value{t: Bool, set: Set{}}, // type error; should be false
+		},
+		{
 			query:    `issuance`,
 			data:     `{"issuance": true}`,
 			expected: value{t: Bool, set: Set{Invert: true}},
@@ -108,10 +130,17 @@ func TestEval(t *testing.T) {
 			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
+			query: `inputs(issuance)`,
+			data: `{
+				"inputs": [{"transfer": true}]
+			}`,
+			expected: value{t: Bool, set: Set{}}, // false, but no panic
+		},
+		{
 			query: `inputs(account_tags.domestic AND account_tags.revolving)`,
 			data: `{
 				"inputs": [
-					{ "account_tags": {"domestic": true, "priority_client": true, "revolving": false} },
+					{ "account_tags": {"domestic": true, "priority_client": true} },
 					{ "account_tags": {"domestic": true, "revolving": true} }
 				]
 			}`,

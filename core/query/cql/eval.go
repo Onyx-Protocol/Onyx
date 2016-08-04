@@ -82,7 +82,8 @@ func eval(env environment, expr expr) value {
 	case notExpr:
 		v := eval(env, e.inner)
 		if !v.is(Bool) {
-			panic("NOT requires a boolean operand")
+			// type error; return false
+			return value{t: Bool, set: Set{}}
 		}
 		return value{t: Bool, set: complement(v.set)}
 	case binaryExpr:
@@ -111,7 +112,8 @@ func eval(env environment, expr expr) value {
 		for _, subenv := range subenvs {
 			v := eval(subenv, e.expr)
 			if !v.is(Bool) {
-				panic(e.ident + "(...) body must have type bool")
+				// type error; return false
+				return value{t: Bool, set: Set{}}
 			}
 			set = union(set, v.set)
 		}
@@ -119,7 +121,8 @@ func eval(env environment, expr expr) value {
 	case selectorExpr:
 		v := eval(env, e.objExpr)
 		if !v.is(Object) {
-			panic("selector `.` can only be used on objects")
+			// type error; return false
+			return value{t: Bool, set: Set{}}
 		}
 
 		m := mapEnv(v.obj)
