@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"time"
 
+	"golang.org/x/crypto/sha3"
 	"golang.org/x/net/context"
 
 	"chain/core/signers"
 	"chain/cos/bc"
 	"chain/cos/txscript"
+	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
@@ -56,7 +58,7 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 
 	derivedXPubs := hd25519.DeriveXPubs(assetSigner.XPubs, path)
 	derivedPKs := hd25519.XPubKeys(derivedXPubs)
-	issuanceProgram, redeem, err := txscript.Scripts(derivedPKs, assetSigner.Quorum)
+	issuanceProgram, redeem, err := scripts(derivedPKs, assetSigner.Quorum, def)
 	if err != nil {
 		return nil, err
 	}
@@ -288,4 +290,30 @@ func nextIndex(ctx context.Context) ([]uint32, error) {
 		return nil, errors.WithDetailf(err, "get key info")
 	}
 	return idx, nil
+}
+
+func scripts(pubkeys []ed25519.PublicKey, nrequired int, definition []byte) ([]byte, []byte, error) {
+	redeem, err := txscript.MultiSigScript(pubkeys, nrequired)
+	if err != nil {
+		return nil, nil, err
+	}
+	return redeemToPkScriptWithDefinition(redeem, definition), redeem, nil
+}
+
+// redeemToPkScriptWithDefinition takes a redeem script
+// and calculates its corresponding issuance pk script, including
+// the asset definition.
+func redeemToPkScriptWithDefinition(redeem, definition []byte) []byte {
+	hash := sha3.Sum256(redeem)
+	builder := txscript.NewScriptBuilder()
+	builder.AddData(definition)
+	builder.AddOp(txscript.OP_DROP)
+	builder.AddOp(txscript.OP_DUP)
+	builder.AddOp(txscript.OP_SHA3)
+	builder.AddData(hash[:])
+	builder.AddOp(txscript.OP_EQUALVERIFY)
+	builder.AddOp(txscript.OP_0)
+	builder.AddOp(txscript.OP_CHECKPREDICATE)
+	script, _ := builder.Script()
+	return script
 }
