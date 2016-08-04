@@ -5,17 +5,10 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	"chain/cos/bc"
 	"chain/cos/patricia"
 	"chain/encoding/blockchain"
 	"chain/errors"
 )
-
-// ADPTreeItem returns the key of an ADP in the state tree,
-// as well as a patricia.Valuer for Inserts into the state tree.
-func ADPTreeItem(assetID bc.AssetID, adp bc.Hash) ([]byte, patricia.Valuer) {
-	return append(assetID[:], byte('d')), patricia.HashValuer(adp)
-}
 
 // OutputTreeItem returns the key of an output in the state tree,
 // as well as a patricia.Valuer for Inserts into the state tree.

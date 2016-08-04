@@ -32,8 +32,3 @@ func ComputeAssetID(issuanceProgram []byte, genesis [32]byte, vmVersion uint32) 
 	buf = append(buf, b.Bytes()...)
 	return sha3.Sum256(buf)
 }
-
-// HashAssetDefinition calculates an asset definition's hash.
-func HashAssetDefinition(def []byte) Hash {
-	return Hash(sha3.Sum256(def))
-}

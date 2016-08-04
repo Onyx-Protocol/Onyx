@@ -13,8 +13,6 @@ TRUNCATE
 	blocks_txs,
 	blocks,
 	txs,
-	asset_definitions,
-	asset_definition_pointers,
 	reservations,
 	signed_blocks,
 	state_trees;

@@ -238,7 +238,7 @@ func TestGenerateBlock(t *testing.T) {
 			Height:            2,
 			PreviousBlockHash: latestBlock.Hash(),
 			Commitment: mustDecodeHex(
-				"c5b6b5d13dd59ef6bd708dd42cd44522776f5ac8b287b6dac86f2463e31f103d714326e5334384d33a0f88ee054a2631ed9c8197de8e843cd56ceae049c7daac", // TODO(bobg): verify this is the right value
+				"c5b6b5d13dd59ef6bd708dd42cd44522776f5ac8b287b6dac86f2463e31f103dd5dc7c782ccf231c47540f1be0ca548adc4c266b3ae647f62763df327d28afba", // TODO(bobg): verify this is the right value
 			),
 			TimestampMS:  bc.Millis(now),
 			OutputScript: latestBlock.OutputScript,

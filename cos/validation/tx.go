@@ -171,17 +171,6 @@ func ApplyTx(tree *patricia.Tree, priorIssuances PriorIssuances, tx *bc.Tx) erro
 	for i, in := range tx.Inputs {
 		if ic, ok := in.InputCommitment.(*bc.IssuanceInputCommitment); ok {
 			// issuance input
-
-			// If asset definition field is empty, no update of ADP takes place.
-			ad := in.AssetDefinition()
-			if len(ad) > 0 {
-				assetID := in.AssetID()
-				defHash := bc.HashAssetDefinition(ad)
-				err := tree.Insert(state.ADPTreeItem(assetID, defHash))
-				if err != nil {
-					return err
-				}
-			}
 			if i == 0 && priorIssuances != nil {
 				priorIssuances[tx.Hash] = ic.MaxTimeMS
 			}

@@ -21,7 +21,6 @@ func Init(chain *cos.FC, isManager bool) {
 	fc = chain
 	if isManager {
 		fc.AddBlockCallback(func(ctx context.Context, b *bc.Block) {
-			saveAssetDefinitions(ctx, b)
 			recordIssuances(ctx, b)
 		})
 	}

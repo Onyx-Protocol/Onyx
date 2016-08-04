@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -322,26 +322,6 @@ CREATE TABLE account_utxos (
     confirmed_in bigint,
     block_pos integer,
     block_timestamp bigint
-);
-
-
---
--- Name: asset_definition_pointers; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE asset_definition_pointers (
-    asset_id text NOT NULL,
-    asset_definition_hash text NOT NULL
-);
-
-
---
--- Name: asset_definitions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE asset_definitions (
-    hash text NOT NULL,
-    definition bytea
 );
 
 
@@ -670,22 +650,6 @@ ALTER TABLE ONLY signers ALTER COLUMN key_index SET DEFAULT nextval('signers_key
 
 ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_pkey PRIMARY KEY (tx_hash, index);
-
-
---
--- Name: asset_definition_pointers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY asset_definition_pointers
-    ADD CONSTRAINT asset_definition_pointers_pkey PRIMARY KEY (asset_id);
-
-
---
--- Name: asset_definitions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY asset_definitions
-    ADD CONSTRAINT asset_definitions_pkey PRIMARY KEY (hash);
 
 
 --
@@ -1028,3 +992,4 @@ insert into migrations (filename, hash) values ('2016-08-03.0.assets.use-signers
 insert into migrations (filename, hash) values ('2016-08-03.1.core.remove-projects.sql', '801a54a49cdde74e5d8995a91be1ca0d4aa0715374a088fe4d2fe041d19cd09d');
 insert into migrations (filename, hash) values ('2016-08-03.2.mockhsm.add-xpub-hash.sql', '70cb6105554a3691c485edcc9472fe4823297fa6fdf0ea7e46bb8dbebe32a076');
 insert into migrations (filename, hash) values ('2016-08-03.3.signer.add-tags-to-signers.sql', '96d4fca692e5eedbc7c2a65e993936717cdbb09bd3f0b220ee862cc1aec1b5a9');
+insert into migrations (filename, hash) values ('2016-08-04.0.assets.remove-mutable-definitions.sql', '0daf236696d4f80f96c8eeeb062673180991e64d9a27e65e29f45b8fc9564830');

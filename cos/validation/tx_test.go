@@ -3,7 +3,6 @@ package validation
 import (
 	"chain/cos/bc"
 	"chain/cos/patricia"
-	"chain/cos/state"
 	"chain/cos/txscript"
 	"chain/errors"
 	"fmt"
@@ -106,25 +105,6 @@ func TestUniqueIssuance(t *testing.T) {
 	// Adding it again should fail
 	if ConfirmTx(tree, priorIssuances, tx, bc.Millis(now)) == nil {
 		t.Errorf("expected adding duplicate issuance tx to fail")
-	}
-}
-
-func TestNoUpdateEmptyAD(t *testing.T) {
-	tree := patricia.NewTree(nil)
-	tx := bc.NewTx(bc.TxData{
-		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), bc.Hash{}, 1000, []byte{1}, nil, nil, nil),
-		},
-	})
-	err := ApplyTx(tree, nil, tx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	k, _ := state.ADPTreeItem(bc.AssetID{}, bc.Hash{})
-	if tree.Lookup(k) != nil {
-		// If metadata field is empty, no update of ADP takes place.
-		t.Fatal("apply tx should not save an empty asset definition")
 	}
 }
 
