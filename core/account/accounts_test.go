@@ -45,8 +45,8 @@ func TestCreateControlProgram(t *testing.T) {
 	}
 }
 
-func createTestAccount(ctx context.Context, t testing.TB) *signers.Signer {
-	account, err := Create(ctx, []string{dummyXPub}, 1, nil, nil)
+func createTestAccount(ctx context.Context, t testing.TB, tags map[string]interface{}) *signers.Signer {
+	account, err := Create(ctx, []string{dummyXPub}, 1, tags, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -56,7 +56,7 @@ func createTestAccount(ctx context.Context, t testing.TB) *signers.Signer {
 
 func createTestControlProgram(ctx context.Context, t testing.TB, accountID string) []byte {
 	if accountID == "" {
-		account := createTestAccount(ctx, t)
+		account := createTestAccount(ctx, t, nil)
 		accountID = account.ID
 	}
 

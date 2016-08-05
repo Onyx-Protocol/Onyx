@@ -16,7 +16,7 @@ import (
 func TestLoadAccountInfo(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
-	acc := createTestAccount(ctx, t)
+	acc := createTestAccount(ctx, t, nil)
 	acp := createTestControlProgram(ctx, t, acc.ID)
 
 	to1 := bc.NewTxOutput(bc.AssetID{}, 0, acp, nil)
