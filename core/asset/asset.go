@@ -16,6 +16,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/metrics"
+	"chain/net/http/httpjson"
 )
 
 var (
@@ -132,18 +133,53 @@ func Archive(ctx context.Context, id bc.AssetID) error {
 
 // List returns a paginated set of Assets
 func List(ctx context.Context, prev string, limit int) ([]*Asset, string, error) {
-	assetSigners, last, err := signers.List(ctx, "asset", prev, limit)
-	if err != nil {
-		return nil, "", err
-	}
-	// TODO(tessr): fetch asset definition
+	const q = `
+		SELECT assets.id, definition, issuance_program, redeem_program,  key_index(assets.key_index), signer_id,
+			quorum, xpubs, key_index(signers.key_index)
+		FROM assets
+		LEFT JOIN signers ON (assets.signer_id=signers.id)
+		WHERE ($1='' OR assets.id>$1) AND NOT assets.archived AND signers.type='asset'
+		ORDER BY id ASC
+		LIMIT $2
+	`
+	var assets []*Asset
+	err := pg.ForQueryRows(ctx, q, prev, limit,
+		func(id string, definition, issuanceProgram, redeemProgram []byte, keyIndex pg.Uint32s, signerID string, quorum int, xpubs pg.Strings, signerKeyIndex pg.Uint32s) error {
+			var assetID bc.AssetID
+			err := assetID.UnmarshalText([]byte(id))
+			if err != nil {
+				return errors.WithDetailf(httpjson.ErrBadRequest, "%q is an invalid asset ID", assetID)
+			}
 
-	assets := make([]*Asset, 0, len(assetSigners))
-	for _, signer := range assetSigners {
-		a := &Asset{
-			Signer: signer,
-		}
-		assets = append(assets, a)
+			keys, err := convertKeys(xpubs)
+			if err != nil {
+				return errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
+			}
+
+			assets = append(assets, &Asset{
+				AssetID:         assetID,
+				Definition:      definition,
+				IssuanceProgram: issuanceProgram,
+				RedeemProgram:   redeemProgram,
+				KeyIndex:        keyIndex,
+				Signer: &signers.Signer{
+					ID:       signerID,
+					Type:     "asset",
+					XPubs:    keys,
+					Quorum:   quorum,
+					KeyIndex: signerKeyIndex,
+				},
+			})
+			return nil
+		})
+
+	if err != nil {
+		return nil, "", errors.Wrap(err)
+	}
+
+	var last string
+	if limit > 0 {
+		last = assets[len(assets)-1].AssetID.String()
 	}
 
 	return assets, last, nil
@@ -186,9 +222,8 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 }
 
 func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
-	// TODO: fetch asset definition as well
 	const q = `
-		SELECT id, issuance_program, redeem_program,
+		SELECT id, issuance_program, redeem_program, definition,
 			genesis_hash, key_index(key_index), signer_id, archived
 		FROM assets
 		WHERE id=$1
@@ -204,6 +239,7 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 		&a.AssetID,
 		&a.IssuanceProgram,
 		&a.RedeemProgram,
+		&a.Definition,
 		&a.GenesisHash,
 		(*pg.Uint32s)(&a.KeyIndex),
 		&signerID,
@@ -229,10 +265,9 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 
 // assetByClientToken loads an asset from the database using its client token.
 func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error) {
-	// TODO: fetch asset definition as well
 	const q = `
-		SELECT id, redeem_program, issuance_program, genesis_hash, key_index(key_index),
-			signer_id, archived
+		SELECT id, redeem_program, issuance_program, definition,
+			genesis_hash, key_index(key_index), signer_id, archived
 		FROM assets
 		WHERE client_token=$1
 	`
@@ -245,6 +280,7 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 		&a.AssetID,
 		&a.RedeemProgram,
 		&a.IssuanceProgram,
+		&a.Definition,
 		&a.GenesisHash,
 		(*pg.Uint32s)(&a.KeyIndex),
 		&signerID,
@@ -272,10 +308,8 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 // As is the standard for Go's map[string] serialization, object keys will
 // appear in lexicographic order. Although this is mostly meant for machine
 // consumption, the JSON is pretty-printed for easy reading.
+// The empty asset def is an empty byte slice.
 func serializeAssetDef(def map[string]interface{}) ([]byte, error) {
-	if def == nil {
-		return nil, nil
-	}
 	return json.MarshalIndent(def, "", "  ")
 }
 
@@ -314,4 +348,16 @@ func redeemToPkScriptWithDefinition(redeem, definition []byte) []byte {
 	builder.AddOp(txscript.OP_0).AddOp(txscript.OP_CHECKPREDICATE)
 	script, _ := builder.Script()
 	return script
+}
+
+func convertKeys(xpubs []string) ([]*hd25519.XPub, error) {
+	var xkeys []*hd25519.XPub
+	for i, xpub := range xpubs {
+		xkey, err := hd25519.XPubFromString(xpub)
+		if err != nil {
+			return nil, errors.WithDetailf(signers.ErrBadXPub, "key %d: xpub is not valid", i)
+		}
+		xkeys = append(xkeys, xkey)
+	}
+	return xkeys, nil
 }

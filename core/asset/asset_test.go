@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"golang.org/x/net/context"
 
 	"chain/core/signers"
@@ -100,6 +102,54 @@ func TestFindAsset(t *testing.T) {
 
 	if !reflect.DeepEqual(asset, found) {
 		t.Errorf("expected %v and %v to match", asset, found)
+	}
+}
+
+func TestListAsset(t *testing.T) {
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	count := 3
+	keys := []string{testutil.TestXPub.String()}
+	var genesisHash bc.Hash
+
+	// We do some map gymnastics because we don't know what the
+	// asset ids of the generated assets will be.
+	aMap := make(map[bc.AssetID]*Asset)
+	for i := 0; i < count; i++ {
+		a, err := Define(ctx, keys, 1, nil, genesisHash, nil)
+		if err != nil {
+			testutil.FatalErr(t, err)
+		}
+		aMap[a.AssetID] = a
+	}
+
+	found, last, err := List(ctx, "", count)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	for i, f := range found {
+		for id, asset := range aMap {
+			if f.AssetID != id {
+				continue
+			}
+
+			if !reflect.DeepEqual(f, asset) {
+				t.Fatalf("List(ctx, \"\", 3)=found; found[%d]=%v, want %v", i, spew.Sdump(f), spew.Sdump(asset))
+			}
+
+			delete(aMap, id)
+		}
+
+		if i == len(found)-1 {
+			if last != f.AssetID.String() {
+				t.Errorf("`last` doesn't match last ID. Got last=%s, want %s", last, f.AssetID.String())
+			}
+		}
+	}
+
+	// Make sure we used up everything in aMap
+	if len(aMap) != 0 {
+		t.Error("Didn't find all the assets.")
 	}
 }
 
