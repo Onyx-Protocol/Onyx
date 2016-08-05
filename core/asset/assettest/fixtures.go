@@ -12,7 +12,6 @@ import (
 	"chain/core/asset"
 	"chain/core/blocksigner"
 	"chain/core/generator"
-	"chain/core/issuer"
 	"chain/core/txbuilder"
 	"chain/cos"
 	"chain/cos/bc"
@@ -130,7 +129,7 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, a
 		testutil.FatalErr(t, errors.WithDetailf(err, "get asset with ID %q", assetID))
 	}
 
-	src := issuer.NewIssueSource(ctx, assetAmount, asst.Definition, nil) // does not support reference data
+	src := asset.NewIssueSource(ctx, assetAmount, asst.Definition, nil) // does not support reference data
 	tpl, err := txbuilder.Build(ctx, nil, []*txbuilder.Source{src}, []*txbuilder.Destination{dest}, nil, time.Minute)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -202,7 +201,16 @@ func Issue(ctx context.Context, t testing.TB, assetID bc.AssetID, dests []*txbui
 		issueAmount += dst.Amount
 	}
 
-	txTemplate, err := issuer.Issue(ctx, bc.AssetAmount{AssetID: assetID, Amount: issueAmount}, dests)
+	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: issueAmount}
+
+	txTemplate, err := txbuilder.Build(
+		ctx,
+		nil,
+		[]*txbuilder.Source{asset.NewIssueSource(ctx, assetAmount, nil, nil)},
+		dests,
+		nil,
+		time.Minute,
+	)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

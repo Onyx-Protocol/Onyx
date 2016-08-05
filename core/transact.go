@@ -8,54 +8,13 @@ import (
 
 	"chain/core/account"
 	"chain/core/asset"
-	"chain/core/issuer"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
 	"chain/database/pg"
-	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/reqid"
 	"chain/net/trace/span"
 )
-
-// POST /v3/assets/:assetID/issue
-func issueAsset(ctx context.Context, assetIDStr string, reqDests []*Destination) (interface{}, error) {
-	defer metrics.RecordElapsed(time.Now())
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
-	var assetID bc.AssetID
-	err := assetID.UnmarshalText([]byte(assetIDStr))
-	if err != nil {
-		return nil, errors.WithDetailf(ErrBadBuildRequest, "invalid asset id %q", assetIDStr)
-	}
-
-	// Where asset_ids are not specified in destinations - and even
-	// where they are - use the one passed in above.
-	for _, dest := range reqDests {
-		dest.AssetID = &assetID
-	}
-
-	var amount uint64
-	dests := make([]*txbuilder.Destination, 0, len(reqDests))
-	for _, reqDest := range reqDests {
-		parsed, err := reqDest.parse(ctx)
-		if err != nil {
-			return nil, err
-		}
-		dests = append(dests, parsed)
-		amount += reqDest.Amount
-	}
-
-	aa := bc.AssetAmount{AssetID: assetID, Amount: amount}
-	template, err := issuer.Issue(ctx, aa, dests)
-	if err != nil {
-		return nil, err
-	}
-
-	ret := map[string]interface{}{"template": template}
-	return ret, nil
-}
 
 func buildSingle(ctx context.Context, req *BuildRequest) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())

@@ -11,7 +11,6 @@ import (
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
-	"chain/core/issuer"
 	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
@@ -288,10 +287,14 @@ func issue(ctx context.Context, t testing.TB, info *clientInfo, destAcctID strin
 	if err != nil {
 		return nil, err
 	}
-	issueTx, err := issuer.Issue(ctx, assetAmount, []*txbuilder.Destination{issueDest})
-	if err != nil {
-		return nil, err
-	}
+	issueTx, err := txbuilder.Build(
+		ctx,
+		nil,
+		[]*txbuilder.Source{NewIssueSource(ctx, assetAmount, nil, nil)},
+		[]*txbuilder.Destination{issueDest},
+		nil,
+		time.Minute,
+	)
 	assettest.SignTxTemplate(t, issueTx, info.privKeyAsset)
 	return FinalizeTx(ctx, issueTx)
 }

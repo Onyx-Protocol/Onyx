@@ -11,7 +11,6 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/asset/assettest"
-	"chain/core/issuer"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
 	"chain/database/pg"
@@ -39,7 +38,7 @@ func TestAccountTransfer(t *testing.T) {
 		Amount:  100,
 	}
 
-	sources := issuer.NewIssueSource(ctx, assetAmt, nil, nil)
+	sources := asset.NewIssueSource(ctx, assetAmt, nil, nil)
 	dests, err := account.NewDestination(ctx, &assetAmt, acc.ID, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -103,53 +102,6 @@ func TestLogin(t *testing.T) {
 	}
 }
 
-func TestIssue(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	fc, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	asset.Init(fc, true)
-	account.Init(fc)
-
-	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil)
-	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
-
-	ctx = authn.NewContext(ctx, userID)
-
-	reqDestFmt := `
-		{"asset_id": "%s",
-		 "amount": 100,
-		 "account_id": "%s"}
-	`
-	reqDestStr := fmt.Sprintf(reqDestFmt, assetID.String(), account1ID)
-	var reqDest Destination
-	err = json.Unmarshal([]byte(reqDestStr), &reqDest)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-	result, err := issueAsset(ctx, assetID.String(), []*Destination{&reqDest})
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-	jsonResult, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-	var parsedResult map[string]interface{}
-	err = json.Unmarshal(jsonResult, &parsedResult)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-	inspectTemplate(t, parsedResult, account1ID)
-}
-
 func TestTransfer(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	fc, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
@@ -179,7 +131,14 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	txTemplate, err := issuer.Issue(ctx, issueAssetAmount, []*txbuilder.Destination{issueDest})
+	txTemplate, err := txbuilder.Build(
+		ctx,
+		nil,
+		[]*txbuilder.Source{asset.NewIssueSource(ctx, issueAssetAmount, nil, nil)},
+		[]*txbuilder.Destination{issueDest},
+		nil,
+		time.Minute,
+	)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

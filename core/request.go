@@ -6,7 +6,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/account"
-	"chain/core/issuer"
+	"chain/core/asset"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
 	chainjson "chain/encoding/json"
@@ -68,7 +68,7 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 			AssetID: *source.AssetID,
 			Amount:  source.Amount,
 		}
-		return issuer.NewIssueSource(ctx, *assetAmount, nil, nil), nil // TODO: allow specifying updated asset definition and reference data
+		return asset.NewIssueSource(ctx, *assetAmount, nil, nil), nil // TODO: allow specifying updated asset definition and reference data
 	}
 	return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown source type `%s`", source.Type)
 }
