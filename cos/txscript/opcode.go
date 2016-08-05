@@ -665,44 +665,6 @@ func (pop *parsedOpcode) isConditional() bool {
 	}
 }
 
-// checkMinimalDataPush returns whether or not the current data push uses the
-// smallest possible opcode to represent it.  For example, the value 15 could
-// be pushed with OP_DATA_1 15 (among other variations); however, OP_15 is a
-// single opcode that represents the same value and is only a single byte versus
-// two bytes.
-func (pop *parsedOpcode) checkMinimalDataPush() error {
-	data := pop.data
-	dataLen := len(data)
-	opcode := pop.opcode.value
-
-	if dataLen == 0 && opcode != OP_0 {
-		return ErrStackMinimalData
-	} else if dataLen == 1 && data[0] >= 1 && data[0] <= 16 {
-		if opcode != OP_1+data[0]-1 {
-			// Should have used OP_1 .. OP_16
-			return ErrStackMinimalData
-		}
-	} else if dataLen == 1 && data[0] == 0x81 {
-		if opcode != OP_1NEGATE {
-			return ErrStackMinimalData
-		}
-	} else if dataLen <= 75 {
-		if int(opcode) != dataLen {
-			// Should have used a direct push
-			return ErrStackMinimalData
-		}
-	} else if dataLen <= 255 {
-		if opcode != OP_PUSHDATA1 {
-			return ErrStackMinimalData
-		}
-	} else if dataLen <= 65535 {
-		if opcode != OP_PUSHDATA2 {
-			return ErrStackMinimalData
-		}
-	}
-	return nil
-}
-
 // print returns a human-readable string representation of the opcode for use
 // in script disassembly.
 func (pop *parsedOpcode) print(oneline bool) string {
