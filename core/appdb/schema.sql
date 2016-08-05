@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -335,7 +335,6 @@ CREATE TABLE assets (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     definition_mutable boolean DEFAULT false NOT NULL,
     definition bytea,
-    redeem_program bytea NOT NULL,
     sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL,
     issuance_program bytea NOT NULL,
     archived boolean DEFAULT false NOT NULL,
@@ -993,3 +992,4 @@ insert into migrations (filename, hash) values ('2016-08-03.1.core.remove-projec
 insert into migrations (filename, hash) values ('2016-08-03.2.mockhsm.add-xpub-hash.sql', '70cb6105554a3691c485edcc9472fe4823297fa6fdf0ea7e46bb8dbebe32a076');
 insert into migrations (filename, hash) values ('2016-08-03.3.signer.add-tags-to-signers.sql', '96d4fca692e5eedbc7c2a65e993936717cdbb09bd3f0b220ee862cc1aec1b5a9');
 insert into migrations (filename, hash) values ('2016-08-04.0.assets.remove-mutable-definitions.sql', '0daf236696d4f80f96c8eeeb062673180991e64d9a27e65e29f45b8fc9564830');
+insert into migrations (filename, hash) values ('2016-08-05.0.core.remove-asset-redeem.sql', 'd9f1fe0eeb9b3702fb366586f2b208f1c0eab22a110f49d683a685a1c924da3b');

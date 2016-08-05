@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"golang.org/x/crypto/sha3"
 	"golang.org/x/net/context"
 
 	"chain/core/signers"
@@ -27,7 +26,6 @@ type Asset struct {
 	AssetID         bc.AssetID      `json:"id"`
 	Definition      []byte          `json:"definition"`
 	IssuanceProgram []byte          `json:"issuance_program"`
-	RedeemProgram   []byte          `json:"redeem_program"`
 	GenesisHash     bc.Hash         `json:"genesis_hash"`
 	Signer          *signers.Signer `json:"signer"`
 	KeyIndex        []uint32        `json:"key_index"`
@@ -59,7 +57,7 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 
 	derivedXPubs := hd25519.DeriveXPubs(assetSigner.XPubs, path)
 	derivedPKs := hd25519.XPubKeys(derivedXPubs)
-	issuanceProgram, redeem, err := scripts(derivedPKs, assetSigner.Quorum, def)
+	issuanceProgram, err := programWithDefinition(derivedPKs, assetSigner.Quorum, def)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +66,6 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 		KeyIndex:        idx,
 		Definition:      def,
 		IssuanceProgram: issuanceProgram,
-		RedeemProgram:   redeem,
 		GenesisHash:     genesisHash,
 		AssetID:         bc.ComputeAssetID(issuanceProgram, genesisHash, 1),
 		Signer:          assetSigner,
@@ -134,7 +131,7 @@ func Archive(ctx context.Context, id bc.AssetID) error {
 // List returns a paginated set of Assets
 func List(ctx context.Context, prev string, limit int) ([]*Asset, string, error) {
 	const q = `
-		SELECT assets.id, definition, issuance_program, redeem_program,  key_index(assets.key_index), signer_id,
+		SELECT assets.id, definition, issuance_program, key_index(assets.key_index), signer_id,
 			quorum, xpubs, key_index(signers.key_index)
 		FROM assets
 		LEFT JOIN signers ON (assets.signer_id=signers.id)
@@ -144,7 +141,7 @@ func List(ctx context.Context, prev string, limit int) ([]*Asset, string, error)
 	`
 	var assets []*Asset
 	err := pg.ForQueryRows(ctx, q, prev, limit,
-		func(id string, definition, issuanceProgram, redeemProgram []byte, keyIndex pg.Uint32s, signerID string, quorum int, xpubs pg.Strings, signerKeyIndex pg.Uint32s) error {
+		func(id string, definition, issuanceProgram []byte, keyIndex pg.Uint32s, signerID string, quorum int, xpubs pg.Strings, signerKeyIndex pg.Uint32s) error {
 			var assetID bc.AssetID
 			err := assetID.UnmarshalText([]byte(id))
 			if err != nil {
@@ -160,7 +157,6 @@ func List(ctx context.Context, prev string, limit int) ([]*Asset, string, error)
 				AssetID:         assetID,
 				Definition:      definition,
 				IssuanceProgram: issuanceProgram,
-				RedeemProgram:   redeemProgram,
 				KeyIndex:        keyIndex,
 				Signer: &signers.Signer{
 					ID:       signerID,
@@ -192,15 +188,15 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
     INSERT INTO assets
-	 	(id, signer_id, key_index, redeem_program, genesis_hash, issuance_program, definition, client_token)
-    VALUES($1, $2, to_key_index($3), $4, $5, $6, $7, $8)
+	 	(id, signer_id, key_index, genesis_hash, issuance_program, definition, client_token)
+    VALUES($1, $2, to_key_index($3), $4, $5, $6, $7)
     ON CONFLICT (client_token) DO NOTHING
   `
 
 	res, err := pg.Exec(
 		ctx, q,
 		asset.AssetID, asset.Signer.ID, pg.Uint32s(asset.KeyIndex),
-		asset.RedeemProgram, asset.GenesisHash, asset.IssuanceProgram,
+		asset.GenesisHash, asset.IssuanceProgram,
 		asset.Definition, clientToken,
 	)
 	if err != nil {
@@ -223,7 +219,7 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 
 func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 	const q = `
-		SELECT id, issuance_program, redeem_program, definition,
+		SELECT id, issuance_program, definition,
 			genesis_hash, key_index(key_index), signer_id, archived
 		FROM assets
 		WHERE id=$1
@@ -238,7 +234,6 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 	err := pg.QueryRow(ctx, q, id.String()).Scan(
 		&a.AssetID,
 		&a.IssuanceProgram,
-		&a.RedeemProgram,
 		&a.Definition,
 		&a.GenesisHash,
 		(*pg.Uint32s)(&a.KeyIndex),
@@ -266,7 +261,7 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 // assetByClientToken loads an asset from the database using its client token.
 func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error) {
 	const q = `
-		SELECT id, redeem_program, issuance_program, definition,
+		SELECT id, issuance_program, definition,
 			genesis_hash, key_index(key_index), signer_id, archived
 		FROM assets
 		WHERE client_token=$1
@@ -278,7 +273,6 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 	)
 	err := pg.QueryRow(ctx, q, clientToken).Scan(
 		&a.AssetID,
-		&a.RedeemProgram,
 		&a.IssuanceProgram,
 		&a.Definition,
 		&a.GenesisHash,
@@ -326,28 +320,15 @@ func nextIndex(ctx context.Context) ([]uint32, error) {
 	return idx, nil
 }
 
-func scripts(pubkeys []ed25519.PublicKey, nrequired int, definition []byte) ([]byte, []byte, error) {
-	redeem, err := txscript.TxMultiSigScript(pubkeys, nrequired)
+func programWithDefinition(pubkeys []ed25519.PublicKey, nrequired int, definition []byte) ([]byte, error) {
+	issuanceProg, err := txscript.TxMultiSigScript(pubkeys, nrequired)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return redeemToPkScriptWithDefinition(redeem, definition), redeem, nil
-}
-
-// redeemToPkScriptWithDefinition takes a redeem script
-// and calculates its corresponding issuance pk script, including
-// the asset definition.
-func redeemToPkScriptWithDefinition(redeem, definition []byte) []byte {
-	hash := sha3.Sum256(redeem)
 	builder := txscript.NewScriptBuilder()
 	builder.AddData(definition).AddOp(txscript.OP_DROP)
-	builder.AddOp(txscript.OP_DUP)
-	builder.AddOp(txscript.OP_SHA3)
-	builder.AddData(hash[:])
-	builder.AddOp(txscript.OP_EQUALVERIFY)
-	builder.AddOp(txscript.OP_0).AddOp(txscript.OP_CHECKPREDICATE)
-	script, _ := builder.Script()
-	return script
+	builder.ConcatRawScript(issuanceProg)
+	return builder.Script()
 }
 
 func convertKeys(xpubs []string) ([]*hd25519.XPub, error) {

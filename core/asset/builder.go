@@ -51,7 +51,6 @@ func issuanceInput(a *Asset, aa bc.AssetAmount) *txbuilder.Input {
 	tmplInp := &txbuilder.Input{AssetAmount: aa}
 	path := signers.Path(a.Signer, signers.AssetKeySpace, a.KeyIndex) // is this the right key index?
 	sigs := txbuilder.InputSigs(a.Signer.XPubs, path)
-	tmplInp.AddWitnessSigs(sigs, txscript.SigsRequired(a.RedeemProgram), nil)
-	tmplInp.AddWitnessData(a.RedeemProgram)
+	tmplInp.AddWitnessSigs(sigs, txscript.SigsRequired(a.IssuanceProgram), nil)
 	return tmplInp
 }
