@@ -55,12 +55,12 @@ type Signer struct {
 	XPubs    []*hd25519.XPub        `json:"xpubs"`
 	Quorum   int                    `json:"quorum"`
 	Tags     map[string]interface{} `json:"tags"`
-	keyIndex []uint32
+	KeyIndex []uint32               `json:"-"`
 }
 
 // Path returns the complete path for derived keys
 func Path(s *Signer, ks keySpace, itemIndex []uint32) []uint32 {
-	return append(append([]uint32{uint32(ks)}, s.keyIndex...), itemIndex...)
+	return append(append([]uint32{uint32(ks)}, s.KeyIndex...), itemIndex...)
 }
 
 // Create creates and stores a Signer in the database
@@ -108,7 +108,7 @@ func Create(ctx context.Context, typ string, xpubs []string, quorum int, tags ma
 		XPubs:    keys,
 		Quorum:   quorum,
 		Tags:     tags,
-		keyIndex: keyIndex,
+		KeyIndex: keyIndex,
 	}, nil
 }
 
@@ -124,7 +124,7 @@ func findByClientToken(ctx context.Context, clientToken *string) (*Signer, error
 		tags     []byte
 	)
 	err := pg.QueryRow(ctx, q, clientToken).
-		Scan(&s.ID, &s.Type, (*pg.Strings)(&xpubStrs), &s.Quorum, (*pg.Uint32s)(&s.keyIndex), &tags)
+		Scan(&s.ID, &s.Type, (*pg.Strings)(&xpubStrs), &s.Quorum, (*pg.Uint32s)(&s.KeyIndex), &tags)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -165,7 +165,7 @@ func Find(ctx context.Context, typ, id string) (*Signer, error) {
 		&s.Type,
 		(*pg.Strings)(&xpubStrs),
 		&s.Quorum,
-		(*pg.Uint32s)(&s.keyIndex),
+		(*pg.Uint32s)(&s.KeyIndex),
 		&tags,
 		&archived,
 	)
@@ -245,7 +245,7 @@ func List(ctx context.Context, typ, prev string, limit int) ([]*Signer, string, 
 				XPubs:    keys,
 				Quorum:   quorum,
 				Tags:     tags,
-				keyIndex: keyIndex,
+				KeyIndex: keyIndex,
 			})
 			return nil
 		},
