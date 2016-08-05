@@ -23,7 +23,10 @@ var (
 
 // NewIndexer constructs a new indexer for indexing transactions.
 func NewIndexer(db pg.DB) *Indexer {
-	return &Indexer{db: db}
+	return &Indexer{
+		db:      db,
+		indexes: make(map[string]*Index),
+	}
 }
 
 // Indexer creates, updates and queries against CQL indexes.
