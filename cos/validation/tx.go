@@ -118,12 +118,10 @@ func ValidateTx(tx *bc.Tx) error {
 
 	// Check that every output has a valid value.
 	for _, txout := range tx.Outputs {
-		// Zero-value outputs are allowed for re-publishing
-		// asset definition using issuance transactions.
-		// Non-issuance transactions cannot have zero-value outputs.
+		// Transactions cannot have zero-value outputs.
 		// If all inputs have zero value, tx therefore must have no outputs.
-		if txout.Amount == 0 && !issued[txout.AssetID] {
-			return errors.WithDetailf(ErrBadTx, "non-issuance output value must be greater than 0")
+		if txout.Amount == 0 {
+			return errors.WithDetailf(ErrBadTx, "output value must be greater than 0")
 		}
 		parity[txout.AssetID] -= int64(txout.Amount)
 	}

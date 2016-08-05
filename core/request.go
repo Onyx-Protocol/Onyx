@@ -68,7 +68,7 @@ func (source *Source) parse(ctx context.Context) (*txbuilder.Source, error) {
 			AssetID: *source.AssetID,
 			Amount:  source.Amount,
 		}
-		return asset.NewIssueSource(ctx, *assetAmount, nil, nil), nil // TODO: allow specifying updated asset definition and reference data
+		return asset.NewIssueSource(ctx, *assetAmount, nil), nil // TODO: allow specifying reference data
 	}
 	return nil, errors.WithDetailf(ErrBadBuildRequest, "unknown source type `%s`", source.Type)
 }

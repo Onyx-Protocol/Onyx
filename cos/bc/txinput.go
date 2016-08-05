@@ -38,7 +38,6 @@ type (
 		Amount               uint64
 		VMVersion            uint32
 		IssuanceProgram      []byte
-		AssetDefinition      []byte
 	}
 )
 
@@ -64,7 +63,7 @@ func NewSpendInput(txhash Hash, index uint32, inputWitness [][]byte, assetID Ass
 	}
 }
 
-func NewIssuanceInput(minTime, maxTime time.Time, initialBlock Hash, amount uint64, issuanceProgram, assetDefinition, referenceData []byte, inputWitness [][]byte) *TxInput {
+func NewIssuanceInput(minTime, maxTime time.Time, initialBlock Hash, amount uint64, issuanceProgram, referenceData []byte, inputWitness [][]byte) *TxInput {
 	return &TxInput{
 		AssetVersion: 1,
 		InputCommitment: &IssuanceInputCommitment{
@@ -74,7 +73,6 @@ func NewIssuanceInput(minTime, maxTime time.Time, initialBlock Hash, amount uint
 			Amount:          amount,
 			VMVersion:       1,
 			IssuanceProgram: issuanceProgram,
-			AssetDefinition: assetDefinition,
 		},
 		ReferenceData: referenceData,
 		InputWitness:  inputWitness,
@@ -106,13 +104,6 @@ func (t TxInput) Amount() uint64 {
 	}
 	sc := t.InputCommitment.(*SpendInputCommitment)
 	return sc.Amount
-}
-
-func (t TxInput) AssetDefinition() []byte {
-	if ic, ok := t.InputCommitment.(*IssuanceInputCommitment); ok {
-		return ic.AssetDefinition
-	}
-	return nil
 }
 
 func (t TxInput) ControlProgram() []byte {
@@ -262,10 +253,6 @@ func (ic *IssuanceInputCommitment) readFrom(r io.Reader, _ uint32) (err error) {
 	if err != nil {
 		return err
 	}
-	ic.AssetDefinition, err = blockchain.ReadBytes(r, assetDefinitionMaxByteLength)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -279,6 +266,5 @@ func (ic IssuanceInputCommitment) writeTo(w io.Writer, _ uint32, serflags uint8)
 	blockchain.WriteUvarint(&b, ic.Amount)
 	blockchain.WriteUvarint(&b, uint64(ic.VMVersion))
 	blockchain.WriteBytes(&b, ic.IssuanceProgram)
-	blockchain.WriteBytes(&b, ic.AssetDefinition)
 	writeMetadata(w, b.Bytes(), serflags)
 }

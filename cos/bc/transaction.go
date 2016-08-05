@@ -23,9 +23,8 @@ const (
 )
 
 const (
-	assetDefinitionMaxByteLength = 5000000 // 5 mb
-	metadataMaxByteLength        = 500000  // 500 kb
-	witnessMaxByteLength         = 500000  // 500 kb
+	metadataMaxByteLength = 500000 // 500 kb
+	witnessMaxByteLength  = 500000 // 500 kb
 )
 
 // Tx holds a transaction along with its hash.

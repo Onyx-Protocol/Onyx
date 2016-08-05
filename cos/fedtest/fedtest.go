@@ -65,7 +65,7 @@ func Issue(t testing.TB, asset *TestAsset, dest *TestDest, amount uint64) (*bc.T
 	tx := &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), bc.Hash{}, amount, asset.PKScript, nil, nil, nil),
+			bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), bc.Hash{}, amount, asset.PKScript, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(asset.AssetID, amount, dest.PKScript, nil),

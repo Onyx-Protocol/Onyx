@@ -290,7 +290,7 @@ func issue(ctx context.Context, t testing.TB, info *clientInfo, destAcctID strin
 	issueTx, err := txbuilder.Build(
 		ctx,
 		nil,
-		[]*txbuilder.Source{NewIssueSource(ctx, assetAmount, nil, nil)},
+		[]*txbuilder.Source{NewIssueSource(ctx, assetAmount, nil)},
 		[]*txbuilder.Destination{issueDest},
 		nil,
 		time.Minute,

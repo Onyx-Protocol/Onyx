@@ -188,15 +188,11 @@ func TestGenerateBlock(t *testing.T) {
 	genesisHash := latestBlock.Hash()
 	assetID := bc.ComputeAssetID(nil, genesisHash, 1)
 
-	assetDef := []byte(`{
-"key": "clam"
-}`)
-
 	txs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Version: 1,
 			Inputs: []*bc.TxInput{
-				bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 50, nil, assetDef, nil, [][]byte{
+				bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 50, nil, nil, [][]byte{
 					nil,
 					mustDecodeHex("30450221009037e1d39b7d59d24eba8012baddd5f4ab886a51b46f52b7c479ddfa55eeb5c5022076008409243475b25dfba6db85e15cf3d74561a147375941e4830baa69769b5101"),
 					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae")}),
@@ -208,7 +204,7 @@ func TestGenerateBlock(t *testing.T) {
 		bc.NewTx(bc.TxData{
 			Version: 1,
 			Inputs: []*bc.TxInput{
-				bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 50, nil, assetDef, nil, [][]byte{
+				bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 50, nil, nil, [][]byte{
 					nil,
 					mustDecodeHex("3045022100f3bcffcfd6a1ce9542b653500386cd0ee7b9c86c59390ca0fc0238c0ebe3f1d6022065ac468a51a016842660c3a616c99a9aa5109a3bad1877ba3e0f010f3972472e01"),
 					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae"),
@@ -238,7 +234,7 @@ func TestGenerateBlock(t *testing.T) {
 			Height:            2,
 			PreviousBlockHash: latestBlock.Hash(),
 			Commitment: mustDecodeHex(
-				"c5b6b5d13dd59ef6bd708dd42cd44522776f5ac8b287b6dac86f2463e31f103dd5dc7c782ccf231c47540f1be0ca548adc4c266b3ae647f62763df327d28afba", // TODO(bobg): verify this is the right value
+				"eef4d293c9c326c2bbbd77d4c1f0e9ceaf34c822aa4874ccd73ffe7eee477cbde561ec28c67f40007fa416dae949c3bf1cd4392ee1ca0d6b60d92abdf7a1322d",
 			),
 			TimestampMS:  bc.Millis(now),
 			OutputScript: latestBlock.OutputScript,

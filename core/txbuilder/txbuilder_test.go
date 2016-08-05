@@ -212,7 +212,7 @@ func TestAssembleSignatures(t *testing.T) {
 	unsigned := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 5, issuanceProg, nil, nil, nil),
+			bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 5, issuanceProg, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 5, outscript, nil),
@@ -247,7 +247,7 @@ func TestAssembleSignatures(t *testing.T) {
 		t.Fatal(withStack(err))
 	}
 
-	want := "0111d0e8b5ca73721f92f86f5e472891efffeb24729fbb59d7f0f3791e1e91be" // TODO(bobg): verify this is the right hash
+	want := "1b30687452cf0cfbcf7ca744ebae0fe5b4173a73d91461613c48224fa18d42f9"
 	if got := tx.WitnessHash().String(); got != want {
 		t.Errorf("got tx witness hash = %v want %v", got, want)
 	}

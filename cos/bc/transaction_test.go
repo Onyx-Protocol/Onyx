@@ -50,7 +50,7 @@ func TestTransaction(t *testing.T) {
 			tx: NewTx(TxData{
 				Version: 1,
 				Inputs: []*TxInput{
-					NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1000000000000, issuanceScript, nil, []byte("input"), [][]byte{[]byte{1, 2, 3}}),
+					NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1000000000000, issuanceScript, []byte("input"), [][]byte{[]byte{1, 2, 3}}),
 				},
 				Outputs: []*TxOutput{
 					NewTxOutput(AssetID{}, 1000000000000, []byte{1}, []byte("output")),
@@ -63,7 +63,7 @@ func TestTransaction(t *testing.T) {
 				"01" + // transaction version
 				"01" + // inputs count
 				"01" + // input 0, asset version
-				"37" + // input 0, input commitment length prefix
+				"36" + // input 0, input commitment length prefix
 				"00" + // input 0, input commitment, "issuance" type
 				"80bce5bde506" + // input 0, input commitment, mintime
 				"8099c1bfe506" + // input 0, input commitment, maxtime
@@ -71,7 +71,6 @@ func TestTransaction(t *testing.T) {
 				"80a094a58d1d" + // input 0, input commitment, amount
 				"01" + // input 0, input commitment, vm version
 				"0101" + // input 0, input commitment, issuance program
-				"00" + // input 0, input commitment, asset definition
 				"05696e707574" + // input 0, reference data
 				"05" + // input 0, input witness length prefix
 				"01" + // input 0, input witness, number of args
@@ -88,8 +87,8 @@ func TestTransaction(t *testing.T) {
 				"00" + // mintime
 				"00" + // maxtime
 				"0869737375616e6365"), // reference data
-			hash:        mustDecodeHash("4b3c0036f7de199c41e3d9b993b14d4482d9351beed538e0fc4e1cc56a60e1b6"),
-			witnessHash: mustDecodeHash("cfa2be43281d536bf73027fcf157609d9006fd808bf3e1d89de94489e554789c"),
+			hash:        mustDecodeHash("10a3dcecea732da4d9b7855772a59a31e6a9e76dfaf13654c1ee51ec4c01fa2c"),
+			witnessHash: mustDecodeHash("44f86fe5c1110301d294b31ce521969bcd1d84bb9e397539b9aa21cd56c7a57d"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -187,14 +186,14 @@ func TestHasIssuance(t *testing.T) {
 		want bool
 	}{{
 		tx: &TxData{
-			Inputs: []*TxInput{NewIssuanceInput(now, now.Add(time.Hour), Hash{}, 0, nil, nil, nil, nil)},
+			Inputs: []*TxInput{NewIssuanceInput(now, now.Add(time.Hour), Hash{}, 0, nil, nil, nil)},
 		},
 		want: true,
 	}, {
 		tx: &TxData{
 			Inputs: []*TxInput{
 				NewSpendInput(Hash{}, 0, nil, AssetID{}, 0, nil, nil),
-				NewIssuanceInput(now, now.Add(time.Hour), Hash{}, 0, nil, nil, nil, nil),
+				NewIssuanceInput(now, now.Add(time.Hour), Hash{}, 0, nil, nil, nil),
 			},
 		},
 		want: true,

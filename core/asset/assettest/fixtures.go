@@ -124,12 +124,8 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, a
 	dest := AccountDestinationFixture(ctx, t, assetID, amount, accountID)
 
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
-	asst, err := asset.Find(ctx, assetID)
-	if err != nil {
-		testutil.FatalErr(t, errors.WithDetailf(err, "get asset with ID %q", assetID))
-	}
 
-	src := asset.NewIssueSource(ctx, assetAmount, asst.Definition, nil) // does not support reference data
+	src := asset.NewIssueSource(ctx, assetAmount, nil) // does not support reference data
 	tpl, err := txbuilder.Build(ctx, nil, []*txbuilder.Source{src}, []*txbuilder.Destination{dest}, nil, time.Minute)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -206,7 +202,7 @@ func Issue(ctx context.Context, t testing.TB, assetID bc.AssetID, dests []*txbui
 	txTemplate, err := txbuilder.Build(
 		ctx,
 		nil,
-		[]*txbuilder.Source{asset.NewIssueSource(ctx, assetAmount, nil, nil)},
+		[]*txbuilder.Source{asset.NewIssueSource(ctx, assetAmount, nil)},
 		dests,
 		nil,
 		time.Minute,

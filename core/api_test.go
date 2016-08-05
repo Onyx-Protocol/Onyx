@@ -38,7 +38,7 @@ func TestAccountTransfer(t *testing.T) {
 		Amount:  100,
 	}
 
-	sources := asset.NewIssueSource(ctx, assetAmt, nil, nil)
+	sources := asset.NewIssueSource(ctx, assetAmt, nil)
 	dests, err := account.NewDestination(ctx, &assetAmt, acc.ID, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -134,7 +134,7 @@ func TestTransfer(t *testing.T) {
 	txTemplate, err := txbuilder.Build(
 		ctx,
 		nil,
-		[]*txbuilder.Source{asset.NewIssueSource(ctx, issueAssetAmount, nil, nil)},
+		[]*txbuilder.Source{asset.NewIssueSource(ctx, issueAssetAmount, nil)},
 		[]*txbuilder.Destination{issueDest},
 		nil,
 		time.Minute,

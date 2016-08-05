@@ -16,8 +16,7 @@ import (
 // that issues an asset
 type IssuanceReserver struct {
 	bc.AssetID
-	AssetDefinition []byte // omit to keep existing asset definition
-	ReferenceData   []byte
+	ReferenceData []byte
 }
 
 func (ir IssuanceReserver) Reserve(ctx context.Context, amt *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
@@ -26,7 +25,7 @@ func (ir IssuanceReserver) Reserve(ctx context.Context, amt *bc.AssetAmount, ttl
 		return nil, errors.WithDetailf(err, "find asset with ID %q", ir.AssetID)
 	}
 
-	in := bc.NewIssuanceInput(time.Now(), time.Now().Add(ttl), asset.GenesisHash, amt.Amount, asset.IssuanceProgram, ir.AssetDefinition, ir.ReferenceData, nil)
+	in := bc.NewIssuanceInput(time.Now(), time.Now().Add(ttl), asset.GenesisHash, amt.Amount, asset.IssuanceProgram, ir.ReferenceData, nil)
 	return &txbuilder.ReserveResult{
 		Items: []*txbuilder.ReserveResultItem{{
 			TxInput:       in,
@@ -36,13 +35,12 @@ func (ir IssuanceReserver) Reserve(ctx context.Context, amt *bc.AssetAmount, ttl
 }
 
 // NewIssueSource returns a txbuilder.Source with an IssuanceReserver.
-func NewIssueSource(ctx context.Context, assetAmount bc.AssetAmount, assetDefinition, referenceData []byte) *txbuilder.Source {
+func NewIssueSource(ctx context.Context, assetAmount bc.AssetAmount, referenceData []byte) *txbuilder.Source {
 	return &txbuilder.Source{
 		AssetAmount: assetAmount,
 		Reserver: IssuanceReserver{
-			AssetID:         assetAmount.AssetID,
-			AssetDefinition: assetDefinition,
-			ReferenceData:   referenceData,
+			AssetID:       assetAmount.AssetID,
+			ReferenceData: referenceData,
 		},
 	}
 }

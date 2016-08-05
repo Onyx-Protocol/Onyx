@@ -15,7 +15,7 @@ func TestUniqueIssuance(t *testing.T) {
 	trueProg := []byte{txscript.OP_TRUE}
 	assetID := bc.ComputeAssetID(trueProg, genesisHash, 1)
 	now := time.Now()
-	issuanceInp := bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1, trueProg, nil, nil, nil)
+	issuanceInp := bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1, trueProg, nil, nil)
 
 	// Transaction with the issuance twice is invalid
 	tx := bc.NewTx(bc.TxData{
@@ -50,7 +50,7 @@ func TestUniqueIssuance(t *testing.T) {
 
 	true2Prog := []byte{txscript.OP_TRUE, txscript.OP_TRUE}
 	asset2ID := bc.ComputeAssetID(true2Prog, genesisHash, 1)
-	issuance2Inp := bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1, true2Prog, nil, nil, nil)
+	issuance2Inp := bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1, true2Prog, nil, nil)
 
 	// Transaction with issuance in second slot does not get added to issuance memory
 	tx = bc.NewTx(bc.TxData{
@@ -157,26 +157,12 @@ func TestTxIsWellFormed(t *testing.T) {
 			},
 		},
 		{
-			// can have zero-amount outputs to re-publish asset definitions
-			badTx: false,
-			tx: bc.Tx{
-				TxData: bc.TxData{
-					Inputs: []*bc.TxInput{
-						bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), genesisHash, 0, issuanceProg, nil, nil, nil),
-					},
-					Outputs: []*bc.TxOutput{
-						bc.NewTxOutput(aid1, 0, nil, nil),
-					},
-				},
-			},
-		},
-		{
 			badTx:  true,
-			detail: "non-issuance output value must be greater than 0",
+			detail: "output value must be greater than 0",
 			tx: bc.Tx{
 				TxData: bc.TxData{
 					Inputs: []*bc.TxInput{
-						bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), genesisHash, 0, issuanceProg, nil, nil, nil),
+						bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), genesisHash, 0, issuanceProg, nil, nil),
 						bc.NewSpendInput(txhash1, 0, nil, aid2, 0, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
@@ -278,7 +264,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 					MinTime: bc.Millis(now),
 					MaxTime: bc.Millis(now.Add(time.Hour)),
 					Inputs: []*bc.TxInput{
-						bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1000, issuanceProg, nil, nil, nil),
+						bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1000, issuanceProg, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid, 1000, nil, nil),
@@ -294,7 +280,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 					MinTime: bc.Millis(now),
 					MaxTime: bc.Millis(now.Add(time.Minute)),
 					Inputs: []*bc.TxInput{
-						bc.NewIssuanceInput(now, now.Add(time.Minute), genesisHash, 1000, issuanceProg, nil, nil, nil),
+						bc.NewIssuanceInput(now, now.Add(time.Minute), genesisHash, 1000, issuanceProg, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid, 1000, nil, nil),
@@ -310,7 +296,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 					MinTime: bc.Millis(now),
 					MaxTime: bc.Millis(now.Add(time.Minute)),
 					Inputs: []*bc.TxInput{
-						bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), genesisHash, 1000, issuanceProg, nil, nil, nil),
+						bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), genesisHash, 1000, issuanceProg, nil, nil),
 					},
 					Outputs: []*bc.TxOutput{
 						bc.NewTxOutput(aid, 1000, nil, nil),
