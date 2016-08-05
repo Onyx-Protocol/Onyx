@@ -41,6 +41,11 @@ func List(ctx context.Context, prev string, limit int) ([]*signers.Signer, strin
 	return signers.List(ctx, "account", prev, limit)
 }
 
+// SetTags updates the tags on a given Account
+func SetTags(ctx context.Context, id string, newTags map[string]interface{}) (*signers.Signer, error) {
+	return signers.SetTags(ctx, "account", id, newTags)
+}
+
 // CreateControlProgram creates a control program
 // that is tied to the Account and stores it in the database.
 func CreateControlProgram(ctx context.Context, accountID string) ([]byte, error) {

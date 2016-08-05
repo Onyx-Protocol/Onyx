@@ -109,9 +109,8 @@ type page struct {
 func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
 	h.HandleFunc("POST", "/v3/invitations", createInvitation)
-	h.HandleFunc("POST", "/list-accounts", listAccounts)
-	h.HandleFunc("POST", "/create-account", createAccount)
 	h.HandleFunc("POST", "/get-account", getAccount)
+	h.HandleFunc("POST", "/set-account-tags", setAccountTags)
 	h.HandleFunc("GET", "/v3/assets", a.listAssets)
 	h.HandleFunc("POST", "/v3/assets", a.defineAsset)
 	h.HandleFunc("POST", "/v3/accounts/:accountID/control-programs", createAccountControlProgram)

@@ -50,6 +50,14 @@ func getAccount(ctx context.Context, in struct{ ID string }) (interface{}, error
 	return account.Find(ctx, in.ID)
 }
 
+// POST /set-account-tags
+func setAccountTags(ctx context.Context, in struct {
+	AccountID string `json:"account_id"`
+	Tags      map[string]interface{}
+}) (interface{}, error) {
+	return account.SetTags(ctx, in.AccountID, in.Tags)
+}
+
 // DELETE /v3/accounts/:accountID
 // Idempotent
 func archiveAccount(ctx context.Context, accountID string) error {

@@ -78,25 +78,22 @@ func Create(ctx context.Context, typ string, xpubs []string, quorum int, tags ma
 		return nil, errors.Wrap(ErrBadQuorum)
 	}
 
+	tagsParam, err := tagsToNullString(tags)
+	if err != nil {
+		return nil, err
+	}
+
 	const q = `
 		INSERT INTO signers (id, type, xpubs, quorum, tags, client_token)
 		VALUES (next_chain_id($1::text), $2, $3, $4, $5, $6)
 		ON CONFLICT (client_token) DO NOTHING
 		RETURNING id, key_index(key_index)
   `
-
-	var tagsJSON []byte
-	if len(tags) != 0 {
-		tagsJSON, err = json.Marshal(tags)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-	}
 	var (
 		id       string
 		keyIndex []uint32
 	)
-	err = pg.QueryRow(ctx, q, typeIDMap[typ], typ, pg.Strings(xpubs), quorum, sql.NullString{String: string(tagsJSON), Valid: len(tagsJSON) > 0}, clientToken).
+	err = pg.QueryRow(ctx, q, typeIDMap[typ], typ, pg.Strings(xpubs), quorum, tagsParam, clientToken).
 		Scan(&id, (*pg.Uint32s)(&keyIndex))
 	if err == sql.ErrNoRows && clientToken != nil {
 		return findByClientToken(ctx, clientToken)
@@ -266,6 +263,24 @@ func List(ctx context.Context, typ, prev string, limit int) ([]*Signer, string, 
 	return signers, last, nil
 }
 
+// SetTags updates the tags on the provided Signer.
+func SetTags(ctx context.Context, typ, id string, tags map[string]interface{}) (*Signer, error) {
+	tagsParam, err := tagsToNullString(tags)
+	if err != nil {
+		return nil, err
+	}
+
+	const q = `
+		UPDATE signers SET tags=$1 WHERE id=$2 AND type=$3 AND NOT archived
+	`
+	_, err = pg.Exec(ctx, q, tagsParam, id, typ)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	return Find(ctx, typ, id)
+}
+
 func convertKeys(xpubs []string) ([]*hd25519.XPub, error) {
 	var xkeys []*hd25519.XPub
 	for i, xpub := range xpubs {
@@ -276,4 +291,16 @@ func convertKeys(xpubs []string) ([]*hd25519.XPub, error) {
 		xkeys = append(xkeys, xkey)
 	}
 	return xkeys, nil
+}
+
+func tagsToNullString(tags map[string]interface{}) (*sql.NullString, error) {
+	var tagsJSON []byte
+	if len(tags) != 0 {
+		var err error
+		tagsJSON, err = json.Marshal(tags)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+	}
+	return &sql.NullString{String: string(tagsJSON), Valid: len(tagsJSON) > 0}, nil
 }

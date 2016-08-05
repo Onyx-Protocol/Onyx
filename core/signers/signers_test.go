@@ -237,6 +237,23 @@ func TestList(t *testing.T) {
 	}
 }
 
+func TestSetTags(t *testing.T) {
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+
+	signer := createFixture(ctx, t)
+	newTags := map[string]interface{}{"one": "foo"}
+
+	updated, err := SetTags(ctx, signer.Type, signer.ID, newTags)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	signer.Tags = newTags
+	if !reflect.DeepEqual(signer, updated) {
+		t.Errorf("got = %+v want %+v", updated, signer)
+	}
+}
+
 var clientTokenCounter = createCounter()
 
 func createFixture(ctx context.Context, t testing.TB) *Signer {
