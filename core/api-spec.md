@@ -14,13 +14,11 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [Asset Object](#asset-object)
   * [Create Asset](#create-asset)
   * [Set Asset Tags](#set-asset-tags)
-  * [Get Asset](#get-asset)
   * [List Assets](#list-assets)
 * [Accounts](#accounts)
   * [Account Object](#account-object)
   * [Create Account](#create-account)
   * [Set Account Tags](#set-account-tags)
-  * [Get Account](#get-account)
   * [List Accounts](#list-accounts)
 * [Control Programs](#control-programs)
   * [Create Control Program](#create-control-program)
@@ -30,10 +28,8 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [Unspent Output Object](#unspent-output-object)
   * [Build Transaction Template](#build-transaction-template)
   * [Create Transaction](#create-transaction)
-  * [Get Transaction](#get-transaction)
   * [List Transactions](#list-transactions)
   * [List Balances](#list-balances)
-  * [Get Unspent Output](#get-unspent-output)
   * [List Unspent Outputs](#list-unspent-outputs)
 * [Indexes](#indexes)
   * [Index Object](#index-object)
@@ -158,24 +154,6 @@ Request
 
 Response: an [asset object](#asset-object).
 
-### Get Asset
-
-Endpoint
-```
-POST /get-asset
-```
-    
-Request
-```    
-[
-  {
-  "asset_id": "..."
-  }
-]
-```
-
-Response: an array of [asset objects](#asset-object).
-
 ### List Assets
 
 Endpoint
@@ -244,26 +222,6 @@ Request
 ```
 
 Response: an [account object](#account-object).
-
-
-### Get Account
-
-Endpoint
-```    
-POST /get-account
-```
-
-Request
-```    
-[
-  {
-    "id": "..."
-  }
-]
-```
-
-Response: an array of [account objects](#account-object).
-
 
 ### List Accounts
 Optionally filtered by a query.
@@ -484,24 +442,6 @@ Request: an array of [transaction template objects](#transaction-template-object
 
 Response: an array of [transaction objects](#transaction-object).
 
-### Get Transaction
-
-Endpoint
-```
-POST /get-transaction
-```
-
-Request
-```
-[
-  {
-    "id": "..."
-  }   
-]
-```
-
-Response: an array of [transaction objects](#transaction-object).
-
 ### List Transactions
 
 Endpoint
@@ -565,25 +505,6 @@ Ungrouped
   }
 ]
 ```
-
-### Get Unspent Output
-
-Endpoint
-```
-POST /get-unspent-output
-```
-
-Request
-```    
-[
-  {
-    "transaction_id": "...",
-    "position": "...",
-  }
-]
-```
-
-Response: an array of [output objects](#output-object).
 
 ### List Unspent Outputs
 
