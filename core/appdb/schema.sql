@@ -326,6 +326,18 @@ CREATE TABLE account_utxos (
 
 
 --
+-- Name: annotated_txs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE annotated_txs (
+    block_height bigint NOT NULL,
+    tx_pos integer NOT NULL,
+    tx_hash text NOT NULL,
+    data jsonb NOT NULL
+);
+
+
+--
 -- Name: assets; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -652,6 +664,14 @@ ALTER TABLE ONLY account_utxos
 
 
 --
+-- Name: annotated_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY annotated_txs
+    ADD CONSTRAINT annotated_txs_pkey PRIMARY KEY (block_height, tx_pos);
+
+
+--
 -- Name: assets_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -848,6 +868,13 @@ CREATE INDEX account_utxos_reservation_id_idx ON account_utxos USING btree (rese
 
 
 --
+-- Name: annotated_txs_data; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX annotated_txs_data ON annotated_txs USING gin (data);
+
+
+--
 -- Name: assets_sort_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -993,3 +1020,4 @@ insert into migrations (filename, hash) values ('2016-08-03.2.mockhsm.add-xpub-h
 insert into migrations (filename, hash) values ('2016-08-03.3.signer.add-tags-to-signers.sql', '96d4fca692e5eedbc7c2a65e993936717cdbb09bd3f0b220ee862cc1aec1b5a9');
 insert into migrations (filename, hash) values ('2016-08-04.0.assets.remove-mutable-definitions.sql', '0daf236696d4f80f96c8eeeb062673180991e64d9a27e65e29f45b8fc9564830');
 insert into migrations (filename, hash) values ('2016-08-05.0.core.remove-asset-redeem.sql', 'd9f1fe0eeb9b3702fb366586f2b208f1c0eab22a110f49d683a685a1c924da3b');
+insert into migrations (filename, hash) values ('2016-08-05.1.query.transaction-index.sql', '165e9595e85f127df281f66b9d4acf4b573289a12a0304d50ed53e024475d7e5');

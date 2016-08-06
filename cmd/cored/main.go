@@ -217,7 +217,7 @@ func main() {
 	}
 
 	// Setup the transaction query indexer to index every transaction.
-	indexer := query.NewIndexer(db)
+	indexer := query.NewIndexer(db, fc)
 
 	// Note, it's important for any services that will install blockchain
 	// callbacks to be initialized before leader.Run() and the http server,

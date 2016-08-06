@@ -6,6 +6,7 @@
 --   psql -f clear-blockchain.sql $DBURL
 
 TRUNCATE
+	annotated_txs,
 	account_utxos,
 	issuance_totals,
 	account_control_programs,

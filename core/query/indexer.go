@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/query/cql"
+	"chain/cos"
 	"chain/database/pg"
 	"chain/errors"
 	chainlog "chain/log"
@@ -22,11 +23,13 @@ var (
 )
 
 // NewIndexer constructs a new indexer for indexing transactions.
-func NewIndexer(db pg.DB) *Indexer {
-	return &Indexer{
+func NewIndexer(db pg.DB, fc *cos.FC) *Indexer {
+	indexer := &Indexer{
 		db:      db,
 		indexes: make(map[string]*Index),
 	}
+	fc.AddBlockCallback(indexer.indexBlockCallback)
+	return indexer
 }
 
 // Indexer creates, updates and queries against CQL indexes.
