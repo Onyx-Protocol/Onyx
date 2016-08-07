@@ -143,6 +143,7 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	// Transaction indexes & querying
 	h.HandleFunc("POST", "/create-index", a.createIndex)
 	h.HandleFunc("POST", "/list-indexes", a.listIndexes)
+	h.HandleFunc("POST", "/get-index", a.getIndex)
 
 	return h.ServeHTTPContext
 }

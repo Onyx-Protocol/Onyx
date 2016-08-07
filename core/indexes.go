@@ -16,7 +16,7 @@ func (a *api) createIndex(ctx context.Context, in struct {
 	Type  string `json:"type"`
 	Query string `json:"query"`
 }) (*query.Index, error) {
-	if in.Type != "transaction" && in.Type != "output" {
+	if in.Type != "transaction" && in.Type != "balance" && in.Type != "asset" {
 		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "unknown index type %q", in.Type)
 	}
 
@@ -27,7 +27,25 @@ func (a *api) createIndex(ctx context.Context, in struct {
 // listIndexes is an http handler for listing CQL indexes.
 //
 // POST /list-indexes
-func (a *api) listIndexes(ctx context.Context) ([]*query.Index, error) {
-	indexes, err := a.indexer.ListIndexes(ctx)
-	return indexes, errors.Wrap(err, "listing indexes")
+func (a *api) listIndexes(ctx context.Context, in requestQuery) (result page, err error) {
+	limit := defGenericPageSize
+
+	indexes, cursor, err := a.indexer.ListIndexes(ctx, in.Cursor, limit)
+	if err != nil {
+		return result, errors.Wrap(err, "listing indexes")
+	}
+	for _, item := range indexes {
+		result.Items = append(result.Items, item)
+	}
+	result.LastPage = len(indexes) < limit
+	result.Query.Cursor = cursor
+	return result, nil
+}
+
+// getIndex is an http handler for retrieving a CQL index.
+//
+// POST /get-index
+func (a *api) getIndex(ctx context.Context, in struct{ ID string }) (*query.Index, error) {
+	idx, err := a.indexer.GetIndex(ctx, in.ID)
+	return idx, errors.Wrap(err, "retrieving an index")
 }

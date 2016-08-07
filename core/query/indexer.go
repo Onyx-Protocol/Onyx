@@ -105,10 +105,10 @@ func (i *Indexer) CreateIndex(ctx context.Context, id string, typ string, rawQue
 }
 
 // ListIndexes lists all registered indexes.
-func (i *Indexer) ListIndexes(ctx context.Context) ([]*Index, error) {
-	indexes, err := i.getIndexes(ctx)
+func (i *Indexer) ListIndexes(ctx context.Context, cursor string, limit int) ([]*Index, string, error) {
+	indexes, newCursor, err := i.listIndexes(ctx, cursor, limit)
 	if err != nil {
-		return nil, errors.Wrap(err, "retrieving indexes")
+		return nil, "", errors.Wrap(err, "retrieving indexes")
 	}
 
 	// Parse all the queries so that we can print a cleaned
@@ -116,10 +116,35 @@ func (i *Indexer) ListIndexes(ctx context.Context) ([]*Index, error) {
 	for _, idx := range indexes {
 		idx.Query, err = cql.Parse(idx.rawQuery)
 		if err != nil {
-			return nil, errors.Wrap(err, "parsing raw query")
+			return nil, "", errors.Wrap(err, "parsing raw query")
 		}
 	}
-	return indexes, nil
+	return indexes, newCursor, nil
+}
+
+// GetIndex retrieves a registered index.
+func (i *Indexer) GetIndex(ctx context.Context, id string) (*Index, error) {
+	const q = `
+		SELECT internal_id, id, type, query
+		FROM query_indexes WHERE id=$1
+	`
+
+	var idx Index
+	err := i.db.QueryRow(ctx, q, id).Scan(
+		&idx.internalID,
+		&idx.ID,
+		&idx.Type,
+		&idx.rawQuery,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "retrieve index sql query")
+	}
+
+	idx.Query, err = cql.Parse(idx.rawQuery)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing raw query")
+	}
+	return &idx, nil
 }
 
 func (i *Indexer) isIndexActive(id string) bool {
@@ -181,4 +206,36 @@ func (i *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
 		indexes = append(indexes, idx)
 	}
 	return indexes, errors.Wrap(rows.Err())
+}
+
+// listIndexes behaves almost identically to getIndexes.
+// The caveat is listIndexes returns a paged result.
+func (i *Indexer) listIndexes(ctx context.Context, cursor string, limit int) ([]*Index, string, error) {
+	const q = `
+		SELECT internal_id, id, type, query, created_at
+		FROM query_indexes WHERE ($1='' OR $1<id)
+		ORDER BY id ASC LIMIT $2
+	`
+
+	rows, err := i.db.Query(ctx, q, cursor, limit)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "reload indexes sql query")
+	}
+	defer rows.Close()
+
+	var indexes []*Index
+	for rows.Next() {
+		idx := new(Index)
+		err = rows.Scan(&idx.internalID, &idx.ID, &idx.Type, &idx.rawQuery, &idx.createdAt)
+		if err != nil {
+			return nil, "", errors.Wrap(err, "scanning query_indexes row")
+		}
+		indexes = append(indexes, idx)
+	}
+
+	var last string
+	if len(indexes) > 0 {
+		last = indexes[len(indexes)-1].ID
+	}
+	return indexes, last, errors.Wrap(rows.Err())
 }
