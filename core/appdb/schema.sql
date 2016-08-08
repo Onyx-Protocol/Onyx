@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.3
--- Dumped by pg_dump version 9.5.3
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -503,6 +503,16 @@ CREATE TABLE pool_txs (
 
 
 --
+-- Name: query_blocks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE query_blocks (
+    height bigint NOT NULL,
+    "timestamp" bigint NOT NULL
+);
+
+
+--
 -- Name: query_indexes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -768,6 +778,14 @@ ALTER TABLE ONLY pool_txs
 
 
 --
+-- Name: query_blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY query_blocks
+    ADD CONSTRAINT query_blocks_pkey PRIMARY KEY (height);
+
+
+--
 -- Name: query_indexes_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -893,6 +911,13 @@ CREATE INDEX auth_tokens_user_id_idx ON auth_tokens USING btree (user_id);
 --
 
 CREATE UNIQUE INDEX blocks_txs_block_height_block_pos_key ON blocks_txs USING btree (block_height, block_pos);
+
+
+--
+-- Name: query_blocks_timestamp_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX query_blocks_timestamp_idx ON query_blocks USING btree ("timestamp");
 
 
 --
@@ -1022,3 +1047,4 @@ insert into migrations (filename, hash) values ('2016-08-04.0.assets.remove-muta
 insert into migrations (filename, hash) values ('2016-08-05.0.core.remove-asset-redeem.sql', 'd9f1fe0eeb9b3702fb366586f2b208f1c0eab22a110f49d683a685a1c924da3b');
 insert into migrations (filename, hash) values ('2016-08-05.1.query.transaction-index.sql', '165e9595e85f127df281f66b9d4acf4b573289a12a0304d50ed53e024475d7e5');
 insert into migrations (filename, hash) values ('2016-08-08.0.assets.use-jsonb-for-definition.sql', 'c2cad7d90cbdb17a9bebb7a54547ca6cfc2e788a6ec881d6fb5885ba02ee2cb4');
+insert into migrations (filename, hash) values ('2016-08-08.1.query.blocks.sql', '6df00f3746c4d0f322a96c3054cbc9f08939b3f31cbcbcfd06d1341f0bf44d2b');

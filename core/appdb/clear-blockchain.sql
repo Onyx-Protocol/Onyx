@@ -14,6 +14,7 @@ TRUNCATE
 	blocks_txs,
 	blocks,
 	txs,
+	query_blocks,
 	reservations,
 	signed_blocks,
 	state_trees;

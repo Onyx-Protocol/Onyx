@@ -15,12 +15,26 @@ import (
 // saves all annotated transactions to the database and indexes them according
 // to the Core's configured indexes.
 func (i *Indexer) indexBlockCallback(ctx context.Context, b *bc.Block) {
-	_, err := i.annotatedTxs(ctx, b)
+	err := i.insertBlock(ctx, b)
+	if err != nil {
+		log.Fatal(ctx, err)
+	}
+
+	_, err = i.annotatedTxs(ctx, b)
 	if err != nil {
 		log.Fatal(ctx, err)
 	}
 
 	// TODO(jackson): Build indexes
+}
+
+func (i *Indexer) insertBlock(ctx context.Context, b *bc.Block) error {
+	const q = `
+		INSERT INTO query_blocks (height, timestamp) VALUES($1, $2)
+		ON CONFLICT (height) DO NOTHING
+	`
+	_, err := i.db.Exec(ctx, q, b.Height, b.TimestampMS)
+	return errors.Wrap(err, "inserting block timestamp")
 }
 
 func (i *Indexer) annotatedTxs(ctx context.Context, b *bc.Block) ([]map[string]interface{}, error) {
