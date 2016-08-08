@@ -7,7 +7,6 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
 * [MockHSM](#mockhsm)
   * [Key Object](#key-object)
   * [Create Key](#create-key)
-  * [Get Key](#get-key)
   * [List Keys](#list-keys)
   * [Sign Transaction Template](#sign-transaction-template)
 * [Assets](#assets)
@@ -44,7 +43,6 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
     
 ```
 {
-  "id": "...",
   "xpub": "xpub1.."
 }
 ```
@@ -54,29 +52,6 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
 Endpoint
 ```
 POST /mockhsm/create-key
-```
-    
-Request
-```
-{
-  "id": "..."     // user supplied. must be unique. if not provided, core will create.
-}
-```
-
-Response: [Key Object](#key-object)
-
-### Get Key
-    
-Endpoint
-```
-POST /mockhsm/get-key
-```    
-
-Request
-```
-{
-  "id": "..."
-}
 ```
 
 Response: [Key Object](#key-object)
@@ -108,7 +83,7 @@ Response: An array of signed transaction template objects.
 ### Asset Object
 ```
   {
-    "asset_id": "...",
+    "id": "...",
     "issuance_program: "...",
     "definition": {},
     "tags": {}
@@ -162,6 +137,8 @@ POST /list-assets
 ```
     
 Request
+
+Accepts either an `index_id` or a `query`.
 ```
 {
   index_id: "...",
@@ -184,7 +161,6 @@ Response: an array of [asset objects](#asset-object).
 ```
 
 ### Create Account
-Creates one or more new accounts.
 
 Endpoint
 ```    
@@ -195,7 +171,6 @@ Request
 ```
 [
   {
-    "id": "...",          // user supplied. must be unique. if not provided, core will create.
     "xpubs": ["xpub"],
     "quorum": 1,
     "tags": {}
@@ -224,7 +199,7 @@ Request
 Response: an [account object](#account-object).
 
 ### List Accounts
-Optionally filtered by a query.
+Optionally filtered by a `query`.
 
 Endpoint
 ```    
@@ -310,7 +285,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
                 "asset_tags": {},
                 "issuance_program": ...,
                 "reference_data": {"details:": "..."},
-                "asset_definition": "..."                       // if provided at issuance
+                "asset_definition": "..."
             },
             {
                 "action": spend,
@@ -318,7 +293,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
                     "transaction_id": "94C5D3...",
                     "position": 1,
                 },
-                "account_ids": [],
+                "account_id": "",
                 "account_tags": {},
                 "asset_id": "125B4E...",
                 "asset_tags": {},
@@ -330,7 +305,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
             {
                 "action": "control",
                 "position": "...",
-                "account_ids": [],
+                "account_id": "",
                 "account_tags": {},
                 "asset_id": "125B4E...",
                 "asset_tags": {},
@@ -455,7 +430,6 @@ Accepts either an `index_id` or a `query`.
 ```
 {
   "index_id": "...",
-  "query": "...,"
   "params": ["param"],
 }
 ```
@@ -476,8 +450,7 @@ Accepts either an `index_id` or a `query`.
 ``` 
 {
   "index_id": "...",
-  "query": "...,"
-  "params": ["fishco", null],      // wildcard is group_by
+  "params": ["param", null],      // `null` indicates group by which to sum unspents
 }
 ```
 
@@ -519,7 +492,6 @@ Accepts either an `index_id` or a `query`.
 ```
 {
   "index_id": "...",
-  "query": "...,"
   "params": ["param"],
 }
 ```
@@ -548,7 +520,6 @@ POST /create-index
 Request
 ```
 {
-  "id": "...",            // user supplied. must be unique. if not provided, core will create.
   "type": "...",          // `transaction`, `balance`, or `asset`
   "unspents": "true",     // only for `type: "balance"` - indexes unspent outputs in addition to balances
   "query": "..."
