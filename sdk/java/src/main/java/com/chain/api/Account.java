@@ -27,7 +27,7 @@ public class Account {
     public List<String> xpubs;
 
     /**
-     * List of user-specified tags on the object
+     * User-specified tag structure for the account
      */
     public Map<String, Object> tags;
 

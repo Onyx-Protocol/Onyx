@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.3
+-- Dumped by pg_dump version 9.5.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -346,13 +346,13 @@ CREATE TABLE assets (
     key_index bigint NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     definition_mutable boolean DEFAULT false NOT NULL,
-    definition bytea,
     sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL,
     issuance_program bytea NOT NULL,
     archived boolean DEFAULT false NOT NULL,
     client_token text,
     genesis_hash text NOT NULL,
-    signer_id text NOT NULL
+    signer_id text NOT NULL,
+    definition jsonb
 );
 
 
@@ -1021,3 +1021,4 @@ insert into migrations (filename, hash) values ('2016-08-03.3.signer.add-tags-to
 insert into migrations (filename, hash) values ('2016-08-04.0.assets.remove-mutable-definitions.sql', '0daf236696d4f80f96c8eeeb062673180991e64d9a27e65e29f45b8fc9564830');
 insert into migrations (filename, hash) values ('2016-08-05.0.core.remove-asset-redeem.sql', 'd9f1fe0eeb9b3702fb366586f2b208f1c0eab22a110f49d683a685a1c924da3b');
 insert into migrations (filename, hash) values ('2016-08-05.1.query.transaction-index.sql', '165e9595e85f127df281f66b9d4acf4b573289a12a0304d50ed53e024475d7e5');
+insert into migrations (filename, hash) values ('2016-08-08.0.assets.use-jsonb-for-definition.sql', 'c2cad7d90cbdb17a9bebb7a54547ca6cfc2e788a6ec881d6fb5885ba02ee2cb4');

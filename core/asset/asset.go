@@ -23,12 +23,12 @@ var (
 )
 
 type Asset struct {
-	AssetID         bc.AssetID      `json:"id"`
-	Definition      []byte          `json:"definition"`
-	IssuanceProgram []byte          `json:"issuance_program"`
-	GenesisHash     bc.Hash         `json:"genesis_hash"`
-	Signer          *signers.Signer `json:"signer"`
-	KeyIndex        []uint32        `json:"key_index"`
+	AssetID         bc.AssetID             `json:"id"`
+	Definition      map[string]interface{} `json:"definition"`
+	IssuanceProgram []byte                 `json:"issuance_program"`
+	GenesisHash     bc.Hash                `json:"genesis_hash"`
+	Signer          *signers.Signer        `json:"signer"`
+	KeyIndex        []uint32               `json:"key_index"`
 }
 
 // Define defines a new Asset.
@@ -43,7 +43,7 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 		return nil, err
 	}
 
-	def, err := serializeAssetDef(definition)
+	serializedDef, err := serializeAssetDef(definition)
 	if err != nil {
 		return nil, errors.Wrap(err, "serializing asset definition")
 	}
@@ -57,14 +57,14 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 
 	derivedXPubs := hd25519.DeriveXPubs(assetSigner.XPubs, path)
 	derivedPKs := hd25519.XPubKeys(derivedXPubs)
-	issuanceProgram, err := programWithDefinition(derivedPKs, assetSigner.Quorum, def)
+	issuanceProgram, err := programWithDefinition(derivedPKs, assetSigner.Quorum, serializedDef)
 	if err != nil {
 		return nil, err
 	}
 
 	asset := &Asset{
 		KeyIndex:        idx,
-		Definition:      def,
+		Definition:      definition,
 		IssuanceProgram: issuanceProgram,
 		GenesisHash:     genesisHash,
 		AssetID:         bc.ComputeAssetID(issuanceProgram, genesisHash, 1),
@@ -141,7 +141,7 @@ func List(ctx context.Context, prev string, limit int) ([]*Asset, string, error)
 	`
 	var assets []*Asset
 	err := pg.ForQueryRows(ctx, q, prev, limit,
-		func(id string, definition, issuanceProgram []byte, keyIndex pg.Uint32s, signerID string, quorum int, xpubs pg.Strings, signerKeyIndex pg.Uint32s) error {
+		func(id string, definitionBytes []byte, issuanceProgram []byte, keyIndex pg.Uint32s, signerID string, quorum int, xpubs pg.Strings, signerKeyIndex pg.Uint32s) error {
 			var assetID bc.AssetID
 			err := assetID.UnmarshalText([]byte(id))
 			if err != nil {
@@ -151,6 +151,14 @@ func List(ctx context.Context, prev string, limit int) ([]*Asset, string, error)
 			keys, err := convertKeys(xpubs)
 			if err != nil {
 				return errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
+			}
+
+			var definition map[string]interface{}
+			if len(definitionBytes) > 0 {
+				err := json.Unmarshal(definitionBytes, &definition)
+				if err != nil {
+					return errors.Wrap(err)
+				}
 			}
 
 			assets = append(assets, &Asset{
@@ -192,12 +200,16 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
     VALUES($1, $2, to_key_index($3), $4, $5, $6, $7)
     ON CONFLICT (client_token) DO NOTHING
   `
+	defParams, err := mapToNullString(asset.Definition)
+	if err != nil {
+		return nil, err
+	}
 
 	res, err := pg.Exec(
 		ctx, q,
 		asset.AssetID, asset.Signer.ID, pg.Uint32s(asset.KeyIndex),
 		asset.GenesisHash, asset.IssuanceProgram,
-		asset.Definition, clientToken,
+		defParams, clientToken,
 	)
 	if err != nil {
 		return nil, err
@@ -226,15 +238,16 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 	`
 
 	var (
-		a        Asset
-		archived bool
-		signerID string
+		a          Asset
+		archived   bool
+		signerID   string
+		definition []byte
 	)
 
 	err := pg.QueryRow(ctx, q, id.String()).Scan(
 		&a.AssetID,
 		&a.IssuanceProgram,
-		&a.Definition,
+		&definition,
 		&a.GenesisHash,
 		(*pg.Uint32s)(&a.KeyIndex),
 		&signerID,
@@ -247,6 +260,13 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 
 	if archived {
 		return nil, ErrArchived
+	}
+
+	if len(definition) > 0 {
+		err := json.Unmarshal(definition, &a.Definition)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
 	}
 
 	sig, err := signers.Find(ctx, "asset", signerID)
@@ -267,14 +287,15 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 		WHERE client_token=$1
 	`
 	var (
-		a        Asset
-		archived bool
-		signerID string
+		a          Asset
+		archived   bool
+		signerID   string
+		definition []byte
 	)
 	err := pg.QueryRow(ctx, q, clientToken).Scan(
 		&a.AssetID,
 		&a.IssuanceProgram,
-		&a.Definition,
+		&definition,
 		&a.GenesisHash,
 		(*pg.Uint32s)(&a.KeyIndex),
 		&signerID,
@@ -286,6 +307,13 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 
 	if archived {
 		return nil, ErrArchived
+	}
+
+	if len(definition) > 0 {
+		err := json.Unmarshal(definition, &a.Definition)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
 	}
 
 	sig, err := signers.Find(ctx, "asset", signerID)
@@ -341,4 +369,16 @@ func convertKeys(xpubs []string) ([]*hd25519.XPub, error) {
 		xkeys = append(xkeys, xkey)
 	}
 	return xkeys, nil
+}
+
+func mapToNullString(in map[string]interface{}) (*sql.NullString, error) {
+	var mapJson []byte
+	if len(in) != 0 {
+		var err error
+		mapJson, err = json.Marshal(in)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+	}
+	return &sql.NullString{String: string(mapJson), Valid: len(mapJson) > 0}, nil
 }
