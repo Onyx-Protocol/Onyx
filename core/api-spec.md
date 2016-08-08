@@ -26,7 +26,7 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [Transaction Object](#transaction-object)
   * [Unspent Output Object](#unspent-output-object)
   * [Build Transaction Template](#build-transaction-template)
-  * [Create Transaction](#create-transaction)
+  * [Submit Transaction Template](#submit-transaction-template)
   * [List Transactions](#list-transactions)
   * [List Balances](#list-balances)
   * [List Unspent Outputs](#list-unspent-outputs)
@@ -406,11 +406,11 @@ Request
 
 Response: An array of [transaction template objects](#transaction-template-object).
 
-### Create Transaction
+### Submit Transaction Template
 
 Endpoint
 ```
-POST /create-transaction
+POST /submit-transaction-template
 ```
 
 Request: an array of [transaction template objects](#transaction-template-object).
