@@ -30,8 +30,7 @@ const (
 // Tx holds a transaction along with its hash.
 type Tx struct {
 	TxData
-	Hash   Hash
-	Stored bool // whether this tx is on durable storage
+	Hash Hash
 }
 
 func (tx *Tx) UnmarshalText(p []byte) error {

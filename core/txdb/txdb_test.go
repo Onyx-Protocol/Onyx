@@ -46,7 +46,6 @@ func TestPoolTxs(t *testing.T) {
 		Version:  1,
 		Metadata: []byte("hello"),
 	})
-	wantTx.Stored = true
 	want := []*bc.Tx{wantTx}
 
 	if !reflect.DeepEqual(got, want) {
@@ -78,7 +77,6 @@ func TestGetTxs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tx.Stored = true
 	if !reflect.DeepEqual(poolTxs[tx.Hash], tx) {
 		t.Errorf("got:\n\t%+v\nwant:\n\t%+v", poolTxs[tx.Hash], tx)
 	}

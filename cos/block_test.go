@@ -241,9 +241,6 @@ func TestGenerateBlock(t *testing.T) {
 		},
 		Transactions: txs,
 	}
-	for _, wanttx := range want.Transactions {
-		wanttx.Stored = true
-	}
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("generated block:\ngot:  %+v\nwant: %+v", got, want)

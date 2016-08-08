@@ -38,7 +38,7 @@ func getBlockchainTxs(ctx context.Context, db pg.DB, hashes ...bc.Hash) (bcTxs m
 	`
 	bcTxs = make(map[bc.Hash]*bc.Tx, len(hashes))
 	err = pg.ForQueryRows(pg.NewContext(ctx, db), q, pg.Strings(hashStrings), func(hash bc.Hash, data bc.TxData) {
-		tx := &bc.Tx{TxData: data, Hash: hash, Stored: true}
+		tx := &bc.Tx{TxData: data, Hash: hash}
 		bcTxs[hash] = tx
 	})
 	return bcTxs, errors.Wrap(err, "get txs query")
@@ -59,7 +59,7 @@ func getPoolTxs(ctx context.Context, db pg.DB, hashes ...bc.Hash) (poolTxs map[b
 	`
 	poolTxs = make(map[bc.Hash]*bc.Tx, len(hashes))
 	err = pg.ForQueryRows(pg.NewContext(ctx, db), q, pg.Strings(hashStrings), func(hash bc.Hash, data bc.TxData) {
-		tx := &bc.Tx{TxData: data, Hash: hash, Stored: true}
+		tx := &bc.Tx{TxData: data, Hash: hash}
 		poolTxs[hash] = tx
 	})
 	return poolTxs, errors.Wrap(err, "get txs query")
@@ -73,7 +73,7 @@ func dumpPoolTxs(ctx context.Context, db pg.DB) ([]*bc.Tx, error) {
 	const q = `SELECT tx_hash, data FROM pool_txs ORDER BY sort_id`
 	var txs []*bc.Tx
 	err := pg.ForQueryRows(pg.NewContext(ctx, db), q, func(hash bc.Hash, data bc.TxData) {
-		txs = append(txs, &bc.Tx{TxData: data, Hash: hash, Stored: true})
+		txs = append(txs, &bc.Tx{TxData: data, Hash: hash})
 	})
 	if err != nil {
 		return nil, err
