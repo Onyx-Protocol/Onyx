@@ -257,7 +257,7 @@ NOTE: Revisit this! What are the implications on `redemption_predicates` when th
       "signature_data": "e603d3b8a10fb1714b986393c686fc3ab5f361ec29f94cfd8c7ef3e95e5e44d8",
       "signatures": [
         {
-          "xpub_hash": "...",
+          "xpub": "...",
           "derivation_path": [0,0,2,0,9],
           "signature": ""
         }
