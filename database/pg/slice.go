@@ -2,6 +2,7 @@ package pg
 
 import (
 	"bytes"
+	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -66,6 +67,39 @@ func (a Strings) Value() (driver.Value, error) {
 			val = append(val, ',')
 		}
 		b := []byte(s)
+		val = append(val, '"')
+		for _, c := range b {
+			switch c {
+			case '"', '\\':
+				val = append(val, '\\', c)
+			default:
+				val = append(val, c)
+			}
+		}
+		val = append(val, '"')
+	}
+	return append(val, '}'), nil
+}
+
+type NullStrings []sql.NullString
+
+func (a *NullStrings) Scan(val interface{}) error {
+	panic("unimplemented")
+}
+
+func (a NullStrings) Value() (driver.Value, error) {
+	var val []byte
+	val = append(val, '{')
+	for i, s := range a {
+		if i > 0 {
+			val = append(val, ',')
+		}
+		if !s.Valid {
+			val = append(val, "NULL"...)
+			continue
+		}
+
+		b := []byte(s.String)
 		val = append(val, '"')
 		for _, c := range b {
 			switch c {

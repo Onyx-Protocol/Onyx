@@ -55,6 +55,35 @@ func TestSliceStringValue(t *testing.T) {
 	}
 }
 
+func TestSliceNullStringsValue(t *testing.T) {
+	tests := []struct {
+		in  NullStrings
+		out string
+	}{
+		{NullStrings{{"a", true}, {"b", true}, {"c", true}}, `{"a","b","c"}`},
+		{NullStrings{{"a", true}, {"b", false}, {"c", true}}, `{"a",NULL,"c"}`},
+		{NullStrings{{"", false}, {"NULL", false}, {"NULL", true}}, `{NULL,NULL,"NULL"}`},
+		{NullStrings{{"a b", true}, {"c'd", true}}, `{"a b","c'd"}`},
+		{NullStrings{{`a"`, true}, {"this,can,handle,commas", true}}, `{"a\"","this,can,handle,commas"}`},
+	}
+
+	for i, test := range tests {
+		val, err := test.in.Value()
+		if err != nil {
+			t.Errorf("%d: unexpected error: %s", i, err)
+			continue
+		}
+		b, ok := val.([]byte)
+		if !ok {
+			t.Errorf("%d: could not type assert to []byte", i)
+			continue
+		}
+		if !reflect.DeepEqual(string(b), test.out) {
+			t.Errorf("%d: Scan(%v) got %v want %v", i, test.in, string(b), test.out)
+		}
+	}
+}
+
 func TestSliceStringScanErr(t *testing.T) {
 	s := `{","}`
 	var x Strings
