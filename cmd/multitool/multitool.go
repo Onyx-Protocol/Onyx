@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha512"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -73,6 +75,7 @@ var subcommands = map[string]command{
 	"genprv":      command{genprv, "generate prv", ""},
 	"genxprv":     command{genxprv, "generate xprv", ""},
 	"hex":         command{hexCmd, "string <-> hex", "INPUT"},
+	"hmac512":     command{hmac512, "compute the hmac512 digest", "KEY VALUE"},
 	"pub":         command{pub, "get pub key from prv, or xpub from xprv", "PRV/XPRV"},
 	"script":      command{script, "hex <-> opcodes", "INPUT"},
 	"sha3":        command{sha3Cmd, "produce sha3 hash", "INPUT"},
@@ -235,8 +238,16 @@ func hexCmd(args []string) {
 	if err == nil {
 		fmt.Println(string(b))
 	} else {
-		fmt.Println(hex.EncodeToString(b))
+		fmt.Println(hex.EncodeToString([]byte(inp)))
 	}
+}
+
+func hmac512(args []string) {
+	key, usedStdin := input(args, 0, false)
+	val, _ := input(args, 1, usedStdin)
+	mac := hmac.New(sha512.New, mustDecodeHex(key))
+	mac.Write(mustDecodeHex(val))
+	fmt.Println(hex.EncodeToString(mac.Sum(nil)))
 }
 
 func pub(args []string) {

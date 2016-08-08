@@ -35,7 +35,7 @@ func TestCreateControlProgram(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	want, err := txscript.ParseScriptString("OP_DUP OP_SHA3 OP_DATA_32 0xffba1b8515ea01b4eb0026e65721a884c8cf4a15be58adc3dce24306a81026fe OP_EQUALVERIFY 0 OP_CHECKPREDICATE")
+	want, err := txscript.ParseScriptString("OP_DUP OP_SHA3 OP_DATA_32 0x963e9956eabe4610b042a3b085a1dc648e7fd87298b51d0369e2f66446338739 OP_EQUALVERIFY 0 OP_CHECKPREDICATE")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
