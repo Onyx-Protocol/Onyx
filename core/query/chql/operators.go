@@ -1,4 +1,4 @@
-package cql
+package chql
 
 import "strconv"
 

@@ -1,4 +1,4 @@
-package cql
+package chql
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ func Eval(env map[string]interface{}, q Query) (s Set, err error) {
 	return v.set, nil
 }
 
-// Type defines the value types of CQL.
+// Type defines the value types of ChQL.
 type Type int
 
 const (
@@ -53,7 +53,7 @@ func (t Type) String() string {
 	case Object:
 		return "object"
 	}
-	panic("unknown cql type")
+	panic("unknown ChQL type")
 }
 
 // value represents the result of evaluating an expression against an

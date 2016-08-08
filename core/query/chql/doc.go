@@ -1,14 +1,14 @@
 /*
 
-Package cql evaluates expressions in the Chain Query Language (CQL).
-A CQL query is a boolean expression with zero or more placeholder
+Package chql evaluates expressions in the Chain Query Language (ChQL).
+A ChQL query is a boolean expression with zero or more placeholder
 values ($1, $2, etc) that are initially unconstrained. The query is
 evaluated in an environment (such as a transaction object or a UTXO)
 that determines the value of all non-placeholder terms. The query
 and its fixed values together constrain the placeholders. Function
 Eval finds the set of all placeholder values that satisfy the query.
 
-Expressions in CQL have the following forms:
+Expressions in ChQL have the following forms:
 
   Form                     Type     Subexpression types
   expr1 "OR" expr2         bool     bool, bool
@@ -48,4 +48,4 @@ Queries are statically type-checked: if a subexpression doesn't have
 the appropriate type, Parse will return an error.
 
 */
-package cql
+package chql

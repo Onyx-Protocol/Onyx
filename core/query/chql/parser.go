@@ -1,24 +1,24 @@
-package cql
+package chql
 
 import (
 	"fmt"
 	"strconv"
 )
 
-// Query represents a parsed CQL expression.
+// Query represents a parsed CjQL expression.
 type Query struct {
 	expr       expr
 	Parameters int
 }
 
 // String returns a cleaned, canonical representation of the
-// CQL query string.
+// ChQL query string.
 func (q Query) String() string {
 	return q.expr.String()
 }
 
 // MarshalText implements the encoding.TextMarshaler interface and
-// returns a cleaned, canonical representation of the CQL query.
+// returns a cleaned, canonical representation of the ChQL query.
 func (q Query) MarshalText() ([]byte, error) {
 	return []byte(q.expr.String()), nil
 }

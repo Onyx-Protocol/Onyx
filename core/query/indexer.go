@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/query/cql"
+	"chain/core/query/chql"
 	"chain/cos"
 	"chain/database/pg"
 	"chain/errors"
@@ -18,8 +18,8 @@ const (
 )
 
 var (
-	ErrParsingQuery      = errors.New("error parsing CQL query")
-	ErrTooManyParameters = errors.New("transaction CQL queries support up to 1 parameter")
+	ErrParsingQuery      = errors.New("error parsing ChQL query")
+	ErrTooManyParameters = errors.New("transaction ChQL queries support up to 1 parameter")
 )
 
 // NewIndexer constructs a new indexer for indexing transactions.
@@ -32,7 +32,7 @@ func NewIndexer(db pg.DB, fc *cos.FC) *Indexer {
 	return indexer
 }
 
-// Indexer creates, updates and queries against CQL indexes.
+// Indexer creates, updates and queries against ChQL indexes.
 type Indexer struct {
 	db      pg.DB
 	mu      sync.Mutex // protects indexes
@@ -65,12 +65,12 @@ func (i *Indexer) BeginIndexing(ctx context.Context) error {
 	return nil
 }
 
-// Index represents a transaction index on a particular CQL query.
+// Index represents a transaction index on a particular ChQL query.
 type Index struct {
-	ID         string    `json:"id"`   // unique, external string identifier
-	Type       string    `json:"type"` // 'transaction', 'output', etc.
-	Query      cql.Query `json:"query"`
-	internalID int       // unique, internal pg serial id
+	ID         string     `json:"id"`   // unique, external string identifier
+	Type       string     `json:"type"` // 'transaction', 'output', etc.
+	Query      chql.Query `json:"query"`
+	internalID int        // unique, internal pg serial id
 	rawQuery   string
 	createdAt  time.Time
 }
@@ -78,7 +78,7 @@ type Index struct {
 // CreateIndex commits a new index in the database. Blockchain data
 // will not be indexed until the leader process picks up the new index.
 func (i *Indexer) CreateIndex(ctx context.Context, id string, typ string, rawQuery string) (*Index, error) {
-	q, err := cql.Parse(rawQuery)
+	q, err := chql.Parse(rawQuery)
 	if err != nil {
 		return nil, errors.WithDetail(ErrParsingQuery, err.Error())
 	}
@@ -114,7 +114,7 @@ func (i *Indexer) ListIndexes(ctx context.Context, cursor string, limit int) ([]
 	// Parse all the queries so that we can print a cleaned
 	// represenation of the query.
 	for _, idx := range indexes {
-		idx.Query, err = cql.Parse(idx.rawQuery)
+		idx.Query, err = chql.Parse(idx.rawQuery)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "parsing raw query")
 		}
@@ -140,7 +140,7 @@ func (i *Indexer) GetIndex(ctx context.Context, id string) (*Index, error) {
 		return nil, errors.Wrap(err, "retrieve index sql query")
 	}
 
-	idx.Query, err = cql.Parse(idx.rawQuery)
+	idx.Query, err = chql.Parse(idx.rawQuery)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing raw query")
 	}
@@ -155,7 +155,7 @@ func (i *Indexer) isIndexActive(id string) bool {
 }
 
 func (i *Indexer) setupIndex(idx *Index) (err error) {
-	idx.Query, err = cql.Parse(idx.rawQuery)
+	idx.Query, err = chql.Parse(idx.rawQuery)
 	if err != nil {
 		return errors.Wrap(err, "parsing raw query for index", idx.ID)
 	}

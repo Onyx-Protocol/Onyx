@@ -24,7 +24,7 @@ func (a *api) createIndex(ctx context.Context, in struct {
 	return idx, errors.Wrap(err, "creating the new index")
 }
 
-// listIndexes is an http handler for listing CQL indexes.
+// listIndexes is an http handler for listing ChQL indexes.
 //
 // POST /list-indexes
 func (a *api) listIndexes(ctx context.Context, in requestQuery) (result page, err error) {
@@ -42,7 +42,7 @@ func (a *api) listIndexes(ctx context.Context, in requestQuery) (result page, er
 	return result, nil
 }
 
-// getIndex is an http handler for retrieving a CQL index.
+// getIndex is an http handler for retrieving a ChQL index.
 //
 // POST /get-index
 func (a *api) getIndex(ctx context.Context, in struct{ ID string }) (*query.Index, error) {

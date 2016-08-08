@@ -1,4 +1,4 @@
-package cql
+package chql
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 // AsSQL translates q to SQL using the provided sql table definition.
 //
 // Example usage:
-//     sqlExpr, err := AsSQL(cqlQuery, unspentOutputsTbl)
+//     sqlExpr, err := AsSQL(chqlQuery, unspentOutputsTbl)
 //     if err != nil {
 //         // ...
 //     }
@@ -41,7 +41,7 @@ func AsSQL(q Query, tbl SQLTable) (sqlExpr SQLExpr, err error) {
 }
 
 // SQLTable defines the schema of a queryable SQL table and the mapping
-// of CQL attribute names to column names.
+// of ChQL attribute names to column names.
 type SQLTable map[string]SQLColumn
 
 // SQLColumn defines a column of a queryable SQL table.
@@ -55,7 +55,7 @@ type sqlPlaceholder struct {
 	value  interface{}
 }
 
-// SQLExpr encapsulates a generated SQL expression for executing a CQL query
+// SQLExpr encapsulates a generated SQL expression for executing a ChQL query
 // against a table. The SQL expression is guaranteed to evaluate to a boolean
 // in SQL against the provided table.
 type SQLExpr struct {
@@ -70,7 +70,7 @@ func (q SQLExpr) String() string {
 }
 
 // Values constructs the values to the parameterized SQL query by merging
-// in the CQL query parameters.
+// in the ChQL query parameters.
 func (q SQLExpr) Values(params ...interface{}) []interface{} {
 	var values []interface{}
 	for _, p := range q.placeholders {
@@ -88,7 +88,7 @@ func translateToSQL(w *SQLExpr, t SQLTable, expr expr) {
 	case parenExpr:
 		// No need to write extra parens here because all expressions
 		// with operators are written with explicit wrapping parens so
-		// as not to assume SQL operator precedence is the same as CQL's.
+		// as not to assume SQL operator precedence is the same as ChQL's.
 		translateToSQL(w, t, e.inner)
 	case notExpr:
 		w.buf.WriteString("(")

@@ -1,4 +1,4 @@
-package cql
+package chql
 
 // Set represents the set of parameter values that can satisfy the
 // query for the provided object.

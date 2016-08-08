@@ -1,4 +1,4 @@
-package cql
+package chql
 
 import (
 	"reflect"
@@ -15,24 +15,24 @@ func TestTranslateToSQL(t *testing.T) {
 	}
 
 	testCases := []struct {
-		cql  string
+		chql string
 		sql  string
 		vals []sqlPlaceholder
 	}{
-		{cql: `2000`, sql: `2000`},
-		{cql: `0xFF`, sql: `255`},
-		{cql: `'usd'`, sql: `$1`, vals: []sqlPlaceholder{{value: "usd"}}},
-		{cql: `1 OR 1`, sql: `(1 OR 1)`},
-		{cql: `1 AND 1`, sql: `(1 AND 1)`},
-		{cql: `4 < 5`, sql: `(4 < 5)`},
-		{cql: `4 <= 5`, sql: `(4 <= 5)`},
-		{cql: `4 > 5`, sql: `(4 > 5)`},
-		{cql: `4 >= 5`, sql: `(4 >= 5)`},
-		{cql: `4 = 5`, sql: `(4 = 5)`},
-		{cql: `4 != 5`, sql: `(4 != 5)`},
-		{cql: `asset_id`, sql: `"asset_id"`},
+		{chql: `2000`, sql: `2000`},
+		{chql: `0xFF`, sql: `255`},
+		{chql: `'usd'`, sql: `$1`, vals: []sqlPlaceholder{{value: "usd"}}},
+		{chql: `1 OR 1`, sql: `(1 OR 1)`},
+		{chql: `1 AND 1`, sql: `(1 AND 1)`},
+		{chql: `4 < 5`, sql: `(4 < 5)`},
+		{chql: `4 <= 5`, sql: `(4 <= 5)`},
+		{chql: `4 > 5`, sql: `(4 > 5)`},
+		{chql: `4 >= 5`, sql: `(4 >= 5)`},
+		{chql: `4 = 5`, sql: `(4 = 5)`},
+		{chql: `4 != 5`, sql: `(4 != 5)`},
+		{chql: `asset_id`, sql: `"asset_id"`},
 		{
-			cql:  `(account_id = $1) AND (amount > 2000) AND (asset_id = $2)`,
+			chql: `(account_id = $1) AND (amount > 2000) AND (asset_id = $2)`,
 			sql:  `((("account_id" = $1) AND ("amount" > 2000)) AND ("asset_id" = $2))`,
 			vals: []sqlPlaceholder{{number: 1}, {number: 2}},
 		},
@@ -41,7 +41,7 @@ func TestTranslateToSQL(t *testing.T) {
 	for _, tc := range testCases {
 		var sqlExpr SQLExpr
 
-		expr, _, err := parse(tc.cql)
+		expr, _, err := parse(tc.chql)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -49,10 +49,10 @@ func TestTranslateToSQL(t *testing.T) {
 		translateToSQL(&sqlExpr, cols, expr)
 		got := sqlExpr.String()
 		if got != tc.sql {
-			t.Errorf("translateToSQL(%q) = %q, want %q", tc.cql, got, tc.sql)
+			t.Errorf("translateToSQL(%q) = %q, want %q", tc.chql, got, tc.sql)
 		}
 		if !reflect.DeepEqual(sqlExpr.placeholders, tc.vals) {
-			t.Errorf("translateToSQL(%q) values %#v, want %#v", tc.cql, sqlExpr.placeholders, tc.vals)
+			t.Errorf("translateToSQL(%q) values %#v, want %#v", tc.chql, sqlExpr.placeholders, tc.vals)
 		}
 	}
 }
