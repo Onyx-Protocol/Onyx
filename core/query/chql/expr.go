@@ -6,14 +6,6 @@ type expr interface {
 	String() string
 }
 
-type notExpr struct {
-	inner expr
-}
-
-func (e notExpr) String() string {
-	return "NOT " + e.inner.String()
-}
-
 type binaryExpr struct {
 	op   *binaryOp
 	l, r expr

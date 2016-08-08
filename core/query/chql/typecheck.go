@@ -28,15 +28,6 @@ func typeCheckExpr(expr expr, t SQLTable) (typ Type, err error) {
 	switch e := expr.(type) {
 	case parenExpr:
 		return typeCheckExpr(e.inner, t)
-	case notExpr:
-		typ, err = typeCheckExpr(e.inner, t)
-		if err != nil {
-			return typ, err
-		}
-		if !isType(typ, Bool) {
-			return typ, fmt.Errorf("NOT expects a bool operand")
-		}
-		return Bool, nil
 	case binaryExpr:
 		leftTyp, err := typeCheckExpr(e.l, t)
 		if err != nil {
@@ -53,7 +44,7 @@ func typeCheckExpr(expr expr, t SQLTable) (typ Type, err error) {
 				return typ, fmt.Errorf("%s expects bool operands", e.op.name)
 			}
 			return Bool, nil
-		case "<", "<=", ">", ">=", "=", "!=":
+		case "=":
 			if !isType(leftTyp, String) && !isType(leftTyp, Integer) {
 				return typ, fmt.Errorf("%s expects integer or string operands", e.op.name)
 			}

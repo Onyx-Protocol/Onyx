@@ -13,14 +13,8 @@ Expressions in ChQL have the following forms:
   Form                     Type     Subexpression types
   expr1 "OR" expr2         bool     bool, bool
   expr1 "AND" expr2        bool     bool, bool
-  "NOT" expr               bool     bool
   ident "(" expr ")"       bool     list, bool
   expr1 "=" expr2          bool     any (must match)
-  expr1 "!=" expr2         bool     any (must match)
-  expr1 ">" expr2          bool     int, int
-  expr1 "<" expr2          bool     int, int
-  expr1 ">=" expr2         bool     int, int
-  expr1 "<=" expr2         bool     int, int
   expr "." ident           any      object
   "(" expr ")"             any      any
   ident                    any      n/a

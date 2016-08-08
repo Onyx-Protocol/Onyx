@@ -4,19 +4,14 @@ import "strconv"
 
 type binaryOp struct {
 	precedence int
-	name       string // AND, <=, etc.
+	name       string // AND, =, etc.
 	apply      func(lv, rv value) value
 }
 
 var binaryOps = map[string]*binaryOp{
 	"OR":  {1, "OR", applyOr},
 	"AND": {2, "AND", applyAnd},
-	"<":   {3, "<", applyLessThan},
-	">":   {3, ">", applyGreaterThan},
-	"<=":  {3, "<=", applyLessThanEqual},
-	">=":  {3, ">=", applyGreaterThanEqual},
 	"=":   {3, "=", applyEqual},
-	"!=":  {3, "!=", applyNotEqual},
 }
 
 func applyOr(lv, rv value) value {
@@ -27,44 +22,6 @@ func applyOr(lv, rv value) value {
 func applyAnd(lv, rv value) value {
 	// non-bool operands will have empty sets
 	return value{t: Bool, set: intersection(lv.set, rv.set)}
-}
-
-func applyLessThan(lv, rv value) value {
-	if lv.is(Any) || rv.is(Any) {
-		panic("inequality comparison does not support parameterized expressions")
-	}
-	if lv.is(Integer) && rv.is(Integer) {
-		return value{t: Bool, set: Set{Invert: lv.integer < rv.integer}}
-	}
-	if lv.is(String) && rv.is(String) {
-		return value{t: Bool, set: Set{Invert: lv.str < rv.str}}
-	}
-	return value{t: Bool, set: Set{}} // type error; return false
-}
-
-func applyLessThanEqual(lv, rv value) value {
-	if lv.is(Any) || rv.is(Any) {
-		panic("inequality comparison does not support parameterized expressions")
-	}
-	if lv.is(Integer) && rv.is(Integer) {
-		return value{t: Bool, set: Set{Invert: lv.integer <= rv.integer}}
-	}
-	if lv.is(String) && rv.is(String) {
-		return value{t: Bool, set: Set{Invert: lv.str <= rv.str}}
-	}
-	return value{t: Bool, set: Set{}} // type error; return false
-}
-
-func applyGreaterThan(lv, rv value) value {
-	v := applyLessThanEqual(lv, rv)
-	v.set.Invert = !v.set.Invert
-	return v
-}
-
-func applyGreaterThanEqual(lv, rv value) value {
-	v := applyLessThan(lv, rv)
-	v.set.Invert = !v.set.Invert
-	return v
 }
 
 func applyEqual(lv, rv value) value {
@@ -101,10 +58,4 @@ func applyEqual(lv, rv value) value {
 		set = Set{} // different types are never equal
 	}
 	return value{t: Bool, set: set}
-}
-
-func applyNotEqual(lv, rv value) value {
-	neq := applyEqual(lv, rv)
-	neq.set.Invert = !neq.set.Invert
-	return neq
 }

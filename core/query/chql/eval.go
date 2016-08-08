@@ -79,13 +79,6 @@ func (v value) is(t Type) bool {
 
 func eval(env environment, expr expr) value {
 	switch e := expr.(type) {
-	case notExpr:
-		v := eval(env, e.inner)
-		if !v.is(Bool) {
-			// type error; return false
-			return value{t: Bool, set: Set{}}
-		}
-		return value{t: Bool, set: complement(v.set)}
 	case binaryExpr:
 		lv, rv := eval(env, e.l), eval(env, e.r)
 		return e.op.apply(lv, rv)

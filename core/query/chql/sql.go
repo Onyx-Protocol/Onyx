@@ -90,11 +90,6 @@ func translateToSQL(w *SQLExpr, t SQLTable, expr expr) {
 		// with operators are written with explicit wrapping parens so
 		// as not to assume SQL operator precedence is the same as ChQL's.
 		translateToSQL(w, t, e.inner)
-	case notExpr:
-		w.buf.WriteString("(")
-		w.buf.WriteString("NOT ")
-		translateToSQL(w, t, e.inner)
-		w.buf.WriteString(")")
 	case binaryExpr:
 		// translate the left operand
 		w.buf.WriteString("(")
@@ -103,7 +98,7 @@ func translateToSQL(w *SQLExpr, t SQLTable, expr expr) {
 		// translate the operator itself
 		w.buf.WriteString(" ")
 		switch e.op.name {
-		case "OR", "AND", "<", "<=", ">", ">=", "=", "!=":
+		case "OR", "AND", "=":
 			w.buf.WriteString(e.op.name)
 		default:
 			panic(fmt.Errorf("unsupported operator: %s", e.op.name))

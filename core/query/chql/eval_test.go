@@ -40,40 +40,8 @@ func TestEval(t *testing.T) {
 			expected: value{t: Bool, set: Set{}},
 		},
 		{
-			query:    `1 <= '1'`,
-			expected: value{t: Bool, set: Set{}},
-		},
-		{
 			query:    `0xFF = 255`,
 			expected: value{t: Bool, set: Set{Invert: true}},
-		},
-		{
-			query:    `0xFF != 255`,
-			expected: value{t: Bool, set: Set{}},
-		},
-		{
-			query:    `10 < 9`,
-			expected: value{t: Bool, set: Set{}},
-		},
-		{
-			query:    `'10' < '9'`,
-			expected: value{t: Bool, set: Set{Invert: true}},
-		},
-		{
-			query:    `0xA >= 10`,
-			expected: value{t: Bool, set: Set{Invert: true}},
-		},
-		{
-			query:    `0xA <= 10`,
-			expected: value{t: Bool, set: Set{Invert: true}},
-		},
-		{
-			query:    `0xB > 10`,
-			expected: value{t: Bool, set: Set{Invert: true}},
-		},
-		{
-			query:    `0xA < 10`,
-			expected: value{t: Bool, set: Set{}},
 		},
 		{
 			query: `reference.recipient.email_address`,
@@ -104,16 +72,8 @@ func TestEval(t *testing.T) {
 			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 		{
-			query:    `('hello' = 'hello') != ('hello' = 'hello')`,
-			expected: value{t: Bool, set: Set{}},
-		},
-		{
 			query:    `($1 = 'hello') = ($1 = 'hello')`,
 			expected: value{t: Bool, set: Set{Invert: true}},
-		},
-		{
-			query:    `($1 = 'hello') = ($1 != 'hello')`,
-			expected: value{t: Bool, set: Set{}},
 		},
 		{
 			query:    `1 = 'hello'`,
@@ -155,16 +115,6 @@ func TestEval(t *testing.T) {
 				]
 			}`,
 			expected: value{t: Bool, set: Set{}},
-		},
-		{
-			query: `NOT inputs(account_tags.domestic AND account_tags.revolving)`,
-			data: `{
-				"inputs": [
-					{ "account_tags": {"revolving": false, "domestic": true, "priority_client": true} },
-					{ "account_tags": {"revolving": true, "domestic": false, "international": true} }
-				]
-			}`,
-			expected: value{t: Bool, set: Set{Invert: true}},
 		},
 	}
 

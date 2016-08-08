@@ -104,18 +104,8 @@ func (p *parser) parseTok(tok token) {
 func parseExpr(p *parser) expr {
 	// Uses the precedence-climbing algorithm:
 	// https://en.wikipedia.org/wiki/Operator-precedence_parser#Precedence_climbing_method
-	expr := parseUnaryExpr(p)
+	expr := parsePrimaryExpr(p)
 	return parseExprCont(p, expr, 0)
-}
-
-func parseUnaryExpr(p *parser) expr {
-	// Only one unary expr, NOT <expr>
-	if p.lit != "NOT" {
-		return parsePrimaryExpr(p)
-	}
-	p.next()
-	expr := parseUnaryExpr(p)
-	return notExpr{inner: expr}
 }
 
 func parseExprCont(p *parser, lhs expr, minPrecedence int) expr {
@@ -126,7 +116,7 @@ func parseExprCont(p *parser, lhs expr, minPrecedence int) expr {
 		}
 		p.next()
 
-		rhs := parseUnaryExpr(p)
+		rhs := parsePrimaryExpr(p)
 
 		for {
 			op2, ok := determineBinaryOp(p, op.precedence+1)

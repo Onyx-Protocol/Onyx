@@ -24,16 +24,11 @@ func TestTranslateToSQL(t *testing.T) {
 		{chql: `'usd'`, sql: `$1`, vals: []sqlPlaceholder{{value: "usd"}}},
 		{chql: `1 OR 1`, sql: `(1 OR 1)`},
 		{chql: `1 AND 1`, sql: `(1 AND 1)`},
-		{chql: `4 < 5`, sql: `(4 < 5)`},
-		{chql: `4 <= 5`, sql: `(4 <= 5)`},
-		{chql: `4 > 5`, sql: `(4 > 5)`},
-		{chql: `4 >= 5`, sql: `(4 >= 5)`},
 		{chql: `4 = 5`, sql: `(4 = 5)`},
-		{chql: `4 != 5`, sql: `(4 != 5)`},
 		{chql: `asset_id`, sql: `"asset_id"`},
 		{
-			chql: `(account_id = $1) AND (amount > 2000) AND (asset_id = $2)`,
-			sql:  `((("account_id" = $1) AND ("amount" > 2000)) AND ("asset_id" = $2))`,
+			chql: `(account_id = $1) AND (amount = 2000) AND (asset_id = $2)`,
+			sql:  `((("account_id" = $1) AND ("amount" = 2000)) AND ("asset_id" = $2))`,
 			vals: []sqlPlaceholder{{number: 1}, {number: 2}},
 		},
 	}
