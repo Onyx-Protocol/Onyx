@@ -339,7 +339,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
                 "reference_data": {"user": "bob"}
             },
             {
-                "action": "destroy",
+                "action": "retire",
                 "position": "...",
                 "asset_id": "125B4E...",
                 "asset_tags": {},
