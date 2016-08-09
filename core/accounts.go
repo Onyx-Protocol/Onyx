@@ -63,16 +63,3 @@ func setAccountTags(ctx context.Context, in struct {
 func archiveAccount(ctx context.Context, accountID string) error {
 	return account.Archive(ctx, accountID)
 }
-
-// POST /v3/accounts/:accountID/control-programs
-func createAccountControlProgram(ctx context.Context, accountID string) (interface{}, error) {
-	controlProgram, err := account.CreateControlProgram(ctx, accountID)
-	if err != nil {
-		return nil, err
-	}
-
-	ret := map[string]interface{}{
-		"control_program": controlProgram,
-	}
-	return ret, nil
-}

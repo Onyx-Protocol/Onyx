@@ -82,19 +82,22 @@ type page struct {
 
 func (a *api) handler() chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
+
+	// Accounts
 	h.HandleFunc("POST", "/list-accounts", listAccounts)
 	h.HandleFunc("POST", "/create-account", createAccount)
 	h.HandleFunc("POST", "/get-account", getAccount)
 	h.HandleFunc("POST", "/set-account-tags", setAccountTags)
+
+	// Assets
 	h.HandleFunc("POST", "/list-assets", a.listAssets)
 	h.HandleFunc("POST", "/create-asset", a.createAsset)
 	h.HandleFunc("POST", "/update-asset", setAssetTags)
-	h.HandleFunc("POST", "/v3/accounts/:accountID/control-programs", createAccountControlProgram)
-	h.HandleFunc("DELETE", "/v3/accounts/:accountID", archiveAccount)
-	h.HandleFunc("DELETE", "/v3/assets/:assetID", archiveAsset)
+
+	// Transactions
 	h.HandleFunc("POST", "/build-transaction-template", build)
 	h.HandleFunc("POST", "/submit-transaction-template", submit)
-	h.HandleFunc("POST", "/v3/transact/cancel-reservation", cancelReservation)
+	h.HandleFunc("POST", "/create-control-program", createControlProgram)
 
 	// MockHSM endpoints
 	h.HandleFunc("POST", "/mockhsm/create-key", a.mockhsmCreateKey)
@@ -106,6 +109,11 @@ func (a *api) handler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/create-index", a.createIndex)
 	h.HandleFunc("POST", "/list-indexes", a.listIndexes)
 	h.HandleFunc("POST", "/get-index", a.getIndex)
+
+	// V3 DEPRECATED
+	h.HandleFunc("DELETE", "/v3/accounts/:accountID", archiveAccount)
+	h.HandleFunc("DELETE", "/v3/assets/:assetID", archiveAsset)
+	h.HandleFunc("POST", "/v3/transact/cancel-reservation", cancelReservation)
 
 	return h.ServeHTTPContext
 }
