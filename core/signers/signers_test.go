@@ -22,7 +22,6 @@ func TestCreate(t *testing.T) {
 		typ    string
 		xpubs  []string
 		quorum int
-		tags   map[string]interface{}
 		want   error
 	}{{
 		typ:    "account",

@@ -416,19 +416,6 @@ func serializeAssetDef(def map[string]interface{}) ([]byte, error) {
 	return json.MarshalIndent(def, "", "  ")
 }
 
-func nextIndex(ctx context.Context) ([]uint32, error) {
-	const q = `SELECT key_index(nextval('assets_key_index_seq'::regclass)-1)`
-	var idx []uint32
-	err := pg.QueryRow(ctx, q).Scan((*pg.Uint32s)(&idx))
-	if err == sql.ErrNoRows {
-		err = pg.ErrUserInputNotFound
-	}
-	if err != nil {
-		return nil, errors.WithDetailf(err, "get key info")
-	}
-	return idx, nil
-}
-
 func programWithDefinition(pubkeys []ed25519.PublicKey, nrequired int, definition []byte) ([]byte, error) {
 	issuanceProg, err := txscript.TxMultiSigScript(pubkeys, nrequired)
 	if err != nil {

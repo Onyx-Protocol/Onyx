@@ -2,9 +2,6 @@
 package core
 
 import (
-	"strconv"
-	"time"
-
 	"chain/core/blocksigner"
 	"chain/core/generator"
 	"chain/core/mockhsm"
@@ -16,10 +13,8 @@ import (
 )
 
 const (
-	sessionTokenLifetime = 2 * 7 * 24 * time.Hour
-	defAccountPageSize   = 100
-	defAssetPageSize     = 100
-	defGenericPageSize   = 100
+	defAccountPageSize = 100
+	defGenericPageSize = 100
 )
 
 // Handler returns a handler that serves the Chain HTTP API.
@@ -130,18 +125,4 @@ func rpcAuthedHandler(generator *generator.Config, signer *blocksigner.Signer) c
 	}
 
 	return h.ServeHTTPContext
-}
-
-// For time query-params that can be in either RFC3339 or
-// Unix-timestamp form.
-func parseTime(s string) (t time.Time, err error) {
-	t, err = time.Parse(time.RFC3339, s)
-	if err != nil {
-		i, err := strconv.ParseInt(s, 10, 64)
-		if err != nil {
-			return t, err
-		}
-		t = time.Unix(i, 0)
-	}
-	return t, nil
 }

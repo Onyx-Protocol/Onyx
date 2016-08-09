@@ -47,8 +47,6 @@ func CreateAccountControlProgramFixture(ctx context.Context, t testing.TB, accID
 	return controlProgram
 }
 
-var assetCounter = createCounter()
-
 func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum int, def, tags map[string]interface{}) bc.AssetID {
 	if len(keys) == 0 {
 		keys = []string{testutil.TestXPub.String()}
@@ -65,19 +63,6 @@ func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum
 	}
 
 	return asset.AssetID
-}
-
-// Creates an infinite stream of integers counting up from 1
-func createCounter() <-chan int {
-	result := make(chan int)
-	go func() {
-		var n int
-		for {
-			n++
-			result <- n
-		}
-	}()
-	return result
 }
 
 func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64, accountID string) state.Output {

@@ -2,7 +2,6 @@ package core
 
 import (
 	"net/http"
-	"strconv"
 
 	"golang.org/x/net/context"
 
@@ -34,18 +33,4 @@ func logHTTPError(ctx context.Context, err error) {
 		keyvals = append(keyvals, log.KeyStack, errors.Stack(err))
 	}
 	log.Write(ctx, keyvals...)
-}
-
-func getPageData(ctx context.Context, defaultLimit int) (prev string, limit int, err error) {
-	prev = httpjson.Request(ctx).Header.Get("Range-After")
-
-	limit = defaultLimit
-	if lstr := httpjson.Request(ctx).Header.Get("Limit"); lstr != "" {
-		limit, err = strconv.Atoi(lstr)
-		if err != nil {
-			err = errors.Wrap(errBadReqHeader, err.Error())
-			return "", 0, errors.WithDetail(err, "limit header")
-		}
-	}
-	return
 }

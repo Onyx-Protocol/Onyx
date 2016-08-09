@@ -7,7 +7,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	. "chain/core/account"
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
