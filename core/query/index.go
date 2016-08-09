@@ -125,10 +125,9 @@ func (i *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, annot
 
 	// Insert all of the block's outputs at once.
 	const insertQ = `
-		INSERT block_height, tx_pos, output_index, tx_hash, data, timespan
-		INTO annotated_outputs
+		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, data, timespan)
 		SELECT $1, unnest($2::integer[]), unnest($3::integer[]), unnest($4::text[]),
-		           unnest($5::jsonb[]),   int8range($12, NULL)
+		           unnest($5::jsonb[]),   int8range($6, NULL)
 		ON CONFLICT (block_height, tx_pos, output_index) DO NOTHING;
 	`
 	_, err := i.db.Exec(ctx, insertQ, b.Height, outputTxPositions,
@@ -139,7 +138,7 @@ func (i *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, annot
 
 	const updateQ = `
 		UPDATE annotated_outputs SET timespan = INT8RANGE(LOWER(timespan), $1)
-		WHERE (tx_hash, output_index) IN (SELECT unnest($2::text[]), unnest($3::text[]))
+		WHERE (tx_hash, output_index) IN (SELECT unnest($2::text[]), unnest($3::integer[]))
 	`
 	_, err = i.db.Exec(ctx, updateQ, b.TimestampMS, prevoutHashes, prevoutIndexes)
 	return errors.Wrap(err, "updating spent annotated outputs")
