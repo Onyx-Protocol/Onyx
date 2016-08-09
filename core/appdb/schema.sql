@@ -377,7 +377,6 @@ CREATE TABLE asset_tags (
 
 CREATE TABLE assets (
     id text NOT NULL,
-    key_index bigint NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     definition_mutable boolean DEFAULT false NOT NULL,
     sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL,
@@ -1129,3 +1128,4 @@ insert into migrations (filename, hash) values ('2016-08-08.1.query.blocks.sql',
 insert into migrations (filename, hash) values ('2016-08-08.2.core.add-tags-tables.sql', '7f97aa4efa6b026fa7ac288f49073c885585c9ca4fa0cf05772942ffab996bfd');
 insert into migrations (filename, hash) values ('2016-08-08.3.query.annotated-outputs.sql', 'e94d4eb5fd8987ab40b9287d3af8ad5ff33b76a96d47e83436ad7d8f50355624');
 insert into migrations (filename, hash) values ('2016-08-09.0.signers.change-tags.sql', '78aa00b2c54f0fd1b6920a8d74d568111906a7a5b871a4ee51a04b2a9aa2b590');
+insert into migrations (filename, hash) values ('2016-08-09.1.assets.drop-key-index.sql', '203fb5589e82c11bc8fd33cd4ec717587813094575f7cec96e653deb9167df59');

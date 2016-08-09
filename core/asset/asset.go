@@ -28,7 +28,6 @@ type Asset struct {
 	IssuanceProgram []byte                 `json:"issuance_program"`
 	GenesisHash     bc.Hash                `json:"genesis_hash"`
 	Signer          *signers.Signer        `json:"signer"`
-	KeyIndex        []uint32               `json:"key_index"`
 	Tags            map[string]interface{} `json:"tags"`
 }
 
@@ -49,12 +48,7 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 		return nil, errors.Wrap(err, "serializing asset definition")
 	}
 
-	idx, err := nextIndex(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	path := signers.Path(assetSigner, signers.AssetKeySpace, idx)
+	path := signers.Path(assetSigner, signers.AssetKeySpace, nil)
 
 	derivedXPubs := hd25519.DeriveXPubs(assetSigner.XPubs, path)
 	derivedPKs := hd25519.XPubKeys(derivedXPubs)
@@ -64,7 +58,6 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 	}
 
 	asset := &Asset{
-		KeyIndex:        idx,
 		Definition:      definition,
 		IssuanceProgram: issuanceProgram,
 		GenesisHash:     genesisHash,
@@ -165,7 +158,7 @@ func Archive(ctx context.Context, id bc.AssetID) error {
 // List returns a paginated set of Assets
 func List(ctx context.Context, prev string, limit int) ([]*Asset, string, error) {
 	const q = `
-		SELECT assets.id, definition, issuance_program, key_index(assets.key_index), signer_id,
+		SELECT assets.id, definition, issuance_program, signer_id,
 			quorum, xpubs, key_index(signers.key_index)
 		FROM assets
 		LEFT JOIN signers ON (assets.signer_id=signers.id)
@@ -175,7 +168,7 @@ func List(ctx context.Context, prev string, limit int) ([]*Asset, string, error)
 	`
 	var assets []*Asset
 	err := pg.ForQueryRows(ctx, q, prev, limit,
-		func(id string, definitionBytes []byte, issuanceProgram []byte, keyIndex pg.Uint32s, signerID string, quorum int, xpubs pg.Strings, signerKeyIndex pg.Uint32s) error {
+		func(id string, definitionBytes []byte, issuanceProgram []byte, signerID string, quorum int, xpubs pg.Strings, signerKeyIndex pg.Uint32s) error {
 			var assetID bc.AssetID
 			err := assetID.UnmarshalText([]byte(id))
 			if err != nil {
@@ -199,7 +192,6 @@ func List(ctx context.Context, prev string, limit int) ([]*Asset, string, error)
 				AssetID:         assetID,
 				Definition:      definition,
 				IssuanceProgram: issuanceProgram,
-				KeyIndex:        keyIndex,
 				Signer: &signers.Signer{
 					ID:       signerID,
 					Type:     "asset",
@@ -230,9 +222,8 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
     INSERT INTO assets
-
-	 	(id, signer_id, key_index, genesis_hash, issuance_program, definition, client_token)
-    VALUES($1, $2, to_key_index($3), $4, $5, $6, $7)
+	 	(id, signer_id, genesis_hash, issuance_program, definition, client_token)
+    VALUES($1, $2, $3, $4, $5, $6)
     ON CONFLICT (client_token) DO NOTHING
   `
 	defParams, err := mapToNullString(asset.Definition)
@@ -242,7 +233,7 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 
 	res, err := pg.Exec(
 		ctx, q,
-		asset.AssetID, asset.Signer.ID, pg.Uint32s(asset.KeyIndex),
+		asset.AssetID, asset.Signer.ID,
 		asset.GenesisHash, asset.IssuanceProgram,
 		defParams, clientToken,
 	)
@@ -287,8 +278,7 @@ func insertAssetTags(ctx context.Context, assetID bc.AssetID, tags map[string]in
 
 func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 	const q = `
-		SELECT id, issuance_program, definition, genesis_hash,
-		key_index(key_index), signer_id, archived
+		SELECT id, issuance_program, definition, genesis_hash, signer_id, archived
 		FROM assets
 		WHERE id=$1
 	`
@@ -305,7 +295,6 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 		&a.IssuanceProgram,
 		&definition,
 		&a.GenesisHash,
-		(*pg.Uint32s)(&a.KeyIndex),
 		&signerID,
 		&archived,
 	)
@@ -361,7 +350,7 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error) {
 	const q = `
 		SELECT id, issuance_program, definition,
-			genesis_hash, key_index(key_index), signer_id, archived
+			genesis_hash, signer_id, archived
 		FROM assets
 		WHERE client_token=$1
 	`
@@ -376,7 +365,6 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 		&a.IssuanceProgram,
 		&definition,
 		&a.GenesisHash,
-		(*pg.Uint32s)(&a.KeyIndex),
 		&signerID,
 		&archived,
 	)

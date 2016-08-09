@@ -40,7 +40,7 @@ func (a *IssueAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 // to issue units of asset 'a'.
 func issuanceInput(a *Asset, aa bc.AssetAmount) *txbuilder.Input {
 	tmplInp := &txbuilder.Input{AssetAmount: aa}
-	path := signers.Path(a.Signer, signers.AssetKeySpace, a.KeyIndex) // is this the right key index?
+	path := signers.Path(a.Signer, signers.AssetKeySpace, nil)
 	sigs := txbuilder.InputSigs(a.Signer.XPubs, path)
 	tmplInp.AddWitnessSigs(sigs, txscript.SigsRequired(a.IssuanceProgram), nil)
 	return tmplInp
