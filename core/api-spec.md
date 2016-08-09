@@ -312,19 +312,13 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
                 "amount": 5000,
                 "control_program": "205CDF...",
                 "reference_data": {"user": "bob"}
-            },
-            {
-                "action": "retire",
-                "position": "...",
-                "asset_id": "125B4E...",
-                "asset_tags": {},
-                "amount": 1000,
-                "control_program": "OP_RETURN",
-                "reference_data": {"wire_transfer_id": "..."}
             }
         ]
     }
 ```
+
+Note: the "retire" SDK method is simply a control program containing the `RETURN` operation.
+To keep the interface narrow, the SDK can generate such a control program.
 
 ### Unspent Output Object
 
