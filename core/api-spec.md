@@ -138,15 +138,34 @@ POST /list-assets
     
 Request
 
-Accepts either an `index_id` or a `query`.
 ```
 {
-  index_id: "...",
-  params: ["param"],
+  "chql": "...", 
+  "chql_params": [], // optional
+  "cursor": "..." // optional
 }
 ```
 
-Response: an array of [asset objects](#asset-object).
+Response
+
+```
+{
+  "items": [
+    {
+      "id": "...", 
+      "issuance_program": "...", 
+      "definition": {}, 
+      "tags": {}
+    }
+  ],
+  "query": {
+    "chql": "...", 
+    "chql_params": [], 
+    "cursor": "..." 
+  },
+  "last_page": true|false
+}
+```
 
 ## Accounts
 
@@ -199,7 +218,7 @@ Request
 Response: an [account object](#account-object).
 
 ### List Accounts
-Optionally filtered by a `query`.
+Optionally filtered by a `chql` query.
 
 Endpoint
 ```    
@@ -207,14 +226,37 @@ POST /list-accounts
 ```
 
 Request
-```    
+
+```
 {
-  "query": "accounts_tags.entity = $1 AND accounts_tags.bank = $2"
-  "params": ["acme", "bank1"]
+  "chql": "...", 
+  "chql_params": [], // optional
+  "cursor": "..." // optional
 }
 ```
 
-Response: an array of [account objects](#account-object).
+Response
+
+```
+{
+  "items": [
+    {
+      "id": "...", 
+      "xpubs": ["xpub"], 
+      "quorum": 1, 
+      "tags": {}
+    }
+  ],
+  "query": {
+    "chql": "...", 
+    "chql_params": [], 
+    "cursor": "..." 
+  },
+  "last_page": true|false
+}
+```
+
+
 
 ## Control Programs
 
@@ -312,19 +354,13 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
                 "amount": 5000,
                 "control_program": "205CDF...",
                 "reference_data": {"user": "bob"}
-            },
-            {
-                "action": "retire",
-                "position": "...",
-                "asset_id": "125B4E...",
-                "asset_tags": {},
-                "amount": 1000,
-                "control_program": "OP_RETURN",
-                "reference_data": {"wire_transfer_id": "..."}
             }
         ]
     }
 ```
+
+Note: the "retire" SDK method is simply a control program containing the `RETURN` operation.
+To keep the interface narrow, the SDK can generate such a control program.
 
 ### Unspent Output Object
 
@@ -403,9 +439,6 @@ Request
         }
     ]
 ```
-
-Note: the "retire" SDK method appears in the cored interface as an action
-of type `control_program` (where the given control program causes retirement).
 
 Response: An array of [transaction template objects](#transaction-template-object).
 
