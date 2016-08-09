@@ -6,15 +6,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	. "chain/core/appdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/testutil"
-)
-
-var (
-	dummyXPrv = testutil.TestXPrv
-	dummyXPub = testutil.TestXPub
 )
 
 func TestKeyIndexSQL(t *testing.T) {
@@ -42,7 +35,7 @@ func TestKeyIndexSQL(t *testing.T) {
 			t.Errorf("key_index(%d) = %v want %v", pair.encoded, got, pair.decoded)
 		}
 
-		got = KeyIndex(pair.encoded)
+		got = keyIndex(pair.encoded)
 		if !reflect.DeepEqual(got, pair.decoded) {
 			t.Errorf("KeyIndex(%d) = %v want %v", pair.encoded, got, pair.decoded)
 		}
@@ -58,4 +51,11 @@ func TestKeyIndexSQL(t *testing.T) {
 			t.Errorf("to_key_index(%v) = %d want %d", pair.decoded, got, pair.encoded)
 		}
 	}
+}
+
+func keyIndex(n int64) []uint32 {
+	index := make([]uint32, 2)
+	index[0] = uint32(n >> 31)
+	index[1] = uint32(n & 0x7fffffff)
+	return index
 }

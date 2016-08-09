@@ -4,7 +4,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/account/utxodb"
-	"chain/core/appdb"
 	"chain/core/asset"
 	"chain/core/signers"
 	"chain/core/txbuilder"
@@ -38,15 +37,12 @@ var (
 		pg.ErrUserInputNotFound:      errorInfo{404, "CH005", "Not found"},
 		httpjson.ErrBadRequest:       errorInfo{400, "CH007", "Invalid request body"},
 		errBadReqHeader:              errorInfo{400, "CH008", "Invalid request header"},
-		appdb.ErrBadLabel:            errorInfo{400, "CH704", "Invalid label"},
 		utxodb.ErrInsufficient:       errorInfo{400, "CH733", "Insufficient funds for tx"},
 		utxodb.ErrReserved:           errorInfo{400, "CH743", "Some outputs are reserved; try again"},
 		asset.ErrRejected:            errorInfo{400, "CH744", "Transaction rejected"},
 		asset.ErrBadTxTemplate:       errorInfo{400, "CH755", "Invalid transaction template"},
 		ErrBadBuildRequest:           errorInfo{400, "CH756", "Invalid build transaction request"},
 		txbuilder.ErrBadBuildRequest: errorInfo{400, "CH756", "Invalid build transaction request"},
-		appdb.ErrCannotDelete:        errorInfo{400, "CH901", "Cannot delete non-empty object"},
-		appdb.ErrArchived:            errorInfo{404, "CH902", "Item has been archived"},
 
 		// Signers error namespace (2xx)
 		signers.ErrBadQuorum: errorInfo{400, "CH200", "Quorum must be greater than 1 and less than or equal to the length of xpubs"},
