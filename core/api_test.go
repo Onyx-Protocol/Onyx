@@ -196,17 +196,9 @@ func TestTransfer(t *testing.T) {
 	}
 }
 
-// expects inp to have one "template" member, with one input and one output
+// expects inp to be a map, with one input member
 func inspectTemplate(t *testing.T, inp map[string]interface{}, expectedReceiverAccountID string) map[string]interface{} {
-	member, ok := inp["template"]
-	if !ok {
-		t.Errorf("expected \"template\" in result")
-	}
-	parsedTemplate, ok := member.(map[string]interface{})
-	if !ok {
-		t.Errorf("expected \"template\" in result to be a map")
-	}
-	member, ok = parsedTemplate["inputs"]
+	member, ok := inp["inputs"]
 	if !ok {
 		t.Errorf("expected template.inputs in result")
 	}
@@ -217,7 +209,7 @@ func inspectTemplate(t *testing.T, inp map[string]interface{}, expectedReceiverA
 	if len(parsedInputs) != 1 {
 		t.Errorf("expected template.inputs in result to have length 1, got %d", len(parsedInputs))
 	}
-	return parsedTemplate
+	return inp
 }
 
 func toTxTemplate(ctx context.Context, inp map[string]interface{}) (*txbuilder.Template, error) {

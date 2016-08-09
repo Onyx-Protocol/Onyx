@@ -16,7 +16,7 @@ import (
 	"chain/net/trace/span"
 )
 
-func buildSingle(ctx context.Context, req *buildRequest) (interface{}, error) {
+func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -41,7 +41,7 @@ func buildSingle(ctx context.Context, req *buildRequest) (interface{}, error) {
 		tpl.Inputs = []*txbuilder.Input{}
 	}
 
-	return map[string]interface{}{"template": tpl}, nil
+	return tpl, nil
 }
 
 // POST /v3/transact/build
