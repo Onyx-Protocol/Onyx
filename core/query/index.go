@@ -54,19 +54,13 @@ func (i *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[st
 		hashes = append(hashes, tx.Hash.String())
 		positions = append(positions, uint32(pos))
 
-		// TODO(jackson): This is temporary until we have real
-		// annotated transactions.
-		b, err := json.Marshal(tx)
+		annotatedTx := transactionObject(tx, b, uint32(pos))
+		b, err := json.Marshal(annotatedTx)
 		if err != nil {
 			return nil, err
 		}
+		// TODO(jackson): Pull in annotations from other pkgs.
 		annotatedTxs = append(annotatedTxs, string(b))
-
-		var annotatedTx map[string]interface{}
-		err = json.Unmarshal(b, &annotatedTx)
-		if err != nil {
-			return nil, err
-		}
 		annotatedTxsDecoded = append(annotatedTxsDecoded, annotatedTx)
 	}
 
