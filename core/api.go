@@ -120,9 +120,7 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("DELETE", "/v3/accounts/:accountID", archiveAccount)
 	h.HandleFunc("DELETE", "/v3/assets/:assetID", archiveAsset)
 	h.HandleFunc("POST", "/build-transaction-template", build)
-	h.HandleFunc("POST", "/v3/transact/submit", submit)
-	h.HandleFunc("POST", "/v3/transact/finalize", submitSingle) // DEPRECATED
-	h.HandleFunc("POST", "/v3/transact/finalize-batch", submit) // DEPRECATED
+	h.HandleFunc("POST", "/submit-transaction-template", submit)
 	h.HandleFunc("POST", "/v3/transact/cancel-reservation", cancelReservation)
 	h.HandleFunc("GET", "/v3/user", getAuthdUser)
 	h.HandleFunc("POST", "/v3/user/email", updateUserEmail)
