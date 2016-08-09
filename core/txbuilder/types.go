@@ -1,8 +1,6 @@
 package txbuilder
 
 import (
-	"time"
-
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
@@ -19,6 +17,7 @@ type Template struct {
 // Input is an input for a TxTemplate.
 type Input struct {
 	bc.AssetAmount
+	Index         uint32                `json:"input_index"`
 	SigComponents []*SigScriptComponent `json:"signature_components,omitempty"`
 }
 
@@ -41,45 +40,6 @@ type Signature struct {
 	Bytes          json.HexBytes `json:"signature"`
 }
 
-type ReserveResultItem struct {
-	TxInput       *bc.TxInput
-	TemplateInput *Input
-}
-
-type ReserveResult struct {
-	Items  []*ReserveResultItem
-	Change []*Destination
-}
-
-type Reserver interface {
-	Reserve(context.Context, *bc.AssetAmount, time.Duration) (*ReserveResult, error)
-}
-
-// A Source is a source of funds for a transaction.
-type Source struct {
-	bc.AssetAmount
-	Reserver Reserver
-}
-
-type Receiver interface {
-	PKScript() []byte
-}
-
-// A Destination is a payment destination for a transaction.
-type Destination struct {
-	bc.AssetAmount
-	Metadata []byte
-	Receiver Receiver
-}
-
-func (source *Source) Reserve(ctx context.Context, ttl time.Duration) (*ReserveResult, error) {
-	return source.Reserver.Reserve(ctx, &source.AssetAmount, ttl)
-}
-
-func (dest *Destination) PKScript() []byte {
-	return dest.Receiver.PKScript()
-}
-
 func (inp *Input) AddWitnessData(data []byte) {
 	inp.SigComponents = append(inp.SigComponents, &SigScriptComponent{
 		Type: "data",
@@ -97,4 +57,8 @@ func (inp *Input) AddWitnessSigs(sigs []*Signature, nreq int, sigData *bc.Hash) 
 		copy(c.SignatureData[:], (*sigData)[:])
 	}
 	inp.SigComponents = append(inp.SigComponents, c)
+}
+
+type Action interface {
+	Build(context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*Input, error)
 }

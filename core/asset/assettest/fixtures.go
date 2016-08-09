@@ -121,12 +121,12 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, a
 	if accountID == "" {
 		accountID = CreateAccountFixture(ctx, t, nil, 0, nil)
 	}
-	dest := AccountDestinationFixture(ctx, t, assetID, amount, accountID)
+	dest := NewAccountControlAction(bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil)
 
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
 
-	src := asset.NewIssueSource(ctx, assetAmount, nil) // does not support reference data
-	tpl, err := txbuilder.Build(ctx, nil, []*txbuilder.Source{src}, []*txbuilder.Destination{dest}, nil, time.Minute)
+	src := NewIssueAction(assetAmount, nil) // does not support reference data
+	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{dest, src}, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -142,14 +142,6 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, a
 		Outpoint: bc.Outpoint{Hash: tx.Hash, Index: 0},
 		TxOutput: *tx.Outputs[0],
 	}
-}
-
-func AccountDestinationFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64, accountID string) *txbuilder.Destination {
-	dest, err := account.NewDestination(ctx, &bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	return dest
 }
 
 // InitializeSigningGenerator initiaizes a generator fixture with the
@@ -188,24 +180,15 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 	return fc, g, nil
 }
 
-func Issue(ctx context.Context, t testing.TB, assetID bc.AssetID, dests []*txbuilder.Destination) *bc.Tx {
-	var issueAmount uint64
-	for _, dst := range dests {
-		if dst.AssetID != assetID {
-			continue
-		}
-		issueAmount += dst.Amount
-	}
-
-	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: issueAmount}
+func Issue(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64, actions []txbuilder.Action) *bc.Tx {
+	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
+	actions = append(actions, NewIssueAction(assetAmount, nil))
 
 	txTemplate, err := txbuilder.Build(
 		ctx,
 		nil,
-		[]*txbuilder.Source{asset.NewIssueSource(ctx, assetAmount, nil)},
-		dests,
+		actions,
 		nil,
-		time.Minute,
 	)
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -221,8 +204,8 @@ func Issue(ctx context.Context, t testing.TB, assetID bc.AssetID, dests []*txbui
 	return tx
 }
 
-func Transfer(ctx context.Context, t testing.TB, srcs []*txbuilder.Source, dests []*txbuilder.Destination) *bc.Tx {
-	template, err := txbuilder.Build(ctx, nil, srcs, dests, nil, time.Hour)
+func Transfer(ctx context.Context, t testing.TB, actions []txbuilder.Action) *bc.Tx {
+	template, err := txbuilder.Build(ctx, nil, actions, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -239,14 +222,40 @@ func Transfer(ctx context.Context, t testing.TB, srcs []*txbuilder.Source, dests
 	return tx
 }
 
-func AccountDest(ctx context.Context, t testing.TB, accountID string, assetID bc.AssetID, amount uint64) *txbuilder.Destination {
-	d, err := account.NewDestination(ctx, &bc.AssetAmount{
-		AssetID: assetID,
-		Amount:  amount,
-	}, accountID, nil)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
+func NewIssueAction(assetAmount bc.AssetAmount, referenceData []byte) *asset.IssueAction {
+	return &asset.IssueAction{
+		Params: struct {
+			bc.AssetAmount
+			TTL time.Duration
+		}{assetAmount, 0},
+		ReferenceData: referenceData,
 	}
-	return d
+}
+
+func NewAccountSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash, txOut *uint32, refData []byte) *account.SpendAction {
+	return &account.SpendAction{
+		Params: struct {
+			bc.AssetAmount
+			AccountID string        `json:"account_id"`
+			TxHash    *bc.Hash      `json:"transaction_hash"`
+			TxOut     *uint32       `json:"transaction_output"`
+			TTL       time.Duration `json:"reservation_ttl"`
+		}{
+			AssetAmount: amt,
+			AccountID:   accountID,
+			TxHash:      txHash,
+			TxOut:       txOut,
+		},
+		ReferenceData: refData,
+	}
+}
+
+func NewAccountControlAction(amt bc.AssetAmount, accountID string, refData []byte) *account.ControlAction {
+	return &account.ControlAction{
+		Params: struct {
+			bc.AssetAmount
+			AccountID string `json:"account_id"`
+		}{amt, accountID},
+		ReferenceData: refData,
+	}
 }

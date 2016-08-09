@@ -9,40 +9,31 @@ import (
 	"chain/core/txbuilder"
 	"chain/cos/bc"
 	"chain/cos/txscript"
+	"chain/encoding/json"
 	"chain/errors"
 )
 
-// IssuanceReserver is a txbuilder.Reserver
-// that issues an asset
-type IssuanceReserver struct {
-	bc.AssetID
-	ReferenceData []byte
+type IssueAction struct {
+	Params struct {
+		bc.AssetAmount
+		TTL time.Duration
+	}
+	ReferenceData json.HexBytes `json:"reference_data"`
 }
 
-func (ir IssuanceReserver) Reserve(ctx context.Context, amt *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
-	asset, err := Find(ctx, ir.AssetID)
+func (a *IssueAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
+	asset, err := Find(ctx, a.Params.AssetID)
 	if err != nil {
-		return nil, errors.WithDetailf(err, "find asset with ID %q", ir.AssetID)
+		return nil, nil, nil, errors.WithDetailf(err, "find asset with ID %q", a.Params.AssetID)
 	}
-
-	in := bc.NewIssuanceInput(time.Now(), time.Now().Add(ttl), asset.GenesisHash, amt.Amount, asset.IssuanceProgram, ir.ReferenceData, nil)
-	return &txbuilder.ReserveResult{
-		Items: []*txbuilder.ReserveResultItem{{
-			TxInput:       in,
-			TemplateInput: issuanceInput(asset, *amt),
-		}},
-	}, nil
-}
-
-// NewIssueSource returns a txbuilder.Source with an IssuanceReserver.
-func NewIssueSource(ctx context.Context, assetAmount bc.AssetAmount, referenceData []byte) *txbuilder.Source {
-	return &txbuilder.Source{
-		AssetAmount: assetAmount,
-		Reserver: IssuanceReserver{
-			AssetID:       assetAmount.AssetID,
-			ReferenceData: referenceData,
-		},
+	ttl := a.Params.TTL
+	if ttl == 0 {
+		ttl = time.Minute
 	}
+	txin := bc.NewIssuanceInput(time.Now(), time.Now().Add(ttl), asset.GenesisHash, a.Params.Amount, asset.IssuanceProgram, a.ReferenceData, nil)
+	tplIn := issuanceInput(asset, a.Params.AssetAmount)
+
+	return []*bc.TxInput{txin}, nil, []*txbuilder.Input{tplIn}, nil
 }
 
 // issuanceInput returns an Input that can be used

@@ -6,7 +6,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/asset/assettest"
-	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -32,78 +31,6 @@ func TestAdminAuthz(t *testing.T) {
 			got := errors.Root(adminAuthz(ctx))
 			if got != c.want {
 				t.Errorf("adminAuthz(%s) = %q want %q", c.userID, got, c.want)
-			}
-		}
-	})
-}
-
-func TestBuildAuthz(t *testing.T) {
-	withCommonFixture(t, func(ctx context.Context, fixtureInfo *fixtureInfo) {
-		acc1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
-		acc2ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
-
-		assetIDPtr := &bc.AssetID{}
-
-		cases := []struct {
-			userID  string
-			request []*BuildRequest
-			want    error
-		}{
-			{
-				userID: fixtureInfo.u2ID,
-				request: []*BuildRequest{
-					&BuildRequest{
-						Sources: []*Source{
-							&Source{
-								AssetID:   assetIDPtr,
-								AccountID: acc1ID,
-							},
-						},
-						Dests: []*Destination{
-							&Destination{
-								AssetID:   assetIDPtr,
-								AccountID: acc2ID,
-							},
-						},
-					},
-				},
-				want: nil,
-			},
-			{
-				userID: fixtureInfo.u2ID,
-				request: []*BuildRequest{
-					&BuildRequest{
-						Sources: []*Source{
-							{
-								AssetID:   assetIDPtr,
-								AccountID: acc1ID,
-							},
-						},
-						Dests: []*Destination{
-							&Destination{
-								AssetID:   assetIDPtr,
-								AccountID: acc2ID,
-							},
-						},
-					},
-					&BuildRequest{
-						Sources: []*Source{
-							&Source{
-								AssetID:   assetIDPtr,
-								AccountID: acc2ID,
-							},
-						},
-					},
-				},
-				want: nil,
-			},
-		}
-
-		for i, c := range cases {
-			ctx := authn.NewContext(ctx, c.userID)
-			got := buildAuthz(ctx, c.request...)
-			if errors.Root(got) != c.want {
-				t.Errorf("%d: buildAuthz = %q want %q", i, got, c.want)
 			}
 		}
 	})

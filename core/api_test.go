@@ -39,13 +39,10 @@ func TestAccountTransfer(t *testing.T) {
 		Amount:  100,
 	}
 
-	sources := asset.NewIssueSource(ctx, assetAmt, nil)
-	dests, err := account.NewDestination(ctx, &assetAmt, acc.ID, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	sources := txbuilder.Action(assettest.NewIssueAction(assetAmt, nil))
+	dests := assettest.NewAccountControlAction(assetAmt, acc.ID, nil)
 
-	tmpl, err := txbuilder.Build(ctx, nil, []*txbuilder.Source{sources}, []*txbuilder.Destination{dests}, nil, time.Minute)
+	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,8 +54,8 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	// new source
-	sources = account.NewSource(ctx, &assetAmt, acc.ID, nil, nil, nil)
-	tmpl, err = txbuilder.Build(ctx, nil, []*txbuilder.Source{sources}, []*txbuilder.Destination{dests}, nil, time.Minute)
+	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil)
+	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +125,7 @@ func TestTransfer(t *testing.T) {
 		AssetID: assetID,
 		Amount:  100,
 	}
-	issueDest, err := account.NewDestination(ctx, &issueAssetAmount, account1ID, nil)
+	issueDest := assettest.NewAccountControlAction(issueAssetAmount, account1ID, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -136,10 +133,8 @@ func TestTransfer(t *testing.T) {
 	txTemplate, err := txbuilder.Build(
 		ctx,
 		nil,
-		[]*txbuilder.Source{asset.NewIssueSource(ctx, issueAssetAmount, nil)},
-		[]*txbuilder.Destination{issueDest},
+		[]txbuilder.Action{assettest.NewIssueAction(issueAssetAmount, nil), issueDest},
 		nil,
-		time.Minute,
 	)
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -156,17 +151,19 @@ func TestTransfer(t *testing.T) {
 
 	// Now transfer
 	buildReqFmt := `
-		{"inputs": [{"asset_id": "%s", "amount": 100, "account_id": "%s", "type": "account"}],
-		 "outputs": [{"asset_id": "%s", "amount": 100, "account_id": "%s", "type": "account"}]}
+		{"actions": [
+			{"type": "spend_account_unspent_output_selector", "params": {"asset_id": "%s", "amount": 100, "account_id": "%s"}},
+			{"type": "account_control", "params": {"asset_id": "%s", "amount": 100, "account_id": "%s"}}
+		]}
 	`
 	buildReqStr := fmt.Sprintf(buildReqFmt, assetIDStr, account1ID, assetIDStr, account2ID)
-	var buildReq BuildRequest
+	var buildReq buildRequest
 	err = json.Unmarshal([]byte(buildReqStr), &buildReq)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	buildResult, err := build(ctx, []*BuildRequest{&buildReq})
+	buildResult, err := build(ctx, []*buildRequest{&buildReq})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

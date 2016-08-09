@@ -283,37 +283,29 @@ func issue(ctx context.Context, t testing.TB, info *clientInfo, destAcctID strin
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}
-	issueDest, err := account.NewDestination(ctx, &assetAmount, destAcctID, nil)
-	if err != nil {
-		return nil, err
-	}
+	issueDest := assettest.NewAccountControlAction(assetAmount, destAcctID, nil)
 	issueTx, err := txbuilder.Build(
 		ctx,
 		nil,
-		[]*txbuilder.Source{NewIssueSource(ctx, assetAmount, nil)},
-		[]*txbuilder.Destination{issueDest},
+		[]txbuilder.Action{assettest.NewIssueAction(assetAmount, nil), issueDest},
 		nil,
-		time.Minute,
 	)
+	if err != nil {
+		return nil, err
+	}
 	assettest.SignTxTemplate(t, issueTx, info.privKeyAsset)
 	return FinalizeTx(ctx, issueTx)
 }
 
 func transfer(ctx context.Context, t testing.TB, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
-	assetAmount := &bc.AssetAmount{
+	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}
-	source := account.NewSource(ctx, assetAmount, srcAcctID, nil, nil, nil)
-	sources := []*txbuilder.Source{source}
+	source := assettest.NewAccountSpendAction(assetAmount, srcAcctID, nil, nil, nil)
+	dest := assettest.NewAccountControlAction(assetAmount, destAcctID, nil)
 
-	dest, err := account.NewDestination(ctx, assetAmount, destAcctID, nil)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	dests := []*txbuilder.Destination{dest}
-
-	xferTx, err := txbuilder.Build(ctx, nil, sources, dests, []byte{}, time.Minute)
+	xferTx, err := txbuilder.Build(ctx, nil, []txbuilder.Action{source, dest}, []byte{})
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

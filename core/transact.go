@@ -16,7 +16,7 @@ import (
 	"chain/net/trace/span"
 )
 
-func buildSingle(ctx context.Context, req *BuildRequest) (interface{}, error) {
+func buildSingle(ctx context.Context, req *buildRequest) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -26,12 +26,7 @@ func buildSingle(ctx context.Context, req *BuildRequest) (interface{}, error) {
 	}
 	defer dbtx.Rollback(ctx)
 
-	prevTx, sources, destinations, err := req.parse(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	tpl, err := txbuilder.Build(ctx, prevTx, sources, destinations, req.Metadata, req.ResTime)
+	tpl, err := txbuilder.Build(ctx, req.Tx, req.actions(), req.ReferenceData)
 	if err != nil {
 		return nil, err
 	}
@@ -51,14 +46,10 @@ func buildSingle(ctx context.Context, req *BuildRequest) (interface{}, error) {
 
 // POST /v3/transact/build
 // Idempotent
-func build(ctx context.Context, buildReqs []*BuildRequest) (interface{}, error) {
+func build(ctx context.Context, buildReqs []*buildRequest) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
-
-	if err := buildAuthz(ctx, buildReqs...); err != nil {
-		return nil, err
-	}
 
 	responses := make([]interface{}, len(buildReqs))
 	var wg sync.WaitGroup

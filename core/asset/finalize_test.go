@@ -6,7 +6,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/account"
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
@@ -43,43 +42,29 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 	dumpState(ctx, t)
 
-	// Build a transaction template with a reservation, no destination.
-	assetAmount := &bc.AssetAmount{
+	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.AssetID,
 		Amount:  10,
 	}
-	sources := []*txbuilder.Source{
-		account.NewSource(ctx, assetAmount, info.acctA.ID, nil, nil, nil),
-	}
-	srcTmpl, err := txbuilder.Build(ctx, nil, sources, nil, []byte{}, time.Minute)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
+	spendAction := assettest.NewAccountSpendAction(assetAmount, info.acctA.ID, nil, nil, nil)
+	spendAction.Params.TTL = time.Millisecond
+	dest1 := assettest.NewAccountControlAction(assetAmount, info.acctB.ID, nil)
 
 	// Build the first tx
-	dest1, err := account.NewDestination(ctx, assetAmount, info.acctB.ID, nil)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	firstTemplate, err := txbuilder.Build(ctx, srcTmpl, nil, []*txbuilder.Destination{dest1}, []byte{}, time.Minute)
+	firstTemplate, err := txbuilder.Build(ctx, nil, []txbuilder.Action{spendAction, dest1}, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 	assettest.SignTxTemplate(t, firstTemplate, info.privKeyAccounts)
-	_, err = FinalizeTx(ctx, firstTemplate)
+	tx, err := FinalizeTx(ctx, firstTemplate)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
 	// Build the second tx
-	dest2, err := account.NewDestination(ctx, assetAmount, info.acctB.ID, nil)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	secondTemplate, err := txbuilder.Build(ctx, srcTmpl, nil, []*txbuilder.Destination{dest2}, []byte{}, time.Minute)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
+	secondTemplate, err := txbuilder.Build(ctx, &tx.TxData, nil, []byte("test"))
+	secondTemplate.Inputs = firstTemplate.Inputs
+	txbuilder.ComputeSigHashes(secondTemplate)
 	assettest.SignTxTemplate(t, secondTemplate, info.privKeyAccounts)
 	_, err = FinalizeTx(ctx, secondTemplate)
 	if err != nil {

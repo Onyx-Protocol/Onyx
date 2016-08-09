@@ -3,7 +3,6 @@ package txbuilder
 import (
 	"bytes"
 	"fmt"
-	"time"
 
 	"golang.org/x/net/context"
 
@@ -25,95 +24,59 @@ var (
 // Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, prev *Template, sources []*Source, dests []*Destination, metadata []byte, ttl time.Duration) (*Template, error) {
-	if ttl < time.Minute {
-		ttl = time.Minute
-	}
-	tpl, err := build(ctx, sources, dests, metadata, ttl)
-	if err != nil {
-		return nil, err
-	}
-	if prev != nil {
-		tpl, err = combine(prev, tpl)
-		if err != nil {
-			return nil, err
+func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref []byte) (*Template, error) {
+	if tx == nil {
+		tx = &bc.TxData{
+			Version: bc.CurrentTransactionVersion,
 		}
 	}
 
-	ComputeSigHashes(ctx, tpl)
+	if len(ref) != 0 {
+		if len(tx.Metadata) != 0 && !bytes.Equal(tx.Metadata, ref) {
+			return nil, errors.WithDetail(ErrBadBuildRequest, "transaction metadata does not match previous template's metadata")
+		}
+
+		tx.Metadata = ref
+	}
+
+	var tplInputs []*Input
+	for _, action := range actions {
+		txins, txouts, inputs, err := action.Build(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+
+		if len(txins) != len(inputs) {
+			return nil, errors.Wrap(fmt.Errorf("%T returned different number of transaction and template inputs", action))
+		}
+
+		for i := range txins {
+			inputs[i].Index = uint32(len(tx.Inputs))
+			tplInputs = append(tplInputs, inputs[i])
+			tx.Inputs = append(tx.Inputs, txins[i])
+		}
+
+		tx.Outputs = append(tx.Outputs, txouts...)
+	}
+
+	for _, input := range tplInputs {
+		// Empty signature arrays should be serialized as empty arrays, not null.
+		if input.SigComponents == nil {
+			input.SigComponents = []*SigScriptComponent{}
+		}
+	}
+
+	tpl := &Template{
+		Unsigned: tx,
+		Inputs:   tplInputs,
+	}
+	ComputeSigHashes(tpl)
 	return tpl, nil
-}
-
-func build(ctx context.Context, sources []*Source, dests []*Destination, metadata []byte, ttl time.Duration) (*Template, error) {
-	tx := &bc.TxData{
-		Version:  bc.CurrentTransactionVersion,
-		Metadata: metadata,
-	}
-
-	var inputs []*Input
-
-	for _, source := range sources {
-		reserveResult, err := source.Reserve(ctx, ttl)
-		if err != nil {
-			return nil, errors.Wrap(err, "reserve")
-		}
-		for _, item := range reserveResult.Items {
-			// Empty signature arrays should be serialized as empty arrays, not null.
-			if item.TemplateInput.SigComponents == nil {
-				item.TemplateInput.SigComponents = []*SigScriptComponent{}
-			}
-
-			tx.Inputs = append(tx.Inputs, item.TxInput)
-			inputs = append(inputs, item.TemplateInput)
-		}
-		dests = append(dests, reserveResult.Change...)
-	}
-
-	for _, dest := range dests {
-		tx.Outputs = append(tx.Outputs, bc.NewTxOutput(dest.AssetID, dest.Amount, dest.PKScript(), dest.Metadata))
-	}
-
-	appTx := &Template{
-		Unsigned:   tx,
-		BlockChain: "sandbox",
-		Inputs:     inputs,
-	}
-
-	return appTx, nil
-}
-
-func combine(txs ...*Template) (*Template, error) {
-	if len(txs) == 0 {
-		return nil, errors.New("must pass at least one tx")
-	}
-	completeWire := &bc.TxData{Version: bc.CurrentTransactionVersion}
-	complete := &Template{BlockChain: txs[0].BlockChain, Unsigned: completeWire}
-
-	for _, tx := range txs {
-		if tx.BlockChain != complete.BlockChain {
-			return nil, errors.New("all txs must be the same BlockChain")
-		}
-
-		if len(tx.Unsigned.Metadata) != 0 {
-			if len(complete.Unsigned.Metadata) != 0 &&
-				!bytes.Equal(tx.Unsigned.Metadata, complete.Unsigned.Metadata) {
-				return nil, errors.WithDetail(ErrBadBuildRequest, "transaction metadata does not match previous template's metadata")
-			}
-
-			complete.Unsigned.Metadata = tx.Unsigned.Metadata
-		}
-
-		complete.Inputs = append(complete.Inputs, tx.Inputs...)
-		completeWire.Inputs = append(completeWire.Inputs, tx.Unsigned.Inputs...)
-		completeWire.Outputs = append(completeWire.Outputs, tx.Unsigned.Outputs...)
-	}
-
-	return complete, nil
 }
 
 // ComputeSigHashes populates signature data for every input and sigscript
 // component.
-func ComputeSigHashes(ctx context.Context, tpl *Template) {
+func ComputeSigHashes(tpl *Template) {
 	sigHasher := bc.NewSigHasher(tpl.Unsigned)
 	for i, in := range tpl.Inputs {
 		h := sigHasher.Hash(i, bc.SigHashAll)
@@ -128,9 +91,9 @@ func ComputeSigHashes(ctx context.Context, tpl *Template) {
 // creating a fully-signed transaction.
 func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 	msg := txTemplate.Unsigned
-	for i, input := range txTemplate.Inputs {
-		if msg.Inputs[i] == nil {
-			return nil, fmt.Errorf("unsigned tx missing input %d", i)
+	for _, input := range txTemplate.Inputs {
+		if msg.Inputs[input.Index] == nil {
+			return nil, fmt.Errorf("unsigned tx missing input %d", input.Index)
 		}
 
 		components := input.SigComponents
@@ -159,7 +122,7 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 				return nil, fmt.Errorf("unknown sigscript component `%s`", c.Type)
 			}
 		}
-		msg.Inputs[i].InputWitness = witness
+		msg.Inputs[input.Index].InputWitness = witness
 	}
 
 	return bc.NewTx(*msg), nil
@@ -180,7 +143,7 @@ func InputSigs(keys []*hd25519.XPub, path []uint32) (sigs []*Signature) {
 }
 
 func Sign(ctx context.Context, tpl *Template, signFn func(context.Context, *SigScriptComponent, *Signature) ([]byte, error)) error {
-	ComputeSigHashes(ctx, tpl)
+	ComputeSigHashes(tpl)
 	// TODO(kr): come up with some scheme to verify that the
 	// covered output scripts are what the client really wants.
 	for i, input := range tpl.Inputs {

@@ -12,42 +12,54 @@ import (
 	"chain/cos/bc"
 	"chain/cos/txscript"
 	"chain/crypto/ed25519/hd25519"
+	"chain/encoding/json"
 	"chain/errors"
 )
 
-// Reserver selects utxos that are sent to control programs contained
-// in the account. It satisfies the txbuilder.Reserver interface.
-type Reserver struct {
-	accountID   string
-	txHash      *bc.Hash // optional filter
-	outputIndex *uint32  // optional filter
-	clientToken *string
+type SpendAction struct {
+	Params struct {
+		bc.AssetAmount
+		AccountID string        `json:"account_id"`
+		TxHash    *bc.Hash      `json:"transaction_hash"`
+		TxOut     *uint32       `json:"transaction_output"`
+		TTL       time.Duration `json:"reservation_ttl"`
+	}
+	ReferenceData json.HexBytes `json:"reference_data"`
+	ClientToken   *string       `json:"client_token"`
 }
 
-// Reserve selects utxos held in the account.
-func (reserver *Reserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmount, ttl time.Duration) (*txbuilder.ReserveResult, error) {
+func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
+	ttl := a.Params.TTL
+	if ttl == 0 {
+		ttl = time.Minute
+	}
+
 	utxodbSource := utxodb.Source{
-		AssetID:     assetAmount.AssetID,
-		Amount:      assetAmount.Amount,
-		AccountID:   reserver.accountID,
-		TxHash:      reserver.txHash,
-		OutputIndex: reserver.outputIndex,
-		ClientToken: reserver.clientToken,
+		AssetID:     a.Params.AssetID,
+		Amount:      a.Params.Amount,
+		AccountID:   a.Params.AccountID,
+		TxHash:      a.Params.TxHash,
+		OutputIndex: a.Params.TxOut,
+		ClientToken: a.ClientToken,
 	}
 	utxodbSources := []utxodb.Source{utxodbSource}
 	reserved, change, err := utxodb.Reserve(ctx, utxodbSources, ttl)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	result := &txbuilder.ReserveResult{}
+	var (
+		txins      []*bc.TxInput
+		tplIns     []*txbuilder.Input
+		changeOuts []*bc.TxOutput
+	)
 	for _, r := range reserved {
-		txInput := bc.NewSpendInput(r.Hash, r.Index, nil, r.AssetID, r.Amount, r.Script, nil)
+		txInput := bc.NewSpendInput(r.Hash, r.Index, nil, r.AssetID, r.Amount, r.Script, a.ReferenceData)
 
 		templateInput := &txbuilder.Input{}
 		inputAccount, err := Find(ctx, r.AccountID)
 		if err != nil {
-			return nil, errors.Wrap(err, "get account info")
+			return nil, nil, nil, errors.Wrap(err, "get account info")
 		}
 
 		path := signers.Path(inputAccount, signers.AccountKeySpace, r.ControlProgramIndex[:])
@@ -56,37 +68,33 @@ func (reserver *Reserver) Reserve(ctx context.Context, assetAmount *bc.AssetAmou
 
 		redeemScript, err := txscript.TxMultiSigScript(derivedPKs, inputAccount.Quorum)
 		if err != nil {
-			return nil, errors.Wrap(err, "compute redeem script")
+			return nil, nil, nil, errors.Wrap(err, "compute redeem script")
 		}
 		templateInput.AssetID = r.AssetID
 		templateInput.Amount = r.Amount
 		templateInput.AddWitnessSigs(txbuilder.InputSigs(inputAccount.XPubs, path), inputAccount.Quorum, nil)
 		templateInput.AddWitnessData(redeemScript)
 
-		item := &txbuilder.ReserveResultItem{
-			TxInput:       txInput,
-			TemplateInput: templateInput,
-		}
-
-		result.Items = append(result.Items, item)
+		txins = append(txins, txInput)
+		tplIns = append(tplIns, templateInput)
 	}
 	if len(change) > 0 {
 		changeAmounts := breakupChange(change[0].Amount)
 
 		// TODO(bobg): As pointed out by @kr, each time through this loop
-		// involves a db write (in the call to NewDestination).
+		// involves a db write.
 		// May be preferable performancewise to allocate all the
 		// destinations in one call.
 		for _, changeAmount := range changeAmounts {
-			dest, err := NewDestination(ctx, &bc.AssetAmount{AssetID: assetAmount.AssetID, Amount: changeAmount}, reserver.accountID, nil)
+			acp, err := CreateControlProgram(ctx, a.Params.AccountID)
 			if err != nil {
-				return nil, errors.Wrap(err, "creating change destination")
+				return nil, nil, nil, err
 			}
-			result.Change = append(result.Change, dest)
+			changeOuts = append(changeOuts, bc.NewTxOutput(a.Params.AssetID, changeAmount, acp, nil))
 		}
 	}
 
-	return result, nil
+	return txins, changeOuts, tplIns, nil
 }
 
 func breakupChange(total uint64) (amounts []uint64) {
@@ -101,43 +109,21 @@ func breakupChange(total uint64) (amounts []uint64) {
 	return amounts
 }
 
-// NewSource returns a new txbuilder.Source with an account reserver.
-func NewSource(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, txHash *bc.Hash, outputIndex *uint32, clientToken *string) *txbuilder.Source {
-	return &txbuilder.Source{
-		AssetAmount: *assetAmount,
-		Reserver: &Reserver{
-			accountID:   accountID,
-			txHash:      txHash,
-			outputIndex: outputIndex,
-			clientToken: clientToken,
-		},
+type ControlAction struct {
+	Params struct {
+		bc.AssetAmount
+		AccountID string `json:"account_id"`
 	}
+	ReferenceData json.HexBytes `json:"reference_data"`
 }
 
-// Receiver satisfies the txbuilder.Receiver interface.
-type Receiver struct {
-	controlProgram []byte
-	accountID      string
-}
-
-// PKScript returns a control program held by the account.
-func (receiver *Receiver) PKScript() []byte { return receiver.controlProgram }
-
-// AccountID returns the account id of the receiver.
-func (receiver *Receiver) AccountID() string { return receiver.accountID }
-
-// NewDestination returns a new txbuilder.Destination with an account receiver.
-func NewDestination(ctx context.Context, assetAmount *bc.AssetAmount, accountID string, metadata []byte) (*txbuilder.Destination, error) {
-	acp, err := CreateControlProgram(ctx, accountID)
+func (a *ControlAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
+	acp, err := CreateControlProgram(ctx, a.Params.AccountID)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
-
-	return &txbuilder.Destination{
-		AssetAmount: *assetAmount,
-		Metadata:    metadata,
-		Receiver:    &Receiver{controlProgram: acp, accountID: accountID},
-	}, nil
+	out := bc.NewTxOutput(a.Params.AssetID, a.Params.Amount, acp, a.ReferenceData)
+	return nil, []*bc.TxOutput{out}, nil, nil
 }
 
 // CancelReservations cancels any existing reservations
