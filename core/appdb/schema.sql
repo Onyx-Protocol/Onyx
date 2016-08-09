@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -322,6 +322,20 @@ CREATE TABLE account_utxos (
     confirmed_in bigint,
     block_pos integer,
     block_timestamp bigint
+);
+
+
+--
+-- Name: annotated_outputs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE annotated_outputs (
+    block_height bigint NOT NULL,
+    tx_pos integer NOT NULL,
+    output_index integer NOT NULL,
+    tx_hash text NOT NULL,
+    data jsonb NOT NULL,
+    timespan int8range NOT NULL
 );
 
 
@@ -684,6 +698,14 @@ ALTER TABLE ONLY account_utxos
 
 
 --
+-- Name: annotated_outputs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY annotated_outputs
+    ADD CONSTRAINT annotated_outputs_pkey PRIMARY KEY (block_height, tx_pos, output_index);
+
+
+--
 -- Name: annotated_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -904,6 +926,27 @@ CREATE INDEX account_utxos_reservation_id_idx ON account_utxos USING btree (rese
 
 
 --
+-- Name: annotated_outputs_jsondata_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX annotated_outputs_jsondata_idx ON annotated_outputs USING gin (data jsonb_path_ops);
+
+
+--
+-- Name: annotated_outputs_outpoint_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX annotated_outputs_outpoint_idx ON annotated_outputs USING btree (tx_hash, output_index);
+
+
+--
+-- Name: annotated_outputs_timespan_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX annotated_outputs_timespan_idx ON annotated_outputs USING gist (timespan);
+
+
+--
 -- Name: annotated_txs_data; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1067,3 +1110,4 @@ insert into migrations (filename, hash) values ('2016-08-05.1.query.transaction-
 insert into migrations (filename, hash) values ('2016-08-08.0.assets.use-jsonb-for-definition.sql', 'c2cad7d90cbdb17a9bebb7a54547ca6cfc2e788a6ec881d6fb5885ba02ee2cb4');
 insert into migrations (filename, hash) values ('2016-08-08.1.query.blocks.sql', '6df00f3746c4d0f322a96c3054cbc9f08939b3f31cbcbcfd06d1341f0bf44d2b');
 insert into migrations (filename, hash) values ('2016-08-08.2.core.add-tags-tables.sql', '7f97aa4efa6b026fa7ac288f49073c885585c9ca4fa0cf05772942ffab996bfd');
+insert into migrations (filename, hash) values ('2016-08-08.3.query.annotated-outputs.sql', 'e94d4eb5fd8987ab40b9287d3af8ad5ff33b76a96d47e83436ad7d8f50355624');

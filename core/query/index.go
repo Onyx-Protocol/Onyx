@@ -2,6 +2,7 @@ package query
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"golang.org/x/net/context"
 
@@ -20,7 +21,12 @@ func (i *Indexer) indexBlockCallback(ctx context.Context, b *bc.Block) {
 		log.Fatal(ctx, err)
 	}
 
-	_, err = i.annotatedTxs(ctx, b)
+	txs, err := i.insertAnnotatedTxs(ctx, b)
+	if err != nil {
+		log.Fatal(ctx, err)
+	}
+
+	err = i.insertAnnotatedOutputs(ctx, b, txs)
 	if err != nil {
 		log.Fatal(ctx, err)
 	}
@@ -37,7 +43,7 @@ func (i *Indexer) insertBlock(ctx context.Context, b *bc.Block) error {
 	return errors.Wrap(err, "inserting block timestamp")
 }
 
-func (i *Indexer) annotatedTxs(ctx context.Context, b *bc.Block) ([]map[string]interface{}, error) {
+func (i *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[string]interface{}, error) {
 	var (
 		hashes              = pg.Strings(make([]string, 0, len(b.Transactions)))
 		positions           = pg.Uint32s(make([]uint32, 0, len(b.Transactions)))
@@ -66,13 +72,75 @@ func (i *Indexer) annotatedTxs(ctx context.Context, b *bc.Block) ([]map[string]i
 
 	// Save the annotated txs to the database.
 	const insertQ = `
-		INSERT INTO annotated_txs(block_height, block_index, tx_hash, data)
+		INSERT INTO annotated_txs(block_height, tx_pos, tx_hash, data)
 		SELECT $1, unnest($2::integer[]), unnest($3::text[]), unnest($4::jsonb[])
-		ON CONFLICT (block_height, block_index) DO NOTHING;
+		ON CONFLICT (block_height, tx_pos) DO NOTHING;
 	`
 	_, err := i.db.Exec(ctx, insertQ, b.Height, positions, hashes, annotatedTxs)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting annotated_txs to db")
 	}
 	return annotatedTxsDecoded, nil
+}
+
+func (i *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, annotatedTxs []map[string]interface{}) error {
+	var (
+		outputTxPositions pg.Uint32s
+		outputIndexes     pg.Uint32s
+		outputTxHashes    pg.Strings
+		outputData        pg.Strings
+		prevoutHashes     pg.Strings
+		prevoutIndexes    pg.Uint32s
+	)
+
+	for pos, tx := range b.Transactions {
+		for _, in := range tx.Inputs {
+			if !in.IsIssuance() {
+				prevoutHashes = append(prevoutHashes, in.Outpoint().Hash.String())
+				prevoutIndexes = append(prevoutIndexes, in.Outpoint().Index)
+			}
+		}
+
+		outs, ok := annotatedTxs[pos]["outputs"].([]interface{})
+		if !ok {
+			return errors.Wrap(fmt.Errorf("bad outputs type %T", annotatedTxs[pos]["outputs"]))
+		}
+		for outIndex, out := range outs {
+			txOut, ok := out.(map[string]interface{})
+			if !ok {
+				return errors.Wrap(fmt.Errorf("bad output type %T", out))
+			}
+
+			serializedData, err := json.Marshal(txOut)
+			if err != nil {
+				return errors.Wrap(err, "serializing annotated output")
+			}
+
+			outputTxPositions = append(outputTxPositions, uint32(pos))
+			outputIndexes = append(outputIndexes, uint32(outIndex))
+			outputTxHashes = append(outputTxHashes, tx.Hash.String())
+			outputData = append(outputData, string(serializedData))
+		}
+	}
+
+	// Insert all of the block's outputs at once.
+	const insertQ = `
+		INSERT block_height, tx_pos, output_index, tx_hash, data, timespan
+		INTO annotated_outputs
+		SELECT $1, unnest($2::integer[]), unnest($3::integer[]), unnest($4::text[]),
+		           unnest($5::jsonb[]),   int8range($12, NULL)
+		ON CONFLICT (block_height, tx_pos, output_index) DO NOTHING;
+	`
+	_, err := i.db.Exec(ctx, insertQ, b.Height, outputTxPositions,
+		outputIndexes, outputTxHashes, outputData, b.TimestampMS)
+	if err != nil {
+		return errors.Wrap(err, "batch inserting annotated outputs")
+	}
+
+	const updateQ = `
+		UPDATE annotated_outputs SET timespan = INT8RANGE(LOWER(timespan), $1)
+		WHERE (tx_hash, output_index) IN (SELECT unnest($2::text[]), unnest($3::text[]))
+	`
+	_, err = i.db.Exec(ctx, updateQ, b.TimestampMS, prevoutHashes, prevoutIndexes)
+	return errors.Wrap(err, "updating spent annotated outputs")
 }
