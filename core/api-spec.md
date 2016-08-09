@@ -167,6 +167,25 @@ Response
 }
 ```
 
+### Archive Asset
+
+Endpoint
+```
+POST /archive-asset
+```
+    
+Request
+
+```
+{
+  asset_id: "...",
+}
+```
+
+Response
+
+The response body is empty.
+
 ## Accounts
 
 ### Account Object
@@ -257,6 +276,25 @@ Response
 ```
 
 
+
+### Archive Account
+
+Endpoint
+```
+POST /archive-account
+```
+    
+Request
+
+```
+{
+  account_id: "...",
+}
+```
+
+Response
+
+The response body is empty.
 
 ## Control Programs
 
