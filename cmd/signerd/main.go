@@ -10,12 +10,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/btcsuite/btcutil/base58"
 	"github.com/kr/secureheader"
-	"golang.org/x/crypto/sha3"
 	"golang.org/x/net/context"
 
 	"chain/core/txbuilder"
+	"chain/crypto/ed25519/hd25519"
 	"chain/crypto/hsm/thales/see"
 	"chain/crypto/hsm/thales/xprvseeclient"
 	"chain/env"
@@ -56,8 +55,8 @@ var (
 	seeConn *see.Conn
 	client  *xprvseeclient.Client
 
-	xpub string
-	kd   uint32
+	xpubstr string
+	kd      uint32
 )
 
 func main() {
@@ -83,7 +82,7 @@ func main() {
 	}
 
 	m := httpjson.NewServeMux(writeHTTPError)
-	m.HandleFunc("POST", "/v1/signtemplates", signTemplates)
+	m.HandleFunc("POST", "/sign-transaction-template", signTemplates)
 
 	var h chainhttp.Handler = m
 	h = metrics.Handler{Handler: h}
@@ -134,16 +133,16 @@ func loadKey(ctx context.Context) error {
 		return err
 	}
 
-	if len(xpubBytes) == 78 {
-		checkSum := sha3.Sum256(xpubBytes)
-		xpubBytes = append(xpubBytes, checkSum[:4]...)
+	if len(xpubBytes) != 64 {
+		return fmt.Errorf("xpub should have 64 bytes, got %d bytes", len(xpubBytes))
 	}
 
-	if len(xpubBytes) != 82 {
-		return fmt.Errorf("xpub should have 82 bytes, got %d bytes", len(xpubBytes))
+	xpub, err := hd25519.XPubFromBytes(xpubBytes)
+	if err != nil {
+		return err
 	}
 
-	xpub = base58.Encode(xpubBytes)
+	xpubstr = xpub.String()
 	return nil
 }
 

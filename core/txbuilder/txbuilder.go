@@ -157,7 +157,7 @@ func Sign(ctx context.Context, tpl *Template, signFn func(context.Context, *SigS
 					if err != nil {
 						return errors.Wrapf(err, "computing signature for input %d, sigscript component %d, sig %d", i, c, s)
 					}
-					sig.Bytes = append(sigBytes, byte(bc.SigHashAll))
+					sig.Bytes = sigBytes
 				}
 			}
 		}
