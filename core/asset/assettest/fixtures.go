@@ -86,7 +86,7 @@ func CreateAccountControlProgramFixture(ctx context.Context, t testing.TB, accID
 
 var assetCounter = createCounter()
 
-func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum int, def map[string]interface{}) bc.AssetID {
+func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum int, def, tags map[string]interface{}) bc.AssetID {
 	if len(keys) == 0 {
 		keys = []string{testutil.TestXPub.String()}
 	}
@@ -96,7 +96,7 @@ func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum
 	}
 	var genesisHash bc.Hash
 
-	asset, err := asset.Define(ctx, keys, quorum, def, genesisHash, nil)
+	asset, err := asset.Define(ctx, keys, quorum, def, genesisHash, tags, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

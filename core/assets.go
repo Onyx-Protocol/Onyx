@@ -18,6 +18,7 @@ type assetResponse struct {
 	XPubs      []*hd25519.XPub        `json:"xpubs"`
 	Quorum     int                    `json:"quorum"`
 	Definition map[string]interface{} `json:"definition"`
+	Tags       map[string]interface{} `json:"tags"`
 }
 
 // POST /list-assets
@@ -42,11 +43,25 @@ func (a *api) listAssets(ctx context.Context, in requestQuery) (result page, err
 	return result, nil
 }
 
+// POST /update-asset
+func setAssetTags(ctx context.Context, in struct {
+	AssetID string `json:"asset_id"`
+	Tags    map[string]interface{}
+}) (interface{}, error) {
+	var decodedAssetID bc.AssetID
+	err := decodedAssetID.UnmarshalText([]byte(in.AssetID))
+	if err != nil {
+		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "%q is an invalid asset ID", in.AssetID)
+	}
+	return asset.SetTags(ctx, decodedAssetID, in.Tags)
+}
+
 // POST /create-asset
 func (a *api) createAsset(ctx context.Context, in struct {
 	XPubs      []string
 	Quorum     int
 	Definition map[string]interface{}
+	Tags       map[string]interface{}
 
 	// ClientToken is the application's unique token for the asset. Every asset
 	// should have a unique client token. The client token is used to ensure
@@ -61,7 +76,7 @@ func (a *api) createAsset(ctx context.Context, in struct {
 		return result, err
 	}
 
-	asset, err := asset.Define(ctx, in.XPubs, in.Quorum, in.Definition, genesis.Hash(), in.ClientToken)
+	asset, err := asset.Define(ctx, in.XPubs, in.Quorum, in.Definition, genesis.Hash(), in.Tags, in.ClientToken)
 	if err != nil {
 		return result, err
 	}
@@ -70,6 +85,7 @@ func (a *api) createAsset(ctx context.Context, in struct {
 	result.XPubs = asset.Signer.XPubs
 	result.Quorum = asset.Signer.Quorum
 	result.Definition = asset.Definition
+	result.Tags = asset.Tags
 	return result, nil
 }
 

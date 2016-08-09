@@ -21,7 +21,7 @@ func TestDefineAsset(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	keys := []string{testutil.TestXPub.String()}
 	var genesisHash bc.Hash
-	asset, err := Define(ctx, keys, 1, nil, genesisHash, nil)
+	asset, err := Define(ctx, keys, 1, nil, genesisHash, nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -39,16 +39,17 @@ func TestDefineAsset(t *testing.T) {
 }
 
 func TestDefineAssetIdempotency(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	token := "test_token"
 	keys := []string{testutil.TestXPub.String()}
 	var genesisHash bc.Hash
-	asset0, err := Define(ctx, keys, 1, nil, genesisHash, &token)
+	asset0, err := Define(ctx, keys, 1, nil, genesisHash, nil, &token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	asset1, err := Define(ctx, keys, 1, nil, genesisHash, &token)
+	asset1, err := Define(ctx, keys, 1, nil, genesisHash, nil, &token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -59,11 +60,56 @@ func TestDefineAssetIdempotency(t *testing.T) {
 	}
 }
 
-func TestDefineAndArchiveAsset(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+func TestSetAssetTags(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	keys := []string{testutil.TestXPub.String()}
 	var genesisHash bc.Hash
-	asset, err := Define(ctx, keys, 1, nil, genesisHash, nil)
+	asset, err := Define(ctx, keys, 1, nil, genesisHash, nil, nil)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	newTags := map[string]interface{}{"someTag": "taggityTag"}
+
+	updated, err := SetTags(ctx, asset.AssetID, newTags)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	asset.Tags = newTags
+	if !reflect.DeepEqual(asset, updated) {
+		t.Errorf("got = %+v want %+v", updated, asset)
+	}
+}
+
+func TestSetNonLocalAssetTags(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+	newTags := map[string]interface{}{"someTag": "taggityTag"}
+	assetID := mustDecodeAssetID("2d194241795a28af3345ffcc64fd31d8819c56f4c4d4b4360763a259152aa393")
+
+	updated, err := SetTags(ctx, assetID, newTags)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	want := &Asset{
+		AssetID: assetID,
+		Tags:    newTags,
+	}
+
+	if !reflect.DeepEqual(updated, want) {
+		t.Errorf("got = %+v want %+v", updated, want)
+	}
+}
+
+func TestDefineAndArchiveAsset(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+	keys := []string{testutil.TestXPub.String()}
+	var genesisHash bc.Hash
+	asset, err := Define(ctx, keys, 1, nil, genesisHash, nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -87,10 +133,11 @@ func TestDefineAndArchiveAsset(t *testing.T) {
 }
 
 func TestFindAsset(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	keys := []string{testutil.TestXPub.String()}
 	var genesisHash bc.Hash
-	asset, err := Define(ctx, keys, 1, nil, genesisHash, nil)
+	asset, err := Define(ctx, keys, 1, nil, genesisHash, nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -115,7 +162,7 @@ func TestListAsset(t *testing.T) {
 	// asset ids of the generated assets will be.
 	aMap := make(map[bc.AssetID]*Asset)
 	for i := 0; i < count; i++ {
-		a, err := Define(ctx, keys, 1, nil, genesisHash, nil)
+		a, err := Define(ctx, keys, 1, nil, genesisHash, nil, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -154,12 +201,13 @@ func TestListAsset(t *testing.T) {
 }
 
 func TestAssetByClientToken(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	keys := []string{testutil.TestXPub.String()}
 	token := "test_token"
 	var genesisHash bc.Hash
 
-	asset, err := Define(ctx, keys, 1, nil, genesisHash, &token)
+	asset, err := Define(ctx, keys, 1, nil, genesisHash, nil, &token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

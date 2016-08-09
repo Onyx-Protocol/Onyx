@@ -29,10 +29,11 @@ type Asset struct {
 	GenesisHash     bc.Hash                `json:"genesis_hash"`
 	Signer          *signers.Signer        `json:"signer"`
 	KeyIndex        []uint32               `json:"key_index"`
+	Tags            map[string]interface{} `json:"tags"`
 }
 
 // Define defines a new Asset.
-func Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, genesisHash bc.Hash, clientToken *string) (*Asset, error) {
+func Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, genesisHash bc.Hash, tags map[string]interface{}, clientToken *string) (*Asset, error) {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "define asset")
@@ -69,6 +70,7 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 		GenesisHash:     genesisHash,
 		AssetID:         bc.ComputeAssetID(issuanceProgram, genesisHash, 1),
 		Signer:          assetSigner,
+		Tags:            tags,
 	}
 
 	asset, err = insertAsset(ctx, asset, clientToken)
@@ -76,11 +78,43 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 		return nil, errors.Wrap(err, "inserting asset")
 	}
 
+	err = insertAssetTags(ctx, asset.AssetID, tags)
+	if err != nil {
+		return nil, errors.Wrap(err, "inserting asset tags")
+	}
+
 	err = dbtx.Commit(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "committing define asset dbtx")
 	}
+
 	return asset, nil
+}
+
+// SetTags sets tags on the given asset and its associated signer.
+func SetTags(ctx context.Context, id bc.AssetID, newTags map[string]interface{}) (*Asset, error) {
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "set asset tags")
+	}
+	defer dbtx.Rollback(ctx)
+
+	err = insertAssetTags(ctx, id, newTags)
+	if err != nil {
+		return nil, errors.Wrap(err, "set asset tags")
+	}
+
+	a, err := assetByAssetID(ctx, id)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "committing set asset tags dbtx")
+	}
+
+	return a, nil
 }
 
 // Find retrieves an Asset record from signer.
@@ -196,6 +230,7 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
     INSERT INTO assets
+
 	 	(id, signer_id, key_index, genesis_hash, issuance_program, definition, client_token)
     VALUES($1, $2, to_key_index($3), $4, $5, $6, $7)
     ON CONFLICT (client_token) DO NOTHING
@@ -229,10 +264,31 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 	return asset, nil
 }
 
+// insertAssetTags inserts a set of tags for the given assetID.
+// It must take place inside a database transaction.
+func insertAssetTags(ctx context.Context, assetID bc.AssetID, tags map[string]interface{}) error {
+	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
+	tagsParam, err := mapToNullString(tags)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	const q = `
+		INSERT INTO asset_tags (asset_id, tags) VALUES ($1, $2)
+		ON CONFLICT (asset_id) DO UPDATE SET tags = $2
+	`
+	_, err = pg.Exec(ctx, q, assetID.String(), tagsParam)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	return nil
+}
+
 func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 	const q = `
-		SELECT id, issuance_program, definition,
-			genesis_hash, key_index(key_index), signer_id, archived
+		SELECT id, issuance_program, definition, genesis_hash,
+		key_index(key_index), signer_id, archived
 		FROM assets
 		WHERE id=$1
 	`
@@ -254,12 +310,27 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 		&archived,
 	)
 
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 
 	if archived {
 		return nil, ErrArchived
+	}
+
+	if err == sql.ErrNoRows {
+		// Assume that this is a non-local asset
+		// if we can't find it in the assets table
+		a = Asset{AssetID: id}
+	} else {
+		// Only try to fetch the signer if this is a
+		// local asset.
+		sig, err := signers.Find(ctx, "asset", signerID)
+		if err != nil {
+			return nil, errors.Wrap(err, "couldn't find signer")
+		}
+
+		a.Signer = sig
 	}
 
 	if len(definition) > 0 {
@@ -269,12 +340,20 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 		}
 	}
 
-	sig, err := signers.Find(ctx, "asset", signerID)
+	const tagQ = `SELECT tags FROM asset_tags WHERE asset_id=$1`
+	var tags []byte
+	err = pg.QueryRow(ctx, tagQ, id.String()).Scan(&tags)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't find signer")
+		return nil, errors.Wrap(err)
 	}
 
-	a.Signer = sig
+	if len(tags) > 0 {
+		err := json.Unmarshal(tags, &a.Tags)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+	}
+
 	return &a, nil
 }
 
@@ -311,6 +390,20 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 
 	if len(definition) > 0 {
 		err := json.Unmarshal(definition, &a.Definition)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+	}
+
+	const tagQ = `SELECT tags FROM asset_tags WHERE asset_id=$1`
+	var tags []byte
+	err = pg.QueryRow(ctx, tagQ, a.AssetID.String()).Scan(&tags)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	if len(tags) > 0 {
+		err := json.Unmarshal(tags, &a.Tags)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}

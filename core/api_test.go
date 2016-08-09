@@ -21,7 +21,8 @@ import (
 )
 
 func TestAccountTransfer(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	_, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -32,7 +33,7 @@ func TestAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, nil)
 	assetAmt := bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
@@ -103,7 +104,8 @@ func TestLogin(t *testing.T) {
 }
 
 func TestTransfer(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
 	fc, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -113,7 +115,7 @@ func TestTransfer(t *testing.T) {
 	account.Init(fc)
 
 	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, nil)
 	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
 	account2ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
 

@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -334,6 +334,16 @@ CREATE TABLE annotated_txs (
     tx_pos integer NOT NULL,
     tx_hash text NOT NULL,
     data jsonb NOT NULL
+);
+
+
+--
+-- Name: asset_tags; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE asset_tags (
+    asset_id text NOT NULL,
+    tags jsonb
 );
 
 
@@ -679,6 +689,14 @@ ALTER TABLE ONLY account_utxos
 
 ALTER TABLE ONLY annotated_txs
     ADD CONSTRAINT annotated_txs_pkey PRIMARY KEY (block_height, tx_pos);
+
+
+--
+-- Name: asset_tags_asset_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY asset_tags
+    ADD CONSTRAINT asset_tags_asset_id_key UNIQUE (asset_id);
 
 
 --
@@ -1048,3 +1066,4 @@ insert into migrations (filename, hash) values ('2016-08-05.0.core.remove-asset-
 insert into migrations (filename, hash) values ('2016-08-05.1.query.transaction-index.sql', '165e9595e85f127df281f66b9d4acf4b573289a12a0304d50ed53e024475d7e5');
 insert into migrations (filename, hash) values ('2016-08-08.0.assets.use-jsonb-for-definition.sql', 'c2cad7d90cbdb17a9bebb7a54547ca6cfc2e788a6ec881d6fb5885ba02ee2cb4');
 insert into migrations (filename, hash) values ('2016-08-08.1.query.blocks.sql', '6df00f3746c4d0f322a96c3054cbc9f08939b3f31cbcbcfd06d1341f0bf44d2b');
+insert into migrations (filename, hash) values ('2016-08-08.2.core.add-tags-tables.sql', '7f97aa4efa6b026fa7ac288f49073c885585c9ca4fa0cf05772942ffab996bfd');

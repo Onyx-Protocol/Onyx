@@ -115,6 +115,7 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/set-account-tags", setAccountTags)
 	h.HandleFunc("POST", "/list-assets", a.listAssets)
 	h.HandleFunc("POST", "/create-asset", a.createAsset)
+	h.HandleFunc("POST", "/update-asset", setAssetTags)
 	h.HandleFunc("POST", "/v3/accounts/:accountID/control-programs", createAccountControlProgram)
 	h.HandleFunc("DELETE", "/v3/accounts/:accountID", archiveAccount)
 	h.HandleFunc("DELETE", "/v3/assets/:assetID", archiveAsset)
