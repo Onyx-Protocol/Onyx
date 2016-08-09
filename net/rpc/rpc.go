@@ -47,12 +47,12 @@ var SecretToken string
 // Authenticate compares the secret to the SecretToken used to authenticate
 // requests. The api package uses this function to auth internode requests.
 // id and ctx are unused because this is a chain/net/http/authn AuthFunc.
-func Authenticate(ctx context.Context, id, secret string) (userID string, err error) {
+func Authenticate(ctx context.Context, id, secret string) error {
 	if subtle.ConstantTimeCompare([]byte(secret), []byte(SecretToken)) == 0 {
-		return "", authn.ErrNotAuthenticated
+		return authn.ErrNotAuthenticated
 	}
 
-	return "", nil
+	return nil
 }
 
 // ErrStatusCode is an error returned when an rpc fails with a non-200

@@ -16,7 +16,6 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
-	"chain/net/http/authn"
 	"chain/testutil"
 )
 
@@ -77,27 +76,7 @@ func TestMux(t *testing.T) {
 			t.Fatal("unexpected panic:", err)
 		}
 	}()
-	Handler("", nil, nil, nil, nil, nil, nil)
-}
-
-func TestLogin(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	uid := assettest.CreateUserFixture(ctx, t, "foo@bar.com", "abracadabra", "developer")
-	ctx = authn.NewContext(ctx, uid)
-
-	tok, err := login(ctx)
-	if err != nil {
-		t.Fatal("unexpected error", err)
-	}
-
-	// Verify that the token is valid
-	gotUID, err := authenticateToken(ctx, tok.ID, tok.Secret)
-	if err != nil {
-		t.Errorf("authenticate token err = %v want nil", err)
-	}
-	if gotUID != uid {
-		t.Errorf("authenticated user ID = %v want %v", gotUID, uid)
-	}
+	Handler(nil, nil, nil, nil, nil, nil)
 }
 
 func TestTransfer(t *testing.T) {
@@ -111,14 +90,11 @@ func TestTransfer(t *testing.T) {
 	asset.Init(fc, true)
 	account.Init(fc)
 
-	userID := assettest.CreateUserFixture(ctx, t, "", "", "")
 	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, nil)
 	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
 	account2ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
 
 	assetIDStr := assetID.String()
-
-	ctx = authn.NewContext(ctx, userID)
 
 	// Preface: issue some asset for account1ID to transfer to account2ID
 	issueAssetAmount := bc.AssetAmount{

@@ -61,10 +61,6 @@ From #devlog, build and deploy the Core server:
 	/build [-t <git-branch>] api
 	/deploy [-t <build-tag>] api <target>
 
-From your local machine, create a Core user:
-
-	$ DB_URL=`appenv -t <target> DB_URL` corectl adduser <email> <password>
-
 Finally, try logging into the dashboard at `https://<target>.chain.com`.
 
 ##### Provisioning TODO:

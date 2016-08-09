@@ -50,19 +50,18 @@ import (
 
 var (
 	// config vars
-	tlsCrt       = env.String("TLSCRT", "")
-	tlsKey       = env.String("TLSKEY", "")
-	listenAddr   = env.String("LISTEN", ":8080")
-	dbURL        = env.String("DB_URL", "postgres:///core?sslmode=disable")
-	target       = env.String("TARGET", "sandbox")
-	samplePer    = env.Duration("SAMPLEPER", 10*time.Second)
-	nouserSecret = env.String("NOUSER_SECRET", "")
-	splunkAddr   = os.Getenv("SPLUNKADDR")
-	logFile      = os.Getenv("LOGFILE")
-	logSize      = env.Int("LOGSIZE", 5e6) // 5MB
-	logCount     = env.Int("LOGCOUNT", 9)
-	logQueries   = env.Bool("LOG_QUERIES", false)
-	blockKey     = env.String("BLOCK_KEY", "7a99f72169fad2d3a75aa36c550f60ee3a10f947ab5e4d38d5823667333d7e811af6c3e2396e20cab40770a8d8d5a906cb147539f390b57364b99b767d0b1418")
+	tlsCrt     = env.String("TLSCRT", "")
+	tlsKey     = env.String("TLSKEY", "")
+	listenAddr = env.String("LISTEN", ":8080")
+	dbURL      = env.String("DB_URL", "postgres:///core?sslmode=disable")
+	target     = env.String("TARGET", "sandbox")
+	samplePer  = env.Duration("SAMPLEPER", 10*time.Second)
+	splunkAddr = os.Getenv("SPLUNKADDR")
+	logFile    = os.Getenv("LOGFILE")
+	logSize    = env.Int("LOGSIZE", 5e6) // 5MB
+	logCount   = env.Int("LOGCOUNT", 9)
+	logQueries = env.Bool("LOG_QUERIES", false)
+	blockKey   = env.String("BLOCK_KEY", "7a99f72169fad2d3a75aa36c550f60ee3a10f947ab5e4d38d5823667333d7e811af6c3e2396e20cab40770a8d8d5a906cb147539f390b57364b99b767d0b1418")
 	// for config var LIBRATO_URL, see func init below
 	traceguideToken    = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns         = env.Int("MAXDBCONNS", 10) // set to 100 in prod
@@ -243,7 +242,7 @@ func main() {
 
 	hsm := mockhsm.New(db)
 
-	h := core.Handler(*nouserSecret, generatorConfig, localSigner, store, pool, hsm, indexer)
+	h := core.Handler(generatorConfig, localSigner, store, pool, hsm, indexer)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}

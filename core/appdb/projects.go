@@ -10,18 +10,6 @@ import (
 	"chain/strings"
 )
 
-// IsAdmin returns true if the user is an admin.
-func IsAdmin(ctx context.Context, userID string) (bool, error) {
-	const q = `
-		SELECT COUNT(*)=1 FROM users
-		WHERE id=$1 AND role='admin'
-	`
-	var isAdmin bool
-	row := pg.QueryRow(ctx, q, userID)
-	err := row.Scan(&isAdmin)
-	return isAdmin, errors.Wrap(err)
-}
-
 // CheckActiveAsset returns nil if the provided assets are active.
 // If any of the assets are archived, this function returns ErrArchived.
 func CheckActiveAsset(ctx context.Context, assetIDs ...string) error {

@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -12,7 +11,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/appdb"
 	"chain/core/txdb"
 	"chain/cos"
 	"chain/crypto/ed25519"
@@ -39,9 +37,7 @@ type command struct {
 }
 
 var commands = map[string]*command{
-	"adduser": {addUser, "adduser [email] [password] [role]"},
 	"genesis": {genesis, "genesis"},
-	"boot":    {boot, "boot [email] [password]"},
 }
 
 func main() {
@@ -71,15 +67,6 @@ func main() {
 	cmd.f(db, os.Args[2:])
 }
 
-func addUser(db *sql.DB, args []string) {
-	ctx := pg.NewContext(context.Background(), db)
-	u, err := appdb.CreateUser(ctx, args[0], args[1], args[2])
-	if err != nil {
-		fatalln("error:", err)
-	}
-	fmt.Printf("user created: %+v\n", *u)
-}
-
 func genesis(db *sql.DB, args []string) {
 	keyBytes, err := hex.DecodeString(*blockKey)
 	if err != nil {
@@ -105,37 +92,6 @@ func genesis(db *sql.DB, args []string) {
 		fatalln("error:", err)
 	}
 	fmt.Printf("block created: %+v\n", b)
-}
-
-func boot(db *sql.DB, args []string) {
-	ctx := pg.NewContext(context.Background(), db)
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		fatalln("begin")
-	}
-	defer dbtx.Rollback(ctx)
-
-	u, err := appdb.CreateUser(ctx, args[0], args[1], "admin")
-	if err != nil {
-		fatalln(err)
-	}
-
-	tok, err := appdb.CreateAuthToken(ctx, u.ID, "api", nil)
-	if err != nil {
-		fatalln(err)
-	}
-
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		fatalln(err)
-	}
-
-	result, _ := json.MarshalIndent(map[string]string{
-		"userID":      u.ID,
-		"tokenID":     tok.ID,
-		"tokenSecret": tok.Secret,
-	}, "", "  ")
-	fmt.Printf("%s\n", result)
 }
 
 func fatalln(v ...interface{}) {

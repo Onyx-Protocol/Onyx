@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"chain/core/appdb"
 	"chain/core/blocksigner"
 	"chain/core/generator"
 	"chain/core/mockhsm"
@@ -23,10 +22,8 @@ const (
 	defGenericPageSize   = 100
 )
 
-// Handler returns a handler that serves the Chain HTTP API. Param nouserSecret
-// will be used as the password for routes starting with /nouser/.
+// Handler returns a handler that serves the Chain HTTP API.
 func Handler(
-	nouserSecret string,
 	generatorConfig *generator.Config,
 	signer *blocksigner.Signer,
 	store *txdb.Store,
@@ -43,21 +40,11 @@ func Handler(
 		indexer:   indexer,
 	}
 
-	pwHandler := httpjson.NewServeMux(writeHTTPError)
-	pwHandler.HandleFunc("POST", "/v3/login", login)
-	h.AddFunc("POST", "/v3/login", userCredsAuthn(pwHandler.ServeHTTPContext))
-
-	nouserHandler := chainhttp.HandlerFunc(nouserAuthn(nouserSecret, nouserHandler()))
-	h.Add("GET", "/nouser/", nouserHandler)
-	h.Add("PUT", "/nouser/", nouserHandler)
-	h.Add("POST", "/nouser/", nouserHandler)
-	h.Add("DELETE", "/nouser/", nouserHandler)
-
-	tokenHandler := chainhttp.HandlerFunc(tokenAuthn(a.tokenAuthedHandler()))
-	h.Add("GET", "/", tokenHandler)
-	h.Add("PUT", "/", tokenHandler)
-	h.Add("POST", "/", tokenHandler)
-	h.Add("DELETE", "/", tokenHandler)
+	apiHandler := a.handler()
+	h.Add("GET", "/", apiHandler)
+	h.Add("PUT", "/", apiHandler)
+	h.Add("POST", "/", apiHandler)
+	h.Add("DELETE", "/", apiHandler)
 
 	rpcHandler := chainhttp.HandlerFunc(rpcAuthn(rpcAuthedHandler(generatorConfig, signer)))
 	h.Add("GET", "/rpc/", rpcHandler)
@@ -66,20 +53,6 @@ func Handler(
 	h.Add("DELETE", "/rpc/", rpcHandler)
 
 	return h
-}
-
-func nouserHandler() chainhttp.HandlerFunc {
-	h := httpjson.NewServeMux(writeHTTPError)
-
-	// These routes must trust the client to enforce access control.
-	// Think twice before adding something here.
-	h.HandleFunc("GET", "/nouser/invitations/:invID", appdb.GetInvitation)
-	h.HandleFunc("POST", "/nouser/invitations/:invID/create-user", createUserFromInvitation)
-	h.HandleFunc("POST", "/nouser/password-reset/start", startPasswordReset)
-	h.HandleFunc("POST", "/nouser/password-reset/check", checkPasswordReset)
-	h.HandleFunc("POST", "/nouser/password-reset/finish", finishPasswordReset)
-
-	return h.ServeHTTPContext
 }
 
 type api struct {
@@ -106,9 +79,8 @@ type page struct {
 	Query    requestQuery  `json:"query"`
 }
 
-func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
+func (a *api) handler() chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
-	h.HandleFunc("POST", "/v3/invitations", createInvitation)
 	h.HandleFunc("POST", "/list-accounts", listAccounts)
 	h.HandleFunc("POST", "/create-account", createAccount)
 	h.HandleFunc("POST", "/get-account", getAccount)
@@ -122,15 +94,6 @@ func (a *api) tokenAuthedHandler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/build-transaction-template", build)
 	h.HandleFunc("POST", "/submit-transaction-template", submit)
 	h.HandleFunc("POST", "/v3/transact/cancel-reservation", cancelReservation)
-	h.HandleFunc("GET", "/v3/user", getAuthdUser)
-	h.HandleFunc("POST", "/v3/user/email", updateUserEmail)
-	h.HandleFunc("POST", "/v3/user/password", updateUserPassword)
-	h.HandleFunc("PUT", "/v3/user/:userID/role", updateUserRole)
-	h.HandleFunc("GET", "/v3/users", listUsers)
-	h.HandleFunc("GET", "/v3/authcheck", func() {})
-	h.HandleFunc("GET", "/v3/api-tokens", listAPITokens)
-	h.HandleFunc("POST", "/v3/api-tokens", createAPIToken)
-	h.HandleFunc("DELETE", "/v3/api-tokens/:tokenID", appdb.DeleteAuthToken)
 
 	// MockHSM endpoints
 	h.HandleFunc("POST", "/mockhsm/create-key", a.mockhsmCreateKey)

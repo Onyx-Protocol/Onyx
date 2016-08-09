@@ -191,11 +191,11 @@ func signTemplate(ctx context.Context, tpl *txbuilder.Template) error {
 }
 
 // TODO(kr): more flexible/secure authentication (e.g. kerberos style)
-func auth(ctx context.Context, name, pw string) (authID string, err error) {
+func auth(ctx context.Context, name, pw string) error {
 	if subtle.ConstantTimeCompare([]byte(pw), password) != 1 {
-		return "", authn.ErrNotAuthenticated
+		return authn.ErrNotAuthenticated
 	}
-	return "user", nil
+	return nil
 }
 
 func logWriter() io.Writer {

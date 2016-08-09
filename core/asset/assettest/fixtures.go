@@ -1,14 +1,12 @@
 package assettest
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"chain/core/account"
-	"chain/core/appdb"
 	"chain/core/asset"
 	"chain/core/blocksigner"
 	"chain/core/generator"
@@ -23,41 +21,6 @@ import (
 	"chain/errors"
 	"chain/testutil"
 )
-
-var userCounter = createCounter()
-
-func CreateUserFixture(ctx context.Context, t testing.TB, email, password, role string) string {
-	if email == "" {
-		email = fmt.Sprintf("user-%d@domain.tld", <-userCounter)
-	}
-	if password == "" {
-		password = "drowssap"
-	}
-	if role == "" {
-		role = "developer"
-	}
-	user, err := appdb.CreateUser(ctx, email, password, role)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	return user.ID
-}
-
-func CreateAuthTokenFixture(ctx context.Context, t testing.TB, userID string, typ string, expiresAt *time.Time) *appdb.AuthToken {
-	token, err := appdb.CreateAuthToken(ctx, userID, typ, expiresAt)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	return token
-}
-
-func CreateInvitationFixture(ctx context.Context, t testing.TB, email, role string) string {
-	invitation, err := appdb.CreateInvitation(ctx, email, role)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	return invitation.ID
-}
 
 func CreateAccountFixture(ctx context.Context, t testing.TB, keys []string, quorum int, tags map[string]interface{}) string {
 	if keys == nil {

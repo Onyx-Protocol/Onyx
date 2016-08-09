@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.3
+-- Dumped by pg_dump version 9.5.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -402,20 +402,6 @@ CREATE SEQUENCE assets_key_index_seq
 
 
 --
--- Name: auth_tokens; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE auth_tokens (
-    id text DEFAULT next_chain_id('at'::text) NOT NULL,
-    secret_hash bytea NOT NULL,
-    user_id text,
-    type text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    expires_at timestamp with time zone
-);
-
-
---
 -- Name: blocks; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -449,19 +435,6 @@ CREATE SEQUENCE chain_id_seq
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
-
-
---
--- Name: invitations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE invitations (
-    id text NOT NULL,
-    email text NOT NULL,
-    role text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT invitations_role_check CHECK (((role = 'developer'::text) OR (role = 'admin'::text)))
-);
 
 
 --
@@ -668,22 +641,6 @@ CREATE TABLE txs (
 
 
 --
--- Name: users; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE users (
-    id text DEFAULT next_chain_id('u'::text) NOT NULL,
-    email text NOT NULL,
-    password_hash bytea NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    pwreset_secret_hash bytea,
-    pwreset_expires_at timestamp with time zone,
-    role text DEFAULT 'developer'::text NOT NULL,
-    CONSTRAINT users_role_check CHECK (((role = 'developer'::text) OR (role = 'admin'::text)))
-);
-
-
---
 -- Name: internal_id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -775,14 +732,6 @@ ALTER TABLE ONLY blocks
 
 ALTER TABLE ONLY blocks_txs
     ADD CONSTRAINT blocks_txs_tx_hash_block_hash_key UNIQUE (tx_hash, block_hash);
-
-
---
--- Name: invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY invitations
-    ADD CONSTRAINT invitations_pkey PRIMARY KEY (id);
 
 
 --
@@ -906,14 +855,6 @@ ALTER TABLE ONLY txs
 
 
 --
--- Name: users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY users
-    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
-
-
---
 -- Name: account_control_programs_control_program_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -977,13 +918,6 @@ CREATE INDEX assets_sort_id ON assets USING btree (sort_id);
 
 
 --
--- Name: auth_tokens_user_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX auth_tokens_user_id_idx ON auth_tokens USING btree (user_id);
-
-
---
 -- Name: blocks_txs_block_height_block_pos_key; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1026,26 +960,11 @@ CREATE INDEX signers_type_id_idx ON signers USING btree (type, id);
 
 
 --
--- Name: users_lower_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX users_lower_idx ON users USING btree (lower(email));
-
-
---
 -- Name: account_utxos_reservation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id) ON DELETE SET NULL;
-
-
---
--- Name: auth_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY auth_tokens
-    ADD CONSTRAINT auth_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 
 
 --
@@ -1129,3 +1048,4 @@ insert into migrations (filename, hash) values ('2016-08-08.2.core.add-tags-tabl
 insert into migrations (filename, hash) values ('2016-08-08.3.query.annotated-outputs.sql', 'e94d4eb5fd8987ab40b9287d3af8ad5ff33b76a96d47e83436ad7d8f50355624');
 insert into migrations (filename, hash) values ('2016-08-09.0.signers.change-tags.sql', '78aa00b2c54f0fd1b6920a8d74d568111906a7a5b871a4ee51a04b2a9aa2b590');
 insert into migrations (filename, hash) values ('2016-08-09.1.assets.drop-key-index.sql', '203fb5589e82c11bc8fd33cd4ec717587813094575f7cec96e653deb9167df59');
+insert into migrations (filename, hash) values ('2016-08-09.2.api.remove-users.sql', 'b70d35ce042e2565c507a79dca8c31a1decc5d75495af3a4e566a6a55329a413');
