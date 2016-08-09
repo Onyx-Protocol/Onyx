@@ -81,25 +81,13 @@ func TestCreate(t *testing.T) {
 		},
 		quorum: 2,
 		want:   nil,
-	}, {
-		typ:    "account",
-		xpubs:  []string{testutil.TestXPub.String()},
-		quorum: 1,
-		tags:   map[string]interface{}{"one": "foo"},
-		want:   nil,
-	}, {
-		typ:    "account",
-		xpubs:  []string{testutil.TestXPub.String()},
-		quorum: 1,
-		tags:   map[string]interface{}{"one": "foo", "two": "bar"},
-		want:   nil,
 	}}
 
 	for _, c := range cases {
-		_, got := Create(ctx, c.typ, c.xpubs, c.quorum, c.tags, nil)
+		_, got := Create(ctx, c.typ, c.xpubs, c.quorum, nil)
 
 		if errors.Root(got) != c.want {
-			t.Errorf("Create(%s, %v, %d, %v) = %q want %q", c.typ, c.xpubs, c.quorum, c.tags, errors.Root(got), c.want)
+			t.Errorf("Create(%s, %v, %d) = %q want %q", c.typ, c.xpubs, c.quorum, errors.Root(got), c.want)
 		}
 	}
 }
@@ -113,7 +101,6 @@ func TestCreateIdempotency(t *testing.T) {
 		"account",
 		[]string{testutil.TestXPub.String()},
 		1,
-		nil,
 		&clientToken,
 	)
 
@@ -126,7 +113,6 @@ func TestCreateIdempotency(t *testing.T) {
 		"account",
 		[]string{testutil.TestXPub.String()},
 		1,
-		nil,
 		&clientToken,
 	)
 
@@ -237,23 +223,6 @@ func TestList(t *testing.T) {
 	}
 }
 
-func TestSetTags(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-
-	signer := createFixture(ctx, t)
-	newTags := map[string]interface{}{"one": "foo"}
-
-	updated, err := SetTags(ctx, signer.Type, signer.ID, newTags)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	signer.Tags = newTags
-	if !reflect.DeepEqual(signer, updated) {
-		t.Errorf("got = %+v want %+v", updated, signer)
-	}
-}
-
 var clientTokenCounter = createCounter()
 
 func createFixture(ctx context.Context, t testing.TB) *Signer {
@@ -263,7 +232,6 @@ func createFixture(ctx context.Context, t testing.TB) *Signer {
 		"account",
 		[]string{testutil.TestXPub.String()},
 		1,
-		nil,
 		&clientToken,
 	)
 

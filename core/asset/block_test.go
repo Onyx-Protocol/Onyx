@@ -11,7 +11,6 @@ import (
 	. "chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
-	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/cos"
@@ -212,8 +211,8 @@ func benchGenBlock(b *testing.B) {
 
 type clientInfo struct {
 	asset           *Asset
-	acctA           *signers.Signer
-	acctB           *signers.Signer
+	acctA           *account.Account
+	acctB           *account.Account
 	privKeyAsset    *hd25519.XPrv
 	privKeyAccounts *hd25519.XPrv
 }

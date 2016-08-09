@@ -1,6 +1,8 @@
 package account
 
 import (
+	"database/sql"
+	"encoding/json"
 	"sync"
 	"time"
 
@@ -14,6 +16,11 @@ import (
 	"chain/metrics"
 )
 
+type Account struct {
+	*signers.Signer
+	Tags map[string]interface{} `json:"tags"`
+}
+
 var (
 	acpIndexNext int64 // next acp index in our block
 	acpIndexCap  int64 // points to end of block
@@ -21,8 +28,80 @@ var (
 )
 
 // Create creates a new Account.
-func Create(ctx context.Context, xpubs []string, quorum int, tags map[string]interface{}, clientToken *string) (*signers.Signer, error) {
-	return signers.Create(ctx, "account", xpubs, quorum, tags, clientToken)
+func Create(ctx context.Context, xpubs []string, quorum int, tags map[string]interface{}, clientToken *string) (*Account, error) {
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "create signer")
+	}
+	defer dbtx.Rollback(ctx)
+
+	signer, err := signers.Create(ctx, "account", xpubs, quorum, clientToken)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	account := &Account{Signer: signer}
+	err = insertAccountTags(ctx, account.ID, tags)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	account.Tags = tags
+
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "committing create account dbtx")
+	}
+	return account, nil
+}
+
+// SetTags updates the tags on the provided Account.
+func SetTags(ctx context.Context, id string, tags map[string]interface{}) (*Account, error) {
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "setting tags")
+	}
+	defer dbtx.Rollback(ctx)
+
+	signer, err := Find(ctx, id)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	err = insertAccountTags(ctx, id, tags)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "committing create account dbtx")
+	}
+
+	return &Account{
+		Signer: signer,
+		Tags:   tags,
+	}, nil
+}
+
+// insertAccountTags inserts a set of tags for the given accountID.
+// It must take place inside a database transaction.
+func insertAccountTags(ctx context.Context, accountID string, tags map[string]interface{}) error {
+	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
+	tagsParam, err := tagsToNullString(tags)
+	if err != nil {
+		return err
+	}
+
+	const q = `
+		INSERT INTO account_tags (account_id, tags) VALUES ($1, $2)
+		ON CONFLICT (account_id) DO UPDATE SET tags = $2
+	`
+
+	_, err = pg.Exec(ctx, q, accountID, tagsParam)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	return nil
 }
 
 // Find retrieves an Account record from signer
@@ -39,11 +118,6 @@ func Archive(ctx context.Context, id string) error {
 // List returns a paginated set of Accounts
 func List(ctx context.Context, prev string, limit int) ([]*signers.Signer, string, error) {
 	return signers.List(ctx, "account", prev, limit)
-}
-
-// SetTags updates the tags on a given Account
-func SetTags(ctx context.Context, id string, newTags map[string]interface{}) (*signers.Signer, error) {
-	return signers.SetTags(ctx, "account", id, newTags)
 }
 
 // CreateControlProgram creates a control program
@@ -112,4 +186,16 @@ func keyIndex(n int64) []uint32 {
 	index[0] = uint32(n >> 31)
 	index[1] = uint32(n & 0x7fffffff)
 	return index
+}
+
+func tagsToNullString(tags map[string]interface{}) (*sql.NullString, error) {
+	var tagsJSON []byte
+	if len(tags) != 0 {
+		var err error
+		tagsJSON, err = json.Marshal(tags)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+	}
+	return &sql.NullString{String: string(tagsJSON), Valid: len(tagsJSON) > 0}, nil
 }

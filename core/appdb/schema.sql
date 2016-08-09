@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -302,6 +302,16 @@ CREATE TABLE account_control_programs (
     key_index bigint NOT NULL,
     control_program bytea NOT NULL,
     redeem_program bytea NOT NULL
+);
+
+
+--
+-- Name: account_tags; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE account_tags (
+    account_id text NOT NULL,
+    tags jsonb
 );
 
 
@@ -615,8 +625,7 @@ CREATE TABLE signers (
     xpubs text[] NOT NULL,
     quorum integer NOT NULL,
     client_token text,
-    archived boolean DEFAULT false NOT NULL,
-    tags jsonb
+    archived boolean DEFAULT false NOT NULL
 );
 
 
@@ -687,6 +696,14 @@ ALTER TABLE ONLY query_indexes ALTER COLUMN internal_id SET DEFAULT nextval('que
 --
 
 ALTER TABLE ONLY signers ALTER COLUMN key_index SET DEFAULT nextval('signers_key_index_seq'::regclass);
+
+
+--
+-- Name: account_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY account_tags
+    ADD CONSTRAINT account_tags_pkey PRIMARY KEY (account_id);
 
 
 --
@@ -1111,3 +1128,4 @@ insert into migrations (filename, hash) values ('2016-08-08.0.assets.use-jsonb-f
 insert into migrations (filename, hash) values ('2016-08-08.1.query.blocks.sql', '6df00f3746c4d0f322a96c3054cbc9f08939b3f31cbcbcfd06d1341f0bf44d2b');
 insert into migrations (filename, hash) values ('2016-08-08.2.core.add-tags-tables.sql', '7f97aa4efa6b026fa7ac288f49073c885585c9ca4fa0cf05772942ffab996bfd');
 insert into migrations (filename, hash) values ('2016-08-08.3.query.annotated-outputs.sql', 'e94d4eb5fd8987ab40b9287d3af8ad5ff33b76a96d47e83436ad7d8f50355624');
+insert into migrations (filename, hash) values ('2016-08-09.0.signers.change-tags.sql', '78aa00b2c54f0fd1b6920a8d74d568111906a7a5b871a4ee51a04b2a9aa2b590');

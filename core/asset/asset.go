@@ -39,7 +39,7 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 		return nil, errors.Wrap(err, "define asset")
 	}
 	defer dbtx.Rollback(ctx)
-	assetSigner, err := signers.Create(ctx, "asset", xpubs, quorum, nil, clientToken)
+	assetSigner, err := signers.Create(ctx, "asset", xpubs, quorum, clientToken)
 	if err != nil {
 		return nil, err
 	}

@@ -2,11 +2,11 @@ package account
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 
 	"golang.org/x/net/context"
 
-	"chain/core/signers"
 	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -14,6 +14,27 @@ import (
 )
 
 var dummyXPub = testutil.TestXPub.String()
+
+func TestCreateAccount(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+
+	account, err := Create(ctx, []string{dummyXPub}, 1, nil, nil)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	// Verify that the account was defined.
+	var id string
+	var checkQ = `SELECT id FROM signers`
+	err = pg.QueryRow(ctx, checkQ).Scan(&id)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+	if id != account.ID {
+		t.Errorf("expected account %s to be recorded as %s", account.ID, id)
+	}
+}
 
 func resetSeqs(ctx context.Context, t testing.TB) {
 	acpIndexNext, acpIndexCap = 1, 100
@@ -45,7 +66,7 @@ func TestCreateControlProgram(t *testing.T) {
 	}
 }
 
-func createTestAccount(ctx context.Context, t testing.TB, tags map[string]interface{}) *signers.Signer {
+func createTestAccount(ctx context.Context, t testing.TB, tags map[string]interface{}) *Account {
 	account, err := Create(ctx, []string{dummyXPub}, 1, tags, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -65,4 +86,21 @@ func createTestControlProgram(ctx context.Context, t testing.TB, accountID strin
 		testutil.FatalErr(t, err)
 	}
 	return acp
+}
+
+func TestSetTags(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+	account := createTestAccount(ctx, t, nil)
+	newTags := map[string]interface{}{"someTag": "taggityTag"}
+
+	got, err := SetTags(ctx, account.ID, newTags)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	account.Tags = newTags
+	if !reflect.DeepEqual(got, account) {
+		t.Errorf("got SetTags=%v, want %v", got, account)
+	}
 }
