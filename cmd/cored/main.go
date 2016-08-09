@@ -65,6 +65,7 @@ var (
 	// for config var LIBRATO_URL, see func init below
 	traceguideToken    = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns         = env.Int("MAXDBCONNS", 10) // set to 100 in prod
+	apiSecretToken     = env.String("API_SECRET", "")
 	rpcSecretToken     = env.String("RPC_SECRET", "secret")
 	isSigner           = env.Bool("SIGNER", true) // node type must set FALSE explicitly
 	isGenerator        = env.Bool("GENERATOR", true)
@@ -242,7 +243,7 @@ func main() {
 
 	hsm := mockhsm.New(db)
 
-	h := core.Handler(generatorConfig, localSigner, store, pool, hsm, indexer)
+	h := core.Handler(*apiSecretToken, generatorConfig, localSigner, store, pool, hsm, indexer)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}

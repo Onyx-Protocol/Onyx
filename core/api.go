@@ -24,6 +24,7 @@ const (
 
 // Handler returns a handler that serves the Chain HTTP API.
 func Handler(
+	apiSecret string,
 	generatorConfig *generator.Config,
 	signer *blocksigner.Signer,
 	store *txdb.Store,
@@ -40,7 +41,7 @@ func Handler(
 		indexer:   indexer,
 	}
 
-	apiHandler := a.handler()
+	apiHandler := apiAuthn(apiSecret, a.handler())
 	h.Add("GET", "/", apiHandler)
 	h.Add("PUT", "/", apiHandler)
 	h.Add("POST", "/", apiHandler)
