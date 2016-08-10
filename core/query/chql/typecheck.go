@@ -13,8 +13,8 @@ func knownType(t Type) bool {
 	return t == Bool || t == String || t == Integer || t == Object
 }
 
-func typeCheck(expr expr, t SQLTable) error {
-	typ, err := typeCheckExpr(expr, t)
+func typeCheck(expr expr) error {
+	typ, err := typeCheckExpr(expr)
 	if err != nil {
 		return err
 	}
@@ -24,16 +24,16 @@ func typeCheck(expr expr, t SQLTable) error {
 	return nil
 }
 
-func typeCheckExpr(expr expr, t SQLTable) (typ Type, err error) {
+func typeCheckExpr(expr expr) (typ Type, err error) {
 	switch e := expr.(type) {
 	case parenExpr:
-		return typeCheckExpr(e.inner, t)
+		return typeCheckExpr(e.inner)
 	case binaryExpr:
-		leftTyp, err := typeCheckExpr(e.l, t)
+		leftTyp, err := typeCheckExpr(e.l)
 		if err != nil {
 			return leftTyp, err
 		}
-		rightTyp, err := typeCheckExpr(e.r, t)
+		rightTyp, err := typeCheckExpr(e.r)
 		if err != nil {
 			return rightTyp, err
 		}
@@ -61,15 +61,7 @@ func typeCheckExpr(expr expr, t SQLTable) (typ Type, err error) {
 	case placeholderExpr:
 		return Any, nil
 	case attrExpr:
-		if t == nil {
-			return Any, nil
-		}
-
-		column, ok := t[e.attr]
-		if !ok {
-			return typ, fmt.Errorf("unknown column %q", e.attr)
-		}
-		return column.Type, nil
+		return Any, nil
 	case valueExpr:
 		switch e.typ {
 		case tokString:
@@ -80,7 +72,7 @@ func typeCheckExpr(expr expr, t SQLTable) (typ Type, err error) {
 			panic(fmt.Errorf("value expr with invalid token type: %s", e.typ))
 		}
 	case selectorExpr:
-		typ, err = typeCheckExpr(e.objExpr, t)
+		typ, err = typeCheckExpr(e.objExpr)
 		if err != nil {
 			return typ, err
 		}
@@ -89,7 +81,7 @@ func typeCheckExpr(expr expr, t SQLTable) (typ Type, err error) {
 		}
 		return Any, nil
 	case envExpr:
-		typ, err = typeCheckExpr(e.expr, t)
+		typ, err = typeCheckExpr(e.expr)
 		if err != nil {
 			return typ, err
 		}

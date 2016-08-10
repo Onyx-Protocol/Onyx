@@ -30,7 +30,7 @@ func Parse(query string) (q Query, err error) {
 	if err != nil {
 		return q, err
 	}
-	err = typeCheck(expr, nil)
+	err = typeCheck(expr)
 	if err != nil {
 		return q, err
 	}

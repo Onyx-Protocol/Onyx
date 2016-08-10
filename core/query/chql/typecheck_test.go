@@ -2,28 +2,14 @@ package chql
 
 import "testing"
 
-var tbl = SQLTable{
-	"is_issuance":     {"is_issuance", Bool},
-	"asset_id":        {"asset_id", String},
-	"account_id":      {"account_id", String},
-	"amount":          {"amount", Integer},
-	"account_tags":    {"account_tags", Object},
-	"account_numbers": {"account_numbers", Object},
-	"reference":       {"reference_data", Object},
-}
-
 func TestTypeCheckInvalid(t *testing.T) {
 	testCases := []struct {
-		chql  string
-		table SQLTable
+		chql string
 	}{
 		{chql: `1 = 'hello world'`},
 		{chql: `INPUTS('hello')`},
 		{chql: `foo(1=1).bar`},
 		{chql: `'hello'.foo`},
-		{chql: `is_issuance AND amount`, table: tbl},
-		{chql: `account_tags = account_tags`, table: tbl},
-		{chql: `'hello' OR account_tags.foo = $1`, table: tbl},
 	}
 
 	for _, tc := range testCases {
@@ -32,7 +18,7 @@ func TestTypeCheckInvalid(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		typ, err := typeCheckExpr(expr, tc.table)
+		typ, err := typeCheckExpr(expr)
 		if err == nil {
 			t.Errorf("typeCheckExpr(%s) = %s, want error", expr, typ)
 		}
@@ -41,9 +27,8 @@ func TestTypeCheckInvalid(t *testing.T) {
 
 func TestTypeCheckValid(t *testing.T) {
 	testCases := []struct {
-		chql  string
-		typ   Type
-		table SQLTable
+		chql string
+		typ  Type
 	}{
 		{chql: `1`, typ: Integer},
 		{chql: `'hello world'`, typ: String},
@@ -53,10 +38,6 @@ func TestTypeCheckValid(t *testing.T) {
 		{chql: `$1 = 'hello' OR account_tags.something = $1`, typ: Bool},
 		{chql: `($1 = 'hello') OR (account_tags.something = $1)`, typ: Bool},
 		{chql: `inputs(account_tags.domestic AND account_tags.type = 'revolving')`, typ: Bool},
-		{chql: `is_issuance`, typ: Bool, table: tbl},
-		{chql: `asset_id`, typ: String, table: tbl},
-		{chql: `account_tags`, typ: Object, table: tbl},
-		{chql: `reference.recipient.id`, typ: Any, table: tbl},
 	}
 
 	for _, tc := range testCases {
@@ -65,7 +46,7 @@ func TestTypeCheckValid(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		typ, err := typeCheckExpr(expr, tc.table)
+		typ, err := typeCheckExpr(expr)
 		if err != nil {
 			t.Fatal(err)
 		}

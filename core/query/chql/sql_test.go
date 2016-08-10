@@ -5,49 +5,74 @@ import (
 	"testing"
 )
 
-func TestTranslateToSQL(t *testing.T) {
-	cols := SQLTable{
-		"asset_id":        {"asset_id", String},
-		"amount":          {"amount", Integer},
-		"account_id":      {"account_id", String},
-		"account_tags":    {"account_tags", Object},
-		"account_numbers": {"account_numbers", Object},
-	}
-
+func TestAsSQL(t *testing.T) {
+	placeholderValues := []interface{}{"foo", "bar", "baz"}
 	testCases := []struct {
-		chql string
-		sql  string
-		vals []sqlPlaceholder
+		q     string
+		conds []interface{}
 	}{
-		{chql: `2000`, sql: `2000`},
-		{chql: `0xFF`, sql: `255`},
-		{chql: `'usd'`, sql: `$1`, vals: []sqlPlaceholder{{value: "usd"}}},
-		{chql: `1 OR 1`, sql: `(1 OR 1)`},
-		{chql: `1 AND 1`, sql: `(1 AND 1)`},
-		{chql: `4 = 5`, sql: `(4 = 5)`},
-		{chql: `asset_id`, sql: `"asset_id"`},
 		{
-			chql: `(account_id = $1) AND (amount = 2000) AND (asset_id = $2)`,
-			sql:  `((("account_id" = $1) AND ("amount" = 2000)) AND ("asset_id" = $2))`,
-			vals: []sqlPlaceholder{{number: 1}, {number: 2}},
+			q:     `inputs(a = 'a' AND b = 'b')`,
+			conds: []interface{}{`{"inputs":[{"a":"a","b":"b"}]}`},
+		},
+		{
+			q:     `inputs(a = 'a') OR outputs(b = 'b')`,
+			conds: []interface{}{`{"inputs":[{"a":"a"}]}`, `{"outputs":[{"b":"b"}]}`},
+		},
+		{
+			q:     `inputs(a = 'a') AND outputs(b = 'b')`,
+			conds: []interface{}{`{"inputs":[{"a":"a"}],"outputs":[{"b":"b"}]}`},
+		},
+		{
+			q:     `inputs(a = 'a') AND inputs(b = 'b')`,
+			conds: []interface{}{`{"inputs":[{"a":"a"},{"b":"b"}]}`},
+		},
+		{
+			q:     `inputs(a = 'a') OR inputs(b = 'b')`,
+			conds: []interface{}{`{"inputs":[{"a":"a"}]}`, `{"inputs":[{"b":"b"}]}`},
+		},
+		{
+			q:     `inputs(a = 'a') AND ref.txbankref = '1ab'`,
+			conds: []interface{}{`{"inputs":[{"a":"a"}],"ref":{"txbankref":"1ab"}}`},
+		},
+		{
+			q:     `inputs(a = 'a') OR ref.txbankref = '1ab'`,
+			conds: []interface{}{`{"inputs":[{"a":"a"}]}`, `{"ref":{"txbankref":"1ab"}}`},
+		},
+		{
+			q:     `inputs(action = 'issue')`,
+			conds: []interface{}{`{"inputs":[{"action":"issue"}]}`},
+		},
+		{
+			q: `inputs((a = $1 OR b = $2) AND (c = $3 OR d = 'fuzz'))`,
+			conds: []interface{}{
+				`{"inputs":[{"a":"foo","c":"baz"}]}`,
+				`{"inputs":[{"a":"foo","d":"fuzz"}]}`,
+				`{"inputs":[{"b":"bar","c":"baz"}]}`,
+				`{"inputs":[{"b":"bar","d":"fuzz"}]}`,
+			},
+		},
+		{
+			q: `inputs((asset_id = 'abc' OR account_id = 'xyz') AND ref.bank_id = 'baz')`,
+			conds: []interface{}{
+				`{"inputs":[{"asset_id":"abc","ref":{"bank_id":"baz"}}]}`,
+				`{"inputs":[{"account_id":"xyz","ref":{"bank_id":"baz"}}]}`,
+			},
 		},
 	}
 
 	for _, tc := range testCases {
-		var sqlExpr SQLExpr
-
-		expr, _, err := parse(tc.chql)
+		e, _, err := parse(tc.q)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		translateToSQL(&sqlExpr, cols, expr)
-		got := sqlExpr.String()
-		if got != tc.sql {
-			t.Errorf("translateToSQL(%q) = %q, want %q", tc.chql, got, tc.sql)
+		sqlExpr, err := asSQL(e, placeholderValues)
+		if err != nil {
+			t.Fatal(err)
 		}
-		if !reflect.DeepEqual(sqlExpr.placeholders, tc.vals) {
-			t.Errorf("translateToSQL(%q) values %#v, want %#v", tc.chql, sqlExpr.placeholders, tc.vals)
+		if !reflect.DeepEqual(sqlExpr.Values, tc.conds) {
+			t.Errorf("AsSQL(%q) = %#v, want %#v", tc.q, sqlExpr.Values, tc.conds)
 		}
 	}
 }
