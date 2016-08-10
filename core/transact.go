@@ -98,11 +98,7 @@ func submitSingle(ctx context.Context, fc *cos.FC, x submitSingleArg) (interface
 		return nil, err
 	}
 
-	ret := map[string]interface{}{
-		"transaction_id":  tx.Hash.String(),
-		"raw_transaction": tx,
-	}
-	return ret, nil
+	return map[string]string{"id": tx.Hash.String()}, nil
 }
 
 // TODO(bobg): allow caller to specify reservation by (encrypted) id?

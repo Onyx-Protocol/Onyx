@@ -488,7 +488,14 @@ POST /submit-transaction-template
 
 Request: an array of [transaction template objects](#transaction-template-object).
 
-Response: an array of [transaction objects](#transaction-object).
+Response
+```
+[
+  {
+    "id": "..."
+  }
+]
+```
 
 ### List Transactions
 
