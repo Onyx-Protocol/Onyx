@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"sync"
 
 	"golang.org/x/net/context"
 
@@ -11,27 +12,51 @@ import (
 )
 
 // POST /createControlProgram
-func createControlProgram(ctx context.Context, in struct {
+func createControlProgram(ctx context.Context, ins []struct {
 	Type       string
 	Parameters json.RawMessage
-}) (interface{}, error) {
-	if in.Type == "account" {
-		return createAccountControlProgram(ctx, in.Parameters)
+}) interface{} {
+
+	responses := make([]interface{}, len(ins))
+	var wg sync.WaitGroup
+	wg.Add(len(responses))
+
+	for i := 0; i < len(responses); i++ {
+		go func(i int) {
+			defer wg.Done()
+			var (
+				prog interface{}
+				err  error
+			)
+			switch ins[i].Type {
+			case "account":
+				prog, err = createAccountControlProgram(ctx, ins[i].Parameters)
+			default:
+				err = errors.WithDetailf(httpjson.ErrBadRequest, "unknown control program type %q", ins[i].Type)
+			}
+			if err != nil {
+				logHTTPError(ctx, err)
+				responses[i], _ = errInfo(err)
+			} else {
+				responses[i] = prog
+			}
+		}(i)
 	}
 
-	return nil, errors.WithDetailf(httpjson.ErrBadRequest, "unknown control program type %q", in.Type)
+	wg.Wait()
+	return responses
 }
 
 func createAccountControlProgram(ctx context.Context, input []byte) (interface{}, error) {
 	var parsed struct {
-		AccountId string `json:"account_id"`
+		AccountID string `json:"account_id"`
 	}
 	err := json.Unmarshal(input, &parsed)
 	if err != nil {
 		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "no 'account_id' parameter sent")
 	}
 
-	controlProgram, err := account.CreateControlProgram(ctx, parsed.AccountId)
+	controlProgram, err := account.CreateControlProgram(ctx, parsed.AccountID)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -56,8 +57,13 @@ func setAssetTags(ctx context.Context, in struct {
 	return asset.SetTags(ctx, decodedAssetID, in.Tags)
 }
 
+type assetResponseOrError struct {
+	*assetResponse
+	*detailedError
+}
+
 // POST /create-asset
-func (a *api) createAsset(ctx context.Context, in struct {
+func (a *api) createAsset(ctx context.Context, ins []struct {
 	XPubs      []string
 	Quorum     int
 	Definition map[string]interface{}
@@ -68,25 +74,50 @@ func (a *api) createAsset(ctx context.Context, in struct {
 	// idempotency of create asset requests. Duplicate create asset requests
 	// with the same client_token will only create one asset.
 	ClientToken *string `json:"client_token"`
-}) (result assetResponse, err error) {
+}) ([]assetResponseOrError, error) {
 	defer metrics.RecordElapsed(time.Now())
 
 	genesis, err := a.store.GetBlock(ctx, 1)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
-	asset, err := asset.Define(ctx, in.XPubs, in.Quorum, in.Definition, genesis.Hash(), in.Tags, in.ClientToken)
-	if err != nil {
-		return result, err
+	responses := make([]assetResponseOrError, len(ins))
+	var wg sync.WaitGroup
+	wg.Add(len(responses))
+
+	for i := 0; i < len(responses); i++ {
+		go func(i int) {
+			defer wg.Done()
+			asset, err := asset.Define(
+				ctx,
+				ins[i].XPubs,
+				ins[i].Quorum,
+				ins[i].Definition,
+				genesis.Hash(),
+				ins[i].Tags,
+				ins[i].ClientToken,
+			)
+			if err != nil {
+				logHTTPError(ctx, err)
+				res, _ := errInfo(err)
+				responses[i] = assetResponseOrError{detailedError: &res}
+			} else {
+				responses[i] = assetResponseOrError{
+					assetResponse: &assetResponse{
+						ID:         asset.AssetID,
+						XPubs:      asset.Signer.XPubs,
+						Quorum:     asset.Signer.Quorum,
+						Definition: asset.Definition,
+						Tags:       asset.Tags,
+					},
+				}
+			}
+		}(i)
 	}
 
-	result.ID = asset.AssetID
-	result.XPubs = asset.Signer.XPubs
-	result.Quorum = asset.Signer.Quorum
-	result.Definition = asset.Definition
-	result.Tags = asset.Tags
-	return result, nil
+	wg.Wait()
+	return responses, nil
 }
 
 // DELETE /v3/assets/:assetID
