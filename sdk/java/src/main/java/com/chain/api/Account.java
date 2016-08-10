@@ -30,9 +30,28 @@ public class Account {
      */
     public Map<String, Object> tags;
 
-    /**
-     *
-     */
+    public Account setTags(Map<String, Object> tags) {
+        this.tags = tags;
+        return this;
+    }
+
+    public Account addTag(String key, Object value) {
+        this.tags.put(key, value);
+        return this;
+    }
+
+    public Account removeTag(String key) {
+        this.tags.remove(key);
+        return this;
+    }
+
+    public Account updateTags(Context ctx) throws ChainException {
+        HashMap<String, Object> requestBody = new HashMap<>();
+        requestBody.put("account_id", this.id);
+        requestBody.put("tags", this.tags);
+
+        return ctx.request("set-account-tags", requestBody, Account.class);
+    }
 
     /**
      * A single page of Account objects returned from a search query, with a pointer to the next page of results
@@ -75,6 +94,7 @@ public class Account {
         private String clientToken;
 
         public Builder() {
+            this.tags = new HashMap<>();
             this.xpubs = new ArrayList<>();
         }
 
@@ -109,6 +129,11 @@ public class Account {
 
         public Builder setTags(Map<String, Object> tags) {
             this.tags = tags;
+            return this;
+        }
+
+        public Builder addTag(String key, Object value) {
+            this.tags.put(key, value);
             return this;
         }
     }

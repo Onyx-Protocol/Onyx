@@ -26,6 +26,29 @@ public class Asset {
 
     public int quorum;
 
+    public Asset setTags(Map<String, Object> tags) {
+        this.tags = tags;
+        return this;
+    }
+
+    public Asset addTag(String key, Object value) {
+        this.tags.put(key, value);
+        return this;
+    }
+
+    public Asset removeTag(String key) {
+        this.tags.remove(key);
+        return this;
+    }
+
+    public Asset updateTags(Context ctx) throws ChainException {
+        HashMap<String, Object> requestBody = new HashMap<>();
+        requestBody.put("asset_id", this.id);
+        requestBody.put("tags", this.tags);
+
+        return ctx.request("set-asset-tags", requestBody, Asset.class);
+    }
+
     public static class Page extends BasePage<Asset> {
         public Page next(Context ctx)
         throws ChainException {

@@ -87,7 +87,7 @@ func (a *api) handler() chainhttp.HandlerFunc {
 	// Assets
 	h.HandleFunc("POST", "/list-assets", a.listAssets)
 	h.HandleFunc("POST", "/create-asset", a.createAsset)
-	h.HandleFunc("POST", "/update-asset", setAssetTags)
+	h.HandleFunc("POST", "/set-asset-tags", setAssetTags)
 
 	// Transactions
 	h.HandleFunc("POST", "/build-transaction-template", build)
