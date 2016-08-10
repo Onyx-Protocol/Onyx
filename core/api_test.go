@@ -22,7 +22,7 @@ import (
 func TestAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	_, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	fc, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +47,7 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
-	_, err = asset.FinalizeTx(ctx, tmpl)
+	_, err = txbuilder.FinalizeTx(ctx, fc, tmpl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
-	_, err = asset.FinalizeTx(ctx, tmpl)
+	_, err = txbuilder.FinalizeTx(ctx, fc, tmpl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +76,7 @@ func TestMux(t *testing.T) {
 			t.Fatal("unexpected panic:", err)
 		}
 	}()
-	Handler("", nil, nil, nil, nil, nil, nil)
+	Handler("", nil, nil, nil, nil, nil, nil, nil)
 }
 
 func TestTransfer(t *testing.T) {
@@ -119,7 +119,7 @@ func TestTransfer(t *testing.T) {
 
 	assettest.SignTxTemplate(t, txTemplate, nil)
 
-	_, err = asset.FinalizeTx(ctx, txTemplate)
+	_, err = txbuilder.FinalizeTx(ctx, fc, txTemplate)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -166,7 +166,7 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	_, err = submitSingle(ctx, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
+	_, err = submitSingle(ctx, fc, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
 	if err != nil && err != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)
 	}

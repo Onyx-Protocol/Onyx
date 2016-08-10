@@ -7,6 +7,7 @@ import (
 	"chain/core/mockhsm"
 	"chain/core/query"
 	"chain/core/txdb"
+	"chain/cos"
 	chainhttp "chain/net/http"
 	"chain/net/http/httpjson"
 	"chain/net/http/pat"
@@ -20,6 +21,7 @@ const (
 // Handler returns a handler that serves the Chain HTTP API.
 func Handler(
 	apiSecret string,
+	fc *cos.FC,
 	generatorConfig *generator.Config,
 	signer *blocksigner.Signer,
 	store *txdb.Store,
@@ -29,6 +31,7 @@ func Handler(
 ) chainhttp.Handler {
 	h := pat.New()
 	a := &api{
+		fc:        fc,
 		store:     store,
 		pool:      pool,
 		generator: generatorConfig,
@@ -52,6 +55,7 @@ func Handler(
 }
 
 type api struct {
+	fc        *cos.FC
 	store     *txdb.Store
 	pool      *txdb.Pool
 	generator *generator.Config
@@ -91,7 +95,7 @@ func (a *api) handler() chainhttp.HandlerFunc {
 
 	// Transactions
 	h.HandleFunc("POST", "/build-transaction-template", build)
-	h.HandleFunc("POST", "/submit-transaction-template", submit)
+	h.HandleFunc("POST", "/submit-transaction-template", a.submit)
 	h.HandleFunc("POST", "/create-control-program", createControlProgram)
 
 	// MockHSM endpoints

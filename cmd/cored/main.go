@@ -29,6 +29,7 @@ import (
 	"chain/core/mockhsm"
 	"chain/core/query"
 	"chain/core/rpcclient"
+	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/cos"
 	"chain/cos/txscript"
@@ -127,7 +128,7 @@ func main() {
 		chainlog.Fatal(ctx, "error", err)
 	}
 
-	asset.Generator = remoteGeneratorURL
+	txbuilder.Generator = remoteGeneratorURL
 
 	privKey, err := hd25519.PrvFromBytes(keyBytes)
 	if err != nil {
@@ -243,7 +244,7 @@ func main() {
 
 	hsm := mockhsm.New(db)
 
-	h := core.Handler(*apiSecretToken, generatorConfig, localSigner, store, pool, hsm, indexer)
+	h := core.Handler(*apiSecretToken, fc, generatorConfig, localSigner, store, pool, hsm, indexer)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}

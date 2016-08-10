@@ -1,4 +1,4 @@
-package asset
+package txbuilder
 
 import (
 	"time"
@@ -6,7 +6,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/rpcclient"
-	"chain/core/txbuilder"
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/cos/validation"
@@ -28,7 +27,7 @@ var Generator *string
 // FinalizeTx validates a transaction signature template,
 // assembles a fully signed tx, and stores the effects of
 // its changes on the UTXO set.
-func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, error) {
+func FinalizeTx(ctx context.Context, fc *cos.FC, txTemplate *Template) (*bc.Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
 
 	if txTemplate.Unsigned == nil {
@@ -39,12 +38,12 @@ func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, er
 		return nil, errors.WithDetail(ErrBadTxTemplate, "too many inputs in template")
 	}
 
-	msg, err := txbuilder.AssembleSignatures(txTemplate)
+	msg, err := AssembleSignatures(txTemplate)
 	if err != nil {
 		return nil, errors.WithDetail(ErrBadTxTemplate, err.Error())
 	}
 
-	err = publishTx(ctx, msg)
+	err = publishTx(ctx, fc, msg)
 	if err != nil {
 		rawtx, err2 := msg.MarshalText()
 		if err2 != nil {
@@ -58,7 +57,7 @@ func FinalizeTx(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, er
 }
 
 // TODO(boymanjor): Refactor into fc.LatestBlockHeight
-func latestBlockHeight(ctx context.Context) (uint64, error) {
+func latestBlockHeight(ctx context.Context, fc *cos.FC) (uint64, error) {
 	b, err := fc.LatestBlock(ctx)
 	if errors.Root(err) == cos.ErrNoBlocks {
 		return 0, nil
@@ -73,16 +72,16 @@ func latestBlockHeight(ctx context.Context) (uint64, error) {
 // confirmed on the blockchain.  ErrRejected means a conflicting tx is
 // on the blockchain.  context.DeadlineExceeded means ctx is an
 // expiring context that timed out.
-func FinalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx, error) {
+func FinalizeTxWait(ctx context.Context, fc *cos.FC, txTemplate *Template) (*bc.Tx, error) {
 	// Avoid a race condition.  Calling latestBlockHeight here ensures that
 	// when we start waiting for blocks below, we don't begin waiting at
 	// block N+1 when the tx we want is in block N.
-	height, err := latestBlockHeight(ctx)
+	height, err := latestBlockHeight(ctx, fc)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := FinalizeTx(ctx, txTemplate)
+	tx, err := FinalizeTx(ctx, fc, txTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +92,7 @@ func FinalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx
 		case <-ctx.Done():
 			return nil, ctx.Err()
 
-		case err := <-waitBlock(ctx, height):
+		case err := <-waitBlock(ctx, fc, height):
 			if err != nil {
 				// This should be impossible, since the only error produced by
 				// WaitForBlock is ErrTheDistantFuture, and height is known
@@ -128,13 +127,13 @@ func FinalizeTxWait(ctx context.Context, txTemplate *txbuilder.Template) (*bc.Tx
 	}
 }
 
-func waitBlock(ctx context.Context, height uint64) <-chan error {
+func waitBlock(ctx context.Context, fc *cos.FC, height uint64) <-chan error {
 	c := make(chan error, 1)
 	go func() { c <- fc.WaitForBlock(ctx, height) }()
 	return c
 }
 
-func publishTx(ctx context.Context, msg *bc.Tx) error {
+func publishTx(ctx context.Context, fc *cos.FC, msg *bc.Tx) error {
 	// Make sure there is atleast one block in case client is
 	// trying to finalize a tx before the genesis block has landed
 	fc.WaitForBlock(ctx, 1)

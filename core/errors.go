@@ -39,8 +39,8 @@ var (
 		errBadReqHeader:              errorInfo{400, "CH008", "Invalid request header"},
 		utxodb.ErrInsufficient:       errorInfo{400, "CH733", "Insufficient funds for tx"},
 		utxodb.ErrReserved:           errorInfo{400, "CH743", "Some outputs are reserved; try again"},
-		asset.ErrRejected:            errorInfo{400, "CH744", "Transaction rejected"},
-		asset.ErrBadTxTemplate:       errorInfo{400, "CH755", "Invalid transaction template"},
+		txbuilder.ErrRejected:        errorInfo{400, "CH744", "Transaction rejected"},
+		txbuilder.ErrBadTxTemplate:   errorInfo{400, "CH755", "Invalid transaction template"},
 		ErrBadBuildRequest:           errorInfo{400, "CH756", "Invalid build transaction request"},
 		txbuilder.ErrBadBuildRequest: errorInfo{400, "CH756", "Invalid build transaction request"},
 

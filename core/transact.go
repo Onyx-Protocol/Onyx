@@ -7,8 +7,8 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/core/account"
-	"chain/core/asset"
 	"chain/core/txbuilder"
+	"chain/cos"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/metrics"
@@ -77,9 +77,7 @@ type submitSingleArg struct {
 	wait time.Duration
 }
 
-// POST /v3/transact/finalize
-// Idempotent
-func submitSingle(ctx context.Context, x submitSingleArg) (interface{}, error) {
+func submitSingle(ctx context.Context, fc *cos.FC, x submitSingleArg) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -95,7 +93,7 @@ func submitSingle(ctx context.Context, x submitSingleArg) (interface{}, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	tx, err := asset.FinalizeTxWait(ctx, x.tpl)
+	tx, err := txbuilder.FinalizeTxWait(ctx, fc, x.tpl)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +125,7 @@ type submitArg struct {
 
 // POST /v3/transact/submit
 // Idempotent
-func submit(ctx context.Context, x submitArg) interface{} {
+func (a *api) submit(ctx context.Context, x submitArg) interface{} {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -137,7 +135,7 @@ func submit(ctx context.Context, x submitArg) interface{} {
 	wg.Add(len(responses))
 	for i := range responses {
 		go func(i int) {
-			resp, err := submitSingle(reqid.NewSubContext(ctx, reqid.New()), submitSingleArg{tpl: x.Transactions[i], wait: x.wait})
+			resp, err := submitSingle(reqid.NewSubContext(ctx, reqid.New()), a.fc, submitSingleArg{tpl: x.Transactions[i], wait: x.wait})
 			if err != nil {
 				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)

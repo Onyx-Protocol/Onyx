@@ -1,4 +1,4 @@
-package asset_test
+package txbuilder_test
 
 import (
 	"testing"
@@ -8,10 +8,10 @@ import (
 
 	"chain/core/account"
 	"chain/core/account/utxodb"
-	. "chain/core/asset"
+	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
-	"chain/core/txbuilder"
+	. "chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/cos"
 	"chain/cos/bc"
@@ -24,16 +24,22 @@ import (
 	"chain/testutil"
 )
 
-func TestTransferConfirmed(t *testing.T) {
+// TestConflictingTxsInPool tests creating conflicting transactions, and
+// ensures that they both make it into the tx pool. Then, when a block
+// lands, only one of the txs should be confirmed.
+//
+// Conflicting txs are created by building a tx template with only a
+// source, and then building two different txs with that same source,
+// but destinations w/ different addresses.
+func TestConflictingTxsInPool(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-
-	info, g, err := bootdb(ctx, t)
+	info, fc, g, err := bootdb(ctx, t)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = issue(ctx, t, info, info.acctA.ID, 10)
+	_, err = issue(ctx, t, fc, info, info.acctA.ID, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +51,69 @@ func TestTransferConfirmed(t *testing.T) {
 	}
 	dumpState(ctx, t)
 
-	_, err = transfer(ctx, t, info, info.acctA.ID, info.acctB.ID, 10)
+	assetAmount := bc.AssetAmount{
+		AssetID: info.asset.AssetID,
+		Amount:  10,
+	}
+	spendAction := assettest.NewAccountSpendAction(assetAmount, info.acctA.ID, nil, nil, nil)
+	spendAction.Params.TTL = time.Millisecond
+	dest1 := assettest.NewAccountControlAction(assetAmount, info.acctB.ID, nil)
+
+	// Build the first tx
+	firstTemplate, err := Build(ctx, nil, []Action{spendAction, dest1}, nil)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	assettest.SignTxTemplate(t, firstTemplate, info.privKeyAccounts)
+	tx, err := FinalizeTx(ctx, fc, firstTemplate)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	// Build the second tx
+	secondTemplate, err := Build(ctx, &tx.TxData, nil, []byte("test"))
+	secondTemplate.Inputs = firstTemplate.Inputs
+	ComputeSigHashes(secondTemplate)
+	assettest.SignTxTemplate(t, secondTemplate, info.privKeyAccounts)
+	_, err = FinalizeTx(ctx, fc, secondTemplate)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	// Make a block, which should reject one of the txs.
+	dumpState(ctx, t)
+	b, err := g.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dumpState(ctx, t)
+	if len(b.Transactions) != 1 {
+		t.Errorf("got block.Transactions = %#v\n, want exactly one tx", b.Transactions)
+	}
+}
+
+func TestTransferConfirmed(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+
+	info, fc, g, err := bootdb(ctx, t)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = issue(ctx, t, fc, info, info.acctA.ID, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dumpState(ctx, t)
+	_, err = g.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dumpState(ctx, t)
+
+	_, err = transfer(ctx, t, fc, info, info.acctA.ID, info.acctB.ID, 10)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -61,17 +129,17 @@ func TestGenSpendApply(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 
-	info, g, err := bootdb(ctx, t)
+	info, fc, g, err := bootdb(ctx, t)
 	if err != nil {
 		t.Fatal(err)
 	}
-	issueTx, err := issue(ctx, t, info, info.acctA.ID, 10)
+	issueTx, err := issue(ctx, t, fc, info, info.acctA.ID, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("issued %v", issueTx.Hash)
 
-	block, prevBlock, err := FC().GenerateBlock(ctx, time.Now())
+	block, prevBlock, err := fc.GenerateBlock(ctx, time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,12 +149,12 @@ func TestGenSpendApply(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = transfer(ctx, t, info, info.acctA.ID, info.acctB.ID, 10)
+	_, err = transfer(ctx, t, fc, info, info.acctA.ID, info.acctB.ID, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = FC().AddBlock(ctx, block)
+	err = fc.AddBlock(ctx, block)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,19 +176,19 @@ func TestGenSpendApply(t *testing.T) {
 func BenchmarkTransferWithBlocks(b *testing.B) {
 	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	info, g, err := bootdb(ctx, b)
+	info, fc, g, err := bootdb(ctx, b)
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	for i := 0; i < b.N; i++ {
-		tx, err := issue(ctx, b, info, info.acctA.ID, 10)
+		tx, err := issue(ctx, b, fc, info, info.acctA.ID, 10)
 		if err != nil {
 			b.Fatal(err)
 		}
 		b.Logf("finalized %v", tx.Hash)
 
-		tx, err = transfer(ctx, b, info, info.acctA.ID, info.acctB.ID, 10)
+		tx, err = transfer(ctx, b, fc, info, info.acctA.ID, info.acctB.ID, 10)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -199,10 +267,13 @@ func benchGenBlock(b *testing.B) {
 			2
 		);
 	`)
-
+	_, fc, _, err := bootdb(ctx, b)
+	if err != nil {
+		testutil.FatalErr(b, err)
+	}
 	now := time.Now()
 	b.StartTimer()
-	_, _, err := FC().GenerateBlock(ctx, now)
+	_, _, err = fc.GenerateBlock(ctx, now)
 	b.StopTimer()
 	if err != nil {
 		b.Fatal(err)
@@ -210,7 +281,7 @@ func benchGenBlock(b *testing.B) {
 }
 
 type clientInfo struct {
-	asset           *Asset
+	asset           *asset.Asset
 	acctA           *account.Account
 	acctB           *account.Account
 	privKeyAsset    *hd25519.XPrv
@@ -219,52 +290,52 @@ type clientInfo struct {
 
 // TODO(kr): refactor this into new package core/coreutil
 // and consume it from cmd/corectl.
-func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *generator.Generator, error) {
+func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *cos.FC, *generator.Generator, error) {
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	_, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	defer dbtx.Rollback(ctx)
 
 	accPriv, accPub, err := hd25519.NewXKeys(nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	acctA, err := account.Create(ctx, []string{accPub.String()}, 1, nil, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	acctB, err := account.Create(ctx, []string{accPub.String()}, 1, nil, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	genesis, err := store.GetBlock(ctx, 1)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	assetPriv, assetPub, err := hd25519.NewXKeys(nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	asset, err := Define(ctx, []string{assetPub.String()}, 1, nil, genesis.Hash(), nil, nil)
+	asset, err := asset.Define(ctx, []string{assetPub.String()}, 1, nil, genesis.Hash(), nil, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	err = dbtx.Commit(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	info := &clientInfo{
@@ -274,29 +345,29 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *generator.Generato
 		privKeyAsset:    assetPriv,
 		privKeyAccounts: accPriv,
 	}
-	return info, g, nil
+	return info, fc, g, nil
 }
 
-func issue(ctx context.Context, t testing.TB, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
+func issue(ctx context.Context, t testing.TB, fc *cos.FC, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}
 	issueDest := assettest.NewAccountControlAction(assetAmount, destAcctID, nil)
-	issueTx, err := txbuilder.Build(
+	issueTx, err := Build(
 		ctx,
 		nil,
-		[]txbuilder.Action{assettest.NewIssueAction(assetAmount, nil), issueDest},
+		[]Action{assettest.NewIssueAction(assetAmount, nil), issueDest},
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 	assettest.SignTxTemplate(t, issueTx, info.privKeyAsset)
-	return FinalizeTx(ctx, issueTx)
+	return FinalizeTx(ctx, fc, issueTx)
 }
 
-func transfer(ctx context.Context, t testing.TB, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
+func transfer(ctx context.Context, t testing.TB, fc *cos.FC, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
@@ -304,14 +375,14 @@ func transfer(ctx context.Context, t testing.TB, info *clientInfo, srcAcctID, de
 	source := assettest.NewAccountSpendAction(assetAmount, srcAcctID, nil, nil, nil)
 	dest := assettest.NewAccountControlAction(assetAmount, destAcctID, nil)
 
-	xferTx, err := txbuilder.Build(ctx, nil, []txbuilder.Action{source, dest}, []byte{})
+	xferTx, err := Build(ctx, nil, []Action{source, dest}, []byte{})
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
 
 	assettest.SignTxTemplate(t, xferTx, info.privKeyAccounts)
 
-	tx, err := FinalizeTx(ctx, xferTx)
+	tx, err := FinalizeTx(ctx, fc, xferTx)
 	return tx, errors.Wrap(err)
 }
 

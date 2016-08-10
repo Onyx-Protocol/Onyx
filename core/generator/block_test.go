@@ -50,7 +50,7 @@ func TestGetBlocks(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	_, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestGetBlocks(t *testing.T) {
 	}()
 
 	assetID := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, nil)
-	assettest.IssueAssetsFixture(ctx, t, assetID, 1, "")
+	assettest.IssueAssetsFixture(ctx, t, fc, assetID, 1, "")
 
 	// Hopefully force the GetBlocks call to wait
 	time.Sleep(10 * time.Millisecond)

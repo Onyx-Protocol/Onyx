@@ -65,7 +65,7 @@ func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum
 	return asset.AssetID
 }
 
-func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64, accountID string) state.Output {
+func IssueAssetsFixture(ctx context.Context, t testing.TB, fc *cos.FC, assetID bc.AssetID, amount uint64, accountID string) state.Output {
 	if accountID == "" {
 		accountID = CreateAccountFixture(ctx, t, nil, 0, nil)
 	}
@@ -81,7 +81,7 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, assetID bc.AssetID, a
 
 	SignTxTemplate(t, tpl, testutil.TestXPrv)
 
-	tx, err := asset.FinalizeTx(ctx, tpl)
+	tx, err := txbuilder.FinalizeTx(ctx, fc, tpl)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -128,7 +128,7 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 	return fc, g, nil
 }
 
-func Issue(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64, actions []txbuilder.Action) *bc.Tx {
+func Issue(ctx context.Context, t testing.TB, fc *cos.FC, assetID bc.AssetID, amount uint64, actions []txbuilder.Action) *bc.Tx {
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
 	actions = append(actions, NewIssueAction(assetAmount, nil))
 
@@ -143,7 +143,7 @@ func Issue(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64,
 		t.Fatal(err)
 	}
 	SignTxTemplate(t, txTemplate, nil)
-	tx, err := asset.FinalizeTx(ctx, txTemplate)
+	tx, err := txbuilder.FinalizeTx(ctx, fc, txTemplate)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -152,7 +152,7 @@ func Issue(ctx context.Context, t testing.TB, assetID bc.AssetID, amount uint64,
 	return tx
 }
 
-func Transfer(ctx context.Context, t testing.TB, actions []txbuilder.Action) *bc.Tx {
+func Transfer(ctx context.Context, t testing.TB, fc *cos.FC, actions []txbuilder.Action) *bc.Tx {
 	template, err := txbuilder.Build(ctx, nil, actions, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -161,7 +161,7 @@ func Transfer(ctx context.Context, t testing.TB, actions []txbuilder.Action) *bc
 
 	SignTxTemplate(t, template, testutil.TestXPrv)
 
-	tx, err := asset.FinalizeTx(ctx, template)
+	tx, err := txbuilder.FinalizeTx(ctx, fc, template)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
