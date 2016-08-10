@@ -6,6 +6,7 @@ import com.chain.http.Context;
 import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -23,6 +24,8 @@ public class TransactionTemplate {
         @SerializedName("asset_id")
         public String assetID;
         public BigInteger amount;
+        @SerializedName("input_index")
+        public int inputIndex;
         @SerializedName("signature_components")
         public SignatureComponent[] signatureComponents;
     }
@@ -43,10 +46,36 @@ public class TransactionTemplate {
         public String signature;
     }
 
+    public static class SubmitResponse {
+        @SerializedName("transaction_id")
+        public String id;
+
+        // Error data
+        public String code;
+        public String message;
+        public String detail;
+    }
+
     public static List<TransactionTemplate> build(Context ctx, List<TransactionTemplate.Builder> templates)
     throws ChainException {
         Type type = new TypeToken<ArrayList<TransactionTemplate>>() {}.getType();
         return ctx.request("build-transaction-template", templates, type);
+    }
+
+    public SubmitResponse submit(Context ctx, TransactionTemplate template)
+    throws ChainException {
+        List<SubmitResponse> transactions = TransactionTemplate.submit(ctx, Arrays.asList(template));
+        return transactions.get(0);
+    }
+
+    public static List<SubmitResponse> submit(Context ctx, List<TransactionTemplate> templates)
+    throws ChainException {
+        Type type = new TypeToken<ArrayList<SubmitResponse>>() {}.getType();
+
+        HashMap<String, Object> requestBody = new HashMap<>();
+        requestBody.put("transactions", templates);
+
+        return ctx.request("submit-transaction-template", requestBody, type);
     }
 
     public static class Action {
@@ -81,10 +110,7 @@ public class TransactionTemplate {
 
         public TransactionTemplate build(Context ctx)
                 throws ChainException {
-            List<TransactionTemplate.Builder> req = new ArrayList<TransactionTemplate.Builder>();
-            req.add(this);
-            Type type = new TypeToken<ArrayList<TransactionTemplate>>() {}.getType();
-            List<TransactionTemplate> tmpls = ctx.request("build-transaction-template", req, type);
+            List<TransactionTemplate> tmpls = TransactionTemplate.build(ctx, Arrays.asList(this));
             return tmpls.get(0);
         }
 
