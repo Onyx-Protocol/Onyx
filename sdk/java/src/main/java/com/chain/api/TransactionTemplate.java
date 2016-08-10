@@ -123,9 +123,87 @@ public class TransactionTemplate {
             return this;
         }
 
+        public Builder addAction(Action action, byte[] referenceData) {
+            if (referenceData != null) {
+                action.setReferenceData(referenceData);
+            }
+
+            this.actions.add(action);
+            return this;
+        }
+
         public Builder setReferenceData(byte[] referenceData) {
             this.referenceData = referenceData;
             return this;
+        }
+
+        public Builder issue(String assetId, BigInteger amount, byte[] referenceData) {
+            Action action = new Action()
+                    .setType("issue")
+                    .setParameter("asset_id", assetId)
+                    .setParameter("amount", amount);
+
+            return this.addAction(action, referenceData);
+        }
+
+         public Builder controlWithAccount(String accountId, String assetId, BigInteger amount, byte[] referenceData) {
+             Action action = new Action()
+                     .setType("account_control")
+                     .setParameter("account_id", accountId)
+                     .setParameter("asset_id", assetId)
+                     .setParameter("amount", amount);
+
+             return this.addAction(action, referenceData);
+        }
+
+        public Builder controlWithProgram(ControlProgram program, String assetId, BigInteger amount, byte[] referenceData) {
+            Action action = new Action()
+                    .setType("control_program")
+                    .setParameter("control_program", program.program)
+                    .setParameter("asset_id", assetId)
+                    .setParameter("amount", amount);
+
+            return this.addAction(action, referenceData);
+        }
+
+
+        public Builder spendFromAccount(String accountId, String assetId, BigInteger amount, byte[] referenceData) {
+            Action action = new Action()
+                    .setType("spend_account_unspent_output_selector")
+                    .setParameter("account_id", accountId)
+                    .setParameter("asset_id", assetId)
+                    .setParameter("amount", amount);
+
+            return this.addAction(action, referenceData);
+        }
+
+        public Builder spendUnspentOutput(UnspentOutput uo, byte[] referenceData) {
+            Action action = new Action()
+                    .setType("spend_account_unspent_output_selector")
+                    .setParameter("transaction_hash", uo.pointer.transactionId)
+                    .setParameter("transaction_output", uo.pointer.index)
+                    .setParameter("asset_id", uo.assetId)
+                    .setParameter("amount", uo.amount);
+
+            return this.addAction(action, referenceData);
+        }
+
+        public Builder spendUnspentOutputs(List<UnspentOutput> uos, byte[] referenceData) {
+            for (UnspentOutput uo : uos) {
+                this.spendUnspentOutput(uo, referenceData);
+            }
+
+            return this;
+        }
+
+        public Builder retire(String assetId, BigInteger amount, byte[] referenceData) {
+            Action action = new Action()
+                    .setType("control_program")
+                    .setParameter("control_program", ControlProgram.retireProgram())
+                    .setParameter("asset_id", assetId)
+                    .setParameter("amount", amount);
+
+            return this.addAction(action, referenceData);
         }
     }
 }

@@ -9,6 +9,10 @@ import java.util.Map;
 public class ControlProgram {
     public byte[] program;
 
+    public static byte[] retireProgram() {
+        return "6a".getBytes();
+    }
+
     public static class Builder {
         public String type;
         public Map<String,Object> parameters;
