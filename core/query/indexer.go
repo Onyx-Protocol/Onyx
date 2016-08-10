@@ -1,6 +1,7 @@
 package query
 
 import (
+	"database/sql"
 	"sync"
 	"time"
 
@@ -73,6 +74,24 @@ type Index struct {
 	internalID int        // unique, internal pg serial id
 	rawQuery   string
 	createdAt  time.Time
+}
+
+// GetIndex looks up an individual index by its ID and its type.
+func (i *Indexer) GetIndex(ctx context.Context, id, typ string) (*Index, error) {
+	const selectQ = `
+		SELECT internal_id, id, type, query, created_at FROM query_indexes
+		WHERE id = $1 AND type = $2
+	`
+	var idx Index
+	err := i.db.QueryRow(ctx, selectQ, id, typ).
+		Scan(&idx.internalID, &idx.ID, &idx.Type, &idx.rawQuery, &idx.createdAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, errors.Wrap(err, "looking up index")
+	}
+	idx.Query, err = chql.Parse(idx.rawQuery)
+	return &idx, err
 }
 
 // CreateIndex commits a new index in the database. Blockchain data

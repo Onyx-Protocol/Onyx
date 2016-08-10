@@ -65,11 +65,12 @@ type api struct {
 
 // Used as a request object for api queries
 type requestQuery struct {
-	Cursor    string   `json:"cursor"`
-	Index     string   `json:"index,omitempty"`
-	StartTime uint64   `json:"start_time,omitempty"`
-	EndTime   uint64   `json:"end_time,omitempty"`
-	Params    []string `json:"params,omitempty"`
+	Cursor    string        `json:"cursor"`
+	StartTime uint64        `json:"start_time,omitempty"`
+	EndTime   uint64        `json:"end_time,omitempty"`
+	Query     string        `json:"query,omitempty"`
+	Index     string        `json:"index,omitempty"`
+	Params    []interface{} `json:"params,omitempty"`
 }
 
 // Used as a response object for api queries
@@ -107,6 +108,7 @@ func (a *api) handler() chainhttp.HandlerFunc {
 	// Transaction indexes & querying
 	h.HandleFunc("POST", "/create-index", a.createIndex)
 	h.HandleFunc("POST", "/list-indexes", a.listIndexes)
+	h.HandleFunc("POST", "/list-transactions", a.listTransactions)
 
 	// V3 DEPRECATED
 	h.HandleFunc("DELETE", "/v3/accounts/:accountID", archiveAccount)

@@ -5,6 +5,7 @@ import (
 
 	"chain/core/account/utxodb"
 	"chain/core/asset"
+	"chain/core/query"
 	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/database/pg"
@@ -37,6 +38,8 @@ var (
 		pg.ErrUserInputNotFound:      errorInfo{404, "CH005", "Not found"},
 		httpjson.ErrBadRequest:       errorInfo{400, "CH007", "Invalid request body"},
 		errBadReqHeader:              errorInfo{400, "CH008", "Invalid request header"},
+		query.ErrBadCursor:           errorInfo{400, "CH600", "Malformed pagination cursor"},
+		query.ErrMissingParameters:   errorInfo{400, "CH600", "Missing parameters to ChQL query"},
 		utxodb.ErrInsufficient:       errorInfo{400, "CH733", "Insufficient funds for tx"},
 		utxodb.ErrReserved:           errorInfo{400, "CH743", "Some outputs are reserved; try again"},
 		txbuilder.ErrRejected:        errorInfo{400, "CH744", "Transaction rejected"},
