@@ -67,7 +67,7 @@ func Create(ctx context.Context, typ string, xpubs []string, quorum int, clientT
 		return nil, errors.Wrap(ErrNoXPubs)
 	}
 
-	keys, err := convertKeys(xpubs)
+	keys, err := ConvertKeys(xpubs)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func findByClientToken(ctx context.Context, clientToken *string) (*Signer, error
 		return nil, errors.Wrap(err)
 	}
 
-	keys, err := convertKeys(xpubStrs)
+	keys, err := ConvertKeys(xpubStrs)
 	if err != nil {
 		return nil, errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
 	}
@@ -166,7 +166,7 @@ func Find(ctx context.Context, typ, id string) (*Signer, error) {
 		return nil, errors.Wrap(ErrBadType)
 	}
 
-	keys, err := convertKeys(xpubStrs)
+	keys, err := ConvertKeys(xpubStrs)
 	if err != nil {
 		return nil, errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
 	}
@@ -201,7 +201,7 @@ func List(ctx context.Context, typ, prev string, limit int) ([]*Signer, string, 
 	var signers []*Signer
 	err := pg.ForQueryRows(ctx, q, typ, prev, limit,
 		func(id, typ string, xpubs pg.Strings, quorum int, keyIndex pg.Uint32s) error {
-			keys, err := convertKeys(xpubs)
+			keys, err := ConvertKeys(xpubs)
 			if err != nil {
 				return errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
 			}
@@ -229,7 +229,7 @@ func List(ctx context.Context, typ, prev string, limit int) ([]*Signer, string, 
 	return signers, last, nil
 }
 
-func convertKeys(xpubs []string) ([]*hd25519.XPub, error) {
+func ConvertKeys(xpubs []string) ([]*hd25519.XPub, error) {
 	var xkeys []*hd25519.XPub
 	for i, xpub := range xpubs {
 		xkey, err := hd25519.XPubFromString(xpub)

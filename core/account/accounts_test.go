@@ -3,7 +3,10 @@ package account
 import (
 	"bytes"
 	"reflect"
+	"strconv"
 	"testing"
+
+	"github.com/davecgh/go-spew/spew"
 
 	"golang.org/x/net/context"
 
@@ -102,5 +105,63 @@ func TestSetTags(t *testing.T) {
 	account.Tags = newTags
 	if !reflect.DeepEqual(got, account) {
 		t.Errorf("got SetTags=%v, want %v", got, account)
+	}
+}
+
+func TestFind(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+	tags := map[string]interface{}{"someTag": "taggityTag"}
+	account := createTestAccount(ctx, t, tags)
+
+	found, err := Find(ctx, account.ID)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	if !reflect.DeepEqual(account, found) {
+		t.Errorf("expected found account to be %v, instead found %v", account, found)
+	}
+}
+
+func TestList(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+
+	accounts := make(map[string]*Account)
+	for i := 0; i < 3; i++ {
+		tags := map[string]interface{}{"number": strconv.Itoa(i)}
+		account := createTestAccount(ctx, t, tags)
+		accounts[account.ID] = account
+	}
+
+	found, last, err := List(ctx, "", 3)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	for i, f := range found {
+		for id, account := range accounts {
+			if f.ID != id {
+				continue
+			}
+
+			if !reflect.DeepEqual(f, account) {
+				t.Fatalf("List(ctx, \"\", 3)=found; found[%d]=%v, want %v", i, spew.Sdump(f), spew.Sdump(account))
+			}
+
+			delete(accounts, id)
+		}
+
+		if i == len(found)-1 {
+			if last != f.ID {
+				t.Errorf("`last` doesn't match last ID. Got last=%s, want %s", last, f.ID)
+			}
+		}
+	}
+
+	// Make sure we used up everything in aMap
+	if len(accounts) != 0 {
+		t.Error("Didn't find all the assets.")
 	}
 }

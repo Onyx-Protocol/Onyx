@@ -176,7 +176,7 @@ func List(ctx context.Context, prev string, limit int) ([]*Asset, string, error)
 				return errors.WithDetailf(httpjson.ErrBadRequest, "%q is an invalid asset ID", assetID)
 			}
 
-			keys, err := convertKeys(xpubs)
+			keys, err := signers.ConvertKeys(xpubs)
 			if err != nil {
 				return errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
 			}
@@ -435,18 +435,6 @@ func programWithDefinition(pubkeys []ed25519.PublicKey, nrequired int, definitio
 	builder.AddData(definition).AddOp(txscript.OP_DROP)
 	builder.ConcatRawScript(issuanceProg)
 	return builder.Script()
-}
-
-func convertKeys(xpubs []string) ([]*hd25519.XPub, error) {
-	var xkeys []*hd25519.XPub
-	for i, xpub := range xpubs {
-		xkey, err := hd25519.XPubFromString(xpub)
-		if err != nil {
-			return nil, errors.WithDetailf(signers.ErrBadXPub, "key %d: xpub is not valid", i)
-		}
-		xkeys = append(xkeys, xkey)
-	}
-	return xkeys, nil
 }
 
 func mapToNullString(in map[string]interface{}) (*sql.NullString, error) {

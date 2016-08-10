@@ -62,7 +62,7 @@ func SetTags(ctx context.Context, id string, tags map[string]interface{}) (*Acco
 	}
 	defer dbtx.Rollback(ctx)
 
-	signer, err := Find(ctx, id)
+	acc, err := Find(ctx, id)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -76,10 +76,8 @@ func SetTags(ctx context.Context, id string, tags map[string]interface{}) (*Acco
 		return nil, errors.Wrap(err, "committing create account dbtx")
 	}
 
-	return &Account{
-		Signer: signer,
-		Tags:   tags,
-	}, nil
+	acc.Tags = tags
+	return acc, nil
 }
 
 // insertAccountTags inserts a set of tags for the given accountID.
@@ -105,8 +103,40 @@ func insertAccountTags(ctx context.Context, accountID string, tags map[string]in
 }
 
 // Find retrieves an Account record from signer
-func Find(ctx context.Context, id string) (*signers.Signer, error) {
-	return signers.Find(ctx, "account", id)
+func Find(ctx context.Context, id string) (*Account, error) {
+	s, err := signers.Find(ctx, "account", id)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	tags, err := fetchAccountTags(ctx, s.ID)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	return &Account{
+		Signer: s,
+		Tags:   tags,
+	}, nil
+}
+
+func fetchAccountTags(ctx context.Context, id string) (map[string]interface{}, error) {
+	const q = `SELECT tags FROM account_tags WHERE account_id=$1`
+	var tagBytes []byte
+	err := pg.QueryRow(ctx, q, id).Scan(&tagBytes)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	var tags map[string]interface{}
+	if len(tagBytes) > 0 {
+		err := json.Unmarshal(tagBytes, &tags)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+	}
+
+	return tags, nil
 }
 
 // Archive marks an Account record as archived,
@@ -116,8 +146,54 @@ func Archive(ctx context.Context, id string) error {
 }
 
 // List returns a paginated set of Accounts
-func List(ctx context.Context, prev string, limit int) ([]*signers.Signer, string, error) {
-	return signers.List(ctx, "account", prev, limit)
+func List(ctx context.Context, prev string, limit int) ([]*Account, string, error) {
+	const q = `
+		SELECT id, xpubs, quorum, key_index(key_index), tags
+		FROM signers
+		LEFT JOIN account_tags ON signers.id=account_tags.account_id
+		WHERE type='account' AND ($1='' OR $1<id)
+		ORDER BY id ASC LIMIT $2
+	`
+
+	var accounts []*Account
+	err := pg.ForQueryRows(ctx, q, prev, limit,
+		func(id string, xpubs pg.Strings, quorum int, keyIndex pg.Uint32s, tags []byte) error {
+			keys, err := signers.ConvertKeys(xpubs)
+			if err != nil {
+				return errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
+			}
+
+			a := &Account{
+				Signer: &signers.Signer{
+					ID:       id,
+					Type:     "account",
+					XPubs:    keys,
+					Quorum:   quorum,
+					KeyIndex: keyIndex,
+				}}
+
+			if len(tags) > 0 {
+				err := json.Unmarshal(tags, &a.Tags)
+				if err != nil {
+					return errors.Wrap(err)
+				}
+			}
+
+			accounts = append(accounts, a)
+			return nil
+		},
+	)
+
+	if err != nil {
+		return nil, "", errors.Wrap(err)
+	}
+
+	var last string
+	if len(accounts) > 0 {
+		last = accounts[len(accounts)-1].ID
+	}
+
+	return accounts, last, nil
 }
 
 // CreateControlProgram creates a control program
@@ -133,7 +209,7 @@ func CreateControlProgram(ctx context.Context, accountID string) ([]byte, error)
 		return nil, err
 	}
 
-	path := signers.Path(account, signers.AccountKeySpace, idx)
+	path := signers.Path(account.Signer, signers.AccountKeySpace, idx)
 	derivedXPubs := hd25519.DeriveXPubs(account.XPubs, path)
 	derivedPKs := hd25519.XPubKeys(derivedXPubs)
 	control, redeem, err := txscript.TxScripts(derivedPKs, account.Quorum)

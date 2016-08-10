@@ -62,7 +62,7 @@ func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 			return nil, nil, nil, errors.Wrap(err, "get account info")
 		}
 
-		path := signers.Path(inputAccount, signers.AccountKeySpace, r.ControlProgramIndex[:])
+		path := signers.Path(inputAccount.Signer, signers.AccountKeySpace, r.ControlProgramIndex[:])
 		derivedXPubs := hd25519.DeriveXPubs(inputAccount.XPubs, path)
 		derivedPKs := hd25519.XPubKeys(derivedXPubs)
 
