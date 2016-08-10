@@ -6,6 +6,7 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/txscript"
+	chainjson "chain/encoding/json"
 )
 
 func transactionObject(orig *bc.Tx, b *bc.Block, indexInBlock uint32) map[string]interface{} {
@@ -36,6 +37,7 @@ func transactionInput(in *bc.TxInput) map[string]interface{} {
 		"asset_id":       in.AssetID().String(),
 		"amount":         in.Amount(),
 		"reference_data": unmarshalReferenceData(in.ReferenceData),
+		"input_witness":  hexSlices(in.InputWitness),
 	}
 	if in.IsIssuance() {
 		issuance := in.InputCommitment.(*bc.IssuanceInputCommitment)
@@ -77,4 +79,12 @@ func unmarshalReferenceData(data []byte) map[string]interface{} {
 		return map[string]interface{}{}
 	}
 	return obj
+}
+
+func hexSlices(byteas [][]byte) []chainjson.HexBytes {
+	res := make([]chainjson.HexBytes, 0, len(byteas))
+	for _, s := range byteas {
+		res = append(res, chainjson.HexBytes(s))
+	}
+	return res
 }
