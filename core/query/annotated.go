@@ -6,7 +6,6 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/txscript"
-	chainjson "chain/encoding/json"
 )
 
 func transactionObject(orig *bc.Tx, b *bc.Block, indexInBlock uint32) map[string]interface{} {
@@ -81,10 +80,10 @@ func unmarshalReferenceData(data []byte) map[string]interface{} {
 	return obj
 }
 
-func hexSlices(byteas [][]byte) []chainjson.HexBytes {
-	res := make([]chainjson.HexBytes, 0, len(byteas))
+func hexSlices(byteas [][]byte) []interface{} {
+	res := make([]interface{}, 0, len(byteas))
 	for _, s := range byteas {
-		res = append(res, chainjson.HexBytes(s))
+		res = append(res, hex.EncodeToString(s))
 	}
 	return res
 }
