@@ -2,7 +2,6 @@ package com.chain.api;
 
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
-import com.chain.signing.KeyHandle;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.*;
@@ -95,15 +94,15 @@ public class Account {
             return this;
         }
 
-        public Builder addXpub(KeyHandle key) {
-            this.xpubs.add(key.getXPub());
+        public Builder addXpub(String xpub) {
+            this.xpubs.add(xpub);
             return this;
         }
 
-        public Builder setXpubs(List<KeyHandle> keys) {
+        public Builder setXpubs(List<String> xpubs) {
             this.xpubs = new ArrayList<>();
-            for (KeyHandle key : keys) {
-                this.xpubs.add(key.getXPub());
+            for (String xpub : xpubs) {
+                this.xpubs.add(xpub);
             }
             return this;
         }

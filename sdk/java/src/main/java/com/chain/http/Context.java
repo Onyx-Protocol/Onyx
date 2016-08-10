@@ -15,14 +15,14 @@ public class Context {
     private APIClient httpClient;
 
     /**
-     * Create a new Context object for the specified Core instance.
+     * Create a new http Context object
      *
-     * @param chainUrl The URL of the Chain Core. Includes basic authentication
-     *                 in the URL string i.e. https://u:p@api.chain.com
+     * @param url The URL of the Chain Core or HSM. Includes basic authentication
+     *            in the URL string i.e. https://u:p@api.chain.com
      */
-    public Context(URL chainUrl) {
-        this.url = chainUrl;
-        this.httpClient = new APIClient(chainUrl);
+    public Context(URL url) {
+        this.url = url;
+        this.httpClient = new APIClient(url);
     }
 
     /**
@@ -37,7 +37,5 @@ public class Context {
         return httpClient.post(action, APIClient.serializer.toJson(body), tClass);
     }
 
-    public URL getUrl() {
-        return this.url;
-    }
+    public URL getUrl() { return this.url; }
 }

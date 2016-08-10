@@ -98,7 +98,7 @@ func (a *api) handler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/mockhsm/create-key", a.mockhsmCreateKey)
 	h.HandleFunc("POST", "/mockhsm/list-keys", a.mockhsmListKeys)
 	h.HandleFunc("POST", "/mockhsm/delkey", a.mockhsmDelKey)
-	h.HandleFunc("POST", "/mockhsm/signtemplates", a.mockhsmSignTemplates)
+	h.HandleFunc("POST", "/mockhsm/sign-transaction-template", a.mockhsmSignTemplates)
 
 	// Transaction indexes & querying
 	h.HandleFunc("POST", "/create-index", a.createIndex)

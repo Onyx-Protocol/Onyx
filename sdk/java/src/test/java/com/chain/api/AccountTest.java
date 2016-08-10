@@ -19,7 +19,7 @@ public class AccountTest extends BaseTest {
         String tag = "t1";
         createMockResponse("{\"id\":\"" + accountId + "\",\"quorum\":1, \"xpubs\": [\"" + xpubString + "\"], \"tags\":{\"hello\": [\"this\", \"is\", \"an\", \"array\"]}}");
 
-        KeyHandle testKey = new KeyHandle(xpubString, new URL("http://example.com"));
+        String testKey = "7abdd659a569d566ffe2bc2e4536d6fa07b8bf4bf87ef0bf760c9363d85fb4e3de69d25e0bc158de9b5684d76a7e40f2b7c537107d6c5b2a07c42cc923993a77";
 
         Map<String, Object> tags = new HashMap<>();
         tags.put("hello", Arrays.asList("this", "is", "an", "array"));

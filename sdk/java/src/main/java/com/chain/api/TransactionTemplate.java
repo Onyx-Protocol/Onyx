@@ -1,5 +1,6 @@
 package com.chain.api;
 
+import com.chain.exception.ChainException;
 import com.chain.http.Context;
 
 import java.lang.reflect.Type;
@@ -10,10 +11,8 @@ import java.util.List;
 
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
-import com.chain.exception.ChainException;
 
 public class TransactionTemplate {
-
     @SerializedName("unsigned_hex")
     public String unsignedHex;
     @SerializedName("block_chain")
@@ -45,7 +44,7 @@ public class TransactionTemplate {
     }
 
     public static List<TransactionTemplate> build(Context ctx, List<TransactionTemplate.Builder> templates)
-            throws ChainException {
+    throws ChainException {
         Type type = new TypeToken<ArrayList<TransactionTemplate>>() {}.getType();
         return ctx.request("build-transaction-template", templates, type);
     }
@@ -84,7 +83,6 @@ public class TransactionTemplate {
                 throws ChainException {
             List<TransactionTemplate.Builder> req = new ArrayList<TransactionTemplate.Builder>();
             req.add(this);
-
             Type type = new TypeToken<ArrayList<TransactionTemplate>>() {}.getType();
             List<TransactionTemplate> tmpls = ctx.request("build-transaction-template", req, type);
             return tmpls.get(0);
