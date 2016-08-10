@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/core/account"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
@@ -53,15 +54,26 @@ func (i *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[st
 	for pos, tx := range b.Transactions {
 		hashes = append(hashes, tx.Hash.String())
 		positions = append(positions, uint32(pos))
+		annotatedTxsDecoded = append(annotatedTxsDecoded, transactionObject(tx, b, uint32(pos)))
+	}
 
-		annotatedTx := transactionObject(tx, b, uint32(pos))
-		b, err := json.Marshal(annotatedTx)
+	dbctx := pg.NewContext(ctx, i.db)
+
+	// TODO(bobg): Rather than call out to specific annotaters here,
+	// creating dependencies on potentially a lot of packages,
+	// consider allowing other packages to register their annotaters
+	// as callbacks.
+	err := account.AnnotateTxs(dbctx, annotatedTxsDecoded)
+	if err != nil {
+		return nil, errors.Wrap(err, "adding account annotations")
+	}
+
+	for _, decoded := range annotatedTxsDecoded {
+		b, err := json.Marshal(decoded)
 		if err != nil {
 			return nil, err
 		}
-		// TODO(jackson): Pull in annotations from other pkgs.
 		annotatedTxs = append(annotatedTxs, string(b))
-		annotatedTxsDecoded = append(annotatedTxsDecoded, annotatedTx)
 	}
 
 	// Save the annotated txs to the database.
@@ -70,7 +82,7 @@ func (i *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[st
 		SELECT $1, unnest($2::integer[]), unnest($3::text[]), unnest($4::jsonb[])
 		ON CONFLICT (block_height, tx_pos) DO NOTHING;
 	`
-	_, err := i.db.Exec(ctx, insertQ, b.Height, positions, hashes, annotatedTxs)
+	_, err = i.db.Exec(ctx, insertQ, b.Height, positions, hashes, annotatedTxs)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting annotated_txs to db")
 	}
