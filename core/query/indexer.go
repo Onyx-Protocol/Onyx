@@ -173,7 +173,7 @@ func (i *Indexer) refreshIndexes(ctx context.Context) error {
 
 		err := i.setupIndex(index)
 		if err != nil {
-			chainlog.Fatal(ctx, err)
+			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
 	}
 	return nil

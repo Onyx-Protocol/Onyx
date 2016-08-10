@@ -10,12 +10,12 @@ import (
 func init() {
 	register("logparity",
 		"check parity of key-value args in log invocations",
-		checkLogWriteCall,
+		checkLogCall,
 		callExpr)
 }
 
 // checkCall triggers the print-specific checks if the call invokes a print function.
-func checkLogWriteCall(f *File, node ast.Node) {
+func checkLogCall(f *File, node ast.Node) {
 	call, ok := node.(*ast.CallExpr)
 	if !ok {
 		return
@@ -30,11 +30,11 @@ func checkLogWriteCall(f *File, node ast.Node) {
 		return
 	}
 
-	if fun.FullName() != "chain/log.Write" {
+	if fun.FullName() != "chain/log.Write" && fun.FullName() != "chain/log.Fatal" {
 		return
 	}
 
-	// Form is log.Write(ctx, key1, val1, key2, val2, ...)
+	// Form of arguments is (ctx, key1, val1, key2, val2, ...)
 	narg := len(call.Args) - 1 // Subtract one for the context.
 	if narg%2 == 1 && call.Ellipsis == 0 {
 		f.Badf(call.Pos(), "odd number of arguments in call to %s.%s", sel.X, sel.Sel)

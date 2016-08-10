@@ -19,17 +19,17 @@ import (
 func (i *Indexer) indexBlockCallback(ctx context.Context, b *bc.Block) {
 	err := i.insertBlock(ctx, b)
 	if err != nil {
-		log.Fatal(ctx, err)
+		log.Fatal(ctx, log.KeyError, err)
 	}
 
 	txs, err := i.insertAnnotatedTxs(ctx, b)
 	if err != nil {
-		log.Fatal(ctx, err)
+		log.Fatal(ctx, log.KeyError, err)
 	}
 
 	err = i.insertAnnotatedOutputs(ctx, b, txs)
 	if err != nil {
-		log.Fatal(ctx, err)
+		log.Fatal(ctx, log.KeyError, err)
 	}
 
 	// TODO(jackson): Build indexes

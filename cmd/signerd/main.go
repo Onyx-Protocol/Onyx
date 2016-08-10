@@ -71,14 +71,14 @@ func main() {
 	var err error
 	seeConn, err = see.Open(*userdata)
 	if err != nil {
-		log.Fatal(ctx, "error", err)
+		log.Fatal(ctx, log.KeyError, err)
 	}
 
 	client = xprvseeclient.New(seeConn)
 
 	err = loadKey(ctx)
 	if err != nil {
-		log.Fatal(ctx, "error", "loading hsm kd: "+err.Error())
+		log.Fatal(ctx, log.KeyError, errors.Wrap(err, "loading hsm kd"))
 	}
 
 	m := httpjson.NewServeMux(writeHTTPError)
@@ -101,7 +101,7 @@ func main() {
 	if *tlsCrt != "" {
 		cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
 		if err != nil {
-			log.Fatal(ctx, "error", "parsing tls X509 key pair: "+err.Error())
+			log.Fatal(ctx, log.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
 		}
 
 		server.TLSConfig = &tls.Config{
@@ -113,7 +113,7 @@ func main() {
 		err = server.ListenAndServe()
 	}
 	if err != nil {
-		log.Fatal(ctx, "error", "ListenAndServe: "+err.Error())
+		log.Fatal(ctx, log.KeyError, errors.Wrap(err, "ListenAndServe"))
 	}
 }
 

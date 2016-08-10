@@ -26,7 +26,7 @@ func Run(db *sql.DB, lead func(context.Context)) {
 	leaderKeyBytes := make([]byte, 32)
 	_, err := rand.Read(leaderKeyBytes)
 	if err != nil {
-		log.Fatal(ctx, "error", err)
+		log.Fatal(ctx, log.KeyError, err)
 	}
 	l := &leader{
 		db:   db,

@@ -37,7 +37,7 @@ except the printf check.
 
 Available checks:
 
-Parity of log.Write
+Parity of log.Write and log.Fatal
 
 Flag: -logparity
 
