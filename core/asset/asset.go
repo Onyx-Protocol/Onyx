@@ -159,16 +159,17 @@ func Archive(ctx context.Context, id bc.AssetID) error {
 func List(ctx context.Context, prev string, limit int) ([]*Asset, string, error) {
 	const q = `
 		SELECT assets.id, definition, issuance_program, signer_id,
-			quorum, xpubs, key_index(signers.key_index)
+			quorum, xpubs, key_index(signers.key_index), tags
 		FROM assets
 		LEFT JOIN signers ON (assets.signer_id=signers.id)
+		LEFT JOIN asset_tags ON (assets.id=asset_tags.asset_id)
 		WHERE ($1='' OR assets.id>$1) AND NOT assets.archived AND signers.type='asset'
 		ORDER BY id ASC
 		LIMIT $2
 	`
 	var assets []*Asset
 	err := pg.ForQueryRows(ctx, q, prev, limit,
-		func(id string, definitionBytes []byte, issuanceProgram []byte, signerID string, quorum int, xpubs pg.Strings, signerKeyIndex pg.Uint32s) error {
+		func(id string, definitionBytes []byte, issuanceProgram []byte, signerID string, quorum int, xpubs pg.Strings, keyIndex pg.Uint32s, tags []byte) error {
 			var assetID bc.AssetID
 			err := assetID.UnmarshalText([]byte(id))
 			if err != nil {
@@ -188,7 +189,7 @@ func List(ctx context.Context, prev string, limit int) ([]*Asset, string, error)
 				}
 			}
 
-			assets = append(assets, &Asset{
+			a := &Asset{
 				AssetID:         assetID,
 				Definition:      definition,
 				IssuanceProgram: issuanceProgram,
@@ -197,9 +198,18 @@ func List(ctx context.Context, prev string, limit int) ([]*Asset, string, error)
 					Type:     "asset",
 					XPubs:    keys,
 					Quorum:   quorum,
-					KeyIndex: signerKeyIndex,
+					KeyIndex: keyIndex,
 				},
-			})
+			}
+
+			if len(tags) > 0 {
+				err := json.Unmarshal(tags, &a.Tags)
+				if err != nil {
+					return errors.Wrap(err)
+				}
+			}
+
+			assets = append(assets, a)
 			return nil
 		})
 

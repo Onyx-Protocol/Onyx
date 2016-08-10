@@ -3,6 +3,7 @@ package asset
 import (
 	"encoding/hex"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
@@ -162,7 +163,8 @@ func TestListAsset(t *testing.T) {
 	// asset ids of the generated assets will be.
 	aMap := make(map[bc.AssetID]*Asset)
 	for i := 0; i < count; i++ {
-		a, err := Define(ctx, keys, 1, nil, genesisHash, nil, nil)
+		tags := map[string]interface{}{"number": strconv.Itoa(i)}
+		a, err := Define(ctx, keys, 1, nil, genesisHash, tags, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
