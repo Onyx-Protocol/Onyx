@@ -141,7 +141,7 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 		if k == KeyError {
 			rec.IsError = true
 			if e, ok := v.(error); ok && stack == nil {
-				stack = errors.Stack(e)
+				stack = errors.Stack(errors.Wrap(e)) // wrap to ensure callstack
 			}
 		}
 		out += " " + formatKey(k) + "=" + formatValue(v)
