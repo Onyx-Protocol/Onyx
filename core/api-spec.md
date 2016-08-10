@@ -33,7 +33,6 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
 * [Indexes](#indexes)
   * [Index Object](#index-object)
   * [Create Index](#create-index)
-  * [Get Index](#get-index)
   * [List Indexes](#list-indexes)
 
 
@@ -599,22 +598,6 @@ Request
   "query": "..."
 }
 ```
-Response: an [index object](#index-object).
-
-### Get Index
-
-Endpoint
-```
-POST /get-index
-```
-
-Request
-```    
-{
-  "id": "..."
-}
-```
-
 Response: an [index object](#index-object).
 
 ### List Indexes

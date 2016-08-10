@@ -122,31 +122,6 @@ func (i *Indexer) ListIndexes(ctx context.Context, cursor string, limit int) ([]
 	return indexes, newCursor, nil
 }
 
-// GetIndex retrieves a registered index.
-func (i *Indexer) GetIndex(ctx context.Context, id string) (*Index, error) {
-	const q = `
-		SELECT internal_id, id, type, query
-		FROM query_indexes WHERE id=$1
-	`
-
-	var idx Index
-	err := i.db.QueryRow(ctx, q, id).Scan(
-		&idx.internalID,
-		&idx.ID,
-		&idx.Type,
-		&idx.rawQuery,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "retrieve index sql query")
-	}
-
-	idx.Query, err = chql.Parse(idx.rawQuery)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing raw query")
-	}
-	return &idx, nil
-}
-
 func (i *Indexer) isIndexActive(id string) bool {
 	i.mu.Lock()
 	defer i.mu.Unlock()

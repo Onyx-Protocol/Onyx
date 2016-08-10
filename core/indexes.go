@@ -41,11 +41,3 @@ func (a *api) listIndexes(ctx context.Context, in requestQuery) (result page, er
 	result.Query.Cursor = cursor
 	return result, nil
 }
-
-// getIndex is an http handler for retrieving a ChQL index.
-//
-// POST /get-index
-func (a *api) getIndex(ctx context.Context, in struct{ ID string }) (*query.Index, error) {
-	idx, err := a.indexer.GetIndex(ctx, in.ID)
-	return idx, errors.Wrap(err, "retrieving an index")
-}
