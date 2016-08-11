@@ -51,10 +51,10 @@ func (a *api) listIndexes(ctx context.Context, query requestQuery) (page, error)
 //
 // POST /list-transactions
 func (a *api) listTransactions(ctx context.Context, in requestQuery) (result page, err error) {
-	if in.Index == "" && in.Query == "" {
-		return result, fmt.Errorf("must provide either index or query")
-	} else if in.Index != "" && in.Query != "" {
-		return result, fmt.Errorf("cannot provide both index and query")
+	if in.Index == "" && in.ChQL == "" {
+		return result, fmt.Errorf("must provide either index or chql query")
+	} else if in.Index != "" && in.ChQL != "" {
+		return result, fmt.Errorf("cannot provide both index and chql query")
 	}
 
 	var (
@@ -63,8 +63,8 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 	)
 
 	// Build the ChQL query
-	if in.Query != "" {
-		q, err = chql.Parse(in.Query)
+	if in.ChQL != "" {
+		q, err = chql.Parse(in.ChQL)
 		if err != nil {
 			return result, err
 		}
@@ -97,7 +97,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 	}
 
 	limit := defGenericPageSize
-	txns, nextCur, err := a.indexer.Transactions(ctx, q, in.Params, *cur, limit)
+	txns, nextCur, err := a.indexer.Transactions(ctx, q, in.ChQLParams, *cur, limit)
 	if err != nil {
 		return result, errors.Wrap(err, "running tx query")
 	}

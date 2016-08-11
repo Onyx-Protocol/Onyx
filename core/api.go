@@ -65,12 +65,12 @@ type api struct {
 
 // Used as a request object for api queries
 type requestQuery struct {
-	Cursor    string        `json:"cursor"`
-	StartTime uint64        `json:"start_time,omitempty"`
-	EndTime   uint64        `json:"end_time,omitempty"`
-	Query     string        `json:"query,omitempty"`
-	Index     string        `json:"index,omitempty"`
-	Params    []interface{} `json:"params,omitempty"`
+	Cursor     string        `json:"cursor"`
+	StartTime  uint64        `json:"start_time,omitempty"`
+	EndTime    uint64        `json:"end_time,omitempty"`
+	Index      string        `json:"index,omitempty"`
+	ChQL       string        `json:"chql,omitempty"`
+	ChQLParams []interface{} `json:"chql_params,omitempty"`
 }
 
 // Used as a response object for api queries
