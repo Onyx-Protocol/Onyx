@@ -53,7 +53,7 @@ public class Asset {
         }
     }
 
-    public static class Query extends BaseQuery<Page> {
+    public static class Query extends BaseQuery<Query> {
         public Page search(Context ctx)
         throws ChainException {
             return ctx.request("list-assets", this.queryPointer, Page.class);

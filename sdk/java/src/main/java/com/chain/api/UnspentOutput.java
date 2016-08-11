@@ -31,11 +31,11 @@ public class UnspentOutput {
         }
     }
 
-    public static class Query extends BaseQuery<Page> {
+    public static class Query extends BaseQuery<Query> {
         public QueryPointerWithTime queryPointer;
 
         public Page search(Context ctx)
-                throws ChainException {
+        throws ChainException {
             return ctx.request("list-unspent-outputs", this.queryPointer, Page.class);
         }
 

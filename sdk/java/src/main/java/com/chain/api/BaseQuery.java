@@ -6,29 +6,37 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
 
-public abstract class BaseQuery<T> {
+public abstract class BaseQuery<T extends BaseQuery<T>> {
     @SerializedName("query")
-    public QueryPointer queryPointer;
+    protected QueryPointer queryPointer;
 
-    public abstract T search(Context ctx)
+    public abstract <S extends BasePage> S search(Context ctx)
     throws ChainException;
 
     public BaseQuery() {
       this.queryPointer = new QueryPointer();
     }
 
-    public <S extends BaseQuery> S useIndex(String indexId) {
-        this.queryPointer.indexId = indexId;
-        return (S)this;
+    public T useIndex(String index) {
+        this.queryPointer.index = index;
+        return (T)this;
     }
 
-    public <S extends BaseQuery> S addParameter(String parameter) {
-        this.queryPointer.parameters.add(parameter);
-        return (S)this;
+    public T setQuery(String query) {
+        this.queryPointer.query = query;
+        return (T)this;
     }
 
-    public <S extends BaseQuery> S setParameters(ArrayList<String> parameters) {
-        this.queryPointer.parameters = parameters;
-        return (S)this;
+    public T addParameter(String param) {
+        this.queryPointer.params.add(param);
+        return (T)this;
+    }
+
+    public T setParameters(ArrayList<String> params) {
+        this.queryPointer.params = new ArrayList<>();
+        for (String param : params) {
+            this.queryPointer.params.add(param);
+        }
+        return (T)this;
     }
 }

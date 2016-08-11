@@ -17,7 +17,9 @@ public class HsmSigner {
     }
 
     public void addKey(String xpub, URL hsmUrl) {
-        hsmUrls.add(hsmUrl);
+        if (!hsmUrls.contains(hsmUrl)) {
+            hsmUrls.add(hsmUrl);
+        }
     }
 
     // TODO(boymanjor): Currently this method trusts the hsm to return a tx template

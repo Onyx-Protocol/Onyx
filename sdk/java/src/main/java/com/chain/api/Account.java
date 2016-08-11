@@ -72,7 +72,7 @@ public class Account {
         }
     }
 
-    public static class Query extends BaseQuery<Page> {
+    public static class Query extends BaseQuery<Query> {
         public Page search(Context ctx)
         throws ChainException {
             return ctx.request("list-accounts", this.queryPointer, Page.class);

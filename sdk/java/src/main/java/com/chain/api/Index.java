@@ -19,7 +19,7 @@ public class Index {
         }
     }
 
-    public static class Query extends BaseQuery<Page> {
+    public static class Query extends BaseQuery<Query> {
         public Page search(Context ctx)
         throws ChainException {
             return ctx.request("list-indexes", this.queryPointer, Page.class);
