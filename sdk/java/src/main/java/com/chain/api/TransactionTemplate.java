@@ -47,7 +47,6 @@ public class TransactionTemplate {
     }
 
     public static class SubmitResponse {
-        @SerializedName("transaction_id")
         public String id;
 
         // Error data
