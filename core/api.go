@@ -88,11 +88,13 @@ func (a *api) handler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/create-account", createAccount)
 	h.HandleFunc("POST", "/get-account", getAccount)
 	h.HandleFunc("POST", "/set-account-tags", setAccountTags)
+	h.HandleFunc("POST", "/archive-account", archiveAccount)
 
 	// Assets
 	h.HandleFunc("POST", "/list-assets", a.listAssets)
 	h.HandleFunc("POST", "/create-asset", a.createAsset)
 	h.HandleFunc("POST", "/set-asset-tags", setAssetTags)
+	h.HandleFunc("POST", "/archive-asset", archiveAsset)
 
 	// Transactions
 	h.HandleFunc("POST", "/build-transaction-template", build)
@@ -111,8 +113,6 @@ func (a *api) handler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/list-transactions", a.listTransactions)
 
 	// V3 DEPRECATED
-	h.HandleFunc("DELETE", "/v3/accounts/:accountID", archiveAccount)
-	h.HandleFunc("DELETE", "/v3/assets/:assetID", archiveAsset)
 	h.HandleFunc("POST", "/v3/transact/cancel-reservation", cancelReservation)
 
 	return h.ServeHTTPContext
