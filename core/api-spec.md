@@ -449,7 +449,6 @@ Request
                 {
                 	"type":"spend_account_unspent_output",
                 	"params":{
-                		"account_id":"...",
                 		"transaction_id":"...",
                 		"position":0
                 	},
