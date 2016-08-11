@@ -1,10 +1,10 @@
 package txbuilder
 
 import (
+	"golang.org/x/net/context"
+
 	"chain/cos/bc"
 	"chain/encoding/json"
-
-	"golang.org/x/net/context"
 )
 
 type ControlProgramAction struct {
@@ -12,7 +12,7 @@ type ControlProgramAction struct {
 		bc.AssetAmount
 		Program json.HexBytes `json:"control_program"`
 	}
-	ReferenceData json.HexBytes `json:"reference_data"`
+	ReferenceData json.Map `json:"reference_data"`
 }
 
 func (c *ControlProgramAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*Input, error) {

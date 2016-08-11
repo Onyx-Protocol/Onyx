@@ -24,8 +24,8 @@ type SpendAction struct {
 		TxOut     *uint32       `json:"transaction_output"`
 		TTL       time.Duration `json:"reservation_ttl"`
 	}
-	ReferenceData json.HexBytes `json:"reference_data"`
-	ClientToken   *string       `json:"client_token"`
+	ReferenceData json.Map `json:"reference_data"`
+	ClientToken   *string  `json:"client_token"`
 }
 
 func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
@@ -114,7 +114,7 @@ type ControlAction struct {
 		bc.AssetAmount
 		AccountID string `json:"account_id"`
 	}
-	ReferenceData json.HexBytes `json:"reference_data"`
+	ReferenceData json.Map `json:"reference_data"`
 }
 
 func (a *ControlAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {

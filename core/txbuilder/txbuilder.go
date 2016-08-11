@@ -8,6 +8,7 @@ import (
 
 	"chain/cos/bc"
 	"chain/crypto/ed25519/hd25519"
+	"chain/encoding/json"
 	"chain/errors"
 )
 
@@ -24,7 +25,7 @@ var (
 // Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref []byte) (*Template, error) {
+func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map) (*Template, error) {
 	if tx == nil {
 		tx = &bc.TxData{
 			Version: bc.CurrentTransactionVersion,

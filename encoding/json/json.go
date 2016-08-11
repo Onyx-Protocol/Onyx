@@ -1,6 +1,9 @@
 package json
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+	"encoding/json"
+)
 
 type HexBytes []byte
 
@@ -13,4 +16,20 @@ func (h *HexBytes) UnmarshalText(text []byte) error {
 	*h = make([]byte, n)
 	_, err := hex.Decode(*h, text)
 	return err
+}
+
+type Map []byte
+
+func (m Map) MarshalJSON() ([]byte, error) {
+	return m, nil
+}
+
+func (m *Map) UnmarshalJSON(text []byte) error {
+	var check map[string]*json.RawMessage
+	err := json.Unmarshal(text, &check)
+	if err != nil {
+		return err
+	}
+	*m = text
+	return nil
 }

@@ -18,7 +18,7 @@ type IssueAction struct {
 		bc.AssetAmount
 		TTL time.Duration
 	}
-	ReferenceData json.HexBytes `json:"reference_data"`
+	ReferenceData json.Map `json:"reference_data"`
 }
 
 func (a *IssueAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {

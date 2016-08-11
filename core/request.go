@@ -38,9 +38,9 @@ func (a *action) UnmarshalJSON(data []byte) error {
 }
 
 type buildRequest struct {
-	Tx            *bc.TxData         `json:"transaction"`
-	Actions       []*action          `json:"actions"`
-	ReferenceData chainjson.HexBytes `json:"metadata"`
+	Tx            *bc.TxData    `json:"transaction"`
+	Actions       []*action     `json:"actions"`
+	ReferenceData chainjson.Map `json:"reference_data"`
 }
 
 func (req *buildRequest) actions() []txbuilder.Action {

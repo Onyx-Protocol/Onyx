@@ -18,6 +18,7 @@ import (
 	"chain/cos/state"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
+	"chain/encoding/json"
 	"chain/errors"
 	"chain/testutil"
 )
@@ -170,7 +171,7 @@ func Transfer(ctx context.Context, t testing.TB, fc *cos.FC, actions []txbuilder
 	return tx
 }
 
-func NewIssueAction(assetAmount bc.AssetAmount, referenceData []byte) *asset.IssueAction {
+func NewIssueAction(assetAmount bc.AssetAmount, referenceData json.Map) *asset.IssueAction {
 	return &asset.IssueAction{
 		Params: struct {
 			bc.AssetAmount
@@ -180,7 +181,7 @@ func NewIssueAction(assetAmount bc.AssetAmount, referenceData []byte) *asset.Iss
 	}
 }
 
-func NewAccountSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash, txOut *uint32, refData []byte) *account.SpendAction {
+func NewAccountSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash, txOut *uint32, refData json.Map) *account.SpendAction {
 	return &account.SpendAction{
 		Params: struct {
 			bc.AssetAmount
@@ -198,7 +199,7 @@ func NewAccountSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash
 	}
 }
 
-func NewAccountControlAction(amt bc.AssetAmount, accountID string, refData []byte) *account.ControlAction {
+func NewAccountControlAction(amt bc.AssetAmount, accountID string, refData json.Map) *account.ControlAction {
 	return &account.ControlAction{
 		Params: struct {
 			bc.AssetAmount
