@@ -19,7 +19,7 @@ func TestConstructTransactionsQuery(t *testing.T) {
 			query:     `inputs(action='issue' AND asset_id=$1)`,
 			values:    []interface{}{"abc"},
 			cursor:    TxCursor{MaxBlockHeight: 205, MaxPosition: 35, MinBlockHeight: 100},
-			wantQuery: `SELECT block_height, tx_pos, data FROM annotated_txs WHERE ((data @> $1::jsonb)) AND (block_height, tx_pos) <= ($2, $3) AND block_height >= $4 ORDER BY block_height DESC, tx_pos DESC LIMIT 100`,
+			wantQuery: `SELECT block_height, tx_pos, data FROM annotated_txs WHERE (data @> $1::jsonb) AND (block_height, tx_pos) <= ($2, $3) AND block_height >= $4 ORDER BY block_height DESC, tx_pos DESC LIMIT 100`,
 			wantValues: []interface{}{
 				`{"inputs":[{"action":"issue","asset_id":"abc"}]}`,
 				uint64(205), uint32(35), uint64(100),

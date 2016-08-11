@@ -27,6 +27,11 @@ type SQLExpr struct {
 }
 
 func asSQL(e expr, dataColumn string, values []interface{}) (exp SQLExpr, err error) {
+	if e == nil {
+		// An empty expression is a valid query without any filtering.
+		return SQLExpr{}, nil
+	}
+
 	pvals := map[int]interface{}{}
 	for i, v := range values {
 		pvals[i+1] = v
@@ -36,6 +41,9 @@ func asSQL(e expr, dataColumn string, values []interface{}) (exp SQLExpr, err er
 
 	var buf bytes.Buffer
 	var params []interface{}
+	if len(matches) > 1 {
+		buf.WriteString("(")
+	}
 	for i, condition := range matches {
 		if i > 0 {
 			buf.WriteString(" OR ")
@@ -48,6 +56,9 @@ func asSQL(e expr, dataColumn string, values []interface{}) (exp SQLExpr, err er
 
 		params = append(params, string(b))
 		buf.WriteString("(" + dataColumn + " @> $" + strconv.Itoa(len(params)) + "::jsonb)")
+	}
+	if len(matches) > 1 {
+		buf.WriteString(")")
 	}
 
 	exp = SQLExpr{

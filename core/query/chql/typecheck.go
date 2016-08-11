@@ -25,6 +25,10 @@ func typeCheck(expr expr) error {
 }
 
 func typeCheckExpr(expr expr) (typ Type, err error) {
+	if expr == nil { // no expr is a valid, bool type
+		return Bool, nil
+	}
+
 	switch e := expr.(type) {
 	case parenExpr:
 		return typeCheckExpr(e.inner)

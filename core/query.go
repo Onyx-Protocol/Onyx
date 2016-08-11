@@ -60,10 +60,8 @@ func (a *api) listIndexes(ctx context.Context, query requestQuery) (page, error)
 //
 // POST /list-transactions
 func (a *api) listTransactions(ctx context.Context, in requestQuery) (result page, err error) {
-	if in.Index == "" && in.ChQL == "" {
-		return result, fmt.Errorf("must provide either index or chql query")
-	} else if in.Index != "" && in.ChQL != "" {
-		return result, fmt.Errorf("cannot provide both index and chql query")
+	if in.Index != "" && in.ChQL != "" {
+		return result, fmt.Errorf("cannot provide both index and query")
 	}
 
 	var (
@@ -72,12 +70,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 	)
 
 	// Build the ChQL query
-	if in.ChQL != "" {
-		q, err = chql.Parse(in.ChQL)
-		if err != nil {
-			return result, err
-		}
-	} else {
+	if in.Index != "" {
 		idx, err := a.indexer.GetIndex(ctx, in.Index, "transaction")
 		if err != nil {
 			return result, err
@@ -86,6 +79,11 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 			return result, fmt.Errorf("Unknown transaction index %q", in.Index)
 		}
 		q = idx.Query
+	} else {
+		q, err = chql.Parse(in.ChQL)
+		if err != nil {
+			return result, err
+		}
 	}
 
 	// Either parse the provided cursor or look one up for the time range.

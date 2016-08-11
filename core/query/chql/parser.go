@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-// Query represents a parsed CjQL expression.
+// Query represents a parsed ChQL expression.
 type Query struct {
 	expr       expr
 	Parameters int
@@ -51,8 +51,13 @@ func parse(exprString string) (expr expr, parser *parser, err error) {
 			panic(r)
 		}
 	}()
-
 	parser = newParser([]byte(exprString))
+
+	// An empty expression is a valid query.
+	if parser.tok == tokEOF {
+		return nil, parser, nil
+	}
+
 	expr = parseExpr(parser)
 	parser.parseTok(tokEOF)
 	return expr, parser, err

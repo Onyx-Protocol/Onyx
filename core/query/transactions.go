@@ -121,10 +121,11 @@ func constructTransactionsQuery(expr chql.SQLExpr, cur TxCursor, limit int) (str
 	buf.WriteString(" WHERE ")
 
 	// add filter conditions
-	vals = append(vals, expr.Values...)
-	buf.WriteString("(")
-	buf.WriteString(expr.SQL)
-	buf.WriteString(") AND ")
+	if len(expr.SQL) > 0 {
+		vals = append(vals, expr.Values...)
+		buf.WriteString(expr.SQL)
+		buf.WriteString(" AND ")
+	}
 
 	// add time range & cursor conditions
 	buf.WriteString(fmt.Sprintf("(block_height, tx_pos) <= ($%d, $%d) AND ", len(vals)+1, len(vals)+2))
