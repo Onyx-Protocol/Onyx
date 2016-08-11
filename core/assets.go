@@ -8,18 +8,16 @@ import (
 
 	"chain/core/asset"
 	"chain/cos/bc"
-	"chain/crypto/ed25519/hd25519"
 	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/httpjson"
 )
 
 type assetResponse struct {
-	ID         bc.AssetID             `json:"id"`
-	XPubs      []*hd25519.XPub        `json:"xpubs"`
-	Quorum     int                    `json:"quorum"`
-	Definition map[string]interface{} `json:"definition"`
-	Tags       map[string]interface{} `json:"tags"`
+	ID              bc.AssetID             `json:"id"`
+	IssuanceProgram []byte                 `json:"issuance_program"`
+	Definition      map[string]interface{} `json:"definition"`
+	Tags            map[string]interface{} `json:"tags"`
 }
 
 // POST /list-assets
@@ -34,10 +32,10 @@ func (a *api) listAssets(ctx context.Context, query requestQuery) (page, error) 
 	var items []assetResponse
 	for _, asset := range assets {
 		items = append(items, assetResponse{
-			ID:         asset.AssetID,
-			XPubs:      asset.Signer.XPubs,
-			Quorum:     asset.Signer.Quorum,
-			Definition: asset.Definition,
+			ID:              asset.AssetID,
+			IssuanceProgram: asset.IssuanceProgram,
+			Definition:      asset.Definition,
+			Tags:            asset.Tags,
 		})
 	}
 
@@ -110,11 +108,10 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 			} else {
 				responses[i] = assetResponseOrError{
 					assetResponse: &assetResponse{
-						ID:         asset.AssetID,
-						XPubs:      asset.Signer.XPubs,
-						Quorum:     asset.Signer.Quorum,
-						Definition: asset.Definition,
-						Tags:       asset.Tags,
+						ID:              asset.AssetID,
+						IssuanceProgram: asset.IssuanceProgram,
+						Definition:      asset.Definition,
+						Tags:            asset.Tags,
 					},
 				}
 			}
