@@ -314,7 +314,7 @@ Request
 ]
 ```
 
-If the `type` is `account` then the following params are require:
+If the `type` is `account` then the following params are required:
 ```
 {
   account_id: "..."
