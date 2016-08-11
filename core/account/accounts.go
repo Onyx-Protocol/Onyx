@@ -145,19 +145,18 @@ func Archive(ctx context.Context, id string) error {
 	return signers.Archive(ctx, "account", id)
 }
 
-// List returns a paginated set of Accounts
-func List(ctx context.Context, prev string, limit int) ([]*Account, string, error) {
+// FindBatch returns a map of Accounts for the provided IDs. The
+// account tags on the returned Accounts will not be populated.
+func FindBatch(ctx context.Context, ids ...string) (map[string]*Account, error) {
 	const q = `
-		SELECT id, xpubs, quorum, key_index(key_index), tags
+		SELECT id, xpubs, quorum, key_index(key_index)
 		FROM signers
-		LEFT JOIN account_tags ON signers.id=account_tags.account_id
-		WHERE type='account' AND ($1='' OR $1<id)
-		ORDER BY id ASC LIMIT $2
+		WHERE type='account' AND id = ANY ($1)
 	`
 
-	var accounts []*Account
-	err := pg.ForQueryRows(ctx, q, prev, limit,
-		func(id string, xpubs pg.Strings, quorum int, keyIndex pg.Uint32s, tags []byte) error {
+	accounts := make(map[string]*Account, len(ids))
+	err := pg.ForQueryRows(ctx, q, pg.Strings(ids),
+		func(id string, xpubs pg.Strings, quorum int, keyIndex pg.Uint32s) error {
 			keys, err := signers.ConvertKeys(xpubs)
 			if err != nil {
 				return errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
@@ -171,29 +170,14 @@ func List(ctx context.Context, prev string, limit int) ([]*Account, string, erro
 					Quorum:   quorum,
 					KeyIndex: keyIndex,
 				}}
-
-			if len(tags) > 0 {
-				err := json.Unmarshal(tags, &a.Tags)
-				if err != nil {
-					return errors.Wrap(err)
-				}
-			}
-
-			accounts = append(accounts, a)
+			accounts[id] = a
 			return nil
 		},
 	)
-
 	if err != nil {
-		return nil, "", errors.Wrap(err)
+		return nil, errors.Wrap(err)
 	}
-
-	var last string
-	if len(accounts) > 0 {
-		last = accounts[len(accounts)-1].ID
-	}
-
-	return accounts, last, nil
+	return accounts, nil
 }
 
 // CreateControlProgram creates a control program

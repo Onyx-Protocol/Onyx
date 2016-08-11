@@ -43,7 +43,7 @@ func TestConstructTransactionsQuery(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		expr, err := chql.AsSQL(q, tc.values)
+		expr, err := chql.AsSQL(q, "data", tc.values)
 		if err != nil {
 			t.Fatal(err)
 		}

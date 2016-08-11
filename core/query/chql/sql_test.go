@@ -67,7 +67,7 @@ func TestAsSQL(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		sqlExpr, err := asSQL(e, placeholderValues)
+		sqlExpr, err := asSQL(e, "data", placeholderValues)
 		if err != nil {
 			t.Fatal(err)
 		}

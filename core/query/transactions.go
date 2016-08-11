@@ -73,7 +73,7 @@ func (i *Indexer) LookupTxCursor(ctx context.Context, begin, end uint64) (*TxCur
 
 // Transactions queries the blockchain for transactions matching the query `q`.
 func (i *Indexer) Transactions(ctx context.Context, q chql.Query, vals []interface{}, cur TxCursor, limit int) ([]interface{}, *TxCursor, error) {
-	expr, err := chql.AsSQL(q, vals)
+	expr, err := chql.AsSQL(q, "data", vals)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "converting to SQL")
 	}

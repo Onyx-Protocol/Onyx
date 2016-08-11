@@ -7,7 +7,7 @@ import (
 )
 
 // AsSQL translates q to SQL.
-func AsSQL(q Query, values []interface{}) (sqlExpr SQLExpr, err error) {
+func AsSQL(q Query, dataColumn string, values []interface{}) (sqlExpr SQLExpr, err error) {
 	defer func() {
 		r := recover()
 		if e, ok := r.(error); ok {
@@ -17,7 +17,7 @@ func AsSQL(q Query, values []interface{}) (sqlExpr SQLExpr, err error) {
 		}
 	}()
 
-	return asSQL(q.expr, values)
+	return asSQL(q.expr, dataColumn, values)
 }
 
 type SQLExpr struct {
@@ -26,7 +26,7 @@ type SQLExpr struct {
 	GroupBy [][]string
 }
 
-func asSQL(e expr, values []interface{}) (exp SQLExpr, err error) {
+func asSQL(e expr, dataColumn string, values []interface{}) (exp SQLExpr, err error) {
 	pvals := map[int]interface{}{}
 	for i, v := range values {
 		pvals[i+1] = v
@@ -47,7 +47,7 @@ func asSQL(e expr, values []interface{}) (exp SQLExpr, err error) {
 		}
 
 		params = append(params, string(b))
-		buf.WriteString("(data @> $" + strconv.Itoa(len(params)) + "::jsonb)")
+		buf.WriteString("(" + dataColumn + " @> $" + strconv.Itoa(len(params)) + "::jsonb)")
 	}
 
 	exp = SQLExpr{

@@ -8,25 +8,7 @@ import (
 
 	"chain/core/account"
 	"chain/metrics"
-	"chain/net/http/httpjson"
 )
-
-// POST /list-accounts
-func listAccounts(ctx context.Context, query requestQuery) (page, error) {
-	limit := defAccountPageSize
-
-	accounts, cursor, err := account.List(ctx, query.Cursor, limit)
-	if err != nil {
-		return page{}, err
-	}
-
-	query.Cursor = cursor
-	return page{
-		Items:    httpjson.Array(accounts),
-		LastPage: len(accounts) < limit,
-		Query:    query,
-	}, nil
-}
 
 // POST /create-account
 func createAccount(ctx context.Context, ins []struct {

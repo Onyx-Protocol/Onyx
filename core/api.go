@@ -84,7 +84,6 @@ func (a *api) handler() chainhttp.HandlerFunc {
 	h := httpjson.NewServeMux(writeHTTPError)
 
 	// Accounts
-	h.HandleFunc("POST", "/list-accounts", listAccounts)
 	h.HandleFunc("POST", "/create-account", createAccount)
 	h.HandleFunc("POST", "/get-account", getAccount)
 	h.HandleFunc("POST", "/set-account-tags", setAccountTags)
@@ -110,6 +109,7 @@ func (a *api) handler() chainhttp.HandlerFunc {
 	// Transaction indexes & querying
 	h.HandleFunc("POST", "/create-index", a.createIndex)
 	h.HandleFunc("POST", "/list-indexes", a.listIndexes)
+	h.HandleFunc("POST", "/list-accounts", a.listAccounts)
 	h.HandleFunc("POST", "/list-transactions", a.listTransactions)
 
 	// V3 DEPRECATED

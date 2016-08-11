@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"golang.org/x/net/context"
 
 	"chain/cos/txscript"
@@ -124,44 +122,22 @@ func TestFind(t *testing.T) {
 	}
 }
 
-func TestList(t *testing.T) {
+func TestFindBatch(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 
-	accounts := make(map[string]*Account)
+	var accountIDs []string
 	for i := 0; i < 3; i++ {
 		tags := map[string]interface{}{"number": strconv.Itoa(i)}
 		account := createTestAccount(ctx, t, tags)
-		accounts[account.ID] = account
+		accountIDs = append(accountIDs, account.ID)
 	}
 
-	found, last, err := List(ctx, "", 3)
+	accs, err := FindBatch(ctx, accountIDs...)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-
-	for i, f := range found {
-		for id, account := range accounts {
-			if f.ID != id {
-				continue
-			}
-
-			if !reflect.DeepEqual(f, account) {
-				t.Fatalf("List(ctx, \"\", 3)=found; found[%d]=%v, want %v", i, spew.Sdump(f), spew.Sdump(account))
-			}
-
-			delete(accounts, id)
-		}
-
-		if i == len(found)-1 {
-			if last != f.ID {
-				t.Errorf("`last` doesn't match last ID. Got last=%s, want %s", last, f.ID)
-			}
-		}
-	}
-
-	// Make sure we used up everything in aMap
-	if len(accounts) != 0 {
-		t.Error("Didn't find all the assets.")
+	if len(accs) != len(accountIDs) {
+		t.Errorf("got %d account IDs, want %d", len(accs), len(accountIDs))
 	}
 }
