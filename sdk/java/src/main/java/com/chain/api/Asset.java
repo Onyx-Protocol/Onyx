@@ -3,16 +3,16 @@ package com.chain.api;
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
+import com.google.gson.reflect.TypeToken;
 
+import java.lang.reflect.Type;
 import java.util.*;
 
 public class Asset {
     public String id;
 
-    /**
-     * The list of public keys attached to the asset
-     */
-    public List<String> xpubs;
+    @SerializedName("issuance_program")
+    public byte[] issuanceProgram;
 
     /**
      * The immutable asset definition
@@ -23,8 +23,6 @@ public class Asset {
      * User-specified tag structure for the asset
      */
     public Map<String, Object> tags;
-
-    public int quorum;
 
     public Asset setTags(Map<String, Object> tags) {
         this.tags = tags;
@@ -45,7 +43,6 @@ public class Asset {
         HashMap<String, Object> requestBody = new HashMap<>();
         requestBody.put("asset_id", this.id);
         requestBody.put("tags", this.tags);
-
         return ctx.request("set-asset-tags", requestBody, Asset.class);
     }
 
@@ -79,8 +76,17 @@ public class Asset {
 
         public Asset create(Context ctx)
         throws ChainException {
-            this.clientToken = UUID.randomUUID().toString();
-            return ctx.request("create-asset", this, Asset.class);
+            List<Asset> assets = Asset.Builder.create(ctx, Arrays.asList(this));
+            return assets.get(0);
+        }
+
+        public static List<Asset> create(Context ctx, List<Builder> assets)
+        throws ChainException {
+            for (Builder asset : assets) {
+                asset.clientToken = UUID.randomUUID().toString();
+            }
+            Type type = new TypeToken<List<Asset>>() {}.getType();
+            return ctx.request("create-asset", assets, type);
         }
 
         public Builder setDefinition(Map<String, Object> definition) {
@@ -88,13 +94,13 @@ public class Asset {
             return this;
         }
 
-        public Builder setTags(Map<String, Object> tags) {
-            this.tags = tags;
+        public Builder addTag(String key, Object value) {
+            this.tags.put(key, value);
             return this;
         }
 
-        public Builder addTag(String key, Object value) {
-            this.tags.put(key, value);
+        public Builder setTags(Map<String, Object> tags) {
+            this.tags = tags;
             return this;
         }
 

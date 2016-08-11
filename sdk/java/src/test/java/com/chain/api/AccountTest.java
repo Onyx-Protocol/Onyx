@@ -25,7 +25,6 @@ public class AccountTest extends BaseTest {
         tags.put("hello", Arrays.asList("this", "is", "an", "array"));
 
         Account acc = new Account.Builder()
-                .setId(accountId)
                 .addXpub(testKey)
                 .setTags(tags)
                 .setQuorum(1)

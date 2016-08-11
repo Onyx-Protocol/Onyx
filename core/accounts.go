@@ -45,12 +45,6 @@ func createAccount(ctx context.Context, ins []struct {
 	return responses
 }
 
-// POST /get-account
-// TODO(boymanjor): Refactor for batch retrieval
-func getAccount(ctx context.Context, in struct{ ID string }) (interface{}, error) {
-	return account.Find(ctx, in.ID)
-}
-
 // POST /set-account-tags
 func setAccountTags(ctx context.Context, in struct {
 	AccountID string `json:"account_id"`

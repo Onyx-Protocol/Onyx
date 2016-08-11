@@ -3,7 +3,9 @@ package com.chain.api;
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
+import com.google.gson.reflect.TypeToken;
 
+import java.lang.reflect.Type;
 import java.util.*;
 
 /**
@@ -49,7 +51,6 @@ public class Account {
         HashMap<String, Object> requestBody = new HashMap<>();
         requestBody.put("account_id", this.id);
         requestBody.put("tags", this.tags);
-
         return ctx.request("set-account-tags", requestBody, Account.class);
     }
 
@@ -76,20 +77,12 @@ public class Account {
         throws ChainException {
             return ctx.request("list-accounts", this.queryPointer, Page.class);
         }
-
-        public Account find(Context ctx, String accountId)
-        throws ChainException {
-            Map<String, Object> req = new HashMap<>();
-            req.put("id", accountId);
-            return ctx.request("get-account", req, Account.class);
-        }
     }
 
     public static class Builder {
-        private String id;
-        private int quorum;
-        private List<String> xpubs;
-        private Map<String, Object> tags;
+        public int quorum;
+        public List<String> xpubs;
+        public Map<String, Object> tags;
         @SerializedName("client_token")
         private String clientToken;
 
@@ -98,15 +91,33 @@ public class Account {
             this.xpubs = new ArrayList<>();
         }
 
+        /**
+         * Creates an account object.
+         *
+         * @param ctx context object that makes requests to core
+         * @return an account object
+         * @throws ChainException
+         */
         public Account create(Context ctx)
         throws ChainException {
-            this.clientToken = UUID.randomUUID().toString();
-            return ctx.request("create-account", this, Account.class);
+            List<Account> accts = Account.Builder.create(ctx, Arrays.asList(this));
+            return accts.get(0);
         }
 
-        public Builder setId(String id) {
-            this.id = id;
-            return this;
+        /**
+         * Creates a batch of account objects.
+         *
+         * @param ctx context object that makes requests to core
+         * @return an account object
+         * @throws ChainException
+         */
+        public static List<Account> create(Context ctx, List<Builder> accts)
+        throws ChainException {
+            for (Builder acct : accts) {
+                acct.clientToken = UUID.randomUUID().toString();
+            }
+            Type type = new TypeToken<List<Account>>() {}.getType();
+            return ctx.request("create-account", accts, type);
         }
 
         public Builder setQuorum(int quorum) {
@@ -127,13 +138,13 @@ public class Account {
             return this;
         }
 
-        public Builder setTags(Map<String, Object> tags) {
-            this.tags = tags;
+        public Builder addTag(String key, Object value) {
+            this.tags.put(key, value);
             return this;
         }
 
-        public Builder addTag(String key, Object value) {
-            this.tags.put(key, value);
+        public Builder setTags(Map<String, Object> tags) {
+            this.tags = tags;
             return this;
         }
     }

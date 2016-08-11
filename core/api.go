@@ -85,7 +85,6 @@ func (a *api) handler() chainhttp.HandlerFunc {
 
 	// Accounts
 	h.HandleFunc("POST", "/create-account", createAccount)
-	h.HandleFunc("POST", "/get-account", getAccount)
 	h.HandleFunc("POST", "/set-account-tags", setAccountTags)
 	h.HandleFunc("POST", "/archive-account", archiveAccount)
 
