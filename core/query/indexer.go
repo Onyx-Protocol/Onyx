@@ -132,7 +132,7 @@ func (i *Indexer) CreateIndex(ctx context.Context, id string, typ string, rawQue
 		Query:    q,
 		rawQuery: rawQuery,
 	}
-	err = i.db.QueryRow(ctx, insertQ, id, typ, rawQuery).Scan(&idx.internalID, &idx.createdAt)
+	err = i.db.QueryRow(ctx, insertQ, id, typ, rawQuery, unspents).Scan(&idx.internalID, &idx.createdAt)
 	if err != nil {
 		return nil, errors.Wrap(err, "saving tx index in db")
 	}
