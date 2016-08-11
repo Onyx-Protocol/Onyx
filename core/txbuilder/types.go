@@ -9,15 +9,14 @@ import (
 
 // Template represents a partially- or fully-signed transaction.
 type Template struct {
-	Unsigned   *bc.TxData `json:"unsigned_hex"`
-	BlockChain string     `json:"block_chain"`
-	Inputs     []*Input   `json:"inputs"`
+	Unsigned *bc.TxData `json:"unsigned_hex"`
+	Inputs   []*Input   `json:"inputs"`
 }
 
 // Input is an input for a TxTemplate.
 type Input struct {
 	bc.AssetAmount
-	Index         uint32                `json:"input_index"`
+	Position      uint32                `json:"position"`
 	SigComponents []*SigScriptComponent `json:"signature_components,omitempty"`
 }
 
@@ -28,7 +27,7 @@ type Input struct {
 type SigScriptComponent struct {
 	Type          string        `json:"type"`           // required
 	Data          json.HexBytes `json:"data"`           // required for 'data'
-	Required      int           `json:"required"`       // required for 'signature'
+	Quorum        int           `json:"quorum"`         // required for 'signature'
 	SignatureData bc.Hash       `json:"signature_data"` // required for 'signature'
 	Signatures    []*Signature  `json:"signatures"`     // required for 'signature'
 }
@@ -50,7 +49,7 @@ func (inp *Input) AddWitnessData(data []byte) {
 func (inp *Input) AddWitnessSigs(sigs []*Signature, nreq int, sigData *bc.Hash) {
 	c := &SigScriptComponent{
 		Type:       "signature",
-		Required:   nreq,
+		Quorum:     nreq,
 		Signatures: sigs,
 	}
 	if sigData != nil {

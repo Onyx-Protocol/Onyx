@@ -67,7 +67,6 @@ func TestBuild(t *testing.T) {
 	}
 
 	want := &Template{
-		BlockChain: "sandbox",
 		Unsigned: &bc.TxData{
 			Version: 1,
 			Inputs: []*bc.TxInput{
@@ -123,7 +122,7 @@ func TestAssembleSignatures(t *testing.T) {
 			SigComponents: []*SigScriptComponent{
 				{
 					Type:          "signature",
-					Required:      2,
+					Quorum:        2,
 					SignatureData: sigData,
 					Signatures: []*Signature{{
 						XPub:           "xpub661MyMwAqRbcGZNqeB27ae2nQLWoWd9Ffx8NEXrVDFgFPe6Jdzw53p5m3ewA3K2z5nPmcJK7r1nykAwkoNHWgHr5kLCWi777ShtKwLdy55a",

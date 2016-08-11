@@ -16,16 +16,13 @@ import com.google.gson.reflect.TypeToken;
 public class TransactionTemplate {
     @SerializedName("unsigned_hex")
     public String unsignedHex;
-    @SerializedName("block_chain")
-    public String blockChain;
     public List<Input> inputs;
 
     public static class Input {
         @SerializedName("asset_id")
         public String assetID;
         public BigInteger amount;
-        @SerializedName("input_index")
-        public int inputIndex;
+        public int position;
         @SerializedName("signature_components")
         public SignatureComponent[] signatureComponents;
     }
@@ -33,7 +30,7 @@ public class TransactionTemplate {
     public static class SignatureComponent {
         public String type;
         public String data;
-        public int required;
+        public int quorum;
         @SerializedName("signature_data")
         public String signatureData;
         public Signature[] signatures;

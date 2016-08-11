@@ -52,7 +52,7 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map) (
 		}
 
 		for i := range txins {
-			inputs[i].Index = uint32(len(tx.Inputs))
+			inputs[i].Position = uint32(len(tx.Inputs))
 			tplInputs = append(tplInputs, inputs[i])
 			tx.Inputs = append(tx.Inputs, txins[i])
 		}
@@ -93,8 +93,8 @@ func ComputeSigHashes(tpl *Template) {
 func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 	msg := txTemplate.Unsigned
 	for _, input := range txTemplate.Inputs {
-		if msg.Inputs[input.Index] == nil {
-			return nil, fmt.Errorf("unsigned tx missing input %d", input.Index)
+		if msg.Inputs[input.Position] == nil {
+			return nil, fmt.Errorf("unsigned tx missing input %d", input.Position)
 		}
 
 		components := input.SigComponents
@@ -115,7 +115,7 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 					}
 					witness = append(witness, sig.Bytes)
 					added++
-					if added == c.Required {
+					if added == c.Quorum {
 						break
 					}
 				}
@@ -123,7 +123,7 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 				return nil, fmt.Errorf("unknown sigscript component `%s`", c.Type)
 			}
 		}
-		msg.Inputs[input.Index].InputWitness = witness
+		msg.Inputs[input.Position].InputWitness = witness
 	}
 
 	return bc.NewTx(*msg), nil

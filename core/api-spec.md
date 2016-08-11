@@ -324,21 +324,30 @@ If the `type` is `account` then the following params are require:
 ## Transactions
 
 ### Transaction Template Object
-NOTE: Revisit this! What are the implications on `redemption_predicates` when there are many types of control programs? Should there be a `control_program_type`?
-
 ```
 {
+  "unsigned_hex": "...",
   "inputs": [
     {
       "asset_id": "2ed22e7846968aaee500b5ea4b4dfc8bdbe798f32e0737516ab44be4417ff111",
       "amount": 4,
-      "redemption_predicates": "255121031351da7e482a17720fa36154d739ec204faa9dc488d286d9e0126049e5ddea4951ae",      // revisit this! should there by a `control_program_type`?
-      "signature_data": "e603d3b8a10fb1714b986393c686fc3ab5f361ec29f94cfd8c7ef3e95e5e44d8",
-      "signatures": [
+      "position": 0,
+      "signature_components": [
         {
-          "xpub": "...",
-          "derivation_path": [0,0,2,0,9],
-          "signature": ""
+          "type": "data",
+          "data": "abcd..."
+        },
+        {
+          "type": "signature",
+          "quorum": 1,
+          "signature_data": "e603d3b8a10fb1714b986393c686fc3ab5f361ec29f94cfd8c7ef3e95e5e44d8",
+          "signatures": [
+            {
+              "xpub": "...",
+              "derivation_path": [0,0,2,0,9],
+              "signature": ""
+            }
+          ]
         }
       ]
     }
