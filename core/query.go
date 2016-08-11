@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -62,6 +63,9 @@ func (a *api) listIndexes(ctx context.Context, query requestQuery) (page, error)
 func (a *api) listTransactions(ctx context.Context, in requestQuery) (result page, err error) {
 	if in.Index != "" && in.ChQL != "" {
 		return result, fmt.Errorf("cannot provide both index and query")
+	}
+	if in.EndTime == 0 {
+		in.EndTime = uint64(time.Now().UnixNano()) / uint64(time.Millisecond)
 	}
 
 	var (
