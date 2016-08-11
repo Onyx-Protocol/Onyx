@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.3
--- Dumped by pg_dump version 9.5.3
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -527,7 +527,8 @@ CREATE TABLE query_indexes (
     id text NOT NULL,
     type text NOT NULL,
     query text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    unspent_outputs boolean DEFAULT false NOT NULL
 );
 
 
@@ -1049,3 +1050,4 @@ insert into migrations (filename, hash) values ('2016-08-08.3.query.annotated-ou
 insert into migrations (filename, hash) values ('2016-08-09.0.signers.change-tags.sql', '78aa00b2c54f0fd1b6920a8d74d568111906a7a5b871a4ee51a04b2a9aa2b590');
 insert into migrations (filename, hash) values ('2016-08-09.1.assets.drop-key-index.sql', '203fb5589e82c11bc8fd33cd4ec717587813094575f7cec96e653deb9167df59');
 insert into migrations (filename, hash) values ('2016-08-09.2.api.remove-users.sql', 'b70d35ce042e2565c507a79dca8c31a1decc5d75495af3a4e566a6a55329a413');
+insert into migrations (filename, hash) values ('2016-08-11.0.query.unspent-outputs-flag.sql', '0af7543ce626d494f6a8b3fd0c22c6ffa5fad12f7c86381117dfe957b3b2e782');

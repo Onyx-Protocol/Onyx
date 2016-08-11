@@ -12,19 +12,27 @@ import (
 	"chain/net/http/httpjson"
 )
 
+var (
+	ErrBadIndexConfig = errors.New("index configuration invalid")
+)
+
 // createIndex is an http handler for creating indexes.
 //
 // POST /create-index
 func (a *api) createIndex(ctx context.Context, in struct {
-	ID    string `json:"id"`
-	Type  string `json:"type"`
-	Query string `json:"query"`
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Query    string `json:"query"`
+	Unspents bool   `json:"unspents"`
 }) (*query.Index, error) {
 	if in.Type != "transaction" && in.Type != "balance" && in.Type != "asset" {
-		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "unknown index type %q", in.Type)
+		return nil, errors.WithDetailf(ErrBadIndexConfig, "unknown index type %q", in.Type)
+	}
+	if in.Unspents && in.Type != "balance" {
+		return nil, errors.WithDetail(ErrBadIndexConfig, "unspents flag is only valid for balance indexes")
 	}
 
-	idx, err := a.indexer.CreateIndex(ctx, in.ID, in.Type, in.Query)
+	idx, err := a.indexer.CreateIndex(ctx, in.ID, in.Type, in.Query, in.Unspents)
 	return idx, errors.Wrap(err, "creating the new index")
 }
 
