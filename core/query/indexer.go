@@ -95,7 +95,7 @@ func (i *Index) MarshalJSON() ([]byte, error) {
 // GetIndex looks up an individual index by its ID and its type.
 func (i *Indexer) GetIndex(ctx context.Context, id, typ string) (*Index, error) {
 	const selectQ = `
-		SELECT internal_id, id, type, query, created_at, unspents FROM query_indexes
+		SELECT internal_id, id, type, query, created_at, unspent_outputs FROM query_indexes
 		WHERE id = $1 AND type = $2
 	`
 	var idx Index
@@ -122,8 +122,8 @@ func (i *Indexer) CreateIndex(ctx context.Context, id string, typ string, rawQue
 	}
 
 	const insertQ = `
-		INSERT INTO query_indexes (id, type, query, unspents) VALUES($1, $2, $3, $4)
-		ON CONFLICT (id) DO UPDATE SET type = $2, query = $3, unspents = $4
+		INSERT INTO query_indexes (id, type, query, unspent_outputs) VALUES($1, $2, $3, $4)
+		ON CONFLICT (id) DO UPDATE SET type = $2, query = $3, unspent_outputs = $4
 		RETURNING internal_id, created_at
 	`
 	idx := &Index{
@@ -199,7 +199,7 @@ func (i *Indexer) refreshIndexes(ctx context.Context) error {
 // getIndexes does not parse idx.RawQuery and leaves
 // idx.Query as nil.
 func (i *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
-	const q = `SELECT internal_id, id, type, query, created_at, unspents FROM query_indexes`
+	const q = `SELECT internal_id, id, type, query, created_at, unspent_outputs FROM query_indexes`
 	rows, err := i.db.Query(ctx, q)
 	if err != nil {
 		return nil, errors.Wrap(err, "reload indexes sql query")
@@ -222,7 +222,7 @@ func (i *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
 // The caveat is listIndexes returns a paged result.
 func (i *Indexer) listIndexes(ctx context.Context, cursor string, limit int) ([]*Index, string, error) {
 	const q = `
-		SELECT internal_id, id, type, query, created_at, unspents
+		SELECT internal_id, id, type, query, created_at, unspent_outputs
 		FROM query_indexes WHERE ($1='' OR $1<id)
 		ORDER BY id ASC LIMIT $2
 	`
