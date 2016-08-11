@@ -30,19 +30,20 @@ func (a *api) createIndex(ctx context.Context, in struct {
 // listIndexes is an http handler for listing ChQL indexes.
 //
 // POST /list-indexes
-func (a *api) listIndexes(ctx context.Context, in requestQuery) (result page, err error) {
+func (a *api) listIndexes(ctx context.Context, query requestQuery) (page, error) {
 	limit := defGenericPageSize
 
-	indexes, cursor, err := a.indexer.ListIndexes(ctx, in.Cursor, limit)
+	indexes, cursor, err := a.indexer.ListIndexes(ctx, query.Cursor, limit)
 	if err != nil {
-		return result, errors.Wrap(err, "listing indexes")
+		return page{}, errors.Wrap(err, "listing indexes")
 	}
-	for _, item := range indexes {
-		result.Items = append(result.Items, item)
-	}
-	result.LastPage = len(indexes) < limit
-	result.Query.Cursor = cursor
-	return result, nil
+
+	query.Cursor = cursor
+	return page{
+		Items:    httpjson.Array(indexes),
+		LastPage: len(indexes) < limit,
+		Query:    query,
+	}, nil
 }
 
 // listTransactions is an http handler for listing transactions matching
@@ -104,7 +105,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 	out := in
 	out.Cursor = nextCur.String()
 	return page{
-		Items:    txns,
+		Items:    httpjson.Array(txns),
 		LastPage: len(txns) < limit,
 		Query:    out,
 	}, nil

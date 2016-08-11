@@ -23,25 +23,30 @@ type assetResponse struct {
 }
 
 // POST /list-assets
-func (a *api) listAssets(ctx context.Context, in requestQuery) (result page, err error) {
+func (a *api) listAssets(ctx context.Context, query requestQuery) (page, error) {
 	limit := defAccountPageSize
 
-	assets, cursor, err := asset.List(ctx, in.Cursor, limit)
+	assets, cursor, err := asset.List(ctx, query.Cursor, limit)
 	if err != nil {
-		return result, err
+		return page{}, err
 	}
 
+	var items []assetResponse
 	for _, asset := range assets {
-		result.Items = append(result.Items, assetResponse{
+		items = append(items, assetResponse{
 			ID:         asset.AssetID,
 			XPubs:      asset.Signer.XPubs,
 			Quorum:     asset.Signer.Quorum,
-			Definition: asset.Definition})
+			Definition: asset.Definition,
+		})
 	}
 
-	result.LastPage = len(assets) < limit
-	result.Query.Cursor = cursor
-	return result, nil
+	query.Cursor = cursor
+	return page{
+		Items:    httpjson.Array(items),
+		LastPage: len(assets) < limit,
+		Query:    query,
+	}, nil
 }
 
 // POST /update-asset

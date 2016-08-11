@@ -75,9 +75,9 @@ type requestQuery struct {
 
 // Used as a response object for api queries
 type page struct {
-	Items    []interface{} `json:"items"`
-	LastPage bool          `json:"last_page"`
-	Query    requestQuery  `json:"query"`
+	Items    interface{}  `json:"items"`
+	LastPage bool         `json:"last_page"`
+	Query    requestQuery `json:"query"`
 }
 
 func (a *api) handler() chainhttp.HandlerFunc {

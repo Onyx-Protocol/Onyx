@@ -7,6 +7,7 @@ import (
 	"chain/crypto/ed25519/hd25519"
 	"chain/encoding/json"
 	"chain/errors"
+	"chain/net/http/httpjson"
 )
 
 func (a *api) mockhsmCreateKey(ctx context.Context) (result struct {
@@ -20,25 +21,29 @@ func (a *api) mockhsmCreateKey(ctx context.Context) (result struct {
 	return result, nil
 }
 
-func (a *api) mockhsmListKeys(ctx context.Context, in struct{ Cursor string }) (result page, err error) {
+func (a *api) mockhsmListKeys(ctx context.Context, query struct{ Cursor string }) (page, error) {
 	limit := defGenericPageSize
 
-	xpubs, cursor, err := a.hsm.ListKeys(ctx, in.Cursor, limit)
+	xpubs, cursor, err := a.hsm.ListKeys(ctx, query.Cursor, limit)
 	if err != nil {
-		return result, err
+		return page{}, err
 	}
 
+	var items []interface{}
 	for _, xpub := range xpubs {
 		item := struct {
 			XPub *hd25519.XPub `json:"xpub"`
 		}{
 			xpub,
 		}
-		result.Items = append(result.Items, item)
+		items = append(items, item)
 	}
-	result.LastPage = len(xpubs) < limit
-	result.Query.Cursor = cursor
-	return result, nil
+
+	return page{
+		Items:    httpjson.Array(items),
+		LastPage: len(xpubs) < limit,
+		Query:    requestQuery{Cursor: cursor},
+	}, nil
 }
 
 func (a *api) mockhsmDelKey(ctx context.Context, xpubBytes json.HexBytes) error {
