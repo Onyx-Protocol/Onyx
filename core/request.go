@@ -27,7 +27,7 @@ func (a *action) UnmarshalJSON(data []byte) error {
 		a.underlying = new(txbuilder.ControlProgramAction)
 	case "spend_account_unspent_output_selector":
 		a.underlying = new(account.SpendAction)
-	case "account_control":
+	case "control_account":
 		a.underlying = new(account.ControlAction)
 	case "issue":
 		a.underlying = new(asset.IssueAction)

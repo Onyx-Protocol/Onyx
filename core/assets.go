@@ -122,13 +122,9 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 	return responses, nil
 }
 
-// DELETE /v3/assets/:assetID
-// Idempotent
-func archiveAsset(ctx context.Context, assetID string) error {
-	var decodedAssetID bc.AssetID
-	err := decodedAssetID.UnmarshalText([]byte(assetID))
-	if err != nil {
-		return errors.WithDetailf(httpjson.ErrBadRequest, "%q is an invalid asset ID", assetID)
-	}
-	return asset.Archive(ctx, decodedAssetID)
+// POST /archive-asset
+func archiveAsset(ctx context.Context, in struct {
+	AssetID bc.AssetID `json:"asset_id"`
+}) error {
+	return asset.Archive(ctx, in.AssetID)
 }

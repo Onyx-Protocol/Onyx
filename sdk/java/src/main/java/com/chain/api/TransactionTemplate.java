@@ -144,7 +144,7 @@ public class TransactionTemplate {
 
          public Builder controlWithAccount(String accountId, String assetId, BigInteger amount, byte[] referenceData) {
              Action action = new Action()
-                     .setType("account_control")
+                     .setType("control_account")
                      .setParameter("account_id", accountId)
                      .setParameter("asset_id", assetId)
                      .setParameter("amount", amount);

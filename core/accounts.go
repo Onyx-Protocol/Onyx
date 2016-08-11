@@ -53,8 +53,9 @@ func setAccountTags(ctx context.Context, in struct {
 	return account.SetTags(ctx, in.AccountID, in.Tags)
 }
 
-// DELETE /v3/accounts/:accountID
-// Idempotent
-func archiveAccount(ctx context.Context, accountID string) error {
-	return account.Archive(ctx, accountID)
+// POST /archive-account
+func archiveAccount(ctx context.Context, in struct {
+	AccountID string `json:"account_id"`
+}) error {
+	return account.Archive(ctx, in.AccountID)
 }

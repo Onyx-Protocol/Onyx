@@ -44,8 +44,7 @@ func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, e
 	return tpl, nil
 }
 
-// POST /v3/transact/build
-// Idempotent
+// POST /build-transaction-template
 func build(ctx context.Context, buildReqs []*buildRequest) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)

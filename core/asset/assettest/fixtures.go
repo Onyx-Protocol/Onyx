@@ -187,7 +187,7 @@ func NewAccountSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash
 			bc.AssetAmount
 			AccountID string        `json:"account_id"`
 			TxHash    *bc.Hash      `json:"transaction_hash"`
-			TxOut     *uint32       `json:"transaction_output"`
+			TxOut     *uint32       `json:"position"`
 			TTL       time.Duration `json:"reservation_ttl"`
 		}{
 			AssetAmount: amt,
