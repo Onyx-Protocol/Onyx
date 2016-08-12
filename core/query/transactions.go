@@ -2,7 +2,6 @@ package query
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -30,41 +29,39 @@ func (cur TxCursor) String() string {
 	return fmt.Sprintf("%x-%x-%x", cur.MaxBlockHeight, cur.MaxPosition, cur.MinBlockHeight)
 }
 
-func DecodeTxCursor(str string) (c *TxCursor, err error) {
+func DecodeTxCursor(str string) (c TxCursor, err error) {
 	s := strings.Split(str, "-")
 	if len(s) != 3 {
-		return nil, ErrBadCursor
+		return c, ErrBadCursor
 	}
 	max, err := strconv.ParseUint(s[0], 16, 64)
 	if err != nil {
-		return nil, ErrBadCursor
+		return c, ErrBadCursor
 	}
 	pos, err := strconv.ParseUint(s[1], 16, 32)
 	if err != nil {
-		return nil, ErrBadCursor
+		return c, ErrBadCursor
 	}
 	min, err := strconv.ParseUint(s[2], 16, 64)
 	if err != nil {
-		return nil, ErrBadCursor
+		return c, ErrBadCursor
 	}
-	return &TxCursor{MaxBlockHeight: max, MaxPosition: uint32(pos), MinBlockHeight: min}, nil
+	return TxCursor{MaxBlockHeight: max, MaxPosition: uint32(pos), MinBlockHeight: min}, nil
 }
 
 // LookupTxCursor looks up the transaction cursor for the provided time range.
-func (ind *Indexer) LookupTxCursor(ctx context.Context, begin, end uint64) (*TxCursor, error) {
+func (ind *Indexer) LookupTxCursor(ctx context.Context, begin, end uint64) (TxCursor, error) {
 	const q = `
-		SELECT MAX(height), MIN(height) FROM query_blocks
+		SELECT COALESCE(MAX(height), 0), COALESCE(MIN(height), 0) FROM query_blocks
 		WHERE timestamp >= $1 AND timestamp <= $2
 	`
 
 	var max, min uint64
 	err := ind.db.QueryRow(ctx, q, begin, end).Scan(&max, &min)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	} else if err != nil {
-		return nil, errors.Wrap(err, "querying `query_blocks`")
+	if err != nil {
+		return TxCursor{}, errors.Wrap(err, "querying `query_blocks`")
 	}
-	return &TxCursor{
+	return TxCursor{
 		MaxBlockHeight: max,
 		MaxPosition:    math.MaxInt32,
 		MinBlockHeight: min,

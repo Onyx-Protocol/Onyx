@@ -1,11 +1,35 @@
 package query
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"chain/core/query/chql"
+	"chain/cos"
+	"chain/database/pg/pgtest"
 )
+
+func TestLookupTxCursorNoBlocks(t *testing.T) {
+	ctx := context.Background()
+	db := pgtest.NewTx(t)
+	indexer := NewIndexer(db, &cos.FC{})
+
+	cur, err := indexer.LookupTxCursor(ctx, 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := TxCursor{
+		MaxBlockHeight: 0,
+		MaxPosition:    math.MaxInt32,
+		MinBlockHeight: 0,
+	}
+	if !reflect.DeepEqual(cur, want) {
+		t.Errorf("Got tx cursor %s, want %s", cur, want)
+	}
+}
 
 func TestConstructTransactionsQuery(t *testing.T) {
 	testCases := []struct {

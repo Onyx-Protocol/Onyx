@@ -75,7 +75,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 
 	var (
 		q   chql.Query
-		cur *query.TxCursor
+		cur query.TxCursor
 	)
 
 	// Build the ChQL query
@@ -101,19 +101,15 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 		if err != nil {
 			return result, errors.Wrap(err, "decoding cursor")
 		}
-	}
-	if cur == nil {
+	} else {
 		cur, err = a.indexer.LookupTxCursor(ctx, in.StartTimeMS, in.EndTimeMS)
 		if err != nil {
 			return result, err
 		}
 	}
-	if cur == nil { // no results; empty page
-		return page{LastPage: true}, nil
-	}
 
 	limit := defGenericPageSize
-	txns, nextCur, err := a.indexer.Transactions(ctx, q, in.ChQLParams, *cur, limit)
+	txns, nextCur, err := a.indexer.Transactions(ctx, q, in.ChQLParams, cur, limit)
 	if err != nil {
 		return result, errors.Wrap(err, "running tx query")
 	}
