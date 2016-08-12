@@ -13,11 +13,21 @@ import (
 )
 
 var fc *cos.FC
+var indexer Saver
 
-// Init sets the package level cos. If isManager is true,
+// A Saver is responsible for saving an annotated account object.
+// for indexing and retrieval.
+// If the Core is configured not to provide search services,
+// SaveAnnotatedAccount can be a no-op.
+type Saver interface {
+	SaveAnnotatedAccount(context.Context, string, map[string]interface{}) error
+}
+
+// Init sets the package level cos and query indexer.
 // Init registers all necessary callbacks for updating
 // application state with the cos.
-func Init(chain *cos.FC) {
+func Init(chain *cos.FC, ind Saver) {
+	indexer = ind
 	if fc == chain {
 		// Silently ignore duplicate calls.
 		return
@@ -33,6 +43,19 @@ func Init(chain *cos.FC) {
 	fc.AddBlockCallback(func(ctx context.Context, b *bc.Block) {
 		indexAccountUTXOs(ctx, b)
 	})
+}
+
+func indexAnnotatedAccount(ctx context.Context, a *Account) error {
+	if indexer == nil {
+		return nil
+	}
+	m := map[string]interface{}{
+		"id":     a.ID,
+		"tags":   a.Tags,
+		"xpubs":  a.XPubs,
+		"quorum": a.Quorum,
+	}
+	return indexer.SaveAnnotatedAccount(ctx, a.ID, m)
 }
 
 type output struct {

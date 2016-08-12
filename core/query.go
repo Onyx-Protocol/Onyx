@@ -6,7 +6,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/account"
 	"chain/core/query"
 	"chain/core/query/chql"
 	"chain/cos/bc"
@@ -127,48 +126,29 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 // listAccounts is an http handler for listing accounts matching
 // a ChQL query or index.
 //
-// TODO(jackson): This endpoint performs two separate db queries, one
-// for performing ChQL query filtering, the other for retrieving
-// account/signer data. We might want to refactor this, but for now
-// it maintains a nice boundary between the core/query and core/account
-// packages.
-//
 // POST /list-accounts
-func (a *api) listAccounts(ctx context.Context, in requestQuery) (result page, err error) {
+func (a *api) listAccounts(ctx context.Context, in requestQuery) (page, error) {
 	limit := defGenericPageSize
 
 	// Build the ChQL query
 	q, err := chql.Parse(in.ChQL)
 	if err != nil {
-		return result, err
+		return page{}, errors.Wrap(err, "parsing acc query")
 	}
 	cur := in.Cursor
 
 	// Use the ChQL query engine for querying account tags.
-	var accountIDs []string
-	var accountTags map[string]map[string]interface{}
-	accountIDs, accountTags, cur, err = a.indexer.AccountTags(ctx, q, in.ChQLParams, cur, limit)
+	accounts, cur, err := a.indexer.Accounts(ctx, q, in.ChQLParams, cur, limit)
 	if err != nil {
-		return result, errors.Wrap(err, "running acc query")
+		return page{}, errors.Wrap(err, "running acc query")
 	}
 
-	// Pull in the accounts by the IDs.
-	accounts, err := account.FindBatch(ctx, accountIDs...)
-	if err != nil {
-		return result, errors.Wrap(err, "retrieving account list")
-	}
-	items := make([]*account.Account, 0, len(accountIDs))
-	for _, id := range accountIDs {
-		account := accounts[id]
-		account.Tags = accountTags[id]
-		items = append(items, account)
-	}
-
+	// Pull in the accounts by the IDs
 	out := in
 	out.Cursor = cur
 	return page{
-		Items:    httpjson.Array(items),
-		LastPage: len(accountIDs) < limit,
+		Items:    httpjson.Array(accounts),
+		LastPage: len(accounts) < limit,
 		Query:    out,
 	}, nil
 }

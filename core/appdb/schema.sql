@@ -376,6 +376,16 @@ CREATE TABLE account_utxos (
 
 
 --
+-- Name: annotated_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE annotated_accounts (
+    id text NOT NULL,
+    data jsonb NOT NULL
+);
+
+
+--
 -- Name: annotated_assets; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -722,6 +732,14 @@ ALTER TABLE ONLY account_utxos
 
 
 --
+-- Name: annotated_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY annotated_accounts
+    ADD CONSTRAINT annotated_accounts_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: annotated_assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -942,6 +960,13 @@ CREATE INDEX account_utxos_reservation_id_idx ON account_utxos USING btree (rese
 
 
 --
+-- Name: annotated_accounts_jsondata_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX annotated_accounts_jsondata_idx ON annotated_accounts USING gin (data jsonb_path_ops);
+
+
+--
 -- Name: annotated_assets_jsondata_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1118,3 +1143,4 @@ insert into migrations (filename, hash) values ('2016-08-09.2.api.remove-users.s
 insert into migrations (filename, hash) values ('2016-08-11.0.query.unspent-outputs-flag.sql', '0af7543ce626d494f6a8b3fd0c22c6ffa5fad12f7c86381117dfe957b3b2e782');
 insert into migrations (filename, hash) values ('2016-08-11.1.account.reserve-utxo.sql', 'd551e173f1a4c255729186bc161682efd88e4cc953a501ea9d62c6d53688f9fa');
 insert into migrations (filename, hash) values ('2016-08-11.2.query.annotated-assets.sql', 'a53245f9d6c232dd2e9407772288bf30298ac59d565eb9f413c95ca884c0c60d');
+insert into migrations (filename, hash) values ('2016-08-12.0.query.annotated-accounts.sql', '9cf8f26521724d7f5f871bb5f1e19e16e6a2b069d680144729e6427677e4bb92');

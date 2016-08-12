@@ -88,8 +88,9 @@ func TestTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	asset.Init(fc, query.NewIndexer(db, fc), true)
-	account.Init(fc)
+	ind := query.NewIndexer(db, fc)
+	asset.Init(fc, ind, true)
+	account.Init(fc, ind)
 
 	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, nil)
 	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)

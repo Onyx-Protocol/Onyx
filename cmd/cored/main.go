@@ -195,7 +195,7 @@ func main() {
 	rpcclient.Init(*remoteGeneratorURL)
 
 	asset.Init(fc, indexer, *isManager)
-	account.Init(fc)
+	account.Init(fc, indexer)
 
 	var generatorConfig *generator.Config
 	if *isGenerator {

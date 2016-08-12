@@ -51,6 +51,12 @@ func Create(ctx context.Context, xpubs []string, quorum int, tags map[string]int
 	if err != nil {
 		return nil, errors.Wrap(err, "committing create account dbtx")
 	}
+
+	err = indexAnnotatedAccount(ctx, account)
+	if err != nil {
+		return nil, errors.Wrap(err, "indexing annotated account")
+	}
+
 	return account, nil
 }
 
@@ -75,8 +81,13 @@ func SetTags(ctx context.Context, id string, tags map[string]interface{}) (*Acco
 	if err != nil {
 		return nil, errors.Wrap(err, "committing create account dbtx")
 	}
-
 	acc.Tags = tags
+
+	err = indexAnnotatedAccount(ctx, acc)
+	if err != nil {
+		return nil, errors.Wrap(err, "indexing annotated account")
+	}
+
 	return acc, nil
 }
 

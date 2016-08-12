@@ -31,7 +31,7 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	}
 	indexer := NewIndexer(db, fc)
 	asset.Init(fc, indexer, true)
-	account.Init(fc)
+	account.Init(fc, indexer)
 	indexer.RegisterAnnotator(account.AnnotateTxs)
 	indexer.RegisterAnnotator(asset.AnnotateTxs)
 	localSigner := blocksigner.New(testutil.TestPrv, db, fc)
