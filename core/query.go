@@ -9,6 +9,7 @@ import (
 	"chain/core/account"
 	"chain/core/query"
 	"chain/core/query/chql"
+	"chain/cos/bc"
 	"chain/errors"
 	"chain/net/http/httpjson"
 )
@@ -70,7 +71,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 		return result, fmt.Errorf("cannot provide both index and query")
 	}
 	if in.EndTimeMS == 0 {
-		in.EndTimeMS = uint64(time.Now().UnixNano()) / uint64(time.Millisecond)
+		in.EndTimeMS = bc.Millis(time.Now())
 	}
 
 	var (
@@ -85,7 +86,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 			return result, err
 		}
 		if idx == nil {
-			return result, fmt.Errorf("Unknown transaction index %q", in.Index)
+			return result, fmt.Errorf("unknown transaction index %q", in.Index)
 		}
 		q = idx.Query
 	} else {
@@ -172,6 +173,44 @@ func (a *api) listAccounts(ctx context.Context, in requestQuery) (result page, e
 	}, nil
 }
 
+// POST /list-balances
+func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, err error) {
+	if in.Index != "" && in.ChQL != "" {
+		return result, fmt.Errorf("cannot provide both index and query")
+	}
+	if in.TimestampMS == 0 {
+		in.TimestampMS = bc.Millis(time.Now())
+	}
+
+	var q chql.Query
+	if in.Index != "" {
+		idx, err := a.indexer.GetIndex(ctx, in.Index, query.IndexTypeBalance)
+		if err != nil {
+			return result, err
+		}
+		if idx == nil {
+			return result, fmt.Errorf("unknown balance index %q", in.Index)
+		}
+		q = idx.Query
+	} else {
+		q, err = chql.Parse(in.ChQL)
+		if err != nil {
+			return result, err
+		}
+	}
+
+	// TODO(jackson): paginate this endpoint.
+	balances, err := a.indexer.Balances(ctx, q, in.ChQLParams, in.TimestampMS)
+	if err != nil {
+		return result, err
+	}
+
+	result.Items = httpjson.Array(balances)
+	result.LastPage = true
+	result.Query = in
+	return result, nil
+}
+
 // POST /list-unspent-outputs
 func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result page, err error) {
 	if in.Index != "" && in.ChQL != "" {
@@ -185,10 +224,10 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 			return result, err
 		}
 		if idx == nil {
-			return result, fmt.Errorf("Unknown balance index %q", in.Index)
+			return result, fmt.Errorf("unknown balance index %q", in.Index)
 		}
 		if !idx.Unspents {
-			return result, fmt.Errorf("Unspents must be true")
+			return result, fmt.Errorf("unspents must be true")
 		}
 		q = idx.Query
 	} else {

@@ -117,6 +117,7 @@ func (a *api) handler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/list-accounts", a.listAccounts)
 	h.HandleFunc("POST", "/list-assets", a.listAssets)
 	h.HandleFunc("POST", "/list-transactions", a.listTransactions)
+	h.HandleFunc("POST", "/list-balances", a.listBalances)
 	h.HandleFunc("POST", "/list-unspent-outputs", a.listUnspentOutputs)
 
 	// V3 DEPRECATED
