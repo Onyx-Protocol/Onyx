@@ -23,8 +23,8 @@ const (
 )
 
 const (
-	metadataMaxByteLength = 500000 // 500 kb
-	witnessMaxByteLength  = 500000 // 500 kb
+	refDataMaxByteLength = 500000 // 500 kb
+	witnessMaxByteLength = 500000 // 500 kb
 )
 
 // Tx holds a transaction along with its hash.
@@ -69,12 +69,12 @@ const (
 // Most users will want to use Tx instead;
 // it includes the hash.
 type TxData struct {
-	Version  uint32
-	Inputs   []*TxInput
-	Outputs  []*TxOutput
-	MinTime  uint64
-	MaxTime  uint64
-	Metadata []byte
+	Version       uint32
+	Inputs        []*TxInput
+	Outputs       []*TxOutput
+	MinTime       uint64
+	MaxTime       uint64
+	ReferenceData []byte
 }
 
 // Outpoint defines a bitcoin data type that is used to track previous
@@ -157,7 +157,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 
 	tx.MinTime, _ = blockchain.ReadUvarint(r)
 	tx.MaxTime, _ = blockchain.ReadUvarint(r)
-	tx.Metadata, err = blockchain.ReadBytes(r, metadataMaxByteLength)
+	tx.ReferenceData, err = blockchain.ReadBytes(r, refDataMaxByteLength)
 	return err
 }
 
@@ -168,7 +168,7 @@ func (p *Outpoint) readFrom(r io.Reader) {
 	p.Index = uint32(index)
 }
 
-// Hash computes the hash of the transaction with metadata fields
+// Hash computes the hash of the transaction with reference data fields
 // replaced by their hashes,
 // and stores the result in Hash.
 func (tx *TxData) Hash() Hash {
@@ -309,7 +309,7 @@ func (s *SigHasher) Hash(idx int, hashType SigHashType) (hash Hash) {
 	w.Write(outputsHash[:])
 	blockchain.WriteUvarint(w, s.tx.MinTime)
 	blockchain.WriteUvarint(w, s.tx.MaxTime)
-	writeMetadata(w, s.tx.Metadata, 0)
+	writeRefData(w, s.tx.ReferenceData, 0)
 	w.Write([]byte{byte(hashType)})
 
 	h.Sum(hash[:0])
@@ -349,7 +349,7 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) {
 
 	blockchain.WriteUvarint(w, tx.MinTime)
 	blockchain.WriteUvarint(w, tx.MaxTime)
-	writeMetadata(w, tx.Metadata, serflags)
+	writeRefData(w, tx.ReferenceData, serflags)
 }
 
 // String returns the Outpoint in the human-readable form "hash:index".
@@ -386,7 +386,7 @@ func (a AssetAmount) writeTo(w io.Writer) {
 }
 
 // assumes w has sticky errors
-func writeMetadata(w io.Writer, data []byte, serflags byte) {
+func writeRefData(w io.Writer, data []byte, serflags byte) {
 	if serflags&SerMetadata != 0 {
 		blockchain.WriteBytes(w, data)
 	} else {

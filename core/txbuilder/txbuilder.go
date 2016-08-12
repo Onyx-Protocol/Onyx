@@ -33,11 +33,11 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map) (
 	}
 
 	if len(ref) != 0 {
-		if len(tx.Metadata) != 0 && !bytes.Equal(tx.Metadata, ref) {
-			return nil, errors.WithDetail(ErrBadBuildRequest, "transaction metadata does not match previous template's metadata")
+		if len(tx.ReferenceData) != 0 && !bytes.Equal(tx.ReferenceData, ref) {
+			return nil, errors.WithDetail(ErrBadBuildRequest, "transaction reference data does not match previous template's reference data")
 		}
 
-		tx.Metadata = ref
+		tx.ReferenceData = ref
 	}
 
 	var tplInputs []*Input

@@ -49,7 +49,7 @@ func (to *TxOutput) readFrom(r io.Reader) (err error) {
 	if err != nil {
 		return err
 	}
-	to.ReferenceData, err = blockchain.ReadBytes(r, metadataMaxByteLength)
+	to.ReferenceData, err = blockchain.ReadBytes(r, refDataMaxByteLength)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (oc *OutputCommitment) readFrom(r io.Reader, assetVersion uint32) (err erro
 func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
 	blockchain.WriteUvarint(w, uint64(to.AssetVersion))
 	to.OutputCommitment.writeTo(w, to.AssetVersion)
-	writeMetadata(w, to.ReferenceData, serflags)
+	writeRefData(w, to.ReferenceData, serflags)
 	blockchain.WriteBytes(w, nil) // empty output witness
 }
 

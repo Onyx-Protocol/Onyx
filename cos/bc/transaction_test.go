@@ -29,12 +29,12 @@ func TestTransaction(t *testing.T) {
 	}{
 		{
 			tx: NewTx(TxData{
-				Version:  1,
-				Inputs:   nil,
-				Outputs:  nil,
-				MinTime:  0,
-				MaxTime:  0,
-				Metadata: nil,
+				Version:       1,
+				Inputs:        nil,
+				Outputs:       nil,
+				MinTime:       0,
+				MaxTime:       0,
+				ReferenceData: nil,
 			}),
 			hex: ("07" + // serflags
 				"01" + // transaction version
@@ -55,9 +55,9 @@ func TestTransaction(t *testing.T) {
 				Outputs: []*TxOutput{
 					NewTxOutput(AssetID{}, 1000000000000, []byte{1}, []byte("output")),
 				},
-				MinTime:  0,
-				MaxTime:  0,
-				Metadata: []byte("issuance"),
+				MinTime:       0,
+				MaxTime:       0,
+				ReferenceData: []byte("issuance"),
 			}),
 			hex: ("07" + // serflags
 				"01" + // transaction version
@@ -100,9 +100,9 @@ func TestTransaction(t *testing.T) {
 					NewTxOutput(ComputeAssetID(issuanceScript, genesisHash, 1), 600000000000, []byte{1}, nil),
 					NewTxOutput(ComputeAssetID(issuanceScript, genesisHash, 1), 400000000000, []byte{2}, nil),
 				},
-				MinTime:  1492590000,
-				MaxTime:  1492590591,
-				Metadata: []byte("distribution"),
+				MinTime:       1492590000,
+				MaxTime:       1492590591,
+				ReferenceData: []byte("distribution"),
 			}),
 			hex: ("07" + // serflags
 				"01" + // transaction version
@@ -258,7 +258,7 @@ func TestTxHashForSig(t *testing.T) {
 		Outputs: []*TxOutput{
 			NewTxOutput(assetID, 1000000000000, []byte{3}, nil),
 		},
-		Metadata: []byte("transfer"),
+		ReferenceData: []byte("transfer"),
 	}
 	cases := []struct {
 		idx      int

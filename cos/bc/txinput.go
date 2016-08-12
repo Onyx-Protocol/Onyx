@@ -155,7 +155,7 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 			t.InputCommitment = sc
 		}
 	}
-	t.ReferenceData, _ = blockchain.ReadBytes(r, metadataMaxByteLength)
+	t.ReferenceData, _ = blockchain.ReadBytes(r, refDataMaxByteLength)
 	inputWitness, err := blockchain.ReadBytes(r, witnessMaxByteLength)
 	if err != nil {
 		return err
@@ -181,7 +181,7 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 func (t TxInput) writeTo(w io.Writer, serflags uint8) {
 	blockchain.WriteUvarint(w, uint64(t.AssetVersion))
 	t.InputCommitment.writeTo(w, t.AssetVersion, serflags)
-	writeMetadata(w, t.ReferenceData, serflags)
+	writeRefData(w, t.ReferenceData, serflags)
 	if serflags&SerWitness != 0 {
 		blockchain.WriteBytes(w, t.inputWitnessBytes())
 	}
@@ -266,5 +266,5 @@ func (ic IssuanceInputCommitment) writeTo(w io.Writer, _ uint32, serflags uint8)
 	blockchain.WriteUvarint(&b, ic.Amount)
 	blockchain.WriteUvarint(&b, uint64(ic.VMVersion))
 	blockchain.WriteBytes(&b, ic.IssuanceProgram)
-	writeMetadata(w, b.Bytes(), serflags)
+	writeRefData(w, b.Bytes(), serflags)
 }

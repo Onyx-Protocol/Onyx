@@ -84,7 +84,7 @@ func (b *Block) writeTo(w io.Writer, forSigning bool) {
 // NewBlockVersion is the version to use when creating new blocks.
 const NewBlockVersion = 1
 
-// BlockHeader describes necessary metadata of the block.
+// BlockHeader describes necessary data of the block.
 type BlockHeader struct {
 	// Version of the block.
 	Version uint32

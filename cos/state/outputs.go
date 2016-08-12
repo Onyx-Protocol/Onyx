@@ -19,7 +19,7 @@ func NewOutput(o bc.TxOutput, p bc.Outpoint) *Output {
 
 // Prevout returns the Output consumed by the provided tx input. It
 // only includes the output data that is embedded within inputs (ex,
-// excludes metadata).
+// excludes reference data).
 func Prevout(in *bc.TxInput) *Output {
 	assetAmount := in.AssetAmount()
 	t := bc.NewTxOutput(assetAmount.AssetID, assetAmount.Amount, in.ControlProgram(), nil)

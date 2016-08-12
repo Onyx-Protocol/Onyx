@@ -14,7 +14,7 @@ func transactionObject(orig *bc.Tx, b *bc.Block, indexInBlock uint32) map[string
 		"block_id":       b.Hash().String(),
 		"block_height":   b.Height,
 		"position":       indexInBlock,
-		"reference_data": unmarshalReferenceData(orig.Metadata),
+		"reference_data": unmarshalReferenceData(orig.ReferenceData),
 	}
 
 	inputs := make([]interface{}, 0, len(orig.Inputs))
