@@ -5,10 +5,15 @@ import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class Balance {
-    public static class Page extends BasePage<Map<String, Object>> {
+    @SerializedName("group_by")
+    public List<String> groupBy;
+    public Integer amount;
+
+    public static class Page extends BasePage<Balance> {
         public Page next(Context ctx)
         throws ChainException {
             return ctx.request("list-balances", this.query, Page.class);
