@@ -79,6 +79,8 @@ var subcommands = map[string]command{
 	"pub":         command{pub, "get pub key from prv, or xpub from xprv", "PRV/XPRV"},
 	"script":      command{script, "hex <-> opcodes", "INPUT"},
 	"sha3":        command{sha3Cmd, "produce sha3 hash", "INPUT"},
+	"sha512":      command{sha512Cmd, "produce sha512 hash", "INPUT"},
+	"sha512alt":   command{sha512alt, "produce sha512alt hash", "INPUT"},
 	"sign":        command{sign, "sign, using hex PRV or XPRV, the given hex MSG", "PRV/XPRV MSG"},
 	"tx":          command{tx, "decode and pretty-print a transaction", "TX"},
 	"uvarint":     command{uvarint, "decimal <-> hex", "[-from|-to] VAL"},
@@ -140,8 +142,12 @@ func input(args []string, n int, usedStdin bool) (string, bool) {
 	return string(b), true
 }
 
+func decodeHex(s string) ([]byte, error) {
+	return hex.DecodeString(strings.TrimSpace(s))
+}
+
 func mustDecodeHex(s string) []byte {
-	res, err := hex.DecodeString(s)
+	res, err := decodeHex(s)
 	if err != nil {
 		errorf("error decoding hex: %s", err)
 	}
@@ -150,7 +156,7 @@ func mustDecodeHex(s string) []byte {
 
 func mustDecodeHash(s string) bc.Hash {
 	var h bc.Hash
-	err := h.UnmarshalText([]byte(s))
+	err := h.UnmarshalText([]byte(strings.TrimSpace(s)))
 	if err != nil {
 		errorf("error decoding hash: %s", err)
 	}
@@ -234,7 +240,7 @@ func genxprv(_ []string) {
 
 func hexCmd(args []string) {
 	inp, _ := input(args, 0, false)
-	b, err := hex.DecodeString(inp)
+	b, err := decodeHex(inp)
 	if err == nil {
 		fmt.Println(string(b))
 	} else {
@@ -267,7 +273,7 @@ func pub(args []string) {
 
 func script(args []string) {
 	inp, _ := input(args, 0, false)
-	b, err := hex.DecodeString(inp)
+	b, err := decodeHex(inp)
 	if err == nil {
 		dis, err := txscript.DisasmString(b)
 		if err == nil {
@@ -291,6 +297,23 @@ func sha3Cmd(args []string) {
 	b := mustDecodeHex(inp)
 	h := sha3.Sum256(b)
 	fmt.Println(hex.EncodeToString(h[:]))
+}
+
+func sha512Cmd(args []string) {
+	inp, _ := input(args, 0, false)
+	b := mustDecodeHex(inp)
+	h := sha512.Sum512(b)
+	fmt.Println(hex.EncodeToString(h[:]))
+}
+
+func sha512alt(args []string) {
+	inp, _ := input(args, 0, false)
+	b := mustDecodeHex(inp)
+	h := sha512.Sum512(b)
+	h[0] &= 248
+	h[31] &= 127
+	h[31] |= 64
+	fmt.Println(hex.EncodeToString(h[:32]))
 }
 
 func sign(args []string) {
