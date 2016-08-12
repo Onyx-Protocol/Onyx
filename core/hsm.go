@@ -3,6 +3,7 @@ package core
 import (
 	"golang.org/x/net/context"
 
+	"chain/core/mockhsm"
 	"chain/core/txbuilder"
 	"chain/crypto/ed25519/hd25519"
 	"chain/encoding/json"
@@ -73,5 +74,9 @@ func (a *api) mockhsmSignTemplate(ctx context.Context, sigComponent *txbuilder.S
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing xpub")
 	}
-	return a.hsm.Sign(ctx, xpub, sig.DerivationPath, sigComponent.SignatureData[:])
+	sigBytes, err := a.hsm.Sign(ctx, xpub, sig.DerivationPath, sigComponent.SignatureData[:])
+	if err == mockhsm.ErrNoKey {
+		return nil, nil
+	}
+	return sigBytes, err
 }

@@ -154,6 +154,9 @@ func Sign(ctx context.Context, tpl *Template, signFn func(context.Context, *SigS
 					continue
 				}
 				for s, sig := range component.Signatures {
+					if len(sig.Bytes) > 0 {
+						continue
+					}
 					sigBytes, err := signFn(ctx, component, sig)
 					if err != nil {
 						return errors.Wrapf(err, "computing signature for input %d, sigscript component %d, sig %d", i, c, s)

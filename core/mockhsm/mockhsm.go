@@ -1,7 +1,9 @@
 package mockhsm
 
 import (
+	"database/sql"
 	"encoding/hex"
+	"errors"
 
 	"golang.org/x/crypto/sha3"
 	"golang.org/x/net/context"
@@ -65,9 +67,14 @@ func (h *HSM) ListKeys(ctx context.Context, cursor string, limit int) ([]*hd2551
 	return xpubs, newCursor, nil
 }
 
+var ErrNoKey = errors.New("key not found")
+
 func (h *HSM) load(ctx context.Context, xpub *hd25519.XPub) (*hd25519.XPrv, error) {
 	var b []byte
 	err := h.db.QueryRow(ctx, "SELECT xprv FROM mockhsm WHERE xpub = $1", xpub.Bytes()).Scan(&b)
+	if err == sql.ErrNoRows {
+		return nil, ErrNoKey
+	}
 	if err != nil {
 		return nil, err
 	}
