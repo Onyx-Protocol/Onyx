@@ -124,6 +124,8 @@ func main() {
 	chainlog.SetPrefix(append([]interface{}{"app", "api", "target", *target, "buildtag", buildTag, "processID", processID}, race...)...)
 	chainlog.SetOutput(logWriter())
 
+	requireSecretInProd(*apiSecretToken)
+
 	keyBytes, err := hex.DecodeString(*blockKey)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
