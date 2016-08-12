@@ -20,33 +20,6 @@ type assetResponse struct {
 	Tags            map[string]interface{} `json:"tags"`
 }
 
-// POST /list-assets
-func (a *api) listAssets(ctx context.Context, query requestQuery) (page, error) {
-	limit := defAccountPageSize
-
-	assets, cursor, err := asset.List(ctx, query.Cursor, limit)
-	if err != nil {
-		return page{}, err
-	}
-
-	var items []assetResponse
-	for _, asset := range assets {
-		items = append(items, assetResponse{
-			ID:              asset.AssetID,
-			IssuanceProgram: asset.IssuanceProgram,
-			Definition:      asset.Definition,
-			Tags:            asset.Tags,
-		})
-	}
-
-	query.Cursor = cursor
-	return page{
-		Items:    httpjson.Array(items),
-		LastPage: len(assets) < limit,
-		Query:    query,
-	}, nil
-}
-
 // POST /update-asset
 func setAssetTags(ctx context.Context, in struct {
 	AssetID string `json:"asset_id"`

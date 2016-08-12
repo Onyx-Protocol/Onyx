@@ -49,9 +49,10 @@ func NewIndexer(db pg.DB, fc *cos.FC) *Indexer {
 
 // Indexer creates, updates and queries against ChQL indexes.
 type Indexer struct {
-	db      pg.DB
-	mu      sync.Mutex // protects indexes
-	indexes map[string]*Index
+	db         pg.DB
+	mu         sync.Mutex // protects indexes
+	indexes    map[string]*Index
+	annotators []Annotator
 }
 
 // BeginIndexing must be called before blocks are processed to refresh

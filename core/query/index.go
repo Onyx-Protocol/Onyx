@@ -6,12 +6,21 @@ import (
 
 	"golang.org/x/net/context"
 
-	"chain/core/account"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
 )
+
+// Annotator describes a function capable of adding annotations
+// to transactions, inputs and outputs.
+type Annotator func(ctx context.Context, txs []map[string]interface{}) error
+
+// RegisterAnnotator adds an additional annotator capable of mutating
+// the annotated transaction object.
+func (ind *Indexer) RegisterAnnotator(annotator Annotator) {
+	ind.annotators = append(ind.annotators, annotator)
+}
 
 // indexBlockCallback is registered as a block callback on the cos.FC. It
 // saves all annotated transactions to the database and indexes them according
@@ -59,13 +68,11 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[
 
 	dbctx := pg.NewContext(ctx, ind.db)
 
-	// TODO(bobg): Rather than call out to specific annotaters here,
-	// creating dependencies on potentially a lot of packages,
-	// consider allowing other packages to register their annotaters
-	// as callbacks.
-	err := account.AnnotateTxs(dbctx, annotatedTxsDecoded)
-	if err != nil {
-		return nil, errors.Wrap(err, "adding account annotations")
+	for _, annotator := range ind.annotators {
+		err := annotator(dbctx, annotatedTxsDecoded)
+		if err != nil {
+			return nil, errors.Wrap(err, "adding external annotations")
+		}
 	}
 
 	for _, decoded := range annotatedTxsDecoded {
@@ -82,7 +89,7 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[
 		SELECT $1, unnest($2::integer[]), unnest($3::text[]), unnest($4::jsonb[])
 		ON CONFLICT (block_height, tx_pos) DO NOTHING;
 	`
-	_, err = ind.db.Exec(ctx, insertQ, b.Height, positions, hashes, annotatedTxs)
+	_, err := ind.db.Exec(ctx, insertQ, b.Height, positions, hashes, annotatedTxs)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting annotated_txs to db")
 	}

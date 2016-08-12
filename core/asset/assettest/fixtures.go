@@ -106,7 +106,7 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 	if err != nil {
 		return nil, nil, err
 	}
-	asset.Init(fc, true)
+	asset.Init(fc, nil, true)
 	account.Init(fc)
 	privkey := testutil.TestPrv
 	localSigner := blocksigner.New(privkey, pg.FromContext(ctx), fc)

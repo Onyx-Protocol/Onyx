@@ -180,6 +180,10 @@ func main() {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 
+	// Setup the transaction query indexer to index every transaction.
+	indexer := query.NewIndexer(db, fc)
+	indexer.RegisterAnnotator(account.AnnotateTxs)
+
 	var localSigner *blocksigner.Signer
 	if *isSigner {
 		localSigner = blocksigner.New(privKey, db, fc)
@@ -187,7 +191,7 @@ func main() {
 
 	rpcclient.Init(*remoteGeneratorURL)
 
-	asset.Init(fc, *isManager)
+	asset.Init(fc, indexer, *isManager)
 	account.Init(fc)
 
 	var generatorConfig *generator.Config
@@ -217,9 +221,6 @@ func main() {
 			FC:            fc,
 		}
 	}
-
-	// Setup the transaction query indexer to index every transaction.
-	indexer := query.NewIndexer(db, fc)
 
 	// Note, it's important for any services that will install blockchain
 	// callbacks to be initialized before leader.Run() and the http server,

@@ -11,6 +11,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/asset/assettest"
+	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
 	"chain/database/pg"
@@ -87,7 +88,7 @@ func TestTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	asset.Init(fc, true)
+	asset.Init(fc, query.NewIndexer(db, fc), true)
 	account.Init(fc)
 
 	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, nil)

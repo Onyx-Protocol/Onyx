@@ -44,9 +44,11 @@ func (i *Indexer) AccountTags(ctx context.Context, q chql.Query, vals []interfac
 		}
 
 		var tags map[string]interface{}
-		err = json.Unmarshal(rawTags, &tags)
-		if err != nil {
-			return nil, nil, "", err
+		if len(rawTags) > 0 {
+			err = json.Unmarshal(rawTags, &tags)
+			if err != nil {
+				return nil, nil, "", err
+			}
 		}
 
 		cur = accID

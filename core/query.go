@@ -217,3 +217,33 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 		Query:    outQuery,
 	}, nil
 }
+
+// listAssets is an http handler for listing assets matching
+// a ChQL query or index.
+//
+// POST /list-assets
+func (a *api) listAssets(ctx context.Context, in requestQuery) (page, error) {
+	limit := defGenericPageSize
+
+	// Build the ChQL query
+	q, err := chql.Parse(in.ChQL)
+	if err != nil {
+		return page{}, err
+	}
+	cur := in.Cursor
+
+	// Use the ChQL query engine for querying asset tags.
+	var assets []map[string]interface{}
+	assets, cur, err = a.indexer.Assets(ctx, q, in.ChQLParams, cur, limit)
+	if err != nil {
+		return page{}, errors.Wrap(err, "running asset query")
+	}
+
+	out := in
+	out.Cursor = cur
+	return page{
+		Items:    httpjson.Array(assets),
+		LastPage: len(assets) < limit,
+		Query:    out,
+	}, nil
+}

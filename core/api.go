@@ -96,7 +96,6 @@ func (a *api) handler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/archive-account", archiveAccount)
 
 	// Assets
-	h.HandleFunc("POST", "/list-assets", a.listAssets)
 	h.HandleFunc("POST", "/create-asset", a.createAsset)
 	h.HandleFunc("POST", "/set-asset-tags", setAssetTags)
 	h.HandleFunc("POST", "/archive-asset", archiveAsset)
@@ -116,6 +115,7 @@ func (a *api) handler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/create-index", a.createIndex)
 	h.HandleFunc("POST", "/list-indexes", a.listIndexes)
 	h.HandleFunc("POST", "/list-accounts", a.listAccounts)
+	h.HandleFunc("POST", "/list-assets", a.listAssets)
 	h.HandleFunc("POST", "/list-transactions", a.listTransactions)
 	h.HandleFunc("POST", "/list-unspent-outputs", a.listUnspentOutputs)
 
