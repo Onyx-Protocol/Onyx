@@ -3,18 +3,25 @@ package asset
 import (
 	"golang.org/x/net/context"
 
-	"chain/core/query"
 	"chain/cos"
 	"chain/cos/bc"
 )
 
 var fc *cos.FC
-var indexer *query.Indexer
+var indexer Saver
+
+// A Saver is responsible for saving an annotated asset object
+// for indexing and retrieval.
+// If the Core is configured not to provide search services,
+// SaveAnnotatedAsset can be a no-op.
+type Saver interface {
+	SaveAnnotatedAsset(context.Context, bc.AssetID, map[string]interface{}) error
+}
 
 // Init sets the package level cos. If isManager is true,
 // Init registers all necessary callbacks for updating
 // application state with the cos.
-func Init(chain *cos.FC, ind *query.Indexer, isManager bool) {
+func Init(chain *cos.FC, ind Saver, isManager bool) {
 	indexer = ind
 	if fc == chain {
 		// Silently ignore duplicate calls.

@@ -3,8 +3,12 @@ package query
 import (
 	"reflect"
 	"testing"
+	"time"
+
+	"github.com/davecgh/go-spew/spew"
 
 	"chain/core/query/chql"
+	"chain/cos/bc"
 )
 
 func TestConstructBalancesQuery(t *testing.T) {
@@ -49,6 +53,114 @@ func TestConstructBalancesQuery(t *testing.T) {
 		}
 		if !reflect.DeepEqual(values, tc.wantValues) {
 			t.Errorf("case %d: got %#v, want %#v", i, values, tc.wantValues)
+		}
+	}
+}
+
+func TestQueryBalances(t *testing.T) {
+	type (
+		testcase struct {
+			query  string
+			values []interface{}
+			when   time.Time
+			want   []interface{}
+		}
+	)
+
+	ctx, indexer, time1, time2, acct1, acct2, asset1, asset2 := setupQueryTest(t)
+
+	want0 := interface{}(map[string]interface{}{"amount": uint64(0)})
+	want867 := interface{}(map[string]interface{}{"amount": uint64(867)})
+
+	cases := []testcase{
+		{
+			query:  "asset_id = $1",
+			values: []interface{}{asset1.AssetID.String()},
+			when:   time1,
+			want:   []interface{}{want0},
+		},
+		{
+			query:  "asset_tags.currency = $1",
+			values: []interface{}{"USD"},
+			when:   time1,
+			want:   []interface{}{want0},
+		},
+		{
+			query:  "asset_id = $1",
+			values: []interface{}{asset1.AssetID.String()},
+			when:   time2,
+			want:   []interface{}{want867},
+		},
+		{
+			query:  "asset_tags.currency = $1",
+			values: []interface{}{"USD"},
+			when:   time2,
+			want:   []interface{}{want867},
+		},
+		{
+			query:  "asset_id = $1",
+			values: []interface{}{asset2.AssetID.String()},
+			when:   time1,
+			want:   []interface{}{want0},
+		},
+		{
+			query:  "asset_id = $1",
+			values: []interface{}{asset2.AssetID.String()},
+			when:   time2,
+			want:   []interface{}{want0},
+		},
+		{
+			query:  "account_id = $1",
+			values: []interface{}{acct1.ID},
+			when:   time1,
+			want:   []interface{}{want0},
+		},
+		{
+			query:  "account_id = $1",
+			values: []interface{}{acct1.ID},
+			when:   time2,
+			want:   []interface{}{want867},
+		},
+		{
+			query:  "account_id = $1",
+			values: []interface{}{acct2.ID},
+			when:   time1,
+			want:   []interface{}{want0},
+		},
+		{
+			query:  "account_id = $1",
+			values: []interface{}{acct2.ID},
+			when:   time2,
+			want:   []interface{}{want0},
+		},
+		{
+			query:  "asset_id = $1 AND account_id = $2",
+			values: []interface{}{asset1.AssetID.String(), acct1.ID},
+			when:   time2,
+			want:   []interface{}{want867},
+		},
+		{
+			query:  "asset_id = $1 AND account_id = $2",
+			values: []interface{}{asset2.AssetID.String(), acct1.ID},
+			when:   time2,
+			want:   []interface{}{want0},
+		},
+	}
+
+	for i, tc := range cases {
+		chql, err := chql.Parse(tc.query)
+		if err != nil {
+			t.Fatal(err)
+		}
+		balances, err := indexer.Balances(ctx, chql, tc.values, bc.Millis(tc.when))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(balances) != len(tc.want) {
+			t.Fatalf("case %d: got %d balances, want %d", i, len(balances), len(tc.want))
+		}
+		if !reflect.DeepEqual(balances, tc.want) {
+			t.Errorf("case %d: got:\n%s\nwant:\n%s", i, spew.Sdump(balances), spew.Sdump(tc.want))
 		}
 	}
 }
