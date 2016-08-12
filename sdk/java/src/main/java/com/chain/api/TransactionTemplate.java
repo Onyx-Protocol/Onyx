@@ -5,10 +5,7 @@ import com.chain.http.Context;
 
 import java.lang.reflect.Type;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
@@ -77,7 +74,8 @@ public class TransactionTemplate {
     public static class Action {
         public String type;
         public HashMap<String, Object> params;
-        public byte[] referenceData;
+        @SerializedName("reference_data")
+        public Map<String, Object> referenceData;
 
         public Action() {
             this.params = new HashMap();
@@ -93,7 +91,7 @@ public class TransactionTemplate {
             return this;
         }
 
-        public Action setReferenceData(byte[] referenceData) {
+        public Action setReferenceData(Map<String, Object> referenceData) {
             this.referenceData = referenceData;
             return this;
         }
@@ -102,7 +100,8 @@ public class TransactionTemplate {
 
     public static class Builder {
         private List<Action> actions;
-        private byte[] referenceData;
+        @SerializedName("reference_data")
+        private Map<String, Object> referenceData;
 
         public TransactionTemplate build(Context ctx)
                 throws ChainException {
@@ -119,7 +118,7 @@ public class TransactionTemplate {
             return this;
         }
 
-        public Builder addAction(Action action, byte[] referenceData) {
+        public Builder addAction(Action action, Map<String, Object> referenceData) {
             if (referenceData != null) {
                 action.setReferenceData(referenceData);
             }
@@ -128,12 +127,12 @@ public class TransactionTemplate {
             return this;
         }
 
-        public Builder setReferenceData(byte[] referenceData) {
+        public Builder setReferenceData(Map<String, Object> referenceData) {
             this.referenceData = referenceData;
             return this;
         }
 
-        public Builder issue(String assetId, BigInteger amount, byte[] referenceData) {
+        public Builder issue(String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
                     .setType("issue")
                     .setParameter("asset_id", assetId)
@@ -142,7 +141,7 @@ public class TransactionTemplate {
             return this.addAction(action, referenceData);
         }
 
-         public Builder controlWithAccount(String accountId, String assetId, BigInteger amount, byte[] referenceData) {
+         public Builder controlWithAccount(String accountId, String assetId, BigInteger amount, Map<String, Object> referenceData) {
              Action action = new Action()
                      .setType("control_account")
                      .setParameter("account_id", accountId)
@@ -152,7 +151,7 @@ public class TransactionTemplate {
              return this.addAction(action, referenceData);
         }
 
-        public Builder controlWithProgram(ControlProgram program, String assetId, BigInteger amount, byte[] referenceData) {
+        public Builder controlWithProgram(ControlProgram program, String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
                     .setType("control_program")
                     .setParameter("control_program", program.program)
@@ -163,7 +162,7 @@ public class TransactionTemplate {
         }
 
 
-        public Builder spendFromAccount(String accountId, String assetId, BigInteger amount, byte[] referenceData) {
+        public Builder spendFromAccount(String accountId, String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
                     .setType("spend_account_unspent_output_selector")
                     .setParameter("account_id", accountId)
@@ -173,7 +172,7 @@ public class TransactionTemplate {
             return this.addAction(action, referenceData);
         }
 
-        public Builder spendUnspentOutput(UnspentOutput uo, byte[] referenceData) {
+        public Builder spendUnspentOutput(UnspentOutput uo, Map<String, Object> referenceData) {
             Action action = new Action()
                     .setType("spend_account_unspent_output_selector")
                     .setParameter("transaction_hash", uo.pointer.transactionId)
@@ -184,7 +183,7 @@ public class TransactionTemplate {
             return this.addAction(action, referenceData);
         }
 
-        public Builder spendUnspentOutputs(List<UnspentOutput> uos, byte[] referenceData) {
+        public Builder spendUnspentOutputs(List<UnspentOutput> uos, Map<String, Object> referenceData) {
             for (UnspentOutput uo : uos) {
                 this.spendUnspentOutput(uo, referenceData);
             }
@@ -192,7 +191,7 @@ public class TransactionTemplate {
             return this;
         }
 
-        public Builder retire(String assetId, BigInteger amount, byte[] referenceData) {
+        public Builder retire(String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
                     .setType("control_program")
                     .setParameter("control_program", ControlProgram.retireProgram())
