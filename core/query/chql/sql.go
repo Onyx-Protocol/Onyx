@@ -66,7 +66,11 @@ func asSQL(e expr, dataColumn string, values []interface{}) (exp SQLExpr, err er
 		Values: params,
 	}
 	for _, b := range bindings {
-		exp.GroupBy = append(exp.GroupBy, b.path)
+		revpath := make([]string, 0, len(b.path))
+		for i := len(b.path) - 1; i >= 0; i-- {
+			revpath = append(revpath, b.path[i])
+		}
+		exp.GroupBy = append(exp.GroupBy, revpath)
 	}
 	return exp, nil
 }

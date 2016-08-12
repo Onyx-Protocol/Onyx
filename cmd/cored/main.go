@@ -183,6 +183,7 @@ func main() {
 	// Setup the transaction query indexer to index every transaction.
 	indexer := query.NewIndexer(db, fc)
 	indexer.RegisterAnnotator(account.AnnotateTxs)
+	indexer.RegisterAnnotator(asset.AnnotateTxs)
 
 	var localSigner *blocksigner.Signer
 	if *isSigner {
