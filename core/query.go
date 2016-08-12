@@ -69,8 +69,8 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 	if in.Index != "" && in.ChQL != "" {
 		return result, fmt.Errorf("cannot provide both index and query")
 	}
-	if in.EndTime == 0 {
-		in.EndTime = uint64(time.Now().UnixNano()) / uint64(time.Millisecond)
+	if in.EndTimeMS == 0 {
+		in.EndTimeMS = uint64(time.Now().UnixNano()) / uint64(time.Millisecond)
 	}
 
 	var (
