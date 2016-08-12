@@ -34,7 +34,9 @@ func asSQL(e expr, dataColumn string, values []interface{}) (exp SQLExpr, err er
 
 	pvals := map[int]interface{}{}
 	for i, v := range values {
-		pvals[i+1] = v
+		if v != nil {
+			pvals[i+1] = v
+		}
 	}
 
 	matches, bindings := matchingObjects(e, pvals)

@@ -6,7 +6,7 @@ import (
 )
 
 func TestAsSQL(t *testing.T) {
-	placeholderValues := []interface{}{"foo", "bar", "baz"}
+	placeholderValues := []interface{}{"foo", "bar", "baz", nil, nil}
 	testCases := []struct {
 		q     string
 		conds []interface{}
@@ -42,6 +42,14 @@ func TestAsSQL(t *testing.T) {
 		{
 			q:     `inputs(action = 'issue')`,
 			conds: []interface{}{`{"inputs":[{"action":"issue"}]}`},
+		},
+		{
+			q:     `asset_id = $3 AND account_id = $4`,
+			conds: []interface{}{`{"asset_id":"baz"}`},
+		},
+		{
+			q:     `asset_id = $4 AND account_id = $5`,
+			conds: []interface{}{`{}`},
 		},
 		{
 			q: `inputs((a = $1 OR b = $2) AND (c = $3 OR d = 'fuzz'))`,

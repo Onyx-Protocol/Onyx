@@ -26,6 +26,12 @@ func TestConstructBalancesQuery(t *testing.T) {
 			wantValues: []interface{}{`{"account_id":"abc"}`, now},
 		},
 		{
+			query:      "asset_id = $1 AND account_id = 'abc'",
+			values:     []interface{}{nil},
+			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0), "data"->>'asset_id' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
+			wantValues: []interface{}{`{"account_id":"abc"}`, now},
+		},
+		{
 			query:      "asset_id = $1 AND account_id = $2",
 			values:     []interface{}{"foo", "bar"},
 			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0) FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8`,
