@@ -16,7 +16,7 @@ public abstract class BasePage<T> {
     public boolean lastPage;
 
     @SerializedName("query")
-    public QueryPointer queryPointer;
+    public Query query;
 
     public abstract <S extends BasePage> S next(Context ctx)
     throws ChainException;

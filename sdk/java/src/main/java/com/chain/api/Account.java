@@ -55,7 +55,7 @@ public class Account {
     }
 
     /**
-     * A single page of Account objects returned from a search query, with a pointer to the next page of results
+     * A single page of Account objects returned from a execute query, with a pointer to the next page of results
      * if applicable.
      */
     public static class Page extends BasePage<Account> {
@@ -68,14 +68,14 @@ public class Account {
          */
         public Page next(Context ctx)
         throws ChainException {
-            return ctx.request("list-accounts", this.queryPointer, Page.class);
+            return ctx.request("list-accounts", this.query, Page.class);
         }
     }
 
-    public static class Query extends BaseQuery<Query> {
-        public Page search(Context ctx)
+    public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
+        public Page execute(Context ctx)
         throws ChainException {
-            return ctx.request("list-accounts", this.queryPointer, Page.class);
+            return ctx.request("list-accounts", this.query, Page.class);
         }
     }
 

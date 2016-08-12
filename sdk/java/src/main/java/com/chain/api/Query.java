@@ -5,11 +5,11 @@ import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
 import java.util.List;
 
-public class QueryPointer {
+public class Query {
     public String index;
     public String chql;
     @SerializedName("chql_params")
-    public List<String> params;
+    public List<String> chqlParams;
     public String cursor;
     @SerializedName("start_time")
     public long startTime;
@@ -17,7 +17,7 @@ public class QueryPointer {
     public long endTime;
     public long timestamp;
 
-    public QueryPointer() {
-        this.params = new ArrayList<>();
+    public Query() {
+        this.chqlParams = new ArrayList<>();
     }
 }

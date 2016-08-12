@@ -25,27 +25,23 @@ public class Transaction {
     public static class Page extends BasePage<Transaction> {
         public Page next(Context ctx)
         throws ChainException {
-            return ctx.request("list-transactions", this.queryPointer, Page.class);
+            return ctx.request("list-transactions", this.query, Page.class);
         }
     }
 
-    public static class Query extends BaseQuery<Query> {
-        public Query() {
-            this.queryPointer = new QueryPointer();
-        }
-
-        public Page search(Context ctx)
+    public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
+        public Page execute(Context ctx)
         throws ChainException {
-            return ctx.request("list-transactions", this.queryPointer, Page.class);
+            return ctx.request("list-transactions", this.query, Page.class);
         }
 
-        public Query setStartTime(long time) {
-            this.queryPointer.startTime = time;
+        public QueryBuilder setStartTime(long time) {
+            this.query.startTime = time;
             return this;
         }
 
-        public Query setEndTime(long time) {
-            this.queryPointer.endTime = time;
+        public QueryBuilder setEndTime(long time) {
+            this.query.endTime = time;
             return this;
         }
     }

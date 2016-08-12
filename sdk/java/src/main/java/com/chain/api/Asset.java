@@ -49,14 +49,14 @@ public class Asset {
     public static class Page extends BasePage<Asset> {
         public Page next(Context ctx)
         throws ChainException {
-            return ctx.request("list-assets", this.queryPointer, Page.class);
+            return ctx.request("list-assets", this.query, Page.class);
         }
     }
 
-    public static class Query extends BaseQuery<Query> {
-        public Page search(Context ctx)
+    public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
+        public Page execute(Context ctx)
         throws ChainException {
-            return ctx.request("list-assets", this.queryPointer, Page.class);
+            return ctx.request("list-assets", this.query, Page.class);
         }
     }
 

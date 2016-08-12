@@ -15,7 +15,7 @@ public class MockHsm {
         public static class Page extends BasePage<Key> {
             public Page next(Context ctx)
             throws ChainException {
-                Key.Page page = ctx.request("mockhsm/list-keys", this.queryPointer, Page.class);
+                Key.Page page = ctx.request("mockhsm/list-keys", this.query, Page.class);
                 URL mockHsmUrl = buildMockHsmUrl(ctx.getUrl());
                 for (Key k : page.items) {
                     k.hsmUrl = mockHsmUrl;

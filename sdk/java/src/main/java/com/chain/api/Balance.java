@@ -11,48 +11,18 @@ public class Balance {
     public static class Page extends BasePage<Map<String, Object>> {
         public Page next(Context ctx)
         throws ChainException {
-            return ctx.request("list-balances", this.queryPointer, Page.class);
+            return ctx.request("list-balances", this.query, Page.class);
         }
     }
 
-    public static class Query {
-        @SerializedName("query")
-        protected QueryPointer queryPointer;
-
-        public Query() {
-            this.queryPointer = new QueryPointer();
-        }
-
-        public Query useIndex(String index) {
-            this.queryPointer.index = index;
-            return this;
-        }
-
-        public Query withChQL(String chql) {
-            this.queryPointer.chql = chql;
-            return this;
-        }
-
-        public Query addParameter(String param) {
-            this.queryPointer.params.add(param);
-            return this;
-        }
-
-        public Query setParameters(ArrayList<String> params) {
-            this.queryPointer.params = new ArrayList<>();
-            for (String param : params) {
-                this.queryPointer.params.add(param);
-            }
-            return this;
-        }
-
-        public Page listBalances(Context ctx)
+    public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
+        public Page execute(Context ctx)
         throws ChainException {
-            return ctx.request("list-balances", this.queryPointer, Page.class);
+            return ctx.request("list-balances", this.query, Page.class);
         }
 
-        public Query setTimestamp(long time) {
-            this.queryPointer.timestamp = time;
+        public QueryBuilder setTimestamp(long time) {
+            this.query.timestamp = time;
             return this;
         }
     }

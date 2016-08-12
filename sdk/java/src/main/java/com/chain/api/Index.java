@@ -15,14 +15,14 @@ public class Index {
     public static class Page extends BasePage<Index> {
         public Page next(Context ctx)
         throws ChainException {
-            return ctx.request("list-indexes", this.queryPointer, Page.class);
+            return ctx.request("list-indexes", this.query, Page.class);
         }
     }
 
-    public static class Query extends BaseQuery<Query> {
-        public Page search(Context ctx)
+    public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
+        public Page execute(Context ctx)
         throws ChainException {
-            return ctx.request("list-indexes", this.queryPointer, Page.class);
+            return ctx.request("list-indexes", this.query, Page.class);
         }
 
         public Index find(Context ctx, String id)
