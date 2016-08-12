@@ -16,6 +16,7 @@ public class QueryPointer {
     public long startTime;
     @SerializedName("end_time")
     public long endTime;
+    public long timestamp;
 
     public QueryPointer() {
         this.params = new ArrayList<>();

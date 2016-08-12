@@ -55,8 +55,6 @@ public class Transaction {
         public BigInteger amount;
         @SerializedName("asset_id")
         public String assetId;
-        @SerializedName("spent_output")
-        public OutputPointer pointer;
         @SerializedName("account_id")
         public String accountId;
         @SerializedName("account_tags")

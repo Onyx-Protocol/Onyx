@@ -174,11 +174,9 @@ public class TransactionTemplate {
 
         public Builder spendUnspentOutput(UnspentOutput uo, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setType("spend_account_unspent_output_selector")
-                    .setParameter("transaction_hash", uo.pointer.transactionId)
-                    .setParameter("transaction_output", uo.pointer.index)
-                    .setParameter("asset_id", uo.assetId)
-                    .setParameter("amount", uo.amount);
+                    .setType("spend_account_unspent_output")
+                    .setParameter("transaction_id", uo.transactionId)
+                    .setParameter("position", uo.position);
 
             return this.addAction(action, referenceData);
         }
