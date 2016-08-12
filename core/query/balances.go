@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/lib/pq"
 	"golang.org/x/net/context"
@@ -44,9 +43,12 @@ func (ind *Indexer) Balances(ctx context.Context, q chql.Query, vals []interface
 		item := map[string]interface{}{
 			"amount": balance,
 		}
-		for i, grouping := range expr.GroupBy {
-			name := strings.Join(grouping, ".")
-			item[name] = scanArguments[i+1]
+		var groupBy []interface{}
+		for i := range expr.GroupBy {
+			groupBy = append(groupBy, scanArguments[i+1])
+		}
+		if len(groupBy) > 0 {
+			item["group_by"] = groupBy
 		}
 		balances = append(balances, item)
 	}

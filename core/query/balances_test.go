@@ -1,6 +1,7 @@
 package query
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 	"time"
@@ -63,91 +64,100 @@ func TestQueryBalances(t *testing.T) {
 			query  string
 			values []interface{}
 			when   time.Time
-			want   []interface{}
+			want   string
 		}
 	)
 
 	ctx, indexer, time1, time2, acct1, acct2, asset1, asset2 := setupQueryTest(t)
-
-	want0 := interface{}(map[string]interface{}{"amount": uint64(0)})
-	want867 := interface{}(map[string]interface{}{"amount": uint64(867)})
 
 	cases := []testcase{
 		{
 			query:  "asset_id = $1",
 			values: []interface{}{asset1.AssetID.String()},
 			when:   time1,
-			want:   []interface{}{want0},
+			want:   `[{"amount": 0}]`,
 		},
 		{
 			query:  "asset_tags.currency = $1",
 			values: []interface{}{"USD"},
 			when:   time1,
-			want:   []interface{}{want0},
+			want:   `[{"amount": 0}]`,
 		},
 		{
 			query:  "asset_id = $1",
 			values: []interface{}{asset1.AssetID.String()},
 			when:   time2,
-			want:   []interface{}{want867},
+			want:   `[{"amount": 867}]`,
 		},
 		{
 			query:  "asset_tags.currency = $1",
 			values: []interface{}{"USD"},
 			when:   time2,
-			want:   []interface{}{want867},
+			want:   `[{"amount": 867}]`,
 		},
 		{
 			query:  "asset_id = $1",
 			values: []interface{}{asset2.AssetID.String()},
 			when:   time1,
-			want:   []interface{}{want0},
+			want:   `[{"amount": 0}]`,
 		},
 		{
 			query:  "asset_id = $1",
 			values: []interface{}{asset2.AssetID.String()},
 			when:   time2,
-			want:   []interface{}{want0},
+			want:   `[{"amount": 0}]`,
 		},
 		{
 			query:  "account_id = $1",
 			values: []interface{}{acct1.ID},
 			when:   time1,
-			want:   []interface{}{want0},
+			want:   `[{"amount": 0}]`,
 		},
 		{
 			query:  "account_id = $1",
 			values: []interface{}{acct1.ID},
 			when:   time2,
-			want:   []interface{}{want867},
+			want:   `[{"amount": 867}]`,
 		},
 		{
 			query:  "account_id = $1",
 			values: []interface{}{acct2.ID},
 			when:   time1,
-			want:   []interface{}{want0},
+			want:   `[{"amount": 0}]`,
 		},
 		{
 			query:  "account_id = $1",
 			values: []interface{}{acct2.ID},
 			when:   time2,
-			want:   []interface{}{want0},
+			want:   `[{"amount": 0}]`,
 		},
 		{
 			query:  "asset_id = $1 AND account_id = $2",
 			values: []interface{}{asset1.AssetID.String(), acct1.ID},
 			when:   time2,
-			want:   []interface{}{want867},
+			want:   `[{"amount": 867}]`,
 		},
 		{
 			query:  "asset_id = $1 AND account_id = $2",
 			values: []interface{}{asset2.AssetID.String(), acct1.ID},
 			when:   time2,
-			want:   []interface{}{want0},
+			want:   `[{"amount": 0}]`,
+		},
+		{
+			query:  "asset_id = $1 AND account_id = $2",
+			values: []interface{}{asset1.AssetID.String()},
+			when:   time2,
+			want:   `[{"group_by": ["` + acct1.ID + `"], "amount": 867}]`,
 		},
 	}
 
 	for i, tc := range cases {
+		var want []interface{}
+		err := json.Unmarshal([]byte(tc.want), &want)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		chql, err := chql.Parse(tc.query)
 		if err != nil {
 			t.Fatal(err)
@@ -156,11 +166,30 @@ func TestQueryBalances(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(balances) != len(tc.want) {
-			t.Fatalf("case %d: got %d balances, want %d", i, len(balances), len(tc.want))
+		if len(balances) != len(want) {
+			t.Fatalf("case %d: got %d balances, want %d", i, len(balances), len(want))
 		}
-		if !reflect.DeepEqual(balances, tc.want) {
+
+		got := jsonRT(t, balances)
+		if !reflect.DeepEqual(got, want) {
 			t.Errorf("case %d: got:\n%s\nwant:\n%s", i, spew.Sdump(balances), spew.Sdump(tc.want))
 		}
 	}
+}
+
+// jsonRT does a JSON round trip -- it marshals v
+// then unmarshals the resutling JSON into an interface{}.
+// This normalizes the types so it can be more easily compared
+// with reflect.DeepEqual.
+func jsonRT(tb testing.TB, v interface{}) interface{} {
+	b, err := json.Marshal(v)
+	if err != nil {
+		tb.Fatal(err)
+	}
+	var x interface{}
+	err = json.Unmarshal(b, &x)
+	if err != nil {
+		tb.Fatal(err)
+	}
+	return x
 }

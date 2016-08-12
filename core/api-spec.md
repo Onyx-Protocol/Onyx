@@ -545,14 +545,14 @@ Accepts either an `index_id` or a `query`.
 Response 
 
 Grouped
-```    
+```
 [
   {
-    "asset_id": "a1",       
+    "group_by": ["a1"],
     "amount": 10
   },
   {
-    "asset_id": "a2",
+    "group_by": ["a2"],
     "amount": 20
   }
 ]
