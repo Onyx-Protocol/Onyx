@@ -172,8 +172,9 @@ func NewIssueAction(assetAmount bc.AssetAmount, referenceData json.Map) *asset.I
 	return &asset.IssueAction{
 		Params: struct {
 			bc.AssetAmount
-			TTL time.Duration
-		}{assetAmount, 0},
+			TTL     time.Duration
+			MinTime *time.Time `json:"min_time"`
+		}{assetAmount, 0, nil},
 		ReferenceData: referenceData,
 	}
 }

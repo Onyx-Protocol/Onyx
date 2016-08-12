@@ -16,7 +16,8 @@ import (
 type IssueAction struct {
 	Params struct {
 		bc.AssetAmount
-		TTL time.Duration
+		TTL     time.Duration
+		MinTime *time.Time `json:"min_time"`
 	}
 	ReferenceData json.Map `json:"reference_data"`
 }
@@ -30,7 +31,11 @@ func (a *IssueAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 	if ttl == 0 {
 		ttl = time.Minute
 	}
-	txin := bc.NewIssuanceInput(time.Now(), time.Now().Add(ttl), asset.GenesisHash, a.Params.Amount, asset.IssuanceProgram, a.ReferenceData, nil)
+	minTime := time.Now()
+	if a.Params.MinTime != nil {
+		minTime = *a.Params.MinTime
+	}
+	txin := bc.NewIssuanceInput(minTime, minTime.Add(ttl), asset.GenesisHash, a.Params.Amount, asset.IssuanceProgram, a.ReferenceData, nil)
 	tplIn := issuanceInput(asset, a.Params.AssetAmount)
 
 	return []*bc.TxInput{txin}, nil, []*txbuilder.Input{tplIn}, nil
