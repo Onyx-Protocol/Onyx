@@ -1,6 +1,6 @@
 #Chain Core Developer Edition
 ##Introduction
-Chain Core DE is a docker container that runs `cored` and chain dashboard. The container exposes `cored` on port 8080 and the dashboard on 8081.
+Chain Core DE is a docker container that runs `cored`, exposed on port 8080.
 
 ##Quickstart
 ####Build the image
@@ -21,13 +21,8 @@ alpine              latest              f70c828098f5        10 days ago         
 >**Note:** The `--name` flag allows you to name the container and refer to that name in subsequent commands.
 
 ```
-$ docker run --rm -p 8080:8080 -p 8081:8081 --name <NAME> <IMAGE_ID>
+$ docker run --rm -p 8080:8080 --name <NAME> <IMAGE_ID>
 ```
-
-####Open dashboard
-To open the dashboard visit `http://localhost:8081`
-- Email: hello@chain.com
-- Password: password
 
 ####Access core
 The api credentials will be printed to your shell. The core is listening on `http://localhost:8080`
@@ -41,7 +36,7 @@ $ docker stop <NAME>
 ```
 $ mkdir -p /path/to/store/db
 $ mkdir -p path/to/store/logs
-$ docker run --rm -p 8080:8080 -p 8081:8081 -v /path/to/store/db:/var/lib/postgresql/data -v /path/to/store/logs:/var/log/chain --name <NAME> <IMAGE_ID>
+$ docker run --rm -p 8080:8080 -v /path/to/store/db:/var/lib/postgresql/data -v /path/to/store/logs:/var/log/chain --name <NAME> <IMAGE_ID>
 ```
 
 ##Other features
@@ -61,7 +56,6 @@ $ docker load < /path/to/file
 The container keeps logs for both processes and a copy of the core credentials. To access run:
 ```
 $ docker exec -it <NAME> tail /var/log/chain/cored.log # cored logs
-$ docker exec -it <NAME> tail /var/log/chain/dashboard.log # dashboard logs
 $ docker exec -it <NAME> tail /var/log/chain/credentials.json # core credentials
 ```
 

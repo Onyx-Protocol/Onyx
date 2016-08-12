@@ -16,7 +16,6 @@ cleanup() {
   rm -f $CHAIN/docker/de/cored
   rm -f $CHAIN/docker/de/corectl
   rm -f $CHAIN/docker/de/schema.sql
-  rm -rf $CHAIN/docker/de/dashboard
 }
 trap "cleanup" EXIT
 
@@ -31,7 +30,5 @@ GOOS=linux GOARCH=amd64 go build\
   chain/cmd/corectl
 
 cp $CHAIN/core/appdb/schema.sql $CHAIN/docker/de/schema.sql
-cp -r $DASHBOARD $CHAIN/docker/de/dashboard
-rm -rf $CHAIN/docker/de/dashboard/.git/
 
 docker build --tag chain-core-de:$tag $CHAIN/docker/de/
