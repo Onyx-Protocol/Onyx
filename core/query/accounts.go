@@ -70,10 +70,12 @@ func constructAccountsQuery(expr chql.SQLExpr, cur string, limit int) (string, [
 	buf.WriteString(" WHERE ")
 
 	// add filter conditions
-	vals = append(vals, expr.Values...)
-	buf.WriteString("(")
-	buf.WriteString(expr.SQL)
-	buf.WriteString(") AND ")
+	if len(expr.SQL) > 0 {
+		vals = append(vals, expr.Values...)
+		buf.WriteString("(")
+		buf.WriteString(expr.SQL)
+		buf.WriteString(") AND ")
+	}
 
 	// add cursor conditions
 	buf.WriteString(fmt.Sprintf("account_id > $%d ", len(vals)+1))
