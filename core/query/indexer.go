@@ -19,6 +19,19 @@ const (
 	indexRefreshPeriod = time.Minute
 )
 
+// Valid index types
+const (
+	IndexTypeAsset       = "asset"
+	IndexTypeBalance     = "balance"
+	IndexTypeTransaction = "transaction"
+)
+
+var IndexTypes = map[string]bool{
+	IndexTypeAsset:       true,
+	IndexTypeBalance:     true,
+	IndexTypeTransaction: true,
+}
+
 var (
 	ErrParsingQuery      = errors.New("error parsing ChQL query")
 	ErrTooManyParameters = errors.New("transaction ChQL queries support up to 1 parameter")
@@ -43,8 +56,8 @@ type Indexer struct {
 
 // BeginIndexing must be called before blocks are processed to refresh
 // the indexes.
-func (i *Indexer) BeginIndexing(ctx context.Context) error {
-	err := i.refreshIndexes(ctx)
+func (ind *Indexer) BeginIndexing(ctx context.Context) error {
+	err := ind.refreshIndexes(ctx)
 	if err != nil {
 		return err
 	}
@@ -57,7 +70,7 @@ func (i *Indexer) BeginIndexing(ctx context.Context) error {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				err := i.refreshIndexes(ctx)
+				err := ind.refreshIndexes(ctx)
 				if err != nil {
 					chainlog.Error(ctx, err)
 				}
@@ -93,13 +106,13 @@ func (i *Index) MarshalJSON() ([]byte, error) {
 }
 
 // GetIndex looks up an individual index by its ID and its type.
-func (i *Indexer) GetIndex(ctx context.Context, id, typ string) (*Index, error) {
+func (ind *Indexer) GetIndex(ctx context.Context, id, typ string) (*Index, error) {
 	const selectQ = `
 		SELECT internal_id, id, type, query, created_at, unspent_outputs FROM query_indexes
 		WHERE id = $1 AND type = $2
 	`
 	var idx Index
-	err := i.db.QueryRow(ctx, selectQ, id, typ).
+	err := ind.db.QueryRow(ctx, selectQ, id, typ).
 		Scan(&idx.internalID, &idx.ID, &idx.Type, &idx.rawQuery, &idx.createdAt, &idx.Unspents)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -112,12 +125,12 @@ func (i *Indexer) GetIndex(ctx context.Context, id, typ string) (*Index, error) 
 
 // CreateIndex commits a new index in the database. Blockchain data
 // will not be indexed until the leader process picks up the new index.
-func (i *Indexer) CreateIndex(ctx context.Context, id string, typ string, rawQuery string, unspents bool) (*Index, error) {
+func (ind *Indexer) CreateIndex(ctx context.Context, id string, typ string, rawQuery string, unspents bool) (*Index, error) {
 	q, err := chql.Parse(rawQuery)
 	if err != nil {
 		return nil, errors.WithDetail(ErrParsingQuery, err.Error())
 	}
-	if typ == "transaction" && q.Parameters > 1 {
+	if typ == IndexTypeTransaction && q.Parameters > 1 {
 		return nil, ErrTooManyParameters
 	}
 
@@ -132,7 +145,7 @@ func (i *Indexer) CreateIndex(ctx context.Context, id string, typ string, rawQue
 		Query:    q,
 		rawQuery: rawQuery,
 	}
-	err = i.db.QueryRow(ctx, insertQ, id, typ, rawQuery, unspents).Scan(&idx.internalID, &idx.createdAt)
+	err = ind.db.QueryRow(ctx, insertQ, id, typ, rawQuery, unspents).Scan(&idx.internalID, &idx.createdAt)
 	if err != nil {
 		return nil, errors.Wrap(err, "saving tx index in db")
 	}
@@ -140,8 +153,8 @@ func (i *Indexer) CreateIndex(ctx context.Context, id string, typ string, rawQue
 }
 
 // ListIndexes lists all registered indexes.
-func (i *Indexer) ListIndexes(ctx context.Context, cursor string, limit int) ([]*Index, string, error) {
-	indexes, newCursor, err := i.listIndexes(ctx, cursor, limit)
+func (ind *Indexer) ListIndexes(ctx context.Context, cursor string, limit int) ([]*Index, string, error) {
+	indexes, newCursor, err := ind.listIndexes(ctx, cursor, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "retrieving indexes")
 	}
@@ -157,37 +170,37 @@ func (i *Indexer) ListIndexes(ctx context.Context, cursor string, limit int) ([]
 	return indexes, newCursor, nil
 }
 
-func (i *Indexer) isIndexActive(id string) bool {
-	i.mu.Lock()
-	defer i.mu.Unlock()
-	_, ok := i.indexes[id]
+func (ind *Indexer) isIndexActive(id string) bool {
+	ind.mu.Lock()
+	defer ind.mu.Unlock()
+	_, ok := ind.indexes[id]
 	return ok
 }
 
-func (i *Indexer) setupIndex(idx *Index) (err error) {
+func (ind *Indexer) setupIndex(idx *Index) (err error) {
 	idx.Query, err = chql.Parse(idx.rawQuery)
 	if err != nil {
 		return errors.Wrap(err, "parsing raw query for index", idx.ID)
 	}
 
-	i.mu.Lock()
-	defer i.mu.Unlock()
-	i.indexes[idx.ID] = idx
+	ind.mu.Lock()
+	defer ind.mu.Unlock()
+	ind.indexes[idx.ID] = idx
 	return nil
 }
 
-func (i *Indexer) refreshIndexes(ctx context.Context) error {
-	indexes, err := i.getIndexes(ctx)
+func (ind *Indexer) refreshIndexes(ctx context.Context) error {
+	indexes, err := ind.getIndexes(ctx)
 	if err != nil {
 		return err
 	}
 
 	for _, index := range indexes {
-		if i.isIndexActive(index.ID) {
+		if ind.isIndexActive(index.ID) {
 			continue
 		}
 
-		err := i.setupIndex(index)
+		err := ind.setupIndex(index)
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
@@ -198,9 +211,9 @@ func (i *Indexer) refreshIndexes(ctx context.Context) error {
 // getIndexes queries the database for all active indexes.
 // getIndexes does not parse idx.RawQuery and leaves
 // idx.Query as nil.
-func (i *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
+func (ind *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
 	const q = `SELECT internal_id, id, type, query, created_at, unspent_outputs FROM query_indexes`
-	rows, err := i.db.Query(ctx, q)
+	rows, err := ind.db.Query(ctx, q)
 	if err != nil {
 		return nil, errors.Wrap(err, "reload indexes sql query")
 	}
@@ -220,14 +233,14 @@ func (i *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
 
 // listIndexes behaves almost identically to getIndexes.
 // The caveat is listIndexes returns a paged result.
-func (i *Indexer) listIndexes(ctx context.Context, cursor string, limit int) ([]*Index, string, error) {
+func (ind *Indexer) listIndexes(ctx context.Context, cursor string, limit int) ([]*Index, string, error) {
 	const q = `
 		SELECT internal_id, id, type, query, created_at, unspent_outputs
 		FROM query_indexes WHERE ($1='' OR $1<id)
 		ORDER BY id ASC LIMIT $2
 	`
 
-	rows, err := i.db.Query(ctx, q, cursor, limit)
+	rows, err := ind.db.Query(ctx, q, cursor, limit)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "reload indexes sql query")
 	}

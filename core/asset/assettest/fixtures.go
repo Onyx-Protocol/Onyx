@@ -119,9 +119,6 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 			FC:           fc,
 		},
 	}
-	if err != nil {
-		return nil, nil, err
-	}
 	err = g.UpsertGenesisBlock(ctx)
 	if err != nil {
 		return nil, nil, err

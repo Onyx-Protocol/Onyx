@@ -16,18 +16,18 @@ import (
 // indexBlockCallback is registered as a block callback on the cos.FC. It
 // saves all annotated transactions to the database and indexes them according
 // to the Core's configured indexes.
-func (i *Indexer) indexBlockCallback(ctx context.Context, b *bc.Block) {
-	err := i.insertBlock(ctx, b)
+func (ind *Indexer) indexBlockCallback(ctx context.Context, b *bc.Block) {
+	err := ind.insertBlock(ctx, b)
 	if err != nil {
 		log.Fatal(ctx, log.KeyError, err)
 	}
 
-	txs, err := i.insertAnnotatedTxs(ctx, b)
+	txs, err := ind.insertAnnotatedTxs(ctx, b)
 	if err != nil {
 		log.Fatal(ctx, log.KeyError, err)
 	}
 
-	err = i.insertAnnotatedOutputs(ctx, b, txs)
+	err = ind.insertAnnotatedOutputs(ctx, b, txs)
 	if err != nil {
 		log.Fatal(ctx, log.KeyError, err)
 	}
@@ -35,16 +35,16 @@ func (i *Indexer) indexBlockCallback(ctx context.Context, b *bc.Block) {
 	// TODO(jackson): Build indexes
 }
 
-func (i *Indexer) insertBlock(ctx context.Context, b *bc.Block) error {
+func (ind *Indexer) insertBlock(ctx context.Context, b *bc.Block) error {
 	const q = `
 		INSERT INTO query_blocks (height, timestamp) VALUES($1, $2)
 		ON CONFLICT (height) DO NOTHING
 	`
-	_, err := i.db.Exec(ctx, q, b.Height, b.TimestampMS)
+	_, err := ind.db.Exec(ctx, q, b.Height, b.TimestampMS)
 	return errors.Wrap(err, "inserting block timestamp")
 }
 
-func (i *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[string]interface{}, error) {
+func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[string]interface{}, error) {
 	var (
 		hashes              = pg.Strings(make([]string, 0, len(b.Transactions)))
 		positions           = pg.Uint32s(make([]uint32, 0, len(b.Transactions)))
@@ -57,7 +57,7 @@ func (i *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[st
 		annotatedTxsDecoded = append(annotatedTxsDecoded, transactionObject(tx, b, uint32(pos)))
 	}
 
-	dbctx := pg.NewContext(ctx, i.db)
+	dbctx := pg.NewContext(ctx, ind.db)
 
 	// TODO(bobg): Rather than call out to specific annotaters here,
 	// creating dependencies on potentially a lot of packages,
@@ -82,14 +82,14 @@ func (i *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[st
 		SELECT $1, unnest($2::integer[]), unnest($3::text[]), unnest($4::jsonb[])
 		ON CONFLICT (block_height, tx_pos) DO NOTHING;
 	`
-	_, err = i.db.Exec(ctx, insertQ, b.Height, positions, hashes, annotatedTxs)
+	_, err = ind.db.Exec(ctx, insertQ, b.Height, positions, hashes, annotatedTxs)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting annotated_txs to db")
 	}
 	return annotatedTxsDecoded, nil
 }
 
-func (i *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, annotatedTxs []map[string]interface{}) error {
+func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, annotatedTxs []map[string]interface{}) error {
 	var (
 		outputTxPositions pg.Uint32s
 		outputIndexes     pg.Uint32s
@@ -136,7 +136,7 @@ func (i *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, annot
 		           unnest($5::jsonb[]),   int8range($6, NULL)
 		ON CONFLICT (block_height, tx_pos, output_index) DO NOTHING;
 	`
-	_, err := i.db.Exec(ctx, insertQ, b.Height, outputTxPositions,
+	_, err := ind.db.Exec(ctx, insertQ, b.Height, outputTxPositions,
 		outputIndexes, outputTxHashes, outputData, b.TimestampMS)
 	if err != nil {
 		return errors.Wrap(err, "batch inserting annotated outputs")
@@ -146,6 +146,6 @@ func (i *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, annot
 		UPDATE annotated_outputs SET timespan = INT8RANGE(LOWER(timespan), $1)
 		WHERE (tx_hash, output_index) IN (SELECT unnest($2::text[]), unnest($3::integer[]))
 	`
-	_, err = i.db.Exec(ctx, updateQ, b.TimestampMS, prevoutHashes, prevoutIndexes)
+	_, err = ind.db.Exec(ctx, updateQ, b.TimestampMS, prevoutHashes, prevoutIndexes)
 	return errors.Wrap(err, "updating spent annotated outputs")
 }

@@ -65,9 +65,16 @@ type api struct {
 
 // Used as a request object for api queries
 type requestQuery struct {
-	Cursor     string        `json:"cursor"`
-	StartTime  uint64        `json:"start_time,omitempty"`
-	EndTime    uint64        `json:"end_time,omitempty"`
+	Cursor string `json:"cursor"`
+
+	// These two are used for time-range queries like /list-transactions
+	StartTimeMS uint64 `json:"start_time,omitempty"`
+	EndTimeMS   uint64 `json:"end_time,omitempty"`
+
+	// This is used for point-in-time queries like /list-balances
+	// TODO(bobg): Different request structs for endpoints with different needs
+	TimestampMS uint64 `json:"timestamp,omitempty"`
+
 	Index      string        `json:"index,omitempty"`
 	ChQL       string        `json:"chql,omitempty"`
 	ChQLParams []interface{} `json:"chql_params,omitempty"`
@@ -110,6 +117,7 @@ func (a *api) handler() chainhttp.HandlerFunc {
 	h.HandleFunc("POST", "/list-indexes", a.listIndexes)
 	h.HandleFunc("POST", "/list-accounts", a.listAccounts)
 	h.HandleFunc("POST", "/list-transactions", a.listTransactions)
+	h.HandleFunc("POST", "/list-unspent-outputs", a.listUnspentOutputs)
 
 	// V3 DEPRECATED
 	h.HandleFunc("POST", "/v3/transact/cancel-reservation", cancelReservation)

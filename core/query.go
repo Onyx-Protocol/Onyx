@@ -26,10 +26,10 @@ func (a *api) createIndex(ctx context.Context, in struct {
 	Query    string `json:"query"`
 	Unspents bool   `json:"unspents"`
 }) (*query.Index, error) {
-	if in.Type != "transaction" && in.Type != "balance" && in.Type != "asset" {
+	if !query.IndexTypes[in.Type] {
 		return nil, errors.WithDetailf(ErrBadIndexConfig, "unknown index type %q", in.Type)
 	}
-	if in.Unspents && in.Type != "balance" {
+	if in.Unspents && in.Type != query.IndexTypeBalance {
 		return nil, errors.WithDetail(ErrBadIndexConfig, "unspents flag is only valid for balance indexes")
 	}
 
@@ -56,6 +56,11 @@ func (a *api) listIndexes(ctx context.Context, query requestQuery) (page, error)
 	}, nil
 }
 
+var (
+	ErrNeitherIndexNorQuery = errors.New("must provide either index or query")
+	ErrBothIndexAndQuery    = errors.New("cannot provide both index and query")
+)
+
 // listTransactions is an http handler for listing transactions matching
 // a ChQL query or index.
 //
@@ -75,7 +80,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 
 	// Build the ChQL query
 	if in.Index != "" {
-		idx, err := a.indexer.GetIndex(ctx, in.Index, "transaction")
+		idx, err := a.indexer.GetIndex(ctx, in.Index, query.IndexTypeTransaction)
 		if err != nil {
 			return result, err
 		}
@@ -98,7 +103,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 		}
 	}
 	if cur == nil {
-		cur, err = a.indexer.LookupTxCursor(ctx, in.StartTime, in.EndTime)
+		cur, err = a.indexer.LookupTxCursor(ctx, in.StartTimeMS, in.EndTimeMS)
 		if err != nil {
 			return result, err
 		}
@@ -168,5 +173,51 @@ func (a *api) listAccounts(ctx context.Context, in requestQuery) (result page, e
 		Items:    httpjson.Array(items),
 		LastPage: len(accountIDs) < limit,
 		Query:    out,
+	}, nil
+}
+
+// POST /list-unspent-outputs
+func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result page, err error) {
+	if in.Index != "" && in.ChQL != "" {
+		return result, fmt.Errorf("cannot provide both index and query")
+	}
+
+	var q chql.Query
+	if in.Index != "" {
+		idx, err := a.indexer.GetIndex(ctx, in.Index, query.IndexTypeBalance)
+		if err != nil {
+			return result, err
+		}
+		if idx == nil {
+			return result, fmt.Errorf("Unknown balance index %q", in.Index)
+		}
+		if !idx.Unspents {
+			return result, fmt.Errorf("Unspents must be true")
+		}
+		q = idx.Query
+	} else {
+		q, err = chql.Parse(in.ChQL)
+		if err != nil {
+			return result, err
+		}
+	}
+
+	var cursor *query.OutputsCursor
+	if in.Cursor != "" {
+		cursor, err = query.DecodeOutputsCursor(in.Cursor)
+		if err != nil {
+			return result, errors.Wrap(err, "decoding cursor")
+		}
+	}
+
+	limit := defGenericPageSize
+	outputs, newCursor, err := a.indexer.Outputs(ctx, q, in.ChQLParams, in.TimestampMS, cursor, limit)
+
+	outQuery := in
+	outQuery.Cursor = newCursor.String()
+	return page{
+		Items:    outputs,
+		LastPage: len(outputs) < limit,
+		Query:    outQuery,
 	}, nil
 }

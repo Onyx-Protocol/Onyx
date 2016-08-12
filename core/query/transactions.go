@@ -51,14 +51,14 @@ func DecodeTxCursor(str string) (c *TxCursor, err error) {
 }
 
 // LookupTxCursor looks up the transaction cursor for the provided time range.
-func (i *Indexer) LookupTxCursor(ctx context.Context, begin, end uint64) (*TxCursor, error) {
+func (ind *Indexer) LookupTxCursor(ctx context.Context, begin, end uint64) (*TxCursor, error) {
 	const q = `
 		SELECT MAX(height), MIN(height) FROM query_blocks
 		WHERE timestamp >= $1 AND timestamp <= $2
 	`
 
 	var max, min uint64
-	err := i.db.QueryRow(ctx, q, begin, end).Scan(&max, &min)
+	err := ind.db.QueryRow(ctx, q, begin, end).Scan(&max, &min)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -72,7 +72,7 @@ func (i *Indexer) LookupTxCursor(ctx context.Context, begin, end uint64) (*TxCur
 }
 
 // Transactions queries the blockchain for transactions matching the query `q`.
-func (i *Indexer) Transactions(ctx context.Context, q chql.Query, vals []interface{}, cur TxCursor, limit int) ([]interface{}, *TxCursor, error) {
+func (ind *Indexer) Transactions(ctx context.Context, q chql.Query, vals []interface{}, cur TxCursor, limit int) ([]interface{}, *TxCursor, error) {
 	expr, err := chql.AsSQL(q, "data", vals)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "converting to SQL")
@@ -84,7 +84,7 @@ func (i *Indexer) Transactions(ctx context.Context, q chql.Query, vals []interfa
 	}
 
 	queryStr, queryArgs := constructTransactionsQuery(expr, cur, limit)
-	rows, err := i.db.Query(ctx, queryStr, queryArgs...)
+	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "executing txn query")
 	}
