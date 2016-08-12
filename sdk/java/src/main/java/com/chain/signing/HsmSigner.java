@@ -1,5 +1,6 @@
 package com.chain.signing;
 
+import com.chain.api.MockHsm;
 import com.chain.api.TransactionTemplate;
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
@@ -10,22 +11,26 @@ import java.net.URL;
 import java.util.*;
 
 public class HsmSigner {
-    private List<URL> hsmUrls;
+    private static Set<URL> hsmUrls = new HashSet<>();
 
-    public HsmSigner() {
-        this.hsmUrls = new ArrayList<>();
+    public static void addKey(String xpub, URL hsmUrl) {
+        hsmUrls.add(hsmUrl);
     }
 
-    public void addKey(String xpub, URL hsmUrl) {
-        if (!hsmUrls.contains(hsmUrl)) {
-            hsmUrls.add(hsmUrl);
+    public static void addKey(MockHsm.Key key) {
+        hsmUrls.add(key.hsmUrl);
+    }
+
+    public static void addKeys(List<MockHsm.Key> keys) {
+        for (MockHsm.Key key : keys) {
+            hsmUrls.add(key.hsmUrl);
         }
     }
 
     // TODO(boymanjor): Currently this method trusts the hsm to return a tx template
     // in the event it is unable to sign it. Moving forward we should employ a filter
     // step and only send txs to hsms that hold the proper key material to sign.
-    public List<TransactionTemplate> sign(List<TransactionTemplate> tmpls)
+    public static List<TransactionTemplate> sign(List<TransactionTemplate> tmpls)
     throws ChainException {
         for (URL hsmUrl : hsmUrls) {
             Context hsm = new Context(hsmUrl);

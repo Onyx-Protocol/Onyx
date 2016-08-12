@@ -17,10 +17,8 @@ public class MockHsm {
             throws ChainException {
                 Key.Page page = ctx.request("mockhsm/list-keys", this.queryPointer, Page.class);
                 URL mockHsmUrl = buildMockHsmUrl(ctx.getUrl());
-                if (page.items != null) {
-                    for (Key k : page.items) {
-                        k.hsmUrl = mockHsmUrl;
-                    }
+                for (Key k : page.items) {
+                    k.hsmUrl = mockHsmUrl;
                 }
                 return page;
             }
@@ -37,10 +35,8 @@ public class MockHsm {
         throws ChainException {
             Key.Page page = ctx.request("mockhsm/list-keys", null, Page.class);
             URL mockHsmUrl = buildMockHsmUrl(ctx.getUrl());
-            if (page.items != null) {
-                for (Key k : page.items) {
-                    k.hsmUrl = mockHsmUrl;
-                }
+            for (Key k : page.items) {
+                k.hsmUrl = mockHsmUrl;
             }
             return page;
         }
