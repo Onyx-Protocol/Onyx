@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	"reflect"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
+	"chain/core/account"
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
@@ -71,13 +73,15 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	asset := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, nil)
 	out := assettest.IssueAssetsFixture(ctx, t, fc, asset, 2, accID)
 
-	assetAmount1 := bc.AssetAmount{
-		AssetID: asset,
-		Amount:  1,
+	source := &account.SpendUTXOAction{
+		Params: struct {
+			TxHash bc.Hash       `json:"transaction_hash"`
+			TxOut  uint32        `json:"position"`
+			TTL    time.Duration `json:"reservation_ttl"`
+		}{out.Hash, out.Index, time.Minute},
 	}
-	source := assettest.NewAccountSpendAction(assetAmount1, accID, &out.Outpoint.Hash, &out.Outpoint.Index, nil)
 
-	gotTxIns, gotTxOuts, _, err := source.Build(ctx)
+	gotTxIns, _, _, err := source.Build(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -87,18 +91,6 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 	if !reflect.DeepEqual(gotTxIns, wantTxIns) {
 		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", gotTxIns, wantTxIns)
-	}
-
-	if len(gotTxOuts) != 1 {
-		t.Errorf("expected 1 change output")
-	}
-
-	if gotTxOuts[0].Amount != 1 {
-		t.Errorf("expected change amount to be 1")
-	}
-
-	if !programInAccount(ctx, t, gotTxOuts[0].ControlProgram, accID) {
-		t.Errorf("expected change control program to belong to account")
 	}
 }
 

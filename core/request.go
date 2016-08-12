@@ -31,6 +31,8 @@ func (a *action) UnmarshalJSON(data []byte) error {
 		a.underlying = new(account.ControlAction)
 	case "issue":
 		a.underlying = new(asset.IssueAction)
+	case "spend_account_unspent_output":
+		a.underlying = new(account.SpendUTXOAction)
 	default:
 		return errors.WithDetailf(ErrBadBuildRequest, "invalid action: %s", x.Type)
 	}

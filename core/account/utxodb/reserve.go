@@ -63,6 +63,91 @@ type (
 	}
 )
 
+func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *string, ttl time.Duration) (*UTXO, error) {
+	defer metrics.RecordElapsed(time.Now())
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
+	dbtx, ctx, err := pg.Begin(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "begin transaction for reserving utxos")
+	}
+	defer dbtx.Rollback(ctx)
+
+	_, err = pg.Exec(ctx, `LOCK TABLE account_utxos IN ROW EXCLUSIVE MODE`)
+	if err != nil {
+		return nil, errors.Wrap(err, "acquire lock for reserving utxos")
+	}
+
+	exp := time.Now().UTC().Add(ttl)
+
+	const (
+		reserveQ = `
+			SELECT * FROM reserve_utxo($1, $2, $3, $4)
+				AS (reservation_id INT, already_existed BOOLEAN, utxo_exists BOOLEAN)
+		`
+		utxosQ = `
+			SELECT account_id, asset_id, amount, key_index(control_program_index), control_program
+			FROM account_utxos
+			WHERE reservation_id = $1 LIMIT 1
+		`
+	)
+
+	var (
+		reservationID  int32
+		alreadyExisted bool
+		utxoExists     bool
+	)
+	err = pg.QueryRow(ctx, reserveQ, txHash, pos, exp, clientToken).Scan(
+		&reservationID,
+		&alreadyExisted,
+		&utxoExists,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "reserve utxo")
+	}
+	if reservationID <= 0 {
+		if !utxoExists {
+			return nil, ErrInsufficient
+		}
+		return nil, ErrReserved
+	}
+
+	var (
+		accountID    string
+		assetID      bc.AssetID
+		amount       uint64
+		programIndex pg.Uint32s
+		controlProg  []byte
+	)
+
+	err = pg.QueryRow(ctx, utxosQ, reservationID).Scan(&accountID, &assetID, &amount, &programIndex, &controlProg)
+	if err != nil {
+		return nil, errors.Wrap(err, "query reservation member")
+	}
+
+	err = dbtx.Commit(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "commit transaction for reserving utxo")
+	}
+
+	utxo := &UTXO{
+		Outpoint: bc.Outpoint{
+			Hash:  txHash,
+			Index: pos,
+		},
+		AssetAmount: bc.AssetAmount{
+			AssetID: assetID,
+			Amount:  amount,
+		},
+		Script:    controlProg,
+		AccountID: accountID,
+	}
+	copy(utxo.ControlProgramIndex[:], programIndex[:2])
+
+	return utxo, nil
+}
+
 func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTXO, c []Change, err error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
