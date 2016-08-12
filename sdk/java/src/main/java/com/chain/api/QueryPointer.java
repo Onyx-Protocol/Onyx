@@ -7,8 +7,7 @@ import java.util.List;
 
 public class QueryPointer {
     public String index;
-    @SerializedName("chql")
-    public String query;
+    public String chql;
     @SerializedName("chql_params")
     public List<String> params;
     public String cursor;

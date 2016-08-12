@@ -22,8 +22,8 @@ public abstract class BaseQuery<T extends BaseQuery<T>> {
         return (T)this;
     }
 
-    public T setQuery(String query) {
-        this.queryPointer.query = query;
+    public T withChQL(String chql) {
+        this.queryPointer.chql = chql;
         return (T)this;
     }
 
