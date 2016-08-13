@@ -59,11 +59,11 @@ func constructBalancesQuery(expr chql.SQLExpr, timestampMS uint64) (string, []in
 	var buf bytes.Buffer
 
 	buf.WriteString("SELECT COALESCE(SUM((data->>'amount')::integer), 0)")
-	for i, grouping := range expr.GroupBy {
+	for _, grouping := range expr.GroupBy {
 		buf.WriteString(", ")
 
 		buf.WriteString(pq.QuoteIdentifier("data"))
-		for _, field := range grouping {
+		for i, field := range grouping {
 			if i+1 < len(grouping) {
 				buf.WriteString("->")
 			} else {

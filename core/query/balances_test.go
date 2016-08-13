@@ -40,7 +40,7 @@ func TestConstructBalancesQuery(t *testing.T) {
 		{
 			query:      "account_id = $1 AND asset_tags.currency = $2",
 			values:     []interface{}{"foo"},
-			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0), "data"->'asset_tags'->'currency' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
+			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0), "data"->'asset_tags'->>'currency' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
 			wantValues: []interface{}{`{"account_id":"foo"}`, now},
 		},
 	}
