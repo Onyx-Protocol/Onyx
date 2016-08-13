@@ -3,13 +3,10 @@ package httpjson
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"reflect"
 
 	"golang.org/x/net/context"
-
-	"chain/net/http/pat"
 )
 
 // DefaultResponse will be sent as the response body
@@ -21,21 +18,19 @@ var DefaultResponse = json.RawMessage(`{"message":"ok"}`)
 // It uses the signature of the function to decide how to interpret
 type handler struct {
 	fv      reflect.Value
-	labels  []string
 	inType  reflect.Type
 	hasCtx  bool
 	errFunc ErrorWriter
 }
 
-func newHandler(pattern string, f interface{}, errFunc ErrorWriter) (*handler, error) {
+func newHandler(f interface{}, errFunc ErrorWriter) (*handler, error) {
 	fv := reflect.ValueOf(f)
-	labels := pat.Labels(pattern)
-	hasCtx, inType, err := funcInputType(fv, len(labels))
+	hasCtx, inType, err := funcInputType(fv)
 	if err != nil {
 		return nil, err
 	}
 
-	h := &handler{fv, labels, inType, hasCtx, errFunc}
+	h := &handler{fv, inType, hasCtx, errFunc}
 	return h, nil
 }
 
@@ -45,10 +40,6 @@ func (h *handler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r
 		ctx = context.WithValue(ctx, reqKey, req)
 		ctx = context.WithValue(ctx, respKey, w)
 		a = append(a, reflect.ValueOf(ctx))
-	}
-	for _, label := range h.labels {
-		s := req.URL.Query().Get(label)
-		a = append(a, reflect.ValueOf(s))
 	}
 	if h.inType != nil {
 		inPtr := reflect.New(h.inType)
@@ -91,7 +82,7 @@ var (
 	contextType = reflect.TypeOf((*context.Context)(nil)).Elem()
 )
 
-func funcInputType(fv reflect.Value, nlabel int) (hasCtx bool, t reflect.Type, err error) {
+func funcInputType(fv reflect.Value) (hasCtx bool, t reflect.Type, err error) {
 	ft := fv.Type()
 	if ft.Kind() != reflect.Func || ft.IsVariadic() {
 		return false, nil, errors.New("need nonvariadic func in " + ft.String())
@@ -103,18 +94,11 @@ func funcInputType(fv reflect.Value, nlabel int) (hasCtx bool, t reflect.Type, e
 		off = 1
 	}
 
-	if ft.NumIn() < off+nlabel {
-		return false, nil, errors.New("not enough params in " + ft.String())
-	} else if ft.NumIn() > off+nlabel+1 {
+	if ft.NumIn() > off+1 {
 		return false, nil, errors.New("too many params in " + ft.String())
 	}
-	for i := 0; i < nlabel; i++ {
-		if ft.In(off+i).Kind() != reflect.String {
-			return false, nil, fmt.Errorf("param %d must be string label in %s", i, ft)
-		}
-	}
 
-	if ft.NumIn() == off+nlabel+1 {
+	if ft.NumIn() == off+1 {
 		t = ft.In(ft.NumIn() - 1)
 	}
 

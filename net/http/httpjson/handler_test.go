@@ -17,26 +17,24 @@ func TestHandler(t *testing.T) {
 	errX := errors.New("x")
 
 	cases := []struct {
-		pattern  string
 		rawQuery string
 		input    string
 		output   string
 		f        interface{}
 		wantErr  error
 	}{
-		{"/", "", ``, `{"message":"ok"}`, func() {}, nil},
-		{"/", "", ``, `1`, func() int { return 1 }, nil},
-		{"/", "", ``, `{"message":"ok"}`, func() error { return nil }, nil},
-		{"/", "", ``, ``, func() error { return errX }, errX},
-		{"/", "", ``, `1`, func() (int, error) { return 1, nil }, nil},
-		{"/", "", ``, ``, func() (int, error) { return 0, errX }, errX},
-		{"/", "", `1`, `1`, func(i int) int { return i }, nil},
-		{"/", "", `1`, `1`, func(i *int) int { return *i }, nil},
-		{"/:a", ":a=foo", ``, `"foo"`, func(s string) string { return s }, nil},
-		{"/", "", `"foo"`, `"foo"`, func(s string) string { return s }, nil},
-		{"/", "", `{"x":1}`, `1`, func(x struct{ X int }) int { return x.X }, nil},
-		{"/", "", `{"x":1}`, `1`, func(x *struct{ X int }) int { return x.X }, nil},
-		{"/", "", ``, `1`, func(ctx context.Context) int { return ctx.Value("k").(int) }, nil},
+		{"", ``, `{"message":"ok"}`, func() {}, nil},
+		{"", ``, `1`, func() int { return 1 }, nil},
+		{"", ``, `{"message":"ok"}`, func() error { return nil }, nil},
+		{"", ``, ``, func() error { return errX }, errX},
+		{"", ``, `1`, func() (int, error) { return 1, nil }, nil},
+		{"", ``, ``, func() (int, error) { return 0, errX }, errX},
+		{"", `1`, `1`, func(i int) int { return i }, nil},
+		{"", `1`, `1`, func(i *int) int { return *i }, nil},
+		{"", `"foo"`, `"foo"`, func(s string) string { return s }, nil},
+		{"", `{"x":1}`, `1`, func(x struct{ X int }) int { return x.X }, nil},
+		{"", `{"x":1}`, `1`, func(x *struct{ X int }) int { return x.X }, nil},
+		{"", ``, `1`, func(ctx context.Context) int { return ctx.Value("k").(int) }, nil},
 	}
 
 	for _, test := range cases {
@@ -44,9 +42,9 @@ func TestHandler(t *testing.T) {
 		errFunc := func(ctx context.Context, w http.ResponseWriter, err error) {
 			gotErr = err
 		}
-		h, err := newHandler(test.pattern, test.f, errFunc)
+		h, err := newHandler(test.f, errFunc)
 		if err != nil {
-			t.Errorf("NewHandler(%q, %v) got err %v", test.pattern, test.f, err)
+			t.Errorf("newHandler(%v) got err %v", test.f, err)
 			continue
 		}
 
@@ -73,7 +71,7 @@ func TestReadErr(t *testing.T) {
 	errFunc := func(ctx context.Context, w http.ResponseWriter, err error) {
 		gotErr = errors.Root(err)
 	}
-	h, _ := newHandler("/", func(int) {}, errFunc)
+	h, _ := newHandler(func(int) {}, errFunc)
 
 	resp := httptest.NewRecorder()
 	body := iotest.OneByteReader(iotest.TimeoutReader(strings.NewReader("123456")))
@@ -89,29 +87,23 @@ func TestReadErr(t *testing.T) {
 }
 
 func TestFuncInputTypeError(t *testing.T) {
-	cases := []struct {
-		nlabel int
-		pat    string
-		f      interface{}
-	}{
-		{0, "/", 0},
-		{0, "/", "foo"},
-		{0, "/", func() (int, int) { return 0, 0 }},
-		{1, "/:n", func() {}},
-		{1, "/:n", func(int) {}},
-		{0, "/", func(string, int) {}},
-		{0, "/", func() (int, int, error) { return 0, 0, nil }},
+	cases := []interface{}{
+		0,
+		"foo",
+		func() (int, int) { return 0, 0 },
+		func(string, int) {},
+		func() (int, int, error) { return 0, 0, nil },
 	}
 
-	for _, test := range cases {
-		_, _, err := funcInputType(reflect.ValueOf(test.f), test.nlabel)
+	for _, testf := range cases {
+		_, _, err := funcInputType(reflect.ValueOf(testf))
 		if err == nil {
-			t.Errorf("funcInputType(%T, %d) want error", test.f, test.nlabel)
+			t.Errorf("funcInputType(%T) want error", testf)
 		}
 
-		_, err = newHandler(test.pat, test.f, nil)
+		_, err = newHandler(testf, nil)
 		if err == nil {
-			t.Errorf("funcInputType(%T, %d) want error", test.f, test.nlabel)
+			t.Errorf("funcInputType(%T) want error", testf)
 		}
 	}
 }
@@ -124,33 +116,30 @@ var (
 
 func TestFuncInputTypeOk(t *testing.T) {
 	cases := []struct {
-		nlabel  int
 		f       interface{}
 		wantCtx bool
 		wantT   reflect.Type
 	}{
-		{0, func() {}, false, nil},
-		{0, func() int { return 0 }, false, nil},
-		{0, func() error { return nil }, false, nil},
-		{0, func() (int, error) { return 0, nil }, false, nil},
-		{0, func(int) {}, false, intType},
-		{0, func(*int) {}, false, intpType},
-		{0, func(context.Context) {}, true, nil},
-		{0, func(string) {}, false, stringType}, // req body is string
-		{1, func(string) {}, false, nil},        // one label; no req body
-		{1, func(label, body string) {}, false, stringType},
+		{func() {}, false, nil},
+		{func() int { return 0 }, false, nil},
+		{func() error { return nil }, false, nil},
+		{func() (int, error) { return 0, nil }, false, nil},
+		{func(int) {}, false, intType},
+		{func(*int) {}, false, intpType},
+		{func(context.Context) {}, true, nil},
+		{func(string) {}, false, stringType}, // req body is string
 	}
 
 	for _, test := range cases {
-		gotCtx, gotT, err := funcInputType(reflect.ValueOf(test.f), test.nlabel)
+		gotCtx, gotT, err := funcInputType(reflect.ValueOf(test.f))
 		if err != nil {
-			t.Errorf("funcInputType(%T, %d) got error: %v", test.f, test.nlabel, err)
+			t.Errorf("funcInputType(%T) got error: %v", test.f, err)
 		}
 		if gotCtx != test.wantCtx {
-			t.Errorf("funcInputType(%T, %d) context = %v want %v", test.f, test.nlabel, gotCtx, test.wantCtx)
+			t.Errorf("funcInputType(%T) context = %v want %v", test.f, gotCtx, test.wantCtx)
 		}
 		if gotT != test.wantT {
-			t.Errorf("funcInputType(%T, %d) = %v want %v", test.f, test.nlabel, gotT, test.wantT)
+			t.Errorf("funcInputType(%T) = %v want %v", test.f, gotT, test.wantT)
 		}
 	}
 }

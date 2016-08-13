@@ -12,10 +12,10 @@ import (
 func TestMuxOk(t *testing.T) {
 	errFunc := func(ctx context.Context, w http.ResponseWriter, err error) {}
 	m := NewServeMux(errFunc)
-	m.HandleFunc("GET", "/:n", func(a string) string { return a })
+	m.HandleFunc("POST", "/", func(a string) string { return a })
 
 	resp := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/2", nil)
+	req, _ := http.NewRequest("POST", "/", strings.NewReader(`"2"`))
 	m.ServeHTTPContext(nil, resp, req)
 	if resp.Code != 200 {
 		t.Errorf("response code = %d want 200", resp.Code)

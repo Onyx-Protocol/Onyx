@@ -45,7 +45,7 @@ func (m *ServeMux) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 // If f is not a function with a compatible signature,
 // HandleFunc panics.
 func (m *ServeMux) HandleFunc(method, pattern string, f interface{}) {
-	h, err := newHandler(pattern, f, m.errFunc)
+	h, err := newHandler(f, m.errFunc)
 	if err != nil {
 		panic(err)
 	}
