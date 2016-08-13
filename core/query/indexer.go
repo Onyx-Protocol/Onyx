@@ -13,6 +13,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	chainlog "chain/log"
+	"chain/net/http/httpjson"
 )
 
 const (
@@ -137,7 +138,6 @@ func (ind *Indexer) CreateIndex(ctx context.Context, id string, typ string, rawQ
 
 	const insertQ = `
 		INSERT INTO query_indexes (id, type, query, unspent_outputs) VALUES($1, $2, $3, $4)
-		ON CONFLICT (id) DO UPDATE SET type = $2, query = $3, unspent_outputs = $4
 		RETURNING internal_id, created_at
 	`
 	idx := &Index{
@@ -148,6 +148,9 @@ func (ind *Indexer) CreateIndex(ctx context.Context, id string, typ string, rawQ
 	}
 	err = ind.db.QueryRow(ctx, insertQ, id, typ, rawQuery, unspents).Scan(&idx.internalID, &idx.createdAt)
 	if err != nil {
+		if pg.IsUniqueViolation(err) {
+			return nil, errors.Wrap(httpjson.ErrBadRequest, "non-unique index")
+		}
 		return nil, errors.Wrap(err, "saving tx index in db")
 	}
 	return idx, nil

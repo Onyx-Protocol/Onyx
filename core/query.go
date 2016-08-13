@@ -32,6 +32,9 @@ func (a *api) createIndex(ctx context.Context, in struct {
 	if in.Unspents && in.Type != query.IndexTypeBalance {
 		return nil, errors.WithDetail(ErrBadIndexConfig, "unspents flag is only valid for balance indexes")
 	}
+	if in.ID == "" {
+		return nil, errors.WithDetail(httpjson.ErrBadRequest, "missing index ID")
+	}
 
 	idx, err := a.indexer.CreateIndex(ctx, in.ID, in.Type, in.Query, in.Unspents)
 	return idx, errors.Wrap(err, "creating the new index")

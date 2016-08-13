@@ -608,6 +608,7 @@ POST /create-index
 Request
 ```
 {
+  "id": "...",            // user-supplied, human-readable unique id
   "type": "...",          // `transaction`, `balance`, or `asset`
   "unspents": "true",     // only for `type: "balance"` - indexes unspent outputs in addition to balances
   "query": "..."
