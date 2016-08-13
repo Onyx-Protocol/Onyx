@@ -10,6 +10,7 @@ import (
 	"chain/core/asset"
 	"chain/core/blocksigner"
 	"chain/core/generator"
+	"chain/core/mockhsm"
 	"chain/core/txbuilder"
 	"chain/cos"
 	"chain/cos/bc"
@@ -108,13 +109,19 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 	}
 	asset.Init(fc, nil, true)
 	account.Init(fc, nil)
-	privkey := testutil.TestPrv
-	localSigner := blocksigner.New(privkey, pg.FromContext(ctx), fc)
+
+	hsm := mockhsm.New(pg.FromContext(ctx))
+	xpub, err := hsm.CreateKey(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	localSigner := blocksigner.New(xpub, hsm, pg.FromContext(ctx), fc)
 	g := &generator.Generator{
 		Config: generator.Config{
 			LocalSigner:  localSigner,
 			BlockPeriod:  time.Second,
-			BlockKeys:    []ed25519.PublicKey{testutil.TestPub},
+			BlockKeys:    []ed25519.PublicKey{xpub.Key},
 			SigsRequired: 1,
 			FC:           fc,
 		},

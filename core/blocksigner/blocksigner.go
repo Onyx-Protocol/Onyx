@@ -3,38 +3,41 @@ package blocksigner
 import (
 	"golang.org/x/net/context"
 
+	"chain/core/mockhsm"
 	"chain/cos"
 	"chain/cos/bc"
-	"chain/crypto/ed25519"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
 )
 
 // Signer validates and signs blocks.
 type Signer struct {
-	key ed25519.PrivateKey
-	db  pg.DB
-	fc  *cos.FC
+	XPub *hd25519.XPub
+	hsm  *mockhsm.HSM
+	db   pg.DB
+	fc   *cos.FC
 }
 
-// New returns a new Signer
-// that validates blocks with fc
-// and signs them with k.
-func New(k ed25519.PrivateKey, db pg.DB, fc *cos.FC) *Signer {
-	if k == nil {
-		panic("signer key is unset")
-	}
+// New returns a new Signer that validates blocks with fc and signs
+// them with k.
+//
+// TODO(bobg): Create an HSM abstraction that allows HSM's other than
+// the mockhsm to be used here.
+func New(xpub *hd25519.XPub, hsm *mockhsm.HSM, db pg.DB, fc *cos.FC) *Signer {
 	return &Signer{
-		key: k,
-		db:  db,
-		fc:  fc,
+		XPub: xpub,
+		hsm:  hsm,
+		db:   db,
+		fc:   fc,
 	}
 }
 
 // ComputeBlockSignature computes the signature for the block using
 // the private key in s.  It does not validate the block.
-func (s *Signer) ComputeBlockSignature(b *bc.Block) []byte {
-	return cos.ComputeBlockSignature(b, s.key)
+func (s *Signer) ComputeBlockSignature(ctx context.Context, b *bc.Block) ([]byte, error) {
+	hash := b.HashForSig()
+	return s.hsm.Sign(ctx, s.XPub, nil, hash[:])
 }
 
 // SignBlock validates the given block against the current blockchain
@@ -57,12 +60,7 @@ func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "lock block height")
 	}
-	return s.ComputeBlockSignature(b), nil
-}
-
-// PublicKey gets the public key for the signer's private key.
-func (s *Signer) PublicKey() ed25519.PublicKey {
-	return s.key.Public().(ed25519.PublicKey)
+	return s.ComputeBlockSignature(ctx, b)
 }
 
 // lockBlockHeight records a signer's intention to sign a given block

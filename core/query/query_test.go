@@ -11,6 +11,7 @@ import (
 	"chain/core/asset/assettest"
 	"chain/core/blocksigner"
 	"chain/core/generator"
+	"chain/core/mockhsm"
 	"chain/core/txdb"
 	"chain/cos"
 	"chain/crypto/ed25519"
@@ -34,17 +35,22 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	account.Init(fc, indexer)
 	indexer.RegisterAnnotator(account.AnnotateTxs)
 	indexer.RegisterAnnotator(asset.AnnotateTxs)
-	localSigner := blocksigner.New(testutil.TestPrv, db, fc)
+	hsm := mockhsm.New(db)
+	xpub, err := hsm.CreateKey(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	localSigner := blocksigner.New(xpub, hsm, db, fc)
 	g := &generator.Generator{
 		Config: generator.Config{
 			LocalSigner:  localSigner,
 			BlockPeriod:  time.Second,
-			BlockKeys:    []ed25519.PublicKey{testutil.TestPub},
+			BlockKeys:    []ed25519.PublicKey{xpub.Key},
 			SigsRequired: 1,
 			FC:           fc,
 		},
 	}
-	genesis, err := fc.UpsertGenesisBlock(ctx, []ed25519.PublicKey{testutil.TestPub}, 1, time.Now())
+	genesis, err := fc.UpsertGenesisBlock(ctx, []ed25519.PublicKey{xpub.Key}, 1, time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -52,18 +52,18 @@ import (
 
 var (
 	// config vars
-	tlsCrt     = env.String("TLSCRT", "")
-	tlsKey     = env.String("TLSKEY", "")
-	listenAddr = env.String("LISTEN", ":8080")
-	dbURL      = env.String("DB_URL", "postgres:///core?sslmode=disable")
-	target     = env.String("TARGET", "sandbox")
-	samplePer  = env.Duration("SAMPLEPER", 10*time.Second)
-	splunkAddr = os.Getenv("SPLUNKADDR")
-	logFile    = os.Getenv("LOGFILE")
-	logSize    = env.Int("LOGSIZE", 5e6) // 5MB
-	logCount   = env.Int("LOGCOUNT", 9)
-	logQueries = env.Bool("LOG_QUERIES", false)
-	blockKey   = env.String("BLOCK_KEY", "7a99f72169fad2d3a75aa36c550f60ee3a10f947ab5e4d38d5823667333d7e811af6c3e2396e20cab40770a8d8d5a906cb147539f390b57364b99b767d0b1418")
+	tlsCrt       = env.String("TLSCRT", "")
+	tlsKey       = env.String("TLSKEY", "")
+	listenAddr   = env.String("LISTEN", ":8080")
+	dbURL        = env.String("DB_URL", "postgres:///core?sslmode=disable")
+	target       = env.String("TARGET", "sandbox")
+	samplePer    = env.Duration("SAMPLEPER", 10*time.Second)
+	splunkAddr   = os.Getenv("SPLUNKADDR")
+	logFile      = os.Getenv("LOGFILE")
+	logSize      = env.Int("LOGSIZE", 5e6) // 5MB
+	logCount     = env.Int("LOGCOUNT", 9)
+	logQueries   = env.Bool("LOG_QUERIES", false)
+	blockXPubStr = env.String("BLOCK_XPUB", "")
 	// for config var LIBRATO_URL, see func init below
 	traceguideToken    = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns         = env.Int("MAXDBCONNS", 10) // set to 100 in prod
@@ -126,18 +126,7 @@ func main() {
 
 	requireSecretInProd(*apiSecretToken)
 
-	keyBytes, err := hex.DecodeString(*blockKey)
-	if err != nil {
-		chainlog.Fatal(ctx, chainlog.KeyError, err)
-	}
-
 	txbuilder.Generator = remoteGeneratorURL
-
-	privKey, err := hd25519.PrvFromBytes(keyBytes)
-	if err != nil {
-		panic(err)
-	}
-	pubKey := privKey.Public().(ed25519.PublicKey)
 
 	if librato.URL.Host != "" {
 		librato.Source = *target
@@ -172,12 +161,36 @@ func main() {
 	db.SetMaxOpenConns(*maxDBConns)
 	db.SetMaxIdleConns(100)
 	ctx = pg.NewContext(ctx, db)
+
+	hsm := mockhsm.New(db)
+
+	// TODO(bobg): Right now there are a few uses for this xpub
+	// (https://github.com/chain-engineering/chain/pull/1317#discussion_r74675283),
+	// but in the future only signers should care about them. Look for
+	// the BLOCK_XPUB setting only when isSigner is true, and generate a
+	// new key only on request, not automatically.
+	var blockXPub *hd25519.XPub
+	if *blockXPubStr == "" {
+		blockXPub, err = hsm.CreateKey(ctx)
+		if err != nil {
+			panic(err)
+		}
+		log.Println("Generated new block-signing key")
+		log.Println("Specify for future runs by adding this to the environment:")
+		log.Printf("BLOCK_XPUB=%s\n", blockXPub.String())
+	} else {
+		blockXPub, err = hd25519.XPubFromString(*blockXPubStr)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	heights, err := txdb.ListenBlocks(ctx, *dbURL)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 	store, pool := txdb.New(db)
-	fc, err := cos.NewFC(ctx, store, pool, []ed25519.PublicKey{pubKey}, heights)
+	fc, err := cos.NewFC(ctx, store, pool, []ed25519.PublicKey{blockXPub.Key}, heights)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
@@ -189,7 +202,7 @@ func main() {
 
 	var localSigner *blocksigner.Signer
 	if *isSigner {
-		localSigner = blocksigner.New(privKey, db, fc)
+		localSigner = blocksigner.New(blockXPub, hsm, db, fc)
 	}
 
 	rpcclient.Init(*remoteGeneratorURL)
@@ -212,7 +225,7 @@ func main() {
 			pubKeys[i] = key.Key
 		}
 		if *isSigner {
-			pubKeys[nSigners-1] = pubKey
+			pubKeys[nSigners-1] = blockXPub.Key
 		}
 
 		generatorConfig = &generator.Config{
@@ -246,8 +259,6 @@ func main() {
 			go fetch.Fetch(ctx, fc)
 		}
 	})
-
-	hsm := mockhsm.New(db)
 
 	h := core.Handler(*apiSecretToken, fc, generatorConfig, localSigner, store, pool, hsm, indexer)
 	h = metrics.Handler{Handler: h}

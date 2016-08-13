@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -73,7 +74,7 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 		signersByPubkey[keystr(remoteSigner.Key)] = remoteSigner
 	}
 	if g.LocalSigner != nil {
-		signersByPubkey[keystr(g.LocalSigner.PublicKey())] = nil
+		signersByPubkey[keystr(g.LocalSigner.XPub.Key)] = nil
 	}
 
 	type response struct {
@@ -109,7 +110,7 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 				pos:    pos,
 			}
 			if signer == nil {
-				r.signature = g.LocalSigner.ComputeBlockSignature(b)
+				r.signature, r.err = g.LocalSigner.ComputeBlockSignature(ctx, b)
 			} else {
 				r.signature, r.err = rpcclient.GetSignatureForSerializedBlock(ctx, signer.URL.String(), serializedBlock)
 			}
@@ -155,5 +156,5 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 }
 
 func keystr(k ed25519.PublicKey) string {
-	return string(hd25519.PubBytes(k))
+	return hex.EncodeToString(hd25519.PubBytes(k))
 }
