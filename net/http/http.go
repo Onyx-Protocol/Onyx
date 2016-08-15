@@ -10,30 +10,9 @@ import (
 	"chain/net/http/reqid"
 )
 
+// Handler is like http.Handler but it also takes a context.
 type Handler interface {
 	ServeHTTPContext(context.Context, http.ResponseWriter, *http.Request)
-}
-
-type HandlerFunc func(context.Context, http.ResponseWriter, *http.Request)
-
-// ServeHTTPContext calls f(ctx, w, r).
-func (f HandlerFunc) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	f(ctx, w, r)
-}
-
-type noContextHandler struct {
-	h http.Handler
-}
-
-// DropContext returns a Handler that ignores its context
-// and simply calls h.
-func DropContext(h http.Handler) Handler {
-	return noContextHandler{h}
-}
-
-func (h noContextHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) { h.h.ServeHTTP(w, req) }
-func (h noContextHandler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-	h.h.ServeHTTP(w, req)
 }
 
 // ContextHandler converts a Handler to an http.Handler

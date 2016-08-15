@@ -7,9 +7,13 @@ import (
 	"testing"
 
 	"golang.org/x/net/context"
-
-	chainhttp "chain/net/http"
 )
+
+type handlerFunc func(context.Context, http.ResponseWriter, *http.Request)
+
+func (f handlerFunc) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	f(ctx, w, req)
+}
 
 func alwaysSuccess(ctx context.Context, u, p string) error     { return nil }
 func alwaysNotAuth(ctx context.Context, u, p string) error     { return ErrNotAuthenticated }
@@ -18,7 +22,7 @@ func alwaysInternalErr(ctx context.Context, u, p string) error { return errors.N
 func TestBasicHandler(t *testing.T) {
 	h := BasicHandler{
 		Auth: alwaysSuccess,
-		Next: chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {}),
+		Next: handlerFunc(func(context.Context, http.ResponseWriter, *http.Request) {}),
 	}
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/whatever", nil)

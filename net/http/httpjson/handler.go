@@ -7,7 +7,13 @@ import (
 	"reflect"
 
 	"golang.org/x/net/context"
+
+	chainhttp "chain/net/http"
 )
+
+// ErrorWriter is responsible for writing the provided error value
+// to the response.
+type ErrorWriter func(context.Context, http.ResponseWriter, error)
 
 // DefaultResponse will be sent as the response body
 // when the handler function signature
@@ -23,7 +29,10 @@ type handler struct {
 	errFunc ErrorWriter
 }
 
-func newHandler(f interface{}, errFunc ErrorWriter) (*handler, error) {
+// Handler returns an HTTP handler for function f.
+// See the package doc for details on allowed signatures for f.
+// If f returns a non-nil error, the handler will call errFunc.
+func Handler(f interface{}, errFunc ErrorWriter) (chainhttp.Handler, error) {
 	fv := reflect.ValueOf(f)
 	hasCtx, inType, err := funcInputType(fv)
 	if err != nil {

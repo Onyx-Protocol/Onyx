@@ -68,7 +68,7 @@ func TestAccountTransfer(t *testing.T) {
 }
 
 func TestMux(t *testing.T) {
-	// Handler calls httpjson.HandleFunc, which panics
+	// Handler calls handleJSON, which panics
 	// if the function signature is not of the right form.
 	// So call Handler here and rescue any panic
 	// to check for this case.

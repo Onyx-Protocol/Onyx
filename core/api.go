@@ -8,9 +8,7 @@ import (
 	"chain/core/query"
 	"chain/core/txdb"
 	"chain/cos"
-	chainhttp "chain/net/http"
-	"chain/net/http/httpjson"
-	"chain/net/http/pat"
+	"chain/net/http"
 )
 
 const (
@@ -28,8 +26,7 @@ func Handler(
 	pool *txdb.Pool,
 	hsm *mockhsm.HSM,
 	indexer *query.Indexer,
-) chainhttp.Handler {
-	h := pat.New()
+) http.Handler {
 	a := &api{
 		fc:        fc,
 		store:     store,
@@ -39,19 +36,10 @@ func Handler(
 		indexer:   indexer,
 	}
 
-	apiHandler := apiAuthn(apiSecret, a.handler())
-	h.Add("GET", "/", apiHandler)
-	h.Add("PUT", "/", apiHandler)
-	h.Add("POST", "/", apiHandler)
-	h.Add("DELETE", "/", apiHandler)
-
-	rpcHandler := chainhttp.HandlerFunc(rpcAuthn(rpcAuthedHandler(generatorConfig, signer)))
-	h.Add("GET", "/rpc/", rpcHandler)
-	h.Add("PUT", "/rpc/", rpcHandler)
-	h.Add("POST", "/rpc/", rpcHandler)
-	h.Add("DELETE", "/rpc/", rpcHandler)
-
-	return h
+	m := http.NewServeMux()
+	m.Handle("/", apiAuthn(apiSecret, a.handler()))
+	m.Handle("/rpc/", rpcAuthn(rpcAuthedHandler(generatorConfig, signer)))
+	return m
 }
 
 type api struct {
@@ -87,55 +75,55 @@ type page struct {
 	Query    requestQuery `json:"query"`
 }
 
-func (a *api) handler() chainhttp.HandlerFunc {
-	h := httpjson.NewServeMux(writeHTTPError)
+func (a *api) handler() http.Handler {
+	m := http.NewServeMux()
 
 	// Accounts
-	h.HandleFunc("POST", "/create-account", createAccount)
-	h.HandleFunc("POST", "/set-account-tags", setAccountTags)
-	h.HandleFunc("POST", "/archive-account", archiveAccount)
+	m.Handle("/create-account", jsonHandler(createAccount))
+	m.Handle("/set-account-tags", jsonHandler(setAccountTags))
+	m.Handle("/archive-account", jsonHandler(archiveAccount))
 
 	// Assets
-	h.HandleFunc("POST", "/create-asset", a.createAsset)
-	h.HandleFunc("POST", "/set-asset-tags", setAssetTags)
-	h.HandleFunc("POST", "/archive-asset", archiveAsset)
+	m.Handle("/create-asset", jsonHandler(a.createAsset))
+	m.Handle("/set-asset-tags", jsonHandler(setAssetTags))
+	m.Handle("/archive-asset", jsonHandler(archiveAsset))
 
 	// Transactions
-	h.HandleFunc("POST", "/build-transaction-template", build)
-	h.HandleFunc("POST", "/submit-transaction-template", a.submit)
-	h.HandleFunc("POST", "/create-control-program", createControlProgram)
+	m.Handle("/build-transaction-template", jsonHandler(build))
+	m.Handle("/submit-transaction-template", jsonHandler(a.submit))
+	m.Handle("/create-control-program", jsonHandler(createControlProgram))
 
 	// MockHSM endpoints
-	h.HandleFunc("POST", "/mockhsm/create-key", a.mockhsmCreateKey)
-	h.HandleFunc("POST", "/mockhsm/list-keys", a.mockhsmListKeys)
-	h.HandleFunc("POST", "/mockhsm/delkey", a.mockhsmDelKey)
-	h.HandleFunc("POST", "/mockhsm/sign-transaction-template", a.mockhsmSignTemplates)
+	m.Handle("/mockhsm/create-key", jsonHandler(a.mockhsmCreateKey))
+	m.Handle("/mockhsm/list-keys", jsonHandler(a.mockhsmListKeys))
+	m.Handle("/mockhsm/delkey", jsonHandler(a.mockhsmDelKey))
+	m.Handle("/mockhsm/sign-transaction-template", jsonHandler(a.mockhsmSignTemplates))
 
 	// Transaction indexes & querying
-	h.HandleFunc("POST", "/create-index", a.createIndex)
-	h.HandleFunc("POST", "/list-indexes", a.listIndexes)
-	h.HandleFunc("POST", "/list-accounts", a.listAccounts)
-	h.HandleFunc("POST", "/list-assets", a.listAssets)
-	h.HandleFunc("POST", "/list-transactions", a.listTransactions)
-	h.HandleFunc("POST", "/list-balances", a.listBalances)
-	h.HandleFunc("POST", "/list-unspent-outputs", a.listUnspentOutputs)
+	m.Handle("/create-index", jsonHandler(a.createIndex))
+	m.Handle("/list-indexes", jsonHandler(a.listIndexes))
+	m.Handle("/list-accounts", jsonHandler(a.listAccounts))
+	m.Handle("/list-assets", jsonHandler(a.listAssets))
+	m.Handle("/list-transactions", jsonHandler(a.listTransactions))
+	m.Handle("/list-balances", jsonHandler(a.listBalances))
+	m.Handle("/list-unspent-outputs", jsonHandler(a.listUnspentOutputs))
 
 	// V3 DEPRECATED
-	h.HandleFunc("POST", "/v3/transact/cancel-reservation", cancelReservation)
+	m.Handle("/v3/transact/cancel-reservation", jsonHandler(cancelReservation))
 
-	return h.ServeHTTPContext
+	return m
 }
 
-func rpcAuthedHandler(generator *generator.Config, signer *blocksigner.Signer) chainhttp.HandlerFunc {
-	h := httpjson.NewServeMux(writeHTTPError)
+func rpcAuthedHandler(generator *generator.Config, signer *blocksigner.Signer) http.Handler {
+	m := http.NewServeMux()
 
 	if generator != nil {
-		h.HandleFunc("POST", "/rpc/generator/submit", generator.Submit)
-		h.HandleFunc("POST", "/rpc/generator/get-blocks", generator.GetBlocks)
+		m.Handle("/rpc/generator/submit", jsonHandler(generator.Submit))
+		m.Handle("/rpc/generator/get-blocks", jsonHandler(generator.GetBlocks))
 	}
 	if signer != nil {
-		h.HandleFunc("POST", "/rpc/signer/sign-block", signer.SignBlock)
+		m.Handle("/rpc/signer/sign-block", jsonHandler(signer.SignBlock))
 	}
 
-	return h.ServeHTTPContext
+	return m
 }

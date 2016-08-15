@@ -42,9 +42,9 @@ func TestHandler(t *testing.T) {
 		errFunc := func(ctx context.Context, w http.ResponseWriter, err error) {
 			gotErr = err
 		}
-		h, err := newHandler(test.f, errFunc)
+		h, err := Handler(test.f, errFunc)
 		if err != nil {
-			t.Errorf("newHandler(%v) got err %v", test.f, err)
+			t.Errorf("Handler(%v) got err %v", test.f, err)
 			continue
 		}
 
@@ -71,7 +71,7 @@ func TestReadErr(t *testing.T) {
 	errFunc := func(ctx context.Context, w http.ResponseWriter, err error) {
 		gotErr = errors.Root(err)
 	}
-	h, _ := newHandler(func(int) {}, errFunc)
+	h, _ := Handler(func(int) {}, errFunc)
 
 	resp := httptest.NewRecorder()
 	body := iotest.OneByteReader(iotest.TimeoutReader(strings.NewReader("123456")))
@@ -101,7 +101,7 @@ func TestFuncInputTypeError(t *testing.T) {
 			t.Errorf("funcInputType(%T) want error", testf)
 		}
 
-		_, err = newHandler(testf, nil)
+		_, err = Handler(testf, nil)
 		if err == nil {
 			t.Errorf("funcInputType(%T) want error", testf)
 		}

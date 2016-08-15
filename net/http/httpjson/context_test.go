@@ -18,7 +18,7 @@ func TestContext(t *testing.T) {
 		ResponseWriter(ctx).Header().Set("Test-Resp-Key", wantRespHead)
 	}
 
-	h, err := newHandler(f, nil)
+	h, err := Handler(f, nil)
 	if err != nil {
 		t.Fatalf("err = %v", err)
 	}

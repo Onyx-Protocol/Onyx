@@ -1,23 +1,24 @@
 package core
 
 import (
+	"crypto/subtle"
+
 	"golang.org/x/net/context"
 
 	chainhttp "chain/net/http"
 	"chain/net/http/authn"
 	"chain/net/rpc"
-	"crypto/subtle"
 )
 
-func rpcAuthn(f chainhttp.HandlerFunc) chainhttp.HandlerFunc {
+func rpcAuthn(f chainhttp.Handler) chainhttp.Handler {
 	return authn.BasicHandler{
 		Auth:  rpc.Authenticate,
 		Next:  f,
 		Realm: "x.chain.com",
-	}.ServeHTTPContext
+	}
 }
 
-func apiAuthn(secret string, next chainhttp.HandlerFunc) chainhttp.HandlerFunc {
+func apiAuthn(secret string, next chainhttp.Handler) chainhttp.Handler {
 	// If the secret is blank, we should not require an HTTP Basic Auth header,
 	// nor should we present a WWW-Authenticate challenge.
 	if secret == "" {
@@ -35,5 +36,5 @@ func apiAuthn(secret string, next chainhttp.HandlerFunc) chainhttp.HandlerFunc {
 		Auth:  authFunc,
 		Next:  next,
 		Realm: "Chain Core API",
-	}.ServeHTTPContext
+	}
 }

@@ -7,16 +7,20 @@ import (
 	"testing"
 
 	"golang.org/x/net/context"
-
-	chainhttp "chain/net/http"
 )
+
+type handlerFunc func(context.Context, http.ResponseWriter, *http.Request)
+
+func (f handlerFunc) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	f(ctx, w, req)
+}
 
 func TestGzip(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/foo", nil)
 	r.Header.Set("accept-encoding", "gzip")
 	ctx := context.Background()
-	h := Handler{chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h := Handler{handlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "hello, world")
 	})}
 	h.ServeHTTPContext(ctx, w, r)
@@ -29,7 +33,7 @@ func TestNoGzip(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/foo", nil)
 	ctx := context.Background()
-	h := Handler{chainhttp.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h := Handler{handlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "hello, world")
 	})}
 	h.ServeHTTPContext(ctx, w, r)

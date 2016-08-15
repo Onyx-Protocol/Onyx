@@ -7,12 +7,21 @@ import (
 
 	"chain/errors"
 	"chain/log"
+	chainhttp "chain/net/http"
 	"chain/net/http/httpjson"
 )
 
 // errBadReqHeader indicates the user supplied a malformed request header,
 // possibly including a datatype that doesn't match what we expected.
 var errBadReqHeader = errors.New("bad request header")
+
+func jsonHandler(f interface{}) chainhttp.Handler {
+	h, err := httpjson.Handler(f, writeHTTPError)
+	if err != nil {
+		panic(err)
+	}
+	return h
+}
 
 func writeHTTPError(ctx context.Context, w http.ResponseWriter, err error) {
 	logHTTPError(ctx, err)

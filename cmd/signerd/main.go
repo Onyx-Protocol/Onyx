@@ -81,8 +81,12 @@ func main() {
 		log.Fatal(ctx, log.KeyError, errors.Wrap(err, "loading hsm kd"))
 	}
 
-	m := httpjson.NewServeMux(writeHTTPError)
-	m.HandleFunc("POST", "/sign-transaction-template", signTemplates)
+	m := chainhttp.NewServeMux()
+	signHandler, err := httpjson.Handler(signTemplates, writeHTTPError)
+	if err != nil {
+		log.Error(ctx, err)
+	}
+	m.Handle("/sign-transaction-template", signHandler)
 
 	var h chainhttp.Handler = m
 	h = metrics.Handler{Handler: h}
