@@ -17,7 +17,7 @@ TRUNCATE
 	query_blocks,
 	reservations,
 	signed_blocks,
-	state_trees;
+	snapshots;
 
 ALTER SEQUENCE address_index_seq RESTART;
 ALTER SEQUENCE pool_tx_sort_id_seq RESTART;

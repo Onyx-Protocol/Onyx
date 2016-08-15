@@ -1,0 +1,28 @@
+syntax = "proto3";
+option go_package = "storage";
+package chain.core.txdb.internal.storage;
+
+// Snapshot represents a snapshot of the blockchain, including the state
+// tree and issuance memory.
+message Snapshot {
+  // Nodes contains every node within the state tree, including interior nodes.
+  // The nodes are ordered according to a pre-order traversal.
+  repeated StateTreeNode nodes = 1;
+
+  // Issuances contains the record of recent issuances for ensuring uniqueness
+  // of issuances.
+  repeated Issuance issuances = 2;
+
+  message Issuance {
+    bytes  hash      = 1;
+    uint64 expiry_ms = 2;
+  }
+
+  message StateTreeNode {
+    bytes key = 1;
+    bool leaf = 2;
+    bytes hash = 3;
+    bytes value = 4;
+  }
+}
+

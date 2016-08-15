@@ -11,7 +11,7 @@ import (
 	"chain/cos/bc"
 	"chain/cos/mempool"
 	"chain/cos/memstore"
-	"chain/cos/patricia"
+	"chain/cos/state"
 	"chain/cos/txscript"
 	"chain/crypto/ed25519"
 	"chain/errors"
@@ -25,7 +25,7 @@ func TestLatestBlock(t *testing.T) {
 	noBlocks := memstore.New()
 	oneBlock := memstore.New()
 	oneBlock.SaveBlock(ctx, &bc.Block{})
-	oneBlock.SaveStateTree(ctx, 1, patricia.NewTree(nil))
+	oneBlock.SaveSnapshot(ctx, 1, state.Empty())
 
 	cases := []struct {
 		store   Store
@@ -93,7 +93,7 @@ func TestWaitForBlock(t *testing.T) {
 		},
 	}
 	store.SaveBlock(ctx, block1)
-	store.SaveStateTree(ctx, 1, patricia.NewTree(nil))
+	store.SaveSnapshot(ctx, 1, state.Empty())
 	fc, err := NewFC(ctx, store, mempool.New(), nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)

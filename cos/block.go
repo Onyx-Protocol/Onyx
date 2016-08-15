@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/patricia"
+	"chain/cos/state"
 	"chain/cos/txscript"
 	"chain/cos/validation"
 	"chain/crypto/ed25519"
@@ -61,29 +61,22 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 		},
 	}
 
-	tree, err := fc.stateTree(ctx, prev.Height)
+	snapshot, err := fc.currentState(ctx, prev.Height)
 	if err != nil {
 		return nil, nil, err
-	}
-
-	priorIssuances := make(validation.PriorIssuances)
-	for k, v := range fc.priorIssuances {
-		priorIssuances[k] = v
 	}
 
 	ctx = span.NewContextSuffix(ctx, "-validate-all")
 	defer span.Finish(ctx)
 	for _, tx := range txs {
-		if validation.ConfirmTx(tree, priorIssuances, tx, b.TimestampMS) == nil {
-			validation.ApplyTx(tree, priorIssuances, tx)
+		if validation.ConfirmTx(snapshot, tx, b.TimestampMS) == nil {
+			validation.ApplyTx(snapshot, tx)
 			b.Transactions = append(b.Transactions, tx)
 		}
 	}
 
-	stateRoot := tree.RootHash()
-	b.SetStateRoot(stateRoot)
-	txRoot := validation.CalcMerkleRoot(b.Transactions)
-	b.SetTxRoot(txRoot)
+	b.SetStateRoot(snapshot.Tree.RootHash())
+	b.SetTxRoot(validation.CalcMerkleRoot(b.Transactions))
 
 	return b, prev, nil
 }
@@ -97,17 +90,17 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	tree, err := fc.stateTree(ctx, block.Height-1)
+	snapshot, err := fc.currentState(ctx, block.Height-1)
 	if err != nil {
 		return err
 	}
 
-	err = fc.validateBlock(ctx, block, tree)
+	err = fc.validateBlock(ctx, block, snapshot)
 	if err != nil {
 		return errors.Wrap(err, "block validation")
 	}
 
-	_, err = fc.applyBlock(ctx, block, tree)
+	_, err = fc.applyBlock(ctx, block, snapshot)
 	if err != nil {
 		return errors.Wrap(err, "applying block")
 	}
@@ -157,16 +150,16 @@ func (fc *FC) setHeight(h uint64) {
 	fc.height.cond.Broadcast()
 }
 
-func (fc *FC) stateTree(ctx context.Context, expectedHeight uint64) (*patricia.Tree, error) {
+func (fc *FC) currentState(ctx context.Context, expectedHeight uint64) (*state.Snapshot, error) {
 	// TODO(jackson): Store the state tree on FC.
-	tree, height, err := fc.store.LatestStateTree(ctx)
+	snapshot, height, err := fc.store.LatestSnapshot(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "loading state tree")
+		return nil, errors.Wrap(err, "loading state snapshot")
 	}
 	if height != expectedHeight {
-		return nil, errors.New("missing state tree for block")
+		return nil, errors.New("missing state snapshot for block")
 	}
-	return tree, nil
+	return state.Copy(snapshot), nil
 }
 
 // ValidateBlockForSig performs validation on an incoming _unsigned_
@@ -177,8 +170,8 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	defer span.Finish(ctx)
 
 	var (
-		prev *bc.Block
-		tree = patricia.NewTree(nil)
+		prev     *bc.Block
+		snapshot = state.Empty()
 	)
 
 	if block.Height > 1 {
@@ -188,19 +181,19 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 			return errors.Wrap(err, "getting previous block")
 		}
 
-		tree, err = fc.stateTree(ctx, prev.Height)
+		snapshot, err = fc.currentState(ctx, prev.Height)
 		if err != nil {
 			return err
 		}
 	}
 
-	err := validation.ValidateBlockForSig(ctx, tree, fc.priorIssuances, prev, block)
+	err := validation.ValidateBlockForSig(ctx, snapshot, prev, block)
 	return errors.Wrap(err, "validation")
 }
 
 // validateBlock performs validation on an incoming block, in advance of
 // applying the block to the store.
-func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, tree *patricia.Tree) error {
+func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -214,9 +207,9 @@ func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, tree *patricia
 	}
 
 	if isSignedByTrustedHost(block, fc.trustedKeys) {
-		err = validation.ApplyBlock(tree, fc.priorIssuances, block)
+		err = validation.ApplyBlock(snapshot, block)
 	} else {
-		err = validation.ValidateAndApplyBlock(ctx, tree, fc.priorIssuances, prev, block)
+		err = validation.ValidateAndApplyBlock(ctx, snapshot, prev, block)
 	}
 	if err != nil {
 		return errors.Wrapf(ErrBadBlock, "validate block: %v", err)
@@ -248,15 +241,15 @@ func isSignedByTrustedHost(block *bc.Block, trustedKeys []ed25519.PublicKey) boo
 func (fc *FC) applyBlock(
 	ctx context.Context,
 	block *bc.Block,
-	tree *patricia.Tree,
+	snapshot *state.Snapshot,
 ) (conflictingTxs []*bc.Tx, err error) {
 	err = fc.store.SaveBlock(ctx, block)
 	if err != nil {
 		return nil, errors.Wrap(err, "storing block")
 	}
-	err = fc.store.SaveStateTree(ctx, block.Height, tree)
+	err = fc.store.SaveSnapshot(ctx, block.Height, snapshot)
 	if err != nil {
-		return nil, errors.Wrap(err, "storing state tree")
+		return nil, errors.Wrap(err, "storing state snapshot")
 	}
 	conflicts, err := fc.rebuildPool(ctx, block)
 	return conflicts, errors.Wrap(err, "rebuilding pool")
@@ -281,15 +274,15 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 		return nil, errors.Wrap(err, "")
 	}
 
-	tree, err := fc.stateTree(ctx, block.Height)
+	snapshot, err := fc.currentState(ctx, block.Height)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, tx := range txs {
-		txErr := validation.ConfirmTx(tree, fc.priorIssuances, tx, block.TimestampMS)
+		txErr := validation.ConfirmTx(snapshot, tx, block.TimestampMS)
 		if txErr == nil {
-			validation.ApplyTx(tree, fc.priorIssuances, tx)
+			validation.ApplyTx(snapshot, tx)
 		} else {
 			deleteTxs = append(deleteTxs, tx)
 			if txInBlock[tx.Hash] {

@@ -51,8 +51,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/patricia"
-	"chain/cos/validation"
+	"chain/cos/state"
 	"chain/crypto/ed25519"
 	"chain/errors"
 )
@@ -86,11 +85,11 @@ type Store interface {
 	Height(context.Context) (uint64, error)
 	GetTxs(context.Context, ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error)
 	GetBlock(context.Context, uint64) (*bc.Block, error)
-	LatestStateTree(context.Context) (*patricia.Tree, uint64, error)
+	LatestSnapshot(context.Context) (*state.Snapshot, uint64, error)
 
 	SaveBlock(context.Context, *bc.Block) error
 	FinalizeBlock(context.Context, uint64) error
-	SaveStateTree(context.Context, uint64, *patricia.Tree) error
+	SaveSnapshot(context.Context, uint64, *state.Snapshot) error
 }
 
 // Pool provides storage for transactions in the pending tx pool.
@@ -109,7 +108,6 @@ type FC struct {
 	blockCallbacks []BlockCallback
 	txCallbacks    []TxCallback
 	trustedKeys    []ed25519.PublicKey
-	priorIssuances validation.PriorIssuances
 	height         struct {
 		cond sync.Cond // protects n
 		n    uint64
@@ -126,10 +124,9 @@ type FC struct {
 // signature indicates the block was already validated locally.
 func NewFC(ctx context.Context, store Store, pool Pool, trustedKeys []ed25519.PublicKey, heights <-chan uint64) (*FC, error) {
 	fc := &FC{
-		store:          store,
-		pool:           pool,
-		trustedKeys:    trustedKeys,
-		priorIssuances: make(validation.PriorIssuances),
+		store:       store,
+		pool:        pool,
+		trustedKeys: trustedKeys,
 	}
 	fc.height.cond.L = new(sync.Mutex)
 

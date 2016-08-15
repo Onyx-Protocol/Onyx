@@ -2,7 +2,7 @@ package validation
 
 import (
 	"chain/cos/bc"
-	"chain/cos/patricia"
+	"chain/cos/state"
 	"chain/cos/txscript"
 	"chain/errors"
 	"fmt"
@@ -38,15 +38,13 @@ func TestUniqueIssuance(t *testing.T) {
 		t.Errorf("expected tx with unique issuance to pass validation, got: %s", err)
 	}
 
-	tree := patricia.NewTree(nil)
+	snapshot := state.Empty()
 
 	// Add tx to the state tree so we can spend it in the next tx
-	err = ApplyTx(tree, nil, tx)
+	err = ApplyTx(snapshot, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	priorIssuances := make(PriorIssuances)
 
 	true2Prog := []byte{txscript.OP_TRUE, txscript.OP_TRUE}
 	asset2ID := bc.ComputeAssetID(true2Prog, genesisHash, 1)
@@ -68,11 +66,11 @@ func TestUniqueIssuance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = ConfirmTx(tree, priorIssuances, tx, bc.Millis(now))
+	err = ConfirmTx(snapshot, tx, bc.Millis(now))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(priorIssuances) > 0 {
+	if _, ok := snapshot.Issuances[tx.Hash]; ok {
 		t.Errorf("expected tx with non-issuance first input to be omitted from issuance memory")
 	}
 
@@ -90,20 +88,19 @@ func TestUniqueIssuance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = ConfirmTx(tree, priorIssuances, tx, bc.Millis(now))
+	err = ConfirmTx(snapshot, tx, bc.Millis(now))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = ApplyTx(tree, priorIssuances, tx)
+	err = ApplyTx(snapshot, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(priorIssuances) < 1 {
+	if _, ok := snapshot.Issuances[tx.Hash]; !ok {
 		t.Errorf("expected tx with issuance first input to be added to issuance memory")
 	}
-
 	// Adding it again should fail
-	if ConfirmTx(tree, priorIssuances, tx, bc.Millis(now)) == nil {
+	if ConfirmTx(snapshot, tx, bc.Millis(now)) == nil {
 		t.Errorf("expected adding duplicate issuance tx to fail")
 	}
 }
@@ -308,7 +305,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		err := ConfirmTx(patricia.NewTree(nil), nil, &c.tx, c.timestamp)
+		err := ConfirmTx(state.Empty(), &c.tx, c.timestamp)
 		if !c.ok && errors.Root(err) != ErrBadTx {
 			t.Errorf("test %d: got = %s, want ErrBadTx", i, err)
 			continue
@@ -322,11 +319,10 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 }
 
 func BenchmarkConfirmTx(b *testing.B) {
-	tree := patricia.NewTree(nil)
 	tx := txFromHex("0000000101341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5ffffffff6f00473045022100c561a9b4854742bc36c805513b872b2c0a1a367da24710eadd4f3fbc3b1ab41302207cf9eec4e5db694831fe43cf193f23d869291025ac6062199dd6b8998e93e15825512103623fb1fe38ce7e43cf407ec99b061c6d2da0278e80ce094393875c5b94f1ed9051ae0001df03f294bd08930f542a42b91199a8afe1b45c28eeb058cc5e8c8d600e0dd42f0000000000000001000000000000000000000474782d31")
 	ts := uint64(time.Now().Unix())
 	for i := 0; i < b.N; i++ {
-		ConfirmTx(tree, nil, tx, ts)
+		ConfirmTx(state.Empty(), tx, ts)
 	}
 }
 

@@ -5,7 +5,7 @@ import (
 
 	"chain/cos"
 	"chain/cos/bc"
-	"chain/cos/patricia"
+	"chain/cos/state"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
@@ -58,10 +58,10 @@ func (s *Store) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) 
 	return &b, nil
 }
 
-// LatestStateTree returns the most recent state tree stored in
+// LatestSnapshot returns the most recent state snapshot stored in
 // the database and its corresponding block height.
-func (s *Store) LatestStateTree(ctx context.Context) (*patricia.Tree, uint64, error) {
-	return getStateTreeSnapshot(ctx, s.db)
+func (s *Store) LatestSnapshot(ctx context.Context) (*state.Snapshot, uint64, error) {
+	return getStateSnapshot(ctx, s.db)
 }
 
 // SaveBlock persists a new block in the database.
@@ -82,9 +82,9 @@ func (s *Store) SaveBlock(ctx context.Context, block *bc.Block) error {
 	return errors.Wrap(err, "committing db transaction")
 }
 
-// SaveStateTree saves a state tree snapshot to the database.
-func (s *Store) SaveStateTree(ctx context.Context, height uint64, tree *patricia.Tree) error {
-	err := storeStateTreeSnapshot(ctx, s.db, tree, height)
+// SaveSnapshot saves a state snapshot to the database.
+func (s *Store) SaveSnapshot(ctx context.Context, height uint64, snapshot *state.Snapshot) error {
+	err := storeStateSnapshot(ctx, s.db, snapshot, height)
 	return errors.Wrap(err, "saving state tree")
 }
 

@@ -4,7 +4,7 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/cos/bc"
-	"chain/cos/patricia"
+	"chain/cos/state"
 )
 
 // MemStore satisfies the cos.Store interface.
@@ -14,7 +14,7 @@ import (
 type MemStore struct {
 	Blocks      []*bc.Block
 	BlockTxs    map[bc.Hash]*bc.Tx
-	State       *patricia.Tree
+	State       *state.Snapshot
 	StateHeight uint64
 }
 
@@ -47,8 +47,8 @@ func (m *MemStore) SaveBlock(ctx context.Context, b *bc.Block) error {
 	return nil
 }
 
-func (m *MemStore) SaveStateTree(ctx context.Context, height uint64, tree *patricia.Tree) error {
-	m.State = patricia.Copy(tree)
+func (m *MemStore) SaveSnapshot(ctx context.Context, height uint64, snapshot *state.Snapshot) error {
+	m.State = state.Copy(snapshot)
 	m.StateHeight = height
 	return nil
 }
@@ -61,11 +61,11 @@ func (m *MemStore) GetBlock(ctx context.Context, height uint64) (*bc.Block, erro
 	return m.Blocks[index], nil
 }
 
-func (m *MemStore) LatestStateTree(context.Context) (*patricia.Tree, uint64, error) {
+func (m *MemStore) LatestSnapshot(context.Context) (*state.Snapshot, uint64, error) {
 	if m.State == nil {
-		m.State = patricia.NewTree(nil)
+		m.State = state.Empty()
 	}
-	return patricia.Copy(m.State), m.StateHeight, nil
+	return state.Copy(m.State), m.StateHeight, nil
 }
 
 func (m *MemStore) FinalizeBlock(context.Context, uint64) error { return nil }

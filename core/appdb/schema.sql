@@ -682,10 +682,10 @@ ALTER SEQUENCE signers_key_index_seq OWNED BY signers.key_index;
 
 
 --
--- Name: state_trees; Type: TABLE; Schema: public; Owner: -
+-- Name: snapshots; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE state_trees (
+CREATE TABLE snapshots (
     height bigint NOT NULL,
     data bytea NOT NULL
 );
@@ -919,7 +919,7 @@ ALTER TABLE ONLY signers
 -- Name: state_trees_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY state_trees
+ALTER TABLE ONLY snapshots
     ADD CONSTRAINT state_trees_pkey PRIMARY KEY (height);
 
 
@@ -1144,3 +1144,4 @@ insert into migrations (filename, hash) values ('2016-08-11.0.query.unspent-outp
 insert into migrations (filename, hash) values ('2016-08-11.1.account.reserve-utxo.sql', 'd551e173f1a4c255729186bc161682efd88e4cc953a501ea9d62c6d53688f9fa');
 insert into migrations (filename, hash) values ('2016-08-11.2.query.annotated-assets.sql', 'a53245f9d6c232dd2e9407772288bf30298ac59d565eb9f413c95ca884c0c60d');
 insert into migrations (filename, hash) values ('2016-08-12.0.query.annotated-accounts.sql', '9cf8f26521724d7f5f871bb5f1e19e16e6a2b069d680144729e6427677e4bb92');
+insert into migrations (filename, hash) values ('2016-08-15.0.txdb.rename-snapshots.sql', 'a167fdce1fc8ed05155f2237b1902841c8e4a9f76f7568fbd3532d21c0f7bcc8');

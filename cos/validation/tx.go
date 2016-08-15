@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"chain/cos/bc"
-	"chain/cos/patricia"
 	"chain/cos/state"
 	"chain/cos/txscript"
 	"chain/errors"
@@ -30,10 +29,7 @@ var ErrBadTx = errors.New("invalid transaction")
 //
 // Tx should have already been validated (with `ValidateTx`) when the tx
 // was added to the pool.
-//
-// TODO(bobg): Combine the "tree" and "priorIssuances" arguments taken
-// by ConfirmTx and ValidateTx into a single "state" object.
-func ConfirmTx(tree *patricia.Tree, priorIssuances PriorIssuances, tx *bc.Tx, timestampMS uint64) error {
+func ConfirmTx(snapshot *state.Snapshot, tx *bc.Tx, timestampMS uint64) error {
 	if timestampMS < tx.MinTime {
 		return errors.WithDetail(ErrBadTx, "block time is before transaction min time")
 	}
@@ -48,16 +44,13 @@ func ConfirmTx(tree *patricia.Tree, priorIssuances PriorIssuances, tx *bc.Tx, ti
 				if ic.MinTimeMS > timestampMS || ic.MaxTimeMS < timestampMS {
 					return errors.WithDetailf(ErrBadTx, "block time is outside issuance time window (input %d)", inIndex)
 				}
-				if priorIssuances != nil {
-					// prune
-					for txhash, expireMS := range priorIssuances {
-						if timestampMS > expireMS {
-							delete(priorIssuances, txhash)
-						}
+				for txhash, expireMS := range snapshot.Issuances {
+					if timestampMS > expireMS {
+						delete(snapshot.Issuances, txhash)
 					}
-					if _, ok2 := priorIssuances[tx.Hash]; ok2 {
-						return errors.WithDetail(ErrBadTx, "duplicate issuance transaction")
-					}
+				}
+				if _, ok2 := snapshot.Issuances[tx.Hash]; ok2 {
+					return errors.WithDetail(ErrBadTx, "duplicate issuance transaction")
 				}
 			}
 			continue
@@ -67,7 +60,7 @@ func ConfirmTx(tree *patricia.Tree, priorIssuances PriorIssuances, tx *bc.Tx, ti
 
 		// Lookup the prevout in the blockchain state tree.
 		k, val := state.OutputTreeItem(state.Prevout(txin))
-		n := tree.Lookup(k)
+		n := snapshot.Tree.Lookup(k)
 		if n == nil || n.Hash() != val.Value().Hash() {
 			return errors.WithDetailf(ErrBadTx, "output %s for input %d is invalid", txin.Outpoint().String(), inIndex)
 		}
@@ -165,19 +158,19 @@ func ValidateTx(tx *bc.Tx) error {
 }
 
 // ApplyTx updates the state tree with all the changes to the ledger.
-func ApplyTx(tree *patricia.Tree, priorIssuances PriorIssuances, tx *bc.Tx) error {
+func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 	for i, in := range tx.Inputs {
 		if ic, ok := in.InputCommitment.(*bc.IssuanceInputCommitment); ok {
 			// issuance input
-			if i == 0 && priorIssuances != nil {
-				priorIssuances[tx.Hash] = ic.MaxTimeMS
+			if i == 0 {
+				snapshot.Issuances[tx.Hash] = ic.MaxTimeMS
 			}
 			continue
 		}
 
 		// Remove the consumed output from the state tree.
 		prevoutKey, _ := state.OutputTreeItem(state.Prevout(in))
-		err := tree.Delete(prevoutKey)
+		err := snapshot.Tree.Delete(prevoutKey)
 		if err != nil {
 			return err
 		}
@@ -189,7 +182,7 @@ func ApplyTx(tree *patricia.Tree, priorIssuances PriorIssuances, tx *bc.Tx) erro
 		}
 		// Insert new outputs into the state tree.
 		o := state.NewOutput(*out, bc.Outpoint{Hash: tx.Hash, Index: uint32(i)})
-		err := tree.Insert(state.OutputTreeItem(o))
+		err := snapshot.Tree.Insert(state.OutputTreeItem(o))
 		if err != nil {
 			return err
 		}
