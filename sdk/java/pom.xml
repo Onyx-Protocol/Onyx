@@ -83,7 +83,25 @@
                     </relocations>
                     <filters>
                         <filter>
-                            <artifact>*:*</artifact>
+                            <artifact>com.squareup.okhttp:okhttp</artifact>
+                            <excludes>
+                                <exclude>META-INF/**</exclude>
+                            </excludes>
+                        </filter>
+                        <filter>
+                            <artifact>com.google.code.gson:gson</artifact>
+                            <excludes>
+                                <exclude>META-INF/**</exclude>
+                            </excludes>
+                        </filter>
+                        <filter>
+                            <artifact>com.fatboyindustrial.gson-javatime-serialisers:gson-javatime-serialisers</artifact>
+                            <excludes>
+                                <exclude>META-INF/**</exclude>
+                            </excludes>
+                        </filter>
+                        <filter>
+                            <artifact>com.squareup.okio:okio</artifact>
                             <excludes>
                                 <exclude>META-INF/**</exclude>
                             </excludes>
