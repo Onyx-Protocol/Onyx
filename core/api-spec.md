@@ -321,6 +321,16 @@ If the `type` is `account` then the following params are required:
 }
 ```
 
+Response
+
+```
+[
+  {
+    "control_program": "..."
+  }
+]
+```
+
 ## Transactions
 
 ### Transaction Template Object

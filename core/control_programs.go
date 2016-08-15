@@ -11,7 +11,7 @@ import (
 	"chain/net/http/httpjson"
 )
 
-// POST /createControlProgram
+// POST /create-control-program
 func createControlProgram(ctx context.Context, ins []struct {
 	Type       string
 	Parameters json.RawMessage
@@ -62,7 +62,7 @@ func createAccountControlProgram(ctx context.Context, input []byte) (interface{}
 	}
 
 	ret := map[string]interface{}{
-		"program": controlProgram,
+		"control_program": controlProgram,
 	}
 	return ret, nil
 }
