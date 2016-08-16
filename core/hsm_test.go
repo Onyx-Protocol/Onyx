@@ -47,10 +47,10 @@ func TestMockHSM(t *testing.T) {
 	asset1ID := assettest.CreateAssetFixture(ctx, t, []string{testutil.TestXPub.String()}, 1, assetDef1, nil)
 	asset2ID := assettest.CreateAssetFixture(ctx, t, []string{testutil.TestXPub.String()}, 1, assetDef2, nil)
 
-	issueSrc1 := txbuilder.Action(assettest.NewIssueAction(bc.AssetAmount{asset1ID, 100}, nil))
-	issueSrc2 := txbuilder.Action(assettest.NewIssueAction(bc.AssetAmount{asset2ID, 200}, nil))
-	issueDest1 := assettest.NewAccountControlAction(bc.AssetAmount{asset1ID, 100}, acct1.ID, nil)
-	issueDest2 := assettest.NewAccountControlAction(bc.AssetAmount{asset2ID, 200}, acct2.ID, nil)
+	issueSrc1 := txbuilder.Action(assettest.NewIssueAction(bc.AssetAmount{AssetID: asset1ID, Amount: 100}, nil))
+	issueSrc2 := txbuilder.Action(assettest.NewIssueAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, nil))
+	issueDest1 := assettest.NewAccountControlAction(bc.AssetAmount{AssetID: asset1ID, Amount: 100}, acct1.ID, nil)
+	issueDest2 := assettest.NewAccountControlAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, acct2.ID, nil)
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{issueSrc1, issueSrc2, issueDest1, issueDest2}, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -61,10 +61,10 @@ func TestMockHSM(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	xferSrc1 := assettest.NewAccountSpendAction(bc.AssetAmount{asset1ID, 10}, acct1.ID, nil, nil, nil)
-	xferSrc2 := assettest.NewAccountSpendAction(bc.AssetAmount{asset2ID, 20}, acct2.ID, nil, nil, nil)
-	xferDest1 := assettest.NewAccountControlAction(bc.AssetAmount{asset2ID, 20}, acct1.ID, nil)
-	xferDest2 := assettest.NewAccountControlAction(bc.AssetAmount{asset1ID, 10}, acct2.ID, nil)
+	xferSrc1 := assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct1.ID, nil, nil, nil)
+	xferSrc2 := assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct2.ID, nil, nil, nil)
+	xferDest1 := assettest.NewAccountControlAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct1.ID, nil)
+	xferDest2 := assettest.NewAccountControlAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct2.ID, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{xferSrc1, xferSrc2, xferDest1, xferDest2}, nil)
 	if err != nil {
 		t.Fatal(err)

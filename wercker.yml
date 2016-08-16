@@ -1,4 +1,4 @@
-box: erykwalder/docker-containers:golang1.5
+box: krarick/golang:1.7
 
 services:
   - id: clkao/postgres-plv8
@@ -13,7 +13,6 @@ build:
         name: fmt vet test imports
         code: |
           set -veo pipefail
-          export GO15VENDOREXPERIMENT=1
           go version
           go env
           export CHAIN=$GOPATH/src/chain

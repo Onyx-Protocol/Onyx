@@ -90,7 +90,7 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{asset1.AssetID.String()},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{asset1.AssetID, 867}, acct1.ID},
+				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
 			},
 		},
 		{
@@ -98,7 +98,7 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{"USD"},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{asset1.AssetID, 867}, acct1.ID},
+				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
 			},
 		},
 		{
@@ -122,7 +122,7 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{acct1.ID},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{asset1.AssetID, 867}, acct1.ID},
+				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
 			},
 		},
 		{
@@ -142,7 +142,7 @@ func TestQueryOutputs(t *testing.T) {
 			values: []interface{}{asset1.AssetID.String(), acct1.ID},
 			when:   time2,
 			want: []assetAccountAmount{
-				{bc.AssetAmount{asset1.AssetID, 867}, acct1.ID},
+				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
 			},
 		},
 		{

@@ -60,11 +60,11 @@ func TestSliceNullStringsValue(t *testing.T) {
 		in  NullStrings
 		out string
 	}{
-		{NullStrings{{"a", true}, {"b", true}, {"c", true}}, `{"a","b","c"}`},
-		{NullStrings{{"a", true}, {"b", false}, {"c", true}}, `{"a",NULL,"c"}`},
-		{NullStrings{{"", false}, {"NULL", false}, {"NULL", true}}, `{NULL,NULL,"NULL"}`},
-		{NullStrings{{"a b", true}, {"c'd", true}}, `{"a b","c'd"}`},
-		{NullStrings{{`a"`, true}, {"this,can,handle,commas", true}}, `{"a\"","this,can,handle,commas"}`},
+		{NullStrings{{String: "a", Valid: true}, {String: "b", Valid: true}, {String: "c", Valid: true}}, `{"a","b","c"}`},
+		{NullStrings{{String: "a", Valid: true}, {String: "b", Valid: false}, {String: "c", Valid: true}}, `{"a",NULL,"c"}`},
+		{NullStrings{{String: "", Valid: false}, {String: "NULL", Valid: false}, {String: "NULL", Valid: true}}, `{NULL,NULL,"NULL"}`},
+		{NullStrings{{String: "a b", Valid: true}, {String: "c'd", Valid: true}}, `{"a b","c'd"}`},
+		{NullStrings{{String: `a"`, Valid: true}, {String: "this,can,handle,commas", Valid: true}}, `{"a\"","this,can,handle,commas"}`},
 	}
 
 	for i, test := range tests {
