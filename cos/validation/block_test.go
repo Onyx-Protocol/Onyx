@@ -50,7 +50,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			Height:            1,
 			TimestampMS:       6,
 			ConsensusProgram:  []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
-			SignatureScript:   []byte{txscript.OP_4},
+			Witness:           [][]byte{{0x04}},
 		},
 		want: ErrBadHeight,
 	}, {
@@ -69,7 +69,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			Height:            2,
 			TimestampMS:       6,
 			ConsensusProgram:  []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
-			SignatureScript:   []byte{txscript.OP_3},
+			Witness:           [][]byte{{0x03}},
 		},
 		want: ErrBadSig,
 	}, {
@@ -79,14 +79,13 @@ func TestValidateBlockHeader(t *testing.T) {
 			Height:            2,
 			TimestampMS:       6,
 			ConsensusProgram:  []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
-			SignatureScript:   []byte{txscript.OP_4},
+			Witness:           [][]byte{{0x04}},
 		},
 		want: nil,
 	}}
 	for _, c := range cases {
 		block := &bc.Block{BlockHeader: c.header}
 		got := ValidateBlockHeader(prevBlock, block)
-
 		if errors.Root(got) != c.want {
 			t.Errorf("%s: got %q want %q", c.desc, got, c.want)
 		}

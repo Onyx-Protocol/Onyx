@@ -228,23 +228,26 @@ func TestGenerateBlock(t *testing.T) {
 		t.Fatalf("err got = %v want nil", err)
 	}
 
+	// TODO(bobg): verify these hashes are correct
+	var wantTxRoot, wantAssetsRoot bc.Hash
+	copy(wantTxRoot[:], mustDecodeHex("48a22b8cd8667873911fce88c683aa7cf5105e2fb81b0ba393d00f33d86199c9"))
+	copy(wantAssetsRoot[:], mustDecodeHex("87af461341d0ad5a421ec54d21bd8c5dc9da1297a766e98778d36922db3240f6"))
+
 	want := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Version:           bc.NewBlockVersion,
-			Height:            2,
-			PreviousBlockHash: latestBlock.Hash(),
-			Commitment: mustDecodeHex(
-				"eef4d293c9c326c2bbbd77d4c1f0e9ceaf34c822aa4874ccd73ffe7eee477cbde561ec28c67f40007fa416dae949c3bf1cd4392ee1ca0d6b60d92abdf7a1322d",
-			),
-			TimestampMS:      bc.Millis(now),
-			ConsensusProgram: latestBlock.ConsensusProgram,
+			Version:                bc.NewBlockVersion,
+			Height:                 2,
+			PreviousBlockHash:      latestBlock.Hash(),
+			TransactionsMerkleRoot: wantTxRoot,
+			AssetsMerkleRoot:       wantAssetsRoot,
+			TimestampMS:            bc.Millis(now),
+			ConsensusProgram:       latestBlock.ConsensusProgram,
 		},
 		Transactions: txs,
 	}
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("generated block:\ngot:  %+v\nwant: %+v", got, want)
-		t.Logf("got.Commitment: %s\nwant.Commitment: %s\n", hex.EncodeToString(got.BlockHeader.Commitment), hex.EncodeToString(want.BlockHeader.Commitment))
 	}
 
 }
@@ -273,37 +276,36 @@ func TestIsSignedByTrustedHost(t *testing.T) {
 
 	block := &bc.Block{}
 	signBlock(t, block, privKeys)
-	sig := block.SignatureScript
 
 	cases := []struct {
 		desc        string
-		sigScript   []byte
+		witness     [][]byte
 		trustedKeys []ed25519.PublicKey
 		want        bool
 	}{{
 		desc:        "empty sig",
-		sigScript:   nil,
+		witness:     nil,
 		trustedKeys: privToPub(privKeys),
 		want:        false,
 	}, {
 		desc:        "wrong trusted keys",
-		sigScript:   sig,
+		witness:     block.Witness,
 		trustedKeys: privToPub([]ed25519.PrivateKey{newPrivKey(t)}),
 		want:        false,
 	}, {
 		desc:        "one-of-one trusted keys",
-		sigScript:   sig,
+		witness:     block.Witness,
 		trustedKeys: privToPub(privKeys),
 		want:        true,
 	}, {
 		desc:        "one-of-two trusted keys",
-		sigScript:   sig,
+		witness:     block.Witness,
 		trustedKeys: privToPub(append(privKeys, newPrivKey(t))),
 		want:        true,
 	}}
 
 	for _, c := range cases {
-		block.SignatureScript = c.sigScript
+		block.Witness = c.witness
 		got := isSignedByTrustedHost(block, c.trustedKeys)
 
 		if got != c.want {
@@ -328,10 +330,7 @@ func signBlock(t testing.TB, b *bc.Block, keys []ed25519.PrivateKey) {
 		sig := ComputeBlockSignature(b, key)
 		sigs = append(sigs, sig)
 	}
-	err := AddSignaturesToBlock(b, sigs)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
+	AddSignaturesToBlock(b, sigs)
 }
 
 func privToPub(privs []ed25519.PrivateKey) []ed25519.PublicKey {

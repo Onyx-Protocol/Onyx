@@ -137,7 +137,8 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 					signatures = append(signatures, r)
 				}
 			}
-			return cos.AddSignaturesToBlock(b, signatures)
+			cos.AddSignaturesToBlock(b, signatures)
+			return nil
 		}
 	}
 

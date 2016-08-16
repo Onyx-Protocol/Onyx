@@ -75,8 +75,8 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 		}
 	}
 
-	b.SetStateRoot(snapshot.Tree.RootHash())
-	b.SetTxRoot(validation.CalcMerkleRoot(b.Transactions))
+	b.TransactionsMerkleRoot = validation.CalcMerkleRoot(b.Transactions)
+	b.AssetsMerkleRoot = snapshot.Tree.RootHash()
 
 	return b, prev, nil
 }
@@ -218,13 +218,8 @@ func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, snapshot *stat
 }
 
 func isSignedByTrustedHost(block *bc.Block, trustedKeys []ed25519.PublicKey) bool {
-	sigs, err := txscript.PushedData(block.SignatureScript)
-	if err != nil {
-		return false
-	}
-
 	hash := block.HashForSig()
-	for _, sig := range sigs {
+	for _, sig := range block.Witness {
 		if len(sig) == 0 {
 			continue
 		}
@@ -315,20 +310,8 @@ func ComputeBlockSignature(b *bc.Block, key ed25519.PrivateKey) []byte {
 // block's SignatureScript.  The signatures must be in the correct
 // order, to wit: matching the order of pubkeys in the previous
 // block's output script.
-func AddSignaturesToBlock(b *bc.Block, signatures [][]byte) error {
-	// assumes multisig output script
-	builder := txscript.NewScriptBuilder()
-	for _, signature := range signatures {
-		builder.AddData(signature)
-	}
-	script, err := builder.Script()
-	if err != nil {
-		return errors.Wrap(err, "finalizing block sigscript")
-	}
-
-	b.SignatureScript = script
-
-	return nil
+func AddSignaturesToBlock(b *bc.Block, signatures [][]byte) {
+	b.Witness = append([][]byte{}, signatures...)
 }
 
 // GenerateBlockScript generates a predicate script

@@ -48,6 +48,7 @@ func (s *Store) GetTxs(ctx context.Context, hashes ...bc.Hash) (bcTxs map[bc.Has
 func (s *Store) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) {
 	const q = `SELECT data FROM blocks WHERE height = $1`
 	var b bc.Block
+
 	err := s.db.QueryRow(ctx, q, height).Scan(&b)
 	if err == sql.ErrNoRows {
 		return nil, nil

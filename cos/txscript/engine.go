@@ -430,10 +430,6 @@ func NewEngineForBlock(scriptPubKey []byte, block *bc.Block, flags ScriptFlags) 
 	if err != nil {
 		return nil, err
 	}
-	pushed, err := PushedData(block.SignatureScript)
-	if err != nil {
-		return nil, err
-	}
-	err = vm.Prepare(scriptPubKey, pushed, 0)
+	err = vm.Prepare(scriptPubKey, block.Witness, 0)
 	return vm, err
 }

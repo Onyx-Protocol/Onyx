@@ -28,7 +28,7 @@ func TestIdempotentAddTx(t *testing.T) {
 	}
 
 	block, _, err := fc.GenerateBlock(ctx, time.Now())
-	block.SignatureScript = []byte{txscript.OP_0}
+	block.Witness = [][]byte{{txscript.OP_0}}
 	err = fc.AddBlock(ctx, block)
 	if err != nil {
 		testutil.FatalErr(t, err)

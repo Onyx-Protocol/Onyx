@@ -24,7 +24,7 @@ const (
 
 const (
 	refDataMaxByteLength = 500000 // 500 kb
-	witnessMaxByteLength = 500000 // 500 kb
+	witnessMaxByteLength = 500000 // 500 kb TODO(bobg): move this where it makes sense for block.go to share it
 )
 
 // Tx holds a transaction along with its hash.
@@ -130,6 +130,9 @@ func (tx *TxData) Value() (driver.Value, error) {
 func (tx *TxData) readFrom(r io.Reader) error {
 	var serflags [1]byte
 	_, err := io.ReadFull(r, serflags[:])
+	if err != nil {
+		return err
+	}
 	if err == nil && serflags[0] != serRequired {
 		return fmt.Errorf("unsupported serflags %#x", serflags[0])
 	}

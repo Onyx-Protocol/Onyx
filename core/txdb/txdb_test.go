@@ -118,7 +118,7 @@ func TestGetBlock(t *testing.T) {
 		(
 			'1f20d89dd393f452b4396589ed5d6f90465cb032aa3f9fe42a99d47c7089b0a3',
 			1,
-			decode('0101313233000000000000000000000000000000000000000000000000000000000040414243000000000000000000000000000000000000000000000000000000000058595a0000000000000000000000000000000000000000000000000000000000640f746573742d7369672d73637269707412746573742d6f75747075742d7363726970740107010000000007746573742d7478', 'hex'),
+			decode('03010131323300000000000000000000000000000000000000000000000000000000006453414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000012746573742d6f75747075742d73637269707411010f746573742d7369672d7363726970740107010000000007746573742d7478', 'hex'),
 			''
 		);
 	`)
@@ -128,20 +128,21 @@ func TestGetBlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
-
 	want := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Version:           1,
 			Height:            1,
 			PreviousBlockHash: [32]byte{'1', '2', '3'},
-			Commitment: []byte{
+			TransactionsMerkleRoot: bc.Hash{
 				'A', 'B', 'C', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			},
+			AssetsMerkleRoot: bc.Hash{
 				'X', 'Y', 'Z', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			},
 			TimestampMS:      100,
-			SignatureScript:  []byte("test-sig-script"),
+			Witness:          [][]byte{[]byte("test-sig-script")},
 			ConsensusProgram: []byte("test-output-script"),
 		},
 		Transactions: []*bc.Tx{
@@ -228,8 +229,18 @@ func TestListBlocks(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 	blks := []*bc.Block{
-		{BlockHeader: bc.BlockHeader{Height: 1}},
-		{BlockHeader: bc.BlockHeader{Height: 0}},
+		{
+			BlockHeader: bc.BlockHeader{
+				Version: 1,
+				Height:  2,
+			},
+		},
+		{
+			BlockHeader: bc.BlockHeader{
+				Version: 1,
+				Height:  1,
+			},
+		},
 	}
 	for _, blk := range blks {
 		err := insertBlock(ctx, dbtx, blk)
@@ -247,7 +258,7 @@ func TestListBlocks(t *testing.T) {
 		limit: 50,
 		want:  blks,
 	}, {
-		prev:  "1",
+		prev:  "2",
 		limit: 50,
 		want:  []*bc.Block{blks[1]},
 	}, {
@@ -255,7 +266,7 @@ func TestListBlocks(t *testing.T) {
 		limit: 1,
 		want:  []*bc.Block{blks[0]},
 	}, {
-		prev:  "0",
+		prev:  "1",
 		limit: 50,
 		want:  nil,
 	}}

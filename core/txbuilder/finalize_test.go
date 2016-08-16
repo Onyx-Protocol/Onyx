@@ -86,6 +86,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	dumpState(ctx, t)
 	if len(b.Transactions) != 1 {
 		t.Errorf("got block.Transactions = %#v\n, want exactly one tx", b.Transactions)

@@ -2,6 +2,8 @@ package validation
 
 import (
 	"bytes"
+	"encoding/hex"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -67,7 +69,7 @@ func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, blo
 		}
 	}
 
-	if block.StateRoot() != snapshot.Tree.RootHash() {
+	if block.AssetsMerkleRoot != snapshot.Tree.RootHash() {
 		return ErrBadStateRoot
 	}
 	return nil
@@ -111,7 +113,7 @@ func validateBlockHeader(prevBlock, block *bc.Block, runScript bool) error {
 
 	txMerkleRoot := CalcMerkleRoot(block.Transactions)
 	// can be modified to allow soft fork
-	if block.TxRoot() != txMerkleRoot {
+	if block.TransactionsMerkleRoot != txMerkleRoot {
 		return ErrBadTxRoot
 	}
 
@@ -126,8 +128,14 @@ func validateBlockHeader(prevBlock, block *bc.Block, runScript bool) error {
 		}
 		if err = engine.Execute(); err != nil {
 			pkScriptStr, _ := txscript.DisasmString(prevBlock.ConsensusProgram)
-			sigScriptStr, _ := txscript.DisasmString(block.SignatureScript)
-			return errors.Wrapf(ErrBadSig, "validation failed in script execution in block (sigscript[%s] pkscript[%s]): %s", sigScriptStr, pkScriptStr, err.Error())
+
+			witnessStrs := make([]string, 0, len(block.Witness))
+			for _, w := range block.Witness {
+				witnessStrs = append(witnessStrs, hex.EncodeToString(w))
+			}
+			witnessStr := strings.Join(witnessStrs, "; ")
+
+			return errors.Wrapf(ErrBadSig, "validation failed in script execution in block (program [%s] witness [%s]): %s", pkScriptStr, witnessStr, err.Error())
 		}
 	}
 

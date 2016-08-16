@@ -3,6 +3,7 @@ package bc
 import (
 	"bytes"
 	"database/sql/driver"
+	"fmt"
 	"io"
 	"time"
 
@@ -17,6 +18,15 @@ const (
 
 	// MaxProgramByteLength is the maximum length in bytes of a COS program.
 	MaxProgramByteLength = 1000000
+)
+
+const (
+	SerBlockWitness      = 1
+	SerBlockTransactions = 2
+
+	SerBlockSigHash = 0
+	SerBlockHeader  = SerBlockWitness
+	SerBlockFull    = SerBlockWitness | SerBlockTransactions
 )
 
 // Block describes a complete block, including its header
@@ -43,37 +53,41 @@ func (b *Block) Value() (driver.Value, error) {
 	return buf.Bytes(), nil
 }
 
-// assumes r has sticky errors
 func (b *Block) readFrom(r io.Reader) error {
-	err := b.BlockHeader.readFrom(r)
+	serflags, err := b.BlockHeader.readFrom(r)
 	if err != nil {
 		return err
 	}
-	for n, _ := blockchain.ReadUvarint(r); n > 0; n-- {
-		var data TxData
-		err := data.readFrom(r)
+	if serflags&SerBlockTransactions == SerBlockTransactions {
+		n, err := blockchain.ReadUvarint(r)
 		if err != nil {
 			return err
 		}
-		// TODO(kr): store/reload hashes;
-		// don't compute here if not necessary.
-		tx := NewTx(data)
-		b.Transactions = append(b.Transactions, tx)
+		for ; n > 0; n-- {
+			var data TxData
+			err = data.readFrom(r)
+			if err != nil {
+				return err
+			}
+			// TODO(kr): store/reload hashes;
+			// don't compute here if not necessary.
+			tx := NewTx(data)
+			b.Transactions = append(b.Transactions, tx)
+		}
 	}
 	return nil
 }
 
-// WriteTo satisfies interface io.WriterTo.
 func (b *Block) WriteTo(w io.Writer) (int64, error) {
 	ew := errors.NewWriter(w)
-	b.writeTo(ew, false)
+	b.writeTo(ew, SerBlockFull)
 	return ew.Written(), ew.Err()
 }
 
 // assumes w has sticky errors
-func (b *Block) writeTo(w io.Writer, forSigning bool) {
-	b.BlockHeader.writeTo(w, forSigning)
-	if !forSigning {
+func (b *Block) writeTo(w io.Writer, serflags uint8) {
+	b.BlockHeader.writeTo(w, serflags)
+	if serflags&SerBlockTransactions == SerBlockTransactions {
 		blockchain.WriteUvarint(w, uint64(len(b.Transactions)))
 		for _, tx := range b.Transactions {
 			tx.WriteTo(w)
@@ -96,22 +110,29 @@ type BlockHeader struct {
 	// Hash of the previous block in the block chain.
 	PreviousBlockHash Hash
 
-	// Commitment is the collection of state commitments
-	// this block includes. Currently this is made of
-	// the TxRoot and the StateRoot.
-	Commitment []byte
-
 	// Time of the block in milliseconds.
 	// Must grow monotonically and can be equal
 	// to the time in the previous block.
 	TimestampMS uint64
 
-	// Signature script authenticates the block against
-	// the output script from the previous block.
-	SignatureScript []byte
+	// The next three fields constitute the block's "commitment."
 
-	// Consensus Program specifies a predicate for signing the next block.
+	// TransactionsMerkleRoot is the root hash of the Merkle binary hash
+	// tree formed by the transaction witness hashes of all transactions
+	// included in the block.
+	TransactionsMerkleRoot Hash
+
+	// AssetsMerkleRoot is the root hash of the Merkle Patricia Tree of
+	// the set of unspent outputs with asset version 1 after applying
+	// the block.
+	AssetsMerkleRoot Hash
+
+	// ConsensusProgram is the predicate for validating the next block.
 	ConsensusProgram []byte
+
+	// Witness is a vector of arguments to the previous block's
+	// ConsensusProgram for validating this block.
+	Witness [][]byte
 }
 
 // Time returns the time represented by the Timestamp in bh.
@@ -125,7 +146,8 @@ func (bh *BlockHeader) Scan(val interface{}) error {
 	if !ok {
 		return errors.New("Scan must receive a byte slice")
 	}
-	return bh.readFrom(bytes.NewReader(buf))
+	_, err := bh.readFrom(bytes.NewReader(buf))
+	return err
 }
 
 func (bh *BlockHeader) Value() (driver.Value, error) {
@@ -146,8 +168,9 @@ func (bh *BlockHeader) Hash() Hash {
 	return v
 }
 
-// HashForSig returns a hash of the block header with signature script blanked out.
-// This hash is used for signing the block and verifying the signature.
+// HashForSig returns a hash of the block header without witness.
+// This hash is used for signing the block and verifying the
+// signature.
 func (bh *BlockHeader) HashForSig() Hash {
 	h := sha3.New256()
 	bh.WriteForSigTo(h) // error is impossible
@@ -156,95 +179,112 @@ func (bh *BlockHeader) HashForSig() Hash {
 	return v
 }
 
-// TxRoot returns the transaction merkle root
-// in the block Commitment field.
-func (bh *BlockHeader) TxRoot() Hash {
-	var hash Hash
-	if len(bh.Commitment) >= 32 {
-		copy(hash[:], bh.Commitment[0:32])
+func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
+	var serflags [1]byte
+	io.ReadFull(r, serflags[:])
+	switch serflags[0] {
+	case SerBlockSigHash, SerBlockHeader, SerBlockFull:
+	default:
+		return 0, fmt.Errorf("unsupported serialization flags 0x%x", serflags)
 	}
-	return hash
-}
 
-// SetTxRoot sets the transaction merkle root
-// in the block Commitment field.
-func (bh *BlockHeader) SetTxRoot(h Hash) {
-	if len(bh.Commitment) < 32 {
-		bh.Commitment = make([]byte, 32)
+	v, err := blockchain.ReadUvarint(r)
+	if err != nil {
+		return 0, err
 	}
-	copy(bh.Commitment[0:32], h[:])
-}
-
-// StateRoot returns the state merkle root
-// in the block Commitment field.
-func (bh *BlockHeader) StateRoot() Hash {
-	var hash Hash
-	if len(bh.Commitment) >= 64 {
-		copy(hash[:], bh.Commitment[32:64])
-	}
-	return hash
-}
-
-// SetStateRoot sets the state merkle root
-// in the block Commitment field.
-func (bh *BlockHeader) SetStateRoot(h Hash) {
-	if len(bh.Commitment) < 64 {
-		newComm := make([]byte, 64)
-		copy(newComm, bh.Commitment)
-		bh.Commitment = newComm
-	}
-	copy(bh.Commitment[32:64], h[:])
-}
-
-// assumes r has sticky errors
-func (bh *BlockHeader) readFrom(r io.Reader) (err error) {
-	v, _ := blockchain.ReadUvarint(r)
 	bh.Version = uint32(v)
-	bh.Height, _ = blockchain.ReadUvarint(r)
-	io.ReadFull(r, bh.PreviousBlockHash[:])
-	bh.Commitment, err = blockchain.ReadBytes(r, commitmentMaxByteLength)
+
+	bh.Height, err = blockchain.ReadUvarint(r)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	bh.TimestampMS, _ = blockchain.ReadUvarint(r)
-	bh.SignatureScript, err = blockchain.ReadBytes(r, MaxProgramByteLength)
+	_, err = io.ReadFull(r, bh.PreviousBlockHash[:])
 	if err != nil {
-		return err
+		return 0, err
 	}
-	bh.ConsensusProgram, err = blockchain.ReadBytes(r, MaxProgramByteLength)
+
+	bh.TimestampMS, err = blockchain.ReadUvarint(r)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+
+	commitment, err := blockchain.ReadBytes(r, commitmentMaxByteLength)
+	if err != nil {
+		return 0, err
+	}
+	if len(commitment) < 64 {
+		return 0, fmt.Errorf("block commitment string too short")
+	}
+	copy(bh.TransactionsMerkleRoot[:], commitment[:32])
+	copy(bh.AssetsMerkleRoot[:], commitment[32:64])
+	progReader := bytes.NewReader(commitment[64:])
+	bh.ConsensusProgram, err = blockchain.ReadBytes(progReader, MaxProgramByteLength)
+	if err != nil {
+		return 0, err
+	}
+
+	if serflags[0]&SerBlockWitness == SerBlockWitness {
+		witness, err := blockchain.ReadBytes(r, witnessMaxByteLength)
+		if err != nil {
+			return 0, err
+		}
+		witnessReader := bytes.NewReader(witness)
+
+		n, err := blockchain.ReadUvarint(witnessReader)
+		if err != nil {
+			return 0, err
+		}
+
+		for ; n > 0; n-- {
+			w, err := blockchain.ReadBytes(witnessReader, witnessMaxByteLength)
+			if err != nil {
+				return 0, errors.Wrap(err, "reading block witness")
+			}
+			bh.Witness = append(bh.Witness, w)
+		}
+	}
+
+	return serflags[0], nil
 }
 
-// WriteTo satisfies interface io.WriterTo.
 func (bh *BlockHeader) WriteTo(w io.Writer) (int64, error) {
 	ew := errors.NewWriter(w)
-	bh.writeTo(ew, false)
+	bh.writeTo(ew, SerBlockHeader)
 	return ew.Written(), ew.Err()
 }
 
 // WriteForSigTo writes bh to w in a format suitable for signing.
 func (bh *BlockHeader) WriteForSigTo(w io.Writer) (int64, error) {
 	ew := errors.NewWriter(w)
-	bh.writeTo(ew, true)
+	bh.writeTo(ew, SerBlockSigHash)
 	return ew.Written(), ew.Err()
 }
 
 // writeTo writes bh to w.
-// If forSigning is true, it writes an empty string instead of the signature script.
-// assumes w has sticky errors.
-func (bh *BlockHeader) writeTo(w io.Writer, forSigning bool) error {
+func (bh *BlockHeader) writeTo(w io.Writer, serflags uint8) error {
+	w.Write([]byte{serflags})
 	blockchain.WriteUvarint(w, uint64(bh.Version))
 	blockchain.WriteUvarint(w, bh.Height)
 	w.Write(bh.PreviousBlockHash[:])
-	blockchain.WriteBytes(w, bh.Commitment)
 	blockchain.WriteUvarint(w, bh.TimestampMS)
-	if forSigning {
-		blockchain.WriteBytes(w, nil)
-	} else {
-		blockchain.WriteBytes(w, bh.SignatureScript)
+
+	var commitment bytes.Buffer
+	commitment.Write(bh.TransactionsMerkleRoot[:])
+	commitment.Write(bh.AssetsMerkleRoot[:])
+	blockchain.WriteBytes(&commitment, bh.ConsensusProgram)
+
+	blockchain.WriteBytes(w, commitment.Bytes())
+
+	if serflags&SerBlockWitness == SerBlockWitness {
+		var witnessBuf bytes.Buffer
+
+		blockchain.WriteUvarint(&witnessBuf, uint64(len(bh.Witness)))
+		for _, witness := range bh.Witness {
+			blockchain.WriteBytes(&witnessBuf, witness)
+		}
+
+		blockchain.WriteBytes(w, witnessBuf.Bytes())
 	}
-	return blockchain.WriteBytes(w, bh.ConsensusProgram)
+
+	return nil
 }
