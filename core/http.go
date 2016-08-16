@@ -7,7 +7,6 @@ import (
 
 	"chain/errors"
 	"chain/log"
-	chainhttp "chain/net/http"
 	"chain/net/http/httpjson"
 )
 
@@ -15,7 +14,7 @@ import (
 // possibly including a datatype that doesn't match what we expected.
 var errBadReqHeader = errors.New("bad request header")
 
-func jsonHandler(f interface{}) chainhttp.Handler {
+func jsonHandler(f interface{}) http.Handler {
 	h, err := httpjson.Handler(f, writeHTTPError)
 	if err != nil {
 		panic(err)

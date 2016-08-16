@@ -52,7 +52,7 @@ func TestHandler(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/", strings.NewReader(test.input))
 		req.URL.RawQuery = test.rawQuery
 		ctx := context.WithValue(context.Background(), "k", 1)
-		h.ServeHTTPContext(ctx, resp, req)
+		h.ServeHTTP(resp, req.WithContext(ctx))
 		if resp.Code != 200 {
 			t.Errorf("%T response code = %d want 200", test.f, resp.Code)
 		}
@@ -76,7 +76,7 @@ func TestReadErr(t *testing.T) {
 	resp := httptest.NewRecorder()
 	body := iotest.OneByteReader(iotest.TimeoutReader(strings.NewReader("123456")))
 	req, _ := http.NewRequest("GET", "/", body)
-	h.ServeHTTPContext(nil, resp, req)
+	h.ServeHTTP(resp, req)
 	if got := resp.Body.Len(); got != 0 {
 		t.Errorf("len(response) = %d want 0", got)
 	}

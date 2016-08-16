@@ -7,8 +7,6 @@ import (
 	"reflect"
 
 	"golang.org/x/net/context"
-
-	chainhttp "chain/net/http"
 )
 
 // ErrorWriter is responsible for writing the provided error value
@@ -32,7 +30,7 @@ type handler struct {
 // Handler returns an HTTP handler for function f.
 // See the package doc for details on allowed signatures for f.
 // If f returns a non-nil error, the handler will call errFunc.
-func Handler(f interface{}, errFunc ErrorWriter) (chainhttp.Handler, error) {
+func Handler(f interface{}, errFunc ErrorWriter) (http.Handler, error) {
 	fv := reflect.ValueOf(f)
 	hasCtx, inType, err := funcInputType(fv)
 	if err != nil {
@@ -43,18 +41,19 @@ func Handler(f interface{}, errFunc ErrorWriter) (chainhttp.Handler, error) {
 	return h, nil
 }
 
-func (h *handler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var a []reflect.Value
 	if h.hasCtx {
+		ctx := req.Context()
 		ctx = context.WithValue(ctx, reqKey, req)
 		ctx = context.WithValue(ctx, respKey, w)
 		a = append(a, reflect.ValueOf(ctx))
 	}
 	if h.inType != nil {
 		inPtr := reflect.New(h.inType)
-		err := Read(ctx, req.Body, inPtr.Interface())
+		err := Read(req.Context(), req.Body, inPtr.Interface())
 		if err != nil {
-			h.errFunc(ctx, w, err)
+			h.errFunc(req.Context(), w, err)
 			return
 		}
 		a = append(a, inPtr.Elem())
@@ -79,11 +78,11 @@ func (h *handler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r
 		err, _ = rv[1].Interface().(error)
 	}
 	if err != nil {
-		h.errFunc(ctx, w, err)
+		h.errFunc(req.Context(), w, err)
 		return
 	}
 
-	Write(ctx, w, 200, res)
+	Write(req.Context(), w, 200, res)
 }
 
 var (

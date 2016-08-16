@@ -7,7 +7,6 @@ import (
 
 	"chain/errors"
 	"chain/log"
-	chainhttp "chain/net/http"
 )
 
 // key is an unexported type for keys defined in this package.
@@ -32,17 +31,17 @@ var ErrNotAuthenticated = errors.New("not authenticated")
 type BasicHandler struct {
 	Auth  AuthFunc
 	Realm string
-	Next  chainhttp.Handler
+	Next  http.Handler
 }
 
-// ServeHTTPContext satisfies the ContextHandler interface.
-func (h BasicHandler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+// ServeHTTP satisfies http.Handler.
+func (h BasicHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	username, password, _ := req.BasicAuth()
-	err := h.Auth(ctx, username, password)
+	err := h.Auth(req.Context(), username, password)
 	if err == nil {
-		h.Next.ServeHTTPContext(ctx, w, req)
+		h.Next.ServeHTTP(w, req)
 	} else if err == ErrNotAuthenticated {
-		log.Write(ctx,
+		log.Write(req.Context(),
 			"status", http.StatusUnauthorized,
 			log.KeyError, err,
 		)
@@ -51,7 +50,7 @@ func (h BasicHandler) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		}
 		http.Error(w, `{"message": "Request could not be authenticated"}`, http.StatusUnauthorized)
 	} else {
-		log.Write(ctx,
+		log.Write(req.Context(),
 			"status", http.StatusInternalServerError,
 			log.KeyError, err,
 			log.KeyStack, errors.Stack(err),

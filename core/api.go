@@ -2,13 +2,14 @@
 package core
 
 import (
+	"net/http"
+
 	"chain/core/blocksigner"
 	"chain/core/generator"
 	"chain/core/mockhsm"
 	"chain/core/query"
 	"chain/core/txdb"
 	"chain/cos"
-	"chain/net/http"
 )
 
 const (

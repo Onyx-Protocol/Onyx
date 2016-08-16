@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"log"
+	"net/http"
+	"runtime"
 
 	"golang.org/x/net/context"
 )
@@ -72,4 +74,26 @@ func FromSubContext(ctx context.Context) string {
 		return Unknown
 	}
 	return subReqID
+}
+
+func Handler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		// TODO(kr): take half of request ID from the client
+		id := New()
+		ctx = NewContext(ctx, id)
+		defer func() {
+			if err := recover(); err != nil {
+				// See also $GOROOT/src/net/http/server.go.
+				const size = 64 << 10
+				buf := make([]byte, size)
+				buf = buf[:runtime.Stack(buf, false)]
+				// TODO(kr): use chain/log here
+				// log.Write(ctx, log.KeyMessage, "panic", "remote-addr", req.RemoteAddr, log.KeyError, err, log.KeyStack, buf)
+				log.Printf(`message=panic remote-addr=%q error=%q\n%s\n`, req.RemoteAddr, err, buf)
+			}
+		}()
+		w.Header().Add("Chain-Request-Id", id)
+		handler.ServeHTTP(w, req.WithContext(ctx))
+	})
 }

@@ -44,9 +44,9 @@ import (
 	"chain/log/splunk"
 	"chain/metrics"
 	"chain/metrics/librato"
-	chainhttp "chain/net/http"
 	"chain/net/http/gzip"
 	"chain/net/http/httpspan"
+	"chain/net/http/reqid"
 	"chain/net/rpc"
 )
 
@@ -264,8 +264,9 @@ func main() {
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}
-
-	http.Handle("/", chainhttp.ContextHandler{Context: ctx, Handler: h})
+	h = dbContextHandler(h, db)
+	h = reqid.Handler(h)
+	http.Handle("/", h)
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 
 	secureheader.DefaultConfig.PermitClearLoopback = true
@@ -291,6 +292,14 @@ func main() {
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
 	}
+}
+
+func dbContextHandler(handler http.Handler, db pg.DB) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		ctx = pg.NewContext(ctx, db)
+		handler.ServeHTTP(w, req.WithContext(ctx))
+	})
 }
 
 func remoteSignerInfo(ctx context.Context) (a []*generator.RemoteSigner) {

@@ -23,11 +23,11 @@ import (
 	"chain/log/rotation"
 	"chain/log/splunk"
 	"chain/metrics"
-	chainhttp "chain/net/http"
 	"chain/net/http/authn"
 	"chain/net/http/gzip"
 	"chain/net/http/httpjson"
 	"chain/net/http/httpspan"
+	"chain/net/http/reqid"
 )
 
 var (
@@ -81,19 +81,20 @@ func main() {
 		log.Fatal(ctx, log.KeyError, errors.Wrap(err, "loading hsm kd"))
 	}
 
-	m := chainhttp.NewServeMux()
+	m := http.NewServeMux()
 	signHandler, err := httpjson.Handler(signTemplates, writeHTTPError)
 	if err != nil {
 		log.Error(ctx, err)
 	}
 	m.Handle("/sign-transaction-template", signHandler)
 
-	var h chainhttp.Handler = m
+	var h http.Handler = m
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}
 	h = authn.BasicHandler{Auth: auth, Realm: "signerd", Next: h}
-	http.Handle("/", chainhttp.ContextHandler{Context: ctx, Handler: h})
+	h = reqid.Handler(h)
+	http.Handle("/", h)
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 	secureheader.DefaultConfig.PermitClearLoopback = true
 

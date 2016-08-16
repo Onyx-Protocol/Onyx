@@ -26,7 +26,7 @@ func TestContext(t *testing.T) {
 	resp := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
 	req.Header.Set("Test-Key", wantHead)
-	h.ServeHTTPContext(context.Background(), resp, req)
+	h.ServeHTTP(resp, req)
 	if g := resp.Header().Get("Test-Resp-Key"); g != wantRespHead {
 		t.Errorf("header = %q want %q", g, wantRespHead)
 	}

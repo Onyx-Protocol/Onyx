@@ -5,20 +5,16 @@ import (
 	"io"
 	"net/http"
 	"strings"
-
-	"golang.org/x/net/context"
-
-	chainhttp "chain/net/http"
 )
 
 type Handler struct {
-	Handler chainhttp.Handler
+	Handler http.Handler
 }
 
-func (h Handler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Vary", "Accept-Encoding")
 	if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-		h.Handler.ServeHTTPContext(ctx, w, r)
+		h.Handler.ServeHTTP(w, r)
 		return
 	}
 	w.Header().Set("Content-Encoding", "gzip")
@@ -30,6 +26,6 @@ func (h Handler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r 
 			response
 		}
 	)
-	h.Handler.ServeHTTPContext(ctx, gzipResponse{gz, response{w}}, r)
+	h.Handler.ServeHTTP(gzipResponse{gz, response{w}}, r)
 	gz.Close()
 }

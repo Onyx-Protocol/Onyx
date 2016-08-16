@@ -19,7 +19,6 @@ import (
 	"golang.org/x/net/context"
 
 	"chain/log"
-	chainhttp "chain/net/http"
 )
 
 var (
@@ -41,14 +40,14 @@ var (
 // Handler counts requests and response codes in metrics.
 // See the package doc for metric names.
 type Handler struct {
-	Handler chainhttp.Handler
+	Handler http.Handler
 }
 
-// ServeHTTPContext satisfies chainhttp.Handler interface
-func (h Handler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+// ServeHTTP satisfies http.Handler
+func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// TODO(kr): generate counters automatically based on path
 	metrics.Counter("requests").Add()
-	h.Handler.ServeHTTPContext(ctx, &codeCountResponse{w, false}, req)
+	h.Handler.ServeHTTP(&codeCountResponse{w, false}, req)
 }
 
 type codeCountResponse struct {

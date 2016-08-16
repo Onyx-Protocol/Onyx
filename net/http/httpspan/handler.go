@@ -5,10 +5,8 @@ import (
 	"strings"
 
 	"github.com/resonancelabs/go-pub/instrument"
-	"golang.org/x/net/context"
 
 	"chain/log"
-	chainhttp "chain/net/http"
 	"chain/net/http/reqid"
 	"chain/net/trace/span"
 )
@@ -24,12 +22,12 @@ const (
 // It uses HTTP header fields to link the span
 // into a trace identified by the client.
 type Handler struct {
-	Handler chainhttp.Handler
+	Handler http.Handler
 }
 
-// ServeHTTPContext satisfies the http.Handler interface.
+// ServeHTTP satisfies http.Handler.
 // It expects to find a request ID in the context.
-func (h Handler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	sp := instrument.StartSpan()
 	sp.SetOperation("http.request")
 	if s := req.Header.Get(fieldParentID); s != "" {
@@ -40,6 +38,7 @@ func (h Handler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, re
 			sp.AddTraceJoinId(kv[:i], kv[i+1:])
 		}
 	}
+	ctx := req.Context()
 	sp.AddTraceJoinId("reqid", reqid.FromContext(ctx))
 	ctx = span.NewContextWithSpan(ctx, sp)
 	log.Write(
@@ -48,6 +47,6 @@ func (h Handler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, re
 		"method", req.Method,
 		"path", req.URL.Path,
 	)
-	h.Handler.ServeHTTPContext(ctx, w, req)
+	h.Handler.ServeHTTP(w, req.WithContext(ctx))
 	sp.Finish()
 }
