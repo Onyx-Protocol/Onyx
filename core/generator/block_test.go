@@ -80,7 +80,7 @@ func TestGetBlocks(t *testing.T) {
 		}
 	}()
 
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
 	assettest.IssueAssetsFixture(ctx, t, fc, assetID, 1, "")
 
 	// Hopefully force the GetBlocks call to wait

@@ -23,14 +23,26 @@ type assetResponse struct {
 // POST /update-asset
 func setAssetTags(ctx context.Context, in struct {
 	AssetID string `json:"asset_id"`
+	Alias   string `json:"alias"`
 	Tags    map[string]interface{}
 }) (interface{}, error) {
 	var decodedAssetID bc.AssetID
-	err := decodedAssetID.UnmarshalText([]byte(in.AssetID))
-	if err != nil {
-		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "%q is an invalid asset ID", in.AssetID)
+	if in.AssetID != "" {
+		err := decodedAssetID.UnmarshalText([]byte(in.AssetID))
+		if err != nil {
+			return nil, errors.WithDetailf(httpjson.ErrBadRequest, "%q is an invalid asset ID", in.AssetID)
+		}
+
+		if in.Alias != "" {
+			return nil, errors.Wrap(httpjson.ErrBadRequest, "cannot supply both asset_id and alias")
+		}
 	}
-	return asset.SetTags(ctx, decodedAssetID, in.Tags)
+
+	if in.AssetID == "" && in.Alias == "" {
+		return nil, errors.Wrap(httpjson.ErrBadRequest, "must supply either asset_id or alias")
+	}
+
+	return asset.SetTags(ctx, decodedAssetID, in.Alias, in.Tags)
 }
 
 type assetResponseOrError struct {
@@ -43,6 +55,7 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 	XPubs      []string
 	Quorum     int
 	Definition map[string]interface{}
+	Alias      string
 	Tags       map[string]interface{}
 
 	// ClientToken is the application's unique token for the asset. Every asset
@@ -71,6 +84,7 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 				ins[i].Quorum,
 				ins[i].Definition,
 				genesis.Hash(),
+				ins[i].Alias,
 				ins[i].Tags,
 				ins[i].ClientToken,
 			)
@@ -98,6 +112,14 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 // POST /archive-asset
 func archiveAsset(ctx context.Context, in struct {
 	AssetID bc.AssetID `json:"asset_id"`
+	Alias   string     `json:"alias"`
 }) error {
-	return asset.Archive(ctx, in.AssetID)
+	if (in.AssetID != bc.AssetID{} && in.Alias != "") {
+		return errors.Wrap(httpjson.ErrBadRequest, "cannot supply both asset_id and alias")
+	}
+
+	if (in.AssetID == bc.AssetID{} && in.Alias == "") {
+		return errors.Wrap(httpjson.ErrBadRequest, "must supply either asset_id or alias")
+	}
+	return asset.Archive(ctx, in.AssetID, in.Alias)
 }

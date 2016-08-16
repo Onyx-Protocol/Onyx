@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -447,7 +447,8 @@ CREATE TABLE assets (
     client_token text,
     genesis_hash text NOT NULL,
     signer_id text NOT NULL,
-    definition jsonb
+    definition jsonb,
+    alias text
 );
 
 
@@ -782,6 +783,14 @@ ALTER TABLE ONLY asset_tags
 
 
 --
+-- Name: assets_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY assets
+    ADD CONSTRAINT assets_alias_key UNIQUE (alias);
+
+
+--
 -- Name: assets_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1073,3 +1082,4 @@ ALTER TABLE ONLY account_utxos
 --
 
 insert into migrations (filename, hash) values ('2016-08-16.0.core.initial-schema.sql', '60cd6638983c225741317bb71385a7e740425f968685a9a8f54db3de4b78fbf5');
+insert into migrations (filename, hash) values ('2016-08-16.1.api.add-asset-aliases.sql', '78b8c814db73872e6ebc8c5bcedc342d17f566a0a637470aed2761ae09060873');

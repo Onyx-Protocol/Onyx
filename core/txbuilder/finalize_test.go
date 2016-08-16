@@ -329,7 +329,7 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *cos.FC, *generator
 		return nil, nil, nil, err
 	}
 
-	asset, err := asset.Define(ctx, []string{assetPub.String()}, 1, nil, genesis.Hash(), nil, nil)
+	asset, err := asset.Define(ctx, []string{assetPub.String()}, 1, nil, genesis.Hash(), "", nil, nil)
 	if err != nil {
 		return nil, nil, nil, err
 	}

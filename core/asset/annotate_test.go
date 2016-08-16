@@ -17,13 +17,13 @@ func TestAnnotateTxs(t *testing.T) {
 
 	tags1 := map[string]interface{}{"foo": "bar"}
 
-	asset1, err := Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, bc.Hash{}, tags1, nil)
+	asset1, err := Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, bc.Hash{}, "", tags1, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	tags2 := map[string]interface{}{"foo": "baz"}
-	asset2, err := Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, bc.Hash{}, tags2, nil)
+	asset2, err := Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, bc.Hash{}, "", tags2, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
