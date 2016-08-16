@@ -1,1 +1,0 @@
-ALTER TABLE assets DROP COLUMN key_index;

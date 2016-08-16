@@ -1,4 +1,0 @@
-CREATE TABLE mockhsm (
-  xpub BYTEA PRIMARY KEY NOT NULL,
-  xprv BYTEA NOT NULL
-);

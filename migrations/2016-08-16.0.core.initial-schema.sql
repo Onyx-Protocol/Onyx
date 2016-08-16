@@ -1,19 +1,4 @@
 --
--- PostgreSQL database dump
---
-
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SET check_function_bodies = false;
-SET client_min_messages = warning;
-SET row_security = off;
-
---
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -526,17 +511,6 @@ CREATE TABLE leader (
 
 
 --
--- Name: migrations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE migrations (
-    filename text NOT NULL,
-    hash text NOT NULL,
-    applied_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
 -- Name: mockhsm; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -838,14 +812,6 @@ ALTER TABLE ONLY leader
 
 
 --
--- Name: migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY migrations
-    ADD CONSTRAINT migrations_pkey PRIMARY KEY (filename);
-
-
---
 -- Name: mockhsm_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1066,10 +1032,3 @@ CREATE INDEX signers_type_id_idx ON signers USING btree (type, id);
 
 ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id) ON DELETE SET NULL;
-
-
---
--- PostgreSQL database dump complete
---
-
-insert into migrations (filename, hash) values ('2016-08-16.0.core.initial-schema.sql', '60cd6638983c225741317bb71385a7e740425f968685a9a8f54db3de4b78fbf5');
