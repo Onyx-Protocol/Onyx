@@ -4,6 +4,7 @@ import com.chain.exception.ChainException;
 
 import java.lang.reflect.Type;
 import java.net.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The Context object contains all information necessary to
@@ -38,4 +39,16 @@ public class Context {
     }
 
     public URL getUrl() { return this.url; }
+
+    public void setConnectTimeout(long timeout, TimeUnit unit) {
+        this.httpClient.setConnectTimeout(timeout, unit);
+    }
+
+    public void setReadTimeout(long timeout, TimeUnit unit) {
+        this.httpClient.setReadTimeout(timeout, unit);
+    }
+
+    public void setWriteTimeout(long timeout, TimeUnit unit) {
+        this.httpClient.setWriteTimeout(timeout, unit);
+    }
 }
