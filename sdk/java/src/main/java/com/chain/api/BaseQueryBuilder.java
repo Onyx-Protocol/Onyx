@@ -10,7 +10,7 @@ public abstract class BaseQueryBuilder<T extends BaseQueryBuilder<T>> {
     @SerializedName("query")
     protected Query query;
 
-    public abstract <S extends BasePage> S execute(Context ctx)
+    public abstract <S extends PagedItems> S execute(Context ctx)
     throws ChainException;
 
     public BaseQueryBuilder() {

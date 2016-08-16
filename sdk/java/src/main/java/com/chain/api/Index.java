@@ -12,21 +12,22 @@ public class Index {
     public String query;
     public Boolean unspents;
 
-    public static class Page extends BasePage<Index> {
-        public Page next(Context ctx)
-        throws ChainException {
-            return ctx.request("list-indexes", this.query, Page.class);
+    public static class Items extends PagedItems<Index> {
+        public Items getPage() throws ChainException {
+            Items items = this.context.request("list-indexes", this.query, Items.class);
+            items.setContext(this.context);
+            return items;
         }
     }
 
     public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
-        public Page execute(Context ctx)
-        throws ChainException {
-            return ctx.request("list-indexes", this.query, Page.class);
+        public Items execute(Context ctx) throws ChainException {
+            Items items = new Items();
+            items.setContext(ctx);
+            return items.getPage();
         }
 
-        public Index find(Context ctx, String id)
-        throws ChainException {
+        public Index find(Context ctx, String id) throws ChainException {
             Map<String, Object> req = new HashMap<>();
             req.put("id", id);
             return ctx.request("get-index", req, Index.class);
@@ -39,8 +40,7 @@ public class Index {
         public String query;
         public boolean unspents;
 
-        public Index create(Context ctx)
-        throws ChainException {
+        public Index create(Context ctx) throws ChainException {
             return ctx.request("create-index", this, Index.class);
         }
 

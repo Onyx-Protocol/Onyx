@@ -54,28 +54,19 @@ public class Account {
         return ctx.request("set-account-tags", requestBody, Account.class);
     }
 
-    /**
-     * A single page of Account objects returned from a execute query, with a pointer to the next page of results
-     * if applicable.
-     */
-    public static class Page extends BasePage<Account> {
-        /**
-         *
-         *
-         * @param ctx
-         * @return The next Account.Page of results for the originating query
-         * @throws ChainException
-         */
-        public Page next(Context ctx)
-        throws ChainException {
-            return ctx.request("list-accounts", this.query, Page.class);
+    public static class Items extends PagedItems<Account> {
+        public Items getPage() throws ChainException {
+            Items items = this.context.request("list-accounts", this.query, Items.class);
+            items.setContext(this.context);
+            return items;
         }
     }
-
     public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
-        public Page execute(Context ctx)
-        throws ChainException {
-            return ctx.request("list-accounts", this.query, Page.class);
+        public Items execute(Context ctx) throws ChainException {
+            Items items = new Items();
+            items.setContext(ctx);
+            items.setQuery(this.query);
+            return items.getPage();
         }
     }
 

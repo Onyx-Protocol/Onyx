@@ -6,7 +6,6 @@ import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
 
 import java.math.BigInteger;
-
 import java.util.List;
 import java.util.Map;
 
@@ -22,17 +21,20 @@ public class Transaction {
     @SerializedName("reference_data")
     public Map<String, Object> referenceData;
 
-    public static class Page extends BasePage<Transaction> {
-        public Page next(Context ctx)
-        throws ChainException {
-            return ctx.request("list-transactions", this.query, Page.class);
+    public static class Items extends PagedItems<Transaction> {
+        public Items getPage() throws ChainException {
+            Items items = this.context.request("list-transactions", this.query, Items.class);
+            items.setContext(this.context);
+            return items;
         }
     }
 
     public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
-        public Page execute(Context ctx)
-        throws ChainException {
-            return ctx.request("list-transactions", this.query, Page.class);
+        public Items execute(Context ctx) throws ChainException {
+            Items items = new Items();
+            items.setContext(ctx);
+            items.setQuery(this.query);
+            return items.getPage();
         }
 
         public QueryBuilder setStartTime(long time) {

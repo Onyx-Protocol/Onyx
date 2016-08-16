@@ -46,17 +46,20 @@ public class Asset {
         return ctx.request("set-asset-tags", requestBody, Asset.class);
     }
 
-    public static class Page extends BasePage<Asset> {
-        public Page next(Context ctx)
-        throws ChainException {
-            return ctx.request("list-assets", this.query, Page.class);
+    public static class Items extends PagedItems<Asset> {
+        public Items getPage() throws ChainException {
+            Items items = this.context.request("list-assets", this.query, Items.class);
+            items.setContext(this.context);
+            return items;
         }
     }
 
     public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
-        public Page execute(Context ctx)
-        throws ChainException {
-            return ctx.request("list-assets", this.query, Page.class);
+        public Items execute(Context ctx) throws ChainException {
+            Items items = new Items();
+            items.setContext(ctx);
+            items.setQuery(this.query);
+            return items.getPage();
         }
     }
 

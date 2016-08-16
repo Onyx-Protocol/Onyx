@@ -12,38 +12,32 @@ public class MockHsm {
         public String xpub;
         public URL hsmUrl;
 
-        public static class Page extends BasePage<Key> {
-            public Page next(Context ctx)
-            throws ChainException {
-                Key.Page page = ctx.request("mockhsm/list-keys", this.query, Page.class);
-                URL mockHsmUrl = buildMockHsmUrl(ctx.getUrl());
-                for (Key k : page.items) {
-                    k.hsmUrl = mockHsmUrl;
-                }
-                return page;
-            }
-        }
-
-        public static Key create(Context ctx)
-        throws ChainException {
+        public static Key create(Context ctx) throws ChainException {
             Key key = ctx.request("mockhsm/create-key", null, Key.class);
             key.hsmUrl = buildMockHsmUrl(ctx.getUrl());
             return key;
         }
 
-        public static Key.Page list(Context ctx)
-        throws ChainException {
-            Key.Page page = ctx.request("mockhsm/list-keys", null, Page.class);
-            URL mockHsmUrl = buildMockHsmUrl(ctx.getUrl());
-            for (Key k : page.items) {
-                k.hsmUrl = mockHsmUrl;
+        public static class Items extends PagedItems<Key> {
+            public Items getPage() throws ChainException {
+                Items items = this.context.request("mockhsm/list-keys", this.query, Items.class);
+                items.setContext(this.context);
+                URL mockHsmUrl = buildMockHsmUrl(this.context.getUrl());
+                for (Key k : items.list) {
+                    k.hsmUrl = mockHsmUrl;
+                }
+                return items;
             }
-            return page;
+        }
+
+        public static Items list(Context ctx) throws ChainException {
+            Items items = new Items();
+            items.setContext(ctx);
+            return items.getPage();
         }
     }
 
-    private static URL buildMockHsmUrl(URL coreUrl)
-    throws BadURLException {
+    private static URL buildMockHsmUrl(URL coreUrl) throws BadURLException {
         try {
             return new URL(coreUrl.toString() + "/mockhsm");
         } catch (MalformedURLException e) {
