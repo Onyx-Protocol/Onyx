@@ -140,9 +140,9 @@ func TestGetBlock(t *testing.T) {
 				'X', 'Y', 'Z', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			},
-			TimestampMS:     100,
-			SignatureScript: []byte("test-sig-script"),
-			OutputScript:    []byte("test-output-script"),
+			TimestampMS:      100,
+			SignatureScript:  []byte("test-sig-script"),
+			ConsensusProgram: []byte("test-output-script"),
 		},
 		Transactions: []*bc.Tx{
 			bc.NewTx(bc.TxData{Version: 1, ReferenceData: []byte("test-tx")}),

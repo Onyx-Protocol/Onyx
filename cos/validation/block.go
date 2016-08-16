@@ -115,17 +115,17 @@ func validateBlockHeader(prevBlock, block *bc.Block, runScript bool) error {
 		return ErrBadTxRoot
 	}
 
-	if txscript.IsUnspendable(block.OutputScript) {
+	if txscript.IsUnspendable(block.ConsensusProgram) {
 		return ErrBadScript
 	}
 
 	if runScript && prevBlock != nil {
-		engine, err := txscript.NewEngineForBlock(prevBlock.OutputScript, block, txscript.StandardVerifyFlags)
+		engine, err := txscript.NewEngineForBlock(prevBlock.ConsensusProgram, block, txscript.StandardVerifyFlags)
 		if err != nil {
 			return err
 		}
 		if err = engine.Execute(); err != nil {
-			pkScriptStr, _ := txscript.DisasmString(prevBlock.OutputScript)
+			pkScriptStr, _ := txscript.DisasmString(prevBlock.ConsensusProgram)
 			sigScriptStr, _ := txscript.DisasmString(block.SignatureScript)
 			return errors.Wrapf(ErrBadSig, "validation failed in script execution in block (sigscript[%s] pkscript[%s]): %s", sigScriptStr, pkScriptStr, err.Error())
 		}

@@ -56,7 +56,7 @@ func (g *Generator) MakeBlock(ctx context.Context) (*bc.Block, error) {
 }
 
 func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error {
-	pubkeys, nrequired, err := txscript.ParseBlockMultiSigScript(prevBlock.OutputScript)
+	pubkeys, nrequired, err := txscript.ParseBlockMultiSigScript(prevBlock.ConsensusProgram)
 	if err != nil {
 		return errors.Wrap(err, "parsing prevblock output script")
 	}

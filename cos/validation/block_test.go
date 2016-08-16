@@ -11,9 +11,9 @@ import (
 func TestValidateBlockHeader(t *testing.T) {
 	prevBlock := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Height:       1,
-			TimestampMS:  5,
-			OutputScript: []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
+			Height:           1,
+			TimestampMS:      5,
+			ConsensusProgram: []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
 		},
 	}
 	prevHash := prevBlock.Hash()
@@ -49,7 +49,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			PreviousBlockHash: prevHash,
 			Height:            1,
 			TimestampMS:       6,
-			OutputScript:      []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
+			ConsensusProgram:  []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
 			SignatureScript:   []byte{txscript.OP_4},
 		},
 		want: ErrBadHeight,
@@ -59,7 +59,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			PreviousBlockHash: prevHash,
 			Height:            2,
 			TimestampMS:       6,
-			OutputScript:      []byte{txscript.OP_RETURN},
+			ConsensusProgram:  []byte{txscript.OP_RETURN},
 		},
 		want: ErrBadScript,
 	}, {
@@ -68,7 +68,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			PreviousBlockHash: prevHash,
 			Height:            2,
 			TimestampMS:       6,
-			OutputScript:      []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
+			ConsensusProgram:  []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
 			SignatureScript:   []byte{txscript.OP_3},
 		},
 		want: ErrBadSig,
@@ -78,7 +78,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			PreviousBlockHash: prevHash,
 			Height:            2,
 			TimestampMS:       6,
-			OutputScript:      []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
+			ConsensusProgram:  []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
 			SignatureScript:   []byte{txscript.OP_4},
 		},
 		want: nil,

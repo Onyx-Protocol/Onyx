@@ -57,7 +57,7 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 			Height:            prev.Height + 1,
 			PreviousBlockHash: prev.Hash(),
 			TimestampMS:       timestampMS,
-			OutputScript:      prev.OutputScript,
+			ConsensusProgram:  prev.ConsensusProgram,
 		},
 	}
 
@@ -366,10 +366,10 @@ func NewGenesisBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time
 	}
 	b := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Version:      bc.NewBlockVersion,
-			Height:       1,
-			TimestampMS:  bc.Millis(timestamp),
-			OutputScript: script,
+			Version:          bc.NewBlockVersion,
+			Height:           1,
+			TimestampMS:      bc.Millis(timestamp),
+			ConsensusProgram: script,
 		},
 	}
 	return b, nil

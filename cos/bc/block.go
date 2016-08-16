@@ -110,8 +110,8 @@ type BlockHeader struct {
 	// the output script from the previous block.
 	SignatureScript []byte
 
-	// Output script specifies a predicate for signing the next block.
-	OutputScript []byte
+	// Consensus Program specifies a predicate for signing the next block.
+	ConsensusProgram []byte
 }
 
 // Time returns the time represented by the Timestamp in bh.
@@ -211,7 +211,7 @@ func (bh *BlockHeader) readFrom(r io.Reader) (err error) {
 	if err != nil {
 		return err
 	}
-	bh.OutputScript, err = blockchain.ReadBytes(r, MaxProgramByteLength)
+	bh.ConsensusProgram, err = blockchain.ReadBytes(r, MaxProgramByteLength)
 	if err != nil {
 		return err
 	}
@@ -246,5 +246,5 @@ func (bh *BlockHeader) writeTo(w io.Writer, forSigning bool) error {
 	} else {
 		blockchain.WriteBytes(w, bh.SignatureScript)
 	}
-	return blockchain.WriteBytes(w, bh.OutputScript)
+	return blockchain.WriteBytes(w, bh.ConsensusProgram)
 }

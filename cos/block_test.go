@@ -74,22 +74,22 @@ func TestWaitForBlock(t *testing.T) {
 	store := memstore.New()
 	block1 := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Height:       1,
-			OutputScript: []byte{txscript.OP_TRUE},
+			Height:           1,
+			ConsensusProgram: []byte{txscript.OP_TRUE},
 		},
 	}
 	block2 := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			PreviousBlockHash: block1.Hash(),
 			Height:            2,
-			OutputScript:      []byte{txscript.OP_TRUE},
+			ConsensusProgram:  []byte{txscript.OP_TRUE},
 		},
 	}
 	block3 := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			PreviousBlockHash: block2.Hash(),
 			Height:            3,
-			OutputScript:      []byte{txscript.OP_TRUE},
+			ConsensusProgram:  []byte{txscript.OP_TRUE},
 		},
 	}
 	store.SaveBlock(ctx, block1)
@@ -236,8 +236,8 @@ func TestGenerateBlock(t *testing.T) {
 			Commitment: mustDecodeHex(
 				"eef4d293c9c326c2bbbd77d4c1f0e9ceaf34c822aa4874ccd73ffe7eee477cbde561ec28c67f40007fa416dae949c3bf1cd4392ee1ca0d6b60d92abdf7a1322d",
 			),
-			TimestampMS:  bc.Millis(now),
-			OutputScript: latestBlock.OutputScript,
+			TimestampMS:      bc.Millis(now),
+			ConsensusProgram: latestBlock.ConsensusProgram,
 		},
 		Transactions: txs,
 	}
