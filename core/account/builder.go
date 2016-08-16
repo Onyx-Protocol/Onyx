@@ -126,7 +126,7 @@ func utxoToInputs(ctx context.Context, u *utxodb.UTXO, refData []byte) (*bc.TxIn
 	txInput := bc.NewSpendInput(u.Hash, u.Index, nil, u.AssetID, u.Amount, u.Script, refData)
 
 	templateInput := &txbuilder.Input{}
-	inputAccount, err := Find(ctx, u.AccountID)
+	inputAccount, err := FindByID(ctx, u.AccountID)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "get account info")
 	}

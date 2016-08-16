@@ -56,12 +56,12 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	}
 	genesisHash := genesis.Hash()
 
-	acct1, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, nil, nil)
+	acct1, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	acct2, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, nil, nil)
+	acct2, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

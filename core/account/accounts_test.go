@@ -8,9 +8,12 @@ import (
 
 	"golang.org/x/net/context"
 
+	"chain/core/signers"
 	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/errors"
+	"chain/net/http/httpjson"
 	"chain/testutil"
 )
 
@@ -20,7 +23,7 @@ func TestCreateAccount(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 
-	account, err := Create(ctx, []string{dummyXPub}, 1, nil, nil)
+	account, err := Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -37,6 +40,17 @@ func TestCreateAccount(t *testing.T) {
 	}
 }
 
+func TestCreateAccountReusedAlias(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+	createTestAccount(ctx, t, "some-account", nil)
+
+	_, err := Create(ctx, []string{dummyXPub}, 1, "some-account", nil, nil)
+	if errors.Root(err) != httpjson.ErrBadRequest {
+		t.Errorf("Expected %s when reusing an alias, got %v", httpjson.ErrBadRequest, err)
+	}
+}
+
 func resetSeqs(ctx context.Context, t testing.TB) {
 	acpIndexNext, acpIndexCap = 1, 100
 	pgtest.Exec(ctx, t, `ALTER SEQUENCE account_control_program_seq RESTART`)
@@ -47,7 +61,7 @@ func TestCreateControlProgram(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	resetSeqs(ctx, t)
 
-	account, err := Create(ctx, []string{dummyXPub}, 1, nil, nil)
+	account, err := Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -67,8 +81,8 @@ func TestCreateControlProgram(t *testing.T) {
 	}
 }
 
-func createTestAccount(ctx context.Context, t testing.TB, tags map[string]interface{}) *Account {
-	account, err := Create(ctx, []string{dummyXPub}, 1, tags, nil)
+func createTestAccount(ctx context.Context, t testing.TB, alias string, tags map[string]interface{}) *Account {
+	account, err := Create(ctx, []string{dummyXPub}, 1, alias, tags, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -78,7 +92,7 @@ func createTestAccount(ctx context.Context, t testing.TB, tags map[string]interf
 
 func createTestControlProgram(ctx context.Context, t testing.TB, accountID string) []byte {
 	if accountID == "" {
-		account := createTestAccount(ctx, t, nil)
+		account := createTestAccount(ctx, t, "", nil)
 		accountID = account.ID
 	}
 
@@ -92,10 +106,23 @@ func createTestControlProgram(ctx context.Context, t testing.TB, accountID strin
 func TestSetTags(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	account := createTestAccount(ctx, t, nil)
+	account := createTestAccount(ctx, t, "some-alias", nil)
 	newTags := map[string]interface{}{"someTag": "taggityTag"}
 
-	got, err := SetTags(ctx, account.ID, newTags)
+	// first, set by ID
+	got, err := SetTags(ctx, account.ID, "", newTags)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	account.Tags = newTags
+	if !reflect.DeepEqual(got, account) {
+		t.Errorf("got SetTags=%v, want %v", got, account)
+	}
+
+	newTags = map[string]interface{}{"someTag": "something different"}
+	// next, set by alias
+	got, err = SetTags(ctx, "", "some-alias", newTags)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -106,13 +133,29 @@ func TestSetTags(t *testing.T) {
 	}
 }
 
-func TestFind(t *testing.T) {
+func TestFindByID(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	tags := map[string]interface{}{"someTag": "taggityTag"}
-	account := createTestAccount(ctx, t, tags)
+	account := createTestAccount(ctx, t, "", tags)
 
-	found, err := Find(ctx, account.ID)
+	found, err := FindByID(ctx, account.ID)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	if !reflect.DeepEqual(account, found) {
+		t.Errorf("expected found account to be %v, instead found %v", account, found)
+	}
+}
+
+func TestFindByAlias(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+	tags := map[string]interface{}{"someTag": "taggityTag"}
+	account := createTestAccount(ctx, t, "some-alias", tags)
+
+	found, err := FindByAlias(ctx, "some-alias")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -129,7 +172,7 @@ func TestFindBatch(t *testing.T) {
 	var accountIDs []string
 	for i := 0; i < 3; i++ {
 		tags := map[string]interface{}{"number": strconv.Itoa(i)}
-		account := createTestAccount(ctx, t, tags)
+		account := createTestAccount(ctx, t, "", tags)
 		accountIDs = append(accountIDs, account.ID)
 	}
 
@@ -139,5 +182,37 @@ func TestFindBatch(t *testing.T) {
 	}
 	if len(accs) != len(accountIDs) {
 		t.Errorf("got %d account IDs, want %d", len(accs), len(accountIDs))
+	}
+}
+
+func TestArchiveByID(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+	account := createTestAccount(ctx, t, "", nil)
+
+	err := Archive(ctx, account.ID, "")
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	_, err = FindByID(ctx, account.ID)
+	if errors.Root(err) != signers.ErrArchived {
+		t.Errorf("expected %s when Finding an archived account, instead got %s", signers.ErrArchived, err)
+	}
+}
+
+func TestArchiveByAlias(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+	createTestAccount(ctx, t, "some-alias", nil)
+
+	err := Archive(ctx, "", "some-alias")
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	_, err = FindByAlias(ctx, "some-alias")
+	if errors.Root(err) != signers.ErrArchived {
+		t.Errorf("expected %s when Finding an archived account, instead got %s", signers.ErrArchived, err)
 	}
 }

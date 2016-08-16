@@ -28,7 +28,7 @@ func TestAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	acc, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, nil, nil)
+	acc, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,8 +93,8 @@ func TestTransfer(t *testing.T) {
 	account.Init(fc, ind)
 
 	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, nil)
-	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
-	account2ID := assettest.CreateAccountFixture(ctx, t, nil, 0, nil)
+	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
+	account2ID := assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
 
 	assetIDStr := assetID.String()
 

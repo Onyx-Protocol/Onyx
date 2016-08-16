@@ -15,8 +15,8 @@ import (
 
 func TestAnnotateTxs(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	acc1 := createTestAccount(ctx, t, nil)
-	acc2 := createTestAccount(ctx, t, map[string]interface{}{"one": "foo", "two": "bar"})
+	acc1 := createTestAccount(ctx, t, "", nil)
+	acc2 := createTestAccount(ctx, t, "", map[string]interface{}{"one": "foo", "two": "bar"})
 	acp1 := createTestControlProgram(ctx, t, acc1.ID)
 	acp2 := createTestControlProgram(ctx, t, acc2.ID)
 

@@ -24,14 +24,14 @@ import (
 	"chain/testutil"
 )
 
-func CreateAccountFixture(ctx context.Context, t testing.TB, keys []string, quorum int, tags map[string]interface{}) string {
+func CreateAccountFixture(ctx context.Context, t testing.TB, keys []string, quorum int, alias string, tags map[string]interface{}) string {
 	if keys == nil {
 		keys = []string{testutil.TestXPub.String()}
 	}
 	if quorum == 0 {
 		quorum = len(keys)
 	}
-	acc, err := account.Create(ctx, keys, quorum, tags, nil)
+	acc, err := account.Create(ctx, keys, quorum, alias, tags, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -40,7 +40,7 @@ func CreateAccountFixture(ctx context.Context, t testing.TB, keys []string, quor
 
 func CreateAccountControlProgramFixture(ctx context.Context, t testing.TB, accID string) []byte {
 	if accID == "" {
-		accID = CreateAccountFixture(ctx, t, nil, 0, nil)
+		accID = CreateAccountFixture(ctx, t, nil, 0, "", nil)
 	}
 	controlProgram, err := account.CreateControlProgram(ctx, accID)
 	if err != nil {
@@ -69,7 +69,7 @@ func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum
 
 func IssueAssetsFixture(ctx context.Context, t testing.TB, fc *cos.FC, assetID bc.AssetID, amount uint64, accountID string) state.Output {
 	if accountID == "" {
-		accountID = CreateAccountFixture(ctx, t, nil, 0, nil)
+		accountID = CreateAccountFixture(ctx, t, nil, 0, "", nil)
 	}
 	dest := NewAccountControlAction(bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil)
 

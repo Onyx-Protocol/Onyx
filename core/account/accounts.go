@@ -3,6 +3,7 @@ package account
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -14,11 +15,13 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/metrics"
+	"chain/net/http/httpjson"
 )
 
 type Account struct {
 	*signers.Signer
-	Tags map[string]interface{} `json:"tags"`
+	Alias string                 `json:"alias"`
+	Tags  map[string]interface{} `json:"tags"`
 }
 
 var (
@@ -28,7 +31,7 @@ var (
 )
 
 // Create creates a new Account.
-func Create(ctx context.Context, xpubs []string, quorum int, tags map[string]interface{}, clientToken *string) (*Account, error) {
+func Create(ctx context.Context, xpubs []string, quorum int, alias string, tags map[string]interface{}, clientToken *string) (*Account, error) {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "create signer")
@@ -40,12 +43,30 @@ func Create(ctx context.Context, xpubs []string, quorum int, tags map[string]int
 		return nil, errors.Wrap(err)
 	}
 
-	account := &Account{Signer: signer}
-	err = insertAccountTags(ctx, account.ID, tags)
+	tagsParam, err := tagsToNullString(tags)
 	if err != nil {
+		return nil, err
+	}
+
+	aliasSQL := sql.NullString{
+		String: alias,
+		Valid:  alias != "",
+	}
+
+	const q = `INSERT INTO accounts (account_id, alias, tags) VALUES ($1, $2, $3)`
+	_, err = pg.Exec(ctx, q, signer.ID, aliasSQL, tagsParam)
+	if err != nil {
+		if pg.IsUniqueViolation(err) {
+			return nil, errors.Wrap(httpjson.ErrBadRequest, "non-unique alias")
+		}
 		return nil, errors.Wrap(err)
 	}
-	account.Tags = tags
+
+	account := &Account{
+		Signer: signer,
+		Alias:  alias,
+		Tags:   tags,
+	}
 
 	err = dbtx.Commit(ctx)
 	if err != nil {
@@ -61,19 +82,27 @@ func Create(ctx context.Context, xpubs []string, quorum int, tags map[string]int
 }
 
 // SetTags updates the tags on the provided Account.
-func SetTags(ctx context.Context, id string, tags map[string]interface{}) (*Account, error) {
+func SetTags(ctx context.Context, id, alias string, tags map[string]interface{}) (*Account, error) {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "setting tags")
 	}
 	defer dbtx.Rollback(ctx)
 
-	acc, err := Find(ctx, id)
-	if err != nil {
-		return nil, errors.Wrap(err)
+	var acc *Account
+	if id != "" {
+		acc, err = FindByID(ctx, id)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+	} else {
+		acc, err = FindByAlias(ctx, alias)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
 	}
 
-	err = insertAccountTags(ctx, id, tags)
+	err = insertAccountTags(ctx, acc.ID, tags)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -91,9 +120,9 @@ func SetTags(ctx context.Context, id string, tags map[string]interface{}) (*Acco
 	return acc, nil
 }
 
-// insertAccountTags inserts a set of tags for the given accountID.
+// insertAccountTags inserts a set of tags for the given identifier
 // It must take place inside a database transaction.
-func insertAccountTags(ctx context.Context, accountID string, tags map[string]interface{}) error {
+func insertAccountTags(ctx context.Context, id string, tags map[string]interface{}) error {
 	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 	tagsParam, err := tagsToNullString(tags)
 	if err != nil {
@@ -101,11 +130,11 @@ func insertAccountTags(ctx context.Context, accountID string, tags map[string]in
 	}
 
 	const q = `
-		INSERT INTO account_tags (account_id, tags) VALUES ($1, $2)
+		INSERT INTO accounts (account_id, tags) VALUES ($1, $2)
 		ON CONFLICT (account_id) DO UPDATE SET tags = $2
-	`
+`
 
-	_, err = pg.Exec(ctx, q, accountID, tagsParam)
+	_, err = pg.Exec(ctx, q, id, tagsParam)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -113,30 +142,66 @@ func insertAccountTags(ctx context.Context, accountID string, tags map[string]in
 	return nil
 }
 
-// Find retrieves an Account record from signer
-func Find(ctx context.Context, id string) (*Account, error) {
+// FindByID retrieves an Account record from signer by its accountID
+func FindByID(ctx context.Context, id string) (*Account, error) {
 	s, err := signers.Find(ctx, "account", id)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
 
-	tags, err := fetchAccountTags(ctx, s.ID)
+	alias, tags, err := fetchAccountData(ctx, s.ID)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
 
 	return &Account{
 		Signer: s,
+		Alias:  alias,
 		Tags:   tags,
 	}, nil
 }
 
-func fetchAccountTags(ctx context.Context, id string) (map[string]interface{}, error) {
-	const q = `SELECT tags FROM account_tags WHERE account_id=$1`
-	var tagBytes []byte
-	err := pg.QueryRow(ctx, q, id).Scan(&tagBytes)
+func fetchAccountData(ctx context.Context, id string) (string, map[string]interface{}, error) {
+	const q = `SELECT alias, tags FROM accounts WHERE account_id=$1`
+	var (
+		tagBytes []byte
+		alias    sql.NullString
+	)
+	err := pg.QueryRow(ctx, q, id).Scan(&alias, &tagBytes)
+	if err != nil {
+		return "", nil, errors.Wrap(err)
+	}
+
+	var tags map[string]interface{}
+	if len(tagBytes) > 0 {
+		err := json.Unmarshal(tagBytes, &tags)
+		if err != nil {
+			return "", nil, errors.Wrap(err)
+		}
+	}
+
+	if alias.Valid {
+		return alias.String, tags, nil
+	}
+
+	return "", tags, nil
+}
+
+// FindByAlias retrieves an Account record by its alias
+func FindByAlias(ctx context.Context, alias string) (*Account, error) {
+	const q = `SELECT account_id, tags, archived FROM accounts WHERE alias=$1`
+	var (
+		tagBytes  []byte
+		accountID string
+		archived  bool
+	)
+	err := pg.QueryRow(ctx, q, alias).Scan(&accountID, &tagBytes, &archived)
 	if err != nil {
 		return nil, errors.Wrap(err)
+	}
+
+	if archived {
+		return nil, signers.ErrArchived
 	}
 
 	var tags map[string]interface{}
@@ -147,12 +212,38 @@ func fetchAccountTags(ctx context.Context, id string) (map[string]interface{}, e
 		}
 	}
 
-	return tags, nil
+	s, err := signers.Find(ctx, "account", accountID)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	return &Account{
+		Signer: s,
+		Alias:  alias,
+		Tags:   tags,
+	}, nil
 }
 
 // Archive marks an Account record as archived,
 // effectively "deleting" it.
-func Archive(ctx context.Context, id string) error {
+func Archive(ctx context.Context, id, alias string) error {
+	identifier := id
+	column := "account_id"
+	if id == "" {
+		identifier = alias
+		column = "alias"
+	}
+
+	const q = `
+		UPDATE accounts SET archived='t' WHERE %s=$1
+		RETURNING account_id
+	`
+
+	err := pg.QueryRow(ctx, fmt.Sprintf(q, column), identifier).Scan(&id)
+	if err == sql.ErrNoRows {
+		return errors.Wrap(pg.ErrUserInputNotFound)
+	}
+
 	return signers.Archive(ctx, "account", id)
 }
 
@@ -194,7 +285,7 @@ func FindBatch(ctx context.Context, ids ...string) (map[string]*Account, error) 
 // CreateControlProgram creates a control program
 // that is tied to the Account and stores it in the database.
 func CreateControlProgram(ctx context.Context, accountID string) ([]byte, error) {
-	account, err := Find(ctx, accountID)
+	account, err := FindByID(ctx, accountID)
 	if err != nil {
 		return nil, err
 	}

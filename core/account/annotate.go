@@ -71,7 +71,7 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 		SELECT signer_id, control_program, tags
 		FROM account_control_programs
 		LEFT JOIN signers ON signers.id=account_control_programs.signer_id
-		LEFT JOIN account_tags ON account_tags.account_id=signers.id
+		LEFT JOIN accounts ON accounts.account_id=signers.id
 		WHERE control_program=ANY($1::bytea[])
 	`
 	var (

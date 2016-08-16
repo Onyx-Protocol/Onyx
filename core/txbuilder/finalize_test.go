@@ -309,12 +309,12 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *cos.FC, *generator
 		return nil, nil, nil, err
 	}
 
-	acctA, err := account.Create(ctx, []string{accPub.String()}, 1, nil, nil)
+	acctA, err := account.Create(ctx, []string{accPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	acctB, err := account.Create(ctx, []string{accPub.String()}, 1, nil, nil)
+	acctB, err := account.Create(ctx, []string{accPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		return nil, nil, nil, err
 	}

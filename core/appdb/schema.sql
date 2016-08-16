@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -346,16 +346,6 @@ CREATE TABLE account_control_programs (
 
 
 --
--- Name: account_tags; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE account_tags (
-    account_id text NOT NULL,
-    tags jsonb
-);
-
-
---
 -- Name: account_utxos; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -372,6 +362,18 @@ CREATE TABLE account_utxos (
     confirmed_in bigint,
     block_pos integer,
     block_timestamp bigint
+);
+
+
+--
+-- Name: accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE accounts (
+    account_id text NOT NULL,
+    tags jsonb,
+    alias text,
+    archived boolean DEFAULT false NOT NULL
 );
 
 
@@ -719,7 +721,7 @@ ALTER TABLE ONLY signers ALTER COLUMN key_index SET DEFAULT nextval('signers_key
 -- Name: account_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY account_tags
+ALTER TABLE ONLY accounts
     ADD CONSTRAINT account_tags_pkey PRIMARY KEY (account_id);
 
 
@@ -729,6 +731,14 @@ ALTER TABLE ONLY account_tags
 
 ALTER TABLE ONLY account_utxos
     ADD CONSTRAINT account_utxos_pkey PRIMARY KEY (tx_hash, index);
+
+
+--
+-- Name: accounts_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY accounts
+    ADD CONSTRAINT accounts_alias_key UNIQUE (alias);
 
 
 --
@@ -1145,3 +1155,4 @@ insert into migrations (filename, hash) values ('2016-08-11.1.account.reserve-ut
 insert into migrations (filename, hash) values ('2016-08-11.2.query.annotated-assets.sql', 'a53245f9d6c232dd2e9407772288bf30298ac59d565eb9f413c95ca884c0c60d');
 insert into migrations (filename, hash) values ('2016-08-12.0.query.annotated-accounts.sql', '9cf8f26521724d7f5f871bb5f1e19e16e6a2b069d680144729e6427677e4bb92');
 insert into migrations (filename, hash) values ('2016-08-15.0.txdb.rename-snapshots.sql', 'a167fdce1fc8ed05155f2237b1902841c8e4a9f76f7568fbd3532d21c0f7bcc8');
+insert into migrations (filename, hash) values ('2016-08-16.0.api.add-account-aliases.sql', '9b3cd83f6df5579105389c99162e717767e75933bee51c75723bdee1d3a18035');
