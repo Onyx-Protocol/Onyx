@@ -13,9 +13,14 @@ import java.util.*;
  */
 public class Account {
     /**
-     * Unique account identifier, optionally user defined
+     * Unique account identifier
      */
     public String id;
+
+    /**
+     * User specified, unique identifier
+     */
+    public String alias;
 
     /**
      * The number of public keys required to signing transactions for the account
@@ -71,6 +76,7 @@ public class Account {
     }
 
     public static class Builder {
+        public String alias;
         public int quorum;
         public List<String> xpubs;
         public Map<String, Object> tags;
@@ -109,6 +115,11 @@ public class Account {
             }
             Type type = new TypeToken<List<Account>>() {}.getType();
             return ctx.request("create-account", accts, type);
+        }
+
+        public Builder setAlias(String alias) {
+            this.alias = alias;
+            return this;
         }
 
         public Builder setQuorum(int quorum) {
