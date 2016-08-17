@@ -64,7 +64,7 @@ type requestQuery struct {
 	// TODO(bobg): Different request structs for endpoints with different needs
 	TimestampMS uint64 `json:"timestamp,omitempty"`
 
-	Index      string        `json:"index,omitempty"`
+	Index      string        `json:"index_alias,omitempty"`
 	ChQL       string        `json:"chql,omitempty"`
 	ChQLParams []interface{} `json:"chql_params,omitempty"`
 }

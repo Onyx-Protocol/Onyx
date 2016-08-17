@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -587,7 +587,7 @@ CREATE TABLE query_blocks (
 
 CREATE TABLE query_indexes (
     internal_id integer NOT NULL,
-    id text NOT NULL,
+    alias text NOT NULL,
     type text NOT NULL,
     query text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -891,7 +891,7 @@ ALTER TABLE ONLY query_blocks
 --
 
 ALTER TABLE ONLY query_indexes
-    ADD CONSTRAINT query_indexes_id_key UNIQUE (id);
+    ADD CONSTRAINT query_indexes_id_key UNIQUE (alias);
 
 
 --
@@ -1083,3 +1083,4 @@ ALTER TABLE ONLY account_utxos
 
 insert into migrations (filename, hash) values ('2016-08-16.0.core.initial-schema.sql', '60cd6638983c225741317bb71385a7e740425f968685a9a8f54db3de4b78fbf5');
 insert into migrations (filename, hash) values ('2016-08-16.1.api.add-asset-aliases.sql', '78b8c814db73872e6ebc8c5bcedc342d17f566a0a637470aed2761ae09060873');
+insert into migrations (filename, hash) values ('2016-08-16.2.query.rename-index-alias.sql', 'eb1b6b4fa602ac21d7f957f8fda0b94dd50fb710055842cead111a0bb35d93ae');

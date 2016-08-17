@@ -21,7 +21,7 @@ var (
 //
 // POST /create-index
 func (a *api) createIndex(ctx context.Context, in struct {
-	ID       string `json:"id"`
+	Alias    string `json:"alias"`
 	Type     string `json:"type"`
 	Query    string `json:"query"`
 	Unspents bool   `json:"unspents"`
@@ -32,11 +32,11 @@ func (a *api) createIndex(ctx context.Context, in struct {
 	if in.Unspents && in.Type != query.IndexTypeBalance {
 		return nil, errors.WithDetail(ErrBadIndexConfig, "unspents flag is only valid for balance indexes")
 	}
-	if in.ID == "" {
-		return nil, errors.WithDetail(httpjson.ErrBadRequest, "missing index ID")
+	if in.Alias == "" {
+		return nil, errors.WithDetail(httpjson.ErrBadRequest, "missing index alias")
 	}
 
-	idx, err := a.indexer.CreateIndex(ctx, in.ID, in.Type, in.Query, in.Unspents)
+	idx, err := a.indexer.CreateIndex(ctx, in.Alias, in.Type, in.Query, in.Unspents)
 	return idx, errors.Wrap(err, "creating the new index")
 }
 
