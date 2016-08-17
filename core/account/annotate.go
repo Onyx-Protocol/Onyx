@@ -53,6 +53,9 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 			if !ok {
 				return errors.Wrap(fmt.Errorf("bad input witness type %T", txIn["input_witness"]))
 			}
+			if len(inputWitness) == 0 {
+				continue
+			}
 			maybeRedeemStr, ok := inputWitness[len(inputWitness)-1].(string)
 			if !ok {
 				return errors.Wrap(fmt.Errorf("bad input witness item type %T", inputWitness[len(inputWitness)-1]))
