@@ -19,7 +19,9 @@ func mkOpData(n int) func(*virtualMachine) error {
 		if err != nil {
 			return err
 		}
-		return vm.push(vm.program[vm.pc+1:vm.pc+1+uint32(n)], false)
+		d := make([]byte, n)
+		copy(d, vm.program[vm.pc+1:vm.pc+1+uint32(n)])
+		return vm.push(d, false)
 	}
 }
 
@@ -40,7 +42,9 @@ func opPushdata(vm *virtualMachine) error {
 	if end > uint64(len(vm.program)) {
 		return ErrShortProgram
 	}
-	return vm.push(vm.program[start:end], false)
+	d := make([]byte, end-start)
+	copy(d, vm.program[start:end])
+	return vm.push(d, false)
 }
 
 func op1Negate(vm *virtualMachine) error {

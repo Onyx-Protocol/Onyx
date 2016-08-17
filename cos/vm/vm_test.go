@@ -96,6 +96,14 @@ func TestProgramOK(t *testing.T) {
 		{"0 0 BOOLOR NOT", nil},
 
 		{"1 2 OR 3 EQUAL", nil},
+
+		{"0x00 0 CATPUSHDATA 0x0000 EQUAL", nil},
+		{"0 0xff CATPUSHDATA 0x01ff EQUAL", nil},
+		{"0x05 0x05 CATPUSHDATA 0x050105 EQUAL", nil},
+		{"0xff 0xff CATPUSHDATA 0xff01ff EQUAL", nil},
+		{"0 0xcccccc CATPUSHDATA 0x03cccccc EQUAL", nil},
+		{"0x05 0x05 SWAP 0xdeadbeef CATPUSHDATA DROP 0x05 EQUAL", nil},
+		{"0x05 0x05 SWAP 0xdeadbeef CATPUSHDATA DROP 0x05 EQUAL", nil},
 	}
 	for i, c := range cases {
 		prog, err := Compile(c.prog)
