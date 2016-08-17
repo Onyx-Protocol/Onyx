@@ -148,7 +148,7 @@ func (ind *Indexer) CreateIndex(ctx context.Context, alias, typ, rawQuery string
 	err = ind.db.QueryRow(ctx, insertQ, alias, typ, rawQuery, unspents).Scan(&idx.internalID, &idx.createdAt)
 	if err != nil {
 		if pg.IsUniqueViolation(err) {
-			return nil, errors.Wrap(httpjson.ErrBadRequest, "non-unique index")
+			return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
 		}
 		return nil, errors.Wrap(err, "saving tx index in db")
 	}

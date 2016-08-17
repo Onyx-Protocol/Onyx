@@ -1,5 +1,6 @@
 package com.chain.api;
 
+import com.chain.exception.APIException;
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
 
@@ -55,10 +56,19 @@ public class TransactionTemplate {
         return ctx.request("build-transaction-template", templates, type);
     }
 
-    public SubmitResponse submit(Context ctx, TransactionTemplate template)
+    public SubmitResponse submit(Context ctx)
     throws ChainException {
-        List<SubmitResponse> transactions = TransactionTemplate.submit(ctx, Arrays.asList(template));
-        return transactions.get(0);
+        List<SubmitResponse> transactions = TransactionTemplate.submit(ctx, Arrays.asList(this));
+        SubmitResponse result = transactions.get(0);
+        if (result.id == null) {
+            throw new APIException(
+                    result.code,
+                    result.message,
+                    result.detail,
+                    null
+            );
+        }
+        return result;
     }
 
     public static List<SubmitResponse> submit(Context ctx, List<TransactionTemplate> templates)

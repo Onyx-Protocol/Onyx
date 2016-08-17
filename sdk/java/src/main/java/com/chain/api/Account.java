@@ -1,5 +1,6 @@
 package com.chain.api;
 
+import com.chain.exception.APIException;
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
@@ -36,6 +37,11 @@ public class Account {
      * User-specified tag structure for the account
      */
     public Map<String, Object> tags;
+
+    // Error data
+    public String code;
+    public String message;
+    public String detail;
 
     public Account setTags(Map<String, Object> tags) {
         this.tags = tags;
@@ -98,7 +104,16 @@ public class Account {
         public Account create(Context ctx)
         throws ChainException {
             List<Account> accts = Account.Builder.create(ctx, Arrays.asList(this));
-            return accts.get(0);
+            Account result = accts.get(0);
+            if (result.id == null) {
+                throw new APIException(
+                    result.code,
+                    result.message,
+                    result.detail,
+                    null
+                );
+            }
+            return result;
         }
 
         /**

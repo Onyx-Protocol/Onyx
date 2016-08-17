@@ -49,7 +49,9 @@ public class APIException extends ChainException {
             s += " Detail: " + this.detail;
         }
 
-        s += " Request-ID: " + this.requestID;
+        if (this.requestID != null) {
+            s += " Request-ID: " + this.requestID;
+        }
 
         return s;
     }

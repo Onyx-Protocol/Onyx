@@ -55,7 +55,7 @@ func Create(ctx context.Context, xpubs []string, quorum int, alias string, tags 
 	const q = `INSERT INTO accounts (account_id, alias, tags) VALUES ($1, $2, $3)`
 	_, err = pg.Exec(ctx, q, signer.ID, aliasSQL, tagsParam)
 	if pg.IsUniqueViolation(err) {
-		return nil, errors.Wrap(httpjson.ErrBadRequest, "non-unique alias")
+		return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
 	} else if err != nil {
 		return nil, errors.Wrap(err)
 	}

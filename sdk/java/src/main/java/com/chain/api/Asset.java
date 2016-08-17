@@ -1,5 +1,6 @@
 package com.chain.api;
 
+import com.chain.exception.APIException;
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
@@ -24,6 +25,11 @@ public class Asset {
      * User-specified tag structure for the asset
      */
     public Map<String, Object> tags;
+
+    // Error data
+    public String code;
+    public String message;
+    public String detail;
 
     public Asset setTags(Map<String, Object> tags) {
         this.tags = tags;
@@ -82,6 +88,15 @@ public class Asset {
         public Asset create(Context ctx)
         throws ChainException {
             List<Asset> assets = Asset.Builder.create(ctx, Arrays.asList(this));
+            Asset result = assets.get(0);
+            if (result.id == null) {
+                throw new APIException(
+                        result.code,
+                        result.message,
+                        result.detail,
+                        null
+                );
+            }
             return assets.get(0);
         }
 
