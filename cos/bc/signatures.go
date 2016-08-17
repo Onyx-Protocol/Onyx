@@ -3,7 +3,6 @@ package bc
 // SigHashType represents hash type bits at the end of a signature.
 type SigHashType byte
 
-// Hash type bits from the end of a signature.
 const (
 	SigHashOld          SigHashType = 0x0
 	SigHashAll          SigHashType = 0x1
