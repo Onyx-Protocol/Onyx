@@ -280,7 +280,9 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 		asset.GenesisHash, asset.IssuanceProgram,
 		defParams, clientToken,
 	)
-	if err != nil {
+	if pg.IsUniqueViolation(err) {
+		return nil, errors.Wrap(httpjson.ErrBadRequest, "non-unique alias")
+	} else if err != nil {
 		return nil, err
 	}
 	rowsAffected, err := res.RowsAffected()
