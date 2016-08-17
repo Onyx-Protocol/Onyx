@@ -8,6 +8,7 @@ import java.util.Map;
 
 public class Index {
     public String id;
+    public String alias;
     public String type;
     public String query;
     public Boolean unspents;
@@ -35,7 +36,7 @@ public class Index {
     }
 
     public static class Builder {
-        public String id;
+        public String alias;
         public String type;
         public String query;
         public boolean unspents;
@@ -44,8 +45,8 @@ public class Index {
             return ctx.request("create-index", this, Index.class);
         }
 
-        public Builder setId(String id) {
-            this.id = id;
+        public Builder setAlias(String alias) {
+            this.alias = alias;
             return this;
         }
 

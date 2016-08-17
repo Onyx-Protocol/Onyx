@@ -6,7 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Query {
-    public String index;
+    @SerializedName("index_alias")
+    public String indexAlias;
     public String chql;
     @SerializedName("chql_params")
     public List<String> chqlParams;

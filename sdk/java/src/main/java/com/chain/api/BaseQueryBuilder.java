@@ -17,8 +17,8 @@ public abstract class BaseQueryBuilder<T extends BaseQueryBuilder<T>> {
       this.query = new Query();
     }
 
-    public T useIndex(String index) {
-        this.query.index = index;
+    public T useIndexByAlias(String alias) {
+        this.query.indexAlias = alias;
         return (T)this;
     }
 
