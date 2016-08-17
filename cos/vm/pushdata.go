@@ -10,40 +10,13 @@ func opFalse(vm *virtualMachine) error {
 	return vm.pushBool(false, false)
 }
 
-func mkOpData(n int) func(*virtualMachine) error {
-	return func(vm *virtualMachine) error {
-		if vm.pc+1+uint32(n) > uint32(len(vm.program)) {
-			return ErrShortProgram
-		}
-		err := vm.applyCost(1)
-		if err != nil {
-			return err
-		}
-		d := make([]byte, n)
-		copy(d, vm.program[vm.pc+1:vm.pc+1+uint32(n)])
-		return vm.push(d, false)
-	}
-}
-
 func opPushdata(vm *virtualMachine) error {
 	err := vm.applyCost(1)
 	if err != nil {
 		return err
 	}
-	if vm.pc >= uint32(len(vm.program)) {
-		return ErrShortProgram
-	}
-	n, nbytes := binary.Uvarint(vm.program[vm.pc+1:])
-	if nbytes <= 0 {
-		return ErrBadValue
-	}
-	start := uint64(vm.pc) + 1 + uint64(nbytes)
-	end := start + uint64(n)
-	if end > uint64(len(vm.program)) {
-		return ErrShortProgram
-	}
-	d := make([]byte, end-start)
-	copy(d, vm.program[start:end])
+	d := make([]byte, len(vm.data))
+	copy(d, vm.data)
 	return vm.push(d, false)
 }
 
@@ -53,16 +26,6 @@ func op1Negate(vm *virtualMachine) error {
 		return err
 	}
 	return vm.pushInt64(-1, false)
-}
-
-func mkOpNum(n uint8) func(*virtualMachine) error {
-	return func(vm *virtualMachine) error {
-		err := vm.applyCost(1)
-		if err != nil {
-			return err
-		}
-		return vm.pushInt64(int64(n), false)
-	}
 }
 
 func opNop(_ *virtualMachine) error {
@@ -75,13 +38,19 @@ func pushdataBytes(in []byte) []byte {
 		return []byte{OP_0}
 	}
 	if l <= 75 {
-		return append([]byte{OP_DATA_1 + uint8(len(in)) - 1}, in...)
+		return append([]byte{OP_DATA_1 + uint8(l) - 1}, in...)
 	}
-	var lenBytes [10]byte
-	nbytes := binary.PutUvarint(lenBytes[:], uint64(l))
-	res := append([]byte{OP_PUSHDATA}, lenBytes[:nbytes]...)
-	res = append(res, in...)
-	return res
+	if l < 1<<8 {
+		return append([]byte{OP_PUSHDATA1, uint8(l)}, in...)
+	}
+	if l < 1<<16 {
+		var b [2]byte
+		binary.LittleEndian.PutUint16(b[:], uint16(l))
+		return append([]byte{OP_PUSHDATA2, b[0], b[1]}, in...)
+	}
+	var b [4]byte
+	binary.LittleEndian.PutUint32(b[:], uint32(l))
+	return append([]byte{OP_PUSHDATA4, b[0], b[1], b[2], b[3]}, in...)
 }
 
 func pushdataInt64(n int64) []byte {

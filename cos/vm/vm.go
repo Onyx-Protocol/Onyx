@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"encoding/binary"
 	"fmt"
 	"io"
 
@@ -13,9 +12,13 @@ const initialRunLimit = 50000
 
 type virtualMachine struct {
 	program      []byte
-	pc           uint32
+	pc, nextPC   uint32
 	runLimit     int64
 	deferredCost int64
+
+	// Stores the data parsed out of an opcode. Used as input to
+	// data-pushing opcodes.
+	data []byte
 
 	// CHECKPREDICATE spawns a child vm with depth+1
 	depth int
@@ -32,6 +35,8 @@ type virtualMachine struct {
 
 	block *bc.Block
 
+	// Set this to a non-nil value to produce trace output during
+	// execution.
 	traceOut io.Writer
 }
 
@@ -93,30 +98,19 @@ func VerifyBlock(block, prevBlock *bc.Block) (bool, error) {
 
 func (vm *virtualMachine) run() (bool, error) {
 	for vm.pc = 0; vm.pc < uint32(len(vm.program)); { // handle vm.pc updates in the loop
-		opcode := vm.program[vm.pc]
-
-		switch opcode {
-		case 0x65, 0x66:
-			return false, ErrIllegalOpcode
+		op, oplength, data, err := parseOp(vm.program, vm.pc)
+		if err != nil {
+			return false, err
 		}
 
-		op := ops[opcode]
-		if op.fn == nil {
-			return false, ErrUnknownOpcode
-		}
+		vm.nextPC = vm.pc + oplength
 
 		var skip bool
-		switch opcode {
+		switch op.opcode {
 		case OP_IF, OP_NOTIF, OP_ELSE, OP_ENDIF, OP_WHILE, OP_ENDWHILE:
 			skip = false
 		default:
 			skip = len(vm.condStack) > 0 && !vm.condStack[len(vm.condStack)-1]
-		}
-
-		lsDepth := len(vm.loopStack)
-		var lsTop uint32
-		if lsDepth > 0 {
-			lsTop = vm.loopStack[len(vm.loopStack)-1]
 		}
 
 		if vm.traceOut != nil {
@@ -124,11 +118,16 @@ func (vm *virtualMachine) run() (bool, error) {
 			if skip {
 				opname = fmt.Sprintf("[%s]", opname)
 			}
-			fmt.Fprintf(vm.traceOut, "vm %d pc %d limit %d %s\n", vm.depth, vm.pc, vm.runLimit, opname)
+			fmt.Fprintf(vm.traceOut, "vm %d pc %d limit %d %s", vm.depth, vm.pc, vm.runLimit, opname)
+			if len(data) > 0 {
+				fmt.Fprintf(vm.traceOut, " %x", data)
+			}
+			fmt.Fprint(vm.traceOut, "\n")
 		}
 
 		if !skip {
 			vm.deferredCost = 0
+			vm.data = data
 			err := op.fn(vm)
 			if err != nil {
 				return false, err
@@ -139,33 +138,12 @@ func (vm *virtualMachine) run() (bool, error) {
 			}
 		}
 
+		vm.pc = vm.nextPC
+
 		if vm.traceOut != nil && !skip {
 			for i := len(vm.dataStack) - 1; i >= 0; i-- {
 				fmt.Fprintf(vm.traceOut, "  stack %d: %x\n", len(vm.dataStack)-1-i, vm.dataStack[i])
 			}
-		}
-
-		switch {
-		case opcode == OP_ENDWHILE:
-			if len(vm.loopStack) < lsDepth {
-				vm.pc = lsTop
-			} else {
-				vm.pc++
-			}
-		case opcode >= OP_DATA_1 && opcode <= OP_DATA_75:
-			vm.pc += uint32(opcode - OP_DATA_1 + 2)
-		case opcode == OP_PUSHDATA:
-			if vm.pc >= uint32(len(vm.program)) {
-				return false, ErrShortProgram
-			}
-			n, nbytes := binary.Uvarint(vm.program[vm.pc+1:])
-			if nbytes <= 0 {
-				return false, ErrBadValue
-			}
-			// TODO(bobg): range-check nbytes and n
-			vm.pc += 1 + uint32(nbytes) + uint32(n)
-		default:
-			vm.pc++
 		}
 	}
 	res := len(vm.dataStack) > 0 && AsBool(vm.dataStack[len(vm.dataStack)-1])

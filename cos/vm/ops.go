@@ -1,6 +1,9 @@
 package vm
 
-import "fmt"
+import (
+	"encoding/binary"
+	"fmt"
+)
 
 type op struct {
 	opcode uint8
@@ -107,9 +110,11 @@ const (
 	OP_DATA_74 = uint8(0x4a)
 	OP_DATA_75 = uint8(0x4b)
 
-	OP_PUSHDATA = uint8(0x4c) // TODO(bobg): revert to PUSHDATA1, PUSHDATA2, and PUSHDATA4
-	OP_1NEGATE  = uint8(0x4f)
-	OP_NOP      = uint8(0x61)
+	OP_PUSHDATA1 = uint8(0x4c)
+	OP_PUSHDATA2 = uint8(0x4d)
+	OP_PUSHDATA4 = uint8(0x4e)
+	OP_1NEGATE   = uint8(0x4f)
+	OP_NOP       = uint8(0x61)
 
 	OP_IF             = uint8(0x63)
 	OP_NOTIF          = uint8(0x64)
@@ -206,9 +211,12 @@ const (
 var opList = []op{
 	// data pushing
 	{0x00, "FALSE", opFalse},
-	{0x4c, "PUSHDATA", opPushdata},
-	// 0x4d was PUSHDATA2
-	// 0x4e was PUSHDATA4
+
+	// sic: the PUSHDATA ops all share an implementation
+	{0x4c, "PUSHDATA1", opPushdata},
+	{0x4d, "PUSHDATA2", opPushdata},
+	{0x4e, "PUSHDATA4", opPushdata},
+
 	{0x4f, "1NEGATE", op1Negate},
 
 	// TODO(bobg): 0x50 fails
@@ -318,23 +326,106 @@ var opList = []op{
 
 var (
 	// Indexed by opcode
-	ops [256]op
+	ops [256]*op
 
 	// Indexed by name
-	opsByName map[string]op
+	opsByName map[string]*op
 )
+
+// parseOp parses the op at position pc in prog.  Return values are
+// the opcode at that position (simply prog[pc]); the length of the
+// opcode plus any associated data (as with OP_DATA* and OP_PUSHDATA*
+// instructions); the associated data, if any; and any parsing error
+// (e.g. prog is too short).
+func parseOp(prog []byte, pc uint32) (op *op, oplen uint32, data []byte, err error) {
+	if pc >= uint32(len(prog)) {
+		err = ErrShortProgram
+		return
+	}
+	opcode := prog[pc]
+	if opcode == 0x65 || opcode == 0x66 {
+		err = ErrIllegalOpcode
+	} else {
+		op = ops[opcode]
+		if op == nil {
+			err = ErrUnknownOpcode
+			return
+		}
+	}
+	oplen = 1 // the opcode itself
+	if opcode >= OP_1 && opcode <= OP_16 {
+		data = []byte{opcode - OP_1 + 1}
+		return
+	}
+	if opcode >= OP_DATA_1 && opcode <= OP_DATA_75 {
+		oplen += uint32(opcode - OP_DATA_1 + 1)
+		end := pc + oplen
+		if end > uint32(len(prog)) {
+			err = ErrShortProgram
+			return
+		}
+		data = prog[pc+1 : end]
+		return
+	}
+	if opcode == OP_PUSHDATA1 {
+		if pc == uint32(len(prog)-1) {
+			err = ErrShortProgram
+			return
+		}
+		n := prog[pc+1]
+		oplen += uint32(1 + n)
+		end := pc + oplen
+		if end > uint32(len(prog)) {
+			err = ErrShortProgram
+			return
+		}
+		data = prog[pc+2 : end]
+		return
+	}
+	if opcode == OP_PUSHDATA2 {
+		if pc > uint32(len(prog)-3) {
+			err = ErrShortProgram
+			return
+		}
+		n := binary.LittleEndian.Uint16(prog[pc+1 : pc+3])
+		oplen += uint32(2 + n)
+		end := pc + oplen
+		if end > uint32(len(prog)) {
+			err = ErrShortProgram
+			return
+		}
+		data = prog[pc+3 : end]
+		return
+	}
+	if opcode == OP_PUSHDATA4 {
+		if pc > uint32(len(prog)-5) {
+			err = ErrShortProgram
+			return
+		}
+		n := binary.LittleEndian.Uint32(prog[pc+1 : pc+5])
+		oplen += 4 + n
+		end := pc + oplen
+		if end > uint32(len(prog)) {
+			err = ErrShortProgram
+			return
+		}
+		data = prog[pc+5 : end]
+		return
+	}
+	return
+}
 
 func init() {
 	for i := 1; i <= 75; i++ {
-		opList = append(opList, op{uint8(i), fmt.Sprintf("DATA_%d", i), mkOpData(i)})
+		opList = append(opList, op{uint8(i), fmt.Sprintf("DATA_%d", i), opPushdata})
 	}
 	for i := uint8(1); i <= 16; i++ {
-		opList = append(opList, op{0x50 + uint8(i), fmt.Sprintf("%d", i), mkOpNum(i)})
+		opList = append(opList, op{0x50 + uint8(i), fmt.Sprintf("%d", i), opPushdata})
 	}
-	opsByName = make(map[string]op, len(opList)+2)
-	for _, op := range opList {
-		ops[op.opcode] = op
-		opsByName[op.name] = op
+	opsByName = make(map[string]*op, len(opList)+2)
+	for i, op := range opList {
+		ops[op.opcode] = &opList[i]
+		opsByName[op.name] = &opList[i]
 	}
 	opsByName["0"] = ops[OP_FALSE]
 	opsByName["TRUE"] = ops[OP_1]

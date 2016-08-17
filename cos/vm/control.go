@@ -147,8 +147,8 @@ func opEndwhile(vm *virtualMachine) error {
 	c := vm.condStack[len(vm.condStack)-1]
 	vm.condStack = vm.condStack[:len(vm.condStack)-1]
 	if c {
+		vm.nextPC = vm.loopStack[len(vm.loopStack)-1]
 		vm.loopStack = vm.loopStack[:len(vm.loopStack)-1]
-		return nil
 	}
 	return nil
 }
