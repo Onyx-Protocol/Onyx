@@ -21,7 +21,7 @@ func TestMockHSM(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), db)
 	fc, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	mockhsm := mockhsm.New(db)
-	xpub1, err := mockhsm.CreateKey(ctx)
+	xpub1, err := mockhsm.CreateKey(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}

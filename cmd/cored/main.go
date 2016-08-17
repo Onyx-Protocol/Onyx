@@ -171,10 +171,11 @@ func main() {
 	// new key only on request, not automatically.
 	var blockXPub *hd25519.XPub
 	if *blockXPubStr == "" {
-		blockXPub, err = hsm.CreateKey(ctx)
+		coreXPub, err := hsm.CreateKey(ctx, "")
 		if err != nil {
 			panic(err)
 		}
+		blockXPub = coreXPub.XPub
 		log.Println("Generated new block-signing key")
 		log.Println("Specify for future runs by adding this to the environment:")
 		log.Printf("BLOCK_XPUB=%s\n", blockXPub.String())

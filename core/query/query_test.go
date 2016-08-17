@@ -36,11 +36,11 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	indexer.RegisterAnnotator(account.AnnotateTxs)
 	indexer.RegisterAnnotator(asset.AnnotateTxs)
 	hsm := mockhsm.New(db)
-	xpub, err := hsm.CreateKey(ctx)
+	xpub, err := hsm.CreateKey(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	localSigner := blocksigner.New(xpub, hsm, db, fc)
+	localSigner := blocksigner.New(xpub.XPub, hsm, db, fc)
 	g := &generator.Generator{
 		Config: generator.Config{
 			LocalSigner:  localSigner,

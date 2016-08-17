@@ -111,12 +111,12 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 	account.Init(fc, nil)
 
 	hsm := mockhsm.New(pg.FromContext(ctx))
-	xpub, err := hsm.CreateKey(ctx)
+	xpub, err := hsm.CreateKey(ctx, "")
 	if err != nil {
 		return nil, nil, err
 	}
 
-	localSigner := blocksigner.New(xpub, hsm, pg.FromContext(ctx), fc)
+	localSigner := blocksigner.New(xpub.XPub, hsm, pg.FromContext(ctx), fc)
 	g := &generator.Generator{
 		Config: generator.Config{
 			LocalSigner:  localSigner,

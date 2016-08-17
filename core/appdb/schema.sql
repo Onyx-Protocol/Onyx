@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -544,7 +544,8 @@ CREATE TABLE migrations (
 CREATE TABLE mockhsm (
     xpub bytea NOT NULL,
     xprv bytea NOT NULL,
-    xpub_hash text NOT NULL
+    xpub_hash text NOT NULL,
+    alias text
 );
 
 
@@ -855,6 +856,14 @@ ALTER TABLE ONLY migrations
 
 
 --
+-- Name: mockhsm_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY mockhsm
+    ADD CONSTRAINT mockhsm_alias_key UNIQUE (alias);
+
+
+--
 -- Name: mockhsm_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1084,3 +1093,4 @@ ALTER TABLE ONLY account_utxos
 insert into migrations (filename, hash) values ('2016-08-16.0.core.initial-schema.sql', '60cd6638983c225741317bb71385a7e740425f968685a9a8f54db3de4b78fbf5');
 insert into migrations (filename, hash) values ('2016-08-16.1.api.add-asset-aliases.sql', '78b8c814db73872e6ebc8c5bcedc342d17f566a0a637470aed2761ae09060873');
 insert into migrations (filename, hash) values ('2016-08-16.2.query.rename-index-alias.sql', 'eb1b6b4fa602ac21d7f957f8fda0b94dd50fb710055842cead111a0bb35d93ae');
+insert into migrations (filename, hash) values ('2016-08-16.3.api.alias-keys.sql', 'ab1f9368d3a6bb79ae7a4f8c8f838315927286b8c7c55667bdf769297531cb17');

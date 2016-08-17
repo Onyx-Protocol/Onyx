@@ -16,41 +16,54 @@ type HSM struct {
 	db pg.DB
 }
 
+type XPub struct {
+	*hd25519.XPub `json:"xpub"`
+	Alias         string `json:"alias"`
+}
+
 func New(db pg.DB) *HSM {
 	return &HSM{db}
 }
 
 // CreateKey produces a new random xprv and stores it in the db.
-func (h *HSM) CreateKey(ctx context.Context) (*hd25519.XPub, error) {
+func (h *HSM) CreateKey(ctx context.Context, alias string) (*XPub, error) {
 	xprv, xpub, err := hd25519.NewXKeys(nil)
 	if err != nil {
 		return nil, err
 	}
 	hash := sha3.Sum256(xpub.Bytes())
-	err = h.store(ctx, hex.EncodeToString(hash[:]), xprv, xpub)
+	err = h.store(ctx, hex.EncodeToString(hash[:]), xprv, xpub, alias)
 	if err != nil {
 		return nil, err
 	}
-	return xpub, nil
+	return &XPub{XPub: xpub, Alias: alias}, nil
 }
 
-func (h *HSM) store(ctx context.Context, xpubHash string, xprv *hd25519.XPrv, xpub *hd25519.XPub) error {
-	_, err := h.db.Exec(ctx, "INSERT INTO mockhsm (xpub_hash, xpub, xprv) VALUES ($1, $2, $3)", xpubHash, xpub.Bytes(), xprv.Bytes())
+func (h *HSM) store(ctx context.Context, xpubHash string, xprv *hd25519.XPrv, xpub *hd25519.XPub, alias string) error {
+	aliasSql := sql.NullString{
+		String: alias,
+		Valid:  alias != "",
+	}
+	_, err := h.db.Exec(ctx, "INSERT INTO mockhsm (xpub_hash, xpub, xprv, alias) VALUES ($1, $2, $3, $4)", xpubHash, xpub.Bytes(), xprv.Bytes(), aliasSql)
 	return err
 }
 
 // ListKeys returns a list of all xpubs from the db.
-func (h *HSM) ListKeys(ctx context.Context, cursor string, limit int) ([]*hd25519.XPub, string, error) {
-	var xpubs []*hd25519.XPub
+func (h *HSM) ListKeys(ctx context.Context, cursor string, limit int) ([]*XPub, string, error) {
+	var xpubs []*XPub
 	const q = `
-		SELECT xpub FROM mockhsm
+		SELECT xpub, alias FROM mockhsm
 		WHERE ($1='' OR $1<xpub_hash)
 		ORDER BY xpub_hash ASC LIMIT $2
 	`
-	err := pg.ForQueryRows(ctx, q, cursor, limit, func(b []byte) {
-		xpub, err := hd25519.XPubFromBytes(b)
+	err := pg.ForQueryRows(ctx, q, cursor, limit, func(b []byte, alias sql.NullString) {
+		hdxpub, err := hd25519.XPubFromBytes(b)
 		if err != nil {
 			return
+		}
+		xpub := &XPub{XPub: hdxpub}
+		if alias.Valid {
+			xpub.Alias = alias.String
 		}
 		xpubs = append(xpubs, xpub)
 	})
