@@ -1,11 +1,11 @@
 package span
 
 import (
+	"context"
 	"runtime"
 	"strings"
 
 	"github.com/resonancelabs/go-pub/instrument"
-	"golang.org/x/net/context"
 )
 
 // NewContext starts a new span named after the calling function

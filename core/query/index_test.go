@@ -1,9 +1,8 @@
 package query
 
 import (
+	"context"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"chain/cos"
 	"chain/cos/bc"

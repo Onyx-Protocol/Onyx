@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/hex"
 	"expvar"
@@ -16,7 +17,6 @@ import (
 	"github.com/kr/secureheader"
 	"github.com/resonancelabs/go-pub/instrument"
 	"github.com/resonancelabs/go-pub/instrument/client"
-	"golang.org/x/net/context"
 
 	"chain/core"
 	"chain/core/account"

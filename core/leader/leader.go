@@ -1,11 +1,10 @@
 package leader
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/database/sql"
 	"chain/log"

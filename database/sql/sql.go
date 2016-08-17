@@ -19,11 +19,10 @@ package sql
 // the trace.
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-
-	"golang.org/x/net/context"
 
 	"chain/errors"
 	"chain/log"

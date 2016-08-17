@@ -1,10 +1,9 @@
 package asset
 
 import (
+	"context"
 	"reflect"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/database/pg"

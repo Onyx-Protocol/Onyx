@@ -2,11 +2,11 @@ package query
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strconv"
 
 	"github.com/lib/pq"
-	"golang.org/x/net/context"
 
 	"chain/core/query/chql"
 	"chain/errors"

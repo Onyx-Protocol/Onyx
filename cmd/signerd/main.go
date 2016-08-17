@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/subtle"
 	"crypto/tls"
 	"fmt"
@@ -11,7 +12,6 @@ import (
 	"time"
 
 	"github.com/kr/secureheader"
-	"golang.org/x/net/context"
 
 	"chain/core/txbuilder"
 	"chain/crypto/ed25519/hd25519"

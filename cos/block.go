@@ -1,10 +1,9 @@
 package cos
 
 import (
+	"context"
 	"fmt"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/cos/state"

@@ -1,13 +1,12 @@
 package account
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/signers"
 	"chain/cos/txscript"

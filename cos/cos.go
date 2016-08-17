@@ -46,9 +46,8 @@ To ingest a block, call AddBlock.
 package cos
 
 import (
+	"context"
 	"sync"
-
-	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/cos/state"

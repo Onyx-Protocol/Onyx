@@ -1,13 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
 
 	"github.com/lib/pq"
-	"golang.org/x/net/context"
 
 	"chain/database/pg/pgtest"
 	"chain/database/sql"

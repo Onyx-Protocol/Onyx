@@ -1,12 +1,11 @@
 package asset
 
 import (
+	"context"
 	"encoding/hex"
 	"reflect"
 	"strconv"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"chain/core/signers"
 	"chain/cos/bc"

@@ -1,11 +1,10 @@
 package httpjson
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"golang.org/x/net/context"
 )
 
 func TestContext(t *testing.T) {

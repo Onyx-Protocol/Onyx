@@ -1,12 +1,11 @@
 package cos
 
 import (
+	"context"
 	"encoding/hex"
 	"reflect"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/cos/mempool"

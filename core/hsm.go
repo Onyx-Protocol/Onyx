@@ -1,7 +1,7 @@
 package core
 
 import (
-	"golang.org/x/net/context"
+	"context"
 
 	"chain/core/mockhsm"
 	"chain/core/txbuilder"

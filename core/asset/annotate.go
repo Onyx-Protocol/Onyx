@@ -1,10 +1,9 @@
 package asset
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-
-	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/errors"

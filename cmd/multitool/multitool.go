@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha512"
 	"encoding/binary"
@@ -15,7 +16,6 @@ import (
 	"time"
 
 	"golang.org/x/crypto/sha3"
-	"golang.org/x/net/context"
 
 	"github.com/davecgh/go-spew/spew"
 

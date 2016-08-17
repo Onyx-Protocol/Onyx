@@ -1,7 +1,7 @@
 package memstore
 
 import (
-	"golang.org/x/net/context"
+	"context"
 
 	"chain/cos/bc"
 	"chain/cos/state"

@@ -1,9 +1,8 @@
 package signers
 
 import (
+	"context"
 	"database/sql"
-
-	"golang.org/x/net/context"
 
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"

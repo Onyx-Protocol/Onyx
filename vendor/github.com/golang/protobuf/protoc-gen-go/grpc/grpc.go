@@ -53,7 +53,7 @@ const generatedCodeVersion = 2
 // Paths for packages used by code generated in this file,
 // relative to the import_prefix of the generator.Generator.
 const (
-	contextPkgPath = "golang.org/x/net/context"
+	contextPkgPath = "context"
 	grpcPkgPath    = "google.golang.org/grpc"
 )
 

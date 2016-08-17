@@ -2,14 +2,13 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/txdb"
 	"chain/cos"

@@ -2,14 +2,12 @@ package rpc
 
 import (
 	"bytes"
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
-
-	"golang.org/x/net/context"
-	"golang.org/x/net/context/ctxhttp"
 
 	"chain/net/http/authn"
 	"chain/net/http/reqid"
@@ -92,7 +90,7 @@ func Call(ctx context.Context, address, path string, request, response interface
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", LocalNode.String())
 
-	resp, err := ctxhttp.Do(ctx, nil, req)
+	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {
 		return err
 	}

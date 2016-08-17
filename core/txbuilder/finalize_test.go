@@ -1,10 +1,9 @@
 package txbuilder_test
 
 import (
+	"context"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/account"
 	"chain/core/account/utxodb"

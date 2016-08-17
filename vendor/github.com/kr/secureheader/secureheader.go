@@ -25,12 +25,11 @@ package secureheader
 // See https://github.com/kr/secureheader/issues/1.
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"strconv"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // DefaultConfig is initialized with conservative (safer and more

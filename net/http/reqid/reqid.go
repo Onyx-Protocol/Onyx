@@ -2,13 +2,12 @@
 package reqid
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"log"
 	"net/http"
 	"runtime"
-
-	"golang.org/x/net/context"
 )
 
 // key is an unexported type for keys defined in this package.

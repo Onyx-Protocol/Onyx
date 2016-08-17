@@ -1,9 +1,8 @@
 package rpcclient
 
 import (
+	"context"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/cos"
 	"chain/cos/bc"

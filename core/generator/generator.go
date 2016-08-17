@@ -1,10 +1,9 @@
 package generator
 
 import (
+	"context"
 	"net/url"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/blocksigner"
 	"chain/cos"

@@ -4,6 +4,7 @@
 package log
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -13,8 +14,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/resonancelabs/go-pub/base"
 	"github.com/resonancelabs/go-pub/instrument"

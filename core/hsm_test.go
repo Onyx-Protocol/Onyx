@@ -1,9 +1,8 @@
 package core
 
 import (
+	"context"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"chain/core/account"
 	"chain/core/asset/assettest"

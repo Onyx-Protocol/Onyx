@@ -1,12 +1,12 @@
 package mockhsm
 
 import (
+	"context"
 	"database/sql"
 	"encoding/hex"
 	"errors"
 
 	"golang.org/x/crypto/sha3"
-	"golang.org/x/net/context"
 
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"

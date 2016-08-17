@@ -1,9 +1,8 @@
 package httpjson
 
 import (
+	"context"
 	"net/http"
-
-	"golang.org/x/net/context"
 )
 
 // key is an unexported type for keys defined in this package.

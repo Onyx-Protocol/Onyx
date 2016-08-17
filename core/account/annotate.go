@@ -1,12 +1,11 @@
 package account
 
 import (
+	"context"
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-
-	"golang.org/x/net/context"
 
 	"chain/cos/txscript"
 	"chain/database/pg"

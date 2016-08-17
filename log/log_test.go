@@ -2,12 +2,11 @@ package log
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"chain/errors"
 	"chain/net/http/reqid"

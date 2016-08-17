@@ -1,7 +1,7 @@
 package asset
 
 import (
-	"golang.org/x/net/context"
+	"context"
 
 	"chain/core/txdb"
 	"chain/cos/bc"

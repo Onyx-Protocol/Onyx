@@ -1,12 +1,11 @@
 package query
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"sync"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/query/chql"
 	"chain/cos"

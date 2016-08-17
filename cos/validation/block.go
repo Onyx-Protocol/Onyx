@@ -2,10 +2,9 @@ package validation
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"strings"
-
-	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/cos/state"

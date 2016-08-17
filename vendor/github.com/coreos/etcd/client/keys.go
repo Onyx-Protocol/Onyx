@@ -17,6 +17,7 @@ package client
 //go:generate codecgen -d 1819 -r "Node|Response|Nodes" -o keys.generated.go keys.go
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,7 +29,6 @@ import (
 
 	"github.com/coreos/etcd/Godeps/_workspace/src/github.com/ugorji/go/codec"
 	"github.com/coreos/etcd/pkg/pathutil"
-	"golang.org/x/net/context"
 )
 
 const (

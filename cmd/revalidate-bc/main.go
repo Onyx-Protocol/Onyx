@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	"strings"
 
 	_ "github.com/lib/pq"
-	"golang.org/x/net/context"
 
 	"chain/cos"
 	"chain/cos/bc"
@@ -93,6 +93,7 @@ func main() {
 
 func RevalidateBlockchain(db *sql.DB) (blocksValidated uint64, err error) {
 	dbCtx, cancel := context.WithCancel(pg.NewContext(context.Background(), db))
+	defer cancel()
 	blocks := streamBlocks(dbCtx)
 
 	// Setup an FC backed with a memstore.
@@ -107,7 +108,6 @@ func RevalidateBlockchain(db *sql.DB) (blocksValidated uint64, err error) {
 	for b := range blocks {
 		err = fc.AddBlock(ctx, b)
 		if err != nil {
-			cancel()
 			return blocksValidated, fmt.Errorf("block %s, height %d: %s", b.Hash(), b.Height, err)
 		}
 		blocksValidated++

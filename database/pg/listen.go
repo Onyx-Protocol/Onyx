@@ -1,9 +1,8 @@
 package pg
 
 import (
+	"context"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/lib/pq"
 

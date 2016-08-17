@@ -1,7 +1,7 @@
 package txdb
 
 import (
-	"golang.org/x/net/context"
+	"context"
 
 	"chain/cos/bc"
 	"chain/log"

@@ -1,11 +1,10 @@
 package signers
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/database/pg/pgtest"

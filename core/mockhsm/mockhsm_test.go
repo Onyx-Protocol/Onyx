@@ -1,12 +1,11 @@
 package mockhsm
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-
-	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/database/pg/pgtest"

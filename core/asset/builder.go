@@ -1,9 +1,8 @@
 package asset
 
 import (
+	"context"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/signers"
 	"chain/core/txbuilder"

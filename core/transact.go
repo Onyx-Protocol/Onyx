@@ -1,10 +1,9 @@
 package core
 
 import (
+	"context"
 	"sync"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/account"
 	"chain/core/txbuilder"

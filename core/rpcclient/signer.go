@@ -1,9 +1,8 @@
 package rpcclient
 
 import (
+	"context"
 	"encoding/json"
-
-	"golang.org/x/net/context"
 
 	"chain/net/rpc"
 )

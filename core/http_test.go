@@ -1,13 +1,13 @@
 package core
 
 import (
-	"chain/database/pg"
-	"chain/errors"
+	"context"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"golang.org/x/net/context"
+	"chain/database/pg"
+	"chain/errors"
 )
 
 func TestWriteHTTPError(t *testing.T) {

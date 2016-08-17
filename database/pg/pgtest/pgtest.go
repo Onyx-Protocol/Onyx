@@ -1,6 +1,7 @@
 package pgtest
 
 import (
+	"context"
 	stdsql "database/sql"
 	"io/ioutil"
 	"log"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/lib/pq"
-	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/database/sql"

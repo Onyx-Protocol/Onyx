@@ -1,10 +1,9 @@
 package core
 
 import (
+	"context"
 	"encoding/json"
 	"sync"
-
-	"golang.org/x/net/context"
 
 	"chain/core/account"
 	"chain/errors"

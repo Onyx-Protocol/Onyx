@@ -2,9 +2,8 @@ package txbuilder
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-
-	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/crypto/ed25519/hd25519"

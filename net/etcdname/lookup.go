@@ -1,6 +1,7 @@
 package etcdname
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net"
@@ -10,7 +11,6 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/client"
-	"golang.org/x/net/context"
 
 	"chain/log"
 )

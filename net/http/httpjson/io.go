@@ -1,12 +1,11 @@
 package httpjson
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 	"reflect"
-
-	"golang.org/x/net/context"
 
 	"chain/errors"
 	"chain/log"

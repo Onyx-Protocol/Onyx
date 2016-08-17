@@ -1,10 +1,9 @@
 package utxodb
 
 import (
+	"context"
 	"database/sql"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/database/pg"

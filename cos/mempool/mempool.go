@@ -1,9 +1,9 @@
 package mempool
 
 import (
-	"chain/cos/bc"
+	"context"
 
-	"golang.org/x/net/context"
+	"chain/cos/bc"
 )
 
 // MemPool satisfies the cos.Pool interface.

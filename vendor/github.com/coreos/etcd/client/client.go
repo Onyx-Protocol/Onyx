@@ -15,6 +15,7 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -27,8 +28,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 var (

@@ -1,9 +1,8 @@
 package appdb_test
 
 import (
+	"context"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"chain/database/pg"
 	"chain/database/pg/pgtest"

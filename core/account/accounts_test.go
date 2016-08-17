@@ -2,11 +2,10 @@ package account
 
 import (
 	"bytes"
+	"context"
 	"reflect"
 	"strconv"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"chain/core/signers"
 	"chain/cos/txscript"

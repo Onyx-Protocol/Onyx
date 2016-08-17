@@ -1,12 +1,11 @@
 package account_test
 
 import (
+	"context"
 	"database/sql"
 	"reflect"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/account"
 	"chain/core/asset/assettest"

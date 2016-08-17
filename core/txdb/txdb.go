@@ -2,10 +2,9 @@ package txdb
 
 import (
 	"bytes"
+	"context"
 	"sort"
 	"strconv"
-
-	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/database/pg"

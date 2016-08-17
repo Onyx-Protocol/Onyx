@@ -1,10 +1,9 @@
 package core
 
 import (
+	"context"
 	"crypto/subtle"
 	"net/http"
-
-	"golang.org/x/net/context"
 
 	"chain/net/http/authn"
 	"chain/net/rpc"

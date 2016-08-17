@@ -1,7 +1,7 @@
 package fetch
 
 import (
-	"golang.org/x/net/context"
+	"context"
 
 	"chain/core/rpcclient"
 	"chain/cos"

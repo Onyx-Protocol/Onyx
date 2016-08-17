@@ -1,10 +1,9 @@
 package account
 
 import (
+	"context"
 	"math/rand"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/account/utxodb"
 	"chain/core/signers"

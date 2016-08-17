@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -10,8 +11,6 @@ import (
 	"path/filepath"
 	"sort"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/database/sql"
 	"chain/errors"

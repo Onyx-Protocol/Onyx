@@ -1,12 +1,11 @@
 package generator
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/rpcclient"
 	"chain/cos"

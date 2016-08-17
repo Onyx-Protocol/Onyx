@@ -1,12 +1,11 @@
 package core
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/account"
 	"chain/core/asset"

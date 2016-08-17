@@ -2,13 +2,12 @@ package httpjson
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"chain/log"
 )

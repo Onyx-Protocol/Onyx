@@ -1,10 +1,9 @@
 package txdb
 
 import (
+	"context"
 	"reflect"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/cos/patricia"

@@ -1,9 +1,8 @@
 package pg
 
 import (
+	"context"
 	"fmt"
-
-	"golang.org/x/net/context"
 
 	"chain/database/sql"
 )

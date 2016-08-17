@@ -1,11 +1,10 @@
 package query
 
 import (
+	"context"
 	"math"
 	"reflect"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"chain/core/query/chql"
 	"chain/cos"

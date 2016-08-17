@@ -1,8 +1,9 @@
 package txdb
 
 import (
+	"context"
+
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 
 	"chain/core/txdb/internal/storage"
 	"chain/cos/bc"

@@ -1,14 +1,13 @@
 package rpc
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
-
-	"golang.org/x/net/context"
 )
 
 func TestRPCCallJSON(t *testing.T) {

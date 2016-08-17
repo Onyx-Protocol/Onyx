@@ -1,9 +1,8 @@
 package pg
 
 import (
+	"context"
 	"reflect"
-
-	"golang.org/x/net/context"
 
 	"chain/errors"
 )

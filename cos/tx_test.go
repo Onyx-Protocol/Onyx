@@ -1,10 +1,9 @@
 package cos
 
 import (
+	"context"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/cos/fedtest"
 	"chain/cos/mempool"

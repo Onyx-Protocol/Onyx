@@ -1,12 +1,11 @@
 package authn
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"golang.org/x/net/context"
 )
 
 func alwaysSuccess(ctx context.Context, u, p string) error     { return nil }

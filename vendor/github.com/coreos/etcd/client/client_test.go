@@ -15,6 +15,7 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -27,7 +28,6 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/net/context"
 	"github.com/coreos/etcd/pkg/testutil"
 )
 

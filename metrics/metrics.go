@@ -7,6 +7,7 @@
 package metrics
 
 import (
+	"context"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/codahale/metrics"
 	_ "github.com/codahale/metrics/runtime"
-	"golang.org/x/net/context"
 
 	"chain/log"
 )

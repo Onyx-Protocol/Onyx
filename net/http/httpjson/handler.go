@@ -1,12 +1,11 @@
 package httpjson
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"reflect"
-
-	"golang.org/x/net/context"
 )
 
 // ErrorWriter is responsible for writing the provided error value

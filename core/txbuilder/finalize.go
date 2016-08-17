@@ -1,9 +1,8 @@
 package txbuilder
 
 import (
+	"context"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/rpcclient"
 	"chain/cos"

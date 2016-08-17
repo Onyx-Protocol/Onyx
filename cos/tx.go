@@ -1,9 +1,8 @@
 package cos
 
 import (
+	"context"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/cos/validation"

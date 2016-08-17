@@ -1,14 +1,13 @@
 package query
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/lib/pq"
-
-	"golang.org/x/net/context"
 
 	"chain/core/query/chql"
 )

@@ -1,11 +1,10 @@
 package asset
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/signers"
 	"chain/cos/bc"

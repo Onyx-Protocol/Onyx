@@ -1,10 +1,9 @@
 package query
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-
-	"golang.org/x/net/context"
 
 	"chain/cos/bc"
 	"chain/database/pg"

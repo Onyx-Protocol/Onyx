@@ -2,13 +2,12 @@ package query
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
-
-	"golang.org/x/net/context"
 
 	"chain/core/query/chql"
 	"chain/errors"

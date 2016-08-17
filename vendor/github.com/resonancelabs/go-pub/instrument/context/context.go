@@ -1,9 +1,9 @@
 package context
 
 import (
-	"github.com/resonancelabs/go-pub/instrument"
+	"context"
 
-	"golang.org/x/net/context"
+	"github.com/resonancelabs/go-pub/instrument"
 )
 
 type contextKey int

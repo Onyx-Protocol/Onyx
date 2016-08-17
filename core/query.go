@@ -1,10 +1,9 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"chain/core/query"
 	"chain/core/query/chql"

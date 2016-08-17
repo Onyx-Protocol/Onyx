@@ -1,7 +1,7 @@
 package blocksigner
 
 import (
-	"golang.org/x/net/context"
+	"context"
 
 	"chain/core/mockhsm"
 	"chain/cos"
