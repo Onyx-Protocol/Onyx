@@ -2,6 +2,7 @@ package com.chain.api;
 
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
+import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ControlProgram {
+    @SerializedName("control_program")
     public byte[] program;
 
     public static byte[] retireProgram() {
