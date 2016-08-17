@@ -32,8 +32,20 @@ func (a *api) mockhsmListKeys(ctx context.Context, query struct{ Cursor string }
 		return page{}, err
 	}
 
+	var items []interface{}
+	for _, xpub := range xpubs {
+		item := struct {
+			XPub  *hd25519.XPub `json:"xpub"`
+			Alias string        `json:"alias"`
+		}{
+			xpub.XPub,
+			xpub.Alias,
+		}
+		items = append(items, item)
+	}
+
 	return page{
-		Items:    httpjson.Array(xpubs),
+		Items:    httpjson.Array(items),
 		LastPage: len(xpubs) < limit,
 		Query:    requestQuery{Cursor: cursor},
 	}, nil
