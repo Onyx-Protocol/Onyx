@@ -32,11 +32,11 @@ func DecodeOutputsCursor(str string) (c *OutputsCursor, err error) {
 	if err != nil {
 		return nil, ErrBadCursor
 	}
-	lastTxPos, err := strconv.ParseUint(s[0], 16, 32)
+	lastTxPos, err := strconv.ParseUint(s[1], 16, 32)
 	if err != nil {
 		return nil, ErrBadCursor
 	}
-	lastIndex, err := strconv.ParseUint(s[0], 16, 32)
+	lastIndex, err := strconv.ParseUint(s[2], 16, 32)
 	if err != nil {
 		return nil, ErrBadCursor
 	}

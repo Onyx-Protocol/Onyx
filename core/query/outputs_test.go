@@ -1,13 +1,85 @@
 package query
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
 
 	"chain/core/query/chql"
+	"chain/cos"
 	"chain/cos/bc"
+	"chain/database/pg"
+	"chain/database/pg/pgtest"
 )
+
+func TestDecodeOutputsCursor(t *testing.T) {
+	testCases := []struct {
+		str string
+		cur OutputsCursor
+	}{
+		{str: "1-1-0", cur: OutputsCursor{lastBlockHeight: 1, lastTxPos: 1}},
+		{str: "1-2-3", cur: OutputsCursor{lastBlockHeight: 1, lastTxPos: 2, lastIndex: 3}},
+		{str: "a-1-0", cur: OutputsCursor{lastBlockHeight: 10, lastTxPos: 1}},
+		{str: "f-f-f", cur: OutputsCursor{lastBlockHeight: 0xf, lastTxPos: 0xf, lastIndex: 0xf}},
+		{str: "c001-cafe-ca75", cur: OutputsCursor{lastBlockHeight: 0xc001, lastTxPos: 0xcafe, lastIndex: 0xca75}},
+	}
+
+	for _, tc := range testCases {
+		decoded, err := DecodeOutputsCursor(tc.str)
+		if err != nil {
+			t.Error(err)
+		}
+		if !reflect.DeepEqual(decoded, &tc.cur) {
+			t.Errorf("got %#v, want %#v", decoded, &tc.cur)
+		}
+		if decoded.String() != tc.str {
+			t.Errorf("re-encode: got %s, want %s", decoded.String(), tc.str)
+		}
+	}
+}
+
+func TestOutputsCursor(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+	_, err := db.Exec(ctx, `
+		INSERT INTO annotated_outputs (block_height, tx_pos, output_index, tx_hash, data, timespan)
+		VALUES
+			(1, 0, 0, 'ab', '{"account_id": "abc"}', int8range(1, 100)),
+			(1, 1, 0, 'cd', '{"account_id": "abc"}', int8range(1, 100)),
+			(2, 0, 0, 'ef', '{"account_id": "abc"}', int8range(10, 50));
+	`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	q, err := chql.Parse(`account_id = 'abc'`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	indexer := NewIndexer(db, &cos.FC{})
+	results, cursor, err := indexer.Outputs(ctx, q, nil, 25, nil, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 2 {
+		t.Errorf("got %d results, want 2", len(results))
+	}
+	if cursor.String() != "1-1-0" {
+		t.Errorf("got cursor=%q want 1-1-0", cursor.String())
+	}
+
+	results, cursor, err = indexer.Outputs(ctx, q, nil, 25, cursor, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 {
+		t.Errorf("got %d results, want 1", len(results))
+	}
+	if cursor.String() != "2-0-0" {
+		t.Errorf("got cursor=%q want 2-0-0", cursor.String())
+	}
+}
 
 func TestConstructOutputsQuery(t *testing.T) {
 	now := time.Unix(233400000, 0)
