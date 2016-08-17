@@ -42,6 +42,7 @@ func indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 	}
 	m := map[string]interface{}{
 		"id":               a.AssetID,
+		"alias":            a.Alias,
 		"definition":       a.Definition,
 		"issuance_program": a.IssuanceProgram,
 		"tags":             a.Tags,

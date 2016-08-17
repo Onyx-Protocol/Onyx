@@ -51,6 +51,7 @@ func indexAnnotatedAccount(ctx context.Context, a *Account) error {
 	}
 	m := map[string]interface{}{
 		"id":     a.ID,
+		"alias":  a.Alias,
 		"tags":   a.Tags,
 		"xpubs":  a.XPubs,
 		"quorum": a.Quorum,

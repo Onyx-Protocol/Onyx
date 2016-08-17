@@ -60,6 +60,19 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 		return errors.Wrap(err, "querying asset tags")
 	}
 
+	// Look up all the asset aliases for all applicable assets.
+	aliasesByAssetIDStr := make(map[string]string, len(assetIDStrs))
+	const aliasQ = `
+		SELECT id, alias FROM assets
+		WHERE alias IS NOT NULL AND id IN (SELECT unnest($1::text[]))
+	`
+	err = pg.ForQueryRows(ctx, aliasQ, pg.Strings(assetIDStrs), func(assetIDStr, alias string) {
+		aliasesByAssetIDStr[assetIDStr] = alias
+	})
+	if err != nil {
+		return errors.Wrap(err, "querying asset aliases")
+	}
+
 	// Add the asset tags to all the inputs & outputs.
 	empty := map[string]interface{}{}
 	for _, tx := range txs {
@@ -82,6 +95,9 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 			} else {
 				in["asset_tags"] = empty
 			}
+			if alias, ok := aliasesByAssetIDStr[assetIDStr]; ok {
+				in["asset_alias"] = alias
+			}
 		}
 
 		outs := tx["outputs"].([]interface{}) // error check happened above
@@ -93,6 +109,9 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 				out["asset_tags"] = tags
 			} else {
 				out["asset_tags"] = empty
+			}
+			if alias, ok := aliasesByAssetIDStr[assetIDStr]; ok {
+				out["asset_alias"] = alias
 			}
 		}
 	}

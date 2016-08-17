@@ -1,6 +1,7 @@
 package account
 
 import (
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -68,7 +69,7 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 	}
 
 	const q = `
-		SELECT signer_id, control_program, tags
+		SELECT signer_id, control_program, alias, tags
 		FROM account_control_programs
 		LEFT JOIN signers ON signers.id=account_control_programs.signer_id
 		LEFT JOIN accounts ON accounts.account_id=signers.id
@@ -77,11 +78,13 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 	var (
 		ids      []string
 		programs [][]byte
+		aliases  []sql.NullString
 		tags     []*json.RawMessage
 	)
-	err := pg.ForQueryRows(ctx, q, pg.Byteas(controlPrograms), func(accountID string, program []byte, accountTags []byte) {
+	err := pg.ForQueryRows(ctx, q, pg.Byteas(controlPrograms), func(accountID string, program []byte, alias sql.NullString, accountTags []byte) {
 		ids = append(ids, accountID)
 		programs = append(programs, program)
+		aliases = append(aliases, alias)
 		if len(accountTags) > 0 {
 			tags = append(tags, (*json.RawMessage)(&accountTags))
 		} else {
@@ -97,6 +100,9 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 			m["account_id"] = ids[i]
 			if tags[i] != nil {
 				m["account_tags"] = tags[i]
+			}
+			if aliases[i].Valid {
+				m["account_alias"] = aliases[i].String
 			}
 		}
 	}
