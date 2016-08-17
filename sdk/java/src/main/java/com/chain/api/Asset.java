@@ -10,6 +10,7 @@ import java.util.*;
 
 public class Asset {
     public String id;
+    public String alias;
 
     @SerializedName("issuance_program")
     public byte[] issuanceProgram;
@@ -64,6 +65,7 @@ public class Asset {
     }
 
     public static class Builder {
+        public String alias;
         public Map<String, Object> definition;
         public Map<String, Object> tags;
         public List<String> xpubs;
@@ -90,6 +92,11 @@ public class Asset {
             }
             Type type = new TypeToken<List<Asset>>() {}.getType();
             return ctx.request("create-asset", assets, type);
+        }
+
+        public Builder setAlias(String alias) {
+            this.alias = alias;
+            return this;
         }
 
         public Builder setDefinition(Map<String, Object> definition) {
