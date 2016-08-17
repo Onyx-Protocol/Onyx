@@ -2,12 +2,12 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"chain/core/query"
 	"chain/core/query/chql"
 	"chain/cos/bc"
+	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/httpjson"
 )
@@ -68,8 +68,8 @@ var (
 //
 // POST /list-transactions
 func (a *api) listTransactions(ctx context.Context, in requestQuery) (result page, err error) {
-	if in.Index != "" && in.ChQL != "" {
-		return result, fmt.Errorf("cannot provide both index and query")
+	if (in.IndexID != "" || in.IndexAlias != "") && in.ChQL != "" {
+		return result, errors.WithDetail(httpjson.ErrBadRequest, "cannot provide both index and query")
 	}
 	if in.EndTimeMS == 0 {
 		in.EndTimeMS = bc.Millis(time.Now())
@@ -81,13 +81,13 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 	)
 
 	// Build the ChQL query
-	if in.Index != "" {
-		idx, err := a.indexer.GetIndex(ctx, in.Index, query.IndexTypeTransaction)
+	if in.IndexAlias != "" || in.IndexID != "" {
+		idx, err := a.indexer.GetIndex(ctx, in.IndexID, in.IndexAlias, query.IndexTypeTransaction)
 		if err != nil {
 			return result, err
 		}
 		if idx == nil {
-			return result, fmt.Errorf("unknown transaction index %q", in.Index)
+			return result, errors.WithDetail(pg.ErrUserInputNotFound, "transaction index not found")
 		}
 		q = idx.Query
 	} else {
@@ -157,21 +157,21 @@ func (a *api) listAccounts(ctx context.Context, in requestQuery) (page, error) {
 
 // POST /list-balances
 func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, err error) {
-	if in.Index != "" && in.ChQL != "" {
-		return result, fmt.Errorf("cannot provide both index and query")
+	if (in.IndexID != "" || in.IndexAlias != "") && in.ChQL != "" {
+		return result, errors.WithDetail(httpjson.ErrBadRequest, "cannot provide both index and query")
 	}
 	if in.TimestampMS == 0 {
 		in.TimestampMS = bc.Millis(time.Now())
 	}
 
 	var q chql.Query
-	if in.Index != "" {
-		idx, err := a.indexer.GetIndex(ctx, in.Index, query.IndexTypeBalance)
+	if in.IndexID != "" || in.IndexAlias != "" {
+		idx, err := a.indexer.GetIndex(ctx, in.IndexID, in.IndexAlias, query.IndexTypeBalance)
 		if err != nil {
 			return result, err
 		}
 		if idx == nil {
-			return result, fmt.Errorf("unknown balance index %q", in.Index)
+			return result, errors.WithDetail(pg.ErrUserInputNotFound, "balance index not found")
 		}
 		q = idx.Query
 	} else {
@@ -195,21 +195,21 @@ func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, e
 
 // POST /list-unspent-outputs
 func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result page, err error) {
-	if in.Index != "" && in.ChQL != "" {
-		return result, fmt.Errorf("cannot provide both index and query")
+	if (in.IndexID != "" || in.IndexAlias != "") && in.ChQL != "" {
+		return result, errors.WithDetail(httpjson.ErrBadRequest, "cannot provide both index and query")
 	}
 
 	var q chql.Query
-	if in.Index != "" {
-		idx, err := a.indexer.GetIndex(ctx, in.Index, query.IndexTypeBalance)
+	if in.IndexID != "" || in.IndexAlias != "" {
+		idx, err := a.indexer.GetIndex(ctx, in.IndexID, in.IndexAlias, query.IndexTypeBalance)
 		if err != nil {
 			return result, err
 		}
 		if idx == nil {
-			return result, fmt.Errorf("unknown balance index %q", in.Index)
+			return result, errors.WithDetail(pg.ErrUserInputNotFound, "balance index not found")
 		}
 		if !idx.Unspents {
-			return result, fmt.Errorf("unspents must be true")
+			return result, errors.WithDetail(httpjson.ErrBadRequest, "balance index doesn't support output indexing")
 		}
 		q = idx.Query
 	} else {

@@ -83,19 +83,20 @@ func (ind *Indexer) BeginIndexing(ctx context.Context) error {
 
 // Index represents a transaction index on a particular ChQL query.
 type Index struct {
-	Alias      string // unique, external string identifier
-	Type       string // 'transaction', 'balance', etc.
-	Query      chql.Query
-	Unspents   bool // only for balance indexes
-	internalID int  // unique, internal pg serial id
-	rawQuery   string
-	createdAt  time.Time
+	ID        string // unique, chain ID
+	Alias     string // unique, external string identifier
+	Type      string // 'transaction', 'balance', etc.
+	Query     chql.Query
+	Unspents  bool // only for balance indexes
+	rawQuery  string
+	createdAt time.Time
 }
 
 // MarshalJSON implements json.Marshaler and correctly marshals the 'unspents'
 // field only if the index is a balance index.
 func (i *Index) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
+		"id":    i.ID,
 		"alias": i.Alias,
 		"type":  i.Type,
 		"query": i.Query.String(),
@@ -106,15 +107,15 @@ func (i *Index) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-// GetIndex looks up an individual index by its ID and its type.
-func (ind *Indexer) GetIndex(ctx context.Context, alias, typ string) (*Index, error) {
+// GetIndex looks up an individual index by its ID or alias and its type.
+func (ind *Indexer) GetIndex(ctx context.Context, id, alias, typ string) (*Index, error) {
 	const selectQ = `
-		SELECT internal_id, alias, type, query, created_at, unspent_outputs FROM query_indexes
-		WHERE alias = $1 AND type = $2
+		SELECT id, alias, type, query, created_at, unspent_outputs FROM query_indexes
+		WHERE (($1 != '' AND id = $1) OR ($2 != '' AND alias = $2) AND type = $3
 	`
 	var idx Index
-	err := ind.db.QueryRow(ctx, selectQ, alias, typ).
-		Scan(&idx.internalID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &idx.Unspents)
+	err := ind.db.QueryRow(ctx, selectQ, id, alias, typ).
+		Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &idx.Unspents)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -137,7 +138,7 @@ func (ind *Indexer) CreateIndex(ctx context.Context, alias, typ, rawQuery string
 
 	const insertQ = `
 		INSERT INTO query_indexes (alias, type, query, unspent_outputs) VALUES($1, $2, $3, $4)
-		RETURNING internal_id, created_at
+		RETURNING id, created_at
 	`
 	idx := &Index{
 		Alias:    alias,
@@ -145,7 +146,7 @@ func (ind *Indexer) CreateIndex(ctx context.Context, alias, typ, rawQuery string
 		Query:    q,
 		rawQuery: rawQuery,
 	}
-	err = ind.db.QueryRow(ctx, insertQ, alias, typ, rawQuery, unspents).Scan(&idx.internalID, &idx.createdAt)
+	err = ind.db.QueryRow(ctx, insertQ, alias, typ, rawQuery, unspents).Scan(&idx.ID, &idx.createdAt)
 	if err != nil {
 		if pg.IsUniqueViolation(err) {
 			return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
@@ -215,7 +216,7 @@ func (ind *Indexer) refreshIndexes(ctx context.Context) error {
 // getIndexes does not parse idx.RawQuery and leaves
 // idx.Query as nil.
 func (ind *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
-	const q = `SELECT internal_id, alias, type, query, created_at, unspent_outputs FROM query_indexes`
+	const q = `SELECT id, alias, type, query, created_at, unspent_outputs FROM query_indexes`
 	rows, err := ind.db.Query(ctx, q)
 	if err != nil {
 		return nil, errors.Wrap(err, "reload indexes sql query")
@@ -225,7 +226,7 @@ func (ind *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
 	var indexes []*Index
 	for rows.Next() {
 		idx := new(Index)
-		err = rows.Scan(&idx.internalID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &idx.Unspents)
+		err = rows.Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &idx.Unspents)
 		if err != nil {
 			return nil, errors.Wrap(err, "scanning query_indexes row")
 		}
@@ -238,9 +239,9 @@ func (ind *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
 // The caveat is listIndexes returns a paged result.
 func (ind *Indexer) listIndexes(ctx context.Context, cursor string, limit int) ([]*Index, string, error) {
 	const q = `
-		SELECT internal_id, alias, type, query, created_at, unspent_outputs
-		FROM query_indexes WHERE ($1='' OR $1<alias)
-		ORDER BY alias ASC LIMIT $2
+		SELECT id, alias, type, query, created_at, unspent_outputs
+		FROM query_indexes WHERE ($1='' OR $1<id)
+		ORDER BY id ASC LIMIT $2
 	`
 
 	rows, err := ind.db.Query(ctx, q, cursor, limit)
@@ -252,7 +253,7 @@ func (ind *Indexer) listIndexes(ctx context.Context, cursor string, limit int) (
 	var indexes []*Index
 	for rows.Next() {
 		idx := new(Index)
-		err = rows.Scan(&idx.internalID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &idx.Unspents)
+		err = rows.Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &idx.Unspents)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "scanning query_indexes row")
 		}
@@ -261,7 +262,7 @@ func (ind *Indexer) listIndexes(ctx context.Context, cursor string, limit int) (
 
 	var last string
 	if len(indexes) > 0 {
-		last = indexes[len(indexes)-1].Alias
+		last = indexes[len(indexes)-1].ID
 	}
 	return indexes, last, errors.Wrap(rows.Err())
 }

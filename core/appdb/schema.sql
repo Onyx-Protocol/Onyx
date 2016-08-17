@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -587,7 +587,7 @@ CREATE TABLE query_blocks (
 --
 
 CREATE TABLE query_indexes (
-    internal_id integer NOT NULL,
+    id text DEFAULT next_chain_id('idx'::text) NOT NULL,
     alias text NOT NULL,
     type text NOT NULL,
     query text NOT NULL,
@@ -612,7 +612,7 @@ CREATE SEQUENCE query_indexes_internal_id_seq
 -- Name: query_indexes_internal_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE query_indexes_internal_id_seq OWNED BY query_indexes.internal_id;
+ALTER SEQUENCE query_indexes_internal_id_seq OWNED BY query_indexes.id;
 
 
 --
@@ -703,13 +703,6 @@ CREATE TABLE txs (
     tx_hash text NOT NULL,
     data bytea NOT NULL
 );
-
-
---
--- Name: internal_id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY query_indexes ALTER COLUMN internal_id SET DEFAULT nextval('query_indexes_internal_id_seq'::regclass);
 
 
 --
@@ -908,7 +901,7 @@ ALTER TABLE ONLY query_indexes
 --
 
 ALTER TABLE ONLY query_indexes
-    ADD CONSTRAINT query_indexes_pkey PRIMARY KEY (internal_id);
+    ADD CONSTRAINT query_indexes_pkey PRIMARY KEY (id);
 
 
 --
@@ -1093,4 +1086,5 @@ ALTER TABLE ONLY account_utxos
 insert into migrations (filename, hash) values ('2016-08-16.0.core.initial-schema.sql', '60cd6638983c225741317bb71385a7e740425f968685a9a8f54db3de4b78fbf5');
 insert into migrations (filename, hash) values ('2016-08-16.1.api.add-asset-aliases.sql', '78b8c814db73872e6ebc8c5bcedc342d17f566a0a637470aed2761ae09060873');
 insert into migrations (filename, hash) values ('2016-08-16.2.query.rename-index-alias.sql', 'eb1b6b4fa602ac21d7f957f8fda0b94dd50fb710055842cead111a0bb35d93ae');
-insert into migrations (filename, hash) values ('2016-08-16.3.api.alias-keys.sql', 'ab1f9368d3a6bb79ae7a4f8c8f838315927286b8c7c55667bdf769297531cb17');
+insert into migrations (filename, hash) values ('2016-08-16.3.api.alias-keys.sql', 'ee7702a963064b004800ee356558ec2a2a3062f443ff7871d1fc2a873f22665e');
+insert into migrations (filename, hash) values ('2016-08-17.0.query.index-id.sql', '538ce1a1f61b496d1809049f3934ba445177e5b71af2e802d2fbcb009a8d80cb');
