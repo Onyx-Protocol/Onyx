@@ -198,6 +198,9 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 	if (in.IndexID != "" || in.IndexAlias != "") && in.ChQL != "" {
 		return result, errors.WithDetail(httpjson.ErrBadRequest, "cannot provide both index and query")
 	}
+	if in.TimestampMS == 0 {
+		in.TimestampMS = bc.Millis(time.Now())
+	}
 
 	var q chql.Query
 	if in.IndexID != "" || in.IndexAlias != "" {
