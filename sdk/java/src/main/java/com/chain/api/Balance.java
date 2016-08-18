@@ -4,12 +4,13 @@ import com.chain.exception.ChainException;
 import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
 
+import java.math.BigInteger;
 import java.util.List;
 
 public class Balance {
     @SerializedName("group_by")
     public List<String> groupBy;
-    public Integer amount;
+    public BigInteger amount;
 
     public static class Items extends PagedItems<Balance> {
         public Items getPage() throws ChainException {
