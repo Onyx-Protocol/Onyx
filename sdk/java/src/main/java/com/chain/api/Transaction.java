@@ -201,7 +201,7 @@ public class Transaction {
             return this;
         }
 
-        public Builder issue(String assetId, BigInteger amount, Map<String, Object> referenceData) {
+        public Builder issueById(String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
                     .setType("issue")
                     .setParameter("asset_id", assetId)
@@ -210,7 +210,16 @@ public class Transaction {
             return this.addAction(action, referenceData);
         }
 
-        public Builder controlWithAccount(String accountId, String assetId, BigInteger amount, Map<String, Object> referenceData) {
+        public Builder issueByAlias(String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
+            Action action = new Action()
+                    .setType("issue")
+                    .setParameter("asset_alias", assetAlias)
+                    .setParameter("amount", amount);
+
+            return this.addAction(action, referenceData);
+        }
+
+        public Builder controlWithAccountByID(String accountId, String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
                     .setType("control_account")
                     .setParameter("account_id", accountId)
@@ -220,7 +229,17 @@ public class Transaction {
             return this.addAction(action, referenceData);
         }
 
-        public Builder controlWithProgram(ControlProgram program, String assetId, BigInteger amount, Map<String, Object> referenceData) {
+        public Builder controlWithAccountByAlias(String accountAlias, String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
+            Action action = new Action()
+                    .setType("control_account")
+                    .setParameter("account_alias", accountAlias)
+                    .setParameter("asset_alias", assetAlias)
+                    .setParameter("amount", amount);
+
+            return this.addAction(action, referenceData);
+        }
+
+        public Builder controlWithProgramById(ControlProgram program, String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
                     .setType("control_program")
                     .setParameter("control_program", program.program)
@@ -230,12 +249,31 @@ public class Transaction {
             return this.addAction(action, referenceData);
         }
 
+        public Builder controlWithProgramByAlias(ControlProgram program, String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
+            Action action = new Action()
+                    .setType("control_program")
+                    .setParameter("control_program", program.program)
+                    .setParameter("asset_alias", assetAlias)
+                    .setParameter("amount", amount);
 
-        public Builder spendFromAccount(String accountId, String assetId, BigInteger amount, Map<String, Object> referenceData) {
+            return this.addAction(action, referenceData);
+        }
+
+        public Builder spendFromAccountById(String accountId, String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
                     .setType("spend_account_unspent_output_selector")
                     .setParameter("account_id", accountId)
                     .setParameter("asset_id", assetId)
+                    .setParameter("amount", amount);
+
+            return this.addAction(action, referenceData);
+        }
+
+        public Builder spendFromAccountByAlias(String accountAlias, String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
+            Action action = new Action()
+                    .setType("spend_account_unspent_output_selector")
+                    .setParameter("account_alias", accountAlias)
+                    .setParameter("asset_alias", assetAlias)
                     .setParameter("amount", amount);
 
             return this.addAction(action, referenceData);
@@ -258,11 +296,21 @@ public class Transaction {
             return this;
         }
 
-        public Builder retire(String assetId, BigInteger amount, Map<String, Object> referenceData) {
+        public Builder retireById(String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
                     .setType("control_program")
                     .setParameter("control_program", ControlProgram.retireProgram())
                     .setParameter("asset_id", assetId)
+                    .setParameter("amount", amount);
+
+            return this.addAction(action, referenceData);
+        }
+
+        public Builder retireByAlias(String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
+            Action action = new Action()
+                    .setType("control_program")
+                    .setParameter("control_program", ControlProgram.retireProgram())
+                    .setParameter("asset_alias", assetAlias)
                     .setParameter("amount", amount);
 
             return this.addAction(action, referenceData);
