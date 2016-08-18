@@ -16,7 +16,7 @@ const (
 	OP_0     = uint8(0x00) // synonym
 
 	OP_1    = uint8(0x51)
-	OP_TRUE = uint(0x51) // synonym
+	OP_TRUE = uint8(0x51) // synonym
 
 	OP_2  = uint8(0x52)
 	OP_3  = uint8(0x53)
@@ -197,14 +197,14 @@ const (
 	OP_TXSIGHASH     = uint8(0xae)
 	OP_BLOCKSIGHASH  = uint8(0xaf)
 
-	OP_FINDOUTPUT  = uint(0xc1)
-	OP_ASSET       = uint(0xc2)
-	OP_AMOUNT      = uint(0xc3)
-	OP_PROGRAM     = uint(0xc4)
-	OP_MINTIME     = uint(0xc5)
-	OP_MAXTIME     = uint(0xc6)
-	OP_REFDATAHASH = uint(0xc8)
-	OP_INDEX       = uint(0xc9)
+	OP_FINDOUTPUT  = uint8(0xc1)
+	OP_ASSET       = uint8(0xc2)
+	OP_AMOUNT      = uint8(0xc3)
+	OP_PROGRAM     = uint8(0xc4)
+	OP_MINTIME     = uint8(0xc5)
+	OP_MAXTIME     = uint8(0xc6)
+	OP_REFDATAHASH = uint8(0xc8)
+	OP_INDEX       = uint8(0xc9)
 )
 
 // In no particular order

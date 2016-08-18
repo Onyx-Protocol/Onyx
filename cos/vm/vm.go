@@ -24,10 +24,9 @@ type virtualMachine struct {
 	depth int
 
 	// In each of these stacks, stack[len(stack)-1] is the top element.
-	condStack []bool
-	loopStack []uint32 // each element is a pc value
-	dataStack [][]byte
-	altStack  [][]byte
+	controlStack []controlTuple
+	dataStack    [][]byte
+	altStack     [][]byte
 
 	tx         *bc.Tx
 	inputIndex uint32
@@ -110,7 +109,7 @@ func (vm *virtualMachine) run() (bool, error) {
 		case OP_IF, OP_NOTIF, OP_ELSE, OP_ENDIF, OP_WHILE, OP_ENDWHILE:
 			skip = false
 		default:
-			skip = len(vm.condStack) > 0 && !vm.condStack[len(vm.condStack)-1]
+			skip = len(vm.controlStack) > 0 && !vm.controlStack[len(vm.controlStack)-1].flag
 		}
 
 		if vm.traceOut != nil {
@@ -136,6 +135,8 @@ func (vm *virtualMachine) run() (bool, error) {
 			if err != nil {
 				return false, err
 			}
+		} else {
+			vm.applyCost(1)
 		}
 
 		vm.pc = vm.nextPC
@@ -146,6 +147,11 @@ func (vm *virtualMachine) run() (bool, error) {
 			}
 		}
 	}
+
+	if len(vm.controlStack) > 0 {
+		return false, ErrNonEmptyControlStack
+	}
+
 	res := len(vm.dataStack) > 0 && AsBool(vm.dataStack[len(vm.dataStack)-1])
 	return res, nil
 }

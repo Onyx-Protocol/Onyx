@@ -104,6 +104,35 @@ func TestProgramOK(t *testing.T) {
 		{"0 0xcccccc CATPUSHDATA 0x03cccccc EQUAL", nil},
 		{"0x05 0x05 SWAP 0xdeadbeef CATPUSHDATA DROP 0x05 EQUAL", nil},
 		{"0x05 0x05 SWAP 0xdeadbeef CATPUSHDATA DROP 0x05 EQUAL", nil},
+
+		// control flow ops
+		{"1 IF 1 ENDIF", nil},
+		{"1 DUP IF ENDIF", nil},
+		{"1 DUP IF ELSE ENDIF", nil},
+		{"1 IF 1 ELSE ENDIF", nil},
+		{"0 IF ELSE 1 ENDIF", nil},
+
+		{"1 1 IF IF 1 ELSE 0 ENDIF ENDIF", nil},
+		{"1 0 IF IF 1 ELSE 0 ENDIF ENDIF", nil},
+		{"1 1 IF IF 1 ELSE 0 ENDIF ELSE IF 0 ELSE 1 ENDIF ENDIF", nil},
+		{"0 0 IF IF 1 ELSE 0 ENDIF ELSE IF 0 ELSE 1 ENDIF ENDIF", nil},
+		{"0 IF 1 IF RETURN ELSE RETURN ENDIF ELSE 1 ENDIF", nil},
+		{"1 IF 1 ELSE 1 IF RETURN ELSE RETURN ENDIF ENDIF", nil},
+
+		{"1 0 NOTIF IF 1 ELSE 0 ENDIF ENDIF", nil},
+		{"1 1 NOTIF IF 1 ELSE 0 ENDIF ENDIF", nil},
+		{"1 0 NOTIF IF 1 ELSE 0 ENDIF ELSE IF 0 ELSE 1 ENDIF ENDIF", nil},
+		{"0 1 NOTIF IF 1 ELSE 0 ENDIF ELSE IF 0 ELSE 1 ENDIF ENDIF", nil},
+
+		{"1 WHILE 0 ENDWHILE", nil},
+		{"1 WHILE NOT ENDWHILE 1", nil},
+		{"1 WHILE IF 0 ELSE 1 ENDIF ENDWHILE 1", nil},
+		{"0 WHILE 0 ENDWHILE 1", nil},
+		{"1 WHILE IF 1 0 ELSE 1 ENDIF ENDWHILE", nil},
+		{"0 1 WHILE DROP 1ADD DUP 10 LESSTHAN ENDWHILE 10 NUMEQUAL", nil},
+		{"0 1 2 3 4 5 6 WHILE DROP ENDWHILE 1", nil},
+		{"0 1 WHILE DROP 1ADD TOALTSTACK 0 ENDWHILE FROMALTSTACK", nil},
+		{"1 WHILE WHILE 0 ENDWHILE 0 ENDWHILE", nil},
 	}
 	for i, c := range cases {
 		prog, err := Compile(c.prog)
