@@ -44,7 +44,7 @@ func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, e
 }
 
 // POST /build-transaction-template
-func build(ctx context.Context, buildReqs []*buildRequest) (interface{}, error) {
+func build(ctx context.Context, buildReqs []*aliasBuildRequest) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -56,7 +56,14 @@ func build(ctx context.Context, buildReqs []*buildRequest) (interface{}, error) 
 	for i := 0; i < len(responses); i++ {
 		go func(i int) {
 			defer wg.Done()
-			resp, err := buildSingle(reqid.NewSubContext(ctx, reqid.New()), buildReqs[i])
+
+			filteredRequest, err := filterAliases(ctx, buildReqs[i])
+			if err != nil {
+				responses[i], _ = errInfo(err)
+				return
+			}
+
+			resp, err := buildSingle(reqid.NewSubContext(ctx, reqid.New()), filteredRequest)
 			if err != nil {
 				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)

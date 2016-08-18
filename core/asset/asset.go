@@ -141,9 +141,24 @@ func SetTags(ctx context.Context, id bc.AssetID, alias string, newTags map[strin
 	return a, nil
 }
 
-// Find retrieves an Asset record from signer.
-func Find(ctx context.Context, id bc.AssetID) (*Asset, error) {
+// FindByID retrieves an Asset record along with its signer, given an assetID.
+func FindByID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 	asset, err := assetByAssetID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	asset.Signer, err = signers.Find(ctx, "asset", asset.Signer.ID)
+	if err != nil {
+		return nil, err
+	}
+	return asset, nil
+}
+
+// FindByAlias retrieves an Asset record along with its signer,
+// given an asset alias.
+func FindByAlias(ctx context.Context, alias string) (*Asset, error) {
+	asset, err := assetByAlias(ctx, alias)
 	if err != nil {
 		return nil, err
 	}

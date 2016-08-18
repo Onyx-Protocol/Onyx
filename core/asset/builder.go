@@ -22,7 +22,7 @@ type IssueAction struct {
 }
 
 func (a *IssueAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
-	asset, err := Find(ctx, a.Params.AssetID)
+	asset, err := FindByID(ctx, a.Params.AssetID)
 	if err != nil {
 		return nil, nil, nil, errors.WithDetailf(err, "find asset with ID %q", a.Params.AssetID)
 	}

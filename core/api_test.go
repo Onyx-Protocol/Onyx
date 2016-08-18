@@ -91,9 +91,13 @@ func TestTransfer(t *testing.T) {
 	asset.Init(fc, ind, true)
 	account.Init(fc, ind)
 
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, "", nil)
-	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
-	account2ID := assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
+	assetAlias := "some-asset"
+	account1Alias := "first-account"
+	account2Alias := "second-account"
+
+	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, assetAlias, nil)
+	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, account1Alias, nil)
+	account2ID := assettest.CreateAccountFixture(ctx, t, nil, 0, account2Alias, nil)
 
 	assetIDStr := assetID.String()
 
@@ -134,13 +138,14 @@ func TestTransfer(t *testing.T) {
 		]}
 	`
 	buildReqStr := fmt.Sprintf(buildReqFmt, assetIDStr, account1ID, assetIDStr, account2ID)
-	var buildReq buildRequest
+	var buildReq aliasBuildRequest
 	err = json.Unmarshal([]byte(buildReqStr), &buildReq)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	buildResult, err := build(ctx, []*buildRequest{&buildReq})
+
+	buildResult, err := build(ctx, []*aliasBuildRequest{&buildReq})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -161,6 +166,51 @@ func TestTransfer(t *testing.T) {
 		t.Errorf("expected build result to have length 1, got %d", len(parsedResult))
 	}
 	toSign := inspectTemplate(t, parsedResult[0], account2ID)
+	txTemplate, err = toTxTemplate(ctx, toSign)
+	assettest.SignTxTemplate(t, txTemplate, testutil.TestXPrv)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+	_, err = submitSingle(ctx, fc, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
+	if err != nil && err != context.DeadlineExceeded {
+		testutil.FatalErr(t, err)
+	}
+
+	// Now transfer back using aliases.
+	buildReqFmt = `
+		{"actions": [
+			{"type": "spend_account_unspent_output_selector", "params": {"asset_alias": "%s", "amount": 100, "account_alias": "%s"}},
+			{"type": "control_account", "params": {"asset_alias": "%s", "amount": 100, "account_alias": "%s"}}
+		]}
+	`
+	buildReqStr = fmt.Sprintf(buildReqFmt, assetAlias, account2Alias, assetAlias, account1Alias)
+	err = json.Unmarshal([]byte(buildReqStr), &buildReq)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	buildResult, err = build(ctx, []*aliasBuildRequest{&buildReq})
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+	jsonResult, err = json.MarshalIndent(buildResult, "", "  ")
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	err = json.Unmarshal(jsonResult, &parsedResult)
+	if err != nil {
+		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+	if len(parsedResult) != 1 {
+		t.Errorf("expected build result to have length 1, got %d", len(parsedResult))
+	}
+	toSign = inspectTemplate(t, parsedResult[0], account2ID)
 	txTemplate, err = toTxTemplate(ctx, toSign)
 	assettest.SignTxTemplate(t, txTemplate, testutil.TestXPrv)
 	if err != nil {

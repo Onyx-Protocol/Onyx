@@ -131,7 +131,7 @@ func TestDefineAndArchiveAssetByID(t *testing.T) {
 	}
 
 	// Verify that the asset was archived.
-	_, err = Find(ctx, asset.AssetID)
+	_, err = FindByID(ctx, asset.AssetID)
 	if err != ErrArchived {
 		t.Error("expected asset id to be archived")
 	}
@@ -171,7 +171,7 @@ func TestDefineAndArchiveAssetByAlias(t *testing.T) {
 	}
 }
 
-func TestFindAsset(t *testing.T) {
+func TestFindAssetByID(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	keys := []string{testutil.TestXPub.String()}
@@ -181,7 +181,7 @@ func TestFindAsset(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	found, err := Find(ctx, asset.AssetID)
+	found, err := FindByID(ctx, asset.AssetID)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
