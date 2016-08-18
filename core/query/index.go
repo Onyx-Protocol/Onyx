@@ -123,6 +123,12 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 				return errors.Wrap(fmt.Errorf("bad output type %T", out))
 			}
 
+			// Don't index retired outputs.
+			typ, ok := txOut["action"].(string)
+			if ok && typ == "retire" {
+				continue
+			}
+
 			txOutCopy := make(map[string]interface{}, len(txOut))
 			for k, v := range txOut {
 				txOutCopy[k] = v // be extra paranoid; don't modify txOut
