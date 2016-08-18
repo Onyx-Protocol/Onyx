@@ -59,6 +59,7 @@ func build(ctx context.Context, buildReqs []*aliasBuildRequest) (interface{}, er
 
 			filteredRequest, err := filterAliases(ctx, buildReqs[i])
 			if err != nil {
+				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)
 				return
 			}
