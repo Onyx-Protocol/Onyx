@@ -1,7 +1,8 @@
 package com.chain.signing;
 
 import com.chain.api.MockHsm;
-import com.chain.api.TransactionTemplate;
+
+import com.chain.api.Transaction;
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
 import com.google.gson.reflect.TypeToken;
@@ -30,11 +31,11 @@ public class HsmSigner {
     // TODO(boymanjor): Currently this method trusts the hsm to return a tx template
     // in the event it is unable to sign it. Moving forward we should employ a filter
     // step and only send txs to hsms that hold the proper key material to sign.
-    public static List<TransactionTemplate> sign(List<TransactionTemplate> tmpls)
+    public static List<Transaction.Template> sign(List<Transaction.Template> tmpls)
     throws ChainException {
         for (URL hsmUrl : hsmUrls) {
             Context hsm = new Context(hsmUrl);
-            Type type = new TypeToken<ArrayList<TransactionTemplate>>() {}.getType();
+            Type type = new TypeToken<ArrayList<Transaction.Template>>() {}.getType();
             tmpls = hsm.request("sign-transaction-template", tmpls, type);
         }
         return tmpls;
