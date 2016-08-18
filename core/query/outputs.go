@@ -108,7 +108,9 @@ func constructOutputsQuery(expr chql.SQLExpr, timestampMS uint64, cursor *Output
 
 	where := strings.TrimSpace(expr.SQL)
 	timespanExpr := fmt.Sprintf("timespan @> $%d::int8", timestampValIndex)
-	if where != "" {
+	if where == "" {
+		where = timespanExpr
+	} else {
 		where = fmt.Sprintf("(%s) AND %s", where, timespanExpr)
 	}
 

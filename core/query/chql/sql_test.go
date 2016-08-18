@@ -12,6 +12,9 @@ func TestAsSQL(t *testing.T) {
 		conds []interface{}
 	}{
 		{
+		// empty query
+		},
+		{
 			q:     `inputs(a = 'a' AND b = 'b')`,
 			conds: []interface{}{`{"inputs":[{"a":"a","b":"b"}]}`},
 		},

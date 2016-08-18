@@ -93,6 +93,11 @@ func TestConstructOutputsQuery(t *testing.T) {
 		wantValues []interface{}
 	}{
 		{
+			// empty query
+			wantQuery:  `SELECT block_height, tx_pos, output_index, data FROM "annotated_outputs" WHERE timespan @> $1::int8 ORDER BY block_height ASC, tx_pos ASC, output_index ASC LIMIT 10`,
+			wantValues: []interface{}{nowMillis},
+		},
+		{
 			query:      "asset_id = $1 AND account_id = 'abc'",
 			values:     []interface{}{"foo"},
 			wantQuery:  `SELECT block_height, tx_pos, output_index, data FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 ORDER BY block_height ASC, tx_pos ASC, output_index ASC LIMIT 10`,

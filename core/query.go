@@ -229,6 +229,9 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 
 	limit := defGenericPageSize
 	outputs, newCursor, err := a.indexer.Outputs(ctx, q, in.ChQLParams, in.TimestampMS, cursor, limit)
+	if err != nil {
+		return result, errors.Wrap(err, "querying outputs")
+	}
 
 	outQuery := in
 	outQuery.Cursor = newCursor.String()

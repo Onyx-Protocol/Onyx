@@ -11,6 +11,9 @@ func TestParseValid(t *testing.T) {
 		expr expr
 	}{
 		{
+		// empty query
+		},
+		{
 			q:    "'hello world'",
 			expr: valueExpr{typ: tokString, value: "'hello world'"},
 		},
