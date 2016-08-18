@@ -93,6 +93,9 @@ var (
 	expireReservationsPeriod = time.Minute
 )
 
+// reserved mockhsm key alias
+const autoBlockKeyAlias = "_CHAIN_CORE_AUTO_BLOCK_KEY"
+
 func init() {
 	librato.URL = env.URL("LIBRATO_URL", "")
 	librato.Prefix = "chain.api."
@@ -164,21 +167,18 @@ func main() {
 
 	hsm := mockhsm.New(db)
 
-	// TODO(bobg): Right now there are a few uses for this xpub
-	// (https://github.com/chain-engineering/chain/pull/1317#discussion_r74675283),
-	// but in the future only signers should care about them. Look for
-	// the BLOCK_XPUB setting only when isSigner is true, and generate a
-	// new key only on request, not automatically.
 	var blockXPub *hd25519.XPub
 	if *blockXPubStr == "" {
-		coreXPub, err := hsm.CreateKey(ctx, "")
+		coreXPub, created, err := hsm.GetOrCreateKey(ctx, autoBlockKeyAlias)
 		if err != nil {
 			panic(err)
 		}
 		blockXPub = coreXPub.XPub
-		log.Println("Generated new block-signing key")
-		log.Println("Specify for future runs by adding this to the environment:")
-		log.Printf("BLOCK_XPUB=%s\n", blockXPub.String())
+		if created {
+			log.Printf("Generated new block-signing key %s\n", blockXPub.String())
+		} else {
+			log.Printf("Using block-signing key %s\n", blockXPub.String())
+		}
 	} else {
 		blockXPub, err = hd25519.XPubFromString(*blockXPubStr)
 		if err != nil {

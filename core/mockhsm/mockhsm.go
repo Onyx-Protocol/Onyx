@@ -4,12 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"encoding/hex"
-	"errors"
 
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
+	"chain/errors"
 )
 
 type HSM struct {
@@ -27,16 +27,39 @@ func New(db pg.DB) *HSM {
 
 // CreateKey produces a new random xprv and stores it in the db.
 func (h *HSM) CreateKey(ctx context.Context, alias string) (*XPub, error) {
+	xpub, _, err := h.create(ctx, alias, false)
+	return xpub, err
+}
+
+// GetOrCreate looks for the key with the given alias, generating a
+// new one if it's not found.
+func (h *HSM) GetOrCreateKey(ctx context.Context, alias string) (xpub *XPub, created bool, err error) {
+	return h.create(ctx, alias, true)
+}
+
+func (h *HSM) create(ctx context.Context, alias string, get bool) (*XPub, bool, error) {
 	xprv, xpub, err := hd25519.NewXKeys(nil)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	hash := sha3.Sum256(xpub.Bytes())
 	err = h.store(ctx, hex.EncodeToString(hash[:]), xprv, xpub, alias)
 	if err != nil {
-		return nil, err
+		if get && pg.IsUniqueViolation(err) {
+			var xpubBytes []byte
+			err = pg.QueryRow(ctx, `SELECT xpub FROM mockhsm WHERE alias = $1`, alias).Scan(&xpubBytes)
+			if err != nil {
+				return nil, false, errors.Wrapf(err, "reading existing xpub with alias %s", alias)
+			}
+			existingXPub, err := hd25519.XPubFromBytes(xpubBytes)
+			if err != nil {
+				return nil, false, errors.Wrapf(err, "parsing bytes of existing xpub with alias %s", alias)
+			}
+			return &XPub{XPub: existingXPub, Alias: alias}, false, nil
+		}
+		return nil, false, errors.Wrap(err, "storing new xpub")
 	}
-	return &XPub{XPub: xpub, Alias: alias}, nil
+	return &XPub{XPub: xpub, Alias: alias}, true, nil
 }
 
 func (h *HSM) store(ctx context.Context, xpubHash string, xprv *hd25519.XPrv, xpub *hd25519.XPub, alias string) error {
