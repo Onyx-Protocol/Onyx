@@ -17,6 +17,15 @@ func (t tracebuf) dump() {
 
 // Programs that run without error and return a true result.
 func TestProgramOK(t *testing.T) {
+	doOKNotOK(t, true)
+}
+
+// Programs that run without error and return a false result.
+func TestProgramNotOK(t *testing.T) {
+	doOKNotOK(t, false)
+}
+
+func doOKNotOK(t *testing.T, expectOK bool) {
 	cases := []struct {
 		prog string
 		args [][]byte
@@ -24,66 +33,66 @@ func TestProgramOK(t *testing.T) {
 		{"TRUE", nil},
 
 		// bitwise ops
-		{"0x010f INVERT 0xfef0 EQUAL", nil},
+		{"INVERT 0xfef0 EQUAL", [][]byte{{0x01, 0x0f}}},
 
-		{"0x03 0x06 AND 0x02 EQUAL", nil},
-		{"0x03ff 0x06 AND 0x02 EQUAL", nil},
+		{"AND 0x02 EQUAL", [][]byte{{0x03}, {0x06}}},
+		{"AND 0x02 EQUAL", [][]byte{{0x03, 0xff}, {0x06}}},
 
-		{"0x03 0x06 OR 0x07 EQUAL", nil},
-		{"0x03ff 0x06 OR 0x07ff EQUAL", nil},
+		{"OR 0x07 EQUAL", [][]byte{{0x03}, {0x06}}},
+		{"OR 0x07ff EQUAL", [][]byte{{0x03, 0xff}, {0x06}}},
 
-		{"0x03 0x06 XOR 0x05 EQUAL", nil},
-		{"0x03ff 0x06 XOR 0x05ff EQUAL", nil},
+		{"XOR 0x05 EQUAL", [][]byte{{0x03}, {0x06}}},
+		{"XOR 0x05ff EQUAL", [][]byte{{0x03, 0xff}, {0x06}}},
 
 		// numeric and logical ops
-		{"1 1ADD 2 NUMEQUAL", nil},
-		{"-1 1ADD 0 NUMEQUAL", nil},
+		{"1ADD 2 NUMEQUAL", [][]byte{Int64Bytes(1)}},
+		{"1ADD 0 NUMEQUAL", [][]byte{Int64Bytes(-1)}},
 
-		{"2 1SUB 1 NUMEQUAL", nil},
-		{"0 1SUB -1 NUMEQUAL", nil},
+		{"1SUB 1 NUMEQUAL", [][]byte{Int64Bytes(2)}},
+		{"1SUB -1 NUMEQUAL", [][]byte{Int64Bytes(0)}},
 
-		{"1 2MUL 2 NUMEQUAL", nil},
-		{"0 2MUL 0 NUMEQUAL", nil},
-		{"-1 2MUL -2 NUMEQUAL", nil},
+		{"2MUL 2 NUMEQUAL", [][]byte{Int64Bytes(1)}},
+		{"2MUL 0 NUMEQUAL", [][]byte{Int64Bytes(0)}},
+		{"2MUL -2 NUMEQUAL", [][]byte{Int64Bytes(-1)}},
 
-		{"2 2DIV 1 NUMEQUAL", nil},
-		{"1 2DIV 0 NUMEQUAL", nil},
-		{"0 2DIV 0 NUMEQUAL", nil},
-		{"-1 2DIV 0 NUMEQUAL", nil},
-		{"-2 2DIV -1 NUMEQUAL", nil},
+		{"2DIV 1 NUMEQUAL", [][]byte{Int64Bytes(2)}},
+		{"2DIV 0 NUMEQUAL", [][]byte{Int64Bytes(1)}},
+		{"2DIV 0 NUMEQUAL", [][]byte{Int64Bytes(0)}},
+		{"2DIV 0 NUMEQUAL", [][]byte{Int64Bytes(-1)}},
+		{"2DIV -1 NUMEQUAL", [][]byte{Int64Bytes(-2)}},
 
-		{"1 NEGATE -1 NUMEQUAL", nil},
-		{"-1 NEGATE 1 NUMEQUAL", nil},
-		{"0 NEGATE 0 NUMEQUAL", nil},
+		{"NEGATE -1 NUMEQUAL", [][]byte{Int64Bytes(1)}},
+		{"NEGATE 1 NUMEQUAL", [][]byte{Int64Bytes(-1)}},
+		{"NEGATE 0 NUMEQUAL", [][]byte{Int64Bytes(0)}},
 
-		{"1 ABS 1 NUMEQUAL", nil},
-		{"-1 ABS 1 NUMEQUAL", nil},
-		{"0 ABS 0 NUMEQUAL", nil},
+		{"ABS 1 NUMEQUAL", [][]byte{Int64Bytes(1)}},
+		{"ABS 1 NUMEQUAL", [][]byte{Int64Bytes(-1)}},
+		{"ABS 0 NUMEQUAL", [][]byte{Int64Bytes(0)}},
 
-		{"1 0NOTEQUAL", nil},
-		{"0 0NOTEQUAL NOT", nil},
+		{"0NOTEQUAL", [][]byte{Int64Bytes(1)}},
+		{"0NOTEQUAL NOT", [][]byte{Int64Bytes(0)}},
 
-		{"2 3 ADD 5 NUMEQUAL", nil},
+		{"ADD 5 NUMEQUAL", [][]byte{Int64Bytes(2), Int64Bytes(3)}},
 
-		{"5 3 SUB 2 NUMEQUAL", nil},
+		{"SUB 2 NUMEQUAL", [][]byte{Int64Bytes(5), Int64Bytes(3)}},
 
-		{"2 3 MUL 6 NUMEQUAL", nil},
+		{"MUL 6 NUMEQUAL", [][]byte{Int64Bytes(2), Int64Bytes(3)}},
 
-		{"6 3 DIV 2 NUMEQUAL", nil},
+		{"DIV 2 NUMEQUAL", [][]byte{Int64Bytes(6), Int64Bytes(3)}},
 
-		{"6 2 MOD 0 NUMEQUAL", nil},
-		{"-6 2 MOD 0 NUMEQUAL", nil},
-		{"6 -2 MOD 0 NUMEQUAL", nil},
-		{"-6 -2 MOD 0 NUMEQUAL", nil},
-		{"12 10 MOD 2 NUMEQUAL", nil},
-		{"-12 10 MOD 8 NUMEQUAL", nil},
-		{"12 -10 MOD -8 NUMEQUAL", nil},
-		{"-12 -10 MOD -2 NUMEQUAL", nil},
+		{"MOD 0 NUMEQUAL", [][]byte{Int64Bytes(6), Int64Bytes(2)}},
+		{"MOD 0 NUMEQUAL", [][]byte{Int64Bytes(-6), Int64Bytes(2)}},
+		{"MOD 0 NUMEQUAL", [][]byte{Int64Bytes(6), Int64Bytes(-2)}},
+		{"MOD 0 NUMEQUAL", [][]byte{Int64Bytes(-6), Int64Bytes(-2)}},
+		{"MOD 2 NUMEQUAL", [][]byte{Int64Bytes(12), Int64Bytes(10)}},
+		{"MOD 8 NUMEQUAL", [][]byte{Int64Bytes(-12), Int64Bytes(10)}},
+		{"MOD -8 NUMEQUAL", [][]byte{Int64Bytes(12), Int64Bytes(-10)}},
+		{"MOD -2 NUMEQUAL", [][]byte{Int64Bytes(-12), Int64Bytes(-10)}},
 
-		{"1 1 LSHIFT 2 NUMEQUAL", nil},
-		{"1 2 LSHIFT 4 NUMEQUAL", nil},
-		{"-1 1 LSHIFT -2 NUMEQUAL", nil},
-		{"-1 2 LSHIFT -4 NUMEQUAL", nil},
+		{"LSHIFT 2 NUMEQUAL", [][]byte{Int64Bytes(1), Int64Bytes(1)}},
+		{"LSHIFT 4 NUMEQUAL", [][]byte{Int64Bytes(1), Int64Bytes(2)}},
+		{"LSHIFT -2 NUMEQUAL", [][]byte{Int64Bytes(-1), Int64Bytes(1)}},
+		{"LSHIFT -4 NUMEQUAL", [][]byte{Int64Bytes(-1), Int64Bytes(2)}},
 
 		{"1 1 BOOLAND", nil},
 		{"1 0 BOOLAND NOT", nil},
@@ -97,10 +106,18 @@ func TestProgramOK(t *testing.T) {
 
 		{"1 2 OR 3 EQUAL", nil},
 
-		{"0x00 0 CATPUSHDATA 0x0000 EQUAL", nil},
+		// control ops
+		{"TRUE FALSE IF RETURN ENDIF", nil},
+		{"FALSE IF RETURN ELSE TRUE ENDIF", nil},
+		{"TRUE TRUE NOTIF RETURN ENDIF", nil},
+		{"TRUE NOTIF RETURN ELSE TRUE ENDIF", nil},
+		{"17 FALSE TRUE TRUE TRUE WHILE DROP ENDWHILE 17 NUMEQUAL", nil},
+
+		// splice ops
+		{"0 CATPUSHDATA 0x0000 EQUAL", [][]byte{{0x00}}},
 		{"0 0xff CATPUSHDATA 0x01ff EQUAL", nil},
-		{"0x05 0x05 CATPUSHDATA 0x050105 EQUAL", nil},
-		{"0xff 0xff CATPUSHDATA 0xff01ff EQUAL", nil},
+		{"CATPUSHDATA 0x050105 EQUAL", [][]byte{{0x05}, {0x05}}},
+		{"CATPUSHDATA 0xff01ff EQUAL", [][]byte{{0xff}, {0xff}}},
 		{"0 0xcccccc CATPUSHDATA 0x03cccccc EQUAL", nil},
 		{"0x05 0x05 SWAP 0xdeadbeef CATPUSHDATA DROP 0x05 EQUAL", nil},
 		{"0x05 0x05 SWAP 0xdeadbeef CATPUSHDATA DROP 0x05 EQUAL", nil},
@@ -135,11 +152,15 @@ func TestProgramOK(t *testing.T) {
 		{"1 WHILE WHILE 0 ENDWHILE 0 ENDWHILE", nil},
 	}
 	for i, c := range cases {
-		prog, err := Compile(c.prog)
+		progSrc := c.prog
+		if !expectOK {
+			progSrc += " NOT"
+		}
+		prog, err := Compile(progSrc)
 		if err != nil {
 			t.Fatal(err)
 		}
-		fmt.Printf("* case %d, prog [%s] [%x]\n", i, c.prog, prog)
+		fmt.Printf("* case %d, prog [%s] [%x]\n", i, progSrc, prog)
 		trace := new(tracebuf)
 		vm := &virtualMachine{
 			program:   prog,
@@ -148,17 +169,18 @@ func TestProgramOK(t *testing.T) {
 			traceOut:  trace,
 		}
 		ok, err := vm.run()
-		if err != nil {
+		if err == nil {
+			if ok != expectOK {
+				trace.dump()
+				t.Errorf("case %d [%s]: expected %v result, got %v", i, progSrc, expectOK, ok)
+			}
+		} else {
 			trace.dump()
-			t.Errorf("case %d: unexpected error %s", i, err)
+			t.Errorf("case %d [%s]: unexpected error: %s", i, progSrc, err)
 		}
-		if !ok {
+		if testing.Verbose() && (ok == expectOK) && err == nil {
 			trace.dump()
-			t.Errorf("case %d: expected true result, got false", i)
+			fmt.Println("")
 		}
-		if testing.Verbose() && ok && err == nil {
-			trace.dump()
-		}
-		fmt.Println("")
 	}
 }
