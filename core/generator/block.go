@@ -29,12 +29,13 @@ var (
 	ErrUnknownPubkey = errors.New("unknown block pubkey")
 )
 
-// MakeBlock creates a new bc.Block and updates the txpool/utxo state.
+// MakeBlock generates a new bc.Block, collects the required signatures
+// and commits the block to the blockchain.
 func (g *Generator) MakeBlock(ctx context.Context) (*bc.Block, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	b, prevBlock, err := g.FC.GenerateBlock(ctx, time.Now())
+	b, err := g.FC.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
 	if err != nil {
 		return nil, errors.Wrap(err, "generate")
 	}
@@ -42,15 +43,25 @@ func (g *Generator) MakeBlock(ctx context.Context) (*bc.Block, error) {
 		return nil, nil // don't bother making an empty block
 	}
 
-	err = g.GetAndAddBlockSignatures(ctx, b, prevBlock)
+	// TODO(jackson): Persist b to database before asking signers
+	// to sign the block.
+
+	err = g.GetAndAddBlockSignatures(ctx, b, g.latestBlock)
 	if err != nil {
 		return nil, errors.Wrap(err, "sign")
 	}
 
-	err = g.FC.AddBlock(ctx, b)
+	// Apply the block to get the state snapshot and commit it.
+	snapshot, err := g.FC.ValidateBlock(ctx, g.latestSnapshot, g.latestBlock, b)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply")
 	}
+	err = g.FC.CommitBlock(ctx, b, snapshot)
+	if err != nil {
+		return nil, errors.Wrap(err, "commit")
+	}
+	g.latestBlock = b
+	g.latestSnapshot = snapshot
 	return b, nil
 }
 

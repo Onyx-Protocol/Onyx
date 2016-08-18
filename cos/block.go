@@ -19,35 +19,30 @@ import (
 // included in each block.
 const maxBlockTxs = 10000
 
+// saveSnapshotFrequency stores how often (in blocks) to save a state
+// snapshot to the Store.
+const saveSnapshotFrequency = 10
+
 // ErrBadBlock is returned when a block is invalid.
 var ErrBadBlock = errors.New("invalid block")
 
 // GenerateBlock generates a valid, but unsigned, candidate block from
-// the current tx pool.  It returns the new block and the previous
-// block (the latest on the blockchain).  It has no side effects.
-func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Block, err error) {
+// the current tx pool.  It returns the new block and has no side effects.
+func (fc *FC) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time) (b *bc.Block, err error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
 	timestampMS := bc.Millis(now)
-
-	// TODO(jackson): The leader process should store its own in-memory
-	// copy of the current state tree and latest block on FC instead.
-	prev, err = fc.LatestBlock(ctx)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "fetch latest block")
-	}
-
 	if timestampMS < prev.TimestampMS {
-		return nil, nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
+		return nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
 	}
+
+	// Make a copy of the state that we can apply our changes to.
+	snapshot = state.Copy(snapshot)
 
 	txs, err := fc.pool.Dump(ctx)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "get pool TXs")
-	}
-	if len(txs) > maxBlockTxs {
-		txs = txs[:maxBlockTxs]
+		return nil, errors.Wrap(err, "get pool TXs")
 	}
 
 	b = &bc.Block{
@@ -60,48 +55,84 @@ func (fc *FC) GenerateBlock(ctx context.Context, now time.Time) (b, prev *bc.Blo
 		},
 	}
 
-	snapshot, err := fc.currentState(ctx, prev.Height)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	ctx = span.NewContextSuffix(ctx, "-validate-all")
 	defer span.Finish(ctx)
 	for _, tx := range txs {
+		if len(b.Transactions) >= maxBlockTxs {
+			break
+		}
+
 		if validation.ConfirmTx(snapshot, tx, b.TimestampMS) == nil {
 			validation.ApplyTx(snapshot, tx)
 			b.Transactions = append(b.Transactions, tx)
 		}
 	}
-
 	b.TransactionsMerkleRoot = validation.CalcMerkleRoot(b.Transactions)
 	b.AssetsMerkleRoot = snapshot.Tree.RootHash()
-
-	return b, prev, nil
+	return b, nil
 }
 
-// AddBlock validates block and (if valid) adds it to the chain.
-// It also deletes any pending transactions that become conflicted
-// as a result of this block.
-//
-// This updates the UTXO set and ADPs, and calls new-block callbacks.
-func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
+// ValidateBlock performs validation on an incoming block, in advance
+// of committing the block. ValidateBlock returns the state after
+// the block has been applied.
+func (fc *FC) ValidateBlock(ctx context.Context, prevState *state.Snapshot, prev, block *bc.Block) (*state.Snapshot, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	snapshot, err := fc.currentState(ctx, block.Height-1)
+	err := validation.ValidateBlockHeader(prev, block)
 	if err != nil {
-		return err
+		return nil, errors.Wrap(err, "validating block header")
 	}
 
-	err = fc.validateBlock(ctx, block, snapshot)
+	newState := state.Copy(prevState)
+	if isSignedByTrustedHost(block, fc.trustedKeys) {
+		err = validation.ApplyBlock(newState, block)
+	} else {
+		err = validation.ValidateAndApplyBlock(ctx, newState, prev, block)
+	}
 	if err != nil {
-		return errors.Wrap(err, "block validation")
+		return nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
+	}
+	return newState, nil
+}
+
+// CommitBlock commits the block to the blockchain.
+//
+// This function:
+//   * saves the block to the store.
+//   * saves the state tree to the store (optionally).
+//   * deletes any pending transactions that become conflicted
+//     as a result of this block.
+//   * executes all new-block callbacks.
+//
+// The block parameter must have already been validated before
+// being committed.
+func (fc *FC) CommitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
+
+	// SaveBlock is the linearization point. Once the block is committed
+	// to persistent storage, the block has been applied and everything
+	// else can be derived from that block.
+	err := fc.store.SaveBlock(ctx, block)
+	if err != nil {
+		return errors.Wrap(err, "storing block")
 	}
 
-	_, err = fc.applyBlock(ctx, block, snapshot)
+	// Save a state snapshot periodically.
+	if block.Height%saveSnapshotFrequency == 0 {
+		// TODO(jackson): Save the snapshot asnychronously, but ensure
+		// that we never fall behind if saving a snapshot takes longer
+		// than the snapshotting period.
+		err = fc.store.SaveSnapshot(ctx, block.Height, snapshot)
+		if err != nil {
+			return errors.Wrap(err, "storing state snapshot")
+		}
+	}
+
+	_, err = fc.rebuildPool(ctx, block, snapshot)
 	if err != nil {
-		return errors.Wrap(err, "applying block")
+		return errors.Wrap(err, "rebuilding pool")
 	}
 
 	for _, tx := range block.Transactions {
@@ -127,13 +158,12 @@ func (fc *FC) AddBlock(ctx context.Context, block *bc.Block) error {
 	// harmless; and the following call is required in the cases where
 	// it's not redundant.
 	fc.setHeight(block.Height)
-
 	return nil
 }
 
 func (fc *FC) setHeight(h uint64) {
 	// We call setHeight from two places independently:
-	// ApplyBlock and the Postgres LISTEN goroutine.
+	// CommitBlock and the Postgres LISTEN goroutine.
 	// This means we can get here twice for each block,
 	// and any of them might be arbitrarily delayed,
 	// which means h might be from the past.
@@ -180,6 +210,10 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 			return errors.Wrap(err, "getting previous block")
 		}
 
+		// TODO(jackson): Forward request to leader process (who will have
+		// the state snapshot in-memory) and delete `fc.currentState`.
+		// Because we don't save the snapshot on every block, this isn't
+		// guaranteed to be correct!
 		snapshot, err = fc.currentState(ctx, prev.Height)
 		if err != nil {
 			return err
@@ -245,11 +279,11 @@ func (fc *FC) applyBlock(
 	if err != nil {
 		return nil, errors.Wrap(err, "storing state snapshot")
 	}
-	conflicts, err := fc.rebuildPool(ctx, block)
+	conflicts, err := fc.rebuildPool(ctx, block, snapshot)
 	return conflicts, errors.Wrap(err, "rebuilding pool")
 }
 
-func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error) {
+func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) ([]*bc.Tx, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -265,15 +299,15 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 
 	txs, err := fc.pool.Dump(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "")
-	}
-
-	snapshot, err := fc.currentState(ctx, block.Height)
-	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "dumping tx pool")
 	}
 
 	for _, tx := range txs {
+		if block.TimestampMS < tx.MinTime {
+			// This can't be confirmed yet because its mintime is too high.
+			continue
+		}
+
 		txErr := validation.ConfirmTx(snapshot, tx, block.TimestampMS)
 		if txErr == nil {
 			validation.ApplyTx(snapshot, tx)
@@ -294,7 +328,6 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block) ([]*bc.Tx, error
 	if err != nil {
 		return nil, errors.Wrap(err, "removing conflicting txs")
 	}
-
 	return conflictTxs, nil
 }
 
@@ -333,7 +366,7 @@ func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []ed25519.PublicKe
 		return nil, errors.Wrap(err, "getting blockchain height")
 	}
 	if h == 0 {
-		err = fc.AddBlock(ctx, b)
+		err = fc.CommitBlock(ctx, b, state.Empty())
 		if err != nil {
 			return nil, errors.Wrap(err, "adding genesis block")
 		}

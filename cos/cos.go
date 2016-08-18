@@ -17,7 +17,7 @@ To collect pending transactions, call AddTx for each one.
 
 To add a new block to the blockchain, call GenerateBlock, sign
 the block (possibly collecting signatures from other parties),
-and call AddBlock.
+and call CommitBlock.
 
 Signer
 
@@ -40,7 +40,7 @@ call WaitForBlock on successive block heights and inspect the
 blockchain state (using GetTxs or GetBlock) until you find that
 the transaction has been either confirmed or rejected.
 
-To ingest a block, call AddBlock.
+To ingest a block, call ValidateBlock and CommitBlock.
 
 */
 package cos
@@ -117,7 +117,7 @@ type FC struct {
 
 // NewFC returns a new FC using store as the underlying storage.
 //
-// AddBlock will skip validation for any block signed by a key
+// ValidateBlock will skip validation for any block signed by a key
 // in trustedKeys. Typically, trustedKeys contains the public key
 // for the local block-signer process; the presence of its
 // signature indicates the block was already validated locally.

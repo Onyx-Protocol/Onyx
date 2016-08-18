@@ -116,19 +116,18 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 	}
 
 	localSigner := blocksigner.New(xpub.XPub, hsm, pg.FromContext(ctx), fc)
-	g := &generator.Generator{
-		Config: generator.Config{
-			LocalSigner:  localSigner,
-			BlockPeriod:  time.Second,
-			BlockKeys:    []ed25519.PublicKey{xpub.Key},
-			SigsRequired: 1,
-			FC:           fc,
-		},
+	config := generator.Config{
+		LocalSigner:  localSigner,
+		BlockPeriod:  time.Second,
+		BlockKeys:    []ed25519.PublicKey{xpub.Key},
+		SigsRequired: 1,
+		FC:           fc,
 	}
-	err = g.UpsertGenesisBlock(ctx)
+	genesis, err := config.UpsertGenesisBlock(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
+	g := generator.New(genesis, state.Empty(), config)
 	return fc, g, nil
 }
 

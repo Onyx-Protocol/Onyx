@@ -126,7 +126,7 @@ func TestWaitForBlock(t *testing.T) {
 	default:
 	}
 
-	err = fc.AddBlock(ctx, block2)
+	err = fc.CommitBlock(ctx, block2, state.Empty())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -137,7 +137,7 @@ func TestWaitForBlock(t *testing.T) {
 	default:
 	}
 
-	err = fc.AddBlock(ctx, block3)
+	err = fc.CommitBlock(ctx, block3, state.Empty())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -222,7 +222,7 @@ func TestGenerateBlock(t *testing.T) {
 		}
 	}
 
-	got, _, err := fc.GenerateBlock(ctx, now)
+	got, err := fc.GenerateBlock(ctx, latestBlock, state.Empty(), now)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}

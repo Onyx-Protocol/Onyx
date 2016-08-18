@@ -14,6 +14,7 @@ import (
 	"chain/core/txdb"
 	"chain/cos"
 	"chain/cos/bc"
+	"chain/cos/state"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
@@ -139,12 +140,16 @@ func TestGenSpendApply(t *testing.T) {
 	}
 	t.Logf("issued %v", issueTx.Hash)
 
-	block, prevBlock, err := fc.GenerateBlock(ctx, time.Now())
+	genesis, snapshot, err := fc.Recover(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = g.GetAndAddBlockSignatures(ctx, block, prevBlock)
+	b, err := fc.GenerateBlock(ctx, genesis, snapshot, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = g.GetAndAddBlockSignatures(ctx, b, genesis)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +159,11 @@ func TestGenSpendApply(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = fc.AddBlock(ctx, block)
+	snapshot, err = fc.ValidateBlock(ctx, snapshot, genesis, b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = fc.CommitBlock(ctx, b, snapshot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,14 +257,6 @@ func benchGenBlock(b *testing.B) {
 	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	pgtest.Exec(ctx, b, `
-		INSERT INTO blocks (block_hash, height, data, header)
-		VALUES(
-			'341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5',
-			1,
-			decode('0000000100000000000000013132330000000000000000000000000000000000000000000000000000000000414243000000000000000000000000000000000000000000000000000000000058595a000000000000000000000000000000000000000000000000000000000000000000000000640f746573742d7369672d73637269707412746573742d6f75747075742d73637269707401000000010000000000000000000007746573742d7478', 'hex'),
-			''
-		);
-
 		INSERT INTO pool_txs (tx_hash, data, sort_id)
 		VALUES (
 			'37383ebfffe807d694343a9004a42f605592e0dc7f7d5de76857fb46a7050410',
@@ -271,9 +272,15 @@ func benchGenBlock(b *testing.B) {
 	if err != nil {
 		testutil.FatalErr(b, err)
 	}
+
+	genesis, err := fc.LatestBlock(ctx)
+	if err != nil {
+		testutil.FatalErr(b, err)
+	}
+
 	now := time.Now()
 	b.StartTimer()
-	_, _, err = fc.GenerateBlock(ctx, now)
+	_, err = fc.GenerateBlock(ctx, genesis, state.Empty(), now)
 	b.StopTimer()
 	if err != nil {
 		b.Fatal(err)

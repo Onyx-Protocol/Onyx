@@ -120,6 +120,7 @@ func insertBlock(ctx context.Context, dbtx *sql.Tx, block *bc.Block) error {
 	const q = `
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (block_hash) DO NOTHING
 	`
 	_, err := dbtx.Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
 	if err != nil {

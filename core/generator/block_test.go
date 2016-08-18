@@ -24,17 +24,22 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	block, prev, err := fc.GenerateBlock(ctx, time.Now())
+	tip, snapshot, err := fc.Recover(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	err = g.GetAndAddBlockSignatures(ctx, block, prev)
+	block, err := fc.GenerateBlock(ctx, tip, snapshot, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	engine, err := txscript.NewEngineForBlock(prev.ConsensusProgram, block, txscript.StandardVerifyFlags)
+	err = g.GetAndAddBlockSignatures(ctx, block, tip)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	engine, err := txscript.NewEngineForBlock(tip.ConsensusProgram, block, txscript.StandardVerifyFlags)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

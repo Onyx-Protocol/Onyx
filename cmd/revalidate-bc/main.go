@@ -18,6 +18,7 @@ import (
 	"chain/cos/bc"
 	"chain/cos/mempool"
 	"chain/cos/memstore"
+	"chain/cos/state"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
@@ -105,11 +106,23 @@ func RevalidateBlockchain(db *sql.DB) (blocksValidated uint64, err error) {
 		fatalf("unable to construct FC: %s\n", err)
 	}
 
+	var (
+		prev         *bc.Block
+		prevSnapshot *state.Snapshot
+	)
+
 	for b := range blocks {
-		err = fc.AddBlock(ctx, b)
+		snapshot, err := fc.ValidateBlock(ctx, prevSnapshot, prev, b)
 		if err != nil {
 			return blocksValidated, fmt.Errorf("block %s, height %d: %s", b.Hash(), b.Height, err)
 		}
+
+		err = fc.CommitBlock(ctx, b, snapshot)
+		if err != nil {
+			return blocksValidated, fmt.Errorf("block %s, height %d: %s", b.Hash(), b.Height, err)
+		}
+
+		prev, prevSnapshot = b, snapshot
 		blocksValidated++
 	}
 	return blocksValidated, nil
