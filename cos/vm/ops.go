@@ -121,7 +121,7 @@ const (
 	OP_ELSE           = uint8(0x67)
 	OP_ENDIF          = uint8(0x68)
 	OP_VERIFY         = uint8(0x69)
-	OP_RETURN         = uint8(0x6a)
+	OP_FAIL           = uint8(0x6a)
 	OP_CHECKPREDICATE = uint8(0xc0)
 	OP_WHILE          = uint8(0xd0)
 	OP_ENDWHILE       = uint8(0xd1)
@@ -205,6 +205,18 @@ const (
 	OP_MAXTIME     = uint8(0xc6)
 	OP_REFDATAHASH = uint8(0xc8)
 	OP_INDEX       = uint8(0xc9)
+
+	OP_CODESEPARATOR = uint8(0xab)
+	OP_NOP1          = uint8(0xb0)
+	OP_NOP2          = uint8(0xb1)
+	OP_NOP3          = uint8(0xb2)
+	OP_NOP4          = uint8(0xb3)
+	OP_NOP5          = uint8(0xb4)
+	OP_NOP6          = uint8(0xb5)
+	OP_NOP7          = uint8(0xb6)
+	OP_NOP8          = uint8(0xb7)
+	OP_NOP9          = uint8(0xb8)
+	OP_NOP10         = uint8(0xb9)
 )
 
 // In no particular order
@@ -235,7 +247,7 @@ var opList = []op{
 	{0x67, "ELSE", opElse},
 	{0x68, "ENDIF", opEndif},
 	{0x69, "VERIFY", opVerify},
-	{0x6a, "RETURN", opReturn},
+	{0x6a, "FAIL", opFail},
 	{0xc0, "CHECKPREDICATE", opCheckPredicate},
 	{0xd0, "WHILE", opWhile},
 	{0xd1, "ENDWHILE", opEndwhile},
@@ -322,6 +334,8 @@ var opList = []op{
 	{0xc6, "MAXTIME", opMaxTime},
 	{0xc8, "REFDATAHASH", opRefDataHash},
 	{0xc9, "INDEX", opIndex},
+
+	{0xab, "CODESEPARATOR", opNop},
 }
 
 var (
@@ -333,24 +347,20 @@ var (
 )
 
 // parseOp parses the op at position pc in prog.  Return values are
-// the opcode at that position (simply prog[pc]); the length of the
+// the op object for the opcode at that position; the length of the
 // opcode plus any associated data (as with OP_DATA* and OP_PUSHDATA*
 // instructions); the associated data, if any; and any parsing error
-// (e.g. prog is too short).
+// (e.g. unknown opcode or prog is too short).
 func parseOp(prog []byte, pc uint32) (op *op, oplen uint32, data []byte, err error) {
 	if pc >= uint32(len(prog)) {
 		err = ErrShortProgram
 		return
 	}
 	opcode := prog[pc]
-	if opcode == 0x65 || opcode == 0x66 {
-		err = ErrIllegalOpcode
-	} else {
-		op = ops[opcode]
-		if op == nil {
-			err = ErrUnknownOpcode
-			return
-		}
+	op = ops[opcode]
+	if op == nil {
+		err = ErrUnknownOpcode
+		return
 	}
 	oplen = 1 // the opcode itself
 	if opcode >= OP_1 && opcode <= OP_16 {
@@ -421,6 +431,9 @@ func init() {
 	}
 	for i := uint8(1); i <= 16; i++ {
 		opList = append(opList, op{0x50 + uint8(i), fmt.Sprintf("%d", i), opPushdata})
+	}
+	for i := 0; i <= 9; i++ {
+		opList = append(opList, op{0xb0 + uint8(i), fmt.Sprintf("NOP%d", i+1), opNop})
 	}
 	opsByName = make(map[string]*op, len(opList)+2)
 	for i, op := range opList {

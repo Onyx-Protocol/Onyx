@@ -28,8 +28,8 @@ func op1Negate(vm *virtualMachine) error {
 	return vm.pushInt64(-1, false)
 }
 
-func opNop(_ *virtualMachine) error {
-	return nil
+func opNop(vm *virtualMachine) error {
+	return vm.applyCost(1)
 }
 
 func pushdataBytes(in []byte) []byte {

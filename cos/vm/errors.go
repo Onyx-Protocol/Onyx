@@ -12,7 +12,6 @@ var (
 	ErrDataStackUnderflow    = errors.New("data stack underflow")
 	ErrDecode                = errors.New("decoding error")
 	ErrDivZero               = errors.New("division by zero")
-	ErrIllegalOpcode         = errors.New("illegal opcode")
 	ErrToken                 = errors.New("unrecognized token")
 	ErrReturn                = errors.New("RETURN executed")
 	ErrRunLimitExceeded      = errors.New("run limit exceeded")

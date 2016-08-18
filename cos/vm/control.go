@@ -92,7 +92,7 @@ func opVerify(vm *virtualMachine) error {
 	return ErrVerifyFailed
 }
 
-func opReturn(vm *virtualMachine) error {
+func opFail(vm *virtualMachine) error {
 	err := vm.applyCost(1)
 	if err != nil {
 		return err

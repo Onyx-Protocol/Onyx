@@ -234,11 +234,11 @@ func TestControlOps(t *testing.T) {
 		wantErr: ErrDataStackUnderflow,
 	}, {
 		startVM: &virtualMachine{runLimit: 50000},
-		op:      OP_RETURN,
+		op:      OP_FAIL,
 		wantErr: ErrReturn,
 	}, {
 		startVM: &virtualMachine{runLimit: 0},
-		op:      OP_RETURN,
+		op:      OP_FAIL,
 		wantErr: ErrRunLimitExceeded,
 	}, {
 		op: OP_CHECKPREDICATE,
@@ -266,7 +266,7 @@ func TestControlOps(t *testing.T) {
 		op: OP_CHECKPREDICATE,
 		startVM: &virtualMachine{
 			runLimit:  50000,
-			dataStack: [][]byte{{OP_RETURN}, {}},
+			dataStack: [][]byte{{OP_FAIL}, {}},
 		},
 		wantVM: &virtualMachine{
 			runLimit:     0,
