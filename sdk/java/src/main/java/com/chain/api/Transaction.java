@@ -146,9 +146,12 @@ public class Transaction {
         public HashMap<String, Object> params;
         @SerializedName("reference_data")
         public Map<String, Object> referenceData;
+        @SerializedName("client_token")
+        private String clientToken;
 
         public Action() {
             this.params = new HashMap();
+            this.clientToken = UUID.randomUUID().toString();
         }
 
         public Action setType(String type) {
