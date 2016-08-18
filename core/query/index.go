@@ -123,7 +123,13 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 				return errors.Wrap(fmt.Errorf("bad output type %T", out))
 			}
 
-			serializedData, err := json.Marshal(txOut)
+			txOutCopy := make(map[string]interface{}, len(txOut))
+			for k, v := range txOut {
+				txOutCopy[k] = v // be extra paranoid; don't modify txOut
+			}
+
+			txOutCopy["transaction_id"] = tx.Hash
+			serializedData, err := json.Marshal(txOutCopy)
 			if err != nil {
 				return errors.Wrap(err, "serializing annotated output")
 			}
