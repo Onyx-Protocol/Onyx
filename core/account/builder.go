@@ -19,7 +19,7 @@ type SpendAction struct {
 	Params struct {
 		bc.AssetAmount
 		AccountID string        `json:"account_id"`
-		TxHash    *bc.Hash      `json:"transaction_hash"`
+		TxHash    *bc.Hash      `json:"transaction_id"`
 		TxOut     *uint32       `json:"position"`
 		TTL       time.Duration `json:"reservation_ttl"`
 	}
@@ -94,7 +94,7 @@ func breakupChange(total uint64) (amounts []uint64) {
 
 type SpendUTXOAction struct {
 	Params struct {
-		TxHash bc.Hash       `json:"transaction_hash"`
+		TxHash bc.Hash       `json:"transaction_id"`
 		TxOut  uint32        `json:"position"`
 		TTL    time.Duration `json:"reservation_ttl"`
 	}
