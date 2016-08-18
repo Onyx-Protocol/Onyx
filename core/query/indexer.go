@@ -111,7 +111,7 @@ func (i *Index) MarshalJSON() ([]byte, error) {
 func (ind *Indexer) GetIndex(ctx context.Context, id, alias, typ string) (*Index, error) {
 	const selectQ = `
 		SELECT id, alias, type, query, created_at, unspent_outputs FROM query_indexes
-		WHERE (($1 != '' AND id = $1) OR ($2 != '' AND alias = $2) AND type = $3
+		WHERE (($1 != '' AND id = $1) OR ($2 != '' AND alias = $2)) AND type = $3
 	`
 	var idx Index
 	err := ind.db.QueryRow(ctx, selectQ, id, alias, typ).
