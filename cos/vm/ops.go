@@ -186,7 +186,7 @@ const (
 	OP_GREATERTHANOREQUAL = uint8(0xa2)
 	OP_MIN                = uint8(0xa3)
 	OP_MAX                = uint8(0xa4)
-	OP_WITHIN             = uint8(0xa4)
+	OP_WITHIN             = uint8(0xa5)
 
 	OP_RIPEMD160     = uint8(0xa6)
 	OP_SHA1          = uint8(0xa7)
@@ -315,7 +315,7 @@ var opList = []op{
 	{0xa2, "GREATERTHANOREQUAL", opGreaterThanOrEqual},
 	{0xa3, "MIN", opMin},
 	{0xa4, "MAX", opMax},
-	{0xa4, "WITHIN", opWithin},
+	{0xa5, "WITHIN", opWithin},
 
 	{0xa6, "RIPEMD160", opRipemd160},
 	{0xa7, "SHA1", opSha1},

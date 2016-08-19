@@ -281,7 +281,8 @@ func opTuck(vm *virtualMachine) error {
 	if len(vm.dataStack) < 2 {
 		return ErrDataStackUnderflow
 	}
-	top2 := vm.dataStack[len(vm.dataStack)-2:]
+	top2 := make([][]byte, 2)
+	copy(top2, vm.dataStack[len(vm.dataStack)-2:])
 	// temporarily remove the top two items without standard memory accounting
 	vm.dataStack = vm.dataStack[:len(vm.dataStack)-2]
 	err = vm.push(top2[1], false)

@@ -38,7 +38,10 @@ func doHash(vm *virtualMachine, hashFactory func() hash.Hash) error {
 	if cost < 64 {
 		cost = 64
 	}
-	vm.applyCost(cost)
+	err = vm.applyCost(cost)
+	if err != nil {
+		return err
+	}
 	h := hashFactory()
 	_, err = h.Write(x)
 	if err != nil {
@@ -86,7 +89,7 @@ func opCheckMultiSig(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	if numPubkeys < 0 {
+	if numPubkeys <= 0 {
 		return ErrBadValue
 	}
 	err = vm.applyCost(1024 * numPubkeys)
@@ -109,7 +112,7 @@ func opCheckMultiSig(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	if numSigs < 0 || numSigs > numPubkeys {
+	if numSigs <= 0 || numSigs > numPubkeys {
 		return ErrBadValue
 	}
 	sigs := make([][]byte, 0, numSigs)
@@ -139,7 +142,10 @@ func opTxSigHash(vm *virtualMachine) error {
 		return err
 	}
 	hashBytes := vm.sigHasher.Hash(int(vm.inputIndex), bc.SigHashType(hashType))
-	vm.applyCost(4 * int64(len(hashBytes)))
+	err = vm.applyCost(4 * int64(len(hashBytes)))
+	if err != nil {
+		return err
+	}
 	return vm.push(hashBytes[:], false)
 }
 
@@ -148,6 +154,9 @@ func opBlockSigHash(vm *virtualMachine) error {
 		return ErrContext
 	}
 	h := vm.block.HashForSig()
-	vm.applyCost(4 * int64(len(h)))
+	err := vm.applyCost(4 * int64(len(h)))
+	if err != nil {
+		return err
+	}
 	return vm.push(h[:], false)
 }

@@ -6,12 +6,13 @@ import (
 )
 
 func TestControlOps(t *testing.T) {
-	cases := []struct {
+	type testStruct struct {
 		op      uint8
 		startVM *virtualMachine
 		wantErr error
 		wantVM  *virtualMachine
-	}{{
+	}
+	cases := []testStruct{{
 		op: OP_IF,
 		startVM: &virtualMachine{
 			runLimit:     50000,
@@ -69,13 +70,6 @@ func TestControlOps(t *testing.T) {
 	}, {
 		op: OP_IF,
 		startVM: &virtualMachine{
-			runLimit:  0,
-			dataStack: [][]byte{{1}},
-		},
-		wantErr: ErrRunLimitExceeded,
-	}, {
-		op: OP_IF,
-		startVM: &virtualMachine{
 			runLimit:  50000,
 			dataStack: [][]byte{},
 		},
@@ -113,13 +107,6 @@ func TestControlOps(t *testing.T) {
 			runLimit:     49996,
 			controlStack: []controlTuple{{optype: cfIf, flag: false}, {optype: cfElse, flag: false}},
 		},
-	}, {
-		op: OP_ELSE,
-		startVM: &virtualMachine{
-			runLimit:     0,
-			controlStack: []controlTuple{{optype: cfIf, flag: true}},
-		},
-		wantErr: ErrRunLimitExceeded,
 	}, {
 		op: OP_ELSE,
 		startVM: &virtualMachine{
@@ -170,13 +157,6 @@ func TestControlOps(t *testing.T) {
 			controlStack: []controlTuple{{optype: cfWhile, flag: true}},
 		},
 		wantErr: ErrBadControlSyntax,
-	}, {
-		op: OP_ENDIF,
-		startVM: &virtualMachine{
-			runLimit:     0,
-			controlStack: []controlTuple{{optype: cfWhile, flag: true}},
-		},
-		wantErr: ErrRunLimitExceeded,
 	}, {
 		op: OP_ENDIF,
 		startVM: &virtualMachine{
@@ -221,13 +201,6 @@ func TestControlOps(t *testing.T) {
 	}, {
 		op: OP_VERIFY,
 		startVM: &virtualMachine{
-			runLimit:  0,
-			dataStack: [][]byte{{1}},
-		},
-		wantErr: ErrRunLimitExceeded,
-	}, {
-		op: OP_VERIFY,
-		startVM: &virtualMachine{
 			runLimit:  50000,
 			dataStack: [][]byte{},
 		},
@@ -236,10 +209,6 @@ func TestControlOps(t *testing.T) {
 		startVM: &virtualMachine{runLimit: 50000},
 		op:      OP_FAIL,
 		wantErr: ErrReturn,
-	}, {
-		startVM: &virtualMachine{runLimit: 0},
-		op:      OP_FAIL,
-		wantErr: ErrRunLimitExceeded,
 	}, {
 		op: OP_CHECKPREDICATE,
 		startVM: &virtualMachine{
@@ -301,12 +270,6 @@ func TestControlOps(t *testing.T) {
 		},
 		wantErr: ErrRunLimitExceeded,
 	}, {
-		op: OP_CHECKPREDICATE,
-		startVM: &virtualMachine{
-			runLimit: 0,
-		},
-		wantErr: ErrRunLimitExceeded,
-	}, {
 		op: OP_WHILE,
 		startVM: &virtualMachine{
 			runLimit:     50000,
@@ -351,13 +314,6 @@ func TestControlOps(t *testing.T) {
 			controlStack: []controlTuple{{optype: cfIf, flag: false}, {optype: cfWhile, flag: false}},
 			pc:           5,
 		},
-	}, {
-		op: OP_WHILE,
-		startVM: &virtualMachine{
-			runLimit:  0,
-			dataStack: [][]byte{{}},
-		},
-		wantErr: ErrRunLimitExceeded,
 	}, {
 		op: OP_WHILE,
 		startVM: &virtualMachine{
@@ -407,14 +363,20 @@ func TestControlOps(t *testing.T) {
 			controlStack: []controlTuple{{optype: cfElse, flag: true}},
 		},
 		wantErr: ErrBadControlSyntax,
-	}, {
-		op: OP_ENDWHILE,
-		startVM: &virtualMachine{
-			runLimit:     0,
-			controlStack: []controlTuple{{optype: cfWhile, flag: false, pc: 5}},
-		},
-		wantErr: ErrRunLimitExceeded,
 	}}
+
+	limitChecks := []uint8{
+		OP_IF, OP_NOTIF, OP_ELSE, OP_ENDIF, OP_WHILE, OP_ENDWHILE,
+		OP_CHECKPREDICATE, OP_VERIFY, OP_FAIL,
+	}
+
+	for _, op := range limitChecks {
+		cases = append(cases, testStruct{
+			op:      op,
+			startVM: &virtualMachine{runLimit: 0},
+			wantErr: ErrRunLimitExceeded,
+		})
+	}
 
 	for i, c := range cases {
 		err := ops[c.op].fn(c.startVM)
