@@ -47,6 +47,6 @@ build:
         name: check for tk and xxx
         code: |
           p='(xxx|(tk)+)' # can't write inline or it'll match this file
-          if egrep -Iinr '//.*\b'$p'\b' $(ls -1|grep -v vendor)
+          if egrep -Iinr '//.*\b'$p'\b' $(ls -1|egrep -v 'vendor|generated')
           then exit 1
           fi

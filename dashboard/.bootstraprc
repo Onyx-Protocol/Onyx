@@ -1,0 +1,17 @@
+{
+  bootstrapVersion: 3,
+
+  // This gets loaded before bootstrap/variables
+  preBootstrapCustomizations: ./src/styles/_bootstrap-overrides.scss,
+
+  // Imports app styles into project
+  appStyles: ./src/styles/app.scss,
+
+  styleLoaders: ['style', 'css', 'sass'],
+
+  // Bootstrap styles
+  styles: true,
+
+  // Bootstrap scripts
+  scripts: false
+}

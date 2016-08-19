@@ -1,0 +1,26 @@
+.brand_image {
+  height: 100%;
+  opacity: 0.9;
+}
+
+.divider {
+  color: white;
+  opacity: 0.25;
+  font-size: 20px;
+  margin-top: 10px;
+}
+
+.footer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 1rem;
+  background-color: $well-bg;
+  text-align: center;
+}
+
+.glyphicon {
+  opacity: 0.5;
+  margin-right: 8px;
+}

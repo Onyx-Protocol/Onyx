@@ -1,0 +1,10 @@
+// Contents of this file are included in every
+// CSS module.
+//
+// Do NOT put styles in here that generate output. Only include
+// variables, mixins and other functions describing common
+// functionality.
+
+@import "node_modules/bootstrap-sass/assets/stylesheets/bootstrap/_variables";
+@import "node_modules/bootstrap-sass/assets/stylesheets/bootstrap/_mixins";
+@import "src/styles/bootstrap-overrides";

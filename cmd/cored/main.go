@@ -12,6 +12,7 @@ import (
 	_ "net/http/pprof"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/kr/secureheader"
@@ -39,6 +40,7 @@ import (
 	"chain/database/sql"
 	"chain/env"
 	"chain/errors"
+	"chain/generated/dashboard"
 	chainlog "chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
@@ -261,6 +263,7 @@ func main() {
 	})
 
 	h := core.Handler(*apiSecretToken, fc, generatorConfig, localSigner, store, pool, hsm, indexer)
+	h = dashboardHandler(h)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = httpspan.Handler{Handler: h}
@@ -299,6 +302,22 @@ func dbContextHandler(handler http.Handler, db pg.DB) http.Handler {
 		ctx := req.Context()
 		ctx = pg.NewContext(ctx, db)
 		handler.ServeHTTP(w, req.WithContext(ctx))
+	})
+}
+
+func dashboardHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		path := req.URL.Path[1:]
+		if path == "" {
+			path = "index.html"
+		}
+
+		output, ok := dashboard.Files[path]
+		if ok {
+			http.ServeContent(w, req, path, time.Time{}, strings.NewReader(output))
+		} else {
+			next.ServeHTTP(w, req)
+		}
 	})
 }
 
