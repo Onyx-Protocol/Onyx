@@ -1,6 +1,11 @@
 var webpack = require('webpack')
 var getConfig = require('hjs-webpack')
 
+let publicPath = "/"
+if (process.env.NODE_ENV === "production") {
+  publicPath = "/dashboard/"
+}
+
 // Creates a webpack config object. The
 // object can be extended by accessing
 // its properties.
@@ -20,6 +25,14 @@ var config = getConfig({
   // but since it's destructive we make it
   // false by default
   clearBeforeBuild: true,
+
+  html: function (context) {
+    return {
+      'index.html': context.defaultTemplate({
+        publicPath: publicPath
+      })
+    }
+  },
 
   // Proxy API requests to local core server
   devServer: {
@@ -68,5 +81,8 @@ config.plugins.push(new webpack.EnvironmentPlugin([
   'API_URL',
   'PROXY_API_HOST'
 ]))
+
+config.output.publicPath = publicPath
+
 
 module.exports = config

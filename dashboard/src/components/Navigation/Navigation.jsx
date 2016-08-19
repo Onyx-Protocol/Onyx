@@ -14,6 +14,55 @@ class Navigation extends React.Component {
                 <img src={logo} className={styles.brand_image} />
               </Link>
             </div>
+
+            <div className="collapse navbar-collapse">
+              <ul className="nav navbar-nav">
+                <li>
+                  <Link to={`/transactions`}>
+                    <span className={`glyphicon glyphicon-transfer ${styles.glyphicon}`} />
+                     Transactions
+                  </Link>
+                </li>
+                <li>
+                  <Link to={`/unspents`}>
+                    <span className={`glyphicon glyphicon-link ${styles.glyphicon}`} />
+                    Unspent output
+                  </Link>
+                </li>
+                <li>
+                  <Link to={`/balances`}>
+                    <span className={`glyphicon glyphicon-usd ${styles.glyphicon}`} />
+                    Balances
+                  </Link>
+                </li>
+                <li className={styles.divider}>|</li>
+                <li>
+                  <Link to={`/accounts`}>
+                    <span className={`glyphicon glyphicon-user ${styles.glyphicon}`} />
+                    Accounts
+                  </Link>
+                </li>
+                <li>
+                  <Link to={`/assets`}>
+                    <span className={`glyphicon glyphicon-barcode ${styles.glyphicon}`} />
+                    Assets
+                  </Link>
+                </li>
+                <li>
+                  <Link to={`/indexes`}>
+                    <span className={`glyphicon glyphicon-eye-open ${styles.glyphicon}`} />
+                    Indexes
+                  </Link>
+                </li>
+                <li className={styles.divider}>|</li>
+                <li>
+                  <Link to={`/mockhsms`}>
+                    <span className={`glyphicon glyphicon-lock ${styles.glyphicon}`} />
+                    Mock HSM
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 

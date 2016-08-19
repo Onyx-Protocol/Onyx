@@ -306,18 +306,24 @@ func dbContextHandler(handler http.Handler, db pg.DB) http.Handler {
 }
 
 func dashboardHandler(next http.Handler) http.Handler {
+	mux := http.NewServeMux()
+	mux.Handle("/dashboard/", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		file := strings.TrimPrefix(req.URL.Path, "/dashboard/")
+		output, ok := dashboard.Files[file]
+		if !ok {
+			output = dashboard.Files["index.html"]
+		}
+		http.ServeContent(w, req, file, time.Time{}, strings.NewReader(output))
+	}))
+	mux.Handle("/", next)
+
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		path := req.URL.Path[1:]
-		if path == "" {
-			path = "index.html"
+		if req.URL.Path == "/" {
+			http.Redirect(w, req, "/dashboard/", http.StatusFound)
+			return
 		}
 
-		output, ok := dashboard.Files[path]
-		if ok {
-			http.ServeContent(w, req, path, time.Time{}, strings.NewReader(output))
-		} else {
-			next.ServeHTTP(w, req)
-		}
+		mux.ServeHTTP(w, req)
 	})
 }
 

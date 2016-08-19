@@ -1,0 +1,21 @@
+.search_bar {
+  margin: 15px 0 30px 0;
+}
+
+.search_field {
+  display: inline-block;
+  position: relative;
+  width: calc(100% - 100px);
+}
+
+.search_button {
+  display: inline-block;
+  margin-left: 10px;
+  width: 90px;
+}
+
+.clear_search {
+  position: absolute;
+  right: 8px;
+  top: 5px;
+}
