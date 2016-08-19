@@ -25,7 +25,6 @@ package secureheader
 // See https://github.com/kr/secureheader/issues/1.
 
 import (
-	"context"
 	"net"
 	"net/http"
 	"strconv"
@@ -91,20 +90,11 @@ type Config struct {
 	Next http.Handler
 }
 
-// ServeHTTP calls ServeHTTPContext with context.Background().
-func (c *Config) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
-	c.ServeHTTPContext(ctx, w, r)
-}
-
-// ServeHTTPContext sets header fields on w according to the options in
+// ServeHTTP sets header fields on w according to the options in
 // c, then either replies directly or runs c.Next to reply.
 // Typically c.Next is nil, in which case http.DefaultServeMux is
 // used instead.
-//
-// If c.Next implements ContextHandler, then ServeHTTPContext will
-// provide ctx to c.Next.
-func (c *Config) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (c *Config) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if c.HTTPSRedirect && !c.isHTTPS(r) && !c.okloopback(r) {
 		url := *r.URL
 		url.Scheme = "https"
@@ -136,17 +126,7 @@ func (c *Config) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r 
 	if next == nil {
 		next = http.DefaultServeMux
 	}
-	if ctxHandler, ok := next.(ContextHandler); ok {
-		ctxHandler.ServeHTTPContext(ctx, w, r)
-	} else {
-		next.ServeHTTP(w, r)
-	}
-}
-
-// ContextHandler can be used by Config.Next to accept a context.Context.
-// See comment for Config.ServeHTTPContext.
-type ContextHandler interface {
-	ServeHTTPContext(context.Context, http.ResponseWriter, *http.Request)
+	next.ServeHTTP(w, r)
 }
 
 // Given that r is cleartext (not HTTPS), okloopback returns
