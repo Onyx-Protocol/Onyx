@@ -501,6 +501,17 @@ CREATE SEQUENCE chain_id_seq
 
 
 --
+-- Name: generator_pending_block; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE generator_pending_block (
+    singleton boolean DEFAULT true NOT NULL,
+    data bytea NOT NULL,
+    CONSTRAINT generator_pending_block_singleton CHECK (singleton)
+);
+
+
+--
 -- Name: issuance_totals; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -825,6 +836,14 @@ ALTER TABLE ONLY blocks_txs
 
 
 --
+-- Name: generator_pending_block_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY generator_pending_block
+    ADD CONSTRAINT generator_pending_block_pkey PRIMARY KEY (singleton);
+
+
+--
 -- Name: issuance_totals_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1088,3 +1107,4 @@ insert into migrations (filename, hash) values ('2016-08-16.1.api.add-asset-alia
 insert into migrations (filename, hash) values ('2016-08-16.2.query.rename-index-alias.sql', 'eb1b6b4fa602ac21d7f957f8fda0b94dd50fb710055842cead111a0bb35d93ae');
 insert into migrations (filename, hash) values ('2016-08-16.3.api.alias-keys.sql', 'ee7702a963064b004800ee356558ec2a2a3062f443ff7871d1fc2a873f22665e');
 insert into migrations (filename, hash) values ('2016-08-17.0.query.index-id.sql', '538ce1a1f61b496d1809049f3934ba445177e5b71af2e802d2fbcb009a8d80cb');
+insert into migrations (filename, hash) values ('2016-08-19.0.generator.generated-block.sql', '8068324f63c2d973f0eac120460ca202711bfab0f734b789f18206f21abd3a80');

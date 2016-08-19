@@ -58,14 +58,28 @@ type RemoteSigner struct {
 func Generate(ctx context.Context, config Config, period time.Duration) {
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
-	block, snapshot, err := config.FC.Recover(ctx)
+	recoveredBlock, recoveredSnapshot, err := config.FC.Recover(ctx)
 	if err != nil {
 		log.Fatal(ctx, log.KeyError, err)
 	}
+	g := New(recoveredBlock, recoveredSnapshot, config)
 
-	g := New(block, snapshot, config)
+	// Check to see if we already have a pending, generated block.
+	// This can happen if the leader process exits between generating
+	// the block and committing the signed block to the blockchain.
+	b, err := g.getPendingBlock(ctx)
+	if err != nil {
+		log.Fatal(ctx, err)
+	}
+	if b != nil && (g.latestBlock == nil || b.Height == g.latestBlock.Height+1) {
+		// g.commitBlock will update g.latestBlock and g.latestSnapshot.
+		_, err := g.commitBlock(ctx, b)
+		if err != nil {
+			log.Fatal(ctx, err)
+		}
+	}
 
-	if block == nil {
+	if g.latestBlock == nil {
 		genesis, err := g.UpsertGenesisBlock(ctx)
 		if err != nil {
 			panic(err)

@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"chain/cos/txscript"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
+	"chain/database/pg"
 	"chain/errors"
 	"chain/net/trace/span"
 )
@@ -42,11 +44,15 @@ func (g *Generator) MakeBlock(ctx context.Context) (*bc.Block, error) {
 	if len(b.Transactions) == 0 {
 		return nil, nil // don't bother making an empty block
 	}
+	err = g.savePendingBlock(ctx, b)
+	if err != nil {
+		return nil, err
+	}
+	return g.commitBlock(ctx, b)
+}
 
-	// TODO(jackson): Persist b to database before asking signers
-	// to sign the block.
-
-	err = g.GetAndAddBlockSignatures(ctx, b, g.latestBlock)
+func (g *Generator) commitBlock(ctx context.Context, b *bc.Block) (*bc.Block, error) {
+	err := g.GetAndAddBlockSignatures(ctx, b, g.latestBlock)
 	if err != nil {
 		return nil, errors.Wrap(err, "sign")
 	}
@@ -60,6 +66,7 @@ func (g *Generator) MakeBlock(ctx context.Context) (*bc.Block, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "commit")
 	}
+
 	g.latestBlock = b
 	g.latestSnapshot = snapshot
 	return b, nil
@@ -168,4 +175,29 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 
 func keystr(k ed25519.PublicKey) string {
 	return hex.EncodeToString(hd25519.PubBytes(k))
+}
+
+// getPendingBlock retrieves the generated, uncomitted block if it exists.
+func (g *Generator) getPendingBlock(ctx context.Context) (*bc.Block, error) {
+	const q = `SELECT data FROM generator_pending_block`
+	var block bc.Block
+	err := pg.QueryRow(ctx, q).Scan(&block)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, errors.Wrap(err, "retrieving generated pending block query")
+	}
+	return &block, nil
+}
+
+// savePendingBlock persists a pending, uncommitted block to the database.
+// The generator should save a pending block *before* asking signers to
+// sign the block.
+func (g *Generator) savePendingBlock(ctx context.Context, b *bc.Block) error {
+	const q = `
+		INSERT INTO generator_pending_block (data) VALUES($1)
+		ON CONFLICT (singleton) DO UPDATE SET data = $1;
+	`
+	_, err := pg.Exec(ctx, q, b)
+	return errors.Wrap(err, "generator_pending_block insert query")
 }
