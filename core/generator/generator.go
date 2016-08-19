@@ -19,7 +19,6 @@ import (
 type Config struct {
 	RemoteSigners []*RemoteSigner
 	LocalSigner   *blocksigner.Signer
-	BlockPeriod   time.Duration
 	BlockKeys     []ed25519.PublicKey // keys for block scripts
 	SigsRequired  int                 // sigs required for block scripts
 	FC            *cos.FC
@@ -56,7 +55,7 @@ type RemoteSigner struct {
 // Generate runs in a loop, making one new block
 // every block period. It returns when its context
 // is canceled.
-func Generate(ctx context.Context, config Config) {
+func Generate(ctx context.Context, config Config, period time.Duration) {
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
 	block, snapshot, err := config.FC.Recover(ctx)
@@ -75,7 +74,7 @@ func Generate(ctx context.Context, config Config) {
 		g.latestSnapshot = state.Empty()
 	}
 
-	ticks := time.Tick(g.BlockPeriod)
+	ticks := time.Tick(period)
 	for {
 		select {
 		case <-ctx.Done():

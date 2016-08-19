@@ -43,7 +43,6 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	localSigner := blocksigner.New(xpub.XPub, hsm, db, fc)
 	config := generator.Config{
 		LocalSigner:  localSigner,
-		BlockPeriod:  time.Second,
 		BlockKeys:    []ed25519.PublicKey{xpub.Key},
 		SigsRequired: 1,
 		FC:           fc,

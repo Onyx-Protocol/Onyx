@@ -232,7 +232,6 @@ func main() {
 		generatorConfig = &generator.Config{
 			RemoteSigners: remotes,
 			LocalSigner:   localSigner,
-			BlockPeriod:   blockPeriod,
 			BlockKeys:     pubKeys,
 			SigsRequired:  *sigsRequired,
 			FC:            fc,
@@ -255,7 +254,7 @@ func main() {
 			go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
 		}
 		if *isGenerator {
-			go generator.Generate(ctx, *generatorConfig)
+			go generator.Generate(ctx, *generatorConfig, blockPeriod)
 		} else {
 			go fetch.Fetch(ctx, fc)
 		}
