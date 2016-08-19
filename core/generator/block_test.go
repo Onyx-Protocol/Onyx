@@ -8,48 +8,13 @@ import (
 	"chain/core/asset/assettest"
 	"chain/core/txdb"
 	"chain/cos/bc"
-	"chain/cos/txscript"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
-	"chain/testutil"
 )
 
-func TestGetAndAddBlockSignatures(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	fc, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	tip, snapshot, err := fc.Recover(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	block, err := fc.GenerateBlock(ctx, tip, snapshot, time.Now())
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	err = g.GetAndAddBlockSignatures(ctx, block, tip)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	engine, err := txscript.NewEngineForBlock(tip.ConsensusProgram, block, txscript.StandardVerifyFlags)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	err = engine.Execute()
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-}
-
+// TODO(kr): GetBlocks is not a generator function.
+// Move this test (and GetBlocks) to another package.
 func TestGetBlocks(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)

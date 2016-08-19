@@ -15,6 +15,9 @@ import (
 	"chain/log"
 )
 
+// TODO(kr): replace RemoteSigners type and use of *blocksigner.Signer
+// with a single BlockSigner interface.
+
 // Config encapsulates generator configuration options.
 type Config struct {
 	RemoteSigners []*RemoteSigner
@@ -121,6 +124,8 @@ func (g *Config) Submit(ctx context.Context, tx *bc.Tx) error {
 // GetBlocks returns blocks (with heights larger than afterHeight) in
 // block-height order.
 func (g *Config) GetBlocks(ctx context.Context, afterHeight uint64) ([]*bc.Block, error) {
+	// TODO(kr): This is not a generator function.
+	// Move this to another package.
 	err := g.FC.WaitForBlock(ctx, afterHeight+1)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", afterHeight+1)
