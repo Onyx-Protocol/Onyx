@@ -387,7 +387,7 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 		return
 	}
 	if opcode == OP_PUSHDATA2 {
-		if pc > uint32(len(prog)-3) {
+		if pc+3 > uint32(len(prog)) {
 			err = ErrShortProgram
 			return
 		}
@@ -402,7 +402,7 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 		return
 	}
 	if opcode == OP_PUSHDATA4 {
-		if pc > uint32(len(prog)-5) {
+		if pc+5 > uint32(len(prog)) {
 			err = ErrShortProgram
 			return
 		}
