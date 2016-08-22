@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"chain/errors"
 )
 
-// Convert a string like "2 3 ADD 5 EQUAL" into 0x525393559c.
+// Convert a string like "2 3 ADD 5 NUMEQUAL" into 0x525393559c.
 // The input should not include PUSHDATA (or OP_<num>) ops; those will
 // be inferred.
 func Compile(s string) ([]byte, error) {
@@ -43,6 +44,10 @@ func Compile(s string) ([]byte, error) {
 		} else {
 			return nil, errors.Wrap(ErrToken, token)
 		}
+	}
+	err := scanner.Err()
+	if err != nil {
+		return nil, err
 	}
 	return res, nil
 }
@@ -77,13 +82,13 @@ func split(inp []byte, atEOF bool) (advance int, token []byte, err error) {
 	if len(token) > 1 && token[0] != '\'' {
 		return
 	}
-
-	// Rescan the input, but skip the whitespace that ScanWords skipped.
-	start := advance - len(token)
-	if len(inp) == start {
-		return start, nil, nil
+	var start int
+	for ; start < len(inp); start++ {
+		if !unicode.IsSpace(rune(inp[start])) {
+			break
+		}
 	}
-	if inp[start] != '\'' {
+	if start == len(inp) || inp[start] != '\'' {
 		return
 	}
 	var escape bool
