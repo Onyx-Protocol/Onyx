@@ -38,7 +38,6 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 	localSigner := blocksigner.New(xpub.XPub, hsm, dbtx, fc)
 	config := Config{
 		LocalSigner:  localSigner,
-		BlockPeriod:  time.Second,
 		BlockKeys:    []ed25519.PublicKey{xpub.Key},
 		SigsRequired: 1,
 		FC:           fc,
