@@ -55,30 +55,16 @@ func FinalizeTx(ctx context.Context, fc *cos.FC, txTemplate *Template) (*bc.Tx, 
 	return msg, nil
 }
 
-// TODO(boymanjor): Refactor into fc.LatestBlockHeight
-func latestBlockHeight(ctx context.Context, fc *cos.FC) (uint64, error) {
-	b, err := fc.LatestBlock(ctx)
-	if errors.Root(err) == cos.ErrNoBlocks {
-		return 0, nil
-	} else if err != nil {
-		return 0, errors.Wrap(err, "getting latest block")
-	}
-	return b.Height, nil
-}
-
 // FinalizeTxWait calls FinalizeTx and then waits for confirmation of
 // the transaction.  A nil error return means the transaction is
 // confirmed on the blockchain.  ErrRejected means a conflicting tx is
 // on the blockchain.  context.DeadlineExceeded means ctx is an
 // expiring context that timed out.
 func FinalizeTxWait(ctx context.Context, fc *cos.FC, txTemplate *Template) (*bc.Tx, error) {
-	// Avoid a race condition.  Calling latestBlockHeight here ensures that
+	// Avoid a race condition.  Calling fc.Height() here ensures that
 	// when we start waiting for blocks below, we don't begin waiting at
 	// block N+1 when the tx we want is in block N.
-	height, err := latestBlockHeight(ctx, fc)
-	if err != nil {
-		return nil, err
-	}
+	height := fc.Height()
 
 	tx, err := FinalizeTx(ctx, fc, txTemplate)
 	if err != nil {

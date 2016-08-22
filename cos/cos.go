@@ -147,6 +147,13 @@ func NewFC(ctx context.Context, store Store, pool Pool, trustedKeys []ed25519.Pu
 	return fc, nil
 }
 
+// Height returns the current height of the blockchain.
+func (fc *FC) Height() uint64 {
+	fc.height.cond.L.Lock()
+	defer fc.height.cond.L.Unlock()
+	return fc.height.n
+}
+
 func (fc *FC) AddBlockCallback(f BlockCallback) {
 	fc.blockCallbacks = append(fc.blockCallbacks, f)
 }
