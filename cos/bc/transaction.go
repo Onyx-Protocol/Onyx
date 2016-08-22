@@ -23,8 +23,9 @@ const (
 )
 
 const (
-	refDataMaxByteLength = 500000 // 500 kb
-	witnessMaxByteLength = 500000 // 500 kb TODO(bobg): move this where it makes sense for block.go to share it
+	refDataMaxByteLength      = 500000 // 500 kb
+	witnessMaxByteLength      = 500000 // 500 kb TODO(bobg): move this where it makes sense for block.go to share it
+	commonFieldsMaxByteLength = 500000 // 500 kb
 )
 
 // Tx holds a transaction along with its hash.
@@ -126,7 +127,6 @@ func (tx *TxData) Value() (driver.Value, error) {
 	return b.Bytes(), nil
 }
 
-// assumes r has sticky errors
 func (tx *TxData) readFrom(r io.Reader) error {
 	var serflags [1]byte
 	_, err := io.ReadFull(r, serflags[:])
@@ -137,10 +137,37 @@ func (tx *TxData) readFrom(r io.Reader) error {
 		return fmt.Errorf("unsupported serflags %#x", serflags[0])
 	}
 
-	v, _ := blockchain.ReadUvarint(r)
+	v, err := blockchain.ReadUvarint(r)
+	if err != nil {
+		return err
+	}
 	tx.Version = uint32(v)
 
-	for n, _ := blockchain.ReadUvarint(r); n > 0; n-- {
+	commonFields, err := blockchain.ReadBytes(r, commonFieldsMaxByteLength)
+	if err != nil {
+		return err
+	}
+	buf := bytes.NewReader(commonFields)
+	tx.MinTime, err = blockchain.ReadUvarint(buf)
+	if err != nil {
+		return err
+	}
+	tx.MaxTime, err = blockchain.ReadUvarint(buf)
+	if err != nil {
+		return err
+	}
+
+	// Common witness, empty in v1
+	_, err = blockchain.ReadBytes(r, witnessMaxByteLength)
+	if err != nil {
+		return err
+	}
+
+	n, err := blockchain.ReadUvarint(r)
+	if err != nil {
+		return err
+	}
+	for ; n > 0; n-- {
 		ti := new(TxInput)
 		err = ti.readFrom(r)
 		if err != nil {
@@ -149,7 +176,11 @@ func (tx *TxData) readFrom(r io.Reader) error {
 		tx.Inputs = append(tx.Inputs, ti)
 	}
 
-	for n, _ := blockchain.ReadUvarint(r); n > 0; n-- {
+	n, err = blockchain.ReadUvarint(r)
+	if err != nil {
+		return err
+	}
+	for ; n > 0; n-- {
 		to := new(TxOutput)
 		err = to.readFrom(r)
 		if err != nil {
@@ -158,8 +189,6 @@ func (tx *TxData) readFrom(r io.Reader) error {
 		tx.Outputs = append(tx.Outputs, to)
 	}
 
-	tx.MinTime, _ = blockchain.ReadUvarint(r)
-	tx.MaxTime, _ = blockchain.ReadUvarint(r)
 	tx.ReferenceData, err = blockchain.ReadBytes(r, refDataMaxByteLength)
 	return err
 }
@@ -340,6 +369,15 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) {
 	w.Write([]byte{serflags})
 	blockchain.WriteUvarint(w, uint64(tx.Version))
 
+	// common fields
+	var buf bytes.Buffer
+	blockchain.WriteUvarint(&buf, tx.MinTime)
+	blockchain.WriteUvarint(&buf, tx.MaxTime)
+	blockchain.WriteBytes(w, buf.Bytes())
+
+	// common witness
+	blockchain.WriteBytes(w, []byte{})
+
 	blockchain.WriteUvarint(w, uint64(len(tx.Inputs)))
 	for _, ti := range tx.Inputs {
 		ti.writeTo(w, serflags)
@@ -350,8 +388,6 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) {
 		to.writeTo(w, serflags)
 	}
 
-	blockchain.WriteUvarint(w, tx.MinTime)
-	blockchain.WriteUvarint(w, tx.MaxTime)
 	writeRefData(w, tx.ReferenceData, serflags)
 }
 

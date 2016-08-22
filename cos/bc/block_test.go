@@ -87,7 +87,7 @@ func TestSmallBlock(t *testing.T) {
 		"01" + // witness extensible string length
 		"00" + // witness num witness args
 		"01" + // num transactions
-		"07010000000000") // transaction
+		"070102000000000000") // transaction
 	want, _ := hex.DecodeString(wantHex)
 	if !bytes.Equal(got, want) {
 		t.Errorf("small block bytes = %x want %x", got, want)

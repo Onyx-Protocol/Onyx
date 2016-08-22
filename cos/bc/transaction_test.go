@@ -38,13 +38,15 @@ func TestTransaction(t *testing.T) {
 			}),
 			hex: ("07" + // serflags
 				"01" + // transaction version
+				"02" + // common fields extensible string length
+				"00" + // common fields, mintime
+				"00" + // common fields, maxtime
+				"00" + // common witness extensible string length
 				"00" + // inputs count
 				"00" + // outputs count
-				"00" + // mintime
-				"00" + // maxtime
 				"00"), // reference data
-			hash:        mustDecodeHash("8a25dbad170e0e36fe6ef5c4479b44c7a5ec03d300a693671bb6c851a7ade2e3"),
-			witnessHash: mustDecodeHash("372a82e424cdadc1d233e6a000b5b644b84472a6eb8365d23f052cb8663e2ff7"),
+			hash:        mustDecodeHash("74e60d94a75848b48fc79eac11a1d39f41e1b32046cf948929b729a57b75d5be"),
+			witnessHash: mustDecodeHash("536cef3158d7ea51194b370e02f27265e8584ff4df1cd2829de0074c11f1f1b2"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -61,6 +63,10 @@ func TestTransaction(t *testing.T) {
 			}),
 			hex: ("07" + // serflags
 				"01" + // transaction version
+				"02" + // common fields extensible string length
+				"00" + // common fields, mintime
+				"00" + // common fields, maxtime
+				"00" + // common witness extensible string length
 				"01" + // inputs count
 				"01" + // input 0, asset version
 				"36" + // input 0, input commitment length prefix
@@ -84,11 +90,9 @@ func TestTransaction(t *testing.T) {
 				"0101" + // output 0, output commitment, control program
 				"066f7574707574" + // output 0, reference data
 				"00" + // output 0, output witness
-				"00" + // mintime
-				"00" + // maxtime
 				"0869737375616e6365"), // reference data
-			hash:        mustDecodeHash("10a3dcecea732da4d9b7855772a59a31e6a9e76dfaf13654c1ee51ec4c01fa2c"),
-			witnessHash: mustDecodeHash("44f86fe5c1110301d294b31ce521969bcd1d84bb9e397539b9aa21cd56c7a57d"),
+			hash:        mustDecodeHash("efa7ded16f69f183f84dd0dcb9108d6b41c66ce91d2d05853e32a5a42306aee5"),
+			witnessHash: mustDecodeHash("a0560a79ebc2fa623a61afe8914242f89daf60884ab0dcede37f4251e0f5de0f"),
 		},
 		{
 			tx: NewTx(TxData{
@@ -106,6 +110,10 @@ func TestTransaction(t *testing.T) {
 			}),
 			hex: ("07" + // serflags
 				"01" + // transaction version
+				"0a" + // common fields extensible string length
+				"b0bbdcc705" + // common fields, mintime
+				"ffbfdcc705" + // common fields, maxtime
+				"00" + // common witness extensible string length
 				"01" + // inputs count
 				"01" + // input 0, asset version
 				"4c" + // input 0, input commitment length prefix
@@ -137,11 +145,9 @@ func TestTransaction(t *testing.T) {
 				"0102" + // output 1, output commitment, control program
 				"00" + // output 1, reference data
 				"00" + // output 1, output witness
-				"b0bbdcc705" + // mintime
-				"ffbfdcc705" + // maxtime
 				"0c646973747269627574696f6e"), // reference data
-			hash:        mustDecodeHash("fcbd7e149d5db32bc7635cd313e9de37fcd24e01492f057ece36a799555c5dee"),
-			witnessHash: mustDecodeHash("615689585f1f882d76e1d50f2fd719bb433c25992d4833f4de696824b792a8f2"),
+			hash:        mustDecodeHash("b752c2c6e423fb228d5d4f3b4bc2cf008317608f03c156d9b8c950b058659a38"),
+			witnessHash: mustDecodeHash("3bcdf9c8c8285da9252604708340b4cc9c2f4ae4268481ff1910d972cfd7438e"),
 		},
 	}
 

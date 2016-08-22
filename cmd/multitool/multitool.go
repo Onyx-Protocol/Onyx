@@ -83,6 +83,7 @@ var subcommands = map[string]command{
 	"sha512alt":   command{sha512alt, "produce sha512alt hash", "INPUT"},
 	"sign":        command{sign, "sign, using hex PRV or XPRV, the given hex MSG", "PRV/XPRV MSG"},
 	"tx":          command{tx, "decode and pretty-print a transaction", "TX"},
+	"txhash":      command{txhash, "decode a hex transaction and show its txhash", "TX"},
 	"uvarint":     command{uvarint, "decimal <-> hex", "[-from|-to] VAL"},
 	"varint":      command{varint, "decimal <-> hex", "[-from|-to] VAL"},
 	"verify":      command{verify, "verify, using hex PUB or XPUB and the given hex MSG and SIG", "PUB/XPUB MSG SIG"},
@@ -349,11 +350,22 @@ func sign(args []string) {
 func tx(args []string) {
 	inp, _ := input(args, 0, false)
 	var tx bc.TxData
-	err := tx.UnmarshalText([]byte(inp))
+	err := tx.UnmarshalText([]byte(strings.TrimSpace(inp)))
 	if err != nil {
 		errorf("error unmarshaling tx: %s", err)
 	}
 	spew.Printf("%v\n", tx)
+}
+
+func txhash(args []string) {
+	inp, _ := input(args, 0, false)
+	var tx bc.TxData
+	err := tx.UnmarshalText([]byte(strings.TrimSpace(inp)))
+	if err != nil {
+		errorf("error unmarshaling tx: %s", err)
+	}
+	h := tx.Hash()
+	fmt.Printf("%x\n", h[:])
 }
 
 func varint(args []string) {
