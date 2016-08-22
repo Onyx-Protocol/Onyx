@@ -73,6 +73,10 @@ func (g *Generator) commitBlock(ctx context.Context, b *bc.Block) (*bc.Block, er
 }
 
 func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error {
+	if prevBlock == nil && b.Height == 1 {
+		return nil // no signatures needed for initial block
+	}
+
 	pubkeys, nrequired, err := txscript.ParseBlockMultiSigScript(prevBlock.ConsensusProgram)
 	if err != nil {
 		return errors.Wrap(err, "parsing prevblock output script")

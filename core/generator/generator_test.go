@@ -73,3 +73,21 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 }
+
+func TestGetAndAddBlockSignaturesInitialBlock(t *testing.T) {
+	ctx := context.Background()
+
+	g := new(Generator)
+	block, err := cos.NewGenesisBlock(nil, 0, time.Now())
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	err = g.GetAndAddBlockSignatures(ctx, block, nil)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+
+	if len(block.Witness) != 0 {
+		t.Fatalf("GetAndAddBlockSignatures produced witness %v, want empty", block.Witness)
+	}
+}
