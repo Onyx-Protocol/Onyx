@@ -42,6 +42,7 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
     
 ```
 {
+  "alias": "...",
   "xpub": "xpub1.."
 }
 ```
@@ -51,6 +52,13 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
 Endpoint
 ```
 POST /mockhsm/create-key
+```
+
+Request
+```
+{
+  "alias": "..."
+}
 ```
 
 Response: [Key Object](#key-object)
@@ -83,6 +91,7 @@ Response: An array of signed transaction template objects.
 ```
   {
     "id": "...",
+    "alias": "...",
     "issuance_program: "...",
     "definition": {},
     "tags": {}
@@ -100,6 +109,7 @@ Request
 ```
 [
   {
+    "alias": "...",
     "xpubs": ["..."],
     "quorum": 1,
     "definition: {},
@@ -121,7 +131,7 @@ POST /set-asset-tags
 Request
 ```
 {
-  "asset_id": "...",
+  "asset_id": "...",      // accepts `asset_id` or `asset_alias`
   "tags": {}
 }
 ```
@@ -177,7 +187,7 @@ Request
 
 ```
 {
-  asset_id: "...",
+  asset_id: "...",        // accepts `asset_id` or `asset_alias`
 }
 ```
 
@@ -191,6 +201,7 @@ The response body is empty.
 ```    
 {
   "id": "...",
+  "alias": "...",
   "xpubs": ["xpub"],
   "quorum": 1,
   "tags": {}
@@ -208,6 +219,7 @@ Request
 ```
 [
   {
+    "alias": "...",
     "xpubs": ["xpub"],
     "quorum": 1,
     "tags": {}
@@ -228,7 +240,7 @@ POST /set-account-tags
 Request
 ```    
 {
-  "account_id": "..."
+  "account_id": "..."       // accepts `account_id` or `account_alias`
   "tags": {}
 }
 ```
@@ -287,7 +299,7 @@ Request
 
 ```
 {
-  account_id: "...",
+  account_id: "...",    // accepts  `account_id` or `account_alias`
 }
 ```
 
@@ -317,7 +329,7 @@ Request
 If the `type` is `account` then the following params are required:
 ```
 {
-  account_id: "..."
+  account_id: "..."         // accepts `account_id` or `account_alias`
 }
 ```
 
@@ -380,6 +392,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
             {
                 "action": "issue",
                 "asset_id": "125B4E...",
+                "asset_alias": "...",
                 "asset_tags": {},
                 "issuance_program": ...,
                 "reference_data": {"details:": "..."},
@@ -392,8 +405,10 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
                     "position": 1,
                 },
                 "account_id": "",
+                "account_alias": "...",
                 "account_tags": {},
                 "asset_id": "125B4E...",
+                "asset_alias": "...",
                 "asset_tags": {},
                 "amount": 5000,
                 "reference_data": {"user": "alice"}
@@ -404,8 +419,10 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
                 "action": "control",
                 "position": "...",
                 "account_id": "",
+                "account_alias": "...",
                 "account_tags": {},
                 "asset_id": "125B4E...",
+                "asset_alias": "...",
                 "asset_tags": {},
                 "amount": 5000,
                 "control_program": "205CDF...",
@@ -425,9 +442,11 @@ To keep the interface narrow, the SDK can generate such a control program.
   "transaction_id": "...",
   "position": "...",
   "asset_id": "...",
+  "asset_alias": "...",
   "asset_tags": {},
   "amount": 5000,
   "account_id": "...",
+  "account_alias": "...",
   "account_tags": {},
   "control_program": "...",
   "reference_data": {}
@@ -451,7 +470,7 @@ Request
                 {
                 	"type":"spend_account_unspent_output_selector",
                 	"params":{
-                		"asset_id":"...",
+                		"asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
                 		"amount":123,
                 		"account_id":"..."
                 	}
@@ -467,7 +486,7 @@ Request
                 {
                 	"type":"issue",
                 	"params":{
-                		"asset_id":"...",
+                		"asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
                 		"amount":500
                 	},
                 	"reference_data":"..."
@@ -475,16 +494,16 @@ Request
                 {
                 	"type":"control_account",
                 	"params":{
-                		"asset_id":"...",
+                		"asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
                 		"amount":500,
-                		"account_id":"..."
+                		"account_id":"..."                                // accepts `account_id` or `account_alias`
                 	},
                 	"reference_data":"..."
                 },
                 {
                 	"type":"control_program",
                 	"params":{
-                		"asset_id":"...",
+                		"asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
                 		"amount":500,
                 		"control_program":"..."
                 	},
@@ -524,7 +543,7 @@ POST /list-transactions
 
 Request
 
-Accepts either an `index_id` or a `query`.
+Accepts either an `index_id`, `index_alias`, or a `query`.
 ```
 {
   "index_id": "...",
@@ -543,7 +562,7 @@ POST /list-balances
 
 Request
 
-Accepts either an `index_id` or a `query`.
+Accepts either an `index_id`, `index_alias`, or a `query`.
 
 ``` 
 {
@@ -586,7 +605,7 @@ POST /list-unspent-outputs
 
 Request
 
-Accepts either an `index_id` or a `query`.
+Accepts either an `index_id`, `index_alias`, or a `query`.
 ```
 {
   "index_id": "...",
@@ -601,7 +620,8 @@ Response: an array of [output objects](#output-object).
 ### Index Object
 ```    
 {
-  "id": "...",            
+  "id": "...",
+  "alias": "...",
   "type": "...",              // `transaction`, `balance`, or `asset`
   "unspents": "true",         // only for `type: "balance"` - indexes unspent outputs in addition to balances
   "query": "..."
@@ -618,7 +638,7 @@ POST /create-index
 Request
 ```
 {
-  "id": "...",            // user-supplied, human-readable unique id
+  "alias": "...",
   "type": "...",          // `transaction`, `balance`, or `asset`
   "unspents": "true",     // only for `type: "balance"` - indexes unspent outputs in addition to balances
   "query": "..."
