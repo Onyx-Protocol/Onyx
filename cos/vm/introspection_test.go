@@ -26,7 +26,7 @@ func TestIntrospectionOps(t *testing.T) {
 	})
 
 	type testStruct struct {
-		op      uint8
+		op      Op
 		startVM *virtualMachine
 		wantErr error
 		wantVM  *virtualMachine
@@ -258,7 +258,7 @@ func TestIntrospectionOps(t *testing.T) {
 		},
 	}}
 
-	txops := []uint8{
+	txops := []Op{
 		OP_FINDOUTPUT, OP_ASSET, OP_AMOUNT, OP_PROGRAM,
 		OP_MINTIME, OP_MAXTIME, OP_REFDATAHASH, OP_INDEX,
 	}

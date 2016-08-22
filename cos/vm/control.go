@@ -131,7 +131,7 @@ func opCheckPredicate(vm *virtualMachine) error {
 		dataStack:  append([][]byte{}, vm.dataStack...),
 		tx:         vm.tx,
 		inputIndex: vm.inputIndex,
-		traceOut:   vm.traceOut,
+		sigHasher:  vm.sigHasher,
 	}
 	preStackCost := stackCost(childVM.dataStack)
 	ok, childErr := childVM.run()

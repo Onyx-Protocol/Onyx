@@ -5,376 +5,370 @@ import (
 	"fmt"
 )
 
-type op struct {
-	opcode uint8
-	name   string
-	fn     func(*virtualMachine) error
+type Op uint8
+
+func (op Op) String() string {
+	return ops[op].name
+}
+
+type Instruction struct {
+	Op   Op
+	Len  uint32
+	Data []byte
 }
 
 const (
-	OP_FALSE = uint8(0x00)
-	OP_0     = uint8(0x00) // synonym
+	OP_FALSE Op = 0x00
+	OP_0     Op = 0x00 // synonym
 
-	OP_1    = uint8(0x51)
-	OP_TRUE = uint8(0x51) // synonym
+	OP_1    Op = 0x51
+	OP_TRUE Op = 0x51 // synonym
 
-	OP_2  = uint8(0x52)
-	OP_3  = uint8(0x53)
-	OP_4  = uint8(0x54)
-	OP_5  = uint8(0x55)
-	OP_6  = uint8(0x56)
-	OP_7  = uint8(0x57)
-	OP_8  = uint8(0x58)
-	OP_9  = uint8(0x59)
-	OP_10 = uint8(0x5a)
-	OP_11 = uint8(0x5b)
-	OP_12 = uint8(0x5c)
-	OP_13 = uint8(0x5d)
-	OP_14 = uint8(0x5e)
-	OP_15 = uint8(0x5f)
-	OP_16 = uint8(0x60)
+	OP_2  Op = 0x52
+	OP_3  Op = 0x53
+	OP_4  Op = 0x54
+	OP_5  Op = 0x55
+	OP_6  Op = 0x56
+	OP_7  Op = 0x57
+	OP_8  Op = 0x58
+	OP_9  Op = 0x59
+	OP_10 Op = 0x5a
+	OP_11 Op = 0x5b
+	OP_12 Op = 0x5c
+	OP_13 Op = 0x5d
+	OP_14 Op = 0x5e
+	OP_15 Op = 0x5f
+	OP_16 Op = 0x60
 
-	OP_DATA_1  = uint8(0x01)
-	OP_DATA_2  = uint8(0x02)
-	OP_DATA_3  = uint8(0x03)
-	OP_DATA_4  = uint8(0x04)
-	OP_DATA_5  = uint8(0x05)
-	OP_DATA_6  = uint8(0x06)
-	OP_DATA_7  = uint8(0x07)
-	OP_DATA_8  = uint8(0x08)
-	OP_DATA_9  = uint8(0x09)
-	OP_DATA_10 = uint8(0x0a)
-	OP_DATA_11 = uint8(0x0b)
-	OP_DATA_12 = uint8(0x0c)
-	OP_DATA_13 = uint8(0x0d)
-	OP_DATA_14 = uint8(0x0e)
-	OP_DATA_15 = uint8(0x0f)
-	OP_DATA_16 = uint8(0x10)
-	OP_DATA_17 = uint8(0x11)
-	OP_DATA_18 = uint8(0x12)
-	OP_DATA_19 = uint8(0x13)
-	OP_DATA_20 = uint8(0x14)
-	OP_DATA_21 = uint8(0x15)
-	OP_DATA_22 = uint8(0x16)
-	OP_DATA_23 = uint8(0x17)
-	OP_DATA_24 = uint8(0x18)
-	OP_DATA_25 = uint8(0x19)
-	OP_DATA_26 = uint8(0x1a)
-	OP_DATA_27 = uint8(0x1b)
-	OP_DATA_28 = uint8(0x1c)
-	OP_DATA_29 = uint8(0x1d)
-	OP_DATA_30 = uint8(0x1e)
-	OP_DATA_31 = uint8(0x1f)
-	OP_DATA_32 = uint8(0x20)
-	OP_DATA_33 = uint8(0x21)
-	OP_DATA_34 = uint8(0x22)
-	OP_DATA_35 = uint8(0x23)
-	OP_DATA_36 = uint8(0x24)
-	OP_DATA_37 = uint8(0x25)
-	OP_DATA_38 = uint8(0x26)
-	OP_DATA_39 = uint8(0x27)
-	OP_DATA_40 = uint8(0x28)
-	OP_DATA_41 = uint8(0x29)
-	OP_DATA_42 = uint8(0x2a)
-	OP_DATA_43 = uint8(0x2b)
-	OP_DATA_44 = uint8(0x2c)
-	OP_DATA_45 = uint8(0x2d)
-	OP_DATA_46 = uint8(0x2e)
-	OP_DATA_47 = uint8(0x2f)
-	OP_DATA_48 = uint8(0x30)
-	OP_DATA_49 = uint8(0x31)
-	OP_DATA_50 = uint8(0x32)
-	OP_DATA_51 = uint8(0x33)
-	OP_DATA_52 = uint8(0x34)
-	OP_DATA_53 = uint8(0x35)
-	OP_DATA_54 = uint8(0x36)
-	OP_DATA_55 = uint8(0x37)
-	OP_DATA_56 = uint8(0x38)
-	OP_DATA_57 = uint8(0x39)
-	OP_DATA_58 = uint8(0x3a)
-	OP_DATA_59 = uint8(0x3b)
-	OP_DATA_60 = uint8(0x3c)
-	OP_DATA_61 = uint8(0x3d)
-	OP_DATA_62 = uint8(0x3e)
-	OP_DATA_63 = uint8(0x3f)
-	OP_DATA_64 = uint8(0x40)
-	OP_DATA_65 = uint8(0x41)
-	OP_DATA_66 = uint8(0x42)
-	OP_DATA_67 = uint8(0x43)
-	OP_DATA_68 = uint8(0x44)
-	OP_DATA_69 = uint8(0x45)
-	OP_DATA_70 = uint8(0x46)
-	OP_DATA_71 = uint8(0x47)
-	OP_DATA_72 = uint8(0x48)
-	OP_DATA_73 = uint8(0x49)
-	OP_DATA_74 = uint8(0x4a)
-	OP_DATA_75 = uint8(0x4b)
+	OP_DATA_1  Op = 0x01
+	OP_DATA_2  Op = 0x02
+	OP_DATA_3  Op = 0x03
+	OP_DATA_4  Op = 0x04
+	OP_DATA_5  Op = 0x05
+	OP_DATA_6  Op = 0x06
+	OP_DATA_7  Op = 0x07
+	OP_DATA_8  Op = 0x08
+	OP_DATA_9  Op = 0x09
+	OP_DATA_10 Op = 0x0a
+	OP_DATA_11 Op = 0x0b
+	OP_DATA_12 Op = 0x0c
+	OP_DATA_13 Op = 0x0d
+	OP_DATA_14 Op = 0x0e
+	OP_DATA_15 Op = 0x0f
+	OP_DATA_16 Op = 0x10
+	OP_DATA_17 Op = 0x11
+	OP_DATA_18 Op = 0x12
+	OP_DATA_19 Op = 0x13
+	OP_DATA_20 Op = 0x14
+	OP_DATA_21 Op = 0x15
+	OP_DATA_22 Op = 0x16
+	OP_DATA_23 Op = 0x17
+	OP_DATA_24 Op = 0x18
+	OP_DATA_25 Op = 0x19
+	OP_DATA_26 Op = 0x1a
+	OP_DATA_27 Op = 0x1b
+	OP_DATA_28 Op = 0x1c
+	OP_DATA_29 Op = 0x1d
+	OP_DATA_30 Op = 0x1e
+	OP_DATA_31 Op = 0x1f
+	OP_DATA_32 Op = 0x20
+	OP_DATA_33 Op = 0x21
+	OP_DATA_34 Op = 0x22
+	OP_DATA_35 Op = 0x23
+	OP_DATA_36 Op = 0x24
+	OP_DATA_37 Op = 0x25
+	OP_DATA_38 Op = 0x26
+	OP_DATA_39 Op = 0x27
+	OP_DATA_40 Op = 0x28
+	OP_DATA_41 Op = 0x29
+	OP_DATA_42 Op = 0x2a
+	OP_DATA_43 Op = 0x2b
+	OP_DATA_44 Op = 0x2c
+	OP_DATA_45 Op = 0x2d
+	OP_DATA_46 Op = 0x2e
+	OP_DATA_47 Op = 0x2f
+	OP_DATA_48 Op = 0x30
+	OP_DATA_49 Op = 0x31
+	OP_DATA_50 Op = 0x32
+	OP_DATA_51 Op = 0x33
+	OP_DATA_52 Op = 0x34
+	OP_DATA_53 Op = 0x35
+	OP_DATA_54 Op = 0x36
+	OP_DATA_55 Op = 0x37
+	OP_DATA_56 Op = 0x38
+	OP_DATA_57 Op = 0x39
+	OP_DATA_58 Op = 0x3a
+	OP_DATA_59 Op = 0x3b
+	OP_DATA_60 Op = 0x3c
+	OP_DATA_61 Op = 0x3d
+	OP_DATA_62 Op = 0x3e
+	OP_DATA_63 Op = 0x3f
+	OP_DATA_64 Op = 0x40
+	OP_DATA_65 Op = 0x41
+	OP_DATA_66 Op = 0x42
+	OP_DATA_67 Op = 0x43
+	OP_DATA_68 Op = 0x44
+	OP_DATA_69 Op = 0x45
+	OP_DATA_70 Op = 0x46
+	OP_DATA_71 Op = 0x47
+	OP_DATA_72 Op = 0x48
+	OP_DATA_73 Op = 0x49
+	OP_DATA_74 Op = 0x4a
+	OP_DATA_75 Op = 0x4b
 
-	OP_PUSHDATA1 = uint8(0x4c)
-	OP_PUSHDATA2 = uint8(0x4d)
-	OP_PUSHDATA4 = uint8(0x4e)
-	OP_1NEGATE   = uint8(0x4f)
-	OP_NOP       = uint8(0x61)
+	OP_PUSHDATA1 Op = 0x4c
+	OP_PUSHDATA2 Op = 0x4d
+	OP_PUSHDATA4 Op = 0x4e
+	OP_1NEGATE   Op = 0x4f
+	OP_NOP       Op = 0x61
 
-	OP_IF             = uint8(0x63)
-	OP_NOTIF          = uint8(0x64)
-	OP_ELSE           = uint8(0x67)
-	OP_ENDIF          = uint8(0x68)
-	OP_VERIFY         = uint8(0x69)
-	OP_FAIL           = uint8(0x6a)
-	OP_CHECKPREDICATE = uint8(0xc0)
-	OP_WHILE          = uint8(0xd0)
-	OP_ENDWHILE       = uint8(0xd1)
+	OP_IF             Op = 0x63
+	OP_NOTIF          Op = 0x64
+	OP_ELSE           Op = 0x67
+	OP_ENDIF          Op = 0x68
+	OP_VERIFY         Op = 0x69
+	OP_FAIL           Op = 0x6a
+	OP_CHECKPREDICATE Op = 0xc0
+	OP_WHILE          Op = 0xd0
+	OP_ENDWHILE       Op = 0xd1
 
-	OP_TOALTSTACK   = uint8(0x6b)
-	OP_FROMALTSTACK = uint8(0x6c)
-	OP_2DROP        = uint8(0x6d)
-	OP_2DUP         = uint8(0x6e)
-	OP_3DUP         = uint8(0x6f)
-	OP_2OVER        = uint8(0x70)
-	OP_2ROT         = uint8(0x71)
-	OP_2SWAP        = uint8(0x72)
-	OP_IFDUP        = uint8(0x73)
-	OP_DEPTH        = uint8(0x74)
-	OP_DROP         = uint8(0x75)
-	OP_DUP          = uint8(0x76)
-	OP_NIP          = uint8(0x77)
-	OP_OVER         = uint8(0x78)
-	OP_PICK         = uint8(0x79)
-	OP_ROLL         = uint8(0x7a)
-	OP_ROT          = uint8(0x7b)
-	OP_SWAP         = uint8(0x7c)
-	OP_TUCK         = uint8(0x7d)
+	OP_TOALTSTACK   Op = 0x6b
+	OP_FROMALTSTACK Op = 0x6c
+	OP_2DROP        Op = 0x6d
+	OP_2DUP         Op = 0x6e
+	OP_3DUP         Op = 0x6f
+	OP_2OVER        Op = 0x70
+	OP_2ROT         Op = 0x71
+	OP_2SWAP        Op = 0x72
+	OP_IFDUP        Op = 0x73
+	OP_DEPTH        Op = 0x74
+	OP_DROP         Op = 0x75
+	OP_DUP          Op = 0x76
+	OP_NIP          Op = 0x77
+	OP_OVER         Op = 0x78
+	OP_PICK         Op = 0x79
+	OP_ROLL         Op = 0x7a
+	OP_ROT          Op = 0x7b
+	OP_SWAP         Op = 0x7c
+	OP_TUCK         Op = 0x7d
 
-	OP_CAT         = uint8(0x7e)
-	OP_SUBSTR      = uint8(0x7f)
-	OP_LEFT        = uint8(0x80)
-	OP_RIGHT       = uint8(0x81)
-	OP_SIZE        = uint8(0x82)
-	OP_CATPUSHDATA = uint8(0xc7)
+	OP_CAT         Op = 0x7e
+	OP_SUBSTR      Op = 0x7f
+	OP_LEFT        Op = 0x80
+	OP_RIGHT       Op = 0x81
+	OP_SIZE        Op = 0x82
+	OP_CATPUSHDATA Op = 0xc7
 
-	OP_INVERT      = uint8(0x83)
-	OP_AND         = uint8(0x84)
-	OP_OR          = uint8(0x85)
-	OP_XOR         = uint8(0x86)
-	OP_EQUAL       = uint8(0x87)
-	OP_EQUALVERIFY = uint8(0x88)
+	OP_INVERT      Op = 0x83
+	OP_AND         Op = 0x84
+	OP_OR          Op = 0x85
+	OP_XOR         Op = 0x86
+	OP_EQUAL       Op = 0x87
+	OP_EQUALVERIFY Op = 0x88
 
-	OP_1ADD               = uint8(0x8b)
-	OP_1SUB               = uint8(0x8c)
-	OP_2MUL               = uint8(0x8d)
-	OP_2DIV               = uint8(0x8e)
-	OP_NEGATE             = uint8(0x8f)
-	OP_ABS                = uint8(0x90)
-	OP_NOT                = uint8(0x91)
-	OP_0NOTEQUAL          = uint8(0x92)
-	OP_ADD                = uint8(0x93)
-	OP_SUB                = uint8(0x94)
-	OP_MUL                = uint8(0x95)
-	OP_DIV                = uint8(0x96)
-	OP_MOD                = uint8(0x97)
-	OP_LSHIFT             = uint8(0x98)
-	OP_RSHIFT             = uint8(0x99)
-	OP_BOOLAND            = uint8(0x9a)
-	OP_BOOLOR             = uint8(0x9b)
-	OP_NUMEQUAL           = uint8(0x9c)
-	OP_NUMEQUALVERIFY     = uint8(0x9d)
-	OP_NUMNOTEQUAL        = uint8(0x9e)
-	OP_LESSTHAN           = uint8(0x9f)
-	OP_GREATERTHAN        = uint8(0xa0)
-	OP_LESSTHANOREQUAL    = uint8(0xa1)
-	OP_GREATERTHANOREQUAL = uint8(0xa2)
-	OP_MIN                = uint8(0xa3)
-	OP_MAX                = uint8(0xa4)
-	OP_WITHIN             = uint8(0xa5)
+	OP_1ADD               Op = 0x8b
+	OP_1SUB               Op = 0x8c
+	OP_2MUL               Op = 0x8d
+	OP_2DIV               Op = 0x8e
+	OP_NEGATE             Op = 0x8f
+	OP_ABS                Op = 0x90
+	OP_NOT                Op = 0x91
+	OP_0NOTEQUAL          Op = 0x92
+	OP_ADD                Op = 0x93
+	OP_SUB                Op = 0x94
+	OP_MUL                Op = 0x95
+	OP_DIV                Op = 0x96
+	OP_MOD                Op = 0x97
+	OP_LSHIFT             Op = 0x98
+	OP_RSHIFT             Op = 0x99
+	OP_BOOLAND            Op = 0x9a
+	OP_BOOLOR             Op = 0x9b
+	OP_NUMEQUAL           Op = 0x9c
+	OP_NUMEQUALVERIFY     Op = 0x9d
+	OP_NUMNOTEQUAL        Op = 0x9e
+	OP_LESSTHAN           Op = 0x9f
+	OP_GREATERTHAN        Op = 0xa0
+	OP_LESSTHANOREQUAL    Op = 0xa1
+	OP_GREATERTHANOREQUAL Op = 0xa2
+	OP_MIN                Op = 0xa3
+	OP_MAX                Op = 0xa4
+	OP_WITHIN             Op = 0xa5
 
-	OP_RIPEMD160     = uint8(0xa6)
-	OP_SHA1          = uint8(0xa7)
-	OP_SHA256        = uint8(0xa8)
-	OP_SHA3          = uint8(0xaa)
-	OP_CHECKSIG      = uint8(0xac)
-	OP_CHECKMULTISIG = uint8(0xad)
-	OP_TXSIGHASH     = uint8(0xae)
-	OP_BLOCKSIGHASH  = uint8(0xaf)
+	OP_RIPEMD160     Op = 0xa6
+	OP_SHA1          Op = 0xa7
+	OP_SHA256        Op = 0xa8
+	OP_SHA3          Op = 0xaa
+	OP_CHECKSIG      Op = 0xac
+	OP_CHECKMULTISIG Op = 0xad
+	OP_TXSIGHASH     Op = 0xae
+	OP_BLOCKSIGHASH  Op = 0xaf
 
-	OP_FINDOUTPUT  = uint8(0xc1)
-	OP_ASSET       = uint8(0xc2)
-	OP_AMOUNT      = uint8(0xc3)
-	OP_PROGRAM     = uint8(0xc4)
-	OP_MINTIME     = uint8(0xc5)
-	OP_MAXTIME     = uint8(0xc6)
-	OP_REFDATAHASH = uint8(0xc8)
-	OP_INDEX       = uint8(0xc9)
+	OP_FINDOUTPUT  Op = 0xc1
+	OP_ASSET       Op = 0xc2
+	OP_AMOUNT      Op = 0xc3
+	OP_PROGRAM     Op = 0xc4
+	OP_MINTIME     Op = 0xc5
+	OP_MAXTIME     Op = 0xc6
+	OP_REFDATAHASH Op = 0xc8
+	OP_INDEX       Op = 0xc9
 
-	OP_CODESEPARATOR = uint8(0xab)
-	OP_NOP1          = uint8(0xb0)
-	OP_NOP2          = uint8(0xb1)
-	OP_NOP3          = uint8(0xb2)
-	OP_NOP4          = uint8(0xb3)
-	OP_NOP5          = uint8(0xb4)
-	OP_NOP6          = uint8(0xb5)
-	OP_NOP7          = uint8(0xb6)
-	OP_NOP8          = uint8(0xb7)
-	OP_NOP9          = uint8(0xb8)
-	OP_NOP10         = uint8(0xb9)
+	OP_CODESEPARATOR Op = 0xab
+	OP_NOP1          Op = 0xb0
+	OP_NOP2          Op = 0xb1
+	OP_NOP3          Op = 0xb2
+	OP_NOP4          Op = 0xb3
+	OP_NOP5          Op = 0xb4
+	OP_NOP6          Op = 0xb5
+	OP_NOP7          Op = 0xb6
+	OP_NOP8          Op = 0xb7
+	OP_NOP9          Op = 0xb8
+	OP_NOP10         Op = 0xb9
 )
 
-// In no particular order
-var opList = []op{
-	// data pushing
-	{0x00, "FALSE", opFalse},
-
-	// sic: the PUSHDATA ops all share an implementation
-	{0x4c, "PUSHDATA1", opPushdata},
-	{0x4d, "PUSHDATA2", opPushdata},
-	{0x4e, "PUSHDATA4", opPushdata},
-
-	{0x4f, "1NEGATE", op1Negate},
-
-	// TODO(bobg): 0x50 fails
-
-	{0x61, "NOP", opNop},
-
-	// TODO(bobg): 0x62 fails
-
-	// control flow
-	{0x63, "IF", opIf},
-	{0x64, "NOTIF", opNotIf},
-
-	// 0x65 forbidden
-	// 0x66 forbidden
-
-	{0x67, "ELSE", opElse},
-	{0x68, "ENDIF", opEndif},
-	{0x69, "VERIFY", opVerify},
-	{0x6a, "FAIL", opFail},
-	{0xc0, "CHECKPREDICATE", opCheckPredicate},
-	{0xd0, "WHILE", opWhile},
-	{0xd1, "ENDWHILE", opEndwhile},
-
-	{0x6b, "TOALTSTACK", opToAltStack},
-	{0x6c, "FROMALTSTACK", opFromAltStack},
-	{0x6d, "2DROP", op2Drop},
-	{0x6e, "2DUP", op2Dup},
-	{0x6f, "3DUP", op3Dup},
-	{0x70, "2OVER", op2Over},
-	{0x71, "2ROT", op2Rot},
-	{0x72, "2SWAP", op2Swap},
-	{0x73, "IFDUP", opIfDup},
-	{0x74, "DEPTH", opDepth},
-	{0x75, "DROP", opDrop},
-	{0x76, "DUP", opDup},
-	{0x77, "NIP", opNip},
-	{0x78, "OVER", opOver},
-	{0x79, "PICK", opPick},
-	{0x7a, "ROLL", opRoll},
-	{0x7b, "ROT", opRot},
-	{0x7c, "SWAP", opSwap},
-	{0x7d, "TUCK", opTuck},
-
-	{0x7e, "CAT", opCat},
-	{0x7f, "SUBSTR", opSubstr},
-	{0x80, "LEFT", opLeft},
-	{0x81, "RIGHT", opRight},
-	{0x82, "SIZE", opSize},
-	{0xc7, "CATPUSHDATA", opCatpushdata},
-
-	{0x83, "INVERT", opInvert},
-	{0x84, "AND", opAnd},
-	{0x85, "OR", opOr},
-	{0x86, "XOR", opXor},
-	{0x87, "EQUAL", opEqual},
-	{0x88, "EQUALVERIFY", opEqualVerify},
-
-	// TODO(bobg): 0x89 fails
-	// TODO(bobg): 0x8a fails
-
-	{0x8b, "1ADD", op1Add},
-	{0x8c, "1SUB", op1Sub},
-	{0x8d, "2MUL", op2Mul},
-	{0x8e, "2DIV", op2Div},
-	{0x8f, "NEGATE", opNegate},
-	{0x90, "ABS", opAbs},
-	{0x91, "NOT", opNot},
-	{0x92, "0NOTEQUAL", op0NotEqual},
-	{0x93, "ADD", opAdd},
-	{0x94, "SUB", opSub},
-	{0x95, "MUL", opMul},
-	{0x96, "DIV", opDiv},
-	{0x97, "MOD", opMod},
-	{0x98, "LSHIFT", opLshift},
-	{0x99, "RSHIFT", opRshift},
-	{0x9a, "BOOLAND", opBoolAnd},
-	{0x9b, "BOOLOR", opBoolOr},
-	{0x9c, "NUMEQUAL", opNumEqual},
-	{0x9d, "NUMEQUALVERIFY", opNumEqualVerify},
-	{0x9e, "NUMNOTEQUAL", opNumNotEqual},
-	{0x9f, "LESSTHAN", opLessThan},
-	{0xa0, "GREATERTHAN", opGreaterThan},
-	{0xa1, "LESSTHANOREQUAL", opLessThanOrEqual},
-	{0xa2, "GREATERTHANOREQUAL", opGreaterThanOrEqual},
-	{0xa3, "MIN", opMin},
-	{0xa4, "MAX", opMax},
-	{0xa5, "WITHIN", opWithin},
-
-	{0xa6, "RIPEMD160", opRipemd160},
-	{0xa7, "SHA1", opSha1},
-	{0xa8, "SHA256", opSha256},
-	{0xaa, "SHA3", opSha3},
-	{0xac, "CHECKSIG", opCheckSig},
-	{0xad, "CHECKMULTISIG", opCheckMultiSig},
-	{0xae, "TXSIGHASH", opTxSigHash},
-	{0xaf, "BLOCKSIGHASH", opBlockSigHash},
-
-	{0xc1, "FINDOUTPUT", opFindOutput},
-	{0xc2, "ASSET", opAsset},
-	{0xc3, "AMOUNT", opAmount},
-	{0xc4, "PROGRAM", opProgram},
-	{0xc5, "MINTIME", opMinTime},
-	{0xc6, "MAXTIME", opMaxTime},
-	{0xc8, "REFDATAHASH", opRefDataHash},
-	{0xc9, "INDEX", opIndex},
-
-	{0xab, "CODESEPARATOR", opNop},
+type opInfo struct {
+	op   Op
+	name string
+	fn   func(*virtualMachine) error
 }
 
 var (
-	// Indexed by opcode
-	ops [256]*op
+	ops = [256]opInfo{
+		// data pushing
+		OP_FALSE: {OP_FALSE, "FALSE", opFalse},
 
-	// Indexed by name
-	opsByName map[string]*op
+		// sic: the PUSHDATA ops all share an implementation
+		OP_PUSHDATA1: {OP_PUSHDATA1, "PUSHDATA1", opPushdata},
+		OP_PUSHDATA2: {OP_PUSHDATA2, "PUSHDATA2", opPushdata},
+		OP_PUSHDATA4: {OP_PUSHDATA4, "PUSHDATA4", opPushdata},
+
+		OP_1NEGATE: {OP_1NEGATE, "1NEGATE", op1Negate},
+
+		OP_NOP: {OP_NOP, "NOP", opNop},
+
+		// control flow
+		OP_IF:    {OP_IF, "IF", opIf},
+		OP_NOTIF: {OP_NOTIF, "NOTIF", opNotIf},
+
+		OP_ELSE:     {OP_ELSE, "ELSE", opElse},
+		OP_ENDIF:    {OP_ENDIF, "ENDIF", opEndif},
+		OP_VERIFY:   {OP_VERIFY, "VERIFY", opVerify},
+		OP_FAIL:     {OP_FAIL, "FAIL", opFail},
+		OP_WHILE:    {OP_WHILE, "WHILE", opWhile},
+		OP_ENDWHILE: {OP_ENDWHILE, "ENDWHILE", opEndwhile},
+
+		OP_TOALTSTACK:   {OP_TOALTSTACK, "TOALTSTACK", opToAltStack},
+		OP_FROMALTSTACK: {OP_FROMALTSTACK, "FROMALTSTACK", opFromAltStack},
+		OP_2DROP:        {OP_2DROP, "2DROP", op2Drop},
+		OP_2DUP:         {OP_2DUP, "2DUP", op2Dup},
+		OP_3DUP:         {OP_3DUP, "3DUP", op3Dup},
+		OP_2OVER:        {OP_2OVER, "2OVER", op2Over},
+		OP_2ROT:         {OP_2ROT, "2ROT", op2Rot},
+		OP_2SWAP:        {OP_2SWAP, "2SWAP", op2Swap},
+		OP_IFDUP:        {OP_IFDUP, "IFDUP", opIfDup},
+		OP_DEPTH:        {OP_DEPTH, "DEPTH", opDepth},
+		OP_DROP:         {OP_DROP, "DROP", opDrop},
+		OP_DUP:          {OP_DUP, "DUP", opDup},
+		OP_NIP:          {OP_NIP, "NIP", opNip},
+		OP_OVER:         {OP_OVER, "OVER", opOver},
+		OP_PICK:         {OP_PICK, "PICK", opPick},
+		OP_ROLL:         {OP_ROLL, "ROLL", opRoll},
+		OP_ROT:          {OP_ROT, "ROT", opRot},
+		OP_SWAP:         {OP_SWAP, "SWAP", opSwap},
+		OP_TUCK:         {OP_TUCK, "TUCK", opTuck},
+
+		OP_CAT:         {OP_CAT, "CAT", opCat},
+		OP_SUBSTR:      {OP_SUBSTR, "SUBSTR", opSubstr},
+		OP_LEFT:        {OP_LEFT, "LEFT", opLeft},
+		OP_RIGHT:       {OP_RIGHT, "RIGHT", opRight},
+		OP_SIZE:        {OP_SIZE, "SIZE", opSize},
+		OP_CATPUSHDATA: {OP_CATPUSHDATA, "CATPUSHDATA", opCatpushdata},
+
+		OP_INVERT:      {OP_INVERT, "INVERT", opInvert},
+		OP_AND:         {OP_AND, "AND", opAnd},
+		OP_OR:          {OP_OR, "OR", opOr},
+		OP_XOR:         {OP_XOR, "XOR", opXor},
+		OP_EQUAL:       {OP_EQUAL, "EQUAL", opEqual},
+		OP_EQUALVERIFY: {OP_EQUALVERIFY, "EQUALVERIFY", opEqualVerify},
+
+		OP_1ADD:               {OP_1ADD, "1ADD", op1Add},
+		OP_1SUB:               {OP_1SUB, "1SUB", op1Sub},
+		OP_2MUL:               {OP_2MUL, "2MUL", op2Mul},
+		OP_2DIV:               {OP_2DIV, "2DIV", op2Div},
+		OP_NEGATE:             {OP_NEGATE, "NEGATE", opNegate},
+		OP_ABS:                {OP_ABS, "ABS", opAbs},
+		OP_NOT:                {OP_NOT, "NOT", opNot},
+		OP_0NOTEQUAL:          {OP_0NOTEQUAL, "0NOTEQUAL", op0NotEqual},
+		OP_ADD:                {OP_ADD, "ADD", opAdd},
+		OP_SUB:                {OP_SUB, "SUB", opSub},
+		OP_MUL:                {OP_MUL, "MUL", opMul},
+		OP_DIV:                {OP_DIV, "DIV", opDiv},
+		OP_MOD:                {OP_MOD, "MOD", opMod},
+		OP_LSHIFT:             {OP_LSHIFT, "LSHIFT", opLshift},
+		OP_RSHIFT:             {OP_RSHIFT, "RSHIFT", opRshift},
+		OP_BOOLAND:            {OP_BOOLAND, "BOOLAND", opBoolAnd},
+		OP_BOOLOR:             {OP_BOOLOR, "BOOLOR", opBoolOr},
+		OP_NUMEQUAL:           {OP_NUMEQUAL, "NUMEQUAL", opNumEqual},
+		OP_NUMEQUALVERIFY:     {OP_NUMEQUALVERIFY, "NUMEQUALVERIFY", opNumEqualVerify},
+		OP_NUMNOTEQUAL:        {OP_NUMNOTEQUAL, "NUMNOTEQUAL", opNumNotEqual},
+		OP_LESSTHAN:           {OP_LESSTHAN, "LESSTHAN", opLessThan},
+		OP_GREATERTHAN:        {OP_GREATERTHAN, "GREATERTHAN", opGreaterThan},
+		OP_LESSTHANOREQUAL:    {OP_LESSTHANOREQUAL, "LESSTHANOREQUAL", opLessThanOrEqual},
+		OP_GREATERTHANOREQUAL: {OP_GREATERTHANOREQUAL, "GREATERTHANOREQUAL", opGreaterThanOrEqual},
+		OP_MIN:                {OP_MIN, "MIN", opMin},
+		OP_MAX:                {OP_MAX, "MAX", opMax},
+		OP_WITHIN:             {OP_WITHIN, "WITHIN", opWithin},
+
+		OP_RIPEMD160:     {OP_RIPEMD160, "RIPEMD160", opRipemd160},
+		OP_SHA1:          {OP_SHA1, "SHA1", opSha1},
+		OP_SHA256:        {OP_SHA256, "SHA256", opSha256},
+		OP_SHA3:          {OP_SHA3, "SHA3", opSha3},
+		OP_CHECKSIG:      {OP_CHECKSIG, "CHECKSIG", opCheckSig},
+		OP_CHECKMULTISIG: {OP_CHECKMULTISIG, "CHECKMULTISIG", opCheckMultiSig},
+		OP_TXSIGHASH:     {OP_TXSIGHASH, "TXSIGHASH", opTxSigHash},
+		OP_BLOCKSIGHASH:  {OP_BLOCKSIGHASH, "BLOCKSIGHASH", opBlockSigHash},
+
+		OP_FINDOUTPUT:  {OP_FINDOUTPUT, "FINDOUTPUT", opFindOutput},
+		OP_ASSET:       {OP_ASSET, "ASSET", opAsset},
+		OP_AMOUNT:      {OP_AMOUNT, "AMOUNT", opAmount},
+		OP_PROGRAM:     {OP_PROGRAM, "PROGRAM", opProgram},
+		OP_MINTIME:     {OP_MINTIME, "MINTIME", opMinTime},
+		OP_MAXTIME:     {OP_MAXTIME, "MAXTIME", opMaxTime},
+		OP_REFDATAHASH: {OP_REFDATAHASH, "REFDATAHASH", opRefDataHash},
+		OP_INDEX:       {OP_INDEX, "INDEX", opIndex},
+
+		OP_CODESEPARATOR: {OP_CODESEPARATOR, "CODESEPARATOR", opNop},
+	}
+
+	opsByName map[string]opInfo
 )
 
-// parseOp parses the op at position pc in prog.  Return values are
-// the op object for the opcode at that position; the length of the
-// opcode plus any associated data (as with OP_DATA* and OP_PUSHDATA*
-// instructions); the associated data, if any; and any parsing error
-// (e.g. unknown opcode or prog is too short).
-func parseOp(prog []byte, pc uint32) (op *op, oplen uint32, data []byte, err error) {
+// ParseOp parses the op at position pc in prog, returning the parsed
+// instruction (opcode plus any associated data).
+func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 	if pc >= uint32(len(prog)) {
 		err = ErrShortProgram
 		return
 	}
-	opcode := prog[pc]
-	op = ops[opcode]
-	if op == nil {
+	opcode := Op(prog[pc])
+	info := ops[opcode]
+	if info.name == "" {
 		err = ErrUnknownOpcode
 		return
 	}
-	oplen = 1 // the opcode itself
+	inst.Op = opcode
+	inst.Len = 1
 	if opcode >= OP_1 && opcode <= OP_16 {
-		data = []byte{opcode - OP_1 + 1}
+		inst.Data = []byte{uint8(opcode-OP_1) + 1}
 		return
 	}
 	if opcode >= OP_DATA_1 && opcode <= OP_DATA_75 {
-		oplen += uint32(opcode - OP_DATA_1 + 1)
-		end := pc + oplen
+		inst.Len += uint32(opcode - OP_DATA_1 + 1)
+		end := pc + inst.Len
 		if end > uint32(len(prog)) {
 			err = ErrShortProgram
 			return
 		}
-		data = prog[pc+1 : end]
+		inst.Data = prog[pc+1 : end]
 		return
 	}
 	if opcode == OP_PUSHDATA1 {
@@ -383,13 +377,13 @@ func parseOp(prog []byte, pc uint32) (op *op, oplen uint32, data []byte, err err
 			return
 		}
 		n := prog[pc+1]
-		oplen += uint32(1 + n)
-		end := pc + oplen
+		inst.Len += uint32(1 + n)
+		end := pc + inst.Len
 		if end > uint32(len(prog)) {
 			err = ErrShortProgram
 			return
 		}
-		data = prog[pc+2 : end]
+		inst.Data = prog[pc+2 : end]
 		return
 	}
 	if opcode == OP_PUSHDATA2 {
@@ -398,13 +392,13 @@ func parseOp(prog []byte, pc uint32) (op *op, oplen uint32, data []byte, err err
 			return
 		}
 		n := binary.LittleEndian.Uint16(prog[pc+1 : pc+3])
-		oplen += uint32(2 + n)
-		end := pc + oplen
+		inst.Len += uint32(2 + n)
+		end := pc + inst.Len
 		if end > uint32(len(prog)) {
 			err = ErrShortProgram
 			return
 		}
-		data = prog[pc+3 : end]
+		inst.Data = prog[pc+3 : end]
 		return
 	}
 	if opcode == OP_PUSHDATA4 {
@@ -413,32 +407,52 @@ func parseOp(prog []byte, pc uint32) (op *op, oplen uint32, data []byte, err err
 			return
 		}
 		n := binary.LittleEndian.Uint32(prog[pc+1 : pc+5])
-		oplen += 4 + n
-		end := pc + oplen
+		inst.Len += 4 + n
+		end := pc + inst.Len
 		if end > uint32(len(prog)) {
 			err = ErrShortProgram
 			return
 		}
-		data = prog[pc+5 : end]
+		inst.Data = prog[pc+5 : end]
 		return
 	}
 	return
 }
 
+func ParseProgram(prog []byte) ([]Instruction, error) {
+	var result []Instruction
+	for pc := uint32(0); pc < uint32(len(prog)); { // update pc inside the loop
+		inst, err := ParseOp(prog, pc)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, inst)
+		pc += inst.Len
+	}
+	return result, nil
+}
+
 func init() {
 	for i := 1; i <= 75; i++ {
-		opList = append(opList, op{uint8(i), fmt.Sprintf("DATA_%d", i), opPushdata})
+		ops[i] = opInfo{Op(i), fmt.Sprintf("DATA_%d", i), opPushdata}
 	}
-	for i := uint8(1); i <= 16; i++ {
-		opList = append(opList, op{0x50 + uint8(i), fmt.Sprintf("%d", i), opPushdata})
+	for i := uint8(0); i <= 15; i++ {
+		op := uint8(OP_1) + i
+		ops[op] = opInfo{Op(op), fmt.Sprintf("%d", i+1), opPushdata}
 	}
-	for i := 0; i <= 9; i++ {
-		opList = append(opList, op{0xb0 + uint8(i), fmt.Sprintf("NOP%d", i+1), opNop})
+	for i := uint8(0); i <= 9; i++ {
+		op := uint8(OP_NOP1) + i
+		ops[op] = opInfo{Op(op), fmt.Sprintf("NOP%d", i+1), opNop}
 	}
-	opsByName = make(map[string]*op, len(opList)+2)
-	for i, op := range opList {
-		ops[op.opcode] = &opList[i]
-		opsByName[op.name] = &opList[i]
+
+	// This is here to break a dependency cycle
+	ops[OP_CHECKPREDICATE] = opInfo{OP_CHECKPREDICATE, "CHECKPREDICATE", opCheckPredicate}
+
+	opsByName = make(map[string]opInfo)
+	for _, info := range ops {
+		if info.name != "" {
+			opsByName[info.name] = info
+		}
 	}
 	opsByName["0"] = ops[OP_FALSE]
 	opsByName["TRUE"] = ops[OP_1]

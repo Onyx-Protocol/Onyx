@@ -7,13 +7,13 @@ package txscript
 import (
 	"bytes"
 	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"hash"
 	"math"
 
-	"github.com/btcsuite/fastsha256"
-	"github.com/btcsuite/golangcrypto/ripemd160"
+	"golang.org/x/crypto/ripemd160"
 	"golang.org/x/crypto/sha3"
 
 	"chain/cos/bc"
@@ -1971,7 +1971,7 @@ func opcodeSha256(op *parsedOpcode, vm *Engine) error {
 		return err
 	}
 
-	hash := fastsha256.Sum256(buf)
+	hash := sha256.Sum256(buf)
 	vm.dstack.PushByteArray(hash[:])
 	return nil
 }

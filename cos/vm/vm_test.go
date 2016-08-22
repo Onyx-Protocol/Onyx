@@ -162,11 +162,11 @@ func doOKNotOK(t *testing.T, expectOK bool) {
 		}
 		fmt.Printf("* case %d, prog [%s] [%x]\n", i, progSrc, prog)
 		trace := new(tracebuf)
+		TraceOut = trace
 		vm := &virtualMachine{
 			program:   prog,
 			runLimit:  initialRunLimit,
 			dataStack: append([][]byte{}, c.args...),
-			traceOut:  trace,
 		}
 		ok, err := vm.run()
 		if err == nil {

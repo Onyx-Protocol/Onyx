@@ -33,11 +33,11 @@ type virtualMachine struct {
 	sigHasher  *bc.SigHasher
 
 	block *bc.Block
-
-	// Set this to a non-nil value to produce trace output during
-	// execution.
-	traceOut io.Writer
 }
+
+// Set this to a non-nil value to produce trace output during
+// execution.
+var TraceOut io.Writer
 
 func VerifyTxInput(tx *bc.Tx, inputIndex uint32) (bool, error) {
 	txinput := tx.Inputs[inputIndex]
@@ -97,37 +97,37 @@ func VerifyBlock(block, prevBlock *bc.Block) (bool, error) {
 
 func (vm *virtualMachine) run() (bool, error) {
 	for vm.pc = 0; vm.pc < uint32(len(vm.program)); { // handle vm.pc updates in the loop
-		op, oplength, data, err := parseOp(vm.program, vm.pc)
+		inst, err := ParseOp(vm.program, vm.pc)
 		if err != nil {
 			return false, err
 		}
 
-		vm.nextPC = vm.pc + oplength
+		vm.nextPC = vm.pc + inst.Len
 
 		var skip bool
-		switch op.opcode {
+		switch inst.Op {
 		case OP_IF, OP_NOTIF, OP_ELSE, OP_ENDIF, OP_WHILE, OP_ENDWHILE:
 			skip = false
 		default:
 			skip = len(vm.controlStack) > 0 && !vm.controlStack[len(vm.controlStack)-1].flag
 		}
 
-		if vm.traceOut != nil {
-			opname := op.name
+		if TraceOut != nil {
+			opname := inst.Op.String()
 			if skip {
 				opname = fmt.Sprintf("[%s]", opname)
 			}
-			fmt.Fprintf(vm.traceOut, "vm %d pc %d limit %d %s", vm.depth, vm.pc, vm.runLimit, opname)
-			if len(data) > 0 {
-				fmt.Fprintf(vm.traceOut, " %x", data)
+			fmt.Fprintf(TraceOut, "vm %d pc %d limit %d %s", vm.depth, vm.pc, vm.runLimit, opname)
+			if len(inst.Data) > 0 {
+				fmt.Fprintf(TraceOut, " %x", inst.Data)
 			}
-			fmt.Fprint(vm.traceOut, "\n")
+			fmt.Fprint(TraceOut, "\n")
 		}
 
 		if !skip {
 			vm.deferredCost = 0
-			vm.data = data
-			err := op.fn(vm)
+			vm.data = inst.Data
+			err := ops[inst.Op].fn(vm)
 			if err != nil {
 				return false, err
 			}
@@ -141,9 +141,9 @@ func (vm *virtualMachine) run() (bool, error) {
 
 		vm.pc = vm.nextPC
 
-		if vm.traceOut != nil && !skip {
+		if TraceOut != nil && !skip {
 			for i := len(vm.dataStack) - 1; i >= 0; i-- {
-				fmt.Fprintf(vm.traceOut, "  stack %d: %x\n", len(vm.dataStack)-1-i, vm.dataStack[i])
+				fmt.Fprintf(TraceOut, "  stack %d: %x\n", len(vm.dataStack)-1-i, vm.dataStack[i])
 			}
 		}
 	}

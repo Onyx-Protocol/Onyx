@@ -3,6 +3,7 @@ package vm
 import (
 	"bufio"
 	"encoding/hex"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -18,14 +19,14 @@ func Compile(s string) ([]byte, error) {
 	scanner.Split(split)
 	for scanner.Scan() {
 		token := scanner.Text()
-		if op, ok := opsByName[token]; ok {
-			res = append(res, op.opcode)
+		if info, ok := opsByName[token]; ok {
+			res = append(res, byte(info.op))
 		} else if strings.HasPrefix(token, "0x") {
 			bytes, err := hex.DecodeString(strings.TrimPrefix(token, "0x"))
 			if err != nil {
 				return nil, err
 			}
-			res = append(res, pushdataBytes(bytes)...)
+			res = append(res, PushdataBytes(bytes)...)
 		} else if len(token) >= 2 && token[0] == '\'' && token[len(token)-1] == '\'' {
 			bytes := make([]byte, 0, len(token)-2)
 			var b int
@@ -36,14 +37,33 @@ func Compile(s string) ([]byte, error) {
 				bytes = append(bytes, token[i])
 				b++
 			}
-			res = append(res, pushdataBytes(bytes)...)
+			res = append(res, PushdataBytes(bytes)...)
 		} else if num, err := strconv.ParseInt(token, 10, 64); err == nil {
-			res = append(res, pushdataInt64(num)...)
+			res = append(res, PushdataInt64(num)...)
 		} else {
 			return nil, errors.Wrap(ErrToken, token)
 		}
 	}
 	return res, nil
+}
+
+func Decompile(prog []byte) (string, error) {
+	var strs []string
+	for i := uint32(0); i < uint32(len(prog)); { // update i inside the loop
+		inst, err := ParseOp(prog, i)
+		if err != nil {
+			return "", err
+		}
+		var str string
+		if len(inst.Data) > 0 {
+			str = fmt.Sprintf("0x%x", inst.Data)
+		} else {
+			str = inst.Op.String()
+		}
+		strs = append(strs, str)
+		i += inst.Len
+	}
+	return strings.Join(strs, " "), nil
 }
 
 // split is a bufio.SplitFunc for scanning the input to Compile.

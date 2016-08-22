@@ -15,7 +15,7 @@ func TestCryptoOps(t *testing.T) {
 	})
 
 	type testStruct struct {
-		op      uint8
+		op      Op
 		startVM *virtualMachine
 		wantErr error
 		wantVM  *virtualMachine
@@ -480,7 +480,7 @@ func TestCryptoOps(t *testing.T) {
 		wantErr: ErrContext,
 	}}
 
-	hashOps := []uint8{OP_RIPEMD160, OP_SHA1, OP_SHA256, OP_SHA3}
+	hashOps := []Op{OP_RIPEMD160, OP_SHA1, OP_SHA256, OP_SHA3}
 	for _, op := range hashOps {
 		cases = append(cases, testStruct{
 			op: op,

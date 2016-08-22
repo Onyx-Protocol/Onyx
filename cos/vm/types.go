@@ -40,6 +40,9 @@ func AsInt64(b []byte) (int64, error) {
 	if len(b) == 0 {
 		return 0, nil
 	}
+	if len(b) > 8 {
+		return 0, ErrBadValue
+	}
 
 	var padded [8]byte
 	copy(padded[:], b)

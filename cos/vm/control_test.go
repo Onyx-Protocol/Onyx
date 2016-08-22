@@ -7,7 +7,7 @@ import (
 
 func TestControlOps(t *testing.T) {
 	type testStruct struct {
-		op      uint8
+		op      Op
 		startVM *virtualMachine
 		wantErr error
 		wantVM  *virtualMachine
@@ -213,7 +213,7 @@ func TestControlOps(t *testing.T) {
 		op: OP_CHECKPREDICATE,
 		startVM: &virtualMachine{
 			runLimit:  50000,
-			dataStack: [][]byte{{OP_TRUE}, {}},
+			dataStack: [][]byte{{byte(OP_TRUE)}, {}},
 		},
 		wantVM: &virtualMachine{
 			runLimit:     0,
@@ -235,7 +235,7 @@ func TestControlOps(t *testing.T) {
 		op: OP_CHECKPREDICATE,
 		startVM: &virtualMachine{
 			runLimit:  50000,
-			dataStack: [][]byte{{OP_FAIL}, {}},
+			dataStack: [][]byte{{byte(OP_FAIL)}, {}},
 		},
 		wantVM: &virtualMachine{
 			runLimit:     0,
@@ -365,7 +365,7 @@ func TestControlOps(t *testing.T) {
 		wantErr: ErrBadControlSyntax,
 	}}
 
-	limitChecks := []uint8{
+	limitChecks := []Op{
 		OP_IF, OP_NOTIF, OP_ELSE, OP_ENDIF, OP_WHILE, OP_ENDWHILE,
 		OP_CHECKPREDICATE, OP_VERIFY, OP_FAIL,
 	}
@@ -382,7 +382,7 @@ func TestControlOps(t *testing.T) {
 		err := ops[c.op].fn(c.startVM)
 
 		if err != c.wantErr {
-			t.Errorf("case %d, op %s: got err = %v want %v", i, ops[c.op].name, err, c.wantErr)
+			t.Errorf("case %d, op %s: got err = %v want %v", i, c.op.String(), err, c.wantErr)
 			continue
 		}
 		if c.wantErr != nil {
@@ -390,7 +390,7 @@ func TestControlOps(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(c.startVM, c.wantVM) {
-			t.Errorf("case %d, op %s: unexpected vm result\n\tgot:  %+v\n\twant: %+v\n", i, ops[c.op].name, c.startVM, c.wantVM)
+			t.Errorf("case %d, op %s: unexpected vm result\n\tgot:  %+v\n\twant: %+v\n", i, c.op.String(), c.startVM, c.wantVM)
 		}
 	}
 }

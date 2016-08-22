@@ -7,7 +7,7 @@ import (
 
 func TestPushdataOps(t *testing.T) {
 	type testStruct struct {
-		op      uint8
+		op      Op
 		startVM *virtualMachine
 		wantErr error
 		wantVM  *virtualMachine
@@ -48,9 +48,9 @@ func TestPushdataOps(t *testing.T) {
 		wantErr: ErrRunLimitExceeded,
 	}}
 
-	pushdataops := []uint8{OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4}
+	pushdataops := []Op{OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4}
 	for i := 1; i <= 75; i++ {
-		pushdataops = append(pushdataops, uint8(i))
+		pushdataops = append(pushdataops, Op(i))
 	}
 	for _, op := range pushdataops {
 		cases = append(cases, testStruct{

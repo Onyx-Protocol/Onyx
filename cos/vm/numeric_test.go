@@ -7,7 +7,7 @@ import (
 
 func TestNumericOps(t *testing.T) {
 	type testStruct struct {
-		op      uint8
+		op      Op
 		startVM *virtualMachine
 		wantErr error
 		wantVM  *virtualMachine
@@ -453,7 +453,7 @@ func TestNumericOps(t *testing.T) {
 		wantErr: ErrDataStackUnderflow,
 	}}
 
-	numops := []uint8{
+	numops := []Op{
 		OP_1ADD, OP_1SUB, OP_2MUL, OP_2DIV, OP_NEGATE, OP_ABS, OP_NOT, OP_0NOTEQUAL,
 		OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT, OP_BOOLAND,
 		OP_BOOLOR, OP_NUMEQUAL, OP_NUMEQUALVERIFY, OP_NUMNOTEQUAL, OP_LESSTHAN,

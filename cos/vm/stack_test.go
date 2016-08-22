@@ -7,7 +7,7 @@ import (
 
 func TestStackOps(t *testing.T) {
 	type testStruct struct {
-		op      uint8
+		op      Op
 		startVM *virtualMachine
 		wantErr error
 		wantVM  *virtualMachine
@@ -293,7 +293,7 @@ func TestStackOps(t *testing.T) {
 		},
 		wantErr: ErrRunLimitExceeded,
 	}}
-	stackops := []uint8{
+	stackops := []Op{
 		OP_DEPTH, OP_FROMALTSTACK, OP_TOALTSTACK, OP_2DROP, OP_2DUP, OP_3DUP,
 		OP_2OVER, OP_2ROT, OP_2SWAP, OP_IFDUP, OP_DROP, OP_DUP, OP_NIP,
 		OP_OVER, OP_PICK, OP_ROLL, OP_ROT, OP_SWAP, OP_TUCK,

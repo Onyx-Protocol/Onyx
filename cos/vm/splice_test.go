@@ -7,7 +7,7 @@ import (
 
 func TestSpliceOps(t *testing.T) {
 	type testStruct struct {
-		op      uint8
+		op      Op
 		startVM *virtualMachine
 		wantErr error
 		wantVM  *virtualMachine
@@ -206,7 +206,7 @@ func TestSpliceOps(t *testing.T) {
 		wantErr: ErrRunLimitExceeded,
 	}}
 
-	spliceops := []uint8{OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT, OP_CATPUSHDATA, OP_SIZE}
+	spliceops := []Op{OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT, OP_CATPUSHDATA, OP_SIZE}
 	for _, op := range spliceops {
 		cases = append(cases, testStruct{
 			op:      op,

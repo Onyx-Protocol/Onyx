@@ -7,7 +7,7 @@ import (
 
 func TestBitwiseOps(t *testing.T) {
 	type testStruct struct {
-		op      uint8
+		op      Op
 		startVM *virtualMachine
 		wantErr error
 		wantVM  *virtualMachine
@@ -231,7 +231,7 @@ func TestBitwiseOps(t *testing.T) {
 		wantErr: ErrVerifyFailed,
 	}}
 
-	bitops := []uint8{OP_INVERT, OP_AND, OP_OR, OP_XOR, OP_EQUAL, OP_EQUALVERIFY}
+	bitops := []Op{OP_INVERT, OP_AND, OP_OR, OP_XOR, OP_EQUAL, OP_EQUALVERIFY}
 	for _, op := range bitops {
 		cases = append(cases, testStruct{
 			op: op,
@@ -257,7 +257,7 @@ func TestBitwiseOps(t *testing.T) {
 		})
 	}
 
-	twoops := []uint8{OP_AND, OP_OR, OP_XOR, OP_EQUAL, OP_EQUALVERIFY}
+	twoops := []Op{OP_AND, OP_OR, OP_XOR, OP_EQUAL, OP_EQUALVERIFY}
 	for _, op := range twoops {
 		cases = append(cases, testStruct{
 			op: op,
