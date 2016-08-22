@@ -1,4 +1,4 @@
-package com.chain.exception;
+package com.chain;
 
 import com.squareup.okhttp.Response;
 

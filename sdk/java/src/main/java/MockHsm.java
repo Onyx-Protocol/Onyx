@@ -1,8 +1,4 @@
-package com.chain.api;
-
-import com.chain.exception.BadURLException;
-import com.chain.exception.ChainException;
-import com.chain.http.Context;
+package com.chain;
 
 import java.net.MalformedURLException;
 import java.net.URL;

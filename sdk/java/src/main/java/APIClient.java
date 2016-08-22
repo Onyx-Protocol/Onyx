@@ -1,6 +1,5 @@
-package com.chain.http;
+package com.chain;
 
-import com.chain.exception.*;
 import com.fatboyindustrial.gsonjavatime.Converters;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;

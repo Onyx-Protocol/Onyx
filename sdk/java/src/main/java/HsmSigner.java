@@ -1,10 +1,5 @@
-package com.chain.signing;
+package com.chain;
 
-import com.chain.api.MockHsm;
-
-import com.chain.api.Transaction;
-import com.chain.exception.ChainException;
-import com.chain.http.Context;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;

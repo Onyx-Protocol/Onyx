@@ -1,4 +1,4 @@
-package com.chain.exception;
+package com.chain;
 
 /**
  * APIException wraps errors returned by the API.

@@ -1,8 +1,5 @@
-package com.chain.api;
+package com.chain;
 
-import com.chain.exception.APIException;
-import com.chain.exception.ChainException;
-import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 

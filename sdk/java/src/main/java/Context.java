@@ -1,6 +1,4 @@
-package com.chain.http;
-
-import com.chain.exception.ChainException;
+package com.chain;
 
 import java.lang.reflect.Type;
 import java.net.*;

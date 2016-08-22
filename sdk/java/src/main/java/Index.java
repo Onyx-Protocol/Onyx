@@ -1,7 +1,4 @@
-package com.chain.api;
-
-import com.chain.exception.ChainException;
-import com.chain.http.Context;
+package com.chain;
 
 import java.util.HashMap;
 import java.util.Map;
