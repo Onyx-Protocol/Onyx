@@ -7,13 +7,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
+	"strconv"
 	"time"
 
-	"chain/core/txdb"
+	"chain/core/generator"
 	"chain/cos"
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
@@ -22,8 +21,7 @@ import (
 
 // config vars
 var (
-	dbURL    = env.String("DB_URL", "postgres:///core?sslmode=disable")
-	blockKey = env.String("BLOCK_KEY", "2c1f68880327212b6aa71d7c8e0a9375451143352d5c760dc38559f1159c84ce")
+	dbURL = env.String("DB_URL", "postgres:///core?sslmode=disable")
 )
 
 // We collect log output in this buffer,
@@ -36,7 +34,7 @@ type command struct {
 }
 
 var commands = map[string]*command{
-	"genesis": {genesis, "genesis"},
+	"init": {initblock, "init [quorum] [key...]"},
 }
 
 func main() {
@@ -59,38 +57,44 @@ func main() {
 		help(os.Stderr)
 		os.Exit(1)
 	}
-	if len(os.Args)-1 != len(strings.Fields(cmd.shortHelp)) {
-		fmt.Fprintln(os.Stderr, "usage: corectl", cmd.shortHelp)
-		os.Exit(1)
-	}
 	cmd.f(db, os.Args[2:])
 }
 
-func genesis(db *sql.DB, args []string) {
-	keyBytes, err := hex.DecodeString(*blockKey)
+func initblock(db *sql.DB, args []string) {
+	if len(args) == 0 {
+		fatalln("error: please provide a quorum size")
+	}
+	quorum, err := strconv.Atoi(args[0])
+	args = args[1:]
+	if err != nil {
+		fatalln("error:", err)
+	}
+	if quorum > len(args) {
+		fatalln("error: quorum size requires more keys than provided")
+	}
+
+	var keys []ed25519.PublicKey
+	for _, s := range args {
+		b, err := hex.DecodeString(s)
+		if err != nil {
+			fatalln("error:", err)
+		}
+		keys = append(keys, b)
+	}
+
+	block, err := cos.NewGenesisBlock(keys, quorum, time.Now())
 	if err != nil {
 		fatalln("error:", err)
 	}
 
-	privKey, err := hd25519.PrvFromBytes(keyBytes)
-	if err != nil {
-		fatalln("error:", err)
-	}
-	pubKey := privKey.Public().(ed25519.PublicKey)
-
-	ctx := pg.NewContext(context.Background(), db)
-
-	store, pool := txdb.New(db)
-	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
+	ctx := context.Background()
+	err = generator.SaveInitialBlock(ctx, db, block)
 	if err != nil {
 		fatalln("error:", err)
 	}
 
-	b, err := fc.UpsertGenesisBlock(ctx, []ed25519.PublicKey{pubKey}, 1, time.Now())
-	if err != nil {
-		fatalln("error:", err)
-	}
-	fmt.Printf("block created: %+v\n", b)
+	fmt.Printf("block created: %+v\n\n", block)
+	fmt.Println("initial block hash", block.Hash())
 }
 
 func fatalln(v ...interface{}) {
