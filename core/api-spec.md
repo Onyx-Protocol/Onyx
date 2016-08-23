@@ -149,8 +149,8 @@ Request
 
 ```
 {
-  "chql": "...", 
-  "chql_params": [], // optional
+  "filter": "...", 
+  "filter_params": [], // optional
   "cursor": "..." // optional
 }
 ```
@@ -168,8 +168,8 @@ Response
     }
   ],
   "query": {
-    "chql": "...", 
-    "chql_params": [], 
+    "filter": "...", 
+    "filter_params": [], 
     "cursor": "..." 
   },
   "last_page": true|false
@@ -248,7 +248,6 @@ Request
 Response: an [account object](#account-object).
 
 ### List Accounts
-Optionally filtered by a `chql` query.
 
 Endpoint
 ```    
@@ -259,9 +258,9 @@ Request
 
 ```
 {
-  "chql": "...", 
-  "chql_params": [], // optional
-  "cursor": "..." // optional
+  "filter": "...",      // optional
+  "filter_params": [],  // optional
+  "cursor": "..."       // optional
 }
 ```
 
@@ -278,8 +277,8 @@ Response
     }
   ],
   "query": {
-    "chql": "...", 
-    "chql_params": [], 
+    "filter": "...", 
+    "filter_params": [], 
     "cursor": "..." 
   },
   "last_page": true|false
@@ -543,11 +542,11 @@ POST /list-transactions
 
 Request
 
-Accepts either an `index_id`, `index_alias`, or a `query`.
+Accepts either an `index_id`, `index_alias`, or a `filter`.
 ```
 {
   "index_id": "...",
-  "params": ["param"],
+  "filter_params": ["param"],
 }
 ```
 
@@ -562,12 +561,13 @@ POST /list-balances
 
 Request
 
-Accepts either an `index_id`, `index_alias`, or a `query`.
+Accepts either an `index_id`, `index_alias`, or a `filter`.
 
 ``` 
 {
   "index_id": "...",
-  "params": ["param", null],      // `null` indicates group by which to sum unspents
+  "filter_params": ["param"],
+  "sum_by": ["selector1", "selector2"]
 }
 ```
 
@@ -577,14 +577,15 @@ Grouped
 ```
 [
   {
-    "group_by": ["a1"],
+    "sum_by": {"selector1": "...", "selector2": "..."},
     "amount": 10
   },
   {
-    "group_by": ["a2"],
+    "sum_by": {"selector1": "...", "selector2": "..."},
     "amount": 20
   }
 ]
+
 ```
     
 Ungrouped 
@@ -605,11 +606,11 @@ POST /list-unspent-outputs
 
 Request
 
-Accepts either an `index_id`, `index_alias`, or a `query`.
+Accepts either an `index_id`, `index_alias`, or a `filter`.
 ```
 {
   "index_id": "...",
-  "params": ["param"],
+  "filter_params": ["param"],
 }
 ```
 
@@ -622,9 +623,9 @@ Response: an array of [output objects](#output-object).
 {
   "id": "...",
   "alias": "...",
-  "type": "...",              // `transaction`, `balance`, or `asset`
-  "unspents": "true",         // only for `type: "balance"` - indexes unspent outputs in addition to balances
-  "query": "..."
+  "type": "...",        // `transaction`, `balance`, `unspent-output`, or `asset`
+  "filter": "...",
+  "sum_by": []          // only for `type: balance`
 }
 ```
 
@@ -639,9 +640,9 @@ Request
 ```
 {
   "alias": "...",
-  "type": "...",          // `transaction`, `balance`, or `asset`
-  "unspents": "true",     // only for `type: "balance"` - indexes unspent outputs in addition to balances
-  "query": "..."
+  "type": "...",          // `transaction`, `balance`, `unspent-output`, or `asset`
+  "filter": "...",
+  "sum_by": []            // only for `type: balance`
 }
 ```
 Response: an [index object](#index-object).
