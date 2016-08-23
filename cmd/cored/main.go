@@ -56,7 +56,7 @@ var (
 	tlsCrt       = env.String("TLSCRT", "")
 	tlsKey       = env.String("TLSKEY", "")
 	listenAddr   = env.String("LISTEN", ":8080")
-	dbURL        = env.String("DB_URL", "postgres:///core?sslmode=disable")
+	dbURL        = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
 	target       = env.String("TARGET", "sandbox")
 	samplePer    = env.Duration("SAMPLEPER", 10*time.Second)
 	splunkAddr   = os.Getenv("SPLUNKADDR")

@@ -2,6 +2,8 @@ Chain 🍭
 
 ## Getting Started
 
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/chain-engineering/chain/tree/main)
+
 First, make sure you have the dependencies installed:
 
 * [Go](https://golang.org/doc/install), with $GOPATH set to your preferred directory

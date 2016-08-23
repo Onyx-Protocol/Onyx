@@ -1,0 +1,17 @@
+{
+  "name": "Chain Core 1",
+  "description": "Entperprise Blockchain",
+  "repository": "https://github.com/chain/chain",
+  "logo": "http://chain.com/images/chain-logo.04205b59.png",
+  "keywords": ["blockchain", "chain"],
+  "success_url": "/dashboard",
+  "addons": [
+    {
+      "plan": "heroku-postgresql",
+      "options": {"version": "9.5"}
+    }
+  ],
+  "env": {
+    "GO_INSTALL_PACKAGE_SPEC": "./cmd/..."
+  }
+}
