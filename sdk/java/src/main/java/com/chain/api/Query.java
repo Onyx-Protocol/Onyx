@@ -1,4 +1,4 @@
-package com.chain;
+package com.chain.api;
 
 import com.google.gson.annotations.SerializedName;
 

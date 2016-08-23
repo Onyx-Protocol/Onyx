@@ -1,4 +1,4 @@
-package com.chain;
+package com.chain.exception;
 
 public class ChainException extends Exception {
     public ChainException() { super(); }

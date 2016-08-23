@@ -1,4 +1,4 @@
-package com.chain;
+package com.chain.exception;
 
 public class JSONException extends ChainException {
     public JSONException(String message, String requestID) {

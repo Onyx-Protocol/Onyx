@@ -1,4 +1,4 @@
-package com.chain;
+package com.chain.exception;
 
 public class SigningException extends ChainException {
     private Exception original;
