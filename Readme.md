@@ -70,3 +70,25 @@ Finally, try logging into the dashboard at `https://<target>.chain.com`.
 - Commandline tool to create projects
 - Commandline tool to add members to projects
 - `/provision` should automatically migrate and deploy given a specific git ref, defaulting to `main`.
+
+## Dependencies
+
+To add or update a Go dependency, do the following:
+
+Copy the code from `$GOPATH/src/x`
+to `$CHAIN/vendor/x`. For example, to vendor the package
+`github.com/kr/pretty`, run
+
+	$ mkdir -p $CHAIN/vendor/github.com/kr
+	$ rm -r $CHAIN/vendor/github.com/kr/pretty
+	$ cp -r $GOPATH/src/github.com/kr/pretty $CHAIN/vendor/github.com/kr/pretty
+	$ rm -rf $CHAIN/vendor/github.com/kr/pretty/.git
+
+(Note: don't put a trailing slash (`/`) on these paths.
+It can change the behavior of cp and put the files
+in the wrong place.)
+
+In your commit message, include the commit hash of the upstream repo
+for the dependency. (You can find this with `git rev-parse HEAD` in
+the upstream repo.) Also, make sure the upstream working tree is clean.
+(Check with `git status`.)
