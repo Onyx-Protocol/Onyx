@@ -20,7 +20,7 @@ import (
 func TestAccountSourceReserve(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	fc, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,6 +28,12 @@ func TestAccountSourceReserve(t *testing.T) {
 	accID := assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
 	asset := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
 	out := assettest.IssueAssetsFixture(ctx, t, fc, asset, 2, accID)
+
+	// Make a block so that account UTXOs are available to spend.
+	_, err = g.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	assetAmount1 := bc.AssetAmount{
 		AssetID: asset,
@@ -63,7 +69,7 @@ func TestAccountSourceReserve(t *testing.T) {
 func TestAccountSourceUTXOReserve(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	fc, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,6 +77,12 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	accID := assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
 	asset := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
 	out := assettest.IssueAssetsFixture(ctx, t, fc, asset, 2, accID)
+
+	// Make a block so that account UTXOs are available to spend.
+	_, err = g.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	source := &account.SpendUTXOAction{
 		Params: struct {
@@ -96,7 +108,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 func TestAccountSourceReserveIdempotency(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	fc, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,6 +133,12 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	wantSrc.ClientToken = &clientToken1
 	gotSrc.ClientToken = &clientToken1
 	separateSrc.ClientToken = &clientToken2
+
+	// Make a block so that account UTXOs are available to spend.
+	_, err = g.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
 		got, _, _, err := source.Build(ctx)
@@ -152,7 +170,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 func TestAccountSourceWithTxHash(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	fc, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,6 +186,12 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 	for i := 0; i < utxos; i++ {
 		o := assettest.IssueAssetsFixture(ctx, t, fc, asset, 1, acc)
 		srcTxs = append(srcTxs, o.Outpoint.Hash)
+	}
+
+	// Make a block so that account UTXOs are available to spend.
+	_, err = g.MakeBlock(ctx)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	for i := 0; i < utxos; i++ {

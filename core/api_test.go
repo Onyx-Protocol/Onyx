@@ -22,7 +22,7 @@ import (
 func TestAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	fc, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,6 +48,12 @@ func TestAccountTransfer(t *testing.T) {
 
 	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
 	_, err = txbuilder.FinalizeTx(ctx, fc, tmpl)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Make a block so that UTXOs from the above tx are available to spend.
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +88,7 @@ func TestMux(t *testing.T) {
 func TestTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	fc, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,6 +133,12 @@ func TestTransfer(t *testing.T) {
 	_, err = txbuilder.FinalizeTx(ctx, fc, txTemplate)
 	if err != nil {
 		t.Log(errors.Stack(err))
+		t.Fatal(err)
+	}
+
+	// Make a block so that UTXOs from the above tx are available to spend.
+	_, err = g.MakeBlock(ctx)
+	if err != nil {
 		t.Fatal(err)
 	}
 

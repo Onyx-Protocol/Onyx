@@ -43,26 +43,29 @@ func TestDeleteUTXOs(t *testing.T) {
 	assetID := bc.AssetID{}
 	acp := createTestControlProgram(ctx, t, "")
 
-	tx := bc.NewTx(bc.TxData{
-		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(assetID, 1, acp, nil),
-		},
-	})
-
-	err := addAccountData(ctx, tx)
+	block1 := &bc.Block{Transactions: []*bc.Tx{
+		bc.NewTx(bc.TxData{
+			Outputs: []*bc.TxOutput{
+				bc.NewTxOutput(assetID, 1, acp, nil),
+			},
+		}),
+	}}
+	err := indexAccountUTXOs(ctx, block1)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	block := &bc.Block{Transactions: []*bc.Tx{
+	block2 := &bc.Block{Transactions: []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Inputs: []*bc.TxInput{
-				bc.NewSpendInput(tx.Hash, 0, nil, assetID, 1, nil, nil),
+				bc.NewSpendInput(block1.Transactions[0].Hash, 0, nil, assetID, 1, nil, nil),
 			},
 		}),
 	}}
-
-	indexAccountUTXOs(ctx, block)
+	err = indexAccountUTXOs(ctx, block2)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
 
 	var n int
 	err = pg.QueryRow(ctx, `SELECT count(*) FROM account_utxos`).Scan(&n)

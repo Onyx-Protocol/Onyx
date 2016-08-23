@@ -87,6 +87,7 @@ public class Transaction {
         @SerializedName("unsigned_hex")
         public String unsignedHex;
         public List<Input> inputs;
+        public Boolean local;
 
         public static class Input {
             @SerializedName("asset_id")

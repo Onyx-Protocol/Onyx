@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"chain/core/account"
-	"chain/core/account/utxodb"
 	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/generator"
@@ -117,68 +116,6 @@ func TestTransferConfirmed(t *testing.T) {
 	_, err = transfer(ctx, t, fc, info, info.acctA.ID, info.acctB.ID, 10)
 	if err != nil {
 		testutil.FatalErr(t, err)
-	}
-}
-
-func TestGenSpendApply(t *testing.T) {
-	// 1. Start with an output in pool.
-	// 2. Generate a block.
-	// 3. Spend the output.
-	// 4. Apply the block.
-	// Output should stay spent!
-
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
-
-	info, fc, g, err := bootdb(ctx, t)
-	if err != nil {
-		t.Fatal(err)
-	}
-	issueTx, err := issue(ctx, t, fc, info, info.acctA.ID, 10)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("issued %v", issueTx.Hash)
-
-	genesis, snapshot, err := fc.Recover(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	b, err := fc.GenerateBlock(ctx, genesis, snapshot, time.Now())
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = g.GetAndAddBlockSignatures(ctx, b, genesis)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = transfer(ctx, t, fc, info, info.acctA.ID, info.acctB.ID, 10)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	snapshot, err = fc.ValidateBlock(ctx, snapshot, genesis, b)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = fc.CommitBlock(ctx, b, snapshot)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	inputs := []utxodb.Source{{
-		AssetID:   info.asset.AssetID,
-		AccountID: info.acctA.ID,
-		Amount:    10,
-	}}
-	reserved, _, err := utxodb.Reserve(ctx, inputs, 2*time.Minute)
-	if err != nil && errors.Root(err) != utxodb.ErrInsufficient {
-		t.Fatal(err)
-	}
-	if len(reserved) > 0 {
-		t.Fatalf("want %v to stay spent after landing block", issueTx.Hash)
 	}
 }
 

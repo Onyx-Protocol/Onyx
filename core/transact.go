@@ -10,6 +10,7 @@ import (
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/database/pg"
+	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/reqid"
 	"chain/net/trace/span"
@@ -99,12 +100,87 @@ func submitSingle(ctx context.Context, fc *cos.FC, x submitSingleArg) (interface
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	tx, err := txbuilder.FinalizeTxWait(ctx, fc, x.tpl)
+	tx, err := finalizeTxWait(ctx, fc, x.tpl)
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]string{"id": tx.Hash.String()}, nil
+}
+
+// finalizeTxWait calls FinalizeTx and then waits for confirmation of
+// the transaction.  A nil error return means the transaction is
+// confirmed on the blockchain.  ErrRejected means a conflicting tx is
+// on the blockchain.  context.DeadlineExceeded means ctx is an
+// expiring context that timed out.
+func finalizeTxWait(ctx context.Context, fc *cos.FC, txTemplate *txbuilder.Template) (*bc.Tx, error) {
+	// Avoid a race condition.  Calling fc.Height() here ensures that
+	// when we start waiting for blocks below, we don't begin waiting at
+	// block N+1 when the tx we want is in block N.
+	height := fc.Height()
+
+	tx, err := txbuilder.FinalizeTx(ctx, fc, txTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	// As a rule we only index confirmed blockchain data to prevent dirty
+	// reads, but here we're explicitly breaking that rule iff all of the
+	// inputs to the transaction are from locally-controlled keys. In that
+	// case, we're confident that this tx will be confirmed, so we relax
+	// that constraint to allow use of unconfirmed change, etc.
+	if txTemplate.Local {
+		err := account.IndexUnconfirmedUTXOs(ctx, tx)
+		if err != nil {
+			return nil, errors.Wrap(err, "indexing unconfirmed account utxos")
+		}
+	}
+
+	for {
+		height++
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+
+		case err := <-waitBlock(ctx, fc, height):
+			if err != nil {
+				// This should be impossible, since the only error produced by
+				// WaitForBlock is ErrTheDistantFuture, and height is known
+				// not to be in "the distant future."
+				return nil, errors.Wrapf(err, "waiting for block %d", height)
+			}
+			// TODO(bobg): This technique is not future-proof.  The database
+			// won't necessarily contain all the txs we might care about.
+			// An alternative approach will be to scan through each block as
+			// it lands, looking for the tx or a tx that conflicts with it.
+			// For now, though, this is probably faster and simpler.
+			bcTxs, err := fc.ConfirmedTxs(ctx, tx.Hash)
+			if err != nil {
+				return nil, errors.Wrap(err, "getting bc txs")
+			}
+			if _, ok := bcTxs[tx.Hash]; ok {
+				// confirmed
+				return tx, nil
+			}
+
+			poolTxs, err := fc.PendingTxs(ctx, tx.Hash)
+			if err != nil {
+				return nil, errors.Wrap(err, "getting pool txs")
+			}
+			if _, ok := poolTxs[tx.Hash]; !ok {
+				// rejected
+				return nil, txbuilder.ErrRejected
+			}
+
+			// still in the pool; iterate
+		}
+	}
+}
+
+func waitBlock(ctx context.Context, fc *cos.FC, height uint64) <-chan error {
+	c := make(chan error, 1)
+	go func() { c <- fc.WaitForBlock(ctx, height) }()
+	return c
 }
 
 // TODO(bobg): allow caller to specify reservation by (encrypted) id?

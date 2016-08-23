@@ -361,7 +361,8 @@ CREATE TABLE account_utxos (
     metadata bytea NOT NULL,
     confirmed_in bigint,
     block_pos integer,
-    block_timestamp bigint
+    block_timestamp bigint,
+    expiry_height bigint
 );
 
 
@@ -1108,3 +1109,4 @@ insert into migrations (filename, hash) values ('2016-08-16.2.query.rename-index
 insert into migrations (filename, hash) values ('2016-08-16.3.api.alias-keys.sql', 'ee7702a963064b004800ee356558ec2a2a3062f443ff7871d1fc2a873f22665e');
 insert into migrations (filename, hash) values ('2016-08-17.0.query.index-id.sql', '538ce1a1f61b496d1809049f3934ba445177e5b71af2e802d2fbcb009a8d80cb');
 insert into migrations (filename, hash) values ('2016-08-19.0.generator.generated-block.sql', '8068324f63c2d973f0eac120460ca202711bfab0f734b789f18206f21abd3a80');
+insert into migrations (filename, hash) values ('2016-08-22.0.account.change-utxos.sql', '11dff1da7353fd6896c4f153654029d717f838b4a4e528cf7139bfcf35ebf124');

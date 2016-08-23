@@ -71,7 +71,6 @@ var (
 )
 
 type BlockCallback func(ctx context.Context, block *bc.Block)
-type TxCallback func(context.Context, *bc.Tx)
 
 // Store provides storage for blockchain data: blocks, asset
 // definition pointers and confirmed transactions.
@@ -105,7 +104,6 @@ type Pool interface {
 // objects can be safely stored.
 type FC struct {
 	blockCallbacks []BlockCallback
-	txCallbacks    []TxCallback
 	trustedKeys    []ed25519.PublicKey
 	height         struct {
 		cond sync.Cond // protects n
@@ -156,10 +154,6 @@ func (fc *FC) Height() uint64 {
 
 func (fc *FC) AddBlockCallback(f BlockCallback) {
 	fc.blockCallbacks = append(fc.blockCallbacks, f)
-}
-
-func (fc *FC) AddTxCallback(f TxCallback) {
-	fc.txCallbacks = append(fc.txCallbacks, f)
 }
 
 func (fc *FC) LatestBlock(ctx context.Context) (*bc.Block, error) {

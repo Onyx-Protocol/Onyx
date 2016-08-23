@@ -18,7 +18,7 @@ import (
 func TestMockHSM(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	fc, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	mockhsm := mockhsm.New(db)
 	xpub1, err := mockhsm.CreateKey(ctx, "")
 	if err != nil {
@@ -56,6 +56,12 @@ func TestMockHSM(t *testing.T) {
 	}
 	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
 	_, err = txbuilder.FinalizeTx(ctx, fc, tmpl)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Make a block so that UTXOs from the above tx are available to spend.
+	_, err = g.MakeBlock(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

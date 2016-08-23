@@ -135,12 +135,6 @@ func (fc *FC) CommitBlock(ctx context.Context, block *bc.Block, snapshot *state.
 		return errors.Wrap(err, "rebuilding pool")
 	}
 
-	for _, tx := range block.Transactions {
-		for _, cb := range fc.txCallbacks {
-			cb(ctx, tx)
-		}
-	}
-
 	for _, cb := range fc.blockCallbacks {
 		cb(ctx, block)
 	}

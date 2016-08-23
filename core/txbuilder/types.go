@@ -11,6 +11,12 @@ import (
 type Template struct {
 	Unsigned *bc.TxData `json:"unsigned_hex"`
 	Inputs   []*Input   `json:"inputs"`
+
+	// Local indicates that all inputs to the transaction are signed
+	// exclusively by keys managed by this Core. Whenever accepting
+	// a template from an external Core, `Local` should be set to
+	// false.
+	Local bool `json:"local"`
 }
 
 // Input is an input for a TxTemplate.

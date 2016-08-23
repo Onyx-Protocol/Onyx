@@ -69,6 +69,7 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map) (
 	tpl := &Template{
 		Unsigned: tx,
 		Inputs:   tplInputs,
+		Local:    true,
 	}
 	ComputeSigHashes(tpl)
 	return tpl, nil

@@ -55,12 +55,5 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 
 	// Update persistent tx pool state.
 	err = fc.pool.Insert(ctx, tx)
-	if err != nil {
-		return errors.Wrap(err, "applying tx to store")
-	}
-
-	for _, cb := range fc.txCallbacks {
-		cb(ctx, tx)
-	}
-	return nil
+	return errors.Wrap(err, "applying tx to store")
 }
