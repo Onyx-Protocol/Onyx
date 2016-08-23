@@ -3,6 +3,7 @@ package query
 import (
 	"encoding/hex"
 	"encoding/json"
+	"time"
 
 	"chain/cos/bc"
 	"chain/cos/vmutil"
@@ -11,6 +12,7 @@ import (
 func transactionObject(orig *bc.Tx, b *bc.Block, indexInBlock uint32) map[string]interface{} {
 	m := map[string]interface{}{
 		"id":             orig.Hash.String(),
+		"timestamp":      b.Time().Format(time.RFC3339),
 		"block_id":       b.Hash().String(),
 		"block_height":   b.Height,
 		"position":       indexInBlock,
