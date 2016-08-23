@@ -89,7 +89,7 @@ func opCheckMultiSig(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	if numPubkeys <= 0 {
+	if numPubkeys < 0 {
 		return ErrBadValue
 	}
 	err = vm.applyCost(1024 * numPubkeys)
@@ -112,7 +112,7 @@ func opCheckMultiSig(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	if numSigs <= 0 || numSigs > numPubkeys {
+	if numSigs < 0 || numSigs > numPubkeys || (numPubkeys > 0 && numSigs == 0) {
 		return ErrBadValue
 	}
 	sigs := make([][]byte, 0, numSigs)

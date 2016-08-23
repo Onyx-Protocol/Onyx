@@ -7,6 +7,7 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/cos/vm"
+	"chain/crypto/ed25519"
 )
 
 // TestIsPushOnlyScript ensures the IsPushOnlyScript function returns the
@@ -102,5 +103,23 @@ func TestPayToContract(t *testing.T) {
 	expected = append(expected, []byte{byte(vm.OP_EQUALVERIFY), byte(vm.OP_0), byte(vm.OP_CHECKPREDICATE)}...)
 	if !bytes.Equal(script, expected) {
 		t.Errorf("expected %v, got %v", expected, script)
+	}
+}
+
+func Test00Multisig(t *testing.T) {
+	prog, err := doMultiSigScript(nil, 0, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(prog) < 1 {
+		t.Fatal("doMultiSigScript(0, 0) = {} want script")
+	}
+}
+
+func Test01Multisig(t *testing.T) {
+	pubkeys := []ed25519.PublicKey{{}}
+	_, err := doMultiSigScript(pubkeys, 0, true)
+	if err == nil {
+		t.Fatal("doMultiSigScript(1, 0) = success want error")
 	}
 }

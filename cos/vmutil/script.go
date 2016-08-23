@@ -36,7 +36,7 @@ func BlockMultiSigScript(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, er
 }
 
 func doMultiSigScript(pubkeys []ed25519.PublicKey, nrequired int, isBlock bool) ([]byte, error) {
-	if nrequired <= 0 || len(pubkeys) < nrequired {
+	if nrequired < 0 || len(pubkeys) < nrequired || (len(pubkeys) > 0 && nrequired == 0) {
 		return nil, ErrBadValue
 	}
 	builder := NewBuilder()
