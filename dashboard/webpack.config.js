@@ -1,6 +1,10 @@
+/*eslint-env node*/
+
 var webpack = require('webpack')
 var getConfig = require('hjs-webpack')
 
+// Set base path to JS and CSS files when
+// required by other files
 let publicPath = "/"
 if (process.env.NODE_ENV === "production") {
   publicPath = "/dashboard/"
@@ -18,6 +22,10 @@ var config = getConfig({
   // is where your fully static site should
   // end up for simple deployment.
   out: 'public',
+
+  output: {
+    hash: true
+  },
 
   // This will destroy and re-create your
   // `out` folder before building so you always
@@ -50,7 +58,8 @@ var config = getConfig({
 
 // Enable CSS modules
 let loaders = config.module.loaders
-for (item of loaders) {
+
+for (let item of loaders) {
   if (item.loader) {
     item.loader = item.loader.replace("css-loader","css-loader?modules&importLoaders=1&localIdentName=[name]__[local]__[hash:base64:5]")
   }
@@ -83,6 +92,5 @@ config.plugins.push(new webpack.EnvironmentPlugin([
 ]))
 
 config.output.publicPath = publicPath
-
 
 module.exports = config

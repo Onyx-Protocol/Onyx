@@ -7,10 +7,41 @@
   // Imports app styles into project
   appStyles: ./src/styles/app.scss,
 
+  env: {
+    development: {
+      extractStyles: false
+    },
+    production: {
+      extractStyles: true
+    }
+  },
+
   styleLoaders: ['style', 'css', 'sass'],
 
   // Bootstrap styles
-  styles: true,
+  styles: {
+    mixins: true,
+    normalize: true,
+    glyphicons: true,
+    scaffolding: true,
+    type: true,
+    code: true,
+    grid: true,
+    tables: true,
+    forms: true,
+    buttons: true,
+    dropdowns: true,
+    input-groups: true,
+    navs: true,
+    navbar: true,
+    jumbotron: true,
+    pagination: true,
+    pager: true,
+    panels: true,
+    close: true,
+    utilities: true,
+    responsive-utilities: true
+  },
 
   // Bootstrap scripts
   scripts: false

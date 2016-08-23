@@ -1,12 +1,10 @@
 import React from 'react'
 import { Provider } from 'react-redux'
-import { Router, Route, IndexRoute } from 'react-router'
+import { Router } from 'react-router'
 import { history } from '../utility/environment'
 import { syncHistoryWithStore } from 'react-router-redux'
 
 import routes from '../routes'
-
-const basename = process.env.NODE_ENV === "production" ? "/dashboard" : "/"
 
 export default class App extends React.Component {
   componentWillMount() {
