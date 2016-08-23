@@ -11,67 +11,6 @@
 			"Rev": "5df83ba895b6ba073c0513dddcec6d7473c95592"
 		},
 		{
-			"ImportPath": "github.com/btcsuite/btcd/blockchain",
-			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
-			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
-		},
-		{
-			"ImportPath": "github.com/btcsuite/btcd/btcec",
-			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
-			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
-		},
-		{
-			"ImportPath": "github.com/btcsuite/btcd/chaincfg",
-			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
-			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
-		},
-		{
-			"ImportPath": "github.com/btcsuite/btcd/database",
-			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
-			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
-		},
-		{
-			"ImportPath": "github.com/btcsuite/btcd/txscript",
-			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
-			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
-		},
-		{
-			"ImportPath": "github.com/btcsuite/btcd/wire",
-			"Comment": "BTCD_0_11_1_BETA-34-g43774fe",
-			"Rev": "43774fe6bb034c89d3a36bc7a5f0fce93139c999"
-		},
-		{
-			"ImportPath": "github.com/btcsuite/btclog",
-			"Comment": "BTCLOG_0_0_3-5-g5005b72",
-			"Rev": "5005b7240f310ae8f01c7664a3954d280241eb2b"
-		},
-		{
-			"ImportPath": "github.com/btcsuite/btcutil",
-			"Comment": "BTCUTIL_0_4_0-45-g03f6069",
-			"Rev": "03f6069579df8d3dc1e7298912ac7c75fdd11c9c"
-		},
-		{
-			"ImportPath": "github.com/btcsuite/fastsha256",
-			"Rev": "302ad4db268b46f9ebda3078f6f7397f96047735"
-		},
-		{
-			"ImportPath": "github.com/btcsuite/golangcrypto/ripemd160",
-			"Rev": "53f62d9b43e87a6c56975cf862af7edf33a8d0df"
-		},
-		{
-			"ImportPath": "github.com/btcsuite/goleveldb/leveldb",
-			"Rev": "d87ae1f5189b9ece9ed9b661e490a668e9a1d0df"
-		},
-		{
-			"ImportPath": "github.com/btcsuite/seelog",
-			"Comment": "v2.1-84-g313961b",
-			"Rev": "313961b101eb55f65ae0f03ddd4e322731763b6c"
-		},
-		{
-			"ImportPath": "github.com/btcsuite/snappy-go/snappy",
-			"Rev": "fff4c573c694b1e2d5c7a9b2b72dbe947b6a4c8e"
-		},
-		{
 			"ImportPath": "github.com/codahale/hdrhistogram",
 			"Rev": "3989c9c70509e52d10cd2b76e254fb570aa4a348"
 		},
@@ -106,16 +45,6 @@
 		{
 			"ImportPath": "github.com/lsegal/gucumber",
 			"Rev": "e8116c9c66e641e9f81fc0a79fac923dfc646378"
-		},
-		{
-			"ImportPath": "github.com/onsi/ginkgo",
-			"Comment": "v1.2.0-29-g7f8ab55",
-			"Rev": "7f8ab55aaf3b86885aa55b762e803744d1674700"
-		},
-		{
-			"ImportPath": "github.com/onsi/gomega",
-			"Comment": "v1.0-71-g2152b45",
-			"Rev": "2152b45fa28a361beba9aab0885972323a444e28"
 		},
 		{
 			"ImportPath": "github.com/pmezard/go-difflib/difflib",
