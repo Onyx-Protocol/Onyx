@@ -5,10 +5,10 @@ import Client from './client'
 import errors from './errors'
 
 function nockHelper() {
-    return nock('http://test-server').defaultReplyHeaders({
-      'Content-Type': 'application/json',
-      'Chain-Request-Id': '1'
-    })
+  return nock('http://test-server').defaultReplyHeaders({
+    'Content-Type': 'application/json',
+    'Chain-Request-Id': '1'
+  })
 }
 
 describe('Client', () => {
