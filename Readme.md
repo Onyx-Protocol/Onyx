@@ -2,7 +2,7 @@ Chain 🍭
 
 ## Getting Started
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/chain-engineering/chain/tree/main)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/chain/chain/tree/main)
 
 First, make sure you have the dependencies installed:
 
