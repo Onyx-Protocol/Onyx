@@ -6,7 +6,7 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/cos/bc"
-	"chain/cos/txscript"
+	"chain/cos/vm"
 )
 
 type (
@@ -74,7 +74,7 @@ func (t translation) getOps() string {
 
 func (t translation) getBytes() ([]byte, error) {
 	if t.bytes == nil {
-		b, err := txscript.ParseScriptString(t.getOps())
+		b, err := vm.Compile(t.getOps())
 		if err != nil {
 			return nil, err
 		}

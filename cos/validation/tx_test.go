@@ -1,18 +1,19 @@
 package validation
 
 import (
-	"chain/cos/bc"
-	"chain/cos/state"
-	"chain/cos/txscript"
-	"chain/errors"
 	"fmt"
 	"testing"
 	"time"
+
+	"chain/cos/bc"
+	"chain/cos/state"
+	"chain/cos/vm"
+	"chain/errors"
 )
 
 func TestUniqueIssuance(t *testing.T) {
 	var genesisHash bc.Hash
-	trueProg := []byte{txscript.OP_TRUE}
+	trueProg := []byte{byte(vm.OP_TRUE)}
 	assetID := bc.ComputeAssetID(trueProg, genesisHash, 1)
 	now := time.Now()
 	issuanceInp := bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1, trueProg, nil, nil)
@@ -46,7 +47,7 @@ func TestUniqueIssuance(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	true2Prog := []byte{txscript.OP_TRUE, txscript.OP_TRUE}
+	true2Prog := []byte{byte(vm.OP_TRUE), byte(vm.OP_TRUE)}
 	asset2ID := bc.ComputeAssetID(true2Prog, genesisHash, 1)
 	issuance2Inp := bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1, true2Prog, nil, nil)
 

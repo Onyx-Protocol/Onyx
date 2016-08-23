@@ -11,7 +11,8 @@ import (
 	"chain/cos/mempool"
 	"chain/cos/memstore"
 	"chain/cos/state"
-	"chain/cos/txscript"
+	"chain/cos/validation"
+	"chain/cos/vm"
 	"chain/crypto/ed25519"
 	"chain/database/pg/pgtest"
 	"chain/testutil"
@@ -63,12 +64,10 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	engine, err := txscript.NewEngineForBlock(tip.ConsensusProgram, block, txscript.StandardVerifyFlags)
-	if err != nil {
-		testutil.FatalErr(t, err)
+	ok, err := vm.VerifyBlockHeader(block, tip)
+	if err == nil && !ok {
+		err = validation.ErrFalseVMResult
 	}
-
-	err = engine.Execute()
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -78,7 +77,7 @@ func TestGetAndAddBlockSignaturesInitialBlock(t *testing.T) {
 	ctx := context.Background()
 
 	g := new(Generator)
-	block, err := cos.NewGenesisBlock(nil, 0, time.Now())
+	block, err := cos.NewGenesisBlock(testutil.TestPubs, 1, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

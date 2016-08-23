@@ -33,7 +33,6 @@ import (
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/cos"
-	"chain/cos/txscript"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
@@ -153,10 +152,6 @@ func main() {
 			"buildcommit": buildCommit,
 		},
 	}))
-
-	// TODO(jackson): Propagate blockchain parameters to txscript via cos.FC.
-	txscript.SetMaxStackSize(*maxProgramStackSize)
-	txscript.SetMaxOpsPerScript(*maxProgramOps)
 
 	sql.EnableQueryLogging(*logQueries)
 	db, err := sql.Open("schemadb", *dbURL)

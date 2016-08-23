@@ -20,7 +20,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"chain/cos/bc"
-	"chain/cos/txscript"
+	"chain/cos/vm"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 )
@@ -276,7 +276,7 @@ func script(args []string) {
 	inp, _ := input(args, 0, false)
 	b, err := decodeHex(inp)
 	if err == nil {
-		dis, err := txscript.DisasmString(b)
+		dis, err := vm.Decompile(b)
 		if err == nil {
 			fmt.Println(dis)
 			return
@@ -285,7 +285,7 @@ func script(args []string) {
 		// it's an uncompiled program that just looks like hex. Fall
 		// through and try it that way.
 	}
-	parsed, err := txscript.ParseScriptString(inp)
+	parsed, err := vm.Compile(inp)
 	if err == nil {
 		fmt.Println(hex.EncodeToString(parsed))
 		return

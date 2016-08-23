@@ -3,16 +3,17 @@
 This package implements the VM described in Chain Core Protocol 1.
 
 The VM is for verifying transaction inputs and blocks. Accordingly
-there are two main entrypoints: VerifyTxInput and VerifyBlock, both in
-vm.go. Each constructs a disposable VM object to perform its
+there are two main entrypoints: VerifyTxInput and VerifyBlockHeader,
+both in vm.go. Each constructs a disposable VM object to perform its
 computation.
 
 For VerifyTxInput, the program to execute comes from the input
 commitment: either the prevout's control program, if it's a spend
-input; or the issuance program, if it's an issuance. For VerifyBlock,
-the program to execute is the previous block's consensus program.  In
-all cases, the VM's data stack is first populated with witness data
-from the current object (transaction input or block).
+input; or the issuance program, if it's an issuance. For
+VerifyBlockHeader, the program to execute is the previous block's
+consensus program.  In all cases, the VM's data stack is first
+populated with witness data from the current object (transaction input
+or block).
 
 The program is interpreted byte-by-byte by the main loop in
 virtualMachine.run(). Most bytes are opcodes in one of the following categories:

@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"chain/cos/txscript"
+	"chain/cos/vmutil"
 	"chain/database/pg"
 	"chain/errors"
 )
@@ -64,7 +64,7 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 			if err != nil {
 				return err
 			}
-			controlProgram := txscript.RedeemToPkScript(maybeRedeem)
+			controlProgram := vmutil.RedeemToPkScript(maybeRedeem)
 			controlPrograms = append(controlPrograms, controlProgram)
 			controlMaps[string(controlProgram)] = append(controlMaps[string(controlProgram)], txIn)
 		}

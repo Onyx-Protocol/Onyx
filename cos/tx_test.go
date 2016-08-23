@@ -9,13 +9,12 @@ import (
 	"chain/cos/mempool"
 	"chain/cos/memstore"
 	"chain/cos/state"
-	"chain/cos/txscript"
 	"chain/testutil"
 )
 
 func TestIdempotentAddTx(t *testing.T) {
 	ctx, fc := newContextFC(t)
-	genesis, err := fc.UpsertGenesisBlock(ctx, nil, 0, time.Now())
+	genesis, err := fc.UpsertGenesisBlock(ctx, testutil.TestPubs, 1, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -32,7 +31,8 @@ func TestIdempotentAddTx(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	block.Witness = [][]byte{{txscript.OP_0}}
+	sig := ComputeBlockSignature(block, testutil.TestPrv)
+	AddSignaturesToBlock(block, [][]byte{sig})
 	tree, err := fc.ValidateBlock(ctx, state.Empty(), genesis, block)
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -54,7 +54,7 @@ func TestAddTx(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	_, err = fc.UpsertGenesisBlock(ctx, nil, 0, time.Now())
+	_, err = fc.UpsertGenesisBlock(ctx, testutil.TestPubs, 1, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

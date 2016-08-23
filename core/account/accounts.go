@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"chain/core/signers"
-	"chain/cos/txscript"
+	"chain/cos/vmutil"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
@@ -296,7 +296,7 @@ func CreateControlProgram(ctx context.Context, accountID string) ([]byte, error)
 	path := signers.Path(account.Signer, signers.AccountKeySpace, idx)
 	derivedXPubs := hd25519.DeriveXPubs(account.XPubs, path)
 	derivedPKs := hd25519.XPubKeys(derivedXPubs)
-	control, redeem, err := txscript.TxScripts(derivedPKs, account.Quorum)
+	control, redeem, err := vmutil.TxScripts(derivedPKs, account.Quorum)
 	if err != nil {
 		return nil, err
 	}

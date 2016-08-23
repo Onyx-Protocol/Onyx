@@ -11,7 +11,7 @@ import (
 	"chain/cos/mempool"
 	"chain/cos/memstore"
 	"chain/cos/state"
-	"chain/cos/txscript"
+	"chain/cos/vm"
 	"chain/crypto/ed25519"
 	"chain/errors"
 	"chain/testutil"
@@ -74,21 +74,21 @@ func TestWaitForBlock(t *testing.T) {
 	block1 := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Height:           1,
-			ConsensusProgram: []byte{txscript.OP_TRUE},
+			ConsensusProgram: []byte{byte(vm.OP_TRUE)},
 		},
 	}
 	block2 := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			PreviousBlockHash: block1.Hash(),
 			Height:            2,
-			ConsensusProgram:  []byte{txscript.OP_TRUE},
+			ConsensusProgram:  []byte{byte(vm.OP_TRUE)},
 		},
 	}
 	block3 := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			PreviousBlockHash: block2.Hash(),
 			Height:            3,
-			ConsensusProgram:  []byte{txscript.OP_TRUE},
+			ConsensusProgram:  []byte{byte(vm.OP_TRUE)},
 		},
 	}
 	store.SaveBlock(ctx, block1)
@@ -168,7 +168,7 @@ func TestIdempotentUpsert(t *testing.T) {
 	// UpsertGenesisBlock again should be a no-op, not produce an error.
 	for i := 0; i < 2; i++ {
 		var err error
-		_, err = fc.UpsertGenesisBlock(ctx, []ed25519.PublicKey{testutil.TestPub}, 1, time.Now())
+		_, err = fc.UpsertGenesisBlock(ctx, testutil.TestPubs, 1, time.Now())
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -180,7 +180,7 @@ func TestGenerateBlock(t *testing.T) {
 
 	now := time.Unix(233400000, 0)
 
-	latestBlock, err := fc.UpsertGenesisBlock(ctx, []ed25519.PublicKey{testutil.TestPub}, 1, now)
+	latestBlock, err := fc.UpsertGenesisBlock(ctx, testutil.TestPubs, 1, now)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -252,7 +252,7 @@ func TestGenerateBlock(t *testing.T) {
 }
 
 func TestValidateGenesisBlockForSig(t *testing.T) {
-	genesis, err := NewGenesisBlock(nil, 0, time.Now())
+	genesis, err := NewGenesisBlock(testutil.TestPubs, 1, time.Now())
 	if err != nil {
 		t.Fatal("unexpected error ", err)
 	}

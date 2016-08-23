@@ -77,7 +77,7 @@ func VerifyTxInput(tx *bc.Tx, inputIndex uint32) (bool, error) {
 	return vm.run()
 }
 
-func VerifyBlock(block, prevBlock *bc.Block) (bool, error) {
+func VerifyBlockHeader(block, prevBlock *bc.Block) (bool, error) {
 	vm := virtualMachine{
 		block: block,
 

@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"chain/cos/bc"
-	"chain/cos/txscript"
+	"chain/cos/vm"
 )
 
 const help = `
@@ -97,7 +97,7 @@ func main() {
 			fatalf("err decoding hex: %s", err)
 		}
 
-		s, err := txscript.DisasmString(b)
+		s, err := vm.Decompile(b)
 		if err != nil {
 			fatalf("error decoding script: %s", err)
 		}

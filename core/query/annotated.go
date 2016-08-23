@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"chain/cos/bc"
-	"chain/cos/txscript"
+	"chain/cos/vmutil"
 )
 
 func transactionObject(orig *bc.Tx, b *bc.Block, indexInBlock uint32) map[string]interface{} {
@@ -62,7 +62,7 @@ func transactionOutput(out *bc.TxOutput, idx uint32) map[string]interface{} {
 		"reference_data":  unmarshalReferenceData(out.ReferenceData),
 	}
 
-	if txscript.IsUnspendable(out.ControlProgram) {
+	if vmutil.IsUnspendable(out.ControlProgram) {
 		obj["action"] = "retire"
 	} else {
 		obj["action"] = "control"

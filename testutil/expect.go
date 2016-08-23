@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"chain/cos/txscript"
+	"chain/cos/vm"
 	"chain/errors"
 )
 
@@ -23,8 +23,8 @@ func ExpectEqual(t testing.TB, actual, expected interface{}, msg string) {
 
 func ExpectScriptEqual(t testing.TB, actual, expected []byte, msg string) {
 	if !reflect.DeepEqual(expected, actual) {
-		expectedStr, _ := txscript.DisasmString(expected)
-		actualStr, _ := txscript.DisasmString(actual)
+		expectedStr, _ := vm.Decompile(expected)
+		actualStr, _ := vm.Decompile(actual)
 		t.Errorf("%s: got [%s], expected [%s]\n%s", msg, actualStr, expectedStr, stackTrace())
 	}
 }

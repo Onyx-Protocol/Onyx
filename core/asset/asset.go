@@ -8,7 +8,8 @@ import (
 
 	"chain/core/signers"
 	"chain/cos/bc"
-	"chain/cos/txscript"
+	"chain/cos/vm"
+	"chain/cos/vmutil"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
@@ -545,14 +546,14 @@ func serializeAssetDef(def map[string]interface{}) ([]byte, error) {
 }
 
 func programWithDefinition(pubkeys []ed25519.PublicKey, nrequired int, definition []byte) ([]byte, error) {
-	issuanceProg, err := txscript.TxMultiSigScript(pubkeys, nrequired)
+	issuanceProg, err := vmutil.TxMultiSigScript(pubkeys, nrequired)
 	if err != nil {
 		return nil, err
 	}
-	builder := txscript.NewScriptBuilder()
-	builder.AddData(definition).AddOp(txscript.OP_DROP)
-	builder.ConcatRawScript(issuanceProg)
-	return builder.Script()
+	builder := vmutil.NewBuilder()
+	builder.AddData(definition).AddOp(vm.OP_DROP)
+	builder.AddRawBytes(issuanceProg)
+	return builder.Program, nil
 }
 
 func mapToNullString(in map[string]interface{}) (*sql.NullString, error) {

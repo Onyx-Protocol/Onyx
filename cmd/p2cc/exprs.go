@@ -1,11 +1,11 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
 	"strings"
 
-	"chain/cos/txscript"
+	"chain/cos/vm"
+	"chain/cos/vmutil"
 	"chain/errors"
 )
 
@@ -250,11 +250,11 @@ func (call callExpr) contractCall(stk stack, context *context, contract *contrac
 		return nil, fmt.Errorf("contract %s requires %d param(s), got %d", contract.name, len(contract.params), len(call.actuals))
 	}
 	stk = stk.push(typedName{name: "[building pkscript]", typ: bytesType})
-	b := txscript.AddDataToScript(nil, txscript.ScriptVersion1)
-	b = append(b, txscript.OP_DROP)
-	var output *translation
-	output = output.add(fmt.Sprintf("DATA_%d 0x%s", len(b), hex.EncodeToString(b)), stk)
-	var argdescs []string
+	var (
+		b        = vmutil.NewBuilder()
+		output   *translation
+		argdescs []string
+	)
 	for n := len(call.actuals) - 1; n >= 0; n-- {
 		actual := call.actuals[n]
 		t, err := actual.translate(stk, context)
@@ -267,12 +267,12 @@ func (call callExpr) contractCall(stk stack, context *context, contract *contrac
 		argdescs = append(argdescs, argdesc)
 	}
 	if len(call.actuals) > 0 {
-		b = txscript.AddInt64ToScript(nil, int64(len(call.actuals)))
-		b = append(b, txscript.OP_ROLL)
-		output = output.add(fmt.Sprintf("DATA_%d 0x%s CAT", len(b), hex.EncodeToString(b)), stk)
+		b.AddInt64(int64(len(call.actuals))).AddOp(vm.OP_ROLL)
+		output = output.add(fmt.Sprintf("0x%x CAT", b.Program), stk)
 	}
-	b = []byte{txscript.OP_DUP, txscript.OP_SHA3}
-	output = output.add(fmt.Sprintf("DATA_2 0x%s CAT", hex.EncodeToString(b)), stk)
+	b = vmutil.NewBuilder()
+	b.AddOp(vm.OP_DUP).AddOp(vm.OP_SHA3)
+	output = output.add(fmt.Sprintf("0x%x CAT", b.Program), stk)
 
 	if isSelf {
 		output = output.add("OUTPUTSCRIPT SIZE 34 SUB 32 SUBSTR CATPUSHDATA", stk)
@@ -285,11 +285,13 @@ func (call callExpr) contractCall(stk stack, context *context, contract *contrac
 		if err != nil {
 			return nil, err
 		}
-		b = txscript.AddDataToScript(nil, hash[:])
-		output = output.add(fmt.Sprintf("DATA_%d 0x%s CAT", len(b), hex.EncodeToString(b)), stk)
+		b = vmutil.NewBuilder()
+		b.AddData(hash[:])
+		output = output.add(fmt.Sprintf("0x%x CAT", b.Program), stk)
 	}
 
-	b = []byte{txscript.OP_EQUALVERIFY, txscript.OP_0, txscript.OP_CHECKPREDICATE}
+	b = vmutil.NewBuilder()
+	b.AddOp(vm.OP_EQUALVERIFY).AddOp(vm.OP_0).AddOp(vm.OP_CHECKPREDICATE)
 	// reverse argdescs
 	for i := 0; i < len(argdescs)/2; i++ {
 		other := len(argdescs) - i - 1
@@ -297,7 +299,7 @@ func (call callExpr) contractCall(stk stack, context *context, contract *contrac
 	}
 	s := stk.drop()
 	s = s.push(typedName{name: fmt.Sprintf("[%s(%s)]", call.name, strings.Join(argdescs, ", "))})
-	output = output.add(fmt.Sprintf("DATA_2 0x%s CAT", hex.EncodeToString(b)), s)
+	output = output.add(fmt.Sprintf("0x%x CAT", b.Program), s)
 	return output, nil
 }
 

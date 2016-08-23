@@ -8,7 +8,8 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/state"
-	"chain/cos/txscript"
+	"chain/cos/vm"
+	"chain/cos/vmutil"
 	"chain/errors"
 	"chain/net/trace/span"
 )
@@ -116,25 +117,23 @@ func validateBlockHeader(prevBlock, block *bc.Block, runScript bool) error {
 		return ErrBadTxRoot
 	}
 
-	if txscript.IsUnspendable(block.ConsensusProgram) {
+	if vmutil.IsUnspendable(block.ConsensusProgram) {
 		return ErrBadScript
 	}
 
 	if runScript && prevBlock != nil {
-		engine, err := txscript.NewEngineForBlock(prevBlock.ConsensusProgram, block, txscript.StandardVerifyFlags)
-		if err != nil {
-			return err
+		ok, err := vm.VerifyBlockHeader(block, prevBlock)
+		if err == nil && !ok {
+			err = ErrFalseVMResult
 		}
-		if err = engine.Execute(); err != nil {
-			pkScriptStr, _ := txscript.DisasmString(prevBlock.ConsensusProgram)
-
+		if err != nil {
+			pkScriptStr, _ := vm.Decompile(prevBlock.ConsensusProgram)
 			witnessStrs := make([]string, 0, len(block.Witness))
 			for _, w := range block.Witness {
 				witnessStrs = append(witnessStrs, hex.EncodeToString(w))
 			}
 			witnessStr := strings.Join(witnessStrs, "; ")
-
-			return errors.Wrapf(ErrBadSig, "validation failed in script execution in block (program [%s] witness [%s]): %s", pkScriptStr, witnessStr, err.Error())
+			return errors.Wrapf(ErrBadSig, "validation failed in script execution in block (program [%s] witness [%s]): %s", pkScriptStr, witnessStr, err)
 		}
 	}
 

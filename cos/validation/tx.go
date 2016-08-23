@@ -2,14 +2,13 @@ package validation
 
 import (
 	"encoding/hex"
-	"fmt"
-	"os"
 	"reflect"
 	"strings"
 
 	"chain/cos/bc"
 	"chain/cos/state"
-	"chain/cos/txscript"
+	"chain/cos/vm"
+	"chain/cos/vmutil"
 	"chain/errors"
 )
 
@@ -20,8 +19,13 @@ type PriorIssuances map[bc.Hash]uint64
 
 var stubGenesisHash = bc.Hash{}
 
-// ErrBadTx is returned for transactions failing validation
-var ErrBadTx = errors.New("invalid transaction")
+var (
+	// ErrBadTx is returned for transactions failing validation
+	ErrBadTx = errors.New("invalid transaction")
+
+	// ErrFalseVMResult is one of the ways for a transaction to fail validation
+	ErrFalseVMResult = errors.New("false VM result")
+)
 
 // ConfirmTx validates the given transaction against the given state tree
 // before it's added to a block. If tx is invalid, it returns a non-nil
@@ -125,33 +129,25 @@ func ValidateTx(tx *bc.Tx) error {
 		}
 	}
 
-	engine, err := txscript.NewReusableEngine(&tx.TxData, txscript.StandardVerifyFlags)
-	if err != nil {
-		return fmt.Errorf("cannot create script engine: %s", err)
-	}
-	if false { // change to true for quick debug tracing
-		txscript.SetLogWriter(os.Stdout, "trace")
-		defer txscript.DisableLog()
-	}
-	for i, input := range tx.Inputs {
-		var program []byte
-		if input.IsIssuance() {
-			program = input.IssuanceProgram()
-		} else {
-			program = input.ControlProgram()
+	for i, _ := range tx.Inputs {
+		ok, err := vm.VerifyTxInput(tx, uint32(i))
+		if err == nil && !ok {
+			err = ErrFalseVMResult
 		}
-		err = engine.Prepare(program, input.InputWitness, i)
 		if err != nil {
-			err = errors.Wrapf(ErrBadTx, "cannot prepare VM to process input %d: %s", i, err)
-			return errors.WithDetailf(err, "invalid program on input %d", i)
-		}
-		if err = engine.Execute(); err != nil {
-			scriptStr, _ := txscript.DisasmString(program)
+			input := tx.Inputs[i]
+			var program []byte
+			if input.IsIssuance() {
+				program = input.IssuanceProgram()
+			} else {
+				program = input.ControlProgram()
+			}
+			scriptStr, _ := vm.Decompile(program)
 			hexArgs := make([]string, 0, len(input.InputWitness))
 			for _, arg := range input.InputWitness {
 				hexArgs = append(hexArgs, hex.EncodeToString(arg))
 			}
-			return errors.WithDetailf(ErrBadTx, "validation failed in script execution, input %d (args [%s] program [%s])", i, strings.Join(hexArgs, " "), scriptStr)
+			return errors.WithDetailf(ErrBadTx, "validation failed in script execution, input %d (program [%s] args [%s]): %s", i, scriptStr, strings.Join(hexArgs, " "), err)
 		}
 	}
 	return nil
@@ -177,7 +173,7 @@ func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 	}
 
 	for i, out := range tx.Outputs {
-		if txscript.IsUnspendable(out.ControlProgram) {
+		if vmutil.IsUnspendable(out.ControlProgram) {
 			continue
 		}
 		// Insert new outputs into the state tree.

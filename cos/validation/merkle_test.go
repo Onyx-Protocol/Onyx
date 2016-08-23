@@ -3,7 +3,7 @@ package validation
 import (
 	"bytes"
 	"chain/cos/bc"
-	"chain/cos/txscript"
+	"chain/cos/vm"
 	"testing"
 )
 
@@ -14,7 +14,7 @@ func TestCalcMerkleRoot(t *testing.T) {
 	}{{
 		witnesses: [][][]byte{
 			[][]byte{
-				txscript.NumItem(1).Bytes(),
+				vm.Int64Bytes(1),
 				[]byte("00000"),
 			},
 		},
@@ -22,11 +22,11 @@ func TestCalcMerkleRoot(t *testing.T) {
 	}, {
 		witnesses: [][][]byte{
 			[][]byte{
-				txscript.NumItem(1).Bytes(),
+				vm.Int64Bytes(1),
 				[]byte("000000"),
 			},
 			[][]byte{
-				txscript.NumItem(1).Bytes(),
+				vm.Int64Bytes(1),
 				[]byte("111111"),
 			},
 		},
@@ -34,11 +34,11 @@ func TestCalcMerkleRoot(t *testing.T) {
 	}, {
 		witnesses: [][][]byte{
 			[][]byte{
-				txscript.NumItem(1).Bytes(),
+				vm.Int64Bytes(1),
 				[]byte("000000"),
 			},
 			[][]byte{
-				txscript.NumItem(2).Bytes(),
+				vm.Int64Bytes(2),
 				[]byte("111111"),
 				[]byte("222222"),
 			},

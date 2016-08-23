@@ -7,8 +7,8 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/state"
-	"chain/cos/txscript"
 	"chain/cos/validation"
+	"chain/cos/vmutil"
 	"chain/crypto/ed25519"
 	"chain/errors"
 	"chain/log"
@@ -343,7 +343,7 @@ func AddSignaturesToBlock(b *bc.Block, signatures [][]byte) {
 // GenerateBlockScript generates a predicate script
 // requiring nSigs signatures from the given keys.
 func GenerateBlockScript(keys []ed25519.PublicKey, nSigs int) ([]byte, error) {
-	return txscript.BlockMultiSigScript(keys, nSigs)
+	return vmutil.BlockMultiSigScript(keys, nSigs)
 }
 
 // UpsertGenesisBlock creates a genesis block iff it does not exist.

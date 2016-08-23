@@ -20,6 +20,11 @@ func (b *Builder) AddData(data []byte) *Builder {
 	return b
 }
 
+func (b *Builder) AddRawBytes(data []byte) *Builder {
+	b.Program = append(b.Program, data...)
+	return b
+}
+
 func (b *Builder) AddOp(op vm.Op) *Builder {
 	b.Program = append(b.Program, byte(op))
 	return b

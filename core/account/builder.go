@@ -9,7 +9,7 @@ import (
 	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
-	"chain/cos/txscript"
+	"chain/cos/vmutil"
 	"chain/crypto/ed25519/hd25519"
 	"chain/encoding/json"
 	"chain/errors"
@@ -134,7 +134,7 @@ func utxoToInputs(ctx context.Context, u *utxodb.UTXO, refData []byte) (*bc.TxIn
 	derivedXPubs := hd25519.DeriveXPubs(inputAccount.XPubs, path)
 	derivedPKs := hd25519.XPubKeys(derivedXPubs)
 
-	redeemScript, err := txscript.TxMultiSigScript(derivedPKs, inputAccount.Quorum)
+	redeemScript, err := vmutil.TxMultiSigScript(derivedPKs, inputAccount.Quorum)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "compute redeem script")
 	}

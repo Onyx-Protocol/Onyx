@@ -10,7 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"chain/cos/txscript"
+	"chain/cos/vm"
+	"chain/cos/vmutil"
 )
 
 var (
@@ -58,7 +59,7 @@ func main() {
 			panic(err)
 		}
 		fmt.Fprintf(outFile, "package %s\n\n", filepath.Base(filepath.Dir(absIn)))
-		fmt.Fprint(outFile, "import (\n\t\"chain/cos/bc\"\n\t\"chain/cos/txscript\"\n)\n")
+		fmt.Fprint(outFile, "import (\n\t\"chain/cos/bc\"\n\t\"chain/cos/vm\"\n\t\"chain/cos/vmutil\"\n)\n")
 	}
 
 	contracts, err := parse(in)
@@ -127,13 +128,13 @@ func main() {
 			fmt.Fprint(outFile, ") ([]byte, error) {\n")
 			var inputsArg string
 			if len(pair.parsed.params) > 0 {
-				fmt.Fprintf(outFile, "\tinputs := make([]txscript.Item, 0, %d)\n", len(pair.parsed.params))
+				fmt.Fprintf(outFile, "\tinputs := make([][]byte, 0, %d)\n", len(pair.parsed.params))
 				buildInputs(outFile, pair.parsed.params)
 				inputsArg = "inputs"
 			} else {
 				inputsArg = "nil"
 			}
-			fmt.Fprintf(outFile, "\treturn txscript.PayToContractHash(%sContractHash, %s, txscript.ScriptVersion1)\n", contractTitle, inputsArg)
+			fmt.Fprintf(outFile, "\treturn vmutil.PayToContractHash(%sContractHash, %s)\n", contractTitle, inputsArg)
 			fmt.Fprint(outFile, "}\n")
 			for i, clause := range pair.parsed.clauses {
 				fmt.Fprint(outFile, "\n")
@@ -146,16 +147,16 @@ func main() {
 					nItems++
 				}
 				if nItems > 0 {
-					fmt.Fprintf(outFile, "\tinputs := make([]txscript.Item, 0, %d)\n", nItems)
+					fmt.Fprintf(outFile, "\tinputs := make([][]byte, 0, %d)\n", nItems)
 					if needClauseSelector {
-						fmt.Fprintf(outFile, "\tinputs = append(inputs, txscript.NumItem(%d))\n", i+1)
+						fmt.Fprintf(outFile, "\tinputs = append(inputs, vm.Int64Bytes(%d))\n", i+1)
 					}
 					buildInputs(outFile, clause.params)
 					inputsArg = "inputs"
 				} else {
 					inputsArg = "nil"
 				}
-				fmt.Fprintf(outFile, "\treturn txscript.RedeemP2C(%sContractBytes, %s)\n", contractTitle, inputsArg)
+				fmt.Fprintf(outFile, "\treturn vmutil.RedeemP2C(%sContractBytes, %s)\n", contractTitle, inputsArg)
 				fmt.Fprint(outFile, "}\n")
 			}
 		}
@@ -195,27 +196,21 @@ func main() {
 		fmt.Println("\nContracthash hex:")
 		fmt.Println(hex.EncodeToString(hash[:]))
 
-		pkscript, err := txscript.PayToContractHash(hash, nil, txscript.ScriptVersion1)
-		if err != nil {
-			panic(err)
-		}
+		pkscript := vmutil.PayToContractHash(hash, nil)
 
 		// Passed nil for params above.  Add in placeholders for them
 		// "manually."
-		pkscriptPrefix := pkscript[:2] // <scriptVersion> DROP
-		var pkscriptSuffix []byte
+		pkscriptSuffix := vmutil.NewBuilder()
 		if len(pair.parsed.params) > 0 {
-			pkscriptSuffix = txscript.AddInt64ToScript(nil, int64(len(pair.parsed.params)))
-			pkscriptSuffix = append(pkscriptSuffix, txscript.OP_ROLL)
+			pkscriptSuffix.AddInt64(int64(len(pair.parsed.params))).AddOp(vm.OP_ROLL)
 		}
-		pkscriptSuffix = append(pkscriptSuffix, pkscript[2:]...) // DUP SHA3 <hash> EQUALVERIFY 0 CHECKPREDICATE
+		pkscriptSuffix.AddRawBytes(pkscript) // DUP SHA3 <hash> EQUALVERIFY 0 CHECKPREDICATE
 
 		fmt.Println("\nPkscript hex:")
-		fmt.Printf("%s", hex.EncodeToString(pkscriptPrefix))
 		for n := len(pair.parsed.params) - 1; n >= 0; n-- {
 			fmt.Printf("<%s>", pair.parsed.params[n].name)
 		}
-		fmt.Printf("%s\n", hex.EncodeToString(pkscriptSuffix))
+		fmt.Printf("%s\n", hex.EncodeToString(pkscriptSuffix.Program))
 
 		for j, clause := range pair.parsed.clauses {
 			fmt.Printf("\nRedeem %s.%s:\n", pair.parsed.name, clause.name)
@@ -225,9 +220,9 @@ func main() {
 			}
 			var redeem []byte
 			if len(pair.parsed.clauses) > 1 {
-				redeem = txscript.AddInt64ToScript(nil, int64(j+1))
+				redeem = vm.PushdataInt64(int64(j + 1))
 			}
-			redeem = txscript.AddDataToScript(redeem, bytes)
+			redeem = append(redeem, vm.PushdataBytes(bytes)...)
 			fmt.Printf("%s\n", hex.EncodeToString(redeem))
 		}
 	}
@@ -253,15 +248,15 @@ func emitParams(w io.Writer, params []typedName) {
 
 func buildInputs(w io.Writer, params []typedName) {
 	for _, param := range params {
-		var typ string
+		var toAppend string
 		switch param.typ {
 		case unknownType, bytesType:
-			typ = "Data"
+			toAppend = param.name
 		case numType:
-			typ = "Num"
+			toAppend = fmt.Sprintf("vm.Int64Bytes(%s)", param.name)
 		case boolType:
-			typ = "Bool"
+			toAppend = fmt.Sprintf("vm.BoolBytes(%s)", param.name)
 		}
-		fmt.Fprintf(w, "\tinputs = append(inputs, txscript.%sItem(%s))\n", typ, param.name)
+		fmt.Fprintf(w, "\tinputs = append(inputs, %s)\n", toAppend)
 	}
 }

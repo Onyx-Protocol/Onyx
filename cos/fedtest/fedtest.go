@@ -6,7 +6,7 @@ import (
 
 	"chain/cos/bc"
 	"chain/cos/state"
-	"chain/cos/txscript"
+	"chain/cos/vmutil"
 	"chain/crypto/ed25519"
 	"chain/testutil"
 )
@@ -22,7 +22,7 @@ func Dest(t testing.TB) *TestDest {
 		testutil.FatalErr(t, err)
 	}
 
-	pkScript, redeem, err := txscript.TxScripts([]ed25519.PublicKey{pub}, 1)
+	pkScript, redeem, err := vmutil.TxScripts([]ed25519.PublicKey{pub}, 1)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

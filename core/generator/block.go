@@ -11,7 +11,7 @@ import (
 	"chain/core/rpcclient"
 	"chain/cos"
 	"chain/cos/bc"
-	"chain/cos/txscript"
+	"chain/cos/vmutil"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
@@ -77,7 +77,7 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 		return nil // no signatures needed for initial block
 	}
 
-	pubkeys, nrequired, err := txscript.ParseBlockMultiSigScript(prevBlock.ConsensusProgram)
+	pubkeys, nrequired, err := vmutil.ParseBlockMultiSigScript(prevBlock.ConsensusProgram)
 	if err != nil {
 		return errors.Wrap(err, "parsing prevblock output script")
 	}

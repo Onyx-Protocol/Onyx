@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"chain/core/signers"
-	"chain/cos/txscript"
+	"chain/cos/vm"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -70,7 +70,7 @@ func TestCreateControlProgram(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	want, err := txscript.ParseScriptString("OP_DUP OP_SHA3 OP_DATA_32 0x963e9956eabe4610b042a3b085a1dc648e7fd87298b51d0369e2f66446338739 OP_EQUALVERIFY 0 OP_CHECKPREDICATE")
+	want, err := vm.Compile("DUP SHA3 0x963e9956eabe4610b042a3b085a1dc648e7fd87298b51d0369e2f66446338739 EQUALVERIFY 0 CHECKPREDICATE")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

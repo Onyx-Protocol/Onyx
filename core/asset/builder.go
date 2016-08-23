@@ -7,7 +7,7 @@ import (
 	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/cos/bc"
-	"chain/cos/txscript"
+	"chain/cos/vmutil"
 	"chain/encoding/json"
 	"chain/errors"
 )
@@ -46,6 +46,6 @@ func issuanceInput(a *Asset, aa bc.AssetAmount) *txbuilder.Input {
 	tmplInp := &txbuilder.Input{AssetAmount: aa}
 	path := signers.Path(a.Signer, signers.AssetKeySpace, nil)
 	sigs := txbuilder.InputSigs(a.Signer.XPubs, path)
-	tmplInp.AddWitnessSigs(sigs, txscript.SigsRequired(a.IssuanceProgram), nil)
+	tmplInp.AddWitnessSigs(sigs, vmutil.SigsRequired(a.IssuanceProgram), nil)
 	return tmplInp
 }

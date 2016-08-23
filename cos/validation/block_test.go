@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"chain/cos/bc"
-	"chain/cos/txscript"
+	"chain/cos/vm"
 	"chain/errors"
 )
 
@@ -13,7 +13,7 @@ func TestValidateBlockHeader(t *testing.T) {
 		BlockHeader: bc.BlockHeader{
 			Height:           1,
 			TimestampMS:      5,
-			ConsensusProgram: []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
+			ConsensusProgram: []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
 		},
 	}
 	prevHash := prevBlock.Hash()
@@ -49,7 +49,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			PreviousBlockHash: prevHash,
 			Height:            1,
 			TimestampMS:       6,
-			ConsensusProgram:  []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
+			ConsensusProgram:  []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
 			Witness:           [][]byte{{0x04}},
 		},
 		want: ErrBadHeight,
@@ -59,7 +59,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			PreviousBlockHash: prevHash,
 			Height:            2,
 			TimestampMS:       6,
-			ConsensusProgram:  []byte{txscript.OP_RETURN},
+			ConsensusProgram:  []byte{byte(vm.OP_FAIL)},
 		},
 		want: ErrBadScript,
 	}, {
@@ -68,7 +68,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			PreviousBlockHash: prevHash,
 			Height:            2,
 			TimestampMS:       6,
-			ConsensusProgram:  []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
+			ConsensusProgram:  []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
 			Witness:           [][]byte{{0x03}},
 		},
 		want: ErrBadSig,
@@ -78,7 +78,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			PreviousBlockHash: prevHash,
 			Height:            2,
 			TimestampMS:       6,
-			ConsensusProgram:  []byte{txscript.OP_5, txscript.OP_ADD, txscript.OP_9, txscript.OP_EQUAL},
+			ConsensusProgram:  []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
 			Witness:           [][]byte{{0x04}},
 		},
 		want: nil,

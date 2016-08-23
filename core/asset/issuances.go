@@ -5,7 +5,7 @@ import (
 
 	"chain/core/txdb"
 	"chain/cos/bc"
-	"chain/cos/txscript"
+	"chain/cos/vmutil"
 	"chain/database/pg"
 	"chain/errors"
 	chainlog "chain/log"
@@ -113,7 +113,7 @@ func calcIssuances(txs ...*bc.Tx) Issuances {
 		for _, txout := range tx.Outputs {
 			parity[txout.AssetAmount.AssetID] -= int64(txout.AssetAmount.Amount)
 
-			if txscript.IsUnspendable(txout.ControlProgram) {
+			if vmutil.IsUnspendable(txout.ControlProgram) {
 				amt := assets[txout.AssetID]
 				amt.Destroyed = amt.Destroyed + txout.Amount
 				assets[txout.AssetID] = amt

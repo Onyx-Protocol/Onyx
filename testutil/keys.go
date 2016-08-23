@@ -10,6 +10,7 @@ var (
 	TestXPrv *hd25519.XPrv
 	TestPub  ed25519.PublicKey
 	TestPrv  ed25519.PrivateKey
+	TestPubs []ed25519.PublicKey
 )
 
 type zeroReader struct{}
@@ -29,6 +30,7 @@ func init() {
 	}
 	TestPrv = TestXPrv.Key
 	TestPub = TestXPub.Key
+	TestPubs = []ed25519.PublicKey{TestPub}
 }
 
 // XPubs parses the serialized xpubs in a.
