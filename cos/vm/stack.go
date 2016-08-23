@@ -227,7 +227,6 @@ func opRoll(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	// TODO(bobg): range-check n
 	err = rot(vm, n+1)
 	if err != nil {
 		return err

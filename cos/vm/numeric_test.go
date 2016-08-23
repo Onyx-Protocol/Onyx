@@ -1,6 +1,8 @@
 package vm
 
 import (
+	"fmt"
+	"math"
 	"reflect"
 	"testing"
 )
@@ -57,6 +59,16 @@ func TestNumericOps(t *testing.T) {
 		startVM: &virtualMachine{
 			runLimit:  50000,
 			dataStack: [][]byte{Int64Bytes(-2)},
+		},
+		wantVM: &virtualMachine{
+			runLimit:  49998,
+			dataStack: [][]byte{Int64Bytes(-1)},
+		},
+	}, {
+		op: OP_2DIV,
+		startVM: &virtualMachine{
+			runLimit:  50000,
+			dataStack: [][]byte{Int64Bytes(-1)},
 		},
 		wantVM: &virtualMachine{
 			runLimit:  49998,
@@ -185,6 +197,17 @@ func TestNumericOps(t *testing.T) {
 		op: OP_DIV,
 		startVM: &virtualMachine{
 			runLimit:  50000,
+			dataStack: [][]byte{Int64Bytes(-3), Int64Bytes(2)},
+		},
+		wantVM: &virtualMachine{
+			runLimit:     49992,
+			deferredCost: -9,
+			dataStack:    [][]byte{Int64Bytes(-1)},
+		},
+	}, {
+		op: OP_DIV,
+		startVM: &virtualMachine{
+			runLimit:  50000,
 			dataStack: [][]byte{{2}, {}},
 		},
 		wantErr: ErrDivZero,
@@ -240,17 +263,6 @@ func TestNumericOps(t *testing.T) {
 			dataStack:    [][]byte{Int64Bytes(-4)},
 		},
 	}, {
-		op: OP_LSHIFT,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{2}, Int64Bytes(-1)},
-		},
-		wantVM: &virtualMachine{
-			runLimit:     49992,
-			deferredCost: -16,
-			dataStack:    [][]byte{{1}},
-		},
-	}, {
 		op: OP_RSHIFT,
 		startVM: &virtualMachine{
 			runLimit:  50000,
@@ -271,17 +283,6 @@ func TestNumericOps(t *testing.T) {
 			runLimit:     49992,
 			deferredCost: -9,
 			dataStack:    [][]byte{Int64Bytes(-1)},
-		},
-	}, {
-		op: OP_RSHIFT,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{{2}, Int64Bytes(-1)},
-		},
-		wantVM: &virtualMachine{
-			runLimit:     49992,
-			deferredCost: -16,
-			dataStack:    [][]byte{{4}},
 		},
 	}, {
 		op: OP_BOOLAND,
@@ -503,6 +504,78 @@ func TestNumericOps(t *testing.T) {
 
 		if !reflect.DeepEqual(c.startVM, c.wantVM) {
 			t.Errorf("case %d, op %s: unexpected vm result\n\tgot:  %+v\n\twant: %+v\n", i, ops[c.op].name, c.startVM, c.wantVM)
+		}
+	}
+}
+
+func TestRangeErrs(t *testing.T) {
+	cases := []struct {
+		prog           string
+		expectRangeErr bool
+	}{
+		{"0 1ADD", false},
+		{fmt.Sprintf("%d 1ADD", int64(math.MinInt64)), false},
+		{fmt.Sprintf("%d 1ADD", int64(math.MaxInt64)-1), false},
+		{fmt.Sprintf("%d 1ADD", int64(math.MaxInt64)), true},
+		{"0 1SUB", false},
+		{fmt.Sprintf("%d 1SUB", int64(math.MaxInt64)), false},
+		{fmt.Sprintf("%d 1SUB", int64(math.MinInt64)+1), false},
+		{fmt.Sprintf("%d 1SUB", int64(math.MinInt64)), true},
+		{"1 2MUL", false},
+		{fmt.Sprintf("%d 2MUL", int64(math.MaxInt64)/2-1), false},
+		{fmt.Sprintf("%d 2MUL", int64(math.MaxInt64)/2+1), true},
+		{fmt.Sprintf("%d 2MUL", int64(math.MinInt64)/2+1), false},
+		{fmt.Sprintf("%d 2MUL", int64(math.MinInt64)/2-1), true},
+		{"1 NEGATE", false},
+		{"-1 NEGATE", false},
+		{fmt.Sprintf("%d NEGATE", int64(math.MaxInt64)), false},
+		{fmt.Sprintf("%d NEGATE", int64(math.MinInt64)), true},
+		{"1 ABS", false},
+		{"-1 ABS", false},
+		{fmt.Sprintf("%d ABS", int64(math.MaxInt64)), false},
+		{fmt.Sprintf("%d ABS", int64(math.MinInt64)), true},
+		{"2 3 ADD", false},
+		{fmt.Sprintf("%d %d ADD", int64(math.MinInt64), int64(math.MaxInt64)), false},
+		{fmt.Sprintf("%d %d ADD", int64(math.MaxInt64)/2-1, int64(math.MaxInt64)/2-2), false},
+		{fmt.Sprintf("%d %d ADD", int64(math.MaxInt64)/2+1, int64(math.MaxInt64)/2+2), true},
+		{fmt.Sprintf("%d %d ADD", int64(math.MinInt64)/2+1, int64(math.MinInt64)/2+2), false},
+		{fmt.Sprintf("%d %d ADD", int64(math.MinInt64)/2-1, int64(math.MinInt64)/2-2), true},
+		{"2 3 SUB", false},
+		{fmt.Sprintf("1 %d SUB", int64(math.MaxInt64)), false},
+		{fmt.Sprintf("-1 %d SUB", int64(math.MinInt64)), false},
+		{fmt.Sprintf("1 %d SUB", int64(math.MinInt64)), true},
+		{fmt.Sprintf("-1 %d SUB", int64(math.MaxInt64)), false},
+		{fmt.Sprintf("-2 %d SUB", int64(math.MaxInt64)), true},
+		{"1 2 LSHIFT", false},
+		{"-1 2 LSHIFT", false},
+		{"-1 63 LSHIFT", false},
+		{"-1 64 LSHIFT", true},
+		{"0 64 LSHIFT", false},
+		{"1 62 LSHIFT", false},
+		{"1 63 LSHIFT", true},
+		{fmt.Sprintf("%d 0 LSHIFT", int64(math.MaxInt64)), false},
+		{fmt.Sprintf("%d 1 LSHIFT", int64(math.MaxInt64)), true},
+		{fmt.Sprintf("%d 1 LSHIFT", int64(math.MaxInt64)/2), false},
+		{fmt.Sprintf("%d 2 LSHIFT", int64(math.MaxInt64)/2), true},
+		{fmt.Sprintf("%d 0 LSHIFT", int64(math.MinInt64)), false},
+		{fmt.Sprintf("%d 1 LSHIFT", int64(math.MinInt64)), true},
+		{fmt.Sprintf("%d 1 LSHIFT", int64(math.MinInt64)/2), false},
+		{fmt.Sprintf("%d 2 LSHIFT", int64(math.MinInt64)/2), true},
+	}
+
+	for i, c := range cases {
+		prog, _ := Compile(c.prog)
+		vm := &virtualMachine{
+			program:  prog,
+			runLimit: 50000,
+		}
+		_, err := vm.run()
+		if c.expectRangeErr {
+			if err != ErrRange {
+				t.Errorf("case %d (%s): expected range error, got %s", i, c.prog, err)
+			}
+		} else if err != nil {
+			t.Errorf("case %d (%s): expected no error, got %s", i, c.prog, err)
 		}
 	}
 }

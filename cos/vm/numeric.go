@@ -1,5 +1,7 @@
 package vm
 
+import "math"
+
 func op1Add(vm *virtualMachine) error {
 	err := vm.applyCost(2)
 	if err != nil {
@@ -9,7 +11,9 @@ func op1Add(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	// TODO(bobg): range-check n
+	if n == math.MaxInt64 {
+		return ErrRange
+	}
 	return vm.pushInt64(n+1, true)
 }
 
@@ -22,7 +26,9 @@ func op1Sub(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	// TODO(bobg): range-check n
+	if n == math.MinInt64 {
+		return ErrRange
+	}
 	return vm.pushInt64(n-1, true)
 }
 
@@ -35,8 +41,11 @@ func op2Mul(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	// TODO(bobg): range-check n
-	return vm.pushInt64(2*n, true)
+	res := 2 * n
+	if res/2 != n {
+		return ErrRange
+	}
+	return vm.pushInt64(res, true)
 }
 
 func op2Div(vm *virtualMachine) error {
@@ -48,16 +57,7 @@ func op2Div(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	var wasNegative bool
-	if n < 0 {
-		wasNegative = true
-		n = -n
-	}
-	n >>= 1
-	if wasNegative {
-		n = -n
-	}
-	return vm.pushInt64(n, true)
+	return vm.pushInt64(n>>1, true)
 }
 
 func opNegate(vm *virtualMachine) error {
@@ -69,7 +69,9 @@ func opNegate(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	// TODO(bobg): range-check n
+	if n == math.MinInt64 {
+		return ErrRange
+	}
 	return vm.pushInt64(-n, true)
 }
 
@@ -82,7 +84,9 @@ func opAbs(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	// TODO(bobg): range-check n
+	if n == math.MinInt64 {
+		return ErrRange
+	}
 	if n < 0 {
 		n = -n
 	}
@@ -126,7 +130,10 @@ func opAdd(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	// TODO(bobg): range-check x and y
+	sum := x + y
+	if (x > 0 && y > 0 && sum < 0) || (x < 0 && y < 0 && sum > 0) {
+		return ErrRange
+	}
 	return vm.pushInt64(x+y, true)
 }
 
@@ -143,7 +150,10 @@ func opSub(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	// TODO(bobg): range-check x and y
+	diff := x - y
+	if (x > 0 && y < 0 && diff < 0) || (x < 0 && y > 0 && diff > 0) {
+		return ErrRange
+	}
 	return vm.pushInt64(x-y, true)
 }
 
@@ -160,8 +170,11 @@ func opMul(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	// TODO(bobg): range-check x and y
-	return vm.pushInt64(x*y, true)
+	res := x * y
+	if res/y != x {
+		return ErrRange
+	}
+	return vm.pushInt64(res, true)
 }
 
 func opDiv(vm *virtualMachine) error {
@@ -180,20 +193,7 @@ func opDiv(vm *virtualMachine) error {
 	if y == 0 {
 		return ErrDivZero
 	}
-	var negs int
-	if x < 0 {
-		negs++
-		x = -x
-	}
-	if y < 0 {
-		negs++
-		y = -y
-	}
-	res := x / y
-	if negs == 1 {
-		res = -res
-	}
-	return vm.pushInt64(res, true)
+	return vm.pushInt64(x/y, true)
 }
 
 func opMod(vm *virtualMachine) error {
@@ -233,25 +233,48 @@ func opLshift(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
+	if y < 0 {
+		return ErrBadValue
+	}
 	x, err := vm.popInt64(true)
 	if err != nil {
 		return err
 	}
-	// TODO(bobg): range-check x and y
-	var wasNegative bool
+	if x == 0 || y == 0 {
+		return vm.pushInt64(x, true)
+	}
+
+	var maxShift int64
 	if x < 0 {
-		wasNegative = true
-		x = -x
-	}
-	if y < 0 {
-		x >>= uint64(-y)
+		maxShift = 64
 	} else {
-		x <<= uint64(y)
+		maxShift = 63
 	}
-	if wasNegative {
-		x = -x
+	if y >= maxShift {
+		return ErrRange
 	}
-	return vm.pushInt64(x, true)
+
+	// Check for this separately since we can't take the abs of MinInt64.
+	if x == int64(math.MinInt64) {
+		return ErrRange
+	}
+
+	// How far can we left shift? Look for the most significant bit.
+	var absX, msb int64
+	if x < 0 {
+		absX = -x
+	} else {
+		absX = x
+	}
+	for absX > 0 {
+		msb++
+		absX >>= 1
+	}
+	if y > maxShift-msb {
+		return ErrRange
+	}
+
+	return vm.pushInt64(x<<uint64(y), true)
 }
 
 func opRshift(vm *virtualMachine) error {
@@ -267,21 +290,10 @@ func opRshift(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	// TODO(bobg): range-check x and y
-	var wasNegative bool
-	if x < 0 {
-		wasNegative = true
-		x = -x
-	}
 	if y < 0 {
-		x <<= uint64(-y)
-	} else {
-		x >>= uint64(y)
+		return ErrBadValue
 	}
-	if wasNegative {
-		x = -x
-	}
-	return vm.pushInt64(x, true)
+	return vm.pushInt64(x>>uint64(y), true)
 }
 
 func opBoolAnd(vm *virtualMachine) error {

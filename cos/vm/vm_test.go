@@ -58,7 +58,7 @@ func doOKNotOK(t *testing.T, expectOK bool) {
 		{"2DIV 1 NUMEQUAL", [][]byte{Int64Bytes(2)}},
 		{"2DIV 0 NUMEQUAL", [][]byte{Int64Bytes(1)}},
 		{"2DIV 0 NUMEQUAL", [][]byte{Int64Bytes(0)}},
-		{"2DIV 0 NUMEQUAL", [][]byte{Int64Bytes(-1)}},
+		{"2DIV -1 NUMEQUAL", [][]byte{Int64Bytes(-1)}},
 		{"2DIV -1 NUMEQUAL", [][]byte{Int64Bytes(-2)}},
 
 		{"NEGATE -1 NUMEQUAL", [][]byte{Int64Bytes(1)}},
