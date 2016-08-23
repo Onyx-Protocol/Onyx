@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "start": "hjs-dev-server",
     "build": "NODE_ENV=production webpack",
+    "lint": "eslint src/**",
+    "start": "hjs-dev-server",
     "test": "mocha --compilers js:babel-core/register */**/*.test.js"
   },
   "author": "",
@@ -43,6 +44,7 @@
     "uuid": "^2.0.2"
   },
   "devDependencies": {
+    "eslint": "~3.3.1",
     "mocha": "~2.2.0",
     "nock": "~4.0.0"
   }
