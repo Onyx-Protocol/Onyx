@@ -13,5 +13,20 @@ body {
   position: relative;
   margin: 0;
   padding-bottom: 4rem;
+  padding-top: 70px;
   min-height: 100%;
+}
+
+.btn:focus,.btn:active:focus,.btn.active:focus,
+.btn.focus,.btn:active.focus,.btn.active.focus {
+    outline: none;
+}
+
+.form-container {
+  max-width: 50%;
+  margin: 0 auto;
+}
+
+.panel-body pre {
+  margin-bottom: 0;
 }

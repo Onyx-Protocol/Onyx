@@ -4,8 +4,6 @@ import { Route, IndexRoute, Redirect } from 'react-router'
 import Navigation from './components/Navigation/Navigation'
 import Section from './containers/SectionContainer'
 
-import Home from './components/Home'
-
 import TransactionList from './containers/Transactions/List'
 import NewTransaction from './containers/Transactions/New'
 
@@ -29,7 +27,7 @@ import NotFound from './components/NotFound'
 export default ({
   path: '/',
   component: Navigation,
-  indexRoute: { component: Home },
+  indexRoute: { onEnter: (nextState, replace) => replace('/transactions') },
   childRoutes: [
     {
       path: 'transactions',

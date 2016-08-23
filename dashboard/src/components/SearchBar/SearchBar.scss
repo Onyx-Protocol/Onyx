@@ -5,17 +5,27 @@
 .search_field {
   display: inline-block;
   position: relative;
-  width: calc(100% - 100px);
+  width: calc(100% - 130px);
+}
+
+.search_input {
+  height:50px;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
 .search_button {
   display: inline-block;
   margin-left: 10px;
-  width: 90px;
+  width: 120px;
+  margin-top:-3px;
+  height:50px;
+  font-size: 18px;
 }
 
 .clear_search {
   position: absolute;
-  right: 8px;
-  top: 5px;
+  right: 18px;
+  top: 13px;
 }

@@ -9,12 +9,21 @@ export default function(type, options = {}) {
   const resetPage = actionCreator(`RESET_${type.toUpperCase()}_PAGE`)
   const updateQuery = actionCreator(`UPDATE_${type.toUpperCase()}_QUERY`, (param) => {return { param }})
 
+  const submitQuery = function(query) {
+    return function(dispatch, getState) {
+      dispatch(updateQuery(query))
+      dispatch(resetPage())
+      dispatch(fetchPage()) // FIXME: do this in fewer steps?
+    }
+  }
+
   const fetchPage = function() {
     const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
     return function(dispatch, getState) {
       let pageCount = getState()[type].pages.length
       let latestPage = getState()[type].pages[pageCount - 1]
       let promise
+      let chql
 
       if (latestPage) {
         if (!latestPage.last_page) {
@@ -25,7 +34,8 @@ export default function(type, options = {}) {
       } else {
         let params = {}
         if (getState()[type].currentQuery) {
-          params.chql = getState()[type].currentQuery
+          chql = getState()[type].currentQuery
+          params.chql = chql
         }
         promise = chain[className].query(context, params)
       }
@@ -39,6 +49,9 @@ export default function(type, options = {}) {
         dispatch(incrementPage())
       }).catch((err) => {
         console.log(err)
+        if (options.tryId && chql.indexOf(" ") < 0 && chql.indexOf("=") < 0) {
+          dispatch(submitQuery(`id='${chql}'`))
+        }
       })
     }
   }
@@ -59,12 +72,6 @@ export default function(type, options = {}) {
     		}
     	}
     },
-    submitQuery: function(query) {
-      return function(dispatch, getState) {
-        dispatch(updateQuery(query))
-        dispatch(resetPage()) // FIXME
-        dispatch(fetchPage()) // FIXME
-      }
-    }
+    submitQuery: submitQuery
   }
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import PageHeader from "../PageHeader"
+import PageHeader from "../PageHeader/PageHeader"
 
 class Form extends React.Component {
   constructor(props) {
@@ -29,34 +29,43 @@ class Form extends React.Component {
 
   render() {
     return(
-      <div>
+      <div className='form-container'>
         <PageHeader title="New Index" />
 
-        <input
-          ref="alias"
-          className='form-control'
-          type='text'
-          placeholder='Alias'
-          value={this.state.alias}
-          onChange={this.handleChange} />
-        <select className='form-control'
-          ref="type"
-          value={this.state.type}
-          onChange={this.handleChange}>
-            <option value="transaction">Transaction</option>
-            <option value="balance">Balance</option>
-            <option value="asset">Asset</option>
-        </select>
-        <input
-          ref="query"
-          className='form-control'
-          type='text'
-          placeholder='Query'
-          value={this.state.query}
-          onChange={this.handleChange} />
+        <div className='form-group'>
+          <label>Alias</label>
+          <input
+            ref="alias"
+            className='form-control'
+            type='text'
+            placeholder='Alias'
+            autoFocus="autofocus"
+            value={this.state.alias}
+            onChange={this.handleChange} />
+        </div>
+        <div className='form-group'>
+          <label>Type</label>
+          <select className='form-control'
+            ref="type"
+            value={this.state.type}
+            onChange={this.handleChange}>
+              <option value="transaction">Transaction</option>
+              <option value="balance">Balance</option>
+              <option value="asset">Asset</option>
+          </select>
+        </div>
+        <div className='form-group'>
+          <label>ChQL Query</label>
+          <input
+            ref="query"
+            className='form-control'
+            type='text'
+            placeholder='Query'
+            value={this.state.query}
+            onChange={this.handleChange} />
+        </div>
 
-
-        <button onClick={this.handleSubmit}>Submit</button>
+        <button className='btn btn-primary' onClick={this.handleSubmit}>Submit</button>
       </div>
     )
   }

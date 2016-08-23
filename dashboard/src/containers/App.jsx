@@ -10,7 +10,7 @@ const basename = process.env.NODE_ENV === "production" ? "/dashboard" : "/"
 
 export default class App extends React.Component {
   componentWillMount() {
-    document.title = "🚧 Chain Dashboard 🚧"
+    document.title = "Chain Core Dashboard"
   }
 
   render() {

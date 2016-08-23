@@ -6,6 +6,7 @@ const type = "unspent"
 const newStateToProps = (state) => {
   let defaults = mapStateToProps(type, Item)(state)
   defaults.skipCreate = true
+  defaults.label = "Unspent Outputs"
   return defaults
 }
 

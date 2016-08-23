@@ -6,7 +6,7 @@ class Item extends React.Component {
     return(
       <div className="panel panel-default">
         <div className="panel-heading">
-          <strong>Key {item.alias}</strong>
+          <strong>Key - {item.alias}</strong>
         </div>
         <div className="panel-body">
           <pre>

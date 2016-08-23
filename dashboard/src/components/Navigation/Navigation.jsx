@@ -3,11 +3,30 @@ import { Link } from 'react-router'
 import styles from "./Navigation.scss"
 
 class Navigation extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { dropdownClass: "" }
+
+    this.toggleDropdown = this.toggleDropdown.bind(this)
+    this.closeDropdown = this.closeDropdown.bind(this)
+  }
+
+  toggleDropdown(event) {
+    event.stopPropagation()
+
+    let existing = this.state.dropdownClass
+    this.setState({ dropdownClass: (existing == "" ? "open" : "") })
+  }
+
+  closeDropdown() {
+    this.setState({ dropdownClass: "" })
+  }
+
   render() {
     let logo = require('../../images/logo-white.png')
     return (
-      <div>
-        <div className="navbar navbar-default navbar-static-top">
+      <div onClick={this.closeDropdown}>
+        <div className="navbar navbar-default navbar-fixed-top">
           <div className="container">
             <div className="navbar-header">
               <Link to={'/'} className="navbar-brand">
@@ -16,50 +35,60 @@ class Navigation extends React.Component {
             </div>
 
             <div className="collapse navbar-collapse">
-              <ul className="nav navbar-nav">
+              <ul className="nav navbar-nav navbar-right">
                 <li>
-                  <Link to={`/transactions`}>
+                  <Link to={`/transactions`} activeClassName={styles.active}>
                     <span className={`glyphicon glyphicon-transfer ${styles.glyphicon}`} />
                      Transactions
                   </Link>
                 </li>
                 <li>
-                  <Link to={`/unspents`}>
-                    <span className={`glyphicon glyphicon-link ${styles.glyphicon}`} />
-                    Unspent output
+                  <Link to={`/assets`} activeClassName={styles.active}>
+                    <span className={`glyphicon glyphicon-file ${styles.glyphicon}`} />
+                    Assets
                   </Link>
                 </li>
                 <li>
-                  <Link to={`/balances`}>
-                    <span className={`glyphicon glyphicon-usd ${styles.glyphicon}`} />
-                    Balances
-                  </Link>
-                </li>
-                <li className={styles.divider}>|</li>
-                <li>
-                  <Link to={`/accounts`}>
+                  <Link to={`/accounts`} activeClassName={styles.active}>
                     <span className={`glyphicon glyphicon-user ${styles.glyphicon}`} />
                     Accounts
                   </Link>
                 </li>
                 <li>
-                  <Link to={`/assets`}>
-                    <span className={`glyphicon glyphicon-barcode ${styles.glyphicon}`} />
-                    Assets
+                  <Link to={`/balances`} activeClassName={styles.active}>
+                    <span className={`glyphicon glyphicon-stats ${styles.glyphicon}`} />
+                    Balances
                   </Link>
                 </li>
                 <li>
-                  <Link to={`/indexes`}>
-                    <span className={`glyphicon glyphicon-eye-open ${styles.glyphicon}`} />
-                    Indexes
+                  <Link to={`/unspents`} activeClassName={styles.active}>
+                    <span className={`glyphicon glyphicon-th-list ${styles.glyphicon}`} />
+                    Unspent Outputs
                   </Link>
                 </li>
                 <li className={styles.divider}>|</li>
-                <li>
-                  <Link to={`/mockhsms`}>
-                    <span className={`glyphicon glyphicon-lock ${styles.glyphicon}`} />
-                    Mock HSM
-                  </Link>
+
+                <li className={`dropdown ${this.state.dropdownClass}`}>
+                  <a href="#" onClick={this.toggleDropdown}>
+                    <span className={`glyphicon glyphicon-cog ${styles.glyphicon}`} />
+                      Configuration <span className="caret">
+                    </span>
+                  </a>
+
+                  <ul className={`dropdown-menu ${styles.dropdown}`}>
+                    <li>
+                      <Link to={`/indexes`} activeClassName={styles.active}>
+                        <span className={`glyphicon glyphicon-eye-open ${styles.glyphicon}`} />
+                        Indexes
+                      </Link>
+                    </li>
+                    <li>
+                      <Link to={`/mockhsms`} activeClassName={styles.active}>
+                        <span className={`glyphicon glyphicon-lock ${styles.glyphicon}`} />
+                        Mock HSM
+                      </Link>
+                    </li>
+                  </ul>
                 </li>
               </ul>
             </div>
@@ -72,7 +101,7 @@ class Navigation extends React.Component {
 
         <footer className={`${styles.footer}`}>
           <div className="container">
-            ✨&nbsp;&nbsp;© Chain ✨
+            © Chain
           </div>
         </footer>
       </div>

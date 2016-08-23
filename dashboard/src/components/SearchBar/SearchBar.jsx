@@ -12,6 +12,11 @@ class SearchBar extends React.Component {
     this.clearQuery = this.clearQuery.bind(this)
   }
 
+  componentWillReceiveProps(nextProps) {
+    // Override text field with default query when provided
+    this.setState({query: nextProps.queryString})
+  }
+
   handleChange(event) {
     this.setState({
       query: this.refs.queryField.value
@@ -43,14 +48,14 @@ class SearchBar extends React.Component {
             <input ref="queryField"
                    value={this.state.query}
                    onChange={this.handleChange}
-                   className="form-control"
+                   className={`form-control ${styles.search_input}`}
                    type="search"
                    autoFocus="autofocus"
-                   placeholder="Enter a query" />
+                   placeholder="ChQL query..." />
 
             {clearButton}
           </span>
-          <button type="submit" className={`btn btn-default ${styles.search_button}`} >
+          <button type="submit" className={`btn btn-primary ${styles.search_button}`} >
             Search
           </button>
         </form>

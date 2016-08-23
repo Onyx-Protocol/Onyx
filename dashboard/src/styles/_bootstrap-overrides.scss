@@ -1,9 +1,18 @@
 $grid-gutter-width: 30px;
-$container-desktop: 940px + $grid-gutter-width;
-$container-large-desktop: 940px $grid-gutter-width;
+$container-desktop: 1040px + $grid-gutter-width;
 
-$brand-primary: #2098D4;
+$brand-primary: #A3C610;
 
-$navbar-default-bg: $brand-primary;
+$navbar-default-bg: #333;
+$link-color: darken($brand-primary, 5%);
 $navbar-default-link-color: transparentize(white, 0.1);
+$navbar-default-link-active-color: white;
 $navbar-default-link-hover-color: white;
+
+$input-border-focus: $brand-primary;
+
+$pre-bg: #fff;
+
+$panel-footer-bg: #fff;
+
+$pre-border-color: transparent;

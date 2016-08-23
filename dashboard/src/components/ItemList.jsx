@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router'
+import { pluralize, capitalize } from '../utility/string'
 
 import PageNavigation from "./PageNavigation"
-import PageHeader from "./PageHeader"
+import PageHeader from "./PageHeader/PageHeader"
 import SearchBar from "./SearchBar/SearchBar"
 
 class ItemList extends React.Component {
@@ -13,20 +14,22 @@ class ItemList extends React.Component {
   }
 
   render() {
-    const label = this.props.label || this.props.type
-    const title = label.charAt(0).toUpperCase() + label.slice(1) + "s"
+    const label = this.props.label || pluralize(capitalize(this.props.type))
     const keyProp = this.props.keyProp || "id"
 
-    let header = [<PageHeader key='page-title' title={title} />]
+    let pageHeader = <PageHeader key='page-title'
+      title={label}
+      buttonAction={this.props.showCreate}
+      buttonLabel="New"
+      showActionButton={!this.props.skipCreate}
+    />
 
-    if (!this.props.skipCreate) { header.push (
-      <button key='create-button' className="btn btn-primary btn-lg" onClick={this.props.showCreate}>
-        Create new {label}
-      </button>
-    )}
-
+    let header = [pageHeader]
     if (!this.props.skipQuery) { header.push(
-      <SearchBar key='search-bar' submitQuery={this.props.submitQuery} queryString={this.props.query}/>
+      <SearchBar key='search-bar'
+        submitQuery={this.props.submitQuery}
+        queryString={this.props.query}
+      />
     )}
 
     if (this.props.pages[this.props.currentPage] !== undefined) {

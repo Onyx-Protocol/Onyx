@@ -1,5 +1,5 @@
 import React from 'react';
-import PageHeader from "../PageHeader"
+import PageHeader from "../PageHeader/PageHeader"
 
 class Form extends React.Component {
   constructor(props) {
@@ -24,18 +24,22 @@ class Form extends React.Component {
 
   render() {
     return(
-      <div>
-        <PageHeader title="New Key" />
+      <div className='form-container'>
+        <PageHeader title="New Mock HSM Key" />
 
-        <input
-          ref="alias"
-          className='form-control'
-          type='text'
-          placeholder="Alias"
-          value={this.state.alias}
-          onChange={this.handleChange} />
+        <div className='form-group'>
+          <label>Alias</label>
+          <input
+            ref="alias"
+            className='form-control'
+            type='text'
+            placeholder="Alias"
+            autoFocus="autofocus"
+            value={this.state.alias}
+            onChange={this.handleChange} />
+        </div>
 
-        <button onClick={this.handleSubmit}>Submit</button>
+        <button className='btn btn-primary' onClick={this.handleSubmit}>Submit</button>
       </div>
     )
   }

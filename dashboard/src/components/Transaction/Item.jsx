@@ -7,7 +7,7 @@ class Item extends React.Component {
     return(
       <div className="panel panel-default">
         <div className="panel-heading">
-          <strong>Transaction {item.id}</strong>
+          <strong>Transaction - {item.id}</strong>
         </div>
         <div className="panel-body">
           <pre>

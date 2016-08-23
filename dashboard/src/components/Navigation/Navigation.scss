@@ -1,6 +1,6 @@
 .brand_image {
-  height: 100%;
-  opacity: 0.9;
+  height: 30px;
+  margin-top: -5px;
 }
 
 .divider {
@@ -23,4 +23,23 @@
 .glyphicon {
   opacity: 0.5;
   margin-right: 8px;
+}
+
+// FIXME: need !important to override bootstrap
+.active {
+  padding-bottom: 11px !important;
+  border-color: lighten($brand-primary, 3%);
+  border-style: solid;
+  border-width: 0 0 3px 0;
+}
+
+.dropdown li {
+  a {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+
+  & .active {
+    border-width: 0 0 0 3px;
+  }
 }

@@ -1,0 +1,11 @@
+.main {
+  position: relative;
+}
+
+.button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  color: $link-color;
+  border-color: $brand-primary;
+}

@@ -9,7 +9,7 @@ const mapStateToProps = (state) => ({
   pages: state[type].pages,
   currentPage: state[type].currentPage,
   type: type,
-  label: "key",
+  label: "Mock HSM Keys",
   listItemComponent: Item,
   keyProp: "xpub",
   skipQuery: true
