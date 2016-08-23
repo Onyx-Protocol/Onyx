@@ -76,6 +76,7 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	}
 
 	assettest.IssueAssetsFixture(ctx, t, fc, asset1.AssetID, 867, acct1.ID)
+	assettest.IssueAssetsFixture(ctx, t, fc, asset2.AssetID, 100, acct1.ID)
 
 	_, err = g.MakeBlock(ctx)
 	if err != nil {

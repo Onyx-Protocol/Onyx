@@ -111,7 +111,7 @@ func TestQueryBalances(t *testing.T) {
 			query:  "asset_id = $1",
 			values: []interface{}{asset2.AssetID.String()},
 			when:   time2,
-			want:   `[{"amount": 0}]`,
+			want:   `[{"amount": 100}]`,
 		},
 		{
 			query:  "account_id = $1",
@@ -123,7 +123,7 @@ func TestQueryBalances(t *testing.T) {
 			query:  "account_id = $1",
 			values: []interface{}{acct1.ID},
 			when:   time2,
-			want:   `[{"amount": 867}]`,
+			want:   `[{"amount": 967}]`,
 		},
 		{
 			query:  "account_id = $1",
@@ -147,13 +147,19 @@ func TestQueryBalances(t *testing.T) {
 			query:  "asset_id = $1 AND account_id = $2",
 			values: []interface{}{asset2.AssetID.String(), acct1.ID},
 			when:   time2,
-			want:   `[{"amount": 0}]`,
+			want:   `[{"amount": 100}]`,
 		},
 		{
 			query:  "asset_id = $1 AND account_id = $2",
 			values: []interface{}{asset1.AssetID.String()},
 			when:   time2,
 			want:   `[{"group_by": ["` + acct1.ID + `"], "amount": 867}]`,
+		},
+		{
+			query:  "asset_tags.currency = $1",
+			values: []interface{}{},
+			when:   time2,
+			want:   `[{"group_by": ["USD"], "amount": 867}, {"group_by": [null], "amount": 100}]`,
 		},
 	}
 

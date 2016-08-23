@@ -33,7 +33,7 @@ func (ind *Indexer) Balances(ctx context.Context, q chql.Query, vals []interface
 		scanArguments = append(scanArguments, &balance)
 		for range expr.GroupBy {
 			// TODO(jackson): Support grouping by things besides strings.
-			scanArguments = append(scanArguments, new(string))
+			scanArguments = append(scanArguments, new(*string))
 		}
 		err := rows.Scan(scanArguments...)
 		if err != nil {

@@ -187,6 +187,9 @@ func TestQueryOutputs(t *testing.T) {
 			query:  "asset_id = $1",
 			values: []interface{}{asset2.AssetID.String()},
 			when:   time2,
+			want: []assetAccountAmount{
+				{bc.AssetAmount{AssetID: asset2.AssetID, Amount: 100}, acct1.ID},
+			},
 		},
 		{
 			query:  "account_id = $1",
@@ -200,6 +203,7 @@ func TestQueryOutputs(t *testing.T) {
 			when:   time2,
 			want: []assetAccountAmount{
 				{bc.AssetAmount{AssetID: asset1.AssetID, Amount: 867}, acct1.ID},
+				{bc.AssetAmount{AssetID: asset2.AssetID, Amount: 100}, acct1.ID},
 			},
 		},
 		{
@@ -224,7 +228,7 @@ func TestQueryOutputs(t *testing.T) {
 		},
 		{
 			query:  "asset_id = $1 AND account_id = $2",
-			values: []interface{}{asset2.AssetID.String(), acct1.ID},
+			values: []interface{}{asset2.AssetID.String(), acct2.ID},
 			when:   time2,
 			want:   []assetAccountAmount{},
 		},
