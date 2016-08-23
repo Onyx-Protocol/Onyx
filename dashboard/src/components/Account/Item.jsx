@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 
 class Item extends React.Component {
   render() {
@@ -17,7 +17,7 @@ class Item extends React.Component {
             {JSON.stringify(item, null, '  ')}
           </pre>
         </div>
-        <div className="panel-footer">  
+        <div className="panel-footer">
           <ul className="nav nav-pills">
             <li>
               <button className="btn btn-link" onClick={this.props.showTransactions.bind(this, item.id)}>Transactions</button>

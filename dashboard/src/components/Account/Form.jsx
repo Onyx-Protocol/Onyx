@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 import PageHeader from "../PageHeader/PageHeader"
 
 class Form extends React.Component {
@@ -14,7 +14,7 @@ class Form extends React.Component {
     this.handleSubmit = this.handleSubmit.bind(this)
   }
 
-  handleChange(event) {
+  handleChange() {
     let newState = {
       alias: this.refs.alias.value,
       xpubs: this.refs.xpubs.value.split(","),
@@ -24,7 +24,7 @@ class Form extends React.Component {
     this.setState(newState)
   }
 
-  handleSubmit(event) {
+  handleSubmit() {
     let request = Object.assign(this.state)
     request.tags = JSON.parse(request.tags)
     this.props.submitForm(request)
@@ -34,7 +34,7 @@ class Form extends React.Component {
     return(
       <div className='form-container'>
         <PageHeader title="New Account" />
-        
+
         <div className='form-group'>
           <label>Alias</label>
           <input

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 import styles from "./SearchBar.scss"
 
 class SearchBar extends React.Component {
@@ -17,20 +17,20 @@ class SearchBar extends React.Component {
     this.setState({query: nextProps.queryString})
   }
 
-  handleChange(event) {
+  handleChange() {
     this.setState({
       query: this.refs.queryField.value
     })
   }
 
-  handleSubmit(event) {
+  handleSubmit() {
     event.preventDefault()
 
     this.setState({ showClear: true })
     this.props.submitQuery(this.state.query)
   }
 
-  clearQuery(event) {
+  clearQuery() {
     this.setState({ query: "", showClear: false })
     this.props.submitQuery("")
   }

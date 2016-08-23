@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 import PageHeader from "../PageHeader/PageHeader"
 
 class Form extends React.Component {
@@ -11,14 +11,14 @@ class Form extends React.Component {
     this.handleSubmit = this.handleSubmit.bind(this)
   }
 
-  handleChange(event) {
+  handleChange() {
     let newState = {
       actions: this.refs.actions.value
     }
     this.setState(newState)
   }
 
-  handleSubmit(event) {
+  handleSubmit() {
     let request = Object.assign(this.state)
     request.actions = JSON.parse(request.actions)
     this.props.submitForm(request)

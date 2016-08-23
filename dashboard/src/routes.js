@@ -1,6 +1,3 @@
-import React from 'react'
-import { Route, IndexRoute, Redirect } from 'react-router'
-
 import Navigation from './components/Navigation/Navigation'
 import Section from './containers/SectionContainer'
 

@@ -1,5 +1,4 @@
-import React from 'react';
-import { Link } from 'react-router'
+import React from 'react'
 import { pluralize, capitalize } from '../utility/string'
 
 import PageNavigation from "./PageNavigation"

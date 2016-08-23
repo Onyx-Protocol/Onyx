@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "build": "NODE_ENV=production webpack",
-    "lint": "eslint src/**",
+    "lint": "eslint \"src/**\"",
     "start": "hjs-dev-server",
     "test": "mocha --compilers js:babel-core/register */**/*.test.js"
   },
@@ -46,6 +46,7 @@
   },
   "devDependencies": {
     "eslint": "~3.3.1",
+    "eslint-plugin-react": "^6.1.2",
     "mocha": "~2.2.0",
     "nock": "~4.0.0"
   }
