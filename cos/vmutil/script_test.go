@@ -55,7 +55,6 @@ func TestIsPushOnly(t *testing.T) {
 // results.
 func TestIsUnspendable(t *testing.T) {
 	tests := []struct {
-		name     string
 		pkScript []byte
 		expected bool
 	}{

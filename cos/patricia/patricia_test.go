@@ -13,10 +13,6 @@ import (
 	"chain/cos/bc"
 )
 
-func simpleValue(s string) Valuer {
-	return BytesValuer([]byte(s))
-}
-
 func TestLookup(t *testing.T) {
 	vals := makeVals(5)
 	tr := &Tree{

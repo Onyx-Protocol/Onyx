@@ -348,14 +348,6 @@ func newPrivKey(t *testing.T) ed25519.PrivateKey {
 	return priv
 }
 
-func mustParseHash(s string) [32]byte {
-	h, err := bc.ParseHash(s)
-	if err != nil {
-		panic(err)
-	}
-	return h
-}
-
 func mustDecodeHex(s string) []byte {
 	data, err := hex.DecodeString(s)
 	if err != nil {

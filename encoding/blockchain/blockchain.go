@@ -10,9 +10,6 @@ import (
 	chainio "chain/io"
 )
 
-// endianness is the default endian encoding (little or big)
-var endianness = binary.LittleEndian
-
 // WriteUvarint writes a variable-length unsigned int
 func WriteUvarint(w io.Writer, x uint64) (int, error) {
 	var buf [9]byte

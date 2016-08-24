@@ -1,51 +1,18 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"io/ioutil"
 	"path/filepath"
 	"testing"
 
-	"github.com/lib/pq"
-
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 )
 
 const (
 	testDir = "testfiles"
-	schema  = "migratetest"
 )
 
 func testPath(filename string) string {
 	return filepath.Join(testDir, filename)
-}
-
-// resetSchema will reset the database schema to the one in the file
-// at the provided path. We cannot use pgtest here because we're
-// not using the same schema file consistently throughout this package's
-// tests.
-func resetSchema(db *sql.DB, schemaSQLPath string) {
-	ctx := context.Background()
-	const reset = `
-		DROP SCHEMA IF EXISTS %s CASCADE;
-		CREATE SCHEMA %s;
-	`
-
-	quotedSchema := pq.QuoteIdentifier(schema)
-	_, err := db.Exec(ctx, fmt.Sprintf(reset, quotedSchema, quotedSchema))
-	if err != nil {
-		panic(err)
-	}
-	b, err := ioutil.ReadFile(schemaSQLPath)
-	if err != nil {
-		panic(err)
-	}
-	_, err = db.Exec(ctx, string(b))
-	if err != nil {
-		panic(err)
-	}
 }
 
 func TestLoadMigrations(t *testing.T) {

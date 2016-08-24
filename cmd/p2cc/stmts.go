@@ -6,9 +6,6 @@ import (
 )
 
 type (
-	assignOp struct {
-		op, translation string
-	}
 	assignStmt struct {
 		name, op string
 		expr     translatable

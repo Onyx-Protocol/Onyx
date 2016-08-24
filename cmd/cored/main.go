@@ -78,10 +78,6 @@ var (
 	remoteSignerKeys   = env.StringSlice("REMOTE_SIGNER_KEYS")
 	sigsRequired       = env.Int("SIGS_REQUIRED", 1)
 
-	// blockchain parameters
-	maxProgramOps       = env.Int("MAX_PROGRAM_OPS", 1000)
-	maxProgramStackSize = env.Int("MAX_PROGRAM_STACK", 1000)
-
 	// build vars; initialized by the linker
 	buildTag    = "dev"
 	buildCommit = "?"

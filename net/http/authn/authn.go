@@ -8,10 +8,6 @@ import (
 	"chain/log"
 )
 
-// key is an unexported type for keys defined in this package.
-// This prevents collisions with keys defined in other packages.
-type key int
-
 // AuthFunc describes any function that takes a standard username/password pair
 // and attempts to perform authentication. When used in conjunction with
 // BasicHandler, returning ErrNotAuthenticated from an AuthFunc will cause a 401

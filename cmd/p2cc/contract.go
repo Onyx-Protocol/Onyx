@@ -33,7 +33,6 @@ type (
 	decl struct {
 		name string
 		val  expr
-		typ  int
 	}
 
 	// Block is the body of an if, while, or clause.  Only in the case

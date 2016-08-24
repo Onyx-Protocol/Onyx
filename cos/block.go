@@ -218,32 +218,6 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	return errors.Wrap(err, "validation")
 }
 
-// validateBlock performs validation on an incoming block, in advance of
-// applying the block to the store.
-func (fc *FC) validateBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
-	prev, err := fc.store.GetBlock(ctx, block.Height-1)
-	if err != nil {
-		return errors.Wrap(err, "loading previous block")
-	}
-	err = validation.ValidateBlockHeader(prev, block)
-	if err != nil {
-		return errors.Wrap(err, "validating block header")
-	}
-
-	if isSignedByTrustedHost(block, fc.trustedKeys) {
-		err = validation.ApplyBlock(snapshot, block)
-	} else {
-		err = validation.ValidateAndApplyBlock(ctx, snapshot, prev, block)
-	}
-	if err != nil {
-		return errors.Wrapf(ErrBadBlock, "validate block: %v", err)
-	}
-	return nil
-}
-
 func isSignedByTrustedHost(block *bc.Block, trustedKeys []ed25519.PublicKey) bool {
 	hash := block.HashForSig()
 	for _, sig := range block.Witness {
@@ -258,23 +232,6 @@ func isSignedByTrustedHost(block *bc.Block, trustedKeys []ed25519.PublicKey) boo
 	}
 
 	return false
-}
-
-func (fc *FC) applyBlock(
-	ctx context.Context,
-	block *bc.Block,
-	snapshot *state.Snapshot,
-) (conflictingTxs []*bc.Tx, err error) {
-	err = fc.store.SaveBlock(ctx, block)
-	if err != nil {
-		return nil, errors.Wrap(err, "storing block")
-	}
-	err = fc.store.SaveSnapshot(ctx, block.Height, snapshot)
-	if err != nil {
-		return nil, errors.Wrap(err, "storing state snapshot")
-	}
-	conflicts, err := fc.rebuildPool(ctx, block, snapshot)
-	return conflicts, errors.Wrap(err, "rebuilding pool")
 }
 
 func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) ([]*bc.Tx, error) {

@@ -17,8 +17,6 @@ import (
 // issuance memory.
 type PriorIssuances map[bc.Hash]uint64
 
-var stubGenesisHash = bc.Hash{}
-
 var (
 	// ErrBadTx is returned for transactions failing validation
 	ErrBadTx = errors.New("invalid transaction")

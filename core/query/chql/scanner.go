@@ -17,6 +17,8 @@ const (
 
 func (t token) String() string {
 	switch t {
+	case tokInvalid:
+		return "invalid"
 	case tokEOF:
 		return "EOF"
 	case tokKeyword:
@@ -32,7 +34,7 @@ func (t token) String() string {
 	case tokPlaceholder:
 		return "placeholder"
 	}
-	return "invalid token"
+	return "unknown token"
 }
 
 // A scanner holds the scanner's internal state while processing

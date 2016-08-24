@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	defAccountPageSize = 100
 	defGenericPageSize = 100
 )
 
