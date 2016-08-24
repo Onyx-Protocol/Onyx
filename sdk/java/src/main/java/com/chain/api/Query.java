@@ -10,17 +10,20 @@ public class Query {
     public String indexId;
     @SerializedName("index_alias")
     public String indexAlias;
-    public String chql;
-    @SerializedName("chql_params")
-    public List<String> chqlParams;
+    public String filter;
+    @SerializedName("filter_params")
+    public List<String> filterParams;
     public String cursor;
     @SerializedName("start_time")
     public long startTime;
     @SerializedName("end_time")
     public long endTime;
     public long timestamp;
+    @SerializedName("sum_by")
+    public List<String> sumBy;
 
     public Query() {
-        this.chqlParams = new ArrayList<>();
+        this.filterParams = new ArrayList<>();
+        this.sumBy = new ArrayList<>();
     }
 }

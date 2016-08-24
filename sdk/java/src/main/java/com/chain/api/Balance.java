@@ -5,11 +5,13 @@ import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Balance {
-    @SerializedName("group_by")
-    public List<String> groupBy;
+    @SerializedName("sum_by")
+    public Map<String, String> sumBy;
     public BigInteger amount;
 
     public static class Items extends PagedItems<Balance> {
@@ -30,6 +32,19 @@ public class Balance {
 
         public QueryBuilder setTimestamp(long time) {
             this.query.timestamp = time;
+            return this;
+        }
+
+        public QueryBuilder addSumByParameter(String param) {
+            this.query.sumBy.add(param);
+            return this;
+        }
+
+        public QueryBuilder setSumByParameters(List<String> params) {
+            this.query.sumBy = new ArrayList<>();
+            for (String param : params) {
+                this.query.sumBy.add(param);
+            }
             return this;
         }
     }

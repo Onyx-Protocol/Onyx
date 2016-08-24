@@ -27,20 +27,20 @@ public abstract class BaseQueryBuilder<T extends BaseQueryBuilder<T>> {
         return (T)this;
     }
 
-    public T withChQL(String chql) {
-        this.query.chql = chql;
+    public T withFilter(String filter) {
+        this.query.filter = filter;
         return (T)this;
     }
 
-    public T addChQLParameter(String param) {
-        this.query.chqlParams.add(param);
+    public T addFilterParameter(String param) {
+        this.query.filterParams.add(param);
         return (T)this;
     }
 
-    public T setChQLParameters(ArrayList<String> params) {
-        this.query.chqlParams = new ArrayList<>();
-        for (String cp : params) {
-            this.query.chqlParams.add(cp);
+    public T setFilterParameters(ArrayList<String> params) {
+        this.query.filterParams = new ArrayList<>();
+        for (String p : params) {
+            this.query.filterParams.add(p);
         }
         return (T)this;
     }

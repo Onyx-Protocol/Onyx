@@ -2,16 +2,20 @@ package com.chain.api;
 
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
+import com.google.gson.annotations.SerializedName;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Index {
     public String id;
     public String alias;
     public String type;
-    public String query;
-    public Boolean unspents;
+    public String filter;
+    @SerializedName("sum_by")
+    public List<String> sumBy;
 
     public static class Items extends PagedItems<Index> {
         public Items getPage() throws ChainException {
@@ -38,8 +42,9 @@ public class Index {
     public static class Builder {
         public String alias;
         public String type;
-        public String query;
-        public boolean unspents;
+        public String filter;
+        @SerializedName("sum_by")
+        public List<String> sumBy = new ArrayList<>();
 
         public Index create(Context ctx) throws ChainException {
             return ctx.request("create-index", this, Index.class);
@@ -55,13 +60,21 @@ public class Index {
             return this;
         }
 
-        public Builder setQuery(String query) {
-            this.query = query;
+        public Builder setFilter(String query) {
+            this.filter = query;
             return this;
         }
 
-        public Builder setUnspents(Boolean unspents) {
-            this.unspents = unspents;
+        public Builder addSumByParameter(String param) {
+            this.sumBy.add(param);
+            return this;
+        }
+
+        public Builder setSumByParameters(List<String> params) {
+            this.sumBy = new ArrayList<>();
+            for (String p : params) {
+                this.sumBy.add(p);
+            }
             return this;
         }
     }
