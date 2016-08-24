@@ -1,16 +1,16 @@
-const actionCreator = function(type, payloadCreator) {
-  const res = (...args) => {
-    let action = { type }
-
-    if (typeof payloadCreator == "function") {
-      return Object.assign({}, payloadCreator(...args), action)
+export default function(type, payloadCreator) {
+  let creator
+  if (payloadCreator) {
+    creator = (...args) => {
+      return Object.assign(payloadCreator(...args), {type})
     }
-
-    return action
+  } else {
+    creator = () => {
+      return {type}
+    }
   }
-  res.type = type
 
-  return res
+  creator.type = type
+
+  return creator
 }
-
-export default actionCreator
