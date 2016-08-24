@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"chain/core/query/chql"
+	"chain/core/query/filter"
 	"chain/errors"
 )
 
@@ -27,11 +27,11 @@ func (i *Indexer) SaveAnnotatedAccount(ctx context.Context, accountID string, ac
 }
 
 // Accounts queries the blockchain for accounts matching the query `q`.
-func (i *Indexer) Accounts(ctx context.Context, q chql.Query, vals []interface{}, cur string, limit int) ([]map[string]interface{}, string, error) {
-	if len(vals) != q.Parameters {
+func (i *Indexer) Accounts(ctx context.Context, p filter.Predicate, vals []interface{}, cur string, limit int) ([]map[string]interface{}, string, error) {
+	if len(vals) != p.Parameters {
 		return nil, "", ErrParameterCountMismatch
 	}
-	expr, err := chql.AsSQL(q, "data", vals)
+	expr, err := filter.AsSQL(p, "data", vals)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "converting to SQL")
 	}
@@ -66,7 +66,7 @@ func (i *Indexer) Accounts(ctx context.Context, q chql.Query, vals []interface{}
 	return accounts, cur, errors.Wrap(rows.Err())
 }
 
-func constructAccountsQuery(expr chql.SQLExpr, cur string, limit int) (string, []interface{}) {
+func constructAccountsQuery(expr filter.SQLExpr, cur string, limit int) (string, []interface{}) {
 	var buf bytes.Buffer
 	var vals []interface{}
 

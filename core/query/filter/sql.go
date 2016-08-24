@@ -1,4 +1,4 @@
-package chql
+package filter
 
 import (
 	"bytes"
@@ -9,8 +9,8 @@ import (
 	"github.com/lib/pq"
 )
 
-// AsSQL translates q to SQL.
-func AsSQL(q Query, dataColumn string, values []interface{}) (sqlExpr SQLExpr, err error) {
+// AsSQL translates p to SQL.
+func AsSQL(p Predicate, dataColumn string, values []interface{}) (sqlExpr SQLExpr, err error) {
 	defer func() {
 		r := recover()
 		if e, ok := r.(error); ok {
@@ -20,7 +20,7 @@ func AsSQL(q Query, dataColumn string, values []interface{}) (sqlExpr SQLExpr, e
 		}
 	}()
 
-	return asSQL(q.expr, dataColumn, values)
+	return asSQL(p.expr, dataColumn, values)
 }
 
 // FieldAsSQL returns a jsonb indexing SQL representation of the field.
@@ -36,7 +36,7 @@ func FieldAsSQL(col string, f Field) string {
 			buf.WriteString("->>")
 		}
 
-		// Note, field here originally came from an identifier in ChQL, so
+		// Note, field here originally came from an identifier in a filter, so
 		// it should be safe to embed in a string without quoting.
 		// TODO(jackson): Quote/restrict anyways to be defensive.
 		buf.WriteString("'")
@@ -64,7 +64,7 @@ type SQLExpr struct {
 
 func asSQL(e expr, dataColumn string, values []interface{}) (exp SQLExpr, err error) {
 	if e == nil {
-		// An empty expression is a valid query without any filtering.
+		// An empty expression is a valid predicate without any filtering.
 		return SQLExpr{}, nil
 	}
 

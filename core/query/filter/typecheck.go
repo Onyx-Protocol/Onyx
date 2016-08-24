@@ -1,4 +1,4 @@
-package chql
+package filter
 
 import (
 	"errors"
@@ -19,7 +19,7 @@ func typeCheck(expr expr) error {
 		return err
 	}
 	if typ != Bool {
-		return fmt.Errorf("query must evaluate to bool, got %s", typ)
+		return fmt.Errorf("filter predicate must evaluate to bool, got %s", typ)
 	}
 	return nil
 }

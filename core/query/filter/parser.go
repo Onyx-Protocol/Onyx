@@ -1,48 +1,47 @@
-package chql
+package filter
 
 import (
 	"fmt"
 	"strconv"
 )
 
-// Query represents a parsed ChQL expression.
-type Query struct {
+// Predicate represents a parsed filter predicate.
+type Predicate struct {
 	expr       expr
 	Parameters int
 }
 
 // String returns a cleaned, canonical representation of the
-// ChQL query string.
-func (q Query) String() string {
-	if q.expr == nil {
+// predicate.
+func (p Predicate) String() string {
+	if p.expr == nil {
 		return ""
 	}
-	return q.expr.String()
+	return p.expr.String()
 }
 
 // MarshalText implements the encoding.TextMarshaler interface and
-// returns a cleaned, canonical representation of the ChQL query.
-func (q Query) MarshalText() ([]byte, error) {
-	return []byte(q.expr.String()), nil
+// returns a cleaned, canonical representation of the predicate.
+func (p Predicate) MarshalText() ([]byte, error) {
+	return []byte(p.expr.String()), nil
 }
 
-// Parse parses a query and returns an internal representation of the
-// query or an error if it fails to parse.
-func Parse(query string) (q Query, err error) {
-	expr, parser, err := parse(query)
+// Parse parses a predicate and returns an internal representation of the
+// predicate or an error if it fails to parse.
+func Parse(predicate string) (p Predicate, err error) {
+	expr, parser, err := parse(predicate)
 	if err != nil {
-		return q, err
+		return p, err
 	}
 	err = typeCheck(expr)
 	if err != nil {
-		return q, err
+		return p, err
 	}
 
-	q = Query{
+	return Predicate{
 		Parameters: parser.maxPlaceholder,
 		expr:       expr,
-	}
-	return q, err
+	}, nil
 }
 
 // Field is a type for simple expressions that simply access an attribute of
@@ -84,7 +83,7 @@ func parse(exprString string) (expr expr, parser *parser, err error) {
 	}()
 	parser = newParser([]byte(exprString))
 
-	// An empty expression is a valid query.
+	// An empty expression is a valid predicate.
 	if parser.tok == tokEOF {
 		return nil, parser, nil
 	}

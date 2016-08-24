@@ -8,16 +8,16 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/core/query/chql"
+	"chain/core/query/filter"
 	"chain/errors"
 )
 
 // Balances performs a balances query against the annotated_outputs.
-func (ind *Indexer) Balances(ctx context.Context, q chql.Query, vals []interface{}, sumBy []chql.Field, timestampMS uint64) ([]interface{}, error) {
-	if len(vals) != q.Parameters {
+func (ind *Indexer) Balances(ctx context.Context, p filter.Predicate, vals []interface{}, sumBy []filter.Field, timestampMS uint64) ([]interface{}, error) {
+	if len(vals) != p.Parameters {
 		return nil, ErrParameterCountMismatch
 	}
-	expr, err := chql.AsSQL(q, "data", vals)
+	expr, err := filter.AsSQL(p, "data", vals)
 	if err != nil {
 		return nil, err
 	}
@@ -58,13 +58,13 @@ func (ind *Indexer) Balances(ctx context.Context, q chql.Query, vals []interface
 	return balances, errors.Wrap(rows.Err())
 }
 
-func constructBalancesQuery(expr chql.SQLExpr, sumBy []chql.Field, timestampMS uint64) (string, []interface{}) {
+func constructBalancesQuery(expr filter.SQLExpr, sumBy []filter.Field, timestampMS uint64) (string, []interface{}) {
 	var buf bytes.Buffer
 
 	buf.WriteString("SELECT COALESCE(SUM((data->>'amount')::integer), 0)")
 	for _, field := range sumBy {
 		buf.WriteString(", ")
-		buf.WriteString(chql.FieldAsSQL("data", field))
+		buf.WriteString(filter.FieldAsSQL("data", field))
 	}
 	buf.WriteString(" FROM ")
 	buf.WriteString(pq.QuoteIdentifier("annotated_outputs"))

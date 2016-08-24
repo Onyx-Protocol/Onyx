@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"chain/core/query"
-	"chain/core/query/chql"
+	"chain/core/query/filter"
 	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
@@ -20,10 +20,10 @@ var (
 //
 // POST /create-index
 func (a *api) createIndex(ctx context.Context, in struct {
-	Alias string   `json:"alias"`
-	Type  string   `json:"type"`
-	Query string   `json:"query"`
-	SumBy []string `json:"sum_by"`
+	Alias  string   `json:"alias"`
+	Type   string   `json:"type"`
+	Filter string   `json:"filter"`
+	SumBy  []string `json:"sum_by"`
 }) (*query.Index, error) {
 	if !query.IndexTypes[in.Type] {
 		return nil, errors.WithDetailf(ErrBadIndexConfig, "unknown index type %q", in.Type)
@@ -35,11 +35,11 @@ func (a *api) createIndex(ctx context.Context, in struct {
 		return nil, errors.WithDetail(httpjson.ErrBadRequest, "missing index alias")
 	}
 
-	idx, err := a.indexer.CreateIndex(ctx, in.Alias, in.Type, in.Query, in.SumBy)
+	idx, err := a.indexer.CreateIndex(ctx, in.Alias, in.Type, in.Filter, in.SumBy)
 	return idx, errors.Wrap(err, "creating the new index")
 }
 
-// listIndexes is an http handler for listing ChQL indexes.
+// listIndexes is an http handler for listing search indexes.
 //
 // POST /list-indexes
 func (a *api) listIndexes(ctx context.Context, query requestQuery) (page, error) {
@@ -58,29 +58,24 @@ func (a *api) listIndexes(ctx context.Context, query requestQuery) (page, error)
 	}, nil
 }
 
-var (
-	ErrNeitherIndexNorQuery = errors.New("must provide either index or query")
-	ErrBothIndexAndQuery    = errors.New("cannot provide both index and query")
-)
-
 // listTransactions is an http handler for listing transactions matching
-// a ChQL query or index.
+// an index or an ad-hoc filter.
 //
 // POST /list-transactions
 func (a *api) listTransactions(ctx context.Context, in requestQuery) (result page, err error) {
-	if (in.IndexID != "" || in.IndexAlias != "") && in.ChQL != "" {
-		return result, errors.WithDetail(httpjson.ErrBadRequest, "cannot provide both index and query")
+	if (in.IndexID != "" || in.IndexAlias != "") && in.Filter != "" {
+		return result, errors.WithDetail(httpjson.ErrBadRequest, "cannot provide both index and filter predicate")
 	}
 	if in.EndTimeMS == 0 {
 		in.EndTimeMS = bc.Millis(time.Now())
 	}
 
 	var (
-		q   chql.Query
+		p   filter.Predicate
 		cur query.TxCursor
 	)
 
-	// Build the ChQL query
+	// Build the filter predicate.
 	if in.IndexAlias != "" || in.IndexID != "" {
 		idx, err := a.indexer.GetIndex(ctx, in.IndexID, in.IndexAlias, query.IndexTypeTransaction)
 		if err != nil {
@@ -89,9 +84,9 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 		if idx == nil {
 			return result, errors.WithDetail(pg.ErrUserInputNotFound, "transaction index not found")
 		}
-		q = idx.Query
+		p = idx.Predicate
 	} else {
-		q, err = chql.Parse(in.ChQL)
+		p, err = filter.Parse(in.Filter)
 		if err != nil {
 			return result, err
 		}
@@ -111,7 +106,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 	}
 
 	limit := defGenericPageSize
-	txns, nextCur, err := a.indexer.Transactions(ctx, q, in.ChQLParams, cur, limit)
+	txns, nextCur, err := a.indexer.Transactions(ctx, p, in.FilterParams, cur, limit)
 	if err != nil {
 		return result, errors.Wrap(err, "running tx query")
 	}
@@ -126,21 +121,21 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 }
 
 // listAccounts is an http handler for listing accounts matching
-// a ChQL query or index.
+// an index or an ad-hoc filter.
 //
 // POST /list-accounts
 func (a *api) listAccounts(ctx context.Context, in requestQuery) (page, error) {
 	limit := defGenericPageSize
 
-	// Build the ChQL query
-	q, err := chql.Parse(in.ChQL)
+	// Build the filter predicate.
+	p, err := filter.Parse(in.Filter)
 	if err != nil {
 		return page{}, errors.Wrap(err, "parsing acc query")
 	}
 	cur := in.Cursor
 
-	// Use the ChQL query engine for querying account tags.
-	accounts, cur, err := a.indexer.Accounts(ctx, q, in.ChQLParams, cur, limit)
+	// Use the filter engine for querying account tags.
+	accounts, cur, err := a.indexer.Accounts(ctx, p, in.FilterParams, cur, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running acc query")
 	}
@@ -157,15 +152,15 @@ func (a *api) listAccounts(ctx context.Context, in requestQuery) (page, error) {
 
 // POST /list-balances
 func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, err error) {
-	if (in.IndexID != "" || in.IndexAlias != "") && in.ChQL != "" {
-		return result, errors.WithDetail(httpjson.ErrBadRequest, "cannot provide both index and query")
+	if (in.IndexID != "" || in.IndexAlias != "") && in.Filter != "" {
+		return result, errors.WithDetail(httpjson.ErrBadRequest, "cannot provide both index and filter predicate")
 	}
 	if in.TimestampMS == 0 {
 		in.TimestampMS = bc.Millis(time.Now())
 	}
 
-	var q chql.Query
-	var sumBy []chql.Field
+	var p filter.Predicate
+	var sumBy []filter.Field
 	if in.IndexID != "" || in.IndexAlias != "" {
 		idx, err := a.indexer.GetIndex(ctx, in.IndexID, in.IndexAlias, query.IndexTypeBalance)
 		if err != nil {
@@ -174,16 +169,16 @@ func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, e
 		if idx == nil {
 			return result, errors.WithDetail(pg.ErrUserInputNotFound, "balance index not found")
 		}
-		q = idx.Query
+		p = idx.Predicate
 		sumBy = idx.SumBy
 	} else {
-		q, err = chql.Parse(in.ChQL)
+		p, err = filter.Parse(in.Filter)
 		if err != nil {
 			return result, err
 		}
 
 		for _, field := range in.SumBy {
-			f, err := chql.ParseField(field)
+			f, err := filter.ParseField(field)
 			if err != nil {
 				return result, err
 			}
@@ -192,7 +187,7 @@ func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, e
 	}
 
 	// TODO(jackson): paginate this endpoint.
-	balances, err := a.indexer.Balances(ctx, q, in.ChQLParams, sumBy, in.TimestampMS)
+	balances, err := a.indexer.Balances(ctx, p, in.FilterParams, sumBy, in.TimestampMS)
 	if err != nil {
 		return result, err
 	}
@@ -208,7 +203,7 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 	if in.TimestampMS == 0 {
 		in.TimestampMS = bc.Millis(time.Now())
 	}
-	var q chql.Query
+	var p filter.Predicate
 	if in.IndexID != "" || in.IndexAlias != "" {
 		idx, err := a.indexer.GetIndex(ctx, in.IndexID, in.IndexAlias, query.IndexTypeOutput)
 		if err != nil {
@@ -217,9 +212,9 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 		if idx == nil {
 			return result, errors.WithDetail(pg.ErrUserInputNotFound, "output index not found")
 		}
-		q = idx.Query
+		p = idx.Predicate
 	} else {
-		q, err = chql.Parse(in.ChQL)
+		p, err = filter.Parse(in.Filter)
 		if err != nil {
 			return result, err
 		}
@@ -234,7 +229,7 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 	}
 
 	limit := defGenericPageSize
-	outputs, newCursor, err := a.indexer.Outputs(ctx, q, in.ChQLParams, in.TimestampMS, cursor, limit)
+	outputs, newCursor, err := a.indexer.Outputs(ctx, p, in.FilterParams, in.TimestampMS, cursor, limit)
 	if err != nil {
 		return result, errors.Wrap(err, "querying outputs")
 	}
@@ -249,22 +244,22 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 }
 
 // listAssets is an http handler for listing assets matching
-// a ChQL query or index.
+// an index or an ad-hoc filter.
 //
 // POST /list-assets
 func (a *api) listAssets(ctx context.Context, in requestQuery) (page, error) {
 	limit := defGenericPageSize
 
-	// Build the ChQL query
-	q, err := chql.Parse(in.ChQL)
+	// Build the filter predicate.
+	p, err := filter.Parse(in.Filter)
 	if err != nil {
 		return page{}, err
 	}
 	cur := in.Cursor
 
-	// Use the ChQL query engine for querying asset tags.
+	// Use the query engine for querying asset tags.
 	var assets []map[string]interface{}
-	assets, cur, err = a.indexer.Assets(ctx, q, in.ChQLParams, cur, limit)
+	assets, cur, err = a.indexer.Assets(ctx, p, in.FilterParams, cur, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running asset query")
 	}

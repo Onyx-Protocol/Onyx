@@ -9,7 +9,7 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/core/query/chql"
+	"chain/core/query/filter"
 )
 
 type OutputsCursor struct {
@@ -46,11 +46,11 @@ func DecodeOutputsCursor(str string) (c *OutputsCursor, err error) {
 	}, nil
 }
 
-func (ind *Indexer) Outputs(ctx context.Context, q chql.Query, vals []interface{}, timestampMS uint64, cursor *OutputsCursor, limit int) ([]interface{}, *OutputsCursor, error) {
-	if len(vals) != q.Parameters {
+func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []interface{}, timestampMS uint64, cursor *OutputsCursor, limit int) ([]interface{}, *OutputsCursor, error) {
+	if len(vals) != p.Parameters {
 		return nil, nil, ErrParameterCountMismatch
 	}
-	expr, err := chql.AsSQL(q, "data", vals)
+	expr, err := filter.AsSQL(p, "data", vals)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -97,7 +97,7 @@ func (ind *Indexer) Outputs(ctx context.Context, q chql.Query, vals []interface{
 	return outputs, &newCursor, nil
 }
 
-func constructOutputsQuery(expr chql.SQLExpr, timestampMS uint64, cursor *OutputsCursor, limit int) (string, []interface{}) {
+func constructOutputsQuery(expr filter.SQLExpr, timestampMS uint64, cursor *OutputsCursor, limit int) (string, []interface{}) {
 	sql := fmt.Sprintf("SELECT block_height, tx_pos, output_index, data FROM %s", pq.QuoteIdentifier("annotated_outputs"))
 
 	vals := make([]interface{}, 0, 4+len(expr.Values))

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"chain/core/query/chql"
+	"chain/core/query/filter"
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/database/pg"
@@ -52,7 +52,7 @@ func TestOutputsCursor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	q, err := chql.Parse(`account_id = 'abc'`)
+	q, err := filter.Parse(`account_id = 'abc'`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,11 +117,11 @@ func TestConstructOutputsQuery(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		q, err := chql.Parse(tc.query)
+		q, err := filter.Parse(tc.query)
 		if err != nil {
 			t.Fatal(err)
 		}
-		expr, err := chql.AsSQL(q, "data", tc.values)
+		expr, err := filter.AsSQL(q, "data", tc.values)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -235,11 +235,11 @@ func TestQueryOutputs(t *testing.T) {
 	}
 
 	for i, tc := range cases {
-		chql, err := chql.Parse(tc.query)
+		f, err := filter.Parse(tc.query)
 		if err != nil {
 			t.Fatal(err)
 		}
-		outputs, _, err := indexer.Outputs(ctx, chql, tc.values, bc.Millis(tc.when), nil, 1000)
+		outputs, _, err := indexer.Outputs(ctx, f, tc.values, bc.Millis(tc.when), nil, 1000)
 		if err != nil {
 			t.Fatal(err)
 		}

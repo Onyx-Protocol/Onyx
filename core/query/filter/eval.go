@@ -1,4 +1,4 @@
-package chql
+package filter
 
 import (
 	"fmt"
@@ -6,21 +6,21 @@ import (
 	"strconv"
 )
 
-// Eval evaluates the provided query against the provided environment.
-func Eval(env map[string]interface{}, q Query) (s Set, err error) {
-	if q.Parameters > 1 {
+// Eval evaluates the provided predicate against the provided environment.
+func Eval(env map[string]interface{}, p Predicate) (s Set, err error) {
+	if p.Parameters > 1 {
 		return s, fmt.Errorf("multiple parameters are not yet supported")
 	}
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("preparing query: %s", r)
+			err = fmt.Errorf("preparing predicate: %s", r)
 		}
 	}()
 
-	v := eval(mapEnv(env), q.expr)
+	v := eval(mapEnv(env), p.expr)
 	if !v.is(Bool) {
-		return s, fmt.Errorf("query `%s` does not evaluate to a boolean", q.expr.String())
+		return s, fmt.Errorf("predicate `%s` does not evaluate to a boolean", p.expr.String())
 	}
 
 	// Always sort the return set so Eval(...) returns a
@@ -29,7 +29,7 @@ func Eval(env map[string]interface{}, q Query) (s Set, err error) {
 	return v.set, nil
 }
 
-// Type defines the value types of ChQL.
+// Type defines the value types in filter expressions.
 type Type int
 
 const (
@@ -53,7 +53,7 @@ func (t Type) String() string {
 	case Object:
 		return "object"
 	}
-	panic("unknown ChQL type")
+	panic("unknown type")
 }
 
 // value represents the result of evaluating an expression against an

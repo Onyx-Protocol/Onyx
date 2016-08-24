@@ -1,4 +1,4 @@
-package chql
+package filter
 
 import (
 	"reflect"
@@ -12,7 +12,7 @@ func TestAsSQL(t *testing.T) {
 		conds []interface{}
 	}{
 		{
-		// empty query
+		// empty predicate
 		},
 		{
 			q:     `inputs(a = 'a' AND b = 'b')`,

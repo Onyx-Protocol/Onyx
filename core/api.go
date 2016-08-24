@@ -63,11 +63,11 @@ type requestQuery struct {
 	// TODO(bobg): Different request structs for endpoints with different needs
 	TimestampMS uint64 `json:"timestamp,omitempty"`
 
-	IndexID    string        `json:"index_id,omitempty"`
-	IndexAlias string        `json:"index_alias,omitempty"`
-	ChQL       string        `json:"chql,omitempty"`
-	ChQLParams []interface{} `json:"chql_params,omitempty"`
-	SumBy      []string      `json:"sum_by,omitempty"`
+	IndexID      string        `json:"index_id,omitempty"`
+	IndexAlias   string        `json:"index_alias,omitempty"`
+	Filter       string        `json:"filter,omitempty"`
+	FilterParams []interface{} `json:"filter_params,omitempty"`
+	SumBy        []string      `json:"sum_by,omitempty"`
 }
 
 // Used as a response object for api queries

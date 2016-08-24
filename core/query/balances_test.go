@@ -8,40 +8,40 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"chain/core/query/chql"
+	"chain/core/query/filter"
 	"chain/cos/bc"
 )
 
 func TestConstructBalancesQuery(t *testing.T) {
 	now := uint64(123456)
 	testCases := []struct {
-		query      string
+		predicate  string
 		sumBy      []string
 		values     []interface{}
 		wantQuery  string
 		wantValues []interface{}
 	}{
 		{
-			query:      "account_id = 'abc'",
+			predicate:  "account_id = 'abc'",
 			sumBy:      []string{"asset_id"},
 			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0), "data"->>'asset_id' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
 			wantValues: []interface{}{`{"account_id":"abc"}`, now},
 		},
 		{
-			query:      "account_id = $1",
+			predicate:  "account_id = $1",
 			sumBy:      []string{"asset_id"},
 			values:     []interface{}{"abc"},
 			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0), "data"->>'asset_id' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
 			wantValues: []interface{}{`{"account_id":"abc"}`, now},
 		},
 		{
-			query:      "asset_id = $1 AND account_id = $2",
+			predicate:  "asset_id = $1 AND account_id = $2",
 			values:     []interface{}{"foo", "bar"},
 			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0) FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8`,
 			wantValues: []interface{}{`{"account_id":"bar","asset_id":"foo"}`, now},
 		},
 		{
-			query:      "account_id = $1",
+			predicate:  "account_id = $1",
 			sumBy:      []string{"asset_tags.currency"},
 			values:     []interface{}{"foo"},
 			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0), "data"->'asset_tags'->>'currency' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
@@ -50,17 +50,17 @@ func TestConstructBalancesQuery(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		q, err := chql.Parse(tc.query)
+		p, err := filter.Parse(tc.predicate)
 		if err != nil {
 			t.Fatal(err)
 		}
-		expr, err := chql.AsSQL(q, "data", tc.values)
+		expr, err := filter.AsSQL(p, "data", tc.values)
 		if err != nil {
 			t.Fatal(err)
 		}
-		var fields []chql.Field
+		var fields []filter.Field
 		for _, s := range tc.sumBy {
-			f, err := chql.ParseField(s)
+			f, err := filter.ParseField(s)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -80,11 +80,11 @@ func TestConstructBalancesQuery(t *testing.T) {
 func TestQueryBalances(t *testing.T) {
 	type (
 		testcase struct {
-			query  string
-			sumBy  []string
-			values []interface{}
-			when   time.Time
-			want   string
+			predicate string
+			sumBy     []string
+			values    []interface{}
+			when      time.Time
+			want      string
 		}
 	)
 
@@ -92,83 +92,83 @@ func TestQueryBalances(t *testing.T) {
 
 	cases := []testcase{
 		{
-			query:  "asset_id = $1",
-			values: []interface{}{asset1.AssetID.String()},
-			when:   time1,
-			want:   `[{"amount": 0}]`,
+			predicate: "asset_id = $1",
+			values:    []interface{}{asset1.AssetID.String()},
+			when:      time1,
+			want:      `[{"amount": 0}]`,
 		},
 		{
-			query:  "asset_tags.currency = $1",
-			values: []interface{}{"USD"},
-			when:   time1,
-			want:   `[{"amount": 0}]`,
+			predicate: "asset_tags.currency = $1",
+			values:    []interface{}{"USD"},
+			when:      time1,
+			want:      `[{"amount": 0}]`,
 		},
 		{
-			query:  "asset_id = $1",
-			values: []interface{}{asset1.AssetID.String()},
-			when:   time2,
-			want:   `[{"amount": 867}]`,
+			predicate: "asset_id = $1",
+			values:    []interface{}{asset1.AssetID.String()},
+			when:      time2,
+			want:      `[{"amount": 867}]`,
 		},
 		{
-			query:  "asset_tags.currency = $1",
-			values: []interface{}{"USD"},
-			when:   time2,
-			want:   `[{"amount": 867}]`,
+			predicate: "asset_tags.currency = $1",
+			values:    []interface{}{"USD"},
+			when:      time2,
+			want:      `[{"amount": 867}]`,
 		},
 		{
-			query:  "asset_id = $1",
-			values: []interface{}{asset2.AssetID.String()},
-			when:   time1,
-			want:   `[{"amount": 0}]`,
+			predicate: "asset_id = $1",
+			values:    []interface{}{asset2.AssetID.String()},
+			when:      time1,
+			want:      `[{"amount": 0}]`,
 		},
 		{
-			query:  "asset_id = $1",
-			values: []interface{}{asset2.AssetID.String()},
-			when:   time2,
-			want:   `[{"amount": 100}]`,
+			predicate: "asset_id = $1",
+			values:    []interface{}{asset2.AssetID.String()},
+			when:      time2,
+			want:      `[{"amount": 100}]`,
 		},
 		{
-			query:  "account_id = $1",
-			values: []interface{}{acct1.ID},
-			when:   time1,
-			want:   `[{"amount": 0}]`,
+			predicate: "account_id = $1",
+			values:    []interface{}{acct1.ID},
+			when:      time1,
+			want:      `[{"amount": 0}]`,
 		},
 		{
-			query:  "account_id = $1",
-			values: []interface{}{acct1.ID},
-			when:   time2,
-			want:   `[{"amount": 967}]`,
+			predicate: "account_id = $1",
+			values:    []interface{}{acct1.ID},
+			when:      time2,
+			want:      `[{"amount": 967}]`,
 		},
 		{
-			query:  "account_id = $1",
-			values: []interface{}{acct2.ID},
-			when:   time1,
-			want:   `[{"amount": 0}]`,
+			predicate: "account_id = $1",
+			values:    []interface{}{acct2.ID},
+			when:      time1,
+			want:      `[{"amount": 0}]`,
 		},
 		{
-			query:  "account_id = $1",
-			values: []interface{}{acct2.ID},
-			when:   time2,
-			want:   `[{"amount": 0}]`,
+			predicate: "account_id = $1",
+			values:    []interface{}{acct2.ID},
+			when:      time2,
+			want:      `[{"amount": 0}]`,
 		},
 		{
-			query:  "asset_id = $1 AND account_id = $2",
-			values: []interface{}{asset1.AssetID.String(), acct1.ID},
-			when:   time2,
-			want:   `[{"amount": 867}]`,
+			predicate: "asset_id = $1 AND account_id = $2",
+			values:    []interface{}{asset1.AssetID.String(), acct1.ID},
+			when:      time2,
+			want:      `[{"amount": 867}]`,
 		},
 		{
-			query:  "asset_id = $1 AND account_id = $2",
-			values: []interface{}{asset2.AssetID.String(), acct1.ID},
-			when:   time2,
-			want:   `[{"amount": 100}]`,
+			predicate: "asset_id = $1 AND account_id = $2",
+			values:    []interface{}{asset2.AssetID.String(), acct1.ID},
+			when:      time2,
+			want:      `[{"amount": 100}]`,
 		},
 		{
-			query:  "asset_id = $1",
-			sumBy:  []string{"account_id"},
-			values: []interface{}{asset1.AssetID.String()},
-			when:   time2,
-			want:   `[{"sum_by": {"account_id": "` + acct1.ID + `"}, "amount": 867}]`,
+			predicate: "asset_id = $1",
+			sumBy:     []string{"account_id"},
+			values:    []interface{}{asset1.AssetID.String()},
+			when:      time2,
+			want:      `[{"sum_by": {"account_id": "` + acct1.ID + `"}, "amount": 867}]`,
 		},
 		{
 			sumBy: []string{"asset_tags.currency"},
@@ -184,20 +184,20 @@ func TestQueryBalances(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		q, err := chql.Parse(tc.query)
+		p, err := filter.Parse(tc.predicate)
 		if err != nil {
 			t.Fatal(err)
 		}
-		var fields []chql.Field
+		var fields []filter.Field
 		for _, s := range tc.sumBy {
-			f, err := chql.ParseField(s)
+			f, err := filter.ParseField(s)
 			if err != nil {
 				t.Fatal(err)
 			}
 			fields = append(fields, f)
 		}
 
-		balances, err := indexer.Balances(ctx, q, tc.values, fields, bc.Millis(tc.when))
+		balances, err := indexer.Balances(ctx, p, tc.values, fields, bc.Millis(tc.when))
 		if err != nil {
 			t.Fatal(err)
 		}

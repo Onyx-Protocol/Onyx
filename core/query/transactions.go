@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"chain/core/query/chql"
+	"chain/core/query/filter"
 	"chain/errors"
 )
 
@@ -68,11 +68,11 @@ func (ind *Indexer) LookupTxCursor(ctx context.Context, begin, end uint64) (TxCu
 }
 
 // Transactions queries the blockchain for transactions matching the query `q`.
-func (ind *Indexer) Transactions(ctx context.Context, q chql.Query, vals []interface{}, cur TxCursor, limit int) ([]interface{}, *TxCursor, error) {
-	if len(vals) != q.Parameters {
+func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals []interface{}, cur TxCursor, limit int) ([]interface{}, *TxCursor, error) {
+	if len(vals) != p.Parameters {
 		return nil, nil, ErrParameterCountMismatch
 	}
-	expr, err := chql.AsSQL(q, "data", vals)
+	expr, err := filter.AsSQL(p, "data", vals)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "converting to SQL")
 	}
@@ -107,7 +107,7 @@ func (ind *Indexer) Transactions(ctx context.Context, q chql.Query, vals []inter
 	return txns, &cur, nil
 }
 
-func constructTransactionsQuery(expr chql.SQLExpr, cur TxCursor, limit int) (string, []interface{}) {
+func constructTransactionsQuery(expr filter.SQLExpr, cur TxCursor, limit int) (string, []interface{}) {
 	var buf bytes.Buffer
 	var vals []interface{}
 

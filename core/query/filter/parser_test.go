@@ -1,4 +1,4 @@
-package chql
+package filter
 
 import (
 	"reflect"
@@ -7,30 +7,30 @@ import (
 
 func TestParseValid(t *testing.T) {
 	testCases := []struct {
-		q    string
+		p    string
 		expr expr
 	}{
 		{
-		// empty query
+		// empty predicate
 		},
 		{
-			q:    "'hello world'",
+			p:    "'hello world'",
 			expr: valueExpr{typ: tokString, value: "'hello world'"},
 		},
 		{
-			q:    "2000",
+			p:    "2000",
 			expr: valueExpr{typ: tokInteger, value: "2000"},
 		},
 		{
-			q:    "0",
+			p:    "0",
 			expr: valueExpr{typ: tokInteger, value: "0"},
 		},
 		{
-			q:    "0xff",
+			p:    "0xff",
 			expr: valueExpr{typ: tokInteger, value: "255"},
 		},
 		{
-			q: "reference.recipient.email_address",
+			p: "reference.recipient.email_address",
 			expr: selectorExpr{
 				ident: "email_address",
 				objExpr: selectorExpr{
@@ -40,7 +40,7 @@ func TestParseValid(t *testing.T) {
 			},
 		},
 		{
-			q: "(reference.recipient).email_address",
+			p: "(reference.recipient).email_address",
 			expr: selectorExpr{
 				ident: "email_address",
 				objExpr: parenExpr{
@@ -52,7 +52,7 @@ func TestParseValid(t *testing.T) {
 			},
 		},
 		{
-			q: "2000 = 1000",
+			p: "2000 = 1000",
 			expr: binaryExpr{
 				op: binaryOps["="],
 				l:  valueExpr{typ: tokInteger, value: "2000"},
@@ -60,7 +60,7 @@ func TestParseValid(t *testing.T) {
 			},
 		},
 		{
-			q: "INPUTS(asset_id = $1)",
+			p: "INPUTS(asset_id = $1)",
 			expr: envExpr{
 				ident: "INPUTS",
 				expr: binaryExpr{
@@ -71,7 +71,7 @@ func TestParseValid(t *testing.T) {
 			},
 		},
 		{
-			q: "INPUTS(asset_id = $1) OR OUTPUTS(asset_id = 'abcdefg')",
+			p: "INPUTS(asset_id = $1) OR OUTPUTS(asset_id = 'abcdefg')",
 			expr: binaryExpr{
 				op: binaryOps["OR"],
 				l: envExpr{
@@ -93,7 +93,7 @@ func TestParseValid(t *testing.T) {
 			},
 		},
 		{
-			q: "INPUTS(asset_tags.promissory_note AND account_tags.id = $1)",
+			p: "INPUTS(asset_tags.promissory_note AND account_tags.id = $1)",
 			expr: envExpr{
 				ident: "INPUTS",
 				expr: binaryExpr{
@@ -116,13 +116,13 @@ func TestParseValid(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		expr, _, err := parse(tc.q)
+		expr, _, err := parse(tc.p)
 		if err != nil {
 			t.Errorf("%d: %s", i, err)
 			continue
 		}
 		if !reflect.DeepEqual(expr, tc.expr) {
-			t.Errorf("%d: parsing %q\ngot=\n%#v\nwant=\n%#v\n", i, tc.q, expr, tc.expr)
+			t.Errorf("%d: parsing %q\ngot=\n%#v\nwant=\n%#v\n", i, tc.p, expr, tc.expr)
 		}
 	}
 }

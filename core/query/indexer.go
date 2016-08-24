@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"chain/core/query/chql"
+	"chain/core/query/filter"
 	"chain/cos"
 	"chain/database/pg"
 	"chain/errors"
@@ -35,8 +35,8 @@ var IndexTypes = map[string]bool{
 }
 
 var (
-	ErrParsingQuery      = errors.New("error parsing ChQL query")
-	ErrTooManyParameters = errors.New("transaction ChQL queries support up to 1 parameter")
+	ErrParsingQuery      = errors.New("error parsing filter")
+	ErrTooManyParameters = errors.New("transaction filters support up to 1 parameter")
 )
 
 // NewIndexer constructs a new indexer for indexing transactions.
@@ -49,7 +49,7 @@ func NewIndexer(db pg.DB, fc *cos.FC) *Indexer {
 	return indexer
 }
 
-// Indexer creates, updates and queries against ChQL indexes.
+// Indexer creates, updates and queries against indexes.
 type Indexer struct {
 	db         pg.DB
 	mu         sync.Mutex // protects indexes
@@ -83,27 +83,27 @@ func (ind *Indexer) BeginIndexing(ctx context.Context) error {
 	return nil
 }
 
-// Index represents a transaction index on a particular ChQL query.
+// Index represents a transaction index configured with a particular filter.
 type Index struct {
-	ID        string // unique, chain ID
-	Alias     string // unique, external string identifier
-	Type      string // 'transaction', 'balance', etc.
-	Query     chql.Query
-	SumBy     []chql.Field // only for 'balance' indexes
-	rawQuery  string
-	rawSumBy  []string
-	createdAt time.Time
+	ID           string // unique, chain ID
+	Alias        string // unique, external string identifier
+	Type         string // 'transaction', 'balance', etc.
+	Predicate    filter.Predicate
+	SumBy        []filter.Field // only for 'balance' indexes
+	rawPredicate string
+	rawSumBy     []string
+	createdAt    time.Time
 }
 
 // Parse parses the Index's rawQuery and rawSumBy, populating the Query
 // and SumBy fields with the AST representations.
 func (i *Index) Parse() (err error) {
-	i.Query, err = chql.Parse(i.rawQuery)
+	i.Predicate, err = filter.Parse(i.rawPredicate)
 	if err != nil {
 		return errors.Wrap(err, "parsing index query")
 	}
 	for _, rawField := range i.rawSumBy {
-		field, err := chql.ParseField(rawField)
+		field, err := filter.ParseField(rawField)
 		if err != nil {
 			return errors.Wrap(err, "parsing index field")
 		}
@@ -119,7 +119,7 @@ func (i *Index) MarshalJSON() ([]byte, error) {
 		"id":    i.ID,
 		"alias": i.Alias,
 		"type":  i.Type,
-		"query": i.Query.String(),
+		"query": i.Predicate.String(),
 	}
 
 	if i.Type == IndexTypeBalance {
@@ -141,7 +141,7 @@ func (ind *Indexer) GetIndex(ctx context.Context, id, alias, typ string) (*Index
 	var idx Index
 	var sumBy pg.Strings
 	err := ind.db.QueryRow(ctx, selectQ, id, alias, typ).
-		Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &sumBy)
+		Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawPredicate, &idx.createdAt, &sumBy)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -155,13 +155,13 @@ func (ind *Indexer) GetIndex(ctx context.Context, id, alias, typ string) (*Index
 // CreateIndex commits a new index in the database. Blockchain data
 // will not be indexed until the leader process picks up the new index.
 func (ind *Indexer) CreateIndex(ctx context.Context, alias, typ, rawQuery string, sumByFields []string) (*Index, error) {
-	q, err := chql.Parse(rawQuery)
+	q, err := filter.Parse(rawQuery)
 	if err != nil {
 		return nil, errors.WithDetail(ErrParsingQuery, err.Error())
 	}
-	var fields []chql.Field
+	var fields []filter.Field
 	for _, rawField := range sumByFields {
-		field, err := chql.ParseField(rawField)
+		field, err := filter.ParseField(rawField)
 		if err != nil {
 			return nil, errors.WithDetail(ErrParsingQuery, err.Error())
 		}
@@ -180,12 +180,12 @@ func (ind *Indexer) CreateIndex(ctx context.Context, alias, typ, rawQuery string
 		RETURNING id, created_at
 	`
 	idx := &Index{
-		Alias:    alias,
-		Type:     typ,
-		Query:    q,
-		SumBy:    fields,
-		rawQuery: rawQuery,
-		rawSumBy: sumByFields,
+		Alias:        alias,
+		Type:         typ,
+		Predicate:    q,
+		SumBy:        fields,
+		rawPredicate: rawQuery,
+		rawSumBy:     sumByFields,
 	}
 	err = ind.db.QueryRow(ctx, insertQ, alias, typ, rawQuery, pg.Strings(sumByFields)).Scan(&idx.ID, &idx.createdAt)
 	if pg.IsUniqueViolation(err) {
@@ -267,7 +267,7 @@ func (ind *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
 	for rows.Next() {
 		idx := new(Index)
 		var sumBy pg.Strings
-		err = rows.Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &sumBy)
+		err = rows.Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawPredicate, &idx.createdAt, &sumBy)
 		if err != nil {
 			return nil, errors.Wrap(err, "scanning query_indexes row")
 		}
@@ -296,7 +296,7 @@ func (ind *Indexer) listIndexes(ctx context.Context, cursor string, limit int) (
 	for rows.Next() {
 		idx := new(Index)
 		var sumBy pg.Strings
-		err = rows.Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &sumBy)
+		err = rows.Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawPredicate, &idx.createdAt, &sumBy)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "scanning query_indexes row")
 		}

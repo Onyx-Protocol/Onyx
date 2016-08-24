@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"chain/core/query/chql"
+	"chain/core/query/filter"
 	"chain/cos/bc"
 	"chain/errors"
 )
@@ -28,11 +28,11 @@ func (i *Indexer) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, as
 }
 
 // Assets queries the blockchain for annotated assets matching the query.
-func (i *Indexer) Assets(ctx context.Context, q chql.Query, vals []interface{}, cur string, limit int) ([]map[string]interface{}, string, error) {
-	if len(vals) != q.Parameters {
+func (i *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []interface{}, cur string, limit int) ([]map[string]interface{}, string, error) {
+	if len(vals) != p.Parameters {
 		return nil, "", ErrParameterCountMismatch
 	}
-	expr, err := chql.AsSQL(q, "data", vals)
+	expr, err := filter.AsSQL(p, "data", vals)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "converting to SQL")
 	}
@@ -71,7 +71,7 @@ func (i *Indexer) Assets(ctx context.Context, q chql.Query, vals []interface{}, 
 	return assets, cur, nil
 }
 
-func constructAssetsQuery(expr chql.SQLExpr, cur string, limit int) (string, []interface{}) {
+func constructAssetsQuery(expr filter.SQLExpr, cur string, limit int) (string, []interface{}) {
 	var buf bytes.Buffer
 	var vals []interface{}
 

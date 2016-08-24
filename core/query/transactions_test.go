@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/core/query/chql"
+	"chain/core/query/filter"
 	"chain/cos"
 	"chain/database/pg/pgtest"
 )
@@ -62,11 +62,11 @@ func TestConstructTransactionsQuery(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		q, err := chql.Parse(tc.query)
+		q, err := filter.Parse(tc.query)
 		if err != nil {
 			t.Fatal(err)
 		}
-		expr, err := chql.AsSQL(q, "data", tc.values)
+		expr, err := filter.AsSQL(q, "data", tc.values)
 		if err != nil {
 			t.Fatal(err)
 		}

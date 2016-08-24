@@ -1,14 +1,14 @@
 /*
+Package filter parses and evaluates Chain filter expressions. A
+predicate is a boolean expression with zero or more placeholder
+values ($1, $2, etc) that are initially unconstrained. The
+predicate is evaluated in an environment (such as a transaction
+object or a UTXO) that determines the value of all non-placeholder
+terms. The predicate and its fixed values together constrain the
+placeholders. Function Eval finds the set of all placeholder values
+that satisfy the predicate.
 
-Package chql evaluates expressions in the Chain Query Language (ChQL).
-A ChQL query is a boolean expression with zero or more placeholder
-values ($1, $2, etc) that are initially unconstrained. The query is
-evaluated in an environment (such as a transaction object or a UTXO)
-that determines the value of all non-placeholder terms. The query
-and its fixed values together constrain the placeholders. Function
-Eval finds the set of all placeholder values that satisfy the query.
-
-Expressions in ChQL have the following forms:
+Expressions in a filter expression have the following forms:
 
   Form                     Type     Subexpression types
   expr1 "OR" expr2         bool     bool, bool
@@ -38,8 +38,8 @@ subexpression 'expr' is evaluated in each subenvironment, and if
 there exists one subenvironment for which 'expr' is true, the
 expression as a whole is true.
 
-Queries are statically type-checked: if a subexpression doesn't have
+Filters are statically type-checked: if a subexpression doesn't have
 the appropriate type, Parse will return an error.
 
 */
-package chql
+package filter

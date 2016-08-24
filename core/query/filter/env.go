@@ -1,4 +1,4 @@
-package chql
+package filter
 
 import "fmt"
 
