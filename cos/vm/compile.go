@@ -11,7 +11,7 @@ import (
 	"chain/errors"
 )
 
-// Convert a string like "2 3 ADD 5 NUMEQUAL" into 0x525393559c.
+// Compile converts a string like "2 3 ADD 5 NUMEQUAL" into 0x525393559c.
 // The input should not include PUSHDATA (or OP_<num>) ops; those will
 // be inferred.
 func Compile(s string) ([]byte, error) {

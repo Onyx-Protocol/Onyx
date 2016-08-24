@@ -164,7 +164,7 @@ func (ind *Indexer) ListIndexes(ctx context.Context, cursor string, limit int) (
 	}
 
 	// Parse all the queries so that we can print a cleaned
-	// represenation of the query.
+	// representation of the query.
 	for _, idx := range indexes {
 		idx.Query, err = chql.Parse(idx.rawQuery)
 		if err != nil {

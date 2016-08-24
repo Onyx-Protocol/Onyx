@@ -35,7 +35,7 @@ type virtualMachine struct {
 	block *bc.Block
 }
 
-// Set this to a non-nil value to produce trace output during
+// TraceOut - if non-nil - will receive trace output during
 // execution.
 var TraceOut io.Writer
 

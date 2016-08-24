@@ -137,7 +137,7 @@ func streamBlocks(ctx context.Context) <-chan *bc.Block {
 	ch := make(chan *bc.Block, batchBlockCount)
 	go func() {
 		defer close(ch)
-		var next uint64 = 0
+		var next uint64
 		for {
 			// Get a new page of blocks and send them out over the channel.
 			var batch []*bc.Block

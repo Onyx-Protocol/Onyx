@@ -267,7 +267,7 @@ type Node struct {
 }
 
 // Value encapsulates a value stored in the tree. The value may
-// be a precomputed hash or an abritrary byte slice that will be
+// be a precomputed hash or an arbitrary byte slice that will be
 // hashed when necessary.
 type Value struct {
 	Bytes  []byte

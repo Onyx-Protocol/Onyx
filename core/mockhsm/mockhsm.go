@@ -31,7 +31,7 @@ func (h *HSM) CreateKey(ctx context.Context, alias string) (*XPub, error) {
 	return xpub, err
 }
 
-// GetOrCreate looks for the key with the given alias, generating a
+// GetOrCreateKey looks for the key with the given alias, generating a
 // new one if it's not found.
 func (h *HSM) GetOrCreateKey(ctx context.Context, alias string) (xpub *XPub, created bool, err error) {
 	return h.create(ctx, alias, true)
@@ -63,11 +63,11 @@ func (h *HSM) create(ctx context.Context, alias string, get bool) (*XPub, bool, 
 }
 
 func (h *HSM) store(ctx context.Context, xpubHash string, xprv *hd25519.XPrv, xpub *hd25519.XPub, alias string) error {
-	aliasSql := sql.NullString{
+	aliasSQL := sql.NullString{
 		String: alias,
 		Valid:  alias != "",
 	}
-	_, err := h.db.Exec(ctx, "INSERT INTO mockhsm (xpub_hash, xpub, xprv, alias) VALUES ($1, $2, $3, $4)", xpubHash, xpub.Bytes(), xprv.Bytes(), aliasSql)
+	_, err := h.db.Exec(ctx, "INSERT INTO mockhsm (xpub_hash, xpub, xprv, alias) VALUES ($1, $2, $3, $4)", xpubHash, xpub.Bytes(), xprv.Bytes(), aliasSQL)
 	return err
 }
 

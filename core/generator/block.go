@@ -208,7 +208,7 @@ func (g *Generator) savePendingBlock(ctx context.Context, b *bc.Block) error {
 
 // SaveInitialBlock saves b as the generator's pending block.
 // Block b must have height 1.
-// It is an error to save an inital block after other blocks
+// It is an error to save an initial block after other blocks
 // have been generated.
 func SaveInitialBlock(ctx context.Context, db pg.DB, b *bc.Block) error {
 	if b.Height != 1 {

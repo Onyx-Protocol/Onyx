@@ -37,7 +37,7 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 
 	// Look up all the asset tags for all applicable assets.
 	assetIDStrs := make([]string, 0, len(assetIDStrMap))
-	for assetIDStr, _ := range assetIDStrMap {
+	for assetIDStr := range assetIDStrMap {
 		assetIDStrs = append(assetIDStrs, assetIDStr)
 	}
 	tagsByAssetIDStr := make(map[string]map[string]interface{}, len(assetIDStrs))

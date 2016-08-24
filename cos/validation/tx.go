@@ -129,7 +129,7 @@ func ValidateTx(tx *bc.Tx) error {
 		}
 	}
 
-	for i, _ := range tx.Inputs {
+	for i := range tx.Inputs {
 		ok, err := vm.VerifyTxInput(tx, uint32(i))
 		if err == nil && !ok {
 			err = ErrFalseVMResult

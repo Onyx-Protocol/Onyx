@@ -70,7 +70,7 @@ class Form extends React.Component {
             onChange={this.handleChange} />
         </div>
         <div className='form-group'>
-          <label>Defintion</label>
+          <label>Definition</label>
           <textarea
             ref="definition"
             className='form-control'

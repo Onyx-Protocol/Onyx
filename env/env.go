@@ -122,7 +122,7 @@ func URL(name string, value string) *url.URL {
 // URLVar defines a url.URL variable with
 // the specified name ande default value.
 // The argument p points to a url.URL variable
-// in which to store the value of the enviroment
+// in which to store the value of the environment
 // variable.
 func URLVar(p *url.URL, name string, value string) {
 	v, err := url.Parse(value)

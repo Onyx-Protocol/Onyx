@@ -35,7 +35,7 @@ If the function returns a non-nil error,
 the handler will call the error function provided
 in its constructor.
 Otherwise, the handler will write the return value
-as JSON text to the reponse body.
+as JSON text to the response body.
 If the return type is omitted, the handler will send
 a default response value.
 

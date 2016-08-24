@@ -557,13 +557,13 @@ func programWithDefinition(pubkeys []ed25519.PublicKey, nrequired int, definitio
 }
 
 func mapToNullString(in map[string]interface{}) (*sql.NullString, error) {
-	var mapJson []byte
+	var mapJSON []byte
 	if len(in) != 0 {
 		var err error
-		mapJson, err = json.Marshal(in)
+		mapJSON, err = json.Marshal(in)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
 	}
-	return &sql.NullString{String: string(mapJson), Valid: len(mapJson) > 0}, nil
+	return &sql.NullString{String: string(mapJSON), Valid: len(mapJSON) > 0}, nil
 }
