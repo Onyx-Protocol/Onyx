@@ -4,7 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"reflect"
 	"testing"
+	"time"
+
+	"chain/cos/bc"
+	"chain/errors"
 )
 
 type tracebuf struct {
@@ -181,6 +186,251 @@ func doOKNotOK(t *testing.T, expectOK bool) {
 		if testing.Verbose() && (ok == expectOK) && err == nil {
 			trace.dump()
 			fmt.Println("")
+		}
+	}
+}
+
+func TestVerifyTxInput(t *testing.T) {
+	cases := []struct {
+		input   *bc.TxInput
+		want    bool
+		wantErr error
+	}{{
+		input: bc.NewSpendInput(
+			bc.Hash{},
+			0,
+			[][]byte{{2}, {3}},
+			bc.AssetID{},
+			1,
+			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
+			nil,
+		),
+		want: true,
+	}, {
+		input: bc.NewIssuanceInput(
+			time.Now(),
+			time.Now(),
+			bc.Hash{},
+			1,
+			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
+			nil,
+			[][]byte{{2}, {3}},
+		),
+		want: true,
+	}, {
+		input: &bc.TxInput{
+			InputCommitment: &bc.IssuanceInputCommitment{
+				VMVersion: 2,
+			},
+		},
+		wantErr: ErrUnsupportedVM,
+	}, {
+		input: &bc.TxInput{
+			InputCommitment: &bc.SpendInputCommitment{
+				OutputCommitment: bc.OutputCommitment{
+					VMVersion: 2,
+				},
+			},
+		},
+		wantErr: ErrUnsupportedVM,
+	}, {
+		input: bc.NewIssuanceInput(
+			time.Now(),
+			time.Now(),
+			bc.Hash{},
+			1,
+			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
+			nil,
+			[][]byte{make([]byte, 50001)},
+		),
+		wantErr: ErrRunLimitExceeded,
+	}, {
+		input: &bc.TxInput{
+			InputCommitment: nil,
+		},
+		wantErr: ErrUnsupportedTx,
+	}}
+
+	for i, c := range cases {
+		tx := &bc.Tx{TxData: bc.TxData{
+			Inputs: []*bc.TxInput{c.input},
+		}}
+
+		got, gotErr := VerifyTxInput(tx, 0)
+
+		if gotErr != c.wantErr {
+			t.Errorf("VerifyTxInput(%+v) err = %v want %v", i, gotErr, c.wantErr)
+		}
+
+		if got != c.want {
+			t.Errorf("VerifyTxInput(%+v) = %v want %v", i, got, c.want)
+		}
+	}
+}
+
+func TestVerifyBlockHeader(t *testing.T) {
+	block := &bc.Block{
+		BlockHeader: bc.BlockHeader{Witness: [][]byte{{2}, {3}}},
+	}
+	prevBlock := &bc.Block{
+		BlockHeader: bc.BlockHeader{ConsensusProgram: []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)}},
+	}
+
+	got, gotErr := VerifyBlockHeader(block, prevBlock)
+	if gotErr != nil {
+		t.Errorf("unexpected error: %v", gotErr)
+	}
+
+	if !got {
+		t.Error("expected true result")
+	}
+
+	block = &bc.Block{
+		BlockHeader: bc.BlockHeader{Witness: [][]byte{make([]byte, 50000)}},
+	}
+
+	_, gotErr = VerifyBlockHeader(block, prevBlock)
+	if errors.Root(gotErr) != ErrRunLimitExceeded {
+		t.Error("expected block to exceed run limit")
+	}
+}
+
+func TestRun(t *testing.T) {
+	cases := []struct {
+		vm      *virtualMachine
+		want    bool
+		wantErr error
+	}{{
+		vm:   &virtualMachine{runLimit: 50000, program: []byte{byte(OP_TRUE)}},
+		want: true,
+	}, {
+		vm:      &virtualMachine{runLimit: 50000, program: []byte{byte(OP_ADD)}},
+		wantErr: ErrDataStackUnderflow,
+	}, {
+		vm:      &virtualMachine{runLimit: 50000, program: []byte{byte(OP_TRUE), byte(OP_IF)}},
+		wantErr: ErrNonEmptyControlStack,
+	}}
+
+	for i, c := range cases {
+		got, gotErr := c.vm.run()
+
+		if gotErr != c.wantErr {
+			t.Errorf("run test %d: got err = %v want %v", i, gotErr, c.wantErr)
+			continue
+		}
+
+		if c.wantErr != nil {
+			continue
+		}
+
+		if got != c.want {
+			t.Errorf("run test %d: got = %v want %v", i, got, c.want)
+		}
+	}
+}
+
+func TestStep(t *testing.T) {
+	cases := []struct {
+		startVM *virtualMachine
+		wantVM  *virtualMachine
+		wantErr error
+	}{{
+		startVM: &virtualMachine{
+			program:  []byte{byte(OP_TRUE)},
+			runLimit: 50000,
+		},
+		wantVM: &virtualMachine{
+			program:   []byte{byte(OP_TRUE)},
+			runLimit:  49990,
+			dataStack: [][]byte{{1}},
+			pc:        1,
+			nextPC:    1,
+			data:      []byte{1},
+		},
+	}, {
+		startVM: &virtualMachine{
+			program:   []byte{byte(OP_TRUE), byte(OP_IF), byte(OP_1), byte(OP_ENDIF)},
+			runLimit:  49990,
+			dataStack: [][]byte{{1}},
+			pc:        1,
+		},
+		wantVM: &virtualMachine{
+			program:      []byte{byte(OP_TRUE), byte(OP_IF), byte(OP_1), byte(OP_ENDIF)},
+			runLimit:     49995,
+			dataStack:    [][]byte{},
+			controlStack: []controlTuple{{optype: cfIf, flag: true}},
+			pc:           2,
+			nextPC:       2,
+			deferredCost: -9,
+		},
+	}, {
+		startVM: &virtualMachine{
+			program:      []byte{byte(OP_TRUE), byte(OP_IF), byte(OP_1), byte(OP_ENDIF)},
+			runLimit:     49995,
+			dataStack:    [][]byte{},
+			controlStack: []controlTuple{{optype: cfIf, flag: true}},
+			pc:           2,
+		},
+		wantVM: &virtualMachine{
+			program:      []byte{byte(OP_TRUE), byte(OP_IF), byte(OP_1), byte(OP_ENDIF)},
+			runLimit:     49985,
+			dataStack:    [][]byte{{1}},
+			controlStack: []controlTuple{{optype: cfIf, flag: true}},
+			pc:           3,
+			nextPC:       3,
+			data:         []byte{1},
+		},
+	}, {
+		startVM: &virtualMachine{
+			program:      []byte{byte(OP_FALSE), byte(OP_IF), byte(OP_1), byte(OP_ENDIF)},
+			runLimit:     49995,
+			dataStack:    [][]byte{},
+			controlStack: []controlTuple{{optype: cfIf, flag: false}},
+			pc:           2,
+		},
+		wantVM: &virtualMachine{
+			program:      []byte{byte(OP_FALSE), byte(OP_IF), byte(OP_1), byte(OP_ENDIF)},
+			runLimit:     49994,
+			dataStack:    [][]byte{},
+			controlStack: []controlTuple{{optype: cfIf, flag: false}},
+			pc:           3,
+			nextPC:       3,
+		},
+	}, {
+		startVM: &virtualMachine{
+			program:  []byte{255},
+			runLimit: 50000,
+		},
+		wantErr: ErrUnknownOpcode,
+	}, {
+		startVM: &virtualMachine{
+			program:  []byte{byte(OP_ADD)},
+			runLimit: 50000,
+		},
+		wantErr: ErrDataStackUnderflow,
+	}, {
+		startVM: &virtualMachine{
+			program:  []byte{byte(OP_INDEX)},
+			runLimit: 1,
+			tx:       &bc.Tx{},
+		},
+		wantErr: ErrRunLimitExceeded,
+	}}
+
+	for i, c := range cases {
+		gotErr := c.startVM.step()
+
+		if gotErr != c.wantErr {
+			t.Errorf("step test %d: got err = %v want %v", i, gotErr, c.wantErr)
+			continue
+		}
+
+		if c.wantErr != nil {
+			continue
+		}
+
+		if !reflect.DeepEqual(c.startVM, c.wantVM) {
+			t.Errorf("step test %d:\n\tgot vm:  %+v\n\twant vm: %+v", i, c.startVM, c.wantVM)
 		}
 	}
 }

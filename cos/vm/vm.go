@@ -96,55 +96,10 @@ func VerifyBlockHeader(block, prevBlock *bc.Block) (bool, error) {
 }
 
 func (vm *virtualMachine) run() (bool, error) {
-	for vm.pc = 0; vm.pc < uint32(len(vm.program)); { // handle vm.pc updates in the loop
-		inst, err := ParseOp(vm.program, vm.pc)
+	for vm.pc = 0; vm.pc < uint32(len(vm.program)); { // handle vm.pc updates in step
+		err := vm.step()
 		if err != nil {
 			return false, err
-		}
-
-		vm.nextPC = vm.pc + inst.Len
-
-		var skip bool
-		switch inst.Op {
-		case OP_IF, OP_NOTIF, OP_ELSE, OP_ENDIF, OP_WHILE, OP_ENDWHILE:
-			skip = false
-		default:
-			skip = len(vm.controlStack) > 0 && !vm.controlStack[len(vm.controlStack)-1].flag
-		}
-
-		if TraceOut != nil {
-			opname := inst.Op.String()
-			if skip {
-				opname = fmt.Sprintf("[%s]", opname)
-			}
-			fmt.Fprintf(TraceOut, "vm %d pc %d limit %d %s", vm.depth, vm.pc, vm.runLimit, opname)
-			if len(inst.Data) > 0 {
-				fmt.Fprintf(TraceOut, " %x", inst.Data)
-			}
-			fmt.Fprint(TraceOut, "\n")
-		}
-
-		if !skip {
-			vm.deferredCost = 0
-			vm.data = inst.Data
-			err := ops[inst.Op].fn(vm)
-			if err != nil {
-				return false, err
-			}
-			err = vm.applyCost(vm.deferredCost)
-			if err != nil {
-				return false, err
-			}
-		} else {
-			vm.applyCost(1)
-		}
-
-		vm.pc = vm.nextPC
-
-		if TraceOut != nil && !skip {
-			for i := len(vm.dataStack) - 1; i >= 0; i-- {
-				fmt.Fprintf(TraceOut, "  stack %d: %x\n", len(vm.dataStack)-1-i, vm.dataStack[i])
-			}
 		}
 	}
 
@@ -154,6 +109,60 @@ func (vm *virtualMachine) run() (bool, error) {
 
 	res := len(vm.dataStack) > 0 && AsBool(vm.dataStack[len(vm.dataStack)-1])
 	return res, nil
+}
+
+func (vm *virtualMachine) step() error {
+	inst, err := ParseOp(vm.program, vm.pc)
+	if err != nil {
+		return err
+	}
+
+	vm.nextPC = vm.pc + inst.Len
+
+	var skip bool
+	switch inst.Op {
+	case OP_IF, OP_NOTIF, OP_ELSE, OP_ENDIF, OP_WHILE, OP_ENDWHILE:
+		skip = false
+	default:
+		skip = len(vm.controlStack) > 0 && !vm.controlStack[len(vm.controlStack)-1].flag
+	}
+
+	if TraceOut != nil {
+		opname := inst.Op.String()
+		if skip {
+			opname = fmt.Sprintf("[%s]", opname)
+		}
+		fmt.Fprintf(TraceOut, "vm %d pc %d limit %d %s", vm.depth, vm.pc, vm.runLimit, opname)
+		if len(inst.Data) > 0 {
+			fmt.Fprintf(TraceOut, " %x", inst.Data)
+		}
+		fmt.Fprint(TraceOut, "\n")
+	}
+
+	if !skip {
+		vm.deferredCost = 0
+		vm.data = inst.Data
+		err := ops[inst.Op].fn(vm)
+		if err != nil {
+			return err
+		}
+		err = vm.applyCost(vm.deferredCost)
+		if err != nil {
+			return err
+		}
+	} else {
+		vm.applyCost(1)
+	}
+
+	vm.pc = vm.nextPC
+
+	if TraceOut != nil && !skip {
+		for i := len(vm.dataStack) - 1; i >= 0; i-- {
+			fmt.Fprintf(TraceOut, "  stack %d: %x\n", len(vm.dataStack)-1-i, vm.dataStack[i])
+		}
+	}
+
+	return nil
 }
 
 func (vm *virtualMachine) push(data []byte, deferred bool) error {
