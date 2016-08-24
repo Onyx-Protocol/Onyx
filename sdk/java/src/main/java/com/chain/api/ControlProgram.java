@@ -16,7 +16,8 @@ public class ControlProgram {
     public byte[] program;
 
     public static byte[] retireProgram() {
-        return "6a".getBytes();
+        byte[] b = {0x6a};
+        return b;
     }
 
     public static class Builder {
