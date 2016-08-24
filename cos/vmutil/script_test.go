@@ -122,3 +122,17 @@ func Test01Multisig(t *testing.T) {
 		t.Fatal("doMultiSigScript(1, 0) = success want error")
 	}
 }
+
+func TestParse00Multisig(t *testing.T) {
+	prog, err := doMultiSigScript(nil, 0, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	keys, quorum, err := doParseMultiSigScript(prog, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(keys) != 0 || quorum != 0 {
+		t.Fatalf("doParseMultiSigScript(%x, true) = (%v, %d) want (nil, 0)", prog, keys, quorum)
+	}
+}

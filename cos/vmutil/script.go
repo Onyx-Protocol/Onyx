@@ -90,9 +90,6 @@ func doParseMultiSigScript(script []byte, isBlock bool) ([]ed25519.PublicKey, in
 	if err != nil {
 		return nil, 0, errors.Wrap(ErrMultisigFormat, "parsing nrequired")
 	}
-	if nrequired < 1 {
-		return nil, 0, errors.Wrap(ErrMultisigFormat, "nrequired < 1")
-	}
 
 	var npubkeysOpIndex int
 	if isBlock {
@@ -109,6 +106,9 @@ func doParseMultiSigScript(script []byte, isBlock bool) ([]ed25519.PublicKey, in
 	}
 	if nrequired > npubkeys {
 		return nil, 0, errors.Wrap(ErrMultisigFormat, "nrequired > npubkeys")
+	}
+	if nrequired == 0 && npubkeys > 0 {
+		return nil, 0, errors.Wrap(ErrMultisigFormat, "nrequired == 0 and npubkeys > 0")
 	}
 	pubkeyPops := pops[1:npubkeysOpIndex]
 	if !isPushOnly(pubkeyPops) {
