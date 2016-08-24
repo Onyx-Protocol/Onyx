@@ -23,12 +23,14 @@ const (
 const (
 	IndexTypeAsset       = "asset"
 	IndexTypeBalance     = "balance"
+	IndexTypeOutput      = "output"
 	IndexTypeTransaction = "transaction"
 )
 
 var IndexTypes = map[string]bool{
 	IndexTypeAsset:       true,
 	IndexTypeBalance:     true,
+	IndexTypeOutput:      true,
 	IndexTypeTransaction: true,
 }
 
@@ -87,12 +89,30 @@ type Index struct {
 	Alias     string // unique, external string identifier
 	Type      string // 'transaction', 'balance', etc.
 	Query     chql.Query
-	Unspents  bool // only for balance indexes
+	SumBy     []chql.Field // only for 'balance' indexes
 	rawQuery  string
+	rawSumBy  []string
 	createdAt time.Time
 }
 
-// MarshalJSON implements json.Marshaler and correctly marshals the 'unspents'
+// Parse parses the Index's rawQuery and rawSumBy, populating the Query
+// and SumBy fields with the AST representations.
+func (i *Index) Parse() (err error) {
+	i.Query, err = chql.Parse(i.rawQuery)
+	if err != nil {
+		return errors.Wrap(err, "parsing index query")
+	}
+	for _, rawField := range i.rawSumBy {
+		field, err := chql.ParseField(rawField)
+		if err != nil {
+			return errors.Wrap(err, "parsing index field")
+		}
+		i.SumBy = append(i.SumBy, field)
+	}
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler and correctly marshals the 'sum_by'
 // field only if the index is a balance index.
 func (i *Index) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
@@ -101,8 +121,13 @@ func (i *Index) MarshalJSON() ([]byte, error) {
 		"type":  i.Type,
 		"query": i.Query.String(),
 	}
-	if i.Type == "balance" {
-		m["unspents"] = i.Unspents
+
+	if i.Type == IndexTypeBalance {
+		cleaned := []string{}
+		for _, f := range i.SumBy {
+			cleaned = append(cleaned, f.String())
+		}
+		m["sum_by"] = cleaned
 	}
 	return json.Marshal(m)
 }
@@ -110,47 +135,62 @@ func (i *Index) MarshalJSON() ([]byte, error) {
 // GetIndex looks up an individual index by its ID or alias and its type.
 func (ind *Indexer) GetIndex(ctx context.Context, id, alias, typ string) (*Index, error) {
 	const selectQ = `
-		SELECT id, alias, type, query, created_at, unspent_outputs FROM query_indexes
+		SELECT id, alias, type, query, created_at, sum_by FROM query_indexes
 		WHERE (($1 != '' AND id = $1) OR ($2 != '' AND alias = $2)) AND type = $3
 	`
 	var idx Index
+	var sumBy pg.Strings
 	err := ind.db.QueryRow(ctx, selectQ, id, alias, typ).
-		Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &idx.Unspents)
+		Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &sumBy)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, errors.Wrap(err, "looking up index")
 	}
-	idx.Query, err = chql.Parse(idx.rawQuery)
-	return &idx, err
+	idx.rawSumBy = sumBy
+
+	return &idx, idx.Parse()
 }
 
 // CreateIndex commits a new index in the database. Blockchain data
 // will not be indexed until the leader process picks up the new index.
-func (ind *Indexer) CreateIndex(ctx context.Context, alias, typ, rawQuery string, unspents bool) (*Index, error) {
+func (ind *Indexer) CreateIndex(ctx context.Context, alias, typ, rawQuery string, sumByFields []string) (*Index, error) {
 	q, err := chql.Parse(rawQuery)
 	if err != nil {
 		return nil, errors.WithDetail(ErrParsingQuery, err.Error())
+	}
+	var fields []chql.Field
+	for _, rawField := range sumByFields {
+		field, err := chql.ParseField(rawField)
+		if err != nil {
+			return nil, errors.WithDetail(ErrParsingQuery, err.Error())
+		}
+		fields = append(fields, field)
+	}
+
+	if len(sumByFields) > 0 && typ != IndexTypeBalance {
+		return nil, errors.WithDetail(httpjson.ErrBadRequest, "can only sum by on balance indexes")
 	}
 	if typ == IndexTypeTransaction && q.Parameters > 1 {
 		return nil, ErrTooManyParameters
 	}
 
 	const insertQ = `
-		INSERT INTO query_indexes (alias, type, query, unspent_outputs) VALUES($1, $2, $3, $4)
+		INSERT INTO query_indexes (alias, type, query, sum_by) VALUES($1, $2, $3, $4)
 		RETURNING id, created_at
 	`
 	idx := &Index{
 		Alias:    alias,
 		Type:     typ,
 		Query:    q,
+		SumBy:    fields,
 		rawQuery: rawQuery,
+		rawSumBy: sumByFields,
 	}
-	err = ind.db.QueryRow(ctx, insertQ, alias, typ, rawQuery, unspents).Scan(&idx.ID, &idx.createdAt)
-	if err != nil {
-		if pg.IsUniqueViolation(err) {
-			return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
-		}
+	err = ind.db.QueryRow(ctx, insertQ, alias, typ, rawQuery, pg.Strings(sumByFields)).Scan(&idx.ID, &idx.createdAt)
+	if pg.IsUniqueViolation(err) {
+		return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
+	} else if err != nil {
 		return nil, errors.Wrap(err, "saving tx index in db")
 	}
 	return idx, nil
@@ -166,7 +206,7 @@ func (ind *Indexer) ListIndexes(ctx context.Context, cursor string, limit int) (
 	// Parse all the queries so that we can print a cleaned
 	// representation of the query.
 	for _, idx := range indexes {
-		idx.Query, err = chql.Parse(idx.rawQuery)
+		err = idx.Parse()
 		if err != nil {
 			return nil, "", errors.Wrap(err, "parsing raw query")
 		}
@@ -182,7 +222,7 @@ func (ind *Indexer) isIndexActive(id string) bool {
 }
 
 func (ind *Indexer) setupIndex(idx *Index) (err error) {
-	idx.Query, err = chql.Parse(idx.rawQuery)
+	err = idx.Parse()
 	if err != nil {
 		return errors.Wrap(err, "parsing raw query for index", idx.Alias)
 	}
@@ -216,7 +256,7 @@ func (ind *Indexer) refreshIndexes(ctx context.Context) error {
 // getIndexes does not parse idx.RawQuery and leaves
 // idx.Query as nil.
 func (ind *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
-	const q = `SELECT id, alias, type, query, created_at, unspent_outputs FROM query_indexes`
+	const q = `SELECT id, alias, type, query, created_at, sum_by FROM query_indexes`
 	rows, err := ind.db.Query(ctx, q)
 	if err != nil {
 		return nil, errors.Wrap(err, "reload indexes sql query")
@@ -226,10 +266,12 @@ func (ind *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
 	var indexes []*Index
 	for rows.Next() {
 		idx := new(Index)
-		err = rows.Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &idx.Unspents)
+		var sumBy pg.Strings
+		err = rows.Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &sumBy)
 		if err != nil {
 			return nil, errors.Wrap(err, "scanning query_indexes row")
 		}
+		idx.rawSumBy = sumBy
 		indexes = append(indexes, idx)
 	}
 	return indexes, errors.Wrap(rows.Err())
@@ -239,7 +281,7 @@ func (ind *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
 // The caveat is listIndexes returns a paged result.
 func (ind *Indexer) listIndexes(ctx context.Context, cursor string, limit int) ([]*Index, string, error) {
 	const q = `
-		SELECT id, alias, type, query, created_at, unspent_outputs
+		SELECT id, alias, type, query, created_at, sum_by
 		FROM query_indexes WHERE ($1='' OR $1<id)
 		ORDER BY id ASC LIMIT $2
 	`
@@ -253,10 +295,12 @@ func (ind *Indexer) listIndexes(ctx context.Context, cursor string, limit int) (
 	var indexes []*Index
 	for rows.Next() {
 		idx := new(Index)
-		err = rows.Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &idx.Unspents)
+		var sumBy pg.Strings
+		err = rows.Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawQuery, &idx.createdAt, &sumBy)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "scanning query_indexes row")
 		}
+		idx.rawSumBy = sumBy
 		indexes = append(indexes, idx)
 	}
 

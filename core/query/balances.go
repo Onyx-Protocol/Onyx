@@ -13,12 +13,15 @@ import (
 )
 
 // Balances performs a balances query against the annotated_outputs.
-func (ind *Indexer) Balances(ctx context.Context, q chql.Query, vals []interface{}, timestampMS uint64) ([]interface{}, error) {
+func (ind *Indexer) Balances(ctx context.Context, q chql.Query, vals []interface{}, sumBy []chql.Field, timestampMS uint64) ([]interface{}, error) {
+	if len(vals) != q.Parameters {
+		return nil, ErrParameterCountMismatch
+	}
 	expr, err := chql.AsSQL(q, "data", vals)
 	if err != nil {
 		return nil, err
 	}
-	queryStr, queryArgs := constructBalancesQuery(expr, timestampMS)
+	queryStr, queryArgs := constructBalancesQuery(expr, sumBy, timestampMS)
 	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, err
@@ -29,9 +32,9 @@ func (ind *Indexer) Balances(ctx context.Context, q chql.Query, vals []interface
 	for rows.Next() {
 		// balance and groupings will hold the output of the row scan
 		var balance uint64
-		scanArguments := make([]interface{}, 0, len(expr.GroupBy)+1)
+		scanArguments := make([]interface{}, 0, len(sumBy)+1)
 		scanArguments = append(scanArguments, &balance)
-		for range expr.GroupBy {
+		for range sumBy {
 			// TODO(jackson): Support grouping by things besides strings.
 			scanArguments = append(scanArguments, new(*string))
 		}
@@ -40,43 +43,28 @@ func (ind *Indexer) Balances(ctx context.Context, q chql.Query, vals []interface
 			return nil, errors.Wrap(err, "scanning balance row")
 		}
 
+		sumByValues := map[string]interface{}{}
+		for i, f := range sumBy {
+			sumByValues[f.String()] = scanArguments[i+1]
+		}
 		item := map[string]interface{}{
 			"amount": balance,
 		}
-		var groupBy []interface{}
-		for i := range expr.GroupBy {
-			groupBy = append(groupBy, scanArguments[i+1])
-		}
-		if len(groupBy) > 0 {
-			item["group_by"] = groupBy
+		if len(sumByValues) > 0 {
+			item["sum_by"] = sumByValues
 		}
 		balances = append(balances, item)
 	}
 	return balances, errors.Wrap(rows.Err())
 }
 
-func constructBalancesQuery(expr chql.SQLExpr, timestampMS uint64) (string, []interface{}) {
+func constructBalancesQuery(expr chql.SQLExpr, sumBy []chql.Field, timestampMS uint64) (string, []interface{}) {
 	var buf bytes.Buffer
 
 	buf.WriteString("SELECT COALESCE(SUM((data->>'amount')::integer), 0)")
-	for _, grouping := range expr.GroupBy {
+	for _, field := range sumBy {
 		buf.WriteString(", ")
-
-		buf.WriteString(pq.QuoteIdentifier("data"))
-		for i, field := range grouping {
-			if i+1 < len(grouping) {
-				buf.WriteString("->")
-			} else {
-				buf.WriteString("->>")
-			}
-
-			// Note, field here originally came from an identifier in ChQL, so
-			// it should be safe to embed in a string without quoting.
-			// TODO(jackson): Quote/restrict anyways to be defensive.
-			buf.WriteString("'")
-			buf.WriteString(field)
-			buf.WriteString("'")
-		}
+		buf.WriteString(chql.FieldAsSQL("data", field))
 	}
 	buf.WriteString(" FROM ")
 	buf.WriteString(pq.QuoteIdentifier("annotated_outputs"))
@@ -95,9 +83,9 @@ func constructBalancesQuery(expr chql.SQLExpr, timestampMS uint64) (string, []in
 
 	buf.WriteString(fmt.Sprintf("timespan @> $%d::int8", timestampValIndex))
 
-	if len(expr.GroupBy) > 0 {
+	if len(sumBy) > 0 {
 		buf.WriteString(" GROUP BY ")
-		for i := range expr.GroupBy {
+		for i := range sumBy {
 			if i != 0 {
 				buf.WriteString(", ")
 			}

@@ -39,19 +39,19 @@ var (
 	// Missing entries will map to infoInternal.
 	// See chain.com/docs.
 	errorInfoTab = map[error]errorInfo{
-		context.DeadlineExceeded:     errorInfo{504, "CH504", "Request timed out"},
-		pg.ErrUserInputNotFound:      errorInfo{404, "CH005", "Not found"},
-		httpjson.ErrBadRequest:       errorInfo{400, "CH007", "Invalid request body"},
-		errBadReqHeader:              errorInfo{400, "CH008", "Invalid request header"},
-		query.ErrBadCursor:           errorInfo{400, "CH600", "Malformed pagination cursor"},
-		query.ErrMissingParameters:   errorInfo{400, "CH601", "Missing parameters to ChQL query"},
-		ErrBadIndexConfig:            errorInfo{400, "CH602", "Invalid ChQL index configuration"},
-		utxodb.ErrInsufficient:       errorInfo{400, "CH733", "Insufficient funds for tx"},
-		utxodb.ErrReserved:           errorInfo{400, "CH743", "Some outputs are reserved; try again"},
-		txbuilder.ErrRejected:        errorInfo{400, "CH744", "Transaction rejected"},
-		txbuilder.ErrBadTxTemplate:   errorInfo{400, "CH755", "Invalid transaction template"},
-		ErrBadBuildRequest:           errorInfo{400, "CH756", "Invalid build transaction request"},
-		txbuilder.ErrBadBuildRequest: errorInfo{400, "CH756", "Invalid build transaction request"},
+		context.DeadlineExceeded:        errorInfo{504, "CH504", "Request timed out"},
+		pg.ErrUserInputNotFound:         errorInfo{404, "CH005", "Not found"},
+		httpjson.ErrBadRequest:          errorInfo{400, "CH007", "Invalid request body"},
+		errBadReqHeader:                 errorInfo{400, "CH008", "Invalid request header"},
+		query.ErrBadCursor:              errorInfo{400, "CH600", "Malformed pagination cursor"},
+		query.ErrParameterCountMismatch: errorInfo{400, "CH601", "Incorrect number of parameters to ChQL query"},
+		ErrBadIndexConfig:               errorInfo{400, "CH602", "Invalid ChQL index configuration"},
+		utxodb.ErrInsufficient:          errorInfo{400, "CH733", "Insufficient funds for tx"},
+		utxodb.ErrReserved:              errorInfo{400, "CH743", "Some outputs are reserved; try again"},
+		txbuilder.ErrRejected:           errorInfo{400, "CH744", "Transaction rejected"},
+		txbuilder.ErrBadTxTemplate:      errorInfo{400, "CH755", "Invalid transaction template"},
+		ErrBadBuildRequest:              errorInfo{400, "CH756", "Invalid build transaction request"},
+		txbuilder.ErrBadBuildRequest:    errorInfo{400, "CH756", "Invalid build transaction request"},
 
 		// Signers error namespace (2xx)
 		signers.ErrBadQuorum: errorInfo{400, "CH200", "Quorum must be greater than 1 and less than or equal to the length of xpubs"},

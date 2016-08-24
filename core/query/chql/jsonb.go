@@ -5,29 +5,26 @@ import (
 	"strconv"
 )
 
-func jsonValue(expr expr, pvals map[int]interface{}) (v interface{}, pnum int, path []string) {
+func jsonValue(expr expr, pvals map[int]interface{}) (v interface{}, path []string) {
 	switch e := expr.(type) {
 	case parenExpr:
 		return jsonValue(expr, pvals)
 	case placeholderExpr:
-		if val, ok := pvals[e.num]; ok {
-			return val, pnum, nil
-		}
-		return nil, e.num, nil
+		return pvals[e.num], nil
 	case attrExpr:
 		// TODO(jackson): Handle implicit booleans like `inputs(is_issuance)`
-		return nil, pnum, []string{e.attr}
+		return nil, []string{e.attr}
 	case selectorExpr:
-		_, _, innerPath := jsonValue(e.objExpr, pvals)
-		return nil, pnum, append([]string{e.ident}, innerPath...)
+		_, innerPath := jsonValue(e.objExpr, pvals)
+		return nil, append([]string{e.ident}, innerPath...)
 	case valueExpr:
 		if e.typ == tokString {
 			strv := e.value[1 : len(e.value)-1]
-			return strv, pnum, nil
+			return strv, nil
 		}
 		if e.typ == tokInteger {
 			i, _ := strconv.Atoi(e.value) // err impossible; enforce at parser
-			return i, pnum, nil
+			return i, nil
 		}
 		panic(fmt.Errorf("value expr with invalid token type: %s", e.typ))
 	default:
@@ -35,51 +32,42 @@ func jsonValue(expr expr, pvals map[int]interface{}) (v interface{}, pnum int, p
 	}
 }
 
-type binding struct {
-	num  int
-	path []string
-}
-
-func matchingObjects(expr expr, pvals map[int]interface{}) ([]interface{}, []binding) {
+func matchingObjects(expr expr, pvals map[int]interface{}) []interface{} {
 	switch e := expr.(type) {
 	case parenExpr:
 		return matchingObjects(e.inner, pvals)
 	case envExpr:
-		conds, _ := matchingObjects(e.expr, pvals)
+		conds := matchingObjects(e.expr, pvals)
 		var newConditions []interface{}
 		for _, v := range conds {
 			newConditions = append(newConditions, map[string]interface{}{
 				e.ident: []interface{}{v},
 			})
 		}
-		// bindings are unsupported here, just return nil
-		return newConditions, nil
+		return newConditions
 	case binaryExpr:
 		if e.op.name == "OR" {
-			leftConds, leftBindings := matchingObjects(e.l, pvals)
-			rightConds, rightBindings := matchingObjects(e.r, pvals)
-			return append(leftConds, rightConds...), append(leftBindings, rightBindings...)
+			return append(matchingObjects(e.l, pvals), matchingObjects(e.r, pvals)...)
 		}
 
 		if e.op.name == "AND" {
 			// TODO: restrict the complexity of queries to prevent people
 			// from shooting themselves in the foot with an enormous
 			// cross product.
-			leftConds, leftBindings := matchingObjects(e.l, pvals)
-			rightConds, rightBindings := matchingObjects(e.r, pvals)
+			leftConds := matchingObjects(e.l, pvals)
+			rightConds := matchingObjects(e.r, pvals)
 			var intersection []interface{}
 			for _, c1 := range leftConds {
 				for _, c2 := range rightConds {
 					intersection = append(intersection, mergeObjects(c1, c2))
 				}
 			}
-			bindings := append(leftBindings, rightBindings...)
-			return intersection, bindings
+			return intersection
 		}
 
 		if e.op.name == "=" {
-			lv, lpnum, lp := jsonValue(e.l, pvals)
-			rv, rpnum, rp := jsonValue(e.r, pvals)
+			lv, lp := jsonValue(e.l, pvals)
+			rv, rp := jsonValue(e.r, pvals)
 			switch {
 			// left is a value, right is a path
 			case lv != nil && len(rp) > 0:
@@ -87,7 +75,7 @@ func matchingObjects(expr expr, pvals map[int]interface{}) ([]interface{}, []bin
 				for _, p := range rp {
 					m = map[string]interface{}{p: m}
 				}
-				return []interface{}{m}, nil
+				return []interface{}{m}
 
 			// right is a value, left is a path
 			case rv != nil && len(lp) > 0:
@@ -95,15 +83,7 @@ func matchingObjects(expr expr, pvals map[int]interface{}) ([]interface{}, []bin
 				for _, p := range lp {
 					m = map[string]interface{}{p: m}
 				}
-				return []interface{}{m}, nil
-
-			// left is an unconstrained placeholder
-			case lpnum > 0 && len(rp) > 0:
-				return []interface{}{map[string]interface{}{}}, []binding{{num: lpnum, path: rp}}
-
-			// right is an unconstrained placeholder
-			case rpnum > 0 && len(lp) > 0:
-				return []interface{}{map[string]interface{}{}}, []binding{{num: rpnum, path: lp}}
+				return []interface{}{m}
 
 			default:
 				panic(fmt.Errorf("unsupported operands for ="))

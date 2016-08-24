@@ -602,7 +602,7 @@ CREATE TABLE query_indexes (
     type text NOT NULL,
     query text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    unspent_outputs boolean DEFAULT false NOT NULL
+    sum_by text[]
 );
 
 
@@ -1108,3 +1108,4 @@ insert into migrations (filename, hash) values ('2016-08-16.3.api.alias-keys.sql
 insert into migrations (filename, hash) values ('2016-08-17.0.query.index-id.sql', '538ce1a1f61b496d1809049f3934ba445177e5b71af2e802d2fbcb009a8d80cb');
 insert into migrations (filename, hash) values ('2016-08-19.0.generator.generated-block.sql', '8068324f63c2d973f0eac120460ca202711bfab0f734b789f18206f21abd3a80');
 insert into migrations (filename, hash) values ('2016-08-22.0.account.change-utxos.sql', '11dff1da7353fd6896c4f153654029d717f838b4a4e528cf7139bfcf35ebf124');
+insert into migrations (filename, hash) values ('2016-08-23.0.query.sum-by.sql', '82a04d0595f19df735dd35e896496c79a70398a8428131ece4d441aaf2f3836c');

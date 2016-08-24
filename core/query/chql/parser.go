@@ -14,6 +14,9 @@ type Query struct {
 // String returns a cleaned, canonical representation of the
 // ChQL query string.
 func (q Query) String() string {
+	if q.expr == nil {
+		return ""
+	}
 	return q.expr.String()
 }
 
@@ -40,6 +43,34 @@ func Parse(query string) (q Query, err error) {
 		expr:       expr,
 	}
 	return q, err
+}
+
+// Field is a type for simple expressions that simply access an attribute of
+// the queried object. They're used for GROUP BYs.
+type Field struct {
+	expr expr
+}
+
+func (f Field) String() string {
+	return f.expr.String()
+}
+
+// ParseField parses a field expression (either an attrExpr or a selectorExpr).
+func ParseField(s string) (f Field, err error) {
+	expr, _, err := parse(s)
+	if err != nil {
+		return f, err
+	}
+	if expr == nil {
+		return f, fmt.Errorf("empty field expression")
+	}
+
+	switch expr.(type) {
+	case attrExpr, selectorExpr:
+		return Field{expr: expr}, nil
+	default:
+		return f, fmt.Errorf("%q is not a valid field expression", s)
+	}
 }
 
 func parse(exprString string) (expr expr, parser *parser, err error) {

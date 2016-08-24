@@ -17,9 +17,8 @@ func TestMatchingObjects(t *testing.T) {
 	}
 
 	testCases := []struct {
-		q            string
-		want         []interface{}
-		wantBindings []binding
+		q    string
+		want []interface{}
 	}{
 		{
 			q: `INPUTS(a = 'abc' OR b = 'xyz')`,
@@ -48,11 +47,8 @@ func TestMatchingObjects(t *testing.T) {
 			},
 		},
 		{
-			q:    `asset_id = $1 AND account_id = $4`,
+			q:    `asset_id = $1`,
 			want: []interface{}{m("asset_id", "foo")},
-			wantBindings: []binding{
-				{num: 4, path: []string{"account_id"}},
-			},
 		},
 	}
 
@@ -61,7 +57,7 @@ func TestMatchingObjects(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		got, gotBindings := matchingObjects(e, placeholderValues)
+		got := matchingObjects(e, placeholderValues)
 		if !reflect.DeepEqual(got, tc.want) {
 			gotJSON, err := json.MarshalIndent(got, "", " ")
 			if err != nil {
@@ -71,10 +67,7 @@ func TestMatchingObjects(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			t.Errorf("matchingObjects(%q).conds = \n%s\n want \n%s", tc.q, gotJSON, wantJSON)
-		}
-		if !reflect.DeepEqual(gotBindings, tc.wantBindings) {
-			t.Errorf("matchingObjects(%q).bindings = %#v, want %#v", tc.q, gotBindings, tc.wantBindings)
+			t.Errorf("matchingObjects(%q) = \n%s\n want \n%s", tc.q, gotJSON, wantJSON)
 		}
 	}
 }

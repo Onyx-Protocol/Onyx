@@ -16,18 +16,21 @@ func TestConstructBalancesQuery(t *testing.T) {
 	now := uint64(123456)
 	testCases := []struct {
 		query      string
+		sumBy      []string
 		values     []interface{}
 		wantQuery  string
 		wantValues []interface{}
 	}{
 		{
-			query:      "asset_id = $1 AND account_id = 'abc'",
+			query:      "account_id = 'abc'",
+			sumBy:      []string{"asset_id"},
 			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0), "data"->>'asset_id' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
 			wantValues: []interface{}{`{"account_id":"abc"}`, now},
 		},
 		{
-			query:      "asset_id = $1 AND account_id = 'abc'",
-			values:     []interface{}{nil},
+			query:      "account_id = $1",
+			sumBy:      []string{"asset_id"},
+			values:     []interface{}{"abc"},
 			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0), "data"->>'asset_id' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
 			wantValues: []interface{}{`{"account_id":"abc"}`, now},
 		},
@@ -38,7 +41,8 @@ func TestConstructBalancesQuery(t *testing.T) {
 			wantValues: []interface{}{`{"account_id":"bar","asset_id":"foo"}`, now},
 		},
 		{
-			query:      "account_id = $1 AND asset_tags.currency = $2",
+			query:      "account_id = $1",
+			sumBy:      []string{"asset_tags.currency"},
 			values:     []interface{}{"foo"},
 			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0), "data"->'asset_tags'->>'currency' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
 			wantValues: []interface{}{`{"account_id":"foo"}`, now},
@@ -54,7 +58,16 @@ func TestConstructBalancesQuery(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		query, values := constructBalancesQuery(expr, now)
+		var fields []chql.Field
+		for _, s := range tc.sumBy {
+			f, err := chql.ParseField(s)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fields = append(fields, f)
+		}
+
+		query, values := constructBalancesQuery(expr, fields, now)
 		if query != tc.wantQuery {
 			t.Errorf("case %d: got\n%s\nwant\n%s", i, query, tc.wantQuery)
 		}
@@ -68,6 +81,7 @@ func TestQueryBalances(t *testing.T) {
 	type (
 		testcase struct {
 			query  string
+			sumBy  []string
 			values []interface{}
 			when   time.Time
 			want   string
@@ -150,16 +164,16 @@ func TestQueryBalances(t *testing.T) {
 			want:   `[{"amount": 100}]`,
 		},
 		{
-			query:  "asset_id = $1 AND account_id = $2",
+			query:  "asset_id = $1",
+			sumBy:  []string{"account_id"},
 			values: []interface{}{asset1.AssetID.String()},
 			when:   time2,
-			want:   `[{"group_by": ["` + acct1.ID + `"], "amount": 867}]`,
+			want:   `[{"sum_by": {"account_id": "` + acct1.ID + `"}, "amount": 867}]`,
 		},
 		{
-			query:  "asset_tags.currency = $1",
-			values: []interface{}{},
-			when:   time2,
-			want:   `[{"group_by": ["USD"], "amount": 867}, {"group_by": [null], "amount": 100}]`,
+			sumBy: []string{"asset_tags.currency"},
+			when:  time2,
+			want:  `[{"sum_by": {"asset_tags.currency": "USD"}, "amount": 867}, {"sum_by": {"asset_tags.currency": null}, "amount": 100}]`,
 		},
 	}
 
@@ -170,15 +184,25 @@ func TestQueryBalances(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		chql, err := chql.Parse(tc.query)
+		q, err := chql.Parse(tc.query)
 		if err != nil {
 			t.Fatal(err)
 		}
-		balances, err := indexer.Balances(ctx, chql, tc.values, bc.Millis(tc.when))
+		var fields []chql.Field
+		for _, s := range tc.sumBy {
+			f, err := chql.ParseField(s)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fields = append(fields, f)
+		}
+
+		balances, err := indexer.Balances(ctx, q, tc.values, fields, bc.Millis(tc.when))
 		if err != nil {
 			t.Fatal(err)
 		}
 		if len(balances) != len(want) {
+			t.Logf("%#v", balances)
 			t.Fatalf("case %d: got %d balances, want %d", i, len(balances), len(want))
 		}
 

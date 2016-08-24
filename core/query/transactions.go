@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	ErrBadCursor         = errors.New("malformed pagination cursor")
-	ErrMissingParameters = errors.New("missing parameters to query")
+	ErrBadCursor              = errors.New("malformed pagination cursor")
+	ErrParameterCountMismatch = errors.New("wrong number of parameters to query")
 )
 
 type TxCursor struct {
@@ -69,14 +69,12 @@ func (ind *Indexer) LookupTxCursor(ctx context.Context, begin, end uint64) (TxCu
 
 // Transactions queries the blockchain for transactions matching the query `q`.
 func (ind *Indexer) Transactions(ctx context.Context, q chql.Query, vals []interface{}, cur TxCursor, limit int) ([]interface{}, *TxCursor, error) {
+	if len(vals) != q.Parameters {
+		return nil, nil, ErrParameterCountMismatch
+	}
 	expr, err := chql.AsSQL(q, "data", vals)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "converting to SQL")
-	}
-	if len(expr.GroupBy) > 0 {
-		// A GROUP BY query doesn't make sense for transactions. This
-		// is caused by leaving a parameter unconstrained in the query.
-		return nil, nil, ErrMissingParameters
 	}
 
 	queryStr, queryArgs := constructTransactionsQuery(expr, cur, limit)

@@ -67,6 +67,7 @@ type requestQuery struct {
 	IndexAlias string        `json:"index_alias,omitempty"`
 	ChQL       string        `json:"chql,omitempty"`
 	ChQLParams []interface{} `json:"chql_params,omitempty"`
+	SumBy      []string      `json:"sum_by,omitempty"`
 }
 
 // Used as a response object for api queries

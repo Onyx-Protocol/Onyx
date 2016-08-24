@@ -47,12 +47,12 @@ func DecodeOutputsCursor(str string) (c *OutputsCursor, err error) {
 }
 
 func (ind *Indexer) Outputs(ctx context.Context, q chql.Query, vals []interface{}, timestampMS uint64, cursor *OutputsCursor, limit int) ([]interface{}, *OutputsCursor, error) {
+	if len(vals) != q.Parameters {
+		return nil, nil, ErrParameterCountMismatch
+	}
 	expr, err := chql.AsSQL(q, "data", vals)
 	if err != nil {
 		return nil, nil, err
-	}
-	if len(expr.GroupBy) > 0 {
-		return nil, nil, ErrMissingParameters
 	}
 	queryStr, queryArgs := constructOutputsQuery(expr, timestampMS, cursor, limit)
 	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)

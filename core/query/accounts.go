@@ -28,14 +28,12 @@ func (i *Indexer) SaveAnnotatedAccount(ctx context.Context, accountID string, ac
 
 // Accounts queries the blockchain for accounts matching the query `q`.
 func (i *Indexer) Accounts(ctx context.Context, q chql.Query, vals []interface{}, cur string, limit int) ([]map[string]interface{}, string, error) {
+	if len(vals) != q.Parameters {
+		return nil, "", ErrParameterCountMismatch
+	}
 	expr, err := chql.AsSQL(q, "data", vals)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "converting to SQL")
-	}
-	if len(expr.GroupBy) > 0 {
-		// A GROUP BY query doesn't make sense for accounts. This
-		// is caused by leaving a parameter unconstrained in the query.
-		return nil, "", ErrMissingParameters
 	}
 
 	queryStr, queryArgs := constructAccountsQuery(expr, cur, limit)

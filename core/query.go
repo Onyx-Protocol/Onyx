@@ -20,22 +20,22 @@ var (
 //
 // POST /create-index
 func (a *api) createIndex(ctx context.Context, in struct {
-	Alias    string `json:"alias"`
-	Type     string `json:"type"`
-	Query    string `json:"query"`
-	Unspents bool   `json:"unspents"`
+	Alias string   `json:"alias"`
+	Type  string   `json:"type"`
+	Query string   `json:"query"`
+	SumBy []string `json:"sum_by"`
 }) (*query.Index, error) {
 	if !query.IndexTypes[in.Type] {
 		return nil, errors.WithDetailf(ErrBadIndexConfig, "unknown index type %q", in.Type)
 	}
-	if in.Unspents && in.Type != query.IndexTypeBalance {
-		return nil, errors.WithDetail(ErrBadIndexConfig, "unspents flag is only valid for balance indexes")
+	if len(in.SumBy) > 0 && in.Type != query.IndexTypeBalance {
+		return nil, errors.WithDetail(ErrBadIndexConfig, "sum-by field is only valid for balance indexes")
 	}
 	if in.Alias == "" {
 		return nil, errors.WithDetail(httpjson.ErrBadRequest, "missing index alias")
 	}
 
-	idx, err := a.indexer.CreateIndex(ctx, in.Alias, in.Type, in.Query, in.Unspents)
+	idx, err := a.indexer.CreateIndex(ctx, in.Alias, in.Type, in.Query, in.SumBy)
 	return idx, errors.Wrap(err, "creating the new index")
 }
 
@@ -165,6 +165,7 @@ func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, e
 	}
 
 	var q chql.Query
+	var sumBy []chql.Field
 	if in.IndexID != "" || in.IndexAlias != "" {
 		idx, err := a.indexer.GetIndex(ctx, in.IndexID, in.IndexAlias, query.IndexTypeBalance)
 		if err != nil {
@@ -174,15 +175,24 @@ func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, e
 			return result, errors.WithDetail(pg.ErrUserInputNotFound, "balance index not found")
 		}
 		q = idx.Query
+		sumBy = idx.SumBy
 	} else {
 		q, err = chql.Parse(in.ChQL)
 		if err != nil {
 			return result, err
 		}
+
+		for _, field := range in.SumBy {
+			f, err := chql.ParseField(field)
+			if err != nil {
+				return result, err
+			}
+			sumBy = append(sumBy, f)
+		}
 	}
 
 	// TODO(jackson): paginate this endpoint.
-	balances, err := a.indexer.Balances(ctx, q, in.ChQLParams, in.TimestampMS)
+	balances, err := a.indexer.Balances(ctx, q, in.ChQLParams, sumBy, in.TimestampMS)
 	if err != nil {
 		return result, err
 	}
@@ -195,24 +205,17 @@ func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, e
 
 // POST /list-unspent-outputs
 func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result page, err error) {
-	if (in.IndexID != "" || in.IndexAlias != "") && in.ChQL != "" {
-		return result, errors.WithDetail(httpjson.ErrBadRequest, "cannot provide both index and query")
-	}
 	if in.TimestampMS == 0 {
 		in.TimestampMS = bc.Millis(time.Now())
 	}
-
 	var q chql.Query
 	if in.IndexID != "" || in.IndexAlias != "" {
-		idx, err := a.indexer.GetIndex(ctx, in.IndexID, in.IndexAlias, query.IndexTypeBalance)
+		idx, err := a.indexer.GetIndex(ctx, in.IndexID, in.IndexAlias, query.IndexTypeOutput)
 		if err != nil {
 			return result, err
 		}
 		if idx == nil {
-			return result, errors.WithDetail(pg.ErrUserInputNotFound, "balance index not found")
-		}
-		if !idx.Unspents {
-			return result, errors.WithDetail(httpjson.ErrBadRequest, "balance index doesn't support output indexing")
+			return result, errors.WithDetail(pg.ErrUserInputNotFound, "output index not found")
 		}
 		q = idx.Query
 	} else {

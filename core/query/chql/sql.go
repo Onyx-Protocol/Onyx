@@ -3,7 +3,10 @@ package chql
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strconv"
+
+	"github.com/lib/pq"
 )
 
 // AsSQL translates q to SQL.
@@ -20,10 +23,43 @@ func AsSQL(q Query, dataColumn string, values []interface{}) (sqlExpr SQLExpr, e
 	return asSQL(q.expr, dataColumn, values)
 }
 
+// FieldAsSQL returns a jsonb indexing SQL representation of the field.
+func FieldAsSQL(col string, f Field) string {
+	components := jsonbPath(f)
+
+	var buf bytes.Buffer
+	buf.WriteString(pq.QuoteIdentifier(col))
+	for i, c := range components {
+		if i+1 < len(components) {
+			buf.WriteString("->")
+		} else {
+			buf.WriteString("->>")
+		}
+
+		// Note, field here originally came from an identifier in ChQL, so
+		// it should be safe to embed in a string without quoting.
+		// TODO(jackson): Quote/restrict anyways to be defensive.
+		buf.WriteString("'")
+		buf.WriteString(c)
+		buf.WriteString("'")
+	}
+	return buf.String()
+}
+
+func jsonbPath(f Field) []string {
+	switch e := f.expr.(type) {
+	case selectorExpr:
+		return append(jsonbPath(Field{expr: e.objExpr}), e.ident)
+	case attrExpr:
+		return []string{e.attr}
+	default:
+		panic(fmt.Errorf("unexpected field of type %T", e))
+	}
+}
+
 type SQLExpr struct {
-	SQL     string
-	Values  []interface{}
-	GroupBy [][]string
+	SQL    string
+	Values []interface{}
 }
 
 func asSQL(e expr, dataColumn string, values []interface{}) (exp SQLExpr, err error) {
@@ -39,7 +75,7 @@ func asSQL(e expr, dataColumn string, values []interface{}) (exp SQLExpr, err er
 		}
 	}
 
-	matches, bindings := matchingObjects(e, pvals)
+	matches := matchingObjects(e, pvals)
 
 	var buf bytes.Buffer
 	var params []interface{}
@@ -63,16 +99,8 @@ func asSQL(e expr, dataColumn string, values []interface{}) (exp SQLExpr, err er
 		buf.WriteString(")")
 	}
 
-	exp = SQLExpr{
+	return SQLExpr{
 		SQL:    buf.String(),
 		Values: params,
-	}
-	for _, b := range bindings {
-		revpath := make([]string, 0, len(b.path))
-		for i := len(b.path) - 1; i >= 0; i-- {
-			revpath = append(revpath, b.path[i])
-		}
-		exp.GroupBy = append(exp.GroupBy, revpath)
-	}
-	return exp, nil
+	}, nil
 }
