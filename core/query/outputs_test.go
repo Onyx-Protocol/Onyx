@@ -86,25 +86,25 @@ func TestConstructOutputsQuery(t *testing.T) {
 	nowMillis := bc.Millis(now)
 
 	testCases := []struct {
-		query      string
+		filter     string
 		values     []interface{}
 		cursor     *OutputsCursor
 		wantQuery  string
 		wantValues []interface{}
 	}{
 		{
-			// empty query
+			// empty filter
 			wantQuery:  `SELECT block_height, tx_pos, output_index, data FROM "annotated_outputs" WHERE timespan @> $1::int8 ORDER BY block_height ASC, tx_pos ASC, output_index ASC LIMIT 10`,
 			wantValues: []interface{}{nowMillis},
 		},
 		{
-			query:      "asset_id = $1 AND account_id = 'abc'",
+			filter:     "asset_id = $1 AND account_id = 'abc'",
 			values:     []interface{}{"foo"},
 			wantQuery:  `SELECT block_height, tx_pos, output_index, data FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 ORDER BY block_height ASC, tx_pos ASC, output_index ASC LIMIT 10`,
 			wantValues: []interface{}{`{"account_id":"abc","asset_id":"foo"}`, nowMillis},
 		},
 		{
-			query:  "asset_id = $1 AND account_id = 'abc'",
+			filter: "asset_id = $1 AND account_id = 'abc'",
 			values: []interface{}{"foo"},
 			cursor: &OutputsCursor{
 				lastBlockHeight: 15,
@@ -117,11 +117,11 @@ func TestConstructOutputsQuery(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		q, err := filter.Parse(tc.query)
+		f, err := filter.Parse(tc.filter)
 		if err != nil {
 			t.Fatal(err)
 		}
-		expr, err := filter.AsSQL(q, "data", tc.values)
+		expr, err := filter.AsSQL(f, "data", tc.values)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -142,7 +142,7 @@ func TestQueryOutputs(t *testing.T) {
 			AccountID string
 		}
 		testcase struct {
-			query  string
+			filter string
 			values []interface{}
 			when   time.Time
 			want   []assetAccountAmount
@@ -153,17 +153,17 @@ func TestQueryOutputs(t *testing.T) {
 
 	cases := []testcase{
 		{
-			query:  "asset_id = $1",
+			filter: "asset_id = $1",
 			values: []interface{}{asset1.AssetID.String()},
 			when:   time1,
 		},
 		{
-			query:  "asset_tags.currency = $1",
+			filter: "asset_tags.currency = $1",
 			values: []interface{}{"USD"},
 			when:   time1,
 		},
 		{
-			query:  "asset_id = $1",
+			filter: "asset_id = $1",
 			values: []interface{}{asset1.AssetID.String()},
 			when:   time2,
 			want: []assetAccountAmount{
@@ -171,7 +171,7 @@ func TestQueryOutputs(t *testing.T) {
 			},
 		},
 		{
-			query:  "asset_tags.currency = $1",
+			filter: "asset_tags.currency = $1",
 			values: []interface{}{"USD"},
 			when:   time2,
 			want: []assetAccountAmount{
@@ -179,12 +179,12 @@ func TestQueryOutputs(t *testing.T) {
 			},
 		},
 		{
-			query:  "asset_id = $1",
+			filter: "asset_id = $1",
 			values: []interface{}{asset2.AssetID.String()},
 			when:   time1,
 		},
 		{
-			query:  "asset_id = $1",
+			filter: "asset_id = $1",
 			values: []interface{}{asset2.AssetID.String()},
 			when:   time2,
 			want: []assetAccountAmount{
@@ -192,13 +192,13 @@ func TestQueryOutputs(t *testing.T) {
 			},
 		},
 		{
-			query:  "account_id = $1",
+			filter: "account_id = $1",
 			values: []interface{}{acct1.ID},
 			when:   time1,
 			want:   []assetAccountAmount{},
 		},
 		{
-			query:  "account_id = $1",
+			filter: "account_id = $1",
 			values: []interface{}{acct1.ID},
 			when:   time2,
 			want: []assetAccountAmount{
@@ -207,19 +207,19 @@ func TestQueryOutputs(t *testing.T) {
 			},
 		},
 		{
-			query:  "account_id = $1",
+			filter: "account_id = $1",
 			values: []interface{}{acct2.ID},
 			when:   time1,
 			want:   []assetAccountAmount{},
 		},
 		{
-			query:  "account_id = $1",
+			filter: "account_id = $1",
 			values: []interface{}{acct2.ID},
 			when:   time2,
 			want:   []assetAccountAmount{},
 		},
 		{
-			query:  "asset_id = $1 AND account_id = $2",
+			filter: "asset_id = $1 AND account_id = $2",
 			values: []interface{}{asset1.AssetID.String(), acct1.ID},
 			when:   time2,
 			want: []assetAccountAmount{
@@ -227,7 +227,7 @@ func TestQueryOutputs(t *testing.T) {
 			},
 		},
 		{
-			query:  "asset_id = $1 AND account_id = $2",
+			filter: "asset_id = $1 AND account_id = $2",
 			values: []interface{}{asset2.AssetID.String(), acct2.ID},
 			when:   time2,
 			want:   []assetAccountAmount{},
@@ -235,7 +235,7 @@ func TestQueryOutputs(t *testing.T) {
 	}
 
 	for i, tc := range cases {
-		f, err := filter.Parse(tc.query)
+		f, err := filter.Parse(tc.filter)
 		if err != nil {
 			t.Fatal(err)
 		}

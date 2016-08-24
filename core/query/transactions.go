@@ -67,7 +67,8 @@ func (ind *Indexer) LookupTxCursor(ctx context.Context, begin, end uint64) (TxCu
 	}, nil
 }
 
-// Transactions queries the blockchain for transactions matching the query `q`.
+// Transactions queries the blockchain for transactions matching the
+// filter predicate `p`.
 func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals []interface{}, cur TxCursor, limit int) ([]interface{}, *TxCursor, error) {
 	if len(vals) != p.Parameters {
 		return nil, nil, ErrParameterCountMismatch

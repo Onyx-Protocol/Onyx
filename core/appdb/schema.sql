@@ -600,7 +600,7 @@ CREATE TABLE query_indexes (
     id text DEFAULT next_chain_id('idx'::text) NOT NULL,
     alias text NOT NULL,
     type text NOT NULL,
-    query text NOT NULL,
+    filter text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     sum_by text[]
 );
@@ -1101,7 +1101,7 @@ ALTER TABLE ONLY account_utxos
 -- PostgreSQL database dump complete
 --
 
-insert into migrations (filename, hash) values ('2016-08-16.0.core.initial-schema.sql', '60cd6638983c225741317bb71385a7e740425f968685a9a8f54db3de4b78fbf5');
+insert into migrations (filename, hash) values ('2016-08-16.0.core.initial-schema.sql', 'ee7466ce9642af3afa60c3104d3d0f8f4161e4a9f58b1daa58e005a6566b82e2');
 insert into migrations (filename, hash) values ('2016-08-16.1.api.add-asset-aliases.sql', '78b8c814db73872e6ebc8c5bcedc342d17f566a0a637470aed2761ae09060873');
 insert into migrations (filename, hash) values ('2016-08-16.2.query.rename-index-alias.sql', 'eb1b6b4fa602ac21d7f957f8fda0b94dd50fb710055842cead111a0bb35d93ae');
 insert into migrations (filename, hash) values ('2016-08-16.3.api.alias-keys.sql', 'ee7702a963064b004800ee356558ec2a2a3062f443ff7871d1fc2a873f22665e');
@@ -1109,3 +1109,4 @@ insert into migrations (filename, hash) values ('2016-08-17.0.query.index-id.sql
 insert into migrations (filename, hash) values ('2016-08-19.0.generator.generated-block.sql', '8068324f63c2d973f0eac120460ca202711bfab0f734b789f18206f21abd3a80');
 insert into migrations (filename, hash) values ('2016-08-22.0.account.change-utxos.sql', '11dff1da7353fd6896c4f153654029d717f838b4a4e528cf7139bfcf35ebf124');
 insert into migrations (filename, hash) values ('2016-08-23.0.query.sum-by.sql', '82a04d0595f19df735dd35e896496c79a70398a8428131ece4d441aaf2f3836c');
+insert into migrations (filename, hash) values ('2016-08-24.0.query.index-filter.sql', '9b501c1fc5a528312f7239a58b1552bf95681fe228d57472a65e9a55fc19246b');

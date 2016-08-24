@@ -35,7 +35,7 @@ var IndexTypes = map[string]bool{
 }
 
 var (
-	ErrParsingQuery      = errors.New("error parsing filter")
+	ErrParsingFilter     = errors.New("error parsing filter")
 	ErrTooManyParameters = errors.New("transaction filters support up to 1 parameter")
 )
 
@@ -116,10 +116,10 @@ func (i *Index) Parse() (err error) {
 // field only if the index is a balance index.
 func (i *Index) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
-		"id":    i.ID,
-		"alias": i.Alias,
-		"type":  i.Type,
-		"query": i.Predicate.String(),
+		"id":     i.ID,
+		"alias":  i.Alias,
+		"type":   i.Type,
+		"filter": i.Predicate.String(),
 	}
 
 	if i.Type == IndexTypeBalance {
@@ -135,7 +135,7 @@ func (i *Index) MarshalJSON() ([]byte, error) {
 // GetIndex looks up an individual index by its ID or alias and its type.
 func (ind *Indexer) GetIndex(ctx context.Context, id, alias, typ string) (*Index, error) {
 	const selectQ = `
-		SELECT id, alias, type, query, created_at, sum_by FROM query_indexes
+		SELECT id, alias, type, filter, created_at, sum_by FROM query_indexes
 		WHERE (($1 != '' AND id = $1) OR ($2 != '' AND alias = $2)) AND type = $3
 	`
 	var idx Index
@@ -154,16 +154,16 @@ func (ind *Indexer) GetIndex(ctx context.Context, id, alias, typ string) (*Index
 
 // CreateIndex commits a new index in the database. Blockchain data
 // will not be indexed until the leader process picks up the new index.
-func (ind *Indexer) CreateIndex(ctx context.Context, alias, typ, rawQuery string, sumByFields []string) (*Index, error) {
-	q, err := filter.Parse(rawQuery)
+func (ind *Indexer) CreateIndex(ctx context.Context, alias, typ, rawPredicate string, sumByFields []string) (*Index, error) {
+	q, err := filter.Parse(rawPredicate)
 	if err != nil {
-		return nil, errors.WithDetail(ErrParsingQuery, err.Error())
+		return nil, errors.WithDetail(ErrParsingFilter, err.Error())
 	}
 	var fields []filter.Field
 	for _, rawField := range sumByFields {
 		field, err := filter.ParseField(rawField)
 		if err != nil {
-			return nil, errors.WithDetail(ErrParsingQuery, err.Error())
+			return nil, errors.WithDetail(ErrParsingFilter, err.Error())
 		}
 		fields = append(fields, field)
 	}
@@ -176,7 +176,7 @@ func (ind *Indexer) CreateIndex(ctx context.Context, alias, typ, rawQuery string
 	}
 
 	const insertQ = `
-		INSERT INTO query_indexes (alias, type, query, sum_by) VALUES($1, $2, $3, $4)
+		INSERT INTO query_indexes (alias, type, filter, sum_by) VALUES($1, $2, $3, $4)
 		RETURNING id, created_at
 	`
 	idx := &Index{
@@ -184,10 +184,10 @@ func (ind *Indexer) CreateIndex(ctx context.Context, alias, typ, rawQuery string
 		Type:         typ,
 		Predicate:    q,
 		SumBy:        fields,
-		rawPredicate: rawQuery,
+		rawPredicate: rawPredicate,
 		rawSumBy:     sumByFields,
 	}
-	err = ind.db.QueryRow(ctx, insertQ, alias, typ, rawQuery, pg.Strings(sumByFields)).Scan(&idx.ID, &idx.createdAt)
+	err = ind.db.QueryRow(ctx, insertQ, alias, typ, rawPredicate, pg.Strings(sumByFields)).Scan(&idx.ID, &idx.createdAt)
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
 	} else if err != nil {
@@ -204,11 +204,11 @@ func (ind *Indexer) ListIndexes(ctx context.Context, cursor string, limit int) (
 	}
 
 	// Parse all the queries so that we can print a cleaned
-	// representation of the query.
+	// representation of the query predicate.
 	for _, idx := range indexes {
 		err = idx.Parse()
 		if err != nil {
-			return nil, "", errors.Wrap(err, "parsing raw query")
+			return nil, "", errors.Wrap(err, "parsing filter")
 		}
 	}
 	return indexes, newCursor, nil
@@ -224,7 +224,7 @@ func (ind *Indexer) isIndexActive(id string) bool {
 func (ind *Indexer) setupIndex(idx *Index) (err error) {
 	err = idx.Parse()
 	if err != nil {
-		return errors.Wrap(err, "parsing raw query for index", idx.Alias)
+		return errors.Wrap(err, "parsing filter for index", idx.Alias)
 	}
 
 	ind.mu.Lock()
@@ -253,10 +253,10 @@ func (ind *Indexer) refreshIndexes(ctx context.Context) error {
 }
 
 // getIndexes queries the database for all active indexes.
-// getIndexes does not parse idx.RawQuery and leaves
-// idx.Query as nil.
+// getIndexes does not parse idx.rawPredicate and leaves
+// idx.Predicate as nil.
 func (ind *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
-	const q = `SELECT id, alias, type, query, created_at, sum_by FROM query_indexes`
+	const q = `SELECT id, alias, type, filter, created_at, sum_by FROM query_indexes`
 	rows, err := ind.db.Query(ctx, q)
 	if err != nil {
 		return nil, errors.Wrap(err, "reload indexes sql query")
@@ -281,7 +281,7 @@ func (ind *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
 // The caveat is listIndexes returns a paged result.
 func (ind *Indexer) listIndexes(ctx context.Context, cursor string, limit int) ([]*Index, string, error) {
 	const q = `
-		SELECT id, alias, type, query, created_at, sum_by
+		SELECT id, alias, type, filter, created_at, sum_by
 		FROM query_indexes WHERE ($1='' OR $1<id)
 		ORDER BY id ASC LIMIT $2
 	`
