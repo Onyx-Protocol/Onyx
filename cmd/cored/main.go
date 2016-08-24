@@ -76,7 +76,6 @@ var (
 	remoteGeneratorURL = env.String("REMOTE_GENERATOR_URL", "")
 	remoteSignerURLs   = env.StringSlice("REMOTE_SIGNER_URLS")
 	remoteSignerKeys   = env.StringSlice("REMOTE_SIGNER_KEYS")
-	sigsRequired       = env.Int("SIGS_REQUIRED", 1)
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -206,27 +205,9 @@ func main() {
 
 	var generatorConfig *generator.Config
 	if *isGenerator {
-		remotes := remoteSignerInfo(ctx)
-		nSigners := len(remotes)
-		if *isSigner {
-			nSigners++
-		}
-		if nSigners < *sigsRequired {
-			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(errors.New("too few signers configured")))
-		}
-		pubKeys := make([]ed25519.PublicKey, nSigners)
-		for i, key := range remotes {
-			pubKeys[i] = key.Key
-		}
-		if *isSigner {
-			pubKeys[nSigners-1] = blockXPub.Key
-		}
-
 		generatorConfig = &generator.Config{
-			RemoteSigners: remotes,
+			RemoteSigners: remoteSignerInfo(ctx),
 			LocalSigner:   localSigner,
-			BlockKeys:     pubKeys,
-			SigsRequired:  *sigsRequired,
 			FC:            fc,
 		}
 	}

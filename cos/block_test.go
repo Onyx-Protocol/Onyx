@@ -161,30 +161,12 @@ func waitForBlockChan(ctx context.Context, fc *FC, height uint64) chan error {
 	return ch
 }
 
-func TestIdempotentUpsert(t *testing.T) {
-	ctx, fc := newContextFC(t)
-
-	// InitializeSigningGenerator added a genesis block.  Calling
-	// UpsertGenesisBlock again should be a no-op, not produce an error.
-	for i := 0; i < 2; i++ {
-		var err error
-		_, err = fc.UpsertGenesisBlock(ctx, testutil.TestPubs, 1, time.Now())
-		if err != nil {
-			testutil.FatalErr(t, err)
-		}
-	}
-}
-
 func TestGenerateBlock(t *testing.T) {
-	ctx, fc := newContextFC(t)
-
+	ctx := context.Background()
 	now := time.Unix(233400000, 0)
+	fc, b1 := newTestFC(t, now)
 
-	latestBlock, err := fc.UpsertGenesisBlock(ctx, testutil.TestPubs, 1, now)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	genesisHash := latestBlock.Hash()
+	genesisHash := b1.Hash()
 	assetID := bc.ComputeAssetID(nil, genesisHash, 1)
 
 	txs := []*bc.Tx{
@@ -222,25 +204,25 @@ func TestGenerateBlock(t *testing.T) {
 		}
 	}
 
-	got, err := fc.GenerateBlock(ctx, latestBlock, state.Empty(), now)
+	got, err := fc.GenerateBlock(ctx, b1, state.Empty(), now)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
 
 	// TODO(bobg): verify these hashes are correct
 	var wantTxRoot, wantAssetsRoot bc.Hash
-	copy(wantTxRoot[:], mustDecodeHex("60154ef1bb64c1f7567184ca6ae3cd2645788ffe3c723f9a8846c4a3a87ba9bf"))
-	copy(wantAssetsRoot[:], mustDecodeHex("a88ef8959187a0c5905beed2019269835bca245fbd36b09b95f684b5038bdf93"))
+	copy(wantTxRoot[:], mustDecodeHex("29a11bc539b34ffc05725e0ddc99edce3d054fd02741a21c5ea53d38d7014a09"))
+	copy(wantAssetsRoot[:], mustDecodeHex("dddc627ae1e1f0872ca2b80d4d13866cae2ccbdb177fce8c6dd75d371d946cda"))
 
 	want := &bc.Block{
 		BlockHeader: bc.BlockHeader{
 			Version:                bc.NewBlockVersion,
 			Height:                 2,
-			PreviousBlockHash:      latestBlock.Hash(),
+			PreviousBlockHash:      b1.Hash(),
 			TransactionsMerkleRoot: wantTxRoot,
 			AssetsMerkleRoot:       wantAssetsRoot,
 			TimestampMS:            bc.Millis(now),
-			ConsensusProgram:       latestBlock.ConsensusProgram,
+			ConsensusProgram:       b1.ConsensusProgram,
 		},
 		Transactions: txs,
 	}
@@ -311,6 +293,26 @@ func TestIsSignedByTrustedHost(t *testing.T) {
 			t.Errorf("%s: got %v want %v", c.desc, got, c.want)
 		}
 	}
+}
+
+// newTestFC returns a new FC using memstore and mempool for storage,
+// along with an initial block b1 (with a 0/0 multisig program).
+// It commits b1 before returning.
+func newTestFC(tb testing.TB, ts time.Time) (fc *FC, b1 *bc.Block) {
+	ctx := context.Background()
+	fc, err := NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	b1, err = NewGenesisBlock(nil, 0, ts)
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	err = fc.CommitBlock(ctx, b1, state.Empty())
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	return fc, b1
 }
 
 func newContextFC(t testing.TB) (context.Context, *FC) {

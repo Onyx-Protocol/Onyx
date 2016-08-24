@@ -14,6 +14,8 @@ if [[ $? -eq 0 ]]; then
 	# and save to /var/log/chain/credentials.json
 fi
 
+corectl init 0
+
 (
 	/usr/bin/chain/cored
 	echo 'cored' >$psmgr

@@ -8,24 +8,41 @@ import (
 	"chain/core/blocksigner"
 	"chain/core/mockhsm"
 	"chain/cos"
+	"chain/cos/bc"
 	"chain/cos/mempool"
 	"chain/cos/memstore"
 	"chain/cos/state"
 	"chain/cos/validation"
 	"chain/cos/vm"
-	"chain/crypto/ed25519"
 	"chain/database/pg/pgtest"
 	"chain/testutil"
 )
+
+// newTestFC returns a new FC using memstore and mempool for storage,
+// along with an initial block b1 (with a 0/0 multisig program).
+// It commits b1 before returning.
+func newTestFC(tb testing.TB, ts time.Time) (fc *cos.FC, b1 *bc.Block) {
+	ctx := context.Background()
+	fc, err := cos.NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	b1, err = cos.NewGenesisBlock(nil, 0, ts)
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	err = fc.CommitBlock(ctx, b1, state.Empty())
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	return fc, b1
+}
 
 func TestGetAndAddBlockSignatures(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 
-	fc, err := cos.NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
+	fc, b1 := newTestFC(t, time.Now())
 
 	// TODO(kr): tweak the generator's design to not
 	// take a hard dependency on mockhsm.
@@ -38,16 +55,11 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 
 	localSigner := blocksigner.New(xpub.XPub, hsm, dbtx, fc)
 	config := Config{
-		LocalSigner:  localSigner,
-		BlockKeys:    []ed25519.PublicKey{xpub.Key},
-		SigsRequired: 1,
-		FC:           fc,
+		LocalSigner: localSigner,
+		FC:          fc,
 	}
-	genesis, err := config.UpsertGenesisBlock(ctx)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	g := New(genesis, state.Empty(), config)
+
+	g := New(b1, state.Empty(), config)
 
 	tip, snapshot, err := fc.Recover(ctx)
 	if err != nil {

@@ -81,6 +81,9 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 	if err != nil {
 		return errors.Wrap(err, "parsing prevblock output script")
 	}
+	if nrequired == 0 {
+		return nil // no signatures needed
+	}
 
 	signersConfigured := len(g.RemoteSigners)
 	if g.LocalSigner != nil {

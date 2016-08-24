@@ -14,7 +14,6 @@ import (
 	"chain/core/txdb"
 	"chain/cos"
 	"chain/cos/state"
-	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/testutil"
@@ -42,17 +41,19 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	}
 	localSigner := blocksigner.New(xpub.XPub, hsm, db, fc)
 	config := generator.Config{
-		LocalSigner:  localSigner,
-		BlockKeys:    []ed25519.PublicKey{xpub.Key},
-		SigsRequired: 1,
-		FC:           fc,
+		LocalSigner: localSigner,
+		FC:          fc,
 	}
-	genesis, err := config.UpsertGenesisBlock(ctx)
+	b1, err := cos.NewGenesisBlock(nil, 0, time.Now())
 	if err != nil {
-		t.Fatal(err)
+		testutil.FatalErr(t, err)
 	}
-	g := generator.New(genesis, state.Empty(), config)
-	genesisHash := genesis.Hash()
+	err = fc.CommitBlock(ctx, b1, state.Empty())
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	g := generator.New(b1, state.Empty(), config)
+	genesisHash := b1.Hash()
 
 	acct1, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {

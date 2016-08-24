@@ -58,6 +58,10 @@ From your local machine, check out your desired branch for the `chain` project, 
 
 	$ migratedb -t <target>
 
+Then create an initial block:
+
+	$ DB_URL=postgres://... corectl init 1 [key]
+
 From #devlog, build and deploy the Core server:
 
 	/build [-t <git-branch>] api

@@ -303,28 +303,6 @@ func GenerateBlockScript(keys []ed25519.PublicKey, nSigs int) ([]byte, error) {
 	return vmutil.BlockMultiSigScript(keys, nSigs)
 }
 
-// UpsertGenesisBlock creates a genesis block iff it does not exist.
-func (fc *FC) UpsertGenesisBlock(ctx context.Context, pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
-	// TODO(bobg): Cache the genesis block if it exists and return it
-	// rather than always consing up a new one.
-	b, err := NewGenesisBlock(pubkeys, nSigs, timestamp)
-	if err != nil {
-		return nil, err
-	}
-
-	h, err := fc.store.Height(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting blockchain height")
-	}
-	if h == 0 {
-		err = fc.CommitBlock(ctx, b, state.Empty())
-		if err != nil {
-			return nil, errors.Wrap(err, "adding genesis block")
-		}
-	}
-	return b, nil
-}
-
 func NewGenesisBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
 	script, err := GenerateBlockScript(pubkeys, nSigs)
 	if err != nil {

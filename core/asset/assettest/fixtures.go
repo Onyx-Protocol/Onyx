@@ -16,7 +16,6 @@ import (
 	"chain/cos/mempool"
 	"chain/cos/memstore"
 	"chain/cos/state"
-	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/encoding/json"
 	"chain/errors"
@@ -117,16 +116,18 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 
 	localSigner := blocksigner.New(xpub.XPub, hsm, pg.FromContext(ctx), fc)
 	config := generator.Config{
-		LocalSigner:  localSigner,
-		BlockKeys:    []ed25519.PublicKey{xpub.Key},
-		SigsRequired: 1,
-		FC:           fc,
+		LocalSigner: localSigner,
+		FC:          fc,
 	}
-	genesis, err := config.UpsertGenesisBlock(ctx)
+	b1, err := cos.NewGenesisBlock(nil, 0, time.Now())
 	if err != nil {
 		return nil, nil, err
 	}
-	g := generator.New(genesis, state.Empty(), config)
+	err = fc.CommitBlock(ctx, b1, state.Empty())
+	if err != nil {
+		return nil, nil, err
+	}
+	g := generator.New(b1, state.Empty(), config)
 	return fc, g, nil
 }
 

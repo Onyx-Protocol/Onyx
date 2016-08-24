@@ -22,8 +22,6 @@ import (
 type Config struct {
 	RemoteSigners []*RemoteSigner
 	LocalSigner   *blocksigner.Signer
-	BlockKeys     []ed25519.PublicKey // keys for block scripts
-	SigsRequired  int                 // sigs required for block scripts
 	FC            *cos.FC
 }
 
@@ -82,15 +80,6 @@ func Generate(ctx context.Context, config Config, period time.Duration) {
 		}
 	}
 
-	if g.latestBlock == nil {
-		genesis, err := g.UpsertGenesisBlock(ctx)
-		if err != nil {
-			panic(err)
-		}
-		g.latestBlock = genesis
-		g.latestSnapshot = state.Empty()
-	}
-
 	ticks := time.Tick(period)
 	for {
 		select {
@@ -104,13 +93,6 @@ func Generate(ctx context.Context, config Config, period time.Duration) {
 			}
 		}
 	}
-}
-
-// UpsertGenesisBlock upserts a genesis block using
-// the keys and signatures required.
-func (g *Config) UpsertGenesisBlock(ctx context.Context) (*bc.Block, error) {
-	b, err := g.FC.UpsertGenesisBlock(ctx, g.BlockKeys, g.SigsRequired, time.Now())
-	return b, errors.Wrap(err)
 }
 
 // Submit is an http handler for the generator submit transaction endpoint.

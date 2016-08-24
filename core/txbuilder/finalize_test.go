@@ -14,7 +14,6 @@ import (
 	"chain/cos"
 	"chain/cos/bc"
 	"chain/cos/state"
-	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -328,40 +327,4 @@ func transfer(ctx context.Context, t testing.TB, fc *cos.FC, info *clientInfo, s
 
 	tx, err := FinalizeTx(ctx, fc, xferTx)
 	return tx, errors.Wrap(err)
-}
-
-func TestUpsertGenesisBlock(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
-
-	pubkey := testutil.TestPub
-
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	b, err := fc.UpsertGenesisBlock(ctx, []ed25519.PublicKey{pubkey}, 1, time.Now())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var n int64
-	err = pg.QueryRow(ctx, "SELECT count(*) FROM blocks").Scan(&n)
-	if err != nil {
-		t.Fatal("Count:", err)
-	} else if n != 1 {
-		t.Fatalf("count(*) FROM blocks = %d want 1", n)
-	}
-
-	var got bc.Hash
-	err = pg.QueryRow(ctx, `SELECT block_hash FROM blocks`).Scan(&got)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := b.Hash()
-	if got != want {
-		t.Errorf("block hash = %v want %v", got, want)
-	}
 }
