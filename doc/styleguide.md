@@ -185,6 +185,11 @@ ultra-brief statement of the purpose of the patch. Shoot for <50
 characters total, but this can be hard with long import paths so don’t
 worry too much.
 
+  The subject should be in the imperative mood. For example,
+“send hex encoded bytes in retire program” rather than
+“client should send hex encoded bytes in retire program”;
+and “fix sign extension” rather than “fixed sign extension”.
+
 - Blank line following the subject.
 
 - Details. This is a long description of what the change is, why we
@@ -212,6 +217,7 @@ patch after six months. It will be helpful to know that it’s part of a
 set, but that’s probably not the first question they’ll ask.
 
 More generally good advice on commit messages:
+- http://chris.beams.io/posts/git-commit/
 - https://robots.thoughtbot.com/5-useful-tips-for-a-better-commit-message
 - http://mislav.net/2014/02/hidden-documentation/
 
