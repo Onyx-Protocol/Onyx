@@ -3,8 +3,8 @@ package txbuilder
 import (
 	"context"
 
-	"chain/cos/bc"
 	"chain/encoding/json"
+	"chain/protocol/bc"
 )
 
 type ControlProgramAction struct {

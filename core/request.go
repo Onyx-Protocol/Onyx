@@ -7,9 +7,9 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/txbuilder"
-	"chain/cos/bc"
 	chainjson "chain/encoding/json"
 	"chain/errors"
+	"chain/protocol/bc"
 )
 
 type action struct {

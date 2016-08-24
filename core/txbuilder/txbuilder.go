@@ -5,10 +5,10 @@ import (
 	"context"
 	"fmt"
 
-	"chain/cos/bc"
 	"chain/crypto/ed25519/hd25519"
 	"chain/encoding/json"
 	"chain/errors"
+	"chain/protocol/bc"
 )
 
 var (

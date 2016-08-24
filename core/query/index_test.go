@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 
-	"chain/cos"
-	"chain/cos/bc"
 	"chain/database/pg/pgtest"
+	"chain/protocol"
+	"chain/protocol/bc"
 )
 
 func TestIndexBlock(t *testing.T) {
 	ctx := context.Background()
 	db := pgtest.NewTx(t)
 
-	indexer := NewIndexer(db, &cos.FC{})
+	indexer := NewIndexer(db, &protocol.FC{})
 	b := &bc.Block{
 		Transactions: []*bc.Tx{},
 	}
@@ -33,7 +33,7 @@ func TestAnnotatedTxs(t *testing.T) {
 	ctx := context.Background()
 	db := pgtest.NewTx(t)
 
-	indexer := NewIndexer(db, &cos.FC{})
+	indexer := NewIndexer(db, &protocol.FC{})
 	b := &bc.Block{
 		Transactions: []*bc.Tx{
 			{Hash: bc.Hash{0: 0x01}},

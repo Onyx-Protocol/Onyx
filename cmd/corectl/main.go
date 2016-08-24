@@ -11,12 +11,12 @@ import (
 	"time"
 
 	"chain/core/generator"
-	"chain/cos"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
 	"chain/log"
+	"chain/protocol"
 )
 
 // config vars
@@ -82,7 +82,7 @@ func initblock(db *sql.DB, args []string) {
 		keys = append(keys, b)
 	}
 
-	block, err := cos.NewGenesisBlock(keys, quorum, time.Now())
+	block, err := protocol.NewGenesisBlock(keys, quorum, time.Now())
 	if err != nil {
 		fatalln("error:", err)
 	}

@@ -14,14 +14,14 @@ import (
 
 	_ "github.com/lib/pq"
 
-	"chain/cos"
-	"chain/cos/bc"
-	"chain/cos/mempool"
-	"chain/cos/memstore"
-	"chain/cos/state"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
+	"chain/protocol"
+	"chain/protocol/bc"
+	"chain/protocol/mempool"
+	"chain/protocol/memstore"
+	"chain/protocol/state"
 )
 
 const (
@@ -101,7 +101,7 @@ func RevalidateBlockchain(db *sql.DB) (blocksValidated uint64, err error) {
 	// TODO(jackson): Don't keep everything in memory so that we can validate
 	// larger blockchains in the future.
 	ctx := context.Background()
-	fc, err := cos.NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
+	fc, err := protocol.NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
 	if err != nil {
 		fatalf("unable to construct FC: %s\n", err)
 	}

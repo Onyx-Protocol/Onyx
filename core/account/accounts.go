@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"chain/core/signers"
-	"chain/cos/vmutil"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/httpjson"
+	"chain/protocol/vmutil"
 )
 
 type Account struct {

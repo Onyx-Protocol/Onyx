@@ -5,8 +5,8 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	"chain/cos/bc"
-	"chain/cos/vm"
+	"chain/protocol/bc"
+	"chain/protocol/vm"
 )
 
 type (

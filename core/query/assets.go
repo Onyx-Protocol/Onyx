@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"chain/core/query/filter"
-	"chain/cos/bc"
 	"chain/errors"
+	"chain/protocol/bc"
 )
 
 // SaveAnnotatedAsset saves an annotated asset to the query indexes.

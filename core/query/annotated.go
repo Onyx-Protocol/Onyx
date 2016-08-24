@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"chain/cos/bc"
-	"chain/cos/vmutil"
+	"chain/protocol/bc"
+	"chain/protocol/vmutil"
 )
 
 func transactionObject(orig *bc.Tx, b *bc.Block, indexInBlock uint32) map[string]interface{} {

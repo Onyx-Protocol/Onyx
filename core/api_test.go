@@ -12,10 +12,10 @@ import (
 	"chain/core/asset/assettest"
 	"chain/core/query"
 	"chain/core/txbuilder"
-	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/protocol/bc"
 	"chain/testutil"
 )
 

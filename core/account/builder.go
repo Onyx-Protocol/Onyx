@@ -8,11 +8,11 @@ import (
 	"chain/core/account/utxodb"
 	"chain/core/signers"
 	"chain/core/txbuilder"
-	"chain/cos/bc"
-	"chain/cos/vmutil"
 	"chain/crypto/ed25519/hd25519"
 	"chain/encoding/json"
 	"chain/errors"
+	"chain/protocol/bc"
+	"chain/protocol/vmutil"
 )
 
 type SpendAction struct {

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"chain/cos/vm"
-	"chain/cos/vmutil"
 	"chain/errors"
+	"chain/protocol/vm"
+	"chain/protocol/vmutil"
 )
 
 type (

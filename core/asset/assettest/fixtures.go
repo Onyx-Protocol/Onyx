@@ -11,14 +11,14 @@ import (
 	"chain/core/generator"
 	"chain/core/mockhsm"
 	"chain/core/txbuilder"
-	"chain/cos"
-	"chain/cos/bc"
-	"chain/cos/mempool"
-	"chain/cos/memstore"
-	"chain/cos/state"
 	"chain/database/pg"
 	"chain/encoding/json"
 	"chain/errors"
+	"chain/protocol"
+	"chain/protocol/bc"
+	"chain/protocol/mempool"
+	"chain/protocol/memstore"
+	"chain/protocol/state"
 	"chain/testutil"
 )
 
@@ -65,7 +65,7 @@ func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum
 	return asset.AssetID
 }
 
-func IssueAssetsFixture(ctx context.Context, t testing.TB, fc *cos.FC, assetID bc.AssetID, amount uint64, accountID string) state.Output {
+func IssueAssetsFixture(ctx context.Context, t testing.TB, fc *protocol.FC, assetID bc.AssetID, amount uint64, accountID string) state.Output {
 	if accountID == "" {
 		accountID = CreateAccountFixture(ctx, t, nil, 0, "", nil)
 	}
@@ -94,14 +94,14 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, fc *cos.FC, assetID b
 
 // InitializeSigningGenerator initiaizes a generator fixture with the
 // provided store. Store can be nil, in which case it will use memstore.
-func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.Pool) (*cos.FC, *generator.Generator, error) {
+func InitializeSigningGenerator(ctx context.Context, store protocol.Store, pool protocol.Pool) (*protocol.FC, *generator.Generator, error) {
 	if store == nil {
 		store = memstore.New()
 	}
 	if pool == nil {
 		pool = mempool.New()
 	}
-	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
+	fc, err := protocol.NewFC(ctx, store, pool, nil, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -119,7 +119,7 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 		LocalSigner: localSigner,
 		FC:          fc,
 	}
-	b1, err := cos.NewGenesisBlock(nil, 0, time.Now())
+	b1, err := protocol.NewGenesisBlock(nil, 0, time.Now())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -131,7 +131,7 @@ func InitializeSigningGenerator(ctx context.Context, store cos.Store, pool cos.P
 	return fc, g, nil
 }
 
-func Issue(ctx context.Context, t testing.TB, fc *cos.FC, assetID bc.AssetID, amount uint64, actions []txbuilder.Action) *bc.Tx {
+func Issue(ctx context.Context, t testing.TB, fc *protocol.FC, assetID bc.AssetID, amount uint64, actions []txbuilder.Action) *bc.Tx {
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
 	actions = append(actions, NewIssueAction(assetAmount, nil))
 
@@ -155,7 +155,7 @@ func Issue(ctx context.Context, t testing.TB, fc *cos.FC, assetID bc.AssetID, am
 	return tx
 }
 
-func Transfer(ctx context.Context, t testing.TB, fc *cos.FC, actions []txbuilder.Action) *bc.Tx {
+func Transfer(ctx context.Context, t testing.TB, fc *protocol.FC, actions []txbuilder.Action) *bc.Tx {
 	template, err := txbuilder.Build(ctx, nil, actions, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))

@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"chain/core/query/filter"
-	"chain/cos"
-	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/protocol"
+	"chain/protocol/bc"
 )
 
 func TestDecodeOutputsCursor(t *testing.T) {
@@ -57,7 +57,7 @@ func TestOutputsCursor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	indexer := NewIndexer(db, &cos.FC{})
+	indexer := NewIndexer(db, &protocol.FC{})
 	results, cursor, err := indexer.Outputs(ctx, q, nil, 25, nil, 2)
 	if err != nil {
 		t.Fatal(err)

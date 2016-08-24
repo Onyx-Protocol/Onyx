@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"chain/core/txdb"
-	"chain/cos/bc"
-	"chain/cos/vmutil"
 	"chain/database/pg"
 	"chain/errors"
 	chainlog "chain/log"
+	"chain/protocol/bc"
+	"chain/protocol/vmutil"
 )
 
 // Issuances counts the total units of assets issued and destroyed.
@@ -55,7 +55,7 @@ func PoolIssuances(ctx context.Context, pool *txdb.Pool) (Issuances, error) {
 	return calcIssuances(txs...), nil
 }
 
-// recordIssuances is a cos block callback that updates the issuance_totals
+// recordIssuances is an FC block callback that updates the issuance_totals
 // table with all issuances within the provided block.
 func recordIssuances(ctx context.Context, b *bc.Block) {
 	issuances := calcIssuances(b.Transactions...)

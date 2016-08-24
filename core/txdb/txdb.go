@@ -6,12 +6,12 @@ import (
 	"sort"
 	"strconv"
 
-	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
 	"chain/log"
 	"chain/net/trace/span"
+	"chain/protocol/bc"
 	"chain/strings"
 )
 

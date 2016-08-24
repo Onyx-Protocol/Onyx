@@ -3,29 +3,29 @@ package txdb
 import (
 	"context"
 
-	"chain/cos"
-	"chain/cos/bc"
-	"chain/cos/state"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
+	"chain/protocol"
+	"chain/protocol/bc"
+	"chain/protocol/state"
 )
 
 // A Store encapsulates storage for blockchain validation.
-// It satisfies the interface cos.Store, and provides additional
+// It satisfies the interface protocol.Store, and provides additional
 // methods for querying current data.
 type Store struct {
 	db *sql.DB
 }
 
-var _ cos.Store = (*Store)(nil)
+var _ protocol.Store = (*Store)(nil)
 
 // NewStore creates and returns a new Store object.
 //
 // A Store manages its own database transactions, so
 // it requires a handle to a SQL database.
 // For testing purposes, it is usually much faster
-// and more convenient to use package chain/cos/memstore
+// and more convenient to use package chain/protocol/memstore
 // instead.
 func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}

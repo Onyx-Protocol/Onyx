@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"chain/cos/vm"
 	"chain/errors"
+	"chain/protocol/vm"
 )
 
 var wd, _ = os.Getwd()

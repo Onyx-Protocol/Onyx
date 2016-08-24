@@ -6,12 +6,12 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"chain/core/txdb/internal/storage"
-	"chain/cos/bc"
-	"chain/cos/patricia"
-	"chain/cos/state"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
+	"chain/protocol/bc"
+	"chain/protocol/patricia"
+	"chain/protocol/state"
 )
 
 func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot, blockHeight uint64) error {

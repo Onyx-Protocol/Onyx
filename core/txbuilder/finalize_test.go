@@ -11,14 +11,14 @@ import (
 	"chain/core/generator"
 	. "chain/core/txbuilder"
 	"chain/core/txdb"
-	"chain/cos"
-	"chain/cos/bc"
-	"chain/cos/state"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
 	"chain/errors"
+	"chain/protocol"
+	"chain/protocol/bc"
+	"chain/protocol/state"
 	"chain/testutil"
 )
 
@@ -233,7 +233,7 @@ type clientInfo struct {
 
 // TODO(kr): refactor this into new package core/coreutil
 // and consume it from cmd/corectl.
-func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *cos.FC, *generator.Generator, error) {
+func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.FC, *generator.Generator, error) {
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
 	fc, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
@@ -291,7 +291,7 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *cos.FC, *generator
 	return info, fc, g, nil
 }
 
-func issue(ctx context.Context, t testing.TB, fc *cos.FC, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
+func issue(ctx context.Context, t testing.TB, fc *protocol.FC, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
@@ -310,7 +310,7 @@ func issue(ctx context.Context, t testing.TB, fc *cos.FC, info *clientInfo, dest
 	return FinalizeTx(ctx, fc, issueTx)
 }
 
-func transfer(ctx context.Context, t testing.TB, fc *cos.FC, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
+func transfer(ctx context.Context, t testing.TB, fc *protocol.FC, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.AssetID,
 		Amount:  amount,

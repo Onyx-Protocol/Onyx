@@ -1,10 +1,11 @@
 package core
 
 import (
-	"chain/database/pg"
-	"chain/errors"
 	"database/sql"
 	"testing"
+
+	"chain/database/pg"
+	"chain/errors"
 )
 
 func TestErrInfo(t *testing.T) {

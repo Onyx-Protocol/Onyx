@@ -9,14 +9,14 @@ import (
 	"time"
 
 	"chain/core/rpcclient"
-	"chain/cos"
-	"chain/cos/bc"
-	"chain/cos/vmutil"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/trace/span"
+	"chain/protocol"
+	"chain/protocol/bc"
+	"chain/protocol/vmutil"
 )
 
 var (
@@ -161,7 +161,7 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 					signatures = append(signatures, r)
 				}
 			}
-			cos.AddSignaturesToBlock(b, signatures)
+			protocol.AddSignaturesToBlock(b, signatures)
 			return nil
 		}
 	}

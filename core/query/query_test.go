@@ -12,10 +12,10 @@ import (
 	"chain/core/generator"
 	"chain/core/mockhsm"
 	"chain/core/txdb"
-	"chain/cos"
-	"chain/cos/state"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/protocol"
+	"chain/protocol/state"
 	"chain/testutil"
 )
 
@@ -25,7 +25,7 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	store, pool := txdb.New(db)
-	fc, err := cos.NewFC(ctx, store, pool, nil, nil)
+	fc, err := protocol.NewFC(ctx, store, pool, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 		LocalSigner: localSigner,
 		FC:          fc,
 	}
-	b1, err := cos.NewGenesisBlock(nil, 0, time.Now())
+	b1, err := protocol.NewGenesisBlock(nil, 0, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

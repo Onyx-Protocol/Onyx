@@ -3,11 +3,11 @@ package asset
 import (
 	"context"
 
-	"chain/cos"
-	"chain/cos/bc"
+	"chain/protocol"
+	"chain/protocol/bc"
 )
 
-var fc *cos.FC
+var fc *protocol.FC
 var indexer Saver
 
 // A Saver is responsible for saving an annotated asset object
@@ -18,10 +18,10 @@ type Saver interface {
 	SaveAnnotatedAsset(context.Context, bc.AssetID, map[string]interface{}) error
 }
 
-// Init sets the package level cos. If isManager is true,
+// Init sets the package level FC. If isManager is true,
 // Init registers all necessary callbacks for updating
-// application state with the cos.
-func Init(chain *cos.FC, ind Saver, isManager bool) {
+// application state with the FC.
+func Init(chain *protocol.FC, ind Saver, isManager bool) {
 	indexer = ind
 	if fc == chain {
 		// Silently ignore duplicate calls.

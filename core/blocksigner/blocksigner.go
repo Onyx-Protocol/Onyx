@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"chain/core/mockhsm"
-	"chain/cos"
-	"chain/cos/bc"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
+	"chain/protocol"
+	"chain/protocol/bc"
 )
 
 // Signer validates and signs blocks.
@@ -16,7 +16,7 @@ type Signer struct {
 	XPub *hd25519.XPub
 	hsm  *mockhsm.HSM
 	db   pg.DB
-	fc   *cos.FC
+	fc   *protocol.FC
 }
 
 // New returns a new Signer that validates blocks with fc and signs
@@ -24,7 +24,7 @@ type Signer struct {
 //
 // TODO(bobg): Create an HSM abstraction that allows HSM's other than
 // the mockhsm to be used here.
-func New(xpub *hd25519.XPub, hsm *mockhsm.HSM, db pg.DB, fc *cos.FC) *Signer {
+func New(xpub *hd25519.XPub, hsm *mockhsm.HSM, db pg.DB, fc *protocol.FC) *Signer {
 	return &Signer{
 		XPub: xpub,
 		hsm:  hsm,

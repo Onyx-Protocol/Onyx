@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"chain/cos/vm"
-	"chain/cos/vmutil"
+	"chain/protocol/vm"
+	"chain/protocol/vmutil"
 )
 
 var (
@@ -59,7 +59,7 @@ func main() {
 			panic(err)
 		}
 		fmt.Fprintf(outFile, "package %s\n\n", filepath.Base(filepath.Dir(absIn)))
-		fmt.Fprint(outFile, "import (\n\t\"chain/cos/bc\"\n\t\"chain/cos/vm\"\n\t\"chain/cos/vmutil\"\n)\n")
+		fmt.Fprint(outFile, "import (\n\t\"chain/protocol/bc\"\n\t\"chain/protocol/vm\"\n\t\"chain/protocol/vmutil\"\n)\n")
 	}
 
 	contracts, err := parse(in)

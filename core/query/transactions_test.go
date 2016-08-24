@@ -7,14 +7,14 @@ import (
 	"testing"
 
 	"chain/core/query/filter"
-	"chain/cos"
 	"chain/database/pg/pgtest"
+	"chain/protocol"
 )
 
 func TestLookupTxCursorNoBlocks(t *testing.T) {
 	ctx := context.Background()
 	db := pgtest.NewTx(t)
-	indexer := NewIndexer(db, &cos.FC{})
+	indexer := NewIndexer(db, &protocol.FC{})
 
 	cur, err := indexer.LookupTxCursor(ctx, 0, 0)
 	if err != nil {

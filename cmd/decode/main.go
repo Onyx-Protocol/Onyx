@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"chain/cos/bc"
-	"chain/cos/vm"
+	"chain/protocol/bc"
+	"chain/protocol/vm"
 )
 
 const help = `

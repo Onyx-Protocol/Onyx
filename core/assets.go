@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"chain/core/asset"
-	"chain/cos/bc"
 	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/httpjson"
+	"chain/protocol/bc"
 )
 
 type assetResponse struct {

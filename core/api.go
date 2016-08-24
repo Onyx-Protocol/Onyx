@@ -9,7 +9,7 @@ import (
 	"chain/core/mockhsm"
 	"chain/core/query"
 	"chain/core/txdb"
-	"chain/cos"
+	"chain/protocol"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 // Handler returns a handler that serves the Chain HTTP API.
 func Handler(
 	apiSecret string,
-	fc *cos.FC,
+	fc *protocol.FC,
 	generatorConfig *generator.Config,
 	signer *blocksigner.Signer,
 	store *txdb.Store,
@@ -43,7 +43,7 @@ func Handler(
 }
 
 type api struct {
-	fc        *cos.FC
+	fc        *protocol.FC
 	store     *txdb.Store
 	pool      *txdb.Pool
 	generator *generator.Config

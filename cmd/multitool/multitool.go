@@ -19,10 +19,10 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"chain/cos/bc"
-	"chain/cos/vm"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
+	"chain/protocol/bc"
+	"chain/protocol/vm"
 )
 
 // A timed reader times out its Read() operation after a specified

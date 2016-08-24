@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"chain/cos/vmutil"
 	"chain/database/pg"
 	"chain/errors"
+	"chain/protocol/vmutil"
 )
 
 // AnnotateTxs adds account data to transactions

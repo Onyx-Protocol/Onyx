@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"chain/core/blocksigner"
-	"chain/cos"
-	"chain/cos/bc"
-	"chain/cos/state"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
+	"chain/protocol"
+	"chain/protocol/bc"
+	"chain/protocol/state"
 )
 
 // TODO(kr): replace RemoteSigners type and use of *blocksigner.Signer
@@ -22,7 +22,7 @@ import (
 type Config struct {
 	RemoteSigners []*RemoteSigner
 	LocalSigner   *blocksigner.Signer
-	FC            *cos.FC
+	FC            *protocol.FC
 }
 
 // New constructs a new generator and returns it.

@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"chain/cos/bc"
-	"chain/cos/mempool"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/encoding/json"
 	"chain/errors"
+	"chain/protocol/bc"
+	"chain/protocol/mempool"
 	"chain/testutil"
 )
 

@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"chain/core/query/filter"
-	"chain/cos"
 	"chain/database/pg"
 	"chain/errors"
 	chainlog "chain/log"
 	"chain/net/http/httpjson"
+	"chain/protocol"
 )
 
 const (
@@ -40,7 +40,7 @@ var (
 )
 
 // NewIndexer constructs a new indexer for indexing transactions.
-func NewIndexer(db pg.DB, fc *cos.FC) *Indexer {
+func NewIndexer(db pg.DB, fc *protocol.FC) *Indexer {
 	indexer := &Indexer{
 		db:      db,
 		indexes: make(map[string]*Index),

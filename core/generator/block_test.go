@@ -7,10 +7,10 @@ import (
 
 	"chain/core/asset/assettest"
 	"chain/core/txdb"
-	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
+	"chain/protocol/bc"
 )
 
 // TODO(kr): GetBlocks is not a generator function.

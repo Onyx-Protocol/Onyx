@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"chain/cos/bc"
 	"chain/errors"
 	"chain/net/rpc"
+	"chain/protocol/bc"
 )
 
 const (

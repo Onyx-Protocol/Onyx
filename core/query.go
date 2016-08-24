@@ -6,10 +6,10 @@ import (
 
 	"chain/core/query"
 	"chain/core/query/filter"
-	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/httpjson"
+	"chain/protocol/bc"
 )
 
 var (

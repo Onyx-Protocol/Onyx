@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	"chain/core/signers"
-	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
+	"chain/protocol/bc"
 	"chain/testutil"
 )
 

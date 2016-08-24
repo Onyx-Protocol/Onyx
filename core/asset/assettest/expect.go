@@ -3,7 +3,7 @@ package assettest
 import (
 	"testing"
 
-	"chain/cos/bc"
+	"chain/protocol/bc"
 )
 
 // ExpectMatchingInputs tests each input in a given tx, expecting to

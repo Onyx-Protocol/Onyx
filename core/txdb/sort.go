@@ -3,9 +3,9 @@ package txdb
 import (
 	"context"
 
-	"chain/cos/bc"
 	"chain/log"
 	"chain/net/trace/span"
+	"chain/protocol/bc"
 )
 
 func topSort(ctx context.Context, txs []*bc.Tx) []*bc.Tx {

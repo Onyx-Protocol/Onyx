@@ -8,10 +8,10 @@ import (
 	"chain/core/asset/assettest"
 	"chain/core/mockhsm"
 	"chain/core/txbuilder"
-	"chain/cos/bc"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/protocol/bc"
 	"chain/testutil"
 )
 

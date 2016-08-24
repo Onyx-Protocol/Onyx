@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/cos/bc"
-	"chain/cos/patricia"
-	"chain/cos/state"
 	"chain/database/pg/pgtest"
+	"chain/protocol/bc"
+	"chain/protocol/patricia"
+	"chain/protocol/state"
 )
 
 type pair struct {

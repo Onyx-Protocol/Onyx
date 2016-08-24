@@ -5,12 +5,12 @@ import (
 	"time"
 
 	"chain/core/rpcclient"
-	"chain/cos"
-	"chain/cos/bc"
-	"chain/cos/validation"
 	"chain/errors"
 	chainlog "chain/log"
 	"chain/metrics"
+	"chain/protocol"
+	"chain/protocol/bc"
+	"chain/protocol/validation"
 )
 
 var (
@@ -26,7 +26,7 @@ var Generator *string
 // FinalizeTx validates a transaction signature template,
 // assembles a fully signed tx, and stores the effects of
 // its changes on the UTXO set.
-func FinalizeTx(ctx context.Context, fc *cos.FC, txTemplate *Template) (*bc.Tx, error) {
+func FinalizeTx(ctx context.Context, fc *protocol.FC, txTemplate *Template) (*bc.Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
 
 	if txTemplate.Unsigned == nil {
@@ -55,7 +55,7 @@ func FinalizeTx(ctx context.Context, fc *cos.FC, txTemplate *Template) (*bc.Tx, 
 	return msg, nil
 }
 
-func publishTx(ctx context.Context, fc *cos.FC, msg *bc.Tx) error {
+func publishTx(ctx context.Context, fc *protocol.FC, msg *bc.Tx) error {
 	// Make sure there is atleast one block in case client is
 	// trying to finalize a tx before the genesis block has landed
 	fc.WaitForBlock(ctx, 1)

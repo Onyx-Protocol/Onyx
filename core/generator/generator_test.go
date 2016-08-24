@@ -7,27 +7,27 @@ import (
 
 	"chain/core/blocksigner"
 	"chain/core/mockhsm"
-	"chain/cos"
-	"chain/cos/bc"
-	"chain/cos/mempool"
-	"chain/cos/memstore"
-	"chain/cos/state"
-	"chain/cos/validation"
-	"chain/cos/vm"
 	"chain/database/pg/pgtest"
+	"chain/protocol"
+	"chain/protocol/bc"
+	"chain/protocol/mempool"
+	"chain/protocol/memstore"
+	"chain/protocol/state"
+	"chain/protocol/validation"
+	"chain/protocol/vm"
 	"chain/testutil"
 )
 
 // newTestFC returns a new FC using memstore and mempool for storage,
 // along with an initial block b1 (with a 0/0 multisig program).
 // It commits b1 before returning.
-func newTestFC(tb testing.TB, ts time.Time) (fc *cos.FC, b1 *bc.Block) {
+func newTestFC(tb testing.TB, ts time.Time) (fc *protocol.FC, b1 *bc.Block) {
 	ctx := context.Background()
-	fc, err := cos.NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
+	fc, err := protocol.NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	b1, err = cos.NewGenesisBlock(nil, 0, ts)
+	b1, err = protocol.NewGenesisBlock(nil, 0, ts)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
@@ -89,7 +89,7 @@ func TestGetAndAddBlockSignaturesInitialBlock(t *testing.T) {
 	ctx := context.Background()
 
 	g := new(Generator)
-	block, err := cos.NewGenesisBlock(testutil.TestPubs, 1, time.Now())
+	block, err := protocol.NewGenesisBlock(testutil.TestPubs, 1, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

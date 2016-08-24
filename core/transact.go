@@ -7,13 +7,13 @@ import (
 
 	"chain/core/account"
 	"chain/core/txbuilder"
-	"chain/cos"
-	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/reqid"
 	"chain/net/trace/span"
+	"chain/protocol"
+	"chain/protocol/bc"
 )
 
 func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
@@ -84,7 +84,7 @@ type submitSingleArg struct {
 	wait time.Duration
 }
 
-func submitSingle(ctx context.Context, fc *cos.FC, x submitSingleArg) (interface{}, error) {
+func submitSingle(ctx context.Context, fc *protocol.FC, x submitSingleArg) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -113,7 +113,7 @@ func submitSingle(ctx context.Context, fc *cos.FC, x submitSingleArg) (interface
 // confirmed on the blockchain.  ErrRejected means a conflicting tx is
 // on the blockchain.  context.DeadlineExceeded means ctx is an
 // expiring context that timed out.
-func finalizeTxWait(ctx context.Context, fc *cos.FC, txTemplate *txbuilder.Template) (*bc.Tx, error) {
+func finalizeTxWait(ctx context.Context, fc *protocol.FC, txTemplate *txbuilder.Template) (*bc.Tx, error) {
 	// Avoid a race condition.  Calling fc.Height() here ensures that
 	// when we start waiting for blocks below, we don't begin waiting at
 	// block N+1 when the tx we want is in block N.
@@ -177,7 +177,7 @@ func finalizeTxWait(ctx context.Context, fc *cos.FC, txTemplate *txbuilder.Templ
 	}
 }
 
-func waitBlock(ctx context.Context, fc *cos.FC, height uint64) <-chan error {
+func waitBlock(ctx context.Context, fc *protocol.FC, height uint64) <-chan error {
 	c := make(chan error, 1)
 	go func() { c <- fc.WaitForBlock(ctx, height) }()
 	return c

@@ -32,7 +32,6 @@ import (
 	"chain/core/rpcclient"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
-	"chain/cos"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
@@ -49,6 +48,7 @@ import (
 	"chain/net/http/httpspan"
 	"chain/net/http/reqid"
 	"chain/net/rpc"
+	"chain/protocol"
 )
 
 var (
@@ -183,7 +183,7 @@ func main() {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 	store, pool := txdb.New(db)
-	fc, err := cos.NewFC(ctx, store, pool, []ed25519.PublicKey{blockXPub.Key}, heights)
+	fc, err := protocol.NewFC(ctx, store, pool, []ed25519.PublicKey{blockXPub.Key}, heights)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
@@ -214,7 +214,7 @@ func main() {
 
 	// Note, it's important for any services that will install blockchain
 	// callbacks to be initialized before leader.Run() and the http server,
-	// otherwise there's a data race within cos.FC.
+	// otherwise there's a data race within protocol.FC.
 	go leader.Run(db, func(ctx context.Context) {
 		ctx = pg.NewContext(ctx, db)
 

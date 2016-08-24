@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"time"
 
-	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
 	chainlog "chain/log"
 	"chain/metrics"
 	"chain/net/trace/span"
+	"chain/protocol/bc"
 )
 
 var (

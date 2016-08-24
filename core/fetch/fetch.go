@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"chain/core/rpcclient"
-	"chain/cos"
 	"chain/log"
+	"chain/protocol"
 )
 
 // Fetch runs in a loop, fetching blocks from the configured
@@ -13,7 +13,7 @@ import (
 // FC.
 //
 // It returns when its context is canceled.
-func Fetch(ctx context.Context, fc *cos.FC) {
+func Fetch(ctx context.Context, fc *protocol.FC) {
 	// TODO(kr): take explicit peer URL?
 
 	// This process just became leader, so it's responsible

@@ -7,15 +7,15 @@ import (
 	"time"
 
 	"chain/core/signers"
-	"chain/cos/bc"
-	"chain/cos/vm"
-	"chain/cos/vmutil"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/httpjson"
+	"chain/protocol/bc"
+	"chain/protocol/vm"
+	"chain/protocol/vmutil"
 )
 
 var (

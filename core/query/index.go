@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
+	"chain/protocol/bc"
 )
 
 // Annotator describes a function capable of adding annotations
@@ -21,7 +21,7 @@ func (ind *Indexer) RegisterAnnotator(annotator Annotator) {
 	ind.annotators = append(ind.annotators, annotator)
 }
 
-// indexBlockCallback is registered as a block callback on the cos.FC. It
+// indexBlockCallback is registered as a block callback on the FC. It
 // saves all annotated transactions to the database and indexes them according
 // to the Core's configured indexes.
 func (ind *Indexer) indexBlockCallback(ctx context.Context, b *bc.Block) {

@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/cos/bc"
-	"chain/cos/state"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/protocol/bc"
+	"chain/protocol/state"
 	"chain/testutil"
 )
 

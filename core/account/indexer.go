@@ -3,13 +3,13 @@ package account
 import (
 	"context"
 
-	"chain/cos"
-	"chain/cos/bc"
-	"chain/cos/state"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
 	"chain/net/trace/span"
+	"chain/protocol"
+	"chain/protocol/bc"
+	"chain/protocol/state"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 	unconfirmedExpiration = 5
 )
 
-var fc *cos.FC
+var fc *protocol.FC
 var indexer Saver
 
 // A Saver is responsible for saving an annotated account object.
@@ -30,10 +30,10 @@ type Saver interface {
 	SaveAnnotatedAccount(context.Context, string, map[string]interface{}) error
 }
 
-// Init sets the package level cos and query indexer.
+// Init sets the package level FC and query indexer.
 // Init registers all necessary callbacks for updating
-// application state with the cos.
-func Init(chain *cos.FC, ind Saver) {
+// application state with the FC.
+func Init(chain *protocol.FC, ind Saver) {
 	indexer = ind
 	if fc == chain {
 		// Silently ignore duplicate calls.

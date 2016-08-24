@@ -6,10 +6,10 @@ import (
 
 	"chain/core/signers"
 	"chain/core/txbuilder"
-	"chain/cos/bc"
-	"chain/cos/vmutil"
 	"chain/encoding/json"
 	"chain/errors"
+	"chain/protocol/bc"
+	"chain/protocol/vmutil"
 )
 
 type IssueAction struct {

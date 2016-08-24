@@ -9,7 +9,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"chain/core/query/filter"
-	"chain/cos/bc"
+	"chain/protocol/bc"
 )
 
 func TestConstructBalancesQuery(t *testing.T) {

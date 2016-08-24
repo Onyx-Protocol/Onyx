@@ -3,10 +3,10 @@ package txdb
 import (
 	"context"
 
-	"chain/cos/bc"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
+	"chain/protocol/bc"
 )
 
 // A Pool encapsulates storage of the pending transaction pool.
@@ -19,7 +19,7 @@ type Pool struct {
 // A Pool manages its own database transactions, so
 // it requires a handle to a SQL database.
 // For testing purposes, it is usually much faster
-// and more convenient to use package chain/cos/mempool
+// and more convenient to use package chain/protocol/mempool
 // instead.
 func NewPool(db *sql.DB) *Pool {
 	return &Pool{db: db}
@@ -87,7 +87,7 @@ func (p *Pool) Clean(ctx context.Context, txs []*bc.Tx) error {
 }
 
 // CountTxs returns the total number of unconfirmed transactions. It
-// is not a part of the cos.Pool interface.
+// is not a part of the Pool interface.
 func (p *Pool) CountTxs(ctx context.Context) (uint64, error) {
 	const q = `SELECT count(tx_hash) FROM pool_txs`
 	var res uint64
