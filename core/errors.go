@@ -43,6 +43,7 @@ var (
 		pg.ErrUserInputNotFound:         errorInfo{404, "CH005", "Not found"},
 		httpjson.ErrBadRequest:          errorInfo{400, "CH007", "Invalid request body"},
 		errBadReqHeader:                 errorInfo{400, "CH008", "Invalid request header"},
+		ErrProdReset:                    errorInfo{400, "CH100", "Reset can only be called in a development system"},
 		query.ErrBadCursor:              errorInfo{400, "CH600", "Malformed pagination cursor"},
 		query.ErrParameterCountMismatch: errorInfo{400, "CH601", "Incorrect number of parameters to filter"},
 		ErrBadIndexConfig:               errorInfo{400, "CH602", "Invalid index configuration"},

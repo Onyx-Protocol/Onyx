@@ -109,6 +109,8 @@ func (a *api) handler() http.Handler {
 	m.Handle("/list-balances", jsonHandler(a.listBalances))
 	m.Handle("/list-unspent-outputs", jsonHandler(a.listUnspentOutputs))
 
+	m.Handle("/reset", jsonHandler(a.reset))
+
 	// V3 DEPRECATED
 	m.Handle("/v3/transact/cancel-reservation", jsonHandler(cancelReservation))
 
