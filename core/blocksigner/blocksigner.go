@@ -16,20 +16,20 @@ type Signer struct {
 	XPub *hd25519.XPub
 	hsm  *mockhsm.HSM
 	db   pg.DB
-	fc   *protocol.FC
+	c    *protocol.Chain
 }
 
-// New returns a new Signer that validates blocks with fc and signs
+// New returns a new Signer that validates blocks with c and signs
 // them with k.
 //
 // TODO(bobg): Create an HSM abstraction that allows HSM's other than
 // the mockhsm to be used here.
-func New(xpub *hd25519.XPub, hsm *mockhsm.HSM, db pg.DB, fc *protocol.FC) *Signer {
+func New(xpub *hd25519.XPub, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Signer {
 	return &Signer{
 		XPub: xpub,
 		hsm:  hsm,
 		db:   db,
-		fc:   fc,
+		c:    c,
 	}
 }
 
@@ -47,12 +47,11 @@ func (s *Signer) ComputeBlockSignature(ctx context.Context, b *bc.Block) ([]byte
 // This function fails if this node has ever signed a block at the
 // same height as b.
 func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
-	fc := s.fc
-	err := fc.WaitForBlock(ctx, b.Height-1)
+	err := s.c.WaitForBlock(ctx, b.Height-1)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", b.Height-1)
 	}
-	err = fc.ValidateBlockForSig(ctx, b)
+	err = s.c.ValidateBlockForSig(ctx, b)
 	if err != nil {
 		return nil, errors.Wrap(err, "validating block for signature")
 	}

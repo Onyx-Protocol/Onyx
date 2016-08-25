@@ -23,9 +23,9 @@ import (
 //
 // It is an error to call AddTx before the genesis block has landed.
 // Use WaitForBlock to guarantee this.
-func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
+func (c *Chain) AddTx(ctx context.Context, tx *bc.Tx) error {
 	// Check if the transaction already exists in the tx pool.
-	poolTxs, err := fc.pool.GetTxs(ctx, tx.Hash)
+	poolTxs, err := c.pool.GetTxs(ctx, tx.Hash)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -33,7 +33,7 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 		return nil
 	}
 	// Check if the transaction already exists in the blockchain.
-	bcTxs, err := fc.store.GetTxs(ctx, tx.Hash)
+	bcTxs, err := c.store.GetTxs(ctx, tx.Hash)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -54,6 +54,6 @@ func (fc *FC) AddTx(ctx context.Context, tx *bc.Tx) error {
 	}
 
 	// Update persistent tx pool state.
-	err = fc.pool.Insert(ctx, tx)
+	err = c.pool.Insert(ctx, tx)
 	return errors.Wrap(err, "applying tx to store")
 }

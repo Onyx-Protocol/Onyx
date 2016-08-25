@@ -26,7 +26,7 @@ var Generator *string
 // FinalizeTx validates a transaction signature template,
 // assembles a fully signed tx, and stores the effects of
 // its changes on the UTXO set.
-func FinalizeTx(ctx context.Context, fc *protocol.FC, txTemplate *Template) (*bc.Tx, error) {
+func FinalizeTx(ctx context.Context, c *protocol.Chain, txTemplate *Template) (*bc.Tx, error) {
 	defer metrics.RecordElapsed(time.Now())
 
 	if txTemplate.Unsigned == nil {
@@ -42,7 +42,7 @@ func FinalizeTx(ctx context.Context, fc *protocol.FC, txTemplate *Template) (*bc
 		return nil, errors.WithDetail(ErrBadTxTemplate, err.Error())
 	}
 
-	err = publishTx(ctx, fc, msg)
+	err = publishTx(ctx, c, msg)
 	if err != nil {
 		rawtx, err2 := msg.MarshalText()
 		if err2 != nil {
@@ -55,11 +55,11 @@ func FinalizeTx(ctx context.Context, fc *protocol.FC, txTemplate *Template) (*bc
 	return msg, nil
 }
 
-func publishTx(ctx context.Context, fc *protocol.FC, msg *bc.Tx) error {
+func publishTx(ctx context.Context, c *protocol.Chain, msg *bc.Tx) error {
 	// Make sure there is atleast one block in case client is
 	// trying to finalize a tx before the genesis block has landed
-	fc.WaitForBlock(ctx, 1)
-	err := fc.AddTx(ctx, msg)
+	c.WaitForBlock(ctx, 1)
+	err := c.AddTx(ctx, msg)
 	if errors.Root(err) == validation.ErrBadTx {
 		detail := errors.Detail(err)
 		err = errors.Wrap(ErrBadTxTemplate, err)

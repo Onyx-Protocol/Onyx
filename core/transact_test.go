@@ -17,7 +17,7 @@ import (
 func TestLocalAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	c, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +45,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 	// Submit the transaction but w/o waiting long for confirmation.
 	// The outputs should be indexed because the transaction template
 	// indicates that the transaction is completely local to this Core.
-	_, _ = submitSingle(ctx, fc, submitSingleArg{tpl: tmpl, wait: time.Millisecond})
+	_, _ = submitSingle(ctx, c, submitSingleArg{tpl: tmpl, wait: time.Millisecond})
 
 	// Add a new source, spending the change output produced above.
 	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil)
@@ -55,7 +55,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 	}
 
 	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
-	_, err = txbuilder.FinalizeTx(ctx, fc, tmpl)
+	_, err = txbuilder.FinalizeTx(ctx, c, tmpl)
 	if err != nil {
 		t.Fatal(err)
 	}

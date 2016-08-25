@@ -40,12 +40,12 @@ var (
 )
 
 // NewIndexer constructs a new indexer for indexing transactions.
-func NewIndexer(db pg.DB, fc *protocol.FC) *Indexer {
+func NewIndexer(db pg.DB, c *protocol.Chain) *Indexer {
 	indexer := &Indexer{
 		db:      db,
 		indexes: make(map[string]*Index),
 	}
-	fc.AddBlockCallback(indexer.indexBlockCallback)
+	c.AddBlockCallback(indexer.indexBlockCallback)
 	return indexer
 }
 

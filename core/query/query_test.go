@@ -25,13 +25,13 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	store, pool := txdb.New(db)
-	fc, err := protocol.NewFC(ctx, store, pool, nil, nil)
+	c, err := protocol.NewChain(ctx, store, pool, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	indexer := NewIndexer(db, fc)
-	asset.Init(fc, indexer, true)
-	account.Init(fc, indexer)
+	indexer := NewIndexer(db, c)
+	asset.Init(c, indexer, true)
+	account.Init(c, indexer)
 	indexer.RegisterAnnotator(account.AnnotateTxs)
 	indexer.RegisterAnnotator(asset.AnnotateTxs)
 	hsm := mockhsm.New(db)
@@ -39,16 +39,16 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	if err != nil {
 		t.Fatal(err)
 	}
-	localSigner := blocksigner.New(xpub.XPub, hsm, db, fc)
+	localSigner := blocksigner.New(xpub.XPub, hsm, db, c)
 	config := generator.Config{
 		LocalSigner: localSigner,
-		FC:          fc,
+		Chain:       c,
 	}
 	b1, err := protocol.NewGenesisBlock(nil, 0, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	err = fc.CommitBlock(ctx, b1, state.Empty())
+	err = c.CommitBlock(ctx, b1, state.Empty())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -76,8 +76,8 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 		t.Fatal(err)
 	}
 
-	assettest.IssueAssetsFixture(ctx, t, fc, asset1.AssetID, 867, acct1.ID)
-	assettest.IssueAssetsFixture(ctx, t, fc, asset2.AssetID, 100, acct1.ID)
+	assettest.IssueAssetsFixture(ctx, t, c, asset1.AssetID, 867, acct1.ID)
+	assettest.IssueAssetsFixture(ctx, t, c, asset2.AssetID, 100, acct1.ID)
 
 	_, err = g.MakeBlock(ctx)
 	if err != nil {

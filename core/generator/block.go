@@ -37,7 +37,7 @@ func (g *Generator) MakeBlock(ctx context.Context) (*bc.Block, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	b, err := g.FC.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
+	b, err := g.Chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
 	if err != nil {
 		return nil, errors.Wrap(err, "generate")
 	}
@@ -58,11 +58,11 @@ func (g *Generator) commitBlock(ctx context.Context, b *bc.Block) (*bc.Block, er
 	}
 
 	// Apply the block to get the state snapshot and commit it.
-	snapshot, err := g.FC.ValidateBlock(ctx, g.latestSnapshot, g.latestBlock, b)
+	snapshot, err := g.Chain.ValidateBlock(ctx, g.latestSnapshot, g.latestBlock, b)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply")
 	}
-	err = g.FC.CommitBlock(ctx, b, snapshot)
+	err = g.Chain.CommitBlock(ctx, b, snapshot)
 	if err != nil {
 		return nil, errors.Wrap(err, "commit")
 	}

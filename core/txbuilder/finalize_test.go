@@ -32,12 +32,12 @@ import (
 func TestConflictingTxsInPool(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	info, fc, g, err := bootdb(ctx, t)
+	info, c, g, err := bootdb(ctx, t)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = issue(ctx, t, fc, info, info.acctA.ID, 10)
+	_, err = issue(ctx, t, c, info, info.acctA.ID, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 	assettest.SignTxTemplate(t, firstTemplate, info.privKeyAccounts)
-	tx, err := FinalizeTx(ctx, fc, firstTemplate)
+	tx, err := FinalizeTx(ctx, c, firstTemplate)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -73,7 +73,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	secondTemplate.Inputs = firstTemplate.Inputs
 	ComputeSigHashes(secondTemplate)
 	assettest.SignTxTemplate(t, secondTemplate, info.privKeyAccounts)
-	_, err = FinalizeTx(ctx, fc, secondTemplate)
+	_, err = FinalizeTx(ctx, c, secondTemplate)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -95,12 +95,12 @@ func TestTransferConfirmed(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 
-	info, fc, g, err := bootdb(ctx, t)
+	info, c, g, err := bootdb(ctx, t)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = issue(ctx, t, fc, info, info.acctA.ID, 10)
+	_, err = issue(ctx, t, c, info, info.acctA.ID, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +112,7 @@ func TestTransferConfirmed(t *testing.T) {
 	}
 	dumpState(ctx, t)
 
-	_, err = transfer(ctx, t, fc, info, info.acctA.ID, info.acctB.ID, 10)
+	_, err = transfer(ctx, t, c, info, info.acctA.ID, info.acctB.ID, 10)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -121,19 +121,19 @@ func TestTransferConfirmed(t *testing.T) {
 func BenchmarkTransferWithBlocks(b *testing.B) {
 	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	info, fc, g, err := bootdb(ctx, b)
+	info, c, g, err := bootdb(ctx, b)
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	for i := 0; i < b.N; i++ {
-		tx, err := issue(ctx, b, fc, info, info.acctA.ID, 10)
+		tx, err := issue(ctx, b, c, info, info.acctA.ID, 10)
 		if err != nil {
 			b.Fatal(err)
 		}
 		b.Logf("finalized %v", tx.Hash)
 
-		tx, err = transfer(ctx, b, fc, info, info.acctA.ID, info.acctB.ID, 10)
+		tx, err = transfer(ctx, b, c, info, info.acctA.ID, info.acctB.ID, 10)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -204,19 +204,19 @@ func benchGenBlock(b *testing.B) {
 			2
 		);
 	`)
-	_, fc, _, err := bootdb(ctx, b)
+	_, c, _, err := bootdb(ctx, b)
 	if err != nil {
 		testutil.FatalErr(b, err)
 	}
 
-	genesis, err := fc.LatestBlock(ctx)
+	genesis, err := c.LatestBlock(ctx)
 	if err != nil {
 		testutil.FatalErr(b, err)
 	}
 
 	now := time.Now()
 	b.StartTimer()
-	_, err = fc.GenerateBlock(ctx, genesis, state.Empty(), now)
+	_, err = c.GenerateBlock(ctx, genesis, state.Empty(), now)
 	b.StopTimer()
 	if err != nil {
 		b.Fatal(err)
@@ -233,9 +233,9 @@ type clientInfo struct {
 
 // TODO(kr): refactor this into new package core/coreutil
 // and consume it from cmd/corectl.
-func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.FC, *generator.Generator, error) {
+func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.Chain, *generator.Generator, error) {
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	fc, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	c, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -288,10 +288,10 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.FC, *gene
 		privKeyAsset:    assetPriv,
 		privKeyAccounts: accPriv,
 	}
-	return info, fc, g, nil
+	return info, c, g, nil
 }
 
-func issue(ctx context.Context, t testing.TB, fc *protocol.FC, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
+func issue(ctx context.Context, t testing.TB, c *protocol.Chain, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
@@ -307,10 +307,10 @@ func issue(ctx context.Context, t testing.TB, fc *protocol.FC, info *clientInfo,
 		return nil, err
 	}
 	assettest.SignTxTemplate(t, issueTx, info.privKeyAsset)
-	return FinalizeTx(ctx, fc, issueTx)
+	return FinalizeTx(ctx, c, issueTx)
 }
 
-func transfer(ctx context.Context, t testing.TB, fc *protocol.FC, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
+func transfer(ctx context.Context, t testing.TB, c *protocol.Chain, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
 	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
@@ -325,6 +325,6 @@ func transfer(ctx context.Context, t testing.TB, fc *protocol.FC, info *clientIn
 
 	assettest.SignTxTemplate(t, xferTx, info.privKeyAccounts)
 
-	tx, err := FinalizeTx(ctx, fc, xferTx)
+	tx, err := FinalizeTx(ctx, c, xferTx)
 	return tx, errors.Wrap(err)
 }

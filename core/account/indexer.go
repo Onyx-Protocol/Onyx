@@ -19,7 +19,7 @@ const (
 	unconfirmedExpiration = 5
 )
 
-var fc *protocol.FC
+var chain *protocol.Chain
 var indexer Saver
 
 // A Saver is responsible for saving an annotated account object.
@@ -30,18 +30,18 @@ type Saver interface {
 	SaveAnnotatedAccount(context.Context, string, map[string]interface{}) error
 }
 
-// Init sets the package level FC and query indexer.
+// Init sets the package level Chain and query indexer.
 // Init registers all necessary callbacks for updating
-// application state with the FC.
-func Init(chain *protocol.FC, ind Saver) {
+// application state with the Chain.
+func Init(c *protocol.Chain, ind Saver) {
 	indexer = ind
-	if fc == chain {
+	if chain == c {
 		// Silently ignore duplicate calls.
 		return
 	}
 
-	fc = chain
-	fc.AddBlockCallback(func(ctx context.Context, b *bc.Block) {
+	chain = c
+	chain.AddBlockCallback(func(ctx context.Context, b *bc.Block) {
 		err := indexAccountUTXOs(ctx, b)
 		if err != nil {
 			log.Error(ctx, err)
@@ -87,7 +87,7 @@ func IndexUnconfirmedUTXOs(ctx context.Context, tx *bc.Tx) error {
 	if err != nil {
 		return errors.Wrap(err, "loading account info")
 	}
-	err = upsertUnconfirmedAccountOutputs(ctx, accOuts, fc.Height()+unconfirmedExpiration)
+	err = upsertUnconfirmedAccountOutputs(ctx, accOuts, chain.Height()+unconfirmedExpiration)
 	return errors.Wrap(err, "upserting confirmed account utxos")
 }
 

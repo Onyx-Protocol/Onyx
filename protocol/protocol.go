@@ -77,7 +77,7 @@ type BlockCallback func(ctx context.Context, block *bc.Block)
 //
 // Note, this is different from a state tree. A state tree provides
 // access to the state at a given point in time -- outputs and
-// ADPs. An FC uses Store to load state trees from storage and
+// ADPs. A Chain uses Store to load state trees from storage and
 // persist validated data.
 type Store interface {
 	Height(context.Context) (uint64, error)
@@ -98,11 +98,11 @@ type Pool interface {
 	Dump(context.Context) ([]*bc.Tx, error)
 }
 
-// FC provides a complete, minimal blockchain database. It
+// Chain provides a complete, minimal blockchain database. It
 // delegates the underlying storage to other objects, and uses
 // validation logic from package validation to decide what
 // objects can be safely stored.
-type FC struct {
+type Chain struct {
 	blockCallbacks []BlockCallback
 	trustedKeys    []ed25519.PublicKey
 	height         struct {
@@ -113,55 +113,55 @@ type FC struct {
 	pool  Pool
 }
 
-// NewFC returns a new FC using store as the underlying storage.
+// NewChain returns a new Chain using store as the underlying storage.
 //
 // ValidateBlock will skip validation for any block signed by a key
 // in trustedKeys. Typically, trustedKeys contains the public key
 // for the local block-signer process; the presence of its
 // signature indicates the block was already validated locally.
-func NewFC(ctx context.Context, store Store, pool Pool, trustedKeys []ed25519.PublicKey, heights <-chan uint64) (*FC, error) {
-	fc := &FC{
+func NewChain(ctx context.Context, store Store, pool Pool, trustedKeys []ed25519.PublicKey, heights <-chan uint64) (*Chain, error) {
+	c := &Chain{
 		store:       store,
 		pool:        pool,
 		trustedKeys: trustedKeys,
 	}
-	fc.height.cond.L = new(sync.Mutex)
+	c.height.cond.L = new(sync.Mutex)
 
 	var err error
-	fc.height.n, err = store.Height(ctx)
+	c.height.n, err = store.Height(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "looking up blockchain height")
 	}
 
-	// Note that fc.height.n may still be zero here.
+	// Note that c.height.n may still be zero here.
 	if heights != nil {
 		go func() {
 			for h := range heights {
-				fc.setHeight(h)
+				c.setHeight(h)
 			}
 		}()
 	}
 
-	return fc, nil
+	return c, nil
 }
 
 // Height returns the current height of the blockchain.
-func (fc *FC) Height() uint64 {
-	fc.height.cond.L.Lock()
-	defer fc.height.cond.L.Unlock()
-	return fc.height.n
+func (c *Chain) Height() uint64 {
+	c.height.cond.L.Lock()
+	defer c.height.cond.L.Unlock()
+	return c.height.n
 }
 
-func (fc *FC) AddBlockCallback(f BlockCallback) {
-	fc.blockCallbacks = append(fc.blockCallbacks, f)
+func (c *Chain) AddBlockCallback(f BlockCallback) {
+	c.blockCallbacks = append(c.blockCallbacks, f)
 }
 
-func (fc *FC) LatestBlock(ctx context.Context) (*bc.Block, error) {
-	fc.height.cond.L.Lock()
-	height := fc.height.n
-	fc.height.cond.L.Unlock()
+func (c *Chain) LatestBlock(ctx context.Context) (*bc.Block, error) {
+	c.height.cond.L.Lock()
+	height := c.height.n
+	c.height.cond.L.Unlock()
 
-	b, err := fc.store.GetBlock(ctx, height)
+	b, err := c.store.GetBlock(ctx, height)
 	if err != nil {
 		return nil, err
 	}
@@ -171,29 +171,29 @@ func (fc *FC) LatestBlock(ctx context.Context) (*bc.Block, error) {
 	return b, nil
 }
 
-func (fc *FC) WaitForBlock(ctx context.Context, height uint64) error {
+func (c *Chain) WaitForBlock(ctx context.Context, height uint64) error {
 	const slop = 3
 
-	fc.height.cond.L.Lock()
-	defer fc.height.cond.L.Unlock()
+	c.height.cond.L.Lock()
+	defer c.height.cond.L.Unlock()
 
-	if height > fc.height.n+slop {
+	if height > c.height.n+slop {
 		return ErrTheDistantFuture
 	}
 
-	for fc.height.n < height {
-		fc.height.cond.Wait()
+	for c.height.n < height {
+		c.height.cond.Wait()
 	}
 
 	return nil
 }
 
 // ConfirmedTxs looks up the provided hases in the confirmed blockchain.
-func (fc *FC) ConfirmedTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
-	return fc.store.GetTxs(ctx, hashes...)
+func (c *Chain) ConfirmedTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
+	return c.store.GetTxs(ctx, hashes...)
 }
 
 // PendingTxs looks up the provided hashes in the tx pool.
-func (fc *FC) PendingTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
-	return fc.pool.GetTxs(ctx, hashes...)
+func (c *Chain) PendingTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
+	return c.pool.GetTxs(ctx, hashes...)
 }

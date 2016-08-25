@@ -97,13 +97,13 @@ func RevalidateBlockchain(db *sql.DB) (blocksValidated uint64, err error) {
 	defer cancel()
 	blocks := streamBlocks(dbCtx)
 
-	// Setup an FC backed with a memstore.
+	// Setup a Chain backed with a memstore.
 	// TODO(jackson): Don't keep everything in memory so that we can validate
 	// larger blockchains in the future.
 	ctx := context.Background()
-	fc, err := protocol.NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
+	c, err := protocol.NewChain(ctx, memstore.New(), mempool.New(), nil, nil)
 	if err != nil {
-		fatalf("unable to construct FC: %s\n", err)
+		fatalf("unable to construct protocol.Chain: %s\n", err)
 	}
 
 	var (
@@ -112,12 +112,12 @@ func RevalidateBlockchain(db *sql.DB) (blocksValidated uint64, err error) {
 	)
 
 	for b := range blocks {
-		snapshot, err := fc.ValidateBlock(ctx, prevSnapshot, prev, b)
+		snapshot, err := c.ValidateBlock(ctx, prevSnapshot, prev, b)
 		if err != nil {
 			return blocksValidated, fmt.Errorf("block %s, height %d: %s", b.Hash(), b.Height, err)
 		}
 
-		err = fc.CommitBlock(ctx, b, snapshot)
+		err = c.CommitBlock(ctx, b, snapshot)
 		if err != nil {
 			return blocksValidated, fmt.Errorf("block %s, height %d: %s", b.Hash(), b.Height, err)
 		}

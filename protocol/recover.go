@@ -15,8 +15,8 @@ import (
 //
 // If the blockchain is empty (missing genesis block), this function
 // returns a nil block and a nil snapshot.
-func (fc *FC) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error) {
-	snapshot, snapshotHeight, err := fc.store.LatestSnapshot(ctx)
+func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error) {
+	snapshot, snapshotHeight, err := c.store.LatestSnapshot(ctx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting latest snapshot")
 	}
@@ -24,12 +24,12 @@ func (fc *FC) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error) {
 	// The true height of the blockchain might be higher than the
 	// height at which the state snapshot was taken. Replay all
 	// existing blocks higher than the snapshot height.
-	height, err := fc.store.Height(ctx)
+	height, err := c.store.Height(ctx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting blockchain height")
 	}
 	for h := snapshotHeight + 1; h <= height; h++ {
-		b, err := fc.store.GetBlock(ctx, h)
+		b, err := c.store.GetBlock(ctx, h)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "getting block")
 		}
@@ -42,7 +42,7 @@ func (fc *FC) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error) {
 		// and the block isn't fully committed.
 		// TODO(jackson): Calling CommitBlock() is overboard and performs
 		// a lot of redundant work. Only do what is necessary.
-		err = fc.CommitBlock(ctx, b, snapshot)
+		err = c.CommitBlock(ctx, b, snapshot)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "committing block")
 		}
@@ -53,7 +53,7 @@ func (fc *FC) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error) {
 	// height == snapshotHeight.
 	var tip *bc.Block
 	if height > 0 {
-		tip, err = fc.store.GetBlock(ctx, height)
+		tip, err = c.store.GetBlock(ctx, height)
 		if err != nil {
 			return nil, nil, err
 		}

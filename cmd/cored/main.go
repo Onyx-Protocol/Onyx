@@ -183,38 +183,38 @@ func main() {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 	store, pool := txdb.New(db)
-	fc, err := protocol.NewFC(ctx, store, pool, []ed25519.PublicKey{blockXPub.Key}, heights)
+	c, err := protocol.NewChain(ctx, store, pool, []ed25519.PublicKey{blockXPub.Key}, heights)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 
 	// Setup the transaction query indexer to index every transaction.
-	indexer := query.NewIndexer(db, fc)
+	indexer := query.NewIndexer(db, c)
 	indexer.RegisterAnnotator(account.AnnotateTxs)
 	indexer.RegisterAnnotator(asset.AnnotateTxs)
 
 	var localSigner *blocksigner.Signer
 	if *isSigner {
-		localSigner = blocksigner.New(blockXPub, hsm, db, fc)
+		localSigner = blocksigner.New(blockXPub, hsm, db, c)
 	}
 
 	rpcclient.Init(*remoteGeneratorURL)
 
-	asset.Init(fc, indexer, *isManager)
-	account.Init(fc, indexer)
+	asset.Init(c, indexer, *isManager)
+	account.Init(c, indexer)
 
 	var generatorConfig *generator.Config
 	if *isGenerator {
 		generatorConfig = &generator.Config{
 			RemoteSigners: remoteSignerInfo(ctx),
 			LocalSigner:   localSigner,
-			FC:            fc,
+			Chain:         c,
 		}
 	}
 
 	// Note, it's important for any services that will install blockchain
 	// callbacks to be initialized before leader.Run() and the http server,
-	// otherwise there's a data race within protocol.FC.
+	// otherwise there's a data race within protocol.Chain.
 	go leader.Run(db, func(ctx context.Context) {
 		ctx = pg.NewContext(ctx, db)
 
@@ -230,11 +230,11 @@ func main() {
 		if *isGenerator {
 			go generator.Generate(ctx, *generatorConfig, blockPeriod)
 		} else {
-			go fetch.Fetch(ctx, fc)
+			go fetch.Fetch(ctx, c)
 		}
 	})
 
-	h := core.Handler(*apiSecretToken, fc, generatorConfig, localSigner, store, pool, hsm, indexer)
+	h := core.Handler(*apiSecretToken, c, generatorConfig, localSigner, store, pool, hsm, indexer)
 	h = dashboardHandler(h)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}

@@ -28,7 +28,7 @@ var ErrBadBlock = errors.New("invalid block")
 
 // GenerateBlock generates a valid, but unsigned, candidate block from
 // the current tx pool.  It returns the new block and has no side effects.
-func (fc *FC) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time) (b *bc.Block, err error) {
+func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time) (b *bc.Block, err error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -40,7 +40,7 @@ func (fc *FC) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state
 	// Make a copy of the state that we can apply our changes to.
 	snapshot = state.Copy(snapshot)
 
-	txs, err := fc.pool.Dump(ctx)
+	txs, err := c.pool.Dump(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get pool TXs")
 	}
@@ -75,7 +75,7 @@ func (fc *FC) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state
 // ValidateBlock performs validation on an incoming block, in advance
 // of committing the block. ValidateBlock returns the state after
 // the block has been applied.
-func (fc *FC) ValidateBlock(ctx context.Context, prevState *state.Snapshot, prev, block *bc.Block) (*state.Snapshot, error) {
+func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, prev, block *bc.Block) (*state.Snapshot, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -85,7 +85,7 @@ func (fc *FC) ValidateBlock(ctx context.Context, prevState *state.Snapshot, prev
 	}
 
 	newState := state.Copy(prevState)
-	if isSignedByTrustedHost(block, fc.trustedKeys) {
+	if isSignedByTrustedHost(block, c.trustedKeys) {
 		err = validation.ApplyBlock(newState, block)
 	} else {
 		err = validation.ValidateAndApplyBlock(ctx, newState, prev, block)
@@ -107,14 +107,14 @@ func (fc *FC) ValidateBlock(ctx context.Context, prevState *state.Snapshot, prev
 //
 // The block parameter must have already been validated before
 // being committed.
-func (fc *FC) CommitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
+func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
 	// SaveBlock is the linearization point. Once the block is committed
 	// to persistent storage, the block has been applied and everything
 	// else can be derived from that block.
-	err := fc.store.SaveBlock(ctx, block)
+	err := c.store.SaveBlock(ctx, block)
 	if err != nil {
 		return errors.Wrap(err, "storing block")
 	}
@@ -124,38 +124,38 @@ func (fc *FC) CommitBlock(ctx context.Context, block *bc.Block, snapshot *state.
 		// TODO(jackson): Save the snapshot asnychronously, but ensure
 		// that we never fall behind if saving a snapshot takes longer
 		// than the snapshotting period.
-		err = fc.store.SaveSnapshot(ctx, block.Height, snapshot)
+		err = c.store.SaveSnapshot(ctx, block.Height, snapshot)
 		if err != nil {
 			return errors.Wrap(err, "storing state snapshot")
 		}
 	}
 
-	_, err = fc.rebuildPool(ctx, block, snapshot)
+	_, err = c.rebuildPool(ctx, block, snapshot)
 	if err != nil {
 		return errors.Wrap(err, "rebuilding pool")
 	}
 
-	for _, cb := range fc.blockCallbacks {
+	for _, cb := range c.blockCallbacks {
 		cb(ctx, block)
 	}
 
-	err = fc.store.FinalizeBlock(ctx, block.Height)
+	err = c.store.FinalizeBlock(ctx, block.Height)
 	if err != nil {
 		return errors.Wrap(err, "finalizing block")
 	}
 
-	// When fc.store is a txdb.Store, and fc has been initialized with a
+	// When c.store is a txdb.Store, and c has been initialized with a
 	// channel from txdb.ListenBlocks, then the above call to
-	// fc.store.FinalizeBlock will have done a postgresql NOTIFY and
-	// that will wake up the goroutine in NewFC, which also calls
+	// c.store.FinalizeBlock will have done a postgresql NOTIFY and
+	// that will wake up the goroutine in NewChain, which also calls
 	// setHeight.  But duplicate calls with the same blockheight are
 	// harmless; and the following call is required in the cases where
 	// it's not redundant.
-	fc.setHeight(block.Height)
+	c.setHeight(block.Height)
 	return nil
 }
 
-func (fc *FC) setHeight(h uint64) {
+func (c *Chain) setHeight(h uint64) {
 	// We call setHeight from two places independently:
 	// CommitBlock and the Postgres LISTEN goroutine.
 	// This means we can get here twice for each block,
@@ -163,19 +163,19 @@ func (fc *FC) setHeight(h uint64) {
 	// which means h might be from the past.
 	// Detect and discard these duplicate calls.
 
-	fc.height.cond.L.Lock()
-	defer fc.height.cond.L.Unlock()
+	c.height.cond.L.Lock()
+	defer c.height.cond.L.Unlock()
 
-	if h <= fc.height.n {
+	if h <= c.height.n {
 		return
 	}
-	fc.height.n = h
-	fc.height.cond.Broadcast()
+	c.height.n = h
+	c.height.cond.Broadcast()
 }
 
-func (fc *FC) currentState(ctx context.Context, expectedHeight uint64) (*state.Snapshot, error) {
-	// TODO(jackson): Store the state tree on FC.
-	snapshot, height, err := fc.store.LatestSnapshot(ctx)
+func (c *Chain) currentState(ctx context.Context, expectedHeight uint64) (*state.Snapshot, error) {
+	// TODO(jackson): Store the state tree on Chain.
+	snapshot, height, err := c.store.LatestSnapshot(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "loading state snapshot")
 	}
@@ -188,7 +188,7 @@ func (fc *FC) currentState(ctx context.Context, expectedHeight uint64) (*state.S
 // ValidateBlockForSig performs validation on an incoming _unsigned_
 // block in preparation for signing it.  By definition it does not
 // execute the sigscript.
-func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
+func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -199,16 +199,16 @@ func (fc *FC) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 
 	if block.Height > 1 {
 		var err error
-		prev, err = fc.store.GetBlock(ctx, block.Height-1)
+		prev, err = c.store.GetBlock(ctx, block.Height-1)
 		if err != nil {
 			return errors.Wrap(err, "getting previous block")
 		}
 
 		// TODO(jackson): Forward request to leader process (who will have
-		// the state snapshot in-memory) and delete `fc.currentState`.
+		// the state snapshot in-memory) and delete `c.currentState`.
 		// Because we don't save the snapshot on every block, this isn't
 		// guaranteed to be correct!
-		snapshot, err = fc.currentState(ctx, prev.Height)
+		snapshot, err = c.currentState(ctx, prev.Height)
 		if err != nil {
 			return err
 		}
@@ -234,7 +234,7 @@ func isSignedByTrustedHost(block *bc.Block, trustedKeys []ed25519.PublicKey) boo
 	return false
 }
 
-func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) ([]*bc.Tx, error) {
+func (c *Chain) rebuildPool(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) ([]*bc.Tx, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -248,7 +248,7 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block, snapshot *state.
 		conflictTxs []*bc.Tx
 	)
 
-	txs, err := fc.pool.Dump(ctx)
+	txs, err := c.pool.Dump(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "dumping tx pool")
 	}
@@ -275,7 +275,7 @@ func (fc *FC) rebuildPool(ctx context.Context, block *bc.Block, snapshot *state.
 		}
 	}
 
-	err = fc.pool.Clean(ctx, deleteTxs)
+	err = c.pool.Clean(ctx, deleteTxs)
 	if err != nil {
 		return nil, errors.Wrap(err, "removing conflicting txs")
 	}

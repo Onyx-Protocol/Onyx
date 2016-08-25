@@ -18,7 +18,7 @@ import (
 func TestMockHSM(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	c, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	mockhsm := mockhsm.New(db)
 	xpub1, err := mockhsm.CreateKey(ctx, "")
 	if err != nil {
@@ -55,7 +55,7 @@ func TestMockHSM(t *testing.T) {
 		t.Fatal(err)
 	}
 	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
-	_, err = txbuilder.FinalizeTx(ctx, fc, tmpl)
+	_, err = txbuilder.FinalizeTx(ctx, c, tmpl)
 	if err != nil {
 		t.Fatal(err)
 	}

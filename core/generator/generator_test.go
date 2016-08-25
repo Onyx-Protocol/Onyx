@@ -18,12 +18,12 @@ import (
 	"chain/testutil"
 )
 
-// newTestFC returns a new FC using memstore and mempool for storage,
+// newTestChain returns a new Chain using memstore and mempool for storage,
 // along with an initial block b1 (with a 0/0 multisig program).
 // It commits b1 before returning.
-func newTestFC(tb testing.TB, ts time.Time) (fc *protocol.FC, b1 *bc.Block) {
+func newTestChain(tb testing.TB, ts time.Time) (c *protocol.Chain, b1 *bc.Block) {
 	ctx := context.Background()
-	fc, err := protocol.NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
+	c, err := protocol.NewChain(ctx, memstore.New(), mempool.New(), nil, nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
@@ -31,18 +31,18 @@ func newTestFC(tb testing.TB, ts time.Time) (fc *protocol.FC, b1 *bc.Block) {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	err = fc.CommitBlock(ctx, b1, state.Empty())
+	err = c.CommitBlock(ctx, b1, state.Empty())
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	return fc, b1
+	return c, b1
 }
 
 func TestGetAndAddBlockSignatures(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 
-	fc, b1 := newTestFC(t, time.Now())
+	c, b1 := newTestChain(t, time.Now())
 
 	// TODO(kr): tweak the generator's design to not
 	// take a hard dependency on mockhsm.
@@ -53,20 +53,20 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	localSigner := blocksigner.New(xpub.XPub, hsm, dbtx, fc)
+	localSigner := blocksigner.New(xpub.XPub, hsm, dbtx, c)
 	config := Config{
 		LocalSigner: localSigner,
-		FC:          fc,
+		Chain:       c,
 	}
 
 	g := New(b1, state.Empty(), config)
 
-	tip, snapshot, err := fc.Recover(ctx)
+	tip, snapshot, err := c.Recover(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	block, err := fc.GenerateBlock(ctx, tip, snapshot, time.Now())
+	block, err := c.GenerateBlock(ctx, tip, snapshot, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

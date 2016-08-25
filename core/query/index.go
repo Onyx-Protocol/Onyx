@@ -21,7 +21,7 @@ func (ind *Indexer) RegisterAnnotator(annotator Annotator) {
 	ind.annotators = append(ind.annotators, annotator)
 }
 
-// indexBlockCallback is registered as a block callback on the FC. It
+// indexBlockCallback is registered as a block callback on the Chain. It
 // saves all annotated transactions to the database and indexes them according
 // to the Core's configured indexes.
 func (ind *Indexer) indexBlockCallback(ctx context.Context, b *bc.Block) {

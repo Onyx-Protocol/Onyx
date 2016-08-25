@@ -7,7 +7,7 @@ import (
 	"chain/protocol/bc"
 )
 
-var fc *protocol.FC
+var chain *protocol.Chain
 var indexer Saver
 
 // A Saver is responsible for saving an annotated asset object
@@ -18,19 +18,19 @@ type Saver interface {
 	SaveAnnotatedAsset(context.Context, bc.AssetID, map[string]interface{}) error
 }
 
-// Init sets the package level FC. If isManager is true,
+// Init sets the package level Chain. If isManager is true,
 // Init registers all necessary callbacks for updating
-// application state with the FC.
-func Init(chain *protocol.FC, ind Saver, isManager bool) {
+// application state with the Chain.
+func Init(c *protocol.Chain, ind Saver, isManager bool) {
 	indexer = ind
-	if fc == chain {
+	if chain == c {
 		// Silently ignore duplicate calls.
 		return
 	}
 
-	fc = chain
+	chain = c
 	if isManager {
-		fc.AddBlockCallback(func(ctx context.Context, b *bc.Block) {
+		chain.AddBlockCallback(func(ctx context.Context, b *bc.Block) {
 			recordIssuances(ctx, b)
 		})
 	}

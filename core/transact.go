@@ -84,7 +84,7 @@ type submitSingleArg struct {
 	wait time.Duration
 }
 
-func submitSingle(ctx context.Context, fc *protocol.FC, x submitSingleArg) (interface{}, error) {
+func submitSingle(ctx context.Context, c *protocol.Chain, x submitSingleArg) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -100,7 +100,7 @@ func submitSingle(ctx context.Context, fc *protocol.FC, x submitSingleArg) (inte
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	tx, err := finalizeTxWait(ctx, fc, x.tpl)
+	tx, err := finalizeTxWait(ctx, c, x.tpl)
 	if err != nil {
 		return nil, err
 	}
@@ -113,13 +113,13 @@ func submitSingle(ctx context.Context, fc *protocol.FC, x submitSingleArg) (inte
 // confirmed on the blockchain.  ErrRejected means a conflicting tx is
 // on the blockchain.  context.DeadlineExceeded means ctx is an
 // expiring context that timed out.
-func finalizeTxWait(ctx context.Context, fc *protocol.FC, txTemplate *txbuilder.Template) (*bc.Tx, error) {
-	// Avoid a race condition.  Calling fc.Height() here ensures that
+func finalizeTxWait(ctx context.Context, c *protocol.Chain, txTemplate *txbuilder.Template) (*bc.Tx, error) {
+	// Avoid a race condition.  Calling c.Height() here ensures that
 	// when we start waiting for blocks below, we don't begin waiting at
 	// block N+1 when the tx we want is in block N.
-	height := fc.Height()
+	height := c.Height()
 
-	tx, err := txbuilder.FinalizeTx(ctx, fc, txTemplate)
+	tx, err := txbuilder.FinalizeTx(ctx, c, txTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func finalizeTxWait(ctx context.Context, fc *protocol.FC, txTemplate *txbuilder.
 		case <-ctx.Done():
 			return nil, ctx.Err()
 
-		case err := <-waitBlock(ctx, fc, height):
+		case err := <-waitBlock(ctx, c, height):
 			if err != nil {
 				// This should be impossible, since the only error produced by
 				// WaitForBlock is ErrTheDistantFuture, and height is known
@@ -154,7 +154,7 @@ func finalizeTxWait(ctx context.Context, fc *protocol.FC, txTemplate *txbuilder.
 			// An alternative approach will be to scan through each block as
 			// it lands, looking for the tx or a tx that conflicts with it.
 			// For now, though, this is probably faster and simpler.
-			bcTxs, err := fc.ConfirmedTxs(ctx, tx.Hash)
+			bcTxs, err := c.ConfirmedTxs(ctx, tx.Hash)
 			if err != nil {
 				return nil, errors.Wrap(err, "getting bc txs")
 			}
@@ -163,7 +163,7 @@ func finalizeTxWait(ctx context.Context, fc *protocol.FC, txTemplate *txbuilder.
 				return tx, nil
 			}
 
-			poolTxs, err := fc.PendingTxs(ctx, tx.Hash)
+			poolTxs, err := c.PendingTxs(ctx, tx.Hash)
 			if err != nil {
 				return nil, errors.Wrap(err, "getting pool txs")
 			}
@@ -177,10 +177,10 @@ func finalizeTxWait(ctx context.Context, fc *protocol.FC, txTemplate *txbuilder.
 	}
 }
 
-func waitBlock(ctx context.Context, fc *protocol.FC, height uint64) <-chan error {
-	c := make(chan error, 1)
-	go func() { c <- fc.WaitForBlock(ctx, height) }()
-	return c
+func waitBlock(ctx context.Context, c *protocol.Chain, height uint64) <-chan error {
+	err := make(chan error, 1)
+	go func() { err <- c.WaitForBlock(ctx, height) }()
+	return err
 }
 
 // TODO(bobg): allow caller to specify reservation by (encrypted) id?
@@ -213,7 +213,7 @@ func (a *api) submit(ctx context.Context, x submitArg) interface{} {
 	wg.Add(len(responses))
 	for i := range responses {
 		go func(i int) {
-			resp, err := submitSingle(reqid.NewSubContext(ctx, reqid.New()), a.fc, submitSingleArg{tpl: x.Transactions[i], wait: x.wait})
+			resp, err := submitSingle(reqid.NewSubContext(ctx, reqid.New()), a.c, submitSingleArg{tpl: x.Transactions[i], wait: x.wait})
 			if err != nil {
 				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)

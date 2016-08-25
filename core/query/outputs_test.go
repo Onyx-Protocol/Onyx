@@ -57,7 +57,7 @@ func TestOutputsCursor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	indexer := NewIndexer(db, &protocol.FC{})
+	indexer := NewIndexer(db, &protocol.Chain{})
 	results, cursor, err := indexer.Outputs(ctx, q, nil, 25, nil, 2)
 	if err != nil {
 		t.Fatal(err)

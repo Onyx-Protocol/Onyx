@@ -35,36 +35,36 @@ func TestLatestBlock(t *testing.T) {
 		{oneBlock, &bc.Block{}, nil},
 	}
 
-	for _, c := range cases {
-		fc, err := NewFC(ctx, c.store, emptyPool, nil, nil)
+	for _, test := range cases {
+		c, err := NewChain(ctx, test.store, emptyPool, nil, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		got, gotErr := fc.LatestBlock(ctx)
+		got, gotErr := c.LatestBlock(ctx)
 
-		if !reflect.DeepEqual(got, c.want) {
-			t.Errorf("got latest = %+v want %+v", got, c.want)
+		if !reflect.DeepEqual(got, test.want) {
+			t.Errorf("got latest = %+v want %+v", got, test.want)
 		}
 
-		if !reflect.DeepEqual(got, c.want) {
-			t.Errorf("got latest err = %q want %q", gotErr, c.wantErr)
+		if !reflect.DeepEqual(got, test.want) {
+			t.Errorf("got latest err = %q want %q", gotErr, test.wantErr)
 		}
 	}
 }
 
 func TestNoTimeTravel(t *testing.T) {
 	ctx := context.Background()
-	fc, err := NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
+	c, err := NewChain(ctx, memstore.New(), mempool.New(), nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fc.setHeight(1)
-	fc.setHeight(2)
+	c.setHeight(1)
+	c.setHeight(2)
 
-	fc.setHeight(1) // don't go backward
-	if fc.height.n != 2 {
-		t.Fatalf("fc.height.n = %d want 2", fc.height.n)
+	c.setHeight(1) // don't go backward
+	if c.height.n != 2 {
+		t.Fatalf("c.height.n = %d want 2", c.height.n)
 	}
 }
 
@@ -93,12 +93,12 @@ func TestWaitForBlock(t *testing.T) {
 	}
 	store.SaveBlock(ctx, block1)
 	store.SaveSnapshot(ctx, 1, state.Empty())
-	fc, err := NewFC(ctx, store, mempool.New(), nil, nil)
+	c, err := NewChain(ctx, store, mempool.New(), nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	ch := waitForBlockChan(ctx, fc, 1)
+	ch := waitForBlockChan(ctx, c, 1)
 	select {
 	case err := <-ch:
 		if err != nil {
@@ -108,7 +108,7 @@ func TestWaitForBlock(t *testing.T) {
 		t.Errorf("timed out waiting for block 0")
 	}
 
-	ch = waitForBlockChan(ctx, fc, 5)
+	ch = waitForBlockChan(ctx, c, 5)
 	select {
 	case err := <-ch:
 		if err != ErrTheDistantFuture {
@@ -118,7 +118,7 @@ func TestWaitForBlock(t *testing.T) {
 		t.Errorf("timed out waiting for block 5")
 	}
 
-	ch = waitForBlockChan(ctx, fc, 2)
+	ch = waitForBlockChan(ctx, c, 2)
 
 	select {
 	case <-ch:
@@ -126,7 +126,7 @@ func TestWaitForBlock(t *testing.T) {
 	default:
 	}
 
-	err = fc.CommitBlock(ctx, block2, state.Empty())
+	err = c.CommitBlock(ctx, block2, state.Empty())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -137,7 +137,7 @@ func TestWaitForBlock(t *testing.T) {
 	default:
 	}
 
-	err = fc.CommitBlock(ctx, block3, state.Empty())
+	err = c.CommitBlock(ctx, block3, state.Empty())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -152,10 +152,10 @@ func TestWaitForBlock(t *testing.T) {
 	}
 }
 
-func waitForBlockChan(ctx context.Context, fc *FC, height uint64) chan error {
+func waitForBlockChan(ctx context.Context, c *Chain, height uint64) chan error {
 	ch := make(chan error)
 	go func() {
-		err := fc.WaitForBlock(ctx, height)
+		err := c.WaitForBlock(ctx, height)
 		ch <- err
 	}()
 	return ch
@@ -164,7 +164,7 @@ func waitForBlockChan(ctx context.Context, fc *FC, height uint64) chan error {
 func TestGenerateBlock(t *testing.T) {
 	ctx := context.Background()
 	now := time.Unix(233400000, 0)
-	fc, b1 := newTestFC(t, now)
+	c, b1 := newTestChain(t, now)
 
 	genesisHash := b1.Hash()
 	assetID := bc.ComputeAssetID(nil, genesisHash, 1)
@@ -197,14 +197,14 @@ func TestGenerateBlock(t *testing.T) {
 		}),
 	}
 	for _, tx := range txs {
-		err := fc.pool.Insert(ctx, tx)
+		err := c.pool.Insert(ctx, tx)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 	}
 
-	got, err := fc.GenerateBlock(ctx, b1, state.Empty(), now)
+	got, err := c.GenerateBlock(ctx, b1, state.Empty(), now)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
@@ -240,12 +240,12 @@ func TestValidateGenesisBlockForSig(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	fc, err := NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
+	c, err := NewChain(ctx, memstore.New(), mempool.New(), nil, nil)
 	if err != nil {
 		t.Fatal("unexpected error ", err)
 	}
 
-	err = fc.ValidateBlockForSig(ctx, genesis)
+	err = c.ValidateBlockForSig(ctx, genesis)
 	if err != nil {
 		t.Error("unexpected error ", err)
 	}
@@ -295,12 +295,12 @@ func TestIsSignedByTrustedHost(t *testing.T) {
 	}
 }
 
-// newTestFC returns a new FC using memstore and mempool for storage,
+// newTestChain returns a new Chain using memstore and mempool for storage,
 // along with an initial block b1 (with a 0/0 multisig program).
 // It commits b1 before returning.
-func newTestFC(tb testing.TB, ts time.Time) (fc *FC, b1 *bc.Block) {
+func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
 	ctx := context.Background()
-	fc, err := NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
+	c, err := NewChain(ctx, memstore.New(), mempool.New(), nil, nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
@@ -308,21 +308,11 @@ func newTestFC(tb testing.TB, ts time.Time) (fc *FC, b1 *bc.Block) {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	err = fc.CommitBlock(ctx, b1, state.Empty())
+	err = c.CommitBlock(ctx, b1, state.Empty())
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	return fc, b1
-}
-
-func newContextFC(t testing.TB) (context.Context, *FC) {
-	ctx := context.Background()
-	fc, err := NewFC(ctx, memstore.New(), mempool.New(), nil, nil)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	return ctx, fc
+	return c, b1
 }
 
 func signBlock(t testing.TB, b *bc.Block, keys []ed25519.PrivateKey) {

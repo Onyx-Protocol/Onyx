@@ -65,7 +65,7 @@ func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum
 	return asset.AssetID
 }
 
-func IssueAssetsFixture(ctx context.Context, t testing.TB, fc *protocol.FC, assetID bc.AssetID, amount uint64, accountID string) state.Output {
+func IssueAssetsFixture(ctx context.Context, t testing.TB, c *protocol.Chain, assetID bc.AssetID, amount uint64, accountID string) state.Output {
 	if accountID == "" {
 		accountID = CreateAccountFixture(ctx, t, nil, 0, "", nil)
 	}
@@ -81,7 +81,7 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, fc *protocol.FC, asse
 
 	SignTxTemplate(t, tpl, testutil.TestXPrv)
 
-	tx, err := txbuilder.FinalizeTx(ctx, fc, tpl)
+	tx, err := txbuilder.FinalizeTx(ctx, c, tpl)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -94,19 +94,19 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, fc *protocol.FC, asse
 
 // InitializeSigningGenerator initiaizes a generator fixture with the
 // provided store. Store can be nil, in which case it will use memstore.
-func InitializeSigningGenerator(ctx context.Context, store protocol.Store, pool protocol.Pool) (*protocol.FC, *generator.Generator, error) {
+func InitializeSigningGenerator(ctx context.Context, store protocol.Store, pool protocol.Pool) (*protocol.Chain, *generator.Generator, error) {
 	if store == nil {
 		store = memstore.New()
 	}
 	if pool == nil {
 		pool = mempool.New()
 	}
-	fc, err := protocol.NewFC(ctx, store, pool, nil, nil)
+	c, err := protocol.NewChain(ctx, store, pool, nil, nil)
 	if err != nil {
 		return nil, nil, err
 	}
-	asset.Init(fc, nil, true)
-	account.Init(fc, nil)
+	asset.Init(c, nil, true)
+	account.Init(c, nil)
 
 	hsm := mockhsm.New(pg.FromContext(ctx))
 	xpub, err := hsm.CreateKey(ctx, "")
@@ -114,24 +114,24 @@ func InitializeSigningGenerator(ctx context.Context, store protocol.Store, pool 
 		return nil, nil, err
 	}
 
-	localSigner := blocksigner.New(xpub.XPub, hsm, pg.FromContext(ctx), fc)
+	localSigner := blocksigner.New(xpub.XPub, hsm, pg.FromContext(ctx), c)
 	config := generator.Config{
 		LocalSigner: localSigner,
-		FC:          fc,
+		Chain:       c,
 	}
 	b1, err := protocol.NewGenesisBlock(nil, 0, time.Now())
 	if err != nil {
 		return nil, nil, err
 	}
-	err = fc.CommitBlock(ctx, b1, state.Empty())
+	err = c.CommitBlock(ctx, b1, state.Empty())
 	if err != nil {
 		return nil, nil, err
 	}
 	g := generator.New(b1, state.Empty(), config)
-	return fc, g, nil
+	return c, g, nil
 }
 
-func Issue(ctx context.Context, t testing.TB, fc *protocol.FC, assetID bc.AssetID, amount uint64, actions []txbuilder.Action) *bc.Tx {
+func Issue(ctx context.Context, t testing.TB, c *protocol.Chain, assetID bc.AssetID, amount uint64, actions []txbuilder.Action) *bc.Tx {
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
 	actions = append(actions, NewIssueAction(assetAmount, nil))
 
@@ -146,7 +146,7 @@ func Issue(ctx context.Context, t testing.TB, fc *protocol.FC, assetID bc.AssetI
 		t.Fatal(err)
 	}
 	SignTxTemplate(t, txTemplate, nil)
-	tx, err := txbuilder.FinalizeTx(ctx, fc, txTemplate)
+	tx, err := txbuilder.FinalizeTx(ctx, c, txTemplate)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -155,7 +155,7 @@ func Issue(ctx context.Context, t testing.TB, fc *protocol.FC, assetID bc.AssetI
 	return tx
 }
 
-func Transfer(ctx context.Context, t testing.TB, fc *protocol.FC, actions []txbuilder.Action) *bc.Tx {
+func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, actions []txbuilder.Action) *bc.Tx {
 	template, err := txbuilder.Build(ctx, nil, actions, nil)
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -164,7 +164,7 @@ func Transfer(ctx context.Context, t testing.TB, fc *protocol.FC, actions []txbu
 
 	SignTxTemplate(t, template, testutil.TestXPrv)
 
-	tx, err := txbuilder.FinalizeTx(ctx, fc, template)
+	tx, err := txbuilder.FinalizeTx(ctx, c, template)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

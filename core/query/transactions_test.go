@@ -14,7 +14,7 @@ import (
 func TestLookupTxCursorNoBlocks(t *testing.T) {
 	ctx := context.Background()
 	db := pgtest.NewTx(t)
-	indexer := NewIndexer(db, &protocol.FC{})
+	indexer := NewIndexer(db, &protocol.Chain{})
 
 	cur, err := indexer.LookupTxCursor(ctx, 0, 0)
 	if err != nil {

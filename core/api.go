@@ -19,8 +19,7 @@ const (
 // Handler returns a handler that serves the Chain HTTP API.
 func Handler(
 	apiSecret string,
-	fc *protocol.FC,
-	generatorConfig *generator.Config,
+	c *protocol.Chain, generatorConfig *generator.Config,
 	signer *blocksigner.Signer,
 	store *txdb.Store,
 	pool *txdb.Pool,
@@ -28,7 +27,7 @@ func Handler(
 	indexer *query.Indexer,
 ) http.Handler {
 	a := &api{
-		fc:        fc,
+		c:         c,
 		store:     store,
 		pool:      pool,
 		generator: generatorConfig,
@@ -43,7 +42,7 @@ func Handler(
 }
 
 type api struct {
-	fc        *protocol.FC
+	c         *protocol.Chain
 	store     *txdb.Store
 	pool      *txdb.Pool
 	generator *generator.Config

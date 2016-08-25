@@ -22,7 +22,7 @@ import (
 func TestAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	c, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +47,7 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
-	_, err = txbuilder.FinalizeTx(ctx, fc, tmpl)
+	_, err = txbuilder.FinalizeTx(ctx, c, tmpl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
-	_, err = txbuilder.FinalizeTx(ctx, fc, tmpl)
+	_, err = txbuilder.FinalizeTx(ctx, c, tmpl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,14 +88,14 @@ func TestMux(t *testing.T) {
 func TestTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	fc, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	c, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ind := query.NewIndexer(db, fc)
-	asset.Init(fc, ind, true)
-	account.Init(fc, ind)
+	ind := query.NewIndexer(db, c)
+	asset.Init(c, ind, true)
+	account.Init(c, ind)
 
 	assetAlias := "some-asset"
 	account1Alias := "first-account"
@@ -130,7 +130,7 @@ func TestTransfer(t *testing.T) {
 
 	assettest.SignTxTemplate(t, txTemplate, nil)
 
-	_, err = txbuilder.FinalizeTx(ctx, fc, txTemplate)
+	_, err = txbuilder.FinalizeTx(ctx, c, txTemplate)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -184,7 +184,7 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	_, err = submitSingle(ctx, fc, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
+	_, err = submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
 	if err != nil && err != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)
 	}
@@ -229,7 +229,7 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	_, err = submitSingle(ctx, fc, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
+	_, err = submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
 	if err != nil && err != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)
 	}

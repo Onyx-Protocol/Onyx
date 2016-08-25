@@ -22,7 +22,7 @@ import (
 type Config struct {
 	RemoteSigners []*RemoteSigner
 	LocalSigner   *blocksigner.Signer
-	FC            *protocol.FC
+	Chain         *protocol.Chain
 }
 
 // New constructs a new generator and returns it.
@@ -59,7 +59,7 @@ type RemoteSigner struct {
 func Generate(ctx context.Context, config Config, period time.Duration) {
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
-	recoveredBlock, recoveredSnapshot, err := config.FC.Recover(ctx)
+	recoveredBlock, recoveredSnapshot, err := config.Chain.Recover(ctx)
 	if err != nil {
 		log.Fatal(ctx, log.KeyError, err)
 	}
@@ -99,7 +99,7 @@ func Generate(ctx context.Context, config Config, period time.Duration) {
 // Other nodes will call this endpoint to notify the generator of submitted
 // transactions.
 func (g *Config) Submit(ctx context.Context, tx *bc.Tx) error {
-	err := g.FC.AddTx(ctx, tx)
+	err := g.Chain.AddTx(ctx, tx)
 	return err
 }
 
@@ -108,7 +108,7 @@ func (g *Config) Submit(ctx context.Context, tx *bc.Tx) error {
 func (g *Config) GetBlocks(ctx context.Context, afterHeight uint64) ([]*bc.Block, error) {
 	// TODO(kr): This is not a generator function.
 	// Move this to another package.
-	err := g.FC.WaitForBlock(ctx, afterHeight+1)
+	err := g.Chain.WaitForBlock(ctx, afterHeight+1)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", afterHeight+1)
 	}
