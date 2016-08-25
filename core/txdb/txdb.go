@@ -164,7 +164,8 @@ func insertBlockTxs(ctx context.Context, dbtx *sql.Tx, block *bc.Block) error {
 
 	const blockTxQ = `
 		INSERT INTO blocks_txs (tx_hash, block_pos, block_hash, block_height)
-		SELECT unnest($1::text[]), unnest($2::int[]), $3, $4;
+		SELECT unnest($1::text[]), unnest($2::int[]), $3, $4
+		ON CONFLICT (block_height, block_pos) DO NOTHING;
 	`
 	_, err = dbtx.Exec(
 		ctx,

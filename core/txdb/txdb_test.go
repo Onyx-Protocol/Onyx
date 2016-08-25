@@ -193,6 +193,35 @@ func TestInsertBlock(t *testing.T) {
 	}
 }
 
+func TestInsertBlockTxsIdempotent(t *testing.T) {
+	dbtx := pgtest.NewTx(t)
+	ctx := context.Background()
+
+	block := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			Version: 1,
+			Height:  1,
+		},
+		Transactions: []*bc.Tx{
+			bc.NewTx(bc.TxData{
+				ReferenceData: []byte("a"),
+			}),
+			bc.NewTx(bc.TxData{
+				ReferenceData: []byte("b"),
+			}),
+		},
+	}
+	err := insertBlockTxs(ctx, dbtx, block)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Do it again; should be no error.
+	err = insertBlockTxs(ctx, dbtx, block)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestGetBlockByHash(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
