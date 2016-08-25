@@ -3,12 +3,13 @@ import chain from '../chain'
 import { useRouterHistory } from 'react-router'
 import { createHistory } from 'history'
 
-let apiHost = process.env.API_URL
-let basename = "/"
-
+let apiHost, basename
 if (process.env.NODE_ENV === 'production') {
   apiHost = window.location.origin
   basename = "/dashboard"
+} else {
+  apiHost = process.env.API_URL || "http://localhost:3000/api"
+  basename = "/"
 }
 
 // API context
