@@ -5,23 +5,30 @@ import (
 	"time"
 
 	"chain/core/generator"
+	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/vmutil"
 )
 
+func getBlockKeys(c *protocol.Chain, ctx context.Context) (keys []ed25519.PublicKey, quorum int, err error) {
+	lastBlock, err := c.LatestBlock(ctx)
+	if err == protocol.ErrNoBlocks {
+		return nil, 0, nil
+	}
+	if err != nil {
+		return nil, 0, errors.Wrap(err)
+	}
+	return vmutil.ParseBlockMultiSigScript(lastBlock.ConsensusProgram)
+}
+
 // ErrProdReset is returned when reset is called on a
 // production system.
 var ErrProdReset = errors.New("reset called on production system")
 
 func (a *api) reset(ctx context.Context) error {
-	lastBlock, err := a.c.LatestBlock(ctx)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	keys, quorum, err := vmutil.ParseBlockMultiSigScript(lastBlock.ConsensusProgram)
+	keys, quorum, err := getBlockKeys(a.c, ctx)
 	if err != nil {
 		return errors.Wrap(err)
 	}
