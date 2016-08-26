@@ -1,10 +1,10 @@
 $grid-gutter-width: 30px;
 $container-desktop: 1040px + $grid-gutter-width;
 
-$brand-primary: #A3C610;
+$brand-primary: #00B8A4;
 
-$navbar-default-bg: #333;
-$link-color: darken($brand-primary, 5%);
+$navbar-default-bg: #20252D;
+$link-color: $brand-primary;
 $navbar-default-link-color: transparentize(white, 0.1);
 $navbar-default-link-active-color: white;
 $navbar-default-link-hover-color: white;
