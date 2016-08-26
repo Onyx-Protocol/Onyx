@@ -26,7 +26,7 @@ class Navigation extends React.Component {
     let logo = require('../../images/logo-white.png')
     return (
       <div onClick={this.closeDropdown}>
-        <div className="navbar navbar-default navbar-fixed-top">
+        <div className={`navbar navbar-default navbar-fixed-top ${styles.navbar_fixed}`}>
           <div className="container">
             <div className="navbar-header">
               <Link to={'/'} className="navbar-brand">

@@ -3,6 +3,12 @@
   margin-top: -5px;
 }
 
+.navbar_fixed {
+  @media(max-width:910px){
+    position: absolute !important;
+  }
+}
+
 .divider {
   color: white;
   opacity: 0.25;
