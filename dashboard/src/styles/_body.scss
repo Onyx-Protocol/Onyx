@@ -17,9 +17,8 @@ body {
   min-height: 100%;
 }
 
-.btn:focus,.btn:active:focus,.btn.active:focus,
-.btn.focus,.btn:active.focus,.btn.active.focus {
-    outline: none;
+:focus, .focus {
+    outline: none !important;
 }
 
 .form-container {
