@@ -234,7 +234,7 @@ func TestCryptoOps(t *testing.T) {
 				mustDecodeHex("badbad"),
 			},
 		},
-		wantErr: hd25519.ErrEOT,
+		wantErr: hd25519.ErrBadKeyLen,
 	}, {
 		op: OP_CHECKSIG,
 		startVM: &virtualMachine{
@@ -393,7 +393,7 @@ func TestCryptoOps(t *testing.T) {
 				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
 			},
 		},
-		wantErr: hd25519.ErrEOT,
+		wantErr: hd25519.ErrBadKeyLen,
 	}, {
 		op: OP_CHECKMULTISIG,
 		startVM: &virtualMachine{
