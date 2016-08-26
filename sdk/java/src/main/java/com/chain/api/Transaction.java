@@ -7,6 +7,7 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.math.BigInteger;
+import java.time.OffsetDateTime;
 import java.util.*;
 
 /**
@@ -44,6 +45,11 @@ public class Transaction {
      * Position of a transaction within the block.
      */
     public int position;
+
+    /**
+     * Time of transaction.
+     */
+    public Date timestamp;
 
     /**
      * User specified, unstructured data embedded within a transaction.
