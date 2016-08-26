@@ -2,9 +2,21 @@ package com.chain.exception;
 
 /**
  * APIException wraps errors returned by the API.
- * Each error contains a brief description in addition
- * to a unique error code. The error code can be used by
- * Chain Support to diagnose the exact cause of the error.
+ * Each error contains a brief description in addition to a unique error code.<br>
+ * The error code can be used by Chain Support to diagnose the exact cause of the error.
+ * The mapping of error codes to messages is as follows:<br><br>
+ * <h2>Transaction errors</h2>
+ * CH700 - Reference data does not match previous transaction's reference data<br>
+ * CH701 - Invalid action type<br>
+ * CH702 - Invalid alias on action<br>
+ * CH730 - Missing raw transaction<br>
+ * CH731 - Too many inputs in template for transaction<br>
+ * CH732 - Invalid transaction input index<br>
+ * CH733 - Invalid signature script component<br>
+ * CH734 - Missing signature in template<br>
+ * CH735 - Transaction rejected<br>
+ * CH760 - Insufficient funds for tx<br>
+ * CH761 - Some outputs are reserved; try again<br>
  */
 public class APIException extends ChainException {
     public APIException(String message, String requestID) {
