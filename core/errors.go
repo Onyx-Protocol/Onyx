@@ -39,30 +39,35 @@ var (
 	// Missing entries will map to infoInternal.
 	// See chain.com/docs.
 	errorInfoTab = map[error]errorInfo{
-		context.DeadlineExceeded:        errorInfo{504, "CH504", "Request timed out"},
-		pg.ErrUserInputNotFound:         errorInfo{404, "CH005", "Not found"},
-		httpjson.ErrBadRequest:          errorInfo{400, "CH007", "Invalid request body"},
-		errBadReqHeader:                 errorInfo{400, "CH008", "Invalid request header"},
-		ErrProdReset:                    errorInfo{400, "CH100", "Reset can only be called in a development system"},
-		query.ErrBadCursor:              errorInfo{400, "CH600", "Malformed pagination cursor"},
-		query.ErrParameterCountMismatch: errorInfo{400, "CH601", "Incorrect number of parameters to filter"},
-		ErrBadIndexConfig:               errorInfo{400, "CH602", "Invalid index configuration"},
-		utxodb.ErrInsufficient:          errorInfo{400, "CH733", "Insufficient funds for tx"},
-		utxodb.ErrReserved:              errorInfo{400, "CH743", "Some outputs are reserved; try again"},
-		txbuilder.ErrRejected:           errorInfo{400, "CH744", "Transaction rejected"},
-		txbuilder.ErrBadTxTemplate:      errorInfo{400, "CH755", "Invalid transaction template"},
-		ErrBadBuildRequest:              errorInfo{400, "CH756", "Invalid build transaction request"},
-		txbuilder.ErrBadBuildRequest:    errorInfo{400, "CH756", "Invalid build transaction request"},
+		// General error namespace (0xx)
+		context.DeadlineExceeded: errorInfo{504, "CH001", "Request timed out"},
+		pg.ErrUserInputNotFound:  errorInfo{404, "CH002", "Not found"},
+		httpjson.ErrBadRequest:   errorInfo{400, "CH003", "Invalid request body"},
+		errBadReqHeader:          errorInfo{400, "CH004", "Invalid request header"},
+		asset.ErrArchived:        errorInfo{404, "CH005", "Item has been archived"},
+		signers.ErrArchived:      errorInfo{404, "CH005", "Item has been archived"},
+
+		// Core error namespace
+		ErrProdReset: errorInfo{400, "CH100", "Reset can only be called in a development system"},
 
 		// Signers error namespace (2xx)
 		signers.ErrBadQuorum: errorInfo{400, "CH200", "Quorum must be greater than 1 and less than or equal to the length of xpubs"},
-		signers.ErrBadXPub:   errorInfo{400, "CH200", "Invalid xpub format"},
-		signers.ErrNoXPubs:   errorInfo{400, "CH200", "At least one xpub is required"},
-		signers.ErrBadType:   errorInfo{400, "CH200", "Retrieved type does not match expected type"},
-		signers.ErrArchived:  errorInfo{404, "CH200", "Item has been archived"},
+		signers.ErrBadXPub:   errorInfo{400, "CH201", "Invalid xpub format"},
+		signers.ErrNoXPubs:   errorInfo{400, "CH202", "At least one xpub is required"},
+		signers.ErrBadType:   errorInfo{400, "CH203", "Retrieved type does not match expected type"},
 
-		// Assets error namespace (2xx)
-		asset.ErrArchived: errorInfo{404, "CH200", "Item has been archived"},
+		// Query error namespace
+		query.ErrBadCursor:              errorInfo{400, "CH600", "Malformed pagination cursor"},
+		query.ErrParameterCountMismatch: errorInfo{400, "CH601", "Incorrect number of parameters to filter"},
+		ErrBadIndexConfig:               errorInfo{400, "CH602", "Invalid index configuration"},
+
+		// Transaction error namespace
+		ErrBadBuildRequest:           errorInfo{400, "CH700", "Invalid build transaction request"},
+		txbuilder.ErrBadBuildRequest: errorInfo{400, "CH700", "Invalid build transaction request"},
+		txbuilder.ErrBadTxTemplate:   errorInfo{400, "CH701", "Invalid transaction template"},
+		txbuilder.ErrRejected:        errorInfo{400, "CH702", "Transaction rejected"},
+		utxodb.ErrInsufficient:       errorInfo{400, "CH710", "Insufficient funds for tx"},
+		utxodb.ErrReserved:           errorInfo{400, "CH711", "Some outputs are reserved; try again"},
 	}
 )
 
