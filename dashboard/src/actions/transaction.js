@@ -14,6 +14,16 @@ const list = generateListActions(type, {
 const form = generateFormActions(type)
 
 form.submitForm = (data) => function(dispatch) {
+  // HACK: Check for retire actions and replace with OP_FAIL control programs.
+  // TODO: update JS SDK to support Java SDK builder style.
+  for (let i = 0; i < data.actions.length; i++) {
+    let a = data.actions[i]
+    if (a.type == 'retire_asset') {
+      a.type = 'control_program'
+      a.params.control_program = '6a' // OP_FAIL hex byte
+    }
+  }
+
   return new chain.Transaction(data)
     .build(context)
     .then((template) => {

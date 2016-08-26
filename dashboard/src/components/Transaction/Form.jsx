@@ -7,6 +7,7 @@ const SPEND_ACCOUNT_KEY = "spend_account_unspent_output_selector"
 const SPEND_UNSPENT_KEY = "spend_account_unspent_output"
 const CONTROL_ACCOUNT_KEY = "control_account"
 const CONTROL_PROGRAM_KEY = "control_program"
+const RETIRE_ASSET_KEY = "retire_asset"
 
 const actionTypes = {}
 actionTypes[ISSUE_KEY] = "Issue"
@@ -14,6 +15,7 @@ actionTypes[SPEND_ACCOUNT_KEY] = "Spend from Account"
 actionTypes[SPEND_UNSPENT_KEY] = "Spend from Unspent Output"
 actionTypes[CONTROL_ACCOUNT_KEY] = "Control with Account"
 actionTypes[CONTROL_PROGRAM_KEY] = "Control with Program"
+actionTypes[RETIRE_ASSET_KEY] = "Retire asset units"
 
 class Form extends React.Component {
   constructor(props) {
@@ -46,6 +48,9 @@ class Form extends React.Component {
       break
     case CONTROL_PROGRAM_KEY:
       fields[index] = {asset_alias: true, control_program: true, amount: true}
+      break
+    case RETIRE_ASSET_KEY:
+      fields[index] = {asset_alias: true, amount: true}
       break
     default:
       fields[index] = {}
