@@ -21,7 +21,7 @@ import (
 
 // config vars
 var (
-	dbURL = env.String("DB_URL", "postgres:///core?sslmode=disable")
+	dbURL = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
 )
 
 // We collect log output in this buffer,
