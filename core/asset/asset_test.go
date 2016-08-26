@@ -23,6 +23,9 @@ func TestDefineAsset(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
+	if asset.sortID == "" {
+		t.Error("asset.sortID empty")
+	}
 
 	// Verify that the asset was defined.
 	var id string

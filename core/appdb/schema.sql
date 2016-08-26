@@ -392,7 +392,8 @@ CREATE TABLE annotated_accounts (
 
 CREATE TABLE annotated_assets (
     id text NOT NULL,
-    data jsonb NOT NULL
+    data jsonb NOT NULL,
+    sort_id text NOT NULL
 );
 
 
@@ -1013,6 +1014,13 @@ CREATE INDEX annotated_assets_jsondata_idx ON annotated_assets USING gin (data j
 
 
 --
+-- Name: annotated_assets_sort_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX annotated_assets_sort_id ON annotated_assets USING btree (sort_id);
+
+
+--
 -- Name: annotated_outputs_jsondata_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1110,3 +1118,4 @@ insert into migrations (filename, hash) values ('2016-08-19.0.generator.generate
 insert into migrations (filename, hash) values ('2016-08-22.0.account.change-utxos.sql', '11dff1da7353fd6896c4f153654029d717f838b4a4e528cf7139bfcf35ebf124');
 insert into migrations (filename, hash) values ('2016-08-23.0.query.sum-by.sql', '82a04d0595f19df735dd35e896496c79a70398a8428131ece4d441aaf2f3836c');
 insert into migrations (filename, hash) values ('2016-08-24.0.query.index-filter.sql', '9b501c1fc5a528312f7239a58b1552bf95681fe228d57472a65e9a55fc19246b');
+insert into migrations (filename, hash) values ('2016-08-26.0.query.assets-sort-id.sql', '56083fef381b675be65ef9c9769de724ddf46f2c3ed44a9e75ab81ecc812f983');

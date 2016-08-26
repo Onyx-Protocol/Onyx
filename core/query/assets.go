@@ -13,17 +13,17 @@ import (
 )
 
 // SaveAnnotatedAsset saves an annotated asset to the query indexes.
-func (i *Indexer) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, asset map[string]interface{}) error {
+func (i *Indexer) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, asset map[string]interface{}, sortID string) error {
 	b, err := json.Marshal(asset)
 	if err != nil {
 		return errors.Wrap(err)
 	}
 
 	const q = `
-		INSERT INTO annotated_assets (id, data) VALUES($1, $2)
-		ON CONFLICT (id) DO UPDATE SET data = $2
+		INSERT INTO annotated_assets (id, data, sort_id) VALUES($1, $2, $3)
+		ON CONFLICT (id) DO UPDATE SET data = $2, sort_id = $3
 	`
-	_, err = i.db.Exec(ctx, q, assetID.String(), b)
+	_, err = i.db.Exec(ctx, q, assetID.String(), b, sortID)
 	return errors.Wrap(err, "saving annotated asset")
 }
 
@@ -46,9 +46,9 @@ func (i *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []interfa
 
 	assets := make([]map[string]interface{}, 0, limit)
 	for rows.Next() {
-		var assetID bc.AssetID
+		var sortID string
 		var rawAsset []byte
-		err := rows.Scan(&assetID, &rawAsset)
+		err := rows.Scan(&sortID, &rawAsset)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "scanning annotated asset row")
 		}
@@ -61,7 +61,7 @@ func (i *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []interfa
 			}
 		}
 
-		cur = assetID.String()
+		cur = sortID
 		assets = append(assets, asset)
 	}
 	err = rows.Err()
@@ -75,7 +75,7 @@ func constructAssetsQuery(expr filter.SQLExpr, cur string, limit int) (string, [
 	var buf bytes.Buffer
 	var vals []interface{}
 
-	buf.WriteString("SELECT id, data FROM annotated_assets")
+	buf.WriteString("SELECT sort_id, data FROM annotated_assets")
 	buf.WriteString(" WHERE ")
 
 	// add filter conditions
@@ -87,10 +87,10 @@ func constructAssetsQuery(expr filter.SQLExpr, cur string, limit int) (string, [
 	}
 
 	// add cursor conditions
-	buf.WriteString(fmt.Sprintf("id > $%d ", len(vals)+1))
+	buf.WriteString(fmt.Sprintf("($%d='' OR sort_id < $%d) ", len(vals)+1, len(vals)+1))
 	vals = append(vals, string(cur))
 
-	buf.WriteString("ORDER BY id ASC ")
+	buf.WriteString("ORDER BY sort_id DESC ")
 	buf.WriteString("LIMIT " + strconv.Itoa(limit))
 	return buf.String(), vals
 }

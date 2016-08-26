@@ -15,7 +15,7 @@ var indexer Saver
 // If the Core is configured not to provide search services,
 // SaveAnnotatedAsset can be a no-op.
 type Saver interface {
-	SaveAnnotatedAsset(context.Context, bc.AssetID, map[string]interface{}) error
+	SaveAnnotatedAsset(context.Context, bc.AssetID, map[string]interface{}, string) error
 }
 
 // Init sets the package level Chain. If isManager is true,
@@ -47,5 +47,5 @@ func indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 		"issuance_program": a.IssuanceProgram,
 		"tags":             a.Tags,
 	}
-	return indexer.SaveAnnotatedAsset(ctx, a.AssetID, m)
+	return indexer.SaveAnnotatedAsset(ctx, a.AssetID, m, a.sortID)
 }

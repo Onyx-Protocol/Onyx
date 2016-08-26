@@ -30,6 +30,7 @@ type Asset struct {
 	GenesisHash     bc.Hash                `json:"genesis_hash"`
 	Signer          *signers.Signer        `json:"signer"`
 	Tags            map[string]interface{} `json:"tags"`
+	sortID          string
 }
 
 // Define defines a new Asset.
@@ -209,7 +210,7 @@ func Archive(ctx context.Context, id bc.AssetID, alias string) error {
 func FindBatch(ctx context.Context, assetIDs ...bc.AssetID) (map[string]*Asset, error) {
 	const q = `
 		SELECT assets.id, definition, issuance_program, signer_id,
-			quorum, xpubs, key_index(signers.key_index)
+			quorum, xpubs, key_index(signers.key_index), sort_id
 		FROM assets
 		LEFT JOIN signers ON (assets.signer_id=signers.id)
 		WHERE assets.id = ANY($1) AND NOT assets.archived AND signers.type='asset'
@@ -222,7 +223,7 @@ func FindBatch(ctx context.Context, assetIDs ...bc.AssetID) (map[string]*Asset, 
 
 	assets := make(map[string]*Asset, len(assetIDs))
 	err := pg.ForQueryRows(ctx, q, pg.Strings(assetIDStrings),
-		func(id string, definitionBytes []byte, issuanceProgram []byte, signerID string, quorum int, xpubs pg.Strings, keyIndex pg.Uint32s) error {
+		func(id string, definitionBytes []byte, issuanceProgram []byte, signerID string, quorum int, xpubs pg.Strings, keyIndex pg.Uint32s, sortID string) error {
 			var assetID bc.AssetID
 			err := assetID.UnmarshalText([]byte(id))
 			if err != nil {
@@ -253,6 +254,7 @@ func FindBatch(ctx context.Context, assetIDs ...bc.AssetID) (map[string]*Asset, 
 					Quorum:   quorum,
 					KeyIndex: keyIndex,
 				},
+				sortID: sortID,
 			}
 			return nil
 		})
@@ -269,6 +271,7 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 	 	(id, alias, signer_id, genesis_hash, issuance_program, definition, client_token)
     VALUES($1, $2, $3, $4, $5, $6, $7)
     ON CONFLICT (client_token) DO NOTHING
+	RETURNING sort_id
   `
 	defParams, err := mapToNullString(asset.Definition)
 	if err != nil {
@@ -280,28 +283,24 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 		Valid:  asset.Alias != "",
 	}
 
-	res, err := pg.Exec(
+	err = pg.QueryRow(
 		ctx, q,
 		asset.AssetID, aliasParam, asset.Signer.ID,
 		asset.GenesisHash, asset.IssuanceProgram,
 		defParams, clientToken,
-	)
+	).Scan(&asset.sortID)
+
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
-	} else if err != nil {
-		return nil, err
-	}
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return nil, errors.Wrap(err, "retrieving rows affected")
-	}
-	if rowsAffected == 0 && clientToken != nil {
-		// There is already an asset for this issuer node with the provided client
+	} else if err == sql.ErrNoRows && clientToken != nil {
+		// There is already an asset with the provided client
 		// token. We should return the existing asset.
 		asset, err = assetByClientToken(ctx, *clientToken)
 		if err != nil {
 			return nil, errors.Wrap(err, "retrieving existing asset")
 		}
+	} else if err != nil {
+		return nil, err
 	}
 	return asset, nil
 }
@@ -329,7 +328,7 @@ func insertAssetTags(ctx context.Context, assetID bc.AssetID, tags map[string]in
 
 func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 	const q = `
-		SELECT id, alias, issuance_program, definition, genesis_hash, signer_id, archived
+		SELECT id, alias, issuance_program, definition, genesis_hash, signer_id, archived, sort_id
 		FROM assets
 		WHERE id=$1
 	`
@@ -350,6 +349,7 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 		&a.GenesisHash,
 		&signerID,
 		&archived,
+		&a.sortID,
 	)
 
 	if err != nil && err != sql.ErrNoRows {
@@ -405,7 +405,7 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 
 func assetByAlias(ctx context.Context, alias string) (*Asset, error) {
 	const q = `
-		SELECT id, alias, issuance_program, definition, genesis_hash, signer_id, archived
+		SELECT id, alias, issuance_program, definition, genesis_hash, signer_id, archived, sort_id
 		FROM assets
 		WHERE alias=$1
 	`
@@ -425,6 +425,7 @@ func assetByAlias(ctx context.Context, alias string) (*Asset, error) {
 		&a.GenesisHash,
 		&signerID,
 		&archived,
+		&a.sortID,
 	)
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
@@ -473,7 +474,7 @@ func assetByAlias(ctx context.Context, alias string) (*Asset, error) {
 func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error) {
 	const q = `
 		SELECT id, issuance_program, definition,
-			genesis_hash, signer_id, archived
+			genesis_hash, signer_id, archived, sort_id
 		FROM assets
 		WHERE client_token=$1
 	`
@@ -490,6 +491,7 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 		&a.GenesisHash,
 		&signerID,
 		&archived,
+		&a.sortID,
 	)
 	if err != nil {
 		return nil, err
