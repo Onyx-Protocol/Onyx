@@ -108,6 +108,17 @@ func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, pr
 // The block parameter must have already been validated before
 // being committed.
 func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
+	err := c.commitBlock(ctx, block, snapshot)
+	if err != nil {
+		return errors.Wrap(err, "committing block")
+	}
+
+	_, err = c.rebuildPool(ctx, block, snapshot)
+	return errors.Wrap(err, "rebuilding pool")
+}
+
+// commitBlock commits a block without rebuilding the pool.
+func (c *Chain) commitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -128,11 +139,6 @@ func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *stat
 		if err != nil {
 			return errors.Wrap(err, "storing state snapshot")
 		}
-	}
-
-	_, err = c.rebuildPool(ctx, block, snapshot)
-	if err != nil {
-		return errors.Wrap(err, "rebuilding pool")
 	}
 
 	for _, cb := range c.blockCallbacks {

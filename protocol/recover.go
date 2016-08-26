@@ -40,9 +40,9 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 
 		// Commit the block again in case we crashed halfway through
 		// and the block isn't fully committed.
-		// TODO(jackson): Calling CommitBlock() is overboard and performs
+		// TODO(jackson): Calling commitBlock() is overboard and performs
 		// a lot of redundant work. Only do what is necessary.
-		err = c.CommitBlock(ctx, b, snapshot)
+		err = c.commitBlock(ctx, b, snapshot)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "committing block")
 		}
