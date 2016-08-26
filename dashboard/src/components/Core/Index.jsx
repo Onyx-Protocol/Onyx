@@ -3,6 +3,7 @@ import { context } from '../../utility/environment'
 
 import React from 'react'
 import PageHeader from '../PageHeader/PageHeader'
+import ErrorBanner from '../Common/ErrorBanner'
 import Panel from '../Common/Panel'
 
 import styles from "./Index.scss"
@@ -24,6 +25,12 @@ export default class Index extends React.Component {
 
         <Panel title={title}>
           <p>This will permanently delete all data stored in this core, including blockchain data, accounts, assets, indexes, and MockHSM keys.</p>
+
+          {this.state.deleteError && <ErrorBanner
+            title='Error resetting data'
+            message={this.state.deleteError.toString()}
+          />}
+
           <button
             className='btn btn-danger btn-lg'
             onClick={this.deleteClick}
