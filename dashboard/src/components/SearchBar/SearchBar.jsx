@@ -62,7 +62,7 @@ class SearchBar extends React.Component {
           onChange={this.handleChange}
           className={`form-control ${styles.search_input}`}
           type="search"
-          placeholder="asset_id"
+          placeholder="asset_alias, asset_id"
           />
       </span>
       searchFieldClass = styles.search_field_half

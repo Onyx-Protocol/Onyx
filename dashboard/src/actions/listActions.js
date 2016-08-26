@@ -53,8 +53,8 @@ export default function(type, options = {}) {
         dispatch(incrementPage())
       }).catch((err) => {
         console.log(err)
-        if (options.tryId && filter.indexOf(" ") < 0 && filter.indexOf("=") < 0) {
-          dispatch(submitQuery(`id='${filter}'`))
+        if (options.defaultKey && filter.indexOf(" ") < 0 && filter.indexOf("=") < 0) {
+          dispatch(submitQuery(`${options.defaultKey}='${filter}'`))
         }
       })
     }

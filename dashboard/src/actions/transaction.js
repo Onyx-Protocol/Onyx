@@ -8,7 +8,9 @@ import unspentActions from './unspent'
 
 const type = "transaction"
 
-const list = generateListActions(type, { tryId: true })
+const list = generateListActions(type, {
+  defaultKey: "id"
+})
 const form = generateFormActions(type)
 
 form.submitForm = (data) => function(dispatch) {
