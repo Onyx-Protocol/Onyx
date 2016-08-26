@@ -36,8 +36,8 @@ func Handler(
 	}
 
 	m := http.NewServeMux()
-	m.Handle("/", apiAuthn(apiSecret, a.handler()))
-	m.Handle("/rpc/", rpcAuthn(rpcAuthedHandler(generatorConfig, signer)))
+	m.Handle("/", apiAuthn(apiSecret, waitForGenesis(a.c, a.handler())))
+	m.Handle("/rpc/", rpcAuthn(waitForGenesis(a.c, rpcAuthedHandler(generatorConfig, signer))))
 	return m
 }
 
@@ -48,6 +48,20 @@ type api struct {
 	generator *generator.Config
 	hsm       *mockhsm.HSM
 	indexer   *query.Indexer
+}
+
+func waitForGenesis(c *protocol.Chain, h http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		if c.Height() == 0 {
+			err := c.WaitForBlock(ctx, 1)
+			if err != nil {
+				writeHTTPError(ctx, rw, err)
+				return
+			}
+		}
+		h.ServeHTTP(rw, req)
+	})
 }
 
 // Used as a request object for api queries

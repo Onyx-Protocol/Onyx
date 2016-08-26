@@ -70,6 +70,9 @@ func (a *api) reset(ctx context.Context) error {
 		return errors.Wrap(err)
 	}
 
+	// Reset the height on the blockchain.
+	a.c.Reset()
+
 	block, err := protocol.NewGenesisBlock(keys, quorum, time.Now())
 	if err != nil {
 		return errors.Wrap(err)
