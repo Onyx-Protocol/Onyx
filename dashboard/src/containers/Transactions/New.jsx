@@ -9,9 +9,7 @@ const mapStateToProps = () => ({})
 
 const mapDispatchToProps = (dispatch) => {
   return {
-    submitForm: (data) => {
-      dispatch(actions[type].submitForm(data))
-    },
+    submitForm: (data) => dispatch(actions[type].submitForm(data))
   }
 }
 

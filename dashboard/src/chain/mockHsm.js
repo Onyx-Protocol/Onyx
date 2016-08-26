@@ -1,5 +1,6 @@
 import buildClass from './buildClass'
 import uuid from 'uuid'
+import Transaction from './transaction'
 
 export default class MockHsm extends buildClass('mockhsm', {
   listPath: "/mockhsm/list-keys"
@@ -12,6 +13,6 @@ export default class MockHsm extends buildClass('mockhsm', {
 
   static sign(templates, context) {
     return context.client.request('/mockhsm/sign-transaction-template', templates)
-      .then(data => data)
+      .then(data => data.map((item) => new Transaction(item)))
   }
 }

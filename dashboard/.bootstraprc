@@ -30,6 +30,7 @@
     tables: true,
     forms: true,
     buttons: true,
+    alerts: true,
     dropdowns: true,
     input-groups: true,
     navs: true,

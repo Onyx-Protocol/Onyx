@@ -14,21 +14,20 @@ const list = generateListActions(type, {
 const form = generateFormActions(type)
 
 form.submitForm = (data) => function(dispatch) {
-  let transaction = new chain.Transaction(data).build(context)
-
-  transaction.then((template) => {
-    return chain.MockHsm.sign([template], context)
-  })
-  .then((signedTemplates) => {
-    return chain.Transaction.submit(signedTemplates, context)
-  })
-  .then(() => {
-    dispatch(list.updateQuery(""))
-    dispatch(list.resetPage())
-    dispatch(unspentActions.resetPage())
-    dispatch(push('/transactions'))
-  })
-
+  return new chain.Transaction(data)
+    .build(context)
+    .then((template) => {
+      return chain.MockHsm.sign([template], context)
+    })
+    .then((signedTemplates) => {
+      return signedTemplates[0].submit(context)
+    })
+    .then(() => {
+      dispatch(list.updateQuery(""))
+      dispatch(list.resetPage())
+      dispatch(unspentActions.resetPage())
+      dispatch(push('/transactions'))
+    })
 }
 
 

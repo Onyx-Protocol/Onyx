@@ -1,6 +1,6 @@
 import React from 'react'
 import PageHeader from "../PageHeader/PageHeader"
-import { Panel, TextField, NumberField, SelectField } from "../Common"
+import { Panel, TextField, NumberField, SelectField, ErrorBanner } from "../Common"
 
 const ISSUE_KEY = "issue"
 const SPEND_ACCOUNT_KEY = "spend_account_unspent_output_selector"
@@ -22,6 +22,7 @@ class Form extends React.Component {
 
     this.showField = this.showField.bind(this)
     this.buildFieldsForAction = this.selectFieldsForAction.bind(this)
+    this.submitWithValidation = this.submitWithValidation.bind(this)
 
     // Add single initial action
     this.props.fields.actions.addField()
@@ -58,9 +59,17 @@ class Form extends React.Component {
     return field ? field[fieldName] : false
   }
 
+  submitWithValidation(data) {
+    return new Promise((resolve, reject) => {
+      this.props.submitForm(data)
+        .catch((err) => reject({_error: err.message}))
+    })
+  }
+
   render() {
     const {
       fields: { actions },
+      error,
       handleSubmit,
       submitting
     } = this.props
@@ -69,7 +78,7 @@ class Form extends React.Component {
       <div className="form-container">
         <PageHeader title="New Transaction" />
 
-        <form onSubmit={handleSubmit(this.props.submitForm)} >
+        <form onSubmit={handleSubmit(this.submitWithValidation)} >
           <div className='form-group'>
 
             {!actions.length && <div className='well'>Add actions to build a transaction</div>}
@@ -123,6 +132,10 @@ class Form extends React.Component {
             Submitting builds a transaction template, signs the template with
              the Mock HSM, and submits the fully signed template to the blockchain.
           </p>
+
+          {error && <ErrorBanner
+            title="There was a problem submitting your transaction:"
+            message={error}/>}
 
           <button type="submit" className="btn btn-primary" disabled={submitting}>Submit Transaction</button>
         </form>

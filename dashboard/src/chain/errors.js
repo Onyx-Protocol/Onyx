@@ -5,6 +5,26 @@ export default {
     return err
   },
 
+  formatErrMsg: function(body, requestId) {
+    let tokens = []
+
+    if (typeof body.code === 'string' && body.code.length > 0) {
+      tokens.push('Code: ' + body.code)
+    }
+
+    tokens.push('Message: ' + body.message)
+
+    if (typeof body.detail === 'string' && body.detail.length > 0) {
+      tokens.push('Detail: ' + body.detail)
+    }
+
+    if (requestId) {
+      tokens.push('Request-ID: ' + requestId)
+    }
+
+    return tokens.join(' ')
+  },
+
   types: {
     FETCH: 'FETCH',
     CONNECTIVITY: 'CONNECTIVITY',

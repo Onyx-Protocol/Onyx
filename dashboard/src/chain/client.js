@@ -1,24 +1,6 @@
 import 'isomorphic-fetch'
 import errors from './errors'
 
-function formatErrMsg(body, requestId) {
-  let tokens = []
-
-  if (typeof body.code === 'string' && body.code.length > 0) {
-    tokens.push('Code: ' + body.code)
-  }
-
-  tokens.push('Message: ' + body.message)
-
-  if (typeof body.detail === 'string' && body.detail.length > 0) {
-    tokens.push('Detail: ' + body.detail)
-  }
-
-  tokens.push('Request-ID: ' + requestId)
-
-  return tokens.join(' ')
-}
-
 class Client {
   constructor(baseUrl) {
     this.baseUrl = baseUrl
@@ -80,7 +62,7 @@ class Client {
 
         throw errors.create(
           errType,
-          formatErrMsg(body, requestId),
+          errors.formatErrMsg(body, requestId),
           {response: resp}
         )
       })
