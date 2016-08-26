@@ -22,8 +22,7 @@ export default function(type, options = {}) {
     return function(dispatch, getState) {
       let pageCount = getState()[type].pages.length
       let latestPage = getState()[type].pages[pageCount - 1]
-      let promise
-      let chql
+      let promise, filter
 
       if (latestPage) {
         if (!latestPage.last_page) {
@@ -34,8 +33,13 @@ export default function(type, options = {}) {
       } else {
         let params = {}
         if (getState()[type].currentQuery) {
-          chql = getState()[type].currentQuery
-          params.chql = chql
+          filter = getState()[type].currentQuery
+          params.filter = filter
+        }
+        if (getState()[type].sumBy) {
+          params.sum_by = getState()[type].sumBy.split(",")
+        } else if (options.defaultSumBy) {
+          params.sum_by = options.defaultSumBy()
         }
         promise = chain[className].query(context, params)
       }
@@ -49,8 +53,8 @@ export default function(type, options = {}) {
         dispatch(incrementPage())
       }).catch((err) => {
         console.log(err)
-        if (options.tryId && chql.indexOf(" ") < 0 && chql.indexOf("=") < 0) {
-          dispatch(submitQuery(`id='${chql}'`))
+        if (options.tryId && filter.indexOf(" ") < 0 && filter.indexOf("=") < 0) {
+          dispatch(submitQuery(`id='${filter}'`))
         }
       })
     }
@@ -63,14 +67,14 @@ export default function(type, options = {}) {
     resetPage: resetPage,
     updateQuery: updateQuery,
     displayNextPage: function() {
-    	return function(dispatch, getState) {
-    		let currentPage = getState()[type].currentPage;
-    		if (currentPage + 1 >= getState()[type].pages.length) {
-    			dispatch(fetchPage())
-    		} else {
-    			dispatch(incrementPage())
-    		}
-    	}
+      return function(dispatch, getState) {
+        let currentPage = getState()[type].currentPage
+        if (currentPage + 1 >= getState()[type].pages.length) {
+          dispatch(fetchPage())
+        } else {
+          dispatch(incrementPage())
+        }
+      }
     },
     submitQuery: submitQuery
   }

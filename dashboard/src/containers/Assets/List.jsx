@@ -10,8 +10,12 @@ const dispatch = (dispatch) => Object.assign({},
   mapDispatchToProps(type)(dispatch),
   {
     itemActions: {
-      showCirculation: (id) => {
-        let query = `asset_id='${id}'`
+      showCirculation: (item) => {
+        let query = `asset_id='${item.id}'`
+        if (item.alias) {
+          query = `asset_alias='${item.alias}'`
+        }
+
         dispatch(actions.balance.updateQuery(query))
         dispatch(actions.balance.resetPage())
         dispatch(push('/balances'))

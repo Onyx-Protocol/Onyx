@@ -5,9 +5,11 @@ import ItemList from '../../components/ItemList'
 export const mapStateToProps = (type, itemComponent) => (state) => ({
   pages: state[type].pages,
   currentPage: state[type].currentPage,
-  query: state[type].currentQuery,
   type: type,
-  listItemComponent: itemComponent
+  listItemComponent: itemComponent,
+  searchState: {
+    queryString: state[type].currentQuery
+  }
 })
 
 export const mapDispatchToProps = (type) => (dispatch) => ({

@@ -2,10 +2,22 @@
   margin: 15px 0 30px 0;
 }
 
-.search_field {
+.search_field_full, .search_field_half, .sum_by_field {
   display: inline-block;
   position: relative;
+}
+
+.search_field_full {
   width: calc(100% - 130px);
+}
+
+.search_field_half {
+  width: 60%;
+  padding-right: 10px;
+}
+
+.sum_by_field {
+  width: calc(40% - 130px);
 }
 
 .search_input {
@@ -15,10 +27,16 @@
   font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
-.search_button {
+.search_button_container {
   display: inline-block;
+  position: relative;
   margin-left: 10px;
+  padding-bottom: 20px;
   width: 120px;
+}
+
+.search_button {
+  width: 100%;
   margin-top:-3px;
   height:50px;
   font-size: 18px;
@@ -26,6 +44,9 @@
 
 .clear_search {
   position: absolute;
-  right: 18px;
-  top: 13px;
+  bottom: 0;
+  left: 0;
+  font-size: 12px;
+  width: 100%;
+  text-align: center;
 }

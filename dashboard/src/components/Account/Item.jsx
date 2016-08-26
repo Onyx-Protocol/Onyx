@@ -5,7 +5,7 @@ class Item extends React.Component {
     const item = this.props.item
     const title = item.alias ?
       `Account - ${item.alias}` :
-      `Account - Asset ${item.id}`
+      `Account - ${item.id}`
 
     return(
       <div className="panel panel-default">

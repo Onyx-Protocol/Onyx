@@ -6,6 +6,7 @@ const type = "balance"
 const newStateToProps = (state) => {
   let defaults = mapStateToProps(type, Item)(state)
   defaults.skipCreate = true
+  defaults.searchState.sumBy = state[type].sumBy
   return defaults
 }
 

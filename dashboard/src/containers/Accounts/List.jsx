@@ -17,8 +17,11 @@ const dispatch = (dispatch) => Object.assign({},
         dispatch(push('/transactions'))
       },
       showBalances: (id) => {
-        let query = `account_id='${id}' AND asset_id=$1`
-        dispatch(actions.balance.updateQuery(query))
+        let query = `account_id='${id}'`
+        dispatch(actions.balance.updateQuery({
+          query: query,
+          sumBy: 'asset_id'
+        }))
         dispatch(actions.balance.resetPage())
         dispatch(push('/balances'))
       }

@@ -27,7 +27,7 @@ class ItemList extends React.Component {
     if (!this.props.skipQuery) { header.push(
       <SearchBar key='search-bar'
         submitQuery={this.props.submitQuery}
-        queryString={this.props.query}
+        {...this.props.searchState}
       />
     )}
 

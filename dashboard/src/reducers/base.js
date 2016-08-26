@@ -24,7 +24,13 @@ export const currentPageActions = (type) => (state = -1, action) => {
 
 export const currentQueryActions = (type) => (state = "", action) => {
   if (action.type == actions[type].updateQuery.type) {
-    return action.param
+    if (action.param && action.param.query) {
+      return action.param.query
+    } else if (typeof action.param === "string") {
+      return action.param
+    }
+
+    return ""
   }
 
   return state
