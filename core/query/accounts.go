@@ -82,10 +82,10 @@ func constructAccountsQuery(expr filter.SQLExpr, cur string, limit int) (string,
 	}
 
 	// add cursor conditions
-	buf.WriteString(fmt.Sprintf("id > $%d ", len(vals)+1))
+	buf.WriteString(fmt.Sprintf("id < $%d ", len(vals)+1))
 	vals = append(vals, string(cur))
 
-	buf.WriteString("ORDER BY id ASC ")
+	buf.WriteString("ORDER BY id DESC ")
 	buf.WriteString("LIMIT " + strconv.Itoa(limit))
 	return buf.String(), vals
 }
