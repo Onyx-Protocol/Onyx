@@ -19,7 +19,7 @@ import NewIndex from './containers/Indexes/New'
 import MockHsmList from './containers/MockHsm/List'
 import NewKey from './containers/MockHsm/New'
 
-import CoreSettings from './components/CoreSettings/Index'
+import CoreIndex from './components/Core/Index'
 
 import NotFound from './components/NotFound'
 
@@ -69,8 +69,8 @@ export default ({
       childRoutes: [{ path: 'create', component: NewKey }]
     },
     {
-      path: 'core-settings',
-      component: CoreSettings,
+      path: 'core',
+      component: CoreIndex,
     },
     {
       path: '*',

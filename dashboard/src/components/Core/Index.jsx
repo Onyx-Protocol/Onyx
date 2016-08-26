@@ -20,7 +20,7 @@ export default class Index extends React.Component {
     return (
       <div className='form-container'>
 
-        <PageHeader key='page-title' title='Core Settings'/>
+        <PageHeader key='page-title' title='Core'/>
 
         <Panel title={title}>
           <p>This will permanently delete all data stored in this core, including blockchain data, accounts, assets, indexes, and MockHSM keys.</p>

@@ -89,9 +89,9 @@ class Navigation extends React.Component {
                       </Link>
                     </li>
                     <li>
-                      <Link to={`/core-settings`} activeClassName={styles.active}>
+                      <Link to={`/core`} activeClassName={styles.active}>
                         <span className={`glyphicon glyphicon-hdd ${styles.glyphicon}`} />
-                        Core Settings
+                        Core
                       </Link>
                     </li>
                   </ul>
