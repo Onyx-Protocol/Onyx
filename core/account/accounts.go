@@ -166,6 +166,9 @@ func fetchAccountData(ctx context.Context, id string) (string, map[string]interf
 		alias    sql.NullString
 	)
 	err := pg.QueryRow(ctx, q, id).Scan(&alias, &tagBytes)
+	if err == sql.ErrNoRows {
+		return "", nil, errors.Wrap(pg.ErrUserInputNotFound)
+	}
 	if err != nil {
 		return "", nil, errors.Wrap(err)
 	}
@@ -194,6 +197,9 @@ func FindByAlias(ctx context.Context, alias string) (*Account, error) {
 		archived  bool
 	)
 	err := pg.QueryRow(ctx, q, alias).Scan(&accountID, &tagBytes, &archived)
+	if err == sql.ErrNoRows {
+		return nil, errors.Wrap(pg.ErrUserInputNotFound)
+	}
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

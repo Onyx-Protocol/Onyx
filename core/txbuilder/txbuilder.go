@@ -12,11 +12,10 @@ import (
 )
 
 var (
-	// ErrBadBuildRequest is returned from Build when the arguments are
-	// invalid.
-	ErrBadBuildRequest = errors.New("bad build request")
-
-	ErrNoSigScript = errors.New("data only for redeeming, not scripts")
+	ErrBadRefData       = errors.New("transaction reference data does not match previous template's reference data")
+	ErrBadTxInputIdx    = errors.New("unsigned tx missing input")
+	ErrBadSigScriptComp = errors.New("invalid signature script component")
+	ErrMissingSig       = errors.New("missing signature in template")
 )
 
 // Build builds or adds on to a transaction.
@@ -33,20 +32,21 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map) (
 
 	if len(ref) != 0 {
 		if len(tx.ReferenceData) != 0 && !bytes.Equal(tx.ReferenceData, ref) {
-			return nil, errors.WithDetail(ErrBadBuildRequest, "transaction reference data does not match previous template's reference data")
+			return nil, errors.Wrap(ErrBadRefData)
 		}
 
 		tx.ReferenceData = ref
 	}
 
 	var tplInputs []*Input
-	for _, action := range actions {
+	for i, action := range actions {
 		txins, txouts, inputs, err := action.Build(ctx)
 		if err != nil {
-			return nil, errors.Wrap(err)
+			return nil, errors.WithDetailf(err, "invalid action %d", i)
 		}
 
 		if len(txins) != len(inputs) {
+			// This would only happen from a bug in our system
 			return nil, errors.Wrap(fmt.Errorf("%T returned different number of transaction and template inputs", action))
 		}
 
@@ -92,9 +92,9 @@ func ComputeSigHashes(tpl *Template) {
 // creating a fully-signed transaction.
 func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 	msg := txTemplate.Unsigned
-	for _, input := range txTemplate.Inputs {
+	for i, input := range txTemplate.Inputs {
 		if msg.Inputs[input.Position] == nil {
-			return nil, fmt.Errorf("unsigned tx missing input %d", input.Position)
+			return nil, errors.WithDetailf(ErrBadTxInputIdx, "input %d references missing tx input %d", i, input.Position)
 		}
 
 		components := input.SigComponents
@@ -103,8 +103,6 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 
 		for _, c := range components {
 			switch c.Type {
-			case "script":
-				return nil, ErrNoSigScript
 			case "data":
 				witness = append(witness, c.Data)
 			case "signature":
@@ -119,8 +117,11 @@ func AssembleSignatures(txTemplate *Template) (*bc.Tx, error) {
 						break
 					}
 				}
+				if added < c.Quorum {
+					return nil, errors.WithDetailf(ErrMissingSig, "input %d requires %d signatures, got %d", i, c.Quorum, added)
+				}
 			default:
-				return nil, fmt.Errorf("unknown sigscript component `%s`", c.Type)
+				return nil, errors.WithDetailf(ErrBadSigScriptComp, "input %d unknown type %s", i, c.Type)
 			}
 		}
 		msg.Inputs[input.Position].InputWitness = witness
@@ -159,7 +160,7 @@ func Sign(ctx context.Context, tpl *Template, signFn func(context.Context, *SigS
 					}
 					sigBytes, err := signFn(ctx, component, sig)
 					if err != nil {
-						return errors.Wrapf(err, "computing signature for input %d, sigscript component %d, sig %d", i, c, s)
+						return errors.WithDetailf(err, "computing signature for input %d, sigscript component %d, sig %d", i, c, s)
 					}
 					sig.Bytes = sigBytes
 				}

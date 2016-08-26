@@ -121,7 +121,7 @@ func TestAssembleSignatures(t *testing.T) {
 			SigComponents: []*SigScriptComponent{
 				{
 					Type:          "signature",
-					Quorum:        2,
+					Quorum:        1,
 					SignatureData: sigData,
 					Signatures: []*Signature{{
 						XPub:           "xpub661MyMwAqRbcGZNqeB27ae2nQLWoWd9Ffx8NEXrVDFgFPe6Jdzw53p5m3ewA3K2z5nPmcJK7r1nykAwkoNHWgHr5kLCWi777ShtKwLdy55a",

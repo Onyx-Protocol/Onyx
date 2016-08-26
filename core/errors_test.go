@@ -15,8 +15,8 @@ func TestErrInfo(t *testing.T) {
 	}{
 		{nil, 500},
 		{sql.ErrNoRows, 500},
-		{pg.ErrUserInputNotFound, 404},
-		{errors.Wrap(pg.ErrUserInputNotFound, "foo"), 404},
+		{pg.ErrUserInputNotFound, 400},
+		{errors.Wrap(pg.ErrUserInputNotFound, "foo"), 400},
 		{sliceError{}, 500},
 	}
 

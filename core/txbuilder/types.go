@@ -29,7 +29,7 @@ type Input struct {
 // SigScriptComponent is an unserialized portion of the sigscript. When
 // a tx is finalized, all the sig script components for each input
 // are serialized and concatenated to make the final sigscripts. Type
-// must be one of 'script', 'data' or 'signature'.
+// must be 'data' or 'signature'.
 type SigScriptComponent struct {
 	Type          string        `json:"type"`           // required
 	Data          json.HexBytes `json:"data"`           // required for 'data'

@@ -159,16 +159,7 @@ func FindByID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 // FindByAlias retrieves an Asset record along with its signer,
 // given an asset alias.
 func FindByAlias(ctx context.Context, alias string) (*Asset, error) {
-	asset, err := assetByAlias(ctx, alias)
-	if err != nil {
-		return nil, err
-	}
-
-	asset.Signer, err = signers.Find(ctx, "asset", asset.Signer.ID)
-	if err != nil {
-		return nil, err
-	}
-	return asset, nil
+	return assetByAlias(ctx, alias)
 }
 
 // Archive marks an Asset record as archived, effectively "deleting" it.
@@ -435,6 +426,9 @@ func assetByAlias(ctx context.Context, alias string) (*Asset, error) {
 		&signerID,
 		&archived,
 	)
+	if err == sql.ErrNoRows {
+		return nil, pg.ErrUserInputNotFound
+	}
 
 	if err != nil {
 		return nil, err

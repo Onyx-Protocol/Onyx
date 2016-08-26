@@ -107,7 +107,7 @@ func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *s
 	}
 	if reservationID <= 0 {
 		if !utxoExists {
-			return nil, ErrInsufficient
+			return nil, pg.ErrUserInputNotFound
 		}
 		return nil, ErrReserved
 	}
@@ -121,6 +121,9 @@ func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *s
 	)
 
 	err = pg.QueryRow(ctx, utxosQ, reservationID).Scan(&accountID, &assetID, &amount, &programIndex, &controlProg)
+	if err == sql.ErrNoRows {
+		return nil, pg.ErrUserInputNotFound
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, "query reservation member")
 	}

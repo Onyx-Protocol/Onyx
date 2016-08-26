@@ -12,6 +12,11 @@ import (
 	"chain/protocol/bc"
 )
 
+var (
+	ErrBadActionType = errors.New("bad action type")
+	ErrBadAlias      = errors.New("bad alias")
+)
+
 type action struct {
 	underlying txbuilder.Action
 }
@@ -36,7 +41,7 @@ func (a *action) UnmarshalJSON(data []byte) error {
 	case "spend_account_unspent_output":
 		a.underlying = new(account.SpendUTXOAction)
 	default:
-		return errors.WithDetailf(ErrBadBuildRequest, "invalid action: %s", x.Type)
+		return errors.WithDetailf(ErrBadActionType, "unknown type %s", x.Type)
 	}
 	return json.Unmarshal(data, a.underlying)
 }
@@ -69,27 +74,27 @@ type aliasBuildRequest struct {
 func filterAliases(ctx context.Context, abr *aliasBuildRequest) (*buildRequest, error) {
 	// parse aliases as needed
 	var err error
-	for _, aAction := range abr.Actions {
+	for i, aAction := range abr.Actions {
 		p0, ok := aAction["params"]
 		if !ok {
-			return nil, errors.Wrap(ErrBadBuildRequest, "missing params on action")
+			return nil, nil
 		}
 
 		p, ok := p0.(map[string]interface{})
 		if !ok {
-			return nil, errors.Wrap(ErrBadBuildRequest, "misshappen params on action")
+			return nil, nil
 		}
 
 		if _, ok := p["asset_id"]; !ok {
 			if assetAlias, ok := p["asset_alias"]; ok {
 				aa, ok := assetAlias.(string)
 				if !ok {
-					return nil, errors.Wrap(ErrBadBuildRequest, "misshappen asset alias")
+					return nil, errors.WithDetailf(ErrBadAlias, "invalid asset alias %v on action %d", assetAlias, i)
 				}
 
 				ast, err := asset.FindByAlias(ctx, aa)
 				if err != nil {
-					return nil, errors.Wrap(ErrBadBuildRequest, "missing asset alias")
+					return nil, errors.WithDetailf(err, "invalid asset alias %s on action %d", aa, i)
 				}
 
 				p["asset_id"] = ast.AssetID
@@ -100,12 +105,12 @@ func filterAliases(ctx context.Context, abr *aliasBuildRequest) (*buildRequest, 
 			if accountAlias, ok := p["account_alias"]; ok {
 				aa, ok := accountAlias.(string)
 				if !ok {
-					return nil, errors.Wrap(ErrBadBuildRequest, "misshappen account alias")
+					return nil, errors.WithDetailf(ErrBadAlias, "invalid account alias %v on action %d", accountAlias, i)
 				}
 
 				acc, err := account.FindByAlias(ctx, aa)
 				if err != nil {
-					return nil, errors.Wrap(ErrBadBuildRequest, "missing account alias")
+					return nil, errors.WithDetailf(err, "invalid account alias %s on action %d", aa, i)
 				}
 
 				p["account_id"] = acc.ID

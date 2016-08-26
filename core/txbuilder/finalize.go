@@ -14,11 +14,11 @@ import (
 )
 
 var (
-	// ErrBadTxTemplate is returned by FinalizeTx
-	ErrBadTxTemplate = errors.New("bad transaction template")
-
 	// ErrRejected means the network rejected a tx (as a double-spend)
 	ErrRejected = errors.New("transaction rejected")
+
+	ErrMissingRawTx  = errors.New("missing unsigned tx")
+	ErrBadInputCount = errors.New("too many inputs in template")
 )
 
 var Generator *string
@@ -30,16 +30,16 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, txTemplate *Template) (*
 	defer metrics.RecordElapsed(time.Now())
 
 	if txTemplate.Unsigned == nil {
-		return nil, errors.WithDetail(ErrBadTxTemplate, "missing unsigned tx")
+		return nil, errors.Wrap(ErrMissingRawTx)
 	}
 
 	if len(txTemplate.Inputs) > len(txTemplate.Unsigned.Inputs) {
-		return nil, errors.WithDetail(ErrBadTxTemplate, "too many inputs in template")
+		return nil, errors.Wrap(ErrBadInputCount)
 	}
 
 	msg, err := AssembleSignatures(txTemplate)
 	if err != nil {
-		return nil, errors.WithDetail(ErrBadTxTemplate, err.Error())
+		return nil, errors.Wrap(err)
 	}
 
 	err = publishTx(ctx, c, msg)
@@ -62,7 +62,7 @@ func publishTx(ctx context.Context, c *protocol.Chain, msg *bc.Tx) error {
 	err := c.AddTx(ctx, msg)
 	if errors.Root(err) == validation.ErrBadTx {
 		detail := errors.Detail(err)
-		err = errors.Wrap(ErrBadTxTemplate, err)
+		err = errors.Wrap(ErrRejected, err)
 		return errors.WithDetail(err, detail)
 	} else if err != nil {
 		return errors.Wrap(err, "add tx to blockchain")

@@ -6,6 +6,7 @@ import (
 
 	"chain/core/signers"
 	"chain/core/txbuilder"
+	"chain/database/pg"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
@@ -23,8 +24,11 @@ type IssueAction struct {
 
 func (a *IssueAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
 	asset, err := FindByID(ctx, a.Params.AssetID)
+	if errors.Root(err) == pg.ErrUserInputNotFound {
+		err = errors.WithDetailf(err, "missing asset with ID %q", a.Params.AssetID)
+	}
 	if err != nil {
-		return nil, nil, nil, errors.WithDetailf(err, "find asset with ID %q", a.Params.AssetID)
+		return nil, nil, nil, err
 	}
 	ttl := a.Params.TTL
 	if ttl == 0 {

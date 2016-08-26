@@ -6,16 +6,12 @@ import (
 	"chain/core/account/utxodb"
 	"chain/core/asset"
 	"chain/core/query"
+	"chain/core/rpcclient"
 	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/httpjson"
-)
-
-var (
-	// ErrBadBuildRequest is returned for malformed build transaction requests.
-	ErrBadBuildRequest = errors.New("bad build request")
 )
 
 // errorInfo contains a set of error codes to send to the user.
@@ -41,14 +37,15 @@ var (
 	errorInfoTab = map[error]errorInfo{
 		// General error namespace (0xx)
 		context.DeadlineExceeded: errorInfo{504, "CH001", "Request timed out"},
-		pg.ErrUserInputNotFound:  errorInfo{404, "CH002", "Not found"},
+		pg.ErrUserInputNotFound:  errorInfo{400, "CH002", "Not found"},
 		httpjson.ErrBadRequest:   errorInfo{400, "CH003", "Invalid request body"},
 		errBadReqHeader:          errorInfo{400, "CH004", "Invalid request header"},
-		asset.ErrArchived:        errorInfo{404, "CH005", "Item has been archived"},
-		signers.ErrArchived:      errorInfo{404, "CH005", "Item has been archived"},
+		asset.ErrArchived:        errorInfo{400, "CH005", "Item has been archived"},
+		signers.ErrArchived:      errorInfo{400, "CH005", "Item has been archived"},
 
 		// Core error namespace
-		ErrProdReset: errorInfo{400, "CH100", "Reset can only be called in a development system"},
+		ErrProdReset:             errorInfo{400, "CH100", "Reset can only be called in a development system"},
+		rpcclient.ErrNoGenerator: errorInfo{400, "CH101", "No generator is configured on the core"},
 
 		// Signers error namespace (2xx)
 		signers.ErrBadQuorum: errorInfo{400, "CH200", "Quorum must be greater than 1 and less than or equal to the length of xpubs"},
@@ -56,18 +53,26 @@ var (
 		signers.ErrNoXPubs:   errorInfo{400, "CH202", "At least one xpub is required"},
 		signers.ErrBadType:   errorInfo{400, "CH203", "Retrieved type does not match expected type"},
 
-		// Query error namespace
+		// Query error namespace (6xx)
 		query.ErrBadCursor:              errorInfo{400, "CH600", "Malformed pagination cursor"},
 		query.ErrParameterCountMismatch: errorInfo{400, "CH601", "Incorrect number of parameters to filter"},
 		ErrBadIndexConfig:               errorInfo{400, "CH602", "Invalid index configuration"},
 
-		// Transaction error namespace
-		ErrBadBuildRequest:           errorInfo{400, "CH700", "Invalid build transaction request"},
-		txbuilder.ErrBadBuildRequest: errorInfo{400, "CH700", "Invalid build transaction request"},
-		txbuilder.ErrBadTxTemplate:   errorInfo{400, "CH701", "Invalid transaction template"},
-		txbuilder.ErrRejected:        errorInfo{400, "CH702", "Transaction rejected"},
-		utxodb.ErrInsufficient:       errorInfo{400, "CH710", "Insufficient funds for tx"},
-		utxodb.ErrReserved:           errorInfo{400, "CH711", "Some outputs are reserved; try again"},
+		// Transaction error namespace (7xx)
+		// Build error namespace (70x)
+		txbuilder.ErrBadRefData: errorInfo{400, "CH700", "Reference data does not match previous transaction's reference data"},
+		ErrBadActionType:        errorInfo{400, "CH701", "Invalid action type"},
+		ErrBadAlias:             errorInfo{400, "CH702", "Invalid alias on action"},
+		// Submit error namespace (73x)
+		txbuilder.ErrMissingRawTx:     errorInfo{400, "CH730", "Missing raw transaction"},
+		txbuilder.ErrBadInputCount:    errorInfo{400, "CH731", "Too many inputs in template for transaction"},
+		txbuilder.ErrBadTxInputIdx:    errorInfo{400, "CH732", "Invalid transaction input index"},
+		txbuilder.ErrBadSigScriptComp: errorInfo{400, "CH733", "Invalid signature script component"},
+		txbuilder.ErrMissingSig:       errorInfo{400, "CH734", "Missing signature in template"},
+		txbuilder.ErrRejected:         errorInfo{400, "CH735", "Transaction rejected"},
+		// account action error namespace (76x)
+		utxodb.ErrInsufficient: errorInfo{400, "CH760", "Insufficient funds for tx"},
+		utxodb.ErrReserved:     errorInfo{400, "CH761", "Some outputs are reserved; try again"},
 	}
 )
 
