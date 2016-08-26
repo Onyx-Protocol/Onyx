@@ -8,7 +8,7 @@ class Form extends React.Component {
       alias: "",
       type: "",
       unspents: false,
-      query: ""
+      filter: ""
     }
     this.handleChange = this.handleChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -17,7 +17,7 @@ class Form extends React.Component {
   handleChange() {
     let newState = {
       alias: this.refs.alias.value,
-      query: this.refs.query.value,
+      filter: this.refs.filter.value,
       type: this.refs.type.value
     }
     this.setState(newState)
@@ -55,13 +55,13 @@ class Form extends React.Component {
           </select>
         </div>
         <div className='form-group'>
-          <label>ChQL Query</label>
+          <label>Filter</label>
           <input
-            ref="query"
+            ref="filter"
             className='form-control'
             type='text'
-            placeholder='Query'
-            value={this.state.query}
+            placeholder='Filter'
+            value={this.state.filter}
             onChange={this.handleChange} />
         </div>
 

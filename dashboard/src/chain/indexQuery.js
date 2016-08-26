@@ -2,7 +2,7 @@ import buildClass from './buildClass'
 import uuid from 'uuid'
 
 export default class Index extends buildClass('index', {
-  listPath: 'list-indexes'
+  listPath: '/list-indexes'
 }) {
   create(context) {
     let body = Object.assign({ client_token: uuid.v4() }, this)

@@ -15,7 +15,7 @@ actionTypes[SPEND_ACCOUNT_KEY] = "Spend from Account"
 actionTypes[SPEND_UNSPENT_KEY] = "Spend from Unspent Output"
 actionTypes[CONTROL_ACCOUNT_KEY] = "Control with Account"
 actionTypes[CONTROL_PROGRAM_KEY] = "Control with Program"
-actionTypes[RETIRE_ASSET_KEY] = "Retire asset units"
+actionTypes[RETIRE_ASSET_KEY] = "Retire"
 
 class Form extends React.Component {
   constructor(props) {
