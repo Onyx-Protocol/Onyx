@@ -88,6 +88,12 @@ class Navigation extends React.Component {
                         Mock HSM
                       </Link>
                     </li>
+                    <li>
+                      <Link to={`/core-settings`} activeClassName={styles.active}>
+                        <span className={`glyphicon glyphicon-hdd ${styles.glyphicon}`} />
+                        Core Settings
+                      </Link>
+                    </li>
                   </ul>
                 </li>
               </ul>

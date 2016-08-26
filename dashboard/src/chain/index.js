@@ -1,4 +1,5 @@
 import Context from './context'
+import Core from './core'
 import Transaction from './transaction'
 import Unspent from './unspent'
 import Balance from './balance'
@@ -9,6 +10,7 @@ import Index from './indexQuery'
 
 export default {
   Context,
+  Core,
   Transaction,
   Unspent,
   Balance,
