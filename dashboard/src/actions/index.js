@@ -6,7 +6,7 @@ import AssetActions from './asset'
 import IndexActions from './indexQuery'
 import MockHsmActions from './mockhsm'
 
-export default Object.assign({}, {
+export default {
   transaction: TransactionActions,
   unspent: UnspentActions,
   balance: BalanceActions,
@@ -14,4 +14,4 @@ export default Object.assign({}, {
   asset: AssetActions,
   index: IndexActions,
   mockhsm: MockHsmActions
-})
+}

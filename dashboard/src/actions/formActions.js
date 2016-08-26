@@ -7,22 +7,22 @@ export default function(type, options = {}) {
   const createPath = options.createPath || `/${type}s/create`
 
   return {
-    showCreate: () => function(dispatch, getState) {
+    showCreate: () => function(dispatch) {
       dispatch(push(createPath))
     },
 
     submitForm: (data) => {
       const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
-      return function(dispatch, getState) {
+      return function(dispatch) {
         let object = new chain[className](data)
 
         object.create(context)
-          .then((param) => {
+          .then(() => {
             options.resetAction(dispatch)
             dispatch(push(listPath))
-        }).catch((err) => {
-          console.log(err)
-        })
+          }).catch((err) => {
+            console.log(err)
+          })
       }
     }
   }

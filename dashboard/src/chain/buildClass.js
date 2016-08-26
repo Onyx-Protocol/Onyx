@@ -12,7 +12,7 @@ function buildClass(type, options = {}) {
     }
 
     create(context) {
-      let body = Object.assign({}, { client_token: uuid.v4() }, this)
+      let body = Object.assign({ client_token: uuid.v4() }, this)
       return this.constructor.create(context, [body]).then(data => data[0])
     }
 

@@ -34,6 +34,7 @@
     input-groups: true,
     navs: true,
     navbar: true,
+    wells: true,
     jumbotron: true,
     pagination: true,
     pager: true,
