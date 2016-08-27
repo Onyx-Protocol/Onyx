@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"reflect"
-	"strconv"
 	"testing"
 
 	"chain/core/signers"
@@ -191,32 +190,6 @@ func TestFindAssetByID(t *testing.T) {
 
 	if !reflect.DeepEqual(asset, found) {
 		t.Errorf("expected %v and %v to match", asset, found)
-	}
-}
-
-func TestFindBatchAsset(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	count := 3
-	keys := []string{testutil.TestXPub.String()}
-	var genesisHash bc.Hash
-
-	var assetIDs []bc.AssetID
-	for i := 0; i < count; i++ {
-		tags := map[string]interface{}{"number": strconv.Itoa(i)}
-		a, err := Define(ctx, keys, 1, nil, genesisHash, "", tags, nil)
-		if err != nil {
-			testutil.FatalErr(t, err)
-		}
-		assetIDs = append(assetIDs, a.AssetID)
-	}
-	t.Logf("%#v", assetIDs)
-
-	found, err := FindBatch(ctx, assetIDs...)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	if len(found) != len(assetIDs) {
-		t.Errorf("Got %d assets, want %d", len(found), len(assetIDs))
 	}
 }
 

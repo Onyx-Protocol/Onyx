@@ -205,62 +205,6 @@ func Archive(ctx context.Context, id bc.AssetID, alias string) error {
 	return nil
 }
 
-// FindBatch returns a map of Assets for the provided IDs. The
-// asset tags on the returned Assets will not be populated.
-func FindBatch(ctx context.Context, assetIDs ...bc.AssetID) (map[string]*Asset, error) {
-	const q = `
-		SELECT assets.id, definition, issuance_program, signer_id,
-			quorum, xpubs, key_index(signers.key_index), sort_id
-		FROM assets
-		LEFT JOIN signers ON (assets.signer_id=signers.id)
-		WHERE assets.id = ANY($1) AND NOT assets.archived AND signers.type='asset'
-	`
-
-	assetIDStrings := make([]string, 0, len(assetIDs))
-	for _, assetID := range assetIDs {
-		assetIDStrings = append(assetIDStrings, assetID.String())
-	}
-
-	assets := make(map[string]*Asset, len(assetIDs))
-	err := pg.ForQueryRows(ctx, q, pg.Strings(assetIDStrings),
-		func(id string, definitionBytes []byte, issuanceProgram []byte, signerID string, quorum int, xpubs pg.Strings, keyIndex pg.Uint32s, sortID string) error {
-			var assetID bc.AssetID
-			err := assetID.UnmarshalText([]byte(id))
-			if err != nil {
-				return errors.WithDetailf(httpjson.ErrBadRequest, "%q is an invalid asset ID", assetID)
-			}
-
-			keys, err := signers.ConvertKeys(xpubs)
-			if err != nil {
-				return errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
-			}
-
-			var definition map[string]interface{}
-			if len(definitionBytes) > 0 {
-				err := json.Unmarshal(definitionBytes, &definition)
-				if err != nil {
-					return errors.Wrap(err)
-				}
-			}
-
-			assets[id] = &Asset{
-				AssetID:         assetID,
-				Definition:      definition,
-				IssuanceProgram: issuanceProgram,
-				Signer: &signers.Signer{
-					ID:       signerID,
-					Type:     "asset",
-					XPubs:    keys,
-					Quorum:   quorum,
-					KeyIndex: keyIndex,
-				},
-				sortID: sortID,
-			}
-			return nil
-		})
-	return assets, errors.Wrap(err)
-}
-
 // insertAsset adds the asset to the database. If the asset has a client token,
 // and there already exists an asset for the same issuer node with that client
 // token, insertAsset will lookup and return the existing asset instead.

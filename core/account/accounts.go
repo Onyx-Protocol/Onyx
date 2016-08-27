@@ -251,41 +251,6 @@ func Archive(ctx context.Context, id, alias string) error {
 	return signers.Archive(ctx, "account", id)
 }
 
-// FindBatch returns a map of Accounts for the provided IDs. The
-// account tags on the returned Accounts will not be populated.
-func FindBatch(ctx context.Context, ids ...string) (map[string]*Account, error) {
-	const q = `
-		SELECT id, xpubs, quorum, key_index(key_index)
-		FROM signers
-		WHERE type='account' AND id = ANY ($1)
-	`
-
-	accounts := make(map[string]*Account, len(ids))
-	err := pg.ForQueryRows(ctx, q, pg.Strings(ids),
-		func(id string, xpubs pg.Strings, quorum int, keyIndex pg.Uint32s) error {
-			keys, err := signers.ConvertKeys(xpubs)
-			if err != nil {
-				return errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
-			}
-
-			a := &Account{
-				Signer: &signers.Signer{
-					ID:       id,
-					Type:     "account",
-					XPubs:    keys,
-					Quorum:   quorum,
-					KeyIndex: keyIndex,
-				}}
-			accounts[id] = a
-			return nil
-		},
-	)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	return accounts, nil
-}
-
 // CreateControlProgram creates a control program
 // that is tied to the Account and stores it in the database.
 func CreateControlProgram(ctx context.Context, accountID string) ([]byte, error) {

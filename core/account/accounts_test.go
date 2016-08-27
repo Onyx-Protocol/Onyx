@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"reflect"
-	"strconv"
 	"testing"
 
 	"chain/core/signers"
@@ -161,26 +160,6 @@ func TestFindByAlias(t *testing.T) {
 
 	if !reflect.DeepEqual(account, found) {
 		t.Errorf("expected found account to be %v, instead found %v", account, found)
-	}
-}
-
-func TestFindBatch(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
-
-	var accountIDs []string
-	for i := 0; i < 3; i++ {
-		tags := map[string]interface{}{"number": strconv.Itoa(i)}
-		account := createTestAccount(ctx, t, "", tags)
-		accountIDs = append(accountIDs, account.ID)
-	}
-
-	accs, err := FindBatch(ctx, accountIDs...)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	if len(accs) != len(accountIDs) {
-		t.Errorf("got %d account IDs, want %d", len(accs), len(accountIDs))
 	}
 }
 
