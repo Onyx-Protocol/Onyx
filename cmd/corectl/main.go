@@ -12,7 +12,6 @@ import (
 
 	"chain/core/generator"
 	"chain/crypto/ed25519"
-	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
 	"chain/log"
@@ -40,8 +39,7 @@ var commands = map[string]*command{
 func main() {
 	log.SetOutput(&logbuf)
 	env.Parse()
-	sql.Register("schemadb", pg.SchemaDriver("corectl"))
-	db, err := sql.Open("schemadb", *dbURL)
+	db, err := sql.Open("postgres", *dbURL)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(2)

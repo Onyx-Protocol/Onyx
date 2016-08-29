@@ -116,7 +116,6 @@ func main() {
 	}
 	rpc.SecretToken = *rpcSecretToken
 
-	sql.Register("schemadb", pg.SchemaDriver(buildTag))
 	log.SetPrefix("api-" + buildTag + ": ")
 	log.SetFlags(log.Lshortfile)
 	chainlog.SetPrefix(append([]interface{}{"app", "api", "target", *target, "buildtag", buildTag, "processID", processID}, race...)...)
@@ -148,7 +147,7 @@ func main() {
 	}))
 
 	sql.EnableQueryLogging(*logQueries)
-	db, err := sql.Open("schemadb", *dbURL)
+	db, err := sql.Open("postgres", *dbURL)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}

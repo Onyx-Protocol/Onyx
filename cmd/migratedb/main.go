@@ -16,7 +16,6 @@ import (
 
 	_ "github.com/lib/pq"
 
-	"chain/database/pg"
 	"chain/database/sql"
 )
 
@@ -88,8 +87,7 @@ func main() {
 	}
 
 	// Create a database connection.
-	sql.Register("schemadb", pg.SchemaDriver("migratedb"))
-	db, err := sql.Open("schemadb", dbURL)
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		fatalf("unable to connect to %s: %v\n", dbURL, err)
 	}
