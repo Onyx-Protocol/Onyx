@@ -2,6 +2,7 @@
 package core
 
 import (
+	"context"
 	"net/http"
 
 	"chain/core/blocksigner"
@@ -10,6 +11,7 @@ import (
 	"chain/core/query"
 	"chain/core/txdb"
 	"chain/protocol"
+	"chain/protocol/bc"
 )
 
 const (
@@ -19,7 +21,7 @@ const (
 // Handler returns a handler that serves the Chain HTTP API.
 func Handler(
 	apiSecret string,
-	c *protocol.Chain, generatorConfig *generator.Config,
+	c *protocol.Chain,
 	signer *blocksigner.Signer,
 	store *txdb.Store,
 	pool *txdb.Pool,
@@ -27,27 +29,25 @@ func Handler(
 	indexer *query.Indexer,
 ) http.Handler {
 	a := &api{
-		c:         c,
-		store:     store,
-		pool:      pool,
-		generator: generatorConfig,
-		hsm:       hsm,
-		indexer:   indexer,
+		c:       c,
+		store:   store,
+		pool:    pool,
+		hsm:     hsm,
+		indexer: indexer,
 	}
 
 	m := http.NewServeMux()
 	m.Handle("/", apiAuthn(apiSecret, waitForGenesis(a.c, a.handler())))
-	m.Handle("/rpc/", rpcAuthn(waitForGenesis(a.c, rpcAuthedHandler(generatorConfig, signer))))
+	m.Handle("/rpc/", rpcAuthn(waitForGenesis(a.c, rpcAuthedHandler(c, signer))))
 	return m
 }
 
 type api struct {
-	c         *protocol.Chain
-	store     *txdb.Store
-	pool      *txdb.Pool
-	generator *generator.Config
-	hsm       *mockhsm.HSM
-	indexer   *query.Indexer
+	c       *protocol.Chain
+	store   *txdb.Store
+	pool    *txdb.Pool
+	hsm     *mockhsm.HSM
+	indexer *query.Indexer
 }
 
 func waitForGenesis(c *protocol.Chain, h http.Handler) http.Handler {
@@ -131,13 +131,14 @@ func (a *api) handler() http.Handler {
 	return m
 }
 
-func rpcAuthedHandler(generator *generator.Config, signer *blocksigner.Signer) http.Handler {
+func rpcAuthedHandler(c *protocol.Chain, signer *blocksigner.Signer) http.Handler {
 	m := http.NewServeMux()
 
-	if generator != nil {
-		m.Handle("/rpc/generator/submit", jsonHandler(generator.Submit))
-		m.Handle("/rpc/generator/get-blocks", jsonHandler(generator.GetBlocks))
-	}
+	m.Handle("/rpc/submit", jsonHandler(c.AddTx))
+	m.Handle("/rpc/get-blocks", jsonHandler(func(ctx context.Context, h uint64) ([]*bc.Block, error) {
+		return generator.GetBlocks(ctx, c, h)
+	}))
+
 	if signer != nil {
 		m.Handle("/rpc/signer/sign-block", jsonHandler(signer.SignBlock))
 	}

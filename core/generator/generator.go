@@ -95,20 +95,12 @@ func Generate(ctx context.Context, config Config, period time.Duration) {
 	}
 }
 
-// Submit is an http handler for the generator submit transaction endpoint.
-// Other nodes will call this endpoint to notify the generator of submitted
-// transactions.
-func (g *Config) Submit(ctx context.Context, tx *bc.Tx) error {
-	err := g.Chain.AddTx(ctx, tx)
-	return err
-}
-
 // GetBlocks returns blocks (with heights larger than afterHeight) in
 // block-height order.
-func (g *Config) GetBlocks(ctx context.Context, afterHeight uint64) ([]*bc.Block, error) {
+func GetBlocks(ctx context.Context, c *protocol.Chain, afterHeight uint64) ([]*bc.Block, error) {
 	// TODO(kr): This is not a generator function.
 	// Move this to another package.
-	err := g.Chain.WaitForBlock(ctx, afterHeight+1)
+	err := c.WaitForBlock(ctx, afterHeight+1)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", afterHeight+1)
 	}

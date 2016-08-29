@@ -234,7 +234,7 @@ func main() {
 		}
 	})
 
-	h := core.Handler(*apiSecretToken, c, generatorConfig, localSigner, store, pool, hsm, indexer)
+	h := core.Handler(*apiSecretToken, c, localSigner, store, pool, hsm, indexer)
 	h = dashboardHandler(h)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}

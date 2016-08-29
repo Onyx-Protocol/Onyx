@@ -19,7 +19,7 @@ func Submit(ctx context.Context, tx *bc.Tx) error {
 	if generatorURL == "" {
 		return ErrNoGenerator
 	}
-	return rpc.Call(ctx, generatorURL, "/rpc/generator/submit", tx, nil)
+	return rpc.Call(ctx, generatorURL, "/rpc/submit", tx, nil)
 }
 
 // GetBlocks sends a get-blocks RPC request to the generator
@@ -33,7 +33,7 @@ func GetBlocks(ctx context.Context, height uint64) ([]*bc.Block, error) {
 	defer cancel()
 
 	var blocks []*bc.Block
-	err := rpc.Call(ctx, generatorURL, "/rpc/generator/get-blocks", height, &blocks)
+	err := rpc.Call(ctx, generatorURL, "/rpc/get-blocks", height, &blocks)
 	if err == context.DeadlineExceeded {
 		return nil, nil
 	}
