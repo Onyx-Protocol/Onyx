@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -501,6 +501,21 @@ CREATE SEQUENCE chain_id_seq
 
 
 --
+-- Name: config; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE config (
+    singleton boolean DEFAULT true NOT NULL,
+    is_signer boolean,
+    is_generator boolean,
+    genesis_hash text NOT NULL,
+    remote_generator_url text,
+    configured_at timestamp with time zone NOT NULL,
+    CONSTRAINT config_singleton CHECK (singleton)
+);
+
+
+--
 -- Name: generator_pending_block; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -836,6 +851,14 @@ ALTER TABLE ONLY blocks_txs
 
 
 --
+-- Name: config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY config
+    ADD CONSTRAINT config_pkey PRIMARY KEY (singleton);
+
+
+--
 -- Name: generator_pending_block_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1119,3 +1142,4 @@ insert into migrations (filename, hash) values ('2016-08-22.0.account.change-utx
 insert into migrations (filename, hash) values ('2016-08-23.0.query.sum-by.sql', '82a04d0595f19df735dd35e896496c79a70398a8428131ece4d441aaf2f3836c');
 insert into migrations (filename, hash) values ('2016-08-24.0.query.index-filter.sql', '9b501c1fc5a528312f7239a58b1552bf95681fe228d57472a65e9a55fc19246b');
 insert into migrations (filename, hash) values ('2016-08-26.0.query.assets-sort-id.sql', '56083fef381b675be65ef9c9769de724ddf46f2c3ed44a9e75ab81ecc812f983');
+insert into migrations (filename, hash) values ('2016-08-29.0.core.config.sql', '4f440fccb3a8523bfd4455acf400e20859d134118742a55677a04d2297297914');
