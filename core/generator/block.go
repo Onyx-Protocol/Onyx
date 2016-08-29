@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"time"
 
-	"chain/core/rpcclient"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
+	"chain/net/rpc"
 	"chain/net/trace/span"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -136,7 +136,9 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 			if signer == nil {
 				r.signature, r.err = g.LocalSigner.ComputeBlockSignature(ctx, b)
 			} else {
-				r.signature, r.err = rpcclient.GetSignatureForSerializedBlock(ctx, signer.URL.String(), serializedBlock)
+				var signature []byte
+				err := rpc.Call(ctx, signer.URL.String(), "/rpc/signer/sign-block", (*json.RawMessage)(&serializedBlock), &signature)
+				r.signature, r.err = signature, err
 			}
 			responses <- r
 		}(i)

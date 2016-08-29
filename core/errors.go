@@ -6,7 +6,6 @@ import (
 	"chain/core/account/utxodb"
 	"chain/core/asset"
 	"chain/core/query"
-	"chain/core/rpcclient"
 	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/database/pg"
@@ -44,8 +43,7 @@ var (
 		signers.ErrArchived:      errorInfo{400, "CH005", "Item has been archived"},
 
 		// Core error namespace
-		ErrProdReset:             errorInfo{400, "CH100", "Reset can only be called in a development system"},
-		rpcclient.ErrNoGenerator: errorInfo{400, "CH101", "No generator is configured on the core"},
+		ErrProdReset: errorInfo{400, "CH100", "Reset can only be called in a development system"},
 
 		// Signers error namespace (2xx)
 		signers.ErrBadQuorum: errorInfo{400, "CH200", "Quorum must be greater than 1 and less than or equal to the length of xpubs"},

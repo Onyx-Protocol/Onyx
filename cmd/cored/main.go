@@ -29,7 +29,6 @@ import (
 	"chain/core/leader"
 	"chain/core/mockhsm"
 	"chain/core/query"
-	"chain/core/rpcclient"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
@@ -198,8 +197,6 @@ func main() {
 		localSigner = blocksigner.New(blockXPub, hsm, db, c)
 	}
 
-	rpcclient.Init(*remoteGeneratorURL)
-
 	asset.Init(c, indexer, *isManager)
 	account.Init(c, indexer)
 
@@ -230,7 +227,7 @@ func main() {
 		if *isGenerator {
 			go generator.Generate(ctx, *generatorConfig, blockPeriod)
 		} else {
-			go fetch.Fetch(ctx, c)
+			go fetch.Fetch(ctx, c, *remoteGeneratorURL)
 		}
 	})
 

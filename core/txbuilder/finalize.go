@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"chain/core/rpcclient"
 	"chain/errors"
 	chainlog "chain/log"
 	"chain/metrics"
+	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/validation"
@@ -69,7 +69,7 @@ func publishTx(ctx context.Context, c *protocol.Chain, msg *bc.Tx) error {
 	}
 
 	if Generator != nil && *Generator != "" {
-		err = rpcclient.Submit(ctx, msg)
+		err = rpc.Call(ctx, *Generator, "/rpc/submit", msg, nil)
 		if err != nil {
 			err = errors.Wrap(err, "generator transaction notice")
 			chainlog.Error(ctx, err)
