@@ -39,7 +39,7 @@ var commands = map[string]*command{
 func main() {
 	log.SetOutput(&logbuf)
 	env.Parse()
-	db, err := sql.Open("postgres", *dbURL)
+	db, err := sql.Open("hapg", *dbURL)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(2)

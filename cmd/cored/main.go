@@ -147,7 +147,7 @@ func main() {
 	}))
 
 	sql.EnableQueryLogging(*logQueries)
-	db, err := sql.Open("postgres", *dbURL)
+	db, err := sql.Open("hapg", *dbURL)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}

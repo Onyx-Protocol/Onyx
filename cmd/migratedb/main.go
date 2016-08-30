@@ -87,7 +87,7 @@ func main() {
 	}
 
 	// Create a database connection.
-	db, err := sql.Open("postgres", dbURL)
+	db, err := sql.Open("hapg", dbURL)
 	if err != nil {
 		fatalf("unable to connect to %s: %v\n", dbURL, err)
 	}

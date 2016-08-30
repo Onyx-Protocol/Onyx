@@ -26,7 +26,7 @@ func TestResolveURI(t *testing.T) {
 		}
 
 		if res != c.want {
-			t.Fatalf("ResolveURI(%q) = %q, want %q", c.input, res, c.want)
+			t.Fatalf("resolveURI(%q) = %q, want %q", c.input, res, c.want)
 		}
 
 	}

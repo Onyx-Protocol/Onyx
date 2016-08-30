@@ -1,6 +1,13 @@
+// package pg provides small utilities for the lib/pq
+// database driver.
+//
+// It also registers the sql.Driver "hapg", which can
+// resolve uris from the high-availability postgres package.
 package pg
 
 import (
+	"database/sql"
+	"database/sql/driver"
 	"net"
 	"net/url"
 
@@ -8,6 +15,22 @@ import (
 
 	chainnet "chain/net"
 )
+
+// TODO: move this under chain/hapg
+type hapgDriver struct{}
+
+func (d hapgDriver) Open(name string) (driver.Conn, error) {
+	name, err := resolveURI(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return pq.Open(name)
+}
+
+func init() {
+	sql.Register("hapg", hapgDriver{})
+}
 
 // IsUniqueViolation returns true if the given error is a Postgres unique
 // constraint violation error.
