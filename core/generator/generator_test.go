@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"chain/core/blocksigner"
-	"chain/core/mockhsm"
-	"chain/database/pg/pgtest"
+	"chain/crypto/ed25519"
 	"chain/protocol"
+	"chain/protocol/bc"
 	"chain/protocol/prottest"
 	"chain/protocol/state"
 	"chain/protocol/validation"
@@ -17,7 +16,6 @@ import (
 )
 
 func TestGetAndAddBlockSignatures(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 
 	c := prottest.NewChain(t)
@@ -26,18 +24,15 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	// TODO(kr): tweak the generator's design to not
-	// take a hard dependency on mockhsm.
-	// See also similar comment in $CHAIN/core/blocksigner/blocksigner.go.
-	hsm := mockhsm.New(dbtx)
-	xpub, err := hsm.CreateKey(ctx, "")
+	pubKey, privKey, err := ed25519.GenerateKey(nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
+	signer := testSigner{pubKey, privKey}
 	g := &generator{
 		chain:          c,
-		localSigner:    blocksigner.New(xpub.XPub, hsm, dbtx, c),
+		signers:        []BlockSigner{signer},
 		latestBlock:    b1,
 		latestSnapshot: state.Empty(),
 	}
@@ -82,4 +77,22 @@ func TestGetAndAddBlockSignaturesInitialBlock(t *testing.T) {
 	if len(block.Witness) != 0 {
 		t.Fatalf("getAndAddBlockSignatures produced witness %v, want empty", block.Witness)
 	}
+}
+
+type testSigner struct {
+	pubKey  ed25519.PublicKey
+	privKey ed25519.PrivateKey
+}
+
+func (s testSigner) PubKey() ed25519.PublicKey {
+	return s.pubKey
+}
+
+func (s testSigner) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
+	hash := b.HashForSig()
+	return ed25519.Sign(s.privKey, hash[:]), nil
+}
+
+func (s testSigner) String() string {
+	return "test-signer"
 }

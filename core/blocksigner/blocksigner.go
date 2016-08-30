@@ -2,8 +2,10 @@ package blocksigner
 
 import (
 	"context"
+	"encoding/hex"
 
 	"chain/core/mockhsm"
+	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
@@ -21,9 +23,6 @@ type Signer struct {
 
 // New returns a new Signer that validates blocks with c and signs
 // them with k.
-//
-// TODO(bobg): Create an HSM abstraction that allows HSM's other than
-// the mockhsm to be used here.
 func New(xpub *hd25519.XPub, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Signer {
 	return &Signer{
 		XPub: xpub,
@@ -33,20 +32,28 @@ func New(xpub *hd25519.XPub, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Sig
 	}
 }
 
-// ComputeBlockSignature computes the signature for the block using
+// SignBlock computes the signature for the block using
 // the private key in s.  It does not validate the block.
-func (s *Signer) ComputeBlockSignature(ctx context.Context, b *bc.Block) ([]byte, error) {
+func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	hash := b.HashForSig()
 	return s.hsm.Sign(ctx, s.XPub, nil, hash[:])
 }
 
-// SignBlock validates the given block against the current blockchain
+func (s *Signer) PubKey() ed25519.PublicKey {
+	return s.XPub.Key
+}
+
+func (s *Signer) String() string {
+	return "signer for key " + hex.EncodeToString(s.XPub.Key)
+}
+
+// ValidateAndSignBlock validates the given block against the current blockchain
 // and, if valid, computes and returns a signature for the block.  It
 // is used as the httpjson handler for /rpc/signer/sign-block.
 //
 // This function fails if this node has ever signed a block at the
 // same height as b.
-func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
+func (s *Signer) ValidateAndSignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	err := s.c.WaitForBlock(ctx, b.Height-1)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", b.Height-1)
@@ -59,7 +66,7 @@ func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "lock block height")
 	}
-	return s.ComputeBlockSignature(ctx, b)
+	return s.SignBlock(ctx, b)
 }
 
 // lockBlockHeight records a signer's intention to sign a given block

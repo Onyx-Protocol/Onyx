@@ -4,26 +4,23 @@ import (
 	"context"
 	"time"
 
-	"chain/core/blocksigner"
-	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
-	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
 )
 
-// TODO(kr): replace RemoteSigners type and use of *blocksigner.Signer
-// with a single BlockSigner interface.
+type BlockSigner interface {
+	SignBlock(context.Context, *bc.Block) (signature []byte, err error)
+}
 
 // generator produces new blocks on an interval.
 type generator struct {
 	// config
-	chain         *protocol.Chain
-	remoteSigners []*RemoteSigner
-	localSigner   *blocksigner.Signer
+	chain   *protocol.Chain
+	signers []BlockSigner
 
 	// latestBlock and latestSnapshot are current as long as this
 	// process remains the leader process. If the process is demoted,
@@ -33,23 +30,10 @@ type generator struct {
 	latestSnapshot *state.Snapshot
 }
 
-// RemoteSigner defines the address and public key of another Core
-// that may sign blocks produced by this generator.
-type RemoteSigner struct {
-	Client *rpc.Client
-	Key    ed25519.PublicKey
-}
-
 // Generate runs in a loop, making one new block
 // every block period. It returns when its context
 // is canceled.
-func Generate(
-	ctx context.Context,
-	c *protocol.Chain,
-	rs []*RemoteSigner,
-	ls *blocksigner.Signer,
-	period time.Duration,
-) {
+func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, period time.Duration) {
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
 	recoveredBlock, recoveredSnapshot, err := c.Recover(ctx)
@@ -59,8 +43,7 @@ func Generate(
 
 	g := &generator{
 		chain:          c,
-		remoteSigners:  rs,
-		localSigner:    ls,
+		signers:        s,
 		latestBlock:    recoveredBlock,
 		latestSnapshot: recoveredSnapshot,
 	}

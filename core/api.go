@@ -5,7 +5,6 @@ import (
 	"context"
 	"net/http"
 
-	"chain/core/blocksigner"
 	"chain/core/generator"
 	"chain/core/mockhsm"
 	"chain/core/query"
@@ -21,7 +20,7 @@ const (
 func Handler(
 	apiSecret, rpcSecret string,
 	c *protocol.Chain,
-	signer *blocksigner.Signer,
+	signer func(context.Context, *bc.Block) ([]byte, error),
 	hsm *mockhsm.HSM,
 	indexer *query.Indexer,
 ) http.Handler {
@@ -125,7 +124,7 @@ func (a *api) handler() http.Handler {
 	return m
 }
 
-func rpcAuthedHandler(c *protocol.Chain, signer *blocksigner.Signer) http.Handler {
+func rpcAuthedHandler(c *protocol.Chain, signer func(context.Context, *bc.Block) ([]byte, error)) http.Handler {
 	m := http.NewServeMux()
 
 	m.Handle("/rpc/submit", jsonHandler(c.AddTx))
@@ -140,7 +139,7 @@ func rpcAuthedHandler(c *protocol.Chain, signer *blocksigner.Signer) http.Handle
 	}))
 
 	if signer != nil {
-		m.Handle("/rpc/signer/sign-block", jsonHandler(signer.SignBlock))
+		m.Handle("/rpc/signer/sign-block", jsonHandler(signer))
 	}
 
 	return m

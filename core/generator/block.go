@@ -3,31 +3,22 @@ package generator
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"time"
 
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
+	"chain/log"
 	"chain/net/trace/span"
 	"chain/protocol/bc"
 	"chain/protocol/vmutil"
 )
 
-var (
-	// errTooFewSigners is returned when a block-signing attempt finds
-	// that not enough signers are configured for the number of
-	// signatures required.
-	errTooFewSigners = errors.New("too few signers")
-
-	// errUnknownPubkey is returned when a block-signing attempt finds
-	// an unrecognized public key in the output script of the previous
-	// block.
-	errUnknownPubkey = errors.New("unknown block pubkey")
-)
+// errTooFewSigners is returned when a block-signing attempt finds
+// that not enough signers are configured for the number of
+// signatures required.
+var errTooFewSigners = errors.New("too few signers")
 
 // makeBlock generates a new bc.Block, collects the required signatures
 // and commits the block to the blockchain.
@@ -75,113 +66,73 @@ func (g *generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 		return nil // no signatures needed for initial block
 	}
 
-	pubkeys, nrequired, err := vmutil.ParseBlockMultiSigScript(prevBlock.ConsensusProgram)
+	pubkeys, quorum, err := vmutil.ParseBlockMultiSigScript(prevBlock.ConsensusProgram)
 	if err != nil {
 		return errors.Wrap(err, "parsing prevblock output script")
 	}
-	if nrequired == 0 {
-		return nil // no signatures needed
-	}
-
-	signersConfigured := len(g.remoteSigners)
-	if g.localSigner != nil {
-		signersConfigured++
-	}
-	if signersConfigured < nrequired {
+	if len(g.signers) < quorum {
 		return errTooFewSigners
 	}
 
-	signersByPubkey := make(map[string]*RemoteSigner, signersConfigured)
-	for _, remoteSigner := range g.remoteSigners {
-		signersByPubkey[keystr(remoteSigner.Key)] = remoteSigner
-	}
-	if g.localSigner != nil {
-		signersByPubkey[keystr(g.localSigner.XPub.Key)] = nil
+	hashForSig := b.HashForSig()
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	goodSigs := make([][]byte, len(pubkeys))
+	replies := make([][]byte, len(g.signers))
+	done := make(chan int, len(g.signers))
+	for i, signer := range g.signers {
+		go getSig(ctx, signer, b, &replies[i], i, done)
 	}
 
-	type response struct {
-		signature []byte
-		signer    *RemoteSigner
-		err       error
-		pos       int
-	}
-
-	var (
-		nrequests       int
-		serializedBlock []byte
-		responses       = make(chan *response, len(pubkeys))
-	)
-	for i, pubkey := range pubkeys {
-		signer, ok := signersByPubkey[keystr(pubkey)]
-		if !ok {
-			return errUnknownPubkey
+	nready := 0
+	for i := 0; i < len(g.signers) && nready < quorum; i++ {
+		sig := replies[<-done]
+		if sig == nil {
+			continue
 		}
-
-		if signer != nil && serializedBlock == nil {
-			// Optimization: serialize the block just once instead of in N
-			// goroutines (and not at all if only using a local signer).
-			serializedBlock, err = json.Marshal(b)
-			if err != nil {
-				return errors.Wrap(err, "serializing block")
-			}
-		}
-
-		go func(pos int) {
-			r := &response{
-				signer: signer,
-				pos:    pos,
-			}
-			if signer == nil {
-				r.signature, r.err = g.localSigner.ComputeBlockSignature(ctx, b)
-			} else {
-				var signature []byte
-				err := signer.Client.Call(ctx, "/rpc/signer/sign-block", (*json.RawMessage)(&serializedBlock), &signature)
-				r.signature, r.err = signature, err
-			}
-			responses <- r
-		}(i)
-		nrequests++
-	}
-
-	ready := make([][]byte, nrequests)
-	var nready int
-	var errResponses []*response
-
-	for i := 0; i < nrequests; i++ {
-		response := <-responses
-		if response.err != nil {
-			errResponses = append(errResponses, response)
-		}
-		ready[response.pos] = response.signature
-		nready++
-		if nready >= nrequired {
-			signatures := make([][]byte, 0, nready)
-			for _, r := range ready {
-				if r != nil {
-					signatures = append(signatures, r)
-				}
-			}
-			b.Witness = signatures
-			return nil
+		k := indexKey(pubkeys, hashForSig[:], sig)
+		if k >= 0 && goodSigs[k] == nil {
+			goodSigs[k] = sig
+			nready++
+		} else if k < 0 {
+			log.Write(ctx, "error", "invalid signature", "block", b.Hash(), "signature", sig)
 		}
 	}
 
-	// Didn't get enough signatures
-	errMsg := fmt.Sprintf("got %d of %d needed signature(s)", nready, nrequired)
-	for _, errResponse := range errResponses {
-		var addr string
-		if errResponse.signer == nil {
-			addr = "local"
-		} else {
-			addr = errResponse.signer.Client.BaseURL
-		}
-		errMsg += fmt.Sprintf(" [%s: %s]", addr, errResponse.err)
+	if nready < quorum {
+		return fmt.Errorf("got %d of %d needed signatures", nready, quorum)
 	}
-	return errors.New(errMsg)
+	b.Witness = nonNilSigs(goodSigs)
+	return nil
 }
 
-func keystr(k ed25519.PublicKey) string {
-	return hex.EncodeToString(hd25519.PubBytes(k))
+func indexKey(keys []ed25519.PublicKey, msg, sig []byte) int {
+	for i, key := range keys {
+		if ed25519.Verify(key, msg, sig) {
+			return i
+		}
+	}
+	return -1
+}
+
+func getSig(ctx context.Context, signer BlockSigner, b *bc.Block, sig *[]byte, i int, done chan int) {
+	var err error
+	*sig, err = signer.SignBlock(ctx, b)
+	if err != nil {
+		log.Write(ctx, "error", err, "signer", signer)
+	}
+	done <- i
+}
+
+func nonNilSigs(a [][]byte) (b [][]byte) {
+	for _, p := range a {
+		if p != nil {
+			b = append(a, p)
+		}
+	}
+	return b
 }
 
 // getPendingBlock retrieves the generated, uncomitted block if it exists.

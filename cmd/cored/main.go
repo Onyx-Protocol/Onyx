@@ -48,6 +48,7 @@ import (
 	"chain/net/http/reqid"
 	"chain/net/rpc"
 	"chain/protocol"
+	"chain/protocol/bc"
 )
 
 var (
@@ -193,17 +194,21 @@ func main() {
 	indexer.RegisterAnnotator(account.AnnotateTxs)
 	indexer.RegisterAnnotator(asset.AnnotateTxs)
 
-	var localSigner *blocksigner.Signer
+	var generatorSigners []generator.BlockSigner
+	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
 	if *isSigner {
-		localSigner = blocksigner.New(blockXPub, hsm, db, c)
+		s := blocksigner.New(blockXPub, hsm, db, c)
+		generatorSigners = append(generatorSigners, s) // "local" signer
+		signBlockHandler = s.ValidateAndSignBlock
 	}
 
 	asset.Init(c, indexer)
 	account.Init(c, indexer)
 
-	var remoteSigners []*generator.RemoteSigner
 	if *isGenerator {
-		remoteSigners = remoteSignerInfo(ctx, processID, buildTag, *rpcSecretToken)
+		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, *rpcSecretToken) {
+			generatorSigners = append(generatorSigners, signer)
+		}
 	}
 
 	// Note, it's important for any services that will install blockchain
@@ -222,13 +227,13 @@ func main() {
 			go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
 		}
 		if *isGenerator {
-			go generator.Generate(ctx, c, remoteSigners, localSigner, blockPeriod)
+			go generator.Generate(ctx, c, generatorSigners, blockPeriod)
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator)
 		}
 	})
 
-	h := core.Handler(*apiSecretToken, *rpcSecretToken, c, localSigner, hsm, indexer)
+	h := core.Handler(*apiSecretToken, *rpcSecretToken, c, signBlockHandler, hsm, indexer)
 	h = dashboardHandler(h)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
@@ -293,7 +298,14 @@ func dashboardHandler(next http.Handler) http.Handler {
 	})
 }
 
-func remoteSignerInfo(ctx context.Context, processID, buildTag, rpcSecretToken string) (a []*generator.RemoteSigner) {
+// remoteSigner defines the address and public key of another Core
+// that may sign blocks produced by this generator.
+type remoteSigner struct {
+	Client *rpc.Client
+	Key    ed25519.PublicKey
+}
+
+func remoteSignerInfo(ctx context.Context, processID, buildTag, rpcSecretToken string) (a []*remoteSigner) {
 	// REMOTE_SIGNER_URLS and REMOTE_SIGNER_KEYS should be parallel,
 	// comma-separated lists. Each element of REMOTE_SIGNER_KEYS is the
 	// public key for the corresponding URL in REMOTE_SIGNER_URLS.
@@ -319,9 +331,21 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, rpcSecretToken s
 			Password: rpcSecretToken,
 			BuildTag: buildTag,
 		}
-		a = append(a, &generator.RemoteSigner{Client: client, Key: k})
+		a = append(a, &remoteSigner{Client: client, Key: k})
 	}
 	return a
+}
+
+func (s *remoteSigner) SignBlock(ctx context.Context, b *bc.Block) (signature []byte, err error) {
+	// TODO(kr): We might end up serializing b multiple
+	// times in multiple calls to different remoteSigners.
+	// Maybe optimize that if it makes a difference.
+	err = s.Client.Call(ctx, "/rpc/signer/sign-block", b, &signature)
+	return
+}
+
+func (s *remoteSigner) String() string {
+	return s.Client.BaseURL
 }
 
 func logWriter() io.Writer {
