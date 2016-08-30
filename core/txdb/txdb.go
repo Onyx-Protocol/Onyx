@@ -81,21 +81,6 @@ func dumpPoolTxs(ctx context.Context, db pg.DB) ([]*bc.Tx, error) {
 	return txs, nil
 }
 
-func (s *Store) GetTxBlockHeader(ctx context.Context, hash bc.Hash) (*bc.BlockHeader, error) {
-	const q = `
-		SELECT header
-		FROM blocks b
-		JOIN blocks_txs bt ON b.block_hash = bt.block_hash
-		WHERE bt.tx_hash=$1
-	`
-	b := new(bc.BlockHeader)
-	err := s.db.QueryRow(ctx, q, hash).Scan(b)
-	if err == sql.ErrNoRows {
-		return nil, nil // tx "not being in a block" is not an error
-	}
-	return b, errors.Wrap(err, "select query")
-}
-
 // insertTx inserts tx into txs. It returns true if the insert query inserted the
 // transaction. It returns false if the transaction already existed and the query
 // had no effect.
@@ -194,31 +179,6 @@ func listBlocks(ctx context.Context, db pg.DB, prev string, limit int) ([]*bc.Bl
 		blocks = append(blocks, &b)
 	})
 	return blocks, err
-}
-
-// GetBlockByHash fetches a block by its hash.
-func (s *Store) GetBlockByHash(ctx context.Context, hash string) (*bc.Block, error) {
-	return getBlockByHash(ctx, s.db, hash)
-}
-
-func getBlockByHash(ctx context.Context, db pg.DB, hash string) (*bc.Block, error) {
-	const q = `SELECT data FROM blocks WHERE block_hash=$1`
-	block := new(bc.Block)
-	err := db.QueryRow(ctx, q, hash).Scan(block)
-	if err == sql.ErrNoRows {
-		err = pg.ErrUserInputNotFound
-	}
-	return block, errors.WithDetailf(err, "block hash=%v", hash)
-}
-
-// CountBlockTxs returns the total number of confirmed transactions.
-// TODO: Instead running a count query, we should increment a value each time a
-// new block lands.
-func (s *Store) CountBlockTxs(ctx context.Context) (uint64, error) {
-	const q = `SELECT count(tx_hash) FROM blocks_txs`
-	var res uint64
-	err := s.db.QueryRow(ctx, q).Scan(&res)
-	return res, errors.Wrap(err)
 }
 
 func ListenBlocks(ctx context.Context, dbURL string) (<-chan uint64, error) {

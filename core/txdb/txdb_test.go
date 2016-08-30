@@ -154,6 +154,16 @@ func TestGetBlock(t *testing.T) {
 	}
 }
 
+func getBlockByHash(ctx context.Context, db pg.DB, hash string) (*bc.Block, error) {
+	const q = `SELECT data FROM blocks WHERE block_hash=$1`
+	block := new(bc.Block)
+	err := db.QueryRow(ctx, q, hash).Scan(block)
+	if err == sql.ErrNoRows {
+		err = pg.ErrUserInputNotFound
+	}
+	return block, errors.WithDetailf(err, "block hash=%v", hash)
+}
+
 func TestInsertBlock(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
@@ -219,37 +229,6 @@ func TestInsertBlockTxsIdempotent(t *testing.T) {
 	err = insertBlockTxs(ctx, dbtx, block)
 	if err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestGetBlockByHash(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := context.Background()
-	blk := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Version: 1,
-			Height:  1,
-		},
-	}
-	err := insertBlock(ctx, dbtx, blk)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	got, err := getBlockByHash(ctx, dbtx, blk.Hash().String())
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	if !reflect.DeepEqual(got, blk) {
-		t.Errorf("got:\n\t%+v\nwant:\n\t:%+v", got, blk)
-	}
-
-	_, gotErr := getBlockByHash(ctx, dbtx, "nonexistent")
-	if errors.Root(gotErr) != pg.ErrUserInputNotFound {
-		t.Errorf("got err=%q want %q", errors.Root(gotErr), pg.ErrUserInputNotFound)
 	}
 }
 
