@@ -21,8 +21,8 @@ import (
 )
 
 func TestReset(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	c, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -38,8 +38,8 @@ func TestReset(t *testing.T) {
 }
 
 func TestAccountTransfer(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
 	asset.Init(c, nil)
 	account.Init(c, nil)
@@ -100,13 +100,13 @@ func TestMux(t *testing.T) {
 }
 
 func TestTransfer(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
 	asset.Init(c, nil)
 	account.Init(c, nil)
 
-	ind := query.NewIndexer(db, c)
+	ind := query.NewIndexer(dbtx, c)
 	asset.Init(c, ind)
 	account.Init(c, ind)
 

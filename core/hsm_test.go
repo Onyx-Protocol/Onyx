@@ -18,12 +18,12 @@ import (
 )
 
 func TestMockHSM(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
 	asset.Init(c, nil)
 	account.Init(c, nil)
-	mockhsm := mockhsm.New(db)
+	mockhsm := mockhsm.New(dbtx)
 	xpub1, err := mockhsm.CreateKey(ctx, "")
 	if err != nil {
 		t.Fatal(err)
