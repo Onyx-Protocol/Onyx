@@ -111,7 +111,7 @@ func TestTransfer(t *testing.T) {
 	}
 
 	ind := query.NewIndexer(db, c)
-	asset.Init(c, ind, true)
+	asset.Init(c, ind)
 	account.Init(c, ind)
 
 	assetAlias := "some-asset"

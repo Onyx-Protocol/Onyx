@@ -30,7 +30,7 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 		t.Fatal(err)
 	}
 	indexer := NewIndexer(db, c)
-	asset.Init(c, indexer, true)
+	asset.Init(c, indexer)
 	account.Init(c, indexer)
 	indexer.RegisterAnnotator(account.AnnotateTxs)
 	indexer.RegisterAnnotator(asset.AnnotateTxs)

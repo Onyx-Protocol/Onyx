@@ -105,7 +105,7 @@ func InitializeSigningGenerator(ctx context.Context, store protocol.Store, pool 
 	if err != nil {
 		return nil, nil, err
 	}
-	asset.Init(c, nil, true)
+	asset.Init(c, nil)
 	account.Init(c, nil)
 
 	hsm := mockhsm.New(pg.FromContext(ctx))

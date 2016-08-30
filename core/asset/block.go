@@ -18,10 +18,8 @@ type Saver interface {
 	SaveAnnotatedAsset(context.Context, bc.AssetID, map[string]interface{}, string) error
 }
 
-// Init sets the package level Chain. If isManager is true,
-// Init registers all necessary callbacks for updating
-// application state with the Chain.
-func Init(c *protocol.Chain, ind Saver, isManager bool) {
+// Init sets the package level Chain.
+func Init(c *protocol.Chain, ind Saver) {
 	indexer = ind
 	if chain == c {
 		// Silently ignore duplicate calls.
@@ -29,11 +27,6 @@ func Init(c *protocol.Chain, ind Saver, isManager bool) {
 	}
 
 	chain = c
-	if isManager {
-		chain.AddBlockCallback(func(ctx context.Context, b *bc.Block) {
-			recordIssuances(ctx, b)
-		})
-	}
 }
 
 func indexAnnotatedAsset(ctx context.Context, a *Asset) error {

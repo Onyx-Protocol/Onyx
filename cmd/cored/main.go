@@ -198,7 +198,7 @@ func main() {
 		localSigner = blocksigner.New(blockXPub, hsm, db, c)
 	}
 
-	asset.Init(c, indexer, *isManager)
+	asset.Init(c, indexer)
 	account.Init(c, indexer)
 
 	var generatorConfig *generator.Config

@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -527,20 +527,6 @@ CREATE TABLE generator_pending_block (
 
 
 --
--- Name: issuance_totals; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE issuance_totals (
-    asset_id text NOT NULL,
-    issued bigint DEFAULT 0 NOT NULL,
-    destroyed bigint DEFAULT 0 NOT NULL,
-    height bigint NOT NULL,
-    CONSTRAINT issuance_totals_confirmed_check CHECK ((issued >= 0)),
-    CONSTRAINT positive_destroyed_confirmed CHECK ((destroyed >= 0))
-);
-
-
---
 -- Name: leader; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -867,14 +853,6 @@ ALTER TABLE ONLY generator_pending_block
 
 
 --
--- Name: issuance_totals_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY issuance_totals
-    ADD CONSTRAINT issuance_totals_pkey PRIMARY KEY (asset_id);
-
-
---
 -- Name: leader_singleton_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1143,3 +1121,4 @@ insert into migrations (filename, hash) values ('2016-08-23.0.query.sum-by.sql',
 insert into migrations (filename, hash) values ('2016-08-24.0.query.index-filter.sql', '9b501c1fc5a528312f7239a58b1552bf95681fe228d57472a65e9a55fc19246b');
 insert into migrations (filename, hash) values ('2016-08-26.0.query.assets-sort-id.sql', '56083fef381b675be65ef9c9769de724ddf46f2c3ed44a9e75ab81ecc812f983');
 insert into migrations (filename, hash) values ('2016-08-29.0.core.config.sql', '4f440fccb3a8523bfd4455acf400e20859d134118742a55677a04d2297297914');
+insert into migrations (filename, hash) values ('2016-08-30.0.asset.issuance-totals.sql', '2a4b3f9899df7c099eb215c0bf5b6b7e2ac6f991c08820c000a96ddf8cfb2671');

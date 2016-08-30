@@ -51,7 +51,6 @@ func (a *api) reset(ctx context.Context) error {
 			blocks,
 			blocks_txs,
 			generator_pending_block,
-			issuance_totals,
 			leader,
 			mockhsm,
 			pool_txs,
