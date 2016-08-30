@@ -43,7 +43,7 @@ var (
 		signers.ErrArchived:      errorInfo{400, "CH005", "Item has been archived"},
 
 		// Core error namespace
-		ErrProdReset: errorInfo{400, "CH100", "Reset can only be called in a development system"},
+		errProdReset: errorInfo{400, "CH100", "Reset can only be called in a development system"},
 
 		// Signers error namespace (2xx)
 		signers.ErrBadQuorum: errorInfo{400, "CH200", "Quorum must be greater than 1 and less than or equal to the length of xpubs"},
@@ -54,13 +54,13 @@ var (
 		// Query error namespace (6xx)
 		query.ErrBadCursor:              errorInfo{400, "CH600", "Malformed pagination cursor"},
 		query.ErrParameterCountMismatch: errorInfo{400, "CH601", "Incorrect number of parameters to filter"},
-		ErrBadIndexConfig:               errorInfo{400, "CH602", "Invalid index configuration"},
+		errBadIndexConfig:               errorInfo{400, "CH602", "Invalid index configuration"},
 
 		// Transaction error namespace (7xx)
 		// Build error namespace (70x)
 		txbuilder.ErrBadRefData: errorInfo{400, "CH700", "Reference data does not match previous transaction's reference data"},
-		ErrBadActionType:        errorInfo{400, "CH701", "Invalid action type"},
-		ErrBadAlias:             errorInfo{400, "CH702", "Invalid alias on action"},
+		errBadActionType:        errorInfo{400, "CH701", "Invalid action type"},
+		errBadAlias:             errorInfo{400, "CH702", "Invalid alias on action"},
 		// Submit error namespace (73x)
 		txbuilder.ErrMissingRawTx:     errorInfo{400, "CH730", "Missing raw transaction"},
 		txbuilder.ErrBadInputCount:    errorInfo{400, "CH731", "Too many inputs in template for transaction"},

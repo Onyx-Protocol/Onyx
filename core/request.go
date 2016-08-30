@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	ErrBadActionType = errors.New("bad action type")
-	ErrBadAlias      = errors.New("bad alias")
+	errBadActionType = errors.New("bad action type")
+	errBadAlias      = errors.New("bad alias")
 )
 
 type action struct {
@@ -41,7 +41,7 @@ func (a *action) UnmarshalJSON(data []byte) error {
 	case "spend_account_unspent_output":
 		a.underlying = new(account.SpendUTXOAction)
 	default:
-		return errors.WithDetailf(ErrBadActionType, "unknown type %s", x.Type)
+		return errors.WithDetailf(errBadActionType, "unknown type %s", x.Type)
 	}
 	return json.Unmarshal(data, a.underlying)
 }
@@ -89,7 +89,7 @@ func filterAliases(ctx context.Context, abr *aliasBuildRequest) (*buildRequest, 
 			if assetAlias, ok := p["asset_alias"]; ok {
 				aa, ok := assetAlias.(string)
 				if !ok {
-					return nil, errors.WithDetailf(ErrBadAlias, "invalid asset alias %v on action %d", assetAlias, i)
+					return nil, errors.WithDetailf(errBadAlias, "invalid asset alias %v on action %d", assetAlias, i)
 				}
 
 				ast, err := asset.FindByAlias(ctx, aa)
@@ -105,7 +105,7 @@ func filterAliases(ctx context.Context, abr *aliasBuildRequest) (*buildRequest, 
 			if accountAlias, ok := p["account_alias"]; ok {
 				aa, ok := accountAlias.(string)
 				if !ok {
-					return nil, errors.WithDetailf(ErrBadAlias, "invalid account alias %v on action %d", accountAlias, i)
+					return nil, errors.WithDetailf(errBadAlias, "invalid account alias %v on action %d", accountAlias, i)
 				}
 
 				acc, err := account.FindByAlias(ctx, aa)

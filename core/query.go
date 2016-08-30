@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	ErrBadIndexConfig = errors.New("index configuration invalid")
+	errBadIndexConfig = errors.New("index configuration invalid")
 )
 
 // createIndex is an http handler for creating indexes.
@@ -26,10 +26,10 @@ func (a *api) createIndex(ctx context.Context, in struct {
 	SumBy  []string `json:"sum_by"`
 }) (*query.Index, error) {
 	if !query.IndexTypes[in.Type] {
-		return nil, errors.WithDetailf(ErrBadIndexConfig, "unknown index type %q", in.Type)
+		return nil, errors.WithDetailf(errBadIndexConfig, "unknown index type %q", in.Type)
 	}
 	if len(in.SumBy) > 0 && in.Type != query.IndexTypeBalance {
-		return nil, errors.WithDetail(ErrBadIndexConfig, "sum-by field is only valid for balance indexes")
+		return nil, errors.WithDetail(errBadIndexConfig, "sum-by field is only valid for balance indexes")
 	}
 	if in.Alias == "" {
 		return nil, errors.WithDetail(httpjson.ErrBadRequest, "missing index alias")

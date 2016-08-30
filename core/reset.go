@@ -23,9 +23,9 @@ func getBlockKeys(c *protocol.Chain, ctx context.Context) (keys []ed25519.Public
 	return vmutil.ParseBlockMultiSigScript(lastBlock.ConsensusProgram)
 }
 
-// ErrProdReset is returned when reset is called on a
+// errProdReset is returned when reset is called on a
 // production system.
-var ErrProdReset = errors.New("reset called on production system")
+var errProdReset = errors.New("reset called on production system")
 
 func (a *api) reset(ctx context.Context) error {
 	keys, quorum, err := getBlockKeys(a.c, ctx)
@@ -34,7 +34,7 @@ func (a *api) reset(ctx context.Context) error {
 	}
 
 	if len(keys) != 0 {
-		return ErrProdReset
+		return errProdReset
 	}
 
 	const q = `
