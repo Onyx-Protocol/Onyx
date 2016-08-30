@@ -1,4 +1,4 @@
-package generator_test
+package generator
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"chain/core/asset/assettest"
-	"chain/core/generator"
 	"chain/core/txdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -26,7 +25,7 @@ func TestGetBlocks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	blocks, err := generator.GetBlocks(ctx, chain, 0)
+	blocks, err := GetBlocks(ctx, chain, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +42,7 @@ func TestGetBlocks(t *testing.T) {
 		defer close(c)
 
 		// expect this will wait until block 2 is ready
-		blocks, err := generator.GetBlocks(ctx, chain, 1)
+		blocks, err := GetBlocks(ctx, chain, 1)
 		if err == nil {
 			c <- blocks
 		} else {
