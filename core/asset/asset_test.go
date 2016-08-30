@@ -39,8 +39,8 @@ func TestDefineAsset(t *testing.T) {
 }
 
 func TestDefineAssetIdempotency(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	token := "test_token"
 	keys := []string{testutil.TestXPub.String()}
 	var genesisHash bc.Hash
@@ -61,8 +61,8 @@ func TestDefineAssetIdempotency(t *testing.T) {
 }
 
 func TestSetAssetTags(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	keys := []string{testutil.TestXPub.String()}
 	var genesisHash bc.Hash
 	asset, err := Define(ctx, keys, 1, nil, genesisHash, "some-alias", nil, nil)
@@ -97,8 +97,8 @@ func TestSetAssetTags(t *testing.T) {
 }
 
 func TestSetNonLocalAssetTags(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	newTags := map[string]interface{}{"someTag": "taggityTag"}
 	assetID := mustDecodeAssetID("2d194241795a28af3345ffcc64fd31d8819c56f4c4d4b4360763a259152aa393")
 
@@ -118,8 +118,8 @@ func TestSetNonLocalAssetTags(t *testing.T) {
 }
 
 func TestDefineAndArchiveAssetByID(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	keys := []string{testutil.TestXPub.String()}
 	var genesisHash bc.Hash
 	asset, err := Define(ctx, keys, 1, nil, genesisHash, "", nil, nil)
@@ -146,8 +146,8 @@ func TestDefineAndArchiveAssetByID(t *testing.T) {
 }
 
 func TestDefineAndArchiveAssetByAlias(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	keys := []string{testutil.TestXPub.String()}
 	var genesisHash bc.Hash
 	asset, err := Define(ctx, keys, 1, nil, genesisHash, "some-alias", nil, nil)
@@ -174,8 +174,8 @@ func TestDefineAndArchiveAssetByAlias(t *testing.T) {
 }
 
 func TestFindAssetByID(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	keys := []string{testutil.TestXPub.String()}
 	var genesisHash bc.Hash
 	asset, err := Define(ctx, keys, 1, nil, genesisHash, "", nil, nil)
@@ -194,8 +194,8 @@ func TestFindAssetByID(t *testing.T) {
 }
 
 func TestAssetByClientToken(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	keys := []string{testutil.TestXPub.String()}
 	token := "test_token"
 	var genesisHash bc.Hash
