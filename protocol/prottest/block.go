@@ -1,0 +1,83 @@
+package prottest
+
+import (
+	"context"
+	"sync"
+	"testing"
+	"time"
+
+	"chain/protocol"
+	"chain/protocol/bc"
+	"chain/protocol/mempool"
+	"chain/protocol/memstore"
+	"chain/protocol/state"
+	"chain/testutil"
+)
+
+var (
+	mutex  sync.Mutex // protects the following
+	states = make(map[*protocol.Chain]*state.Snapshot)
+)
+
+// NewChain makes a new Chain using memstore and mempool for storage,
+// along with an initial block using a 0/0 multisig program.
+// It commits the initial block before returning the Chain.
+func NewChain(tb testing.TB) *protocol.Chain {
+	ctx := context.Background()
+	c, err := protocol.NewChain(ctx, memstore.New(), mempool.New(), nil, nil)
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	b1, err := protocol.NewGenesisBlock(nil, 0, time.Now())
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	err = c.CommitBlock(ctx, b1, state.Empty())
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	return c
+}
+
+// MakeBlock makes a new block from the pool in c, commits it, and returns it.
+// It assumes c's consensus program requires 0 signatures.
+// (This is true for chains returned by NewChain.)
+// If c requires more than 0 signatures, MakeBlock will fail.
+// MakeBlock always makes a block;
+// if there are no transactions in the pool,
+// it makes an empty block.
+func MakeBlock(ctx context.Context, tb testing.TB, c *protocol.Chain) *bc.Block {
+	// TODO(kr): remove context parameter when block
+	// callbacks no longer expect a DB connection pool
+	// to be in the ctx. Just use background here.
+
+	curBlock, err := c.LatestBlock(ctx)
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+
+	mutex.Lock()
+	curState := states[c]
+	mutex.Unlock()
+	if curState == nil {
+		curState = state.Empty()
+	}
+
+	nextBlock, err := c.GenerateBlock(ctx, curBlock, curState, time.Now())
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	nextState, err := c.ValidateBlock(ctx, curState, curBlock, nextBlock)
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	err = c.CommitBlock(ctx, nextBlock, nextState)
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+
+	mutex.Lock()
+	states[c] = nextState
+	mutex.Unlock()
+	return nextBlock
+}

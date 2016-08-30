@@ -11,16 +11,14 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/prottest"
 	"chain/testutil"
 )
 
 func TestLocalAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	c, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	c := prottest.NewChain(t)
 
 	acc, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
@@ -60,10 +58,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b, err := g.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	b := prottest.MakeBlock(ctx, t, c)
 	if len(b.Transactions) != 2 {
 		t.Errorf("len(b.Transactions) = %d, want 2", len(b.Transactions))
 	}

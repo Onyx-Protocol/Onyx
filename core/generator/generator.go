@@ -87,7 +87,7 @@ func Generate(ctx context.Context, config Config, period time.Duration) {
 			log.Messagef(ctx, "Deposed, Generate exiting")
 			return
 		case <-ticks:
-			_, err := g.MakeBlock(ctx)
+			_, err := g.makeBlock(ctx)
 			if err != nil {
 				log.Error(ctx, err)
 			}

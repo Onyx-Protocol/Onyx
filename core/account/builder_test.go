@@ -8,32 +8,30 @@ import (
 	"time"
 
 	"chain/core/account"
+	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/prottest"
 	"chain/testutil"
 )
 
 func TestAccountSourceReserve(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
-	c, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	c := prottest.NewChain(t)
+	asset.Init(c, nil)
+	account.Init(c, nil)
 
 	accID := assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
 	asset := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
 	out := assettest.IssueAssetsFixture(ctx, t, c, asset, 2, accID)
 
 	// Make a block so that account UTXOs are available to spend.
-	_, err = g.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	prottest.MakeBlock(ctx, t, c)
 
 	assetAmount1 := bc.AssetAmount{
 		AssetID: asset,
@@ -69,20 +67,16 @@ func TestAccountSourceReserve(t *testing.T) {
 func TestAccountSourceUTXOReserve(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
-	c, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	c := prottest.NewChain(t)
+	asset.Init(c, nil)
+	account.Init(c, nil)
 
 	accID := assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
 	asset := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
 	out := assettest.IssueAssetsFixture(ctx, t, c, asset, 2, accID)
 
 	// Make a block so that account UTXOs are available to spend.
-	_, err = g.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	prottest.MakeBlock(ctx, t, c)
 
 	source := &account.SpendUTXOAction{
 		Params: struct {
@@ -108,10 +102,9 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 func TestAccountSourceReserveIdempotency(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
-	c, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	c := prottest.NewChain(t)
+	asset.Init(c, nil)
+	account.Init(c, nil)
 
 	var (
 		accID        = assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
@@ -135,10 +128,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	separateSrc.ClientToken = &clientToken2
 
 	// Make a block so that account UTXOs are available to spend.
-	_, err = g.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	prottest.MakeBlock(ctx, t, c)
 
 	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
 		got, _, _, err := source.Build(ctx)
@@ -170,10 +160,9 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 func TestAccountSourceWithTxHash(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
-	c, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	c := prottest.NewChain(t)
+	asset.Init(c, nil)
+	account.Init(c, nil)
 
 	var (
 		acc      = assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
@@ -189,10 +178,7 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 	}
 
 	// Make a block so that account UTXOs are available to spend.
-	_, err = g.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	prottest.MakeBlock(ctx, t, c)
 
 	for i := 0; i < utxos; i++ {
 		theTxHash := srcTxs[i]

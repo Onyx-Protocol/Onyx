@@ -8,14 +8,9 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/asset/assettest"
-	"chain/core/blocksigner"
-	"chain/core/generator"
-	"chain/core/mockhsm"
-	"chain/core/txdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/protocol"
-	"chain/protocol/state"
+	"chain/protocol/prottest"
 	"chain/testutil"
 )
 
@@ -24,35 +19,17 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	store, pool := txdb.New(db)
-	c, err := protocol.NewChain(ctx, store, pool, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	c := prottest.NewChain(t)
 	indexer := NewIndexer(db, c)
 	asset.Init(c, indexer)
 	account.Init(c, indexer)
 	indexer.RegisterAnnotator(account.AnnotateTxs)
 	indexer.RegisterAnnotator(asset.AnnotateTxs)
-	hsm := mockhsm.New(db)
-	xpub, err := hsm.CreateKey(ctx, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	localSigner := blocksigner.New(xpub.XPub, hsm, db, c)
-	config := generator.Config{
-		LocalSigner: localSigner,
-		Chain:       c,
-	}
-	b1, err := protocol.NewGenesisBlock(nil, 0, time.Now())
+
+	b1, err := c.LatestBlock(ctx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	err = c.CommitBlock(ctx, b1, state.Empty())
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	g := generator.New(b1, state.Empty(), config)
 	genesisHash := b1.Hash()
 
 	acct1, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
@@ -79,10 +56,7 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	assettest.IssueAssetsFixture(ctx, t, c, asset1.AssetID, 867, acct1.ID)
 	assettest.IssueAssetsFixture(ctx, t, c, asset2.AssetID, 100, acct1.ID)
 
-	_, err = g.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	prottest.MakeBlock(ctx, t, c)
 
 	time2 := time.Now()
 

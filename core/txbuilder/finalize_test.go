@@ -8,7 +8,6 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/asset/assettest"
-	"chain/core/generator"
 	. "chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/crypto/ed25519/hd25519"
@@ -18,6 +17,7 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/prottest"
 	"chain/protocol/state"
 	"chain/testutil"
 )
@@ -32,7 +32,7 @@ import (
 func TestConflictingTxsInPool(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	info, c, g, err := bootdb(ctx, t)
+	info, c, err := bootdb(ctx, t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,10 +43,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	dumpState(ctx, t)
-	_, err = g.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	prottest.MakeBlock(ctx, t, c)
 	dumpState(ctx, t)
 
 	assetAmount := bc.AssetAmount{
@@ -80,10 +77,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 
 	// Make a block, which should reject one of the txs.
 	dumpState(ctx, t)
-	b, err := g.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	b := prottest.MakeBlock(ctx, t, c)
 
 	dumpState(ctx, t)
 	if len(b.Transactions) != 1 {
@@ -95,7 +89,7 @@ func TestTransferConfirmed(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 
-	info, c, g, err := bootdb(ctx, t)
+	info, c, err := bootdb(ctx, t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,10 +100,7 @@ func TestTransferConfirmed(t *testing.T) {
 	}
 
 	dumpState(ctx, t)
-	_, err = g.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	prottest.MakeBlock(ctx, t, c)
 	dumpState(ctx, t)
 
 	_, err = transfer(ctx, t, c, info, info.acctA.ID, info.acctB.ID, 10)
@@ -121,7 +112,7 @@ func TestTransferConfirmed(t *testing.T) {
 func BenchmarkTransferWithBlocks(b *testing.B) {
 	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	info, c, g, err := bootdb(ctx, b)
+	info, c, err := bootdb(ctx, b)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -140,10 +131,7 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 		b.Logf("finalized %v", tx.Hash)
 
 		if i%10 == 0 {
-			_, err = g.MakeBlock(ctx)
-			if err != nil {
-				b.Fatal(err)
-			}
+			prottest.MakeBlock(ctx, b, c)
 		}
 	}
 }
@@ -204,7 +192,7 @@ func benchGenBlock(b *testing.B) {
 			2
 		);
 	`)
-	_, c, _, err := bootdb(ctx, b)
+	_, c, err := bootdb(ctx, b)
 	if err != nil {
 		testutil.FatalErr(b, err)
 	}
@@ -233,52 +221,52 @@ type clientInfo struct {
 
 // TODO(kr): refactor this into new package core/coreutil
 // and consume it from cmd/corectl.
-func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.Chain, *generator.Generator, error) {
+func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.Chain, error) {
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	c, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	c, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	defer dbtx.Rollback(ctx)
 
 	accPriv, accPub, err := hd25519.NewXKeys(nil)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	acctA, err := account.Create(ctx, []string{accPub.String()}, 1, "", nil, nil)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	acctB, err := account.Create(ctx, []string{accPub.String()}, 1, "", nil, nil)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	genesis, err := store.GetBlock(ctx, 1)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	assetPriv, assetPub, err := hd25519.NewXKeys(nil)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	asset, err := asset.Define(ctx, []string{assetPub.String()}, 1, nil, genesis.Hash(), "", nil, nil)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	err = dbtx.Commit(ctx)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	info := &clientInfo{
@@ -288,7 +276,7 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.Chain, *g
 		privKeyAsset:    assetPriv,
 		privKeyAccounts: accPriv,
 	}
-	return info, c, g, nil
+	return info, c, nil
 }
 
 func issue(ctx context.Context, t testing.TB, c *protocol.Chain, info *clientInfo, destAcctID string, amount uint64) (*bc.Tx, error) {

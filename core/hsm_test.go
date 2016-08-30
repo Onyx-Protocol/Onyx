@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"chain/core/account"
+	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/mockhsm"
 	"chain/core/txbuilder"
@@ -12,13 +13,16 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/prottest"
 	"chain/testutil"
 )
 
 func TestMockHSM(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	c, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	c := prottest.NewChain(t)
+	asset.Init(c, nil)
+	account.Init(c, nil)
 	mockhsm := mockhsm.New(db)
 	xpub1, err := mockhsm.CreateKey(ctx, "")
 	if err != nil {
@@ -61,10 +65,7 @@ func TestMockHSM(t *testing.T) {
 	}
 
 	// Make a block so that UTXOs from the above tx are available to spend.
-	_, err = g.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	prottest.MakeBlock(ctx, t, c)
 
 	xferSrc1 := assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct1.ID, nil, nil, nil)
 	xferSrc2 := assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct2.ID, nil, nil, nil)

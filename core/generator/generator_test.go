@@ -9,40 +9,22 @@ import (
 	"chain/core/mockhsm"
 	"chain/database/pg/pgtest"
 	"chain/protocol"
-	"chain/protocol/bc"
-	"chain/protocol/mempool"
-	"chain/protocol/memstore"
+	"chain/protocol/prottest"
 	"chain/protocol/state"
 	"chain/protocol/validation"
 	"chain/protocol/vm"
 	"chain/testutil"
 )
 
-// newTestChain returns a new Chain using memstore and mempool for storage,
-// along with an initial block b1 (with a 0/0 multisig program).
-// It commits b1 before returning.
-func newTestChain(tb testing.TB, ts time.Time) (c *protocol.Chain, b1 *bc.Block) {
-	ctx := context.Background()
-	c, err := protocol.NewChain(ctx, memstore.New(), mempool.New(), nil, nil)
-	if err != nil {
-		testutil.FatalErr(tb, err)
-	}
-	b1, err = protocol.NewGenesisBlock(nil, 0, ts)
-	if err != nil {
-		testutil.FatalErr(tb, err)
-	}
-	err = c.CommitBlock(ctx, b1, state.Empty())
-	if err != nil {
-		testutil.FatalErr(tb, err)
-	}
-	return c, b1
-}
-
 func TestGetAndAddBlockSignatures(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 
-	c, b1 := newTestChain(t, time.Now())
+	c := prottest.NewChain(t)
+	b1, err := c.LatestBlock(ctx)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
 
 	// TODO(kr): tweak the generator's design to not
 	// take a hard dependency on mockhsm.

@@ -7,11 +7,7 @@ import (
 
 	"chain/core/account"
 	"chain/core/asset"
-	"chain/core/blocksigner"
-	"chain/core/generator"
-	"chain/core/mockhsm"
 	"chain/core/txbuilder"
-	"chain/database/pg"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol"
@@ -94,7 +90,7 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, c *protocol.Chain, as
 
 // InitializeSigningGenerator initiaizes a generator fixture with the
 // provided store. Store can be nil, in which case it will use memstore.
-func InitializeSigningGenerator(ctx context.Context, store protocol.Store, pool protocol.Pool) (*protocol.Chain, *generator.Generator, error) {
+func InitializeSigningGenerator(ctx context.Context, store protocol.Store, pool protocol.Pool) (*protocol.Chain, error) {
 	if store == nil {
 		store = memstore.New()
 	}
@@ -103,32 +99,20 @@ func InitializeSigningGenerator(ctx context.Context, store protocol.Store, pool 
 	}
 	c, err := protocol.NewChain(ctx, store, pool, nil, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	asset.Init(c, nil)
 	account.Init(c, nil)
 
-	hsm := mockhsm.New(pg.FromContext(ctx))
-	xpub, err := hsm.CreateKey(ctx, "")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	localSigner := blocksigner.New(xpub.XPub, hsm, pg.FromContext(ctx), c)
-	config := generator.Config{
-		LocalSigner: localSigner,
-		Chain:       c,
-	}
 	b1, err := protocol.NewGenesisBlock(nil, 0, time.Now())
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	err = c.CommitBlock(ctx, b1, state.Empty())
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	g := generator.New(b1, state.Empty(), config)
-	return c, g, nil
+	return c, nil
 }
 
 func Issue(ctx context.Context, t testing.TB, c *protocol.Chain, assetID bc.AssetID, amount uint64, actions []txbuilder.Action) *bc.Tx {

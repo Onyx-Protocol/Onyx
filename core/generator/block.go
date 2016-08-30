@@ -30,9 +30,9 @@ var (
 	ErrUnknownPubkey = errors.New("unknown block pubkey")
 )
 
-// MakeBlock generates a new bc.Block, collects the required signatures
+// makeBlock generates a new bc.Block, collects the required signatures
 // and commits the block to the blockchain.
-func (g *Generator) MakeBlock(ctx context.Context) (*bc.Block, error) {
+func (g *Generator) makeBlock(ctx context.Context) (*bc.Block, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 

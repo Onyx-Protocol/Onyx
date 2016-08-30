@@ -12,6 +12,7 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/database/sql"
 	"chain/protocol/bc"
+	"chain/protocol/prottest"
 )
 
 // TODO(kr): GetBlocks is not a generator function.
@@ -20,7 +21,7 @@ func TestGetBlocks(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	chain, g, err := assettest.InitializeSigningGenerator(ctx, store, pool)
+	chain, err := assettest.InitializeSigningGenerator(ctx, store, pool)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,10 +57,7 @@ func TestGetBlocks(t *testing.T) {
 	// Hopefully force the GetBlocks call to wait
 	time.Sleep(10 * time.Millisecond)
 
-	_, err = g.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	prottest.MakeBlock(ctx, t, chain)
 
 	blocks, ok := <-c
 	if !ok {

@@ -16,13 +16,14 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/prottest"
 	"chain/testutil"
 )
 
 func TestReset(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	c, _, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
+	c, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,10 +40,9 @@ func TestReset(t *testing.T) {
 func TestAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	c, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	c := prottest.NewChain(t)
+	asset.Init(c, nil)
+	account.Init(c, nil)
 
 	acc, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
@@ -70,10 +70,7 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	// Make a block so that UTXOs from the above tx are available to spend.
-	_, err = g.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	prottest.MakeBlock(ctx, t, c)
 
 	// new source
 	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil)
@@ -105,10 +102,9 @@ func TestMux(t *testing.T) {
 func TestTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
-	c, g, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	c := prottest.NewChain(t)
+	asset.Init(c, nil)
+	account.Init(c, nil)
 
 	ind := query.NewIndexer(db, c)
 	asset.Init(c, ind)
@@ -130,10 +126,6 @@ func TestTransfer(t *testing.T) {
 		Amount:  100,
 	}
 	issueDest := assettest.NewAccountControlAction(issueAssetAmount, account1ID, nil)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
 	txTemplate, err := txbuilder.Build(
 		ctx,
 		nil,
@@ -154,10 +146,7 @@ func TestTransfer(t *testing.T) {
 	}
 
 	// Make a block so that UTXOs from the above tx are available to spend.
-	_, err = g.MakeBlock(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	prottest.MakeBlock(ctx, t, c)
 
 	// Now transfer
 	buildReqFmt := `
