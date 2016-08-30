@@ -19,24 +19,24 @@ import (
 )
 
 var (
-	// ErrTooFewSigners is returned when a block-signing attempt finds
+	// errTooFewSigners is returned when a block-signing attempt finds
 	// that not enough signers are configured for the number of
 	// signatures required.
-	ErrTooFewSigners = errors.New("too few signers")
+	errTooFewSigners = errors.New("too few signers")
 
-	// ErrUnknownPubkey is returned when a block-signing attempt finds
+	// errUnknownPubkey is returned when a block-signing attempt finds
 	// an unrecognized public key in the output script of the previous
 	// block.
-	ErrUnknownPubkey = errors.New("unknown block pubkey")
+	errUnknownPubkey = errors.New("unknown block pubkey")
 )
 
 // makeBlock generates a new bc.Block, collects the required signatures
 // and commits the block to the blockchain.
-func (g *Generator) makeBlock(ctx context.Context) (*bc.Block, error) {
+func (g *generator) makeBlock(ctx context.Context) (*bc.Block, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	b, err := g.Chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
+	b, err := g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
 	if err != nil {
 		return nil, errors.Wrap(err, "generate")
 	}
@@ -50,18 +50,18 @@ func (g *Generator) makeBlock(ctx context.Context) (*bc.Block, error) {
 	return g.commitBlock(ctx, b)
 }
 
-func (g *Generator) commitBlock(ctx context.Context, b *bc.Block) (*bc.Block, error) {
-	err := g.GetAndAddBlockSignatures(ctx, b, g.latestBlock)
+func (g *generator) commitBlock(ctx context.Context, b *bc.Block) (*bc.Block, error) {
+	err := g.getAndAddBlockSignatures(ctx, b, g.latestBlock)
 	if err != nil {
 		return nil, errors.Wrap(err, "sign")
 	}
 
 	// Apply the block to get the state snapshot and commit it.
-	snapshot, err := g.Chain.ValidateBlock(ctx, g.latestSnapshot, g.latestBlock, b)
+	snapshot, err := g.chain.ValidateBlock(ctx, g.latestSnapshot, g.latestBlock, b)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply")
 	}
-	err = g.Chain.CommitBlock(ctx, b, snapshot)
+	err = g.chain.CommitBlock(ctx, b, snapshot)
 	if err != nil {
 		return nil, errors.Wrap(err, "commit")
 	}
@@ -71,7 +71,7 @@ func (g *Generator) commitBlock(ctx context.Context, b *bc.Block) (*bc.Block, er
 	return b, nil
 }
 
-func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error {
+func (g *generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error {
 	if prevBlock == nil && b.Height == 1 {
 		return nil // no signatures needed for initial block
 	}
@@ -84,20 +84,20 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 		return nil // no signatures needed
 	}
 
-	signersConfigured := len(g.RemoteSigners)
-	if g.LocalSigner != nil {
+	signersConfigured := len(g.remoteSigners)
+	if g.localSigner != nil {
 		signersConfigured++
 	}
 	if signersConfigured < nrequired {
-		return ErrTooFewSigners
+		return errTooFewSigners
 	}
 
 	signersByPubkey := make(map[string]*RemoteSigner, signersConfigured)
-	for _, remoteSigner := range g.RemoteSigners {
+	for _, remoteSigner := range g.remoteSigners {
 		signersByPubkey[keystr(remoteSigner.Key)] = remoteSigner
 	}
-	if g.LocalSigner != nil {
-		signersByPubkey[keystr(g.LocalSigner.XPub.Key)] = nil
+	if g.localSigner != nil {
+		signersByPubkey[keystr(g.localSigner.XPub.Key)] = nil
 	}
 
 	type response struct {
@@ -115,7 +115,7 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 	for i, pubkey := range pubkeys {
 		signer, ok := signersByPubkey[keystr(pubkey)]
 		if !ok {
-			return ErrUnknownPubkey
+			return errUnknownPubkey
 		}
 
 		if signer != nil && serializedBlock == nil {
@@ -133,7 +133,7 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 				pos:    pos,
 			}
 			if signer == nil {
-				r.signature, r.err = g.LocalSigner.ComputeBlockSignature(ctx, b)
+				r.signature, r.err = g.localSigner.ComputeBlockSignature(ctx, b)
 			} else {
 				var signature []byte
 				err := signer.Client.Call(ctx, "/rpc/signer/sign-block", (*json.RawMessage)(&serializedBlock), &signature)
@@ -186,7 +186,7 @@ func keystr(k ed25519.PublicKey) string {
 }
 
 // getPendingBlock retrieves the generated, uncomitted block if it exists.
-func (g *Generator) getPendingBlock(ctx context.Context) (*bc.Block, error) {
+func (g *generator) getPendingBlock(ctx context.Context) (*bc.Block, error) {
 	const q = `SELECT data FROM generator_pending_block`
 	var block bc.Block
 	err := pg.QueryRow(ctx, q).Scan(&block)
@@ -201,7 +201,7 @@ func (g *Generator) getPendingBlock(ctx context.Context) (*bc.Block, error) {
 // savePendingBlock persists a pending, uncommitted block to the database.
 // The generator should save a pending block *before* asking signers to
 // sign the block.
-func (g *Generator) savePendingBlock(ctx context.Context, b *bc.Block) error {
+func (g *generator) savePendingBlock(ctx context.Context, b *bc.Block) error {
 	const q = `
 		INSERT INTO generator_pending_block (data) VALUES($1)
 		ON CONFLICT (singleton) DO UPDATE SET data = $1;

@@ -18,25 +18,12 @@ import (
 // TODO(kr): replace RemoteSigners type and use of *blocksigner.Signer
 // with a single BlockSigner interface.
 
-// Config encapsulates generator configuration options.
-type Config struct {
-	RemoteSigners []*RemoteSigner
-	LocalSigner   *blocksigner.Signer
-	Chain         *protocol.Chain
-}
-
-// New constructs a new generator and returns it.
-func New(block *bc.Block, snapshot *state.Snapshot, config Config) *Generator {
-	return &Generator{
-		Config:         config,
-		latestBlock:    block,
-		latestSnapshot: snapshot,
-	}
-}
-
-// Generator produces new blocks on an interval.
-type Generator struct {
-	Config
+// generator produces new blocks on an interval.
+type generator struct {
+	// config
+	chain         *protocol.Chain
+	remoteSigners []*RemoteSigner
+	localSigner   *blocksigner.Signer
 
 	// latestBlock and latestSnapshot are current as long as this
 	// process remains the leader process. If the process is demoted,
@@ -56,14 +43,27 @@ type RemoteSigner struct {
 // Generate runs in a loop, making one new block
 // every block period. It returns when its context
 // is canceled.
-func Generate(ctx context.Context, config Config, period time.Duration) {
+func Generate(
+	ctx context.Context,
+	c *protocol.Chain,
+	rs []*RemoteSigner,
+	ls *blocksigner.Signer,
+	period time.Duration,
+) {
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
-	recoveredBlock, recoveredSnapshot, err := config.Chain.Recover(ctx)
+	recoveredBlock, recoveredSnapshot, err := c.Recover(ctx)
 	if err != nil {
 		log.Fatal(ctx, log.KeyError, err)
 	}
-	g := New(recoveredBlock, recoveredSnapshot, config)
+
+	g := &generator{
+		chain:          c,
+		remoteSigners:  rs,
+		localSigner:    ls,
+		latestBlock:    recoveredBlock,
+		latestSnapshot: recoveredSnapshot,
+	}
 
 	// Check to see if we already have a pending, generated block.
 	// This can happen if the leader process exits between generating

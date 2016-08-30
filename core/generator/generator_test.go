@@ -35,13 +35,12 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	localSigner := blocksigner.New(xpub.XPub, hsm, dbtx, c)
-	config := Config{
-		LocalSigner: localSigner,
-		Chain:       c,
+	g := &generator{
+		chain:          c,
+		localSigner:    blocksigner.New(xpub.XPub, hsm, dbtx, c),
+		latestBlock:    b1,
+		latestSnapshot: state.Empty(),
 	}
-
-	g := New(b1, state.Empty(), config)
 
 	tip, snapshot, err := c.Recover(ctx)
 	if err != nil {
@@ -53,7 +52,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	err = g.GetAndAddBlockSignatures(ctx, block, tip)
+	err = g.getAndAddBlockSignatures(ctx, block, tip)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -70,17 +69,17 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 func TestGetAndAddBlockSignaturesInitialBlock(t *testing.T) {
 	ctx := context.Background()
 
-	g := new(Generator)
+	g := new(generator)
 	block, err := protocol.NewGenesisBlock(testutil.TestPubs, 1, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	err = g.GetAndAddBlockSignatures(ctx, block, nil)
+	err = g.getAndAddBlockSignatures(ctx, block, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
 	if len(block.Witness) != 0 {
-		t.Fatalf("GetAndAddBlockSignatures produced witness %v, want empty", block.Witness)
+		t.Fatalf("getAndAddBlockSignatures produced witness %v, want empty", block.Witness)
 	}
 }

@@ -201,13 +201,9 @@ func main() {
 	asset.Init(c, indexer)
 	account.Init(c, indexer)
 
-	var generatorConfig *generator.Config
+	var remoteSigners []*generator.RemoteSigner
 	if *isGenerator {
-		generatorConfig = &generator.Config{
-			RemoteSigners: remoteSignerInfo(ctx, processID, buildTag, *rpcSecretToken),
-			LocalSigner:   localSigner,
-			Chain:         c,
-		}
+		remoteSigners = remoteSignerInfo(ctx, processID, buildTag, *rpcSecretToken)
 	}
 
 	// Note, it's important for any services that will install blockchain
@@ -226,7 +222,7 @@ func main() {
 			go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
 		}
 		if *isGenerator {
-			go generator.Generate(ctx, *generatorConfig, blockPeriod)
+			go generator.Generate(ctx, c, remoteSigners, localSigner, blockPeriod)
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator)
 		}
