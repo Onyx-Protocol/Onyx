@@ -9,7 +9,6 @@ import (
 	"chain/core/generator"
 	"chain/core/mockhsm"
 	"chain/core/query"
-	"chain/core/txdb"
 	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -24,16 +23,12 @@ func Handler(
 	apiSecret, rpcSecret string,
 	c *protocol.Chain,
 	signer *blocksigner.Signer,
-	store *txdb.Store,
-	pool *txdb.Pool,
 	hsm *mockhsm.HSM,
 	indexer *query.Indexer,
 	remoteGenerator *rpc.Client,
 ) http.Handler {
 	a := &api{
 		c:               c,
-		store:           store,
-		pool:            pool,
 		hsm:             hsm,
 		indexer:         indexer,
 		remoteGenerator: remoteGenerator,
@@ -47,8 +42,6 @@ func Handler(
 
 type api struct {
 	c               *protocol.Chain
-	store           *txdb.Store
-	pool            *txdb.Pool
 	hsm             *mockhsm.HSM
 	indexer         *query.Indexer
 	remoteGenerator *rpc.Client

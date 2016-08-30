@@ -65,7 +65,7 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 }) ([]assetResponseOrError, error) {
 	defer metrics.RecordElapsed(time.Now())
 
-	genesis, err := a.store.GetBlock(ctx, 1)
+	genesis, err := a.c.GetBlock(ctx, 1)
 	if err != nil {
 		return nil, err
 	}

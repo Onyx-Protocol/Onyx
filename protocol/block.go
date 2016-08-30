@@ -26,6 +26,12 @@ const saveSnapshotFrequency = 10
 // ErrBadBlock is returned when a block is invalid.
 var ErrBadBlock = errors.New("invalid block")
 
+// GetBlock returns the block at the given height, if there is one,
+// otherwise it returns an error.
+func (c *Chain) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) {
+	return c.store.GetBlock(ctx, height)
+}
+
 // GenerateBlock generates a valid, but unsigned, candidate block from
 // the current tx pool.  It returns the new block and has no side effects.
 func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time) (b *bc.Block, err error) {
