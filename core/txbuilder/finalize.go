@@ -21,7 +21,7 @@ var (
 	ErrBadInputCount = errors.New("too many inputs in template")
 )
 
-var Generator *string
+var Generator *rpc.Client
 
 // FinalizeTx validates a transaction signature template,
 // assembles a fully signed tx, and stores the effects of
@@ -68,8 +68,8 @@ func publishTx(ctx context.Context, c *protocol.Chain, msg *bc.Tx) error {
 		return errors.Wrap(err, "add tx to blockchain")
 	}
 
-	if Generator != nil && *Generator != "" {
-		err = rpc.Call(ctx, *Generator, "/rpc/submit", msg, nil)
+	if Generator != nil {
+		err = Generator.Call(ctx, "/rpc/submit", msg, nil)
 		if err != nil {
 			err = errors.Wrap(err, "generator transaction notice")
 			chainlog.Error(ctx, err)

@@ -18,7 +18,7 @@ const getBlocksTimeout = 3 * time.Second
 // Chain.
 //
 // It returns when its context is canceled.
-func Fetch(ctx context.Context, c *protocol.Chain, peerURL string) {
+func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
 	prevBlock, prevSnapshot, err := c.Recover(ctx)
@@ -37,7 +37,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peerURL string) {
 				height = prevBlock.Height
 			}
 
-			blocks, err := getBlocks(ctx, peerURL, height)
+			blocks, err := getBlocks(ctx, peer, height)
 			if err != nil {
 				log.Error(ctx, err)
 				continue
@@ -67,12 +67,12 @@ func Fetch(ctx context.Context, c *protocol.Chain, peerURL string) {
 
 // getBlocks sends a get-blocks RPC request to another Core
 // for all blocks since the highest-known one.
-func getBlocks(ctx context.Context, peerURL string, height uint64) ([]*bc.Block, error) {
+func getBlocks(ctx context.Context, peer *rpc.Client, height uint64) ([]*bc.Block, error) {
 	ctx, cancel := context.WithTimeout(ctx, getBlocksTimeout)
 	defer cancel()
 
 	var blocks []*bc.Block
-	err := rpc.Call(ctx, peerURL, "/rpc/get-blocks", height, &blocks)
+	err := peer.Call(ctx, "/rpc/get-blocks", height, &blocks)
 	if err == context.DeadlineExceeded {
 		return nil, nil
 	}

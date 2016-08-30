@@ -107,14 +107,18 @@ func main() {
 		panic(err)
 	}
 
-	// Initialize the internode rpc package.
+	// Initialize internode rpc clients.
 	processID := fmt.Sprintf("chain-%s-%s-%d", *target, hostname, os.Getpid())
-	rpc.LocalNode = rpc.NodeInfo{
-		ProcessID: processID,
-		Target:    *target,
-		BuildTag:  buildTag,
+	var remoteGenerator *rpc.Client
+	if *remoteGeneratorURL != "" {
+		remoteGenerator = &rpc.Client{
+			BaseURL:  *remoteGeneratorURL,
+			Username: processID,
+			Password: *rpcSecretToken,
+			BuildTag: buildTag,
+		}
 	}
-	rpc.SecretToken = *rpcSecretToken
+	txbuilder.Generator = remoteGenerator
 
 	log.SetPrefix("api-" + buildTag + ": ")
 	log.SetFlags(log.Lshortfile)
@@ -122,8 +126,6 @@ func main() {
 	chainlog.SetOutput(logWriter())
 
 	requireSecretInProd(*apiSecretToken)
-
-	txbuilder.Generator = remoteGeneratorURL
 
 	if librato.URL.Host != "" {
 		librato.Source = *target
@@ -202,7 +204,7 @@ func main() {
 	var generatorConfig *generator.Config
 	if *isGenerator {
 		generatorConfig = &generator.Config{
-			RemoteSigners: remoteSignerInfo(ctx),
+			RemoteSigners: remoteSignerInfo(ctx, processID, buildTag, *rpcSecretToken),
 			LocalSigner:   localSigner,
 			Chain:         c,
 		}
@@ -226,11 +228,11 @@ func main() {
 		if *isGenerator {
 			go generator.Generate(ctx, *generatorConfig, blockPeriod)
 		} else {
-			go fetch.Fetch(ctx, c, *remoteGeneratorURL)
+			go fetch.Fetch(ctx, c, remoteGenerator)
 		}
 	})
 
-	h := core.Handler(*apiSecretToken, c, localSigner, store, pool, hsm, indexer)
+	h := core.Handler(*apiSecretToken, *rpcSecretToken, c, localSigner, store, pool, hsm, indexer, remoteGenerator)
 	h = dashboardHandler(h)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
@@ -295,7 +297,7 @@ func dashboardHandler(next http.Handler) http.Handler {
 	})
 }
 
-func remoteSignerInfo(ctx context.Context) (a []*generator.RemoteSigner) {
+func remoteSignerInfo(ctx context.Context, processID, buildTag, rpcSecretToken string) (a []*generator.RemoteSigner) {
 	// REMOTE_SIGNER_URLS and REMOTE_SIGNER_KEYS should be parallel,
 	// comma-separated lists. Each element of REMOTE_SIGNER_KEYS is the
 	// public key for the corresponding URL in REMOTE_SIGNER_URLS.
@@ -315,7 +317,13 @@ func remoteSignerInfo(ctx context.Context) (a []*generator.RemoteSigner) {
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err), "at", "decoding signer public key")
 		}
-		a = append(a, &generator.RemoteSigner{URL: u, Key: k})
+		client := &rpc.Client{
+			BaseURL:  u.String(),
+			Username: processID,
+			Password: rpcSecretToken,
+			BuildTag: buildTag,
+		}
+		a = append(a, &generator.RemoteSigner{Client: client, Key: k})
 	}
 	return a
 }

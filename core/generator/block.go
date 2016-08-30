@@ -12,7 +12,6 @@ import (
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/net/rpc"
 	"chain/net/trace/span"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -137,7 +136,7 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 				r.signature, r.err = g.LocalSigner.ComputeBlockSignature(ctx, b)
 			} else {
 				var signature []byte
-				err := rpc.Call(ctx, signer.URL.String(), "/rpc/signer/sign-block", (*json.RawMessage)(&serializedBlock), &signature)
+				err := signer.Client.Call(ctx, "/rpc/signer/sign-block", (*json.RawMessage)(&serializedBlock), &signature)
 				r.signature, r.err = signature, err
 			}
 			responses <- r
@@ -175,7 +174,7 @@ func (g *Generator) GetAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 		if errResponse.signer == nil {
 			addr = "local"
 		} else {
-			addr = errResponse.signer.URL.String()
+			addr = errResponse.signer.Client.BaseURL
 		}
 		errMsg += fmt.Sprintf(" [%s: %s]", addr, errResponse.err)
 	}

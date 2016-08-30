@@ -2,7 +2,6 @@ package generator
 
 import (
 	"context"
-	"net/url"
 	"time"
 
 	"chain/core/blocksigner"
@@ -10,6 +9,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
+	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -49,8 +49,8 @@ type Generator struct {
 // RemoteSigner defines the address and public key of another Core
 // that may sign blocks produced by this generator.
 type RemoteSigner struct {
-	URL *url.URL
-	Key ed25519.PublicKey
+	Client *rpc.Client
+	Key    ed25519.PublicKey
 }
 
 // Generate runs in a loop, making one new block

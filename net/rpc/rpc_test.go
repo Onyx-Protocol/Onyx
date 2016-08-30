@@ -10,6 +10,8 @@ import (
 	"testing"
 )
 
+const secretToken = "shhhh, a secret"
+
 func TestRPCCallJSON(t *testing.T) {
 	requestBody := map[string]string{
 		"hello": "world",
@@ -29,8 +31,8 @@ func TestRPCCallJSON(t *testing.T) {
 		_, pw, ok := req.BasicAuth()
 		if !ok {
 			t.Error("no user/password set")
-		} else if pw != SecretToken {
-			t.Errorf("got=%s; want=%s", pw, SecretToken)
+		} else if pw != secretToken {
+			t.Errorf("got=%s; want=%s", pw, secretToken)
 		}
 
 		decodedRequestBody := map[string]string{}
@@ -51,7 +53,8 @@ func TestRPCCallJSON(t *testing.T) {
 	defer server.Close()
 
 	response := map[string]string{}
-	err := Call(context.Background(), server.URL, "/example/rpc/path", requestBody, &response)
+	client := &Client{BaseURL: server.URL, Password: secretToken}
+	err := client.Call(context.Background(), "/example/rpc/path", requestBody, &response)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,8 +71,9 @@ func TestRPCCallError(t *testing.T) {
 	}))
 	defer server.Close()
 
+	client := &Client{BaseURL: server.URL, Password: secretToken}
 	wantErr := ErrStatusCode{URL: server.URL + "/error", StatusCode: 500}
-	err := Call(context.Background(), server.URL, "/error", nil, nil)
+	err := client.Call(context.Background(), "/error", nil, nil)
 	if !reflect.DeepEqual(wantErr, err) {
 		t.Errorf("got=%#v; want=%#v", err, wantErr)
 	}

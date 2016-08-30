@@ -3,54 +3,27 @@ package rpc
 import (
 	"bytes"
 	"context"
-	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 
-	"chain/net/http/authn"
 	"chain/net/http/reqid"
 )
 
-// NodeInfo encapsulates metadata about a node.
-type NodeInfo struct {
-	ProcessID string
-	Target    string
-	BuildTag  string
+// A Client is a Chain RPC client. It performs RPCs over HTTP using JSON
+// request and responses. A Client must be configured with a secret token
+// to authenticate with other Cores on the network.
+type Client struct {
+	BaseURL  string
+	Username string
+	Password string
+	BuildTag string
 }
 
-func (ni NodeInfo) String() string {
-	return fmt.Sprintf("Chain; target=%s; process=%s; buildtag=%s",
-		ni.Target, ni.ProcessID, ni.BuildTag)
-}
-
-func (ni NodeInfo) MarshalText() ([]byte, error) {
-	return []byte(ni.String()), nil
-}
-
-var (
-	// LocalNode includes data about this node. This information is used in
-	// RPCs to identify the the node performing the RPC. This should be
-	// initialized prior to using this package to avoid synchronization
-	// issues.
-	LocalNode NodeInfo
-)
-
-// SecretToken is a shared secret used by nodes (manager, issuer, generator,
-// signer, etc) to authorize communication with each other. It must be set
-// before calling any functions in this package.
-var SecretToken string
-
-// Authenticate compares the secret to the SecretToken used to authenticate
-// requests. The api package uses this function to auth internode requests.
-// id and ctx are unused because this is a chain/net/http/authn AuthFunc.
-func Authenticate(ctx context.Context, id, secret string) error {
-	if subtle.ConstantTimeCompare([]byte(secret), []byte(SecretToken)) == 0 {
-		return authn.ErrNotAuthenticated
-	}
-
-	return nil
+func (c Client) userAgent() string {
+	return fmt.Sprintf("Chain; process=%s; buildtag=%s",
+		c.Username, c.BuildTag)
 }
 
 // ErrStatusCode is an error returned when an rpc fails with a non-200
@@ -66,13 +39,13 @@ func (e ErrStatusCode) Error() string {
 }
 
 // Call calls a remote procedure on another node, specified by the path.
-func Call(ctx context.Context, address, path string, request, response interface{}) error {
+func (c *Client) Call(ctx context.Context, path string, request, response interface{}) error {
 	var jsonBody bytes.Buffer
 	if err := json.NewEncoder(&jsonBody).Encode(request); err != nil {
 		return err
 	}
 
-	u, err := url.Parse(address)
+	u, err := url.Parse(c.BaseURL)
 	if err != nil {
 		return err
 	}
@@ -82,13 +55,13 @@ func Call(ctx context.Context, address, path string, request, response interface
 	if err != nil {
 		return err
 	}
-	req.SetBasicAuth(LocalNode.ProcessID, SecretToken)
+	req.SetBasicAuth(c.Username, c.Password)
 
 	// Propagate our request ID so that we can trace a request across nodes.
 	req.Header.Add("Request-ID", reqid.FromContext(ctx))
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", LocalNode.String())
+	req.Header.Set("User-Agent", c.userAgent())
 
 	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {

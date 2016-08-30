@@ -10,6 +10,7 @@ import (
 	"chain/core/mockhsm"
 	"chain/core/query"
 	"chain/core/txdb"
+	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
 )
@@ -20,34 +21,37 @@ const (
 
 // Handler returns a handler that serves the Chain HTTP API.
 func Handler(
-	apiSecret string,
+	apiSecret, rpcSecret string,
 	c *protocol.Chain,
 	signer *blocksigner.Signer,
 	store *txdb.Store,
 	pool *txdb.Pool,
 	hsm *mockhsm.HSM,
 	indexer *query.Indexer,
+	remoteGenerator *rpc.Client,
 ) http.Handler {
 	a := &api{
-		c:       c,
-		store:   store,
-		pool:    pool,
-		hsm:     hsm,
-		indexer: indexer,
+		c:               c,
+		store:           store,
+		pool:            pool,
+		hsm:             hsm,
+		indexer:         indexer,
+		remoteGenerator: remoteGenerator,
 	}
 
 	m := http.NewServeMux()
 	m.Handle("/", apiAuthn(apiSecret, waitForGenesis(a.c, a.handler())))
-	m.Handle("/rpc/", rpcAuthn(waitForGenesis(a.c, rpcAuthedHandler(c, signer))))
+	m.Handle("/rpc/", apiAuthn(rpcSecret, waitForGenesis(a.c, rpcAuthedHandler(c, signer))))
 	return m
 }
 
 type api struct {
-	c       *protocol.Chain
-	store   *txdb.Store
-	pool    *txdb.Pool
-	hsm     *mockhsm.HSM
-	indexer *query.Indexer
+	c               *protocol.Chain
+	store           *txdb.Store
+	pool            *txdb.Pool
+	hsm             *mockhsm.HSM
+	indexer         *query.Indexer
+	remoteGenerator *rpc.Client
 }
 
 func waitForGenesis(c *protocol.Chain, h http.Handler) http.Handler {
