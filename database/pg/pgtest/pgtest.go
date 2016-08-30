@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -106,6 +107,29 @@ func NewTx(t testing.TB) *sql.Tx {
 	return tx
 }
 
+// CloneDB creates a new database, using the database at the provided
+// URL as a template. It returns the URL of the database clone.
+func CloneDB(ctx context.Context, baseURL string) (newURL string, err error) {
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return "", err
+	}
+
+	ctldb, err := stdsql.Open("postgres", baseURL)
+	if err != nil {
+		return "", err
+	}
+	defer ctldb.Close()
+
+	dbname := pickName("db")
+	_, err = ctldb.Exec("CREATE DATABASE " + pq.QuoteIdentifier(dbname) + " WITH TEMPLATE " + pq.QuoteIdentifier(u.Path[1:]))
+	if err != nil {
+		return "", err
+	}
+	u.Path = "/" + dbname
+	return u.String(), nil
+}
+
 // open derives a new randomized test database name from baseURL,
 // initializes it with schemaFile, and opens it.
 func open(ctx context.Context, baseURL, schemaFile string) (newurl string, db *sql.DB, err error) {
@@ -129,7 +153,7 @@ func open(ctx context.Context, baseURL, schemaFile string) (newurl string, db *s
 		log.Println(err)
 	}
 
-	dbname := pickDBName()
+	dbname := pickName("db")
 	u.Path = "/" + dbname
 	_, err = ctldb.Exec("CREATE DATABASE " + pq.QuoteIdentifier(dbname))
 	if err != nil {
@@ -188,7 +212,7 @@ func gcdbs(db *stdsql.DB) error {
 		SELECT datname FROM pg_database
 		WHERE datname LIKE 'pgtest_%' AND datname < $1
 	`
-	rows, err := db.Query(q, formatPrefix(gcTime))
+	rows, err := db.Query(q, formatPrefix("db", gcTime))
 	if err != nil {
 		return err
 	}
@@ -213,16 +237,46 @@ func gcdbs(db *stdsql.DB) error {
 	return nil
 }
 
-func pickDBName() (s string) {
+// A pool contains initialized, pristine databases,
+// as returned from open. It is the client's job to
+// make sure a database is in this state
+// (for example, by rolling back a transaction)
+// before returning it to the pool.
+type pool struct {
+	mu  sync.Mutex // protects dbs
+	dbs []*sql.DB
+}
+
+func (p *pool) get(ctx context.Context, url, path string) (*sql.DB, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if len(p.dbs) > 0 {
+		db := p.dbs[0]
+		p.dbs = p.dbs[1:]
+		return db, nil
+	}
+
+	_, db, err := open(ctx, url, path)
+	return db, err
+}
+
+func (p *pool) put(db *sql.DB) {
+	p.mu.Lock()
+	p.dbs = append(p.dbs, db)
+	p.mu.Unlock()
+}
+
+func pickName(prefix string) (s string) {
 	const chars = "abcdefghijklmnopqrstuvwxyz"
 	for i := 0; i < 10; i++ {
 		s += string(chars[random.Intn(len(chars))])
 	}
-	return formatPrefix(time.Now()) + s
+	return formatPrefix(prefix, time.Now()) + s
 }
 
-func formatPrefix(t time.Time) string {
-	return "pgtest_" + t.UTC().Format(timeFormat) + "Z_"
+func formatPrefix(prefix string, t time.Time) string {
+	return "pgtest_" + prefix + "_" + t.UTC().Format(timeFormat) + "Z_"
 }
 
 // Exec executes q in the database or transaction in ctx.
