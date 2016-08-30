@@ -149,18 +149,17 @@ func finalizeTxWait(ctx context.Context, c *protocol.Chain, txTemplate *txbuilde
 				// not to be in "the distant future."
 				return nil, errors.Wrapf(err, "waiting for block %d", height)
 			}
-			// TODO(bobg): This technique is not future-proof.  The database
-			// won't necessarily contain all the txs we might care about.
-			// An alternative approach will be to scan through each block as
-			// it lands, looking for the tx or a tx that conflicts with it.
-			// For now, though, this is probably faster and simpler.
-			bcTxs, err := c.ConfirmedTxs(ctx, tx.Hash)
+			// TODO(jackson): Avoid stampeding herd of get block queries.
+			// Maybe just cache n most recent blocks in protocol.Chain?
+			b, err := c.GetBlock(ctx, height)
 			if err != nil {
-				return nil, errors.Wrap(err, "getting bc txs")
+				return nil, errors.Wrap(err, "getting block that just landed")
 			}
-			if _, ok := bcTxs[tx.Hash]; ok {
-				// confirmed
-				return tx, nil
+			for _, confirmed := range b.Transactions {
+				if confirmed.Hash == tx.Hash {
+					// confirmed
+					return tx, nil
+				}
 			}
 
 			poolTxs, err := c.PendingTxs(ctx, tx.Hash)

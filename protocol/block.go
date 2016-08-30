@@ -294,29 +294,8 @@ func (c *Chain) rebuildPool(ctx context.Context, block *bc.Block, snapshot *stat
 	return conflictTxs, nil
 }
 
-// ComputeBlockSignature signs a block with the given key.  It does
-// not validate the block.
-func ComputeBlockSignature(b *bc.Block, key ed25519.PrivateKey) []byte {
-	hash := b.HashForSig()
-	return ed25519.Sign(key, hash[:])
-}
-
-// AddSignaturesToBlock adds signatures to a block, replacing the
-// block's SignatureScript.  The signatures must be in the correct
-// order, to wit: matching the order of pubkeys in the previous
-// block's output script.
-func AddSignaturesToBlock(b *bc.Block, signatures [][]byte) {
-	b.Witness = append([][]byte{}, signatures...)
-}
-
-// GenerateBlockScript generates a predicate script
-// requiring nSigs signatures from the given keys.
-func GenerateBlockScript(keys []ed25519.PublicKey, nSigs int) ([]byte, error) {
-	return vmutil.BlockMultiSigScript(keys, nSigs)
-}
-
 func NewGenesisBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
-	script, err := GenerateBlockScript(pubkeys, nSigs)
+	script, err := vmutil.BlockMultiSigScript(pubkeys, nSigs)
 	if err != nil {
 		return nil, err
 	}

@@ -13,7 +13,6 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/trace/span"
-	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/vmutil"
 )
@@ -162,7 +161,7 @@ func (g *generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 					signatures = append(signatures, r)
 				}
 			}
-			protocol.AddSignaturesToBlock(b, signatures)
+			b.Witness = signatures
 			return nil
 		}
 	}

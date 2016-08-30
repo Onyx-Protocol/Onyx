@@ -318,10 +318,11 @@ func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
 func signBlock(t testing.TB, b *bc.Block, keys []ed25519.PrivateKey) {
 	var sigs [][]byte
 	for _, key := range keys {
-		sig := ComputeBlockSignature(b, key)
+		hash := b.HashForSig()
+		sig := ed25519.Sign(key, hash[:])
 		sigs = append(sigs, sig)
 	}
-	AddSignaturesToBlock(b, sigs)
+	b.Witness = sigs
 }
 
 func privToPub(privs []ed25519.PrivateKey) []ed25519.PublicKey {

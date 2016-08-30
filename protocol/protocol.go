@@ -23,11 +23,6 @@ Signer
 
 An signer has one basic job: sign exactly one valid block at each height.
 
-To sign an unsigned block obtained from a generator node, first
-validate against the current blockchain state, then call
-ComputeBlockSignature, and finally send the signature back to the
-generator node.
-
 Manager
 
 A manager's job is to select outputs for spending and to compose
@@ -175,11 +170,6 @@ func (c *Chain) WaitForBlock(ctx context.Context, height uint64) error {
 	}
 
 	return nil
-}
-
-// ConfirmedTxs looks up the provided hases in the confirmed blockchain.
-func (c *Chain) ConfirmedTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
-	return c.store.GetTxs(ctx, hashes...)
 }
 
 // PendingTxs looks up the provided hashes in the tx pool.
