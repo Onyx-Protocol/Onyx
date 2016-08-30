@@ -5,5 +5,5 @@ const type = "mockhsm"
 
 export default combineReducers({
   pages: pagesActions(type),
-  currentPage: currentPageActions(type)
+  currentPage: currentPageActions(type),
 })

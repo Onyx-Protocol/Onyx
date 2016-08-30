@@ -16,12 +16,10 @@ export default function(type, options = {}) {
       return function(dispatch) {
         let object = new chain[className](data)
 
-        object.create(context)
+        return object.create(context)
           .then(() => {
             options.resetAction(dispatch)
             dispatch(push(listPath))
-          }).catch((err) => {
-            console.log(err)
           })
       }
     }

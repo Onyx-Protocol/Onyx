@@ -1,5 +1,6 @@
 import React from 'react'
 import PageHeader from "../PageHeader/PageHeader"
+import { ErrorBanner } from "../Common"
 
 class Form extends React.Component {
   constructor(props) {
@@ -11,15 +12,15 @@ class Form extends React.Component {
     this.handleSubmit = this.handleSubmit.bind(this)
   }
 
-  handleChange() {
-    let newState = {
-      alias: this.refs.alias.value
-    }
-    this.setState(newState)
+  handleChange(event) {
+    this.setState({alias: event.target.value})
   }
 
-  handleSubmit() {
-    this.props.submitForm(this.state)
+  handleSubmit(event) {
+    event.preventDefault()
+    this.props.submitForm({alias: this.state.alias}).catch((err) => {
+      this.setState({error: err})
+    })
   }
 
   render() {
@@ -27,24 +28,30 @@ class Form extends React.Component {
       <div className='form-container'>
         <PageHeader title="New Mock HSM Key" />
 
-        <div className='form-group'>
-          <label>Alias</label>
-          <input
-            ref="alias"
-            className='form-control'
-            type='text'
-            placeholder="Alias"
-            autoFocus="autofocus"
-            value={this.state.alias}
-            onChange={this.handleChange} />
-        </div>
+        <form onSubmit={this.handleSubmit}>
+          <div className='form-group'>
+            <label>Alias</label>
+            <input
+              className='form-control'
+              type='text'
+              placeholder="Alias"
+              autoFocus="autofocus"
+              value={this.state.alias}
+              onChange={this.handleChange} />
+          </div>
 
-        <button className='btn btn-primary' onClick={this.handleSubmit}>Submit</button>
+          {this.state.error &&
+            <ErrorBanner
+              title='Error creating key'
+              message={this.state.error.toString()}
+            />
+          }
+
+          <button className='btn btn-primary'>Submit</button>
+        </form>
       </div>
     )
   }
-
-
 }
 
 export default Form
