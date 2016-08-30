@@ -18,8 +18,8 @@ import (
 var dummyXPub = testutil.TestXPub.String()
 
 func TestCreateAccount(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 
 	account, err := Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
 	if err != nil {
@@ -39,8 +39,8 @@ func TestCreateAccount(t *testing.T) {
 }
 
 func TestCreateAccountReusedAlias(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	createTestAccount(ctx, t, "some-account", nil)
 
 	_, err := Create(ctx, []string{dummyXPub}, 1, "some-account", nil, nil)
@@ -102,8 +102,8 @@ func createTestControlProgram(ctx context.Context, t testing.TB, accountID strin
 }
 
 func TestSetTags(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	account := createTestAccount(ctx, t, "some-alias", nil)
 	newTags := map[string]interface{}{"someTag": "taggityTag"}
 
@@ -132,8 +132,8 @@ func TestSetTags(t *testing.T) {
 }
 
 func TestFindByID(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	tags := map[string]interface{}{"someTag": "taggityTag"}
 	account := createTestAccount(ctx, t, "", tags)
 
@@ -148,8 +148,8 @@ func TestFindByID(t *testing.T) {
 }
 
 func TestFindByAlias(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	tags := map[string]interface{}{"someTag": "taggityTag"}
 	account := createTestAccount(ctx, t, "some-alias", tags)
 
@@ -164,8 +164,8 @@ func TestFindByAlias(t *testing.T) {
 }
 
 func TestArchiveByID(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	account := createTestAccount(ctx, t, "", nil)
 
 	err := Archive(ctx, account.ID, "")
@@ -180,8 +180,8 @@ func TestArchiveByID(t *testing.T) {
 }
 
 func TestArchiveByAlias(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	createTestAccount(ctx, t, "some-alias", nil)
 
 	err := Archive(ctx, "", "some-alias")
