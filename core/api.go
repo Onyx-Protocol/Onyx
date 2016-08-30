@@ -142,6 +142,12 @@ func rpcAuthedHandler(c *protocol.Chain, signer *blocksigner.Signer) http.Handle
 	m.Handle("/rpc/get-blocks", jsonHandler(func(ctx context.Context, h uint64) ([]*bc.Block, error) {
 		return generator.GetBlocks(ctx, c, h)
 	}))
+	m.Handle("/rpc/block-height", jsonHandler(func(ctx context.Context) map[string]uint64 {
+		h := c.Height()
+		return map[string]uint64{
+			"block_height": h,
+		}
+	}))
 
 	if signer != nil {
 		m.Handle("/rpc/signer/sign-block", jsonHandler(signer.SignBlock))
