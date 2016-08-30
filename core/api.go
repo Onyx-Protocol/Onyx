@@ -9,7 +9,6 @@ import (
 	"chain/core/generator"
 	"chain/core/mockhsm"
 	"chain/core/query"
-	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
 )
@@ -25,13 +24,11 @@ func Handler(
 	signer *blocksigner.Signer,
 	hsm *mockhsm.HSM,
 	indexer *query.Indexer,
-	remoteGenerator *rpc.Client,
 ) http.Handler {
 	a := &api{
-		c:               c,
-		hsm:             hsm,
-		indexer:         indexer,
-		remoteGenerator: remoteGenerator,
+		c:       c,
+		hsm:     hsm,
+		indexer: indexer,
 	}
 
 	m := http.NewServeMux()
@@ -41,10 +38,9 @@ func Handler(
 }
 
 type api struct {
-	c               *protocol.Chain
-	hsm             *mockhsm.HSM
-	indexer         *query.Indexer
-	remoteGenerator *rpc.Client
+	c       *protocol.Chain
+	hsm     *mockhsm.HSM
+	indexer *query.Indexer
 }
 
 func waitForGenesis(c *protocol.Chain, h http.Handler) http.Handler {

@@ -232,7 +232,7 @@ func main() {
 		}
 	})
 
-	h := core.Handler(*apiSecretToken, *rpcSecretToken, c, localSigner, hsm, indexer, remoteGenerator)
+	h := core.Handler(*apiSecretToken, *rpcSecretToken, c, localSigner, hsm, indexer)
 	h = dashboardHandler(h)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
