@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"runtime"
-	"sync"
 	"testing"
 	"time"
 
@@ -22,7 +21,13 @@ import (
 
 var (
 	random = rand.New(rand.NewSource(time.Now().UnixNano()))
-	dbpool pool
+
+	// dbpool contains initialized, pristine databases,
+	// as returned from open. It is the client's job to
+	// make sure a database is in this state
+	// (for example, by rolling back a transaction)
+	// before returning it to the pool.
+	dbpool = make(chan *sql.DB, 4)
 )
 
 // DefaultURL is used by NewTX and NewDB if DBURL is the empty string.
@@ -86,7 +91,7 @@ func NewTx(t testing.TB) *sql.Tx {
 	if os.Getenv("CHAIN") == "" {
 		t.Log("warning: $CHAIN not set; probably can't find schema")
 	}
-	db, err := dbpool.get(ctx, DBURL, SchemaPath)
+	db, err := getdb(ctx, DBURL, SchemaPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,8 +164,22 @@ func (f finaldb) finalizeTx(tx *sql.Tx) {
 			f.db.Close()
 			return
 		}
-		dbpool.put(f.db)
+		select {
+		case dbpool <- f.db:
+		default:
+			f.db.Close() // pool is full
+		}
 	}()
+}
+
+func getdb(ctx context.Context, url, path string) (*sql.DB, error) {
+	select {
+	case db := <-dbpool:
+		return db, nil
+	default:
+		_, db, err := open(ctx, url, path)
+		return db, err
+	}
 }
 
 func gcdbs(db *stdsql.DB) error {
@@ -192,36 +211,6 @@ func gcdbs(db *stdsql.DB) error {
 		go db.Exec("DROP DATABASE " + pq.QuoteIdentifier(name))
 	}
 	return nil
-}
-
-// A pool contains initialized, pristine databases,
-// as returned from open. It is the client's job to
-// make sure a database is in this state
-// (for example, by rolling back a transaction)
-// before returning it to the pool.
-type pool struct {
-	mu  sync.Mutex // protects dbs
-	dbs []*sql.DB
-}
-
-func (p *pool) get(ctx context.Context, url, path string) (*sql.DB, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if len(p.dbs) > 0 {
-		db := p.dbs[0]
-		p.dbs = p.dbs[1:]
-		return db, nil
-	}
-
-	_, db, err := open(ctx, url, path)
-	return db, err
-}
-
-func (p *pool) put(db *sql.DB) {
-	p.mu.Lock()
-	p.dbs = append(p.dbs, db)
-	p.mu.Unlock()
 }
 
 func pickDBName() (s string) {
