@@ -13,7 +13,7 @@ import (
 )
 
 // SaveAnnotatedAsset saves an annotated asset to the query indexes.
-func (i *Indexer) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, asset map[string]interface{}, sortID string) error {
+func (ind *Indexer) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, asset map[string]interface{}, sortID string) error {
 	b, err := json.Marshal(asset)
 	if err != nil {
 		return errors.Wrap(err)
@@ -23,12 +23,12 @@ func (i *Indexer) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, as
 		INSERT INTO annotated_assets (id, data, sort_id) VALUES($1, $2, $3)
 		ON CONFLICT (id) DO UPDATE SET data = $2, sort_id = $3
 	`
-	_, err = i.db.Exec(ctx, q, assetID.String(), b, sortID)
+	_, err = ind.db.Exec(ctx, q, assetID.String(), b, sortID)
 	return errors.Wrap(err, "saving annotated asset")
 }
 
 // Assets queries the blockchain for annotated assets matching the query.
-func (i *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []interface{}, cur string, limit int) ([]map[string]interface{}, string, error) {
+func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []interface{}, cur string, limit int) ([]map[string]interface{}, string, error) {
 	if len(vals) != p.Parameters {
 		return nil, "", ErrParameterCountMismatch
 	}
@@ -38,7 +38,7 @@ func (i *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []interfa
 	}
 
 	queryStr, queryArgs := constructAssetsQuery(expr, cur, limit)
-	rows, err := i.db.Query(ctx, queryStr, queryArgs...)
+	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "executing assets query")
 	}

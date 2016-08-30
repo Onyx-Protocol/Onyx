@@ -12,7 +12,7 @@ import (
 )
 
 // SaveAnnotatedAccount saves an annotated account to the query indexes.
-func (i *Indexer) SaveAnnotatedAccount(ctx context.Context, accountID string, account map[string]interface{}) error {
+func (ind *Indexer) SaveAnnotatedAccount(ctx context.Context, accountID string, account map[string]interface{}) error {
 	b, err := json.Marshal(account)
 	if err != nil {
 		return errors.Wrap(err)
@@ -22,12 +22,12 @@ func (i *Indexer) SaveAnnotatedAccount(ctx context.Context, accountID string, ac
 		INSERT INTO annotated_accounts (id, data) VALUES($1, $2)
 		ON CONFLICT (id) DO UPDATE SET data = $2
 	`
-	_, err = i.db.Exec(ctx, q, accountID, b)
+	_, err = ind.db.Exec(ctx, q, accountID, b)
 	return errors.Wrap(err, "saving annotated account")
 }
 
 // Accounts queries the blockchain for accounts matching the query `q`.
-func (i *Indexer) Accounts(ctx context.Context, p filter.Predicate, vals []interface{}, cur string, limit int) ([]map[string]interface{}, string, error) {
+func (ind *Indexer) Accounts(ctx context.Context, p filter.Predicate, vals []interface{}, cur string, limit int) ([]map[string]interface{}, string, error) {
 	if len(vals) != p.Parameters {
 		return nil, "", ErrParameterCountMismatch
 	}
@@ -37,7 +37,7 @@ func (i *Indexer) Accounts(ctx context.Context, p filter.Predicate, vals []inter
 	}
 
 	queryStr, queryArgs := constructAccountsQuery(expr, cur, limit)
-	rows, err := i.db.Query(ctx, queryStr, queryArgs...)
+	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "executing acc query")
 	}
