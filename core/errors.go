@@ -5,6 +5,7 @@ import (
 
 	"chain/core/account/utxodb"
 	"chain/core/asset"
+	"chain/core/mockhsm"
 	"chain/core/query"
 	"chain/core/signers"
 	"chain/core/txbuilder"
@@ -71,6 +72,9 @@ var (
 		// account action error namespace (76x)
 		utxodb.ErrInsufficient: errorInfo{400, "CH760", "Insufficient funds for tx"},
 		utxodb.ErrReserved:     errorInfo{400, "CH761", "Some outputs are reserved; try again"},
+
+		// Mock HSM error namespace (80x)
+		mockhsm.ErrDuplicateKeyAlias: errorInfo{400, "CH800", "Duplicate alias for Mock HSM key"},
 	}
 )
 

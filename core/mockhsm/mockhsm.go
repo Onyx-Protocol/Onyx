@@ -12,6 +12,8 @@ import (
 	"chain/errors"
 )
 
+var ErrDuplicateKeyAlias = errors.New("duplicate key alias")
+
 type HSM struct {
 	db pg.DB
 }
@@ -45,7 +47,11 @@ func (h *HSM) create(ctx context.Context, alias string, get bool) (*XPub, bool, 
 	hash := sha3.Sum256(xpub.Bytes())
 	err = h.store(ctx, hex.EncodeToString(hash[:]), xprv, xpub, alias)
 	if err != nil {
-		if get && pg.IsUniqueViolation(err) {
+		if pg.IsUniqueViolation(err) {
+			if !get {
+				return nil, false, errors.WithDetailf(ErrDuplicateKeyAlias, "value: %q", alias)
+			}
+
 			var xpubBytes []byte
 			err = pg.QueryRow(ctx, `SELECT xpub FROM mockhsm WHERE alias = $1`, alias).Scan(&xpubBytes)
 			if err != nil {

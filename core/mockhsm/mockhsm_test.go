@@ -9,6 +9,7 @@ import (
 
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/errors"
 )
 
 func TestMockHSM(t *testing.T) {
@@ -69,5 +70,14 @@ func TestKeyWithAlias(t *testing.T) {
 
 	if !reflect.DeepEqual(xpubs[0], xpub) {
 		t.Fatalf("expected to get %v instead got %v", spew.Sdump(xpub), spew.Sdump(xpubs[0]))
+	}
+
+	// check for uniqueness error
+	xpub, err = hsm.CreateKey(ctx, "some-alias")
+	if xpub != nil {
+		t.Fatalf("xpub: got %v want nil", xpub)
+	}
+	if errors.Root(err) != ErrDuplicateKeyAlias {
+		t.Fatalf("error return value: got %v want %v", errors.Root(err), ErrDuplicateKeyAlias)
 	}
 }
