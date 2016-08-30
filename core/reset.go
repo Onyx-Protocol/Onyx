@@ -13,10 +13,11 @@ import (
 )
 
 func getBlockKeys(c *protocol.Chain, ctx context.Context) (keys []ed25519.PublicKey, quorum int, err error) {
-	lastBlock, err := c.LatestBlock(ctx)
-	if err == protocol.ErrNoBlocks {
+	height := c.Height()
+	if height == 0 {
 		return nil, 0, nil
 	}
+	lastBlock, err := c.GetBlock(ctx, height)
 	if err != nil {
 		return nil, 0, errors.Wrap(err)
 	}

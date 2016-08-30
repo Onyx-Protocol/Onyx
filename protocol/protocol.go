@@ -61,10 +61,6 @@ var (
 	// blockchain.
 	ErrTheDistantFuture = errors.New("the block height is too damn high")
 
-	// ErrNoBlocks is returned when LatestBlock is called and the store
-	// contains no blocks.
-	ErrNoBlocks = errors.New("no blocks in the store")
-
 	// ErrBadStateHeight is returned from Store.StateTree when the
 	// height parameter does not match the latest block height.
 	ErrBadStateHeight = errors.New("requested block height does not match current state")
@@ -162,21 +158,6 @@ func (c *Chain) Reset() {
 
 func (c *Chain) AddBlockCallback(f BlockCallback) {
 	c.blockCallbacks = append(c.blockCallbacks, f)
-}
-
-func (c *Chain) LatestBlock(ctx context.Context) (*bc.Block, error) {
-	c.height.cond.L.Lock()
-	height := c.height.n
-	c.height.cond.L.Unlock()
-
-	b, err := c.store.GetBlock(ctx, height)
-	if err != nil {
-		return nil, err
-	}
-	if b == nil {
-		return nil, ErrNoBlocks
-	}
-	return b, nil
 }
 
 func (c *Chain) WaitForBlock(ctx context.Context, height uint64) error {

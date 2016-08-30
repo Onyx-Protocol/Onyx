@@ -26,7 +26,7 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	indexer.RegisterAnnotator(account.AnnotateTxs)
 	indexer.RegisterAnnotator(asset.AnnotateTxs)
 
-	b1, err := c.LatestBlock(ctx)
+	b1, err := c.GetBlock(ctx, 1)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

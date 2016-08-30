@@ -51,7 +51,7 @@ func MakeBlock(ctx context.Context, tb testing.TB, c *protocol.Chain) *bc.Block 
 	// callbacks no longer expect a DB connection pool
 	// to be in the ctx. Just use background here.
 
-	curBlock, err := c.LatestBlock(ctx)
+	curBlock, err := c.GetBlock(ctx, c.Height())
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}

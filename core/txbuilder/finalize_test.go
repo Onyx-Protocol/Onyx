@@ -201,7 +201,7 @@ func benchGenBlock(b *testing.B) {
 		testutil.FatalErr(b, err)
 	}
 
-	genesis, err := c.LatestBlock(ctx)
+	genesis, err := c.GetBlock(ctx, 1)
 	if err != nil {
 		testutil.FatalErr(b, err)
 	}

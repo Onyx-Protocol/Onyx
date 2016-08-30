@@ -17,7 +17,7 @@ import (
 	"chain/testutil"
 )
 
-func TestLatestBlock(t *testing.T) {
+func TestGetBlock(t *testing.T) {
 	ctx := context.Background()
 
 	emptyPool := mempool.New()
@@ -31,7 +31,7 @@ func TestLatestBlock(t *testing.T) {
 		want    *bc.Block
 		wantErr error
 	}{
-		{noBlocks, nil, ErrNoBlocks},
+		{noBlocks, nil, nil},
 		{oneBlock, &bc.Block{}, nil},
 	}
 
@@ -40,7 +40,7 @@ func TestLatestBlock(t *testing.T) {
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
-		got, gotErr := c.LatestBlock(ctx)
+		got, gotErr := c.GetBlock(ctx, c.Height())
 
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("got latest = %+v want %+v", got, test.want)

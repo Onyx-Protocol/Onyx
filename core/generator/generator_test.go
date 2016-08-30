@@ -21,7 +21,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 	ctx := context.Background()
 
 	c := prottest.NewChain(t)
-	b1, err := c.LatestBlock(ctx)
+	b1, err := c.GetBlock(ctx, 1)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
