@@ -67,8 +67,12 @@ func TestConflictingTxsInPool(t *testing.T) {
 
 	// Build the second tx
 	secondTemplate, err := Build(ctx, &tx.TxData, nil, []byte("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	secondTemplate.Inputs = firstTemplate.Inputs
-	ComputeSigHashes(secondTemplate)
+	secondTemplate.Inputs[0].WitnessComponents[0].(*SignatureWitness).Signatures[0].Bytes = nil
+	StageWitnesses(secondTemplate)
 	assettest.SignTxTemplate(t, secondTemplate, info.privKeyAccounts)
 	_, err = FinalizeTx(ctx, c, secondTemplate)
 	if err != nil {

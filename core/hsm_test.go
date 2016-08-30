@@ -94,22 +94,23 @@ func TestMockHSM(t *testing.T) {
 }
 
 func inspectInput(t *testing.T, inp *txbuilder.Input, expectSig bool) {
-	if len(inp.SigComponents) != 2 {
-		t.Fatalf("len(inp.SigComponents) is %d, want 2", len(inp.SigComponents))
+	if len(inp.WitnessComponents) != 2 {
+		t.Fatalf("len(inp.WitnessComponents) is %d, want 2", len(inp.WitnessComponents))
 	}
-	if inp.SigComponents[0].Type != "signature" {
-		t.Fatalf("inp.SigComponents[0].Type is %s, want \"signature\"", inp.SigComponents[0].Type)
+	s, ok := inp.WitnessComponents[0].(*txbuilder.SignatureWitness)
+	if !ok {
+		t.Fatalf("inp.WitnessComponents[0] has type %T, want *txbuilder.SignatureWitness", inp.WitnessComponents[0])
 	}
-	if len(inp.SigComponents[0].Signatures) != 1 {
-		t.Fatalf("len(inp.SigComponents[0].Signatures) is %d, want 1", len(inp.SigComponents[0].Signatures))
+	if len(s.Signatures) != 1 {
+		t.Fatalf("len(s.Signatures) is %d, want 1", len(s.Signatures))
 	}
 	if expectSig {
-		if len(inp.SigComponents[0].Signatures[0].Bytes) == 0 {
-			t.Errorf("expected a signature in inp.SigComponents[0].Signatures[0]")
+		if len(s.Signatures[0].Bytes) == 0 {
+			t.Errorf("expected a signature in s.Signatures[0]")
 		}
 	} else {
-		if len(inp.SigComponents[0].Signatures[0].Bytes) != 0 {
-			t.Errorf("expected no signature in inp.SigComponents[0].Signatures[0], got %x", inp.SigComponents[0].Signatures[0].Bytes)
+		if len(s.Signatures[0].Bytes) != 0 {
+			t.Errorf("expected no signature in s.Signatures[0], got %x", s.Signatures[0].Bytes)
 		}
 	}
 }

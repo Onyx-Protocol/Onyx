@@ -2,8 +2,10 @@ package txbuilder
 
 import (
 	"context"
+	"encoding/json"
 
-	"chain/encoding/json"
+	chainjson "chain/encoding/json"
+	"chain/errors"
 	"chain/protocol/bc"
 )
 
@@ -17,51 +19,67 @@ type Template struct {
 	// a template from an external Core, `Local` should be set to
 	// false.
 	Local bool `json:"local"`
+
+	sigHasher *bc.SigHasher
+}
+
+func (t *Template) Hash(idx int, hashType bc.SigHashType) bc.Hash {
+	if t.sigHasher == nil {
+		t.sigHasher = bc.NewSigHasher(t.Unsigned)
+	}
+	return t.sigHasher.Hash(idx, hashType)
 }
 
 // Input is an input for a TxTemplate.
 type Input struct {
 	bc.AssetAmount
-	Position      uint32                `json:"position"`
-	SigComponents []*SigScriptComponent `json:"signature_components,omitempty"`
+	Position          uint32             `json:"position"`
+	WitnessComponents []WitnessComponent `json:"witness_components,omitempty"`
 }
 
-// SigScriptComponent is an unserialized portion of the sigscript. When
-// a tx is finalized, all the sig script components for each input
-// are serialized and concatenated to make the final sigscripts. Type
-// must be 'data' or 'signature'.
-type SigScriptComponent struct {
-	Type          string        `json:"type"`           // required
-	Data          json.HexBytes `json:"data"`           // required for 'data'
-	Quorum        int           `json:"quorum"`         // required for 'signature'
-	SignatureData bc.Hash       `json:"signature_data"` // required for 'signature'
-	Signatures    []*Signature  `json:"signatures"`     // required for 'signature'
-}
-
-// Signature is an signature for a TxTemplate.
-type Signature struct {
-	XPub           string        `json:"xpub"`
-	DerivationPath []uint32      `json:"derivation_path"`
-	Bytes          json.HexBytes `json:"signature"`
-}
-
-func (inp *Input) AddWitnessData(data []byte) {
-	inp.SigComponents = append(inp.SigComponents, &SigScriptComponent{
-		Type: "data",
-		Data: data,
-	})
-}
-
-func (inp *Input) AddWitnessSigs(sigs []*Signature, nreq int, sigData *bc.Hash) {
-	c := &SigScriptComponent{
-		Type:       "signature",
-		Quorum:     nreq,
-		Signatures: sigs,
+func (inp *Input) UnmarshalJSON(b []byte) error {
+	var pre struct {
+		bc.AssetAmount
+		Position          uint32            `json:"position"`
+		WitnessComponents []json.RawMessage `json:"witness_components"`
 	}
-	if sigData != nil {
-		copy(c.SignatureData[:], (*sigData)[:])
+	err := json.Unmarshal(b, &pre)
+	if err != nil {
+		return err
 	}
-	inp.SigComponents = append(inp.SigComponents, c)
+	inp.AssetAmount = pre.AssetAmount
+	inp.Position = pre.Position
+
+	for i, w := range pre.WitnessComponents {
+		var t struct {
+			Type string `json:"type"`
+		}
+		err = json.Unmarshal(w, &t)
+		if err != nil {
+			return err
+		}
+		switch t.Type {
+		case "data":
+			var d struct {
+				Data chainjson.HexBytes `json:"data"`
+			}
+			err = json.Unmarshal(w, &d)
+			if err != nil {
+				return err
+			}
+			inp.WitnessComponents = append(inp.WitnessComponents, DataWitness(d.Data))
+		case "signature":
+			var s SignatureWitness
+			err = json.Unmarshal(w, &s)
+			if err != nil {
+				return err
+			}
+			inp.WitnessComponents = append(inp.WitnessComponents, &s)
+		default:
+			return errors.WithDetailf(ErrBadWitnessComponent, "witness component %d has unknown type '%s'", i, t.Type)
+		}
+	}
+	return nil
 }
 
 type Action interface {

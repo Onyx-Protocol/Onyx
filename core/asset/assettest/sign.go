@@ -1,6 +1,7 @@
 package assettest
 
 import (
+	"context"
 	"testing"
 
 	"chain/core/txbuilder"
@@ -13,10 +14,13 @@ func SignTxTemplate(t testing.TB, template *txbuilder.Template, priv *hd25519.XP
 		priv = testutil.TestXPrv
 	}
 	for _, input := range template.Inputs {
-		for _, component := range input.SigComponents {
-			for _, sig := range component.Signatures {
-				derivedSK := priv.Derive(sig.DerivationPath)
-				sig.Bytes = derivedSK.Sign(component.SignatureData[:])
+		for _, c := range input.WitnessComponents {
+			err := c.Sign(nil, func(_ context.Context, _ string, path []uint32, data [32]byte) ([]byte, error) {
+				derived := priv.Derive(path)
+				return derived.Sign(data[:]), nil
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
 		}
 	}

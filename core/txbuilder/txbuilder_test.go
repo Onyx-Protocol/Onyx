@@ -21,10 +21,10 @@ type testAction bc.AssetAmount
 func (t testAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*Input, error) {
 	in := bc.NewSpendInput([32]byte{255}, 0, nil, t.AssetID, t.Amount, nil, nil)
 	tplIn := &Input{
-		SigComponents: []*SigScriptComponent{{
-			Type: "data",
-			Data: []byte("redeem"),
-		}}}
+		WitnessComponents: []WitnessComponent{
+			DataWitness("redeem"),
+		},
+	}
 	change := bc.NewTxOutput(t.AssetID, t.Amount, []byte("change"), nil)
 	return []*bc.TxInput{in}, []*bc.TxOutput{change}, []*Input{tplIn}, nil
 }
@@ -77,16 +77,13 @@ func TestBuild(t *testing.T) {
 			},
 		},
 		Inputs: []*Input{{
-			SigComponents: []*SigScriptComponent{
-				{
-					Type: "data",
-					Data: []byte("redeem"),
-				},
+			WitnessComponents: []WitnessComponent{
+				DataWitness("redeem"),
 			},
 		}},
 	}
 
-	ComputeSigHashes(want)
+	StageWitnesses(want)
 	if !reflect.DeepEqual(got.Unsigned, want.Unsigned) {
 		t.Errorf("got tx:\n\t%#v\nwant tx:\n\t%#v", got.Unsigned, want.Unsigned)
 		t.Errorf("got tx inputs:\n\t%#v\nwant tx inputs:\n\t%#v", got.Unsigned.Inputs, want.Unsigned.Inputs)
@@ -98,7 +95,7 @@ func TestBuild(t *testing.T) {
 	}
 }
 
-func TestAssembleSignatures(t *testing.T) {
+func TestMaterializeWitnesses(t *testing.T) {
 	var genesisHash bc.Hash
 	issuanceProg := []byte{1}
 	assetID := bc.ComputeAssetID(issuanceProg, genesisHash, 1)
@@ -118,9 +115,8 @@ func TestAssembleSignatures(t *testing.T) {
 	tpl := &Template{
 		Unsigned: unsigned,
 		Inputs: []*Input{{
-			SigComponents: []*SigScriptComponent{
-				{
-					Type:          "signature",
+			WitnessComponents: []WitnessComponent{
+				&SignatureWitness{
 					Quorum:        1,
 					SignatureData: sigData,
 					Signatures: []*Signature{{
@@ -129,15 +125,12 @@ func TestAssembleSignatures(t *testing.T) {
 						Bytes:          mustDecodeHex("304402202ece2c2dfd0ca44b27c5e03658c7eaac4d61d5c2668940da1bdcf53b312db0fc0220670c520b67b6fd4f4efcfbe55e82dc4a4624059b51594889d664bea445deee6b01"),
 					}},
 				},
-				{
-					Type: "data",
-					Data: mustDecodeHex("5221033dda0a756db51f76a4f394161614f01df4061644c514fde3994adbe4a3a2d21621038a0f0a8d593773abcd8c878f8777c57986f9f84886c8dde0cf00fdc2c89f0c592103b9e805011523bb28eedb3fcfff8924684a91116a76408fe0972805295e50e15d53ae"),
-				},
+				DataWitness(mustDecodeHex("5221033dda0a756db51f76a4f394161614f01df4061644c514fde3994adbe4a3a2d21621038a0f0a8d593773abcd8c878f8777c57986f9f84886c8dde0cf00fdc2c89f0c592103b9e805011523bb28eedb3fcfff8924684a91116a76408fe0972805295e50e15d53ae")),
 			},
 		}},
 	}
 
-	tx, err := AssembleSignatures(tpl)
+	tx, err := MaterializeWitnesses(tpl)
 	if err != nil {
 		t.Fatal(withStack(err))
 	}

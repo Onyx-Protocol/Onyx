@@ -185,11 +185,11 @@ func TestTransfer(t *testing.T) {
 	}
 	toSign := inspectTemplate(t, parsedResult[0], account2ID)
 	txTemplate, err = toTxTemplate(ctx, toSign)
-	assettest.SignTxTemplate(t, txTemplate, testutil.TestXPrv)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
+	assettest.SignTxTemplate(t, txTemplate, testutil.TestXPrv)
 	_, err = submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
 	if err != nil && err != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)

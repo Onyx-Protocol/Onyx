@@ -186,8 +186,8 @@ func signTemplates(ctx context.Context, txs []*txbuilder.Template) interface{} {
 	return resp
 }
 
-func clientSigner(_ context.Context, sigComponent *txbuilder.SigScriptComponent, sig *txbuilder.Signature) ([]byte, error) {
-	return client.Sign(kd, sig.DerivationPath, sigComponent.SignatureData)
+func clientSigner(_ context.Context, _ string, path []uint32, data [32]byte) ([]byte, error) {
+	return client.Sign(kd, path, data)
 }
 
 func signTemplate(ctx context.Context, tpl *txbuilder.Template) error {

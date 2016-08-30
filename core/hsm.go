@@ -73,12 +73,12 @@ func (a *api) mockhsmSignTemplates(ctx context.Context, tpls []*txbuilder.Templa
 	return resp
 }
 
-func (a *api) mockhsmSignTemplate(ctx context.Context, sigComponent *txbuilder.SigScriptComponent, sig *txbuilder.Signature) ([]byte, error) {
-	xpub, err := hd25519.XPubFromString(sig.XPub)
+func (a *api) mockhsmSignTemplate(ctx context.Context, xpubstr string, path []uint32, data [32]byte) ([]byte, error) {
+	xpub, err := hd25519.XPubFromString(xpubstr)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing xpub")
 	}
-	sigBytes, err := a.hsm.Sign(ctx, xpub, sig.DerivationPath, sigComponent.SignatureData[:])
+	sigBytes, err := a.hsm.Sign(ctx, xpub, path, data[:])
 	if err == mockhsm.ErrNoKey {
 		return nil, nil
 	}

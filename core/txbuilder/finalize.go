@@ -37,7 +37,7 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, txTemplate *Template) (*
 		return nil, errors.Wrap(ErrBadInputCount)
 	}
 
-	msg, err := AssembleSignatures(txTemplate)
+	msg, err := MaterializeWitnesses(txTemplate)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
