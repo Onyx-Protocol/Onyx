@@ -5,9 +5,61 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/crypto/ed25519/hd25519"
 	"chain/protocol/bc"
 )
+
+func TestCheckSig(t *testing.T) {
+	cases := []struct {
+		prog    string
+		ok, err bool
+	}{
+		{
+			"0x010203 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 0x040506 CHECKSIG",
+			false, false,
+		},
+		{
+			"0x010203 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f 0x040506 CHECKSIG",
+			false, true,
+		},
+		{
+			"0x26ced30b1942b89ef5332a9f22f1a61e5a6a3f8a5bc33b2fc58b1daf78c81bf1d5c8add19cea050adeb37da3a7bf8f813c6a6922b42934a6441fa6bb1c7fc208 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 0xdbca6fb13badb7cfdf76510070ffad15b85f9934224a9e11202f5e8f86b584a6 CHECKSIG",
+			true, false,
+		},
+		{
+			"0x010203 1 0x040506 1 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 CHECKMULTISIG",
+			false, false,
+		},
+		{
+			"0x010203 1 0x040506 1 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f CHECKMULTISIG",
+			false, true,
+		},
+		{
+			"0x26ced30b1942b89ef5332a9f22f1a61e5a6a3f8a5bc33b2fc58b1daf78c81bf1d5c8add19cea050adeb37da3a7bf8f813c6a6922b42934a6441fa6bb1c7fc208 1 0xdbca6fb13badb7cfdf76510070ffad15b85f9934224a9e11202f5e8f86b584a6 1 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 CHECKMULTISIG",
+			true, false,
+		},
+	}
+
+	for i, c := range cases {
+		prog, err := Compile(c.prog)
+		if err != nil {
+			t.Fatalf("case %d: %s", i, err)
+		}
+		vm := &virtualMachine{
+			program:  prog,
+			runLimit: 50000,
+		}
+		ok, err := vm.run()
+		if (err != nil) != c.err {
+			if c.err {
+				t.Errorf("case %d: expected error, got none", i)
+			} else {
+				t.Errorf("case %d: expected no error, got %s", i, err)
+			}
+		} else if ok != c.ok {
+			t.Errorf("case %d: ok is %v, expected %v", i, ok, c.ok)
+		}
+	}
+}
 
 func TestCryptoOps(t *testing.T) {
 	tx := bc.NewTx(bc.TxData{
@@ -226,18 +278,6 @@ func TestCryptoOps(t *testing.T) {
 	}, {
 		op: OP_CHECKSIG,
 		startVM: &virtualMachine{
-			runLimit: 50000,
-			dataStack: [][]byte{
-				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851" +
-					"fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
-				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
-				mustDecodeHex("badbad"),
-			},
-		},
-		wantErr: hd25519.ErrBadKeyLen,
-	}, {
-		op: OP_CHECKSIG,
-		startVM: &virtualMachine{
 			runLimit: 0,
 		},
 		wantErr: ErrRunLimitExceeded,
@@ -380,20 +420,6 @@ func TestCryptoOps(t *testing.T) {
 			},
 		},
 		wantErr: ErrBadValue,
-	}, {
-		op: OP_CHECKMULTISIG,
-		startVM: &virtualMachine{
-			runLimit: 50000,
-			dataStack: [][]byte{
-				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851" +
-					"fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
-				{1},
-				mustDecodeHex("badbad"),
-				{1},
-				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
-			},
-		},
-		wantErr: hd25519.ErrBadKeyLen,
 	}, {
 		op: OP_CHECKMULTISIG,
 		startVM: &virtualMachine{
