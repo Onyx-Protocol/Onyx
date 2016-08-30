@@ -12,11 +12,6 @@ import (
 	"chain/protocol/vmutil"
 )
 
-// PriorIssuances maps a tx hash (of a tx containing an issuance) to
-// the time (in Unix millis) at which it should expire from the
-// issuance memory.
-type PriorIssuances map[bc.Hash]uint64
-
 var (
 	// ErrBadTx is returned for transactions failing validation
 	ErrBadTx = errors.New("invalid transaction")
