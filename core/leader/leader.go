@@ -56,8 +56,8 @@ type leader struct {
 func update(ctx context.Context, l *leader) {
 	const (
 		insertQ = `
-			INSERT INTO leader (leader_key, leader_address, expiry) VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '10 seconds')
-			ON CONFLICT (singleton) DO UPDATE SET leader_key = $1, leader_address = $2, expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
+			INSERT INTO leader (leader_key, address, expiry) VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '10 seconds')
+			ON CONFLICT (singleton) DO UPDATE SET leader_key = $1, address = $2, expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
 				WHERE leader.expiry < CURRENT_TIMESTAMP
 		`
 		updateQ = `
