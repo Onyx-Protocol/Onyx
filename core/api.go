@@ -44,14 +44,7 @@ type api struct {
 
 func waitForGenesis(c *protocol.Chain, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		ctx := req.Context()
-		if c.Height() == 0 {
-			err := c.WaitForBlock(ctx, 1)
-			if err != nil {
-				writeHTTPError(ctx, rw, err)
-				return
-			}
-		}
+		c.WaitForBlock(1)
 		h.ServeHTTP(rw, req)
 	})
 }

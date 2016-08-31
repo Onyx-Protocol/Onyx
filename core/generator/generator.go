@@ -83,7 +83,7 @@ func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, period ti
 func GetBlocks(ctx context.Context, c *protocol.Chain, afterHeight uint64) ([]*bc.Block, error) {
 	// TODO(kr): This is not a generator function.
 	// Move this to another package.
-	err := c.WaitForBlock(ctx, afterHeight+1)
+	err := c.WaitForBlockSoon(afterHeight + 1)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", afterHeight+1)
 	}

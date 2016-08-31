@@ -142,13 +142,7 @@ func finalizeTxWait(ctx context.Context, c *protocol.Chain, txTemplate *txbuilde
 		case <-ctx.Done():
 			return nil, ctx.Err()
 
-		case err := <-waitBlock(ctx, c, height):
-			if err != nil {
-				// This should be impossible, since the only error produced by
-				// WaitForBlock is ErrTheDistantFuture, and height is known
-				// not to be in "the distant future."
-				return nil, errors.Wrapf(err, "waiting for block %d", height)
-			}
+		case <-waitBlock(ctx, c, height):
 			// TODO(jackson): Avoid stampeding herd of get block queries.
 			// Maybe just cache n most recent blocks in protocol.Chain?
 			b, err := c.GetBlock(ctx, height)
@@ -176,10 +170,13 @@ func finalizeTxWait(ctx context.Context, c *protocol.Chain, txTemplate *txbuilde
 	}
 }
 
-func waitBlock(ctx context.Context, c *protocol.Chain, height uint64) <-chan error {
-	err := make(chan error, 1)
-	go func() { err <- c.WaitForBlock(ctx, height) }()
-	return err
+func waitBlock(ctx context.Context, c *protocol.Chain, height uint64) <-chan struct{} {
+	done := make(chan struct{}, 1)
+	go func() {
+		c.WaitForBlock(height)
+		done <- struct{}{}
+	}()
+	return done
 }
 
 // TODO(bobg): allow caller to specify reservation by (encrypted) id?

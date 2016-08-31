@@ -68,7 +68,7 @@ func TestNoTimeTravel(t *testing.T) {
 	}
 }
 
-func TestWaitForBlock(t *testing.T) {
+func TestWaitForBlockSoon(t *testing.T) {
 	ctx := context.Background()
 	store := memstore.New()
 	block1 := &bc.Block{
@@ -98,7 +98,7 @@ func TestWaitForBlock(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	ch := waitForBlockChan(ctx, c, 1)
+	ch := waitForBlockChan(c, 1)
 	select {
 	case err := <-ch:
 		if err != nil {
@@ -108,7 +108,7 @@ func TestWaitForBlock(t *testing.T) {
 		t.Errorf("timed out waiting for block 0")
 	}
 
-	ch = waitForBlockChan(ctx, c, 5)
+	ch = waitForBlockChan(c, 5)
 	select {
 	case err := <-ch:
 		if err != ErrTheDistantFuture {
@@ -118,11 +118,11 @@ func TestWaitForBlock(t *testing.T) {
 		t.Errorf("timed out waiting for block 5")
 	}
 
-	ch = waitForBlockChan(ctx, c, 2)
+	ch = waitForBlockChan(c, 2)
 
 	select {
 	case <-ch:
-		t.Errorf("WaitForBlock should wait")
+		t.Errorf("WaitForBlockSoon should wait")
 	default:
 	}
 
@@ -133,7 +133,7 @@ func TestWaitForBlock(t *testing.T) {
 
 	select {
 	case <-ch:
-		t.Errorf("WaitForBlock should wait")
+		t.Errorf("WaitForBlockSoon should wait")
 	default:
 	}
 
@@ -152,10 +152,10 @@ func TestWaitForBlock(t *testing.T) {
 	}
 }
 
-func waitForBlockChan(ctx context.Context, c *Chain, height uint64) chan error {
+func waitForBlockChan(c *Chain, height uint64) chan error {
 	ch := make(chan error)
 	go func() {
-		err := c.WaitForBlock(ctx, height)
+		err := c.WaitForBlockSoon(height)
 		ch <- err
 	}()
 	return ch

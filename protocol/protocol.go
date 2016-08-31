@@ -155,21 +155,25 @@ func (c *Chain) AddBlockCallback(f BlockCallback) {
 	c.blockCallbacks = append(c.blockCallbacks, f)
 }
 
-func (c *Chain) WaitForBlock(ctx context.Context, height uint64) error {
+// WaitForBlockSoon waits for the block at the given height,
+// but it is an error to wait for a block far in the future.
+// To wait unconditionally, the caller should use WaitForBlock.
+func (c *Chain) WaitForBlockSoon(height uint64) error {
 	const slop = 3
-
-	c.height.cond.L.Lock()
-	defer c.height.cond.L.Unlock()
-
-	if height > c.height.n+slop {
+	if height > c.Height()+slop {
 		return ErrTheDistantFuture
 	}
+	c.WaitForBlock(height)
+	return nil
+}
 
+// WaitForBlock waits for the block at the given height.
+func (c *Chain) WaitForBlock(height uint64) {
+	c.height.cond.L.Lock()
+	defer c.height.cond.L.Unlock()
 	for c.height.n < height {
 		c.height.cond.Wait()
 	}
-
-	return nil
 }
 
 // PendingTxs looks up the provided hashes in the tx pool.
