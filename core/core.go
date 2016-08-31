@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"chain/core/generator"
+	"chain/core/leader"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/errors"
@@ -91,6 +92,14 @@ func (a *api) reset(ctx context.Context) error {
 }
 
 func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
+	if leader.IsLeading() {
+		return a.leaderInfo(ctx)
+	} else {
+		return a.fetchInfoFromLeader(ctx)
+	}
+}
+
+func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 	var (
 		isSigner     bool
 		isGenerator  bool
@@ -153,5 +162,20 @@ func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
 		"build_commit":           expvar.Get("buildcommit").String(),
 		"build_date":             expvar.Get("builddate").String(),
 	}, nil
+}
 
+func (a *api) fetchInfoFromLeader(ctx context.Context) (map[string]interface{}, error) {
+	addr, err := leader.Address(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	l := &rpc.Client{
+		BaseURL: "https://" + addr,
+		// TODO(tessr): Auth.
+	}
+
+	var resp map[string]interface{}
+	err = l.Call(ctx, "/info", nil, &resp)
+	return resp, err
 }

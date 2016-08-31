@@ -4,11 +4,28 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"sync"
 	"time"
 
+	"chain/database/pg"
 	"chain/database/sql"
+	"chain/errors"
 	"chain/log"
 )
+
+var (
+	isLeading bool
+	lock      sync.Mutex
+)
+
+// IsLeading returns true if this process is
+// the core leader.
+func IsLeading() bool {
+	lock.Lock()
+	l := isLeading
+	lock.Unlock()
+	return l
+}
 
 // Run runs as a goroutine, trying once every five seconds to become
 // the leader for the core.  If it succeeds, then it calls the
@@ -85,6 +102,11 @@ func update(ctx context.Context, l *leader) {
 		log.Messagef(ctx, "No longer core leader")
 		l.cancel()
 		l.leading = false
+
+		lock.Lock()
+		isLeading = false
+		lock.Unlock()
+
 		l.cancel = nil
 	} else {
 		// Try to put this process's key into the leader table.  It
@@ -112,7 +134,26 @@ func update(ctx context.Context, l *leader) {
 		log.Messagef(ctx, "I am the core leader")
 
 		l.leading = true
+
+		lock.Lock()
+		isLeading = true
+		lock.Unlock()
+
 		ctx, l.cancel = context.WithCancel(ctx)
 		go l.lead(ctx)
 	}
+}
+
+// Address retrieves the IP address of the current
+// core leader.
+func Address(ctx context.Context) (string, error) {
+	const q = `SELECT address FROM leader`
+
+	var addr string
+	err := pg.FromContext(ctx).QueryRow(ctx, q).Scan(&addr)
+	if err != nil {
+		return "", errors.Wrap(err, "could not fetch leader address")
+	}
+
+	return addr, nil
 }
