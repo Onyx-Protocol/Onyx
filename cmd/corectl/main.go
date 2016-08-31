@@ -91,6 +91,16 @@ func initblock(db *sql.DB, args []string) {
 		fatalln("error:", err)
 	}
 
+	// Save the config to the database too.
+	const q = `
+		INSERT INTO config (is_signer, is_generator, genesis_hash, configured_at)
+		VALUES('t', 't', $1, NOW())
+	`
+	_, err = db.Exec(ctx, q, block.Hash())
+	if err != nil {
+		fatalln("error:", err)
+	}
+
 	fmt.Printf("block created: %+v\n\n", block)
 	fmt.Println("initial block hash", block.Hash())
 }
