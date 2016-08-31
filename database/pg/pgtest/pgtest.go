@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"runtime"
-	"sync"
 	"testing"
 	"time"
 
@@ -235,36 +234,6 @@ func gcdbs(db *stdsql.DB) error {
 		go db.Exec("DROP DATABASE " + pq.QuoteIdentifier(name))
 	}
 	return nil
-}
-
-// A pool contains initialized, pristine databases,
-// as returned from open. It is the client's job to
-// make sure a database is in this state
-// (for example, by rolling back a transaction)
-// before returning it to the pool.
-type pool struct {
-	mu  sync.Mutex // protects dbs
-	dbs []*sql.DB
-}
-
-func (p *pool) get(ctx context.Context, url, path string) (*sql.DB, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if len(p.dbs) > 0 {
-		db := p.dbs[0]
-		p.dbs = p.dbs[1:]
-		return db, nil
-	}
-
-	_, db, err := open(ctx, url, path)
-	return db, err
-}
-
-func (p *pool) put(db *sql.DB) {
-	p.mu.Lock()
-	p.dbs = append(p.dbs, db)
-	p.mu.Unlock()
 }
 
 func pickName(prefix string) (s string) {
