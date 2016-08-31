@@ -509,8 +509,8 @@ CREATE TABLE config (
     is_signer boolean,
     is_generator boolean,
     genesis_hash text NOT NULL,
-    remote_generator_url text,
     configured_at timestamp with time zone NOT NULL,
+    generator_url text DEFAULT ''::text NOT NULL,
     CONSTRAINT config_singleton CHECK (singleton)
 );
 
@@ -1146,3 +1146,4 @@ insert into migrations (filename, hash) values ('2016-08-29.0.core.config.sql', 
 insert into migrations (filename, hash) values ('2016-08-30.0.asset.issuance-totals.sql', '2a4b3f9899df7c099eb215c0bf5b6b7e2ac6f991c08820c000a96ddf8cfb2671');
 insert into migrations (filename, hash) values ('2016-08-31.0.core.add-leader-address.sql', '6d2f4eca68067afae4531b8e56de4c7628158e2dd66cd1831585d26e83817f1b');
 insert into migrations (filename, hash) values ('2016-08-31.1.core.mockhsm-key-sort.sql', '4ecebb1e4485e6ea7b0fb7ed3a34f5c4f511fdec0379d67fcb646ec06708ad70');
+insert into migrations (filename, hash) values ('2016-08-31.2.core.default-config-generator-url.sql', '4b3a62ed2ff07256b6289b1f0e02910d9ddf5e345c169a978910306cad1c6948');

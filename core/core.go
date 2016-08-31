@@ -92,19 +92,19 @@ func (a *api) reset(ctx context.Context) error {
 
 func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
 	var (
-		isSigner           bool
-		isGenerator        bool
-		genesisHash        string
-		remoteGeneratorURL string
-		configuredAt       time.Time
+		isSigner     bool
+		isGenerator  bool
+		genesisHash  string
+		generatorURL string
+		configuredAt time.Time
 	)
 
 	const q = `
-		SELECT is_signer, is_generator, genesis_hash, remote_generator_url, configured_at
+		SELECT is_signer, is_generator, genesis_hash, generator_url, configured_at
 		FROM config
 	`
 
-	err := pg.QueryRow(ctx, q).Scan(&isSigner, &isGenerator, &genesisHash, &remoteGeneratorURL, &configuredAt)
+	err := pg.QueryRow(ctx, q).Scan(&isSigner, &isGenerator, &genesisHash, &generatorURL, &configuredAt)
 	if err == sql.ErrNoRows {
 		return map[string]interface{}{
 			"is_configured": false,
@@ -120,13 +120,13 @@ func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
 	} else {
 		// TODO(tessr): Store the generator block height in memory on the core leader
 		// instead of retrieving it every time.
-		remoteGenerator := &rpc.Client{
-			BaseURL: remoteGeneratorURL,
+		generator := &rpc.Client{
+			BaseURL: generatorURL,
 			// TODO(tessr): Auth.
 		}
 
 		var resp map[string]uint64
-		err := remoteGenerator.Call(ctx, "/rpc/block-height", nil, &resp)
+		err := generator.Call(ctx, "/rpc/block-height", nil, &resp)
 		if err != nil {
 			log.Error(ctx, err, "could not receive latest block height from generator")
 			generatorHeight = "unknown"
@@ -145,7 +145,7 @@ func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
 		"configured_at":          configuredAt,
 		"is_signer":              isSigner,
 		"is_generator":           isGenerator,
-		"generator_url":          remoteGeneratorURL,
+		"generator_url":          generatorURL,
 		"initial_block_hash":     genesisHash,
 		"block_height":           localHeight,
 		"generator_block_height": generatorHeight,
