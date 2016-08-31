@@ -1,0 +1,1 @@
+ALTER TABLE leader ADD COLUMN address text NOT NULL;

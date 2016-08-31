@@ -214,7 +214,7 @@ func main() {
 	// Note, it's important for any services that will install blockchain
 	// callbacks to be initialized before leader.Run() and the http server,
 	// otherwise there's a data race within protocol.Chain.
-	go leader.Run(db, func(ctx context.Context) {
+	go leader.Run(db, *listenAddr, func(ctx context.Context) {
 		ctx = pg.NewContext(ctx, db)
 
 		// Must setup the indexer before generating or fetching blocks.

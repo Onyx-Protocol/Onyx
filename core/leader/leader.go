@@ -20,7 +20,7 @@ import (
 //
 // The Chain Core has up to a 10-second refractory period after
 // shutdown, during which no process can become the new leader.
-func Run(db *sql.DB, lead func(context.Context)) {
+func Run(db *sql.DB, addr string, lead func(context.Context)) {
 	ctx := context.Background()
 	leaderKeyBytes := make([]byte, 32)
 	_, err := rand.Read(leaderKeyBytes)
@@ -28,9 +28,10 @@ func Run(db *sql.DB, lead func(context.Context)) {
 		log.Fatal(ctx, log.KeyError, err)
 	}
 	l := &leader{
-		db:   db,
-		key:  hex.EncodeToString(leaderKeyBytes),
-		lead: lead,
+		db:      db,
+		key:     hex.EncodeToString(leaderKeyBytes),
+		lead:    lead,
+		address: addr,
 	}
 	log.Messagef(ctx, "Chose leaderKey: %s", l.key)
 
@@ -42,9 +43,10 @@ func Run(db *sql.DB, lead func(context.Context)) {
 
 type leader struct {
 	// config
-	db   *sql.DB
-	key  string
-	lead func(context.Context)
+	db      *sql.DB
+	key     string
+	lead    func(context.Context)
+	address string
 
 	// state
 	leading bool
@@ -54,8 +56,8 @@ type leader struct {
 func update(ctx context.Context, l *leader) {
 	const (
 		insertQ = `
-			INSERT INTO leader (leader_key, expiry) VALUES ($1, CURRENT_TIMESTAMP + INTERVAL '10 seconds')
-			ON CONFLICT (singleton) DO UPDATE SET leader_key = $1, expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
+			INSERT INTO leader (leader_key, leader_address, expiry) VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '10 seconds')
+			ON CONFLICT (singleton) DO UPDATE SET leader_key = $1, leader_address = $2, expiry = CURRENT_TIMESTAMP + INTERVAL '10 seconds'
 				WHERE leader.expiry < CURRENT_TIMESTAMP
 		`
 		updateQ = `
@@ -65,7 +67,7 @@ func update(ctx context.Context, l *leader) {
 	)
 
 	if l.leading {
-		res, err := l.db.Exec(ctx, updateQ, l.key)
+		res, err := l.db.Exec(ctx, updateQ, l.key, l.address)
 		if err == nil {
 			rowsAffected, err := res.RowsAffected()
 			if err == nil && rowsAffected > 0 {
@@ -92,7 +94,7 @@ func update(ctx context.Context, l *leader) {
 		// On success, this process's leadership expires in 10 seconds
 		// unless it's renewed in the UPDATE query above.
 		// That extends it for another 10 seconds.
-		res, err := l.db.Exec(ctx, insertQ, l.key)
+		res, err := l.db.Exec(ctx, insertQ, l.key, l.address)
 		if err != nil {
 			log.Error(ctx, err)
 			return

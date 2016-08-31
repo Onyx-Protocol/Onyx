@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -534,6 +534,7 @@ CREATE TABLE leader (
     singleton boolean DEFAULT true NOT NULL,
     leader_key text NOT NULL,
     expiry timestamp with time zone DEFAULT '1970-01-01 00:00:00-08'::timestamp with time zone NOT NULL,
+    address text NOT NULL,
     CONSTRAINT leader_singleton CHECK (singleton)
 );
 
@@ -1122,3 +1123,4 @@ insert into migrations (filename, hash) values ('2016-08-24.0.query.index-filter
 insert into migrations (filename, hash) values ('2016-08-26.0.query.assets-sort-id.sql', '56083fef381b675be65ef9c9769de724ddf46f2c3ed44a9e75ab81ecc812f983');
 insert into migrations (filename, hash) values ('2016-08-29.0.core.config.sql', '4f440fccb3a8523bfd4455acf400e20859d134118742a55677a04d2297297914');
 insert into migrations (filename, hash) values ('2016-08-30.0.asset.issuance-totals.sql', '2a4b3f9899df7c099eb215c0bf5b6b7e2ac6f991c08820c000a96ddf8cfb2671');
+insert into migrations (filename, hash) values ('2016-08-31.0.core.add-leader-address.sql', '6d2f4eca68067afae4531b8e56de4c7628158e2dd66cd1831585d26e83817f1b');
