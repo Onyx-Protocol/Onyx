@@ -14,8 +14,7 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/lib/pq"
-
+	_ "chain/database/pg"
 	"chain/database/sql"
 )
 
