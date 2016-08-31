@@ -8,6 +8,42 @@ import (
 	"chain/protocol/bc"
 )
 
+func TestOutpointOp(t *testing.T) {
+	now := time.Now()
+	var zeroHash bc.Hash
+	tx := bc.NewTx(bc.TxData{
+		Inputs: []*bc.TxInput{
+			bc.NewSpendInput(zeroHash, 0, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
+			bc.NewIssuanceInput(now, now.Add(time.Minute), zeroHash, 6, []byte("issueprog"), nil, nil),
+		},
+	})
+	vm := &virtualMachine{
+		runLimit:   50000,
+		tx:         tx,
+		inputIndex: 0,
+		program:    []byte{uint8(OP_OUTPOINT)},
+	}
+	err := vm.step()
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedStack := [][]byte{zeroHash[:], []byte{}}
+	if !reflect.DeepEqual(vm.dataStack, expectedStack) {
+		t.Errorf("expected stack %v, got %v", expectedStack, vm.dataStack)
+	}
+
+	vm = &virtualMachine{
+		runLimit:   50000,
+		tx:         tx,
+		inputIndex: 1,
+		program:    []byte{uint8(OP_OUTPOINT)},
+	}
+	err = vm.step()
+	if err != ErrContext {
+		t.Errorf("expected ErrContext, got %v", err)
+	}
+}
+
 func TestIntrospectionOps(t *testing.T) {
 	now := time.Now()
 	tx := bc.NewTx(bc.TxData{
@@ -41,12 +77,13 @@ func TestIntrospectionOps(t *testing.T) {
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
 				{7},
 				append([]byte{2}, make([]byte, 31)...),
+				{1},
 				[]byte("controlprog"),
 			},
 		},
 		wantVM: &virtualMachine{
 			runLimit:     49984,
-			deferredCost: -99,
+			deferredCost: -108,
 			tx:           tx,
 			dataStack:    [][]byte{{1}},
 		},
@@ -59,12 +96,13 @@ func TestIntrospectionOps(t *testing.T) {
 				[]byte{},
 				{1},
 				append([]byte{9}, make([]byte, 31)...),
+				{1},
 				[]byte("missingprog"),
 			},
 		},
 		wantVM: &virtualMachine{
 			runLimit:     49984,
-			deferredCost: -68,
+			deferredCost: -77,
 			tx:           tx,
 			dataStack:    [][]byte{{}},
 		},
@@ -77,6 +115,7 @@ func TestIntrospectionOps(t *testing.T) {
 				mustDecodeHex("1f2a05f881ed9fa0c9068a84823677409f863891a2196eb55dbfbb677a566374"),
 				{7},
 				append([]byte{2}, make([]byte, 31)...),
+				{1},
 				[]byte("controlprog"),
 			},
 		},
@@ -106,6 +145,7 @@ func TestIntrospectionOps(t *testing.T) {
 			tx:       tx,
 			dataStack: [][]byte{
 				append([]byte{2}, make([]byte, 31)...),
+				{1},
 				[]byte("controlprog"),
 			},
 		},
@@ -118,6 +158,7 @@ func TestIntrospectionOps(t *testing.T) {
 			dataStack: [][]byte{
 				{7},
 				append([]byte{2}, make([]byte, 31)...),
+				{1},
 				[]byte("controlprog"),
 			},
 		},
@@ -262,6 +303,7 @@ func TestIntrospectionOps(t *testing.T) {
 	txops := []Op{
 		OP_FINDOUTPUT, OP_ASSET, OP_AMOUNT, OP_PROGRAM,
 		OP_MINTIME, OP_MAXTIME, OP_REFDATAHASH, OP_INDEX,
+		OP_OUTPOINT,
 	}
 
 	for _, op := range txops {

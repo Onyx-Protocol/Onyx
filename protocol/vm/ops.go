@@ -211,6 +211,7 @@ const (
 	OP_MAXTIME     Op = 0xc6
 	OP_REFDATAHASH Op = 0xc8
 	OP_INDEX       Op = 0xc9
+	OP_OUTPOINT    Op = 0xcb
 
 	OP_CODESEPARATOR Op = 0xab
 	OP_NOP1          Op = 0xb0
@@ -335,6 +336,7 @@ var (
 		OP_MAXTIME:     {OP_MAXTIME, "MAXTIME", opMaxTime},
 		OP_REFDATAHASH: {OP_REFDATAHASH, "REFDATAHASH", opRefDataHash},
 		OP_INDEX:       {OP_INDEX, "INDEX", opIndex},
+		OP_OUTPOINT:    {OP_OUTPOINT, "OUTPOINT", opOutpoint},
 
 		OP_CODESEPARATOR: {OP_CODESEPARATOR, "CODESEPARATOR", opNop},
 	}

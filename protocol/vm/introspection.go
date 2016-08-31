@@ -22,6 +22,10 @@ func opFindOutput(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
+	vmVersion, err := vm.popInt64(true)
+	if err != nil {
+		return err
+	}
 	assetID, err := vm.pop(true)
 	if err != nil {
 		return err
@@ -39,13 +43,19 @@ func opFindOutput(vm *virtualMachine) error {
 	}
 
 	for _, o := range vm.tx.Outputs {
+		if o.AssetVersion != 1 {
+			continue
+		}
+		if o.Amount != uint64(amount) {
+			continue
+		}
+		if o.VMVersion != uint32(vmVersion) {
+			continue
+		}
 		if !bytes.Equal(o.ControlProgram, prog) {
 			continue
 		}
 		if !bytes.Equal(o.AssetID[:], assetID) {
-			continue
-		}
-		if o.Amount != uint64(amount) {
 			continue
 		}
 		if len(refdatahash) > 0 {
@@ -160,4 +170,28 @@ func opIndex(vm *virtualMachine) error {
 	}
 
 	return vm.pushInt64(int64(vm.inputIndex), true)
+}
+
+func opOutpoint(vm *virtualMachine) error {
+	if vm.tx == nil {
+		return ErrContext
+	}
+
+	txin := vm.tx.Inputs[vm.inputIndex]
+	if txin.IsIssuance() {
+		return ErrContext
+	}
+
+	err := vm.applyCost(1)
+	if err != nil {
+		return err
+	}
+
+	outpoint := txin.Outpoint()
+
+	err = vm.push(outpoint.Hash[:], true)
+	if err != nil {
+		return err
+	}
+	return vm.pushInt64(int64(outpoint.Index), true)
 }
