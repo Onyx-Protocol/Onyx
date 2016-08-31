@@ -107,7 +107,7 @@ func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
 	err := pg.QueryRow(ctx, q).Scan(&isSigner, &isGenerator, &genesisHash, &remoteGeneratorURL, &configuredAt)
 	if err == sql.ErrNoRows {
 		return map[string]interface{}{
-			"configured": false,
+			"is_configured": false,
 		}, nil
 	} else if err != nil {
 		return nil, err
