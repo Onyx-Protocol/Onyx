@@ -1,7 +1,20 @@
-export default {
+const lib = {
   create: function(type, message, props = {}) {
     let err = new Error(message)
     Object.assign(err, props, {type: type})
+    return err
+  },
+
+  isBatchError: function (v) {
+      return v && v.code && !v.stack
+  },
+
+  newBatchError: function (opts) {
+    let err = new Error(lib.formatErrMsg(opts))
+    err.code = opts.code
+    err.chainMessage = opts.message
+    err.detail = opts.detail
+    err.resp = opts.resp
     return err
   },
 
@@ -35,3 +48,5 @@ export default {
     SERVER_ERROR: 'SERVER_ERROR',
   }
 }
+
+export default lib

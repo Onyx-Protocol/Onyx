@@ -1,33 +1,48 @@
 import React from 'react'
 import PageHeader from "../PageHeader/PageHeader"
+import { ErrorBanner } from "../Common"
 
 class Form extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      alias: "",
-      xpubs: [],
-      quorum: 1,
-      tags: "{}"
+      form: {
+        alias: "",
+        xpubs: [],
+        quorum: 1,
+        tags: "{}"
+      }
     }
     this.handleChange = this.handleChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
   }
 
   handleChange() {
-    let newState = {
-      alias: this.refs.alias.value,
-      xpubs: this.refs.xpubs.value.split(","),
-      quorum: parseInt(this.refs.quorum.value),
-      tags: this.refs.tags.value
-    }
-    this.setState(newState)
+    this.setState({
+      form: {
+        alias: this.refs.alias.value,
+        xpubs: this.refs.xpubs.value.split(","),
+        quorum: parseInt(this.refs.quorum.value),
+        tags: this.refs.tags.value
+      }
+    })
   }
 
-  handleSubmit() {
-    let request = Object.assign(this.state)
-    request.tags = JSON.parse(request.tags)
-    this.props.submitForm(request)
+  handleSubmit(event) {
+    event.preventDefault()
+
+    let request = Object.assign({}, this.state.form)
+
+    try {
+      request.tags = JSON.parse(request.tags)
+    } catch(err) {
+      this.setState({error: "Tags must be a valid JSON object."})
+      return
+    }
+
+    this.props.submitForm(request).catch(err => {
+      this.setState({error: err})
+    })
   }
 
   render() {
@@ -35,47 +50,56 @@ class Form extends React.Component {
       <div className='form-container'>
         <PageHeader title="New Account" />
 
-        <div className='form-group'>
-          <label>Alias</label>
-          <input
-            ref="alias"
-            className='form-control'
-            type='text'
-            placeholder="Alias"
-            autoFocus="autofocus"
-            value={this.state.alias}
-            onChange={this.handleChange} />
-        </div>
-        <div className='form-group'>
-          <label>Xpubs</label>
-          <input
-            ref="xpubs"
-            className='form-control'
-            type='text'
-            placeholder="Xpubs (comma separated)"
-            value={this.state.xpubs}
-            onChange={this.handleChange} />
-        </div>
-        <div className='form-group'>
-          <label>Quorum</label>
-          <input
-            ref="quorum"
-            className='form-control'
-            type='number'
-            placeholder="Quorum"
-            value={this.state.quorum}
-            onChange={this.handleChange} />
-        </div>
-        <div className='form-group'>
-          <label>Tags</label>
-          <textarea
-            ref="tags"
-            className='form-control'
-            value={this.state.tags}
-            onChange={this.handleChange} />
-        </div>
+        <form onSubmit={this.handleSubmit}>
+          <div className='form-group'>
+            <label>Alias</label>
+            <input
+              ref="alias"
+              className='form-control'
+              type='text'
+              placeholder="Alias"
+              autoFocus="autofocus"
+              value={this.state.form.alias}
+              onChange={this.handleChange} />
+          </div>
+          <div className='form-group'>
+            <label>Xpubs</label>
+            <input
+              ref="xpubs"
+              className='form-control'
+              type='text'
+              placeholder="Xpubs (comma separated)"
+              value={this.state.form.xpubs}
+              onChange={this.handleChange} />
+          </div>
+          <div className='form-group'>
+            <label>Quorum</label>
+            <input
+              ref="quorum"
+              className='form-control'
+              type='number'
+              placeholder="Quorum"
+              value={this.state.form.quorum}
+              onChange={this.handleChange} />
+          </div>
+          <div className='form-group'>
+            <label>Tags</label>
+            <textarea
+              ref="tags"
+              className='form-control'
+              value={this.state.form.tags}
+              onChange={this.handleChange} />
+          </div>
 
-        <button className='btn btn-primary' onClick={this.handleSubmit}>Submit</button>
+          {this.state.error &&
+            <ErrorBanner
+              title='Error creating account'
+              message={this.state.error.toString()}
+            />
+          }
+
+          <button className='btn btn-primary'>Submit</button>
+        </form>
       </div>
     )
   }

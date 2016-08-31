@@ -1,6 +1,7 @@
 import uuid from 'uuid'
 
 import Page from './page'
+import errors from './errors'
 
 function buildClass(type, options = {}) {
   const createPath = options.createPath || `/create-${type}`
@@ -13,7 +14,12 @@ function buildClass(type, options = {}) {
 
     create(context) {
       let body = Object.assign({ client_token: uuid.v4() }, this)
-      return this.constructor.create(context, [body]).then(data => data[0])
+      return this.constructor.create(context, [body]).then(data => {
+        if (errors.isBatchError(data[0])) {
+          throw errors.newBatchError(data[0])
+        }
+        return data[0]
+      })
     }
 
     // NOTE: static create requires client_token to be set
