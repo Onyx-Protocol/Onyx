@@ -34,6 +34,10 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [Index Object](#index-object)
   * [Create Index](#create-index)
   * [List Indexes](#list-indexes)
+* [Core](#core)
+  * [Configure](#configure)
+  * [Info](#info)
+  * [Reset](#reset)
 
 
 ## MockHSM
@@ -655,3 +659,87 @@ POST /list-indexes
 ```
 
 Response: an array of [index objects](#index-object).
+
+## Core
+
+### Configure
+
+Configures the core. Can only be called once between [resets](#reset).
+
+Endpoint
+
+```
+POST /configure
+```
+
+Request
+
+```
+{
+  "is_generator": <true | false>,
+
+  // Supply these if is_generator is false.
+  "generator_url": ...,
+  "initial_block_hash": ...,
+}
+```
+
+Response
+
+```
+{"message": "ok"}
+```
+
+Returns 400 error if the generator URL and/or initial block hash is bad.
+
+### Info
+
+Returns useful information about this core, including the relative distance between the local block height and the generator's block height.
+
+Endpoint
+
+```
+POST /info
+```
+
+Request
+
+(empty)
+
+Response
+
+```
+{
+  "is_configured": <true | false>,
+  "configured_at": ...,
+  "is_signer": <true | false>,
+  "is_generator": <true | false>,
+  "generator_url": ...,
+  "initial_block_hash": ...,
+  "block_height": ...,
+  "generator_block_height": ...,
+  "is_production": <true | false>,
+  "build_commit": ...,
+  "build_date": ...
+}
+```
+
+### Reset
+
+Resets all data in the core, including blockchain data, accounts, assets, and HSM keys.
+
+Endpoint
+
+```
+POST /reset
+```
+
+Request
+
+(empty)
+
+Reponse
+
+```
+{"message": "ok"}
+```
