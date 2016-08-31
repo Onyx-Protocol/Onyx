@@ -257,6 +257,21 @@ public class Transaction {
         private Boolean local;
 
         /**
+         * The Chain error code.
+         */
+        public String code;
+
+        /**
+         * The Chain error message.
+         */
+        public String message;
+
+        /**
+         * Additional details about the error.
+         */
+        public String detail;
+
+        /**
          * A single input included in a transaction template.
          */
         public static class Input {
@@ -497,7 +512,16 @@ public class Transaction {
         public Template build(Context ctx)
         throws ChainException {
             List<Template> tmpls = Transaction.build(ctx, Arrays.asList(this));
-            return tmpls.get(0);
+            Template response = tmpls.get(0);
+            if (response.unsignedHex == null) {
+                throw new APIException(
+                    response.code,
+                    response.message,
+                    response.detail,
+                    null
+                );
+            }
+            return response;
         }
 
         /**
