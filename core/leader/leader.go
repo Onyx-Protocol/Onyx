@@ -67,7 +67,7 @@ func update(ctx context.Context, l *leader) {
 	)
 
 	if l.leading {
-		res, err := l.db.Exec(ctx, updateQ, l.key, l.address)
+		res, err := l.db.Exec(ctx, updateQ, l.key)
 		if err == nil {
 			rowsAffected, err := res.RowsAffected()
 			if err == nil && rowsAffected > 0 {
