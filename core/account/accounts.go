@@ -267,12 +267,12 @@ func CreateControlProgram(ctx context.Context, accountID string) ([]byte, error)
 	path := signers.Path(account.Signer, signers.AccountKeySpace, idx)
 	derivedXPubs := hd25519.DeriveXPubs(account.XPubs, path)
 	derivedPKs := hd25519.XPubKeys(derivedXPubs)
-	control, redeem, err := vmutil.TxScripts(derivedPKs, account.Quorum)
+	control, _, err := vmutil.TxScripts(derivedPKs, account.Quorum)
 	if err != nil {
 		return nil, err
 	}
 
-	err = insertAccountControlProgram(ctx, account.ID, idx, control, redeem)
+	err = insertAccountControlProgram(ctx, account.ID, idx, control)
 	if err != nil {
 		return nil, err
 	}
@@ -280,13 +280,13 @@ func CreateControlProgram(ctx context.Context, accountID string) ([]byte, error)
 	return control, nil
 }
 
-func insertAccountControlProgram(ctx context.Context, accountID string, idx []uint32, control, redeem []byte) error {
+func insertAccountControlProgram(ctx context.Context, accountID string, idx []uint32, control []byte) error {
 	const q = `
-		INSERT INTO account_control_programs (signer_id, key_index, control_program, redeem_program)
-		VALUES($1, to_key_index($2), $3, $4)
+		INSERT INTO account_control_programs (signer_id, key_index, control_program)
+		VALUES($1, to_key_index($2), $3)
 	`
 
-	_, err := pg.Exec(ctx, q, accountID, pg.Uint32s(idx), control, redeem)
+	_, err := pg.Exec(ctx, q, accountID, pg.Uint32s(idx), control)
 	return errors.Wrap(err)
 }
 
