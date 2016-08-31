@@ -75,6 +75,7 @@ var (
 
 		// Mock HSM error namespace (80x)
 		mockhsm.ErrDuplicateKeyAlias: errorInfo{400, "CH800", "Duplicate alias for Mock HSM key"},
+		mockhsm.ErrInvalidCursor:     errorInfo{400, "CH801", "Invalid cursor in query"},
 	}
 )
 

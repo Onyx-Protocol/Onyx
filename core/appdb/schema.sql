@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.3
+-- Dumped by pg_dump version 9.5.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -551,6 +551,18 @@ CREATE TABLE migrations (
 
 
 --
+-- Name: mockhsm_sort_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE mockhsm_sort_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
 -- Name: mockhsm; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -558,7 +570,8 @@ CREATE TABLE mockhsm (
     xpub bytea NOT NULL,
     xprv bytea NOT NULL,
     xpub_hash text NOT NULL,
-    alias text
+    alias text,
+    sort_id bigint DEFAULT nextval('mockhsm_sort_id_seq'::regclass) NOT NULL
 );
 
 
@@ -958,6 +971,14 @@ ALTER TABLE ONLY signers
 
 
 --
+-- Name: sort_id_index; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY mockhsm
+    ADD CONSTRAINT sort_id_index UNIQUE (sort_id);
+
+
+--
 -- Name: state_trees_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1124,3 +1145,4 @@ insert into migrations (filename, hash) values ('2016-08-26.0.query.assets-sort-
 insert into migrations (filename, hash) values ('2016-08-29.0.core.config.sql', '4f440fccb3a8523bfd4455acf400e20859d134118742a55677a04d2297297914');
 insert into migrations (filename, hash) values ('2016-08-30.0.asset.issuance-totals.sql', '2a4b3f9899df7c099eb215c0bf5b6b7e2ac6f991c08820c000a96ddf8cfb2671');
 insert into migrations (filename, hash) values ('2016-08-31.0.core.add-leader-address.sql', '6d2f4eca68067afae4531b8e56de4c7628158e2dd66cd1831585d26e83817f1b');
+insert into migrations (filename, hash) values ('2016-08-31.1.core.mockhsm-key-sort.sql', '4ecebb1e4485e6ea7b0fb7ed3a34f5c4f511fdec0379d67fcb646ec06708ad70');

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/hex"
+	"strconv"
 
 	"golang.org/x/crypto/sha3"
 
@@ -12,7 +13,10 @@ import (
 	"chain/errors"
 )
 
-var ErrDuplicateKeyAlias = errors.New("duplicate key alias")
+var (
+	ErrDuplicateKeyAlias = errors.New("duplicate key alias")
+	ErrInvalidCursor     = errors.New("invalid cursor")
+)
 
 type HSM struct {
 	db pg.DB
@@ -79,13 +83,25 @@ func (h *HSM) store(ctx context.Context, xpubHash string, xprv *hd25519.XPrv, xp
 
 // ListKeys returns a list of all xpubs from the db.
 func (h *HSM) ListKeys(ctx context.Context, cursor string, limit int) ([]*XPub, string, error) {
+	var (
+		zcursor int64
+		err     error
+	)
+
+	if cursor != "" {
+		zcursor, err = strconv.ParseInt(cursor, 10, 64)
+		if err != nil {
+			return nil, "", errors.WithDetailf(ErrInvalidCursor, "value: %q", cursor)
+		}
+	}
+
 	var xpubs []*XPub
 	const q = `
-		SELECT xpub, alias FROM mockhsm
-		WHERE ($1='' OR $1<xpub_hash)
-		ORDER BY xpub_hash ASC LIMIT $2
+		SELECT xpub, alias, sort_id FROM mockhsm
+		WHERE ($1=0 OR $1 < sort_id)
+		ORDER BY sort_id DESC LIMIT $2
 	`
-	err := pg.ForQueryRows(ctx, q, cursor, limit, func(b []byte, alias sql.NullString) {
+	err = pg.ForQueryRows(ctx, q, zcursor, limit, func(b []byte, alias sql.NullString, sortID int64) {
 		hdxpub, err := hd25519.XPubFromBytes(b)
 		if err != nil {
 			return
@@ -95,18 +111,13 @@ func (h *HSM) ListKeys(ctx context.Context, cursor string, limit int) ([]*XPub, 
 			xpub.Alias = alias.String
 		}
 		xpubs = append(xpubs, xpub)
+		zcursor = sortID
 	})
 	if err != nil {
 		return nil, "", err
 	}
 
-	var newCursor string
-	if len(xpubs) > 0 {
-		lastXPub := xpubs[len(xpubs)-1]
-		hash := sha3.Sum256(lastXPub.Bytes())
-		newCursor = hex.EncodeToString(hash[:])
-	}
-	return xpubs, newCursor, nil
+	return xpubs, strconv.FormatInt(zcursor, 10), nil
 }
 
 var ErrNoKey = errors.New("key not found")
