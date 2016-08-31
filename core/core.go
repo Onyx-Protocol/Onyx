@@ -141,17 +141,17 @@ func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
 
 	// TODO(tessr): Add "synced" after SYNC_LIMIT is added.
 	return map[string]interface{}{
-		"is_configured":           true,
-		"configured_at":           configuredAt,
-		"is_signer":               isSigner,
-		"is_generator":            isGenerator,
-		"remote_generator_url":    remoteGeneratorURL,
-		"initial_block_hash":      genesisHash,
-		"block_height":            localHeight,
-		"remote_generator_height": generatorHeight,
-		"is_production":           expvar.Get("buildtag").String() != "dev",
-		"build_commit":            expvar.Get("buildcommit").String(),
-		"build_date":              expvar.Get("builddate").String(),
+		"is_configured":          true,
+		"configured_at":          configuredAt,
+		"is_signer":              isSigner,
+		"is_generator":           isGenerator,
+		"generator_url":          remoteGeneratorURL,
+		"initial_block_hash":     genesisHash,
+		"block_height":           localHeight,
+		"generator_block_height": generatorHeight,
+		"is_production":          expvar.Get("buildtag").String() != "dev",
+		"build_commit":           expvar.Get("buildcommit").String(),
+		"build_date":             expvar.Get("builddate").String(),
 	}, nil
 
 }
