@@ -277,18 +277,18 @@ public class Transaction {
             public int position;
 
             /**
-             * A list of components used to coordinate the signing an input.
+             * A list of components used to coordinate the signing of an input.
              */
-            @SerializedName("signature_components")
-            public SignatureComponent[] signatureComponents;
+            @SerializedName("witness_components")
+            public WitnessComponent[] witnessComponents;
         }
 
         /**
-         * A single signature component, holding information that will become the input witness.
+         * A single witness component, holding information that will become the input witness.
          */
-        public static class SignatureComponent {
+        public static class WitnessComponent {
             /**
-             * The type of signature component.<br>
+             * The type of witness component.<br>
              * Possible types are "script", "data", and "signature".
              */
             public String type;
