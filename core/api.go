@@ -108,7 +108,7 @@ func (a *api) handler() http.Handler {
 	m.Handle("/list-balances", jsonHandler(a.listBalances))
 	m.Handle("/list-unspent-outputs", jsonHandler(a.listUnspentOutputs))
 
-	m.Handle("/core/info", jsonHandler(a.info))
+	m.Handle("/info", jsonHandler(a.info))
 	m.Handle("/reset", jsonHandler(a.reset))
 
 	// V3 DEPRECATED
