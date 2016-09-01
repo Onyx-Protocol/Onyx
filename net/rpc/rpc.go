@@ -25,14 +25,14 @@ func (c Client) userAgent() string {
 		c.Username, c.BuildTag)
 }
 
-// ErrStatusCode is an error returned when an rpc fails with a non-200
+// errStatusCode is an error returned when an rpc fails with a non-200
 // response code.
-type ErrStatusCode struct {
+type errStatusCode struct {
 	URL        string
 	StatusCode int
 }
 
-func (e ErrStatusCode) Error() string {
+func (e errStatusCode) Error() string {
 	return fmt.Sprintf("Request to `%s` responded with %d %s",
 		e.URL, e.StatusCode, http.StatusText(e.StatusCode))
 }
@@ -76,7 +76,7 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return ErrStatusCode{
+		return errStatusCode{
 			URL:        u.String(),
 			StatusCode: resp.StatusCode,
 		}
