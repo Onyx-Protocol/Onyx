@@ -21,20 +21,21 @@ func TestWitnessJSON(t *testing.T) {
 		WitnessComponents: []WitnessComponent{
 			DataWitness{1, 2, 3},
 			&SignatureWitness{
-				Quorum:        4,
-				SignatureData: bc.Hash{0xfe},
-				Signatures: []*Signature{
-					{
-						XPub:           "fd",
-						DerivationPath: []uint32{5, 6, 7},
-						Bytes:          chainjson.HexBytes{8, 9, 10},
-					},
+				Quorum: 4,
+				Keys: []KeyID{{
+					XPub:           "fd",
+					DerivationPath: []uint32{5, 6, 7},
+				}},
+				Constraints: []Constraint{
+					TxHashConstraint(bc.Hash{0xfb}),
 				},
+				Program: []byte{0xfe},
+				Sigs:    []chainjson.HexBytes{{8, 9, 10}},
 			},
 		},
 	}
 
-	b, err := json.Marshal(inp)
+	b, err := json.MarshalIndent(inp, "", "  ")
 	if err != nil {
 		t.Fatal(err)
 	}

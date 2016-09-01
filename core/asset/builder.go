@@ -39,17 +39,15 @@ func (a *IssueAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 		minTime = *a.Params.MinTime
 	}
 	txin := bc.NewIssuanceInput(minTime, minTime.Add(ttl), asset.InitialBlockHash, a.Params.Amount, asset.IssuanceProgram, a.ReferenceData, nil)
-	tplIn := issuanceInput(asset, a.Params.AssetAmount)
+
+	tplIn := &txbuilder.Input{AssetAmount: a.Params.AssetAmount}
+	path := signers.Path(asset.Signer, signers.AssetKeySpace, nil)
+	keyIDs := txbuilder.KeyIDs(asset.Signer.XPubs, path)
+	_, nrequired, err := vmutil.ParseP2DPMultiSigProgram(asset.IssuanceProgram)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	tplIn.AddWitnessKeys(keyIDs, nrequired, nil)
 
 	return []*bc.TxInput{txin}, nil, []*txbuilder.Input{tplIn}, nil
-}
-
-// issuanceInput returns an Input that can be used
-// to issue units of asset 'a'.
-func issuanceInput(a *Asset, aa bc.AssetAmount) *txbuilder.Input {
-	tmplInp := &txbuilder.Input{AssetAmount: aa}
-	path := signers.Path(a.Signer, signers.AssetKeySpace, nil)
-	sigs := txbuilder.InputSigs(a.Signer.XPubs, path)
-	tmplInp.AddWitnessSigs(sigs, vmutil.SigsRequired(a.IssuanceProgram), nil)
-	return tmplInp
 }

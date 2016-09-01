@@ -45,8 +45,8 @@ func TestAccountTransfer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
+
 	_, err = txbuilder.FinalizeTx(ctx, c, tmpl)
 	if err != nil {
 		t.Fatal(err)
@@ -63,6 +63,7 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
+
 	_, err = txbuilder.FinalizeTx(ctx, c, tmpl)
 	if err != nil {
 		t.Fatal(err)
@@ -237,6 +238,13 @@ func inspectTemplate(t *testing.T, inp map[string]interface{}, expectedReceiverA
 	if len(parsedInputs) != 1 {
 		t.Errorf("expected template.inputs in result to have length 1, got %d", len(parsedInputs))
 	}
+
+	// Ugly hack: a large number deep in the template (that we don't
+	// care about here) unmarshals into interface{} as a float64 in
+	// scientific notation. Set it to a small integer here to prevent
+	// that.
+	inp["inputs"].([]interface{})[0].(map[string]interface{})["witness_components"].([]interface{})[0].(map[string]interface{})["constraints"].([]interface{})[0].(map[string]interface{})["ttl"] = 17
+
 	return inp
 }
 
