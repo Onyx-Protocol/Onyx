@@ -91,6 +91,12 @@ func (a *api) reset(ctx context.Context) error {
 }
 
 func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
+	if a.config == nil {
+		// never configured
+		return map[string]interface{}{
+			"is_configured": false,
+		}, nil
+	}
 	if leader.IsLeading() {
 		return a.leaderInfo(ctx)
 	} else {
@@ -99,13 +105,6 @@ func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
 }
 
 func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
-	if a.config == nil {
-		// never configured
-		return map[string]interface{}{
-			"is_configured": false,
-		}, nil
-	}
-
 	localHeight := a.c.Height()
 	var (
 		generatorHeight  interface{}
