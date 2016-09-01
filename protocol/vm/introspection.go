@@ -2,10 +2,11 @@ package vm
 
 import (
 	"bytes"
-
-	"chain/protocol/bc"
+	"math"
 
 	"golang.org/x/crypto/sha3"
+
+	"chain/protocol/bc"
 )
 
 func opFindOutput(vm *virtualMachine) error {
@@ -142,7 +143,12 @@ func opMaxTime(vm *virtualMachine) error {
 		return err
 	}
 
-	return vm.pushInt64(int64(vm.tx.MaxTime), true)
+	maxTime := vm.tx.MaxTime
+	if maxTime == 0 || maxTime > math.MaxInt64 {
+		maxTime = uint64(math.MaxInt64)
+	}
+
+	return vm.pushInt64(int64(maxTime), true)
 }
 
 func opRefDataHash(vm *virtualMachine) error {
