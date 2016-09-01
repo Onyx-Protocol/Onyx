@@ -16,30 +16,106 @@ export default class Index extends React.Component {
   }
 
   render() {
-    let title = <h4 className={styles.panel_heading}>Reset data</h4>
+    let replicationLagClass
+    if (this.props.core.replicationLag < 5) {
+      replicationLagClass = styles.green
+    } else if (this.props.core.replicationLag < 10) {
+      replicationLagClass = styles.yellow
+    } else {
+      replicationLagClass = styles.red
+    }
 
     return (
-      <div className='form-container'>
+      <div>
 
-        <PageHeader key='page-title' title='Core'/>
+        <PageHeader additionalStyles={styles.page_header} title='Core'/>
 
-        <Panel title={title}>
-          <p>This will permanently delete all data stored in this core, including blockchain data, accounts, assets, indexes, and MockHSM keys.</p>
+        <div className={`${styles.top} ${styles.flex}`}>
+          <div className={`${styles.left} ${styles.col}`}>
+            <div>
+              <h3>Configuration</h3>
+              <table className={styles.table}>
+                <tbody>
+                  <tr>
+                    <td className={styles.row_label}>Core Type:</td>
+                    <td>{this.props.core.generator ? 'Generator' : 'Node'}</td>
+                  </tr>
+                  <tr>
+                    <td className={styles.row_label}>Setup Time:</td>
+                    <td>{this.props.core.configuredAt}</td>
+                  </tr>
+                  <tr>
+                    <td className={styles.row_label}>Build Commit:</td>
+                    <td>{this.props.core.buildCommit}</td>
+                  </tr>
 
-          {this.state.deleteError && <ErrorBanner
-            title='Error resetting data'
-            message={this.state.deleteError.toString()}
-          />}
+                  {this.props.core.generator && <tr>
+                    <td className={styles.row_label}>Initial Block hash:</td>
+                    <td><code className={styles.block_hash}>{this.props.core.initialBlockHash}</code></td>
+                  </tr>}
 
-          <button
-            className='btn btn-danger btn-lg'
-            onClick={this.deleteClick}
-            disabled={this.state.deleteDisabled}
-          >
-            Delete all data
-          </button>
-        </Panel>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
+          <div className={`${styles.col}`}>
+            <div>
+              <h3>Network Status</h3>
+
+              <table className={styles.table}>
+                <tbody>
+                  <tr>
+                    <td className={styles.row_label}>Generator Block:</td>
+                    <td>{this.props.core.generatorBlockHeight}</td>
+                  </tr>
+                  <tr>
+                    <td className={styles.row_label}>Local Block:</td>
+                    <td>{this.props.core.blockHeight}</td>
+                  </tr>
+
+                  {this.props.core.replicationLag && <tr>
+                    <td className={styles.row_label}>Replication Lag:</td>
+                    <td className={`${styles.replication_lag} ${replicationLagClass}`}>
+                      {this.props.core.replicationLag}
+                    </td>
+                  </tr>}
+                </tbody>
+              </table>
+
+              {!this.props.core.generator &&
+                <p>
+                  You may be experiencing latency in receiving funds and issuing
+                  assets due to the replication lag in the network. Check out the
+                  Core documentation on how to fix this issue.
+                </p>}
+            </div>
+          </div>
+        </div>
+
+        <div className="row">
+          <div className="col-sm-6">
+            <h3>Reset Data</h3>
+            <p>
+              This will permanently delete all data stored in this core,
+              including blockchain data, accounts, assets, indexes,
+              and MockHSM keys.
+            </p>
+
+            {this.state.deleteError && <ErrorBanner
+              title='Error resetting data'
+              message={this.state.deleteError.toString()}
+            />}
+
+            <button
+              className='btn btn-danger btn-lg'
+              onClick={this.deleteClick}
+              disabled={this.state.deleteDisabled}
+            >
+              Delete all data
+            </button>
+          </div>
+        </div>
       </div>
     )
   }

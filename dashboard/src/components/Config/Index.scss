@@ -1,0 +1,65 @@
+.title {
+  font-size: 28px;
+  font-weight: normal;
+}
+
+.subtitle {
+  font-size: 20px;
+  color: $text-color;
+  font-weight: normal;
+  margin-top: 0;
+  padding-bottom: 1em;
+}
+
+.choice_wrapper {
+  display: block;
+  font-weight: normal;
+  margin-bottom: $grid-gutter-width;
+}
+
+.choice_radio_button {
+  position: absolute;
+  visibility: hidden;
+}
+
+.choice {
+  border: 1px solid $table-border-color;
+  border-radius: $border-radius-base;
+  cursor: pointer;
+  padding: $grid-gutter-width;
+  text-align: center;
+
+  &:hover {
+    border-color: lighten($brand-primary, 10%);
+  }
+
+  img {
+    display: block;
+    margin: 0 auto;
+    width: 80px;
+    height: 80px;
+  }
+
+  .choice_title{
+    display: block;
+    font-size: 18px;
+    margin: 12px 0;
+  }
+
+  p {
+
+  }
+}
+
+input[type=radio]:checked ~ .choice {
+  background-color: transparentize($brand-primary, 0.85);
+  border-color: $brand-primary;
+
+  .choice_title {
+    color: $brand-primary;
+  }
+}
+
+.submit {
+  width: 100%;
+}

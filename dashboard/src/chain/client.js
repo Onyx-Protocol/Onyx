@@ -41,7 +41,7 @@ class Client {
         throw errors.create(
           errors.types.JSON,
           'Could not parse JSON response',
-          {response: resp}
+          {response: resp, status: resp.status}
         )
       }).then((body) => {
         if (resp.status / 100 == 2) {

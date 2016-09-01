@@ -7,7 +7,7 @@ export default function(type, options = {}) {
   const decrementPage = actionCreator(`DECREMENT_${type.toUpperCase()}_PAGE`)
   const appendPage = actionCreator(`APPEND_${type.toUpperCase()}_PAGE`, param => { return { param }} )
   const resetPage = actionCreator(`RESET_${type.toUpperCase()}_PAGE`)
-  const updateQuery = actionCreator(`UPDATE_${type.toUpperCase()}_QUERY`, (param) => {return { param }})
+  const updateQuery = actionCreator(`UPDATE_${type.toUpperCase()}_QUERY`, param => {return { param }})
 
   const submitQuery = function(query) {
     return function(dispatch, getState) {

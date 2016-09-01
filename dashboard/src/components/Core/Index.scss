@@ -1,5 +1,67 @@
-// kludge away some mysterioius extra margins
-.panel_heading {
-  margin-top: 0;
+.page_header h1 {
   margin-bottom: 0;
+}
+
+.table {
+  margin-bottom: $grid-gutter-width;
+
+  td {
+    vertical-align: top;
+  }
+}
+
+.row_label {
+  padding-right: $grid-gutter-width;
+  font-weight: bold;
+}
+
+.block_hash {
+  display: block;
+  max-width: 250px;
+  word-wrap: break-word;
+}
+
+.flex {
+  display: flex;
+}
+
+.col {
+  display: flex;
+  width: 50%;
+  padding: $grid-gutter-width;
+
+  h3 {
+    margin-top: 0;
+  }
+}
+
+.top {
+  border-bottom: 1px solid $border-color;
+}
+
+.left {
+  border-right: 1px solid $border-color;
+  padding-left: 0;
+}
+
+.replication_lag {
+  border-radius: $border-radius-base;
+  display: block;
+  color: white;
+  padding: 0 8px;
+  line-height: 1.5;
+  margin-top: 2px;
+  margin-left: -8px;
+}
+
+.green {
+  background: $brand-success;
+}
+
+.yellow {
+  background: $brand-warning;
+}
+
+.red {
+  background: $brand-danger;
 }

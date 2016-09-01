@@ -12,6 +12,7 @@ class TextField extends React.Component {
         <label>{this.props.title}</label>
         <input className='form-control'
           type={this.state.type}
+          placeholder={this.props.placeholder}
           {...this.props.fieldProps} />
       </div>
     )

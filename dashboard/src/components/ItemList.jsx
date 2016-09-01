@@ -1,7 +1,7 @@
 import React from 'react'
 import { pluralize, capitalize } from '../utility/string'
 
-import PageNavigation from "./PageNavigation"
+import Pagination from "./Pagination"
 import PageHeader from "./PageHeader/PageHeader"
 import SearchBar from "./SearchBar/SearchBar"
 
@@ -32,7 +32,7 @@ class ItemList extends React.Component {
     )}
 
     if (this.props.pages[this.props.currentPage] !== undefined) {
-      let pageNavigation = <PageNavigation
+      let pagination = <Pagination
           currentPage={this.props.currentPage}
           lastPage={this.props.pages[this.props.currentPage].last_page}
           getPrevPage={this.props.getPrevPage}
@@ -41,13 +41,13 @@ class ItemList extends React.Component {
       return(
         <div>
           {header}
-          {pageNavigation}
+          {pagination}
 
           {this.props.pages[this.props.currentPage].items.map((item) => {
             return <this.props.listItemComponent key={item[keyProp]} item={item} {...this.props.itemActions}/>
           })}
 
-          {pageNavigation}
+          {pagination}
         </div>
        )
     } else {

@@ -15,7 +15,7 @@ export const mapStateToProps = (type, itemComponent) => (state) => ({
 export const mapDispatchToProps = (type) => (dispatch) => ({
   getNextPage: () => dispatch(actions[type].displayNextPage()),
   getPrevPage: () => dispatch(actions[type].decrementPage()),
-  showCreate: () => dispatch(actions[type].showCreate()),
+  showCreate: () => dispatch(actions[type].showCreate),
   submitQuery: (query) => dispatch(actions[type].submitQuery(query))
 })
 

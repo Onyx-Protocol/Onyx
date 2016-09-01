@@ -1,32 +1,24 @@
-import Navigation from './components/Navigation/Navigation'
+import AppContainer from './containers/AppContainer'
 import Section from './containers/SectionContainer'
-
 import TransactionList from './containers/Transactions/List'
 import NewTransaction from './containers/Transactions/New'
-
 import UnspentList from './containers/Unspent/List'
 import BalanceList from './containers/Balance/List'
-
 import AccountList from './containers/Accounts/List'
 import NewAccount from './containers/Accounts/New'
-
 import AssetList from './containers/Assets/List'
 import NewAsset from './containers/Assets/New'
-
 import IndexList from './containers/Indexes/List'
 import NewIndex from './containers/Indexes/New'
-
 import MockHsmList from './containers/MockHsm/List'
 import NewKey from './containers/MockHsm/New'
-
-import CoreIndex from './components/Core/Index'
-
+import CoreIndex from './containers/Core'
+import ConfigIndex from './containers/Config'
 import NotFound from './components/NotFound'
 
 export default ({
   path: '/',
-  component: Navigation,
-  indexRoute: { onEnter: (nextState, replace) => replace('/transactions') },
+  component: AppContainer,
   childRoutes: [
     {
       path: 'transactions',
@@ -70,7 +62,13 @@ export default ({
     },
     {
       path: 'core',
-      component: CoreIndex,
+      component: Section,
+      indexRoute: { component: CoreIndex }
+    },
+    {
+      path: 'configuration',
+      component: Section,
+      indexRoute: { component: ConfigIndex }
     },
     {
       path: '*',

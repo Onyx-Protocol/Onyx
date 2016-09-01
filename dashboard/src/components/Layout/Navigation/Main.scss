@@ -13,17 +13,7 @@
   color: white;
   opacity: 0.25;
   font-size: 20px;
-  margin-top: 10px;
-}
-
-.footer {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  padding: 1rem;
-  background-color: $well-bg;
-  text-align: center;
+  margin-top: $navbar-padding-vertical - 6px;
 }
 
 .glyphicon {
@@ -33,7 +23,7 @@
 
 // FIXME: need !important to override bootstrap
 .active {
-  padding-bottom: 11px !important;
+  padding-bottom: $navbar-padding-vertical - 3px !important;
   border-color: lighten($brand-primary, 3%);
   border-style: solid;
   border-width: 0 0 3px 0;

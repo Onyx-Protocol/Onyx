@@ -18,7 +18,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = (dispatch) => ({
   getNextPage: () => dispatch(actions[type].displayNextPage()),
   getPrevPage: () => dispatch(actions[type].decrementPage()),
-  showCreate: () => dispatch(actions[type].showCreate()),
+  showCreate: () => dispatch(actions[type].showCreate),
 })
 
 export default connect(

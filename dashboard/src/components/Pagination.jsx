@@ -1,6 +1,6 @@
 import React from 'react'
 
-class PageNavigation extends React.Component {
+class Pagination extends React.Component {
   render() {
     let prevClass = "btn btn-default " + (this.props.currentPage > 0 ? "" : "disabled")
     let nextClass = "btn btn-default " + (this.props.lastPage ? "disabled" : "")
@@ -23,4 +23,4 @@ class PageNavigation extends React.Component {
   }
 }
 
-export default PageNavigation
+export default Pagination

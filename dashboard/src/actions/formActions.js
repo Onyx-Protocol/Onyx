@@ -7,10 +7,7 @@ export default function(type, options = {}) {
   const createPath = options.createPath || `/${type}s/create`
 
   return {
-    showCreate: () => function(dispatch) {
-      dispatch(push(createPath))
-    },
-
+    showCreate: push(createPath),
     submitForm: (data) => {
       const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
       return function(dispatch) {

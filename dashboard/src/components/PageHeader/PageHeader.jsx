@@ -15,7 +15,7 @@ class PageHeader extends React.Component {
     }
 
     return (
-      <div className={styles.main}>
+      <div className={styles.main + " " + (this.props.additionalStyles || "")}>
         <h1 className="page-header">{this.props.title}</h1>
         {button}
       </div>
