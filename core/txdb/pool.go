@@ -4,24 +4,21 @@ import (
 	"context"
 
 	"chain/database/pg"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/protocol/bc"
 )
 
 // A Pool encapsulates storage of the pending transaction pool.
 type Pool struct {
-	db *sql.DB
+	db pg.DB
 }
 
 // NewPool creates and returns a new Pool object.
 //
-// A Pool manages its own database transactions, so
-// it requires a handle to a SQL database.
 // For testing purposes, it is usually much faster
 // and more convenient to use package chain/protocol/mempool
 // instead.
-func NewPool(db *sql.DB) *Pool {
+func NewPool(db pg.DB) *Pool {
 	return &Pool{db: db}
 }
 
@@ -32,19 +29,12 @@ func (p *Pool) GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.T
 
 // Insert adds the transaction to the pending pool.
 func (p *Pool) Insert(ctx context.Context, tx *bc.Tx) error {
-	dbtx, err := p.db.Begin(ctx)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-	defer dbtx.Rollback(ctx)
-
-	err = insertPoolTx(ctx, dbtx, tx)
-	if err != nil {
-		return errors.Wrap(err, "insert into pool txs")
-	}
-
-	err = dbtx.Commit(ctx)
-	return errors.Wrap(err, "committing database transaction")
+	const q = `
+		INSERT INTO pool_txs (tx_hash, data) VALUES ($1, $2)
+		ON CONFLICT (tx_hash) DO NOTHING
+	`
+	_, err := p.db.Exec(ctx, q, tx.Hash, tx)
+	return errors.Wrap(err, "insert into pool txs")
 }
 
 // Dump returns the pooled transactions in topological order.
@@ -72,13 +62,4 @@ func (p *Pool) CountTxs(ctx context.Context) (uint64, error) {
 	var res uint64
 	err := p.db.QueryRow(ctx, q).Scan(&res)
 	return res, errors.Wrap(err)
-}
-
-func insertPoolTx(ctx context.Context, db pg.DB, tx *bc.Tx) error {
-	const q = `
-		INSERT INTO pool_txs (tx_hash, data) VALUES ($1, $2)
-		ON CONFLICT (tx_hash) DO NOTHING
-	`
-	_, err := db.Exec(ctx, q, tx.Hash, tx)
-	return errors.Wrap(err)
 }

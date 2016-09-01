@@ -87,17 +87,11 @@ func TestGetTxs(t *testing.T) {
 	}
 }
 
-func TestInsertTx(t *testing.T) {
+func TestInsertPoolTx(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 	tx := bc.NewTx(bc.TxData{ReferenceData: []byte("tx")})
-	err := insertPoolTx(ctx, dbtx, tx)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	_, err = getBlockchainTxs(ctx, dbtx, tx.Hash)
+	err := (&Pool{dbtx}).Insert(ctx, tx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
