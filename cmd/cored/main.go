@@ -269,7 +269,7 @@ func dbContextHandler(handler http.Handler, db pg.DB) http.Handler {
 // loadConfig loads the stored configuration, if any, from the database.
 func loadConfig(ctx context.Context, db pg.DB) (*core.Config, error) {
 	const q = `
-		SELECT is_signer, is_generator, genesis_hash, generator_url, block_xpub, configured_at
+		SELECT is_signer, is_generator, initial_block_hash, generator_url, block_xpub, configured_at
 		FROM config
 	`
 

@@ -166,14 +166,14 @@ func TestGenerateBlock(t *testing.T) {
 	now := time.Unix(233400000, 0)
 	c, b1 := newTestChain(t, now)
 
-	genesisHash := b1.Hash()
-	assetID := bc.ComputeAssetID(nil, genesisHash, 1)
+	initialBlockHash := b1.Hash()
+	assetID := bc.ComputeAssetID(nil, initialBlockHash, 1)
 
 	txs := []*bc.Tx{
 		bc.NewTx(bc.TxData{
 			Version: 1,
 			Inputs: []*bc.TxInput{
-				bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 50, nil, nil, [][]byte{
+				bc.NewIssuanceInput(now, now.Add(time.Hour), initialBlockHash, 50, nil, nil, [][]byte{
 					nil,
 					mustDecodeHex("30450221009037e1d39b7d59d24eba8012baddd5f4ab886a51b46f52b7c479ddfa55eeb5c5022076008409243475b25dfba6db85e15cf3d74561a147375941e4830baa69769b5101"),
 					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae")}),
@@ -185,7 +185,7 @@ func TestGenerateBlock(t *testing.T) {
 		bc.NewTx(bc.TxData{
 			Version: 1,
 			Inputs: []*bc.TxInput{
-				bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 50, nil, nil, [][]byte{
+				bc.NewIssuanceInput(now, now.Add(time.Hour), initialBlockHash, 50, nil, nil, [][]byte{
 					nil,
 					mustDecodeHex("3045022100f3bcffcfd6a1ce9542b653500386cd0ee7b9c86c59390ca0fc0238c0ebe3f1d6022065ac468a51a016842660c3a616c99a9aa5109a3bad1877ba3e0f010f3972472e01"),
 					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae"),
@@ -232,8 +232,8 @@ func TestGenerateBlock(t *testing.T) {
 	}
 }
 
-func TestValidateGenesisBlockForSig(t *testing.T) {
-	genesis, err := NewGenesisBlock(testutil.TestPubs, 1, time.Now())
+func TestValidateBlockForSig(t *testing.T) {
+	initialBlock, err := NewInitialBlock(testutil.TestPubs, 1, time.Now())
 	if err != nil {
 		t.Fatal("unexpected error ", err)
 	}
@@ -244,7 +244,7 @@ func TestValidateGenesisBlockForSig(t *testing.T) {
 		t.Fatal("unexpected error ", err)
 	}
 
-	err = c.ValidateBlockForSig(ctx, genesis)
+	err = c.ValidateBlockForSig(ctx, initialBlock)
 	if err != nil {
 		t.Error("unexpected error ", err)
 	}
@@ -259,7 +259,7 @@ func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	b1, err = NewGenesisBlock(nil, 0, ts)
+	b1, err = NewInitialBlock(nil, 0, ts)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}

@@ -201,14 +201,14 @@ func benchGenBlock(b *testing.B) {
 		testutil.FatalErr(b, err)
 	}
 
-	genesis, err := c.GetBlock(ctx, 1)
+	initialBlock, err := c.GetBlock(ctx, 1)
 	if err != nil {
 		testutil.FatalErr(b, err)
 	}
 
 	now := time.Now()
 	b.StartTimer()
-	_, _, err = c.GenerateBlock(ctx, genesis, state.Empty(), now)
+	_, _, err = c.GenerateBlock(ctx, initialBlock, state.Empty(), now)
 	b.StopTimer()
 	if err != nil {
 		b.Fatal(err)
@@ -253,7 +253,7 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.Chain, er
 		return nil, nil, err
 	}
 
-	genesis, err := store.GetBlock(ctx, 1)
+	initialBlock, err := store.GetBlock(ctx, 1)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -263,7 +263,7 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.Chain, er
 		return nil, nil, err
 	}
 
-	asset, err := asset.Define(ctx, []string{assetPub.String()}, 1, nil, genesis.Hash(), "", nil, nil)
+	asset, err := asset.Define(ctx, []string{assetPub.String()}, 1, nil, initialBlock.Hash(), "", nil, nil)
 	if err != nil {
 		return nil, nil, err
 	}

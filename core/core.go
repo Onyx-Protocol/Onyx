@@ -98,7 +98,7 @@ func (a *api) reset(ctx context.Context) error {
 	// Reset the height on the blockchain.
 	a.c.Reset()
 
-	block, err := protocol.NewGenesisBlock(keys, quorum, time.Now())
+	block, err := protocol.NewInitialBlock(keys, quorum, time.Now())
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -216,7 +216,7 @@ func configure(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if x.IsGenerator {
-		block, err := protocol.NewGenesisBlock(signingKeys, 1, time.Now())
+		block, err := protocol.NewInitialBlock(signingKeys, 1, time.Now())
 		if err != nil {
 			writeHTTPError(ctx, w, err)
 			return
@@ -238,7 +238,7 @@ func configure(w http.ResponseWriter, r *http.Request) {
 	}
 
 	const q = `
-		INSERT INTO config (is_signer, block_xpub, is_generator, genesis_hash, generator_url, configured_at)
+		INSERT INTO config (is_signer, block_xpub, is_generator, initial_block_hash, generator_url, configured_at)
 		VALUES ($1, $2, $3, $4, $5, NOW())
 	`
 	_, err = pg.Exec(ctx, q, x.IsSigner, x.BlockXPub, x.IsGenerator, x.InitialBlockHash, x.GeneratorURL)

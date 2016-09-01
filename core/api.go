@@ -63,13 +63,6 @@ type api struct {
 	config  *Config
 }
 
-func waitForGenesis(c *protocol.Chain, h http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		c.WaitForBlock(1)
-		h.ServeHTTP(rw, req)
-	})
-}
-
 // Used as a request object for api queries
 type requestQuery struct {
 	Cursor string `json:"cursor"`

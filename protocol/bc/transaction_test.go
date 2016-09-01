@@ -18,8 +18,8 @@ var now = time.Unix(233400000, 0)
 
 func TestTransaction(t *testing.T) {
 	issuanceScript := []byte{1}
-	genesisHashHex := "03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"
-	genesisHash := mustDecodeHash(genesisHashHex)
+	initialBlockHashHex := "03deff1d4319d67baa10a6d26c1fea9c3e8d30e33474efee1a610a9bb49d758d"
+	initialBlockHash := mustDecodeHash(initialBlockHashHex)
 
 	cases := []struct {
 		tx          *Tx
@@ -52,7 +52,7 @@ func TestTransaction(t *testing.T) {
 			tx: NewTx(TxData{
 				Version: 1,
 				Inputs: []*TxInput{
-					NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 1000000000000, issuanceScript, []byte("input"), [][]byte{[]byte{1, 2, 3}}),
+					NewIssuanceInput(now, now.Add(time.Hour), initialBlockHash, 1000000000000, issuanceScript, []byte("input"), [][]byte{[]byte{1, 2, 3}}),
 				},
 				Outputs: []*TxOutput{
 					NewTxOutput(AssetID{}, 1000000000000, []byte{1}, []byte("output")),
@@ -73,7 +73,7 @@ func TestTransaction(t *testing.T) {
 				"00" + // input 0, input commitment, "issuance" type
 				"80bce5bde506" + // input 0, input commitment, mintime
 				"8099c1bfe506" + // input 0, input commitment, maxtime
-				genesisHashHex + // input 0, input commitment, initial block
+				initialBlockHashHex + // input 0, input commitment, initial block
 				"80a094a58d1d" + // input 0, input commitment, amount
 				"01" + // input 0, input commitment, vm version
 				"0101" + // input 0, input commitment, issuance program
@@ -101,8 +101,8 @@ func TestTransaction(t *testing.T) {
 					NewSpendInput(mustDecodeHash("dd385f6fe25d91d8c1bd0fa58951ad56b0c5229dcc01f61d9f9e8b9eb92d3292"), 0, nil, AssetID{}, 1000000000000, []byte{1}, []byte("input")),
 				},
 				Outputs: []*TxOutput{
-					NewTxOutput(ComputeAssetID(issuanceScript, genesisHash, 1), 600000000000, []byte{1}, nil),
-					NewTxOutput(ComputeAssetID(issuanceScript, genesisHash, 1), 400000000000, []byte{2}, nil),
+					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1), 600000000000, []byte{1}, nil),
+					NewTxOutput(ComputeAssetID(issuanceScript, initialBlockHash, 1), 400000000000, []byte{2}, nil),
 				},
 				MinTime:       1492590000,
 				MaxTime:       1492590591,

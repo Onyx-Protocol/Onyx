@@ -104,7 +104,7 @@ type BlockHeader struct {
 	Version uint32
 
 	// Height of the block in the block chain.
-	// Genesis block has height 0.
+	// Initial block has height 1.
 	Height uint64
 
 	// Hash of the previous block in the block chain.

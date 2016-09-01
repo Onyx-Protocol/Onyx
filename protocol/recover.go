@@ -13,7 +13,7 @@ import (
 // to a complete state. It returns the latest confirmed block
 // and the corresponding state snapshot.
 //
-// If the blockchain is empty (missing genesis block), this function
+// If the blockchain is empty (missing initial block), this function
 // returns a nil block and a nil snapshot.
 func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error) {
 	snapshot, snapshotHeight, err := c.store.LatestSnapshot(ctx)

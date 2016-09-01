@@ -30,7 +30,7 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	genesisHash := b1.Hash()
+	initialBlockHash := b1.Hash()
 
 	acct1, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
@@ -44,11 +44,11 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 
 	asset1Tags := map[string]interface{}{"currency": "USD"}
 
-	asset1, err := asset.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, genesisHash, "", asset1Tags, nil)
+	asset1, err := asset.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, initialBlockHash, "", asset1Tags, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	asset2, err := asset.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, genesisHash, "", nil, nil)
+	asset2, err := asset.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, initialBlockHash, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

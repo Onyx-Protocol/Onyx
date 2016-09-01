@@ -65,7 +65,7 @@ func TestGetAndAddBlockSignaturesInitialBlock(t *testing.T) {
 	ctx := context.Background()
 
 	g := new(generator)
-	block, err := protocol.NewGenesisBlock(testutil.TestPubs, 1, time.Now())
+	block, err := protocol.NewInitialBlock(testutil.TestPubs, 1, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

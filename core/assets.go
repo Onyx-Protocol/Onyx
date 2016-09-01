@@ -65,7 +65,7 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 }) ([]assetResponseOrError, error) {
 	defer metrics.RecordElapsed(time.Now())
 
-	genesis, err := a.c.GetBlock(ctx, 1)
+	initialBlock, err := a.c.GetBlock(ctx, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 				ins[i].XPubs,
 				ins[i].Quorum,
 				ins[i].Definition,
-				genesis.Hash(),
+				initialBlock.Hash(),
 				ins[i].Alias,
 				ins[i].Tags,
 				ins[i].ClientToken,

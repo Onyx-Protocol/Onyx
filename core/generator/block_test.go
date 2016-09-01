@@ -31,7 +31,7 @@ func TestGetBlocks(t *testing.T) {
 	}
 
 	if len(blocks) != 1 {
-		t.Errorf("expected 1 (genesis) block, got %d", len(blocks))
+		t.Errorf("expected 1 (initial) block, got %d", len(blocks))
 	}
 
 	c := make(chan []*bc.Block)

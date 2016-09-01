@@ -23,18 +23,18 @@ var (
 )
 
 type Asset struct {
-	AssetID         bc.AssetID             `json:"id"`
-	Alias           string                 `json:"alias"`
-	Definition      map[string]interface{} `json:"definition"`
-	IssuanceProgram []byte                 `json:"issuance_program"`
-	GenesisHash     bc.Hash                `json:"genesis_hash"`
-	Signer          *signers.Signer        `json:"signer"`
-	Tags            map[string]interface{} `json:"tags"`
-	sortID          string
+	AssetID          bc.AssetID             `json:"id"`
+	Alias            string                 `json:"alias"`
+	Definition       map[string]interface{} `json:"definition"`
+	IssuanceProgram  []byte                 `json:"issuance_program"`
+	InitialBlockHash bc.Hash                `json:"initial_block_hash"`
+	Signer           *signers.Signer        `json:"signer"`
+	Tags             map[string]interface{} `json:"tags"`
+	sortID           string
 }
 
 // Define defines a new Asset.
-func Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, genesisHash bc.Hash, alias string, tags map[string]interface{}, clientToken *string) (*Asset, error) {
+func Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, initialBlockHash bc.Hash, alias string, tags map[string]interface{}, clientToken *string) (*Asset, error) {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "define asset")
@@ -60,13 +60,13 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 	}
 
 	asset := &Asset{
-		Alias:           alias,
-		Definition:      definition,
-		IssuanceProgram: issuanceProgram,
-		GenesisHash:     genesisHash,
-		AssetID:         bc.ComputeAssetID(issuanceProgram, genesisHash, 1),
-		Signer:          assetSigner,
-		Tags:            tags,
+		Alias:            alias,
+		Definition:       definition,
+		IssuanceProgram:  issuanceProgram,
+		InitialBlockHash: initialBlockHash,
+		AssetID:          bc.ComputeAssetID(issuanceProgram, initialBlockHash, 1),
+		Signer:           assetSigner,
+		Tags:             tags,
 	}
 
 	asset, err = insertAsset(ctx, asset, clientToken)
@@ -212,7 +212,7 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
     INSERT INTO assets
-	 	(id, alias, signer_id, genesis_hash, issuance_program, definition, client_token)
+	 	(id, alias, signer_id, initial_block_hash, issuance_program, definition, client_token)
     VALUES($1, $2, $3, $4, $5, $6, $7)
     ON CONFLICT (client_token) DO NOTHING
 	RETURNING sort_id
@@ -230,7 +230,7 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 	err = pg.QueryRow(
 		ctx, q,
 		asset.AssetID, aliasParam, asset.Signer.ID,
-		asset.GenesisHash, asset.IssuanceProgram,
+		asset.InitialBlockHash, asset.IssuanceProgram,
 		defParams, clientToken,
 	).Scan(&asset.sortID)
 
@@ -272,7 +272,7 @@ func insertAssetTags(ctx context.Context, assetID bc.AssetID, tags map[string]in
 
 func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 	const q = `
-		SELECT id, alias, issuance_program, definition, genesis_hash, signer_id, archived, sort_id
+		SELECT id, alias, issuance_program, definition, initial_block_hash, signer_id, archived, sort_id
 		FROM assets
 		WHERE id=$1
 	`
@@ -290,7 +290,7 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 		&alias,
 		&a.IssuanceProgram,
 		&definition,
-		&a.GenesisHash,
+		&a.InitialBlockHash,
 		&signerID,
 		&archived,
 		&a.sortID,
@@ -349,7 +349,7 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 
 func assetByAlias(ctx context.Context, alias string) (*Asset, error) {
 	const q = `
-		SELECT id, alias, issuance_program, definition, genesis_hash, signer_id, archived, sort_id
+		SELECT id, alias, issuance_program, definition, initial_block_hash, signer_id, archived, sort_id
 		FROM assets
 		WHERE alias=$1
 	`
@@ -366,7 +366,7 @@ func assetByAlias(ctx context.Context, alias string) (*Asset, error) {
 		&a.Alias,
 		&a.IssuanceProgram,
 		&definition,
-		&a.GenesisHash,
+		&a.InitialBlockHash,
 		&signerID,
 		&archived,
 		&a.sortID,
@@ -418,7 +418,7 @@ func assetByAlias(ctx context.Context, alias string) (*Asset, error) {
 func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error) {
 	const q = `
 		SELECT id, issuance_program, definition,
-			genesis_hash, signer_id, archived, sort_id
+			initial_block_hash, signer_id, archived, sort_id
 		FROM assets
 		WHERE client_token=$1
 	`
@@ -432,7 +432,7 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 		&a.AssetID,
 		&a.IssuanceProgram,
 		&definition,
-		&a.GenesisHash,
+		&a.InitialBlockHash,
 		&signerID,
 		&archived,
 		&a.sortID,

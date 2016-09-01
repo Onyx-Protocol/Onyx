@@ -44,7 +44,7 @@ func TestValidateBlockHeader(t *testing.T) {
 		},
 		want: ErrBadTimestamp,
 	}, {
-		desc: "fake genesis block",
+		desc: "fake initial block",
 		header: bc.BlockHeader{
 			PreviousBlockHash: prevHash,
 			Height:            1,

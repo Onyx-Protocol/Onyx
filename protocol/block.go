@@ -275,7 +275,7 @@ func (c *Chain) rebuildPool(ctx context.Context, block *bc.Block, snapshot *stat
 	return conflictTxs, nil
 }
 
-func NewGenesisBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
+func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
 	script, err := vmutil.BlockMultiSigScript(pubkeys, nSigs)
 	if err != nil {
 		return nil, err

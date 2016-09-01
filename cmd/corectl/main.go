@@ -80,7 +80,7 @@ func initblock(db *sql.DB, args []string) {
 		keys = append(keys, b)
 	}
 
-	block, err := protocol.NewGenesisBlock(keys, quorum, time.Now())
+	block, err := protocol.NewInitialBlock(keys, quorum, time.Now())
 	if err != nil {
 		fatalln("error:", err)
 	}
@@ -93,7 +93,7 @@ func initblock(db *sql.DB, args []string) {
 
 	// Save the config to the database too.
 	const q = `
-		INSERT INTO config (is_signer, is_generator, genesis_hash, configured_at)
+		INSERT INTO config (is_signer, is_generator, initial_block_hash, configured_at)
 		VALUES('t', 't', $1, NOW())
 	`
 	_, err = db.Exec(ctx, q, block.Hash())

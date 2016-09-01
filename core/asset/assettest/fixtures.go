@@ -51,9 +51,9 @@ func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum
 	if quorum == 0 {
 		quorum = len(keys)
 	}
-	var genesisHash bc.Hash
+	var initialBlockHash bc.Hash
 
-	asset, err := asset.Define(ctx, keys, quorum, def, genesisHash, alias, tags, nil)
+	asset, err := asset.Define(ctx, keys, quorum, def, initialBlockHash, alias, tags, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -104,7 +104,7 @@ func InitializeSigningGenerator(ctx context.Context, store protocol.Store, pool 
 	asset.Init(c, nil)
 	account.Init(c, nil)
 
-	b1, err := protocol.NewGenesisBlock(nil, 0, time.Now())
+	b1, err := protocol.NewInitialBlock(nil, 0, time.Now())
 	if err != nil {
 		return nil, err
 	}

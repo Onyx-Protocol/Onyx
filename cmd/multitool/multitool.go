@@ -166,14 +166,14 @@ func mustDecodeHash(s string) bc.Hash {
 
 func assetid(args []string) {
 	var (
-		issuanceInp, genesisInp string
-		usedStdin               bool
+		issuanceInp, initialBlockInp string
+		usedStdin                    bool
 	)
 	issuanceInp, usedStdin = input(args, 0, false)
-	genesisInp, _ = input(args, 1, usedStdin)
+	initialBlockInp, _ = input(args, 1, usedStdin)
 	issuance := mustDecodeHex(issuanceInp)
-	genesis := mustDecodeHash(genesisInp)
-	assetID := bc.ComputeAssetID(issuance, genesis, 1)
+	initialBlock := mustDecodeHash(initialBlockInp)
+	assetID := bc.ComputeAssetID(issuance, initialBlock, 1)
 	fmt.Println(assetID.String())
 }
 

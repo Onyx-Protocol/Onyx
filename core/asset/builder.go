@@ -38,7 +38,7 @@ func (a *IssueAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 	if a.Params.MinTime != nil {
 		minTime = *a.Params.MinTime
 	}
-	txin := bc.NewIssuanceInput(minTime, minTime.Add(ttl), asset.GenesisHash, a.Params.Amount, asset.IssuanceProgram, a.ReferenceData, nil)
+	txin := bc.NewIssuanceInput(minTime, minTime.Add(ttl), asset.InitialBlockHash, a.Params.Amount, asset.IssuanceProgram, a.ReferenceData, nil)
 	tplIn := issuanceInput(asset, a.Params.AssetAmount)
 
 	return []*bc.TxInput{txin}, nil, []*txbuilder.Input{tplIn}, nil

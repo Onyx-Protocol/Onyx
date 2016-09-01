@@ -96,15 +96,15 @@ func TestBuild(t *testing.T) {
 }
 
 func TestMaterializeWitnesses(t *testing.T) {
-	var genesisHash bc.Hash
+	var initialBlockHash bc.Hash
 	issuanceProg := []byte{1}
-	assetID := bc.ComputeAssetID(issuanceProg, genesisHash, 1)
+	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	now := time.Unix(233400000, 0)
 	unsigned := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(now, now.Add(time.Hour), genesisHash, 5, issuanceProg, nil, nil),
+			bc.NewIssuanceInput(now, now.Add(time.Hour), initialBlockHash, 5, issuanceProg, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 5, outscript, nil),

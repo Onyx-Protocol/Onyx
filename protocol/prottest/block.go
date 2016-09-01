@@ -28,7 +28,7 @@ func NewChain(tb testing.TB) *protocol.Chain {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-	b1, err := protocol.NewGenesisBlock(nil, 0, time.Now())
+	b1, err := protocol.NewInitialBlock(nil, 0, time.Now())
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}

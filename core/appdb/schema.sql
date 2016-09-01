@@ -444,7 +444,7 @@ CREATE TABLE assets (
     issuance_program bytea NOT NULL,
     archived boolean DEFAULT false NOT NULL,
     client_token text,
-    genesis_hash text NOT NULL,
+    initial_block_hash text NOT NULL,
     signer_id text NOT NULL,
     definition jsonb,
     alias text
@@ -507,7 +507,7 @@ CREATE TABLE config (
     singleton boolean DEFAULT true NOT NULL,
     is_signer boolean,
     is_generator boolean,
-    genesis_hash text NOT NULL,
+    initial_block_hash text NOT NULL,
     configured_at timestamp with time zone NOT NULL,
     generator_url text DEFAULT ''::text NOT NULL,
     block_xpub text DEFAULT ''::text NOT NULL,
@@ -1149,3 +1149,4 @@ insert into migrations (filename, hash) values ('2016-08-31.1.core.mockhsm-key-s
 insert into migrations (filename, hash) values ('2016-08-31.2.core.default-config-generator-url.sql', '4b3a62ed2ff07256b6289b1f0e02910d9ddf5e345c169a978910306cad1c6948');
 insert into migrations (filename, hash) values ('2016-08-31.3.account.drop-redeem-program.sql', '8b1dfd7056ba04cbb2609a9fa0e8f8f76e6fca3d19b8c2a3cbd88f0513022462');
 insert into migrations (filename, hash) values ('2016-09-01.0.core.add-block-xpub.sql', '89051edcfbfba56cc09870ab9864b8605babded501a612e0a3882823b4ebbdba');
+insert into migrations (filename, hash) values ('2016-09-01.1.core.rename-genesis-to-initial.sql', '25699037b44a16db6e3fdbfe81f35dea5dbf4b230ff3f63904f5150f08955208');

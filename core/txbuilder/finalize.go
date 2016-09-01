@@ -57,7 +57,7 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, txTemplate *Template) (*
 
 func publishTx(ctx context.Context, c *protocol.Chain, msg *bc.Tx) error {
 	// Make sure there is atleast one block in case client is
-	// trying to finalize a tx before the genesis block has landed
+	// trying to finalize a tx before the initial block has landed
 	c.WaitForBlock(1)
 	err := c.AddTx(ctx, msg)
 	if errors.Root(err) == validation.ErrBadTx {
