@@ -2,6 +2,7 @@ package fetch
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"chain/errors"
@@ -12,6 +13,20 @@ import (
 )
 
 const getBlocksTimeout = 3 * time.Second
+
+var (
+	generatorHeight          uint64
+	generatorHeightFetchedAt time.Time
+	generatorLock            sync.Mutex
+)
+
+func GeneratorHeight() (uint64, time.Time) {
+	generatorLock.Lock()
+	h := generatorHeight
+	t := generatorHeightFetchedAt
+	generatorLock.Unlock()
+	return h, t
+}
 
 // Fetch runs in a loop, fetching blocks from the configured
 // peer (e.g. the generator) and applying them to the local
@@ -61,6 +76,16 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 				prevSnapshot = snapshot
 				prevBlock = block
 			}
+
+			gh, err := getHeight(ctx, peer)
+			if err != nil {
+				log.Error(ctx, err)
+			} else {
+				generatorLock.Lock()
+				generatorHeight = gh
+				generatorHeightFetchedAt = time.Now()
+				generatorLock.Unlock()
+			}
 		}
 	}
 }
@@ -77,4 +102,20 @@ func getBlocks(ctx context.Context, peer *rpc.Client, height uint64) ([]*bc.Bloc
 		return nil, nil
 	}
 	return blocks, errors.Wrap(err, "get blocks rpc")
+}
+
+// getHeight sends a get-height RPC request to another Core for
+// the latest height that that peer knows about.
+func getHeight(ctx context.Context, peer *rpc.Client) (uint64, error) {
+	var resp map[string]uint64
+	err := peer.Call(ctx, "/rpc/block-height", nil, &resp)
+	if err != nil {
+		return 0, errors.Wrap(err, "could not get remote block height")
+	}
+	h, ok := resp["block_height"]
+	if !ok {
+		return 0, errors.New("unexpected response from generator")
+	}
+
+	return h, nil
 }

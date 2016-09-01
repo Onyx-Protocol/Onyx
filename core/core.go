@@ -5,12 +5,12 @@ import (
 	"expvar"
 	"time"
 
+	"chain/core/fetch"
 	"chain/core/generator"
 	"chain/core/leader"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/log"
 	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/vmutil"
@@ -107,43 +107,30 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 	}
 
 	localHeight := a.c.Height()
-	var generatorHeight interface{}
+	var (
+		generatorHeight  interface{}
+		generatorFetched time.Time
+	)
 	if a.config.IsGenerator {
 		generatorHeight = localHeight
+		generatorFetched = time.Now()
 	} else {
-		// TODO(tessr): Store the generator block height in memory on the core leader
-		// instead of retrieving it every time.
-		generator := &rpc.Client{
-			BaseURL: a.config.GeneratorURL,
-		}
-
-		var resp map[string]uint64
-		err := generator.Call(ctx, "/rpc/block-height", nil, &resp)
-		if err != nil {
-			log.Error(ctx, err, "could not receive latest block height from generator")
-			generatorHeight = "unknown"
-		}
-		if h, ok := resp["block_height"]; ok {
-			generatorHeight = h
-		} else {
-			log.Write(ctx, "unexpected response from generator")
-			generatorHeight = "unknown"
-		}
+		generatorHeight, generatorFetched = fetch.GeneratorHeight()
 	}
 
-	// TODO(tessr): Add "synced" after SYNC_LIMIT is added.
 	return map[string]interface{}{
-		"is_configured":          true,
-		"configured_at":          a.config.ConfiguredAt,
-		"is_signer":              a.config.IsSigner,
-		"is_generator":           a.config.IsGenerator,
-		"generator_url":          a.config.GeneratorURL,
-		"initial_block_hash":     a.config.GenesisHash,
-		"block_height":           localHeight,
-		"generator_block_height": generatorHeight,
-		"is_production":          expvar.Get("buildtag").String() != "dev",
-		"build_commit":           expvar.Get("buildcommit").String(),
-		"build_date":             expvar.Get("builddate").String(),
+		"is_configured":                     true,
+		"configured_at":                     a.config.ConfiguredAt,
+		"is_signer":                         a.config.IsSigner,
+		"is_generator":                      a.config.IsGenerator,
+		"generator_url":                     a.config.GeneratorURL,
+		"initial_block_hash":                a.config.GenesisHash,
+		"block_height":                      localHeight,
+		"generator_block_height":            generatorHeight,
+		"generator_block_height_fetched_at": generatorFetched,
+		"is_production":                     expvar.Get("buildtag").String() != "dev",
+		"build_commit":                      expvar.Get("buildcommit").String(),
+		"build_date":                        expvar.Get("builddate").String(),
 	}, nil
 }
 
