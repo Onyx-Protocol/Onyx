@@ -201,34 +201,12 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, p
 	}
 	txbuilder.Generator = remoteGenerator
 
-	hsm := mockhsm.New(db)
-
-	var err error
-	var blockXPub *hd25519.XPub
-	if *blockXPubStr == "" {
-		coreXPub, created, err := hsm.GetOrCreateKey(ctx, autoBlockKeyAlias)
-		if err != nil {
-			panic(err)
-		}
-		blockXPub = coreXPub.XPub
-		if created {
-			log.Printf("Generated new block-signing key %s\n", blockXPub.String())
-		} else {
-			log.Printf("Using block-signing key %s\n", blockXPub.String())
-		}
-	} else {
-		blockXPub, err = hd25519.XPubFromString(*blockXPubStr)
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	heights, err := txdb.ListenBlocks(ctx, *dbURL)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 	store, pool := txdb.New(db)
-	c, err := protocol.NewChain(ctx, store, pool, []ed25519.PublicKey{blockXPub.Key}, heights)
+	c, err := protocol.NewChain(ctx, store, pool, heights)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
@@ -238,9 +216,28 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, p
 	indexer.RegisterAnnotator(account.AnnotateTxs)
 	indexer.RegisterAnnotator(asset.AnnotateTxs)
 
+	hsm := mockhsm.New(db)
 	var generatorSigners []generator.BlockSigner
 	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
 	if config.IsSigner {
+		var blockXPub *hd25519.XPub
+		if *blockXPubStr == "" {
+			coreXPub, created, err := hsm.GetOrCreateKey(ctx, autoBlockKeyAlias)
+			if err != nil {
+				panic(err)
+			}
+			blockXPub = coreXPub.XPub
+			if created {
+				log.Printf("Generated new block-signing key %s\n", blockXPub.String())
+			} else {
+				log.Printf("Using block-signing key %s\n", blockXPub.String())
+			}
+		} else {
+			blockXPub, err = hd25519.XPubFromString(*blockXPubStr)
+			if err != nil {
+				panic(err)
+			}
+		}
 		s := blocksigner.New(blockXPub, hsm, db, c)
 		generatorSigners = append(generatorSigners, s) // "local" signer
 		signBlockHandler = s.ValidateAndSignBlock

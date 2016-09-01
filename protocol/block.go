@@ -33,22 +33,23 @@ func (c *Chain) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) 
 }
 
 // GenerateBlock generates a valid, but unsigned, candidate block from
-// the current tx pool.  It returns the new block and has no side effects.
-func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time) (b *bc.Block, err error) {
+// the current tx pool.  It returns the new block and a snapshot of what
+// the state snapshot is if the block is applied. It has no side effects.
+func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time) (b *bc.Block, result *state.Snapshot, err error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
 	timestampMS := bc.Millis(now)
 	if timestampMS < prev.TimestampMS {
-		return nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
+		return nil, nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
 	}
 
 	// Make a copy of the state that we can apply our changes to.
-	snapshot = state.Copy(snapshot)
+	result = state.Copy(snapshot)
 
 	txs, err := c.pool.Dump(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "get pool TXs")
+		return nil, nil, errors.Wrap(err, "get pool TXs")
 	}
 
 	b = &bc.Block{
@@ -68,14 +69,14 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 			break
 		}
 
-		if validation.ConfirmTx(snapshot, tx, b.TimestampMS) == nil {
-			validation.ApplyTx(snapshot, tx)
+		if validation.ConfirmTx(result, tx, b.TimestampMS) == nil {
+			validation.ApplyTx(result, tx)
 			b.Transactions = append(b.Transactions, tx)
 		}
 	}
 	b.TransactionsMerkleRoot = validation.CalcMerkleRoot(b.Transactions)
-	b.AssetsMerkleRoot = snapshot.Tree.RootHash()
-	return b, nil
+	b.AssetsMerkleRoot = result.Tree.RootHash()
+	return b, result, nil
 }
 
 // ValidateBlock performs validation on an incoming block, in advance
@@ -91,11 +92,7 @@ func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, pr
 	}
 
 	newState := state.Copy(prevState)
-	if isSignedByTrustedHost(block, c.trustedKeys) {
-		err = validation.ApplyBlock(newState, block)
-	} else {
-		err = validation.ValidateAndApplyBlock(ctx, newState, prev, block)
-	}
+	err = validation.ValidateAndApplyBlock(ctx, newState, prev, block)
 	if err != nil {
 		return nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
 	}
@@ -228,22 +225,6 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 
 	err := validation.ValidateBlockForSig(ctx, snapshot, prev, block)
 	return errors.Wrap(err, "validation")
-}
-
-func isSignedByTrustedHost(block *bc.Block, trustedKeys []ed25519.PublicKey) bool {
-	hash := block.HashForSig()
-	for _, sig := range block.Witness {
-		if len(sig) == 0 {
-			continue
-		}
-		for _, pubk := range trustedKeys {
-			if ed25519.Verify(pubk, hash[:], sig) {
-				return true
-			}
-		}
-	}
-
-	return false
 }
 
 func (c *Chain) rebuildPool(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) ([]*bc.Tx, error) {

@@ -24,7 +24,7 @@ var (
 // It commits the initial block before returning the Chain.
 func NewChain(tb testing.TB) *protocol.Chain {
 	ctx := context.Background()
-	c, err := protocol.NewChain(ctx, memstore.New(), mempool.New(), nil, nil)
+	c, err := protocol.NewChain(ctx, memstore.New(), mempool.New(), nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
@@ -63,11 +63,7 @@ func MakeBlock(ctx context.Context, tb testing.TB, c *protocol.Chain) *bc.Block 
 		curState = state.Empty()
 	}
 
-	nextBlock, err := c.GenerateBlock(ctx, curBlock, curState, time.Now())
-	if err != nil {
-		testutil.FatalErr(tb, err)
-	}
-	nextState, err := c.ValidateBlock(ctx, curState, curBlock, nextBlock)
+	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now())
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}

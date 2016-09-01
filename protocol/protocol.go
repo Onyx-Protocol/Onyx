@@ -44,7 +44,6 @@ import (
 	"context"
 	"sync"
 
-	"chain/crypto/ed25519"
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -95,7 +94,6 @@ type Pool interface {
 // objects can be safely stored.
 type Chain struct {
 	blockCallbacks []BlockCallback
-	trustedKeys    []ed25519.PublicKey
 	height         struct {
 		cond sync.Cond // protects n
 		n    uint64
@@ -105,16 +103,10 @@ type Chain struct {
 }
 
 // NewChain returns a new Chain using store as the underlying storage.
-//
-// ValidateBlock will skip validation for any block signed by a key
-// in trustedKeys. Typically, trustedKeys contains the public key
-// for the local block-signer process; the presence of its
-// signature indicates the block was already validated locally.
-func NewChain(ctx context.Context, store Store, pool Pool, trustedKeys []ed25519.PublicKey, heights <-chan uint64) (*Chain, error) {
+func NewChain(ctx context.Context, store Store, pool Pool, heights <-chan uint64) (*Chain, error) {
 	c := &Chain{
-		store:       store,
-		pool:        pool,
-		trustedKeys: trustedKeys,
+		store: store,
+		pool:  pool,
 	}
 	c.height.cond.L = new(sync.Mutex)
 

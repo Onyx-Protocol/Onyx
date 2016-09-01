@@ -60,8 +60,13 @@ func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, period ti
 		log.Fatal(ctx, err)
 	}
 	if b != nil && (g.latestBlock == nil || b.Height == g.latestBlock.Height+1) {
+		s, err := g.chain.ValidateBlock(ctx, g.latestSnapshot, g.latestBlock, b)
+		if err != nil {
+			log.Fatal(ctx, err)
+		}
+
 		// g.commitBlock will update g.latestBlock and g.latestSnapshot.
-		_, err := g.commitBlock(ctx, b)
+		_, err = g.commitBlock(ctx, b, s)
 		if err != nil {
 			log.Fatal(ctx, err)
 		}

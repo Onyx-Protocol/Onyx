@@ -42,7 +42,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	block, err := c.GenerateBlock(ctx, tip, snapshot, time.Now())
+	block, _, err := c.GenerateBlock(ctx, tip, snapshot, time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

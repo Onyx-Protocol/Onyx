@@ -12,6 +12,7 @@ import (
 	"chain/log"
 	"chain/net/trace/span"
 	"chain/protocol/bc"
+	"chain/protocol/state"
 	"chain/protocol/vmutil"
 )
 
@@ -26,7 +27,7 @@ func (g *generator) makeBlock(ctx context.Context) (*bc.Block, error) {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	b, err := g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
+	b, s, err := g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
 	if err != nil {
 		return nil, errors.Wrap(err, "generate")
 	}
@@ -37,27 +38,22 @@ func (g *generator) makeBlock(ctx context.Context) (*bc.Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	return g.commitBlock(ctx, b)
+	return g.commitBlock(ctx, b, s)
 }
 
-func (g *generator) commitBlock(ctx context.Context, b *bc.Block) (*bc.Block, error) {
+func (g *generator) commitBlock(ctx context.Context, b *bc.Block, s *state.Snapshot) (*bc.Block, error) {
 	err := g.getAndAddBlockSignatures(ctx, b, g.latestBlock)
 	if err != nil {
 		return nil, errors.Wrap(err, "sign")
 	}
 
-	// Apply the block to get the state snapshot and commit it.
-	snapshot, err := g.chain.ValidateBlock(ctx, g.latestSnapshot, g.latestBlock, b)
-	if err != nil {
-		return nil, errors.Wrap(err, "apply")
-	}
-	err = g.chain.CommitBlock(ctx, b, snapshot)
+	err = g.chain.CommitBlock(ctx, b, s)
 	if err != nil {
 		return nil, errors.Wrap(err, "commit")
 	}
 
 	g.latestBlock = b
-	g.latestSnapshot = snapshot
+	g.latestSnapshot = s
 	return b, nil
 }
 

@@ -208,7 +208,7 @@ func benchGenBlock(b *testing.B) {
 
 	now := time.Now()
 	b.StartTimer()
-	_, err = c.GenerateBlock(ctx, genesis, state.Empty(), now)
+	_, _, err = c.GenerateBlock(ctx, genesis, state.Empty(), now)
 	b.StopTimer()
 	if err != nil {
 		b.Fatal(err)

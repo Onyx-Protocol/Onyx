@@ -24,15 +24,11 @@ func TestIdempotentAddTx(t *testing.T) {
 	}
 
 	// still idempotent after block lands
-	block, err := c.GenerateBlock(ctx, b1, state.Empty(), time.Now())
+	block, tree, err := c.GenerateBlock(ctx, b1, state.Empty(), time.Now())
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	tree, err := c.ValidateBlock(ctx, state.Empty(), b1, block)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
 	err = c.CommitBlock(ctx, block, tree)
 	if err != nil {
 		testutil.FatalErr(t, err)

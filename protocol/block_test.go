@@ -36,7 +36,7 @@ func TestGetBlock(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		c, err := NewChain(ctx, test.store, emptyPool, nil, nil)
+		c, err := NewChain(ctx, test.store, emptyPool, nil)
 		if err != nil {
 			testutil.FatalErr(t, err)
 		}
@@ -54,7 +54,7 @@ func TestGetBlock(t *testing.T) {
 
 func TestNoTimeTravel(t *testing.T) {
 	ctx := context.Background()
-	c, err := NewChain(ctx, memstore.New(), mempool.New(), nil, nil)
+	c, err := NewChain(ctx, memstore.New(), mempool.New(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func TestWaitForBlockSoon(t *testing.T) {
 	}
 	store.SaveBlock(ctx, block1)
 	store.SaveSnapshot(ctx, 1, state.Empty())
-	c, err := NewChain(ctx, store, mempool.New(), nil, nil)
+	c, err := NewChain(ctx, store, mempool.New(), nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -204,7 +204,7 @@ func TestGenerateBlock(t *testing.T) {
 		}
 	}
 
-	got, err := c.GenerateBlock(ctx, b1, state.Empty(), now)
+	got, _, err := c.GenerateBlock(ctx, b1, state.Empty(), now)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
@@ -230,7 +230,6 @@ func TestGenerateBlock(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("generated block:\ngot:  %+v\nwant: %+v", got, want)
 	}
-
 }
 
 func TestValidateGenesisBlockForSig(t *testing.T) {
@@ -240,7 +239,7 @@ func TestValidateGenesisBlockForSig(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	c, err := NewChain(ctx, memstore.New(), mempool.New(), nil, nil)
+	c, err := NewChain(ctx, memstore.New(), mempool.New(), nil)
 	if err != nil {
 		t.Fatal("unexpected error ", err)
 	}
@@ -251,56 +250,12 @@ func TestValidateGenesisBlockForSig(t *testing.T) {
 	}
 }
 
-func TestIsSignedByTrustedHost(t *testing.T) {
-	privKey := testutil.TestPrv
-	privKeys := []ed25519.PrivateKey{privKey}
-
-	block := &bc.Block{}
-	signBlock(t, block, privKeys)
-
-	cases := []struct {
-		desc        string
-		witness     [][]byte
-		trustedKeys []ed25519.PublicKey
-		want        bool
-	}{{
-		desc:        "empty sig",
-		witness:     nil,
-		trustedKeys: privToPub(privKeys),
-		want:        false,
-	}, {
-		desc:        "wrong trusted keys",
-		witness:     block.Witness,
-		trustedKeys: privToPub([]ed25519.PrivateKey{newPrivKey(t)}),
-		want:        false,
-	}, {
-		desc:        "one-of-one trusted keys",
-		witness:     block.Witness,
-		trustedKeys: privToPub(privKeys),
-		want:        true,
-	}, {
-		desc:        "one-of-two trusted keys",
-		witness:     block.Witness,
-		trustedKeys: privToPub(append(privKeys, newPrivKey(t))),
-		want:        true,
-	}}
-
-	for _, c := range cases {
-		block.Witness = c.witness
-		got := isSignedByTrustedHost(block, c.trustedKeys)
-
-		if got != c.want {
-			t.Errorf("%s: got %v want %v", c.desc, got, c.want)
-		}
-	}
-}
-
 // newTestChain returns a new Chain using memstore and mempool for storage,
 // along with an initial block b1 (with a 0/0 multisig program).
 // It commits b1 before returning.
 func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
 	ctx := context.Background()
-	c, err := NewChain(ctx, memstore.New(), mempool.New(), nil, nil)
+	c, err := NewChain(ctx, memstore.New(), mempool.New(), nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}

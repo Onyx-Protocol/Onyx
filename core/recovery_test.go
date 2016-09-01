@@ -148,7 +148,7 @@ func TestRecovery(t *testing.T) {
 
 func generateBlock(ctx context.Context, db *sql.DB, timestamp time.Time) error {
 	store, pool := txdb.New(db)
-	c, err := protocol.NewChain(ctx, store, pool, nil, nil)
+	c, err := protocol.NewChain(ctx, store, pool, nil)
 	if err != nil {
 		return err
 	}
@@ -165,16 +165,12 @@ func generateBlock(ctx context.Context, db *sql.DB, timestamp time.Time) error {
 		return err
 	}
 
-	b, err := c.GenerateBlock(ctx, block, snapshot, timestamp)
+	b, s, err := c.GenerateBlock(ctx, block, snapshot, timestamp)
 	if err != nil {
 		return err
 	}
 	if len(b.Transactions) == 0 {
 		return nil
 	}
-	snapshot, err = c.ValidateBlock(ctx, snapshot, block, b)
-	if err != nil {
-		return err
-	}
-	return c.CommitBlock(ctx, b, snapshot)
+	return c.CommitBlock(ctx, b, s)
 }

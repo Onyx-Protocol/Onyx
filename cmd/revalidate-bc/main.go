@@ -100,7 +100,7 @@ func RevalidateBlockchain(db *sql.DB) (blocksValidated uint64, err error) {
 	// TODO(jackson): Don't keep everything in memory so that we can validate
 	// larger blockchains in the future.
 	ctx := context.Background()
-	c, err := protocol.NewChain(ctx, memstore.New(), mempool.New(), nil, nil)
+	c, err := protocol.NewChain(ctx, memstore.New(), mempool.New(), nil)
 	if err != nil {
 		fatalf("unable to construct protocol.Chain: %s\n", err)
 	}

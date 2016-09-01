@@ -97,7 +97,7 @@ func InitializeSigningGenerator(ctx context.Context, store protocol.Store, pool 
 	if pool == nil {
 		pool = mempool.New()
 	}
-	c, err := protocol.NewChain(ctx, store, pool, nil, nil)
+	c, err := protocol.NewChain(ctx, store, pool, nil)
 	if err != nil {
 		return nil, err
 	}
