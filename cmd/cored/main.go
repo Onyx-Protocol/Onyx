@@ -66,16 +66,12 @@ var (
 	logQueries   = env.Bool("LOG_QUERIES", false)
 	blockXPubStr = env.String("BLOCK_XPUB", "")
 	// for config var LIBRATO_URL, see func init below
-	traceguideToken    = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
-	maxDBConns         = env.Int("MAXDBCONNS", 10) // set to 100 in prod
-	apiSecretToken     = env.String("API_SECRET", "")
-	rpcSecretToken     = env.String("RPC_SECRET", "secret")
-	isSigner           = env.Bool("SIGNER", true) // node type must set FALSE explicitly
-	isGenerator        = env.Bool("GENERATOR", true)
-	isManager          = env.Bool("MANAGER", true)
-	remoteGeneratorURL = env.String("REMOTE_GENERATOR_URL", "")
-	remoteSignerURLs   = env.StringSlice("REMOTE_SIGNER_URLS")
-	remoteSignerKeys   = env.StringSlice("REMOTE_SIGNER_KEYS")
+	traceguideToken  = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
+	maxDBConns       = env.Int("MAXDBCONNS", 10) // set to 100 in prod
+	apiSecretToken   = env.String("API_SECRET", "")
+	rpcSecretToken   = env.String("RPC_SECRET", "secret")
+	remoteSignerURLs = env.StringSlice("REMOTE_SIGNER_URLS")
+	remoteSignerKeys = env.StringSlice("REMOTE_SIGNER_KEYS")
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -103,23 +99,27 @@ func init() {
 func main() {
 	ctx := context.Background()
 	env.Parse()
-	hostname, err := os.Hostname()
+
+	sql.EnableQueryLogging(*logQueries)
+	db, err := sql.Open("hapg", *dbURL)
 	if err != nil {
-		panic(err)
+		chainlog.Fatal(ctx, chainlog.KeyError, err)
+	}
+	db.SetMaxOpenConns(*maxDBConns)
+	db.SetMaxIdleConns(100)
+	ctx = pg.NewContext(ctx, db)
+
+	config, err := loadConfig(ctx, db)
+	if err != nil {
+		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
 
 	// Initialize internode rpc clients.
-	processID := fmt.Sprintf("chain-%s-%s-%d", *target, hostname, os.Getpid())
-	var remoteGenerator *rpc.Client
-	if *remoteGeneratorURL != "" {
-		remoteGenerator = &rpc.Client{
-			BaseURL:  *remoteGeneratorURL,
-			Username: processID,
-			Password: *rpcSecretToken,
-			BuildTag: buildTag,
-		}
+	hostname, err := os.Hostname()
+	if err != nil {
+		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
-	txbuilder.Generator = remoteGenerator
+	processID := fmt.Sprintf("chain-%s-%s-%d", *target, hostname, os.Getpid())
 
 	log.SetPrefix("api-" + buildTag + ": ")
 	log.SetFlags(log.Lshortfile)
@@ -149,17 +149,62 @@ func main() {
 		},
 	}))
 
-	sql.EnableQueryLogging(*logQueries)
-	db, err := sql.Open("hapg", *dbURL)
-	if err != nil {
-		chainlog.Fatal(ctx, chainlog.KeyError, err)
+	var h http.Handler
+	if config != nil {
+		h = launchConfiguredCore(ctx, db, *config, processID)
+	} else {
+		chainlog.Messagef(ctx, "Launching as unconfigured Core.")
+		h = core.Handler(*apiSecretToken, *rpcSecretToken, nil, nil, nil, nil, nil)
 	}
-	db.SetMaxOpenConns(*maxDBConns)
-	db.SetMaxIdleConns(100)
-	ctx = pg.NewContext(ctx, db)
+
+	h = dashboardHandler(h)
+	h = metrics.Handler{Handler: h}
+	h = gzip.Handler{Handler: h}
+	h = httpspan.Handler{Handler: h}
+	h = dbContextHandler(h, db)
+	h = reqid.Handler(h)
+	http.Handle("/", h)
+	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
+	secureheader.DefaultConfig.PermitClearLoopback = true
+	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
+
+	server := &http.Server{
+		Addr:    *listenAddr,
+		Handler: secureheader.DefaultConfig,
+	}
+	if *tlsCrt != "" {
+		cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
+		}
+
+		server.TLSConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+		err = server.ListenAndServeTLS("", "") // uses TLS certs from above
+	} else {
+		err = server.ListenAndServe()
+	}
+	if err != nil {
+		chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
+	}
+}
+
+func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, processID string) http.Handler {
+	var remoteGenerator *rpc.Client
+	if !config.IsGenerator {
+		remoteGenerator = &rpc.Client{
+			BaseURL:  config.GeneratorURL,
+			Username: processID,
+			Password: *rpcSecretToken,
+			BuildTag: buildTag,
+		}
+	}
+	txbuilder.Generator = remoteGenerator
 
 	hsm := mockhsm.New(db)
 
+	var err error
 	var blockXPub *hd25519.XPub
 	if *blockXPubStr == "" {
 		coreXPub, created, err := hsm.GetOrCreateKey(ctx, autoBlockKeyAlias)
@@ -196,7 +241,7 @@ func main() {
 
 	var generatorSigners []generator.BlockSigner
 	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
-	if *isSigner {
+	if config.IsSigner {
 		s := blocksigner.New(blockXPub, hsm, db, c)
 		generatorSigners = append(generatorSigners, s) // "local" signer
 		signBlockHandler = s.ValidateAndSignBlock
@@ -205,7 +250,7 @@ func main() {
 	asset.Init(c, indexer)
 	account.Init(c, indexer)
 
-	if *isGenerator {
+	if config.IsGenerator {
 		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, *rpcSecretToken) {
 			generatorSigners = append(generatorSigners, signer)
 		}
@@ -223,49 +268,15 @@ func main() {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
 
-		if *isManager {
-			go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
-		}
-		if *isGenerator {
+		go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
+		if config.IsGenerator {
 			go generator.Generate(ctx, c, generatorSigners, blockPeriod)
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator)
 		}
 	})
 
-	h := core.Handler(*apiSecretToken, *rpcSecretToken, c, signBlockHandler, hsm, indexer)
-	h = dashboardHandler(h)
-	h = metrics.Handler{Handler: h}
-	h = gzip.Handler{Handler: h}
-	h = httpspan.Handler{Handler: h}
-	h = dbContextHandler(h, db)
-	h = reqid.Handler(h)
-	http.Handle("/", h)
-	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
-
-	secureheader.DefaultConfig.PermitClearLoopback = true
-	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
-
-	server := &http.Server{
-		Addr:    *listenAddr,
-		Handler: secureheader.DefaultConfig,
-	}
-	if *tlsCrt != "" {
-		cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "parsing tls X509 key pair"))
-		}
-
-		server.TLSConfig = &tls.Config{
-			Certificates: []tls.Certificate{cert},
-		}
-		err = server.ListenAndServeTLS("", "") // uses TLS certs from above
-	} else {
-		err = server.ListenAndServe()
-	}
-	if err != nil {
-		chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
-	}
+	return core.Handler(*apiSecretToken, *rpcSecretToken, c, signBlockHandler, hsm, indexer, &config)
 }
 
 func dbContextHandler(handler http.Handler, db pg.DB) http.Handler {
@@ -274,6 +285,23 @@ func dbContextHandler(handler http.Handler, db pg.DB) http.Handler {
 		ctx = pg.NewContext(ctx, db)
 		handler.ServeHTTP(w, req.WithContext(ctx))
 	})
+}
+
+// loadConfig loads the stored configuration, if any, from the database.
+func loadConfig(ctx context.Context, db pg.DB) (*core.Config, error) {
+	const q = `
+		SELECT is_signer, is_generator, genesis_hash, generator_url, configured_at
+		FROM config
+	`
+
+	c := new(core.Config)
+	err := db.QueryRow(ctx, q).Scan(&c.IsSigner, &c.IsGenerator, &c.GenesisHash, &c.GeneratorURL, &c.ConfiguredAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, errors.Wrap(err, "fetching Core config")
+	}
+	return c, nil
 }
 
 func dashboardHandler(next http.Handler) http.Handler {

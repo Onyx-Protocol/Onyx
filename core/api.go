@@ -4,6 +4,7 @@ package core
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"chain/core/generator"
 	"chain/core/mockhsm"
@@ -23,23 +24,35 @@ func Handler(
 	signer func(context.Context, *bc.Block) ([]byte, error),
 	hsm *mockhsm.HSM,
 	indexer *query.Indexer,
+	config *Config,
 ) http.Handler {
 	a := &api{
 		c:       c,
 		hsm:     hsm,
 		indexer: indexer,
+		config:  config,
 	}
 
 	m := http.NewServeMux()
-	m.Handle("/", apiAuthn(apiSecret, waitForGenesis(a.c, a.handler())))
-	m.Handle("/rpc/", apiAuthn(rpcSecret, waitForGenesis(a.c, rpcAuthedHandler(c, signer))))
+	m.Handle("/", apiAuthn(apiSecret, a.handler()))
+	m.Handle("/rpc/", apiAuthn(rpcSecret, rpcAuthedHandler(c, signer)))
 	return m
+}
+
+// Config encapsulates Core-level, persistent configuration options.
+type Config struct {
+	IsSigner     bool
+	IsGenerator  bool
+	GenesisHash  string
+	GeneratorURL string
+	ConfiguredAt time.Time
 }
 
 type api struct {
 	c       *protocol.Chain
 	hsm     *mockhsm.HSM
 	indexer *query.Indexer
+	config  *Config
 }
 
 func waitForGenesis(c *protocol.Chain, h http.Handler) http.Handler {

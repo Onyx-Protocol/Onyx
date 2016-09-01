@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"database/sql"
 	"expvar"
 	"time"
 
@@ -100,37 +99,22 @@ func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
 }
 
 func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
-	var (
-		isSigner     bool
-		isGenerator  bool
-		genesisHash  string
-		generatorURL string
-		configuredAt time.Time
-	)
-
-	const q = `
-		SELECT is_signer, is_generator, genesis_hash, generator_url, configured_at
-		FROM config
-	`
-
-	err := pg.QueryRow(ctx, q).Scan(&isSigner, &isGenerator, &genesisHash, &generatorURL, &configuredAt)
-	if err == sql.ErrNoRows {
+	if a.config == nil {
+		// never configured
 		return map[string]interface{}{
 			"is_configured": false,
 		}, nil
-	} else if err != nil {
-		return nil, err
 	}
 
 	localHeight := a.c.Height()
 	var generatorHeight interface{}
-	if isGenerator {
+	if a.config.IsGenerator {
 		generatorHeight = localHeight
 	} else {
 		// TODO(tessr): Store the generator block height in memory on the core leader
 		// instead of retrieving it every time.
 		generator := &rpc.Client{
-			BaseURL: generatorURL,
+			BaseURL: a.config.GeneratorURL,
 			// TODO(tessr): Auth.
 		}
 
@@ -151,11 +135,11 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 	// TODO(tessr): Add "synced" after SYNC_LIMIT is added.
 	return map[string]interface{}{
 		"is_configured":          true,
-		"configured_at":          configuredAt,
-		"is_signer":              isSigner,
-		"is_generator":           isGenerator,
-		"generator_url":          generatorURL,
-		"initial_block_hash":     genesisHash,
+		"configured_at":          a.config.ConfiguredAt,
+		"is_signer":              a.config.IsSigner,
+		"is_generator":           a.config.IsGenerator,
+		"generator_url":          a.config.GeneratorURL,
+		"initial_block_hash":     a.config.GenesisHash,
 		"block_height":           localHeight,
 		"generator_block_height": generatorHeight,
 		"is_production":          expvar.Get("buildtag").String() != "dev",
