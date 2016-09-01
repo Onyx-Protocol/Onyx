@@ -44,7 +44,11 @@ var (
 		signers.ErrArchived:      errorInfo{400, "CH005", "Item has been archived"},
 
 		// Core error namespace
-		errProdReset: errorInfo{400, "CH100", "Reset can only be called in a development system"},
+		errUnconfigured:      errorInfo{400, "CH100", "This core still needs to be configured"},
+		errAlreadyConfigured: errorInfo{400, "CH101", "This core has already been configured"},
+		errBadGenerator:      errorInfo{400, "CH102", "Generator URL returned an invalid response"},
+		errBadBlockXPub:      errorInfo{400, "CH103", "Provided Block XPub is invalid"},
+		errProdReset:         errorInfo{400, "CH110", "Reset can only be called in a development system"},
 
 		// Signers error namespace (2xx)
 		signers.ErrBadQuorum: errorInfo{400, "CH200", "Quorum must be greater than 1 and less than or equal to the length of xpubs"},

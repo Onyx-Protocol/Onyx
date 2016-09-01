@@ -3,18 +3,39 @@ package core
 import (
 	"context"
 	"expvar"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"syscall"
 	"time"
 
 	"chain/core/fetch"
 	"chain/core/generator"
 	"chain/core/leader"
+	"chain/core/mockhsm"
+	"chain/core/txdb"
 	"chain/crypto/ed25519"
+	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
+	"chain/database/sql"
 	"chain/errors"
+	"chain/net/http/httpjson"
 	"chain/net/rpc"
 	"chain/protocol"
+	"chain/protocol/state"
 	"chain/protocol/vmutil"
 )
+
+var (
+	errAlreadyConfigured = errors.New("core is already configured; must reset first")
+	errUnconfigured      = errors.New("core is not configured")
+	errBadGenerator      = errors.New("generator returned an unsuccessful response")
+	errBadBlockXPub      = errors.New("supplied block xpub is invalid")
+)
+
+// reserved mockhsm key alias
+const autoBlockKeyAlias = "_CHAIN_CORE_AUTO_BLOCK_KEY"
 
 func getBlockKeys(c *protocol.Chain, ctx context.Context) (keys []ed25519.PublicKey, quorum int, err error) {
 	height := c.Height()
@@ -123,7 +144,7 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"is_signer":                         a.config.IsSigner,
 		"is_generator":                      a.config.IsGenerator,
 		"generator_url":                     a.config.GeneratorURL,
-		"initial_block_hash":                a.config.GenesisHash,
+		"initial_block_hash":                a.config.InitialBlockHash,
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
@@ -147,4 +168,139 @@ func (a *api) fetchInfoFromLeader(ctx context.Context) (map[string]interface{}, 
 	var resp map[string]interface{}
 	err = l.Call(ctx, "/info", nil, &resp)
 	return resp, err
+}
+
+func configure(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var x Config
+	err := httpjson.Read(ctx, r.Body, &x)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	if !x.IsGenerator {
+		err = tryGenerator(ctx, x.GeneratorURL)
+		if err != nil {
+			writeHTTPError(ctx, w, err)
+			return
+		}
+	}
+
+	var signingKeys []ed25519.PublicKey
+	if x.IsSigner {
+		var blockXPub *hd25519.XPub
+		if x.BlockXPub == "" {
+			hsm := mockhsm.New(pg.FromContext(ctx))
+			coreXPub, created, err := hsm.GetOrCreateKey(ctx, autoBlockKeyAlias)
+			if err != nil {
+				writeHTTPError(ctx, w, err)
+				return
+			}
+			blockXPub = coreXPub.XPub
+			if created {
+				log.Printf("Generated new block-signing key %s\n", blockXPub.String())
+			} else {
+				log.Printf("Using block-signing key %s\n", blockXPub.String())
+			}
+			x.BlockXPub = blockXPub.String()
+		} else {
+			blockXPub, err = hd25519.XPubFromString(x.BlockXPub)
+			if err != nil {
+				writeHTTPError(ctx, w, errors.Wrap(errBadBlockXPub, err.Error()))
+				return
+			}
+		}
+		signingKeys = append(signingKeys, blockXPub.Key)
+	}
+
+	if x.IsGenerator {
+		block, err := protocol.NewGenesisBlock(signingKeys, 1, time.Now())
+		if err != nil {
+			writeHTTPError(ctx, w, err)
+			return
+		}
+		store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
+		chain, err := protocol.NewChain(ctx, store, pool, nil)
+		if err != nil {
+			writeHTTPError(ctx, w, err)
+			return
+		}
+
+		err = chain.CommitBlock(ctx, block, state.Empty())
+		if err != nil {
+			writeHTTPError(ctx, w, err)
+			return
+		}
+
+		x.InitialBlockHash = block.Hash()
+	}
+
+	const q = `
+		INSERT INTO config (is_signer, block_xpub, is_generator, genesis_hash, generator_url, configured_at)
+		VALUES ($1, $2, $3, $4, $5, NOW())
+	`
+	_, err = pg.Exec(ctx, q, x.IsSigner, x.BlockXPub, x.IsGenerator, x.InitialBlockHash, x.GeneratorURL)
+	if err != nil {
+		writeHTTPError(ctx, w, err)
+		return
+	}
+
+	w.Header().Add("Connection", "close")
+	w.WriteHeader(http.StatusOK)
+	w.Write(httpjson.DefaultResponse)
+
+	if hijacker, ok := w.(http.Hijacker); ok {
+		conn, buf, err := hijacker.Hijack()
+		if err != nil {
+			log.Printf("could not hijack connection: %s", err)
+		} else {
+			err = buf.Flush()
+			if err != nil {
+				log.Printf("could not flush connection buffer: %s", err)
+			}
+			err = conn.Close()
+			if err != nil {
+				log.Printf("could not close connection: %s", err)
+			}
+		}
+	}
+
+	execSelf()
+}
+
+func tryGenerator(ctx context.Context, url string) error {
+	client := &rpc.Client{
+		BaseURL: url,
+	}
+	resp := map[string]interface{}{}
+	err := client.Call(ctx, "/rpc/block-height", nil, &resp)
+	if err != nil {
+		return errors.Wrap(errBadGenerator, err.Error())
+	}
+
+	heightField, ok := resp["block_height"]
+	if !ok {
+		return errBadGenerator
+	}
+
+	height, ok := heightField.(uint64)
+	if !ok || height < 1 {
+		return errBadGenerator
+	}
+
+	return nil
+}
+
+func execSelf() {
+	binpath, err := exec.LookPath(os.Args[0])
+	if err != nil {
+		panic(err)
+	}
+
+	err = syscall.Exec(binpath, os.Args, os.Environ())
+	if err != nil {
+		panic(err)
+	}
 }

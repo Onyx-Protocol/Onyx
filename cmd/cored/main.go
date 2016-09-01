@@ -53,18 +53,17 @@ import (
 
 var (
 	// config vars
-	tlsCrt       = env.String("TLSCRT", "")
-	tlsKey       = env.String("TLSKEY", "")
-	listenAddr   = env.String("LISTEN", ":8080")
-	dbURL        = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
-	target       = env.String("TARGET", "sandbox")
-	samplePer    = env.Duration("SAMPLEPER", 10*time.Second)
-	splunkAddr   = os.Getenv("SPLUNKADDR")
-	logFile      = os.Getenv("LOGFILE")
-	logSize      = env.Int("LOGSIZE", 5e6) // 5MB
-	logCount     = env.Int("LOGCOUNT", 9)
-	logQueries   = env.Bool("LOG_QUERIES", false)
-	blockXPubStr = env.String("BLOCK_XPUB", "")
+	tlsCrt     = env.String("TLSCRT", "")
+	tlsKey     = env.String("TLSKEY", "")
+	listenAddr = env.String("LISTEN", ":8080")
+	dbURL      = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
+	target     = env.String("TARGET", "sandbox")
+	samplePer  = env.Duration("SAMPLEPER", 10*time.Second)
+	splunkAddr = os.Getenv("SPLUNKADDR")
+	logFile    = os.Getenv("LOGFILE")
+	logSize    = env.Int("LOGSIZE", 5e6) // 5MB
+	logCount   = env.Int("LOGCOUNT", 9)
+	logQueries = env.Bool("LOG_QUERIES", false)
 	// for config var LIBRATO_URL, see func init below
 	traceguideToken  = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns       = env.Int("MAXDBCONNS", 10) // set to 100 in prod
@@ -84,9 +83,6 @@ var (
 	blockPeriod              = 1 * time.Second
 	expireReservationsPeriod = time.Minute
 )
-
-// reserved mockhsm key alias
-const autoBlockKeyAlias = "_CHAIN_CORE_AUTO_BLOCK_KEY"
 
 func init() {
 	librato.URL = env.URL("LIBRATO_URL", "")
@@ -221,22 +217,9 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, p
 	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
 	if config.IsSigner {
 		var blockXPub *hd25519.XPub
-		if *blockXPubStr == "" {
-			coreXPub, created, err := hsm.GetOrCreateKey(ctx, autoBlockKeyAlias)
-			if err != nil {
-				panic(err)
-			}
-			blockXPub = coreXPub.XPub
-			if created {
-				log.Printf("Generated new block-signing key %s\n", blockXPub.String())
-			} else {
-				log.Printf("Using block-signing key %s\n", blockXPub.String())
-			}
-		} else {
-			blockXPub, err = hd25519.XPubFromString(*blockXPubStr)
-			if err != nil {
-				panic(err)
-			}
+		blockXPub, err = hd25519.XPubFromString(config.BlockXPub)
+		if err != nil {
+			panic(err)
 		}
 		s := blocksigner.New(blockXPub, hsm, db, c)
 		generatorSigners = append(generatorSigners, s) // "local" signer
@@ -286,12 +269,12 @@ func dbContextHandler(handler http.Handler, db pg.DB) http.Handler {
 // loadConfig loads the stored configuration, if any, from the database.
 func loadConfig(ctx context.Context, db pg.DB) (*core.Config, error) {
 	const q = `
-		SELECT is_signer, is_generator, genesis_hash, generator_url, configured_at
+		SELECT is_signer, is_generator, genesis_hash, generator_url, block_xpub, configured_at
 		FROM config
 	`
 
 	c := new(core.Config)
-	err := db.QueryRow(ctx, q).Scan(&c.IsSigner, &c.IsGenerator, &c.GenesisHash, &c.GeneratorURL, &c.ConfiguredAt)
+	err := db.QueryRow(ctx, q).Scan(&c.IsSigner, &c.IsGenerator, &c.InitialBlockHash, &c.GeneratorURL, &c.BlockXPub, &c.ConfiguredAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {

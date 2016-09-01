@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -510,6 +510,7 @@ CREATE TABLE config (
     genesis_hash text NOT NULL,
     configured_at timestamp with time zone NOT NULL,
     generator_url text DEFAULT ''::text NOT NULL,
+    block_xpub text DEFAULT ''::text NOT NULL,
     CONSTRAINT config_singleton CHECK (singleton)
 );
 
@@ -1147,3 +1148,4 @@ insert into migrations (filename, hash) values ('2016-08-31.0.core.add-leader-ad
 insert into migrations (filename, hash) values ('2016-08-31.1.core.mockhsm-key-sort.sql', '4ecebb1e4485e6ea7b0fb7ed3a34f5c4f511fdec0379d67fcb646ec06708ad70');
 insert into migrations (filename, hash) values ('2016-08-31.2.core.default-config-generator-url.sql', '4b3a62ed2ff07256b6289b1f0e02910d9ddf5e345c169a978910306cad1c6948');
 insert into migrations (filename, hash) values ('2016-08-31.3.account.drop-redeem-program.sql', '8b1dfd7056ba04cbb2609a9fa0e8f8f76e6fca3d19b8c2a3cbd88f0513022462');
+insert into migrations (filename, hash) values ('2016-09-01.0.core.add-block-xpub.sql', '89051edcfbfba56cc09870ab9864b8605babded501a612e0a3882823b4ebbdba');

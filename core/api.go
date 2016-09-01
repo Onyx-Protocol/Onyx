@@ -34,18 +34,26 @@ func Handler(
 	}
 
 	m := http.NewServeMux()
-	m.Handle("/", apiAuthn(apiSecret, a.handler()))
-	m.Handle("/rpc/", apiAuthn(rpcSecret, rpcAuthedHandler(c, signer)))
+	if config != nil {
+		m.Handle("/", apiAuthn(apiSecret, a.handler()))
+		m.Handle("/rpc/", apiAuthn(rpcSecret, rpcAuthedHandler(c, signer)))
+		m.Handle("/configure", apiAuthn(apiSecret, alwaysError(errAlreadyConfigured)))
+	} else {
+		m.Handle("/", apiAuthn(apiSecret, alwaysError(errUnconfigured)))
+		m.Handle("/configure", apiAuthn(apiSecret, http.HandlerFunc(configure)))
+	}
+	m.Handle("/info", jsonHandler(a.info))
 	return m
 }
 
 // Config encapsulates Core-level, persistent configuration options.
 type Config struct {
-	IsSigner     bool
-	IsGenerator  bool
-	GenesisHash  string
-	GeneratorURL string
-	ConfiguredAt time.Time
+	IsSigner         bool    `json:"is_signer"`
+	IsGenerator      bool    `json:"is_generator"`
+	InitialBlockHash bc.Hash `json:"initial_block_hash"`
+	GeneratorURL     string  `json:"generator_url"`
+	ConfiguredAt     time.Time
+	BlockXPub        string `json:"block_xpub"`
 }
 
 type api struct {
@@ -121,7 +129,6 @@ func (a *api) handler() http.Handler {
 	m.Handle("/list-balances", jsonHandler(a.listBalances))
 	m.Handle("/list-unspent-outputs", jsonHandler(a.listUnspentOutputs))
 
-	m.Handle("/info", jsonHandler(a.info))
 	m.Handle("/reset", jsonHandler(a.reset))
 
 	// V3 DEPRECATED

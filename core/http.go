@@ -41,3 +41,7 @@ func logHTTPError(ctx context.Context, err error) {
 	}
 	log.Write(ctx, keyvals...)
 }
+
+func alwaysError(err error) http.Handler {
+	return jsonHandler(func() error { return err })
+}
