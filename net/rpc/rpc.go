@@ -17,7 +17,6 @@ import (
 type Client struct {
 	BaseURL  string
 	Username string
-	Password string
 	BuildTag string
 }
 
@@ -55,7 +54,14 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 	if err != nil {
 		return err
 	}
-	req.SetBasicAuth(c.Username, c.Password)
+
+	var username, password string
+	if u.User != nil {
+		username = u.User.Username()
+		password, _ = u.User.Password()
+	}
+
+	req.SetBasicAuth(username, password)
 
 	// Propagate our request ID so that we can trace a request across nodes.
 	req.Header.Add("Request-ID", reqid.FromContext(ctx))

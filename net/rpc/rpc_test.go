@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"strings"
 	"testing"
@@ -52,9 +53,15 @@ func TestRPCCallJSON(t *testing.T) {
 	}))
 	defer server.Close()
 
+	serverURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	serverURL.User = url.UserPassword("", secretToken)
+
 	response := map[string]string{}
-	client := &Client{BaseURL: server.URL, Password: secretToken}
-	err := client.Call(context.Background(), "/example/rpc/path", requestBody, &response)
+	client := &Client{BaseURL: serverURL.String()}
+	err = client.Call(context.Background(), "/example/rpc/path", requestBody, &response)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +78,7 @@ func TestRPCCallError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := &Client{BaseURL: server.URL, Password: secretToken}
+	client := &Client{BaseURL: server.URL}
 	wantErr := ErrStatusCode{URL: server.URL + "/error", StatusCode: 500}
 	err := client.Call(context.Background(), "/error", nil, nil)
 	if !reflect.DeepEqual(wantErr, err) {

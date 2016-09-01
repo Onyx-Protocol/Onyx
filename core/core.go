@@ -115,7 +115,6 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		// instead of retrieving it every time.
 		generator := &rpc.Client{
 			BaseURL: a.config.GeneratorURL,
-			// TODO(tessr): Auth.
 		}
 
 		var resp map[string]uint64

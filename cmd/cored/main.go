@@ -196,7 +196,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, p
 		remoteGenerator = &rpc.Client{
 			BaseURL:  config.GeneratorURL,
 			Username: processID,
-			Password: *rpcSecretToken,
 			BuildTag: buildTag,
 		}
 	}
@@ -356,7 +355,6 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, rpcSecretToken s
 		client := &rpc.Client{
 			BaseURL:  u.String(),
 			Username: processID,
-			Password: rpcSecretToken,
 			BuildTag: buildTag,
 		}
 		a = append(a, &remoteSigner{Client: client, Key: k})
