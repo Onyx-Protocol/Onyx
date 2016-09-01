@@ -64,12 +64,6 @@ func (p *Pool) Dump(ctx context.Context) ([]*bc.Tx, error) {
 
 // Clean removes txs from the pending tx pool.
 func (p *Pool) Clean(ctx context.Context, txs []*bc.Tx) error {
-	dbtx, err := p.db.Begin(ctx)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-	defer dbtx.Rollback(ctx)
-
 	var deleteTxHashes []string
 	for _, tx := range txs {
 		deleteTxHashes = append(deleteTxHashes, tx.Hash.String())
@@ -77,13 +71,8 @@ func (p *Pool) Clean(ctx context.Context, txs []*bc.Tx) error {
 
 	// Delete pool_txs
 	const txq = `DELETE FROM pool_txs WHERE tx_hash IN (SELECT unnest($1::text[]))`
-	_, err = dbtx.Exec(ctx, txq, pg.Strings(deleteTxHashes))
-	if err != nil {
-		return errors.Wrap(err, "delete from pool_txs")
-	}
-
-	err = dbtx.Commit(ctx)
-	return errors.Wrap(err, "pool update dbtx commit")
+	_, err := p.db.Exec(ctx, txq, pg.Strings(deleteTxHashes))
+	return errors.Wrap(err, "delete from pool_txs")
 }
 
 // CountTxs returns the total number of unconfirmed transactions. It
