@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -11,18 +12,27 @@ import (
 	"chain/net/http/reqid"
 )
 
+const (
+	HeaderBlockchainID = "X-Blockchain-ID"
+)
+
+// ErrWrongNetwork is returned when a peer's blockchain ID differs from
+// the RPC client's blockchain ID.
+var ErrWrongNetwork = errors.New("connected to a peer on a different network")
+
 // A Client is a Chain RPC client. It performs RPCs over HTTP using JSON
 // request and responses. A Client must be configured with a secret token
 // to authenticate with other Cores on the network.
 type Client struct {
-	BaseURL  string
-	Username string
-	BuildTag string
+	BaseURL      string
+	Username     string
+	BuildTag     string
+	BlockchainID string
 }
 
 func (c Client) userAgent() string {
-	return fmt.Sprintf("Chain; process=%s; buildtag=%s",
-		c.Username, c.BuildTag)
+	return fmt.Sprintf("Chain; process=%s; buildtag=%s; blockchainID=%s",
+		c.Username, c.BuildTag, c.BlockchainID)
 }
 
 // errStatusCode is an error returned when an rpc fails with a non-200
@@ -82,6 +92,9 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 		}
 	}
 
+	if c.BlockchainID != "" && c.BlockchainID != resp.Header.Get(HeaderBlockchainID) {
+		return ErrWrongNetwork
+	}
 	if response != nil {
 		if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
 			return err

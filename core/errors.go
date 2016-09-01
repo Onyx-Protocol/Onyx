@@ -12,6 +12,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/httpjson"
+	"chain/net/rpc"
 )
 
 // errorInfo contains a set of error codes to send to the user.
@@ -48,6 +49,7 @@ var (
 		errAlreadyConfigured: errorInfo{400, "CH101", "This core has already been configured"},
 		errBadGenerator:      errorInfo{400, "CH102", "Generator URL returned an invalid response"},
 		errBadBlockXPub:      errorInfo{400, "CH103", "Provided Block XPub is invalid"},
+		rpc.ErrWrongNetwork:  errorInfo{502, "CH104", "A peer core is operating on a different blockchain network"},
 		errProdReset:         errorInfo{400, "CH110", "Reset can only be called in a development system"},
 
 		// Signers error namespace (2xx)

@@ -190,9 +190,10 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, p
 	var remoteGenerator *rpc.Client
 	if !config.IsGenerator {
 		remoteGenerator = &rpc.Client{
-			BaseURL:  config.GeneratorURL,
-			Username: processID,
-			BuildTag: buildTag,
+			BaseURL:      config.GeneratorURL,
+			Username:     processID,
+			BuildTag:     buildTag,
+			BlockchainID: config.InitialBlockHash.String(),
 		}
 	}
 	txbuilder.Generator = remoteGenerator
@@ -230,7 +231,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, p
 	account.Init(c, indexer)
 
 	if config.IsGenerator {
-		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, *rpcSecretToken) {
+		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, *rpcSecretToken, config.InitialBlockHash.String()) {
 			generatorSigners = append(generatorSigners, signer)
 		}
 	}
@@ -255,7 +256,11 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, p
 		}
 	})
 
-	return core.Handler(*apiSecretToken, *rpcSecretToken, c, signBlockHandler, hsm, indexer, &config)
+	h := core.Handler(*apiSecretToken, *rpcSecretToken, c, signBlockHandler, hsm, indexer, &config)
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set(rpc.HeaderBlockchainID, config.InitialBlockHash.String())
+		h.ServeHTTP(w, req)
+	})
 }
 
 func dbContextHandler(handler http.Handler, db pg.DB) http.Handler {
@@ -312,7 +317,7 @@ type remoteSigner struct {
 	Key    ed25519.PublicKey
 }
 
-func remoteSignerInfo(ctx context.Context, processID, buildTag, rpcSecretToken string) (a []*remoteSigner) {
+func remoteSignerInfo(ctx context.Context, processID, buildTag, rpcSecretToken, blockchainID string) (a []*remoteSigner) {
 	// REMOTE_SIGNER_URLS and REMOTE_SIGNER_KEYS should be parallel,
 	// comma-separated lists. Each element of REMOTE_SIGNER_KEYS is the
 	// public key for the corresponding URL in REMOTE_SIGNER_URLS.
@@ -333,9 +338,10 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, rpcSecretToken s
 			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err), "at", "decoding signer public key")
 		}
 		client := &rpc.Client{
-			BaseURL:  u.String(),
-			Username: processID,
-			BuildTag: buildTag,
+			BaseURL:      u.String(),
+			Username:     processID,
+			BuildTag:     buildTag,
+			BlockchainID: blockchainID,
 		}
 		a = append(a, &remoteSigner{Client: client, Key: k})
 	}
