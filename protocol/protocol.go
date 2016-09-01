@@ -82,7 +82,12 @@ type Store interface {
 
 // Pool provides storage for transactions in the pending tx pool.
 type Pool interface {
+	// Insert adds a transaction to the pool.
+	// It doesn't check for validity, or whether the transaction
+	// conflicts with another.
+	// It is required to be idempotent.
 	Insert(context.Context, *bc.Tx) error
+
 	GetTxs(context.Context, ...bc.Hash) (map[bc.Hash]*bc.Tx, error)
 	Clean(ctx context.Context, txs []*bc.Tx) error
 	Dump(context.Context) ([]*bc.Tx, error)
