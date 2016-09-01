@@ -14,7 +14,6 @@ ldflags="-X main.buildTag=$tag -X main.buildCommit=$commit -X main.buildDate=$da
 
 cleanup() {
   rm -f $CHAIN/docker/de/cored
-  rm -f $CHAIN/docker/de/corectl
   rm -f $CHAIN/docker/de/schema.sql
 }
 trap "cleanup" EXIT
@@ -24,10 +23,6 @@ GOOS=linux GOARCH=amd64 go build\
   -ldflags "$ldflags"\
   -o $CHAIN/docker/de/cored\
   chain/cmd/cored
-
-GOOS=linux GOARCH=amd64 go build\
-  -o $CHAIN/docker/de/corectl\
-  chain/cmd/corectl
 
 cp $CHAIN/core/appdb/schema.sql $CHAIN/docker/de/schema.sql
 

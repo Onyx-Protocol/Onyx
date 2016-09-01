@@ -5,7 +5,6 @@ VOLUME /var/lib/postgresql/data
 VOLUME /var/log/chain
 
 COPY cored /usr/bin/chain/cored
-COPY corectl /usr/bin/chain/corectl
 COPY schema.sql /var/lib/chain/schema.sql
 COPY startup.sh /usr/bin/chain/startup.sh
 
