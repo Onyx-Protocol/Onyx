@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"chain/core/fetch"
-	"chain/core/generator"
 	"chain/core/leader"
 	"chain/core/mockhsm"
 	"chain/core/txdb"
@@ -53,14 +52,17 @@ func getBlockKeys(c *protocol.Chain, ctx context.Context) (keys []ed25519.Public
 // production system.
 var errProdReset = errors.New("reset called on production system")
 
-func (a *api) reset(ctx context.Context) error {
-	keys, quorum, err := getBlockKeys(a.c, ctx)
+func (a *api) reset(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	keys, _, err := getBlockKeys(a.c, ctx)
 	if err != nil {
-		return errors.Wrap(err)
+		writeHTTPError(ctx, w, errors.Wrap(err))
+		return
 	}
 
 	if len(keys) != 0 {
-		return errProdReset
+		writeHTTPError(ctx, w, errProdReset)
+		return
 	}
 
 	const q = `
@@ -92,23 +94,12 @@ func (a *api) reset(ctx context.Context) error {
 
 	_, err = pg.Exec(ctx, q)
 	if err != nil {
-		return errors.Wrap(err)
+		writeHTTPError(ctx, w, errors.Wrap(err))
+		return
 	}
 
-	// Reset the height on the blockchain.
-	a.c.Reset()
-
-	block, err := protocol.NewInitialBlock(keys, quorum, time.Now())
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	err = generator.SaveInitialBlock(ctx, pg.FromContext(ctx), block)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	return nil
+	closeConnOK(w)
+	execSelf()
 }
 
 func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
@@ -247,26 +238,7 @@ func configure(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Connection", "close")
-	w.WriteHeader(http.StatusOK)
-	w.Write(httpjson.DefaultResponse)
-
-	if hijacker, ok := w.(http.Hijacker); ok {
-		conn, buf, err := hijacker.Hijack()
-		if err != nil {
-			log.Printf("could not hijack connection: %s", err)
-		} else {
-			err = buf.Flush()
-			if err != nil {
-				log.Printf("could not flush connection buffer: %s", err)
-			}
-			err = conn.Close()
-			if err != nil {
-				log.Printf("could not close connection: %s", err)
-			}
-		}
-	}
-
+	closeConnOK(w)
 	execSelf()
 }
 
@@ -287,6 +259,30 @@ func tryGenerator(ctx context.Context, url string) error {
 	}
 
 	return nil
+}
+
+func closeConnOK(w http.ResponseWriter) {
+	w.Header().Add("Connection", "close")
+	w.WriteHeader(http.StatusOK)
+	w.Write(httpjson.DefaultResponse)
+
+	hijacker, ok := w.(http.Hijacker)
+	if !ok {
+		return
+	}
+	conn, buf, err := hijacker.Hijack()
+	if err != nil {
+		log.Printf("could not hijack connection: %s\n", err)
+		return
+	}
+	err = buf.Flush()
+	if err != nil {
+		log.Printf("could not flush connection buffer: %s\n", err)
+	}
+	err = conn.Close()
+	if err != nil {
+		log.Printf("could not close connection: %s\n", err)
+	}
 }
 
 func execSelf() {

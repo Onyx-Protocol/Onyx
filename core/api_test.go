@@ -20,23 +20,6 @@ import (
 	"chain/testutil"
 )
 
-func TestReset(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	c, err := assettest.InitializeSigningGenerator(ctx, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	api := &api{c: c}
-
-	err = api.reset(ctx)
-
-	if err != nil {
-		t.Errorf("unexpected error %v", err)
-	}
-}
-
 func TestAccountTransfer(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)

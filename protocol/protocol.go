@@ -135,14 +135,6 @@ func (c *Chain) Height() uint64 {
 	return c.height.n
 }
 
-// Reset resets the blockchain height back to 0. It does not
-// modify the Store.
-func (c *Chain) Reset() {
-	c.height.cond.L.Lock()
-	defer c.height.cond.L.Unlock()
-	c.height.n = 0
-}
-
 func (c *Chain) AddBlockCallback(f BlockCallback) {
 	c.blockCallbacks = append(c.blockCallbacks, f)
 }
