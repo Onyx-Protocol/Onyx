@@ -274,19 +274,15 @@ func tryGenerator(ctx context.Context, url string) error {
 	client := &rpc.Client{
 		BaseURL: url,
 	}
-	resp := map[string]interface{}{}
-	err := client.Call(ctx, "/rpc/block-height", nil, &resp)
+	var x struct {
+		BlockHeight uint64 `json:"block_height"`
+	}
+	err := client.Call(ctx, "/rpc/block-height", nil, &x)
 	if err != nil {
 		return errors.Wrap(errBadGenerator, err.Error())
 	}
 
-	heightField, ok := resp["block_height"]
-	if !ok {
-		return errBadGenerator
-	}
-
-	height, ok := heightField.(uint64)
-	if !ok || height < 1 {
+	if x.BlockHeight < 1 {
 		return errBadGenerator
 	}
 
