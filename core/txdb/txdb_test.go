@@ -91,13 +91,10 @@ func TestInsertTx(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
 	tx := bc.NewTx(bc.TxData{ReferenceData: []byte("tx")})
-	ok, err := insertTx(ctx, dbtx, tx)
+	err := insertPoolTx(ctx, dbtx, tx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
-	}
-	if !ok {
-		t.Fatal("expected insertTx to be successful")
 	}
 
 	_, err = getBlockchainTxs(ctx, dbtx, tx.Hash)

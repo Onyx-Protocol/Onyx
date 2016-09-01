@@ -38,16 +38,6 @@ func (p *Pool) Insert(ctx context.Context, tx *bc.Tx) error {
 	}
 	defer dbtx.Rollback(ctx)
 
-	inserted, err := insertTx(ctx, dbtx, tx)
-	if err != nil {
-		return errors.Wrap(err, "insert into txs")
-	}
-	if !inserted {
-		// Another SQL transaction already succeeded in applying the tx,
-		// so there's no need to do anything else.
-		return nil
-	}
-
 	err = insertPoolTx(ctx, dbtx, tx)
 	if err != nil {
 		return errors.Wrap(err, "insert into pool txs")

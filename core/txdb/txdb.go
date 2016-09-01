@@ -81,23 +81,6 @@ func dumpPoolTxs(ctx context.Context, db pg.DB) ([]*bc.Tx, error) {
 	return txs, nil
 }
 
-// insertTx inserts tx into txs. It returns true if the insert query inserted the
-// transaction. It returns false if the transaction already existed and the query
-// had no effect.
-func insertTx(ctx context.Context, dbtx *sql.Tx, tx *bc.Tx) (bool, error) {
-	const q = `INSERT INTO txs (tx_hash, data) VALUES($1, $2) ON CONFLICT DO NOTHING`
-	res, err := dbtx.Exec(ctx, q, tx.Hash, tx)
-	if err != nil {
-		return false, errors.Wrap(err, "insert query")
-	}
-
-	affected, err := res.RowsAffected()
-	if err != nil {
-		return false, errors.Wrap(err, "insert query rows affected")
-	}
-	return affected > 0, nil
-}
-
 func insertBlock(ctx context.Context, dbtx *sql.Tx, block *bc.Block) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
