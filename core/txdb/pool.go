@@ -75,7 +75,10 @@ func (p *Pool) CountTxs(ctx context.Context) (uint64, error) {
 }
 
 func insertPoolTx(ctx context.Context, db pg.DB, tx *bc.Tx) error {
-	const q = `INSERT INTO pool_txs (tx_hash, data) VALUES ($1, $2)`
+	const q = `
+		INSERT INTO pool_txs (tx_hash, data) VALUES ($1, $2)
+		ON CONFLICT (tx_hash) DO NOTHING
+	`
 	_, err := db.Exec(ctx, q, tx.Hash, tx)
 	return errors.Wrap(err)
 }
