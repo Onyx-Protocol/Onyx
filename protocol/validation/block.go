@@ -43,7 +43,11 @@ func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, blo
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	err := validateBlockHeader(prevBlock, block, runScript)
+	var prev *bc.BlockHeader
+	if prevBlock != nil {
+		prev = &prevBlock.BlockHeader
+	}
+	err := validateBlockHeader(prev, block, runScript)
 	if err != nil {
 		return err
 	}
@@ -90,23 +94,26 @@ func ApplyBlock(snapshot *state.Snapshot, block *bc.Block) error {
 // that can be checked before processing the transactions.
 // This includes the previous block hash, height, timestamp,
 // output script, and signature script.
-func ValidateBlockHeader(prevBlock, block *bc.Block) error {
-	return validateBlockHeader(prevBlock, block, true)
+//
+// If block is the genesis block, prev should be the zero value block
+// header.
+func ValidateBlockHeader(prev *bc.BlockHeader, block *bc.Block) error {
+	return validateBlockHeader(prev, block, true)
 }
 
-func validateBlockHeader(prevBlock, block *bc.Block, runScript bool) error {
-	if prevBlock == nil && block.Height != 1 {
+func validateBlockHeader(prev *bc.BlockHeader, block *bc.Block, runScript bool) error {
+	if prev == nil && block.Height != 1 {
 		return ErrBadHeight
 	}
-	if prevBlock != nil {
-		prevHash := prevBlock.Hash()
+	if prev != nil {
+		prevHash := prev.Hash()
 		if !bytes.Equal(block.PreviousBlockHash[:], prevHash[:]) {
 			return ErrBadPrevHash
 		}
-		if block.Height != prevBlock.Height+1 {
+		if block.Height != prev.Height+1 {
 			return ErrBadHeight
 		}
-		if block.TimestampMS < prevBlock.TimestampMS {
+		if block.TimestampMS < prev.TimestampMS {
 			return ErrBadTimestamp
 		}
 	}
@@ -121,13 +128,13 @@ func validateBlockHeader(prevBlock, block *bc.Block, runScript bool) error {
 		return ErrBadScript
 	}
 
-	if runScript && prevBlock != nil {
-		ok, err := vm.VerifyBlockHeader(block, prevBlock)
+	if runScript && prev != nil {
+		ok, err := vm.VerifyBlockHeader(prev, block)
 		if err == nil && !ok {
 			err = ErrFalseVMResult
 		}
 		if err != nil {
-			pkScriptStr, _ := vm.Decompile(prevBlock.ConsensusProgram)
+			pkScriptStr, _ := vm.Decompile(prev.ConsensusProgram)
 			witnessStrs := make([]string, 0, len(block.Witness))
 			for _, w := range block.Witness {
 				witnessStrs = append(witnessStrs, hex.EncodeToString(w))

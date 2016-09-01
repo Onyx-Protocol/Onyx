@@ -276,7 +276,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 		BlockHeader: bc.BlockHeader{ConsensusProgram: []byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)}},
 	}
 
-	got, gotErr := VerifyBlockHeader(block, prevBlock)
+	got, gotErr := VerifyBlockHeader(&prevBlock.BlockHeader, block)
 	if gotErr != nil {
 		t.Errorf("unexpected error: %v", gotErr)
 	}
@@ -289,7 +289,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 		BlockHeader: bc.BlockHeader{Witness: [][]byte{make([]byte, 50000)}},
 	}
 
-	_, gotErr = VerifyBlockHeader(block, prevBlock)
+	_, gotErr = VerifyBlockHeader(&prevBlock.BlockHeader, block)
 	if errors.Root(gotErr) != ErrRunLimitExceeded {
 		t.Error("expected block to exceed run limit")
 	}

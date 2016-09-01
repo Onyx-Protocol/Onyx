@@ -9,14 +9,12 @@ import (
 )
 
 func TestValidateBlockHeader(t *testing.T) {
-	prevBlock := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Height:           1,
-			TimestampMS:      5,
-			ConsensusProgram: []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
-		},
+	prevHeader := bc.BlockHeader{
+		Height:           1,
+		TimestampMS:      5,
+		ConsensusProgram: []byte{byte(vm.OP_5), byte(vm.OP_ADD), byte(vm.OP_9), byte(vm.OP_EQUAL)},
 	}
-	prevHash := prevBlock.Hash()
+	prevHash := prevHeader.Hash()
 	cases := []struct {
 		desc   string
 		header bc.BlockHeader
@@ -85,7 +83,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	}}
 	for _, c := range cases {
 		block := &bc.Block{BlockHeader: c.header}
-		got := ValidateBlockHeader(prevBlock, block)
+		got := ValidateBlockHeader(&prevHeader, block)
 		if errors.Root(got) != c.want {
 			t.Errorf("%s: got %q want %q", c.desc, got, c.want)
 		}

@@ -52,7 +52,7 @@ func TestGetAndAddBlockSignatures(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	ok, err := vm.VerifyBlockHeader(block, tip)
+	ok, err := vm.VerifyBlockHeader(&tip.BlockHeader, block)
 	if err == nil && !ok {
 		err = validation.ErrFalseVMResult
 	}

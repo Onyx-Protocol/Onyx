@@ -77,11 +77,11 @@ func VerifyTxInput(tx *bc.Tx, inputIndex uint32) (bool, error) {
 	return vm.run()
 }
 
-func VerifyBlockHeader(block, prevBlock *bc.Block) (bool, error) {
+func VerifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (bool, error) {
 	vm := virtualMachine{
 		block: block,
 
-		program:  prevBlock.ConsensusProgram,
+		program:  prev.ConsensusProgram,
 		runLimit: initialRunLimit,
 	}
 

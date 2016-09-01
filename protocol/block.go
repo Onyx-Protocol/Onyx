@@ -86,13 +86,10 @@ func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, pr
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	err := validation.ValidateBlockHeader(prev, block)
-	if err != nil {
-		return nil, errors.Wrap(err, "validating block header")
-	}
+	// TODO(jackson): This function doesn't use Chain at all; refactor.
 
 	newState := state.Copy(prevState)
-	err = validation.ValidateAndApplyBlock(ctx, newState, prev, block)
+	err := validation.ValidateAndApplyBlock(ctx, newState, prev, block)
 	if err != nil {
 		return nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
 	}
