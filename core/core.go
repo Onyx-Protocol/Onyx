@@ -161,6 +161,79 @@ func (a *api) fetchInfoFromLeader(ctx context.Context) (map[string]interface{}, 
 	return resp, err
 }
 
+// Configure configures the core by writing to the database.
+// If running in a cored process,
+// the caller must ensure that the new configuration is properly reloaded,
+// for example by restarting the process.
+//
+// If c.IsSigner is true, Configure generates a new mockhsm keypair
+// for signing blocks, and assigns it to c.BlockXPub.
+//
+// If c.IsGenerator is true, Configure creates an initial block,
+// saves it, and assigns its hash to c.InitialBlockHash.
+// Otherwise, c.IsGenerator is false, and Configure makes a test request
+// to GeneratorURL to detect simple configuration mistakes.
+func Configure(ctx context.Context, db pg.DB, c *Config) error {
+	var err error
+	if !c.IsGenerator {
+		err = tryGenerator(ctx, c.GeneratorURL)
+		if err != nil {
+			return err
+		}
+	}
+
+	var signingKeys []ed25519.PublicKey
+	if c.IsSigner {
+		var blockXPub *hd25519.XPub
+		if c.BlockXPub == "" {
+			hsm := mockhsm.New(db)
+			coreXPub, created, err := hsm.GetOrCreateKey(ctx, autoBlockKeyAlias)
+			if err != nil {
+				return err
+			}
+			blockXPub = coreXPub.XPub
+			if created {
+				log.Printf("Generated new block-signing key %s\n", blockXPub.String())
+			} else {
+				log.Printf("Using block-signing key %s\n", blockXPub.String())
+			}
+			c.BlockXPub = blockXPub.String()
+		} else {
+			blockXPub, err = hd25519.XPubFromString(c.BlockXPub)
+			if err != nil {
+				return errors.Wrap(errBadBlockXPub, err.Error())
+			}
+		}
+		signingKeys = append(signingKeys, blockXPub.Key)
+	}
+
+	if c.IsGenerator {
+		block, err := protocol.NewInitialBlock(signingKeys, 1, time.Now())
+		if err != nil {
+			return err
+		}
+		store, pool := txdb.New(db.(*sql.DB))
+		chain, err := protocol.NewChain(ctx, store, pool, nil)
+		if err != nil {
+			return err
+		}
+
+		err = chain.CommitBlock(ctx, block, state.Empty())
+		if err != nil {
+			return err
+		}
+
+		c.InitialBlockHash = block.Hash()
+	}
+
+	const q = `
+		INSERT INTO config (is_signer, block_xpub, is_generator, initial_block_hash, generator_url, configured_at)
+		VALUES ($1, $2, $3, $4, $5, NOW())
+	`
+	_, err = db.Exec(ctx, q, c.IsSigner, c.BlockXPub, c.IsGenerator, c.InitialBlockHash, c.GeneratorURL)
+	return err
+}
+
 func configure(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -171,68 +244,7 @@ func configure(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !x.IsGenerator {
-		err = tryGenerator(ctx, x.GeneratorURL)
-		if err != nil {
-			writeHTTPError(ctx, w, err)
-			return
-		}
-	}
-
-	var signingKeys []ed25519.PublicKey
-	if x.IsSigner {
-		var blockXPub *hd25519.XPub
-		if x.BlockXPub == "" {
-			hsm := mockhsm.New(pg.FromContext(ctx))
-			coreXPub, created, err := hsm.GetOrCreateKey(ctx, autoBlockKeyAlias)
-			if err != nil {
-				writeHTTPError(ctx, w, err)
-				return
-			}
-			blockXPub = coreXPub.XPub
-			if created {
-				log.Printf("Generated new block-signing key %s\n", blockXPub.String())
-			} else {
-				log.Printf("Using block-signing key %s\n", blockXPub.String())
-			}
-			x.BlockXPub = blockXPub.String()
-		} else {
-			blockXPub, err = hd25519.XPubFromString(x.BlockXPub)
-			if err != nil {
-				writeHTTPError(ctx, w, errors.Wrap(errBadBlockXPub, err.Error()))
-				return
-			}
-		}
-		signingKeys = append(signingKeys, blockXPub.Key)
-	}
-
-	if x.IsGenerator {
-		block, err := protocol.NewInitialBlock(signingKeys, 1, time.Now())
-		if err != nil {
-			writeHTTPError(ctx, w, err)
-			return
-		}
-		store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-		chain, err := protocol.NewChain(ctx, store, pool, nil)
-		if err != nil {
-			writeHTTPError(ctx, w, err)
-			return
-		}
-
-		err = chain.CommitBlock(ctx, block, state.Empty())
-		if err != nil {
-			writeHTTPError(ctx, w, err)
-			return
-		}
-
-		x.InitialBlockHash = block.Hash()
-	}
-
-	const q = `
-		INSERT INTO config (is_signer, block_xpub, is_generator, initial_block_hash, generator_url, configured_at)
-		VALUES ($1, $2, $3, $4, $5, NOW())
-	`
-	_, err = pg.Exec(ctx, q, x.IsSigner, x.BlockXPub, x.IsGenerator, x.InitialBlockHash, x.GeneratorURL)
+	err = Configure(ctx, pg.FromContext(ctx), &x)
 	if err != nil {
 		writeHTTPError(ctx, w, err)
 		return
