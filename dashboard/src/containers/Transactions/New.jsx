@@ -23,8 +23,12 @@ const config = {
     'actions[].params.control_program',
     'actions[].params.transaction_id',
     'actions[].params.position',
-    'actions[].reference_data'
-  ]
+    'actions[].reference_data',
+    'reference_data',
+  ],
+  initialValues: {
+    reference_data: '{}',
+  },
 }
 
 export default reduxForm(config, mapStateToProps, mapDispatchToProps)(Form)
