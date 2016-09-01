@@ -12,7 +12,11 @@ import (
 	"chain/protocol/state"
 )
 
+// A BlockSigner signs blocks.
 type BlockSigner interface {
+	// SignBlock returns an ed25519 signature over the block's sighash.
+	// See also the Chain Protocol spec for the complete required behavior
+	// of a block signer.
 	SignBlock(context.Context, *bc.Block) (signature []byte, err error)
 }
 
@@ -78,8 +82,13 @@ func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, period ti
 	}
 }
 
-// GetBlocks returns blocks (with heights larger than afterHeight) in
-// block-height order.
+// GetBlocks returns contiguous blocks
+// with heights larger than afterHeight,
+// in block-height order.
+// If successful, it always returns at least one block,
+// waiting if necessary until one is created.
+// It is not guaranteed to return all available blocks.
+// It is an error to request blocks very far in the future.
 func GetBlocks(ctx context.Context, c *protocol.Chain, afterHeight uint64) ([]*bc.Block, error) {
 	// TODO(kr): This is not a generator function.
 	// Move this to another package.
