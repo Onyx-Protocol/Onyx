@@ -22,6 +22,13 @@ type SpendAction struct {
 		TxHash    *bc.Hash      `json:"transaction_id"`
 		TxOut     *uint32       `json:"position"`
 		TTL       time.Duration `json:"reservation_ttl"`
+
+		// These fields are only necessary for filtering
+		// aliases on transaction build requests. A wrapper
+		// function reads them to set the ID fields. They are
+		// not used anywhere else in the code base.
+		AccountAlias string `json:"account_alias"`
+		AssetAlias   string `json:"asset_alias"`
 	}
 	ReferenceData json.Map `json:"reference_data"`
 	ClientToken   *string  `json:"client_token"`
@@ -156,6 +163,13 @@ type ControlAction struct {
 	Params struct {
 		bc.AssetAmount
 		AccountID string `json:"account_id"`
+
+		// These fields are only necessary for filtering
+		// aliases on transaction build requests. A wrapper
+		// function reads them to set the ID fields. They are
+		// not used anywhere else in the code base.
+		AccountAlias string `json:"account_alias"`
+		AssetAlias   string `json:"asset_alias"`
 	}
 	ReferenceData json.Map `json:"reference_data"`
 }

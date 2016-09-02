@@ -33,8 +33,9 @@ func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *ControlPro
 	return &ControlProgramAction{
 		Params: struct {
 			bc.AssetAmount
-			Program json.HexBytes `json:"control_program"`
-		}{assetAmt, script},
+			Program    json.HexBytes `json:"control_program"`
+			AssetAlias string        `json:"asset_alias"`
+		}{assetAmt, script, ""},
 	}
 }
 

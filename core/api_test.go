@@ -139,14 +139,14 @@ func TestTransfer(t *testing.T) {
 		]}
 	`
 	buildReqStr := fmt.Sprintf(buildReqFmt, assetIDStr, account1ID, assetIDStr, account2ID)
-	var buildReq aliasBuildRequest
+	var buildReq buildRequest
 	err = json.Unmarshal([]byte(buildReqStr), &buildReq)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
 
-	buildResult, err := build(ctx, []*aliasBuildRequest{&buildReq})
+	buildResult, err := build(ctx, []*buildRequest{&buildReq})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -192,7 +192,7 @@ func TestTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	buildResult, err = build(ctx, []*aliasBuildRequest{&buildReq})
+	buildResult, err = build(ctx, []*buildRequest{&buildReq})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

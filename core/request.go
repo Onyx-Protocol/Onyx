@@ -31,7 +31,6 @@ func (a *action) UnmarshalJSON(data []byte) error {
 	switch x.Type {
 	case "control_program":
 		a.underlying = new(txbuilder.ControlProgramAction)
-
 	case "spend_account_unspent_output_selector":
 		a.underlying = new(account.SpendAction)
 	case "control_account":
@@ -61,74 +60,61 @@ func (req *buildRequest) actions() []txbuilder.Action {
 	return actions
 }
 
-// aliasBuildRequest is like a buildRequest, but includes aliases for accounts
-// and assets. The aliases can be used to populate the account id or asset id
-// field and then this can be turned into a buildRequest. The Tx and ReferenceData
-// fields are json.RawMessages because we don't need them when doing alias lookups.
-type aliasBuildRequest struct {
-	Tx            *json.RawMessage         `json:"transaction"`
-	Actions       []map[string]interface{} `json:"actions"`
-	ReferenceData *json.RawMessage         `json:"reference_data"`
-}
-
-func filterAliases(ctx context.Context, abr *aliasBuildRequest) (*buildRequest, error) {
-	// parse aliases as needed
-	var err error
-	for i, aAction := range abr.Actions {
-		p0, ok := aAction["params"]
-		if !ok {
-			return nil, nil
-		}
-
-		p, ok := p0.(map[string]interface{})
-		if !ok {
-			return nil, nil
-		}
-
-		if _, ok := p["asset_id"]; !ok {
-			if assetAlias, ok := p["asset_alias"]; ok {
-				aa, ok := assetAlias.(string)
-				if !ok {
-					return nil, errors.WithDetailf(errBadAlias, "invalid asset alias %v on action %d", assetAlias, i)
-				}
-
-				ast, err := asset.FindByAlias(ctx, aa)
+func filterAliases(ctx context.Context, br *buildRequest) error {
+	for i, aAction := range br.Actions {
+		v := aAction.underlying
+		switch p := v.(type) {
+		case *asset.IssueAction:
+			if (p.Params.AssetID == bc.AssetID{}) && p.Params.AssetAlias != "" {
+				ast, err := asset.FindByAlias(ctx, p.Params.AssetAlias)
 				if err != nil {
-					return nil, errors.WithDetailf(err, "invalid asset alias %s on action %d", aa, i)
+					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.Params.AssetAlias, i)
 				}
-
-				p["asset_id"] = ast.AssetID
+				p.Params.AssetID = ast.AssetID
 			}
-		}
-
-		if _, ok := p["account_id"]; !ok {
-			if accountAlias, ok := p["account_alias"]; ok {
-				aa, ok := accountAlias.(string)
-				if !ok {
-					return nil, errors.WithDetailf(errBadAlias, "invalid account alias %v on action %d", accountAlias, i)
-				}
-
-				acc, err := account.FindByAlias(ctx, aa)
+			aAction.underlying = p
+		case *account.ControlAction:
+			if (p.Params.AssetID == bc.AssetID{}) && p.Params.AssetAlias != "" {
+				ast, err := asset.FindByAlias(ctx, p.Params.AssetAlias)
 				if err != nil {
-					return nil, errors.WithDetailf(err, "invalid account alias %s on action %d", aa, i)
+					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.Params.AssetAlias, i)
 				}
-
-				p["account_id"] = acc.ID
+				p.Params.AssetID = ast.AssetID
 			}
+			if p.Params.AccountID == "" && p.Params.AccountAlias != "" {
+				acc, err := account.FindByAlias(ctx, p.Params.AccountAlias)
+				if err != nil {
+					return errors.WithDetailf(err, "invalid account alias %s on action %d", p.Params.AccountAlias, i)
+				}
+				p.Params.AccountID = acc.ID
+			}
+			aAction.underlying = p
+		case *account.SpendAction:
+			if (p.Params.AssetID == bc.AssetID{}) && p.Params.AssetAlias != "" {
+				ast, err := asset.FindByAlias(ctx, p.Params.AssetAlias)
+				if err != nil {
+					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.Params.AssetAlias, i)
+				}
+				p.Params.AssetID = ast.AssetID
+			}
+			if p.Params.AccountID == "" && p.Params.AccountAlias != "" {
+				acc, err := account.FindByAlias(ctx, p.Params.AccountAlias)
+				if err != nil {
+					return errors.WithDetailf(err, "invalid account alias %s on action %d", p.Params.AccountAlias, i)
+				}
+				p.Params.AccountID = acc.ID
+			}
+			aAction.underlying = p
+		case *txbuilder.ControlProgramAction:
+			if (p.Params.AssetID == bc.AssetID{}) && p.Params.AssetAlias != "" {
+				ast, err := asset.FindByAlias(ctx, p.Params.AssetAlias)
+				if err != nil {
+					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.Params.AssetAlias, i)
+				}
+				p.Params.AssetID = ast.AssetID
+			}
+			aAction.underlying = p
 		}
 	}
-
-	// turn aliasBuildRequest into buildRequest
-	b, err := json.Marshal(abr)
-	if err != nil {
-		return nil, err
-	}
-
-	var br buildRequest
-	err = json.Unmarshal(b, &br)
-	if err != nil {
-		return nil, err
-	}
-
-	return &br, nil
+	return nil
 }

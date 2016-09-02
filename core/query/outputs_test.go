@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 	"testing"
 	"time"
@@ -250,36 +251,19 @@ func TestQueryOutputs(t *testing.T) {
 			var found bool
 			wantAssetID := w.AssetID.String()
 			for _, output := range outputs {
-				got, ok := output.(map[string]interface{})
-				if !ok {
-					t.Fatalf("case %d: output is not a JSON object", i)
-				}
-				gotAssetIDItem, ok := got["asset_id"]
-				if !ok {
-					t.Fatalf("case %d: output does not contain asset_id", i)
-				}
-				gotAssetID, ok := gotAssetIDItem.(string)
-				if !ok {
-					t.Fatalf("case %d: output asset_id is not a string", i)
-				}
-				gotAmountItem, ok := got["amount"]
-				if !ok {
-					t.Fatalf("case %d: output does not contain amount", i)
-				}
-				gotAmount, ok := gotAmountItem.(float64)
-				if !ok {
-					t.Fatalf("case %d: output amount is not a float64", i)
-				}
-				gotAccountIDItem, ok := got["account_id"]
-				if !ok {
-					t.Fatalf("case %d: output does not contain account_id", i)
-				}
-				gotAccountID, ok := gotAccountIDItem.(string)
-				if !ok {
-					t.Fatalf("case %d: output account_id is not a string", i)
+				var got struct {
+					AssetID   *string `json:"asset_id"`
+					Amount    *uint64
+					AccountID *string `json:"account_id"`
 				}
 
-				if wantAssetID == gotAssetID && w.Amount == uint64(gotAmount) && w.AccountID == gotAccountID {
+				bytes := output.(*json.RawMessage)
+				err := json.Unmarshal(*bytes, &got)
+				if err != nil {
+					t.Fatalf("case %d: output is not a JSON object", i)
+				}
+
+				if wantAssetID == *got.AssetID && w.Amount == uint64(*got.Amount) && w.AccountID == *got.AccountID {
 					found = true
 					break
 				}

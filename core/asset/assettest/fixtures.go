@@ -161,9 +161,10 @@ func NewIssueAction(assetAmount bc.AssetAmount, referenceData json.Map) *asset.I
 	return &asset.IssueAction{
 		Params: struct {
 			bc.AssetAmount
-			TTL     time.Duration
-			MinTime *time.Time `json:"min_time"`
-		}{assetAmount, 0, nil},
+			TTL        time.Duration
+			MinTime    *time.Time `json:"min_time"`
+			AssetAlias string     `json:"asset_alias"`
+		}{assetAmount, 0, nil, ""},
 		ReferenceData: referenceData,
 	}
 }
@@ -172,15 +173,19 @@ func NewAccountSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash
 	return &account.SpendAction{
 		Params: struct {
 			bc.AssetAmount
-			AccountID string        `json:"account_id"`
-			TxHash    *bc.Hash      `json:"transaction_id"`
-			TxOut     *uint32       `json:"position"`
-			TTL       time.Duration `json:"reservation_ttl"`
+			AccountID    string        `json:"account_id"`
+			TxHash       *bc.Hash      `json:"transaction_id"`
+			TxOut        *uint32       `json:"position"`
+			TTL          time.Duration `json:"reservation_ttl"`
+			AccountAlias string        `json:"account_alias"`
+			AssetAlias   string        `json:"asset_alias"`
 		}{
-			AssetAmount: amt,
-			AccountID:   accountID,
-			TxHash:      txHash,
-			TxOut:       txOut,
+			AssetAmount:  amt,
+			AssetAlias:   "",
+			TxHash:       txHash,
+			TxOut:        txOut,
+			AccountID:    accountID,
+			AccountAlias: "",
 		},
 		ReferenceData: refData,
 	}
@@ -190,8 +195,10 @@ func NewAccountControlAction(amt bc.AssetAmount, accountID string, refData json.
 	return &account.ControlAction{
 		Params: struct {
 			bc.AssetAmount
-			AccountID string `json:"account_id"`
-		}{amt, accountID},
+			AccountID    string `json:"account_id"`
+			AccountAlias string `json:"account_alias"`
+			AssetAlias   string `json:"asset_alias"`
+		}{amt, accountID, "", ""},
 		ReferenceData: refData,
 	}
 }

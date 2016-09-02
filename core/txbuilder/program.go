@@ -11,6 +11,12 @@ type ControlProgramAction struct {
 	Params struct {
 		bc.AssetAmount
 		Program json.HexBytes `json:"control_program"`
+
+		// This field is only necessary for filtering
+		// aliases on transaction build requests. A wrapper
+		// function reads it to set the ID field. It is
+		// not used anywhere else in the code base.
+		AssetAlias string `json:"asset_alias"`
 	}
 	ReferenceData json.Map `json:"reference_data"`
 }

@@ -92,14 +92,7 @@ func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals [
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "scanning transaction row")
 		}
-
-		// TODO(jackson): Use json.RawMessage?
-		var m map[string]interface{}
-		err = json.Unmarshal(data, &m)
-		if err != nil {
-			return nil, nil, err
-		}
-		txns = append(txns, m)
+		txns = append(txns, (*json.RawMessage)(&data))
 	}
 	err = rows.Err()
 	if err != nil {

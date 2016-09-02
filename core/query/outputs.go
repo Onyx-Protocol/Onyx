@@ -78,12 +78,7 @@ func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []inte
 		if err != nil {
 			return nil, nil, err
 		}
-		var output map[string]interface{}
-		err = json.Unmarshal(data, &output)
-		if err != nil {
-			return nil, nil, err
-		}
-		outputs = append(outputs, output)
+		outputs = append(outputs, (*json.RawMessage)(&data))
 
 		newCursor.lastBlockHeight = blockHeight
 		newCursor.lastTxPos = txPos

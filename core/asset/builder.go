@@ -18,6 +18,12 @@ type IssueAction struct {
 		bc.AssetAmount
 		TTL     time.Duration
 		MinTime *time.Time `json:"min_time"`
+
+		// This field is only necessary for filtering
+		// aliases on transaction build requests. A wrapper
+		// function reads it to set the ID field. It is
+		// not used anywhere else in the code base.
+		AssetAlias string `json:"asset_alias"`
 	}
 	ReferenceData json.Map `json:"reference_data"`
 }
