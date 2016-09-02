@@ -25,6 +25,7 @@
     "hjs-webpack": "~8.3.0",
     "isomorphic-fetch": "~2.2.1",
     "json-loader": "~0.5.4",
+    "moment": "^2.14.1",
     "node-sass": "~3.8.0",
     "pluralize": "~3.0.0",
     "postcss-loader": "~0.9.1",
@@ -42,6 +43,8 @@
     "sass-loader": "~4.0.0",
     "sass-resources-loader": "~1.1.0",
     "style-loader": "~0.13.1",
+    "svg-inline-loader": "^0.6.1",
+    "svg-inline-react": "^1.0.2",
     "url-loader": "~0.5.7",
     "uuid": "~2.0.2"
   },

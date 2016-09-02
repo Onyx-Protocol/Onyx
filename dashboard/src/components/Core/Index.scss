@@ -13,16 +13,18 @@
 .row_label {
   padding-right: $grid-gutter-width;
   font-weight: bold;
+  white-space: pre;
 }
 
 .block_hash {
   display: block;
-  max-width: 250px;
   word-wrap: break-word;
+  word-break: break-all;
 }
 
 .flex {
   display: flex;
+  overflow:hidden;
 }
 
 .col {
@@ -40,8 +42,13 @@
 }
 
 .left {
-  border-right: 1px solid $border-color;
   padding-left: 0;
+  width: 67%;
+}
+
+.right {
+  border-left: 1px solid $border-color;
+  width: 33%;
 }
 
 .replication_lag {

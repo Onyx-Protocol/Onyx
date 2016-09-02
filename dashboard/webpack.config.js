@@ -67,6 +67,7 @@ for (let item of loaders) {
     item.loader = item.loader.replace("sass-loader","sass-loader!sass-resources-loader")
   }
 }
+
 config.module.loaders = loaders
 config.sassResources = './src/styles/resources.scss'
 

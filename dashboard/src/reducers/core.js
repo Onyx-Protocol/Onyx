@@ -1,5 +1,8 @@
 import { combineReducers } from 'redux'
 import actions from '../actions'
+import moment from 'moment'
+
+const LONG_TIME_FORMAT = 'YYYY-MM-DD, h:mm:ss a'
 
 const coreConfigReducer = (key, state, defaultState, action) => {
   if (action.type == actions.core.updateInfo.type) {
@@ -11,12 +14,30 @@ const coreConfigReducer = (key, state, defaultState, action) => {
 
 export const configured = (state, action) =>
   coreConfigReducer('is_configured', state, false, action)
-export const configuredAt = (state, action) =>
-  coreConfigReducer('configured_at', state, "", action)
-export const buildCommit = (state, action) =>
-  coreConfigReducer('build_commit', state, "", action)
-export const buildDate = (state, action) =>
-  coreConfigReducer('build_date', state, "", action)
+export const configuredAt = (state, action) => {
+  let value =  coreConfigReducer('configured_at', state, '', action)
+  if (value != '') {
+    value = moment(value).format(LONG_TIME_FORMAT)
+  }
+  return value
+}
+export const buildCommit = (state, action) => {
+  let value = coreConfigReducer('build_commit', state, '', action)
+  if (value === '?') {
+    value = 'Local development'
+  } else if (value != '') {
+    value = value.substring(0,18)
+  }
+  return value
+}
+export const buildDate = (state, action) => {
+  let value = coreConfigReducer('build_date', state, '', action)
+  if (value !== '') {
+    value = moment(value, 'X').format(LONG_TIME_FORMAT)
+  }
+
+  return value
+}
 export const production = (state, action) =>
   coreConfigReducer('is_production', state, false, action)
 export const blockHeight = (state, action) =>
@@ -33,7 +54,7 @@ export const initialBlockHash = (state, action) =>
 
 export const replicationLag = (state = null, action) => {
   if (action.type == actions.core.updateInfo.type) {
-    return action.param.generator_block_height - action.param.block_height + "" 
+    return action.param.generator_block_height - action.param.block_height + ''
   }
 
   return state

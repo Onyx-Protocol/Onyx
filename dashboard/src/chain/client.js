@@ -37,6 +37,10 @@ class Client {
         )
       }
 
+      if (resp.status == 204) {
+        return {status: 204}
+      }
+
       return resp.json().catch(() => {
         throw errors.create(
           errors.types.JSON,

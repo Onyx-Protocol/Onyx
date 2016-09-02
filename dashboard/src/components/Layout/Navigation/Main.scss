@@ -1,11 +1,18 @@
 .brand_image {
   height: 30px;
-  margin-top: -5px;
+  margin-top: -3px;
 }
 
 .navbar_fixed {
   @media(max-width:910px){
     position: absolute !important;
+  }
+
+  @media(max-width: $container-desktop) {
+    li a {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
   }
 }
 

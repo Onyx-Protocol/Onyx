@@ -33,7 +33,7 @@
     border-color: lighten($brand-primary, 10%);
   }
 
-  img {
+  svg {
     display: block;
     margin: 0 auto;
     width: 80px;
@@ -57,6 +57,17 @@ input[type=radio]:checked ~ .choice {
 
   .choice_title {
     color: $brand-primary;
+  }
+
+  svg {
+    polygon {
+      stroke: $brand-primary;
+      fill: transparentize($brand-primary, 0.85);
+    }
+
+    rect, path {
+      fill: $brand-primary
+    }
   }
 }
 

@@ -86,7 +86,7 @@ class SearchBar extends React.Component {
 
           <div className={styles.search_button_container}>
             <button type="submit" className={`btn btn-primary ${styles.search_button}`} >
-              Search
+              Filter
             </button>
             {clearButton}
           </div>
