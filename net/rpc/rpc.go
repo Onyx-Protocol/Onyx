@@ -85,6 +85,10 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 	}
 	defer resp.Body.Close()
 
+	if id := resp.Header.Get(HeaderBlockchainID); c.BlockchainID != "" && id != "" && c.BlockchainID != id {
+		return ErrWrongNetwork
+	}
+
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return errStatusCode{
 			URL:        u.String(),
@@ -92,9 +96,6 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 		}
 	}
 
-	if c.BlockchainID != "" && c.BlockchainID != resp.Header.Get(HeaderBlockchainID) {
-		return ErrWrongNetwork
-	}
 	if response != nil {
 		if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
 			return err
