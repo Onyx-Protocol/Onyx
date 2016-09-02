@@ -7,7 +7,10 @@
 package metrics
 
 import (
+	"bufio"
 	"context"
+	"errors"
+	"net"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -55,6 +58,9 @@ type codeCountResponse struct {
 	wroteHeader bool
 }
 
+var _ http.ResponseWriter = (*codeCountResponse)(nil)
+var _ http.Hijacker = (*codeCountResponse)(nil)
+
 func (w *codeCountResponse) WriteHeader(code int) {
 	if w.wroteHeader {
 		return
@@ -67,6 +73,14 @@ func (w *codeCountResponse) WriteHeader(code int) {
 func (w *codeCountResponse) Write(p []byte) (int, error) {
 	w.WriteHeader(200)
 	return w.ResponseWriter.Write(p)
+}
+
+func (w *codeCountResponse) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("not a hijacker")
+	}
+	return h.Hijack()
 }
 
 func normalizeName(name string) string {
