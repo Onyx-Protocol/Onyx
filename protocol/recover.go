@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"context"
+	"fmt"
 
 	"chain/errors"
 	"chain/protocol/bc"
@@ -37,6 +38,10 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "applying block")
 		}
+		if b.AssetsMerkleRoot != snapshot.Tree.RootHash() {
+			return nil, nil, fmt.Errorf("block %d has state root %s; snapshot has root %s",
+				b.Height, b.AssetsMerkleRoot, snapshot.Tree.RootHash())
+		}
 
 		// Commit the block again in case we crashed halfway through
 		// and the block isn't fully committed.
@@ -56,6 +61,10 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 		tip, err = c.store.GetBlock(ctx, height)
 		if err != nil {
 			return nil, nil, err
+		}
+		if tip.AssetsMerkleRoot != snapshot.Tree.RootHash() {
+			return nil, nil, fmt.Errorf("block %d has state root %s; snapshot has root %s",
+				tip.Height, tip.AssetsMerkleRoot, snapshot.Tree.RootHash())
 		}
 	}
 	return tip, snapshot, nil
