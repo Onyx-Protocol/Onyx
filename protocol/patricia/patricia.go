@@ -164,6 +164,7 @@ func (t *Tree) insert(n *Node, key []uint8, val Valuer) (*Node, error) {
 		}
 		newNode := new(Node)
 		*newNode = *n
+		newNode.hash = nil
 		newNode.children[bit] = child // mutation is ok because newNode hasn't escaped yet
 		return newNode, nil
 	}
@@ -220,6 +221,7 @@ func (t *Tree) delete(n *Node, key []uint8) (*Node, error) {
 
 	newNode := new(Node)
 	*newNode = *n
+	newNode.hash = nil
 	newNode.children[bit] = newChild
 
 	return newNode, nil

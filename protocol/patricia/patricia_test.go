@@ -7,11 +7,51 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"testing/quick"
 
 	"golang.org/x/crypto/sha3"
 
 	"chain/protocol/bc"
 )
+
+func TestRootHashBug(t *testing.T) {
+	tr := NewTree(nil)
+
+	err := tr.Insert([]byte{0x94}, HashValuer(bc.Hash{0x01}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = tr.Insert([]byte{0x36}, HashValuer(bc.Hash{0x02}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := tr.RootHash()
+	err = tr.Insert([]byte{0xba}, HashValuer(bc.Hash{0x03}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tr.RootHash() == before {
+		t.Errorf("before and after root hash is %s", before)
+	}
+}
+
+func TestRootHashInsertQuickCheck(t *testing.T) {
+	tr := NewTree(nil)
+
+	keys := [][]byte{}
+	f := func(b [32]byte) bool {
+		before := tr.RootHash()
+		err := tr.Insert(b[:], HashValuer(b))
+		keys = append(keys, b[:])
+		if err != nil {
+			return false
+		}
+		return before != tr.RootHash()
+	}
+	if err := quick.Check(f, nil); err != nil {
+		t.Error(err)
+	}
+}
 
 func TestLookup(t *testing.T) {
 	vals := makeVals(5)
