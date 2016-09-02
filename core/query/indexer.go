@@ -283,7 +283,7 @@ func (ind *Indexer) listIndexes(ctx context.Context, cursor string, limit int) (
 	const q = `
 		SELECT id, alias, type, filter, created_at, sum_by
 		FROM query_indexes WHERE ($1='' OR $1<id)
-		ORDER BY id ASC LIMIT $2
+		ORDER BY created_at DESC LIMIT $2
 	`
 
 	rows, err := ind.db.Query(ctx, q, cursor, limit)
