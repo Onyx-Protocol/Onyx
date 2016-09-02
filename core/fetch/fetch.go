@@ -58,6 +58,8 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 			blocks, err := getBlocks(ctx, peer, height)
 			if err != nil {
 				log.Error(ctx, err)
+				nfailures++
+				time.Sleep(backoffDur(nfailures))
 				continue
 			}
 
