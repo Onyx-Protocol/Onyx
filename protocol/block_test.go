@@ -13,7 +13,6 @@ import (
 	"chain/protocol/mempool"
 	"chain/protocol/memstore"
 	"chain/protocol/state"
-	"chain/protocol/vm"
 	"chain/testutil"
 )
 
@@ -68,97 +67,51 @@ func TestNoTimeTravel(t *testing.T) {
 	}
 }
 
-func TestWaitForBlockSoon(t *testing.T) {
-	ctx := context.Background()
-	store := memstore.New()
-	block1 := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			Height:           1,
-			ConsensusProgram: []byte{byte(vm.OP_TRUE)},
-		},
-	}
-	block2 := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			PreviousBlockHash: block1.Hash(),
-			Height:            2,
-			ConsensusProgram:  []byte{byte(vm.OP_TRUE)},
-		},
-	}
-	block3 := &bc.Block{
-		BlockHeader: bc.BlockHeader{
-			PreviousBlockHash: block2.Hash(),
-			Height:            3,
-			ConsensusProgram:  []byte{byte(vm.OP_TRUE)},
-		},
-	}
-	store.SaveBlock(ctx, block1)
-	store.SaveSnapshot(ctx, 1, state.Empty())
-	c, err := NewChain(ctx, store, mempool.New(), nil)
+func TestWaitForBlockSoonAlreadyExists(t *testing.T) {
+	c, _ := newTestChain(t, time.Now())
+	makeEmptyBlock(t, c) // height=2
+	makeEmptyBlock(t, c) // height=3
+
+	err := c.WaitForBlockSoon(2)
 	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	ch := waitForBlockChan(c, 1)
-	select {
-	case err := <-ch:
-		if err != nil {
-			t.Errorf("got err %q waiting for block 0", err)
-		}
-	case <-time.After(10 * time.Millisecond):
-		t.Errorf("timed out waiting for block 0")
-	}
-
-	ch = waitForBlockChan(c, 5)
-	select {
-	case err := <-ch:
-		if err != ErrTheDistantFuture {
-			t.Errorf("got %q waiting for block 5, expected %q", err, ErrTheDistantFuture)
-		}
-	case <-time.After(10 * time.Millisecond):
-		t.Errorf("timed out waiting for block 5")
-	}
-
-	ch = waitForBlockChan(c, 2)
-
-	select {
-	case <-ch:
-		t.Errorf("WaitForBlockSoon should wait")
-	default:
-	}
-
-	err = c.CommitBlock(ctx, block2, state.Empty())
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	select {
-	case <-ch:
-		t.Errorf("WaitForBlockSoon should wait")
-	default:
-	}
-
-	err = c.CommitBlock(ctx, block3, state.Empty())
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	select {
-	case err := <-ch:
-		if err != nil {
-			t.Errorf("got err %q waiting for block 3", err)
-		}
-	case <-time.After(10 * time.Millisecond):
-		t.Errorf("timed out waiting for block 3")
+		t.Fatal(err)
 	}
 }
 
-func waitForBlockChan(c *Chain, height uint64) chan error {
-	ch := make(chan error)
+func TestWaitForBlockSoonDistantFuture(t *testing.T) {
+	c, _ := newTestChain(t, time.Now())
+
+	got := c.WaitForBlockSoon(100) // distant future
+	want := ErrTheDistantFuture
+	if got != want {
+		t.Errorf("WaitForBlockSoon(100) = %+v want %+v", got, want)
+	}
+}
+
+func TestWaitForBlockSoonWaits(t *testing.T) {
+	// This test is inherently racy. It's possible
+	// that the block creation might run before
+	// the wait's internal test loop finds no block.
+	// In that case, the test will pass, but it will
+	// not have tested anything.
+	//
+	// It's the best we can do.
+
+	c, _ := newTestChain(t, time.Now())
+	makeEmptyBlock(t, c) // height=2
+
 	go func() {
-		err := c.WaitForBlockSoon(height)
-		ch <- err
+		time.Sleep(10 * time.Millisecond) // sorry for the slow test 😔
+		makeEmptyBlock(t, c)              // height=3
 	}()
-	return ch
+
+	err := c.WaitForBlockSoon(3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g := c.Height(); g != 3 {
+		t.Errorf("height after waiting = %d want 3", g)
+	}
 }
 
 func TestGenerateBlock(t *testing.T) {
@@ -268,6 +221,30 @@ func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
 		testutil.FatalErr(tb, err)
 	}
 	return c, b1
+}
+
+func makeEmptyBlock(tb testing.TB, c *Chain) {
+	ctx := context.Background()
+
+	curBlock, err := c.GetBlock(ctx, c.Height())
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+
+	if len(curBlock.Transactions) > 0 {
+		tb.Fatal("cannot make nonempty block")
+	}
+
+	curState := state.Empty()
+
+	nextBlock, nextState, err := c.GenerateBlock(ctx, curBlock, curState, time.Now())
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
+	err = c.CommitBlock(ctx, nextBlock, nextState)
+	if err != nil {
+		testutil.FatalErr(tb, err)
+	}
 }
 
 func signBlock(t testing.TB, b *bc.Block, keys []ed25519.PrivateKey) {
