@@ -263,11 +263,11 @@ func tryGenerator(ctx context.Context, url string) error {
 
 func closeConnOK(w http.ResponseWriter) {
 	w.Header().Add("Connection", "close")
-	w.WriteHeader(http.StatusOK)
-	w.Write(httpjson.DefaultResponse)
+	w.WriteHeader(http.StatusNoContent)
 
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
+		log.Printf("no hijacker")
 		return
 	}
 	conn, buf, err := hijacker.Hijack()
