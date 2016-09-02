@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	HeaderBlockchainID = "X-Blockchain-ID"
+	HeaderBlockchainID = "Blockchain-ID"
 )
 
 // ErrWrongNetwork is returned when a peer's blockchain ID differs from
