@@ -58,7 +58,6 @@ func (inp *Input) UnmarshalJSON(b []byte) error {
 		if err != nil {
 			return err
 		}
-		var component WitnessComponent
 		switch t.Type {
 		case "data":
 			var d struct {
@@ -68,18 +67,17 @@ func (inp *Input) UnmarshalJSON(b []byte) error {
 			if err != nil {
 				return err
 			}
-			component = DataWitness(d.Data)
+			inp.WitnessComponents = append(inp.WitnessComponents, DataWitness(d.Data))
 		case "signature":
 			var s SignatureWitness
 			err = json.Unmarshal(w, &s)
 			if err != nil {
 				return err
 			}
-			component = &s
+			inp.WitnessComponents = append(inp.WitnessComponents, &s)
 		default:
 			return errors.WithDetailf(ErrBadWitnessComponent, "witness component %d has unknown type '%s'", i, t.Type)
 		}
-		inp.WitnessComponents = append(inp.WitnessComponents, component)
 	}
 	return nil
 }
