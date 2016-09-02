@@ -52,17 +52,14 @@ func getBlockKeys(c *protocol.Chain, ctx context.Context) (keys []ed25519.Public
 // production system.
 var errProdReset = errors.New("reset called on production system")
 
-func (a *api) reset(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (a *api) reset(ctx context.Context) error {
 	keys, _, err := getBlockKeys(a.c, ctx)
 	if err != nil {
-		writeHTTPError(ctx, w, errors.Wrap(err))
-		return
+		return errors.Wrap(err)
 	}
 
 	if len(keys) != 0 {
-		writeHTTPError(ctx, w, errProdReset)
-		return
+		return errProdReset
 	}
 
 	const q = `
@@ -92,12 +89,13 @@ func (a *api) reset(w http.ResponseWriter, r *http.Request) {
 
 	_, err = pg.Exec(ctx, q)
 	if err != nil {
-		writeHTTPError(ctx, w, errors.Wrap(err))
-		return
+		return errors.Wrap(err)
 	}
 
+	w := httpjson.ResponseWriter(ctx)
 	closeConnOK(w)
 	execSelf()
+	panic("unreached")
 }
 
 func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
@@ -232,24 +230,16 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	return err
 }
 
-func configure(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var x Config
-	err := httpjson.Read(ctx, r.Body, &x)
+func configure(ctx context.Context, x *Config) error {
+	err := Configure(ctx, pg.FromContext(ctx), x)
 	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
+		return err
 	}
 
-	err = Configure(ctx, pg.FromContext(ctx), &x)
-	if err != nil {
-		writeHTTPError(ctx, w, err)
-		return
-	}
-
+	w := httpjson.ResponseWriter(ctx)
 	closeConnOK(w)
 	execSelf()
+	panic("unreached")
 }
 
 func tryGenerator(ctx context.Context, url string) error {

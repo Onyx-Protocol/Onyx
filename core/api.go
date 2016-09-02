@@ -40,7 +40,7 @@ func Handler(
 		m.Handle("/configure", apiAuthn(apiSecret, alwaysError(errAlreadyConfigured)))
 	} else {
 		m.Handle("/", apiAuthn(apiSecret, alwaysError(errUnconfigured)))
-		m.Handle("/configure", apiAuthn(apiSecret, http.HandlerFunc(configure)))
+		m.Handle("/configure", apiAuthn(apiSecret, jsonHandler(configure)))
 	}
 	m.Handle("/info", jsonHandler(a.info))
 	return m
@@ -122,7 +122,7 @@ func (a *api) handler() http.Handler {
 	m.Handle("/list-balances", jsonHandler(a.listBalances))
 	m.Handle("/list-unspent-outputs", jsonHandler(a.listUnspentOutputs))
 
-	m.Handle("/reset", http.HandlerFunc(a.reset))
+	m.Handle("/reset", jsonHandler(a.reset))
 
 	// V3 DEPRECATED
 	m.Handle("/v3/transact/cancel-reservation", jsonHandler(cancelReservation))
