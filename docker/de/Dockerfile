@@ -1,6 +1,6 @@
 FROM alpine
 
-RUN apk --no-cache add postgresql
+RUN apk --no-cache add postgresql ca-certificates
 VOLUME /var/lib/postgresql/data
 VOLUME /var/log/chain
 
