@@ -2,6 +2,7 @@ package fetch
 
 import (
 	"context"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/state"
 )
 
 const getBlocksTimeout = 3 * time.Second
@@ -41,6 +43,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 		log.Fatal(ctx, log.KeyError, err)
 	}
 
+	var nfailures uint // for backoff
 	for {
 		select {
 		case <-ctx.Done():
@@ -58,24 +61,14 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 				continue
 			}
 
-			for _, block := range blocks {
-				snapshot, err := c.ValidateBlock(ctx, prevSnapshot, prevBlock, block)
-				if err != nil {
-					// TODO(jackson): What do we do here? Right now, we'll busy
-					// loop querying the generator over and over. Panic?
-					log.Error(ctx, err)
-					break
-				}
-
-				err = c.CommitBlock(ctx, block, snapshot)
-				if err != nil {
-					log.Error(ctx, err)
-					break
-				}
-
-				prevSnapshot = snapshot
-				prevBlock = block
+			prevSnapshot, prevBlock, err = applyBlocks(ctx, c, prevSnapshot, prevBlock, blocks)
+			if err != nil {
+				log.Error(ctx, err)
+				nfailures++
+				time.Sleep(backoffDur(nfailures))
+				continue
 			}
+			nfailures = 0
 
 			gh, err := getHeight(ctx, peer)
 			if err != nil {
@@ -88,6 +81,37 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 			}
 		}
 	}
+}
+
+func applyBlocks(ctx context.Context, c *protocol.Chain, snap *state.Snapshot, block *bc.Block, blocks []*bc.Block) (*state.Snapshot, *bc.Block, error) {
+	for _, b := range blocks {
+		ss, err := c.ValidateBlock(ctx, snap, block, b)
+		if err != nil {
+			// TODO(kr): this is a validation failure.
+			// It's either a serious bug or an attack.
+			// Do something better than just log the error
+			// (in the caller above). Alert a human,
+			// the security team, the legal team, the A-team,
+			// somebody.
+			return snap, block, err
+		}
+
+		err = c.CommitBlock(ctx, b, ss)
+		if err != nil {
+			return snap, block, err
+		}
+
+		snap, block = ss, b
+	}
+	return snap, block, nil
+}
+
+func backoffDur(n uint) time.Duration {
+	if n > 33 {
+		n = 33 // cap to about 10s
+	}
+	d := rand.Int63n(1 << n)
+	return time.Duration(d)
 }
 
 // getBlocks sends a get-blocks RPC request to another Core
