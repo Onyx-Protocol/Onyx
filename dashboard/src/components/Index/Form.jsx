@@ -1,71 +1,81 @@
 import React from 'react'
 import PageHeader from "../PageHeader/PageHeader"
+import { TextField, SelectField, ErrorBanner } from '../Common'
+import { reduxForm } from 'redux-form'
+
+const fields = [ 'alias', 'type', 'filter', 'sum_by[]' ]
+
+const indexTypes = {
+  transaction: "Transaction",
+  balance: "Balance",
+  asset: "Asset"
+}
 
 class Form extends React.Component {
   constructor(props) {
     super(props)
-    this.state = {
-      alias: "",
-      type: "",
-      unspents: false,
-      filter: ""
-    }
-    this.handleChange = this.handleChange.bind(this)
-    this.handleSubmit = this.handleSubmit.bind(this)
+
+    this.state = { showSumBy: false }
+
+    this.submitWithErrors = this.submitWithErrors.bind(this)
   }
 
-  handleChange() {
-    let newState = {
-      alias: this.refs.alias.value,
-      filter: this.refs.filter.value,
-      type: this.refs.type.value
-    }
-    this.setState(newState)
-  }
-
-  handleSubmit() {
-    this.props.submitForm(this.state)
+  submitWithErrors(data) {
+    return new Promise((resolve, reject) => {
+      this.props.submitForm(data)
+        .catch((err) => reject({_error: err.message}))
+    })
   }
 
   render() {
+    const {
+      fields: { alias, type, filter, sum_by },
+      error,
+      handleSubmit,
+      submitting
+    } = this.props
+
+    let typeOnChange = event => {
+      let showSumBy = type.onChange(event).value === 'balance'
+      this.setState({ showSumBy: showSumBy })
+
+      if (!showSumBy) {
+        for (let i = 0; i < sum_by.length; i++) { sum_by.removeField() }
+      } else {
+        sum_by.addField()
+      }
+    }
+    let typeProps = Object.assign({}, type, {onChange: typeOnChange})
+
     return(
       <div className='form-container'>
         <PageHeader title="New Index" />
 
-        <div className='form-group'>
-          <label>Alias</label>
-          <input
-            ref="alias"
-            className='form-control'
-            type='text'
-            placeholder='Alias'
-            autoFocus="autofocus"
-            value={this.state.alias}
-            onChange={this.handleChange} />
-        </div>
-        <div className='form-group'>
-          <label>Type</label>
-          <select className='form-control'
-            ref="type"
-            value={this.state.type}
-            onChange={this.handleChange}>
-              <option value="transaction">Transaction</option>
-              <option value="balance">Balance</option>
-              <option value="asset">Asset</option>
-          </select>
-        </div>
-        <div className='form-group'>
-          <label>Filter</label>
-          <input
-            ref="filter"
-            className='form-control'
-            type='text'
-            placeholder='Filter'
-            value={this.state.filter}
-            onChange={this.handleChange} />
-        </div>
+        <form onSubmit={handleSubmit(this.submitWithErrors)}>
+          <TextField title="Alias" fieldProps={alias} />
+          <SelectField title="Type" emptyLabel="Select index type..." options={indexTypes} fieldProps={typeProps} />
+          <TextField title="Filter" fieldProps={filter} />
 
-        <button className='btn btn-primary' onClick={this.handleSubmit}>Submit</button>
+          {this.state.showSumBy && <div className='form-group'>
+            {sum_by.map((item, index) => <TextField title="Sum By" key={`sum-by-${index}`} fieldProps={item} />)}
+
+            <button type="button" className="btn btn-link" onClick={sum_by.addField} >
+              + Add sum field
+            </button>
+
+            {sum_by.length > 0 &&
+              <button type="button" className="btn btn-link" onClick={() => sum_by.removeField()}>
+                - Remove sum field
+              </button>
+            }
+          </div>}
+
+          {error && <ErrorBanner
+            title="There was a problem creating your index:"
+            message={error}/>}
+
+          <button className='btn btn-primary'>Submit</button>
+        </form>
       </div>
     )
   }
@@ -73,4 +83,7 @@ class Form extends React.Component {
 
 }
 
-export default Form
+export default reduxForm({
+  form: 'newIndexForm',
+  fields
+})(Form)
