@@ -24,27 +24,27 @@ func TestConstructBalancesQuery(t *testing.T) {
 		{
 			predicate:  "account_id = 'abc'",
 			sumBy:      []string{"asset_id"},
-			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0), "data"->>'asset_id' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
+			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::bigint), 0), "data"->>'asset_id' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
 			wantValues: []interface{}{`{"account_id":"abc"}`, now},
 		},
 		{
 			predicate:  "account_id = $1",
 			sumBy:      []string{"asset_id"},
 			values:     []interface{}{"abc"},
-			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0), "data"->>'asset_id' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
+			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::bigint), 0), "data"->>'asset_id' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
 			wantValues: []interface{}{`{"account_id":"abc"}`, now},
 		},
 		{
 			predicate:  "asset_id = $1 AND account_id = $2",
 			values:     []interface{}{"foo", "bar"},
-			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0) FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8`,
+			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::bigint), 0) FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8`,
 			wantValues: []interface{}{`{"account_id":"bar","asset_id":"foo"}`, now},
 		},
 		{
 			predicate:  "account_id = $1",
 			sumBy:      []string{"asset_tags.currency"},
 			values:     []interface{}{"foo"},
-			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::integer), 0), "data"->'asset_tags'->>'currency' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
+			wantQuery:  `SELECT COALESCE(SUM((data->>'amount')::bigint), 0), "data"->'asset_tags'->>'currency' FROM "annotated_outputs" WHERE ((data @> $1::jsonb)) AND timespan @> $2::int8 GROUP BY 2`,
 			wantValues: []interface{}{`{"account_id":"foo"}`, now},
 		},
 	}

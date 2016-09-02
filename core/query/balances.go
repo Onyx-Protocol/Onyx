@@ -61,7 +61,7 @@ func (ind *Indexer) Balances(ctx context.Context, p filter.Predicate, vals []int
 func constructBalancesQuery(expr filter.SQLExpr, sumBy []filter.Field, timestampMS uint64) (string, []interface{}) {
 	var buf bytes.Buffer
 
-	buf.WriteString("SELECT COALESCE(SUM((data->>'amount')::integer), 0)")
+	buf.WriteString("SELECT COALESCE(SUM((data->>'amount')::bigint), 0)")
 	for _, field := range sumBy {
 		buf.WriteString(", ")
 		buf.WriteString(filter.FieldAsSQL("data", field))
