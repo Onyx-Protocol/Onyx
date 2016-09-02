@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"expvar"
 	"log"
 	"net/http"
@@ -23,7 +24,6 @@ import (
 	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/state"
-	"chain/protocol/vmutil"
 )
 
 var (
@@ -36,16 +36,8 @@ var (
 // reserved mockhsm key alias
 const autoBlockKeyAlias = "_CHAIN_CORE_AUTO_BLOCK_KEY"
 
-func getBlockKeys(c *protocol.Chain, ctx context.Context) (keys []ed25519.PublicKey, quorum int, err error) {
-	height := c.Height()
-	if height == 0 {
-		return nil, 0, nil
-	}
-	lastBlock, err := c.GetBlock(ctx, height)
-	if err != nil {
-		return nil, 0, errors.Wrap(err)
-	}
-	return vmutil.ParseBlockMultiSigScript(lastBlock.ConsensusProgram)
+func isProduction() bool {
+	return expvar.Get("buildtag").String() != `"dev"`
 }
 
 // errProdReset is returned when reset is called on a
@@ -53,12 +45,7 @@ func getBlockKeys(c *protocol.Chain, ctx context.Context) (keys []ed25519.Public
 var errProdReset = errors.New("reset called on production system")
 
 func (a *api) reset(ctx context.Context) error {
-	keys, _, err := getBlockKeys(a.c, ctx)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	if len(keys) != 0 {
+	if isProduction() {
 		return errProdReset
 	}
 
@@ -74,6 +61,7 @@ func (a *api) reset(ctx context.Context) error {
 			asset_tags,
 			assets,
 			blocks,
+			config,
 			generator_pending_block,
 			leader,
 			mockhsm,
@@ -87,7 +75,7 @@ func (a *api) reset(ctx context.Context) error {
 			RESTART IDENTITY;
 	`
 
-	_, err = pg.Exec(ctx, q)
+	_, err := pg.Exec(ctx, q)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -125,6 +113,9 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		generatorHeight, generatorFetched = fetch.GeneratorHeight()
 	}
 
+	buildCommit := json.RawMessage(expvar.Get("buildcommit").String())
+	buildDate := json.RawMessage(expvar.Get("builddate").String())
+
 	return map[string]interface{}{
 		"is_configured":                     true,
 		"configured_at":                     a.config.ConfiguredAt,
@@ -135,9 +126,9 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
-		"is_production":                     expvar.Get("buildtag").String() != "dev",
-		"build_commit":                      expvar.Get("buildcommit").String(),
-		"build_date":                        expvar.Get("builddate").String(),
+		"is_production":                     isProduction(),
+		"build_commit":                      &buildCommit,
+		"build_date":                        &buildDate,
 	}, nil
 }
 
