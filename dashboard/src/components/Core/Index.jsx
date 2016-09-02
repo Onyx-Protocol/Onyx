@@ -25,7 +25,6 @@ export default class Index extends React.Component {
       // TODO: Use Redux state reset and nav action instead of window.location.
       // Also, move confirmation message to a bonafide flash div. alert() in a
       // browser microtask is going away. cf https://www.chromestatus.com/features/5647113010544640
-      window.alert("Data on this core has been reset. The dashboard will now reload")
       window.location.href = '/'
     }).catch((err) => {
       this.setState({
