@@ -31,7 +31,7 @@ class AppContainer extends React.Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.configured != this.props.configured &&
+    if (nextProps.configured != this.props.configured ||
         nextProps.location.pathName != this.props.location.pathName) {
       this.redirectRoot(nextProps.configured, nextProps.location)
     }
