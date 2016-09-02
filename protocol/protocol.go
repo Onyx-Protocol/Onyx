@@ -32,7 +32,7 @@ To publish a new transaction, prepare your transaction (select
 outputs, and compose and sign the tx), call AddTx, and
 send the transaction to a generator node. To wait for confirmation,
 call WaitForBlock on successive block heights and inspect the
-blockchain state (using GetTxs or GetBlock) until you find that
+blockchain state until you find that
 the transaction has been either confirmed or rejected.
 
 To ingest a block, call ValidateBlock and CommitBlock.
@@ -71,7 +71,6 @@ type BlockCallback func(ctx context.Context, block *bc.Block)
 // persist validated data.
 type Store interface {
 	Height(context.Context) (uint64, error)
-	GetTxs(context.Context, ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error)
 	GetBlock(context.Context, uint64) (*bc.Block, error)
 	LatestSnapshot(context.Context) (*state.Snapshot, uint64, error)
 

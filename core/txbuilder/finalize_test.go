@@ -146,10 +146,7 @@ func dumpState(ctx context.Context, t *testing.T) {
 		SELECT tx_hash, data FROM pool_txs
 	`)
 	t.Log("blockchain")
-	dumpTab(ctx, t, `
-		SELECT blocks_txs.tx_hash, txs.data FROM blocks_txs
-		INNER JOIN txs ON blocks_txs.tx_hash = txs.tx_hash
-	`)
+	dumpBlocks(ctx, t)
 }
 
 func dumpTab(ctx context.Context, t *testing.T, q string) {
@@ -168,6 +165,26 @@ func dumpTab(ctx context.Context, t *testing.T, q string) {
 		for index, o := range tx.Outputs {
 			t.Logf("hash: %s index: %d pkscript: %x", hash, index, o.ControlProgram)
 		}
+	}
+	if rows.Err() != nil {
+		t.Fatal(rows.Err())
+	}
+}
+
+func dumpBlocks(ctx context.Context, t *testing.T) {
+	rows, err := pg.Query(ctx, `SELECT height, block_hash FROM blocks`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var height uint64
+		var hash bc.Hash
+		err = rows.Scan(&height, &hash)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("height:%d hash:%v", height, hash)
 	}
 	if rows.Err() != nil {
 		t.Fatal(rows.Err())

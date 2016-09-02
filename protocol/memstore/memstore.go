@@ -13,37 +13,21 @@ import (
 // so tests can directly inspect their values.
 type MemStore struct {
 	Blocks      []*bc.Block
-	BlockTxs    map[bc.Hash]*bc.Tx
 	State       *state.Snapshot
 	StateHeight uint64
 }
 
 // New returns a new MemStore
 func New() *MemStore {
-	return &MemStore{BlockTxs: make(map[bc.Hash]*bc.Tx)}
+	return new(MemStore)
 }
 
 func (m *MemStore) Height(context.Context) (uint64, error) {
 	return uint64(len(m.Blocks)), nil
 }
 
-func (m *MemStore) GetTxs(ctx context.Context, hashes ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error) {
-	bcTxs = make(map[bc.Hash]*bc.Tx)
-	for _, hash := range hashes {
-		if tx := m.BlockTxs[hash]; tx != nil {
-			bcTxs[hash] = m.BlockTxs[hash]
-		}
-	}
-	return bcTxs, nil
-}
-
 func (m *MemStore) SaveBlock(ctx context.Context, b *bc.Block) error {
 	m.Blocks = append(m.Blocks, b)
-
-	// Record all the new transactions.
-	for _, tx := range b.Transactions {
-		m.BlockTxs[tx.Hash] = tx
-	}
 	return nil
 }
 

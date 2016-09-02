@@ -77,7 +77,6 @@ func (a *api) reset(w http.ResponseWriter, r *http.Request) {
 			asset_tags,
 			assets,
 			blocks,
-			blocks_txs,
 			generator_pending_block,
 			leader,
 			mockhsm,
@@ -87,8 +86,7 @@ func (a *api) reset(w http.ResponseWriter, r *http.Request) {
 			reservations,
 			signed_blocks,
 			signers,
-			snapshots,
-			txs
+			snapshots
 			RESTART IDENTITY;
 	`
 

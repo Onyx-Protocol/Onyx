@@ -1,7 +1,6 @@
 package txdb
 
 import (
-	"bytes"
 	"context"
 	"sort"
 	"strconv"
@@ -19,28 +18,6 @@ import (
 // db handle.
 func New(db *sql.DB) (*Store, *Pool) {
 	return NewStore(db), NewPool(db)
-}
-
-// getBlockchainTxs looks up transactions by their hashes in the blockchain.
-func getBlockchainTxs(ctx context.Context, db pg.DB, hashes ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error) {
-	hashStrings := make([]string, 0, len(hashes))
-	for _, h := range hashes {
-		hashStrings = append(hashStrings, h.String())
-	}
-	sort.Strings(hashStrings)
-	hashStrings = strings.Uniq(hashStrings)
-	const q = `
-		SELECT t.tx_hash, t.data
-		FROM txs t
-		INNER JOIN blocks_txs b ON b.tx_hash = t.tx_hash
-		WHERE t.tx_hash = ANY($1)
-	`
-	bcTxs = make(map[bc.Hash]*bc.Tx, len(hashes))
-	err = pg.ForQueryRows(pg.NewContext(ctx, db), q, pg.Strings(hashStrings), func(hash bc.Hash, data bc.TxData) {
-		tx := &bc.Tx{TxData: data, Hash: hash}
-		bcTxs[hash] = tx
-	})
-	return bcTxs, errors.Wrap(err, "get txs query")
 }
 
 // getPoolTxs looks up transactions by their hashes in the pending tx pool.
@@ -91,59 +68,7 @@ func insertBlock(ctx context.Context, dbtx *sql.Tx, block *bc.Block) error {
 		ON CONFLICT (block_hash) DO NOTHING
 	`
 	_, err := dbtx.Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
-	if err != nil {
-		return errors.Wrap(err, "insert query")
-	}
-
-	err = insertBlockTxs(ctx, dbtx, block)
-	return errors.Wrap(err, "inserting txs")
-}
-
-func insertBlockTxs(ctx context.Context, dbtx *sql.Tx, block *bc.Block) error {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
-	var (
-		hashes   []string // all txs in block
-		blockPos []int32  // position of txs in block
-		data     [][]byte // parallel with hashes
-	)
-	for i, tx := range block.Transactions {
-		hashes = append(hashes, tx.Hash.String())
-		blockPos = append(blockPos, int32(i))
-		var buf bytes.Buffer
-		_, err := tx.WriteTo(&buf)
-		if err != nil {
-			return errors.Wrap(err, "serializing tx")
-		}
-		data = append(data, buf.Bytes())
-	}
-
-	const txQ = `
-		WITH t AS (SELECT unnest($1::text[]) tx_hash, unnest($2::bytea[]) dat)
-		INSERT INTO txs (tx_hash, data)
-		SELECT tx_hash, dat FROM t
-		ON CONFLICT DO NOTHING;
-	`
-	_, err := pg.Exec(pg.NewContext(ctx, dbtx), txQ, pg.Strings(hashes), pg.Byteas(data))
-	if err != nil {
-		return errors.Wrap(err, "insert txs")
-	}
-
-	const blockTxQ = `
-		INSERT INTO blocks_txs (tx_hash, block_pos, block_hash, block_height)
-		SELECT unnest($1::text[]), unnest($2::int[]), $3, $4
-		ON CONFLICT (block_height, block_pos) DO NOTHING;
-	`
-	_, err = dbtx.Exec(
-		ctx,
-		blockTxQ,
-		pg.Strings(hashes),
-		pg.Int32s(blockPos),
-		block.Hash(),
-		block.Height,
-	)
-	return errors.Wrap(err, "insert block txs")
+	return errors.Wrap(err, "insert query")
 }
 
 // ListBlocks returns a list of the most recent blocks,

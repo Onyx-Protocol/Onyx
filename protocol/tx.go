@@ -32,14 +32,6 @@ func (c *Chain) AddTx(ctx context.Context, tx *bc.Tx) error {
 	if _, ok := poolTxs[tx.Hash]; ok {
 		return nil
 	}
-	// Check if the transaction already exists in the blockchain.
-	bcTxs, err := c.store.GetTxs(ctx, tx.Hash)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-	if _, ok := bcTxs[tx.Hash]; ok {
-		return nil
-	}
 
 	// Check if this transaction's max time has already elapsed.
 	// We purposely do not check the min time, because we can still

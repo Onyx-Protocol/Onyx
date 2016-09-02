@@ -39,11 +39,6 @@ func (s *Store) Height(ctx context.Context) (uint64, error) {
 	return height, errors.Wrap(err, "max height sql query")
 }
 
-// GetTxs looks up transactions in the blockchain by their hashes.
-func (s *Store) GetTxs(ctx context.Context, hashes ...bc.Hash) (bcTxs map[bc.Hash]*bc.Tx, err error) {
-	return getBlockchainTxs(ctx, s.db, hashes...)
-}
-
 // GetBlock looks up the block with the provided block height.
 func (s *Store) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) {
 	const q = `SELECT data FROM blocks WHERE height = $1`

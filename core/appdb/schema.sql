@@ -476,18 +476,6 @@ CREATE TABLE blocks (
 
 
 --
--- Name: blocks_txs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE blocks_txs (
-    tx_hash text NOT NULL,
-    block_hash text NOT NULL,
-    block_height bigint NOT NULL,
-    block_pos integer NOT NULL
-);
-
-
---
 -- Name: chain_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -722,16 +710,6 @@ CREATE TABLE snapshots (
 
 
 --
--- Name: txs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE txs (
-    tx_hash text NOT NULL,
-    data bytea NOT NULL
-);
-
-
---
 -- Name: key_index; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -840,14 +818,6 @@ ALTER TABLE ONLY blocks
 
 ALTER TABLE ONLY blocks
     ADD CONSTRAINT blocks_pkey PRIMARY KEY (block_hash);
-
-
---
--- Name: blocks_txs_tx_hash_block_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY blocks_txs
-    ADD CONSTRAINT blocks_txs_tx_hash_block_hash_key UNIQUE (tx_hash, block_hash);
 
 
 --
@@ -987,14 +957,6 @@ ALTER TABLE ONLY snapshots
 
 
 --
--- Name: txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY txs
-    ADD CONSTRAINT txs_pkey PRIMARY KEY (tx_hash);
-
-
---
 -- Name: account_control_programs_control_program_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1079,13 +1041,6 @@ CREATE INDEX assets_sort_id ON assets USING btree (sort_id);
 
 
 --
--- Name: blocks_txs_block_height_block_pos_key; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX blocks_txs_block_height_block_pos_key ON blocks_txs USING btree (block_height, block_pos);
-
-
---
 -- Name: query_blocks_timestamp_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1150,3 +1105,4 @@ insert into migrations (filename, hash) values ('2016-08-31.2.core.default-confi
 insert into migrations (filename, hash) values ('2016-08-31.3.account.drop-redeem-program.sql', '8b1dfd7056ba04cbb2609a9fa0e8f8f76e6fca3d19b8c2a3cbd88f0513022462');
 insert into migrations (filename, hash) values ('2016-09-01.0.core.add-block-xpub.sql', '89051edcfbfba56cc09870ab9864b8605babded501a612e0a3882823b4ebbdba');
 insert into migrations (filename, hash) values ('2016-09-01.1.core.rename-genesis-to-initial.sql', '25699037b44a16db6e3fdbfe81f35dea5dbf4b230ff3f63904f5150f08955208');
+insert into migrations (filename, hash) values ('2016-09-01.2.core.drop-txs.sql', '14e21eba20efe97745d7e0a1a17e51582e2c05597030db1a3a01d46258ff2574');
