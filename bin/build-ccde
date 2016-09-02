@@ -7,10 +7,9 @@ set -xue
 # See https://github.com/lib/pq/issues/395.
 export CGO_ENABLED=0
 
-tag=`git describe --tags`
 commit=`git rev-parse HEAD`
 date=`date +%s`
-ldflags="-X main.buildTag=$tag -X main.buildCommit=$commit -X main.buildDate=$date"
+ldflags="-X main.buildTag=dev -X main.buildCommit=$commit -X main.buildDate=$date"
 
 cleanup() {
   rm -f $CHAIN/docker/de/cored
@@ -26,4 +25,4 @@ GOOS=linux GOARCH=amd64 go build\
 
 cp $CHAIN/core/appdb/schema.sql $CHAIN/docker/de/schema.sql
 
-docker build --tag chain-core-de:$tag $CHAIN/docker/de/
+docker build --tag chain:latest $CHAIN/docker/de/
