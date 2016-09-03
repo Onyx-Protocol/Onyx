@@ -45,3 +45,8 @@ body {
   margin-bottom: 0;
   color: $gray-light;
 }
+
+p {
+  line-height: 1.5;
+  margin-bottom: $grid-gutter-width/2;
+}

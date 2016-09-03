@@ -56,8 +56,8 @@ export default class Index extends React.Component {
 
     return (
       <form onSubmit={handleSubmit(this.submitWithValidation)}>
-        <h2 className={styles.title}>Select how you would like to set up your blockchain</h2>
-        <h3 className={styles.subtitle}>You can change your configuration at a later time</h3>
+        <h2 className={styles.title}>Select a blockchain configuration</h2>
+        <h3 className={styles.subtitle}>You can reset your Chain Core at any time to change these settings</h3>
 
         {error && <ErrorBanner
           title="There was a problem configuring your core:"
@@ -104,14 +104,16 @@ export default class Index extends React.Component {
             </label>
 
             {this.showJoinFields() && <div>
-              <TextField
-                title="Remote Generator URL"
-                placeholder="https://<remote-chain-core>"
-                fieldProps={generator_url} />
-              <TextField
-                title="Blockchain ID"
-                placeholder="896a800000000000000"
-                fieldProps={initial_block_hash} />
+              <div className={styles.join_fields}>
+                <TextField
+                  title="Block Generator URL"
+                  placeholder="https://<block-generator-host>"
+                  fieldProps={generator_url} />
+                <TextField
+                  title="Blockchain ID"
+                  placeholder="896a800000000000000"
+                  fieldProps={initial_block_hash} />
+              </div>
 
               {submitButton}
             </div>}

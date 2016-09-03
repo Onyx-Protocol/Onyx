@@ -9,7 +9,7 @@ class Config extends React.Component {
         <Navbar customStyles='navbar-static-top'>
           <div className={`navbar-header ${styles.header}`}>
             <div className={`navbar-brand ${styles.title}`}>
-              Configure Chain Core
+              Chain Core
             </div>
           </div>
         </Navbar>

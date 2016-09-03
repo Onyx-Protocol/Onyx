@@ -8,6 +8,8 @@ class AppContainer extends React.Component {
   constructor(props) {
     super(props)
 
+    this.state = { loadedInfo: false }
+
     this.redirectRoot = this.redirectRoot.bind(this)
   }
 
@@ -24,7 +26,11 @@ class AppContainer extends React.Component {
 
   componentWillMount() {
     this.props.fetchInfo().then(() => {
+      this.setState({loadedInfo: true})
       this.redirectRoot(this.props.configured, this.props.location)
+    }).catch((err) => {
+      this.setState({loadedInfo: true})
+      throw(err)
     })
 
     setInterval(this.props.fetchInfo, CORE_POLLING_TIME)
@@ -38,12 +44,14 @@ class AppContainer extends React.Component {
   }
 
   render() {
+    let loading = <div></div>
+
     let layout = <Main>{this.props.children}</Main>
     if (!this.props.configured) {
       layout = <Config>{this.props.children}</Config>
     }
 
-    return layout
+    return this.state.loadedInfo ? layout : loading
   }
 }
 
