@@ -15,6 +15,7 @@ import (
 )
 
 const getBlocksTimeout = 3 * time.Second
+const heightPollingPeriod = 3 * time.Second
 
 var (
 	generatorHeight          uint64
@@ -42,6 +43,9 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 	if err != nil {
 		log.Fatal(ctx, log.KeyError, err)
 	}
+
+	// Fetch the generator height periodically.
+	go fetchGeneratorHeight(ctx, peer)
 
 	var nfailures uint // for backoff
 	for {
@@ -71,7 +75,19 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 				continue
 			}
 			nfailures = 0
+		}
+	}
+}
 
+func fetchGeneratorHeight(ctx context.Context, peer *rpc.Client) {
+	ticker := time.NewTicker(heightPollingPeriod)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Messagef(ctx, "Deposed, fetchGeneratorHeight exiting")
+			ticker.Stop()
+			return
+		case <-ticker.C:
 			gh, err := getHeight(ctx, peer)
 			if err != nil {
 				log.Error(ctx, err)
