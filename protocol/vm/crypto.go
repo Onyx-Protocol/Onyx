@@ -121,29 +121,31 @@ func opCheckMultiSig(vm *virtualMachine) error {
 		sigs = append(sigs, sig)
 	}
 
-	var fail bool
 	pubkeys := make([]ed25519.PublicKey, 0, numPubkeys)
 	for _, p := range pubkeyByteses {
 		pubkey, err := hd25519.PubFromBytes(p)
 		if err != nil {
-			fail = true
-			break
+			return vm.pushBool(false, false)
 		}
 		pubkeys = append(pubkeys, pubkey)
 	}
 
-	var result bool
-	if !fail {
-		for len(sigs) > 0 && len(pubkeys) > 0 {
-			if ed25519.Verify(pubkeys[0], msg, sigs[0]) {
-				sigs = sigs[1:]
+	// TODO(jackson): Fix this once we're guaranteed to that signatures
+	// and public keys will be in the same order.
+	used := make([]bool, len(pubkeys))
+	for _, sig := range sigs {
+		valid := false
+		for i, pubkey := range pubkeys {
+			if !used[i] && ed25519.Verify(pubkey, msg, sig) {
+				valid, used[i] = true, true
+				break
 			}
-			pubkeys = pubkeys[1:]
 		}
-		result = len(sigs) == 0
+		if !valid {
+			return vm.pushBool(false, false)
+		}
 	}
-
-	return vm.pushBool(result, false)
+	return vm.pushBool(true, false)
 }
 
 func opTxSigHash(vm *virtualMachine) error {
