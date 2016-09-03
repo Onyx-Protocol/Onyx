@@ -177,7 +177,7 @@ func (a *api) fetchInfoFromLeader(ctx context.Context) (map[string]interface{}, 
 func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	var err error
 	if !c.IsGenerator {
-		err = tryGenerator(ctx, c.GeneratorURL)
+		err = tryGenerator(ctx, c.GeneratorURL, c.InitialBlockHash.String())
 		if err != nil {
 			return err
 		}
@@ -247,9 +247,10 @@ func configure(ctx context.Context, x *Config) error {
 	panic("unreached")
 }
 
-func tryGenerator(ctx context.Context, url string) error {
+func tryGenerator(ctx context.Context, url, blockchainID string) error {
 	client := &rpc.Client{
-		BaseURL: url,
+		BaseURL:      url,
+		BlockchainID: blockchainID,
 	}
 	var x struct {
 		BlockHeight uint64 `json:"block_height"`
