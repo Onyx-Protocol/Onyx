@@ -25,7 +25,9 @@ export default class Index extends React.Component {
       // TODO: Use Redux state reset and nav action instead of window.location.
       // Also, move confirmation message to a bonafide flash div. alert() in a
       // browser microtask is going away. cf https://www.chromestatus.com/features/5647113010544640
-      window.location.href = '/'
+      setTimeout(function(){
+        window.location.href = '/'
+      }, 500);
     }).catch((err) => {
       this.setState({
         deleteError: err,
