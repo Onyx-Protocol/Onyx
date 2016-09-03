@@ -102,7 +102,7 @@ func GetBlocks(ctx context.Context, c *protocol.Chain, afterHeight uint64) ([]*b
 		return nil, errors.Wrapf(err, "waiting for block at height %d", afterHeight+1)
 	}
 
-	const q = `SELECT data FROM blocks WHERE height > $1 ORDER BY height`
+	const q = `SELECT data FROM blocks WHERE height > $1 ORDER BY height LIMIT 10`
 	var blocks []*bc.Block
 	err = pg.ForQueryRows(ctx, q, afterHeight, func(b bc.Block) {
 		blocks = append(blocks, &b)
