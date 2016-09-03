@@ -1,7 +1,6 @@
 import chain from '../chain'
 import { context } from '../utility/environment'
 import actionCreator from './actionCreator'
-import routing from './routing'
 
 const updateInfo = actionCreator(`UPDATE_CORE_INFO`, param => { return { param }})
 

@@ -1,3 +1,6 @@
+import chain from '../chain'
+import { context } from '../utility/environment'
+
 import generateListActions from './listActions'
 import generateFormActions from './formActions'
 
@@ -13,7 +16,11 @@ const form = generateFormActions(type, {
 
 let actions = Object.assign({},
   list,
-  form
+  form,
+  {
+    createControlProgram: (data) => () =>
+      chain.ControlProgram.create(data, context)
+  }
 )
 
 export default actions

@@ -24,7 +24,8 @@ const dispatch = (dispatch) => Object.assign({},
         }))
         dispatch(actions.balance.resetPage())
         dispatch(push('/balances'))
-      }
+      },
+      createControlProgram: (data) => dispatch(actions[type].createControlProgram(data))
     }
   }
 )

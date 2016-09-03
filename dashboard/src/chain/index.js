@@ -1,21 +1,23 @@
-import Context from './context'
-import Core from './core'
-import Transaction from './transaction'
-import Unspent from './unspent'
-import Balance from './balance'
 import Account from './account'
 import Asset from './asset'
-import MockHsm from './mockHsm'
+import Balance from './balance'
+import Context from './context'
+import ControlProgram from './controlProgram'
+import Core from './core'
 import Index from './indexQuery'
+import MockHsm from './mockHsm'
+import Transaction from './transaction'
+import Unspent from './unspent'
 
 export default {
-  Context,
-  Core,
-  Transaction,
-  Unspent,
-  Balance,
   Account,
   Asset,
+  Balance,
+  Context,
+  Core,
+  ControlProgram,
   Index,
-  MockHsm
+  MockHsm,
+  Transaction,
+  Unspent
 }
