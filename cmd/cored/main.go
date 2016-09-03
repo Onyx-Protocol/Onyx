@@ -105,6 +105,8 @@ func main() {
 	db.SetMaxIdleConns(100)
 	ctx = pg.NewContext(ctx, db)
 
+	resetInDevIfRequested(db)
+
 	config, err := loadConfig(ctx, db)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)

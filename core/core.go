@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"time"
 
@@ -44,9 +45,11 @@ func isProduction() bool {
 // production system.
 var errProdReset = errors.New("reset called on production system")
 
-func (a *api) reset(ctx context.Context) error {
+// Reset deletes all data, resulting in an unconfigured core.
+// It must be called before any other functions in this package.
+func Reset(ctx context.Context, db pg.DB) error {
 	if isProduction() {
-		return errProdReset
+		return errors.Wrap(errProdReset)
 	}
 
 	const q = `
@@ -75,14 +78,18 @@ func (a *api) reset(ctx context.Context) error {
 			RESTART IDENTITY;
 	`
 
-	_, err := pg.Exec(ctx, q)
-	if err != nil {
-		return errors.Wrap(err)
+	_, err := db.Exec(ctx, q)
+	return errors.Wrap(err)
+}
+
+func (a *api) reset(ctx context.Context) error {
+	if isProduction() {
+		return errors.Wrap(errProdReset)
 	}
 
 	w := httpjson.ResponseWriter(ctx)
 	closeConnOK(w)
-	execSelf()
+	execSelf("RESET=true")
 	panic("unreached")
 }
 
@@ -276,14 +283,36 @@ func closeConnOK(w http.ResponseWriter) {
 	}
 }
 
-func execSelf() {
+// execSelf execs Args with environment values replaced
+// by the ones in env.
+func execSelf(env ...string) {
 	binpath, err := exec.LookPath(os.Args[0])
 	if err != nil {
 		panic(err)
 	}
 
-	err = syscall.Exec(binpath, os.Args, os.Environ())
+	env = mergeEnvLists(env, os.Environ())
+	err = syscall.Exec(binpath, os.Args, env)
 	if err != nil {
 		panic(err)
 	}
+}
+
+// mergeEnvLists merges the two environment lists such that
+// variables with the same name in "in" replace those in "out".
+// This always returns a newly allocated slice.
+func mergeEnvLists(in, out []string) []string {
+	out = append([]string(nil), out...)
+NextVar:
+	for _, inkv := range in {
+		k := strings.SplitAfterN(inkv, "=", 2)[0]
+		for i, outkv := range out {
+			if strings.HasPrefix(outkv, k) {
+				out[i] = inkv
+				continue NextVar
+			}
+		}
+		out = append(out, inkv)
+	}
+	return out
 }
