@@ -3,6 +3,7 @@ package asset
 import (
 	"context"
 
+	"chain/encoding/json"
 	"chain/protocol"
 	"chain/protocol/bc"
 )
@@ -37,7 +38,7 @@ func indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 		"id":               a.AssetID,
 		"alias":            a.Alias,
 		"definition":       a.Definition,
-		"issuance_program": a.IssuanceProgram,
+		"issuance_program": json.HexBytes(a.IssuanceProgram),
 		"tags":             a.Tags,
 	}
 	return indexer.SaveAnnotatedAsset(ctx, a.AssetID, m, a.sortID)

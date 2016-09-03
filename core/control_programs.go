@@ -2,10 +2,11 @@ package core
 
 import (
 	"context"
-	"encoding/json"
+	stdjson "encoding/json"
 	"sync"
 
 	"chain/core/account"
+	"chain/encoding/json"
 	"chain/errors"
 	"chain/net/http/httpjson"
 )
@@ -13,7 +14,7 @@ import (
 // POST /create-control-program
 func createControlProgram(ctx context.Context, ins []struct {
 	Type       string
-	Parameters json.RawMessage
+	Parameters stdjson.RawMessage
 }) interface{} {
 
 	responses := make([]interface{}, len(ins))
@@ -50,7 +51,7 @@ func createAccountControlProgram(ctx context.Context, input []byte) (interface{}
 	var parsed struct {
 		AccountID string `json:"account_id"`
 	}
-	err := json.Unmarshal(input, &parsed)
+	err := stdjson.Unmarshal(input, &parsed)
 	if err != nil {
 		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "no 'account_id' parameter sent")
 	}
@@ -61,7 +62,7 @@ func createAccountControlProgram(ctx context.Context, input []byte) (interface{}
 	}
 
 	ret := map[string]interface{}{
-		"control_program": controlProgram,
+		"control_program": json.HexBytes(controlProgram),
 	}
 	return ret, nil
 }

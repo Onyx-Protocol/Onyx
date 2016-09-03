@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"chain/core/asset"
+	"chain/encoding/json"
 	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/httpjson"
@@ -14,7 +15,7 @@ import (
 
 type assetResponse struct {
 	ID              bc.AssetID             `json:"id"`
-	IssuanceProgram []byte                 `json:"issuance_program"`
+	IssuanceProgram json.HexBytes          `json:"issuance_program"`
 	Definition      map[string]interface{} `json:"definition"`
 	Tags            map[string]interface{} `json:"tags"`
 }
