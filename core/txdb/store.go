@@ -40,14 +40,13 @@ func (s *Store) Height(ctx context.Context) (uint64, error) {
 }
 
 // GetBlock looks up the block with the provided block height.
+// If no block is found at that height, it returns an error that
+// wraps sql.ErrNoRows.
 func (s *Store) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) {
 	const q = `SELECT data FROM blocks WHERE height = $1`
 	var b bc.Block
 
 	err := s.db.QueryRow(ctx, q, height).Scan(&b)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
 	if err != nil {
 		return nil, errors.Wrap(err, "select query")
 	}
