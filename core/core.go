@@ -110,7 +110,7 @@ func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
 func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 	localHeight := a.c.Height()
 	var (
-		generatorHeight  interface{}
+		generatorHeight  uint64
 		generatorFetched time.Time
 	)
 	if a.config.IsGenerator {
@@ -122,6 +122,13 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 
 	buildCommit := json.RawMessage(expvar.Get("buildcommit").String())
 	buildDate := json.RawMessage(expvar.Get("builddate").String())
+
+	// Because everything is asynchronous, it's possible for the localHeight to
+	// be higher than our cached generator height. In that case, display the
+	// generatorHeight as our height.
+	if localHeight > generatorHeight {
+		generatorHeight = localHeight
+	}
 
 	return map[string]interface{}{
 		"is_configured":                     true,
