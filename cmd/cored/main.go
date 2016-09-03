@@ -68,7 +68,7 @@ var (
 	traceguideToken  = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns       = env.Int("MAXDBCONNS", 10) // set to 100 in prod
 	apiSecretToken   = env.String("API_SECRET", "")
-	rpcSecretToken   = env.String("RPC_SECRET", "secret")
+	rpcSecretToken   = env.String("RPC_SECRET", "")
 	remoteSignerURLs = env.StringSlice("REMOTE_SIGNER_URLS")
 	remoteSignerKeys = env.StringSlice("REMOTE_SIGNER_KEYS")
 
