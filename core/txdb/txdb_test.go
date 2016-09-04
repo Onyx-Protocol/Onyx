@@ -172,7 +172,7 @@ func TestInsertBlock(t *testing.T) {
 			}),
 		},
 	}
-	err := insertBlock(ctx, dbtx, blk)
+	err := (&Store{dbtx}).SaveBlock(ctx, blk)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -204,7 +204,7 @@ func TestListBlocks(t *testing.T) {
 		},
 	}
 	for _, blk := range blks {
-		err := insertBlock(ctx, dbtx, blk)
+		err := (&Store{dbtx}).SaveBlock(ctx, blk)
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)

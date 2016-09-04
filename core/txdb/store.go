@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"chain/database/pg"
-	"chain/database/sql"
 	"chain/errors"
+	"chain/net/trace/span"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -15,19 +15,17 @@ import (
 // It satisfies the interface protocol.Store, and provides additional
 // methods for querying current data.
 type Store struct {
-	db *sql.DB
+	db pg.DB
 }
 
 var _ protocol.Store = (*Store)(nil)
 
 // NewStore creates and returns a new Store object.
 //
-// A Store manages its own database transactions, so
-// it requires a handle to a SQL database.
 // For testing purposes, it is usually much faster
 // and more convenient to use package chain/protocol/memstore
 // instead.
-func NewStore(db *sql.DB) *Store {
+func NewStore(db pg.DB) *Store {
 	return &Store{db: db}
 }
 
@@ -61,20 +59,16 @@ func (s *Store) LatestSnapshot(ctx context.Context) (*state.Snapshot, uint64, er
 
 // SaveBlock persists a new block in the database.
 func (s *Store) SaveBlock(ctx context.Context, block *bc.Block) error {
-	dbtx, err := s.db.Begin(ctx)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-	ctx = pg.NewContext(ctx, dbtx)
-	defer dbtx.Rollback(ctx)
+	ctx = span.NewContext(ctx)
+	defer span.Finish(ctx)
 
-	err = insertBlock(ctx, dbtx, block)
-	if err != nil {
-		return errors.Wrap(err, "insert block")
-	}
-
-	err = dbtx.Commit(ctx)
-	return errors.Wrap(err, "committing db transaction")
+	const q = `
+		INSERT INTO blocks (block_hash, height, data, header)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (block_hash) DO NOTHING
+	`
+	_, err := s.db.Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
+	return errors.Wrap(err, "insert block")
 }
 
 // SaveSnapshot saves a state snapshot to the database.

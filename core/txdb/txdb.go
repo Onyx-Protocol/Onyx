@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"chain/database/pg"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/log"
 	"chain/net/trace/span"
@@ -16,7 +15,7 @@ import (
 
 // New creates a Store and Pool backed by the txdb with the provided
 // db handle.
-func New(db *sql.DB) (*Store, *Pool) {
+func New(db pg.DB) (*Store, *Pool) {
 	return NewStore(db), NewPool(db)
 }
 
@@ -56,19 +55,6 @@ func dumpPoolTxs(ctx context.Context, db pg.DB) ([]*bc.Tx, error) {
 	}
 	txs = topSort(ctx, txs)
 	return txs, nil
-}
-
-func insertBlock(ctx context.Context, dbtx *sql.Tx, block *bc.Block) error {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
-	const q = `
-		INSERT INTO blocks (block_hash, height, data, header)
-		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (block_hash) DO NOTHING
-	`
-	_, err := dbtx.Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
-	return errors.Wrap(err, "insert query")
 }
 
 // ListBlocks returns a list of the most recent blocks,
