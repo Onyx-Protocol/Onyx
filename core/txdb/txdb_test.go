@@ -59,9 +59,8 @@ func TestPoolTxs(t *testing.T) {
 }
 
 func TestGetTxs(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	dbctx := pg.NewContext(context.Background(), db)
-	pool := NewPool(pg.FromContext(dbctx).(*sql.DB))
+	dbtx := pgtest.NewTx(t)
+	pool := NewPool(dbtx)
 	ctx := context.Background()
 
 	tx := bc.NewTx(bc.TxData{ReferenceData: []byte("tx")})
@@ -99,9 +98,8 @@ func TestInsertPoolTx(t *testing.T) {
 }
 
 func TestGetBlock(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	dbctx := pg.NewContext(context.Background(), db)
-	pgtest.Exec(dbctx, t, `
+	dbtx := pgtest.NewTx(t)
+	pgtest.Exec(pg.NewContext(context.Background(), dbtx), t, `
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES
 		('0000000000000000000000000000000000000000000000000000000000000000', 0, '', ''),
@@ -112,7 +110,7 @@ func TestGetBlock(t *testing.T) {
 			''
 		);
 	`)
-	store := NewStore(pg.FromContext(dbctx).(*sql.DB))
+	store := NewStore(dbtx)
 	ctx := context.Background()
 	got, err := store.GetBlock(ctx, 1)
 	if err != nil {
