@@ -45,7 +45,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 	}
 
 	// Fetch the generator height periodically.
-	go fetchGeneratorHeight(ctx, peer)
+	go pollGeneratorHeight(ctx, peer)
 
 	var nfailures uint // for backoff
 	for {
@@ -79,7 +79,9 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 	}
 }
 
-func fetchGeneratorHeight(ctx context.Context, peer *rpc.Client) {
+func pollGeneratorHeight(ctx context.Context, peer *rpc.Client) {
+	updateGeneratorHeight(ctx, peer)
+
 	ticker := time.NewTicker(heightPollingPeriod)
 	for {
 		select {
@@ -88,17 +90,22 @@ func fetchGeneratorHeight(ctx context.Context, peer *rpc.Client) {
 			ticker.Stop()
 			return
 		case <-ticker.C:
-			gh, err := getHeight(ctx, peer)
-			if err != nil {
-				log.Error(ctx, err)
-			} else {
-				generatorLock.Lock()
-				generatorHeight = gh
-				generatorHeightFetchedAt = time.Now()
-				generatorLock.Unlock()
-			}
+			updateGeneratorHeight(ctx, peer)
 		}
 	}
+}
+
+func updateGeneratorHeight(ctx context.Context, peer *rpc.Client) {
+	gh, err := getHeight(ctx, peer)
+	if err != nil {
+		log.Error(ctx, err)
+		return
+	}
+
+	generatorLock.Lock()
+	defer generatorLock.Unlock()
+	generatorHeight = gh
+	generatorHeightFetchedAt = time.Now()
 }
 
 func applyBlocks(ctx context.Context, c *protocol.Chain, snap *state.Snapshot, block *bc.Block, blocks []*bc.Block) (*state.Snapshot, *bc.Block, error) {
