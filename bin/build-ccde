@@ -23,6 +23,6 @@ GOOS=linux GOARCH=amd64 go build\
   -o $CHAIN/docker/de/cored\
   chain/cmd/cored
 
-cp $CHAIN/core/appdb/schema.sql $CHAIN/docker/de/schema.sql
+cp $CHAIN/core/schema.sql $CHAIN/docker/de/schema.sql
 
 docker build --tag chain:latest $CHAIN/docker/de/

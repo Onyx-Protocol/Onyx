@@ -1,4 +1,4 @@
-package appdb_test
+package core
 
 import (
 	"context"

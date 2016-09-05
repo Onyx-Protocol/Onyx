@@ -16,7 +16,6 @@ cleanup() {
   rm -f $CHAIN/docker/testbot/cored
   rm -f $CHAIN/docker/testbot/corectl
   rm -f $CHAIN/docker/testbot/schema.sql
-  rm -f $CHAIN/docker/testbot/clear-blockchain.sql
 }
 trap "cleanup" EXIT
 
@@ -30,8 +29,7 @@ GOOS=linux GOARCH=amd64 go build\
   -o $CHAIN/docker/testbot/corectl\
   chain/cmd/corectl
 
-cp $CHAIN/core/appdb/schema.sql $CHAIN/docker/testbot/schema.sql
-cp $CHAIN/core/appdb/clear-blockchain.sql $CHAIN/docker/testbot/clear-blockchain.sql
+cp $CHAIN/core/schema.sql $CHAIN/docker/testbot/schema.sql
 
 docker build --tag testbot $CHAIN/docker/testbot/
 docker run --rm --name testbot -e PRIV1=$PRIV1 -e PRIV2=$PRIV2 -e PUB1=$PUB1 -e PUB2=$PUB2 testbot

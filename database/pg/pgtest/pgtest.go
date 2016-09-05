@@ -43,7 +43,7 @@ var (
 
 	// SchemaPath is a file containing a schema to initialize
 	// a database in NewTx.
-	SchemaPath = os.Getenv("CHAIN") + "/core/appdb/schema.sql"
+	SchemaPath = os.Getenv("CHAIN") + "/core/schema.sql"
 )
 
 const (

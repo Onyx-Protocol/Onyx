@@ -11,7 +11,7 @@ db=tmp_db_for_dump_schema
 dropdb --if-exists $db
 createdb $db
 migratedb -d postgres:///$db?sslmode=disable
-pg_dump -sOx $db | grep -v COMMENT >$CHAIN/core/appdb/schema.sql
+pg_dump -sOx $db | grep -v COMMENT >$CHAIN/core/schema.sql
 
 psql -c 'SELECT filename, hash FROM migrations ORDER BY filename'\
 	--pset tuples_only\
@@ -19,6 +19,6 @@ psql -c 'SELECT filename, hash FROM migrations ORDER BY filename'\
 	--pset fieldsep=,\
 	postgres:///$db?sslmode=disable\
 	|sed "s/\(.*\),\(.*\)/insert into migrations (filename, hash) values ('\1', '\2');/"\
-	>>$CHAIN/core/appdb/schema.sql
+	>>$CHAIN/core/schema.sql
 
 dropdb $db
