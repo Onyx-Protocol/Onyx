@@ -9,11 +9,9 @@ import (
 	"chain/core/asset"
 	"chain/core/asset/assettest"
 	. "chain/core/txbuilder"
-	"chain/core/txdb"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -30,8 +28,8 @@ import (
 // source, and then building two different txs with that same source,
 // but destinations w/ different addresses.
 func TestConflictingTxsInPool(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	info, c, err := bootdb(ctx, t)
 	if err != nil {
 		t.Fatal(err)
@@ -90,8 +88,8 @@ func TestConflictingTxsInPool(t *testing.T) {
 }
 
 func TestTransferConfirmed(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
 
 	info, c, err := bootdb(ctx, t)
 	if err != nil {
@@ -114,8 +112,8 @@ func TestTransferConfirmed(t *testing.T) {
 }
 
 func BenchmarkTransferWithBlocks(b *testing.B) {
-	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(b)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	info, c, err := bootdb(ctx, b)
 	if err != nil {
 		b.Fatal(err)
@@ -199,8 +197,8 @@ func BenchmarkGenerateBlock(b *testing.B) {
 
 func benchGenBlock(b *testing.B) {
 	b.StopTimer()
-	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
+	dbtx := pgtest.NewTx(b)
+	ctx := pg.NewContext(context.Background(), dbtx)
 	pgtest.Exec(ctx, b, `
 		INSERT INTO pool_txs (tx_hash, data, sort_id)
 		VALUES (
@@ -243,17 +241,9 @@ type clientInfo struct {
 // TODO(kr): refactor this into new package core/coreutil
 // and consume it from cmd/corectl.
 func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.Chain, error) {
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	c, err := assettest.InitializeSigningGenerator(ctx, store, pool)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer dbtx.Rollback(ctx)
+	c := prottest.NewChain(t)
+	asset.Init(c, nil)
+	account.Init(c, nil)
 
 	accPriv, accPub, err := hd25519.NewXKeys(nil)
 	if err != nil {
@@ -270,7 +260,7 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.Chain, er
 		return nil, nil, err
 	}
 
-	initialBlock, err := store.GetBlock(ctx, 1)
+	initialBlock, err := c.GetBlock(ctx, 1)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -281,11 +271,6 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.Chain, er
 	}
 
 	asset, err := asset.Define(ctx, []string{assetPub.String()}, 1, nil, initialBlock.Hash(), "", nil, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	err = dbtx.Commit(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
