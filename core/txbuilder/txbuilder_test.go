@@ -84,7 +84,6 @@ func TestBuild(t *testing.T) {
 		}},
 	}
 
-	StageWitnesses(want)
 	if !reflect.DeepEqual(got.Unsigned, want.Unsigned) {
 		t.Errorf("got tx:\n\t%#v\nwant tx:\n\t%#v", got.Unsigned, want.Unsigned)
 		t.Errorf("got tx inputs:\n\t%#v\nwant tx inputs:\n\t%#v", got.Unsigned.Inputs, want.Unsigned.Inputs)
@@ -111,20 +110,18 @@ func TestMaterializeWitnesses(t *testing.T) {
 			bc.NewTxOutput(assetID, 5, outscript, nil),
 		},
 	}
-	sigData, _ := bc.ParseHash("b64d968745f18a5da6d5dd4ec750f7e6da5204000a9ee90ba9187ec85c25032c")
 
 	tpl := &Template{
 		Unsigned: unsigned,
 		Inputs: []*Input{{
 			WitnessComponents: []WitnessComponent{
 				&SignatureWitness{
-					Quorum:        1,
-					SignatureData: sigData,
-					Signatures: []*Signature{{
+					Quorum: 1,
+					Keys: []KeyID{{
 						XPub:           "xpub661MyMwAqRbcGZNqeB27ae2nQLWoWd9Ffx8NEXrVDFgFPe6Jdzw53p5m3ewA3K2z5nPmcJK7r1nykAwkoNHWgHr5kLCWi777ShtKwLdy55a",
 						DerivationPath: []uint32{0, 0, 0, 0},
-						Bytes:          mustDecodeHex("304402202ece2c2dfd0ca44b27c5e03658c7eaac4d61d5c2668940da1bdcf53b312db0fc0220670c520b67b6fd4f4efcfbe55e82dc4a4624059b51594889d664bea445deee6b01"),
 					}},
+					Sigs: []json.HexBytes{mustDecodeHex("304402202ece2c2dfd0ca44b27c5e03658c7eaac4d61d5c2668940da1bdcf53b312db0fc0220670c520b67b6fd4f4efcfbe55e82dc4a4624059b51594889d664bea445deee6b01")},
 				},
 				DataWitness(mustDecodeHex("5221033dda0a756db51f76a4f394161614f01df4061644c514fde3994adbe4a3a2d21621038a0f0a8d593773abcd8c878f8777c57986f9f84886c8dde0cf00fdc2c89f0c592103b9e805011523bb28eedb3fcfff8924684a91116a76408fe0972805295e50e15d53ae")),
 			},
@@ -136,7 +133,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 		t.Fatal(withStack(err))
 	}
 
-	want := "a66976c1145eb8753208eb4b8e99adee5a993e647ef52be79df344d32d545e20"
+	want := "2bbbefcec1cd14ffd70692d5ab41d894b5f13432ebced43ae58a29c034bdadc3"
 	if got := tx.WitnessHash().String(); got != want {
 		t.Errorf("got tx witness hash = %v want %v", got, want)
 	}

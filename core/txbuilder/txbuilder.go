@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	ErrBadConstraint       = errors.New("invalid witness constraint")
 	ErrBadRefData          = errors.New("transaction reference data does not match previous template's reference data")
 	ErrBadTxInputIdx       = errors.New("unsigned tx missing input")
 	ErrBadWitnessComponent = errors.New("invalid witness component")
@@ -71,31 +72,23 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map) (
 		Inputs:   tplInputs,
 		Local:    true,
 	}
-	StageWitnesses(tpl)
 	return tpl, nil
 }
 
-// InputSigs takes a set of keys
-// and creates a matching set of Input Signatures
-// for a Template
-func InputSigs(keys []*hd25519.XPub, path []uint32) (sigs []*Signature) {
-	sigs = []*Signature{}
-	for _, k := range keys {
-		sigs = append(sigs, &Signature{
-			XPub:           k.String(),
-			DerivationPath: path,
-		})
+// KeyIDs produces KeyIDs from a list of xpubs and a derivation path
+// (applied to all the xpubs).
+func KeyIDs(xpubs []*hd25519.XPub, path []uint32) []KeyID {
+	result := make([]KeyID, 0, len(xpubs))
+	for _, xpub := range xpubs {
+		result = append(result, KeyID{xpub.String(), path})
 	}
-	return sigs
+	return result
 }
 
 func Sign(ctx context.Context, tpl *Template, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
-	StageWitnesses(tpl)
-	// TODO(kr): come up with some scheme to verify that the
-	// covered output scripts are what the client really wants.
 	for i, input := range tpl.Inputs {
 		for j, c := range input.WitnessComponents {
-			err := c.Sign(ctx, signFn)
+			err := c.Sign(ctx, tpl, i, signFn)
 			if err != nil {
 				return errors.WithDetailf(err, "adding signature(s) to witness component %d of input %d", j, i)
 			}

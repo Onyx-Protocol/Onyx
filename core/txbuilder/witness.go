@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 
+	"golang.org/x/crypto/sha3"
+
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/vm"
 )
 
 // WitnessComponent encodes instructions for finalizing a transaction
@@ -15,26 +18,17 @@ import (
 // corresponds to.
 type WitnessComponent interface {
 	// Stage is called on the component after all the inputs of a tx
-	// template are present (e.g., to add the tx sighash).
-	Stage(*Template, int)
+	// template are present (e.g., to add the tx sighash). It produces a
+	// p2dp predicate.
+	Stage(*Template, int) []byte
 
 	// Sign is called to add signatures. Actual signing is delegated to
 	// a callback function.
-	Sign(context.Context, func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error
+	Sign(context.Context, *Template, int, func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error
 
 	// Materialize is called to turn the component into a vector of
 	// arguments for the input witness.
-	Materialize() ([][]byte, error)
-}
-
-// StageWitnesses "stages" each witness component by e.g. populating
-// signature data with the tx sighash.
-func StageWitnesses(tpl *Template) {
-	for i, in := range tpl.Inputs {
-		for _, c := range in.WitnessComponents {
-			c.Stage(tpl, i)
-		}
-	}
+	Materialize(*Template, int) ([][]byte, error)
 }
 
 // MaterializeWitnesses takes a filled in Template and "materializes"
@@ -49,7 +43,7 @@ func MaterializeWitnesses(txTemplate *Template) (*bc.Tx, error) {
 
 		var witness [][]byte
 		for j, c := range input.WitnessComponents {
-			items, err := c.Materialize()
+			items, err := c.Materialize(txTemplate, i)
 			if err != nil {
 				return nil, errors.WithDetailf(err, "error in witness component %d of input %d", j, i)
 			}
@@ -64,12 +58,12 @@ func MaterializeWitnesses(txTemplate *Template) (*bc.Tx, error) {
 
 type DataWitness []byte
 
-func (_ DataWitness) Stage(_ *Template, _ int) {}
-func (_ DataWitness) Sign(_ context.Context, _ func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
+func (_ DataWitness) Stage(_ *Template, _ int) []byte { return nil }
+func (_ DataWitness) Sign(_ context.Context, _ *Template, _ int, _ func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
 	return nil
 }
 
-func (d DataWitness) Materialize() ([][]byte, error) {
+func (d DataWitness) Materialize(_ *Template, _ int) ([][]byte, error) {
 	return [][]byte{d}, nil
 }
 
@@ -86,50 +80,78 @@ func (d DataWitness) MarshalJSON() ([]byte, error) {
 
 type (
 	SignatureWitness struct {
-		// The number of signatures required
+		// Quorum is the number of signatures required.
 		Quorum int `json:"quorum"`
 
-		// The data to be signed
-		SignatureData bc.Hash `json:"signature_data"`
+		// Keys are the identities of the keys to sign with.
+		Keys []KeyID `json:"keys"`
 
-		// Identities of the keys to sign with (and, upon finalizing, the
-		// signature bytes themselves)
-		Signatures []*Signature `json:"signatures"`
+		// Constraints is a list of constraints to express in the deferred
+		// predicate in the txinput.
+		Constraints []Constraint `json:"constraints"`
+
+		// Sigs is the output of Sign, where program (the output of Stage)
+		// is signed by each of the keys in Keys.
+		Sigs []chainjson.HexBytes `json:"signatures"`
 	}
 
-	Signature struct {
-		XPub           string             `json:"xpub"`
-		DerivationPath []uint32           `json:"derivation_path"`
-		Bytes          chainjson.HexBytes `json:"signature"`
+	KeyID struct {
+		XPub           string   `json:"xpub"`
+		DerivationPath []uint32 `json:"derivation_path"`
 	}
 )
 
-func (sw *SignatureWitness) Stage(tpl *Template, index int) {
-	sw.SignatureData = tpl.Hash(index, bc.SigHashAll)
+func (sw *SignatureWitness) Stage(tpl *Template, index int) []byte {
+	if len(sw.Constraints) == 0 {
+		// When in doubt, commit to the hash of the current tx
+		// TODO(bobg): When we add other Constraint types, require callers
+		// to specify this explicitly rather than as a default.
+		h := tpl.Hash(index, bc.SigHashAll)
+		sw.Constraints = []Constraint{TxHashConstraint(h)}
+	}
+	var program []byte
+	for i, c := range sw.Constraints {
+		program = append(program, c.Code()...)
+		if i < len(sw.Constraints)-1 { // leave the final bool on top of the stack
+			program = append(program, byte(vm.OP_VERIFY))
+		}
+	}
+	return program
 }
 
-func (sw *SignatureWitness) Sign(ctx context.Context, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
-	for i, sig := range sw.Signatures {
-		if len(sig.Bytes) > 0 {
+func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
+	if len(sw.Sigs) < len(sw.Keys) {
+		// Each key in sw.Keys will produce a signature in sw.Sigs. Make
+		// sure there are enough slots in sw.Sigs and that we preserve any
+		// sigs already present.
+		newSigs := make([]chainjson.HexBytes, len(sw.Keys))
+		copy(newSigs, sw.Sigs)
+		sw.Sigs = newSigs
+	}
+	program := sw.Stage(tpl, index)
+	h := sha3.Sum256(program)
+	for i, keyID := range sw.Keys {
+		if len(sw.Sigs[i]) > 0 {
+			// Already have a signature for this key
 			continue
 		}
-		sigBytes, err := signFn(ctx, sig.XPub, sig.DerivationPath, sw.SignatureData)
+		sigBytes, err := signFn(ctx, keyID.XPub, keyID.DerivationPath, h)
 		if err != nil {
 			return errors.WithDetailf(err, "computing signature %d", i)
 		}
-		sig.Bytes = sigBytes
+		sw.Sigs[i] = sigBytes
 	}
 	return nil
 }
 
-func (sw SignatureWitness) Materialize() ([][]byte, error) {
+func (sw SignatureWitness) Materialize(tpl *Template, index int) ([][]byte, error) {
 	added := 0
-	var result [][]byte
-	for _, s := range sw.Signatures {
-		if len(s.Bytes) == 0 {
+	result := make([][]byte, 0, 1+len(sw.Keys))
+	for _, s := range sw.Sigs {
+		if len(s) == 0 {
 			continue
 		}
-		result = append(result, s.Bytes)
+		result = append(result, s)
 		added++
 		if added >= sw.Quorum {
 			break
@@ -138,35 +160,78 @@ func (sw SignatureWitness) Materialize() ([][]byte, error) {
 	if added < sw.Quorum {
 		return nil, errors.WithDetailf(ErrMissingSig, "requires %d signature(s), got %d", sw.Quorum, added)
 	}
+	program := sw.Stage(tpl, index)
+	result = append(result, program)
 	return result, nil
 }
 
 func (sw SignatureWitness) MarshalJSON() ([]byte, error) {
 	obj := struct {
-		Type          string       `json:"type"`
-		Quorum        int          `json:"quorum"`
-		SignatureData bc.Hash      `json:"signature_data"`
-		Signatures    []*Signature `json:"signatures"`
+		Type        string               `json:"type"`
+		Quorum      int                  `json:"quorum"`
+		Keys        []KeyID              `json:"keys"`
+		Constraints []Constraint         `json:"constraints"`
+		Sigs        []chainjson.HexBytes `json:"signatures"`
 	}{
-		Type:          "signature",
-		Quorum:        sw.Quorum,
-		SignatureData: sw.SignatureData,
-		Signatures:    sw.Signatures,
+		Type:        "signature",
+		Quorum:      sw.Quorum,
+		Keys:        sw.Keys,
+		Constraints: sw.Constraints,
+		Sigs:        sw.Sigs,
 	}
 	return json.Marshal(obj)
+}
+
+func (sw *SignatureWitness) UnmarshalJSON(b []byte) error {
+	var pre struct {
+		Quorum      int     `json:"quorum"`
+		Keys        []KeyID `json:"keys"`
+		Constraints []json.RawMessage
+		Sigs        []chainjson.HexBytes `json:"signatures"`
+	}
+	err := json.Unmarshal(b, &pre)
+	if err != nil {
+		return err
+	}
+	sw.Quorum = pre.Quorum
+	sw.Keys = pre.Keys
+	sw.Sigs = pre.Sigs
+	for i, c := range pre.Constraints {
+		var t struct {
+			Type string `json:"type"`
+		}
+		err = json.Unmarshal(c, &t)
+		if err != nil {
+			return err
+		}
+		var constraint Constraint
+		switch t.Type {
+		case "transaction_id":
+			var txhash struct {
+				Hash bc.Hash `json:"transaction_id"`
+			}
+			err = json.Unmarshal(c, &txhash)
+			if err != nil {
+				return err
+			}
+			constraint = TxHashConstraint(txhash.Hash)
+		default:
+			return errors.WithDetailf(ErrBadConstraint, "constraint %d has unknown type '%s'", i, t.Type)
+		}
+		sw.Constraints = append(sw.Constraints, constraint)
+	}
+	return nil
 }
 
 func (inp *Input) AddWitnessData(data []byte) {
 	inp.WitnessComponents = append(inp.WitnessComponents, DataWitness(data))
 }
 
-func (inp *Input) AddWitnessSigs(sigs []*Signature, quorum int, sigData *bc.Hash) {
+func (inp *Input) AddWitnessKeys(keys []KeyID, quorum int, constraints []Constraint) {
 	sw := &SignatureWitness{
-		Quorum:     quorum,
-		Signatures: sigs,
-	}
-	if sigData != nil {
-		sw.SignatureData = *sigData
+		Quorum:      quorum,
+		Keys:        keys,
+		Constraints: constraints,
 	}
 	inp.WitnessComponents = append(inp.WitnessComponents, sw)
 }

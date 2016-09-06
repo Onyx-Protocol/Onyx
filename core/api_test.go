@@ -237,6 +237,7 @@ func inspectTemplate(t *testing.T, inp map[string]interface{}, expectedReceiverA
 	if len(parsedInputs) != 1 {
 		t.Errorf("expected template.inputs in result to have length 1, got %d", len(parsedInputs))
 	}
+
 	return inp
 }
 

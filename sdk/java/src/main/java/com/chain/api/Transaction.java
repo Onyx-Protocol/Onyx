@@ -304,7 +304,7 @@ public class Transaction {
         public static class WitnessComponent {
             /**
              * The type of witness component.<br>
-             * Possible types are "script", "data", and "signature".
+             * Possible types are "data" and "signature".
              */
             public String type;
 
@@ -319,21 +319,25 @@ public class Transaction {
             public int quorum;
 
             /**
-             * The data which needs to be signed (null unless type is "signature").
+             * The list of keys to sign with (null unless type is "signature").
              */
-            @SerializedName("signature_data")
-            public String signatureData;
+            public KeyID[] keys;
 
             /**
-             * The list of signatures (null unless type is "signature").
+             * The list of constraints from which to build the p2dp signature predicate (null unless type is "signature").
              */
-            public Signature[] signatures;
+            public Constraint[] constraints;
+
+            /**
+             * The list of signatures made with the specified keys (null unless type is "signature").
+             */
+            public String[] signatures;
         }
 
         /**
-         * A class representing a signature on an input.
+         * A class representing a derived signing key.
          */
-        public static class Signature {
+        public static class KeyID {
             /**
              * The extended public key associated with the private key used to sign.
              */
@@ -344,11 +348,23 @@ public class Transaction {
              */
             @SerializedName("derivation_path")
             public ArrayList<Integer> derivationPath;
+        }
+
+        /**
+         * A constraint in a "signature"-typed WitnessComponent.
+         */
+        public static class Constraint {
+            /**
+             * The type of the constraint.<br>
+             * For now the only possible type is "transaction_id".
+             */
+            public String type;
 
             /**
-             * The hex-encoded signature.
+             * Transaction id (null unless type is "transaction_id").
              */
-            public String signature;
+            @SerializedName("transaction_id")
+            public String transactionID;
         }
     }
 

@@ -267,11 +267,7 @@ func CreateControlProgram(ctx context.Context, accountID string) ([]byte, error)
 	path := signers.Path(account.Signer, signers.AccountKeySpace, idx)
 	derivedXPubs := hd25519.DeriveXPubs(account.XPubs, path)
 	derivedPKs := hd25519.XPubKeys(derivedXPubs)
-	control, _, err := vmutil.TxScripts(derivedPKs, account.Quorum)
-	if err != nil {
-		return nil, err
-	}
-
+	control := vmutil.P2DPMultiSigProgram(derivedPKs, account.Quorum)
 	err = insertAccountControlProgram(ctx, account.ID, idx, control)
 	if err != nil {
 		return nil, err

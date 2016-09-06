@@ -13,9 +13,9 @@ func SignTxTemplate(t testing.TB, template *txbuilder.Template, priv *hd25519.XP
 	if priv == nil {
 		priv = testutil.TestXPrv
 	}
-	for _, input := range template.Inputs {
+	for i, input := range template.Inputs {
 		for _, c := range input.WitnessComponents {
-			err := c.Sign(nil, func(_ context.Context, _ string, path []uint32, data [32]byte) ([]byte, error) {
+			err := c.Sign(nil, template, i, func(_ context.Context, _ string, path []uint32, data [32]byte) ([]byte, error) {
 				derived := priv.Derive(path)
 				return derived.Sign(data[:]), nil
 			})

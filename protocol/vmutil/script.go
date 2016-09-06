@@ -138,17 +138,6 @@ func isPushOnly(instructions []vm.Instruction) bool {
 	return true
 }
 
-// SigsRequired returns the number of signatures required by
-// script. Result is 1 unless script parses as a multisig script, in
-// which case it's the number of sigs required by that.
-func SigsRequired(script []byte) int {
-	_, nsigs, err := ParseTxMultiSigScript(script)
-	if err == nil {
-		return nsigs
-	}
-	return 1
-}
-
 // PayToContractHash builds a contracthash-style p2c pkscript.
 func PayToContractHash(contractHash bc.ContractHash, params [][]byte) []byte {
 	builder := NewBuilder()
@@ -189,4 +178,62 @@ func TxScripts(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, []byte, erro
 		return nil, nil, err
 	}
 	return RedeemToPkScript(redeem), redeem, nil
+}
+
+func P2DPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) []byte {
+	builder := NewBuilder()
+	// Expected stack: [... SIG SIG SIG PREDICATE]
+	// Number of sigs must match nrequired.
+	builder.AddOp(vm.OP_DUP).AddOp(vm.OP_TOALTSTACK) // stash a copy of the predicate
+	builder.AddOp(vm.OP_SHA3)                        // stack is now [... SIG SIG SIG PREDICATEHASH]
+	builder.AddInt64(int64(nrequired))               // stack is now [... SIG SIG SIG PREDICATEHASH M]
+	for _, p := range pubkeys {
+		builder.AddData(hd25519.PubBytes(p))
+	}
+	builder.AddInt64(int64(len(pubkeys)))                 // stack is now [... sig sig sig PREDICATEHASH M pub pub pub N]
+	builder.AddOp(vm.OP_DUP).AddInt64(2).AddOp(vm.OP_ADD) // stack is now [... sig sig sig PREDICATEHASH M pub pub pub N N+2]
+	builder.AddOp(vm.OP_ROLL)                             // stack is now [... sig sig sig M pub pub pub N PREDICATEHASH]
+	builder.AddOp(vm.OP_CHECKMULTISIG).AddOp(vm.OP_VERIFY)
+	builder.AddOp(vm.OP_FROMALTSTACK) // get the stashed predicate back
+	builder.AddInt64(0).AddOp(vm.OP_CHECKPREDICATE)
+	return builder.Program
+}
+
+func ParseP2DPMultiSigProgram(program []byte) ([]ed25519.PublicKey, int, error) {
+	pops, err := vm.ParseProgram(program)
+	if err != nil {
+		return nil, 0, err
+	}
+	if len(pops) < 15 {
+		return nil, 0, vm.ErrShortProgram
+	}
+
+	npubkeys, err := vm.AsInt64(pops[len(pops)-10].Data)
+	if err != nil {
+		return nil, 0, err
+	}
+	if npubkeys <= 0 || int(npubkeys) > len(pops)-14 {
+		return nil, 0, ErrBadValue
+	}
+
+	// Count all instructions backwards from the end in case there are
+	// extra instructions at the beginning of the program (like a
+	// <pushdata> DROP).
+
+	firstPubkeyIndex := len(pops) - 10 - int(npubkeys)
+
+	nrequired, err := vm.AsInt64(pops[firstPubkeyIndex-1].Data)
+	if nrequired <= 0 {
+		return nil, 0, ErrBadValue
+	}
+
+	pubkeys := make([]ed25519.PublicKey, 0, npubkeys)
+	for i := firstPubkeyIndex; i < firstPubkeyIndex+int(npubkeys); i++ {
+		pubkey, err := hd25519.PubFromBytes(pops[i].Data)
+		if err != nil {
+			return nil, 0, err
+		}
+		pubkeys = append(pubkeys, pubkey)
+	}
+	return pubkeys, int(nrequired), nil
 }

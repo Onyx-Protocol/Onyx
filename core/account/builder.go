@@ -8,11 +8,9 @@ import (
 	"chain/core/account/utxodb"
 	"chain/core/signers"
 	"chain/core/txbuilder"
-	"chain/crypto/ed25519/hd25519"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
-	"chain/protocol/vmutil"
 )
 
 type SpendAction struct {
@@ -56,7 +54,7 @@ func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 	utxodbSources := []utxodb.Source{utxodbSource}
 	reserved, change, err := utxodb.Reserve(ctx, utxodbSources, ttl)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, errors.Wrap(err, "reserving utxos")
 	}
 
 	var (
@@ -65,9 +63,9 @@ func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 		changeOuts []*bc.TxOutput
 	)
 	for _, r := range reserved {
-		txInput, templateInput, err := utxoToInputs(ctx, acct, r, a.ReferenceData)
+		txInput, templateInput, err := utxoToInputs(ctx, acct, r, a.ReferenceData, a.Params.TTL)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, errors.Wrap(err, "creating inputs")
 		}
 
 		txins = append(txins, txInput)
@@ -83,7 +81,7 @@ func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 		for _, changeAmount := range changeAmounts {
 			acp, err := CreateControlProgram(ctx, a.Params.AccountID)
 			if err != nil {
-				return nil, nil, nil, err
+				return nil, nil, nil, errors.Wrap(err, "creating control program")
 			}
 			changeOuts = append(changeOuts, bc.NewTxOutput(a.Params.AssetID, changeAmount, acp, nil))
 		}
@@ -130,7 +128,7 @@ func (a *SpendUTXOAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOut
 		return nil, nil, nil, err
 	}
 
-	txInput, tplInput, err := utxoToInputs(ctx, acct, r, a.ReferenceData)
+	txInput, tplInput, err := utxoToInputs(ctx, acct, r, a.ReferenceData, a.Params.TTL)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -138,23 +136,17 @@ func (a *SpendUTXOAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOut
 	return []*bc.TxInput{txInput}, nil, []*txbuilder.Input{tplInput}, nil
 }
 
-func utxoToInputs(ctx context.Context, account *Account, u *utxodb.UTXO, refData []byte) (*bc.TxInput, *txbuilder.Input, error) {
+func utxoToInputs(ctx context.Context, account *Account, u *utxodb.UTXO, refData []byte, ttl time.Duration) (*bc.TxInput, *txbuilder.Input, error) {
 	txInput := bc.NewSpendInput(u.Hash, u.Index, nil, u.AssetID, u.Amount, u.Script, refData)
 
-	templateInput := &txbuilder.Input{}
+	templateInput := &txbuilder.Input{
+		AssetAmount: u.AssetAmount,
+	}
 
 	path := signers.Path(account.Signer, signers.AccountKeySpace, u.ControlProgramIndex[:])
-	derivedXPubs := hd25519.DeriveXPubs(account.XPubs, path)
-	derivedPKs := hd25519.XPubKeys(derivedXPubs)
+	keyIDs := txbuilder.KeyIDs(account.XPubs, path)
 
-	redeemScript, err := vmutil.TxMultiSigScript(derivedPKs, account.Quorum)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "compute redeem script")
-	}
-	templateInput.AssetID = u.AssetID
-	templateInput.Amount = u.Amount
-	templateInput.AddWitnessSigs(txbuilder.InputSigs(account.XPubs, path), account.Quorum, nil)
-	templateInput.AddWitnessData(redeemScript)
+	templateInput.AddWitnessKeys(keyIDs, account.Quorum, nil)
 
 	return txInput, templateInput, nil
 }
