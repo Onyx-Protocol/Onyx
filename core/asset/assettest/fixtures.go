@@ -12,8 +12,6 @@ import (
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
-	"chain/protocol/memstore"
 	"chain/protocol/state"
 	"chain/testutil"
 )
@@ -86,33 +84,6 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, c *protocol.Chain, as
 		Outpoint: bc.Outpoint{Hash: tx.Hash, Index: 0},
 		TxOutput: *tx.Outputs[0],
 	}
-}
-
-// InitializeSigningGenerator initiaizes a generator fixture with the
-// provided store. Store can be nil, in which case it will use memstore.
-func InitializeSigningGenerator(ctx context.Context, store protocol.Store, pool protocol.Pool) (*protocol.Chain, error) {
-	if store == nil {
-		store = memstore.New()
-	}
-	if pool == nil {
-		pool = mempool.New()
-	}
-	c, err := protocol.NewChain(ctx, store, pool, nil)
-	if err != nil {
-		return nil, err
-	}
-	asset.Init(c, nil)
-	account.Init(c, nil)
-
-	b1, err := protocol.NewInitialBlock(nil, 0, time.Now())
-	if err != nil {
-		return nil, err
-	}
-	err = c.CommitBlock(ctx, b1, state.Empty())
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
 }
 
 func Issue(ctx context.Context, t testing.TB, c *protocol.Chain, assetID bc.AssetID, amount uint64, actions []txbuilder.Action) *bc.Tx {

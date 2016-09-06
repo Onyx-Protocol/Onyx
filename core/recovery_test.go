@@ -35,10 +35,10 @@ func TestRecovery(t *testing.T) {
 	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	store, pool := txdb.New(db)
 	setupCtx := pg.NewContext(ctx, db)
-	c, err := assettest.InitializeSigningGenerator(setupCtx, store, pool)
-	if err != nil {
-		t.Fatal(err)
-	}
+	c := prottest.NewChainWithStorage(t, store, pool)
+	asset.Init(c, nil)
+	account.Init(c, nil)
+
 	// Setup the transaction query indexer to index every transaction.
 	indexer := query.NewIndexer(db, c)
 	indexer.RegisterAnnotator(account.AnnotateTxs)
@@ -66,7 +66,7 @@ func TestRecovery(t *testing.T) {
 		assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: apple, Amount: 1}, alice, nil, nil, nil),
 	})
 
-	err = db.Close()
+	err := db.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
