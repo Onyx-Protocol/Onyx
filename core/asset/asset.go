@@ -103,29 +103,16 @@ func SetTags(ctx context.Context, id bc.AssetID, alias string, newTags map[strin
 	}
 	defer dbtx.Rollback(ctx)
 
-	var a *Asset
-	if (id != bc.AssetID{}) {
-		err = insertAssetTags(ctx, id, newTags)
-		if err != nil {
-			return nil, errors.Wrap(err, "set asset tags")
-		}
-
-		a, err = assetByAssetID(ctx, id)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-	} else {
-		a, err = assetByAlias(ctx, alias)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-
-		err = insertAssetTags(ctx, a.AssetID, newTags)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-		a.Tags = newTags
+	a, err := lookupAsset(ctx, id, alias)
+	if err != nil {
+		return nil, errors.Wrap(err)
 	}
+
+	err = insertAssetTags(ctx, a.AssetID, newTags)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	a.Tags = newTags
 
 	err = dbtx.Commit(ctx)
 	if err != nil {
@@ -145,40 +132,20 @@ func SetTags(ctx context.Context, id bc.AssetID, alias string, newTags map[strin
 
 // FindByID retrieves an Asset record along with its signer, given an assetID.
 func FindByID(ctx context.Context, id bc.AssetID) (*Asset, error) {
-	asset, err := assetByAssetID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	asset.Signer, err = signers.Find(ctx, "asset", asset.Signer.ID)
-	if err != nil {
-		return nil, err
-	}
-	return asset, nil
+	return lookupAsset(ctx, id, "")
 }
 
 // FindByAlias retrieves an Asset record along with its signer,
 // given an asset alias.
 func FindByAlias(ctx context.Context, alias string) (*Asset, error) {
-	return assetByAlias(ctx, alias)
+	return lookupAsset(ctx, bc.AssetID{}, alias)
 }
 
 // Archive marks an Asset record as archived, effectively "deleting" it.
 func Archive(ctx context.Context, id bc.AssetID, alias string) error {
-	var (
-		asset *Asset
-		err   error
-	)
-	if (id != bc.AssetID{}) {
-		asset, err = assetByAssetID(ctx, id)
-		if err != nil {
-			return errors.Wrap(err, "asset is missing")
-		}
-	} else {
-		asset, err = assetByAlias(ctx, alias)
-		if err != nil {
-			return errors.Wrap(err, "asset is missing")
-		}
+	asset, err := lookupAsset(ctx, id, alias)
+	if err != nil {
+		return errors.Wrap(err, "asset is missing")
 	}
 
 	dbtx, ctx, err := pg.Begin(ctx)
@@ -192,9 +159,12 @@ func Archive(ctx context.Context, id bc.AssetID, alias string) error {
 	if err != nil {
 		return errors.Wrap(err, "archive asset query")
 	}
-	err = signers.Archive(ctx, "asset", asset.Signer.ID)
-	if err != nil {
-		return errors.Wrap(err, "archive asset signer")
+
+	if asset.Signer != nil {
+		err = signers.Archive(ctx, "asset", asset.Signer.ID)
+		if err != nil {
+			return errors.Wrap(err, "archive asset signer")
+		}
 	}
 
 	err = dbtx.Commit(ctx)
@@ -227,9 +197,14 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 		Valid:  asset.Alias != "",
 	}
 
+	var signerID sql.NullString
+	if asset.Signer != nil {
+		signerID = sql.NullString{Valid: true, String: asset.Signer.ID}
+	}
+
 	err = pg.QueryRow(
 		ctx, q,
-		asset.AssetID, aliasParam, asset.Signer.ID,
+		asset.AssetID, aliasParam, signerID,
 		asset.InitialBlockHash, asset.IssuanceProgram,
 		defParams, clientToken,
 	).Scan(&asset.sortID)
@@ -270,22 +245,25 @@ func insertAssetTags(ctx context.Context, assetID bc.AssetID, tags map[string]in
 	return nil
 }
 
-func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
+func lookupAsset(ctx context.Context, idQ bc.AssetID, aliasQ string) (*Asset, error) {
+	if idQ != (bc.AssetID{}) && aliasQ != "" {
+		return nil, errors.New("cannot refer to asset by both ID and alias")
+	}
+
 	const q = `
 		SELECT id, alias, issuance_program, definition, initial_block_hash, signer_id, archived, sort_id
 		FROM assets
-		WHERE id=$1
+		WHERE id=$1 OR ($2!='' AND alias=$2)
 	`
 
 	var (
 		a          Asset
 		alias      sql.NullString
 		archived   bool
-		signerID   string
+		signerID   sql.NullString
 		definition []byte
 	)
-
-	err := pg.QueryRow(ctx, q, id.String()).Scan(
+	err := pg.QueryRow(ctx, q, idQ.String(), aliasQ).Scan(
 		&a.AssetID,
 		&alias,
 		&a.IssuanceProgram,
@@ -295,27 +273,22 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 		&archived,
 		&a.sortID,
 	)
-
-	if err != nil && err != sql.ErrNoRows {
+	if err == sql.ErrNoRows {
+		return nil, pg.ErrUserInputNotFound
+	} else if err != nil {
 		return nil, err
 	}
-
 	if archived {
 		return nil, ErrArchived
 	}
 
-	if err == sql.ErrNoRows {
-		// Assume that this is a non-local asset
-		// if we can't find it in the assets table
-		a = Asset{AssetID: id}
-	} else {
+	if signerID.Valid {
 		// Only try to fetch the signer if this is a
 		// local asset.
-		sig, err := signers.Find(ctx, "asset", signerID)
+		sig, err := signers.Find(ctx, "asset", signerID.String)
 		if err != nil {
 			return nil, errors.Wrap(err, "couldn't find signer")
 		}
-
 		a.Signer = sig
 	}
 
@@ -332,75 +305,8 @@ func assetByAssetID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 
 	const tagQ = `SELECT tags FROM asset_tags WHERE asset_id=$1`
 	var tags []byte
-	err = pg.QueryRow(ctx, tagQ, id.String()).Scan(&tags)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-
-	if len(tags) > 0 {
-		err := json.Unmarshal(tags, &a.Tags)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-	}
-
-	return &a, nil
-}
-
-func assetByAlias(ctx context.Context, alias string) (*Asset, error) {
-	const q = `
-		SELECT id, alias, issuance_program, definition, initial_block_hash, signer_id, archived, sort_id
-		FROM assets
-		WHERE alias=$1
-	`
-
-	var (
-		a          Asset
-		archived   bool
-		signerID   string
-		definition []byte
-	)
-
-	err := pg.QueryRow(ctx, q, alias).Scan(
-		&a.AssetID,
-		&a.Alias,
-		&a.IssuanceProgram,
-		&definition,
-		&a.InitialBlockHash,
-		&signerID,
-		&archived,
-		&a.sortID,
-	)
-	if err == sql.ErrNoRows {
-		return nil, pg.ErrUserInputNotFound
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	if archived {
-		return nil, ErrArchived
-	}
-
-	sig, err := signers.Find(ctx, "asset", signerID)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't find signer")
-	}
-
-	a.Signer = sig
-
-	if len(definition) > 0 {
-		err := json.Unmarshal(definition, &a.Definition)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-	}
-
-	const tagQ = `SELECT tags FROM asset_tags WHERE asset_id=$1`
-	var tags []byte
-	err = pg.QueryRow(ctx, tagQ, a.AssetID).Scan(&tags)
-	if err != nil {
+	err = pg.QueryRow(ctx, tagQ, a.AssetID.String()).Scan(&tags)
+	if err != nil && err != sql.ErrNoRows {
 		return nil, errors.Wrap(err)
 	}
 
@@ -417,7 +323,7 @@ func assetByAlias(ctx context.Context, alias string) (*Asset, error) {
 // assetByClientToken loads an asset from the database using its client token.
 func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error) {
 	const q = `
-		SELECT id, issuance_program, definition,
+		SELECT id, alias, issuance_program, definition,
 			initial_block_hash, signer_id, archived, sort_id
 		FROM assets
 		WHERE client_token=$1
@@ -425,11 +331,13 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 	var (
 		a          Asset
 		archived   bool
-		signerID   string
+		signerID   sql.NullString
+		alias      sql.NullString
 		definition []byte
 	)
 	err := pg.QueryRow(ctx, q, clientToken).Scan(
 		&a.AssetID,
+		&alias,
 		&a.IssuanceProgram,
 		&definition,
 		&a.InitialBlockHash,
@@ -437,12 +345,17 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 		&archived,
 		&a.sortID,
 	)
-	if err != nil {
-		return nil, err
+	if err == sql.ErrNoRows {
+		return nil, pg.ErrUserInputNotFound
+	} else if err != nil {
+		return nil, errors.Wrap(err)
 	}
-
 	if archived {
 		return nil, ErrArchived
+	}
+
+	if alias.Valid {
+		a.Alias = alias.String
 	}
 
 	if len(definition) > 0 {
@@ -455,7 +368,7 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 	const tagQ = `SELECT tags FROM asset_tags WHERE asset_id=$1`
 	var tags []byte
 	err = pg.QueryRow(ctx, tagQ, a.AssetID.String()).Scan(&tags)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return nil, errors.Wrap(err)
 	}
 
@@ -466,12 +379,14 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 		}
 	}
 
-	sig, err := signers.Find(ctx, "asset", signerID)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't find signer")
+	if signerID.Valid {
+		sig, err := signers.Find(ctx, "asset", signerID.String)
+		if err != nil {
+			return nil, errors.Wrap(err, "couldn't find signer")
+		}
+		a.Signer = sig
 	}
 
-	a.Signer = sig
 	return &a, nil
 }
 

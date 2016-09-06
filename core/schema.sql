@@ -445,7 +445,7 @@ CREATE TABLE assets (
     archived boolean DEFAULT false NOT NULL,
     client_token text,
     initial_block_hash text NOT NULL,
-    signer_id text NOT NULL,
+    signer_id text,
     definition jsonb,
     alias text
 );
@@ -1106,3 +1106,4 @@ insert into migrations (filename, hash) values ('2016-08-31.3.account.drop-redee
 insert into migrations (filename, hash) values ('2016-09-01.0.core.add-block-xpub.sql', '89051edcfbfba56cc09870ab9864b8605babded501a612e0a3882823b4ebbdba');
 insert into migrations (filename, hash) values ('2016-09-01.1.core.rename-genesis-to-initial.sql', '25699037b44a16db6e3fdbfe81f35dea5dbf4b230ff3f63904f5150f08955208');
 insert into migrations (filename, hash) values ('2016-09-01.2.core.drop-txs.sql', '14e21eba20efe97745d7e0a1a17e51582e2c05597030db1a3a01d46258ff2574');
+insert into migrations (filename, hash) values ('2016-09-05.0.asset.signer-null.sql', 'e611da44df43ea431c937c77c1e852fe82dc0049a118ec896102ca8a2cfb09f6');

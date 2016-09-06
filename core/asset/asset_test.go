@@ -96,22 +96,28 @@ func TestSetAssetTags(t *testing.T) {
 	}
 }
 
-func TestSetNonLocalAssetTags(t *testing.T) {
+func TestNonLocalAsset(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
-	newTags := map[string]interface{}{"someTag": "taggityTag"}
-	assetID := mustDecodeAssetID("2d194241795a28af3345ffcc64fd31d8819c56f4c4d4b4360763a259152aa393")
 
-	updated, err := SetTags(ctx, assetID, "", newTags)
+	asset, err := insertAsset(ctx, &Asset{
+		AssetID:          mustDecodeAssetID("2d194241795a28af3345ffcc64fd31d8819c56f4c4d4b4360763a259152aa393"),
+		Definition:       map[string]interface{}{"currency": "USD"},
+		IssuanceProgram:  []byte{0x01},
+		InitialBlockHash: bc.Hash{0x01},
+	}, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	want := &Asset{
-		AssetID: assetID,
-		Tags:    newTags,
+	newTags := map[string]interface{}{"someTag": "taggityTag"}
+	updated, err := SetTags(ctx, asset.AssetID, "", newTags)
+	if err != nil {
+		testutil.FatalErr(t, err)
 	}
 
+	want := asset
+	want.Tags = newTags
 	if !reflect.DeepEqual(updated, want) {
 		t.Errorf("got = %+v want %+v", updated, want)
 	}
@@ -161,7 +167,7 @@ func TestDefineAndArchiveAssetByAlias(t *testing.T) {
 	}
 
 	// Verify that the asset was archived.
-	_, err = assetByAlias(ctx, "some-alias")
+	_, err = lookupAsset(ctx, bc.AssetID{}, "some-alias")
 	if err != ErrArchived {
 		t.Error("expected asset id to be archived")
 	}
