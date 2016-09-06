@@ -14,19 +14,25 @@ import (
 	"chain/protocol/bc"
 )
 
+type simpleHasher []byte
+
+func (s simpleHasher) Hash() bc.Hash {
+	return sha3.Sum256(s)
+}
+
 func TestRootHashBug(t *testing.T) {
 	tr := NewTree(nil)
 
-	err := tr.Insert([]byte{0x94}, HashValuer(bc.Hash{0x01}))
+	err := tr.Insert([]byte{0x94}, identityHasher(bc.Hash{0x01}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = tr.Insert([]byte{0x36}, HashValuer(bc.Hash{0x02}))
+	err = tr.Insert([]byte{0x36}, identityHasher(bc.Hash{0x02}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	before := tr.RootHash()
-	err = tr.Insert([]byte{0xba}, HashValuer(bc.Hash{0x03}))
+	err = tr.Insert([]byte{0xba}, identityHasher(bc.Hash{0x03}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +47,7 @@ func TestRootHashInsertQuickCheck(t *testing.T) {
 	keys := [][]byte{}
 	f := func(b [32]byte) bool {
 		before := tr.RootHash()
-		err := tr.Insert(b[:], HashValuer(b))
+		err := tr.Insert(b[:], simpleHasher(b[:]))
 		keys = append(keys, b[:])
 		if err != nil {
 			return false
@@ -314,14 +320,14 @@ func TestRootHash(t *testing.T) {
 		want: bc.Hash{},
 	}, {
 		tree: &Tree{root: &Node{val: vals[0], isLeaf: true}},
-		want: vals[0].Value().Hash(),
+		want: vals[0].Hash(),
 	}, {
 		tree: &Tree{
 			root: &Node{
 				children: [2]*Node{{val: vals[0], isLeaf: true}, {val: vals[1], isLeaf: true}},
 			},
 		},
-		want: hash(vals[0].Value().Hash(), vals[1].Value().Hash()),
+		want: hash(vals[0].Hash(), vals[1].Hash()),
 	}, {
 		tree: &Tree{
 			root: &Node{
@@ -333,7 +339,7 @@ func TestRootHash(t *testing.T) {
 				},
 			},
 		},
-		want: hash(hash(vals[0].Value().Hash(), vals[1].Value().Hash()), vals[2].Value().Hash()),
+		want: hash(hash(vals[0].Hash(), vals[1].Hash()), vals[2].Hash()),
 	}}
 	for _, c := range cases {
 		got := c.tree.RootHash()
@@ -368,10 +374,10 @@ func TestBoolKey(t *testing.T) {
 	}
 }
 
-func makeVals(num int) []Valuer {
-	var vals []Valuer
+func makeVals(num int) []Hasher {
+	var vals []Hasher
 	for i := 0; i < num; i++ {
-		vals = append(vals, BytesValuer([]byte{byte(i)}))
+		vals = append(vals, simpleHasher{byte(i)})
 	}
 	return vals
 }

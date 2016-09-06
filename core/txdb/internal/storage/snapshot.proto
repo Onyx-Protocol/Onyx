@@ -22,7 +22,6 @@ message Snapshot {
     bytes key = 1;
     bool leaf = 2;
     bytes hash = 3;
-    bytes value = 4;
   }
 }
 

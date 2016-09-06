@@ -18,16 +18,10 @@ func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot,
 	var storedSnapshot storage.Snapshot
 	err := patricia.Walk(snapshot.Tree, func(n *patricia.Node) error {
 		hash := n.Hash()
-		var value []byte
-		if v := n.Value(); !v.IsHash {
-			value = n.Value().Bytes
-		}
-
 		storedSnapshot.Nodes = append(storedSnapshot.Nodes, &storage.Snapshot_StateTreeNode{
-			Key:   n.Key(),
-			Leaf:  n.IsLeaf(),
-			Hash:  hash[:],
-			Value: value,
+			Key:  n.Key(),
+			Leaf: n.IsLeaf(),
+			Hash: hash[:],
 		})
 		return nil
 	})
@@ -81,15 +75,9 @@ func getStateSnapshot(ctx context.Context, db pg.DB) (*state.Snapshot, uint64, e
 
 	nodes := make([]*patricia.Node, 0, len(storedSnapshot.Nodes))
 	for _, node := range storedSnapshot.Nodes {
-		var v patricia.Valuer
-		if len(node.Value) == 0 {
-			var h bc.Hash
-			copy(h[:], node.Hash)
-			v = patricia.HashValuer(h)
-		} else {
-			v = patricia.BytesValuer(node.Value)
-		}
-		nodes = append(nodes, patricia.NewNode(node.Key, v, node.Leaf))
+		var h bc.Hash
+		copy(h[:], node.Hash)
+		nodes = append(nodes, patricia.NewNode(node.Key, h, node.Leaf))
 	}
 
 	issuances := make(state.PriorIssuances, len(storedSnapshot.Issuances))

@@ -7,7 +7,6 @@ import (
 
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
-	"chain/protocol/patricia"
 	"chain/protocol/state"
 )
 
@@ -15,6 +14,8 @@ type pair struct {
 	key  string
 	hash bc.Hash
 }
+
+func (p pair) Hash() bc.Hash { return p.hash }
 
 func TestReadWriteStateSnapshot(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
@@ -74,7 +75,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		t.Logf("Applying changeset %d\n", i)
 
 		for _, insert := range changeset.inserts {
-			err := snapshot.Tree.Insert([]byte(insert.key), patricia.HashValuer(insert.hash))
+			err := snapshot.Tree.Insert([]byte(insert.key), insert)
 			if err != nil {
 				t.Fatal(err)
 			}
