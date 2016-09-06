@@ -3,27 +3,21 @@ package generator
 import (
 	"context"
 	"testing"
-	"time"
 
-	"chain/core/asset/assettest"
 	"chain/core/txdb"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/database/sql"
-	"chain/protocol/bc"
 	"chain/protocol/prottest"
+	"chain/testutil"
 )
 
 // TODO(kr): GetBlocks is not a generator function.
 // Move this test (and GetBlocks) to another package.
 func TestGetBlocks(t *testing.T) {
-	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
-	store, pool := txdb.New(pg.FromContext(ctx).(*sql.DB))
-	chain, err := assettest.InitializeSigningGenerator(ctx, store, pool)
-	if err != nil {
-		t.Fatal(err)
-	}
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
+	store, pool := txdb.New(dbtx)
+	chain := prottest.NewChainWithStorage(t, store, pool)
 
 	blocks, err := GetBlocks(ctx, chain, 0)
 	if err != nil {
@@ -34,33 +28,11 @@ func TestGetBlocks(t *testing.T) {
 		t.Errorf("expected 1 (initial) block, got %d", len(blocks))
 	}
 
-	c := make(chan []*bc.Block)
-
-	var innerErr error
-
-	go func() {
-		defer close(c)
-
-		// expect this will wait until block 2 is ready
-		blocks, err := GetBlocks(ctx, chain, 1)
-		if err == nil {
-			c <- blocks
-		} else {
-			innerErr = err
-		}
-	}()
-
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
-	assettest.IssueAssetsFixture(ctx, t, chain, assetID, 1, "")
-
-	// Hopefully force the GetBlocks call to wait
-	time.Sleep(10 * time.Millisecond)
-
 	prottest.MakeBlock(ctx, t, chain)
 
-	blocks, ok := <-c
-	if !ok {
-		t.Fatal(innerErr)
+	blocks, err = GetBlocks(ctx, chain, 1)
+	if err != nil {
+		testutil.FatalErr(t, err)
 	}
 
 	if len(blocks) != 1 {

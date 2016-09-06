@@ -23,8 +23,15 @@ var (
 // along with an initial block using a 0/0 multisig program.
 // It commits the initial block before returning the Chain.
 func NewChain(tb testing.TB) *protocol.Chain {
+	return NewChainWithStorage(tb, memstore.New(), mempool.New())
+}
+
+// NewChain makes a new Chain using store and pool for storage,
+// along with an initial block using a 0/0 multisig program.
+// It commits the initial block before returning the Chain.
+func NewChainWithStorage(tb testing.TB, store protocol.Store, pool protocol.Pool) *protocol.Chain {
 	ctx := context.Background()
-	c, err := protocol.NewChain(ctx, memstore.New(), mempool.New(), nil)
+	c, err := protocol.NewChain(ctx, store, pool, nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
