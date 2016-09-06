@@ -86,14 +86,19 @@ func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, pr
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
-	// TODO(jackson): This function doesn't use Chain at all; refactor.
-
 	newState := state.Copy(prevState)
-	err := validation.ValidateAndApplyBlock(ctx, newState, prev, block)
+	err := validation.ValidateAndApplyBlock(ctx, newState, prev, block, c.validateTxCached)
 	if err != nil {
 		return nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
 	}
 	return newState, nil
+}
+
+func (c *Chain) validateTxCached(tx *bc.Tx) error {
+	// TODO(kr): consult a cache of prevalidated transactions.
+	// It probably shouldn't use the pool, but instead keep
+	// in memory a table of witness hashes (or similar).
+	return validation.ValidateTx(tx)
 }
 
 // CommitBlock commits the block to the blockchain.
@@ -220,7 +225,7 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 		}
 	}
 
-	err := validation.ValidateBlockForSig(ctx, snapshot, prev, block)
+	err := validation.ValidateBlockForSig(ctx, snapshot, prev, block, validation.ValidateTx)
 	return errors.Wrap(err, "validation")
 }
 

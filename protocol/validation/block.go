@@ -28,18 +28,18 @@ var (
 // ValidateAndApplyBlock validates the given block against the given
 // state tree and applies its changes to the state snapshot.
 // If block is invalid, it returns a non-nil error describing why.
-func ValidateAndApplyBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block) error {
-	return validateBlock(ctx, snapshot, prevBlock, block, true)
+func ValidateAndApplyBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
+	return validateBlock(ctx, snapshot, prevBlock, block, validateTx, true)
 }
 
 // ValidateBlockForSig performs validation on an incoming _unsigned_
 // block in preparation for signing it.  By definition it does not
 // execute the sigscript.
-func ValidateBlockForSig(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block) error {
-	return validateBlock(ctx, snapshot, prevBlock, block, false)
+func ValidateBlockForSig(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
+	return validateBlock(ctx, snapshot, prevBlock, block, validateTx, false)
 }
 
-func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, runScript bool) error {
+func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error, runScript bool) error {
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
 
@@ -56,10 +56,7 @@ func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, blo
 	// TODO(erywalder): consider writing to a copy of the state tree
 	// of the one provided and make the caller call ApplyBlock as well
 	for _, tx := range block.Transactions {
-		// TODO(jackson): This ValidateTx call won't be necessary if this
-		// tx is in the pool. It'll be cleaner to implement once prevout
-		// commitments are up to spec.
-		err := ValidateTx(tx)
+		err := validateTx(tx)
 		if err != nil {
 			return err
 		}
