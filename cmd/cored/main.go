@@ -51,6 +51,11 @@ import (
 	"chain/protocol/bc"
 )
 
+const (
+	httpReadTimeout  = 30 * time.Second
+	httpWriteTimeout = 2 * time.Minute
+)
+
 var (
 	// config vars
 	tlsCrt     = env.String("TLSCRT", "")
@@ -167,8 +172,10 @@ func main() {
 	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
 
 	server := &http.Server{
-		Addr:    *listenAddr,
-		Handler: secureheader.DefaultConfig,
+		Addr:         *listenAddr,
+		Handler:      secureheader.DefaultConfig,
+		ReadTimeout:  httpReadTimeout,
+		WriteTimeout: httpWriteTimeout,
 	}
 	if *tlsCrt != "" {
 		cert, err := tls.X509KeyPair([]byte(*tlsCrt), []byte(*tlsKey))
