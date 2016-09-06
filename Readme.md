@@ -6,7 +6,7 @@ Chain 🍭
 
 First, make sure you have the dependencies installed:
 
-* [Go](https://golang.org/doc/install), with $GOPATH set to your
+* [Go](https://golang.org/doc/install) version 1.7, with $GOPATH set to your
   preferred directory
 * Postgres (we suggest [Postgres.app](http://postgresapp.com/)),
   along with the [command line
