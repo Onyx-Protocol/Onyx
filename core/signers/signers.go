@@ -13,7 +13,7 @@ type keySpace uint32
 
 const (
 	AssetKeySpace   keySpace = 0
-	AccountKeySpace          = 1
+	AccountKeySpace keySpace = 1
 )
 
 var typeIDMap = map[string]string{
