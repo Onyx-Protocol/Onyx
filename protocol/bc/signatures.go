@@ -4,7 +4,6 @@ package bc
 type SigHashType byte
 
 const (
-	SigHashOld          SigHashType = 0x0
 	SigHashAll          SigHashType = 0x1
 	SigHashNone         SigHashType = 0x2
 	SigHashSingle       SigHashType = 0x3
