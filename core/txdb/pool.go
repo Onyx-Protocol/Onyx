@@ -3,6 +3,8 @@ package txdb
 import (
 	"context"
 
+	"github.com/lib/pq"
+
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol/bc"
@@ -51,7 +53,7 @@ func (p *Pool) Clean(ctx context.Context, txs []*bc.Tx) error {
 
 	// Delete pool_txs
 	const txq = `DELETE FROM pool_txs WHERE tx_hash IN (SELECT unnest($1::text[]))`
-	_, err := p.db.Exec(ctx, txq, pg.Strings(deleteTxHashes))
+	_, err := p.db.Exec(ctx, txq, pq.StringArray(deleteTxHashes))
 	return errors.Wrap(err, "delete from pool_txs")
 }
 

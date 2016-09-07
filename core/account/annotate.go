@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/lib/pq"
+
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol/vmutil"
@@ -83,7 +85,7 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 		aliases  []sql.NullString
 		tags     []*json.RawMessage
 	)
-	err := pg.ForQueryRows(ctx, q, pg.Byteas(controlPrograms), func(accountID string, program []byte, alias sql.NullString, accountTags []byte) {
+	err := pg.ForQueryRows(ctx, q, pq.ByteaArray(controlPrograms), func(accountID string, program []byte, alias sql.NullString, accountTags []byte) {
 		ids = append(ids, accountID)
 		programs = append(programs, program)
 		aliases = append(aliases, alias)

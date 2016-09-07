@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/lib/pq"
+
 	"chain/database/pg"
 	"chain/errors"
 )
@@ -41,7 +43,7 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 		assetIDStrs = append(assetIDStrs, assetIDStr)
 	}
 	tagsByAssetIDStr := make(map[string]map[string]interface{}, len(assetIDStrs))
-	err := pg.ForQueryRows(ctx, `SELECT asset_id, tags FROM asset_tags WHERE asset_id IN (SELECT unnest($1::text[]))`, pg.Strings(assetIDStrs),
+	err := pg.ForQueryRows(ctx, `SELECT asset_id, tags FROM asset_tags WHERE asset_id IN (SELECT unnest($1::text[]))`, pq.StringArray(assetIDStrs),
 		func(assetIDStr string, tagsBlob []byte) error {
 			if len(tagsBlob) == 0 {
 				return nil
@@ -65,7 +67,7 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 		SELECT id, alias FROM assets
 		WHERE alias IS NOT NULL AND id IN (SELECT unnest($1::text[]))
 	`
-	err = pg.ForQueryRows(ctx, aliasQ, pg.Strings(assetIDStrs), func(assetIDStr, alias string) {
+	err = pg.ForQueryRows(ctx, aliasQ, pq.StringArray(assetIDStrs), func(assetIDStr, alias string) {
 		aliasesByAssetIDStr[assetIDStr] = alias
 	})
 	if err != nil {

@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/lib/pq"
+
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
@@ -33,7 +35,7 @@ func getPoolTxs(ctx context.Context, db pg.DB, hashes ...bc.Hash) (poolTxs map[b
 		WHERE t.tx_hash = ANY($1)
 	`
 	poolTxs = make(map[bc.Hash]*bc.Tx, len(hashes))
-	err = pg.ForQueryRows(pg.NewContext(ctx, db), q, pg.Strings(hashStrings), func(hash bc.Hash, data bc.TxData) {
+	err = pg.ForQueryRows(pg.NewContext(ctx, db), q, pq.StringArray(hashStrings), func(hash bc.Hash, data bc.TxData) {
 		tx := &bc.Tx{TxData: data, Hash: hash}
 		poolTxs[hash] = tx
 	})

@@ -3,6 +3,8 @@ package account
 import (
 	"context"
 
+	"github.com/lib/pq"
+
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
@@ -134,7 +136,7 @@ func indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	return errors.Wrap(err, "deleting expired account utxos")
 }
 
-func prevoutDBKeys(txs ...*bc.Tx) (txhash pg.Strings, index pg.Uint32s) {
+func prevoutDBKeys(txs ...*bc.Tx) (txhash pq.StringArray, index pg.Uint32s) {
 	for _, tx := range txs {
 		for _, in := range tx.Inputs {
 			if in.IsIssuance() {
@@ -161,7 +163,7 @@ func loadAccountInfo(ctx context.Context, outs []*state.Output) ([]*output, erro
 		outsByScript[scriptStr] = append(outsByScript[scriptStr], out)
 	}
 
-	var scripts pg.Byteas
+	var scripts pq.ByteaArray
 	for s := range outsByScript {
 		scripts = append(scripts, []byte(s))
 	}
@@ -194,14 +196,14 @@ func loadAccountInfo(ctx context.Context, outs []*state.Output) ([]*output, erro
 // account utxos.
 func upsertUnconfirmedAccountOutputs(ctx context.Context, outs []*output, expiryHeight uint64) error {
 	var (
-		txHash    pg.Strings
+		txHash    pq.StringArray
 		index     pg.Uint32s
-		assetID   pg.Strings
-		amount    pg.Int64s
-		accountID pg.Strings
-		cpIndex   pg.Int64s
-		program   pg.Byteas
-		metadata  pg.Byteas
+		assetID   pq.StringArray
+		amount    pq.Int64Array
+		accountID pq.StringArray
+		cpIndex   pq.Int64Array
+		program   pq.ByteaArray
+		metadata  pq.ByteaArray
 	)
 	for _, out := range outs {
 		txHash = append(txHash, out.Outpoint.Hash.String())
@@ -240,14 +242,14 @@ func upsertUnconfirmedAccountOutputs(ctx context.Context, outs []*output, expiry
 // block confirmation data will in the row will be updated.
 func upsertConfirmedAccountOutputs(ctx context.Context, outs []*output, pos map[bc.Hash]uint32, block *bc.Block) error {
 	var (
-		txHash    pg.Strings
+		txHash    pq.StringArray
 		index     pg.Uint32s
-		assetID   pg.Strings
-		amount    pg.Int64s
-		accountID pg.Strings
-		cpIndex   pg.Int64s
-		program   pg.Byteas
-		metadata  pg.Byteas
+		assetID   pq.StringArray
+		amount    pq.Int64Array
+		accountID pq.StringArray
+		cpIndex   pq.Int64Array
+		program   pq.ByteaArray
+		metadata  pq.ByteaArray
 		blockPos  pg.Uint32s
 	)
 	for _, out := range outs {

@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/lib/pq"
+
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
@@ -85,7 +87,7 @@ func Create(ctx context.Context, typ string, xpubs []string, quorum int, clientT
 		id       string
 		keyIndex []uint32
 	)
-	err = pg.QueryRow(ctx, q, typeIDMap[typ], typ, pg.Strings(xpubs), quorum, clientToken).
+	err = pg.QueryRow(ctx, q, typeIDMap[typ], typ, pq.StringArray(xpubs), quorum, clientToken).
 		Scan(&id, (*pg.Uint32s)(&keyIndex))
 	if err == sql.ErrNoRows && clientToken != nil {
 		return findByClientToken(ctx, clientToken)
@@ -114,7 +116,7 @@ func findByClientToken(ctx context.Context, clientToken *string) (*Signer, error
 		xpubStrs []string
 	)
 	err := pg.QueryRow(ctx, q, clientToken).
-		Scan(&s.ID, &s.Type, (*pg.Strings)(&xpubStrs), &s.Quorum, (*pg.Uint32s)(&s.KeyIndex))
+		Scan(&s.ID, &s.Type, (*pq.StringArray)(&xpubStrs), &s.Quorum, (*pg.Uint32s)(&s.KeyIndex))
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -145,7 +147,7 @@ func Find(ctx context.Context, typ, id string) (*Signer, error) {
 	err := pg.QueryRow(ctx, q, id).Scan(
 		&s.ID,
 		&s.Type,
-		(*pg.Strings)(&xpubStrs),
+		(*pq.StringArray)(&xpubStrs),
 		&s.Quorum,
 		(*pg.Uint32s)(&s.KeyIndex),
 		&archived,
@@ -199,7 +201,7 @@ func List(ctx context.Context, typ, prev string, limit int) ([]*Signer, string, 
 
 	var signers []*Signer
 	err := pg.ForQueryRows(ctx, q, typ, prev, limit,
-		func(id, typ string, xpubs pg.Strings, quorum int, keyIndex pg.Uint32s) error {
+		func(id, typ string, xpubs pq.StringArray, quorum int, keyIndex pg.Uint32s) error {
 			keys, err := ConvertKeys(xpubs)
 			if err != nil {
 				return errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))

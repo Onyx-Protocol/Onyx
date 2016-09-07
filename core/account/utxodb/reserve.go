@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/lib/pq"
+
 	"chain/database/pg"
 	"chain/errors"
 	chainlog "chain/log"
@@ -157,7 +159,7 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 
 	var reserved []*UTXO
 	var change []Change
-	var reservationIDs []int32
+	var reservationIDs []int64
 
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
@@ -172,7 +174,7 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 
 	defer func() {
 		if err != nil {
-			pg.Exec(ctx, "SELECT cancel_reservations($1)", pg.Int32s(reservationIDs)) // ignore errors
+			pg.Exec(ctx, "SELECT cancel_reservations($1)", pq.Int64Array(reservationIDs)) // ignore errors
 		}
 	}()
 
@@ -196,7 +198,7 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 			txHash   sql.NullString
 			outIndex sql.NullInt64
 
-			reservationID  int32
+			reservationID  int64
 			alreadyExisted bool
 			existingChange uint64
 			reservedAmount uint64
@@ -279,10 +281,10 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 // or canceled), it silently ignores them.
 func Cancel(ctx context.Context, outpoints []bc.Outpoint) error {
 	txHashes := make([]string, 0, len(outpoints))
-	indexes := make([]int32, 0, len(outpoints))
+	indexes := make([]uint32, 0, len(outpoints))
 	for _, outpoint := range outpoints {
 		txHashes = append(txHashes, outpoint.Hash.String())
-		indexes = append(indexes, int32(outpoint.Index))
+		indexes = append(indexes, outpoint.Index)
 	}
 
 	const query = `
@@ -293,7 +295,7 @@ func Cancel(ctx context.Context, outpoints []bc.Outpoint) error {
 		SELECT cancel_reservation(reservation_id) FROM reservation_ids
 	`
 
-	_, err := pg.Exec(ctx, query, pg.Strings(txHashes), pg.Int32s(indexes))
+	_, err := pg.Exec(ctx, query, pq.StringArray(txHashes), pg.Uint32s(indexes))
 	return err
 }
 

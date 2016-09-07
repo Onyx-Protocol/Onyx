@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/lib/pq"
+
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
@@ -54,9 +56,9 @@ func (ind *Indexer) insertBlock(ctx context.Context, b *bc.Block) error {
 
 func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[string]interface{}, error) {
 	var (
-		hashes              = pg.Strings(make([]string, 0, len(b.Transactions)))
+		hashes              = pq.StringArray(make([]string, 0, len(b.Transactions)))
 		positions           = pg.Uint32s(make([]uint32, 0, len(b.Transactions)))
-		annotatedTxs        = pg.Strings(make([]string, 0, len(b.Transactions)))
+		annotatedTxs        = pq.StringArray(make([]string, 0, len(b.Transactions)))
 		annotatedTxsDecoded = make([]map[string]interface{}, 0, len(b.Transactions))
 	)
 	for pos, tx := range b.Transactions {
@@ -99,9 +101,9 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 	var (
 		outputTxPositions pg.Uint32s
 		outputIndexes     pg.Uint32s
-		outputTxHashes    pg.Strings
-		outputData        pg.Strings
-		prevoutHashes     pg.Strings
+		outputTxHashes    pq.StringArray
+		outputData        pq.StringArray
+		prevoutHashes     pq.StringArray
 		prevoutIndexes    pg.Uint32s
 	)
 

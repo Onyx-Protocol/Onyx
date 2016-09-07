@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lib/pq"
+
 	"chain/core/query/filter"
 	"chain/database/pg"
 	"chain/errors"
@@ -139,7 +141,7 @@ func (ind *Indexer) GetIndex(ctx context.Context, id, alias, typ string) (*Index
 		WHERE (($1 != '' AND id = $1) OR ($2 != '' AND alias = $2)) AND type = $3
 	`
 	var idx Index
-	var sumBy pg.Strings
+	var sumBy pq.StringArray
 	err := ind.db.QueryRow(ctx, selectQ, id, alias, typ).
 		Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawPredicate, &idx.createdAt, &sumBy)
 	if err == sql.ErrNoRows {
@@ -187,7 +189,7 @@ func (ind *Indexer) CreateIndex(ctx context.Context, alias, typ, rawPredicate st
 		rawPredicate: rawPredicate,
 		rawSumBy:     sumByFields,
 	}
-	err = ind.db.QueryRow(ctx, insertQ, alias, typ, rawPredicate, pg.Strings(sumByFields)).Scan(&idx.ID, &idx.createdAt)
+	err = ind.db.QueryRow(ctx, insertQ, alias, typ, rawPredicate, pq.StringArray(sumByFields)).Scan(&idx.ID, &idx.createdAt)
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
 	} else if err != nil {
@@ -266,7 +268,7 @@ func (ind *Indexer) getIndexes(ctx context.Context) ([]*Index, error) {
 	var indexes []*Index
 	for rows.Next() {
 		idx := new(Index)
-		var sumBy pg.Strings
+		var sumBy pq.StringArray
 		err = rows.Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawPredicate, &idx.createdAt, &sumBy)
 		if err != nil {
 			return nil, errors.Wrap(err, "scanning query_indexes row")
@@ -295,7 +297,7 @@ func (ind *Indexer) listIndexes(ctx context.Context, cursor string, limit int) (
 	var indexes []*Index
 	for rows.Next() {
 		idx := new(Index)
-		var sumBy pg.Strings
+		var sumBy pq.StringArray
 		err = rows.Scan(&idx.ID, &idx.Alias, &idx.Type, &idx.rawPredicate, &idx.createdAt, &sumBy)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "scanning query_indexes row")

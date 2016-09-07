@@ -3,6 +3,8 @@ package asset
 import (
 	"context"
 
+	"github.com/lib/pq"
+
 	"chain/database/pg"
 	"chain/encoding/json"
 	"chain/log"
@@ -50,8 +52,8 @@ func indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 // indexAssets is run on every block and indexes all non-local assets.
 func indexAssets(ctx context.Context, b *bc.Block) {
 	var (
-		assetIDs, definitions pg.Strings
-		issuancePrograms      pg.Byteas
+		assetIDs, definitions pq.StringArray
+		issuancePrograms      pq.ByteaArray
 		seen                  = make(map[bc.AssetID]bool)
 	)
 	for _, tx := range b.Transactions {
