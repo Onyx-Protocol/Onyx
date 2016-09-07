@@ -17,3 +17,5 @@ func requireSecretInProd(secret string) {
 }
 
 func resetInDevIfRequested(db pg.DB) {}
+
+func initSchemaInDev(db pg.DB) {}

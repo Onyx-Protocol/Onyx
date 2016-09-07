@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"os"
 
 	"chain/core"
@@ -14,6 +15,25 @@ import (
 var reset = env.Bool("RESET", false)
 
 func requireSecretInProd(secret string) {}
+
+func initSchemaInDev(db pg.DB) {
+	ctx := context.Background()
+	const q = `
+		SELECT count(*) FROM pg_tables
+		WHERE schemaname='public' AND tablename='migrations'
+	`
+	var n int
+	err := db.QueryRow(ctx, q).Scan(&n)
+	if err != nil {
+		log.Fatalln("schema init:", err)
+	}
+	if n == 0 {
+		_, err := db.Exec(ctx, Files["schema.sql"])
+		if err != nil {
+			log.Fatalln("schema init:", err)
+		}
+	}
+}
 
 func resetInDevIfRequested(db pg.DB) {
 	if *reset {

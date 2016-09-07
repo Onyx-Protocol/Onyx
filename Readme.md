@@ -39,7 +39,6 @@ Build and install from source:
 Set up the database:
 
 	$ createdb core
-	$ migratedb
 
 Start Chain Core:
 

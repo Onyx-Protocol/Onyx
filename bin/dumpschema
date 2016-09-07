@@ -21,4 +21,11 @@ psql -c 'SELECT filename, hash FROM migrations ORDER BY filename'\
 	|sed "s/\(.*\),\(.*\)/insert into migrations (filename, hash) values ('\1', '\2');/"\
 	>>$CHAIN/core/schema.sql
 
+go install chain/cmd/gobundle
+
+(
+	printf '//+build !prod\n\n'
+	gobundle $CHAIN/core/schema.sql
+) | gofmt >$CHAIN/cmd/cored/schema.go
+
 dropdb $db

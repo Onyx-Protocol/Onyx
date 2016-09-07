@@ -110,6 +110,7 @@ func main() {
 	db.SetMaxIdleConns(100)
 	ctx = pg.NewContext(ctx, db)
 
+	initSchemaInDev(db)
 	resetInDevIfRequested(db)
 
 	config, err := loadConfig(ctx, db)
