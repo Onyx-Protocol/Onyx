@@ -27,7 +27,19 @@ func TestWitnessJSON(t *testing.T) {
 					DerivationPath: []uint32{5, 6, 7},
 				}},
 				Constraints: []Constraint{
-					TxHashConstraint(bc.Hash{0xfb}),
+					TTLConstraint(11),
+					OutpointConstraint(bc.Outpoint{
+						Hash:  bc.Hash{0xfc},
+						Index: 38,
+					}),
+					&PayConstraint{
+						AssetAmount: bc.AssetAmount{
+							AssetID: bc.AssetID{0xfa},
+							Amount:  39,
+						},
+						Program:     chainjson.HexBytes{40, 41, 42},
+						RefDataHash: &bc.Hash{43, 44},
+					},
 				},
 				Sigs: []chainjson.HexBytes{{8, 9, 10}},
 			},
@@ -46,6 +58,6 @@ func TestWitnessJSON(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(inp, &got) {
-		t.Errorf("got:\n%s\nwant:\n%s", spew.Sdump(&got), spew.Sdump(inp))
+		t.Errorf("got:\n%s\nwant:\n%s\nJSON was: %s", spew.Sdump(&got), spew.Sdump(inp), string(b))
 	}
 }

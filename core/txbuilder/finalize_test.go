@@ -48,7 +48,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 		AssetID: info.asset.AssetID,
 		Amount:  10,
 	}
-	spendAction := assettest.NewAccountSpendAction(assetAmount, info.acctA.ID, nil, nil, nil)
+	spendAction := assettest.NewAccountSpendAction(assetAmount, info.acctA.ID, nil, nil, nil, nil)
 	spendAction.Params.TTL = time.Millisecond
 	dest1 := assettest.NewAccountControlAction(assetAmount, info.acctB.ID, nil)
 
@@ -310,7 +310,7 @@ func transfer(ctx context.Context, t testing.TB, c *protocol.Chain, info *client
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}
-	source := assettest.NewAccountSpendAction(assetAmount, srcAcctID, nil, nil, nil)
+	source := assettest.NewAccountSpendAction(assetAmount, srcAcctID, nil, nil, nil, nil)
 	dest := assettest.NewAccountControlAction(assetAmount, destAcctID, nil)
 
 	xferTx, err := Build(ctx, nil, []Action{source, dest}, []byte{})

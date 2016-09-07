@@ -37,7 +37,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		AssetID: asset,
 		Amount:  1,
 	}
-	source := assettest.NewAccountSpendAction(assetAmount1, accID, nil, nil, nil)
+	source := assettest.NewAccountSpendAction(assetAmount1, accID, nil, nil, nil, nil)
 
 	gotTxIns, gotTxOuts, _, err := source.Build(ctx)
 	if err != nil {
@@ -119,9 +119,9 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		// An idempotency key that both reservations should use.
 		clientToken1 = "a-unique-idempotency-key"
 		clientToken2 = "another-unique-idempotency-key"
-		wantSrc      = assettest.NewAccountSpendAction(assetAmount1, accID, nil, nil, nil)
-		gotSrc       = assettest.NewAccountSpendAction(assetAmount1, accID, nil, nil, nil)
-		separateSrc  = assettest.NewAccountSpendAction(assetAmount1, accID, nil, nil, nil)
+		wantSrc      = assettest.NewAccountSpendAction(assetAmount1, accID, nil, nil, nil, nil)
+		gotSrc       = assettest.NewAccountSpendAction(assetAmount1, accID, nil, nil, nil, nil)
+		separateSrc  = assettest.NewAccountSpendAction(assetAmount1, accID, nil, nil, nil, nil)
 	)
 	wantSrc.ClientToken = &clientToken1
 	gotSrc.ClientToken = &clientToken1
@@ -182,7 +182,7 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 
 	for i := 0; i < utxos; i++ {
 		theTxHash := srcTxs[i]
-		source := assettest.NewAccountSpendAction(assetAmt, acc, &theTxHash, nil, nil)
+		source := assettest.NewAccountSpendAction(assetAmt, acc, &theTxHash, nil, nil, nil)
 
 		gotRes, _, _, err := source.Build(ctx)
 		if err != nil {

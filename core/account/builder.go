@@ -28,6 +28,7 @@ type SpendAction struct {
 		AccountAlias string `json:"account_alias"`
 		AssetAlias   string `json:"asset_alias"`
 	}
+	Constraints   txbuilder.ConstraintList
 	ReferenceData json.Map `json:"reference_data"`
 	ClientToken   *string  `json:"client_token"`
 }
@@ -62,8 +63,18 @@ func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 		tplIns     []*txbuilder.Input
 		changeOuts []*bc.TxOutput
 	)
+
+	constraints := a.Constraints
+	if len(constraints) > 0 {
+		// Add constraints only if some are already specified. If none
+		// are, leave the constraint list empty to get the default
+		// commit-to-txsighash behavior.
+		expiration := bc.Millis(time.Now().Add(ttl))
+		constraints = append(constraints, txbuilder.TTLConstraint(expiration))
+	}
+
 	for _, r := range reserved {
-		txInput, templateInput, err := utxoToInputs(ctx, acct, r, a.ReferenceData, a.Params.TTL)
+		txInput, templateInput, err := utxoToInputs(ctx, acct, r, a.ReferenceData, constraints)
 		if err != nil {
 			return nil, nil, nil, errors.Wrap(err, "creating inputs")
 		}
@@ -84,6 +95,27 @@ func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 				return nil, nil, nil, errors.Wrap(err, "creating control program")
 			}
 			changeOuts = append(changeOuts, bc.NewTxOutput(a.Params.AssetID, changeAmount, acp, nil))
+
+			if len(constraints) > 0 {
+				// Constrain every input to require this change output.
+
+				for _, tplIn := range tplIns {
+					if len(tplIn.WitnessComponents) != 1 {
+						// shouldn't happen
+						continue
+					}
+					if sw, ok := tplIn.WitnessComponents[0].(*txbuilder.SignatureWitness); ok {
+						pc := &txbuilder.PayConstraint{
+							AssetAmount: bc.AssetAmount{
+								AssetID: a.Params.AssetID,
+								Amount:  changeAmount,
+							},
+							Program: acp,
+						}
+						sw.Constraints = append(sw.Constraints, pc)
+					}
+				}
+			}
 		}
 	}
 
@@ -108,6 +140,7 @@ type SpendUTXOAction struct {
 		TxOut  uint32        `json:"position"`
 		TTL    time.Duration `json:"reservation_ttl"`
 	}
+	Constraints   txbuilder.ConstraintList
 	ReferenceData json.Map `json:"reference_data"`
 	ClientToken   *string  `json:"client_token"`
 }
@@ -128,7 +161,16 @@ func (a *SpendUTXOAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOut
 		return nil, nil, nil, err
 	}
 
-	txInput, tplInput, err := utxoToInputs(ctx, acct, r, a.ReferenceData, a.Params.TTL)
+	constraints := a.Constraints
+	if len(constraints) > 0 {
+		// Add constraints only if some are already specified. If none
+		// are, leave the constraint list empty to get the default
+		// commit-to-txsighash behavior.
+		expiration := bc.Millis(time.Now().Add(ttl))
+		constraints = append(constraints, txbuilder.TTLConstraint(expiration))
+	}
+
+	txInput, tplInput, err := utxoToInputs(ctx, acct, r, a.ReferenceData, constraints)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -136,7 +178,7 @@ func (a *SpendUTXOAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOut
 	return []*bc.TxInput{txInput}, nil, []*txbuilder.Input{tplInput}, nil
 }
 
-func utxoToInputs(ctx context.Context, account *Account, u *utxodb.UTXO, refData []byte, ttl time.Duration) (*bc.TxInput, *txbuilder.Input, error) {
+func utxoToInputs(ctx context.Context, account *Account, u *utxodb.UTXO, refData []byte, constraints []txbuilder.Constraint) (*bc.TxInput, *txbuilder.Input, error) {
 	txInput := bc.NewSpendInput(u.Hash, u.Index, nil, u.AssetID, u.Amount, u.Script, refData)
 
 	templateInput := &txbuilder.Input{
@@ -146,7 +188,14 @@ func utxoToInputs(ctx context.Context, account *Account, u *utxodb.UTXO, refData
 	path := signers.Path(account.Signer, signers.AccountKeySpace, u.ControlProgramIndex[:])
 	keyIDs := txbuilder.KeyIDs(account.XPubs, path)
 
-	templateInput.AddWitnessKeys(keyIDs, account.Quorum, nil)
+	if len(constraints) > 0 {
+		// Add constraints only if some are already specified. If none
+		// are, leave the constraint list empty to get the default
+		// commit-to-txsighash behavior.
+		constraints = append(constraints, txbuilder.OutpointConstraint(u.Outpoint))
+	}
+
+	templateInput.AddWitnessKeys(keyIDs, account.Quorum, constraints)
 
 	return txInput, templateInput, nil
 }

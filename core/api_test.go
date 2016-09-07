@@ -56,7 +56,7 @@ func TestAccountTransfer(t *testing.T) {
 	prottest.MakeBlock(ctx, t, c)
 
 	// new source
-	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil)
+	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, nil)
 	if err != nil {
 		t.Fatal(err)

@@ -3,6 +3,7 @@ package txbuilder
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/mempool"
+	"chain/protocol/vm"
 	"chain/testutil"
 )
 
@@ -111,6 +113,13 @@ func TestMaterializeWitnesses(t *testing.T) {
 		},
 	}
 
+	witnessData := mustDecodeHex("5221033dda0a756db51f76a4f394161614f01df4061644c514fde3994adbe4a3a2d21621038a0f0a8d593773abcd8c878f8777c57986f9f84886c8dde0cf00fdc2c89f0c592103b9e805011523bb28eedb3fcfff8924684a91116a76408fe0972805295e50e15d53ae")
+	sig := mustDecodeHex("304402202ece2c2dfd0ca44b27c5e03658c7eaac4d61d5c2668940da1bdcf53b312db0fc0220670c520b67b6fd4f4efcfbe55e82dc4a4624059b51594889d664bea445deee6b01")
+	prog, err := vm.Compile(fmt.Sprintf("0x804cf05736 MAXTIME LESSTHAN VERIFY 0 5 0x%x 1 0x76a914c5d128911c28776f56baaac550963f7b88501dc388c0 FINDOUTPUT", assetID[:]))
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tpl := &Template{
 		Unsigned: unsigned,
 		Inputs: []*Input{{
@@ -121,11 +130,27 @@ func TestMaterializeWitnesses(t *testing.T) {
 						XPub:           "xpub661MyMwAqRbcGZNqeB27ae2nQLWoWd9Ffx8NEXrVDFgFPe6Jdzw53p5m3ewA3K2z5nPmcJK7r1nykAwkoNHWgHr5kLCWi777ShtKwLdy55a",
 						DerivationPath: []uint32{0, 0, 0, 0},
 					}},
-					Sigs: []json.HexBytes{mustDecodeHex("304402202ece2c2dfd0ca44b27c5e03658c7eaac4d61d5c2668940da1bdcf53b312db0fc0220670c520b67b6fd4f4efcfbe55e82dc4a4624059b51594889d664bea445deee6b01")},
+					Constraints: []Constraint{
+						TTLConstraint(bc.Millis(now.Add(time.Hour))),
+						&PayConstraint{
+							AssetAmount: bc.AssetAmount{
+								AssetID: assetID,
+								Amount:  5,
+							},
+							Program: outscript,
+						},
+					},
+					Sigs: []json.HexBytes{sig},
 				},
-				DataWitness(mustDecodeHex("5221033dda0a756db51f76a4f394161614f01df4061644c514fde3994adbe4a3a2d21621038a0f0a8d593773abcd8c878f8777c57986f9f84886c8dde0cf00fdc2c89f0c592103b9e805011523bb28eedb3fcfff8924684a91116a76408fe0972805295e50e15d53ae")),
+				DataWitness(witnessData),
 			},
 		}},
+	}
+
+	want := [][]byte{
+		sig,
+		prog,
+		witnessData,
 	}
 
 	tx, err := MaterializeWitnesses(tpl)
@@ -133,9 +158,9 @@ func TestMaterializeWitnesses(t *testing.T) {
 		t.Fatal(withStack(err))
 	}
 
-	want := "2bbbefcec1cd14ffd70692d5ab41d894b5f13432ebced43ae58a29c034bdadc3"
-	if got := tx.WitnessHash().String(); got != want {
-		t.Errorf("got tx witness hash = %v want %v", got, want)
+	got := tx.Inputs[0].InputWitness
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
 }
 

@@ -349,23 +349,6 @@ public class Transaction {
             @SerializedName("derivation_path")
             public ArrayList<Integer> derivationPath;
         }
-
-        /**
-         * A constraint in a "signature"-typed WitnessComponent.
-         */
-        public static class Constraint {
-            /**
-             * The type of the constraint.<br>
-             * For now the only possible type is "transaction_id".
-             */
-            public String type;
-
-            /**
-             * Transaction id (null unless type is "transaction_id").
-             */
-            @SerializedName("transaction_id")
-            public String transactionID;
-        }
     }
 
     /**
@@ -455,6 +438,12 @@ public class Transaction {
         public Map<String, Object> referenceData;
 
         /**
+         * List of constraints for this action.
+         * Only valid for certain action types ("issue," "spend_account_unspent_output_selector," and "spend_account_unspent_output").
+         */
+        public Constraint[] constraints;
+
+        /**
          * A unique identifier used for request idempotence.
          */
         @SerializedName("client_token")
@@ -501,6 +490,54 @@ public class Transaction {
     }
 
     /**
+     * A constraint in certain kinds of Actions and WitnessComponents.
+     */
+    public static class Constraint {
+        /**
+         * The type of the constraint.<br>
+         * Possible types are "ttl", "outpoint", and "payment".
+         */
+        public String type;
+
+        /**
+         * The time (in Unix milliseconds) at which the transaction becomes invalid (not set unless type is "ttl").
+         */
+        public long ttl;
+
+        /**
+         * Transaction id (hash) of an outpoint being spent (not set unless type is "outpoint").
+         */
+        public String hash;
+
+        /**
+         * Index of an outpoint being spent (not set unless type is "outpoint").
+         */
+        public int index;
+
+        /**
+         * AssetID of a payment being sent (unset unless type is "payment").
+         */
+        @SerializedName("asset_id")
+        public String assetID;
+
+        /**
+         * Amount of a payment being sent (unset unless type is "payment").
+         */
+        public BigInteger amount;
+
+        /**
+         * Control program to which payment is being sent (unset unless type is "payment").
+         */
+        public String program;
+
+        /**
+         * Reference-data hash in output to which payment is being sent (unset unless type is "payment").
+         */
+        @SerializedName("refdata_hash")
+        public String refdataHash;
+    }
+
+   /**
      * A builder class for transaction templates.
      */
     public static class Builder {

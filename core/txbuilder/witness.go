@@ -10,6 +10,7 @@ import (
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
+	"chain/protocol/vmutil"
 )
 
 // WitnessComponent encodes instructions for finalizing a transaction
@@ -81,7 +82,8 @@ type (
 		Keys []KeyID `json:"keys"`
 
 		// Constraints is a list of constraints to express in the deferred
-		// predicate in the txinput.
+		// predicate in the txinput. An empty constraint list produces a
+		// deferred predicate that commits to the tx sighash.
 		Constraints ConstraintList `json:"constraints"`
 
 		// Sigs is the output of Sign, where program (the output of Stage)
@@ -97,11 +99,11 @@ type (
 
 func (sw *SignatureWitness) stage(tpl *Template, index int) []byte {
 	if len(sw.Constraints) == 0 {
-		// When in doubt, commit to the hash of the current tx
-		// TODO(bobg): When we add other Constraint types, require callers
-		// to specify this explicitly rather than as a default.
 		h := tpl.Hash(index, bc.SigHashAll)
-		sw.Constraints = []Constraint{TxHashConstraint(h)}
+		builder := vmutil.NewBuilder()
+		builder.AddData(h[:])
+		builder.AddInt64(1).AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
+		return builder.Program
 	}
 	var program []byte
 	for i, c := range sw.Constraints {

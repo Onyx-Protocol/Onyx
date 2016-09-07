@@ -25,6 +25,7 @@ type IssueAction struct {
 		// not used anywhere else in the code base.
 		AssetAlias string `json:"asset_alias"`
 	}
+	Constraints   txbuilder.ConstraintList
 	ReferenceData json.Map `json:"reference_data"`
 }
 
@@ -44,7 +45,8 @@ func (a *IssueAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 	if a.Params.MinTime != nil {
 		minTime = *a.Params.MinTime
 	}
-	txin := bc.NewIssuanceInput(minTime, minTime.Add(ttl), asset.InitialBlockHash, a.Params.Amount, asset.IssuanceProgram, a.ReferenceData, nil)
+	maxTime := minTime.Add(ttl)
+	txin := bc.NewIssuanceInput(minTime, maxTime, asset.InitialBlockHash, a.Params.Amount, asset.IssuanceProgram, a.ReferenceData, nil)
 
 	tplIn := &txbuilder.Input{AssetAmount: a.Params.AssetAmount}
 	path := signers.Path(asset.Signer, signers.AssetKeySpace, nil)
@@ -53,7 +55,16 @@ func (a *IssueAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	tplIn.AddWitnessKeys(keyIDs, nrequired, nil)
+
+	constraints := a.Constraints
+	if len(constraints) > 0 {
+		// Add constraints only if some are already specified. If none
+		// are, leave the constraint list empty to get the default
+		// commit-to-txsighash behavior.
+		constraints = append(constraints, txbuilder.TTLConstraint(bc.Millis(maxTime)))
+	}
+
+	tplIn.AddWitnessKeys(keyIDs, nrequired, constraints)
 
 	return []*bc.TxInput{txin}, nil, []*txbuilder.Input{tplIn}, nil
 }
