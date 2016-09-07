@@ -4,7 +4,7 @@ Chain 🍭
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/chain/chain/tree/main)
 
-First, make sure you have the dependencies installed:
+### Dependencies
 
 * [Go](https://golang.org/doc/install) version 1.7, with $GOPATH set to your
   preferred directory
@@ -28,19 +28,28 @@ You should also add `$CHAIN/bin` to your path (as well as
 
 You might want to open a new terminal window to pick up the change.
 
-### Source Code
+### Installation
 
-Get and and compile the source:
+Build and install from source:
 
 	$ git clone https://github.com/chain/chain $CHAIN
 	$ cd $CHAIN
 	$ go install ./cmd/...
 
-Create a development database:
+Set up the database:
 
 	$ createdb core
+	$ migratedb
 
-## Testing
+Start Chain Core:
+
+	$ cored
+
+Access the dashboard:
+
+	$ open http://localhost:8080/
+
+Run tests:
 
     $ go test $(go list ./... | grep -v vendor)
 
