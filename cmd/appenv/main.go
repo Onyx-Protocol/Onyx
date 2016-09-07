@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	flagA = flag.String("a", "api", "`app`")
+	flagA = flag.String("a", "core", "`app`")
 	flagT = flag.String("t", os.Getenv("USER"), "`target`")
 	flagR = flag.String("r", "next", "`release`")
 	flagD = flag.Bool("d", false, "delete env vars")

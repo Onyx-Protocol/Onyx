@@ -13,7 +13,7 @@ Given one or more name=value arguments, it merges them into
 the stack's config.
 
 Flag -a specifies the app to access.
-The default is "api".
+The default is "core".
 
 Flag -t specifies the target to access.
 The default is the value of $USER.

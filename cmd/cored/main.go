@@ -91,7 +91,7 @@ var (
 
 func init() {
 	librato.URL = env.URL("LIBRATO_URL", "")
-	librato.Prefix = "chain.api."
+	librato.Prefix = "chain.cored."
 	expvar.NewString("buildtag").Set(buildTag)
 	expvar.NewString("builddate").Set(buildDate)
 	expvar.NewString("buildcommit").Set(buildCommit)
@@ -125,9 +125,9 @@ func main() {
 	}
 	processID := fmt.Sprintf("chain-%s-%s-%d", *target, hostname, os.Getpid())
 
-	log.SetPrefix("api-" + buildTag + ": ")
+	log.SetPrefix("cored-" + buildTag + ": ")
 	log.SetFlags(log.Lshortfile)
-	chainlog.SetPrefix(append([]interface{}{"app", "api", "target", *target, "buildtag", buildTag, "processID", processID}, race...)...)
+	chainlog.SetPrefix(append([]interface{}{"app", "cored", "target", *target, "buildtag", buildTag, "processID", processID}, race...)...)
 	chainlog.SetOutput(logWriter())
 
 	requireSecretInProd(*apiSecretToken)
@@ -144,7 +144,7 @@ func main() {
 	}
 	instrument.SetDefaultRuntime(client.NewRuntime(&client.Options{
 		AccessToken: traceguideToken,
-		GroupName:   "api",
+		GroupName:   "cored",
 		Attributes: map[string]interface{}{
 			"target":      *target,
 			"buildtag":    buildTag,

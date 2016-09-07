@@ -4,8 +4,8 @@ package main
 
 /*
 
-Each build of api also produces a race-enabled binary.
-See builds/api/build for the details.
+Each build of cored also produces a race-enabled binary.
+See builds/core/build for the details.
 
 To use this facility, log in to a machine, stop the
 normal binary via upstart, and start the race-enabled
