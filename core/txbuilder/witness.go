@@ -17,11 +17,6 @@ import (
 // produces zero or more items for the InputWitness of the txinput it
 // corresponds to.
 type WitnessComponent interface {
-	// Stage is called on the component after all the inputs of a tx
-	// template are present (e.g., to add the tx sighash). It produces a
-	// p2dp predicate.
-	Stage(*Template, int) []byte
-
 	// Sign is called to add signatures. Actual signing is delegated to
 	// a callback function.
 	Sign(context.Context, *Template, int, func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error
@@ -58,7 +53,6 @@ func MaterializeWitnesses(txTemplate *Template) (*bc.Tx, error) {
 
 type DataWitness []byte
 
-func (_ DataWitness) Stage(_ *Template, _ int) []byte { return nil }
 func (_ DataWitness) Sign(_ context.Context, _ *Template, _ int, _ func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
 	return nil
 }
@@ -101,7 +95,7 @@ type (
 	}
 )
 
-func (sw *SignatureWitness) Stage(tpl *Template, index int) []byte {
+func (sw *SignatureWitness) stage(tpl *Template, index int) []byte {
 	if len(sw.Constraints) == 0 {
 		// When in doubt, commit to the hash of the current tx
 		// TODO(bobg): When we add other Constraint types, require callers
@@ -128,7 +122,7 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, 
 		copy(newSigs, sw.Sigs)
 		sw.Sigs = newSigs
 	}
-	program := sw.Stage(tpl, index)
+	program := sw.stage(tpl, index)
 	h := sha3.Sum256(program)
 	for i, keyID := range sw.Keys {
 		if len(sw.Sigs[i]) > 0 {
@@ -160,7 +154,7 @@ func (sw SignatureWitness) Materialize(tpl *Template, index int) ([][]byte, erro
 	if added < sw.Quorum {
 		return nil, errors.WithDetailf(ErrMissingSig, "requires %d signature(s), got %d", sw.Quorum, added)
 	}
-	program := sw.Stage(tpl, index)
+	program := sw.stage(tpl, index)
 	result = append(result, program)
 	return result, nil
 }
