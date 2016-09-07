@@ -110,7 +110,7 @@ func post(v interface{}, url, user, pass string) error {
 		return err
 	}
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("User-Agent", "chain-engineering-librato/0")
+	req.Header.Add("User-Agent", "chain-librato/0")
 	req.Header.Add("Connection", "Keep-Alive")
 	req.SetBasicAuth(user, pass)
 	resp, err := httpClient.Do(req)

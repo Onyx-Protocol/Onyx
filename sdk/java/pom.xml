@@ -8,7 +8,7 @@
     <version>1.0.0</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>The Official Java SDK for Chain Core</description>
-    <url>https://github.com/chain-engineering/chain</url>
+    <url>https://github.com/chain/chain</url>
     <properties>
         <encoding>UTF-8</encoding>
     </properties>

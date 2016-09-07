@@ -6,7 +6,7 @@
 	<packaging>jar</packaging>
 	<version>1.0.0</version>
 	<name>${project.groupId}:${project.artifactId}</name>
-	<url>https://github.com/chain-engineering/chain</url>
+	<url>https://github.com/chain/chain</url>
 	<dependencies>
 		<dependency>
 			<groupId>com.chain</groupId>

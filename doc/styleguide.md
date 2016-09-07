@@ -226,7 +226,7 @@ several) where this patch was discussed. Use GitHub’s “closes #nnn”
 notation to tell GitHub to close the ones that need to be closed. This
 part generally needs to be added at the end of the review process, and
 it’s mostly automated by
-[git-land](https://github.com/chain-engineering/chain/blob/main/bin/git-land)
+[git-land](https://github.com/chain/chain/blob/main/bin/git-land)
 (see below).
 
 ### Trello
@@ -290,7 +290,7 @@ update your patch. When the reviewers are satisfied, they’ll write
 “LGTM”, for “looks good to me”.
 
 Then it’s time to land the change. Our tool
-[git-land](https://github.com/chain-engineering/chain/blob/main/bin/git-land)
+[git-land](https://github.com/chain/chain/blob/main/bin/git-land)
 automates much of the work of landing. First it checks a couple of
 preconditions, such as whether at least one person has LGTM’d the pull
 request, and whether the automated testing bot has marked it as
