@@ -45,18 +45,21 @@ func (h *Hash) UnmarshalText(b []byte) error {
 	return err
 }
 
-// Value satisfies the driver.Valuer interace
+// Value satisfies the driver.Valuer interface
 func (h Hash) Value() (driver.Value, error) {
 	return h.MarshalText()
 }
 
-// Scan satisfies the driver.Scanner interace
+// Scan satisfies the driver.Scanner interface
 func (h *Hash) Scan(val interface{}) error {
-	b, ok := val.([]byte)
-	if !ok {
-		return errors.New("Scan must receive a byte slice")
+	switch v := val.(type) {
+	case []byte:
+		return h.UnmarshalText(v)
+	case string:
+		return h.UnmarshalText([]byte(v))
+	default:
+		return fmt.Errorf("Hash.Scan received unsupported type %T", val)
 	}
-	return h.UnmarshalText(b)
 }
 
 // ParseHash takes a hex-encoded hash and returns
