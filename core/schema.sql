@@ -447,7 +447,8 @@ CREATE TABLE assets (
     initial_block_hash text NOT NULL,
     signer_id text,
     definition jsonb,
-    alias text
+    alias text,
+    first_block_height bigint
 );
 
 
@@ -1107,3 +1108,4 @@ insert into migrations (filename, hash) values ('2016-09-01.0.core.add-block-xpu
 insert into migrations (filename, hash) values ('2016-09-01.1.core.rename-genesis-to-initial.sql', '25699037b44a16db6e3fdbfe81f35dea5dbf4b230ff3f63904f5150f08955208');
 insert into migrations (filename, hash) values ('2016-09-01.2.core.drop-txs.sql', '14e21eba20efe97745d7e0a1a17e51582e2c05597030db1a3a01d46258ff2574');
 insert into migrations (filename, hash) values ('2016-09-05.0.asset.signer-null.sql', 'e611da44df43ea431c937c77c1e852fe82dc0049a118ec896102ca8a2cfb09f6');
+insert into migrations (filename, hash) values ('2016-09-06.0.asset.height.sql', 'd63ac300dfdaaa9ea48741b5d9c66af27a11eba46621ee2cb9a76ba39b2e50a6');

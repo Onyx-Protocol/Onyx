@@ -408,6 +408,20 @@ func programWithDefinition(pubkeys []ed25519.PublicKey, nrequired int, definitio
 	return builder.Program, nil
 }
 
+func definitionFromProgram(program []byte) ([]byte, error) {
+	pops, err := vm.ParseProgram(program)
+	if err != nil {
+		return nil, err
+	}
+	if len(pops) < 2 {
+		return nil, errors.New("bad issuance program")
+	}
+	if pops[1].Op != vm.OP_DROP {
+		return nil, errors.New("bad issuance program")
+	}
+	return pops[0].Data, nil
+}
+
 func mapToNullString(in map[string]interface{}) (*sql.NullString, error) {
 	var mapJSON []byte
 	if len(in) != 0 {
