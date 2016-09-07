@@ -225,9 +225,7 @@ Finally, list the reviewers and the pull requests or issues (can be
 several) where this patch was discussed. Use GitHub’s “closes #nnn”
 notation to tell GitHub to close the ones that need to be closed. This
 part generally needs to be added at the end of the review process, and
-it’s mostly automated by
-[git-land](https://github.com/chain/chain/blob/main/bin/git-land)
-(see below).
+it’s mostly automated by chainbot's /land command (see below).
 
 ### Trello
 
@@ -289,17 +287,15 @@ looking at it, they’ll add their comments and questions, and you’ll
 update your patch. When the reviewers are satisfied, they’ll write
 “LGTM”, for “looks good to me”.
 
-Then it’s time to land the change. Our tool
-[git-land](https://github.com/chain/chain/blob/main/bin/git-land)
-automates much of the work of landing. First it checks a couple of
-preconditions, such as whether at least one person has LGTM’d the pull
-request, and whether the automated testing bot has marked it as
-passing. A reviewer can veto the patch by writing “NOT LGTM” if they
-think landing it as-is would be a problem. Assuming all its checks
-pass, git-land squashes the branch down to a single commit, pushes it
-to branch main, and cleans up the topic branch. (Using git-land
-ensures each commit on main has a single parent. Merge commits are
-prohibited. They contribute no useful information and add clutter.)
+Then it’s time to land the change. Our tool chainbot automates much
+of the work of landing. First it checks whether at least one person
+has LGTM’d the pull request and that it has not been vetoed by a
+"NOT LGTM". Then it attempts an automated rebase against main. It
+will wait for automated testing to succeed, before squashing the
+branch down to a single commit and pushing it to branch main. (Using
+chainbot ensures each commit on main has a single parent. Merge
+commits are prohibited. They contribute no useful information and add
+clutter.) chainbot is called from Slack, using the /land command.
 
 ### A Tough Example
 
