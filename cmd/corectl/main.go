@@ -3,19 +3,14 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
-	"strconv"
-	"time"
 
-	"chain/core/generator"
-	"chain/crypto/ed25519"
+	"chain/core"
 	"chain/database/sql"
 	"chain/env"
 	"chain/log"
-	"chain/protocol"
 )
 
 // config vars
@@ -33,7 +28,7 @@ type command struct {
 }
 
 var commands = map[string]*command{
-	"init": {initblock, "init [quorum] [key...]"},
+	"config-generator": {configGenerator, "config-generator [quorum] [key...]"},
 }
 
 func main() {
@@ -58,51 +53,23 @@ func main() {
 	cmd.f(db, os.Args[2:])
 }
 
-func initblock(db *sql.DB, args []string) {
-	if len(args) == 0 {
-		fatalln("error: please provide a quorum size")
-	}
-	quorum, err := strconv.Atoi(args[0])
-	args = args[1:]
-	if err != nil {
-		fatalln("error:", err)
-	}
-	if quorum > len(args) {
-		fatalln("error: quorum size requires more keys than provided")
+func configGenerator(db *sql.DB, args []string) {
+	if len(args) != 0 {
+		fatalln("error: config-generator takes no args")
 	}
 
-	var keys []ed25519.PublicKey
-	for _, s := range args {
-		b, err := hex.DecodeString(s)
-		if err != nil {
-			fatalln("error:", err)
-		}
-		keys = append(keys, b)
-	}
-
-	block, err := protocol.NewInitialBlock(keys, quorum, time.Now())
-	if err != nil {
-		fatalln("error:", err)
+	config := &core.Config{
+		IsGenerator: true,
+		IsSigner:    true,
 	}
 
 	ctx := context.Background()
-	err = generator.SaveInitialBlock(ctx, db, block)
+	err := core.Configure(ctx, db, config)
 	if err != nil {
 		fatalln("error:", err)
 	}
 
-	// Save the config to the database too.
-	const q = `
-		INSERT INTO config (is_signer, is_generator, initial_block_hash, configured_at)
-		VALUES('t', 't', $1, NOW())
-	`
-	_, err = db.Exec(ctx, q, block.Hash())
-	if err != nil {
-		fatalln("error:", err)
-	}
-
-	fmt.Printf("block created: %+v\n\n", block)
-	fmt.Println("initial block hash", block.Hash())
+	fmt.Println("initial block hash", config.InitialBlockHash)
 }
 
 func fatalln(v ...interface{}) {
