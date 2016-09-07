@@ -2,6 +2,7 @@ package validation
 
 import (
 	"encoding/hex"
+	"math"
 	"reflect"
 	"strings"
 
@@ -67,7 +68,7 @@ func ConfirmTx(snapshot *state.Snapshot, tx *bc.Tx, timestampMS uint64) error {
 
 // ValidateTx checks whether tx passes context-free validation:
 // - inputs and outputs balance
-// - no duplicate prevouts
+// - no duplicate input commitments
 // - input scripts pass
 //
 // If tx is well formed and valid, it returns a nil error; otherwise, it
@@ -77,16 +78,32 @@ func ValidateTx(tx *bc.Tx) error {
 		return errors.WithDetail(ErrBadTx, "inputs are missing")
 	}
 
+	// Check that the transaction maximum time is greater than or equal to the
+	// minimum time, if it is greater than 0.
 	if tx.MaxTime > 0 && tx.MaxTime < tx.MinTime {
 		return errors.WithDetail(ErrBadTx, "positive maxtime must be >= mintime")
 	}
 
+	// Check that each input commitment appears only once. Also check that sums
+	// of inputs and outputs balance, and check that both input and output sums
+	// are less than 2^63 so that they don't overflow their int64 representation.
 	issued := make(map[bc.AssetID]bool)
-	parity := make(map[bc.AssetID]int64)
+	parityIns := make(map[bc.AssetID]int64)
+	parityOuts := make(map[bc.AssetID]int64)
 
 	for i, txin := range tx.Inputs {
 		assetID := txin.AssetID()
-		parity[assetID] += int64(txin.Amount())
+
+		if txin.Amount() > math.MaxInt64 {
+			return errors.WithDetail(ErrBadTx, "input value exceeds maximum value of int64")
+		}
+
+		sum, err := safeSum(parityIns[assetID], int64(txin.Amount()))
+		if err != nil {
+			return errors.WithDetailf(ErrBadTx, "adding input %d overflows the allowed asset amount", i)
+		}
+		parityIns[assetID] = sum
+
 		if txin.IsIssuance() {
 			issued[assetID] = true
 			if i == 0 {
@@ -107,17 +124,26 @@ func ValidateTx(tx *bc.Tx) error {
 	}
 
 	// Check that every output has a valid value.
-	for _, txout := range tx.Outputs {
+	for i, txout := range tx.Outputs {
 		// Transactions cannot have zero-value outputs.
 		// If all inputs have zero value, tx therefore must have no outputs.
 		if txout.Amount == 0 {
-			return errors.WithDetailf(ErrBadTx, "output value must be greater than 0")
+			return errors.WithDetail(ErrBadTx, "output value must be greater than 0")
 		}
-		parity[txout.AssetID] -= int64(txout.Amount)
+
+		if txout.Amount > math.MaxInt64 {
+			return errors.WithDetail(ErrBadTx, "output value exceeds maximum value of int64")
+		}
+
+		sum, err := safeSum(parityOuts[txout.AssetID], int64(txout.Amount))
+		if err != nil {
+			return errors.WithDetailf(ErrBadTx, "adding output %d overflows the allowed asset amount", i)
+		}
+		parityOuts[txout.AssetID] = sum
 	}
 
-	for asset, val := range parity {
-		if val != 0 {
+	for asset, val := range parityIns {
+		if val != parityOuts[asset] {
 			return errors.WithDetailf(ErrBadTx, "amounts for asset %s are not balanced on inputs and outputs", asset)
 		}
 	}
@@ -144,6 +170,16 @@ func ValidateTx(tx *bc.Tx) error {
 		}
 	}
 	return nil
+}
+
+// safeSum is a helper for ValidateTx which adds two int64s. An error is returned
+// if the result overflows.
+func safeSum(x, y int64) (int64, error) {
+	sum := x + y
+	if (x > 0 && y > 0 && sum < 0) || (x < 0 && y < 0 && sum > 0) {
+		return 0, errors.New("int64 overflow")
+	}
+	return sum, nil
 }
 
 // ApplyTx updates the state tree with all the changes to the ledger.
