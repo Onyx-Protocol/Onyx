@@ -116,7 +116,7 @@ func TestRecovery(t *testing.T) {
 		if ok {
 			// The driver never crashed the goroutine, so n is now greater than
 			// the total number of queries performed during `generateBlock`.
-			databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "pool_txs"))
+			databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "pool_txs", "*_id_seq"))
 			break
 		}
 
@@ -126,7 +126,7 @@ func TestRecovery(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "pool_txs"))
+		databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "pool_txs", "*_id_seq"))
 	}
 
 	if len(databaseDumps) < 2 {
