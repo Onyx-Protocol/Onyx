@@ -1,5 +1,5 @@
 .search_bar {
-  margin: 15px 0 30px 0;
+  margin: 15px 0 50px 0;
 }
 
 .search_field_full, .search_field_half, .sum_by_field {
@@ -31,8 +31,8 @@
   display: inline-block;
   position: relative;
   margin-left: 10px;
-  padding-bottom: 20px;
   width: 120px;
+  vertical-align: bottom;
 }
 
 .search_button {
