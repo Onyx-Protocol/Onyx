@@ -3,6 +3,7 @@ package txbuilder
 import (
 	"encoding/json"
 
+	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
@@ -16,6 +17,41 @@ type Constraint interface {
 	// executed, must consume nothing from the stack and leave a new
 	// boolean value on top of it.
 	Code() []byte
+}
+
+type ConstraintList []Constraint
+
+func (cl *ConstraintList) UnmarshalJSON(b []byte) error {
+	var pre []json.RawMessage
+	err := json.Unmarshal(b, &pre)
+	if err != nil {
+		return err
+	}
+	for i, p := range pre {
+		var t struct {
+			Type string
+		}
+		err = json.Unmarshal(p, &t)
+		if err != nil {
+			return err
+		}
+		var constraint Constraint
+		switch t.Type {
+		case "transaction_id":
+			var txhash struct {
+				Hash bc.Hash `json:"transaction_id"`
+			}
+			err = json.Unmarshal(p, &txhash)
+			if err != nil {
+				return err
+			}
+			constraint = TxHashConstraint(txhash.Hash)
+		default:
+			return errors.WithDetailf(ErrBadConstraint, "constraint %d has unknown type '%s'", i, t.Type)
+		}
+		*cl = append(*cl, constraint)
+	}
+	return nil
 }
 
 // TxHashConstraint requires the transaction to have the given hash.

@@ -82,7 +82,7 @@ type (
 
 		// Constraints is a list of constraints to express in the deferred
 		// predicate in the txinput.
-		Constraints []Constraint `json:"constraints"`
+		Constraints ConstraintList `json:"constraints"`
 
 		// Sigs is the output of Sign, where program (the output of Stage)
 		// is signed by each of the keys in Keys.
@@ -174,47 +174,6 @@ func (sw SignatureWitness) MarshalJSON() ([]byte, error) {
 		Sigs:        sw.Sigs,
 	}
 	return json.Marshal(obj)
-}
-
-func (sw *SignatureWitness) UnmarshalJSON(b []byte) error {
-	var pre struct {
-		Quorum      int     `json:"quorum"`
-		Keys        []KeyID `json:"keys"`
-		Constraints []json.RawMessage
-		Sigs        []chainjson.HexBytes `json:"signatures"`
-	}
-	err := json.Unmarshal(b, &pre)
-	if err != nil {
-		return err
-	}
-	sw.Quorum = pre.Quorum
-	sw.Keys = pre.Keys
-	sw.Sigs = pre.Sigs
-	for i, c := range pre.Constraints {
-		var t struct {
-			Type string `json:"type"`
-		}
-		err = json.Unmarshal(c, &t)
-		if err != nil {
-			return err
-		}
-		var constraint Constraint
-		switch t.Type {
-		case "transaction_id":
-			var txhash struct {
-				Hash bc.Hash `json:"transaction_id"`
-			}
-			err = json.Unmarshal(c, &txhash)
-			if err != nil {
-				return err
-			}
-			constraint = TxHashConstraint(txhash.Hash)
-		default:
-			return errors.WithDetailf(ErrBadConstraint, "constraint %d has unknown type '%s'", i, t.Type)
-		}
-		sw.Constraints = append(sw.Constraints, constraint)
-	}
-	return nil
 }
 
 func (inp *Input) AddWitnessData(data []byte) {
