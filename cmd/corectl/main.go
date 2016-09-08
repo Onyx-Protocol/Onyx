@@ -23,12 +23,11 @@ var (
 var logbuf bytes.Buffer
 
 type command struct {
-	f         func(*sql.DB, []string)
-	shortHelp string
+	f func(*sql.DB, []string)
 }
 
 var commands = map[string]*command{
-	"config-generator": {configGenerator, "config-generator [quorum] [key...]"},
+	"config-generator": {configGenerator},
 }
 
 func main() {
