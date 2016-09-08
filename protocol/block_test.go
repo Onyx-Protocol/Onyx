@@ -62,8 +62,8 @@ func TestNoTimeTravel(t *testing.T) {
 	c.setHeight(2)
 
 	c.setHeight(1) // don't go backward
-	if c.height.n != 2 {
-		t.Fatalf("c.height.n = %d want 2", c.height.n)
+	if c.state.height != 2 {
+		t.Fatalf("c.state.height = %d want 2", c.state.height)
 	}
 }
 

@@ -26,6 +26,10 @@ const saveSnapshotFrequency = 10
 // ErrBadBlock is returned when a block is invalid.
 var ErrBadBlock = errors.New("invalid block")
 
+// ErrStaleState is returned when the Chain does not have a current
+// blockchain state.
+var ErrStaleState = errors.New("stale blockchain state")
+
 // GetBlock returns the block at the given height, if there is one,
 // otherwise it returns an error.
 func (c *Chain) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) {
@@ -155,6 +159,7 @@ func (c *Chain) commitBlock(ctx context.Context, block *bc.Block, snapshot *stat
 		return errors.Wrap(err, "finalizing block")
 	}
 
+	// c.setState will update the local blockchain state and height.
 	// When c.store is a txdb.Store, and c has been initialized with a
 	// channel from txdb.ListenBlocks, then the above call to
 	// c.store.FinalizeBlock will have done a postgresql NOTIFY and
@@ -162,7 +167,7 @@ func (c *Chain) commitBlock(ctx context.Context, block *bc.Block, snapshot *stat
 	// setHeight.  But duplicate calls with the same blockheight are
 	// harmless; and the following call is required in the cases where
 	// it's not redundant.
-	c.setHeight(block.Height)
+	c.setState(block, snapshot)
 	return nil
 }
 
@@ -174,26 +179,14 @@ func (c *Chain) setHeight(h uint64) {
 	// which means h might be from the past.
 	// Detect and discard these duplicate calls.
 
-	c.height.cond.L.Lock()
-	defer c.height.cond.L.Unlock()
+	c.state.cond.L.Lock()
+	defer c.state.cond.L.Unlock()
 
-	if h <= c.height.n {
+	if h <= c.state.height {
 		return
 	}
-	c.height.n = h
-	c.height.cond.Broadcast()
-}
-
-func (c *Chain) currentState(ctx context.Context, expectedHeight uint64) (*state.Snapshot, error) {
-	// TODO(jackson): Store the state tree on Chain.
-	snapshot, height, err := c.store.LatestSnapshot(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "loading state snapshot")
-	}
-	if height != expectedHeight {
-		return nil, errors.New("missing state snapshot for block")
-	}
-	return state.Copy(snapshot), nil
+	c.state.height = h
+	c.state.cond.Broadcast()
 }
 
 // ValidateBlockForSig performs validation on an incoming _unsigned_
@@ -215,13 +208,11 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 			return errors.Wrap(err, "getting previous block")
 		}
 
-		// TODO(jackson): Forward request to leader process (who will have
-		// the state snapshot in-memory) and delete `c.currentState`.
-		// Because we don't save the snapshot on every block, this isn't
-		// guaranteed to be correct!
-		snapshot, err = c.currentState(ctx, prev.Height)
-		if err != nil {
-			return err
+		prev, snapshot = c.State()
+		if prev == nil || prev.Height != block.Height-1 {
+			// TODO(jackson): Forward request to leader process (who will have
+			// the state snapshot in-memory).
+			return ErrStaleState
 		}
 	}
 

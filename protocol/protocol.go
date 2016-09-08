@@ -98,9 +98,11 @@ type Pool interface {
 // objects can be safely stored.
 type Chain struct {
 	blockCallbacks []BlockCallback
-	height         struct {
-		cond sync.Cond // protects n
-		n    uint64
+	state          struct {
+		cond     sync.Cond // protects height, block, snapshot
+		height   uint64
+		block    *bc.Block       // current only if leader
+		snapshot *state.Snapshot // current only if leader
 	}
 	store Store
 	pool  Pool
@@ -112,10 +114,10 @@ func NewChain(ctx context.Context, store Store, pool Pool, heights <-chan uint64
 		store: store,
 		pool:  pool,
 	}
-	c.height.cond.L = new(sync.Mutex)
+	c.state.cond.L = new(sync.Mutex)
 
 	var err error
-	c.height.n, err = store.Height(ctx)
+	c.state.height, err = store.Height(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "looking up blockchain height")
 	}
@@ -134,9 +136,29 @@ func NewChain(ctx context.Context, store Store, pool Pool, heights <-chan uint64
 
 // Height returns the current height of the blockchain.
 func (c *Chain) Height() uint64 {
-	c.height.cond.L.Lock()
-	defer c.height.cond.L.Unlock()
-	return c.height.n
+	c.state.cond.L.Lock()
+	defer c.state.cond.L.Unlock()
+	return c.state.height
+}
+
+// State returns the most recent state available. It will not be current
+// unless the current process is the leader. Callers should examine the
+// returned block header's height if they need to verify the current state.
+func (c *Chain) State() (*bc.Block, *state.Snapshot) {
+	c.state.cond.L.Lock()
+	defer c.state.cond.L.Unlock()
+	return c.state.block, c.state.snapshot
+}
+
+func (c *Chain) setState(b *bc.Block, s *state.Snapshot) {
+	c.state.cond.L.Lock()
+	defer c.state.cond.L.Unlock()
+	c.state.block = b
+	c.state.snapshot = s
+	if b != nil && b.Height > c.state.height {
+		c.state.height = b.Height
+		c.state.cond.Broadcast()
+	}
 }
 
 func (c *Chain) AddBlockCallback(f BlockCallback) {
@@ -157,10 +179,10 @@ func (c *Chain) WaitForBlockSoon(height uint64) error {
 
 // WaitForBlock waits for the block at the given height.
 func (c *Chain) WaitForBlock(height uint64) {
-	c.height.cond.L.Lock()
-	defer c.height.cond.L.Unlock()
-	for c.height.n < height {
-		c.height.cond.Wait()
+	c.state.cond.L.Lock()
+	defer c.state.cond.L.Unlock()
+	for c.state.height < height {
+		c.state.cond.Wait()
 	}
 }
 
