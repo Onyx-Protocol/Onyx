@@ -21,7 +21,7 @@ public class UnspentOutput {
     @SerializedName("account_tags")
     public Map<String, Object> accountTags;
     @SerializedName("control_program")
-    public byte[] controlProgram;
+    public String controlProgram;
     @SerializedName("reference_data")
     public Map<String, Object> referenceData;
 

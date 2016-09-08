@@ -14,7 +14,7 @@ public class Asset {
     public String alias;
 
     @SerializedName("issuance_program")
-    public byte[] issuanceProgram;
+    public String issuanceProgram;
 
     /**
      * The immutable asset definition

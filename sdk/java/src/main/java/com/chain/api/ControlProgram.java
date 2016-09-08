@@ -13,11 +13,10 @@ import java.util.Map;
 
 public class ControlProgram {
     @SerializedName("control_program")
-    public byte[] program;
+    public String program;
 
-    public static byte[] retireProgram() {
-        byte[] b = {0x6a};
-        return b;
+    public static String retireProgram() {
+        return "6a";
     }
 
     public static class Builder {

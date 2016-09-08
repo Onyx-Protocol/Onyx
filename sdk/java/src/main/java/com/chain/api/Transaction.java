@@ -164,13 +164,13 @@ public class Transaction {
          * Inputs to the control program used to verify the ability to take the specified action (possibly null).
          */
         @SerializedName("input_witness")
-        public byte[][] inputWitness;
+        public String[] inputWitness;
 
         /**
          * A program specifying a predicate for issuing an asset (possibly null if input is not an issuance).
          */
         @SerializedName("issuance_program")
-        public byte[] issuanceProgram;
+        public String issuanceProgram;
 
         /**
          * User specified, unstructured data embedded within an input (possibly null).
@@ -204,7 +204,7 @@ public class Transaction {
          * The control program which must be satisfied to transfer this output.
          */
         @SerializedName("control_program")
-        public byte[] controlProgram;
+        public String controlProgram;
 
         /**
          * The output's position in a transaction's list of outputs

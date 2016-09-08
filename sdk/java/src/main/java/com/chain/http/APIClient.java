@@ -18,9 +18,8 @@ public class APIClient {
     private OkHttpClient httpClient;
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     public static final Gson serializer = Converters
-        .registerOffsetDateTime(new GsonBuilder())
-        .registerTypeHierarchyAdapter(byte[].class, new GsonByteHex())
-        .create();
+            .registerOffsetDateTime(new GsonBuilder())
+            .create();
 
     public APIClient(URL url) {
         this.baseURL = url;
@@ -202,42 +201,5 @@ public class APIClient {
             }
         }
         return Credentials.basic(user, pass);
-    }
-
-    private static class GsonByteHex implements JsonSerializer<byte[]>, JsonDeserializer<byte[]> {
-        final private static char[] hexArray = "0123456789abcdef".toCharArray();
-
-        private static char[] toHex(byte[] data) {
-            char[] res = new char[data.length * 2];
-            for (int i = 0; i < data.length; i++) {
-                int v = data[i] & 0xFF;
-                res[i * 2] = hexArray[v >>> 4];
-                res[i * 2 + 1] = hexArray[v & 0x0F];
-            }
-            return res;
-        }
-
-        private static byte[] fromHex(char[] src)
-        throws Exception {
-            byte[] res = new byte[src.length / 2];
-            for (int i = 0; i < src.length; i += 2) {
-                res[i / 2] = (byte) ((Character.digit(src[i], 16) << 4) + Character.digit(src[i+1], 16));
-            }
-            return res;
-        }
-
-        public JsonElement serialize(byte[] data, Type t, JsonSerializationContext c) {
-            return new JsonPrimitive(new String(toHex(data)));
-        }
-
-        public byte[] deserialize(JsonElement json, Type t, JsonDeserializationContext c)
-        throws JsonParseException {
-            char[] src = json.getAsString().toCharArray();
-            try {
-                return fromHex(src);
-            } catch (Exception e) {
-                throw new JsonParseException(e);
-            }
-        }
     }
 }
