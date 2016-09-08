@@ -1,19 +1,17 @@
 # Chain Core QA Suite
-All tests require proper credentials to a Chain Core and a copy of the Chain SDK.
-
-### Build test suite
+### Build jar
 
 Install mvn:
 
     $ brew install mvn
 
-Download and build the [Chain Java SDK](https://github.com/chain-engineering/chain-sdk-java).
+Build the Chain Core SDK jar
 
 Add the jar to your local maven repository:
 
-    $ mvn install:install-file -Dfile=relative/path/to/jar -DpomFile=relative/path/to/pom.xml
+    $ mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file -Dfile=relative/path/to/jar
 
-Build the tests:
+Build the QA Suite:
 
     $ cd $CHAIN/qa
     $ mvn package
@@ -21,13 +19,16 @@ Build the tests:
 ### Single core tests
 > These tests exercise various, functional flows available within a single core network.
 
-Run tests
+Your core url can be passed as the CHAIN_API_URL environment variable. All programs will default to http://localhost:8080
 
-    $ CHAIN_API_URL=<auth_url> java -ea -cp path/to/chain-core-qa.jar chain.qa.baseline.singlecore.Main
+Run basic example
 
-### Multi-core tests
-> These tests exercise various, functional flows available within a multi-core network.
+    $ java -cp path/to/chain-core-qa.jar com.chain_qa.BasicExample
 
-Run tests
+Run multisig example
 
-    $ CHAIN_API_URL=<auth_url> SECOND_API_URL=<second_auth_url> java -ea -cp path/to/chain-core-qa.jar chain.qa.baseline.multicore.Main
+    $ java -cp path/to/chain-core-qa.jar com.chain_qa.MultiSigExample
+
+Run reference data example
+
+    $ java -cp path/to/chain-core-qa.jar com.chain_qa.ReferenceDataExample
