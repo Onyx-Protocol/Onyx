@@ -13,7 +13,6 @@ ldflags="-X main.buildTag=dev -X main.buildCommit=$commit -X main.buildDate=$dat
 
 cleanup() {
   rm -f $CHAIN/docker/de/cored
-  rm -f $CHAIN/docker/de/schema.sql
 }
 trap "cleanup" EXIT
 
@@ -22,7 +21,5 @@ GOOS=linux GOARCH=amd64 go build\
   -ldflags "$ldflags"\
   -o $CHAIN/docker/de/cored\
   chain/cmd/cored
-
-cp $CHAIN/core/schema.sql $CHAIN/docker/de/schema.sql
 
 docker build --tag chain:latest $CHAIN/docker/de/
