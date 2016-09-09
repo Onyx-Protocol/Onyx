@@ -74,7 +74,28 @@ Endpoint
 POST /mockhsm/list-keys
 ```
 
-Response: An array of [key objects](#key-object).
+Request
+
+```
+{
+  "cursor": "..." // optional
+}
+```
+
+Response
+
+```
+{
+  "items": [
+    <key object>,
+    ...
+  ],
+  "query": {
+    "cursor": "..."
+  },
+  "last_page": true|false
+}
+```
 
 ### Sign Transaction Template
     
@@ -164,12 +185,8 @@ Response
 ```
 {
   "items": [
-    {
-      "id": "...", 
-      "issuance_program": "...", 
-      "definition": {}, 
-      "tags": {}
-    }
+    <asset object>,
+    ...
   ],
   "query": {
     "filter": "...", 
@@ -262,9 +279,9 @@ Request
 
 ```
 {
-  "filter": "...",      // optional
-  "filter_params": [],  // optional
-  "cursor": "..."       // optional
+  "filter": "...", // optional
+  "filter_params": [], // optional
+  "cursor": "..." // optional
 }
 ```
 
@@ -273,12 +290,8 @@ Response
 ```
 {
   "items": [
-    {
-      "id": "...", 
-      "xpubs": ["xpub"], 
-      "quorum": 1, 
-      "tags": {}
-    }
+    <account object>,
+    ...
   ],
   "query": {
     "filter": "...", 
@@ -546,15 +559,38 @@ POST /list-transactions
 
 Request
 
-Accepts either an `index_id`, `index_alias`, or a `filter`.
 ```
 {
+  // supply one of index_id, index_alias, or filter
   "index_id": "...",
-  "filter_params": ["param"],
+  "index_alias": "...",
+  "filter": "...",
+
+  "filter_params": [], // optional
+  "cursor": "..." // optional
 }
 ```
 
-Response: an array of [transaction objects](#transaction-object).
+Response
+
+```
+{
+  "items": [
+    <transaction object>,
+    ...
+  ],
+  "query": {
+    // includes one of index_id, index_alias, or filter
+    "index_id": "...",
+    "index_alias": "...",
+    "filter": "...",
+
+    "filter_params": [],
+    "cursor": "..."
+  },
+  "last_page": true|false
+}
+```
 
 ### List Balances
 
@@ -565,13 +601,15 @@ POST /list-balances
 
 Request
 
-Accepts either an `index_id`, `index_alias`, or a `filter`.
-
 ``` 
 {
+  // supply one of index_id, index_alias, or filter
   "index_id": "...",
-  "filter_params": ["param"],
-  "sum_by": ["selector1", "selector2"]
+  "index_alias": "...",
+  "filter": "...",
+
+  "filter_params": ["param"], // optional
+  "sum_by": ["selector1", ...] // optional
 }
 ```
 
@@ -579,26 +617,42 @@ Response
 
 Grouped
 ```
-[
-  {
-    "sum_by": {"selector1": "...", "selector2": "..."},
-    "amount": 10
-  },
-  {
-    "sum_by": {"selector1": "...", "selector2": "..."},
-    "amount": 20
-  }
-]
-
+{
+  "items": [
+    {
+      "sum_by": {
+        "selector1": "...",
+        ...
+      },
+      "amount": ...
+    },
+    ...
+  ],
+  "last_page": true, // currently only returns one page
+  "query": {...}
+}
 ```
     
 Ungrouped 
 ```    
-[
-  {
-    "amount": 10
-  }
-]
+{
+  "items": [
+    {
+      "amount": 10
+    }
+  ],
+  "last_page": true,
+  "query": {
+    // includes one of index_id, index_alias, or filter
+    "index_id": "...",
+    "index_alias": "...",
+    "filter": "...",
+
+    "filter_params": [],
+    "sum_by": [...],
+    "cursor": "..."
+  },
+}
 ```
 
 ### List Unspent Outputs
@@ -613,12 +667,36 @@ Request
 Accepts either an `index_id`, `index_alias`, or a `filter`.
 ```
 {
+  // supply one of index_id, index_alias, or filter
   "index_id": "...",
-  "filter_params": ["param"],
+  "index_alias": "...",
+  "filter": "...",
+
+  "filter_params": [], // optional
+  "cursor": "..." // optional
 }
 ```
 
-Response: an array of [output objects](#output-object).
+Response
+
+```
+{
+  "items": [
+    <unspent output object>,
+    ...
+  ],
+  "query": {
+    // includes one of index_id, index_alias, or filter
+    "index_id": "...",
+    "index_alias": "...",
+    "filter": "...",
+
+    "filter_params": [],
+    "cursor": "..."
+  },
+  "last_page": true|false
+}
+```
 
 ## Indexes
 
@@ -649,6 +727,7 @@ Request
   "sum_by": []            // only for `type: balance`
 }
 ```
+
 Response: an [index object](#index-object).
 
 ### List Indexes
@@ -658,7 +737,28 @@ Endpoint
 POST /list-indexes
 ```
 
-Response: an array of [index objects](#index-object).
+Request
+
+```
+{
+  "cursor": "..." // optional
+}
+```
+
+Response
+
+```
+{
+  "items": [
+    <index object>,
+    ...
+  ],
+  "query": {
+    "cursor": "..."
+  },
+  "last_page": true|false
+}
+```
 
 ## Core
 
