@@ -103,14 +103,6 @@ func TestBuild(t *testing.T) {
 	}
 }
 
-func programWithDefinition(pubkeys []ed25519.PublicKey, nrequired int, definition []byte) ([]byte, error) {
-	issuanceProg := vmutil.P2DPMultiSigProgram(pubkeys, nrequired)
-	builder := vmutil.NewBuilder()
-	builder.AddData(definition).AddOp(vm.OP_DROP)
-	builder.AddRawBytes(issuanceProg)
-	return builder.Program, nil
-}
-
 func TestMaterializeWitnesses(t *testing.T) {
 	var initialBlockHash bc.Hash
 	privkey, pubkey, err := hd25519.NewXKeys(nil)
@@ -218,10 +210,18 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	builder := vmutil.NewBuilder()
 	builder.AddData(h[:])
 	builder.AddInt64(1).AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
-	msg := sha3.Sum256(builder.Program)
+	prog := builder.Program
+	msg := sha3.Sum256(prog)
 	sig1 := ed25519.Sign(privkey1.Key, msg[:])
 	sig2 := ed25519.Sign(privkey2.Key, msg[:])
 	sig3 := ed25519.Sign(privkey3.Key, msg[:])
+	want := [][]byte{
+		sig1,
+		sig2,
+		prog,
+	}
+
+	// Test with more signatures than required, in correct order
 	tpl.Inputs = []*Input{{
 		WitnessComponents: []WitnessComponent{
 			&SignatureWitness{
@@ -245,10 +245,58 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 			},
 		},
 	}}
-
-	_, err = MaterializeWitnesses(tpl)
+	tx, err := MaterializeWitnesses(tpl)
 	if err != nil {
 		t.Fatal(withStack(err))
+	}
+	got := tx.Inputs[0].InputWitness
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got input witness %v, want input witness %v", got, want)
+	}
+
+	// Test with more signatures than required, in incorrect order
+	component, ok := tpl.Inputs[0].WitnessComponents[0].(*SignatureWitness)
+	if !ok {
+		t.Fatal("expecting WitnessComponent of type SignatureWitness")
+	}
+	component.Sigs = []json.HexBytes{sig3, sig2, sig1}
+	tx, err = MaterializeWitnesses(tpl)
+	if err != nil {
+		t.Fatal(withStack(err))
+	}
+
+	got = tx.Inputs[0].InputWitness
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got input witness %v, want input witness %v", got, want)
+	}
+
+	// Test with exact amount of signatures required, in correct order
+	component.Sigs = []json.HexBytes{sig1, sig2}
+	tx, err = MaterializeWitnesses(tpl)
+	if err != nil {
+		t.Fatal(withStack(err))
+	}
+	got = tx.Inputs[0].InputWitness
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got input witness %v, want input witness %v", got, want)
+	}
+
+	// Test with exact amount of signatures required, in incorrect order
+	component.Sigs = []json.HexBytes{sig2, sig1}
+	tx, err = MaterializeWitnesses(tpl)
+	if err != nil {
+		t.Fatal(withStack(err))
+	}
+	got = tx.Inputs[0].InputWitness
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got input witness %v, want input witness %v", got, want)
+	}
+
+	// Test with insufficient amount of signatures required
+	component.Sigs = []json.HexBytes{sig2}
+	tx, err = MaterializeWitnesses(tpl)
+	if errors.Root(err) != ErrMissingSig {
+		t.Errorf("got %v, want ErrMissingSig", err)
 	}
 }
 
