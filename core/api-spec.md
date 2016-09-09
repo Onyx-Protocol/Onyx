@@ -118,6 +118,8 @@ Response: An array of signed transaction template objects.
     "id": "...",
     "alias": "...",
     "issuance_program: "...",
+    "xpubs": ["xpub"],
+    "quorum": 1,
     "definition": {},
     "tags": {}
   }
