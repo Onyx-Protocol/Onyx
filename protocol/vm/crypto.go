@@ -130,22 +130,13 @@ func opCheckMultiSig(vm *virtualMachine) error {
 		pubkeys = append(pubkeys, pubkey)
 	}
 
-	// TODO(jackson): Fix this once we're guaranteed to that signatures
-	// and public keys will be in the same order.
-	used := make([]bool, len(pubkeys))
-	for _, sig := range sigs {
-		valid := false
-		for i, pubkey := range pubkeys {
-			if !used[i] && ed25519.Verify(pubkey, msg, sig) {
-				valid, used[i] = true, true
-				break
-			}
+	for len(sigs) > 0 && len(pubkeys) > 0 {
+		if ed25519.Verify(pubkeys[0], msg, sigs[0]) {
+			sigs = sigs[1:]
 		}
-		if !valid {
-			return vm.pushBool(false, false)
-		}
+		pubkeys = pubkeys[1:]
 	}
-	return vm.pushBool(true, false)
+	return vm.pushBool(len(sigs) == 0, false)
 }
 
 func opTxSigHash(vm *virtualMachine) error {

@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
+	"chain/crypto/ed25519"
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
@@ -141,24 +142,39 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, 
 }
 
 func (sw SignatureWitness) Materialize(tpl *Template, index int) ([][]byte, error) {
-	added := 0
-	result := make([][]byte, 0, 1+len(sw.Keys))
-	for _, s := range sw.Sigs {
-		if len(s) == 0 {
-			continue
-		}
-		result = append(result, s)
-		added++
-		if added >= sw.Quorum {
-			break
-		}
+	input := tpl.Unsigned.Inputs[index]
+	var multiSig []byte
+	if input.IsIssuance() {
+		multiSig = input.IssuanceProgram()
+	} else {
+		multiSig = input.ControlProgram()
 	}
-	if added < sw.Quorum {
-		return nil, errors.WithDetailf(ErrMissingSig, "requires %d signature(s), got %d", sw.Quorum, added)
+	pubkeys, quorum, err := vmutil.ParseP2DPMultiSigProgram(multiSig)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing input program script")
 	}
+	var sigs [][]byte
 	program := sw.stage(tpl, index)
-	result = append(result, program)
-	return result, nil
+	h := sha3.Sum256(program)
+	for i := 0; i < len(pubkeys) && len(sigs) < quorum; i++ {
+		k := indexSig(pubkeys[i], h[:], sw.Sigs)
+		if k >= 0 {
+			sigs = append(sigs, sw.Sigs[k])
+		}
+	}
+	if len(sigs) < quorum {
+		return nil, errors.WithDetailf(ErrMissingSig, "requires %d signature(s), got %d", quorum, len(sigs))
+	}
+	return append(sigs, program), nil
+}
+
+func indexSig(key ed25519.PublicKey, msg []byte, sigs []chainjson.HexBytes) int {
+	for i, sig := range sigs {
+		if ed25519.Verify(key, msg, sig) {
+			return i
+		}
+	}
+	return -1
 }
 
 func (sw SignatureWitness) MarshalJSON() ([]byte, error) {
