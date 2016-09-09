@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"chain/crypto/ed25519/hd25519"
 	"chain/encoding/json"
@@ -24,11 +25,25 @@ var (
 // Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map) (*Template, error) {
+func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, maxTimeMS uint64) (*Template, error) {
 	if tx == nil {
 		tx = &bc.TxData{
 			Version: bc.CurrentTransactionVersion,
 		}
+	}
+
+	// If there are any actions with a TTL, restrict the transaction's MaxTime accordingly.
+	now := time.Now()
+	for _, a := range actions {
+		if t, ok := a.(ttler); ok {
+			timestampMS := bc.Millis(now.Add(t.TTL()))
+			if timestampMS < maxTimeMS {
+				maxTimeMS = timestampMS
+			}
+		}
+	}
+	if tx.MaxTime == 0 || tx.MaxTime > maxTimeMS {
+		tx.MaxTime = maxTimeMS
 	}
 
 	if len(ref) != 0 {

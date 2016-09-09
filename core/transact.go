@@ -16,6 +16,10 @@ import (
 	"chain/protocol/bc"
 )
 
+const (
+	defaultTxTTL = 5 * time.Minute
+)
+
 func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
@@ -26,7 +30,12 @@ func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, e
 	}
 	defer dbtx.Rollback(ctx)
 
-	tpl, err := txbuilder.Build(ctx, req.Tx, req.actions(), req.ReferenceData)
+	ttl := req.TTL
+	if ttl == 0 {
+		ttl = defaultTxTTL
+	}
+	maxTimeMS := bc.Millis(time.Now().Add(ttl))
+	tpl, err := txbuilder.Build(ctx, req.Tx, req.actions(), req.ReferenceData, maxTimeMS)
 	if err != nil {
 		return nil, err
 	}

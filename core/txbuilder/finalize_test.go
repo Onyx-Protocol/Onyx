@@ -49,11 +49,10 @@ func TestConflictingTxsInPool(t *testing.T) {
 		Amount:  10,
 	}
 	spendAction := assettest.NewAccountSpendAction(assetAmount, info.acctA.ID, nil, nil, nil, nil)
-	spendAction.Params.TTL = time.Millisecond
 	dest1 := assettest.NewAccountControlAction(assetAmount, info.acctB.ID, nil)
 
 	// Build the first tx
-	firstTemplate, err := Build(ctx, nil, []Action{spendAction, dest1}, nil)
+	firstTemplate, err := Build(ctx, nil, []Action{spendAction, dest1}, nil, bc.Millis(time.Now().Add(time.Minute)))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -64,7 +63,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	// Build the second tx
-	secondTemplate, err := Build(ctx, &tx.TxData, nil, []byte("test"))
+	secondTemplate, err := Build(ctx, &tx.TxData, nil, []byte("test"), bc.Millis(time.Now().Add(time.Minute)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -297,6 +296,7 @@ func issue(ctx context.Context, t testing.TB, c *protocol.Chain, info *clientInf
 		nil,
 		[]Action{assettest.NewIssueAction(assetAmount, nil), issueDest},
 		nil,
+		bc.Millis(time.Now().Add(time.Minute)),
 	)
 	if err != nil {
 		return nil, err
@@ -313,7 +313,7 @@ func transfer(ctx context.Context, t testing.TB, c *protocol.Chain, info *client
 	source := assettest.NewAccountSpendAction(assetAmount, srcAcctID, nil, nil, nil, nil)
 	dest := assettest.NewAccountControlAction(assetAmount, destAcctID, nil)
 
-	xferTx, err := Build(ctx, nil, []Action{source, dest}, []byte{})
+	xferTx, err := Build(ctx, nil, []Action{source, dest}, []byte{}, bc.Millis(time.Now().Add(time.Minute)))
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

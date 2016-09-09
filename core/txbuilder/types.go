@@ -3,6 +3,7 @@ package txbuilder
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	chainjson "chain/encoding/json"
 	"chain/errors"
@@ -86,4 +87,8 @@ func (inp *Input) UnmarshalJSON(b []byte) error {
 
 type Action interface {
 	Build(context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*Input, error)
+}
+
+type ttler interface {
+	TTL() time.Duration
 }

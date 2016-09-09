@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"chain/core/account"
 	"chain/core/asset"
@@ -49,6 +50,7 @@ type buildRequest struct {
 	Tx            *bc.TxData    `json:"transaction"`
 	Actions       []*action     `json:"actions"`
 	ReferenceData chainjson.Map `json:"reference_data"`
+	TTL           time.Duration `json:"ttl"`
 }
 
 func (req *buildRequest) actions() []txbuilder.Action {

@@ -66,8 +66,8 @@ func TestBuild(t *testing.T) {
 		newControlProgramAction(bc.AssetAmount{AssetID: [32]byte{2}, Amount: 6}, []byte("dest")),
 		testAction(bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5}),
 	}
-
-	got, err := Build(ctx, nil, actions, nil)
+	expiryTime := bc.Millis(time.Now().Add(time.Minute))
+	got, err := Build(ctx, nil, actions, nil, expiryTime)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -76,6 +76,7 @@ func TestBuild(t *testing.T) {
 	want := &Template{
 		Unsigned: &bc.TxData{
 			Version: 1,
+			MaxTime: expiryTime,
 			Inputs: []*bc.TxInput{
 				bc.NewSpendInput([32]byte{255}, 0, nil, [32]byte{1}, 5, nil, nil),
 			},

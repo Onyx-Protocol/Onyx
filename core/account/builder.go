@@ -33,15 +33,19 @@ type SpendAction struct {
 	ClientToken   *string  `json:"client_token"`
 }
 
+// TTL returns the time-to-live of the reservation created by this action.
+func (a *SpendAction) TTL() time.Duration {
+	ttl := a.Params.TTL
+	if ttl == 0 {
+		ttl = time.Minute
+	}
+	return ttl
+}
+
 func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
 	acct, err := FindByID(ctx, a.Params.AccountID)
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "get account info")
-	}
-
-	ttl := a.Params.TTL
-	if ttl == 0 {
-		ttl = time.Minute
 	}
 
 	utxodbSource := utxodb.Source{
@@ -53,7 +57,7 @@ func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 		ClientToken: a.ClientToken,
 	}
 	utxodbSources := []utxodb.Source{utxodbSource}
-	reserved, change, err := utxodb.Reserve(ctx, utxodbSources, ttl)
+	reserved, change, err := utxodb.Reserve(ctx, utxodbSources, a.TTL())
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "reserving utxos")
 	}
@@ -69,7 +73,7 @@ func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 		// Add constraints only if some are already specified. If none
 		// are, leave the constraint list empty to get the default
 		// commit-to-txsighash behavior.
-		expiration := bc.Millis(time.Now().Add(ttl))
+		expiration := bc.Millis(time.Now().Add(a.TTL()))
 		constraints = append(constraints, txbuilder.TTLConstraint(expiration))
 	}
 
@@ -145,13 +149,17 @@ type SpendUTXOAction struct {
 	ClientToken   *string  `json:"client_token"`
 }
 
-func (a *SpendUTXOAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
+// TTL returns the time-to-live of the reservation created by this action.
+func (a *SpendUTXOAction) TTL() time.Duration {
 	ttl := a.Params.TTL
 	if ttl == 0 {
 		ttl = time.Minute
 	}
+	return ttl
+}
 
-	r, err := utxodb.ReserveUTXO(ctx, a.Params.TxHash, a.Params.TxOut, a.ClientToken, a.Params.TTL)
+func (a *SpendUTXOAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
+	r, err := utxodb.ReserveUTXO(ctx, a.Params.TxHash, a.Params.TxOut, a.ClientToken, a.TTL())
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -166,7 +174,7 @@ func (a *SpendUTXOAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOut
 		// Add constraints only if some are already specified. If none
 		// are, leave the constraint list empty to get the default
 		// commit-to-txsighash behavior.
-		expiration := bc.Millis(time.Now().Add(ttl))
+		expiration := bc.Millis(time.Now().Add(a.TTL()))
 		constraints = append(constraints, txbuilder.TTLConstraint(expiration))
 	}
 
