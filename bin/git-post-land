@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e
+
+branch=`git symbolic-ref --short HEAD`
+
+if [[ $branch == "main" ]]
+then
+	echo "can't delete main"
+	exit
+fi
+
+read -r -p "Are you sure you want to delete branch $branch? [y/N] " response
+if ! [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]
+then
+	exit
+fi
+
+git checkout main
+git fetch origin
+git merge --ff-only origin/main
+git branch -D $branch
+git remote prune origin
