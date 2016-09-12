@@ -3,6 +3,7 @@ package bc
 import (
 	"bytes"
 	"database/sql/driver"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"time"
@@ -36,6 +37,29 @@ type Block struct {
 	Transactions []*Tx
 }
 
+// MarshalText fulfills the json.Marshaler interface.
+// This guarantees that blocks will get deserialized correctly
+// when being parsed from HTTP requests.
+func (b *Block) MarshalText() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	_, err := b.WriteTo(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	enc := make([]byte, hex.EncodedLen(buf.Len()))
+	hex.Encode(enc, buf.Bytes())
+	return enc, nil
+}
+
+// UnmarshalText fulfills the encoding.TextUnmarshaler interface.
+func (b *Block) UnmarshalText(text []byte) error {
+	decoded := make([]byte, hex.DecodedLen(len(text)))
+	hex.Decode(decoded, text)
+	return b.readFrom(bytes.NewReader(decoded))
+}
+
+// Scan fulfills the sql.Scanner interface.
 func (b *Block) Scan(val interface{}) error {
 	buf, ok := val.([]byte)
 	if !ok {
@@ -44,6 +68,7 @@ func (b *Block) Scan(val interface{}) error {
 	return b.readFrom(bytes.NewReader(buf))
 }
 
+// Value fulfills the sql.driver.Valuer interface.
 func (b *Block) Value() (driver.Value, error) {
 	buf := new(bytes.Buffer)
 	_, err := b.WriteTo(buf)
