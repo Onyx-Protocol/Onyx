@@ -299,6 +299,7 @@ func loadConfig(ctx context.Context, db pg.DB) (*core.Config, error) {
 }
 
 func dashboardHandler(next http.Handler) http.Handler {
+	lastMod := time.Now() // use start time as a conservative bound for last-modified
 	mux := http.NewServeMux()
 	mux.Handle("/dashboard/", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		file := strings.TrimPrefix(req.URL.Path, "/dashboard/")
@@ -306,7 +307,7 @@ func dashboardHandler(next http.Handler) http.Handler {
 		if !ok {
 			output = dashboard.Files["index.html"]
 		}
-		http.ServeContent(w, req, file, time.Time{}, strings.NewReader(output))
+		http.ServeContent(w, req, file, lastMod, strings.NewReader(output))
 	}))
 	mux.Handle("/", next)
 
