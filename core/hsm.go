@@ -11,16 +11,11 @@ import (
 	"chain/net/http/httpjson"
 )
 
-func (a *api) mockhsmCreateKey(ctx context.Context, in struct{ Alias string }) (result struct {
-	XPub  json.HexBytes `json:"xpub"`
-	Alias string        `json:"alias"`
-}, err error) {
-	xpub, err := a.hsm.CreateKey(ctx, in.Alias)
+func (a *api) mockhsmCreateKey(ctx context.Context, in struct{ Alias *string }) (result *mockhsm.XPub, err error) {
+	result, err = a.hsm.CreateKey(ctx, in.Alias)
 	if err != nil {
 		return result, err
 	}
-	result.XPub = xpub.Bytes()
-	result.Alias = xpub.Alias
 	return result, nil
 }
 
@@ -34,14 +29,7 @@ func (a *api) mockhsmListKeys(ctx context.Context, query struct{ Cursor string }
 
 	var items []interface{}
 	for _, xpub := range xpubs {
-		item := struct {
-			XPub  *hd25519.XPub `json:"xpub"`
-			Alias string        `json:"alias"`
-		}{
-			xpub.XPub,
-			xpub.Alias,
-		}
-		items = append(items, item)
+		items = append(items, xpub)
 	}
 
 	return page{

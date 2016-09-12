@@ -61,7 +61,7 @@ POST /mockhsm/create-key
 Request
 ```
 {
-  "alias": "..."
+  "alias": "..." // optional
 }
 ```
 

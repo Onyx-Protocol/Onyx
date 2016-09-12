@@ -23,8 +23,8 @@ type HSM struct {
 }
 
 type XPub struct {
-	*hd25519.XPub
-	Alias string
+	*hd25519.XPub `json:"xpub"`
+	Alias         *string `json:"alias"`
 }
 
 func New(db pg.DB) *HSM {
@@ -32,7 +32,7 @@ func New(db pg.DB) *HSM {
 }
 
 // CreateKey produces a new random xprv and stores it in the db.
-func (h *HSM) CreateKey(ctx context.Context, alias string) (*XPub, error) {
+func (h *HSM) CreateKey(ctx context.Context, alias *string) (*XPub, error) {
 	xpub, _, err := h.create(ctx, alias, false)
 	return xpub, err
 }
@@ -40,16 +40,17 @@ func (h *HSM) CreateKey(ctx context.Context, alias string) (*XPub, error) {
 // GetOrCreateKey looks for the key with the given alias, generating a
 // new one if it's not found.
 func (h *HSM) GetOrCreateKey(ctx context.Context, alias string) (xpub *XPub, created bool, err error) {
-	return h.create(ctx, alias, true)
+	return h.create(ctx, &alias, true)
 }
 
-func (h *HSM) create(ctx context.Context, alias string, get bool) (*XPub, bool, error) {
+func (h *HSM) create(ctx context.Context, alias *string, get bool) (*XPub, bool, error) {
 	xprv, xpub, err := hd25519.NewXKeys(nil)
 	if err != nil {
 		return nil, false, err
 	}
 	hash := sha3.Sum256(xpub.Bytes())
-	err = h.store(ctx, hex.EncodeToString(hash[:]), xprv, xpub, alias)
+	const q = `INSERT INTO mockhsm (xpub_hash, xpub, xprv, alias) VALUES ($1, $2, $3, $4)`
+	_, err = h.db.Exec(ctx, q, hex.EncodeToString(hash[:]), xpub.Bytes(), xprv.Bytes(), alias)
 	if err != nil {
 		if pg.IsUniqueViolation(err) {
 			if !get {
@@ -70,15 +71,6 @@ func (h *HSM) create(ctx context.Context, alias string, get bool) (*XPub, bool, 
 		return nil, false, errors.Wrap(err, "storing new xpub")
 	}
 	return &XPub{XPub: xpub, Alias: alias}, true, nil
-}
-
-func (h *HSM) store(ctx context.Context, xpubHash string, xprv *hd25519.XPrv, xpub *hd25519.XPub, alias string) error {
-	aliasSQL := sql.NullString{
-		String: alias,
-		Valid:  alias != "",
-	}
-	_, err := h.db.Exec(ctx, "INSERT INTO mockhsm (xpub_hash, xpub, xprv, alias) VALUES ($1, $2, $3, $4)", xpubHash, xpub.Bytes(), xprv.Bytes(), aliasSQL)
-	return err
 }
 
 // ListKeys returns a list of all xpubs from the db.
@@ -108,7 +100,7 @@ func (h *HSM) ListKeys(ctx context.Context, cursor string, limit int) ([]*XPub, 
 		}
 		xpub := &XPub{XPub: hdxpub}
 		if alias.Valid {
-			xpub.Alias = alias.String
+			xpub.Alias = &alias.String
 		}
 		xpubs = append(xpubs, xpub)
 		zcursor = sortID

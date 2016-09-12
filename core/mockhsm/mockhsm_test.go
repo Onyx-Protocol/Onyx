@@ -16,11 +16,11 @@ func TestMockHSM(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	hsm := New(db)
-	xpub, err := hsm.CreateKey(ctx, "")
+	xpub, err := hsm.CreateKey(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	xpub2, err := hsm.CreateKey(ctx, "")
+	xpub2, err := hsm.CreateKey(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +59,8 @@ func TestKeyWithAlias(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	hsm := New(db)
-	xpub, err := hsm.CreateKey(ctx, "some-alias")
+	alias := "some-alias"
+	xpub, err := hsm.CreateKey(ctx, &alias)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +74,7 @@ func TestKeyWithAlias(t *testing.T) {
 	}
 
 	// check for uniqueness error
-	xpub, err = hsm.CreateKey(ctx, "some-alias")
+	xpub, err = hsm.CreateKey(ctx, &alias)
 	if xpub != nil {
 		t.Fatalf("xpub: got %v want nil", xpub)
 	}
