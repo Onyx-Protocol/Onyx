@@ -3,6 +3,7 @@
 set -e
 
 branch=`git symbolic-ref --short HEAD`
+commit=`git rev-parse --short HEAD`
 
 if [[ $branch == "main" ]]
 then
@@ -10,11 +11,8 @@ then
 	exit
 fi
 
-read -r -p "Are you sure you want to delete branch $branch? [y/N] " response
-if ! [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]
-then
-	exit
-fi
+echo "About to delete branch $branch."
+echo "To recreate it, run 'git checkout -b $branch $commit'."
 
 git checkout main
 git fetch origin
