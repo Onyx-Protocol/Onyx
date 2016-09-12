@@ -77,7 +77,7 @@ type TTLConstraint time.Time
 
 func (t TTLConstraint) Code() []byte {
 	builder := vmutil.NewBuilder()
-	builder.AddInt64(int64(bc.Millis(time.Time(t)))).AddOp(vm.OP_MAXTIME).AddOp(vm.OP_LESSTHAN)
+	builder.AddOp(vm.OP_MAXTIME).AddInt64(int64(bc.Millis(time.Time(t)))).AddOp(vm.OP_LESSTHAN)
 	return builder.Program
 }
 
