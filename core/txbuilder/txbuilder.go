@@ -25,7 +25,7 @@ var (
 // Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, maxTimeMS uint64) (*Template, error) {
+func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, maxTime time.Time) (*Template, error) {
 	if tx == nil {
 		tx = &bc.TxData{
 			Version: bc.CurrentTransactionVersion,
@@ -36,14 +36,14 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, m
 	now := time.Now()
 	for _, a := range actions {
 		if t, ok := a.(ttler); ok {
-			timestampMS := bc.Millis(now.Add(t.TTL()))
-			if timestampMS < maxTimeMS {
-				maxTimeMS = timestampMS
+			timestamp := now.Add(t.TTL())
+			if timestamp.Before(maxTime) {
+				maxTime = timestamp
 			}
 		}
 	}
-	if tx.MaxTime == 0 || tx.MaxTime > maxTimeMS {
-		tx.MaxTime = maxTimeMS
+	if tx.MaxTime == 0 || tx.MaxTime > bc.Millis(maxTime) {
+		tx.MaxTime = bc.Millis(maxTime)
 	}
 
 	if len(ref) != 0 {
@@ -56,7 +56,7 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, m
 
 	var tplInputs []*Input
 	for i, action := range actions {
-		txins, txouts, inputs, err := action.Build(ctx)
+		txins, txouts, inputs, err := action.Build(ctx, maxTime)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "invalid action %d", i)
 		}

@@ -42,7 +42,7 @@ func (a *SpendAction) TTL() time.Duration {
 	return ttl
 }
 
-func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
+func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
 	acct, err := FindByID(ctx, a.Params.AccountID)
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "get account info")
@@ -57,7 +57,7 @@ func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 		ClientToken: a.ClientToken,
 	}
 	utxodbSources := []utxodb.Source{utxodbSource}
-	reserved, change, err := utxodb.Reserve(ctx, utxodbSources, a.TTL())
+	reserved, change, err := utxodb.Reserve(ctx, utxodbSources, maxTime)
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "reserving utxos")
 	}
@@ -73,8 +73,7 @@ func (a *SpendAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 		// Add constraints only if some are already specified. If none
 		// are, leave the constraint list empty to get the default
 		// commit-to-txsighash behavior.
-		expiration := bc.Millis(time.Now().Add(a.TTL()))
-		constraints = append(constraints, txbuilder.TTLConstraint(expiration))
+		constraints = append(constraints, txbuilder.TTLConstraint(maxTime))
 	}
 
 	for _, r := range reserved {
@@ -158,8 +157,8 @@ func (a *SpendUTXOAction) TTL() time.Duration {
 	return ttl
 }
 
-func (a *SpendUTXOAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
-	r, err := utxodb.ReserveUTXO(ctx, a.Params.TxHash, a.Params.TxOut, a.ClientToken, a.TTL())
+func (a *SpendUTXOAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
+	r, err := utxodb.ReserveUTXO(ctx, a.Params.TxHash, a.Params.TxOut, a.ClientToken, maxTime)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -174,8 +173,7 @@ func (a *SpendUTXOAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOut
 		// Add constraints only if some are already specified. If none
 		// are, leave the constraint list empty to get the default
 		// commit-to-txsighash behavior.
-		expiration := bc.Millis(time.Now().Add(a.TTL()))
-		constraints = append(constraints, txbuilder.TTLConstraint(expiration))
+		constraints = append(constraints, txbuilder.TTLConstraint(maxTime))
 	}
 
 	txInput, tplInput, err := utxoToInputs(ctx, acct, r, a.ReferenceData, constraints)
@@ -223,7 +221,7 @@ type ControlAction struct {
 	ReferenceData json.Map `json:"reference_data"`
 }
 
-func (a *ControlAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
+func (a *ControlAction) Build(ctx context.Context, _ time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
 	acp, err := CreateControlProgram(ctx, a.Params.AccountID)
 	if err != nil {
 		return nil, nil, nil, err

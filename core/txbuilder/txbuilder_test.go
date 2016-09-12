@@ -25,7 +25,7 @@ import (
 
 type testAction bc.AssetAmount
 
-func (t testAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*Input, error) {
+func (t testAction) Build(ctx context.Context, _ time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*Input, error) {
 	in := bc.NewSpendInput([32]byte{255}, 0, nil, t.AssetID, t.Amount, nil, nil)
 	tplIn := &Input{
 		WitnessComponents: []WitnessComponent{
@@ -66,7 +66,7 @@ func TestBuild(t *testing.T) {
 		newControlProgramAction(bc.AssetAmount{AssetID: [32]byte{2}, Amount: 6}, []byte("dest")),
 		testAction(bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5}),
 	}
-	expiryTime := bc.Millis(time.Now().Add(time.Minute))
+	expiryTime := time.Now().Add(time.Minute)
 	got, err := Build(ctx, nil, actions, nil, expiryTime)
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -76,7 +76,7 @@ func TestBuild(t *testing.T) {
 	want := &Template{
 		Unsigned: &bc.TxData{
 			Version: 1,
-			MaxTime: expiryTime,
+			MaxTime: bc.Millis(expiryTime),
 			Inputs: []*bc.TxInput{
 				bc.NewSpendInput([32]byte{255}, 0, nil, [32]byte{1}, 5, nil, nil),
 			},
@@ -142,7 +142,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 						DerivationPath: []uint32{0, 0, 0, 0},
 					}},
 					Constraints: []Constraint{
-						TTLConstraint(bc.Millis(now.Add(time.Hour))),
+						TTLConstraint(now.Add(time.Hour)),
 						&PayConstraint{
 							AssetAmount: bc.AssetAmount{
 								AssetID: assetID,

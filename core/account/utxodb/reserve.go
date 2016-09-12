@@ -64,7 +64,7 @@ type (
 	}
 )
 
-func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *string, ttl time.Duration) (*UTXO, error) {
+func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *string, exp time.Time) (*UTXO, error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -79,8 +79,6 @@ func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *s
 	if err != nil {
 		return nil, errors.Wrap(err, "acquire lock for reserving utxos")
 	}
-
-	exp := time.Now().UTC().Add(ttl)
 
 	const (
 		reserveQ = `
@@ -152,7 +150,7 @@ func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *s
 	return utxo, nil
 }
 
-func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTXO, c []Change, err error) {
+func Reserve(ctx context.Context, sources []Source, exp time.Time) (u []*UTXO, c []Change, err error) {
 	defer metrics.RecordElapsed(time.Now())
 	ctx = span.NewContext(ctx)
 	defer span.Finish(ctx)
@@ -177,9 +175,6 @@ func Reserve(ctx context.Context, sources []Source, ttl time.Duration) (u []*UTX
 			pg.Exec(ctx, "SELECT cancel_reservations($1)", pq.Int64Array(reservationIDs)) // ignore errors
 		}
 	}()
-
-	now := time.Now().UTC()
-	exp := now.Add(ttl)
 
 	const (
 		reserveQ = `

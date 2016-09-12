@@ -86,7 +86,7 @@ func (inp *Input) UnmarshalJSON(b []byte) error {
 }
 
 type Action interface {
-	Build(context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*Input, error)
+	Build(context.Context, time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*Input, error)
 }
 
 type ttler interface {

@@ -2,6 +2,7 @@ package txbuilder
 
 import (
 	"encoding/json"
+	"time"
 
 	chainjson "chain/encoding/json"
 	"chain/errors"
@@ -40,7 +41,7 @@ func (cl *ConstraintList) UnmarshalJSON(b []byte) error {
 		switch t.Type {
 		case "ttl":
 			var t struct {
-				TTL int64
+				TTL time.Time
 			}
 			err = json.Unmarshal(p, &t)
 			if err != nil {
@@ -71,23 +72,22 @@ func (cl *ConstraintList) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// TTLConstraint means the tx is only valid until the given time (in
-// milliseconds since 1970).
-type TTLConstraint int64
+// TTLConstraint means the tx is only valid until the given time.
+type TTLConstraint time.Time
 
 func (t TTLConstraint) Code() []byte {
 	builder := vmutil.NewBuilder()
-	builder.AddInt64(int64(t)).AddOp(vm.OP_MAXTIME).AddOp(vm.OP_LESSTHAN)
+	builder.AddInt64(int64(bc.Millis(time.Time(t)))).AddOp(vm.OP_MAXTIME).AddOp(vm.OP_LESSTHAN)
 	return builder.Program
 }
 
 func (t TTLConstraint) MarshalJSON() ([]byte, error) {
 	s := struct {
-		Type string `json:"type"`
-		TTL  int64  `json:"ttl"`
+		Type string    `json:"type"`
+		TTL  time.Time `json:"ttl"`
 	}{
 		Type: "ttl",
-		TTL:  int64(t),
+		TTL:  time.Time(t),
 	}
 	return json.Marshal(s)
 }

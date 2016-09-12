@@ -29,7 +29,7 @@ type IssueAction struct {
 	ReferenceData json.Map `json:"reference_data"`
 }
 
-func (a *IssueAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
+func (a *IssueAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
 	asset, err := FindByID(ctx, a.Params.AssetID)
 	if errors.Root(err) == pg.ErrUserInputNotFound {
 		err = errors.WithDetailf(err, "missing asset with ID %q", a.Params.AssetID)
@@ -37,15 +37,10 @@ func (a *IssueAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	ttl := a.Params.TTL
-	if ttl == 0 {
-		ttl = time.Minute
-	}
 	minTime := time.Now()
 	if a.Params.MinTime != nil {
 		minTime = *a.Params.MinTime
 	}
-	maxTime := minTime.Add(ttl)
 	txin := bc.NewIssuanceInput(minTime, maxTime, asset.InitialBlockHash, a.Params.Amount, asset.IssuanceProgram, a.ReferenceData, nil)
 
 	tplIn := &txbuilder.Input{AssetAmount: a.Params.AssetAmount}
@@ -61,7 +56,7 @@ func (a *IssueAction) Build(ctx context.Context) ([]*bc.TxInput, []*bc.TxOutput,
 		// Add constraints only if some are already specified. If none
 		// are, leave the constraint list empty to get the default
 		// commit-to-txsighash behavior.
-		constraints = append(constraints, txbuilder.TTLConstraint(bc.Millis(maxTime)))
+		constraints = append(constraints, txbuilder.TTLConstraint(maxTime))
 	}
 
 	tplIn.AddWitnessKeys(keyIDs, nrequired, constraints)

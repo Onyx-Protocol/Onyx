@@ -41,7 +41,7 @@ func TestAccountTransfer(t *testing.T) {
 	sources := txbuilder.Action(assettest.NewIssueAction(assetAmt, nil))
 	dests := assettest.NewAccountControlAction(assetAmt, acc.ID, nil)
 
-	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, nil, bc.Millis(time.Now().Add(time.Minute)))
+	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, nil, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func TestAccountTransfer(t *testing.T) {
 
 	// new source
 	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
-	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, nil, bc.Millis(time.Now().Add(time.Minute)))
+	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, nil, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestTransfer(t *testing.T) {
 		nil,
 		[]txbuilder.Action{assettest.NewIssueAction(issueAssetAmount, nil), issueDest},
 		nil,
-		bc.Millis(time.Now().Add(time.Minute)),
+		time.Now().Add(time.Minute),
 	)
 	if err != nil {
 		t.Log(errors.Stack(err))

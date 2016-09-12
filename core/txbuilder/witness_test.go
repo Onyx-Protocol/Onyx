@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 
@@ -12,6 +13,8 @@ import (
 )
 
 func TestWitnessJSON(t *testing.T) {
+	u := time.Now().UTC()
+
 	inp := &Input{
 		AssetAmount: bc.AssetAmount{
 			AssetID: bc.AssetID{0xff},
@@ -27,7 +30,7 @@ func TestWitnessJSON(t *testing.T) {
 					DerivationPath: []uint32{5, 6, 7},
 				}},
 				Constraints: []Constraint{
-					TTLConstraint(11),
+					TTLConstraint(u),
 					OutpointConstraint(bc.Outpoint{
 						Hash:  bc.Hash{0xfc},
 						Index: 38,
