@@ -24,7 +24,7 @@ var (
 
 type Asset struct {
 	AssetID          bc.AssetID             `json:"id"`
-	Alias            string                 `json:"alias"`
+	Alias            *string                `json:"alias"`
 	Definition       map[string]interface{} `json:"definition"`
 	IssuanceProgram  []byte                 `json:"issuance_program"`
 	InitialBlockHash bc.Hash                `json:"initial_block_hash"`
@@ -34,7 +34,7 @@ type Asset struct {
 }
 
 // Define defines a new Asset.
-func Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, initialBlockHash bc.Hash, alias string, tags map[string]interface{}, clientToken *string) (*Asset, error) {
+func Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, initialBlockHash bc.Hash, alias *string, tags map[string]interface{}, clientToken *string) (*Asset, error) {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "define asset")
@@ -192,11 +192,6 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 		return nil, err
 	}
 
-	aliasParam := sql.NullString{
-		String: asset.Alias,
-		Valid:  asset.Alias != "",
-	}
-
 	var signerID sql.NullString
 	if asset.Signer != nil {
 		signerID = sql.NullString{Valid: true, String: asset.Signer.ID}
@@ -204,7 +199,7 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 
 	err = pg.QueryRow(
 		ctx, q,
-		asset.AssetID, aliasParam, signerID,
+		asset.AssetID, asset.Alias, signerID,
 		asset.InitialBlockHash, asset.IssuanceProgram,
 		defParams, clientToken,
 	).Scan(&asset.sortID)
@@ -300,7 +295,7 @@ func lookupAsset(ctx context.Context, idQ bc.AssetID, aliasQ string) (*Asset, er
 	}
 
 	if alias.Valid {
-		a.Alias = alias.String
+		a.Alias = &alias.String
 	}
 
 	const tagQ = `SELECT tags FROM asset_tags WHERE asset_id=$1`
@@ -355,7 +350,7 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 	}
 
 	if alias.Valid {
-		a.Alias = alias.String
+		a.Alias = &alias.String
 	}
 
 	if len(definition) > 0 {

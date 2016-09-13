@@ -6,26 +6,18 @@ import (
 	"time"
 
 	"chain/core/asset"
-	"chain/encoding/json"
 	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/httpjson"
 	"chain/protocol/bc"
 )
 
-type assetResponse struct {
-	ID              bc.AssetID             `json:"id"`
-	IssuanceProgram json.HexBytes          `json:"issuance_program"`
-	Definition      map[string]interface{} `json:"definition"`
-	Tags            map[string]interface{} `json:"tags"`
-}
-
 // POST /update-asset
 func setAssetTags(ctx context.Context, in struct {
 	AssetID string `json:"asset_id"`
 	Alias   string `json:"alias"`
 	Tags    map[string]interface{}
-}) (interface{}, error) {
+}) (*asset.Asset, error) {
 	var decodedAssetID bc.AssetID
 	if in.AssetID != "" {
 		err := decodedAssetID.UnmarshalText([]byte(in.AssetID))
@@ -45,8 +37,8 @@ func setAssetTags(ctx context.Context, in struct {
 	return asset.SetTags(ctx, decodedAssetID, in.Alias, in.Tags)
 }
 
-type assetResponseOrError struct {
-	*assetResponse
+type assetOrError struct {
+	*asset.Asset
 	*detailedError
 }
 
@@ -55,7 +47,7 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 	XPubs      []string
 	Quorum     int
 	Definition map[string]interface{}
-	Alias      string
+	Alias      *string
 	Tags       map[string]interface{}
 
 	// ClientToken is the application's unique token for the asset. Every asset
@@ -63,7 +55,7 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 	// idempotency of create asset requests. Duplicate create asset requests
 	// with the same client_token will only create one asset.
 	ClientToken *string `json:"client_token"`
-}) ([]assetResponseOrError, error) {
+}) ([]assetOrError, error) {
 	defer metrics.RecordElapsed(time.Now())
 
 	initialBlock, err := a.c.GetBlock(ctx, 1)
@@ -71,7 +63,7 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 		return nil, err
 	}
 
-	responses := make([]assetResponseOrError, len(ins))
+	responses := make([]assetOrError, len(ins))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
 
@@ -91,16 +83,9 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 			if err != nil {
 				logHTTPError(ctx, err)
 				res, _ := errInfo(err)
-				responses[i] = assetResponseOrError{detailedError: &res}
+				responses[i] = assetOrError{detailedError: &res}
 			} else {
-				responses[i] = assetResponseOrError{
-					assetResponse: &assetResponse{
-						ID:              asset.AssetID,
-						IssuanceProgram: asset.IssuanceProgram,
-						Definition:      asset.Definition,
-						Tags:            asset.Tags,
-					},
-				}
+				responses[i] = assetOrError{Asset: asset}
 			}
 		}(i)
 	}

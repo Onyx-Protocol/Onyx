@@ -48,8 +48,8 @@ func TestMockHSM(t *testing.T) {
 	assetDef1 := map[string]interface{}{"foo": 1}
 	assetDef2 := map[string]interface{}{"foo": 2}
 
-	asset1ID := assettest.CreateAssetFixture(ctx, t, []string{testutil.TestXPub.String()}, 1, assetDef1, "", nil)
-	asset2ID := assettest.CreateAssetFixture(ctx, t, []string{testutil.TestXPub.String()}, 1, assetDef2, "", nil)
+	asset1ID := assettest.CreateAssetFixture(ctx, t, []string{testutil.TestXPub.String()}, 1, assetDef1, nil, nil)
+	asset2ID := assettest.CreateAssetFixture(ctx, t, []string{testutil.TestXPub.String()}, 1, assetDef2, nil, nil)
 
 	issueSrc1 := txbuilder.Action(assettest.NewIssueAction(bc.AssetAmount{AssetID: asset1ID, Amount: 100}, nil))
 	issueSrc2 := txbuilder.Action(assettest.NewIssueAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, nil))

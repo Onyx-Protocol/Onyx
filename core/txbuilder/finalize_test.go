@@ -270,7 +270,7 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.Chain, er
 		return nil, nil, err
 	}
 
-	asset, err := asset.Define(ctx, []string{assetPub.String()}, 1, nil, initialBlock.Hash(), "", nil, nil)
+	asset, err := asset.Define(ctx, []string{assetPub.String()}, 1, nil, initialBlock.Hash(), nil, nil, nil)
 	if err != nil {
 		return nil, nil, err
 	}

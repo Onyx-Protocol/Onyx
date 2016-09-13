@@ -44,11 +44,11 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 
 	asset1Tags := map[string]interface{}{"currency": "USD"}
 
-	asset1, err := asset.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, initialBlockHash, "", asset1Tags, nil)
+	asset1, err := asset.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, initialBlockHash, nil, asset1Tags, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	asset2, err := asset.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, initialBlockHash, "", nil, nil)
+	asset2, err := asset.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, initialBlockHash, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
