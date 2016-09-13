@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html"
 	"log"
 	"net/http"
 	"os"
@@ -113,21 +114,13 @@ func buildBody(req Req) []byte {
 	} else {
 		// add the error log
 		buffer += `,{
-			"text": "` + sanitize(req.Log) + `",
+			"text": "` + html.EscapeString(req.Log) + `",
 			"mrkdwn_in": [
 				"text"
 			]
 		}]}`
 	}
 	return []byte(buffer)
-}
-
-func sanitize(str string) string {
-	str = strings.Replace(str, `"`, `\"`, -1)
-	str = strings.Replace(str, `&`, `&amp;`, -1)
-	str = strings.Replace(str, `<`, `&lt;`, -1)
-	str = strings.Replace(str, `>`, `&gt;`, -1)
-	return str
 }
 
 func runIn(dir string, c *exec.Cmd, req Req) {
