@@ -1,36 +1,14 @@
 #!/bin/sh
 set -xue
 
-# Disable cgo entirely.
-# We have seen one too many problems with cgo,
-# including an occasional (rare) malloc failure.
-# See https://github.com/lib/pq/issues/395.
-export CGO_ENABLED=0
-
-tag=`git describe --tags`
-commit=`git rev-parse HEAD`
-date=`date +%s`
-ldflags="-X main.buildTag=$tag -X main.buildCommit=$commit -X main.buildDate=$date"
-
-cleanup() {
-  rm -f $CHAIN/docker/testbot/cored
-  rm -f $CHAIN/docker/testbot/corectl
-  rm -f $CHAIN/docker/testbot/schema.sql
-}
+# The function body is wrapped in a subshell so that
+# failure of the "docker rmi" command doesn't trigger
+# a test failure (due to set -e)
+cleanup() {(
+  set +e
+  docker rmi `docker images -f "dangling=true" -q`
+)}
 trap "cleanup" EXIT
 
-GOOS=linux GOARCH=amd64 go build\
-  -tags 'insecure_disable_https_redirect'\
-  -ldflags "$ldflags"\
-  -o $CHAIN/docker/testbot/cored\
-  chain/cmd/cored
-
-GOOS=linux GOARCH=amd64 go build\
-  -o $CHAIN/docker/testbot/corectl\
-  chain/cmd/corectl
-
-cp $CHAIN/core/schema.sql $CHAIN/docker/testbot/schema.sql
-
 docker build --tag testbot $CHAIN/docker/testbot/
-docker run --rm --name testbot -e PRIV1=$PRIV1 -e PRIV2=$PRIV2 -e PUB1=$PUB1 -e PUB2=$PUB2 testbot
-docker rmi `docker images -f "dangling=true" -q`
+docker run --rm -v $CHAIN:/go/src/chain --name testbot testbot

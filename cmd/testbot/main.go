@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	listen    = env.String("LISTEN", ":4567")
+	listen    = env.String("LISTEN", ":8080")
 	slackURL  = os.Getenv("SLACK_WEBHOOK_URL")
 	sourcedir = os.Getenv("CHAIN")
 	mu        sync.Mutex
@@ -38,6 +38,8 @@ type Req struct {
 func main() {
 	log.SetFlags(log.Lshortfile)
 	http.HandleFunc("/push", handler)
+	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
+
 	log.Println("listening on", *listen)
 	log.Fatal(http.ListenAndServe(*listen, nil))
 }
@@ -71,7 +73,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			defer catch()
 			runIn(sourcedir, exec.Command("git", "fetch", "origin"), req)
 			runIn(sourcedir, exec.Command("git", "clean", "-xdf"), req)
-			runIn(sourcedir, exec.Command("git", "checkout", req.After), req)
+			runIn(sourcedir, exec.Command("git", "checkout", req.After, "--"), req)
 			runIn(sourcedir, exec.Command("git", "reset", "--hard", req.After), req)
 			runIn(sourcedir, exec.Command("./bin/run-tests"), req)
 			postToSlack(buildBody(req))
