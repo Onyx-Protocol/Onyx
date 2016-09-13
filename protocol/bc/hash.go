@@ -1,8 +1,10 @@
 package bc
 
 import (
+	"bytes"
 	"database/sql/driver"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 
 	"golang.org/x/crypto/sha3"
@@ -43,6 +45,24 @@ func (h *Hash) UnmarshalText(b []byte) error {
 	}
 	_, err := hex.Decode(h[:], b)
 	return err
+}
+
+// UnmarshalJSON satisfies the json.Unmarshaler interface.
+// If b is a JSON-encoded null, it copies the zero-value into h. Othwerwise, it
+// decodes hex data from b into h.
+func (h *Hash) UnmarshalJSON(b []byte) error {
+	if bytes.Equal(b, []byte("null")) {
+		*h = Hash{}
+		return nil
+	}
+
+	s := new(string)
+	err := json.Unmarshal(b, s)
+	if err != nil {
+		return err
+	}
+
+	return h.UnmarshalText([]byte(*s))
 }
 
 // Value satisfies the driver.Valuer interface
