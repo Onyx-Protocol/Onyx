@@ -96,8 +96,8 @@ func ValidateTx(tx *bc.Tx) error {
 			return errors.WithDetail(ErrBadTx, "input value exceeds maximum value of int64")
 		}
 
-		sum, err := safeSum(parity[assetID], int64(txin.Amount()))
-		if err != nil {
+		sum, ok := addCheckOverflow(parity[assetID], int64(txin.Amount()))
+		if !ok {
 			return errors.WithDetailf(ErrBadTx, "adding input %d overflows the allowed asset amount", i)
 		}
 		parity[assetID] = sum
@@ -132,8 +132,8 @@ func ValidateTx(tx *bc.Tx) error {
 			return errors.WithDetail(ErrBadTx, "output value exceeds maximum value of int64")
 		}
 
-		sum, err := safeSum(parity[txout.AssetID], -int64(txout.Amount))
-		if err != nil {
+		sum, ok := addCheckOverflow(parity[txout.AssetID], -int64(txout.Amount))
+		if !ok {
 			return errors.WithDetailf(ErrBadTx, "adding output %d overflows the allowed asset amount", i)
 		}
 		parity[txout.AssetID] = sum
@@ -169,14 +169,15 @@ func ValidateTx(tx *bc.Tx) error {
 	return nil
 }
 
-// safeSum is a helper for ValidateTx which adds two int64s. An error is returned
-// if the result overflows.
-func safeSum(x, y int64) (int64, error) {
-	sum := x + y
+// addCheckOverflow adds x and y, checking for overflow.
+// It returns the sum, if possible,
+// and it returns whether the sum is correct.
+func addCheckOverflow(x, y int64) (sum int64, ok bool) {
+	sum = x + y
 	if (x > 0 && y > 0 && sum < 0) || (x < 0 && y < 0 && sum > 0) {
-		return 0, errors.New("int64 overflow")
+		return 0, false
 	}
-	return sum, nil
+	return sum, true
 }
 
 // ApplyTx updates the state tree with all the changes to the ledger.
