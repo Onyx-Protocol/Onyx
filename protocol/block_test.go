@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"chain/crypto/ed25519"
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/mempool"
@@ -245,32 +244,6 @@ func makeEmptyBlock(tb testing.TB, c *Chain) {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
-}
-
-func signBlock(t testing.TB, b *bc.Block, keys []ed25519.PrivateKey) {
-	var sigs [][]byte
-	for _, key := range keys {
-		hash := b.HashForSig()
-		sig := ed25519.Sign(key, hash[:])
-		sigs = append(sigs, sig)
-	}
-	b.Witness = sigs
-}
-
-func privToPub(privs []ed25519.PrivateKey) []ed25519.PublicKey {
-	var public []ed25519.PublicKey
-	for _, priv := range privs {
-		public = append(public, priv.Public().(ed25519.PublicKey))
-	}
-	return public
-}
-
-func newPrivKey(t *testing.T) ed25519.PrivateKey {
-	_, priv, err := ed25519.GenerateKey(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return priv
 }
 
 func mustDecodeHex(s string) []byte {
