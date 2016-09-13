@@ -29,10 +29,10 @@ func TestMockHSM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !xpub.Verify(msg, sig) {
+	if !xpub.XPub.Verify(msg, sig) {
 		t.Error("expected verify to succeed")
 	}
-	if xpub2.Verify(msg, sig) {
+	if xpub2.XPub.Verify(msg, sig) {
 		t.Error("expected verify with wrong pubkey to fail")
 	}
 	path := []uint32{3, 2, 6, 3, 8, 2, 7}
@@ -40,10 +40,10 @@ func TestMockHSM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if xpub2.Verify(msg, sig) {
+	if xpub2.XPub.Verify(msg, sig) {
 		t.Error("expected verify with underived pubkey of sig from derived privkey to fail")
 	}
-	if !xpub2.Derive(path).Verify(msg, sig) {
+	if !xpub2.XPub.Derive(path).Verify(msg, sig) {
 		t.Error("expected verify with derived pubkey of sig from derived privkey to succeed")
 	}
 	xpubs, _, err := hsm.ListKeys(ctx, "", 100)
