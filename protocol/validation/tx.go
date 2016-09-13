@@ -87,9 +87,7 @@ func ValidateTx(tx *bc.Tx) error {
 	// Check that each input commitment appears only once. Also check that sums
 	// of inputs and outputs balance, and check that both input and output sums
 	// are less than 2^63 so that they don't overflow their int64 representation.
-	issued := make(map[bc.AssetID]bool)
-	parityIns := make(map[bc.AssetID]int64)
-	parityOuts := make(map[bc.AssetID]int64)
+	parity := make(map[bc.AssetID]int64)
 
 	for i, txin := range tx.Inputs {
 		assetID := txin.AssetID()
@@ -98,14 +96,13 @@ func ValidateTx(tx *bc.Tx) error {
 			return errors.WithDetail(ErrBadTx, "input value exceeds maximum value of int64")
 		}
 
-		sum, err := safeSum(parityIns[assetID], int64(txin.Amount()))
+		sum, err := safeSum(parity[assetID], int64(txin.Amount()))
 		if err != nil {
 			return errors.WithDetailf(ErrBadTx, "adding input %d overflows the allowed asset amount", i)
 		}
-		parityIns[assetID] = sum
+		parity[assetID] = sum
 
 		if txin.IsIssuance() {
-			issued[assetID] = true
 			if i == 0 {
 				ic := txin.InputCommitment.(*bc.IssuanceInputCommitment)
 				if ic.MaxTimeMS < ic.MinTimeMS {
@@ -135,15 +132,15 @@ func ValidateTx(tx *bc.Tx) error {
 			return errors.WithDetail(ErrBadTx, "output value exceeds maximum value of int64")
 		}
 
-		sum, err := safeSum(parityOuts[txout.AssetID], int64(txout.Amount))
+		sum, err := safeSum(parity[txout.AssetID], -int64(txout.Amount))
 		if err != nil {
 			return errors.WithDetailf(ErrBadTx, "adding output %d overflows the allowed asset amount", i)
 		}
-		parityOuts[txout.AssetID] = sum
+		parity[txout.AssetID] = sum
 	}
 
-	for asset, val := range parityIns {
-		if val != parityOuts[asset] {
+	for asset, val := range parity {
+		if val != 0 {
 			return errors.WithDetailf(ErrBadTx, "amounts for asset %s are not balanced on inputs and outputs", asset)
 		}
 	}
