@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"chain/core/signers"
@@ -245,12 +246,22 @@ func lookupAsset(ctx context.Context, idQ bc.AssetID, aliasQ string) (*Asset, er
 		return nil, errors.New("cannot refer to asset by both ID and alias")
 	}
 
-	const q = `
-		SELECT id, alias, issuance_program, definition, initial_block_hash, signer_id, archived, sort_id
-		FROM assets
-		WHERE id=$1 OR ($2!='' AND alias=$2)
-	`
+	return assetQuery(ctx, "id=$1 OR ($2!='' AND alias=$2)", idQ, aliasQ)
+}
 
+// assetByClientToken loads an asset from the database using its client token.
+func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error) {
+	return assetQuery(ctx, "client_token=$1", clientToken)
+}
+
+func assetQuery(ctx context.Context, pred string, args ...interface{}) (*Asset, error) {
+	const baseQ = `
+		SELECT id, alias, issuance_program, definition,
+			initial_block_hash, signer_id, archived, sort_id
+		FROM assets
+		WHERE %s
+		LIMIT 1
+	`
 	var (
 		a          Asset
 		alias      sql.NullString
@@ -258,7 +269,7 @@ func lookupAsset(ctx context.Context, idQ bc.AssetID, aliasQ string) (*Asset, er
 		signerID   sql.NullString
 		definition []byte
 	)
-	err := pg.QueryRow(ctx, q, idQ.String(), aliasQ).Scan(
+	err := pg.QueryRow(ctx, fmt.Sprintf(baseQ, pred), args...).Scan(
 		&a.AssetID,
 		&alias,
 		&a.IssuanceProgram,
@@ -310,76 +321,6 @@ func lookupAsset(ctx context.Context, idQ bc.AssetID, aliasQ string) (*Asset, er
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
-	}
-
-	return &a, nil
-}
-
-// assetByClientToken loads an asset from the database using its client token.
-func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error) {
-	const q = `
-		SELECT id, alias, issuance_program, definition,
-			initial_block_hash, signer_id, archived, sort_id
-		FROM assets
-		WHERE client_token=$1
-	`
-	var (
-		a          Asset
-		archived   bool
-		signerID   sql.NullString
-		alias      sql.NullString
-		definition []byte
-	)
-	err := pg.QueryRow(ctx, q, clientToken).Scan(
-		&a.AssetID,
-		&alias,
-		&a.IssuanceProgram,
-		&definition,
-		&a.InitialBlockHash,
-		&signerID,
-		&archived,
-		&a.sortID,
-	)
-	if err == sql.ErrNoRows {
-		return nil, pg.ErrUserInputNotFound
-	} else if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	if archived {
-		return nil, ErrArchived
-	}
-
-	if alias.Valid {
-		a.Alias = &alias.String
-	}
-
-	if len(definition) > 0 {
-		err := json.Unmarshal(definition, &a.Definition)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-	}
-
-	const tagQ = `SELECT tags FROM asset_tags WHERE asset_id=$1`
-	var tags []byte
-	err = pg.QueryRow(ctx, tagQ, a.AssetID.String()).Scan(&tags)
-	if err != nil && err != sql.ErrNoRows {
-		return nil, errors.Wrap(err)
-	}
-
-	if len(tags) > 0 {
-		err := json.Unmarshal(tags, &a.Tags)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-	}
-
-	if signerID.Valid {
-		sig, err := signers.Find(ctx, "asset", signerID.String)
-		if err != nil {
-			return nil, errors.Wrap(err, "couldn't find signer")
-		}
-		a.Signer = sig
 	}
 
 	return &a, nil
