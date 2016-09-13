@@ -208,13 +208,13 @@ func derive(args []string) {
 		path = append(path, uint32(p))
 	}
 	// XPrvs are longer than XPubs, try parsing one of those first.
-	xprv, err := hd25519.XPrvFromString(k)
+	xprv, err := hd25519.XPrvFromString(strings.TrimSpace(k))
 	if err == nil {
 		derived := xprv.Derive(path)
 		fmt.Println(derived.String())
 		return
 	}
-	xpub, err := hd25519.XPubFromString(k)
+	xpub, err := hd25519.XPubFromString(strings.TrimSpace(k))
 	if err == nil {
 		derived := xpub.Derive(path)
 		fmt.Println(derived.String())
@@ -259,7 +259,7 @@ func hmac512(args []string) {
 
 func pub(args []string) {
 	inp, _ := input(args, 0, false)
-	xprv, err := hd25519.XPrvFromString(inp)
+	xprv, err := hd25519.XPrvFromString(strings.TrimSpace(inp))
 	if err == nil {
 		fmt.Println(xprv.Public().String())
 		return
@@ -329,7 +329,7 @@ func sign(args []string) {
 		prv  ed25519.PrivateKey
 		err  error
 	)
-	xprv, err = hd25519.XPrvFromString(keyInp)
+	xprv, err = hd25519.XPrvFromString(strings.TrimSpace(keyInp))
 	if err != nil {
 		xprv = nil
 		prv, err = hd25519.PrvFromBytes(mustDecodeHex(keyInp))
@@ -446,7 +446,7 @@ func verify(args []string) {
 		pub  ed25519.PublicKey
 		err  error
 	)
-	xpub, err = hd25519.XPubFromString(keyInp)
+	xpub, err = hd25519.XPubFromString(strings.TrimSpace(keyInp))
 	if err != nil {
 		xpub = nil
 		pub, err = hd25519.PubFromBytes(mustDecodeHex(keyInp))
