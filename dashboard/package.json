@@ -6,7 +6,8 @@
     "build": "NODE_ENV=production webpack",
     "lint": "eslint \"src/**\"",
     "start": "hjs-dev-server",
-    "test": "mocha --compilers js:babel-core/register */**/*.test.js"
+    "test": "mocha --compilers js:babel-core/register */**/*.test.js",
+    "generate-component": "babel-node bin/generate.js component"
   },
   "author": "",
   "license": "",
@@ -49,9 +50,13 @@
     "uuid": "~2.0.2"
   },
   "devDependencies": {
+    "babel-cli": "^6.14.0",
+    "command-line-args": "^3.0.1",
+    "command-line-commands": "^1.0.4",
     "eslint": "~3.3.1",
     "eslint-plugin-react": "~6.1.2",
     "mocha": "~2.2.0",
-    "nock": "~4.0.0"
+    "nock": "~4.0.0",
+    "shelljs": "^0.7.4"
   }
 }

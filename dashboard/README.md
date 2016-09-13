@@ -22,6 +22,27 @@ npm install
 npm test
 ```
 
+#### Creating new components
+
+To generate a new component with a connected stylesheet, use the following
+command:
+
+```
+npm run generate-component Common/MyComponent
+```
+
+The above command will create two new files in the `src/components` directory:
+
+```
+src/components/Common/MyComponent/MyComponent.jsx
+src/components/Common/MyComponent/MyComponent.scss
+```
+
+with `MyComponent.scss` imported as a stylesheet into `MyComponent.jsx`.
+
+Additionally, if there is an `index.js` file in `src/components/Common`, it
+will appropriately add the newly created component to the index exports.
+
 #### Running the development server
 
 To connect to Chain Core in development, we use a proxy server to provide a
