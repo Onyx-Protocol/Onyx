@@ -43,6 +43,13 @@ with `MyComponent.scss` imported as a stylesheet into `MyComponent.jsx`.
 Additionally, if there is an `index.js` file in `src/components/Common`, it
 will appropriately add the newly created component to the index exports.
 
+#### Working with Redux
+
+To inspect and debug Redux actions, we recommend the "Redux DevTools" Chrome
+extension:
+
+https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd
+
 #### Running the development server
 
 To connect to Chain Core in development, we use a proxy server to provide a

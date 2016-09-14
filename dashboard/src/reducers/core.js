@@ -15,8 +15,8 @@ const coreConfigReducer = (key, state, defaultState, action) => {
 export const configured = (state, action) =>
   coreConfigReducer('is_configured', state, false, action)
 export const configuredAt = (state, action) => {
-  let value =  coreConfigReducer('configured_at', state, '', action)
-  if (value != '') {
+  let value = coreConfigReducer('configured_at', state, '', action)
+  if (action.type == actions.core.updateInfo.type && value != '') {
     value = moment(value).format(LONG_TIME_FORMAT)
   }
   return value
