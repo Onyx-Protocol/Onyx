@@ -30,10 +30,6 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [List Transactions](#list-transactions)
   * [List Balances](#list-balances)
   * [List Unspent Outputs](#list-unspent-outputs)
-* [Indexes](#indexes)
-  * [Index Object](#index-object)
-  * [Create Index](#create-index)
-  * [List Indexes](#list-indexes)
 * [Core](#core)
   * [Configure](#configure)
   * [Info](#info)
@@ -563,11 +559,7 @@ Request
 
 ```
 {
-  // supply one of index_id, index_alias, or filter
-  "index_id": "...",
-  "index_alias": "...",
-  "filter": "...",
-
+  "filter": "...", // optional
   "filter_params": [], // optional
   "order": <"asc"|"desc">, // optional, defaults to "desc" (newest to oldest)
   "cursor": "..." // optional
@@ -583,11 +575,7 @@ Response
     ...
   ],
   "query": {
-    // includes one of index_id, index_alias, or filter
-    "index_id": "...",
-    "index_alias": "...",
     "filter": "...",
-
     "filter_params": [],
     "order": <"asc"|"desc">
     "cursor": "..."
@@ -607,11 +595,7 @@ Request
 
 ``` 
 {
-  // supply one of index_id, index_alias, or filter
-  "index_id": "...",
-  "index_alias": "...",
-  "filter": "...",
-
+  "filter": "...", // optional
   "filter_params": ["param"], // optional
   "sum_by": ["selector1", ...] // optional
 }
@@ -647,11 +631,7 @@ Ungrouped
   ],
   "last_page": true,
   "query": {
-    // includes one of index_id, index_alias, or filter
-    "index_id": "...",
-    "index_alias": "...",
     "filter": "...",
-
     "filter_params": [],
     "sum_by": [...],
     "cursor": "..."
@@ -668,14 +648,9 @@ POST /list-unspent-outputs
 
 Request
 
-Accepts either an `index_id`, `index_alias`, or a `filter`.
 ```
 {
-  // supply one of index_id, index_alias, or filter
-  "index_id": "...",
-  "index_alias": "...",
-  "filter": "...",
-
+  "filter": "...", // optional
   "filter_params": [], // optional
   "cursor": "..." // optional
 }
@@ -690,74 +665,8 @@ Response
     ...
   ],
   "query": {
-    // includes one of index_id, index_alias, or filter
-    "index_id": "...",
-    "index_alias": "...",
     "filter": "...",
-
     "filter_params": [],
-    "cursor": "..."
-  },
-  "last_page": true|false
-}
-```
-
-## Indexes
-
-### Index Object
-```    
-{
-  "id": "...",
-  "alias": "...",
-  "type": "...",        // `transaction`, `balance`, `unspent-output`, or `asset`
-  "filter": "...",
-  "sum_by": []          // only for `type: balance`
-}
-```
-
-### Create Index
-
-Endpoint
-```
-POST /create-index
-```
-
-Request
-```
-{
-  "alias": "...",
-  "type": "...",          // `transaction`, `balance`, `unspent-output`, or `asset`
-  "filter": "...",
-  "sum_by": []            // only for `type: balance`
-}
-```
-
-Response: an [index object](#index-object).
-
-### List Indexes
-
-Endpoint
-```
-POST /list-indexes
-```
-
-Request
-
-```
-{
-  "cursor": "..." // optional
-}
-```
-
-Response
-
-```
-{
-  "items": [
-    <index object>,
-    ...
-  ],
-  "query": {
     "cursor": "..."
   },
   "last_page": true|false
