@@ -11,22 +11,22 @@ import (
 	"chain/protocol"
 )
 
-func TestLookupTxCursorNoBlocks(t *testing.T) {
+func TestLookupTxAfterNoBlocks(t *testing.T) {
 	ctx := context.Background()
 	db := pgtest.NewTx(t)
 	indexer := NewIndexer(db, &protocol.Chain{})
 
-	cur, err := indexer.LookupTxCursor(ctx, 0, 0)
+	cur, err := indexer.LookupTxAfter(ctx, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := TxCursor{
+	want := TxAfter{
 		MaxBlockHeight: 0,
 		MaxPosition:    math.MaxInt32,
 		MinBlockHeight: 0,
 	}
 	if !reflect.DeepEqual(cur, want) {
-		t.Errorf("Got tx cursor %s, want %s", cur, want)
+		t.Errorf("Got tx after %s, want %s", cur, want)
 	}
 }
 
@@ -34,14 +34,14 @@ func TestConstructTransactionsQuery(t *testing.T) {
 	testCases := []struct {
 		filter     string
 		values     []interface{}
-		cursor     TxCursor
+		after      TxAfter
 		wantQuery  string
 		wantValues []interface{}
 	}{
 		{
 			filter:    `inputs(action='issue' AND asset_id=$1)`,
 			values:    []interface{}{"abc"},
-			cursor:    TxCursor{MaxBlockHeight: 205, MaxPosition: 35, MinBlockHeight: 100},
+			after:     TxAfter{MaxBlockHeight: 205, MaxPosition: 35, MinBlockHeight: 100},
 			wantQuery: `SELECT block_height, tx_pos, data FROM annotated_txs WHERE (data @> $1::jsonb) AND (block_height, tx_pos) <= ($2, $3) AND block_height >= $4 ORDER BY block_height DESC, tx_pos DESC LIMIT 100`,
 			wantValues: []interface{}{
 				`{"inputs":[{"action":"issue","asset_id":"abc"}]}`,
@@ -51,7 +51,7 @@ func TestConstructTransactionsQuery(t *testing.T) {
 		{
 			filter:    `outputs(account_id = $1 OR reference_data.corporate=$2)`,
 			values:    []interface{}{"acc123", "corp"},
-			cursor:    TxCursor{MaxBlockHeight: 2, MaxPosition: 20, MinBlockHeight: 1},
+			after:     TxAfter{MaxBlockHeight: 2, MaxPosition: 20, MinBlockHeight: 1},
 			wantQuery: `SELECT block_height, tx_pos, data FROM annotated_txs WHERE ((data @> $1::jsonb) OR (data @> $2::jsonb)) AND (block_height, tx_pos) <= ($3, $4) AND block_height >= $5 ORDER BY block_height DESC, tx_pos DESC LIMIT 100`,
 			wantValues: []interface{}{
 				`{"outputs":[{"account_id":"acc123"}]}`,
@@ -71,7 +71,7 @@ func TestConstructTransactionsQuery(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		query, values := constructTransactionsQuery(expr, tc.cursor, 100)
+		query, values := constructTransactionsQuery(expr, tc.after, 100)
 		if query != tc.wantQuery {
 			t.Errorf("got\n%s\nwant\n%s", query, tc.wantQuery)
 		}

@@ -15,7 +15,7 @@ import (
 
 var (
 	ErrDuplicateKeyAlias = errors.New("duplicate key alias")
-	ErrInvalidCursor     = errors.New("invalid cursor")
+	ErrInvalidAfter      = errors.New("invalid after")
 )
 
 type HSM struct {
@@ -74,16 +74,16 @@ func (h *HSM) create(ctx context.Context, alias *string, get bool) (*XPub, bool,
 }
 
 // ListKeys returns a list of all xpubs from the db.
-func (h *HSM) ListKeys(ctx context.Context, cursor string, limit int) ([]*XPub, string, error) {
+func (h *HSM) ListKeys(ctx context.Context, after string, limit int) ([]*XPub, string, error) {
 	var (
-		zcursor int64
-		err     error
+		zafter int64
+		err    error
 	)
 
-	if cursor != "" {
-		zcursor, err = strconv.ParseInt(cursor, 10, 64)
+	if after != "" {
+		zafter, err = strconv.ParseInt(after, 10, 64)
 		if err != nil {
-			return nil, "", errors.WithDetailf(ErrInvalidCursor, "value: %q", cursor)
+			return nil, "", errors.WithDetailf(ErrInvalidAfter, "value: %q", after)
 		}
 	}
 
@@ -93,7 +93,7 @@ func (h *HSM) ListKeys(ctx context.Context, cursor string, limit int) ([]*XPub, 
 		WHERE ($1=0 OR $1 < sort_id)
 		ORDER BY sort_id DESC LIMIT $2
 	`
-	err = pg.ForQueryRows(ctx, q, zcursor, limit, func(b []byte, alias sql.NullString, sortID int64) {
+	err = pg.ForQueryRows(ctx, q, zafter, limit, func(b []byte, alias sql.NullString, sortID int64) {
 		hdxpub, err := hd25519.XPubFromBytes(b)
 		if err != nil {
 			return
@@ -103,13 +103,13 @@ func (h *HSM) ListKeys(ctx context.Context, cursor string, limit int) ([]*XPub, 
 			xpub.Alias = &alias.String
 		}
 		xpubs = append(xpubs, xpub)
-		zcursor = sortID
+		zafter = sortID
 	})
 	if err != nil {
 		return nil, "", err
 	}
 
-	return xpubs, strconv.FormatInt(zcursor, 10), nil
+	return xpubs, strconv.FormatInt(zafter, 10), nil
 }
 
 var ErrNoKey = errors.New("key not found")

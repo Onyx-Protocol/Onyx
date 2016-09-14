@@ -12,41 +12,41 @@ import (
 	"chain/core/query/filter"
 )
 
-type OutputsCursor struct {
+type OutputsAfter struct {
 	lastBlockHeight uint64
 	lastTxPos       uint32
 	lastIndex       uint32
 }
 
-func (cur OutputsCursor) String() string {
+func (cur OutputsAfter) String() string {
 	return fmt.Sprintf("%x-%x-%x", cur.lastBlockHeight, cur.lastTxPos, cur.lastIndex)
 }
 
-func DecodeOutputsCursor(str string) (c *OutputsCursor, err error) {
+func DecodeOutputsAfter(str string) (c *OutputsAfter, err error) {
 	s := strings.Split(str, "-")
 	if len(s) != 3 {
-		return nil, ErrBadCursor
+		return nil, ErrBadAfter
 	}
 	lastBlockHeight, err := strconv.ParseUint(s[0], 16, 64)
 	if err != nil {
-		return nil, ErrBadCursor
+		return nil, ErrBadAfter
 	}
 	lastTxPos, err := strconv.ParseUint(s[1], 16, 32)
 	if err != nil {
-		return nil, ErrBadCursor
+		return nil, ErrBadAfter
 	}
 	lastIndex, err := strconv.ParseUint(s[2], 16, 32)
 	if err != nil {
-		return nil, ErrBadCursor
+		return nil, ErrBadAfter
 	}
-	return &OutputsCursor{
+	return &OutputsAfter{
 		lastBlockHeight: lastBlockHeight,
 		lastTxPos:       uint32(lastTxPos),
 		lastIndex:       uint32(lastIndex),
 	}, nil
 }
 
-func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []interface{}, timestampMS uint64, cursor *OutputsCursor, limit int) ([]interface{}, *OutputsCursor, error) {
+func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []interface{}, timestampMS uint64, after *OutputsAfter, limit int) ([]interface{}, *OutputsAfter, error) {
 	if len(vals) != p.Parameters {
 		return nil, nil, ErrParameterCountMismatch
 	}
@@ -54,16 +54,16 @@ func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []inte
 	if err != nil {
 		return nil, nil, err
 	}
-	queryStr, queryArgs := constructOutputsQuery(expr, timestampMS, cursor, limit)
+	queryStr, queryArgs := constructOutputsQuery(expr, timestampMS, after, limit)
 	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer rows.Close()
 
-	var newCursor OutputsCursor
-	if cursor != nil {
-		newCursor = *cursor
+	var newAfter OutputsAfter
+	if after != nil {
+		newAfter = *after
 	}
 
 	outputs := make([]interface{}, 0, limit)
@@ -80,19 +80,19 @@ func (ind *Indexer) Outputs(ctx context.Context, p filter.Predicate, vals []inte
 		}
 		outputs = append(outputs, (*json.RawMessage)(&data))
 
-		newCursor.lastBlockHeight = blockHeight
-		newCursor.lastTxPos = txPos
-		newCursor.lastIndex = index
+		newAfter.lastBlockHeight = blockHeight
+		newAfter.lastTxPos = txPos
+		newAfter.lastIndex = index
 	}
 	err = rows.Err()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return outputs, &newCursor, nil
+	return outputs, &newAfter, nil
 }
 
-func constructOutputsQuery(expr filter.SQLExpr, timestampMS uint64, cursor *OutputsCursor, limit int) (string, []interface{}) {
+func constructOutputsQuery(expr filter.SQLExpr, timestampMS uint64, after *OutputsAfter, limit int) (string, []interface{}) {
 	sql := fmt.Sprintf("SELECT block_height, tx_pos, output_index, data FROM %s", pq.QuoteIdentifier("annotated_outputs"))
 
 	vals := make([]interface{}, 0, 4+len(expr.Values))
@@ -109,14 +109,14 @@ func constructOutputsQuery(expr filter.SQLExpr, timestampMS uint64, cursor *Outp
 		where = fmt.Sprintf("(%s) AND %s", where, timespanExpr)
 	}
 
-	if cursor != nil {
-		vals = append(vals, cursor.lastBlockHeight)
+	if after != nil {
+		vals = append(vals, after.lastBlockHeight)
 		lastBlockHeightValIndex := len(vals)
 
-		vals = append(vals, cursor.lastTxPos)
+		vals = append(vals, after.lastTxPos)
 		lastTxPosValIndex := len(vals)
 
-		vals = append(vals, cursor.lastIndex)
+		vals = append(vals, after.lastIndex)
 		lastIndexValIndex := len(vals)
 
 		where = fmt.Sprintf("%s AND (block_height, tx_pos, output_index) > ($%d, $%d, $%d)", where, lastBlockHeightValIndex, lastTxPosValIndex, lastIndexValIndex)

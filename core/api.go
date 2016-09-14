@@ -65,7 +65,7 @@ type api struct {
 
 // Used as a request object for api queries
 type requestQuery struct {
-	Cursor string `json:"cursor"`
+	After string `json:"after"`
 
 	// These two are used for time-range queries like /list-transactions
 	StartTimeMS uint64 `json:"start_time,omitempty"`
@@ -86,7 +86,7 @@ type requestQuery struct {
 type page struct {
 	Items    interface{}  `json:"items"`
 	LastPage bool         `json:"last_page"`
-	Query    requestQuery `json:"query"`
+	Next     requestQuery `json:"next"`
 }
 
 func (a *api) handler() http.Handler {

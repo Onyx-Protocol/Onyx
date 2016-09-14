@@ -13,7 +13,7 @@ public class Query {
     public String filter;
     @SerializedName("filter_params")
     public List<String> filterParams;
-    public String cursor;
+    public String after;
     @SerializedName("start_time")
     public long startTime;
     @SerializedName("end_time")

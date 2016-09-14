@@ -19,10 +19,10 @@ func (a *api) mockhsmCreateKey(ctx context.Context, in struct{ Alias *string }) 
 	return result, nil
 }
 
-func (a *api) mockhsmListKeys(ctx context.Context, query struct{ Cursor string }) (page, error) {
+func (a *api) mockhsmListKeys(ctx context.Context, query struct{ After string }) (page, error) {
 	limit := defGenericPageSize
 
-	xpubs, cursor, err := a.hsm.ListKeys(ctx, query.Cursor, limit)
+	xpubs, after, err := a.hsm.ListKeys(ctx, query.After, limit)
 	if err != nil {
 		return page{}, err
 	}
@@ -35,7 +35,7 @@ func (a *api) mockhsmListKeys(ctx context.Context, query struct{ Cursor string }
 	return page{
 		Items:    httpjson.Array(items),
 		LastPage: len(xpubs) < limit,
-		Query:    requestQuery{Cursor: cursor},
+		Next:     requestQuery{After: after},
 	}, nil
 }
 

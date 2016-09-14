@@ -14,20 +14,20 @@ import (
 	"chain/protocol/bc"
 )
 
-func TestDecodeOutputsCursor(t *testing.T) {
+func TestDecodeOutputsAfter(t *testing.T) {
 	testCases := []struct {
 		str string
-		cur OutputsCursor
+		cur OutputsAfter
 	}{
-		{str: "1-1-0", cur: OutputsCursor{lastBlockHeight: 1, lastTxPos: 1}},
-		{str: "1-2-3", cur: OutputsCursor{lastBlockHeight: 1, lastTxPos: 2, lastIndex: 3}},
-		{str: "a-1-0", cur: OutputsCursor{lastBlockHeight: 10, lastTxPos: 1}},
-		{str: "f-f-f", cur: OutputsCursor{lastBlockHeight: 0xf, lastTxPos: 0xf, lastIndex: 0xf}},
-		{str: "c001-cafe-ca75", cur: OutputsCursor{lastBlockHeight: 0xc001, lastTxPos: 0xcafe, lastIndex: 0xca75}},
+		{str: "1-1-0", cur: OutputsAfter{lastBlockHeight: 1, lastTxPos: 1}},
+		{str: "1-2-3", cur: OutputsAfter{lastBlockHeight: 1, lastTxPos: 2, lastIndex: 3}},
+		{str: "a-1-0", cur: OutputsAfter{lastBlockHeight: 10, lastTxPos: 1}},
+		{str: "f-f-f", cur: OutputsAfter{lastBlockHeight: 0xf, lastTxPos: 0xf, lastIndex: 0xf}},
+		{str: "c001-cafe-ca75", cur: OutputsAfter{lastBlockHeight: 0xc001, lastTxPos: 0xcafe, lastIndex: 0xca75}},
 	}
 
 	for _, tc := range testCases {
-		decoded, err := DecodeOutputsCursor(tc.str)
+		decoded, err := DecodeOutputsAfter(tc.str)
 		if err != nil {
 			t.Error(err)
 		}
@@ -40,7 +40,7 @@ func TestDecodeOutputsCursor(t *testing.T) {
 	}
 }
 
-func TestOutputsCursor(t *testing.T) {
+func TestOutputsAfter(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	_, err := db.Exec(ctx, `
@@ -59,26 +59,26 @@ func TestOutputsCursor(t *testing.T) {
 	}
 
 	indexer := NewIndexer(db, &protocol.Chain{})
-	results, cursor, err := indexer.Outputs(ctx, q, nil, 25, nil, 2)
+	results, after, err := indexer.Outputs(ctx, q, nil, 25, nil, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(results) != 2 {
 		t.Errorf("got %d results, want 2", len(results))
 	}
-	if cursor.String() != "1-1-0" {
-		t.Errorf("got cursor=%q want 1-1-0", cursor.String())
+	if after.String() != "1-1-0" {
+		t.Errorf("got after=%q want 1-1-0", after.String())
 	}
 
-	results, cursor, err = indexer.Outputs(ctx, q, nil, 25, cursor, 2)
+	results, after, err = indexer.Outputs(ctx, q, nil, 25, after, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(results) != 1 {
 		t.Errorf("got %d results, want 1", len(results))
 	}
-	if cursor.String() != "2-0-0" {
-		t.Errorf("got cursor=%q want 2-0-0", cursor.String())
+	if after.String() != "2-0-0" {
+		t.Errorf("got after=%q want 2-0-0", after.String())
 	}
 }
 
@@ -89,7 +89,7 @@ func TestConstructOutputsQuery(t *testing.T) {
 	testCases := []struct {
 		filter     string
 		values     []interface{}
-		cursor     *OutputsCursor
+		after      *OutputsAfter
 		wantQuery  string
 		wantValues []interface{}
 	}{
@@ -107,7 +107,7 @@ func TestConstructOutputsQuery(t *testing.T) {
 		{
 			filter: "asset_id = $1 AND account_id = 'abc'",
 			values: []interface{}{"foo"},
-			cursor: &OutputsCursor{
+			after: &OutputsAfter{
 				lastBlockHeight: 15,
 				lastTxPos:       17,
 				lastIndex:       19,
@@ -126,7 +126,7 @@ func TestConstructOutputsQuery(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		query, values := constructOutputsQuery(expr, nowMillis, tc.cursor, 10)
+		query, values := constructOutputsQuery(expr, nowMillis, tc.after, 10)
 		if query != tc.wantQuery {
 			t.Errorf("case %d: got %s want %s", i, query, tc.wantQuery)
 		}

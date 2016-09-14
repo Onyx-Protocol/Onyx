@@ -31,7 +31,7 @@ func (ind *Indexer) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, 
 }
 
 // Assets queries the blockchain for annotated assets matching the query.
-func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []interface{}, cur string, limit int) ([]map[string]interface{}, string, error) {
+func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []interface{}, after string, limit int) ([]map[string]interface{}, string, error) {
 	if len(vals) != p.Parameters {
 		return nil, "", ErrParameterCountMismatch
 	}
@@ -40,7 +40,7 @@ func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []inter
 		return nil, "", errors.Wrap(err, "converting to SQL")
 	}
 
-	queryStr, queryArgs := constructAssetsQuery(expr, cur, limit)
+	queryStr, queryArgs := constructAssetsQuery(expr, after, limit)
 	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "executing assets query")
@@ -70,7 +70,7 @@ func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []inter
 			}
 		}
 
-		cur = sortID
+		after = sortID
 		assets = append(assets, asset)
 		ids = append(ids, id)
 		assetsByID[id] = asset
@@ -116,10 +116,10 @@ func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []inter
 		return nil, "", errors.Wrap(err, "signers end row scan loop")
 	}
 
-	return assets, cur, nil
+	return assets, after, nil
 }
 
-func constructAssetsQuery(expr filter.SQLExpr, cur string, limit int) (string, []interface{}) {
+func constructAssetsQuery(expr filter.SQLExpr, after string, limit int) (string, []interface{}) {
 	var buf bytes.Buffer
 	var vals []interface{}
 
@@ -134,9 +134,9 @@ func constructAssetsQuery(expr filter.SQLExpr, cur string, limit int) (string, [
 		buf.WriteString(") AND ")
 	}
 
-	// add cursor conditions
+	// add after conditions
 	buf.WriteString(fmt.Sprintf("($%d='' OR sort_id < $%d) ", len(vals)+1, len(vals)+1))
-	vals = append(vals, string(cur))
+	vals = append(vals, string(after))
 
 	buf.WriteString("ORDER BY sort_id DESC ")
 	buf.WriteString("LIMIT " + strconv.Itoa(limit))

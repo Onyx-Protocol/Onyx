@@ -45,16 +45,16 @@ func (a *api) createIndex(ctx context.Context, in struct {
 func (a *api) listIndexes(ctx context.Context, query requestQuery) (page, error) {
 	limit := defGenericPageSize
 
-	indexes, cursor, err := a.indexer.ListIndexes(ctx, query.Cursor, limit)
+	indexes, after, err := a.indexer.ListIndexes(ctx, query.After, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "listing indexes")
 	}
 
-	query.Cursor = cursor
+	query.After = after
 	return page{
 		Items:    httpjson.Array(indexes),
 		LastPage: len(indexes) < limit,
-		Query:    query,
+		Next:     query,
 	}, nil
 }
 
@@ -71,8 +71,8 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 	}
 
 	var (
-		p   filter.Predicate
-		cur query.TxCursor
+		p     filter.Predicate
+		after query.TxAfter
 	)
 
 	// Build the filter predicate.
@@ -92,31 +92,31 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 		}
 	}
 
-	// Either parse the provided cursor or look one up for the time range.
-	if in.Cursor != "" {
-		cur, err = query.DecodeTxCursor(in.Cursor)
+	// Either parse the provided `after` or look one up for the time range.
+	if in.After != "" {
+		after, err = query.DecodeTxAfter(in.After)
 		if err != nil {
-			return result, errors.Wrap(err, "decoding cursor")
+			return result, errors.Wrap(err, "decoding `after`")
 		}
 	} else {
-		cur, err = a.indexer.LookupTxCursor(ctx, in.StartTimeMS, in.EndTimeMS)
+		after, err = a.indexer.LookupTxAfter(ctx, in.StartTimeMS, in.EndTimeMS)
 		if err != nil {
 			return result, err
 		}
 	}
 
 	limit := defGenericPageSize
-	txns, nextCur, err := a.indexer.Transactions(ctx, p, in.FilterParams, cur, limit)
+	txns, nextAfter, err := a.indexer.Transactions(ctx, p, in.FilterParams, after, limit)
 	if err != nil {
 		return result, errors.Wrap(err, "running tx query")
 	}
 
 	out := in
-	out.Cursor = nextCur.String()
+	out.After = nextAfter.String()
 	return page{
 		Items:    httpjson.Array(txns),
 		LastPage: len(txns) < limit,
-		Query:    out,
+		Next:     out,
 	}, nil
 }
 
@@ -132,21 +132,21 @@ func (a *api) listAccounts(ctx context.Context, in requestQuery) (page, error) {
 	if err != nil {
 		return page{}, errors.Wrap(err, "parsing acc query")
 	}
-	cur := in.Cursor
+	after := in.After
 
 	// Use the filter engine for querying account tags.
-	accounts, cur, err := a.indexer.Accounts(ctx, p, in.FilterParams, cur, limit)
+	accounts, after, err := a.indexer.Accounts(ctx, p, in.FilterParams, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running acc query")
 	}
 
 	// Pull in the accounts by the IDs
 	out := in
-	out.Cursor = cur
+	out.After = after
 	return page{
 		Items:    httpjson.Array(accounts),
 		LastPage: len(accounts) < limit,
-		Query:    out,
+		Next:     out,
 	}, nil
 }
 
@@ -194,7 +194,7 @@ func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, e
 
 	result.Items = httpjson.Array(balances)
 	result.LastPage = true
-	result.Query = in
+	result.Next = in
 	return result, nil
 }
 
@@ -220,26 +220,26 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 		}
 	}
 
-	var cursor *query.OutputsCursor
-	if in.Cursor != "" {
-		cursor, err = query.DecodeOutputsCursor(in.Cursor)
+	var after *query.OutputsAfter
+	if in.After != "" {
+		after, err = query.DecodeOutputsAfter(in.After)
 		if err != nil {
-			return result, errors.Wrap(err, "decoding cursor")
+			return result, errors.Wrap(err, "decoding `after`")
 		}
 	}
 
 	limit := defGenericPageSize
-	outputs, newCursor, err := a.indexer.Outputs(ctx, p, in.FilterParams, in.TimestampMS, cursor, limit)
+	outputs, nextAfter, err := a.indexer.Outputs(ctx, p, in.FilterParams, in.TimestampMS, after, limit)
 	if err != nil {
 		return result, errors.Wrap(err, "querying outputs")
 	}
 
 	outQuery := in
-	outQuery.Cursor = newCursor.String()
+	outQuery.After = nextAfter.String()
 	return page{
 		Items:    outputs,
 		LastPage: len(outputs) < limit,
-		Query:    outQuery,
+		Next:     outQuery,
 	}, nil
 }
 
@@ -255,20 +255,20 @@ func (a *api) listAssets(ctx context.Context, in requestQuery) (page, error) {
 	if err != nil {
 		return page{}, err
 	}
-	cur := in.Cursor
+	after := in.After
 
 	// Use the query engine for querying asset tags.
 	var assets []map[string]interface{}
-	assets, cur, err = a.indexer.Assets(ctx, p, in.FilterParams, cur, limit)
+	assets, after, err = a.indexer.Assets(ctx, p, in.FilterParams, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running asset query")
 	}
 
 	out := in
-	out.Cursor = cur
+	out.After = after
 	return page{
 		Items:    httpjson.Array(assets),
 		LastPage: len(assets) < limit,
-		Query:    out,
+		Next:     out,
 	}, nil
 }
