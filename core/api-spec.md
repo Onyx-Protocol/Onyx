@@ -483,7 +483,7 @@ Request
             "reference_data":"...",
             "actions":[  
                 {
-                  "type":"spend_account_unspent_output_selector",
+                  "type":"spend_account",
                   "asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
                   "amount":123,
                   "account_id":"..."
