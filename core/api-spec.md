@@ -569,6 +569,7 @@ Request
   "filter": "...",
 
   "filter_params": [], // optional
+  "order": <"asc"|"desc">, // optional, defaults to "desc" (newest to oldest)
   "cursor": "..." // optional
 }
 ```
@@ -588,6 +589,7 @@ Response
     "filter": "...",
 
     "filter_params": [],
+    "order": <"asc"|"desc">
     "cursor": "..."
   },
   "last_page": true|false
