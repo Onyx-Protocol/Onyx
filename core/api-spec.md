@@ -117,7 +117,8 @@ Response: An array of signed transaction template objects.
     "xpubs": ["xpub"],
     "quorum": 1,
     "definition": {},
-    "tags": {}
+    "tags": {},
+    "origin": "..."                 // `local` if asset was created in the Core, `external` if not
   }
 ```
 
