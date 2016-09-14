@@ -1,14 +1,5 @@
 #!/bin/sh
 set -xue
 
-# The function body is wrapped in a subshell so that
-# failure of the "docker rmi" command doesn't trigger
-# a test failure (due to set -e)
-cleanup() {(
-  set +e
-  docker rmi `docker images -f "dangling=true" -q`
-)}
-trap "cleanup" EXIT
-
 docker build --tag testbot $CHAIN/docker/testbot/
 docker run --rm -v $CHAIN:/go/src/chain --name testbot testbot

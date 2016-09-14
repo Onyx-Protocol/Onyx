@@ -23,16 +23,16 @@ var (
 )
 
 type Req struct {
-	Ref     string
-	After   string
-	Log     string
-	Commits []struct {
+	Ref    string
+	After  string
+	Log    string
+	Commit struct {
 		Message string
 		URL     string
 		Author  struct {
 			Username string
 		}
-	}
+	} `json:"head_commit"`
 }
 
 func main() {
@@ -50,14 +50,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&req)
 	if err != nil {
 		body, err := json.Marshal(map[string]string{"text": fmt.Sprintln("parsing request:", err)})
-		if err != nil {
-			panic(err)
-		}
-		postToSlack(body)
-		return
-	}
-	if len(req.Commits) != 1 {
-		body, err := json.Marshal(map[string]string{"text": "expecting 1 commit"})
 		if err != nil {
 			panic(err)
 		}
@@ -91,6 +83,9 @@ func buildBody(req Req) []byte {
 		result = "failed :thumbsdown:"
 	}
 
+	// Only display the commit message header
+	split := strings.Split(req.Commit.Message, "\n")
+	msg := split[0]
 	buffer := `{
 		"attachments": [
 			{
@@ -99,12 +94,12 @@ func buildBody(req Req) []byte {
 				"fields": [
 					{
 						"title": "Commit",
-						"value": "<` + req.Commits[0].URL + `|` + req.Commits[0].Message + `>",
+						"value": "<` + req.Commit.URL + `|` + msg + `>",
 						"short": false
 					},
 					{
 						"title": "Author",
-						"value": "<https://github.com/` + req.Commits[0].Author.Username + `|` + req.Commits[0].Author.Username + `>",
+						"value": "<https://github.com/` + req.Commit.Author.Username + `|` + req.Commit.Author.Username + `>",
 						"short": false
 					}
 				]

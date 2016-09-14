@@ -5,6 +5,7 @@ set -eou pipefail
 initlog=/var/log/chain/init.log
 
 # cleanup kills cored process
+# and removes built jars
 cleanup() {
 	echo "Cleanup:" 1>&2
 	for pid in $(ps aux | grep [c]ored$ | awk {'print $1'});
@@ -12,6 +13,8 @@ cleanup() {
 		kill -9 $pid
 	done
 	wait
+	rm -rf $CHAIN/sdk/java/target
+	rm -rf $CHAIN/qa/target
 }
 # call cleanup on program exit
 trap 'cleanup' EXIT
