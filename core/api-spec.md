@@ -74,7 +74,7 @@ Request
 
 ```
 {
-  "cursor": "..." // optional
+  "after": "..." // optional
 }
 ```
 
@@ -86,8 +86,8 @@ Response
     <key object>,
     ...
   ],
-  "query": {
-    "cursor": "..."
+  "next": {
+    "after": "..."
   },
   "last_page": true|false
 }
@@ -174,7 +174,7 @@ Request
 {
   "filter": "...", 
   "filter_params": [], // optional
-  "cursor": "..." // optional
+  "after": "..." // optional
 }
 ```
 
@@ -186,10 +186,10 @@ Response
     <asset object>,
     ...
   ],
-  "query": {
+  "next": {
     "filter": "...", 
     "filter_params": [], 
-    "cursor": "..." 
+    "after": "..."
   },
   "last_page": true|false
 }
@@ -279,7 +279,7 @@ Request
 {
   "filter": "...", // optional
   "filter_params": [], // optional
-  "cursor": "..." // optional
+  "after": "..." // optional
 }
 ```
 
@@ -291,10 +291,10 @@ Response
     <account object>,
     ...
   ],
-  "query": {
+  "next": {
     "filter": "...", 
     "filter_params": [], 
-    "cursor": "..." 
+    "after": "..."
   },
   "last_page": true|false
 }
@@ -562,7 +562,7 @@ Request
   "filter": "...", // optional
   "filter_params": [], // optional
   "order": <"asc"|"desc">, // optional, defaults to "desc" (newest to oldest)
-  "cursor": "..." // optional
+  "after": "..." // optional
 }
 ```
 
@@ -574,11 +574,11 @@ Response
     <transaction object>,
     ...
   ],
-  "query": {
+  "next": {
     "filter": "...",
     "filter_params": [],
     "order": <"asc"|"desc">
-    "cursor": "..."
+    "after": "..."
   },
   "last_page": true|false
 }
@@ -617,7 +617,7 @@ Grouped
     ...
   ],
   "last_page": true, // currently only returns one page
-  "query": {...}
+  "next": {...}
 }
 ```
     
@@ -630,11 +630,11 @@ Ungrouped
     }
   ],
   "last_page": true,
-  "query": {
+  "next": {
     "filter": "...",
     "filter_params": [],
     "sum_by": [...],
-    "cursor": "..."
+    "after": "..."
   },
 }
 ```
@@ -652,7 +652,7 @@ Request
 {
   "filter": "...", // optional
   "filter_params": [], // optional
-  "cursor": "..." // optional
+  "after": "..." // optional
 }
 ```
 
@@ -664,10 +664,10 @@ Response
     <unspent output object>,
     ...
   ],
-  "query": {
+  "next": {
     "filter": "...",
     "filter_params": [],
-    "cursor": "..."
+    "after": "..."
   },
   "last_page": true|false
 }
