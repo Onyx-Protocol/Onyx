@@ -73,16 +73,16 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, c *protocol.Chain, as
 		testutil.FatalErr(t, err)
 	}
 
-	SignTxTemplate(t, tpl, testutil.TestXPrv)
+	SignTxTemplate(t, ctx, tpl, testutil.TestXPrv)
 
-	tx, err := txbuilder.FinalizeTx(ctx, c, tpl)
+	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tpl.Transaction))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
 	return state.Output{
-		Outpoint: bc.Outpoint{Hash: tx.Hash, Index: 0},
-		TxOutput: *tx.Outputs[0],
+		Outpoint: bc.Outpoint{Hash: tpl.Transaction.Hash(), Index: 0},
+		TxOutput: *tpl.Transaction.Outputs[0],
 	}
 }
 
@@ -101,8 +101,9 @@ func Issue(ctx context.Context, t testing.TB, c *protocol.Chain, assetID bc.Asse
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	SignTxTemplate(t, txTemplate, nil)
-	tx, err := txbuilder.FinalizeTx(ctx, c, txTemplate)
+	SignTxTemplate(t, ctx, txTemplate, nil)
+	tx := bc.NewTx(*txTemplate.Transaction)
+	err = txbuilder.FinalizeTx(ctx, c, tx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -118,9 +119,10 @@ func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, actions []tx
 		t.Fatal(err)
 	}
 
-	SignTxTemplate(t, template, testutil.TestXPrv)
+	SignTxTemplate(t, ctx, template, testutil.TestXPrv)
 
-	tx, err := txbuilder.FinalizeTx(ctx, c, template)
+	tx := bc.NewTx(*template.Transaction)
+	err = txbuilder.FinalizeTx(ctx, c, tx)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

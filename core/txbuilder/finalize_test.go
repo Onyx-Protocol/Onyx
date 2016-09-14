@@ -56,8 +56,9 @@ func TestConflictingTxsInPool(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	assettest.SignTxTemplate(t, firstTemplate, info.privKeyAccounts)
-	tx, err := FinalizeTx(ctx, c, firstTemplate)
+	assettest.SignTxTemplate(t, ctx, firstTemplate, info.privKeyAccounts)
+	tx := bc.NewTx(*firstTemplate.Transaction)
+	err = FinalizeTx(ctx, c, tx)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -71,8 +72,8 @@ func TestConflictingTxsInPool(t *testing.T) {
 	secondTemplate.Inputs[0].WitnessComponents[0].(*SignatureWitness).Sigs[0] = nil
 	secondTemplate.Inputs[0].WitnessComponents[0].(*SignatureWitness).Constraints = nil
 
-	assettest.SignTxTemplate(t, secondTemplate, info.privKeyAccounts)
-	_, err = FinalizeTx(ctx, c, secondTemplate)
+	assettest.SignTxTemplate(t, ctx, secondTemplate, info.privKeyAccounts)
+	err = FinalizeTx(ctx, c, bc.NewTx(*secondTemplate.Transaction))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -301,8 +302,9 @@ func issue(ctx context.Context, t testing.TB, c *protocol.Chain, info *clientInf
 	if err != nil {
 		return nil, err
 	}
-	assettest.SignTxTemplate(t, issueTx, info.privKeyAsset)
-	return FinalizeTx(ctx, c, issueTx)
+	assettest.SignTxTemplate(t, ctx, issueTx, info.privKeyAsset)
+	tx := bc.NewTx(*issueTx.Transaction)
+	return tx, FinalizeTx(ctx, c, tx)
 }
 
 func transfer(ctx context.Context, t testing.TB, c *protocol.Chain, info *clientInfo, srcAcctID, destAcctID string, amount uint64) (*bc.Tx, error) {
@@ -318,8 +320,9 @@ func transfer(ctx context.Context, t testing.TB, c *protocol.Chain, info *client
 		return nil, errors.Wrap(err)
 	}
 
-	assettest.SignTxTemplate(t, xferTx, info.privKeyAccounts)
+	assettest.SignTxTemplate(t, ctx, xferTx, info.privKeyAccounts)
 
-	tx, err := FinalizeTx(ctx, c, xferTx)
+	tx := bc.NewTx(*xferTx.Transaction)
+	err = FinalizeTx(ctx, c, tx)
 	return tx, errors.Wrap(err)
 }

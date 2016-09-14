@@ -75,7 +75,6 @@ var (
 		txbuilder.ErrBadInputCount:       errorInfo{400, "CH731", "Too many inputs in template for transaction"},
 		txbuilder.ErrBadTxInputIdx:       errorInfo{400, "CH732", "Invalid transaction input index"},
 		txbuilder.ErrBadWitnessComponent: errorInfo{400, "CH733", "Invalid witness component"},
-		txbuilder.ErrMissingSig:          errorInfo{400, "CH734", "Missing signature in template"},
 		txbuilder.ErrRejected:            errorInfo{400, "CH735", "Transaction rejected"},
 		// account action error namespace (76x)
 		utxodb.ErrInsufficient: errorInfo{400, "CH760", "Insufficient funds for tx"},

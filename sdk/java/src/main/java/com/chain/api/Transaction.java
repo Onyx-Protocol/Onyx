@@ -243,13 +243,14 @@ public class Transaction {
         /**
          * A hex-encoded representation of a transaction template.
          */
-        @SerializedName("unsigned_hex")
-        public String unsignedHex;
+        @SerializedName("raw_transaction")
+        public String rawTransaction;
 
         /**
-         * The list of inputs included in a transaction.
+         * The list of inputs to be signed in a transaction.
          */
-        public List<Input> inputs;
+        @SerializedName("inputs_to_sign")
+        public List<Input> inputsToSign;
 
         /**
          * For core use only.
@@ -391,7 +392,7 @@ public class Transaction {
     throws ChainException {
         Type type = new TypeToken<ArrayList<Template>>() {
         }.getType();
-        return ctx.request("build-transaction-template", builders, type);
+        return ctx.request("build-transaction", builders, type);
     }
 
     /**
@@ -413,7 +414,7 @@ public class Transaction {
         HashMap<String, Object> requestBody = new HashMap<>();
         requestBody.put("transactions", templates);
 
-        return ctx.request("submit-transaction-template", requestBody, type);
+        return ctx.request("submit-transaction", requestBody, type);
     }
 
     /**
@@ -518,7 +519,7 @@ public class Transaction {
         throws ChainException {
             List<Template> tmpls = Transaction.build(ctx, Arrays.asList(this));
             Template response = tmpls.get(0);
-            if (response.unsignedHex == null) {
+            if (response.rawTransaction == null) {
                 throw new APIException(
                     response.code,
                     response.message,

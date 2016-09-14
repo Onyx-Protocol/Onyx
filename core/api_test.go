@@ -46,8 +46,8 @@ func TestAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
-	_, err = txbuilder.FinalizeTx(ctx, c, tmpl)
+	assettest.SignTxTemplate(t, ctx, tmpl, testutil.TestXPrv)
+	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,8 +62,8 @@ func TestAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
-	_, err = txbuilder.FinalizeTx(ctx, c, tmpl)
+	assettest.SignTxTemplate(t, ctx, tmpl, testutil.TestXPrv)
+	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,9 +121,9 @@ func TestTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assettest.SignTxTemplate(t, txTemplate, nil)
+	assettest.SignTxTemplate(t, ctx, txTemplate, nil)
 
-	_, err = txbuilder.FinalizeTx(ctx, c, txTemplate)
+	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*txTemplate.Transaction))
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -173,7 +173,7 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	assettest.SignTxTemplate(t, txTemplate, testutil.TestXPrv)
+	assettest.SignTxTemplate(t, ctx, txTemplate, testutil.TestXPrv)
 	_, err = submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
 	if err != nil && err != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)
@@ -214,7 +214,7 @@ func TestTransfer(t *testing.T) {
 	}
 	toSign = inspectTemplate(t, parsedResult[0], account2ID)
 	txTemplate, err = toTxTemplate(ctx, toSign)
-	assettest.SignTxTemplate(t, txTemplate, testutil.TestXPrv)
+	assettest.SignTxTemplate(t, ctx, txTemplate, testutil.TestXPrv)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -227,7 +227,7 @@ func TestTransfer(t *testing.T) {
 
 // expects inp to be a map, with one input member
 func inspectTemplate(t *testing.T, inp map[string]interface{}, expectedReceiverAccountID string) map[string]interface{} {
-	member, ok := inp["inputs"]
+	member, ok := inp["inputs_to_sign"]
 	if !ok {
 		t.Errorf("expected template.inputs in result")
 	}

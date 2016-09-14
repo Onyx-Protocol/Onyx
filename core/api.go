@@ -103,15 +103,15 @@ func (a *api) handler() http.Handler {
 	m.Handle("/archive-asset", jsonHandler(archiveAsset))
 
 	// Transactions
-	m.Handle("/build-transaction-template", jsonHandler(build))
-	m.Handle("/submit-transaction-template", jsonHandler(a.submit))
+	m.Handle("/build-transaction", jsonHandler(build))
+	m.Handle("/submit-transaction", jsonHandler(a.submit))
 	m.Handle("/create-control-program", jsonHandler(createControlProgram))
 
 	// MockHSM endpoints
 	m.Handle("/mockhsm/create-key", jsonHandler(a.mockhsmCreateKey))
 	m.Handle("/mockhsm/list-keys", jsonHandler(a.mockhsmListKeys))
 	m.Handle("/mockhsm/delkey", jsonHandler(a.mockhsmDelKey))
-	m.Handle("/mockhsm/sign-transaction-template", jsonHandler(a.mockhsmSignTemplates))
+	m.Handle("/mockhsm/sign-transaction", jsonHandler(a.mockhsmSignTemplates))
 
 	// Transaction indexes & querying
 	m.Handle("/create-index", jsonHandler(a.createIndex))

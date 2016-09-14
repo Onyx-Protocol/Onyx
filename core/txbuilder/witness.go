@@ -28,21 +28,30 @@ type WitnessComponent interface {
 	Materialize(*Template, int) ([][]byte, error)
 }
 
-// MaterializeWitnesses takes a filled in Template and "materializes"
+// materializeWitnesses takes a filled in Template and "materializes"
 // each witness component, turning it into a vector of arguments for
 // the tx's input witness, creating a fully-signed transaction.
-func MaterializeWitnesses(txTemplate *Template) (*bc.Tx, error) {
-	msg := txTemplate.Unsigned
+func materializeWitnesses(txTemplate *Template) error {
+	msg := txTemplate.Transaction
+
+	if msg == nil {
+		return errors.Wrap(ErrMissingRawTx)
+	}
+
+	if len(txTemplate.Inputs) > len(msg.Inputs) {
+		return errors.Wrap(ErrBadInputCount)
+	}
+
 	for i, input := range txTemplate.Inputs {
 		if msg.Inputs[input.Position] == nil {
-			return nil, errors.WithDetailf(ErrBadTxInputIdx, "input %d references missing tx input %d", i, input.Position)
+			return errors.WithDetailf(ErrBadTxInputIdx, "input %d references missing tx input %d", i, input.Position)
 		}
 
 		var witness [][]byte
 		for j, c := range input.WitnessComponents {
 			items, err := c.Materialize(txTemplate, i)
 			if err != nil {
-				return nil, errors.WithDetailf(err, "error in witness component %d of input %d", j, i)
+				return errors.WithDetailf(err, "error in witness component %d of input %d", j, i)
 			}
 			witness = append(witness, items...)
 		}
@@ -50,7 +59,7 @@ func MaterializeWitnesses(txTemplate *Template) (*bc.Tx, error) {
 		msg.Inputs[input.Position].InputWitness = witness
 	}
 
-	return bc.NewTx(*msg), nil
+	return nil
 }
 
 type DataWitness []byte
@@ -142,7 +151,7 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, 
 }
 
 func (sw SignatureWitness) Materialize(tpl *Template, index int) ([][]byte, error) {
-	input := tpl.Unsigned.Inputs[index]
+	input := tpl.Transaction.Inputs[index]
 	var multiSig []byte
 	if input.IsIssuance() {
 		multiSig = input.IssuanceProgram()
@@ -161,9 +170,6 @@ func (sw SignatureWitness) Materialize(tpl *Template, index int) ([][]byte, erro
 		if k >= 0 {
 			sigs = append(sigs, sw.Sigs[k])
 		}
-	}
-	if len(sigs) < quorum {
-		return nil, errors.WithDetailf(ErrMissingSig, "requires %d signature(s), got %d", quorum, len(sigs))
 	}
 	return append(sigs, program), nil
 }

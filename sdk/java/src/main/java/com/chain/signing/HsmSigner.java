@@ -36,7 +36,7 @@ public class HsmSigner {
         for (URL hsmUrl : hsmUrls) {
             Context hsm = new Context(hsmUrl);
             Type type = new TypeToken<ArrayList<Transaction.Template>>() {}.getType();
-            tmpls = hsm.request("sign-transaction-template", tmpls, type);
+            tmpls = hsm.request("sign-transaction", tmpls, type);
         }
         return tmpls;
     }

@@ -38,7 +38,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
+	assettest.SignTxTemplate(t, ctx, tmpl, testutil.TestXPrv)
 
 	// Submit the transaction but w/o waiting long for confirmation.
 	// The outputs should be indexed because the transaction template
@@ -52,8 +52,8 @@ func TestLocalAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
-	_, err = txbuilder.FinalizeTx(ctx, c, tmpl)
+	assettest.SignTxTemplate(t, ctx, tmpl, testutil.TestXPrv)
+	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}

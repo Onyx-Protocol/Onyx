@@ -12,7 +12,7 @@ export default class MockHsm extends buildClass('mockhsm', {
   }
 
   static sign(templates, context) {
-    return context.client.request('/mockhsm/sign-transaction-template', templates)
+    return context.client.request('/mockhsm/sign-transaction', templates)
       .then(data => data.map((item) => new Transaction(item)))
   }
 }

@@ -15,7 +15,7 @@ class Transaction extends buildClass('transaction') {
 
   build(context) {
     let body = [this]
-    return context.client.request('/build-transaction-template', body)
+    return context.client.request('/build-transaction', body)
       .then(data => this.checkForError(data[0]))
   }
 
@@ -26,7 +26,7 @@ class Transaction extends buildClass('transaction') {
 
   static submit(signedTransactions, context) {
     let body = {transactions: signedTransactions}
-    return context.client.request('/submit-transaction-template', body)
+    return context.client.request('/submit-transaction', body)
       .then(data => data.map((item) => new Transaction(item)))
   }
 }

@@ -59,8 +59,8 @@ func TestMockHSM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assettest.SignTxTemplate(t, tmpl, testutil.TestXPrv)
-	_, err = txbuilder.FinalizeTx(ctx, c, tmpl)
+	assettest.SignTxTemplate(t, ctx, tmpl, testutil.TestXPrv)
+	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
 	}

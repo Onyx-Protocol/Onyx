@@ -86,7 +86,7 @@ func main() {
 	if err != nil {
 		log.Error(ctx, err)
 	}
-	m.Handle("/sign-transaction-template", signHandler)
+	m.Handle("/sign-transaction", signHandler)
 
 	var h http.Handler = m
 	h = metrics.Handler{Handler: h}

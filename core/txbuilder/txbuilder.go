@@ -17,7 +17,6 @@ var (
 	ErrBadRefData          = errors.New("transaction reference data does not match previous template's reference data")
 	ErrBadTxInputIdx       = errors.New("unsigned tx missing input")
 	ErrBadWitnessComponent = errors.New("invalid witness component")
-	ErrMissingSig          = errors.New("missing signature in template")
 )
 
 // Build builds or adds on to a transaction.
@@ -26,10 +25,12 @@ var (
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
 func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, maxTime time.Time) (*Template, error) {
+	var local bool
 	if tx == nil {
 		tx = &bc.TxData{
 			Version: bc.CurrentTransactionVersion,
 		}
+		local = true
 	}
 
 	// If there are any actions with a TTL, restrict the transaction's MaxTime accordingly.
@@ -83,9 +84,9 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, m
 	}
 
 	tpl := &Template{
-		Unsigned: tx,
-		Inputs:   tplInputs,
-		Local:    true,
+		Transaction: tx,
+		Inputs:      tplInputs,
+		Local:       local,
 	}
 	return tpl, nil
 }
@@ -109,5 +110,5 @@ func Sign(ctx context.Context, tpl *Template, signFn func(context.Context, strin
 			}
 		}
 	}
-	return nil
+	return materializeWitnesses(tpl)
 }

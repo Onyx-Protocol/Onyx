@@ -12,8 +12,8 @@ import (
 
 // Template represents a partially- or fully-signed transaction.
 type Template struct {
-	Unsigned *bc.TxData `json:"unsigned_hex"`
-	Inputs   []*Input   `json:"inputs"`
+	Transaction *bc.TxData `json:"raw_transaction"`
+	Inputs      []*Input   `json:"inputs_to_sign"`
 
 	// Local indicates that all inputs to the transaction are signed
 	// exclusively by keys managed by this Core. Whenever accepting
@@ -26,7 +26,7 @@ type Template struct {
 
 func (t *Template) Hash(idx int, hashType bc.SigHashType) bc.Hash {
 	if t.sigHasher == nil {
-		t.sigHasher = bc.NewSigHasher(t.Unsigned)
+		t.sigHasher = bc.NewSigHasher(t.Transaction)
 	}
 	return t.sigHasher.Hash(idx, hashType)
 }

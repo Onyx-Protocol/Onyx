@@ -71,7 +71,7 @@ func TestBuild(t *testing.T) {
 	}
 
 	want := &Template{
-		Unsigned: &bc.TxData{
+		Transaction: &bc.TxData{
 			Version: 1,
 			MaxTime: bc.Millis(expiryTime),
 			Inputs: []*bc.TxInput{
@@ -89,10 +89,10 @@ func TestBuild(t *testing.T) {
 		}},
 	}
 
-	if !reflect.DeepEqual(got.Unsigned, want.Unsigned) {
-		t.Errorf("got tx:\n\t%#v\nwant tx:\n\t%#v", got.Unsigned, want.Unsigned)
-		t.Errorf("got tx inputs:\n\t%#v\nwant tx inputs:\n\t%#v", got.Unsigned.Inputs, want.Unsigned.Inputs)
-		t.Errorf("got tx outputs:\n\t%#v\nwant tx outputs:\n\t%#v", got.Unsigned.Outputs, want.Unsigned.Outputs)
+	if !reflect.DeepEqual(got.Transaction, want.Transaction) {
+		t.Errorf("got tx:\n\t%#v\nwant tx:\n\t%#v", got.Transaction, want.Transaction)
+		t.Errorf("got tx inputs:\n\t%#v\nwant tx inputs:\n\t%#v", got.Transaction.Inputs, want.Transaction.Inputs)
+		t.Errorf("got tx outputs:\n\t%#v\nwant tx outputs:\n\t%#v", got.Transaction.Outputs, want.Transaction.Outputs)
 	}
 
 	if !reflect.DeepEqual(got.Inputs, want.Inputs) {
@@ -129,7 +129,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 	}
 
 	tpl := &Template{
-		Unsigned: unsigned,
+		Transaction: unsigned,
 		Inputs: []*Input{{
 			WitnessComponents: []WitnessComponent{
 				&SignatureWitness{
@@ -161,12 +161,12 @@ func TestMaterializeWitnesses(t *testing.T) {
 		witnessData,
 	}
 
-	tx, err := MaterializeWitnesses(tpl)
+	err = materializeWitnesses(tpl)
 	if err != nil {
 		t.Fatal(withStack(err))
 	}
 
-	got := tx.Inputs[0].InputWitness
+	got := tpl.Transaction.Inputs[0].InputWitness
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
@@ -201,7 +201,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	}
 
 	tpl := &Template{
-		Unsigned: unsigned,
+		Transaction: unsigned,
 	}
 	h := tpl.Hash(0, bc.SigHashAll)
 	builder := vmutil.NewBuilder()
@@ -242,11 +242,11 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 			},
 		},
 	}}
-	tx, err := MaterializeWitnesses(tpl)
+	err = materializeWitnesses(tpl)
 	if err != nil {
 		t.Fatal(withStack(err))
 	}
-	got := tx.Inputs[0].InputWitness
+	got := tpl.Transaction.Inputs[0].InputWitness
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
@@ -257,43 +257,36 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 		t.Fatal("expecting WitnessComponent of type SignatureWitness")
 	}
 	component.Sigs = []json.HexBytes{sig3, sig2, sig1}
-	tx, err = MaterializeWitnesses(tpl)
+	err = materializeWitnesses(tpl)
 	if err != nil {
 		t.Fatal(withStack(err))
 	}
 
-	got = tx.Inputs[0].InputWitness
+	got = tpl.Transaction.Inputs[0].InputWitness
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
 
 	// Test with exact amount of signatures required, in correct order
 	component.Sigs = []json.HexBytes{sig1, sig2}
-	tx, err = MaterializeWitnesses(tpl)
+	err = materializeWitnesses(tpl)
 	if err != nil {
 		t.Fatal(withStack(err))
 	}
-	got = tx.Inputs[0].InputWitness
+	got = tpl.Transaction.Inputs[0].InputWitness
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
 
 	// Test with exact amount of signatures required, in incorrect order
 	component.Sigs = []json.HexBytes{sig2, sig1}
-	tx, err = MaterializeWitnesses(tpl)
+	err = materializeWitnesses(tpl)
 	if err != nil {
 		t.Fatal(withStack(err))
 	}
-	got = tx.Inputs[0].InputWitness
+	got = tpl.Transaction.Inputs[0].InputWitness
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
-	}
-
-	// Test with insufficient amount of signatures required
-	component.Sigs = []json.HexBytes{sig2}
-	tx, err = MaterializeWitnesses(tpl)
-	if errors.Root(err) != ErrMissingSig {
-		t.Errorf("got %v, want ErrMissingSig", err)
 	}
 }
 

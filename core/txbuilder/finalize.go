@@ -17,7 +17,7 @@ var (
 	// ErrRejected means the network rejected a tx (as a double-spend)
 	ErrRejected = errors.New("transaction rejected")
 
-	ErrMissingRawTx  = errors.New("missing unsigned tx")
+	ErrMissingRawTx  = errors.New("missing raw tx")
 	ErrBadInputCount = errors.New("too many inputs in template")
 )
 
@@ -26,33 +26,20 @@ var Generator *rpc.Client
 // FinalizeTx validates a transaction signature template,
 // assembles a fully signed tx, and stores the effects of
 // its changes on the UTXO set.
-func FinalizeTx(ctx context.Context, c *protocol.Chain, txTemplate *Template) (*bc.Tx, error) {
+func FinalizeTx(ctx context.Context, c *protocol.Chain, tx *bc.Tx) error {
 	defer metrics.RecordElapsed(time.Now())
 
-	if txTemplate.Unsigned == nil {
-		return nil, errors.Wrap(ErrMissingRawTx)
-	}
-
-	if len(txTemplate.Inputs) > len(txTemplate.Unsigned.Inputs) {
-		return nil, errors.Wrap(ErrBadInputCount)
-	}
-
-	msg, err := MaterializeWitnesses(txTemplate)
+	err := publishTx(ctx, c, tx)
 	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-
-	err = publishTx(ctx, c, msg)
-	if err != nil {
-		rawtx, err2 := msg.MarshalText()
+		rawtx, err2 := tx.MarshalText()
 		if err2 != nil {
 			// ignore marshalling errors (they should never happen anyway)
-			return nil, err
+			return err
 		}
-		return nil, errors.Wrapf(err, "tx=%s", rawtx)
+		return errors.Wrapf(err, "tx=%s", rawtx)
 	}
 
-	return msg, nil
+	return nil
 }
 
 func publishTx(ctx context.Context, c *protocol.Chain, msg *bc.Tx) error {
