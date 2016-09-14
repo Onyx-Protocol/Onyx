@@ -552,7 +552,8 @@ Request
   "filter": "...", // optional
   "filter_params": [], // optional
   "order": <"asc"|"desc">, // optional, defaults to "desc" (newest to oldest)
-  "after": "..." // optional
+  "after": "...", // optional
+  "timeout": "..." // optional, used for notifications
 }
 ```
 
@@ -661,6 +662,89 @@ Response
   },
   "last_page": true|false
 }
+```
+
+## Cursors
+
+To receive crash-resistant notifications about new transactions, Cursors can be used in conjunction with the `/list-transactions` endpoint. 
+
+To process new transactions, a client should:
+
+1. Create a Cursor, adding a `filter` and optionally adding an `alias`; or get a previously created Cursor by its id or alias.
+2. Extract the `after` from the response. 
+3. List transactions with the extracted `after` and `filter`, and set `"order": "asc"` on the request body, to receive transactions in the order that they happened.
+4. Extract the new `after` from the `/list-transactions` response body. 
+5. Update the Cursor with the new `after`. 
+6. Repeat steps 3 - 5.
+
+### Cursor Object
+```
+{
+  "id": "...",
+  "alias": "...", 
+  "filter": "...", 
+  "after": "...",
+  "order": "..."
+}
+```
+
+### Create Cursor
+Endpoint 
+
+```
+POST /create-cursor
+```
+
+Request
+
+```
+{
+    "alias": "...", // optional
+    "filter": "..."
+}
+```
+
+Response 
+
+A Cursor object.
+
+### Get Cursor
+Request
+
+```
+{
+  "id": ..., // provide either cursor id or alias
+  "alias": ...
+}
+```
+
+Response 
+
+A Cursor object.
+
+### Update Cursor
+Updates the Cursor with a new `after`. This is used to acknowledge that the last set of transactions received from `/list-transactions` was processed successfully.
+
+Endpoint 
+
+```
+POST /update-cursor
+```
+
+Request 
+
+```
+{
+    "id": "...", // provide either cursor id or alias
+    "alias": "...",
+    "after": "..."
+}
+```
+
+Response 
+
+```
+{"message": "ok"}
 ```
 
 ## Core
