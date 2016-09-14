@@ -419,52 +419,14 @@ public class Transaction {
     /**
      * An action that can be taken within a transaction.
      */
-    public static class Action {
-        /**
-         * The type of action.<br>
-         * Possible types are "issue", "spend_account_unspent_output_selector", "spend_account_unspent_output", "control_account", "control_program", and "retire".
-         */
-        public String type;
-
-        /**
-         * List of parameters used to build the action.
-         */
-        public HashMap<String, Object> params;
-
-        /**
-         * User specified, unstructured data embedded within the action (possibly null).
-         */
-        @SerializedName("reference_data")
-        public Map<String, Object> referenceData;
-
-        /**
-         * List of constraints for this action.
-         * Only valid for certain action types ("issue," "spend_account_unspent_output_selector," and "spend_account_unspent_output").
-         */
-        public Constraint[] constraints;
-
-        /**
-         * A unique identifier used for request idempotence.
-         */
-        @SerializedName("client_token")
-        private String clientToken;
-
+    public static class Action extends HashMap<String, Object> {
         /**
          * Default constructor initializes list and sets the client token.
          */
         public Action() {
-            this.params = new HashMap();
-            this.clientToken = UUID.randomUUID().toString();
-        }
-
-        /**
-         * Sets the action type.
-         * @param type the type of action
-         * @return updated action object
-         */
-        public Action setType(String type) {
-            this.type = type;
-            return this;
+            // Several action types require client_token as an idempotency key.
+            // It's safest to include a default value for this param.
+            this.put("client_token", UUID.randomUUID().toString());
         }
 
         /**
@@ -474,17 +436,7 @@ public class Transaction {
          * @return updated action object
          */
         public Action setParameter(String key, Object value) {
-            this.params.put(key, value);
-            return this;
-        }
-
-        /**
-         * Sets the reference data for the action.
-         * @param referenceData a map (represented as a json object) of reference information
-         * @return updated action object
-         */
-        public Action setReferenceData(Map<String, Object> referenceData) {
-            this.referenceData = referenceData;
+            this.put(key, value);
             return this;
         }
     }
@@ -547,7 +499,7 @@ public class Transaction {
         private List<Action> actions;
 
         /**
-         * User specified, unstructured data embedded within the action.
+         * User specified, unstructured data embedded at the top level of the transaction.
          */
         @SerializedName("reference_data")
         private Map<String, Object> referenceData;
@@ -595,21 +547,6 @@ public class Transaction {
         }
 
         /**
-         * Adds an action to a transaction builder.
-         * @param action action to add
-         * @param referenceData reference info to embed into the action (possibly null)
-         * @return updated builder object
-         */
-        public Builder addAction(Action action, Map<String, Object> referenceData) {
-            if (referenceData != null) {
-                action.setReferenceData(referenceData);
-            }
-
-            this.actions.add(action);
-            return this;
-        }
-
-        /**
          * Sets a transaction's reference data.
          * @param referenceData info to embed into a transaction.
          * @return
@@ -628,11 +565,12 @@ public class Transaction {
          */
         public Builder issueById(String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setType("issue")
+                    .setParameter("type", "issue")
                     .setParameter("asset_id", assetId)
-                    .setParameter("amount", amount);
+                    .setParameter("amount", amount)
+                    .setParameter("reference_data", referenceData);
 
-            return this.addAction(action, referenceData);
+            return this.addAction(action);
         }
 
         /**
@@ -645,11 +583,12 @@ public class Transaction {
          */
         public Builder issueByAlias(String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setType("issue")
+                    .setParameter("type", "issue")
                     .setParameter("asset_alias", assetAlias)
-                    .setParameter("amount", amount);
+                    .setParameter("amount", amount)
+                    .setParameter("reference_data", referenceData);
 
-            return this.addAction(action, referenceData);
+            return this.addAction(action);
         }
 
         /**
@@ -662,12 +601,13 @@ public class Transaction {
          */
         public Builder controlWithAccountByID(String accountId, String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setType("control_account")
+                    .setParameter("type", "control_account")
                     .setParameter("account_id", accountId)
                     .setParameter("asset_id", assetId)
-                    .setParameter("amount", amount);
+                    .setParameter("amount", amount)
+                    .setParameter("reference_data", referenceData);
 
-            return this.addAction(action, referenceData);
+            return this.addAction(action);
         }
 
         /**
@@ -680,12 +620,13 @@ public class Transaction {
          */
         public Builder controlWithAccountByAlias(String accountAlias, String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setType("control_account")
+                    .setParameter("type", "control_account")
                     .setParameter("account_alias", accountAlias)
                     .setParameter("asset_alias", assetAlias)
-                    .setParameter("amount", amount);
+                    .setParameter("amount", amount)
+                    .setParameter("reference_data", referenceData);
 
-            return this.addAction(action, referenceData);
+            return this.addAction(action);
         }
 
         /**
@@ -698,12 +639,13 @@ public class Transaction {
          */
         public Builder controlWithProgramById(ControlProgram program, String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setType("control_program")
+                    .setParameter("type", "control_program")
                     .setParameter("control_program", program.program)
                     .setParameter("asset_id", assetId)
-                    .setParameter("amount", amount);
+                    .setParameter("amount", amount)
+                    .setParameter("reference_data", referenceData);
 
-            return this.addAction(action, referenceData);
+            return this.addAction(action);
         }
 
         /**
@@ -716,12 +658,13 @@ public class Transaction {
          */
         public Builder controlWithProgramByAlias(ControlProgram program, String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setType("control_program")
+                    .setParameter("type", "control_program")
                     .setParameter("control_program", program.program)
                     .setParameter("asset_alias", assetAlias)
-                    .setParameter("amount", amount);
+                    .setParameter("amount", amount)
+                    .setParameter("reference_data", referenceData);
 
-            return this.addAction(action, referenceData);
+            return this.addAction(action);
         }
 
         /**
@@ -734,12 +677,13 @@ public class Transaction {
          */
         public Builder spendFromAccountById(String accountId, String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setType("spend_account_unspent_output_selector")
+                    .setParameter("type", "spend_account_unspent_output_selector")
                     .setParameter("account_id", accountId)
                     .setParameter("asset_id", assetId)
-                    .setParameter("amount", amount);
+                    .setParameter("amount", amount)
+                    .setParameter("reference_data", referenceData);
 
-            return this.addAction(action, referenceData);
+            return this.addAction(action);
         }
 
         /**
@@ -752,12 +696,13 @@ public class Transaction {
          */
         public Builder spendFromAccountByAlias(String accountAlias, String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setType("spend_account_unspent_output_selector")
+                    .setParameter("type", "spend_account_unspent_output_selector")
                     .setParameter("account_alias", accountAlias)
                     .setParameter("asset_alias", assetAlias)
-                    .setParameter("amount", amount);
+                    .setParameter("amount", amount)
+                    .setParameter("reference_data", referenceData);
 
-            return this.addAction(action, referenceData);
+            return this.addAction(action);
         }
 
         /**
@@ -768,11 +713,12 @@ public class Transaction {
          */
         public Builder spendUnspentOutput(UnspentOutput unspentOutput, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setType("spend_account_unspent_output")
+                    .setParameter("type", "spend_account_unspent_output")
                     .setParameter("transaction_id", unspentOutput.transactionId)
-                    .setParameter("position", unspentOutput.position);
+                    .setParameter("position", unspentOutput.position)
+                    .setParameter("reference_data", referenceData);
 
-            return this.addAction(action, referenceData);
+            return this.addAction(action);
         }
 
         /**
@@ -798,12 +744,13 @@ public class Transaction {
          */
         public Builder retireById(String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setType("control_program")
+                    .setParameter("type", "control_program")
                     .setParameter("control_program", ControlProgram.retireProgram())
                     .setParameter("asset_id", assetId)
-                    .setParameter("amount", amount);
+                    .setParameter("amount", amount)
+                    .setParameter("reference_data", referenceData);
 
-            return this.addAction(action, referenceData);
+            return this.addAction(action);
         }
 
         /**
@@ -815,12 +762,13 @@ public class Transaction {
          */
         public Builder retireByAlias(String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setType("control_program")
+                    .setParameter("type", "control_program")
                     .setParameter("control_program", ControlProgram.retireProgram())
                     .setParameter("asset_alias", assetAlias)
-                    .setParameter("amount", amount);
+                    .setParameter("amount", amount)
+                    .setParameter("reference_data", referenceData);
 
-            return this.addAction(action, referenceData);
+            return this.addAction(action);
         }
     }
 }

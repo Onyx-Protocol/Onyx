@@ -67,53 +67,53 @@ func filterAliases(ctx context.Context, br *buildRequest) error {
 		v := aAction.underlying
 		switch p := v.(type) {
 		case *asset.IssueAction:
-			if (p.Params.AssetID == bc.AssetID{}) && p.Params.AssetAlias != "" {
-				ast, err := asset.FindByAlias(ctx, p.Params.AssetAlias)
+			if (p.AssetID == bc.AssetID{}) && p.AssetAlias != "" {
+				ast, err := asset.FindByAlias(ctx, p.AssetAlias)
 				if err != nil {
-					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.Params.AssetAlias, i)
+					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.AssetAlias, i)
 				}
-				p.Params.AssetID = ast.AssetID
+				p.AssetID = ast.AssetID
 			}
 			aAction.underlying = p
 		case *account.ControlAction:
-			if (p.Params.AssetID == bc.AssetID{}) && p.Params.AssetAlias != "" {
-				ast, err := asset.FindByAlias(ctx, p.Params.AssetAlias)
+			if (p.AssetID == bc.AssetID{}) && p.AssetAlias != "" {
+				ast, err := asset.FindByAlias(ctx, p.AssetAlias)
 				if err != nil {
-					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.Params.AssetAlias, i)
+					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.AssetAlias, i)
 				}
-				p.Params.AssetID = ast.AssetID
+				p.AssetID = ast.AssetID
 			}
-			if p.Params.AccountID == "" && p.Params.AccountAlias != "" {
-				acc, err := account.FindByAlias(ctx, p.Params.AccountAlias)
+			if p.AccountID == "" && p.AccountAlias != "" {
+				acc, err := account.FindByAlias(ctx, p.AccountAlias)
 				if err != nil {
-					return errors.WithDetailf(err, "invalid account alias %s on action %d", p.Params.AccountAlias, i)
+					return errors.WithDetailf(err, "invalid account alias %s on action %d", p.AccountAlias, i)
 				}
-				p.Params.AccountID = acc.ID
+				p.AccountID = acc.ID
 			}
 			aAction.underlying = p
 		case *account.SpendAction:
-			if (p.Params.AssetID == bc.AssetID{}) && p.Params.AssetAlias != "" {
-				ast, err := asset.FindByAlias(ctx, p.Params.AssetAlias)
+			if (p.AssetID == bc.AssetID{}) && p.AssetAlias != "" {
+				ast, err := asset.FindByAlias(ctx, p.AssetAlias)
 				if err != nil {
-					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.Params.AssetAlias, i)
+					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.AssetAlias, i)
 				}
-				p.Params.AssetID = ast.AssetID
+				p.AssetID = ast.AssetID
 			}
-			if p.Params.AccountID == "" && p.Params.AccountAlias != "" {
-				acc, err := account.FindByAlias(ctx, p.Params.AccountAlias)
+			if p.AccountID == "" && p.AccountAlias != "" {
+				acc, err := account.FindByAlias(ctx, p.AccountAlias)
 				if err != nil {
-					return errors.WithDetailf(err, "invalid account alias %s on action %d", p.Params.AccountAlias, i)
+					return errors.WithDetailf(err, "invalid account alias %s on action %d", p.AccountAlias, i)
 				}
-				p.Params.AccountID = acc.ID
+				p.AccountID = acc.ID
 			}
 			aAction.underlying = p
 		case *txbuilder.ControlProgramAction:
-			if (p.Params.AssetID == bc.AssetID{}) && p.Params.AssetAlias != "" {
-				ast, err := asset.FindByAlias(ctx, p.Params.AssetAlias)
+			if (p.AssetID == bc.AssetID{}) && p.AssetAlias != "" {
+				ast, err := asset.FindByAlias(ctx, p.AssetAlias)
 				if err != nil {
-					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.Params.AssetAlias, i)
+					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.AssetAlias, i)
 				}
-				p.Params.AssetID = ast.AssetID
+				p.AssetID = ast.AssetID
 			}
 			aAction.underlying = p
 		}

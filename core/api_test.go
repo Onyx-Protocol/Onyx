@@ -135,8 +135,8 @@ func TestTransfer(t *testing.T) {
 	// Now transfer
 	buildReqFmt := `
 		{"actions": [
-			{"type": "spend_account_unspent_output_selector", "params": {"asset_id": "%s", "amount": 100, "account_id": "%s"}},
-			{"type": "control_account", "params": {"asset_id": "%s", "amount": 100, "account_id": "%s"}}
+			{"type": "spend_account_unspent_output_selector", "asset_id": "%s", "amount": 100, "account_id": "%s"},
+			{"type": "control_account", "asset_id": "%s", "amount": 100, "account_id": "%s"}
 		]}
 	`
 	buildReqStr := fmt.Sprintf(buildReqFmt, assetIDStr, account1ID, assetIDStr, account2ID)

@@ -90,5 +90,5 @@ type Action interface {
 }
 
 type ttler interface {
-	TTL() time.Duration
+	GetTTL() time.Duration
 }

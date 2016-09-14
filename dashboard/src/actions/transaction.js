@@ -46,7 +46,7 @@ function preprocessTransaction(data) {
     let a = data.actions[i]
     if (a.type == 'retire_asset') {
       a.type = 'control_program'
-      a.params.control_program = '6a' // OP_FAIL hex byte
+      a.control_program = '6a' // OP_FAIL hex byte
     }
   }
 }

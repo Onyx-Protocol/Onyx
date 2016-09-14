@@ -482,46 +482,36 @@ Request
             "reference_data":"...",
             "actions":[  
                 {
-                	"type":"spend_account_unspent_output_selector",
-                	"params":{
-                		"asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
-                		"amount":123,
-                		"account_id":"..."
-                	}
+                  "type":"spend_account_unspent_output_selector",
+                  "asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
+                  "amount":123,
+                  "account_id":"..."
                 },
                 {
-                	"type":"spend_account_unspent_output",
-                	"params":{
-                		"transaction_id":"...",
-                		"position":0
-                	},
-                	"reference_data":"..."
+                  "type":"spend_account_unspent_output",
+                  "transaction_id":"...",
+                  "position":0,
+                  "reference_data":"..."
                 },
                 {
-                	"type":"issue",
-                	"params":{
-                		"asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
-                		"amount":500
-                	},
-                	"reference_data":"..."
+                  "type":"issue",
+                  "asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
+                  "amount":500,
+                  "reference_data":"..."
                 },
                 {
-                	"type":"control_account",
-                	"params":{
-                		"asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
-                		"amount":500,
-                		"account_id":"..."                                // accepts `account_id` or `account_alias`
-                	},
-                	"reference_data":"..."
+                  "type":"control_account",
+                  "asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
+                  "amount":500,
+                  "account_id":"...",                               // accepts `account_id` or `account_alias`
+                  "reference_data":"..."
                 },
                 {
-                	"type":"control_program",
-                	"params":{
-                		"asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
-                		"amount":500,
-                		"control_program":"..."
-                	},
-                	"reference_data":"..."
+                  "type":"control_program",
+                  "asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
+                  "amount":500,
+                  "control_program":"...",
+                  "reference_data":"..."
                 }
             ]
         }

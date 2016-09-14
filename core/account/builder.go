@@ -14,28 +14,27 @@ import (
 )
 
 type SpendAction struct {
-	Params struct {
-		bc.AssetAmount
-		AccountID string        `json:"account_id"`
-		TxHash    *bc.Hash      `json:"transaction_id"`
-		TxOut     *uint32       `json:"position"`
-		TTL       time.Duration `json:"reservation_ttl"`
+	bc.AssetAmount
+	AccountID string        `json:"account_id"`
+	TxHash    *bc.Hash      `json:"transaction_id"`
+	TxOut     *uint32       `json:"position"`
+	TTL       time.Duration `json:"reservation_ttl"`
 
-		// These fields are only necessary for filtering
-		// aliases on transaction build requests. A wrapper
-		// function reads them to set the ID fields. They are
-		// not used anywhere else in the code base.
-		AccountAlias string `json:"account_alias"`
-		AssetAlias   string `json:"asset_alias"`
-	}
+	// These fields are only necessary for filtering
+	// aliases on transaction build requests. A wrapper
+	// function reads them to set the ID fields. They are
+	// not used anywhere else in the code base.
+	AccountAlias string `json:"account_alias"`
+	AssetAlias   string `json:"asset_alias"`
+
 	Constraints   txbuilder.ConstraintList
 	ReferenceData json.Map `json:"reference_data"`
 	ClientToken   *string  `json:"client_token"`
 }
 
 // TTL returns the time-to-live of the reservation created by this action.
-func (a *SpendAction) TTL() time.Duration {
-	ttl := a.Params.TTL
+func (a *SpendAction) GetTTL() time.Duration {
+	ttl := a.TTL
 	if ttl == 0 {
 		ttl = time.Minute
 	}
@@ -43,17 +42,17 @@ func (a *SpendAction) TTL() time.Duration {
 }
 
 func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
-	acct, err := FindByID(ctx, a.Params.AccountID)
+	acct, err := FindByID(ctx, a.AccountID)
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "get account info")
 	}
 
 	utxodbSource := utxodb.Source{
-		AssetID:     a.Params.AssetID,
-		Amount:      a.Params.Amount,
-		AccountID:   a.Params.AccountID,
-		TxHash:      a.Params.TxHash,
-		OutputIndex: a.Params.TxOut,
+		AssetID:     a.AssetID,
+		Amount:      a.Amount,
+		AccountID:   a.AccountID,
+		TxHash:      a.TxHash,
+		OutputIndex: a.TxOut,
 		ClientToken: a.ClientToken,
 	}
 	utxodbSources := []utxodb.Source{utxodbSource}
@@ -93,11 +92,11 @@ func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInp
 		// May be preferable performancewise to allocate all the
 		// destinations in one call.
 		for _, changeAmount := range changeAmounts {
-			acp, err := CreateControlProgram(ctx, a.Params.AccountID)
+			acp, err := CreateControlProgram(ctx, a.AccountID)
 			if err != nil {
 				return nil, nil, nil, errors.Wrap(err, "creating control program")
 			}
-			changeOuts = append(changeOuts, bc.NewTxOutput(a.Params.AssetID, changeAmount, acp, nil))
+			changeOuts = append(changeOuts, bc.NewTxOutput(a.AssetID, changeAmount, acp, nil))
 
 			if len(constraints) > 0 {
 				// Constrain every input to require this change output.
@@ -110,7 +109,7 @@ func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInp
 					if sw, ok := tplIn.WitnessComponents[0].(*txbuilder.SignatureWitness); ok {
 						pc := &txbuilder.PayConstraint{
 							AssetAmount: bc.AssetAmount{
-								AssetID: a.Params.AssetID,
+								AssetID: a.AssetID,
 								Amount:  changeAmount,
 							},
 							Program: acp,
@@ -138,19 +137,18 @@ func breakupChange(total uint64) (amounts []uint64) {
 }
 
 type SpendUTXOAction struct {
-	Params struct {
-		TxHash bc.Hash       `json:"transaction_id"`
-		TxOut  uint32        `json:"position"`
-		TTL    time.Duration `json:"reservation_ttl"`
-	}
+	TxHash bc.Hash       `json:"transaction_id"`
+	TxOut  uint32        `json:"position"`
+	TTL    time.Duration `json:"reservation_ttl"`
+
 	Constraints   txbuilder.ConstraintList
 	ReferenceData json.Map `json:"reference_data"`
 	ClientToken   *string  `json:"client_token"`
 }
 
 // TTL returns the time-to-live of the reservation created by this action.
-func (a *SpendUTXOAction) TTL() time.Duration {
-	ttl := a.Params.TTL
+func (a *SpendUTXOAction) GetTTL() time.Duration {
+	ttl := a.TTL
 	if ttl == 0 {
 		ttl = time.Minute
 	}
@@ -158,7 +156,7 @@ func (a *SpendUTXOAction) TTL() time.Duration {
 }
 
 func (a *SpendUTXOAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
-	r, err := utxodb.ReserveUTXO(ctx, a.Params.TxHash, a.Params.TxOut, a.ClientToken, maxTime)
+	r, err := utxodb.ReserveUTXO(ctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -207,26 +205,25 @@ func utxoToInputs(ctx context.Context, account *Account, u *utxodb.UTXO, refData
 }
 
 type ControlAction struct {
-	Params struct {
-		bc.AssetAmount
-		AccountID string `json:"account_id"`
+	bc.AssetAmount
+	AccountID string `json:"account_id"`
 
-		// These fields are only necessary for filtering
-		// aliases on transaction build requests. A wrapper
-		// function reads them to set the ID fields. They are
-		// not used anywhere else in the code base.
-		AccountAlias string `json:"account_alias"`
-		AssetAlias   string `json:"asset_alias"`
-	}
+	// These fields are only necessary for filtering
+	// aliases on transaction build requests. A wrapper
+	// function reads them to set the ID fields. They are
+	// not used anywhere else in the code base.
+	AccountAlias string `json:"account_alias"`
+	AssetAlias   string `json:"asset_alias"`
+
 	ReferenceData json.Map `json:"reference_data"`
 }
 
 func (a *ControlAction) Build(ctx context.Context, _ time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
-	acp, err := CreateControlProgram(ctx, a.Params.AccountID)
+	acp, err := CreateControlProgram(ctx, a.AccountID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	out := bc.NewTxOutput(a.Params.AssetID, a.Params.Amount, acp, a.ReferenceData)
+	out := bc.NewTxOutput(a.AssetID, a.Amount, acp, a.ReferenceData)
 	return nil, []*bc.TxOutput{out}, nil, nil
 }
 

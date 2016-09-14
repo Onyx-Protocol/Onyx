@@ -53,22 +53,22 @@ class ActionItem extends React.Component {
         <SelectField title="Type" emptyLabel="Select an action type..." options={actionTypes} fieldProps={typeProps} />
 
         {visible.account_alias &&
-          <TextField title="Account Alias" fieldProps={this.props.fieldProps.params.account_alias} />}
+          <TextField title="Account Alias" fieldProps={this.props.fieldProps.account_alias} />}
 
         {visible.control_program &&
-          <TextField title="Control Program" fieldProps={this.props.fieldProps.params.control_program} />}
+          <TextField title="Control Program" fieldProps={this.props.fieldProps.control_program} />}
 
         {visible.transaction_id &&
-          <TextField title="Transaction ID" fieldProps={this.props.fieldProps.params.transaction_id} />}
+          <TextField title="Transaction ID" fieldProps={this.props.fieldProps.transaction_id} />}
 
         {visible.position &&
-          <NumberField title="Transaction Unspent Position" fieldProps={this.props.fieldProps.params.position} />}
+          <NumberField title="Transaction Unspent Position" fieldProps={this.props.fieldProps.position} />}
 
         {visible.asset_alias &&
-          <TextField title="Asset Alias" fieldProps={this.props.fieldProps.params.asset_alias} />}
+          <TextField title="Asset Alias" fieldProps={this.props.fieldProps.asset_alias} />}
 
         {visible.amount &&
-          <NumberField title="Amount" fieldProps={this.props.fieldProps.params.amount} />}
+          <NumberField title="Amount" fieldProps={this.props.fieldProps.amount} />}
 
         {this.state.selectedType && this.state.referenceDataOpen &&
           <TextareaField title='Reference data' fieldProps={this.props.fieldProps.reference_data} />

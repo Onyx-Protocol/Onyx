@@ -36,7 +36,7 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, m
 	now := time.Now()
 	for _, a := range actions {
 		if t, ok := a.(ttler); ok {
-			timestamp := now.Add(t.TTL())
+			timestamp := now.Add(t.GetTTL())
 			if timestamp.Before(maxTime) {
 				maxTime = timestamp
 			}

@@ -79,11 +79,9 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	prottest.MakeBlock(ctx, t, c)
 
 	source := &account.SpendUTXOAction{
-		Params: struct {
-			TxHash bc.Hash       `json:"transaction_id"`
-			TxOut  uint32        `json:"position"`
-			TTL    time.Duration `json:"reservation_ttl"`
-		}{out.Hash, out.Index, time.Minute},
+		TxHash: out.Hash,
+		TxOut:  out.Index,
+		TTL:    time.Minute,
 	}
 
 	gotTxIns, _, _, err := source.Build(ctx, time.Now().Add(time.Minute))

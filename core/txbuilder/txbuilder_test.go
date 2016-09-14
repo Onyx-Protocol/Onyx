@@ -38,11 +38,8 @@ func (t testAction) Build(ctx context.Context, _ time.Time) ([]*bc.TxInput, []*b
 
 func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *ControlProgramAction {
 	return &ControlProgramAction{
-		Params: struct {
-			bc.AssetAmount
-			Program    json.HexBytes `json:"control_program"`
-			AssetAlias string        `json:"asset_alias"`
-		}{assetAmt, script, ""},
+		AssetAmount: assetAmt,
+		Program:     script,
 	}
 }
 
