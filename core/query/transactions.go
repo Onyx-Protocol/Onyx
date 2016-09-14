@@ -19,13 +19,22 @@ var (
 )
 
 type TxAfter struct {
-	MaxBlockHeight uint64 // inclusive
-	MaxPosition    uint32 // inclusive
-	MinBlockHeight uint64 // inclusive
+	// FromBlockHeight and FromPosition uniquely identify the last transaction returned
+	// by a list-transactions query.
+	//
+	// If list-transactions is called with a time range instead of a cursor, these fields
+	// are populated with the position of the transaction at the start of the time range.
+	FromBlockHeight uint64 // exclusive
+	FromPosition    uint32 // exclusive
+
+	// StopBlockHeight identifies the last block that should be included in a transaction
+	// list. It is used when list-transactions is called with a time range instead
+	// of a cursor.
+	StopBlockHeight uint64 // inclusive
 }
 
-func (cur TxAfter) String() string {
-	return fmt.Sprintf("%x-%x-%x", cur.MaxBlockHeight, cur.MaxPosition, cur.MinBlockHeight)
+func (after TxAfter) String() string {
+	return fmt.Sprintf("%x-%x-%x", after.FromBlockHeight, after.FromPosition, after.StopBlockHeight)
 }
 
 func DecodeTxAfter(str string) (c TxAfter, err error) {
@@ -33,7 +42,7 @@ func DecodeTxAfter(str string) (c TxAfter, err error) {
 	if len(s) != 3 {
 		return c, ErrBadAfter
 	}
-	max, err := strconv.ParseUint(s[0], 16, 64)
+	from, err := strconv.ParseUint(s[0], 16, 64)
 	if err != nil {
 		return c, ErrBadAfter
 	}
@@ -41,11 +50,11 @@ func DecodeTxAfter(str string) (c TxAfter, err error) {
 	if err != nil {
 		return c, ErrBadAfter
 	}
-	min, err := strconv.ParseUint(s[2], 16, 64)
+	stop, err := strconv.ParseUint(s[2], 16, 64)
 	if err != nil {
 		return c, ErrBadAfter
 	}
-	return TxAfter{MaxBlockHeight: max, MaxPosition: uint32(pos), MinBlockHeight: min}, nil
+	return TxAfter{FromBlockHeight: from, FromPosition: uint32(pos), StopBlockHeight: stop}, nil
 }
 
 // LookupTxAfter looks up the transaction `after` for the provided time range.
@@ -55,15 +64,15 @@ func (ind *Indexer) LookupTxAfter(ctx context.Context, begin, end uint64) (TxAft
 		WHERE timestamp >= $1 AND timestamp <= $2
 	`
 
-	var max, min uint64
-	err := ind.db.QueryRow(ctx, q, begin, end).Scan(&max, &min)
+	var from, stop uint64
+	err := ind.db.QueryRow(ctx, q, begin, end).Scan(&from, &stop)
 	if err != nil {
 		return TxAfter{}, errors.Wrap(err, "querying `query_blocks`")
 	}
 	return TxAfter{
-		MaxBlockHeight: max,
-		MaxPosition:    math.MaxInt32,
-		MinBlockHeight: min,
+		FromBlockHeight: from,
+		FromPosition:    math.MaxInt32, // TODO(tessr): Support reversing direction.
+		StopBlockHeight: stop,
 	}, nil
 }
 
@@ -88,7 +97,7 @@ func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals [
 	txns := make([]interface{}, 0, limit)
 	for rows.Next() {
 		var data []byte
-		err := rows.Scan(&cur.MaxBlockHeight, &cur.MaxPosition, &data)
+		err := rows.Scan(&cur.FromBlockHeight, &cur.FromPosition, &data)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "scanning transaction row")
 		}
@@ -116,9 +125,9 @@ func constructTransactionsQuery(expr filter.SQLExpr, cur TxAfter, limit int) (st
 	}
 
 	// add time range & after conditions
-	buf.WriteString(fmt.Sprintf("(block_height, tx_pos) <= ($%d, $%d) AND ", len(vals)+1, len(vals)+2))
+	buf.WriteString(fmt.Sprintf("(block_height, tx_pos) < ($%d, $%d) AND ", len(vals)+1, len(vals)+2))
 	buf.WriteString(fmt.Sprintf("block_height >= $%d ", len(vals)+3))
-	vals = append(vals, cur.MaxBlockHeight, cur.MaxPosition, cur.MinBlockHeight)
+	vals = append(vals, cur.FromBlockHeight, cur.FromPosition, cur.StopBlockHeight)
 
 	buf.WriteString("ORDER BY block_height DESC, tx_pos DESC ")
 	buf.WriteString("LIMIT " + strconv.Itoa(limit))
