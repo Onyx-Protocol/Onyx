@@ -34,6 +34,7 @@ var (
 	key          = os.Getenv("USER")
 	user         = os.Getenv("USER")
 	schemaPath   = os.Getenv("CHAIN") + "/core/schema.sql"
+	sdkDir       = os.Getenv("CHAIN") + "/sdk/java"
 
 	awsConfig = &aws.Config{Region: aws.String("us-east-1")}
 	ec2client = ec2.New(awsConfig)
@@ -67,12 +68,25 @@ func main() {
 	log.SetPrefix(appName + ": ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds)
 
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [-d] Main.java\n", os.Args[0])
+		fmt.Fprint(os.Stderr, usage)
+		flag.PrintDefaults()
+	}
 	flag.Parse()
 
 	if *flagD {
 		doDelete()
 		return
 	}
+
+	if flag.NArg() == 0 {
+		flag.Usage()
+		os.Exit(2)
+	}
+
+	testJava, err := ioutil.ReadFile(flag.Arg(0))
+	must(err)
 
 	schema, err := ioutil.ReadFile(schemaPath)
 	must(err)
@@ -98,7 +112,7 @@ func main() {
 
 	coredBin := mustBuildCored()
 	corectlBin := mustBuildCorectl()
-	jarFile := mustBuildJAR()
+	chainJAR := mustBuildJAR()
 
 	log.Println("waiting for EC2 instances to open port 22")
 	wg.Wait()
@@ -122,7 +136,8 @@ func main() {
 	deleteELBNames = append(deleteELBNames, &elbName)
 	coreURL := "http://" + elbHost
 	log.Println("core URL:", coreURL)
-	must(scp(client.addr, jarFile, "test.jar", 0644))
+	must(scp(client.addr, chainJAR, "chain.jar", 0644))
+	must(scp(client.addr, testJava, "Main.java", 0644))
 	mustRunOn(client.addr, clientsh, "coreURL", coreURL, "elbHost", elbHost)
 	log.Println("SUCCESS")
 	cleanup()
@@ -199,7 +214,19 @@ func mustBuildCorectl() []byte {
 	return out
 }
 
-func mustBuildJAR() []byte { return nil }
+func mustBuildJAR() []byte {
+	cmd := exec.Command("mvn", "-Djar.finalName=chain", "package")
+	cmd.Dir = sdkDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	must(cmd.Run())
+
+	b, err := ioutil.ReadFile(sdkDir + "/target/chain.jar")
+	must(err)
+
+	log.Printf("java SDK jar: %d bytes", len(b))
+	return b
+}
 
 func cleanup() {
 	if len(killInstanceIDs) > 0 {
@@ -529,7 +556,30 @@ echo waiting for elb dns to resolve
 while ! host {{elbHost}}
 do sleep 5 # sigh
 done
-curl -sv "$CHAIN_API_URL"/debug/vars
-#wget --quiet -O t.jar https://s3.amazonaws.com/chain-qa/chain-core-qa.jar
-#java -ea -cp t.jar com.chain.qa.singlecore.Main
+curl -si "$CHAIN_API_URL"/debug/vars
+export CLASSPATH=.:$HOME/chain.jar
+javac Main.java
+java Main
+`
+
+const usage = `
+Command benchcore boots a set of EC2 instances, compiles
+cored, corectl, and the Java SDK locally, sets up a postgres
+database and chain core on the instances, copies the SDK and
+Main.java to another instance to serve as the test driver,
+and runs the driver.
+
+It expects a full Chain development environment. See
+Readme.md in the root of this repo for instructions.
+
+Main.java can have any file name, but it will be renamed to
+Main.java on the test driver host, so it must have a public
+class named Main containing the entry point.
+
+On successful exit of the test driver, benchcore will delete
+the AWS resources it created. If there is a failure, it will
+leave the instances running for debugging investigation. To
+clean up, run 'benchcore -d'.
+
+Flags:
 `
