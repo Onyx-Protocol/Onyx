@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -612,39 +612,6 @@ CREATE TABLE query_blocks (
 
 
 --
--- Name: query_indexes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE query_indexes (
-    id text DEFAULT next_chain_id('idx'::text) NOT NULL,
-    alias text NOT NULL,
-    type text NOT NULL,
-    filter text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    sum_by text[]
-);
-
-
---
--- Name: query_indexes_internal_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE query_indexes_internal_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: query_indexes_internal_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE query_indexes_internal_id_seq OWNED BY query_indexes.id;
-
-
---
 -- Name: reservation_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -932,22 +899,6 @@ ALTER TABLE ONLY query_blocks
 
 
 --
--- Name: query_indexes_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY query_indexes
-    ADD CONSTRAINT query_indexes_id_key UNIQUE (alias);
-
-
---
--- Name: query_indexes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY query_indexes
-    ADD CONSTRAINT query_indexes_pkey PRIMARY KEY (id);
-
-
---
 -- Name: reservations_idempotency_key_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1148,3 +1099,4 @@ insert into migrations (filename, hash) values ('2016-09-01.2.core.drop-txs.sql'
 insert into migrations (filename, hash) values ('2016-09-05.0.asset.signer-null.sql', 'e611da44df43ea431c937c77c1e852fe82dc0049a118ec896102ca8a2cfb09f6');
 insert into migrations (filename, hash) values ('2016-09-06.0.asset.height.sql', 'd63ac300dfdaaa9ea48741b5d9c66af27a11eba46621ee2cb9a76ba39b2e50a6');
 insert into migrations (filename, hash) values ('2016-09-14.0.appdb.add-cursors-table.sql', 'fedda13d07e22fce61508dfdc38cafba9492439200e0d120c7438dc7489f4c3a');
+insert into migrations (filename, hash) values ('2016-09-14.1.query.remove-indexes.sql', '47f772881706b2a518f79f22a7dd82512ce3994ba2b97cd7cfc25272aadf8f32');

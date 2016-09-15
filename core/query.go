@@ -6,66 +6,16 @@ import (
 
 	"chain/core/query"
 	"chain/core/query/filter"
-	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/httpjson"
 	"chain/protocol/bc"
 )
-
-var (
-	errBadIndexConfig = errors.New("index configuration invalid")
-)
-
-// createIndex is an http handler for creating indexes.
-//
-// POST /create-index
-func (a *api) createIndex(ctx context.Context, in struct {
-	Alias  string   `json:"alias"`
-	Type   string   `json:"type"`
-	Filter string   `json:"filter"`
-	SumBy  []string `json:"sum_by"`
-}) (*query.Index, error) {
-	if !query.IndexTypes[in.Type] {
-		return nil, errors.WithDetailf(errBadIndexConfig, "unknown index type %q", in.Type)
-	}
-	if len(in.SumBy) > 0 && in.Type != query.IndexTypeBalance {
-		return nil, errors.WithDetail(errBadIndexConfig, "sum-by field is only valid for balance indexes")
-	}
-	if in.Alias == "" {
-		return nil, errors.WithDetail(httpjson.ErrBadRequest, "missing index alias")
-	}
-
-	idx, err := a.indexer.CreateIndex(ctx, in.Alias, in.Type, in.Filter, in.SumBy)
-	return idx, errors.Wrap(err, "creating the new index")
-}
-
-// listIndexes is an http handler for listing search indexes.
-//
-// POST /list-indexes
-func (a *api) listIndexes(ctx context.Context, query requestQuery) (page, error) {
-	limit := defGenericPageSize
-
-	indexes, after, err := a.indexer.ListIndexes(ctx, query.After, limit)
-	if err != nil {
-		return page{}, errors.Wrap(err, "listing indexes")
-	}
-
-	query.After = after
-	return page{
-		Items:    httpjson.Array(indexes),
-		LastPage: len(indexes) < limit,
-		Next:     query,
-	}, nil
-}
 
 // listTransactions is an http handler for listing transactions matching
 // an index or an ad-hoc filter.
 //
 // POST /list-transactions
 func (a *api) listTransactions(ctx context.Context, in requestQuery) (result page, err error) {
-	if (in.IndexID != "" || in.IndexAlias != "") && in.Filter != "" {
-		return result, errors.WithDetail(httpjson.ErrBadRequest, "cannot provide both index and filter predicate")
-	}
 	if in.EndTimeMS == 0 {
 		in.EndTimeMS = bc.Millis(time.Now())
 	}
@@ -76,20 +26,9 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 	)
 
 	// Build the filter predicate.
-	if in.IndexAlias != "" || in.IndexID != "" {
-		idx, err := a.indexer.GetIndex(ctx, in.IndexID, in.IndexAlias, query.IndexTypeTransaction)
-		if err != nil {
-			return result, err
-		}
-		if idx == nil {
-			return result, errors.WithDetail(pg.ErrUserInputNotFound, "transaction index not found")
-		}
-		p = idx.Predicate
-	} else {
-		p, err = filter.Parse(in.Filter)
-		if err != nil {
-			return result, err
-		}
+	p, err = filter.Parse(in.Filter)
+	if err != nil {
+		return result, err
 	}
 
 	// Either parse the provided `after` or look one up for the time range.
@@ -157,38 +96,23 @@ func (a *api) listAccounts(ctx context.Context, in requestQuery) (page, error) {
 
 // POST /list-balances
 func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, err error) {
-	if (in.IndexID != "" || in.IndexAlias != "") && in.Filter != "" {
-		return result, errors.WithDetail(httpjson.ErrBadRequest, "cannot provide both index and filter predicate")
-	}
 	if in.TimestampMS == 0 {
 		in.TimestampMS = bc.Millis(time.Now())
 	}
 
 	var p filter.Predicate
 	var sumBy []filter.Field
-	if in.IndexID != "" || in.IndexAlias != "" {
-		idx, err := a.indexer.GetIndex(ctx, in.IndexID, in.IndexAlias, query.IndexTypeBalance)
-		if err != nil {
-			return result, err
-		}
-		if idx == nil {
-			return result, errors.WithDetail(pg.ErrUserInputNotFound, "balance index not found")
-		}
-		p = idx.Predicate
-		sumBy = idx.SumBy
-	} else {
-		p, err = filter.Parse(in.Filter)
-		if err != nil {
-			return result, err
-		}
+	p, err = filter.Parse(in.Filter)
+	if err != nil {
+		return result, err
+	}
 
-		for _, field := range in.SumBy {
-			f, err := filter.ParseField(field)
-			if err != nil {
-				return result, err
-			}
-			sumBy = append(sumBy, f)
+	for _, field := range in.SumBy {
+		f, err := filter.ParseField(field)
+		if err != nil {
+			return result, err
 		}
+		sumBy = append(sumBy, f)
 	}
 
 	// TODO(jackson): paginate this endpoint.
@@ -209,20 +133,9 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 		in.TimestampMS = bc.Millis(time.Now())
 	}
 	var p filter.Predicate
-	if in.IndexID != "" || in.IndexAlias != "" {
-		idx, err := a.indexer.GetIndex(ctx, in.IndexID, in.IndexAlias, query.IndexTypeOutput)
-		if err != nil {
-			return result, err
-		}
-		if idx == nil {
-			return result, errors.WithDetail(pg.ErrUserInputNotFound, "output index not found")
-		}
-		p = idx.Predicate
-	} else {
-		p, err = filter.Parse(in.Filter)
-		if err != nil {
-			return result, err
-		}
+	p, err = filter.Parse(in.Filter)
+	if err != nil {
+		return result, err
 	}
 
 	var after *query.OutputsAfter

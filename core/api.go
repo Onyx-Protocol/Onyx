@@ -78,8 +78,6 @@ type requestQuery struct {
 	// This is used by /list-transactions.
 	Order string `json:"order,omitempty"`
 
-	IndexID      string        `json:"index_id,omitempty"`
-	IndexAlias   string        `json:"index_alias,omitempty"`
 	Filter       string        `json:"filter,omitempty"`
 	FilterParams []interface{} `json:"filter_params,omitempty"`
 	SumBy        []string      `json:"sum_by,omitempty"`
@@ -116,9 +114,7 @@ func (a *api) handler() http.Handler {
 	m.Handle("/mockhsm/delkey", jsonHandler(a.mockhsmDelKey))
 	m.Handle("/mockhsm/sign-transaction", jsonHandler(a.mockhsmSignTemplates))
 
-	// Transaction indexes & querying
-	m.Handle("/create-index", jsonHandler(a.createIndex))
-	m.Handle("/list-indexes", jsonHandler(a.listIndexes))
+	// Transaction querying
 	m.Handle("/list-accounts", jsonHandler(a.listAccounts))
 	m.Handle("/list-assets", jsonHandler(a.listAssets))
 	m.Handle("/list-transactions", jsonHandler(a.listTransactions))

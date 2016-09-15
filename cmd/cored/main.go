@@ -252,12 +252,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, p
 	go leader.Run(db, *listenAddr, func(ctx context.Context) {
 		ctx = pg.NewContext(ctx, db)
 
-		// Must setup the indexer before generating or fetching blocks.
-		err := indexer.BeginIndexing(ctx)
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
-		}
-
 		go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
 		if config.IsGenerator {
 			go generator.Generate(ctx, c, generatorSigners, blockPeriod)

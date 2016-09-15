@@ -63,7 +63,6 @@ var (
 		// Query error namespace (6xx)
 		query.ErrBadAfter:               errorInfo{400, "CH600", "Malformed pagination parameter `after`"},
 		query.ErrParameterCountMismatch: errorInfo{400, "CH601", "Incorrect number of parameters to filter"},
-		errBadIndexConfig:               errorInfo{400, "CH602", "Invalid index configuration"},
 
 		// Transaction error namespace (7xx)
 		// Build error namespace (70x)
