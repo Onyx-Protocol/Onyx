@@ -1,6 +1,5 @@
 import actionCreator from './actionCreator'
 
-const toggleDropdown = actionCreator(`TOGGLE_DROPDOWN`)
 const _closeDropwdown = actionCreator(`CLOSE_DROPDOWN`)
 
 const closeDropdown = () => (dispatch, getState) => {
@@ -11,6 +10,8 @@ const closeDropdown = () => (dispatch, getState) => {
 closeDropdown.type = _closeDropwdown.type
 
 export default {
-  toggleDropdown,
-  closeDropdown
+  toggleDropdown: actionCreator(`TOGGLE_DROPDOWN`),
+  closeDropdown,
+  dismissFlash: actionCreator(`DISMISS_FLASH`),
+  displayedFlash: actionCreator(`DISPLAYED_FLASH`)
 }

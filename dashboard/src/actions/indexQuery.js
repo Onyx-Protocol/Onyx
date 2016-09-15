@@ -6,11 +6,7 @@ const type = "index"
 const list = generateListActions(type)
 const form = generateFormActions(type, {
   listPath: "indexes",
-  createPath: "indexes/create",
-  resetAction: function(dispatch) {
-    dispatch(list.updateQuery(""))
-    dispatch(list.resetPage())
-  }
+  createPath: "indexes/create"
 })
 
 let actions = Object.assign({},

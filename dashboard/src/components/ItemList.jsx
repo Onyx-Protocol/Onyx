@@ -7,8 +7,14 @@ import SearchBar from "./SearchBar/SearchBar"
 
 class ItemList extends React.Component {
   componentWillMount() {
-    if (this.props.currentPage == -1) {
+    if (this.props.currentPage === -1) {
       this.props.getNextPage()
+    }
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.currentPage === -1) {
+      nextProps.getNextPage()
     }
   }
 

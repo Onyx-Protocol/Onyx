@@ -67,10 +67,9 @@ form.submitForm = (data) => function(dispatch) {
       return signedTemplates[0].submit(context)
     })
     .then(() => {
-      dispatch(list.updateQuery(""))
-      dispatch(list.resetPage())
-      dispatch(unspentActions.resetPage())
       dispatch(push('/transactions'))
+      dispatch(form.created())
+      dispatch(unspentActions.resetPage())
     })
 }
 

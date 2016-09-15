@@ -7,12 +7,7 @@ import generateFormActions from './formActions'
 const type = "account"
 
 const list = generateListActions(type, { defaultKey: "alias" })
-const form = generateFormActions(type, {
-  resetAction: function(dispatch) {
-    dispatch(list.updateQuery(""))
-    dispatch(list.resetPage())
-  }
-})
+const form = generateFormActions(type)
 
 let actions = Object.assign({},
   list,

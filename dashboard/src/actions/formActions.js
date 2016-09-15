@@ -1,13 +1,16 @@
 import chain from '../chain'
 import { context } from '../utility/environment'
+import actionCreator from './actionCreator'
 import { push } from 'react-router-redux'
 
 export default function(type, options = {}) {
   const listPath   = options.listPath || `/${type}s`
   const createPath = options.createPath || `/${type}s/create`
+  const created = actionCreator(`CREATED_${type.toUpperCase()}`, param => ({ param }) )
 
   return {
     showCreate: push(createPath),
+    created,
     submitForm: (data) => {
       const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
       return function(dispatch) {
@@ -15,8 +18,8 @@ export default function(type, options = {}) {
 
         return object.create(context)
           .then(() => {
-            options.resetAction(dispatch)
             dispatch(push(listPath))
+            dispatch(created())
           })
       }
     }

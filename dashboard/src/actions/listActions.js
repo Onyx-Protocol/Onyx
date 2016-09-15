@@ -5,9 +5,9 @@ import actionCreator from './actionCreator'
 export default function(type, options = {}) {
   const incrementPage = actionCreator(`INCREMENT_${type.toUpperCase()}_PAGE`)
   const decrementPage = actionCreator(`DECREMENT_${type.toUpperCase()}_PAGE`)
-  const appendPage = actionCreator(`APPEND_${type.toUpperCase()}_PAGE`, param => { return { param }} )
+  const appendPage = actionCreator(`APPEND_${type.toUpperCase()}_PAGE`, param => ({ param }) )
   const resetPage = actionCreator(`RESET_${type.toUpperCase()}_PAGE`)
-  const updateQuery = actionCreator(`UPDATE_${type.toUpperCase()}_QUERY`, param => {return { param }})
+  const updateQuery = actionCreator(`UPDATE_${type.toUpperCase()}_QUERY`, param => ({ param }) )
 
   const submitQuery = function(query) {
     return function(dispatch, getState) {
@@ -50,7 +50,6 @@ export default function(type, options = {}) {
         }
 
         dispatch(appendPage(param))
-        dispatch(incrementPage())
       }).catch((err) => {
         console.log(err)
         if (options.defaultKey && filter.indexOf(" ") < 0 && filter.indexOf("=") < 0) {

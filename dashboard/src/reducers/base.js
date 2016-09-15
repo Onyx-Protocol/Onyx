@@ -1,7 +1,8 @@
 import actions from '../actions'
 
 export const pagesActions = (type) => (state = [], action) => {
-  if (action.type == actions[type].resetPage.type) {
+  if ((actions[type].created && action.type == actions[type].created.type) ||
+    action.type == actions[type].resetPage.type) {
     return []
   } else if (action.type == actions[type].appendPage.type) {
     return state.concat([action.param])
@@ -11,9 +12,11 @@ export const pagesActions = (type) => (state = [], action) => {
 }
 
 export const currentPageActions = (type) => (state = -1, action) => {
-  if (action.type == actions[type].resetPage.type) {
+  if ((actions[type].created && action.type == actions[type].created.type) ||
+    action.type == actions[type].resetPage.type) {
     return -1
-  } else if (action.type == actions[type].incrementPage.type) {
+  } else if (action.type == actions[type].appendPage.type ||
+    action.type == actions[type].incrementPage.type) {
     return state + 1
   } else if (action.type == actions[type].decrementPage.type) {
     return Math.max(state - 1, 0)
@@ -30,6 +33,8 @@ export const currentQueryActions = (type) => (state = "", action) => {
       return action.param
     }
 
+    return ""
+  } else if (actions[type].created && action.type == actions[type].created.type) {
     return ""
   }
 

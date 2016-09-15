@@ -1,4 +1,5 @@
 import React from 'react'
+import { Flash } from '../Common'
 import Navigation from './Navigation/Main'
 import Footer from './Footer/Footer'
 import styles from './Main.scss'
@@ -15,6 +16,12 @@ class Main extends React.Component {
     this.props.toggleDropdown()
   }
 
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.flashMessage.displayed == false) {
+      this.props.markFlashDisplayed()
+    }
+  }
+
   render() {
     return (
       <div
@@ -25,6 +32,10 @@ class Main extends React.Component {
           toggleDropdown={this.toggleDropdown} />
 
         <div className="container">
+          <Flash {...this.props.flashMessage}
+            dismissFlash={this.props.dismissFlash}
+          />
+
           {this.props.children}
         </div>
 

@@ -2,7 +2,7 @@ import chain from '../chain'
 import { context } from '../utility/environment'
 import actionCreator from './actionCreator'
 
-const updateInfo = actionCreator(`UPDATE_CORE_INFO`, param => { return { param }})
+const updateInfo = actionCreator(`UPDATE_CORE_INFO`, param => ({ param }))
 
 const fetchCoreInfo = () => {
   return (dispatch) => {
