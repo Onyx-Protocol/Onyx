@@ -600,7 +600,7 @@ public class Transaction {
          * @param referenceData reference data to embed into the action (possibly null)
          * @return updated builder object
          */
-        public Builder controlWithAccountByID(String accountId, String assetId, BigInteger amount, Map<String, Object> referenceData) {
+        public Builder controlWithAccountById(String accountId, String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
                     .setParameter("type", "control_account")
                     .setParameter("account_id", accountId)
