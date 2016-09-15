@@ -12,12 +12,10 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
 * [Assets](#assets)
   * [Asset Object](#asset-object)
   * [Create Asset](#create-asset)
-  * [Set Asset Tags](#set-asset-tags)
   * [List Assets](#list-assets)
 * [Accounts](#accounts)
   * [Account Object](#account-object)
   * [Create Account](#create-account)
-  * [Set Account Tags](#set-account-tags)
   * [List Accounts](#list-accounts)
 * [Control Programs](#control-programs)
   * [Create Control Program](#create-control-program)
@@ -144,24 +142,6 @@ Request
 
 Response: An array of [asset objects](#asset-object).
 
-### Set Asset Tags
-Replaces any existing tags.
-
-Endpoint 
-```    
-POST /set-asset-tags
-```
-
-Request
-```
-{
-  "asset_id": "...",      // accepts `asset_id` or `asset_alias`
-  "tags": {}
-}
-```
-
-Response: an [asset object](#asset-object).
-
 ### List Assets
 
 Endpoint
@@ -248,24 +228,6 @@ Request
 ```    
 
 Response: an array of [account objects](#account-object).
-
-### Set Account Tags
-Replaces any existing tags.
-
-Endpoint
-```    
-POST /set-account-tags
-```
-    
-Request
-```    
-{
-  "account_id": "..."       // accepts `account_id` or `account_alias`
-  "tags": {}
-}
-```
-
-Response: an [account object](#account-object).
 
 ### List Accounts
 
