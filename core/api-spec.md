@@ -581,9 +581,11 @@ POST /list-transactions
   "filter_params": [], // optional
   "order": <"asc"|"desc">, // optional, defaults to "desc" (newest to oldest)
   "after": "...", // optional
-  "timeout": "..." // optional, used for notifications
+  "timeout": <number, in milliseconds> // optional, defaults to 1000 (1 second)
 }
 ```
+
+If order is "asc", the request will stay open until there are transactions to return, or until the timeout occurs, whichever happens first.
 
 #### Response
 
