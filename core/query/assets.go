@@ -7,10 +7,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/lib/pq"
-
 	"chain/core/query/filter"
-	"chain/core/signers"
 	"chain/errors"
 	"chain/protocol/bc"
 )
@@ -47,17 +44,13 @@ func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []inter
 	}
 	defer rows.Close()
 
-	var (
-		assets     = make([]map[string]interface{}, 0, limit)
-		assetsByID = make(map[string]map[string]interface{})
-		ids        []string
-	)
+	assets := make([]map[string]interface{}, 0, limit)
 	for rows.Next() {
 		var (
-			id, sortID string
-			rawAsset   []byte
+			sortID   string
+			rawAsset []byte
 		)
-		err := rows.Scan(&id, &sortID, &rawAsset)
+		err := rows.Scan(&sortID, &rawAsset)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "scanning annotated asset row")
 		}
@@ -72,48 +65,10 @@ func (ind *Indexer) Assets(ctx context.Context, p filter.Predicate, vals []inter
 
 		after = sortID
 		assets = append(assets, asset)
-		ids = append(ids, id)
-		assetsByID[id] = asset
 	}
 	err = rows.Err()
 	if err != nil {
 		return nil, "", errors.Wrap(err)
-	}
-
-	// Attach signer information (xpubs, quorum) to local assets
-	const q = `
-		SELECT assets.id, signers.xpubs, signers.quorum
-		FROM assets
-		JOIN signers ON assets.signer_id = signers.id
-		WHERE assets.id IN (SELECT unnest($1::text[]))
-	`
-	rows, err = ind.db.Query(ctx, q, pq.StringArray(ids))
-	if err != nil {
-		return nil, "", errors.Wrap(err, "signers query")
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var (
-			id       string
-			rawXpubs pq.StringArray
-			quorum   int
-		)
-
-		err := rows.Scan(&id, &rawXpubs, &quorum)
-		if err != nil {
-			return nil, "", errors.Wrap(err, "signers scan")
-		}
-
-		xpubs, err := signers.ConvertKeys(rawXpubs)
-		if err != nil { // silently ignore errors
-			asset := assetsByID[id]
-			asset["xpubs"] = xpubs
-			asset["quorum"] = quorum
-		}
-	}
-	if err = rows.Err(); err != nil {
-		return nil, "", errors.Wrap(err, "signers end row scan loop")
 	}
 
 	return assets, after, nil
@@ -123,7 +78,7 @@ func constructAssetsQuery(expr filter.SQLExpr, after string, limit int) (string,
 	var buf bytes.Buffer
 	var vals []interface{}
 
-	buf.WriteString("SELECT id, sort_id, data FROM annotated_assets")
+	buf.WriteString("SELECT sort_id, data FROM annotated_assets")
 	buf.WriteString(" WHERE ")
 
 	// add filter conditions
