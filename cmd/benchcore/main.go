@@ -550,15 +550,16 @@ apt-get install -y -qq oracle-java8-installer
 EOFSUDO
 
 export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+export CLASSPATH=.:$HOME/chain.jar
+javac Main.java
 
-export CHAIN_API_URL='{{coreURL}}'
 echo waiting for elb dns to resolve
 while ! host {{elbHost}}
 do sleep 5 # sigh
 done
+
+export CHAIN_API_URL='{{coreURL}}'
 curl -si "$CHAIN_API_URL"/debug/vars
-export CLASSPATH=.:$HOME/chain.jar
-javac Main.java
 java Main
 `
 
