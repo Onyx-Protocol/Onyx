@@ -170,16 +170,17 @@ func finalizeTxWait(ctx context.Context, c *protocol.Chain, txTemplate *txbuilde
 				}
 			}
 
-			poolTxs, err := c.PendingTxs(ctx, tx.Hash)
-			if err != nil {
-				return errors.Wrap(err, "getting pool txs")
-			}
-			if _, ok := poolTxs[tx.Hash]; !ok {
-				// rejected
+			if tx.MaxTime > 0 && tx.MaxTime < b.TimestampMS {
 				return txbuilder.ErrRejected
 			}
 
-			// still in the pool; iterate
+			// might still be in pool or might be rejected; we can't
+			// tell definitively until its max time elapses.
+
+			// TODO(jackson): Re-insert into the pool.
+
+			// TODO(jackson): Do simple rejection checks like checking if
+			// the tx's blockchain prevouts still exist in the state tree.
 		}
 	}
 }

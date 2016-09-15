@@ -24,11 +24,6 @@ func NewPool(db pg.DB) *Pool {
 	return &Pool{db: db}
 }
 
-// GetTxs looks up transactions by their hashes in the pool.
-func (p *Pool) GetTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
-	return getPoolTxs(ctx, p.db, hashes...)
-}
-
 // Insert adds the transaction to the pending pool.
 func (p *Pool) Insert(ctx context.Context, tx *bc.Tx) error {
 	const q = `

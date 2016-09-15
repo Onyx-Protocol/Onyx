@@ -87,7 +87,6 @@ type Pool interface {
 	// It is required to be idempotent.
 	Insert(context.Context, *bc.Tx) error
 
-	GetTxs(context.Context, ...bc.Hash) (map[bc.Hash]*bc.Tx, error)
 	Clean(ctx context.Context, txs []*bc.Tx) error
 	Dump(context.Context) ([]*bc.Tx, error)
 }
@@ -184,9 +183,4 @@ func (c *Chain) WaitForBlock(height uint64) {
 	for c.state.height < height {
 		c.state.cond.Wait()
 	}
-}
-
-// PendingTxs looks up the provided hashes in the tx pool.
-func (c *Chain) PendingTxs(ctx context.Context, hashes ...bc.Hash) (map[bc.Hash]*bc.Tx, error) {
-	return c.pool.GetTxs(ctx, hashes...)
 }

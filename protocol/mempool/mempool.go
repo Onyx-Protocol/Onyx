@@ -27,17 +27,6 @@ func (m *MemPool) Insert(ctx context.Context, tx *bc.Tx) error {
 	return nil
 }
 
-// GetTxs looks up transactions in the tx pool by their tx hashes.
-func (m *MemPool) GetTxs(ctx context.Context, hashes ...bc.Hash) (poolTxs map[bc.Hash]*bc.Tx, err error) {
-	poolTxs = make(map[bc.Hash]*bc.Tx)
-	for _, hash := range hashes {
-		if tx := m.poolMap[hash]; tx != nil {
-			poolTxs[hash] = m.poolMap[hash]
-		}
-	}
-	return poolTxs, nil
-}
-
 // Dump returns all pending transactions in the pool.
 func (m *MemPool) Dump(context.Context) ([]*bc.Tx, error) {
 	return m.pool[:len(m.pool):len(m.pool)], nil

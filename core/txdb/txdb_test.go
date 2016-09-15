@@ -58,34 +58,6 @@ func TestPoolTxs(t *testing.T) {
 	}
 }
 
-func TestGetTxs(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	pool := NewPool(dbtx)
-	ctx := context.Background()
-
-	tx := bc.NewTx(bc.TxData{ReferenceData: []byte("tx")})
-	err := pool.Insert(ctx, tx)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-	poolTxs, err := pool.GetTxs(ctx, tx.Hash)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	if !reflect.DeepEqual(poolTxs[tx.Hash], tx) {
-		t.Errorf("got:\n\t%+v\nwant:\n\t%+v", poolTxs[tx.Hash], tx)
-	}
-
-	nonexistentHash := mustParseHash("beefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeef")
-	_, gotErr := pool.GetTxs(ctx, tx.Hash, nonexistentHash)
-	if gotErr != nil {
-		t.Errorf("got err=%v want nil", gotErr)
-	}
-}
-
 func TestInsertPoolTx(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()

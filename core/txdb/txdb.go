@@ -2,44 +2,19 @@ package txdb
 
 import (
 	"context"
-	"sort"
 	"strconv"
-
-	"github.com/lib/pq"
 
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
 	"chain/net/trace/span"
 	"chain/protocol/bc"
-	"chain/strings"
 )
 
 // New creates a Store and Pool backed by the txdb with the provided
 // db handle.
 func New(db pg.DB) (*Store, *Pool) {
 	return NewStore(db), NewPool(db)
-}
-
-// getPoolTxs looks up transactions by their hashes in the pending tx pool.
-func getPoolTxs(ctx context.Context, db pg.DB, hashes ...bc.Hash) (poolTxs map[bc.Hash]*bc.Tx, err error) {
-	hashStrings := make([]string, 0, len(hashes))
-	for _, h := range hashes {
-		hashStrings = append(hashStrings, h.String())
-	}
-	sort.Strings(hashStrings)
-	hashStrings = strings.Uniq(hashStrings)
-	const q = `
-		SELECT t.tx_hash, t.data
-		FROM pool_txs t
-		WHERE t.tx_hash = ANY($1)
-	`
-	poolTxs = make(map[bc.Hash]*bc.Tx, len(hashes))
-	err = pg.ForQueryRows(pg.NewContext(ctx, db), q, pq.StringArray(hashStrings), func(hash bc.Hash, data bc.TxData) {
-		tx := &bc.Tx{TxData: data, Hash: hash}
-		poolTxs[hash] = tx
-	})
-	return poolTxs, errors.Wrap(err, "get txs query")
 }
 
 // dumpPoolTxs returns all of the pending transactions in the pool.
