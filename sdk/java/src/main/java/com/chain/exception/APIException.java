@@ -10,7 +10,7 @@ package com.chain.exception;
  * CH701 - Invalid action type<br>
  * CH702 - Invalid alias on action<br>
  * CH730 - Missing raw transaction<br>
- * CH731 - Too many inputs in template for transaction<br>
+ * CH731 - Too many signing instructions in template for transaction<br>
  * CH732 - Invalid transaction input index<br>
  * CH733 - Invalid signature script component<br>
  * CH734 - Missing signature in template<br>

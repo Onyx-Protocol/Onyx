@@ -40,7 +40,12 @@ func (a *SpendAction) GetTTL() time.Duration {
 	return ttl
 }
 
-func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
+func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) (
+	[]*bc.TxInput,
+	[]*bc.TxOutput,
+	[]*txbuilder.SigningInstruction,
+	error,
+) {
 	acct, err := FindByID(ctx, a.AccountID)
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "get account info")
@@ -62,18 +67,18 @@ func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInp
 
 	var (
 		txins      []*bc.TxInput
-		tplIns     []*txbuilder.Input
+		tplInsts   []*txbuilder.SigningInstruction
 		changeOuts []*bc.TxOutput
 	)
 
 	for _, r := range reserved {
-		txInput, templateInput, err := utxoToInputs(ctx, acct, r, a.ReferenceData)
+		txInput, sigInst, err := utxoToInputs(ctx, acct, r, a.ReferenceData)
 		if err != nil {
 			return nil, nil, nil, errors.Wrap(err, "creating inputs")
 		}
 
 		txins = append(txins, txInput)
-		tplIns = append(tplIns, templateInput)
+		tplInsts = append(tplInsts, sigInst)
 	}
 	if len(change) > 0 {
 		changeAmounts := breakupChange(change[0].Amount)
@@ -91,7 +96,7 @@ func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInp
 		}
 	}
 
-	return txins, changeOuts, tplIns, nil
+	return txins, changeOuts, tplInsts, nil
 }
 
 func breakupChange(total uint64) (amounts []uint64) {
@@ -124,7 +129,12 @@ func (a *SpendUTXOAction) GetTTL() time.Duration {
 	return ttl
 }
 
-func (a *SpendUTXOAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
+func (a *SpendUTXOAction) Build(ctx context.Context, maxTime time.Time) (
+	[]*bc.TxInput,
+	[]*bc.TxOutput,
+	[]*txbuilder.SigningInstruction,
+	error,
+) {
 	r, err := utxodb.ReserveUTXO(ctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
 	if err != nil {
 		return nil, nil, nil, err
@@ -135,27 +145,31 @@ func (a *SpendUTXOAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.T
 		return nil, nil, nil, err
 	}
 
-	txInput, tplInput, err := utxoToInputs(ctx, acct, r, a.ReferenceData)
+	txInput, sigInst, err := utxoToInputs(ctx, acct, r, a.ReferenceData)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	return []*bc.TxInput{txInput}, nil, []*txbuilder.Input{tplInput}, nil
+	return []*bc.TxInput{txInput}, nil, []*txbuilder.SigningInstruction{sigInst}, nil
 }
 
-func utxoToInputs(ctx context.Context, account *Account, u *utxodb.UTXO, refData []byte) (*bc.TxInput, *txbuilder.Input, error) {
+func utxoToInputs(ctx context.Context, account *Account, u *utxodb.UTXO, refData []byte) (
+	*bc.TxInput,
+	*txbuilder.SigningInstruction,
+	error,
+) {
 	txInput := bc.NewSpendInput(u.Hash, u.Index, nil, u.AssetID, u.Amount, u.Script, refData)
 
-	templateInput := &txbuilder.Input{
+	sigInst := &txbuilder.SigningInstruction{
 		AssetAmount: u.AssetAmount,
 	}
 
 	path := signers.Path(account.Signer, signers.AccountKeySpace, u.ControlProgramIndex[:])
 	keyIDs := txbuilder.KeyIDs(account.XPubs, path)
 
-	templateInput.AddWitnessKeys(keyIDs, account.Quorum)
+	sigInst.AddWitnessKeys(keyIDs, account.Quorum)
 
-	return txInput, templateInput, nil
+	return txInput, sigInst, nil
 }
 
 type ControlAction struct {
@@ -172,7 +186,12 @@ type ControlAction struct {
 	ReferenceData json.Map `json:"reference_data"`
 }
 
-func (a *ControlAction) Build(ctx context.Context, _ time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
+func (a *ControlAction) Build(ctx context.Context, _ time.Time) (
+	[]*bc.TxInput,
+	[]*bc.TxOutput,
+	[]*txbuilder.SigningInstruction,
+	error,
+) {
 	acp, err := CreateControlProgram(ctx, a.AccountID)
 	if err != nil {
 		return nil, nil, nil, err

@@ -38,17 +38,17 @@ func materializeWitnesses(txTemplate *Template) error {
 		return errors.Wrap(ErrMissingRawTx)
 	}
 
-	if len(txTemplate.Inputs) > len(msg.Inputs) {
-		return errors.Wrap(ErrBadInputCount)
+	if len(txTemplate.SigningInstructions) > len(msg.Inputs) {
+		return errors.Wrap(ErrBadInstructionCount)
 	}
 
-	for i, input := range txTemplate.Inputs {
-		if msg.Inputs[input.Position] == nil {
-			return errors.WithDetailf(ErrBadTxInputIdx, "input %d references missing tx input %d", i, input.Position)
+	for i, sigInst := range txTemplate.SigningInstructions {
+		if msg.Inputs[sigInst.Position] == nil {
+			return errors.WithDetailf(ErrBadTxInputIdx, "signing instruction %d references missing tx input %d", i, sigInst.Position)
 		}
 
 		var witness [][]byte
-		for j, c := range input.WitnessComponents {
+		for j, c := range sigInst.WitnessComponents {
 			items, err := c.Materialize(txTemplate, i)
 			if err != nil {
 				return errors.WithDetailf(err, "error in witness component %d of input %d", j, i)
@@ -56,7 +56,7 @@ func materializeWitnesses(txTemplate *Template) error {
 			witness = append(witness, items...)
 		}
 
-		msg.Inputs[input.Position].InputWitness = witness
+		msg.Inputs[sigInst.Position].InputWitness = witness
 	}
 
 	return nil
@@ -239,14 +239,14 @@ func (sw SignatureWitness) MarshalJSON() ([]byte, error) {
 	return json.Marshal(obj)
 }
 
-func (inp *Input) AddWitnessData(data []byte) {
-	inp.WitnessComponents = append(inp.WitnessComponents, DataWitness(data))
+func (si *SigningInstruction) AddWitnessData(data []byte) {
+	si.WitnessComponents = append(si.WitnessComponents, DataWitness(data))
 }
 
-func (inp *Input) AddWitnessKeys(keys []KeyID, quorum int) {
+func (si *SigningInstruction) AddWitnessKeys(keys []KeyID, quorum int) {
 	sw := &SignatureWitness{
 		Quorum: quorum,
 		Keys:   keys,
 	}
-	inp.WitnessComponents = append(inp.WitnessComponents, sw)
+	si.WitnessComponents = append(si.WitnessComponents, sw)
 }

@@ -77,7 +77,7 @@ func TestBuildFinal(t *testing.T) {
 	assettest.SignTxTemplate(t, ctx, tmpl, nil)
 	assettest.SignTxTemplate(t, ctx, &tmpl2, nil)
 
-	prog1 := tmpl.Inputs[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
+	prog1 := tmpl.SigningInstructions[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
 	insts1, err := vm.ParseProgram(prog1)
 	if err != nil {
 		t.Fatal(err)
@@ -103,7 +103,7 @@ func TestBuildFinal(t *testing.T) {
 		t.Fatalf("sigwitness program1 opcode 17 is %02x, expected %02x", insts1[13].Op, vm.OP_FINDOUTPUT)
 	}
 
-	prog2 := tmpl2.Inputs[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
+	prog2 := tmpl2.SigningInstructions[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
 	insts2, err := vm.ParseProgram(prog2)
 	if err != nil {
 		t.Fatal(err)
@@ -326,16 +326,16 @@ func TestTransfer(t *testing.T) {
 
 // expects inp to be a map, with one input member
 func inspectTemplate(t *testing.T, inp map[string]interface{}, expectedReceiverAccountID string) map[string]interface{} {
-	member, ok := inp["inputs_to_sign"]
+	member, ok := inp["signing_instructions"]
 	if !ok {
-		t.Errorf("expected template.inputs in result")
+		t.Errorf("expected template.signing_instructions in result")
 	}
 	parsedInputs, ok := member.([]interface{})
 	if !ok {
-		t.Errorf("expected template.inputs in result to be a list")
+		t.Errorf("expected template.signing_instructions in result to be a list")
 	}
 	if len(parsedInputs) != 1 {
-		t.Errorf("expected template.inputs in result to have length 1, got %d", len(parsedInputs))
+		t.Errorf("expected template.signing_instructions in result to have length 1, got %d", len(parsedInputs))
 	}
 
 	return inp

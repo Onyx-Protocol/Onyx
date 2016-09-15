@@ -247,10 +247,10 @@ public class Transaction {
         public String rawTransaction;
 
         /**
-         * The list of inputs to be signed in a transaction.
+         * The list of signing instructions for inputs in the transaction.
          */
-        @SerializedName("inputs_to_sign")
-        public List<Input> inputsToSign;
+        @SerializedName("signing_instructions")
+        public List<SigningInstruction> signing_instructions;
 
         /**
          * For core use only.
@@ -279,9 +279,9 @@ public class Transaction {
         public String detail;
 
         /**
-         * A single input included in a transaction template.
+         * A single signing instruction included in a transaction template.
          */
-        public static class Input {
+        public static class SigningInstruction {
             /**
              * The id of the asset being issued or spent.
              */

@@ -35,7 +35,12 @@ func (a IssueAction) GetTTL() time.Duration {
 	return ttl
 }
 
-func (a *IssueAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*txbuilder.Input, error) {
+func (a *IssueAction) Build(ctx context.Context, maxTime time.Time) (
+	[]*bc.TxInput,
+	[]*bc.TxOutput,
+	[]*txbuilder.SigningInstruction,
+	error,
+) {
 	asset, err := FindByID(ctx, a.AssetID)
 	if errors.Root(err) == pg.ErrUserInputNotFound {
 		err = errors.WithDetailf(err, "missing asset with ID %q", a.AssetID)
@@ -49,7 +54,7 @@ func (a *IssueAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInp
 	}
 	txin := bc.NewIssuanceInput(minTime, maxTime, asset.InitialBlockHash, a.Amount, asset.IssuanceProgram, a.ReferenceData, nil)
 
-	tplIn := &txbuilder.Input{AssetAmount: a.AssetAmount}
+	tplIn := &txbuilder.SigningInstruction{AssetAmount: a.AssetAmount}
 	path := signers.Path(asset.Signer, signers.AssetKeySpace, nil)
 	keyIDs := txbuilder.KeyIDs(asset.Signer.XPubs, path)
 	_, nrequired, err := vmutil.ParseP2DPMultiSigProgram(asset.IssuanceProgram)
@@ -59,5 +64,5 @@ func (a *IssueAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInp
 
 	tplIn.AddWitnessKeys(keyIDs, nrequired)
 
-	return []*bc.TxInput{txin}, nil, []*txbuilder.Input{tplIn}, nil
+	return []*bc.TxInput{txin}, nil, []*txbuilder.SigningInstruction{tplIn}, nil
 }

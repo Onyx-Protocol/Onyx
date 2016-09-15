@@ -17,8 +17,8 @@ var (
 	// ErrRejected means the network rejected a tx (as a double-spend)
 	ErrRejected = errors.New("transaction rejected")
 
-	ErrMissingRawTx  = errors.New("missing raw tx")
-	ErrBadInputCount = errors.New("too many inputs in template")
+	ErrMissingRawTx        = errors.New("missing raw tx")
+	ErrBadInstructionCount = errors.New("too many signing instructions in template")
 )
 
 var Generator *rpc.Client

@@ -45,9 +45,9 @@ func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, e
 		return nil, err
 	}
 
-	// ensure null is never returned for inputs
-	if tpl.Inputs == nil {
-		tpl.Inputs = []*txbuilder.Input{}
+	// ensure null is never returned for signing instructions
+	if tpl.SigningInstructions == nil {
+		tpl.SigningInstructions = []*txbuilder.SigningInstruction{}
 	}
 
 	return tpl, nil

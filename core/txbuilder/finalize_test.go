@@ -68,8 +68,8 @@ func TestConflictingTxsInPool(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	secondTemplate.Inputs = firstTemplate.Inputs
-	secondTemplate.Inputs[0].WitnessComponents[0].(*SignatureWitness).Sigs[0] = nil
+	secondTemplate.SigningInstructions = firstTemplate.SigningInstructions
+	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Sigs[0] = nil
 
 	assettest.SignTxTemplate(t, ctx, secondTemplate, info.privKeyAccounts)
 	err = FinalizeTx(ctx, c, bc.NewTx(*secondTemplate.Transaction))

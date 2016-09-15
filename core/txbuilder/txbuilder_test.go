@@ -25,15 +25,20 @@ import (
 
 type testAction bc.AssetAmount
 
-func (t testAction) Build(ctx context.Context, _ time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*Input, error) {
+func (t testAction) Build(ctx context.Context, _ time.Time) (
+	[]*bc.TxInput,
+	[]*bc.TxOutput,
+	[]*SigningInstruction,
+	error,
+) {
 	in := bc.NewSpendInput([32]byte{255}, 0, nil, t.AssetID, t.Amount, nil, nil)
-	tplIn := &Input{
+	tplIn := &SigningInstruction{
 		WitnessComponents: []WitnessComponent{
 			DataWitness("redeem"),
 		},
 	}
 	change := bc.NewTxOutput(t.AssetID, t.Amount, []byte("change"), nil)
-	return []*bc.TxInput{in}, []*bc.TxOutput{change}, []*Input{tplIn}, nil
+	return []*bc.TxInput{in}, []*bc.TxOutput{change}, []*SigningInstruction{tplIn}, nil
 }
 
 func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *ControlProgramAction {
@@ -82,7 +87,7 @@ func TestBuild(t *testing.T) {
 				bc.NewTxOutput([32]byte{1}, 5, []byte("change"), nil),
 			},
 		},
-		Inputs: []*Input{{
+		SigningInstructions: []*SigningInstruction{{
 			WitnessComponents: []WitnessComponent{
 				DataWitness("redeem"),
 			},
@@ -95,8 +100,8 @@ func TestBuild(t *testing.T) {
 		t.Errorf("got tx outputs:\n\t%#v\nwant tx outputs:\n\t%#v", got.Transaction.Outputs, want.Transaction.Outputs)
 	}
 
-	if !reflect.DeepEqual(got.Inputs, want.Inputs) {
-		t.Errorf("got inputs:\n\t%#v\nwant inputs:\n\t%#v", got.Inputs, want.Inputs)
+	if !reflect.DeepEqual(got.SigningInstructions, want.SigningInstructions) {
+		t.Errorf("got signing instructions:\n\t%#v\nwant signing instructions:\n\t%#v", got.SigningInstructions, want.SigningInstructions)
 	}
 }
 
@@ -130,7 +135,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 
 	tpl := &Template{
 		Transaction: unsigned,
-		Inputs: []*Input{{
+		SigningInstructions: []*SigningInstruction{{
 			WitnessComponents: []WitnessComponent{
 				&SignatureWitness{
 					Quorum: 1,
@@ -210,7 +215,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	}
 
 	// Test with more signatures than required, in correct order
-	tpl.Inputs = []*Input{{
+	tpl.SigningInstructions = []*SigningInstruction{{
 		WitnessComponents: []WitnessComponent{
 			&SignatureWitness{
 				Quorum: 2,
@@ -243,7 +248,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	}
 
 	// Test with more signatures than required, in incorrect order
-	component, ok := tpl.Inputs[0].WitnessComponents[0].(*SignatureWitness)
+	component, ok := tpl.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness)
 	if !ok {
 		t.Fatal("expecting WitnessComponent of type SignatureWitness")
 	}

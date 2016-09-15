@@ -86,21 +86,21 @@ func TestMockHSM(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected a *txbuilder.Template, got %T (%v)", outTmpls[0], outTmpls[0])
 	}
-	if len(outTmpl.Inputs) != 2 {
-		t.Fatalf("expected 2 inputs, got %d", len(outTmpl.Inputs))
+	if len(outTmpl.SigningInstructions) != 2 {
+		t.Fatalf("expected 2 signing instructions, got %d", len(outTmpl.SigningInstructions))
 	}
 
-	inspectInput(t, outTmpl.Inputs[0], true)
-	inspectInput(t, outTmpl.Inputs[1], false)
+	inspectSigInst(t, outTmpl.SigningInstructions[0], true)
+	inspectSigInst(t, outTmpl.SigningInstructions[1], false)
 }
 
-func inspectInput(t *testing.T, inp *txbuilder.Input, expectSig bool) {
-	if len(inp.WitnessComponents) != 1 {
-		t.Fatalf("len(inp.WitnessComponents) is %d, want 1", len(inp.WitnessComponents))
+func inspectSigInst(t *testing.T, si *txbuilder.SigningInstruction, expectSig bool) {
+	if len(si.WitnessComponents) != 1 {
+		t.Fatalf("len(si.WitnessComponents) is %d, want 1", len(si.WitnessComponents))
 	}
-	s, ok := inp.WitnessComponents[0].(*txbuilder.SignatureWitness)
+	s, ok := si.WitnessComponents[0].(*txbuilder.SignatureWitness)
 	if !ok {
-		t.Fatalf("inp.WitnessComponents[0] has type %T, want *txbuilder.SignatureWitness", inp.WitnessComponents[0])
+		t.Fatalf("si.WitnessComponents[0] has type %T, want *txbuilder.SignatureWitness", si.WitnessComponents[0])
 	}
 	if len(s.Sigs) != 1 {
 		t.Fatalf("len(s.Sigs) is %d, want 1", len(s.Sigs))

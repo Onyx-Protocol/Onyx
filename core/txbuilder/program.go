@@ -21,7 +21,12 @@ type ControlProgramAction struct {
 	ReferenceData json.Map `json:"reference_data"`
 }
 
-func (c *ControlProgramAction) Build(ctx context.Context, _ time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*Input, error) {
+func (c *ControlProgramAction) Build(ctx context.Context, _ time.Time) (
+	[]*bc.TxInput,
+	[]*bc.TxOutput,
+	[]*SigningInstruction,
+	error,
+) {
 	out := bc.NewTxOutput(c.AssetID, c.Amount, c.Program, c.ReferenceData)
 	return nil, []*bc.TxOutput{out}, nil, nil
 }

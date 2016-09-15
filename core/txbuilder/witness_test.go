@@ -35,7 +35,7 @@ func TestInferConstraints(t *testing.T) {
 }
 
 func TestWitnessJSON(t *testing.T) {
-	inp := &Input{
+	si := &SigningInstruction{
 		AssetAmount: bc.AssetAmount{
 			AssetID: bc.AssetID{0xff},
 			Amount:  21,
@@ -54,18 +54,18 @@ func TestWitnessJSON(t *testing.T) {
 		},
 	}
 
-	b, err := json.MarshalIndent(inp, "", "  ")
+	b, err := json.MarshalIndent(si, "", "  ")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var got Input
+	var got SigningInstruction
 	err = json.Unmarshal(b, &got)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(inp, &got) {
-		t.Errorf("got:\n%s\nwant:\n%s\nJSON was: %s", spew.Sdump(&got), spew.Sdump(inp), string(b))
+	if !reflect.DeepEqual(si, &got) {
+		t.Errorf("got:\n%s\nwant:\n%s\nJSON was: %s", spew.Sdump(&got), spew.Sdump(si), string(b))
 	}
 }

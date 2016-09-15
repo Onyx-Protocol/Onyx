@@ -71,7 +71,7 @@ var (
 		errBadAlias:             errorInfo{400, "CH702", "Invalid alias on action"},
 		// Submit error namespace (73x)
 		txbuilder.ErrMissingRawTx:        errorInfo{400, "CH730", "Missing raw transaction"},
-		txbuilder.ErrBadInputCount:       errorInfo{400, "CH731", "Too many inputs in template for transaction"},
+		txbuilder.ErrBadInstructionCount: errorInfo{400, "CH731", "Too many signing instructions in template for transaction"},
 		txbuilder.ErrBadTxInputIdx:       errorInfo{400, "CH732", "Invalid transaction input index"},
 		txbuilder.ErrBadWitnessComponent: errorInfo{400, "CH733", "Invalid witness component"},
 		txbuilder.ErrRejected:            errorInfo{400, "CH735", "Transaction rejected"},

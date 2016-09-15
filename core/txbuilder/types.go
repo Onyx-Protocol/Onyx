@@ -12,8 +12,8 @@ import (
 
 // Template represents a partially- or fully-signed transaction.
 type Template struct {
-	Transaction *bc.TxData `json:"raw_transaction"`
-	Inputs      []*Input   `json:"inputs_to_sign"`
+	Transaction         *bc.TxData            `json:"raw_transaction"`
+	SigningInstructions []*SigningInstruction `json:"signing_instructions"`
 
 	// Local indicates that all inputs to the transaction are signed
 	// exclusively by keys managed by this Core. Whenever accepting
@@ -36,14 +36,14 @@ func (t *Template) Hash(idx int, hashType bc.SigHashType) bc.Hash {
 	return t.sigHasher.Hash(idx, hashType)
 }
 
-// Input is an input for a TxTemplate.
-type Input struct {
+// SigningInstruction gives directions for signing inputs in a TxTemplate.
+type SigningInstruction struct {
 	bc.AssetAmount
 	Position          uint32             `json:"position"`
 	WitnessComponents []WitnessComponent `json:"witness_components,omitempty"`
 }
 
-func (inp *Input) UnmarshalJSON(b []byte) error {
+func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 	var pre struct {
 		bc.AssetAmount
 		Position          uint32            `json:"position"`
@@ -53,8 +53,8 @@ func (inp *Input) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	inp.AssetAmount = pre.AssetAmount
-	inp.Position = pre.Position
+	si.AssetAmount = pre.AssetAmount
+	si.Position = pre.Position
 
 	for i, w := range pre.WitnessComponents {
 		var t struct {
@@ -85,13 +85,13 @@ func (inp *Input) UnmarshalJSON(b []byte) error {
 		default:
 			return errors.WithDetailf(ErrBadWitnessComponent, "witness component %d has unknown type '%s'", i, t.Type)
 		}
-		inp.WitnessComponents = append(inp.WitnessComponents, component)
+		si.WitnessComponents = append(si.WitnessComponents, component)
 	}
 	return nil
 }
 
 type Action interface {
-	Build(context.Context, time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*Input, error)
+	Build(context.Context, time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*SigningInstruction, error)
 }
 
 type ttler interface {

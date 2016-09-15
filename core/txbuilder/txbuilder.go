@@ -55,38 +55,38 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, m
 		tx.ReferenceData = ref
 	}
 
-	var tplInputs []*Input
+	var tplSigInsts []*SigningInstruction
 	for i, action := range actions {
-		txins, txouts, inputs, err := action.Build(ctx, maxTime)
+		txins, txouts, sigInsts, err := action.Build(ctx, maxTime)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "invalid action %d", i)
 		}
 
-		if len(txins) != len(inputs) {
+		if len(txins) != len(sigInsts) {
 			// This would only happen from a bug in our system
-			return nil, errors.Wrap(fmt.Errorf("%T returned different number of transaction and template inputs", action))
+			return nil, errors.Wrap(fmt.Errorf("%T returned different number of inputs and signing instructions", action))
 		}
 
 		for i := range txins {
-			inputs[i].Position = uint32(len(tx.Inputs))
-			tplInputs = append(tplInputs, inputs[i])
+			sigInsts[i].Position = uint32(len(tx.Inputs))
+			tplSigInsts = append(tplSigInsts, sigInsts[i])
 			tx.Inputs = append(tx.Inputs, txins[i])
 		}
 
 		tx.Outputs = append(tx.Outputs, txouts...)
 	}
 
-	for _, input := range tplInputs {
+	for _, sigInst := range tplSigInsts {
 		// Empty signature arrays should be serialized as empty arrays, not null.
-		if input.WitnessComponents == nil {
-			input.WitnessComponents = []WitnessComponent{}
+		if sigInst.WitnessComponents == nil {
+			sigInst.WitnessComponents = []WitnessComponent{}
 		}
 	}
 
 	tpl := &Template{
-		Transaction: tx,
-		Inputs:      tplInputs,
-		Local:       local,
+		Transaction:         tx,
+		SigningInstructions: tplSigInsts,
+		Local:               local,
 	}
 	return tpl, nil
 }
@@ -102,8 +102,8 @@ func KeyIDs(xpubs []*hd25519.XPub, path []uint32) []KeyID {
 }
 
 func Sign(ctx context.Context, tpl *Template, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
-	for i, input := range tpl.Inputs {
-		for j, c := range input.WitnessComponents {
+	for i, sigInst := range tpl.SigningInstructions {
+		for j, c := range sigInst.WitnessComponents {
 			err := c.Sign(ctx, tpl, i, signFn)
 			if err != nil {
 				return errors.WithDetailf(err, "adding signature(s) to witness component %d of input %d", j, i)
