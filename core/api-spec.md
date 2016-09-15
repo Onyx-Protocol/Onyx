@@ -1,4 +1,5 @@
 # Draft: Chain Core API Spec
+
 This document serves as the canonical source of the HTTP interface to Chain Core.
 As the API crystallizes, we will add more thorough descriptions of behaviour and data requirements.
 
@@ -28,6 +29,10 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [List Transactions](#list-transactions)
   * [List Balances](#list-balances)
   * [List Unspent Outputs](#list-unspent-outputs)
+* [Cursors](#cursors)
+  * [Create Cursor](#create-cursor)
+  * [Get Cursor](#get-cursor)
+  * [Update Cursor](#update-cursor)
 * [Core](#core)
   * [Configure](#configure)
   * [Info](#info)
@@ -37,7 +42,7 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
 ## MockHSM
 
 ### Key Object
-    
+
 ```
 {
   "alias": "...",
@@ -46,29 +51,34 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
 ```
 
 ### Create Key
-    
-Endpoint
+
+#### Endpoint
+
 ```
 POST /mockhsm/create-key
 ```
 
-Request
+#### Request
+
 ```
 {
   "alias": "..." // optional
 }
 ```
 
-Response: [Key Object](#key-object)
+#### Response
+
+A [Key Object](#key-object).
 
 ### List Keys
-    
-Endpoint
-```    
+
+#### Endpoint
+
+```
 POST /mockhsm/list-keys
 ```
 
-Request
+#### Request
 
 ```
 {
@@ -76,7 +86,7 @@ Request
 }
 ```
 
-Response
+#### Response
 
 ```
 {
@@ -92,42 +102,48 @@ Response
 ```
 
 ### Sign Transaction
-    
-Endpoint
-```    
+
+#### Endpoint
+
+```
 POST mockhsm/sign-transaction
 ```
 
-Request: An array of [transaction template objects](#transaction-template-object).
+#### Request
 
-Response: An array of [transaction template objects](#transaction-template-object).
+An array of [transaction template objects](#transaction-template-object).
 
-    
+#### Response
+
+An array of [transaction template objects](#transaction-template-object).
 
 ## Assets
 
 ### Asset Object
+
 ```
-  {
-    "id": "...",
-    "alias": "...",
-    "issuance_program: "...",
-    "xpubs": ["xpub"],
-    "quorum": 1,
-    "definition": {},
-    "tags": {},
-    "origin": "..."                 // `local` if asset was created in the Core, `external` if not
-  }
+{
+  "id": "...",
+  "alias": "...",
+  "issuance_program: "...",
+  "xpubs": ["xpub"],
+  "quorum": 1,
+  "definition": {},
+  "tags": {},
+  "origin": "..." // `local` if asset was created in the Core, `external` if not
+}
 ```
 
 ### Create Asset
-    
-Endpoint 
-```    
+
+#### Endpoint
+
+```
 POST /create-asset
 ```
-    
-Request
+
+#### Request
+
 ```
 [
   {
@@ -140,26 +156,29 @@ Request
 ]
 ```
 
-Response: An array of [asset objects](#asset-object).
+#### Response
+
+An array of [asset objects](#asset-object).
 
 ### List Assets
 
-Endpoint
+#### Endpoint
+
 ```
 POST /list-assets
 ```
-    
-Request
+
+#### Request
 
 ```
 {
-  "filter": "...", 
+  "filter": "...",
   "filter_params": [], // optional
   "after": "..." // optional
 }
 ```
 
-Response
+#### Response
 
 ```
 {
@@ -168,8 +187,8 @@ Response
     ...
   ],
   "next": {
-    "filter": "...", 
-    "filter_params": [], 
+    "filter": "...",
+    "filter_params": [],
     "after": "..."
   },
   "last_page": true|false
@@ -178,27 +197,29 @@ Response
 
 ### Archive Asset
 
-Endpoint
+#### Endpoint
+
 ```
 POST /archive-asset
 ```
-    
-Request
+
+#### Request
 
 ```
 {
-  asset_id: "...",        // accepts `asset_id` or `asset_alias`
+  asset_id: "...", // accepts `asset_id` or `asset_alias`
 }
 ```
 
-Response
+#### Response
 
 The response body is empty.
 
 ## Accounts
 
 ### Account Object
-```    
+
+```
 {
   "id": "...",
   "alias": "...",
@@ -210,12 +231,14 @@ The response body is empty.
 
 ### Create Account
 
-Endpoint
-```    
+#### Endpoint
+
+```
 POST /create-account
 ```
-    
-Request
+
+#### Request
+
 ```
 [
   {
@@ -225,18 +248,21 @@ Request
     "tags": {}
   }
 ]
-```    
+```
 
-Response: an array of [account objects](#account-object).
+#### Response
+
+An array of [account objects](#account-object).
 
 ### List Accounts
 
-Endpoint
-```    
+#### Endpoint
+
+```
 POST /list-accounts
 ```
 
-Request
+#### Request
 
 ```
 {
@@ -246,7 +272,7 @@ Request
 }
 ```
 
-Response
+#### Response
 
 ```
 {
@@ -255,32 +281,30 @@ Response
     ...
   ],
   "next": {
-    "filter": "...", 
-    "filter_params": [], 
+    "filter": "...",
+    "filter_params": [],
     "after": "..."
   },
   "last_page": true|false
 }
 ```
 
-
-
 ### Archive Account
 
-Endpoint
+#### Endpoint
 ```
 POST /archive-account
 ```
-    
-Request
+
+#### Request
 
 ```
 {
-  account_id: "...",    // accepts  `account_id` or `account_alias`
+  account_id: "...", // accepts `account_id` or `account_alias`
 }
 ```
 
-Response
+#### Response
 
 The response body is empty.
 
@@ -288,12 +312,14 @@ The response body is empty.
 
 ### Create Control Program
 
-Endpoint
-```    
+#### Endpoint
+
+```
 POST /create-control-program
 ```
 
-Request
+#### Request
+
 ```
 [
   {
@@ -304,13 +330,14 @@ Request
 ```
 
 If the `type` is `account` then the following params are required:
+
 ```
 {
-  account_id: "..."         // accepts `account_id` or `account_alias`
+  account_id: "..." // accepts `account_id` or `account_alias`
 }
 ```
 
-Response
+#### Response
 
 ```
 [
@@ -323,64 +350,66 @@ Response
 ## Transactions
 
 ### Transaction Object
+
 Annotated by the Core services where possible (account_ids, account_tags, asset_tags)
 
-```        
+```
+{
+  "id": "C5D3F8...",
+  "timestamp": "2015-12-30T00:02:23Z",
+  "block_id": "A83585...",
+  "block_height": 100,
+  "position": ..., // position in block
+  "reference_data": {"deal_id": "..."},
+  "inputs": [
     {
-        "id": "C5D3F8...",
-        "timestamp": "2015-12-30T00:02:23Z",
-        "block_id": "A83585...",
-        "block_height": 100,
-        "position": ...,                                        // position in block
-        "reference_data": {"deal_id": ..."},
-        "inputs": [
-            {
-                "action": "issue",
-                "asset_id": "125B4E...",
-                "asset_alias": "...",
-                "asset_tags": {},
-                "issuance_program": ...,
-                "reference_data": {"details:": "..."},
-                "asset_definition": "..."
-            },
-            {
-                "action": spend,
-                "spent_output": {
-                    "transaction_id": "94C5D3...",
-                    "position": 1,
-                },
-                "account_id": "",
-                "account_alias": "...",
-                "account_tags": {},
-                "asset_id": "125B4E...",
-                "asset_alias": "...",
-                "asset_tags": {},
-                "amount": 5000,
-                "reference_data": {"user": "alice"}
-            }
-        ],
-        "outputs": [
-            {
-                "action": "control",
-                "position": "...",
-                "account_id": "",
-                "account_alias": "...",
-                "account_tags": {},
-                "asset_id": "125B4E...",
-                "asset_alias": "...",
-                "asset_tags": {},
-                "amount": 5000,
-                "control_program": "205CDF...",
-                "reference_data": {"user": "bob"}
-            }
-        ]
+      "action": "issue",
+      "asset_id": "125B4E...",
+      "asset_alias": "...",
+      "asset_tags": {},
+      "issuance_program": ...,
+      "reference_data": {"details": "..."},
+      "asset_definition": "..."
+    },
+    {
+      "action": "spend",
+      "spent_output": {
+        "transaction_id": "94C5D3...",
+        "position": 1,
+      },
+      "account_id": "",
+      "account_alias": "...",
+      "account_tags": {},
+      "asset_id": "125B4E...",
+      "asset_alias": "...",
+      "asset_tags": {},
+      "amount": 5000,
+      "reference_data": {"user": "alice"}
     }
+  ],
+  "outputs": [
+    {
+      "action": "control",
+      "position": "...",
+      "account_id": "",
+      "account_alias": "...",
+      "account_tags": {},
+      "asset_id": "125B4E...",
+      "asset_alias": "...",
+      "asset_tags": {},
+      "amount": 5000,
+      "control_program": "205CDF...",
+      "reference_data": {"user": "bob"}
+    }
+  ]
+}
 ```
 
 Note: the "retire" SDK method is simply a control program containing the `RETURN` operation.
 To keep the interface narrow, the SDK can generate such a control program.
 
 ### Transaction Template Object
+
 ```
 {
   "raw_transaction": "...",
@@ -432,64 +461,71 @@ To keep the interface narrow, the SDK can generate such a control program.
 
 ### Build Transaction
 
-Endpoint
-```    
+#### Endpoint
+
+```
 POST /build-transaction
 ```
 
-Request
+#### Request
+
 ```
-    [
-        {  
-            "raw_transaction":"...",       // optional. an unsubmitted transaction to which additional actions can be appended.
-            "reference_data":"...",
-            "actions":[  
-                {
-                  "type":"spend_account",
-                  "asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
-                  "amount":123,
-                  "account_id":"..."
-                },
-                {
-                  "type":"spend_account_unspent_output",
-                  "transaction_id":"...",
-                  "position":0,
-                  "reference_data":"..."
-                },
-                {
-                  "type":"issue",
-                  "asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
-                  "amount":500,
-                  "reference_data":"..."
-                },
-                {
-                  "type":"control_account",
-                  "asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
-                  "amount":500,
-                  "account_id":"...",                               // accepts `account_id` or `account_alias`
-                  "reference_data":"..."
-                },
-                {
-                  "type":"control_program",
-                  "asset_id":"...",                                 // accepts `asset_id` or `asset_alias`
-                  "amount":500,
-                  "control_program":"...",
-                  "reference_data":"..."
-                }
-            ]
-        }
+[
+  {
+    "raw_transaction": "...", // optional. an unsubmitted transaction to which additional actions can be appended.
+    "reference_data": "...",
+    "actions":[
+      {
+        "type": "spend_account",
+        "asset_id": "...", // accepts `asset_id` or `asset_alias`
+        "amount": 123,
+        "account_id": "..."
+      },
+      {
+        "type": "spend_account_unspent_output",
+        "transaction_id": "...",
+        "position": 0,
+        "reference_data": "..."
+      },
+      {
+        "type": "issue",
+        "asset_id": "...", // accepts `asset_id` or `asset_alias`
+        "amount": 500,
+        "reference_data": "..."
+      },
+      {
+        "type": "control_account",
+        "asset_id": "...", // accepts `asset_id` or `asset_alias`
+        "amount": 500,
+        "account_id": "...", // accepts `account_id` or `account_alias`
+        "reference_data": "..."
+      },
+      {
+        "type": "control_program",
+        "asset_id": "...", // accepts `asset_id` or `asset_alias`
+        "amount": 500,
+        "control_program": "...",
+        "reference_data": "..."
+      }
     ]
+  }
+]
 ```
 
-Response: An array of [transaction template objects](#transaction-template-object).
+#### Response
+
+An array of [transaction template objects](#transaction-template-object).
 
 ### Submit Transaction
 
-Endpoint
+#### Endpoint
+
 ```
 POST /submit-transaction
 ```
-Request
+
+#### Request
+
 ```
 [
   {
@@ -498,7 +534,8 @@ Request
 ]
 ```
 
-Response
+#### Response
+
 ```
 [
   {
@@ -509,12 +546,13 @@ Response
 
 ### List Transactions
 
-Endpoint
+#### Endpoint
+
 ```
 POST /list-transactions
 ```
 
-Request
+#### Request
 
 ```
 {
@@ -526,7 +564,7 @@ Request
 }
 ```
 
-Response
+#### Response
 
 ```
 {
@@ -546,14 +584,15 @@ Response
 
 ### List Balances
 
-Endpoint
+#### Endpoint
+
 ```
 POST /list-balances
 ```
 
-Request
+#### Request
 
-``` 
+```
 {
   "filter": "...", // optional
   "filter_params": ["param"], // optional
@@ -561,9 +600,10 @@ Request
 }
 ```
 
-Response 
+#### Response
 
-Grouped
+Grouped:
+
 ```
 {
   "items": [
@@ -580,9 +620,10 @@ Grouped
   "next": {...}
 }
 ```
-    
-Ungrouped 
-```    
+
+Ungrouped:
+
+```
 {
   "items": [
     {
@@ -601,12 +642,13 @@ Ungrouped
 
 ### List Unspent Outputs
 
-Endpoint
+#### Endpoint
+
 ```
 POST /list-unspent-outputs
 ```
 
-Request
+#### Request
 
 ```
 {
@@ -616,7 +658,7 @@ Request
 }
 ```
 
-Response
+#### Response
 
 ```
 {
@@ -635,36 +677,38 @@ Response
 
 ## Cursors
 
-To receive crash-resistant notifications about new transactions, Cursors can be used in conjunction with the `/list-transactions` endpoint. 
+To receive crash-resistant notifications about new transactions, Cursors can be used in conjunction with the `/list-transactions` endpoint.
 
 To process new transactions, a client should:
 
 1. Create a Cursor, adding a `filter` and optionally adding an `alias`; or get a previously created Cursor by its id or alias.
-2. Extract the `after` from the response. 
+2. Extract the `after` from the response.
 3. List transactions with the extracted `after` and `filter`, and set `"order": "asc"` on the request body, to receive transactions in the order that they happened.
-4. Extract the new `after` from the `/list-transactions` response body. 
-5. Update the Cursor with the new `after`. 
+4. Extract the new `after` from the `/list-transactions` response body.
+5. Update the Cursor with the new `after`.
 6. Repeat steps 3 - 5.
 
 ### Cursor Object
+
 ```
 {
   "id": "...",
-  "alias": "...", 
-  "filter": "...", 
+  "alias": "...",
+  "filter": "...",
   "after": "...",
   "order": "..."
 }
 ```
 
 ### Create Cursor
-Endpoint 
+
+#### Endpoint
 
 ```
 POST /create-cursor
 ```
 
-Request
+#### Request
 
 ```
 {
@@ -673,12 +717,19 @@ Request
 }
 ```
 
-Response 
+#### Response
 
 A Cursor object.
 
 ### Get Cursor
-Request
+
+#### Endpoint
+
+```
+POST /get-cursor
+```
+
+#### Request
 
 ```
 {
@@ -687,20 +738,21 @@ Request
 }
 ```
 
-Response 
+#### Response
 
 A Cursor object.
 
 ### Update Cursor
+
 Updates the Cursor with a new `after`. This is used to acknowledge that the last set of transactions received from `/list-transactions` was processed successfully.
 
-Endpoint 
+#### Endpoint
 
 ```
 POST /update-cursor
 ```
 
-Request 
+#### Request
 
 ```
 {
@@ -710,7 +762,7 @@ Request
 }
 ```
 
-Response 
+#### Response
 
 ```
 {"message": "ok"}
@@ -722,13 +774,13 @@ Response
 
 Configures the core. Can only be called once between [resets](#reset).
 
-Endpoint
+#### Endpoint
 
 ```
 POST /configure
 ```
 
-Request
+#### Request
 
 ```
 {
@@ -740,7 +792,7 @@ Request
 }
 ```
 
-Response
+#### Response
 
 ```
 {"message": "ok"}
@@ -752,17 +804,17 @@ Returns 400 error if the generator URL and/or initial block hash is bad.
 
 Returns useful information about this core, including the relative distance between the local block height and the generator's block height.
 
-Endpoint
+#### Endpoint
 
 ```
 POST /info
 ```
 
-Request
+#### Request
 
 (empty)
 
-Response
+#### Response
 
 ```
 {
@@ -784,17 +836,17 @@ Response
 
 Resets all data in the core, including blockchain data, accounts, assets, and HSM keys.
 
-Endpoint
+#### Endpoint
 
 ```
 POST /reset
 ```
 
-Request
+#### Request
 
 (empty)
 
-Reponse
+#### Response
 
 ```
 {"message": "ok"}
