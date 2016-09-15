@@ -331,9 +331,11 @@ public class Transaction {
             public KeyID[] keys;
 
             /**
-             * The list of constraints from which to build the p2dp signature predicate (null unless type is "signature").
+             * The program whose hash is signed. If empty, it is
+             * inferred during signing from aspects of the
+             * transaction.
              */
-            public Constraint[] constraints;
+            public String program;
 
             /**
              * The list of signatures made with the specified keys (null unless type is "signature").
