@@ -8,7 +8,7 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [Key Object](#key-object)
   * [Create Key](#create-key)
   * [List Keys](#list-keys)
-  * [Sign Transaction Template](#sign-transaction-template)
+  * [Sign Transaction](#sign-transaction)
 * [Assets](#assets)
   * [Asset Object](#asset-object)
   * [Create Asset](#create-asset)
@@ -22,11 +22,11 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
 * [Control Programs](#control-programs)
   * [Create Control Program](#create-control-program)
 * [Transactions](#transactions)
-  * [Transaction Template Object](#transaction-template-object)
   * [Transaction Object](#transaction-object)
   * [Unspent Output Object](#unspent-output-object)
-  * [Build Transaction Template](#build-transaction-template)
-  * [Submit Transaction Template](#submit-transaction-template)
+  * [Transaction Template Object](#transaction-template-object)
+  * [Build Transaction](#build-transaction)
+  * [Submit Transaction](#submit-transaction)
   * [List Transactions](#list-transactions)
   * [List Balances](#list-balances)
   * [List Unspent Outputs](#list-unspent-outputs)
@@ -93,16 +93,16 @@ Response
 }
 ```
 
-### Sign Transaction Template
+### Sign Transaction
     
 Endpoint
 ```    
-POST mockhsm/sign-transaction-template
+POST mockhsm/sign-transaction
 ```
 
-Request: An array of transaction template objects.
+Request: An array of [transaction template objects](#transaction-template-object).
 
-Response: An array of signed transaction template objects.
+Response: An array of [transaction template objects](#transaction-template-object).
 
     
 
@@ -360,38 +360,6 @@ Response
 
 ## Transactions
 
-### Transaction Template Object
-```
-{
-  "unsigned_hex": "...",
-  "inputs": [
-    {
-      "asset_id": "2ed22e7846968aaee500b5ea4b4dfc8bdbe798f32e0737516ab44be4417ff111",
-      "amount": 4,
-      "position": 0,
-      "signature_components": [
-        {
-          "type": "data",
-          "data": "abcd..."
-        },
-        {
-          "type": "signature",
-          "quorum": 1,
-          "signature_data": "e603d3b8a10fb1714b986393c686fc3ab5f361ec29f94cfd8c7ef3e95e5e44d8",
-          "signatures": [
-            {
-              "xpub": "...",
-              "derivation_path": [0,0,2,0,9],
-              "signature": ""
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
-
 ### Transaction Object
 Annotated by the Core services where possible (account_ids, account_tags, asset_tags)
 
@@ -450,6 +418,38 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
 Note: the "retire" SDK method is simply a control program containing the `RETURN` operation.
 To keep the interface narrow, the SDK can generate such a control program.
 
+### Transaction Template Object
+```
+{
+  "raw_transaction": "...",
+  "signing_instructions": [
+    {
+      "position": 0,
+      "asset_id": "2ed22e7846968aaee500b5ea4b4dfc8bdbe798f32e0737516ab44be4417ff111",
+      "amount": 4,
+      "signature_components": [
+        {
+          "type": "data",
+          "data": "abcd..."
+        },
+        {
+          "type": "signature",
+          "quorum": 1,
+          "signature_data": "e603d3b8a10fb1714b986393c686fc3ab5f361ec29f94cfd8c7ef3e95e5e44d8",
+          "signatures": [
+            {
+              "xpub": "...",
+              "derivation_path": [0,0,2,0,9],
+              "signature": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
 ### Unspent Output Object
 
 ```
@@ -468,18 +468,18 @@ To keep the interface narrow, the SDK can generate such a control program.
 }
 ```
 
-### Build Transaction Template
+### Build Transaction
 
 Endpoint
 ```    
-POST /build-transaction-template
+POST /build-transaction
 ```
 
 Request
 ```
     [
         {  
-            "transaction":"...",
+            "raw_transaction":"...",       // optional. an unsubmitted transaction to which additional actions can be appended.
             "reference_data":"...",
             "actions":[  
                 {
@@ -521,14 +521,20 @@ Request
 
 Response: An array of [transaction template objects](#transaction-template-object).
 
-### Submit Transaction Template
+### Submit Transaction
 
 Endpoint
 ```
-POST /submit-transaction-template
+POST /submit-transaction
 ```
-
-Request: an array of [transaction template objects](#transaction-template-object).
+Request
+```
+[
+  {
+    "raw_transaction": "..."
+  }
+]
+```
 
 Response
 ```
