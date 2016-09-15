@@ -5,6 +5,8 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
 
 ## Table of Contents
 
+* [Errors](#errors)
+  * [Error Object](#error-object)
 * [MockHSM](#mockhsm)
   * [Key Object](#key-object)
   * [Create Key](#create-key)
@@ -38,6 +40,17 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [Info](#info)
   * [Reset](#reset)
 
+
+## Errors
+
+### Error Object
+
+```
+{
+  "code": <string>,
+  "message": <string>
+}
+```
 
 ## MockHSM
 
@@ -115,7 +128,7 @@ An array of [transaction template objects](#transaction-template-object).
 
 #### Response
 
-An array of [transaction template objects](#transaction-template-object).
+An array of [transaction template objects](#transaction-template-object) and/or [error objects](#error-object).
 
 ## Assets
 
@@ -292,6 +305,7 @@ POST /list-accounts
 ### Archive Account
 
 #### Endpoint
+
 ```
 POST /archive-account
 ```
@@ -300,7 +314,7 @@ POST /archive-account
 
 ```
 {
-  account_id: "...", // accepts `account_id` or `account_alias`
+  "account_id": "...", // accepts `account_id` or `account_alias`
 }
 ```
 
@@ -333,7 +347,7 @@ If the `type` is `account` then the following params are required:
 
 ```
 {
-  account_id: "..." // accepts `account_id` or `account_alias`
+  "account_id": "..." // accepts `account_id` or `account_alias`
 }
 ```
 
@@ -373,6 +387,10 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
     },
     {
       "action": "spend",
+      "asset_id": "125B4E...",
+      "asset_alias": "...",
+      "asset_tags": {},
+      "amount": 5000,
       "spent_output": {
         "transaction_id": "94C5D3...",
         "position": 1,
@@ -380,10 +398,6 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
       "account_id": "",
       "account_alias": "...",
       "account_tags": {},
-      "asset_id": "125B4E...",
-      "asset_alias": "...",
-      "asset_tags": {},
-      "amount": 5000,
       "reference_data": {"user": "alice"}
     }
   ],
@@ -391,13 +405,13 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
     {
       "action": "control",
       "position": "...",
-      "account_id": "",
-      "account_alias": "...",
-      "account_tags": {},
       "asset_id": "125B4E...",
       "asset_alias": "...",
       "asset_tags": {},
       "amount": 5000,
+      "account_id": "",
+      "account_alias": "...",
+      "account_tags": {},
       "control_program": "205CDF...",
       "reference_data": {"user": "bob"}
     }
@@ -412,28 +426,28 @@ To keep the interface narrow, the SDK can generate such a control program.
 
 ```
 {
-  "raw_transaction": "...",
+  "raw_transaction": <hex string>,
   "signing_instructions": [
     {
       "position": 0,
       "asset_id": "2ed22e7846968aaee500b5ea4b4dfc8bdbe798f32e0737516ab44be4417ff111",
       "amount": 4,
-      "signature_components": [
+      "witness_components": [
         {
           "type": "data",
           "data": "abcd..."
         },
         {
           "type": "signature",
-          "quorum": 1,
-          "signature_data": "e603d3b8a10fb1714b986393c686fc3ab5f361ec29f94cfd8c7ef3e95e5e44d8",
-          "signatures": [
+          "quorum": <int>,
+          "keys": [
             {
-              "xpub": "...",
-              "derivation_path": [0,0,2,0,9],
-              "signature": ""
+              "xpub": <string>,
+              "derivation_path": [<int>, ...]
             }
-          ]
+          ],
+          "program": <string>,
+          "signatures": [<string>, ...]
         }
       ]
     }
@@ -445,6 +459,7 @@ To keep the interface narrow, the SDK can generate such a control program.
 
 ```
 {
+  "action": "control",
   "transaction_id": "...",
   "position": "...",
   "asset_id": "...",
@@ -472,7 +487,7 @@ POST /build-transaction
 ```
 [
   {
-    "raw_transaction": "...", // optional. an unsubmitted transaction to which additional actions can be appended.
+    "raw_transaction": <hex string>, // optional. an unsubmitted transaction to which additional actions can be appended.
     "reference_data": "...",
     "actions":[
       {
@@ -514,7 +529,7 @@ POST /build-transaction
 
 #### Response
 
-An array of [transaction template objects](#transaction-template-object).
+An array of [transaction template objects](#transaction-template-object) and/or [error objects](#error-object).
 
 ### Submit Transaction
 
@@ -529,7 +544,7 @@ POST /submit-transaction
 ```
 [
   {
-    "raw_transaction": "..."
+    "raw_transaction": <hex string>
   }
 ]
 ```
@@ -538,9 +553,15 @@ POST /submit-transaction
 
 ```
 [
+  // Object with ID if transaction submission succeeded.
   {
     "id": "..."
-  }
+  },
+
+  // Error object if transaction submission failed.
+  <error object>,
+
+  ...
 ]
 ```
 
@@ -616,8 +637,8 @@ Grouped:
     },
     ...
   ],
-  "last_page": true, // currently only returns one page
-  "next": {...}
+  "next": {...},
+  "last_page": true // currently only returns one page
 }
 ```
 
@@ -630,13 +651,13 @@ Ungrouped:
       "amount": 10
     }
   ],
-  "last_page": true,
   "next": {
     "filter": "...",
     "filter_params": [],
     "sum_by": [...],
     "after": "..."
   },
+  "last_page": true
 }
 ```
 
