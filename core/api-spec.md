@@ -586,6 +586,8 @@ POST /list-transactions
 {
   "filter": "...", // optional
   "filter_params": [], // optional
+  "start_time": <number, millisecond Unixtime>, // optional, defaults to 0
+  "end_time": <number, millisecond Unixtime>, // optional, defaults to current time
   "order": <"asc"|"desc">, // optional, defaults to "desc" (newest to oldest)
   "after": "...", // optional
   "timeout": <number, in milliseconds> // optional, defaults to 1000 (1 second)
@@ -605,6 +607,8 @@ If order is "asc", the request will stay open until there are transactions to re
   "next": {
     "filter": "...",
     "filter_params": [],
+    "start_time": <number>,
+    "end_time": <number>,
     "order": <"asc"|"desc">
     "after": "..."
   },
@@ -626,7 +630,8 @@ POST /list-balances
 {
   "filter": "...", // optional
   "filter_params": ["param"], // optional
-  "sum_by": ["selector1", ...] // optional
+  "sum_by": ["selector1", ...], // optional
+  "timestamp": <number, millisecond Unixtime> // optional, defaults to current time
 }
 ```
 
@@ -664,6 +669,7 @@ Ungrouped:
     "filter": "...",
     "filter_params": [],
     "sum_by": [...],
+    "timestamp": <number>,
     "after": "..."
   },
   "last_page": true
@@ -684,6 +690,7 @@ POST /list-unspent-outputs
 {
   "filter": "...", // optional
   "filter_params": [], // optional
+  "timestamp": <number, millisecond Unixtime>, // optional, defaults to current time
   "after": "..." // optional
 }
 ```
@@ -699,6 +706,7 @@ POST /list-unspent-outputs
   "next": {
     "filter": "...",
     "filter_params": [],
+    "timestamp": <number>,
     "after": "..."
   },
   "last_page": true|false
