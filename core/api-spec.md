@@ -149,7 +149,7 @@ An array of [transaction template objects](#transaction-template-object) and/or 
   "quorum": 1,
   "definition": {},
   "tags": {},
-  "origin": "..." // `local` if asset was created in the Core, `external` if not
+  "origin": <"local"|"external">
 }
 ```
 
@@ -387,6 +387,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
       "asset_id": "125B4E...",
       "asset_alias": "...",
       "asset_tags": {},
+      "asset_origin": <"local"|"external">
       "amount": 5000,
       "issuance_program": ...,
       "reference_data": {"details": "..."},
@@ -397,6 +398,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
       "asset_id": "125B4E...",
       "asset_alias": "...",
       "asset_tags": {},
+      "asset_origin": <"local"|"external">,
       "amount": 5000,
       "spent_output": {
         "transaction_id": "94C5D3...",
@@ -415,6 +417,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
       "asset_id": "125B4E...",
       "asset_alias": "...",
       "asset_tags": {},
+      "asset_origin": <"local"|"external">,
       "amount": 5000,
       "account_id": "",
       "account_alias": "...",
@@ -472,6 +475,7 @@ To keep the interface narrow, the SDK can generate such a control program.
   "asset_id": "...",
   "asset_alias": "...",
   "asset_tags": {},
+  "asset_origin": <"local"|"external">,
   "amount": 5000,
   "account_id": "...",
   "account_alias": "...",
