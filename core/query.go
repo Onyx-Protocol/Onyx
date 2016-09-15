@@ -105,8 +105,13 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 		}
 	}
 
+	var asc bool
+	if in.Order == "asc" {
+		asc = true
+	}
+
 	limit := defGenericPageSize
-	txns, nextAfter, err := a.indexer.Transactions(ctx, p, in.FilterParams, after, limit)
+	txns, nextAfter, err := a.indexer.Transactions(ctx, p, in.FilterParams, after, limit, asc)
 	if err != nil {
 		return result, errors.Wrap(err, "running tx query")
 	}

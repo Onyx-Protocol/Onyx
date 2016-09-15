@@ -35,6 +35,7 @@ func TestConstructTransactionsQuery(t *testing.T) {
 		filter     string
 		values     []interface{}
 		after      TxAfter
+		asc        bool
 		wantQuery  string
 		wantValues []interface{}
 	}{
@@ -42,6 +43,7 @@ func TestConstructTransactionsQuery(t *testing.T) {
 			filter:    `inputs(action='issue' AND asset_id=$1)`,
 			values:    []interface{}{"abc"},
 			after:     TxAfter{FromBlockHeight: 205, FromPosition: 35, StopBlockHeight: 100},
+			asc:       false,
 			wantQuery: `SELECT block_height, tx_pos, data FROM annotated_txs WHERE (data @> $1::jsonb) AND (block_height, tx_pos) < ($2, $3) AND block_height >= $4 ORDER BY block_height DESC, tx_pos DESC LIMIT 100`,
 			wantValues: []interface{}{
 				`{"inputs":[{"action":"issue","asset_id":"abc"}]}`,
@@ -52,7 +54,20 @@ func TestConstructTransactionsQuery(t *testing.T) {
 			filter:    `outputs(account_id = $1 OR reference_data.corporate=$2)`,
 			values:    []interface{}{"acc123", "corp"},
 			after:     TxAfter{FromBlockHeight: 2, FromPosition: 20, StopBlockHeight: 1},
+			asc:       false,
 			wantQuery: `SELECT block_height, tx_pos, data FROM annotated_txs WHERE ((data @> $1::jsonb) OR (data @> $2::jsonb)) AND (block_height, tx_pos) < ($3, $4) AND block_height >= $5 ORDER BY block_height DESC, tx_pos DESC LIMIT 100`,
+			wantValues: []interface{}{
+				`{"outputs":[{"account_id":"acc123"}]}`,
+				`{"outputs":[{"reference_data":{"corporate":"corp"}}]}`,
+				uint64(2), uint32(20), uint64(1),
+			},
+		},
+		{
+			filter:    `outputs(account_id = $1 OR reference_data.corporate=$2)`,
+			values:    []interface{}{"acc123", "corp"},
+			after:     TxAfter{FromBlockHeight: 2, FromPosition: 20, StopBlockHeight: 1},
+			asc:       true,
+			wantQuery: `SELECT block_height, tx_pos, data FROM annotated_txs WHERE ((data @> $1::jsonb) OR (data @> $2::jsonb)) AND (block_height, tx_pos) > ($3, $4) AND block_height <= $5 ORDER BY block_height ASC, tx_pos ASC LIMIT 100`,
 			wantValues: []interface{}{
 				`{"outputs":[{"account_id":"acc123"}]}`,
 				`{"outputs":[{"reference_data":{"corporate":"corp"}}]}`,
@@ -71,7 +86,7 @@ func TestConstructTransactionsQuery(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		query, values := constructTransactionsQuery(expr, tc.after, 100)
+		query, values := constructTransactionsQuery(expr, tc.after, tc.asc, 100)
 		if query != tc.wantQuery {
 			t.Errorf("got\n%s\nwant\n%s", query, tc.wantQuery)
 		}

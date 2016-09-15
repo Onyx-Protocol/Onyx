@@ -22,14 +22,14 @@ type TxAfter struct {
 	// FromBlockHeight and FromPosition uniquely identify the last transaction returned
 	// by a list-transactions query.
 	//
-	// If list-transactions is called with a time range instead of a cursor, these fields
+	// If list-transactions is called with a time range instead of an `after`, these fields
 	// are populated with the position of the transaction at the start of the time range.
 	FromBlockHeight uint64 // exclusive
 	FromPosition    uint32 // exclusive
 
 	// StopBlockHeight identifies the last block that should be included in a transaction
 	// list. It is used when list-transactions is called with a time range instead
-	// of a cursor.
+	// of an `after`.
 	StopBlockHeight uint64 // inclusive
 }
 
@@ -78,7 +78,7 @@ func (ind *Indexer) LookupTxAfter(ctx context.Context, begin, end uint64) (TxAft
 
 // Transactions queries the blockchain for transactions matching the
 // filter predicate `p`.
-func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals []interface{}, cur TxAfter, limit int) ([]interface{}, *TxAfter, error) {
+func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals []interface{}, after TxAfter, limit int, asc bool) ([]interface{}, *TxAfter, error) {
 	if len(vals) != p.Parameters {
 		return nil, nil, ErrParameterCountMismatch
 	}
@@ -87,7 +87,7 @@ func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals [
 		return nil, nil, errors.Wrap(err, "converting to SQL")
 	}
 
-	queryStr, queryArgs := constructTransactionsQuery(expr, cur, limit)
+	queryStr, queryArgs := constructTransactionsQuery(expr, after, asc, limit)
 	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "executing txn query")
@@ -97,7 +97,7 @@ func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals [
 	txns := make([]interface{}, 0, limit)
 	for rows.Next() {
 		var data []byte
-		err := rows.Scan(&cur.FromBlockHeight, &cur.FromPosition, &data)
+		err := rows.Scan(&after.FromBlockHeight, &after.FromPosition, &data)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "scanning transaction row")
 		}
@@ -107,10 +107,13 @@ func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals [
 	if err != nil {
 		return nil, nil, errors.Wrap(err)
 	}
-	return txns, &cur, nil
+	return txns, &after, nil
 }
 
-func constructTransactionsQuery(expr filter.SQLExpr, cur TxAfter, limit int) (string, []interface{}) {
+// If asc is true, the transactions will be returned from "in front" of the `after`
+// param (e.g., the oldest transaction immediately after the `after` param,
+// followed by the second oldest, etc) in ascending order.
+func constructTransactionsQuery(expr filter.SQLExpr, after TxAfter, asc bool, limit int) (string, []interface{}) {
 	var buf bytes.Buffer
 	var vals []interface{}
 
@@ -124,12 +127,22 @@ func constructTransactionsQuery(expr filter.SQLExpr, cur TxAfter, limit int) (st
 		buf.WriteString(" AND ")
 	}
 
-	// add time range & after conditions
-	buf.WriteString(fmt.Sprintf("(block_height, tx_pos) < ($%d, $%d) AND ", len(vals)+1, len(vals)+2))
-	buf.WriteString(fmt.Sprintf("block_height >= $%d ", len(vals)+3))
-	vals = append(vals, cur.FromBlockHeight, cur.FromPosition, cur.StopBlockHeight)
+	if asc {
+		// add time range & after conditions
+		buf.WriteString(fmt.Sprintf("(block_height, tx_pos) > ($%d, $%d) AND ", len(vals)+1, len(vals)+2))
+		buf.WriteString(fmt.Sprintf("block_height <= $%d ", len(vals)+3))
+		vals = append(vals, after.FromBlockHeight, after.FromPosition, after.StopBlockHeight)
 
-	buf.WriteString("ORDER BY block_height DESC, tx_pos DESC ")
+		buf.WriteString("ORDER BY block_height ASC, tx_pos ASC ")
+	} else {
+		// add time range & after conditions
+		buf.WriteString(fmt.Sprintf("(block_height, tx_pos) < ($%d, $%d) AND ", len(vals)+1, len(vals)+2))
+		buf.WriteString(fmt.Sprintf("block_height >= $%d ", len(vals)+3))
+		vals = append(vals, after.FromBlockHeight, after.FromPosition, after.StopBlockHeight)
+
+		buf.WriteString("ORDER BY block_height DESC, tx_pos DESC ")
+	}
+
 	buf.WriteString("LIMIT " + strconv.Itoa(limit))
 	return buf.String(), vals
 }

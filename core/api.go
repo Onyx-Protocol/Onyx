@@ -75,6 +75,9 @@ type requestQuery struct {
 	// TODO(bobg): Different request structs for endpoints with different needs
 	TimestampMS uint64 `json:"timestamp,omitempty"`
 
+	// This is used by /list-transactions.
+	Order string `json:"order,omitempty"`
+
 	IndexID      string        `json:"index_id,omitempty"`
 	IndexAlias   string        `json:"index_alias,omitempty"`
 	Filter       string        `json:"filter,omitempty"`
