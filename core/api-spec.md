@@ -489,6 +489,7 @@ POST /build-transaction
   {
     "raw_transaction": <hex string>, // optional. an unsubmitted transaction to which additional actions can be appended.
     "reference_data": "...",
+    "ttl": <number of milliseconds>, // optional, defaults to 300000 (5 minutes)
     "actions":[
       {
         "type": "spend_account",
