@@ -135,7 +135,7 @@ func TestTransfer(t *testing.T) {
 	// Now transfer
 	buildReqFmt := `
 		{"actions": [
-			{"type": "spend_account_unspent_output_selector", "asset_id": "%s", "amount": 100, "account_id": "%s"},
+			{"type": "spend_account", "asset_id": "%s", "amount": 100, "account_id": "%s"},
 			{"type": "control_account", "asset_id": "%s", "amount": 100, "account_id": "%s"}
 		]}
 	`
@@ -182,7 +182,7 @@ func TestTransfer(t *testing.T) {
 	// Now transfer back using aliases.
 	buildReqFmt = `
 		{"actions": [
-			{"type": "spend_account_unspent_output_selector", "params": {"asset_alias": "%s", "amount": 100, "account_alias": "%s"}},
+			{"type": "spend_account", "params": {"asset_alias": "%s", "amount": 100, "account_alias": "%s"}},
 			{"type": "control_account", "params": {"asset_alias": "%s", "amount": 100, "account_alias": "%s"}}
 		]}
 	`

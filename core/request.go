@@ -32,7 +32,7 @@ func (a *action) UnmarshalJSON(data []byte) error {
 	switch x.Type {
 	case "control_program":
 		a.underlying = new(txbuilder.ControlProgramAction)
-	case "spend_account_unspent_output_selector":
+	case "spend_account":
 		a.underlying = new(account.SpendAction)
 	case "control_account":
 		a.underlying = new(account.ControlAction)

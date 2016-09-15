@@ -3,7 +3,7 @@ import PageHeader from "../PageHeader/PageHeader"
 import { Panel, TextField, NumberField, SelectField, TextareaField, ErrorBanner } from "../Common"
 
 const ISSUE_KEY = "issue"
-const SPEND_ACCOUNT_KEY = "spend_account_unspent_output_selector"
+const SPEND_ACCOUNT_KEY = "spent_account"
 const SPEND_UNSPENT_KEY = "spend_account_unspent_output"
 const CONTROL_ACCOUNT_KEY = "control_account"
 const CONTROL_PROGRAM_KEY = "control_program"

@@ -127,7 +127,7 @@ public class Transaction {
     public static class Input {
         /**
          * The type of action being taken on an input.<br>
-         * Possible actions are "issue", "spend_account_unspent_output_selector", and "spend_account_unspent_output".
+         * Possible actions are "issue", "spend_account", and "spend_account_unspent_output".
          */
         public String action;
 
@@ -678,7 +678,7 @@ public class Transaction {
          */
         public Builder spendFromAccountById(String accountId, String assetId, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setParameter("type", "spend_account_unspent_output_selector")
+                    .setParameter("type", "spend_account")
                     .setParameter("account_id", accountId)
                     .setParameter("asset_id", assetId)
                     .setParameter("amount", amount)
@@ -697,7 +697,7 @@ public class Transaction {
          */
         public Builder spendFromAccountByAlias(String accountAlias, String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
             Action action = new Action()
-                    .setParameter("type", "spend_account_unspent_output_selector")
+                    .setParameter("type", "spend_account")
                     .setParameter("account_alias", accountAlias)
                     .setParameter("asset_alias", assetAlias)
                     .setParameter("amount", amount)
