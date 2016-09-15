@@ -24,7 +24,6 @@ type IssueAction struct {
 	// not used anywhere else in the code base.
 	AssetAlias string `json:"asset_alias"`
 
-	Constraints   txbuilder.ConstraintList
 	ReferenceData json.Map `json:"reference_data"`
 }
 
@@ -58,15 +57,7 @@ func (a *IssueAction) Build(ctx context.Context, maxTime time.Time) ([]*bc.TxInp
 		return nil, nil, nil, err
 	}
 
-	constraints := a.Constraints
-	if len(constraints) > 0 {
-		// Add constraints only if some are already specified. If none
-		// are, leave the constraint list empty to get the default
-		// commit-to-txsighash behavior.
-		constraints = append(constraints, txbuilder.TTLConstraint(maxTime))
-	}
-
-	tplIn.AddWitnessKeys(keyIDs, nrequired, constraints)
+	tplIn.AddWitnessKeys(keyIDs, nrequired)
 
 	return []*bc.TxInput{txin}, nil, []*txbuilder.Input{tplIn}, nil
 }

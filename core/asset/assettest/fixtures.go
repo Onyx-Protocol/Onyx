@@ -138,7 +138,7 @@ func NewIssueAction(assetAmount bc.AssetAmount, referenceData json.Map) *asset.I
 	}
 }
 
-func NewAccountSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash, txOut *uint32, refData json.Map, constraints []txbuilder.Constraint) *account.SpendAction {
+func NewAccountSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash, txOut *uint32, refData json.Map) *account.SpendAction {
 	return &account.SpendAction{
 		AssetAmount:   amt,
 		AssetAlias:    "",
@@ -146,7 +146,6 @@ func NewAccountSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash
 		TxOut:         txOut,
 		AccountID:     accountID,
 		AccountAlias:  "",
-		Constraints:   constraints,
 		ReferenceData: refData,
 	}
 }

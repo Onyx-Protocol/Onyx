@@ -48,7 +48,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 		AssetID: info.asset.AssetID,
 		Amount:  10,
 	}
-	spendAction := assettest.NewAccountSpendAction(assetAmount, info.acctA.ID, nil, nil, nil, nil)
+	spendAction := assettest.NewAccountSpendAction(assetAmount, info.acctA.ID, nil, nil, nil)
 	dest1 := assettest.NewAccountControlAction(assetAmount, info.acctB.ID, nil)
 
 	// Build the first tx
@@ -70,7 +70,6 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 	secondTemplate.Inputs = firstTemplate.Inputs
 	secondTemplate.Inputs[0].WitnessComponents[0].(*SignatureWitness).Sigs[0] = nil
-	secondTemplate.Inputs[0].WitnessComponents[0].(*SignatureWitness).Constraints = nil
 
 	assettest.SignTxTemplate(t, ctx, secondTemplate, info.privKeyAccounts)
 	err = FinalizeTx(ctx, c, bc.NewTx(*secondTemplate.Transaction))
@@ -312,7 +311,7 @@ func transfer(ctx context.Context, t testing.TB, c *protocol.Chain, info *client
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}
-	source := assettest.NewAccountSpendAction(assetAmount, srcAcctID, nil, nil, nil, nil)
+	source := assettest.NewAccountSpendAction(assetAmount, srcAcctID, nil, nil, nil)
 	dest := assettest.NewAccountControlAction(assetAmount, destAcctID, nil)
 
 	xferTx, err := Build(ctx, nil, []Action{source, dest}, []byte{}, time.Now().Add(time.Minute))

@@ -46,7 +46,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 	_, _ = submitSingle(ctx, c, submitSingleArg{tpl: tmpl, wait: time.Millisecond})
 
 	// Add a new source, spending the change output produced above.
-	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
+	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, nil, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)

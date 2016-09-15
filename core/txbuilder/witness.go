@@ -91,13 +91,13 @@ type (
 		// Keys are the identities of the keys to sign with.
 		Keys []KeyID `json:"keys"`
 
-		// Constraints is a list of constraints to express in the deferred
-		// predicate in the txinput. An empty constraint list produces a
-		// deferred predicate that commits to the tx sighash.
-		Constraints ConstraintList `json:"constraints"`
+		// Program is the deferred predicate, whose hash is what gets
+		// signed. If empty, it is computed during Sign from the outputs
+		// and the current input of the transaction.
+		Program chainjson.HexBytes `json:"program"`
 
-		// Sigs is the output of Sign, where program (the output of Stage)
-		// is signed by each of the keys in Keys.
+		// Sigs are signatures of Program made from each of the Keys
+		// during Sign.
 		Sigs []chainjson.HexBytes `json:"signatures"`
 	}
 
@@ -107,25 +107,28 @@ type (
 	}
 )
 
-func (sw *SignatureWitness) stage(tpl *Template, index int) []byte {
-	if len(sw.Constraints) == 0 {
-		h := tpl.Hash(index, bc.SigHashAll)
-		builder := vmutil.NewBuilder()
-		builder.AddData(h[:])
-		builder.AddInt64(1).AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
-		return builder.Program
-	}
-	var program []byte
-	for i, c := range sw.Constraints {
-		program = append(program, c.Code()...)
-		if i < len(sw.Constraints)-1 { // leave the final bool on top of the stack
-			program = append(program, byte(vm.OP_VERIFY))
+var ErrEmptyProgram = errors.New("empty signature program")
+
+// Sign populates sw.Sigs with as many signatures of the deferred predicate in
+// sw.Program as it can from the set of keys in sw.Keys.
+//
+// If sw.Program is empty, it is populated with an _inferred_ deferred
+// predicate: a program committing to aspects of the current
+// transaction. Specifically, the program commits to:
+//  - the maxtime of the transaction
+//  - the outpoint and reference data of the current input
+//  - the assetID, amount, reference data, and control program of each output.
+func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
+	// Compute the deferred predicate to sign. This is either a
+	// txsighash program if tpl.Final is true (i.e., the tx is complete
+	// and no further changes are allowed) or a program enforcing
+	// constraints derived from the existing outputs and current input.
+	if len(sw.Program) == 0 {
+		sw.Program = buildSigProgram(tpl, index)
+		if len(sw.Program) == 0 {
+			return ErrEmptyProgram
 		}
 	}
-	return program
-}
-
-func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
 	if len(sw.Sigs) < len(sw.Keys) {
 		// Each key in sw.Keys will produce a signature in sw.Sigs. Make
 		// sure there are enough slots in sw.Sigs and that we preserve any
@@ -134,8 +137,7 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, 
 		copy(newSigs, sw.Sigs)
 		sw.Sigs = newSigs
 	}
-	program := sw.stage(tpl, index)
-	h := sha3.Sum256(program)
+	h := sha3.Sum256(sw.Program)
 	for i, keyID := range sw.Keys {
 		if len(sw.Sigs[i]) > 0 {
 			// Already have a signature for this key
@@ -148,6 +150,46 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, 
 		sw.Sigs[i] = sigBytes
 	}
 	return nil
+}
+
+func buildSigProgram(tpl *Template, index int) []byte {
+	if tpl.Final {
+		h := tpl.Hash(index, bc.SigHashAll)
+		builder := vmutil.NewBuilder()
+		builder.AddData(h[:])
+		builder.AddInt64(1).AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
+		return builder.Program
+	}
+	constraints := make([]constraint, 0, 3+len(tpl.Transaction.Outputs))
+	if tpl.Transaction.MaxTime > 0 {
+		constraints = append(constraints, ttlConstraint(tpl.Transaction.MaxTime))
+	}
+	inp := tpl.Transaction.Inputs[index]
+	if !inp.IsIssuance() {
+		constraints = append(constraints, outpointConstraint(inp.Outpoint()))
+	}
+	if len(inp.ReferenceData) > 0 {
+		constraints = append(constraints, refdataConstraint(inp.ReferenceData))
+	}
+	for _, out := range tpl.Transaction.Outputs {
+		c := &payConstraint{
+			AssetAmount: out.AssetAmount,
+			Program:     out.ControlProgram,
+		}
+		if len(out.ReferenceData) > 0 {
+			h := sha3.Sum256(out.ReferenceData)
+			c.RefDataHash = (*bc.Hash)(&h)
+		}
+		constraints = append(constraints, c)
+	}
+	var program []byte
+	for i, c := range constraints {
+		program = append(program, c.code()...)
+		if i < len(constraints)-1 { // leave the final bool on top of the stack
+			program = append(program, byte(vm.OP_VERIFY))
+		}
+	}
+	return program
 }
 
 func (sw SignatureWitness) Materialize(tpl *Template, index int) ([][]byte, error) {
@@ -163,15 +205,14 @@ func (sw SignatureWitness) Materialize(tpl *Template, index int) ([][]byte, erro
 		return nil, errors.Wrap(err, "parsing input program script")
 	}
 	var sigs [][]byte
-	program := sw.stage(tpl, index)
-	h := sha3.Sum256(program)
+	h := sha3.Sum256(sw.Program)
 	for i := 0; i < len(pubkeys) && len(sigs) < quorum; i++ {
 		k := indexSig(pubkeys[i], h[:], sw.Sigs)
 		if k >= 0 {
 			sigs = append(sigs, sw.Sigs[k])
 		}
 	}
-	return append(sigs, program), nil
+	return append(sigs, sw.Program), nil
 }
 
 func indexSig(key ed25519.PublicKey, msg []byte, sigs []chainjson.HexBytes) int {
@@ -185,17 +226,15 @@ func indexSig(key ed25519.PublicKey, msg []byte, sigs []chainjson.HexBytes) int 
 
 func (sw SignatureWitness) MarshalJSON() ([]byte, error) {
 	obj := struct {
-		Type        string               `json:"type"`
-		Quorum      int                  `json:"quorum"`
-		Keys        []KeyID              `json:"keys"`
-		Constraints []Constraint         `json:"constraints"`
-		Sigs        []chainjson.HexBytes `json:"signatures"`
+		Type   string               `json:"type"`
+		Quorum int                  `json:"quorum"`
+		Keys   []KeyID              `json:"keys"`
+		Sigs   []chainjson.HexBytes `json:"signatures"`
 	}{
-		Type:        "signature",
-		Quorum:      sw.Quorum,
-		Keys:        sw.Keys,
-		Constraints: sw.Constraints,
-		Sigs:        sw.Sigs,
+		Type:   "signature",
+		Quorum: sw.Quorum,
+		Keys:   sw.Keys,
+		Sigs:   sw.Sigs,
 	}
 	return json.Marshal(obj)
 }
@@ -204,11 +243,10 @@ func (inp *Input) AddWitnessData(data []byte) {
 	inp.WitnessComponents = append(inp.WitnessComponents, DataWitness(data))
 }
 
-func (inp *Input) AddWitnessKeys(keys []KeyID, quorum int, constraints []Constraint) {
+func (inp *Input) AddWitnessKeys(keys []KeyID, quorum int) {
 	sw := &SignatureWitness{
-		Quorum:      quorum,
-		Keys:        keys,
-		Constraints: constraints,
+		Quorum: quorum,
+		Keys:   keys,
 	}
 	inp.WitnessComponents = append(inp.WitnessComponents, sw)
 }

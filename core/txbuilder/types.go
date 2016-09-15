@@ -21,6 +21,11 @@ type Template struct {
 	// false.
 	Local bool `json:"local"`
 
+	// Final signals to Sign that signatures should commit to the tx
+	// sighash rather than to constraints based on individual inputs and
+	// outputs. This effectively prevents further changes to the tx.
+	Final bool `json:"final"`
+
 	sigHasher *bc.SigHasher
 }
 

@@ -1,11 +1,8 @@
 package txbuilder
 
 import (
-	"encoding/json"
-	"time"
+	"golang.org/x/crypto/sha3"
 
-	chainjson "chain/encoding/json"
-	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
@@ -14,89 +11,27 @@ import (
 // Constraint types express a constraint on an input of a proposed
 // transaction, and know how to turn that constraint into part of a
 // p2dp program in that input's witness.
-type Constraint interface {
+type constraint interface {
 	// Code produces bytecode expressing the constraint. The code, when
 	// executed, must consume nothing from the stack and leave a new
 	// boolean value on top of it.
-	Code() []byte
+	code() []byte
 }
 
-type ConstraintList []Constraint
+// ttlConstraint means the tx is only valid until the given time.
+type ttlConstraint int64
 
-func (cl *ConstraintList) UnmarshalJSON(b []byte) error {
-	var pre []json.RawMessage
-	err := json.Unmarshal(b, &pre)
-	if err != nil {
-		return err
-	}
-	for i, p := range pre {
-		var t struct {
-			Type string
-		}
-		err = json.Unmarshal(p, &t)
-		if err != nil {
-			return err
-		}
-		var constraint Constraint
-		switch t.Type {
-		case "ttl":
-			var t struct {
-				TTL time.Time
-			}
-			err = json.Unmarshal(p, &t)
-			if err != nil {
-				return err
-			}
-			constraint = TTLConstraint(t.TTL)
-		case "outpoint":
-			var t struct {
-				bc.Outpoint
-			}
-			err = json.Unmarshal(p, &t)
-			if err != nil {
-				return err
-			}
-			constraint = OutpointConstraint(t.Outpoint)
-		case "payment":
-			var t PayConstraint
-			err = json.Unmarshal(p, &t)
-			if err != nil {
-				return err
-			}
-			constraint = &t
-		default:
-			return errors.WithDetailf(ErrBadConstraint, "constraint %d has unknown type '%s'", i, t.Type)
-		}
-		*cl = append(*cl, constraint)
-	}
-	return nil
-}
-
-// TTLConstraint means the tx is only valid until the given time.
-type TTLConstraint time.Time
-
-func (t TTLConstraint) Code() []byte {
+func (t ttlConstraint) code() []byte {
 	builder := vmutil.NewBuilder()
-	builder.AddOp(vm.OP_MAXTIME).AddInt64(int64(bc.Millis(time.Time(t)))).AddOp(vm.OP_LESSTHAN)
+	builder.AddOp(vm.OP_MAXTIME).AddInt64(int64(t)).AddOp(vm.OP_LESSTHANOREQUAL)
 	return builder.Program
 }
 
-func (t TTLConstraint) MarshalJSON() ([]byte, error) {
-	s := struct {
-		Type string    `json:"type"`
-		TTL  time.Time `json:"ttl"`
-	}{
-		Type: "ttl",
-		TTL:  time.Time(t),
-	}
-	return json.Marshal(s)
-}
-
-// OutpointConstraint requires the outpoint being spent to equal the
+// outpointConstraint requires the outpoint being spent to equal the
 // given value.
-type OutpointConstraint bc.Outpoint
+type outpointConstraint bc.Outpoint
 
-func (o OutpointConstraint) Code() []byte {
+func (o outpointConstraint) code() []byte {
 	builder := vmutil.NewBuilder()
 	builder.AddData(o.Hash[:]).AddInt64(int64(o.Index))
 	builder.AddOp(vm.OP_OUTPOINT)                     // stack is now [... hash index hash index]
@@ -106,27 +41,27 @@ func (o OutpointConstraint) Code() []byte {
 	return builder.Program
 }
 
-func (o OutpointConstraint) MarshalJSON() ([]byte, error) {
-	s := struct {
-		Type string `json:"type"`
-		bc.Outpoint
-	}{
-		Type:     "outpoint",
-		Outpoint: bc.Outpoint(o),
-	}
-	return json.Marshal(s)
+// refdataConstraint requires the input refdatahash to match that of
+// the given data.
+type refdataConstraint []byte
+
+func (r refdataConstraint) code() []byte {
+	h := sha3.Sum256(r)
+	builder := vmutil.NewBuilder()
+	builder.AddData(h[:]).AddOp(vm.OP_REFDATAHASH).AddOp(vm.OP_EQUAL)
+	return builder.Program
 }
 
 // PayConstraint requires the transaction to pay (at least) the given
 // amount of the given asset to the given program, optionally with the
 // given refdatahash.
-type PayConstraint struct {
+type payConstraint struct {
 	bc.AssetAmount
-	Program     chainjson.HexBytes `json:"program"`
-	RefDataHash *bc.Hash           `json:"refdata_hash,omitempty"`
+	Program     []byte
+	RefDataHash *bc.Hash
 }
 
-func (p PayConstraint) Code() []byte {
+func (p payConstraint) code() []byte {
 	builder := vmutil.NewBuilder()
 	if p.RefDataHash == nil {
 		builder.AddData([]byte{})
@@ -136,19 +71,4 @@ func (p PayConstraint) Code() []byte {
 	builder.AddInt64(int64(p.Amount)).AddData(p.AssetID[:]).AddInt64(1).AddData(p.Program)
 	builder.AddOp(vm.OP_FINDOUTPUT)
 	return builder.Program
-}
-
-func (p PayConstraint) MarshalJSON() ([]byte, error) {
-	s := struct {
-		Type string `json:"type"`
-		bc.AssetAmount
-		Program     chainjson.HexBytes `json:"program"`
-		RefDataHash *bc.Hash           `json:"refdata_hash,omitempty"`
-	}{
-		Type:        "payment",
-		AssetAmount: p.AssetAmount,
-		Program:     p.Program,
-		RefDataHash: p.RefDataHash,
-	}
-	return json.Marshal(s)
 }

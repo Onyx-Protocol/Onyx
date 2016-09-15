@@ -138,17 +138,8 @@ func TestMaterializeWitnesses(t *testing.T) {
 						XPub:           pubkey.String(),
 						DerivationPath: []uint32{0, 0, 0, 0},
 					}},
-					Constraints: []Constraint{
-						TTLConstraint(now.Add(time.Hour)),
-						&PayConstraint{
-							AssetAmount: bc.AssetAmount{
-								AssetID: assetID,
-								Amount:  5,
-							},
-							Program: outscript,
-						},
-					},
-					Sigs: []json.HexBytes{sig},
+					Program: prog,
+					Sigs:    []json.HexBytes{sig},
 				},
 				DataWitness(witnessData),
 			},
@@ -237,8 +228,8 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 						DerivationPath: []uint32{0, 0, 0, 0},
 					},
 				},
-				Constraints: []Constraint{},
-				Sigs:        []json.HexBytes{sig1, sig2, sig3},
+				Program: prog,
+				Sigs:    []json.HexBytes{sig1, sig2, sig3},
 			},
 		},
 	}}

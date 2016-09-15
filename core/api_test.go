@@ -17,8 +17,107 @@ import (
 	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
+	"chain/protocol/vm"
 	"chain/testutil"
 )
+
+func TestBuildFinal(t *testing.T) {
+	dbtx := pgtest.NewTx(t)
+	ctx := pg.NewContext(context.Background(), dbtx)
+	c := prottest.NewChain(t)
+	asset.Init(c, nil)
+	account.Init(c, nil)
+
+	acc, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, nil, nil)
+	assetAmt := bc.AssetAmount{
+		AssetID: assetID,
+		Amount:  100,
+	}
+
+	sources := txbuilder.Action(assettest.NewIssueAction(assetAmt, nil))
+	dests := assettest.NewAccountControlAction(assetAmt, acc.ID, nil)
+
+	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, nil, time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assettest.SignTxTemplate(t, ctx, tmpl, testutil.TestXPrv)
+	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Make a block so that UTXOs from the above tx are available to spend.
+	prottest.MakeBlock(ctx, t, c)
+
+	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil)
+	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, nil, time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// deep-copy tmpl via json
+	tmplJSON, err := json.Marshal(tmpl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var tmpl2 txbuilder.Template
+	err = json.Unmarshal(tmplJSON, &tmpl2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl2.Final = true
+
+	assettest.SignTxTemplate(t, ctx, tmpl, nil)
+	assettest.SignTxTemplate(t, ctx, &tmpl2, nil)
+
+	prog1 := tmpl.Inputs[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
+	insts1, err := vm.ParseProgram(prog1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(insts1) != 18 {
+		t.Fatalf("expected 14 instructions in sigwitness program 1, got %d", len(insts1))
+	}
+	if insts1[0].Op != vm.OP_MAXTIME {
+		t.Fatalf("sigwitness program1 opcode 0 is %02x, expected %02x", insts1[0].Op, vm.OP_MAXTIME)
+	}
+	if insts1[2].Op != vm.OP_LESSTHANOREQUAL {
+		t.Fatalf("sigwitness program1 opcode 2 is %02x, expected %02x", insts1[2].Op, vm.OP_LESSTHANOREQUAL)
+	}
+	if insts1[3].Op != vm.OP_VERIFY {
+		t.Fatalf("sigwitness program1 opcode 3 is %02x, expected %02x", insts1[3].Op, vm.OP_VERIFY)
+	}
+	for i, op := range []vm.Op{vm.OP_FALSE, vm.OP_OUTPOINT, vm.OP_ROT, vm.OP_NUMEQUAL, vm.OP_VERIFY, vm.OP_EQUAL, vm.OP_VERIFY, vm.OP_FALSE} {
+		if insts1[i+5].Op != op {
+			t.Fatalf("sigwitness program 1 opcode %d is %02x, expected %02x", i+5, insts1[i+5].Op, op)
+		}
+	}
+	if insts1[17].Op != vm.OP_FINDOUTPUT {
+		t.Fatalf("sigwitness program1 opcode 17 is %02x, expected %02x", insts1[13].Op, vm.OP_FINDOUTPUT)
+	}
+
+	prog2 := tmpl2.Inputs[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
+	insts2, err := vm.ParseProgram(prog2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(insts2) != 4 {
+		t.Fatalf("expected 4 instructions in sigwitness program 2, got %d", len(insts2))
+	}
+	if insts2[2].Op != vm.OP_TXSIGHASH {
+		t.Fatalf("sigwitness program2 opcode 2 is %02x, expected %02x", insts2[2].Op, vm.OP_TXSIGHASH)
+	}
+	if insts2[3].Op != vm.OP_EQUAL {
+		t.Fatalf("sigwitness program2 opcode 3 is %02x, expected %02x", insts2[3].Op, vm.OP_EQUAL)
+	}
+}
 
 func TestAccountTransfer(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
@@ -56,7 +155,7 @@ func TestAccountTransfer(t *testing.T) {
 	prottest.MakeBlock(ctx, t, c)
 
 	// new source
-	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
+	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests}, nil, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)

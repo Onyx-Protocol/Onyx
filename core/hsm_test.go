@@ -68,8 +68,8 @@ func TestMockHSM(t *testing.T) {
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(ctx, t, c)
 
-	xferSrc1 := assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct1.ID, nil, nil, nil, nil)
-	xferSrc2 := assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct2.ID, nil, nil, nil, nil)
+	xferSrc1 := assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct1.ID, nil, nil, nil)
+	xferSrc2 := assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct2.ID, nil, nil, nil)
 	xferDest1 := assettest.NewAccountControlAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct1.ID, nil)
 	xferDest2 := assettest.NewAccountControlAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct2.ID, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{xferSrc1, xferSrc2, xferDest1, xferDest2}, nil, time.Now().Add(time.Minute))

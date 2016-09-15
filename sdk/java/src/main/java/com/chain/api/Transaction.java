@@ -258,6 +258,12 @@ public class Transaction {
         private Boolean local;
 
         /**
+         * Set to true to make the transaction "final" when signing, preventing further changes.
+         */
+        @SerializedName("final")
+        public Boolean isFinal;
+
+        /**
          * The Chain error code.
          */
         public String code;

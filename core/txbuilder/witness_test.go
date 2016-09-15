@@ -1,20 +1,40 @@
 package txbuilder
 
 import (
+	"bytes"
 	"encoding/json"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/davecgh/go-spew/spew"
 
 	chainjson "chain/encoding/json"
 	"chain/protocol/bc"
+	"chain/protocol/vm"
 )
 
-func TestWitnessJSON(t *testing.T) {
-	u := time.Now().UTC()
+func TestInferConstraints(t *testing.T) {
+	tpl := &Template{
+		Transaction: &bc.TxData{
+			Inputs: []*bc.TxInput{
+				bc.NewSpendInput(bc.Hash{}, 1, nil, bc.AssetID{}, 123, nil, []byte{1}),
+			},
+			Outputs: []*bc.TxOutput{
+				bc.NewTxOutput(bc.AssetID{}, 123, []byte{10, 11, 12}, nil),
+			},
+		},
+	}
+	prog := buildSigProgram(tpl, 0)
+	want, err := vm.Compile("0x0000000000000000000000000000000000000000000000000000000000000000 1 OUTPOINT ROT NUMEQUAL VERIFY EQUAL VERIFY 0x2767f15c8af2f2c7225d5273fdd683edc714110a987d1054697c348aed4e6cc7 REFDATAHASH EQUAL VERIFY 0 123 0x0000000000000000000000000000000000000000000000000000000000000000 1 0x0a0b0c FINDOUTPUT")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(want, prog) {
+		t.Errorf("expected sig witness program %x, got %x", want, prog)
+	}
+}
 
+func TestWitnessJSON(t *testing.T) {
 	inp := &Input{
 		AssetAmount: bc.AssetAmount{
 			AssetID: bc.AssetID{0xff},
@@ -29,21 +49,6 @@ func TestWitnessJSON(t *testing.T) {
 					XPub:           "fd",
 					DerivationPath: []uint32{5, 6, 7},
 				}},
-				Constraints: []Constraint{
-					TTLConstraint(u),
-					OutpointConstraint(bc.Outpoint{
-						Hash:  bc.Hash{0xfc},
-						Index: 38,
-					}),
-					&PayConstraint{
-						AssetAmount: bc.AssetAmount{
-							AssetID: bc.AssetID{0xfa},
-							Amount:  39,
-						},
-						Program:     chainjson.HexBytes{40, 41, 42},
-						RefDataHash: &bc.Hash{43, 44},
-					},
-				},
 				Sigs: []chainjson.HexBytes{{8, 9, 10}},
 			},
 		},

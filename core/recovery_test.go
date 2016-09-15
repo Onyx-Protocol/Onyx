@@ -64,8 +64,8 @@ func TestRecovery(t *testing.T) {
 	assettest.Transfer(setupCtx, t, c, []txbuilder.Action{
 		assettest.NewAccountControlAction(bc.AssetAmount{AssetID: usd, Amount: 1}, alice, nil),
 		assettest.NewAccountControlAction(bc.AssetAmount{AssetID: apple, Amount: 1}, bob, nil),
-		assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: usd, Amount: 1}, bob, nil, nil, nil, nil),
-		assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: apple, Amount: 1}, alice, nil, nil, nil, nil),
+		assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: usd, Amount: 1}, bob, nil, nil, nil),
+		assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: apple, Amount: 1}, alice, nil, nil, nil),
 	})
 
 	err := db.Close()
