@@ -101,10 +101,10 @@ func KeyIDs(xpubs []*hd25519.XPub, path []uint32) []KeyID {
 	return result
 }
 
-func Sign(ctx context.Context, tpl *Template, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
+func Sign(ctx context.Context, tpl *Template, xpubs []string, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
 	for i, sigInst := range tpl.SigningInstructions {
 		for j, c := range sigInst.WitnessComponents {
-			err := c.Sign(ctx, tpl, i, signFn)
+			err := c.Sign(ctx, tpl, i, xpubs, signFn)
 			if err != nil {
 				return errors.WithDetailf(err, "adding signature(s) to witness component %d of input %d", j, i)
 			}

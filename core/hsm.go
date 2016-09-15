@@ -47,15 +47,18 @@ func (a *api) mockhsmDelKey(ctx context.Context, xpubBytes json.HexBytes) error 
 	return a.hsm.DelKey(ctx, xpub)
 }
 
-func (a *api) mockhsmSignTemplates(ctx context.Context, tpls []*txbuilder.Template) []interface{} {
-	resp := make([]interface{}, 0, len(tpls))
-	for _, tpl := range tpls {
-		err := txbuilder.Sign(ctx, tpl, a.mockhsmSignTemplate)
+func (a *api) mockhsmSignTemplates(ctx context.Context, x struct {
+	Txs   []*txbuilder.Template `json:"transactions"`
+	XPubs []string              `json:"xpubs"`
+}) []interface{} {
+	resp := make([]interface{}, 0, len(x.Txs))
+	for _, tx := range x.Txs {
+		err := txbuilder.Sign(ctx, tx, x.XPubs, a.mockhsmSignTemplate)
 		if err != nil {
 			info, _ := errInfo(err)
 			resp = append(resp, info)
 		} else {
-			resp = append(resp, tpl)
+			resp = append(resp, tx)
 		}
 	}
 	return resp

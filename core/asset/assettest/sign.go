@@ -13,7 +13,7 @@ func SignTxTemplate(t testing.TB, ctx context.Context, template *txbuilder.Templ
 	if priv == nil {
 		priv = testutil.TestXPrv
 	}
-	err := txbuilder.Sign(ctx, template, func(_ context.Context, _ string, path []uint32, data [32]byte) ([]byte, error) {
+	err := txbuilder.Sign(ctx, template, []string{priv.Public().String()}, func(_ context.Context, _ string, path []uint32, data [32]byte) ([]byte, error) {
 		derived := priv.Derive(path)
 		return derived.Sign(data[:]), nil
 	})

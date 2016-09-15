@@ -124,7 +124,12 @@ POST mockhsm/sign-transaction
 
 #### Request
 
-An array of [transaction template objects](#transaction-template-object).
+```
+{
+  "transactions": [{...}],
+  "xpubs": ["..."],
+}
+```
 
 #### Response
 

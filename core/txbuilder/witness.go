@@ -21,7 +21,7 @@ import (
 type WitnessComponent interface {
 	// Sign is called to add signatures. Actual signing is delegated to
 	// a callback function.
-	Sign(context.Context, *Template, int, func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error
+	Sign(context.Context, *Template, int, []string, func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error
 
 	// Materialize is called to turn the component into a vector of
 	// arguments for the input witness.
@@ -64,7 +64,7 @@ func materializeWitnesses(txTemplate *Template) error {
 
 type DataWitness []byte
 
-func (_ DataWitness) Sign(_ context.Context, _ *Template, _ int, _ func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
+func (_ DataWitness) Sign(_ context.Context, _ *Template, _ int, _ []string, _ func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
 	return nil
 }
 
@@ -118,7 +118,7 @@ var ErrEmptyProgram = errors.New("empty signature program")
 //  - the maxtime of the transaction
 //  - the outpoint and reference data of the current input
 //  - the assetID, amount, reference data, and control program of each output.
-func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
+func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, xpubs []string, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
 	// Compute the deferred predicate to sign. This is either a
 	// txsighash program if tpl.Final is true (i.e., the tx is complete
 	// and no further changes are allowed) or a program enforcing
@@ -130,7 +130,7 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, 
 		}
 	}
 	if len(sw.Sigs) < len(sw.Keys) {
-		// Each key in sw.Keys will produce a signature in sw.Sigs. Make
+		// Each key in sw.Keys may produce a signature in sw.Sigs. Make
 		// sure there are enough slots in sw.Sigs and that we preserve any
 		// sigs already present.
 		newSigs := make([]chainjson.HexBytes, len(sw.Keys))
@@ -143,6 +143,9 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, 
 			// Already have a signature for this key
 			continue
 		}
+		if !contains(xpubs, keyID.XPub) {
+			continue
+		}
 		sigBytes, err := signFn(ctx, keyID.XPub, keyID.DerivationPath, h)
 		if err != nil {
 			return errors.WithDetailf(err, "computing signature %d", i)
@@ -150,6 +153,15 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, 
 		sw.Sigs[i] = sigBytes
 	}
 	return nil
+}
+
+func contains(list []string, key string) bool {
+	for _, k := range list {
+		if k == key {
+			return true
+		}
+	}
+	return false
 }
 
 func buildSigProgram(tpl *Template, index int) []byte {

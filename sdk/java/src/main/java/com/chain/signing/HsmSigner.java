@@ -12,19 +12,22 @@ import java.net.URL;
 import java.util.*;
 
 public class HsmSigner {
-    private static Set<URL> hsmUrls = new HashSet<>();
+    private static Map<URL, List<String>> hsmXPubs = new HashMap();
 
     public static void addKey(String xpub, URL hsmUrl) {
-        hsmUrls.add(hsmUrl);
+        if (!hsmXPubs.containsKey(hsmUrl)) {
+            hsmXPubs.put(hsmUrl, new ArrayList<String>());
+        }
+        hsmXPubs.get(hsmUrl).add(xpub);
     }
 
     public static void addKey(MockHsm.Key key) {
-        hsmUrls.add(key.hsmUrl);
+        addKey(key.xpub, key.hsmUrl);
     }
 
     public static void addKeys(List<MockHsm.Key> keys) {
         for (MockHsm.Key key : keys) {
-            hsmUrls.add(key.hsmUrl);
+            addKey(key.xpub, key.hsmUrl);
         }
     }
 
@@ -33,10 +36,15 @@ public class HsmSigner {
     // step and only send txs to hsms that hold the proper key material to sign.
     public static List<Transaction.Template> sign(List<Transaction.Template> tmpls)
     throws ChainException {
-        for (URL hsmUrl : hsmUrls) {
-            Context hsm = new Context(hsmUrl);
+        for (Map.Entry<URL, List<String>> entry : hsmXPubs.entrySet()) {
+            Context hsm = new Context(entry.getKey());
             Type type = new TypeToken<ArrayList<Transaction.Template>>() {}.getType();
-            tmpls = hsm.request("sign-transaction", tmpls, type);
+
+            HashMap<String, Object> requestBody = new HashMap();
+            requestBody.put("transactions", tmpls);
+            requestBody.put("xpubs", entry.getValue());
+
+            tmpls = hsm.request("sign-transaction", requestBody, type);
         }
         return tmpls;
     }

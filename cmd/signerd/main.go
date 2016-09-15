@@ -170,11 +170,14 @@ func logHTTPError(ctx context.Context, err error) {
 	log.Write(ctx, keyvals...)
 }
 
-func signTemplates(ctx context.Context, txs []*txbuilder.Template) interface{} {
-	log.Write(ctx, "at", "signTemplates", "n", len(txs))
+func signTemplates(ctx context.Context, x struct {
+	Txs   []*txbuilder.Template `json:"transactions"`
+	XPubs []string              `json:"xpubs"`
+}) interface{} {
+	log.Write(ctx, "at", "signTemplates", "n", len(x.Txs))
 	var resp []interface{}
-	for _, tpl := range txs {
-		err := signTemplate(ctx, tpl)
+	for _, tpl := range x.Txs {
+		err := txbuilder.Sign(ctx, tpl, x.XPubs, clientSigner)
 		if err != nil {
 			logHTTPError(ctx, err)
 			info, _ := errInfo(err)
@@ -188,10 +191,6 @@ func signTemplates(ctx context.Context, txs []*txbuilder.Template) interface{} {
 
 func clientSigner(_ context.Context, _ string, path []uint32, data [32]byte) ([]byte, error) {
 	return client.Sign(kd, path, data)
-}
-
-func signTemplate(ctx context.Context, tpl *txbuilder.Template) error {
-	return txbuilder.Sign(ctx, tpl, clientSigner)
 }
 
 // TODO(kr): more flexible/secure authentication (e.g. kerberos style)
