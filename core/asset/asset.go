@@ -177,8 +177,8 @@ func Archive(ctx context.Context, id bc.AssetID, alias string) error {
 }
 
 // insertAsset adds the asset to the database. If the asset has a client token,
-// and there already exists an asset for the same issuer node with that client
-// token, insertAsset will lookup and return the existing asset instead.
+// and there already exists an asset with that client token, insertAsset will
+// lookup and return the existing asset instead.
 func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset, error) {
 	defer metrics.RecordElapsed(time.Now())
 	const q = `
