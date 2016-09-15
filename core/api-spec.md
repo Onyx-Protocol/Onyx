@@ -381,6 +381,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
       "asset_id": "125B4E...",
       "asset_alias": "...",
       "asset_tags": {},
+      "amount": 5000,
       "issuance_program": ...,
       "reference_data": {"details": "..."},
       "asset_definition": "..."
