@@ -101,36 +101,6 @@ func createTestControlProgram(ctx context.Context, t testing.TB, accountID strin
 	return acp
 }
 
-func TestSetTags(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	account := createTestAccount(ctx, t, "some-alias", nil)
-	newTags := map[string]interface{}{"someTag": "taggityTag"}
-
-	// first, set by ID
-	got, err := SetTags(ctx, account.ID, "", newTags)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	account.Tags = newTags
-	if !reflect.DeepEqual(got, account) {
-		t.Errorf("got SetTags=%v, want %v", got, account)
-	}
-
-	newTags = map[string]interface{}{"someTag": "something different"}
-	// next, set by alias
-	got, err = SetTags(ctx, "", "some-alias", newTags)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	account.Tags = newTags
-	if !reflect.DeepEqual(got, account) {
-		t.Errorf("got SetTags=%v, want %v", got, account)
-	}
-}
-
 func TestFindByID(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)

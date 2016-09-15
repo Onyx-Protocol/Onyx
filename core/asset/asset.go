@@ -96,41 +96,6 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 	return asset, nil
 }
 
-// SetTags sets tags on the given asset and its associated signer.
-func SetTags(ctx context.Context, id bc.AssetID, alias string, newTags map[string]interface{}) (*Asset, error) {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "set asset tags")
-	}
-	defer dbtx.Rollback(ctx)
-
-	a, err := lookupAsset(ctx, id, alias)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-
-	err = insertAssetTags(ctx, a.AssetID, newTags)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	a.Tags = newTags
-
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "committing set asset tags dbtx")
-	}
-
-	// Note, this should be okay to do outside of the SQL txn
-	// because each step should be idempotent. Also, we have no
-	// guarantee that the query engine uses the same db handle.
-	err = indexAnnotatedAsset(ctx, a)
-	if err != nil {
-		return nil, errors.Wrap(err, "indexing annotated asset")
-	}
-
-	return a, nil
-}
-
 // FindByID retrieves an Asset record along with its signer, given an assetID.
 func FindByID(ctx context.Context, id bc.AssetID) (*Asset, error) {
 	return lookupAsset(ctx, id, "")

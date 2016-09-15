@@ -43,28 +43,6 @@ public class Account {
     public String message;
     public String detail;
 
-    public Account setTags(Map<String, Object> tags) {
-        this.tags = tags;
-        return this;
-    }
-
-    public Account addTag(String key, Object value) {
-        this.tags.put(key, value);
-        return this;
-    }
-
-    public Account removeTag(String key) {
-        this.tags.remove(key);
-        return this;
-    }
-
-    public Account updateTags(Context ctx) throws ChainException {
-        HashMap<String, Object> requestBody = new HashMap<>();
-        requestBody.put("account_id", this.id);
-        requestBody.put("tags", this.tags);
-        return ctx.request("set-account-tags", requestBody, Account.class);
-    }
-
     public static class Items extends PagedItems<Account> {
         public Items getPage() throws ChainException {
             Items items = this.context.request("list-accounts", this.query, Items.class);

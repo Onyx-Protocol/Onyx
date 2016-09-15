@@ -79,45 +79,6 @@ func Create(ctx context.Context, xpubs []string, quorum int, alias string, tags 
 	return account, nil
 }
 
-// SetTags updates the tags on the provided Account.
-func SetTags(ctx context.Context, id, alias string, tags map[string]interface{}) (*Account, error) {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "setting tags")
-	}
-	defer dbtx.Rollback(ctx)
-
-	var acc *Account
-	if id != "" {
-		acc, err = FindByID(ctx, id)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-	} else {
-		acc, err = FindByAlias(ctx, alias)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-	}
-
-	err = insertAccountTags(ctx, acc.ID, tags)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "committing create account dbtx")
-	}
-	acc.Tags = tags
-
-	err = indexAnnotatedAccount(ctx, acc)
-	if err != nil {
-		return nil, errors.Wrap(err, "indexing annotated account")
-	}
-
-	return acc, nil
-}
-
 // insertAccountTags inserts a set of tags for the given identifier
 // It must take place inside a database transaction.
 func insertAccountTags(ctx context.Context, id string, tags map[string]interface{}) error {

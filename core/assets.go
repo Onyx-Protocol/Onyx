@@ -12,31 +12,6 @@ import (
 	"chain/protocol/bc"
 )
 
-// POST /update-asset
-func setAssetTags(ctx context.Context, in struct {
-	AssetID string `json:"asset_id"`
-	Alias   string `json:"alias"`
-	Tags    map[string]interface{}
-}) (*asset.Asset, error) {
-	var decodedAssetID bc.AssetID
-	if in.AssetID != "" {
-		err := decodedAssetID.UnmarshalText([]byte(in.AssetID))
-		if err != nil {
-			return nil, errors.WithDetailf(httpjson.ErrBadRequest, "%q is an invalid asset ID", in.AssetID)
-		}
-
-		if in.Alias != "" {
-			return nil, errors.Wrap(httpjson.ErrBadRequest, "cannot supply both asset_id and alias")
-		}
-	}
-
-	if in.AssetID == "" && in.Alias == "" {
-		return nil, errors.Wrap(httpjson.ErrBadRequest, "must supply either asset_id or alias")
-	}
-
-	return asset.SetTags(ctx, decodedAssetID, in.Alias, in.Tags)
-}
-
 type assetOrError struct {
 	*asset.Asset
 	*detailedError

@@ -95,12 +95,10 @@ func (a *api) handler() http.Handler {
 
 	// Accounts
 	m.Handle("/create-account", jsonHandler(createAccount))
-	m.Handle("/set-account-tags", jsonHandler(setAccountTags))
 	m.Handle("/archive-account", jsonHandler(archiveAccount))
 
 	// Assets
 	m.Handle("/create-asset", jsonHandler(a.createAsset))
-	m.Handle("/set-asset-tags", jsonHandler(setAssetTags))
 	m.Handle("/archive-asset", jsonHandler(archiveAsset))
 
 	// Transactions

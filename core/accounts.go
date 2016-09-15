@@ -47,23 +47,6 @@ func createAccount(ctx context.Context, ins []struct {
 	return responses
 }
 
-// POST /set-account-tags
-func setAccountTags(ctx context.Context, in struct {
-	AccountID string `json:"account_id"`
-	Alias     string `json:"alias"`
-	Tags      map[string]interface{}
-}) (interface{}, error) {
-	if in.AccountID != "" && in.Alias != "" {
-		return nil, errors.Wrap(httpjson.ErrBadRequest, "cannot supply both account_id and alias")
-	}
-
-	if in.AccountID == "" && in.Alias == "" {
-		return nil, errors.Wrap(httpjson.ErrBadRequest, "must supply either account_id or alias")
-	}
-
-	return account.SetTags(ctx, in.AccountID, in.Alias, in.Tags)
-}
-
 // POST /archive-account
 func archiveAccount(ctx context.Context, in struct {
 	AccountID string `json:"account_id"`
