@@ -4,7 +4,6 @@ import Balance from './balance'
 import Context from './context'
 import ControlProgram from './controlProgram'
 import Core from './core'
-import Index from './indexQuery'
 import MockHsm from './mockHsm'
 import Transaction from './transaction'
 import Unspent from './unspent'
@@ -16,7 +15,6 @@ export default {
   Context,
   Core,
   ControlProgram,
-  Index,
   MockHsm,
   Transaction,
   Unspent

@@ -8,8 +8,6 @@ import AccountList from './containers/Accounts/List'
 import NewAccount from './containers/Accounts/New'
 import AssetList from './containers/Assets/List'
 import NewAsset from './containers/Assets/New'
-import IndexList from './containers/Indexes/List'
-import NewIndex from './containers/Indexes/New'
 import MockHsmList from './containers/MockHsm/List'
 import NewKey from './containers/MockHsm/New'
 import CoreIndex from './containers/Core'
@@ -47,12 +45,6 @@ export default ({
       component: Section,
       indexRoute: { component: AssetList },
       childRoutes: [{ path: 'create', component: NewAsset }]
-    },
-    {
-      path: 'indexes',
-      component: Section,
-      indexRoute: { component: IndexList },
-      childRoutes: [{ path: 'create', component: NewIndex }]
     },
     {
       path: 'mockhsms',

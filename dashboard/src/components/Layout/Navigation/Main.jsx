@@ -58,12 +58,6 @@ class Navigation extends React.Component {
 
               <ul className={`dropdown-menu ${styles.dropdown}`}>
                 <li>
-                  <Link to={`/indexes`} activeClassName={styles.active}>
-                    <span className={`glyphicon glyphicon-eye-open ${styles.glyphicon}`} />
-                    Indexes
-                  </Link>
-                </li>
-                <li>
                   <Link to={`/mockhsms`} activeClassName={styles.active}>
                     <span className={`glyphicon glyphicon-lock ${styles.glyphicon}`} />
                     Mock HSM

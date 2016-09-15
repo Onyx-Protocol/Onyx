@@ -9,7 +9,6 @@ import unspent from './unspent'
 import balance from './balance'
 import account from './account'
 import asset from './asset'
-import index from './indexQuery'
 import mockhsm from './mockhsm'
 
 export default combineReducers({
@@ -22,6 +21,5 @@ export default combineReducers({
   balance,
   asset,
   account,
-  index,
   mockhsm
 })

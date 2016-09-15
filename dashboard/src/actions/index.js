@@ -5,7 +5,6 @@ import unspent from './unspent'
 import balance from './balance'
 import account from './account'
 import asset from './asset'
-import index from './indexQuery'
 import mockhsm from './mockhsm'
 import core from './core'
 
@@ -17,7 +16,6 @@ export default {
   balance,
   account,
   asset,
-  index,
   mockhsm,
   core
 }
