@@ -32,6 +32,7 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [List Balances](#list-balances)
   * [List Unspent Outputs](#list-unspent-outputs)
 * [Cursors](#cursors)
+  * [Cursor Object](#cursor-object)
   * [Create Cursor](#create-cursor)
   * [Get Cursor](#get-cursor)
   * [Update Cursor](#update-cursor)
@@ -733,8 +734,8 @@ To process new transactions, a client should:
   "id": "...",
   "alias": "...",
   "filter": "...",
-  "after": "...",
   "order": "..."
+  "after": "...",
 }
 ```
 
