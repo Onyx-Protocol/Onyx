@@ -3,6 +3,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -16,6 +17,8 @@ import (
 const (
 	defGenericPageSize = 100
 )
+
+var errNotFound = errors.New("not found")
 
 // Handler returns a handler that serves the Chain HTTP API.
 func Handler(
@@ -126,6 +129,8 @@ func (a *api) handler() http.Handler {
 
 	// V3 DEPRECATED
 	m.Handle("/v3/transact/cancel-reservation", jsonHandler(cancelReservation))
+
+	m.Handle("/", alwaysError(errNotFound))
 
 	return m
 }

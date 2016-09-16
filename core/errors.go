@@ -44,6 +44,7 @@ var (
 		errBadReqHeader:          errorInfo{400, "CH004", "Invalid request header"},
 		asset.ErrArchived:        errorInfo{400, "CH005", "Item has been archived"},
 		signers.ErrArchived:      errorInfo{400, "CH005", "Item has been archived"},
+		errNotFound:              errorInfo{404, "CH006", "Not found"},
 
 		// Core error namespace
 		errUnconfigured:              errorInfo{400, "CH100", "This core still needs to be configured"},
