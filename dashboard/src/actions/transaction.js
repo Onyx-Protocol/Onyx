@@ -61,7 +61,17 @@ form.submitForm = (data) => function(dispatch) {
   return new chain.Transaction(data)
     .build(context)
     .then((template) => {
-      return chain.MockHsm.sign([template], context)
+      const keys = []
+
+      template.signing_instructions.forEach((instruction) => {
+        instruction.witness_components.forEach((component) => {
+          component.keys.forEach((key) => {
+            keys.push(key.xpub)
+          })
+        })
+      })
+
+      return chain.MockHsm.sign([template], keys, context)
     })
     .then((signedTemplates) => {
       return signedTemplates[0].submit(context)
