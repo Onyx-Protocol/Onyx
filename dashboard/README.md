@@ -16,11 +16,43 @@ Install dependencies:
 npm install
 ```
 
+Start the development server with
+
+```
+npm start
+```
+
+By default, the development server uses the following environment variables
+with default values to connect to a local Chain Core instance:
+
+```
+API_URL=http://localhost:3000/api
+PROXY_API_HOST=http://localhost:8080
+```
+
 #### Tests
 
 ```
 npm test
 ```
+
+### React + Redux
+
+#### ES6
+
+Babel is used to transpile the latest ES6 syntax into a format understood by
+both Node.js and browsers. To get an ES6-compatible REPL (or run a one-off script)
+you can use the `babel-node` command:
+
+`$(npm bin)/babel-node`
+
+#### Redux Actions
+
+To inspect and debug Redux actions, we recommend the "Redux DevTools" Chrome
+extension:
+
+https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd
+
 
 #### Creating new components
 
@@ -43,28 +75,6 @@ with `MyComponent.scss` imported as a stylesheet into `MyComponent.jsx`.
 Additionally, if there is an `index.js` file in `src/components/Common`, it
 will appropriately add the newly created component to the index exports.
 
-#### Working with Redux
-
-To inspect and debug Redux actions, we recommend the "Redux DevTools" Chrome
-extension:
-
-https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd
-
-#### Running the development server
-
-To connect to Chain Core in development, we use a proxy server to provide a
-simpler local experience without running into CORs issues.
-
-To start the server in proxy mode, you can use the following example command:
-
-```
-API_URL=http://localhost:3000/api PROXY_API_HOST=http://localhost:8080 npm start
-```
-
-Then navigate to http://localhost:3000
-
-_NOTE: the `/api` suffix on the `API_URL` variable is required for properly
-scoping proxied calls._
 
 ## Production
 
