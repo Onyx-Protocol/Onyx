@@ -62,27 +62,6 @@ func materializeWitnesses(txTemplate *Template) error {
 	return nil
 }
 
-type DataWitness []byte
-
-func (_ DataWitness) Sign(_ context.Context, _ *Template, _ int, _ []string, _ func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
-	return nil
-}
-
-func (d DataWitness) Materialize(_ *Template, _ int) ([][]byte, error) {
-	return [][]byte{d}, nil
-}
-
-func (d DataWitness) MarshalJSON() ([]byte, error) {
-	obj := struct {
-		Type string             `json:"type"`
-		Data chainjson.HexBytes `json:"data"`
-	}{
-		Type: "data",
-		Data: chainjson.HexBytes(d),
-	}
-	return json.Marshal(obj)
-}
-
 type (
 	SignatureWitness struct {
 		// Quorum is the number of signatures required.
@@ -249,10 +228,6 @@ func (sw SignatureWitness) MarshalJSON() ([]byte, error) {
 		Sigs:   sw.Sigs,
 	}
 	return json.Marshal(obj)
-}
-
-func (si *SigningInstruction) AddWitnessData(data []byte) {
-	si.WitnessComponents = append(si.WitnessComponents, DataWitness(data))
 }
 
 func (si *SigningInstruction) AddWitnessKeys(keys []KeyID, quorum int) {

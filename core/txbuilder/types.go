@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
 )
@@ -66,15 +65,6 @@ func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 		}
 		var component WitnessComponent
 		switch t.Type {
-		case "data":
-			var d struct {
-				Data chainjson.HexBytes `json:"data"`
-			}
-			err = json.Unmarshal(w, &d)
-			if err != nil {
-				return err
-			}
-			component = DataWitness(d.Data)
 		case "signature":
 			var s SignatureWitness
 			err = json.Unmarshal(w, &s)

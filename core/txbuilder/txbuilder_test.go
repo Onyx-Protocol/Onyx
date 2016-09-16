@@ -32,11 +32,7 @@ func (t testAction) Build(ctx context.Context, _ time.Time) (
 	error,
 ) {
 	in := bc.NewSpendInput([32]byte{255}, 0, nil, t.AssetID, t.Amount, nil, nil)
-	tplIn := &SigningInstruction{
-		WitnessComponents: []WitnessComponent{
-			DataWitness("redeem"),
-		},
-	}
+	tplIn := &SigningInstruction{}
 	change := bc.NewTxOutput(t.AssetID, t.Amount, []byte("change"), nil)
 	return []*bc.TxInput{in}, []*bc.TxOutput{change}, []*SigningInstruction{tplIn}, nil
 }
@@ -88,9 +84,7 @@ func TestBuild(t *testing.T) {
 			},
 		},
 		SigningInstructions: []*SigningInstruction{{
-			WitnessComponents: []WitnessComponent{
-				DataWitness("redeem"),
-			},
+			WitnessComponents: []WitnessComponent{},
 		}},
 	}
 
@@ -125,7 +119,6 @@ func TestMaterializeWitnesses(t *testing.T) {
 		},
 	}
 
-	witnessData := mustDecodeHex("5221033dda0a756db51f76a4f394161614f01df4061644c514fde3994adbe4a3a2d21621038a0f0a8d593773abcd8c878f8777c57986f9f84886c8dde0cf00fdc2c89f0c592103b9e805011523bb28eedb3fcfff8924684a91116a76408fe0972805295e50e15d53ae")
 	prog, err := vm.Compile(fmt.Sprintf("MAXTIME 0x804cf05736 LESSTHAN VERIFY 0 5 0x%x 1 0x76a914c5d128911c28776f56baaac550963f7b88501dc388c0 FINDOUTPUT", assetID[:]))
 	h := sha3.Sum256(prog)
 	sig := ed25519.Sign(privkey.Key, h[:])
@@ -146,7 +139,6 @@ func TestMaterializeWitnesses(t *testing.T) {
 					Program: prog,
 					Sigs:    []json.HexBytes{sig},
 				},
-				DataWitness(witnessData),
 			},
 		}},
 	}
@@ -154,7 +146,6 @@ func TestMaterializeWitnesses(t *testing.T) {
 	want := [][]byte{
 		sig,
 		prog,
-		witnessData,
 	}
 
 	err = materializeWitnesses(tpl)
