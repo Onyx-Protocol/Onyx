@@ -54,7 +54,7 @@ func (s *Signer) String() string {
 // This function fails if this node has ever signed a block at the
 // same height as b.
 func (s *Signer) ValidateAndSignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
-	err := s.c.WaitForBlockSoon(b.Height - 1)
+	err := s.c.WaitForBlockSoon(ctx, b.Height-1)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", b.Height-1)
 	}

@@ -166,14 +166,26 @@ func (c *Chain) AddBlockCallback(f BlockCallback) {
 
 // WaitForBlockSoon waits for the block at the given height,
 // but it is an error to wait for a block far in the future.
+// WaitForBlockSoon will timeout if the context times out.
 // To wait unconditionally, the caller should use WaitForBlock.
-func (c *Chain) WaitForBlockSoon(height uint64) error {
+func (c *Chain) WaitForBlockSoon(ctx context.Context, height uint64) error {
 	const slop = 3
 	if height > c.Height()+slop {
 		return ErrTheDistantFuture
 	}
-	c.WaitForBlock(height)
-	return nil
+
+	done := make(chan struct{}, 1)
+	go func() {
+		c.WaitForBlock(height)
+		done <- struct{}{}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-done:
+		return nil
+	}
 }
 
 // WaitForBlock waits for the block at the given height.
