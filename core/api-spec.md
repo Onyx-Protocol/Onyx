@@ -120,7 +120,7 @@ POST /mockhsm/list-keys
 #### Endpoint
 
 ```
-POST mockhsm/sign-transaction
+POST /mockhsm/sign-transaction
 ```
 
 #### Request

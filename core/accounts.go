@@ -11,6 +11,15 @@ import (
 	"chain/net/http/httpjson"
 )
 
+// This type enforces JSON field ordering in API output.
+type accountResponse struct {
+	ID     interface{} `json:"id"`
+	Alias  interface{} `json:"alias"`
+	XPubs  interface{} `json:"xpubs"`
+	Quorum interface{} `json:"quorum"`
+	Tags   interface{} `json:"tags"`
+}
+
 // POST /create-account
 func createAccount(ctx context.Context, ins []struct {
 	XPubs  []string
@@ -38,7 +47,14 @@ func createAccount(ctx context.Context, ins []struct {
 				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)
 			} else {
-				responses[i] = acc
+				r := &accountResponse{
+					ID:     acc.ID,
+					Alias:  acc.Alias,
+					XPubs:  acc.XPubs,
+					Quorum: acc.Quorum,
+					Tags:   acc.Tags,
+				}
+				responses[i] = r
 			}
 		}(i)
 	}

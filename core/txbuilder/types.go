@@ -37,8 +37,8 @@ func (t *Template) Hash(idx int, hashType bc.SigHashType) bc.Hash {
 
 // SigningInstruction gives directions for signing inputs in a TxTemplate.
 type SigningInstruction struct {
+	Position uint32 `json:"position"`
 	bc.AssetAmount
-	Position          uint32             `json:"position"`
 	WitnessComponents []WitnessComponent `json:"witness_components,omitempty"`
 }
 

@@ -23,8 +23,8 @@ type HSM struct {
 }
 
 type XPub struct {
-	XPub  *hd25519.XPub `json:"xpub"`
 	Alias *string       `json:"alias"`
+	XPub  *hd25519.XPub `json:"xpub"`
 }
 
 func New(db pg.DB) *HSM {

@@ -47,11 +47,15 @@ func (ind *Indexer) Balances(ctx context.Context, p filter.Predicate, vals []int
 		for i, f := range sumBy {
 			sumByValues[f.String()] = scanArguments[i+1]
 		}
-		item := map[string]interface{}{
-			"amount": balance,
+		// This struct enforces JSON field ordering in API output.
+		item := struct {
+			SumBy  map[string]interface{} `json:"sum_by,omitempty"`
+			Amount uint64                 `json:"amount"`
+		}{
+			Amount: balance,
 		}
 		if len(sumByValues) > 0 {
-			item["sum_by"] = sumByValues
+			item.SumBy = sumByValues
 		}
 		balances = append(balances, item)
 	}

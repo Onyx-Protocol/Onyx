@@ -2,6 +2,8 @@ package core
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"chain/core/query"
@@ -9,6 +11,47 @@ import (
 	"chain/errors"
 	"chain/net/http/httpjson"
 	"chain/protocol/bc"
+)
+
+// These types enforce the ordering of JSON fields in API output.
+type (
+	txinResp struct {
+		Action          interface{} `json:"action"`
+		AssetID         interface{} `json:"asset_id"`
+		AssetAlias      interface{} `json:"asset_alias"`
+		AssetTags       interface{} `json:"asset_tags"`
+		Amount          interface{} `json:"amount"`
+		IssuanceProgram interface{} `json:"issuance_program"`
+		SpentOutput     interface{} `json:"spent_output"`
+		AccountID       interface{} `json:"account_id"`
+		AccountAlias    interface{} `json:"account_alias"`
+		AccountTags     interface{} `json:"account_tags"`
+		ReferenceData   interface{} `json:"reference_data"`
+		AssetDefinition interface{} `json:"asset_definition"`
+	}
+	txoutResp struct {
+		Action         interface{} `json:"action"`
+		Position       interface{} `json:"position"`
+		AssetID        interface{} `json:"asset_id"`
+		AssetAlias     interface{} `json:"asset_alias"`
+		AssetTags      interface{} `json:"asset_tags"`
+		Amount         interface{} `json:"asset_amount"`
+		AccountID      interface{} `json:"account_id"`
+		AccountAlias   interface{} `json:"account_alias"`
+		AccountTags    interface{} `json:"account_tags"`
+		ControlProgram interface{} `json:"control_program"`
+		ReferenceData  interface{} `json:"reference_data"`
+	}
+	txResp struct {
+		ID            interface{} `json:"id"`
+		Timestamp     interface{} `json:"timestamp"`
+		BlockID       interface{} `json:"block_id"`
+		BlockHeight   interface{} `json:"block_height"`
+		Position      interface{} `json:"position"`
+		ReferenceData interface{} `json:"reference_data"`
+		Inputs        interface{} `json:"inputs"`
+		Outputs       interface{} `json:"outputs"`
+	}
 )
 
 // listTransactions is an http handler for listing transactions matching
@@ -55,11 +98,81 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 		return result, errors.Wrap(err, "running tx query")
 	}
 
+	resp := make([]*txResp, 0, len(txns))
+	for _, t := range txns {
+		tjson, ok := t.(*json.RawMessage)
+		if !ok {
+			return result, fmt.Errorf("unexpected type %T in Indexer.Transactions output", t)
+		}
+		if tjson == nil {
+			return result, fmt.Errorf("unexpected nil in Indexer.Transactions output")
+		}
+		var tx map[string]interface{}
+		err = json.Unmarshal(*tjson, &tx)
+		if err != nil {
+			return result, errors.Wrap(err, "decoding Indexer.Transactions output")
+		}
+		inputs, ok := tx["inputs"].([]map[string]interface{})
+		if !ok {
+			return result, fmt.Errorf("unexpected type %T for inputs in Indexer.Transactions output", tx["inputs"])
+		}
+		outputs, ok := tx["outputs"].([]map[string]interface{})
+		if !ok {
+			return result, fmt.Errorf("unexpected type %T for outputs in Indexer.Transactions output", tx["outputs"])
+		}
+		inResps := make([]*txinResp, 0, len(inputs))
+		for _, in := range inputs {
+			r := &txinResp{
+				Action:          in["action"],
+				AssetID:         in["asset_id"],
+				AssetAlias:      in["asset_alias"],
+				AssetTags:       in["asset_tags"],
+				Amount:          in["amount"],
+				IssuanceProgram: in["issuance_program"],
+				SpentOutput:     in["spent_output"],
+				AccountID:       in["account_id"],
+				AccountAlias:    in["account_alias"],
+				AccountTags:     in["account_tags"],
+				ReferenceData:   in["reference_data"],
+				AssetDefinition: in["asset_definition"],
+			}
+			inResps = append(inResps, r)
+		}
+		outResps := make([]*txoutResp, 0, len(outputs))
+		for _, out := range outputs {
+			r := &txoutResp{
+				Action:         out["action"],
+				Position:       out["position"],
+				AssetID:        out["asset_id"],
+				AssetAlias:     out["asset_alias"],
+				AssetTags:      out["asset_tags"],
+				Amount:         out["asset_amount"],
+				AccountID:      out["account_id"],
+				AccountAlias:   out["account_alias"],
+				AccountTags:    out["account_tags"],
+				ControlProgram: out["control_program"],
+				ReferenceData:  out["reference_data"],
+			}
+			outResps = append(outResps, r)
+		}
+		r := &txResp{
+			ID:            tx["id"],
+			Timestamp:     tx["timestamp"],
+			BlockID:       tx["block_id"],
+			BlockHeight:   tx["block_height"],
+			Position:      tx["position"],
+			ReferenceData: tx["reference_data"],
+			Inputs:        inResps,
+			Outputs:       outResps,
+		}
+		resp = append(resp, r)
+	}
+
 	out := in
 	out.After = nextAfter.String()
 	return page{
-		Items:    httpjson.Array(txns),
-		LastPage: len(txns) < limit,
+		Items:    httpjson.Array(resp),
+		LastPage: len(resp) < limit,
 		Next:     out,
 	}, nil
 }
@@ -84,12 +197,24 @@ func (a *api) listAccounts(ctx context.Context, in requestQuery) (page, error) {
 		return page{}, errors.Wrap(err, "running acc query")
 	}
 
+	result := make([]*accountResponse, 0, len(accounts))
+	for _, a := range accounts {
+		r := &accountResponse{
+			ID:     a["id"],
+			Alias:  a["alias"],
+			XPubs:  a["xpubs"],
+			Quorum: a["quorum"],
+			Tags:   a["tags"],
+		}
+		result = append(result, r)
+	}
+
 	// Pull in the accounts by the IDs
 	out := in
 	out.After = after
 	return page{
-		Items:    httpjson.Array(accounts),
-		LastPage: len(accounts) < limit,
+		Items:    httpjson.Array(result),
+		LastPage: len(result) < limit,
 		Next:     out,
 	}, nil
 }
@@ -127,6 +252,22 @@ func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, e
 	return result, nil
 }
 
+// This type enforces the ordering of JSON fields in API output.
+type utxoResp struct {
+	Action         interface{} `json:"action"`
+	TransactionID  interface{} `json:"transaction_id"`
+	Position       interface{} `json:"position"`
+	AssetID        interface{} `json:"asset_id"`
+	AssetAlias     interface{} `json:"asset_alias"`
+	AssetTags      interface{} `json:"asset_tags"`
+	Amount         interface{} `json:"asset_amount"`
+	AccountID      interface{} `json:"account_id"`
+	AccountAlias   interface{} `json:"account_alias"`
+	AccountTags    interface{} `json:"account_tags"`
+	ControlProgram interface{} `json:"control_program"`
+	ReferenceData  interface{} `json:"reference_data"`
+}
+
 // POST /list-unspent-outputs
 func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result page, err error) {
 	if in.TimestampMS == 0 {
@@ -152,11 +293,42 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 		return result, errors.Wrap(err, "querying outputs")
 	}
 
+	resp := make([]*utxoResp, 0, len(outputs))
+	for _, o := range outputs {
+		ojson, ok := o.(*json.RawMessage)
+		if !ok {
+			return result, fmt.Errorf("unexpected type %T in Indexer.Outputs output", o)
+		}
+		if ojson == nil {
+			return result, fmt.Errorf("unexpected nil in Indexer.Outputs output")
+		}
+		var out map[string]interface{}
+		err = json.Unmarshal(*ojson, &out)
+		if err != nil {
+			return result, errors.Wrap(err, "decoding Indexer.Outputs output")
+		}
+		r := &utxoResp{
+			Action:         out["action"],
+			TransactionID:  out["transaction_id"],
+			Position:       out["position"],
+			AssetID:        out["asset_id"],
+			AssetAlias:     out["asset_alias"],
+			AssetTags:      out["asset_tags"],
+			Amount:         out["asset_amount"],
+			AccountID:      out["account_id"],
+			AccountAlias:   out["account_alias"],
+			AccountTags:    out["account_tags"],
+			ControlProgram: out["control_program"],
+			ReferenceData:  out["reference_data"],
+		}
+		resp = append(resp, r)
+	}
+
 	outQuery := in
 	outQuery.After = nextAfter.String()
 	return page{
-		Items:    outputs,
-		LastPage: len(outputs) < limit,
+		Items:    resp,
+		LastPage: len(resp) < limit,
 		Next:     outQuery,
 	}, nil
 }
@@ -182,11 +354,28 @@ func (a *api) listAssets(ctx context.Context, in requestQuery) (page, error) {
 		return page{}, errors.Wrap(err, "running asset query")
 	}
 
+	result := make([]*assetResponse, 0, len(assets))
+	for _, a := range assets {
+		r := &assetResponse{
+			ID:              a["id"],
+			IssuanceProgram: a["issuance_program"],
+			XPubs:           a["xpubs"],
+			Quorum:          a["quorum"],
+			Definition:      a["definition"],
+			Tags:            a["tags"],
+			Origin:          a["origin"],
+		}
+		if alias, ok := a["alias"].(string); ok && alias != "" {
+			r.Alias = &alias
+		}
+		result = append(result, r)
+	}
+
 	out := in
 	out.After = after
 	return page{
-		Items:    httpjson.Array(assets),
-		LastPage: len(assets) < limit,
+		Items:    httpjson.Array(result),
+		LastPage: len(result) < limit,
 		Next:     out,
 	}, nil
 }

@@ -12,17 +12,30 @@ import (
 	"chain/protocol/bc"
 )
 
-type assetOrError struct {
-	*asset.Asset
-	*detailedError
-}
+type (
+	// This type enforces JSON field ordering in API output.
+	assetResponse struct {
+		ID              interface{} `json:"id"`
+		Alias           *string     `json:"alias"`
+		IssuanceProgram interface{} `json:"issuance_program"`
+		XPubs           interface{} `json:"xpubs"`
+		Quorum          interface{} `json:"quorum"`
+		Definition      interface{} `json:"definition"`
+		Tags            interface{} `json:"tags"`
+		Origin          interface{} `json:"origin"`
+	}
+	assetOrError struct {
+		*assetResponse
+		*detailedError
+	}
+)
 
 // POST /create-asset
 func (a *api) createAsset(ctx context.Context, ins []struct {
+	Alias      *string
 	XPubs      []string
 	Quorum     int
 	Definition map[string]interface{}
-	Alias      *string
 	Tags       map[string]interface{}
 
 	// ClientToken is the application's unique token for the asset. Every asset
@@ -60,7 +73,17 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 				res, _ := errInfo(err)
 				responses[i] = assetOrError{detailedError: &res}
 			} else {
-				responses[i] = assetOrError{Asset: asset}
+				r := &assetResponse{
+					ID:              asset.AssetID,
+					Alias:           asset.Alias,
+					IssuanceProgram: asset.IssuanceProgram,
+					XPubs:           asset.Signer.XPubs,
+					Quorum:          asset.Signer.Quorum,
+					Definition:      asset.Definition,
+					Tags:            asset.Tags,
+					Origin:          "local",
+				}
+				responses[i] = assetOrError{assetResponse: r}
 			}
 		}(i)
 	}

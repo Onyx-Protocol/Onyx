@@ -65,6 +65,13 @@ type api struct {
 
 // Used as a request object for api queries
 type requestQuery struct {
+	Filter       string        `json:"filter,omitempty"`
+	FilterParams []interface{} `json:"filter_params,omitempty"`
+	SumBy        []string      `json:"sum_by,omitempty"`
+
+	// This is used by /list-transactions.
+	Order string `json:"order,omitempty"`
+
 	After string `json:"after"`
 
 	// These two are used for time-range queries like /list-transactions
@@ -74,20 +81,13 @@ type requestQuery struct {
 	// This is used for point-in-time queries like /list-balances
 	// TODO(bobg): Different request structs for endpoints with different needs
 	TimestampMS uint64 `json:"timestamp,omitempty"`
-
-	// This is used by /list-transactions.
-	Order string `json:"order,omitempty"`
-
-	Filter       string        `json:"filter,omitempty"`
-	FilterParams []interface{} `json:"filter_params,omitempty"`
-	SumBy        []string      `json:"sum_by,omitempty"`
 }
 
 // Used as a response object for api queries
 type page struct {
 	Items    interface{}  `json:"items"`
-	LastPage bool         `json:"last_page"`
 	Next     requestQuery `json:"next"`
+	LastPage bool         `json:"last_page"`
 }
 
 func (a *api) handler() http.Handler {
