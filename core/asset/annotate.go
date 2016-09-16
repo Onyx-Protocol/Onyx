@@ -43,8 +43,20 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 		assetIDStrs = append(assetIDStrs, assetIDStr)
 	}
 	tagsByAssetIDStr := make(map[string]map[string]interface{}, len(assetIDStrs))
-	err := pg.ForQueryRows(ctx, `SELECT asset_id, tags FROM asset_tags WHERE asset_id IN (SELECT unnest($1::text[]))`, pq.StringArray(assetIDStrs),
-		func(assetIDStr string, tagsBlob []byte) error {
+	aliasesByAssetIDStr := make(map[string]string, len(assetIDStrs))
+	localByAssetIDStr := make(map[string]bool, len(assetIDStrs))
+	const q = `
+		SELECT id, COALESCE(alias, ''), signer_id IS NOT NULL, tags
+		FROM assets
+		LEFT JOIN asset_tags ON asset_id=id
+		WHERE id IN (SELECT unnest($1::text[]))
+	`
+	err := pg.ForQueryRows(ctx, q, pq.StringArray(assetIDStrs),
+		func(assetIDStr, alias string, local bool, tagsBlob []byte) error {
+			if alias != "" {
+				aliasesByAssetIDStr[assetIDStr] = alias
+			}
+			localByAssetIDStr[assetIDStr] = local
 			if len(tagsBlob) == 0 {
 				return nil
 			}
@@ -58,20 +70,7 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 		},
 	)
 	if err != nil {
-		return errors.Wrap(err, "querying asset tags")
-	}
-
-	// Look up all the asset aliases for all applicable assets.
-	aliasesByAssetIDStr := make(map[string]string, len(assetIDStrs))
-	const aliasQ = `
-		SELECT id, alias FROM assets
-		WHERE alias IS NOT NULL AND id IN (SELECT unnest($1::text[]))
-	`
-	err = pg.ForQueryRows(ctx, aliasQ, pq.StringArray(assetIDStrs), func(assetIDStr, alias string) {
-		aliasesByAssetIDStr[assetIDStr] = alias
-	})
-	if err != nil {
-		return errors.Wrap(err, "querying asset aliases")
+		return errors.Wrap(err, "querying assets")
 	}
 
 	// Add the asset tags to all the inputs & outputs.
@@ -99,6 +98,11 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 			if alias, ok := aliasesByAssetIDStr[assetIDStr]; ok {
 				in["asset_alias"] = alias
 			}
+			if localByAssetIDStr[assetIDStr] {
+				in["asset_origin"] = "local"
+			} else {
+				in["asset_origin"] = "external"
+			}
 		}
 
 		outs := tx["outputs"].([]interface{}) // error check happened above
@@ -113,6 +117,11 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 			}
 			if alias, ok := aliasesByAssetIDStr[assetIDStr]; ok {
 				out["asset_alias"] = alias
+			}
+			if localByAssetIDStr[assetIDStr] {
+				out["asset_origin"] = "local"
+			} else {
+				out["asset_origin"] = "external"
 			}
 		}
 	}

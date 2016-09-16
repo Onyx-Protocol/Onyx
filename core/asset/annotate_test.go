@@ -57,30 +57,36 @@ func TestAnnotateTxs(t *testing.T) {
 		{
 			"inputs": []interface{}{
 				map[string]interface{}{
-					"asset_id":   asset1.AssetID.String(),
-					"asset_tags": interface{}(tags1),
+					"asset_id":     asset1.AssetID.String(),
+					"asset_tags":   interface{}(tags1),
+					"asset_origin": "local",
 				},
 				map[string]interface{}{
-					"asset_id":   asset2.AssetID.String(),
-					"asset_tags": interface{}(tags2),
+					"asset_id":     asset2.AssetID.String(),
+					"asset_tags":   interface{}(tags2),
+					"asset_origin": "local",
 				},
 				map[string]interface{}{
-					"asset_id":   "unknown",
-					"asset_tags": map[string]interface{}{},
+					"asset_id":     "unknown",
+					"asset_tags":   map[string]interface{}{},
+					"asset_origin": "external",
 				},
 			},
 			"outputs": []interface{}{
 				map[string]interface{}{
-					"asset_id":   asset1.AssetID.String(),
-					"asset_tags": interface{}(tags1),
+					"asset_id":     asset1.AssetID.String(),
+					"asset_tags":   interface{}(tags1),
+					"asset_origin": "local",
 				},
 				map[string]interface{}{
-					"asset_id":   asset2.AssetID.String(),
-					"asset_tags": interface{}(tags2),
+					"asset_id":     asset2.AssetID.String(),
+					"asset_tags":   interface{}(tags2),
+					"asset_origin": "local",
 				},
 				map[string]interface{}{
-					"asset_id":   "unknown",
-					"asset_tags": map[string]interface{}{},
+					"asset_id":     "unknown",
+					"asset_tags":   map[string]interface{}{},
+					"asset_origin": "external",
 				},
 			},
 		},

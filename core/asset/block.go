@@ -45,10 +45,12 @@ func indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 		"definition":       a.Definition,
 		"issuance_program": json.HexBytes(a.IssuanceProgram),
 		"tags":             a.Tags,
+		"origin":           "external",
 	}
 	if a.Signer != nil {
 		m["xpubs"] = a.Signer.XPubs
 		m["quorum"] = a.Signer.Quorum
+		m["origin"] = "local"
 	}
 	return indexer.SaveAnnotatedAsset(ctx, a.AssetID, m, a.sortID)
 }
