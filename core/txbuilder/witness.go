@@ -145,10 +145,10 @@ func contains(list []string, key string) bool {
 
 func buildSigProgram(tpl *Template, index int) []byte {
 	if tpl.Final {
-		h := tpl.Hash(index, bc.SigHashAll)
+		h := tpl.Hash(index)
 		builder := vmutil.NewBuilder()
 		builder.AddData(h[:])
-		builder.AddInt64(1).AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
+		builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
 		return builder.Program
 	}
 	constraints := make([]constraint, 0, 3+len(tpl.Transaction.Outputs))

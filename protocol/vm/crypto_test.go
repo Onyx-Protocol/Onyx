@@ -440,14 +440,13 @@ func TestCryptoOps(t *testing.T) {
 			runLimit:  50000,
 			tx:        tx,
 			sigHasher: bc.NewSigHasher(&tx.TxData),
-			dataStack: [][]byte{{byte(bc.SigHashAll)}},
 		},
 		wantVM: &virtualMachine{
-			runLimit: 49841,
+			runLimit: 49704,
 			tx:       tx,
 			dataStack: [][]byte{{
-				229, 93, 29, 146, 0, 210, 76, 184, 119, 144, 206, 162, 80, 95, 125, 125,
-				239, 185, 25, 190, 4, 197, 2, 114, 27, 237, 98, 106, 8, 68, 152, 3,
+				230, 56, 214, 217, 169, 158, 194, 90, 177, 11, 63, 105, 74, 101, 81, 80,
+				197, 22, 105, 12, 9, 72, 245, 156, 208, 156, 74, 218, 216, 46, 137, 10,
 			}},
 		},
 	}, {
@@ -456,25 +455,14 @@ func TestCryptoOps(t *testing.T) {
 			runLimit:  0,
 			tx:        tx,
 			sigHasher: bc.NewSigHasher(&tx.TxData),
-			dataStack: [][]byte{{byte(bc.SigHashAll)}},
 		},
 		wantErr: ErrRunLimitExceeded,
 	}, {
 		op: OP_TXSIGHASH,
 		startVM: &virtualMachine{
 			runLimit:  50000,
-			tx:        tx,
-			sigHasher: bc.NewSigHasher(&tx.TxData),
-			dataStack: [][]byte{},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_TXSIGHASH,
-		startVM: &virtualMachine{
-			runLimit:  50000,
 			tx:        nil,
 			sigHasher: bc.NewSigHasher(&tx.TxData),
-			dataStack: [][]byte{{byte(bc.SigHashAll)}},
 		},
 		wantErr: ErrContext,
 	}, {

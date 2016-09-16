@@ -28,11 +28,11 @@ type Template struct {
 	sigHasher *bc.SigHasher
 }
 
-func (t *Template) Hash(idx int, hashType bc.SigHashType) bc.Hash {
+func (t *Template) Hash(idx int) bc.Hash {
 	if t.sigHasher == nil {
 		t.sigHasher = bc.NewSigHasher(t.Transaction)
 	}
-	return t.sigHasher.Hash(idx, hashType)
+	return t.sigHasher.Hash(idx)
 }
 
 // SigningInstruction gives directions for signing inputs in a TxTemplate.

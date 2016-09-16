@@ -7,6 +7,7 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519"
+	"chain/crypto/ed25519/hd25519"
 	"chain/protocol/vm"
 )
 
@@ -134,5 +135,24 @@ func TestParse00Multisig(t *testing.T) {
 	}
 	if len(keys) != 0 || quorum != 0 {
 		t.Fatalf("ParseBlockMultiSigScript(%x) = (%v, %d) want (nil, 0)", prog, keys, quorum)
+	}
+}
+
+func TestP2DP(t *testing.T) {
+	pub1, _, _ := ed25519.GenerateKey(nil)
+	pub2, _, _ := ed25519.GenerateKey(nil)
+	prog := P2DPMultiSigProgram([]ed25519.PublicKey{pub1, pub2}, 1)
+	pubs, n, err := ParseP2DPMultiSigProgram(prog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Errorf("expected nrequired=1, got %d", n)
+	}
+	if !bytes.Equal(pubs[0], pub1) {
+		t.Errorf("expected first pubkey to be %x, got %x", hd25519.PubBytes(pub1), hd25519.PubBytes(pubs[0]))
+	}
+	if !bytes.Equal(pubs[1], pub2) {
+		t.Errorf("expected second pubkey to be %x, got %x", hd25519.PubBytes(pub2), hd25519.PubBytes(pubs[1]))
 	}
 }

@@ -268,38 +268,25 @@ func TestTxHashForSig(t *testing.T) {
 	}
 	cases := []struct {
 		idx      int
-		hashType SigHashType
 		wantHash string
 	}{
-		// TODO(bobg): Update all these hashes to pass under new serialization logic in PR 1070 (and possibly others)
-		{0, SigHashAll, "f63aea25b373b683c367f3dbc94c25ac86b374e2e6f9d01c7e0f4f7465ff48f4"},
-		{0, SigHashSingle, "cd9cb71dd1adf22afc0b4c5eed82b35cd33fdb2cc0e86bbe52e86e0801f90caa"},
-		{0, SigHashNone, "46d93487fcd01b528d0eecab1b22c7e5eef29e63cccc7285be666b6f3c90ab20"},
-		{0, SigHashAll | SigHashAnyOneCanPay, "8d273a2c1a78129aa87dd914e5ea7b90f15946d7b7cf91e95177f1c53593a685"},
-		{0, SigHashSingle | SigHashAnyOneCanPay, "cdb627c065ebb30de501d8b159038b5ae98fc404219ad53731b7ac1a91bd0ff4"},
-		{0, SigHashNone | SigHashAnyOneCanPay, "e79409194a99fc3d5af4eea63ea1d4fca8fa14306eb1702ee09b05fc3d04ee3f"},
-
-		{1, SigHashAll, "95f89e47c7ae3eed075763a2363e846e3450ae32267286126462adf03a054748"},
-		{1, SigHashSingle, "332a73ae16be1233c22d5756f5982640a03fd6eb3f8473801d92ff3a3c78015c"},
-		{1, SigHashNone, "8355a71b8a2aa9b8b5f8959bb3201365536112ded1f8c4706722918e68ab1b41"},
-		{1, SigHashAll | SigHashAnyOneCanPay, "c9550b707b5d71d5b9fa9fc8a738cc79282e489478e292094cf07a56eb4975b9"},
-		{1, SigHashSingle | SigHashAnyOneCanPay, "13e3f0ccaa667b723494dfd253e0a7f43c40f781586e8325f8fbafcf8f6a934e"},
-		{1, SigHashNone | SigHashAnyOneCanPay, "13c2071104b0409cd6d73acd8d291d7c79745d5799969e113dadb7cc8c2fecb7"},
+		{0, "bc69702b102962a963c0f90800a4694c3ccd098c1d6d1d45358d3394ee610253"},
+		{1, "9b149467e52c3cade42e8b048fb56a52b92589e1eca8fcd668c71efa0b00c201"},
 	}
 
 	sigHasher := NewSigHasher(tx)
 
 	for _, c := range cases {
-		hash := tx.HashForSig(c.idx, c.hashType)
+		hash := tx.HashForSig(c.idx)
 
 		if hash.String() != c.wantHash {
-			t.Errorf("HashForSig(%d, %v) = %s want %s", c.idx, c.hashType, hash.String(), c.wantHash)
+			t.Errorf("HashForSig(%d) = %s want %s", c.idx, hash.String(), c.wantHash)
 		}
 
-		cachedHash := sigHasher.Hash(c.idx, c.hashType)
+		cachedHash := sigHasher.Hash(c.idx)
 
 		if cachedHash.String() != c.wantHash {
-			t.Errorf("sigHasher.Hash(%d, %v) = %s want %s", c.idx, c.hashType, hash.String(), c.wantHash)
+			t.Errorf("sigHasher.Hash(%d) = %s want %s", c.idx, hash.String(), c.wantHash)
 		}
 	}
 }

@@ -190,10 +190,10 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	tpl := &Template{
 		Transaction: unsigned,
 	}
-	h := tpl.Hash(0, bc.SigHashAll)
+	h := tpl.Hash(0)
 	builder := vmutil.NewBuilder()
 	builder.AddData(h[:])
-	builder.AddInt64(1).AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
+	builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
 	prog := builder.Program
 	msg := sha3.Sum256(prog)
 	sig1 := ed25519.Sign(privkey1.Key, msg[:])

@@ -237,115 +237,44 @@ func (tx *TxData) WitnessHash() Hash {
 
 // HashForSig generates the hash required for the specified input's
 // signature.
-func (tx *TxData) HashForSig(idx int, hashType SigHashType) Hash {
-	return NewSigHasher(tx).Hash(idx, hashType)
+func (tx *TxData) HashForSig(idx int) Hash {
+	return NewSigHasher(tx).Hash(idx)
 }
 
+// SigHasher caches a txhash for reuse with multiple inputs.
 type SigHasher struct {
-	tx             *TxData
-	inputsHash     *Hash
-	allOutputsHash *Hash
+	txData *TxData
+	txHash *Hash // not computed until needed
 }
 
-func NewSigHasher(tx *TxData) *SigHasher {
-	return &SigHasher{tx: tx}
+func NewSigHasher(txData *TxData) *SigHasher {
+	return &SigHasher{txData: txData}
 }
 
-func (s *SigHasher) writeInput(w io.Writer, idx int) {
-	s.tx.Inputs[idx].writeTo(w, 0)
-}
-
-func (s *SigHasher) writeOutput(w io.Writer, idx int) {
-	s.tx.Outputs[idx].writeTo(w, 0)
-}
-
-// Use only when hashtype is not "anyone can pay"
-func (s *SigHasher) getInputsHash() *Hash {
-	if s.inputsHash == nil {
-		var hash Hash
-		h := sha3.New256()
-		w := errors.NewWriter(h)
-
-		blockchain.WriteUvarint(w, uint64(len(s.tx.Inputs)))
-		for i := 0; i < len(s.tx.Inputs); i++ {
-			s.writeInput(w, i)
-		}
-		h.Sum(hash[:0])
-		s.inputsHash = &hash
+func (s *SigHasher) Hash(idx int) Hash {
+	if s.txHash == nil {
+		h := s.txData.Hash()
+		s.txHash = &h
 	}
-	return s.inputsHash
-}
+	var buf bytes.Buffer
+	buf.Write((*s.txHash)[:])
+	blockchain.WriteUvarint(&buf, uint64(idx))
 
-func (s *SigHasher) getAllOutputsHash() *Hash {
-	if s.allOutputsHash == nil {
-		var hash Hash
-		h := sha3.New256()
-		w := errors.NewWriter(h)
-		blockchain.WriteUvarint(w, uint64(len(s.tx.Outputs)))
-		for i := 0; i < len(s.tx.Outputs); i++ {
-			s.writeOutput(w, i)
-		}
-		h.Sum(hash[:0])
-		s.allOutputsHash = &hash
-	}
-	return s.allOutputsHash
-}
-
-func (s *SigHasher) Hash(idx int, hashType SigHashType) (hash Hash) {
-	var inputsHash *Hash
-	if hashType&SigHashAnyOneCanPay == 0 {
-		inputsHash = s.getInputsHash()
+	var h Hash
+	inp := s.txData.Inputs[idx]
+	sc, ok := inp.InputCommitment.(*SpendInputCommitment)
+	if ok {
+		// inp is a spend
+		var ocBuf bytes.Buffer
+		sc.OutputCommitment.writeTo(&ocBuf, inp.AssetVersion)
+		h = sha3.Sum256(ocBuf.Bytes())
 	} else {
-		inputsHash = &Hash{}
+		// inp is an issuance
+		h = emptyHash
 	}
 
-	var outputCommitment []byte
-	if !s.tx.Inputs[idx].IsIssuance() {
-		var buf bytes.Buffer
-		assetAmount := s.tx.Inputs[idx].AssetAmount()
-		buf.Write(assetAmount.AssetID[:])
-		blockchain.WriteUvarint(&buf, assetAmount.Amount)
-		blockchain.WriteUvarint(&buf, VMVersion)
-		blockchain.WriteBytes(&buf, s.tx.Inputs[idx].ControlProgram())
-		outputCommitment = buf.Bytes()
-	}
-
-	var outputsHash *Hash
-	switch hashType & sigHashMask {
-	case SigHashAll:
-		outputsHash = s.getAllOutputsHash()
-	case SigHashNone:
-		outputsHash = &Hash{}
-	case SigHashSingle:
-		if idx >= len(s.tx.Outputs) {
-			outputsHash = &Hash{}
-		} else {
-			h := sha3.New256()
-			w := errors.NewWriter(h)
-			blockchain.WriteUvarint(w, 1)
-			s.writeOutput(w, idx)
-			var hash Hash
-			h.Sum(hash[:0])
-			outputsHash = &hash
-		}
-	default:
-		return Hash{}
-	}
-
-	h := sha3.New256()
-	w := errors.NewWriter(h)
-	blockchain.WriteUvarint(w, uint64(s.tx.Version))
-	w.Write(inputsHash[:])
-	s.writeInput(w, idx)
-	blockchain.WriteBytes(w, outputCommitment)
-	w.Write(outputsHash[:])
-	blockchain.WriteUvarint(w, s.tx.MinTime)
-	blockchain.WriteUvarint(w, s.tx.MaxTime)
-	writeRefData(w, s.tx.ReferenceData, 0)
-	w.Write([]byte{byte(hashType)})
-
-	h.Sum(hash[:0])
-	return hash
+	buf.Write(h[:])
+	return sha3.Sum256(buf.Bytes())
 }
 
 // MarshalText satisfies blockchain.TextMarshaller interface

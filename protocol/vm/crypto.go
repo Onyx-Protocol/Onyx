@@ -10,7 +10,6 @@ import (
 
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
-	"chain/protocol/bc"
 )
 
 func opRipemd160(vm *virtualMachine) error {
@@ -143,16 +142,12 @@ func opTxSigHash(vm *virtualMachine) error {
 	if vm.tx == nil {
 		return ErrContext
 	}
-	hashType, err := vm.popInt64(false)
+	err := vm.applyCost(256)
 	if err != nil {
 		return err
 	}
-	hashBytes := vm.sigHasher.Hash(int(vm.inputIndex), bc.SigHashType(hashType))
-	err = vm.applyCost(4 * int64(len(hashBytes)))
-	if err != nil {
-		return err
-	}
-	return vm.push(hashBytes[:], false)
+	h := vm.sigHasher.Hash(int(vm.inputIndex))
+	return vm.push(h[:], false)
 }
 
 func opBlockSigHash(vm *virtualMachine) error {

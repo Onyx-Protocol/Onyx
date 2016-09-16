@@ -108,14 +108,14 @@ func TestBuildFinal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(insts2) != 4 {
+	if len(insts2) != 3 {
 		t.Fatalf("expected 4 instructions in sigwitness program 2, got %d", len(insts2))
 	}
-	if insts2[2].Op != vm.OP_TXSIGHASH {
-		t.Fatalf("sigwitness program2 opcode 2 is %02x, expected %02x", insts2[2].Op, vm.OP_TXSIGHASH)
+	if insts2[1].Op != vm.OP_TXSIGHASH {
+		t.Fatalf("sigwitness program2 opcode 1 is %02x, expected %02x", insts2[1].Op, vm.OP_TXSIGHASH)
 	}
-	if insts2[3].Op != vm.OP_EQUAL {
-		t.Fatalf("sigwitness program2 opcode 3 is %02x, expected %02x", insts2[3].Op, vm.OP_EQUAL)
+	if insts2[2].Op != vm.OP_EQUAL {
+		t.Fatalf("sigwitness program2 opcode 2 is %02x, expected %02x", insts2[2].Op, vm.OP_EQUAL)
 	}
 }
 

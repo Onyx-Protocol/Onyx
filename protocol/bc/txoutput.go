@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"io"
 
-	"golang.org/x/crypto/sha3"
-
 	"chain/encoding/blockchain"
 )
 
@@ -88,10 +86,8 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
 	blockchain.WriteBytes(w, nil) // empty output witness
 }
 
-var emptyWitnessHash = sha3.Sum256(nil)
-
 func (to TxOutput) WitnessHash() Hash {
-	return emptyWitnessHash
+	return emptyHash
 }
 
 func (oc OutputCommitment) writeTo(w io.Writer, assetVersion uint32) {

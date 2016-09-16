@@ -16,6 +16,8 @@ import (
 // typically passed as values, not as pointers.
 type Hash [32]byte
 
+var emptyHash = sha3.Sum256([]byte{})
+
 // String returns the bytes of h encoded in hex.
 func (h Hash) String() string {
 	b, _ := h.MarshalText()
