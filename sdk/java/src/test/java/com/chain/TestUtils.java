@@ -1,4 +1,4 @@
-package com.chain_qa;
+package com.chain;
 
 import java.net.MalformedURLException;
 import java.net.URL;

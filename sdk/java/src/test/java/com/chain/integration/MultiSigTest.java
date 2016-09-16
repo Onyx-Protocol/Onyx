@@ -1,27 +1,33 @@
-package com.chain_qa;
+package com.chain.integration;
 
+import com.chain.TestUtils;
 import com.chain.api.Account;
 import com.chain.api.Asset;
 import com.chain.api.MockHsm;
 import com.chain.api.Transaction;
+import com.chain.exception.APIException;
 import com.chain.http.Context;
 import com.chain.signing.HsmSigner;
+import org.junit.Test;
 
 import java.math.BigInteger;
-import java.net.URL;
 import java.util.Arrays;
+import java.util.List;
 
-public class MultiSigExample {
-    public static void main(String[] args) throws Exception {
-        System.out.print("Running...");
-        Context context = new Context(TestUtils.getCoreURL(System.getenv("CHAIN_API_URL")));
+public class MultiSigTest {
+    final String ALICE = "multisig-alice";
+    final String ASSET = "multisig-asset";
+    
+    @Test
+    public void test() throws Exception {
+        Context context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
         MockHsm.Key key1 = MockHsm.Key.create(context);
         MockHsm.Key key2 = MockHsm.Key.create(context);
         MockHsm.Key key3 = MockHsm.Key.create(context);
         HsmSigner.addKeys(Arrays.asList(key1, key2, key3));
 
         new Account.Builder()
-                .setAlias("alice")
+                .setAlias(ALICE)
                 .addXpub(key1.xpub)
                 .addXpub(key2.xpub)
                 .addXpub(key3.xpub)
@@ -29,7 +35,7 @@ public class MultiSigExample {
                 .create(context);
 
         new Asset.Builder()
-                .setAlias("gold")
+                .setAlias(ASSET)
                 .addXpub(key1.xpub)
                 .addXpub(key2.xpub)
                 .addXpub(key3.xpub)
@@ -37,10 +43,14 @@ public class MultiSigExample {
                 .create(context);
 
         Transaction.Template tx = new Transaction.Builder()
-                .issueByAlias("gold", BigInteger.valueOf(100), null)
-                .controlWithAccountByAlias("alice", "gold", BigInteger.valueOf(100), null)
+                .issueByAlias(ASSET, BigInteger.valueOf(100), null)
+                .controlWithAccountByAlias(ALICE, ASSET, BigInteger.valueOf(100), null)
                 .build(context);
-        Transaction.submit(context, HsmSigner.sign(Arrays.asList(tx)));
-        System.out.print("done");
+        List<Transaction.SubmitResponse> responses = Transaction.submit(context, HsmSigner.sign(Arrays.asList(tx)));
+        for (Transaction.SubmitResponse resp : responses) {
+            if (resp.id == null) {
+                throw new APIException(resp.code, resp.message, resp.detail, null);
+            }
+        }
     }
 }

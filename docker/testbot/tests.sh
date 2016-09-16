@@ -14,7 +14,6 @@ cleanup() {
 	done
 	wait
 	rm -rf $CHAIN/sdk/java/target
-	rm -rf $CHAIN/qa/target
 }
 # call cleanup on program exit
 trap 'cleanup' EXIT
@@ -41,4 +40,4 @@ echo "Running Basic Example"
 /go/bin/corectl config-generator
 /go/bin/cored 2>&1 | tee $initlog &
 waitForGenerator
-java -ea -cp /usr/bin/chain/chain-core-qa.jar com.chain_qa.BasicExample
+cd $CHAIN/sdk/java && mvn integration-test
