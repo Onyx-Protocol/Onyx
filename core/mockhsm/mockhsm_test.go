@@ -16,11 +16,11 @@ func TestMockHSM(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	hsm := New(db)
-	xpub, err := hsm.CreateKey(ctx, nil)
+	xpub, err := hsm.CreateKey(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	xpub2, err := hsm.CreateKey(ctx, nil)
+	xpub2, err := hsm.CreateKey(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,8 +59,7 @@ func TestKeyWithAlias(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	hsm := New(db)
-	alias := "some-alias"
-	xpub, err := hsm.CreateKey(ctx, &alias)
+	xpub, err := hsm.CreateKey(ctx, "some-alias")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,11 +73,23 @@ func TestKeyWithAlias(t *testing.T) {
 	}
 
 	// check for uniqueness error
-	xpub, err = hsm.CreateKey(ctx, &alias)
+	xpub, err = hsm.CreateKey(ctx, "some-alias")
 	if xpub != nil {
 		t.Fatalf("xpub: got %v want nil", xpub)
 	}
 	if errors.Root(err) != ErrDuplicateKeyAlias {
 		t.Fatalf("error return value: got %v want %v", errors.Root(err), ErrDuplicateKeyAlias)
+	}
+}
+
+func TestKeyWithEmptyAlias(t *testing.T) {
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+	hsm := New(db)
+	for i := 0; i < 2; i++ {
+		_, err := hsm.CreateKey(ctx, "")
+		if errors.Root(err) != nil {
+			t.Fatal(err)
+		}
 	}
 }

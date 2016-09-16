@@ -32,7 +32,7 @@ type (
 
 // POST /create-asset
 func (a *api) createAsset(ctx context.Context, ins []struct {
-	Alias      *string
+	Alias      string
 	XPubs      []string
 	Quorum     int
 	Definition map[string]interface{}

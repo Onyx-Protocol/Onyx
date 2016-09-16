@@ -27,7 +27,7 @@ func TestAccountSourceReserve(t *testing.T) {
 	account.Init(c, nil)
 
 	accID := assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
-	asset := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, nil, nil)
+	asset := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
 	out := assettest.IssueAssetsFixture(ctx, t, c, asset, 2, accID)
 
 	// Make a block so that account UTXOs are available to spend.
@@ -72,7 +72,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	account.Init(c, nil)
 
 	accID := assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
-	asset := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, nil, nil)
+	asset := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
 	out := assettest.IssueAssetsFixture(ctx, t, c, asset, 2, accID)
 
 	// Make a block so that account UTXOs are available to spend.
@@ -106,7 +106,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 
 	var (
 		accID        = assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
-		asset        = assettest.CreateAssetFixture(ctx, t, nil, 0, nil, nil, nil)
+		asset        = assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
 		_            = assettest.IssueAssetsFixture(ctx, t, c, asset, 2, accID)
 		_            = assettest.IssueAssetsFixture(ctx, t, c, asset, 2, accID)
 		assetAmount1 = bc.AssetAmount{
@@ -164,7 +164,7 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 
 	var (
 		acc      = assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
-		asset    = assettest.CreateAssetFixture(ctx, t, nil, 0, nil, nil, nil)
+		asset    = assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
 		assetAmt = bc.AssetAmount{AssetID: asset, Amount: 1}
 		utxos    = 4
 		srcTxs   []bc.Hash

@@ -35,7 +35,7 @@ type Asset struct {
 }
 
 // Define defines a new Asset.
-func Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, initialBlockHash bc.Hash, alias *string, tags map[string]interface{}, clientToken *string) (*Asset, error) {
+func Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, initialBlockHash bc.Hash, alias string, tags map[string]interface{}, clientToken *string) (*Asset, error) {
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "define asset")
@@ -61,13 +61,15 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 	}
 
 	asset := &Asset{
-		Alias:            alias,
 		Definition:       definition,
 		IssuanceProgram:  issuanceProgram,
 		InitialBlockHash: initialBlockHash,
 		AssetID:          bc.ComputeAssetID(issuanceProgram, initialBlockHash, 1),
 		Signer:           assetSigner,
 		Tags:             tags,
+	}
+	if alias != "" {
+		asset.Alias = &alias
 	}
 
 	asset, err = insertAsset(ctx, asset, clientToken)

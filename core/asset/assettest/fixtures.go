@@ -41,7 +41,7 @@ func CreateAccountControlProgramFixture(ctx context.Context, t testing.TB, accID
 	return controlProgram
 }
 
-func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum int, def map[string]interface{}, alias *string, tags map[string]interface{}) bc.AssetID {
+func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum int, def map[string]interface{}, alias string, tags map[string]interface{}) bc.AssetID {
 	if len(keys) == 0 {
 		keys = []string{testutil.TestXPub.String()}
 	}

@@ -46,13 +46,11 @@ func TestRecovery(t *testing.T) {
 
 	// Create two assets (USD & apples) and two accounts (Alice & Bob).
 	var (
-		usdTags    = map[string]interface{}{"currency": "usd"}
-		usdAlias   = "usd"
-		appleAlias = "apple"
-		usd        = assettest.CreateAssetFixture(setupCtx, t, nil, 0, nil, &usdAlias, usdTags)
-		apple      = assettest.CreateAssetFixture(setupCtx, t, nil, 0, nil, &appleAlias, nil)
-		alice      = assettest.CreateAccountFixture(setupCtx, t, nil, 0, "alice", nil)
-		bob        = assettest.CreateAccountFixture(setupCtx, t, nil, 0, "bob", nil)
+		usdTags = map[string]interface{}{"currency": "usd"}
+		usd     = assettest.CreateAssetFixture(setupCtx, t, nil, 0, nil, "usd", usdTags)
+		apple   = assettest.CreateAssetFixture(setupCtx, t, nil, 0, nil, "apple", nil)
+		alice   = assettest.CreateAccountFixture(setupCtx, t, nil, 0, "alice", nil)
+		bob     = assettest.CreateAccountFixture(setupCtx, t, nil, 0, "bob", nil)
 	)
 	// Issue some apples to Alice and a dollar to Bob.
 	_ = assettest.IssueAssetsFixture(setupCtx, t, c, apple, 10, alice)

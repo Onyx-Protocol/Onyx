@@ -11,7 +11,7 @@ import (
 	"chain/net/http/httpjson"
 )
 
-func (a *api) mockhsmCreateKey(ctx context.Context, in struct{ Alias *string }) (result *mockhsm.XPub, err error) {
+func (a *api) mockhsmCreateKey(ctx context.Context, in struct{ Alias string }) (result *mockhsm.XPub, err error) {
 	result, err = a.hsm.CreateKey(ctx, in.Alias)
 	if err != nil {
 		return result, err

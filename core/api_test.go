@@ -33,7 +33,7 @@ func TestBuildFinal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, nil, nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, "", nil)
 	assetAmt := bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
@@ -131,7 +131,7 @@ func TestAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, nil, nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, "", nil)
 	assetAmt := bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
@@ -196,7 +196,7 @@ func TestTransfer(t *testing.T) {
 	account1Alias := "first-account"
 	account2Alias := "second-account"
 
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, &assetAlias, nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, assetAlias, nil)
 	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, account1Alias, nil)
 	account2ID := assettest.CreateAccountFixture(ctx, t, nil, 0, account2Alias, nil)
 

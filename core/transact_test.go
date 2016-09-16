@@ -25,7 +25,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, nil, nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, "", nil)
 	assetAmt := bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,

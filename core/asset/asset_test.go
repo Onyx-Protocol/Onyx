@@ -18,7 +18,7 @@ func TestDefineAsset(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	keys := []string{testutil.TestXPub.String()}
 	var initialBlockHash bc.Hash
-	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, nil, nil, nil)
+	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, "", nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -44,12 +44,12 @@ func TestDefineAssetIdempotency(t *testing.T) {
 	token := "test_token"
 	keys := []string{testutil.TestXPub.String()}
 	var initialBlockHash bc.Hash
-	asset0, err := Define(ctx, keys, 1, nil, initialBlockHash, nil, nil, &token)
+	asset0, err := Define(ctx, keys, 1, nil, initialBlockHash, "", nil, &token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	asset1, err := Define(ctx, keys, 1, nil, initialBlockHash, nil, nil, &token)
+	asset1, err := Define(ctx, keys, 1, nil, initialBlockHash, "", nil, &token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -65,7 +65,7 @@ func TestDefineAndArchiveAssetByID(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 	keys := []string{testutil.TestXPub.String()}
 	var initialBlockHash bc.Hash
-	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, nil, nil, nil)
+	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, "", nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -93,8 +93,7 @@ func TestDefineAndArchiveAssetByAlias(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 	keys := []string{testutil.TestXPub.String()}
 	var initialBlockHash bc.Hash
-	alias := "some-alias"
-	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, &alias, nil, nil)
+	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, "some-alias", nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -122,7 +121,7 @@ func TestFindAssetByID(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 	keys := []string{testutil.TestXPub.String()}
 	var initialBlockHash bc.Hash
-	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, nil, nil, nil)
+	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, "", nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -144,7 +143,7 @@ func TestAssetByClientToken(t *testing.T) {
 	token := "test_token"
 	var initialBlockHash bc.Hash
 
-	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, nil, nil, &token)
+	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, "", nil, &token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

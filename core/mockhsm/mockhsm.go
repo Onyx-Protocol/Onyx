@@ -32,7 +32,7 @@ func New(db pg.DB) *HSM {
 }
 
 // CreateKey produces a new random xprv and stores it in the db.
-func (h *HSM) CreateKey(ctx context.Context, alias *string) (*XPub, error) {
+func (h *HSM) CreateKey(ctx context.Context, alias string) (*XPub, error) {
 	xpub, _, err := h.create(ctx, alias, false)
 	return xpub, err
 }
@@ -40,17 +40,22 @@ func (h *HSM) CreateKey(ctx context.Context, alias *string) (*XPub, error) {
 // GetOrCreateKey looks for the key with the given alias, generating a
 // new one if it's not found.
 func (h *HSM) GetOrCreateKey(ctx context.Context, alias string) (xpub *XPub, created bool, err error) {
-	return h.create(ctx, &alias, true)
+	return h.create(ctx, alias, true)
 }
 
-func (h *HSM) create(ctx context.Context, alias *string, get bool) (*XPub, bool, error) {
+func (h *HSM) create(ctx context.Context, alias string, get bool) (*XPub, bool, error) {
 	xprv, xpub, err := hd25519.NewXKeys(nil)
 	if err != nil {
 		return nil, false, err
 	}
 	hash := sha3.Sum256(xpub.Bytes())
+	sqlAlias := sql.NullString{String: alias, Valid: alias != ""}
+	var ptrAlias *string
+	if alias != "" {
+		ptrAlias = &alias
+	}
 	const q = `INSERT INTO mockhsm (xpub_hash, xpub, xprv, alias) VALUES ($1, $2, $3, $4)`
-	_, err = h.db.Exec(ctx, q, hex.EncodeToString(hash[:]), xpub.Bytes(), xprv.Bytes(), alias)
+	_, err = h.db.Exec(ctx, q, hex.EncodeToString(hash[:]), xpub.Bytes(), xprv.Bytes(), sqlAlias)
 	if err != nil {
 		if pg.IsUniqueViolation(err) {
 			if !get {
@@ -66,11 +71,11 @@ func (h *HSM) create(ctx context.Context, alias *string, get bool) (*XPub, bool,
 			if err != nil {
 				return nil, false, errors.Wrapf(err, "parsing bytes of existing xpub with alias %s", alias)
 			}
-			return &XPub{XPub: existingXPub, Alias: alias}, false, nil
+			return &XPub{XPub: existingXPub, Alias: ptrAlias}, false, nil
 		}
 		return nil, false, errors.Wrap(err, "storing new xpub")
 	}
-	return &XPub{XPub: xpub, Alias: alias}, true, nil
+	return &XPub{XPub: xpub, Alias: ptrAlias}, true, nil
 }
 
 // ListKeys returns a list of all xpubs from the db.
