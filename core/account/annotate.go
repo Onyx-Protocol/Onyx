@@ -11,7 +11,6 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
-	"chain/protocol/vmutil"
 )
 
 // AnnotateTxs adds account data to transactions
@@ -39,36 +38,6 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 			}
 			controlPrograms = append(controlPrograms, controlProgram)
 			controlMaps[string(controlProgram)] = append(controlMaps[string(controlProgram)], txOut)
-		}
-
-		ins, ok := tx["inputs"].([]interface{})
-		if !ok {
-			return errors.Wrap(fmt.Errorf("bad inputs type %T", tx["inputs"]))
-		}
-
-		for _, in := range ins {
-			txIn, ok := in.(map[string]interface{})
-			if !ok {
-				return errors.Wrap(fmt.Errorf("bad input type %T", in))
-			}
-			inputWitness, ok := txIn["input_witness"].([]interface{})
-			if !ok {
-				return errors.Wrap(fmt.Errorf("bad input witness type %T", txIn["input_witness"]))
-			}
-			if len(inputWitness) == 0 {
-				continue
-			}
-			maybeRedeemStr, ok := inputWitness[len(inputWitness)-1].(string)
-			if !ok {
-				return errors.Wrap(fmt.Errorf("bad input witness item type %T", inputWitness[len(inputWitness)-1]))
-			}
-			maybeRedeem, err := hex.DecodeString(maybeRedeemStr)
-			if err != nil {
-				return err
-			}
-			controlProgram := vmutil.RedeemToPkScript(maybeRedeem)
-			controlPrograms = append(controlPrograms, controlProgram)
-			controlMaps[string(controlProgram)] = append(controlMaps[string(controlProgram)], txIn)
 		}
 	}
 

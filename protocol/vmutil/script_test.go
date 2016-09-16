@@ -106,33 +106,33 @@ func TestPayToContract(t *testing.T) {
 }
 
 func Test00Multisig(t *testing.T) {
-	prog, err := doMultiSigScript(nil, 0, true)
+	prog, err := BlockMultiSigScript(nil, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(prog) < 1 {
-		t.Fatal("doMultiSigScript(0, 0) = {} want script")
+		t.Fatal("BlockMultiSigScript(0, 0) = {} want script")
 	}
 }
 
 func Test01Multisig(t *testing.T) {
 	pubkeys := []ed25519.PublicKey{{}}
-	_, err := doMultiSigScript(pubkeys, 0, true)
+	_, err := BlockMultiSigScript(pubkeys, 0)
 	if err == nil {
-		t.Fatal("doMultiSigScript(1, 0) = success want error")
+		t.Fatal("BlockMultiSigScript(1, 0) = success want error")
 	}
 }
 
 func TestParse00Multisig(t *testing.T) {
-	prog, err := doMultiSigScript(nil, 0, true)
+	prog, err := BlockMultiSigScript(nil, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	keys, quorum, err := doParseMultiSigScript(prog, true)
+	keys, quorum, err := ParseBlockMultiSigScript(prog)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(keys) != 0 || quorum != 0 {
-		t.Fatalf("doParseMultiSigScript(%x, true) = (%v, %d) want (nil, 0)", prog, keys, quorum)
+		t.Fatalf("ParseBlockMultiSigScript(%x) = (%v, %d) want (nil, 0)", prog, keys, quorum)
 	}
 }

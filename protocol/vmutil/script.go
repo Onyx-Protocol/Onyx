@@ -19,23 +19,13 @@ func IsUnspendable(prog []byte) bool {
 	return len(prog) > 0 && prog[0] == byte(vm.OP_FAIL)
 }
 
-// TxMultiSigScript returns a valid script for a multisignature
-// redemption where nrequired of the keys in pubkeys are required to
-// have signed the transaction for success.  An ErrBadValue will
+// BlockMultiSigScript returns a valid script for a multisignature
+// consensus program where nrequired of the keys in pubkeys are
+// required to have signed the block for success.  An ErrBadValue will
 // be returned if nrequired is larger than the number of keys
 // provided.
-// The result is: <nrequired> <pubkey>... <npubkeys> 1 TXSIGHASH CHECKMULTISIG
-func TxMultiSigScript(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
-	return doMultiSigScript(pubkeys, nrequired, false)
-}
-
-// BlockMultiSigScript is like TxMultiSigScript but for blocks.
 // The result is: <nrequired> <pubkey>... <npubkeys> BLOCKSIGHASH CHECKMULTISIG
 func BlockMultiSigScript(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
-	return doMultiSigScript(pubkeys, nrequired, true)
-}
-
-func doMultiSigScript(pubkeys []ed25519.PublicKey, nrequired int, isBlock bool) ([]byte, error) {
 	if nrequired < 0 || len(pubkeys) < nrequired || (len(pubkeys) > 0 && nrequired == 0) {
 		return nil, ErrBadValue
 	}
@@ -44,39 +34,17 @@ func doMultiSigScript(pubkeys []ed25519.PublicKey, nrequired int, isBlock bool) 
 	for _, key := range pubkeys {
 		builder.AddData(hd25519.PubBytes(key))
 	}
-	builder.AddInt64(int64(len(pubkeys)))
-	if isBlock {
-		builder.AddOp(vm.OP_BLOCKSIGHASH)
-	} else {
-		builder.AddInt64(1).AddOp(vm.OP_TXSIGHASH)
-	}
-	builder.AddOp(vm.OP_CHECKMULTISIG)
+	builder.AddInt64(int64(len(pubkeys))).AddOp(vm.OP_BLOCKSIGHASH).AddOp(vm.OP_CHECKMULTISIG)
 	return builder.Program, nil
 }
 
-// ParseTxMultiSigScript is the inverse of TxMultiSigScript().  It parses
-// the script to produce the list of PublicKeys and nrequired values
-// encoded within.
-func ParseTxMultiSigScript(script []byte) ([]ed25519.PublicKey, int, error) {
-	return doParseMultiSigScript(script, false)
-}
-
 func ParseBlockMultiSigScript(script []byte) ([]ed25519.PublicKey, int, error) {
-	return doParseMultiSigScript(script, true)
-}
-
-func doParseMultiSigScript(script []byte, isBlock bool) ([]ed25519.PublicKey, int, error) {
 	pops, err := vm.ParseProgram(script)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	var minLen int
-	if isBlock {
-		minLen = 4
-	} else {
-		minLen = 5
-	}
+	minLen := 4
 
 	if len(pops) < minLen {
 		return nil, 0, vm.ErrShortProgram
@@ -91,12 +59,8 @@ func doParseMultiSigScript(script []byte, isBlock bool) ([]ed25519.PublicKey, in
 		return nil, 0, errors.Wrap(ErrMultisigFormat, "parsing nrequired")
 	}
 
-	var npubkeysOpIndex int
-	if isBlock {
-		npubkeysOpIndex = len(pops) - 3
-	} else {
-		npubkeysOpIndex = len(pops) - 4
-	}
+	npubkeysOpIndex := len(pops) - 3
+
 	npubkeys, err := vm.AsInt64(pops[npubkeysOpIndex].Data)
 	if err != nil {
 		return nil, 0, errors.Wrap(ErrMultisigFormat, "parsing npubkeys")
@@ -152,16 +116,6 @@ func PayToContractHash(contractHash bc.ContractHash, params [][]byte) []byte {
 	return builder.Program
 }
 
-// RedeemP2C builds program args for redeeming a contract.
-func RedeemP2C(contract []byte, inputs [][]byte) [][]byte {
-	args := make([][]byte, 0, len(inputs)+1)
-	args = append(args, inputs...)
-	if contract != nil {
-		args = append(args, contract)
-	}
-	return args
-}
-
 // RedeemToPkScript takes a redeem script
 // and calculates its corresponding pk script
 func RedeemToPkScript(redeem []byte) []byte {
@@ -170,14 +124,6 @@ func RedeemToPkScript(redeem []byte) []byte {
 	builder.AddOp(vm.OP_DUP).AddOp(vm.OP_SHA3).AddData(hash[:]).AddOp(vm.OP_EQUALVERIFY)
 	builder.AddOp(vm.OP_0).AddOp(vm.OP_CHECKPREDICATE)
 	return builder.Program
-}
-
-func TxScripts(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, []byte, error) {
-	redeem, err := TxMultiSigScript(pubkeys, nrequired)
-	if err != nil {
-		return nil, nil, err
-	}
-	return RedeemToPkScript(redeem), redeem, nil
 }
 
 func P2DPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) []byte {
