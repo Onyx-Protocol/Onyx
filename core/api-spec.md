@@ -145,7 +145,16 @@ An array of [transaction template objects](#transaction-template-object) and/or 
   "id": "...",
   "alias": "...",
   "issuance_program: "...",
-  "xpubs": ["xpub"],
+  "keys": [
+    {
+      "asset_pubkey": "...",
+
+      // These properties are only available for assets whose origin is local.
+      "root_xpub": "...",
+      "asset_derivation_path": "..."
+    },
+    ...
+  ],
   "quorum": 1,
   "definition": {},
   "tags": {},
@@ -167,7 +176,7 @@ POST /create-asset
 [
   {
     "alias": "...",
-    "xpubs": ["..."],
+    "root_xpubs": ["..."],
     "quorum": 1,
     "definition: {},
     "tags": {}
@@ -242,7 +251,14 @@ The response body is empty.
 {
   "id": "...",
   "alias": "...",
-  "xpubs": ["xpub"],
+  "keys": [
+    {
+      "root_xpub": "...",
+      "account_xpub": "...",
+      "account_derivation_path": "..."
+    },
+    ...
+  ],
   "quorum": 1,
   "tags": {}
 }
@@ -262,7 +278,7 @@ POST /create-account
 [
   {
     "alias": "...",
-    "xpubs": ["xpub"],
+    "root_xpubs": ["xpub"],
     "quorum": 1,
     "tags": {}
   }
