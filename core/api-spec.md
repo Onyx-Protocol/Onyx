@@ -429,6 +429,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
   "outputs": [
     {
       "action": "control",
+      "purpose": <"change"|"receive">, // provided if the control program was generated locally
       "position": "...",
       "asset_id": "125B4E...",
       "asset_alias": "...",
@@ -486,6 +487,7 @@ To keep the interface narrow, the SDK can generate such a control program.
 ```
 {
   "action": "control",
+  "purpose": <"change"|"receive">, // provided if the control program was generated locally
   "transaction_id": "...",
   "position": "...",
   "asset_id": "...",
