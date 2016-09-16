@@ -7,7 +7,7 @@ import generateFormActions from './formActions'
 const type = "account"
 
 const list = generateListActions(type, { defaultKey: "alias" })
-const form = generateFormActions(type)
+const form = generateFormActions(type, { jsonFields: ['tags'] })
 
 let actions = Object.assign({},
   list,

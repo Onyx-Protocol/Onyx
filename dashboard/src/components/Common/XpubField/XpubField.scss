@@ -1,0 +1,17 @@
+.main {
+  border-top: 1px solid $border-color;
+  margin-top: $grid-gutter-width/2;
+  padding-top: $grid-gutter-width/2;
+  margin-bottom: $grid-gutter-width;
+}
+
+.options {
+  label {
+    font-weight: normal;
+    padding-right: $grid-gutter-width;
+  }
+
+  input {
+    margin-right: 8px;
+  }
+}

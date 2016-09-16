@@ -1,110 +1,64 @@
 import React from 'react'
 import PageHeader from "../PageHeader/PageHeader"
-import { ErrorBanner } from "../Common"
+import {
+  TextField,
+  TextareaField,
+  KeyConfiguration,
+  ErrorBanner
+} from "../Common"
+import { reduxForm } from 'redux-form'
 
 class Form extends React.Component {
   constructor(props) {
     super(props)
-    this.state = {
-      form: {
-        alias: "",
-        xpubs: [],
-        quorum: 1,
-        tags: "{}"
-      }
-    }
-    this.handleChange = this.handleChange.bind(this)
-    this.handleSubmit = this.handleSubmit.bind(this)
+
+    this.submitWithErrors = this.submitWithErrors.bind(this)
   }
 
-  handleChange() {
-    this.setState({
-      form: {
-        alias: this.refs.alias.value,
-        xpubs: this.refs.xpubs.value.split(","),
-        quorum: parseInt(this.refs.quorum.value),
-        tags: this.refs.tags.value
-      }
-    })
-  }
-
-  handleSubmit(event) {
-    event.preventDefault()
-
-    let request = Object.assign({}, this.state.form)
-
-    try {
-      request.tags = JSON.parse(request.tags)
-    } catch(err) {
-      this.setState({error: "Tags must be a valid JSON object."})
-      return
-    }
-
-    this.props.submitForm(request).catch(err => {
-      this.setState({error: err})
+  submitWithErrors(data) {
+    return new Promise((resolve, reject) => {
+      this.props.submitForm(data)
+        .catch((err) => reject({_error: err.message}))
     })
   }
 
   render() {
+    const {
+      fields: { alias, tags, xpubs, quorum },
+      error,
+      handleSubmit,
+      submitting
+    } = this.props
+
+    const mockhsmKeys = this.props.mockhsmKeys ? this.props.mockhsmKeys.items : []
+
     return(
       <div className='form-container'>
         <PageHeader title="New Account" />
 
-        <form onSubmit={this.handleSubmit}>
-          <div className='form-group'>
-            <label>Alias</label>
-            <input
-              ref="alias"
-              className='form-control'
-              type='text'
-              placeholder="Alias"
-              autoFocus="autofocus"
-              value={this.state.form.alias}
-              onChange={this.handleChange} />
-          </div>
-          <div className='form-group'>
-            <label>Xpubs</label>
-            <input
-              ref="xpubs"
-              className='form-control'
-              type='text'
-              placeholder="Xpubs (comma separated)"
-              value={this.state.form.xpubs}
-              onChange={this.handleChange} />
-          </div>
-          <div className='form-group'>
-            <label>Quorum</label>
-            <input
-              ref="quorum"
-              className='form-control'
-              type='number'
-              placeholder="Quorum"
-              value={this.state.form.quorum}
-              onChange={this.handleChange} />
-          </div>
-          <div className='form-group'>
-            <label>Tags</label>
-            <textarea
-              ref="tags"
-              className='form-control'
-              value={this.state.form.tags}
-              onChange={this.handleChange} />
-          </div>
+        <form onSubmit={handleSubmit(this.submitWithErrors)}>
+          <TextField title='Alias' placeholder='Alias' fieldProps={alias} />
+          <TextareaField title="Tags" fieldProps={tags} />
+          <KeyConfiguration xpubs={xpubs} quorum={quorum} mockhsmKeys={mockhsmKeys}/>
 
-          {this.state.error &&
-            <ErrorBanner
-              title='Error creating account'
-              message={this.state.error.toString()}
-            />
-          }
+          {error && <ErrorBanner
+            title="There was a problem creating your account:"
+            message={error}/>}
 
-          <button className='btn btn-primary'>Submit</button>
+          <button type='submit' className='btn btn-primary' disabled={submitting}>
+            Submit
+          </button>
         </form>
       </div>
     )
   }
-
-
 }
 
-export default Form
+const fields = [ 'alias', 'tags', 'xpubs[]', 'quorum' ]
+export default reduxForm({
+  form: 'newAccountForm',
+  fields,
+  initialValues: {
+    tags: '{}',
+  }
+})(Form)

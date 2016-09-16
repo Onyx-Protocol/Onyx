@@ -1,5 +1,6 @@
 import chain from '../chain'
 import { context } from '../utility/environment'
+import { parseNonblankJSON } from '../utility/string'
 import { push } from 'react-router-redux'
 
 import generateListActions from './listActions'
@@ -12,17 +13,6 @@ const list = generateListActions(type, {
   defaultKey: "id"
 })
 const form = generateFormActions(type)
-
-function parseNonblankJSON(json) {
-  json = json || ''
-  json = json.trim()
-
-  if (json == '') {
-    return null
-  }
-
-  return JSON.parse(json)
-}
 
 function preprocessTransaction(data) {
   try {

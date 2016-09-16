@@ -25,6 +25,9 @@ class AppContainer extends React.Component {
   }
 
   componentWillMount() {
+    // FIXME: load all keys somewhere else
+    this.props.prefetchKeys()
+
     this.props.fetchInfo().then(() => {
       this.setState({loadedInfo: true})
       this.redirectRoot(this.props.configured, this.props.location)
