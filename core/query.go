@@ -112,14 +112,35 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 		if err != nil {
 			return result, errors.Wrap(err, "decoding Indexer.Transactions output")
 		}
-		inputs, ok := tx["inputs"].([]map[string]interface{})
+
+		inp, ok := tx["inputs"].([]interface{})
 		if !ok {
 			return result, fmt.Errorf("unexpected type %T for inputs in Indexer.Transactions output", tx["inputs"])
 		}
-		outputs, ok := tx["outputs"].([]map[string]interface{})
+
+		var inputs []map[string]interface{}
+		for i, in := range inp {
+			input, ok := in.(map[string]interface{})
+			if !ok {
+				return result, fmt.Errorf("unexpected type %T for input %d in Indexer.Transactions output", in, i)
+			}
+			inputs = append(inputs, input)
+		}
+
+		outp, ok := tx["outputs"].([]interface{})
 		if !ok {
 			return result, fmt.Errorf("unexpected type %T for outputs in Indexer.Transactions output", tx["outputs"])
 		}
+
+		var outputs []map[string]interface{}
+		for i, out := range outp {
+			output, ok := out.(map[string]interface{})
+			if !ok {
+				return result, fmt.Errorf("unexpected type %T for output %d in Indexer.Transactions output", out, i)
+			}
+			outputs = append(outputs, output)
+		}
+
 		inResps := make([]*txinResp, 0, len(inputs))
 		for _, in := range inputs {
 			r := &txinResp{
