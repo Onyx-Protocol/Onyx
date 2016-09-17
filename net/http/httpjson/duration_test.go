@@ -3,6 +3,7 @@ package httpjson
 import (
 	"encoding/json"
 	"testing"
+	"time"
 )
 
 func TestUnmarshalDuration(t *testing.T) {
@@ -38,5 +39,20 @@ func TestUnmarshalDuration(t *testing.T) {
 		if err.Error() != wantErr {
 			t.Errorf("wanted error %s, got %s", wantErr, err)
 		}
+	}
+}
+
+func TestMarshalDuration(t *testing.T) {
+	dur := Duration{
+		Duration: time.Second,
+	}
+	b, err := json.Marshal(dur)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+
+	want := `"1s"`
+	if string(b) != want {
+		t.Errorf("wanted %s, got %s", want, b)
 	}
 }
