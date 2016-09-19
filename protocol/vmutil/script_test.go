@@ -107,7 +107,7 @@ func TestPayToContract(t *testing.T) {
 }
 
 func Test00Multisig(t *testing.T) {
-	prog, err := BlockMultiSigScript(nil, 0)
+	prog, err := BlockMultiSigProgram(nil, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,18 +118,18 @@ func Test00Multisig(t *testing.T) {
 
 func Test01Multisig(t *testing.T) {
 	pubkeys := []ed25519.PublicKey{{}}
-	_, err := BlockMultiSigScript(pubkeys, 0)
+	_, err := BlockMultiSigProgram(pubkeys, 0)
 	if err == nil {
 		t.Fatal("BlockMultiSigScript(1, 0) = success want error")
 	}
 }
 
 func TestParse00Multisig(t *testing.T) {
-	prog, err := BlockMultiSigScript(nil, 0)
+	prog, err := BlockMultiSigProgram(nil, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	keys, quorum, err := ParseBlockMultiSigScript(prog)
+	keys, quorum, err := ParseBlockMultiSigProgram(prog)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,8 +141,27 @@ func TestParse00Multisig(t *testing.T) {
 func TestP2DP(t *testing.T) {
 	pub1, _, _ := ed25519.GenerateKey(nil)
 	pub2, _, _ := ed25519.GenerateKey(nil)
-	prog := P2DPMultiSigProgram([]ed25519.PublicKey{pub1, pub2}, 1)
+	prog, _ := P2DPMultiSigProgram([]ed25519.PublicKey{pub1, pub2}, 1)
 	pubs, n, err := ParseP2DPMultiSigProgram(prog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Errorf("expected nrequired=1, got %d", n)
+	}
+	if !bytes.Equal(pubs[0], pub1) {
+		t.Errorf("expected first pubkey to be %x, got %x", hd25519.PubBytes(pub1), hd25519.PubBytes(pubs[0]))
+	}
+	if !bytes.Equal(pubs[1], pub2) {
+		t.Errorf("expected second pubkey to be %x, got %x", hd25519.PubBytes(pub2), hd25519.PubBytes(pubs[1]))
+	}
+}
+
+func TestBlockMultisig(t *testing.T) {
+	pub1, _, _ := ed25519.GenerateKey(nil)
+	pub2, _, _ := ed25519.GenerateKey(nil)
+	prog, _ := BlockMultiSigProgram([]ed25519.PublicKey{pub1, pub2}, 1)
+	pubs, n, err := ParseBlockMultiSigProgram(prog)
 	if err != nil {
 		t.Fatal(err)
 	}

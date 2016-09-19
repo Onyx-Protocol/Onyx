@@ -304,7 +304,10 @@ func serializeAssetDef(def map[string]interface{}) ([]byte, error) {
 }
 
 func programWithDefinition(pubkeys []ed25519.PublicKey, nrequired int, definition []byte) ([]byte, error) {
-	issuanceProg := vmutil.P2DPMultiSigProgram(pubkeys, nrequired)
+	issuanceProg, err := vmutil.P2DPMultiSigProgram(pubkeys, nrequired)
+	if err != nil {
+		return nil, err
+	}
 	builder := vmutil.NewBuilder()
 	builder.AddData(definition).AddOp(vm.OP_DROP)
 	builder.AddRawBytes(issuanceProg)

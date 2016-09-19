@@ -62,7 +62,7 @@ func (g *generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *
 		return nil // no signatures needed for initial block
 	}
 
-	pubkeys, quorum, err := vmutil.ParseBlockMultiSigScript(prevBlock.ConsensusProgram)
+	pubkeys, quorum, err := vmutil.ParseBlockMultiSigProgram(prevBlock.ConsensusProgram)
 	if err != nil {
 		return errors.Wrap(err, "parsing prevblock output script")
 	}

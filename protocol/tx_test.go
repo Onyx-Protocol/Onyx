@@ -82,7 +82,7 @@ func (d *testDest) sign(t testing.TB, tx *bc.TxData, index int) {
 	tx.Inputs[index].InputWitness = [][]byte{sig, prog}
 }
 
-func (d testDest) controlProgram() []byte {
+func (d testDest) controlProgram() ([]byte, error) {
 	pub := d.privKey.Public().(ed25519.PublicKey)
 	return vmutil.P2DPMultiSigProgram([]ed25519.PublicKey{pub}, 1)
 }
@@ -94,7 +94,8 @@ type testAsset struct {
 
 func newAsset(t testing.TB) *testAsset {
 	dest := newDest(t)
-	assetID := bc.ComputeAssetID(dest.controlProgram(), bc.Hash{}, 1)
+	cp, _ := dest.controlProgram()
+	assetID := bc.ComputeAssetID(cp, bc.Hash{}, 1)
 
 	return &testAsset{
 		AssetID:  assetID,
@@ -109,13 +110,15 @@ func issue(t testing.TB, asset *testAsset, dest *testDest, amount uint64) (*bc.T
 	if dest == nil {
 		dest = newDest(t)
 	}
+	assetCP, _ := asset.controlProgram()
+	destCP, _ := dest.controlProgram()
 	tx := &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), bc.Hash{}, amount, asset.controlProgram(), nil, nil),
+			bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), bc.Hash{}, amount, assetCP, nil, nil),
 		},
 		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(asset.AssetID, amount, dest.controlProgram(), nil),
+			bc.NewTxOutput(asset.AssetID, amount, destCP, nil),
 		},
 	}
 	asset.sign(t, tx, 0)
@@ -124,13 +127,14 @@ func issue(t testing.TB, asset *testAsset, dest *testDest, amount uint64) (*bc.T
 }
 
 func transfer(t testing.TB, out *state.Output, from, to *testDest) *bc.Tx {
+	cp, _ := to.controlProgram()
 	tx := &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		Inputs: []*bc.TxInput{
 			bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil),
 		},
 		Outputs: []*bc.TxOutput{
-			bc.NewTxOutput(out.AssetID, out.Amount, to.controlProgram(), nil),
+			bc.NewTxOutput(out.AssetID, out.Amount, cp, nil),
 		},
 	}
 	from.sign(t, tx, 0)
