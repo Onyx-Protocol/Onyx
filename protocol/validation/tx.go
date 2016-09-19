@@ -174,7 +174,8 @@ func ValidateTx(tx *bc.Tx) error {
 // and it returns whether the sum is correct.
 func addCheckOverflow(x, y int64) (sum int64, ok bool) {
 	sum = x + y
-	if (x > 0 && y > 0 && sum < 0) || (x < 0 && y < 0 && sum > 0) {
+	if (x > 0 && y > 0 && sum <= 0) ||
+		(x < 0 && y < 0 && sum >= 0) {
 		return 0, false
 	}
 	return sum, true
