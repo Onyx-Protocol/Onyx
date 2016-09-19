@@ -59,6 +59,13 @@ type (
 //
 // POST /list-transactions
 func (a *api) listTransactions(ctx context.Context, in requestQuery) (result page, err error) {
+	var c context.CancelFunc
+	timeout := in.Timeout.Duration
+	if timeout != 0 {
+		ctx, c = context.WithTimeout(ctx, timeout)
+		defer c()
+	}
+
 	if in.EndTimeMS == 0 {
 		in.EndTimeMS = bc.Millis(time.Now())
 	}

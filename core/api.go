@@ -10,6 +10,7 @@ import (
 	"chain/core/generator"
 	"chain/core/mockhsm"
 	"chain/core/query"
+	"chain/net/http/httpjson"
 	"chain/protocol"
 	"chain/protocol/bc"
 )
@@ -72,8 +73,10 @@ type requestQuery struct {
 	FilterParams []interface{} `json:"filter_params,omitempty"`
 	SumBy        []string      `json:"sum_by,omitempty"`
 
-	// This is used by /list-transactions.
-	Order string `json:"order,omitempty"`
+	// Order and Timeout are used by /list-transactions
+	// to facilitate notifications.
+	Order   string            `json:"order,omitempty"`
+	Timeout httpjson.Duration `json:"timeout"`
 
 	After string `json:"after"`
 

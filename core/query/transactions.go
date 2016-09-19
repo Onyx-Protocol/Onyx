@@ -88,26 +88,12 @@ func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals [
 	}
 
 	queryStr, queryArgs := constructTransactionsQuery(expr, after, asc, limit)
-	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "executing txn query")
-	}
-	defer rows.Close()
 
-	txns := make([]interface{}, 0, limit)
-	for rows.Next() {
-		var data []byte
-		err := rows.Scan(&after.FromBlockHeight, &after.FromPosition, &data)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "scanning transaction row")
-		}
-		txns = append(txns, (*json.RawMessage)(&data))
+	if asc {
+		return ind.waitForAndFetchTransactions(ctx, queryStr, queryArgs, after, limit)
+	} else {
+		return ind.fetchTransactions(ctx, queryStr, queryArgs, after, limit)
 	}
-	err = rows.Err()
-	if err != nil {
-		return nil, nil, errors.Wrap(err)
-	}
-	return txns, &after, nil
 }
 
 // If asc is true, the transactions will be returned from "in front" of the `after`
@@ -145,4 +131,67 @@ func constructTransactionsQuery(expr filter.SQLExpr, after TxAfter, asc bool, li
 
 	buf.WriteString("LIMIT " + strconv.Itoa(limit))
 	return buf.String(), vals
+}
+
+func (ind *Indexer) fetchTransactions(ctx context.Context, queryStr string, queryArgs []interface{}, after TxAfter, limit int) ([]interface{}, *TxAfter, error) {
+	rows, err := ind.db.Query(ctx, queryStr, queryArgs...)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "executing txn query")
+	}
+	defer rows.Close()
+
+	txns := make([]interface{}, 0, limit)
+	for rows.Next() {
+		var data []byte
+		err := rows.Scan(&after.FromBlockHeight, &after.FromPosition, &data)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "scanning transaction row")
+		}
+		txns = append(txns, (*json.RawMessage)(&data))
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, nil, errors.Wrap(err)
+	}
+	return txns, &after, nil
+}
+
+type fetchResp struct {
+	txns  []interface{}
+	after *TxAfter
+	err   error
+}
+
+func (ind *Indexer) waitForAndFetchTransactions(ctx context.Context, queryStr string, queryArgs []interface{}, after TxAfter, limit int) ([]interface{}, *TxAfter, error) {
+	resp := make(chan fetchResp, 1)
+	go func() {
+		var (
+			txs []interface{}
+			aft *TxAfter
+			err error
+		)
+
+		h := ind.c.Height()
+		for len(txs) == 0 {
+			h++
+			ind.c.WaitForBlockSoon(ctx, h)
+			txs, aft, err = ind.fetchTransactions(ctx, queryStr, queryArgs, after, limit)
+			if err != nil {
+				resp <- fetchResp{nil, nil, err}
+				return
+			}
+
+			if len(txs) > 0 {
+				resp <- fetchResp{txs, aft, nil}
+				return
+			}
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, nil, ctx.Err()
+	case r := <-resp:
+		return r.txns, r.after, r.err
+	}
 }

@@ -40,6 +40,7 @@ func NewIndexer(db pg.DB, c *protocol.Chain) *Indexer {
 	indexer := &Indexer{
 		db:      db,
 		indexes: make(map[string]*Index),
+		c:       c,
 	}
 	c.AddBlockCallback(indexer.indexBlockCallback)
 	return indexer
@@ -48,6 +49,7 @@ func NewIndexer(db pg.DB, c *protocol.Chain) *Indexer {
 // Indexer creates, updates and queries against indexes.
 type Indexer struct {
 	db         pg.DB
+	c          *protocol.Chain
 	mu         sync.Mutex // protects indexes
 	indexes    map[string]*Index
 	annotators []Annotator
