@@ -1,7 +1,8 @@
 import React from 'react'
 import PageHeader from "../PageHeader/PageHeader"
-import { ErrorBanner } from "../Common"
+import { JsonField, ErrorBanner } from "../Common"
 import ActionItem from './FormActionItem'
+import { reduxForm } from 'redux-form'
 
 class Form extends React.Component {
   constructor(props) {
@@ -18,7 +19,7 @@ class Form extends React.Component {
   }
 
   addActionItem() {
-    this.props.fields.actions.addField({reference_data: '{}'})
+    this.props.fields.actions.addField({reference_data: '{\n\t\n}'})
   }
 
   removeActionItem() {
@@ -69,7 +70,7 @@ class Form extends React.Component {
           <hr />
 
           {this.state.referenceDataOpen &&
-            <TextareaField title='Transaction-level reference data' fieldProps={reference_data} />
+            <JsonField title='Transaction-level reference data' fieldProps={reference_data} />
           }
           {!this.state.referenceDataOpen &&
             <button type="button" className="btn btn-link" onClick={this.openReferenceData}>
@@ -97,4 +98,38 @@ class Form extends React.Component {
   }
 }
 
-export default Form
+const validate = values => {
+  const errors = {actions: {}}
+  let fieldError
+
+  fieldError = JsonField.validator(values.reference_data)
+  if (fieldError) { errors.reference_data = fieldError }
+
+  values.actions.forEach((action, index) => {
+    fieldError = JsonField.validator(values.actions[index].reference_data)
+    if (fieldError) {
+      errors.actions[index] = {...errors.actions[index], reference_data: fieldError}
+    }
+  })
+
+  return errors
+}
+
+export default reduxForm({
+  form: 'NewTransactionForm',
+  fields: [
+    'actions[].type',
+    'actions[].account_alias',
+    'actions[].asset_alias',
+    'actions[].amount',
+    'actions[].control_program',
+    'actions[].transaction_id',
+    'actions[].position',
+    'actions[].reference_data',
+    'reference_data',
+  ],
+  initialValues: {
+    reference_data: '{\n\t\n}',
+  },
+  validate
+})(Form)

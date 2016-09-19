@@ -1,0 +1,13 @@
+.editorWrapper {
+  border: 1px solid $input-border;
+  border-radius: $input-border-radius-large;
+  padding: 12px 8px; // ace-text-layer gets 4px default padding
+}
+
+.editorError {
+  border-color: $brand-danger;
+}
+
+.errorBlock {
+  color: $brand-danger;
+}

@@ -2,7 +2,7 @@ import React from 'react'
 import PageHeader from "../PageHeader/PageHeader"
 import {
   TextField,
-  TextareaField,
+  JsonField,
   KeyConfiguration,
   ErrorBanner
 } from "../Common"
@@ -38,8 +38,8 @@ class Form extends React.Component {
 
         <form onSubmit={handleSubmit(this.submitWithErrors)}>
           <TextField title='Alias' placeholder='Alias' fieldProps={alias} />
-          <TextareaField title="Tags" fieldProps={tags} />
-          <TextareaField title="Definition" fieldProps={definition} />
+          <JsonField title='Tags' fieldProps={tags} />
+          <JsonField title='Definition' fieldProps={definition} />
           <KeyConfiguration xpubs={xpubs} quorum={quorum} mockhsmKeys={mockhsmKeys}/>
 
           {error && <ErrorBanner
@@ -55,12 +55,25 @@ class Form extends React.Component {
   }
 }
 
+const validate = values => {
+  const errors = {}
+
+  const jsonFields = ['tags', 'definition']
+  jsonFields.forEach(key => {
+    const fieldError = JsonField.validator(values[key])
+    if (fieldError) { errors[key] = fieldError }
+  })
+
+  return errors
+}
+
 const fields = [ 'alias', 'tags', 'definition', 'xpubs[]', 'quorum' ]
 export default reduxForm({
   form: 'newAssetForm',
   fields,
+  validate,
   initialValues: {
-    tags: '{}',
-    definition: '{}',
+    tags: '{\n\t\n}',
+    definition: '{\n\t\n}',
   }
 })(Form)
