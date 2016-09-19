@@ -26,15 +26,15 @@ func TestCheckSig(t *testing.T) {
 			true, false,
 		},
 		{
-			"0x010203 1 0x040506 1 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 CHECKMULTISIG",
+			"0x010203 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 0x040506 1 1 CHECKMULTISIG",
 			false, false,
 		},
 		{
-			"0x010203 1 0x040506 1 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f CHECKMULTISIG",
+			"0x010203 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f 0x040506 1 1 CHECKMULTISIG",
 			false, true,
 		},
 		{
-			"0x26ced30b1942b89ef5332a9f22f1a61e5a6a3f8a5bc33b2fc58b1daf78c81bf1d5c8add19cea050adeb37da3a7bf8f813c6a6922b42934a6441fa6bb1c7fc208 1 0xdbca6fb13badb7cfdf76510070ffad15b85f9934224a9e11202f5e8f86b584a6 1 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 CHECKMULTISIG",
+			"0x26ced30b1942b89ef5332a9f22f1a61e5a6a3f8a5bc33b2fc58b1daf78c81bf1d5c8add19cea050adeb37da3a7bf8f813c6a6922b42934a6441fa6bb1c7fc208 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 0xdbca6fb13badb7cfdf76510070ffad15b85f9934224a9e11202f5e8f86b584a6 1 1 CHECKMULTISIG",
 			true, false,
 		},
 	}
@@ -189,8 +189,9 @@ func TestCryptoOps(t *testing.T) {
 			},
 		},
 		wantVM: &virtualMachine{
-			runLimit:  49119,
-			dataStack: [][]byte{{1}},
+			deferredCost: -143,
+			runLimit:     48976,
+			dataStack:    [][]byte{{1}},
 		},
 	}, {
 		op: OP_CHECKSIG,
@@ -204,8 +205,9 @@ func TestCryptoOps(t *testing.T) {
 			},
 		},
 		wantVM: &virtualMachine{
-			runLimit:  49120,
-			dataStack: [][]byte{{}},
+			deferredCost: -144,
+			runLimit:     48976,
+			dataStack:    [][]byte{{}},
 		},
 	}, {
 		op: OP_CHECKSIG,
@@ -219,8 +221,9 @@ func TestCryptoOps(t *testing.T) {
 			},
 		},
 		wantVM: &virtualMachine{
-			runLimit:  49120,
-			dataStack: [][]byte{{}},
+			deferredCost: -144,
+			runLimit:     48976,
+			dataStack:    [][]byte{{}},
 		},
 	}, {
 		op: OP_CHECKSIG,
@@ -234,8 +237,9 @@ func TestCryptoOps(t *testing.T) {
 			},
 		},
 		wantVM: &virtualMachine{
-			runLimit:  49120,
-			dataStack: [][]byte{{}},
+			deferredCost: -144,
+			runLimit:     48976,
+			dataStack:    [][]byte{{}},
 		},
 	}, {
 		op: OP_CHECKSIG,
@@ -286,34 +290,34 @@ func TestCryptoOps(t *testing.T) {
 		startVM: &virtualMachine{
 			runLimit: 50000,
 			dataStack: [][]byte{
-				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851" +
-					"fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
-				{1},
+				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
+				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
 				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
 				{1},
-				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
+				{1},
 			},
 		},
 		wantVM: &virtualMachine{
-			runLimit:  49137,
-			dataStack: [][]byte{{1}},
+			deferredCost: -161,
+			runLimit:     48976,
+			dataStack:    [][]byte{{1}},
 		},
 	}, {
 		op: OP_CHECKMULTISIG,
 		startVM: &virtualMachine{
 			runLimit: 50000,
 			dataStack: [][]byte{
-				mustDecodeHex("badabdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851" +
-					"fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
-				{1},
+				mustDecodeHex("badabdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
+				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
 				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
 				{1},
-				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
+				{1},
 			},
 		},
 		wantVM: &virtualMachine{
-			runLimit:  49138,
-			dataStack: [][]byte{{}},
+			deferredCost: -162,
+			runLimit:     48976,
+			dataStack:    [][]byte{{}},
 		},
 	}, {
 		op: OP_CHECKMULTISIG,
@@ -327,7 +331,8 @@ func TestCryptoOps(t *testing.T) {
 		startVM: &virtualMachine{
 			runLimit: 50000,
 			dataStack: [][]byte{
-				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
+				{1},
+				{1},
 			},
 		},
 		wantErr: ErrDataStackUnderflow,
@@ -336,8 +341,9 @@ func TestCryptoOps(t *testing.T) {
 		startVM: &virtualMachine{
 			runLimit: 50000,
 			dataStack: [][]byte{
-				{1},
 				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
+				{1},
+				{1},
 			},
 		},
 		wantErr: ErrDataStackUnderflow,
@@ -347,8 +353,9 @@ func TestCryptoOps(t *testing.T) {
 			runLimit: 50000,
 			dataStack: [][]byte{
 				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
-				{1},
 				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
+				{1},
+				{1},
 			},
 		},
 		wantErr: ErrDataStackUnderflow,
@@ -357,52 +364,11 @@ func TestCryptoOps(t *testing.T) {
 		startVM: &virtualMachine{
 			runLimit: 50000,
 			dataStack: [][]byte{
-				{1},
-				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
-				{1},
-				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
-			},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_CHECKMULTISIG,
-		startVM: &virtualMachine{
-			runLimit: 50000,
-			dataStack: [][]byte{
-				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851" +
-					"fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
-				{1},
-				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
-				{1},
+				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
 				mustDecodeHex("badbad"),
-			},
-		},
-		wantErr: ErrBadValue,
-	}, {
-		op: OP_CHECKMULTISIG,
-		startVM: &virtualMachine{
-			runLimit: 50000,
-			dataStack: [][]byte{
-				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851" +
-					"fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
-				{1},
-				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
-				{0},
-				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
-			},
-		},
-		wantErr: ErrBadValue,
-	}, {
-		op: OP_CHECKMULTISIG,
-		startVM: &virtualMachine{
-			runLimit: 50000,
-			dataStack: [][]byte{
-				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851" +
-					"fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
-				{0},
 				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
 				{1},
-				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
+				{1},
 			},
 		},
 		wantErr: ErrBadValue,
@@ -411,12 +377,37 @@ func TestCryptoOps(t *testing.T) {
 		startVM: &virtualMachine{
 			runLimit: 50000,
 			dataStack: [][]byte{
-				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851" +
-					"fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
+				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
+				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
+				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
+				{1},
+				{0},
+			},
+		},
+		wantErr: ErrBadValue,
+	}, {
+		op: OP_CHECKMULTISIG,
+		startVM: &virtualMachine{
+			runLimit: 50000,
+			dataStack: [][]byte{
+				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
+				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
+				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
+				{0},
+				{1},
+			},
+		},
+		wantErr: ErrBadValue,
+	}, {
+		op: OP_CHECKMULTISIG,
+		startVM: &virtualMachine{
+			runLimit: 50000,
+			dataStack: [][]byte{
+				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
+				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
+				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
 				{2},
-				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
 				{1},
-				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
 			},
 		},
 		wantErr: ErrBadValue,
@@ -425,12 +416,11 @@ func TestCryptoOps(t *testing.T) {
 		startVM: &virtualMachine{
 			runLimit: 0,
 			dataStack: [][]byte{
-				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851" +
-					"fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
-				{1},
+				mustDecodeHex("af5abdf4bbb34f4a089efc298234f84fd909def662a8df03b4d7d40372728851fbd3bf59920af5a7c361a4851967714271d1727e3be417a60053c30969d8860c"),
+				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
 				mustDecodeHex("ab3220d065dc875c6a5b4ecc39809b5f24eb0a605e9eef5190457edbf1e3b866"),
 				{1},
-				mustDecodeHex("916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"),
+				{1},
 			},
 		},
 		wantErr: ErrRunLimitExceeded,

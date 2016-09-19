@@ -24,17 +24,17 @@ func IsUnspendable(prog []byte) bool {
 // required to have signed the block for success.  An ErrBadValue will
 // be returned if nrequired is larger than the number of keys
 // provided.
-// The result is: <nrequired> <pubkey>... <npubkeys> BLOCKSIGHASH CHECKMULTISIG
+// The result is: BLOCKSIGHASH <pubkey>... <nrequired> <npubkeys> CHECKMULTISIG
 func BlockMultiSigScript(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
 	if nrequired < 0 || len(pubkeys) < nrequired || (len(pubkeys) > 0 && nrequired == 0) {
 		return nil, ErrBadValue
 	}
 	builder := NewBuilder()
-	builder.AddInt64(int64(nrequired))
+	builder.AddOp(vm.OP_BLOCKSIGHASH)
 	for _, key := range pubkeys {
 		builder.AddData(hd25519.PubBytes(key))
 	}
-	builder.AddInt64(int64(len(pubkeys))).AddOp(vm.OP_BLOCKSIGHASH).AddOp(vm.OP_CHECKMULTISIG)
+	builder.AddInt64(int64(nrequired)).AddInt64(int64(len(pubkeys))).AddOp(vm.OP_CHECKMULTISIG)
 	return builder.Program, nil
 }
 
@@ -132,13 +132,11 @@ func P2DPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) []byte {
 	// Number of sigs must match nrequired.
 	builder.AddOp(vm.OP_DUP).AddOp(vm.OP_TOALTSTACK) // stash a copy of the predicate
 	builder.AddOp(vm.OP_SHA3)                        // stack is now [... SIG SIG SIG PREDICATEHASH]
-	builder.AddInt64(int64(nrequired))               // stack is now [... SIG SIG SIG PREDICATEHASH M]
 	for _, p := range pubkeys {
 		builder.AddData(hd25519.PubBytes(p))
 	}
-	builder.AddInt64(int64(len(pubkeys)))                 // stack is now [... sig sig sig PREDICATEHASH M pub pub pub N]
-	builder.AddOp(vm.OP_DUP).AddInt64(2).AddOp(vm.OP_ADD) // stack is now [... sig sig sig PREDICATEHASH M pub pub pub N N+2]
-	builder.AddOp(vm.OP_ROLL)                             // stack is now [... sig sig sig M pub pub pub N PREDICATEHASH]
+	builder.AddInt64(int64(nrequired))    // stack is now [... SIG SIG SIG PREDICATEHASH PUB PUB PUB M]
+	builder.AddInt64(int64(len(pubkeys))) // stack is now [... sig sig sig PREDICATEHASH PUB PUB PUB M N]
 	builder.AddOp(vm.OP_CHECKMULTISIG).AddOp(vm.OP_VERIFY)
 	builder.AddOp(vm.OP_FROMALTSTACK) // get the stashed predicate back
 	builder.AddInt64(0).AddOp(vm.OP_CHECKPREDICATE)
@@ -150,28 +148,30 @@ func ParseP2DPMultiSigProgram(program []byte) ([]ed25519.PublicKey, int, error) 
 	if err != nil {
 		return nil, 0, err
 	}
-	if len(pops) < 15 {
+	if len(pops) < 11 {
 		return nil, 0, vm.ErrShortProgram
-	}
-
-	npubkeys, err := vm.AsInt64(pops[len(pops)-10].Data)
-	if err != nil {
-		return nil, 0, err
-	}
-	if npubkeys <= 0 || int(npubkeys) > len(pops)-14 {
-		return nil, 0, ErrBadValue
 	}
 
 	// Count all instructions backwards from the end in case there are
 	// extra instructions at the beginning of the program (like a
 	// <pushdata> DROP).
 
-	firstPubkeyIndex := len(pops) - 10 - int(npubkeys)
-
-	nrequired, err := vm.AsInt64(pops[firstPubkeyIndex-1].Data)
+	npubkeys, err := vm.AsInt64(pops[len(pops)-6].Data)
+	if err != nil {
+		return nil, 0, err
+	}
+	if npubkeys <= 0 || int(npubkeys) > len(pops)-10 {
+		return nil, 0, ErrBadValue
+	}
+	nrequired, err := vm.AsInt64(pops[len(pops)-7].Data)
+	if err != nil {
+		return nil, 0, err
+	}
 	if nrequired <= 0 {
 		return nil, 0, ErrBadValue
 	}
+
+	firstPubkeyIndex := len(pops) - 7 - int(npubkeys)
 
 	pubkeys := make([]ed25519.PublicKey, 0, npubkeys)
 	for i := firstPubkeyIndex; i < firstPubkeyIndex+int(npubkeys); i++ {

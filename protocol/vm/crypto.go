@@ -54,38 +54,31 @@ func opCheckSig(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	pubkeyBytes, err := vm.pop(false)
+	pubkeyBytes, err := vm.pop(true)
 	if err != nil {
 		return err
 	}
-	msg, err := vm.pop(false)
+	msg, err := vm.pop(true)
 	if err != nil {
 		return err
 	}
 	if len(msg) != 32 {
 		return ErrBadValue
 	}
-	sig, err := vm.pop(false)
+	sig, err := vm.pop(true)
 	if err != nil {
 		return err
 	}
 
 	pubkey, err := hd25519.PubFromBytes(pubkeyBytes)
 	if err != nil {
-		return vm.pushBool(false, false)
+		return vm.pushBool(false, true)
 	}
-	return vm.pushBool(ed25519.Verify(pubkey, msg, sig), false)
+	return vm.pushBool(ed25519.Verify(pubkey, msg, sig), true)
 }
 
 func opCheckMultiSig(vm *virtualMachine) error {
-	msg, err := vm.pop(false)
-	if err != nil {
-		return err
-	}
-	if len(msg) != 32 {
-		return ErrBadValue
-	}
-	numPubkeys, err := vm.popInt64(false)
+	numPubkeys, err := vm.popInt64(true)
 	if err != nil {
 		return err
 	}
@@ -96,24 +89,31 @@ func opCheckMultiSig(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	pubkeyByteses := make([][]byte, 0, numPubkeys)
-	for i := int64(0); i < numPubkeys; i++ {
-		pubkeyBytes, err := vm.pop(false)
-		if err != nil {
-			return err
-		}
-		pubkeyByteses = append(pubkeyByteses, pubkeyBytes)
-	}
-	numSigs, err := vm.popInt64(false)
+	numSigs, err := vm.popInt64(true)
 	if err != nil {
 		return err
 	}
 	if numSigs < 0 || numSigs > numPubkeys || (numPubkeys > 0 && numSigs == 0) {
 		return ErrBadValue
 	}
+	pubkeyByteses := make([][]byte, 0, numPubkeys)
+	for i := int64(0); i < numPubkeys; i++ {
+		pubkeyBytes, err := vm.pop(true)
+		if err != nil {
+			return err
+		}
+		pubkeyByteses = append(pubkeyByteses, pubkeyBytes)
+	}
+	msg, err := vm.pop(true)
+	if err != nil {
+		return err
+	}
+	if len(msg) != 32 {
+		return ErrBadValue
+	}
 	sigs := make([][]byte, 0, numSigs)
 	for i := int64(0); i < numSigs; i++ {
-		sig, err := vm.pop(false)
+		sig, err := vm.pop(true)
 		if err != nil {
 			return err
 		}
@@ -124,7 +124,7 @@ func opCheckMultiSig(vm *virtualMachine) error {
 	for _, p := range pubkeyByteses {
 		pubkey, err := hd25519.PubFromBytes(p)
 		if err != nil {
-			return vm.pushBool(false, false)
+			return vm.pushBool(false, true)
 		}
 		pubkeys = append(pubkeys, pubkey)
 	}
@@ -135,7 +135,7 @@ func opCheckMultiSig(vm *virtualMachine) error {
 		}
 		pubkeys = pubkeys[1:]
 	}
-	return vm.pushBool(len(sigs) == 0, false)
+	return vm.pushBool(len(sigs) == 0, true)
 }
 
 func opTxSigHash(vm *virtualMachine) error {
