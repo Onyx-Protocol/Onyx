@@ -30,7 +30,7 @@ func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, e
 	}
 	defer dbtx.Rollback(ctx)
 
-	ttl := req.TTL
+	ttl := req.TTL.Duration
 	if ttl == 0 {
 		ttl = defaultTxTTL
 	}

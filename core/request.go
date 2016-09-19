@@ -3,13 +3,13 @@ package core
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/txbuilder"
 	chainjson "chain/encoding/json"
 	"chain/errors"
+	"chain/net/http/httpjson"
 	"chain/protocol/bc"
 )
 
@@ -47,10 +47,10 @@ func (a *action) UnmarshalJSON(data []byte) error {
 }
 
 type buildRequest struct {
-	Tx            *bc.TxData    `json:"raw_transaction"`
-	Actions       []*action     `json:"actions"`
-	ReferenceData chainjson.Map `json:"reference_data"`
-	TTL           time.Duration `json:"ttl"`
+	Tx            *bc.TxData        `json:"raw_transaction"`
+	Actions       []*action         `json:"actions"`
+	ReferenceData chainjson.Map     `json:"reference_data"`
+	TTL           httpjson.Duration `json:"ttl"`
 }
 
 func (req *buildRequest) actions() []txbuilder.Action {

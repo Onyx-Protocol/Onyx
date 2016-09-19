@@ -466,6 +466,14 @@ public class Transaction {
         private Map<String, Object> referenceData;
 
         /**
+         * A time duration in milliseconds. If the transaction is not fully
+         * signed and submitted within this time, it will be rejected by the
+         * blockchain. Additionally, any outputs reserved when building this
+         * transaction will remain reserved for this duration.
+         */
+        private long ttl;
+
+        /**
          * Builds a single transaction template.
          * @param ctx context object which makes requests to the server
          * @return a transaction template
@@ -514,6 +522,18 @@ public class Transaction {
          */
         public Builder setReferenceData(Map<String, Object> referenceData) {
             this.referenceData = referenceData;
+            return this;
+        }
+
+        /**
+         * Sets a transaction's time-to-live, which indicates how long outputs
+         * will be reserved for, and how long the transaction will remain valid.
+         * Passing zero will use the default TTL, which is 300000ms (5 minutes).
+         * @param ms the duration of the TTL, in milliseconds.
+         * @return updated builder object
+         */
+        public Builder setTtl(long ms) {
+            this.ttl = ms;
             return this;
         }
 
