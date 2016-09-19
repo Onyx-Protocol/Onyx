@@ -94,9 +94,9 @@ var ErrEmptyProgram = errors.New("empty signature program")
 // If sw.Program is empty, it is populated with an _inferred_ deferred
 // predicate: a program committing to aspects of the current
 // transaction. Specifically, the program commits to:
-//  - the maxtime of the transaction
-//  - the outpoint and reference data of the current input
-//  - the assetID, amount, reference data, and control program of each output.
+//  - the mintime and maxtime of the transaction (if non-zero)
+//  - the outpoint and (if non-empty) reference data of the current input
+//  - the assetID, amount, control program, and (if non-empty) reference data of each output.
 func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, xpubs []string, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
 	// Compute the deferred predicate to sign. This is either a
 	// txsighash program if tpl.Final is true (i.e., the tx is complete
@@ -152,9 +152,10 @@ func buildSigProgram(tpl *Template, index int) []byte {
 		return builder.Program
 	}
 	constraints := make([]constraint, 0, 3+len(tpl.Transaction.Outputs))
-	if tpl.Transaction.MaxTime > 0 {
-		constraints = append(constraints, ttlConstraint(tpl.Transaction.MaxTime))
-	}
+	constraints = append(constraints, &timeConstraint{
+		minTimeMS: tpl.Transaction.MinTime,
+		maxTimeMS: tpl.Transaction.MaxTime,
+	})
 	inp := tpl.Transaction.Inputs[index]
 	if !inp.IsIssuance() {
 		constraints = append(constraints, outpointConstraint(inp.Outpoint()))

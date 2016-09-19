@@ -18,12 +18,30 @@ type constraint interface {
 	code() []byte
 }
 
-// ttlConstraint means the tx is only valid until the given time.
-type ttlConstraint int64
+// timeConstraint means the tx is only valid within the given time
+// bounds.  Either value is allowed to be 0 meaning "ignore."
+type timeConstraint struct {
+	minTimeMS, maxTimeMS uint64
+}
 
-func (t ttlConstraint) code() []byte {
+func (t timeConstraint) code() []byte {
+	if t.minTimeMS == 0 && t.maxTimeMS == 0 {
+		return []byte{byte(vm.OP_TRUE)}
+	}
 	builder := vmutil.NewBuilder()
-	builder.AddOp(vm.OP_MAXTIME).AddInt64(int64(t)).AddOp(vm.OP_LESSTHANOREQUAL)
+	if t.minTimeMS > 0 {
+		builder.AddOp(vm.OP_MINTIME).AddInt64(int64(t.minTimeMS)).AddOp(vm.OP_GREATERTHANOREQUAL)
+	}
+	if t.maxTimeMS > 0 {
+		if t.minTimeMS > 0 {
+			// Consume the boolean left by the "mintime" clause, failing
+			// immediately if it's false, so that the result of the
+			// "maxtime" clause below is really (mintime clause && maxtime
+			// clause).
+			builder.AddOp(vm.OP_VERIFY)
+		}
+		builder.AddOp(vm.OP_MAXTIME).AddInt64(int64(t.maxTimeMS)).AddOp(vm.OP_LESSTHANOREQUAL)
+	}
 	return builder.Program
 }
 
