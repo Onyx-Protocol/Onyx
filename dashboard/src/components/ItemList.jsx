@@ -10,23 +10,30 @@ class ItemList extends React.Component {
     super(props)
 
     this.state = {
-      loading: false
+      mounted: false
     }
   }
 
   componentWillMount() {
-    this.loadFirstPage(this.props)
+    if (this.props.currentPage === -1) {
+      Promise.resolve(this.fetchFirstPage(this.props)).then(() => {
+        this.setState({mounted: true})
+      })
+    } else {
+      this.setState({mounted: true})
+    }
+
   }
 
   componentWillReceiveProps(nextProps) {
-    this.loadFirstPage(nextProps)
+    if (this.state.mounted) {
+      this.fetchFirstPage(nextProps)
+    }
   }
 
-  loadFirstPage(props) {
-    if (!this.state.loading && props.currentPage === -1) {
-      this.setState({loading: true})
-      Promise.resolve(this.props.getNextPage())
-        .then(() => { this.setState({loading: false})})
+  fetchFirstPage(props) {
+    if (props.currentPage === -1) {
+      return this.props.getNextPage()
     }
   }
 
@@ -44,7 +51,7 @@ class ItemList extends React.Component {
     let header = [pageHeader]
     if (!this.props.skipQuery) { header.push(
       <SearchBar key='search-bar'
-        submitQuery={this.props.submitQuery}
+        updateQuery={this.props.updateQuery}
         {...this.props.searchState}
       />
     )}

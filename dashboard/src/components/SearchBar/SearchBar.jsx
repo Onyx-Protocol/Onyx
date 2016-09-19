@@ -34,7 +34,7 @@ class SearchBar extends React.Component {
     event.preventDefault()
 
     this.setState({ showClear: true })
-    this.props.submitQuery({
+    this.props.updateQuery({
       query: this.state.query,
       sumBy: this.state.sumBy
     })
@@ -42,7 +42,7 @@ class SearchBar extends React.Component {
 
   clearQuery() {
     this.setState({ query: "", sumBy: "", showClear: false })
-    this.props.submitQuery("")
+    this.props.updateQuery("")
   }
 
   render() {

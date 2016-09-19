@@ -69,7 +69,7 @@ form.submitForm = (data) => function(dispatch) {
     .then(() => {
       dispatch(push('/transactions'))
       dispatch(form.created())
-      dispatch(unspentActions.resetPage())
+      dispatch(unspentActions.updateQuery(""))
     })
 }
 

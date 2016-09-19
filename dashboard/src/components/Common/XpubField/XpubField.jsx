@@ -25,7 +25,7 @@ class XpubField extends React.Component {
 
         <div className={styles.options}>
           {Object.keys(methodOptions).map((key) =>
-            <label>
+            <label key={`key-${this.props.index}-option-${key}`}>
               <input type="radio"
                 name={`keys-${this.props.index}`}
                 value={key}

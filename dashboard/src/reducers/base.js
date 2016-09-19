@@ -2,7 +2,7 @@ import actions from '../actions'
 
 export const pagesActions = (type) => (state = [], action) => {
   if ((actions[type].created && action.type == actions[type].created.type) ||
-    action.type == actions[type].resetPage.type) {
+    action.type == actions[type].updateQuery.type) {
     return []
   } else if (action.type == actions[type].appendPage.type) {
     return state.concat([action.param])
@@ -13,7 +13,7 @@ export const pagesActions = (type) => (state = [], action) => {
 
 export const currentPageActions = (type) => (state = -1, action) => {
   if ((actions[type].created && action.type == actions[type].created.type) ||
-    action.type == actions[type].resetPage.type) {
+    action.type == actions[type].updateQuery.type) {
     return -1
   } else if (action.type == actions[type].appendPage.type ||
     action.type == actions[type].incrementPage.type) {

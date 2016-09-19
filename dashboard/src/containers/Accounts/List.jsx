@@ -13,7 +13,6 @@ const dispatch = (dispatch) => Object.assign({},
       showTransactions: (id) => {
         let query = `inputs(account_id='${id}') OR outputs(account_id='${id}')`
         dispatch(actions.transaction.updateQuery(query))
-        dispatch(actions.transaction.resetPage())
         dispatch(push('/transactions'))
       },
       showBalances: (id) => {
@@ -22,7 +21,6 @@ const dispatch = (dispatch) => Object.assign({},
           query: query,
           sumBy: 'asset_id'
         }))
-        dispatch(actions.balance.resetPage())
         dispatch(push('/balances'))
       },
       createControlProgram: (data) => dispatch(actions[type].createControlProgram(data))

@@ -17,7 +17,6 @@ const dispatch = (dispatch) => Object.assign({},
         }
 
         dispatch(actions.balance.updateQuery(query))
-        dispatch(actions.balance.resetPage())
         dispatch(push('/balances'))
       },
     }
