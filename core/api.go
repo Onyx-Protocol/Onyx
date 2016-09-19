@@ -111,6 +111,7 @@ func (a *api) handler() http.Handler {
 
 	// Cursors
 	m.Handle("/create-cursor", jsonHandler(createCursor))
+	m.Handle("/get-cursor", jsonHandler(getCursor))
 
 	// MockHSM endpoints
 	m.Handle("/mockhsm/create-key", jsonHandler(a.mockhsmCreateKey))

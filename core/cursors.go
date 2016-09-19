@@ -97,3 +97,44 @@ func cursorByClientToken(ctx context.Context, clientToken string) (*Cursor, erro
 
 	return &cur, nil
 }
+
+// POST /get-cur
+func getCursor(ctx context.Context, in struct {
+	ID    string `json:"id,omitempty"`
+	Alias string `json:"alias,omitempty"`
+}) (*Cursor, error) {
+	defer metrics.RecordElapsed(time.Now())
+
+	where := ` WHERE `
+	id := in.ID
+	if in.ID != "" {
+		where += `id=$1`
+	} else {
+		where += `alias=$1`
+		id = in.Alias
+	}
+
+	q := `
+		SELECT id, alias, filter, after, is_ascending
+		FROM cursors
+	` + where
+
+	var (
+		cur         Cursor
+		isAscending bool
+	)
+
+	err := pg.QueryRow(ctx, q, id).Scan(&cur.ID, &cur.Alias, &cur.Filter, &cur.After, &isAscending)
+	if err != nil {
+		return nil, err
+	}
+
+	if isAscending {
+		cur.Order = "asc"
+	} else {
+		cur.Order = "desc"
+	}
+
+	return &cur, nil
+
+}
