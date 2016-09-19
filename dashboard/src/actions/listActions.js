@@ -44,7 +44,7 @@ export default function(type, options = {}) {
         promise = chain[className].query(context, params)
       }
 
-      promise.then((param) => {
+      return promise.then((param) => {
         if (param.items.length == 0) {
           return
         }
@@ -69,9 +69,9 @@ export default function(type, options = {}) {
       return function(dispatch, getState) {
         let currentPage = getState()[type].currentPage
         if (currentPage + 1 >= getState()[type].pages.length) {
-          dispatch(fetchPage())
+          return dispatch(fetchPage())
         } else {
-          dispatch(incrementPage())
+          return dispatch(incrementPage())
         }
       }
     },

@@ -6,15 +6,27 @@ import PageHeader from "./PageHeader/PageHeader"
 import SearchBar from "./SearchBar/SearchBar"
 
 class ItemList extends React.Component {
-  componentWillMount() {
-    if (this.props.currentPage === -1) {
-      this.props.getNextPage()
+  constructor(props) {
+    super(props)
+
+    this.state = {
+      loading: false
     }
   }
 
+  componentWillMount() {
+    this.loadFirstPage(this.props)
+  }
+
   componentWillReceiveProps(nextProps) {
-    if (nextProps.currentPage === -1) {
-      nextProps.getNextPage()
+    this.loadFirstPage(nextProps)
+  }
+
+  loadFirstPage(props) {
+    if (!this.state.loading && props.currentPage === -1) {
+      this.setState({loading: true})
+      Promise.resolve(this.props.getNextPage())
+        .then(() => { this.setState({loading: false})})
     }
   }
 
