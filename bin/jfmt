@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec java -jar $CHAIN/vendor/google-java-format-1.0-all-deps.jar "$@"
