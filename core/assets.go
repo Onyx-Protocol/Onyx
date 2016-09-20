@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"chain/core/asset"
+	"chain/core/signers"
 	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/httpjson"
@@ -18,7 +19,7 @@ type (
 		ID              interface{} `json:"id"`
 		Alias           *string     `json:"alias"`
 		IssuanceProgram interface{} `json:"issuance_program"`
-		XPubs           interface{} `json:"xpubs"`
+		Keys            interface{} `json:"keys"`
 		Quorum          interface{} `json:"quorum"`
 		Definition      interface{} `json:"definition"`
 		Tags            interface{} `json:"tags"`
@@ -30,10 +31,16 @@ type (
 	}
 )
 
+type assetKey struct {
+	AssetPubkey         interface{} `json:"account_pubkey"`
+	RootXPub            interface{} `json:"root_xpub"`
+	AssetDerivationPath interface{} `json:"asset_derivation_path"`
+}
+
 // POST /create-asset
 func (a *api) createAsset(ctx context.Context, ins []struct {
 	Alias      string
-	XPubs      []string
+	RootXPubs  []string `json:"root_xpubs"`
 	Quorum     int
 	Definition map[string]interface{}
 	Tags       map[string]interface{}
@@ -60,7 +67,7 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 			defer wg.Done()
 			asset, err := asset.Define(
 				ctx,
-				ins[i].XPubs,
+				ins[i].RootXPubs,
 				ins[i].Quorum,
 				ins[i].Definition,
 				initialBlock.Hash(),
@@ -73,11 +80,20 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 				res, _ := errInfo(err)
 				responses[i] = assetOrError{detailedError: &res}
 			} else {
+				var keys []assetKey
+				for _, xpub := range asset.Signer.XPubs {
+					path := signers.Path(asset.Signer, signers.AssetKeySpace, nil)
+					keys = append(keys, assetKey{
+						AssetPubkey:         xpub.Derive(path).Key,
+						RootXPub:            xpub,
+						AssetDerivationPath: path,
+					})
+				}
 				r := &assetResponse{
 					ID:              asset.AssetID,
 					Alias:           asset.Alias,
 					IssuanceProgram: asset.IssuanceProgram,
-					XPubs:           asset.Signer.XPubs,
+					Keys:            keys,
 					Quorum:          asset.Signer.Quorum,
 					Definition:      asset.Definition,
 					Tags:            asset.Tags,

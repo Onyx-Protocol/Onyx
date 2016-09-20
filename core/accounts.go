@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"chain/core/account"
+	"chain/core/signers"
 	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/httpjson"
@@ -15,17 +16,23 @@ import (
 type accountResponse struct {
 	ID     interface{} `json:"id"`
 	Alias  interface{} `json:"alias"`
-	XPubs  interface{} `json:"xpubs"`
+	Keys   interface{} `json:"keys"`
 	Quorum interface{} `json:"quorum"`
 	Tags   interface{} `json:"tags"`
 }
 
+type accountKey struct {
+	RootXPub              interface{} `json:"root_xpub"`
+	AccountXPub           interface{} `json:"account_xpub"`
+	AccountDerivationPath interface{} `json:"account_derivation_path"`
+}
+
 // POST /create-account
 func createAccount(ctx context.Context, ins []struct {
-	XPubs  []string
-	Quorum int
-	Alias  string
-	Tags   map[string]interface{}
+	RootXPubs []string `json:"root_xpubs"`
+	Quorum    int
+	Alias     string
+	Tags      map[string]interface{}
 
 	// ClientToken is the application's unique token for the account. Every account
 	// should have a unique client token. The client token is used to ensure
@@ -42,15 +49,24 @@ func createAccount(ctx context.Context, ins []struct {
 	for i := 0; i < len(responses); i++ {
 		go func(i int) {
 			defer wg.Done()
-			acc, err := account.Create(ctx, ins[i].XPubs, ins[i].Quorum, ins[i].Alias, ins[i].Tags, ins[i].ClientToken)
+			acc, err := account.Create(ctx, ins[i].RootXPubs, ins[i].Quorum, ins[i].Alias, ins[i].Tags, ins[i].ClientToken)
 			if err != nil {
 				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)
 			} else {
+				path := signers.Path(acc.Signer, signers.AccountKeySpace, nil)
+				var keys []accountKey
+				for _, xpub := range acc.XPubs {
+					keys = append(keys, accountKey{
+						RootXPub:              xpub,
+						AccountXPub:           xpub.Derive(path),
+						AccountDerivationPath: path,
+					})
+				}
 				r := &accountResponse{
 					ID:     acc.ID,
 					Alias:  acc.Alias,
-					XPubs:  acc.XPubs,
+					Keys:   keys,
 					Quorum: acc.Quorum,
 					Tags:   acc.Tags,
 				}

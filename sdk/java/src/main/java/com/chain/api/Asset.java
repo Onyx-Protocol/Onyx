@@ -52,7 +52,8 @@ public class Asset {
         public String alias;
         public Map<String, Object> definition;
         public Map<String, Object> tags;
-        public List<String> xpubs;
+        @SerializedName("root_xpubs")
+        public List<String> rootXpubs;
         public int quorum;
         @SerializedName("client_token")
         private String clientToken;
@@ -112,15 +113,15 @@ public class Asset {
             return this;
         }
 
-        public Builder addXpub(String xpub) {
-            this.xpubs.add(xpub);
+        public Builder addRootXpub(String xpub) {
+            this.rootXpubs.add(xpub);
             return this;
         }
 
-        public Builder setXpubs(List<String> xpubs) {
-            this.xpubs = new ArrayList<>();
+        public Builder setRootXpubs(List<String> xpubs) {
+            this.rootXpubs = new ArrayList<>();
             for (String xpub : xpubs) {
-                this.xpubs.add(xpub);
+                this.rootXpubs.add(xpub);
             }
             return this;
         }

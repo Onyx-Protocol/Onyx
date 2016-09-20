@@ -5,6 +5,7 @@ import (
 
 	"github.com/lib/pq"
 
+	"chain/core/signers"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
@@ -56,11 +57,20 @@ func indexAnnotatedAccount(ctx context.Context, a *Account) error {
 	if indexer == nil {
 		return nil
 	}
+	var keys []map[string]interface{}
+	path := signers.Path(a.Signer, signers.AccountKeySpace, nil)
+	for _, xpub := range a.XPubs {
+		keys = append(keys, map[string]interface{}{
+			"root_xpub":               xpub,
+			"account_xpub":            xpub.Derive(path),
+			"account_derivation_path": path,
+		})
+	}
 	m := map[string]interface{}{
 		"id":     a.ID,
 		"alias":  a.Alias,
+		"keys":   keys,
 		"tags":   a.Tags,
-		"xpubs":  a.XPubs,
 		"quorum": a.Quorum,
 	}
 	return indexer.SaveAnnotatedAccount(ctx, a.ID, m)

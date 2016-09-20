@@ -227,10 +227,25 @@ func (a *api) listAccounts(ctx context.Context, in requestQuery) (page, error) {
 
 	result := make([]*accountResponse, 0, len(accounts))
 	for _, a := range accounts {
+		var orderedKeys []accountKey
+		keys, ok := a["keys"].([]interface{})
+		if ok {
+			for _, key := range keys {
+				mapKey, ok := key.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				orderedKeys = append(orderedKeys, accountKey{
+					RootXPub:              mapKey["root_xpub"],
+					AccountXPub:           mapKey["account_xpub"],
+					AccountDerivationPath: mapKey["account_derivation_path"],
+				})
+			}
+		}
 		r := &accountResponse{
 			ID:     a["id"],
 			Alias:  a["alias"],
-			XPubs:  a["xpubs"],
+			Keys:   orderedKeys,
 			Quorum: a["quorum"],
 			Tags:   a["tags"],
 		}
@@ -384,10 +399,25 @@ func (a *api) listAssets(ctx context.Context, in requestQuery) (page, error) {
 
 	result := make([]*assetResponse, 0, len(assets))
 	for _, a := range assets {
+		var orderedKeys []assetKey
+		keys, ok := a["keys"].([]interface{})
+		if ok {
+			for _, key := range keys {
+				mapKey, ok := key.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				orderedKeys = append(orderedKeys, assetKey{
+					AssetPubkey:         mapKey["asset_pubkey"],
+					RootXPub:            mapKey["root_xpub"],
+					AssetDerivationPath: mapKey["asset_derivation_path"],
+				})
+			}
+		}
 		r := &assetResponse{
 			ID:              a["id"],
 			IssuanceProgram: a["issuance_program"],
-			XPubs:           a["xpubs"],
+			Keys:            orderedKeys,
 			Quorum:          a["quorum"],
 			Definition:      a["definition"],
 			Tags:            a["tags"],

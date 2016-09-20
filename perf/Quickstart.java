@@ -17,19 +17,19 @@ public class Main {
 
         new Account.Builder()
                 .setAlias("alice")
-                .addXpub(mainKey.xpub)
+                .addRootXpub(mainKey.xpub)
                 .setQuorum(1)
                 .create(context);
 
         new Account.Builder()
                 .setAlias("bob")
-                .addXpub(mainKey.xpub)
+                .addRootXpub(mainKey.xpub)
                 .setQuorum(1)
                 .create(context);
 
         new Asset.Builder()
                 .setAlias("gold")
-                .addXpub(mainKey.xpub)
+                .addRootXpub(mainKey.xpub)
                 .setQuorum(1)
                 .create(context);
 

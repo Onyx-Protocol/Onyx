@@ -5,11 +5,13 @@ import (
 
 	"github.com/lib/pq"
 
+	"chain/core/signers"
 	"chain/database/pg"
 	"chain/encoding/json"
 	"chain/log"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/vmutil"
 )
 
 var chain *protocol.Chain
@@ -48,9 +50,26 @@ func indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 		"origin":           "external",
 	}
 	if a.Signer != nil {
-		m["xpubs"] = a.Signer.XPubs
+		var keys []map[string]interface{}
+		path := signers.Path(a.Signer, signers.AssetKeySpace, nil)
+		for _, xpub := range a.Signer.XPubs {
+			keys = append(keys, map[string]interface{}{
+				"root_xpub":             xpub,
+				"asset_pubkey":          xpub.Derive(path).Key,
+				"asset_derivation_path": path,
+			})
+		}
 		m["quorum"] = a.Signer.Quorum
 		m["origin"] = "local"
+	} else {
+		pubkeys, quorum, err := vmutil.ParseP2DPMultiSigProgram(a.IssuanceProgram)
+		if err == nil {
+			var keys []map[string]interface{}
+			for _, pubkey := range pubkeys {
+				keys = append(keys, map[string]interface{}{"asset_pubkey": pubkey})
+			}
+			m["quorum"] = quorum
+		}
 	}
 	return indexer.SaveAnnotatedAsset(ctx, a.AssetID, m, a.sortID)
 }

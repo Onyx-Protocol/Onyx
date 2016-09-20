@@ -28,17 +28,17 @@ public class MultiSigTest {
 
         new Account.Builder()
                 .setAlias(ALICE)
-                .addXpub(key1.xpub)
-                .addXpub(key2.xpub)
-                .addXpub(key3.xpub)
+                .addRootXpub(key1.xpub)
+                .addRootXpub(key2.xpub)
+                .addRootXpub(key3.xpub)
                 .setQuorum(2)
                 .create(context);
 
         new Asset.Builder()
                 .setAlias(ASSET)
-                .addXpub(key1.xpub)
-                .addXpub(key2.xpub)
-                .addXpub(key3.xpub)
+                .addRootXpub(key1.xpub)
+                .addRootXpub(key2.xpub)
+                .addRootXpub(key3.xpub)
                 .setQuorum(2)
                 .create(context);
 

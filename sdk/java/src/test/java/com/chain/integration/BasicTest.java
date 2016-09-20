@@ -27,19 +27,19 @@ public class BasicTest {
 
 		new Account.Builder()
 				.setAlias(ALICE)
-				.addXpub(mainKey.xpub)
+				.addRootXpub(mainKey.xpub)
 				.setQuorum(1)
 				.create(context);
 
 		new Account.Builder()
 				.setAlias(BOB)
-				.addXpub(mainKey.xpub)
+				.addRootXpub(mainKey.xpub)
 				.setQuorum(1)
 				.create(context);
 
 		new Asset.Builder()
 				.setAlias(ASSET)
-				.addXpub(mainKey.xpub)
+				.addRootXpub(mainKey.xpub)
 				.setQuorum(1)
 				.create(context);
 

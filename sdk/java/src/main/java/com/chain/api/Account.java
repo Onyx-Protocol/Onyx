@@ -62,7 +62,8 @@ public class Account {
     public static class Builder {
         public String alias;
         public int quorum;
-        public List<String> xpubs;
+        @SerializedName("root_xpubs")
+        public List<String> rootXpubs;
         public Map<String, Object> tags;
         @SerializedName("client_token")
         private String clientToken;
@@ -120,15 +121,15 @@ public class Account {
             return this;
         }
 
-        public Builder addXpub(String xpub) {
-            this.xpubs.add(xpub);
+        public Builder addRootXpub(String xpub) {
+            this.rootXpubs.add(xpub);
             return this;
         }
 
-        public Builder setXpubs(List<String> xpubs) {
-            this.xpubs = new ArrayList<>();
+        public Builder setRootXpubs(List<String> xpubs) {
+            this.rootXpubs = new ArrayList<>();
             for (String xpub : xpubs) {
-                this.xpubs.add(xpub);
+                this.rootXpubs.add(xpub);
             }
             return this;
         }

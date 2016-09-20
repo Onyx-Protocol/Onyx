@@ -24,13 +24,13 @@ var (
 )
 
 type Asset struct {
-	AssetID          bc.AssetID             `json:"id"`
-	Alias            *string                `json:"alias"`
-	Definition       map[string]interface{} `json:"definition"`
-	IssuanceProgram  []byte                 `json:"issuance_program"`
-	InitialBlockHash bc.Hash                `json:"initial_block_hash"`
-	Signer           *signers.Signer        `json:"signer"`
-	Tags             map[string]interface{} `json:"tags"`
+	AssetID          bc.AssetID
+	Alias            *string
+	Definition       map[string]interface{}
+	IssuanceProgram  []byte
+	InitialBlockHash bc.Hash
+	Signer           *signers.Signer
+	Tags             map[string]interface{}
 	sortID           string
 }
 

@@ -19,8 +19,8 @@ import (
 
 type Account struct {
 	*signers.Signer
-	Alias string                 `json:"alias"`
-	Tags  map[string]interface{} `json:"tags"`
+	Alias string
+	Tags  map[string]interface{}
 }
 
 var (
