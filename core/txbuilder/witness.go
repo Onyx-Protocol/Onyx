@@ -49,7 +49,7 @@ func materializeWitnesses(txTemplate *Template) error {
 
 		var witness [][]byte
 		for j, c := range sigInst.WitnessComponents {
-			items, err := c.Materialize(txTemplate, i)
+			items, err := c.Materialize(txTemplate, int(sigInst.Position))
 			if err != nil {
 				return errors.WithDetailf(err, "error in witness component %d of input %d", j, i)
 			}
@@ -103,7 +103,7 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, 
 	// and no further changes are allowed) or a program enforcing
 	// constraints derived from the existing outputs and current input.
 	if len(sw.Program) == 0 {
-		sw.Program = buildSigProgram(tpl, index)
+		sw.Program = buildSigProgram(tpl, int(tpl.SigningInstructions[index].Position))
 		if len(sw.Program) == 0 {
 			return ErrEmptyProgram
 		}
