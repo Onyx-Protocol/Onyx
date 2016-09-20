@@ -24,7 +24,7 @@ class Form extends React.Component {
 
   render() {
     const {
-      fields: { alias, tags, xpubs, quorum },
+      fields: { alias, tags, root_xpubs, quorum },
       error,
       handleSubmit,
       submitting
@@ -39,7 +39,7 @@ class Form extends React.Component {
         <form onSubmit={handleSubmit(this.submitWithErrors)}>
           <TextField title='Alias' placeholder='Alias' fieldProps={alias} />
           <JsonField title='Tags' fieldProps={tags} />
-          <KeyConfiguration xpubs={xpubs} quorum={quorum} mockhsmKeys={mockhsmKeys}/>
+          <KeyConfiguration xpubs={root_xpubs} quorum={quorum} mockhsmKeys={mockhsmKeys}/>
 
           {error && <ErrorBanner
             title="There was a problem creating your account:"
@@ -63,7 +63,7 @@ const validate = values => {
   return errors
 }
 
-const fields = [ 'alias', 'tags', 'xpubs[]', 'quorum' ]
+const fields = [ 'alias', 'tags', 'root_xpubs[]', 'quorum' ]
 export default reduxForm({
   form: 'newAccountForm',
   fields,

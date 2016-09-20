@@ -24,7 +24,7 @@ class Form extends React.Component {
 
   render() {
     const {
-      fields: { alias, tags, definition, xpubs, quorum },
+      fields: { alias, tags, definition, root_xpubs, quorum },
       error,
       handleSubmit,
       submitting
@@ -40,7 +40,7 @@ class Form extends React.Component {
           <TextField title='Alias' placeholder='Alias' fieldProps={alias} />
           <JsonField title='Tags' fieldProps={tags} />
           <JsonField title='Definition' fieldProps={definition} />
-          <KeyConfiguration xpubs={xpubs} quorum={quorum} mockhsmKeys={mockhsmKeys}/>
+          <KeyConfiguration xpubs={root_xpubs} quorum={quorum} mockhsmKeys={mockhsmKeys}/>
 
           {error && <ErrorBanner
             title="There was a problem creating your asset:"
@@ -67,7 +67,7 @@ const validate = values => {
   return errors
 }
 
-const fields = [ 'alias', 'tags', 'definition', 'xpubs[]', 'quorum' ]
+const fields = [ 'alias', 'tags', 'definition', 'root_xpubs[]', 'quorum' ]
 export default reduxForm({
   form: 'newAssetForm',
   fields,
