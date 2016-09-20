@@ -34,7 +34,7 @@ type (
 )
 
 type assetKey struct {
-	AssetPubkey         interface{} `json:"account_pubkey"`
+	AssetPubkey         interface{} `json:"asset_pubkey"`
 	RootXPub            interface{} `json:"root_xpub"`
 	AssetDerivationPath interface{} `json:"asset_derivation_path"`
 }
