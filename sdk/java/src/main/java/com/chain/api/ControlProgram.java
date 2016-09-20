@@ -39,9 +39,15 @@ public class ControlProgram {
             return ctx.request("create-control-program", programs, type);
         }
 
-        public Builder controlWithAccount(String accountId) {
+        public Builder controlWithAccountById(String accountId) {
             this.type = "account";
             this.addParameter("account_id", accountId);
+            return this;
+        }
+
+        public Builder controlWithAccountByAlias(String accountAlias) {
+            this.type = "account";
+            this.addParameter("account_alias", accountAlias);
             return this;
         }
 

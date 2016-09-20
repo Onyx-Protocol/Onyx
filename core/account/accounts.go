@@ -159,7 +159,7 @@ func FindByAlias(ctx context.Context, alias string) (*Account, error) {
 	)
 	err := pg.QueryRow(ctx, q, alias).Scan(&accountID, &tagBytes, &archived)
 	if err == sql.ErrNoRows {
-		return nil, errors.Wrap(pg.ErrUserInputNotFound)
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "alias: %s", alias)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err)

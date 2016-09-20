@@ -49,14 +49,24 @@ func createControlProgram(ctx context.Context, ins []struct {
 
 func createAccountControlProgram(ctx context.Context, input []byte) (interface{}, error) {
 	var parsed struct {
-		AccountID string `json:"account_id"`
+		AccountAlias string `json:"account_alias"`
+		AccountID    string `json:"account_id"`
 	}
 	err := stdjson.Unmarshal(input, &parsed)
 	if err != nil {
-		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "no 'account_id' parameter sent")
+		return nil, errors.WithDetailf(httpjson.ErrBadRequest, "bad parameters for account control program")
 	}
 
-	controlProgram, err := account.CreateControlProgram(ctx, parsed.AccountID)
+	accountID := parsed.AccountID
+	if accountID == "" {
+		acc, err := account.FindByAlias(ctx, parsed.AccountAlias)
+		if err != nil {
+			return nil, err
+		}
+		accountID = acc.ID
+	}
+
+	controlProgram, err := account.CreateControlProgram(ctx, accountID)
 	if err != nil {
 		return nil, err
 	}
