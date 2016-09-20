@@ -35,7 +35,7 @@ type (
 		AssetID        interface{} `json:"asset_id"`
 		AssetAlias     interface{} `json:"asset_alias"`
 		AssetTags      interface{} `json:"asset_tags"`
-		Amount         interface{} `json:"asset_amount"`
+		Amount         interface{} `json:"amount"`
 		AccountID      interface{} `json:"account_id"`
 		AccountAlias   interface{} `json:"account_alias"`
 		AccountTags    interface{} `json:"account_tags"`
@@ -174,7 +174,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 				AssetID:        out["asset_id"],
 				AssetAlias:     out["asset_alias"],
 				AssetTags:      out["asset_tags"],
-				Amount:         out["asset_amount"],
+				Amount:         out["amount"],
 				AccountID:      out["account_id"],
 				AccountAlias:   out["account_alias"],
 				AccountTags:    out["account_tags"],
@@ -303,7 +303,7 @@ type utxoResp struct {
 	AssetID        interface{} `json:"asset_id"`
 	AssetAlias     interface{} `json:"asset_alias"`
 	AssetTags      interface{} `json:"asset_tags"`
-	Amount         interface{} `json:"asset_amount"`
+	Amount         interface{} `json:"amount"`
 	AccountID      interface{} `json:"account_id"`
 	AccountAlias   interface{} `json:"account_alias"`
 	AccountTags    interface{} `json:"account_tags"`
@@ -357,7 +357,7 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 			AssetID:        out["asset_id"],
 			AssetAlias:     out["asset_alias"],
 			AssetTags:      out["asset_tags"],
-			Amount:         out["asset_amount"],
+			Amount:         out["amount"],
 			AccountID:      out["account_id"],
 			AccountAlias:   out["account_alias"],
 			AccountTags:    out["account_tags"],
