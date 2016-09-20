@@ -47,9 +47,10 @@ func transactionInput(in *bc.TxInput) map[string]interface{} {
 	} else {
 		spend := in.InputCommitment.(*bc.SpendInputCommitment)
 		obj["action"] = "spend"
+		obj["control_program"] = hex.EncodeToString(spend.ControlProgram)
 		obj["spent_output"] = map[string]interface{}{
-			"transaction_id": spend.Outpoint.Hash.String(),
-			"position":       spend.Outpoint.Index,
+			"transaction_id": spend.Hash.String(),
+			"position":       spend.Index,
 		}
 	}
 	return obj

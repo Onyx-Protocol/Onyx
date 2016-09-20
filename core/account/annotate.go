@@ -17,27 +17,43 @@ import (
 func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 	controlMaps := make(map[string][]map[string]interface{})
 	var controlPrograms [][]byte
-	for _, tx := range txs {
-		outs, ok := tx["outputs"].([]interface{})
-		if !ok {
-			return errors.Wrap(fmt.Errorf("bad outputs type %T", tx["outputs"]))
-		}
 
-		for _, out := range outs {
-			txOut, ok := out.(map[string]interface{})
+	update := func(s interface{}) error {
+		asSlice, ok := s.([]interface{})
+		if !ok {
+			return errors.Wrap(fmt.Errorf("expected slice, got %T", s))
+		}
+		for _, m := range asSlice {
+			asMap, ok := m.(map[string]interface{})
 			if !ok {
-				return errors.Wrap(fmt.Errorf("bad output type %T", out))
+				return errors.Wrap(fmt.Errorf("expected map, got %T", m))
 			}
-			controlString, ok := txOut["control_program"].(string)
+			if asMap["control_program"] == nil {
+				// Issuance inputs don't have control_programs
+				continue
+			}
+			controlString, ok := asMap["control_program"].(string)
 			if !ok {
-				return errors.Wrap(fmt.Errorf("bad control program type %T", txOut["control_program"]))
+				return errors.Wrap(fmt.Errorf("expected string, got %T", asMap["control_program"]))
 			}
 			controlProgram, err := hex.DecodeString(controlString)
 			if err != nil {
 				return err
 			}
 			controlPrograms = append(controlPrograms, controlProgram)
-			controlMaps[string(controlProgram)] = append(controlMaps[string(controlProgram)], txOut)
+			controlMaps[string(controlProgram)] = append(controlMaps[string(controlProgram)], asMap)
+		}
+		return nil
+	}
+
+	for _, tx := range txs {
+		err := update(tx["outputs"])
+		if err != nil {
+			return err
+		}
+		err = update(tx["inputs"])
+		if err != nil {
+			return err
 		}
 	}
 
