@@ -70,7 +70,7 @@ public class Account {
 
         public Builder() {
             this.tags = new HashMap<>();
-            this.xpubs = new ArrayList<>();
+            this.rootXpubs = new ArrayList<>();
         }
 
         /**

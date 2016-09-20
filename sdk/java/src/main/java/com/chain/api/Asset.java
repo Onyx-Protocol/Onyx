@@ -61,7 +61,7 @@ public class Asset {
         public Builder() {
             this.definition = new HashMap<>();
             this.tags = new HashMap<>();
-            this.xpubs = new ArrayList<>();
+            this.rootXpubs = new ArrayList<>();
         }
 
         public Asset create(Context ctx)
