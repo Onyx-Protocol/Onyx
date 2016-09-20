@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -69,7 +72,7 @@ func main() {
 	log.SetFlags(log.Ldate | log.Lmicroseconds)
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [-d] Main.java\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [-d] X.java\n", os.Args[0])
 		fmt.Fprint(os.Stderr, usage)
 		flag.PrintDefaults()
 	}
@@ -85,30 +88,32 @@ func main() {
 		os.Exit(2)
 	}
 
-	testJava, err := ioutil.ReadFile(flag.Arg(0))
+	progName := flag.Arg(0)
+	testJava, err := ioutil.ReadFile(progName)
 	must(err)
 
 	schema, err := ioutil.ReadFile(schemaPath)
 	must(err)
 
+	c := exec.Command("git", "rev-parse", "HEAD")
+	c.Stderr = os.Stderr
+	commit, err := c.Output()
+	must(err)
+	commit = bytes.TrimSpace(commit)
+
 	var (
 		db     instance
 		client instance
-		coreds = make([]instance, 3)
+		cored  instance
 	)
 
 	var wg sync.WaitGroup
-	wg.Add(1 + len(coreds) + 1)
+	wg.Add(3)
 	log.Println("starting EC2 instances")
 	go makeEC2("pg", &db, &wg)
-	for i := range coreds {
-		go makeEC2("cored", &coreds[i], &wg)
-	}
+	go makeEC2("cored", &cored, &wg)
 	go makeEC2("client", &client, &wg)
-	killInstanceIDs = append(killInstanceIDs, &db.id, &client.id)
-	for i := range coreds {
-		killInstanceIDs = append(killInstanceIDs, &coreds[i].id)
-	}
+	killInstanceIDs = append(killInstanceIDs, &db.id, &cored.id, &client.id)
 
 	coredBin := mustBuildCored()
 	corectlBin := mustBuildCorectl()
@@ -118,28 +123,40 @@ func main() {
 	wg.Wait()
 
 	log.Println("init database")
-	must(scp(db.addr, schema, "schema.sql", 0644))
-	must(scp(db.addr, corectlBin, "corectl", 0755))
+	must(scpPut(db.addr, schema, "schema.sql", 0644))
+	must(scpPut(db.addr, corectlBin, "corectl", 0755))
 	mustRunOn(db.addr, initdbsh)
 
 	dbURL := "postgres://benchcore:benchcorepass@" + db.privAddr + "/core?sslmode=disable"
 
 	log.Println("init cored hosts")
-	for _, inst := range coreds {
-		must(scp(inst.addr, coredBin, "cored", 0755))
-		go mustRunOn(inst.addr, coredsh, "dbURL", dbURL)
-	}
+	must(scpPut(cored.addr, coredBin, "cored", 0755))
+	go mustRunOn(cored.addr, coredsh, "dbURL", dbURL)
 
 	log.Println("init client")
-	var elbHost, elbName string
-	must(makeELB(coreds, &elbHost, &elbName))
-	deleteELBNames = append(deleteELBNames, &elbName)
-	coreURL := "http://" + elbHost
+	coreURL := "http://" + cored.privAddr + ":8080"
 	log.Println("core URL:", coreURL)
-	must(scp(client.addr, chainJAR, "chain.jar", 0644))
-	must(scp(client.addr, testJava, "Main.java", 0644))
-	mustRunOn(client.addr, clientsh, "coreURL", coreURL, "elbHost", elbHost)
+	must(scpPut(client.addr, chainJAR, "chain.jar", 0644))
+	javaClass := strings.TrimSuffix(progName, ".java")
+	must(scpPut(client.addr, testJava, javaClass+".java", 0644))
+	mustRunOn(client.addr, clientsh,
+		"coreURL", coreURL,
+		"coreAddr", cored.privAddr,
+		"javaClass", javaClass,
+	)
+	statsBytes, err := scpGet(client.addr, "stats.json")
+	must(err)
 	log.Println("SUCCESS")
+
+	stats := make(map[string]interface{})
+	must(json.Unmarshal(statsBytes, &stats))
+	stats["commit"] = string(commit)
+	stats["prog"] = progName
+	stats["finished"] = time.Now().UTC()
+
+	out, err := json.MarshalIndent(stats, "", "	")
+	must(err)
+	os.Stdout.Write(append(out, '\n'))
 	cleanup()
 }
 
@@ -217,7 +234,7 @@ func mustBuildCorectl() []byte {
 func mustBuildJAR() []byte {
 	cmd := exec.Command("mvn", "-Djar.finalName=chain", "package")
 	cmd.Dir = sdkDir
-	cmd.Stdout = os.Stdout
+	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	must(cmd.Run())
 
@@ -246,17 +263,20 @@ func cleanup() {
 	}
 }
 
-func scp(host string, data []byte, dest string, mode int) error {
+func scpPut(host string, data []byte, dest string, mode int) error {
 	log.Printf("scp %d bytes to %s", len(data), dest)
 	var client *ssh.Client
 	retry(func() (err error) {
 		client, err = ssh.Dial("tcp", host+":22", sshConfig)
 		return
 	})
+	defer client.Close()
 	s, err := client.NewSession()
 	if err != nil {
 		return err
 	}
+	s.Stderr = os.Stderr
+	s.Stdout = os.Stderr
 	w, err := s.StdinPipe()
 	if err != nil {
 		return err
@@ -271,6 +291,51 @@ func scp(host string, data []byte, dest string, mode int) error {
 	return s.Run("/usr/bin/scp -tr .")
 }
 
+func scpGet(host string, src string) (data []byte, err error) {
+	log.Printf("scp from %s", src)
+	var client *ssh.Client
+	retry(func() (err error) {
+		client, err = ssh.Dial("tcp", host+":22", sshConfig)
+		return
+	})
+	defer client.Close()
+	s, err := client.NewSession()
+	if err != nil {
+		return nil, err
+	}
+	s.Stderr = os.Stderr
+	r, err := s.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.Start("/usr/bin/scp </dev/zero -qf " + src)
+	if err != nil {
+		return nil, err
+	}
+
+	var n int
+	_, err = fmt.Fscanf(r, "C%04o %d %s\n", new(int), &n, new(string))
+	if err != nil {
+		return nil, fmt.Errorf("cannot scan scp code: %v", err)
+	}
+	log.Printf("scp reading %d bytes", n)
+	data = make([]byte, n+1)
+	read, err := io.ReadFull(r, data)
+	if err != nil {
+		return nil, fmt.Errorf("read %d of %d bytes: %v", read, n, err)
+	}
+	if data[len(data)-1] != 0 {
+		return nil, errors.New("expected trailing NUL byte")
+	}
+	data = data[:len(data)-1] // chop off trailing NUL
+	err = s.Wait()
+	if err != nil {
+		return nil, fmt.Errorf("wait: %v", err)
+	}
+	return data, nil
+}
+
 func mustRunOn(host, sh string, keyval ...string) {
 	if len(keyval)%2 != 0 {
 		log.Fatal("odd params", keyval)
@@ -280,11 +345,12 @@ func mustRunOn(host, sh string, keyval ...string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer client.Close()
 	s, err := client.NewSession()
 	if err != nil {
 		log.Fatal(err)
 	}
-	s.Stdout = os.Stdout
+	s.Stdout = os.Stderr
 	s.Stderr = os.Stderr
 	for i := 0; i < len(keyval); i += 2 {
 		sh = strings.Replace(sh, "{{"+keyval[i]+"}}", keyval[i+1], -1)
@@ -368,35 +434,6 @@ func makeEC2(role string, inst *instance, wg *sync.WaitGroup) {
 		return nil
 	})
 
-}
-
-func makeELB(ec2Instances []instance, addr, name *string) error {
-	*name = appName + "-" + user + "-" + randString()[:10]
-	resp, err := elbclient.CreateLoadBalancer(&elb.CreateLoadBalancerInput{
-		LoadBalancerName: name,
-		Subnets:          []*string{&subnetID},
-		Scheme:           aws.String("internal"),
-		Listeners: []*elb.Listener{{
-			InstancePort:     aws.Int64(8080),
-			InstanceProtocol: aws.String("HTTP"),
-			LoadBalancerPort: aws.Int64(80),
-			Protocol:         aws.String("HTTP"),
-		}},
-	})
-	if err != nil {
-		return err
-	}
-	*addr = *resp.DNSName
-
-	var instances []*elb.Instance
-	for _, inst := range ec2Instances {
-		instances = append(instances, &elb.Instance{InstanceID: &inst.id})
-	}
-	_, err = elbclient.RegisterInstancesWithLoadBalancer(&elb.RegisterInstancesWithLoadBalancerInput{
-		LoadBalancerName: name,
-		Instances:        instances,
-	})
-	return err
 }
 
 var errRetry = errors.New("retry")
@@ -549,33 +586,37 @@ apt-get install -y -qq oracle-java8-installer
 
 EOFSUDO
 
+echo compiling test
 export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 export CLASSPATH=.:$HOME/chain.jar
-javac Main.java
+javac {{javaClass}}.java
+echo compiled test
 
-echo waiting for elb dns to resolve
-while ! host {{elbHost}}
-do sleep 5 # sigh
-done
+echo pinging
+ping -c 1 {{coreAddr}}
+echo pinged
 
-export CHAIN_API_URL='{{coreURL}}'
-curl -si "$CHAIN_API_URL"/debug/vars
-java Main
+echo curling "{{coreURL}}/debug/vars"
+curl -si "{{coreURL}}/debug/vars"
+echo curled
+export CHAIN_API_URL='{{coreURL}}/'
+echo running test driver
+java {{javaClass}}
+echo all done
 `
 
 const usage = `
 Command benchcore boots a set of EC2 instances, compiles
 cored, corectl, and the Java SDK locally, sets up a postgres
 database and chain core on the instances, copies the SDK and
-Main.java to another instance to serve as the test driver,
+X.java to another instance to serve as the test driver,
 and runs the driver.
 
 It expects a full Chain development environment. See
 Readme.md in the root of this repo for instructions.
 
-Main.java can have any file name, but it will be renamed to
-Main.java on the test driver host, so it must have a public
-class named Main containing the entry point.
+X.java can have any file name. It is expected to have
+a public class of the same name containing the entry point.
 
 On successful exit of the test driver, benchcore will delete
 the AWS resources it created. If there is a failure, it will
