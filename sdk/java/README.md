@@ -1,5 +1,11 @@
 # Chain Java SDK
 
+## Formatting
+We adhere to the Google Java Style guide. To format code run:
+```
+$ jfmt --replace [files...]
+```
+
 ## Build
 ```
 $ mvn package
