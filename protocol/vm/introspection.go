@@ -201,3 +201,22 @@ func opOutpoint(vm *virtualMachine) error {
 	}
 	return vm.pushInt64(int64(outpoint.Index), true)
 }
+
+func opNonce(vm *virtualMachine) error {
+	if vm.tx == nil {
+		return ErrContext
+	}
+
+	txin := vm.tx.Inputs[vm.inputIndex]
+	ii, ok := txin.TypedInput.(*bc.IssuanceInput)
+	if !ok {
+		return ErrContext
+	}
+
+	err := vm.applyCost(1)
+	if err != nil {
+		return err
+	}
+
+	return vm.push(ii.Nonce, true)
+}

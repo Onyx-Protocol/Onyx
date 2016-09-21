@@ -212,6 +212,7 @@ const (
 	OP_REFDATAHASH Op = 0xc8
 	OP_INDEX       Op = 0xc9
 	OP_OUTPOINT    Op = 0xcb
+	OP_NONCE       Op = 0xcc
 
 	OP_CODESEPARATOR Op = 0xab
 	OP_NOP1          Op = 0xb0
@@ -337,6 +338,7 @@ var (
 		OP_REFDATAHASH: {OP_REFDATAHASH, "REFDATAHASH", opRefDataHash},
 		OP_INDEX:       {OP_INDEX, "INDEX", opIndex},
 		OP_OUTPOINT:    {OP_OUTPOINT, "OUTPOINT", opOutpoint},
+		OP_NONCE:       {OP_NONCE, "NONCE", opNonce},
 
 		OP_CODESEPARATOR: {OP_CODESEPARATOR, "CODESEPARATOR", opNop},
 	}

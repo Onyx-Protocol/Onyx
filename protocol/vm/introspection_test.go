@@ -7,7 +7,7 @@ import (
 	"chain/protocol/bc"
 )
 
-func TestOutpointOp(t *testing.T) {
+func TestOutpointAndNonceOp(t *testing.T) {
 	var zeroHash bc.Hash
 	nonce := []byte{36, 37, 38}
 	tx := bc.NewTx(bc.TxData{
@@ -40,6 +40,31 @@ func TestOutpointOp(t *testing.T) {
 	err = vm.step()
 	if err != ErrContext {
 		t.Errorf("expected ErrContext, got %v", err)
+	}
+
+	vm = &virtualMachine{
+		runLimit:   50000,
+		tx:         tx,
+		inputIndex: 0,
+		program:    []byte{uint8(OP_NONCE)},
+	}
+	err = vm.step()
+	if err != ErrContext {
+		t.Errorf("expected ErrContext, got %v", err)
+	}
+	vm = &virtualMachine{
+		runLimit:   50000,
+		tx:         tx,
+		inputIndex: 1,
+		program:    []byte{uint8(OP_NONCE)},
+	}
+	err = vm.step()
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedStack = [][]byte{nonce}
+	if !reflect.DeepEqual(vm.dataStack, expectedStack) {
+		t.Errorf("expected stack %v, got %v", expectedStack, vm.dataStack)
 	}
 }
 
