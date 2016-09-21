@@ -30,17 +30,6 @@ func CreateAccountFixture(ctx context.Context, t testing.TB, keys []string, quor
 	return acc.ID
 }
 
-func CreateAccountControlProgramFixture(ctx context.Context, t testing.TB, accID string) []byte {
-	if accID == "" {
-		accID = CreateAccountFixture(ctx, t, nil, 0, "", nil)
-	}
-	controlProgram, err := account.CreateControlProgram(ctx, accID)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-	return controlProgram
-}
-
 func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum int, def map[string]interface{}, alias string, tags map[string]interface{}) bc.AssetID {
 	if len(keys) == 0 {
 		keys = []string{testutil.TestXPub.String()}
@@ -84,32 +73,6 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, c *protocol.Chain, as
 		Outpoint: bc.Outpoint{Hash: tpl.Transaction.Hash(), Index: 0},
 		TxOutput: *tpl.Transaction.Outputs[0],
 	}
-}
-
-func Issue(ctx context.Context, t testing.TB, c *protocol.Chain, assetID bc.AssetID, amount uint64, actions []txbuilder.Action) *bc.Tx {
-	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
-	actions = append(actions, NewIssueAction(assetAmount, nil))
-
-	txTemplate, err := txbuilder.Build(
-		ctx,
-		nil,
-		actions,
-		nil,
-		time.Now().Add(time.Minute),
-	)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-	SignTxTemplate(t, ctx, txTemplate, nil)
-	tx := bc.NewTx(*txTemplate.Transaction)
-	err = txbuilder.FinalizeTx(ctx, c, tx)
-	if err != nil {
-		t.Log(errors.Stack(err))
-		t.Fatal(err)
-	}
-
-	return tx
 }
 
 func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, actions []txbuilder.Action) *bc.Tx {

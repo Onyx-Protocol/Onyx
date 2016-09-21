@@ -54,10 +54,6 @@ var (
 	// waiting for a blockheight too far in excess of the tip of the
 	// blockchain.
 	ErrTheDistantFuture = errors.New("the block height is too damn high")
-
-	// ErrBadStateHeight is returned from Store.StateTree when the
-	// height parameter does not match the latest block height.
-	ErrBadStateHeight = errors.New("requested block height does not match current state")
 )
 
 type BlockCallback func(ctx context.Context, block *bc.Block)

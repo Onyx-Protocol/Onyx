@@ -65,3 +65,30 @@ type placeholderExpr struct {
 func (e placeholderExpr) String() string {
 	return fmt.Sprintf("$%d", e.num)
 }
+
+// Type defines the value types in filter expressions.
+type Type int
+
+const (
+	Any Type = iota
+	Bool
+	String
+	Integer
+	Object
+)
+
+func (t Type) String() string {
+	switch t {
+	case Any:
+		return "any"
+	case Bool:
+		return "bool"
+	case String:
+		return "string"
+	case Integer:
+		return "integer"
+	case Object:
+		return "object"
+	}
+	panic("unknown type")
+}

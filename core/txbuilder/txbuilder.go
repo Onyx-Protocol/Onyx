@@ -13,7 +13,6 @@ import (
 )
 
 var (
-	ErrBadConstraint       = errors.New("invalid witness constraint")
 	ErrBadRefData          = errors.New("transaction reference data does not match previous template's reference data")
 	ErrBadTxInputIdx       = errors.New("unsigned tx missing input")
 	ErrBadWitnessComponent = errors.New("invalid witness component")

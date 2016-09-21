@@ -41,12 +41,6 @@ type (
 		ControlProgramIndex [2]uint32
 	}
 
-	Receiver struct {
-		ManagerNodeID       string   `json:"manager_node_id"`
-		AccountID           string   `json:"account_id"`
-		ControlProgramIndex []uint32 `json:"control_program_index"`
-	}
-
 	// Change represents reserved units beyond what was asked for.
 	// Total reservation is for Amount+Source.Amount.
 	Change struct {

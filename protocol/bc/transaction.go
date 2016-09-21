@@ -85,12 +85,6 @@ type Outpoint struct {
 	Index uint32 `json:"index"`
 }
 
-func NewOutpoint(b []byte, index uint32) *Outpoint {
-	result := &Outpoint{Index: index}
-	copy(result.Hash[:], b)
-	return result
-}
-
 // HasIssuance returns true if this transaction has an issuance input.
 func (tx *TxData) HasIssuance() bool {
 	for _, in := range tx.Inputs {

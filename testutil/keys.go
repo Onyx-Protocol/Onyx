@@ -32,16 +32,3 @@ func init() {
 	TestPub = TestXPub.Key
 	TestPubs = []ed25519.PublicKey{TestPub}
 }
-
-// XPubs parses the serialized xpubs in a.
-// If there is a parsing error, it panics.
-func XPubs(a ...string) (ks []*hd25519.XPub) {
-	for _, s := range a {
-		pk, err := hd25519.XPubFromString(s)
-		if err != nil {
-			panic(err)
-		}
-		ks = append(ks, pk)
-	}
-	return ks
-}

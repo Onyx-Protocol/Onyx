@@ -34,24 +34,6 @@ func dumpPoolTxs(ctx context.Context, db pg.DB) ([]*bc.Tx, error) {
 	return txs, nil
 }
 
-// ListBlocks returns a list of the most recent blocks,
-// potentially offset by a previous query's results.
-func (s *Store) ListBlocks(ctx context.Context, prev string, limit int) ([]*bc.Block, error) {
-	return listBlocks(ctx, s.db, prev, limit)
-}
-
-func listBlocks(ctx context.Context, db pg.DB, prev string, limit int) ([]*bc.Block, error) {
-	const q = `
-		SELECT data FROM blocks WHERE ($1='' OR height<$1::bigint)
-		ORDER BY height DESC LIMIT $2
-	`
-	var blocks []*bc.Block
-	err := pg.ForQueryRows(pg.NewContext(ctx, db), q, prev, limit, func(b bc.Block) {
-		blocks = append(blocks, &b)
-	})
-	return blocks, err
-}
-
 func ListenBlocks(ctx context.Context, dbURL string) (<-chan uint64, error) {
 	listener, err := pg.NewListener(ctx, dbURL, "newblock")
 	if err != nil {

@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 
 	"chain/core/mockhsm"
-	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/errors"
@@ -37,10 +36,6 @@ func New(xpub *hd25519.XPub, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Sig
 func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	hash := b.HashForSig()
 	return s.hsm.Sign(ctx, s.XPub, nil, hash[:])
-}
-
-func (s *Signer) PubKey() ed25519.PublicKey {
-	return s.XPub.Key
 }
 
 func (s *Signer) String() string {

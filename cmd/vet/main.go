@@ -7,7 +7,6 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -160,11 +159,6 @@ type File struct {
 	name    string
 	content []byte
 	file    *ast.File
-	b       bytes.Buffer // for use by methods
-
-	// The objects that are receivers of a "String() string" method.
-	// This is used by the recursiveStringer method in print.go.
-	stringers map[*ast.Object]bool
 
 	// Registered checkers to run.
 	checkers map[ast.Node][]func(*File, ast.Node)

@@ -51,12 +51,3 @@ func (p *Pool) Clean(ctx context.Context, txs []*bc.Tx) error {
 	_, err := p.db.Exec(ctx, txq, pq.StringArray(deleteTxHashes))
 	return errors.Wrap(err, "delete from pool_txs")
 }
-
-// CountTxs returns the total number of unconfirmed transactions. It
-// is not a part of the Pool interface.
-func (p *Pool) CountTxs(ctx context.Context) (uint64, error) {
-	const q = `SELECT count(tx_hash) FROM pool_txs`
-	var res uint64
-	err := p.db.QueryRow(ctx, q).Scan(&res)
-	return res, errors.Wrap(err)
-}

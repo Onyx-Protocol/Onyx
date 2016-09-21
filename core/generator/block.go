@@ -155,17 +155,3 @@ func (g *generator) savePendingBlock(ctx context.Context, b *bc.Block) error {
 	_, err := pg.Exec(ctx, q, b)
 	return errors.Wrap(err, "generator_pending_block insert query")
 }
-
-// SaveInitialBlock saves b as the generator's pending block.
-// Block b must have height 1.
-// It is an error to save an initial block after other blocks
-// have been generated.
-func SaveInitialBlock(ctx context.Context, db pg.DB, b *bc.Block) error {
-	if b.Height != 1 {
-		return errors.Wrap(fmt.Errorf("generator: bad initial block height %d", b.Height))
-	}
-	// the insert is meant to fail if a block has ever been generated before
-	const q = `INSERT INTO generator_pending_block (data) values ($1)`
-	_, err := db.Exec(ctx, q, b)
-	return errors.Wrap(err)
-}

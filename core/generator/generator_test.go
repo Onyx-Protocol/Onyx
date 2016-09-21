@@ -84,10 +84,6 @@ type testSigner struct {
 	privKey ed25519.PrivateKey
 }
 
-func (s testSigner) PubKey() ed25519.PublicKey {
-	return s.pubKey
-}
-
 func (s testSigner) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	hash := b.HashForSig()
 	return ed25519.Sign(s.privKey, hash[:]), nil

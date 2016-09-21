@@ -13,14 +13,6 @@ import (
 	"chain/testutil"
 )
 
-func mustParseHash(s string) bc.Hash {
-	h, err := bc.ParseHash(s)
-	if err != nil {
-		panic(err)
-	}
-	return h
-}
-
 func TestPoolTxs(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
@@ -153,65 +145,5 @@ func TestInsertBlock(t *testing.T) {
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
-	}
-}
-
-func TestListBlocks(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := context.Background()
-	blks := []*bc.Block{
-		{
-			BlockHeader: bc.BlockHeader{
-				Version: 1,
-				Height:  2,
-			},
-		},
-		{
-			BlockHeader: bc.BlockHeader{
-				Version: 1,
-				Height:  1,
-			},
-		},
-	}
-	for _, blk := range blks {
-		err := (&Store{dbtx}).SaveBlock(ctx, blk)
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Fatal(err)
-		}
-	}
-	cases := []struct {
-		prev  string
-		limit int
-		want  []*bc.Block
-	}{{
-		prev:  "",
-		limit: 50,
-		want:  blks,
-	}, {
-		prev:  "2",
-		limit: 50,
-		want:  []*bc.Block{blks[1]},
-	}, {
-		prev:  "",
-		limit: 1,
-		want:  []*bc.Block{blks[0]},
-	}, {
-		prev:  "1",
-		limit: 50,
-		want:  nil,
-	}}
-
-	for _, c := range cases {
-		got, err := listBlocks(ctx, dbtx, c.prev, c.limit)
-		if err != nil {
-			t.Log(errors.Stack(err))
-			t.Errorf("ListBlocks(%q, %d) error = %q", c.prev, c.limit, err)
-			continue
-		}
-
-		if !reflect.DeepEqual(got, c.want) {
-			t.Errorf("got ListBlocks(%q, %d):\n\t%+v\nwant:\n\t%+v", c.prev, c.limit, got, c.want)
-		}
 	}
 }

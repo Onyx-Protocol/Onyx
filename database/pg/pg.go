@@ -39,13 +39,6 @@ func IsUniqueViolation(err error) bool {
 	return ok && pqErr.Code.Name() == "unique_violation"
 }
 
-// IsForeignKeyViolation returns true if the given error is a Postgres
-// foreign-key constraint violation error.
-func IsForeignKeyViolation(err error) bool {
-	pqErr, ok := err.(*pq.Error)
-	return ok && pqErr.Code.Name() == "foreign_key_violation"
-}
-
 func resolveURI(rawURI string) (string, error) {
 	u, err := url.Parse(rawURI)
 	if err != nil {

@@ -2,7 +2,6 @@ package asset
 
 import (
 	"context"
-	"encoding/hex"
 	"reflect"
 	"testing"
 
@@ -156,16 +155,4 @@ func TestAssetByClientToken(t *testing.T) {
 	if found.AssetID != asset.AssetID {
 		t.Fatalf("assetByClientToken(\"test_token\")=%x, want %x", found.AssetID[:], asset.AssetID[:])
 	}
-}
-
-func mustDecodeAssetID(hash string) bc.AssetID {
-	var h bc.AssetID
-	if len(hash) != hex.EncodedLen(len(h)) {
-		panic("wrong length hash")
-	}
-	_, err := hex.Decode(h[:], []byte(hash))
-	if err != nil {
-		panic(err)
-	}
-	return h
 }

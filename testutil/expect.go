@@ -4,37 +4,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
-	"runtime"
 	"strings"
 	"testing"
 
 	"chain/errors"
-	"chain/protocol/vm"
 )
 
 var wd, _ = os.Getwd()
-
-func ExpectEqual(t testing.TB, actual, expected interface{}, msg string) {
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("%s: got %v, expected %v\n%s", msg, actual, expected, stackTrace())
-	}
-}
-
-func ExpectScriptEqual(t testing.TB, actual, expected []byte, msg string) {
-	if !reflect.DeepEqual(expected, actual) {
-		expectedStr, _ := vm.Decompile(expected)
-		actualStr, _ := vm.Decompile(actual)
-		t.Errorf("%s: got [%s], expected [%s]\n%s", msg, actualStr, expectedStr, stackTrace())
-	}
-}
-
-func ExpectError(t testing.TB, expected error, msg string, fn func() error) {
-	actual := fn()
-	if expected != errors.Root(actual) {
-		t.Errorf("%s: got error %v, expected %v\n%s", msg, actual, expected, stackTrace())
-	}
-}
 
 func FatalErr(t testing.TB, err error) {
 	args := []interface{}{err}
@@ -48,10 +24,4 @@ func FatalErr(t testing.TB, err error) {
 		args = append(args, s)
 	}
 	t.Fatal(args...)
-}
-
-func stackTrace() []byte {
-	buf := make([]byte, 16384)
-	len := runtime.Stack(buf, false)
-	return buf[:len]
 }

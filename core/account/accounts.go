@@ -79,28 +79,6 @@ func Create(ctx context.Context, xpubs []string, quorum int, alias string, tags 
 	return account, nil
 }
 
-// insertAccountTags inserts a set of tags for the given identifier
-// It must take place inside a database transaction.
-func insertAccountTags(ctx context.Context, id string, tags map[string]interface{}) error {
-	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
-	tagsParam, err := tagsToNullString(tags)
-	if err != nil {
-		return err
-	}
-
-	const q = `
-		INSERT INTO accounts (account_id, tags) VALUES ($1, $2)
-		ON CONFLICT (account_id) DO UPDATE SET tags = $2
-`
-
-	_, err = pg.Exec(ctx, q, id, tagsParam)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	return nil
-}
-
 // FindByID retrieves an Account record from signer by its accountID
 func FindByID(ctx context.Context, id string) (*Account, error) {
 	s, err := signers.Find(ctx, "account", id)
