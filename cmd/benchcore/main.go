@@ -119,6 +119,9 @@ func main() {
 	corectlBin := mustBuildCorectl()
 	chainJAR := mustBuildJAR()
 
+	// NOTE(kr): do not access the local filesystem after this point!
+	log.Println("READY, done with local filesystem")
+
 	log.Println("waiting for EC2 instances to open port 22")
 	wg.Wait()
 
