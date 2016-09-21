@@ -24,14 +24,15 @@ public class Account {
   public String alias;
 
   /**
-   * The number of public keys required to signing transactions for the account
+   * The number of keys required to signing transactions for the account.
    */
   public int quorum;
 
   /**
-   * The list of public keys attached to the account
+   * The list of keys used to create control programs under the account.<br>
+   * Signatures from these keys are required for spending funds held in the account.
    */
-  public List<String> xpubs;
+  public Key[] keys;
 
   /**
    * User-specified tag structure for the account
@@ -42,6 +43,17 @@ public class Account {
   public String code;
   public String message;
   public String detail;
+
+  public static class Key {
+    @SerializedName("root_xpub")
+    public String rootXpub;
+
+    @SerializedName("account_xpub")
+    public String accountXpub;
+
+    @SerializedName("account_derivation_path")
+    public int[] derivationPath;
+  }
 
   public static class Items extends PagedItems<Account> {
     public Items getPage() throws ChainException {

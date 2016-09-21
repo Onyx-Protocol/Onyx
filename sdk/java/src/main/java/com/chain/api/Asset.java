@@ -15,6 +15,15 @@ public class Asset {
 
   @SerializedName("issuance_program")
   public String issuanceProgram;
+  /**
+   * The list of keys associated with the asset.
+   */
+  public Key[] keys;
+
+  /**
+   * The number of keys required to sign issuances of the asset
+   */
+  public int quorum;
 
   /**
    * The immutable asset definition
@@ -26,10 +35,26 @@ public class Asset {
    */
   public Map<String, Object> tags;
 
+  /**
+   * Specifies whether the asset was defined on the local core, or externally
+   */
+  public String origin;
+
   // Error data
   public String code;
   public String message;
   public String detail;
+
+  public static class Key {
+    @SerializedName("root_xpub")
+    public String rootXpub;
+
+    @SerializedName("asset_pubkey")
+    public String assetPubkey;
+
+    @SerializedName("asset_derivation_path")
+    public int[] derivationPath;
+  }
 
   public static class Items extends PagedItems<Asset> {
     public Items getPage() throws ChainException {
