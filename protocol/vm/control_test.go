@@ -213,33 +213,33 @@ func TestControlOps(t *testing.T) {
 		op: OP_CHECKPREDICATE,
 		startVM: &virtualMachine{
 			runLimit:  50000,
-			dataStack: [][]byte{{byte(OP_TRUE)}, {}},
+			dataStack: [][]byte{{}, {byte(OP_TRUE)}, {}},
 		},
 		wantVM: &virtualMachine{
 			runLimit:     0,
-			deferredCost: -49943,
+			deferredCost: -49951,
 			dataStack:    [][]byte{{1}},
 		},
 	}, {
 		op: OP_CHECKPREDICATE,
 		startVM: &virtualMachine{
 			runLimit:  50000,
-			dataStack: [][]byte{{}, {}},
+			dataStack: [][]byte{{}, {}, {}},
 		},
 		wantVM: &virtualMachine{
 			runLimit:     0,
-			deferredCost: -49944,
+			deferredCost: -49952,
 			dataStack:    [][]byte{{}},
 		},
 	}, {
 		op: OP_CHECKPREDICATE,
 		startVM: &virtualMachine{
 			runLimit:  50000,
-			dataStack: [][]byte{{byte(OP_FAIL)}, {}},
+			dataStack: [][]byte{{}, {byte(OP_FAIL)}, {}},
 		},
 		wantVM: &virtualMachine{
 			runLimit:     0,
-			deferredCost: -49944,
+			deferredCost: -49952,
 			dataStack:    [][]byte{{}},
 		},
 	}, {
@@ -259,16 +259,44 @@ func TestControlOps(t *testing.T) {
 		op: OP_CHECKPREDICATE,
 		startVM: &virtualMachine{
 			runLimit:  50000,
-			dataStack: [][]byte{{}, Int64Bytes(-1)},
+			dataStack: [][]byte{{}, {}},
+		},
+		wantErr: ErrDataStackUnderflow,
+	}, {
+		op: OP_CHECKPREDICATE,
+		startVM: &virtualMachine{
+			runLimit:  50000,
+			dataStack: [][]byte{{}, {}, Int64Bytes(-1)},
 		},
 		wantErr: ErrBadValue,
 	}, {
 		op: OP_CHECKPREDICATE,
 		startVM: &virtualMachine{
 			runLimit:  50000,
-			dataStack: [][]byte{{}, Int64Bytes(50000)},
+			dataStack: [][]byte{{}, {}, Int64Bytes(50000)},
 		},
 		wantErr: ErrRunLimitExceeded,
+	}, {
+		op: OP_CHECKPREDICATE,
+		startVM: &virtualMachine{
+			runLimit:  50000,
+			dataStack: [][]byte{{0x05}, {0x07}, {0x02}, {byte(OP_ADD), byte(OP_12), byte(OP_NUMEQUAL)}, {}},
+		},
+		wantVM: &virtualMachine{
+			deferredCost: -49968,
+			dataStack:    [][]byte{{0x01}},
+		},
+	}, {
+		// stack underflow in child vm should produce false result in parent vm
+		op: OP_CHECKPREDICATE,
+		startVM: &virtualMachine{
+			runLimit:  50000,
+			dataStack: [][]byte{{0x05}, {0x07}, {0x01}, {byte(OP_ADD), byte(OP_DATA_12), byte(OP_NUMEQUAL)}, {}},
+		},
+		wantVM: &virtualMachine{
+			deferredCost: -49954,
+			dataStack:    [][]byte{{0x05}, {}},
+		},
 	}, {
 		op: OP_WHILE,
 		startVM: &virtualMachine{

@@ -25,7 +25,7 @@ type WitnessComponent interface {
 
 	// Materialize is called to turn the component into a vector of
 	// arguments for the input witness.
-	Materialize(*Template, int) ([][]byte, error)
+	Materialize(*Template, int, *[][]byte) error
 }
 
 // materializeWitnesses takes a filled in Template and "materializes"
@@ -49,11 +49,10 @@ func materializeWitnesses(txTemplate *Template) error {
 
 		var witness [][]byte
 		for j, c := range sigInst.WitnessComponents {
-			items, err := c.Materialize(txTemplate, int(sigInst.Position))
+			err := c.Materialize(txTemplate, int(sigInst.Position), &witness)
 			if err != nil {
 				return errors.WithDetailf(err, "error in witness component %d of input %d", j, i)
 			}
-			witness = append(witness, items...)
 		}
 
 		msg.Inputs[sigInst.Position].SetArguments(witness)
@@ -184,7 +183,7 @@ func buildSigProgram(tpl *Template, index int) []byte {
 	return program
 }
 
-func (sw SignatureWitness) Materialize(tpl *Template, index int) ([][]byte, error) {
+func (sw SignatureWitness) Materialize(tpl *Template, index int, args *[][]byte) error {
 	input := tpl.Transaction.Inputs[index]
 	var multiSig []byte
 	if input.IsIssuance() {
@@ -194,17 +193,26 @@ func (sw SignatureWitness) Materialize(tpl *Template, index int) ([][]byte, erro
 	}
 	pubkeys, quorum, err := vmutil.ParseP2DPMultiSigProgram(multiSig)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing input program script")
+		return errors.Wrap(err, "parsing input program script")
 	}
-	var sigs [][]byte
+
+	// This is the value of N for the CHECKPREDICATE call. The code
+	// assumes that everything already in the arg list before this call
+	// to Materialize is input to the deferred predicate, so N is
+	// len(*args).
+	*args = append(*args, vm.Int64Bytes(int64(len(*args))))
+
+	var nsigs int
 	h := sha3.Sum256(sw.Program)
-	for i := 0; i < len(pubkeys) && len(sigs) < quorum; i++ {
+	for i := 0; i < len(pubkeys) && nsigs < quorum; i++ {
 		k := indexSig(pubkeys[i], h[:], sw.Sigs)
 		if k >= 0 {
-			sigs = append(sigs, sw.Sigs[k])
+			*args = append(*args, sw.Sigs[k])
+			nsigs++
 		}
 	}
-	return append(sigs, sw.Program), nil
+	*args = append(*args, sw.Program)
+	return nil
 }
 
 func indexSig(key ed25519.PublicKey, msg []byte, sigs []chainjson.HexBytes) int {

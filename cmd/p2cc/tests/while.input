@@ -1,9 +1,0 @@
-contract w(s) {
-  clause x(n) {
-    while n > 0 {
-      s = cat(s, s);
-      n -= 1;
-    }
-    s
-  }
-}

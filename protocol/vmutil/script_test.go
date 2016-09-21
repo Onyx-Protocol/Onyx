@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"testing"
 
-	"golang.org/x/crypto/sha3"
-
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/protocol/vm"
@@ -81,28 +79,6 @@ func TestIsUnspendable(t *testing.T) {
 				i, res, test.expected)
 			continue
 		}
-	}
-}
-
-func TestPayToContract(t *testing.T) {
-	contract, err := vm.Compile("'abc' DROP")
-	if err != nil {
-		t.Fatal(err)
-	}
-	params := [][]byte{
-		vm.Int64Bytes(1),
-		vm.Int64Bytes(2),
-		vm.Int64Bytes(3),
-	}
-
-	contractHash := sha3.Sum256(contract)
-	script := PayToContractHash(contractHash, params)
-
-	expected := []byte{byte(vm.OP_DATA_1), 3, byte(vm.OP_DATA_1), 2, byte(vm.OP_DATA_1), 1, byte(vm.OP_3), byte(vm.OP_ROLL), byte(vm.OP_DUP), byte(vm.OP_SHA3), byte(vm.OP_DATA_32)}
-	expected = append(expected, contractHash[:]...)
-	expected = append(expected, []byte{byte(vm.OP_EQUALVERIFY), byte(vm.OP_0), byte(vm.OP_CHECKPREDICATE)}...)
-	if !bytes.Equal(script, expected) {
-		t.Errorf("expected %v, got %v", expected, script)
 	}
 }
 

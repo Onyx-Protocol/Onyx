@@ -114,8 +114,16 @@ func opCheckPredicate(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
+	n, err := vm.popInt64(true)
+	if err != nil {
+		return err
+	}
 	if limit < 0 {
 		return ErrBadValue
+	}
+	l := int64(len(vm.dataStack))
+	if n > l {
+		return ErrDataStackUnderflow
 	}
 	if limit == 0 {
 		limit = vm.runLimit
@@ -124,20 +132,22 @@ func opCheckPredicate(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
+
 	childVM := virtualMachine{
 		program:    predicate,
 		runLimit:   limit,
 		depth:      vm.depth + 1,
-		dataStack:  append([][]byte{}, vm.dataStack...),
+		dataStack:  append([][]byte{}, vm.dataStack[l-n:]...),
 		tx:         vm.tx,
 		inputIndex: vm.inputIndex,
 		sigHasher:  vm.sigHasher,
 	}
-	preStackCost := stackCost(childVM.dataStack)
+	vm.dataStack = vm.dataStack[:l-n]
+
 	ok, childErr := childVM.run()
 
 	vm.deferCost(-childVM.runLimit)
-	vm.deferCost(-stackCost(childVM.dataStack) + preStackCost)
+	vm.deferCost(-stackCost(childVM.dataStack))
 	vm.deferCost(-stackCost(childVM.altStack))
 
 	err = vm.pushBool(childErr == nil && ok, true)

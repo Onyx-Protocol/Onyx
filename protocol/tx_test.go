@@ -79,7 +79,7 @@ func (d *testDest) sign(t testing.TB, tx *bc.TxData, index int) {
 	prog := []byte{byte(vm.OP_TRUE)}
 	h := sha3.Sum256(prog)
 	sig := ed25519.Sign(d.privKey, h[:])
-	tx.Inputs[index].SetArguments([][]byte{sig, prog})
+	tx.Inputs[index].SetArguments([][]byte{vm.Int64Bytes(0), sig, prog})
 }
 
 func (d testDest) controlProgram() ([]byte, error) {

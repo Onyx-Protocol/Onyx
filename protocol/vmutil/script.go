@@ -1,12 +1,9 @@
 package vmutil
 
 import (
-	"golang.org/x/crypto/sha3"
-
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
 	"chain/errors"
-	"chain/protocol/bc"
 	"chain/protocol/vm"
 )
 
@@ -91,47 +88,23 @@ func isPushOnly(instructions []vm.Instruction) bool {
 	return true
 }
 
-// PayToContractHash builds a contracthash-style p2c pkscript.
-func PayToContractHash(contractHash bc.ContractHash, params [][]byte) []byte {
-	builder := NewBuilder()
-	for i := len(params) - 1; i >= 0; i-- {
-		builder.AddData(params[i])
-	}
-	if len(params) > 0 {
-		builder.AddInt64(int64(len(params))).AddOp(vm.OP_ROLL)
-	}
-	builder.AddOp(vm.OP_DUP).AddOp(vm.OP_SHA3).AddData(contractHash[:])
-	builder.AddOp(vm.OP_EQUALVERIFY).AddOp(vm.OP_0).AddOp(vm.OP_CHECKPREDICATE)
-	return builder.Program
-}
-
-// RedeemToPkScript takes a redeem script
-// and calculates its corresponding pk script
-func RedeemToPkScript(redeem []byte) []byte {
-	hash := sha3.Sum256(redeem)
-	builder := NewBuilder()
-	builder.AddOp(vm.OP_DUP).AddOp(vm.OP_SHA3).AddData(hash[:]).AddOp(vm.OP_EQUALVERIFY)
-	builder.AddOp(vm.OP_0).AddOp(vm.OP_CHECKPREDICATE)
-	return builder.Program
-}
-
 func P2DPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
 	err := checkMultiSigParams(int64(nrequired), int64(len(pubkeys)))
 	if err != nil {
 		return nil, err
 	}
 	builder := NewBuilder()
-	// Expected stack: [... SIG SIG SIG PREDICATE]
+	// Expected stack: [... NARGS SIG SIG SIG PREDICATE]
 	// Number of sigs must match nrequired.
 	builder.AddOp(vm.OP_DUP).AddOp(vm.OP_TOALTSTACK) // stash a copy of the predicate
-	builder.AddOp(vm.OP_SHA3)                        // stack is now [... SIG SIG SIG PREDICATEHASH]
+	builder.AddOp(vm.OP_SHA3)                        // stack is now [... NARGS SIG SIG SIG PREDICATEHASH]
 	for _, p := range pubkeys {
 		builder.AddData(hd25519.PubBytes(p))
 	}
-	builder.AddInt64(int64(nrequired))    // stack is now [... SIG SIG SIG PREDICATEHASH PUB PUB PUB M]
-	builder.AddInt64(int64(len(pubkeys))) // stack is now [... sig sig sig PREDICATEHASH PUB PUB PUB M N]
-	builder.AddOp(vm.OP_CHECKMULTISIG).AddOp(vm.OP_VERIFY)
-	builder.AddOp(vm.OP_FROMALTSTACK) // get the stashed predicate back
+	builder.AddInt64(int64(nrequired))                     // stack is now [... SIG SIG SIG PREDICATEHASH PUB PUB PUB M]
+	builder.AddInt64(int64(len(pubkeys)))                  // stack is now [... SIG SIG SIG PREDICATEHASH PUB PUB PUB M N]
+	builder.AddOp(vm.OP_CHECKMULTISIG).AddOp(vm.OP_VERIFY) // stack is now [... NARGS]
+	builder.AddOp(vm.OP_FROMALTSTACK)                      // stack is now [... NARGS PREDICATE]
 	builder.AddInt64(0).AddOp(vm.OP_CHECKPREDICATE)
 	return builder.Program, nil
 }

@@ -143,6 +143,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 	}
 
 	want := [][]byte{
+		vm.Int64Bytes(0),
 		sig,
 		prog,
 	}
@@ -198,6 +199,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	sig2 := ed25519.Sign(privkey2.Key, msg[:])
 	sig3 := ed25519.Sign(privkey3.Key, msg[:])
 	want := [][]byte{
+		vm.Int64Bytes(0),
 		sig1,
 		sig2,
 		prog,
