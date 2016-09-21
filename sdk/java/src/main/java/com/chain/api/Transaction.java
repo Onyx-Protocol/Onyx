@@ -7,6 +7,8 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.util.*;
 
@@ -396,6 +398,21 @@ public class Transaction {
    */
   public static List<Template> build(Context ctx, List<Transaction.Builder> builders)
       throws ChainException {
+    SecureRandom random = new SecureRandom();
+    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'");
+
+    for (Builder builder : builders) {
+      for (Action action : builder.actions) {
+        if (action.get("type") == "issue") {
+          StringBuilder sb = new StringBuilder();
+          while (sb.length() < 4) {
+            sb.append(Integer.toHexString(random.nextInt()));
+          }
+          action.setParameter("nonce", sb.toString());
+          action.setParameter("min_time", formatter.format(new Date()));
+        }
+      }
+    }
     Type type = new TypeToken<ArrayList<Template>>() {}.getType();
     return ctx.request("build-transaction", builders, type);
   }
