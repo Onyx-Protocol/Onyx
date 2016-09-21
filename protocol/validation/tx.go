@@ -78,6 +78,10 @@ func ValidateTx(tx *bc.Tx) error {
 		return errors.WithDetail(ErrBadTx, "inputs are missing")
 	}
 
+	if len(tx.Inputs) > math.MaxUint32 {
+		return errors.WithDetail(ErrBadTx, "number of inputs overflows uint32")
+	}
+
 	// Check that the transaction maximum time is greater than or equal to the
 	// minimum time, if it is greater than 0.
 	if tx.MaxTime > 0 && tx.MaxTime < tx.MinTime {
@@ -120,6 +124,10 @@ func ValidateTx(tx *bc.Tx) error {
 		}
 	}
 
+	if len(tx.Outputs) > math.MaxUint32 {
+		return errors.WithDetail(ErrBadTx, "number of outputs overflows uint32")
+	}
+
 	// Check that every output has a valid value.
 	for i, txout := range tx.Outputs {
 		// Transactions cannot have zero-value outputs.
@@ -146,7 +154,7 @@ func ValidateTx(tx *bc.Tx) error {
 	}
 
 	for i := range tx.Inputs {
-		ok, err := vm.VerifyTxInput(tx, uint32(i))
+		ok, err := vm.VerifyTxInput(tx, i)
 		if err == nil && !ok {
 			err = ErrFalseVMResult
 		}

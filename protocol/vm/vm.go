@@ -29,7 +29,7 @@ type virtualMachine struct {
 	altStack     [][]byte
 
 	tx         *bc.Tx
-	inputIndex uint32
+	inputIndex int
 	sigHasher  *bc.SigHasher
 
 	block *bc.Block
@@ -39,7 +39,7 @@ type virtualMachine struct {
 // execution.
 var TraceOut io.Writer
 
-func VerifyTxInput(tx *bc.Tx, inputIndex uint32) (bool, error) {
+func VerifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
 	txinput := tx.Inputs[inputIndex]
 
 	var program []byte
