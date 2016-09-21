@@ -18,29 +18,25 @@ type (
 	txinResp struct {
 		Action          interface{} `json:"action"`
 		AssetID         interface{} `json:"asset_id"`
-		AssetAlias      interface{} `json:"asset_alias"`
-		AssetTags       interface{} `json:"asset_tags"`
+		AssetAlias      interface{} `json:"asset_alias,omitempty"`
+		AssetTags       interface{} `json:"asset_tags,omitempty"`
 		AssetOrigin     interface{} `json:"asset_origin"`
 		Amount          interface{} `json:"amount"`
-		IssuanceProgram interface{} `json:"issuance_program"`
-		SpentOutput     interface{} `json:"spent_output"`
-		AccountID       interface{} `json:"account_id"`
-		AccountAlias    interface{} `json:"account_alias"`
-		AccountTags     interface{} `json:"account_tags"`
+		IssuanceProgram interface{} `json:"issuance_program,omitempty"`
+		SpentOutput     interface{} `json:"spent_output,omitempty"`
+		*txAccount
 		ReferenceData   interface{} `json:"reference_data"`
 		AssetDefinition interface{} `json:"asset_definition"`
 	}
 	txoutResp struct {
-		Action         interface{} `json:"action"`
-		Position       interface{} `json:"position"`
-		AssetID        interface{} `json:"asset_id"`
-		AssetAlias     interface{} `json:"asset_alias"`
-		AssetTags      interface{} `json:"asset_tags"`
-		AssetOrigin    interface{} `json:"asset_origin"`
-		Amount         interface{} `json:"amount"`
-		AccountID      interface{} `json:"account_id"`
-		AccountAlias   interface{} `json:"account_alias"`
-		AccountTags    interface{} `json:"account_tags"`
+		Action      interface{} `json:"action"`
+		Position    interface{} `json:"position"`
+		AssetID     interface{} `json:"asset_id"`
+		AssetAlias  interface{} `json:"asset_alias,omitempty"`
+		AssetTags   interface{} `json:"asset_tags"`
+		AssetOrigin interface{} `json:"asset_origin"`
+		Amount      interface{} `json:"amount"`
+		*txAccount
 		ControlProgram interface{} `json:"control_program"`
 		ReferenceData  interface{} `json:"reference_data"`
 	}
@@ -53,6 +49,11 @@ type (
 		ReferenceData interface{} `json:"reference_data"`
 		Inputs        interface{} `json:"inputs"`
 		Outputs       interface{} `json:"outputs"`
+	}
+	txAccount struct {
+		AccountID    interface{} `json:"account_id"`
+		AccountAlias interface{} `json:"account_alias,omitempty"`
+		AccountTags  interface{} `json:"account_tags"`
 	}
 )
 
@@ -161,9 +162,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 				Amount:          in["amount"],
 				IssuanceProgram: in["issuance_program"],
 				SpentOutput:     in["spent_output"],
-				AccountID:       in["account_id"],
-				AccountAlias:    in["account_alias"],
-				AccountTags:     in["account_tags"],
+				txAccount:       txAccountFromMap(in),
 				ReferenceData:   in["reference_data"],
 				AssetDefinition: in["asset_definition"],
 			}
@@ -179,9 +178,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 				AssetTags:      out["asset_tags"],
 				AssetOrigin:    out["asset_origin"],
 				Amount:         out["amount"],
-				AccountID:      out["account_id"],
-				AccountAlias:   out["account_alias"],
-				AccountTags:    out["account_tags"],
+				txAccount:      txAccountFromMap(out),
 				ControlProgram: out["control_program"],
 				ReferenceData:  out["reference_data"],
 			}
@@ -442,4 +439,15 @@ func (a *api) listAssets(ctx context.Context, in requestQuery) (page, error) {
 		LastPage: len(result) < limit,
 		Next:     out,
 	}, nil
+}
+
+func txAccountFromMap(m map[string]interface{}) *txAccount {
+	if _, ok := m["account_id"]; !ok {
+		return nil
+	}
+	return &txAccount{
+		AccountID:    m["account_id"],
+		AccountAlias: m["account_alias"],
+		AccountTags:  m["account_tags"],
+	}
 }
