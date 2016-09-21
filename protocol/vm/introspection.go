@@ -110,11 +110,11 @@ func opProgram(vm *virtualMachine) error {
 
 	var prog []byte
 	inp := vm.tx.Inputs[vm.inputIndex]
-	switch c := inp.InputCommitment.(type) {
-	case *bc.IssuanceInputCommitment:
-		prog = c.IssuanceProgram
-	case *bc.SpendInputCommitment:
-		prog = c.ControlProgram
+	switch inp := inp.TypedInput.(type) {
+	case *bc.IssuanceInput:
+		prog = inp.IssuanceProgram
+	case *bc.SpendInput:
+		prog = inp.ControlProgram
 	}
 
 	return vm.push(prog, true)

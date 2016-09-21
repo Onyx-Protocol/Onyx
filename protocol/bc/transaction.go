@@ -193,11 +193,18 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	return err
 }
 
-// assumes r has sticky errors
-func (p *Outpoint) readFrom(r io.Reader) {
-	io.ReadFull(r, p.Hash[:])
-	index, _ := blockchain.ReadUvarint(r)
+func (p *Outpoint) readFrom(r io.Reader) error {
+	_, err := io.ReadFull(r, p.Hash[:])
+	if err != nil {
+		return err
+	}
+	index, err := blockchain.ReadUvarint(r)
+	if err != nil {
+		return err
+	}
+	// TODO(bobg): range check index
 	p.Index = uint32(index)
+	return nil
 }
 
 // Hash computes the hash of the transaction with reference data fields
@@ -235,6 +242,24 @@ func (tx *TxData) WitnessHash() Hash {
 	return sha3.Sum256(b.Bytes())
 }
 
+func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
+	if n < 0 || n >= len(tx.Inputs) {
+		return h, fmt.Errorf("no input %d", n)
+	}
+	ii, ok := tx.Inputs[n].TypedInput.(*IssuanceInput)
+	if !ok {
+		return h, fmt.Errorf("not an issuance input")
+	}
+	buf := sha3.New256()
+	blockchain.WriteBytes(buf, ii.Nonce)
+	assetID := ii.AssetID()
+	buf.Write(assetID[:])
+	blockchain.WriteUvarint(buf, tx.MinTime)
+	blockchain.WriteUvarint(buf, tx.MaxTime)
+	copy(h[:], buf.Sum(nil))
+	return h, nil
+}
+
 // HashForSig generates the hash required for the specified input's
 // signature.
 func (tx *TxData) HashForSig(idx int) Hash {
@@ -262,11 +287,11 @@ func (s *SigHasher) Hash(idx int) Hash {
 
 	var h Hash
 	inp := s.txData.Inputs[idx]
-	sc, ok := inp.InputCommitment.(*SpendInputCommitment)
+	si, ok := inp.TypedInput.(*SpendInput)
 	if ok {
 		// inp is a spend
 		var ocBuf bytes.Buffer
-		sc.OutputCommitment.writeTo(&ocBuf, inp.AssetVersion)
+		si.OutputCommitment.writeTo(&ocBuf, inp.AssetVersion)
 		h = sha3.Sum256(ocBuf.Bytes())
 	} else {
 		// inp is an issuance

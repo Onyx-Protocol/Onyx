@@ -38,19 +38,18 @@ func transactionInput(in *bc.TxInput) map[string]interface{} {
 		"asset_id":       in.AssetID().String(),
 		"amount":         in.Amount(),
 		"reference_data": unmarshalReferenceData(in.ReferenceData),
-		"input_witness":  hexSlices(in.InputWitness),
+		"input_witness":  hexSlices(in.Arguments()),
 	}
 	if in.IsIssuance() {
-		issuance := in.InputCommitment.(*bc.IssuanceInputCommitment)
 		obj["action"] = "issue"
-		obj["issuance_program"] = hex.EncodeToString(issuance.IssuanceProgram)
+		obj["issuance_program"] = hex.EncodeToString(in.IssuanceProgram())
 	} else {
-		spend := in.InputCommitment.(*bc.SpendInputCommitment)
+		outpoint := in.Outpoint()
 		obj["action"] = "spend"
-		obj["control_program"] = hex.EncodeToString(spend.ControlProgram)
+		obj["control_program"] = hex.EncodeToString(in.ControlProgram())
 		obj["spent_output"] = map[string]interface{}{
-			"transaction_id": spend.Hash.String(),
-			"position":       spend.Index,
+			"transaction_id": outpoint.Hash.String(),
+			"position":       outpoint.Index,
 		}
 	}
 	return obj

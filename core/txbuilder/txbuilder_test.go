@@ -108,11 +108,10 @@ func TestMaterializeWitnesses(t *testing.T) {
 	issuanceProg, _ := vmutil.P2DPMultiSigProgram([]ed25519.PublicKey{pubkey.Key}, 1)
 	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
-	now := time.Unix(233400000, 0)
 	unsigned := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(now, now.Add(time.Hour), initialBlockHash, 5, issuanceProg, nil, nil),
+			bc.NewIssuanceInput(nil, 5, nil, initialBlockHash, issuanceProg, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 5, outscript, nil),
@@ -153,7 +152,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 		t.Fatal(withStack(err))
 	}
 
-	got := tpl.Transaction.Inputs[0].InputWitness
+	got := tpl.Transaction.Inputs[0].Arguments()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
@@ -176,11 +175,10 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	issuanceProg, _ := vmutil.P2DPMultiSigProgram([]ed25519.PublicKey{pubkey1.Key, pubkey2.Key, pubkey3.Key}, 2)
 	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
-	now := time.Unix(233400000, 0)
 	unsigned := &bc.TxData{
 		Version: 1,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(now, now.Add(time.Hour), initialBlockHash, 100, issuanceProg, nil, nil),
+			bc.NewIssuanceInput(nil, 100, nil, initialBlockHash, issuanceProg, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(assetID, 100, outscript, nil),
@@ -233,7 +231,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(withStack(err))
 	}
-	got := tpl.Transaction.Inputs[0].InputWitness
+	got := tpl.Transaction.Inputs[0].Arguments()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
@@ -249,7 +247,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 		t.Fatal(withStack(err))
 	}
 
-	got = tpl.Transaction.Inputs[0].InputWitness
+	got = tpl.Transaction.Inputs[0].Arguments()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
@@ -260,7 +258,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(withStack(err))
 	}
-	got = tpl.Transaction.Inputs[0].InputWitness
+	got = tpl.Transaction.Inputs[0].Arguments()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
@@ -271,7 +269,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(withStack(err))
 	}
-	got = tpl.Transaction.Inputs[0].InputWitness
+	got = tpl.Transaction.Inputs[0].Arguments()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}

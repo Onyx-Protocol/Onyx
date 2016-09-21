@@ -35,6 +35,7 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, m
 
 	// If there are any actions with a TTL, restrict the transaction's MaxTime accordingly.
 	now := time.Now()
+	minTime := uint64(0)
 	for _, a := range actions {
 		if t, ok := a.(ttler); ok {
 			timestamp := now.Add(t.GetTTL())
@@ -42,6 +43,15 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, m
 				maxTime = timestamp
 			}
 		}
+		if t, ok := a.(minTimer); ok {
+			m := t.GetMinTimeMS()
+			if m > minTime {
+				minTime = m
+			}
+		}
+	}
+	if tx.MinTime == 0 || tx.MinTime < minTime {
+		tx.MinTime = minTime
 	}
 	if tx.MaxTime == 0 || tx.MaxTime > bc.Millis(maxTime) {
 		tx.MaxTime = bc.Millis(maxTime)

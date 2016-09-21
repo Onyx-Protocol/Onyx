@@ -87,3 +87,7 @@ type Action interface {
 type ttler interface {
 	GetTTL() time.Duration
 }
+
+type minTimer interface {
+	GetMinTimeMS() uint64
+}

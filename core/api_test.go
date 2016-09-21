@@ -83,7 +83,7 @@ func TestBuildFinal(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(insts1) != 18 {
-		t.Fatalf("expected 14 instructions in sigwitness program 1, got %d", len(insts1))
+		t.Fatalf("expected 18 instructions in sigwitness program 1, got %d (%x)", len(insts1), prog1)
 	}
 	if insts1[0].Op != vm.OP_MAXTIME {
 		t.Fatalf("sigwitness program1 opcode 0 is %02x, expected %02x", insts1[0].Op, vm.OP_MAXTIME)
@@ -100,7 +100,7 @@ func TestBuildFinal(t *testing.T) {
 		}
 	}
 	if insts1[17].Op != vm.OP_FINDOUTPUT {
-		t.Fatalf("sigwitness program1 opcode 17 is %02x, expected %02x", insts1[13].Op, vm.OP_FINDOUTPUT)
+		t.Fatalf("sigwitness program1 opcode 17 is %02x, expected %02x", insts1[17].Op, vm.OP_FINDOUTPUT)
 	}
 
 	prog2 := tmpl2.SigningInstructions[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
@@ -109,7 +109,7 @@ func TestBuildFinal(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(insts2) != 3 {
-		t.Fatalf("expected 4 instructions in sigwitness program 2, got %d", len(insts2))
+		t.Fatalf("expected 3 instructions in sigwitness program 2, got %d (%x)", len(insts2), prog2)
 	}
 	if insts2[1].Op != vm.OP_TXSIGHASH {
 		t.Fatalf("sigwitness program2 opcode 1 is %02x, expected %02x", insts2[1].Op, vm.OP_TXSIGHASH)

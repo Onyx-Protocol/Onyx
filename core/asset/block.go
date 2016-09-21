@@ -94,17 +94,14 @@ func indexAssets(ctx context.Context, b *bc.Block) {
 			if seen[in.AssetID()] {
 				continue
 			}
-
-			ic := in.InputCommitment.(*bc.IssuanceInputCommitment)
-			definition, err := definitionFromProgram(ic.IssuanceProgram)
+			definition, err := definitionFromProgram(in.IssuanceProgram())
 			if err != nil {
 				continue
 			}
-
 			seen[in.AssetID()] = true
 			assetIDs = append(assetIDs, in.AssetID().String())
 			definitions = append(definitions, string(definition))
-			issuancePrograms = append(issuancePrograms, ic.IssuanceProgram)
+			issuancePrograms = append(issuancePrograms, in.IssuanceProgram())
 		}
 	}
 	if len(assetIDs) == 0 {

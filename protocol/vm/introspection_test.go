@@ -3,18 +3,17 @@ package vm
 import (
 	"reflect"
 	"testing"
-	"time"
 
 	"chain/protocol/bc"
 )
 
 func TestOutpointOp(t *testing.T) {
-	now := time.Now()
 	var zeroHash bc.Hash
+	nonce := []byte{36, 37, 38}
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{
 			bc.NewSpendInput(zeroHash, 0, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
-			bc.NewIssuanceInput(now, now.Add(time.Minute), zeroHash, 6, []byte("issueprog"), nil, nil),
+			bc.NewIssuanceInput(nonce, 6, nil, zeroHash, []byte("issueprog"), nil),
 		},
 	})
 	vm := &virtualMachine{
@@ -45,11 +44,10 @@ func TestOutpointOp(t *testing.T) {
 }
 
 func TestIntrospectionOps(t *testing.T) {
-	now := time.Now()
 	tx := bc.NewTx(bc.TxData{
 		Inputs: []*bc.TxInput{
 			bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
-			bc.NewIssuanceInput(now, now.Add(time.Minute), bc.Hash{}, 6, []byte("issueprog"), nil, nil),
+			bc.NewIssuanceInput(nil, 6, nil, bc.Hash{}, []byte("issueprog"), nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(bc.AssetID{3}, 8, []byte("wrongprog"), nil),

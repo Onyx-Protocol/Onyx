@@ -56,7 +56,7 @@ func materializeWitnesses(txTemplate *Template) error {
 			witness = append(witness, items...)
 		}
 
-		msg.Inputs[sigInst.Position].InputWitness = witness
+		msg.Inputs[sigInst.Position].SetArguments(witness)
 	}
 
 	return nil

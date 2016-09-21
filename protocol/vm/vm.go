@@ -43,17 +43,17 @@ func VerifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
 	txinput := tx.Inputs[inputIndex]
 
 	var program []byte
-	switch c := txinput.InputCommitment.(type) {
-	case *bc.IssuanceInputCommitment:
-		if c.VMVersion != 1 {
+	switch inp := txinput.TypedInput.(type) {
+	case *bc.IssuanceInput:
+		if inp.VMVersion != 1 {
 			return false, ErrUnsupportedVM
 		}
-		program = c.IssuanceProgram
-	case *bc.SpendInputCommitment:
-		if c.VMVersion != 1 {
+		program = inp.IssuanceProgram
+	case *bc.SpendInput:
+		if inp.VMVersion != 1 {
 			return false, ErrUnsupportedVM
 		}
-		program = c.ControlProgram
+		program = inp.ControlProgram
 	default:
 		return false, ErrUnsupportedTx
 	}
@@ -67,7 +67,7 @@ func VerifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
 		runLimit: initialRunLimit,
 	}
 
-	for _, arg := range txinput.InputWitness {
+	for _, arg := range txinput.Arguments() {
 		err := vm.push(arg, false)
 		if err != nil {
 			return false, err

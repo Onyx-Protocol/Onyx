@@ -140,7 +140,7 @@ func TestGenerateBlock(t *testing.T) {
 		bc.NewTx(bc.TxData{
 			Version: 1,
 			Inputs: []*bc.TxInput{
-				bc.NewIssuanceInput(now, now.Add(time.Hour), initialBlockHash, 50, nil, nil, [][]byte{
+				bc.NewIssuanceInput(nil, 50, nil, initialBlockHash, nil, [][]byte{
 					nil,
 					mustDecodeHex("30450221009037e1d39b7d59d24eba8012baddd5f4ab886a51b46f52b7c479ddfa55eeb5c5022076008409243475b25dfba6db85e15cf3d74561a147375941e4830baa69769b5101"),
 					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae")}),
@@ -152,7 +152,7 @@ func TestGenerateBlock(t *testing.T) {
 		bc.NewTx(bc.TxData{
 			Version: 1,
 			Inputs: []*bc.TxInput{
-				bc.NewIssuanceInput(now, now.Add(time.Hour), initialBlockHash, 50, nil, nil, [][]byte{
+				bc.NewIssuanceInput(nil, 50, nil, initialBlockHash, nil, [][]byte{
 					nil,
 					mustDecodeHex("3045022100f3bcffcfd6a1ce9542b653500386cd0ee7b9c86c59390ca0fc0238c0ebe3f1d6022065ac468a51a016842660c3a616c99a9aa5109a3bad1877ba3e0f010f3972472e01"),
 					mustDecodeHex("51210210b002870438af79b829bc22c4505e14779ef0080c411ad497d7a0846ee0af6f51ae"),
@@ -178,8 +178,8 @@ func TestGenerateBlock(t *testing.T) {
 
 	// TODO(bobg): verify these hashes are correct
 	var wantTxRoot, wantAssetsRoot bc.Hash
-	copy(wantTxRoot[:], mustDecodeHex("2d3b22867264ed2c78c1c3dd5662a0901666f5d982e3cd5b9821200439822ab0"))
-	copy(wantAssetsRoot[:], mustDecodeHex("9db47c73c36170d35599d347d292187448e85441caf11f5b4afcb671e78056d0"))
+	copy(wantTxRoot[:], mustDecodeHex("97524dacad75362b9679f03ca8bd268c46f09e65e5440eb5ba8403a7805bc307"))
+	copy(wantAssetsRoot[:], mustDecodeHex("e8cbfca1ea14930d548fe5740ec9fb49d552dd87acaadd1d21da75c8a483e21a"))
 
 	want := &bc.Block{
 		BlockHeader: bc.BlockHeader{

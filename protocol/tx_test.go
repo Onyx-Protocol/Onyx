@@ -79,7 +79,7 @@ func (d *testDest) sign(t testing.TB, tx *bc.TxData, index int) {
 	prog := []byte{byte(vm.OP_TRUE)}
 	h := sha3.Sum256(prog)
 	sig := ed25519.Sign(d.privKey, h[:])
-	tx.Inputs[index].InputWitness = [][]byte{sig, prog}
+	tx.Inputs[index].SetArguments([][]byte{sig, prog})
 }
 
 func (d testDest) controlProgram() ([]byte, error) {
@@ -115,11 +115,13 @@ func issue(t testing.TB, asset *testAsset, dest *testDest, amount uint64) (*bc.T
 	tx := &bc.TxData{
 		Version: bc.CurrentTransactionVersion,
 		Inputs: []*bc.TxInput{
-			bc.NewIssuanceInput(time.Now(), time.Now().Add(time.Hour), bc.Hash{}, amount, assetCP, nil, nil),
+			bc.NewIssuanceInput([]byte{1}, amount, nil, bc.Hash{}, assetCP, nil),
 		},
 		Outputs: []*bc.TxOutput{
 			bc.NewTxOutput(asset.AssetID, amount, destCP, nil),
 		},
+		MinTime: bc.Millis(time.Now()),
+		MaxTime: bc.Millis(time.Now().Add(time.Hour)),
 	}
 	asset.sign(t, tx, 0)
 

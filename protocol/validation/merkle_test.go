@@ -19,7 +19,7 @@ func TestCalcMerkleRoot(t *testing.T) {
 				[]byte("00000"),
 			},
 		},
-		want: mustParseHash("b2e80b0f134f1035816c1bc3d37b962b8f92be9097d8ba1fba2dc543e9e54231"),
+		want: mustParseHash("394b0904ac32c1818cb81c0a21e0b4ffcd2526d47b40349c554c4c588ea6a791"),
 	}, {
 		witnesses: [][][]byte{
 			[][]byte{
@@ -31,7 +31,7 @@ func TestCalcMerkleRoot(t *testing.T) {
 				[]byte("111111"),
 			},
 		},
-		want: mustParseHash("d58a9f8db787fa316865ef1cca70e9e3aeb8bc1c9c7a2bccb6e1b4d2bdc2b270"),
+		want: mustParseHash("11ba8c6ad7e62dcdcd792467ec234365f19f085bc4d323d42654e150e88c81d6"),
 	}, {
 		witnesses: [][][]byte{
 			[][]byte{
@@ -44,7 +44,7 @@ func TestCalcMerkleRoot(t *testing.T) {
 				[]byte("222222"),
 			},
 		},
-		want: mustParseHash("9acb338f300707b0fd06e8f0b6c978fadc4bcf3efda98eb2664d63c7057b8c14"),
+		want: mustParseHash("dfe61cf68e70ad29b2bd52b734730dc3a99e7681c74fc17554a1e4bc0a9c80ae"),
 	}}
 
 	for _, c := range cases {
@@ -54,9 +54,10 @@ func TestCalcMerkleRoot(t *testing.T) {
 				TxData: bc.TxData{
 					Inputs: []*bc.TxInput{
 						&bc.TxInput{
-							AssetVersion:    1,
-							InputCommitment: &bc.SpendInputCommitment{},
-							InputWitness:    wit,
+							AssetVersion: 1,
+							TypedInput: &bc.SpendInput{
+								Arguments: wit,
+							},
 						},
 					},
 				},

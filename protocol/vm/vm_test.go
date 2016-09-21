@@ -6,7 +6,6 @@ import (
 	"os"
 	"reflect"
 	"testing"
-	"time"
 
 	"chain/errors"
 	"chain/protocol/bc"
@@ -208,25 +207,24 @@ func TestVerifyTxInput(t *testing.T) {
 		want: true,
 	}, {
 		input: bc.NewIssuanceInput(
-			time.Now(),
-			time.Now(),
-			bc.Hash{},
-			1,
-			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			nil,
+			1,
+			nil,
+			bc.Hash{},
+			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			[][]byte{{2}, {3}},
 		),
 		want: true,
 	}, {
 		input: &bc.TxInput{
-			InputCommitment: &bc.IssuanceInputCommitment{
+			TypedInput: &bc.IssuanceInput{
 				VMVersion: 2,
 			},
 		},
 		wantErr: ErrUnsupportedVM,
 	}, {
 		input: &bc.TxInput{
-			InputCommitment: &bc.SpendInputCommitment{
+			TypedInput: &bc.SpendInput{
 				OutputCommitment: bc.OutputCommitment{
 					VMVersion: 2,
 				},
@@ -235,19 +233,16 @@ func TestVerifyTxInput(t *testing.T) {
 		wantErr: ErrUnsupportedVM,
 	}, {
 		input: bc.NewIssuanceInput(
-			time.Now(),
-			time.Now(),
-			bc.Hash{},
-			1,
-			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			nil,
+			1,
+			nil,
+			bc.Hash{},
+			[]byte{byte(OP_ADD), byte(OP_5), byte(OP_NUMEQUAL)},
 			[][]byte{make([]byte, 50001)},
 		),
 		wantErr: ErrRunLimitExceeded,
 	}, {
-		input: &bc.TxInput{
-			InputCommitment: nil,
-		},
+		input:   &bc.TxInput{},
 		wantErr: ErrUnsupportedTx,
 	}}
 

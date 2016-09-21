@@ -1,9 +1,9 @@
 package validation
 
 import (
+	"bytes"
 	"encoding/hex"
 	"math"
-	"reflect"
 	"strings"
 
 	"chain/errors"
@@ -34,22 +34,31 @@ func ConfirmTx(snapshot *state.Snapshot, tx *bc.Tx, timestampMS uint64) error {
 	if tx.MaxTime > 0 && timestampMS > tx.MaxTime {
 		return errors.WithDetail(ErrBadTx, "block time is after transaction max time")
 	}
-	for inIndex, txin := range tx.Inputs {
-		if ic, ok := txin.InputCommitment.(*bc.IssuanceInputCommitment); ok {
-			// txin is an issuance
 
-			if inIndex == 0 {
-				if ic.MinTimeMS > timestampMS || ic.MaxTimeMS < timestampMS {
-					return errors.WithDetailf(ErrBadTx, "block time is outside issuance time window (input %d)", inIndex)
+	for i, txin := range tx.Inputs {
+		if ii, ok := txin.TypedInput.(*bc.IssuanceInput); ok {
+			if txin.AssetVersion != 1 {
+				continue
+			}
+			if len(ii.Nonce) == 0 {
+				continue
+			}
+			if timestampMS < tx.MinTime || timestampMS > tx.MaxTime {
+				return errors.WithDetail(ErrBadTx, "timestamp outside issuance input's time window")
+			}
+			// TODO(bobg): test that timestampMS + maxIssuanceWindow >= tx.MaxTimeMS
+			// expire old items out of snapshot.Issuances
+			for h, expireMS := range snapshot.Issuances {
+				if timestampMS > expireMS {
+					delete(snapshot.Issuances, h)
 				}
-				for txhash, expireMS := range snapshot.Issuances {
-					if timestampMS > expireMS {
-						delete(snapshot.Issuances, txhash)
-					}
-				}
-				if _, ok2 := snapshot.Issuances[tx.Hash]; ok2 {
-					return errors.WithDetail(ErrBadTx, "duplicate issuance transaction")
-				}
+			}
+			iHash, err := tx.IssuanceHash(i)
+			if err != nil {
+				return err
+			}
+			if _, ok2 := snapshot.Issuances[iHash]; ok2 {
+				return errors.WithDetail(ErrBadTx, "duplicate issuance transaction")
 			}
 			continue
 		}
@@ -60,7 +69,7 @@ func ConfirmTx(snapshot *state.Snapshot, tx *bc.Tx, timestampMS uint64) error {
 		k, val := state.OutputTreeItem(state.Prevout(txin))
 		n := snapshot.Tree.Lookup(k)
 		if n == nil || n.Hash() != val.Hash() {
-			return errors.WithDetailf(ErrBadTx, "output %s for input %d is invalid", txin.Outpoint().String(), inIndex)
+			return errors.WithDetailf(ErrBadTx, "output %s for input %d is invalid", txin.Outpoint().String(), i)
 		}
 	}
 	return nil
@@ -80,6 +89,27 @@ func ValidateTx(tx *bc.Tx) error {
 
 	if len(tx.Inputs) > math.MaxUint32 {
 		return errors.WithDetail(ErrBadTx, "number of inputs overflows uint32")
+	}
+
+	// Are all inputs issuances, all with asset version 1, and all with empty nonces?
+	allIssuancesWithEmptyNonces := true
+	for _, txin := range tx.Inputs {
+		if txin.AssetVersion != 1 {
+			allIssuancesWithEmptyNonces = false
+			break
+		}
+		ii, ok := txin.TypedInput.(*bc.IssuanceInput)
+		if !ok {
+			allIssuancesWithEmptyNonces = false
+			break
+		}
+		if len(ii.Nonce) > 0 {
+			allIssuancesWithEmptyNonces = false
+			break
+		}
+	}
+	if allIssuancesWithEmptyNonces {
+		return errors.WithDetail(ErrBadTx, "all inputs are issuances with empty nonce fields")
 	}
 
 	// Check that the transaction maximum time is greater than or equal to the
@@ -106,19 +136,21 @@ func ValidateTx(tx *bc.Tx) error {
 		}
 		parity[assetID] = sum
 
-		if txin.IsIssuance() {
-			if i == 0 {
-				ic := txin.InputCommitment.(*bc.IssuanceInputCommitment)
-				if ic.MaxTimeMS < ic.MinTimeMS {
-					return errors.WithDetail(ErrBadTx, "input 0 is an issuance with maxtime < mintime")
-				}
-				// TODO(bobg): test that issuance maxtime - issuance mintime <= issuance window limit
+		if ii, ok := txin.TypedInput.(*bc.IssuanceInput); ok {
+			if txin.AssetVersion != 1 {
+				continue
+			}
+			if len(ii.Nonce) == 0 {
+				continue
+			}
+			if tx.MinTime == 0 || tx.MaxTime == 0 {
+				return errors.WithDetail(ErrBadTx, "issuance input with unbounded time window")
 			}
 		}
 
 		for j := 0; j < i; j++ {
 			other := tx.Inputs[j]
-			if reflect.DeepEqual(txin.InputCommitment, other.InputCommitment) {
+			if bytes.Equal(txin.InputCommitmentBytes(), other.InputCommitmentBytes()) {
 				return errors.WithDetailf(ErrBadTx, "input %d is a duplicate of %d", j, i)
 			}
 		}
@@ -167,8 +199,9 @@ func ValidateTx(tx *bc.Tx) error {
 				program = input.ControlProgram()
 			}
 			scriptStr, _ := vm.Decompile(program)
-			hexArgs := make([]string, 0, len(input.InputWitness))
-			for _, arg := range input.InputWitness {
+			args := input.Arguments()
+			hexArgs := make([]string, 0, len(args))
+			for _, arg := range args {
 				hexArgs = append(hexArgs, hex.EncodeToString(arg))
 			}
 			return errors.WithDetailf(ErrBadTx, "validation failed in script execution, input %d (program [%s] args [%s]): %s", i, scriptStr, strings.Join(hexArgs, " "), err)
@@ -192,10 +225,13 @@ func addCheckOverflow(x, y int64) (sum int64, ok bool) {
 // ApplyTx updates the state tree with all the changes to the ledger.
 func ApplyTx(snapshot *state.Snapshot, tx *bc.Tx) error {
 	for i, in := range tx.Inputs {
-		if ic, ok := in.InputCommitment.(*bc.IssuanceInputCommitment); ok {
-			// issuance input
-			if i == 0 {
-				snapshot.Issuances[tx.Hash] = ic.MaxTimeMS
+		if ii, ok := in.TypedInput.(*bc.IssuanceInput); ok {
+			if len(ii.Nonce) > 0 {
+				iHash, err := tx.IssuanceHash(i)
+				if err != nil {
+					return err
+				}
+				snapshot.Issuances[iHash] = tx.MaxTime
 			}
 			continue
 		}

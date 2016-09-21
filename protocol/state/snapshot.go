@@ -5,9 +5,8 @@ import (
 	"chain/protocol/patricia"
 )
 
-// PriorIssuances maps a tx hash (of a tx containing an issuance) to
-// the time (in Unix millis) at which it should expire from the
-// issuance memory.
+// PriorIssuances maps an "issuance hash" to the time (in Unix millis)
+// at which it should expire from the issuance memory.
 type PriorIssuances map[bc.Hash]uint64
 
 // Snapshot encompasses a snapshot of entire blockchain state. It

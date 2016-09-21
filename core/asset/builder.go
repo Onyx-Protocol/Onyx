@@ -25,6 +25,8 @@ type IssueAction struct {
 	AssetAlias string `json:"asset_alias"`
 
 	ReferenceData json.Map `json:"reference_data"`
+
+	Nonce json.HexBytes `json:"nonce"`
 }
 
 func (a IssueAction) GetTTL() time.Duration {
@@ -35,7 +37,14 @@ func (a IssueAction) GetTTL() time.Duration {
 	return ttl
 }
 
-func (a *IssueAction) Build(ctx context.Context, maxTime time.Time) (
+func (a IssueAction) GetMinTimeMS() uint64 {
+	if a.MinTime == nil {
+		return 0
+	}
+	return bc.Millis(*a.MinTime)
+}
+
+func (a *IssueAction) Build(ctx context.Context, _ time.Time) (
 	[]*bc.TxInput,
 	[]*bc.TxOutput,
 	[]*txbuilder.SigningInstruction,
@@ -48,11 +57,7 @@ func (a *IssueAction) Build(ctx context.Context, maxTime time.Time) (
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	minTime := time.Now()
-	if a.MinTime != nil {
-		minTime = *a.MinTime
-	}
-	txin := bc.NewIssuanceInput(minTime, maxTime, asset.InitialBlockHash, a.Amount, asset.IssuanceProgram, a.ReferenceData, nil)
+	txin := bc.NewIssuanceInput(a.Nonce, a.Amount, a.ReferenceData, asset.InitialBlockHash, asset.IssuanceProgram, nil)
 
 	tplIn := &txbuilder.SigningInstruction{AssetAmount: a.AssetAmount}
 	path := signers.Path(asset.Signer, signers.AssetKeySpace, nil)

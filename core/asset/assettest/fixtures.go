@@ -2,6 +2,7 @@ package assettest
 
 import (
 	"context"
+	"crypto/rand"
 	"testing"
 	"time"
 
@@ -132,9 +133,18 @@ func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, actions []tx
 }
 
 func NewIssueAction(assetAmount bc.AssetAmount, referenceData json.Map) *asset.IssueAction {
+	var nonce [8]byte
+	_, err := rand.Read(nonce[:])
+	if err != nil {
+		panic(err)
+	}
+	now := time.Now()
 	return &asset.IssueAction{
+		TTL:           24 * time.Hour,
+		MinTime:       &now,
 		AssetAmount:   assetAmount,
 		ReferenceData: referenceData,
+		Nonce:         nonce[:],
 	}
 }
 
