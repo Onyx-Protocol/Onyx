@@ -2,6 +2,7 @@ package asset
 
 import (
 	"context"
+	"crypto/rand"
 	"time"
 
 	"chain/core/signers"
@@ -25,8 +26,6 @@ type IssueAction struct {
 	AssetAlias string `json:"asset_alias"`
 
 	ReferenceData json.Map `json:"reference_data"`
-
-	Nonce json.HexBytes `json:"nonce"`
 }
 
 func (a IssueAction) GetTTL() time.Duration {
@@ -57,7 +56,13 @@ func (a *IssueAction) Build(ctx context.Context, _ time.Time) (
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	txin := bc.NewIssuanceInput(a.Nonce, a.Amount, a.ReferenceData, asset.InitialBlockHash, asset.IssuanceProgram, nil)
+
+	var nonce [8]byte
+	_, err = rand.Read(nonce[:])
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	txin := bc.NewIssuanceInput(nonce[:], a.Amount, a.ReferenceData, asset.InitialBlockHash, asset.IssuanceProgram, nil)
 
 	tplIn := &txbuilder.SigningInstruction{AssetAmount: a.AssetAmount}
 	path := signers.Path(asset.Signer, signers.AssetKeySpace, nil)

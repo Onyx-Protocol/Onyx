@@ -1,6 +1,5 @@
 import buildClass from './buildClass'
 import errors from './errors'
-import crypto from 'crypto'
 
 class Transaction extends buildClass('transaction') {
   checkForError(data) {
@@ -16,14 +15,6 @@ class Transaction extends buildClass('transaction') {
 
   build(context) {
     let body = [this]
-
-    this.actions.forEach((action) => {
-      if (action.type == 'issue') {
-        action.nonce = crypto.randomBytes(8).toString('hex')
-        action.min_time = new Date()
-      }
-    })
-
     return context.client.request('/build-transaction', body)
       .then(data => this.checkForError(data[0]))
   }
