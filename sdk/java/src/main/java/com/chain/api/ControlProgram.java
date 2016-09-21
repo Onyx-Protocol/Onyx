@@ -1,5 +1,6 @@
 package com.chain.api;
 
+import com.chain.exception.APIException;
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
@@ -15,6 +16,11 @@ public class ControlProgram {
   @SerializedName("control_program")
   public String program;
 
+  // Error data
+  public String code;
+  public String message;
+  public String detail;
+
   public static String retireProgram() {
     return "6a";
   }
@@ -29,7 +35,11 @@ public class ControlProgram {
 
     public ControlProgram create(Context ctx) throws ChainException {
       List<ControlProgram> programs = ControlProgram.Builder.create(ctx, Arrays.asList(this));
-      return programs.get(0);
+      ControlProgram result = programs.get(0);
+      if (result.program == null || result.program.isEmpty()) {
+        throw new APIException(result.code, result.message, result.detail, null);
+      }
+      return result;
     }
 
     public static List<ControlProgram> create(Context ctx, List<Builder> programs)
