@@ -132,10 +132,8 @@ func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, actions []tx
 }
 
 func NewIssueAction(assetAmount bc.AssetAmount, referenceData json.Map) *asset.IssueAction {
-	now := time.Now()
 	return &asset.IssueAction{
 		TTL:           24 * time.Hour,
-		MinTime:       &now,
 		AssetAmount:   assetAmount,
 		ReferenceData: referenceData,
 	}

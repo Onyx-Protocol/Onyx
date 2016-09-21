@@ -16,8 +16,7 @@ import (
 
 type IssueAction struct {
 	bc.AssetAmount
-	TTL     time.Duration
-	MinTime *time.Time `json:"min_time"`
+	TTL time.Duration
 
 	// This field is only necessary for filtering
 	// aliases on transaction build requests. A wrapper
@@ -37,10 +36,10 @@ func (a IssueAction) GetTTL() time.Duration {
 }
 
 func (a IssueAction) GetMinTimeMS() uint64 {
-	if a.MinTime == nil {
-		return 0
-	}
-	return bc.Millis(*a.MinTime)
+	// Auto-supply a nonzero mintime that allows for some clock skew
+	// between this computer and whatever machine validates the
+	// transaction.
+	return bc.Millis(time.Now().Add(-5 * time.Minute))
 }
 
 func (a *IssueAction) Build(ctx context.Context, _ time.Time) (
