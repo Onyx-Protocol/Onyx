@@ -379,7 +379,7 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 			return
 		}
 		n := prog[pc+1]
-		inst.Len += uint32(1 + n)
+		inst.Len += uint32(n) + 1
 		end := pc + inst.Len
 		if end > uint32(len(prog)) {
 			err = ErrShortProgram
@@ -394,7 +394,7 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 			return
 		}
 		n := binary.LittleEndian.Uint16(prog[pc+1 : pc+3])
-		inst.Len += uint32(2 + n)
+		inst.Len += uint32(n) + 2
 		end := pc + inst.Len
 		if end > uint32(len(prog)) {
 			err = ErrShortProgram

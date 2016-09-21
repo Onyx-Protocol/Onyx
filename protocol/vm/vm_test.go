@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"testing/quick"
 
 	"chain/errors"
 	"chain/protocol/bc"
@@ -427,5 +429,71 @@ func TestStep(t *testing.T) {
 		if !reflect.DeepEqual(c.startVM, c.wantVM) {
 			t.Errorf("step test %d:\n\tgot vm:  %+v\n\twant vm: %+v", i, c.startVM, c.wantVM)
 		}
+	}
+}
+
+func decompile(prog []byte) string {
+	var strs []string
+	for i := uint32(0); i < uint32(len(prog)); { // update i inside the loop
+		inst, err := ParseOp(prog, i)
+		if err != nil {
+			strs = append(strs, fmt.Sprintf("<%x>", prog[i]))
+			i++
+			continue
+		}
+		var str string
+		if len(inst.Data) > 0 {
+			str = fmt.Sprintf("0x%x", inst.Data)
+		} else {
+			str = inst.Op.String()
+		}
+		strs = append(strs, str)
+		i += inst.Len
+	}
+	return strings.Join(strs, " ")
+}
+
+func TestVerifyTxInputQuickCheck(t *testing.T) {
+	f := func(program []byte, witnesses [][]byte) (ok bool) {
+		defer func() {
+			if err := recover(); err != nil {
+				t.Log(decompile(program))
+				for i := range witnesses {
+					t.Logf("witness %d: %x\n", i, witnesses[i])
+				}
+				t.Log(err)
+				ok = false
+			}
+		}()
+		tx := bc.NewTx(bc.TxData{
+			Inputs: []*bc.TxInput{bc.NewSpendInput(bc.Hash{}, 0, witnesses, bc.AssetID{}, 10, program, nil)},
+		})
+		verifyTxInput(tx, 0)
+		return true
+	}
+	if err := quick.Check(f, nil); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestVerifyBlockHeaderQuickCheck(t *testing.T) {
+	f := func(program []byte, witnesses [][]byte) (ok bool) {
+		defer func() {
+			if err := recover(); err != nil {
+				t.Log(decompile(program))
+				for i := range witnesses {
+					t.Logf("witness %d: %x\n", i, witnesses[i])
+				}
+				t.Log(err)
+				ok = false
+			}
+		}()
+		prev := &bc.BlockHeader{ConsensusProgram: program}
+		block := &bc.Block{BlockHeader: bc.BlockHeader{Witness: witnesses}}
+		verifyBlockHeader(prev, block)
+		return true
+	}
+	if err := quick.Check(f, nil); err != nil {
+		t.Error(err)
 	}
 }

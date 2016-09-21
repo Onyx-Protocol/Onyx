@@ -54,10 +54,11 @@ func opSubstr(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	if offset+size > int64(len(str)) {
+	end, ok := addCheckOverflow(offset, size)
+	if !ok || end > int64(len(str)) {
 		return ErrBadValue
 	}
-	err = vm.push(str[offset:offset+size], true)
+	err = vm.push(str[offset:end], true)
 	if err != nil {
 		return err
 	}

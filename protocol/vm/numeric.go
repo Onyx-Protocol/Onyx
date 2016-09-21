@@ -41,8 +41,8 @@ func op2Mul(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	res := 2 * n
-	if res/2 != n {
+	res, ok := multiplyCheckOverflow(n, 2)
+	if !ok {
 		return ErrRange
 	}
 	return vm.pushInt64(res, true)
@@ -130,11 +130,11 @@ func opAdd(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	sum := x + y
-	if (x > 0 && y > 0 && sum < 0) || (x < 0 && y < 0 && sum > 0) {
+	res, ok := addCheckOverflow(x, y)
+	if !ok {
 		return ErrRange
 	}
-	return vm.pushInt64(x+y, true)
+	return vm.pushInt64(res, true)
 }
 
 func opSub(vm *virtualMachine) error {
@@ -150,11 +150,11 @@ func opSub(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	diff := x - y
-	if (x > 0 && y < 0 && diff < 0) || (x < 0 && y > 0 && diff > 0) {
+	res, ok := subCheckOverflow(x, y)
+	if !ok {
 		return ErrRange
 	}
-	return vm.pushInt64(x-y, true)
+	return vm.pushInt64(res, true)
 }
 
 func opMul(vm *virtualMachine) error {
@@ -170,8 +170,8 @@ func opMul(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	res := x * y
-	if res/y != x {
+	res, ok := multiplyCheckOverflow(x, y)
+	if !ok {
 		return ErrRange
 	}
 	return vm.pushInt64(res, true)
@@ -193,7 +193,11 @@ func opDiv(vm *virtualMachine) error {
 	if y == 0 {
 		return ErrDivZero
 	}
-	return vm.pushInt64(x/y, true)
+	res, ok := divideCheckOverflow(x, y)
+	if !ok {
+		return ErrRange
+	}
+	return vm.pushInt64(res, true)
 }
 
 func opMod(vm *virtualMachine) error {
@@ -213,7 +217,10 @@ func opMod(vm *virtualMachine) error {
 		return ErrDivZero
 	}
 
-	res := x % y
+	res, ok := modCheckOverflow(x, y)
+	if !ok {
+		return ErrRange
+	}
 
 	// Go's modulus operator produces the wrong result for mixed-sign
 	// operands
@@ -467,4 +474,44 @@ func opWithin(vm *virtualMachine) error {
 		return err
 	}
 	return vm.pushBool(x >= min && x < max, true)
+}
+
+func addCheckOverflow(a, b int64) (sum int64, ok bool) {
+	if (b > 0 && a > math.MaxInt64-b) ||
+		(b < 0 && a < math.MinInt64-b) {
+		return 0, false
+	}
+	return a + b, true
+}
+
+func subCheckOverflow(a, b int64) (diff int64, ok bool) {
+	if (b > 0 && a < math.MinInt64+b) ||
+		(b < 0 && a > math.MaxInt64+b) {
+		return 0, false
+	}
+	return a - b, true
+}
+
+func multiplyCheckOverflow(a, b int64) (product int64, ok bool) {
+	if (a > 0 && b > 0 && a > math.MaxInt64/b) ||
+		(a > 0 && b <= 0 && b < math.MinInt64/a) ||
+		(a <= 0 && b > 0 && a < math.MinInt64/b) ||
+		(a < 0 && b <= 0 && b < math.MaxInt64/a) {
+		return 0, false
+	}
+	return a * b, true
+}
+
+func divideCheckOverflow(a, b int64) (quotient int64, ok bool) {
+	if b == 0 || (a == math.MinInt64 && b == -1) {
+		return 0, false
+	}
+	return a / b, true
+}
+
+func modCheckOverflow(a, b int64) (remainder int64, ok bool) {
+	if b == 0 || (a == math.MinInt64 && b == -1) {
+		return 0, false
+	}
+	return a % b, true
 }

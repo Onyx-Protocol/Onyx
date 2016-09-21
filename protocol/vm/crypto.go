@@ -82,10 +82,11 @@ func opCheckMultiSig(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	if numPubkeys < 0 {
+	pubCost, ok := multiplyCheckOverflow(numPubkeys, 1024)
+	if numPubkeys < 0 || !ok {
 		return ErrBadValue
 	}
-	err = vm.applyCost(1024 * numPubkeys)
+	err = vm.applyCost(pubCost)
 	if err != nil {
 		return err
 	}

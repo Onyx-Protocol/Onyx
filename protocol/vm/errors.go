@@ -17,6 +17,7 @@ var (
 	ErrRunLimitExceeded      = errors.New("run limit exceeded")
 	ErrShortProgram          = errors.New("unexpected end of program")
 	ErrToken                 = errors.New("unrecognized token")
+	ErrUnexpected            = errors.New("unexpected error")
 	ErrUnknownHashType       = errors.New("unknown hash type")
 	ErrUnknownOpcode         = errors.New("unknown opcode")
 	ErrUnsupportedTx         = errors.New("unsupported transaction type")

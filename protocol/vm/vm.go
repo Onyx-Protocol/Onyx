@@ -39,7 +39,17 @@ type virtualMachine struct {
 // execution.
 var TraceOut io.Writer
 
-func VerifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
+func VerifyTxInput(tx *bc.Tx, inputIndex int) (ok bool, err error) {
+	defer func() {
+		if panErr := recover(); panErr != nil {
+			ok = false
+			err = ErrUnexpected
+		}
+	}()
+	return verifyTxInput(tx, inputIndex)
+}
+
+func verifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
 	txinput := tx.Inputs[inputIndex]
 
 	var program []byte
@@ -77,7 +87,17 @@ func VerifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
 	return vm.run()
 }
 
-func VerifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (bool, error) {
+func VerifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (ok bool, err error) {
+	defer func() {
+		if panErr := recover(); panErr != nil {
+			ok = false
+			err = ErrUnexpected
+		}
+	}()
+	return verifyBlockHeader(prev, block)
+}
+
+func verifyBlockHeader(prev *bc.BlockHeader, block *bc.Block) (bool, error) {
 	vm := virtualMachine{
 		block: block,
 

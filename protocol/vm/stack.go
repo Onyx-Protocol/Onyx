@@ -208,10 +208,17 @@ func opPick(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	if int64(len(vm.dataStack)) < n+1 {
+	if n < 0 {
+		return ErrBadValue
+	}
+	off, ok := addCheckOverflow(n, 1)
+	if !ok {
+		return ErrBadValue
+	}
+	if int64(len(vm.dataStack)) < off {
 		return ErrDataStackUnderflow
 	}
-	err = vm.push(vm.dataStack[int64(len(vm.dataStack))-(n+1)], false)
+	err = vm.push(vm.dataStack[int64(len(vm.dataStack))-(off)], false)
 	if err != nil {
 		return err
 	}
@@ -227,7 +234,14 @@ func opRoll(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	err = rot(vm, n+1)
+	if n < 0 {
+		return ErrBadValue
+	}
+	off, ok := addCheckOverflow(n, 1)
+	if !ok {
+		return ErrBadValue
+	}
+	err = rot(vm, off)
 	if err != nil {
 		return err
 	}
@@ -247,6 +261,9 @@ func opRot(vm *virtualMachine) error {
 }
 
 func rot(vm *virtualMachine, n int64) error {
+	if n < 1 {
+		return ErrBadValue
+	}
 	if int64(len(vm.dataStack)) < n {
 		return ErrDataStackUnderflow
 	}
