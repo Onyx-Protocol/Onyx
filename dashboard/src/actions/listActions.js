@@ -17,7 +17,7 @@ export default function(type, options = {}) {
 
       if (latestPage) {
         if (!latestPage.last_page) {
-          promise = latestPage.next(context)
+          promise = latestPage.nextPage(context)
         } else {
           return
         }

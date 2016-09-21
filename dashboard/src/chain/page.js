@@ -7,8 +7,8 @@ class Page {
     })
   }
 
-  next(context) {
-    return this.itemClass.query(context, this.query)
+  nextPage(context) {
+    return this.itemClass.query(context, this.next)
   }
 }
 
