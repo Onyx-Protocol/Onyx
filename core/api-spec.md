@@ -807,6 +807,10 @@ A Cursor object.
 
 Updates the Cursor with a new `after`. This is used to acknowledge that the last set of transactions received from `/list-transactions` was processed successfully.
 
+Cursors can only be updated forwards (i.e., a cursor cannot be updated with a value that is previous to its current value). 
+
+If present, the `previous_after` cursor will be used to prevent a race condition where two clients are updating the same cursor at the same time. If the current cursor does not match `previous_after`, it cannot be updated.
+
 #### Endpoint
 
 ```
@@ -819,6 +823,7 @@ POST /update-cursor
 {
     "id": "...", // provide either cursor id or alias
     "alias": "...",
+    "previous_after": "...", // optional. previous value of the cursor
     "after": "..."
 }
 ```
