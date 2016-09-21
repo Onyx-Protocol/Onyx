@@ -7,6 +7,7 @@ import (
 	"chain/core/asset"
 	"chain/core/mockhsm"
 	"chain/core/query"
+	"chain/core/query/filter"
 	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/database/pg"
@@ -64,6 +65,7 @@ var (
 		// Query error namespace (6xx)
 		query.ErrBadAfter:               errorInfo{400, "CH600", "Malformed pagination parameter `after`"},
 		query.ErrParameterCountMismatch: errorInfo{400, "CH601", "Incorrect number of parameters to filter"},
+		filter.ErrBadFilter:             errorInfo{400, "CH602", "Malformed query filter"},
 
 		// Transaction error namespace (7xx)
 		// Build error namespace (70x)

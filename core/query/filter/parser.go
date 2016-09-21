@@ -3,7 +3,13 @@ package filter
 import (
 	"fmt"
 	"strconv"
+
+	"chain/errors"
 )
+
+// ErrBadFilter is returned from Parse when
+// it encounters an invalid filter expression.
+var ErrBadFilter = errors.New("invalid query filter")
 
 // Predicate represents a parsed filter predicate.
 type Predicate struct {
@@ -31,7 +37,7 @@ func (p Predicate) MarshalText() ([]byte, error) {
 func Parse(predicate string) (p Predicate, err error) {
 	expr, parser, err := parse(predicate)
 	if err != nil {
-		return p, err
+		return p, errors.WithDetail(ErrBadFilter, err.Error())
 	}
 	err = typeCheck(expr)
 	if err != nil {
