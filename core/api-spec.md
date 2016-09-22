@@ -830,9 +830,7 @@ POST /update-cursor
 
 #### Response
 
-```
-{"message": "ok"}
-```
+The updated Cursor object.
 
 ## Core
 
