@@ -73,9 +73,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			runIn(sourcedir, exec.Command("sh", "docker/testbot/tests.sh"), req)
 			postToSlack(buildBody(req))
 			select {
-			case <-startBenchcore(req.Ref):
+			case <-startBenchcore(req.After):
 			case <-time.After(2 * time.Minute):
-				postToSlackText("starting benchmark timed out for " + req.Ref)
+				postToSlackText("starting benchmark timed out for " + req.After)
 			}
 		}()
 	}
@@ -83,7 +83,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 // ready unblocks when benchcore is no longer
 // reading from the filesystem.
-func startBenchcore(ref string) (ready <-chan struct{}) {
+func startBenchcore(commit string) (ready <-chan struct{}) {
 	ch := make(chan struct{})
 	go func() {
 		var errbuf bytes.Buffer
@@ -110,7 +110,7 @@ func startBenchcore(ref string) (ready <-chan struct{}) {
 			return
 		}
 		x.Elapsed = x.Elapsed / 1000 // ms -> s
-		postToSlackText(fmt.Sprintf("throughput for %s: %.2f tx/s", ref, x.Txs/x.Elapsed))
+		postToSlackText(fmt.Sprintf("throughput for %s: %.2f tx/s", commit, x.Txs/x.Elapsed))
 	}()
 	return ch
 }
