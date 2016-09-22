@@ -149,16 +149,16 @@ func updateCursor(ctx context.Context, in struct {
 	Alias string `json:"alias,omitempty"`
 	Prev  string `json:"prev"`
 	After string `json:"after"`
-}) error {
+}) (*Cursor, error) {
 	defer metrics.RecordElapsed(time.Now())
 
 	bad, err := isBefore(in.After, in.Prev)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if bad {
-		return errors.WithDetail(httpjson.ErrBadRequest, "new After cannot be before Prev")
+		return nil, errors.WithDetail(httpjson.ErrBadRequest, "new After cannot be before Prev")
 	}
 
 	where := ` WHERE `
@@ -176,19 +176,23 @@ func updateCursor(ctx context.Context, in struct {
 
 	res, err := pg.Exec(ctx, q, in.After, id, in.Prev)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	affected, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if affected == 0 {
-		return errors.WithDetailf(errNotFound, "could not find cursor with id/alias=%s and prev=%s", id, in.Prev)
+		return nil, errors.WithDetailf(errNotFound, "could not find cursor with id/alias=%s and prev=%s", id, in.Prev)
 	}
 
-	return nil
+	return &Cursor{
+		ID:    in.ID,
+		Alias: in.Alias,
+		After: in.After,
+	}, nil
 }
 
 // isBefore returns true if a is before b. It returns an error if either
