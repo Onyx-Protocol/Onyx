@@ -2,7 +2,8 @@ import React from 'react'
 
 class Item extends React.Component {
   render() {
-    const item = this.props.item
+    const item = {...this.props.item}
+    delete item.id
 
     return(
       <div className="panel panel-default">

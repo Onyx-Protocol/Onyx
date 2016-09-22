@@ -4,10 +4,12 @@ import Item from '../../components/Balance/Item'
 const type = "balance"
 
 const newStateToProps = (state) => {
-  let defaults = mapStateToProps(type, Item)(state)
-  defaults.skipCreate = true
-  defaults.searchState.sumBy = state[type].sumBy
-  return defaults
+  const props =  {
+    ...mapStateToProps(type, Item)(state),
+    skipCreate: true,
+  }
+  props.searchState.sumBy = state[type].listView.sumBy
+  return props
 }
 
 export default connect(

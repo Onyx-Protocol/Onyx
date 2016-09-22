@@ -21,3 +21,5 @@ export const context = new chain.Context({
 export const history = useRouterHistory(createHistory)({
     basename: basename
 })
+
+export const pageSize = 25

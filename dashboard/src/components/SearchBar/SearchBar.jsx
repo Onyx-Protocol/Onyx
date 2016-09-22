@@ -46,25 +46,11 @@ class SearchBar extends React.Component {
   }
 
   render() {
-    let clearButton = this.state.showClear ? <button type="button"
-                   className={`close ${styles.clear_search}`}
-                   onClick={this.clearQuery}>
-                     Reset
-                 </button> : ""
-
-    let sumByField = ""
+    let showSumBy = false
     let searchFieldClass = styles.search_field_full
+
     if (this.props.sumBy !== undefined) {
-      sumByField = <span className={styles.sum_by_field}>
-        <label>Sum By</label>
-        <input ref="sumByField"
-          value={this.state.sumBy}
-          onChange={this.handleChange}
-          className={`form-control ${styles.search_input}`}
-          type="search"
-          placeholder="asset_alias, asset_id"
-          />
-      </span>
+      showSumBy = true
       searchFieldClass = styles.search_field_half
     }
 
@@ -82,13 +68,28 @@ class SearchBar extends React.Component {
                    placeholder="Enter predicate..." />
           </span>
 
-          {sumByField}
+          {showSumBy &&
+            <span className={styles.sum_by_field}>
+              <label>Sum By</label>
+              <input ref="sumByField"
+                value={this.state.sumBy}
+                onChange={this.handleChange}
+                className={`form-control ${styles.search_input}`}
+                type="search"
+                placeholder="asset_alias, asset_id" />
+            </span>}
 
           <div className={styles.search_button_container}>
             <button type="submit" className={`btn btn-primary ${styles.search_button}`} >
               Filter
             </button>
-            {clearButton}
+
+            {this.state.showClear &&
+              <button type="button"
+                className={`close ${styles.clear_search}`}
+                onClick={this.clearQuery}>
+                  Reset
+              </button>}
           </div>
         </form>
       </div>

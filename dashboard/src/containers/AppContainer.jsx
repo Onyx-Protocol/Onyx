@@ -14,7 +14,7 @@ const mapDispatchToProps = (dispatch) => ({
   showConfiguration: () => dispatch(actions.routing.showConfiguration()),
 
   // FIXME: seeding keys should not trigger anything related to paging
-  prefetchKeys: () => dispatch(actions.mockhsm.displayNextPage())
+  prefetchKeys: () => dispatch(actions.mockhsm.incrementPage())
 })
 
 export default connect(

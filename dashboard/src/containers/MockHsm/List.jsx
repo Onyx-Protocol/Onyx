@@ -1,27 +1,21 @@
-import { connect } from 'react-redux'
-import actions from '../../actions'
-import ItemList from '../../components/ItemList'
+import { mapStateToProps, mapDispatchToProps, connect } from '../Base/List'
 import Item from '../../components/MockHsm/Item'
 
-const type = "mockhsm"
+const type = 'mockhsm'
 
-const mapStateToProps = (state) => ({
-  pages: state[type].pages,
-  currentPage: state[type].currentPage,
-  type: type,
-  label: "Mock HSM Keys",
-  listItemComponent: Item,
-  keyProp: "xpub",
-  skipQuery: true
+const state = (state) => ({
+  ...mapStateToProps(type, Item)(state),
+  skipQuery: true,
+  label: 'Mock HSM Keys'
 })
 
-const mapDispatchToProps = (dispatch) => ({
-  getNextPage: () => dispatch(actions[type].displayNextPage()),
-  getPrevPage: () => dispatch(actions[type].decrementPage()),
-  showCreate: () => dispatch(actions[type].showCreate),
+const dispatch = (dispatch) => ({
+  ...mapDispatchToProps(type)(dispatch),
+  updateQuery: null
 })
+
 
 export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(ItemList)
+  state,
+  dispatch
+)

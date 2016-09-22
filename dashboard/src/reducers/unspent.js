@@ -1,10 +1,13 @@
-import { pagesActions, currentPageActions, currentQueryActions } from './base'
+import {
+  itemsReducer,
+  listViewReducer
+} from './base'
 import { combineReducers } from 'redux'
 
-const type = "unspent"
+const type = 'unspent'
+const idFunc = item => `${item.transaction_id}-${item.position}`
 
 export default combineReducers({
-  pages: pagesActions(type),
-  currentPage: currentPageActions(type),
-  currentQuery: currentQueryActions(type)
+  items: itemsReducer(type, idFunc),
+  listView: listViewReducer(type, idFunc)
 })

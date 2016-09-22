@@ -1,10 +1,12 @@
-import { pagesActions, currentPageActions, currentQueryActions } from './base'
+import {
+  itemsReducer,
+  listViewReducer
+} from './base'
 import { combineReducers } from 'redux'
 
-const type = "transaction"
+const type = 'transaction'
 
 export default combineReducers({
-  pages: pagesActions(type),
-  currentPage: currentPageActions(type),
-  currentQuery: currentQueryActions(type)
+  items: itemsReducer(type),
+  listView: listViewReducer(type)
 })

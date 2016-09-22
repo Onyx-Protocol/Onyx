@@ -1,5 +1,5 @@
 import chain from '../chain'
-import { context } from '../utility/environment'
+import { context, pageSize } from '../utility/environment'
 import actionCreator from './actionCreator'
 
 export default function(type, options = {}) {
@@ -8,42 +8,44 @@ export default function(type, options = {}) {
   const appendPage = actionCreator(`APPEND_${type.toUpperCase()}_PAGE`, param => ({ param }) )
   const updateQuery = actionCreator(`UPDATE_${type.toUpperCase()}_QUERY`, param => ({ param }) )
 
+  const getNextPageSlice = function(getState) {
+    const pageStart = (getState()[type].listView.pageIndex + 1) * pageSize
+    return getState()[type].listView.itemIds.slice(pageStart, pageStart + pageSize)
+  }
+
   const fetchPage = function() {
     const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
+
     return function(dispatch, getState) {
-      let pageCount = getState()[type].pages.length
-      let latestPage = getState()[type].pages[pageCount - 1]
+      let latestResponse = getState()[type].listView.cursor
       let promise, filter
 
-      if (latestPage) {
-        if (!latestPage.last_page) {
-          promise = latestPage.nextPage(context)
-        } else {
-          return
-        }
+      if (latestResponse && latestResponse.last_page) {
+        return new Promise.resolve()
+      } else if (latestResponse.nextPage) {
+        promise = latestResponse.nextPage(context)
       } else {
         let params = {}
-        if (getState()[type].currentQuery) {
-          filter = getState()[type].currentQuery
+
+        if (getState()[type].listView.query) {
+          filter = getState()[type].listView.query
           params.filter = filter
         }
-        if (getState()[type].sumBy) {
-          params.sum_by = getState()[type].sumBy.split(",")
+
+        if (getState()[type].listView.sumBy) {
+          params.sum_by = getState()[type].listView.sumBy.split(',')
         } else if (options.defaultSumBy) {
           params.sum_by = options.defaultSumBy()
         }
+
         promise = chain[className].query(context, params)
       }
 
-      return promise.then((param) => {
-        if (param.items.length == 0) {
-          return
-        }
-
-        dispatch(appendPage(param))
-      }).catch((err) => {
+      return promise.then(
+        (param) => dispatch(appendPage(param))
+      ).catch((err) => {
         console.log(err)
-        if (options.defaultKey && filter.indexOf(" ") < 0 && filter.indexOf("=") < 0) {
+        if (options.defaultKey && filter.indexOf('\'') < 0 && filter.indexOf('=') < 0) {
           dispatch(updateQuery(`${options.defaultKey}='${filter}'`))
         }
       })
@@ -51,19 +53,29 @@ export default function(type, options = {}) {
   }
 
   return {
-    incrementPage: incrementPage,
-    decrementPage: decrementPage,
     appendPage: appendPage,
     updateQuery: updateQuery,
-    displayNextPage: function() {
+    incrementPage: function() {
       return function(dispatch, getState) {
-        let currentPage = getState()[type].currentPage
-        if (currentPage + 1 >= getState()[type].pages.length) {
-          return dispatch(fetchPage())
+        const nextPage = getNextPageSlice(getState)
+
+        if (nextPage.length < pageSize) {
+          let fetchPromise = dispatch(fetchPage())
+
+          if (nextPage.length != 0) {
+            dispatch(incrementPage())
+          } else if (getState()[type].listView.pageIndex != 0) {
+            fetchPromise.then(() => {
+              dispatch(incrementPage())
+            })
+          }
+
+          return fetchPromise
         } else {
           return dispatch(incrementPage())
         }
       }
-    }
+    },
+    decrementPage: decrementPage
   }
 }

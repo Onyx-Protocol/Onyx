@@ -1,9 +1,13 @@
-import { pagesActions, currentPageActions } from './base'
+import {
+  itemsReducer,
+  listViewReducer
+} from './base'
 import { combineReducers } from 'redux'
 
-const type = "mockhsm"
+const type = 'mockhsm'
+const idFunc = item => item.xpub
 
 export default combineReducers({
-  pages: pagesActions(type),
-  currentPage: currentPageActions(type),
+  items: itemsReducer(type, idFunc),
+  listView: listViewReducer(type, idFunc)
 })

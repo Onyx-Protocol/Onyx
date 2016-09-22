@@ -30,8 +30,6 @@ class Form extends React.Component {
       submitting
     } = this.props
 
-    const mockhsmKeys = this.props.mockhsmKeys ? this.props.mockhsmKeys.items : []
-
     return(
       <div className='form-container'>
         <PageHeader title="New Asset" />
@@ -40,7 +38,7 @@ class Form extends React.Component {
           <TextField title='Alias' placeholder='Alias' fieldProps={alias} />
           <JsonField title='Tags' fieldProps={tags} />
           <JsonField title='Definition' fieldProps={definition} />
-          <KeyConfiguration xpubs={root_xpubs} quorum={quorum} mockhsmKeys={mockhsmKeys}/>
+          <KeyConfiguration xpubs={root_xpubs} quorum={quorum} mockhsmKeys={this.props.mockhsmKeys}/>
 
           {error && <ErrorBanner
             title="There was a problem creating your asset:"

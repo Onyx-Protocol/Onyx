@@ -30,8 +30,6 @@ class Form extends React.Component {
       submitting
     } = this.props
 
-    const mockhsmKeys = this.props.mockhsmKeys ? this.props.mockhsmKeys.items : []
-
     return(
       <div className='form-container'>
         <PageHeader title="New Account" />
@@ -39,7 +37,7 @@ class Form extends React.Component {
         <form onSubmit={handleSubmit(this.submitWithErrors)}>
           <TextField title='Alias' placeholder='Alias' fieldProps={alias} />
           <JsonField title='Tags' fieldProps={tags} />
-          <KeyConfiguration xpubs={root_xpubs} quorum={quorum} mockhsmKeys={mockhsmKeys}/>
+          <KeyConfiguration xpubs={root_xpubs} quorum={quorum} mockhsmKeys={this.props.mockhsmKeys}/>
 
           {error && <ErrorBanner
             title="There was a problem creating your account:"
