@@ -34,12 +34,7 @@ public class ControlProgram {
     }
 
     public ControlProgram create(Context ctx) throws ChainException {
-      List<ControlProgram> programs = ControlProgram.Builder.create(ctx, Arrays.asList(this));
-      ControlProgram result = programs.get(0);
-      if (result.program == null || result.program.isEmpty()) {
-        throw new APIException(result.code, result.message, result.detail, null);
-      }
-      return result;
+      return ctx.singletonBatchRequest("create-control-program", this, ControlProgram.class);
     }
 
     public static List<ControlProgram> create(Context ctx, List<Builder> programs)

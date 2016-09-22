@@ -9,6 +9,8 @@ import com.squareup.okhttp.*;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -60,20 +62,28 @@ public class APIClient {
     this.httpClient.setProxy(proxy);
   }
 
-  public <T> T post(String path, String body, Type tClass) throws ChainException {
-    // Build the request once at the beginning.
+  public <T> T post(String path, Object body, Type tClass) throws ChainException {
+    return post(path, body, tClass, false);
+  }
+
+  public <T> T post(String path, Object body, Type tClass, boolean singletonBatch)
+      throws ChainException {
+    if (singletonBatch && body != null) {
+      body = Arrays.asList(body);
+    }
+
+    RequestBody requestBody = RequestBody.create(this.JSON, serializer.toJson(body));
     Request req;
-    RequestBody requestBody = (body == null) ? null : RequestBody.create(this.JSON, body);
+
     try {
-      Request.Builder reqBuilder =
+      req =
           new Request.Builder()
               // TODO: include version string in User-Agent when availabe
               .header("User-Agent", "chain-sdk-java")
               .header("Authorization", this.credentials())
               .url(this.url(path))
-              .method("POST", requestBody);
-
-      req = reqBuilder.build();
+              .method("POST", requestBody)
+              .build();
     } catch (MalformedURLException ex) {
       throw new BadURLException(ex.getMessage());
     }
@@ -92,6 +102,9 @@ public class APIClient {
       try {
         Response resp = this.checkError(this.httpClient.newCall(req).execute());
         try {
+          if (singletonBatch) {
+            return deserializeSingletonBatchResponse(resp, tClass);
+          }
           return this.serializer.fromJson(resp.body().charStream(), tClass);
         } catch (IOException ex) {
           throw new HTTPException(ex.getMessage());
@@ -113,6 +126,28 @@ public class APIClient {
       }
     }
     throw exception;
+  }
+
+  private <T> T deserializeSingletonBatchResponse(Response response, Type tClass)
+      throws ChainException, IOException {
+    // The response should be a JSON array with a single item. Since we're in a
+    // generic method, and it's difficult to force Gson to deserialize into
+    // List<T>, we'll do some manual string munging to get a singleton object.
+    String body = new String(response.body().bytes()).trim();
+    if (body.charAt(0) != '[' || body.charAt(body.length() - 1) != ']') {
+      throw new ChainException("Response not an array");
+    }
+    body = body.substring(1, body.length() - 1);
+
+    // Check for an error in the response
+    APIException err = serializer.fromJson(body, APIException.class);
+    if (err.code != null) {
+      err.statusCode = 400; // Treat as bad user input. This is necessary to prevent a retry.
+      err.requestID = response.headers().get("Chain-Request-ID");
+      throw err;
+    }
+
+    return serializer.fromJson(body, tClass);
   }
 
   private static final Random randomGenerator = new Random();

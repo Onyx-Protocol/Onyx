@@ -34,7 +34,22 @@ public class Context {
    * @param tClass Type of object to be deserialized from the repsonse JSON
    */
   public <T> T request(String action, Object body, Type tClass) throws ChainException {
-    return httpClient.post(action, APIClient.serializer.toJson(body), tClass);
+    return httpClient.post(action, body, tClass);
+  }
+
+  /**
+   * Perform a single HTTP POST request against the API for a specific action.
+   * Use this method if you want single-item semantics (creating single assets,
+   * building single transactions) but the API endpoint is implemented as a
+   * batch call.
+   *
+   * @param action The requested API action
+   * @param body Body payload sent to the API as JSON
+   * @param tClass Type of object to be deserialized from the repsonse JSON
+   */
+  public <T> T singletonBatchRequest(String action, Object body, Type tClass)
+      throws ChainException {
+    return httpClient.post(action, body, tClass, true);
   }
 
   public URL getUrl() {

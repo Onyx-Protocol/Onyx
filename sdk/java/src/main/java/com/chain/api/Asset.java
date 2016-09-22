@@ -40,11 +40,6 @@ public class Asset {
    */
   public String origin;
 
-  // Error data
-  public String code;
-  public String message;
-  public String detail;
-
   public static class Key {
     @SerializedName("root_xpub")
     public String rootXpub;
@@ -93,12 +88,7 @@ public class Asset {
     }
 
     public Asset create(Context ctx) throws ChainException {
-      List<Asset> assets = Asset.Builder.create(ctx, Arrays.asList(this));
-      Asset result = assets.get(0);
-      if (result.id == null) {
-        throw new APIException(result.code, result.message, result.detail, null);
-      }
-      return assets.get(0);
+      return ctx.singletonBatchRequest("create-asset", this, Asset.class);
     }
 
     public static List<Asset> create(Context ctx, List<Builder> assets) throws ChainException {

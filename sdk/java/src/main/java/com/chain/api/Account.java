@@ -39,11 +39,6 @@ public class Account {
    */
   public Map<String, Object> tags;
 
-  // Error data
-  public String code;
-  public String message;
-  public String detail;
-
   public static class Key {
     @SerializedName("root_xpub")
     public String rootXpub;
@@ -97,12 +92,7 @@ public class Account {
      * @throws ChainException
      */
     public Account create(Context ctx) throws ChainException {
-      List<Account> accts = Account.Builder.create(ctx, Arrays.asList(this));
-      Account result = accts.get(0);
-      if (result.id == null) {
-        throw new APIException(result.code, result.message, result.detail, null);
-      }
-      return result;
+      return ctx.singletonBatchRequest("create-account", this, Account.class);
     }
 
     /**

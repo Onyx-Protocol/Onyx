@@ -480,12 +480,7 @@ public class Transaction {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Template build(Context ctx) throws ChainException {
-      List<Template> tmpls = Transaction.build(ctx, Arrays.asList(this));
-      Template response = tmpls.get(0);
-      if (response.rawTransaction == null) {
-        throw new APIException(response.code, response.message, response.detail, null);
-      }
-      return response;
+      return ctx.singletonBatchRequest("build-transaction", this, Template.class);
     }
 
     /**

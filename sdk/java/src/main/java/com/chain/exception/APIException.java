@@ -1,5 +1,7 @@
 package com.chain.exception;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * APIException wraps errors returned by the API.
  * Each error contains a brief description in addition to a unique error code.<br>
@@ -42,7 +44,9 @@ public class APIException extends ChainException {
     this.statusCode = statusCode;
   }
 
+  @SerializedName("message")
   public String chainMessage;
+
   public String code;
   public String detail;
   public String requestID;
