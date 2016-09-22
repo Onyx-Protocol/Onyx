@@ -3,6 +3,8 @@ package core
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"math"
 	"time"
 
 	"chain/core/query"
@@ -21,7 +23,7 @@ type Cursor struct {
 }
 
 // POST /create-cursor
-func createCursor(ctx context.Context, in struct {
+func (a *api) createCursor(ctx context.Context, in struct {
 	Alias  string
 	Filter string
 
@@ -33,9 +35,11 @@ func createCursor(ctx context.Context, in struct {
 }) (*Cursor, error) {
 	defer metrics.RecordElapsed(time.Now())
 
+	after := fmt.Sprintf("%x:%x-%x", a.c.Height(), math.MaxUint32, uint64(math.MaxUint64))
 	cur := &Cursor{
 		Alias:  in.Alias,
 		Filter: in.Filter,
+		After:  after,
 	}
 
 	return insertCursor(ctx, cur, in.ClientToken)

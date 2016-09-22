@@ -113,7 +113,7 @@ func (a *api) handler() http.Handler {
 	m.Handle("/create-control-program", jsonHandler(createControlProgram))
 
 	// Cursors
-	m.Handle("/create-cursor", jsonHandler(createCursor))
+	m.Handle("/create-cursor", jsonHandler(a.createCursor))
 	m.Handle("/get-cursor", jsonHandler(getCursor))
 	m.Handle("/update-cursor", jsonHandler(updateCursor))
 
