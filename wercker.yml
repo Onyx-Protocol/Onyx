@@ -1,4 +1,4 @@
-box: krarick/golang:1.7
+box: chaindev/wercker:20160921
 
 services:
   - id: clkao/postgres-plv8
