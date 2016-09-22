@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"strings"
 
 	"chain/core/query/filter"
 	"chain/errors"
@@ -34,26 +33,16 @@ type TxAfter struct {
 }
 
 func (after TxAfter) String() string {
-	return fmt.Sprintf("%x-%x-%x", after.FromBlockHeight, after.FromPosition, after.StopBlockHeight)
+	return fmt.Sprintf("%x:%x-%x", after.FromBlockHeight, after.FromPosition, after.StopBlockHeight)
 }
 
 func DecodeTxAfter(str string) (c TxAfter, err error) {
-	s := strings.Split(str, "-")
-	if len(s) != 3 {
-		return c, ErrBadAfter
-	}
-	from, err := strconv.ParseUint(s[0], 16, 64)
+	var from, pos, stop uint64
+	_, err = fmt.Sscanf(str, "%x:%x-%x", &from, &pos, &stop)
 	if err != nil {
-		return c, ErrBadAfter
+		return c, errors.Wrap(ErrBadAfter, err.Error())
 	}
-	pos, err := strconv.ParseUint(s[1], 16, 32)
-	if err != nil {
-		return c, ErrBadAfter
-	}
-	stop, err := strconv.ParseUint(s[2], 16, 64)
-	if err != nil {
-		return c, ErrBadAfter
-	}
+
 	return TxAfter{FromBlockHeight: from, FromPosition: uint32(pos), StopBlockHeight: stop}, nil
 }
 

@@ -19,11 +19,11 @@ func TestDecodeOutputsAfter(t *testing.T) {
 		str string
 		cur OutputsAfter
 	}{
-		{str: "1-1-0", cur: OutputsAfter{lastBlockHeight: 1, lastTxPos: 1}},
-		{str: "1-2-3", cur: OutputsAfter{lastBlockHeight: 1, lastTxPos: 2, lastIndex: 3}},
-		{str: "a-1-0", cur: OutputsAfter{lastBlockHeight: 10, lastTxPos: 1}},
-		{str: "f-f-f", cur: OutputsAfter{lastBlockHeight: 0xf, lastTxPos: 0xf, lastIndex: 0xf}},
-		{str: "c001-cafe-ca75", cur: OutputsAfter{lastBlockHeight: 0xc001, lastTxPos: 0xcafe, lastIndex: 0xca75}},
+		{str: "1:1:0", cur: OutputsAfter{lastBlockHeight: 1, lastTxPos: 1}},
+		{str: "1:2:3", cur: OutputsAfter{lastBlockHeight: 1, lastTxPos: 2, lastIndex: 3}},
+		{str: "a:1:0", cur: OutputsAfter{lastBlockHeight: 10, lastTxPos: 1}},
+		{str: "f:f:f", cur: OutputsAfter{lastBlockHeight: 0xf, lastTxPos: 0xf, lastIndex: 0xf}},
+		{str: "c001:cafe:ca75", cur: OutputsAfter{lastBlockHeight: 0xc001, lastTxPos: 0xcafe, lastIndex: 0xca75}},
 	}
 
 	for _, tc := range testCases {
@@ -66,8 +66,8 @@ func TestOutputsAfter(t *testing.T) {
 	if len(results) != 2 {
 		t.Errorf("got %d results, want 2", len(results))
 	}
-	if after.String() != "1-1-0" {
-		t.Errorf("got after=%q want 1-1-0", after.String())
+	if after.String() != "1:1:0" {
+		t.Errorf("got after=%q want 1:1:0", after.String())
 	}
 
 	results, after, err = indexer.Outputs(ctx, q, nil, 25, after, 2)
@@ -77,8 +77,8 @@ func TestOutputsAfter(t *testing.T) {
 	if len(results) != 1 {
 		t.Errorf("got %d results, want 1", len(results))
 	}
-	if after.String() != "2-0-0" {
-		t.Errorf("got after=%q want 2-0-0", after.String())
+	if after.String() != "2:0:0" {
+		t.Errorf("got after=%q want 2:0:0", after.String())
 	}
 }
 

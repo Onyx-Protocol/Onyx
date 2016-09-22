@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/lib/pq"
 
 	"chain/core/query/filter"
+	"chain/errors"
 )
 
 type OutputsAfter struct {
@@ -19,26 +19,16 @@ type OutputsAfter struct {
 }
 
 func (cur OutputsAfter) String() string {
-	return fmt.Sprintf("%x-%x-%x", cur.lastBlockHeight, cur.lastTxPos, cur.lastIndex)
+	return fmt.Sprintf("%x:%x:%x", cur.lastBlockHeight, cur.lastTxPos, cur.lastIndex)
 }
 
 func DecodeOutputsAfter(str string) (c *OutputsAfter, err error) {
-	s := strings.Split(str, "-")
-	if len(s) != 3 {
-		return nil, ErrBadAfter
-	}
-	lastBlockHeight, err := strconv.ParseUint(s[0], 16, 64)
+	var lastBlockHeight, lastTxPos, lastIndex uint64
+	_, err = fmt.Sscanf(str, "%x:%x:%x", &lastBlockHeight, &lastTxPos, &lastIndex)
 	if err != nil {
-		return nil, ErrBadAfter
+		return c, errors.Wrap(ErrBadAfter, err.Error())
 	}
-	lastTxPos, err := strconv.ParseUint(s[1], 16, 32)
-	if err != nil {
-		return nil, ErrBadAfter
-	}
-	lastIndex, err := strconv.ParseUint(s[2], 16, 32)
-	if err != nil {
-		return nil, ErrBadAfter
-	}
+
 	return &OutputsAfter{
 		lastBlockHeight: lastBlockHeight,
 		lastTxPos:       uint32(lastTxPos),

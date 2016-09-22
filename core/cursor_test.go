@@ -8,6 +8,7 @@ import (
 	"chain/core/query"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/errors"
 )
 
 func TestInsertCursor(t *testing.T) {
@@ -91,15 +92,15 @@ func TestCursorIsBefore(t *testing.T) {
 		wantRes bool
 		wantErr error
 	}{
-		{"1-1-2", "1-2-3", true, nil},
-		{"1-1-2", "2-2-3", true, nil},
-		{"2-1-2", "1-2-3", false, nil},
+		{"1:1-2", "1:2-3", true, nil},
+		{"1:1-2", "2:2-3", true, nil},
+		{"2:1-2", "1:2-3", false, nil},
 		{"not-a-cursor", "also, not a cursor", false, query.ErrBadAfter},
 	}
 
 	for _, c := range cases {
 		res, err := isBefore(c.a, c.b)
-		if err != c.wantErr {
+		if errors.Root(err) != c.wantErr {
 			t.Errorf("wanted err=%s, got %s", c.wantErr, err)
 		}
 

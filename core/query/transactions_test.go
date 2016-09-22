@@ -8,8 +8,43 @@ import (
 
 	"chain/core/query/filter"
 	"chain/database/pg/pgtest"
+	"chain/errors"
 	"chain/protocol"
 )
+
+func TestDecodeTxAfter(t *testing.T) {
+	testCases := []struct {
+		str     string
+		want    TxAfter
+		wantErr error
+	}{
+		{
+			"1:0-2",
+			TxAfter{
+				FromBlockHeight: 1,
+				FromPosition:    0,
+				StopBlockHeight: 2,
+			},
+			nil,
+		},
+		{
+			"hello",
+			TxAfter{},
+			ErrBadAfter,
+		},
+	}
+
+	for _, c := range testCases {
+		got, err := DecodeTxAfter(c.str)
+		if errors.Root(err) != c.wantErr {
+			t.Fatalf("DecodeTxAfter(%q) unexpected error %s, want %v", c.str, err, c.wantErr)
+		}
+
+		if got != c.want {
+			t.Fatalf("want DecodeTxAfter(%q)=%#v, got %#v", c.str, c.want, got)
+		}
+	}
+}
 
 func TestLookupTxAfterNoBlocks(t *testing.T) {
 	ctx := context.Background()
