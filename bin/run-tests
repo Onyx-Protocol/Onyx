@@ -1,5 +1,0 @@
-#!/bin/sh
-set -xue
-
-docker build --tag testbot $CHAIN/docker/testbot/
-docker run --rm -v $CHAIN:/go/src/chain --name testbot testbot

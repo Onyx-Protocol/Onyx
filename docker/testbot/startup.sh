@@ -1,17 +1,14 @@
 #!/bin/sh
+set -eu
 
-chown -R postgres $PGDATA
-su postgres -c 'initdb -D $PGDATA'
-su postgres -c 'pg_ctl start -w -l $PGDATA/postgres.log'
-su postgres -c 'createdb core'
-su postgres -c 'psql core -f $CHAIN/core/schema.sql'
-# TODO(boymanjor): generate credentials, print to stdout,
-# and save to /var/log/chain/credentials.json
+# setup postgres
+mkdir -p ~/postgresql/data
+initdb -D ~/postgresql/data
+pg_ctl start -D ~/postgresql/data -w -l ~/postgresql/data/postgres.log
 
-echo 'installing cored'
-go install -tags 'insecure_disable_https_redirect' chain/cmd/cored
-
-echo 'installing corectl'
-go install chain/cmd/corectl
-
-sh $CHAIN/docker/testbot/tests.sh
+# setup and run testbot
+echo "machine github.com login chainbot password $GITHUB_TOKEN" >> ~/.netrc
+git clone https://github.com/chain/chain.git $CHAIN
+cd $CHAIN/sdk/java && mvn package && rm -rf $CHAIN/sdk/java/target
+/usr/local/go/bin/go install chain/cmd/testbot
+exec $GOPATH/bin/testbot

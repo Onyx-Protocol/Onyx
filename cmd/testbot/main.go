@@ -42,7 +42,7 @@ func main() {
 	log.SetFlags(log.Lshortfile)
 	http.HandleFunc("/push", handler)
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
-
+	env.Parse()
 	log.Println("listening on", *listen)
 	log.Fatal(http.ListenAndServe(*listen, nil))
 }
@@ -70,7 +70,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			runIn(sourcedir, exec.Command("git", "clean", "-xdf"), req)
 			runIn(sourcedir, exec.Command("git", "checkout", req.After, "--"), req)
 			runIn(sourcedir, exec.Command("git", "reset", "--hard", req.After), req)
-			runIn(sourcedir, exec.Command("./bin/run-tests"), req)
+			runIn(sourcedir, exec.Command("sh", "docker/testbot/tests.sh"), req)
 			postToSlack(buildBody(req))
 			select {
 			case <-startBenchcore(req.Ref):
