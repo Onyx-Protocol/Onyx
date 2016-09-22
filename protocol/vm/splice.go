@@ -1,5 +1,7 @@
 package vm
 
+import "chain/math/checked"
+
 func opCat(vm *virtualMachine) error {
 	err := vm.applyCost(4)
 	if err != nil {
@@ -54,7 +56,7 @@ func opSubstr(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	end, ok := addCheckOverflow(offset, size)
+	end, ok := checked.AddInt64(offset, size)
 	if !ok || end > int64(len(str)) {
 		return ErrBadValue
 	}

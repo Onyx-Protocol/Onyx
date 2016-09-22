@@ -1,5 +1,7 @@
 package vm
 
+import "chain/math/checked"
+
 func opToAltStack(vm *virtualMachine) error {
 	err := vm.applyCost(2)
 	if err != nil {
@@ -211,7 +213,7 @@ func opPick(vm *virtualMachine) error {
 	if n < 0 {
 		return ErrBadValue
 	}
-	off, ok := addCheckOverflow(n, 1)
+	off, ok := checked.AddInt64(n, 1)
 	if !ok {
 		return ErrBadValue
 	}
@@ -237,7 +239,7 @@ func opRoll(vm *virtualMachine) error {
 	if n < 0 {
 		return ErrBadValue
 	}
-	off, ok := addCheckOverflow(n, 1)
+	off, ok := checked.AddInt64(n, 1)
 	if !ok {
 		return ErrBadValue
 	}

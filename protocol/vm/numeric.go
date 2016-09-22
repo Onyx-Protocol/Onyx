@@ -1,6 +1,10 @@
 package vm
 
-import "math"
+import (
+	"math"
+
+	"chain/math/checked"
+)
 
 func op1Add(vm *virtualMachine) error {
 	err := vm.applyCost(2)
@@ -11,10 +15,11 @@ func op1Add(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	if n == math.MaxInt64 {
+	res, ok := checked.AddInt64(n, 1)
+	if !ok {
 		return ErrRange
 	}
-	return vm.pushInt64(n+1, true)
+	return vm.pushInt64(res, true)
 }
 
 func op1Sub(vm *virtualMachine) error {
@@ -26,10 +31,11 @@ func op1Sub(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	if n == math.MinInt64 {
+	res, ok := checked.SubInt64(n, 1)
+	if !ok {
 		return ErrRange
 	}
-	return vm.pushInt64(n-1, true)
+	return vm.pushInt64(res, true)
 }
 
 func op2Mul(vm *virtualMachine) error {
@@ -41,7 +47,7 @@ func op2Mul(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	res, ok := multiplyCheckOverflow(n, 2)
+	res, ok := checked.MulInt64(n, 2)
 	if !ok {
 		return ErrRange
 	}
@@ -69,10 +75,11 @@ func opNegate(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	if n == math.MinInt64 {
+	res, ok := checked.NegateInt64(n)
+	if !ok {
 		return ErrRange
 	}
-	return vm.pushInt64(-n, true)
+	return vm.pushInt64(res, true)
 }
 
 func opAbs(vm *virtualMachine) error {
@@ -130,7 +137,7 @@ func opAdd(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	res, ok := addCheckOverflow(x, y)
+	res, ok := checked.AddInt64(x, y)
 	if !ok {
 		return ErrRange
 	}
@@ -150,7 +157,7 @@ func opSub(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	res, ok := subCheckOverflow(x, y)
+	res, ok := checked.SubInt64(x, y)
 	if !ok {
 		return ErrRange
 	}
@@ -170,7 +177,7 @@ func opMul(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	res, ok := multiplyCheckOverflow(x, y)
+	res, ok := checked.MulInt64(x, y)
 	if !ok {
 		return ErrRange
 	}
@@ -193,7 +200,7 @@ func opDiv(vm *virtualMachine) error {
 	if y == 0 {
 		return ErrDivZero
 	}
-	res, ok := divideCheckOverflow(x, y)
+	res, ok := checked.DivInt64(x, y)
 	if !ok {
 		return ErrRange
 	}
@@ -217,7 +224,7 @@ func opMod(vm *virtualMachine) error {
 		return ErrDivZero
 	}
 
-	res, ok := modCheckOverflow(x, y)
+	res, ok := checked.ModInt64(x, y)
 	if !ok {
 		return ErrRange
 	}
@@ -251,37 +258,12 @@ func opLshift(vm *virtualMachine) error {
 		return vm.pushInt64(x, true)
 	}
 
-	var maxShift int64
-	if x < 0 {
-		maxShift = 64
-	} else {
-		maxShift = 63
-	}
-	if y >= maxShift {
+	res, ok := checked.LshiftInt64(x, y)
+	if !ok {
 		return ErrRange
 	}
 
-	// Check for this separately since we can't take the abs of MinInt64.
-	if x == int64(math.MinInt64) {
-		return ErrRange
-	}
-
-	// How far can we left shift? Look for the most significant bit.
-	var absX, msb int64
-	if x < 0 {
-		absX = -x
-	} else {
-		absX = x
-	}
-	for absX > 0 {
-		msb++
-		absX >>= 1
-	}
-	if y > maxShift-msb {
-		return ErrRange
-	}
-
-	return vm.pushInt64(x<<uint64(y), true)
+	return vm.pushInt64(res, true)
 }
 
 func opRshift(vm *virtualMachine) error {
@@ -474,44 +456,4 @@ func opWithin(vm *virtualMachine) error {
 		return err
 	}
 	return vm.pushBool(x >= min && x < max, true)
-}
-
-func addCheckOverflow(a, b int64) (sum int64, ok bool) {
-	if (b > 0 && a > math.MaxInt64-b) ||
-		(b < 0 && a < math.MinInt64-b) {
-		return 0, false
-	}
-	return a + b, true
-}
-
-func subCheckOverflow(a, b int64) (diff int64, ok bool) {
-	if (b > 0 && a < math.MinInt64+b) ||
-		(b < 0 && a > math.MaxInt64+b) {
-		return 0, false
-	}
-	return a - b, true
-}
-
-func multiplyCheckOverflow(a, b int64) (product int64, ok bool) {
-	if (a > 0 && b > 0 && a > math.MaxInt64/b) ||
-		(a > 0 && b <= 0 && b < math.MinInt64/a) ||
-		(a <= 0 && b > 0 && a < math.MinInt64/b) ||
-		(a < 0 && b <= 0 && b < math.MaxInt64/a) {
-		return 0, false
-	}
-	return a * b, true
-}
-
-func divideCheckOverflow(a, b int64) (quotient int64, ok bool) {
-	if b == 0 || (a == math.MinInt64 && b == -1) {
-		return 0, false
-	}
-	return a / b, true
-}
-
-func modCheckOverflow(a, b int64) (remainder int64, ok bool) {
-	if b == 0 || (a == math.MinInt64 && b == -1) {
-		return 0, false
-	}
-	return a % b, true
 }

@@ -10,6 +10,7 @@ import (
 
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
+	"chain/math/checked"
 )
 
 func opRipemd160(vm *virtualMachine) error {
@@ -82,7 +83,7 @@ func opCheckMultiSig(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	pubCost, ok := multiplyCheckOverflow(numPubkeys, 1024)
+	pubCost, ok := checked.MulInt64(numPubkeys, 1024)
 	if numPubkeys < 0 || !ok {
 		return ErrBadValue
 	}

@@ -2,7 +2,6 @@ package validation
 
 import (
 	"fmt"
-	"math"
 	"testing"
 	"time"
 
@@ -367,32 +366,6 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 		if c.ok && err != nil {
 			t.Errorf("test %d: unexpected error: %s", i, err.Error())
 			continue
-		}
-	}
-}
-
-func TestAddCheckOverflow(t *testing.T) {
-	cases := []struct {
-		x   int64
-		y   int64
-		sum int64
-		ok  bool
-	}{
-		{1, 2, 3, true},
-		{-1, -2, -3, true},
-		{math.MinInt64, math.MinInt64, 0, false},
-		{math.MaxInt64, math.MaxInt64, 0, false},
-	}
-
-	for _, c := range cases {
-		gotSum, gotOK := addCheckOverflow(c.x, c.y)
-
-		if gotSum != c.sum {
-			t.Errorf("addCheckOverflow(%d, %d)=%d, want %d", c.x, c.y, gotSum, c.sum)
-		}
-
-		if gotOK != c.ok {
-			t.Errorf("addCheckOverflow(%d, %d)=%t, want %t", c.x, c.y, gotOK, c.ok)
 		}
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"chain/errors"
+	"chain/math/checked"
 	"chain/protocol/bc"
 	"chain/protocol/state"
 	"chain/protocol/vm"
@@ -130,7 +131,7 @@ func ValidateTx(tx *bc.Tx) error {
 			return errors.WithDetail(ErrBadTx, "input value exceeds maximum value of int64")
 		}
 
-		sum, ok := addCheckOverflow(parity[assetID], int64(txin.Amount()))
+		sum, ok := checked.AddInt64(parity[assetID], int64(txin.Amount()))
 		if !ok {
 			return errors.WithDetailf(ErrBadTx, "adding input %d overflows the allowed asset amount", i)
 		}
@@ -172,7 +173,7 @@ func ValidateTx(tx *bc.Tx) error {
 			return errors.WithDetail(ErrBadTx, "output value exceeds maximum value of int64")
 		}
 
-		sum, ok := addCheckOverflow(parity[txout.AssetID], -int64(txout.Amount))
+		sum, ok := checked.SubInt64(parity[txout.AssetID], int64(txout.Amount))
 		if !ok {
 			return errors.WithDetailf(ErrBadTx, "adding output %d overflows the allowed asset amount", i)
 		}
@@ -208,18 +209,6 @@ func ValidateTx(tx *bc.Tx) error {
 		}
 	}
 	return nil
-}
-
-// addCheckOverflow adds x and y, checking for overflow.
-// It returns the sum, if possible,
-// and it returns whether the sum is correct.
-func addCheckOverflow(x, y int64) (sum int64, ok bool) {
-	sum = x + y
-	if (x > 0 && y > 0 && sum <= 0) ||
-		(x < 0 && y < 0 && sum >= 0) {
-		return 0, false
-	}
-	return sum, true
 }
 
 // ApplyTx updates the state tree with all the changes to the ledger.
