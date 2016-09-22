@@ -70,7 +70,6 @@ func Reset(ctx context.Context, db pg.DB) error {
 			mockhsm,
 			pool_txs,
 			query_blocks,
-			query_indexes,
 			reservations,
 			signed_blocks,
 			signers,
