@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"chain/core/query"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/metrics"
@@ -98,7 +99,7 @@ func cursorByClientToken(ctx context.Context, clientToken string) (*Cursor, erro
 	return &cur, nil
 }
 
-// POST /get-cur
+// POST /get-cursor
 func getCursor(ctx context.Context, in struct {
 	ID    string `json:"id,omitempty"`
 	Alias string `json:"alias,omitempty"`
@@ -136,5 +137,70 @@ func getCursor(ctx context.Context, in struct {
 	}
 
 	return &cur, nil
+}
 
+// POST /update-cursor
+func updateCursor(ctx context.Context, in struct {
+	ID    string `json:"id,omitempty"`
+	Alias string `json:"alias,omitempty"`
+	Prev  string `json:"prev"`
+	After string `json:"after"`
+}) error {
+	defer metrics.RecordElapsed(time.Now())
+
+	bad, err := isBefore(in.After, in.Prev)
+	if err != nil {
+		return err
+	}
+
+	if bad {
+		return errors.WithDetail(httpjson.ErrBadRequest, "new After cannot be before Prev")
+	}
+
+	where := ` WHERE `
+	id := in.ID
+	if in.ID != "" {
+		where += `id=$2`
+	} else {
+		where += `alias=$2`
+		id = in.Alias
+	}
+
+	q := `
+		UPDATE cursors SET after=$1
+	` + where + ` AND after=$3`
+
+	res, err := pg.Exec(ctx, q, in.After, id, in.Prev)
+	if err != nil {
+		return err
+	}
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affected == 0 {
+		return errors.WithDetailf(errNotFound, "could not find cursor with id/alias=%s and prev=%s", id, in.Prev)
+	}
+
+	return nil
+}
+
+// isBefore returns true if a is before b. It returns an error if either
+// a or b are not valid query.TxAfters.
+func isBefore(a, b string) (bool, error) {
+	aAfter, err := query.DecodeTxAfter(a)
+	if err != nil {
+		return false, err
+	}
+
+	bAfter, err := query.DecodeTxAfter(b)
+	if err != nil {
+		return false, err
+	}
+
+	return aAfter.FromBlockHeight < bAfter.FromBlockHeight ||
+		(aAfter.FromBlockHeight == bAfter.FromBlockHeight &&
+			aAfter.FromPosition < bAfter.FromPosition), nil
 }
