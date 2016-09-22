@@ -43,22 +43,33 @@ var (
 	ec2client = ec2.New(awsConfig)
 	elbclient = elb.New(awsConfig)
 
-	keyring   = sshAgent(os.Getenv("SSH_AUTH_SOCK"))
 	sshConfig = &ssh.ClientConfig{
 		User: "ubuntu",
-		Auth: []ssh.AuthMethod{ssh.PublicKeysCallback(keyring.Signers)},
+		Auth: sshAuthMethods(
+			os.Getenv("SSH_AUTH_SOCK"),
+			os.Getenv("SSH_PRIVATE_KEY"),
+		),
 	}
 
 	killInstanceIDs []*string // instances to terminate on exit
 	deleteELBNames  []*string // elbs to delete on exit
 )
 
-func sshAgent(socket string) agent.Agent {
-	conn, err := net.Dial("unix", socket)
-	if err != nil {
-		log.Fatal(err)
+func sshAuthMethods(agentSock, privKeyPEM string) (m []ssh.AuthMethod) {
+	conn, sockErr := net.Dial("unix", agentSock)
+	key, keyErr := ssh.ParsePrivateKey([]byte(privKeyPEM))
+	if sockErr != nil && keyErr != nil {
+		log.Println(sockErr)
+		log.Println(keyErr)
+		log.Fatal("no auth methods found (tried agent and environ)")
 	}
-	return agent.NewClient(conn)
+	if sockErr == nil {
+		m = append(m, ssh.PublicKeysCallback(agent.NewClient(conn).Signers))
+	}
+	if keyErr == nil {
+		m = append(m, ssh.PublicKeys(key))
+	}
+	return m
 }
 
 type instance struct {
