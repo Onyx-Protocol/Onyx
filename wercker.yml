@@ -1,4 +1,6 @@
-box: chaindev/wercker:20160921
+box: chaindev/wercker:20160921.1
+# To update the docker image for this "box",
+# see $CHAIN/docker/wercker.
 
 services:
   - id: clkao/postgres-plv8
@@ -21,7 +23,6 @@ build:
           export WERCKER_SOURCE_DIR=$GOPATH/src/chain
           export DB_URL_TEST="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/api-test?sslmode=disable"
           cd $GOPATH/src/chain
-          go get ./vendor/golang.org/x/tools/cmd/vet ./vendor/golang.org/x/tools/cmd/goimports
           test -z "$(go fmt $(go list ./...|grep -v vendor))"
           go vet $(go list ./...|grep -v vendor)
           go install chain/cmd/vet
