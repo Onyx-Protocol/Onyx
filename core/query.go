@@ -30,6 +30,7 @@ type (
 	}
 	txoutResp struct {
 		Action      interface{} `json:"action"`
+		Purpose     interface{} `json:"purpose,omitempty"`
 		Position    interface{} `json:"position"`
 		AssetID     interface{} `json:"asset_id"`
 		AssetAlias  interface{} `json:"asset_alias,omitempty"`
@@ -172,6 +173,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 		for _, out := range outputs {
 			r := &txoutResp{
 				Action:         out["action"],
+				Purpose:        out["purpose"],
 				Position:       out["position"],
 				AssetID:        out["asset_id"],
 				AssetAlias:     out["asset_alias"],
@@ -299,6 +301,7 @@ func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, e
 // This type enforces the ordering of JSON fields in API output.
 type utxoResp struct {
 	Action         interface{} `json:"action"`
+	Purpose        interface{} `json:"purpose"`
 	TransactionID  interface{} `json:"transaction_id"`
 	Position       interface{} `json:"position"`
 	AssetID        interface{} `json:"asset_id"`
@@ -354,6 +357,7 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 		}
 		r := &utxoResp{
 			Action:         out["action"],
+			Purpose:        out["purpose"],
 			TransactionID:  out["transaction_id"],
 			Position:       out["position"],
 			AssetID:        out["asset_id"],

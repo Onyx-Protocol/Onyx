@@ -88,7 +88,7 @@ func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) (
 		// May be preferable performancewise to allocate all the
 		// destinations in one call.
 		for _, changeAmount := range changeAmounts {
-			acp, err := CreateControlProgram(ctx, a.AccountID)
+			acp, err := CreateControlProgram(ctx, a.AccountID, true)
 			if err != nil {
 				return nil, nil, nil, errors.Wrap(err, "creating control program")
 			}
@@ -192,7 +192,7 @@ func (a *ControlAction) Build(ctx context.Context, _ time.Time) (
 	[]*txbuilder.SigningInstruction,
 	error,
 ) {
-	acp, err := CreateControlProgram(ctx, a.AccountID)
+	acp, err := CreateControlProgram(ctx, a.AccountID, false)
 	if err != nil {
 		return nil, nil, nil, err
 	}

@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -338,7 +338,8 @@ CREATE TABLE account_control_programs (
     id text DEFAULT next_chain_id('acp'::text) NOT NULL,
     signer_id text NOT NULL,
     key_index bigint NOT NULL,
-    control_program bytea NOT NULL
+    control_program bytea NOT NULL,
+    change boolean NOT NULL
 );
 
 
@@ -1099,5 +1100,6 @@ insert into migrations (filename, hash) values ('2016-09-01.2.core.drop-txs.sql'
 insert into migrations (filename, hash) values ('2016-09-05.0.asset.signer-null.sql', 'e611da44df43ea431c937c77c1e852fe82dc0049a118ec896102ca8a2cfb09f6');
 insert into migrations (filename, hash) values ('2016-09-06.0.asset.height.sql', 'd63ac300dfdaaa9ea48741b5d9c66af27a11eba46621ee2cb9a76ba39b2e50a6');
 insert into migrations (filename, hash) values ('2016-09-14.0.appdb.add-cursors-table.sql', 'fedda13d07e22fce61508dfdc38cafba9492439200e0d120c7438dc7489f4c3a');
-insert into migrations (filename, hash) values ('2016-09-14.1.appdb.add-cursors-id.sql', '6125ca2a8c73131e2e619d8edfe59518423482929e13df1f98a24d012cf453bb');
 insert into migrations (filename, hash) values ('2016-09-14.1.query.remove-indexes.sql', '47f772881706b2a518f79f22a7dd82512ce3994ba2b97cd7cfc25272aadf8f32');
+insert into migrations (filename, hash) values ('2016-09-14.2.appdb.add-cursors-id.sql', '6125ca2a8c73131e2e619d8edfe59518423482929e13df1f98a24d012cf453bb');
+insert into migrations (filename, hash) values ('2016-09-23.0.account.change-control-programs.sql', 'dd5fe8c4b418c061bea8007b61dfefb64418f9a99c2978f559b4628ec323bc25');

@@ -66,7 +66,7 @@ func createAccountControlProgram(ctx context.Context, input []byte) (interface{}
 		accountID = acc.ID
 	}
 
-	controlProgram, err := account.CreateControlProgram(ctx, accountID)
+	controlProgram, err := account.CreateControlProgram(ctx, accountID, false)
 	if err != nil {
 		return nil, err
 	}

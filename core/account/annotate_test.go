@@ -37,10 +37,12 @@ func TestAnnotateTxs(t *testing.T) {
 		"inputs": []interface{}{},
 		"outputs": []interface{}{
 			map[string]interface{}{
+				"purpose":         "receive",
 				"control_program": hex.EncodeToString(acp1),
 				"account_id":      acc1.ID,
 			},
 			map[string]interface{}{
+				"purpose":         "receive",
 				"control_program": hex.EncodeToString(acp2),
 				"account_id":      acc2.ID,
 				"account_tags":    (*json.RawMessage)(&wantTags),

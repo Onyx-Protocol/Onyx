@@ -64,7 +64,7 @@ func TestCreateControlProgram(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	got, err := CreateControlProgram(ctx, account.ID)
+	got, err := CreateControlProgram(ctx, account.ID, false)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -94,7 +94,7 @@ func createTestControlProgram(ctx context.Context, t testing.TB, accountID strin
 		accountID = account.ID
 	}
 
-	acp, err := CreateControlProgram(ctx, accountID)
+	acp, err := CreateControlProgram(ctx, accountID, false)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

@@ -8,6 +8,9 @@ import java.math.BigInteger;
 import java.util.Map;
 
 public class UnspentOutput {
+
+  public String purpose;
+
   @SerializedName("transaction_id")
   public String transactionId;
 

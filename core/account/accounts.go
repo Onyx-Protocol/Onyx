@@ -192,7 +192,7 @@ func Archive(ctx context.Context, id, alias string) error {
 
 // CreateControlProgram creates a control program
 // that is tied to the Account and stores it in the database.
-func CreateControlProgram(ctx context.Context, accountID string) ([]byte, error) {
+func CreateControlProgram(ctx context.Context, accountID string, change bool) ([]byte, error) {
 	account, err := FindByID(ctx, accountID)
 	if err != nil {
 		return nil, err
@@ -210,7 +210,7 @@ func CreateControlProgram(ctx context.Context, accountID string) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	err = insertAccountControlProgram(ctx, account.ID, idx, control)
+	err = insertAccountControlProgram(ctx, account.ID, idx, control, change)
 	if err != nil {
 		return nil, err
 	}
@@ -218,13 +218,13 @@ func CreateControlProgram(ctx context.Context, accountID string) ([]byte, error)
 	return control, nil
 }
 
-func insertAccountControlProgram(ctx context.Context, accountID string, idx []uint32, control []byte) error {
+func insertAccountControlProgram(ctx context.Context, accountID string, idx []uint32, control []byte, change bool) error {
 	const q = `
-		INSERT INTO account_control_programs (signer_id, key_index, control_program)
-		VALUES($1, to_key_index($2), $3)
+		INSERT INTO account_control_programs (signer_id, key_index, control_program, change)
+		VALUES($1, to_key_index($2), $3, $4)
 	`
 
-	_, err := pg.Exec(ctx, q, accountID, pg.Uint32s(idx), control)
+	_, err := pg.Exec(ctx, q, accountID, pg.Uint32s(idx), control, change)
 	return errors.Wrap(err)
 }
 

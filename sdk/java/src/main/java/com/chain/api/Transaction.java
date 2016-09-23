@@ -188,6 +188,13 @@ public class Transaction {
     public String action;
 
     /**
+     * The purpose of the output.<br>
+     * Possible purposes are "receive" and "change". Only populated if the
+     * output's control program was generated locally.
+     */
+    public String purpose;
+
+    /**
      * The number of units of the asset being controlled.
      */
     public BigInteger amount;
