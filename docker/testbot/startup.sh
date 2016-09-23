@@ -10,5 +10,9 @@ pg_ctl start -D ~/postgresql/data -w -l ~/postgresql/data/postgres.log
 echo "machine github.com login chainbot password $GITHUB_TOKEN" >> ~/.netrc
 git clone https://github.com/chain/chain.git $CHAIN
 cd $CHAIN/sdk/java && mvn package && rm -rf $CHAIN/sdk/java/target
-/usr/local/go/bin/go install chain/cmd/{testbot,benchcore}
+
+/usr/local/go/bin/go install\
+    chain/cmd/testbot\
+    chain/cmd/benchcore\
+
 exec $GOPATH/bin/testbot
