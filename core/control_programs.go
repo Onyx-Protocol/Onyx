@@ -13,8 +13,8 @@ import (
 
 // POST /create-control-program
 func createControlProgram(ctx context.Context, ins []struct {
-	Type       string
-	Parameters stdjson.RawMessage
+	Type   string
+	Params stdjson.RawMessage
 }) interface{} {
 
 	responses := make([]interface{}, len(ins))
@@ -30,7 +30,7 @@ func createControlProgram(ctx context.Context, ins []struct {
 			)
 			switch ins[i].Type {
 			case "account":
-				prog, err = createAccountControlProgram(ctx, ins[i].Parameters)
+				prog, err = createAccountControlProgram(ctx, ins[i].Params)
 			default:
 				err = errors.WithDetailf(httpjson.ErrBadRequest, "unknown control program type %q", ins[i].Type)
 			}

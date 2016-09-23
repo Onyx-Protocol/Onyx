@@ -27,10 +27,10 @@ public class ControlProgram {
 
   public static class Builder {
     public String type;
-    public Map<String, Object> parameters;
+    public Map<String, Object> params;
 
     public Builder() {
-      this.parameters = new HashMap<>();
+      this.params = new HashMap<>();
     }
 
     public ControlProgram create(Context ctx) throws ChainException {
@@ -61,12 +61,12 @@ public class ControlProgram {
     }
 
     public Builder addParameter(String key, Object value) {
-      this.parameters.put(key, value);
+      this.params.put(key, value);
       return this;
     }
 
     public Builder setParameters(Map<String, Object> parameters) {
-      this.parameters = parameters;
+      this.params = parameters;
       return this;
     }
   }

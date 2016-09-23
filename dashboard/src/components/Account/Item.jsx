@@ -11,7 +11,7 @@ class Item extends React.Component {
   createControlProgram() {
     this.props.createControlProgram([{
       type: "account",
-      parameters: { account_id: this.props.item.id }
+      params: { account_id: this.props.item.id }
     }]).then((program) => {
       this.setState({program: program.control_program})
     })
