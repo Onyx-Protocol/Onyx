@@ -5,6 +5,7 @@ import com.chain.exception.ChainException;
 import com.chain.http.Context;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * When used in conjunction with /list-transactions, Cursors can be used to
