@@ -51,3 +51,13 @@ build:
           if egrep -Iinr '//.*\b'$p'\b' $(ls -1|egrep -v 'vendor|generated')
           then exit 1
           fi
+
+dashboard:
+  steps:
+    - npm-install:
+      cwd: dashboard/
+    - script:
+        name: lint dashboard
+        cwd: dashboard/
+        code: |
+          npm run lint

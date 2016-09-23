@@ -18,6 +18,7 @@
   },
   "rules": {
     "quotes": ["error", "single"],
+    "jsx-quotes": ["error", "prefer-single"],
     "indent": ["error", 2, {"SwitchCase": 1}],
     "linebreak-style": ["error", "unix"],
     "semi": ["error", "never"],
