@@ -1,26 +1,27 @@
-import { AccountField, AssetField } from './AutocompleteField'
-import JsonField from './JsonField/JsonField'
-import Flash from './Flash/Flash'
-import Panel from './Panel'
-import TextField from './TextField'
-import NumberField from './NumberField'
-import SelectField from './SelectField'
-import XpubField from './XpubField/XpubField'
-import KeyConfiguration from './KeyConfiguration'
+import Autocomplete from './Autocomplete'
 import ErrorBanner from './ErrorBanner'
+import Flash from './Flash/Flash'
+import JsonField from './JsonField/JsonField'
+import KeyConfiguration from './KeyConfiguration'
 import Navbar from './Navbar'
+import NumberField from './NumberField'
+import ObjectSelectorField from './ObjectSelectorField/ObjectSelectorField'
+import Panel from './Panel'
+import SelectField from './SelectField'
+import TextField from './TextField'
+import XpubField from './XpubField/XpubField'
 
 export {
-  AccountField,
-  AssetField,
-  JsonField,
-  Flash,
-  Panel,
-  TextField,
-  NumberField,
-  SelectField,
-  XpubField,
-  KeyConfiguration,
+  Autocomplete,
   ErrorBanner,
-  Navbar
+  Flash,
+  JsonField,
+  KeyConfiguration,
+  Navbar,
+  NumberField,
+  ObjectSelectorField,
+  Panel,
+  SelectField,
+  TextField,
+  XpubField,
 }

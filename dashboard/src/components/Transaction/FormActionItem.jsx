@@ -5,8 +5,8 @@ import {
   NumberField,
   SelectField,
   JsonField,
-  AccountField,
-  AssetField
+  ObjectSelectorField,
+  Autocomplete
 } from '../Common'
 
 const ISSUE_KEY = 'issue'
@@ -26,11 +26,11 @@ const actionTypes = [
 ]
 
 const visibleFields = {
-  [ISSUE_KEY]: {asset_alias: true, amount: true},
-  [SPEND_ACCOUNT_KEY]: {asset_alias: true, account_alias: true, amount: true},
+  [ISSUE_KEY]: {asset: true, amount: true},
+  [SPEND_ACCOUNT_KEY]: {asset: true, account: true, amount: true},
   [SPEND_UNSPENT_KEY]: {transaction_id: true, position: true},
-  [CONTROL_ACCOUNT_KEY]: {asset_alias: true, account_alias: true, amount: true},
-  [CONTROL_PROGRAM_KEY]: {asset_alias: true, control_program: true, amount: true},
+  [CONTROL_ACCOUNT_KEY]: {asset: true, account: true, amount: true},
+  [CONTROL_PROGRAM_KEY]: {asset: true, control_program: true, amount: true},
   [RETIRE_ASSET_KEY]: {asset_alias: true, amount: true},
 }
 
@@ -60,10 +60,14 @@ export default class ActionItem extends React.Component {
 
         <SelectField title='Type' emptyLabel='Select an action type...' options={actionTypes} fieldProps={typeProps} />
 
-        {visible.account_alias &&
-          <AccountField
-            title='Account Alias'
-            fieldProps={this.props.fieldProps.account_alias}
+        {visible.account &&
+          <ObjectSelectorField
+            title='Account'
+            aliasField={Autocomplete.AccountAlias}
+            fieldProps={{
+              id: this.props.fieldProps.account_id,
+              alias: this.props.fieldProps.account_alias
+            }}
           />}
 
         {visible.control_program &&
@@ -75,10 +79,14 @@ export default class ActionItem extends React.Component {
         {visible.position &&
           <NumberField title='Transaction Unspent Position' fieldProps={this.props.fieldProps.position} />}
 
-        {visible.asset_alias &&
-          <AssetField
-            title='Asset Alias'
-            fieldProps={this.props.fieldProps.asset_alias}
+        {visible.asset &&
+          <ObjectSelectorField
+            title='Asset'
+            aliasField={Autocomplete.AssetAlias}
+            fieldProps={{
+              id: this.props.fieldProps.asset_id,
+              alias: this.props.fieldProps.asset_alias
+            }}
           />}
 
         {visible.amount &&

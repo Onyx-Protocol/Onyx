@@ -61,27 +61,24 @@ class AutocompleteField extends React.Component {
   }
 
   render() {
-    const { fetching, suggestions } = this.state
+    const { suggestions } = this.state
     const { fieldProps } = this.props
 
     return (
-      <div className='form-group'>
-        {this.props.title && <label>{this.props.title}</label>}
-        <Autosuggest
-          theme={styles}
-          suggestions={suggestions}
-          onSuggestionsFetchRequested={this.onSuggestionsFetchRequested}
-          onSuggestionsClearRequested={this.onSuggestionsClearRequested}
-          onSuggestionSelected={(event) => event.preventDefault()}
-          getSuggestionValue={this.getSuggestionValue}
-          renderSuggestion={this.renderSuggestion}
-          inputProps={{
-            className: 'form-control',
-            value: fieldProps.value,
-            onChange: (event, { newValue }) => fieldProps.onChange(newValue) }}
-        />
-        {fetching && 'Fetching...'}
-      </div>
+      <Autosuggest
+        theme={styles}
+        suggestions={suggestions}
+        onSuggestionsFetchRequested={this.onSuggestionsFetchRequested}
+        onSuggestionsClearRequested={this.onSuggestionsClearRequested}
+        onSuggestionSelected={(event) => event.preventDefault()}
+        getSuggestionValue={this.getSuggestionValue}
+        renderSuggestion={this.renderSuggestion}
+        inputProps={{
+          className: `form-control ${this.props.className}`,
+          value: fieldProps.value,
+          placeholder: this.props.placeholder,
+          onChange: (event, { newValue }) => fieldProps.onChange(newValue) }}
+      />
     )
   }
 }

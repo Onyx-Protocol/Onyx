@@ -54,13 +54,14 @@ class Form extends React.Component {
 
             {!actions.length && <div className='well'>Add actions to build a transaction</div>}
 
-            {actions.map((action, index) => <ActionItem
-              key={index}
-              index={index}
-              fieldProps={action}
-              accounts={this.props.accounts}
-              assets={this.props.assets}
-            />)}
+            {actions.map((action, index) =>
+              <ActionItem
+                key={index}
+                index={index}
+                fieldProps={action}
+                accounts={this.props.accounts}
+                assets={this.props.assets}
+              />)}
 
             <button type='button' className='btn btn-link' onClick={this.addActionItem} >
               + Add Action
@@ -125,7 +126,9 @@ export default reduxForm({
   form: 'NewTransactionForm',
   fields: [
     'actions[].type',
+    'actions[].account_id',
     'actions[].account_alias',
+    'actions[].asset_id',
     'actions[].asset_alias',
     'actions[].amount',
     'actions[].control_program',

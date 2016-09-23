@@ -1,0 +1,11 @@
+.dropdownButton {
+  text-align: left;
+  width: 90px;
+}
+
+.aliasFieldGroupItem {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-top-right-radius: $input-border-radius-large !important;
+  border-bottom-right-radius: $input-border-radius-large !important;
+}
