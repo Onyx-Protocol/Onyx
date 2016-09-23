@@ -54,7 +54,7 @@ build:
 
 dashboard:
   steps:
-    - npm-install:
+    - inz/npm-install@1.1.5:
       cwd: dashboard/
     - script:
         name: lint dashboard
