@@ -10,19 +10,19 @@ class Item extends React.Component {
     }
 
     return(
-      <div className="panel panel-default">
-        <div className="panel-heading">
+      <div className='panel panel-default'>
+        <div className='panel-heading'>
           <strong>Asset - {label}</strong>
         </div>
-        <div className="panel-body">
+        <div className='panel-body'>
           <pre>
             {JSON.stringify(item, null, '  ')}
           </pre>
         </div>
-        <div className="panel-footer">
-          <ul className="nav nav-pills">
+        <div className='panel-footer'>
+          <ul className='nav nav-pills'>
             <li>
-              <button className="btn btn-link" onClick={this.props.showCirculation.bind(this, item)}>
+              <button className='btn btn-link' onClick={this.props.showCirculation.bind(this, item)}>
                 Circulation
               </button>
             </li>

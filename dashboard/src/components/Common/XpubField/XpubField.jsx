@@ -26,7 +26,7 @@ class XpubField extends React.Component {
         <div className={styles.options}>
           {Object.keys(methodOptions).map((key) =>
             <label key={`key-${this.props.index}-option-${key}`}>
-              <input type="radio"
+              <input type='radio'
                 name={`keys-${this.props.index}`}
                 value={key}
                 checked={key == this.state.selectedType}

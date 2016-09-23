@@ -18,17 +18,17 @@ describe('Client', () => {
   describe('#request', () => {
 
     it('deserializes JSON responses', () => {
-      nockHelper().post('/test').reply(200, `{"hello": "world"}`)
+      nockHelper().post('/test').reply(200, '{"hello": "world"}')
 
       return client.request('/test').then((res) => {
-        assert.deepEqual(res, {hello: "world"})
+        assert.deepEqual(res, {hello: 'world'})
       })
     })
 
     it('handles malformed URLs with FETCH error', () => {
       let client = new Client('not a URL')
       return client.request('/test').then(() => {
-        assert(false, "should result in error")
+        assert(false, 'should result in error')
       }).catch((err) => {
         assert.equal(err.type, errors.types.FETCH)
       })
@@ -36,7 +36,7 @@ describe('Client', () => {
 
     it('handles unresponsive servers with FETCH error', () => {
       return client.request('/test').then(() => {
-        assert(false, "should result in error")
+        assert(false, 'should result in error')
       }).catch((err) => {
         assert.equal(err.type, errors.types.FETCH)
         assert(err.sourceError)
@@ -47,7 +47,7 @@ describe('Client', () => {
       nock('http://test-server').post('/test').reply(200)
 
       return client.request('/test').then(() => {
-        assert(false, "should result in error")
+        assert(false, 'should result in error')
       }).catch((err) => {
         assert.equal(err.type, errors.types.NO_REQUEST_ID)
         assert(err.response)
@@ -58,7 +58,7 @@ describe('Client', () => {
       nockHelper().post('/test').reply(200, 'not json')
 
       return client.request('/test').then(() => {
-        assert(false, "should result in error")
+        assert(false, 'should result in error')
       }).catch((err) => {
         assert.equal(err.type, errors.types.JSON)
         assert(err.response)
@@ -69,7 +69,7 @@ describe('Client', () => {
       nockHelper().post('/test').reply(401, '{}')
 
       return client.request('/test').then(() => {
-        assert(false, "should result in error")
+        assert(false, 'should result in error')
       }).catch((err) => {
         assert.equal(err.type, errors.types.UNAUTHORIZED)
         assert(err.response)
@@ -80,7 +80,7 @@ describe('Client', () => {
       nockHelper().post('/test').reply(404, '{}')
 
       return client.request('/test').then(() => {
-        assert(false, "should result in error")
+        assert(false, 'should result in error')
       }).catch((err) => {
         assert.equal(err.type, errors.types.NOT_FOUND)
         assert(err.response)
@@ -91,7 +91,7 @@ describe('Client', () => {
       nockHelper().post('/test').reply(400, '{}')
 
       return client.request('/test').then(() => {
-        assert(false, "should result in error")
+        assert(false, 'should result in error')
       }).catch((err) => {
         assert.equal(err.type, errors.types.BAD_REQUEST)
         assert(err.response)
@@ -102,7 +102,7 @@ describe('Client', () => {
       nockHelper().post('/test').reply(500, '{}')
 
       return client.request('/test').then(() => {
-        assert(false, "should result in error")
+        assert(false, 'should result in error')
       }).catch((err) => {
         assert.equal(err.type, errors.types.SERVER)
         assert(err.response)

@@ -8,7 +8,7 @@ import routes from '../routes'
 
 export default class App extends React.Component {
   componentWillMount() {
-    document.title = "Chain Core Dashboard"
+    document.title = 'Chain Core Dashboard'
   }
 
   render() {

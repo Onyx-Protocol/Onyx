@@ -2,10 +2,10 @@ import { reduxForm } from 'redux-form'
 import actions from '../actions'
 import Index from '../components/Config/Index'
 
-const type = "core"
+const type = 'core'
 const formName = 'CoreConfigurationForm'
 
-const mapStateToProps = (state) => ({})
+const mapStateToProps = () => ({})
 
 const mapDispatchToProps = (dispatch) => ({
   submitForm: (data) => dispatch(actions[type].submitConfiguration(data))

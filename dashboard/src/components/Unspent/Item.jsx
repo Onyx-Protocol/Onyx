@@ -6,8 +6,8 @@ class Item extends React.Component {
     delete item.id
 
     return(
-      <div className="panel panel-default">
-        <div className="panel-body">
+      <div className='panel panel-default'>
+        <div className='panel-body'>
           <pre>
             {JSON.stringify(item, null, '  ')}
           </pre>

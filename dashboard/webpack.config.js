@@ -5,9 +5,9 @@ var getConfig = require('hjs-webpack')
 
 // Set base path to JS and CSS files when
 // required by other files
-let publicPath = "/"
-if (process.env.NODE_ENV === "production") {
-  publicPath = "/dashboard/"
+let publicPath = '/'
+if (process.env.NODE_ENV === 'production') {
+  publicPath = '/dashboard/'
 }
 
 // Creates a webpack config object. The
@@ -45,11 +45,11 @@ var config = getConfig({
   // Proxy API requests to local core server
   devServer: {
     proxy: {
-      context: "/api",
+      context: '/api',
       options: {
-        target: process.env.PROXY_API_HOST || "http://localhost:8080",
+        target: process.env.PROXY_API_HOST || 'http://localhost:8080',
         pathRewrite: {
-          "^/api": ""
+          '^/api': ''
         }
       }
     }
@@ -61,10 +61,10 @@ let loaders = config.module.loaders
 
 for (let item of loaders) {
   if (item.loader) {
-    item.loader = item.loader.replace("css-loader","css-loader?modules&importLoaders=1&localIdentName=[name]__[local]__[hash:base64:5]")
+    item.loader = item.loader.replace('css-loader','css-loader?modules&importLoaders=1&localIdentName=[name]__[local]__[hash:base64:5]')
   }
-  if (".scss".match(item.test) != null) {
-    item.loader = item.loader.replace("sass-loader","sass-loader!sass-resources-loader")
+  if ('.scss'.match(item.test) != null) {
+    item.loader = item.loader.replace('sass-loader','sass-loader!sass-resources-loader')
   }
 }
 

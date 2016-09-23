@@ -6,7 +6,7 @@ const lib = {
   },
 
   isBatchError: function (v) {
-      return v && v.code && !v.stack
+    return v && v.code && !v.stack
   },
 
   newBatchError: function (opts) {

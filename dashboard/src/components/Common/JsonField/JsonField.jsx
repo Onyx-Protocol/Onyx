@@ -13,7 +13,7 @@ class JsonField extends React.Component {
   }
 
   render() {
-    const hint = this.props.hint || "All JSON values supported"
+    const hint = this.props.hint || 'All JSON values supported'
     const fieldProps = this.props.fieldProps
     const displayProps = {
       mode: 'json',
@@ -35,10 +35,10 @@ class JsonField extends React.Component {
       editor.navigateRight(1)
 
       // Restore default browser tab-focusing behavior
-      editor.commands.bindKey("Tab", null)
-      editor.commands.bindKey("Shift-Tab", null)
+      editor.commands.bindKey('Tab', null)
+      editor.commands.bindKey('Shift-Tab', null)
 
-      editor.getSession().on("changeAnnotation", function() {
+      editor.getSession().on('changeAnnotation', function() {
         self.setState({syntaxError: editor.getSession().getAnnotations()[0]})
       })
     }
@@ -75,7 +75,7 @@ JsonField.validator = value => {
   try {
     parseNonblankJSON(value)
   } catch (err) {
-    return "Error parsing JSON"
+    return 'Error parsing JSON'
   }
   return null
 }

@@ -1,5 +1,5 @@
 import React from 'react'
-import { TextField, ErrorBanner } from "../Common"
+import { TextField, ErrorBanner } from '../Common'
 import InlineSVG from 'svg-inline-react'
 import styles from './Index.scss'
 
@@ -23,7 +23,7 @@ export default class Index extends React.Component {
   submitWithValidation(data) {
     if (data.generator_url && !data.initial_block_hash) {
       return new Promise((_, reject) => reject({
-        _error: "You must specifiy a blockchain ID to connect to a network"
+        _error: 'You must specifiy a blockchain ID to connect to a network'
       }))
     }
 
@@ -45,11 +45,10 @@ export default class Index extends React.Component {
       submitting
     } = this.props
 
-    let submitButton = <button type="submit" className={`btn btn-primary btn-lg ${styles.submit}`} disabled={submitting}>
-      <span className="glyphicon glyphicon-arrow-right" />
-      &nbsp;{this.showNewFields() ? "Create" : "Join"} network
+    let submitButton = <button type='submit' className={`btn btn-primary btn-lg ${styles.submit}`} disabled={submitting}>
+      <span className='glyphicon glyphicon-arrow-right' />
+      &nbsp;{this.showNewFields() ? 'Create' : 'Join'} network
     </button>
-
 
     return (
       <form onSubmit={handleSubmit(this.submitWithValidation)}>
@@ -57,14 +56,14 @@ export default class Index extends React.Component {
         <h3 className={styles.subtitle}>You can reset your Chain Core at any time to change these settings</h3>
 
         {error && <ErrorBanner
-          title="There was a problem configuring your core:"
+          title='There was a problem configuring your core:'
           message={error}/>}
 
-        <div className="row">
-          <div className="col-sm-4">
+        <div className='row'>
+          <div className='col-sm-4'>
             <label className={styles.choice_wrapper}>
               <input className={styles.choice_radio_button}
-                    type="radio"
+                    type='radio'
                     {...is_generator}
                     value='true'
                     checked={is_generator.value === 'true'} />
@@ -83,10 +82,10 @@ export default class Index extends React.Component {
             </div>}
           </div>
 
-          <div className="col-sm-4">
+          <div className='col-sm-4'>
             <label className={styles.choice_wrapper}>
               <input className={styles.choice_radio_button}
-                    type="radio"
+                    type='radio'
                     {...is_generator}
                     value='false'
                     checked={is_generator.value === 'false'} />
@@ -103,12 +102,12 @@ export default class Index extends React.Component {
             {this.showJoinFields() && <div>
               <div className={styles.join_fields}>
                 <TextField
-                  title="Block Generator URL"
-                  placeholder="https://<block-generator-host>"
+                  title='Block Generator URL'
+                  placeholder='https://<block-generator-host>'
                   fieldProps={generator_url} />
                 <TextField
-                  title="Blockchain ID"
-                  placeholder="896a800000000000000"
+                  title='Blockchain ID'
+                  placeholder='896a800000000000000'
                   fieldProps={initial_block_hash} />
               </div>
 

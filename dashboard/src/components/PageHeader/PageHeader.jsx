@@ -1,5 +1,5 @@
 import React from 'react'
-import styles from "./PageHeader.scss"
+import styles from './PageHeader.scss'
 
 class PageHeader extends React.Component {
   render() {
@@ -15,8 +15,8 @@ class PageHeader extends React.Component {
     }
 
     return (
-      <div className={styles.main + " " + (this.props.additionalStyles || "")}>
-        <h1 className="page-header">{this.props.title}</h1>
+      <div className={styles.main + ' ' + (this.props.additionalStyles || '')}>
+        <h1 className='page-header'>{this.props.title}</h1>
         {button}
       </div>
     )

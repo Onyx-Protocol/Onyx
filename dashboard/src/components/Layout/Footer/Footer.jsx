@@ -12,12 +12,12 @@ class Footer extends React.Component {
 
     return (
       <footer className={`${styles.footer}`}>
-        <div className="container">
-          <div className="row">
-            <div className="col-sm-6 text-left">
+        <div className='container'>
+          <div className='row'>
+            <div className='col-sm-6 text-left'>
               {buildString}
             </div>
-            <div className="col-sm-6 text-right">
+            <div className='col-sm-6 text-right'>
               © Chain
             </div>
           </div>

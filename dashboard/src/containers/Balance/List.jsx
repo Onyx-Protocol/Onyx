@@ -1,7 +1,7 @@
 import { mapStateToProps, mapDispatchToProps, connect } from '../Base/List'
 import Item from '../../components/Balance/Item'
 
-const type = "balance"
+const type = 'balance'
 
 const newStateToProps = (state) => {
   const props =  {

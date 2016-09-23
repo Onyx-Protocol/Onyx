@@ -5,8 +5,8 @@
 // variables, mixins and other functions describing common
 // functionality.
 
-@import "src/assets/styles/bootstrap-overrides";
-@import "node_modules/bootstrap-sass/assets/stylesheets/bootstrap/_variables";
-@import "node_modules/bootstrap-sass/assets/stylesheets/bootstrap/_mixins";
+@import 'src/assets/styles/bootstrap-overrides';
+@import 'node_modules/bootstrap-sass/assets/stylesheets/bootstrap/_variables';
+@import 'node_modules/bootstrap-sass/assets/stylesheets/bootstrap/_mixins';
 
 $border-color: $page-header-border-color;

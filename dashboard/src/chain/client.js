@@ -24,7 +24,7 @@ class Client {
     return fetch(this.baseUrl + path, req).catch((err) => {
       throw errors.create(
         errors.types.FETCH,
-        "Fetch error: " + err.toString(),
+        'Fetch error: ' + err.toString(),
         {sourceError: err}
       )
     }).then((resp) => {
@@ -32,7 +32,7 @@ class Client {
       if (!requestId) {
         throw errors.create(
           errors.types.NO_REQUEST_ID,
-          "Chain-Request-Id header is missing. There may be an issue with your proxy or network configuration.",
+          'Chain-Request-Id header is missing. There may be an issue with your proxy or network configuration.',
           {response: resp}
         )
       }

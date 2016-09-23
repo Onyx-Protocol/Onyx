@@ -10,7 +10,7 @@ class Flash extends React.Component {
       <div className={`alert alert-${this.props.type}`}>
         {this.props.message}
 
-        <button type="button" className="close" onClick={this.props.dismissFlash}>
+        <button type='button' className='close' onClick={this.props.dismissFlash}>
           <span>&times;</span>
         </button>
       </div>

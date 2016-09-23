@@ -1,3 +1,5 @@
+/*eslint-env node*/
+
 import 'bootstrap-loader'
 import React from 'react'
 import { render } from 'react-dom'

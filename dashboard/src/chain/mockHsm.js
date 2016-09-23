@@ -3,7 +3,7 @@ import uuid from 'uuid'
 import Transaction from './transaction'
 
 export default class MockHsm extends buildClass('mockhsm', {
-  listPath: "/mockhsm/list-keys"
+  listPath: '/mockhsm/list-keys'
 }) {
   create(context) {
     let body = Object.assign({ client_token: uuid.v4() }, this)

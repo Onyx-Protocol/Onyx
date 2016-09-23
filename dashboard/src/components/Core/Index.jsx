@@ -5,7 +5,7 @@ import React from 'react'
 import PageHeader from '../PageHeader/PageHeader'
 import ErrorBanner from '../Common/ErrorBanner'
 
-import styles from "./Index.scss"
+import styles from './Index.scss'
 
 export default class Index extends React.Component {
   constructor(props) {
@@ -15,7 +15,7 @@ export default class Index extends React.Component {
   }
 
   deleteClick() {
-    if (!window.confirm("Are you sure you want to delete all data on this core?")) {
+    if (!window.confirm('Are you sure you want to delete all data on this core?')) {
       return
     }
 
@@ -27,7 +27,7 @@ export default class Index extends React.Component {
       // browser microtask is going away. cf https://www.chromestatus.com/features/5647113010544640
       setTimeout(function(){
         window.location.href = '/'
-      }, 500);
+      }, 500)
     }).catch((err) => {
       this.setState({
         deleteError: err,
@@ -110,8 +110,8 @@ export default class Index extends React.Component {
     )
 
     let resetDataBlock = (
-      <div className="row">
-        <div className="col-sm-6">
+      <div className='row'>
+        <div className='col-sm-6'>
           <h3>Reset Data</h3>
 
           {this.props.core.production ?

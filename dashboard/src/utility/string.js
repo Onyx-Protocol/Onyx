@@ -1,4 +1,6 @@
-export const pluralize = require('pluralize')
+import _pluralize from 'pluralize'
+
+export const pluralize = _pluralize
 
 export const capitalize = (string) => {
   return string.charAt(0).toUpperCase() + string.slice(1)

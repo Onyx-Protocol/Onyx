@@ -2,7 +2,7 @@ import React from 'react'
 import {
   NumberField,
   XpubField,
-} from "../Common"
+} from '../Common'
 
 class KeyConfiguration extends React.Component {
   constructor(props) {
@@ -47,13 +47,13 @@ class KeyConfiguration extends React.Component {
 
     return(
       <div>
-        <NumberField title="Keys" fieldProps={{
+        <NumberField title='Keys' fieldProps={{
           value: this.state.keys,
           onChange: keyCountChange,
           min: 0,
           max: 10
         }} />
-        <NumberField title="Quorum" hint="Number of keys required for transfer" fieldProps={{
+        <NumberField title='Quorum' hint='Number of keys required for transfer' fieldProps={{
           ...this.props.quorum,
           onChange: quorumChange,
           min: 0,

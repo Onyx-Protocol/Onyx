@@ -30,6 +30,15 @@ API_URL=http://localhost:3000/api
 PROXY_API_HOST=http://localhost:8080
 ```
 
+#### Style Guide
+
+We use `eslint` to maintain a consistent code style. To check the source
+directory with `eslint`, run:
+
+```
+npm run lint src 
+```
+
 #### Tests
 
 ```

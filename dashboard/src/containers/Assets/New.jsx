@@ -1,7 +1,7 @@
 import { mapStateToProps, mapDispatchToProps, connect } from '../Base/New'
 import Form from '../../components/Asset/Form'
 
-const type = "asset"
+const type = 'asset'
 
 const props = (state) => ({
   ...mapStateToProps(type)(state),

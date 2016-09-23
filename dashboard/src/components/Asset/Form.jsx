@@ -1,11 +1,11 @@
 import React from 'react'
-import PageHeader from "../PageHeader/PageHeader"
+import PageHeader from '../PageHeader/PageHeader'
 import {
   TextField,
   JsonField,
   KeyConfiguration,
   ErrorBanner
-} from "../Common"
+} from '../Common'
 import { reduxForm } from 'redux-form'
 
 class Form extends React.Component {
@@ -32,7 +32,7 @@ class Form extends React.Component {
 
     return(
       <div className='form-container'>
-        <PageHeader title="New Asset" />
+        <PageHeader title='New Asset' />
 
         <form onSubmit={handleSubmit(this.submitWithErrors)}>
           <TextField title='Alias' placeholder='Alias' fieldProps={alias} />
@@ -41,7 +41,7 @@ class Form extends React.Component {
           <KeyConfiguration xpubs={root_xpubs} quorum={quorum} mockhsmKeys={this.props.mockhsmKeys}/>
 
           {error && <ErrorBanner
-            title="There was a problem creating your asset:"
+            title='There was a problem creating your asset:'
             message={error}/>}
 
           <button type='submit' className='btn btn-primary' disabled={submitting}>

@@ -26,11 +26,11 @@ export const flashMessage = (state = {}, action) => {
   return state
 }
 
-export const dropdownState = (state = "", action) => {
+export const dropdownState = (state = '', action) => {
   if (action.type == actions.app.toggleDropdown.type) {
-    return state === "" ? "open" : ""
+    return state === '' ? 'open' : ''
   } else if (action.type == actions.app.closeDropdown.type) {
-    return ""
+    return ''
   }
 
   return state

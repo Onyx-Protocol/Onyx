@@ -31,7 +31,7 @@ class Main extends React.Component {
           dropdownState={this.props.dropdownState}
           toggleDropdown={this.toggleDropdown} />
 
-        <div className="container">
+        <div className='container'>
           <Flash {...this.props.flashMessage}
             dismissFlash={this.props.dismissFlash}
           />

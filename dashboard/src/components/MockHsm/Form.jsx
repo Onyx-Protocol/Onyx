@@ -1,12 +1,12 @@
 import React from 'react'
-import PageHeader from "../PageHeader/PageHeader"
-import { ErrorBanner } from "../Common"
+import PageHeader from '../PageHeader/PageHeader'
+import { ErrorBanner } from '../Common'
 
 class Form extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      alias: ""
+      alias: ''
     }
     this.handleChange = this.handleChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -26,7 +26,7 @@ class Form extends React.Component {
   render() {
     return(
       <div className='form-container'>
-        <PageHeader title="New Mock HSM Key" />
+        <PageHeader title='New Mock HSM Key' />
 
         <form onSubmit={this.handleSubmit}>
           <div className='form-group'>
@@ -34,8 +34,8 @@ class Form extends React.Component {
             <input
               className='form-control'
               type='text'
-              placeholder="Alias"
-              autoFocus="autofocus"
+              placeholder='Alias'
+              autoFocus='autofocus'
               value={this.state.alias}
               onChange={this.handleChange} />
           </div>

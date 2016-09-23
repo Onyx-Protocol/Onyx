@@ -7,10 +7,10 @@ import generateListActions from './listActions'
 import generateFormActions from './formActions'
 import unspentActions from './unspent'
 
-const type = "transaction"
+const type = 'transaction'
 
 const list = generateListActions(type, {
-  defaultKey: "id"
+  defaultKey: 'id'
 })
 const form = generateFormActions(type)
 
@@ -18,7 +18,7 @@ function preprocessTransaction(data) {
   try {
     data.reference_data = parseNonblankJSON(data.reference_data)
   } catch (err) {
-    throw new Error("Transaction-level reference data should be valid JSON, or blank.")
+    throw new Error('Transaction-level reference data should be valid JSON, or blank.')
   }
 
   for (let i in data.actions) {
@@ -69,7 +69,7 @@ form.submitForm = (data) => function(dispatch) {
     .then(() => {
       dispatch(push('/transactions'))
       dispatch(form.created())
-      dispatch(unspentActions.updateQuery(""))
+      dispatch(unspentActions.updateQuery(''))
     })
 }
 

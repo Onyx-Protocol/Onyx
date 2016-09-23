@@ -4,7 +4,7 @@ import Item from '../../components/Asset/Item'
 import actions from '../../actions'
 import { push } from 'react-router-redux'
 
-const type = "asset"
+const type = 'asset'
 
 const dispatch = (dispatch) => Object.assign({},
   mapDispatchToProps(type)(dispatch),

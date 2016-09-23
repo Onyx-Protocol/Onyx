@@ -1,11 +1,11 @@
 import generateListActions from './listActions'
 import generateFormActions from './formActions'
 
-const type = "mockhsm"
+const type = 'mockhsm'
 
-const list = generateListActions(type, {className: "MockHsm"})
+const list = generateListActions(type, {className: 'MockHsm'})
 const form = generateFormActions(type, {
-  className: "MockHsm"
+  className: 'MockHsm'
 })
 
 let actions = Object.assign({},

@@ -15,8 +15,8 @@ class AppContainer extends React.Component {
 
   redirectRoot(configured, location) {
     if (configured) {
-      if (location.pathname === "/" ||
-          location.pathname.indexOf("configuration") >= 0) {
+      if (location.pathname === '/' ||
+          location.pathname.indexOf('configuration') >= 0) {
         this.props.showRoot()
       }
     } else {

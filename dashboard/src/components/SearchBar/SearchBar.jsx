@@ -1,14 +1,14 @@
 import React from 'react'
-import styles from "./SearchBar.scss"
+import styles from './SearchBar.scss'
 
 class SearchBar extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      query: this.props.queryString || "",
-      sumBy: this.props.sumBy || ""
+      query: this.props.queryString || '',
+      sumBy: this.props.sumBy || ''
     }
-    this.state.showClear = this.state.query != "" || this.state.sumBy != ""
+    this.state.showClear = this.state.query != '' || this.state.sumBy != ''
 
     this.handleChange = this.handleChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -41,8 +41,8 @@ class SearchBar extends React.Component {
   }
 
   clearQuery() {
-    this.setState({ query: "", sumBy: "", showClear: false })
-    this.props.updateQuery("")
+    this.setState({ query: '', sumBy: '', showClear: false })
+    this.props.updateQuery('')
   }
 
   render() {
@@ -59,33 +59,33 @@ class SearchBar extends React.Component {
         <form onSubmit={this.handleSubmit}>
           <span className={searchFieldClass}>
             <label>Filter</label>
-            <input ref="queryField"
+            <input ref='queryField'
                    value={this.state.query}
                    onChange={this.handleChange}
                    className={`form-control ${styles.search_input}`}
-                   type="search"
-                   autoFocus="autofocus"
-                   placeholder="Enter predicate..." />
+                   type='search'
+                   autoFocus='autofocus'
+                   placeholder='Enter predicate...' />
           </span>
 
           {showSumBy &&
             <span className={styles.sum_by_field}>
               <label>Sum By</label>
-              <input ref="sumByField"
+              <input ref='sumByField'
                 value={this.state.sumBy}
                 onChange={this.handleChange}
                 className={`form-control ${styles.search_input}`}
-                type="search"
-                placeholder="asset_alias, asset_id" />
+                type='search'
+                placeholder='asset_alias, asset_id' />
             </span>}
 
           <div className={styles.search_button_container}>
-            <button type="submit" className={`btn btn-primary ${styles.search_button}`} >
+            <button type='submit' className={`btn btn-primary ${styles.search_button}`} >
               Filter
             </button>
 
             {this.state.showClear &&
-              <button type="button"
+              <button type='button'
                 className={`close ${styles.clear_search}`}
                 onClick={this.clearQuery}>
                   Reset

@@ -10,7 +10,7 @@ class Item extends React.Component {
 
   createControlProgram() {
     this.props.createControlProgram([{
-      type: "account",
+      type: 'account',
       params: { account_id: this.props.item.id }
     }]).then((program) => {
       this.setState({program: program.control_program})
@@ -24,31 +24,31 @@ class Item extends React.Component {
       `Account - ${item.id}`
 
     return(
-      <div className="panel panel-default">
-        <div className="panel-heading">
+      <div className='panel panel-default'>
+        <div className='panel-heading'>
           <strong>{title}</strong>
         </div>
-        <div className="panel-body">
+        <div className='panel-body'>
           <pre>
             {JSON.stringify(item, null, '  ')}
           </pre>
         </div>
-        <div className="panel-footer">
-          <div className="row">
-            <div className="col-sm-4">
-              <ul className="nav nav-pills">
+        <div className='panel-footer'>
+          <div className='row'>
+            <div className='col-sm-4'>
+              <ul className='nav nav-pills'>
                 <li>
-                  <button className="btn btn-link" onClick={this.props.showTransactions.bind(this, item.id)}>Transactions</button>
+                  <button className='btn btn-link' onClick={this.props.showTransactions.bind(this, item.id)}>Transactions</button>
                 </li>
                 <li>
-                  <button className="btn btn-link" onClick={this.props.showBalances.bind(this, item.id)}>Balances</button>
+                  <button className='btn btn-link' onClick={this.props.showBalances.bind(this, item.id)}>Balances</button>
                 </li>
               </ul>
             </div>
-            <div className="col-sm-8 text-right">
-              <button className="btn btn-link" onClick={this.createControlProgram.bind(this, item.id)}>
+            <div className='col-sm-8 text-right'>
+              <button className='btn btn-link' onClick={this.createControlProgram.bind(this, item.id)}>
                 Create&nbsp;
-                {this.state.program && "another "}
+                {this.state.program && 'another '}
                 Control Program
               </button>
               {this.state.program && <p>

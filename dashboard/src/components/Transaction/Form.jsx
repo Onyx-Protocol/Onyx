@@ -1,6 +1,6 @@
 import React from 'react'
-import PageHeader from "../PageHeader/PageHeader"
-import { JsonField, ErrorBanner } from "../Common"
+import PageHeader from '../PageHeader/PageHeader'
+import { JsonField, ErrorBanner } from '../Common'
 import ActionItem from './FormActionItem'
 import { reduxForm } from 'redux-form'
 
@@ -46,8 +46,8 @@ class Form extends React.Component {
     } = this.props
 
     return(
-      <div className="form-container">
-        <PageHeader title="New Transaction" />
+      <div className='form-container'>
+        <PageHeader title='New Transaction' />
 
         <form onSubmit={handleSubmit(this.submitWithValidation)} >
           <div className='form-group'>
@@ -62,12 +62,12 @@ class Form extends React.Component {
               assets={this.props.assets}
             />)}
 
-            <button type="button" className="btn btn-link" onClick={this.addActionItem} >
+            <button type='button' className='btn btn-link' onClick={this.addActionItem} >
               + Add Action
             </button>
 
             {actions.length > 0 &&
-              <button type="button" className="btn btn-link" onClick={this.removeActionItem}>
+              <button type='button' className='btn btn-link' onClick={this.removeActionItem}>
                 - Remove Action
               </button>
             }
@@ -79,7 +79,7 @@ class Form extends React.Component {
             <JsonField title='Transaction-level reference data' fieldProps={reference_data} />
           }
           {!this.state.referenceDataOpen &&
-            <button type="button" className="btn btn-link" onClick={this.openReferenceData}>
+            <button type='button' className='btn btn-link' onClick={this.openReferenceData}>
               Add transaction-level reference data
             </button>
           }
@@ -92,10 +92,10 @@ class Form extends React.Component {
           </p>
 
           {error && <ErrorBanner
-            title="There was a problem submitting your transaction:"
+            title='There was a problem submitting your transaction:'
             message={error}/>}
 
-          <button type="submit" className="btn btn-primary" disabled={submitting}>
+          <button type='submit' className='btn btn-primary' disabled={submitting}>
             Submit Transaction
           </button>
         </form>

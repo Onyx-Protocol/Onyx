@@ -5,11 +5,11 @@ class Item extends React.Component {
     const item = this.props.item
 
     return(
-      <div className="panel panel-default">
-        <div className="panel-heading">
+      <div className='panel panel-default'>
+        <div className='panel-heading'>
           <strong>Transaction - {item.id}</strong>
         </div>
-        <div className="panel-body">
+        <div className='panel-body'>
           <pre>
             {JSON.stringify(item, null, '  ')}
           </pre>

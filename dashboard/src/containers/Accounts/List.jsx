@@ -4,7 +4,7 @@ import Item from '../../components/Account/Item'
 import actions from '../../actions'
 import { push } from 'react-router-redux'
 
-const type = "account"
+const type = 'account'
 
 const dispatch = (dispatch) => Object.assign({},
   mapDispatchToProps(type)(dispatch),

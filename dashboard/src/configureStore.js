@@ -1,3 +1,5 @@
+/*eslint-env node*/
+
 import { createStore, applyMiddleware, compose } from 'redux'
 import thunkMiddleware from 'redux-thunk'
 import { routerMiddleware as createRouterMiddleware } from 'react-router-redux'
@@ -22,10 +24,10 @@ export default function() {
   if (module.hot) {
     // Enable Webpack hot module replacement for reducers
     module.hot.accept('./reducers', () => {
-      const nextRootReducer = require('./reducers/index');
-      store.replaceReducer(nextRootReducer);
-    });
+      const nextRootReducer = require('./reducers/index')
+      store.replaceReducer(nextRootReducer)
+    })
   }
 
-  return store;
+  return store
 }

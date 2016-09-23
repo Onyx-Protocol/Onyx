@@ -1,6 +1,6 @@
 import generateListActions from './listActions'
 
-const type = "unspent"
+const type = 'unspent'
 
 const list = generateListActions(type)
 
