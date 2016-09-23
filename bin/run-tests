@@ -1,0 +1,47 @@
+#!/bin/sh
+# runs chain integration tests on osx
+set -eou pipefail
+
+initlog=${LOG:-/tmp/test.log}
+# cleanup kills cored process and removes built artifacts
+#
+# The function body is wrapped in a subshell so that failure
+# of cleanup commands doesn't exit the script (due to set -e)
+cleanup() {(
+	set +e
+	for pid in $(ps aux | grep [c]ored$ | awk {'print $2'});
+	do
+		kill -9 $pid
+	done
+	wait
+	rm -rf $CHAIN/sdk/java/target
+	rm -rf $GOPATH/bin/cored
+	rm -rf $GOPATH/bin/corectl
+	rm -rf $GOPATH/bin/migratedb
+	dropdb it-core
+)}
+trap cleanup EXIT
+
+# waitForGenerator blocks the script and greps
+# the generator's output for a log message signifying
+# the generator is fully initialized. It will timeout
+# after 30s.
+waitForGenerator() {(
+	set +e
+	start=`date +%s`
+	while [ $(( `date +%s` - $start )) -lt 30 ]; do
+		grep "I am the core leader" $initlog >/dev/null
+		if [[ $? -eq 0 ]]; then
+			break
+		fi
+	done
+)}
+(
+	export DATABASE_URL="postgres:///it-core?sslmode=disable"
+	createdb it-core
+	go install chain/cmd/migratedb chain/cmd/cored chain/cmd/corectl
+	migratedb -d $DATABASE_URL
+	corectl config-generator
+	cored | tee $initlog &
+	cd $CHAIN/sdk/java && mvn integration-test
+)
