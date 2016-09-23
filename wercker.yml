@@ -1,4 +1,4 @@
-box: chaindev/wercker:20160921.1
+box: chaindev/wercker:20160923
 # To update the docker image for this "box",
 # see $CHAIN/docker/wercker.
 
