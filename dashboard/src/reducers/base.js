@@ -3,7 +3,7 @@ import { combineReducers } from 'redux'
 const defaultIdFunc = (item) => item.id
 
 export const itemsReducer = (type, idFunc = defaultIdFunc) => (state = {}, action) => {
-  if (action.type == `APPEND_${type.toUpperCase()}_PAGE`) {
+  if (action.type == `RECEIVED_${type.toUpperCase()}_ITEMS`) {
     const newObjects = {}
     action.param.items.forEach(item => {
       if (!item.id) { item.id = idFunc(item) }
@@ -59,6 +59,14 @@ export const currentQueryReducer = (type) => (state = '', action) => {
     return ''
   } else if (action.type == `CREATED_${type.toUpperCase()}`) {
     return ''
+  }
+
+  return state
+}
+
+export const autocompleteIsLoadedReducer = (type) => (state = false, action) => {
+  if (action.type == `DID_LOAD_${type.toUpperCase()}_AUTOCOMPLETE`) {
+    return true
   }
 
   return state

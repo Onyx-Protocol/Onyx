@@ -69,7 +69,7 @@ for (let item of loaders) {
 }
 
 config.module.loaders = loaders
-config.sassResources = './src/styles/resources.scss'
+config.sassResources = './src/assets/styles/resources.scss'
 
 // Configure node modules which may or
 // may not be present in the browser.

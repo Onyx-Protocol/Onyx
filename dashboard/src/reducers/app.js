@@ -14,10 +14,12 @@ export const flashMessage = (state = {}, action) => {
     return success('Created key')
   } else if (action.type == actions.app.displayedFlash.type) {
     return Object.assign({}, state, { displayed: true })
-  } else if (
-    (action.type == '@@router/LOCATION_CHANGE' && state.displayed == true) ||
-    action.type == actions.app.dismissFlash.type
-  ) {
+  } else if (action.type == '@@router/LOCATION_CHANGE' && state.displayed == true) {
+    if (action.payload.state && action.payload.state.preserveFlash) {
+      return state
+    }
+    return {}
+  } else if (action.type == actions.app.dismissFlash.type) {
     return {}
   }
 

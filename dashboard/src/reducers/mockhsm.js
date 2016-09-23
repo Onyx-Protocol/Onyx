@@ -1,6 +1,7 @@
 import {
   itemsReducer,
-  listViewReducer
+  listViewReducer,
+  autocompleteIsLoadedReducer,
 } from './base'
 import { combineReducers } from 'redux'
 
@@ -9,5 +10,6 @@ const idFunc = item => item.xpub
 
 export default combineReducers({
   items: itemsReducer(type, idFunc),
-  listView: listViewReducer(type, idFunc)
+  listView: listViewReducer(type, idFunc),
+  autocompleteIsLoaded: autocompleteIsLoadedReducer(type),
 })

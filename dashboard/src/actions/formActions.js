@@ -25,8 +25,13 @@ export default function(type, options = {}) {
 
         return object.create(context)
           .then(() => {
-            dispatch(push(listPath))
             dispatch(created())
+            dispatch(push({
+              pathname: listPath,
+              state: {
+                preserveFlash: true
+              }
+            }))
           })
       }
     }

@@ -5,7 +5,7 @@ import styles from './Main.scss'
 
 class Navigation extends React.Component {
   render() {
-    let logo = require('../../../images/logo-white.png')
+    let logo = require('../../../assets/images/logo-white.png')
 
     return (
       <Navbar customStyles={`navbar-fixed-top ${styles.navbar_fixed}`}>

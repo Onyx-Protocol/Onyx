@@ -9,28 +9,21 @@ class ItemList extends React.Component {
   constructor(props) {
     super(props)
 
-    this.state = { mounted: false }
+    this.state = { fetching: false }
   }
 
   componentWillMount() {
-    if (this.props.items.length === 0) {
-      Promise.resolve(this.fetchFirstPage(this.props)).then(() => {
-        this.setState({mounted: true})
-      })
-    } else {
-      this.setState({mounted: true})
-    }
+    this.fetchFirstPage(this.props)
   }
 
   componentWillReceiveProps(nextProps) {
-    if (this.state.mounted) {
-      this.fetchFirstPage(nextProps)
-    }
+    this.fetchFirstPage(nextProps)
   }
 
   fetchFirstPage(props) {
-    if (props.items.length === 0) {
-      return this.props.incrementPage()
+    if (props.items.length === 0 && !this.state.fetching) {
+      this.setState({fetching: true})
+      return this.props.incrementPage().then(() => this.setState({fetching: false}))
     }
   }
 

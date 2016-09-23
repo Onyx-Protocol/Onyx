@@ -5,23 +5,55 @@ import actionCreator from './actionCreator'
 export default function(type, options = {}) {
   const incrementPage = actionCreator(`INCREMENT_${type.toUpperCase()}_PAGE`)
   const decrementPage = actionCreator(`DECREMENT_${type.toUpperCase()}_PAGE`)
+  const receivedItems = actionCreator(`RECEIVED_${type.toUpperCase()}_ITEMS`, param => ({ param }) )
   const appendPage = actionCreator(`APPEND_${type.toUpperCase()}_PAGE`, param => ({ param }) )
   const updateQuery = actionCreator(`UPDATE_${type.toUpperCase()}_QUERY`, param => ({ param }) )
+  const didLoadAutocomplete = actionCreator(`DID_LOAD_${type.toUpperCase()}_AUTOCOMPLETE`)
 
   const getNextPageSlice = function(getState) {
     const pageStart = (getState()[type].listView.pageIndex + 1) * pageSize
     return getState()[type].listView.itemIds.slice(pageStart, pageStart + pageSize)
   }
 
-  const fetchPage = function() {
+  const fetchItems = function(params) {
     const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
 
+    return function(dispatch) {
+      const promise = chain[className].query(context, params)
+
+      promise.then(
+        (param) => dispatch(receivedItems(param))
+      )
+
+      return promise
+    }
+  }
+
+  const fetchAll = function(stepCallback = () => {}) {
+    return function(dispatch) {
+      const fetchUntilLastPage = (next) => {
+        return dispatch(fetchItems(next)).then((resp) => {
+          stepCallback(resp)
+
+          if (resp.last_page) {
+            return resp
+          } else {
+            return fetchUntilLastPage(resp.next)
+          }
+        })
+      }
+
+      return fetchUntilLastPage({})
+    }
+  }
+
+  const fetchQueryPage = function() {
     return function(dispatch, getState) {
       let latestResponse = getState()[type].listView.cursor
       let promise, filter
 
       if (latestResponse && latestResponse.last_page) {
-        return new Promise.resolve()
+        return Promise.resolve({})
       } else if (latestResponse.nextPage) {
         promise = latestResponse.nextPage(context)
       } else {
@@ -38,7 +70,7 @@ export default function(type, options = {}) {
           params.sum_by = options.defaultSumBy()
         }
 
-        promise = chain[className].query(context, params)
+        promise = dispatch(fetchItems(params))
       }
 
       return promise.then(
@@ -53,14 +85,16 @@ export default function(type, options = {}) {
   }
 
   return {
-    appendPage: appendPage,
-    updateQuery: updateQuery,
+    appendPage,
+    updateQuery,
+    fetchItems,
+    fetchAll,
     incrementPage: function() {
       return function(dispatch, getState) {
         const nextPage = getNextPageSlice(getState)
 
         if (nextPage.length < pageSize) {
-          let fetchPromise = dispatch(fetchPage())
+          let fetchPromise = dispatch(fetchQueryPage())
 
           if (nextPage.length != 0) {
             dispatch(incrementPage())
@@ -76,6 +110,7 @@ export default function(type, options = {}) {
         }
       }
     },
-    decrementPage: decrementPage
+    decrementPage,
+    didLoadAutocomplete,
   }
 }

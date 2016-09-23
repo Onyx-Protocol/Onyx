@@ -1,3 +1,4 @@
+import { AccountField, AssetField } from './AutocompleteField'
 import JsonField from './JsonField/JsonField'
 import Flash from './Flash/Flash'
 import Panel from './Panel'
@@ -10,6 +11,8 @@ import ErrorBanner from './ErrorBanner'
 import Navbar from './Navbar'
 
 export {
+  AccountField,
+  AssetField,
   JsonField,
   Flash,
   Panel,

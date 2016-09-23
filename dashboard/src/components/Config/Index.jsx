@@ -45,9 +45,6 @@ export default class Index extends React.Component {
       submitting
     } = this.props
 
-    let createNewIcon = require('../../images/config/create-new.svg')
-    let joinExistingIcon = require('../../images/config/join-existing.svg')
-
     let submitButton = <button type="submit" className={`btn btn-primary btn-lg ${styles.submit}`} disabled={submitting}>
       <span className="glyphicon glyphicon-arrow-right" />
       &nbsp;{this.showNewFields() ? "Create" : "Join"} network
@@ -72,7 +69,7 @@ export default class Index extends React.Component {
                     value='true'
                     checked={is_generator.value === 'true'} />
               <div className={styles.choice}>
-                <InlineSVG src={require('!svg-inline!../../images/config/create-new.svg')} />
+                <InlineSVG src={require('!svg-inline!../../assets/images/config/create-new.svg')} />
                 <span className={styles.choice_title}>Create new blockchain network</span>
 
                 <p>
@@ -94,7 +91,7 @@ export default class Index extends React.Component {
                     value='false'
                     checked={is_generator.value === 'false'} />
               <div className={styles.choice}>
-              <InlineSVG src={require('!svg-inline!../../images/config/join-existing.svg')} />
+              <InlineSVG src={require('!svg-inline!../../assets/images/config/join-existing.svg')} />
                 <span className={styles.choice_title}>Join existing blockchain network</span>
 
                 <p>

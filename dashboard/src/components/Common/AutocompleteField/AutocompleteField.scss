@@ -1,0 +1,31 @@
+.suggestionsContainer {
+  position: relative;
+}
+
+.suggestionsList {
+  background: $body-bg;
+  border: 1px solid $input-border;
+  border-radius: $input-border-radius-large;
+  box-shadow: 0px 0px 4px transparentize($text-color, 0.5);
+  list-style-type: none;
+  margin-top: 6px;
+  max-height: 200px;
+  overflow-y: scroll;
+  padding: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.suggestion {
+  border-bottom: 1px solid $input-border;
+  padding: 12px;
+
+  &:last-child {
+    border: none;
+  }
+}
+
+.suggestionFocused {
+  color: $brand-primary;
+  background: $page-header-border-color;
+}
