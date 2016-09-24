@@ -31,7 +31,7 @@ public abstract class BaseQueryBuilder<T extends BaseQueryBuilder<T>> {
     return (T) this;
   }
 
-  public T withFilter(String filter) {
+  public T setFilter(String filter) {
     this.query.filter = filter;
     return (T) this;
   }
