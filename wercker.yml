@@ -18,27 +18,52 @@ build:
           go version
           go env
           export CHAIN=$GOPATH/src/chain
-          PATH=$GOPATH/bin:$PATH
+          PATH=$GOPATH/bin:$PATH:$CHAIN/bin
           cp -a $WERCKER_SOURCE_DIR $GOPATH/src/chain
           export WERCKER_SOURCE_DIR=$GOPATH/src/chain
           export DB_URL_TEST="postgres://u:p@$POSTGRES_PLV8_PORT_5432_TCP_ADDR:$POSTGRES_PLV8_PORT_5432_TCP_PORT/api-test?sslmode=disable"
-          cd $GOPATH/src/chain
-          test -z "$(go fmt $(go list ./...|grep -v vendor))"
+          cd $CHAIN
           go vet $(go list ./...|grep -v vendor)
           go install chain/cmd/vet
           vet .
           go install chain/log # needed before testing ./cmd/vet below
           go test -cover $(go list ./...|grep -v vendor|egrep -v 'xprvseetool|thales|signerd')
-          test -z "$(goimports -l .|grep -v vendor)"
           (cd migrations; ./check-names.bash)
           go generate $(go list ./...|grep -v vendor)
           git diff --exit-code # make sure generated files are in sync
+
+dashboard:
+  steps:
+    - inz/npm-install@1.1.5:
+      cwd: dashboard/
+    - script:
+        name: lint dashboard
+        cwd: dashboard/
+        code: |
+          npm run lint
+
+thales:
+  steps:
     - script:
         name: thales hsm unit tests
         code: |
           export CHAIN=$GOPATH/src/chain
           PATH=$CHAIN/bin:$PATH
           make -C $CHAIN/crypto/hsm/thales/xprvseemodule test
+
+formatting:
+  steps:
+    - script:
+        name: gofmt
+        code: |
+          set -veo pipefail
+          export CHAIN=$GOPATH/src/chain
+          PATH=$GOPATH/bin:$PATH:$CHAIN/bin
+          cp -a $WERCKER_SOURCE_DIR $GOPATH/src/chain
+          export WERCKER_SOURCE_DIR=$GOPATH/src/chain
+          cd $CHAIN
+          test -z "$(go fmt $(go list ./...|grep -v vendor))"
+          test -z "$(./bin/gochainimports -l .|grep -v vendor)"
     - script:
         name: cfmt
         code: |
@@ -52,12 +77,3 @@ build:
           then exit 1
           fi
 
-dashboard:
-  steps:
-    - inz/npm-install@1.1.5:
-      cwd: dashboard/
-    - script:
-        name: lint dashboard
-        cwd: dashboard/
-        code: |
-          npm run lint
