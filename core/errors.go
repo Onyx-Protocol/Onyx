@@ -5,6 +5,7 @@ import (
 
 	"chain/core/account/utxodb"
 	"chain/core/asset"
+	"chain/core/blocksigner"
 	"chain/core/mockhsm"
 	"chain/core/query"
 	"chain/core/query/filter"
@@ -48,13 +49,14 @@ var (
 		errNotFound:              errorInfo{404, "CH006", "Not found"},
 
 		// Core error namespace
-		errUnconfigured:              errorInfo{400, "CH100", "This core still needs to be configured"},
-		errAlreadyConfigured:         errorInfo{400, "CH101", "This core has already been configured"},
-		errBadGenerator:              errorInfo{400, "CH102", "Generator URL returned an invalid response"},
-		errBadBlockXPub:              errorInfo{400, "CH103", "Provided Block XPub is invalid"},
-		rpc.ErrWrongNetwork:          errorInfo{502, "CH104", "A peer core is operating on a different blockchain network"},
-		protocol.ErrTheDistantFuture: errorInfo{400, "CH105", "Requested height is too far ahead"},
-		errProdReset:                 errorInfo{400, "CH110", "Reset can only be called in a development system"},
+		errUnconfigured:                errorInfo{400, "CH100", "This core still needs to be configured"},
+		errAlreadyConfigured:           errorInfo{400, "CH101", "This core has already been configured"},
+		errBadGenerator:                errorInfo{400, "CH102", "Generator URL returned an invalid response"},
+		errBadBlockXPub:                errorInfo{400, "CH103", "Provided Block XPub is invalid"},
+		rpc.ErrWrongNetwork:            errorInfo{502, "CH104", "A peer core is operating on a different blockchain network"},
+		protocol.ErrTheDistantFuture:   errorInfo{400, "CH105", "Requested height is too far ahead"},
+		errProdReset:                   errorInfo{400, "CH110", "Reset can only be called in a development system"},
+		blocksigner.ErrConsensusChange: errorInfo{400, "CH150", "Refuse to sign block with consensus change"},
 
 		// Signers error namespace (2xx)
 		signers.ErrBadQuorum: errorInfo{400, "CH200", "Quorum must be greater than 1 and less than or equal to the length of xpubs"},

@@ -1,6 +1,7 @@
 package blocksigner
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 
@@ -11,6 +12,10 @@ import (
 	"chain/protocol"
 	"chain/protocol/bc"
 )
+
+// ErrConsensusChange is returned from ValidateAndSignBlock
+// when a new consensus program is detected.
+var ErrConsensusChange = errors.New("consensus program has changed")
 
 // Signer validates and signs blocks.
 type Signer struct {
@@ -52,6 +57,19 @@ func (s *Signer) ValidateAndSignBlock(ctx context.Context, b *bc.Block) ([]byte,
 	err := s.c.WaitForBlockSoon(ctx, b.Height-1)
 	if err != nil {
 		return nil, errors.Wrapf(err, "waiting for block at height %d", b.Height-1)
+	}
+	prev, err := s.c.GetBlock(ctx, b.Height-1)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting block at height %d", b.Height-1)
+	}
+	// TODO: Add the ability to change the consensus program
+	// by having a current consensus program, and a potential
+	// next consensus program. Once the next consensus program
+	// has been used, it will become the current consensus program
+	// and the only signable consensus program until a new
+	// next is set.
+	if !bytes.Equal(b.ConsensusProgram, prev.ConsensusProgram) {
+		return nil, errors.Wrap(ErrConsensusChange)
 	}
 	err = s.c.ValidateBlockForSig(ctx, b)
 	if err != nil {
