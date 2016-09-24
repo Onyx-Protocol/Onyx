@@ -6,6 +6,7 @@ import com.chain.http.Context;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * When used in conjunction with /list-transactions, Cursors can be used to
@@ -51,6 +52,7 @@ public class Cursor {
     Map<String, Object> req = new HashMap<>();
     req.put("alias", alias);
     req.put("filter", filter);
+    req.put("client_token", UUID.randomUUID().toString());
     return ctx.request("create-cursor", req, Cursor.class);
   }
 
