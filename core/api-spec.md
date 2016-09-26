@@ -156,7 +156,7 @@ An array of [transaction template objects](#transaction-template-object) and/or 
     {
       "asset_pubkey": "...",
 
-      // These properties are only available for assets whose origin is local.
+      // These properties are only available for assets that are local.
       "root_xpub": "...",
       "asset_derivation_path": "..."
     },
@@ -165,7 +165,7 @@ An array of [transaction template objects](#transaction-template-object) and/or 
   "quorum": 1,
   "definition": {},
   "tags": {},
-  "origin": <"local"|"external">
+  "is_local": <"yes"|"no">
 }
 ```
 
@@ -410,7 +410,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
       "asset_id": "125B4E...",
       "asset_alias": "...",
       "asset_tags": {},
-      "asset_origin": <"local"|"external">
+      "asset_is_local": <"yes"|"no">
       "amount": 5000,
       "issuance_program": ...,
       "reference_data": {"details": "..."},
@@ -421,7 +421,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
       "asset_id": "125B4E...",
       "asset_alias": "...",
       "asset_tags": {},
-      "asset_origin": <"local"|"external">,
+      "asset_is_local": <"yes"|"no">,
       "amount": 5000,
       "spent_output": {
         "transaction_id": "94C5D3...",
@@ -441,7 +441,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
       "asset_id": "125B4E...",
       "asset_alias": "...",
       "asset_tags": {},
-      "asset_origin": <"local"|"external">,
+      "asset_is_local": <"yes"|"no">,
       "amount": 5000,
       "account_id": "",
       "account_alias": "...",
@@ -500,7 +500,7 @@ To keep the interface narrow, the SDK can generate such a control program.
   "asset_id": "...",
   "asset_alias": "...",
   "asset_tags": {},
-  "asset_origin": <"local"|"external">,
+  "asset_is_local": <"yes"|"no">,
   "amount": 5000,
   "account_id": "...",
   "account_alias": "...",
