@@ -39,7 +39,7 @@ public class IouSettlement {
 
     new Asset.Builder()
         .setAlias("dealerusd")
-        .addXpub(dealerIssuerKey.xpub)
+        .addRootXpub(dealerIssuerKey.xpub)
         .setQuorum(1)
         .addTag("entity", "dealer")
         .addTag("currency", "usd")
@@ -47,27 +47,27 @@ public class IouSettlement {
 
     new Asset.Builder()
         .setAlias("nbusd")
-        .addXpub(northBankIssuerKey.xpub)
+        .addRootXpub(northBankIssuerKey.xpub)
         .setQuorum(1)
         .addTag("currency", "usd")
         .create(ctx);
 
     new Asset.Builder()
         .setAlias("sbusd")
-        .addXpub(southBankIssuerKey.xpub)
+        .addRootXpub(southBankIssuerKey.xpub)
         .setQuorum(1)
         .addTag("currency", "usd")
         .create(ctx);
 
     new Account.Builder()
         .setAlias("dealer")
-        .addXpub(dealerAccountKey.xpub)
+        .addRootXpub(dealerAccountKey.xpub)
         .setQuorum(1)
         .create(ctx);
 
-    new Account.Builder().setAlias("nb").addXpub(dealerAccountKey.xpub).setQuorum(1).create(ctx);
+    new Account.Builder().setAlias("nb").addRootXpub(dealerAccountKey.xpub).setQuorum(1).create(ctx);
 
-    new Account.Builder().setAlias("sb").addXpub(dealerAccountKey.xpub).setQuorum(1).create(ctx);
+    new Account.Builder().setAlias("sb").addRootXpub(dealerAccountKey.xpub).setQuorum(1).create(ctx);
 
     Dealer dealer = new Dealer(ctx, getAccount(ctx, "dealer"), getAsset(ctx, "dealerusd"));
     Bank northBank = new Bank(ctx, dealer, getAsset(ctx, "nbusd"), getAccount(ctx, "nb"));
@@ -214,7 +214,7 @@ public class IouSettlement {
 
   static Asset getAsset(Context ctx, String id) throws Exception {
     String q = String.format("alias='%s'", id);
-    Asset.Items assets = new Asset.QueryBuilder().withFilter(q).execute(ctx);
+    Asset.Items assets = new Asset.QueryBuilder().setFilter(q).execute(ctx);
     if (assets.list.size() != 1) {
       throw new Exception(String.format("missing asset: %s", id));
     }
@@ -223,7 +223,7 @@ public class IouSettlement {
 
   static Account getAccount(Context ctx, String id) throws Exception {
     Account.Items accounts =
-        new Account.QueryBuilder().withFilter(String.format("alias='%s'", id)).execute(ctx);
+        new Account.QueryBuilder().setFilter(String.format("alias='%s'", id)).execute(ctx);
     if (accounts.list.size() != 1) {
       throw new Exception(String.format("missing account: %s", id));
     }
@@ -273,7 +273,7 @@ class Bank {
   void incoming() throws Exception {
     Transaction.Items transactions =
         new Transaction.QueryBuilder()
-            .withFilter("outputs(account_id=$1)")
+            .setFilter("outputs(account_id=$1)")
             .addFilterParameter(this.account.id)
             .execute(ctx);
     while (transactions.hasNext()) {
@@ -284,7 +284,7 @@ class Bank {
   void outgoing() throws Exception {
     Transaction.Items transactions =
         new Transaction.QueryBuilder()
-            .withFilter("inputs(action='issuance' AND asset_id = $1)")
+            .setFilter("inputs(action='issuance' AND asset_id = $1)")
             .addFilterParameter(this.account.id)
             .execute(ctx);
     while (transactions.hasNext()) {
@@ -328,7 +328,7 @@ class Dealer {
 
   void reportAllPayments() throws Exception {
     Transaction.Items transactions =
-        new Transaction.QueryBuilder().withFilter("inputs(action='issue')").execute(this.ctx);
+        new Transaction.QueryBuilder().setFilter("inputs(action='issue')").execute(this.ctx);
 
     System.out.println("report: all dealer payments");
     while (transactions.hasNext()) {
@@ -339,7 +339,7 @@ class Dealer {
 
   void reportSettlements() throws Exception {
     Transaction.Items transactions =
-        new Transaction.QueryBuilder().withFilter("outputs(action='retire')").execute(this.ctx);
+        new Transaction.QueryBuilder().setFilter("outputs(action='retire')").execute(this.ctx);
   }
 
   void reportCurrencyExposure() throws Exception {
@@ -349,7 +349,7 @@ class Dealer {
     //Incoming
     balanceItems =
         new Balance.QueryBuilder()
-            .withFilter("account_id='" + this.account.id + "' AND asset_tags.currency=$1")
+            .setFilter("account_id='" + this.account.id + "' AND asset_tags.currency=$1")
             .setTimestamp(System.currentTimeMillis())
             .execute(this.ctx);
 
@@ -366,7 +366,7 @@ class Dealer {
     //Outgoing
     balanceItems =
         new Balance.QueryBuilder()
-            .withFilter("asset_tags.entity='dealer' AND asset_tags.currency=$1")
+            .setFilter("asset_tags.entity='dealer' AND asset_tags.currency=$1")
             .setTimestamp(System.currentTimeMillis())
             .execute(this.ctx);
     while (balanceItems.hasNext()) {
