@@ -37,7 +37,7 @@ public class ControlProgram {
       return ctx.singletonBatchRequest("create-control-program", this, ControlProgram.class);
     }
 
-    public static List<ControlProgram> create(Context ctx, List<Builder> programs)
+    public static List<ControlProgram> createBatch(Context ctx, List<Builder> programs)
         throws ChainException {
       Type type = new TypeToken<List<ControlProgram>>() {}.getType();
       return ctx.request("create-control-program", programs, type);

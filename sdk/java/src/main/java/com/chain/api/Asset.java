@@ -91,7 +91,7 @@ public class Asset {
       return ctx.singletonBatchRequest("create-asset", this, Asset.class);
     }
 
-    public static List<Asset> create(Context ctx, List<Builder> assets) throws ChainException {
+    public static List<Asset> createBatch(Context ctx, List<Builder> assets) throws ChainException {
       for (Builder asset : assets) {
         asset.clientToken = UUID.randomUUID().toString();
       }

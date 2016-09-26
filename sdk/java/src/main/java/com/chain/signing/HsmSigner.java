@@ -33,7 +33,7 @@ public class HsmSigner {
   }
 
   public static Transaction.Template sign(Transaction.Template template) throws ChainException {
-    List<Transaction.Template> templates = sign(Arrays.asList(template));
+    List<Transaction.Template> templates = signBatch(Arrays.asList(template));
     Transaction.Template response = templates.get(0);
     if (response.code != null) {
       throw new APIException(template.code, template.message, template.detail, null);
@@ -44,7 +44,7 @@ public class HsmSigner {
   // TODO(boymanjor): Currently this method trusts the hsm to return a tx template
   // in the event it is unable to sign it. Moving forward we should employ a filter
   // step and only send txs to hsms that hold the proper key material to sign.
-  public static List<Transaction.Template> sign(List<Transaction.Template> tmpls)
+  public static List<Transaction.Template> signBatch(List<Transaction.Template> tmpls)
       throws ChainException {
     for (Map.Entry<URL, List<String>> entry : hsmXPubs.entrySet()) {
       Context hsm = new Context(entry.getKey());

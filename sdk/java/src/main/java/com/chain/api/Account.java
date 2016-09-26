@@ -103,7 +103,7 @@ public class Account {
      * @return a list of account objects
      * @throws ChainException
      */
-    public static List<Account> create(Context ctx, List<Builder> accts) throws ChainException {
+    public static List<Account> createBatch(Context ctx, List<Builder> accts) throws ChainException {
       for (Builder acct : accts) {
         acct.clientToken = UUID.randomUUID().toString();
       }

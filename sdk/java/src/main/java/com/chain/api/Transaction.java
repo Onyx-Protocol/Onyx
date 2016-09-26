@@ -261,7 +261,7 @@ public class Transaction {
   }
 
   /**
-   * A built transaction that has not been submitted for block inclusion (returned from {@link Transaction#build(Context, List)}).
+   * A built transaction that has not been submitted for block inclusion (returned from {@link Transaction#buildBatch(Context, List)}).
    */
   public static class Template {
     /**
@@ -385,7 +385,7 @@ public class Transaction {
   }
 
   /**
-   * A single response from a call to {@link Transaction#submit(Context, List)}
+   * A single response from a call to {@link Transaction#submitBatch(Context, List)}
    */
   public static class SubmitResponse {
     /**
@@ -410,7 +410,7 @@ public class Transaction {
   }
 
   /**
-   * Builds a transaction template.
+   * Builds a batch of transaction templates.
    * @param ctx context object which makes server requests
    * @param builders list of transaction builders
    * @return a list of transaction templates
@@ -420,14 +420,14 @@ public class Transaction {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static List<Template> build(Context ctx, List<Transaction.Builder> builders)
+  public static List<Template> buildBatch(Context ctx, List<Transaction.Builder> builders)
       throws ChainException {
     Type type = new TypeToken<ArrayList<Template>>() {}.getType();
     return ctx.request("build-transaction", builders, type);
   }
 
   /**
-   * Submits signed transaction templates for inclusion into a block.
+   * Submits a batch of signed transaction templates for inclusion into a block.
    * @param ctx context object which makes server requests
    * @param templates list of transaction templates
    * @return a list of submit responses (individual objects can hold transaction ids or error info)
@@ -437,7 +437,7 @@ public class Transaction {
    * @throws HTTPException This exception is raised when errors occur making http requests.
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
-  public static List<SubmitResponse> submit(Context ctx, List<Template> templates)
+  public static List<SubmitResponse> submitBatch(Context ctx, List<Template> templates)
       throws ChainException {
     Type type = new TypeToken<ArrayList<SubmitResponse>>() {}.getType();
     HashMap<String, Object> requestBody = new HashMap<>();
@@ -457,7 +457,7 @@ public class Transaction {
    * @throws JSONException This exception is raised due to malformed json requests or responses.
    */
   public static SubmitResponse submit(Context ctx, Template template) throws ChainException {
-    List<SubmitResponse> responses = submit(ctx, Arrays.asList(template));
+    List<SubmitResponse> responses = submitBatch(ctx, Arrays.asList(template));
     SubmitResponse response = responses.get(0);
     if (response.code != null) {
       throw new APIException(response.code, response.message, response.detail, null);
