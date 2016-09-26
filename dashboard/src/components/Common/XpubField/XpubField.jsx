@@ -19,6 +19,11 @@ class XpubField extends React.Component {
       this.setState({ selectedType: event.target.value })
     }
 
+    const keys = this.props.mockhsmKeys.map(item => ({
+      ...item,
+      label: item.alias ? item.alias : item.id.slice(0, 32) + '...'
+    }))
+
     return (
       <div className={styles.main}>
         <label>Key {this.props.index + 1}</label>
@@ -38,9 +43,9 @@ class XpubField extends React.Component {
         </div>
 
         {this.state.selectedType == 'mockhsm' &&
-          <SelectField options={this.props.mockhsmKeys}
+          <SelectField options={keys}
             valueKey='xpub'
-            labelKey='alias'
+            labelKey='label'
             fieldProps={this.props.fieldProps} />
         }
 
