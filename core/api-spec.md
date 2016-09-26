@@ -35,7 +35,9 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [Cursor Object](#cursor-object)
   * [Create Cursor](#create-cursor)
   * [Get Cursor](#get-cursor)
+  * [List Cursors](#list-cursors)
   * [Update Cursor](#update-cursor)
+  * [Delete Cursor](#delete-cursor)
 * [Core](#core)
   * [Configure](#configure)
   * [Info](#info)
@@ -803,11 +805,42 @@ POST /get-cursor
 
 A Cursor object.
 
+### List Cursors
+
+#### Endpoint
+
+```
+POST /list-cursors
+```
+
+#### Request
+
+```
+{
+  "after": <string> // optional
+}
+```
+
+#### Response
+
+```
+{
+  "items": [
+    <Cursor object>,
+    ...
+  ],
+  "next": {
+    "after": <string>
+  }
+  "last_page": <boolean>
+}
+```
+
 ### Update Cursor
 
 Updates the Cursor with a new `after`. This is used to acknowledge that the last set of transactions received from `/list-transactions` was processed successfully.
 
-Cursors can only be updated forwards (i.e., a cursor cannot be updated with a value that is previous to its current value). 
+Cursors can only be updated forwards (i.e., a cursor cannot be updated with a value that is previous to its current value).
 
 If present, the `previous_after` cursor will be used to prevent a race condition where two clients are updating the same cursor at the same time. If the current cursor does not match `previous_after`, it cannot be updated.
 
@@ -831,6 +864,32 @@ POST /update-cursor
 #### Response
 
 The updated Cursor object.
+
+### Delete Cursor
+
+#### Endpoint
+
+```
+POST /delete-cursor
+```
+
+#### Request
+
+```
+{
+    // Provide either id or alias
+    "id": "..."
+    "alias": "..."
+}
+```
+
+#### Response
+
+```
+{
+  "message": "ok"
+}
+```
 
 ## Core
 
