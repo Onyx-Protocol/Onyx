@@ -404,6 +404,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
   "block_height": 100,
   "position": ..., // position in block
   "reference_data": {"deal_id": "..."},
+  "is_local": <"yes"|"no">, // local if any input or output is local
   "inputs": [
     {
       "action": "issue",
@@ -414,7 +415,8 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
       "amount": 5000,
       "issuance_program": ...,
       "reference_data": {"details": "..."},
-      "asset_definition": "..."
+      "asset_definition": "...",
+      "is_local": <"yes"|"no"> // local if action is issue and asset is local
     },
     {
       "action": "spend",
@@ -430,7 +432,8 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
       "account_id": "",
       "account_alias": "...",
       "account_tags": {},
-      "reference_data": {"user": "alice"}
+      "reference_data": {"user": "alice"},
+      "is_local": <"yes"|"no"> // local if account id is not null
     }
   ],
   "outputs": [
@@ -447,7 +450,8 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
       "account_alias": "...",
       "account_tags": {},
       "control_program": "205CDF...",
-      "reference_data": {"user": "bob"}
+      "reference_data": {"user": "bob"},
+      "is_local": <"yes"|"no"> // local if action is control and account id is not null
     }
   ]
 }
