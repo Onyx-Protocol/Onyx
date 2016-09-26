@@ -38,8 +38,13 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [List Cursors](#list-cursors)
   * [Update Cursor](#update-cursor)
   * [Delete Cursor](#delete-cursor)
+* [Access Tokens](#access-tokens)
+  * [Create Access Token](#create-access-token)
+  * [List Access Tokens](#list-access-tokens)
+  * [Delete Access Token](#delete-access-token)
 * [Core](#core)
   * [Configure](#configure)
+  * [Update Configuration](#update-configuration)
   * [Info](#info)
   * [Reset](#reset)
 
@@ -891,6 +896,97 @@ POST /delete-cursor
 }
 ```
 
+## Access Tokens
+
+### Create Access Token
+
+#### Endpoint
+
+```
+POST /create-access-token
+```
+
+#### Request
+
+```
+{
+  "id": <string>,
+  "type": <"client"|"network">
+}
+```
+
+#### Response
+
+```
+{
+  "id": <string>,
+  "token": "<id>:<secret>",
+  "type": <"client"|"network">,
+  "created_at": <string, RFC3339 timestamp>
+}
+```
+
+### List Access Token
+
+#### Endpoint
+
+```
+POST /list-access-tokens
+```
+
+#### Request
+
+```
+{
+  "after": <string>, // optional
+  "page_size": <integer> // optional, defaults to 100
+}
+```
+
+#### Response
+
+```
+{
+  "items": [
+    {
+      "id": <string>,
+      "type": <"client"|"network">,
+      "created_at": <string, RFC3339 timestamp>
+    },
+    ...
+  ],
+  "next": {
+    "after": <string>,
+    "page_size": <integer>
+  },
+  "last_page": <boolean>
+}
+```
+
+### Delete Access Token
+
+#### Endpoint
+
+```
+POST /delete-access-token
+```
+
+#### Request
+
+```
+{
+  "id": <string>
+}
+```
+
+#### Response
+
+```
+{
+  "message": "ok"
+}
+```
+
 ## Core
 
 ### Configure
@@ -923,6 +1019,31 @@ POST /configure
 
 Returns 400 error if the generator URL and/or initial block hash is bad.
 
+### Update Configuration
+
+Updates the core configuration. Unlike [Configure](#configure), this may be called multiple times between [resets](#reset).
+
+#### Endpoint
+
+```
+POST /update-configuration
+```
+
+#### Request
+
+```
+{
+  "require_client_access_tokens": <boolean>, // optional
+  "require_network_access_tokens": <boolean> // optional
+}
+```
+
+#### Response
+
+```
+{"message": "ok"}
+```
+
 ### Info
 
 Returns useful information about this core, including the relative distance between the local block height and the generator's block height.
@@ -951,7 +1072,9 @@ POST /info
   "generator_block_height": ...,
   "is_production": <true | false>,
   "build_commit": ...,
-  "build_date": ...
+  "build_date": ...,
+  "require_client_access_tokens": <boolean>,
+  "requier_network_access_tokens": <boolean>
 }
 ```
 
