@@ -5,13 +5,11 @@ import com.chain.api.Account;
 import com.chain.api.Asset;
 import com.chain.api.MockHsm;
 import com.chain.api.Transaction;
-import com.chain.exception.APIException;
 import com.chain.http.Context;
 import com.chain.signing.HsmSigner;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.List;
 
 public class MultiSigTest {
   final String ALICE = "multisig-alice";
@@ -43,8 +41,12 @@ public class MultiSigTest {
 
     Transaction.Template tx =
         new Transaction.Builder()
-            .issueByAlias(ASSET, 100, null)
-            .controlWithAccountByAlias(ALICE, ASSET, 100, null)
+            .addAction(new Transaction.Action.Issue().setAssetAlias(ASSET).setAmount(100))
+            .addAction(
+                new Transaction.Action.ControlWithAccount()
+                    .setAccountAlias(ALICE)
+                    .setAssetAlias(ASSET)
+                    .setAmount(100))
             .build(context);
     Transaction.submit(context, HsmSigner.sign(tx));
   }

@@ -5,14 +5,11 @@ import com.chain.api.Account;
 import com.chain.api.Asset;
 import com.chain.api.MockHsm;
 import com.chain.api.Transaction;
-import com.chain.exception.APIException;
 import com.chain.http.Context;
 import com.chain.signing.HsmSigner;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -81,22 +78,38 @@ public class BasicTest {
 
     Transaction.Template issuance =
         new Transaction.Builder()
-            .issueByAlias(ASSET, 100, null)
-            .controlWithAccountByAlias(ALICE, ASSET, 100, null)
+            .addAction(new Transaction.Action.Issue().setAssetAlias(ASSET).setAmount(100))
+            .addAction(
+                new Transaction.Action.ControlWithAccount()
+                    .setAccountAlias(ALICE)
+                    .setAssetAlias(ASSET)
+                    .setAmount(100))
             .build(context);
     Transaction.submit(context, HsmSigner.sign(issuance));
 
     Transaction.Template spending =
         new Transaction.Builder()
-            .spendFromAccountByAlias(ALICE, ASSET, 10, null)
-            .controlWithAccountByAlias(BOB, ASSET, 10, null)
+            .addAction(
+                new Transaction.Action.SpendFromAccount()
+                    .setAccountAlias(ALICE)
+                    .setAssetAlias(ASSET)
+                    .setAmount(10))
+            .addAction(
+                new Transaction.Action.ControlWithAccount()
+                    .setAccountAlias(BOB)
+                    .setAssetAlias(ASSET)
+                    .setAmount(10))
             .build(context);
     Transaction.submit(context, HsmSigner.sign(spending));
 
     Transaction.Template retirement =
         new Transaction.Builder()
-            .spendFromAccountByAlias(BOB, ASSET, 5, null)
-            .retireByAlias(ASSET, 5, null)
+            .addAction(
+                new Transaction.Action.SpendFromAccount()
+                    .setAccountAlias(BOB)
+                    .setAssetAlias(ASSET)
+                    .setAmount(5))
+            .addAction(new Transaction.Action.Retire().setAssetAlias(ASSET).setAmount(5))
             .build(context);
     Transaction.submit(context, HsmSigner.sign(retirement));
   }

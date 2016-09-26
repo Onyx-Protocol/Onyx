@@ -6,6 +6,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+
 import java.util.*;
 
 /**
@@ -115,7 +116,6 @@ public class Transaction {
       this.query.endTime = time;
       return this;
     }
-
 
     /**
      * Sets the order of this query to ascending ("asc") to facilitate
@@ -466,7 +466,7 @@ public class Transaction {
   }
 
   /**
-   * An action that can be taken within a transaction.
+   * Base class representing actions that can be taken within a transaction.
    */
   public static class Action extends HashMap<String, Object> {
     /**
@@ -476,6 +476,370 @@ public class Transaction {
       // Several action types require client_token as an idempotency key.
       // It's safest to include a default value for this param.
       this.put("client_token", UUID.randomUUID().toString());
+    }
+
+    /**
+     * Represents an issuance action.
+     */
+    public static class Issue extends Action {
+      /**
+       * Default constructor defines the action type as "issue"
+       */
+      public Issue() {
+        this.put("type", "issue");
+      }
+
+      /**
+       * Specifies the asset to be issued using its alias
+       * @param alias alias of the asset to be issued
+       * @return updated action object
+       */
+      public Issue setAssetAlias(String alias) {
+        this.put("asset_alias", alias);
+        return this;
+      }
+
+      /**
+       * Specifies the asset to be issued using its id
+       * @param id id of the asset to be issued
+       * @return updated action object
+       */
+      public Issue setAssetId(String id) {
+        this.put("asset_id", id);
+        return this;
+      }
+
+      /**
+       * Specifies the amount of the asset to be issued
+       * @param amount number of units of the asset to be issued
+       * @return updated action object
+       */
+      public Issue setAmount(long amount) {
+        this.put("amount", amount);
+        return this;
+      }
+
+      /**
+       * Specifies the reference data to associate with the action
+       * @param referenceData reference data to embed into the action
+       * @return updated action object
+       */
+      public Issue setReferenceData(HashMap<String, Object> referenceData) {
+        this.put("reference_data", referenceData);
+        return this;
+      }
+    }
+
+    /**
+     * Represents a spend action taken on a particular unspent output.
+     */
+    public static class SpendAccountUnspentOutput extends Action {
+      /**
+       * Default constructor defines the action type as "spend_account_unspent_output"
+       */
+      public SpendAccountUnspentOutput() {
+        this.put("type", "spend_account_unspent_output");
+      }
+
+      /**
+       * Specifies the unspent output to be spent
+       * @param unspentOutput unspent output to be spent
+       * @return updated action object
+       */
+      public SpendAccountUnspentOutput setUnspentOutput(UnspentOutput unspentOutput) {
+        this.put("transaction_id", unspentOutput.transactionId);
+        this.put("position", unspentOutput.position);
+        return this;
+      }
+
+      /**
+       * Specifies a list of unspent outputs to be spent
+       * @param unspentOutputs unspent outputs to be spent
+       * @return updated action object
+       */
+      public SpendAccountUnspentOutput spendUnspentOutputs(List<UnspentOutput> unspentOutputs) {
+        for (UnspentOutput unspentOutput : unspentOutputs) {
+          this.setUnspentOutput(unspentOutput);
+        }
+        return this;
+      }
+
+      /**
+       * Specifies the reference data to associate with the action
+       * @param referenceData reference data to embed into the action
+       * @return updated action object
+       */
+      public SpendAccountUnspentOutput setReferenceData(HashMap<String, Object> referenceData) {
+        this.put("reference_data", referenceData);
+        return this;
+      }
+    }
+
+    /**
+     * Represents a spend action taken on a particular account.
+     */
+    public static class SpendFromAccount extends Action {
+      /**
+       * Default constructor defines the action type as "spend_account"
+       */
+      public SpendFromAccount() {
+        this.put("type", "spend_account");
+      }
+
+      /**
+       * Specifies the spending account using its alias.<br>
+       * <strong>Must</strong> be used with {@link SpendFromAccount#setAssetAlias(String)}
+       * @param alias alias of the spending account
+       * @return updated action object
+       */
+      public SpendFromAccount setAccountAlias(String alias) {
+        this.put("account_alias", alias);
+        return this;
+      }
+
+      /**
+       * Specifies the spending account using its id.<br>
+       * <strong>Must</strong> be used with {@link SpendFromAccount#setAssetId(String)}
+       * @param id id of the spending account
+       * @return updated action object
+       */
+      public SpendFromAccount setAccountId(String id) {
+        this.put("account_id", id);
+        return this;
+      }
+
+      /**
+       * Specifies the asset to be spent using its alias
+       * @param alias alias of the asset to be spent
+       * <strong>Must</strong> be used with {@link SpendFromAccount#setAccountAlias(String)}}
+       * @return updated action object
+       */
+      public SpendFromAccount setAssetAlias(String alias) {
+        this.put("asset_alias", alias);
+        return this;
+      }
+
+      /**
+       * Specifies the asset to be spent using its id
+       * @param id id of the asset to be spent
+       * <strong>Must</strong> be used with {@link SpendFromAccount#setAccountId(String)}
+       * @return updated action object
+       */
+      public SpendFromAccount setAssetId(String id) {
+        this.put("asset_id", id);
+        return this;
+      }
+
+      /**
+       * Specifies the amount of asset to be spent
+       * @param amount number of units of the asset to be spent
+       * @return updated action object
+       */
+      public SpendFromAccount setAmount(long amount) {
+        this.put("amount", amount);
+        return this;
+      }
+
+      /**
+       * Specifies the reference data to associate with the action
+       * @param referenceData reference data to embed into the action
+       * @return updated action object
+       */
+      public SpendFromAccount setReferenceData(HashMap<String, Object> referenceData) {
+        this.put("reference_data", referenceData);
+        return this;
+      }
+    }
+
+    /**
+     * Represents a control action taken on a particular account.
+     */
+    public static class ControlWithAccount extends Action {
+      /**
+       * Default constructor defines the action type as "control_account"
+       */
+      public ControlWithAccount() {
+        this.put("type", "control_account");
+      }
+
+      /**
+       * Specifies the controlling account using its alias.<br>
+       * <strong>Must</strong> be used with {@link ControlWithAccount#setAssetAlias(String)}
+       * @param alias alias of the controlling account
+       * @return updated action object
+       */
+      public ControlWithAccount setAccountAlias(String alias) {
+        this.put("account_alias", alias);
+        return this;
+      }
+
+      /**
+       * Specifies the controlling account using its id.<br>
+       * <strong>Must</strong> be used with {@link ControlWithAccount#setAssetId(String)}
+       * @param id id of the controlling account
+       * @return updated action object
+       */
+      public ControlWithAccount setAccountId(String id) {
+        this.put("account_id", id);
+        return this;
+      }
+
+      /**
+       * Specifies the asset to be controlled using its alias.<br>
+       * <strong>Must</strong> be used with {@link ControlWithAccount#setAccountAlias(String)}
+       * @param alias alias of the asset to be controlled
+       * @return updated action object
+       */
+      public ControlWithAccount setAssetAlias(String alias) {
+        this.put("asset_alias", alias);
+        return this;
+      }
+
+      /**
+       * Specifies the asset to be controlled using its id.<br>
+       * <strong>Must</strong> be used with {@link ControlWithAccount#setAccountId(String)}
+       * @param id id of the asset to be controlled
+       * @return updated action object
+       */
+      public ControlWithAccount setAssetId(String id) {
+        this.put("asset_id", id);
+        return this;
+      }
+
+      /**
+       * Specifies the amount of the asset to be controlled.
+       * @param amount number of units of the asset to be controlled
+       * @return updated action object
+       */
+      public ControlWithAccount setAmount(long amount) {
+        this.put("amount", amount);
+        return this;
+      }
+
+      /**
+       * Specifies the reference data to associate with the action
+       * @param referenceData reference data to embed into the action
+       * @return updated action object
+       */
+      public ControlWithAccount setReferenceData(HashMap<String, Object> referenceData) {
+        this.put("reference_data", referenceData);
+        return this;
+      }
+    }
+
+    /**
+     * Represents a control action taken on a control program.
+     */
+    public static class ControlWithProgram extends Action {
+      /**
+       * Default constructor defines the action type as "control_program"
+       */
+      public ControlWithProgram() {
+        this.put("type", "control_program");
+      }
+
+      /**
+       * Specifies the control program to be used.
+       * @param controlProgram the control program to be used
+       * @return updated action object
+       */
+      public ControlWithProgram setControlProgram(String controlProgram) {
+        this.put("control_program", controlProgram);
+        return this;
+      }
+
+      /**
+       * Specifies the asset to be controlled using its alias
+       * @param alias alias of the asset to be controlled
+       * @return updated action object
+       */
+      public ControlWithProgram setAssetAlias(String alias) {
+        this.put("asset_alias", alias);
+        return this;
+      }
+
+      /**
+       * Specifies the asset to be controlled using its id
+       * @param id id of the asset to be controlled
+       * @return updated action object
+       */
+      public ControlWithProgram setAssetId(String id) {
+        this.put("asset_id", id);
+        return this;
+      }
+
+      /**
+       * Specifies the amount of the asset to be controlled.
+       * @param amount number of units of the asset to be controlled
+       * @return updated action object
+       */
+      public ControlWithProgram setAmount(long amount) {
+        this.put("amount", amount);
+        return this;
+      }
+
+      /**
+       * Specifies the reference data to associate with the action
+       * @param referenceData reference data to embed into the action
+       * @return updated action object
+       */
+      public ControlWithProgram setReferenceData(HashMap<String, Object> referenceData) {
+        this.put("reference_data", referenceData);
+        return this;
+      }
+    }
+
+    /**
+     * Represents a retire action.
+     */
+    public static class Retire extends Action {
+      /**
+       * Default constructor defines the action type as "control_program"
+       */
+      public Retire() {
+        this.put("type", "control_program");
+        this.put("control_program", ControlProgram.retireProgram());
+      }
+
+      /**
+       * Specifies the amount of the asset to be retired.
+       * @param amount number of units of the asset to be retired
+       * @return updated action object
+       */
+      public Retire setAmount(long amount) {
+        this.put("amount", amount);
+        return this;
+      }
+
+      /**
+       * Specifies the asset to be retired using its alias
+       * @param alias alias of the asset to be retired
+       * @return updated action object
+       */
+      public Retire setAssetAlias(String alias) {
+        this.put("asset_alias", alias);
+        return this;
+      }
+
+      /**
+       * Specifies the asset to be retired using its id
+       * @param id id of the asset to be retired
+       * @return updated action object
+       */
+      public Retire setAssetId(String id) {
+        this.put("asset_id", id);
+        return this;
+      }
+
+      /**
+       * Specifies the reference data to associate with the action
+       * @param referenceData reference data to embed into the action
+       * @return updated action object
+       */
+      public Retire setReferenceData(HashMap<String, Object> referenceData) {
+        this.put("reference_data", referenceData);
+        return this;
+      }
     }
 
     /**
@@ -587,239 +951,6 @@ public class Transaction {
     public Builder setTtl(long ms) {
       this.ttl = ms;
       return this;
-    }
-
-    /**
-     * Adds an issuance action to a transaction, using an id to specify the asset.
-     * @param assetId id of the asset being issued
-     * @param amount number of units of the asset to issue
-     * @param referenceData reference data to embed into the action (possibly null)
-     * @return updated builder object
-     */
-    public Builder issueById(String assetId, long amount, Map<String, Object> referenceData) {
-      Action action =
-          new Action()
-              .setParameter("type", "issue")
-              .setParameter("asset_id", assetId)
-              .setParameter("amount", amount)
-              .setParameter("reference_data", referenceData);
-
-      return this.addAction(action);
-    }
-
-    /**
-     * Adds an issuance action to a transaction, using an alias to specify the asset.
-     * @param assetAlias alias of the asset being issued
-     * @param amount number of units of the asset to issue
-     * @param referenceData reference data to embed into the action (possibly null)
-     * @return updated builder object
-     */
-    public Builder issueByAlias(String assetAlias, long amount, Map<String, Object> referenceData) {
-      Action action =
-          new Action()
-              .setParameter("type", "issue")
-              .setParameter("asset_alias", assetAlias)
-              .setParameter("amount", amount)
-              .setParameter("reference_data", referenceData);
-
-      return this.addAction(action);
-    }
-
-    /**
-     * Adds a control (by account) action to a transaction, using an id to specify the asset and account.
-     * @param accountId id of the account controlling the asset
-     * @param assetId id of the asset being controlled
-     * @param amount number of units of the asset being controlled
-     * @param referenceData reference data to embed into the action (possibly null)
-     * @return updated builder object
-     */
-    public Builder controlWithAccountById(
-        String accountId, String assetId, long amount, Map<String, Object> referenceData) {
-      Action action =
-          new Action()
-              .setParameter("type", "control_account")
-              .setParameter("account_id", accountId)
-              .setParameter("asset_id", assetId)
-              .setParameter("amount", amount)
-              .setParameter("reference_data", referenceData);
-
-      return this.addAction(action);
-    }
-
-    /**
-     * Adds a control (by account) action to a transaction, using an alias to specify the asset and account.
-     * @param accountAlias alias of the account controlling the asset
-     * @param assetAlias alias of the asset being controlled
-     * @param amount number of units of the asset being controlled
-     * @param referenceData reference data to embed into the action (possibly null)
-     * @return updated builder object
-     */
-    public Builder controlWithAccountByAlias(
-        String accountAlias, String assetAlias, long amount, Map<String, Object> referenceData) {
-      Action action =
-          new Action()
-              .setParameter("type", "control_account")
-              .setParameter("account_alias", accountAlias)
-              .setParameter("asset_alias", assetAlias)
-              .setParameter("amount", amount)
-              .setParameter("reference_data", referenceData);
-
-      return this.addAction(action);
-    }
-
-    /**
-     * Adds a control (by control program) action to a transaction, using an id to specify the asset.
-     * @param program control program which will control the asset
-     * @param assetId id of the asset being controlled
-     * @param amount number of units of the asset being controlled
-     * @param referenceData reference data to embed into the action (possibly null)
-     * @return updated builder object
-     */
-    public Builder controlWithProgramById(
-        ControlProgram program, String assetId, long amount, Map<String, Object> referenceData) {
-      Action action =
-          new Action()
-              .setParameter("type", "control_program")
-              .setParameter("control_program", program.program)
-              .setParameter("asset_id", assetId)
-              .setParameter("amount", amount)
-              .setParameter("reference_data", referenceData);
-
-      return this.addAction(action);
-    }
-
-    /**
-     * Adds a control (by control program) action to a transaction, using an alias to specify the asset.
-     * @param program control program which will control the asset
-     * @param assetAlias alias of the asset being controlled
-     * @param amount number of units of the asset being controlled
-     * @param referenceData reference data to embed into the action (possibly null)
-     * @return updated builder object
-     */
-    public Builder controlWithProgramByAlias(
-        ControlProgram program, String assetAlias, long amount, Map<String, Object> referenceData) {
-      Action action =
-          new Action()
-              .setParameter("type", "control_program")
-              .setParameter("control_program", program.program)
-              .setParameter("asset_alias", assetAlias)
-              .setParameter("amount", amount)
-              .setParameter("reference_data", referenceData);
-
-      return this.addAction(action);
-    }
-
-    /**
-     * Adds a spend (by account) action to a transaction, using an id to specify the account and asset.
-     * @param accountId id of the account spending the asset
-     * @param assetId id of the asset being spent
-     * @param amount number of units of the asset being spent
-     * @param referenceData reference data to embed into the action (possibly null)
-     * @return updated builder object
-     */
-    public Builder spendFromAccountById(
-        String accountId, String assetId, long amount, Map<String, Object> referenceData) {
-      Action action =
-          new Action()
-              .setParameter("type", "spend_account")
-              .setParameter("account_id", accountId)
-              .setParameter("asset_id", assetId)
-              .setParameter("amount", amount)
-              .setParameter("reference_data", referenceData);
-
-      return this.addAction(action);
-    }
-
-    /**
-     * Adds a spend (by account) action to a transaction, using an alias to specify the account and asset.
-     * @param accountAlias alias of the account spending the asset
-     * @param assetAlias alias of the asset being spent
-     * @param amount number of units of the asset being spent
-     * @param referenceData reference data to embed into the action (possibly null)
-     * @return updated builder object
-     */
-    public Builder spendFromAccountByAlias(
-        String accountAlias, String assetAlias, long amount, Map<String, Object> referenceData) {
-      Action action =
-          new Action()
-              .setParameter("type", "spend_account")
-              .setParameter("account_alias", accountAlias)
-              .setParameter("asset_alias", assetAlias)
-              .setParameter("amount", amount)
-              .setParameter("reference_data", referenceData);
-
-      return this.addAction(action);
-    }
-
-    /**
-     * Adds a spend (by unspent output) action to a transaction.
-     * @param unspentOutput unspent output to spend
-     * @param referenceData reference data to embed into action (possibly null)
-     * @return updated builder object
-     */
-    public Builder spendUnspentOutput(
-        UnspentOutput unspentOutput, Map<String, Object> referenceData) {
-      Action action =
-          new Action()
-              .setParameter("type", "spend_account_unspent_output")
-              .setParameter("transaction_id", unspentOutput.transactionId)
-              .setParameter("position", unspentOutput.position)
-              .setParameter("reference_data", referenceData);
-
-      return this.addAction(action);
-    }
-
-    /**
-     * Adds a list of spend (by unspent output) actions to a transaction.
-     * @param uos list of unspent outputs to spend
-     * @param referenceData reference data to embed into each action (possibly null)
-     * @return updated builder object
-     */
-    public Builder spendUnspentOutputs(List<UnspentOutput> uos, Map<String, Object> referenceData) {
-      for (UnspentOutput uo : uos) {
-        this.spendUnspentOutput(uo, referenceData);
-      }
-
-      return this;
-    }
-
-    /**
-     * Adds a retire action to a transaction, using an id to specify the asset.
-     * @param assetId id of the asset to retire
-     * @param amount number of units of the asset to retire
-     * @param referenceData reference data to embed into the action (possibly null)
-     * @return updated builder object
-     */
-    public Builder retireById(String assetId, long amount, Map<String, Object> referenceData) {
-      Action action =
-          new Action()
-              .setParameter("type", "control_program")
-              .setParameter("control_program", ControlProgram.retireProgram())
-              .setParameter("asset_id", assetId)
-              .setParameter("amount", amount)
-              .setParameter("reference_data", referenceData);
-
-      return this.addAction(action);
-    }
-
-    /**
-     * Adds a retire action to a transaction, using an alias to specify the asset.
-     * @param assetAlias id of the asset to retire
-     * @param amount number of units of the asset to retire
-     * @param referenceData reference data to embed into the action (possibly null)
-     * @return updated builder object
-     */
-    public Builder retireByAlias(
-        String assetAlias, long amount, Map<String, Object> referenceData) {
-      Action action =
-          new Action()
-              .setParameter("type", "control_program")
-              .setParameter("control_program", ControlProgram.retireProgram())
-              .setParameter("asset_alias", assetAlias)
-              .setParameter("amount", amount)
-              .setParameter("reference_data", referenceData);
-
-      return this.addAction(action);
     }
   }
 }
