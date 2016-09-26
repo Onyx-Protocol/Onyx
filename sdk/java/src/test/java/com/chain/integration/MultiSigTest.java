@@ -10,7 +10,6 @@ import com.chain.http.Context;
 import com.chain.signing.HsmSigner;
 import org.junit.Test;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -44,8 +43,8 @@ public class MultiSigTest {
 
     Transaction.Template tx =
         new Transaction.Builder()
-            .issueByAlias(ASSET, BigInteger.valueOf(100), null)
-            .controlWithAccountByAlias(ALICE, ASSET, BigInteger.valueOf(100), null)
+            .issueByAlias(ASSET, 100, null)
+            .controlWithAccountByAlias(ALICE, ASSET, 100, null)
             .build(context);
     Transaction.submit(context, HsmSigner.sign(tx));
   }

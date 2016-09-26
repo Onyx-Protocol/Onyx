@@ -10,7 +10,6 @@ import com.chain.http.Context;
 import com.chain.signing.HsmSigner;
 import org.junit.Test;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -82,22 +81,28 @@ public class BasicTest {
 
     Transaction.Template issuance =
         new Transaction.Builder()
-            .issueByAlias(ASSET, BigInteger.valueOf(100), null)
-            .controlWithAccountByAlias(ALICE, ASSET, BigInteger.valueOf(100), null)
+            .issueByAlias(ASSET, 100, null)
+            .controlWithAccountByAlias(ALICE, ASSET, 100, null)
             .build(context);
-    Transaction.submit(context, HsmSigner.sign(issuance));
+    List<Transaction.SubmitResponse> responses =
+        Transaction.submit(context, HsmSigner.sign(Arrays.asList(issuance)));
+    for (Transaction.SubmitResponse resp : responses) {
+      if (resp.id == null) {
+        throw new APIException(resp.code, resp.message, resp.detail, null);
+      }
+    }
 
     Transaction.Template spending =
         new Transaction.Builder()
-            .spendFromAccountByAlias(ALICE, ASSET, BigInteger.valueOf(10), null)
-            .controlWithAccountByAlias(BOB, ASSET, BigInteger.valueOf(10), null)
+            .spendFromAccountByAlias(ALICE, ASSET, 10, null)
+            .controlWithAccountByAlias(BOB, ASSET, 10, null)
             .build(context);
     Transaction.submit(context, HsmSigner.sign(spending));
 
     Transaction.Template retirement =
         new Transaction.Builder()
-            .spendFromAccountByAlias(BOB, ASSET, BigInteger.valueOf(5), null)
-            .retireByAlias(ASSET, BigInteger.valueOf(5), null)
+            .spendFromAccountByAlias(BOB, ASSET, 5, null)
+            .retireByAlias(ASSET, 5, null)
             .build(context);
     Transaction.submit(context, HsmSigner.sign(retirement));
   }

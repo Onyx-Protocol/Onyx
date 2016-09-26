@@ -6,8 +6,6 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
-import java.math.BigInteger;
-import java.time.OffsetDateTime;
 import java.util.*;
 
 /**
@@ -153,7 +151,7 @@ public class Transaction {
     /**
      * The number of units of the asset being issued or spent.
      */
-    public BigInteger amount;
+    public long amount;
 
     /**
      * The id of the asset being issued or spent.
@@ -218,7 +216,7 @@ public class Transaction {
     /**
      * The number of units of the asset being controlled.
      */
-    public BigInteger amount;
+    public long amount;
 
     /**
      * The id of the asset being controlled.
@@ -317,7 +315,7 @@ public class Transaction {
       /**
        * The number of units of the asset being issued or spent.
        */
-      public BigInteger amount;
+      public long amount;
 
       /**
        * The input's position in a transaction's list of inputs.
@@ -598,7 +596,7 @@ public class Transaction {
      * @param referenceData reference data to embed into the action (possibly null)
      * @return updated builder object
      */
-    public Builder issueById(String assetId, BigInteger amount, Map<String, Object> referenceData) {
+    public Builder issueById(String assetId, long amount, Map<String, Object> referenceData) {
       Action action =
           new Action()
               .setParameter("type", "issue")
@@ -616,8 +614,7 @@ public class Transaction {
      * @param referenceData reference data to embed into the action (possibly null)
      * @return updated builder object
      */
-    public Builder issueByAlias(
-        String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
+    public Builder issueByAlias(String assetAlias, long amount, Map<String, Object> referenceData) {
       Action action =
           new Action()
               .setParameter("type", "issue")
@@ -637,7 +634,7 @@ public class Transaction {
      * @return updated builder object
      */
     public Builder controlWithAccountById(
-        String accountId, String assetId, BigInteger amount, Map<String, Object> referenceData) {
+        String accountId, String assetId, long amount, Map<String, Object> referenceData) {
       Action action =
           new Action()
               .setParameter("type", "control_account")
@@ -658,10 +655,7 @@ public class Transaction {
      * @return updated builder object
      */
     public Builder controlWithAccountByAlias(
-        String accountAlias,
-        String assetAlias,
-        BigInteger amount,
-        Map<String, Object> referenceData) {
+        String accountAlias, String assetAlias, long amount, Map<String, Object> referenceData) {
       Action action =
           new Action()
               .setParameter("type", "control_account")
@@ -682,10 +676,7 @@ public class Transaction {
      * @return updated builder object
      */
     public Builder controlWithProgramById(
-        ControlProgram program,
-        String assetId,
-        BigInteger amount,
-        Map<String, Object> referenceData) {
+        ControlProgram program, String assetId, long amount, Map<String, Object> referenceData) {
       Action action =
           new Action()
               .setParameter("type", "control_program")
@@ -706,10 +697,7 @@ public class Transaction {
      * @return updated builder object
      */
     public Builder controlWithProgramByAlias(
-        ControlProgram program,
-        String assetAlias,
-        BigInteger amount,
-        Map<String, Object> referenceData) {
+        ControlProgram program, String assetAlias, long amount, Map<String, Object> referenceData) {
       Action action =
           new Action()
               .setParameter("type", "control_program")
@@ -730,7 +718,7 @@ public class Transaction {
      * @return updated builder object
      */
     public Builder spendFromAccountById(
-        String accountId, String assetId, BigInteger amount, Map<String, Object> referenceData) {
+        String accountId, String assetId, long amount, Map<String, Object> referenceData) {
       Action action =
           new Action()
               .setParameter("type", "spend_account")
@@ -751,10 +739,7 @@ public class Transaction {
      * @return updated builder object
      */
     public Builder spendFromAccountByAlias(
-        String accountAlias,
-        String assetAlias,
-        BigInteger amount,
-        Map<String, Object> referenceData) {
+        String accountAlias, String assetAlias, long amount, Map<String, Object> referenceData) {
       Action action =
           new Action()
               .setParameter("type", "spend_account")
@@ -805,8 +790,7 @@ public class Transaction {
      * @param referenceData reference data to embed into the action (possibly null)
      * @return updated builder object
      */
-    public Builder retireById(
-        String assetId, BigInteger amount, Map<String, Object> referenceData) {
+    public Builder retireById(String assetId, long amount, Map<String, Object> referenceData) {
       Action action =
           new Action()
               .setParameter("type", "control_program")
@@ -826,7 +810,7 @@ public class Transaction {
      * @return updated builder object
      */
     public Builder retireByAlias(
-        String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
+        String assetAlias, long amount, Map<String, Object> referenceData) {
       Action action =
           new Action()
               .setParameter("type", "control_program")

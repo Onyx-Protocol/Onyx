@@ -4,7 +4,6 @@ import com.chain.exception.ChainException;
 import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
 
-import java.math.BigInteger;
 import java.util.Map;
 
 public class UnspentOutput {
@@ -22,7 +21,7 @@ public class UnspentOutput {
   @SerializedName("asset_tags")
   public Map<String, Object> assetTags;
 
-  public BigInteger amount;
+  public long amount;
 
   @SerializedName("account_id")
   public String accountId;

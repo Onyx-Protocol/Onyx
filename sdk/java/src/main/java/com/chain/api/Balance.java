@@ -4,7 +4,6 @@ import com.chain.exception.ChainException;
 import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +12,7 @@ public class Balance {
   @SerializedName("sum_by")
   public Map<String, String> sumBy;
 
-  public BigInteger amount;
+  public long amount;
 
   public static class Items extends PagedItems<Balance> {
     public Items getPage() throws ChainException {
