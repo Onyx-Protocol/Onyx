@@ -2,6 +2,7 @@ package txdb
 
 import (
 	"context"
+	"math/rand"
 	"reflect"
 	"testing"
 
@@ -105,5 +106,59 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 			t.Fatalf("%d: Wrote %#v issuances to db, read %#v from db\n", i, snapshot.Issuances, loadedSnapshot.Issuances)
 		}
 		snapshot = loadedSnapshot
+	}
+}
+
+func BenchmarkStoreSnapshot100(b *testing.B) {
+	benchmarkStoreSnapshot(100, 100, b)
+}
+
+func BenchmarkStoreSnapshot1000(b *testing.B) {
+	benchmarkStoreSnapshot(1000, 1000, b)
+}
+
+func BenchmarkStoreSnapshot10000(b *testing.B) {
+	benchmarkStoreSnapshot(10000, 10000, b)
+}
+
+func benchmarkStoreSnapshot(nodes, issuances int, b *testing.B) {
+	b.StopTimer()
+
+	// Generate a snapshot with a large number of existing patricia
+	// tree nodes and issuances.
+	r := rand.New(rand.NewSource(12345))
+	db := pgtest.NewTx(b)
+	ctx := context.Background()
+
+	snapshot := state.Empty()
+	for i := 0; i < nodes; i++ {
+		var h [32]byte
+		_, err := r.Read(h[:])
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		err = snapshot.Tree.Insert(h[:], h)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	for i := 0; i < issuances; i++ {
+		var h bc.Hash
+		_, err := r.Read(h[:])
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		snapshot.Issuances[h] = uint64(r.Int63())
+	}
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		err := storeStateSnapshot(ctx, db, snapshot, uint64(i))
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
