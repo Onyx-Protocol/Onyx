@@ -26,4 +26,4 @@ $ mvn -Dchain.api.url=http://localhost:8081 integration-test
 ```
 
 ## Write an integration test
-Tests can be found in `src/test/java/com/chain/integration`. Suffix the class name with `Test` and add a `test()` method with the @Test annotation.
+Tests can be found in `src/test/java/com/chain/integration`. Suffix the class name with `Test` and add a `run()` method with the @Test annotation.
