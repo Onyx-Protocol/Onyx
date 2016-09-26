@@ -35,7 +35,7 @@ func (a *api) createCursor(ctx context.Context, in struct {
 }) (*Cursor, error) {
 	defer metrics.RecordElapsed(time.Now())
 
-	after := fmt.Sprintf("%x:%x-%x", a.c.Height(), math.MaxUint32, uint64(math.MaxUint64))
+	after := fmt.Sprintf("%x:%x-%x", a.c.Height(), math.MaxInt32, uint64(math.MaxInt64))
 	cur := &Cursor{
 		Alias:  in.Alias,
 		Filter: in.Filter,
