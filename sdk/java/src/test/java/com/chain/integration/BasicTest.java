@@ -84,13 +84,7 @@ public class BasicTest {
             .issueByAlias(ASSET, 100, null)
             .controlWithAccountByAlias(ALICE, ASSET, 100, null)
             .build(context);
-    List<Transaction.SubmitResponse> responses =
-        Transaction.submit(context, HsmSigner.sign(Arrays.asList(issuance)));
-    for (Transaction.SubmitResponse resp : responses) {
-      if (resp.id == null) {
-        throw new APIException(resp.code, resp.message, resp.detail, null);
-      }
-    }
+    Transaction.submit(context, HsmSigner.sign(issuance));
 
     Transaction.Template spending =
         new Transaction.Builder()
