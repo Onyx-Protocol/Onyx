@@ -102,7 +102,9 @@ func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
 	if leader.IsLeading() {
 		return a.leaderInfo(ctx)
 	} else {
-		return a.fetchInfoFromLeader(ctx)
+		var resp map[string]interface{}
+		err := callLeader(ctx, "/info", nil, &resp)
+		return resp, err
 	}
 }
 
@@ -143,22 +145,6 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"build_commit":                      &buildCommit,
 		"build_date":                        &buildDate,
 	}, nil
-}
-
-func (a *api) fetchInfoFromLeader(ctx context.Context) (map[string]interface{}, error) {
-	addr, err := leader.Address(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	l := &rpc.Client{
-		BaseURL: "https://" + addr,
-		// TODO(tessr): Auth.
-	}
-
-	var resp map[string]interface{}
-	err = l.Call(ctx, "/info", nil, &resp)
-	return resp, err
 }
 
 // Configure configures the core by writing to the database.

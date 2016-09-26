@@ -225,7 +225,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, p
 
 	hsm := mockhsm.New(db)
 	var generatorSigners []generator.BlockSigner
-	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
+	var signBlockHandler core.BlockSignerFunc
 	if config.IsSigner {
 		var blockXPub *hd25519.XPub
 		blockXPub, err = hd25519.XPubFromString(config.BlockXPub)

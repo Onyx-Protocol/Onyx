@@ -3,14 +3,16 @@ package core
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"time"
 
 	"chain/core/generator"
+	"chain/core/leader"
 	"chain/core/mockhsm"
 	"chain/core/query"
+	"chain/errors"
 	"chain/net/http/httpjson"
+	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
 )
@@ -21,11 +23,15 @@ const (
 
 var errNotFound = errors.New("not found")
 
+// BlockSignerFunc is the type used for providing a function
+// to the core for handling sign block requests.
+type BlockSignerFunc func(context.Context, *bc.Block) ([]byte, error)
+
 // Handler returns a handler that serves the Chain HTTP API.
 func Handler(
 	apiSecret, rpcSecret string,
 	c *protocol.Chain,
-	signer func(context.Context, *bc.Block) ([]byte, error),
+	signer BlockSignerFunc,
 	hsm *mockhsm.HSM,
 	indexer *query.Indexer,
 	config *Config,
@@ -140,7 +146,7 @@ func (a *api) handler() http.Handler {
 	return m
 }
 
-func rpcAuthedHandler(c *protocol.Chain, signer func(context.Context, *bc.Block) ([]byte, error)) http.Handler {
+func rpcAuthedHandler(c *protocol.Chain, signer BlockSignerFunc) http.Handler {
 	m := http.NewServeMux()
 
 	m.Handle("/rpc/submit", jsonHandler(c.AddTx))
@@ -155,8 +161,33 @@ func rpcAuthedHandler(c *protocol.Chain, signer func(context.Context, *bc.Block)
 	}))
 
 	if signer != nil {
-		m.Handle("/rpc/signer/sign-block", jsonHandler(signer))
+		m.Handle("/rpc/signer/sign-block", jsonHandler(leaderSignHandler(signer)))
 	}
 
 	return m
+}
+
+func leaderSignHandler(f BlockSignerFunc) BlockSignerFunc {
+	return func(ctx context.Context, b *bc.Block) ([]byte, error) {
+		if leader.IsLeading() {
+			return f(ctx, b)
+		}
+		var resp []byte
+		err := callLeader(ctx, "/rpc/signer/sign-block", b, &resp)
+		return resp, err
+	}
+}
+
+func callLeader(ctx context.Context, path string, body interface{}, resp interface{}) error {
+	addr, err := leader.Address(ctx)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	l := &rpc.Client{
+		BaseURL: "https://" + addr,
+		// TODO(tessr): Auth.
+	}
+
+	return l.Call(ctx, path, body, &resp)
 }
