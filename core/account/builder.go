@@ -2,7 +2,6 @@ package account
 
 import (
 	"context"
-	"math/rand"
 	"time"
 
 	"chain/core/account/utxodb"
@@ -81,34 +80,14 @@ func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) (
 		tplInsts = append(tplInsts, sigInst)
 	}
 	if len(change) > 0 {
-		changeAmounts := breakupChange(change[0].Amount)
-
-		// TODO(bobg): As pointed out by @kr, each time through this loop
-		// involves a db write.
-		// May be preferable performancewise to allocate all the
-		// destinations in one call.
-		for _, changeAmount := range changeAmounts {
-			acp, err := CreateControlProgram(ctx, a.AccountID, true)
-			if err != nil {
-				return nil, nil, nil, errors.Wrap(err, "creating control program")
-			}
-			changeOuts = append(changeOuts, bc.NewTxOutput(a.AssetID, changeAmount, acp, nil))
+		acp, err := CreateControlProgram(ctx, a.AccountID, true)
+		if err != nil {
+			return nil, nil, nil, errors.Wrap(err, "creating control program")
 		}
+		changeOuts = append(changeOuts, bc.NewTxOutput(a.AssetID, change[0].Amount, acp, nil))
 	}
 
 	return txins, changeOuts, tplInsts, nil
-}
-
-func breakupChange(total uint64) (amounts []uint64) {
-	for total > 1 && rand.Intn(2) == 0 {
-		thisChange := 1 + uint64(rand.Int63n(int64(total)))
-		amounts = append(amounts, thisChange)
-		total -= thisChange
-	}
-	if total > 0 {
-		amounts = append(amounts, total)
-	}
-	return amounts
 }
 
 type SpendUTXOAction struct {
