@@ -117,6 +117,27 @@ public class Transaction {
       this.query.endTime = time;
       return this;
     }
+
+
+    /**
+     * Sets the order of this query to ascending ("asc") to facilitate
+     * notifications.
+     * @return updated QueryBuilder object
+     */
+    public QueryBuilder setAscending() {
+      this.query.order = "asc";
+      return this;
+    }
+
+    /**
+     * Sets a timeout on this query.
+     * @param timeout timeout in milliseconds
+
+     */
+    public QueryBuilder setTimeout(long timeoutMS) {
+      this.query.timeout = timeoutMS;
+      return this;
+    }
   }
 
   /**

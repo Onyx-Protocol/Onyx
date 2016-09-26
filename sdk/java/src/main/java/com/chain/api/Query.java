@@ -17,6 +17,10 @@ public class Query {
   @SerializedName("filter_params")
   public List<String> filterParams;
 
+  public String order;
+
+  public long timeout;
+
   public String after;
 
   @SerializedName("start_time")
