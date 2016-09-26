@@ -93,3 +93,25 @@ func TestKeyWithEmptyAlias(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkSign(b *testing.B) {
+	b.StopTimer()
+
+	_, db := pgtest.NewDB(b, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+	hsm := New(db)
+	xpub, err := hsm.CreateKey(ctx, "")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	msg := []byte("In the face of ignorance and resistance I wrote financial systems into existence")
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := hsm.Sign(ctx, xpub.XPub, nil, msg)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}

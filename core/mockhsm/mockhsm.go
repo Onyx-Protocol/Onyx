@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"strconv"
+	"sync"
 
 	"golang.org/x/crypto/sha3"
 
@@ -20,6 +21,9 @@ var (
 
 type HSM struct {
 	db pg.DB
+
+	cacheMu sync.Mutex
+	cache   map[[64]byte]*hd25519.XPrv
 }
 
 type XPub struct {
@@ -28,7 +32,7 @@ type XPub struct {
 }
 
 func New(db pg.DB) *HSM {
-	return &HSM{db}
+	return &HSM{db: db, cache: make(map[[64]byte]*hd25519.XPrv)}
 }
 
 // CreateKey produces a new random xprv and stores it in the db.
@@ -120,6 +124,13 @@ func (h *HSM) ListKeys(ctx context.Context, after string, limit int) ([]*XPub, s
 var ErrNoKey = errors.New("key not found")
 
 func (h *HSM) load(ctx context.Context, xpub *hd25519.XPub) (*hd25519.XPrv, error) {
+	h.cacheMu.Lock()
+	defer h.cacheMu.Unlock()
+
+	if xpriv, ok := h.cache[xpub.Data()]; ok {
+		return xpriv, nil
+	}
+
 	var b []byte
 	err := h.db.QueryRow(ctx, "SELECT xprv FROM mockhsm WHERE xpub = $1", xpub.Bytes()).Scan(&b)
 	if err == sql.ErrNoRows {
@@ -128,7 +139,12 @@ func (h *HSM) load(ctx context.Context, xpub *hd25519.XPub) (*hd25519.XPrv, erro
 	if err != nil {
 		return nil, err
 	}
-	return hd25519.XPrvFromBytes(b)
+	xpriv, err := hd25519.XPrvFromBytes(b)
+	if err != nil {
+		return nil, err
+	}
+	h.cache[xpub.Data()] = xpriv
+	return xpriv, nil
 }
 
 // Sign looks up the xprv given the xpub, optionally derives a new
@@ -146,6 +162,9 @@ func (h *HSM) Sign(ctx context.Context, xpub *hd25519.XPub, path []uint32, msg [
 }
 
 func (h *HSM) DelKey(ctx context.Context, xpub *hd25519.XPub) error {
+	h.cacheMu.Lock()
+	delete(h.cache, xpub.Data())
+	h.cacheMu.Unlock()
 	_, err := h.db.Exec(ctx, "DELETE FROM mockhsm WHERE xpub = $1", xpub.Bytes())
 	return err
 }
