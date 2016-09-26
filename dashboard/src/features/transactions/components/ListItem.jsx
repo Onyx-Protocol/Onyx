@@ -1,6 +1,7 @@
 import React from 'react'
+import { Link } from 'react-router'
 
-class Item extends React.Component {
+class ListItem extends React.Component {
   render() {
     const item = this.props.item
 
@@ -10,13 +11,13 @@ class Item extends React.Component {
           <strong>Transaction - {item.id}</strong>
         </div>
         <div className='panel-body'>
-          <pre>
-            {JSON.stringify(item, null, '  ')}
-          </pre>
+          <Link to={`/transactions/${item.id}`}>
+            View Transaction →
+          </Link>
         </div>
       </div>
     )
   }
 }
 
-export default Item
+export default ListItem

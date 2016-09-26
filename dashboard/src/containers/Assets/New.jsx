@@ -1,5 +1,5 @@
 import { mapStateToProps, mapDispatchToProps, connect } from '../Base/New'
-import Form from '../../components/Asset/Form'
+import Form from '../../features/assets/components/Form'
 
 const type = 'asset'
 

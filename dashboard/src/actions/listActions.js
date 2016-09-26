@@ -75,11 +75,12 @@ export default function(type, options = {}) {
 
       return promise.then(
         (param) => dispatch(appendPage(param))
-      ).catch(() => {
-        // TODO: log error
+      ).catch(( /* err */ ) => {
+        // TODO: track error
 
         if (options.defaultKey && filter.indexOf('\'') < 0 && filter.indexOf('=') < 0) {
           dispatch(updateQuery(`${options.defaultKey}='${filter}'`))
+          dispatch(fetchQueryPage())
         }
       })
     }

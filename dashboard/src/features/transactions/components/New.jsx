@@ -1,6 +1,6 @@
 import React from 'react'
-import PageHeader from '../PageHeader/PageHeader'
-import { JsonField, ErrorBanner } from '../Common'
+import PageHeader from '../../../components/PageHeader/PageHeader'
+import { JsonField, ErrorBanner } from '../../../components/Common'
 import ActionItem from './FormActionItem'
 import { reduxForm } from 'redux-form'
 

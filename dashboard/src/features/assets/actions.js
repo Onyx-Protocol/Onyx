@@ -1,5 +1,5 @@
-import generateListActions from './listActions'
-import generateFormActions from './formActions'
+import generateListActions from '../../actions/listActions'
+import generateFormActions from '../../actions/formActions'
 
 const type = 'asset'
 

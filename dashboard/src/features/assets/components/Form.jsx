@@ -1,11 +1,11 @@
 import React from 'react'
-import PageHeader from '../PageHeader/PageHeader'
+import PageHeader from '../../../components/PageHeader/PageHeader'
 import {
   TextField,
   JsonField,
   KeyConfiguration,
   ErrorBanner
-} from '../Common'
+} from '../../../components/Common'
 import { reduxForm } from 'redux-form'
 
 class Form extends React.Component {
@@ -24,7 +24,7 @@ class Form extends React.Component {
 
   render() {
     const {
-      fields: { alias, tags, root_xpubs, quorum },
+      fields: { alias, tags, definition, root_xpubs, quorum },
       error,
       handleSubmit,
       submitting
@@ -32,15 +32,16 @@ class Form extends React.Component {
 
     return(
       <div className='form-container'>
-        <PageHeader title='New Account' />
+        <PageHeader title='New Asset' />
 
         <form onSubmit={handleSubmit(this.submitWithErrors)}>
           <TextField title='Alias' placeholder='Alias' fieldProps={alias} />
           <JsonField title='Tags' fieldProps={tags} />
+          <JsonField title='Definition' fieldProps={definition} />
           <KeyConfiguration xpubs={root_xpubs} quorum={quorum} mockhsmKeys={this.props.mockhsmKeys}/>
 
           {error && <ErrorBanner
-            title='There was a problem creating your account:'
+            title='There was a problem creating your asset:'
             message={error}/>}
 
           <button type='submit' className='btn btn-primary' disabled={submitting}>
@@ -55,18 +56,22 @@ class Form extends React.Component {
 const validate = values => {
   const errors = {}
 
-  const tagError = JsonField.validator(values.tags)
-  if (tagError) { errors.tags = tagError }
+  const jsonFields = ['tags', 'definition']
+  jsonFields.forEach(key => {
+    const fieldError = JsonField.validator(values[key])
+    if (fieldError) { errors[key] = fieldError }
+  })
 
   return errors
 }
 
-const fields = [ 'alias', 'tags', 'root_xpubs[]', 'quorum' ]
+const fields = [ 'alias', 'tags', 'definition', 'root_xpubs[]', 'quorum' ]
 export default reduxForm({
-  form: 'newAccountForm',
+  form: 'newAssetForm',
   fields,
   validate,
   initialValues: {
     tags: '{\n\t\n}',
+    definition: '{\n\t\n}',
   }
 })(Form)

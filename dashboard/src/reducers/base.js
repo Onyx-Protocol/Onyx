@@ -4,7 +4,8 @@ import moment from 'moment'
 const defaultIdFunc = (item) => item.id
 
 export const itemsReducer = (type, idFunc = defaultIdFunc) => (state = {}, action) => {
-  if (action.type == `RECEIVED_${type.toUpperCase()}_ITEMS`) {
+  if ([`APPEND_${type.toUpperCase()}_PAGE`,
+       `RECEIVED_${type.toUpperCase()}_ITEMS`].includes(action.type)) {
     const newObjects = {}
     action.param.items.forEach(item => {
       if (!item.id) { item.id = idFunc(item) }

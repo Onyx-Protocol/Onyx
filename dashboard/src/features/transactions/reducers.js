@@ -1,7 +1,7 @@
 import {
   itemsReducer,
   listViewReducer
-} from './base'
+} from '../../reducers/base'
 import { combineReducers } from 'redux'
 
 const type = 'transaction'

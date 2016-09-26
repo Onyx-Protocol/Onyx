@@ -7,7 +7,7 @@ import {
   JsonField,
   ObjectSelectorField,
   Autocomplete
-} from '../Common'
+} from '../../../components/Common'
 
 const ISSUE_KEY = 'issue'
 const SPEND_ACCOUNT_KEY = 'spent_account'
