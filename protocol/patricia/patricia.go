@@ -13,13 +13,6 @@ import (
 // the key provided is a prefix to existing nodes.
 var ErrPrefix = errors.New("key provided is a prefix to other keys")
 
-// Hasher is the interface used for values inserted
-// into the tree. Since this tree is used to create
-// a merkle root, each item must be hashable.
-type Hasher interface {
-	Hash() bc.Hash
-}
-
 // Tree is a patricia tree implementation, or a radix tree
 // with a radix of 2 -- creating an uneven binary tree.
 // Each entry is a key value pair. The key determines
@@ -131,21 +124,20 @@ func (t *Tree) lookup(n *Node, key []uint8) *Node {
 // If the key is present, the existing node is found
 // and its value is updated, leaving the structure of
 // the tree alone.
-func (t *Tree) Insert(bkey []byte, val Hasher) error {
+func (t *Tree) Insert(bkey []byte, hash bc.Hash) error {
 	key := bitKey(bkey)
 
 	if t.root == nil {
-		t.root = &Node{key: key, val: val, isLeaf: true}
+		t.root = &Node{key: key, hash: hash, isLeaf: true}
 		return nil
 	}
 
 	var err error
-	t.root, err = t.insert(t.root, key, val)
-
+	t.root, err = t.insert(t.root, key, hash)
 	return err
 }
 
-func (t *Tree) insert(n *Node, key []uint8, val Hasher) (*Node, error) {
+func (t *Tree) insert(n *Node, key []uint8, hash bc.Hash) (*Node, error) {
 	if bytes.Equal(n.key, key) {
 		if !n.isLeaf {
 			return n, errors.Wrap(ErrPrefix)
@@ -153,7 +145,7 @@ func (t *Tree) insert(n *Node, key []uint8, val Hasher) (*Node, error) {
 		n = &Node{
 			isLeaf: true,
 			key:    n.key,
-			val:    val,
+			hash:   hash,
 		}
 		return n, nil
 	}
@@ -165,14 +157,14 @@ func (t *Tree) insert(n *Node, key []uint8, val Hasher) (*Node, error) {
 		bit := key[len(n.key)]
 
 		child := n.children[bit]
-		child, err := t.insert(child, key, val)
+		child, err := t.insert(child, key, hash)
 		if err != nil {
 			return n, err
 		}
 		newNode := new(Node)
 		*newNode = *n
-		newNode.hash = nil
 		newNode.children[bit] = child // mutation is ok because newNode hasn't escaped yet
+		newNode.hash = hashChildren(newNode.children)
 		return newNode, nil
 	}
 
@@ -182,10 +174,11 @@ func (t *Tree) insert(n *Node, key []uint8, val Hasher) (*Node, error) {
 	}
 	newNode.children[key[common]] = &Node{
 		key:    key,
-		val:    val,
+		hash:   hash,
 		isLeaf: true,
 	}
 	newNode.children[1-key[common]] = n
+	newNode.hash = hashChildren(newNode.children)
 	return newNode, nil
 }
 
@@ -228,8 +221,8 @@ func (t *Tree) delete(n *Node, key []uint8) (*Node, error) {
 
 	newNode := new(Node)
 	*newNode = *n
-	newNode.hash = nil
 	newNode.children[bit] = newChild
+	newNode.hash = hashChildren(newNode.children)
 
 	return newNode, nil
 }
@@ -269,19 +262,14 @@ func commonPrefix(a, b []uint8) []uint8 {
 // Node is a leaf or branch node in a tree
 type Node struct {
 	key      []uint8
-	hash     *bc.Hash
+	hash     bc.Hash
 	isLeaf   bool
 	children [2]*Node
-	val      Hasher
 }
-
-type identityHasher bc.Hash
-
-func (i identityHasher) Hash() bc.Hash { return bc.Hash(i) }
 
 // NewNode returns a node with the given key and hash
 func NewNode(key []uint8, hash bc.Hash, isLeaf bool) *Node {
-	return &Node{key: key, val: identityHasher(hash), hash: &hash, isLeaf: isLeaf}
+	return &Node{key: key, hash: hash, isLeaf: isLeaf}
 }
 
 // Key returns the key for the current node
@@ -290,29 +278,16 @@ func (n *Node) Key() []uint8 { return n.key }
 // IsLeaf returns whether the current node is a leaf node
 func (n *Node) IsLeaf() bool { return n.isLeaf }
 
-// Hash will return a cached hash if available,
-// if not it will calculate a new hash and cache it.
+// Hash will return the hash for this node.
 func (n *Node) Hash() bc.Hash {
-	if n.hash != nil {
-		return *n.hash
-	}
-
-	hash := n.calcHash()
-	n.hash = &hash
-
-	return hash
+	return n.hash
 }
 
-func (n *Node) calcHash() bc.Hash {
-	if n.isLeaf {
-		return n.val.Hash()
-	}
-
+func hashChildren(children [2]*Node) bc.Hash {
 	var data []byte
-	for _, c := range n.children {
+	for _, c := range children {
 		h := c.Hash()
 		data = append(data, h[:]...)
 	}
-
 	return sha3.Sum256(data)
 }

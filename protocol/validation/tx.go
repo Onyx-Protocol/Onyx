@@ -69,7 +69,7 @@ func ConfirmTx(snapshot *state.Snapshot, tx *bc.Tx, timestampMS uint64) error {
 		// Lookup the prevout in the blockchain state tree.
 		k, val := state.OutputTreeItem(state.Prevout(txin))
 		n := snapshot.Tree.Lookup(k)
-		if n == nil || n.Hash() != val.Hash() {
+		if n == nil || n.Hash() != val {
 			return errors.WithDetailf(ErrBadTx, "output %s for input %d is invalid", txin.Outpoint().String(), i)
 		}
 	}

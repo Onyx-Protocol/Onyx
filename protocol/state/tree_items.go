@@ -8,23 +8,20 @@ import (
 	"chain/encoding/blockchain"
 	"chain/errors"
 	"chain/protocol/bc"
-	"chain/protocol/patricia"
 )
 
 // OutputTreeItem returns the key of an output in the state tree,
-// as well as a patricia.Hasher for Inserts into the state tree.
-func OutputTreeItem(o *Output) ([]byte, patricia.Hasher) {
+// as well as a bc.Hash for Inserts into the state tree.
+func OutputTreeItem(o *Output) ([]byte, bc.Hash) {
 	b := bytes.NewBuffer(nil)
 	b.Write(o.AssetID[:])
 	b.Write([]byte("o"))
 	w := errors.NewWriter(b) // used to satisfy interfaces
 	o.Outpoint.WriteTo(w)
-	return b.Bytes(), outputHasher(*o)
+	return b.Bytes(), hashOutput(*o)
 }
 
-type outputHasher Output
-
-func (o outputHasher) Hash() bc.Hash {
+func hashOutput(o Output) bc.Hash {
 	var buf bytes.Buffer
 	o.Outpoint.WriteTo(&buf)
 	blockchain.WriteUvarint(&buf, o.Amount)

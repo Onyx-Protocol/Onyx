@@ -15,8 +15,6 @@ type pair struct {
 	hash bc.Hash
 }
 
-func (p pair) Hash() bc.Hash { return p.hash }
-
 func TestReadWriteStateSnapshot(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := context.Background()
@@ -75,7 +73,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		t.Logf("Applying changeset %d\n", i)
 
 		for _, insert := range changeset.inserts {
-			err := snapshot.Tree.Insert([]byte(insert.key), insert)
+			err := snapshot.Tree.Insert([]byte(insert.key), insert.hash)
 			if err != nil {
 				t.Fatal(err)
 			}
