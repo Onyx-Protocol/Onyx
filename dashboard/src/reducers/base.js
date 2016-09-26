@@ -1,4 +1,5 @@
 import { combineReducers } from 'redux'
+import moment from 'moment'
 
 const defaultIdFunc = (item) => item.id
 
@@ -64,6 +65,14 @@ export const currentQueryReducer = (type) => (state = '', action) => {
   return state
 }
 
+export const currentQueryTimeReducer = (type) => (state = '', action) => {
+  if ([`UPDATE_${type.toUpperCase()}_QUERY`,
+       `CREATED_${type.toUpperCase()}`].includes(action.type)){
+    return moment().format('h:mm:ss a')
+  }
+  return state
+}
+
 export const autocompleteIsLoadedReducer = (type) => (state = false, action) => {
   if (action.type == `DID_LOAD_${type.toUpperCase()}_AUTOCOMPLETE`) {
     return true
@@ -76,5 +85,6 @@ export const listViewReducer = (type, idFunc = defaultIdFunc) => combineReducers
   itemIds: currentListReducer(type, idFunc),
   cursor: currentCursorReducer(type),
   pageIndex: currentPageReducer(type),
-  query: currentQueryReducer(type)
+  query: currentQueryReducer(type),
+  queryTime: currentQueryTimeReducer(type)
 })

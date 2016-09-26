@@ -1,7 +1,8 @@
 import {
   currentPageReducer,
   currentCursorReducer,
-  currentQueryReducer
+  currentQueryReducer,
+  currentQueryTimeReducer
 } from './base'
 
 import { combineReducers } from 'redux'
@@ -50,6 +51,7 @@ export default combineReducers({
     cursor: currentCursorReducer(type),
     pageIndex: currentPageReducer(type),
     query: currentQueryReducer(type),
-    sumBy: sumByReducers
+    queryTime: currentQueryTimeReducer(type),
+    sumBy: sumByReducers,
   })
 })

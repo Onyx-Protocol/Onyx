@@ -33,6 +33,13 @@ class SearchBar extends React.Component {
   handleSubmit(event) {
     event.preventDefault()
 
+    if (this.state.query == '' && this.state.sumBy == '') {
+      if (this.props.queryString || this.props.sumBy) {
+        this.clearQuery()
+      }
+      return
+    }
+
     this.setState({ showClear: true })
     this.props.updateQuery({
       query: this.state.query,
@@ -92,6 +99,10 @@ class SearchBar extends React.Component {
               </button>}
           </div>
         </form>
+
+        {this.state.showClear && <span className={styles.queryTime}>
+          Queried at {this.props.queryTime}
+        </span>}
       </div>
     )
   }

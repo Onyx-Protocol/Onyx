@@ -23,8 +23,9 @@ export const mapStateToProps = (type, itemComponent) => (state) => {
     type: type,
     listItemComponent: itemComponent,
     searchState: {
-      queryString: state[type].listView.query
-    }
+      queryString: state[type].listView.query,
+      queryTime: state[type].listView.queryTime,
+    },
   }
 }
 
