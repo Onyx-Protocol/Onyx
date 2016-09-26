@@ -2,6 +2,7 @@ package vm
 
 import (
 	"bufio"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"strconv"
@@ -21,6 +22,9 @@ func Compile(s string) ([]byte, error) {
 	for scanner.Scan() {
 		token := scanner.Text()
 		if info, ok := opsByName[token]; ok {
+			if strings.HasPrefix(token, "PUSHDATA") || strings.HasPrefix(token, "JUMP") {
+				return nil, errors.Wrap(ErrToken, token)
+			}
 			res = append(res, byte(info.op))
 		} else if strings.HasPrefix(token, "0x") {
 			bytes, err := hex.DecodeString(strings.TrimPrefix(token, "0x"))
@@ -28,6 +32,25 @@ func Compile(s string) ([]byte, error) {
 				return nil, err
 			}
 			res = append(res, PushdataBytes(bytes)...)
+		} else if strings.HasPrefix(token, "JUMP:") {
+			// TODO (Dan): refactor these into function, add labels, add IF/ELSE/ENDIF and BEGIN/WHILE/REPEAT
+			address, err := strconv.ParseUint(strings.TrimPrefix(token, "JUMP:"), 10, 32)
+			if err != nil {
+				return nil, err
+			}
+			res = append(res, byte(OP_JUMP))
+			b := make([]byte, 4)
+			binary.LittleEndian.PutUint32(b, uint32(address))
+			res = append(res, b...)
+		} else if strings.HasPrefix(token, "JUMPIF:") {
+			address, err := strconv.ParseUint(strings.TrimPrefix(token, "JUMPIF:"), 10, 32)
+			if err != nil {
+				return nil, err
+			}
+			res = append(res, byte(OP_JUMPIF))
+			b := make([]byte, 4)
+			binary.LittleEndian.PutUint32(b, uint32(address))
+			res = append(res, b...)
 		} else if len(token) >= 2 && token[0] == '\'' && token[len(token)-1] == '\'' {
 			bytes := make([]byte, 0, len(token)-2)
 			var b int

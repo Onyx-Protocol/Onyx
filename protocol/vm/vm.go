@@ -24,9 +24,8 @@ type virtualMachine struct {
 	depth int
 
 	// In each of these stacks, stack[len(stack)-1] is the top element.
-	controlStack []controlTuple
-	dataStack    [][]byte
-	altStack     [][]byte
+	dataStack [][]byte
+	altStack  [][]byte
 
 	tx         *bc.Tx
 	inputIndex int
@@ -123,10 +122,6 @@ func (vm *virtualMachine) run() (bool, error) {
 		}
 	}
 
-	if len(vm.controlStack) > 0 {
-		return false, ErrNonEmptyControlStack
-	}
-
 	res := len(vm.dataStack) > 0 && AsBool(vm.dataStack[len(vm.dataStack)-1])
 	return res, nil
 }
@@ -139,19 +134,8 @@ func (vm *virtualMachine) step() error {
 
 	vm.nextPC = vm.pc + inst.Len
 
-	var skip bool
-	switch inst.Op {
-	case OP_IF, OP_NOTIF, OP_ELSE, OP_ENDIF, OP_WHILE, OP_ENDWHILE:
-		skip = false
-	default:
-		skip = len(vm.controlStack) > 0 && !vm.controlStack[len(vm.controlStack)-1].flag
-	}
-
 	if TraceOut != nil {
 		opname := inst.Op.String()
-		if skip {
-			opname = fmt.Sprintf("[%s]", opname)
-		}
 		fmt.Fprintf(TraceOut, "vm %d pc %d limit %d %s", vm.depth, vm.pc, vm.runLimit, opname)
 		if len(inst.Data) > 0 {
 			fmt.Fprintf(TraceOut, " %x", inst.Data)
@@ -159,24 +143,20 @@ func (vm *virtualMachine) step() error {
 		fmt.Fprint(TraceOut, "\n")
 	}
 
-	if !skip {
-		vm.deferredCost = 0
-		vm.data = inst.Data
-		err := ops[inst.Op].fn(vm)
-		if err != nil {
-			return err
-		}
-		err = vm.applyCost(vm.deferredCost)
-		if err != nil {
-			return err
-		}
-	} else {
-		vm.applyCost(1)
+	vm.deferredCost = 0
+	vm.data = inst.Data
+	err = ops[inst.Op].fn(vm)
+	if err != nil {
+		return err
+	}
+	err = vm.applyCost(vm.deferredCost)
+	if err != nil {
+		return err
 	}
 
 	vm.pc = vm.nextPC
 
-	if TraceOut != nil && !skip {
+	if TraceOut != nil {
 		for i := len(vm.dataStack) - 1; i >= 0; i-- {
 			fmt.Fprintf(TraceOut, "  stack %d: %x\n", len(vm.dataStack)-1-i, vm.dataStack[i])
 		}

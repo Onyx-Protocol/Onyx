@@ -13,160 +13,77 @@ func TestControlOps(t *testing.T) {
 		wantVM  *virtualMachine
 	}
 	cases := []testStruct{{
-		op: OP_IF,
+		op: OP_JUMP,
 		startVM: &virtualMachine{
-			runLimit:     50000,
-			deferredCost: 0,
-			dataStack:    [][]byte{{1}},
+			runLimit: 50000,
+			pc:       0,
+			nextPC:   1,
+			data:     []byte{0x05, 0x00, 0x00, 0x00},
 		},
 		wantErr: nil,
 		wantVM: &virtualMachine{
-			runLimit:     49996,
+			runLimit: 49999,
+			pc:       0,
+			nextPC:   5,
+			data:     []byte{0x05, 0x00, 0x00, 0x00},
+		},
+	}, {
+		op: OP_JUMP,
+		startVM: &virtualMachine{
+			runLimit: 50000,
+			pc:       0,
+			nextPC:   1,
+			data:     []byte{0xff, 0xff, 0xff, 0xff},
+		},
+		wantErr: nil,
+		wantVM: &virtualMachine{
+			runLimit: 49999,
+			pc:       0,
+			nextPC:   4294967295,
+			data:     []byte{0xff, 0xff, 0xff, 0xff},
+		},
+	}, {
+		op: OP_JUMPIF,
+		startVM: &virtualMachine{
+			runLimit:     50000,
+			pc:           0,
+			nextPC:       1,
+			deferredCost: 0,
+			dataStack:    [][]byte{{1}},
+			data:         []byte{0x05, 0x00, 0x00, 0x00},
+		},
+		wantErr: nil,
+		wantVM: &virtualMachine{
+			runLimit:     49999,
+			pc:           0,
+			nextPC:       5,
 			deferredCost: -9,
 			dataStack:    [][]byte{},
-			controlStack: []controlTuple{{optype: cfIf, flag: true}},
+			data:         []byte{0x05, 0x00, 0x00, 0x00},
 		},
 	}, {
-		op: OP_IF,
+		op: OP_JUMPIF,
 		startVM: &virtualMachine{
 			runLimit:     50000,
-			deferredCost: 0,
-			dataStack:    [][]byte{{1, 1}},
-		},
-		wantErr: nil,
-		wantVM: &virtualMachine{
-			runLimit:     49996,
-			deferredCost: -10,
-			dataStack:    [][]byte{},
-			controlStack: []controlTuple{{optype: cfIf, flag: true}},
-		},
-	}, {
-		op: OP_IF,
-		startVM: &virtualMachine{
-			runLimit:     50000,
+			pc:           0,
+			nextPC:       1,
 			deferredCost: 0,
 			dataStack:    [][]byte{{}},
+			data:         []byte{0x05, 0x00, 0x00, 0x00},
 		},
 		wantErr: nil,
 		wantVM: &virtualMachine{
-			runLimit:     49996,
+			runLimit:     49999,
+			pc:           0,
+			nextPC:       1,
 			deferredCost: -8,
 			dataStack:    [][]byte{},
-			controlStack: []controlTuple{{optype: cfIf, flag: false}},
+			data:         []byte{0x05, 0x00, 0x00, 0x00},
 		},
-	}, {
-		op: OP_IF,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			dataStack:    [][]byte{{1}},
-			controlStack: []controlTuple{{optype: cfIf, flag: false}},
-		},
-		wantErr: nil,
-		wantVM: &virtualMachine{
-			runLimit:     49996,
-			dataStack:    [][]byte{{1}},
-			controlStack: []controlTuple{{optype: cfIf, flag: false}, {optype: cfIf, flag: false}},
-		},
-	}, {
-		op: OP_IF,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_ELSE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{{optype: cfIf, flag: true}},
-		},
-		wantErr: nil,
-		wantVM: &virtualMachine{
-			runLimit:     49996,
-			controlStack: []controlTuple{{optype: cfElse, flag: false}},
-		},
-	}, {
-		op: OP_ELSE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{{optype: cfIf, flag: false}},
-		},
-		wantErr: nil,
-		wantVM: &virtualMachine{
-			runLimit:     49996,
-			controlStack: []controlTuple{{optype: cfElse, flag: true}},
-		},
-	}, {
-		op: OP_ELSE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{{optype: cfIf, flag: false}, {optype: cfIf, flag: false}},
-		},
-		wantErr: nil,
-		wantVM: &virtualMachine{
-			runLimit:     49996,
-			controlStack: []controlTuple{{optype: cfIf, flag: false}, {optype: cfElse, flag: false}},
-		},
-	}, {
-		op: OP_ELSE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{{optype: cfElse, flag: true}},
-		},
-		wantErr: ErrBadControlSyntax,
-	}, {
-		op: OP_ELSE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{{optype: cfWhile, flag: true}},
-		},
-		wantErr: ErrBadControlSyntax,
-	}, {
-		op: OP_ELSE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{},
-		},
-		wantErr: ErrControlStackUnderflow,
-	}, {
-		op: OP_ENDIF,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{{optype: cfIf, flag: true}},
-		},
-		wantErr: nil,
-		wantVM: &virtualMachine{
-			runLimit:     49999,
-			controlStack: []controlTuple{},
-		},
-	}, {
-		op: OP_ENDIF,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{{optype: cfElse, flag: false}},
-		},
-		wantErr: nil,
-		wantVM: &virtualMachine{
-			runLimit:     49999,
-			controlStack: []controlTuple{},
-		},
-	}, {
-		op: OP_ENDIF,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{{optype: cfWhile, flag: true}},
-		},
-		wantErr: ErrBadControlSyntax,
-	}, {
-		op: OP_ENDIF,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{},
-		},
-		wantErr: ErrControlStackUnderflow,
 	}, {
 		op: OP_VERIFY,
 		startVM: &virtualMachine{
+			pc:           0,
 			runLimit:     50000,
 			deferredCost: 0,
 			dataStack:    [][]byte{{1}},
@@ -297,104 +214,9 @@ func TestControlOps(t *testing.T) {
 			deferredCost: -49954,
 			dataStack:    [][]byte{{0x05}, {}},
 		},
-	}, {
-		op: OP_WHILE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			deferredCost: 0,
-			dataStack:    [][]byte{{1}},
-			pc:           5,
-		},
-		wantVM: &virtualMachine{
-			runLimit:     49996,
-			dataStack:    [][]byte{{1}},
-			controlStack: []controlTuple{{optype: cfWhile, flag: true, pc: 5}},
-			pc:           5,
-		},
-	}, {
-		op: OP_WHILE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			deferredCost: 0,
-			dataStack:    [][]byte{{}},
-			pc:           5,
-		},
-		wantVM: &virtualMachine{
-			runLimit:     49996,
-			deferredCost: -8,
-			dataStack:    [][]byte{},
-			controlStack: []controlTuple{{optype: cfWhile, flag: false, pc: 5}},
-			pc:           5,
-		},
-	}, {
-		op: OP_WHILE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			deferredCost: 0,
-			dataStack:    [][]byte{{}},
-			controlStack: []controlTuple{{optype: cfIf, flag: false}},
-			pc:           5,
-		},
-		wantVM: &virtualMachine{
-			runLimit:     49996,
-			deferredCost: 0,
-			dataStack:    [][]byte{{}},
-			controlStack: []controlTuple{{optype: cfIf, flag: false}, {optype: cfWhile, flag: false}},
-			pc:           5,
-		},
-	}, {
-		op: OP_WHILE,
-		startVM: &virtualMachine{
-			runLimit:  50000,
-			dataStack: [][]byte{},
-		},
-		wantErr: ErrDataStackUnderflow,
-	}, {
-		op: OP_ENDWHILE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{{optype: cfWhile, flag: true, pc: 5}},
-		},
-		wantVM: &virtualMachine{
-			runLimit:     49999,
-			controlStack: []controlTuple{},
-			nextPC:       5,
-		},
-	}, {
-		op: OP_ENDWHILE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{{optype: cfWhile, flag: false, pc: 5}},
-		},
-		wantVM: &virtualMachine{
-			runLimit:     49999,
-			controlStack: []controlTuple{},
-		},
-	}, {
-		op: OP_ENDWHILE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{},
-		},
-		wantErr: ErrControlStackUnderflow,
-	}, {
-		op: OP_ENDWHILE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{{optype: cfIf, flag: true}},
-		},
-		wantErr: ErrBadControlSyntax,
-	}, {
-		op: OP_ENDWHILE,
-		startVM: &virtualMachine{
-			runLimit:     50000,
-			controlStack: []controlTuple{{optype: cfElse, flag: true}},
-		},
-		wantErr: ErrBadControlSyntax,
 	}}
 
 	limitChecks := []Op{
-		OP_IF, OP_NOTIF, OP_ELSE, OP_ENDIF, OP_WHILE, OP_ENDWHILE,
 		OP_CHECKPREDICATE, OP_VERIFY, OP_FAIL,
 	}
 

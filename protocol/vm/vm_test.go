@@ -112,13 +112,6 @@ func doOKNotOK(t *testing.T, expectOK bool) {
 
 		{"1 2 OR 3 EQUAL", nil},
 
-		// control ops
-		{"TRUE FALSE IF FAIL ENDIF", nil},
-		{"FALSE IF FAIL ELSE TRUE ENDIF", nil},
-		{"TRUE TRUE NOTIF FAIL ENDIF", nil},
-		{"TRUE NOTIF FAIL ELSE TRUE ENDIF", nil},
-		{"17 FALSE TRUE TRUE TRUE WHILE DROP ENDWHILE 17 NUMEQUAL", nil},
-
 		// splice ops
 		{"0 CATPUSHDATA 0x0000 EQUAL", [][]byte{{0x00}}},
 		{"0 0xff CATPUSHDATA 0x01ff EQUAL", nil},
@@ -128,34 +121,16 @@ func doOKNotOK(t *testing.T, expectOK bool) {
 		{"0x05 0x05 SWAP 0xdeadbeef CATPUSHDATA DROP 0x05 EQUAL", nil},
 		{"0x05 0x05 SWAP 0xdeadbeef CATPUSHDATA DROP 0x05 EQUAL", nil},
 
-		// control flow ops
-		{"1 IF 1 ENDIF", nil},
-		{"1 DUP IF ENDIF", nil},
-		{"1 DUP IF ELSE ENDIF", nil},
-		{"1 IF 1 ELSE ENDIF", nil},
-		{"0 IF ELSE 1 ENDIF", nil},
+		// // control flow ops
+		{"1 JUMP:7 0 1 EQUAL", nil},                                       // jumps over 0
+		{"1 1 JUMPIF:8 0 1 EQUAL", nil},                                   // jumps over 0
+		{"1 0 JUMPIF:8 0 1 EQUAL NOT", nil},                               // doesn't jump over 0
+		{"1 0 JUMPIF:1", nil},                                             // doesn't jump, so no infinite loop
+		{"4 1 JUMPIF:14 5 EQUAL JUMP:16 4 EQUAL", nil},                    // if (true) { return x == 4; } else { return x == 5; }
+		{"5 0 JUMPIF:14 5 EQUAL JUMP:16 4 EQUAL", nil},                    // if (false) { return x == 4; } else { return x == 5; }
+		{"0 1 2 3 4 5 6 JUMP:13 DROP DUP 0 NUMNOTEQUAL JUMPIF:12 1", nil}, // same as "0 1 2 3 4 5 6 WHILE DROP ENDWHILE 1"
+		{"0 JUMP:7 1ADD DUP 10 LESSTHAN JUMPIF:6 10 NUMEQUAL", nil},       // fixed version of "0 1 WHILE DROP 1ADD DUP 10 LESSTHAN ENDWHILE 10 NUMEQUAL"
 
-		{"1 1 IF IF 1 ELSE 0 ENDIF ENDIF", nil},
-		{"1 0 IF IF 1 ELSE 0 ENDIF ENDIF", nil},
-		{"1 1 IF IF 1 ELSE 0 ENDIF ELSE IF 0 ELSE 1 ENDIF ENDIF", nil},
-		{"0 0 IF IF 1 ELSE 0 ENDIF ELSE IF 0 ELSE 1 ENDIF ENDIF", nil},
-		{"0 IF 1 IF FAIL ELSE FAIL ENDIF ELSE 1 ENDIF", nil},
-		{"1 IF 1 ELSE 1 IF FAIL ELSE FAIL ENDIF ENDIF", nil},
-
-		{"1 0 NOTIF IF 1 ELSE 0 ENDIF ENDIF", nil},
-		{"1 1 NOTIF IF 1 ELSE 0 ENDIF ENDIF", nil},
-		{"1 0 NOTIF IF 1 ELSE 0 ENDIF ELSE IF 0 ELSE 1 ENDIF ENDIF", nil},
-		{"0 1 NOTIF IF 1 ELSE 0 ENDIF ELSE IF 0 ELSE 1 ENDIF ENDIF", nil},
-
-		{"1 WHILE 0 ENDWHILE", nil},
-		{"1 WHILE NOT ENDWHILE 1", nil},
-		{"1 WHILE IF 0 ELSE 1 ENDIF ENDWHILE 1", nil},
-		{"0 WHILE 0 ENDWHILE 1", nil},
-		{"1 WHILE IF 1 0 ELSE 1 ENDIF ENDWHILE", nil},
-		{"0 1 WHILE DROP 1ADD DUP 10 LESSTHAN ENDWHILE 10 NUMEQUAL", nil},
-		{"0 1 2 3 4 5 6 WHILE DROP ENDWHILE 1", nil},
-		{"0 1 WHILE DROP 1ADD TOALTSTACK 0 ENDWHILE FROMALTSTACK", nil},
-		{"1 WHILE WHILE 0 ENDWHILE 0 ENDWHILE", nil},
 	}
 	for i, c := range cases {
 		progSrc := c.prog
@@ -303,9 +278,6 @@ func TestRun(t *testing.T) {
 	}, {
 		vm:      &virtualMachine{runLimit: 50000, program: []byte{byte(OP_ADD)}},
 		wantErr: ErrDataStackUnderflow,
-	}, {
-		vm:      &virtualMachine{runLimit: 50000, program: []byte{byte(OP_TRUE), byte(OP_IF)}},
-		wantErr: ErrNonEmptyControlStack,
 	}}
 
 	for i, c := range cases {
@@ -346,52 +318,51 @@ func TestStep(t *testing.T) {
 		},
 	}, {
 		startVM: &virtualMachine{
-			program:   []byte{byte(OP_TRUE), byte(OP_IF), byte(OP_1), byte(OP_ENDIF)},
+			program:   []byte{byte(OP_TRUE), byte(OP_JUMP), byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
 			runLimit:  49990,
+			dataStack: [][]byte{},
+			pc:        1,
+		},
+		wantVM: &virtualMachine{
+			program:      []byte{byte(OP_TRUE), byte(OP_JUMP), byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
+			runLimit:     49989,
+			dataStack:    [][]byte{},
+			data:         []byte{byte(0xff), byte(0x00), byte(0x00), byte(0x00)},
+			pc:           255,
+			nextPC:       255,
+			deferredCost: 0,
+		},
+	}, {
+		startVM: &virtualMachine{
+			program:   []byte{byte(OP_TRUE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			runLimit:  49995,
 			dataStack: [][]byte{{1}},
 			pc:        1,
 		},
 		wantVM: &virtualMachine{
-			program:      []byte{byte(OP_TRUE), byte(OP_IF), byte(OP_1), byte(OP_ENDIF)},
-			runLimit:     49995,
+			program:      []byte{byte(OP_TRUE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			runLimit:     50003,
 			dataStack:    [][]byte{},
-			controlStack: []controlTuple{{optype: cfIf, flag: true}},
-			pc:           2,
-			nextPC:       2,
+			pc:           0,
+			nextPC:       0,
+			data:         []byte{byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
 			deferredCost: -9,
 		},
 	}, {
 		startVM: &virtualMachine{
-			program:      []byte{byte(OP_TRUE), byte(OP_IF), byte(OP_1), byte(OP_ENDIF)},
-			runLimit:     49995,
-			dataStack:    [][]byte{},
-			controlStack: []controlTuple{{optype: cfIf, flag: true}},
-			pc:           2,
+			program:   []byte{byte(OP_FALSE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			runLimit:  49995,
+			dataStack: [][]byte{{}},
+			pc:        1,
 		},
 		wantVM: &virtualMachine{
-			program:      []byte{byte(OP_TRUE), byte(OP_IF), byte(OP_1), byte(OP_ENDIF)},
-			runLimit:     49985,
-			dataStack:    [][]byte{{1}},
-			controlStack: []controlTuple{{optype: cfIf, flag: true}},
-			pc:           3,
-			nextPC:       3,
-			data:         []byte{1},
-		},
-	}, {
-		startVM: &virtualMachine{
-			program:      []byte{byte(OP_FALSE), byte(OP_IF), byte(OP_1), byte(OP_ENDIF)},
-			runLimit:     49995,
+			program:      []byte{byte(OP_FALSE), byte(OP_JUMPIF), byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			runLimit:     50002,
 			dataStack:    [][]byte{},
-			controlStack: []controlTuple{{optype: cfIf, flag: false}},
-			pc:           2,
-		},
-		wantVM: &virtualMachine{
-			program:      []byte{byte(OP_FALSE), byte(OP_IF), byte(OP_1), byte(OP_ENDIF)},
-			runLimit:     49994,
-			dataStack:    [][]byte{},
-			controlStack: []controlTuple{{optype: cfIf, flag: false}},
-			pc:           3,
-			nextPC:       3,
+			pc:           6,
+			nextPC:       6,
+			data:         []byte{byte(0x00), byte(0x00), byte(0x00), byte(0x00)},
+			deferredCost: -8,
 		},
 	}, {
 		startVM: &virtualMachine{

@@ -3,6 +3,8 @@ package vm
 import (
 	"encoding/binary"
 	"fmt"
+
+	"chain/math/checked"
 )
 
 type Op uint8
@@ -122,15 +124,11 @@ const (
 	OP_1NEGATE   Op = 0x4f
 	OP_NOP       Op = 0x61
 
-	OP_IF             Op = 0x63
-	OP_NOTIF          Op = 0x64
-	OP_ELSE           Op = 0x67
-	OP_ENDIF          Op = 0x68
+	OP_JUMP           Op = 0x63
+	OP_JUMPIF         Op = 0x64
 	OP_VERIFY         Op = 0x69
 	OP_FAIL           Op = 0x6a
 	OP_CHECKPREDICATE Op = 0xc0
-	OP_WHILE          Op = 0xd0
-	OP_ENDWHILE       Op = 0xd1
 
 	OP_TOALTSTACK   Op = 0x6b
 	OP_FROMALTSTACK Op = 0x6c
@@ -248,15 +246,11 @@ var (
 		OP_NOP: {OP_NOP, "NOP", opNop},
 
 		// control flow
-		OP_IF:    {OP_IF, "IF", opIf},
-		OP_NOTIF: {OP_NOTIF, "NOTIF", opNotIf},
+		OP_JUMP:   {OP_JUMP, "JUMP", opJump},
+		OP_JUMPIF: {OP_JUMPIF, "JUMPIF", opJumpIf},
 
-		OP_ELSE:     {OP_ELSE, "ELSE", opElse},
-		OP_ENDIF:    {OP_ENDIF, "ENDIF", opEndif},
-		OP_VERIFY:   {OP_VERIFY, "VERIFY", opVerify},
-		OP_FAIL:     {OP_FAIL, "FAIL", opFail},
-		OP_WHILE:    {OP_WHILE, "WHILE", opWhile},
-		OP_ENDWHILE: {OP_ENDWHILE, "ENDWHILE", opEndwhile},
+		OP_VERIFY: {OP_VERIFY, "VERIFY", opVerify},
+		OP_FAIL:   {OP_FAIL, "FAIL", opFail},
 
 		OP_TOALTSTACK:   {OP_TOALTSTACK, "TOALTSTACK", opToAltStack},
 		OP_FROMALTSTACK: {OP_FROMALTSTACK, "FROMALTSTACK", opFromAltStack},
@@ -367,8 +361,8 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 	}
 	if opcode >= OP_DATA_1 && opcode <= OP_DATA_75 {
 		inst.Len += uint32(opcode - OP_DATA_1 + 1)
-		end := pc + inst.Len
-		if end > uint32(len(prog)) {
+		end, ok := checked.AddUint32(pc, inst.Len)
+		if !ok || end > uint32(len(prog)) {
 			err = ErrShortProgram
 			return
 		}
@@ -382,8 +376,8 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 		}
 		n := prog[pc+1]
 		inst.Len += uint32(n) + 1
-		end := pc + inst.Len
-		if end > uint32(len(prog)) {
+		end, ok := checked.AddUint32(pc, inst.Len)
+		if !ok || end > uint32(len(prog)) {
 			err = ErrShortProgram
 			return
 		}
@@ -391,14 +385,14 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 		return
 	}
 	if opcode == OP_PUSHDATA2 {
-		if pc+3 > uint32(len(prog)) {
+		if len(prog) < 3 || pc > uint32(len(prog))-3 {
 			err = ErrShortProgram
 			return
 		}
 		n := binary.LittleEndian.Uint16(prog[pc+1 : pc+3])
 		inst.Len += uint32(n) + 2
-		end := pc + inst.Len
-		if end > uint32(len(prog)) {
+		end, ok := checked.AddUint32(pc, inst.Len)
+		if !ok || end > uint32(len(prog)) {
 			err = ErrShortProgram
 			return
 		}
@@ -406,18 +400,28 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 		return
 	}
 	if opcode == OP_PUSHDATA4 {
-		if pc+5 > uint32(len(prog)) {
+		if len(prog) < 5 || pc > uint32(len(prog))-5 {
 			err = ErrShortProgram
 			return
 		}
 		n := binary.LittleEndian.Uint32(prog[pc+1 : pc+5])
 		inst.Len += 4 + n
-		end := pc + inst.Len
-		if end > uint32(len(prog)) {
+		end, ok := checked.AddUint32(pc, inst.Len)
+		if !ok || end > uint32(len(prog)) {
 			err = ErrShortProgram
 			return
 		}
 		inst.Data = prog[pc+5 : end]
+		return
+	}
+	if opcode == OP_JUMP || opcode == OP_JUMPIF {
+		inst.Len += 4
+		end, ok := checked.AddUint32(pc, inst.Len)
+		if !ok || end > uint32(len(prog)) {
+			err = ErrShortProgram
+			return
+		}
+		inst.Data = prog[pc+1 : end]
 		return
 	}
 	return
