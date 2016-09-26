@@ -30,7 +30,8 @@ public class BasicTest {
     MockHsm.Key mainKey = MockHsm.Key.create(context);
     HsmSigner.addKey(mainKey);
 
-    Account account = new Account.Builder()
+    Account account =
+        new Account.Builder()
             .setAlias(ALICE)
             .addRootXpub(mainKey.xpub)
             .setQuorum(1)
@@ -49,16 +50,13 @@ public class BasicTest {
     assertEquals(account.tags.get("name"), ALICE);
     assertEquals(account.tags.get("test"), TEST);
 
-    new Account.Builder()
-            .setAlias(BOB)
-            .addRootXpub(mainKey.xpub)
-            .setQuorum(1)
-            .create(context);
+    new Account.Builder().setAlias(BOB).addRootXpub(mainKey.xpub).setQuorum(1).create(context);
 
     Map<String, Object> def = new HashMap<>();
     def.put("name", ASSET);
     def.put("test", TEST);
-    Asset asset = new Asset.Builder()
+    Asset asset =
+        new Asset.Builder()
             .setAlias(ASSET)
             .addRootXpub(mainKey.xpub)
             .setQuorum(1)
@@ -82,37 +80,25 @@ public class BasicTest {
     assertEquals(asset.definition.get("test"), TEST);
     assertEquals(asset.origin, "local");
 
-    Transaction.Template issuance = new Transaction.Builder()
+    Transaction.Template issuance =
+        new Transaction.Builder()
             .issueByAlias(ASSET, BigInteger.valueOf(100), null)
             .controlWithAccountByAlias(ALICE, ASSET, BigInteger.valueOf(100), null)
             .build(context);
-    List<Transaction.SubmitResponse> responses = Transaction.submit(context, HsmSigner.sign(Arrays.asList(issuance)));
-    for (Transaction.SubmitResponse resp : responses) {
-      if (resp.id == null) {
-        throw new APIException(resp.code, resp.message, resp.detail, null);
-      }
-    }
+    Transaction.submit(context, HsmSigner.sign(issuance));
 
-    Transaction.Template spending = new Transaction.Builder()
+    Transaction.Template spending =
+        new Transaction.Builder()
             .spendFromAccountByAlias(ALICE, ASSET, BigInteger.valueOf(10), null)
             .controlWithAccountByAlias(BOB, ASSET, BigInteger.valueOf(10), null)
             .build(context);
-    responses = Transaction.submit(context, HsmSigner.sign(Arrays.asList(spending)));
-    for (Transaction.SubmitResponse resp : responses) {
-      if (resp.id == null) {
-        throw new APIException(resp.code, resp.message, resp.detail, null);
-      }
-    }
+    Transaction.submit(context, HsmSigner.sign(spending));
 
-    Transaction.Template retirement = new Transaction.Builder()
+    Transaction.Template retirement =
+        new Transaction.Builder()
             .spendFromAccountByAlias(BOB, ASSET, BigInteger.valueOf(5), null)
             .retireByAlias(ASSET, BigInteger.valueOf(5), null)
             .build(context);
-    responses = Transaction.submit(context, HsmSigner.sign(Arrays.asList(retirement)));
-    for (Transaction.SubmitResponse resp : responses) {
-      if (resp.id == null) {
-        throw new APIException(resp.code, resp.message, resp.detail, null);
-      }
-    }
+    Transaction.submit(context, HsmSigner.sign(retirement));
   }
 }

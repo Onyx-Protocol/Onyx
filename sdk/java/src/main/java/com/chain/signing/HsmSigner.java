@@ -3,6 +3,7 @@ package com.chain.signing;
 import com.chain.api.MockHsm;
 
 import com.chain.api.Transaction;
+import com.chain.exception.APIException;
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
 import com.google.gson.reflect.TypeToken;
@@ -29,6 +30,15 @@ public class HsmSigner {
     for (MockHsm.Key key : keys) {
       addKey(key.xpub, key.hsmUrl);
     }
+  }
+
+  public static Transaction.Template sign(Transaction.Template template) throws ChainException {
+    List<Transaction.Template> templates = sign(Arrays.asList(template));
+    Transaction.Template response = templates.get(0);
+    if (response.code != null) {
+      throw new APIException(template.code, template.message, template.detail, null);
+    }
+    return response;
   }
 
   // TODO(boymanjor): Currently this method trusts the hsm to return a tx template

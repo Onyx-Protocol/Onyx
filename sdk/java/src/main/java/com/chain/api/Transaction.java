@@ -442,11 +442,29 @@ public class Transaction {
   public static List<SubmitResponse> submit(Context ctx, List<Template> templates)
       throws ChainException {
     Type type = new TypeToken<ArrayList<SubmitResponse>>() {}.getType();
-
     HashMap<String, Object> requestBody = new HashMap<>();
     requestBody.put("transactions", templates);
-
     return ctx.request("submit-transaction", requestBody, type);
+  }
+
+  /**
+   * Submits signed transaction template for inclusion into a block.
+   * @param ctx context object which makes server requests
+   * @param template transaction template
+   * @return submit responses
+   * @throws APIException This exception is raised if the api returns errors while submitting a transaction.
+   * @throws BadURLException This exception wraps java.net.MalformedURLException.
+   * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+   * @throws HTTPException This exception is raised when errors occur making http requests.
+   * @throws JSONException This exception is raised due to malformed json requests or responses.
+   */
+  public static SubmitResponse submit(Context ctx, Template template) throws ChainException {
+    List<SubmitResponse> responses = submit(ctx, Arrays.asList(template));
+    SubmitResponse response = responses.get(0);
+    if (response.code != null) {
+      throw new APIException(response.code, response.message, response.detail, null);
+    }
+    return response;
   }
 
   /**
