@@ -160,8 +160,8 @@ func (ind *Indexer) waitForAndFetchTransactions(ctx context.Context, queryStr st
 			err error
 		)
 
-		h := ind.c.Height()
-		for len(txs) == 0 {
+		for h := ind.c.Height(); len(txs) == 0; h++ {
+			ind.c.WaitForBlockSoon(ctx, h)
 			txs, aft, err = ind.fetchTransactions(ctx, queryStr, queryArgs, after, limit)
 			if err != nil {
 				resp <- fetchResp{nil, nil, err}
@@ -172,9 +172,6 @@ func (ind *Indexer) waitForAndFetchTransactions(ctx context.Context, queryStr st
 				resp <- fetchResp{txs, aft, nil}
 				return
 			}
-
-			h++
-			ind.c.WaitForBlockSoon(ctx, h)
 		}
 	}()
 
