@@ -32,6 +32,8 @@ public class Context {
    * @param action The requested API action
    * @param body Body payload sent to the API as JSON
    * @param tClass Type of object to be deserialized from the repsonse JSON
+   * @return the result of the post request
+   * @throws ChainException
    */
   public <T> T request(String action, Object body, Type tClass) throws ChainException {
     return httpClient.post(action, body, tClass);
@@ -46,6 +48,8 @@ public class Context {
    * @param action The requested API action
    * @param body Body payload sent to the API as JSON
    * @param tClass Type of object to be deserialized from the repsonse JSON
+   * @return the result of the post request
+   * @throws ChainException
    */
   public <T> T singletonBatchRequest(String action, Object body, Type tClass)
       throws ChainException {

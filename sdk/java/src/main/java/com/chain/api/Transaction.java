@@ -131,8 +131,8 @@ public class Transaction {
 
     /**
      * Sets a timeout on this query.
-     * @param timeout timeout in milliseconds
-
+     * @param timeoutMS timeout in milliseconds
+     * @return updated QueryBuilder object
      */
     public QueryBuilder setTimeout(long timeoutMS) {
       this.query.timeout = timeoutMS;
@@ -531,7 +531,7 @@ public class Transaction {
     /**
      * Sets a transaction's reference data.
      * @param referenceData info to embed into a transaction.
-     * @return
+     * @return updated builder object
      */
     public Builder setReferenceData(Map<String, Object> referenceData) {
       this.referenceData = referenceData;
@@ -574,7 +574,6 @@ public class Transaction {
      * @param amount number of units of the asset to issue
      * @param referenceData reference data to embed into the action (possibly null)
      * @return updated builder object
-     * @return
      */
     public Builder issueByAlias(
         String assetAlias, BigInteger amount, Map<String, Object> referenceData) {
@@ -730,7 +729,7 @@ public class Transaction {
      * Adds a spend (by unspent output) action to a transaction.
      * @param unspentOutput unspent output to spend
      * @param referenceData reference data to embed into action (possibly null)
-     * @return
+     * @return updated builder object
      */
     public Builder spendUnspentOutput(
         UnspentOutput unspentOutput, Map<String, Object> referenceData) {

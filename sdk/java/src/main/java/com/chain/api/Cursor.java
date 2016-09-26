@@ -45,6 +45,8 @@ public class Cursor {
    * Creates a cursor.
    *
    * @param ctx context object that makes requests to core
+   * @param alias an alias which uniquely identifies this cursor
+   * @param filter a query filter which identifies which transactions this cursor consumes
    * @return a cursor object
    * @throws ChainException
    */

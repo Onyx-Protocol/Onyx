@@ -37,6 +37,8 @@ public class APIClient {
   /**
    * Sets the default connect timeout for new connections. A value of 0 means
    * no timeout.
+   * @param timeout the number of time units for the default timeout
+   * @param unit the unit of time
    */
   public void setConnectTimeout(long timeout, TimeUnit unit) {
     this.httpClient.setConnectTimeout(timeout, unit);
@@ -45,6 +47,8 @@ public class APIClient {
   /**
    * Sets the default read timeout for new connections. A value of 0 means no
    * timeout.
+   * @param timeout the number of time units for the default timeout
+   * @param unit the unit of time
    */
   public void setReadTimeout(long timeout, TimeUnit unit) {
     this.httpClient.setReadTimeout(timeout, unit);
@@ -53,6 +57,8 @@ public class APIClient {
   /**
    * Sets the default write timeout for new connections. A value of 0 means no
    * timeout.
+   * @param timeout the number of time units for the default timeout
+   * @param unit the unit of time
    */
   public void setWriteTimeout(long timeout, TimeUnit unit) {
     this.httpClient.setWriteTimeout(timeout, unit);

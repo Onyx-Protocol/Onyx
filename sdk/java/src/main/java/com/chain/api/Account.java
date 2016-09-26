@@ -99,7 +99,8 @@ public class Account {
      * Creates a batch of account objects.
      *
      * @param ctx context object that makes requests to core
-     * @return an account object
+     * @param accts list of account builders
+     * @return a list of account objects
      * @throws ChainException
      */
     public static List<Account> create(Context ctx, List<Builder> accts) throws ChainException {
