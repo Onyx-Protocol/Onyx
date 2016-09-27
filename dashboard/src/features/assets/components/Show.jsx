@@ -1,13 +1,11 @@
 import React from 'react'
+import { BaseShow } from '../../shared'
 
-class Show extends React.Component {
-  componentDidMount() {
-    this.props.fetchItem(this.props.params.id)
-  }
-
+class Show extends BaseShow {
   render() {
     const item = this.props.item
 
+    let view
     if (item) {
       let label = item.id
 
@@ -15,31 +13,28 @@ class Show extends React.Component {
         label = item.alias
       }
 
-      return(
-        <div className='panel panel-default'>
-          <div className='panel-heading'>
-            <strong>Asset - {label}</strong>
-          </div>
-          <div className='panel-body'>
-            <pre>
-              {JSON.stringify(item, null, '  ')}
-            </pre>
-          </div>
-          <div className='panel-footer'>
-            <ul className='nav nav-pills'>
-              <li>
-                <button className='btn btn-link' onClick={this.props.showCirculation.bind(this, item)}>
-                  Circulation
-                </button>
-              </li>
-            </ul>
-          </div>
-
+      view = <div className='panel panel-default'>
+        <div className='panel-heading'>
+          <strong>Asset - {label}</strong>
         </div>
-      )
-    } else {
-      return(<div>Loading...</div>)
+        <div className='panel-body'>
+          <pre>
+            {JSON.stringify(item, null, '  ')}
+          </pre>
+        </div>
+        <div className='panel-footer'>
+          <ul className='nav nav-pills'>
+            <li>
+              <button className='btn btn-link' onClick={this.props.showCirculation.bind(this, item)}>
+                Circulation
+              </button>
+            </li>
+          </ul>
+        </div>
+
+      </div>
     }
+    return this.renderIfFound(view)
   }
 }
 

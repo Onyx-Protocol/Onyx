@@ -1,15 +1,11 @@
 import React from 'react'
+import { BaseShow } from '../../shared'
 
-class Show extends React.Component {
+class Show extends BaseShow {
   constructor(props) {
     super(props)
 
-    this.state = {}
     this.createControlProgram = this.createControlProgram.bind(this)
-  }
-
-  componentDidMount() {
-    this.props.fetchItem(this.props.params.id)
   }
 
   createControlProgram() {
@@ -24,48 +20,45 @@ class Show extends React.Component {
   render() {
     const item = this.props.item
 
+    let view
     if (item) {
-      return(
-        <div className='panel panel-default'>
-          <div className='panel-heading'>
-            <strong>Account - {item.id}</strong>
-          </div>
-          <div className='panel-body'>
-            <pre>
-              {JSON.stringify(item, null, '  ')}
-            </pre>
-          </div>
+      view = <div className='panel panel-default'>
+        <div className='panel-heading'>
+          <strong>Account - {item.id}</strong>
+        </div>
+        <div className='panel-body'>
+          <pre>
+            {JSON.stringify(item, null, '  ')}
+          </pre>
+        </div>
 
-          <div className='panel-footer'>
-            <div className='row'>
-              <div className='col-sm-4'>
-                <ul className='nav nav-pills'>
-                  <li>
-                    <button className='btn btn-link' onClick={this.props.showTransactions.bind(this, item.id)}>Transactions</button>
-                  </li>
-                  <li>
-                    <button className='btn btn-link' onClick={this.props.showBalances.bind(this, item.id)}>Balances</button>
-                  </li>
-                </ul>
-              </div>
-              <div className='col-sm-8 text-right'>
-                <button className='btn btn-link' onClick={this.createControlProgram}>
-                  Create&nbsp;
-                  {this.state.program && 'another '}
-                  Control Program
-                </button>
-                {this.state.program && <p>
-                  <code>{this.state.program}</code>
-                </p>}
-              </div>
+        <div className='panel-footer'>
+          <div className='row'>
+            <div className='col-sm-4'>
+              <ul className='nav nav-pills'>
+                <li>
+                  <button className='btn btn-link' onClick={this.props.showTransactions.bind(this, item.id)}>Transactions</button>
+                </li>
+                <li>
+                  <button className='btn btn-link' onClick={this.props.showBalances.bind(this, item.id)}>Balances</button>
+                </li>
+              </ul>
+            </div>
+            <div className='col-sm-8 text-right'>
+              <button className='btn btn-link' onClick={this.createControlProgram}>
+                Create&nbsp;
+                {this.state.program && 'another '}
+                Control Program
+              </button>
+              {this.state.program && <p>
+                <code>{this.state.program}</code>
+              </p>}
             </div>
           </div>
-
         </div>
-      )
-    } else {
-      return(<div>Loading...</div>)
+      </div>
     }
+    return this.renderIfFound(view)
   }
 }
 
