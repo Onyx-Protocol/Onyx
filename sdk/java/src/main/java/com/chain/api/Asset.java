@@ -38,7 +38,8 @@ public class Asset {
   /**
    * Specifies whether the asset was defined on the local core, or externally
    */
-  public String origin;
+  @SerializedName("is_local")
+  public String isLocal;
 
   public static class Key {
     @SerializedName("root_xpub")

@@ -178,6 +178,13 @@ public class Transaction {
     public Map<String, Object> assetTags;
 
     /**
+     * A flag indicating if the asset is locally controlled.
+     * Possible values are "yes" or "no".
+     */
+    @SerializedName("asset_is_local")
+    public String assetIsLocal;
+
+    /**
      * Inputs to the control program used to verify the ability to take the specified action (possibly null).
      */
     @SerializedName("input_witness")
@@ -252,6 +259,13 @@ public class Transaction {
      */
     @SerializedName("asset_tags")
     public Map<String, Object> assetTags;
+
+    /**
+     * A flag indicating if the asset is locally controlled.
+     * Possible values are "yes" or "no".
+     */
+    @SerializedName("asset_is_local")
+    public String assetIsLocal;
 
     /**
      * User specified, unstructured data embedded within an input (possibly null).

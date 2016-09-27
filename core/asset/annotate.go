@@ -99,9 +99,9 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 				in["asset_alias"] = alias
 			}
 			if localByAssetIDStr[assetIDStr] {
-				in["asset_origin"] = "local"
+				in["asset_is_local"] = "yes"
 			} else {
-				in["asset_origin"] = "external"
+				in["asset_is_local"] = "no"
 			}
 		}
 
@@ -119,9 +119,9 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 				out["asset_alias"] = alias
 			}
 			if localByAssetIDStr[assetIDStr] {
-				out["asset_origin"] = "local"
+				out["asset_is_local"] = "yes"
 			} else {
-				out["asset_origin"] = "external"
+				out["asset_is_local"] = "no"
 			}
 		}
 	}

@@ -20,7 +20,7 @@ type (
 		AssetID         interface{} `json:"asset_id"`
 		AssetAlias      interface{} `json:"asset_alias,omitempty"`
 		AssetTags       interface{} `json:"asset_tags,omitempty"`
-		AssetOrigin     interface{} `json:"asset_origin"`
+		AssetIsLocal    interface{} `json:"asset_is_local"`
 		Amount          interface{} `json:"amount"`
 		IssuanceProgram interface{} `json:"issuance_program,omitempty"`
 		SpentOutput     interface{} `json:"spent_output,omitempty"`
@@ -29,14 +29,14 @@ type (
 		AssetDefinition interface{} `json:"asset_definition"`
 	}
 	txoutResp struct {
-		Action      interface{} `json:"action"`
-		Purpose     interface{} `json:"purpose,omitempty"`
-		Position    interface{} `json:"position"`
-		AssetID     interface{} `json:"asset_id"`
-		AssetAlias  interface{} `json:"asset_alias,omitempty"`
-		AssetTags   interface{} `json:"asset_tags"`
-		AssetOrigin interface{} `json:"asset_origin"`
-		Amount      interface{} `json:"amount"`
+		Action       interface{} `json:"action"`
+		Purpose      interface{} `json:"purpose,omitempty"`
+		Position     interface{} `json:"position"`
+		AssetID      interface{} `json:"asset_id"`
+		AssetAlias   interface{} `json:"asset_alias,omitempty"`
+		AssetTags    interface{} `json:"asset_tags"`
+		AssetIsLocal interface{} `json:"asset_is_local"`
+		Amount       interface{} `json:"amount"`
 		*txAccount
 		ControlProgram interface{} `json:"control_program"`
 		ReferenceData  interface{} `json:"reference_data"`
@@ -159,7 +159,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 				AssetID:         in["asset_id"],
 				AssetAlias:      in["asset_alias"],
 				AssetTags:       in["asset_tags"],
-				AssetOrigin:     in["asset_origin"],
+				AssetIsLocal:    in["asset_is_local"],
 				Amount:          in["amount"],
 				IssuanceProgram: in["issuance_program"],
 				SpentOutput:     in["spent_output"],
@@ -178,7 +178,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 				AssetID:        out["asset_id"],
 				AssetAlias:     out["asset_alias"],
 				AssetTags:      out["asset_tags"],
-				AssetOrigin:    out["asset_origin"],
+				AssetIsLocal:   out["asset_is_local"],
 				Amount:         out["amount"],
 				txAccount:      txAccountFromMap(out),
 				ControlProgram: out["control_program"],
@@ -307,7 +307,7 @@ type utxoResp struct {
 	AssetID        interface{} `json:"asset_id"`
 	AssetAlias     interface{} `json:"asset_alias"`
 	AssetTags      interface{} `json:"asset_tags"`
-	AssetOrigin    interface{} `json:"asset_origin"`
+	AssetIsLocal   interface{} `json:"asset_is_local"`
 	Amount         interface{} `json:"amount"`
 	AccountID      interface{} `json:"account_id"`
 	AccountAlias   interface{} `json:"account_alias"`
@@ -363,7 +363,7 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 			AssetID:        out["asset_id"],
 			AssetAlias:     out["asset_alias"],
 			AssetTags:      out["asset_tags"],
-			AssetOrigin:    out["asset_origin"],
+			AssetIsLocal:   out["asset_is_local"],
 			Amount:         out["amount"],
 			AccountID:      out["account_id"],
 			AccountAlias:   out["account_alias"],

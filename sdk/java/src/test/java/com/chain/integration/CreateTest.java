@@ -84,7 +84,7 @@ public class CreateTest {
     assertEquals(testAsset.quorum, 1);
     assertEquals(testAsset.tags.get("name"), asset);
     assertEquals(testAsset.definition.get("name"), asset);
-    assertEquals(testAsset.origin, "local");
+    assertEquals(testAsset.isLocal, "yes");
   }
 
   public static void testAssetCreateFailure() throws Exception {

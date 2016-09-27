@@ -48,7 +48,7 @@ func indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 		"definition":       a.Definition,
 		"issuance_program": json.HexBytes(a.IssuanceProgram),
 		"tags":             a.Tags,
-		"origin":           "external",
+		"is_local":         "no",
 	}
 	if a.Signer != nil {
 		var keys []map[string]interface{}
@@ -62,7 +62,7 @@ func indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 		}
 		m["keys"] = keys
 		m["quorum"] = a.Signer.Quorum
-		m["origin"] = "local"
+		m["is_local"] = "yes"
 	} else {
 		pubkeys, quorum, err := vmutil.ParseP2DPMultiSigProgram(a.IssuanceProgram)
 		if err == nil {

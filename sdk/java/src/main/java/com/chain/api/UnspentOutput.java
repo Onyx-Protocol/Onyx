@@ -21,6 +21,9 @@ public class UnspentOutput {
   @SerializedName("asset_tags")
   public Map<String, Object> assetTags;
 
+  @SerializedName("asset_is_local")
+  public String assetIsLocal;
+
   public long amount;
 
   @SerializedName("account_id")
