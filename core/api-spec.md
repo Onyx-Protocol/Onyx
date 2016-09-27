@@ -1077,6 +1077,7 @@ POST /info
   "block_height": ...,
   "generator_block_height": ...,
   "is_production": <true | false>,
+  "network_rpc_version": <integer>,
   "build_commit": ...,
   "build_date": ...,
   "require_client_access_tokens": <boolean>,
