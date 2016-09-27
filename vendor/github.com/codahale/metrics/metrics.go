@@ -77,6 +77,19 @@ func (c Counter) SetBatchFunc(key interface{}, init func(), f func() uint64) {
 	}
 }
 
+// Remove removes the given counter.
+func (c Counter) Remove() {
+	cm.Lock()
+	defer cm.Unlock()
+
+	gm.Lock()
+	defer gm.Unlock()
+
+	delete(counters, string(c))
+	delete(counterFuncs, string(c))
+	delete(inits, string(c))
+}
+
 // A Gauge is an instantaneous measurement of a value.
 //
 // Use a gauge to track metrics which increase and decrease (e.g., amount of
@@ -113,6 +126,15 @@ func (g Gauge) SetBatchFunc(key interface{}, init func(), f func() int64) {
 	if _, ok := inits[key]; !ok {
 		inits[key] = init
 	}
+}
+
+// Remove removes the given gauge.
+func (g Gauge) Remove() {
+	gm.Lock()
+	defer gm.Unlock()
+
+	delete(gauges, string(g))
+	delete(inits, string(g))
 }
 
 // Reset removes all existing counters and gauges.
@@ -179,6 +201,7 @@ func NewHistogram(name string, minValue, maxValue int64, sigfigs int) *Histogram
 	}
 
 	hist := &Histogram{
+		name: name,
 		hist: hdrhistogram.NewWindowed(5, minValue, maxValue, sigfigs),
 	}
 	histograms[name] = hist
@@ -193,22 +216,49 @@ func NewHistogram(name string, minValue, maxValue int64, sigfigs int) *Histogram
 	return hist
 }
 
+// Remove removes the given histogram.
+func (h *Histogram) Remove() {
+
+	hm.Lock()
+	defer hm.Unlock()
+
+	Gauge(h.name + ".P50").Remove()
+	Gauge(h.name + ".P75").Remove()
+	Gauge(h.name + ".P90").Remove()
+	Gauge(h.name + ".P95").Remove()
+	Gauge(h.name + ".P99").Remove()
+	Gauge(h.name + ".P999").Remove()
+
+	delete(histograms, h.name)
+}
+
 type hname string // unexported to prevent collisions
 
 // A Histogram measures the distribution of a stream of values.
 type Histogram struct {
+	name string
 	hist *hdrhistogram.WindowedHistogram
 	m    *hdrhistogram.Histogram
 	rw   sync.RWMutex
 }
 
+// Name returns the name of the histogram
+func (h *Histogram) Name() string {
+	return h.name
+}
+
 // RecordValue records the given value, or returns an error if the value is out
 // of range.
+// Returned error values are of type Error.
 func (h *Histogram) RecordValue(v int64) error {
 	h.rw.Lock()
 	defer h.rw.Unlock()
 
-	return h.hist.Current.RecordValue(v)
+	err := h.hist.Current.RecordValue(v)
+	if err != nil {
+		return Error{h.name, err}
+	}
+	return nil
 }
 
 func (h *Histogram) rotate() {
@@ -236,6 +286,16 @@ func (h *Histogram) valueAt(q float64) func() int64 {
 
 		return h.m.ValueAtQuantile(q)
 	}
+}
+
+// Error describes an error and the name of the metric where it occurred.
+type Error struct {
+	Metric string
+	Err    error
+}
+
+func (e Error) Error() string {
+	return e.Metric + ": " + e.Err.Error()
 }
 
 var (

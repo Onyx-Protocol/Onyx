@@ -1,5 +1,3 @@
-// +build !windows
-
 package runtime
 
 import (
@@ -8,12 +6,11 @@ import (
 	"github.com/codahale/metrics"
 )
 
-func TestFdStats(t *testing.T) {
+func TestGoroutinesStats(t *testing.T) {
 	_, gauges := metrics.Snapshot()
 
 	expected := []string{
-		"FileDescriptors.Max",
-		"FileDescriptors.Used",
+		"Goroutines.Num",
 	}
 
 	for _, name := range expected {

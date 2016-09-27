@@ -18,6 +18,7 @@ func TestMemStats(t *testing.T) {
 		"Mem.LastGC",
 		"Mem.Alloc",
 		"Mem.HeapObjects",
+		"Mem.NextGC",
 	}
 
 	for _, name := range expectedCounters {

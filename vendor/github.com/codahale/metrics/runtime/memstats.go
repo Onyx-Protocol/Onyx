@@ -15,6 +15,7 @@ func init() {
 	metrics.Gauge("Mem.LastGC").SetBatchFunc(key{}, msg.init, msg.lastPause)
 	metrics.Gauge("Mem.Alloc").SetBatchFunc(key{}, msg.init, msg.alloc)
 	metrics.Gauge("Mem.HeapObjects").SetBatchFunc(key{}, msg.init, msg.objects)
+	metrics.Gauge("Mem.NextGC").SetBatchFunc(key{}, msg.init, msg.nextGC)
 }
 
 type key struct{} // unexported to prevent collision
@@ -45,4 +46,8 @@ func (msg *memStatGauges) alloc() int64 {
 
 func (msg *memStatGauges) objects() int64 {
 	return int64(msg.stats.HeapObjects)
+}
+
+func (msg *memStatGauges) nextGC() int64 {
+	return int64(msg.stats.NextGC)
 }

@@ -66,6 +66,18 @@ func TestCounterBatchFunc(t *testing.T) {
 	}
 }
 
+func TestCounterRemove(t *testing.T) {
+	metrics.Reset()
+
+	metrics.Counter("whee").Add()
+	metrics.Counter("whee").Remove()
+
+	counters, _ := metrics.Snapshot()
+	if v, ok := counters["whee"]; ok {
+		t.Errorf("Counter was %v, but expected nothing", v)
+	}
+}
+
 func TestGaugeValue(t *testing.T) {
 	metrics.Reset()
 
@@ -87,6 +99,18 @@ func TestGaugeFunc(t *testing.T) {
 	_, gauges := metrics.Snapshot()
 	if v, want := gauges["whee"], int64(-100); v != want {
 		t.Errorf("Gauge was %v, but expected %v", v, want)
+	}
+}
+
+func TestGaugeRemove(t *testing.T) {
+	metrics.Reset()
+
+	metrics.Gauge("whee").Set(1)
+	metrics.Gauge("whee").Remove()
+
+	_, gauges := metrics.Snapshot()
+	if v, ok := gauges["whee"]; ok {
+		t.Errorf("Gauge was %v, but expected nothing", v)
 	}
 }
 
@@ -124,6 +148,18 @@ func TestHistogram(t *testing.T) {
 
 	if v, want := gauges["heyo.P999"], int64(100); v != want {
 		t.Errorf("P999 was %v, but expected %v", v, want)
+	}
+}
+
+func TestHistogramRemove(t *testing.T) {
+	metrics.Reset()
+
+	h := metrics.NewHistogram("heyo", 1, 1000, 3)
+	h.Remove()
+
+	_, gauges := metrics.Snapshot()
+	if v, ok := gauges["heyo.P50"]; ok {
+		t.Errorf("Gauge was %v, but expected nothing", v)
 	}
 }
 
