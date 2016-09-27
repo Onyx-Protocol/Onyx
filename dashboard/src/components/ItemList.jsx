@@ -17,13 +17,24 @@ class ItemList extends React.Component {
   }
 
   componentWillReceiveProps(nextProps) {
+    if (this.state.error) {
+      if (this.props.searchState.queryString != nextProps.searchState.queryString) {
+        this.setState({error: false})
+      } else { return }
+    }
+
     this.fetchFirstPage(nextProps)
   }
 
   fetchFirstPage(props) {
     if (props.items.length === 0 && !this.state.fetching) {
       this.setState({fetching: true})
-      return this.props.incrementPage().then(() => this.setState({fetching: false}))
+      return this.props.incrementPage()
+        .then((param) => {
+          if (param && param.type == 'ERROR') {
+            this.setState({error: true})
+          }
+        }).then(() => this.setState({fetching: false}))
     }
   }
 

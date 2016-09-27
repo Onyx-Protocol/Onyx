@@ -4,10 +4,17 @@ import actionCreator from './actionCreator'
 
 const updateInfo = actionCreator('UPDATE_CORE_INFO', param => ({ param }))
 
-const fetchCoreInfo = () => {
+const fetchCoreInfo = (options = {}) => {
   return (dispatch) => {
     return chain.Core.info(context)
       .then((info) => dispatch(updateInfo(info)))
+      .catch((err) => {
+        if (options.throw) {
+          throw err
+        } else {
+          dispatch({type: 'ERROR', payload: err})
+        }
+      })
   }
 }
 
@@ -17,7 +24,7 @@ const retry = (dispatch, promise, count = 10) => {
     while (currentTime + 200 >= new Date().getTime()) { /* wait for retry */ }
 
     if (count >= 1) {
-      retry(dispatch, promise, count -1)
+      retry(dispatch, promise, count - 1)
     } else {
       throw(err)
     }
@@ -34,7 +41,8 @@ let actions = {
       data.is_signer = data.is_generator
 
       return chain.Core.configure(data, context)
-        .then(() => retry(dispatch, fetchCoreInfo()))
+        .then(() => retry(dispatch, fetchCoreInfo({throw: true})))
+        .catch((err) => dispatch({type: 'ERROR', payload: err}))
     }
   }
 }

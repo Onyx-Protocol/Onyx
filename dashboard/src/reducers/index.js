@@ -12,15 +12,17 @@ import core from './core'
 import mockhsm from './mockhsm'
 import unspent from './unspent'
 
-export default combineReducers({
-  account,
-  app,
-  asset,
-  balance,
-  core,
-  form,
-  mockhsm,
-  routing,
-  transaction,
-  unspent,
-})
+const makeRootReducer = () =>
+  combineReducers({
+    account,
+    app,
+    asset,
+    balance,
+    core,
+    form,
+    mockhsm,
+    routing,
+    transaction,
+    unspent
+  })
+export default makeRootReducer

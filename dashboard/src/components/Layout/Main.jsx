@@ -16,12 +16,6 @@ class Main extends React.Component {
     this.props.toggleDropdown()
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.flashMessage.displayed == false) {
-      this.props.markFlashDisplayed()
-    }
-  }
-
   render() {
     return (
       <div
@@ -32,7 +26,8 @@ class Main extends React.Component {
           toggleDropdown={this.toggleDropdown} />
 
         <div className='container'>
-          <Flash {...this.props.flashMessage}
+          <Flash messages={this.props.flashMessages}
+            markFlashDisplayed={this.props.markFlashDisplayed}
             dismissFlash={this.props.dismissFlash}
           />
 

@@ -5,13 +5,14 @@ import thunkMiddleware from 'redux-thunk'
 import { routerMiddleware as createRouterMiddleware } from 'react-router-redux'
 import { history } from './utility/environment'
 
-import rootReducer from './reducers'
+import makeRootReducer from './reducers'
+import { combineReducers } from 'redux'
 
 const routerMiddleware = createRouterMiddleware(history)
 
 export default function() {
   const store = createStore(
-    rootReducer,
+    makeRootReducer(),
     compose(
       applyMiddleware(
         thunkMiddleware,
@@ -24,8 +25,8 @@ export default function() {
   if (module.hot) {
     // Enable Webpack hot module replacement for reducers
     module.hot.accept('./reducers', () => {
-      const nextRootReducer = require('./reducers/index')
-      store.replaceReducer(nextRootReducer)
+      const reducers = require('./reducers').default
+      store.replaceReducer(reducers())
     })
   }
 

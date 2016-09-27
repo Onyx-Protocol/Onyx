@@ -50,7 +50,8 @@ export default function(type, options = {}) {
   const fetchQueryPage = function() {
     return function(dispatch, getState) {
       let latestResponse = getState()[type].listView.cursor
-      let promise, filter
+      let promise
+      let filter = ''
 
       if (latestResponse && latestResponse.last_page) {
         return Promise.resolve({})
@@ -75,12 +76,12 @@ export default function(type, options = {}) {
 
       return promise.then(
         (param) => dispatch(appendPage(param))
-      ).catch(( /* err */ ) => {
-        // TODO: track error
-
+      ).catch(( err ) => {
         if (options.defaultKey && filter.indexOf('\'') < 0 && filter.indexOf('=') < 0) {
           dispatch(updateQuery(`${options.defaultKey}='${filter}'`))
           dispatch(fetchQueryPage())
+        } else {
+          return dispatch({type: 'ERROR', payload: err})
         }
       })
     }

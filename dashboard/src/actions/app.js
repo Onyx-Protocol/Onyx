@@ -12,6 +12,6 @@ closeDropdown.type = _closeDropwdown.type
 export default {
   toggleDropdown: actionCreator('TOGGLE_DROPDOWN'),
   closeDropdown,
-  dismissFlash: actionCreator('DISMISS_FLASH'),
-  displayedFlash: actionCreator('DISPLAYED_FLASH')
+  dismissFlash: actionCreator('DISMISS_FLASH', param => ({ param })),
+  displayedFlash: actionCreator('DISPLAYED_FLASH', param => ({ param }))
 }

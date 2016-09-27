@@ -4,7 +4,7 @@ import MainComponent from '../../components/Layout/Main'
 
 const mapStateToProps = (state) => ({
   dropdownState: state.app.dropdownState,
-  flashMessage: state.app.flashMessage,
+  flashMessages: state.app.flashMessages,
   buildCommit: state.core.buildCommit,
   buildDate: state.core.buildDate
 })
@@ -12,8 +12,8 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = (dispatch) => ({
   toggleDropdown: () => dispatch(actions.app.toggleDropdown()),
   closeDropdown: () => dispatch(actions.app.closeDropdown()),
-  markFlashDisplayed: () => dispatch(actions.app.displayedFlash()),
-  dismissFlash: () => dispatch(actions.app.dismissFlash())
+  markFlashDisplayed: (key) => dispatch(actions.app.displayedFlash(key)),
+  dismissFlash: (key) => dispatch(actions.app.dismissFlash(key))
 })
 
 export default connect(
