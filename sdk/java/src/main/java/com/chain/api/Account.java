@@ -79,7 +79,6 @@ public class Account {
     private String clientToken;
 
     public Builder() {
-      this.tags = new HashMap<>();
       this.rootXpubs = new ArrayList<>();
     }
 
@@ -135,6 +134,9 @@ public class Account {
     }
 
     public Builder addTag(String key, Object value) {
+      if (this.tags == null) {
+        this.tags = new HashMap<>();
+      }
       this.tags.put(key, value);
       return this;
     }

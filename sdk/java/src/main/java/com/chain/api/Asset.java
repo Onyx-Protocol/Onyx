@@ -82,8 +82,6 @@ public class Asset {
     private String clientToken;
 
     public Builder() {
-      this.definition = new HashMap<>();
-      this.tags = new HashMap<>();
       this.rootXpubs = new ArrayList<>();
     }
 
@@ -104,12 +102,23 @@ public class Asset {
       return this;
     }
 
+    public Builder addDefinitionField(String key, Object value) {
+      if (this.definition == null) {
+        this.definition = new HashMap<>();
+      }
+      this.definition.put(key, value);
+      return this;
+    }
+
     public Builder setDefinition(Map<String, Object> definition) {
       this.definition = definition;
       return this;
     }
 
     public Builder addTag(String key, Object value) {
+      if (this.tags == null) {
+        this.tags = new HashMap<>();
+      }
       this.tags.put(key, value);
       return this;
     }

@@ -63,6 +63,7 @@ public class CreateTest {
     context = new Context(TestUtils.getCoreURL(System.getProperty("chain.api.url")));
     key = MockHsm.Key.create(context);
     String asset = "CreateTest.testAssetCreateSuccess.asset";
+    String test = "CreateTest.testAssetCreateSuccess.test";
     Map<String, Object> def = new HashMap<>();
     def.put("name", asset);
     Asset testAsset =
@@ -72,6 +73,7 @@ public class CreateTest {
             .setQuorum(1)
             .addTag("name", asset)
             .setDefinition(def)
+            .addDefinitionField("test", test)
             .create(context);
     assertNotNull(testAsset.id);
     assertEquals(testAsset.alias, asset);
@@ -84,6 +86,7 @@ public class CreateTest {
     assertEquals(testAsset.quorum, 1);
     assertEquals(testAsset.tags.get("name"), asset);
     assertEquals(testAsset.definition.get("name"), asset);
+    assertEquals(testAsset.definition.get("test"), test);
     assertEquals(testAsset.isLocal, "yes");
   }
 

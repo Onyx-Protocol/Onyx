@@ -5,14 +5,9 @@ import com.chain.api.Account;
 import com.chain.api.Asset;
 import com.chain.api.MockHsm;
 import com.chain.api.Transaction;
-import com.chain.exception.APIException;
 import com.chain.http.Context;
 import com.chain.signing.HsmSigner;
 import org.junit.Test;
-
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
 
 public class TransactionTest {
   static Context context;
@@ -33,6 +28,7 @@ public class TransactionTest {
     String alice = "TransactionTest.testBasicTransaction.alice";
     String bob = "TransactionTest.testBasicTransaction.bob";
     String asset = "TransactionTest.testBasicTransaction.asset";
+    String test = "TransactionTest.testBasicTransaction.test";
 
     new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(context);
     new Account.Builder().setAlias(bob).addRootXpub(key.xpub).setQuorum(1).create(context);
@@ -40,12 +36,18 @@ public class TransactionTest {
 
     Transaction.Template issuance =
         new Transaction.Builder()
-            .addAction(new Transaction.Action.Issue().setAssetAlias(asset).setAmount(100))
+            .addAction(
+                new Transaction.Action.Issue()
+                    .setAssetAlias(asset)
+                    .setAmount(100)
+                    .addReferenceDataField("test", test))
             .addAction(
                 new Transaction.Action.ControlWithAccount()
                     .setAccountAlias(alice)
                     .setAssetAlias(asset)
-                    .setAmount(100))
+                    .setAmount(100)
+                    .addReferenceDataField("test", test))
+            .addReferenceDataField("test", test)
             .build(context);
     Transaction.submit(context, HsmSigner.sign(issuance));
 
@@ -55,12 +57,15 @@ public class TransactionTest {
                 new Transaction.Action.SpendFromAccount()
                     .setAccountAlias(alice)
                     .setAssetAlias(asset)
-                    .setAmount(10))
+                    .setAmount(10)
+                    .addReferenceDataField("test", test))
             .addAction(
                 new Transaction.Action.ControlWithAccount()
                     .setAccountAlias(bob)
                     .setAssetAlias(asset)
-                    .setAmount(10))
+                    .setAmount(10)
+                    .addReferenceDataField("test", test))
+            .addReferenceDataField("test", test)
             .build(context);
     Transaction.submit(context, HsmSigner.sign(spending));
 
@@ -70,8 +75,14 @@ public class TransactionTest {
                 new Transaction.Action.SpendFromAccount()
                     .setAccountAlias(bob)
                     .setAssetAlias(asset)
-                    .setAmount(5))
-            .addAction(new Transaction.Action.Retire().setAssetAlias(asset).setAmount(5))
+                    .setAmount(5)
+                    .addReferenceDataField("test", test))
+            .addAction(
+                new Transaction.Action.Retire()
+                    .setAssetAlias(asset)
+                    .setAmount(5)
+                    .addReferenceDataField("test", test))
+            .addReferenceDataField("test", test)
             .build(context);
     Transaction.submit(context, HsmSigner.sign(retirement));
   }

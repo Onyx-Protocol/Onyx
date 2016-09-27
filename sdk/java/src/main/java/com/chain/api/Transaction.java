@@ -515,6 +515,34 @@ public class Transaction {
     }
 
     /**
+     * Adds a k,v pair to the action's reference data object.<br>
+     * Since most/all current action types use the reference_data parameter, we provide this method in the base class to avoid repetition.
+     * @param key key of the reference data field
+     * @param value value of reference data field
+     * @return updated action object
+     */
+    public Action addReferenceDataField(String key, Object value) {
+      Map<String, Object> referenceData = (HashMap<String, Object>) this.get("reference_data");
+      if (referenceData == null) {
+        referenceData = new HashMap<>();
+        this.put("reference_data", referenceData);
+      }
+      referenceData.put(key, value);
+      return this;
+    }
+
+    /**
+     * Specifies the reference data to associate with the action
+     * Since most/all current action types use the reference_data parameter, we provide this method in the base class to avoid repetition.
+     * @param referenceData reference data to embed into the action
+     * @return updated action object
+     */
+    public Action setReferenceData(Map<String, Object> referenceData) {
+      this.put("reference_data", referenceData);
+      return this;
+    }
+
+    /**
      * Represents an issuance action.
      */
     public static class Issue extends Action {
@@ -554,16 +582,6 @@ public class Transaction {
         this.put("amount", amount);
         return this;
       }
-
-      /**
-       * Specifies the reference data to associate with the action
-       * @param referenceData reference data to embed into the action
-       * @return updated action object
-       */
-      public Issue setReferenceData(HashMap<String, Object> referenceData) {
-        this.put("reference_data", referenceData);
-        return this;
-      }
     }
 
     /**
@@ -597,16 +615,6 @@ public class Transaction {
         for (UnspentOutput unspentOutput : unspentOutputs) {
           this.setUnspentOutput(unspentOutput);
         }
-        return this;
-      }
-
-      /**
-       * Specifies the reference data to associate with the action
-       * @param referenceData reference data to embed into the action
-       * @return updated action object
-       */
-      public SpendAccountUnspentOutput setReferenceData(HashMap<String, Object> referenceData) {
-        this.put("reference_data", referenceData);
         return this;
       }
     }
@@ -675,16 +683,6 @@ public class Transaction {
         this.put("amount", amount);
         return this;
       }
-
-      /**
-       * Specifies the reference data to associate with the action
-       * @param referenceData reference data to embed into the action
-       * @return updated action object
-       */
-      public SpendFromAccount setReferenceData(HashMap<String, Object> referenceData) {
-        this.put("reference_data", referenceData);
-        return this;
-      }
     }
 
     /**
@@ -751,16 +749,6 @@ public class Transaction {
         this.put("amount", amount);
         return this;
       }
-
-      /**
-       * Specifies the reference data to associate with the action
-       * @param referenceData reference data to embed into the action
-       * @return updated action object
-       */
-      public ControlWithAccount setReferenceData(HashMap<String, Object> referenceData) {
-        this.put("reference_data", referenceData);
-        return this;
-      }
     }
 
     /**
@@ -813,16 +801,6 @@ public class Transaction {
         this.put("amount", amount);
         return this;
       }
-
-      /**
-       * Specifies the reference data to associate with the action
-       * @param referenceData reference data to embed into the action
-       * @return updated action object
-       */
-      public ControlWithProgram setReferenceData(HashMap<String, Object> referenceData) {
-        this.put("reference_data", referenceData);
-        return this;
-      }
     }
 
     /**
@@ -864,16 +842,6 @@ public class Transaction {
        */
       public Retire setAssetId(String id) {
         this.put("asset_id", id);
-        return this;
-      }
-
-      /**
-       * Specifies the reference data to associate with the action
-       * @param referenceData reference data to embed into the action
-       * @return updated action object
-       */
-      public Retire setReferenceData(HashMap<String, Object> referenceData) {
-        this.put("reference_data", referenceData);
         return this;
       }
     }
@@ -964,6 +932,19 @@ public class Transaction {
      */
     public Builder addAction(Action action) {
       this.actions.add(action);
+      return this;
+    }
+
+    /**
+     * Adds a k,v pair to the transaction's reference data object
+     * @param key key of the reference data field
+     * @param value value of reference data field
+     */
+    public Builder addReferenceDataField(String key, Object value) {
+      if (this.referenceData == null) {
+        this.referenceData = new HashMap<>();
+      }
+      this.referenceData.put(key, value);
       return this;
     }
 
