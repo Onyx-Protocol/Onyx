@@ -35,16 +35,8 @@ public class Balance {
       return this;
     }
 
-    public QueryBuilder addSumByParameter(String param) {
-      this.query.sumBy.add(param);
-      return this;
-    }
-
-    public QueryBuilder setSumByParameters(List<String> params) {
-      this.query.sumBy = new ArrayList<>();
-      for (String param : params) {
-        this.query.sumBy.add(param);
-      }
+    public QueryBuilder setSumBy(List<String> sumBy) {
+      this.query.sumBy = new ArrayList<String>(sumBy);
       return this;
     }
   }

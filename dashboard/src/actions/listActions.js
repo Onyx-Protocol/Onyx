@@ -67,8 +67,6 @@ export default function(type, options = {}) {
 
         if (getState()[type].listView.sumBy) {
           params.sum_by = getState()[type].listView.sumBy.split(',')
-        } else if (options.defaultSumBy) {
-          params.sum_by = options.defaultSumBy()
         }
 
         promise = dispatch(fetchItems(params))

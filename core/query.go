@@ -278,6 +278,12 @@ func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, e
 		return result, err
 	}
 
+	// Since an empty SumBy yields a meaningless result, we'll provide a
+	// sensible default here.
+	if len(in.SumBy) == 0 {
+		in.SumBy = []string{"asset_alias", "asset_id"}
+	}
+
 	for _, field := range in.SumBy {
 		f, err := filter.ParseField(field)
 		if err != nil {
