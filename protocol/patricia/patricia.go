@@ -170,7 +170,7 @@ func (t *Tree) insert(n *Node, key []uint8, hash bc.Hash) (*Node, error) {
 
 	common := commonPrefixLen(n.key, key)
 	newNode := &Node{
-		key: n.key[:common],
+		key: key[:common],
 	}
 	newNode.children[key[common]] = &Node{
 		key:    key,
@@ -221,6 +221,7 @@ func (t *Tree) delete(n *Node, key []uint8) (*Node, error) {
 
 	newNode := new(Node)
 	*newNode = *n
+	newNode.key = newChild.key[:len(n.key)] // only use slices of leaf node keys
 	newNode.children[bit] = newChild
 	newNode.hash = hashChildren(newNode.children)
 
