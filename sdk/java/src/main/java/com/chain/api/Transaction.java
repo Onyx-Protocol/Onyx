@@ -57,6 +57,13 @@ public class Transaction {
   public Map<String, Object> referenceData;
 
   /**
+   * A flag indicating one or more inputs or outputs are local.
+   * Possible values are "yes" or "no".
+   */
+  @SerializedName("is_local")
+  public String isLocal;
+
+  /**
    * Paged results of a transaction query.
    */
   public static class Items extends PagedItems<Transaction> {
@@ -201,6 +208,14 @@ public class Transaction {
      */
     @SerializedName("reference_data")
     public Map<String, Object> referenceData;
+
+    /**
+     * A flag indicating if the input is local.
+     * Possible values are "yes" or "no".
+     */
+    @SerializedName("is_local")
+    public String isLocal;
+
   }
 
   /**
@@ -272,6 +287,13 @@ public class Transaction {
      */
     @SerializedName("reference_data")
     public Map<String, Object> referenceData;
+
+    /**
+     * A flag indicating if the output is local.
+     * Possible values are "yes" or "no".
+     */
+    @SerializedName("is_local")
+    public String isLocal;
   }
 
   /**

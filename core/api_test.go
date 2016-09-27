@@ -191,6 +191,8 @@ func TestTransfer(t *testing.T) {
 	ind := query.NewIndexer(dbtx, c)
 	asset.Init(c, ind)
 	account.Init(c, ind)
+	ind.RegisterAnnotator(account.AnnotateTxs)
+	ind.RegisterAnnotator(asset.AnnotateTxs)
 
 	assetAlias := "some-asset"
 	account1Alias := "first-account"

@@ -27,6 +27,7 @@ type (
 		*txAccount
 		ReferenceData   interface{} `json:"reference_data"`
 		AssetDefinition interface{} `json:"asset_definition"`
+		IsLocal         interface{} `json:"is_local"`
 	}
 	txoutResp struct {
 		Action       interface{} `json:"action"`
@@ -40,6 +41,7 @@ type (
 		*txAccount
 		ControlProgram interface{} `json:"control_program"`
 		ReferenceData  interface{} `json:"reference_data"`
+		IsLocal        interface{} `json:"is_local"`
 	}
 	txResp struct {
 		ID            interface{} `json:"id"`
@@ -48,6 +50,7 @@ type (
 		BlockHeight   interface{} `json:"block_height"`
 		Position      interface{} `json:"position"`
 		ReferenceData interface{} `json:"reference_data"`
+		IsLocal       interface{} `json:"is_local"`
 		Inputs        interface{} `json:"inputs"`
 		Outputs       interface{} `json:"outputs"`
 	}
@@ -166,6 +169,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 				txAccount:       txAccountFromMap(in),
 				ReferenceData:   in["reference_data"],
 				AssetDefinition: in["asset_definition"],
+				IsLocal:         in["is_local"],
 			}
 			inResps = append(inResps, r)
 		}
@@ -183,6 +187,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 				txAccount:      txAccountFromMap(out),
 				ControlProgram: out["control_program"],
 				ReferenceData:  out["reference_data"],
+				IsLocal:        out["is_local"],
 			}
 			outResps = append(outResps, r)
 		}
@@ -193,6 +198,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 			BlockHeight:   tx["block_height"],
 			Position:      tx["position"],
 			ReferenceData: tx["reference_data"],
+			IsLocal:       tx["is_local"],
 			Inputs:        inResps,
 			Outputs:       outResps,
 		}
@@ -320,6 +326,7 @@ type utxoResp struct {
 	AccountTags    interface{} `json:"account_tags"`
 	ControlProgram interface{} `json:"control_program"`
 	ReferenceData  interface{} `json:"reference_data"`
+	IsLocal        interface{} `json:"is_local"`
 }
 
 // POST /list-unspent-outputs
@@ -376,6 +383,7 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 			AccountTags:    out["account_tags"],
 			ControlProgram: out["control_program"],
 			ReferenceData:  out["reference_data"],
+			IsLocal:        out["is_local"],
 		}
 		resp = append(resp, r)
 	}
