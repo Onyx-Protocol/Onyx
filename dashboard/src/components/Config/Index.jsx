@@ -23,7 +23,7 @@ export default class Index extends React.Component {
   submitWithValidation(data) {
     if (data.generator_url && !data.initial_block_hash) {
       return new Promise((_, reject) => reject({
-        _error: 'You must specifiy a blockchain ID to connect to a network'
+        _error: 'You must specify a blockchain ID to connect to a network'
       }))
     }
 
