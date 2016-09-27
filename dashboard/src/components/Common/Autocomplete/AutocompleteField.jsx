@@ -8,7 +8,6 @@ class AutocompleteField extends React.Component {
     super()
 
     this.state = {
-      fetching: false,
       suggestions: []
     }
 
@@ -48,7 +47,6 @@ class AutocompleteField extends React.Component {
       this.props.fetchAll(() => {
         this.setState({suggestions: this.getSuggestions(value)})
       }).then(() => {
-        this.setState({fetching: false})
         this.props.didLoadAutocomplete()
       })
     }

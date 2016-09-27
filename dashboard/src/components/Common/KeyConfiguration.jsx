@@ -64,7 +64,6 @@ class KeyConfiguration extends React.Component {
           <XpubField
             key={`xpub-${index}`}
             index={index}
-            mockhsmKeys={this.props.mockhsmKeys}
             fieldProps={xpub}
           />)}
       </div>

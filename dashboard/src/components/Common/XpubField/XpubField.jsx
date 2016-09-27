@@ -1,6 +1,8 @@
 import React from 'react'
-import { SelectField, TextField } from '../'
 import styles from './XpubField.scss'
+import { SelectField, TextField } from '../'
+import { connect } from 'react-redux'
+import actions from '../../../actions'
 
 const methodOptions = {
   mockhsm: 'Use Mock HSM key',
@@ -14,15 +16,18 @@ class XpubField extends React.Component {
     this.state = { selectedType: Object.keys(methodOptions)[0] }
   }
 
+  componentDidMount() {
+    if (!this.props.autocompleteIsLoaded) {
+      this.props.fetchAll().then(() => {
+        this.props.didLoadAutocomplete()
+      })
+    }
+  }
+
   render() {
     const radioChanged = event => {
       this.setState({ selectedType: event.target.value })
     }
-
-    const keys = this.props.mockhsmKeys.map(item => ({
-      ...item,
-      label: item.alias ? item.alias : item.id.slice(0, 32) + '...'
-    }))
 
     return (
       <div className={styles.main}>
@@ -43,7 +48,7 @@ class XpubField extends React.Component {
         </div>
 
         {this.state.selectedType == 'mockhsm' &&
-          <SelectField options={keys}
+          <SelectField options={this.props.mockhsmKeys}
             valueKey='xpub'
             labelKey='label'
             fieldProps={this.props.fieldProps} />
@@ -56,4 +61,25 @@ class XpubField extends React.Component {
   }
 }
 
-export default XpubField
+
+export default connect(
+  (state) => {
+    let keys = []
+    for (var key in state.mockhsm.items) {
+      const item = state.mockhsm.items[key]
+      keys.push({
+        ...item,
+        label: item.alias ? item.alias : item.id.slice(0, 32) + '...'
+      })
+    }
+
+    return {
+      autocompleteIsLoaded: state.mockhsm.autocompleteIsLoaded,
+      mockhsmKeys: keys,
+    }
+  },
+  (dispatch) => ({
+    didLoadAutocomplete: () => dispatch(actions.mockhsm.didLoadAutocomplete()),
+    fetchAll: (cb) => dispatch(actions.mockhsm.fetchAll(cb)),
+  })
+)(XpubField)
