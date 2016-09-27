@@ -35,7 +35,10 @@ var (
 )
 
 // reserved mockhsm key alias
-const autoBlockKeyAlias = "_CHAIN_CORE_AUTO_BLOCK_KEY"
+const (
+	networkRPCVersion = 1
+	autoBlockKeyAlias = "_CHAIN_CORE_AUTO_BLOCK_KEY"
+)
 
 func isProduction() bool {
 	return expvar.Get("buildtag").String() != `"dev"`
@@ -142,6 +145,7 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
 		"is_production":                     isProduction(),
+		"network_rpc_version":               networkRPCVersion,
 		"build_commit":                      &buildCommit,
 		"build_date":                        &buildDate,
 	}, nil
