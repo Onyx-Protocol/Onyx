@@ -942,6 +942,7 @@ POST /list-access-tokens
 
 ```
 {
+  "type": <"client"|"network">, // optional, default is blank (no filtering)
   "after": <string>, // optional
   "page_size": <integer> // optional, defaults to 100
 }
@@ -960,6 +961,7 @@ POST /list-access-tokens
     ...
   ],
   "next": {
+    "type": <"client"|"network">,
     "after": <string>,
     "page_size": <integer>
   },
