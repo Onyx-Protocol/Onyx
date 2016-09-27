@@ -4,6 +4,10 @@ Chain 🍭
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/chain/chain/tree/main)
 
+## Contributing
+
+Chain has adopted the code of conduct defined by the Contributor Covenant. It can be read in full [here](https://github.com/chain/chain/blob/main/CODE_OF_CONDUCT.md).
+
 ### Dependencies
 
 * [Go](https://golang.org/doc/install) version 1.7, with $GOPATH set to your
