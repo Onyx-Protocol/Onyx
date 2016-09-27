@@ -31,7 +31,7 @@ public class MockHsm {
 
     public static class Items extends PagedItems<Key> {
       public Items getPage() throws ChainException {
-        Items items = this.context.request("mockhsm/list-keys", this.query, Items.class);
+        Items items = this.context.request("mockhsm/list-keys", this.next, Items.class);
         items.setContext(this.context);
         URL mockHsmUrl = buildMockHsmUrl(this.context.getUrl());
         for (Key k : items.list) {

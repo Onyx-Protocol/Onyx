@@ -1,50 +1,50 @@
 package com.chain.api;
 
+import com.google.gson.annotations.SerializedName;
+
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
-import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
 
 public abstract class BaseQueryBuilder<T extends BaseQueryBuilder<T>> {
-  @SerializedName("query")
-  protected Query query;
+  protected Query next;
 
   public abstract <S extends PagedItems> S execute(Context ctx) throws ChainException;
 
   public BaseQueryBuilder() {
-    this.query = new Query();
+    this.next = new Query();
   }
 
   public T useIndexById(String id) {
-    this.query.indexId = id;
+    this.next.indexId = id;
     return (T) this;
   }
 
   public T useIndexByAlias(String alias) {
-    this.query.indexAlias = alias;
+    this.next.indexAlias = alias;
     return (T) this;
   }
 
   public T setAfter(String after) {
-    this.query.after = after;
+    this.next.after = after;
     return (T) this;
   }
 
   public T setFilter(String filter) {
-    this.query.filter = filter;
+    this.next.filter = filter;
     return (T) this;
   }
 
   public T addFilterParameter(String param) {
-    this.query.filterParams.add(param);
+    this.next.filterParams.add(param);
     return (T) this;
   }
 
   public T setFilterParameters(ArrayList<String> params) {
-    this.query.filterParams = new ArrayList<>();
+    this.next.filterParams = new ArrayList<>();
     for (String p : params) {
-      this.query.filterParams.add(p);
+      this.next.filterParams.add(p);
     }
     return (T) this;
   }

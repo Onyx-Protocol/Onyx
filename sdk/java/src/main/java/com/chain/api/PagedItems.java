@@ -21,8 +21,7 @@ public abstract class PagedItems<T> implements Iterator<T> {
   @SerializedName("last_page")
   public boolean lastPage;
 
-  @SerializedName("query")
-  public Query query;
+  public Query next;
 
   public abstract PagedItems<T> getPage() throws ChainException;
 
@@ -36,8 +35,8 @@ public abstract class PagedItems<T> implements Iterator<T> {
     this.context = context;
   }
 
-  public void setQuery(Query query) {
-    this.query = query;
+  public void setNext(Query next) {
+    this.next = next;
   }
 
   public T next() {
@@ -54,7 +53,7 @@ public abstract class PagedItems<T> implements Iterator<T> {
           this.pos = 0;
           this.list = items.list;
           this.lastPage = items.lastPage;
-          this.query = items.query;
+          this.next = items.next;
 
           return this.list.size() > 0;
         } catch (ChainException e) {

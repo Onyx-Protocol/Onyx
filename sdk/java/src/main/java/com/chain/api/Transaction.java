@@ -70,7 +70,7 @@ public class Transaction {
      * @throws JSONException This exception is raised due to malformed json requests or responses.
      */
     public Items getPage() throws ChainException {
-      Items items = this.context.request("list-transactions", this.query, Items.class);
+      Items items = this.context.request("list-transactions", this.next, Items.class);
       items.setContext(this.context);
       return items;
     }
@@ -93,7 +93,7 @@ public class Transaction {
     public Items execute(Context ctx) throws ChainException {
       Items items = new Items();
       items.setContext(ctx);
-      items.setQuery(this.query);
+      items.setNext(this.next);
       return items.getPage();
     }
 
@@ -103,7 +103,7 @@ public class Transaction {
      * @return updated QueryBuilder object
      */
     public QueryBuilder setStartTime(long time) {
-      this.query.startTime = time;
+      this.next.startTime = time;
       return this;
     }
 
@@ -113,7 +113,7 @@ public class Transaction {
      * @return updated QueryBuilder object
      */
     public QueryBuilder setEndTime(long time) {
-      this.query.endTime = time;
+      this.next.endTime = time;
       return this;
     }
 
@@ -123,7 +123,7 @@ public class Transaction {
      * @return updated QueryBuilder object
      */
     public QueryBuilder setAscending() {
-      this.query.order = "asc";
+      this.next.order = "asc";
       return this;
     }
 
@@ -133,7 +133,7 @@ public class Transaction {
      * @return updated QueryBuilder object
      */
     public QueryBuilder setTimeout(long timeoutMS) {
-      this.query.timeout = timeoutMS;
+      this.next.timeout = timeoutMS;
       return this;
     }
   }

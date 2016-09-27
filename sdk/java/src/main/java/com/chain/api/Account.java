@@ -1,6 +1,5 @@
 package com.chain.api;
 
-import com.chain.exception.APIException;
 import com.chain.exception.ChainException;
 import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
@@ -52,7 +51,7 @@ public class Account {
 
   public static class Items extends PagedItems<Account> {
     public Items getPage() throws ChainException {
-      Items items = this.context.request("list-accounts", this.query, Items.class);
+      Items items = this.context.request("list-accounts", this.next, Items.class);
       items.setContext(this.context);
       return items;
     }
@@ -62,7 +61,7 @@ public class Account {
     public Items execute(Context ctx) throws ChainException {
       Items items = new Items();
       items.setContext(ctx);
-      items.setQuery(this.query);
+      items.setNext(this.next);
       return items.getPage();
     }
   }

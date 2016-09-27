@@ -16,7 +16,7 @@ public class Balance {
 
   public static class Items extends PagedItems<Balance> {
     public Items getPage() throws ChainException {
-      Items items = this.context.request("list-balances", this.query, Items.class);
+      Items items = this.context.request("list-balances", this.next, Items.class);
       items.setContext(this.context);
       return items;
     }
@@ -26,17 +26,17 @@ public class Balance {
     public Items execute(Context ctx) throws ChainException {
       Items items = new Items();
       items.setContext(ctx);
-      items.setQuery(this.query);
+      items.setNext(this.next);
       return items.getPage();
     }
 
     public QueryBuilder setTimestamp(long time) {
-      this.query.timestamp = time;
+      this.next.timestamp = time;
       return this;
     }
 
     public QueryBuilder setSumBy(List<String> sumBy) {
-      this.query.sumBy = new ArrayList<String>(sumBy);
+      this.next.sumBy = new ArrayList<>(sumBy);
       return this;
     }
   }

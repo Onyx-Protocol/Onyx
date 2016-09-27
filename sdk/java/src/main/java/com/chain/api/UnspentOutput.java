@@ -40,7 +40,7 @@ public class UnspentOutput {
 
   public static class Items extends PagedItems<UnspentOutput> {
     public Items getPage() throws ChainException {
-      Items items = this.context.request("list-unspent-outputs", this.query, Items.class);
+      Items items = this.context.request("list-unspent-outputs", this.next, Items.class);
       items.setContext(this.context);
       return items;
     }
@@ -50,12 +50,12 @@ public class UnspentOutput {
     public Items execute(Context ctx) throws ChainException {
       Items items = new Items();
       items.setContext(ctx);
-      items.setQuery(this.query);
+      items.setNext(this.next);
       return items.getPage();
     }
 
     public QueryBuilder setTimestamp(long time) {
-      this.query.timestamp = time;
+      this.next.timestamp = time;
       return this;
     }
   }
