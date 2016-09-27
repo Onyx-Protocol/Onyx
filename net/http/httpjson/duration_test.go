@@ -2,6 +2,7 @@ package httpjson
 
 import (
 	"encoding/json"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -51,8 +52,12 @@ func TestMarshalDuration(t *testing.T) {
 		t.Errorf("unexpected error %v", err)
 	}
 
-	want := `"1s"`
-	if string(b) != want {
-		t.Errorf("wanted %s, got %s", want, b)
+	got, err := strconv.Atoi(string(b))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := 1000
+	if got != want {
+		t.Errorf("wanted %d, got %d", want, got)
 	}
 }
