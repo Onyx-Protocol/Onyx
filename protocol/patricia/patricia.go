@@ -168,7 +168,7 @@ func (t *Tree) insert(n *Node, key []uint8, hash bc.Hash) (*Node, error) {
 		return newNode, nil
 	}
 
-	common := len(commonPrefix(n.key, key))
+	common := commonPrefixLen(n.key, key)
 	newNode := &Node{
 		key: n.key[:common],
 	}
@@ -239,7 +239,7 @@ func (t *Tree) RootHash() bc.Hash {
 // bitKey takes a byte array and returns a key that can
 // be used inside insert and delete operations.
 func bitKey(byteKey []byte) []uint8 {
-	var key []uint8
+	key := make([]uint8, 0, len(byteKey)*8)
 	for _, b := range byteKey {
 		for i := uint(0); i < 8; i++ {
 			key = append(key, (b>>(7-i))&1)
@@ -248,13 +248,13 @@ func bitKey(byteKey []byte) []uint8 {
 	return key
 }
 
-func commonPrefix(a, b []uint8) []uint8 {
-	var common []uint8
+func commonPrefixLen(a, b []uint8) int {
+	var common int
 	for i := 0; i < len(a) && i < len(b); i++ {
 		if a[i] != b[i] {
 			break
 		}
-		common = append(common, a[i])
+		common++
 	}
 	return common
 }
@@ -283,11 +283,12 @@ func (n *Node) Hash() bc.Hash {
 	return n.hash
 }
 
-func hashChildren(children [2]*Node) bc.Hash {
-	var data []byte
+func hashChildren(children [2]*Node) (hash bc.Hash) {
+	h := sha3.New256()
 	for _, c := range children {
-		h := c.Hash()
-		data = append(data, h[:]...)
+		h.Write(c.hash[:])
 	}
-	return sha3.Sum256(data)
+
+	h.Sum(hash[:0])
+	return hash
 }

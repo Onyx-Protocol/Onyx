@@ -29,6 +29,7 @@ func storeStateSnapshot(ctx context.Context, db pg.DB, snapshot *state.Snapshot,
 		return errors.Wrap(err, "walking patricia tree")
 	}
 
+	storedSnapshot.Issuances = make([]*storage.Snapshot_Issuance, 0, len(snapshot.Issuances))
 	for k, v := range snapshot.Issuances {
 		hash := k
 		storedSnapshot.Issuances = append(storedSnapshot.Issuances, &storage.Snapshot_Issuance{

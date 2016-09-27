@@ -2,6 +2,7 @@ package patricia
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
 	"strconv"
 	"strings"
@@ -12,6 +13,26 @@ import (
 
 	"chain/protocol/bc"
 )
+
+func BenchmarkInserts(b *testing.B) {
+	const nodes = 10000
+	for i := 0; i < b.N; i++ {
+		r := rand.New(rand.NewSource(12345))
+		tr := NewTree(nil)
+		for j := 0; j < nodes; j++ {
+			var h [32]byte
+			_, err := r.Read(h[:])
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			err = tr.Insert(h[:], h)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+}
 
 func TestRootHashBug(t *testing.T) {
 	tr := NewTree(nil)
@@ -328,7 +349,7 @@ func TestBoolKey(t *testing.T) {
 		w []uint8
 	}{{
 		b: nil,
-		w: nil,
+		w: []uint8{},
 	}, {
 		b: []byte{0x8f},
 		w: []uint8{1, 0, 0, 0, 1, 1, 1, 1},
