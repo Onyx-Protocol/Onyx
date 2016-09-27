@@ -41,7 +41,7 @@ func Parse(predicate string) (p Predicate, err error) {
 	}
 	err = typeCheck(expr)
 	if err != nil {
-		return p, err
+		return p, errors.WithDetail(ErrBadFilter, err.Error())
 	}
 
 	return Predicate{
@@ -67,14 +67,14 @@ func ParseField(s string) (f Field, err error) {
 		return f, err
 	}
 	if expr == nil {
-		return f, fmt.Errorf("empty field expression")
+		return f, errors.WithDetail(ErrBadFilter, "empty field expression")
 	}
 
 	switch expr.(type) {
 	case attrExpr, selectorExpr:
 		return Field{expr: expr}, nil
 	default:
-		return f, fmt.Errorf("%q is not a valid field expression", s)
+		return f, errors.WithDetailf(ErrBadFilter, "%q is not a valid field expression", s)
 	}
 }
 

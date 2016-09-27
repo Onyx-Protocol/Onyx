@@ -3,6 +3,8 @@ package filter
 import (
 	"fmt"
 	"strconv"
+
+	"chain/errors"
 )
 
 func jsonValue(expr expr, pvals map[int]interface{}) (v interface{}, path []string) {
@@ -86,7 +88,7 @@ func matchingObjects(expr expr, pvals map[int]interface{}) []interface{} {
 				return []interface{}{m}
 
 			default:
-				panic(fmt.Errorf("unsupported operands for ="))
+				panic(errors.WithDetail(ErrBadFilter, "unsupported operands for ="))
 			}
 		}
 		panic(fmt.Errorf("unknown operator %q", e.op.name))
