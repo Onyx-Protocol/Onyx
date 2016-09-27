@@ -428,7 +428,7 @@ func (a *api) listAssets(ctx context.Context, in requestQuery) (page, error) {
 			Quorum:          a["quorum"],
 			Definition:      a["definition"],
 			Tags:            a["tags"],
-			Origin:          a["origin"],
+			IsLocal:         a["is_local"],
 		}
 		if alias, ok := a["alias"].(string); ok && alias != "" {
 			r.Alias = &alias

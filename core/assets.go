@@ -25,7 +25,7 @@ type (
 		Quorum          interface{} `json:"quorum"`
 		Definition      interface{} `json:"definition"`
 		Tags            interface{} `json:"tags"`
-		Origin          interface{} `json:"origin"`
+		IsLocal         interface{} `json:"is_local"`
 	}
 	assetOrError struct {
 		*assetResponse
@@ -99,7 +99,7 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 					Quorum:          asset.Signer.Quorum,
 					Definition:      asset.Definition,
 					Tags:            asset.Tags,
-					Origin:          "local",
+					IsLocal:         "yes",
 				}
 				responses[i] = assetOrError{assetResponse: r}
 			}
