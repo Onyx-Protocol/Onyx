@@ -83,7 +83,7 @@ func constructAccountsQuery(expr filter.SQLExpr, after string, limit int) (strin
 
 	// add after conditions
 	buf.WriteString(fmt.Sprintf("($%d='' OR id < $%d) ", len(vals)+1, len(vals)+1))
-	vals = append(vals, string(after))
+	vals = append(vals, after)
 
 	buf.WriteString("ORDER BY id DESC ")
 	buf.WriteString("LIMIT " + strconv.Itoa(limit))

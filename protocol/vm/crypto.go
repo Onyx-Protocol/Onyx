@@ -148,7 +148,7 @@ func opTxSigHash(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-	h := vm.sigHasher.Hash(int(vm.inputIndex))
+	h := vm.sigHasher.Hash(vm.inputIndex)
 	return vm.push(h[:], false)
 }
 

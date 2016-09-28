@@ -11,13 +11,13 @@ type Duration struct {
 	time.Duration
 }
 
-// UnmarshalText fulfills the encoding.TextUnmarshaler interface.
+// UnmarshalJSON fulfills the encoding/json.Unmarshaler interface.
 // It attempts to parse text as a time.Duration string.
 // The Go documentation defines this as a possibly signed sequence of decimal
 // numbers, each with optional fraction and a unit suffix, such as
 // "300ms", "-1.5h" or "2h45m".
 // Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h").
-// If there is no time unit, UnmarshalText defaults to ms.
+// If there is no time unit, UnmarshalJSON defaults to ms.
 func (d *Duration) UnmarshalJSON(b []byte) error {
 	dMS, err := strconv.ParseInt(string(b), 10, 64)
 	if err != nil {

@@ -75,19 +75,6 @@ func ParseBlockMultiSigProgram(script []byte) ([]ed25519.PublicKey, int, error) 
 	return pubkeys, int(nrequired), nil
 }
 
-func isPushOnly(instructions []vm.Instruction) bool {
-	for _, inst := range instructions {
-		if len(inst.Data) > 0 {
-			continue
-		}
-		if inst.Op == vm.OP_0 {
-			continue
-		}
-		return false
-	}
-	return true
-}
-
 func P2DPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
 	err := checkMultiSigParams(int64(nrequired), int64(len(pubkeys)))
 	if err != nil {

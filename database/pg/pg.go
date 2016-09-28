@@ -1,4 +1,4 @@
-// package pg provides small utilities for the lib/pq
+// Package pg provides small utilities for the lib/pq
 // database driver.
 //
 // It also registers the sql.Driver "hapg", which can

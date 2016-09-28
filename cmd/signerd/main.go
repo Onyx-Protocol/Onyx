@@ -113,12 +113,15 @@ func main() {
 			Certificates: []tls.Certificate{cert},
 		}
 		err = server.ListenAndServeTLS("", "") // uses TLS certs from above
+		if err != nil {
+			log.Fatal(ctx, log.KeyError, errors.Wrap(err, "ListenAndServeTLS"))
+		}
 	} else {
 		secureheader.DefaultConfig.HTTPSRedirect = false
 		err = server.ListenAndServe()
-	}
-	if err != nil {
-		log.Fatal(ctx, log.KeyError, errors.Wrap(err, "ListenAndServe"))
+		if err != nil {
+			log.Fatal(ctx, log.KeyError, errors.Wrap(err, "ListenAndServe"))
+		}
 	}
 }
 

@@ -6,49 +6,7 @@ import (
 
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/hd25519"
-	"chain/protocol/vm"
 )
-
-// TestIsPushOnlyScript ensures the IsPushOnlyScript function returns the
-// expected results.
-func TestIsPushOnly(t *testing.T) {
-	cases := []struct {
-		prog     string
-		expected bool
-	}{
-		{
-			prog:     "",
-			expected: true,
-		}, {
-			prog:     "1",
-			expected: true,
-		}, {
-			prog:     "0xfadedbed",
-			expected: true,
-		}, {
-			prog:     "1 0xfadedbed TRUE FALSE",
-			expected: true,
-		}, {
-			prog:     "1 0xfadedbed TRUE NOP FALSE",
-			expected: false,
-		},
-	}
-
-	for i, c := range cases {
-		compiled, err := vm.Compile(c.prog)
-		if err != nil {
-			t.Fatal(err)
-		}
-		pops, err := vm.ParseProgram(compiled)
-		if err != nil {
-			t.Fatal(err)
-		}
-		got := isPushOnly(pops)
-		if got != c.expected {
-			t.Errorf("case %d (%s): expected %v, got %v", i, c.prog, c.expected, got)
-		}
-	}
-}
 
 // TestIsUnspendable ensures the IsUnspendable function returns the expected
 // results.

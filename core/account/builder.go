@@ -30,7 +30,7 @@ type SpendAction struct {
 	ClientToken   *string  `json:"client_token"`
 }
 
-// TTL returns the time-to-live of the reservation created by this action.
+// GetTTL returns the time-to-live of the reservation created by this action.
 func (a *SpendAction) GetTTL() time.Duration {
 	ttl := a.TTL
 	if ttl == 0 {
@@ -99,7 +99,7 @@ type SpendUTXOAction struct {
 	ClientToken   *string  `json:"client_token"`
 }
 
-// TTL returns the time-to-live of the reservation created by this action.
+// GetTTL returns the time-to-live of the reservation created by this action.
 func (a *SpendUTXOAction) GetTTL() time.Duration {
 	ttl := a.TTL
 	if ttl == 0 {

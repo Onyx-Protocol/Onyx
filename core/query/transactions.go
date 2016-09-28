@@ -80,9 +80,8 @@ func (ind *Indexer) Transactions(ctx context.Context, p filter.Predicate, vals [
 
 	if asc {
 		return ind.waitForAndFetchTransactions(ctx, queryStr, queryArgs, after, limit)
-	} else {
-		return ind.fetchTransactions(ctx, queryStr, queryArgs, after, limit)
 	}
+	return ind.fetchTransactions(ctx, queryStr, queryArgs, after, limit)
 }
 
 // If asc is true, the transactions will be returned from "in front" of the `after`
@@ -161,7 +160,12 @@ func (ind *Indexer) waitForAndFetchTransactions(ctx context.Context, queryStr st
 		)
 
 		for h := ind.c.Height(); len(txs) == 0; h++ {
-			ind.c.WaitForBlockSoon(ctx, h)
+			err = ind.c.WaitForBlockSoon(ctx, h)
+			if err != nil {
+				resp <- fetchResp{nil, nil, err}
+				return
+			}
+
 			txs, aft, err = ind.fetchTransactions(ctx, queryStr, queryArgs, after, limit)
 			if err != nil {
 				resp <- fetchResp{nil, nil, err}

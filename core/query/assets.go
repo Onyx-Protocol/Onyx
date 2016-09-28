@@ -91,7 +91,7 @@ func constructAssetsQuery(expr filter.SQLExpr, after string, limit int) (string,
 
 	// add after conditions
 	buf.WriteString(fmt.Sprintf("($%d='' OR sort_id < $%d) ", len(vals)+1, len(vals)+1))
-	vals = append(vals, string(after))
+	vals = append(vals, after)
 
 	buf.WriteString("ORDER BY sort_id DESC ")
 	buf.WriteString("LIMIT " + strconv.Itoa(limit))

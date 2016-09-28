@@ -188,11 +188,14 @@ func main() {
 			Certificates: []tls.Certificate{cert},
 		}
 		err = server.ListenAndServeTLS("", "") // uses TLS certs from above
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServeTLS"))
+		}
 	} else {
 		err = server.ListenAndServe()
-	}
-	if err != nil {
-		chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
+		if err != nil {
+			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err, "ListenAndServe"))
+		}
 	}
 }
 

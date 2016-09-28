@@ -26,8 +26,8 @@ func NewChain(tb testing.TB) *protocol.Chain {
 	return NewChainWithStorage(tb, memstore.New(), mempool.New())
 }
 
-// NewChain makes a new Chain using store and pool for storage,
-// along with an initial block using a 0/0 multisig program.
+// NewChainWithStorage makes a new Chain using store and pool for
+// storage, along with an initial block using a 0/0 multisig program.
 // It commits the initial block before returning the Chain.
 func NewChainWithStorage(tb testing.TB, store protocol.Store, pool protocol.Pool) *protocol.Chain {
 	ctx := context.Background()

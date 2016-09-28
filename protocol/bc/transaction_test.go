@@ -7,14 +7,11 @@ import (
 	"io/ioutil"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/davecgh/go-spew/spew"
 
 	"chain/errors"
 )
-
-var now = time.Unix(233400000, 0)
 
 func TestTransaction(t *testing.T) {
 	issuanceScript := []byte{1}
