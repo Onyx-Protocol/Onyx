@@ -143,6 +143,41 @@ func getCursor(ctx context.Context, in struct {
 	return &cur, nil
 }
 
+// POST /delete-cursor
+func deleteCursor(ctx context.Context, in struct {
+	ID    string `json:"id,omitempty"`
+	Alias string `json:"alias,omitempty"`
+}) error {
+	defer metrics.RecordElapsed(time.Now())
+
+	where := ` WHERE `
+	id := in.ID
+	if in.ID != "" {
+		where += `id=$1`
+	} else {
+		where += `alias=$1`
+		id = in.Alias
+	}
+
+	q := `DELETE FROM cursors` + where
+
+	res, err := pg.Exec(ctx, q, id)
+	if err != nil {
+		return err
+	}
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affected == 0 {
+		return errors.WithDetailf(errNotFound, "could not find and delete cursor with id/alias=%s", id)
+	}
+
+	return nil
+}
+
 // POST /update-cursor
 func updateCursor(ctx context.Context, in struct {
 	ID    string `json:"id,omitempty"`
@@ -185,7 +220,7 @@ func updateCursor(ctx context.Context, in struct {
 	}
 
 	if affected == 0 {
-		return nil, errors.WithDetailf(errNotFound, "could not find cursor with id/alias=%s and prev=%s", id, in.Prev)
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "could not find cursor with id/alias=%s and prev=%s", id, in.Prev)
 	}
 
 	return &Cursor{
