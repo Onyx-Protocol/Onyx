@@ -19,9 +19,9 @@ import (
 // included in each block.
 const maxBlockTxs = 10000
 
-// saveSnapshotFrequency stores how often (in blocks) to save a state
+// saveSnapshotFrequency stores how often to save a state
 // snapshot to the Store.
-const saveSnapshotFrequency = 10
+const saveSnapshotFrequency = 24 * time.Hour
 
 // ErrBadBlock is returned when a block is invalid.
 var ErrBadBlock = errors.New("invalid block")
@@ -138,16 +138,8 @@ func (c *Chain) commitBlock(ctx context.Context, block *bc.Block, snapshot *stat
 	if err != nil {
 		return errors.Wrap(err, "storing block")
 	}
-
-	// Save a state snapshot periodically.
-	if block.Height%saveSnapshotFrequency == 0 {
-		// TODO(jackson): Save the snapshot asnychronously, but ensure
-		// that we never fall behind if saving a snapshot takes longer
-		// than the snapshotting period.
-		err = c.store.SaveSnapshot(ctx, block.Height, snapshot)
-		if err != nil {
-			return errors.Wrap(err, "storing state snapshot")
-		}
+	if block.Time().After(c.lastQueuedSnapshot.Add(saveSnapshotFrequency)) {
+		c.queueSnapshot(ctx, block.Height, block.Time(), snapshot)
 	}
 
 	for _, cb := range c.blockCallbacks {
@@ -169,6 +161,19 @@ func (c *Chain) commitBlock(ctx context.Context, block *bc.Block, snapshot *stat
 	// it's not redundant.
 	c.setState(block, snapshot)
 	return nil
+}
+
+func (c *Chain) queueSnapshot(ctx context.Context, height uint64, timestamp time.Time, s *state.Snapshot) {
+	// Non-blockingly queue the snapshot for storage.
+	ps := pendingSnapshot{height: height, snapshot: s}
+	select {
+	case c.pendingSnapshots <- ps:
+		c.lastQueuedSnapshot = timestamp
+	default:
+		// Skip it; saving snapshots is taking longer than the snapshotting period.
+		log.Messagef(ctx, "snapshot storage is taking too long; last queued at %s",
+			c.lastQueuedSnapshot)
+	}
 }
 
 func (c *Chain) setHeight(h uint64) {

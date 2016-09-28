@@ -43,8 +43,10 @@ package protocol
 import (
 	"context"
 	"sync"
+	"time"
 
 	"chain/errors"
+	"chain/log"
 	"chain/protocol/bc"
 	"chain/protocol/state"
 )
@@ -101,13 +103,22 @@ type Chain struct {
 	}
 	store Store
 	pool  Pool
+
+	lastQueuedSnapshot time.Time
+	pendingSnapshots   chan pendingSnapshot
+}
+
+type pendingSnapshot struct {
+	height   uint64
+	snapshot *state.Snapshot
 }
 
 // NewChain returns a new Chain using store as the underlying storage.
 func NewChain(ctx context.Context, store Store, pool Pool, heights <-chan uint64) (*Chain, error) {
 	c := &Chain{
-		store: store,
-		pool:  pool,
+		store:            store,
+		pool:             pool,
+		pendingSnapshots: make(chan pendingSnapshot, 1),
 	}
 	c.state.cond.L = new(sync.Mutex)
 
@@ -125,6 +136,20 @@ func NewChain(ctx context.Context, store Store, pool Pool, heights <-chan uint64
 			}
 		}()
 	}
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case ps := <-c.pendingSnapshots:
+				err = store.SaveSnapshot(ctx, ps.height, ps.snapshot)
+				if err != nil {
+					log.Error(ctx, err, "at", "saving snapshot")
+				}
+			}
+		}
+	}()
 
 	return c, nil
 }

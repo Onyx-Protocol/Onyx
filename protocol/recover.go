@@ -21,6 +21,13 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting latest snapshot")
 	}
+	if snapshotHeight > 0 {
+		snapshotBlock, err := c.store.GetBlock(ctx, snapshotHeight)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "getting snapshot block")
+		}
+		c.lastQueuedSnapshot = snapshotBlock.Time()
+	}
 
 	// The true height of the blockchain might be higher than the
 	// height at which the state snapshot was taken. Replay all
