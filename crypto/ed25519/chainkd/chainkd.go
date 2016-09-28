@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"crypto/sha512"
 	"encoding/binary"
-	"fmt"
 	"hash"
 	"io"
 
@@ -114,6 +113,27 @@ func (xpub XPub) Child(sel []byte) (res XPub) {
 	return res
 }
 
+func (xprv XPrv) Derive(path []uint32) XPrv {
+	res := xprv
+	for _, p := range path {
+		hardened := p >= 1<<31
+		var sel [4]byte
+		binary.LittleEndian.PutUint32(sel[:], p)
+		res = res.Child(sel[:], hardened)
+	}
+	return res
+}
+
+func (xpub XPub) Derive(path []uint32) XPub {
+	res := xpub
+	for _, p := range path {
+		var sel [4]byte
+		binary.LittleEndian.PutUint32(sel[:], p)
+		res = res.Child(sel[:])
+	}
+	return res
+}
+
 func (xprv XPrv) Sign(msg []byte) []byte {
 	var s [32]byte
 	copy(s[:], xprv[:32])
@@ -191,11 +211,4 @@ func modifyScalar(s []byte) {
 	s[0] &= 248
 	s[31] &= 127
 	s[31] |= 64
-}
-
-func (xpub XPub) String() string {
-	return fmt.Sprintf("[xpub %x]", xpub[:])
-}
-func (xprv XPrv) String() string {
-	return fmt.Sprintf("[xprv %x]", xprv[:])
 }
