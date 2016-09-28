@@ -1,6 +1,5 @@
 import java.io.FileWriter;
 import java.io.PrintWriter;
-import java.math.BigInteger;
 import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
@@ -65,9 +64,17 @@ public class IouSettlement {
         .setQuorum(1)
         .create(ctx);
 
-    new Account.Builder().setAlias("nb").addRootXpub(dealerAccountKey.xpub).setQuorum(1).create(ctx);
+    new Account.Builder()
+        .setAlias("nb")
+        .addRootXpub(dealerAccountKey.xpub)
+        .setQuorum(1)
+        .create(ctx);
 
-    new Account.Builder().setAlias("sb").addRootXpub(dealerAccountKey.xpub).setQuorum(1).create(ctx);
+    new Account.Builder()
+        .setAlias("sb")
+        .addRootXpub(dealerAccountKey.xpub)
+        .setQuorum(1)
+        .create(ctx);
 
     Dealer dealer = new Dealer(ctx, getAccount(ctx, "dealer"), getAsset(ctx, "dealerusd"));
     Bank northBank = new Bank(ctx, dealer, getAsset(ctx, "nbusd"), getAccount(ctx, "nb"));
@@ -255,19 +262,28 @@ class Bank {
   void pay(Corp corp, Corp payee, Integer amount) throws Exception {
     Transaction.Template txTmpl =
         new Transaction.Builder()
-            .issueById(this.asset.id, BigInteger.valueOf(amount), corp.ref())
-            .issueById(dealer.usd.id, BigInteger.valueOf(amount), null)
-            .controlWithAccountById(
-                dealer.account.id, this.asset.id, BigInteger.valueOf(amount), null)
-            .controlWithAccountById(
-                payee.bank.account.id, this.dealer.usd.id, BigInteger.valueOf(amount), payee.ref())
+            .addAction(
+                new Transaction.Action.Issue()
+                    .setAssetId(this.asset.id)
+                    .setAmount(amount)
+                    .setReferenceData(corp.ref()))
+            .addAction(new Transaction.Action.Issue().setAssetId(dealer.usd.id).setAmount(amount))
+            .addAction(
+                new Transaction.Action.ControlWithAccount()
+                    .setAccountId(dealer.account.id)
+                    .setAssetId(this.asset.id)
+                    .setAmount(amount))
+            .addAction(
+                new Transaction.Action.ControlWithAccount()
+                    .setAccountId(payee.bank.account.id)
+                    .setAssetId(this.dealer.usd.id)
+                    .setAmount(amount)
+                    .setReferenceData(payee.ref()))
             .build(ctx);
 
-    List<Transaction.Template> signedTpls = HsmSigner.sign(Arrays.asList(txTmpl));
-    List<Transaction.SubmitResponse> txs = Transaction.submit(ctx, signedTpls);
-    for (Transaction.SubmitResponse sr : txs) {
-      System.out.println(String.format("Created tx id=%s", sr.id));
-    }
+    Transaction.Template signedTpl = HsmSigner.sign(txTmpl);
+    Transaction.SubmitResponse tx = Transaction.submit(ctx, signedTpl);
+    System.out.println(String.format("Created tx id=%s", tx.id));
   }
 
   void incoming() throws Exception {
@@ -344,7 +360,7 @@ class Dealer {
 
   void reportCurrencyExposure() throws Exception {
     Balance.Items balanceItems;
-    HashMap<String, BigInteger> exposure = new HashMap<String, BigInteger>();
+    HashMap<String, Long> exposure = new HashMap<String, Long>();
 
     //Incoming
     balanceItems =
@@ -356,11 +372,11 @@ class Dealer {
     while (balanceItems.hasNext()) {
       Balance balance = balanceItems.next();
       String currency = balance.sumBy.get("asset_tags.currency");
-      BigInteger x = BigInteger.valueOf(0);
+      long x = 0;
       if (exposure.containsKey(currency)) {
         x = exposure.get(currency);
       }
-      exposure.put(currency, x.add(balance.amount));
+      exposure.put(currency, x + balance.amount);
     }
 
     //Outgoing
@@ -372,7 +388,7 @@ class Dealer {
     while (balanceItems.hasNext()) {
       Balance balance = balanceItems.next();
       String currency = balance.sumBy.get("asset_tags.currency");
-      exposure.put(currency, exposure.get(currency).subtract(balance.amount));
+      exposure.put(currency, exposure.get(currency) - balance.amount);
     }
 
     System.out.println("report: dealer currency exposure");

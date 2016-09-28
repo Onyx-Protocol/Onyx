@@ -55,4 +55,17 @@ echo 'running integration tests' 1>&2
 $GOPATH/bin/corectl config-generator
 LISTEN=":8081" $GOPATH/bin/cored 2>&1 | tee $initlog &
 waitForGenerator
-cd $CHAIN/sdk/java && mvn -Dchain.api.url="http://localhost:8081" integration-test
+SDKTARGET=chain-test
+cd $CHAIN/sdk/java
+mvn\
+	-Dchain.api.url="http://localhost:8081"\
+	-Djar.finalName=$SDKTARGET\
+	integration-test\
+
+(
+	export CLASSPATH=$CHAIN/sdk/java/target/$SDKTARGET.jar
+	cd $CHAIN/perf
+	for file in *.java
+	do javac $file
+	done
+)

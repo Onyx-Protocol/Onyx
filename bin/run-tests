@@ -36,6 +36,7 @@ waitForGenerator() {(
 		fi
 	done
 )}
+SDKTARGET=chain-test
 (
 	export DATABASE_URL="postgres:///it-core?sslmode=disable"
 	createdb it-core
@@ -43,5 +44,15 @@ waitForGenerator() {(
 	migratedb -d $DATABASE_URL
 	corectl config-generator
 	cored | tee $initlog &
-	cd $CHAIN/sdk/java && mvn integration-test
+	cd $CHAIN/sdk/java
+	mvn\
+		-Djar.finalName=$SDKTARGET\
+		integration-test\
+)
+(
+	export CLASSPATH=$CHAIN/sdk/java/target/$SDKTARGET.jar
+	cd $CHAIN/perf
+	for file in *.java
+	do javac $file
+	done
 )
