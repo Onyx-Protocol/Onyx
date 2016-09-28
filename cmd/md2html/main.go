@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -92,7 +94,7 @@ func render(f string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	src = interpolateCode(src)
 	layout, err := ioutil.ReadFile("layout.html")
 	if os.IsNotExist(err) {
 		layout = []byte("{{Body}}")
@@ -101,6 +103,70 @@ func render(f string) ([]byte, error) {
 	}
 
 	return bytes.Replace(layout, []byte("{{Body}}"), markdown(src), 1), nil
+}
+
+func interpolateCode(md []byte) []byte {
+	const pat = `$code `
+	w := new(bytes.Buffer)
+	scanner := bufio.NewScanner(bytes.NewBuffer(md))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, pat) {
+			var path, snippet string
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				path = fields[1]
+			}
+			if len(fields) >= 3 {
+				snippet = fields[2]
+			}
+			writeCode(w, path, snippet)
+			continue
+		}
+		fmt.Fprintln(w, line)
+	}
+	return w.Bytes()
+}
+
+func writeCode(w io.Writer, path, snippet string) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		fmt.Fprintf(w, "`Unable to read source file: %s`\n", path)
+		return
+	}
+	//If the snippet is unset, print the whole file --omitting snippet definitions.
+	if snippet == "" {
+		fmt.Fprintln(w, "```")
+		for _, line := range strings.Split(string(b), "\n") {
+			if strings.Contains(line, "snippet") {
+				continue
+			}
+			fmt.Fprintln(w, line)
+		}
+		fmt.Fprintln(w, "```")
+		return
+	}
+
+	if !bytes.Contains(b, []byte("snippet "+snippet)) {
+		fmt.Fprintf(w, "`Snippet %q is not in %q`\n", snippet, path)
+		return
+	}
+	found := false
+	for _, line := range strings.Split(string(b), "\n") {
+		if strings.Contains(line, "snippet "+snippet) {
+			fmt.Fprintln(w, "```")
+			found = true
+			continue
+		}
+		if found && strings.Contains(line, "endsnippet") {
+			fmt.Fprintln(w, "```")
+			found = false
+			continue
+		}
+		if found {
+			fmt.Fprintln(w, line)
+		}
+	}
 }
 
 func markdown(source []byte) []byte {

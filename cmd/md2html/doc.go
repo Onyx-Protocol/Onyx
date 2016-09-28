@@ -16,24 +16,102 @@ Usage
 
 	destination - address or directory
 
-	If the destination is an address (e.g. :8080) then md2html will start
-	a web server and serve file from the current directory on that port.
-	If the file request contains an extension, the corresponding file will be
-	served unprocessed. If the file request does not contain an extension,
-	the corresponding file will be converted from markdown into HTML before
-	it is served.
+If the destination is an address (e.g. :8080) then md2html will start
+a web server and serve file from the current directory on that port.
+If the file request contains an extension, the corresponding file will be
+served unprocessed. If the file request does not contain an extension,
+the corresponding file will be converted from markdown into HTML before
+it is served.
 
-	If the destination is a directory, md2html will recursively copy all files
-	from . to destination -- converting .md files into HTML along the way.
+If the destination is a directory, md2html will recursively copy all files
+from . to destination -- converting .md files into HTML along the way.
 
 Example
 
-	Start a server in the current directory:
+Start a server in the current directory:
+
 	$ md2html
 
-	Copy all files --and convert .md to HTML-- in the current directory and
-	write them to ~/site:
+Copy all files --and convert .md to HTML-- in the current directory and
+write them to ~/site:
+
 	$ md2html ~/site
+
+Code Interpolation
+
+Markdown files may contain $code references that will pull in
+source code from other files on the filesystem into the markdown file.
+This interpolation happens prior to converting the markdown into HTML.
+
+To use a $code reference in markdown:
+
+	$code abs-path-to-file [snippet name]
+
+If the snippet name is omitted, the entire file is interpolated.
+
+To define a snippet in a source file:
+
+	//snippet [name]
+	// ... code
+	//endsnippet
+
+For example, assume we have the following file at `/src/x.go`
+
+	package main
+
+	import "fmt"
+
+	func main() {
+		add(1, 2)
+		fmt.Println("hello world")
+	}
+
+	//snippet add
+	func add(x, y int) {
+		return x + y
+	}
+	//endsnippet
+
+And assume we have the following markdown file:
+
+	# Go Example
+
+	$code /src/x.go
+
+md2html will produce the following interpolated markdown file:
+
+	# Go Example
+
+	```
+	package main
+
+	import "fmt"
+
+	func main() {
+		add(1, 2)
+		fmt.Println("hello world")
+	}
+
+	func add(x, y int) {
+		return x + y
+	}
+	```
+
+Assume we have another markdown file:
+
+	# Go Example
+
+	$code /src/x.go add
+
+md2html will produce the following interpolated markdown file:
+
+	# Go Example
+
+	```
+	func add(x, y int) {
+		return x + y
+	}
+	```
 
 */
 package main
