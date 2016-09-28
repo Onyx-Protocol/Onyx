@@ -28,6 +28,16 @@ CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
 SET search_path = public, pg_catalog;
 
 --
+-- Name: access_token_type; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE access_token_type AS ENUM (
+    'client',
+    'network'
+);
+
+
+--
 -- Name: b32enc_crockford(bytea); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -314,6 +324,23 @@ END;
 $$;
 
 
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: access_tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE access_tokens (
+    id text NOT NULL,
+    sort_id text DEFAULT next_chain_id('at'::text),
+    type access_token_type NOT NULL,
+    hashed_secret bytea NOT NULL,
+    created timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
 --
 -- Name: account_control_program_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
@@ -325,10 +352,6 @@ CREATE SEQUENCE account_control_program_seq
     NO MAXVALUE
     CACHE 1;
 
-
-SET default_tablespace = '';
-
-SET default_with_oids = false;
 
 --
 -- Name: account_control_programs; Type: TABLE; Schema: public; Owner: -
@@ -501,6 +524,8 @@ CREATE TABLE config (
     configured_at timestamp with time zone NOT NULL,
     generator_url text DEFAULT ''::text NOT NULL,
     block_xpub text DEFAULT ''::text NOT NULL,
+    network_authed boolean DEFAULT false,
+    client_authed boolean DEFAULT false,
     CONSTRAINT config_singleton CHECK (singleton)
 );
 
@@ -697,6 +722,14 @@ CREATE TABLE snapshots (
 --
 
 ALTER TABLE ONLY signers ALTER COLUMN key_index SET DEFAULT nextval('signers_key_index_seq'::regclass);
+
+
+--
+-- Name: access_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY access_tokens
+    ADD CONSTRAINT access_tokens_pkey PRIMARY KEY (id);
 
 
 --
@@ -1103,3 +1136,5 @@ insert into migrations (filename, hash) values ('2016-09-14.0.appdb.add-cursors-
 insert into migrations (filename, hash) values ('2016-09-14.1.query.remove-indexes.sql', '47f772881706b2a518f79f22a7dd82512ce3994ba2b97cd7cfc25272aadf8f32');
 insert into migrations (filename, hash) values ('2016-09-14.2.appdb.add-cursors-id.sql', '6125ca2a8c73131e2e619d8edfe59518423482929e13df1f98a24d012cf453bb');
 insert into migrations (filename, hash) values ('2016-09-23.0.account.change-control-programs.sql', 'dd5fe8c4b418c061bea8007b61dfefb64418f9a99c2978f559b4628ec323bc25');
+insert into migrations (filename, hash) values ('2016-09-26.0.core.add-access-tokens.sql', '81b12b6aed53dfacca8f8d922b377ef24c727950dea2c8c186d6f68400de511a');
+insert into migrations (filename, hash) values ('2016-09-26.1.core.add-require-auth-flags.sql', '0e21f6d4836fcde1bdec80b0f6cc7c8cf8355fee47a7d5561ed8d7f6726425f1');

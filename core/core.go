@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"chain/core/accesstoken"
 	"chain/core/fetch"
 	"chain/core/leader"
 	"chain/core/mockhsm"
@@ -32,6 +33,7 @@ var (
 	errUnconfigured      = errors.New("core is not configured")
 	errBadGenerator      = errors.New("generator returned an unsuccessful response")
 	errBadBlockXPub      = errors.New("supplied block xpub is invalid")
+	errNoClientTokens    = errors.New("cannot enable client auth without client access tokens")
 )
 
 // reserved mockhsm key alias
@@ -57,6 +59,7 @@ func Reset(ctx context.Context, db pg.DB) error {
 
 	const q = `
 		TRUNCATE
+			access_tokens,
 			account_control_programs,
 			account_utxos,
 			accounts,
@@ -148,6 +151,8 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"network_rpc_version":               networkRPCVersion,
 		"build_commit":                      &buildCommit,
 		"build_date":                        &buildDate,
+		"require_client_access_tokens":      a.config.clientAuthed,
+		"require_network_access_tokens":     a.config.networkAuthed,
 	}, nil
 }
 
@@ -234,6 +239,71 @@ func configure(ctx context.Context, x *Config) error {
 	closeConnOK(w)
 	execSelf()
 	panic("unreached")
+}
+
+// LoadConfig loads the stored configuration, if any, from the database/
+func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
+	const q = `
+			SELECT is_signer, is_generator, initial_block_hash, generator_url, block_xpub,
+			network_authed, client_authed, configured_at
+			FROM config
+		`
+
+	c := new(Config)
+	err := db.QueryRow(ctx, q).Scan(
+		&c.IsSigner,
+		&c.IsGenerator,
+		&c.InitialBlockHash,
+		&c.GeneratorURL,
+		&c.BlockXPub,
+		&c.networkAuthed,
+		&c.clientAuthed,
+		&c.ConfiguredAt,
+	)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, errors.Wrap(err, "fetching Core config")
+	}
+	return c, nil
+}
+
+func (a *api) updateConfig(ctx context.Context, x struct {
+	ClientAuthed  *bool `json:"require_client_access_tokens"`
+	NetworkAuthed *bool `json:"require_network_access_tokens"`
+}) error {
+
+	clientAuthed := a.config.isClientAuthed()
+	networkAuthed := a.config.isNetworkAuthed()
+
+	if x.ClientAuthed != nil {
+		clientAuthed = *x.ClientAuthed
+	}
+	if x.NetworkAuthed != nil {
+		networkAuthed = *x.NetworkAuthed
+	}
+
+	if clientAuthed {
+		clientTokenExists, err := accesstoken.ClientTokenExists(ctx)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+		if !clientTokenExists {
+			return errors.Wrap(errNoClientTokens)
+		}
+	}
+
+	const q = `UPDATE config SET client_authed=$1, network_authed=$2`
+	_, err := pg.Exec(ctx, q, clientAuthed, networkAuthed)
+
+	if err != nil {
+		return err
+	}
+
+	a.config.setClientAuthed(clientAuthed)
+	a.config.setNetworkAuthed(networkAuthed)
+
+	return nil
 }
 
 func tryGenerator(ctx context.Context, url, blockchainID string) error {

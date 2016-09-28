@@ -2,24 +2,35 @@ package core
 
 import (
 	"context"
-	"crypto/subtle"
+	"encoding/hex"
 	"net/http"
+	"sync"
+	"time"
 
+	"chain/core/accesstoken"
+	"chain/errors"
 	"chain/net/http/authn"
 )
 
-func apiAuthn(secret string, next http.Handler) http.Handler {
-	// If the secret is blank, we should not require an HTTP Basic Auth header,
-	// nor should we present a WWW-Authenticate challenge.
-	if secret == "" {
-		return next
-	}
+const tokenExpiry = time.Minute * 5
 
-	authFunc := func(ctx context.Context, _, pw string) error {
-		if subtle.ConstantTimeCompare([]byte(pw), []byte(secret)) == 0 {
-			return authn.ErrNotAuthenticated
+type apiAuthn struct {
+	config   *Config
+	tokenMu  sync.Mutex // protects the following
+	tokenMap map[string]tokenResult
+}
+
+type tokenResult struct {
+	valid      bool
+	lastLookup time.Time
+}
+
+func (a *apiAuthn) Handler(typ string, next http.Handler) http.Handler {
+	authFunc := func(ctx context.Context, user, pw string) error {
+		if !a.config.authEnabled(typ) {
+			return nil
 		}
-		return nil
+		return a.cachedAuthCheck(ctx, typ, user, pw)
 	}
 
 	return authn.BasicHandler{
@@ -27,4 +38,32 @@ func apiAuthn(secret string, next http.Handler) http.Handler {
 		Next:  next,
 		Realm: "Chain Core API",
 	}
+}
+
+func authCheck(ctx context.Context, typ, user, pw string) (bool, error) {
+	pwBytes, err := hex.DecodeString(pw)
+	if err != nil {
+		return false, nil
+	}
+	return accesstoken.Check(ctx, user, typ, pwBytes)
+}
+
+func (a *apiAuthn) cachedAuthCheck(ctx context.Context, typ, user, pw string) error {
+	a.tokenMu.Lock()
+	res, ok := a.tokenMap[typ+user+pw]
+	a.tokenMu.Unlock()
+	if !ok || time.Now().After(res.lastLookup.Add(tokenExpiry)) {
+		valid, err := authCheck(ctx, typ, user, pw)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+		res = tokenResult{valid: valid, lastLookup: time.Now()}
+		a.tokenMu.Lock()
+		a.tokenMap[typ+user+pw] = res
+		a.tokenMu.Unlock()
+	}
+	if !res.valid {
+		return authn.ErrNotAuthenticated
+	}
+	return nil
 }

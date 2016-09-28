@@ -4,6 +4,7 @@ package core
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"chain/core/generator"
@@ -45,14 +46,16 @@ func Handler(
 
 	m := http.NewServeMux()
 	if config != nil {
-		m.Handle("/", apiAuthn(apiSecret, a.handler()))
-		m.Handle("/rpc/", apiAuthn(rpcSecret, rpcAuthedHandler(c, signer)))
-		m.Handle("/configure", apiAuthn(apiSecret, alwaysError(errAlreadyConfigured)))
+		authn := &apiAuthn{config: config, tokenMap: make(map[string]tokenResult)}
+		m.Handle("/", authn.Handler("client", a.handler()))
+		m.Handle("/rpc/", authn.Handler("network", rpcAuthedHandler(c, signer)))
+		m.Handle("/configure", authn.Handler("client", alwaysError(errAlreadyConfigured)))
+		m.Handle("/info", authn.Handler("client", jsonHandler(a.info)))
 	} else {
-		m.Handle("/", apiAuthn(apiSecret, alwaysError(errUnconfigured)))
-		m.Handle("/configure", apiAuthn(apiSecret, jsonHandler(configure)))
+		m.Handle("/", alwaysError(errUnconfigured))
+		m.Handle("/configure", jsonHandler(configure))
+		m.Handle("/info", jsonHandler(a.info))
 	}
-	m.Handle("/info", jsonHandler(a.info))
 	return m
 }
 
@@ -64,6 +67,38 @@ type Config struct {
 	GeneratorURL     string  `json:"generator_url"`
 	ConfiguredAt     time.Time
 	BlockXPub        string `json:"block_xpub"`
+
+	authedMu      sync.Mutex // protects the following
+	clientAuthed  bool
+	networkAuthed bool
+}
+
+func (c *Config) authEnabled(typ string) bool {
+	return (typ == "client" && c.isClientAuthed()) || (typ == "network" && c.isNetworkAuthed())
+}
+
+func (c *Config) isClientAuthed() bool {
+	c.authedMu.Lock()
+	defer c.authedMu.Unlock()
+	return c.clientAuthed
+}
+
+func (c *Config) isNetworkAuthed() bool {
+	c.authedMu.Lock()
+	defer c.authedMu.Unlock()
+	return c.networkAuthed
+}
+
+func (c *Config) setClientAuthed(a bool) {
+	c.authedMu.Lock()
+	defer c.authedMu.Unlock()
+	c.clientAuthed = a
+}
+
+func (c *Config) setNetworkAuthed(a bool) {
+	c.authedMu.Lock()
+	defer c.authedMu.Unlock()
+	c.networkAuthed = a
 }
 
 type api struct {
@@ -78,6 +113,7 @@ type requestQuery struct {
 	Filter       string        `json:"filter,omitempty"`
 	FilterParams []interface{} `json:"filter_params,omitempty"`
 	SumBy        []string      `json:"sum_by,omitempty"`
+	PageSize     int           `json:"page_size"`
 
 	// Order and Timeout are used by /list-transactions
 	// to facilitate notifications.
@@ -136,10 +172,16 @@ func (a *api) handler() http.Handler {
 	m.Handle("/list-balances", jsonHandler(a.listBalances))
 	m.Handle("/list-unspent-outputs", jsonHandler(a.listUnspentOutputs))
 
+	m.Handle("/update-configuration", jsonHandler(a.updateConfig))
 	m.Handle("/reset", jsonHandler(a.reset))
 
 	// V3 DEPRECATED
 	m.Handle("/v3/transact/cancel-reservation", jsonHandler(cancelReservation))
+
+	// Access tokens
+	m.Handle("/create-access-token", jsonHandler(createAccessToken))
+	m.Handle("/list-access-tokens", jsonHandler(listAccessTokens))
+	m.Handle("/delete-access-token", jsonHandler(deleteAccessToken))
 
 	m.Handle("/", alwaysError(errNotFound))
 

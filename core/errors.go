@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 
+	"chain/core/accesstoken"
 	"chain/core/account/utxodb"
 	"chain/core/asset"
 	"chain/core/blocksigner"
@@ -56,6 +57,7 @@ var (
 		rpc.ErrWrongNetwork:            errorInfo{502, "CH104", "A peer core is operating on a different blockchain network"},
 		protocol.ErrTheDistantFuture:   errorInfo{400, "CH105", "Requested height is too far ahead"},
 		errProdReset:                   errorInfo{400, "CH110", "Reset can only be called in a development system"},
+		errNoClientTokens:              errorInfo{400, "CH120", "Cannot enable client authentication with no client tokens"},
 		blocksigner.ErrConsensusChange: errorInfo{400, "CH150", "Refuse to sign block with consensus change"},
 
 		// Signers error namespace (2xx)
@@ -63,6 +65,11 @@ var (
 		signers.ErrBadXPub:   errorInfo{400, "CH201", "Invalid xpub format"},
 		signers.ErrNoXPubs:   errorInfo{400, "CH202", "At least one xpub is required"},
 		signers.ErrBadType:   errorInfo{400, "CH203", "Retrieved type does not match expected type"},
+
+		// Access token error namespace (3xx)
+		accesstoken.ErrBadID:       errorInfo{400, "CH300", "Malformed or empty access token id"},
+		accesstoken.ErrBadType:     errorInfo{400, "CH301", "Access tokens must be type client or network"},
+		accesstoken.ErrDuplicateID: errorInfo{400, "CH302", "Access token id is already in use"},
 
 		// Query error namespace (6xx)
 		query.ErrBadAfter:               errorInfo{400, "CH600", "Malformed pagination parameter `after`"},

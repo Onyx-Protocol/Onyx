@@ -113,7 +113,7 @@ func main() {
 	initSchemaInDev(db)
 	resetInDevIfRequested(db)
 
-	config, err := loadConfig(ctx, db)
+	config, err := core.LoadConfig(ctx, db)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
@@ -273,23 +273,6 @@ func dbContextHandler(handler http.Handler, db pg.DB) http.Handler {
 		ctx = pg.NewContext(ctx, db)
 		handler.ServeHTTP(w, req.WithContext(ctx))
 	})
-}
-
-// loadConfig loads the stored configuration, if any, from the database.
-func loadConfig(ctx context.Context, db pg.DB) (*core.Config, error) {
-	const q = `
-		SELECT is_signer, is_generator, initial_block_hash, generator_url, block_xpub, configured_at
-		FROM config
-	`
-
-	c := new(core.Config)
-	err := db.QueryRow(ctx, q).Scan(&c.IsSigner, &c.IsGenerator, &c.InitialBlockHash, &c.GeneratorURL, &c.BlockXPub, &c.ConfiguredAt)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	} else if err != nil {
-		return nil, errors.Wrap(err, "fetching Core config")
-	}
-	return c, nil
 }
 
 func dashboardHandler(next http.Handler) http.Handler {
