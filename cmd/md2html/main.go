@@ -2,62 +2,108 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/russross/blackfriday"
 )
 
-var (
-	layout = []byte("{{Body}}")
-	footer []byte
-	header []byte
-)
-
 func main() {
-	var err error
-	if len(os.Args) != 3 {
-		log.Fatal("usage: md2html srcDir destDir")
-	}
-	srcDir := os.Args[1]
-	destDir := os.Args[2]
+	var dest = ":8080"
 
-	if _, err := os.Stat(srcDir + "/layout.html"); !os.IsNotExist(err) {
-		layout, err = ioutil.ReadFile(srcDir + "/layout.html")
-		check(err)
+	if len(os.Args) > 2 {
+		log.Fatal("usage: md2html [dest]")
+	}
+	if len(os.Args) == 2 {
+		dest = os.Args[1]
 	}
 
-	files, err := ioutil.ReadDir(srcDir)
-	check(err)
+	if !strings.Contains(dest, ":") {
+		convert(dest)
+		os.Exit(0)
+	}
 
-	for i := range files {
-		srcName := files[i].Name()
-		if !strings.HasSuffix(srcName, ".md") {
-			continue
+	serve(dest)
+}
+
+func serve(addr string) {
+	fmt.Printf("serving at: http://localhost%s\n", addr)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		path := "." + r.URL.Path
+		if filepath.Ext(path) != "" {
+			http.ServeFile(w, r, path)
+			return
 		}
-		srcBytes, err := ioutil.ReadFile(srcDir + "/" + srcName)
-		check(err)
-
-		destBytes := wrap(convert(append(append(header, srcBytes...), footer...)))
-		destName := destDir + "/" + srcName[0:len(srcName)-3]
-		err = ioutil.WriteFile(destName, destBytes, 0644)
-		check(err)
-	}
+		b, err := render(path + ".md")
+		if os.IsNotExist(err) {
+			http.NotFound(w, r)
+		} else if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		w.Write(b)
+	})
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
-func check(err error) {
+func convert(dest string) {
+	fmt.Printf("Converting markdown to: %s\n", dest)
+	err := filepath.Walk(".", func(path string, f os.FileInfo, err error) error {
+		if f.IsDir() {
+			return nil
+		}
+		match, err := filepath.Match("*.md", f.Name())
+		printe(err)
+		if !match {
+			b, err := ioutil.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			err = os.MkdirAll(filepath.Dir(filepath.Join(dest, path)), 0777)
+			if err != nil {
+				return err
+			}
+			return ioutil.WriteFile(filepath.Join(dest, path), b, 0644)
+		}
+		b, err := render(path)
+		printe(err)
+		path = dest + "/" + path
+		printe(os.MkdirAll(filepath.Dir(path), 0777))
+		printe(ioutil.WriteFile(strings.TrimSuffix(path, ".md"), b, 0644))
+		fmt.Printf("converted: %s\n", path)
+		return nil
+	})
+	printe(err)
+}
+
+func printe(err error) {
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 }
 
-func wrap(body []byte) []byte {
-	return bytes.Replace(layout, []byte("{{Body}}"), body, 1)
+func render(f string) ([]byte, error) {
+	src, err := ioutil.ReadFile(f)
+	if err != nil {
+		return nil, err
+	}
+
+	layout, err := ioutil.ReadFile("layout.html")
+	if os.IsNotExist(err) {
+		layout = []byte("{{Body}}")
+	} else if err != nil {
+		return nil, err
+	}
+
+	return bytes.Replace(layout, []byte("{{Body}}"), markdown(src), 1), nil
 }
 
-func convert(source []byte) []byte {
+func markdown(source []byte) []byte {
 	htmlFlags := 0
 	htmlFlags |= blackfriday.HTML_USE_XHTML
 	htmlFlags |= blackfriday.HTML_USE_SMARTYPANTS
