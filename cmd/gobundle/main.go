@@ -17,7 +17,7 @@ func main() {
 	log.SetPrefix("gobundle: ")
 	log.SetFlags(log.Lshortfile)
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage: gobundle [-package name] [path]")
+		fmt.Fprintln(os.Stderr, "Usage: gobundle [-package name] [src]")
 		flag.PrintDefaults()
 	}
 
@@ -26,38 +26,30 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-	name := flag.Arg(0)
+	root := flag.Arg(0)
 
 	fmt.Println("package", *pkg)
 	fmt.Println("var Files = map[string]string{")
 
-	switch info, err := os.Stat(name); {
-	case err != nil:
-		log.Fatalln(err)
-	case info.Mode().IsDir():
-		entries, err := ioutil.ReadDir(name)
+	filepath.Walk(root, func(path string, ent os.FileInfo, err error) error {
 		if err != nil {
-			log.Fatalln(err)
+			log.Println(err)
+			return nil
+		} else if ent.Mode()&os.ModeType != 0 {
+			return nil
 		}
-		for _, ent := range entries {
-			if ent.Mode()&os.ModeType != 0 {
-				continue
-			}
-			b, err := ioutil.ReadFile(filepath.Join(name, ent.Name()))
-			if err != nil {
-				log.Fatalln(err)
-			}
-			fmt.Printf("%q: %q,\n", ent.Name(), b)
-		}
-	case info.Mode().IsRegular():
-		b, err := ioutil.ReadFile(name)
+		b, err := ioutil.ReadFile(path)
 		if err != nil {
-			log.Fatalln(err)
+			log.Println(err)
+			return nil
 		}
-		fmt.Printf("%q: %q,\n", info.Name(), b)
-	default:
-		log.Fatalln(name, "unknown file type", info.Mode())
-	}
+		rel := ent.Name() // in case root is a file
+		if path != root {
+			rel, _ = filepath.Rel(root, path)
+		}
+		fmt.Printf("%q: %q,\n", rel, b)
+		return nil
+	})
 
 	fmt.Println("}")
 }
