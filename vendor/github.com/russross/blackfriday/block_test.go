@@ -657,6 +657,9 @@ func TestUnorderedList(t *testing.T) {
 		"Paragraph\n\n* Linebreak\n",
 		"<p>Paragraph</p>\n\n<ul>\n<li>Linebreak</li>\n</ul>\n",
 
+		"*   List\n\n1. Spacer Mixed listing\n",
+		"<ul>\n<li>List</li>\n</ul>\n\n<ol>\n<li>Spacer Mixed listing</li>\n</ol>\n",
+
 		"*   List\n    * Nested list\n",
 		"<ul>\n<li>List\n\n<ul>\n<li>Nested list</li>\n</ul></li>\n</ul>\n",
 
@@ -702,8 +705,39 @@ func TestUnorderedList(t *testing.T) {
 
 		"* List\n\n    * sublist\n\n    normal text\n\n    * another sublist\n",
 		"<ul>\n<li><p>List</p>\n\n<ul>\n<li>sublist</li>\n</ul>\n\n<p>normal text</p>\n\n<ul>\n<li>another sublist</li>\n</ul></li>\n</ul>\n",
+
+		`* Foo
+
+        bar
+
+        qux
+`,
+		`<ul>
+<li><p>Foo</p>
+
+<pre><code>bar
+
+qux
+</code></pre></li>
+</ul>
+`,
 	}
 	doTestsBlock(t, tests, 0)
+}
+
+func TestFencedCodeBlockWithinList(t *testing.T) {
+	doTestsBlock(t, []string{
+		"* Foo\n\n    ```\n    bar\n\n    qux\n    ```\n",
+		`<ul>
+<li><p>Foo</p>
+
+<pre><code>bar
+
+qux
+</code></pre></li>
+</ul>
+`,
+	}, EXTENSION_FENCED_CODE)
 }
 
 func TestOrderedList(t *testing.T) {
@@ -784,6 +818,12 @@ func TestOrderedList(t *testing.T) {
 		"1. List\n\n          code block with spaces\n",
 		"<ol>\n<li><p>List</p>\n\n<pre><code>  code block with spaces\n</code></pre></li>\n</ol>\n",
 
+		"1. List\n\n* Spacer Mixed listing\n",
+		"<ol>\n<li>List</li>\n</ol>\n\n<ul>\n<li>Spacer Mixed listing</li>\n</ul>\n",
+
+		"1. List\n* Mixed listing\n",
+		"<ol>\n<li>List</li>\n<li>Mixed listing</li>\n</ol>\n",
+
 		"1. List\n    * Mixted list\n",
 		"<ol>\n<li>List\n\n<ul>\n<li>Mixted list</li>\n</ul></li>\n</ol>\n",
 
@@ -798,6 +838,26 @@ func TestOrderedList(t *testing.T) {
 
 		"1. numbers\n1. are ignored\n",
 		"<ol>\n<li>numbers</li>\n<li>are ignored</li>\n</ol>\n",
+
+		`1. Foo
+
+        bar
+
+
+
+        qux
+`,
+		`<ol>
+<li><p>Foo</p>
+
+<pre><code>bar
+
+
+
+qux
+</code></pre></li>
+</ol>
+`,
 	}
 	doTestsBlock(t, tests, 0)
 }
@@ -900,6 +960,14 @@ func TestDefinitionList(t *testing.T) {
 			"<dd><p>Definition b</p></dd>\n" +
 			"</dl>\n" +
 			"\n<p>Text 2</p>\n",
+
+		"Term 1\n:   Definition a\n\n    Text 1\n\n    1. First\n    2. Second",
+		"<dl>\n" +
+			"<dt>Term 1</dt>\n" +
+			"<dd><p>Definition a</p>\n\n" +
+			"<p>Text 1</p>\n\n" +
+			"<ol>\n<li>First</li>\n<li>Second</li>\n</ol></dd>\n" +
+			"</dl>\n",
 	}
 	doTestsBlock(t, tests, EXTENSION_DEFINITION_LISTS)
 }
@@ -1062,6 +1130,12 @@ func TestFencedCodeBlock(t *testing.T) {
 
 		"Some text before a fenced code block\n``` oz\ncode blocks breakup paragraphs\n```\nSome text in between\n``` oz\nmultiple code blocks work okay\n```\nAnd some text after a fenced code block",
 		"<p>Some text before a fenced code block</p>\n\n<pre><code class=\"language-oz\">code blocks breakup paragraphs\n</code></pre>\n\n<p>Some text in between</p>\n\n<pre><code class=\"language-oz\">multiple code blocks work okay\n</code></pre>\n\n<p>And some text after a fenced code block</p>\n",
+
+		"```\n[]:()\n```\n",
+		"<pre><code>[]:()\n</code></pre>\n",
+
+		"```\n[]:()\n[]:)\n[]:(\n[]:x\n[]:testing\n[:testing\n\n[]:\nlinebreak\n[]()\n\n[]:\n[]()\n```",
+		"<pre><code>[]:()\n[]:)\n[]:(\n[]:x\n[]:testing\n[:testing\n\n[]:\nlinebreak\n[]()\n\n[]:\n[]()\n</code></pre>\n",
 	}
 	doTestsBlock(t, tests, EXTENSION_FENCED_CODE)
 }
@@ -1567,4 +1641,75 @@ func TestCDATA(t *testing.T) {
 ]]>
 `,
 	}, EXTENSION_FENCED_CODE)
+}
+
+func TestIsFenceLine(t *testing.T) {
+	tests := []struct {
+		data            []byte
+		syntaxRequested bool
+		newlineOptional bool
+		wantEnd         int
+		wantMarker      string
+		wantSyntax      string
+	}{
+		{
+			data:    []byte("```"),
+			wantEnd: 0,
+		},
+		{
+			data:       []byte("```\nstuff here\n"),
+			wantEnd:    4,
+			wantMarker: "```",
+		},
+		{
+			data:            []byte("```\nstuff here\n"),
+			syntaxRequested: true,
+			wantEnd:         4,
+			wantMarker:      "```",
+		},
+		{
+			data:    []byte("stuff here\n```\n"),
+			wantEnd: 0,
+		},
+		{
+			data:            []byte("```"),
+			newlineOptional: true,
+			wantEnd:         3,
+			wantMarker:      "```",
+		},
+		{
+			data:            []byte("```"),
+			syntaxRequested: true,
+			newlineOptional: true,
+			wantEnd:         3,
+			wantMarker:      "```",
+		},
+		{
+			data:            []byte("``` go"),
+			syntaxRequested: true,
+			newlineOptional: true,
+			wantEnd:         6,
+			wantMarker:      "```",
+			wantSyntax:      "go",
+		},
+	}
+
+	for _, test := range tests {
+		var syntax *string
+		if test.syntaxRequested {
+			syntax = new(string)
+		}
+		end, marker := isFenceLine(test.data, syntax, "```", test.newlineOptional)
+		if got, want := end, test.wantEnd; got != want {
+			t.Errorf("got end %v, want %v", got, want)
+		}
+		if got, want := marker, test.wantMarker; got != want {
+			t.Errorf("got marker %q, want %q", got, want)
+		}
+		if test.syntaxRequested {
+			if got, want := *syntax, test.wantSyntax; got != want {
+				t.Errorf("got syntax %q, want %q", got, want)
+			}
+		}
+	}
 }
