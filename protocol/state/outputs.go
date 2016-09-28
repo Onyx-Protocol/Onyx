@@ -1,6 +1,11 @@
 package state
 
-import "chain/protocol/bc"
+import (
+	"bytes"
+
+	"chain/errors"
+	"chain/protocol/bc"
+)
 
 // Output represents a spent or unspent output
 // for the validation process.
@@ -27,4 +32,14 @@ func Prevout(in *bc.TxInput) *Output {
 		Outpoint: in.Outpoint(),
 		TxOutput: *t,
 	}
+}
+
+// OutputTreeItem returns the key of an output in the state tree,
+// as well as the output commitment (a second []byte) for Inserts
+// into the state tree.
+func OutputTreeItem(o *Output) (bkey, commitment []byte) {
+	b := bytes.NewBuffer(nil)
+	w := errors.NewWriter(b) // used to satisfy interfaces
+	o.Outpoint.WriteTo(w)
+	return b.Bytes(), o.Commitment()
 }

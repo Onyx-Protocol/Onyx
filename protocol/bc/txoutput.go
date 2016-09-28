@@ -90,6 +90,12 @@ func (to TxOutput) WitnessHash() Hash {
 	return emptyHash
 }
 
+func (to TxOutput) Commitment() []byte {
+	var buf bytes.Buffer
+	to.OutputCommitment.writeTo(&buf, to.AssetVersion)
+	return buf.Bytes()
+}
+
 func (oc OutputCommitment) writeTo(w io.Writer, assetVersion uint32) {
 	b := new(bytes.Buffer)
 	if assetVersion == 1 {
