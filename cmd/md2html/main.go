@@ -64,9 +64,11 @@ func convert(source []byte) []byte {
 	htmlFlags |= blackfriday.HTML_SMARTYPANTS_FRACTIONS
 	htmlFlags |= blackfriday.HTML_SMARTYPANTS_LATEX_DASHES
 	htmlFlags |= blackfriday.HTML_SMARTYPANTS_DASHES
+	htmlFlags |= blackfriday.HTML_FOOTNOTE_RETURN_LINKS
 	renderer := blackfriday.HtmlRenderer(htmlFlags, "", "")
 
 	extensions := 0
+	extensions |= blackfriday.EXTENSION_FOOTNOTES
 	extensions |= blackfriday.EXTENSION_NO_INTRA_EMPHASIS
 	extensions |= blackfriday.EXTENSION_TABLES
 	extensions |= blackfriday.EXTENSION_FENCED_CODE
