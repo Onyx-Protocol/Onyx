@@ -9,6 +9,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/log"
 )
 
 func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
@@ -19,16 +20,19 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 	for _, tx := range txs {
 		outs, ok := tx["outputs"].([]interface{})
 		if !ok {
-			return errors.Wrap(fmt.Errorf("bad outputs type %T", tx["outputs"]))
+			log.Error(ctx, errors.Wrap(fmt.Errorf("bad outputs type %T", tx["outputs"])))
+			continue
 		}
 		for _, outObj := range outs {
 			out, ok := outObj.(map[string]interface{})
 			if !ok {
-				return errors.Wrap(fmt.Errorf("bad output type %T", outObj))
+				log.Error(ctx, errors.Wrap(fmt.Errorf("bad output type %T", outObj)))
+				continue
 			}
 			assetIDStr, ok := out["asset_id"].(string)
 			if !ok {
-				return errors.Wrap(fmt.Errorf("bad asset_id type %T", out["asset_id"]))
+				log.Error(ctx, errors.Wrap(fmt.Errorf("bad asset_id type %T", out["asset_id"])))
+				continue
 			}
 			assetIDStrMap[assetIDStr] = true
 		}
@@ -73,57 +77,45 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 		return errors.Wrap(err, "querying assets")
 	}
 
-	// Add the asset tags to all the inputs & outputs.
 	empty := map[string]interface{}{}
-	for _, tx := range txs {
-		ins, ok := tx["inputs"].([]interface{})
+	applyAnnotations := func(s interface{}) {
+		asSlice, ok := s.([]interface{})
 		if !ok {
-			return errors.Wrap(fmt.Errorf("bad inputs type %T", tx["inputs"]))
+			log.Error(ctx, errors.Wrap(fmt.Errorf("expectd slice, got %T", s)))
+			return
 		}
-		for _, inObj := range ins {
-			in, ok := inObj.(map[string]interface{})
+		for _, m := range asSlice {
+			asMap, ok := m.(map[string]interface{})
 			if !ok {
-				return errors.Wrap(fmt.Errorf("bad input type %T", inObj))
+				log.Error(ctx, errors.Wrap(fmt.Errorf("bad input type %T", m)))
+				continue
 			}
-			assetIDStr, ok := in["asset_id"].(string)
+			assetIDStr, ok := asMap["asset_id"].(string)
 			if !ok {
-				return errors.Wrap(fmt.Errorf("bad asset_id type %T", in["asset_id"]))
+				log.Error(ctx, errors.Wrap(fmt.Errorf("bad asset_id type %T", asMap["asset_id"])))
+				continue
 			}
 			tags := tagsByAssetIDStr[assetIDStr]
 			if tags != nil {
-				in["asset_tags"] = tags
+				asMap["asset_tags"] = tags
 			} else {
-				in["asset_tags"] = empty
+				asMap["asset_tags"] = empty
 			}
 			if alias, ok := aliasesByAssetIDStr[assetIDStr]; ok {
-				in["asset_alias"] = alias
+				asMap["asset_alias"] = alias
 			}
 			if localByAssetIDStr[assetIDStr] {
-				in["asset_is_local"] = "yes"
+				asMap["asset_is_local"] = "yes"
 			} else {
-				in["asset_is_local"] = "no"
+				asMap["asset_is_local"] = "no"
 			}
 		}
+	}
 
-		outs := tx["outputs"].([]interface{}) // error check happened above
-		for _, outObj := range outs {
-			out := outObj.(map[string]interface{}) // error check happened above
-			assetIDStr := out["asset_id"].(string) // error check happened above
-			tags := tagsByAssetIDStr[assetIDStr]
-			if tags != nil {
-				out["asset_tags"] = tags
-			} else {
-				out["asset_tags"] = empty
-			}
-			if alias, ok := aliasesByAssetIDStr[assetIDStr]; ok {
-				out["asset_alias"] = alias
-			}
-			if localByAssetIDStr[assetIDStr] {
-				out["asset_is_local"] = "yes"
-			} else {
-				out["asset_is_local"] = "no"
-			}
-		}
+	// Add the asset tags to all the inputs & outputs.
+	for _, tx := range txs {
+		applyAnnotations(tx["inputs"])
+		applyAnnotations(tx["outputs"])
 	}
 	return nil
 }

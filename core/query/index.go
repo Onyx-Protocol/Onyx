@@ -75,10 +75,7 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[
 			return nil, errors.Wrap(err, "adding external annotations")
 		}
 	}
-	err := localAnnotator(dbctx, annotatedTxsDecoded)
-	if err != nil {
-		return nil, errors.Wrap(err, "adding local annotations")
-	}
+	localAnnotator(dbctx, annotatedTxsDecoded)
 
 	for _, decoded := range annotatedTxsDecoded {
 		b, err := json.Marshal(decoded)
@@ -94,7 +91,7 @@ func (ind *Indexer) insertAnnotatedTxs(ctx context.Context, b *bc.Block) ([]map[
 		SELECT $1, unnest($2::integer[]), unnest($3::text[]), unnest($4::jsonb[])
 		ON CONFLICT (block_height, tx_pos) DO NOTHING;
 	`
-	_, err = ind.db.Exec(ctx, insertQ, b.Height, positions, hashes, annotatedTxs)
+	_, err := ind.db.Exec(ctx, insertQ, b.Height, positions, hashes, annotatedTxs)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting annotated_txs to db")
 	}

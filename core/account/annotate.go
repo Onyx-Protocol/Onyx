@@ -11,6 +11,7 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
+	"chain/log"
 )
 
 // AnnotateTxs adds account data to transactions
@@ -19,15 +20,17 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 	outputMaps := make(map[string][]map[string]interface{})
 	var controlPrograms [][]byte
 
-	update := func(s interface{}, maps ...map[string][]map[string]interface{}) error {
+	update := func(s interface{}, maps ...map[string][]map[string]interface{}) {
 		asSlice, ok := s.([]interface{})
 		if !ok {
-			return errors.Wrap(fmt.Errorf("expected slice, got %T", s))
+			log.Error(ctx, errors.Wrap(fmt.Errorf("expected slice, got %T", s)))
+			return
 		}
 		for _, m := range asSlice {
 			asMap, ok := m.(map[string]interface{})
 			if !ok {
-				return errors.Wrap(fmt.Errorf("expected map, got %T", m))
+				log.Error(ctx, errors.Wrap(fmt.Errorf("expected map, got %T", m)))
+				continue
 			}
 			if asMap["control_program"] == nil {
 				// Issuance inputs don't have control_programs
@@ -35,29 +38,24 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 			}
 			controlString, ok := asMap["control_program"].(string)
 			if !ok {
-				return errors.Wrap(fmt.Errorf("expected string, got %T", asMap["control_program"]))
+				log.Error(ctx, errors.Wrap(fmt.Errorf("expected string, got %T", asMap["control_program"])))
+				continue
 			}
 			controlProgram, err := hex.DecodeString(controlString)
 			if err != nil {
-				return err
+				log.Error(ctx, errors.Wrap(err, "could not decode control program"))
+				continue
 			}
 			controlPrograms = append(controlPrograms, controlProgram)
 			for _, m := range maps {
 				m[string(controlProgram)] = append(m[string(controlProgram)], asMap)
 			}
 		}
-		return nil
 	}
 
 	for _, tx := range txs {
-		err := update(tx["outputs"], controlMaps, outputMaps)
-		if err != nil {
-			return err
-		}
-		err = update(tx["inputs"], controlMaps)
-		if err != nil {
-			return err
-		}
+		update(tx["outputs"], controlMaps, outputMaps)
+		update(tx["inputs"], controlMaps)
 	}
 
 	const q = `

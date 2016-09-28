@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"chain/errors"
+	"chain/log"
 	"chain/protocol/bc"
 	"chain/protocol/vmutil"
 )
@@ -95,45 +96,51 @@ func hexSlices(byteas [][]byte) []interface{} {
 
 // localAnnotator depends on the asset and account annotators and
 // must be run after them.
-func localAnnotator(ctx context.Context, txs []map[string]interface{}) error {
+func localAnnotator(ctx context.Context, txs []map[string]interface{}) {
 	for _, tx := range txs {
 		txIsLocal := "no"
 
 		ins, ok := tx["inputs"].([]interface{})
 		if !ok {
-			return errors.Wrap(fmt.Errorf("bad inputs type %T", tx["inputs"]))
-		}
-		for _, inObj := range ins {
-			in, ok := inObj.(map[string]interface{})
-			if !ok {
-				return errors.Wrap(fmt.Errorf("bad input type %T", inObj))
-			}
-			action, ok := in["action"].(string)
-			if !ok {
-				return errors.Wrap(fmt.Errorf("bad input action %T", in["action"]))
-			}
-			assetIsLocal, ok := in["asset_is_local"].(string)
-			if !ok {
-				return errors.Wrap(fmt.Errorf("bad input asset_is_local field: %T", in["asset_is_local"]))
-			}
+			log.Error(ctx, errors.Wrap(fmt.Errorf("bad inputs type %T", tx["inputs"])))
+		} else {
+			for _, inObj := range ins {
+				in, ok := inObj.(map[string]interface{})
+				if !ok {
+					log.Error(ctx, errors.Wrap(fmt.Errorf("bad input type %T", inObj)))
+					continue
+				}
+				action, ok := in["action"].(string)
+				if !ok {
+					log.Error(ctx, errors.Wrap(fmt.Errorf("bad input action %T", in["action"])))
+					continue
+				}
+				assetIsLocal, ok := in["asset_is_local"].(string)
+				if !ok {
+					log.Error(ctx, errors.Wrap(fmt.Errorf("bad input asset_is_local field: %T", in["asset_is_local"])))
+					continue
+				}
 
-			_, hasAccount := in["account_id"]
-			if (action == "issue" && assetIsLocal == "yes") || hasAccount {
-				txIsLocal = "yes"
-				in["is_local"] = "yes"
-			} else {
-				in["is_local"] = "no"
+				_, hasAccount := in["account_id"]
+				if (action == "issue" && assetIsLocal == "yes") || hasAccount {
+					txIsLocal = "yes"
+					in["is_local"] = "yes"
+				} else {
+					in["is_local"] = "no"
+				}
 			}
 		}
 
 		outs, ok := tx["outputs"].([]interface{})
 		if !ok {
-			return errors.Wrap(fmt.Errorf("bad outputs type %T", tx["outputs"]))
+			log.Error(ctx, errors.Wrap(fmt.Errorf("bad outputs type %T", tx["outputs"])))
+			continue
 		}
 		for _, outObj := range outs {
 			out, ok := outObj.(map[string]interface{})
 			if !ok {
-				return errors.Wrap(fmt.Errorf("bad output type %T", outObj))
+				log.Error(ctx, errors.Wrap(fmt.Errorf("bad output type %T", outObj)))
+				continue
 			}
 
 			_, hasAccount := out["account_id"]
@@ -147,5 +154,4 @@ func localAnnotator(ctx context.Context, txs []map[string]interface{}) error {
 
 		tx["is_local"] = txIsLocal
 	}
-	return nil
 }
