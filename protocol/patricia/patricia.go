@@ -13,6 +13,11 @@ import (
 // the key provided is a prefix to existing nodes.
 var ErrPrefix = errors.New("key provided is a prefix to other keys")
 
+var (
+	leafPrefix     = []byte{0x00}
+	interiorPrefix = []byte{0x01}
+)
+
 // Tree is a patricia tree implementation, or a radix tree
 // with a radix of 2 -- creating an uneven binary tree.
 // Each entry is a key value pair. The key determines
@@ -91,15 +96,17 @@ func walk(n *Node, walkFn WalkFunc) error {
 	return nil
 }
 
-// Lookup looks up a key and returns a Node with the provided key.
-// If the key is not present in the tree, nil is returned.
-func (t *Tree) Lookup(bkey []byte) *Node {
+// Contains returns true if the tree contains the provided
+// key, value pair.
+func (t *Tree) Contains(bkey, val []byte) bool {
 	if t.root == nil {
-		return nil
+		return false
 	}
 
 	key := bitKey(bkey)
-	return t.lookup(t.root, key)
+	n := t.lookup(t.root, key)
+	h := sha3.Sum256(append(leafPrefix, val[:]...))
+	return n != nil && n.Hash() == h
 }
 
 func (t *Tree) lookup(n *Node, key []uint8) *Node {
@@ -124,8 +131,10 @@ func (t *Tree) lookup(n *Node, key []uint8) *Node {
 // If the key is present, the existing node is found
 // and its value is updated, leaving the structure of
 // the tree alone.
-func (t *Tree) Insert(bkey []byte, hash bc.Hash) error {
+func (t *Tree) Insert(bkey, val []byte) error {
 	key := bitKey(bkey)
+	value := append(leafPrefix, val...)
+	hash := sha3.Sum256(value)
 
 	if t.root == nil {
 		t.root = &Node{key: key, hash: hash, isLeaf: true}
@@ -142,6 +151,7 @@ func (t *Tree) insert(n *Node, key []uint8, hash bc.Hash) (*Node, error) {
 		if !n.isLeaf {
 			return n, errors.Wrap(ErrPrefix)
 		}
+
 		n = &Node{
 			isLeaf: true,
 			key:    n.key,
@@ -268,7 +278,9 @@ type Node struct {
 	children [2]*Node
 }
 
-// NewNode returns a node with the given key and hash
+// NewNode returns a node with the given key and hash.
+// It does NOT re-hash the provided hash; it should only be
+// used when the provided hash should be used as-is.
 func NewNode(key []uint8, hash bc.Hash, isLeaf bool) *Node {
 	return &Node{key: key, hash: hash, isLeaf: isLeaf}
 }
@@ -286,6 +298,7 @@ func (n *Node) Hash() bc.Hash {
 
 func hashChildren(children [2]*Node) (hash bc.Hash) {
 	h := sha3.New256()
+	h.Write(interiorPrefix)
 	for _, c := range children {
 		h.Write(c.hash[:])
 	}

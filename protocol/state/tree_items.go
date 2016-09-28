@@ -7,12 +7,11 @@ import (
 
 	"chain/encoding/blockchain"
 	"chain/errors"
-	"chain/protocol/bc"
 )
 
 // OutputTreeItem returns the key of an output in the state tree,
-// as well as a bc.Hash for Inserts into the state tree.
-func OutputTreeItem(o *Output) ([]byte, bc.Hash) {
+// as well as the hash (a second []byte) for Inserts into the state tree.
+func OutputTreeItem(o *Output) (bkey, hash []byte) {
 	b := bytes.NewBuffer(nil)
 	b.Write(o.AssetID[:])
 	b.Write([]byte("o"))
@@ -21,11 +20,11 @@ func OutputTreeItem(o *Output) ([]byte, bc.Hash) {
 	return b.Bytes(), hashOutput(*o)
 }
 
-func hashOutput(o Output) bc.Hash {
+func hashOutput(o Output) []byte {
 	var buf bytes.Buffer
 	o.Outpoint.WriteTo(&buf)
 	blockchain.WriteUvarint(&buf, o.Amount)
 	blockchain.WriteBytes(&buf, o.ControlProgram)
 	h := sha3.Sum256(buf.Bytes())
-	return h
+	return h[:]
 }

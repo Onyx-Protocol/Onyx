@@ -13,7 +13,7 @@ import (
 
 type pair struct {
 	key  string
-	hash bc.Hash
+	hash []byte
 }
 
 func TestReadWriteStateSnapshot(t *testing.T) {
@@ -31,7 +31,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 			inserts: []pair{
 				{
 					key:  "sup",
-					hash: bc.Hash{0x01},
+					hash: []byte{0x01},
 				},
 			},
 			newIssuances: map[bc.Hash]uint64{
@@ -44,11 +44,11 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 			inserts: []pair{
 				{
 					key:  "sup",
-					hash: bc.Hash{0x02},
+					hash: []byte{0x02},
 				},
 				{
 					key:  "dup2",
-					hash: bc.Hash{0x03},
+					hash: []byte{0x03},
 				},
 			},
 			newIssuances: map[bc.Hash]uint64{
@@ -63,7 +63,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 			inserts: []pair{
 				{
 					key:  "hello",
-					hash: bc.Hash{0x04},
+					hash: []byte{0x04},
 				},
 			},
 			deletes: []string{"hello"},
@@ -138,7 +138,7 @@ func benchmarkStoreSnapshot(nodes, issuances int, b *testing.B) {
 			b.Fatal(err)
 		}
 
-		err = snapshot.Tree.Insert(h[:], h)
+		err = snapshot.Tree.Insert(h[:], h[:])
 		if err != nil {
 			b.Fatal(err)
 		}
