@@ -70,6 +70,7 @@ func TestOutpointAndNonceOp(t *testing.T) {
 
 func TestIntrospectionOps(t *testing.T) {
 	tx := bc.NewTx(bc.TxData{
+		ReferenceData: []byte("txref"),
 		Inputs: []*bc.TxInput{
 			bc.NewSpendInput(bc.Hash{}, 0, nil, bc.AssetID{1}, 5, []byte("spendprog"), []byte("ref")),
 			bc.NewIssuanceInput(nil, 6, nil, bc.Hash{}, []byte("issueprog"), nil),
@@ -293,6 +294,22 @@ func TestIntrospectionOps(t *testing.T) {
 			tx:           tx,
 		},
 	}, {
+		op: OP_TXREFDATAHASH,
+		startVM: &virtualMachine{
+			runLimit:  50000,
+			dataStack: [][]byte{},
+			tx:        tx,
+		},
+		wantVM: &virtualMachine{
+			runLimit:     49999,
+			deferredCost: 40,
+			dataStack: [][]byte{{
+				62, 81, 144, 242, 105, 30, 109, 69, 28, 80, 237, 249, 169, 166, 106, 122,
+				103, 121, 199, 135, 103, 100, 82, 129, 13, 191, 79, 110, 64, 83, 104, 44,
+			}},
+			tx: tx,
+		},
+	}, {
 		op: OP_REFDATAHASH,
 		startVM: &virtualMachine{
 			runLimit:  50000,
@@ -325,8 +342,8 @@ func TestIntrospectionOps(t *testing.T) {
 
 	txops := []Op{
 		OP_FINDOUTPUT, OP_ASSET, OP_AMOUNT, OP_PROGRAM,
-		OP_MINTIME, OP_MAXTIME, OP_REFDATAHASH, OP_INDEX,
-		OP_OUTPOINT,
+		OP_MINTIME, OP_MAXTIME, OP_TXREFDATAHASH, OP_REFDATAHASH,
+		OP_INDEX, OP_OUTPOINT,
 	}
 
 	for _, op := range txops {

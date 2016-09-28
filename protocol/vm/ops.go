@@ -155,7 +155,7 @@ const (
 	OP_LEFT        Op = 0x80
 	OP_RIGHT       Op = 0x81
 	OP_SIZE        Op = 0x82
-	OP_CATPUSHDATA Op = 0xc7
+	OP_CATPUSHDATA Op = 0x89
 
 	OP_INVERT      Op = 0x83
 	OP_AND         Op = 0x84
@@ -201,16 +201,17 @@ const (
 	OP_TXSIGHASH     Op = 0xae
 	OP_BLOCKSIGHASH  Op = 0xaf
 
-	OP_FINDOUTPUT  Op = 0xc1
-	OP_ASSET       Op = 0xc2
-	OP_AMOUNT      Op = 0xc3
-	OP_PROGRAM     Op = 0xc4
-	OP_MINTIME     Op = 0xc5
-	OP_MAXTIME     Op = 0xc6
-	OP_REFDATAHASH Op = 0xc8
-	OP_INDEX       Op = 0xc9
-	OP_OUTPOINT    Op = 0xcb
-	OP_NONCE       Op = 0xcc
+	OP_FINDOUTPUT    Op = 0xc1
+	OP_ASSET         Op = 0xc2
+	OP_AMOUNT        Op = 0xc3
+	OP_PROGRAM       Op = 0xc4
+	OP_MINTIME       Op = 0xc5
+	OP_MAXTIME       Op = 0xc6
+	OP_TXREFDATAHASH Op = 0xc7
+	OP_REFDATAHASH   Op = 0xc8
+	OP_INDEX         Op = 0xc9
+	OP_OUTPOINT      Op = 0xcb
+	OP_NONCE         Op = 0xcc
 
 	OP_CODESEPARATOR Op = 0xab
 	OP_NOP1          Op = 0xb0
@@ -323,16 +324,17 @@ var (
 		OP_TXSIGHASH:     {OP_TXSIGHASH, "TXSIGHASH", opTxSigHash},
 		OP_BLOCKSIGHASH:  {OP_BLOCKSIGHASH, "BLOCKSIGHASH", opBlockSigHash},
 
-		OP_FINDOUTPUT:  {OP_FINDOUTPUT, "FINDOUTPUT", opFindOutput},
-		OP_ASSET:       {OP_ASSET, "ASSET", opAsset},
-		OP_AMOUNT:      {OP_AMOUNT, "AMOUNT", opAmount},
-		OP_PROGRAM:     {OP_PROGRAM, "PROGRAM", opProgram},
-		OP_MINTIME:     {OP_MINTIME, "MINTIME", opMinTime},
-		OP_MAXTIME:     {OP_MAXTIME, "MAXTIME", opMaxTime},
-		OP_REFDATAHASH: {OP_REFDATAHASH, "REFDATAHASH", opRefDataHash},
-		OP_INDEX:       {OP_INDEX, "INDEX", opIndex},
-		OP_OUTPOINT:    {OP_OUTPOINT, "OUTPOINT", opOutpoint},
-		OP_NONCE:       {OP_NONCE, "NONCE", opNonce},
+		OP_FINDOUTPUT:    {OP_FINDOUTPUT, "FINDOUTPUT", opFindOutput},
+		OP_ASSET:         {OP_ASSET, "ASSET", opAsset},
+		OP_AMOUNT:        {OP_AMOUNT, "AMOUNT", opAmount},
+		OP_PROGRAM:       {OP_PROGRAM, "PROGRAM", opProgram},
+		OP_MINTIME:       {OP_MINTIME, "MINTIME", opMinTime},
+		OP_MAXTIME:       {OP_MAXTIME, "MAXTIME", opMaxTime},
+		OP_TXREFDATAHASH: {OP_TXREFDATAHASH, "TXREFDATAHASH", opTxRefDataHash},
+		OP_REFDATAHASH:   {OP_REFDATAHASH, "REFDATAHASH", opRefDataHash},
+		OP_INDEX:         {OP_INDEX, "INDEX", opIndex},
+		OP_OUTPOINT:      {OP_OUTPOINT, "OUTPOINT", opOutpoint},
+		OP_NONCE:         {OP_NONCE, "NONCE", opNonce},
 
 		OP_CODESEPARATOR: {OP_CODESEPARATOR, "CODESEPARATOR", opNop},
 	}

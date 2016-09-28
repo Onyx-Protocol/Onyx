@@ -165,6 +165,20 @@ func opRefDataHash(vm *virtualMachine) error {
 	return vm.push(h[:], true)
 }
 
+func opTxRefDataHash(vm *virtualMachine) error {
+	if vm.tx == nil {
+		return ErrContext
+	}
+
+	err := vm.applyCost(1)
+	if err != nil {
+		return err
+	}
+
+	h := sha3.Sum256(vm.tx.ReferenceData)
+	return vm.push(h[:], true)
+}
+
 func opIndex(vm *virtualMachine) error {
 	if vm.tx == nil {
 		return ErrContext
