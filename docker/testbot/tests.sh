@@ -66,6 +66,6 @@ mvn\
 	export CLASSPATH=$CHAIN/sdk/java/target/$SDKTARGET.jar
 	cd $CHAIN/perf
 	for file in *.java
-	do javac $file
+	do /usr/lib/jvm/default-jvm/bin/javac $file
 	done
 )
