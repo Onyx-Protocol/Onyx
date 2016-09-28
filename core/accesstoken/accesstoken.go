@@ -99,18 +99,18 @@ func Check(ctx context.Context, id, typ string, secret []byte) (bool, error) {
 }
 
 // List lists all access tokens.
-func List(ctx context.Context, after string, limit int) ([]*Token, string, error) {
+func List(ctx context.Context, typ, after string, limit int) ([]*Token, string, error) {
 	if limit == 0 {
 		limit = defaultLimit
 	}
 	const q = `
 		SELECT id, type, sort_id, created FROM access_tokens
-		WHERE ($1='' OR sort_id<$1)
+		WHERE ($1='' OR type=$1::access_token_type) AND ($2='' OR sort_id<$2)
 		ORDER BY sort_id DESC
-		LIMIT $2
+		LIMIT $3
 	`
 	var tokens []*Token
-	err := pg.ForQueryRows(ctx, q, after, limit, func(id, typ, sortID string, created time.Time) {
+	err := pg.ForQueryRows(ctx, q, typ, after, limit, func(id, typ, sortID string, created time.Time) {
 		tokens = append(tokens, &Token{
 			ID:      id,
 			Type:    typ,

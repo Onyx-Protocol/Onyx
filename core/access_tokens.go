@@ -16,7 +16,7 @@ func listAccessTokens(ctx context.Context, x requestQuery) (*page, error) {
 		limit = defGenericPageSize
 	}
 
-	tokens, next, err := accesstoken.List(ctx, x.After, limit)
+	tokens, next, err := accesstoken.List(ctx, x.Type, x.After, limit)
 	if err != nil {
 		return nil, err
 	}

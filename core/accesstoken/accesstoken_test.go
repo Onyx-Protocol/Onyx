@@ -47,6 +47,7 @@ func TestList(t *testing.T) {
 	}
 
 	cases := []struct {
+		typ      string
 		after    string
 		limit    int
 		want     []*Token
@@ -64,10 +65,26 @@ func TestList(t *testing.T) {
 		limit:    1,
 		want:     []*Token{b},
 		wantNext: b.sortID,
+	}, {
+		typ:      "client",
+		limit:    100,
+		want:     []*Token{c, a},
+		wantNext: a.sortID,
+	}, {
+		typ:      "client",
+		after:    c.sortID,
+		limit:    1,
+		want:     []*Token{a},
+		wantNext: a.sortID,
+	}, {
+		typ:      "network",
+		limit:    100,
+		want:     []*Token{b},
+		wantNext: b.sortID,
 	}}
 
 	for _, c := range cases {
-		got, gotNext, err := List(ctx, c.after, c.limit)
+		got, gotNext, err := List(ctx, c.typ, c.after, c.limit)
 
 		if err != nil {
 			t.Errorf("List(%s, %d) errored: %s", c.after, c.limit, err)

@@ -129,6 +129,10 @@ type requestQuery struct {
 	// This is used for point-in-time queries like /list-balances
 	// TODO(bobg): Different request structs for endpoints with different needs
 	TimestampMS uint64 `json:"timestamp,omitempty"`
+
+	// This is used for filtering results from /list-access-tokens
+	// Value must be "client" or "network"
+	Type string `json:"type"`
 }
 
 // Used as a response object for api queries
