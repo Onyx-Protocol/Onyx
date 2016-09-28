@@ -131,7 +131,7 @@ func validateBlockHeader(prev *bc.BlockHeader, block *bc.Block, runScript bool) 
 			err = ErrFalseVMResult
 		}
 		if err != nil {
-			pkScriptStr, _ := vm.Decompile(prev.ConsensusProgram)
+			pkScriptStr, _ := vm.Disassemble(prev.ConsensusProgram)
 			witnessStrs := make([]string, 0, len(block.Witness))
 			for _, w := range block.Witness {
 				witnessStrs = append(witnessStrs, hex.EncodeToString(w))

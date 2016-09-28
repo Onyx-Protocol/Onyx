@@ -276,7 +276,7 @@ func script(args []string) {
 	inp, _ := input(args, 0, false)
 	b, err := decodeHex(inp)
 	if err == nil {
-		dis, err := vm.Decompile(b)
+		dis, err := vm.Disassemble(b)
 		if err == nil {
 			fmt.Println(dis)
 			return
@@ -285,7 +285,7 @@ func script(args []string) {
 		// it's an uncompiled program that just looks like hex. Fall
 		// through and try it that way.
 	}
-	parsed, err := vm.Compile(inp)
+	parsed, err := vm.Assemble(inp)
 	if err == nil {
 		fmt.Println(hex.EncodeToString(parsed))
 		return

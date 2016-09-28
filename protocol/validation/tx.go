@@ -198,7 +198,7 @@ func ValidateTx(tx *bc.Tx) error {
 			} else {
 				program = input.ControlProgram()
 			}
-			scriptStr, _ := vm.Decompile(program)
+			scriptStr, _ := vm.Disassemble(program)
 			args := input.Arguments()
 			hexArgs := make([]string, 0, len(args))
 			for _, arg := range args {

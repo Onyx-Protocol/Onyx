@@ -122,14 +122,22 @@ func doOKNotOK(t *testing.T, expectOK bool) {
 		{"0x05 0x05 SWAP 0xdeadbeef CATPUSHDATA DROP 0x05 EQUAL", nil},
 
 		// // control flow ops
-		{"1 JUMP:7 0 1 EQUAL", nil},                                       // jumps over 0
-		{"1 1 JUMPIF:8 0 1 EQUAL", nil},                                   // jumps over 0
-		{"1 0 JUMPIF:8 0 1 EQUAL NOT", nil},                               // doesn't jump over 0
-		{"1 0 JUMPIF:1", nil},                                             // doesn't jump, so no infinite loop
-		{"4 1 JUMPIF:14 5 EQUAL JUMP:16 4 EQUAL", nil},                    // if (true) { return x == 4; } else { return x == 5; }
-		{"5 0 JUMPIF:14 5 EQUAL JUMP:16 4 EQUAL", nil},                    // if (false) { return x == 4; } else { return x == 5; }
-		{"0 1 2 3 4 5 6 JUMP:13 DROP DUP 0 NUMNOTEQUAL JUMPIF:12 1", nil}, // same as "0 1 2 3 4 5 6 WHILE DROP ENDWHILE 1"
-		{"0 JUMP:7 1ADD DUP 10 LESSTHAN JUMPIF:6 10 NUMEQUAL", nil},       // fixed version of "0 1 WHILE DROP 1ADD DUP 10 LESSTHAN ENDWHILE 10 NUMEQUAL"
+		{"1 JUMP:7 0 1 EQUAL", nil},                                                       // jumps over 0
+		{"1 JUMP:$target 0 $target 1 EQUAL", nil},                                         // jumps over 0
+		{"1 1 JUMPIF:8 0 1 EQUAL", nil},                                                   // jumps over 0
+		{"1 1 JUMPIF:$target 0 $target 1 EQUAL", nil},                                     // jumps over 0
+		{"1 0 JUMPIF:8 0 1 EQUAL NOT", nil},                                               // doesn't jump over 0
+		{"1 0 JUMPIF:$target 0 $target 1 EQUAL NOT", nil},                                 // doesn't jump over 0
+		{"1 0 JUMPIF:1", nil},                                                             // doesn't jump, so no infinite loop
+		{"1 $target 0 JUMPIF:$target", nil},                                               // doesn't jump, so no infinite loop
+		{"4 1 JUMPIF:14 5 EQUAL JUMP:16 4 EQUAL", nil},                                    // if (true) { return x == 4; } else { return x == 5; }
+		{"4 1 JUMPIF:$true 5 EQUAL JUMP:$end $true 4 EQUAL $end", nil},                    // if (true) { return x == 4; } else { return x == 5; }
+		{"5 0 JUMPIF:14 5 EQUAL JUMP:16 4 EQUAL", nil},                                    // if (false) { return x == 4; } else { return x == 5; }
+		{"5 0 JUMPIF:$true 5 EQUAL JUMP:$end $true 4 $test EQUAL $end", nil},              // if (false) { return x == 4; } else { return x == 5; }
+		{"0 1 2 3 4 5 6 JUMP:13 DROP DUP 0 NUMNOTEQUAL JUMPIF:12 1", nil},                 // same as "0 1 2 3 4 5 6 WHILE DROP ENDWHILE 1"
+		{"0 1 2 3 4 5 6 JUMP:$dup $drop DROP $dup DUP 0 NUMNOTEQUAL JUMPIF:$drop 1", nil}, // same as "0 1 2 3 4 5 6 WHILE DROP ENDWHILE 1"
+		{"0 JUMP:7 1ADD DUP 10 LESSTHAN JUMPIF:6 10 NUMEQUAL", nil},                       // fixed version of "0 1 WHILE DROP 1ADD DUP 10 LESSTHAN ENDWHILE 10 NUMEQUAL"
+		{"0 JUMP:$dup $add 1ADD $dup DUP 10 LESSTHAN JUMPIF:$add 10 NUMEQUAL", nil},       // fixed version of "0 1 WHILE DROP 1ADD DUP 10 LESSTHAN ENDWHILE 10 NUMEQUAL"
 
 	}
 	for i, c := range cases {
@@ -137,7 +145,7 @@ func doOKNotOK(t *testing.T, expectOK bool) {
 		if !expectOK {
 			progSrc += " NOT"
 		}
-		prog, err := Compile(progSrc)
+		prog, err := Assemble(progSrc)
 		if err != nil {
 			t.Fatal(err)
 		}

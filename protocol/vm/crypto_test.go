@@ -40,7 +40,7 @@ func TestCheckSig(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		prog, err := Compile(c.prog)
+		prog, err := Assemble(c.prog)
 		if err != nil {
 			t.Fatalf("case %d: %s", i, err)
 		}

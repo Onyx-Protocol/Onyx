@@ -8,7 +8,7 @@ import (
 	"chain/errors"
 )
 
-func TestCompile(t *testing.T) {
+func TestAssemble(t *testing.T) {
 	cases := []struct {
 		plain   string
 		want    []byte
@@ -26,7 +26,7 @@ func TestCompile(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		got, gotErr := Compile(c.plain)
+		got, gotErr := Assemble(c.plain)
 
 		if errors.Root(gotErr) != c.wantErr {
 			t.Errorf("Compile(%s) err = %v want %v", c.plain, errors.Root(gotErr), c.wantErr)
@@ -43,7 +43,7 @@ func TestCompile(t *testing.T) {
 	}
 }
 
-func TestDecompile(t *testing.T) {
+func TestDisassemble(t *testing.T) {
 	cases := []struct {
 		raw     []byte
 		want    string
@@ -51,11 +51,12 @@ func TestDecompile(t *testing.T) {
 	}{
 		{mustDecodeHex("525393559c"), "0x02 0x03 ADD 0x05 NUMEQUAL", nil},
 		{mustDecodeHex("01135e94559c"), "0x13 0x0e SUB 0x05 NUMEQUAL", nil},
+		{mustDecodeHex("6300000000"), "$alpha JUMP:$alpha", nil},
 		{[]byte{0xff}, "", ErrUnknownOpcode},
 	}
 
 	for _, c := range cases {
-		got, gotErr := Decompile(c.raw)
+		got, gotErr := Disassemble(c.raw)
 
 		if errors.Root(gotErr) != c.wantErr {
 			t.Errorf("Decompile(%x) err = %v want %v", c.raw, errors.Root(gotErr), c.wantErr)

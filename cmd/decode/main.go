@@ -97,7 +97,7 @@ func main() {
 			fatalf("err decoding hex: %s", err)
 		}
 
-		s, err := vm.Decompile(b)
+		s, err := vm.Disassemble(b)
 		if err != nil {
 			fatalf("error decoding script: %s", err)
 		}
