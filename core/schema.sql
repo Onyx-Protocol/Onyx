@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -394,8 +394,7 @@ CREATE TABLE account_utxos (
 CREATE TABLE accounts (
     account_id text NOT NULL,
     tags jsonb,
-    alias text,
-    archived boolean DEFAULT false NOT NULL
+    alias text
 );
 
 
@@ -466,7 +465,6 @@ CREATE TABLE assets (
     definition_mutable boolean DEFAULT false NOT NULL,
     sort_id text DEFAULT next_chain_id('asset'::text) NOT NULL,
     issuance_program bytea NOT NULL,
-    archived boolean DEFAULT false NOT NULL,
     client_token text,
     initial_block_hash text NOT NULL,
     signer_id text,
@@ -683,8 +681,7 @@ CREATE TABLE signers (
     key_index bigint NOT NULL,
     xpubs text[] NOT NULL,
     quorum integer NOT NULL,
-    client_token text,
-    archived boolean DEFAULT false NOT NULL
+    client_token text
 );
 
 
@@ -1138,3 +1135,4 @@ insert into migrations (filename, hash) values ('2016-09-14.2.appdb.add-cursors-
 insert into migrations (filename, hash) values ('2016-09-23.0.account.change-control-programs.sql', 'dd5fe8c4b418c061bea8007b61dfefb64418f9a99c2978f559b4628ec323bc25');
 insert into migrations (filename, hash) values ('2016-09-26.0.core.add-access-tokens.sql', '81b12b6aed53dfacca8f8d922b377ef24c727950dea2c8c186d6f68400de511a');
 insert into migrations (filename, hash) values ('2016-09-26.1.core.add-require-auth-flags.sql', '0e21f6d4836fcde1bdec80b0f6cc7c8cf8355fee47a7d5561ed8d7f6726425f1');
+insert into migrations (filename, hash) values ('2016-09-29.0.core.drop-archived-columns.sql', '557b8ae9b6604485d7ae7eef2206ce218d4bb3a1ac9bcdac6b4691db1da20208');

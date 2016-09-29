@@ -5,10 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/core/signers"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
-	"chain/errors"
 	"chain/protocol/bc"
 	"chain/testutil"
 )
@@ -56,62 +54,6 @@ func TestDefineAssetIdempotency(t *testing.T) {
 	// asset0 and asset1 should be exactly the same because they use the same client token
 	if !reflect.DeepEqual(asset0, asset1) {
 		t.Errorf("expected %v and %v to match", asset0, asset1)
-	}
-}
-
-func TestDefineAndArchiveAssetByID(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	keys := []string{testutil.TestXPub.String()}
-	var initialBlockHash bc.Hash
-	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, "", nil, nil)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	err = Archive(ctx, asset.AssetID, "")
-	if err != nil {
-		t.Errorf("unexpected error %v", err)
-	}
-
-	// Verify that the asset was archived.
-	_, err = FindByID(ctx, asset.AssetID)
-	if err != ErrArchived {
-		t.Error("expected asset id to be archived")
-	}
-
-	// Verify that the signer was archived.
-	_, err = signers.Find(ctx, "asset", asset.Signer.ID)
-	if errors.Root(err) != signers.ErrArchived {
-		t.Error("expected signer to be archived")
-	}
-}
-
-func TestDefineAndArchiveAssetByAlias(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	keys := []string{testutil.TestXPub.String()}
-	var initialBlockHash bc.Hash
-	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, "some-alias", nil, nil)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	err = Archive(ctx, bc.AssetID{}, "some-alias")
-	if err != nil {
-		t.Errorf("unexpected error %v", err)
-	}
-
-	// Verify that the asset was archived.
-	_, err = lookupAsset(ctx, bc.AssetID{}, "some-alias")
-	if err != ErrArchived {
-		t.Error("expected asset id to be archived")
-	}
-
-	// Verify that the signer was archived.
-	_, err = signers.Find(ctx, "asset", asset.Signer.ID)
-	if errors.Root(err) != signers.ErrArchived {
-		t.Error("expected signer to be archived")
 	}
 }
 

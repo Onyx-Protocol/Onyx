@@ -6,8 +6,6 @@ import (
 
 	"chain/core/account"
 	"chain/core/signers"
-	"chain/errors"
-	"chain/net/http/httpjson"
 )
 
 // This type enforces JSON field ordering in API output.
@@ -73,20 +71,4 @@ func createAccount(ctx context.Context, ins []struct {
 
 	wg.Wait()
 	return responses
-}
-
-// POST /archive-account
-func archiveAccount(ctx context.Context, in struct {
-	AccountID string `json:"account_id"`
-	Alias     string `json:"alias"`
-}) error {
-	if in.AccountID != "" && in.Alias != "" {
-		return errors.Wrap(httpjson.ErrBadRequest, "cannot supply both account_id and alias")
-	}
-
-	if in.AccountID == "" && in.Alias == "" {
-		return errors.Wrap(httpjson.ErrBadRequest, "must supply either account_id or alias")
-	}
-
-	return account.Archive(ctx, in.AccountID, in.Alias)
 }

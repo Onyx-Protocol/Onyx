@@ -5,7 +5,6 @@ import (
 
 	"chain/core/accesstoken"
 	"chain/core/account/utxodb"
-	"chain/core/asset"
 	"chain/core/blocksigner"
 	"chain/core/mockhsm"
 	"chain/core/query"
@@ -45,8 +44,6 @@ var (
 		pg.ErrUserInputNotFound:  errorInfo{400, "CH002", "Not found"},
 		httpjson.ErrBadRequest:   errorInfo{400, "CH003", "Invalid request body"},
 		errBadReqHeader:          errorInfo{400, "CH004", "Invalid request header"},
-		asset.ErrArchived:        errorInfo{400, "CH005", "Item has been archived"},
-		signers.ErrArchived:      errorInfo{400, "CH005", "Item has been archived"},
 		errNotFound:              errorInfo{404, "CH006", "Not found"},
 
 		// Core error namespace

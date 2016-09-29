@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"chain/core/signers"
@@ -127,22 +126,17 @@ func fetchAccountData(ctx context.Context, id string) (string, map[string]interf
 
 // FindByAlias retrieves an Account record by its alias
 func FindByAlias(ctx context.Context, alias string) (*Account, error) {
-	const q = `SELECT account_id, tags, archived FROM accounts WHERE alias=$1`
+	const q = `SELECT account_id, tags FROM accounts WHERE alias=$1`
 	var (
 		tagBytes  []byte
 		accountID string
-		archived  bool
 	)
-	err := pg.QueryRow(ctx, q, alias).Scan(&accountID, &tagBytes, &archived)
+	err := pg.QueryRow(ctx, q, alias).Scan(&accountID, &tagBytes)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "alias: %s", alias)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err)
-	}
-
-	if archived {
-		return nil, signers.ErrArchived
 	}
 
 	var tags map[string]interface{}
@@ -163,29 +157,6 @@ func FindByAlias(ctx context.Context, alias string) (*Account, error) {
 		Alias:  alias,
 		Tags:   tags,
 	}, nil
-}
-
-// Archive marks an Account record as archived,
-// effectively "deleting" it.
-func Archive(ctx context.Context, id, alias string) error {
-	identifier := id
-	column := "account_id"
-	if id == "" {
-		identifier = alias
-		column = "alias"
-	}
-
-	const q = `
-		UPDATE accounts SET archived='t' WHERE %s=$1
-		RETURNING account_id
-	`
-
-	err := pg.QueryRow(ctx, fmt.Sprintf(q, column), identifier).Scan(&id)
-	if err == sql.ErrNoRows {
-		return errors.Wrap(pg.ErrUserInputNotFound)
-	}
-
-	return signers.Archive(ctx, "account", id)
 }
 
 // CreateControlProgram creates a control program

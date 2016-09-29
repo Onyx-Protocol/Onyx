@@ -7,9 +7,6 @@ import (
 	"chain/core/asset"
 	"chain/core/signers"
 	"chain/encoding/json"
-	"chain/errors"
-	"chain/net/http/httpjson"
-	"chain/protocol/bc"
 )
 
 type (
@@ -104,19 +101,4 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 
 	wg.Wait()
 	return responses, nil
-}
-
-// POST /archive-asset
-func archiveAsset(ctx context.Context, in struct {
-	AssetID bc.AssetID `json:"asset_id"`
-	Alias   string     `json:"alias"`
-}) error {
-	if (in.AssetID != bc.AssetID{} && in.Alias != "") {
-		return errors.Wrap(httpjson.ErrBadRequest, "cannot supply both asset_id and alias")
-	}
-
-	if (in.AssetID == bc.AssetID{} && in.Alias == "") {
-		return errors.Wrap(httpjson.ErrBadRequest, "must supply either asset_id or alias")
-	}
-	return asset.Archive(ctx, in.AssetID, in.Alias)
 }

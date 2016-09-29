@@ -155,22 +155,6 @@ func TestFind(t *testing.T) {
 	}
 }
 
-func TestArchive(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-
-	s1 := createFixture(ctx, t)
-
-	err := Archive(ctx, s1.Type, s1.ID)
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	_, err = Find(ctx, s1.Type, s1.ID)
-	if errors.Root(err) != ErrArchived {
-		t.Errorf("expected signer to be marked archived")
-	}
-}
-
 func TestList(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 

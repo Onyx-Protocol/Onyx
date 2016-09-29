@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/core/signers"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -130,37 +129,5 @@ func TestFindByAlias(t *testing.T) {
 
 	if !reflect.DeepEqual(account, found) {
 		t.Errorf("expected found account to be %v, instead found %v", account, found)
-	}
-}
-
-func TestArchiveByID(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	account := createTestAccount(ctx, t, "", nil)
-
-	err := Archive(ctx, account.ID, "")
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	_, err = FindByID(ctx, account.ID)
-	if errors.Root(err) != signers.ErrArchived {
-		t.Errorf("expected %s when Finding an archived account, instead got %s", signers.ErrArchived, err)
-	}
-}
-
-func TestArchiveByAlias(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	createTestAccount(ctx, t, "some-alias", nil)
-
-	err := Archive(ctx, "", "some-alias")
-	if err != nil {
-		testutil.FatalErr(t, err)
-	}
-
-	_, err = FindByAlias(ctx, "some-alias")
-	if errors.Root(err) != signers.ErrArchived {
-		t.Errorf("expected %s when Finding an archived account, instead got %s", signers.ErrArchived, err)
 	}
 }

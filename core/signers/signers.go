@@ -40,10 +40,6 @@ var (
 	// ErrBadType is returned when a find operation
 	// retrieves a signer that is not the expected type.
 	ErrBadType = errors.New("retrieved type does not match expected type")
-
-	// ErrArchived is return when a find operation
-	// retrieves a signer that has been archived.
-	ErrArchived = errors.New("archived")
 )
 
 // Signer is the abstract concept of a signer,
@@ -135,13 +131,12 @@ func findByClientToken(ctx context.Context, clientToken *string) (*Signer, error
 // using the type and id.
 func Find(ctx context.Context, typ, id string) (*Signer, error) {
 	const q = `
-		SELECT id, type, xpubs, quorum, key_index(key_index), archived
+		SELECT id, type, xpubs, quorum, key_index(key_index)
 		FROM signers WHERE id=$1
 	`
 
 	var (
 		s        Signer
-		archived bool
 		xpubStrs []string
 	)
 	err := pg.QueryRow(ctx, q, id).Scan(
@@ -150,17 +145,12 @@ func Find(ctx context.Context, typ, id string) (*Signer, error) {
 		(*pq.StringArray)(&xpubStrs),
 		&s.Quorum,
 		(*pg.Uint32s)(&s.KeyIndex),
-		&archived,
 	)
 	if err == sql.ErrNoRows {
 		return nil, errors.Wrap(pg.ErrUserInputNotFound)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err)
-	}
-
-	if archived {
-		return nil, errors.Wrap(ErrArchived)
 	}
 
 	if s.Type != typ {
@@ -175,19 +165,6 @@ func Find(ctx context.Context, typ, id string) (*Signer, error) {
 	s.XPubs = keys
 
 	return &s, nil
-}
-
-// Archive marks a Signer as archived in the database
-func Archive(ctx context.Context, typ, id string) error {
-	const q = `
-		UPDATE signers SET archived='t' WHERE type=$1 and id=$2
-		RETURNING id
-	`
-	err := pg.QueryRow(ctx, q, typ, id).Scan(&id)
-	if err == sql.ErrNoRows {
-		return errors.Wrap(pg.ErrUserInputNotFound)
-	}
-	return errors.Wrap(err)
 }
 
 // List returns a paginated set of Signers, limited to

@@ -17,10 +17,6 @@ import (
 	"chain/protocol/vmutil"
 )
 
-var (
-	ErrArchived = errors.New("asset archived")
-)
-
 type Asset struct {
 	AssetID          bc.AssetID
 	Alias            *string
@@ -107,40 +103,6 @@ func FindByAlias(ctx context.Context, alias string) (*Asset, error) {
 	return lookupAsset(ctx, bc.AssetID{}, alias)
 }
 
-// Archive marks an Asset record as archived, effectively "deleting" it.
-func Archive(ctx context.Context, id bc.AssetID, alias string) error {
-	asset, err := lookupAsset(ctx, id, alias)
-	if err != nil {
-		return errors.Wrap(err, "asset is missing")
-	}
-
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return errors.Wrap(err, "archive asset")
-	}
-	defer dbtx.Rollback(ctx)
-
-	const q = `UPDATE assets SET archived = true WHERE id = $1`
-	_, err = pg.Exec(ctx, q, asset.AssetID.String())
-	if err != nil {
-		return errors.Wrap(err, "archive asset query")
-	}
-
-	if asset.Signer != nil {
-		err = signers.Archive(ctx, "asset", asset.Signer.ID)
-		if err != nil {
-			return errors.Wrap(err, "archive asset signer")
-		}
-	}
-
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		return errors.Wrap(err, "committing archive asset dbtx")
-	}
-
-	return nil
-}
-
 // insertAsset adds the asset to the database. If the asset has a client token,
 // and there already exists an asset with that client token, insertAsset will
 // lookup and return the existing asset instead.
@@ -221,7 +183,7 @@ func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error)
 func assetQuery(ctx context.Context, pred string, args ...interface{}) (*Asset, error) {
 	const baseQ = `
 		SELECT id, alias, issuance_program, definition,
-			initial_block_hash, signer_id, archived, sort_id
+			initial_block_hash, signer_id, sort_id
 		FROM assets
 		WHERE %s
 		LIMIT 1
@@ -229,7 +191,6 @@ func assetQuery(ctx context.Context, pred string, args ...interface{}) (*Asset, 
 	var (
 		a          Asset
 		alias      sql.NullString
-		archived   bool
 		signerID   sql.NullString
 		definition []byte
 	)
@@ -240,16 +201,12 @@ func assetQuery(ctx context.Context, pred string, args ...interface{}) (*Asset, 
 		&definition,
 		&a.InitialBlockHash,
 		&signerID,
-		&archived,
 		&a.sortID,
 	)
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
 	} else if err != nil {
 		return nil, err
-	}
-	if archived {
-		return nil, ErrArchived
 	}
 
 	if signerID.Valid {
