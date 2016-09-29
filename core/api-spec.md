@@ -134,8 +134,14 @@ POST /mockhsm/sign-transaction
 
 ```
 {
-  "transactions": [{...}],
-  "xpubs": ["..."],
+  "transactions": [
+    {
+      <all fields in the Transaction Template object>,
+      "allow_additional_actions": <boolean> // optional, defaults to false
+    },
+    ...
+  ],
+  "xpubs": ["..."]
 }
 ```
 
@@ -489,7 +495,6 @@ POST /build-transaction
   {
     "raw_transaction": <hex string>, // optional. an unsubmitted transaction to which additional actions can be appended.
     "ttl": <number of milliseconds>, // optional, defaults to 300000 (5 minutes)
-    "allow_additional_actions": <boolean>, // optional, defaults to false
     "actions": [
       {
         "type": "spend_account",
