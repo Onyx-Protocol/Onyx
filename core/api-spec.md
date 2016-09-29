@@ -31,13 +31,13 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [List Transactions](#list-transactions)
   * [List Balances](#list-balances)
   * [List Unspent Outputs](#list-unspent-outputs)
-* [Cursors](#cursors)
-  * [Cursor Object](#cursor-object)
-  * [Create Cursor](#create-cursor)
-  * [Get Cursor](#get-cursor)
-  * [List Cursors](#list-cursors)
-  * [Update Cursor](#update-cursor)
-  * [Delete Cursor](#delete-cursor)
+* [Transaction Consumers](#transaction-consumers)
+  * [Transaction Consumer Object](#transaction-consumer-object)
+  * [Create Transaction Consumer](#create-transaction-consumer)
+  * [Get Transaction Consumer](#get-transaction-consumer)
+  * [List Transaction Consumers](#list-transaction-consumers)
+  * [Update Transaction Consumer](#update-transaction-consumer)
+  * [Delete Transaction Consumer](#delete-transaction-consumer)
 * [Access Tokens](#access-tokens)
   * [Create Access Token](#create-access-token)
   * [List Access Tokens](#list-access-tokens)
@@ -716,20 +716,9 @@ POST /list-unspent-outputs
 }
 ```
 
-## Cursors
+## Transaction Consumers
 
-To receive crash-resistant notifications about new transactions, Cursors can be used in conjunction with the `/list-transactions` endpoint.
-
-To process new transactions, a client should:
-
-1. Create a Cursor, adding a `filter` and optionally adding an `alias`; or get a previously created Cursor by its id or alias.
-2. Extract the `after` from the response.
-3. List transactions with the extracted `after` and `filter`, and set `"order": "asc"` on the request body, to receive transactions in the order that they happened.
-4. Extract the new `after` from the `/list-transactions` response body.
-5. Update the Cursor with the new `after`.
-6. Repeat steps 3 - 5.
-
-### Cursor Object
+### Transaction Consumer Object
 
 ```
 {
@@ -741,12 +730,12 @@ To process new transactions, a client should:
 }
 ```
 
-### Create Cursor
+### Create Transaction Consumer
 
 #### Endpoint
 
 ```
-POST /create-cursor
+POST /create-transaction-consumer
 ```
 
 #### Request
@@ -760,35 +749,36 @@ POST /create-cursor
 
 #### Response
 
-A Cursor object.
+A Transaction Consumer object.
 
-### Get Cursor
+### Get Transaction Consumer
 
 #### Endpoint
 
 ```
-POST /get-cursor
+POST /get-transaction-consumer
 ```
 
 #### Request
 
 ```
 {
-  "id": ..., // provide either cursor id or alias
+  // Provide either id or alias
+  "id": ...
   "alias": ...
 }
 ```
 
 #### Response
 
-A Cursor object.
+A Transaction Consumer object.
 
-### List Cursors
+### List Transaction Consumers
 
 #### Endpoint
 
 ```
-POST /list-cursors
+POST /list-transaction-consumers
 ```
 
 #### Request
@@ -804,7 +794,7 @@ POST /list-cursors
 ```
 {
   "items": [
-    <Cursor object>,
+    <Transaction Consumer object>,
     ...
   ],
   "next": {
@@ -814,41 +804,43 @@ POST /list-cursors
 }
 ```
 
-### Update Cursor
+### Update Transaction Consumer
 
-Updates the Cursor with a new `after`. This is used to acknowledge that the last set of transactions received from `/list-transactions` was processed successfully.
+Updates the Transaction Consumer with a new `after`. This is used to acknowledge that the last set of transactions received from `/list-transactions` was processed successfully.
 
-Cursors can only be updated forwards (i.e., a cursor cannot be updated with a value that is previous to its current value).
+Transaction Consumers can only be updated forwards (i.e., a consumer cannot be updated with a value that is previous to its current value).
 
-If present, the `previous_after` cursor will be used to prevent a race condition where two clients are updating the same cursor at the same time. If the current cursor does not match `previous_after`, it cannot be updated.
+If present, the `previous_after` field will be used to prevent a race condition where two clients are updating the same consumer at the same time. If the current consumer does not match `previous_after`, it cannot be updated.
 
 #### Endpoint
 
 ```
-POST /update-cursor
+POST /update-transaction-consumer
 ```
 
 #### Request
 
 ```
 {
-    "id": "...", // provide either cursor id or alias
-    "alias": "...",
-    "previous_after": "...", // optional. previous value of the cursor
-    "after": "..."
+  // Provide either id or alias
+  "id": "...",
+  "alias": "...",
+
+  "previous_after": "...", // optional
+  "after": "..."
 }
 ```
 
 #### Response
 
-The updated Cursor object.
+The updated Transaction Consumer object.
 
-### Delete Cursor
+### Delete Transaction Consumer
 
 #### Endpoint
 
 ```
-POST /delete-cursor
+POST /delete-transaction-consumer
 ```
 
 #### Request
