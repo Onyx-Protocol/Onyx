@@ -29,6 +29,7 @@ import (
 
 var (
 	flagD = flag.Bool("d", false, "delete instances from previous runs")
+	flagP = flag.Bool("p", false, "capture cpu and heap profiles from cored")
 
 	appName      = "benchcore"
 	testRunID    = appName + randString()
@@ -149,7 +150,9 @@ func main() {
 	log.Println("init cored hosts")
 	must(scpPut(cored.addr, coredBin, "cored", 0755))
 	go mustRunOn(cored.addr, coredsh, "dbURL", dbURL)
-	go writeFile("cored", coredBin)
+	if *flagP {
+		writeFile("cored", coredBin)
+	}
 
 	log.Println("init client")
 	coreURL := "http://" + cored.privAddr + ":8080"
@@ -159,7 +162,9 @@ func main() {
 	must(scpPut(client.addr, chainJAR, "chain.jar", 0644))
 	javaClass := strings.TrimSuffix(progName, ".java")
 	must(scpPut(client.addr, testJava, javaClass+".java", 0644))
-	go profile(publicCoreURL)
+	if *flagP {
+		go profile(publicCoreURL)
+	}
 	mustRunOn(client.addr, clientsh,
 		"coreURL", coreURL,
 		"coreAddr", cored.privAddr,
@@ -515,10 +520,11 @@ NextVar:
 }
 
 func profile(coreURL string) {
+	ticker := time.Tick(profileFrequency)
 	for {
-		go captureHeap(coreURL, time.Now())
-		go captureCPU(coreURL, time.Now())
-		time.Sleep(profileFrequency)
+		captureHeap(coreURL, time.Now())
+		captureCPU(coreURL, time.Now())
+		<-ticker
 	}
 }
 
