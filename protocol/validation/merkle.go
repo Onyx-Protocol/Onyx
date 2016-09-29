@@ -8,6 +8,11 @@ import (
 	"chain/protocol/bc"
 )
 
+var (
+	leafPrefix     = []byte{0x00}
+	interiorPrefix = []byte{0x01}
+)
+
 // CalcMerkleRoot creates a merkle tree from a slice of transactions
 // and returns the root hash of the tree.
 //
@@ -52,11 +57,13 @@ func nextPowerOfTwo(n int) int {
 }
 
 func hashMerkleBranches(left, right *bc.Hash) *bc.Hash {
-	var data [64]byte
-	copy(data[0:32], left[:])
-	copy(data[32:64], right[:])
+	var hash bc.Hash
+	h := sha3.New256()
+	h.Write(interiorPrefix)
+	h.Write(left[:])
+	h.Write(right[:])
 
-	hash := bc.Hash(sha3.Sum256(data[:]))
+	h.Sum(hash[:0])
 	return &hash
 }
 
@@ -79,8 +86,9 @@ func buildMerkleTreeStore(transactions []*bc.Tx) []*bc.Hash {
 
 	// Create the base transaction shas and populate the array with them.
 	for i, tx := range transactions {
-		witHash := tx.WitnessHash()
-		merkles[i] = &witHash
+		witHash := [32]byte(tx.WitnessHash())
+		hash := bc.Hash(sha3.Sum256(append(leafPrefix, witHash[:]...)))
+		merkles[i] = &hash
 	}
 
 	// Start the array offset after the last transaction and adjusted to the
