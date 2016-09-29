@@ -47,7 +47,7 @@ func (a *action) UnmarshalJSON(data []byte) error {
 }
 
 type buildRequest struct {
-	Tx            *bc.TxData        `json:"raw_transaction"`
+	Tx            *bc.TxData        `json:"base_transaction"`
 	Actions       []*action         `json:"actions"`
 	ReferenceData chainjson.Map     `json:"reference_data"`
 	TTL           httpjson.Duration `json:"ttl"`

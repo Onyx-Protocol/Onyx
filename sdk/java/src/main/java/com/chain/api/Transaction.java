@@ -865,8 +865,8 @@ public class Transaction {
     /**
      * Hex-encoded serialization of a transaction to add to the current template.
      */
-    @SerializedName("raw_transaction")
-    private String rawTransaction;
+    @SerializedName("base_transaction")
+    private String baseTransaction;
 
     /**
      * List of actions in a transaction.
@@ -909,19 +909,19 @@ public class Transaction {
     }
 
     /**
-     * Sets the rawTransaction field and initializes the actions lists.<br>
+     * Sets the baseTransaction field and initializes the actions lists.<br>
      * This constructor can be used when executing an atomic swap and the counter party has sent an initialized tx template.
      */
     public Builder(String rawTransaction) {
-      this.rawTransaction = rawTransaction;
+      this.baseTransaction = rawTransaction;
       this.actions = new ArrayList<>();
     }
 
     /**
      * Sets the rawTransaction that will be added to the current template.
      */
-    public Builder setRawTransaction(String rawTransaction) {
-      this.rawTransaction = rawTransaction;
+    public Builder setBaseTransaction(String rawTransaction) {
+      this.baseTransaction = rawTransaction;
       return this;
     }
 

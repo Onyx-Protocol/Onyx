@@ -492,7 +492,7 @@ POST /build-transaction
 ```
 [
   {
-    "raw_transaction": <hex string>, // optional. an unsubmitted transaction to which additional actions can be appended.
+    "base_transaction": <hex string>, // optional. an unsubmitted transaction to which additional actions can be appended.
     "ttl": <number of milliseconds>, // optional, defaults to 300000 (5 minutes)
     "actions": [
       {
