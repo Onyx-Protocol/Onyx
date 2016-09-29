@@ -1,4 +1,4 @@
-import AppContainer from './containers/AppContainer'
+import { Container } from './features/app'
 import Section from './containers/SectionContainer'
 import UnspentList from './containers/Unspent/List'
 import BalanceList from './containers/Balance/List'
@@ -6,7 +6,7 @@ import MockHsmList from './containers/MockHsm/List'
 import NewKey from './containers/MockHsm/New'
 import CoreIndex from './containers/Core'
 import ConfigIndex from './containers/Config'
-import NotFound from './components/NotFound'
+import { NotFound } from './features/shared'
 
 import { routes as transactions } from './features/transactions'
 import { routes as assets } from './features/assets'
@@ -14,7 +14,7 @@ import { routes as accounts } from './features/accounts'
 
 export default ({
   path: '/',
-  component: AppContainer,
+  component: Container,
   childRoutes: [
     assets,
     accounts,

@@ -1,4 +1,4 @@
-import actionCreator from './actionCreator'
+import actionCreator from '../../actions/actionCreator'
 
 const _closeDropwdown = actionCreator('CLOSE_DROPDOWN')
 

@@ -9,4 +9,15 @@
 @import 'node_modules/bootstrap-sass/assets/stylesheets/bootstrap/_variables';
 @import 'node_modules/bootstrap-sass/assets/stylesheets/bootstrap/_mixins';
 
-$border-color: $page-header-border-color;
+$background-color: #ffffff;
+$background-emphasis-color: #f7f9fb;
+$border-color: #e7ebf3;
+$text-color: #8c8e94;
+$text-strong-color: #3b4046;
+
+$highlight-default: #00bfaa;
+$highlight-danger: red;
+
+$background-inverse-color: $text-strong-color;
+$border-inverse-color: lighten($text-strong-color, 10%);
+$highlight-inverse-color: #a3a9b8;

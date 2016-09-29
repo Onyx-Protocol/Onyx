@@ -1,5 +1,5 @@
 import React from 'react'
-import NotFound from '../../../components/NotFound'
+import { NotFound } from '../'
 
 export default class BaseShow extends React.Component {
   constructor(props) {

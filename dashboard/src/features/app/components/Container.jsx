@@ -1,10 +1,11 @@
+import { connect } from 'react-redux'
+import actions from '../../../actions'
+import { Main, Config } from './'
 import React from 'react'
-import Main from '../containers/Layout/Main'
-import Config from './Layout/Config'
 
 const CORE_POLLING_TIME=15000
 
-class AppContainer extends React.Component {
+class Container extends React.Component {
   constructor(props) {
     super(props)
 
@@ -44,7 +45,7 @@ class AppContainer extends React.Component {
   }
 
   render() {
-    let loading = <div></div>
+    let loading = <div>Loading...</div>
 
     let layout = <Main>{this.props.children}</Main>
     if (!this.props.configured) {
@@ -55,4 +56,15 @@ class AppContainer extends React.Component {
   }
 }
 
-export default AppContainer
+export default connect(
+  (state) => ({
+    configured: state.core.configured,
+    buildCommit: state.core.buildCommit,
+    buildDate: state.core.buildDate
+  }),
+  (dispatch) => ({
+    fetchInfo: () => dispatch(actions.core.fetchCoreInfo()),
+    showRoot: () => dispatch(actions.routing.showRoot),
+    showConfiguration: () => dispatch(actions.routing.showConfiguration()),
+  })
+)(Container)

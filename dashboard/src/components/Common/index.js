@@ -1,6 +1,5 @@
 import Autocomplete from './Autocomplete'
 import ErrorBanner from './ErrorBanner'
-import Flash from './Flash/Flash'
 import JsonField from './JsonField/JsonField'
 import KeyConfiguration from './KeyConfiguration'
 import Navbar from './Navbar'
@@ -14,7 +13,6 @@ import XpubField from './XpubField/XpubField'
 export {
   Autocomplete,
   ErrorBanner,
-  Flash,
   JsonField,
   KeyConfiguration,
   Navbar,

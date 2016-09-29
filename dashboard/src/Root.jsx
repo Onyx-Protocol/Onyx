@@ -1,12 +1,12 @@
 import React from 'react'
 import { Provider } from 'react-redux'
 import { Router } from 'react-router'
-import { history } from '../utility/environment'
+import { history } from './utility/environment'
 import { syncHistoryWithStore } from 'react-router-redux'
 
-import routes from '../routes'
+import routes from './routes'
 
-export default class App extends React.Component {
+export default class Root extends React.Component {
   componentWillMount() {
     document.title = 'Chain Core Dashboard'
   }

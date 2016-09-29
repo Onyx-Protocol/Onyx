@@ -1,0 +1,66 @@
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  width: 100%;
+  max-width: 100%;
+}
+
+.sidebar {
+  width: 180px;
+  min-width: 180px;
+}
+
+.content {
+  flex: 100;
+  padding: 22px;
+  max-width: calc(100% - 180px);
+}
+
+.sidebarContent {
+  background-color: $background-inverse-color;
+  position: fixed;
+  width: 180px;
+  height: 100%;
+  overflow-y: scroll;
+  z-index: 10;
+
+  a {
+    display: block;
+    padding: 3px 0;
+    color: $highlight-inverse-color;
+  }
+
+  .active {
+    color: $highlight-default;
+  }
+}
+
+.logo {
+  border-bottom: 1px solid $border-inverse-color;
+  padding: 16px;
+
+  img {
+    width: 90px;
+  }
+}
+
+.navigation {
+  padding: 0;
+  list-style-type: none;
+  margin-top: 24px;
+  margin-bottom: 0;
+  padding: 0 12px;
+}
+
+.navigationTitle {
+  font-variant: small-caps;
+  padding: 3px 0;
+}
+
+.glyphicon {
+  font-size: 10px;
+  padding-bottom: 5px;
+  padding-right: 12px;
+  vertical-align: middle;
+}

@@ -1,5 +1,4 @@
 import { combineReducers } from 'redux'
-import actions from '../actions'
 import uuid from 'uuid'
 
 const flash = (message, type) => ({ message, type, displayed: false })
@@ -7,17 +6,17 @@ const success = (message) => flash(message, 'success')
 const error = (message) => flash(message, 'danger')
 
 export const flashMessages = (state = new Map(), action) => {
-  if (action.type == actions.account.created.type) {
+  if (action.type == 'CREATED_ACCOUNT') {
     return new Map(state).set(uuid.v4(), success('Created account'))
-  } else if (action.type == actions.asset.created.type) {
+  } else if (action.type == 'CREATED_ASSET') {
     return new Map(state).set(uuid.v4(), success('Created asset'))
-  } else if (action.type == actions.transaction.created.type) {
+  } else if (action.type == 'CREATED_TRANSACTION') {
     return new Map(state).set(uuid.v4(), success('Created transaction'))
-  } else if (action.type == actions.mockhsm.created.type) {
+  } else if (action.type == 'CREATE_MOCKHSM') {
     return new Map(state).set(uuid.v4(), success('Created key'))
   } else if (action.type == 'ERROR') {
     return new Map(state).set(uuid.v4(), error(action.payload.message))
-  } else if (action.type == actions.app.displayedFlash.type) {
+  } else if (action.type == 'DISPLAYED_FLASH') {
     const existing = state.get(action.param)
     if (existing && !existing.displayed) {
       const newState = new Map(state)
@@ -37,7 +36,7 @@ export const flashMessages = (state = new Map(), action) => {
       })
       return new Map(state)
     }
-  } else if (action.type == actions.app.dismissFlash.type) {
+  } else if (action.type == 'DISMISS_FLASH') {
     state.delete(action.param)
     return new Map(state)
   }
@@ -46,9 +45,9 @@ export const flashMessages = (state = new Map(), action) => {
 }
 
 export const dropdownState = (state = '', action) => {
-  if (action.type == actions.app.toggleDropdown.type) {
+  if (action.type == 'TOGGLE_DROPDOWN') {
     return state === '' ? 'open' : ''
-  } else if (action.type == actions.app.closeDropdown.type) {
+  } else if (action.type == 'CLOSE_DROPDOWN') {
     return ''
   }
 
