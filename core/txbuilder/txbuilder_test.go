@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/encoding/json"
@@ -101,11 +101,11 @@ func TestBuild(t *testing.T) {
 
 func TestMaterializeWitnesses(t *testing.T) {
 	var initialBlockHash bc.Hash
-	privkey, pubkey, err := hd25519.NewXKeys(nil)
+	privkey, pubkey, err := chainkd.NewXKeys(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	issuanceProg, _ := vmutil.P2DPMultiSigProgram([]ed25519.PublicKey{pubkey.Key}, 1)
+	issuanceProg, _ := vmutil.P2DPMultiSigProgram([]ed25519.PublicKey{pubkey.PublicKey()}, 1)
 	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := &bc.TxData{
@@ -120,7 +120,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 
 	prog, err := vm.Assemble(fmt.Sprintf("MAXTIME 0x804cf05736 LESSTHAN VERIFY 0 5 0x%x 1 0x76a914c5d128911c28776f56baaac550963f7b88501dc388c0 FINDOUTPUT", assetID[:]))
 	h := sha3.Sum256(prog)
-	sig := ed25519.Sign(privkey.Key, h[:])
+	sig := privkey.Sign(h[:])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,19 +161,19 @@ func TestMaterializeWitnesses(t *testing.T) {
 
 func TestSignatureWitnessMaterialize(t *testing.T) {
 	var initialBlockHash bc.Hash
-	privkey1, pubkey1, err := hd25519.NewXKeys(nil)
+	privkey1, pubkey1, err := chainkd.NewXKeys(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	privkey2, pubkey2, err := hd25519.NewXKeys(nil)
+	privkey2, pubkey2, err := chainkd.NewXKeys(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	privkey3, pubkey3, err := hd25519.NewXKeys(nil)
+	privkey3, pubkey3, err := chainkd.NewXKeys(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	issuanceProg, _ := vmutil.P2DPMultiSigProgram([]ed25519.PublicKey{pubkey1.Key, pubkey2.Key, pubkey3.Key}, 2)
+	issuanceProg, _ := vmutil.P2DPMultiSigProgram([]ed25519.PublicKey{pubkey1.PublicKey(), pubkey2.PublicKey(), pubkey3.PublicKey()}, 2)
 	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := &bc.TxData{
@@ -195,9 +195,9 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	builder.AddOp(vm.OP_TXSIGHASH).AddOp(vm.OP_EQUAL)
 	prog := builder.Program
 	msg := sha3.Sum256(prog)
-	sig1 := ed25519.Sign(privkey1.Key, msg[:])
-	sig2 := ed25519.Sign(privkey2.Key, msg[:])
-	sig3 := ed25519.Sign(privkey3.Key, msg[:])
+	sig1 := privkey1.Sign(msg[:])
+	sig2 := privkey2.Sign(msg[:])
+	sig3 := privkey3.Sign(msg[:])
 	want := [][]byte{
 		vm.Int64Bytes(0),
 		sig1,

@@ -11,7 +11,7 @@ import (
 	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
@@ -114,7 +114,7 @@ func BenchmarkIOUThroughput(b *testing.B) {
 	}
 }
 
-func testCreateAccount(ctx context.Context, tb testing.TB, key *hd25519.XPub, alias string) string {
+func testCreateAccount(ctx context.Context, tb testing.TB, key chainkd.XPub, alias string) string {
 	acc, err := account.Create(ctx, []string{key.String()}, 1, alias, nil, nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)
@@ -122,7 +122,7 @@ func testCreateAccount(ctx context.Context, tb testing.TB, key *hd25519.XPub, al
 	return acc.ID
 }
 
-func testCreateAsset(ctx context.Context, tb testing.TB, key *hd25519.XPub, alias string, b1Hash bc.Hash) bc.AssetID {
+func testCreateAsset(ctx context.Context, tb testing.TB, key chainkd.XPub, alias string, b1Hash bc.Hash) bc.AssetID {
 	asset, err := asset.Define(ctx, []string{key.String()}, 1, nil, b1Hash, alias, nil, nil)
 	if err != nil {
 		testutil.FatalErr(tb, err)

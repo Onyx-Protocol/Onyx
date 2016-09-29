@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
@@ -102,7 +102,7 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, m
 
 // KeyIDs produces KeyIDs from a list of xpubs and a derivation path
 // (applied to all the xpubs).
-func KeyIDs(xpubs []*hd25519.XPub, path []uint32) []KeyID {
+func KeyIDs(xpubs []chainkd.XPub, path []uint32) []KeyID {
 	result := make([]KeyID, 0, len(xpubs))
 	for _, xpub := range xpubs {
 		result = append(result, KeyID{xpub.String(), path})

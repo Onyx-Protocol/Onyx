@@ -9,7 +9,7 @@ import (
 
 	"chain/core/signers"
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/metrics"
@@ -53,8 +53,8 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 
 	path := signers.Path(assetSigner, signers.AssetKeySpace, nil)
 
-	derivedXPubs := hd25519.DeriveXPubs(assetSigner.XPubs, path)
-	derivedPKs := hd25519.XPubKeys(derivedXPubs)
+	derivedXPubs := chainkd.DeriveXPubs(assetSigner.XPubs, path)
+	derivedPKs := chainkd.XPubKeys(derivedXPubs)
 	issuanceProgram, err := programWithDefinition(derivedPKs, assetSigner.Quorum, serializedDef)
 	if err != nil {
 		return nil, err

@@ -10,7 +10,7 @@ import (
 	"chain/core/asset/assettest"
 	"chain/core/mockhsm"
 	"chain/core/txbuilder"
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
@@ -35,7 +35,7 @@ func TestMockHSM(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, xpub2, err := hd25519.NewXKeys(nil)
+	_, xpub2, err := chainkd.NewXKeys(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func TestMockHSM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assettest.SignTxTemplate(t, ctx, tmpl, testutil.TestXPrv)
+	assettest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
 	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)

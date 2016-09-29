@@ -20,7 +20,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
 )
@@ -71,7 +71,7 @@ var subcommands = map[string]command{
 	"assetid":     command{assetid, "compute asset id", "ISSUANCEPROG GENESISHASH"},
 	"block":       command{block, "decode and pretty-print a block", "BLOCK"},
 	"blockheader": command{blockheader, "decode and pretty-print a block header", "BLOCKHEADER"},
-	"derive":      command{derive, "derive child from given xpub or xprv and given path", "XPUB/XPRV PATH PATH..."},
+	"derive":      command{derive, "derive child from given xpub or xprv and given path", "[-xpub|-xprv] XPUB/XPRV PATH PATH..."},
 	"genprv":      command{genprv, "generate prv", ""},
 	"genxprv":     command{genxprv, "generate xprv", ""},
 	"hex":         command{hexCmd, "string <-> hex", "INPUT"},
@@ -198,6 +198,19 @@ func blockheader(args []string) {
 }
 
 func derive(args []string) {
+	if len(args) == 0 {
+		errorf("must specify -xprv or -xpub, key, and path")
+	}
+	which := args[0]
+	args = args[1:]
+
+	switch which {
+	case "-xprv", "-xpub":
+		// ok
+	default:
+		errorf("must specify -xprv or -xpub")
+	}
+
 	k, _ := input(args, 0, false)
 	path := make([]uint32, 0, len(args)-1)
 	for _, a := range args[1:] {
@@ -207,20 +220,27 @@ func derive(args []string) {
 		}
 		path = append(path, uint32(p))
 	}
-	// XPrvs are longer than XPubs, try parsing one of those first.
-	xprv, err := hd25519.XPrvFromString(strings.TrimSpace(k))
-	if err == nil {
+
+	k = strings.TrimSpace(k)
+
+	if which == "-xprv" {
+		var xprv chainkd.XPrv
+		err := xprv.UnmarshalText([]byte(k))
+		if err != nil {
+			errorf("could not parse key")
+		}
 		derived := xprv.Derive(path)
 		fmt.Println(derived.String())
 		return
 	}
-	xpub, err := hd25519.XPubFromString(strings.TrimSpace(k))
-	if err == nil {
-		derived := xpub.Derive(path)
-		fmt.Println(derived.String())
-		return
+
+	var xpub chainkd.XPub
+	err := xpub.UnmarshalText([]byte(k))
+	if err != nil {
+		errorf("could not parse key")
 	}
-	errorf("could not parse key")
+	derived := xpub.Derive(path)
+	fmt.Println(derived.String())
 }
 
 func genprv(_ []string) {
@@ -228,11 +248,11 @@ func genprv(_ []string) {
 	if err != nil {
 		errorf("unexpected error %s", err)
 	}
-	fmt.Println(hex.EncodeToString(hd25519.PrvBytes(prv)))
+	fmt.Println(hex.EncodeToString(prv))
 }
 
 func genxprv(_ []string) {
-	xprv, _, err := hd25519.NewXKeys(nil)
+	xprv, _, err := chainkd.NewXKeys(nil)
 	if err != nil {
 		errorf("unexpected error %s", err)
 	}
@@ -259,17 +279,15 @@ func hmac512(args []string) {
 
 func pub(args []string) {
 	inp, _ := input(args, 0, false)
-	xprv, err := hd25519.XPrvFromString(strings.TrimSpace(inp))
+	var xprv chainkd.XPrv
+	err := xprv.UnmarshalText([]byte(strings.TrimSpace(inp)))
 	if err == nil {
-		fmt.Println(xprv.Public().String())
+		fmt.Println(xprv.XPub().String())
 		return
 	}
-	prv, err := hd25519.PrvFromBytes(mustDecodeHex(inp))
-	if err == nil {
-		fmt.Println(hex.EncodeToString(hd25519.PubBytes(prv.Public().(ed25519.PublicKey))))
-		return
-	}
-	errorf("could not parse key")
+	prv := ed25519.PrivateKey(mustDecodeHex(inp))
+	pub := prv.Public().(ed25519.PublicKey)
+	fmt.Println(hex.EncodeToString(pub))
 }
 
 func script(args []string) {
@@ -318,32 +336,42 @@ func sha512alt(args []string) {
 }
 
 func sign(args []string) {
+	if len(args) == 0 {
+		errorf("must specify -xprv or -prv, plus msg")
+	}
+	which := args[0]
+	args = args[1:]
+
+	switch which {
+	case "-xprv", "-prv":
+		// ok
+	default:
+		errorf("must specify -xprv or -prv")
+	}
+
 	var (
 		keyInp, msgInp string
 		usedStdin      bool
 	)
 	keyInp, usedStdin = input(args, 0, false)
 	msgInp, _ = input(args, 1, usedStdin)
-	var (
-		xprv *hd25519.XPrv
-		prv  ed25519.PrivateKey
-		err  error
-	)
-	xprv, err = hd25519.XPrvFromString(strings.TrimSpace(keyInp))
-	if err != nil {
-		xprv = nil
-		prv, err = hd25519.PrvFromBytes(mustDecodeHex(keyInp))
-		if err != nil {
-			errorf("could not parse key")
-		}
-	}
+
+	keyInp = strings.TrimSpace(keyInp)
 	msg := mustDecodeHex(msgInp)
 	var signed []byte
-	if xprv != nil {
+
+	if which == "-xprv" {
+		var xprv chainkd.XPrv
+		err := xprv.UnmarshalText([]byte(keyInp))
+		if err != nil {
+			errorf("could not parse xprv")
+		}
 		signed = xprv.Sign(msg)
 	} else {
+		prv := ed25519.PrivateKey(mustDecodeHex(keyInp))
 		signed = ed25519.Sign(prv, msg)
 	}
+
 	fmt.Println(hex.EncodeToString(signed))
 }
 
@@ -441,27 +469,30 @@ func verify(args []string) {
 	keyInp, usedStdin = input(args, 0, false)
 	msgInp, usedStdin = input(args, 1, usedStdin)
 	sigInp, _ = input(args, 2, usedStdin)
-	var (
-		xpub *hd25519.XPub
-		pub  ed25519.PublicKey
-		err  error
-	)
-	xpub, err = hd25519.XPubFromString(strings.TrimSpace(keyInp))
-	if err != nil {
-		xpub = nil
-		pub, err = hd25519.PubFromBytes(mustDecodeHex(keyInp))
-		if err != nil {
-			errorf("could not parse key")
-		}
-	}
+
+	keyInp = strings.TrimSpace(keyInp)
 	msg := mustDecodeHex(msgInp)
 	sig := mustDecodeHex(sigInp)
+
 	var verified bool
-	if xpub != nil {
+
+	switch len(keyInp) {
+	case 128:
+		var xpub chainkd.XPub
+		err := xpub.UnmarshalText([]byte(keyInp))
+		if err != nil {
+			errorf("could not parse xpub")
+		}
 		verified = xpub.Verify(msg, sig)
-	} else {
+
+	case 64:
+		pub := ed25519.PublicKey(mustDecodeHex(keyInp))
 		verified = ed25519.Verify(pub, msg, sig)
+
+	default:
+		errorf("could not parse key")
 	}
+
 	if verified {
 		fmt.Println("verified")
 	} else {

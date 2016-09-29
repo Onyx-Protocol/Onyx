@@ -21,19 +21,19 @@ func NewXKeys(r io.Reader) (xprv XPrv, xpub XPub, err error) {
 func XPubKeys(xpubs []XPub) []ed25519.PublicKey {
 	res := make([]ed25519.PublicKey, 0, len(xpubs))
 	for _, xpub := range xpubs {
-		res = append(res, ed25519.PublicKey(xpub[:32]))
+		res = append(res, xpub.PublicKey())
 	}
 	return res
 }
 
-func DeriveXPubs(xpubs []*XPub, path []uint32) ([]XPub, error) {
+func DeriveXPubs(xpubs []XPub, path []uint32) []XPub {
 	res := make([]XPub, 0, len(xpubs))
 	for _, xpub := range xpubs {
 		d := xpub.Derive(path)
 		res = append(res, d)
 	}
 	sort.Sort(byKey(res))
-	return res, nil
+	return res
 }
 
 type byKey []XPub

@@ -7,7 +7,6 @@ import (
 
 	"chain/core/asset"
 	"chain/core/signers"
-	"chain/crypto/ed25519/hd25519"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/metrics"
@@ -85,8 +84,9 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 				var keys []assetKey
 				for _, xpub := range asset.Signer.XPubs {
 					path := signers.Path(asset.Signer, signers.AssetKeySpace, nil)
+					derived := xpub.Derive(path)
 					keys = append(keys, assetKey{
-						AssetPubkey:         json.HexBytes(hd25519.PubBytes(xpub.Derive(path).Key)),
+						AssetPubkey:         json.HexBytes(derived[:]),
 						RootXPub:            xpub,
 						AssetDerivationPath: path,
 					})

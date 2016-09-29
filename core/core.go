@@ -18,7 +18,7 @@ import (
 	"chain/core/mockhsm"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
@@ -179,7 +179,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 
 	var signingKeys []ed25519.PublicKey
 	if c.IsSigner {
-		var blockXPub *hd25519.XPub
+		var blockXPub chainkd.XPub
 		if c.BlockXPub == "" {
 			hsm := mockhsm.New(db)
 			coreXPub, created, err := hsm.GetOrCreateKey(ctx, autoBlockKeyAlias)
@@ -194,12 +194,13 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			}
 			c.BlockXPub = blockXPub.String()
 		} else {
-			blockXPub, err = hd25519.XPubFromString(c.BlockXPub)
+			var blockXPub chainkd.XPub
+			err = blockXPub.UnmarshalText([]byte(c.BlockXPub))
 			if err != nil {
 				return errors.Wrap(errBadBlockXPub, err.Error())
 			}
 		}
-		signingKeys = append(signingKeys, blockXPub.Key)
+		signingKeys = append(signingKeys, blockXPub.PublicKey())
 	}
 
 	if c.IsGenerator {

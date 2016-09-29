@@ -14,7 +14,7 @@ import (
 	"github.com/kr/secureheader"
 
 	"chain/core/txbuilder"
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/crypto/hsm/thales/see"
 	"chain/crypto/hsm/thales/xprvseeclient"
 	"chain/env"
@@ -145,10 +145,8 @@ func loadKey(ctx context.Context) error {
 		return fmt.Errorf("xpub should have 64 bytes, got %d bytes", len(xpubBytes))
 	}
 
-	xpub, err := hd25519.XPubFromBytes(xpubBytes)
-	if err != nil {
-		return err
-	}
+	var xpub chainkd.XPub
+	copy(xpub[:], xpubBytes)
 
 	xpubstr = xpub.String()
 	return nil

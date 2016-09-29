@@ -180,7 +180,12 @@ func (xprv XPrv) Sign(msg []byte) []byte {
 }
 
 func (xpub XPub) Verify(msg []byte, sig []byte) bool {
-	return ed25519.Verify(ed25519.PublicKey(xpub[:32]), msg, sig)
+	return ed25519.Verify(xpub.PublicKey(), msg, sig)
+}
+
+// PublicKey extracts the ed25519 public key from an xpub.
+func (xpub XPub) PublicKey() ed25519.PublicKey {
+	return ed25519.PublicKey(xpub[:32])
 }
 
 func hashKeySaltSelector(out []byte, version byte, key, salt, sel []byte) {
@@ -195,7 +200,7 @@ func hashKeySaltSelector(out []byte, version byte, key, salt, sel []byte) {
 
 func hashKeySalt(out []byte, version byte, key, salt []byte) {
 	hasher := hashKeySaltHelper(version, key, salt)
-	hasher.Sum(out)
+	hasher.Sum(out[:0])
 }
 
 func hashKeySaltHelper(version byte, key, salt []byte) hash.Hash {

@@ -9,7 +9,7 @@ import (
 	"chain/core/asset"
 	"chain/core/asset/assettest"
 	. "chain/core/txbuilder"
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
@@ -56,7 +56,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	assettest.SignTxTemplate(t, ctx, firstTemplate, info.privKeyAccounts)
+	assettest.SignTxTemplate(t, ctx, firstTemplate, &info.privKeyAccounts)
 	tx := bc.NewTx(*firstTemplate.Transaction)
 	err = FinalizeTx(ctx, c, tx)
 	if err != nil {
@@ -71,7 +71,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	secondTemplate.SigningInstructions = firstTemplate.SigningInstructions
 	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Sigs[0] = nil
 
-	assettest.SignTxTemplate(t, ctx, secondTemplate, info.privKeyAccounts)
+	assettest.SignTxTemplate(t, ctx, secondTemplate, &info.privKeyAccounts)
 	err = FinalizeTx(ctx, c, bc.NewTx(*secondTemplate.Transaction))
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -234,8 +234,8 @@ type clientInfo struct {
 	asset           *asset.Asset
 	acctA           *account.Account
 	acctB           *account.Account
-	privKeyAsset    *hd25519.XPrv
-	privKeyAccounts *hd25519.XPrv
+	privKeyAsset    chainkd.XPrv
+	privKeyAccounts chainkd.XPrv
 }
 
 // TODO(kr): refactor this into new package core/coreutil
@@ -245,7 +245,7 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.Chain, er
 	asset.Init(c, nil)
 	account.Init(c, nil)
 
-	accPriv, accPub, err := hd25519.NewXKeys(nil)
+	accPriv, accPub, err := chainkd.NewXKeys(nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -265,7 +265,7 @@ func bootdb(ctx context.Context, t testing.TB) (*clientInfo, *protocol.Chain, er
 		return nil, nil, err
 	}
 
-	assetPriv, assetPub, err := hd25519.NewXKeys(nil)
+	assetPriv, assetPub, err := chainkd.NewXKeys(nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -301,7 +301,7 @@ func issue(ctx context.Context, t testing.TB, c *protocol.Chain, info *clientInf
 	if err != nil {
 		return nil, err
 	}
-	assettest.SignTxTemplate(t, ctx, issueTx, info.privKeyAsset)
+	assettest.SignTxTemplate(t, ctx, issueTx, &info.privKeyAsset)
 	tx := bc.NewTx(*issueTx.Transaction)
 	return tx, FinalizeTx(ctx, c, tx)
 }
@@ -319,7 +319,7 @@ func transfer(ctx context.Context, t testing.TB, c *protocol.Chain, info *client
 		return nil, errors.Wrap(err)
 	}
 
-	assettest.SignTxTemplate(t, ctx, xferTx, info.privKeyAccounts)
+	assettest.SignTxTemplate(t, ctx, xferTx, &info.privKeyAccounts)
 
 	tx := bc.NewTx(*xferTx.Transaction)
 	err = FinalizeTx(ctx, c, tx)

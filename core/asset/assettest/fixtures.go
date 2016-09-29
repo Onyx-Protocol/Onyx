@@ -62,7 +62,7 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, c *protocol.Chain, as
 		testutil.FatalErr(t, err)
 	}
 
-	SignTxTemplate(t, ctx, tpl, testutil.TestXPrv)
+	SignTxTemplate(t, ctx, tpl, &testutil.TestXPrv)
 
 	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tpl.Transaction))
 	if err != nil {
@@ -82,7 +82,7 @@ func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, actions []tx
 		t.Fatal(err)
 	}
 
-	SignTxTemplate(t, ctx, template, testutil.TestXPrv)
+	SignTxTemplate(t, ctx, template, &testutil.TestXPrv)
 
 	tx := bc.NewTx(*template.Transaction)
 	err = txbuilder.FinalizeTx(ctx, c, tx)

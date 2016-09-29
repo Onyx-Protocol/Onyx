@@ -6,7 +6,7 @@ import (
 
 	"github.com/lib/pq"
 
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/errors"
 )
@@ -52,7 +52,7 @@ var (
 type Signer struct {
 	ID       string
 	Type     string
-	XPubs    []*hd25519.XPub
+	XPubs    []chainkd.XPub
 	Quorum   int
 	KeyIndex []uint32
 }
@@ -230,10 +230,11 @@ func List(ctx context.Context, typ, prev string, limit int) ([]*Signer, string, 
 	return signers, last, nil
 }
 
-func ConvertKeys(xpubs []string) ([]*hd25519.XPub, error) {
-	var xkeys []*hd25519.XPub
+func ConvertKeys(xpubs []string) ([]chainkd.XPub, error) {
+	var xkeys []chainkd.XPub
 	for i, xpub := range xpubs {
-		xkey, err := hd25519.XPubFromString(xpub)
+		var xkey chainkd.XPub
+		err := xkey.UnmarshalText([]byte(xpub))
 		if err != nil {
 			return nil, errors.WithDetailf(ErrBadXPub, "key %d: xpub is not valid", i)
 		}

@@ -2,7 +2,7 @@ package vmutil
 
 import (
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/errors"
 	"chain/protocol/vm"
 )
@@ -29,7 +29,7 @@ func BlockMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, e
 	builder := NewBuilder()
 	builder.AddOp(vm.OP_BLOCKSIGHASH)
 	for _, key := range pubkeys {
-		builder.AddData(hd25519.PubBytes(key))
+		builder.AddData(key)
 	}
 	builder.AddInt64(int64(nrequired)).AddInt64(int64(len(pubkeys))).AddOp(vm.OP_CHECKMULTISIG)
 	return builder.Program, nil
@@ -66,7 +66,7 @@ func ParseBlockMultiSigProgram(script []byte) ([]ed25519.PublicKey, int, error) 
 
 	pubkeys := make([]ed25519.PublicKey, 0, npubkeys)
 	for i := firstPubkeyIndex; i < firstPubkeyIndex+int(npubkeys); i++ {
-		pubkey, err := hd25519.PubFromBytes(pops[i].Data)
+		pubkey, err := chainkd.NewEd25519PublicKey(pops[i].Data)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -86,7 +86,7 @@ func P2DPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, er
 	builder.AddOp(vm.OP_DUP).AddOp(vm.OP_TOALTSTACK) // stash a copy of the predicate
 	builder.AddOp(vm.OP_SHA3)                        // stack is now [... NARGS SIG SIG SIG PREDICATEHASH]
 	for _, p := range pubkeys {
-		builder.AddData(hd25519.PubBytes(p))
+		builder.AddData(p)
 	}
 	builder.AddInt64(int64(nrequired))                     // stack is now [... SIG SIG SIG PREDICATEHASH PUB PUB PUB M]
 	builder.AddInt64(int64(len(pubkeys)))                  // stack is now [... SIG SIG SIG PREDICATEHASH PUB PUB PUB M N]
@@ -129,7 +129,7 @@ func ParseP2DPMultiSigProgram(program []byte) ([]ed25519.PublicKey, int, error) 
 
 	pubkeys := make([]ed25519.PublicKey, 0, npubkeys)
 	for i := firstPubkeyIndex; i < firstPubkeyIndex+int(npubkeys); i++ {
-		pubkey, err := hd25519.PubFromBytes(pops[i].Data)
+		pubkey, err := chainkd.NewEd25519PublicKey(pops[i].Data)
 		if err != nil {
 			return nil, 0, err
 		}

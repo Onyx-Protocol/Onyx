@@ -47,7 +47,7 @@ func TestBuildFinal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assettest.SignTxTemplate(t, ctx, tmpl, testutil.TestXPrv)
+	assettest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
 	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
@@ -145,7 +145,7 @@ func TestAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assettest.SignTxTemplate(t, ctx, tmpl, testutil.TestXPrv)
+	assettest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
 	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
@@ -161,7 +161,7 @@ func TestAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assettest.SignTxTemplate(t, ctx, tmpl, testutil.TestXPrv)
+	assettest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
 	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
@@ -274,7 +274,7 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	assettest.SignTxTemplate(t, ctx, txTemplate, testutil.TestXPrv)
+	assettest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
 	_, err = submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
 	if err != nil && err != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)
@@ -315,7 +315,7 @@ func TestTransfer(t *testing.T) {
 	}
 	toSign = inspectTemplate(t, parsedResult[0], account2ID)
 	txTemplate, err = toTxTemplate(ctx, toSign)
-	assettest.SignTxTemplate(t, ctx, txTemplate, testutil.TestXPrv)
+	assettest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

@@ -32,7 +32,7 @@ import (
 	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
@@ -230,8 +230,8 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, p
 	var generatorSigners []generator.BlockSigner
 	var signBlockHandler core.BlockSignerFunc
 	if config.IsSigner {
-		var blockXPub *hd25519.XPub
-		blockXPub, err = hd25519.XPubFromString(config.BlockXPub)
+		var blockXPub chainkd.XPub
+		err = blockXPub.UnmarshalText([]byte(config.BlockXPub))
 		if err != nil {
 			panic(err)
 		}
@@ -324,7 +324,7 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, rpcSecretToken, 
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
-		k, err := hd25519.PubFromBytes(kbytes)
+		k, err := chainkd.NewEd25519PublicKey(kbytes)
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err), "at", "decoding signer public key")
 		}

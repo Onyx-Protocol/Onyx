@@ -9,7 +9,7 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/errors"
 )
@@ -23,16 +23,16 @@ type HSM struct {
 	db pg.DB
 
 	cacheMu sync.Mutex
-	cache   map[[64]byte]*hd25519.XPrv
+	cache   map[chainkd.XPub]chainkd.XPrv
 }
 
 type XPub struct {
-	Alias *string       `json:"alias"`
-	XPub  *hd25519.XPub `json:"xpub"`
+	Alias *string      `json:"alias"`
+	XPub  chainkd.XPub `json:"xpub"`
 }
 
 func New(db pg.DB) *HSM {
-	return &HSM{db: db, cache: make(map[[64]byte]*hd25519.XPrv)}
+	return &HSM{db: db, cache: make(map[chainkd.XPub]chainkd.XPrv)}
 }
 
 // CreateKey produces a new random xprv and stores it in the db.
@@ -48,7 +48,7 @@ func (h *HSM) GetOrCreateKey(ctx context.Context, alias string) (xpub *XPub, cre
 }
 
 func (h *HSM) create(ctx context.Context, alias string, get bool) (*XPub, bool, error) {
-	xprv, xpub, err := hd25519.NewXKeys(nil)
+	xprv, xpub, err := chainkd.NewXKeys(nil)
 	if err != nil {
 		return nil, false, err
 	}
@@ -71,10 +71,8 @@ func (h *HSM) create(ctx context.Context, alias string, get bool) (*XPub, bool, 
 			if err != nil {
 				return nil, false, errors.Wrapf(err, "reading existing xpub with alias %s", alias)
 			}
-			existingXPub, err := hd25519.XPubFromBytes(xpubBytes)
-			if err != nil {
-				return nil, false, errors.Wrapf(err, "parsing bytes of existing xpub with alias %s", alias)
-			}
+			var existingXPub chainkd.XPub
+			copy(existingXPub[:], xpubBytes)
 			return &XPub{XPub: existingXPub, Alias: ptrAlias}, false, nil
 		}
 		return nil, false, errors.Wrap(err, "storing new xpub")
@@ -103,10 +101,8 @@ func (h *HSM) ListKeys(ctx context.Context, after string, limit int) ([]*XPub, s
 		ORDER BY sort_id DESC LIMIT $2
 	`
 	err = pg.ForQueryRows(ctx, q, zafter, limit, func(b []byte, alias sql.NullString, sortID int64) {
-		hdxpub, err := hd25519.XPubFromBytes(b)
-		if err != nil {
-			return
-		}
+		var hdxpub chainkd.XPub
+		copy(hdxpub[:], b)
 		xpub := &XPub{XPub: hdxpub}
 		if alias.Valid {
 			xpub.Alias = &alias.String
@@ -123,34 +119,31 @@ func (h *HSM) ListKeys(ctx context.Context, after string, limit int) ([]*XPub, s
 
 var ErrNoKey = errors.New("key not found")
 
-func (h *HSM) load(ctx context.Context, xpub *hd25519.XPub) (*hd25519.XPrv, error) {
+func (h *HSM) load(ctx context.Context, xpub chainkd.XPub) (xprv chainkd.XPrv, err error) {
 	h.cacheMu.Lock()
 	defer h.cacheMu.Unlock()
 
-	if xpriv, ok := h.cache[xpub.Data()]; ok {
-		return xpriv, nil
+	if xprv, ok := h.cache[xpub]; ok {
+		return xprv, nil
 	}
 
 	var b []byte
-	err := h.db.QueryRow(ctx, "SELECT xprv FROM mockhsm WHERE xpub = $1", xpub.Bytes()).Scan(&b)
+	err = h.db.QueryRow(ctx, "SELECT xprv FROM mockhsm WHERE xpub = $1", xpub.Bytes()).Scan(&b)
 	if err == sql.ErrNoRows {
-		return nil, ErrNoKey
+		return xprv, ErrNoKey
 	}
 	if err != nil {
-		return nil, err
+		return xprv, err
 	}
-	xpriv, err := hd25519.XPrvFromBytes(b)
-	if err != nil {
-		return nil, err
-	}
-	h.cache[xpub.Data()] = xpriv
-	return xpriv, nil
+	copy(xprv[:], b)
+	h.cache[xpub] = xprv
+	return xprv, nil
 }
 
 // Sign looks up the xprv given the xpub, optionally derives a new
 // xprv with the given path (but does not store the new xprv), and
 // signs the given msg.
-func (h *HSM) Sign(ctx context.Context, xpub *hd25519.XPub, path []uint32, msg []byte) ([]byte, error) {
+func (h *HSM) Sign(ctx context.Context, xpub chainkd.XPub, path []uint32, msg []byte) ([]byte, error) {
 	xprv, err := h.load(ctx, xpub)
 	if err != nil {
 		return nil, err
@@ -161,9 +154,9 @@ func (h *HSM) Sign(ctx context.Context, xpub *hd25519.XPub, path []uint32, msg [
 	return xprv.Sign(msg), nil
 }
 
-func (h *HSM) DelKey(ctx context.Context, xpub *hd25519.XPub) error {
+func (h *HSM) DelKey(ctx context.Context, xpub chainkd.XPub) error {
 	h.cacheMu.Lock()
-	delete(h.cache, xpub.Data())
+	delete(h.cache, xpub)
 	h.cacheMu.Unlock()
 	_, err := h.db.Exec(ctx, "DELETE FROM mockhsm WHERE xpub = $1", xpub.Bytes())
 	return err

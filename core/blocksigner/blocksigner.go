@@ -3,10 +3,9 @@ package blocksigner
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 
 	"chain/core/mockhsm"
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol"
@@ -19,7 +18,7 @@ var ErrConsensusChange = errors.New("consensus program has changed")
 
 // Signer validates and signs blocks.
 type Signer struct {
-	XPub *hd25519.XPub
+	XPub chainkd.XPub
 	hsm  *mockhsm.HSM
 	db   pg.DB
 	c    *protocol.Chain
@@ -27,7 +26,7 @@ type Signer struct {
 
 // New returns a new Signer that validates blocks with c and signs
 // them with k.
-func New(xpub *hd25519.XPub, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Signer {
+func New(xpub chainkd.XPub, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Signer {
 	return &Signer{
 		XPub: xpub,
 		hsm:  hsm,
@@ -44,7 +43,7 @@ func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 }
 
 func (s *Signer) String() string {
-	return "signer for key " + hex.EncodeToString(s.XPub.Key)
+	return "signer for key " + s.XPub.String()
 }
 
 // ValidateAndSignBlock validates the given block against the current blockchain

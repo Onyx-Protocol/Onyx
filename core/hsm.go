@@ -5,8 +5,7 @@ import (
 
 	"chain/core/mockhsm"
 	"chain/core/txbuilder"
-	"chain/crypto/ed25519/hd25519"
-	"chain/encoding/json"
+	"chain/crypto/ed25519/chainkd"
 	"chain/errors"
 	"chain/net/http/httpjson"
 )
@@ -39,11 +38,7 @@ func (a *api) mockhsmListKeys(ctx context.Context, query struct{ After string })
 	}, nil
 }
 
-func (a *api) mockhsmDelKey(ctx context.Context, xpubBytes json.HexBytes) error {
-	xpub, err := hd25519.XPubFromBytes(xpubBytes)
-	if err != nil {
-		return err
-	}
+func (a *api) mockhsmDelKey(ctx context.Context, xpub chainkd.XPub) error {
 	return a.hsm.DelKey(ctx, xpub)
 }
 
@@ -65,7 +60,8 @@ func (a *api) mockhsmSignTemplates(ctx context.Context, x struct {
 }
 
 func (a *api) mockhsmSignTemplate(ctx context.Context, xpubstr string, path []uint32, data [32]byte) ([]byte, error) {
-	xpub, err := hd25519.XPubFromString(xpubstr)
+	var xpub chainkd.XPub
+	err := xpub.UnmarshalText([]byte(xpubstr))
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing xpub")
 	}

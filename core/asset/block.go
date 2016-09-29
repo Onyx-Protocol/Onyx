@@ -6,7 +6,6 @@ import (
 	"github.com/lib/pq"
 
 	"chain/core/signers"
-	"chain/crypto/ed25519/hd25519"
 	"chain/database/pg"
 	"chain/encoding/json"
 	"chain/log"
@@ -54,9 +53,10 @@ func indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 		var keys []map[string]interface{}
 		path := signers.Path(a.Signer, signers.AssetKeySpace, nil)
 		for _, xpub := range a.Signer.XPubs {
+			derived := xpub.Derive(path)
 			keys = append(keys, map[string]interface{}{
 				"root_xpub":             xpub,
-				"asset_pubkey":          json.HexBytes(hd25519.PubBytes(xpub.Derive(path).Key)),
+				"asset_pubkey":          derived,
 				"asset_derivation_path": path,
 			})
 		}
@@ -69,7 +69,7 @@ func indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 			var keys []map[string]interface{}
 			for _, pubkey := range pubkeys {
 				keys = append(keys, map[string]interface{}{
-					"asset_pubkey": json.HexBytes(hd25519.PubBytes(pubkey)),
+					"asset_pubkey": json.HexBytes(pubkey),
 				})
 			}
 			m["keys"] = keys

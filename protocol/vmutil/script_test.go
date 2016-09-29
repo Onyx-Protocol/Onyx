@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/hd25519"
 )
 
 // TestIsUnspendable ensures the IsUnspendable function returns the expected
@@ -84,10 +83,10 @@ func TestP2DP(t *testing.T) {
 		t.Errorf("expected nrequired=1, got %d", n)
 	}
 	if !bytes.Equal(pubs[0], pub1) {
-		t.Errorf("expected first pubkey to be %x, got %x", hd25519.PubBytes(pub1), hd25519.PubBytes(pubs[0]))
+		t.Errorf("expected first pubkey to be %x, got %x", pub1, pubs[0])
 	}
 	if !bytes.Equal(pubs[1], pub2) {
-		t.Errorf("expected second pubkey to be %x, got %x", hd25519.PubBytes(pub2), hd25519.PubBytes(pubs[1]))
+		t.Errorf("expected second pubkey to be %x, got %x", pub2, pubs[1])
 	}
 }
 
@@ -103,9 +102,9 @@ func TestBlockMultisig(t *testing.T) {
 		t.Errorf("expected nrequired=1, got %d", n)
 	}
 	if !bytes.Equal(pubs[0], pub1) {
-		t.Errorf("expected first pubkey to be %x, got %x", hd25519.PubBytes(pub1), hd25519.PubBytes(pubs[0]))
+		t.Errorf("expected first pubkey to be %x, got %x", pub1, pubs[0])
 	}
 	if !bytes.Equal(pubs[1], pub2) {
-		t.Errorf("expected second pubkey to be %x, got %x", hd25519.PubBytes(pub2), hd25519.PubBytes(pubs[1]))
+		t.Errorf("expected second pubkey to be %x, got %x", pub2, pubs[1])
 	}
 }

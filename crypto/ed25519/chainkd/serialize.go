@@ -62,3 +62,12 @@ func (xprv *XPrv) UnmarshalText(inp []byte) error {
 func (xprv XPrv) String() string {
 	return hex.EncodeToString(xprv.Bytes())
 }
+
+// NewEd25519PublicKey checks the input has the right length and produces a
+// PublicKey from it.
+func NewEd25519PublicKey(b []byte) (ed25519.PublicKey, error) {
+	if len(b) != PublicKeySize {
+		return nil, ErrBadKeyLen
+	}
+	return ed25519.PublicKey(b), nil
+}

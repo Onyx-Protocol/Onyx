@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519"
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/math/checked"
 )
 
@@ -70,8 +70,7 @@ func opCheckSig(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-
-	pubkey, err := hd25519.PubFromBytes(pubkeyBytes)
+	pubkey, err := chainkd.NewEd25519PublicKey(pubkeyBytes)
 	if err != nil {
 		return vm.pushBool(false, true)
 	}
@@ -124,7 +123,7 @@ func opCheckMultiSig(vm *virtualMachine) error {
 
 	pubkeys := make([]ed25519.PublicKey, 0, numPubkeys)
 	for _, p := range pubkeyByteses {
-		pubkey, err := hd25519.PubFromBytes(p)
+		pubkey, err := chainkd.NewEd25519PublicKey(p)
 		if err != nil {
 			return vm.pushBool(false, true)
 		}

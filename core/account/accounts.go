@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"chain/core/signers"
-	"chain/crypto/ed25519/hd25519"
+	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/metrics"
@@ -204,8 +204,8 @@ func CreateControlProgram(ctx context.Context, accountID string, change bool) ([
 	}
 
 	path := signers.Path(account.Signer, signers.AccountKeySpace, idx)
-	derivedXPubs := hd25519.DeriveXPubs(account.XPubs, path)
-	derivedPKs := hd25519.XPubKeys(derivedXPubs)
+	derivedXPubs := chainkd.DeriveXPubs(account.XPubs, path)
+	derivedPKs := chainkd.XPubKeys(derivedXPubs)
 	control, err := vmutil.P2DPMultiSigProgram(derivedPKs, account.Quorum)
 	if err != nil {
 		return nil, err
