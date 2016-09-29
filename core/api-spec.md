@@ -488,9 +488,9 @@ POST /build-transaction
 [
   {
     "raw_transaction": <hex string>, // optional. an unsubmitted transaction to which additional actions can be appended.
-    "reference_data": "...",
     "ttl": <number of milliseconds>, // optional, defaults to 300000 (5 minutes)
-    "actions":[
+    "allow_additional_actions": <boolean>, // optional, defaults to false
+    "actions": [
       {
         "type": "spend_account",
         "asset_id": "...", // accepts `asset_id` or `asset_alias`
@@ -522,6 +522,10 @@ POST /build-transaction
         "amount": 500,
         "control_program": "...",
         "reference_data": "..."
+      },
+      {
+        "type": "set_transaction_reference_data",
+        "reference_data": <object>
       }
     ]
   }
