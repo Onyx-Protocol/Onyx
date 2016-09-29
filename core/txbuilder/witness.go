@@ -69,7 +69,7 @@ type (
 		// Keys are the identities of the keys to sign with.
 		Keys []KeyID `json:"keys"`
 
-		// Program is the deferred predicate, whose hash is what gets
+		// Program is the predicate part of the signature program, whose hash is what gets
 		// signed. If empty, it is computed during Sign from the outputs
 		// and the current input of the transaction.
 		Program chainjson.HexBytes `json:"program"`
@@ -87,17 +87,17 @@ type (
 
 var ErrEmptyProgram = errors.New("empty signature program")
 
-// Sign populates sw.Sigs with as many signatures of the deferred predicate in
+// Sign populates sw.Sigs with as many signatures of the predicate in
 // sw.Program as it can from the set of keys in sw.Keys.
 //
-// If sw.Program is empty, it is populated with an _inferred_ deferred
-// predicate: a program committing to aspects of the current
+// If sw.Program is empty, it is populated with an _inferred_ predicate:
+// a program committing to aspects of the current
 // transaction. Specifically, the program commits to:
 //  - the mintime and maxtime of the transaction (if non-zero)
 //  - the outpoint and (if non-empty) reference data of the current input
 //  - the assetID, amount, control program, and (if non-empty) reference data of each output.
 func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, xpubs []string, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
-	// Compute the deferred predicate to sign. This is either a
+	// Compute the predicate to sign. This is either a
 	// txsighash program if tpl.Final is true (i.e., the tx is complete
 	// and no further changes are allowed) or a program enforcing
 	// constraints derived from the existing outputs and current input.
@@ -191,14 +191,14 @@ func (sw SignatureWitness) Materialize(tpl *Template, index int, args *[][]byte)
 	} else {
 		multiSig = input.ControlProgram()
 	}
-	pubkeys, quorum, err := vmutil.ParseP2DPMultiSigProgram(multiSig)
+	pubkeys, quorum, err := vmutil.ParseP2SPMultiSigProgram(multiSig)
 	if err != nil {
 		return errors.Wrap(err, "parsing input program script")
 	}
 
 	// This is the value of N for the CHECKPREDICATE call. The code
 	// assumes that everything already in the arg list before this call
-	// to Materialize is input to the deferred predicate, so N is
+	// to Materialize is input to the signature program, so N is
 	// len(*args).
 	*args = append(*args, vm.Int64Bytes(int64(len(*args))))
 

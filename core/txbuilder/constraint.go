@@ -10,7 +10,7 @@ import (
 
 // Constraint types express a constraint on an input of a proposed
 // transaction, and know how to turn that constraint into part of a
-// p2dp program in that input's witness.
+// signature program in that input's witness.
 type constraint interface {
 	// Code produces bytecode expressing the constraint. The code, when
 	// executed, must consume nothing from the stack and leave a new

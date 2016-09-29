@@ -84,7 +84,7 @@ func (d *testDest) sign(t testing.TB, tx *bc.TxData, index int) {
 
 func (d testDest) controlProgram() ([]byte, error) {
 	pub := d.privKey.Public().(ed25519.PublicKey)
-	return vmutil.P2DPMultiSigProgram([]ed25519.PublicKey{pub}, 1)
+	return vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pub}, 1)
 }
 
 type testAsset struct {

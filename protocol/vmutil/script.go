@@ -75,7 +75,7 @@ func ParseBlockMultiSigProgram(script []byte) ([]ed25519.PublicKey, int, error) 
 	return pubkeys, int(nrequired), nil
 }
 
-func P2DPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
+func P2SPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, error) {
 	err := checkMultiSigParams(int64(nrequired), int64(len(pubkeys)))
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func P2DPMultiSigProgram(pubkeys []ed25519.PublicKey, nrequired int) ([]byte, er
 	return builder.Program, nil
 }
 
-func ParseP2DPMultiSigProgram(program []byte) ([]ed25519.PublicKey, int, error) {
+func ParseP2SPMultiSigProgram(program []byte) ([]ed25519.PublicKey, int, error) {
 	pops, err := vm.ParseProgram(program)
 	if err != nil {
 		return nil, 0, err

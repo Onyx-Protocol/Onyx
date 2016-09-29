@@ -64,7 +64,7 @@ func indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 		m["quorum"] = a.Signer.Quorum
 		m["is_local"] = "yes"
 	} else {
-		pubkeys, quorum, err := vmutil.ParseP2DPMultiSigProgram(a.IssuanceProgram)
+		pubkeys, quorum, err := vmutil.ParseP2SPMultiSigProgram(a.IssuanceProgram)
 		if err == nil {
 			var keys []map[string]interface{}
 			for _, pubkey := range pubkeys {

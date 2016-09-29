@@ -71,11 +71,11 @@ func TestParse00Multisig(t *testing.T) {
 	}
 }
 
-func TestP2DP(t *testing.T) {
+func TestP2SP(t *testing.T) {
 	pub1, _, _ := ed25519.GenerateKey(nil)
 	pub2, _, _ := ed25519.GenerateKey(nil)
-	prog, _ := P2DPMultiSigProgram([]ed25519.PublicKey{pub1, pub2}, 1)
-	pubs, n, err := ParseP2DPMultiSigProgram(prog)
+	prog, _ := P2SPMultiSigProgram([]ed25519.PublicKey{pub1, pub2}, 1)
+	pubs, n, err := ParseP2SPMultiSigProgram(prog)
 	if err != nil {
 		t.Fatal(err)
 	}

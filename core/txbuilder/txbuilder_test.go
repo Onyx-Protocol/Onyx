@@ -105,7 +105,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	issuanceProg, _ := vmutil.P2DPMultiSigProgram([]ed25519.PublicKey{pubkey.PublicKey()}, 1)
+	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey.PublicKey()}, 1)
 	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := &bc.TxData{
@@ -173,7 +173,7 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	issuanceProg, _ := vmutil.P2DPMultiSigProgram([]ed25519.PublicKey{pubkey1.PublicKey(), pubkey2.PublicKey(), pubkey3.PublicKey()}, 2)
+	issuanceProg, _ := vmutil.P2SPMultiSigProgram([]ed25519.PublicKey{pubkey1.PublicKey(), pubkey2.PublicKey(), pubkey3.PublicKey()}, 2)
 	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
 	outscript := mustDecodeHex("76a914c5d128911c28776f56baaac550963f7b88501dc388c0")
 	unsigned := &bc.TxData{
