@@ -42,7 +42,6 @@ import (
 	"chain/log/rotation"
 	"chain/log/splunk"
 	"chain/metrics"
-	"chain/metrics/librato"
 	"chain/net/http/gzip"
 	"chain/net/http/httpspan"
 	"chain/net/http/reqid"
@@ -58,18 +57,17 @@ const (
 
 var (
 	// config vars
-	tlsCrt     = env.String("TLSCRT", "")
-	tlsKey     = env.String("TLSKEY", "")
-	listenAddr = env.String("LISTEN", ":8080")
-	dbURL      = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
-	target     = env.String("TARGET", "sandbox")
-	samplePer  = env.Duration("SAMPLEPER", 10*time.Second)
-	splunkAddr = os.Getenv("SPLUNKADDR")
-	logFile    = os.Getenv("LOGFILE")
-	logSize    = env.Int("LOGSIZE", 5e6) // 5MB
-	logCount   = env.Int("LOGCOUNT", 9)
-	logQueries = env.Bool("LOG_QUERIES", false)
-	// for config var LIBRATO_URL, see func init below
+	tlsCrt           = env.String("TLSCRT", "")
+	tlsKey           = env.String("TLSKEY", "")
+	listenAddr       = env.String("LISTEN", ":8080")
+	dbURL            = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
+	target           = env.String("TARGET", "sandbox")
+	samplePer        = env.Duration("SAMPLEPER", 10*time.Second)
+	splunkAddr       = os.Getenv("SPLUNKADDR")
+	logFile          = os.Getenv("LOGFILE")
+	logSize          = env.Int("LOGSIZE", 5e6) // 5MB
+	logCount         = env.Int("LOGCOUNT", 9)
+	logQueries       = env.Bool("LOG_QUERIES", false)
 	traceguideToken  = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns       = env.Int("MAXDBCONNS", 10) // set to 100 in prod
 	apiSecretToken   = env.String("API_SECRET", "")
@@ -90,8 +88,6 @@ var (
 )
 
 func init() {
-	librato.URL = env.URL("LIBRATO_URL", "")
-	librato.Prefix = "chain.cored."
 	expvar.NewString("buildtag").Set(buildTag)
 	expvar.NewString("builddate").Set(buildDate)
 	expvar.NewString("buildcommit").Set(buildCommit)
@@ -131,13 +127,6 @@ func main() {
 	chainlog.SetOutput(logWriter())
 
 	requireSecretInProd(*apiSecretToken)
-
-	if librato.URL.Host != "" {
-		librato.Source = *target
-		go librato.SampleMetrics(*samplePer)
-	} else {
-		log.Println("no metrics; set LIBRATO_URL for prod")
-	}
 
 	if traceguideToken == "" {
 		log.Println("no tracing; set TRACEGUIDE_ACCESS_TOKEN for prod")
