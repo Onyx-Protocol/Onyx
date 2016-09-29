@@ -230,26 +230,6 @@ POST /list-assets
 }
 ```
 
-### Archive Asset
-
-#### Endpoint
-
-```
-POST /archive-asset
-```
-
-#### Request
-
-```
-{
-  asset_id: "...", // accepts `asset_id` or `asset_alias`
-}
-```
-
-#### Response
-
-The response body is empty.
-
 ## Accounts
 
 ### Account Object
@@ -330,26 +310,6 @@ POST /list-accounts
   "last_page": true|false
 }
 ```
-
-### Archive Account
-
-#### Endpoint
-
-```
-POST /archive-account
-```
-
-#### Request
-
-```
-{
-  "account_id": "...", // accepts `account_id` or `account_alias`
-}
-```
-
-#### Response
-
-The response body is empty.
 
 ## Control Programs
 
