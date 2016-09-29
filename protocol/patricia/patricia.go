@@ -27,48 +27,47 @@ var (
 // The nodes in the tree form an immutable persistent
 // data structure, therefore Copy is a O(1) operation.
 type Tree struct {
-	root *Node
+	root *node
 }
 
-// NewTree assembles a tree using a slice of nodes.
-// The slice of nodes passed must form a complete
-// breadth-first traversal of the entire tree, including
-// interior nodes.
-func NewTree(nodes []*Node) *Tree {
-	tree := &Tree{}
+// Leaf describes a key and its corresponding hash for a
+// value in the patricia tree.
+type Leaf struct {
+	Key  []byte
+	Hash bc.Hash
+}
 
-	for _, node := range nodes {
-		if tree.root == nil {
-			tree.root = node
+// Reconstruct builds a tree with the provided kv pairs as leaf nodes.
+func Reconstruct(vals []Leaf) (*Tree, error) {
+	t := new(Tree)
+	for _, kv := range vals {
+		key := bitKey(kv.Key)
+		if t.root == nil {
+			t.root = &node{key: key, hash: kv.Hash, isLeaf: true}
 			continue
 		}
-		parent := tree.root
-		for {
-			next := parent.children[node.key[len(parent.key)]]
-			if next == nil {
-				parent.children[node.key[len(parent.key)]] = node
-				break
-			}
-			parent = next
+
+		var err error
+		t.root, err = t.insert(t.root, key, kv.Hash)
+		if err != nil {
+			return nil, err
 		}
 	}
-
-	return tree
+	return t, nil
 }
 
 // Copy returns a new tree with the same root as this tree
 func Copy(t *Tree) *Tree {
-	newT := NewTree(nil)
+	newT := new(Tree)
 	newT.root = t.root
 	return newT
 }
 
 // WalkFunc is the type of the function called for each node visited by
 // Walk. If an error is returned, processing stops.
-type WalkFunc func(n *Node) error
+type WalkFunc func(l Leaf) error
 
-// Walk walks the patricia tree calling walkFn for each node in the tree,
-// including root, in a pre-order traversal.
+// Walk walks the patricia tree calling walkFn for each leaf in the tree.
 func Walk(t *Tree, walkFn WalkFunc) error {
 	if t.root == nil {
 		return nil
@@ -76,24 +75,18 @@ func Walk(t *Tree, walkFn WalkFunc) error {
 	return walk(t.root, walkFn)
 }
 
-func walk(n *Node, walkFn WalkFunc) error {
-	err := walkFn(n)
+func walk(n *node, walkFn WalkFunc) error {
+	if n.isLeaf {
+		return walkFn(Leaf{Key: n.Key(), Hash: n.hash})
+	}
+
+	err := walk(n.children[0], walkFn)
 	if err != nil {
 		return err
 	}
 
-	if !n.isLeaf {
-		err = walk(n.children[0], walkFn)
-		if err != nil {
-			return err
-		}
-
-		err = walk(n.children[1], walkFn)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	err = walk(n.children[1], walkFn)
+	return err
 }
 
 // Contains returns true if the tree contains the provided
@@ -109,7 +102,7 @@ func (t *Tree) Contains(bkey, val []byte) bool {
 	return n != nil && n.Hash() == h
 }
 
-func (t *Tree) lookup(n *Node, key []uint8) *Node {
+func (t *Tree) lookup(n *node, key []uint8) *node {
 	if bytes.Equal(n.key, key) {
 		if !n.isLeaf {
 			return nil
@@ -137,7 +130,7 @@ func (t *Tree) Insert(bkey, val []byte) error {
 	hash := sha3.Sum256(value)
 
 	if t.root == nil {
-		t.root = &Node{key: key, hash: hash, isLeaf: true}
+		t.root = &node{key: key, hash: hash, isLeaf: true}
 		return nil
 	}
 
@@ -146,13 +139,13 @@ func (t *Tree) Insert(bkey, val []byte) error {
 	return err
 }
 
-func (t *Tree) insert(n *Node, key []uint8, hash bc.Hash) (*Node, error) {
+func (t *Tree) insert(n *node, key []uint8, hash bc.Hash) (*node, error) {
 	if bytes.Equal(n.key, key) {
 		if !n.isLeaf {
 			return n, errors.Wrap(ErrPrefix)
 		}
 
-		n = &Node{
+		n = &node{
 			isLeaf: true,
 			key:    n.key,
 			hash:   hash,
@@ -171,7 +164,7 @@ func (t *Tree) insert(n *Node, key []uint8, hash bc.Hash) (*Node, error) {
 		if err != nil {
 			return n, err
 		}
-		newNode := new(Node)
+		newNode := new(node)
 		*newNode = *n
 		newNode.children[bit] = child // mutation is ok because newNode hasn't escaped yet
 		newNode.hash = hashChildren(newNode.children)
@@ -179,10 +172,10 @@ func (t *Tree) insert(n *Node, key []uint8, hash bc.Hash) (*Node, error) {
 	}
 
 	common := commonPrefixLen(n.key, key)
-	newNode := &Node{
+	newNode := &node{
 		key: key[:common],
 	}
-	newNode.children[key[common]] = &Node{
+	newNode.children[key[common]] = &node{
 		key:    key,
 		hash:   hash,
 		isLeaf: true,
@@ -207,7 +200,7 @@ func (t *Tree) Delete(bkey []byte) error {
 	return err
 }
 
-func (t *Tree) delete(n *Node, key []uint8) (*Node, error) {
+func (t *Tree) delete(n *node, key []uint8) (*node, error) {
 	if bytes.Equal(key, n.key) {
 		if !n.isLeaf {
 			return n, errors.Wrap(ErrPrefix)
@@ -229,7 +222,7 @@ func (t *Tree) delete(n *Node, key []uint8) (*Node, error) {
 		return n.children[1-bit], nil
 	}
 
-	newNode := new(Node)
+	newNode := new(node)
 	*newNode = *n
 	newNode.key = newChild.key[:len(n.key)] // only use slices of leaf node keys
 	newNode.children[bit] = newChild
@@ -259,6 +252,20 @@ func bitKey(byteKey []byte) []uint8 {
 	return key
 }
 
+// byteKey is the inverse of bitKey.
+func byteKey(bitKey []uint8) (key []byte) {
+	key = make([]byte, len(bitKey)/8)
+	for i := uint(0); i < uint(len(key)); i++ {
+		var b byte
+		for j := uint(0); j < 8; j++ {
+			bit := bitKey[i*8+j]
+			b |= bit << (7 - j)
+		}
+		key[i] = b
+	}
+	return key
+}
+
 func commonPrefixLen(a, b []uint8) int {
 	var common int
 	for i := 0; i < len(a) && i < len(b); i++ {
@@ -270,33 +277,27 @@ func commonPrefixLen(a, b []uint8) int {
 	return common
 }
 
-// Node is a leaf or branch node in a tree
-type Node struct {
+// node is a leaf or branch node in a tree
+type node struct {
 	key      []uint8
 	hash     bc.Hash
 	isLeaf   bool
-	children [2]*Node
+	children [2]*node
 }
 
-// NewNode returns a node with the given key and hash.
-// It does NOT re-hash the provided hash; it should only be
-// used when the provided hash should be used as-is.
-func NewNode(key []uint8, hash bc.Hash, isLeaf bool) *Node {
-	return &Node{key: key, hash: hash, isLeaf: isLeaf}
-}
-
-// Key returns the key for the current node
-func (n *Node) Key() []uint8 { return n.key }
+// Key returns the key for the current node as bytes, as it
+// was provided to Insert.
+func (n *node) Key() []byte { return byteKey(n.key) }
 
 // IsLeaf returns whether the current node is a leaf node
-func (n *Node) IsLeaf() bool { return n.isLeaf }
+func (n *node) IsLeaf() bool { return n.isLeaf }
 
 // Hash will return the hash for this node.
-func (n *Node) Hash() bc.Hash {
+func (n *node) Hash() bc.Hash {
 	return n.hash
 }
 
-func hashChildren(children [2]*Node) (hash bc.Hash) {
+func hashChildren(children [2]*node) (hash bc.Hash) {
 	h := sha3.New256()
 	h.Write(interiorPrefix)
 	for _, c := range children {

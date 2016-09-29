@@ -215,8 +215,6 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 
 		prev, snapshot = c.State()
 		if prev == nil || prev.Height != block.Height-1 {
-			// TODO(jackson): Forward request to leader process (who will have
-			// the state snapshot in-memory).
 			return ErrStaleState
 		}
 	}

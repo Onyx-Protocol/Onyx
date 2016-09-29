@@ -24,6 +24,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 	changes := []struct {
 		inserts          []pair
 		deletes          []string
+		lookups          []pair
 		newIssuances     map[bc.Hash]uint64
 		deletedIssuances []bc.Hash
 	}{
@@ -39,6 +40,7 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 			},
 		},
 		{ // empty changeset
+			lookups: []pair{{key: "sup", hash: []byte{0x01}}},
 		},
 		{ // add two pairs
 			inserts: []pair{
@@ -50,6 +52,10 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 					key:  "dup2",
 					hash: []byte{0x03},
 				},
+			},
+			lookups: []pair{
+				{key: "sup", hash: []byte{0x02}},
+				{key: "dup2", hash: []byte{0x03}},
 			},
 			newIssuances: map[bc.Hash]uint64{
 				bc.Hash{0x02}: 2000,
@@ -94,6 +100,12 @@ func TestReadWriteStateSnapshot(t *testing.T) {
 		loadedSnapshot, height, err := getStateSnapshot(ctx, dbtx)
 		if err != nil {
 			t.Fatalf("Error reading state snapshot from db: %s\n", err)
+		}
+
+		for _, lookup := range changeset.lookups {
+			if !snapshot.Tree.Contains([]byte(lookup.key), lookup.hash) {
+				t.Errorf("Lookup(%s, %s) = false, want true", lookup.key, lookup.hash)
+			}
 		}
 
 		if height != uint64(i) {

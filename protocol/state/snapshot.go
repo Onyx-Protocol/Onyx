@@ -31,7 +31,7 @@ func Copy(original *Snapshot) *Snapshot {
 // Empty returns an empty state snapshot.
 func Empty() *Snapshot {
 	return &Snapshot{
-		Tree:      patricia.NewTree(nil),
+		Tree:      new(patricia.Tree),
 		Issuances: make(PriorIssuances),
 	}
 }
