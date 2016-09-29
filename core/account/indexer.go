@@ -9,7 +9,6 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
-	"chain/net/trace/span"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -164,9 +163,6 @@ func prevoutDBKeys(txs ...*bc.Tx) (txhash pq.StringArray, index pg.Uint32s) {
 // outputs by adding account annotations.  Outputs that can't be
 // annotated are excluded from the result.
 func loadAccountInfo(ctx context.Context, outs []*state.Output) ([]*output, error) {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
 	outsByScript := make(map[string][]*state.Output, len(outs))
 	for _, out := range outs {
 		scriptStr := string(out.ControlProgram)

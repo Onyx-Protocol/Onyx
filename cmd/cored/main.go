@@ -16,8 +16,6 @@ import (
 	"time"
 
 	"github.com/kr/secureheader"
-	"github.com/resonancelabs/go-pub/instrument"
-	"github.com/resonancelabs/go-pub/instrument/client"
 
 	"chain/core"
 	"chain/core/account"
@@ -43,7 +41,6 @@ import (
 	"chain/log/splunk"
 	"chain/metrics"
 	"chain/net/http/gzip"
-	"chain/net/http/httpspan"
 	"chain/net/http/reqid"
 	"chain/net/rpc"
 	"chain/protocol"
@@ -68,7 +65,6 @@ var (
 	logSize          = env.Int("LOGSIZE", 5e6) // 5MB
 	logCount         = env.Int("LOGCOUNT", 9)
 	logQueries       = env.Bool("LOG_QUERIES", false)
-	traceguideToken  = os.Getenv("TRACEGUIDE_ACCESS_TOKEN")
 	maxDBConns       = env.Int("MAXDBCONNS", 10) // set to 100 in prod
 	apiSecretToken   = env.String("API_SECRET", "")
 	rpcSecretToken   = env.String("RPC_SECRET", "")
@@ -128,20 +124,6 @@ func main() {
 
 	requireSecretInProd(*apiSecretToken)
 
-	if traceguideToken == "" {
-		log.Println("no tracing; set TRACEGUIDE_ACCESS_TOKEN for prod")
-	}
-	instrument.SetDefaultRuntime(client.NewRuntime(&client.Options{
-		AccessToken: traceguideToken,
-		GroupName:   "cored",
-		Attributes: map[string]interface{}{
-			"target":      *target,
-			"buildtag":    buildTag,
-			"builddate":   buildDate,
-			"buildcommit": buildCommit,
-		},
-	}))
-
 	var h http.Handler
 	if config != nil {
 		h = launchConfiguredCore(ctx, db, *config, processID)
@@ -153,7 +135,6 @@ func main() {
 	h = dashboardHandler(h)
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
-	h = httpspan.Handler{Handler: h}
 	h = dbContextHandler(h, db)
 	h = reqid.Handler(h)
 	http.Handle("/", h)

@@ -26,7 +26,6 @@ import (
 	"chain/net/http/authn"
 	"chain/net/http/gzip"
 	"chain/net/http/httpjson"
-	"chain/net/http/httpspan"
 	"chain/net/http/reqid"
 )
 
@@ -91,7 +90,6 @@ func main() {
 	var h http.Handler = m
 	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
-	h = httpspan.Handler{Handler: h}
 	h = authn.BasicHandler{Auth: auth, Realm: "signerd", Next: h}
 	h = reqid.Handler(h)
 	http.Handle("/", h)

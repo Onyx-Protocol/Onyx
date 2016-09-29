@@ -11,7 +11,6 @@ import (
 	"chain/errors"
 	chainlog "chain/log"
 	"chain/metrics"
-	"chain/net/trace/span"
 	"chain/protocol/bc"
 )
 
@@ -60,8 +59,6 @@ type (
 
 func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *string, exp time.Time) (*UTXO, error) {
 	defer metrics.RecordElapsed(time.Now())
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
 
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
@@ -146,8 +143,6 @@ func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *s
 
 func Reserve(ctx context.Context, sources []Source, exp time.Time) (u []*UTXO, c []Change, err error) {
 	defer metrics.RecordElapsed(time.Now())
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
 
 	var reserved []*UTXO
 	var change []Change

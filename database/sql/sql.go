@@ -26,7 +26,6 @@ import (
 
 	"chain/errors"
 	"chain/log"
-	"chain/net/trace/span"
 )
 
 // Register makes a database driver available by the provided name.
@@ -194,8 +193,6 @@ func (db *DB) SetMaxOpenConns(n int) {
 // Begin starts a transaction. The isolation level is dependent on
 // the driver.
 func (db *DB) Begin(ctx context.Context) (*Tx, error) {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
 	tx, err := db.db.Begin()
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -206,20 +203,16 @@ func (db *DB) Begin(ctx context.Context) (*Tx, error) {
 // Exec executes a query without returning any rows.
 // The args are for any placeholder parameters in the query.
 func (db *DB) Exec(ctx context.Context, query string, args ...interface{}) (Result, error) {
-	ctx = span.NewContext(ctx)
 	logQuery(ctx, query, args)
-	defer span.Finish(ctx)
 	return db.db.Exec(query, args...)
 }
 
 // Query executes a query that returns rows, typically a SELECT.
 // The args are for any placeholder parameters in the query.
 func (db *DB) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	ctx = span.NewContext(ctx)
 	logQuery(ctx, query, args)
 	rows, err := db.db.Query(query, args...)
 	if err != nil {
-		span.Finish(ctx)
 		return nil, errors.Wrap(err)
 	}
 	return &Rows{rows: rows, ctx: ctx}, nil
@@ -229,7 +222,6 @@ func (db *DB) Query(ctx context.Context, query string, args ...interface{}) (*Ro
 // QueryRow always return a non-nil value. Errors are deferred until
 // Row's Scan method is called.
 func (db *DB) QueryRow(ctx context.Context, query string, args ...interface{}) *Row {
-	ctx = span.NewContext(ctx)
 	logQuery(ctx, query, args)
 	row := db.db.QueryRow(query, args...)
 	return &Row{row: row, ctx: ctx}
@@ -237,35 +229,27 @@ func (db *DB) QueryRow(ctx context.Context, query string, args ...interface{}) *
 
 // Commit commits the transaction.
 func (tx *Tx) Commit(ctx context.Context) error {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
 	return tx.tx.Commit()
 }
 
 // Rollback aborts the transaction.
 func (tx *Tx) Rollback(ctx context.Context) error {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
 	return tx.tx.Rollback()
 }
 
 // Exec executes a query that doesn't return rows.
 // For example: an INSERT and UPDATE.
 func (tx *Tx) Exec(ctx context.Context, query string, args ...interface{}) (Result, error) {
-	ctx = span.NewContext(ctx)
 	logQuery(ctx, query, args)
-	defer span.Finish(ctx)
 	return tx.tx.Exec(query, args...)
 }
 
 // Query executes a query that returns rows, typically a SELECT.
 // The args are for any placeholder parameters in the query.
 func (tx *Tx) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
-	ctx = span.NewContext(ctx)
 	logQuery(ctx, query, args)
 	rows, err := tx.tx.Query(query, args...)
 	if err != nil {
-		span.Finish(ctx)
 		return nil, errors.Wrap(err)
 	}
 	return &Rows{rows: rows, ctx: ctx}, nil
@@ -275,7 +259,6 @@ func (tx *Tx) Query(ctx context.Context, query string, args ...interface{}) (*Ro
 // QueryRow always return a non-nil value. Errors are deferred until
 // Row's Scan method is called.
 func (tx *Tx) QueryRow(ctx context.Context, query string, args ...interface{}) *Row {
-	ctx = span.NewContext(ctx)
 	logQuery(ctx, query, args)
 	row := tx.tx.QueryRow(query, args...)
 	return &Row{row: row, ctx: ctx}
@@ -285,7 +268,6 @@ func (tx *Tx) QueryRow(ctx context.Context, query string, args ...interface{}) *
 // false, the Rows are closed automatically and it will suffice to check the
 // result of Err. Close is idempotent and does not affect the result of Err.
 func (rs *Rows) Close() error {
-	defer span.Finish(rs.ctx)
 	return rs.rows.Close()
 }
 
@@ -326,6 +308,5 @@ func (rs *Rows) Scan(dest ...interface{}) error {
 // Scan uses the first row and discards the rest.  If no row matches
 // the query, Scan returns ErrNoRows.
 func (r *Row) Scan(dest ...interface{}) error {
-	defer span.Finish(r.ctx)
 	return r.row.Scan(dest...)
 }

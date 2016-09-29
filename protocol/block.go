@@ -8,7 +8,6 @@ import (
 	"chain/crypto/ed25519"
 	"chain/errors"
 	"chain/log"
-	"chain/net/trace/span"
 	"chain/protocol/bc"
 	"chain/protocol/state"
 	"chain/protocol/validation"
@@ -40,9 +39,6 @@ func (c *Chain) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) 
 // the current tx pool.  It returns the new block and a snapshot of what
 // the state snapshot is if the block is applied. It has no side effects.
 func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time) (b *bc.Block, result *state.Snapshot, err error) {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
 	timestampMS := bc.Millis(now)
 	if timestampMS < prev.TimestampMS {
 		return nil, nil, fmt.Errorf("timestamp %d is earlier than prevblock timestamp %d", timestampMS, prev.TimestampMS)
@@ -66,8 +62,6 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 		},
 	}
 
-	ctx = span.NewContextSuffix(ctx, "-validate-all")
-	defer span.Finish(ctx)
 	for _, tx := range txs {
 		if len(b.Transactions) >= maxBlockTxs {
 			break
@@ -87,9 +81,6 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 // of committing the block. ValidateBlock returns the state after
 // the block has been applied.
 func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, prev, block *bc.Block) (*state.Snapshot, error) {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
 	newState := state.Copy(prevState)
 	err := validation.ValidateAndApplyBlock(ctx, newState, prev, block, c.validateTxCached)
 	if err != nil {
@@ -128,9 +119,6 @@ func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *stat
 
 // commitBlock commits a block without rebuilding the pool.
 func (c *Chain) commitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
 	// SaveBlock is the linearization point. Once the block is committed
 	// to persistent storage, the block has been applied and everything
 	// else can be derived from that block.
@@ -198,9 +186,6 @@ func (c *Chain) setHeight(h uint64) {
 // block in preparation for signing it.  By definition it does not
 // execute the sigscript.
 func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
 	var (
 		prev     *bc.Block
 		snapshot = state.Empty()
@@ -224,9 +209,6 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 }
 
 func (c *Chain) rebuildPool(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) ([]*bc.Tx, error) {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
 	txInBlock := make(map[bc.Hash]bool)
 	for _, tx := range block.Transactions {
 		txInBlock[tx.Hash] = true

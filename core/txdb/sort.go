@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"chain/log"
-	"chain/net/trace/span"
 	"chain/protocol/bc"
 )
 
@@ -14,8 +13,6 @@ func topSort(ctx context.Context, txs []*bc.Tx) []*bc.Tx {
 	}
 
 	log.Messagef(ctx, "set of %d txs not in topo order; sorting", len(txs))
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
 
 	if len(txs) == 1 {
 		return txs
@@ -74,9 +71,6 @@ func topSort(ctx context.Context, txs []*bc.Tx) []*bc.Tx {
 }
 
 func isTopSorted(ctx context.Context, txs []*bc.Tx) bool {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
 	exists := make(map[bc.Hash]bool)
 	seen := make(map[bc.Hash]bool)
 	for _, tx := range txs {

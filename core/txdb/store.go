@@ -5,7 +5,6 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
-	"chain/net/trace/span"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -59,9 +58,6 @@ func (s *Store) LatestSnapshot(ctx context.Context) (*state.Snapshot, uint64, er
 
 // SaveBlock persists a new block in the database.
 func (s *Store) SaveBlock(ctx context.Context, block *bc.Block) error {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
 	const q = `
 		INSERT INTO blocks (block_hash, height, data, header)
 		VALUES ($1, $2, $3, $4)

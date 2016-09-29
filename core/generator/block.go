@@ -10,7 +10,6 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
-	"chain/net/trace/span"
 	"chain/protocol/bc"
 	"chain/protocol/state"
 	"chain/protocol/vmutil"
@@ -24,9 +23,6 @@ var errTooFewSigners = errors.New("too few signers")
 // makeBlock generates a new bc.Block, collects the required signatures
 // and commits the block to the blockchain.
 func (g *generator) makeBlock(ctx context.Context) (*bc.Block, error) {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
 	b, s, err := g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
 	if err != nil {
 		return nil, errors.Wrap(err, "generate")

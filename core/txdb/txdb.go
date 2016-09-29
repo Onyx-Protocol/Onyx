@@ -7,7 +7,6 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
-	"chain/net/trace/span"
 	"chain/protocol/bc"
 )
 
@@ -19,9 +18,6 @@ func New(db pg.DB) (*Store, *Pool) {
 
 // dumpPoolTxs returns all of the pending transactions in the pool.
 func dumpPoolTxs(ctx context.Context, db pg.DB) ([]*bc.Tx, error) {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
 	const q = `SELECT tx_hash, data FROM pool_txs ORDER BY sort_id`
 	var txs []*bc.Tx
 	err := pg.ForQueryRows(pg.NewContext(ctx, db), q, func(hash bc.Hash, data bc.TxData) {

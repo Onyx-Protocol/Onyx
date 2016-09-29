@@ -11,7 +11,6 @@ import (
 	"chain/errors"
 	"chain/metrics"
 	"chain/net/http/reqid"
-	"chain/net/trace/span"
 	"chain/protocol"
 	"chain/protocol/bc"
 )
@@ -22,8 +21,6 @@ const (
 
 func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
 	defer metrics.RecordElapsed(time.Now())
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -56,8 +53,6 @@ func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, e
 // POST /build-transaction
 func build(ctx context.Context, buildReqs []*buildRequest) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
 
 	responses := make([]interface{}, len(buildReqs))
 	var wg sync.WaitGroup
@@ -95,8 +90,6 @@ type submitSingleArg struct {
 
 func submitSingle(ctx context.Context, c *protocol.Chain, x submitSingleArg) (interface{}, error) {
 	defer metrics.RecordElapsed(time.Now())
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
 
 	// TODO(bobg): Set up an expiring context object outside this
 	// function, perhaps in handler.ServeHTTPContext, and perhaps
@@ -216,8 +209,6 @@ type submitArg struct {
 // Idempotent
 func (a *api) submit(ctx context.Context, x submitArg) interface{} {
 	defer metrics.RecordElapsed(time.Now())
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
 
 	responses := make([]interface{}, len(x.Transactions))
 	var wg sync.WaitGroup

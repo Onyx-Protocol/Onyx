@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"chain/errors"
-	"chain/net/trace/span"
 	"chain/protocol/bc"
 	"chain/protocol/state"
 	"chain/protocol/vm"
@@ -40,9 +39,6 @@ func ValidateBlockForSig(ctx context.Context, snapshot *state.Snapshot, prevBloc
 }
 
 func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error, runScript bool) error {
-	ctx = span.NewContext(ctx)
-	defer span.Finish(ctx)
-
 	var prev *bc.BlockHeader
 	if prevBlock != nil {
 		prev = &prevBlock.BlockHeader

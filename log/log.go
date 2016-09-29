@@ -15,12 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/resonancelabs/go-pub/base"
-	"github.com/resonancelabs/go-pub/instrument"
-
 	"chain/errors"
 	"chain/net/http/reqid"
-	"chain/net/trace/span"
 )
 
 var (
@@ -128,7 +124,6 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 		out += " " + KeySubReqID + "=" + formatValue(subreqid)
 	}
 
-	rec := newSpanRec(vcaller, t)
 	var stack interface{}
 	for i := 0; i < len(keyvals); i += 2 {
 		k := keyvals[i]
@@ -138,7 +133,6 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 			continue
 		}
 		if k == KeyError {
-			rec.IsError = true
 			if e, ok := v.(error); ok && stack == nil {
 				stack = errors.Stack(errors.Wrap(e)) // wrap to ensure callstack
 			}
@@ -152,36 +146,12 @@ func Write(ctx context.Context, keyvals ...interface{}) {
 	logWriter.Write([]byte{'\n'})
 	writeRawStack(logWriter, stack)
 	logWriterMu.Unlock()
-
-	if logger := span.LoggerFromContext(ctx); logger != nil {
-		rec.Message = string(prefix) + out
-		if frames, ok := stack.([]errors.StackFrame); ok {
-			for _, f := range frames {
-				rec.StackFrames = append(rec.StackFrames, f.String())
-			}
-		}
-		logger.Log(rec)
-	}
 }
 
 // Fatal is equivalent to Write() followed by a call to os.Exit(1).
 func Fatal(ctx context.Context, keyvals ...interface{}) {
 	Write(ctx, keyvals...)
 	os.Exit(1)
-}
-
-func newSpanRec(vcaller string, t time.Time) instrument.LogRecord {
-	cpos := strings.IndexByte(vcaller, ':')
-	rec := instrument.LogRecord{
-		TimestampMicros: base.ToMicros(t),
-	}
-	if cpos >= 0 {
-		rec.FileName = vcaller[:cpos]
-		rec.LineNumber, _ = strconv.Atoi(vcaller[cpos+1:])
-	} else {
-		rec.FileName = vcaller
-	}
-	return rec
 }
 
 func writeRawStack(w io.Writer, v interface{}) {
