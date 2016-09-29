@@ -1,7 +1,6 @@
 package bc
 
 import (
-	"encoding/binary"
 	"testing"
 
 	"golang.org/x/crypto/sha3"
@@ -24,18 +23,15 @@ func TestComputeAssetID(t *testing.T) {
 	}
 }
 
+var assetIDSink AssetID
+
 func BenchmarkComputeAssetID(b *testing.B) {
-	b.StopTimer()
-	initialBlockHash := mustDecodeHash("dd506f5d4c3f904d3d4b3c3be597c9198c6193ffd14a28570e4a923ce40cf9e5")
-	b.StartTimer()
+	var (
+		initialBlockHash [32]byte
+		issuanceScript   = []byte{5}
+	)
 
-	var buf [9]byte
 	for i := 0; i < b.N; i++ {
-		b.StopTimer()
-		n := binary.PutUvarint(buf[:], uint64(i))
-		issuanceScript := buf[:n]
-		b.StartTimer()
-
-		ComputeAssetID(issuanceScript, initialBlockHash, 1)
+		assetIDSink = ComputeAssetID(issuanceScript, initialBlockHash, 1)
 	}
 }
