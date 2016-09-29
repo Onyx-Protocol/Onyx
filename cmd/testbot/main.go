@@ -75,7 +75,7 @@ func prHandler(w http.ResponseWriter, r *http.Request) {
 			runIn(sourcedir, exec.Command("git", "fetch", "origin"), req)
 			runIn(sourcedir, exec.Command("git", "clean", "-xdf"), req)
 			runIn(sourcedir, exec.Command("git", "checkout", req.PR.Head.Ref, "--"), req)
-			runIn(sourcedir, exec.Command("git", "reset", "--hard", req.PR.Head.Ref), req)
+			runIn(sourcedir, exec.Command("git", "reset", "--hard", "origin/"+req.PR.Head.Ref), req)
 			runIn(sourcedir, exec.Command("sh", "docker/testbot/tests.sh"), req)
 			postToGithub(req.PR.Head.Sha, map[string]string{
 				"state":       "success",
