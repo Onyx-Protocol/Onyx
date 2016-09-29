@@ -493,25 +493,27 @@ POST /build-transaction
 [
   {
     "base_transaction": <hex string>, // optional. an unsubmitted transaction to which additional actions can be appended.
-    "ttl": <number of milliseconds>, // optional, defaults to 300000 (5 minutes)
     "actions": [
       {
         "type": "spend_account",
         "asset_id": "...", // accepts `asset_id` or `asset_alias`
         "amount": 123,
-        "account_id": "..."
+        "account_id": "...",
+        "ttl": <number of milliseconds>, // optional, defaults to 300000 (5 minutes)
       },
       {
         "type": "spend_account_unspent_output",
         "transaction_id": "...",
         "position": 0,
-        "reference_data": "..."
+        "reference_data": "...",
+        "ttl": <number of milliseconds>, // optional, defaults to 300000 (5 minutes)
       },
       {
         "type": "issue",
         "asset_id": "...", // accepts `asset_id` or `asset_alias`
         "amount": 500,
-        "reference_data": "..."
+        "reference_data": "...",
+        "ttl": <number of milliseconds>, // optional, defaults to 300000 (5 minutes)
       },
       {
         "type": "control_account",
