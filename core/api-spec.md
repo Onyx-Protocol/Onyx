@@ -48,7 +48,6 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [Info](#info)
   * [Reset](#reset)
 
-
 ## Errors
 
 ### Error Object
@@ -970,11 +969,14 @@ POST /configure
 
 ```
 {
-  "is_generator": <true | false>,
+  "is_generator": <boolean>,
+  "require_client_access_tokens": <boolean>,
+  "require_network_access_tokens": <boolean>,
 
   // Supply these if is_generator is false.
   "generator_url": ...,
-  "initial_block_hash": ...,
+  "generator_access_token": <string>,
+  "blockchain_id": <string>
 }
 ```
 
@@ -984,7 +986,7 @@ POST /configure
 {"message": "ok"}
 ```
 
-Returns 400 error if the generator URL and/or initial block hash is bad.
+Returns 400 error if the generator URL, generator access token, and/or blockchain ID are bad.
 
 ### Update Configuration
 
@@ -1029,20 +1031,21 @@ POST /info
 
 ```
 {
-  "is_configured": <true | false>,
-  "configured_at": ...,
-  "is_signer": <true | false>,
-  "is_generator": <true | false>,
-  "generator_url": ...,
-  "initial_block_hash": ...,
-  "block_height": ...,
-  "generator_block_height": ...,
-  "is_production": <true | false>,
+  "is_configured": <boolean>,
+  "configured_at": <string, RFC3339 timestamp>,
+  "is_signer": <boolean>,
+  "is_generator": <boolean>,
+  "generator_url": <string>,
+  "generator_access_token": <string>, // secret portion should be obfuscated
+  "blockchain_id": <string>,
+  "block_height": <integer>,
+  "generator_block_height": <integer>,
+  "is_production": <boolean>,
   "network_rpc_version": <integer>,
-  "build_commit": ...,
-  "build_date": ...,
+  "build_commit": <string>,
+  "build_date": <string>,
   "require_client_access_tokens": <boolean>,
-  "requier_network_access_tokens": <boolean>
+  "require_network_access_tokens": <boolean>
 }
 ```
 
