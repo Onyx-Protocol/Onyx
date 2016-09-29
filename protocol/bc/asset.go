@@ -2,10 +2,8 @@ package bc
 
 import (
 	"database/sql/driver"
-	"sync"
 
-	"golang.org/x/crypto/sha3"
-
+	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 )
 
@@ -22,18 +20,15 @@ func (a *AssetID) UnmarshalJSON(b []byte) error { return (*Hash)(a).UnmarshalJSO
 func (a AssetID) Value() (driver.Value, error)  { return Hash(a).Value() }
 func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
 
-var assetHashPool = &sync.Pool{New: func() interface{} { return sha3.New256() }}
-
 // ComputeAssetID computes the asset ID of the asset defined by
 // the given issuance program and initial block hash.
 func ComputeAssetID(issuanceProgram []byte, initialHash [32]byte, vmVersion uint32) (assetID AssetID) {
-	h := assetHashPool.Get().(sha3.ShakeHash)
+	h := sha3pool.Get()
+	defer sha3pool.Put(h)
 	h.Write(initialHash[:])
 	blockchain.WriteUvarint(h, uint64(assetVersion))
 	blockchain.WriteUvarint(h, uint64(vmVersion))
 	blockchain.WriteBytes(h, issuanceProgram)
 	h.Read(assetID[:])
-	h.Reset()
-	assetHashPool.Put(h)
 	return assetID
 }
