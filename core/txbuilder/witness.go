@@ -162,8 +162,9 @@ func buildSigProgram(tpl *Template, index int) []byte {
 	if len(inp.ReferenceData) > 0 {
 		constraints = append(constraints, refdataConstraint(inp.ReferenceData))
 	}
-	for _, out := range tpl.Transaction.Outputs {
+	for i, out := range tpl.Transaction.Outputs {
 		c := &payConstraint{
+			Index:       i,
 			AssetAmount: out.AssetAmount,
 			Program:     out.ControlProgram,
 		}

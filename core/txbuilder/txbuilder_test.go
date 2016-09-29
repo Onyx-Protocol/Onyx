@@ -118,7 +118,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 		},
 	}
 
-	prog, err := vm.Assemble(fmt.Sprintf("MAXTIME 0x804cf05736 LESSTHAN VERIFY 0 5 0x%x 1 0x76a914c5d128911c28776f56baaac550963f7b88501dc388c0 FINDOUTPUT", assetID[:]))
+	prog, err := vm.Assemble(fmt.Sprintf("MAXTIME 0x804cf05736 LESSTHAN VERIFY 0 0 5 0x%x 1 0x76a914c5d128911c28776f56baaac550963f7b88501dc388c0 CHECKOUTPUT", assetID[:]))
 	h := sha3.Sum256(prog)
 	sig := privkey.Sign(h[:])
 	if err != nil {

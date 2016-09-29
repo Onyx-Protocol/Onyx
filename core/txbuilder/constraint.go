@@ -70,10 +70,10 @@ func (r refdataConstraint) code() []byte {
 	return builder.Program
 }
 
-// PayConstraint requires the transaction to pay (at least) the given
-// amount of the given asset to the given program, optionally with the
-// given refdatahash.
+// PayConstraint requires the transaction to include a given output
+// at the given index, optionally with the given refdatahash.
 type payConstraint struct {
+	Index int
 	bc.AssetAmount
 	Program     []byte
 	RefDataHash *bc.Hash
@@ -81,12 +81,13 @@ type payConstraint struct {
 
 func (p payConstraint) code() []byte {
 	builder := vmutil.NewBuilder()
+	builder.AddInt64(int64(p.Index))
 	if p.RefDataHash == nil {
 		builder.AddData([]byte{})
 	} else {
 		builder.AddData((*p.RefDataHash)[:])
 	}
 	builder.AddInt64(int64(p.Amount)).AddData(p.AssetID[:]).AddInt64(1).AddData(p.Program)
-	builder.AddOp(vm.OP_FINDOUTPUT)
+	builder.AddOp(vm.OP_CHECKOUTPUT)
 	return builder.Program
 }

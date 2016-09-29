@@ -9,7 +9,7 @@ import (
 	"chain/protocol/bc"
 )
 
-func opFindOutput(vm *virtualMachine) error {
+func opCheckOutput(vm *virtualMachine) error {
 	if vm.tx == nil {
 		return ErrContext
 	}
@@ -27,6 +27,9 @@ func opFindOutput(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
+	if vmVersion < 0 {
+		return ErrBadValue
+	}
 	assetID, err := vm.pop(true)
 	if err != nil {
 		return err
@@ -42,32 +45,38 @@ func opFindOutput(vm *virtualMachine) error {
 	if err != nil {
 		return err
 	}
-
-	for _, o := range vm.tx.Outputs {
-		if o.AssetVersion != 1 {
-			continue
-		}
-		if o.Amount != uint64(amount) {
-			continue
-		}
-		if o.VMVersion != uint32(vmVersion) {
-			continue
-		}
-		if !bytes.Equal(o.ControlProgram, prog) {
-			continue
-		}
-		if !bytes.Equal(o.AssetID[:], assetID) {
-			continue
-		}
-		if len(refdatahash) > 0 {
-			h := sha3.Sum256(o.ReferenceData)
-			if !bytes.Equal(h[:], refdatahash) {
-				continue
-			}
-		}
-		return vm.pushBool(true, true)
+	index, err := vm.popInt64(true)
+	if err != nil {
+		return err
 	}
-	return vm.pushBool(false, true)
+	if index < 0 || int64(len(vm.tx.Outputs)) <= index {
+		return ErrBadValue
+	}
+
+	o := vm.tx.Outputs[index]
+
+	if o.AssetVersion != 1 {
+		return vm.pushBool(false, true)
+	}
+	if o.Amount != uint64(amount) {
+		return vm.pushBool(false, true)
+	}
+	if o.VMVersion != uint32(vmVersion) {
+		return vm.pushBool(false, true)
+	}
+	if !bytes.Equal(o.ControlProgram, prog) {
+		return vm.pushBool(false, true)
+	}
+	if !bytes.Equal(o.AssetID[:], assetID) {
+		return vm.pushBool(false, true)
+	}
+	if len(refdatahash) > 0 {
+		h := sha3.Sum256(o.ReferenceData)
+		if !bytes.Equal(h[:], refdatahash) {
+			return vm.pushBool(false, true)
+		}
+	}
+	return vm.pushBool(true, true)
 }
 
 func opAsset(vm *virtualMachine) error {

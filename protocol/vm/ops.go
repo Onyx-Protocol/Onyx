@@ -201,7 +201,7 @@ const (
 	OP_TXSIGHASH     Op = 0xae
 	OP_BLOCKSIGHASH  Op = 0xaf
 
-	OP_FINDOUTPUT    Op = 0xc1
+	OP_CHECKOUTPUT   Op = 0xc1
 	OP_ASSET         Op = 0xc2
 	OP_AMOUNT        Op = 0xc3
 	OP_PROGRAM       Op = 0xc4
@@ -324,7 +324,7 @@ var (
 		OP_TXSIGHASH:     {OP_TXSIGHASH, "TXSIGHASH", opTxSigHash},
 		OP_BLOCKSIGHASH:  {OP_BLOCKSIGHASH, "BLOCKSIGHASH", opBlockSigHash},
 
-		OP_FINDOUTPUT:    {OP_FINDOUTPUT, "FINDOUTPUT", opFindOutput},
+		OP_CHECKOUTPUT:   {OP_CHECKOUTPUT, "CHECKOUTPUT", opCheckOutput},
 		OP_ASSET:         {OP_ASSET, "ASSET", opAsset},
 		OP_AMOUNT:        {OP_AMOUNT, "AMOUNT", opAmount},
 		OP_PROGRAM:       {OP_PROGRAM, "PROGRAM", opProgram},

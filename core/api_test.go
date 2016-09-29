@@ -82,8 +82,8 @@ func TestBuildFinal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(insts1) != 18 {
-		t.Fatalf("expected 18 instructions in sigwitness program 1, got %d (%x)", len(insts1), prog1)
+	if len(insts1) != 19 {
+		t.Fatalf("expected 19 instructions in sigwitness program 1, got %d (%x)", len(insts1), prog1)
 	}
 	if insts1[0].Op != vm.OP_MAXTIME {
 		t.Fatalf("sigwitness program1 opcode 0 is %02x, expected %02x", insts1[0].Op, vm.OP_MAXTIME)
@@ -99,8 +99,8 @@ func TestBuildFinal(t *testing.T) {
 			t.Fatalf("sigwitness program 1 opcode %d is %02x, expected %02x", i+5, insts1[i+5].Op, op)
 		}
 	}
-	if insts1[17].Op != vm.OP_FINDOUTPUT {
-		t.Fatalf("sigwitness program1 opcode 17 is %02x, expected %02x", insts1[17].Op, vm.OP_FINDOUTPUT)
+	if insts1[18].Op != vm.OP_CHECKOUTPUT {
+		t.Fatalf("sigwitness program1 opcode 18 is %02x, expected %02x", insts1[18].Op, vm.OP_CHECKOUTPUT)
 	}
 
 	prog2 := tmpl2.SigningInstructions[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
