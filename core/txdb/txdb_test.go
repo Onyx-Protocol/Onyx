@@ -134,7 +134,7 @@ func TestInsertBlock(t *testing.T) {
 			}),
 		},
 	}
-	err := (&Store{dbtx}).SaveBlock(ctx, blk)
+	err := NewStore(dbtx).SaveBlock(ctx, blk)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

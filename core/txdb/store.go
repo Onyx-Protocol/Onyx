@@ -2,6 +2,11 @@ package txdb
 
 import (
 	"context"
+	"strconv"
+	"sync"
+
+	"github.com/golang/groupcache/lru"
+	"github.com/golang/groupcache/singleflight"
 
 	"chain/database/pg"
 	"chain/errors"
@@ -10,11 +15,18 @@ import (
 	"chain/protocol/state"
 )
 
+const maxCachedBlocks = 100
+
 // A Store encapsulates storage for blockchain validation.
 // It satisfies the interface protocol.Store, and provides additional
 // methods for querying current data.
 type Store struct {
 	db pg.DB
+
+	cacheMu sync.Mutex
+	cache   *lru.Cache
+
+	single singleflight.Group // for cache misses
 }
 
 var _ protocol.Store = (*Store)(nil)
@@ -25,7 +37,10 @@ var _ protocol.Store = (*Store)(nil)
 // and more convenient to use package chain/protocol/memstore
 // instead.
 func NewStore(db pg.DB) *Store {
-	return &Store{db: db}
+	return &Store{
+		db:    db,
+		cache: lru.New(maxCachedBlocks),
+	}
 }
 
 // Height returns the height of the blockchain.
@@ -40,14 +55,34 @@ func (s *Store) Height(ctx context.Context) (uint64, error) {
 // If no block is found at that height, it returns an error that
 // wraps sql.ErrNoRows.
 func (s *Store) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) {
-	const q = `SELECT data FROM blocks WHERE height = $1`
-	var b bc.Block
-
-	err := s.db.QueryRow(ctx, q, height).Scan(&b)
-	if err != nil {
-		return nil, errors.Wrap(err, "select query")
+	s.cacheMu.Lock()
+	block, ok := s.cache.Get(height)
+	s.cacheMu.Unlock()
+	if ok {
+		return block.(*bc.Block), nil
 	}
-	return &b, nil
+
+	heightStr := strconv.FormatUint(height, 16)
+	block, err := s.single.Do(heightStr, func() (interface{}, error) {
+		// TODO(jackson): duplicate queries are possible; check cache
+		// again if this still shows up in profiles.
+
+		const q = `SELECT data FROM blocks WHERE height = $1`
+		var b bc.Block
+		err := s.db.QueryRow(ctx, q, height).Scan(&b)
+		if err != nil {
+			return nil, errors.Wrap(err, "select query")
+		}
+
+		s.cacheMu.Lock()
+		defer s.cacheMu.Unlock()
+		s.cache.Add(b.Height, &b)
+		return &b, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return block.(*bc.Block), nil
 }
 
 // LatestSnapshot returns the most recent state snapshot stored in
@@ -64,7 +99,14 @@ func (s *Store) SaveBlock(ctx context.Context, block *bc.Block) error {
 		ON CONFLICT (block_hash) DO NOTHING
 	`
 	_, err := s.db.Exec(ctx, q, block.Hash(), block.Height, block, &block.BlockHeader)
-	return errors.Wrap(err, "insert block")
+	if err != nil {
+		return errors.Wrap(err, "insert block")
+	}
+
+	s.cacheMu.Lock()
+	defer s.cacheMu.Unlock()
+	s.cache.Add(block.Height, block)
+	return nil
 }
 
 // SaveSnapshot saves a state snapshot to the database.

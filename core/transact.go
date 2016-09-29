@@ -144,8 +144,6 @@ func finalizeTxWait(ctx context.Context, c *protocol.Chain, txTemplate *txbuilde
 			return ctx.Err()
 
 		case <-waitBlock(ctx, c, height):
-			// TODO(jackson): Avoid stampeding herd of get block queries.
-			// Maybe just cache n most recent blocks in protocol.Chain?
 			b, err := c.GetBlock(ctx, height)
 			if err != nil {
 				return errors.Wrap(err, "getting block that just landed")
