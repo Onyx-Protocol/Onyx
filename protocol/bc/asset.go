@@ -1,7 +1,6 @@
 package bc
 
 import (
-	"bytes"
 	"database/sql/driver"
 
 	"golang.org/x/crypto/sha3"
@@ -24,12 +23,12 @@ func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
 
 // ComputeAssetID computes the asset ID of the asset defined by
 // the given issuance program and initial block hash.
-func ComputeAssetID(issuanceProgram []byte, initialHash [32]byte, vmVersion uint32) AssetID {
-	buf := append([]byte{}, initialHash[:]...)
-	var b bytes.Buffer
-	blockchain.WriteUvarint(&b, uint64(assetVersion))
-	blockchain.WriteUvarint(&b, uint64(vmVersion))
-	blockchain.WriteBytes(&b, issuanceProgram)
-	buf = append(buf, b.Bytes()...)
-	return sha3.Sum256(buf)
+func ComputeAssetID(issuanceProgram []byte, initialHash [32]byte, vmVersion uint32) (assetID AssetID) {
+	h := sha3.New256()
+	h.Write(initialHash[:])
+	blockchain.WriteUvarint(h, uint64(assetVersion))
+	blockchain.WriteUvarint(h, uint64(vmVersion))
+	blockchain.WriteBytes(h, issuanceProgram)
+	h.Sum(assetID[:0])
+	return assetID
 }
