@@ -6,13 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
-	"time"
 
 	"chain/core/signers"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/metrics"
 	"chain/net/http/httpjson"
 	"chain/protocol/vmutil"
 )
@@ -229,7 +227,6 @@ func insertAccountControlProgram(ctx context.Context, accountID string, idx []ui
 }
 
 func nextIndex(ctx context.Context) ([]uint32, error) {
-	defer metrics.RecordElapsed(time.Now())
 	acpMu.Lock()
 	defer acpMu.Unlock()
 

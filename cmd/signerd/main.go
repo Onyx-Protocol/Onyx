@@ -22,7 +22,6 @@ import (
 	"chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
-	"chain/metrics"
 	"chain/net/http/authn"
 	"chain/net/http/gzip"
 	"chain/net/http/httpjson"
@@ -88,7 +87,6 @@ func main() {
 	m.Handle("/sign-transaction", signHandler)
 
 	var h http.Handler = m
-	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = authn.BasicHandler{Auth: auth, Realm: "signerd", Next: h}
 	h = reqid.Handler(h)

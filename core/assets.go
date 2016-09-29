@@ -3,13 +3,11 @@ package core
 import (
 	"context"
 	"sync"
-	"time"
 
 	"chain/core/asset"
 	"chain/core/signers"
 	"chain/encoding/json"
 	"chain/errors"
-	"chain/metrics"
 	"chain/net/http/httpjson"
 	"chain/protocol/bc"
 )
@@ -52,8 +50,6 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 	// with the same client_token will only create one asset.
 	ClientToken *string `json:"client_token"`
 }) ([]assetOrError, error) {
-	defer metrics.RecordElapsed(time.Now())
-
 	initialBlock, err := a.c.GetBlock(ctx, 1)
 	if err != nil {
 		return nil, err

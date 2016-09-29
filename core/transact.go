@@ -9,7 +9,6 @@ import (
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/metrics"
 	"chain/net/http/reqid"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -20,7 +19,6 @@ const (
 )
 
 func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
-	defer metrics.RecordElapsed(time.Now())
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -52,8 +50,6 @@ func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, e
 
 // POST /build-transaction
 func build(ctx context.Context, buildReqs []*buildRequest) (interface{}, error) {
-	defer metrics.RecordElapsed(time.Now())
-
 	responses := make([]interface{}, len(buildReqs))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
@@ -89,8 +85,6 @@ type submitSingleArg struct {
 }
 
 func submitSingle(ctx context.Context, c *protocol.Chain, x submitSingleArg) (interface{}, error) {
-	defer metrics.RecordElapsed(time.Now())
-
 	// TODO(bobg): Set up an expiring context object outside this
 	// function, perhaps in handler.ServeHTTPContext, and perhaps
 	// initialize the timeout from the HTTP Timeout field.  (Or just
@@ -208,8 +202,6 @@ type submitArg struct {
 // POST /v3/transact/submit
 // Idempotent
 func (a *api) submit(ctx context.Context, x submitArg) interface{} {
-	defer metrics.RecordElapsed(time.Now())
-
 	responses := make([]interface{}, len(x.Transactions))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))

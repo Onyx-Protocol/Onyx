@@ -39,7 +39,6 @@ import (
 	chainlog "chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
-	"chain/metrics"
 	"chain/net/http/gzip"
 	"chain/net/http/reqid"
 	"chain/net/rpc"
@@ -133,7 +132,6 @@ func main() {
 	}
 
 	h = dashboardHandler(h)
-	h = metrics.Handler{Handler: h}
 	h = gzip.Handler{Handler: h}
 	h = dbContextHandler(h, db)
 	h = reqid.Handler(h)

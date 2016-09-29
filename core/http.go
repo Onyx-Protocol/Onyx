@@ -29,8 +29,6 @@ func writeHTTPError(ctx context.Context, w http.ResponseWriter, err error) {
 
 func logHTTPError(ctx context.Context, err error) {
 	_, info := errInfo(err)
-	//metrics.Counter("status." + strconv.Itoa(info.HTTPStatus)).Add()
-	//metrics.Counter("error." + info.ChainCode).Add()
 	keyvals := []interface{}{
 		"status", info.HTTPStatus,
 		"chaincode", info.ChainCode,

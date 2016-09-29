@@ -2,11 +2,9 @@ package txbuilder
 
 import (
 	"context"
-	"time"
 
 	"chain/errors"
 	chainlog "chain/log"
-	"chain/metrics"
 	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -27,8 +25,6 @@ var Generator *rpc.Client
 // assembles a fully signed tx, and stores the effects of
 // its changes on the UTXO set.
 func FinalizeTx(ctx context.Context, c *protocol.Chain, tx *bc.Tx) error {
-	defer metrics.RecordElapsed(time.Now())
-
 	err := publishTx(ctx, c, tx)
 	if err != nil {
 		rawtx, err2 := tx.MarshalText()

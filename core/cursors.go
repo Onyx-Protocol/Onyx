@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"time"
 
 	"chain/core/cursor"
-	"chain/metrics"
 )
 
 // POST /create-cursor
@@ -21,7 +19,6 @@ func (a *api) createCursor(ctx context.Context, in struct {
 	// with the same client_token will only create one cursor.
 	ClientToken *string `json:"client_token"`
 }) (*cursor.Cursor, error) {
-	defer metrics.RecordElapsed(time.Now())
 	after := fmt.Sprintf("%x:%x-%x", a.c.Height(), math.MaxInt32, uint64(math.MaxInt64))
 	return cursor.Create(ctx, in.Alias, in.Filter, after, in.ClientToken)
 }
@@ -31,9 +28,7 @@ func getCursor(ctx context.Context, in struct {
 	ID    string `json:"id,omitempty"`
 	Alias string `json:"alias,omitempty"`
 }) (*cursor.Cursor, error) {
-	defer metrics.RecordElapsed(time.Now())
 	return cursor.Find(ctx, in.ID, in.Alias)
-
 }
 
 // POST /delete-cursor
@@ -41,7 +36,6 @@ func deleteCursor(ctx context.Context, in struct {
 	ID    string `json:"id,omitempty"`
 	Alias string `json:"alias,omitempty"`
 }) error {
-	defer metrics.RecordElapsed(time.Now())
 	return cursor.Delete(ctx, in.ID, in.Alias)
 }
 
@@ -52,6 +46,5 @@ func updateCursor(ctx context.Context, in struct {
 	Prev  string `json:"prev"`
 	After string `json:"after"`
 }) (*cursor.Cursor, error) {
-	defer metrics.RecordElapsed(time.Now())
 	return cursor.Update(ctx, in.ID, in.Alias, in.Prev, in.After)
 }

@@ -5,14 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"chain/core/signers"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/metrics"
 	"chain/net/http/httpjson"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
@@ -147,7 +145,6 @@ func Archive(ctx context.Context, id bc.AssetID, alias string) error {
 // and there already exists an asset with that client token, insertAsset will
 // lookup and return the existing asset instead.
 func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset, error) {
-	defer metrics.RecordElapsed(time.Now())
 	const q = `
     INSERT INTO assets
 	 	(id, alias, signer_id, initial_block_hash, issuance_program, definition, client_token)

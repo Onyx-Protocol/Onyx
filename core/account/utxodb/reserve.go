@@ -10,7 +10,6 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	chainlog "chain/log"
-	"chain/metrics"
 	"chain/protocol/bc"
 )
 
@@ -58,8 +57,6 @@ type (
 )
 
 func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *string, exp time.Time) (*UTXO, error) {
-	defer metrics.RecordElapsed(time.Now())
-
 	dbtx, ctx, err := pg.Begin(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "begin transaction for reserving utxos")
@@ -142,8 +139,6 @@ func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *s
 }
 
 func Reserve(ctx context.Context, sources []Source, exp time.Time) (u []*UTXO, c []Change, err error) {
-	defer metrics.RecordElapsed(time.Now())
-
 	var reserved []*UTXO
 	var change []Change
 	var reservationIDs []int64

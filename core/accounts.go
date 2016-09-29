@@ -3,12 +3,10 @@ package core
 import (
 	"context"
 	"sync"
-	"time"
 
 	"chain/core/account"
 	"chain/core/signers"
 	"chain/errors"
-	"chain/metrics"
 	"chain/net/http/httpjson"
 )
 
@@ -40,8 +38,6 @@ func createAccount(ctx context.Context, ins []struct {
 	// with the same client_token will only create one account.
 	ClientToken *string `json:"client_token"`
 }) interface{} {
-	defer metrics.RecordElapsed(time.Now())
-
 	responses := make([]interface{}, len(ins))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
