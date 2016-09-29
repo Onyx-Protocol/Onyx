@@ -67,7 +67,7 @@ func prHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("pr ref:", req.PR.Head.Ref)
 	log.Println("pr action:", req.Action)
-	if req.Action == "opened" || req.Action == "synchronized" {
+	if req.Action == "opened" || req.Action == "synchronize" {
 		go func() {
 			mu.Lock()
 			defer mu.Unlock()
