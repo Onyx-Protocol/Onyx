@@ -23,8 +23,8 @@ func (a *AssetID) Scan(b interface{}) error     { return (*Hash)(a).Scan(b) }
 // ComputeAssetID computes the asset ID of the asset defined by
 // the given issuance program and initial block hash.
 func ComputeAssetID(issuanceProgram []byte, initialHash [32]byte, vmVersion uint32) (assetID AssetID) {
-	h := sha3pool.Get()
-	defer sha3pool.Put(h)
+	h := sha3pool.Get256()
+	defer sha3pool.Put256(h)
 	h.Write(initialHash[:])
 	blockchain.WriteUvarint(h, uint64(assetVersion))
 	blockchain.WriteUvarint(h, uint64(vmVersion))

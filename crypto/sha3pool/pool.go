@@ -1,3 +1,4 @@
+// Package sha3pool is a freelist for SHA3-256 hash objects.
 package sha3pool
 
 import (
@@ -8,11 +9,15 @@ import (
 
 var pool = &sync.Pool{New: func() interface{} { return sha3.New256() }}
 
-func Get() sha3.ShakeHash {
+// Get256 returns an initialized SHA3-256 hash ready to use.
+// It is like sha3.New256 except it uses the freelist.
+// The caller should call Put256 when finished with the returned object.
+func Get256() sha3.ShakeHash {
 	return pool.Get().(sha3.ShakeHash)
 }
 
-func Put(h sha3.ShakeHash) {
+// Put256 resets h and puts it in the freelist.
+func Put256(h sha3.ShakeHash) {
 	h.Reset()
 	pool.Put(h)
 }
