@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -53,6 +54,8 @@ var (
 
 	killInstanceIDs []*string // instances to terminate on exit
 	deleteELBNames  []*string // elbs to delete on exit
+
+	profileFrequency = time.Minute * 3
 )
 
 func sshAuthMethods(agentSock, privKeyPEM string) (m []ssh.AuthMethod) {
@@ -146,13 +149,17 @@ func main() {
 	log.Println("init cored hosts")
 	must(scpPut(cored.addr, coredBin, "cored", 0755))
 	go mustRunOn(cored.addr, coredsh, "dbURL", dbURL)
+	go writeFile("cored", coredBin)
 
 	log.Println("init client")
 	coreURL := "http://" + cored.privAddr + ":8080"
 	log.Println("core URL:", coreURL)
+	publicCoreURL := "http://" + cored.addr + ":8080"
+	log.Println("public core URL:", publicCoreURL)
 	must(scpPut(client.addr, chainJAR, "chain.jar", 0644))
 	javaClass := strings.TrimSuffix(progName, ".java")
 	must(scpPut(client.addr, testJava, javaClass+".java", 0644))
+	go profile(publicCoreURL)
 	mustRunOn(client.addr, clientsh,
 		"coreURL", coreURL,
 		"coreAddr", cored.privAddr,
@@ -505,6 +512,53 @@ NextVar:
 		out = append(out, inkv)
 	}
 	return out
+}
+
+func profile(coreURL string) {
+	for {
+		go captureHeap(coreURL, time.Now())
+		go captureCPU(coreURL, time.Now())
+		time.Sleep(profileFrequency)
+	}
+}
+
+func captureHeap(coreURL string, t time.Time) {
+	resp, err := http.Get(coreURL + "/debug/pprof/heap")
+	if err != nil {
+		log.Printf("error getting heap profile: %s\n", err)
+		return
+	}
+	defer resp.Body.Close()
+	out, err := os.Create(fmt.Sprintf("heap%d", t.Unix()))
+	if err != nil {
+		log.Printf("error creating heap file: %s\n", err)
+		return
+	}
+	defer out.Close()
+	io.Copy(out, resp.Body)
+}
+
+func captureCPU(coreURL string, t time.Time) {
+	resp, err := http.Get(coreURL + "/debug/pprof/profile")
+	if err != nil {
+		log.Printf("error getting cpu profile: %s\n", err)
+		return
+	}
+	defer resp.Body.Close()
+	out, err := os.Create(fmt.Sprintf("cpu%d", t.Unix()))
+	if err != nil {
+		log.Printf("error creating cpu file: %s\n", err)
+		return
+	}
+	defer out.Close()
+	io.Copy(out, resp.Body)
+}
+
+func writeFile(path string, data []byte) {
+	err := ioutil.WriteFile(path, data, 0644)
+	if err != nil {
+		log.Printf("error writing %s: %s\n", path, err)
+	}
 }
 
 const initdbsh = `#!/bin/bash
