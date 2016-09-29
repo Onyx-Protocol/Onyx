@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"html"
 	"io"
 	"log"
 	"net/http"
@@ -15,41 +14,84 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kr/s3"
+
 	"chain/env"
 )
 
 var (
-	listen    = env.String("LISTEN", ":8080")
-	slackURL  = os.Getenv("SLACK_WEBHOOK_URL")
-	sourcedir = os.Getenv("CHAIN")
-	mu        sync.Mutex
+	listen      = env.String("LISTEN", ":8080")
+	githubToken = os.Getenv("GITHUB_TOKEN")
+	slackURL    = os.Getenv("SLACK_WEBHOOK_URL")
+	sourcedir   = os.Getenv("CHAIN")
+	keys        = s3.Keys{
+		AccessKey: os.Getenv("AWS_ACCESS_KEY_ID"),
+		SecretKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+	}
+	mu sync.Mutex
 )
 
-type Req struct {
-	Ref    string
-	After  string
-	Log    string
-	Commit struct {
-		Message string
-		URL     string
-		Author  struct {
-			Username string
+type pullRequest struct {
+	Action string
+	PR     struct {
+		Head struct {
+			Ref string
+			Sha string
 		}
-	} `json:"head_commit"`
+	} `json:"pull_request"`
 }
 
 func main() {
 	log.SetFlags(log.Lshortfile)
-	http.HandleFunc("/push", handler)
+	http.HandleFunc("/pr", prHandler)
+	http.HandleFunc("/commit", commitHandler)
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 	env.Parse()
 	log.Println("listening on", *listen)
 	log.Fatal(http.ListenAndServe(*listen, nil))
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+// handles updates to pull requests
+func prHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	req := Req{}
+	req := pullRequest{}
+	err := decoder.Decode(&req)
+	if err != nil {
+		body, err := json.Marshal(map[string]string{"text": fmt.Sprintln("parsing request:", err)})
+		if err != nil {
+			panic(err)
+		}
+		postToSlack(body)
+		return
+	}
+
+	log.Println("pr ref:", req.PR.Head.Ref)
+	log.Println("pr action:", req.Action)
+	if req.Action == "opened" || req.Action == "synchronized" {
+		go func() {
+			mu.Lock()
+			defer mu.Unlock()
+			defer catch()
+			runIn(sourcedir, exec.Command("git", "fetch", "origin"), req)
+			runIn(sourcedir, exec.Command("git", "clean", "-xdf"), req)
+			runIn(sourcedir, exec.Command("git", "checkout", req.PR.Head.Ref, "--"), req)
+			runIn(sourcedir, exec.Command("git", "reset", "--hard", req.PR.Head.Ref), req)
+			runIn(sourcedir, exec.Command("sh", "docker/testbot/tests.sh"), req)
+			postToGithub(req.PR.Head.Sha, map[string]string{
+				"state":       "success",
+				"description": "Integration tests passed",
+				"context":     "chain/testbot",
+			})
+		}()
+	}
+}
+
+// handles commits to the "main" branch
+func commitHandler(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var req struct {
+		After, Ref string
+	}
 	err := decoder.Decode(&req)
 	if err != nil {
 		body, err := json.Marshal(map[string]string{"text": fmt.Sprintln("parsing request:", err)})
@@ -66,12 +108,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			mu.Lock()
 			defer mu.Unlock()
 			defer catch()
-			runIn(sourcedir, exec.Command("git", "fetch", "origin"), req)
-			runIn(sourcedir, exec.Command("git", "clean", "-xdf"), req)
-			runIn(sourcedir, exec.Command("git", "checkout", req.After, "--"), req)
-			runIn(sourcedir, exec.Command("git", "reset", "--hard", req.After), req)
-			runIn(sourcedir, exec.Command("sh", "docker/testbot/tests.sh"), req)
-			postToSlack(buildBody(req))
 			select {
 			case <-startBenchcore(req.After):
 			case <-time.After(2 * time.Minute):
@@ -152,63 +188,62 @@ func (w *signalWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func buildBody(req Req) []byte {
-	var color, result string
-	if req.Log == "" {
-		color = "good"
-		result = "passed :thumbsup:"
-	} else {
-		color = "danger"
-		result = "failed :thumbsdown:"
-	}
-
-	// Only display the commit message header
-	split := strings.Split(req.Commit.Message, "\n")
-	msg := split[0]
-	buffer := `{
-		"attachments": [
-			{
-				"color": "` + color + `",
-				"text": "Integration tests ` + result + `",
-				"fields": [
-					{
-						"title": "Commit",
-						"value": "<` + req.Commit.URL + `|` + msg + `>",
-						"short": false
-					},
-					{
-						"title": "Author",
-						"value": "<https://github.com/` + req.Commit.Author.Username + `|` + req.Commit.Author.Username + `>",
-						"short": false
-					}
-				]
-			}`
-
-	if req.Log == "" {
-		// end json buffer
-		buffer += `]}`
-	} else {
-		// add the error log
-		buffer += `,{
-			"text": "` + html.EscapeString(req.Log) + `",
-			"mrkdwn_in": [
-				"text"
-			]
-		}]}`
-	}
-	return []byte(buffer)
-}
-
-func runIn(dir string, c *exec.Cmd, req Req) {
-	var outbuf, errbuf bytes.Buffer
+func runIn(dir string, c *exec.Cmd, req pullRequest) {
+	var outfile bytes.Buffer
 	c.Dir = dir
 	c.Env = os.Environ()
-	c.Stdout = &outbuf
-	c.Stderr = &errbuf
+	c.Stdout = &outfile
+	c.Stderr = &outfile
 	if err := c.Run(); err != nil {
-		req.Log = fmt.Sprintf("Command run: `%s`\n%s", strings.Join(c.Args, " "), errbuf.String())
-		panic(buildBody(req))
+		log.Printf("error: command run: %s\n", strings.Join(c.Args, " "))
+		postToGithub(req.PR.Head.Sha, map[string]string{
+			"state":       "failure",
+			"description": "Integration tests failed",
+			"target_url":  "https://s3.amazonaws.com/chain-qa/testbot/" + req.PR.Head.Sha,
+			"context":     "chain/testbot",
+		})
+		uploadToS3(req.PR.Head.Sha, &outfile)
+		panic(req)
 	}
+}
+
+func uploadToS3(filename string, logfile *bytes.Buffer) {
+	log.Println("uploading results to s3")
+	req, err := http.NewRequest("PUT", "https://chain-qa.s3.amazonaws.com/testbot/"+filename, logfile)
+	if err != nil {
+		log.Println("sending request:", err)
+	}
+	req.ContentLength = int64(logfile.Len())
+	req.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
+	req.Header.Set("X-Amz-Acl", "public-read")
+	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Content-Disposition", "inline")
+	s3.Sign(req, keys)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	log.Printf("response from aws: %s", resp.Status)
+}
+
+func postToGithub(sha string, requestBody map[string]string) {
+	log.Println("sending results to github")
+	b, err := json.Marshal(requestBody)
+	if err != nil {
+		panic(err)
+	}
+	req, err := http.NewRequest("POST", "https://api.github.com/repos/chain/chain/statuses/"+sha, bytes.NewReader(b))
+	if err != nil {
+		log.Println("sending request:", err)
+	}
+	req.Header.Add("Authorization", "token "+githubToken)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println("sending request:", err)
+	}
+	defer resp.Body.Close()
+	log.Printf("response from github: %s", resp.Status)
 }
 
 func postToSlackText(s string) {
@@ -226,13 +261,14 @@ func postToSlack(b []byte) {
 		log.Println("sending request:", err)
 	}
 	defer resp.Body.Close()
+	log.Printf("response from slack: %s", resp.Status)
 }
 
 func catch() {
 	if err := recover(); err != nil {
 		switch err := err.(type) {
-		case []byte:
-			postToSlack(err)
+		case pullRequest:
+			log.Println("panic due to failed test: continue running server")
 		default:
 			panic(err)
 		}

@@ -11,7 +11,7 @@ initlog=$GOPATH/log/testbot/init.log
 # of cleanup commands doesn't exit the script (due to set -e)
 cleanup() {(
 	set +e
-	echo 'cleaning up' 1>&2
+	echo 'cleaning up'
 	for pid in $(ps aux | grep [c]ored$ | awk {'print $1'});
 	do
 		kill -9 $pid
@@ -40,18 +40,18 @@ waitForGenerator() {(
 	done
 )}
 
-echo 'setup database' 1>&2
+echo 'setup database'
 createdb core
 psql core -f $CHAIN/core/schema.sql
 # TODO(boymanjor): generate credentials
 
-echo 'installing cored' 1>&2
+echo 'installing cored'
 go install -tags 'insecure_disable_https_redirect' chain/cmd/cored
 
-echo 'installing corectl' 1>&2
+echo 'installing corectl'
 go install chain/cmd/corectl
 
-echo 'running integration tests' 1>&2
+echo 'running integration tests'
 $GOPATH/bin/corectl config-generator
 LISTEN=":8081" $GOPATH/bin/cored 2>&1 | tee $initlog &
 waitForGenerator
