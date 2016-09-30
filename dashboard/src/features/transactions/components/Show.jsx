@@ -1,5 +1,5 @@
 import React from 'react'
-import { BaseShow } from '../../shared'
+import { BaseShow } from '../../shared/components'
 
 class Show extends BaseShow {
   render() {

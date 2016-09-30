@@ -18,6 +18,7 @@ class Flash extends React.Component {
     this.props.messages.forEach((item, key) => {
       messages.push(
         <div className={`alert alert-${item.type}`} key={key}>
+          {item.title && <div><strong>{item.title}</strong></div>}
           {item.message}
 
           <button type='button' className='close' onClick={() => this.props.dismissFlash(key)}>

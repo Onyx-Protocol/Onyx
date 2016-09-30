@@ -3,6 +3,8 @@ import { context, pageSize } from '../utility/environment'
 import actionCreator from './actionCreator'
 
 export default function(type, options = {}) {
+  const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
+
   const incrementPage = actionCreator(`INCREMENT_${type.toUpperCase()}_PAGE`)
   const decrementPage = actionCreator(`DECREMENT_${type.toUpperCase()}_PAGE`)
   const receivedItems = actionCreator(`RECEIVED_${type.toUpperCase()}_ITEMS`, param => ({ param }) )
@@ -10,13 +12,23 @@ export default function(type, options = {}) {
   const updateQuery = actionCreator(`UPDATE_${type.toUpperCase()}_QUERY`, param => ({ param }) )
   const didLoadAutocomplete = actionCreator(`DID_LOAD_${type.toUpperCase()}_AUTOCOMPLETE`)
 
+  const deleteItemSuccess = actionCreator(`DELETE_${type.toUpperCase()}`, id => ({ id }))
+  const deleteItem = function(id) {
+    return (dispatch) => chain[className].delete(context, id)
+      .then(() => {
+        dispatch(deleteItemSuccess(id))
+      })
+  }
+
   const getNextPageSlice = function(getState) {
     const pageStart = (getState()[type].listView.pageIndex + 1) * pageSize
     return getState()[type].listView.itemIds.slice(pageStart, pageStart + pageSize)
   }
 
   const fetchItems = function(params) {
-    const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
+    const requiredParams = options.requiredParams || {}
+
+    params = { ...params, ...requiredParams }
 
     return function(dispatch) {
       const promise = chain[className].query(context, params)
@@ -73,7 +85,7 @@ export default function(type, options = {}) {
       }
 
       return promise.then(
-        (param) => dispatch(appendPage(param))
+        (response) => dispatch(appendPage(response))
       ).catch(( err ) => {
         if (options.defaultKey && filter.indexOf('\'') < 0 && filter.indexOf('=') < 0) {
           dispatch(updateQuery(`${options.defaultKey}='${filter}'`))
@@ -89,6 +101,7 @@ export default function(type, options = {}) {
     appendPage,
     updateQuery,
     fetchItems,
+    deleteItem,
     fetchAll,
     incrementPage: function() {
       return function(dispatch, getState) {

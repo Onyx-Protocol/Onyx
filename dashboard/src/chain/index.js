@@ -1,3 +1,4 @@
+import AccessToken from './accessToken'
 import Account from './account'
 import Asset from './asset'
 import Balance from './balance'
@@ -9,6 +10,7 @@ import Transaction from './transaction'
 import Unspent from './unspent'
 
 export default {
+  AccessToken,
   Account,
   Asset,
   Balance,

@@ -2,7 +2,7 @@ class Page {
   constructor(data, itemClass) {
     Object.assign(this, data)
     this.itemClass = itemClass
-    this.items = this.items.map((data) => {
+    this.items = (this.items || []).map((data) => {
       return new itemClass(data)
     })
   }

@@ -6,9 +6,8 @@ const type = 'asset'
 const list = generateListActions(type, { defaultKey: 'alias' })
 const form = generateFormActions(type, { jsonFields: ['tags', 'definition'] })
 
-let actions = Object.assign({},
-  list,
-  form
-)
-
+const actions = {
+  ...list,
+  ...form,
+}
 export default actions

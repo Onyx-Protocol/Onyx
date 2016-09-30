@@ -1,6 +1,7 @@
 import { connect } from 'react-redux'
 import actions from '../../../actions'
-import { Main, Config } from './'
+import Main from './layout/Main/Main'
+import Config from './layout/Config/Config'
 import React from 'react'
 
 const CORE_POLLING_TIME=15000

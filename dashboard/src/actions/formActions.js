@@ -6,7 +6,7 @@ import { push } from 'react-router-redux'
 
 export default function(type, options = {}) {
   const listPath   = options.listPath || `/${type}s`
-  const createPath = options.createPath || `/${type}s/create`
+  const createPath = options.createPath || `${listPath}/create`
   const created = actionCreator(`CREATED_${type.toUpperCase()}`, param => ({ param }) )
 
   return {
@@ -24,8 +24,8 @@ export default function(type, options = {}) {
         let object = new chain[className](data)
 
         return object.create(context)
-          .then(() => {
-            dispatch(created())
+          .then((data) => {
+            dispatch(created(data))
             dispatch(push({
               pathname: listPath,
               state: {

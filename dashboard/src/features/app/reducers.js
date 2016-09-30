@@ -1,9 +1,9 @@
 import { combineReducers } from 'redux'
 import uuid from 'uuid'
 
-const flash = (message, type) => ({ message, type, displayed: false })
-const success = (message) => flash(message, 'success')
-const error = (message) => flash(message, 'danger')
+const flash = (message, title, type) => ({ message, title, type, displayed: false })
+const success = (message, title) => flash(message, title, 'success')
+const error = (message, title) => flash(message, title, 'danger')
 
 export const flashMessages = (state = new Map(), action) => {
   if (action.type == 'CREATED_ACCOUNT') {
@@ -14,6 +14,10 @@ export const flashMessages = (state = new Map(), action) => {
     return new Map(state).set(uuid.v4(), success('Created transaction'))
   } else if (action.type == 'CREATE_MOCKHSM') {
     return new Map(state).set(uuid.v4(), success('Created key'))
+  } else if (['CREATED_CLIENT_ACCESS_TOKEN',
+              'CREATED_NETWORK_ACCESS_TOKEN'].includes(action.type)) {
+    const object = action.param
+    return new Map(state).set(uuid.v4(), success(object.token, 'Created Access Token:'))
   } else if (action.type == 'ERROR') {
     return new Map(state).set(uuid.v4(), error(action.payload.message))
   } else if (action.type == 'DISPLAYED_FLASH') {
@@ -44,17 +48,6 @@ export const flashMessages = (state = new Map(), action) => {
   return state
 }
 
-export const dropdownState = (state = '', action) => {
-  if (action.type == 'TOGGLE_DROPDOWN') {
-    return state === '' ? 'open' : ''
-  } else if (action.type == 'CLOSE_DROPDOWN') {
-    return ''
-  }
-
-  return state
-}
-
 export default combineReducers({
-  dropdownState,
   flashMessages
 })

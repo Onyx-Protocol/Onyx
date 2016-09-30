@@ -12,6 +12,9 @@ export const itemsReducer = (type, idFunc = defaultIdFunc) => (state = {}, actio
       newObjects[idFunc(item)] = item
     })
     return {...state, ...newObjects}
+  } else if (action.type == `DELETE_${type.toUpperCase()}`) {
+    delete state[action.id]
+    return {...state}
   }
   return state
 }
@@ -23,6 +26,12 @@ export const currentListReducer = (type, idFunc = defaultIdFunc) => (state = [],
   } else if (action.type == `APPEND_${type.toUpperCase()}_PAGE`) {
     const newItemIds = [...state, ...action.param.items.map(item => idFunc(item))]
     return [...new Set(newItemIds)]
+  } else if (action.type == `DELETE_${type.toUpperCase()}`) {
+    const index = state.indexOf(action.id)
+    if (index >= 0) {
+      state.splice(index, 1)
+      return [...state]
+    }
   }
   return state
 }

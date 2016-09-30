@@ -1,5 +1,5 @@
 import React from 'react'
-import { pluralize, capitalize } from '../utility/string'
+import { pluralize, humanize } from '../utility/string'
 
 import Pagination from './Pagination'
 import PageHeader from './PageHeader/PageHeader'
@@ -39,7 +39,7 @@ class ItemList extends React.Component {
   }
 
   render() {
-    const label = this.props.label || pluralize(capitalize(this.props.type))
+    const label = this.props.label || pluralize(humanize(this.props.type))
 
     let header = <div>
       <PageHeader key='page-title'

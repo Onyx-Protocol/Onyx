@@ -1,6 +1,6 @@
 import React from 'react'
 import styles from './Main.scss'
-import { Flash } from '../../../../shared'
+import { Flash } from '../../../../shared/components'
 import { Link } from 'react-router'
 import { connect } from 'react-redux'
 import { actions } from '../../../'
@@ -72,6 +72,22 @@ class Main extends React.Component {
                   Core
                 </Link>
               </li>
+            </ul>
+            <ul className={styles.navigation}>
+              <li className={styles.navigationTitle}>security</li>
+              <li>
+                <Link to='/access_tokens/client' activeClassName={styles.active}>
+                  <span className={`glyphicon glyphicon-user ${styles.glyphicon}`} />
+                  Client Tokens
+                </Link>
+              </li>
+              <li>
+                <Link to='/access_tokens/network' activeClassName={styles.active}>
+                  <span className={`glyphicon glyphicon-globe ${styles.glyphicon}`} />
+                  Network Tokens
+                </Link>
+              </li>
+
             </ul>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { Container } from './features/app'
+import { Container } from './features/app/components'
 import Section from './containers/SectionContainer'
 import UnspentList from './containers/Unspent/List'
 import BalanceList from './containers/Balance/List'
@@ -6,11 +6,12 @@ import MockHsmList from './containers/MockHsm/List'
 import NewKey from './containers/MockHsm/New'
 import CoreIndex from './containers/Core'
 import ConfigIndex from './containers/Config'
-import { NotFound } from './features/shared'
+import { NotFound } from './features/shared/components'
 
 import { routes as transactions } from './features/transactions'
 import { routes as assets } from './features/assets'
 import { routes as accounts } from './features/accounts'
+import { routes as accessTokens } from './features/accessTokens'
 
 export default ({
   path: '/',
@@ -19,6 +20,7 @@ export default ({
     assets,
     accounts,
     transactions,
+    accessTokens,
     {
       path: 'unspents',
       component: Section,
