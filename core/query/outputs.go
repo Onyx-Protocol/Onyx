@@ -19,12 +19,12 @@ type OutputsAfter struct {
 }
 
 func (cur OutputsAfter) String() string {
-	return fmt.Sprintf("%x:%x:%x", cur.lastBlockHeight, cur.lastTxPos, cur.lastIndex)
+	return fmt.Sprintf("%d:%d:%d", cur.lastBlockHeight, cur.lastTxPos, cur.lastIndex)
 }
 
 func DecodeOutputsAfter(str string) (c *OutputsAfter, err error) {
 	var lastBlockHeight, lastTxPos, lastIndex uint64
-	_, err = fmt.Sscanf(str, "%x:%x:%x", &lastBlockHeight, &lastTxPos, &lastIndex)
+	_, err = fmt.Sscanf(str, "%d:%d:%d", &lastBlockHeight, &lastTxPos, &lastIndex)
 	if err != nil {
 		return c, errors.Wrap(ErrBadAfter, err.Error())
 	}

@@ -33,12 +33,12 @@ type TxAfter struct {
 }
 
 func (after TxAfter) String() string {
-	return fmt.Sprintf("%x:%x-%x", after.FromBlockHeight, after.FromPosition, after.StopBlockHeight)
+	return fmt.Sprintf("%d:%d-%d", after.FromBlockHeight, after.FromPosition, after.StopBlockHeight)
 }
 
 func DecodeTxAfter(str string) (c TxAfter, err error) {
 	var from, pos, stop uint64
-	_, err = fmt.Sscanf(str, "%x:%x-%x", &from, &pos, &stop)
+	_, err = fmt.Sscanf(str, "%d:%d-%d", &from, &pos, &stop)
 	if err != nil {
 		return c, errors.Wrap(ErrBadAfter, err.Error())
 	}

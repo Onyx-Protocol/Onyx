@@ -22,7 +22,7 @@ func (a *api) createTxConsumer(ctx context.Context, in struct {
 	// with the same client_token will only create one txconsumer.
 	ClientToken *string `json:"client_token"`
 }) (*txconsumer.TxConsumer, error) {
-	after := fmt.Sprintf("%x:%x-%x", a.c.Height(), math.MaxInt32, uint64(math.MaxInt64))
+	after := fmt.Sprintf("%d:%d-%d", a.c.Height(), math.MaxInt32, uint64(math.MaxInt64))
 	return txconsumer.Create(ctx, in.Alias, in.Filter, after, in.ClientToken)
 }
 

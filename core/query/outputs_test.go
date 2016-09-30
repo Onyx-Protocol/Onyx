@@ -21,9 +21,9 @@ func TestDecodeOutputsAfter(t *testing.T) {
 	}{
 		{str: "1:1:0", cur: OutputsAfter{lastBlockHeight: 1, lastTxPos: 1}},
 		{str: "1:2:3", cur: OutputsAfter{lastBlockHeight: 1, lastTxPos: 2, lastIndex: 3}},
-		{str: "a:1:0", cur: OutputsAfter{lastBlockHeight: 10, lastTxPos: 1}},
-		{str: "f:f:f", cur: OutputsAfter{lastBlockHeight: 0xf, lastTxPos: 0xf, lastIndex: 0xf}},
-		{str: "c001:cafe:ca75", cur: OutputsAfter{lastBlockHeight: 0xc001, lastTxPos: 0xcafe, lastIndex: 0xca75}},
+		{str: "10:1:0", cur: OutputsAfter{lastBlockHeight: 10, lastTxPos: 1}},
+		{str: "15:15:15", cur: OutputsAfter{lastBlockHeight: 15, lastTxPos: 15, lastIndex: 15}},
+		{str: "49153:51966:51829", cur: OutputsAfter{lastBlockHeight: 49153, lastTxPos: 51966, lastIndex: 51829}},
 	}
 
 	for _, tc := range testCases {
