@@ -585,6 +585,16 @@ public class Transaction {
         this.put("amount", amount);
         return this;
       }
+
+      /**
+       * Specifies the time to live for this action.
+       * @param ttlMS the ttl, in milliseconds
+       * @return updated action object
+       */
+      public Issue setTTL(long ttlMS) {
+        this.put("ttl", ttlMS);
+        return this;
+      }
     }
 
     /**
@@ -618,6 +628,16 @@ public class Transaction {
         for (UnspentOutput unspentOutput : unspentOutputs) {
           this.setUnspentOutput(unspentOutput);
         }
+        return this;
+      }
+
+      /**
+       * Specifies the time to live for this action.
+       * @param ttlMS the ttl, in milliseconds
+       * @return updated action object
+       */
+      public SpendAccountUnspentOutput setTTL(long ttlMS) {
+        this.put("ttl", ttlMS);
         return this;
       }
     }
@@ -684,6 +704,16 @@ public class Transaction {
        */
       public SpendFromAccount setAmount(long amount) {
         this.put("amount", amount);
+        return this;
+      }
+
+      /**
+       * Specifies the time to live for this action.
+       * @param ttlMS the ttl, in milliseconds
+       * @return updated action object
+       */
+      public SpendFromAccount setTTL(long ttlMS) {
+        this.put("ttl", ttlMS);
         return this;
       }
     }
