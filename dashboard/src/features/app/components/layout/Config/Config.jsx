@@ -1,5 +1,5 @@
 import React from 'react'
-import { Navbar } from '../Common'
+import { Navbar } from '../../../../../components/Common'
 import styles from './Config.scss'
 
 class Config extends React.Component {
@@ -17,7 +17,6 @@ class Config extends React.Component {
         <div className='container'>
           {this.props.children}
         </div>
-
       </div>
     )
   }
