@@ -147,7 +147,7 @@ func getBlocks(ctx context.Context, peer *rpc.Client, height uint64) ([]*bc.Bloc
 
 	var blocks []*bc.Block
 	err := peer.Call(ctx, "/rpc/get-blocks", height, &blocks)
-	if err == context.DeadlineExceeded {
+	if ctx.Err() == context.DeadlineExceeded {
 		return nil, nil
 	}
 	return blocks, errors.Wrap(err, "get blocks rpc")
