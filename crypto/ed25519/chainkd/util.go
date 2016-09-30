@@ -26,7 +26,7 @@ func XPubKeys(xpubs []XPub) []ed25519.PublicKey {
 	return res
 }
 
-func DeriveXPubs(xpubs []XPub, path []uint32) []XPub {
+func DeriveXPubs(xpubs []XPub, path [][]byte) []XPub {
 	res := make([]XPub, 0, len(xpubs))
 	for _, xpub := range xpubs {
 		d := xpub.Derive(path)

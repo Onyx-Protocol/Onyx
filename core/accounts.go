@@ -48,7 +48,7 @@ func createAccount(ctx context.Context, ins []struct {
 				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)
 			} else {
-				path := signers.Path(acc.Signer, signers.AccountKeySpace, nil)
+				path := signers.Path(acc.Signer, signers.AccountKeySpace)
 				var keys []accountKey
 				for _, xpub := range acc.XPubs {
 					keys = append(keys, accountKey{

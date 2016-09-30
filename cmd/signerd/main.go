@@ -186,7 +186,7 @@ func signTemplates(ctx context.Context, x struct {
 	return resp
 }
 
-func clientSigner(_ context.Context, _ string, path []uint32, data [32]byte) ([]byte, error) {
+func clientSigner(_ context.Context, _ string, path [][]byte, data [32]byte) ([]byte, error) {
 	return client.Sign(kd, path, data)
 }
 

@@ -3,6 +3,7 @@ package signers
 import (
 	"context"
 	"database/sql"
+	"encoding/binary"
 
 	"github.com/lib/pq"
 
@@ -11,7 +12,7 @@ import (
 	"chain/errors"
 )
 
-type keySpace uint32
+type keySpace byte
 
 const (
 	AssetKeySpace   keySpace = 0
@@ -50,12 +51,21 @@ type Signer struct {
 	Type     string
 	XPubs    []chainkd.XPub
 	Quorum   int
-	KeyIndex []uint32
+	KeyIndex uint64
 }
 
 // Path returns the complete path for derived keys
-func Path(s *Signer, ks keySpace, itemIndex []uint32) []uint32 {
-	return append(append([]uint32{uint32(ks)}, s.KeyIndex...), itemIndex...)
+func Path(s *Signer, ks keySpace, itemIndexes ...uint64) [][]byte {
+	var path [][]byte
+	signerPath := [9]byte{byte(ks)}
+	binary.LittleEndian.PutUint64(signerPath[1:], s.KeyIndex)
+	path = append(path, signerPath[:])
+	for _, idx := range itemIndexes {
+		var idxBytes [8]byte
+		binary.LittleEndian.PutUint64(idxBytes[:], idx)
+		path = append(path, idxBytes[:])
+	}
+	return path
 }
 
 // Create creates and stores a Signer in the database
@@ -77,14 +87,14 @@ func Create(ctx context.Context, typ string, xpubs []string, quorum int, clientT
 		INSERT INTO signers (id, type, xpubs, quorum, client_token)
 		VALUES (next_chain_id($1::text), $2, $3, $4, $5)
 		ON CONFLICT (client_token) DO NOTHING
-		RETURNING id, key_index(key_index)
+		RETURNING id, key_index
   `
 	var (
 		id       string
-		keyIndex []uint32
+		keyIndex uint64
 	)
 	err = pg.QueryRow(ctx, q, typeIDMap[typ], typ, pq.StringArray(xpubs), quorum, clientToken).
-		Scan(&id, (*pg.Uint32s)(&keyIndex))
+		Scan(&id, &keyIndex)
 	if err == sql.ErrNoRows && clientToken != nil {
 		return findByClientToken(ctx, clientToken)
 	}
@@ -103,7 +113,7 @@ func Create(ctx context.Context, typ string, xpubs []string, quorum int, clientT
 
 func findByClientToken(ctx context.Context, clientToken *string) (*Signer, error) {
 	const q = `
-		SELECT id, type, xpubs, quorum, key_index(key_index)
+		SELECT id, type, xpubs, quorum, key_index
 		FROM signers WHERE client_token=$1
 	`
 
@@ -112,7 +122,7 @@ func findByClientToken(ctx context.Context, clientToken *string) (*Signer, error
 		xpubStrs []string
 	)
 	err := pg.QueryRow(ctx, q, clientToken).
-		Scan(&s.ID, &s.Type, (*pq.StringArray)(&xpubStrs), &s.Quorum, (*pg.Uint32s)(&s.KeyIndex))
+		Scan(&s.ID, &s.Type, (*pq.StringArray)(&xpubStrs), &s.Quorum, &s.KeyIndex)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -131,7 +141,7 @@ func findByClientToken(ctx context.Context, clientToken *string) (*Signer, error
 // using the type and id.
 func Find(ctx context.Context, typ, id string) (*Signer, error) {
 	const q = `
-		SELECT id, type, xpubs, quorum, key_index(key_index)
+		SELECT id, type, xpubs, quorum, key_index
 		FROM signers WHERE id=$1
 	`
 
@@ -144,7 +154,7 @@ func Find(ctx context.Context, typ, id string) (*Signer, error) {
 		&s.Type,
 		(*pq.StringArray)(&xpubStrs),
 		&s.Quorum,
-		(*pg.Uint32s)(&s.KeyIndex),
+		&s.KeyIndex,
 	)
 	if err == sql.ErrNoRows {
 		return nil, errors.Wrap(pg.ErrUserInputNotFound)
@@ -171,14 +181,14 @@ func Find(ctx context.Context, typ, id string) (*Signer, error) {
 // the provided type.
 func List(ctx context.Context, typ, prev string, limit int) ([]*Signer, string, error) {
 	const q = `
-		SELECT id, type, xpubs, quorum, key_index(key_index)
+		SELECT id, type, xpubs, quorum, key_index
 		FROM signers WHERE type=$1 AND ($2='' OR $2<id)
 		ORDER BY id ASC LIMIT $3
 	`
 
 	var signers []*Signer
 	err := pg.ForQueryRows(ctx, q, typ, prev, limit,
-		func(id, typ string, xpubs pq.StringArray, quorum int, keyIndex pg.Uint32s) error {
+		func(id, typ string, xpubs pq.StringArray, quorum int, keyIndex uint64) error {
 			keys, err := ConvertKeys(xpubs)
 			if err != nil {
 				return errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))

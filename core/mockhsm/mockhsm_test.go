@@ -35,7 +35,7 @@ func TestMockHSM(t *testing.T) {
 	if xpub2.XPub.Verify(msg, sig) {
 		t.Error("expected verify with wrong pubkey to fail")
 	}
-	path := []uint32{3, 2, 6, 3, 8, 2, 7}
+	path := [][]byte{{3, 2, 6, 3, 8, 2, 7}}
 	sig, err = hsm.Sign(ctx, xpub2.XPub, path, msg)
 	if err != nil {
 		t.Fatal(err)

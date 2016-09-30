@@ -133,7 +133,7 @@ func TestMaterializeWitnesses(t *testing.T) {
 					Quorum: 1,
 					Keys: []KeyID{{
 						XPub:           pubkey.String(),
-						DerivationPath: []uint32{0, 0, 0, 0},
+						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
 					}},
 					Program: prog,
 					Sigs:    []json.HexBytes{sig},
@@ -213,15 +213,15 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 				Keys: []KeyID{
 					{
 						XPub:           pubkey1.String(),
-						DerivationPath: []uint32{0, 0, 0, 0},
+						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
 					},
 					{
 						XPub:           pubkey2.String(),
-						DerivationPath: []uint32{0, 0, 0, 0},
+						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
 					},
 					{
 						XPub:           pubkey3.String(),
-						DerivationPath: []uint32{0, 0, 0, 0},
+						DerivationPath: []json.HexBytes{{0, 0, 0, 0}},
 					},
 				},
 				Program: prog,

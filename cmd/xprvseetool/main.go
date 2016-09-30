@@ -3,11 +3,11 @@
 package main
 
 import (
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 
 	"chain/crypto/hsm/thales/see"
 	"chain/crypto/hsm/thales/xprvseeclient"
@@ -127,14 +127,14 @@ func main() {
 	}
 }
 
-func argpath(args []string) []uint32 {
-	path := make([]uint32, len(args))
+func argpath(args []string) [][]byte {
+	path := make([][]byte, len(args))
 	for i, s := range args {
-		n, err := strconv.ParseUint(s, 10, 32)
+		p, err := hex.DecodeString(s)
 		if err != nil {
 			panic(err)
 		}
-		path[i] = uint32(n)
+		path[i] = p
 	}
 	return path
 }

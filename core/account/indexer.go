@@ -57,7 +57,7 @@ func indexAnnotatedAccount(ctx context.Context, a *Account) error {
 		return nil
 	}
 	var keys []map[string]interface{}
-	path := signers.Path(a.Signer, signers.AccountKeySpace, nil)
+	path := signers.Path(a.Signer, signers.AccountKeySpace)
 	for _, xpub := range a.XPubs {
 		keys = append(keys, map[string]interface{}{
 			"root_xpub":               xpub,
@@ -78,7 +78,7 @@ func indexAnnotatedAccount(ctx context.Context, a *Account) error {
 type output struct {
 	state.Output
 	AccountID string
-	keyIndex  [2]uint32
+	keyIndex  uint64
 }
 
 // IndexUnconfirmedUTXOs looks up a transaction's control programs for matching
@@ -177,17 +177,17 @@ func loadAccountInfo(ctx context.Context, outs []*state.Output) ([]*output, erro
 	result := make([]*output, 0, len(outs))
 
 	const q = `
-		SELECT signer_id, key_index(key_index), control_program
+		SELECT signer_id, key_index, control_program
 		FROM account_control_programs
 		WHERE control_program IN (SELECT unnest($1::bytea[]))
 	`
-	err := pg.ForQueryRows(ctx, q, scripts, func(accountID string, keyIndex pg.Uint32s, program []byte) {
+	err := pg.ForQueryRows(ctx, q, scripts, func(accountID string, keyIndex uint64, program []byte) {
 		for _, out := range outsByScript[string(program)] {
 			newOut := &output{
 				Output:    *out,
 				AccountID: accountID,
+				keyIndex:  keyIndex,
 			}
-			copy(newOut.keyIndex[:], keyIndex)
 			result = append(result, newOut)
 		}
 	})
@@ -217,7 +217,7 @@ func upsertUnconfirmedAccountOutputs(ctx context.Context, outs []*output, expiry
 		assetID = append(assetID, out.AssetID.String())
 		amount = append(amount, int64(out.Amount))
 		accountID = append(accountID, out.AccountID)
-		cpIndex = append(cpIndex, toKeyIndex(out.keyIndex[:]))
+		cpIndex = append(cpIndex, int64(out.keyIndex))
 		program = append(program, out.ControlProgram)
 		metadata = append(metadata, out.ReferenceData)
 	}
@@ -264,7 +264,7 @@ func upsertConfirmedAccountOutputs(ctx context.Context, outs []*output, pos map[
 		assetID = append(assetID, out.AssetID.String())
 		amount = append(amount, int64(out.Amount))
 		accountID = append(accountID, out.AccountID)
-		cpIndex = append(cpIndex, toKeyIndex(out.keyIndex[:]))
+		cpIndex = append(cpIndex, int64(out.keyIndex))
 		program = append(program, out.ControlProgram)
 		metadata = append(metadata, out.ReferenceData)
 		blockPos = append(blockPos, pos[out.Outpoint.Hash])

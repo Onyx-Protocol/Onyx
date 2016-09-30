@@ -113,23 +113,18 @@ func (xpub XPub) Child(sel []byte) (res XPub) {
 	return res
 }
 
-func (xprv XPrv) Derive(path []uint32) XPrv {
+func (xprv XPrv) Derive(path [][]byte) XPrv {
 	res := xprv
 	for _, p := range path {
-		hardened := p >= 1<<31
-		var sel [4]byte
-		binary.LittleEndian.PutUint32(sel[:], p)
-		res = res.Child(sel[:], hardened)
+		res = res.Child(p, false)
 	}
 	return res
 }
 
-func (xpub XPub) Derive(path []uint32) XPub {
+func (xpub XPub) Derive(path [][]byte) XPub {
 	res := xpub
 	for _, p := range path {
-		var sel [4]byte
-		binary.LittleEndian.PutUint32(sel[:], p)
-		res = res.Child(sel[:])
+		res = res.Child(p)
 	}
 	return res
 }

@@ -51,7 +51,7 @@ func indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 	}
 	if a.Signer != nil {
 		var keys []map[string]interface{}
-		path := signers.Path(a.Signer, signers.AssetKeySpace, nil)
+		path := signers.Path(a.Signer, signers.AssetKeySpace)
 		for _, xpub := range a.Signer.XPubs {
 			derived := xpub.Derive(path)
 			keys = append(keys, map[string]interface{}{

@@ -21,8 +21,8 @@ type Account struct {
 }
 
 var (
-	acpIndexNext int64 // next acp index in our block
-	acpIndexCap  int64 // points to end of block
+	acpIndexNext uint64 // next acp index in our block
+	acpIndexCap  uint64 // points to end of block
 	acpMu        sync.Mutex
 )
 
@@ -187,27 +187,27 @@ func CreateControlProgram(ctx context.Context, accountID string, change bool) ([
 	return control, nil
 }
 
-func insertAccountControlProgram(ctx context.Context, accountID string, idx []uint32, control []byte, change bool) error {
+func insertAccountControlProgram(ctx context.Context, accountID string, idx uint64, control []byte, change bool) error {
 	const q = `
 		INSERT INTO account_control_programs (signer_id, key_index, control_program, change)
-		VALUES($1, to_key_index($2), $3, $4)
+		VALUES($1, $2, $3, $4)
 	`
 
-	_, err := pg.Exec(ctx, q, accountID, pg.Uint32s(idx), control, change)
+	_, err := pg.Exec(ctx, q, accountID, idx, control, change)
 	return errors.Wrap(err)
 }
 
-func nextIndex(ctx context.Context) ([]uint32, error) {
+func nextIndex(ctx context.Context) (uint64, error) {
 	acpMu.Lock()
 	defer acpMu.Unlock()
 
 	if acpIndexNext >= acpIndexCap {
-		var cap int64
+		var cap uint64
 		const incrby = 10000 // account_control_program_seq increments by 10,000
 		const q = `SELECT nextval('account_control_program_seq')`
 		err := pg.QueryRow(ctx, q).Scan(&cap)
 		if err != nil {
-			return nil, errors.Wrap(err, "scan")
+			return 0, errors.Wrap(err, "scan")
 		}
 		acpIndexCap = cap
 		acpIndexNext = cap - incrby
@@ -215,14 +215,7 @@ func nextIndex(ctx context.Context) ([]uint32, error) {
 
 	n := acpIndexNext
 	acpIndexNext++
-	return keyIndex(n), nil
-}
-
-func keyIndex(n int64) []uint32 {
-	index := make([]uint32, 2)
-	index[0] = uint32(n >> 31)
-	index[1] = uint32(n & 0x7fffffff)
-	return index
+	return n, nil
 }
 
 func tagsToNullString(tags map[string]interface{}) (*sql.NullString, error) {

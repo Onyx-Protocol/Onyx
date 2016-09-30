@@ -14,6 +14,10 @@ import (
 	"chain/protocol/vmutil"
 )
 
+// SignFunc is the function passed into Sign that produces
+// a signature for a given xpub, derivation path, and hash.
+type SignFunc func(context.Context, string, [][]byte, [32]byte) ([]byte, error)
+
 // WitnessComponent encodes instructions for finalizing a transaction
 // by populating its InputWitness fields. Each WitnessComponent object
 // produces zero or more items for the InputWitness of the txinput it
@@ -21,7 +25,7 @@ import (
 type WitnessComponent interface {
 	// Sign is called to add signatures. Actual signing is delegated to
 	// a callback function.
-	Sign(context.Context, *Template, int, []string, func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error
+	Sign(context.Context, *Template, int, []string, SignFunc) error
 
 	// Materialize is called to turn the component into a vector of
 	// arguments for the input witness.
@@ -80,8 +84,8 @@ type (
 	}
 
 	KeyID struct {
-		XPub           string   `json:"xpub"`
-		DerivationPath []uint32 `json:"derivation_path"`
+		XPub           string               `json:"xpub"`
+		DerivationPath []chainjson.HexBytes `json:"derivation_path"`
 	}
 )
 
@@ -96,7 +100,7 @@ var ErrEmptyProgram = errors.New("empty signature program")
 //  - the mintime and maxtime of the transaction (if non-zero)
 //  - the outpoint and (if non-empty) reference data of the current input
 //  - the assetID, amount, control program, and (if non-empty) reference data of each output.
-func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, xpubs []string, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
+func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, xpubs []string, signFn SignFunc) error {
 	// Compute the predicate to sign. This is either a
 	// txsighash program if tpl.Final is true (i.e., the tx is complete
 	// and no further changes are allowed) or a program enforcing
@@ -124,7 +128,11 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, 
 		if !contains(xpubs, keyID.XPub) {
 			continue
 		}
-		sigBytes, err := signFn(ctx, keyID.XPub, keyID.DerivationPath, h)
+		var path [][]byte
+		for _, p := range keyID.DerivationPath {
+			path = append(path, p)
+		}
+		sigBytes, err := signFn(ctx, keyID.XPub, path, h)
 		if err != nil {
 			return errors.WithDetailf(err, "computing signature %d", i)
 		}

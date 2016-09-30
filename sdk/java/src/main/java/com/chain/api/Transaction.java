@@ -416,7 +416,7 @@ public class Transaction {
        * The derivation path of the extended public key.
        */
       @SerializedName("derivation_path")
-      public ArrayList<Integer> derivationPath;
+      public String[] derivationPath;
     }
   }
 

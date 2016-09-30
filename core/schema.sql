@@ -170,21 +170,6 @@ $$;
 
 
 --
--- Name: key_index(bigint); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION key_index(n bigint) RETURNS integer[]
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	maxint32 int := x'7fffffff'::int;
-BEGIN
-	RETURN ARRAY[(n>>31) & maxint32, n & maxint32];
-END;
-$$;
-
-
---
 -- Name: next_chain_id(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -307,19 +292,6 @@ BEGIN
 
     SELECT res.reservation_id, res.already_existed, CAST(0 AS BIGINT) AS existing_change, available AS amount, (available+unavailable < inp_amt) AS insufficient INTO ret;
     RETURN ret;
-END;
-$$;
-
-
---
--- Name: to_key_index(integer[]); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION to_key_index(n integer[]) RETURNS bigint
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-	RETURN n[1]::bigint<<31 | n[2]::bigint;
 END;
 $$;
 
@@ -1138,3 +1110,4 @@ insert into migrations (filename, hash) values ('2016-09-26.1.core.add-require-a
 insert into migrations (filename, hash) values ('2016-09-29.0.core.drop-archived-columns.sql', '557b8ae9b6604485d7ae7eef2206ce218d4bb3a1ac9bcdac6b4691db1da20208');
 insert into migrations (filename, hash) values ('2016-09-29.1.core.cursors-to-txconsumers.sql', 'ed2fee4f5e726ba76eff4c7e3aaceac7e960164031df7f89e2a33b5de4e25216');
 insert into migrations (filename, hash) values ('2016-09-29.2.core.rename-blockchain-id.sql', 'bc1dab19322441951dcc2a49577f1b477cca8ae2e9b6c6568ba57028606b64fc');
+insert into migrations (filename, hash) values ('2016-09-29.3.signers.remove-key-index.sql', '8764bd97879be6c057343d1c34acb7e1bce1255c78daebaa3b46e49712103086');

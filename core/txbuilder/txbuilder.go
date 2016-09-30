@@ -102,15 +102,19 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, m
 
 // KeyIDs produces KeyIDs from a list of xpubs and a derivation path
 // (applied to all the xpubs).
-func KeyIDs(xpubs []chainkd.XPub, path []uint32) []KeyID {
+func KeyIDs(xpubs []chainkd.XPub, path [][]byte) []KeyID {
 	result := make([]KeyID, 0, len(xpubs))
+	var hexPath []json.HexBytes
+	for _, p := range path {
+		hexPath = append(hexPath, p)
+	}
 	for _, xpub := range xpubs {
-		result = append(result, KeyID{xpub.String(), path})
+		result = append(result, KeyID{xpub.String(), hexPath})
 	}
 	return result
 }
 
-func Sign(ctx context.Context, tpl *Template, xpubs []string, signFn func(context.Context, string, []uint32, [32]byte) ([]byte, error)) error {
+func Sign(ctx context.Context, tpl *Template, xpubs []string, signFn SignFunc) error {
 	for i, sigInst := range tpl.SigningInstructions {
 		for j, c := range sigInst.WitnessComponents {
 			err := c.Sign(ctx, tpl, i, xpubs, signFn)

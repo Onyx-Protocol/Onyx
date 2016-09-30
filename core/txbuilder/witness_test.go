@@ -48,7 +48,7 @@ func TestWitnessJSON(t *testing.T) {
 				Quorum: 4,
 				Keys: []KeyID{{
 					XPub:           "fd",
-					DerivationPath: []uint32{5, 6, 7},
+					DerivationPath: []chainjson.HexBytes{{5, 6, 7}},
 				}},
 				Sigs: []chainjson.HexBytes{{8, 9, 10}},
 			},

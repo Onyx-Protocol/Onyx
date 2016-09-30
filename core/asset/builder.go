@@ -64,7 +64,7 @@ func (a *IssueAction) Build(ctx context.Context, _ time.Time) (
 	txin := bc.NewIssuanceInput(nonce[:], a.Amount, a.ReferenceData, asset.InitialBlockHash, asset.IssuanceProgram, nil)
 
 	tplIn := &txbuilder.SigningInstruction{AssetAmount: a.AssetAmount}
-	path := signers.Path(asset.Signer, signers.AssetKeySpace, nil)
+	path := signers.Path(asset.Signer, signers.AssetKeySpace)
 	keyIDs := txbuilder.KeyIDs(asset.Signer.XPubs, path)
 	_, nrequired, err := vmutil.ParseP2SPMultiSigProgram(asset.IssuanceProgram)
 	if err != nil {

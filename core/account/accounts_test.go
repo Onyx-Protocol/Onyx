@@ -68,7 +68,7 @@ func TestCreateControlProgram(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	want, err := vm.Assemble("DUP TOALTSTACK SHA3 0xf69afcba8cbd2c34d47dfb2f27dfd116fcbc599398aa0166bc7eb8ff1abde796 1 1 CHECKMULTISIG VERIFY FROMALTSTACK 0 CHECKPREDICATE")
+	want, err := vm.Assemble("DUP TOALTSTACK SHA3 0x6dbfeed3d0cffddbda105bfe320072b067304af099c9cff0251d5446412e524a 1 1 CHECKMULTISIG VERIFY FROMALTSTACK 0 CHECKPREDICATE")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

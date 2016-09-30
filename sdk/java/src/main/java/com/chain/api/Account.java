@@ -46,7 +46,7 @@ public class Account {
     public String accountXpub;
 
     @SerializedName("account_derivation_path")
-    public int[] derivationPath;
+    public String[] derivationPath;
   }
 
   public static class Items extends PagedItems<Account> {

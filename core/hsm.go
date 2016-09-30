@@ -59,7 +59,7 @@ func (a *api) mockhsmSignTemplates(ctx context.Context, x struct {
 	return resp
 }
 
-func (a *api) mockhsmSignTemplate(ctx context.Context, xpubstr string, path []uint32, data [32]byte) ([]byte, error) {
+func (a *api) mockhsmSignTemplate(ctx context.Context, xpubstr string, path [][]byte, data [32]byte) ([]byte, error) {
 	var xpub chainkd.XPub
 	err := xpub.UnmarshalText([]byte(xpubstr))
 	if err != nil {

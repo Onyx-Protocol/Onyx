@@ -45,7 +45,7 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 		return nil, errors.Wrap(err, "serializing asset definition")
 	}
 
-	path := signers.Path(assetSigner, signers.AssetKeySpace, nil)
+	path := signers.Path(assetSigner, signers.AssetKeySpace)
 
 	derivedXPubs := chainkd.DeriveXPubs(assetSigner.XPubs, path)
 	derivedPKs := chainkd.XPubKeys(derivedXPubs)

@@ -143,7 +143,7 @@ func (h *HSM) load(ctx context.Context, xpub chainkd.XPub) (xprv chainkd.XPrv, e
 // Sign looks up the xprv given the xpub, optionally derives a new
 // xprv with the given path (but does not store the new xprv), and
 // signs the given msg.
-func (h *HSM) Sign(ctx context.Context, xpub chainkd.XPub, path []uint32, msg []byte) ([]byte, error) {
+func (h *HSM) Sign(ctx context.Context, xpub chainkd.XPub, path [][]byte, msg []byte) ([]byte, error) {
 	xprv, err := h.load(ctx, xpub)
 	if err != nil {
 		return nil, err

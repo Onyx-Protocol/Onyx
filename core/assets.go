@@ -76,7 +76,7 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 			} else {
 				var keys []assetKey
 				for _, xpub := range asset.Signer.XPubs {
-					path := signers.Path(asset.Signer, signers.AssetKeySpace, nil)
+					path := signers.Path(asset.Signer, signers.AssetKeySpace)
 					derived := xpub.Derive(path)
 					keys = append(keys, assetKey{
 						AssetPubkey:         json.HexBytes(derived[:]),

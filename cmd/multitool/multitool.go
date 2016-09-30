@@ -212,13 +212,13 @@ func derive(args []string) {
 	}
 
 	k, _ := input(args, 0, false)
-	path := make([]uint32, 0, len(args)-1)
+	path := make([][]byte, 0, len(args)-1)
 	for _, a := range args[1:] {
-		p, err := strconv.ParseUint(a, 10, 32)
+		p, err := hex.DecodeString(a)
 		if err != nil {
-			errorf("could not parse %s as uint32", a)
+			errorf("could not parse %s as hex string", a)
 		}
-		path = append(path, uint32(p))
+		path = append(path, p)
 	}
 
 	k = strings.TrimSpace(k)

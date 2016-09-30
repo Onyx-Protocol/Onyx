@@ -36,7 +36,7 @@ type (
 		Script []byte
 
 		AccountID           string
-		ControlProgramIndex [2]uint32
+		ControlProgramIndex uint64
 	}
 
 	// Change represents reserved units beyond what was asked for.
@@ -74,7 +74,7 @@ func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *s
 				AS (reservation_id INT, already_existed BOOLEAN, utxo_exists BOOLEAN)
 		`
 		utxosQ = `
-			SELECT account_id, asset_id, amount, key_index(control_program_index), control_program
+			SELECT account_id, asset_id, amount, control_program_index, control_program
 			FROM account_utxos
 			WHERE reservation_id = $1 LIMIT 1
 		`
@@ -104,7 +104,7 @@ func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *s
 		accountID    string
 		assetID      bc.AssetID
 		amount       uint64
-		programIndex pg.Uint32s
+		programIndex uint64
 		controlProg  []byte
 	)
 
@@ -130,10 +130,10 @@ func ReserveUTXO(ctx context.Context, txHash bc.Hash, pos uint32, clientToken *s
 			AssetID: assetID,
 			Amount:  amount,
 		},
-		Script:    controlProg,
-		AccountID: accountID,
+		Script:              controlProg,
+		AccountID:           accountID,
+		ControlProgramIndex: programIndex,
 	}
-	copy(utxo.ControlProgramIndex[:], programIndex[:2])
 
 	return utxo, nil
 }
@@ -166,7 +166,7 @@ func Reserve(ctx context.Context, sources []Source, exp time.Time) (u []*UTXO, c
 		    AS (reservation_id INT, already_existed BOOLEAN, existing_change BIGINT, amount BIGINT, insufficient BOOLEAN)
 		`
 		utxosQ = `
-			SELECT a.tx_hash, a.index, a.amount, key_index(a.control_program_index), a.control_program
+			SELECT a.tx_hash, a.index, a.amount, a.control_program_index, a.control_program
 			FROM account_utxos a
 			WHERE reservation_id = $1
 		`
@@ -230,16 +230,16 @@ func Reserve(ctx context.Context, sources []Source, exp time.Time) (u []*UTXO, c
 			hash bc.Hash,
 			index uint32,
 			amount uint64,
-			programIndex pg.Uint32s,
+			programIndex uint64,
 			script []byte,
 		) {
 			utxo := UTXO{
-				Outpoint:    bc.Outpoint{Hash: hash, Index: index},
-				Script:      script,
-				AssetAmount: bc.AssetAmount{AssetID: source.AssetID, Amount: amount},
-				AccountID:   source.AccountID,
+				Outpoint:            bc.Outpoint{Hash: hash, Index: index},
+				Script:              script,
+				AssetAmount:         bc.AssetAmount{AssetID: source.AssetID, Amount: amount},
+				AccountID:           source.AccountID,
+				ControlProgramIndex: programIndex,
 			}
-			copy(utxo.ControlProgramIndex[:], programIndex)
 			reserved = append(reserved, &utxo)
 		})
 		if err != nil {
