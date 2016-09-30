@@ -149,19 +149,19 @@ public class IouSettlement {
     Corp acme = new Corp("acme", northBank, ctx);
     Corp zzzz = new Corp("zzzz", southBank, ctx);
 
-    // Target is 10 tx/s total.
-    // We are going to do 5tx/s per corp.
-    // We'll also do 5 threads per corp,
+    // Target is 20 tx/s total.
+    // We are going to do 10tx/s per corp.
+    // We'll also do 10 threads per corp,
     // so each thread should do 1 tx/s.
 
     // Number of threads per corp.
-    final int nthread = 5;
+    final int nthread = 10;
 
     // Min time (in ms) between attempts to send each transaction in a thread.
     final long txperiod = 1000;
 
     //final int ntxTotal = 10 * 60*60*24; // should be multiple of 2*nthread
-    final int ntxTotal = 10 * 60 * 30; // start with a half hour's worth
+    final int ntxTotal = 20 * 60 * 30; // start with a half hour's worth
 
     // Number of transactions per thread.
     // nthread * 2 corps * ntx = ntxTotal
