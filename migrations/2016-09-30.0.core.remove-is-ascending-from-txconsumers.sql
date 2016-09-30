@@ -1,0 +1,1 @@
+ALTER TABLE txconsumers DROP COLUMN is_ascending;

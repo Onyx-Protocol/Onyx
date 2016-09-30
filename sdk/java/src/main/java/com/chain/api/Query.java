@@ -17,7 +17,8 @@ public class Query {
   @SerializedName("filter_params")
   public List<String> filterParams;
 
-  public String order;
+  @SerializedName("ascending_with_long_poll")
+  public boolean ascendingWithLongPoll;
 
   public long timeout;
 

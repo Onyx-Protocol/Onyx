@@ -42,7 +42,7 @@ public class NotificationTest {
 
     Transaction.Consumer cnsmr = Transaction.Consumer.create(context, consumer, filter);
     Transaction.QueryBuilder queryer =
-        new Transaction.QueryBuilder().setAfter(cnsmr.after).setAscending().setTimeout(1000);
+        new Transaction.QueryBuilder().setAfter(cnsmr.after).setAscendingWithLongPoll().setTimeout(1000);
 
     ExecutorService executor = Executors.newFixedThreadPool(1);
     Callable<Transaction.Items> task =

@@ -115,10 +115,10 @@ type requestQuery struct {
 	SumBy        []string      `json:"sum_by,omitempty"`
 	PageSize     int           `json:"page_size"`
 
-	// Order and Timeout are used by /list-transactions
+	// AscLongPoll and Timeout are used by /list-transactions
 	// to facilitate notifications.
-	Order   string            `json:"order,omitempty"`
-	Timeout httpjson.Duration `json:"timeout"`
+	AscLongPoll bool              `json:"ascending_with_long_poll,omitempty"`
+	Timeout     httpjson.Duration `json:"timeout"`
 
 	After string `json:"after"`
 

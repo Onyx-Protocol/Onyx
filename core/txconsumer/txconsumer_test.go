@@ -44,7 +44,6 @@ func TestInsertTxConsumerRepeatToken(t *testing.T) {
 	alias := "test_txconsumer"
 	consumer := &TxConsumer{
 		Alias: &alias,
-		Order: "desc",
 	}
 
 	result0, err := insertTxConsumer(ctx, consumer, &token)

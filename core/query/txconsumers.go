@@ -22,19 +22,12 @@ func (ind *Indexer) TxConsumers(ctx context.Context, after string, limit int) ([
 	txconsumers := make([]*txconsumer.TxConsumer, 0, limit)
 	for rows.Next() {
 		var (
-			consumer    txconsumer.TxConsumer
-			alias       sql.NullString
-			isAscending bool
+			consumer txconsumer.TxConsumer
+			alias    sql.NullString
 		)
-		err := rows.Scan(&consumer.ID, &alias, &consumer.Filter, &consumer.After, &isAscending)
+		err := rows.Scan(&consumer.ID, &alias, &consumer.Filter, &consumer.After)
 		if err != nil {
 			return nil, "", errors.Wrap(err, "scanning txconsumer row")
-		}
-
-		if isAscending {
-			consumer.Order = "asc"
-		} else {
-			consumer.Order = "desc"
 		}
 
 		if alias.Valid {
@@ -55,7 +48,7 @@ func (ind *Indexer) TxConsumers(ctx context.Context, after string, limit int) ([
 func constructTxConsumersQuery(after string, limit int) (string, []interface{}) {
 	var vals []interface{}
 
-	q := "SELECT id, alias, filter, after, is_ascending FROM txconsumers WHERE "
+	q := "SELECT id, alias, filter, after FROM txconsumers WHERE "
 	// add after conditions
 	q += fmt.Sprintf("($%d='' OR id < $%d) ", len(vals)+1, len(vals)+1)
 	vals = append(vals, after)

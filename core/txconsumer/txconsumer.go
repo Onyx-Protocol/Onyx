@@ -14,7 +14,6 @@ type TxConsumer struct {
 	Alias  *string `json:"alias"`
 	Filter string  `json:"filter,omitempty"`
 	After  string  `json:"after,omitempty"`
-	Order  string  `json:"order,omitempty"`
 }
 
 func Create(ctx context.Context, alias, filter, after string, clientToken *string) (*TxConsumer, error) {
@@ -37,8 +36,8 @@ func Create(ctx context.Context, alias, filter, after string, clientToken *strin
 // lookup and return the existing txconsumer instead.
 func insertTxConsumer(ctx context.Context, consumer *TxConsumer, clientToken *string) (*TxConsumer, error) {
 	const q = `
-		INSERT INTO txconsumers (alias, filter, after, is_ascending, client_token)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO txconsumers (alias, filter, after, client_token)
+		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (client_token) DO NOTHING
 		RETURNING id
 	`
@@ -48,11 +47,9 @@ func insertTxConsumer(ctx context.Context, consumer *TxConsumer, clientToken *st
 		alias = sql.NullString{Valid: true, String: *consumer.Alias}
 	}
 
-	isAscending := consumer.Order == "asc"
-
 	err := pg.QueryRow(
 		ctx, q, alias, consumer.Filter, consumer.After,
-		isAscending, clientToken).Scan(&consumer.ID)
+		clientToken).Scan(&consumer.ID)
 
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
@@ -72,25 +69,18 @@ func insertTxConsumer(ctx context.Context, consumer *TxConsumer, clientToken *st
 
 func txconsumerByClientToken(ctx context.Context, clientToken string) (*TxConsumer, error) {
 	const q = `
-		SELECT id, alias, filter, after, is_ascending
+		SELECT id, alias, filter, after
 		FROM txconsumers
 		WHERE client_token=$1
 	`
 
 	var (
-		consumer    TxConsumer
-		alias       sql.NullString
-		isAscending bool
+		consumer TxConsumer
+		alias    sql.NullString
 	)
-	err := pg.QueryRow(ctx, q, clientToken).Scan(&consumer.ID, &alias, &consumer.Filter, &consumer.After, &isAscending)
+	err := pg.QueryRow(ctx, q, clientToken).Scan(&consumer.ID, &alias, &consumer.Filter, &consumer.After)
 	if err != nil {
 		return nil, err
-	}
-
-	if isAscending {
-		consumer.Order = "asc"
-	} else {
-		consumer.Order = "desc"
 	}
 
 	if alias.Valid {
@@ -110,25 +100,18 @@ func Find(ctx context.Context, id, alias string) (*TxConsumer, error) {
 	}
 
 	q := `
-		SELECT id, alias, filter, after, is_ascending
+		SELECT id, alias, filter, after
 		FROM txconsumers
 	` + where
 
 	var (
-		consumer    TxConsumer
-		sqlAlias    sql.NullString
-		isAscending bool
+		consumer TxConsumer
+		sqlAlias sql.NullString
 	)
 
-	err := pg.QueryRow(ctx, q, id).Scan(&consumer.ID, &sqlAlias, &consumer.Filter, &consumer.After, &isAscending)
+	err := pg.QueryRow(ctx, q, id).Scan(&consumer.ID, &sqlAlias, &consumer.Filter, &consumer.After)
 	if err != nil {
 		return nil, err
-	}
-
-	if isAscending {
-		consumer.Order = "asc"
-	} else {
-		consumer.Order = "desc"
 	}
 
 	if sqlAlias.Valid {

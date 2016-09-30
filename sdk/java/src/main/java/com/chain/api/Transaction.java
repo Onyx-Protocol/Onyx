@@ -125,12 +125,12 @@ public class Transaction {
     }
 
     /**
-     * Sets the order of this query to ascending ("asc") to facilitate
+     * Sets the ascending_with_long_poll flag on this query to facilitate
      * notifications.
      * @return updated QueryBuilder object
      */
-    public QueryBuilder setAscending() {
-      this.next.order = "asc";
+    public QueryBuilder setAscendingWithLongPoll() {
+      this.next.ascendingWithLongPoll = true;
       return this;
     }
 
@@ -1002,13 +1002,6 @@ public class Transaction {
      * The query filter used in /list-transactions.
      */
     public String filter;
-
-    /**
-     * The direction ("asc" or "desc") that this consumer moves through the
-     * transaction list. Only "asc" (oldest transactions first) is supported
-     * currently.
-     */
-    public String order;
 
     /**
      * Indicates the last transaction consumed by this consumer.
