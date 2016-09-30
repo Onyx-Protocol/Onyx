@@ -14,9 +14,9 @@ import (
 // TODO(kr): GetBlocks is not a generator function.
 // Move this test (and GetBlocks) to another package.
 func TestGetBlocks(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	store, pool := txdb.New(dbtx)
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+	store, pool := txdb.New(db)
 	chain := prottest.NewChainWithStorage(t, store, pool)
 
 	blocks, err := GetBlocks(ctx, chain, 0)
