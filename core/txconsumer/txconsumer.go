@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"chain/core/query/filter"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/httpjson"
@@ -16,7 +17,13 @@ type TxConsumer struct {
 	After  string  `json:"after,omitempty"`
 }
 
-func Create(ctx context.Context, alias, filter, after string, clientToken *string) (*TxConsumer, error) {
+func Create(ctx context.Context, alias, fil, after string, clientToken *string) (*TxConsumer, error) {
+	// Validate the filter.
+	_, err := filter.Parse(fil)
+	if err != nil {
+		return nil, err
+	}
+
 	var ptrAlias *string
 	if alias != "" {
 		ptrAlias = &alias
@@ -24,7 +31,7 @@ func Create(ctx context.Context, alias, filter, after string, clientToken *strin
 
 	consumer := &TxConsumer{
 		Alias:  ptrAlias,
-		Filter: filter,
+		Filter: fil,
 		After:  after,
 	}
 

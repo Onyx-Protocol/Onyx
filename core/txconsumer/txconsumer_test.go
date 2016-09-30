@@ -5,8 +5,10 @@ import (
 	"reflect"
 	"testing"
 
+	"chain/core/query/filter"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/errors"
 )
 
 func TestInsertTxConsumer(t *testing.T) {
@@ -79,5 +81,16 @@ func TestInsertTxConsumerDuplicateAlias(t *testing.T) {
 	_, err = insertTxConsumer(ctx, consumer, &token1)
 	if err.Error() != "non-unique alias: httpjson: bad request" {
 		t.Errorf("expected ErrBadRequest, got %v", err)
+	}
+}
+
+func TestCreateTxConsumerBadFilter(t *testing.T) {
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	token := "test_token_0"
+	alias := "test_txconsumer"
+	fil := "lol i'm not a ~real~ filter"
+	_, err := Create(ctx, alias, fil, "", &token)
+	if errors.Root(err) != filter.ErrBadFilter {
+		t.Errorf("expected ErrBadFilter, got %s", errors.Root(err))
 	}
 }
