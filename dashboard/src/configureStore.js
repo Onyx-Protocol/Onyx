@@ -6,7 +6,6 @@ import { routerMiddleware as createRouterMiddleware } from 'react-router-redux'
 import { history } from './utility/environment'
 
 import makeRootReducer from './reducers'
-import { combineReducers } from 'redux'
 
 const routerMiddleware = createRouterMiddleware(history)
 
