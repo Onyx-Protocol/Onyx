@@ -8,6 +8,10 @@ import (
 	"chain/log"
 )
 
+type key uint8
+
+const usernameKey key = iota
+
 // AuthFunc describes any function that takes a standard username/password pair
 // and attempts to perform authentication. When used in conjunction with
 // BasicHandler, returning ErrNotAuthenticated from an AuthFunc will cause a 401
@@ -34,6 +38,7 @@ func (h BasicHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	username, password, _ := req.BasicAuth()
 	err := h.Auth(req.Context(), username, password)
 	if err == nil {
+		req = req.WithContext(newContext(req.Context(), username))
 		h.Next.ServeHTTP(w, req)
 	} else if err == ErrNotAuthenticated {
 		log.Write(req.Context(),
@@ -52,4 +57,18 @@ func (h BasicHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		)
 		http.Error(w, `{"message": "Internal error"}`, http.StatusInternalServerError)
 	}
+}
+
+func newContext(ctx context.Context, username string) context.Context {
+	return context.WithValue(ctx, usernameKey, username)
+}
+
+// UsernameFromContext returns the basic auth username
+// attached to a context during a request.
+func UsernameFromContext(ctx context.Context) string {
+	user, ok := ctx.Value(usernameKey).(string)
+	if !ok {
+		return ""
+	}
+	return user
 }

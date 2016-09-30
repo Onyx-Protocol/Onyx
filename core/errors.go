@@ -67,6 +67,7 @@ var (
 		accesstoken.ErrBadID:       errorInfo{400, "CH300", "Malformed or empty access token id"},
 		accesstoken.ErrBadType:     errorInfo{400, "CH301", "Access tokens must be type client or network"},
 		accesstoken.ErrDuplicateID: errorInfo{400, "CH302", "Access token id is already in use"},
+		errCurrentToken:            errorInfo{400, "CH310", "The access token used to authenticate this request cannot be deleted"},
 
 		// Query error namespace (6xx)
 		query.ErrBadAfter:               errorInfo{400, "CH600", "Malformed pagination parameter `after`"},

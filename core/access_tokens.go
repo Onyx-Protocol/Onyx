@@ -2,10 +2,14 @@ package core
 
 import (
 	"context"
+	"errors"
 
 	"chain/core/accesstoken"
+	"chain/net/http/authn"
 	"chain/net/http/httpjson"
 )
+
+var errCurrentToken = errors.New("token cannot delete itself")
 
 func createAccessToken(ctx context.Context, x struct{ ID, Type string }) (*accesstoken.Token, error) {
 	return accesstoken.Create(ctx, x.ID, x.Type)
@@ -33,5 +37,9 @@ func listAccessTokens(ctx context.Context, x requestQuery) (*page, error) {
 }
 
 func deleteAccessToken(ctx context.Context, x struct{ ID string }) error {
+	currentID := authn.UsernameFromContext(ctx)
+	if currentID == x.ID {
+		return errCurrentToken
+	}
 	return accesstoken.Delete(ctx, x.ID)
 }
