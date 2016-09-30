@@ -15,6 +15,7 @@ const SPEND_UNSPENT_KEY = 'spend_account_unspent_output'
 const CONTROL_ACCOUNT_KEY = 'control_account'
 const CONTROL_PROGRAM_KEY = 'control_program'
 const RETIRE_ASSET_KEY = 'retire_asset'
+const TRANSACTION_REFERENCE_DATA = 'set_transaction_reference_data'
 
 const actionTypes = [
   {value: ISSUE_KEY, label: 'Issue'},
@@ -22,7 +23,8 @@ const actionTypes = [
   {value: SPEND_UNSPENT_KEY, label: 'Spend Unspent Output'},
   {value: CONTROL_ACCOUNT_KEY, label: 'Control with Account'},
   {value: CONTROL_PROGRAM_KEY, label: 'Control with Program'},
-  {value: RETIRE_ASSET_KEY, label: 'Retire'}
+  {value: RETIRE_ASSET_KEY, label: 'Retire'},
+  {value: TRANSACTION_REFERENCE_DATA, label: 'Set Transaction Reference Data'},
 ]
 
 const visibleFields = {
@@ -31,7 +33,8 @@ const visibleFields = {
   [SPEND_UNSPENT_KEY]: {transaction_id: true, position: true},
   [CONTROL_ACCOUNT_KEY]: {asset: true, account: true, amount: true},
   [CONTROL_PROGRAM_KEY]: {asset: true, control_program: true, amount: true},
-  [RETIRE_ASSET_KEY]: {asset_alias: true, amount: true},
+  [RETIRE_ASSET_KEY]: {asset: true, amount: true},
+  [TRANSACTION_REFERENCE_DATA]: {},
 }
 
 export default class ActionItem extends React.Component {
@@ -49,7 +52,8 @@ export default class ActionItem extends React.Component {
     let typeOnChange = event => {
       let selected = this.props.fieldProps.type.onChange(event).value
       this.setState({
-        selectedType: selected
+        selectedType: selected,
+        referenceDataOpen: selected == TRANSACTION_REFERENCE_DATA
       })
     }
     let typeProps = Object.assign({}, this.props.fieldProps.type, {onChange: typeOnChange})

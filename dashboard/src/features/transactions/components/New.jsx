@@ -10,7 +10,6 @@ class Form extends React.Component {
     this.state = {fields: []}
 
     this.submitWithValidation = this.submitWithValidation.bind(this)
-    this.openReferenceData = this.openReferenceData.bind(this)
     this.addActionItem = this.addActionItem.bind(this)
     this.removeActionItem = this.removeActionItem.bind(this)
 
@@ -33,13 +32,9 @@ class Form extends React.Component {
     })
   }
 
-  openReferenceData() {
-    this.setState({referenceDataOpen: true})
-  }
-
   render() {
     const {
-      fields: { actions, reference_data },
+      fields: { actions },
       error,
       handleSubmit,
       submitting
@@ -76,17 +71,6 @@ class Form extends React.Component {
 
           <hr />
 
-          {this.state.referenceDataOpen &&
-            <JsonField title='Transaction-level reference data' fieldProps={reference_data} />
-          }
-          {!this.state.referenceDataOpen &&
-            <button type='button' className='btn btn-link' onClick={this.openReferenceData}>
-              Add transaction-level reference data
-            </button>
-          }
-
-          <hr />
-
           <p>
             Submitting builds a transaction template, signs the template with
              the Mock HSM, and submits the fully signed template to the blockchain.
@@ -108,9 +92,6 @@ class Form extends React.Component {
 const validate = values => {
   const errors = {actions: {}}
   let fieldError
-
-  fieldError = JsonField.validator(values.reference_data)
-  if (fieldError) { errors.reference_data = fieldError }
 
   values.actions.forEach((action, index) => {
     fieldError = JsonField.validator(values.actions[index].reference_data)
@@ -135,10 +116,6 @@ export default reduxForm({
     'actions[].transaction_id',
     'actions[].position',
     'actions[].reference_data',
-    'reference_data',
   ],
-  initialValues: {
-    reference_data: '{\n\t\n}',
-  },
   validate
 })(Form)
