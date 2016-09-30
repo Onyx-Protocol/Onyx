@@ -3,7 +3,6 @@ package com.chain.integration;
 import com.chain.TestUtils;
 import com.chain.api.Account;
 import com.chain.api.Asset;
-import com.chain.api.Cursor;
 import com.chain.api.MockHsm;
 import com.chain.api.Transaction;
 
@@ -34,16 +33,16 @@ public class NotificationTest {
     long amount = 1000;
     String alice = "TransactionTest.testTransactionNotification.alice";
     String asset = "TransactionTest.testTransactionNotification.test";
-    String cursor = "TransactionTest.testTransactionNotification.cursor";
-    String filter = "outputs(account_alias=$1)";
+    String consumer = "TransactionTest.testTransactionNotification.consumer";
+    String filter = "outputs(account_alias="+alice+")";
 
     new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(context);
 
     new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(context);
 
-    Cursor cur = Cursor.create(context, cursor, filter);
+    Transaction.Consumer cnsmr = Transaction.Consumer.create(context, consumer, filter);
     Transaction.QueryBuilder queryer =
-        new Transaction.QueryBuilder().setAfter(cur.after).setAscending().setTimeout(1000);
+        new Transaction.QueryBuilder().setAfter(cnsmr.after).setAscending().setTimeout(1000);
 
     ExecutorService executor = Executors.newFixedThreadPool(1);
     Callable<Transaction.Items> task =

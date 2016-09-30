@@ -7,7 +7,7 @@ import (
 	"chain/errors"
 )
 
-func TestCursorIsBefore(t *testing.T) {
+func TestTxConsumerIsBefore(t *testing.T) {
 	cases := []struct {
 		a       string
 		b       string
@@ -17,7 +17,7 @@ func TestCursorIsBefore(t *testing.T) {
 		{"1:1-2", "1:2-3", true, nil},
 		{"1:1-2", "2:2-3", true, nil},
 		{"2:1-2", "1:2-3", false, nil},
-		{"not-a-cursor", "also, not a cursor", false, query.ErrBadAfter},
+		{"not-a-consumer", "also, not a consumer", false, query.ErrBadAfter},
 	}
 
 	for _, c := range cases {

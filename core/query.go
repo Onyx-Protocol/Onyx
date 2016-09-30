@@ -474,23 +474,23 @@ func txAccountFromMap(m map[string]interface{}) *txAccount {
 	}
 }
 
-// listCursors is an http handler for listing cursors. It does not take a filter.
+// listTxConsumers is an http handler for listing txconsumers. It does not take a filter.
 //
-// POST /list-cursors
-func (a *api) listCursors(ctx context.Context, in requestQuery) (page, error) {
+// POST /list-transaction-consumers
+func (a *api) listTxConsumers(ctx context.Context, in requestQuery) (page, error) {
 	limit := defGenericPageSize
 	after := in.After
 
-	cursors, after, err := a.indexer.Cursors(ctx, after, limit)
+	txconsumers, after, err := a.indexer.TxConsumers(ctx, after, limit)
 	if err != nil {
-		return page{}, errors.Wrap(err, "running cursor query")
+		return page{}, errors.Wrap(err, "running txconsumer query")
 	}
 
 	out := in
 	out.After = after
 	return page{
-		Items:    httpjson.Array(cursors),
-		LastPage: len(cursors) < limit,
+		Items:    httpjson.Array(txconsumers),
+		LastPage: len(txconsumers) < limit,
 		Next:     out,
 	}, nil
 }

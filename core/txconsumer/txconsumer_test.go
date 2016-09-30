@@ -1,4 +1,4 @@
-package cursor
+package txconsumer
 
 import (
 	"context"
@@ -9,15 +9,15 @@ import (
 	"chain/database/pg/pgtest"
 )
 
-func TestInsertCursor(t *testing.T) {
+func TestInsertTxConsumer(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	token := "test_token"
-	alias := "test_cursor"
-	cur := &Cursor{
+	alias := "test_txconsumer"
+	consumer := &TxConsumer{
 		Alias: &alias,
 	}
 
-	result, err := insertCursor(ctx, cur, &token)
+	result, err := insertTxConsumer(ctx, consumer, &token)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -26,7 +26,7 @@ func TestInsertCursor(t *testing.T) {
 		t.Errorf("expected result.ID to be populated, but was empty")
 	}
 
-	// Verify that the cursor was created.
+	// Verify that the txconsumer was created.
 	var resultAlias string
 	var checkQ = `SELECT alias FROM txconsumers`
 	err = pg.QueryRow(ctx, checkQ).Scan(&resultAlias)
@@ -34,25 +34,25 @@ func TestInsertCursor(t *testing.T) {
 		t.Errorf("unexpected error %v", err)
 	}
 	if resultAlias != alias {
-		t.Errorf("expected new cursor with alias %s, got %s", alias, resultAlias)
+		t.Errorf("expected new txconsumer with alias %s, got %s", alias, resultAlias)
 	}
 }
 
-func TestInsertCursorRepeatToken(t *testing.T) {
+func TestInsertTxConsumerRepeatToken(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	token := "test_token"
-	alias := "test_cursor"
-	cur := &Cursor{
+	alias := "test_txconsumer"
+	consumer := &TxConsumer{
 		Alias: &alias,
 		Order: "desc",
 	}
 
-	result0, err := insertCursor(ctx, cur, &token)
+	result0, err := insertTxConsumer(ctx, consumer, &token)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
 
-	result1, err := insertCursor(ctx, cur, &token)
+	result1, err := insertTxConsumer(ctx, consumer, &token)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -63,21 +63,21 @@ func TestInsertCursorRepeatToken(t *testing.T) {
 	}
 }
 
-func TestInsertCursorDuplicateAlias(t *testing.T) {
+func TestInsertTxConsumerDuplicateAlias(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	token0 := "test_token_0"
 	token1 := "test_token_1"
-	alias := "test_cursor"
-	cur := &Cursor{
+	alias := "test_txconsumer"
+	consumer := &TxConsumer{
 		Alias: &alias,
 	}
 
-	_, err := insertCursor(ctx, cur, &token0)
+	_, err := insertTxConsumer(ctx, consumer, &token0)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
 
-	_, err = insertCursor(ctx, cur, &token1)
+	_, err = insertTxConsumer(ctx, consumer, &token1)
 	if err.Error() != "non-unique alias: httpjson: bad request" {
 		t.Errorf("expected ErrBadRequest, got %v", err)
 	}

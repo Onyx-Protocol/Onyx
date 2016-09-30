@@ -1,4 +1,4 @@
-package cursor
+package txconsumer
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"chain/net/http/httpjson"
 )
 
-type Cursor struct {
+type TxConsumer struct {
 	ID     string  `json:"id,omitempty"`
 	Alias  *string `json:"alias"`
 	Filter string  `json:"filter,omitempty"`
@@ -17,25 +17,25 @@ type Cursor struct {
 	Order  string  `json:"order,omitempty"`
 }
 
-func Create(ctx context.Context, alias, filter, after string, clientToken *string) (*Cursor, error) {
+func Create(ctx context.Context, alias, filter, after string, clientToken *string) (*TxConsumer, error) {
 	var ptrAlias *string
 	if alias != "" {
 		ptrAlias = &alias
 	}
 
-	cur := &Cursor{
+	consumer := &TxConsumer{
 		Alias:  ptrAlias,
 		Filter: filter,
 		After:  after,
 	}
 
-	return insertCursor(ctx, cur, clientToken)
+	return insertTxConsumer(ctx, consumer, clientToken)
 }
 
-// insertCursor adds the cursor to the database. If the cursor has a client token,
-// and there already exists a cursor with that client token, insertCursor will
-// lookup and return the existing cursor instead.
-func insertCursor(ctx context.Context, cur *Cursor, clientToken *string) (*Cursor, error) {
+// insertTxConsumer adds the txconsumer to the database. If the txconsumer has a client token,
+// and there already exists a txconsumer with that client token, insertTxConsumer will
+// lookup and return the existing txconsumer instead.
+func insertTxConsumer(ctx context.Context, consumer *TxConsumer, clientToken *string) (*TxConsumer, error) {
 	const q = `
 		INSERT INTO txconsumers (alias, filter, after, is_ascending, client_token)
 		VALUES ($1, $2, $3, $4, $5)
@@ -44,33 +44,33 @@ func insertCursor(ctx context.Context, cur *Cursor, clientToken *string) (*Curso
 	`
 
 	var alias sql.NullString
-	if cur.Alias != nil {
-		alias = sql.NullString{Valid: true, String: *cur.Alias}
+	if consumer.Alias != nil {
+		alias = sql.NullString{Valid: true, String: *consumer.Alias}
 	}
 
-	isAscending := cur.Order == "asc"
+	isAscending := consumer.Order == "asc"
 
 	err := pg.QueryRow(
-		ctx, q, alias, cur.Filter, cur.After,
-		isAscending, clientToken).Scan(&cur.ID)
+		ctx, q, alias, consumer.Filter, consumer.After,
+		isAscending, clientToken).Scan(&consumer.ID)
 
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
 	} else if err == sql.ErrNoRows && clientToken != nil {
-		// There is already a cursor with the provided client
-		// token. We should return the existing cursor
-		cur, err = cursorByClientToken(ctx, *clientToken)
+		// There is already a txconsumer with the provided client
+		// token. We should return the existing txconsumer
+		consumer, err = txconsumerByClientToken(ctx, *clientToken)
 		if err != nil {
-			return nil, errors.Wrap(err, "retrieving existing cursor")
+			return nil, errors.Wrap(err, "retrieving existing txconsumer")
 		}
 	} else if err != nil {
 		return nil, err
 	}
 
-	return cur, nil
+	return consumer, nil
 }
 
-func cursorByClientToken(ctx context.Context, clientToken string) (*Cursor, error) {
+func txconsumerByClientToken(ctx context.Context, clientToken string) (*TxConsumer, error) {
 	const q = `
 		SELECT id, alias, filter, after, is_ascending
 		FROM txconsumers
@@ -78,29 +78,29 @@ func cursorByClientToken(ctx context.Context, clientToken string) (*Cursor, erro
 	`
 
 	var (
-		cur         Cursor
+		consumer    TxConsumer
 		alias       sql.NullString
 		isAscending bool
 	)
-	err := pg.QueryRow(ctx, q, clientToken).Scan(&cur.ID, &alias, &cur.Filter, &cur.After, &isAscending)
+	err := pg.QueryRow(ctx, q, clientToken).Scan(&consumer.ID, &alias, &consumer.Filter, &consumer.After, &isAscending)
 	if err != nil {
 		return nil, err
 	}
 
 	if isAscending {
-		cur.Order = "asc"
+		consumer.Order = "asc"
 	} else {
-		cur.Order = "desc"
+		consumer.Order = "desc"
 	}
 
 	if alias.Valid {
-		cur.Alias = &alias.String
+		consumer.Alias = &alias.String
 	}
 
-	return &cur, nil
+	return &consumer, nil
 }
 
-func Find(ctx context.Context, id, alias string) (*Cursor, error) {
+func Find(ctx context.Context, id, alias string) (*TxConsumer, error) {
 	where := ` WHERE `
 	if id != "" {
 		where += `id=$1`
@@ -115,27 +115,27 @@ func Find(ctx context.Context, id, alias string) (*Cursor, error) {
 	` + where
 
 	var (
-		cur         Cursor
+		consumer    TxConsumer
 		sqlAlias    sql.NullString
 		isAscending bool
 	)
 
-	err := pg.QueryRow(ctx, q, id).Scan(&cur.ID, &sqlAlias, &cur.Filter, &cur.After, &isAscending)
+	err := pg.QueryRow(ctx, q, id).Scan(&consumer.ID, &sqlAlias, &consumer.Filter, &consumer.After, &isAscending)
 	if err != nil {
 		return nil, err
 	}
 
 	if isAscending {
-		cur.Order = "asc"
+		consumer.Order = "asc"
 	} else {
-		cur.Order = "desc"
+		consumer.Order = "desc"
 	}
 
 	if sqlAlias.Valid {
-		cur.Alias = &sqlAlias.String
+		consumer.Alias = &sqlAlias.String
 	}
 
-	return &cur, nil
+	return &consumer, nil
 }
 
 func Delete(ctx context.Context, id, alias string) error {
@@ -160,13 +160,13 @@ func Delete(ctx context.Context, id, alias string) error {
 	}
 
 	if affected == 0 {
-		return errors.WithDetailf(pg.ErrUserInputNotFound, "could not find and delete cursor with id/alias=%s", id)
+		return errors.WithDetailf(pg.ErrUserInputNotFound, "could not find and delete txconsumer with id/alias=%s", id)
 	}
 
 	return nil
 }
 
-func Update(ctx context.Context, id, alias, after, prev string) (*Cursor, error) {
+func Update(ctx context.Context, id, alias, after, prev string) (*TxConsumer, error) {
 	where := ` WHERE `
 	if id != "" {
 		where += `id=$2`
@@ -176,7 +176,7 @@ func Update(ctx context.Context, id, alias, after, prev string) (*Cursor, error)
 	}
 
 	q := `
-		UPDATE cursors SET after=$1
+		UPDATE txconsumers SET after=$1
 	` + where + ` AND after=$3`
 
 	res, err := pg.Exec(ctx, q, after, id, prev)
@@ -190,10 +190,10 @@ func Update(ctx context.Context, id, alias, after, prev string) (*Cursor, error)
 	}
 
 	if affected == 0 {
-		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "could not find cursor with id/alias=%s and prev=%s", id, prev)
+		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "could not find txconsumer with id/alias=%s and prev=%s", id, prev)
 	}
 
-	return &Cursor{
+	return &TxConsumer{
 		ID:    id,
 		Alias: &alias,
 		After: after,

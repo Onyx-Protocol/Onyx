@@ -974,4 +974,101 @@ public class Transaction {
       return this;
     }
   }
+
+  /**
+   * When used in conjunction with /list-transactions, Consumers can be used to
+   * receive notifications about transactions.
+   */
+  public static class Consumer {
+    /**
+     * Consumer ID, automatically generated when a consumer is created.
+     */
+    public String id;
+
+    /**
+     * An optional, user-supplied alias that can be used to uniquely identify
+     * this consumer.
+     */
+    public String alias;
+
+    /**
+     * The query filter used in /list-transactions.
+     */
+    public String filter;
+
+    /**
+     * The direction ("asc" or "desc") that this consumer moves through the
+     * transaction list. Only "asc" (oldest transactions first) is supported
+     * currently.
+     */
+    public String order;
+
+    /**
+     * Indicates the last transaction consumed by this consumer.
+     */
+    public String after;
+
+    /**
+     * Creates a consumer.
+     *
+     * @param ctx context object that makes requests to core
+     * @param alias an alias which uniquely identifies this consumer
+     * @param filter a query filter which identifies which transactions this consumer consumes
+     * @return a consumer object
+     * @throws ChainException
+     */
+    public static Consumer create(Context ctx, String alias, String filter) throws ChainException {
+      Map<String, Object> req = new HashMap<>();
+      req.put("alias", alias);
+      req.put("filter", filter);
+      req.put("client_token", UUID.randomUUID().toString());
+      return ctx.request("create-transaction-consumer", req, Consumer.class);
+    }
+
+    /**
+     * Retrieves a consumer by ID.
+     *
+     * @param ctx context object that makes requests to core
+     * @param id the consumer id
+     * @return a consumer object
+     * @throws ChainException
+     */
+    public static Consumer getByID(Context ctx, String id) throws ChainException {
+      Map<String, Object> req = new HashMap<>();
+      req.put("id", id);
+      return ctx.request("get-consumer", req, Consumer.class);
+    }
+
+    /**
+     * Retrieves a consumer by alias.
+     *
+     * @param ctx context object that makes requests to core
+     * @param alias the consumer alias
+     * @return a consumer object
+     * @throws ChainException
+     */
+    public static Consumer getByAlias(Context ctx, String alias) throws ChainException {
+      Map<String, Object> req = new HashMap<>();
+      req.put("alias", alias);
+      return ctx.request("get-consumer", req, Consumer.class);
+    }
+
+    /**
+     * Updates a consumer with a new `after`. Consumers can only be updated forwards
+     * (i.e., a consumer cannot be updated with a value that is previous to its
+     * current value).
+     *
+     * @param ctx context object that makes requests to core
+     * @param after an indicator of the last transaction processed
+     * @return a consumer object
+     * @throws ChainException
+     */
+    public Consumer update(Context ctx, String after) throws ChainException {
+      Map<String, Object> req = new HashMap<>();
+      req.put("id", this.id);
+      req.put("previous_after", this.after);
+      req.put("after", after);
+      return ctx.request("update-consumer", req, Consumer.class);
+    }
+  }
 }

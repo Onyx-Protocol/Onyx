@@ -156,11 +156,11 @@ func (a *api) handler() http.Handler {
 	m.Handle("/submit-transaction", jsonHandler(a.submit))
 	m.Handle("/create-control-program", jsonHandler(createControlProgram))
 
-	// Cursors
-	m.Handle("/create-cursor", jsonHandler(a.createCursor))
-	m.Handle("/get-cursor", jsonHandler(getCursor))
-	m.Handle("/update-cursor", jsonHandler(updateCursor))
-	m.Handle("/delete-cursor", jsonHandler(deleteCursor))
+	// TxConsumers
+	m.Handle("/create-transaction-consumer", jsonHandler(a.createTxConsumer))
+	m.Handle("/get-transaction-consumer", jsonHandler(getTxConsumer))
+	m.Handle("/update-transaction-consumer", jsonHandler(updateTxConsumer))
+	m.Handle("/delete-transaction-consumer", jsonHandler(deleteTxConsumer))
 
 	// MockHSM endpoints
 	m.Handle("/mockhsm/create-key", jsonHandler(a.mockhsmCreateKey))
@@ -171,7 +171,7 @@ func (a *api) handler() http.Handler {
 	// Transaction querying
 	m.Handle("/list-accounts", jsonHandler(a.listAccounts))
 	m.Handle("/list-assets", jsonHandler(a.listAssets))
-	m.Handle("/list-cursors", jsonHandler(a.listCursors))
+	m.Handle("/list-transaction-consumers", jsonHandler(a.listTxConsumers))
 	m.Handle("/list-transactions", jsonHandler(a.listTransactions))
 	m.Handle("/list-balances", jsonHandler(a.listBalances))
 	m.Handle("/list-unspent-outputs", jsonHandler(a.listUnspentOutputs))
