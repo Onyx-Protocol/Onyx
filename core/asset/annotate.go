@@ -46,30 +46,39 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 	for assetIDStr := range assetIDStrMap {
 		assetIDStrs = append(assetIDStrs, assetIDStr)
 	}
-	tagsByAssetIDStr := make(map[string]map[string]interface{}, len(assetIDStrs))
-	aliasesByAssetIDStr := make(map[string]string, len(assetIDStrs))
-	localByAssetIDStr := make(map[string]bool, len(assetIDStrs))
+	var (
+		tagsByAssetIDStr    = make(map[string]map[string]interface{}, len(assetIDStrs))
+		defsByAssetIDStr    = make(map[string]map[string]interface{}, len(assetIDStrs))
+		aliasesByAssetIDStr = make(map[string]string, len(assetIDStrs))
+		localByAssetIDStr   = make(map[string]bool, len(assetIDStrs))
+	)
 	const q = `
-		SELECT id, COALESCE(alias, ''), signer_id IS NOT NULL, tags
+		SELECT id, COALESCE(alias, ''), signer_id IS NOT NULL, tags, definition
 		FROM assets
 		LEFT JOIN asset_tags ON asset_id=id
 		WHERE id IN (SELECT unnest($1::text[]))
 	`
 	err := pg.ForQueryRows(ctx, q, pq.StringArray(assetIDStrs),
-		func(assetIDStr, alias string, local bool, tagsBlob []byte) error {
+		func(assetIDStr, alias string, local bool, tagsBlob []byte, defBlob []byte) error {
 			if alias != "" {
 				aliasesByAssetIDStr[assetIDStr] = alias
 			}
 			localByAssetIDStr[assetIDStr] = local
-			if len(tagsBlob) == 0 {
-				return nil
+			if len(tagsBlob) > 0 {
+				var tags map[string]interface{}
+				err := json.Unmarshal(tagsBlob, &tags)
+				if err != nil {
+					return err
+				}
+				tagsByAssetIDStr[assetIDStr] = tags
 			}
-			var tags map[string]interface{}
-			err := json.Unmarshal(tagsBlob, &tags)
-			if err != nil {
-				return err
+			if len(defBlob) > 0 {
+				var def map[string]interface{}
+				err := json.Unmarshal(defBlob, &def)
+				if err == nil { // ignore non-json defs
+					defsByAssetIDStr[assetIDStr] = def
+				}
 			}
-			tagsByAssetIDStr[assetIDStr] = tags
 			return nil
 		},
 	)
@@ -108,6 +117,12 @@ func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 				asMap["asset_is_local"] = "yes"
 			} else {
 				asMap["asset_is_local"] = "no"
+			}
+			def := defsByAssetIDStr[assetIDStr]
+			if def != nil {
+				asMap["asset_definition"] = def
+			} else {
+				asMap["asset_definition"] = empty
 			}
 		}
 	}

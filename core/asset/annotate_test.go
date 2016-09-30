@@ -15,8 +15,9 @@ func TestAnnotateTxs(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 
 	tags1 := map[string]interface{}{"foo": "bar"}
+	def1 := map[string]interface{}{"baz": "bar"}
 
-	asset1, err := Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, bc.Hash{}, "", tags1, nil)
+	asset1, err := Define(ctx, []string{testutil.TestXPub.String()}, 1, def1, bc.Hash{}, "", tags1, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,36 +58,42 @@ func TestAnnotateTxs(t *testing.T) {
 		{
 			"inputs": []interface{}{
 				map[string]interface{}{
-					"asset_id":       asset1.AssetID.String(),
-					"asset_tags":     interface{}(tags1),
-					"asset_is_local": "yes",
+					"asset_id":         asset1.AssetID.String(),
+					"asset_tags":       interface{}(tags1),
+					"asset_is_local":   "yes",
+					"asset_definition": interface{}(def1),
 				},
 				map[string]interface{}{
-					"asset_id":       asset2.AssetID.String(),
-					"asset_tags":     interface{}(tags2),
-					"asset_is_local": "yes",
+					"asset_id":         asset2.AssetID.String(),
+					"asset_tags":       interface{}(tags2),
+					"asset_is_local":   "yes",
+					"asset_definition": map[string]interface{}{},
 				},
 				map[string]interface{}{
-					"asset_id":       "unknown",
-					"asset_tags":     map[string]interface{}{},
-					"asset_is_local": "no",
+					"asset_id":         "unknown",
+					"asset_tags":       map[string]interface{}{},
+					"asset_is_local":   "no",
+					"asset_definition": map[string]interface{}{},
 				},
 			},
 			"outputs": []interface{}{
 				map[string]interface{}{
-					"asset_id":       asset1.AssetID.String(),
-					"asset_tags":     interface{}(tags1),
-					"asset_is_local": "yes",
+					"asset_id":         asset1.AssetID.String(),
+					"asset_tags":       interface{}(tags1),
+					"asset_is_local":   "yes",
+					"asset_definition": interface{}(def1),
 				},
 				map[string]interface{}{
-					"asset_id":       asset2.AssetID.String(),
-					"asset_tags":     interface{}(tags2),
-					"asset_is_local": "yes",
+					"asset_id":         asset2.AssetID.String(),
+					"asset_tags":       interface{}(tags2),
+					"asset_is_local":   "yes",
+					"asset_definition": map[string]interface{}{},
 				},
 				map[string]interface{}{
-					"asset_id":       "unknown",
-					"asset_tags":     map[string]interface{}{},
-					"asset_is_local": "no",
+					"asset_id":         "unknown",
+					"asset_tags":       map[string]interface{}{},
+					"asset_is_local":   "no",
+					"asset_definition": map[string]interface{}{},
 				},
 			},
 		},

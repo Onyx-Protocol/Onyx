@@ -19,25 +19,26 @@ type (
 		Action          interface{} `json:"action"`
 		AssetID         interface{} `json:"asset_id"`
 		AssetAlias      interface{} `json:"asset_alias,omitempty"`
+		AssetDefinition interface{} `json:"asset_definition"`
 		AssetTags       interface{} `json:"asset_tags,omitempty"`
 		AssetIsLocal    interface{} `json:"asset_is_local"`
 		Amount          interface{} `json:"amount"`
 		IssuanceProgram interface{} `json:"issuance_program,omitempty"`
 		SpentOutput     interface{} `json:"spent_output,omitempty"`
 		*txAccount
-		ReferenceData   interface{} `json:"reference_data"`
-		AssetDefinition interface{} `json:"asset_definition"`
-		IsLocal         interface{} `json:"is_local"`
+		ReferenceData interface{} `json:"reference_data"`
+		IsLocal       interface{} `json:"is_local"`
 	}
 	txoutResp struct {
-		Action       interface{} `json:"action"`
-		Purpose      interface{} `json:"purpose,omitempty"`
-		Position     interface{} `json:"position"`
-		AssetID      interface{} `json:"asset_id"`
-		AssetAlias   interface{} `json:"asset_alias,omitempty"`
-		AssetTags    interface{} `json:"asset_tags"`
-		AssetIsLocal interface{} `json:"asset_is_local"`
-		Amount       interface{} `json:"amount"`
+		Action          interface{} `json:"action"`
+		Purpose         interface{} `json:"purpose,omitempty"`
+		Position        interface{} `json:"position"`
+		AssetID         interface{} `json:"asset_id"`
+		AssetAlias      interface{} `json:"asset_alias,omitempty"`
+		AssetDefinition interface{} `json:"asset_definition"`
+		AssetTags       interface{} `json:"asset_tags"`
+		AssetIsLocal    interface{} `json:"asset_is_local"`
+		Amount          interface{} `json:"amount"`
 		*txAccount
 		ControlProgram interface{} `json:"control_program"`
 		ReferenceData  interface{} `json:"reference_data"`
@@ -161,6 +162,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 				Action:          in["action"],
 				AssetID:         in["asset_id"],
 				AssetAlias:      in["asset_alias"],
+				AssetDefinition: in["asset_definition"],
 				AssetTags:       in["asset_tags"],
 				AssetIsLocal:    in["asset_is_local"],
 				Amount:          in["amount"],
@@ -168,7 +170,6 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 				SpentOutput:     in["spent_output"],
 				txAccount:       txAccountFromMap(in),
 				ReferenceData:   in["reference_data"],
-				AssetDefinition: in["asset_definition"],
 				IsLocal:         in["is_local"],
 			}
 			inResps = append(inResps, r)
@@ -176,18 +177,19 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 		outResps := make([]*txoutResp, 0, len(outputs))
 		for _, out := range outputs {
 			r := &txoutResp{
-				Action:         out["action"],
-				Purpose:        out["purpose"],
-				Position:       out["position"],
-				AssetID:        out["asset_id"],
-				AssetAlias:     out["asset_alias"],
-				AssetTags:      out["asset_tags"],
-				AssetIsLocal:   out["asset_is_local"],
-				Amount:         out["amount"],
-				txAccount:      txAccountFromMap(out),
-				ControlProgram: out["control_program"],
-				ReferenceData:  out["reference_data"],
-				IsLocal:        out["is_local"],
+				Action:          out["action"],
+				Purpose:         out["purpose"],
+				Position:        out["position"],
+				AssetID:         out["asset_id"],
+				AssetAlias:      out["asset_alias"],
+				AssetDefinition: out["asset_definition"],
+				AssetTags:       out["asset_tags"],
+				AssetIsLocal:    out["asset_is_local"],
+				Amount:          out["amount"],
+				txAccount:       txAccountFromMap(out),
+				ControlProgram:  out["control_program"],
+				ReferenceData:   out["reference_data"],
+				IsLocal:         out["is_local"],
 			}
 			outResps = append(outResps, r)
 		}
@@ -312,21 +314,22 @@ func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, e
 
 // This type enforces the ordering of JSON fields in API output.
 type utxoResp struct {
-	Action         interface{} `json:"action"`
-	Purpose        interface{} `json:"purpose"`
-	TransactionID  interface{} `json:"transaction_id"`
-	Position       interface{} `json:"position"`
-	AssetID        interface{} `json:"asset_id"`
-	AssetAlias     interface{} `json:"asset_alias"`
-	AssetTags      interface{} `json:"asset_tags"`
-	AssetIsLocal   interface{} `json:"asset_is_local"`
-	Amount         interface{} `json:"amount"`
-	AccountID      interface{} `json:"account_id"`
-	AccountAlias   interface{} `json:"account_alias"`
-	AccountTags    interface{} `json:"account_tags"`
-	ControlProgram interface{} `json:"control_program"`
-	ReferenceData  interface{} `json:"reference_data"`
-	IsLocal        interface{} `json:"is_local"`
+	Action          interface{} `json:"action"`
+	Purpose         interface{} `json:"purpose"`
+	TransactionID   interface{} `json:"transaction_id"`
+	Position        interface{} `json:"position"`
+	AssetID         interface{} `json:"asset_id"`
+	AssetAlias      interface{} `json:"asset_alias"`
+	AssetDefinition interface{} `json:"asset_definition"`
+	AssetTags       interface{} `json:"asset_tags"`
+	AssetIsLocal    interface{} `json:"asset_is_local"`
+	Amount          interface{} `json:"amount"`
+	AccountID       interface{} `json:"account_id"`
+	AccountAlias    interface{} `json:"account_alias"`
+	AccountTags     interface{} `json:"account_tags"`
+	ControlProgram  interface{} `json:"control_program"`
+	ReferenceData   interface{} `json:"reference_data"`
+	IsLocal         interface{} `json:"is_local"`
 }
 
 // POST /list-unspent-outputs
@@ -369,21 +372,22 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 			return result, errors.Wrap(err, "decoding Indexer.Outputs output")
 		}
 		r := &utxoResp{
-			Action:         out["action"],
-			Purpose:        out["purpose"],
-			TransactionID:  out["transaction_id"],
-			Position:       out["position"],
-			AssetID:        out["asset_id"],
-			AssetAlias:     out["asset_alias"],
-			AssetTags:      out["asset_tags"],
-			AssetIsLocal:   out["asset_is_local"],
-			Amount:         out["amount"],
-			AccountID:      out["account_id"],
-			AccountAlias:   out["account_alias"],
-			AccountTags:    out["account_tags"],
-			ControlProgram: out["control_program"],
-			ReferenceData:  out["reference_data"],
-			IsLocal:        out["is_local"],
+			Action:          out["action"],
+			Purpose:         out["purpose"],
+			TransactionID:   out["transaction_id"],
+			Position:        out["position"],
+			AssetID:         out["asset_id"],
+			AssetAlias:      out["asset_alias"],
+			AssetDefinition: out["asset_definition"],
+			AssetTags:       out["asset_tags"],
+			AssetIsLocal:    out["asset_is_local"],
+			Amount:          out["amount"],
+			AccountID:       out["account_id"],
+			AccountAlias:    out["account_alias"],
+			AccountTags:     out["account_tags"],
+			ControlProgram:  out["control_program"],
+			ReferenceData:   out["reference_data"],
+			IsLocal:         out["is_local"],
 		}
 		resp = append(resp, r)
 	}
