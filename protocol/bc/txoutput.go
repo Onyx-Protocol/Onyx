@@ -12,14 +12,14 @@ import (
 
 type (
 	TxOutput struct {
-		AssetVersion uint32
+		AssetVersion uint64
 		OutputCommitment
 		ReferenceData []byte
 	}
 
 	OutputCommitment struct {
 		AssetAmount
-		VMVersion      uint32
+		VMVersion      uint64
 		ControlProgram []byte
 	}
 )
@@ -41,49 +41,55 @@ func NewTxOutput(assetID AssetID, amount uint64, controlProgram, referenceData [
 
 // assumes r has sticky errors
 func (to *TxOutput) readFrom(r io.Reader) (err error) {
-	assetVersion, _ := blockchain.ReadUvarint(r)
-	to.AssetVersion = uint32(assetVersion)
+	to.AssetVersion, _, err = blockchain.ReadVarint63(r)
+	if err != nil {
+		return err
+	}
+
 	err = to.OutputCommitment.readFrom(r, to.AssetVersion)
 	if err != nil {
 		return err
 	}
-	to.ReferenceData, err = blockchain.ReadBytes(r, refDataMaxByteLength)
+
+	to.ReferenceData, _, err = blockchain.ReadVarstr31(r)
 	if err != nil {
 		return err
 	}
+
 	// read and ignore the (empty) output witness
-	_, err = blockchain.ReadBytes(r, commitmentMaxByteLength) // TODO(bobg): What's the right limit here?
-	if err != nil {
-		return err
-	}
-	return nil
+	_, _, err = blockchain.ReadVarstr31(r)
+
+	return err
 }
 
-func (oc *OutputCommitment) readFrom(r io.Reader, assetVersion uint32) (err error) {
-	b, err := blockchain.ReadBytes(r, commitmentMaxByteLength) // TODO(bobg): Is this the right limit here?
+func (oc *OutputCommitment) readFrom(r io.Reader, assetVersion uint64) (err error) {
+	b, _, err := blockchain.ReadVarstr31(r)
 	if err != nil {
 		return err
 	}
+
 	if assetVersion != 1 {
 		return nil
 	}
+
 	rb := bytes.NewBuffer(b)
 	oc.AssetAmount.readFrom(rb)
-	vmVersion, _ := blockchain.ReadUvarint(rb)
-	oc.VMVersion = uint32(vmVersion)
-	oc.ControlProgram, err = blockchain.ReadBytes(rb, MaxProgramByteLength)
+
+	oc.VMVersion, _, err = blockchain.ReadVarint63(rb)
 	if err != nil {
 		return err
 	}
-	return nil
+
+	oc.ControlProgram, _, err = blockchain.ReadVarstr31(rb)
+	return err
 }
 
 // assumes r has sticky errors
 func (to *TxOutput) writeTo(w io.Writer, serflags byte) {
-	blockchain.WriteUvarint(w, uint64(to.AssetVersion))
+	blockchain.WriteVarint63(w, to.AssetVersion) // TODO(bobg): check and return error
 	to.OutputCommitment.writeTo(w, to.AssetVersion)
 	writeRefData(w, to.ReferenceData, serflags)
-	blockchain.WriteBytes(w, nil) // empty output witness
+	blockchain.WriteVarstr31(w, nil)
 }
 
 func (to TxOutput) WitnessHash() Hash {
@@ -96,12 +102,12 @@ func (to TxOutput) Commitment() []byte {
 	return buf.Bytes()
 }
 
-func (oc OutputCommitment) writeTo(w io.Writer, assetVersion uint32) {
+func (oc OutputCommitment) writeTo(w io.Writer, assetVersion uint64) {
 	b := new(bytes.Buffer)
 	if assetVersion == 1 {
 		oc.AssetAmount.writeTo(b)
-		blockchain.WriteUvarint(b, uint64(oc.VMVersion))
-		blockchain.WriteBytes(b, oc.ControlProgram)
+		blockchain.WriteVarint63(b, oc.VMVersion) // TODO(bobg): check and return error
+		blockchain.WriteVarstr31(b, oc.ControlProgram)
 	}
-	blockchain.WriteBytes(w, b.Bytes())
+	blockchain.WriteVarstr31(w, b.Bytes()) // TODO(bobg): check and return error
 }

@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 func TestMarshalBlock(t *testing.T) {
@@ -72,7 +74,7 @@ func TestMarshalBlock(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(*b, c) {
-		t.Errorf("expected marshaled/unmarshaled block to be %+v, got %+v", *b, c)
+		t.Errorf("expected marshaled/unmarshaled block to be:\n%sgot:\n%s", spew.Sdump(*b), spew.Sdump(c))
 	}
 }
 

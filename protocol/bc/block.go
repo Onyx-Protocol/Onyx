@@ -84,7 +84,7 @@ func (b *Block) readFrom(r io.Reader) error {
 		return err
 	}
 	if serflags&SerBlockTransactions == SerBlockTransactions {
-		n, err := blockchain.ReadUvarint(r)
+		n, _, err := blockchain.ReadVarint31(r)
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func (b *Block) WriteTo(w io.Writer) (int64, error) {
 func (b *Block) writeTo(w io.Writer, serflags uint8) {
 	b.BlockHeader.writeTo(w, serflags)
 	if serflags&SerBlockTransactions == SerBlockTransactions {
-		blockchain.WriteUvarint(w, uint64(len(b.Transactions)))
+		blockchain.WriteVarint31(w, uint64(len(b.Transactions))) // TODO(bobg): check and return error
 		for _, tx := range b.Transactions {
 			tx.WriteTo(w)
 		}
@@ -126,7 +126,7 @@ const NewBlockVersion = 1
 // BlockHeader describes necessary data of the block.
 type BlockHeader struct {
 	// Version of the block.
-	Version uint32
+	Version uint64
 
 	// Height of the block in the block chain.
 	// Initial block has height 1.
@@ -213,27 +213,29 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 		return 0, fmt.Errorf("unsupported serialization flags 0x%x", serflags)
 	}
 
-	v, err := blockchain.ReadUvarint(r)
-	if err != nil {
-		return 0, err
-	}
-	bh.Version = uint32(v)
+	var err error
 
-	bh.Height, err = blockchain.ReadUvarint(r)
+	bh.Version, _, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return 0, err
 	}
+
+	bh.Height, _, err = blockchain.ReadVarint63(r)
+	if err != nil {
+		return 0, err
+	}
+
 	_, err = io.ReadFull(r, bh.PreviousBlockHash[:])
 	if err != nil {
 		return 0, err
 	}
 
-	bh.TimestampMS, err = blockchain.ReadUvarint(r)
+	bh.TimestampMS, _, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return 0, err
 	}
 
-	commitment, err := blockchain.ReadBytes(r, commitmentMaxByteLength)
+	commitment, _, err := blockchain.ReadVarstr31(r)
 	if err != nil {
 		return 0, err
 	}
@@ -242,30 +244,30 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 	}
 	copy(bh.TransactionsMerkleRoot[:], commitment[:32])
 	copy(bh.AssetsMerkleRoot[:], commitment[32:64])
+
 	progReader := bytes.NewReader(commitment[64:])
-	bh.ConsensusProgram, err = blockchain.ReadBytes(progReader, MaxProgramByteLength)
+	bh.ConsensusProgram, _, err = blockchain.ReadVarstr31(progReader)
 	if err != nil {
 		return 0, err
 	}
 
 	if serflags[0]&SerBlockWitness == SerBlockWitness {
-		witness, err := blockchain.ReadBytes(r, witnessMaxByteLength)
+		witness, _, err := blockchain.ReadVarstr31(r)
 		if err != nil {
 			return 0, err
 		}
+
 		witnessReader := bytes.NewReader(witness)
-
-		n, err := blockchain.ReadUvarint(witnessReader)
+		n, _, err := blockchain.ReadVarint31(witnessReader)
 		if err != nil {
 			return 0, err
 		}
-
 		for ; n > 0; n-- {
-			w, err := blockchain.ReadBytes(witnessReader, witnessMaxByteLength)
+			wb, _, err := blockchain.ReadVarstr31(witnessReader)
 			if err != nil {
 				return 0, errors.Wrap(err, "reading block witness")
 			}
-			bh.Witness = append(bh.Witness, w)
+			bh.Witness = append(bh.Witness, wb)
 		}
 	}
 
@@ -288,27 +290,58 @@ func (bh *BlockHeader) WriteForSigTo(w io.Writer) (int64, error) {
 // writeTo writes bh to w.
 func (bh *BlockHeader) writeTo(w io.Writer, serflags uint8) error {
 	w.Write([]byte{serflags})
-	blockchain.WriteUvarint(w, uint64(bh.Version))
-	blockchain.WriteUvarint(w, bh.Height)
-	w.Write(bh.PreviousBlockHash[:])
-	blockchain.WriteUvarint(w, bh.TimestampMS)
+
+	var err error
+
+	_, err = blockchain.WriteVarint63(w, bh.Version)
+	if err != nil {
+		return err
+	}
+	_, err = blockchain.WriteVarint63(w, bh.Height)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(bh.PreviousBlockHash[:])
+	if err != nil {
+		return err
+	}
+	_, err = blockchain.WriteVarint63(w, bh.TimestampMS)
+	if err != nil {
+		return err
+	}
 
 	var commitment bytes.Buffer
 	commitment.Write(bh.TransactionsMerkleRoot[:])
 	commitment.Write(bh.AssetsMerkleRoot[:])
-	blockchain.WriteBytes(&commitment, bh.ConsensusProgram)
+	_, err = blockchain.WriteVarstr31(&commitment, bh.ConsensusProgram)
+	if err != nil {
+		return err
+	}
 
-	blockchain.WriteBytes(w, commitment.Bytes())
+	_, err = blockchain.WriteVarstr31(w, commitment.Bytes())
+	if err != nil {
+		return err
+	}
 
 	if serflags&SerBlockWitness == SerBlockWitness {
 		var witnessBuf bytes.Buffer
 
-		blockchain.WriteUvarint(&witnessBuf, uint64(len(bh.Witness)))
-		for _, witness := range bh.Witness {
-			blockchain.WriteBytes(&witnessBuf, witness)
+		_, err = blockchain.WriteVarint31(&witnessBuf, uint64(len(bh.Witness)))
+		if err != nil {
+			return err
 		}
 
-		blockchain.WriteBytes(w, witnessBuf.Bytes())
+		for _, witness := range bh.Witness {
+			_, err = blockchain.WriteVarstr31(&witnessBuf, witness)
+			if err != nil {
+				return err
+			}
+		}
+
+		_, err = blockchain.WriteVarstr31(w, witnessBuf.Bytes())
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

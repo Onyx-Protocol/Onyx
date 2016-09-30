@@ -183,7 +183,7 @@ func TestTransaction(t *testing.T) {
 			t.Errorf("test %d: unexpected err %v", i, err)
 		}
 		if !reflect.DeepEqual(*tx1, test.tx.TxData) {
-			t.Errorf("test %d: tx1 = %v want %v", i, *tx1, test.tx.TxData)
+			t.Errorf("test %d: tx1 is:\n%swant:\n%s", i, spew.Sdump(*tx1), spew.Sdump(test.tx.TxData))
 		}
 	}
 }

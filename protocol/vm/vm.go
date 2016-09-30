@@ -49,6 +49,10 @@ func VerifyTxInput(tx *bc.Tx, inputIndex int) (ok bool, err error) {
 }
 
 func verifyTxInput(tx *bc.Tx, inputIndex int) (bool, error) {
+	if inputIndex < 0 || inputIndex >= len(tx.Inputs) {
+		return false, ErrBadValue
+	}
+
 	txinput := tx.Inputs[inputIndex]
 
 	var program []byte

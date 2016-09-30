@@ -61,7 +61,7 @@ func opCheckOutput(vm *virtualMachine) error {
 	if o.Amount != uint64(amount) {
 		return vm.pushBool(false, true)
 	}
-	if o.VMVersion != uint32(vmVersion) {
+	if o.VMVersion != uint64(vmVersion) {
 		return vm.pushBool(false, true)
 	}
 	if !bytes.Equal(o.ControlProgram, prog) {

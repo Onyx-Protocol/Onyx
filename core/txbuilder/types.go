@@ -39,7 +39,7 @@ func (t *Template) Hash(idx int) bc.Hash {
 
 // SigningInstruction gives directions for signing inputs in a TxTemplate.
 type SigningInstruction struct {
-	Position uint32 `json:"position"`
+	Position int `json:"position"`
 	bc.AssetAmount
 	WitnessComponents []WitnessComponent `json:"witness_components,omitempty"`
 }
@@ -47,7 +47,7 @@ type SigningInstruction struct {
 func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 	var pre struct {
 		bc.AssetAmount
-		Position          uint32            `json:"position"`
+		Position          int               `json:"position"`
 		WitnessComponents []json.RawMessage `json:"witness_components"`
 	}
 	err := json.Unmarshal(b, &pre)

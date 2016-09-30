@@ -156,8 +156,8 @@ func ValidateTx(tx *bc.Tx) error {
 		}
 	}
 
-	if len(tx.Outputs) > math.MaxUint32 {
-		return errors.WithDetail(ErrBadTx, "number of outputs overflows uint32")
+	if len(tx.Outputs) > math.MaxInt32 {
+		return errors.WithDetail(ErrBadTx, "number of outputs overflows int32")
 	}
 
 	// Check that every output has a valid value.
@@ -183,6 +183,10 @@ func ValidateTx(tx *bc.Tx) error {
 		if val != 0 {
 			return errors.WithDetailf(ErrBadTx, "amounts for asset %s are not balanced on inputs and outputs", asset)
 		}
+	}
+
+	if len(tx.Inputs) > math.MaxInt32 {
+		return errors.WithDetail(ErrBadTx, "number of inputs overflows int32")
 	}
 
 	for i := range tx.Inputs {

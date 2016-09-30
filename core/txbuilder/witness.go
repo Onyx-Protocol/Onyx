@@ -106,7 +106,7 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, 
 	// and no further changes are allowed) or a program enforcing
 	// constraints derived from the existing outputs and current input.
 	if len(sw.Program) == 0 {
-		sw.Program = buildSigProgram(tpl, int(tpl.SigningInstructions[index].Position))
+		sw.Program = buildSigProgram(tpl, tpl.SigningInstructions[index].Position)
 		if len(sw.Program) == 0 {
 			return ErrEmptyProgram
 		}

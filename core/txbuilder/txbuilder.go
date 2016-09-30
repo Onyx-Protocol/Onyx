@@ -77,7 +77,7 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, m
 		}
 
 		for i := range txins {
-			sigInsts[i].Position = uint32(len(tx.Inputs))
+			sigInsts[i].Position = len(tx.Inputs)
 			tplSigInsts = append(tplSigInsts, sigInsts[i])
 			tx.Inputs = append(tx.Inputs, txins[i])
 		}

@@ -14,19 +14,9 @@ import (
 	"chain/errors"
 )
 
-const (
-	// CurrentTransactionVersion is the current latest
-	// supported transaction version.
-	CurrentTransactionVersion = 1
-
-	VMVersion = 1
-)
-
-const (
-	refDataMaxByteLength      = 500000 // 500 kb
-	witnessMaxByteLength      = 500000 // 500 kb TODO(bobg): move this where it makes sense for block.go to share it
-	commonFieldsMaxByteLength = 500000 // 500 kb
-)
+// CurrentTransactionVersion is the current latest
+// supported transaction version.
+const CurrentTransactionVersion = 1
 
 // Tx holds a transaction along with its hash.
 type Tx struct {
@@ -70,7 +60,7 @@ const (
 // Most users will want to use Tx instead;
 // it includes the hash.
 type TxData struct {
-	Version       uint32
+	Version       uint64
 	Inputs        []*TxInput
 	Outputs       []*TxOutput
 	MinTime       uint64
@@ -131,33 +121,35 @@ func (tx *TxData) readFrom(r io.Reader) error {
 		return fmt.Errorf("unsupported serflags %#x", serflags[0])
 	}
 
-	v, err := blockchain.ReadUvarint(r)
+	tx.Version, _, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return err
 	}
-	tx.Version = uint32(v)
 
-	commonFields, err := blockchain.ReadBytes(r, commonFieldsMaxByteLength)
+	commonFields, _, err := blockchain.ReadVarstr31(r)
 	if err != nil {
 		return err
 	}
+
 	buf := bytes.NewReader(commonFields)
-	tx.MinTime, err = blockchain.ReadUvarint(buf)
+
+	tx.MinTime, _, err = blockchain.ReadVarint63(buf)
 	if err != nil {
 		return err
 	}
-	tx.MaxTime, err = blockchain.ReadUvarint(buf)
+
+	tx.MaxTime, _, err = blockchain.ReadVarint63(buf)
 	if err != nil {
 		return err
 	}
 
 	// Common witness, empty in v1
-	_, err = blockchain.ReadBytes(r, witnessMaxByteLength)
+	_, _, err = blockchain.ReadVarstr31(r)
 	if err != nil {
 		return err
 	}
 
-	n, err := blockchain.ReadUvarint(r)
+	n, _, err := blockchain.ReadVarint31(r)
 	if err != nil {
 		return err
 	}
@@ -170,7 +162,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 		tx.Inputs = append(tx.Inputs, ti)
 	}
 
-	n, err = blockchain.ReadUvarint(r)
+	n, _, err = blockchain.ReadVarint31(r)
 	if err != nil {
 		return err
 	}
@@ -183,7 +175,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 		tx.Outputs = append(tx.Outputs, to)
 	}
 
-	tx.ReferenceData, err = blockchain.ReadBytes(r, refDataMaxByteLength)
+	tx.ReferenceData, _, err = blockchain.ReadVarstr31(r)
 	return err
 }
 
@@ -192,13 +184,8 @@ func (p *Outpoint) readFrom(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	index, err := blockchain.ReadUvarint(r)
-	if err != nil {
-		return err
-	}
-	// TODO(bobg): range check index
-	p.Index = uint32(index)
-	return nil
+	p.Index, _, err = blockchain.ReadVarint31(r)
+	return err
 }
 
 // Hash computes the hash of the transaction with reference data fields
@@ -221,13 +208,13 @@ func (tx *TxData) WitnessHash() Hash {
 	txhash := tx.Hash()
 	b.Write(txhash[:])
 
-	blockchain.WriteUvarint(&b, uint64(len(tx.Inputs)))
+	blockchain.WriteVarint31(&b, uint64(len(tx.Inputs))) // TODO(bobg): check and return error
 	for _, txin := range tx.Inputs {
 		h := txin.WitnessHash()
 		b.Write(h[:])
 	}
 
-	blockchain.WriteUvarint(&b, uint64(len(tx.Outputs)))
+	blockchain.WriteVarint31(&b, uint64(len(tx.Outputs))) // TODO(bobg): check and return error
 	for _, txout := range tx.Outputs {
 		h := txout.WitnessHash()
 		b.Write(h[:])
@@ -245,12 +232,22 @@ func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
 		return h, fmt.Errorf("not an issuance input")
 	}
 	buf := sha3.New256()
-	blockchain.WriteBytes(buf, ii.Nonce)
+
+	_, err = blockchain.WriteVarstr31(buf, ii.Nonce)
+	if err != nil {
+		return h, err
+	}
 	assetID := ii.AssetID()
 	buf.Write(assetID[:])
-	blockchain.WriteUvarint(buf, tx.MinTime)
-	blockchain.WriteUvarint(buf, tx.MaxTime)
-	copy(h[:], buf.Sum(nil))
+	_, err = blockchain.WriteVarint63(buf, tx.MinTime)
+	if err != nil {
+		return h, err
+	}
+	_, err = blockchain.WriteVarint63(buf, tx.MaxTime)
+	if err != nil {
+		return h, err
+	}
+	buf.Sum(h[:0])
 	return h, nil
 }
 
@@ -277,7 +274,7 @@ func (s *SigHasher) Hash(idx int) Hash {
 	}
 	var buf bytes.Buffer
 	buf.Write((*s.txHash)[:])
-	blockchain.WriteUvarint(&buf, uint64(idx))
+	blockchain.WriteVarint31(&buf, uint64(idx)) // TODO(bobg): check and return error
 
 	var h Hash
 	inp := s.txData.Inputs[idx]
@@ -296,7 +293,6 @@ func (s *SigHasher) Hash(idx int) Hash {
 	return sha3.Sum256(buf.Bytes())
 }
 
-// MarshalText satisfies blockchain.TextMarshaller interface
 func (tx *TxData) MarshalText() ([]byte, error) {
 	var buf bytes.Buffer
 	tx.WriteTo(&buf) // error is impossible
@@ -315,23 +311,23 @@ func (tx *TxData) WriteTo(w io.Writer) (int64, error) {
 // assumes w has sticky errors
 func (tx *TxData) writeTo(w io.Writer, serflags byte) {
 	w.Write([]byte{serflags})
-	blockchain.WriteUvarint(w, uint64(tx.Version))
+	blockchain.WriteVarint63(w, tx.Version) // TODO(bobg): check and return error
 
 	// common fields
 	var buf bytes.Buffer
-	blockchain.WriteUvarint(&buf, tx.MinTime)
-	blockchain.WriteUvarint(&buf, tx.MaxTime)
-	blockchain.WriteBytes(w, buf.Bytes())
+	blockchain.WriteVarint63(&buf, tx.MinTime) // TODO(bobg): check and return error
+	blockchain.WriteVarint63(&buf, tx.MaxTime) // TODO(bobg): check and return error
+	blockchain.WriteVarstr31(w, buf.Bytes())
 
 	// common witness
-	blockchain.WriteBytes(w, []byte{})
+	blockchain.WriteVarstr31(w, []byte{})
 
-	blockchain.WriteUvarint(w, uint64(len(tx.Inputs)))
+	blockchain.WriteVarint31(w, uint64(len(tx.Inputs))) // TODO(bobg): check and return error
 	for _, ti := range tx.Inputs {
 		ti.writeTo(w, serflags)
 	}
 
-	blockchain.WriteUvarint(w, uint64(len(tx.Outputs)))
+	blockchain.WriteVarint31(w, uint64(len(tx.Outputs))) // TODO(bobg): check and return error
 	for _, to := range tx.Outputs {
 		to.writeTo(w, serflags)
 	}
@@ -351,8 +347,8 @@ func (p Outpoint) WriteTo(w io.Writer) (int64, error) {
 	if err != nil {
 		return int64(n), err
 	}
-	u, err := blockchain.WriteUvarint(w, uint64(p.Index))
-	return int64(n + u), err
+	n2, err := blockchain.WriteVarint31(w, uint64(p.Index))
+	return int64(n + n2), err
 }
 
 type AssetAmount struct {
@@ -363,21 +359,21 @@ type AssetAmount struct {
 // assumes r has sticky errors
 func (a *AssetAmount) readFrom(r io.Reader) {
 	io.ReadFull(r, a.AssetID[:])
-	a.Amount, _ = blockchain.ReadUvarint(r)
+	a.Amount, _, _ = blockchain.ReadVarint63(r) // TODO(bobg): check and return error
 }
 
 // assumes w has sticky errors
 func (a AssetAmount) writeTo(w io.Writer) {
 	w.Write(a.AssetID[:])
-	blockchain.WriteUvarint(w, a.Amount)
+	blockchain.WriteVarint63(w, a.Amount) // TODO(bobg): check and return error
 }
 
 // assumes w has sticky errors
 func writeRefData(w io.Writer, data []byte, serflags byte) {
 	if serflags&SerMetadata != 0 {
-		blockchain.WriteBytes(w, data)
+		blockchain.WriteVarstr31(w, data) // TODO(bobg): check and return error
 	} else {
 		h := fastHash(data)
-		blockchain.WriteBytes(w, h)
+		blockchain.WriteVarstr31(w, h)
 	}
 }
