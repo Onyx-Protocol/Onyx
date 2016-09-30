@@ -80,7 +80,8 @@ func Reset(ctx context.Context, db pg.DB) error {
 			signed_blocks,
 			signers,
 			snapshots,
-			submitted_txs
+			submitted_txs,
+			txconsumers
 			RESTART IDENTITY;
 	`
 
