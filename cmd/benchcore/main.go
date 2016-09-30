@@ -87,7 +87,7 @@ func main() {
 	log.SetFlags(log.Ldate | log.Lmicroseconds)
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [-d] X.java\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [-d] [-p] X.java\n", os.Args[0])
 		fmt.Fprint(os.Stderr, usage)
 		flag.PrintDefaults()
 	}
@@ -691,6 +691,11 @@ Readme.md in the root of this repo for instructions.
 
 X.java can have any file name. It is expected to have
 a public class of the same name containing the entry point.
+
+If flag -p is given, benchcore will save the cored binary
+to a file, along with heap and cpu profiles (captured once
+every three minutes) to files cored, heapTTT, and cpuTTT,
+where TTT is a unix timestamp.
 
 On successful exit of the test driver, benchcore will delete
 the AWS resources it created. If there is a failure, it will
