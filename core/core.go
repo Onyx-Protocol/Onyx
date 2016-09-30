@@ -143,7 +143,7 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"is_signer":                         a.config.IsSigner,
 		"is_generator":                      a.config.IsGenerator,
 		"generator_url":                     a.config.GeneratorURL,
-		"initial_block_hash":                a.config.BlockchainID,
+		"blockchain_id":                     a.config.BlockchainID,
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
@@ -165,7 +165,7 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 // for signing blocks, and assigns it to c.BlockXPub.
 //
 // If c.IsGenerator is true, Configure creates an initial block,
-// saves it, and assigns its hash to c.InitialBlockHash.
+// saves it, and assigns its hash to c.BlockchainID.
 // Otherwise, c.IsGenerator is false, and Configure makes a test request
 // to GeneratorURL to detect simple configuration mistakes.
 func Configure(ctx context.Context, db pg.DB, c *Config) error {
@@ -233,7 +233,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	}
 
 	const q = `
-		INSERT INTO config (is_signer, block_xpub, is_generator, initial_block_hash, generator_url,
+		INSERT INTO config (is_signer, block_xpub, is_generator, blockchain_id, generator_url,
 			network_authed, client_authed, configured_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
 	`
@@ -266,7 +266,7 @@ func configure(ctx context.Context, x *Config) error {
 // LoadConfig loads the stored configuration, if any, from the database/
 func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
-			SELECT is_signer, is_generator, initial_block_hash, generator_url, block_xpub,
+			SELECT is_signer, is_generator, blockchain_id, generator_url, block_xpub,
 			network_authed, client_authed, configured_at
 			FROM config
 		`

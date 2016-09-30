@@ -16,7 +16,7 @@ const config = {
   fields: [
     'is_generator',
     'generator_url',
-    'initial_block_hash'
+    'blockchain_id'
   ]
 }
 

@@ -73,7 +73,7 @@ export default class Index extends React.Component {
               </tr>
               <tr>
                 <td className={styles.row_label}>Blockchain ID:</td>
-                <td><code className={styles.block_hash}>{this.props.core.initialBlockHash}</code></td>
+                <td><code className={styles.block_hash}>{this.props.core.blockchainID}</code></td>
               </tr>
             </tbody>
           </table>

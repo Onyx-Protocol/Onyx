@@ -48,8 +48,8 @@ export const generator = (state, action) =>
   coreConfigReducer('is_generator', state, false, action)
 export const generatorUrl = (state, action) =>
   coreConfigReducer('generator_url', state, false, action)
-export const initialBlockHash = (state, action) =>
-  coreConfigReducer('initial_block_hash', state, 0, action)
+export const blockchainID = (state, action) =>
+  coreConfigReducer('blockchain_id', state, 0, action)
 
 
 export const replicationLag = (state = null, action) => {
@@ -72,5 +72,5 @@ export default combineReducers({
   replicationLag,
   generator,
   generatorUrl,
-  initialBlockHash
+  blockchainID
 })

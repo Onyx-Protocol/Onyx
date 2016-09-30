@@ -21,7 +21,7 @@ export default class Index extends React.Component {
   }
 
   submitWithValidation(data) {
-    if (data.generator_url && !data.initial_block_hash) {
+    if (data.generator_url && !data.blockchain_id) {
       return new Promise((_, reject) => reject({
         _error: 'You must specify a blockchain ID to connect to a network'
       }))
@@ -38,7 +38,7 @@ export default class Index extends React.Component {
       fields: {
         is_generator,
         generator_url,
-        initial_block_hash
+        blockchain_id
       },
       error,
       handleSubmit,
@@ -108,7 +108,7 @@ export default class Index extends React.Component {
                 <TextField
                   title='Blockchain ID'
                   placeholder='896a800000000000000'
-                  fieldProps={initial_block_hash} />
+                  fieldProps={blockchain_id} />
               </div>
 
               {submitButton}
