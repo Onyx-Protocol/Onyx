@@ -469,3 +469,24 @@ func txAccountFromMap(m map[string]interface{}) *txAccount {
 		AccountTags:  m["account_tags"],
 	}
 }
+
+// listCursors is an http handler for listing cursors. It does not take a filter.
+//
+// POST /list-cursors
+func (a *api) listCursors(ctx context.Context, in requestQuery) (page, error) {
+	limit := defGenericPageSize
+	after := in.After
+
+	cursors, after, err := a.indexer.Cursors(ctx, after, limit)
+	if err != nil {
+		return page{}, errors.Wrap(err, "running cursor query")
+	}
+
+	out := in
+	out.After = after
+	return page{
+		Items:    httpjson.Array(cursors),
+		LastPage: len(cursors) < limit,
+		Next:     out,
+	}, nil
+}

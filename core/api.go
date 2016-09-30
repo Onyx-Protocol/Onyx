@@ -171,6 +171,7 @@ func (a *api) handler() http.Handler {
 	// Transaction querying
 	m.Handle("/list-accounts", jsonHandler(a.listAccounts))
 	m.Handle("/list-assets", jsonHandler(a.listAssets))
+	m.Handle("/list-cursors", jsonHandler(a.listCursors))
 	m.Handle("/list-transactions", jsonHandler(a.listTransactions))
 	m.Handle("/list-balances", jsonHandler(a.listBalances))
 	m.Handle("/list-unspent-outputs", jsonHandler(a.listUnspentOutputs))

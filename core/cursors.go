@@ -6,6 +6,9 @@ import (
 	"math"
 
 	"chain/core/cursor"
+	"chain/core/query"
+	"chain/errors"
+	"chain/net/http/httpjson"
 )
 
 // POST /create-cursor
@@ -46,5 +49,35 @@ func updateCursor(ctx context.Context, in struct {
 	Prev  string `json:"prev"`
 	After string `json:"after"`
 }) (*cursor.Cursor, error) {
+	// TODO(tessr): Consider moving this function into the cursor package.
+	// (It's currently outside the cursor package to avoid a dependecy cycle
+	// between cursor and query.)
+	bad, err := txAfterIsBefore(in.After, in.Prev)
+	if err != nil {
+		return nil, err
+	}
+
+	if bad {
+		return nil, errors.WithDetail(httpjson.ErrBadRequest, "new After cannot be before Prev")
+	}
+
 	return cursor.Update(ctx, in.ID, in.Alias, in.Prev, in.After)
+}
+
+// txAfterIsBefore returns true if a is before b. It returns an error if either
+// a or b are not valid query.TxAfters.
+func txAfterIsBefore(a, b string) (bool, error) {
+	aAfter, err := query.DecodeTxAfter(a)
+	if err != nil {
+		return false, err
+	}
+
+	bAfter, err := query.DecodeTxAfter(b)
+	if err != nil {
+		return false, err
+	}
+
+	return aAfter.FromBlockHeight < bAfter.FromBlockHeight ||
+		(aAfter.FromBlockHeight == bAfter.FromBlockHeight &&
+			aAfter.FromPosition < bAfter.FromPosition), nil
 }

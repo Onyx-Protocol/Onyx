@@ -4,23 +4,27 @@ import (
 	"context"
 	"database/sql"
 
-	"chain/core/query"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/httpjson"
 )
 
 type Cursor struct {
-	ID     string `json:"id,omitempty"`
-	Alias  string `json:"alias,omitempty"`
-	Filter string `json:"filter,omitempty"`
-	After  string `json:"after,omitempty"`
-	Order  string `json:"order,omitempty"`
+	ID     string  `json:"id,omitempty"`
+	Alias  *string `json:"alias"`
+	Filter string  `json:"filter,omitempty"`
+	After  string  `json:"after,omitempty"`
+	Order  string  `json:"order,omitempty"`
 }
 
 func Create(ctx context.Context, alias, filter, after string, clientToken *string) (*Cursor, error) {
+	var ptrAlias *string
+	if alias != "" {
+		ptrAlias = &alias
+	}
+
 	cur := &Cursor{
-		Alias:  alias,
+		Alias:  ptrAlias,
 		Filter: filter,
 		After:  after,
 	}
@@ -39,9 +43,9 @@ func insertCursor(ctx context.Context, cur *Cursor, clientToken *string) (*Curso
 		RETURNING id
 	`
 
-	alias := sql.NullString{
-		String: cur.Alias,
-		Valid:  cur.Alias != "",
+	var alias sql.NullString
+	if cur.Alias != nil {
+		alias = sql.NullString{Valid: true, String: *cur.Alias}
 	}
 
 	isAscending := cur.Order == "asc"
@@ -90,7 +94,7 @@ func cursorByClientToken(ctx context.Context, clientToken string) (*Cursor, erro
 	}
 
 	if alias.Valid {
-		cur.Alias = alias.String
+		cur.Alias = &alias.String
 	}
 
 	return &cur, nil
@@ -128,7 +132,7 @@ func Find(ctx context.Context, id, alias string) (*Cursor, error) {
 	}
 
 	if sqlAlias.Valid {
-		cur.Alias = sqlAlias.String
+		cur.Alias = &sqlAlias.String
 	}
 
 	return &cur, nil
@@ -163,15 +167,6 @@ func Delete(ctx context.Context, id, alias string) error {
 }
 
 func Update(ctx context.Context, id, alias, after, prev string) (*Cursor, error) {
-	bad, err := isBefore(after, prev)
-	if err != nil {
-		return nil, err
-	}
-
-	if bad {
-		return nil, errors.WithDetail(httpjson.ErrBadRequest, "new After cannot be before Prev")
-	}
-
 	where := ` WHERE `
 	if id != "" {
 		where += `id=$2`
@@ -200,25 +195,7 @@ func Update(ctx context.Context, id, alias, after, prev string) (*Cursor, error)
 
 	return &Cursor{
 		ID:    id,
-		Alias: alias,
+		Alias: &alias,
 		After: after,
 	}, nil
-}
-
-// isBefore returns true if a is before b. It returns an error if either
-// a or b are not valid query.TxAfters.
-func isBefore(a, b string) (bool, error) {
-	aAfter, err := query.DecodeTxAfter(a)
-	if err != nil {
-		return false, err
-	}
-
-	bAfter, err := query.DecodeTxAfter(b)
-	if err != nil {
-		return false, err
-	}
-
-	return aAfter.FromBlockHeight < bAfter.FromBlockHeight ||
-		(aAfter.FromBlockHeight == bAfter.FromBlockHeight &&
-			aAfter.FromPosition < bAfter.FromPosition), nil
 }
