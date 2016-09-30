@@ -23,7 +23,7 @@ var (
 // Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, maxTime time.Time) (*Template, error) {
+func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Time) (*Template, error) {
 	var local bool
 	if tx == nil {
 		tx = &bc.TxData{
@@ -56,33 +56,33 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, ref json.Map, m
 		tx.MaxTime = bc.Millis(maxTime)
 	}
 
-	if len(ref) != 0 {
-		if len(tx.ReferenceData) != 0 && !bytes.Equal(tx.ReferenceData, ref) {
-			return nil, errors.Wrap(ErrBadRefData)
-		}
-
-		tx.ReferenceData = ref
-	}
-
 	var tplSigInsts []*SigningInstruction
 	for i, action := range actions {
-		txins, txouts, sigInsts, err := action.Build(ctx, maxTime)
+		buildResult, err := action.Build(ctx, maxTime)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "invalid action %d", i)
 		}
 
-		if len(txins) != len(sigInsts) {
+		if len(buildResult.Inputs) != len(buildResult.SigningInstructions) {
 			// This would only happen from a bug in our system
 			return nil, errors.Wrap(fmt.Errorf("%T returned different number of inputs and signing instructions", action))
 		}
 
-		for i := range txins {
-			sigInsts[i].Position = len(tx.Inputs)
-			tplSigInsts = append(tplSigInsts, sigInsts[i])
-			tx.Inputs = append(tx.Inputs, txins[i])
+		for i := range buildResult.Inputs {
+			buildResult.SigningInstructions[i].Position = len(tx.Inputs)
+			tplSigInsts = append(tplSigInsts, buildResult.SigningInstructions[i])
+			tx.Inputs = append(tx.Inputs, buildResult.Inputs[i])
 		}
 
-		tx.Outputs = append(tx.Outputs, txouts...)
+		tx.Outputs = append(tx.Outputs, buildResult.Outputs...)
+
+		if len(buildResult.ReferenceData) > 0 {
+			if len(tx.ReferenceData) != 0 && !bytes.Equal(tx.ReferenceData, buildResult.ReferenceData) {
+				// There can be only one! ...caller that sets reference data
+				return nil, errors.Wrap(ErrBadRefData)
+			}
+			tx.ReferenceData = buildResult.ReferenceData
+		}
 	}
 
 	for _, sigInst := range tplSigInsts {

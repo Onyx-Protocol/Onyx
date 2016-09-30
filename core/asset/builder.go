@@ -41,24 +41,19 @@ func (a IssueAction) GetMinTimeMS() uint64 {
 	return bc.Millis(time.Now().Add(-5 * time.Minute))
 }
 
-func (a *IssueAction) Build(ctx context.Context, _ time.Time) (
-	[]*bc.TxInput,
-	[]*bc.TxOutput,
-	[]*txbuilder.SigningInstruction,
-	error,
-) {
+func (a *IssueAction) Build(ctx context.Context, _ time.Time) (*txbuilder.BuildResult, error) {
 	asset, err := FindByID(ctx, a.AssetID)
 	if errors.Root(err) == pg.ErrUserInputNotFound {
 		err = errors.WithDetailf(err, "missing asset with ID %q", a.AssetID)
 	}
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
 	var nonce [8]byte
 	_, err = rand.Read(nonce[:])
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	txin := bc.NewIssuanceInput(nonce[:], a.Amount, a.ReferenceData, asset.InitialBlockHash, asset.IssuanceProgram, nil)
 
@@ -67,5 +62,5 @@ func (a *IssueAction) Build(ctx context.Context, _ time.Time) (
 	keyIDs := txbuilder.KeyIDs(asset.Signer.XPubs, path)
 	tplIn.AddWitnessKeys(keyIDs, asset.Signer.Quorum)
 
-	return []*bc.TxInput{txin}, nil, []*txbuilder.SigningInstruction{tplIn}, nil
+	return &txbuilder.BuildResult{Inputs: []*bc.TxInput{txin}, SigningInstructions: []*txbuilder.SigningInstruction{tplIn}}, nil
 }

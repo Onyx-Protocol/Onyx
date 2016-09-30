@@ -120,8 +120,10 @@ public class QueryTest {
                     .setAmount(100)
                     .setReferenceData(refData)
                     .addReferenceDataField("test", test))
-            .setReferenceData(refData)
-            .addReferenceDataField("test", test)
+            .addAction(
+                new Transaction.Action.SetTransactionReferenceData()
+                    .setReferenceData(refData)
+                    .addReferenceDataField("test", test))
             .build(context);
     Transaction.submit(context, HsmSigner.sign(issuance));
     Transaction.Items txs =

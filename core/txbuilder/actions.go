@@ -21,12 +21,15 @@ type ControlProgramAction struct {
 	ReferenceData json.Map `json:"reference_data"`
 }
 
-func (c *ControlProgramAction) Build(ctx context.Context, _ time.Time) (
-	[]*bc.TxInput,
-	[]*bc.TxOutput,
-	[]*SigningInstruction,
-	error,
-) {
+func (c *ControlProgramAction) Build(ctx context.Context, _ time.Time) (*BuildResult, error) {
 	out := bc.NewTxOutput(c.AssetID, c.Amount, c.Program, c.ReferenceData)
-	return nil, []*bc.TxOutput{out}, nil, nil
+	return &BuildResult{Outputs: []*bc.TxOutput{out}}, nil
+}
+
+type SetTxRefDataAction struct {
+	Data json.Map `json:"reference_data"`
+}
+
+func (a *SetTxRefDataAction) Build(ctx context.Context, maxTime time.Time) (*BuildResult, error) {
+	return &BuildResult{ReferenceData: a.Data}, nil
 }

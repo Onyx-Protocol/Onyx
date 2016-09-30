@@ -30,7 +30,7 @@ func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, e
 		ttl = defaultTxTTL
 	}
 	maxTime := time.Now().Add(ttl)
-	tpl, err := txbuilder.Build(ctx, req.Tx, req.actions(), req.ReferenceData, maxTime)
+	tpl, err := txbuilder.Build(ctx, req.Tx, req.actions(), maxTime)
 	if err != nil {
 		return nil, err
 	}

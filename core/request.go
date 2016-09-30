@@ -7,7 +7,6 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/txbuilder"
-	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/net/http/httpjson"
 	"chain/protocol/bc"
@@ -40,6 +39,8 @@ func (a *action) UnmarshalJSON(data []byte) error {
 		a.underlying = new(asset.IssueAction)
 	case "spend_account_unspent_output":
 		a.underlying = new(account.SpendUTXOAction)
+	case "set_transaction_reference_data":
+		a.underlying = new(txbuilder.SetTxRefDataAction)
 	default:
 		return errors.WithDetailf(errBadActionType, "unknown type %s", x.Type)
 	}
@@ -47,10 +48,9 @@ func (a *action) UnmarshalJSON(data []byte) error {
 }
 
 type buildRequest struct {
-	Tx            *bc.TxData        `json:"base_transaction"`
-	Actions       []*action         `json:"actions"`
-	ReferenceData chainjson.Map     `json:"reference_data"`
-	TTL           httpjson.Duration `json:"ttl"`
+	Tx      *bc.TxData        `json:"base_transaction"`
+	Actions []*action         `json:"actions"`
+	TTL     httpjson.Duration `json:"ttl"`
 }
 
 func (req *buildRequest) actions() []txbuilder.Action {

@@ -215,7 +215,6 @@ public class Transaction {
      */
     @SerializedName("is_local")
     public String isLocal;
-
   }
 
   /**
@@ -851,6 +850,43 @@ public class Transaction {
     }
 
     /**
+     * Sets the transaction-level reference data.
+     * May only be used once per transaction.
+     */
+    public static class SetTransactionReferenceData extends Action {
+      public SetTransactionReferenceData() {
+        this.put("type", "set_transaction_reference_data");
+      }
+
+      /**
+       * Adds a k,v pair to the action's reference data object.<br>
+       * Since most/all current action types use the reference_data parameter, we provide this method in the base class to avoid repetition.
+       * @param key key of the reference data field
+       * @param value value of reference data field
+       * @return updated SetTransactionReferenceData object
+       */
+      public Action addReferenceDataField(String key, Object value) {
+        Map<String, Object> referenceData = (HashMap<String, Object>) this.get("reference_data");
+        if (referenceData == null) {
+          referenceData = new HashMap<>();
+          this.put("reference_data", referenceData);
+        }
+        referenceData.put(key, value);
+        return this;
+      }
+
+      /**
+       * Specifies the reference data.<br>
+       * @param referenceData reference data to embed into the action
+       * @return updated SetTransactionReferenceData object
+       */
+      public SetTransactionReferenceData setReferenceData(Map<String, Object> referenceData) {
+        this.put("reference_data", referenceData);
+        return this;
+      }
+    }
+
+    /**
      * Sets a k,v parameter pair.
      * @param key the key on the parameter object
      * @param value the corresponding value
@@ -876,12 +912,6 @@ public class Transaction {
      * List of actions in a transaction.
      */
     private List<Action> actions;
-
-    /**
-     * User specified, unstructured data embedded at the top level of the transaction.
-     */
-    @SerializedName("reference_data")
-    private Map<String, Object> referenceData;
 
     /**
      * A time duration in milliseconds. If the transaction is not fully
@@ -936,29 +966,6 @@ public class Transaction {
      */
     public Builder addAction(Action action) {
       this.actions.add(action);
-      return this;
-    }
-
-    /**
-     * Adds a k,v pair to the transaction's reference data object
-     * @param key key of the reference data field
-     * @param value value of reference data field
-     */
-    public Builder addReferenceDataField(String key, Object value) {
-      if (this.referenceData == null) {
-        this.referenceData = new HashMap<>();
-      }
-      this.referenceData.put(key, value);
-      return this;
-    }
-
-    /**
-     * Sets a transaction's reference data.
-     * @param referenceData info to embed into a transaction.
-     * @return updated builder object
-     */
-    public Builder setReferenceData(Map<String, Object> referenceData) {
-      this.referenceData = referenceData;
       return this;
     }
 

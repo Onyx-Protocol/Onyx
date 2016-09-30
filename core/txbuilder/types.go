@@ -82,9 +82,19 @@ func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type Action interface {
-	Build(context.Context, time.Time) ([]*bc.TxInput, []*bc.TxOutput, []*SigningInstruction, error)
-}
+type (
+	BuildResult struct {
+		Inputs               []*bc.TxInput
+		Outputs              []*bc.TxOutput
+		SigningInstructions  []*SigningInstruction
+		MinTimeMS, MaxTimeMS uint64
+		ReferenceData        []byte
+	}
+
+	Action interface {
+		Build(context.Context, time.Time) (*BuildResult, error)
+	}
+)
 
 type ttler interface {
 	GetTTL() time.Duration

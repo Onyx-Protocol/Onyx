@@ -39,7 +39,7 @@ func TestAccountSourceReserve(t *testing.T) {
 	}
 	source := assettest.NewAccountSpendAction(assetAmount1, accID, nil, nil, nil)
 
-	gotTxIns, gotTxOuts, _, err := source.Build(ctx, time.Now().Add(time.Minute))
+	buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -47,19 +47,19 @@ func TestAccountSourceReserve(t *testing.T) {
 
 	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
 
-	if !reflect.DeepEqual(gotTxIns, wantTxIns) {
-		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", gotTxIns, wantTxIns)
+	if !reflect.DeepEqual(buildResult.Inputs, wantTxIns) {
+		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", buildResult.Inputs, wantTxIns)
 	}
 
-	if len(gotTxOuts) != 1 {
+	if len(buildResult.Outputs) != 1 {
 		t.Errorf("expected 1 change output")
 	}
 
-	if gotTxOuts[0].Amount != 1 {
+	if buildResult.Outputs[0].Amount != 1 {
 		t.Errorf("expected change amount to be 1")
 	}
 
-	if !programInAccount(ctx, t, gotTxOuts[0].ControlProgram, accID) {
+	if !programInAccount(ctx, t, buildResult.Outputs[0].ControlProgram, accID) {
 		t.Errorf("expected change control program to belong to account")
 	}
 }
@@ -84,7 +84,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		TTL:    time.Minute,
 	}
 
-	gotTxIns, _, _, err := source.Build(ctx, time.Now().Add(time.Minute))
+	buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -92,8 +92,8 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 
 	wantTxIns := []*bc.TxInput{bc.NewSpendInput(out.Hash, out.Index, nil, out.AssetID, out.Amount, out.ControlProgram, nil)}
 
-	if !reflect.DeepEqual(gotTxIns, wantTxIns) {
-		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", gotTxIns, wantTxIns)
+	if !reflect.DeepEqual(buildResult.Inputs, wantTxIns) {
+		t.Errorf("build txins\ngot:\n\t%+v\nwant:\n\t%+v", buildResult.Inputs, wantTxIns)
 	}
 }
 
@@ -129,15 +129,15 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	prottest.MakeBlock(ctx, t, c)
 
 	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
-		got, _, _, err := source.Build(ctx, time.Now().Add(time.Minute))
+		buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
-		if len(got) != 1 {
+		if len(buildResult.Inputs) != 1 {
 			t.Fatalf("expected 1 result utxo")
 		}
-		return got
+		return buildResult.Inputs
 	}
 
 	var (
@@ -182,17 +182,17 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 		theTxHash := srcTxs[i]
 		source := assettest.NewAccountSpendAction(assetAmt, acc, &theTxHash, nil, nil)
 
-		gotRes, _, _, err := source.Build(ctx, time.Now().Add(time.Minute))
+		buildResult, err := source.Build(ctx, time.Now().Add(time.Minute))
 		if err != nil {
 			t.Log(errors.Stack(err))
 			t.Fatal(err)
 		}
 
-		if len(gotRes) != 1 {
+		if len(buildResult.Inputs) != 1 {
 			t.Fatalf("expected 1 result utxo")
 		}
 
-		got := gotRes[0].Outpoint()
+		got := buildResult.Inputs[0].Outpoint()
 		want := bc.Outpoint{Hash: theTxHash, Index: 0}
 		if got != want {
 			t.Errorf("reserved utxo outpoint got=%v want=%v", got, want)

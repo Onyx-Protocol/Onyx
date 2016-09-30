@@ -59,14 +59,24 @@ func (o outpointConstraint) code() []byte {
 	return builder.Program
 }
 
-// refdataConstraint requires the input refdatahash to match that of
-// the given data.
-type refdataConstraint []byte
+// refdataConstraint requires the refdatahash of the transaction (if
+// tx is true) or the input (if tx is false) to match that of the
+// given data.
+type refdataConstraint struct {
+	data []byte
+	tx   bool
+}
 
 func (r refdataConstraint) code() []byte {
-	h := sha3.Sum256(r)
+	h := sha3.Sum256(r.data)
 	builder := vmutil.NewBuilder()
-	builder.AddData(h[:]).AddOp(vm.OP_REFDATAHASH).AddOp(vm.OP_EQUAL)
+	builder.AddData(h[:])
+	if r.tx {
+		builder.AddOp(vm.OP_TXREFDATAHASH)
+	} else {
+		builder.AddOp(vm.OP_REFDATAHASH)
+	}
+	builder.AddOp(vm.OP_EQUAL)
 	return builder.Program
 }
 

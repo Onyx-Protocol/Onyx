@@ -39,15 +39,10 @@ func (a *SpendAction) GetTTL() time.Duration {
 	return ttl
 }
 
-func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) (
-	[]*bc.TxInput,
-	[]*bc.TxOutput,
-	[]*txbuilder.SigningInstruction,
-	error,
-) {
+func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
 	acct, err := FindByID(ctx, a.AccountID)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "get account info")
+		return nil, errors.Wrap(err, "get account info")
 	}
 
 	utxodbSource := utxodb.Source{
@@ -61,7 +56,7 @@ func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) (
 	utxodbSources := []utxodb.Source{utxodbSource}
 	reserved, change, err := utxodb.Reserve(ctx, utxodbSources, maxTime)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "reserving utxos")
+		return nil, errors.Wrap(err, "reserving utxos")
 	}
 
 	var (
@@ -73,7 +68,7 @@ func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) (
 	for _, r := range reserved {
 		txInput, sigInst, err := utxoToInputs(ctx, acct, r, a.ReferenceData)
 		if err != nil {
-			return nil, nil, nil, errors.Wrap(err, "creating inputs")
+			return nil, errors.Wrap(err, "creating inputs")
 		}
 
 		txins = append(txins, txInput)
@@ -82,12 +77,12 @@ func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) (
 	if len(change) > 0 {
 		acp, err := CreateControlProgram(ctx, a.AccountID, true)
 		if err != nil {
-			return nil, nil, nil, errors.Wrap(err, "creating control program")
+			return nil, errors.Wrap(err, "creating control program")
 		}
 		changeOuts = append(changeOuts, bc.NewTxOutput(a.AssetID, change[0].Amount, acp, nil))
 	}
 
-	return txins, changeOuts, tplInsts, nil
+	return &txbuilder.BuildResult{Inputs: txins, Outputs: changeOuts, SigningInstructions: tplInsts}, nil
 }
 
 type SpendUTXOAction struct {
@@ -108,28 +103,23 @@ func (a *SpendUTXOAction) GetTTL() time.Duration {
 	return ttl
 }
 
-func (a *SpendUTXOAction) Build(ctx context.Context, maxTime time.Time) (
-	[]*bc.TxInput,
-	[]*bc.TxOutput,
-	[]*txbuilder.SigningInstruction,
-	error,
-) {
+func (a *SpendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
 	r, err := utxodb.ReserveUTXO(ctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
 	acct, err := FindByID(ctx, r.AccountID)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
 	txInput, sigInst, err := utxoToInputs(ctx, acct, r, a.ReferenceData)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
-	return []*bc.TxInput{txInput}, nil, []*txbuilder.SigningInstruction{sigInst}, nil
+	return &txbuilder.BuildResult{Inputs: []*bc.TxInput{txInput}, SigningInstructions: []*txbuilder.SigningInstruction{sigInst}}, nil
 }
 
 func utxoToInputs(ctx context.Context, account *Account, u *utxodb.UTXO, refData []byte) (
@@ -165,18 +155,13 @@ type ControlAction struct {
 	ReferenceData json.Map `json:"reference_data"`
 }
 
-func (a *ControlAction) Build(ctx context.Context, _ time.Time) (
-	[]*bc.TxInput,
-	[]*bc.TxOutput,
-	[]*txbuilder.SigningInstruction,
-	error,
-) {
+func (a *ControlAction) Build(ctx context.Context, _ time.Time) (*txbuilder.BuildResult, error) {
 	acp, err := CreateControlProgram(ctx, a.AccountID, false)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	out := bc.NewTxOutput(a.AssetID, a.Amount, acp, a.ReferenceData)
-	return nil, []*bc.TxOutput{out}, nil, nil
+	return &txbuilder.BuildResult{Outputs: []*bc.TxOutput{out}}, nil
 }
 
 // CancelReservations cancels any existing reservations

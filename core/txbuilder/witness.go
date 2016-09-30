@@ -167,8 +167,11 @@ func buildSigProgram(tpl *Template, index int) []byte {
 	if !inp.IsIssuance() {
 		constraints = append(constraints, outpointConstraint(inp.Outpoint()))
 	}
-	if len(inp.ReferenceData) > 0 {
-		constraints = append(constraints, refdataConstraint(inp.ReferenceData))
+	if len(tpl.Transaction.ReferenceData) > 0 {
+		constraints = append(constraints, refdataConstraint{tpl.Transaction.ReferenceData, true})
+	}
+	if len(inp.ReferenceData) > 0 { // TODO(bobg): I think we're making this one unconditional?
+		constraints = append(constraints, refdataConstraint{inp.ReferenceData, false})
 	}
 	for i, out := range tpl.Transaction.Outputs {
 		c := &payConstraint{

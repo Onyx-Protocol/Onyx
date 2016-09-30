@@ -47,7 +47,9 @@ public class TransactionTest {
                     .setAssetAlias(asset)
                     .setAmount(100)
                     .addReferenceDataField("test", test))
-            .addReferenceDataField("test", test)
+            .addAction(
+                new Transaction.Action.SetTransactionReferenceData()
+                    .addReferenceDataField("test", test))
             .build(context);
     Transaction.submit(context, HsmSigner.sign(issuance));
 
@@ -65,7 +67,9 @@ public class TransactionTest {
                     .setAssetAlias(asset)
                     .setAmount(10)
                     .addReferenceDataField("test", test))
-            .addReferenceDataField("test", test)
+            .addAction(
+                new Transaction.Action.SetTransactionReferenceData()
+                    .addReferenceDataField("test", test))
             .build(context);
     Transaction.submit(context, HsmSigner.sign(spending));
 
@@ -82,7 +86,9 @@ public class TransactionTest {
                     .setAssetAlias(asset)
                     .setAmount(5)
                     .addReferenceDataField("test", test))
-            .addReferenceDataField("test", test)
+            .addAction(
+                new Transaction.Action.SetTransactionReferenceData()
+                    .addReferenceDataField("test", test))
             .build(context);
     Transaction.submit(context, HsmSigner.sign(retirement));
   }

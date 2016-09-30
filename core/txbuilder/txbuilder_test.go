@@ -25,16 +25,11 @@ import (
 
 type testAction bc.AssetAmount
 
-func (t testAction) Build(ctx context.Context, _ time.Time) (
-	[]*bc.TxInput,
-	[]*bc.TxOutput,
-	[]*SigningInstruction,
-	error,
-) {
+func (t testAction) Build(ctx context.Context, _ time.Time) (*BuildResult, error) {
 	in := bc.NewSpendInput([32]byte{255}, 0, nil, t.AssetID, t.Amount, nil, nil)
 	tplIn := &SigningInstruction{}
 	change := bc.NewTxOutput(t.AssetID, t.Amount, []byte("change"), nil)
-	return []*bc.TxInput{in}, []*bc.TxOutput{change}, []*SigningInstruction{tplIn}, nil
+	return &BuildResult{Inputs: []*bc.TxInput{in}, Outputs: []*bc.TxOutput{change}, SigningInstructions: []*SigningInstruction{tplIn}}, nil
 }
 
 func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *ControlProgramAction {
@@ -63,9 +58,10 @@ func TestBuild(t *testing.T) {
 	actions := []Action{
 		newControlProgramAction(bc.AssetAmount{AssetID: [32]byte{2}, Amount: 6}, []byte("dest")),
 		testAction(bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5}),
+		&SetTxRefDataAction{Data: []byte("xyz")},
 	}
 	expiryTime := time.Now().Add(time.Minute)
-	got, err := Build(ctx, nil, actions, nil, expiryTime)
+	got, err := Build(ctx, nil, actions, expiryTime)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -82,6 +78,7 @@ func TestBuild(t *testing.T) {
 				bc.NewTxOutput([32]byte{2}, 6, []byte("dest"), nil),
 				bc.NewTxOutput([32]byte{1}, 5, []byte("change"), nil),
 			},
+			ReferenceData: []byte("xyz"),
 		},
 		SigningInstructions: []*SigningInstruction{{
 			WitnessComponents: []WitnessComponent{},
@@ -96,6 +93,13 @@ func TestBuild(t *testing.T) {
 
 	if !reflect.DeepEqual(got.SigningInstructions, want.SigningInstructions) {
 		t.Errorf("got signing instructions:\n\t%#v\nwant signing instructions:\n\t%#v", got.SigningInstructions, want.SigningInstructions)
+	}
+
+	// setting tx refdata twice should fail
+	actions = append(actions, &SetTxRefDataAction{Data: []byte("lmnop")})
+	_, err = Build(ctx, nil, actions, expiryTime)
+	if errors.Root(err) != ErrBadRefData {
+		t.Errorf("got error %v, want ErrBadRefData", err)
 	}
 }
 
