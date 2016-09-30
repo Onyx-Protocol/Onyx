@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"chain/core/accesstoken"
+	"chain/net/http/httpjson"
 )
 
 func createAccessToken(ctx context.Context, x struct{ ID, Type string }) (*accesstoken.Token, error) {
@@ -25,7 +26,7 @@ func listAccessTokens(ctx context.Context, x requestQuery) (*page, error) {
 	x.After = next
 
 	return &page{
-		Items:    tokens,
+		Items:    httpjson.Array(tokens),
 		LastPage: len(tokens) < limit,
 		Next:     outQuery,
 	}, nil
