@@ -56,6 +56,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
+	firstTemplate.AllowAdditional = true
 	assettest.SignTxTemplate(t, ctx, firstTemplate, &info.privKeyAccounts)
 	tx := bc.NewTx(*firstTemplate.Transaction)
 	err = FinalizeTx(ctx, c, tx)

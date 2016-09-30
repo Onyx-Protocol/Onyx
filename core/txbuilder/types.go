@@ -20,10 +20,12 @@ type Template struct {
 	// false.
 	Local bool `json:"local"`
 
-	// Final signals to Sign that signatures should commit to the tx
-	// sighash rather than to constraints based on individual inputs and
-	// outputs. This effectively prevents further changes to the tx.
-	Final bool `json:"final"`
+	// AllowAdditional affects whether Sign commits to the tx sighash or
+	// to individual details of the tx so far. When true, signatures
+	// commit to tx details, and new details may be added but existing
+	// ones cannot be changed. When false, signatures commit to the tx
+	// as a whole, and any change to the tx invalidates the signature.
+	AllowAdditional bool `json:"allow_additional_actions"`
 
 	sigHasher *bc.SigHasher
 }

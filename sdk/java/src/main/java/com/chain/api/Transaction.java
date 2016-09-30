@@ -310,7 +310,7 @@ public class Transaction {
      * The list of signing instructions for inputs in the transaction.
      */
     @SerializedName("signing_instructions")
-    public List<SigningInstruction> signing_instructions;
+    public List<SigningInstruction> signingInstructions;
 
     /**
      * For core use only.
@@ -318,10 +318,14 @@ public class Transaction {
     private Boolean local;
 
     /**
-     * Set to true to make the transaction "final" when signing, preventing further changes.
+     * False (the default) makes the transaction "final" when signing,
+     * preventing further changes - the signature program commits to
+     * the transaction's signature hash.  True makes the transaction
+     * extensible, committing only to the elements in the transaction
+     * so far, permitting the addition of new elements.
      */
-    @SerializedName("final")
-    public Boolean isFinal;
+    @SerializedName("allow_additional_actions")
+    public Boolean allowAdditionalActions;
 
     /**
      * The Chain error code.

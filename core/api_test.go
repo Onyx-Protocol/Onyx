@@ -72,7 +72,9 @@ func TestBuildFinal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmpl2.Final = true
+
+	tmpl.AllowAdditional = true
+	tmpl2.AllowAdditional = false
 
 	assettest.SignTxTemplate(t, ctx, tmpl, nil)
 	assettest.SignTxTemplate(t, ctx, &tmpl2, nil)

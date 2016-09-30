@@ -151,7 +151,7 @@ func contains(list []string, key string) bool {
 }
 
 func buildSigProgram(tpl *Template, index int) []byte {
-	if tpl.Final {
+	if !tpl.AllowAdditional {
 		h := tpl.Hash(index)
 		builder := vmutil.NewBuilder()
 		builder.AddData(h[:])
