@@ -9,8 +9,13 @@ class Main extends React.Component {
   render() {
     let logo = require('../../../../../assets/images/logo-white.png')
 
+    const mainStyles = [styles.main]
+    if (navigator.userAgent.includes('ChainCore.app')) {
+      mainStyles.push(styles.mainEmbedded)
+    }
+
     return (
-      <div className={styles.main}>
+      <div className={mainStyles.join(' ')}>
         <div className={styles.sidebar}>
           <div className={styles.sidebarContent}>
             <div className={styles.logo}>
