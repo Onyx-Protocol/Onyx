@@ -3,8 +3,8 @@
 import 'bootstrap-loader'
 import React from 'react'
 import { render } from 'react-dom'
-import Root from './Root'
-import configureStore from './configureStore'
+import Root from 'Root'
+import configureStore from 'configureStore'
 
 // Set favicon
 let faviconPath = require('!!file?name=favicon.ico!./assets/images/favicon.png')

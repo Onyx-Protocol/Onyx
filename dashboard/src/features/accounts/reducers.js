@@ -2,7 +2,7 @@ import {
   itemsReducer,
   listViewReducer,
   autocompleteIsLoadedReducer,
-} from '../../reducers/base'
+} from 'reducers/base'
 import { combineReducers } from 'redux'
 
 const type = 'account'

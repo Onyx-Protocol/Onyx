@@ -1,4 +1,4 @@
-import { BaseList } from '../../shared/components'
+import { BaseList } from 'features/shared/components'
 import Item from  './ListItem'
 import actions from '../actions'
 

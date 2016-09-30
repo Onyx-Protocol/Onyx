@@ -1,7 +1,7 @@
 import {
   itemsReducer,
   listViewReducer,
-} from '../../reducers/base'
+} from 'reducers/base'
 import { combineReducers } from 'redux'
 
 const type = 'access_token'

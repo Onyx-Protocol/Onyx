@@ -1,5 +1,5 @@
-import generateListActions from '../../actions/listActions'
-import generateFormActions from '../../actions/formActions'
+import generateListActions from 'actions/listActions'
+import generateFormActions from 'actions/formActions'
 
 const type = 'access_token'
 

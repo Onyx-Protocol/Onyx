@@ -1,8 +1,8 @@
-import { BaseNew, FormContainer } from '../../shared/components'
-import { TextField } from '../../../components/Common'
+import { BaseNew, FormContainer } from 'features/shared/components'
+import { TextField } from 'components/Common'
 import React from 'react'
 import { reduxForm } from 'redux-form'
-import { humanize } from '../../../utility/string'
+import { humanize } from 'utility/string'
 
 const clientType = 'client_access_token'
 const networkType = 'network_access_token'

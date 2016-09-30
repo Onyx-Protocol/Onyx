@@ -2,6 +2,7 @@
 
 var webpack = require('webpack')
 var getConfig = require('hjs-webpack')
+var path = require('path')
 
 // Set base path to JS and CSS files when
 // required by other files
@@ -78,6 +79,11 @@ config.node = {
   fs: 'empty',
   net: 'empty',
   tls: 'empty'
+}
+
+config.resolve = {
+  root: path.resolve('./src'),
+  extensions: [ '', '.js', '.jsx' ]
 }
 
 // module.noParse disables parsing for

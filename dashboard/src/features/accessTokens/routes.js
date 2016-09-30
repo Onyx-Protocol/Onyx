@@ -1,4 +1,4 @@
-import Section from '../../containers/SectionContainer'
+import Section from 'containers/SectionContainer'
 import { ClientTokenList, NetworkTokenList } from './components/List'
 import { NewClientToken, NewNetworkToken } from './components/New'
 

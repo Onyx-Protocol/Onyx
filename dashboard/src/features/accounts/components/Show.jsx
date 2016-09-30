@@ -1,5 +1,5 @@
 import React from 'react'
-import { BaseShow } from '../../shared/components'
+import { BaseShow } from 'features/shared/components'
 
 class Show extends BaseShow {
   constructor(props) {
