@@ -289,9 +289,6 @@ type node struct {
 // was provided to Insert.
 func (n *node) Key() []byte { return byteKey(n.key) }
 
-// IsLeaf returns whether the current node is a leaf node
-func (n *node) IsLeaf() bool { return n.isLeaf }
-
 // Hash will return the hash for this node.
 func (n *node) Hash() bc.Hash {
 	return n.hash

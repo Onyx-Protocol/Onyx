@@ -5,14 +5,6 @@ import (
 	"chain/protocol"
 )
 
-// Valid index types
-const (
-	IndexTypeAsset       = "asset"
-	IndexTypeBalance     = "balance"
-	IndexTypeOutput      = "output"
-	IndexTypeTransaction = "transaction"
-)
-
 // NewIndexer constructs a new indexer for indexing transactions.
 func NewIndexer(db pg.DB, c *protocol.Chain) *Indexer {
 	indexer := &Indexer{
