@@ -6,7 +6,6 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	"chain/crypto/ed25519"
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
@@ -92,7 +91,8 @@ type (
 var ErrEmptyProgram = errors.New("empty signature program")
 
 // Sign populates sw.Sigs with as many signatures of the predicate in
-// sw.Program as it can from the set of keys in sw.Keys.
+// sw.Program as it can from the overlapping set of keys in sw.Keys
+// and xpubs.
 //
 // If sw.Program is empty, it is populated with an _inferred_ predicate:
 // a program committing to aspects of the current
@@ -193,18 +193,6 @@ func buildSigProgram(tpl *Template, index int) []byte {
 }
 
 func (sw SignatureWitness) Materialize(tpl *Template, index int, args *[][]byte) error {
-	input := tpl.Transaction.Inputs[index]
-	var multiSig []byte
-	if input.IsIssuance() {
-		multiSig = input.IssuanceProgram()
-	} else {
-		multiSig = input.ControlProgram()
-	}
-	pubkeys, quorum, err := vmutil.ParseP2SPMultiSigProgram(multiSig)
-	if err != nil {
-		return errors.Wrap(err, "parsing input program script")
-	}
-
 	// This is the value of N for the CHECKPREDICATE call. The code
 	// assumes that everything already in the arg list before this call
 	// to Materialize is input to the signature program, so N is
@@ -212,25 +200,14 @@ func (sw SignatureWitness) Materialize(tpl *Template, index int, args *[][]byte)
 	*args = append(*args, vm.Int64Bytes(int64(len(*args))))
 
 	var nsigs int
-	h := sha3.Sum256(sw.Program)
-	for i := 0; i < len(pubkeys) && nsigs < quorum; i++ {
-		k := indexSig(pubkeys[i], h[:], sw.Sigs)
-		if k >= 0 {
-			*args = append(*args, sw.Sigs[k])
+	for i := 0; i < len(sw.Sigs) && nsigs < sw.Quorum; i++ {
+		if len(sw.Sigs[i]) > 0 {
+			*args = append(*args, sw.Sigs[i])
 			nsigs++
 		}
 	}
 	*args = append(*args, sw.Program)
 	return nil
-}
-
-func indexSig(key ed25519.PublicKey, msg []byte, sigs []chainjson.HexBytes) int {
-	for i, sig := range sigs {
-		if ed25519.Verify(key, msg, sig) {
-			return i
-		}
-	}
-	return -1
 }
 
 func (sw SignatureWitness) MarshalJSON() ([]byte, error) {

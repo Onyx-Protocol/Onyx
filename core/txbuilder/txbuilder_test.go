@@ -238,35 +238,12 @@ func TestSignatureWitnessMaterialize(t *testing.T) {
 		t.Errorf("got input witness %v, want input witness %v", got, want)
 	}
 
-	// Test with more signatures than required, in incorrect order
+	// Test with exact amount of signatures required, in correct order
 	component, ok := tpl.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness)
 	if !ok {
 		t.Fatal("expecting WitnessComponent of type SignatureWitness")
 	}
-	component.Sigs = []json.HexBytes{sig3, sig2, sig1}
-	err = materializeWitnesses(tpl)
-	if err != nil {
-		t.Fatal(withStack(err))
-	}
-
-	got = tpl.Transaction.Inputs[0].Arguments()
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got input witness %v, want input witness %v", got, want)
-	}
-
-	// Test with exact amount of signatures required, in correct order
 	component.Sigs = []json.HexBytes{sig1, sig2}
-	err = materializeWitnesses(tpl)
-	if err != nil {
-		t.Fatal(withStack(err))
-	}
-	got = tpl.Transaction.Inputs[0].Arguments()
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got input witness %v, want input witness %v", got, want)
-	}
-
-	// Test with exact amount of signatures required, in incorrect order
-	component.Sigs = []json.HexBytes{sig2, sig1}
 	err = materializeWitnesses(tpl)
 	if err != nil {
 		t.Fatal(withStack(err))

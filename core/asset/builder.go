@@ -11,7 +11,6 @@ import (
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
-	"chain/protocol/vmutil"
 )
 
 type IssueAction struct {
@@ -66,12 +65,7 @@ func (a *IssueAction) Build(ctx context.Context, _ time.Time) (
 	tplIn := &txbuilder.SigningInstruction{AssetAmount: a.AssetAmount}
 	path := signers.Path(asset.Signer, signers.AssetKeySpace)
 	keyIDs := txbuilder.KeyIDs(asset.Signer.XPubs, path)
-	_, nrequired, err := vmutil.ParseP2SPMultiSigProgram(asset.IssuanceProgram)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	tplIn.AddWitnessKeys(keyIDs, nrequired)
+	tplIn.AddWitnessKeys(keyIDs, asset.Signer.Quorum)
 
 	return []*bc.TxInput{txin}, nil, []*txbuilder.SigningInstruction{tplIn}, nil
 }

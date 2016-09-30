@@ -1,9 +1,7 @@
 package chainkd
 
 import (
-	"bytes"
 	"io"
-	"sort"
 
 	"chain/crypto/ed25519"
 )
@@ -32,14 +30,5 @@ func DeriveXPubs(xpubs []XPub, path [][]byte) []XPub {
 		d := xpub.Derive(path)
 		res = append(res, d)
 	}
-	sort.Sort(byKey(res))
 	return res
-}
-
-type byKey []XPub
-
-func (a byKey) Len() int      { return len(a) }
-func (a byKey) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a byKey) Less(i, j int) bool {
-	return bytes.Compare(a[i].Bytes(), a[j].Bytes()) < 0
 }
