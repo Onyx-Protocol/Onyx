@@ -103,15 +103,14 @@ func createTestControlProgram(ctx context.Context, t testing.TB, accountID strin
 func TestFindByID(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
-	tags := map[string]interface{}{"someTag": "taggityTag"}
-	account := createTestAccount(ctx, t, "", tags)
+	account := createTestAccount(ctx, t, "", nil)
 
-	found, err := FindByID(ctx, account.ID)
+	found, err := findByID(ctx, account.ID)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	if !reflect.DeepEqual(account, found) {
+	if !reflect.DeepEqual(account.Signer, found) {
 		t.Errorf("expected found account to be %v, instead found %v", account, found)
 	}
 }
@@ -119,15 +118,14 @@ func TestFindByID(t *testing.T) {
 func TestFindByAlias(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
-	tags := map[string]interface{}{"someTag": "taggityTag"}
-	account := createTestAccount(ctx, t, "some-alias", tags)
+	account := createTestAccount(ctx, t, "some-alias", nil)
 
 	found, err := FindByAlias(ctx, "some-alias")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	if !reflect.DeepEqual(account, found) {
+	if !reflect.DeepEqual(account.Signer, found) {
 		t.Errorf("expected found account to be %v, instead found %v", account, found)
 	}
 }

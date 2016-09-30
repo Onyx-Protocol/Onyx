@@ -37,7 +37,7 @@ func (a *SpendAction) Build(ctx context.Context) (*txbuilder.BuildResult, error)
 	}
 	maxTime := time.Now().Add(ttl)
 
-	acct, err := FindByID(ctx, a.AccountID)
+	acct, err := findByID(ctx, a.AccountID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get account info")
 	}
@@ -108,7 +108,7 @@ func (a *SpendUTXOAction) Build(ctx context.Context) (*txbuilder.BuildResult, er
 		return nil, err
 	}
 
-	acct, err := FindByID(ctx, r.AccountID)
+	acct, err := findByID(ctx, r.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (a *SpendUTXOAction) Build(ctx context.Context) (*txbuilder.BuildResult, er
 	}, nil
 }
 
-func utxoToInputs(ctx context.Context, account *Account, u *utxodb.UTXO, refData []byte) (
+func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxodb.UTXO, refData []byte) (
 	*bc.TxInput,
 	*txbuilder.SigningInstruction,
 	error,
@@ -136,7 +136,7 @@ func utxoToInputs(ctx context.Context, account *Account, u *utxodb.UTXO, refData
 		AssetAmount: u.AssetAmount,
 	}
 
-	path := signers.Path(account.Signer, signers.AccountKeySpace, u.ControlProgramIndex)
+	path := signers.Path(account, signers.AccountKeySpace, u.ControlProgramIndex)
 	keyIDs := txbuilder.KeyIDs(account.XPubs, path)
 
 	sigInst.AddWitnessKeys(keyIDs, account.Quorum)

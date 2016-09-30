@@ -76,62 +76,11 @@ func Create(ctx context.Context, xpubs []string, quorum int, alias string, tags 
 	return account, nil
 }
 
-// FindByID retrieves an Account record from signer by its accountID
-func FindByID(ctx context.Context, id string) (*Account, error) {
-	s, err := signers.Find(ctx, "account", id)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-
-	alias, tags, err := fetchAccountData(ctx, s.ID)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-
-	return &Account{
-		Signer: s,
-		Alias:  alias,
-		Tags:   tags,
-	}, nil
-}
-
-func fetchAccountData(ctx context.Context, id string) (string, map[string]interface{}, error) {
-	const q = `SELECT alias, tags FROM accounts WHERE account_id=$1`
-	var (
-		tagBytes []byte
-		alias    sql.NullString
-	)
-	err := pg.QueryRow(ctx, q, id).Scan(&alias, &tagBytes)
-	if err == sql.ErrNoRows {
-		return "", nil, errors.Wrap(pg.ErrUserInputNotFound)
-	}
-	if err != nil {
-		return "", nil, errors.Wrap(err)
-	}
-
-	var tags map[string]interface{}
-	if len(tagBytes) > 0 {
-		err := json.Unmarshal(tagBytes, &tags)
-		if err != nil {
-			return "", nil, errors.Wrap(err)
-		}
-	}
-
-	if alias.Valid {
-		return alias.String, tags, nil
-	}
-
-	return "", tags, nil
-}
-
-// FindByAlias retrieves an Account record by its alias
-func FindByAlias(ctx context.Context, alias string) (*Account, error) {
-	const q = `SELECT account_id, tags FROM accounts WHERE alias=$1`
-	var (
-		tagBytes  []byte
-		accountID string
-	)
-	err := pg.QueryRow(ctx, q, alias).Scan(&accountID, &tagBytes)
+// FindByAlias retrieves an account's Signer record by its alias
+func FindByAlias(ctx context.Context, alias string) (*signers.Signer, error) {
+	const q = `SELECT account_id FROM accounts WHERE alias=$1`
+	var accountID string
+	err := pg.QueryRow(ctx, q, alias).Scan(&accountID)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "alias: %s", alias)
 	}
@@ -139,30 +88,18 @@ func FindByAlias(ctx context.Context, alias string) (*Account, error) {
 		return nil, errors.Wrap(err)
 	}
 
-	var tags map[string]interface{}
-	if len(tagBytes) > 0 {
-		err := json.Unmarshal(tagBytes, &tags)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-	}
+	return signers.Find(ctx, "account", accountID)
+}
 
-	s, err := signers.Find(ctx, "account", accountID)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
-
-	return &Account{
-		Signer: s,
-		Alias:  alias,
-		Tags:   tags,
-	}, nil
+// findByID returns an account's Signer record by its ID.
+func findByID(ctx context.Context, id string) (*signers.Signer, error) {
+	return signers.Find(ctx, "account", id)
 }
 
 // CreateControlProgram creates a control program
 // that is tied to the Account and stores it in the database.
 func CreateControlProgram(ctx context.Context, accountID string, change bool) ([]byte, error) {
-	account, err := FindByID(ctx, accountID)
+	account, err := findByID(ctx, accountID)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +109,7 @@ func CreateControlProgram(ctx context.Context, accountID string, change bool) ([
 		return nil, err
 	}
 
-	path := signers.Path(account.Signer, signers.AccountKeySpace, idx)
+	path := signers.Path(account, signers.AccountKeySpace, idx)
 	derivedXPubs := chainkd.DeriveXPubs(account.XPubs, path)
 	derivedPKs := chainkd.XPubKeys(derivedXPubs)
 	control, err := vmutil.P2SPMultiSigProgram(derivedPKs, account.Quorum)
