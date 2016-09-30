@@ -162,7 +162,11 @@ func finalizeTxWait(ctx context.Context, c *protocol.Chain, txTemplate *txbuilde
 			// might still be in pool or might be rejected; we can't
 			// tell definitively until its max time elapses.
 
-			// TODO(jackson): Re-insert into the pool.
+			// Re-insert into the pool in case it was dropped.
+			err = txbuilder.FinalizeTx(ctx, c, tx)
+			if err != nil {
+				return err
+			}
 
 			// TODO(jackson): Do simple rejection checks like checking if
 			// the tx's blockchain prevouts still exist in the state tree.
