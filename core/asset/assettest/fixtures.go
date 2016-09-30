@@ -57,7 +57,7 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, c *protocol.Chain, as
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
 
 	src := NewIssueAction(assetAmount, nil) // does not support reference data
-	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{dest, src}, time.Now().Add(time.Minute))
+	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{dest, src})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -76,7 +76,7 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, c *protocol.Chain, as
 }
 
 func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, actions []txbuilder.Action) *bc.Tx {
-	template, err := txbuilder.Build(ctx, nil, actions, time.Now().Add(time.Minute))
+	template, err := txbuilder.Build(ctx, nil, actions)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

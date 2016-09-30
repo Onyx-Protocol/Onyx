@@ -2,7 +2,6 @@ package txbuilder
 
 import (
 	"context"
-	"time"
 
 	"chain/encoding/json"
 	"chain/protocol/bc"
@@ -21,7 +20,7 @@ type ControlProgramAction struct {
 	ReferenceData json.Map `json:"reference_data"`
 }
 
-func (c *ControlProgramAction) Build(ctx context.Context, _ time.Time) (*BuildResult, error) {
+func (c *ControlProgramAction) Build(ctx context.Context) (*BuildResult, error) {
 	out := bc.NewTxOutput(c.AssetID, c.Amount, c.Program, c.ReferenceData)
 	return &BuildResult{Outputs: []*bc.TxOutput{out}}, nil
 }
@@ -30,6 +29,6 @@ type SetTxRefDataAction struct {
 	Data json.Map `json:"reference_data"`
 }
 
-func (a *SetTxRefDataAction) Build(ctx context.Context, maxTime time.Time) (*BuildResult, error) {
+func (a *SetTxRefDataAction) Build(ctx context.Context) (*BuildResult, error) {
 	return &BuildResult{ReferenceData: a.Data}, nil
 }

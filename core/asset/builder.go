@@ -26,22 +26,20 @@ type IssueAction struct {
 	ReferenceData json.Map `json:"reference_data"`
 }
 
-func (a IssueAction) GetTTL() time.Duration {
+func (a *IssueAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
+	now := time.Now()
+
+	// Auto-supply a nonzero mintime that allows for some clock skew
+	// between this computer and whatever machine validates the
+	// transaction.
+	minTime := now.Add(-5 * time.Minute)
+
 	ttl := a.TTL
 	if ttl == 0 {
 		ttl = time.Minute
 	}
-	return ttl
-}
+	maxTime := now.Add(ttl)
 
-func (a IssueAction) GetMinTimeMS() uint64 {
-	// Auto-supply a nonzero mintime that allows for some clock skew
-	// between this computer and whatever machine validates the
-	// transaction.
-	return bc.Millis(time.Now().Add(-5 * time.Minute))
-}
-
-func (a *IssueAction) Build(ctx context.Context, _ time.Time) (*txbuilder.BuildResult, error) {
 	asset, err := FindByID(ctx, a.AssetID)
 	if errors.Root(err) == pg.ErrUserInputNotFound {
 		err = errors.WithDetailf(err, "missing asset with ID %q", a.AssetID)
@@ -62,5 +60,10 @@ func (a *IssueAction) Build(ctx context.Context, _ time.Time) (*txbuilder.BuildR
 	keyIDs := txbuilder.KeyIDs(asset.Signer.XPubs, path)
 	tplIn.AddWitnessKeys(keyIDs, asset.Signer.Quorum)
 
-	return &txbuilder.BuildResult{Inputs: []*bc.TxInput{txin}, SigningInstructions: []*txbuilder.SigningInstruction{tplIn}}, nil
+	return &txbuilder.BuildResult{
+		Inputs:              []*bc.TxInput{txin},
+		SigningInstructions: []*txbuilder.SigningInstruction{tplIn},
+		MinTimeMS:           bc.Millis(minTime),
+		MaxTimeMS:           bc.Millis(maxTime),
+	}, nil
 }

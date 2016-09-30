@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
-	"time"
 
 	"golang.org/x/crypto/sha3"
 
@@ -25,7 +24,7 @@ import (
 
 type testAction bc.AssetAmount
 
-func (t testAction) Build(ctx context.Context, _ time.Time) (*BuildResult, error) {
+func (t testAction) Build(ctx context.Context) (*BuildResult, error) {
 	in := bc.NewSpendInput([32]byte{255}, 0, nil, t.AssetID, t.Amount, nil, nil)
 	tplIn := &SigningInstruction{}
 	change := bc.NewTxOutput(t.AssetID, t.Amount, []byte("change"), nil)
@@ -60,8 +59,7 @@ func TestBuild(t *testing.T) {
 		testAction(bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5}),
 		&SetTxRefDataAction{Data: []byte("xyz")},
 	}
-	expiryTime := time.Now().Add(time.Minute)
-	got, err := Build(ctx, nil, actions, expiryTime)
+	got, err := Build(ctx, nil, actions)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -70,7 +68,6 @@ func TestBuild(t *testing.T) {
 	want := &Template{
 		Transaction: &bc.TxData{
 			Version: 1,
-			MaxTime: bc.Millis(expiryTime),
 			Inputs: []*bc.TxInput{
 				bc.NewSpendInput([32]byte{255}, 0, nil, [32]byte{1}, 5, nil, nil),
 			},
@@ -97,7 +94,7 @@ func TestBuild(t *testing.T) {
 
 	// setting tx refdata twice should fail
 	actions = append(actions, &SetTxRefDataAction{Data: []byte("lmnop")})
-	_, err = Build(ctx, nil, actions, expiryTime)
+	_, err = Build(ctx, nil, actions)
 	if errors.Root(err) != ErrBadRefData {
 		t.Errorf("got error %v, want ErrBadRefData", err)
 	}

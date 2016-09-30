@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"time"
 
 	"chain/crypto/ed25519/chainkd"
 	"chain/encoding/json"
@@ -23,7 +22,7 @@ var (
 // Build partners then satisfy and consume inputs and destinations.
 // The final party must ensure that the transaction is
 // balanced before calling finalize.
-func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Time) (*Template, error) {
+func Build(ctx context.Context, tx *bc.TxData, actions []Action) (*Template, error) {
 	var local bool
 	if tx == nil {
 		tx = &bc.TxData{
@@ -32,33 +31,9 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 		local = true
 	}
 
-	// If there are any actions with a TTL, restrict the transaction's MaxTime accordingly.
-	now := time.Now()
-	minTime := uint64(0)
-	for _, a := range actions {
-		if t, ok := a.(ttler); ok {
-			timestamp := now.Add(t.GetTTL())
-			if timestamp.Before(maxTime) {
-				maxTime = timestamp
-			}
-		}
-		if t, ok := a.(minTimer); ok {
-			m := t.GetMinTimeMS()
-			if m > minTime {
-				minTime = m
-			}
-		}
-	}
-	if tx.MinTime == 0 || tx.MinTime < minTime {
-		tx.MinTime = minTime
-	}
-	if tx.MaxTime == 0 || tx.MaxTime > bc.Millis(maxTime) {
-		tx.MaxTime = bc.Millis(maxTime)
-	}
-
 	var tplSigInsts []*SigningInstruction
 	for i, action := range actions {
-		buildResult, err := action.Build(ctx, maxTime)
+		buildResult, err := action.Build(ctx)
 		if err != nil {
 			return nil, errors.WithDetailf(err, "invalid action %d", i)
 		}
@@ -82,6 +57,17 @@ func Build(ctx context.Context, tx *bc.TxData, actions []Action, maxTime time.Ti
 				return nil, errors.Wrap(ErrBadRefData)
 			}
 			tx.ReferenceData = buildResult.ReferenceData
+		}
+
+		if buildResult.MinTimeMS > 0 {
+			if buildResult.MinTimeMS > tx.MinTime {
+				tx.MinTime = buildResult.MinTimeMS
+			}
+		}
+		if buildResult.MaxTimeMS > 0 {
+			if tx.MaxTime == 0 || buildResult.MaxTimeMS < tx.MaxTime {
+				tx.MaxTime = buildResult.MaxTimeMS
+			}
 		}
 	}
 

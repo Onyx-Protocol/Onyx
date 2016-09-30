@@ -3,7 +3,6 @@ package txbuilder
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"chain/errors"
 	"chain/protocol/bc"
@@ -92,14 +91,6 @@ type (
 	}
 
 	Action interface {
-		Build(context.Context, time.Time) (*BuildResult, error)
+		Build(context.Context) (*BuildResult, error)
 	}
 )
-
-type ttler interface {
-	GetTTL() time.Duration
-}
-
-type minTimer interface {
-	GetMinTimeMS() uint64
-}

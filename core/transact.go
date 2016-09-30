@@ -25,12 +25,7 @@ func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, e
 	}
 	defer dbtx.Rollback(ctx)
 
-	ttl := req.TTL.Duration
-	if ttl == 0 {
-		ttl = defaultTxTTL
-	}
-	maxTime := time.Now().Add(ttl)
-	tpl, err := txbuilder.Build(ctx, req.Tx, req.actions(), maxTime)
+	tpl, err := txbuilder.Build(ctx, req.Tx, req.actions())
 	if err != nil {
 		return nil, err
 	}

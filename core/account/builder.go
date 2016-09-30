@@ -30,16 +30,13 @@ type SpendAction struct {
 	ClientToken   *string  `json:"client_token"`
 }
 
-// GetTTL returns the time-to-live of the reservation created by this action.
-func (a *SpendAction) GetTTL() time.Duration {
+func (a *SpendAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
 	ttl := a.TTL
 	if ttl == 0 {
 		ttl = time.Minute
 	}
-	return ttl
-}
+	maxTime := time.Now().Add(ttl)
 
-func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
 	acct, err := FindByID(ctx, a.AccountID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get account info")
@@ -82,7 +79,12 @@ func (a *SpendAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.
 		changeOuts = append(changeOuts, bc.NewTxOutput(a.AssetID, change[0].Amount, acp, nil))
 	}
 
-	return &txbuilder.BuildResult{Inputs: txins, Outputs: changeOuts, SigningInstructions: tplInsts}, nil
+	return &txbuilder.BuildResult{
+		Inputs:              txins,
+		Outputs:             changeOuts,
+		SigningInstructions: tplInsts,
+		MaxTimeMS:           bc.Millis(maxTime),
+	}, nil
 }
 
 type SpendUTXOAction struct {
@@ -94,16 +96,13 @@ type SpendUTXOAction struct {
 	ClientToken   *string  `json:"client_token"`
 }
 
-// GetTTL returns the time-to-live of the reservation created by this action.
-func (a *SpendUTXOAction) GetTTL() time.Duration {
+func (a *SpendUTXOAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
 	ttl := a.TTL
 	if ttl == 0 {
 		ttl = time.Minute
 	}
-	return ttl
-}
+	maxTime := time.Now().Add(ttl)
 
-func (a *SpendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuilder.BuildResult, error) {
 	r, err := utxodb.ReserveUTXO(ctx, a.TxHash, a.TxOut, a.ClientToken, maxTime)
 	if err != nil {
 		return nil, err
@@ -119,7 +118,11 @@ func (a *SpendUTXOAction) Build(ctx context.Context, maxTime time.Time) (*txbuil
 		return nil, err
 	}
 
-	return &txbuilder.BuildResult{Inputs: []*bc.TxInput{txInput}, SigningInstructions: []*txbuilder.SigningInstruction{sigInst}}, nil
+	return &txbuilder.BuildResult{
+		Inputs:              []*bc.TxInput{txInput},
+		SigningInstructions: []*txbuilder.SigningInstruction{sigInst},
+		MaxTimeMS:           bc.Millis(maxTime),
+	}, nil
 }
 
 func utxoToInputs(ctx context.Context, account *Account, u *utxodb.UTXO, refData []byte) (
@@ -155,7 +158,7 @@ type ControlAction struct {
 	ReferenceData json.Map `json:"reference_data"`
 }
 
-func (a *ControlAction) Build(ctx context.Context, _ time.Time) (*txbuilder.BuildResult, error) {
+func (a *ControlAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
 	acp, err := CreateControlProgram(ctx, a.AccountID, false)
 	if err != nil {
 		return nil, err

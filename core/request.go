@@ -8,7 +8,6 @@ import (
 	"chain/core/asset"
 	"chain/core/txbuilder"
 	"chain/errors"
-	"chain/net/http/httpjson"
 	"chain/protocol/bc"
 )
 
@@ -48,9 +47,8 @@ func (a *action) UnmarshalJSON(data []byte) error {
 }
 
 type buildRequest struct {
-	Tx      *bc.TxData        `json:"base_transaction"`
-	Actions []*action         `json:"actions"`
-	TTL     httpjson.Duration `json:"ttl"`
+	Tx      *bc.TxData `json:"base_transaction"`
+	Actions []*action  `json:"actions"`
 }
 
 func (req *buildRequest) actions() []txbuilder.Action {
