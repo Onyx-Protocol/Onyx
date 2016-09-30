@@ -5,10 +5,15 @@ Command corectl provides miscellaneous control functions for a Chain Core.
 The database connection can be configured using the DB_URL environment
 variable; the default is to connect to the "core" database on localhost.
 
-    corectl init [quorum] [key...]
+    corectl config-generator
 
-Init creates an initial block. Its consensus program contains the given keys
-and requires quorum signatures. A quorum size of 0 is ok.
+config-generator configures a new core as a generator. It matches the dashboard's
+behavior when writing the config.
+
+    corectl create-block-keypair
+
+create-block-keypair generates a new keypair in the MockHSM for block signing,
+with the alias "block_key".
 
 */
 package main

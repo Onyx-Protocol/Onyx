@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"chain/core"
+	"chain/core/mockhsm"
 	"chain/database/sql"
 	"chain/env"
 	"chain/log"
@@ -27,7 +28,8 @@ type command struct {
 }
 
 var commands = map[string]*command{
-	"config-generator": {configGenerator},
+	"config-generator":     {configGenerator},
+	"create-block-keypair": {createBlockKeyPair},
 }
 
 func main() {
@@ -69,6 +71,21 @@ func configGenerator(db *sql.DB, args []string) {
 	}
 
 	fmt.Println("blockchain id", config.BlockchainID)
+}
+
+func createBlockKeyPair(db *sql.DB, args []string) {
+	if len(args) != 0 {
+		fatalln("error: create-block-keypair takes no args")
+	}
+
+	hsm := mockhsm.New(db)
+	ctx := context.Background()
+	xpub, err := hsm.CreateKey(ctx, "block_key")
+	if err != nil {
+		fatalln("error:", err)
+	}
+
+	fmt.Println("block xpub:", xpub.XPub.String())
 }
 
 func fatalln(v ...interface{}) {
