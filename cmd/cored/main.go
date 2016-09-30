@@ -131,6 +131,7 @@ func main() {
 	h = gzip.Handler{Handler: h}
 	h = dbContextHandler(h, db)
 	h = reqid.Handler(h)
+	h = timeoutContextHandler(h)
 	http.Handle("/", h)
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 	secureheader.DefaultConfig.PermitClearLoopback = true
@@ -231,6 +232,23 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set(rpc.HeaderBlockchainID, config.BlockchainID.String())
 		h.ServeHTTP(w, req)
+	})
+}
+
+// timeoutContextHandler propagates the timeout, if any, provided as a header
+// in the http request.
+func timeoutContextHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		timeout, err := time.ParseDuration(req.Header.Get(rpc.HeaderTimeout))
+		if err != nil {
+			handler.ServeHTTP(w, req) // unmodified
+			return
+		}
+
+		ctx := req.Context()
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+		handler.ServeHTTP(w, req.WithContext(ctx))
 	})
 }
 

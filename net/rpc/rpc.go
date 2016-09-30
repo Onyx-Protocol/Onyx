@@ -8,12 +8,15 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"chain/net/http/reqid"
 )
 
+// Chain-specific header fields
 const (
 	HeaderBlockchainID = "Blockchain-ID"
+	HeaderTimeout      = "RPC-Timeout"
 )
 
 // ErrWrongNetwork is returned when a peer's blockchain ID differs from
@@ -75,9 +78,14 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 
 	// Propagate our request ID so that we can trace a request across nodes.
 	req.Header.Add("Request-ID", reqid.FromContext(ctx))
-
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", c.userAgent())
+
+	// Propagate our deadline if we have one.
+	deadline, ok := ctx.Deadline()
+	if ok {
+		req.Header.Set(HeaderTimeout, deadline.Sub(time.Now()).String())
+	}
 
 	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {
