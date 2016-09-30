@@ -37,7 +37,7 @@ func Create(ctx context.Context, alias, filter, after string, clientToken *strin
 // lookup and return the existing cursor instead.
 func insertCursor(ctx context.Context, cur *Cursor, clientToken *string) (*Cursor, error) {
 	const q = `
-		INSERT INTO cursors (alias, filter, after, is_ascending, client_token)
+		INSERT INTO txconsumers (alias, filter, after, is_ascending, client_token)
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (client_token) DO NOTHING
 		RETURNING id
@@ -73,7 +73,7 @@ func insertCursor(ctx context.Context, cur *Cursor, clientToken *string) (*Curso
 func cursorByClientToken(ctx context.Context, clientToken string) (*Cursor, error) {
 	const q = `
 		SELECT id, alias, filter, after, is_ascending
-		FROM cursors
+		FROM txconsumers
 		WHERE client_token=$1
 	`
 
@@ -111,7 +111,7 @@ func Find(ctx context.Context, id, alias string) (*Cursor, error) {
 
 	q := `
 		SELECT id, alias, filter, after, is_ascending
-		FROM cursors
+		FROM txconsumers
 	` + where
 
 	var (
@@ -147,7 +147,7 @@ func Delete(ctx context.Context, id, alias string) error {
 		id = alias
 	}
 
-	q := `DELETE FROM cursors` + where
+	q := `DELETE FROM txconsumers` + where
 
 	res, err := pg.Exec(ctx, q, id)
 	if err != nil {

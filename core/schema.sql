@@ -529,20 +529,6 @@ CREATE TABLE config (
 
 
 --
--- Name: cursors; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE cursors (
-    id text DEFAULT next_chain_id('cur'::text) NOT NULL,
-    alias text,
-    filter text,
-    after text,
-    is_ascending boolean,
-    client_token text NOT NULL
-);
-
-
---
 -- Name: generator_pending_block; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -715,6 +701,20 @@ CREATE TABLE snapshots (
 
 
 --
+-- Name: txconsumers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE txconsumers (
+    id text DEFAULT next_chain_id('cur'::text) NOT NULL,
+    alias text,
+    filter text,
+    after text,
+    is_ascending boolean,
+    client_token text NOT NULL
+);
+
+
+--
 -- Name: key_index; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -842,30 +842,6 @@ ALTER TABLE ONLY config
 
 
 --
--- Name: cursors_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY cursors
-    ADD CONSTRAINT cursors_alias_key UNIQUE (alias);
-
-
---
--- Name: cursors_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY cursors
-    ADD CONSTRAINT cursors_client_token_key UNIQUE (client_token);
-
-
---
--- Name: cursors_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY cursors
-    ADD CONSTRAINT cursors_pkey PRIMARY KEY (id);
-
-
---
 -- Name: generator_pending_block_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -975,6 +951,30 @@ ALTER TABLE ONLY mockhsm
 
 ALTER TABLE ONLY snapshots
     ADD CONSTRAINT state_trees_pkey PRIMARY KEY (height);
+
+
+--
+-- Name: txconsumers_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY txconsumers
+    ADD CONSTRAINT txconsumers_alias_key UNIQUE (alias);
+
+
+--
+-- Name: txconsumers_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY txconsumers
+    ADD CONSTRAINT txconsumers_client_token_key UNIQUE (client_token);
+
+
+--
+-- Name: txconsumers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY txconsumers
+    ADD CONSTRAINT txconsumers_pkey PRIMARY KEY (id);
 
 
 --
@@ -1136,3 +1136,4 @@ insert into migrations (filename, hash) values ('2016-09-23.0.account.change-con
 insert into migrations (filename, hash) values ('2016-09-26.0.core.add-access-tokens.sql', '81b12b6aed53dfacca8f8d922b377ef24c727950dea2c8c186d6f68400de511a');
 insert into migrations (filename, hash) values ('2016-09-26.1.core.add-require-auth-flags.sql', '0e21f6d4836fcde1bdec80b0f6cc7c8cf8355fee47a7d5561ed8d7f6726425f1');
 insert into migrations (filename, hash) values ('2016-09-29.0.core.drop-archived-columns.sql', '557b8ae9b6604485d7ae7eef2206ce218d4bb3a1ac9bcdac6b4691db1da20208');
+insert into migrations (filename, hash) values ('2016-09-29.1.core.cursors-to-txconsumers.sql', 'ed2fee4f5e726ba76eff4c7e3aaceac7e960164031df7f89e2a33b5de4e25216');

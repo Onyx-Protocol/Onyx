@@ -28,7 +28,7 @@ func TestInsertCursor(t *testing.T) {
 
 	// Verify that the cursor was created.
 	var resultAlias string
-	var checkQ = `SELECT alias FROM cursors`
+	var checkQ = `SELECT alias FROM txconsumers`
 	err = pg.QueryRow(ctx, checkQ).Scan(&resultAlias)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
