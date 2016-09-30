@@ -265,7 +265,7 @@ func configure(ctx context.Context, x *Config) error {
 	panic("unreached")
 }
 
-// LoadConfig loads the stored configuration, if any, from the database/
+// LoadConfig loads the stored configuration, if any, from the database.
 func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
 			SELECT is_signer, is_generator, blockchain_id, generator_url, block_xpub,

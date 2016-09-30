@@ -30,6 +30,7 @@ type command struct {
 var commands = map[string]*command{
 	"config-generator":     {configGenerator},
 	"create-block-keypair": {createBlockKeyPair},
+	"config":               {configNongenerator},
 }
 
 func main() {
@@ -86,6 +87,29 @@ func createBlockKeyPair(db *sql.DB, args []string) {
 	}
 
 	fmt.Println("block xpub:", xpub.XPub.String())
+}
+
+func configNongenerator(db *sql.DB, args []string) {
+	if len(args) != 2 && len(args) != 3 {
+		fatalln("error: corectl config <blockchain-id> <generator-url> [block-pubkey]")
+	}
+
+	var config core.Config
+	err := config.BlockchainID.UnmarshalText([]byte(args[0]))
+	if err != nil {
+		fatalln("error: invalid blockchain ID:", err)
+	}
+	config.GeneratorURL = args[1]
+	if len(args) > 2 {
+		config.IsSigner = true
+		config.BlockXPub = args[2]
+	}
+
+	ctx := context.Background()
+	err = core.Configure(ctx, db, &config)
+	if err != nil {
+		fatalln("error:", err)
+	}
 }
 
 func fatalln(v ...interface{}) {
