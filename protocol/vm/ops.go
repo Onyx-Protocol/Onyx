@@ -212,18 +212,6 @@ const (
 	OP_INDEX         Op = 0xc9
 	OP_OUTPOINT      Op = 0xcb
 	OP_NONCE         Op = 0xcc
-
-	OP_CODESEPARATOR Op = 0xab
-	OP_NOP1          Op = 0xb0
-	OP_NOP2          Op = 0xb1
-	OP_NOP3          Op = 0xb2
-	OP_NOP4          Op = 0xb3
-	OP_NOP5          Op = 0xb4
-	OP_NOP6          Op = 0xb5
-	OP_NOP7          Op = 0xb6
-	OP_NOP8          Op = 0xb7
-	OP_NOP9          Op = 0xb8
-	OP_NOP10         Op = 0xb9
 )
 
 type opInfo struct {
@@ -335,8 +323,6 @@ var (
 		OP_INDEX:         {OP_INDEX, "INDEX", opIndex},
 		OP_OUTPOINT:      {OP_OUTPOINT, "OUTPOINT", opOutpoint},
 		OP_NONCE:         {OP_NONCE, "NONCE", opNonce},
-
-		OP_CODESEPARATOR: {OP_CODESEPARATOR, "CODESEPARATOR", opNop},
 	}
 
 	opsByName map[string]opInfo
@@ -350,11 +336,6 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 		return
 	}
 	opcode := Op(prog[pc])
-	info := ops[opcode]
-	if info.name == "" {
-		err = ErrUnknownOpcode
-		return
-	}
 	inst.Op = opcode
 	inst.Len = 1
 	if opcode >= OP_1 && opcode <= OP_16 {
@@ -450,20 +431,20 @@ func init() {
 		op := uint8(OP_1) + i
 		ops[op] = opInfo{Op(op), fmt.Sprintf("%d", i+1), opPushdata}
 	}
-	for i := uint8(0); i <= 9; i++ {
-		op := uint8(OP_NOP1) + i
-		ops[op] = opInfo{Op(op), fmt.Sprintf("NOP%d", i+1), opNop}
-	}
 
 	// This is here to break a dependency cycle
 	ops[OP_CHECKPREDICATE] = opInfo{OP_CHECKPREDICATE, "CHECKPREDICATE", opCheckPredicate}
 
 	opsByName = make(map[string]opInfo)
 	for _, info := range ops {
-		if info.name != "" {
-			opsByName[info.name] = info
-		}
+		opsByName[info.name] = info
 	}
 	opsByName["0"] = ops[OP_FALSE]
 	opsByName["TRUE"] = ops[OP_1]
+
+	for i := 0; i <= 255; i++ {
+		if ops[i].name == "" {
+			ops[i] = opInfo{Op(i), fmt.Sprintf("NOPx%02x", i), opNop}
+		}
+	}
 }

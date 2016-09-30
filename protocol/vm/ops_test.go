@@ -71,9 +71,6 @@ func TestParseOp(t *testing.T) {
 	}, {
 		prog:    []byte{byte(OP_PUSHDATA4), 1, 0, 0, 0},
 		wantErr: ErrShortProgram,
-	}, {
-		prog:    []byte{255},
-		wantErr: ErrUnknownOpcode,
 	}}
 
 	for _, c := range cases {
@@ -110,8 +107,10 @@ func TestParseProgram(t *testing.T) {
 			},
 		},
 		{
-			prog:    []byte{255},
-			wantErr: ErrUnknownOpcode,
+			prog: []byte{255},
+			want: []Instruction{
+				{Op: 255, Len: 1},
+			},
 		},
 	}
 

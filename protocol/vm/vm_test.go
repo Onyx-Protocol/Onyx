@@ -374,10 +374,17 @@ func TestStep(t *testing.T) {
 		},
 	}, {
 		startVM: &virtualMachine{
-			program:  []byte{255},
-			runLimit: 50000,
+			program:   []byte{255},
+			runLimit:  50000,
+			dataStack: [][]byte{},
 		},
-		wantErr: ErrUnknownOpcode,
+		wantVM: &virtualMachine{
+			program:   []byte{255},
+			runLimit:  49999,
+			pc:        1,
+			nextPC:    1,
+			dataStack: [][]byte{},
+		},
 	}, {
 		startVM: &virtualMachine{
 			program:  []byte{byte(OP_ADD)},
