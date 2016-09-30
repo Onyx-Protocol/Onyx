@@ -595,13 +595,11 @@ POST /list-transactions
   "filter_params": [], // optional
   "start_time": <number, millisecond Unixtime>, // optional, defaults to 0
   "end_time": <number, millisecond Unixtime>, // optional, defaults to current time
-  "ascending": <boolean>, // optional, defaults to false (newest to oldest)
+  "ascending_with_long_poll": <boolean>, // optional, defaults to false (newest to oldest, does not long poll)
   "after": "...", // optional
   "timeout": <number, in milliseconds> // optional, defaults to 1000 (1 second)
 }
 ```
-
-If `ascending` is `true`, the request will stay open until there are transactions to return, or until the timeout occurs, whichever happens first.
 
 #### Response
 
@@ -616,7 +614,7 @@ If `ascending` is `true`, the request will stay open until there are transaction
     "filter_params": [],
     "start_time": <number>,
     "end_time": <number>,
-    "ascending": <boolean>,
+    "ascending_with_long_poll": <boolean>,
     "after": "..."
   },
   "last_page": true|false
@@ -729,8 +727,7 @@ POST /list-unspent-outputs
   "id": "...",
   "alias": "...",
   "filter": "...",
-  "ascending": <boolean>,
-  "after": "...",
+  "after": "..."
 }
 ```
 
