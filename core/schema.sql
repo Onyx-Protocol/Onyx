@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.2
--- Dumped by pg_dump version 9.5.2
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -673,6 +673,17 @@ CREATE TABLE snapshots (
 
 
 --
+-- Name: submitted_txs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE submitted_txs (
+    tx_id text NOT NULL,
+    height bigint NOT NULL,
+    submitted_at timestamp without time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: txconsumers; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -925,6 +936,14 @@ ALTER TABLE ONLY snapshots
 
 
 --
+-- Name: submitted_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY submitted_txs
+    ADD CONSTRAINT submitted_txs_pkey PRIMARY KEY (tx_id);
+
+
+--
 -- Name: txconsumers_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1111,3 +1130,4 @@ insert into migrations (filename, hash) values ('2016-09-29.1.core.cursors-to-tx
 insert into migrations (filename, hash) values ('2016-09-29.2.core.rename-blockchain-id.sql', 'bc1dab19322441951dcc2a49577f1b477cca8ae2e9b6c6568ba57028606b64fc');
 insert into migrations (filename, hash) values ('2016-09-29.3.signers.remove-key-index.sql', '797977c67310d658496138a3d956f9d34c52a4462ab55a5754ecaa8b35908904');
 insert into migrations (filename, hash) values ('2016-09-30.0.core.remove-is-ascending-from-txconsumers.sql', 'dc22181470cd84be345701616755371e4612457955f460110ab0f88aeaa85222');
+insert into migrations (filename, hash) values ('2016-09-30.1.core.submit-idempotence.sql', '2dd217fda2f33f72332d0502149c1b1a75e5e896b5252477a35a7f62bb49052f');

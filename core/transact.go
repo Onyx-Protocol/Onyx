@@ -99,23 +99,48 @@ func submitSingle(ctx context.Context, c *protocol.Chain, x submitSingleArg) (in
 	return map[string]string{"id": x.tpl.Transaction.Hash().String()}, nil
 }
 
+// recordSubmittedTx records a lower bound height at which the tx
+// was first submitted to the tx pool. If this request fails for
+// some reason, a retry will know to look for the transaction in
+// blocks starting at this height.
+//
+// If the tx has already been submitted, it returns the existing
+// height.
+// TODO(jackson): Prune entries older than some threshold periodically.
+func recordSubmittedTx(ctx context.Context, txHash bc.Hash, currentHeight uint64) (height uint64, err error) {
+	const q = `
+		WITH inserted AS (
+			INSERT INTO submitted_txs (tx_id, height) VALUES($1, $2)
+			ON CONFLICT DO NOTHING RETURNING height
+		)
+		SELECT height FROM inserted
+		UNION
+		SELECT height FROM submitted_txs WHERE tx_id = $1
+	`
+	err = pg.QueryRow(ctx, q, txHash, currentHeight).Scan(&height)
+	return height, err
+}
+
 // finalizeTxWait calls FinalizeTx and then waits for confirmation of
 // the transaction.  A nil error return means the transaction is
 // confirmed on the blockchain.  ErrRejected means a conflicting tx is
 // on the blockchain.  context.DeadlineExceeded means ctx is an
 // expiring context that timed out.
 func finalizeTxWait(ctx context.Context, c *protocol.Chain, txTemplate *txbuilder.Template) error {
-	// Avoid a race condition.  Calling c.Height() here ensures that
-	// when we start waiting for blocks below, we don't begin waiting at
-	// block N+1 when the tx we want is in block N.
-	height := c.Height()
-
 	if txTemplate.Transaction == nil {
 		return errors.Wrap(txbuilder.ErrMissingRawTx)
 	}
 
+	// Avoid a race condition.  Calling c.Height() here ensures that
+	// when we start waiting for blocks below, we don't begin waiting at
+	// block N+1 when the tx we want is in block N.
 	tx := bc.NewTx(*txTemplate.Transaction)
-	err := txbuilder.FinalizeTx(ctx, c, tx)
+	height, err := recordSubmittedTx(ctx, tx.Hash, c.Height())
+	if err != nil {
+		return errors.Wrap(err, "saving tx submitted height")
+	}
+
+	err = txbuilder.FinalizeTx(ctx, c, tx)
 	if err != nil {
 		return err
 	}

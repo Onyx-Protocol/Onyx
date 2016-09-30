@@ -79,7 +79,8 @@ func Reset(ctx context.Context, db pg.DB) error {
 			reservations,
 			signed_blocks,
 			signers,
-			snapshots
+			snapshots,
+			submitted_txs
 			RESTART IDENTITY;
 	`
 
