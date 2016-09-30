@@ -68,7 +68,7 @@ func configGenerator(db *sql.DB, args []string) {
 		fatalln("error:", err)
 	}
 
-	fmt.Println("initial block hash", config.InitialBlockHash)
+	fmt.Println("initial block hash", config.BlockchainID)
 }
 
 func fatalln(v ...interface{}) {

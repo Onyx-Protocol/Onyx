@@ -143,7 +143,7 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"is_signer":                         a.config.IsSigner,
 		"is_generator":                      a.config.IsGenerator,
 		"generator_url":                     a.config.GeneratorURL,
-		"initial_block_hash":                a.config.InitialBlockHash,
+		"initial_block_hash":                a.config.BlockchainID,
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
@@ -151,8 +151,8 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"network_rpc_version":               networkRPCVersion,
 		"build_commit":                      &buildCommit,
 		"build_date":                        &buildDate,
-		"require_client_access_tokens":      a.config.clientAuthed,
-		"require_network_access_tokens":     a.config.networkAuthed,
+		"require_client_access_tokens":      a.config.isClientAuthed(),
+		"require_network_access_tokens":     a.config.isNetworkAuthed(),
 	}, nil
 }
 
@@ -169,9 +169,19 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 // Otherwise, c.IsGenerator is false, and Configure makes a test request
 // to GeneratorURL to detect simple configuration mistakes.
 func Configure(ctx context.Context, db pg.DB, c *Config) error {
+	if c.isClientAuthed() {
+		clientTokenExists, err := accesstoken.ClientTokenExists(ctx)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+		if !clientTokenExists {
+			return errors.Wrap(errNoClientTokens)
+		}
+	}
+
 	var err error
 	if !c.IsGenerator {
-		err = tryGenerator(ctx, c.GeneratorURL, c.InitialBlockHash.String())
+		err = tryGenerator(ctx, c.GeneratorURL, c.BlockchainID.String())
 		if err != nil {
 			return err
 		}
@@ -219,14 +229,25 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			return err
 		}
 
-		c.InitialBlockHash = block.Hash()
+		c.BlockchainID = block.Hash()
 	}
 
 	const q = `
-		INSERT INTO config (is_signer, block_xpub, is_generator, initial_block_hash, generator_url, configured_at)
-		VALUES ($1, $2, $3, $4, $5, NOW())
+		INSERT INTO config (is_signer, block_xpub, is_generator, initial_block_hash, generator_url,
+			network_authed, client_authed, configured_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
 	`
-	_, err = db.Exec(ctx, q, c.IsSigner, c.BlockXPub, c.IsGenerator, c.InitialBlockHash, c.GeneratorURL)
+	_, err = db.Exec(
+		ctx,
+		q,
+		c.IsSigner,
+		c.BlockXPub,
+		c.IsGenerator,
+		c.BlockchainID,
+		c.GeneratorURL,
+		c.isNetworkAuthed(),
+		c.isClientAuthed(),
+	)
 	return err
 }
 
@@ -254,11 +275,11 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	err := db.QueryRow(ctx, q).Scan(
 		&c.IsSigner,
 		&c.IsGenerator,
-		&c.InitialBlockHash,
+		&c.BlockchainID,
 		&c.GeneratorURL,
 		&c.BlockXPub,
-		&c.networkAuthed,
-		&c.clientAuthed,
+		&c.NetworkAuthed,
+		&c.ClientAuthed,
 		&c.ConfiguredAt,
 	)
 	if err == sql.ErrNoRows {

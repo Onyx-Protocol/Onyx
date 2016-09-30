@@ -65,8 +65,6 @@ var (
 	logCount         = env.Int("LOGCOUNT", 9)
 	logQueries       = env.Bool("LOG_QUERIES", false)
 	maxDBConns       = env.Int("MAXDBCONNS", 10) // set to 100 in prod
-	apiSecretToken   = env.String("API_SECRET", "")
-	rpcSecretToken   = env.String("RPC_SECRET", "")
 	remoteSignerURLs = env.StringSlice("REMOTE_SIGNER_URLS")
 	remoteSignerKeys = env.StringSlice("REMOTE_SIGNER_KEYS")
 
@@ -121,14 +119,12 @@ func main() {
 	chainlog.SetPrefix(append([]interface{}{"app", "cored", "target", *target, "buildtag", buildTag, "processID", processID}, race...)...)
 	chainlog.SetOutput(logWriter())
 
-	requireSecretInProd(*apiSecretToken)
-
 	var h http.Handler
 	if config != nil {
-		h = launchConfiguredCore(ctx, db, *config, processID)
+		h = launchConfiguredCore(ctx, db, config, processID)
 	} else {
 		chainlog.Messagef(ctx, "Launching as unconfigured Core.")
-		h = core.Handler(*apiSecretToken, *rpcSecretToken, nil, nil, nil, nil, nil)
+		h = core.Handler(nil, nil, nil, nil, nil)
 	}
 
 	h = dashboardHandler(h)
@@ -167,14 +163,14 @@ func main() {
 	}
 }
 
-func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, processID string) http.Handler {
+func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, processID string) http.Handler {
 	var remoteGenerator *rpc.Client
 	if !config.IsGenerator {
 		remoteGenerator = &rpc.Client{
 			BaseURL:      config.GeneratorURL,
 			Username:     processID,
 			BuildTag:     buildTag,
-			BlockchainID: config.InitialBlockHash.String(),
+			BlockchainID: config.BlockchainID.String(),
 		}
 	}
 	txbuilder.Generator = remoteGenerator
@@ -212,7 +208,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, p
 	account.Init(c, indexer)
 
 	if config.IsGenerator {
-		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, *rpcSecretToken, config.InitialBlockHash.String()) {
+		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, config.BlockchainID.String()) {
 			generatorSigners = append(generatorSigners, signer)
 		}
 	}
@@ -231,9 +227,9 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config core.Config, p
 		}
 	})
 
-	h := core.Handler(*apiSecretToken, *rpcSecretToken, c, signBlockHandler, hsm, indexer, &config)
+	h := core.Handler(c, signBlockHandler, hsm, indexer, config)
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set(rpc.HeaderBlockchainID, config.InitialBlockHash.String())
+		w.Header().Set(rpc.HeaderBlockchainID, config.BlockchainID.String())
 		h.ServeHTTP(w, req)
 	})
 }
@@ -276,7 +272,7 @@ type remoteSigner struct {
 	Key    ed25519.PublicKey
 }
 
-func remoteSignerInfo(ctx context.Context, processID, buildTag, rpcSecretToken, blockchainID string) (a []*remoteSigner) {
+func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string) (a []*remoteSigner) {
 	// REMOTE_SIGNER_URLS and REMOTE_SIGNER_KEYS should be parallel,
 	// comma-separated lists. Each element of REMOTE_SIGNER_KEYS is the
 	// public key for the corresponding URL in REMOTE_SIGNER_URLS.

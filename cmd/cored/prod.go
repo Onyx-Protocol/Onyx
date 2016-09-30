@@ -2,19 +2,7 @@
 
 package main
 
-import (
-	"context"
-
-	"chain/database/pg"
-	"chain/log"
-)
-
-func requireSecretInProd(secret string) {
-	if secret == "" {
-		ctx := context.Background()
-		log.Fatal(ctx, "error", "please set environment variable API_SECRET")
-	}
-}
+import "chain/database/pg"
 
 func resetInDevIfRequested(db pg.DB) {}
 

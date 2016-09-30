@@ -30,7 +30,6 @@ type BlockSignerFunc func(context.Context, *bc.Block) ([]byte, error)
 
 // Handler returns a handler that serves the Chain HTTP API.
 func Handler(
-	apiSecret, rpcSecret string,
 	c *protocol.Chain,
 	signer BlockSignerFunc,
 	hsm *mockhsm.HSM,
@@ -55,22 +54,23 @@ func Handler(
 		m.Handle("/", alwaysError(errUnconfigured))
 		m.Handle("/configure", jsonHandler(configure))
 		m.Handle("/info", jsonHandler(a.info))
+		registerAccessTokens(m)
 	}
 	return m
 }
 
 // Config encapsulates Core-level, persistent configuration options.
 type Config struct {
-	IsSigner         bool    `json:"is_signer"`
-	IsGenerator      bool    `json:"is_generator"`
-	InitialBlockHash bc.Hash `json:"initial_block_hash"`
-	GeneratorURL     string  `json:"generator_url"`
-	ConfiguredAt     time.Time
-	BlockXPub        string `json:"block_xpub"`
+	IsSigner     bool    `json:"is_signer"`
+	IsGenerator  bool    `json:"is_generator"`
+	BlockchainID bc.Hash `json:"blockchain_id"`
+	GeneratorURL string  `json:"generator_url"`
+	ConfiguredAt time.Time
+	BlockXPub    string `json:"block_xpub"`
 
 	authedMu      sync.Mutex // protects the following
-	clientAuthed  bool
-	networkAuthed bool
+	ClientAuthed  bool       `json:"require_client_access_tokens"`
+	NetworkAuthed bool       `json:"require_network_access_tokens"`
 }
 
 func (c *Config) authEnabled(typ string) bool {
@@ -80,25 +80,25 @@ func (c *Config) authEnabled(typ string) bool {
 func (c *Config) isClientAuthed() bool {
 	c.authedMu.Lock()
 	defer c.authedMu.Unlock()
-	return c.clientAuthed
+	return c.ClientAuthed
 }
 
 func (c *Config) isNetworkAuthed() bool {
 	c.authedMu.Lock()
 	defer c.authedMu.Unlock()
-	return c.networkAuthed
+	return c.NetworkAuthed
 }
 
 func (c *Config) setClientAuthed(a bool) {
 	c.authedMu.Lock()
 	defer c.authedMu.Unlock()
-	c.clientAuthed = a
+	c.ClientAuthed = a
 }
 
 func (c *Config) setNetworkAuthed(a bool) {
 	c.authedMu.Lock()
 	defer c.authedMu.Unlock()
-	c.networkAuthed = a
+	c.NetworkAuthed = a
 }
 
 type api struct {
@@ -182,14 +182,17 @@ func (a *api) handler() http.Handler {
 	// V3 DEPRECATED
 	m.Handle("/v3/transact/cancel-reservation", jsonHandler(cancelReservation))
 
-	// Access tokens
-	m.Handle("/create-access-token", jsonHandler(createAccessToken))
-	m.Handle("/list-access-tokens", jsonHandler(listAccessTokens))
-	m.Handle("/delete-access-token", jsonHandler(deleteAccessToken))
+	registerAccessTokens(m)
 
 	m.Handle("/", alwaysError(errNotFound))
 
 	return m
+}
+
+func registerAccessTokens(m *http.ServeMux) {
+	m.Handle("/create-access-token", jsonHandler(createAccessToken))
+	m.Handle("/list-access-tokens", jsonHandler(listAccessTokens))
+	m.Handle("/delete-access-token", jsonHandler(deleteAccessToken))
 }
 
 func rpcAuthedHandler(c *protocol.Chain, signer BlockSignerFunc) http.Handler {

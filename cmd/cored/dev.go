@@ -14,8 +14,6 @@ import (
 
 var reset = env.Bool("RESET", false)
 
-func requireSecretInProd(secret string) {}
-
 func initSchemaInDev(db pg.DB) {
 	ctx := context.Background()
 	const q = `
