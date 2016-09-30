@@ -10,7 +10,7 @@ import {
 } from '../../../components/Common'
 
 const ISSUE_KEY = 'issue'
-const SPEND_ACCOUNT_KEY = 'spent_account'
+const SPEND_ACCOUNT_KEY = 'spend_account'
 const SPEND_UNSPENT_KEY = 'spend_account_unspent_output'
 const CONTROL_ACCOUNT_KEY = 'control_account'
 const CONTROL_PROGRAM_KEY = 'control_program'
