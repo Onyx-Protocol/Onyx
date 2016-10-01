@@ -496,6 +496,7 @@ CREATE TABLE config (
     block_xpub text DEFAULT ''::text NOT NULL,
     network_authed boolean DEFAULT false,
     client_authed boolean DEFAULT false,
+    remote_block_signers bytea DEFAULT '\x'::bytea NOT NULL,
     CONSTRAINT config_singleton CHECK (singleton)
 );
 
@@ -1131,3 +1132,4 @@ insert into migrations (filename, hash) values ('2016-09-29.2.core.rename-blockc
 insert into migrations (filename, hash) values ('2016-09-29.3.signers.remove-key-index.sql', '797977c67310d658496138a3d956f9d34c52a4462ab55a5754ecaa8b35908904');
 insert into migrations (filename, hash) values ('2016-09-30.0.core.remove-is-ascending-from-txconsumers.sql', 'dc22181470cd84be345701616755371e4612457955f460110ab0f88aeaa85222');
 insert into migrations (filename, hash) values ('2016-09-30.1.core.submit-idempotence.sql', '2dd217fda2f33f72332d0502149c1b1a75e5e896b5252477a35a7f62bb49052f');
+insert into migrations (filename, hash) values ('2016-09-30.2.config.add-secrets-signers.sql', 'da6c7ee122069bbbed470407f4090e364916d8d54339177b21afbadd820bec0e');

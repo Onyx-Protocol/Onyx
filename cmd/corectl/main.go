@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 
 	"chain/core"
 	"chain/core/mockhsm"
@@ -56,17 +58,46 @@ func main() {
 }
 
 func configGenerator(db *sql.DB, args []string) {
-	if len(args) != 0 {
-		fatalln("error: config-generator takes no args")
+	const usage = "error: corectl config-generator [<quorum> <<pubkey> <url>...>]"
+	var (
+		isSigner bool
+		quorum   int
+		signers  []core.ConfigSigner
+		err      error
+	)
+	if len(args) == 0 {
+		isSigner = true
+		quorum = 1
+	} else if len(args)%2 != 1 {
+		fatalln(usage)
+	} else {
+		quorum, err = strconv.Atoi(args[0])
+		if err != nil {
+			fatalln(usage)
+		}
+
+		for i := 1; i < len(args); i += 2 {
+			pubkey, err := hex.DecodeString(args[i])
+			if err != nil {
+				fatalln(usage)
+			}
+			url := args[i+1]
+			signers = append(signers, core.ConfigSigner{
+				Pubkey: pubkey,
+				URL:    url,
+			})
+		}
 	}
 
 	config := &core.Config{
 		IsGenerator: true,
-		IsSigner:    true,
+		IsSigner:    isSigner,
+		Quorum:      quorum,
+		Signers:     signers,
 	}
 
 	ctx := context.Background()
-	err := core.Configure(ctx, db, config)
+	err = core.Configure(ctx, db, config)
 	if err != nil {
 		fatalln("error:", err)
 	}

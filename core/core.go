@@ -6,6 +6,7 @@ import (
 	"expvar"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -34,6 +35,12 @@ var (
 	errBadGenerator      = errors.New("generator returned an unsuccessful response")
 	errBadBlockXPub      = errors.New("supplied block xpub is invalid")
 	errNoClientTokens    = errors.New("cannot enable client auth without client access tokens")
+	errBadSignerURL      = errors.New("block signer URL is invalid")
+	errBadSignerPubkey   = errors.New("block signer pubkey is invalid")
+	errBadQuorum         = errors.New("quorum must be greater than 0 if there are signers")
+	// errProdReset is returned when reset is called on a
+	// production system.
+	errProdReset = errors.New("reset called on production system")
 )
 
 // reserved mockhsm key alias
@@ -45,10 +52,6 @@ const (
 func isProduction() bool {
 	return expvar.Get("buildtag").String() != `"dev"`
 }
-
-// errProdReset is returned when reset is called on a
-// production system.
-var errProdReset = errors.New("reset called on production system")
 
 // Reset deletes all data, resulting in an unconfigured core.
 // It must be called before any other functions in this package.
@@ -216,7 +219,23 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	}
 
 	if c.IsGenerator {
-		block, err := protocol.NewInitialBlock(signingKeys, 1, time.Now())
+		for _, signer := range c.Signers {
+			_, err = url.Parse(signer.URL)
+			if err != nil {
+				return errors.Wrap(errBadSignerURL, err.Error())
+			}
+			signingKey, err := chainkd.NewEd25519PublicKey(signer.Pubkey)
+			if err != nil {
+				return errors.Wrap(errBadSignerPubkey, err.Error())
+			}
+			signingKeys = append(signingKeys, signingKey)
+		}
+
+		if c.Quorum == 0 && len(signingKeys) > 0 {
+			return errors.Wrap(errBadQuorum)
+		}
+
+		block, err := protocol.NewInitialBlock(signingKeys, c.Quorum, time.Now())
 		if err != nil {
 			return err
 		}
@@ -234,10 +253,18 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		c.BlockchainID = block.Hash()
 	}
 
+	var blockSignerData []byte
+	if len(c.Signers) > 0 {
+		blockSignerData, err = json.Marshal(c.Signers)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+	}
+
 	const q = `
 		INSERT INTO config (is_signer, block_xpub, is_generator, blockchain_id, generator_url,
-			network_authed, client_authed, configured_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+			network_authed, client_authed, remote_block_signers, configured_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
 	`
 	_, err = db.Exec(
 		ctx,
@@ -249,6 +276,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		c.GeneratorURL,
 		c.isNetworkAuthed(),
 		c.isClientAuthed(),
+		blockSignerData,
 	)
 	return err
 }
@@ -269,11 +297,12 @@ func configure(ctx context.Context, x *Config) error {
 func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
 			SELECT is_signer, is_generator, blockchain_id, generator_url, block_xpub,
-			network_authed, client_authed, configured_at
+			network_authed, client_authed, remote_block_signers, configured_at
 			FROM config
 		`
 
 	c := new(Config)
+	var blockSignerData []byte
 	err := db.QueryRow(ctx, q).Scan(
 		&c.IsSigner,
 		&c.IsGenerator,
@@ -282,6 +311,7 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 		&c.BlockXPub,
 		&c.NetworkAuthed,
 		&c.ClientAuthed,
+		&blockSignerData,
 		&c.ConfiguredAt,
 	)
 	if err == sql.ErrNoRows {
@@ -289,6 +319,14 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	} else if err != nil {
 		return nil, errors.Wrap(err, "fetching Core config")
 	}
+
+	if len(blockSignerData) > 0 {
+		err = json.Unmarshal(blockSignerData, &c.Signers)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+	}
+
 	return c, nil
 }
 

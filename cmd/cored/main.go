@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"encoding/hex"
 	"expvar"
 	"fmt"
 	"io"
@@ -53,20 +52,18 @@ const (
 
 var (
 	// config vars
-	tlsCrt           = env.String("TLSCRT", "")
-	tlsKey           = env.String("TLSKEY", "")
-	listenAddr       = env.String("LISTEN", ":8080")
-	dbURL            = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
-	target           = env.String("TARGET", "sandbox")
-	samplePer        = env.Duration("SAMPLEPER", 10*time.Second)
-	splunkAddr       = os.Getenv("SPLUNKADDR")
-	logFile          = os.Getenv("LOGFILE")
-	logSize          = env.Int("LOGSIZE", 5e6) // 5MB
-	logCount         = env.Int("LOGCOUNT", 9)
-	logQueries       = env.Bool("LOG_QUERIES", false)
-	maxDBConns       = env.Int("MAXDBCONNS", 10) // set to 100 in prod
-	remoteSignerURLs = env.StringSlice("REMOTE_SIGNER_URLS")
-	remoteSignerKeys = env.StringSlice("REMOTE_SIGNER_KEYS")
+	tlsCrt     = env.String("TLSCRT", "")
+	tlsKey     = env.String("TLSKEY", "")
+	listenAddr = env.String("LISTEN", ":8080")
+	dbURL      = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
+	target     = env.String("TARGET", "sandbox")
+	samplePer  = env.Duration("SAMPLEPER", 10*time.Second)
+	splunkAddr = os.Getenv("SPLUNKADDR")
+	logFile    = os.Getenv("LOGFILE")
+	logSize    = env.Int("LOGSIZE", 5e6) // 5MB
+	logCount   = env.Int("LOGCOUNT", 9)
+	logQueries = env.Bool("LOG_QUERIES", false)
+	maxDBConns = env.Int("MAXDBCONNS", 10) // set to 100 in prod
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -209,7 +206,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	account.Init(c, indexer)
 
 	if config.IsGenerator {
-		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, config.BlockchainID.String()) {
+		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, config.BlockchainID.String(), config) {
 			generatorSigners = append(generatorSigners, signer)
 		}
 	}
@@ -290,23 +287,13 @@ type remoteSigner struct {
 	Key    ed25519.PublicKey
 }
 
-func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string) (a []*remoteSigner) {
-	// REMOTE_SIGNER_URLS and REMOTE_SIGNER_KEYS should be parallel,
-	// comma-separated lists. Each element of REMOTE_SIGNER_KEYS is the
-	// public key for the corresponding URL in REMOTE_SIGNER_URLS.
-	if len(*remoteSignerURLs) != len(*remoteSignerKeys) {
-		chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(errors.New("REMOTE_SIGNER_URLS and REMOTE_SIGNER_KEYS must be same length")))
-	}
-	for i := range *remoteSignerURLs {
-		u, err := url.Parse((*remoteSignerURLs)[i])
+func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID string, config *core.Config) (a []*remoteSigner) {
+	for _, signer := range config.Signers {
+		u, err := url.Parse(signer.URL)
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, err)
 		}
-		kbytes, err := hex.DecodeString((*remoteSignerKeys)[i])
-		if err != nil {
-			chainlog.Fatal(ctx, chainlog.KeyError, err)
-		}
-		k, err := chainkd.NewEd25519PublicKey(kbytes)
+		k, err := chainkd.NewEd25519PublicKey(signer.Pubkey)
 		if err != nil {
 			chainlog.Fatal(ctx, chainlog.KeyError, errors.Wrap(err), "at", "decoding signer public key")
 		}

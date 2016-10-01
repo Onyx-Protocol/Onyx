@@ -11,6 +11,7 @@ import (
 	"chain/core/leader"
 	"chain/core/mockhsm"
 	"chain/core/query"
+	"chain/encoding/json"
 	"chain/errors"
 	"chain/net/http/httpjson"
 	"chain/net/rpc"
@@ -66,7 +67,9 @@ type Config struct {
 	BlockchainID bc.Hash `json:"blockchain_id"`
 	GeneratorURL string  `json:"generator_url"`
 	ConfiguredAt time.Time
-	BlockXPub    string `json:"block_xpub"`
+	BlockXPub    string         `json:"block_xpub"`
+	Signers      []ConfigSigner `json:"block_signer_urls"`
+	Quorum       int
 
 	authedMu      sync.Mutex // protects the following
 	ClientAuthed  bool       `json:"require_client_access_tokens"`
@@ -99,6 +102,11 @@ func (c *Config) setNetworkAuthed(a bool) {
 	c.authedMu.Lock()
 	defer c.authedMu.Unlock()
 	c.NetworkAuthed = a
+}
+
+type ConfigSigner struct {
+	Pubkey json.HexBytes `json:"pubkey"`
+	URL    string        `json:"url"`
 }
 
 type api struct {

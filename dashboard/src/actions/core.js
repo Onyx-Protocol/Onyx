@@ -39,6 +39,7 @@ let actions = {
       // Convert string value to boolean for API
       data.is_generator = data.is_generator === 'true' ? true : false
       data.is_signer = data.is_generator
+      data.quorum = data.is_generator ? 1 : 0
 
       return chain.Core.configure(data, context)
         .then(() => retry(dispatch, fetchCoreInfo({throw: true})))
