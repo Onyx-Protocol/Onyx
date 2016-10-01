@@ -16,10 +16,11 @@ func TestWriteHTTPError(t *testing.T) {
 		json string
 		code int
 	}{
-		{nil, `{"code":"CH000","message":"Chain API Error"}`, 500},
-		{pg.ErrUserInputNotFound, `{"code":"CH002","message":"Not found"}`, 400},
-		{errors.Wrap(pg.ErrUserInputNotFound, "foo"), `{"code":"CH002","message":"Not found"}`, 400},
-		{errors.WithDetail(pg.ErrUserInputNotFound, "foo"), `{"code":"CH002","message":"Not found","detail":"foo"}`, 400},
+		{nil, `{"code":"CH000","message":"Chain API Error","temporary":true}`, 500},
+		{pg.ErrUserInputNotFound, `{"code":"CH002","message":"Not found","temporary":false}`, 400},
+		{errors.Wrap(pg.ErrUserInputNotFound, "foo"), `{"code":"CH002","message":"Not found","temporary":false}`, 400},
+		{errors.WithDetail(pg.ErrUserInputNotFound, "foo"), `{"code":"CH002","message":"Not found","detail":"foo","temporary":false}`, 400},
+		{context.DeadlineExceeded, `{"code":"CH001","message":"Request timed out","temporary":true}`, 504},
 	}
 
 	for _, test := range cases {

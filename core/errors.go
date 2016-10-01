@@ -27,7 +27,14 @@ type errorInfo struct {
 
 type detailedError struct {
 	errorInfo
-	Detail string `json:"detail,omitempty"`
+	Detail    string `json:"detail,omitempty"`
+	Temporary bool   `json:"temporary"`
+}
+
+var temporaryErrorCodes = map[string]bool{
+	"CH000": true, // internal server error
+	"CH001": true, // request timed out
+	"CH761": true, // outputs currently reserved
 }
 
 var (
@@ -110,7 +117,7 @@ func errInfo(err error) (body detailedError, info errorInfo) {
 	defer func() {
 		if err := recover(); err != nil {
 			info = infoInternal
-			body = detailedError{infoInternal, ""}
+			body = detailedError{infoInternal, "", true}
 		}
 	}()
 	info, ok := errorInfoTab[root]
@@ -118,5 +125,10 @@ func errInfo(err error) (body detailedError, info errorInfo) {
 		info = infoInternal
 	}
 
-	return detailedError{info, errors.Detail(err)}, info
+	body = detailedError{
+		errorInfo: info,
+		Detail:    errors.Detail(err),
+		Temporary: temporaryErrorCodes[info.ChainCode],
+	}
+	return body, info
 }

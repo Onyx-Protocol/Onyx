@@ -84,7 +84,7 @@ public class APIClient {
     try {
       req =
           new Request.Builder()
-              // TODO: include version string in User-Agent when availabe
+              // TODO: include version string in User-Agent when available
               .header("User-Agent", "chain-sdk-java")
               .header("Authorization", this.credentials())
               .url(this.url(path))
@@ -124,8 +124,9 @@ public class APIClient {
         // ConnectivityExceptions are always retriable.
         exception = ex;
       } catch (APIException ex) {
-        // Check if this http status code is retriable.
-        if (!isRetriableStatusCode(ex.statusCode)) {
+        // Check if this error is retriable (either it's a status code that's
+        // always retriable or the error is explicitly marked as temporary.
+        if (!isRetriableStatusCode(ex.statusCode) && !ex.temporary) {
           throw ex;
         }
         exception = ex;
@@ -148,7 +149,6 @@ public class APIClient {
     // Check for an error in the response
     APIException err = serializer.fromJson(body, APIException.class);
     if (err.code != null) {
-      err.statusCode = 400; // Treat as bad user input. This is necessary to prevent a retry.
       err.requestID = response.headers().get("Chain-Request-ID");
       throw err;
     }
@@ -201,12 +201,12 @@ public class APIClient {
 
     if ((response.code() / 100) != 2) {
       try {
-        HashMap<String, String> msg =
-            this.serializer.fromJson(
-                response.body().charStream(),
-                new TypeToken<HashMap<String, String>>() {}.getType());
-        throw new APIException(
-            msg.get("code"), msg.get("message"), msg.get("detail"), rid, response.code());
+        APIException err = serializer.fromJson(response.body().charStream(), APIException.class);
+        if (err.code != null) {
+          err.requestID = rid;
+          err.statusCode = response.code();
+          throw err;
+        }
       } catch (IOException ex) {
         throw new JSONException("Unable to read body. " + ex.getMessage(), rid);
       }
