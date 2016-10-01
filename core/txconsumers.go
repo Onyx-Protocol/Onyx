@@ -61,7 +61,7 @@ func updateTxConsumer(ctx context.Context, in struct {
 		return nil, errors.WithDetail(httpjson.ErrBadRequest, "new After cannot be before Prev")
 	}
 
-	return txconsumer.Update(ctx, in.ID, in.Alias, in.Prev, in.After)
+	return txconsumer.Update(ctx, in.ID, in.Alias, in.After, in.Prev)
 }
 
 // txAfterIsBefore returns true if a is before b. It returns an error if either

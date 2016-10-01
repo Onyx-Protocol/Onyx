@@ -34,22 +34,19 @@ public class NotificationTest {
     String alice = "TransactionTest.testTransactionNotification.alice";
     String asset = "TransactionTest.testTransactionNotification.test";
     String consumer = "TransactionTest.testTransactionNotification.consumer";
-    String filter = "outputs(account_alias="+alice+")";
+    String filter = "outputs(account_alias='"+alice+"')";
 
     new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(context);
 
     new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(context);
 
     Transaction.Consumer cnsmr = Transaction.Consumer.create(context, consumer, filter);
-    Transaction.QueryBuilder queryer =
-        new Transaction.QueryBuilder().setAfter(cnsmr.after).setAscendingWithLongPoll().setTimeout(1000);
-
     ExecutorService executor = Executors.newFixedThreadPool(1);
-    Callable<Transaction.Items> task =
+    Callable<Transaction> task =
         () -> {
-          return queryer.execute(context);
+          return cnsmr.next(context);
         };
-    Future<Transaction.Items> future = executor.submit(task);
+    Future<Transaction> future = executor.submit(task);
 
     Transaction.Template issuance =
         new Transaction.Builder()
@@ -62,10 +59,9 @@ public class NotificationTest {
             .build(context);
     Transaction.submit(context, HsmSigner.sign(issuance));
 
-    Transaction.Items txns = future.get();
-    assertEquals(txns.list.size(), 1);
-    assertEquals(txns.list.get(0).inputs.get(0).action, "issue");
-    assertEquals(txns.list.get(0).inputs.get(0).amount, amount);
-    assertEquals(txns.list.get(0).outputs.get(0).amount, amount);
+    Transaction tx = future.get();
+    assertEquals(tx.inputs.get(0).action, "issue");
+    assertEquals(tx.inputs.get(0).amount, amount);
+    assertEquals(tx.outputs.get(0).amount, amount);
   }
 }

@@ -1018,6 +1018,9 @@ public class Transaction {
      */
     public String after;
 
+    private ListIterator<Transaction> txIter;
+    private Transaction lastTx;
+
     /**
      * Creates a consumer.
      *
@@ -1046,7 +1049,7 @@ public class Transaction {
     public static Consumer getByID(Context ctx, String id) throws ChainException {
       Map<String, Object> req = new HashMap<>();
       req.put("id", id);
-      return ctx.request("get-consumer", req, Consumer.class);
+      return ctx.request("get-transaction-consumer", req, Consumer.class);
     }
 
     /**
@@ -1060,25 +1063,81 @@ public class Transaction {
     public static Consumer getByAlias(Context ctx, String alias) throws ChainException {
       Map<String, Object> req = new HashMap<>();
       req.put("alias", alias);
-      return ctx.request("get-consumer", req, Consumer.class);
+      return ctx.request("get-transaction-consumer", req, Consumer.class);
     }
 
     /**
-     * Updates a consumer with a new `after`. Consumers can only be updated forwards
-     * (i.e., a consumer cannot be updated with a value that is previous to its
-     * current value).
+     * Retrieves the next transaction matching the consumer's filter criteria.
+     * If no such transaction is available, this method will block until a
+     * matching transaction arrives in the blockchain, or if the specified
+     * timeout is reached. To avoid client-side timeouts, be sure to call
+     * {@link Context#setReadTimeout(long, TimeUnit)} with appropriate
+     * parameters.
      *
      * @param ctx context object that makes requests to core
-     * @param after an indicator of the last transaction processed
-     * @return a consumer object
+     * @param timeout number of milliseconds before the server-side long-poll should time out
+     * @return a transaction object
      * @throws ChainException
      */
-    public Consumer update(Context ctx, String after) throws ChainException {
+    public Transaction next(Context ctx, long timeout) throws ChainException {
+      if (txIter == null || !txIter.hasNext()) {
+        txIter =
+            new QueryBuilder()
+                .setFilter(filter)
+                .setAfter(after)
+                .setTimeout(timeout)
+                .setAscendingWithLongPoll()
+                .execute(ctx)
+                .list
+                .listIterator();
+      }
+
+      lastTx = txIter.next();
+      return lastTx;
+    }
+
+    /**
+     * Retrieves the next transaction matching the consumer's filter criteria.
+     * If no such transaction is available, this method will block until a
+     * matching transaction arrives in the blockchain. To avoid client-side
+     * timeouts, be sure to call {@link Context#setReadTimeout(long, TimeUnit)}
+     * with appropriate parameters.
+     *
+     * @param ctx context object that makes requests to core
+     * @return a transaction object
+     * @throws ChainException
+     */
+    public Transaction next(Context ctx) throws ChainException {
+      return next(ctx, 0);
+    }
+
+    /**
+     * Persists the state of the transaction consumer. Be sure to call this
+     * periodically when consuming transactions with
+     * {@link #next(Context, long)}. The most conservative (albeit least
+     * performant) strategy is to call ack() once for every result returned by
+     * {@link #next(Context, long)}.
+     *
+     * @param ctx context object that makes requests to core
+     * @throws ChainException
+     */
+    public void ack(Context ctx) throws ChainException {
+      if (lastTx == null) {
+        return;
+      }
+
+      // The format of the cursor value is specified in the core/query package.
+      // It technically uses an unsigned 64-bit int for the end specifier, but
+      // Long.MAX_VALUE should suffice.
+      String newAfter = "" + lastTx.blockHeight + ":" + lastTx.position + "-" + Long.MAX_VALUE;
+      System.out.println(newAfter);
       Map<String, Object> req = new HashMap<>();
       req.put("id", this.id);
       req.put("previous_after", this.after);
-      req.put("after", after);
-      return ctx.request("update-consumer", req, Consumer.class);
+      req.put("after", newAfter);
+      ctx.request("update-transaction-consumer", req, Consumer.class);
+
+      this.after = newAfter;
     }
   }
 }
