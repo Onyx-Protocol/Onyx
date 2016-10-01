@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/lib/pq"
+
 	"chain/core/signers"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/chainkd"
@@ -92,15 +94,15 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 	return asset, nil
 }
 
-// FindByID retrieves an Asset record along with its signer, given an assetID.
-func FindByID(ctx context.Context, id bc.AssetID) (*Asset, error) {
-	return lookupAsset(ctx, id, "")
+// findByID retrieves an Asset record along with its signer, given an assetID.
+func findByID(ctx context.Context, id bc.AssetID) (*Asset, error) {
+	return assetQuery(ctx, "assets.id=$1", id)
 }
 
 // FindByAlias retrieves an Asset record along with its signer,
 // given an asset alias.
 func FindByAlias(ctx context.Context, alias string) (*Asset, error) {
-	return lookupAsset(ctx, bc.AssetID{}, alias)
+	return assetQuery(ctx, "assets.alias=$1", alias)
 }
 
 // insertAsset adds the asset to the database. If the asset has a client token,
@@ -108,11 +110,11 @@ func FindByAlias(ctx context.Context, alias string) (*Asset, error) {
 // lookup and return the existing asset instead.
 func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset, error) {
 	const q = `
-    INSERT INTO assets
-	 	(id, alias, signer_id, initial_block_hash, issuance_program, definition, client_token)
-    VALUES($1, $2, $3, $4, $5, $6, $7)
-    ON CONFLICT (client_token) DO NOTHING
-	RETURNING sort_id
+		INSERT INTO assets
+			(id, alias, signer_id, initial_block_hash, issuance_program, definition, client_token)
+		VALUES($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT (client_token) DO NOTHING
+		RETURNING sort_id
   `
 	defParams, err := mapToNullString(asset.Definition)
 	if err != nil {
@@ -167,41 +169,48 @@ func insertAssetTags(ctx context.Context, assetID bc.AssetID, tags map[string]in
 	return nil
 }
 
-func lookupAsset(ctx context.Context, idQ bc.AssetID, aliasQ string) (*Asset, error) {
-	if idQ != (bc.AssetID{}) && aliasQ != "" {
-		return nil, errors.New("cannot refer to asset by both ID and alias")
-	}
-
-	return assetQuery(ctx, "id=$1 OR ($2!='' AND alias=$2)", idQ, aliasQ)
-}
-
 // assetByClientToken loads an asset from the database using its client token.
 func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error) {
-	return assetQuery(ctx, "client_token=$1", clientToken)
+	return assetQuery(ctx, "assets.client_token=$1", clientToken)
 }
 
 func assetQuery(ctx context.Context, pred string, args ...interface{}) (*Asset, error) {
 	const baseQ = `
-		SELECT id, alias, issuance_program, definition,
-			initial_block_hash, signer_id, sort_id
+		SELECT assets.id, assets.alias, assets.issuance_program, assets.definition,
+			assets.initial_block_hash, assets.sort_id,
+			signers.id, COALESCE(signers.type, ''), COALESCE(signers.xpubs, '{}'),
+			COALESCE(signers.quorum, 0), COALESCE(signers.key_index, 0),
+			asset_tags.tags
 		FROM assets
+		LEFT JOIN signers ON signers.id=assets.signer_id
+		LEFT JOIN asset_tags ON asset_tags.asset_id=assets.id
 		WHERE %s
 		LIMIT 1
 	`
 	var (
 		a          Asset
 		alias      sql.NullString
-		signerID   sql.NullString
 		definition []byte
+		signerID   sql.NullString
+		signerType string
+		quorum     int
+		keyIndex   uint64
+		xpubs      []string
+		tags       []byte
 	)
 	err := pg.QueryRow(ctx, fmt.Sprintf(baseQ, pred), args...).Scan(
 		&a.AssetID,
-		&alias,
+		&a.Alias,
 		&a.IssuanceProgram,
 		&definition,
 		&a.InitialBlockHash,
-		&signerID,
 		&a.sortID,
+		&signerID,
+		&signerType,
+		(*pq.StringArray)(&xpubs),
+		&quorum,
+		&keyIndex,
+		&tags,
 	)
 	if err == sql.ErrNoRows {
 		return nil, pg.ErrUserInputNotFound
@@ -210,13 +219,10 @@ func assetQuery(ctx context.Context, pred string, args ...interface{}) (*Asset, 
 	}
 
 	if signerID.Valid {
-		// Only try to fetch the signer if this is a
-		// local asset.
-		sig, err := signers.Find(ctx, "asset", signerID.String)
+		a.Signer, err = signers.New(signerID.String, signerType, xpubs, quorum, keyIndex)
 		if err != nil {
-			return nil, errors.Wrap(err, "couldn't find signer")
+			return nil, err
 		}
-		a.Signer = sig
 	}
 
 	if len(definition) > 0 {
@@ -228,13 +234,6 @@ func assetQuery(ctx context.Context, pred string, args ...interface{}) (*Asset, 
 
 	if alias.Valid {
 		a.Alias = &alias.String
-	}
-
-	const tagQ = `SELECT tags FROM asset_tags WHERE asset_id=$1`
-	var tags []byte
-	err = pg.QueryRow(ctx, tagQ, a.AssetID.String()).Scan(&tags)
-	if err != nil && err != sql.ErrNoRows {
-		return nil, errors.Wrap(err)
 	}
 
 	if len(tags) > 0 {

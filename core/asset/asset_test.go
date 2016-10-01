@@ -67,7 +67,7 @@ func TestFindAssetByID(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	found, err := FindByID(ctx, asset.AssetID)
+	found, err := findByID(ctx, asset.AssetID)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

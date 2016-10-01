@@ -111,6 +111,20 @@ func Create(ctx context.Context, typ string, xpubs []string, quorum int, clientT
 	}, nil
 }
 
+func New(id, typ string, xpubs []string, quorum int, keyIndex uint64) (*Signer, error) {
+	keys, err := ConvertKeys(xpubs)
+	if err != nil {
+		return nil, errors.WithDetail(errors.New("bad xpub in databse"), errors.Detail(err))
+	}
+	return &Signer{
+		ID:       id,
+		Type:     typ,
+		XPubs:    keys,
+		Quorum:   quorum,
+		KeyIndex: keyIndex,
+	}, nil
+}
+
 func findByClientToken(ctx context.Context, clientToken *string) (*Signer, error) {
 	const q = `
 		SELECT id, type, xpubs, quorum, key_index

@@ -90,7 +90,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	}
 
 	// Ensure that the asset was saved to the `assets` table.
-	got, err := lookupAsset(ctx, remoteAssetID, "")
+	got, err := findByID(ctx, remoteAssetID)
 	if err != nil {
 		t.Fatal(err)
 	}

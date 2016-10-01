@@ -144,7 +144,7 @@ func indexAssets(ctx context.Context, b *bc.Block) {
 	// assets. We need to index them as annotated assets too.
 	for _, assetID := range newAssetIDs {
 		// TODO(jackson): Batch the asset lookups.
-		a, err := lookupAsset(ctx, assetID, "")
+		a, err := findByID(ctx, assetID)
 		if err != nil {
 			log.Fatal(ctx, "at", "looking up new asset", log.KeyError, err)
 		}

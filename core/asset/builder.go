@@ -40,7 +40,7 @@ func (a *IssueAction) Build(ctx context.Context) (*txbuilder.BuildResult, error)
 	}
 	maxTime := now.Add(ttl)
 
-	asset, err := FindByID(ctx, a.AssetID)
+	asset, err := findByID(ctx, a.AssetID)
 	if errors.Root(err) == pg.ErrUserInputNotFound {
 		err = errors.WithDetailf(err, "missing asset with ID %q", a.AssetID)
 	}
