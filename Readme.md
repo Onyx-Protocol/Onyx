@@ -115,3 +115,12 @@ In your commit message, include the commit hash of the upstream repo
 for the dependency. (You can find this with `git rev-parse HEAD` in
 the upstream repo.) Also, make sure the upstream working tree is clean.
 (Check with `git status`.)
+
+### License
+
+Chain Core Developer Edition is licensed under the terms of the [GNU 
+Affero General Public License Version 3 (AGPL)](LICENSE).
+
+The Chain Java SDK (`/sdk/java`) is licensed under the terms of the 
+[Apache License Version 2.0](sdk/java/LICENSE).
+
