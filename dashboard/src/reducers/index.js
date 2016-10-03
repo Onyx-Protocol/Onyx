@@ -12,8 +12,16 @@ import balance from './balance'
 import mockhsm from './mockhsm'
 import unspent from './unspent'
 
-const makeRootReducer = () =>
-  combineReducers({
+const makeRootReducer = () => (state, action) => {
+  if (action.type == 'UPDATE_CORE_INFO' &&
+      !action.param.is_configured) {
+        state = {
+          form: state.form,
+          routing: state.routing
+        }
+      }
+
+  return combineReducers({
     ...access_token,
     account,
     app,
@@ -25,5 +33,6 @@ const makeRootReducer = () =>
     routing,
     transaction,
     unspent,
-  })
+  })(state, action)
+}
 export default makeRootReducer
