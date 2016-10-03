@@ -1,11 +1,11 @@
-import chain from '../../chain'
-import { context } from '../../utility/environment'
-import { parseNonblankJSON } from '../../utility/string'
+import chain from 'chain'
+import { context } from 'utility/environment'
+import { parseNonblankJSON } from 'utility/string'
 import { push } from 'react-router-redux'
 
-import generateListActions from '../../actions/listActions'
-import generateFormActions from '../../actions/formActions'
-import unspentActions from '../../actions/unspent'
+import generateListActions from 'actions/listActions'
+import generateFormActions from 'actions/formActions'
+import unspentActions from 'actions/unspent'
 
 const type = 'transaction'
 
@@ -49,7 +49,7 @@ form.submitForm = (data) => function(dispatch) {
   }
 
   return new chain.Transaction(data)
-    .build(context)
+    .build(context())
     .then((template) => {
       const keys = []
 
@@ -61,10 +61,10 @@ form.submitForm = (data) => function(dispatch) {
         })
       })
 
-      return chain.MockHsm.sign([template], keys, context)
+      return chain.MockHsm.sign([template], keys, context())
     })
     .then((signedTemplates) => {
-      return signedTemplates[0].submit(context)
+      return signedTemplates[0].submit(context())
     })
     .then(() => {
       dispatch(push('/transactions'))
