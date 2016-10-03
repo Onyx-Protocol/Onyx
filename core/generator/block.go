@@ -121,7 +121,7 @@ func getSig(ctx context.Context, signer BlockSigner, b *bc.Block, sig *[]byte, i
 func nonNilSigs(a [][]byte) (b [][]byte) {
 	for _, p := range a {
 		if p != nil {
-			b = append(a, p)
+			b = append(b, p)
 		}
 	}
 	return b
