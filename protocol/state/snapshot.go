@@ -16,6 +16,15 @@ type Snapshot struct {
 	Issuances PriorIssuances
 }
 
+func (s *Snapshot) PruneIssuances(timestampMS uint64) {
+	// Delete expired issuance memory from the snapshot.
+	for hash, expiryMS := range s.Issuances {
+		if timestampMS > expiryMS {
+			delete(s.Issuances, hash)
+		}
+	}
+}
+
 // Copy makes a copy of provided snapshot.
 func Copy(original *Snapshot) *Snapshot {
 	c := &Snapshot{

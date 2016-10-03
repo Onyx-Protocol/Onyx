@@ -46,6 +46,7 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 
 	// Make a copy of the state that we can apply our changes to.
 	result = state.Copy(snapshot)
+	result.PruneIssuances(timestampMS)
 
 	txs, err := c.pool.Dump(ctx)
 	if err != nil {

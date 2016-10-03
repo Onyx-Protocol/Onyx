@@ -28,6 +28,8 @@ var (
 //
 // Tx should have already been validated (with `ValidateTx`) when the tx
 // was added to the pool.
+//
+// ConfirmTx should only read the snapshot and have no side effects.
 func ConfirmTx(snapshot *state.Snapshot, tx *bc.Tx, timestampMS uint64) error {
 	if timestampMS < tx.MinTime {
 		return errors.WithDetail(ErrBadTx, "block time is before transaction min time")
@@ -48,12 +50,6 @@ func ConfirmTx(snapshot *state.Snapshot, tx *bc.Tx, timestampMS uint64) error {
 				return errors.WithDetail(ErrBadTx, "timestamp outside issuance input's time window")
 			}
 			// TODO(bobg): test that timestampMS + maxIssuanceWindow >= tx.MaxTimeMS
-			// expire old items out of snapshot.Issuances
-			for h, expireMS := range snapshot.Issuances {
-				if timestampMS > expireMS {
-					delete(snapshot.Issuances, h)
-				}
-			}
 			iHash, err := tx.IssuanceHash(i)
 			if err != nil {
 				return err

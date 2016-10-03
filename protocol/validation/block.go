@@ -47,6 +47,7 @@ func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, blo
 	if err != nil {
 		return err
 	}
+	snapshot.PruneIssuances(block.TimestampMS)
 
 	// TODO: Check that other block headers are valid.
 	// TODO(erywalder): consider writing to a copy of the state tree
@@ -74,6 +75,7 @@ func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, blo
 
 // ApplyBlock applies the transactions in the block to the state tree.
 func ApplyBlock(snapshot *state.Snapshot, block *bc.Block) error {
+	snapshot.PruneIssuances(block.TimestampMS)
 	for _, tx := range block.Transactions {
 		err := ApplyTx(snapshot, tx)
 		if err != nil {
