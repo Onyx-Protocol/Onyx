@@ -32,7 +32,8 @@ func TestMarshalBlock(t *testing.T) {
 		t.Errorf("unexpected error %s", err)
 	}
 
-	// Include start and end quote marks because MarshalText returns them as part of the string representation of this data.
+	// Include start and end quote marks because json.Marshal adds them
+	// to the result of Block.MarshalText.
 	wantHex := ("\"03" + // serialization flags
 		"01" + // version
 		"01" + // block height
@@ -75,6 +76,12 @@ func TestMarshalBlock(t *testing.T) {
 
 	if !reflect.DeepEqual(*b, c) {
 		t.Errorf("expected marshaled/unmarshaled block to be:\n%sgot:\n%s", spew.Sdump(*b), spew.Sdump(c))
+	}
+
+	got[7] = 'q'
+	err = json.Unmarshal(got, &c)
+	if err == nil {
+		t.Error("unmarshaled corrupted JSON ok, wanted error")
 	}
 }
 

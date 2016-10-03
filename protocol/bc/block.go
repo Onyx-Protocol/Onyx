@@ -55,7 +55,10 @@ func (b *Block) MarshalText() ([]byte, error) {
 // UnmarshalText fulfills the encoding.TextUnmarshaler interface.
 func (b *Block) UnmarshalText(text []byte) error {
 	decoded := make([]byte, hex.DecodedLen(len(text)))
-	hex.Decode(decoded, text)
+	_, err := hex.Decode(decoded, text)
+	if err != nil {
+		return err
+	}
 	return b.readFrom(bytes.NewReader(decoded))
 }
 
