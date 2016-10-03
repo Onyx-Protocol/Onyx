@@ -14,7 +14,7 @@ let actions = Object.assign({},
   form,
   {
     createControlProgram: (data) => () =>
-      chain.ControlProgram.create(data, context)
+      chain.ControlProgram.create(data, context())
   }
 )
 

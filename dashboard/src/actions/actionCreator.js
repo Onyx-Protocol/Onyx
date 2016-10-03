@@ -2,7 +2,7 @@ export default function(type, payloadCreator) {
   let creator
   if (payloadCreator) {
     creator = (...args) => {
-      return Object.assign(payloadCreator(...args), {type})
+      return {...payloadCreator(...args), type}
     }
   } else {
     creator = () => {

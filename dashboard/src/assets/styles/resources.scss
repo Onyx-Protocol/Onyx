@@ -16,8 +16,10 @@ $text-color: #8c8e94;
 $text-strong-color: #3b4046;
 
 $highlight-default: #00bfaa;
-$highlight-danger: red;
+$highlight-danger: #EB4D5C;
 
-$background-inverse-color: $text-strong-color;
+$background-inverse-color: #20252D;
 $border-inverse-color: lighten($text-strong-color, 10%);
 $highlight-inverse-color: #a3a9b8;
+
+$border-radius-standard: 5px;

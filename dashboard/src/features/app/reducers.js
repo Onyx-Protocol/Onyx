@@ -43,11 +43,20 @@ export const flashMessages = (state = new Map(), action) => {
   } else if (action.type == 'DISMISS_FLASH') {
     state.delete(action.param)
     return new Map(state)
+  } else if (action.type == 'USER_LOG_IN') {
+    return new Map()
   }
 
   return state
 }
 
+export const modal = (state = { isShowing: false }, action) => {
+  if      (action.type == 'SHOW_MODAL') return { isShowing: true, ...action.payload }
+  else if (action.type == 'HIDE_MODAL') return { isShowing: false }
+  return state
+}
+
 export default combineReducers({
-  flashMessages
+  flashMessages,
+  modal
 })

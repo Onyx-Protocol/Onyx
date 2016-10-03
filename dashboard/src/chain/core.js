@@ -3,8 +3,12 @@ export default class Core {
     return context.client.request('/reset')
   }
 
-  static configure(body, context) {
+  static configure(context, body) {
     return context.client.request('/configure', body)
+  }
+
+  static updateConfiguration(context, body) {
+    return context.client.request('/update-configuration', body)
   }
 
   static info(context) {

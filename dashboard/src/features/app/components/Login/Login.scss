@@ -1,0 +1,25 @@
+.main {
+  background: $background-inverse-color;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.image {
+  width: 150px;
+  position: absolute;
+  top: calc(100px);
+  left: calc(50% - 75px);
+}
+
+.form {
+  background: $background-color;
+  border-radius: $border-radius-standard;
+  position: absolute;
+  left: calc(50% - 250px);
+  top: calc(200px);
+  width: 500px;
+  padding: 30px;
+}

@@ -1,5 +1,5 @@
 import { connect as reduxConnect } from 'react-redux'
-import actions from '../../../actions'
+import actions from 'actions'
 
 export const mapStateToProps = ( type ) => ( /* state */ ) => ({
   type: type

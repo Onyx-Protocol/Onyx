@@ -23,7 +23,7 @@ export default function(type, options = {}) {
       return function(dispatch) {
         let object = new chain[className](data)
 
-        return object.create(context)
+        return object.create(context())
           .then((data) => {
             dispatch(created(data))
             dispatch(push({

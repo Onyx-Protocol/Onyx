@@ -1,7 +1,7 @@
 const lib = {
   create: function(type, message, props = {}) {
     let err = new Error(message)
-    Object.assign(err, props, {type: type})
+    err = Object.assign(err, props, {type: type})
     return err
   },
 

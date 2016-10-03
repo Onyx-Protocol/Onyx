@@ -1,7 +1,7 @@
 import { connect as reduxConnect } from 'react-redux'
-import actions from '../../../actions'
-import ItemList from '../../../components/ItemList'
-import { pageSize } from '../../../utility/environment'
+import actions from 'actions'
+import ItemList from 'components/ItemList'
+import { pageSize } from 'utility/environment'
 
 export const mapStateToProps = (type, itemComponent) => (state) => {
   const currentIds = state[type].listView.itemIds
@@ -36,10 +36,10 @@ export const mapDispatchToProps = (type) => (dispatch) => ({
   updateQuery: (query) => dispatch(actions[type].updateQuery(query))
 })
 
-export const connect = (state, dispatch) => reduxConnect(
+export const connect = (state, dispatch, component = ItemList) => reduxConnect(
   state,
   dispatch
-)(ItemList)
+)(component)
 
 export default {
   mapStateToProps,

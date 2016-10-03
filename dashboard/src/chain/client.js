@@ -2,8 +2,9 @@ import 'isomorphic-fetch'
 import errors from './errors'
 
 class Client {
-  constructor(baseUrl) {
+  constructor(baseUrl, clientToken) {
     this.baseUrl = baseUrl
+    this.clientToken = clientToken
   }
 
   request(path, body = {}) {
@@ -19,6 +20,10 @@ class Client {
         'User-Agent': 'chain-sdk-js/0.0'
       },
       body: JSON.stringify(body)
+    }
+
+    if (this.clientToken) {
+      req.headers['Authorization'] = `Basic ${btoa(this.clientToken)}`
     }
 
     return fetch(this.baseUrl + path, req).catch((err) => {
@@ -67,7 +72,7 @@ class Client {
         throw errors.create(
           errType,
           errors.formatErrMsg(body, requestId),
-          {response: resp}
+          {response: resp, status: resp.status}
         )
       })
     })

@@ -67,6 +67,8 @@ class ItemList extends React.Component {
         <div>
           {header}
 
+          {this.props.children}
+
           {pagination}
 
           {this.props.items.map((item) =>
@@ -80,6 +82,8 @@ class ItemList extends React.Component {
       return(
         <div>
           {header}
+
+          {this.props.children}
 
           <div className='jumbotron text-center'>
             <p>No results</p>

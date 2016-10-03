@@ -1,10 +1,4 @@
-.main {
-  display: flex;
-  flex: 1;
-  flex-direction: row;
-  width: 100%;
-  max-width: 100%;
-}
+.main {}
 
 .mainEmbedded {
   .sidebarContent, .content {
@@ -14,13 +8,12 @@
 
 .sidebar {
   width: 180px;
-  min-width: 180px;
 }
 
 .content {
-  flex: 100;
+  width: 100%;
   padding: 22px;
-  max-width: calc(100% - 180px);
+  padding-left: 202px;
 }
 
 .sidebarContent {
@@ -28,6 +21,7 @@
   position: fixed;
   width: 180px;
   height: 100%;
+  padding-bottom: 30px;
   overflow-y: scroll;
   z-index: 10;
 

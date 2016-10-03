@@ -1,8 +1,7 @@
-import { connect } from 'react-redux'
-import actions from '../../../actions'
-import Main from './layout/Main/Main'
-import Config from './layout/Config/Config'
 import React from 'react'
+import { connect } from 'react-redux'
+import actions from 'actions'
+import { Main, Config, Login, Modal } from './'
 
 const CORE_POLLING_TIME=15000
 
@@ -10,13 +9,15 @@ class Container extends React.Component {
   constructor(props) {
     super(props)
 
-    this.state = { loadedInfo: false }
+    this.state = {
+      loadedInfo: false
+    }
 
     this.redirectRoot = this.redirectRoot.bind(this)
   }
 
   redirectRoot(configured, location) {
-    if (configured) {
+    if (configured || this.props.loginRequired) {
       if (location.pathname === '/' ||
           location.pathname.indexOf('configuration') >= 0) {
         this.props.showRoot()
@@ -30,9 +31,6 @@ class Container extends React.Component {
     this.props.fetchInfo().then(() => {
       this.setState({loadedInfo: true})
       this.redirectRoot(this.props.configured, this.props.location)
-    }).catch((err) => {
-      this.setState({loadedInfo: true})
-      throw(err)
     })
 
     setInterval(this.props.fetchInfo, CORE_POLLING_TIME)
@@ -46,14 +44,19 @@ class Container extends React.Component {
   }
 
   render() {
-    let loading = <div>Loading...</div>
+    if (!this.state.loadedInfo) return(<div>Loading...</div>)
 
     let layout = <Main>{this.props.children}</Main>
-    if (!this.props.configured) {
+    if (this.props.loginRequired && !this.props.loggedIn) {
+      layout = <Login />
+    } else if (!this.props.configured) {
       layout = <Config>{this.props.children}</Config>
     }
 
-    return this.state.loadedInfo ? layout : loading
+    return(<div>
+      {layout}
+      <Modal />
+    </div>)
   }
 }
 
@@ -61,11 +64,14 @@ export default connect(
   (state) => ({
     configured: state.core.configured,
     buildCommit: state.core.buildCommit,
-    buildDate: state.core.buildDate
+    buildDate: state.core.buildDate,
+    loginRequired: state.core.requireClientToken,
+    loggedIn: state.core.validToken,
   }),
   (dispatch) => ({
-    fetchInfo: () => dispatch(actions.core.fetchCoreInfo()),
+    fetchInfo: options => dispatch(actions.core.fetchCoreInfo(options)),
     showRoot: () => dispatch(actions.routing.showRoot),
     showConfiguration: () => dispatch(actions.routing.showConfiguration()),
+    clearSession: () => dispatch(actions.core.clearSession()),
   })
 )(Container)

@@ -15,7 +15,7 @@ favicon.href = faviconPath
 document.getElementsByTagName('head')[0].appendChild(favicon)
 
 // Start app
-const store = configureStore()
+export const store = configureStore()
 render(
 	<Root store={store}/>,
 	document.getElementById('root')

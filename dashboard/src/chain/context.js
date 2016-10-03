@@ -2,8 +2,8 @@ import Client from './client'
 
 class Context {
   constructor(config) {
-    this.config = Object.assign({}, config)
-    this.client = new Client(config.url)
+    this.config = {...config}
+    this.client = new Client(config.url, config.clientToken)
   }
 }
 

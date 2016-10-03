@@ -1,17 +1,22 @@
 import React from 'react'
 import styles from './Main.scss'
-import { Flash } from '../../../../shared/components'
+import { Flash } from 'features/shared/components'
 import { Link } from 'react-router'
 import { connect } from 'react-redux'
-import { actions } from '../../../'
+import actions from 'actions'
 
 class Main extends React.Component {
   render() {
-    let logo = require('../../../../../assets/images/logo-white.png')
+    let logo = require('assets/images/logo-white.png')
 
     const mainStyles = [styles.main]
     if (navigator.userAgent.includes('ChainCore.app')) {
       mainStyles.push(styles.mainEmbedded)
+    }
+
+    const logOut = (event) => {
+      event.preventDefault()
+      this.props.logOut()
     }
 
     return (
@@ -87,10 +92,22 @@ class Main extends React.Component {
                   Network Tokens
                 </Link>
               </li>
-
             </ul>
+
+            {this.props.canLogOut &&
+              <ul className={styles.navigation}>
+                <li className={styles.navigationTitle}>session</li>
+                <li>
+                  <a href='#' onClick={logOut}>
+                    <span className={`glyphicon glyphicon-log-out ${styles.glyphicon}`} />
+                    Log Out
+                  </a>
+                </li>
+              </ul>}
+
           </div>
         </div>
+
         <div className={styles.content}>
           <Flash messages={this.props.flashMessages}
             markFlashDisplayed={this.props.markFlashDisplayed}
@@ -107,9 +124,11 @@ class Main extends React.Component {
 export default connect(
   (state) => ({
     flashMessages: state.app.flashMessages,
+    canLogOut: state.core.requireClientToken
   }),
   (dispatch) => ({
-    markFlashDisplayed: (key) => dispatch(actions.displayedFlash(key)),
-    dismissFlash: (key) => dispatch(actions.dismissFlash(key)),
+    markFlashDisplayed: (key) => dispatch(actions.app.displayedFlash(key)),
+    dismissFlash: (key) => dispatch(actions.app.dismissFlash(key)),
+    logOut: () => dispatch(actions.core.clearSession())
   })
 )(Main)

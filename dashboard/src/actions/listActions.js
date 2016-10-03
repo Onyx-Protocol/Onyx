@@ -1,5 +1,5 @@
-import chain from '../chain'
-import { context, pageSize } from '../utility/environment'
+import chain from 'chain'
+import { context, pageSize } from 'utility/environment'
 import actionCreator from './actionCreator'
 
 export default function(type, options = {}) {
@@ -13,25 +13,25 @@ export default function(type, options = {}) {
   const didLoadAutocomplete = actionCreator(`DID_LOAD_${type.toUpperCase()}_AUTOCOMPLETE`)
 
   const deleteItemSuccess = actionCreator(`DELETE_${type.toUpperCase()}`, id => ({ id }))
-  const deleteItem = function(id) {
-    return (dispatch) => chain[className].delete(context, id)
+  const deleteItem = (id) => {
+    return (dispatch) => chain[className].delete(context(), id)
       .then(() => {
         dispatch(deleteItemSuccess(id))
       })
   }
 
-  const getNextPageSlice = function(getState) {
+  const getNextPageSlice = (getState) => {
     const pageStart = (getState()[type].listView.pageIndex + 1) * pageSize
     return getState()[type].listView.itemIds.slice(pageStart, pageStart + pageSize)
   }
 
-  const fetchItems = function(params) {
+  const fetchItems = (params) => {
     const requiredParams = options.requiredParams || {}
 
     params = { ...params, ...requiredParams }
 
-    return function(dispatch) {
-      const promise = chain[className].query(context, params)
+    return (dispatch) => {
+      const promise = chain[className].query(context(), params)
 
       promise.then(
         (param) => dispatch(receivedItems(param))
@@ -68,7 +68,7 @@ export default function(type, options = {}) {
       if (latestResponse && latestResponse.last_page) {
         return Promise.resolve({})
       } else if (latestResponse.nextPage) {
-        promise = latestResponse.nextPage(context)
+        promise = latestResponse.nextPage(context())
       } else {
         let params = {}
 

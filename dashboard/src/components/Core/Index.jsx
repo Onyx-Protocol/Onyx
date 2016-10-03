@@ -21,7 +21,7 @@ export default class Index extends React.Component {
 
     this.setState({deleteDisabled: true})
 
-    chain.Core.reset(context).then(() => {
+    chain.Core.reset(context()).then(() => {
       // TODO: Use Redux state reset and nav action instead of window.location.
       // Also, move confirmation message to a bonafide flash div. alert() in a
       // browser microtask is going away. cf https://www.chromestatus.com/features/5647113010544640
