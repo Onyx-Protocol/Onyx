@@ -6,12 +6,21 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/golang/groupcache/lru"
+
 	"chain/core/signers"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/httpjson"
 	"chain/protocol/vmutil"
+)
+
+const maxAccountCache = 100
+
+var (
+	cacheMu sync.Mutex
+	cache   = lru.New(maxAccountCache)
 )
 
 type Account struct {
@@ -93,7 +102,20 @@ func FindByAlias(ctx context.Context, alias string) (*signers.Signer, error) {
 
 // findByID returns an account's Signer record by its ID.
 func findByID(ctx context.Context, id string) (*signers.Signer, error) {
-	return signers.Find(ctx, "account", id)
+	cacheMu.Lock()
+	cached, ok := cache.Get(id)
+	cacheMu.Unlock()
+	if ok {
+		return cached.(*signers.Signer), nil
+	}
+	account, err := signers.Find(ctx, "account", id)
+	if err != nil {
+		return nil, err
+	}
+	cacheMu.Lock()
+	cache.Add(id, account)
+	cacheMu.Unlock()
+	return account, nil
 }
 
 // CreateControlProgram creates a control program

@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"sync"
 
+	"github.com/golang/groupcache/lru"
 	"github.com/lib/pq"
 
 	"chain/core/signers"
@@ -17,6 +19,13 @@ import (
 	"chain/protocol/bc"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
+)
+
+const maxAssetCache = 100
+
+var (
+	cacheMu sync.Mutex
+	cache   = lru.New(maxAssetCache)
 )
 
 type Asset struct {
@@ -96,7 +105,20 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 
 // findByID retrieves an Asset record along with its signer, given an assetID.
 func findByID(ctx context.Context, id bc.AssetID) (*Asset, error) {
-	return assetQuery(ctx, "assets.id=$1", id)
+	cacheMu.Lock()
+	cached, ok := cache.Get(id)
+	cacheMu.Unlock()
+	if ok {
+		return cached.(*Asset), nil
+	}
+	asset, err := assetQuery(ctx, "assets.id=$1", id)
+	if err != nil {
+		return nil, err
+	}
+	cacheMu.Lock()
+	cache.Add(id, asset)
+	cacheMu.Unlock()
+	return asset, nil
 }
 
 // FindByAlias retrieves an Asset record along with its signer,
