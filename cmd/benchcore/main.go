@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -25,11 +26,13 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/elb"
+	_ "github.com/lib/pq"
 )
 
 var (
-	flagD = flag.Bool("d", false, "delete instances from previous runs")
-	flagP = flag.Bool("p", false, "capture cpu and heap profiles from cored")
+	flagD       = flag.Bool("d", false, "delete instances from previous runs")
+	flagP       = flag.Bool("p", false, "capture cpu and heap profiles from cored")
+	flagDBStats = flag.Bool("dbstats", false, "capture database query statistics")
 
 	appName      = "benchcore"
 	testRunID    = appName + randString()
@@ -146,6 +149,7 @@ func main() {
 	mustRunOn(db.addr, initdbsh)
 
 	dbURL := "postgres://benchcore:benchcorepass@" + db.privAddr + "/core?sslmode=disable"
+	pubdbURL := "postgres://benchcore:benchcorepass@" + db.addr + "/core?sslmode=disable"
 
 	log.Println("init cored hosts")
 	must(scpPut(cored.addr, coredBin, "cored", 0755))
@@ -183,6 +187,10 @@ func main() {
 	out, err := json.MarshalIndent(stats, "", "	")
 	must(err)
 	os.Stdout.Write(append(out, '\n'))
+
+	if *flagDBStats {
+		captureDBStats(pubdbURL)
+	}
 	cleanup()
 }
 
@@ -560,6 +568,54 @@ func captureCPU(coreURL string, t time.Time) {
 	io.Copy(out, resp.Body)
 }
 
+func captureDBStats(dburl string) {
+	db, err := sql.Open("postgres", dburl)
+	if err != nil {
+		log.Printf("error capturing db stats: %s", err.Error())
+		return
+	}
+
+	const q = `
+		SELECT
+			(total_time / 1000 / 60) as total_minutes,
+			(total_time/calls) as average_time,
+			calls,
+			query
+		FROM pg_stat_statements                                                                                                                  ORDER BY 1 DESC                                                                                                                          LIMIT 100;
+	`
+	rows, err := db.Query(q)
+	if err != nil {
+		log.Printf("error capturing db stats: %s", err.Error())
+		return
+	}
+	defer rows.Close()
+	var buf bytes.Buffer
+	for rows.Next() {
+		var (
+			totalMin, avgTimeMS float64
+			ncalls              uint64
+			query               string
+		)
+		err := rows.Scan(&totalMin, &avgTimeMS, &ncalls, &query)
+		if err != nil {
+			log.Printf("error capturing db stats: %s", err.Error())
+			return
+		}
+		fmt.Fprintf(
+			&buf,
+			"Total Minutes: %f\nAverage MS: %f\nCalls: %d\nQuery: %s\n---\n",
+			totalMin,
+			avgTimeMS,
+			ncalls,
+			query,
+		)
+	}
+	if err := rows.Err(); err != nil {
+		log.Printf("error capturing db stats: %s", err.Error())
+	}
+	writeFile("db-stats.txt", buf.Bytes())
+}
+
 func writeFile(path string, data []byte) {
 	err := ioutil.WriteFile(path, data, 0644)
 	if err != nil {
@@ -598,6 +654,8 @@ lc_monetary = 'en_US.UTF-8'
 lc_numeric = 'en_US.UTF-8'
 lc_time = 'en_US.UTF-8'
 default_text_search_config = 'pg_catalog.english'
+shared_preload_libraries = 'pg_stat_statements'
+pg_stat_statements.track = all
 EOF
 
 cat <<EOF >/etc/postgresql/9.5/main/pg_hba.conf
@@ -616,7 +674,7 @@ set -eo pipefail
 /usr/lib/postgresql/9.5/bin/createdb core
 /usr/lib/postgresql/9.5/bin/psql \
 	--quiet \
-	-c "CREATE USER benchcore WITH PASSWORD 'benchcorepass' SUPERUSER" \
+	-c "CREATE USER benchcore WITH PASSWORD 'benchcorepass' SUPERUSER; CREATE extension pg_stat_statements;" \
 	core
 /usr/lib/postgresql/9.5/bin/psql --quiet -f $HOME/schema.sql core
 EOFPOSTGRES
