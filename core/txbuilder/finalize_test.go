@@ -40,9 +40,9 @@ func TestConflictingTxsInPool(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dumpState(ctx, t)
+	dumpBlocks(ctx, t)
 	prottest.MakeBlock(ctx, t, c)
-	dumpState(ctx, t)
+	dumpBlocks(ctx, t)
 
 	assetAmount := bc.AssetAmount{
 		AssetID: info.asset.AssetID,
@@ -79,10 +79,10 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	// Make a block, which should reject one of the txs.
-	dumpState(ctx, t)
+	dumpBlocks(ctx, t)
 	b := prottest.MakeBlock(ctx, t, c)
 
-	dumpState(ctx, t)
+	dumpBlocks(ctx, t)
 	if len(b.Transactions) != 1 {
 		t.Errorf("got block.Transactions = %#v\n, want exactly one tx", b.Transactions)
 	}
@@ -102,9 +102,9 @@ func TestTransferConfirmed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dumpState(ctx, t)
+	dumpBlocks(ctx, t)
 	prottest.MakeBlock(ctx, t, c)
-	dumpState(ctx, t)
+	dumpBlocks(ctx, t)
 
 	_, err = transfer(ctx, t, c, info, info.acctA.ID, info.acctB.ID, 10)
 	if err != nil {
@@ -137,15 +137,6 @@ func BenchmarkTransferWithBlocks(b *testing.B) {
 			prottest.MakeBlock(ctx, b, c)
 		}
 	}
-}
-
-func dumpState(ctx context.Context, t *testing.T) {
-	t.Log("pool")
-	dumpTab(ctx, t, `
-		SELECT tx_hash, data FROM pool_txs
-	`)
-	t.Log("blockchain")
-	dumpBlocks(ctx, t)
 }
 
 func dumpTab(ctx context.Context, t *testing.T, q string) {

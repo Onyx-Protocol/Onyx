@@ -574,17 +574,6 @@ CREATE SEQUENCE pool_tx_sort_id_seq
 
 
 --
--- Name: pool_txs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE pool_txs (
-    tx_hash text NOT NULL,
-    data bytea NOT NULL,
-    sort_id bigint DEFAULT nextval('pool_tx_sort_id_seq'::regclass) NOT NULL
-);
-
-
---
 -- Name: query_blocks; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -865,22 +854,6 @@ ALTER TABLE ONLY mockhsm
 
 
 --
--- Name: pool_txs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY pool_txs
-    ADD CONSTRAINT pool_txs_pkey PRIMARY KEY (tx_hash);
-
-
---
--- Name: pool_txs_sort_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY pool_txs
-    ADD CONSTRAINT pool_txs_sort_id_key UNIQUE (sort_id);
-
-
---
 -- Name: query_blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1133,3 +1106,4 @@ insert into migrations (filename, hash) values ('2016-09-29.3.signers.remove-key
 insert into migrations (filename, hash) values ('2016-09-30.0.core.remove-is-ascending-from-txconsumers.sql', 'dc22181470cd84be345701616755371e4612457955f460110ab0f88aeaa85222');
 insert into migrations (filename, hash) values ('2016-09-30.1.core.submit-idempotence.sql', '2dd217fda2f33f72332d0502149c1b1a75e5e896b5252477a35a7f62bb49052f');
 insert into migrations (filename, hash) values ('2016-09-30.2.config.add-secrets-signers.sql', 'da6c7ee122069bbbed470407f4090e364916d8d54339177b21afbadd820bec0e');
+insert into migrations (filename, hash) values ('2016-10-03.0.txdb.drop-pool-txs.sql', 'dd8a2dd430e8e7594eecdfea360a0f5ebe46c34fe6f8a5ad47f7c9c08030c476');

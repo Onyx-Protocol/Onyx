@@ -15,6 +15,7 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/mempool"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
@@ -32,7 +33,8 @@ func BenchmarkIOUThroughput(b *testing.B) {
 	url, db := pgtest.NewDB(b, pgtest.SchemaPath)
 	b.Log("db url", url)
 	ctx := pg.NewContext(context.Background(), db)
-	store, pool := txdb.New(db)
+	store := txdb.NewStore(db)
+	pool := mempool.New()
 	c := prottest.NewChainWithStorage(b, store, pool)
 	b1, err := c.GetBlock(ctx, 1)
 	if err != nil {

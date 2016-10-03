@@ -43,6 +43,7 @@ import (
 	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
+	"chain/protocol/mempool"
 )
 
 const (
@@ -177,8 +178,8 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}
-	store, pool := txdb.New(db)
-	c, err := protocol.NewChain(ctx, store, pool, heights)
+	store := txdb.NewStore(db)
+	c, err := protocol.NewChain(ctx, store, mempool.New(), heights)
 	if err != nil {
 		chainlog.Fatal(ctx, chainlog.KeyError, err)
 	}

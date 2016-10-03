@@ -26,6 +26,7 @@ import (
 	"chain/net/http/httpjson"
 	"chain/net/rpc"
 	"chain/protocol"
+	"chain/protocol/mempool"
 	"chain/protocol/state"
 )
 
@@ -77,7 +78,6 @@ func Reset(ctx context.Context, db pg.DB) error {
 			generator_pending_block,
 			leader,
 			mockhsm,
-			pool_txs,
 			query_blocks,
 			reservations,
 			signed_blocks,
@@ -239,8 +239,8 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		if err != nil {
 			return err
 		}
-		store, pool := txdb.New(db.(*sql.DB))
-		chain, err := protocol.NewChain(ctx, store, pool, nil)
+		store := txdb.NewStore(db.(*sql.DB))
+		chain, err := protocol.NewChain(ctx, store, mempool.New(), nil)
 		if err != nil {
 			return err
 		}

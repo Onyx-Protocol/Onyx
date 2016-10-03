@@ -7,28 +7,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
-	"chain/protocol/bc"
 )
-
-// New creates a Store and Pool backed by the txdb with the provided
-// db handle.
-func New(db pg.DB) (*Store, *Pool) {
-	return NewStore(db), NewPool(db)
-}
-
-// dumpPoolTxs returns all of the pending transactions in the pool.
-func dumpPoolTxs(ctx context.Context, db pg.DB) ([]*bc.Tx, error) {
-	const q = `SELECT tx_hash, data FROM pool_txs ORDER BY sort_id`
-	var txs []*bc.Tx
-	err := pg.ForQueryRows(pg.NewContext(ctx, db), q, func(hash bc.Hash, data bc.TxData) {
-		txs = append(txs, &bc.Tx{TxData: data, Hash: hash})
-	})
-	if err != nil {
-		return nil, err
-	}
-	txs = topSort(ctx, txs)
-	return txs, nil
-}
 
 func ListenBlocks(ctx context.Context, dbURL string) (<-chan uint64, error) {
 	listener, err := pg.NewListener(ctx, dbURL, "newblock")
