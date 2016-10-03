@@ -58,16 +58,23 @@ func main() {
 }
 
 func configGenerator(db *sql.DB, args []string) {
-	const usage = "error: corectl config-generator [<quorum> <<pubkey> <url>...>]"
+	const usage = "error: corectl config-generator [-s] [<quorum> <<pubkey> <url>...>]"
 	var (
 		isSigner bool
 		quorum   int
 		signers  []core.ConfigSigner
 		err      error
 	)
-	if len(args) == 0 {
+
+	if len(args) > 0 && args[0] == "-s" {
 		isSigner = true
-		quorum = 1
+		args = args[1:]
+	}
+
+	if len(args) == 0 {
+		if isSigner {
+			quorum = 1
+		}
 	} else if len(args)%2 != 1 {
 		fatalln(usage)
 	} else {
