@@ -3,8 +3,7 @@ package patricia
 import (
 	"bytes"
 
-	"golang.org/x/crypto/sha3"
-
+	"chain/crypto/sha3pool"
 	"chain/errors"
 	"chain/protocol/bc"
 )
@@ -98,8 +97,14 @@ func (t *Tree) Contains(bkey, val []byte) bool {
 
 	key := bitKey(bkey)
 	n := t.lookup(t.root, key)
-	h := sha3.Sum256(append(leafPrefix, val[:]...))
-	return n != nil && n.Hash() == h
+
+	var hash bc.Hash
+	h := sha3pool.Get256()
+	h.Write(leafPrefix)
+	h.Write(val[:])
+	h.Read(hash[:])
+	sha3pool.Put256(h)
+	return n != nil && n.Hash() == hash
 }
 
 func (t *Tree) lookup(n *node, key []uint8) *node {
@@ -126,8 +131,13 @@ func (t *Tree) lookup(n *node, key []uint8) *node {
 // the tree alone.
 func (t *Tree) Insert(bkey, val []byte) error {
 	key := bitKey(bkey)
-	value := append(leafPrefix, val...)
-	hash := sha3.Sum256(value)
+
+	var hash bc.Hash
+	h := sha3pool.Get256()
+	h.Write(leafPrefix)
+	h.Write(val)
+	h.Read(hash[:])
+	sha3pool.Put256(h)
 
 	if t.root == nil {
 		t.root = &node{key: key, hash: hash, isLeaf: true}
@@ -295,12 +305,13 @@ func (n *node) Hash() bc.Hash {
 }
 
 func hashChildren(children [2]*node) (hash bc.Hash) {
-	h := sha3.New256()
+	h := sha3pool.Get256()
 	h.Write(interiorPrefix)
 	for _, c := range children {
 		h.Write(c.hash[:])
 	}
 
-	h.Sum(hash[:0])
+	h.Read(hash[:])
+	sha3pool.Put256(h)
 	return hash
 }
