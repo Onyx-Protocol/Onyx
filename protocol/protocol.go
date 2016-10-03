@@ -85,7 +85,6 @@ type Pool interface {
 	// It is required to be idempotent.
 	Insert(context.Context, *bc.Tx) error
 
-	Clean(ctx context.Context, txs []*bc.Tx) error
 	Dump(context.Context) ([]*bc.Tx, error)
 }
 

@@ -3,8 +3,6 @@ package txdb
 import (
 	"context"
 
-	"github.com/lib/pq"
-
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol/bc"
@@ -34,20 +32,18 @@ func (p *Pool) Insert(ctx context.Context, tx *bc.Tx) error {
 	return errors.Wrap(err, "insert into pool txs")
 }
 
-// Dump returns the pooled transactions in topological order.
+// Dump returns the pooled transactions in topological order and
+// empties the pool.
 func (p *Pool) Dump(ctx context.Context) ([]*bc.Tx, error) {
-	return dumpPoolTxs(ctx, p.db)
-}
-
-// Clean removes txs from the pending tx pool.
-func (p *Pool) Clean(ctx context.Context, txs []*bc.Tx) error {
-	var deleteTxHashes []string
-	for _, tx := range txs {
-		deleteTxHashes = append(deleteTxHashes, tx.Hash.String())
+	txs, err := dumpPoolTxs(ctx, p.db)
+	if err != nil {
+		return nil, errors.Wrap(err, "listing all pool txs")
 	}
 
-	// Delete pool_txs
-	const txq = `DELETE FROM pool_txs WHERE tx_hash IN (SELECT unnest($1::text[]))`
-	_, err := p.db.Exec(ctx, txq, pq.StringArray(deleteTxHashes))
-	return errors.Wrap(err, "delete from pool_txs")
+	const txq = `TRUNCATE TABLE pool_txs`
+	_, err = p.db.Exec(ctx, txq)
+	if err != nil {
+		return nil, errors.Wrap(err, "delete from pool_txs")
+	}
+	return txs, nil
 }

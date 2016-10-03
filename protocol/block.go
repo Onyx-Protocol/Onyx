@@ -68,10 +68,13 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 			break
 		}
 
-		if validation.ConfirmTx(result, tx, b.TimestampMS) == nil {
-			validation.ApplyTx(result, tx)
-			b.Transactions = append(b.Transactions, tx)
+		err := validation.ConfirmTx(result, tx, b.TimestampMS)
+		if err != nil {
+			log.Messagef(ctx, "skipping tx %s: %s", tx.Hash, err)
+			continue
 		}
+		validation.ApplyTx(result, tx)
+		b.Transactions = append(b.Transactions, tx)
 	}
 	b.TransactionsMerkleRoot = validation.CalcMerkleRoot(b.Transactions)
 	b.AssetsMerkleRoot = result.Tree.RootHash()
@@ -109,17 +112,6 @@ func (c *Chain) validateTxCached(tx *bc.Tx) error {
 // The block parameter must have already been validated before
 // being committed.
 func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
-	err := c.commitBlock(ctx, block, snapshot)
-	if err != nil {
-		return errors.Wrap(err, "committing block")
-	}
-
-	_, err = c.rebuildPool(ctx, block, snapshot)
-	return errors.Wrap(err, "rebuilding pool")
-}
-
-// commitBlock commits a block without rebuilding the pool.
-func (c *Chain) commitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
 	// SaveBlock is the linearization point. Once the block is committed
 	// to persistent storage, the block has been applied and everything
 	// else can be derived from that block.
@@ -207,51 +199,6 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 
 	err := validation.ValidateBlockForSig(ctx, snapshot, prev, block, validation.ValidateTx)
 	return errors.Wrap(err, "validation")
-}
-
-func (c *Chain) rebuildPool(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) ([]*bc.Tx, error) {
-	txInBlock := make(map[bc.Hash]bool)
-	for _, tx := range block.Transactions {
-		txInBlock[tx.Hash] = true
-	}
-
-	var (
-		deleteTxs   []*bc.Tx
-		conflictTxs []*bc.Tx
-	)
-
-	txs, err := c.pool.Dump(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "dumping tx pool")
-	}
-
-	for _, tx := range txs {
-		if block.TimestampMS < tx.MinTime {
-			// This can't be confirmed yet because its mintime is too high.
-			continue
-		}
-
-		txErr := validation.ConfirmTx(snapshot, tx, block.TimestampMS)
-		if txErr == nil {
-			validation.ApplyTx(snapshot, tx)
-		} else {
-			deleteTxs = append(deleteTxs, tx)
-			if txInBlock[tx.Hash] {
-				continue
-			}
-
-			// This should never happen in sandbox, unless a reservation expired
-			// before the original tx was finalized.
-			log.Messagef(ctx, "deleting conflict tx %v because %q", tx.Hash, txErr)
-			conflictTxs = append(conflictTxs, tx)
-		}
-	}
-
-	err = c.pool.Clean(ctx, deleteTxs)
-	if err != nil {
-		return nil, errors.Wrap(err, "removing conflicting txs")
-	}
-	return conflictTxs, nil
 }
 
 func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time) (*bc.Block, error) {
