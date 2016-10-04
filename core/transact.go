@@ -9,6 +9,7 @@ import (
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	"chain/errors"
+	"chain/log"
 	"chain/net/http/reqid"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -119,6 +120,32 @@ func recordSubmittedTx(ctx context.Context, txHash bc.Hash, currentHeight uint64
 	`
 	err = pg.QueryRow(ctx, q, txHash, currentHeight).Scan(&height)
 	return height, err
+}
+
+// CleanupSubmittedTxs will periodically delete records of submitted txs
+// older than a day. This function blocks and only exits when its context
+// is cancelled.
+// TODO(jackson): unexport this and start it in a goroutine in a core.New()
+// function?
+func CleanupSubmittedTxs(ctx context.Context, db pg.DB) {
+	ticker := time.NewTicker(15 * time.Minute)
+	for {
+		select {
+		case <-ticker.C:
+			// TODO(jackson): We could avoid expensive bulk deletes by partitioning
+			// the table and DROP-ing tables of expired rows. Partitioning doesn't
+			// play well with ON CONFLICT clauses though, so we would need to rework
+			// how we guarantee uniqueness.
+			const q = `DELETE FROM submitted_txs WHERE submitted_at < now() - interval '1 day'`
+			_, err := db.Exec(ctx, q)
+			if err != nil {
+				log.Error(ctx, err)
+			}
+		case <-ctx.Done():
+			ticker.Stop()
+			return
+		}
+	}
 }
 
 // finalizeTxWait calls FinalizeTx and then waits for confirmation of

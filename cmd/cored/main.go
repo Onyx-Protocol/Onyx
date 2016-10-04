@@ -212,6 +212,9 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		}
 	}
 
+	// GC old submitted txs periodically.
+	go core.CleanupSubmittedTxs(ctx, db)
+
 	// Note, it's important for any services that will install blockchain
 	// callbacks to be initialized before leader.Run() and the http server,
 	// otherwise there's a data race within protocol.Chain.
