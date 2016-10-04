@@ -50,7 +50,8 @@ const (
 )
 
 func isProduction() bool {
-	return expvar.Get("buildtag").String() != `"dev"`
+	bt := expvar.Get("buildtag")
+	return bt != nil && bt.String() != `"dev"`
 }
 
 // Reset deletes all data, resulting in an unconfigured core.

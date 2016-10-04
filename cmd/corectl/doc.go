@@ -22,5 +22,9 @@ blockchain ID and the corresponding generator URL. Optionally, it takes
 the public key of a block signing key if the Core is to be configured
 as a signer.
 
+    corectl reset
+
+corectl reset resets the blockchain and runs the core as an unconfigured core.
+
 */
 package main

@@ -34,6 +34,7 @@ var commands = map[string]*command{
 	"config-generator":     {configGenerator},
 	"create-block-keypair": {createBlockKeyPair},
 	"config":               {configNongenerator},
+	"reset":                {reset},
 }
 
 func main() {
@@ -164,6 +165,18 @@ func configNongenerator(db *sql.DB, args []string) {
 
 	ctx := context.Background()
 	err = core.Configure(ctx, db, &config)
+	if err != nil {
+		fatalln("error:", err)
+	}
+}
+
+func reset(db *sql.DB, args []string) {
+	if len(args) != 0 {
+		fatalln("error: reset takes no args")
+	}
+
+	ctx := context.Background()
+	err := core.Reset(ctx, db)
 	if err != nil {
 		fatalln("error:", err)
 	}
