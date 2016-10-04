@@ -20,7 +20,6 @@ import (
 	"chain/database/sql"
 	"chain/protocol"
 	"chain/protocol/bc"
-	"chain/protocol/mempool"
 	"chain/protocol/prottest"
 )
 
@@ -34,9 +33,9 @@ func TestRecovery(t *testing.T) {
 	// Setup the test environment using a clean db.
 	ctx := context.Background()
 	dbURL, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	store := txdb.NewStore(db)
+	store, pool := txdb.New(db)
 	setupCtx := pg.NewContext(ctx, db)
-	c := prottest.NewChainWithStorage(t, store, mempool.New())
+	c := prottest.NewChainWithStorage(t, store, pool)
 	asset.Init(c, nil)
 	account.Init(c, nil)
 
@@ -117,7 +116,7 @@ func TestRecovery(t *testing.T) {
 		if ok {
 			// The driver never crashed the goroutine, so n is now greater than
 			// the total number of queries performed during `generateBlock`.
-			databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "*_id_seq"))
+			databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "pool_txs", "*_id_seq"))
 			break
 		}
 
@@ -127,7 +126,7 @@ func TestRecovery(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "*_id_seq"))
+		databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "pool_txs", "*_id_seq"))
 	}
 
 	if len(databaseDumps) < 2 {
@@ -148,8 +147,8 @@ func TestRecovery(t *testing.T) {
 }
 
 func generateBlock(ctx context.Context, db *sql.DB, timestamp time.Time) error {
-	store := txdb.NewStore(db)
-	c, err := protocol.NewChain(ctx, store, mempool.New(), nil)
+	store, pool := txdb.New(db)
+	c, err := protocol.NewChain(ctx, store, pool, nil)
 	if err != nil {
 		return err
 	}

@@ -2,14 +2,13 @@ package mempool
 
 import (
 	"context"
-	"sync"
 
 	"chain/protocol/bc"
 )
 
 // MemPool satisfies the protocol.Pool interface.
+// It is used by tests to avoid needing a database.
 type MemPool struct {
-	mu   sync.Mutex
 	pool []*bc.Tx // in topological order
 }
 
@@ -20,18 +19,14 @@ func New() *MemPool {
 
 // Insert adds a new pending tx to the pending tx pool.
 func (m *MemPool) Insert(ctx context.Context, tx *bc.Tx) error {
-	m.mu.Lock()
 	m.pool = append(m.pool, tx)
-	m.mu.Unlock()
 	return nil
 }
 
 // Dump returns all pending transactions in the pool and
 // empties the pool.
 func (m *MemPool) Dump(context.Context) ([]*bc.Tx, error) {
-	m.mu.Lock()
-	txs := m.pool
-	m.pool = make([]*bc.Tx, 0, len(txs))
-	m.mu.Unlock()
+	txs := m.pool[:len(m.pool):len(m.pool)]
+	m.pool = nil
 	return txs, nil
 }
