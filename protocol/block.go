@@ -208,10 +208,11 @@ func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time
 	}
 	b := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			Version:          bc.NewBlockVersion,
-			Height:           1,
-			TimestampMS:      bc.Millis(timestamp),
-			ConsensusProgram: script,
+			Version:                bc.NewBlockVersion,
+			Height:                 1,
+			TimestampMS:            bc.Millis(timestamp),
+			ConsensusProgram:       script,
+			TransactionsMerkleRoot: validation.CalcMerkleRoot([]*bc.Tx{}), // calculate the zero value of the tx merkle root
 		},
 	}
 	return b, nil
