@@ -614,20 +614,18 @@ public class Transaction {
        * @return updated action object
        */
       public SpendAccountUnspentOutput setUnspentOutput(UnspentOutput unspentOutput) {
-        this.put("transaction_id", unspentOutput.transactionId);
-        this.put("position", unspentOutput.position);
+        setTransactionId(unspentOutput.transactionId);
+        setPosition(unspentOutput.position);
         return this;
       }
 
-      /**
-       * Specifies a list of unspent outputs to be spent
-       * @param unspentOutputs unspent outputs to be spent
-       * @return updated action object
-       */
-      public SpendAccountUnspentOutput spendUnspentOutputs(List<UnspentOutput> unspentOutputs) {
-        for (UnspentOutput unspentOutput : unspentOutputs) {
-          this.setUnspentOutput(unspentOutput);
-        }
+      public SpendAccountUnspentOutput setTransactionId(String id) {
+        this.put("transaction_id", id);
+        return this;
+      }
+
+      public SpendAccountUnspentOutput setPosition(int pos) {
+        this.put("position", pos);
         return this;
       }
 
