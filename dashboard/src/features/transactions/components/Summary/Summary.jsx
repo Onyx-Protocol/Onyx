@@ -21,9 +21,12 @@ class Summary extends React.Component {
         retire: 0
       }
 
-      if (action.account_id) {
-        let account = asset[action.account_id]
-        if (!account) account = asset[action.account_id] = {
+      if (['issue', 'retire'].includes(action.action)) {
+        asset[action.action] += action.amount
+      } else {
+        let accountKey = action.account_id || 'external'
+        let account = asset[accountKey]
+        if (!account) account = asset[accountKey] = {
           alias: action.account_alias,
           spend: 0,
           receive: 0
@@ -31,13 +34,11 @@ class Summary extends React.Component {
 
         if (action.action == 'spend') {
           account.spend += action.amount
-        } else if (action.action == 'control' && action.purpose == 'receive') {
-          account.receive += action.amount
         } else if (action.action == 'control' && action.purpose == 'change') {
           account.spend -= action.amount
+        } else if (action.action == 'control') {
+          account.receive += action.amount
         }
-      } else {
-        asset[action.action] += action.amount
       }
     })
 
@@ -59,23 +60,25 @@ class Summary extends React.Component {
             action: ACTION_NAMES[type],
             rawAction: type,
             amount: asset[type],
-            asset: asset.alias ? asset.alias : asset_id
+            asset: asset.alias ? asset.alias : <code className={styles.asset_id}>{asset_id}</code>,
           })
         }
       })
 
+
       Object.keys(asset).forEach((account_id) => {
         if (nonAccountTypes.includes(account_id)) return
         const account = asset[account_id]
-        const accountTypes = ['spend', 'receive']
+        if (!account) return
 
+        const accountTypes = ['spend', 'receive']
         accountTypes.forEach((type) => {
           if (account[type] > 0) {
             items.push({
               action: ACTION_NAMES[type],
               rawAction: type,
               amount: account[type],
-              asset: asset.alias ? asset.alias : asset_id,
+              asset: asset.alias ? asset.alias : <code className={styles.asset_id}>{asset_id}</code>,
               direction: type == 'spend' ? 'from' : 'to',
               account: account.alias ? account.alias : account_id,
             })
@@ -91,19 +94,20 @@ class Summary extends React.Component {
           <th>Amount</th>
           <th>Asset</th>
           <th></th>
-          <th></th>
         </tr>
       </thead>
       <tbody>
         {items.map((item, index) =>
           <tr key={index} className={index % 2 == 0 ? '' : styles.odd}>
-            <td>{item.action}</td>
-            <td>
+            <td className={styles.colAction}>{item.action}</td>
+            <td className={styles.colAmount}>
               <code className={`${styles.amount} ${styles[item.rawAction]}`}>{item.amount}</code>
             </td>
             <td>{item.asset}</td>
-            <td className={styles.direction}>{item.direction}</td>
-            <td>{item.account}</td>
+            <td className={styles.colAccount}>
+              <span className={styles.direction}>{item.direction}</span>
+              {item.account}
+            </td>
           </tr>
         )}
       </tbody>
