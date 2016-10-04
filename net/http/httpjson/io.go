@@ -25,8 +25,7 @@ func Read(ctx context.Context, r io.Reader, v interface{}) error {
 		if detail == "" {
 			detail = "check request parameters for missing and/or incorrect values"
 		}
-		userErr := errors.WithDetail(ErrBadRequest, err.Error())
-		return errors.WithDetail(userErr, detail)
+		return errors.WithDetail(ErrBadRequest, err.Error()+": "+detail)
 	}
 	return err
 }
