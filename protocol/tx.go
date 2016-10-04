@@ -2,9 +2,13 @@ package protocol
 
 import (
 	"context"
+	"sync"
+
+	"github.com/golang/groupcache/lru"
 
 	"chain/errors"
 	"chain/protocol/bc"
+	"chain/protocol/validation"
 )
 
 // AddTx inserts tx into the set of "pending" transactions available
@@ -30,4 +34,40 @@ func (c *Chain) AddTx(ctx context.Context, tx *bc.Tx) error {
 	// Update persistent tx pool state.
 	err = c.pool.Insert(ctx, tx)
 	return errors.Wrap(err, "applying tx to store")
+}
+
+func (c *Chain) validateTxCached(tx *bc.Tx) error {
+	// Consult a cache of prevalidated transactions.
+	err, ok := c.prevalidated.lookup(tx.Hash)
+	if ok {
+		return err
+	}
+
+	err = validation.ValidateTx(tx)
+	c.prevalidated.cache(tx.Hash, err)
+	return err
+}
+
+type prevalidatedTxsCache struct {
+	mu  sync.Mutex
+	lru *lru.Cache
+}
+
+func (c *prevalidatedTxsCache) lookup(txID bc.Hash) (err error, ok bool) {
+	c.mu.Lock()
+	v, ok := c.lru.Get(txID)
+	c.mu.Unlock()
+	if !ok {
+		return err, ok
+	}
+	if v == nil {
+		return nil, ok
+	}
+	return v.(error), ok
+}
+
+func (c *prevalidatedTxsCache) cache(txID bc.Hash, err error) {
+	c.mu.Lock()
+	c.lru.Add(txID, err)
+	c.mu.Unlock()
 }

@@ -45,11 +45,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/groupcache/lru"
+
 	"chain/errors"
 	"chain/log"
 	"chain/protocol/bc"
 	"chain/protocol/state"
 )
+
+// maxCachedValidatedTxs is the max number of validated txs to cache.
+const maxCachedValidatedTxs = 1000
 
 var (
 	// ErrTheDistantFuture (https://youtu.be/2IPAOxrH7Ro) is returned when
@@ -105,6 +110,8 @@ type Chain struct {
 
 	lastQueuedSnapshot time.Time
 	pendingSnapshots   chan pendingSnapshot
+
+	prevalidated prevalidatedTxsCache
 }
 
 type pendingSnapshot struct {
@@ -118,6 +125,9 @@ func NewChain(ctx context.Context, store Store, pool Pool, heights <-chan uint64
 		store:            store,
 		pool:             pool,
 		pendingSnapshots: make(chan pendingSnapshot, 1),
+		prevalidated: prevalidatedTxsCache{
+			lru: lru.New(maxCachedValidatedTxs),
+		},
 	}
 	c.state.cond.L = new(sync.Mutex)
 

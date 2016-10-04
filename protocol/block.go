@@ -68,13 +68,10 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 			break
 		}
 
-		err := validation.ConfirmTx(result, tx, b.TimestampMS)
-		if err != nil {
-			log.Messagef(ctx, "skipping tx %s: %s", tx.Hash, err)
-			continue
+		if validation.ConfirmTx(result, tx, b.TimestampMS) == nil {
+			validation.ApplyTx(result, tx)
+			b.Transactions = append(b.Transactions, tx)
 		}
-		validation.ApplyTx(result, tx)
-		b.Transactions = append(b.Transactions, tx)
 	}
 	b.TransactionsMerkleRoot = validation.CalcMerkleRoot(b.Transactions)
 	b.AssetsMerkleRoot = result.Tree.RootHash()
@@ -91,13 +88,6 @@ func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, pr
 		return nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
 	}
 	return newState, nil
-}
-
-func (c *Chain) validateTxCached(tx *bc.Tx) error {
-	// TODO(kr): consult a cache of prevalidated transactions.
-	// It probably shouldn't use the pool, but instead keep
-	// in memory a table of witness hashes (or similar).
-	return validation.ValidateTx(tx)
 }
 
 // CommitBlock commits the block to the blockchain.
