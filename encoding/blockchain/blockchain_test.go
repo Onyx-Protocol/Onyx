@@ -2,9 +2,24 @@ package blockchain
 
 import (
 	"bytes"
+	"io/ioutil"
 	"math"
 	"testing"
 )
+
+func BenchmarkWriteVarint31(b *testing.B) {
+	n := uint64(math.MaxInt32)
+	for i := 0; i < b.N; i++ {
+		WriteVarint31(ioutil.Discard, n)
+	}
+}
+
+func BenchmarkWriteVarint63(b *testing.B) {
+	n := uint64(math.MaxInt64)
+	for i := 0; i < b.N; i++ {
+		WriteVarint63(ioutil.Discard, n)
+	}
+}
 
 func TestVarint31(t *testing.T) {
 	cases := []struct {

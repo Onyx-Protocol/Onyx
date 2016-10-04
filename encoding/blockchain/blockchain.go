@@ -7,7 +7,10 @@ import (
 	"errors"
 	"io"
 	"math"
+	"sync"
 )
+
+var bufPool = sync.Pool{New: func() interface{} { return new([9]byte) }}
 
 var ErrRange = errors.New("value out of range")
 
@@ -52,9 +55,10 @@ func WriteVarint31(w io.Writer, val uint64) (int, error) {
 	if val > math.MaxInt32 {
 		return 0, ErrRange
 	}
-	var buf [9]byte
+	buf := bufPool.Get().(*[9]byte)
 	n := binary.PutUvarint(buf[:], val)
 	b, err := w.Write(buf[:n])
+	bufPool.Put(buf)
 	return b, err
 }
 
@@ -62,9 +66,10 @@ func WriteVarint63(w io.Writer, val uint64) (int, error) {
 	if val > math.MaxInt64 {
 		return 0, ErrRange
 	}
-	var buf [9]byte
+	buf := bufPool.Get().(*[9]byte)
 	n := binary.PutUvarint(buf[:], val)
 	b, err := w.Write(buf[:n])
+	bufPool.Put(buf)
 	return b, err
 }
 
