@@ -32,6 +32,7 @@ import (
 var (
 	flagD       = flag.Bool("d", false, "delete instances from previous runs")
 	flagP       = flag.Bool("p", false, "capture cpu and heap profiles from cored")
+	flagQ       = flag.Duration("q", 0, "capture SQL slow queries")
 	flagDBStats = flag.Bool("dbstats", false, "capture database query statistics")
 
 	appName      = "benchcore"
@@ -96,6 +97,12 @@ func main() {
 	}
 	flag.Parse()
 
+	slowQueryThreshold := time.Minute // default to configure when disabled
+	if *flagQ != 0 {
+		slowQueryThreshold = *flagQ
+		fmt.Printf("Logging queries slower than %s\n", slowQueryThreshold)
+	}
+
 	if *flagD {
 		doDelete()
 		return
@@ -146,7 +153,7 @@ func main() {
 	log.Println("init database")
 	must(scpPut(db.addr, schema, "schema.sql", 0644))
 	must(scpPut(db.addr, corectlBin, "corectl", 0755))
-	mustRunOn(db.addr, initdbsh)
+	mustRunOn(db.addr, fmt.Sprintf(initdbsh, slowQueryThreshold/time.Millisecond))
 
 	dbURL := "postgres://benchcore:benchcorepass@" + db.privAddr + "/core?sslmode=disable"
 	pubdbURL := "postgres://benchcore:benchcorepass@" + db.addr + "/core?sslmode=disable"
@@ -176,6 +183,12 @@ func main() {
 	)
 	statsBytes, err := scpGet(client.addr, "stats.json")
 	must(err)
+	if *flagQ != 0 {
+		slowQueryBytes, err := scpGet(db.addr, "/var/log/postgresql/benchcore-queries.csv")
+		must(err)
+		writeFile("./slow-queries.csv", slowQueryBytes)
+	}
+
 	log.Println("SUCCESS")
 
 	stats := make(map[string]interface{})
@@ -656,6 +669,12 @@ lc_time = 'en_US.UTF-8'
 default_text_search_config = 'pg_catalog.english'
 shared_preload_libraries = 'pg_stat_statements'
 pg_stat_statements.track = all
+logging_collector = on
+log_destination = 'csvlog'
+log_directory = '/var/log/postgresql'
+log_filename = 'benchcore-queries.log'
+log_file_mode = 0644
+log_min_duration_statement = %d
 EOF
 
 cat <<EOF >/etc/postgresql/9.5/main/pg_hba.conf
