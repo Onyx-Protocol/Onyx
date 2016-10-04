@@ -11,7 +11,12 @@ import (
 	"sync"
 )
 
-var pool = sync.Pool{New: func() interface{} { return gzip.NewWriter(nil) }}
+var pool = sync.Pool{
+	New: func() interface{} {
+		w, _ := gzip.NewWriterLevel(nil, gzip.BestSpeed)
+		return w
+	},
+}
 
 func getWriter(w io.Writer) *gzip.Writer {
 	gz := pool.Get().(*gzip.Writer)
