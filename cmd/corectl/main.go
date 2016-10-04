@@ -11,6 +11,7 @@ import (
 
 	"chain/core"
 	"chain/core/mockhsm"
+	"chain/crypto/ed25519"
 	"chain/database/sql"
 	"chain/env"
 	"chain/log"
@@ -90,7 +91,12 @@ func configGenerator(db *sql.DB, args []string) {
 			}
 			url := args[i+1]
 			signers = append(signers, core.ConfigSigner{
-				Pubkey: pubkey,
+				// Silently truncate the input (which is likely to be an xpub
+				// produced by the create-block-keypair subcommand) to
+				// bare-pubkey size.
+				// TODO(bobg): When the mockhsm can produce bare pubkeys,
+				// treat xpubs on input as an error instead.
+				Pubkey: pubkey[:ed25519.PublicKeySize],
 				URL:    url,
 			})
 		}
