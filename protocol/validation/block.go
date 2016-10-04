@@ -33,9 +33,10 @@ func ValidateAndApplyBlock(ctx context.Context, snapshot *state.Snapshot, prevBl
 
 // ValidateBlockForSig performs validation on an incoming _unsigned_
 // block in preparation for signing it.  By definition it does not
-// execute the sigscript.
+// execute the sigscript. It also uses a disposable copy of the
+// supplied snapshot.
 func ValidateBlockForSig(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error) error {
-	return validateBlock(ctx, snapshot, prevBlock, block, validateTx, false)
+	return validateBlock(ctx, state.Copy(snapshot), prevBlock, block, validateTx, false)
 }
 
 func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, block *bc.Block, validateTx func(*bc.Tx) error, runScript bool) error {
@@ -50,7 +51,7 @@ func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, blo
 	snapshot.PruneIssuances(block.TimestampMS)
 
 	// TODO: Check that other block headers are valid.
-	// TODO(erywalder): consider writing to a copy of the state tree
+	// TODO(erykwalder): consider writing to a copy of the state tree
 	// of the one provided and make the caller call ApplyBlock as well
 	for _, tx := range block.Transactions {
 		err := validateTx(tx)
