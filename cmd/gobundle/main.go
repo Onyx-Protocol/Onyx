@@ -11,13 +11,14 @@ import (
 
 var (
 	pkg = flag.String("package", "main", "`name` of generated package")
+	sym = flag.String("symbol", "Files", "`name` of map variable")
 )
 
 func main() {
 	log.SetPrefix("gobundle: ")
 	log.SetFlags(log.Lshortfile)
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage: gobundle [-package name] [src]")
+		fmt.Fprintln(os.Stderr, "Usage: gobundle [-package name] [-symbol name] [src]")
 		flag.PrintDefaults()
 	}
 
@@ -29,7 +30,7 @@ func main() {
 	root := flag.Arg(0)
 
 	fmt.Println("package", *pkg)
-	fmt.Println("var Files = map[string]string{")
+	fmt.Println("var", *sym, "= map[string]string{")
 
 	filepath.Walk(root, func(path string, ent os.FileInfo, err error) error {
 		if err != nil {
