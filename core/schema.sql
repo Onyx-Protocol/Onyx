@@ -578,7 +578,7 @@ CREATE SEQUENCE pool_tx_sort_id_seq
 -- Name: pool_txs; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE pool_txs (
+CREATE UNLOGGED TABLE pool_txs (
     tx_hash text NOT NULL,
     data bytea NOT NULL,
     sort_id bigint DEFAULT nextval('pool_tx_sort_id_seq'::regclass) NOT NULL
@@ -1135,3 +1135,4 @@ insert into migrations (filename, hash) values ('2016-09-30.0.core.remove-is-asc
 insert into migrations (filename, hash) values ('2016-09-30.1.core.submit-idempotence.sql', '2dd217fda2f33f72332d0502149c1b1a75e5e896b5252477a35a7f62bb49052f');
 insert into migrations (filename, hash) values ('2016-09-30.2.config.add-secrets-signers.sql', 'da6c7ee122069bbbed470407f4090e364916d8d54339177b21afbadd820bec0e');
 insert into migrations (filename, hash) values ('2016-10-03.1.config.add-generater-token.sql', 'f1f7e6ea6fcbd773242954d32cc402173913396c8c1233fb573ab8a2e5d770f9');
+insert into migrations (filename, hash) values ('2016-10-04.0.txdb.pool-txs-unlogged.sql', '5baa0d1e2890d8be09c9defc3dc0c81ab9fb012cabf000fffc8330eee0d5708a');
