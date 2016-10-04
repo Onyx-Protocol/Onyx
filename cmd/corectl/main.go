@@ -128,8 +128,9 @@ func createBlockKeyPair(db *sql.DB, args []string) {
 }
 
 func configNongenerator(db *sql.DB, args []string) {
-	if len(args) != 2 && len(args) != 3 {
-		fatalln("error: corectl config <blockchain-id> <generator-url> [block-pubkey]")
+	errUsage := "error: corectl config <blockchain-id> <generator-url> [-t <generator-access-token>] [-k <block-pubkey>]"
+	if len(args) < 2 {
+		fatalln(errUsage)
 	}
 
 	var config core.Config
@@ -138,9 +139,21 @@ func configNongenerator(db *sql.DB, args []string) {
 		fatalln("error: invalid blockchain ID:", err)
 	}
 	config.GeneratorURL = args[1]
-	if len(args) > 2 {
-		config.IsSigner = true
-		config.BlockXPub = args[2]
+
+	for args = args[2:]; len(args) > 0; args = args[2:] {
+		if len(args) < 2 {
+			fatalln(errUsage)
+		}
+
+		switch args[0] {
+		case "-t":
+			config.GeneratorAccessToken = args[1]
+		case "-k":
+			config.IsSigner = true
+			config.BlockXPub = args[1]
+		default:
+			fatalln(errUsage)
+		}
 	}
 
 	ctx := context.Background()

@@ -71,6 +71,11 @@ export default class Index extends React.Component {
                 <td className={styles.row_label}>Generator URL:</td>
                 <td>{this.props.core.generator ? window.location.origin : this.props.core.generatorUrl}</td>
               </tr>
+              {!this.props.core.generator &&
+                <tr>
+                  <td className={styles.row_label}>Generator Access Token:</td>
+                  <td><code>{this.props.core.generatorAccessToken}</code></td>
+                </tr>}
               <tr>
                 <td className={styles.row_label}>Blockchain ID:</td>
                 <td><code className={styles.block_hash}>{this.props.core.blockchainID}</code></td>

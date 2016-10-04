@@ -62,14 +62,15 @@ func Handler(
 
 // Config encapsulates Core-level, persistent configuration options.
 type Config struct {
-	IsSigner     bool    `json:"is_signer"`
-	IsGenerator  bool    `json:"is_generator"`
-	BlockchainID bc.Hash `json:"blockchain_id"`
-	GeneratorURL string  `json:"generator_url"`
-	ConfiguredAt time.Time
-	BlockXPub    string         `json:"block_xpub"`
-	Signers      []ConfigSigner `json:"block_signer_urls"`
-	Quorum       int
+	IsSigner             bool    `json:"is_signer"`
+	IsGenerator          bool    `json:"is_generator"`
+	BlockchainID         bc.Hash `json:"blockchain_id"`
+	GeneratorURL         string  `json:"generator_url"`
+	GeneratorAccessToken string  `json:"generator_access_token"`
+	ConfiguredAt         time.Time
+	BlockXPub            string         `json:"block_xpub"`
+	Signers              []ConfigSigner `json:"block_signer_urls"`
+	Quorum               int
 
 	authedMu      sync.Mutex // protects the following
 	ClientAuthed  bool       `json:"require_client_access_tokens"`

@@ -148,6 +148,7 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"is_signer":                         a.config.IsSigner,
 		"is_generator":                      a.config.IsGenerator,
 		"generator_url":                     a.config.GeneratorURL,
+		"generator_access_token":            obfuscateTokenSecret(a.config.GeneratorAccessToken),
 		"blockchain_id":                     a.config.BlockchainID,
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
@@ -186,7 +187,12 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 
 	var err error
 	if !c.IsGenerator {
-		err = tryGenerator(ctx, c.GeneratorURL, c.BlockchainID.String())
+		err = tryGenerator(
+			ctx,
+			c.GeneratorURL,
+			c.GeneratorAccessToken,
+			c.BlockchainID.String(),
+		)
 		if err != nil {
 			return err
 		}
@@ -262,9 +268,10 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	}
 
 	const q = `
-		INSERT INTO config (is_signer, block_xpub, is_generator, blockchain_id, generator_url,
+		INSERT INTO config (is_signer, block_xpub, is_generator,
+			blockchain_id, generator_url, generator_access_token,
 			network_authed, client_authed, remote_block_signers, configured_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
 	`
 	_, err = db.Exec(
 		ctx,
@@ -274,6 +281,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		c.IsGenerator,
 		c.BlockchainID,
 		c.GeneratorURL,
+		c.GeneratorAccessToken,
 		c.isNetworkAuthed(),
 		c.isClientAuthed(),
 		blockSignerData,
@@ -296,7 +304,8 @@ func configure(ctx context.Context, x *Config) error {
 // LoadConfig loads the stored configuration, if any, from the database.
 func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
-			SELECT is_signer, is_generator, blockchain_id, generator_url, block_xpub,
+			SELECT is_signer, is_generator,
+			blockchain_id, generator_url, generator_access_token, block_xpub,
 			network_authed, client_authed, remote_block_signers, configured_at
 			FROM config
 		`
@@ -308,6 +317,7 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 		&c.IsGenerator,
 		&c.BlockchainID,
 		&c.GeneratorURL,
+		&c.GeneratorAccessToken,
 		&c.BlockXPub,
 		&c.NetworkAuthed,
 		&c.ClientAuthed,
@@ -368,9 +378,10 @@ func (a *api) updateConfig(ctx context.Context, x struct {
 	return nil
 }
 
-func tryGenerator(ctx context.Context, url, blockchainID string) error {
+func tryGenerator(ctx context.Context, url, accessToken, blockchainID string) error {
 	client := &rpc.Client{
 		BaseURL:      url,
+		AccessToken:  accessToken,
 		BlockchainID: blockchainID,
 	}
 	var x struct {
@@ -444,4 +455,16 @@ NextVar:
 		out = append(out, inkv)
 	}
 	return out
+}
+
+func obfuscateTokenSecret(token string) string {
+	toks := strings.SplitN(token, ":", 2)
+	var res string
+	if len(toks) > 0 {
+		res += toks[0]
+	}
+	if len(toks) > 1 {
+		res += ":********"
+	}
+	return res
 }

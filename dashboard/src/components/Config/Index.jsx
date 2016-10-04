@@ -38,6 +38,7 @@ export default class Index extends React.Component {
       fields: {
         is_generator,
         generator_url,
+        generator_access_token,
         blockchain_id
       },
       error,
@@ -105,6 +106,10 @@ export default class Index extends React.Component {
                   title='Block Generator URL'
                   placeholder='https://<block-generator-host>'
                   fieldProps={generator_url} />
+                <TextField
+                  title='Generator Access Token'
+                  placeholder='token-id:9e5f139755366add8c76'
+                  fieldProps={generator_access_token} />
                 <TextField
                   title='Blockchain ID'
                   placeholder='896a800000000000000'

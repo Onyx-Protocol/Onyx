@@ -167,6 +167,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	if !config.IsGenerator {
 		remoteGenerator = &rpc.Client{
 			BaseURL:      config.GeneratorURL,
+			AccessToken:  config.GeneratorAccessToken,
 			Username:     processID,
 			BuildTag:     buildTag,
 			BlockchainID: config.BlockchainID.String(),

@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.3
+-- Dumped by pg_dump version 9.5.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -497,6 +497,7 @@ CREATE TABLE config (
     network_authed boolean DEFAULT false,
     client_authed boolean DEFAULT false,
     remote_block_signers bytea DEFAULT '\x'::bytea NOT NULL,
+    generator_access_token text DEFAULT ''::text NOT NULL,
     CONSTRAINT config_singleton CHECK (singleton)
 );
 
@@ -1107,3 +1108,4 @@ insert into migrations (filename, hash) values ('2016-09-30.0.core.remove-is-asc
 insert into migrations (filename, hash) values ('2016-09-30.1.core.submit-idempotence.sql', '2dd217fda2f33f72332d0502149c1b1a75e5e896b5252477a35a7f62bb49052f');
 insert into migrations (filename, hash) values ('2016-09-30.2.config.add-secrets-signers.sql', 'da6c7ee122069bbbed470407f4090e364916d8d54339177b21afbadd820bec0e');
 insert into migrations (filename, hash) values ('2016-10-03.0.txdb.drop-pool-txs.sql', 'dd8a2dd430e8e7594eecdfea360a0f5ebe46c34fe6f8a5ad47f7c9c08030c476');
+insert into migrations (filename, hash) values ('2016-10-03.1.config.add-generater-token.sql', 'f1f7e6ea6fcbd773242954d32cc402173913396c8c1233fb573ab8a2e5d770f9');

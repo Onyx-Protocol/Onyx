@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"chain/net/http/reqid"
@@ -28,6 +29,7 @@ var ErrWrongNetwork = errors.New("connected to a peer on a different network")
 // to authenticate with other Cores on the network.
 type Client struct {
 	BaseURL      string
+	AccessToken  string
 	Username     string
 	BuildTag     string
 	BlockchainID string
@@ -69,11 +71,13 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 	}
 
 	var username, password string
-	if u.User != nil {
-		username = u.User.Username()
-		password, _ = u.User.Password()
+	toks := strings.SplitN(c.AccessToken, ":", 2)
+	if len(toks) > 0 {
+		username = toks[0]
 	}
-
+	if len(toks) > 1 {
+		password = toks[1]
+	}
 	req.SetBasicAuth(username, password)
 
 	// Propagate our request ID so that we can trace a request across nodes.

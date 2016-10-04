@@ -5,13 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"reflect"
 	"strings"
 	"testing"
 )
-
-const secretToken = "shhhh, a secret"
 
 func TestRPCCallJSON(t *testing.T) {
 	requestBody := map[string]string{
@@ -29,11 +26,13 @@ func TestRPCCallJSON(t *testing.T) {
 		if req.URL.Path != "/example/rpc/path" {
 			t.Errorf("got=%s want=/example/rpc/path", req.URL.Path)
 		}
-		_, pw, ok := req.BasicAuth()
+		un, pw, ok := req.BasicAuth()
 		if !ok {
 			t.Error("no user/password set")
-		} else if pw != secretToken {
-			t.Errorf("got=%s; want=%s", pw, secretToken)
+		} else if un != "test-user" {
+			t.Errorf("got=%s; want=test-user", un)
+		} else if pw != "test-secret" {
+			t.Errorf("got=%s; want=test-secret", pw)
 		}
 
 		decodedRequestBody := map[string]string{}
@@ -53,15 +52,12 @@ func TestRPCCallJSON(t *testing.T) {
 	}))
 	defer server.Close()
 
-	serverURL, err := url.Parse(server.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	serverURL.User = url.UserPassword("", secretToken)
-
 	response := map[string]string{}
-	client := &Client{BaseURL: serverURL.String()}
-	err = client.Call(context.Background(), "/example/rpc/path", requestBody, &response)
+	client := &Client{
+		BaseURL:     server.URL,
+		AccessToken: "test-user:test-secret",
+	}
+	err := client.Call(context.Background(), "/example/rpc/path", requestBody, &response)
 	if err != nil {
 		t.Fatal(err)
 	}

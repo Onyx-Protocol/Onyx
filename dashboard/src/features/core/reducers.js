@@ -47,6 +47,8 @@ export const generator = (state, action) =>
   coreConfigReducer('is_generator', state, false, action)
 export const generatorUrl = (state, action) =>
   coreConfigReducer('generator_url', state, false, action)
+export const generatorAccessToken = (state, action) =>
+  coreConfigReducer('generator_access_token', state, false, action)
 export const blockchainID = (state, action) =>
   coreConfigReducer('blockchain_id', state, 0, action)
 export const requireNetworkToken = (state, action) =>
@@ -100,6 +102,7 @@ export default combineReducers({
   replicationLag,
   generator,
   generatorUrl,
+  generatorAccessToken,
   blockchainID,
   requireClientToken,
   clientToken,
