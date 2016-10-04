@@ -11,11 +11,19 @@ import (
 )
 
 var bufPool = sync.Pool{New: func() interface{} { return new([9]byte) }}
+var readerPool = sync.Pool{New: func() interface{} { return new(byteReader) }}
+
+func getReader(r io.Reader) *byteReader {
+	br := readerPool.Get().(*byteReader)
+	br.reset(r)
+	return br
+}
 
 var ErrRange = errors.New("value out of range")
 
 func ReadVarint31(r io.Reader) (uint32, int, error) {
-	br := &byteReader{r: r}
+	br := getReader(r)
+	defer readerPool.Put(br)
 	val, err := binary.ReadUvarint(br)
 	if err != nil {
 		return 0, br.n, err
@@ -27,7 +35,8 @@ func ReadVarint31(r io.Reader) (uint32, int, error) {
 }
 
 func ReadVarint63(r io.Reader) (uint64, int, error) {
-	br := &byteReader{r: r}
+	br := getReader(r)
+	defer readerPool.Put(br)
 	val, err := binary.ReadUvarint(br)
 	if err != nil {
 		return 0, br.n, err
@@ -88,14 +97,18 @@ type byteReader struct {
 	n int
 	r io.Reader
 	e error
+	b [1]byte
+}
+
+func (r *byteReader) reset(reader io.Reader) {
+	*r = byteReader{n: 0, r: reader, e: nil}
 }
 
 func (r *byteReader) ReadByte() (byte, error) {
 	if r.e != nil {
 		return 0, r.e
 	}
-	var b [1]byte
-	n, err := r.r.Read(b[:])
+	n, err := r.r.Read(r.b[:])
 	if n > 0 {
 		// If there was an error, don't return it now, to prevent the
 		// caller from ignoring the valid byte. Hold onto the error and
@@ -103,7 +116,7 @@ func (r *byteReader) ReadByte() (byte, error) {
 		// (See https://github.com/chain/chain/pull/1911#discussion_r80809872)
 		r.e = err
 		r.n++
-		return b[0], nil
+		return r.b[0], nil
 	}
 	return 0, err
 }

@@ -7,6 +7,24 @@ import (
 	"testing"
 )
 
+func BenchmarkReadVarint31(b *testing.B) {
+	data := []byte{0xff, 0xff, 0xff, 0xff, 0x01}
+	r := bytes.NewReader(data)
+	for i := 0; i < b.N; i++ {
+		r.Reset(data)
+		ReadVarint31(r)
+	}
+}
+
+func BenchmarkReadVarint63(b *testing.B) {
+	data := []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01}
+	r := bytes.NewReader(data)
+	for i := 0; i < b.N; i++ {
+		r.Reset(data)
+		ReadVarint63(r)
+	}
+}
+
 func BenchmarkWriteVarint31(b *testing.B) {
 	n := uint64(math.MaxInt32)
 	for i := 0; i < b.N; i++ {
