@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"chain/database/pg"
-	"chain/errors"
 	"chain/log"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -85,30 +83,4 @@ func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, period ti
 			}
 		}
 	}
-}
-
-// GetBlocks returns contiguous blocks
-// with heights larger than afterHeight,
-// in block-height order.
-// If successful, it always returns at least one block,
-// waiting if necessary until one is created.
-// It is not guaranteed to return all available blocks.
-// It is an error to request blocks very far in the future.
-func GetBlocks(ctx context.Context, c *protocol.Chain, afterHeight uint64) ([]*bc.Block, error) {
-	// TODO(kr): This is not a generator function.
-	// Move this to another package.
-	err := c.WaitForBlockSoon(ctx, afterHeight+1)
-	if err != nil {
-		return nil, errors.Wrapf(err, "waiting for block at height %d", afterHeight+1)
-	}
-
-	const q = `SELECT data FROM blocks WHERE height > $1 ORDER BY height LIMIT 10`
-	var blocks []*bc.Block
-	err = pg.ForQueryRows(ctx, q, afterHeight, func(b bc.Block) {
-		blocks = append(blocks, &b)
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "querying blocks from the db")
-	}
-	return blocks, nil
 }

@@ -40,3 +40,14 @@ func ListenBlocks(ctx context.Context, dbURL string) (<-chan uint64, error) {
 
 	return c, nil
 }
+
+// GetRawBlocks queries the database for blocks after the provided height,
+// returning up to count blocks. The blocks are returned as raw bytes.
+func GetRawBlocks(ctx context.Context, afterHeight uint64, count int) ([][]byte, error) {
+	const q = `SELECT data FROM blocks WHERE height > $1 ORDER BY height LIMIT `
+	var blocks [][]byte
+	err := pg.ForQueryRows(ctx, q+strconv.Itoa(count), afterHeight, func(rawBlock []byte) {
+		blocks = append(blocks, rawBlock)
+	})
+	return blocks, errors.Wrap(err, "querying blocks from the db")
+}

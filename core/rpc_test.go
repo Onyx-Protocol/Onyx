@@ -1,6 +1,7 @@
-package generator
+package core
 
 import (
+	"bytes"
 	"context"
 	"testing"
 
@@ -12,26 +13,29 @@ import (
 	"chain/testutil"
 )
 
-// TODO(kr): GetBlocks is not a generator function.
-// Move this test (and GetBlocks) to another package.
 func TestGetBlocks(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	store := txdb.NewStore(db)
 	chain := prottest.NewChainWithStorage(t, store, mempool.New())
+	a := &api{c: chain}
 
-	blocks, err := GetBlocks(ctx, chain, 0)
+	blocks, err := a.getBlocksRPC(ctx, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	if len(blocks) != 1 {
 		t.Errorf("expected 1 (initial) block, got %d", len(blocks))
 	}
 
-	prottest.MakeBlock(ctx, t, chain)
+	newBlock := prottest.MakeBlock(ctx, t, chain)
+	buf := new(bytes.Buffer)
+	_, err = newBlock.WriteTo(buf)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	blocks, err = GetBlocks(ctx, chain, 1)
+	blocks, err = a.getBlocksRPC(ctx, 1)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -39,7 +43,7 @@ func TestGetBlocks(t *testing.T) {
 	if len(blocks) != 1 {
 		t.Errorf("expected 1 block, got %d", len(blocks))
 	}
-	if blocks[0].Height != 2 {
-		t.Errorf("expected block 2, got block %d", blocks[0].Height)
+	if !bytes.Equal(blocks[0], buf.Bytes()) {
+		t.Errorf("got=%x, want=%s", blocks[0], buf.Bytes())
 	}
 }

@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"chain/core/generator"
 	"chain/core/leader"
 	"chain/core/mockhsm"
 	"chain/core/query"
@@ -48,7 +47,7 @@ func Handler(
 	if config != nil {
 		authn := &apiAuthn{config: config, tokenMap: make(map[string]tokenResult)}
 		m.Handle("/", authn.Handler("client", a.handler()))
-		m.Handle("/rpc/", authn.Handler("network", rpcAuthedHandler(c, signer)))
+		m.Handle("/rpc/", authn.Handler("network", a.rpcAuthedHandler(c, signer)))
 		m.Handle("/configure", authn.Handler("client", alwaysError(errAlreadyConfigured)))
 		m.Handle("/info", authn.Handler("client", jsonHandler(a.info)))
 	} else {
@@ -204,13 +203,11 @@ func registerAccessTokens(m *http.ServeMux) {
 	m.Handle("/delete-access-token", jsonHandler(deleteAccessToken))
 }
 
-func rpcAuthedHandler(c *protocol.Chain, signer BlockSignerFunc) http.Handler {
+func (a *api) rpcAuthedHandler(c *protocol.Chain, signer BlockSignerFunc) http.Handler {
 	m := http.NewServeMux()
 
 	m.Handle("/rpc/submit", jsonHandler(c.AddTx))
-	m.Handle("/rpc/get-blocks", jsonHandler(func(ctx context.Context, h uint64) ([]*bc.Block, error) {
-		return generator.GetBlocks(ctx, c, h)
-	}))
+	m.Handle("/rpc/get-blocks", jsonHandler(a.getBlocksRPC))
 	m.Handle("/rpc/block-height", jsonHandler(func(ctx context.Context) map[string]uint64 {
 		h := c.Height()
 		return map[string]uint64{
