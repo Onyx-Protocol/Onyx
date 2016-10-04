@@ -19,6 +19,10 @@
   top: 150px;
   left: calc(50% - 250px);
   width: 500px;
+
+  pre {
+    white-space: pre-wrap;
+  }
 }
 
 .cancel {

@@ -19,16 +19,17 @@ class Modal extends React.Component {
       dispatch(acceptAction)
       dispatch(actions.app.hideModal())
     }
-    const cancel = () => dispatch(cancelAction)
+    const cancel = cancelAction ? () => dispatch(cancelAction) : null
+    const backdropAction = cancel || accept
 
     return(
       <div className={styles.main}>
-        <div className={styles.backdrop} onClick={cancel}></div>
+        <div className={styles.backdrop} onClick={backdropAction}></div>
         <div className={styles.content}>
           {body}
 
-          <button className={`btn btn-danger ${styles.accept}`} onClick={accept}>Accept</button>
-          <button className={`btn btn-link ${styles.cancel}`} onClick={cancel}>Cancel</button>
+          <button className={`btn btn-${this.props.options.danger ? 'danger' : 'primary'} ${styles.accept}`} onClick={accept}>OK</button>
+          {cancel && <button className={`btn btn-link ${styles.cancel}`} onClick={cancel}>Cancel</button>}
         </div>
       </div>
     )
@@ -39,7 +40,8 @@ const mapStateToProps = (state) => ({
   isShowing: state.app.modal.isShowing,
   body: state.app.modal.body,
   acceptAction: state.app.modal.accept,
-  cancelAction: state.app.modal.cancel
+  cancelAction: state.app.modal.cancel,
+  options: state.app.modal.options,
 })
 
 // NOTE: ommitting a function for `mapDispatchToProps` passes `dispatch` as a

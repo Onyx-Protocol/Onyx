@@ -1,0 +1,35 @@
+.main {
+  width: 100%;
+
+  thead {
+    border-bottom: 1px solid $border-color;
+  }
+
+  td, th {
+    padding: 6px 15px;
+  }
+}
+
+.odd td {
+  background: $background-emphasis-color;
+}
+
+.amount {
+  color: $text-color;
+  background: $background-emphasis-color;
+}
+
+.amount.issue, .amount.spend {
+  color: $highlight-danger;
+  background: $highlight-danger-background;
+}
+
+.amount.receive {
+  color: $highlight-success;
+  background: $highlight-success-background;
+}
+
+.direction {
+  color: $text-light-color;
+  text-align: right;
+}

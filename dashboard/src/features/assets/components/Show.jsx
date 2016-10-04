@@ -1,5 +1,9 @@
 import React from 'react'
-import { BaseShow } from '../../shared/components'
+import {
+  BaseShow,
+  PageTitle,
+  Table,
+} from 'features/shared/components'
 
 class Show extends BaseShow {
   render() {
@@ -7,31 +11,41 @@ class Show extends BaseShow {
 
     let view
     if (item) {
-      let label = item.id
+      const title = <span>
+        {'Asset '}
+        <code>{item.alias ? item.alias :item.id}</code>
+      </span>
 
-      if (item.alias) {
-        label = item.alias
-      }
+      view = <div>
+        <PageTitle title={title} />
 
-      view = <div className='panel panel-default'>
-        <div className='panel-heading'>
-          <strong>Asset - {label}</strong>
-        </div>
-        <div className='panel-body'>
-          <pre>
-            {JSON.stringify(item, null, '  ')}
-          </pre>
-        </div>
-        <div className='panel-footer'>
-          <ul className='nav nav-pills'>
-            <li>
-              <button className='btn btn-link' onClick={this.props.showCirculation.bind(this, item)}>
-                Circulation
-              </button>
-            </li>
-          </ul>
-        </div>
+        <Table
+          title='details'
+          actions={[
+            <button className='btn btn-link' onClick={this.props.showCirculation.bind(this, item)}>
+              Circulation
+            </button>
+          ]}
+          items={[
+            {label: 'ID', value: item.id},
+            {label: 'Alias', value: item.alias},
+            {label: 'Tags', value: item.tags},
+            {label: 'Definition', value: item.definition},
+            {label: 'Quorum', value: item.quorum},
+          ]}
+        />
 
+        {item.keys.map((key, index) =>
+          <Table
+            key={index}
+            title={index == 0 ? 'Keys' : ''}
+            items={[
+              {label: 'Root Xpub', value: key.root_xpub},
+              {label: 'Asset Pubkey', value: key.asset_pubkey},
+              {label: 'Asset Derivation Path', value: key.asset_derivation_path},
+            ]}
+          />
+        )}
       </div>
     }
     return this.renderIfFound(view)

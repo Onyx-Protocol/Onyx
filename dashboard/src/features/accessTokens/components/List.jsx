@@ -54,8 +54,8 @@ const dispatchToProps = (type) => (dispatch) => {
 
   return {
     ...BaseList.mapDispatchToProps(type)(dispatch),
-    confirmEnable: (body) => dispatch(actions.app.showModal(body, enableTokens, hideModal)),
-    confirmDisable: (body) => dispatch(actions.app.showModal(body, disableTokens, hideModal)),
+    confirmEnable: (body) => dispatch(actions.app.showModal(body, enableTokens, hideModal, {danger: true})),
+    confirmDisable: (body) => dispatch(actions.app.showModal(body, disableTokens, hideModal, {danger: true})),
     itemActions: {
       delete: (id) => dispatch(actions[type].deleteItem(id))
     },

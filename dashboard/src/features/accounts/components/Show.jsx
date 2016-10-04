@@ -1,5 +1,9 @@
 import React from 'react'
-import { BaseShow } from 'features/shared/components'
+import {
+  BaseShow,
+  PageTitle,
+  Table,
+} from 'features/shared/components'
 
 class Show extends BaseShow {
   constructor(props) {
@@ -12,9 +16,10 @@ class Show extends BaseShow {
     this.props.createControlProgram([{
       type: 'account',
       params: { account_id: this.props.item.id }
-    }]).then((program) => {
-      this.setState({program: program.control_program})
-    })
+    }]).then((program) => this.props.showControlProgram(<div>
+      <p>Copy this one-time use control program to use in a transaction:</p>
+      <pre>{program.control_program}</pre>
+    </div>))
   }
 
   render() {
@@ -22,40 +27,45 @@ class Show extends BaseShow {
 
     let view
     if (item) {
-      view = <div className='panel panel-default'>
-        <div className='panel-heading'>
-          <strong>Account - {item.id}</strong>
-        </div>
-        <div className='panel-body'>
-          <pre>
-            {JSON.stringify(item, null, '  ')}
-          </pre>
-        </div>
+      const title = <span>
+        {'Account '}
+        <code>{item.alias ? item.alias :item.id}</code>
+      </span>
 
-        <div className='panel-footer'>
-          <div className='row'>
-            <div className='col-sm-4'>
-              <ul className='nav nav-pills'>
-                <li>
-                  <button className='btn btn-link' onClick={this.props.showTransactions.bind(this, item.id)}>Transactions</button>
-                </li>
-                <li>
-                  <button className='btn btn-link' onClick={this.props.showBalances.bind(this, item.id)}>Balances</button>
-                </li>
-              </ul>
-            </div>
-            <div className='col-sm-8 text-right'>
-              <button className='btn btn-link' onClick={this.createControlProgram}>
-                Create&nbsp;
-                {this.state.program && 'another '}
-                Control Program
-              </button>
-              {this.state.program && <p>
-                <code>{this.state.program}</code>
-              </p>}
-            </div>
-          </div>
-        </div>
+      view = <div>
+        <PageTitle
+          title={title}
+          actions={
+            <button className='btn btn-link' onClick={this.createControlProgram}>
+              Create Control Program
+            </button>}
+        />
+
+        <Table
+          title='details'
+          actions={[
+            <button className='btn btn-link' onClick={this.props.showTransactions.bind(this, item.id)}>Transactions</button>,
+            <button className='btn btn-link' onClick={this.props.showBalances.bind(this, item.id)}>Balances</button>
+          ]}
+          items={[
+            {label: 'ID', value: item.id},
+            {label: 'Alias', value: item.alias},
+            {label: 'Tags', value: item.tags},
+            {label: 'Quorum', value: item.quorum},
+          ]}
+        />
+
+        {item.keys.map((key, index) =>
+          <Table
+            key={index}
+            title={index == 0 ? 'Keys' : ''}
+            items={[
+              {label: 'Root Xpub', value: key.root_xpub},
+              {label: 'Account Xpub', value: key.account_xpub},
+              {label: 'Account Derivation Path', value: key.account_derivation_path},
+            ]}
+          />
+        )}
       </div>
     }
     return this.renderIfFound(view)
@@ -64,31 +74,34 @@ class Show extends BaseShow {
 
 // Container
 
-import { actions } from '../'
 import { connect } from 'react-redux'
 import { push } from 'react-router-redux'
-import allActions from '../../../actions'
+import actions from 'actions'
 
 const mapStateToProps = (state, ownProps) => ({
   item: state.account.items[ownProps.params.id]
 })
 
 const mapDispatchToProps = ( dispatch ) => ({
-  fetchItem: (id) => dispatch(actions.fetchItems({filter: `id='${id}'`})),
+  fetchItem: (id) => dispatch(actions.account.fetchItems({filter: `id='${id}'`})),
   showTransactions: (id) => {
     let query = `inputs(account_id='${id}') OR outputs(account_id='${id}')`
-    dispatch(allActions.transaction.updateQuery(query))
+    dispatch(actions.transaction.updateQuery(query))
     dispatch(push('/transactions'))
   },
   showBalances: (id) => {
     let query = `account_id='${id}'`
-    dispatch(allActions.balance.updateQuery({
+    dispatch(actions.balance.updateQuery({
       query: query,
       sumBy: 'asset_id'
     }))
     dispatch(push('/balances'))
   },
-  createControlProgram: (data) => dispatch(actions.createControlProgram(data))
+  createControlProgram: (data) => dispatch(actions.account.createControlProgram(data)),
+  showControlProgram: (body) => dispatch(actions.app.showModal(
+    body,
+    actions.app.hideModal()
+  )),
 })
 
 export default connect(

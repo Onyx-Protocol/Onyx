@@ -13,10 +13,14 @@ $background-color: #ffffff;
 $background-emphasis-color: #f7f9fb;
 $border-color: #e7ebf3;
 $text-color: #8c8e94;
+$text-light-color: #dbdcde;
 $text-strong-color: #3b4046;
 
 $highlight-default: #00bfaa;
+$highlight-success: #00bfaa;
+$highlight-success-background: #e3f6f4;
 $highlight-danger: #EB4D5C;
+$highlight-danger-background: #fdedef;
 
 $background-inverse-color: #20252D;
 $border-inverse-color: lighten($text-strong-color, 10%);

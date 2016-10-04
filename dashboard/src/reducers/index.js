@@ -15,11 +15,11 @@ import unspent from './unspent'
 const makeRootReducer = () => (state, action) => {
   if (action.type == 'UPDATE_CORE_INFO' &&
       !action.param.is_configured) {
-        state = {
-          form: state.form,
-          routing: state.routing
-        }
-      }
+    state = {
+      form: state.form,
+      routing: state.routing
+    }
+  }
 
   return combineReducers({
     ...access_token,

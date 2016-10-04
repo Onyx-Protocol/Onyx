@@ -69,8 +69,6 @@ class ItemList extends React.Component {
 
           {this.props.children}
 
-          {pagination}
-
           {this.props.items.map((item) =>
             <this.props.listItemComponent key={item.id} item={item} {...this.props.itemActions}/>
           )}

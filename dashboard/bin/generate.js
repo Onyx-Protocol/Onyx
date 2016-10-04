@@ -57,7 +57,7 @@ switch (command) {
       break
     }
 
-    cd('src/components')
+    cd('src')
     mkdir('-p', path)
 
     let name = path.split('/').pop()

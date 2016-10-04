@@ -1,7 +1,7 @@
-import Section from '../../containers/SectionContainer'
-import TransactionList from '../../containers/Transactions/List'
-import NewTransaction from '../../containers/Transactions/New'
-import Show from './components/Show'
+import Section from 'containers/SectionContainer'
+import TransactionList from 'containers/Transactions/List'
+import NewTransaction from 'containers/Transactions/New'
+import { Show } from './components'
 
 export default {
   path: 'transactions',

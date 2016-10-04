@@ -1,0 +1,41 @@
+.main {
+  border: 1px solid $border-color;
+  margin-bottom: 30px;
+}
+
+.titleBar {
+  background: $background-emphasis-color;
+  border-bottom: 1px solid $border-color;
+  display: flex;
+  align-items: center;
+  padding: 15px;
+
+  code {
+    padding: 0;
+    background: none;
+    color: $text-color;
+  }
+}
+
+.title {
+  flex-grow: 1;
+
+  label {
+    display: block;
+    font-size: 11px;
+    margin: 0;
+    text-transform: uppercase;
+  }
+}
+
+.timestamp {
+  display: block;
+  padding-right: 15px;
+  border-right: 1px solid $border-color;
+  margin-right: 15px;
+}
+
+.viewLink {
+  margin: -15px 0;
+  padding: 15px 0;
+}

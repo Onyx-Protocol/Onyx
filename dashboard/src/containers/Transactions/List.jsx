@@ -1,5 +1,5 @@
-import { mapStateToProps, mapDispatchToProps, connect } from '../Base/List'
-import ListItem from '../../features/transactions/components/ListItem'
+import { mapStateToProps, mapDispatchToProps, connect } from 'containers/Base/List'
+import { ListItem } from 'features/transactions/components'
 
 const type = 'transaction'
 
