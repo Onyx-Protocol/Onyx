@@ -57,18 +57,18 @@ func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, period ti
 	// the block and committing the signed block to the blockchain.
 	b, err := g.getPendingBlock(ctx)
 	if err != nil {
-		log.Fatal(ctx, err)
+		log.Fatal(ctx, log.KeyError, err)
 	}
 	if b != nil && (g.latestBlock == nil || b.Height == g.latestBlock.Height+1) {
 		s, err := g.chain.ValidateBlock(ctx, g.latestSnapshot, g.latestBlock, b)
 		if err != nil {
-			log.Fatal(ctx, err)
+			log.Fatal(ctx, log.KeyError, err)
 		}
 
 		// g.commitBlock will update g.latestBlock and g.latestSnapshot.
 		_, err = g.commitBlock(ctx, b, s)
 		if err != nil {
-			log.Fatal(ctx, err)
+			log.Fatal(ctx, log.KeyError, err)
 		}
 	}
 
