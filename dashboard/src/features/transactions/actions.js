@@ -1,3 +1,4 @@
+import uuid from 'uuid'
 import chain from 'chain'
 import { context } from 'utility/environment'
 import { parseNonblankJSON } from 'utility/string'
@@ -14,15 +15,15 @@ const list = generateListActions(type, {
 })
 const form = generateFormActions(type)
 
-function preprocessTransaction(data) {
-  try {
-    data.reference_data = parseNonblankJSON(data.reference_data)
-  } catch (err) {
-    throw new Error('Transaction-level reference data should be valid JSON, or blank.')
+function preprocessTransaction(formParams) {
+  const copy = JSON.parse(JSON.stringify(formParams))
+  const builder = {
+    base_transaction: copy.base_transaction,
+    actions: copy.actions,
   }
 
-  for (let i in data.actions) {
-    let a = data.actions[i]
+  for (let i in builder.actions) {
+    let a = builder.actions[i]
     try {
       a.reference_data = parseNonblankJSON(a.reference_data)
     } catch (err) {
@@ -32,44 +33,67 @@ function preprocessTransaction(data) {
 
   // HACK: Check for retire actions and replace with OP_FAIL control programs.
   // TODO: update JS SDK to support Java SDK builder style.
-  for (let i = 0; i < data.actions.length; i++) {
-    let a = data.actions[i]
+  for (let i = 0; i < builder.actions.length; i++) {
+    let a = builder.actions[i]
     if (a.type == 'retire_asset') {
       a.type = 'control_program'
       a.control_program = '6a' // OP_FAIL hex byte
     }
   }
+
+  return builder
 }
 
-form.submitForm = (data) => function(dispatch) {
+function getTemplateXpubs(tpl) {
+  const xpubs = []
+  tpl.signing_instructions.forEach((instruction) => {
+    instruction.witness_components.forEach((component) => {
+      component.keys.forEach((key) => {
+        xpubs.push(key.xpub)
+      })
+    })
+  })
+  return xpubs
+}
+
+form.submitForm = (formParams) => function(dispatch) {
+  let builder
   try {
-    preprocessTransaction(data)
+    builder = preprocessTransaction(formParams)
   } catch (err) {
     return Promise.reject(err)
   }
 
-  return new chain.Transaction(data)
-    .build(context())
-    .then((template) => {
-      const keys = []
+  const build = new chain.Transaction(builder).build(context())
 
-      template.signing_instructions.forEach((instruction) => {
-        instruction.witness_components.forEach((component) => {
-          component.keys.forEach((key) => {
-            keys.push(key.xpub)
-          })
-        })
+  if (formParams.submit_action == 'submit') {
+    return build
+      .then(tpl => chain.MockHsm.sign([tpl], getTemplateXpubs(tpl), context()))
+      .then(signed => signed[0].submit(context()))
+      .then(() => {
+        dispatch(push('/transactions'))
+        dispatch(form.created())
+        dispatch(unspentActions.updateQuery(''))
       })
+  }
 
-      return chain.MockHsm.sign([template], keys, context())
-    })
-    .then((signedTemplates) => {
-      return signedTemplates[0].submit(context())
-    })
-    .then(() => {
-      dispatch(push('/transactions'))
-      dispatch(form.created())
-      dispatch(unspentActions.updateQuery(''))
+  // submit_action == 'generate'
+  return build
+    .then(tpl => chain.MockHsm.sign(
+      [{...tpl, allow_additional_actions: true}],
+      getTemplateXpubs(tpl),
+      context()
+    ))
+    .then(signed => {
+      const id = uuid.v4()
+      dispatch({
+        type: 'GENERATED_TX_HEX',
+        generated: {
+          id: id,
+          hex: signed[0].raw_transaction,
+        },
+      })
+      dispatch(push(`/transactions/generated/${id}`))
     })
 }
 

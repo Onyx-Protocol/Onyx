@@ -1,7 +1,7 @@
 import Section from 'containers/SectionContainer'
 import TransactionList from 'containers/Transactions/List'
 import NewTransaction from 'containers/Transactions/New'
-import { Show } from './components'
+import { Show, GeneratedTxHex } from './components'
 
 export default {
   path: 'transactions',
@@ -13,8 +13,12 @@ export default {
       component: NewTransaction
     },
     {
+      path: 'generated/:id',
+      component: GeneratedTxHex,
+    },
+    {
       path: ':id',
       component: Show
-    }
+    },
   ]
 }

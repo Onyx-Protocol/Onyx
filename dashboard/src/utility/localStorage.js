@@ -1,15 +1,22 @@
 export const exportState = (store) => () => {
-  localStorage.setItem('reduxState', JSON.stringify(store.getState().core))
-}
-export const importState = () => {
-  const state = localStorage.getItem('reduxState') ?
-    JSON.parse(localStorage.getItem('reduxState')) :
-    {}
+  const state = store.getState()
+  const exportable = {
+    core: state.core,
+    transaction: {
+      generated: (state.transaction || {}).generated,
+    },
+  }
 
-  return {
-    core: {
-      clientToken: state.clientToken,
-      validToken: state.validToken,
-    }
+  localStorage.setItem('reduxState', JSON.stringify(exportable))
+}
+
+export const importState = () => {
+  const state = localStorage.getItem('reduxState')
+  if (!state) return {}
+
+  try {
+    return JSON.parse(state)
+  } catch (_) {
+    return {}
   }
 }

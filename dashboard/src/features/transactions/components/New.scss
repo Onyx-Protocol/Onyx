@@ -1,0 +1,20 @@
+.submitTable {
+  border-spacing: 5px;
+
+  td input {
+    margin-right: 7px;
+  }
+
+  td {
+    padding: 0;
+    vertical-align: middle;
+  }
+
+  label {
+    margin-bottom: 0;
+  }
+}
+
+.submitDescription {
+  font-weight: normal;
+}

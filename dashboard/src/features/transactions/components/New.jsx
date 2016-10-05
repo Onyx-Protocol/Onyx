@@ -1,8 +1,9 @@
 import React from 'react'
 import PageHeader from '../../../components/PageHeader/PageHeader'
-import { JsonField, ErrorBanner } from '../../../components/Common'
+import { TextField, JsonField, ErrorBanner } from '../../../components/Common'
 import ActionItem from './FormActionItem'
 import { reduxForm } from 'redux-form'
+import styles from './New.scss'
 
 class Form extends React.Component {
   constructor(props) {
@@ -34,7 +35,7 @@ class Form extends React.Component {
 
   render() {
     const {
-      fields: { actions },
+      fields: { base_transaction, actions, submit_action },
       error,
       handleSubmit,
       submitting
@@ -45,6 +46,27 @@ class Form extends React.Component {
         <PageHeader title='New Transaction' />
 
         <form onSubmit={handleSubmit(this.submitWithValidation)} >
+
+          {this.state.showBaseTx &&
+            <TextField
+              title='Base transaction:'
+              placeholder='Paste transaction hex here...'
+              fieldProps={base_transaction}
+              autoFocus={true}
+            />
+          }
+          {!this.state.showBaseTx &&
+            <button
+              type='button'
+              className='btn btn-link'
+              onClick={() => this.setState({showBaseTx: true})
+            }>
+              Include a base transaction
+            </button>
+          }
+
+          <hr />
+
           <div className='form-group'>
 
             {!actions.length && <div className='well'>Add actions to build a transaction</div>}
@@ -71,17 +93,39 @@ class Form extends React.Component {
 
           <hr />
 
-          <p>
-            Submitting builds a transaction template, signs the template with
-             the Mock HSM, and submits the fully signed template to the blockchain.
-          </p>
+          <table className={styles.submitTable}>
+            <tbody>
+              <tr>
+                <td><input id='submit_action_submit' type='radio' {...submit_action} value='submit' checked={submit_action.value == 'submit'} /></td>
+                <td><label htmlFor='submit_action_submit'>Submit transaction to blockchain</label></td>
+              </tr>
+              <tr>
+                <td></td>
+                <td><label htmlFor='submit_action_submit' className={styles.submitDescription}>
+                  This transaction will be signed by the Mock HSM and submitted to the blockchain.
+                </label></td>
+              </tr>
+              <tr>
+                <td><input id='submit_action_generate' type='radio' {...submit_action} value='generate' checked={submit_action.value == 'generate'} /></td>
+                <td><label htmlFor='submit_action_generate'>Allow additional actions</label></td>
+              </tr>
+              <tr>
+                <td></td>
+                <td><label htmlFor='submit_action_generate' className={styles.submitDescription}>
+                  These actions will be signed by the Mock HSM and returned as a transaction hex string, which should be used as the base transaction in a multi-party swap.
+                </label></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <hr />
 
           {error && <ErrorBanner
             title='There was a problem submitting your transaction:'
             message={error}/>}
 
           <button type='submit' className='btn btn-primary' disabled={submitting}>
-            Submit Transaction
+            {submit_action.value == 'submit' ? 'Submit Transaction' : 'Generate Transaction Hex'}
           </button>
         </form>
       </div>
@@ -91,8 +135,15 @@ class Form extends React.Component {
 
 const validate = values => {
   const errors = {actions: {}}
-  let fieldError
 
+  // Base transaction
+  let baseTx = values.base_transaction || ''
+  if (baseTx.trim().match(/[^0-9a-fA-F]/)) {
+    errors.base_transaction = 'Base transaction must be a hex string.'
+  }
+
+  // Actions
+  let fieldError
   values.actions.forEach((action, index) => {
     fieldError = JsonField.validator(values.actions[index].reference_data)
     if (fieldError) {
@@ -106,6 +157,7 @@ const validate = values => {
 export default reduxForm({
   form: 'NewTransactionForm',
   fields: [
+    'base_transaction',
     'actions[].type',
     'actions[].account_id',
     'actions[].account_alias',
@@ -116,6 +168,11 @@ export default reduxForm({
     'actions[].transaction_id',
     'actions[].position',
     'actions[].reference_data',
+    'submit_action',
   ],
-  validate
-})(Form)
+  validate,
+  initialValues: {
+    submit_action: 'submit',
+  },
+}
+)(Form)

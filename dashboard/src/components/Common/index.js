@@ -7,7 +7,7 @@ import NumberField from './NumberField'
 import ObjectSelectorField from './ObjectSelectorField/ObjectSelectorField'
 import Panel from './Panel'
 import SelectField from './SelectField'
-import TextField from './TextField'
+import TextField from './TextField/TextField'
 import XpubField from './XpubField/XpubField'
 
 export {
