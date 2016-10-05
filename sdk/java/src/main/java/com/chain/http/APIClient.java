@@ -82,14 +82,16 @@ public class APIClient {
     Request req;
 
     try {
-      req =
+      Request.Builder builder =
           new Request.Builder()
               // TODO: include version string in User-Agent when available
               .header("User-Agent", "chain-sdk-java")
-              .header("Authorization", this.credentials())
               .url(this.url(path))
-              .method("POST", requestBody)
-              .build();
+              .method("POST", requestBody);
+      if (this.baseURL.getUserInfo() != null) {
+          builder = builder.header("Authorization", this.credentials());
+	  }
+      req = builder.build();
     } catch (MalformedURLException ex) {
       throw new BadURLException(ex.getMessage());
     }
