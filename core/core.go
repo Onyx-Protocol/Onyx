@@ -295,7 +295,11 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	return err
 }
 
-func configure(ctx context.Context, x *Config) error {
+func (a *api) configure(ctx context.Context, x *Config) error {
+	if a.config != nil {
+		return errAlreadyConfigured
+	}
+
 	err := Configure(ctx, pg.FromContext(ctx), x)
 	if err != nil {
 		return err

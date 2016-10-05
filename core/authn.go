@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,21 +26,23 @@ type tokenResult struct {
 	lastLookup time.Time
 }
 
-func (a *apiAuthn) Handler(typ string, next http.Handler) http.Handler {
-	authFunc := func(req *http.Request) error {
-		ctx := req.Context()
-		user, pw, _ := req.BasicAuth()
-		if !a.config.authEnabled(typ) {
-			return nil
-		}
-		return a.cachedAuthCheck(ctx, typ, user, pw)
+func (a *apiAuthn) auth(req *http.Request) error {
+	typ := "client"
+	if strings.HasPrefix(req.URL.Path, networkRPCPrefix) {
+		typ = "network"
 	}
 
-	return authn.BasicHandler{
-		Auth:  authFunc,
-		Next:  next,
-		Realm: "Chain Core API",
+	// Treat "unconfigured" the same as "configured, but
+	// auth is disabled".
+	// TODO(kr): remove this a.config==nil check when we
+	// switch to localhost auth (which ought to remove
+	// the dependency on config entirely here).
+	if a.config == nil || !a.config.authEnabled(typ) {
+		return nil
 	}
+
+	user, pw, _ := req.BasicAuth()
+	return a.cachedAuthCheck(req.Context(), typ, user, pw)
 }
 
 func authCheck(ctx context.Context, typ, user, pw string) (bool, error) {

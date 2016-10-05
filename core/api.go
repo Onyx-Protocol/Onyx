@@ -12,6 +12,7 @@ import (
 	"chain/core/query"
 	"chain/encoding/json"
 	"chain/errors"
+	"chain/net/http/authn"
 	"chain/net/http/httpjson"
 	"chain/net/rpc"
 	"chain/protocol"
@@ -21,6 +22,9 @@ import (
 const (
 	defGenericPageSize = 100
 )
+
+// TODO(kr): change this to "network" or something.
+const networkRPCPrefix = "/rpc/"
 
 var errNotFound = errors.New("not found")
 
@@ -42,21 +46,65 @@ func Handler(
 		indexer: indexer,
 		config:  config,
 	}
+	needConfig := jsonHandler
+	if config == nil {
+		needConfig = func(f interface{}) http.Handler {
+			return alwaysError(errUnconfigured)
+		}
+	}
 
 	m := http.NewServeMux()
-	if config != nil {
-		authn := &apiAuthn{config: config, tokenMap: make(map[string]tokenResult)}
-		m.Handle("/", authn.Handler("client", a.handler()))
-		m.Handle("/rpc/", authn.Handler("network", a.rpcAuthedHandler(c, signer)))
-		m.Handle("/configure", authn.Handler("client", alwaysError(errAlreadyConfigured)))
-		m.Handle("/info", authn.Handler("client", jsonHandler(a.info)))
-	} else {
-		m.Handle("/", alwaysError(errUnconfigured))
-		m.Handle("/configure", jsonHandler(configure))
-		m.Handle("/info", jsonHandler(a.info))
-		registerAccessTokens(m)
+	m.Handle("/", alwaysError(errNotFound))
+
+	m.Handle("/create-account", needConfig(createAccount))
+	m.Handle("/create-asset", needConfig(a.createAsset))
+	m.Handle("/build-transaction", needConfig(build))
+	m.Handle("/submit-transaction", needConfig(a.submit))
+	m.Handle("/create-control-program", needConfig(createControlProgram))
+	m.Handle("/create-transaction-consumer", needConfig(a.createTxConsumer))
+	m.Handle("/get-transaction-consumer", needConfig(getTxConsumer))
+	m.Handle("/update-transaction-consumer", needConfig(updateTxConsumer))
+	m.Handle("/delete-transaction-consumer", needConfig(deleteTxConsumer))
+	m.Handle("/mockhsm/create-key", needConfig(a.mockhsmCreateKey))
+	m.Handle("/mockhsm/list-keys", needConfig(a.mockhsmListKeys))
+	m.Handle("/mockhsm/delkey", needConfig(a.mockhsmDelKey))
+	m.Handle("/mockhsm/sign-transaction", needConfig(a.mockhsmSignTemplates))
+	m.Handle("/list-accounts", needConfig(a.listAccounts))
+	m.Handle("/list-assets", needConfig(a.listAssets))
+	m.Handle("/list-transaction-consumers", needConfig(a.listTxConsumers))
+	m.Handle("/list-transactions", needConfig(a.listTransactions))
+	m.Handle("/list-balances", needConfig(a.listBalances))
+	m.Handle("/list-unspent-outputs", needConfig(a.listUnspentOutputs))
+	m.Handle("/update-configuration", needConfig(a.updateConfig))
+	m.Handle("/reset", needConfig(a.reset))
+
+	// V3 DEPRECATED
+	m.Handle("/v3/transact/cancel-reservation", needConfig(cancelReservation))
+
+	m.Handle(networkRPCPrefix+"submit", needConfig(a.c.AddTx))
+	m.Handle(networkRPCPrefix+"get-blocks", needConfig(a.getBlocksRPC))
+	m.Handle(networkRPCPrefix+"signer/sign-block", needConfig(leaderSignHandler(signer)))
+	m.Handle(networkRPCPrefix+"block-height", needConfig(func(ctx context.Context) map[string]uint64 {
+		h := a.c.Height()
+		return map[string]uint64{
+			"block_height": h,
+		}
+	}))
+
+	m.Handle("/create-access-token", jsonHandler(createAccessToken))
+	m.Handle("/list-access-tokens", jsonHandler(listAccessTokens))
+	m.Handle("/delete-access-token", jsonHandler(deleteAccessToken))
+	m.Handle("/configure", jsonHandler(a.configure))
+	m.Handle("/info", jsonHandler(a.info))
+
+	return authn.BasicHandler{
+		Auth: (&apiAuthn{
+			config:   config,
+			tokenMap: make(map[string]tokenResult),
+		}).auth,
+		Next:  m,
+		Realm: "Chain Core API",
 	}
-	return m
 }
 
 // Config encapsulates Core-level, persistent configuration options.
@@ -150,80 +198,11 @@ type page struct {
 	LastPage bool         `json:"last_page"`
 }
 
-func (a *api) handler() http.Handler {
-	m := http.NewServeMux()
-
-	// Accounts
-	m.Handle("/create-account", jsonHandler(createAccount))
-
-	// Assets
-	m.Handle("/create-asset", jsonHandler(a.createAsset))
-
-	// Transactions
-	m.Handle("/build-transaction", jsonHandler(build))
-	m.Handle("/submit-transaction", jsonHandler(a.submit))
-	m.Handle("/create-control-program", jsonHandler(createControlProgram))
-
-	// TxConsumers
-	m.Handle("/create-transaction-consumer", jsonHandler(a.createTxConsumer))
-	m.Handle("/get-transaction-consumer", jsonHandler(getTxConsumer))
-	m.Handle("/update-transaction-consumer", jsonHandler(updateTxConsumer))
-	m.Handle("/delete-transaction-consumer", jsonHandler(deleteTxConsumer))
-
-	// MockHSM endpoints
-	m.Handle("/mockhsm/create-key", jsonHandler(a.mockhsmCreateKey))
-	m.Handle("/mockhsm/list-keys", jsonHandler(a.mockhsmListKeys))
-	m.Handle("/mockhsm/delkey", jsonHandler(a.mockhsmDelKey))
-	m.Handle("/mockhsm/sign-transaction", jsonHandler(a.mockhsmSignTemplates))
-
-	// Transaction querying
-	m.Handle("/list-accounts", jsonHandler(a.listAccounts))
-	m.Handle("/list-assets", jsonHandler(a.listAssets))
-	m.Handle("/list-transaction-consumers", jsonHandler(a.listTxConsumers))
-	m.Handle("/list-transactions", jsonHandler(a.listTransactions))
-	m.Handle("/list-balances", jsonHandler(a.listBalances))
-	m.Handle("/list-unspent-outputs", jsonHandler(a.listUnspentOutputs))
-
-	m.Handle("/update-configuration", jsonHandler(a.updateConfig))
-	m.Handle("/reset", jsonHandler(a.reset))
-
-	// V3 DEPRECATED
-	m.Handle("/v3/transact/cancel-reservation", jsonHandler(cancelReservation))
-
-	registerAccessTokens(m)
-
-	m.Handle("/", alwaysError(errNotFound))
-
-	return m
-}
-
-func registerAccessTokens(m *http.ServeMux) {
-	m.Handle("/create-access-token", jsonHandler(createAccessToken))
-	m.Handle("/list-access-tokens", jsonHandler(listAccessTokens))
-	m.Handle("/delete-access-token", jsonHandler(deleteAccessToken))
-}
-
-func (a *api) rpcAuthedHandler(c *protocol.Chain, signer BlockSignerFunc) http.Handler {
-	m := http.NewServeMux()
-
-	m.Handle("/rpc/submit", jsonHandler(c.AddTx))
-	m.Handle("/rpc/get-blocks", jsonHandler(a.getBlocksRPC))
-	m.Handle("/rpc/block-height", jsonHandler(func(ctx context.Context) map[string]uint64 {
-		h := c.Height()
-		return map[string]uint64{
-			"block_height": h,
-		}
-	}))
-
-	if signer != nil {
-		m.Handle("/rpc/signer/sign-block", jsonHandler(leaderSignHandler(signer)))
-	}
-
-	return m
-}
-
 func leaderSignHandler(f BlockSignerFunc) BlockSignerFunc {
 	return func(ctx context.Context, b *bc.Block) ([]byte, error) {
+		if f == nil {
+			return nil, errNotFound // TODO(kr): is this really the right error here?
+		}
 		if leader.IsLeading() {
 			return f(ctx, b)
 		}
