@@ -97,12 +97,19 @@ func Handler(
 	m.Handle("/configure", jsonHandler(a.configure))
 	m.Handle("/info", jsonHandler(a.info))
 
+	latencyHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if l := latency(m, req); l != nil {
+			defer l.RecordSince(time.Now())
+		}
+		m.ServeHTTP(w, req)
+	})
+
 	return authn.BasicHandler{
 		Auth: (&apiAuthn{
 			config:   config,
 			tokenMap: make(map[string]tokenResult),
 		}).auth,
-		Next:  m,
+		Next:  latencyHandler,
 		Realm: "Chain Core API",
 	}
 }
