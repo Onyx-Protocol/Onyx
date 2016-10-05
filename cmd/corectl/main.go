@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"chain/core"
+	"chain/core/accesstoken"
 	"chain/core/mockhsm"
 	"chain/crypto/ed25519"
 	"chain/database/sql"
@@ -33,6 +34,7 @@ type command struct {
 var commands = map[string]*command{
 	"config-generator":     {configGenerator},
 	"create-block-keypair": {createBlockKeyPair},
+	"create-token":         {createToken},
 	"config":               {configNongenerator},
 	"reset":                {reset},
 }
@@ -136,6 +138,23 @@ func createBlockKeyPair(db *sql.DB, args []string) {
 	}
 
 	fmt.Println("block xpub:", xpub.XPub.String())
+}
+
+func createToken(db *sql.DB, args []string) {
+	var id, typ string
+	if len(args) == 1 {
+		id, typ = args[0], "client"
+	} else if len(args) == 2 && args[0] == "-net" {
+		id, typ = args[1], "network"
+	} else {
+		fatalln("usage: corectl create-token [-net] [id]")
+	}
+
+	tok, err := accesstoken.Create(context.Background(), id, typ)
+	if err != nil {
+		fatalln("error:", err)
+	}
+	fmt.Printf("%s:%s\n", tok.ID, tok.Token)
 }
 
 func configNongenerator(db *sql.DB, args []string) {
