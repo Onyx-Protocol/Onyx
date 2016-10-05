@@ -886,6 +886,11 @@ public class Transaction {
         this.put("type", "set_transaction_reference_data");
       }
 
+      public SetTransactionReferenceData(Map<String, Object> referenceData) {
+        this();
+        setReferenceData(referenceData);
+      }
+
       /**
        * Adds a k,v pair to the action's reference data object.<br>
        * Since most/all current action types use the reference_data parameter, we provide this method in the base class to avoid repetition.
