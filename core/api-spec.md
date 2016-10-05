@@ -975,7 +975,6 @@ POST /configure
 
   // Supply these if is_generator is false.
   "generator_url": ...,
-  "is_testnet": <boolean>,
   "generator_access_token": <string>,
   "blockchain_id": <string>
 }
@@ -1012,7 +1011,6 @@ POST /info
   "is_signer": <boolean>,
   "is_generator": <boolean>,
   "generator_url": <string>,
-  "is_testnet": <boolean>,
   "generator_access_token": <string>, // secret portion should be obfuscated
   "blockchain_id": <string>,
   "block_height": <integer>,

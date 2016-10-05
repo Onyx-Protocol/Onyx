@@ -496,7 +496,6 @@ CREATE TABLE config (
     block_xpub text DEFAULT ''::text NOT NULL,
     remote_block_signers bytea DEFAULT '\x'::bytea NOT NULL,
     generator_access_token text DEFAULT ''::text NOT NULL,
-    is_testnet boolean DEFAULT false NOT NULL,
     CONSTRAINT config_singleton CHECK (singleton)
 );
 
@@ -1137,3 +1136,4 @@ insert into migrations (filename, hash) values ('2016-10-03.1.config.add-generat
 insert into migrations (filename, hash) values ('2016-10-04.0.txdb.pool-txs-unlogged.sql', '5baa0d1e2890d8be09c9defc3dc0c81ab9fb012cabf000fffc8330eee0d5708a');
 insert into migrations (filename, hash) values ('2016-10-05.0.core.remote-require-auth-flags.sql', '3dad64f0e38c8140d471b851e3ba5bb5045bf5e760488e0ab3b617ddb09c62cf');
 insert into migrations (filename, hash) values ('2016-10-05.1.core.add-testnet-config.sql', '6e0c8da9c9adb3f85f7d4baee00f84b3b4183c8ebad071d54a0128d8b414b007');
+insert into migrations (filename, hash) values ('2016-10-05.2.core.remove-testnet-config.sql', 'f748d503f055882d3c5af641931c3266a120d7b3ba404424db78a1f075f76b95');

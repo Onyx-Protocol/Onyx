@@ -153,7 +153,6 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"is_signer":                         a.config.IsSigner,
 		"is_generator":                      a.config.IsGenerator,
 		"generator_url":                     a.config.GeneratorURL,
-		"is_testnet":                        a.config.IsTestnet,
 		"generator_access_token":            obfuscateTokenSecret(a.config.GeneratorAccessToken),
 		"blockchain_id":                     a.config.BlockchainID,
 		"block_height":                      localHeight,
@@ -263,9 +262,9 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 
 	const q = `
 		INSERT INTO config (is_signer, block_xpub, is_generator,
-			is_testnet, blockchain_id, generator_url, generator_access_token,
+			blockchain_id, generator_url, generator_access_token,
 			remote_block_signers, configured_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8 ,NOW())
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
 	`
 	_, err = db.Exec(
 		ctx,
@@ -273,7 +272,6 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		c.IsSigner,
 		c.BlockXPub,
 		c.IsGenerator,
-		c.IsTestnet,
 		c.BlockchainID,
 		c.GeneratorURL,
 		c.GeneratorAccessToken,
@@ -302,7 +300,7 @@ func (a *api) configure(ctx context.Context, x *Config) error {
 func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
 			SELECT is_signer, is_generator,
-			is_testnet, blockchain_id, generator_url, generator_access_token, block_xpub,
+			blockchain_id, generator_url, generator_access_token, block_xpub,
 			remote_block_signers, configured_at
 			FROM config
 		`
@@ -312,7 +310,6 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	err := db.QueryRow(ctx, q).Scan(
 		&c.IsSigner,
 		&c.IsGenerator,
-		&c.IsTestnet,
 		&c.BlockchainID,
 		&c.GeneratorURL,
 		&c.GeneratorAccessToken,

@@ -119,7 +119,6 @@ type Config struct {
 	IsGenerator          bool    `json:"is_generator"`
 	BlockchainID         bc.Hash `json:"blockchain_id"`
 	GeneratorURL         string  `json:"generator_url"`
-	IsTestnet            bool    `json:"is_testnet"`
 	GeneratorAccessToken string  `json:"generator_access_token"`
 	ConfiguredAt         time.Time
 	BlockXPub            string         `json:"block_xpub"`
