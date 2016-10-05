@@ -46,37 +46,25 @@ type SigningInstruction struct {
 func (si *SigningInstruction) UnmarshalJSON(b []byte) error {
 	var pre struct {
 		bc.AssetAmount
-		Position          int               `json:"position"`
-		WitnessComponents []json.RawMessage `json:"witness_components"`
+		Position          int `json:"position"`
+		WitnessComponents []struct {
+			Type string
+			SignatureWitness
+		} `json:"witness_components"`
 	}
 	err := json.Unmarshal(b, &pre)
 	if err != nil {
 		return err
 	}
+
 	si.AssetAmount = pre.AssetAmount
 	si.Position = pre.Position
-
+	si.WitnessComponents = make([]WitnessComponent, 0, len(pre.WitnessComponents))
 	for i, w := range pre.WitnessComponents {
-		var t struct {
-			Type string `json:"type"`
+		if w.Type != "signature" {
+			return errors.WithDetailf(ErrBadWitnessComponent, "witness component %d has unknown type '%s'", i, w.Type)
 		}
-		err = json.Unmarshal(w, &t)
-		if err != nil {
-			return err
-		}
-		var component WitnessComponent
-		switch t.Type {
-		case "signature":
-			var s SignatureWitness
-			err = json.Unmarshal(w, &s)
-			if err != nil {
-				return err
-			}
-			component = &s
-		default:
-			return errors.WithDetailf(ErrBadWitnessComponent, "witness component %d has unknown type '%s'", i, t.Type)
-		}
-		si.WitnessComponents = append(si.WitnessComponents, component)
+		si.WitnessComponents = append(si.WitnessComponents, &w.SignatureWitness)
 	}
 	return nil
 }
