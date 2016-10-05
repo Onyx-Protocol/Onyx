@@ -38,7 +38,7 @@ var (
 	appName      = "benchcore"
 	testRunID    = appName + randString()
 	ami          = "ami-f71883e0" // Ubuntu LTS 16.04
-	instanceType = "m3.large"
+	instanceType = "m3.xlarge"
 	subnetID     = "subnet-80560fd9"
 	key          = os.Getenv("USER")
 	user         = os.Getenv("USER")
@@ -642,6 +642,8 @@ set -eo pipefail
 sudo bash <<EOFSUDO
 set -eo pipefail
 apt-get update -qq
+mkdir -p /var/lib/postgresql
+mount /dev/xvdb /var/lib/postgresql/
 apt-get install -y -qq postgresql-9.5 postgresql-client-9.5
 
 cat <<EOF >/etc/postgresql/9.5/main/postgresql.conf
@@ -705,7 +707,8 @@ $HOME/corectl config-generator
 const coredsh = `#!/bin/bash
 set -eo pipefail
 export DATABASE_URL='{{dbURL}}'
-./cored
+export GOTRACEBACK=crash
+./cored 2>&1 | tee -a cored.log
 `
 
 const clientsh = `#!/bin/bash

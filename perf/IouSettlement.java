@@ -104,7 +104,7 @@ public class IouSettlement {
       x.add(() -> {
         acme.pay(zzzz, batchSize);
         int v = processed.getAndAdd(batchSize) + batchSize;
-        if (v % 100 == 0) {
+        if (v % 1000 == 0) {
           System.out.printf("%d / %d (%d%%)\ntx", v, ntxTotal, 100 * v / ntxTotal);
         }
         return 1;
@@ -114,7 +114,7 @@ public class IouSettlement {
       x.add(() -> {
         zzzz.pay(acme, batchSize);
         int v = processed.getAndAdd(batchSize) + batchSize;
-        if (v % 100 == 0) {
+        if (v % 1000 == 0) {
           System.out.printf("%d / %d (%d%%)\ntx", v, ntxTotal, 100 * v / ntxTotal);
         }
         return 1;
