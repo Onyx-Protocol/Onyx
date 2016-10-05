@@ -1,0 +1,5 @@
+cpu*
+heap*
+slow-queries.csv
+db-stats.txt
+cored

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -88,55 +89,42 @@ public class IouSettlement {
 
     // Create enough txs to equal (one day's worth of activity at 10 tx/s).
     //final int ntxTotal = 10 * 60*60*24; // should be multiple of 2*nthread
-    final int ntxTotal = 10 * 60 * 30; // start with a half hour's worth
+    final int ntxTotal = 10 * 60 * 60 * 2; // start with two hour's worth
 
-    // Number of transactions per thread.
-    // nthread * 2 corps * ntx = ntxTotal
-    final int ntx = ntxTotal / 2 / nthread;
+    // # of txs to submit in one request
+    final int batchSize = 5;
 
+    // # of batches per corp
+    final int nbatches = ntxTotal / batchSize / 2;
+
+    AtomicInteger processed = new AtomicInteger(0);
     ExecutorService pool = Executors.newFixedThreadPool(2 * nthread);
     List<Callable<Integer>> x = new ArrayList<>();
-    for (int t = 0; t < nthread; t++) {
-      x.add(
-          () -> {
-            for (int i = 0; i < ntx; i++) {
-              if (i % 10 == 0) {
-                System.out.printf("%d / %d (%d%%)\ntx", i, ntx, 100 * i / ntx);
-              }
-              Instant ti = Instant.now();
-              acme.pay(zzzz, i + 1);
-              Duration elapsed = Duration.between(ti, Instant.now());
-              long sleep = 100 - elapsed.toMillis();
-              if (sleep > 0) {
-                Thread.sleep(sleep); // offer at most 10 calls/sec.
-              }
-            }
-            return 1;
-          });
+    for (int b = 0; b < nbatches; b++) {
+      x.add(() -> {
+        acme.pay(zzzz, batchSize);
+        int v = processed.getAndAdd(batchSize) + batchSize;
+        if (v % 100 == 0) {
+          System.out.printf("%d / %d (%d%%)\ntx", v, ntxTotal, 100 * v / ntxTotal);
+        }
+        return 1;
+      });
     }
-    for (int t = 0; t < nthread; t++) {
-      x.add(
-          () -> {
-            for (int i = 0; i < ntx; i++) {
-              if (i % 10 == 0) {
-                System.out.printf("%d / %d (%d%%)\ntx", i, ntx, 100 * i / ntx);
-              }
-              Instant ti = Instant.now();
-              zzzz.pay(acme, i + 1);
-              Duration elapsed = Duration.between(ti, Instant.now());
-              long sleep = 100 - elapsed.toMillis();
-              if (sleep > 0) {
-                Thread.sleep(sleep); // offer at most 10 calls/sec.
-              }
-            }
-            return 1;
-          });
+    for (int b = 0; b < nbatches; b++) {
+      x.add(() -> {
+        zzzz.pay(acme, batchSize);
+        int v = processed.getAndAdd(batchSize) + batchSize;
+        if (v % 100 == 0) {
+          System.out.printf("%d / %d (%d%%)\ntx", v, ntxTotal, 100 * v / ntxTotal);
+        }
+        return 1;
+      });
     }
+
     List<Future<Integer>> futures = pool.invokeAll(x);
-    for (int t = 0; t < 2 * nthread; t++) {
-      futures.get(t).get();
+    for (int b = 0; b < 2 * nbatches; b++) {
+      futures.get(b).get();
     }
-    System.out.println("setup done");
   }
 
   static void bench(Context ctx) throws Exception {
@@ -177,7 +165,7 @@ public class IouSettlement {
                 System.out.printf("%d / %d (%d%%)\ntx", i, ntx, 100 * i / ntx);
               }
               Instant ti = Instant.now();
-              acme.pay(zzzz, i + 1);
+              acme.pay(zzzz, 1);
               Duration elapsed = Duration.between(ti, Instant.now());
               long sleep = txperiod - elapsed.toMillis();
               if (sleep > 0) {
@@ -195,7 +183,7 @@ public class IouSettlement {
                 System.out.printf("%d / %d (%d%%)\ntx", i, ntx, 100 * i / ntx);
               }
               Instant ti = Instant.now();
-              zzzz.pay(acme, i + 1);
+              zzzz.pay(acme, 1);
               Duration elapsed = Duration.between(ti, Instant.now());
               long sleep = txperiod - elapsed.toMillis();
               if (sleep > 0) {
@@ -259,53 +247,32 @@ class Bank {
     this.account = account;
   }
 
-  void pay(Corp corp, Corp payee, Integer amount) throws Exception {
-    Transaction.Template txTmpl =
-        new Transaction.Builder()
+  void pay(Corp corp, Corp payee, Integer times) throws Exception {
+    List<Transaction.Builder> builders = new ArrayList<Transaction.Builder>();
+    for (int i = 0; i < times; i++) {
+        builders.add(
+          new Transaction.Builder()
             .addAction(
                 new Transaction.Action.Issue()
                     .setAssetId(this.asset.id)
-                    .setAmount(amount)
+                    .setAmount(1)
                     .setReferenceData(corp.ref()))
-            .addAction(new Transaction.Action.Issue().setAssetId(dealer.usd.id).setAmount(amount))
+            .addAction(new Transaction.Action.Issue().setAssetId(dealer.usd.id).setAmount(1))
             .addAction(
                 new Transaction.Action.ControlWithAccount()
                     .setAccountId(dealer.account.id)
                     .setAssetId(this.asset.id)
-                    .setAmount(amount))
+                    .setAmount(1))
             .addAction(
                 new Transaction.Action.ControlWithAccount()
                     .setAccountId(payee.bank.account.id)
                     .setAssetId(this.dealer.usd.id)
-                    .setAmount(amount)
-                    .setReferenceData(payee.ref()))
-            .build(ctx);
-
-    Transaction.Template signedTpl = HsmSigner.sign(txTmpl);
-    Transaction.SubmitResponse tx = Transaction.submit(ctx, signedTpl);
-    System.out.println(String.format("Created tx id=%s", tx.id));
-  }
-
-  void incoming() throws Exception {
-    Transaction.Items transactions =
-        new Transaction.QueryBuilder()
-            .setFilter("outputs(account_id=$1)")
-            .addFilterParameter(this.account.id)
-            .execute(ctx);
-    while (transactions.hasNext()) {
-      Transaction tx = transactions.next();
+                    .setAmount(1)
+                    .setReferenceData(payee.ref())));
     }
-  }
-
-  void outgoing() throws Exception {
-    Transaction.Items transactions =
-        new Transaction.QueryBuilder()
-            .setFilter("inputs(action='issuance' AND asset_id = $1)")
-            .addFilterParameter(this.account.id)
-            .execute(ctx);
-    while (transactions.hasNext()) {
-      Transaction tx = transactions.next();
-    }
+    List<Transaction.Template> templates = Transaction.buildBatch(ctx, builders);
+    List<Transaction.Template> signedTemplates = HsmSigner.signBatch(templates);
+    List<Transaction.SubmitResponse> txs = Transaction.submitBatch(ctx, signedTemplates);
   }
 }
 
@@ -320,8 +287,8 @@ class Corp {
     this.ctx = ctx;
   }
 
-  void pay(Corp payee, Integer amount) throws Exception {
-    this.bank.pay(this, payee, amount);
+  void pay(Corp payee, Integer times) throws Exception {
+    this.bank.pay(this, payee, times);
   }
 
   HashMap<String, Object> ref() {
@@ -340,60 +307,5 @@ class Dealer {
     this.account = account;
     this.usd = usd;
     this.ctx = ctx;
-  }
-
-  void reportAllPayments() throws Exception {
-    Transaction.Items transactions =
-        new Transaction.QueryBuilder().setFilter("inputs(action='issue')").execute(this.ctx);
-
-    System.out.println("report: all dealer payments");
-    while (transactions.hasNext()) {
-      Transaction tx = transactions.next();
-      System.out.printf("\ttx: %s\n", tx.id);
-    }
-  }
-
-  void reportSettlements() throws Exception {
-    Transaction.Items transactions =
-        new Transaction.QueryBuilder().setFilter("outputs(action='retire')").execute(this.ctx);
-  }
-
-  void reportCurrencyExposure() throws Exception {
-    Balance.Items balanceItems;
-    HashMap<String, Long> exposure = new HashMap<String, Long>();
-
-    //Incoming
-    balanceItems =
-        new Balance.QueryBuilder()
-            .setFilter("account_id='" + this.account.id + "' AND asset_tags.currency=$1")
-            .setTimestamp(System.currentTimeMillis())
-            .execute(this.ctx);
-
-    while (balanceItems.hasNext()) {
-      Balance balance = balanceItems.next();
-      String currency = balance.sumBy.get("asset_tags.currency");
-      long x = 0;
-      if (exposure.containsKey(currency)) {
-        x = exposure.get(currency);
-      }
-      exposure.put(currency, x + balance.amount);
-    }
-
-    //Outgoing
-    balanceItems =
-        new Balance.QueryBuilder()
-            .setFilter("asset_tags.entity='dealer' AND asset_tags.currency=$1")
-            .setTimestamp(System.currentTimeMillis())
-            .execute(this.ctx);
-    while (balanceItems.hasNext()) {
-      Balance balance = balanceItems.next();
-      String currency = balance.sumBy.get("asset_tags.currency");
-      exposure.put(currency, exposure.get(currency) - balance.amount);
-    }
-
-    System.out.println("report: dealer currency exposure");
-    for (String currency : exposure.keySet()) {
-      System.out.printf("\tcurrency: %s amount: %d\n", currency, exposure.get(currency));
-    }
   }
 }
