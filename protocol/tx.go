@@ -12,7 +12,8 @@ import (
 )
 
 // AddTx inserts tx into the set of "pending" transactions available
-// to be included in the next block produced by GenerateBlock.
+// to be included in the next block produced by GenerateBlock. It should only
+// be called by the Generator.
 //
 // It performs context-free validation of the tx, but does not validate
 // against the current state tree.
@@ -26,7 +27,7 @@ import (
 // It is an error to call AddTx before the initial block has landed.
 // Use WaitForBlock to guarantee this.
 func (c *Chain) AddTx(ctx context.Context, tx *bc.Tx) error {
-	err := c.validateTxCached(tx)
+	err := c.ValidateTxCached(tx)
 	if err != nil {
 		return errors.Wrap(err, "tx rejected")
 	}
@@ -36,7 +37,9 @@ func (c *Chain) AddTx(ctx context.Context, tx *bc.Tx) error {
 	return errors.Wrap(err, "applying tx to store")
 }
 
-func (c *Chain) validateTxCached(tx *bc.Tx) error {
+// ValidateTxCached checks a cache of prevalidated transactions
+// before attempting to perform a context-free validation of the tx.
+func (c *Chain) ValidateTxCached(tx *bc.Tx) error {
 	// Consult a cache of prevalidated transactions.
 	err, ok := c.prevalidated.lookup(tx.Hash)
 	if ok {

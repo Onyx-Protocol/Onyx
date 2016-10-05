@@ -83,7 +83,7 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 // the block has been applied.
 func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, prev, block *bc.Block) (*state.Snapshot, error) {
 	newState := state.Copy(prevState)
-	err := validation.ValidateAndApplyBlock(ctx, newState, prev, block, c.validateTxCached)
+	err := validation.ValidateAndApplyBlock(ctx, newState, prev, block, c.ValidateTxCached)
 	if err != nil {
 		return nil, errors.Wrapf(ErrBadBlock, "validate block: %v", err)
 	}
