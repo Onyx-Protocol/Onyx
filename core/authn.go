@@ -26,7 +26,9 @@ type tokenResult struct {
 }
 
 func (a *apiAuthn) Handler(typ string, next http.Handler) http.Handler {
-	authFunc := func(ctx context.Context, user, pw string) error {
+	authFunc := func(req *http.Request) error {
+		ctx := req.Context()
+		user, pw, _ := req.BasicAuth()
 		if !a.config.authEnabled(typ) {
 			return nil
 		}

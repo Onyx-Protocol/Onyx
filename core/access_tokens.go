@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"chain/core/accesstoken"
-	"chain/net/http/authn"
 	"chain/net/http/httpjson"
 )
 
@@ -37,7 +36,7 @@ func listAccessTokens(ctx context.Context, x requestQuery) (*page, error) {
 }
 
 func deleteAccessToken(ctx context.Context, x struct{ ID string }) error {
-	currentID := authn.UsernameFromContext(ctx)
+	currentID, _, _ := httpjson.Request(ctx).BasicAuth()
 	if currentID == x.ID {
 		return errCurrentToken
 	}

@@ -1,23 +1,18 @@
 package authn
 
 import (
-	"context"
 	"net/http"
 
 	"chain/errors"
 	"chain/log"
 )
 
-type key uint8
-
-const usernameKey key = iota
-
-// AuthFunc describes any function that takes a standard username/password pair
+// AuthFunc describes any function that takes an HTTP request
 // and attempts to perform authentication. When used in conjunction with
 // BasicHandler, returning ErrNotAuthenticated from an AuthFunc will cause a 401
 // response to be written.
 // Any other error will cause a 500 response.
-type AuthFunc func(ctx context.Context, username, password string) error
+type AuthFunc func(*http.Request) error
 
 // ErrNotAuthenticated should be returned by an AuthFunc if the provided
 // credentials are invalid.
@@ -35,17 +30,15 @@ type BasicHandler struct {
 
 // ServeHTTP satisfies http.Handler.
 func (h BasicHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	username, password, _ := req.BasicAuth()
-	err := h.Auth(req.Context(), username, password)
+	err := h.Auth(req)
 	if err == nil {
-		req = req.WithContext(newContext(req.Context(), username))
 		h.Next.ServeHTTP(w, req)
 	} else if err == ErrNotAuthenticated {
 		log.Write(req.Context(),
 			"status", http.StatusUnauthorized,
 			log.KeyError, err,
 		)
-		if username == "" {
+		if u, _, _ := req.BasicAuth(); u == "" {
 			w.Header().Add("WWW-Authenticate", `Basic realm="`+h.Realm+`"`)
 		}
 		http.Error(w, `{"message": "Request could not be authenticated"}`, http.StatusUnauthorized)
@@ -57,18 +50,4 @@ func (h BasicHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		)
 		http.Error(w, `{"message": "Internal error"}`, http.StatusInternalServerError)
 	}
-}
-
-func newContext(ctx context.Context, username string) context.Context {
-	return context.WithValue(ctx, usernameKey, username)
-}
-
-// UsernameFromContext returns the basic auth username
-// attached to a context during a request.
-func UsernameFromContext(ctx context.Context) string {
-	user, ok := ctx.Value(usernameKey).(string)
-	if !ok {
-		return ""
-	}
-	return user
 }

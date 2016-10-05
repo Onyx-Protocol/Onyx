@@ -1,16 +1,15 @@
 package authn
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-func alwaysSuccess(ctx context.Context, u, p string) error     { return nil }
-func alwaysNotAuth(ctx context.Context, u, p string) error     { return ErrNotAuthenticated }
-func alwaysInternalErr(ctx context.Context, u, p string) error { return errors.New("") }
+func alwaysSuccess(*http.Request) error     { return nil }
+func alwaysNotAuth(*http.Request) error     { return ErrNotAuthenticated }
+func alwaysInternalErr(*http.Request) error { return errors.New("") }
 
 func TestBasicHandler(t *testing.T) {
 	h := BasicHandler{

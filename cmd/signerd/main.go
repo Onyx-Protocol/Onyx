@@ -191,7 +191,8 @@ func clientSigner(_ context.Context, _ string, path [][]byte, data [32]byte) ([]
 }
 
 // TODO(kr): more flexible/secure authentication (e.g. kerberos style)
-func auth(ctx context.Context, name, pw string) error {
+func auth(req *http.Request) error {
+	_, pw, _ := req.BasicAuth()
 	if subtle.ConstantTimeCompare([]byte(pw), password) != 1 {
 		return authn.ErrNotAuthenticated
 	}
