@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	latencyMu sync.RWMutex
+	latencyMu sync.Mutex
 	latencies = map[string]*metrics.RotatingLatency{}
 
 	latencyExpvar = expvar.NewMap("latency")
