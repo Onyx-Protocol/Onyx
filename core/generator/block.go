@@ -112,7 +112,7 @@ func indexKey(keys []ed25519.PublicKey, msg, sig []byte) int {
 func getSig(ctx context.Context, signer BlockSigner, b *bc.Block, sig *[]byte, i int, done chan int) {
 	var err error
 	*sig, err = signer.SignBlock(ctx, b)
-	if err != nil {
+	if err != nil && ctx.Err() != context.Canceled {
 		log.Write(ctx, "error", err, "signer", signer)
 	}
 	done <- i
