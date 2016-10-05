@@ -12,6 +12,7 @@
     }
   ],
   "env": {
-    "GO_INSTALL_PACKAGE_SPEC": "./cmd/..."
+    "GO_INSTALL_PACKAGE_SPEC": "./cmd/...",
+    "CMD": "cored"
   }
 }

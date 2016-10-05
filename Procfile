@@ -1,1 +1,1 @@
-web: migratedb -d $DATABASE_URL && LISTEN=:$PORT cored
+web: LISTEN=:$PORT $CMD
