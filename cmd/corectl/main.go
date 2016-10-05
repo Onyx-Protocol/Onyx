@@ -110,6 +110,10 @@ func configGenerator(db *sql.DB, args []string) {
 		Signers:     signers,
 	}
 
+	err = initSchema(db)
+	if err != nil {
+		fatalln("error: init schema", err)
+	}
 	ctx := context.Background()
 	err = core.Configure(ctx, db, config)
 	if err != nil {
@@ -163,6 +167,10 @@ func configNongenerator(db *sql.DB, args []string) {
 		}
 	}
 
+	err = initSchema(db)
+	if err != nil {
+		fatalln("error: init schema", err)
+	}
 	ctx := context.Background()
 	err = core.Configure(ctx, db, &config)
 	if err != nil {
@@ -180,6 +188,23 @@ func reset(db *sql.DB, args []string) {
 	if err != nil {
 		fatalln("error:", err)
 	}
+}
+
+func initSchema(db *sql.DB) error {
+	ctx := context.Background()
+	const q = `
+		SELECT count(*) FROM pg_tables
+		WHERE schemaname='public' AND tablename='migrations'
+	`
+	var n int
+	err := db.QueryRow(ctx, q).Scan(&n)
+	if err != nil {
+		return err
+	} else if n > 0 {
+		return nil // already initialized
+	}
+	_, err = db.Exec(ctx, core.Schema())
+	return err
 }
 
 func fatalln(v ...interface{}) {

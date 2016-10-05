@@ -5,6 +5,8 @@ Command corectl provides miscellaneous control functions for a Chain Core.
 The database connection can be configured using the DATABASE_URL environment
 variable; the default is to connect to the "core" database on localhost.
 
+The config commands initialize the schema if necessary.
+
     corectl config-generator
 
 config-generator configures a new core as a generator. It matches the dashboard's
