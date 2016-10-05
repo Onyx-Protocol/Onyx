@@ -35,15 +35,14 @@ func (p *Pool) Insert(ctx context.Context, tx *bc.Tx) error {
 // Dump returns the pooled transactions in topological order and
 // empties the pool.
 func (p *Pool) Dump(ctx context.Context) ([]*bc.Tx, error) {
-	txs, err := dumpPoolTxs(ctx, p.db)
+	const q = `DELETE FROM pool_txs RETURNING tx_hash, data`
+	var txs []*bc.Tx
+	err := pg.ForQueryRows(pg.NewContext(ctx, p.db), q, func(hash bc.Hash, data bc.TxData) {
+		txs = append(txs, &bc.Tx{TxData: data, Hash: hash})
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "listing all pool txs")
+		return nil, err
 	}
-
-	const txq = `TRUNCATE TABLE pool_txs`
-	_, err = p.db.Exec(ctx, txq)
-	if err != nil {
-		return nil, errors.Wrap(err, "delete from pool_txs")
-	}
+	txs = topSort(ctx, txs)
 	return txs, nil
 }

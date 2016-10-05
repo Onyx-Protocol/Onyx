@@ -28,7 +28,8 @@ func TestPoolTxs(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	got, err := dumpPoolTxs(ctx, dbtx)
+	pool := NewPool(dbtx)
+	got, err := pool.Dump(ctx)
 	if err != nil {
 		t.Fatalf("err got = %v want nil", err)
 	}
