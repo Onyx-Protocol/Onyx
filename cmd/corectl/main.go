@@ -13,6 +13,7 @@ import (
 	"chain/core/accesstoken"
 	"chain/core/mockhsm"
 	"chain/crypto/ed25519"
+	"chain/database/pg"
 	"chain/database/sql"
 	"chain/env"
 	"chain/log"
@@ -150,7 +151,7 @@ func createToken(db *sql.DB, args []string) {
 		fatalln("usage: corectl create-token [-net] [id]")
 	}
 
-	tok, err := accesstoken.Create(context.Background(), id, typ)
+	tok, err := accesstoken.Create(pg.NewContext(context.Background(), db), id, typ)
 	if err != nil {
 		fatalln("error:", err)
 	}
