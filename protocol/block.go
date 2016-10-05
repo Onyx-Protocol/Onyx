@@ -102,6 +102,16 @@ func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, pr
 // The block parameter must have already been validated before
 // being committed.
 func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot) error {
+	return c.commitBlock(ctx, block, snapshot, true)
+}
+
+// commitBlock commits the block to the blockchain; see CommitBlock.
+//
+// The additional parameter "final" should be false when calling
+// CommitBlock on many blocks in a tight loop, except for the last
+// block in the loop. This will avoid redundant work. It should be
+// true in all other cases.
+func (c *Chain) commitBlock(ctx context.Context, block *bc.Block, snapshot *state.Snapshot, final bool) error {
 	// SaveBlock is the linearization point. Once the block is committed
 	// to persistent storage, the block has been applied and everything
 	// else can be derived from that block.
@@ -109,7 +119,7 @@ func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *stat
 	if err != nil {
 		return errors.Wrap(err, "storing block")
 	}
-	if block.Time().After(c.lastQueuedSnapshot.Add(saveSnapshotFrequency)) {
+	if final && block.Time().After(c.lastQueuedSnapshot.Add(saveSnapshotFrequency)) {
 		c.queueSnapshot(ctx, block.Height, block.Time(), snapshot)
 	}
 
@@ -117,9 +127,11 @@ func (c *Chain) CommitBlock(ctx context.Context, block *bc.Block, snapshot *stat
 		cb(ctx, block)
 	}
 
-	err = c.store.FinalizeBlock(ctx, block.Height)
-	if err != nil {
-		return errors.Wrap(err, "finalizing block")
+	if final {
+		err = c.store.FinalizeBlock(ctx, block.Height)
+		if err != nil {
+			return errors.Wrap(err, "finalizing block")
+		}
 	}
 
 	// c.setState will update the local blockchain state and height.

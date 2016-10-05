@@ -54,7 +54,7 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 		// and the block isn't fully committed.
 		// TODO(jackson): Calling CommitBlock() is overboard and performs
 		// a lot of redundant work. Only do what is necessary.
-		err = c.CommitBlock(ctx, b, snapshot)
+		err = c.commitBlock(ctx, b, snapshot, h == height)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "committing block")
 		}
