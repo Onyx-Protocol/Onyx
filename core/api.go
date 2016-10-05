@@ -4,7 +4,6 @@ package core
 import (
 	"context"
 	"net/http"
-	"sync"
 	"time"
 
 	"chain/core/leader"
@@ -39,6 +38,7 @@ func Handler(
 	hsm *mockhsm.HSM,
 	indexer *query.Indexer,
 	config *Config,
+	altAuth func(*http.Request) bool,
 ) http.Handler {
 	a := &api{
 		c:       c,
@@ -75,7 +75,6 @@ func Handler(
 	m.Handle("/list-transactions", needConfig(a.listTransactions))
 	m.Handle("/list-balances", needConfig(a.listBalances))
 	m.Handle("/list-unspent-outputs", needConfig(a.listUnspentOutputs))
-	m.Handle("/update-configuration", needConfig(a.updateConfig))
 	m.Handle("/reset", needConfig(a.reset))
 
 	// V3 DEPRECATED
@@ -106,8 +105,8 @@ func Handler(
 
 	return authn.BasicHandler{
 		Auth: (&apiAuthn{
-			config:   config,
 			tokenMap: make(map[string]tokenResult),
+			alt:      altAuth,
 		}).auth,
 		Next:  latencyHandler,
 		Realm: "Chain Core API",
@@ -125,38 +124,6 @@ type Config struct {
 	BlockXPub            string         `json:"block_xpub"`
 	Signers              []ConfigSigner `json:"block_signer_urls"`
 	Quorum               int
-
-	authedMu      sync.Mutex // protects the following
-	ClientAuthed  bool       `json:"require_client_access_tokens"`
-	NetworkAuthed bool       `json:"require_network_access_tokens"`
-}
-
-func (c *Config) authEnabled(typ string) bool {
-	return (typ == "client" && c.isClientAuthed()) || (typ == "network" && c.isNetworkAuthed())
-}
-
-func (c *Config) isClientAuthed() bool {
-	c.authedMu.Lock()
-	defer c.authedMu.Unlock()
-	return c.ClientAuthed
-}
-
-func (c *Config) isNetworkAuthed() bool {
-	c.authedMu.Lock()
-	defer c.authedMu.Unlock()
-	return c.NetworkAuthed
-}
-
-func (c *Config) setClientAuthed(a bool) {
-	c.authedMu.Lock()
-	defer c.authedMu.Unlock()
-	c.ClientAuthed = a
-}
-
-func (c *Config) setNetworkAuthed(a bool) {
-	c.authedMu.Lock()
-	defer c.authedMu.Unlock()
-	c.NetworkAuthed = a
 }
 
 type ConfigSigner struct {

@@ -5,6 +5,8 @@ package main
 import (
 	"context"
 	"log"
+	"net"
+	"net/http"
 	"os"
 
 	"chain/core"
@@ -42,4 +44,10 @@ func resetInDevIfRequested(db pg.DB) {
 			log.Fatalln("core reset:", err)
 		}
 	}
+}
+
+func authLoopbackInDev(req *http.Request) bool {
+	// Allow connections from the local host.
+	a, err := net.ResolveTCPAddr("tcp", req.RemoteAddr)
+	return err == nil && a.IP.IsLoopback()
 }

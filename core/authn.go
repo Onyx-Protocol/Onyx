@@ -16,7 +16,10 @@ import (
 const tokenExpiry = time.Minute * 5
 
 type apiAuthn struct {
-	config   *Config
+	// alternative authentication mechanism,
+	// used when no basic auth creds are provided.
+	alt func(*http.Request) bool
+
 	tokenMu  sync.Mutex // protects the following
 	tokenMap map[string]tokenResult
 }
@@ -27,21 +30,15 @@ type tokenResult struct {
 }
 
 func (a *apiAuthn) auth(req *http.Request) error {
+	user, pw, ok := req.BasicAuth()
+	if !ok && a.alt(req) {
+		return nil
+	}
+
 	typ := "client"
 	if strings.HasPrefix(req.URL.Path, networkRPCPrefix) {
 		typ = "network"
 	}
-
-	// Treat "unconfigured" the same as "configured, but
-	// auth is disabled".
-	// TODO(kr): remove this a.config==nil check when we
-	// switch to localhost auth (which ought to remove
-	// the dependency on config entirely here).
-	if a.config == nil || !a.config.authEnabled(typ) {
-		return nil
-	}
-
-	user, pw, _ := req.BasicAuth()
 	return a.cachedAuthCheck(req.Context(), typ, user, pw)
 }
 

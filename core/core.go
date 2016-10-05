@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"chain/core/accesstoken"
 	"chain/core/fetch"
 	"chain/core/leader"
 	"chain/core/mockhsm"
@@ -163,8 +162,6 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 		"network_rpc_version":               networkRPCVersion,
 		"build_commit":                      &buildCommit,
 		"build_date":                        &buildDate,
-		"require_client_access_tokens":      a.config.isClientAuthed(),
-		"require_network_access_tokens":     a.config.isNetworkAuthed(),
 	}, nil
 }
 
@@ -181,16 +178,6 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 // Otherwise, c.IsGenerator is false, and Configure makes a test request
 // to GeneratorURL to detect simple configuration mistakes.
 func Configure(ctx context.Context, db pg.DB, c *Config) error {
-	if c.isClientAuthed() {
-		clientTokenExists, err := accesstoken.ClientTokenExists(ctx)
-		if err != nil {
-			return errors.Wrap(err)
-		}
-		if !clientTokenExists {
-			return errors.Wrap(errNoClientTokens)
-		}
-	}
-
 	var err error
 	if !c.IsGenerator {
 		err = tryGenerator(
@@ -276,8 +263,8 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	const q = `
 		INSERT INTO config (is_signer, block_xpub, is_generator,
 			blockchain_id, generator_url, generator_access_token,
-			network_authed, client_authed, remote_block_signers, configured_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+			remote_block_signers, configured_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
 	`
 	_, err = db.Exec(
 		ctx,
@@ -288,8 +275,6 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		c.BlockchainID,
 		c.GeneratorURL,
 		c.GeneratorAccessToken,
-		c.isNetworkAuthed(),
-		c.isClientAuthed(),
 		blockSignerData,
 	)
 	return err
@@ -316,7 +301,7 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
 			SELECT is_signer, is_generator,
 			blockchain_id, generator_url, generator_access_token, block_xpub,
-			network_authed, client_authed, remote_block_signers, configured_at
+			remote_block_signers, configured_at
 			FROM config
 		`
 
@@ -329,8 +314,6 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 		&c.GeneratorURL,
 		&c.GeneratorAccessToken,
 		&c.BlockXPub,
-		&c.NetworkAuthed,
-		&c.ClientAuthed,
 		&blockSignerData,
 		&c.ConfiguredAt,
 	)
@@ -348,44 +331,6 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	}
 
 	return c, nil
-}
-
-func (a *api) updateConfig(ctx context.Context, x struct {
-	ClientAuthed  *bool `json:"require_client_access_tokens"`
-	NetworkAuthed *bool `json:"require_network_access_tokens"`
-}) error {
-
-	clientAuthed := a.config.isClientAuthed()
-	networkAuthed := a.config.isNetworkAuthed()
-
-	if x.ClientAuthed != nil {
-		clientAuthed = *x.ClientAuthed
-	}
-	if x.NetworkAuthed != nil {
-		networkAuthed = *x.NetworkAuthed
-	}
-
-	if clientAuthed {
-		clientTokenExists, err := accesstoken.ClientTokenExists(ctx)
-		if err != nil {
-			return errors.Wrap(err)
-		}
-		if !clientTokenExists {
-			return errors.Wrap(errNoClientTokens)
-		}
-	}
-
-	const q = `UPDATE config SET client_authed=$1, network_authed=$2`
-	_, err := pg.Exec(ctx, q, clientAuthed, networkAuthed)
-
-	if err != nil {
-		return err
-	}
-
-	a.config.setClientAuthed(clientAuthed)
-	a.config.setNetworkAuthed(networkAuthed)
-
-	return nil
 }
 
 func tryGenerator(ctx context.Context, url, accessToken, blockchainID string) error {

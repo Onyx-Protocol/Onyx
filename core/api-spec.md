@@ -972,8 +972,6 @@ POST /configure
 ```
 {
   "is_generator": <boolean>,
-  "require_client_access_tokens": <boolean>,
-  "require_network_access_tokens": <boolean>,
 
   // Supply these if is_generator is false.
   "generator_url": ...,
@@ -989,31 +987,6 @@ POST /configure
 ```
 
 Returns 400 error if the generator URL, generator access token, and/or blockchain ID are bad.
-
-### Update Configuration
-
-Updates the core configuration. Unlike [Configure](#configure), this may be called multiple times between [resets](#reset).
-
-#### Endpoint
-
-```
-POST /update-configuration
-```
-
-#### Request
-
-```
-{
-  "require_client_access_tokens": <boolean>, // optional
-  "require_network_access_tokens": <boolean> // optional
-}
-```
-
-#### Response
-
-```
-{"message": "ok"}
-```
 
 ### Info
 
@@ -1045,9 +1018,7 @@ POST /info
   "is_production": <boolean>,
   "network_rpc_version": <integer>,
   "build_commit": <string>,
-  "build_date": <string>,
-  "require_client_access_tokens": <boolean>,
-  "require_network_access_tokens": <boolean>
+  "build_date": <string>
 }
 ```
 
