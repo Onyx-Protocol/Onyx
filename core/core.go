@@ -54,6 +54,11 @@ func isProduction() bool {
 	return bt != nil && bt.String() != `"dev"`
 }
 
+// Schema returns DDL for the entire Chain Core Postgres schema.
+func Schema() string {
+	return files["schema.sql"]
+}
+
 // Reset deletes all data, resulting in an unconfigured core.
 // It must be called before any other functions in this package.
 func Reset(ctx context.Context, db pg.DB) error {

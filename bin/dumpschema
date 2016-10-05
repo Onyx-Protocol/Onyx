@@ -23,9 +23,7 @@ psql -c 'SELECT filename, hash FROM migrations ORDER BY filename'\
 
 go install chain/cmd/gobundle
 
-(
-	printf '//+build !prod\n\n'
-	gobundle $CHAIN/core/schema.sql
-) | gofmt >$CHAIN/cmd/cored/schema.go
+gobundle -package core -symbol files $CHAIN/core/schema.sql\
+	| gofmt >$CHAIN/core/schema.go
 
 dropdb $db

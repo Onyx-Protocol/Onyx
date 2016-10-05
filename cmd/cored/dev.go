@@ -26,7 +26,7 @@ func initSchemaInDev(db pg.DB) {
 		log.Fatalln("schema init:", err)
 	}
 	if n == 0 {
-		_, err := db.Exec(ctx, Files["schema.sql"])
+		_, err := db.Exec(ctx, core.Schema())
 		if err != nil {
 			log.Fatalln("schema init:", err)
 		}
