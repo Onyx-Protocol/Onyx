@@ -155,7 +155,7 @@ func createToken(db *sql.DB, args []string) {
 	if err != nil {
 		fatalln("error:", err)
 	}
-	fmt.Printf("%s:%s\n", tok.ID, tok.Token)
+	fmt.Print(tok.Token)
 }
 
 func configNongenerator(db *sql.DB, args []string) {

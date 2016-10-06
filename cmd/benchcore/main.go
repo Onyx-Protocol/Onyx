@@ -154,6 +154,8 @@ func main() {
 	must(scpPut(db.addr, schema, "schema.sql", 0644))
 	must(scpPut(db.addr, corectlBin, "corectl", 0755))
 	mustRunOn(db.addr, fmt.Sprintf(initdbsh, slowQueryThreshold/time.Millisecond))
+	token, err := scpGet(db.addr, "token.txt")
+	must(err)
 
 	dbURL := "postgres://benchcore:benchcorepass@" + db.privAddr + "/core?sslmode=disable"
 	pubdbURL := "postgres://benchcore:benchcorepass@" + db.addr + "/core?sslmode=disable"
@@ -166,7 +168,7 @@ func main() {
 	}
 
 	log.Println("init client")
-	coreURL := "http://" + cored.privAddr + ":8080"
+	coreURL := "http://" + strings.TrimSpace(string(token)) + "@" + cored.privAddr + ":8080"
 	log.Println("core URL:", coreURL)
 	publicCoreURL := "http://" + cored.addr + ":8080"
 	log.Println("public core URL:", publicCoreURL)
@@ -702,6 +704,7 @@ EOFPOSTGRES
 
 export DATABASE_URL='postgres://benchcore:benchcorepass@localhost/core'
 $HOME/corectl config-generator
+$HOME/corectl create-token benchcore > $HOME/token.txt
 `
 
 const coredsh = `#!/bin/bash
