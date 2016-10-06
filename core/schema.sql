@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -496,6 +496,7 @@ CREATE TABLE config (
     block_xpub text DEFAULT ''::text NOT NULL,
     remote_block_signers bytea DEFAULT '\x'::bytea NOT NULL,
     generator_access_token text DEFAULT ''::text NOT NULL,
+    max_issuance_window_ms bigint,
     CONSTRAINT config_singleton CHECK (singleton)
 );
 
@@ -1145,3 +1146,4 @@ insert into migrations (filename, hash) values ('2016-10-05.0.core.remote-requir
 insert into migrations (filename, hash) values ('2016-10-05.1.core.add-testnet-config.sql', '6e0c8da9c9adb3f85f7d4baee00f84b3b4183c8ebad071d54a0128d8b414b007');
 insert into migrations (filename, hash) values ('2016-10-05.2.core.remove-testnet-config.sql', 'f748d503f055882d3c5af641931c3266a120d7b3ba404424db78a1f075f76b95');
 insert into migrations (filename, hash) values ('2016-10-05.3.account.index-expiry-height.sql', 'a1db582321307ad8fc49c201e95f7380f5f8441d6ab9a11838433666441817d3');
+insert into migrations (filename, hash) values ('2016-10-05.4.config.add-max-issuance-window.sql', 'd8f1a243626db63630238869d0bf1a6c94f6e771558cb831c03f466bb93b2eb7');
