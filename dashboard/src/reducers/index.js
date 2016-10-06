@@ -16,10 +16,16 @@ import unspent from './unspent'
 const makeRootReducer = () => (state, action) => {
   if (action.type == 'UPDATE_CORE_INFO' &&
       !action.param.is_configured) {
-    state = {
+    const newState = {
       form: state.form,
       routing: state.routing
     }
+
+    if (state.core.blockchainID == (action.param.blockchain_id || 0)) {
+      newState.core = state.core
+    }
+
+    state = newState
   }
 
   return combineReducers({

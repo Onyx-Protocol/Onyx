@@ -15,9 +15,8 @@ export default function(type, options = {}) {
   const deleteItemSuccess = actionCreator(`DELETE_${type.toUpperCase()}`, id => ({ id }))
   const deleteItem = (id) => {
     return (dispatch) => chain[className].delete(context(), id)
-      .then(() => {
-        dispatch(deleteItemSuccess(id))
-      })
+      .then(() => dispatch(deleteItemSuccess(id)))
+      .catch(err => dispatch({type: 'ERROR', payload: err}))
   }
 
   const getNextPageSlice = (getState) => {

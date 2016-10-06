@@ -54,8 +54,6 @@ export const blockchainID = (state, action) =>
   coreConfigReducer('blockchain_id', state, 0, action)
 export const networkRpcVersion = (state, action) =>
   coreConfigReducer('network_rpc_version', state, 0, action)
-export const requireNetworkToken = (state, action) =>
-  coreConfigReducer('require_network_access_tokens', state, false, action)
 
 export const replicationLag = (state = null, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
@@ -73,18 +71,15 @@ export const onTestNet = (state = false, action) => {
   return state
 }
 
-export const requireClientToken = (state, action) => {
-  let value = coreConfigReducer('require_client_access_tokens', state, false, action)
+export const requireClientToken = (state = false, action) => {
   if (action.type == 'ERROR' && action.payload.status == 401) return true
 
-  return value
+  return state
 }
 
 export const clientToken = (state = '', action) => {
   if      (action.type == 'SET_CLIENT_TOKEN') return action.token
   else if (action.type == 'USER_LOG_OUT')     return ''
-  else if (action.type == 'UPDATE_CORE_INFO' &&
-           action.param.require_client_access_tokens == false) return ''
   else if (action.type == 'ERROR' &&
            action.payload.status == 401)      return ''
 
@@ -117,7 +112,6 @@ export default combineReducers({
   requireClientToken,
   clientToken,
   validToken,
-  requireNetworkToken,
   onTestNet,
   networkRpcVersion,
 })

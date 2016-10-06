@@ -17,7 +17,7 @@ class Container extends React.Component {
   }
 
   redirectRoot(configured, location) {
-    if (configured || this.props.loginRequired) {
+    if (configured) {
       if (location.pathname === '/' ||
           location.pathname.indexOf('configuration') >= 0) {
         this.props.showRoot()

@@ -29,8 +29,8 @@ let actions = {
   clearSession,
   logIn: (token) => (dispatch) => {
     dispatch(setClientToken(token))
-    return dispatch(fetchCoreInfo({throw: true})).then(
-      () => dispatch(userLoggedIn())
+    return dispatch(fetchCoreInfo({throw: true}))
+      .then(() => dispatch(userLoggedIn())
     )
   }
 }
