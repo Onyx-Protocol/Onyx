@@ -82,7 +82,7 @@ func ValidateTx(tx *bc.Tx) error {
 		return errors.WithDetail(ErrBadTx, "inputs are missing")
 	}
 
-	if len(tx.Inputs) > math.MaxUint32 {
+	if len(tx.Inputs) > math.MaxInt32 {
 		return errors.WithDetail(ErrBadTx, "number of inputs overflows uint32")
 	}
 
