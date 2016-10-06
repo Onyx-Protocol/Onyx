@@ -45,11 +45,11 @@ func transactionInput(in *bc.TxInput) map[string]interface{} {
 		"input_witness":  hexSlices(in.Arguments()),
 	}
 	if in.IsIssuance() {
-		obj["action"] = "issue"
+		obj["type"] = "issue"
 		obj["issuance_program"] = hex.EncodeToString(in.IssuanceProgram())
 	} else {
 		outpoint := in.Outpoint()
-		obj["action"] = "spend"
+		obj["type"] = "spend"
 		obj["control_program"] = hex.EncodeToString(in.ControlProgram())
 		obj["spent_output"] = map[string]interface{}{
 			"transaction_id": outpoint.Hash.String(),
@@ -69,9 +69,9 @@ func transactionOutput(out *bc.TxOutput, idx uint32) map[string]interface{} {
 	}
 
 	if vmutil.IsUnspendable(out.ControlProgram) {
-		obj["action"] = "retire"
+		obj["type"] = "retire"
 	} else {
-		obj["action"] = "control"
+		obj["type"] = "control"
 	}
 	return obj
 }
@@ -110,9 +110,9 @@ func localAnnotator(ctx context.Context, txs []map[string]interface{}) {
 					log.Error(ctx, errors.Wrap(fmt.Errorf("bad input type %T", inObj)))
 					continue
 				}
-				action, ok := in["action"].(string)
+				typ, ok := in["type"].(string)
 				if !ok {
-					log.Error(ctx, errors.Wrap(fmt.Errorf("bad input action %T", in["action"])))
+					log.Error(ctx, errors.Wrap(fmt.Errorf("bad input type %T", in["type"])))
 					continue
 				}
 				assetIsLocal, ok := in["asset_is_local"].(string)
@@ -122,7 +122,7 @@ func localAnnotator(ctx context.Context, txs []map[string]interface{}) {
 				}
 
 				_, hasAccount := in["account_id"]
-				if (action == "issue" && assetIsLocal == "yes") || hasAccount {
+				if (typ == "issue" && assetIsLocal == "yes") || hasAccount {
 					txIsLocal = "yes"
 					in["is_local"] = "yes"
 				} else {

@@ -153,7 +153,7 @@ public class Transaction {
      * The type of action being taken on an input.<br>
      * Possible actions are "issue", "spend_account", and "spend_account_unspent_output".
      */
-    public String action;
+    public String type;
 
     /**
      * The number of units of the asset being issued or spent.
@@ -225,7 +225,7 @@ public class Transaction {
      * The type of action being taken on the output.<br>
      * Possible actions are "control_account", "control_program", and "retire".
      */
-    public String action;
+    public String type;
 
     /**
      * The purpose of the output.<br>

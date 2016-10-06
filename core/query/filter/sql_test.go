@@ -43,8 +43,8 @@ func TestAsSQL(t *testing.T) {
 			conds: []interface{}{`{"inputs":[{"a":"a"}]}`, `{"ref":{"txbankref":"1ab"}}`},
 		},
 		{
-			q:     `inputs(action = 'issue')`,
-			conds: []interface{}{`{"inputs":[{"action":"issue"}]}`},
+			q:     `inputs(type = 'issue')`,
+			conds: []interface{}{`{"inputs":[{"type":"issue"}]}`},
 		},
 		{
 			q:     `asset_id = $3`,

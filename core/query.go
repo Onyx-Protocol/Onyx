@@ -16,7 +16,7 @@ import (
 // These types enforce the ordering of JSON fields in API output.
 type (
 	txinResp struct {
-		Action          interface{} `json:"action"`
+		Type            interface{} `json:"type"`
 		AssetID         interface{} `json:"asset_id"`
 		AssetAlias      interface{} `json:"asset_alias,omitempty"`
 		AssetDefinition interface{} `json:"asset_definition"`
@@ -30,7 +30,7 @@ type (
 		IsLocal       interface{} `json:"is_local"`
 	}
 	txoutResp struct {
-		Action          interface{} `json:"action"`
+		Type            interface{} `json:"type"`
 		Purpose         interface{} `json:"purpose,omitempty"`
 		Position        interface{} `json:"position"`
 		AssetID         interface{} `json:"asset_id"`
@@ -154,7 +154,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 		inResps := make([]*txinResp, 0, len(inputs))
 		for _, in := range inputs {
 			r := &txinResp{
-				Action:          in["action"],
+				Type:            in["type"],
 				AssetID:         in["asset_id"],
 				AssetAlias:      in["asset_alias"],
 				AssetDefinition: in["asset_definition"],
@@ -172,7 +172,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 		outResps := make([]*txoutResp, 0, len(outputs))
 		for _, out := range outputs {
 			r := &txoutResp{
-				Action:          out["action"],
+				Type:            out["type"],
 				Purpose:         out["purpose"],
 				Position:        out["position"],
 				AssetID:         out["asset_id"],
@@ -309,7 +309,7 @@ func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, e
 
 // This type enforces the ordering of JSON fields in API output.
 type utxoResp struct {
-	Action          interface{} `json:"action"`
+	Type            interface{} `json:"type"`
 	Purpose         interface{} `json:"purpose"`
 	TransactionID   interface{} `json:"transaction_id"`
 	Position        interface{} `json:"position"`
@@ -367,7 +367,7 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 			return result, errors.Wrap(err, "decoding Indexer.Outputs output")
 		}
 		r := &utxoResp{
-			Action:          out["action"],
+			Type:            out["type"],
 			Purpose:         out["purpose"],
 			TransactionID:   out["transaction_id"],
 			Position:        out["position"],

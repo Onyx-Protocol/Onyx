@@ -372,7 +372,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
   "is_local": <"yes"|"no">, // local if any input or output is local
   "inputs": [
     {
-      "action": "issue",
+      "type": "issue",
       "asset_id": "125B4E...",
       "asset_alias": "...",
       "asset_definition": <object>,
@@ -381,10 +381,10 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
       "amount": 5000,
       "issuance_program": ...,
       "reference_data": {"details": "..."},
-      "is_local": <"yes"|"no"> // local if action is issue and asset is local
+      "is_local": <"yes"|"no"> // local if type is issue and asset is local
     },
     {
-      "action": "spend",
+      "type": "spend",
       "asset_id": "125B4E...",
       "asset_alias": "...",
       "asset_definition": <object>,
@@ -404,7 +404,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
   ],
   "outputs": [
     {
-      "action": "control",
+      "type": "control",
       "purpose": <"change"|"receive">, // provided if the control program was generated locally
       "position": "...",
       "asset_id": "125B4E...",
@@ -418,7 +418,7 @@ Annotated by the Core services where possible (account_ids, account_tags, asset_
       "account_tags": {},
       "control_program": "205CDF...",
       "reference_data": {"user": "bob"},
-      "is_local": <"yes"|"no"> // local if action is control and account id is not null
+      "is_local": <"yes"|"no"> // local if type is control and account id is not null
     }
   ]
 }
@@ -464,7 +464,7 @@ To keep the interface narrow, the SDK can generate such a control program.
 
 ```
 {
-  "action": "control",
+  "type": "control",
   "purpose": <"change"|"receive">, // provided if the control program was generated locally
   "transaction_id": "...",
   "position": "...",

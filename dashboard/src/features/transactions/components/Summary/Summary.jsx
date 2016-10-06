@@ -1,7 +1,7 @@
 import React from 'react'
 import styles from './Summary.scss'
 
-const ACTION_NAMES = {
+const INOUT_TYPES = {
   issue: 'Issued',
   control: 'Received',
   spend: 'Spent',
@@ -10,34 +10,34 @@ const ACTION_NAMES = {
 }
 
 class Summary extends React.Component {
-  normalizeActions(actions) {
+  normalizeInouts(inouts) {
     const normalized = {}
 
-    actions.forEach(action => {
-      let asset = normalized[action.asset_id]
-      if (!asset) asset = normalized[action.asset_id] = {
-        alias: action.asset_alias,
+    inouts.forEach(inout => {
+      let asset = normalized[inout.asset_id]
+      if (!asset) asset = normalized[inout.asset_id] = {
+        alias: inout.asset_alias,
         issue: 0,
         retire: 0
       }
 
-      if (['issue', 'retire'].includes(action.action)) {
-        asset[action.action] += action.amount
+      if (['issue', 'retire'].includes(inout.type)) {
+        asset[inout.type] += inout.amount
       } else {
-        let accountKey = action.account_id || 'external'
+        let accountKey = inout.account_id || 'external'
         let account = asset[accountKey]
         if (!account) account = asset[accountKey] = {
-          alias: action.account_alias,
+          alias: inout.account_alias,
           spend: 0,
           receive: 0
         }
 
-        if (action.action == 'spend') {
-          account.spend += action.amount
-        } else if (action.action == 'control' && action.purpose == 'change') {
-          account.spend -= action.amount
-        } else if (action.action == 'control') {
-          account.receive += action.amount
+        if (inout.type == 'spend') {
+          account.spend += inout.amount
+        } else if (inout.type == 'control' && inout.purpose == 'change') {
+          account.spend -= inout.amount
+        } else if (inout.type == 'control') {
+          account.receive += inout.amount
         }
       }
     })
@@ -46,8 +46,8 @@ class Summary extends React.Component {
   }
 
   render() {
-    const actions = this.props.transaction.inputs.concat(this.props.transaction.outputs)
-    const summary = this.normalizeActions(actions)
+    const inouts = this.props.transaction.inputs.concat(this.props.transaction.outputs)
+    const summary = this.normalizeInouts(inouts)
     const items = []
 
     Object.keys(summary).forEach((asset_id) => {
@@ -57,7 +57,7 @@ class Summary extends React.Component {
       nonAccountTypes.forEach((type) => {
         if (asset[type] > 0) {
           items.push({
-            action: ACTION_NAMES[type],
+            type: INOUT_TYPES[type],
             rawAction: type,
             amount: asset[type],
             asset: asset.alias ? asset.alias : <code className={styles.asset_id}>{asset_id}</code>,
@@ -75,7 +75,7 @@ class Summary extends React.Component {
         accountTypes.forEach((type) => {
           if (account[type] > 0) {
             items.push({
-              action: ACTION_NAMES[type],
+              type: INOUT_TYPES[type],
               rawAction: type,
               amount: account[type],
               asset: asset.alias ? asset.alias : <code className={styles.asset_id}>{asset_id}</code>,
@@ -90,7 +90,7 @@ class Summary extends React.Component {
     return(<table className={styles.main}>
       <thead>
         <tr>
-          <th>Action</th>
+          <th>Type</th>
           <th>Amount</th>
           <th>Asset</th>
           <th></th>
@@ -99,7 +99,7 @@ class Summary extends React.Component {
       <tbody>
         {items.map((item, index) =>
           <tr key={index} className={index % 2 == 0 ? '' : styles.odd}>
-            <td className={styles.colAction}>{item.action}</td>
+            <td className={styles.colAction}>{item.type}</td>
             <td className={styles.colAmount}>
               <code className={`${styles.amount} ${styles[item.rawAction]}`}>{item.amount}</code>
             </td>

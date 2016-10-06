@@ -8,29 +8,29 @@ import {
 import { Summary } from './'
 
 class Show extends BaseShow {
-  actionDetails(action) {
-    let details = [{label: 'Action', value: action.action}]
-    if (action.purpose) details.push({label: 'Action Purpose', value: action.purpose})
+  inoutDetails(inout) {
+    let details = [{label: 'Type', value: inout.type}]
+    if (inout.purpose) details.push({label: 'Action Purpose', value: inout.purpose})
 
     details = details.concat([
-      {label: 'Asset ID', value: action.asset_id},
-      {label: 'Asset Alias', value: action.asset_alias},
-      {label: 'Asset Tags', value: action.asset_tags},
-      {label: 'Amount', value: action.amount},
+      {label: 'Asset ID', value: inout.asset_id},
+      {label: 'Asset Alias', value: inout.asset_alias},
+      {label: 'Asset Tags', value: inout.asset_tags},
+      {label: 'Amount', value: inout.amount},
     ])
 
-    if (action.account_id) {
+    if (inout.account_id) {
       details = details.concat([
-        {label: 'Account ID', value: action.account_id},
-        {label: 'Account Alias', value: action.account_alias},
-        {label: 'Account Tags', value: action.account_tags},
+        {label: 'Account ID', value: inout.account_id},
+        {label: 'Account Alias', value: inout.account_alias},
+        {label: 'Account Tags', value: inout.account_tags},
       ])
     }
 
-    if (action.control_program) details.push({label: 'Control Program', value: action.control_program})
-    if (action.issuance_program) details.push({label: 'Issuance Program', value: action.issuance_program})
+    if (inout.control_program) details.push({label: 'Control Program', value: inout.control_program})
+    if (inout.issuance_program) details.push({label: 'Issuance Program', value: inout.issuance_program})
 
-    details.push({label: 'Reference Data', value: action.reference_data})
+    details.push({label: 'Reference Data', value: inout.reference_data})
     return details
   }
 
@@ -66,7 +66,7 @@ class Show extends BaseShow {
           <Table
             key={index}
             title={index == 0 ? 'Inputs' : ''}
-            items={this.actionDetails(input)}
+            items={this.inoutDetails(input)}
           />
         )}
 
@@ -74,7 +74,7 @@ class Show extends BaseShow {
           <Table
             key={index}
             title={index == 0 ? 'Outputs' : ''}
-            items={this.actionDetails(output)}
+            items={this.inoutDetails(output)}
           />
         )}
 

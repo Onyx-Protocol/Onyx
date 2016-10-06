@@ -121,7 +121,7 @@ func (ind *Indexer) insertAnnotatedOutputs(ctx context.Context, b *bc.Block, ann
 			}
 
 			// Don't index retired outputs.
-			typ, ok := txOut["action"].(string)
+			typ, ok := txOut["type"].(string)
 			if ok && typ == "retire" {
 				continue
 			}

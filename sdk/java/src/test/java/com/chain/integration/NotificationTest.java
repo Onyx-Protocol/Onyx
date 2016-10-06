@@ -60,7 +60,7 @@ public class NotificationTest {
     Transaction.submit(context, HsmSigner.sign(issuance));
 
     Transaction tx = future.get();
-    assertEquals(tx.inputs.get(0).action, "issue");
+    assertEquals(tx.inputs.get(0).type, "issue");
     assertEquals(tx.inputs.get(0).amount, amount);
     assertEquals(tx.outputs.get(0).amount, amount);
   }

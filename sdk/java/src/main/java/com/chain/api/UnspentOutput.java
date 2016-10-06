@@ -8,6 +8,8 @@ import java.util.Map;
 
 public class UnspentOutput {
 
+  public String type;
+
   public String purpose;
 
   @SerializedName("transaction_id")
