@@ -1,4 +1,4 @@
-import Section from 'containers/SectionContainer'
+import { RoutingContainer } from 'features/shared/components'
 import { ClientTokenList, NetworkTokenList } from './components/List'
 import { NewClientToken, NewNetworkToken } from './components/New'
 
@@ -10,7 +10,7 @@ export default {
   childRoutes: [
     {
       path: 'client',
-      component: Section,
+      component: RoutingContainer,
       indexRoute: { component: ClientTokenList },
       childRoutes: [{
         path: 'create',
@@ -19,7 +19,7 @@ export default {
     },
     {
       path: 'network',
-      component: Section,
+      component: RoutingContainer,
       indexRoute: { component: NetworkTokenList },
       childRoutes: [{
         path: 'create',

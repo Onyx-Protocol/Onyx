@@ -1,5 +1,5 @@
 import Autocomplete from './Autocomplete'
-import ErrorBanner from './ErrorBanner'
+import HiddenField from './HiddenField'
 import JsonField from './JsonField/JsonField'
 import KeyConfiguration from './KeyConfiguration'
 import Navbar from './Navbar'
@@ -12,7 +12,7 @@ import XpubField from './XpubField/XpubField'
 
 export {
   Autocomplete,
-  ErrorBanner,
+  HiddenField,
   JsonField,
   KeyConfiguration,
   Navbar,

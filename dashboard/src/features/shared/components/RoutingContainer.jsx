@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default class SectionContainer extends React.Component {
+export default class RoutingContainer extends React.Component {
   render() {
     return (
       <div className='section-container'>

@@ -4,6 +4,7 @@ import { Flash } from 'features/shared/components'
 import { Link } from 'react-router'
 import { connect } from 'react-redux'
 import actions from 'actions'
+import { NavigationItem as CoreNavigationItem } from 'features/core/components'
 
 class Main extends React.Component {
   render() {
@@ -73,8 +74,7 @@ class Main extends React.Component {
               </li>
               <li>
                 <Link to='/core' activeClassName={styles.active}>
-                  <span className={`glyphicon glyphicon-hdd ${styles.glyphicon}`} />
-                  Core
+                  <CoreNavigationItem externalStyles={styles.glyphicon}/>
                 </Link>
               </li>
             </ul>

@@ -1,5 +1,5 @@
 import { BaseNew, FormContainer } from 'features/shared/components'
-import { TextField } from 'components/Common'
+import { TextField, HiddenField } from 'components/Common'
 import React from 'react'
 import { reduxForm } from 'redux-form'
 import { humanize } from 'utility/string'
@@ -38,7 +38,7 @@ const Form = class Form extends React.Component {
       submitting={submitting} >
 
       <TextField title='Token ID' placeholder='Token ID' fieldProps={id} />
-      <input type='hidden' {...type} />
+      <HiddenField fieldProps={type} />
 
     </FormContainer>)
   }

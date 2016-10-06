@@ -95,7 +95,9 @@ config.module.noParse = /node_modules\/json-schema\/lib\/validate\.js/
 config.plugins.push(new webpack.EnvironmentPlugin([
   'NODE_ENV',
   'API_URL',
-  'PROXY_API_HOST'
+  'PROXY_API_HOST',
+  'TESTNET_INFO_URL',
+  'TESTNET_GENERATOR_URL'
 ]))
 
 config.output.publicPath = publicPath

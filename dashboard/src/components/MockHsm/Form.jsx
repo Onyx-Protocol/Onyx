@@ -1,6 +1,6 @@
 import React from 'react'
-import PageHeader from '../PageHeader/PageHeader'
-import { ErrorBanner } from '../Common'
+import PageHeader from 'components/PageHeader/PageHeader'
+import { ErrorBanner } from 'features/shared/components'
 
 class Form extends React.Component {
   constructor(props) {

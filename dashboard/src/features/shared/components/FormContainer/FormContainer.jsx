@@ -1,6 +1,6 @@
 import React from 'react'
-import PageHeader from '../../../../components/PageHeader/PageHeader'
-import { ErrorBanner } from '../../../../components/Common'
+import PageHeader from 'components/PageHeader/PageHeader'
+import { ErrorBanner } from 'features/shared/components'
 import styles from './FormContainer.scss'
 
 class FormContainer extends React.Component {

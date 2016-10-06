@@ -1,0 +1,11 @@
+.main {
+  display: block;
+  position: relative;
+}
+
+.warning {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  color: $highlight-danger;
+}

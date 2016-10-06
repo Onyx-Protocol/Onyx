@@ -1,13 +1,14 @@
-import chain from '../../chain'
-import { context } from '../../utility/environment'
-
+import { connect } from 'react-redux'
+import { context } from 'utility/environment'
+import { getUpcomingReset, getNetworkMismatch } from 'features/configuration/reducers'
+import chain from 'chain'
+import { ErrorBanner } from 'features/shared/components'
+import PageHeader from 'components/PageHeader/PageHeader'
 import React from 'react'
-import PageHeader from '../PageHeader/PageHeader'
-import ErrorBanner from '../Common/ErrorBanner'
-
 import styles from './Index.scss'
+import moment from 'moment-timezone'
 
-export default class Index extends React.Component {
+class Index extends React.Component {
   constructor(props) {
     super(props)
     this.state = {}
@@ -110,6 +111,19 @@ export default class Index extends React.Component {
               </tr>}
             </tbody>
           </table>
+
+          {this.props.onTestNet &&
+            <div>
+              {this.props.networkMismatchError && <ErrorBanner
+                title='Network RPC Version'
+                message='This core is not compatible with the Testnet generator. Please update to the latest official release of Chain Core.'
+                />}
+
+              {this.props.upcomingResetError && <ErrorBanner
+                title='Network Reset'
+                message={`The Testnet will be reset at ${this.props.resetTime}`}
+                />}
+            </div>}
         </div>
       </div>
     )
@@ -162,3 +176,20 @@ export default class Index extends React.Component {
     )
   }
 }
+
+// Container
+
+const mapStateToProps = (state) => ({
+  core: state.core,
+  onTestNet: state.core.onTestNet,
+  upcomingResetError: getUpcomingReset(state),
+  resetTime: moment(state.configuration.testNetResetTime).tz('UTC').format('MMMM Do YYYY, h:mm:ss z'),
+  networkMismatchError: getNetworkMismatch(state),
+})
+
+const mapDispatchToProps = () => ({})
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(Index)

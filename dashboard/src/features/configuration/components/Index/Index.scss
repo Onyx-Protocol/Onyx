@@ -11,10 +11,19 @@
   padding-bottom: 1em;
 }
 
+.choices {
+  display: flex;
+  justify-content: space-between;
+}
+
 .choice_wrapper {
-  display: block;
-  font-weight: normal;
-  margin-bottom: $grid-gutter-width;
+  width: 32%;
+
+  > label {
+    display: block;
+    font-weight: normal;
+    margin-bottom: $grid-gutter-width;
+  }
 }
 
 .choice_radio_button {
@@ -76,5 +85,7 @@ input[type=radio]:checked ~ .choice {
 }
 
 .submit {
+  display: block;
+  margin-top: 30px;
   width: 100%;
 }

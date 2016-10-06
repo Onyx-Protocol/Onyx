@@ -28,12 +28,17 @@ class Container extends React.Component {
   }
 
   componentWillMount() {
-    this.props.fetchInfo().then(() => {
+    const checkInfo = () => {
+      if (this.props.onTestNet) this.props.fetchTestNetInfo()
+      return this.props.fetchInfo()
+    }
+
+    checkInfo().then(() => {
       this.setState({loadedInfo: true})
       this.redirectRoot(this.props.configured, this.props.location)
     })
 
-    setInterval(this.props.fetchInfo, CORE_POLLING_TIME)
+    setInterval(checkInfo, CORE_POLLING_TIME)
   }
 
   componentWillReceiveProps(nextProps) {
@@ -67,9 +72,11 @@ export default connect(
     buildDate: state.core.buildDate,
     loginRequired: state.core.requireClientToken,
     loggedIn: state.core.validToken,
+    onTestNet: state.core.onTestNet,
   }),
   (dispatch) => ({
     fetchInfo: options => dispatch(actions.core.fetchCoreInfo(options)),
+    fetchTestNetInfo: () => dispatch(actions.configuration.fetchTestNetInfo()),
     showRoot: () => dispatch(actions.routing.showRoot),
     showConfiguration: () => dispatch(actions.routing.showConfiguration()),
     clearSession: () => dispatch(actions.core.clearSession()),

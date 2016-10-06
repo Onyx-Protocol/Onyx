@@ -2,6 +2,7 @@ import { actions as accessToken } from 'features/accessTokens'
 import { actions as account } from 'features/accounts'
 import { actions as app } from 'features/app'
 import { actions as asset } from 'features/assets'
+import { actions as configuration } from 'features/configuration'
 import { actions as core } from 'features/core'
 import { actions as transaction } from 'features/transactions'
 import balance from './balance'
@@ -15,6 +16,7 @@ const actions = {
   app,
   asset,
   balance,
+  configuration,
   core,
   mockhsm,
   routing,

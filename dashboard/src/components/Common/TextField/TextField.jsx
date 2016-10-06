@@ -1,6 +1,13 @@
 import React from 'react'
 import styles from './TextField.scss'
 
+const TEXT_FIELD_PROPS = [
+  'value',
+  'onBlur',
+  'onChange',
+  'onFocus',
+]
+
 class TextField extends React.Component {
   constructor(props) {
     super(props)
@@ -8,6 +15,13 @@ class TextField extends React.Component {
   }
 
   render() {
+    // Select only valid props from Redux form field properties to
+    // pass to input component
+    const fieldProps = TEXT_FIELD_PROPS.reduce((mapping, key) => {
+      if (this.props.fieldProps.hasOwnProperty(key)) mapping[key] = this.props.fieldProps[key]
+      return mapping
+    }, {})
+
     const inputClasses = ['form-control']
     const error = this.props.fieldProps.error
     if (error) {
@@ -22,7 +36,7 @@ class TextField extends React.Component {
             type={this.state.type}
             placeholder={this.props.placeholder}
             autoFocus={!!this.props.autoFocus}
-            {...this.props.fieldProps} />
+            {...fieldProps} />
 
           {this.props.hint && <span className='help-block'>{this.props.hint}</span>}
         </div>

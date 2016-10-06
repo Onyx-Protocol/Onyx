@@ -1,4 +1,5 @@
 import { combineReducers } from 'redux'
+import { testNetUrl } from 'utility/environment'
 import moment from 'moment'
 
 const LONG_TIME_FORMAT = 'YYYY-MM-DD, h:mm:ss a'
@@ -51,12 +52,22 @@ export const generatorAccessToken = (state, action) =>
   coreConfigReducer('generator_access_token', state, false, action)
 export const blockchainID = (state, action) =>
   coreConfigReducer('blockchain_id', state, 0, action)
+export const networkRpcVersion = (state, action) =>
+  coreConfigReducer('network_rpc_version', state, 0, action)
 export const requireNetworkToken = (state, action) =>
   coreConfigReducer('require_network_access_tokens', state, false, action)
 
 export const replicationLag = (state = null, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
     return action.param.generator_block_height - action.param.block_height + ''
+  }
+
+  return state
+}
+
+export const onTestNet = (state = false, action) => {
+  if (action.type == 'UPDATE_CORE_INFO') {
+    return action.param.generator_url == testNetUrl
   }
 
   return state
@@ -73,8 +84,7 @@ export const clientToken = (state = '', action) => {
   if      (action.type == 'SET_CLIENT_TOKEN') return action.token
   else if (action.type == 'USER_LOG_OUT')     return ''
   else if (action.type == 'UPDATE_CORE_INFO' &&
-           action.param.require_client_access_tokens == false)
-                                              return ''
+           action.param.require_client_access_tokens == false) return ''
   else if (action.type == 'ERROR' &&
            action.payload.status == 401)      return ''
 
@@ -108,4 +118,6 @@ export default combineReducers({
   clientToken,
   validToken,
   requireNetworkToken,
+  onTestNet,
+  networkRpcVersion,
 })

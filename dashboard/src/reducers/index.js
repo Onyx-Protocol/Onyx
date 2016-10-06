@@ -6,6 +6,7 @@ import { reducers as access_token } from 'features/accessTokens'
 import { reducers as account } from 'features/accounts'
 import { reducers as app } from 'features/app'
 import { reducers as asset } from 'features/assets'
+import { reducers as configuration } from 'features/configuration'
 import { reducers as core } from 'features/core'
 import { reducers as transaction } from 'features/transactions'
 import balance from './balance'
@@ -27,6 +28,7 @@ const makeRootReducer = () => (state, action) => {
     app,
     asset,
     balance,
+    configuration,
     core,
     form,
     mockhsm,

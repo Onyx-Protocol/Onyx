@@ -1,11 +1,11 @@
-import Section from 'containers/SectionContainer'
+import { RoutingContainer } from 'features/shared/components'
 import TransactionList from 'containers/Transactions/List'
 import NewTransaction from 'containers/Transactions/New'
 import { Show, GeneratedTxHex } from './components'
 
 export default {
   path: 'transactions',
-  component: Section,
+  component: RoutingContainer,
   indexRoute: { component: TransactionList },
   childRoutes: [
     {

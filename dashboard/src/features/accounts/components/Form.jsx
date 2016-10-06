@@ -4,8 +4,8 @@ import {
   TextField,
   JsonField,
   KeyConfiguration,
-  ErrorBanner
 } from '../../../components/Common'
+import { ErrorBanner } from 'features/shared/components'
 import { reduxForm } from 'redux-form'
 
 class Form extends React.Component {

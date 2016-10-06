@@ -21,19 +21,6 @@ const fetchCoreInfo = (options = {}) => {
   }
 }
 
-const retry = (dispatch, promise, count = 10) => {
-  return dispatch(promise).catch((err) => {
-    var currentTime = new Date().getTime()
-    while (currentTime + 200 >= new Date().getTime()) { /* wait for retry */ }
-
-    if (count >= 1) {
-      retry(dispatch, promise, count - 1)
-    } else {
-      throw(err)
-    }
-  })
-}
-
 let actions = {
   setClientToken,
   updateInfo,
@@ -45,18 +32,6 @@ let actions = {
     return dispatch(fetchCoreInfo({throw: true})).then(
       () => dispatch(userLoggedIn())
     )
-  },
-  submitConfiguration: (data) => {
-    return (dispatch) => {
-      // Convert string value to boolean for API
-      data.is_generator = data.is_generator === 'true' ? true : false
-      data.is_signer = data.is_generator
-      data.quorum = data.is_generator ? 1 : 0
-
-      return chain.Core.configure(context(), data)
-        .then(() => retry(dispatch, fetchCoreInfo({throw: true})))
-        .catch((err) => dispatch({type: 'ERROR', payload: err}))
-    }
   }
 }
 

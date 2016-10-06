@@ -1,6 +1,7 @@
 import React from 'react'
 import { connect } from 'react-redux'
-import { TextField, ErrorBanner } from 'components/Common'
+import { TextField } from 'components/Common'
+import { ErrorBanner } from 'features/shared/components'
 import actions from 'actions'
 import styles from './Login.scss'
 import { reduxForm } from 'redux-form'
@@ -13,7 +14,6 @@ class Login extends React.Component {
   }
 
   submitWithErrors(data) {
-    console.log(data)
     return new Promise((resolve, reject) => {
       this.props.logIn(data.token)
         .catch((err) => reject({_error: err.message}))
@@ -60,7 +60,6 @@ export default connect(
     logIn: (token) => dispatch(actions.core.logIn(token))
   })
 )(reduxForm({
-    form: 'login',
-    fields: ['token'],
-  })(Login)
-)
+  form: 'login',
+  fields: ['token'],
+})(Login))
