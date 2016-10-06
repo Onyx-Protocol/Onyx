@@ -3,6 +3,7 @@ package protocol
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/golang/groupcache/lru"
 
@@ -28,6 +29,11 @@ import (
 // Use WaitForBlock to guarantee this.
 func (c *Chain) AddTx(ctx context.Context, tx *bc.Tx) error {
 	err := c.ValidateTxCached(tx)
+	if err != nil {
+		return errors.Wrap(err, "tx rejected")
+	}
+
+	err = c.checkIssuanceWindow(tx)
 	if err != nil {
 		return errors.Wrap(err, "tx rejected")
 	}
@@ -73,4 +79,17 @@ func (c *prevalidatedTxsCache) cache(txID bc.Hash, err error) {
 	c.mu.Lock()
 	c.lru.Add(txID, err)
 	c.mu.Unlock()
+}
+
+func (c *Chain) checkIssuanceWindow(tx *bc.Tx) error {
+	for _, txi := range tx.Inputs {
+		if _, ok := txi.TypedInput.(*bc.IssuanceInput); ok {
+			windowMS := uint64(c.MaxIssuanceWindow / time.Millisecond)
+			// TODO(tessr): consider removing 0 check once we can configure this
+			if windowMS != 0 && tx.MinTime+windowMS < tx.MaxTime {
+				return errors.WithDetailf(validation.ErrBadTx, "issuance input's time window is larger than the network maximum (%s)", c.MaxIssuanceWindow)
+			}
+		}
+	}
+	return nil
 }

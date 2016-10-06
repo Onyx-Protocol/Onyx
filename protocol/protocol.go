@@ -105,8 +105,9 @@ type Chain struct {
 		block    *bc.Block       // current only if leader
 		snapshot *state.Snapshot // current only if leader
 	}
-	store Store
-	pool  Pool
+	store             Store
+	pool              Pool
+	MaxIssuanceWindow time.Duration // only used by generators
 
 	lastQueuedSnapshot time.Time
 	pendingSnapshots   chan pendingSnapshot

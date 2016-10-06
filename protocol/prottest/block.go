@@ -35,6 +35,7 @@ func NewChainWithStorage(tb testing.TB, store protocol.Store, pool protocol.Pool
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
+	c.MaxIssuanceWindow = 48 * time.Hour // TODO(tessr): consider adding MaxIssuanceWindow to NewChain
 	b1, err := protocol.NewInitialBlock(nil, 0, time.Now())
 	if err != nil {
 		testutil.FatalErr(tb, err)

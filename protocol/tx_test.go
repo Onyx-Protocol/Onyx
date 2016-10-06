@@ -8,8 +8,10 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"chain/crypto/ed25519"
+	"chain/errors"
 	"chain/protocol/bc"
 	"chain/protocol/state"
+	"chain/protocol/validation"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
 	"chain/testutil"
@@ -58,6 +60,18 @@ func TestAddTx(t *testing.T) {
 	err = c.AddTx(ctx, transferTx)
 	if err != nil {
 		testutil.FatalErr(t, err)
+	}
+}
+
+func TestAddTxBadMaxIssuanceWindow(t *testing.T) {
+	ctx := context.Background()
+	c, _ := newTestChain(t, time.Now())
+	c.MaxIssuanceWindow = time.Second
+
+	issueTx, _, _ := issue(t, nil, nil, 1)
+	err := c.AddTx(ctx, issueTx)
+	if errors.Root(err) != validation.ErrBadTx {
+		t.Errorf("expected err to have Root %s, got %s", validation.ErrBadTx, errors.Root(err))
 	}
 }
 

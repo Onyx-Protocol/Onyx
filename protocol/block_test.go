@@ -226,6 +226,8 @@ func newTestChain(tb testing.TB, ts time.Time) (c *Chain, b1 *bc.Block) {
 	if err != nil {
 		testutil.FatalErr(tb, err)
 	}
+	// TODO(tessr): consider adding MaxIssuanceWindow to NewChain
+	c.MaxIssuanceWindow = 48 * time.Hour
 	b1, err = NewInitialBlock(nil, 0, ts)
 	if err != nil {
 		testutil.FatalErr(tb, err)

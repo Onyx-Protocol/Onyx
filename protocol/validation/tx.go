@@ -49,7 +49,6 @@ func ConfirmTx(snapshot *state.Snapshot, tx *bc.Tx, timestampMS uint64) error {
 			if timestampMS < tx.MinTime || timestampMS > tx.MaxTime {
 				return errors.WithDetail(ErrBadTx, "timestamp outside issuance input's time window")
 			}
-			// TODO(bobg): test that timestampMS + maxIssuanceWindow >= tx.MaxTimeMS
 			iHash, err := tx.IssuanceHash(i)
 			if err != nil {
 				return err
