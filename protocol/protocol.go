@@ -63,7 +63,7 @@ var (
 	ErrTheDistantFuture = errors.New("the block height is too damn high")
 )
 
-type BlockCallback func(ctx context.Context, block *bc.Block)
+type BlockCallback func(ctx context.Context, block *bc.Block) error
 
 // Store provides storage for blockchain data: blocks, asset
 // definition pointers and confirmed transactions.

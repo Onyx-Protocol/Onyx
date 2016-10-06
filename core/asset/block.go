@@ -8,7 +8,7 @@ import (
 	"chain/core/signers"
 	"chain/database/pg"
 	"chain/encoding/json"
-	"chain/log"
+	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/vmutil"
@@ -80,7 +80,7 @@ func indexAnnotatedAsset(ctx context.Context, a *Asset) error {
 }
 
 // indexAssets is run on every block and indexes all non-local assets.
-func indexAssets(ctx context.Context, b *bc.Block) {
+func indexAssets(ctx context.Context, b *bc.Block) error {
 	var (
 		assetIDs, definitions pq.StringArray
 		issuancePrograms      pq.ByteaArray
@@ -105,13 +105,13 @@ func indexAssets(ctx context.Context, b *bc.Block) {
 		}
 	}
 	if len(assetIDs) == 0 {
-		return
+		return nil
 	}
 
 	// Grab the intitial block hash.
 	initial, err := chain.GetBlock(ctx, 1)
 	if err != nil {
-		log.Fatal(ctx, log.KeyError, err)
+		return err
 	}
 
 	// Insert these assets into the database. If the asset already exists, don't
@@ -137,7 +137,7 @@ func indexAssets(ctx context.Context, b *bc.Block) {
 	err = pg.ForQueryRows(ctx, q, assetIDs, issuancePrograms, definitions, b.Time(), initial.Hash(), b.Height,
 		func(assetID bc.AssetID) { newAssetIDs = append(newAssetIDs, assetID) })
 	if err != nil {
-		log.Fatal(ctx, "at", "error indexing non-local assets", log.KeyError, err)
+		return errors.Wrap(err, "error indexing non-local assets")
 	}
 
 	// newAssetIDs now contains only the asset IDs of new, non-local
@@ -146,11 +146,12 @@ func indexAssets(ctx context.Context, b *bc.Block) {
 		// TODO(jackson): Batch the asset lookups.
 		a, err := findByID(ctx, assetID)
 		if err != nil {
-			log.Fatal(ctx, "at", "looking up new asset", log.KeyError, err)
+			return errors.Wrap(err, "looking up new asset")
 		}
 		err = indexAnnotatedAsset(ctx, a)
 		if err != nil {
-			log.Fatal(ctx, "at", "indexing annotated asset", log.KeyError, err)
+			return errors.Wrap(err, "indexing annotated asset")
 		}
 	}
+	return nil
 }

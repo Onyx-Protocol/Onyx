@@ -9,7 +9,6 @@ import (
 
 	"chain/database/pg"
 	"chain/errors"
-	"chain/log"
 	"chain/protocol/bc"
 )
 
@@ -26,23 +25,18 @@ func (ind *Indexer) RegisterAnnotator(annotator Annotator) {
 // indexBlockCallback is registered as a block callback on the Chain. It
 // saves all annotated transactions to the database and indexes them according
 // to the Core's configured indexes.
-func (ind *Indexer) indexBlockCallback(ctx context.Context, b *bc.Block) {
+func (ind *Indexer) indexBlockCallback(ctx context.Context, b *bc.Block) error {
 	err := ind.insertBlock(ctx, b)
 	if err != nil {
-		log.Fatal(ctx, log.KeyError, err)
+		return err
 	}
 
 	txs, err := ind.insertAnnotatedTxs(ctx, b)
 	if err != nil {
-		log.Fatal(ctx, log.KeyError, err)
+		return err
 	}
 
-	err = ind.insertAnnotatedOutputs(ctx, b, txs)
-	if err != nil {
-		log.Fatal(ctx, log.KeyError, err)
-	}
-
-	// TODO(jackson): Build indexes
+	return ind.insertAnnotatedOutputs(ctx, b, txs)
 }
 
 func (ind *Indexer) insertBlock(ctx context.Context, b *bc.Block) error {

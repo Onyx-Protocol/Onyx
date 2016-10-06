@@ -8,7 +8,6 @@ import (
 	"chain/core/signers"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/log"
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
@@ -43,13 +42,7 @@ func Init(c *protocol.Chain, ind Saver) {
 	}
 
 	chain = c
-	chain.AddBlockCallback(func(ctx context.Context, b *bc.Block) {
-		err := indexAccountUTXOs(ctx, b)
-		if err != nil {
-			log.Error(ctx, err)
-			panic(err)
-		}
-	})
+	chain.AddBlockCallback(indexAccountUTXOs)
 }
 
 func indexAnnotatedAccount(ctx context.Context, a *Account) error {

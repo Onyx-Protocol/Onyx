@@ -124,7 +124,10 @@ func (c *Chain) commitBlock(ctx context.Context, block *bc.Block, snapshot *stat
 	}
 
 	for _, cb := range c.blockCallbacks {
-		cb(ctx, block)
+		err := cb(ctx, block)
+		if err != nil {
+			return errors.Wrap(err, "executing block callback")
+		}
 	}
 
 	if final {
