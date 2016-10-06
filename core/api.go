@@ -124,6 +124,7 @@ type Config struct {
 	BlockXPub            string         `json:"block_xpub"`
 	Signers              []ConfigSigner `json:"block_signer_urls"`
 	Quorum               int
+	MaxIssuanceWindow    time.Duration
 }
 
 type ConfigSigner struct {

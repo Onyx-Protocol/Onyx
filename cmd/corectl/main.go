@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"flag"
 	"fmt"
 	"io"
 	"os"
 	"strconv"
+	"time"
 
 	"chain/core"
 	"chain/core/accesstoken"
@@ -68,21 +70,22 @@ func main() {
 }
 
 func configGenerator(db *sql.DB, args []string) {
-	const usage = "error: corectl config-generator [-s] [<quorum> <<pubkey> <url>...>]"
+	const usage = "error: corectl config-generator [-s] [-w=max issuance window] [quorum pubkey url...>]"
 	var (
-		isSigner bool
-		quorum   int
-		signers  []core.ConfigSigner
-		err      error
+		quorum  int
+		signers []core.ConfigSigner
+		err     error
 	)
 
-	if len(args) > 0 && args[0] == "-s" {
-		isSigner = true
-		args = args[1:]
-	}
+	var flags flag.FlagSet
+	maxIssuanceWindow := flags.Duration("w", 24*time.Hour, "the maximum issuance window for this generator")
+	isSigner := flags.Bool("s", false, "whether this core is a signer")
+
+	flags.Parse(args)
+	args = flags.Args()
 
 	if len(args) == 0 {
-		if isSigner {
+		if *isSigner {
 			quorum = 1
 		}
 	} else if len(args)%2 != 1 {
@@ -112,10 +115,11 @@ func configGenerator(db *sql.DB, args []string) {
 	}
 
 	config := &core.Config{
-		IsGenerator: true,
-		IsSigner:    isSigner,
-		Quorum:      quorum,
-		Signers:     signers,
+		IsGenerator:       true,
+		IsSigner:          *isSigner,
+		Quorum:            quorum,
+		Signers:           signers,
+		MaxIssuanceWindow: *maxIssuanceWindow,
 	}
 
 	ctx := context.Background()

@@ -210,6 +210,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, config.BlockchainID.String(), config) {
 			generatorSigners = append(generatorSigners, signer)
 		}
+		c.MaxIssuanceWindow = config.MaxIssuanceWindow
 	}
 
 	// GC old submitted txs periodically.

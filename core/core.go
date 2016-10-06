@@ -25,6 +25,7 @@ import (
 	"chain/net/http/httpjson"
 	"chain/net/rpc"
 	"chain/protocol"
+	"chain/protocol/bc"
 	"chain/protocol/state"
 )
 
@@ -211,6 +212,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		}
 
 		c.BlockchainID = block.Hash()
+		chain.MaxIssuanceWindow = c.MaxIssuanceWindow
 	}
 
 	var blockSignerData []byte
@@ -224,8 +226,8 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	const q = `
 		INSERT INTO config (is_signer, block_xpub, is_generator,
 			blockchain_id, generator_url, generator_access_token,
-			remote_block_signers, configured_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+			remote_block_signers, max_issuance_window_ms, configured_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
 	`
 	_, err = db.Exec(
 		ctx,
@@ -237,6 +239,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		c.GeneratorURL,
 		c.GeneratorAccessToken,
 		blockSignerData,
+		bc.DurationMillis(c.MaxIssuanceWindow),
 	)
 	return err
 }
@@ -262,12 +265,15 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 	const q = `
 			SELECT is_signer, is_generator,
 			blockchain_id, generator_url, generator_access_token, block_xpub,
-			remote_block_signers, configured_at
+			remote_block_signers, max_issuance_window_ms, configured_at
 			FROM config
 		`
 
 	c := new(Config)
-	var blockSignerData []byte
+	var (
+		blockSignerData []byte
+		miw             int64
+	)
 	err := db.QueryRow(ctx, q).Scan(
 		&c.IsSigner,
 		&c.IsGenerator,
@@ -276,6 +282,7 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 		&c.GeneratorAccessToken,
 		&c.BlockXPub,
 		&blockSignerData,
+		&miw,
 		&c.ConfiguredAt,
 	)
 	if err == sql.ErrNoRows {
@@ -291,6 +298,7 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 		}
 	}
 
+	c.MaxIssuanceWindow = time.Duration(miw) * time.Millisecond
 	return c, nil
 }
 

@@ -7,10 +7,14 @@ variable; the default is to connect to the "core" database on localhost.
 
 The config commands initialize the schema if necessary.
 
-    corectl config-generator
+    corectl config-generator [-s] [-w max issuance window] [quorum pubkey url...]
 
 config-generator configures a new core as a generator. It matches the dashboard's
 behavior when writing the config.
+
+-s sets this core as a signer.
+-w, followed by a duration string (e.g. "24h"), sets the maximum issuance window.
+The default is 24 hours.
 
     corectl config <blockchainID> <generatorURL> [block-signing-key]
 
