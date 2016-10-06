@@ -798,6 +798,16 @@ public class Transaction {
        * @param controlProgram the control program to be used
        * @return updated action object
        */
+      public ControlWithProgram setControlProgram(ControlProgram controlProgram) {
+        this.put("control_program", controlProgram.program);
+        return this;
+      }
+
+      /**
+       * Specifies the control program to be used.
+       * @param controlProgram the control program (as a string) to be used
+       * @return updated action object
+       */
       public ControlWithProgram setControlProgram(String controlProgram) {
         this.put("control_program", controlProgram);
         return this;
