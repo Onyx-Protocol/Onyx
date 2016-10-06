@@ -59,6 +59,10 @@ func main() {
 		help(os.Stderr)
 		os.Exit(1)
 	}
+	err = initSchema(db)
+	if err != nil {
+		fatalln("error: init schema", err)
+	}
 	cmd.f(db, os.Args[2:])
 }
 
@@ -113,10 +117,6 @@ func configGenerator(db *sql.DB, args []string) {
 		Signers:     signers,
 	}
 
-	err = initSchema(db)
-	if err != nil {
-		fatalln("error: init schema", err)
-	}
 	ctx := context.Background()
 	err = core.Configure(ctx, db, config)
 	if err != nil {
@@ -187,10 +187,6 @@ func configNongenerator(db *sql.DB, args []string) {
 		}
 	}
 
-	err = initSchema(db)
-	if err != nil {
-		fatalln("error: init schema", err)
-	}
 	ctx := context.Background()
 	err = core.Configure(ctx, db, &config)
 	if err != nil {
