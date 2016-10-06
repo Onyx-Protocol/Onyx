@@ -3,7 +3,6 @@ package protocol
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/golang/groupcache/lru"
 
@@ -84,9 +83,8 @@ func (c *prevalidatedTxsCache) cache(txID bc.Hash, err error) {
 func (c *Chain) checkIssuanceWindow(tx *bc.Tx) error {
 	for _, txi := range tx.Inputs {
 		if _, ok := txi.TypedInput.(*bc.IssuanceInput); ok {
-			windowMS := uint64(c.MaxIssuanceWindow / time.Millisecond)
 			// TODO(tessr): consider removing 0 check once we can configure this
-			if windowMS != 0 && tx.MinTime+windowMS < tx.MaxTime {
+			if c.MaxIssuanceWindow != 0 && tx.MinTime+bc.DurationMillis(c.MaxIssuanceWindow) < tx.MaxTime {
 				return errors.WithDetailf(validation.ErrBadTx, "issuance input's time window is larger than the network maximum (%s)", c.MaxIssuanceWindow)
 			}
 		}
