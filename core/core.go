@@ -58,45 +58,6 @@ func Schema() string {
 	return files["schema.sql"]
 }
 
-// Reset deletes all data, resulting in an unconfigured core.
-// It must be called before any other functions in this package.
-func Reset(ctx context.Context, db pg.DB) error {
-	if isProduction() {
-		return errors.Wrap(errProdReset)
-	}
-
-	const q = `
-		TRUNCATE
-			access_tokens,
-			account_control_programs,
-			account_utxos,
-			accounts,
-			annotated_accounts,
-			annotated_assets,
-			annotated_outputs,
-			annotated_txs,
-			asset_tags,
-			assets,
-			blocks,
-			config,
-			generator_pending_block,
-			leader,
-			mockhsm,
-			pool_txs,
-			query_blocks,
-			reservations,
-			signed_blocks,
-			signers,
-			snapshots,
-			submitted_txs,
-			txconsumers
-			RESTART IDENTITY;
-	`
-
-	_, err := db.Exec(ctx, q)
-	return errors.Wrap(err)
-}
-
 func (a *api) reset(ctx context.Context) error {
 	if isProduction() {
 		return errors.Wrap(errProdReset)

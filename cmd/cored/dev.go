@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"chain/core"
+	"chain/core/coreunsafe"
 	"chain/database/pg"
 	"chain/env"
 )
@@ -39,7 +40,7 @@ func resetInDevIfRequested(db pg.DB) {
 	if *reset {
 		os.Setenv("RESET", "false")
 		ctx := context.Background()
-		err := core.Reset(ctx, db)
+		err := coreunsafe.Reset(ctx, db)
 		if err != nil {
 			log.Fatalln("core reset:", err)
 		}

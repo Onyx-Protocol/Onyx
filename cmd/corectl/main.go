@@ -11,6 +11,7 @@ import (
 
 	"chain/core"
 	"chain/core/accesstoken"
+	"chain/core/coreunsafe"
 	"chain/core/mockhsm"
 	"chain/crypto/ed25519"
 	"chain/database/pg"
@@ -200,7 +201,8 @@ func reset(db *sql.DB, args []string) {
 	}
 
 	ctx := context.Background()
-	err := core.Reset(ctx, db)
+	// TODO(jackson): exclude this from prod builds of corectl
+	err := coreunsafe.Reset(ctx, db)
 	if err != nil {
 		fatalln("error:", err)
 	}
