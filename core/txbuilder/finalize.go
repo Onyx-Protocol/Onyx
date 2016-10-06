@@ -1,6 +1,7 @@
 package txbuilder
 
 import (
+	"bytes"
 	"context"
 
 	"chain/errors"
@@ -9,6 +10,7 @@ import (
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/validation"
+	"chain/protocol/vm"
 )
 
 var (
@@ -39,11 +41,15 @@ func FinalizeTx(ctx context.Context, c *protocol.Chain, tx *bc.Tx) error {
 }
 
 func publishTx(ctx context.Context, c *protocol.Chain, msg *bc.Tx) error {
-	// Make sure there is atleast one block in case client is
-	// trying to finalize a tx before the initial block has landed
+	err := checkTxSighashCommitment(msg)
+	if err != nil {
+		return err
+	}
+
+	// Make sure there is at least one block in case client is trying to
+	// finalize a tx before the initial block has landed
 	c.WaitForBlock(1)
 
-	var err error
 	if Generator != nil {
 		// If this transaction is valid, ValidateTxCached will store it in the cache.
 		err := c.ValidateTxCached(msg)
@@ -70,5 +76,52 @@ func publishTx(ctx context.Context, c *protocol.Chain, msg *bc.Tx) error {
 			return errors.Wrap(err, "add tx to blockchain")
 		}
 	}
+	return nil
+}
+
+// To permit idempotence of transaction submission, we require at
+// least one input to commit to the complete transaction (what you get
+// when you build a transaction with allow_additional_actions=false).
+var ErrNoTxSighashCommitment = errors.New("no commitment to tx sighash")
+
+func checkTxSighashCommitment(tx *bc.Tx) error {
+	allIssuances := true
+	sigHasher := bc.NewSigHasher(&tx.TxData)
+
+	for i, inp := range tx.Inputs {
+		spend, ok := inp.TypedInput.(*bc.SpendInput)
+		if !ok {
+			continue
+		}
+		allIssuances = false
+		if len(spend.Arguments) < 3 {
+			// A conforming arguments list contains
+			// [... arg1 arg2 ... argN N sig1 sig2 ... sigM prog]
+			// The args are the opaque arguments to prog. In the case where
+			// N is 0 (prog takes no args), and assuming there must be at
+			// least one signature, spend.Arguments has a minimum length of 3.
+			continue
+		}
+		prog := spend.Arguments[len(spend.Arguments)-1]
+		if len(prog) != 35 {
+			continue
+		}
+		if prog[0] != byte(vm.OP_DATA_32) {
+			continue
+		}
+		if !bytes.Equal(prog[33:], []byte{byte(vm.OP_TXSIGHASH), byte(vm.OP_EQUAL)}) {
+			continue
+		}
+		h := sigHasher.Hash(i)
+		if !bytes.Equal(h[:], prog[1:33]) {
+			continue
+		}
+		return nil
+	}
+
+	if !allIssuances {
+		return ErrNoTxSighashCommitment
+	}
+
 	return nil
 }

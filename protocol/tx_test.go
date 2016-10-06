@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -90,7 +91,8 @@ func newDest(t testing.TB) *testDest {
 }
 
 func (d *testDest) sign(t testing.TB, tx *bc.TxData, index int) {
-	prog := []byte{byte(vm.OP_TRUE)}
+	txsighash := tx.HashForSig(index)
+	prog, _ := vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", txsighash[:]))
 	h := sha3.Sum256(prog)
 	sig := ed25519.Sign(d.privKey, h[:])
 	tx.Inputs[index].SetArguments([][]byte{vm.Int64Bytes(0), sig, prog})

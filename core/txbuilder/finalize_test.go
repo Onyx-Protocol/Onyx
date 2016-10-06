@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"chain/core/account"
+	"chain/core/account/utxodb"
 	"chain/core/asset"
 	"chain/core/asset/assettest"
 	. "chain/core/txbuilder"
@@ -56,7 +57,6 @@ func TestConflictingTxsInPool(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	firstTemplate.AllowAdditional = true
 	assettest.SignTxTemplate(t, ctx, firstTemplate, &info.privKeyAccounts)
 	tx := bc.NewTx(*firstTemplate.Transaction)
 	err = FinalizeTx(ctx, c, tx)
@@ -64,14 +64,18 @@ func TestConflictingTxsInPool(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	// Build the second tx
-	secondTemplate, err := Build(ctx, &tx.TxData, []Action{&SetTxRefDataAction{[]byte("test")}})
+	// Make the utxo available for reserving again
+	err = utxodb.Cancel(ctx, []bc.Outpoint{firstTemplate.Transaction.Inputs[0].TypedInput.(*bc.SpendInput).Outpoint})
 	if err != nil {
 		t.Fatal(err)
 	}
-	secondTemplate.SigningInstructions = firstTemplate.SigningInstructions
-	secondTemplate.SigningInstructions[0].WitnessComponents[0].(*SignatureWitness).Sigs[0] = nil
 
+	// Build the second tx
+	dest2 := assettest.NewAccountControlAction(assetAmount, info.acctB.ID, nil)
+	secondTemplate, err := Build(ctx, nil, []Action{spendAction, dest2})
+	if err != nil {
+		t.Fatal(err)
+	}
 	assettest.SignTxTemplate(t, ctx, secondTemplate, &info.privKeyAccounts)
 	err = FinalizeTx(ctx, c, bc.NewTx(*secondTemplate.Transaction))
 	if err != nil {

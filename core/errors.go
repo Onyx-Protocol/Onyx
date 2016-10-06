@@ -89,12 +89,15 @@ var (
 		txbuilder.ErrBadRefData: errorInfo{400, "CH700", "Reference data does not match previous transaction's reference data"},
 		errBadActionType:        errorInfo{400, "CH701", "Invalid action type"},
 		errBadAlias:             errorInfo{400, "CH702", "Invalid alias on action"},
+
 		// Submit error namespace (73x)
-		txbuilder.ErrMissingRawTx:        errorInfo{400, "CH730", "Missing raw transaction"},
-		txbuilder.ErrBadInstructionCount: errorInfo{400, "CH731", "Too many signing instructions in template for transaction"},
-		txbuilder.ErrBadTxInputIdx:       errorInfo{400, "CH732", "Invalid transaction input index"},
-		txbuilder.ErrBadWitnessComponent: errorInfo{400, "CH733", "Invalid witness component"},
-		txbuilder.ErrRejected:            errorInfo{400, "CH735", "Transaction rejected"},
+		txbuilder.ErrMissingRawTx:          errorInfo{400, "CH730", "Missing raw transaction"},
+		txbuilder.ErrBadInstructionCount:   errorInfo{400, "CH731", "Too many signing instructions in template for transaction"},
+		txbuilder.ErrBadTxInputIdx:         errorInfo{400, "CH732", "Invalid transaction input index"},
+		txbuilder.ErrBadWitnessComponent:   errorInfo{400, "CH733", "Invalid witness component"},
+		txbuilder.ErrRejected:              errorInfo{400, "CH735", "Transaction rejected"},
+		txbuilder.ErrNoTxSighashCommitment: errorInfo{400, "CH736", "Transaction is not final, additional actions still allowed"},
+
 		// account action error namespace (76x)
 		utxodb.ErrInsufficient: errorInfo{400, "CH760", "Insufficient funds for tx"},
 		utxodb.ErrReserved:     errorInfo{400, "CH761", "Some outputs are reserved; try again"},

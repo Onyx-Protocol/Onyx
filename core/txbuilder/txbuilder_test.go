@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"golang.org/x/crypto/sha3"
 
@@ -269,4 +270,135 @@ func mustDecodeHex(str string) []byte {
 		panic(err)
 	}
 	return data
+}
+
+func TestTxSighashCommitment(t *testing.T) {
+	var initialBlockHash bc.Hash
+
+	issuanceProg := []byte{byte(vm.OP_TRUE)}
+	assetID := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
+
+	// Tx with only issuance inputs is OK
+	tx := bc.NewTx(bc.TxData{
+		Version: 1,
+		Inputs: []*bc.TxInput{
+			{
+				AssetVersion: 1,
+				TypedInput: &bc.IssuanceInput{
+					Nonce:           []byte{1},
+					Amount:          1,
+					InitialBlock:    initialBlockHash,
+					VMVersion:       1,
+					IssuanceProgram: issuanceProg,
+				},
+			},
+			{
+				AssetVersion: 1,
+				TypedInput: &bc.IssuanceInput{
+					Nonce:           []byte{2},
+					Amount:          1,
+					InitialBlock:    initialBlockHash,
+					VMVersion:       1,
+					IssuanceProgram: issuanceProg,
+				},
+			},
+		},
+		Outputs: []*bc.TxOutput{
+			{
+				AssetVersion: 1,
+				OutputCommitment: bc.OutputCommitment{
+					AssetAmount: bc.AssetAmount{
+						AssetID: assetID,
+						Amount:  2,
+					},
+					VMVersion:      1,
+					ControlProgram: []byte{3},
+				},
+			},
+		},
+		MinTime: bc.Millis(time.Now()),
+		MaxTime: bc.Millis(time.Now().Add(time.Hour)),
+	})
+	err := checkTxSighashCommitment(tx)
+	if err != nil {
+		t.Errorf("issuances-only: got error %s, want no error", err)
+	}
+
+	// Tx with at any spend inputs, none committing to the txsighash, is not OK
+	tx.Inputs = append(tx.Inputs, &bc.TxInput{
+		AssetVersion: 1,
+		TypedInput: &bc.SpendInput{
+			OutputCommitment: bc.OutputCommitment{
+				AssetAmount: bc.AssetAmount{
+					AssetID: assetID,
+					Amount:  2,
+				},
+				VMVersion:      1,
+				ControlProgram: []byte{byte(vm.OP_TRUE)},
+			},
+		},
+	})
+	tx.Outputs[0].Amount = 4
+	tx = bc.NewTx(tx.TxData) // recompute the tx hash
+	err = checkTxSighashCommitment(tx)
+	if err != ErrNoTxSighashCommitment {
+		t.Errorf("no spend inputs committing to txsighash: got error %s, want ErrNoTxSighashCommitment", err)
+	}
+
+	// Tx with a spend input committing to the wrong txsighash is not OK
+	spendInput := &bc.SpendInput{
+		OutputCommitment: bc.OutputCommitment{
+			AssetAmount: bc.AssetAmount{
+				AssetID: assetID,
+				Amount:  3,
+			},
+			VMVersion:      1,
+			ControlProgram: []byte{byte(vm.OP_TRUE)},
+		},
+	}
+	tx.Inputs = append(tx.Inputs, &bc.TxInput{
+		AssetVersion: 1,
+		TypedInput:   spendInput,
+	})
+	tx.Outputs[0].Amount = 7
+	tx = bc.NewTx(tx.TxData) // recompute the tx hash
+	spendInput.Arguments = make([][]byte, 3)
+	prog, err := vm.Assemble("0x0000000000000000000000000000000000000000000000000000000000000000 TXSIGHASH EQUAL")
+	if err != nil {
+		t.Fatal(err)
+	}
+	spendInput.Arguments[2] = prog
+	err = checkTxSighashCommitment(tx)
+	if err != ErrNoTxSighashCommitment {
+		t.Errorf("spend input committing to the wrong txsighash: got error %s, want ErrNoTxSighashCommitment", err)
+	}
+
+	// Tx with a spend input committing to the right txsighash is OK
+	spendInput = &bc.SpendInput{
+		OutputCommitment: bc.OutputCommitment{
+			AssetAmount: bc.AssetAmount{
+				AssetID: assetID,
+				Amount:  4,
+			},
+			VMVersion:      1,
+			ControlProgram: []byte{byte(vm.OP_TRUE)},
+		},
+	}
+	tx.Inputs = append(tx.Inputs, &bc.TxInput{
+		AssetVersion: 1,
+		TypedInput:   spendInput,
+	})
+	tx.Outputs[0].Amount = 11
+	tx = bc.NewTx(tx.TxData) // recompute the tx hash
+	spendInput.Arguments = make([][]byte, 3)
+	h := tx.HashForSig(4)
+	prog, err = vm.Assemble(fmt.Sprintf("0x%x TXSIGHASH EQUAL", h[:]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	spendInput.Arguments[2] = prog
+	err = checkTxSighashCommitment(tx)
+	if err != nil {
+		t.Errorf("spend input committing to the right txsighash: got error %s, want no error", err)
+	}
 }
