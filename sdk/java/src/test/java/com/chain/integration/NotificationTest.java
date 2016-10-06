@@ -34,7 +34,7 @@ public class NotificationTest {
     String alice = "TransactionTest.testTransactionNotification.alice";
     String asset = "TransactionTest.testTransactionNotification.test";
     String consumer = "TransactionTest.testTransactionNotification.consumer";
-    String filter = "outputs(account_alias='"+alice+"')";
+    String filter = "outputs(account_alias='" + alice + "')";
 
     new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(context);
 

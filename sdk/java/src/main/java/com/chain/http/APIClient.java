@@ -89,8 +89,8 @@ public class APIClient {
               .url(this.url(path))
               .method("POST", requestBody);
       if (this.baseURL.getUserInfo() != null) {
-          builder = builder.header("Authorization", this.credentials());
-	  }
+        builder = builder.header("Authorization", this.credentials());
+      }
       req = builder.build();
     } catch (MalformedURLException ex) {
       throw new BadURLException(ex.getMessage());

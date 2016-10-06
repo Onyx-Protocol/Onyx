@@ -35,7 +35,12 @@ public class APIException extends ChainException {
   }
 
   public APIException(
-      String code, String message, String detail, boolean temporary, String requestID, int statusCode) {
+      String code,
+      String message,
+      String detail,
+      boolean temporary,
+      String requestID,
+      int statusCode) {
     super(message);
     this.chainMessage = message;
     this.code = code;
