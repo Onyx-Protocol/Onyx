@@ -4,7 +4,12 @@ with underflow and overflow checks.
 */
 package checked
 
-import "math"
+import (
+	"errors"
+	"math"
+)
+
+var ErrOverflow = errors.New("arithmetic overflow")
 
 // AddInt64 returns a + b
 // with an integer overflow check.

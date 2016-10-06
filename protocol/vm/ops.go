@@ -3,7 +3,9 @@ package vm
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 
+	"chain/errors"
 	"chain/math/checked"
 )
 
@@ -331,7 +333,11 @@ var (
 // ParseOp parses the op at position pc in prog, returning the parsed
 // instruction (opcode plus any associated data).
 func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
-	if pc >= uint32(len(prog)) {
+	if len(prog) > math.MaxInt32 {
+		err = ErrLongProgram
+	}
+	l := uint32(len(prog))
+	if pc >= l {
 		err = ErrShortProgram
 		return
 	}
@@ -345,7 +351,11 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 	if opcode >= OP_DATA_1 && opcode <= OP_DATA_75 {
 		inst.Len += uint32(opcode - OP_DATA_1 + 1)
 		end, ok := checked.AddUint32(pc, inst.Len)
-		if !ok || end > uint32(len(prog)) {
+		if !ok {
+			err = errors.WithDetail(checked.ErrOverflow, "data length exceeds max program size")
+			return
+		}
+		if end > l {
 			err = ErrShortProgram
 			return
 		}
@@ -353,14 +363,17 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 		return
 	}
 	if opcode == OP_PUSHDATA1 {
-		if pc == uint32(len(prog)-1) {
+		if pc == l-1 {
 			err = ErrShortProgram
 			return
 		}
 		n := prog[pc+1]
 		inst.Len += uint32(n) + 1
 		end, ok := checked.AddUint32(pc, inst.Len)
-		if !ok || end > uint32(len(prog)) {
+		if !ok {
+			err = errors.WithDetail(checked.ErrOverflow, "data length exceeds max program size")
+		}
+		if end > l {
 			err = ErrShortProgram
 			return
 		}
@@ -368,14 +381,18 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 		return
 	}
 	if opcode == OP_PUSHDATA2 {
-		if len(prog) < 3 || pc > uint32(len(prog))-3 {
+		if len(prog) < 3 || pc > l-3 {
 			err = ErrShortProgram
 			return
 		}
 		n := binary.LittleEndian.Uint16(prog[pc+1 : pc+3])
 		inst.Len += uint32(n) + 2
 		end, ok := checked.AddUint32(pc, inst.Len)
-		if !ok || end > uint32(len(prog)) {
+		if !ok {
+			err = errors.WithDetail(checked.ErrOverflow, "data length exceeds max program size")
+			return
+		}
+		if end > l {
 			err = ErrShortProgram
 			return
 		}
@@ -383,14 +400,18 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 		return
 	}
 	if opcode == OP_PUSHDATA4 {
-		if len(prog) < 5 || pc > uint32(len(prog))-5 {
+		if len(prog) < 5 || pc > l-5 {
 			err = ErrShortProgram
 			return
 		}
 		n := binary.LittleEndian.Uint32(prog[pc+1 : pc+5])
 		inst.Len += 4 + n
 		end, ok := checked.AddUint32(pc, inst.Len)
-		if !ok || end > uint32(len(prog)) {
+		if !ok {
+			err = errors.WithDetail(checked.ErrOverflow, "data length exceeds max program size")
+			return
+		}
+		if end > l {
 			err = ErrShortProgram
 			return
 		}
@@ -400,7 +421,11 @@ func ParseOp(prog []byte, pc uint32) (inst Instruction, err error) {
 	if opcode == OP_JUMP || opcode == OP_JUMPIF {
 		inst.Len += 4
 		end, ok := checked.AddUint32(pc, inst.Len)
-		if !ok || end > uint32(len(prog)) {
+		if !ok {
+			err = errors.WithDetail(checked.ErrOverflow, "jump target exceeds max program size")
+			return
+		}
+		if end > l {
 			err = ErrShortProgram
 			return
 		}
@@ -418,7 +443,11 @@ func ParseProgram(prog []byte) ([]Instruction, error) {
 			return nil, err
 		}
 		result = append(result, inst)
-		pc += inst.Len
+		var ok bool
+		pc, ok = checked.AddUint32(pc, inst.Len)
+		if !ok {
+			return nil, errors.WithDetail(checked.ErrOverflow, "program counter exceeds max program size")
+		}
 	}
 	return result, nil
 }

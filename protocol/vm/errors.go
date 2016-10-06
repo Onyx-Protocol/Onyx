@@ -8,6 +8,7 @@ var (
 	ErrContext            = errors.New("wrong context")
 	ErrDataStackUnderflow = errors.New("data stack underflow")
 	ErrDivZero            = errors.New("division by zero")
+	ErrLongProgram        = errors.New("program size exceeds maxint32")
 	ErrRange              = errors.New("range error")
 	ErrReturn             = errors.New("RETURN executed")
 	ErrRunLimitExceeded   = errors.New("run limit exceeded")
