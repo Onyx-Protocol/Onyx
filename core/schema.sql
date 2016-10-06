@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.3
--- Dumped by pg_dump version 9.5.3
+-- Dumped from database version 9.5.0
+-- Dumped by pg_dump version 9.5.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -989,6 +989,13 @@ CREATE INDEX account_utxos_account_id_asset_id_tx_hash_idx ON account_utxos USIN
 
 
 --
+-- Name: account_utxos_expiry_height_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX account_utxos_expiry_height_idx ON account_utxos USING btree (expiry_height) WHERE (confirmed_in IS NULL);
+
+
+--
 -- Name: account_utxos_reservation_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1137,3 +1144,4 @@ insert into migrations (filename, hash) values ('2016-10-04.0.txdb.pool-txs-unlo
 insert into migrations (filename, hash) values ('2016-10-05.0.core.remote-require-auth-flags.sql', '3dad64f0e38c8140d471b851e3ba5bb5045bf5e760488e0ab3b617ddb09c62cf');
 insert into migrations (filename, hash) values ('2016-10-05.1.core.add-testnet-config.sql', '6e0c8da9c9adb3f85f7d4baee00f84b3b4183c8ebad071d54a0128d8b414b007');
 insert into migrations (filename, hash) values ('2016-10-05.2.core.remove-testnet-config.sql', 'f748d503f055882d3c5af641931c3266a120d7b3ba404424db78a1f075f76b95');
+insert into migrations (filename, hash) values ('2016-10-05.3.account.index-expiry-height.sql', 'a1db582321307ad8fc49c201e95f7380f5f8441d6ab9a11838433666441817d3');
