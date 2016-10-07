@@ -70,7 +70,7 @@ func main() {
 }
 
 func configGenerator(db *sql.DB, args []string) {
-	const usage = "error: corectl config-generator [-s] [-w=max issuance window] [quorum pubkey url...>]"
+	const usage = "usage: corectl config-generator [-s] [-w duration] [quorum] [pubkey url]..."
 	var (
 		quorum  int
 		signers []core.ConfigSigner
@@ -78,9 +78,13 @@ func configGenerator(db *sql.DB, args []string) {
 	)
 
 	var flags flag.FlagSet
-	maxIssuanceWindow := flags.Duration("w", 24*time.Hour, "the maximum issuance window for this generator")
+	maxIssuanceWindow := flags.Duration("w", 24*time.Hour, "the maximum issuance window `duration` for this generator")
 	isSigner := flags.Bool("s", false, "whether this core is a signer")
-
+	flags.Usage = func() {
+		fmt.Println(usage)
+		flags.PrintDefaults()
+		os.Exit(1)
+	}
 	flags.Parse(args)
 	args = flags.Args()
 
@@ -143,30 +147,46 @@ func createBlockKeyPair(db *sql.DB, args []string) {
 		fatalln("error:", err)
 	}
 
-	fmt.Println("block xpub:", xpub.XPub.String())
+	fmt.Printf("%x\n", xpub.XPub.PublicKey())
 }
 
 func createToken(db *sql.DB, args []string) {
-	var id, typ string
-	if len(args) == 1 {
-		id, typ = args[0], "client"
-	} else if len(args) == 2 && args[0] == "-net" {
-		id, typ = args[1], "network"
-	} else {
-		fatalln("usage: corectl create-token [-net] [id]")
+	const usage = "usage: corectl create-token [-net] [name]"
+	var flags flag.FlagSet
+	flagNet := flags.Bool("net", false, "create a network token instead of client")
+	flags.Usage = func() {
+		fmt.Println(usage)
+		flags.PrintDefaults()
+		os.Exit(1)
+	}
+	flags.Parse(args)
+	args = flags.Args()
+	if len(args) < 1 {
+		fatalln(usage)
 	}
 
-	tok, err := accesstoken.Create(pg.NewContext(context.Background(), db), id, typ)
+	typ := map[bool]string{true: "network", false: "client"}[*flagNet]
+	tok, err := accesstoken.Create(pg.NewContext(context.Background(), db), args[0], typ)
 	if err != nil {
 		fatalln("error:", err)
 	}
-	fmt.Print(tok.Token)
+	fmt.Println(tok.Token)
 }
 
 func configNongenerator(db *sql.DB, args []string) {
-	errUsage := "error: corectl config <blockchain-id> <generator-url> [-t <generator-access-token>] [-k <block-pubkey>]"
+	const usage = "usage: corectl config [-t token] [-k pubkey] [blockchain-id] [url]"
+	var flags flag.FlagSet
+	flagT := flags.String("t", "", "generator access `token`")
+	flagK := flags.String("k", "", "local `pubkey` for signing blocks")
+	flags.Usage = func() {
+		fmt.Println(usage)
+		flags.PrintDefaults()
+		os.Exit(1)
+	}
+	flags.Parse(args)
+	args = flags.Args()
 	if len(args) < 2 {
-		fatalln(errUsage)
+		fatalln(usage)
 	}
 
 	var config core.Config
@@ -175,22 +195,9 @@ func configNongenerator(db *sql.DB, args []string) {
 		fatalln("error: invalid blockchain ID:", err)
 	}
 	config.GeneratorURL = args[1]
-
-	for args = args[2:]; len(args) > 0; args = args[2:] {
-		if len(args) < 2 {
-			fatalln(errUsage)
-		}
-
-		switch args[0] {
-		case "-t":
-			config.GeneratorAccessToken = args[1]
-		case "-k":
-			config.IsSigner = true
-			config.BlockXPub = args[1]
-		default:
-			fatalln(errUsage)
-		}
-	}
+	config.GeneratorAccessToken = *flagT
+	config.IsSigner = *flagK != ""
+	config.BlockXPub = *flagK
 
 	ctx := context.Background()
 	err = core.Configure(ctx, db, &config)
