@@ -39,6 +39,7 @@ import (
 	"chain/log/rotation"
 	"chain/log/splunk"
 	"chain/net/http/gzip"
+	"chain/net/http/limit"
 	"chain/net/http/reqid"
 	"chain/net/rpc"
 	"chain/protocol"
@@ -64,6 +65,7 @@ var (
 	logCount   = env.Int("LOGCOUNT", 9)
 	logQueries = env.Bool("LOG_QUERIES", false)
 	maxDBConns = env.Int("MAXDBCONNS", 10) // set to 100 in prod
+	reqsPerSec = env.Int("REQUESTS_PER_SECOND", 0)
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -125,6 +127,9 @@ func main() {
 	}
 
 	h = dashboardHandler(h)
+	if *reqsPerSec > 0 {
+		h = limit.Handler(h, *reqsPerSec, 100, limit.AuthUserID)
+	}
 	h = gzip.Handler{Handler: h}
 	h = dbContextHandler(h, db)
 	h = reqid.Handler(h)
