@@ -7,8 +7,7 @@ import (
 	"regexp"
 	"time"
 
-	"golang.org/x/crypto/sha3"
-
+	"chain/crypto/sha3pool"
 	"chain/database/pg"
 	"chain/errors"
 )
@@ -53,7 +52,8 @@ func Create(ctx context.Context, id, typ string) (*Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	hashedSecret := sha3.Sum256(secret[:])
+	var hashedSecret [32]byte
+	sha3pool.Sum256(hashedSecret[:], secret[:])
 
 	const q = `
 		INSERT INTO access_tokens (id, type, hashed_secret)
@@ -83,10 +83,12 @@ func Create(ctx context.Context, id, typ string) (*Token, error) {
 
 // Check returns whether or not an id-secret pair is a valid access token.
 func Check(ctx context.Context, id, typ string, secret []byte) (bool, error) {
-	var toHash [tokenSize]byte
+	var (
+		toHash [tokenSize]byte
+		hashed [32]byte
+	)
 	copy(toHash[:], secret)
-
-	hashed := sha3.Sum256(toHash[:])
+	sha3pool.Sum256(hashed[:], toHash[:])
 
 	const q = `SELECT EXISTS(SELECT 1 FROM access_tokens WHERE id=$1 AND type=$2 AND hashed_secret=$3)`
 	var valid bool

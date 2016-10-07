@@ -21,3 +21,11 @@ func Put256(h sha3.ShakeHash) {
 	h.Reset()
 	pool.Put(h)
 }
+
+// Sum256 uses a ShakeHash from the pool to sum into hash.
+func Sum256(hash, data []byte) {
+	h := Get256()
+	h.Write(data)
+	h.Read(hash)
+	Put256(h)
+}

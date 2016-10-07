@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"golang.org/x/crypto/sha3"
-
+	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 )
 
@@ -308,7 +307,9 @@ func (t TxInput) inputWitnessBytes() []byte {
 }
 
 func (t TxInput) WitnessHash() Hash {
-	return sha3.Sum256(t.inputWitnessBytes())
+	var h Hash
+	sha3pool.Sum256(h[:], t.inputWitnessBytes())
+	return h
 }
 
 func (t TxInput) Outpoint() (o Outpoint) {

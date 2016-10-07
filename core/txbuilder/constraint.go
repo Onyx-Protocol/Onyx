@@ -1,8 +1,7 @@
 package txbuilder
 
 import (
-	"golang.org/x/crypto/sha3"
-
+	"chain/crypto/sha3pool"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
@@ -68,7 +67,8 @@ type refdataConstraint struct {
 }
 
 func (r refdataConstraint) code() []byte {
-	h := sha3.Sum256(r.data)
+	var h [32]byte
+	sha3pool.Sum256(h[:], r.data)
 	builder := vmutil.NewBuilder()
 	builder.AddData(h[:])
 	if r.tx {

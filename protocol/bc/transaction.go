@@ -8,8 +8,7 @@ import (
 	"io"
 	"strconv"
 
-	"golang.org/x/crypto/sha3"
-
+	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
 )
@@ -192,10 +191,11 @@ func (p *Outpoint) readFrom(r io.Reader) error {
 // replaced by their hashes,
 // and stores the result in Hash.
 func (tx *TxData) Hash() Hash {
-	h := sha3.New256()
+	h := sha3pool.Get256()
 	tx.writeTo(h, 0) // error is impossible
 	var v Hash
-	h.Sum(v[:0])
+	h.Read(v[:])
+	sha3pool.Put256(h)
 	return v
 }
 
@@ -220,7 +220,9 @@ func (tx *TxData) WitnessHash() Hash {
 		b.Write(h[:])
 	}
 
-	return sha3.Sum256(b.Bytes())
+	var hash Hash
+	sha3pool.Sum256(hash[:], b.Bytes())
+	return hash
 }
 
 func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
@@ -231,7 +233,8 @@ func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
 	if !ok {
 		return h, fmt.Errorf("not an issuance input")
 	}
-	buf := sha3.New256()
+	buf := sha3pool.Get256()
+	defer sha3pool.Put256(buf)
 
 	_, err = blockchain.WriteVarstr31(buf, ii.Nonce)
 	if err != nil {
@@ -247,7 +250,7 @@ func (tx *TxData) IssuanceHash(n int) (h Hash, err error) {
 	if err != nil {
 		return h, err
 	}
-	buf.Sum(h[:0])
+	buf.Read(h[:])
 	return h, nil
 }
 
@@ -272,25 +275,28 @@ func (s *SigHasher) Hash(idx int) Hash {
 		h := s.txData.Hash()
 		s.txHash = &h
 	}
-	var buf bytes.Buffer
-	buf.Write((*s.txHash)[:])
-	blockchain.WriteVarint31(&buf, uint64(idx)) // TODO(bobg): check and return error
+	h := sha3pool.Get256()
+	h.Write((*s.txHash)[:])
+	blockchain.WriteVarint31(h, uint64(idx)) // TODO(bobg): check and return error
 
-	var h Hash
+	var outHash Hash
 	inp := s.txData.Inputs[idx]
 	si, ok := inp.TypedInput.(*SpendInput)
 	if ok {
 		// inp is a spend
 		var ocBuf bytes.Buffer
 		si.OutputCommitment.writeTo(&ocBuf, inp.AssetVersion)
-		h = sha3.Sum256(ocBuf.Bytes())
+		sha3pool.Sum256(outHash[:], ocBuf.Bytes())
 	} else {
 		// inp is an issuance
-		h = emptyHash
+		outHash = emptyHash
 	}
 
-	buf.Write(h[:])
-	return sha3.Sum256(buf.Bytes())
+	h.Write(outHash[:])
+	var hash Hash
+	h.Read(hash[:])
+	sha3pool.Put256(h)
+	return hash
 }
 
 func (tx *TxData) MarshalText() ([]byte, error) {

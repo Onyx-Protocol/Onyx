@@ -9,6 +9,7 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
+	"chain/crypto/sha3pool"
 	"chain/errors"
 )
 
@@ -98,6 +99,7 @@ func fastHash(d []byte) []byte {
 	if len(d) == 0 {
 		return nil
 	}
-	h := sha3.Sum256(d)
+	var h [32]byte
+	sha3pool.Sum256(h[:], d)
 	return h[:]
 }

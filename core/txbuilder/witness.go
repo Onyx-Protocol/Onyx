@@ -4,8 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"golang.org/x/crypto/sha3"
-
+	"chain/crypto/sha3pool"
 	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
@@ -119,7 +118,8 @@ func (sw *SignatureWitness) Sign(ctx context.Context, tpl *Template, index int, 
 		copy(newSigs, sw.Sigs)
 		sw.Sigs = newSigs
 	}
-	h := sha3.Sum256(sw.Program)
+	var h [32]byte
+	sha3pool.Sum256(h[:], sw.Program)
 	for i, keyID := range sw.Keys {
 		if len(sw.Sigs[i]) > 0 {
 			// Already have a signature for this key
@@ -180,7 +180,8 @@ func buildSigProgram(tpl *Template, index int) []byte {
 			Program:     out.ControlProgram,
 		}
 		if len(out.ReferenceData) > 0 {
-			h := sha3.Sum256(out.ReferenceData)
+			var h [32]byte
+			sha3pool.Sum256(h[:], out.ReferenceData)
 			c.RefDataHash = (*bc.Hash)(&h)
 		}
 		constraints = append(constraints, c)

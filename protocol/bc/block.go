@@ -8,8 +8,7 @@ import (
 	"io"
 	"time"
 
-	"golang.org/x/crypto/sha3"
-
+	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
 )
@@ -189,10 +188,11 @@ func (bh *BlockHeader) Value() (driver.Value, error) {
 
 // Hash returns complete hash of the block header.
 func (bh *BlockHeader) Hash() Hash {
-	h := sha3.New256()
+	h := sha3pool.Get256()
 	bh.WriteTo(h) // error is impossible
 	var v [32]byte
-	h.Sum(v[:0])
+	h.Read(v[:])
+	sha3pool.Put256(h)
 	return v
 }
 
@@ -200,10 +200,11 @@ func (bh *BlockHeader) Hash() Hash {
 // This hash is used for signing the block and verifying the
 // signature.
 func (bh *BlockHeader) HashForSig() Hash {
-	h := sha3.New256()
+	h := sha3pool.Get256()
 	bh.WriteForSigTo(h) // error is impossible
 	var v [32]byte
-	h.Sum(v[:0])
+	h.Read(v[:])
+	sha3pool.Put256(h)
 	return v
 }
 

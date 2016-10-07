@@ -7,9 +7,8 @@ import (
 	"strconv"
 	"sync"
 
-	"golang.org/x/crypto/sha3"
-
 	"chain/crypto/ed25519/chainkd"
+	"chain/crypto/sha3pool"
 	"chain/database/pg"
 	"chain/errors"
 )
@@ -52,7 +51,8 @@ func (h *HSM) create(ctx context.Context, alias string, get bool) (*XPub, bool, 
 	if err != nil {
 		return nil, false, err
 	}
-	hash := sha3.Sum256(xpub.Bytes())
+	var hash [32]byte
+	sha3pool.Sum256(hash[:], xpub.Bytes())
 	sqlAlias := sql.NullString{String: alias, Valid: alias != ""}
 	var ptrAlias *string
 	if alias != "" {
