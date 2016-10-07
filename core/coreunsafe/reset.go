@@ -18,9 +18,10 @@ func isProduction() bool {
 	return bt != nil && bt.String() != `"dev"`
 }
 
-// Reset deletes all data, resulting in an unconfigured core.
-// It must be called before any other functions in this package.
-func Reset(ctx context.Context, db pg.DB) error {
+// ResetBlockchain deletes all blockchain data, resulting in an
+// unconfigured core. It does not delete access tokens or mockhsm
+// keys.
+func ResetBlockchain(ctx context.Context, db pg.DB) error {
 	if isProduction() {
 		// Shouldn't ever happen; This package shouldn't even be
 		// included in a production binary.
@@ -29,7 +30,6 @@ func Reset(ctx context.Context, db pg.DB) error {
 
 	const q = `
 		TRUNCATE
-			access_tokens,
 			account_control_programs,
 			account_utxos,
 			accounts,
@@ -43,7 +43,6 @@ func Reset(ctx context.Context, db pg.DB) error {
 			config,
 			generator_pending_block,
 			leader,
-			mockhsm,
 			pool_txs,
 			query_blocks,
 			reservations,
@@ -55,5 +54,23 @@ func Reset(ctx context.Context, db pg.DB) error {
 			RESTART IDENTITY;
 	`
 	_, err := db.Exec(ctx, q)
+	return errors.Wrap(err)
+}
+
+// ResetEverything deletes all of a Core's data.
+func ResetEverything(ctx context.Context, db pg.DB) error {
+	if isProduction() {
+		// Shouldn't ever happen; This package shouldn't even be
+		// included in a production binary.
+		panic("reset called on production")
+	}
+
+	err := ResetBlockchain(ctx, db)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	const q = `TRUNCATE mockhsm, access_tokens RESTART IDENTITY;`
+	_, err = db.Exec(ctx, q)
 	return errors.Wrap(err)
 }

@@ -4,7 +4,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -13,9 +13,10 @@ import (
 	"chain/core/coreunsafe"
 	"chain/database/pg"
 	"chain/env"
+	"chain/log"
 )
 
-var reset = env.Bool("RESET", false)
+var reset = env.String("RESET", "")
 
 func initSchemaInDev(db pg.DB) {
 	ctx := context.Background()
@@ -26,23 +27,32 @@ func initSchemaInDev(db pg.DB) {
 	var n int
 	err := db.QueryRow(ctx, q).Scan(&n)
 	if err != nil {
-		log.Fatalln("schema init:", err)
+		log.Fatal(ctx, log.KeyError, err)
 	}
 	if n == 0 {
 		_, err := db.Exec(ctx, core.Schema())
 		if err != nil {
-			log.Fatalln("schema init:", err)
+			log.Fatal(ctx, log.KeyError, err)
 		}
 	}
 }
 
 func resetInDevIfRequested(db pg.DB) {
-	if *reset {
-		os.Setenv("RESET", "false")
+	if *reset != "" {
+		os.Setenv("RESET", "")
+
+		var err error
 		ctx := context.Background()
-		err := coreunsafe.Reset(ctx, db)
+		switch *reset {
+		case "blockchain":
+			err = coreunsafe.ResetBlockchain(ctx, db)
+		case "everything":
+			err = coreunsafe.ResetEverything(ctx, db)
+		default:
+			log.Fatal(ctx, log.KeyError, fmt.Errorf("unrecognized argument to reset: %s", *reset))
+		}
 		if err != nil {
-			log.Fatalln("core reset:", err)
+			log.Fatal(ctx, log.KeyError, err)
 		}
 	}
 }

@@ -1,6 +1,6 @@
 export default class Core {
   static reset(context) {
-    return context.client.request('/reset')
+    return context.client.request('/reset', {everything: true})
   }
 
   static configure(context, body) {

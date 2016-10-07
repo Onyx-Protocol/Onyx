@@ -206,7 +206,7 @@ func reset(db *sql.DB, args []string) {
 
 	ctx := context.Background()
 	// TODO(jackson): exclude this from prod builds of corectl
-	err := coreunsafe.Reset(ctx, db)
+	err := coreunsafe.ResetEverything(ctx, db)
 	if err != nil {
 		fatalln("error:", err)
 	}

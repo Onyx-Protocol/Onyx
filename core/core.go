@@ -59,13 +59,20 @@ func Schema() string {
 	return files["schema.sql"]
 }
 
-func (a *api) reset(ctx context.Context) error {
+func (a *api) reset(ctx context.Context, req struct {
+	Everything bool `json:"everything"`
+}) error {
 	if isProduction() {
 		return errors.Wrap(errProdReset)
 	}
 
+	dataToReset := "blockchain"
+	if req.Everything {
+		dataToReset = "everything"
+	}
+
 	closeConnOK(httpjson.ResponseWriter(ctx), httpjson.Request(ctx))
-	execSelf("RESET=true")
+	execSelf("RESET=" + dataToReset)
 	panic("unreached")
 }
 
