@@ -102,4 +102,7 @@ config.plugins.push(new webpack.EnvironmentPlugin([
 
 config.output.publicPath = publicPath
 
+// Support source maps for Babel
+config.devtool = 'source-map'
+
 module.exports = config

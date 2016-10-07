@@ -1,18 +1,15 @@
-import {
-  itemsReducer,
-  listViewReducer,
-} from 'reducers/base'
+import { reducers } from 'features/shared'
 import { combineReducers } from 'redux'
 
 const type = 'access_token'
 
 export default {
   client_access_token: combineReducers({
-    items: itemsReducer('client_' + type),
-    listView: listViewReducer('client_' + type),
+    items: reducers.itemsReducer('client_' + type),
+    listView: reducers.listViewReducer('client_' + type),
   }),
   network_access_token: combineReducers({
-    items: itemsReducer('network_' + type),
-    listView: listViewReducer('network_' + type),
+    items: reducers.itemsReducer('network_' + type),
+    listView: reducers.listViewReducer('network_' + type),
   }),
 }

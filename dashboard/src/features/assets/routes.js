@@ -1,7 +1,5 @@
 import { RoutingContainer } from 'features/shared/components'
-import List from '../../containers/Assets/List'
-import New from '../../containers/Assets/New'
-import Show from './components/Show'
+import { List, New, Show } from './components'
 
 export default {
   path: 'assets',

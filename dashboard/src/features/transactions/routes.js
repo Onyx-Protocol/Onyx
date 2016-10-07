@@ -1,16 +1,14 @@
 import { RoutingContainer } from 'features/shared/components'
-import TransactionList from 'containers/Transactions/List'
-import NewTransaction from 'containers/Transactions/New'
-import { Show, GeneratedTxHex } from './components'
+import { Show, List, New, GeneratedTxHex } from './components'
 
 export default {
   path: 'transactions',
   component: RoutingContainer,
-  indexRoute: { component: TransactionList },
+  indexRoute: { component: List },
   childRoutes: [
     {
       path: 'create',
-      component: NewTransaction
+      component: New
     },
     {
       path: 'generated/:id',

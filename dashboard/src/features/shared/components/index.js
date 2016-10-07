@@ -7,9 +7,11 @@ import Flash from './Flash'
 import FormContainer from './FormContainer/FormContainer'
 import NotFound from './NotFound'
 import PageTitle from './PageTitle/PageTitle'
+import Pagination from './Pagination'
 import RelativeTime from './RelativeTime'
-import Table from './Table/Table'
 import RoutingContainer from './RoutingContainer'
+import SearchBar from './SearchBar/SearchBar'
+import Table from './Table/Table'
 
 export {
   Container,
@@ -21,7 +23,9 @@ export {
   FormContainer,
   NotFound,
   PageTitle,
+  Pagination,
   RelativeTime,
   RoutingContainer,
+  SearchBar,
   Table,
 }

@@ -1,21 +1,17 @@
 import chain from 'chain'
 import { context } from 'utility/environment'
-
-import generateListActions from 'actions/listActions'
-import generateFormActions from 'actions/formActions'
+import { baseFormActions, baseListActions } from 'features/shared/actions'
 
 const type = 'account'
 
-const list = generateListActions(type, { defaultKey: 'alias' })
-const form = generateFormActions(type, { jsonFields: ['tags'] })
+const list = baseListActions(type, { defaultKey: 'alias' })
+const form = baseFormActions(type, { jsonFields: ['tags'] })
 
-let actions = Object.assign({},
-  list,
-  form,
-  {
-    createControlProgram: (data) => () =>
-      chain.ControlProgram.create(data, context())
-  }
-)
+let actions = {
+  ...list,
+  ...form,
+  createControlProgram: (data) => () =>
+    chain.ControlProgram.create(data, context())
+}
 
 export default actions

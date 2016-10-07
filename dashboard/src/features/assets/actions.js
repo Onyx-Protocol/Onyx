@@ -1,10 +1,9 @@
-import generateListActions from '../../actions/listActions'
-import generateFormActions from '../../actions/formActions'
+import { baseFormActions, baseListActions } from 'features/shared/actions'
 
 const type = 'asset'
 
-const list = generateListActions(type, { defaultKey: 'alias' })
-const form = generateFormActions(type, { jsonFields: ['tags', 'definition'] })
+const list = baseListActions(type, { defaultKey: 'alias' })
+const form = baseFormActions(type, { jsonFields: ['tags', 'definition'] })
 
 const actions = {
   ...list,

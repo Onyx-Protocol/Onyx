@@ -1,0 +1,74 @@
+import React from 'react'
+import { BaseNew, FormContainer } from 'features/shared/components'
+import {
+  TextField,
+  JsonField,
+  KeyConfiguration,
+} from 'components/Common'
+import { reduxForm } from 'redux-form'
+
+class Form extends React.Component {
+  constructor(props) {
+    super(props)
+
+    this.submitWithErrors = this.submitWithErrors.bind(this)
+  }
+
+  submitWithErrors(data) {
+    return new Promise((resolve, reject) => {
+      this.props.submitForm(data)
+        .catch((err) => reject({_error: err.message}))
+    })
+  }
+
+  render() {
+    const {
+      fields: { alias, tags, definition, root_xpubs, quorum },
+      error,
+      handleSubmit,
+      submitting
+    } = this.props
+
+    return(
+      <FormContainer
+        error={error}
+        label='New Asset'
+        onSubmit={handleSubmit(this.submitWithErrors)}
+        submitting={submitting} >
+
+        <TextField title='Alias' placeholder='Alias' fieldProps={alias} />
+        <JsonField title='Tags' fieldProps={tags} />
+        <JsonField title='Definition' fieldProps={definition} />
+        <KeyConfiguration xpubs={root_xpubs} quorum={quorum} mockhsmKeys={this.props.mockhsmKeys}/>
+
+      </FormContainer>
+    )
+  }
+}
+
+const validate = values => {
+  const errors = {}
+
+  const jsonFields = ['tags', 'definition']
+  jsonFields.forEach(key => {
+    const fieldError = JsonField.validator(values[key])
+    if (fieldError) { errors[key] = fieldError }
+  })
+
+  return errors
+}
+
+const fields = [ 'alias', 'tags', 'definition', 'root_xpubs[]', 'quorum' ]
+export default BaseNew.connect(
+  BaseNew.mapStateToProps('asset'),
+  BaseNew.mapDispatchToProps('asset'),
+  reduxForm({
+    form: 'newAssetForm',
+    fields,
+    validate,
+    initialValues: {
+      tags: '{\n\t\n}',
+      definition: '{\n\t\n}',
+    }
+  })(Form)
+)

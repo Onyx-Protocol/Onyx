@@ -1,5 +1,7 @@
-import generateListActions from 'actions/listActions'
-import generateFormActions from 'actions/formActions'
+import {
+  baseFormActions,
+  baseListActions
+} from 'features/shared/actions'
 
 import { actions as coreActions } from 'features/core'
 import chain from 'chain'
@@ -15,11 +17,12 @@ const setRequired = (type, value) => {
 
 let actions = {
   client_access_token: {
-    ...generateListActions('client_access_token', {
+    ...baseListActions('client_access_token', {
+      listPath: '/access_tokens/client',
       className: 'AccessToken',
       requiredParams: { type: 'client'},
     }),
-    ...generateFormActions('client_access_token', {
+    ...baseFormActions('client_access_token', {
       listPath: '/access_tokens/client',
       className: 'AccessToken',
     }),
@@ -27,11 +30,12 @@ let actions = {
     disable: setRequired('client_access_token', false),
   },
   network_access_token: {
-    ...generateListActions('network_access_token', {
+    ...baseListActions('network_access_token', {
+      listPath: '/access_tokens/network',
       className: 'AccessToken',
       requiredParams: { type: 'network'},
     }),
-    ...generateFormActions('network_access_token', {
+    ...baseFormActions('network_access_token', {
       listPath: '/access_tokens/network',
       className: 'AccessToken',
     }),
