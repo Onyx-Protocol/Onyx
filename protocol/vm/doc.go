@@ -1,6 +1,5 @@
 /*
-
-This package implements the VM described in Chain Core Protocol 1.
+Package vm implements the VM described in Chain Protocol 1.
 
 The VM is for verifying transaction inputs and blocks. Accordingly
 there are two main entrypoints: VerifyTxInput and VerifyBlockHeader,
@@ -17,14 +16,14 @@ or block).
 
 The program is interpreted byte-by-byte by the main loop in
 virtualMachine.run(). Most bytes are opcodes in one of the following categories:
- - bitwise
- - control
- - crypto
- - introspection
- - numeric
- - pushdata
- - splice
- - stack
+  - bitwise
+  - control
+  - crypto
+  - introspection
+  - numeric
+  - pushdata
+  - splice
+  - stack
 Each category has a corresponding .go file implementing those opcodes.
 
 Each instruction incurs some cost when executed. These costs are
@@ -36,7 +35,5 @@ applied on the fly in the body of each opcode's implementation, and
 point the VM main loop applies the deferred charges. As such,
 functions that have associated costs (chiefly stack pushing and
 popping) include a "deferred" flag as an argument.
-
 */
-
 package vm

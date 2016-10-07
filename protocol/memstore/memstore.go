@@ -1,3 +1,7 @@
+// Package memstore provides a Store implementation that
+// keeps all blockchain state in memory.
+//
+// It is used in tests to avoid needing a database.
 package memstore
 
 import (
@@ -9,9 +13,6 @@ import (
 )
 
 // MemStore satisfies the protocol.Store interface.
-// It is used by tests to avoid needing a database.
-// All its fields are exported
-// so tests can directly inspect their values.
 type MemStore struct {
 	mu          sync.Mutex
 	Blocks      []*bc.Block

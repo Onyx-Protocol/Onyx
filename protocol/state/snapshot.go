@@ -1,3 +1,4 @@
+// Package state provides types for encapsulating blockchain state.
 package state
 
 import (
@@ -16,8 +17,9 @@ type Snapshot struct {
 	Issuances PriorIssuances
 }
 
+// PruneIssuances modifies a Snapshot, removing all issuance hashes
+// with expiration times earlier than the provided timestamp.
 func (s *Snapshot) PruneIssuances(timestampMS uint64) {
-	// Delete expired issuance memory from the snapshot.
 	for hash, expiryMS := range s.Issuances {
 		if timestampMS > expiryMS {
 			delete(s.Issuances, hash)
@@ -25,7 +27,9 @@ func (s *Snapshot) PruneIssuances(timestampMS uint64) {
 	}
 }
 
-// Copy makes a copy of provided snapshot.
+// Copy makes a copy of provided snapshot. Copying a snapshot is an
+// O(n) operation where n is the number of issuance hashes in the
+// snapshot's issuance memory.
 func Copy(original *Snapshot) *Snapshot {
 	c := &Snapshot{
 		Tree:      patricia.Copy(original.Tree),

@@ -36,8 +36,11 @@ func (c *Chain) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) 
 }
 
 // GenerateBlock generates a valid, but unsigned, candidate block from
-// the current tx pool.  It returns the new block and a snapshot of what
-// the state snapshot is if the block is applied. It has no side effects.
+// the current pending transaction pool. It returns the new block and
+// a snapshot of what the state snapshot is if the block is applied.
+//
+// After generating the block, the pending transaction pool will be
+// empty.
 func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *state.Snapshot, now time.Time) (b *bc.Block, result *state.Snapshot, err error) {
 	timestampMS := bc.Millis(now)
 	if timestampMS < prev.TimestampMS {
@@ -95,8 +98,6 @@ func (c *Chain) ValidateBlock(ctx context.Context, prevState *state.Snapshot, pr
 // This function:
 //   * saves the block to the store.
 //   * saves the state tree to the store (optionally).
-//   * deletes any pending transactions that become conflicted
-//     as a result of this block.
 //   * executes all new-block callbacks.
 //
 // The block parameter must have already been validated before
@@ -169,7 +170,7 @@ func (c *Chain) setHeight(h uint64) {
 }
 
 // ValidateBlockForSig performs validation on an incoming _unsigned_
-// block in preparation for signing it.  By definition it does not
+// block in preparation for signing it. By definition it does not
 // execute the sigscript.
 func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error {
 	var (

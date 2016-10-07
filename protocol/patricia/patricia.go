@@ -1,3 +1,14 @@
+// Package patricia implements a patricia tree, or a radix
+// tree with a radix of 2 -- creating an uneven binary tree.
+//
+// Each entry is a key value pair. The key determines
+// where the value is placed in the tree, with each bit
+// of the key indicating a path. Values are arbitrary byte
+// slices but only the SHA3-256 hash of the value is stored
+// within the tree.
+//
+// The nodes in the tree form an immutable persistent data
+// structure, therefore Copy is a O(1) operation.
 package patricia
 
 import (
@@ -17,26 +28,19 @@ var (
 	interiorPrefix = []byte{0x01}
 )
 
-// Tree is a patricia tree implementation, or a radix tree
-// with a radix of 2 -- creating an uneven binary tree.
-// Each entry is a key value pair. The key determines
-// where the value is placed in the tree, with each bit
-// of the key indicating a path.
-//
-// The nodes in the tree form an immutable persistent
-// data structure, therefore Copy is a O(1) operation.
+// Tree implements a patricia tree.
 type Tree struct {
 	root *node
 }
 
-// Leaf describes a key and its corresponding hash for a
-// value in the patricia tree.
+// Leaf describes a key and its corresponding hash of a
+// value inserted into the patricia tree.
 type Leaf struct {
 	Key  []byte
 	Hash bc.Hash
 }
 
-// Reconstruct builds a tree with the provided kv pairs as leaf nodes.
+// Reconstruct builds a tree with the provided leaf nodes.
 func Reconstruct(vals []Leaf) (*Tree, error) {
 	t := new(Tree)
 	for _, kv := range vals {
@@ -55,18 +59,21 @@ func Reconstruct(vals []Leaf) (*Tree, error) {
 	return t, nil
 }
 
-// Copy returns a new tree with the same root as this tree
+// Copy returns a new tree with the same root as this tree. It
+// is an O(1) operation.
 func Copy(t *Tree) *Tree {
 	newT := new(Tree)
 	newT.root = t.root
 	return newT
 }
 
-// WalkFunc is the type of the function called for each node visited by
-// Walk. If an error is returned, processing stops.
+// WalkFunc is the type of the function called for each leaf
+// visited by Walk. If an error is returned, processing stops.
 type WalkFunc func(l Leaf) error
 
-// Walk walks the patricia tree calling walkFn for each leaf in the tree.
+// Walk walks the patricia tree calling walkFn for each leaf in
+// the tree. If an error is returned by walkFn at any point,
+// processing is stopped and the error is returned.
 func Walk(t *Tree, walkFn WalkFunc) error {
 	if t.root == nil {
 		return nil
@@ -241,7 +248,7 @@ func (t *Tree) delete(n *node, key []uint8) (*node, error) {
 	return newNode, nil
 }
 
-// RootHash returns the merkle root of the tree
+// RootHash returns the merkle root of the tree.
 func (t *Tree) RootHash() bc.Hash {
 	root := t.root
 	if root == nil {

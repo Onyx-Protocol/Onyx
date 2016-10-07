@@ -71,9 +71,9 @@ func ConfirmTx(snapshot *state.Snapshot, tx *bc.Tx, timestampMS uint64) error {
 }
 
 // ValidateTx checks whether tx passes context-free validation:
-// - inputs and outputs balance
-// - no duplicate input commitments
-// - input scripts pass
+//   - inputs and outputs balance
+//   - no duplicate input commitments
+//   - input scripts pass
 //
 // If tx is well formed and valid, it returns a nil error; otherwise, it
 // returns an error describing why tx is invalid.

@@ -1,3 +1,8 @@
+// Package mempool provides a Pool implementation that keeps
+// all pending transactions in memory.
+//
+// It is used in tests to avoid needing a database and is not
+// safe for concurrent access.
 package mempool
 
 import (
@@ -7,7 +12,6 @@ import (
 )
 
 // MemPool satisfies the protocol.Pool interface.
-// It is used by tests to avoid needing a database.
 type MemPool struct {
 	pool []*bc.Tx // in topological order
 }
