@@ -20,7 +20,7 @@ const maxBlockTxs = 10000
 
 // saveSnapshotFrequency stores how often to save a state
 // snapshot to the Store.
-const saveSnapshotFrequency = 24 * time.Hour
+const saveSnapshotFrequency = time.Hour
 
 // ErrBadBlock is returned when a block is invalid.
 var ErrBadBlock = errors.New("invalid block")
