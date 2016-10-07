@@ -36,7 +36,8 @@ func (h BasicHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	} else if err == ErrNotAuthenticated {
 		log.Write(req.Context(),
 			"status", http.StatusUnauthorized,
-			log.KeyError, err,
+			"message", err, // not "error" so we avoid stack trace noise
+			"url", req.URL.String(),
 		)
 		if u, _, _ := req.BasicAuth(); u == "" {
 			w.Header().Add("WWW-Authenticate", `Basic realm="`+h.Realm+`"`)
