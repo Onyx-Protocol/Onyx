@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"expvar"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -22,6 +21,7 @@ import (
 	"chain/database/pg"
 	"chain/database/sql"
 	"chain/errors"
+	"chain/log"
 	"chain/net/http/httpjson"
 	"chain/net/rpc"
 	"chain/protocol"
@@ -64,8 +64,7 @@ func (a *api) reset(ctx context.Context) error {
 		return errors.Wrap(errProdReset)
 	}
 
-	w := httpjson.ResponseWriter(ctx)
-	closeConnOK(w)
+	closeConnOK(httpjson.ResponseWriter(ctx), httpjson.Request(ctx))
 	execSelf("RESET=true")
 	panic("unreached")
 }
@@ -164,9 +163,9 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			}
 			blockXPub = coreXPub.XPub
 			if created {
-				log.Printf("Generated new block-signing key %s\n", blockXPub.String())
+				log.Messagef(ctx, "Generated new block-signing key %s\n", blockXPub.String())
 			} else {
-				log.Printf("Using block-signing key %s\n", blockXPub.String())
+				log.Messagef(ctx, "Using block-signing key %s\n", blockXPub.String())
 			}
 			c.BlockXPub = blockXPub.String()
 		} else {
@@ -254,8 +253,7 @@ func (a *api) configure(ctx context.Context, x *Config) error {
 		return err
 	}
 
-	w := httpjson.ResponseWriter(ctx)
-	closeConnOK(w)
+	closeConnOK(httpjson.ResponseWriter(ctx), httpjson.Request(ctx))
 	execSelf()
 	panic("unreached")
 }
@@ -323,27 +321,27 @@ func tryGenerator(ctx context.Context, url, accessToken, blockchainID string) er
 	return nil
 }
 
-func closeConnOK(w http.ResponseWriter) {
+func closeConnOK(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Connection", "close")
 	w.WriteHeader(http.StatusNoContent)
 
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
-		log.Printf("no hijacker")
+		log.Messagef(req.Context(), "no hijacker")
 		return
 	}
 	conn, buf, err := hijacker.Hijack()
 	if err != nil {
-		log.Printf("could not hijack connection: %s\n", err)
+		log.Messagef(req.Context(), "could not hijack connection: %s\n", err)
 		return
 	}
 	err = buf.Flush()
 	if err != nil {
-		log.Printf("could not flush connection buffer: %s\n", err)
+		log.Messagef(req.Context(), "could not flush connection buffer: %s\n", err)
 	}
 	err = conn.Close()
 	if err != nil {
-		log.Printf("could not close connection: %s\n", err)
+		log.Messagef(req.Context(), "could not close connection: %s\n", err)
 	}
 }
 
