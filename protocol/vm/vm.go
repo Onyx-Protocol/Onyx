@@ -136,6 +136,10 @@ func (vm *virtualMachine) step() error {
 		return err
 	}
 
+	if vm.isDisallowedOpcode(inst.Op) {
+		return ErrDisallowedOpcode
+	}
+
 	vm.nextPC = vm.pc + inst.Len
 
 	if TraceOut != nil {
@@ -167,6 +171,16 @@ func (vm *virtualMachine) step() error {
 	}
 
 	return nil
+}
+
+func (vm *virtualMachine) isDisallowedOpcode(op Op) bool {
+	if vm.tx == nil {
+		return false
+	}
+	if vm.tx.Version != 1 {
+		return false
+	}
+	return isExpansion[op]
 }
 
 func (vm *virtualMachine) push(data []byte, deferred bool) error {

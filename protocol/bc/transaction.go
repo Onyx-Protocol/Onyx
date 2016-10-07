@@ -132,14 +132,20 @@ func (tx *TxData) readFrom(r io.Reader) error {
 
 	buf := bytes.NewReader(commonFields)
 
-	tx.MinTime, _, err = blockchain.ReadVarint63(buf)
+	var n1, n2 int
+
+	tx.MinTime, n1, err = blockchain.ReadVarint63(buf)
 	if err != nil {
 		return err
 	}
 
-	tx.MaxTime, _, err = blockchain.ReadVarint63(buf)
+	tx.MaxTime, n2, err = blockchain.ReadVarint63(buf)
 	if err != nil {
 		return err
+	}
+
+	if tx.Version == 1 && n1+n2 < len(commonFields) {
+		return fmt.Errorf("unrecognized extra data in common fields for transaction version 1")
 	}
 
 	// Common witness, empty in v1
@@ -154,7 +160,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	}
 	for ; n > 0; n-- {
 		ti := new(TxInput)
-		err = ti.readFrom(r)
+		err = ti.readFrom(r, tx.Version)
 		if err != nil {
 			return err
 		}
@@ -167,7 +173,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	}
 	for ; n > 0; n-- {
 		to := new(TxOutput)
-		err = to.readFrom(r)
+		err = to.readFrom(r, tx.Version)
 		if err != nil {
 			return err
 		}
@@ -178,13 +184,14 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	return err
 }
 
-func (p *Outpoint) readFrom(r io.Reader) error {
-	_, err := io.ReadFull(r, p.Hash[:])
+func (p *Outpoint) readFrom(r io.Reader) (int, error) {
+	n1, err := io.ReadFull(r, p.Hash[:])
 	if err != nil {
-		return err
+		return n1, err
 	}
-	p.Index, _, err = blockchain.ReadVarint31(r)
-	return err
+	var n2 int
+	p.Index, n2, err = blockchain.ReadVarint31(r)
+	return n1 + n2, err
 }
 
 // Hash computes the hash of the transaction with reference data fields
@@ -363,9 +370,14 @@ type AssetAmount struct {
 }
 
 // assumes r has sticky errors
-func (a *AssetAmount) readFrom(r io.Reader) {
-	io.ReadFull(r, a.AssetID[:])
-	a.Amount, _, _ = blockchain.ReadVarint63(r) // TODO(bobg): check and return error
+func (a *AssetAmount) readFrom(r io.Reader) (int, error) {
+	n1, err := io.ReadFull(r, a.AssetID[:])
+	if err != nil {
+		return n1, err
+	}
+	var n2 int
+	a.Amount, n2, err = blockchain.ReadVarint63(r)
+	return n1 + n2, err
 }
 
 // assumes w has sticky errors

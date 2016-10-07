@@ -452,6 +452,8 @@ func ParseProgram(prog []byte) ([]Instruction, error) {
 	return result, nil
 }
 
+var isExpansion [256]bool
+
 func init() {
 	for i := 1; i <= 75; i++ {
 		ops[i] = opInfo{Op(i), fmt.Sprintf("DATA_%d", i), opPushdata}
@@ -474,6 +476,7 @@ func init() {
 	for i := 0; i <= 255; i++ {
 		if ops[i].name == "" {
 			ops[i] = opInfo{Op(i), fmt.Sprintf("NOPx%02x", i), opNop}
+			isExpansion[i] = true
 		}
 	}
 }

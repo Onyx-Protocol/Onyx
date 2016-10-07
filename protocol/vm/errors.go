@@ -7,6 +7,7 @@ var (
 	ErrBadValue           = errors.New("bad value")
 	ErrContext            = errors.New("wrong context")
 	ErrDataStackUnderflow = errors.New("data stack underflow")
+	ErrDisallowedOpcode   = errors.New("disallowed opcode")
 	ErrDivZero            = errors.New("division by zero")
 	ErrLongProgram        = errors.New("program size exceeds maxint32")
 	ErrRange              = errors.New("range error")

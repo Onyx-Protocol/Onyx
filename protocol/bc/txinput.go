@@ -144,7 +144,7 @@ func (t *TxInput) SetArguments(args [][]byte) {
 	}
 }
 
-func (t *TxInput) readFrom(r io.Reader) (err error) {
+func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 	t.AssetVersion, _, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return err
@@ -166,35 +166,50 @@ func (t *TxInput) readFrom(r io.Reader) (err error) {
 		if err != nil {
 			return err
 		}
+		bytesRead := 1
+		var n int
 		switch icType[0] {
 		case 0:
 			ii = new(IssuanceInput)
 
-			ii.Nonce, _, err = blockchain.ReadVarstr31(icBuf)
+			ii.Nonce, n, err = blockchain.ReadVarstr31(icBuf)
 			if err != nil {
 				return err
 			}
+			bytesRead += n
 
 			var assetID Hash
-			_, err = io.ReadFull(icBuf, assetID[:])
+			n, err = io.ReadFull(icBuf, assetID[:])
 			if err != nil {
 				return err
 			}
+			bytesRead += n
 
-			ii.Amount, _, err = blockchain.ReadVarint63(icBuf)
+			ii.Amount, n, err = blockchain.ReadVarint63(icBuf)
 			if err != nil {
 				return err
 			}
+			bytesRead += n
 
 		case 1:
 			si = new(SpendInput)
-			si.Outpoint.readFrom(icBuf)
-			err = si.OutputCommitment.readFrom(icBuf, 1)
+			n, err = si.Outpoint.readFrom(icBuf)
 			if err != nil {
 				return err
 			}
+			bytesRead += n
+			n, err = si.OutputCommitment.readFrom(icBuf, txVersion, 1)
+			if err != nil {
+				return err
+			}
+			bytesRead += n
+
 		default:
 			return fmt.Errorf("unsupported input type %d", icType[0])
+		}
+
+		if txVersion == 1 && bytesRead < len(inputCommitment) {
+			return fmt.Errorf("unrecognized extra data in input commitment for transaction version 1")
 		}
 	}
 

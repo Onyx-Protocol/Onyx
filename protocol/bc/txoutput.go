@@ -2,6 +2,7 @@ package bc
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"chain/encoding/blockchain"
@@ -40,13 +41,13 @@ func NewTxOutput(assetID AssetID, amount uint64, controlProgram, referenceData [
 }
 
 // assumes r has sticky errors
-func (to *TxOutput) readFrom(r io.Reader) (err error) {
+func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 	to.AssetVersion, _, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return err
 	}
 
-	err = to.OutputCommitment.readFrom(r, to.AssetVersion)
+	_, err = to.OutputCommitment.readFrom(r, txVersion, to.AssetVersion)
 	if err != nil {
 		return err
 	}
@@ -62,26 +63,37 @@ func (to *TxOutput) readFrom(r io.Reader) (err error) {
 	return err
 }
 
-func (oc *OutputCommitment) readFrom(r io.Reader, assetVersion uint64) (err error) {
-	b, _, err := blockchain.ReadVarstr31(r)
+func (oc *OutputCommitment) readFrom(r io.Reader, txVersion, assetVersion uint64) (n int, err error) {
+	b, n, err := blockchain.ReadVarstr31(r)
 	if err != nil {
-		return err
+		return n, err
 	}
 
 	if assetVersion != 1 {
-		return nil
+		return n, nil
 	}
 
 	rb := bytes.NewBuffer(b)
-	oc.AssetAmount.readFrom(rb)
-
-	oc.VMVersion, _, err = blockchain.ReadVarint63(rb)
+	n1, err := oc.AssetAmount.readFrom(rb)
 	if err != nil {
-		return err
+		return n, err
+	}
+	var n2 int
+	oc.VMVersion, n2, err = blockchain.ReadVarint63(rb)
+	if err != nil {
+		return n, err
+	}
+	var n3 int
+	oc.ControlProgram, n3, err = blockchain.ReadVarstr31(rb)
+	if err != nil {
+		return n, err
 	}
 
-	oc.ControlProgram, _, err = blockchain.ReadVarstr31(rb)
-	return err
+	if txVersion == 1 && n1+n2+n3 < len(b) {
+		return n, fmt.Errorf("unrecognized extra data in output commitment for transaction version 1")
+	}
+
+	return n, nil
 }
 
 // assumes r has sticky errors

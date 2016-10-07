@@ -2,6 +2,7 @@ package validation
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -26,7 +27,7 @@ func TestUniqueIssuance(t *testing.T) {
 		MinTime: bc.Millis(now),
 		MaxTime: bc.Millis(now.Add(time.Hour)),
 	})
-	if ValidateTx(tx) == nil {
+	if CheckTxWellFormed(tx) == nil {
 		t.Errorf("expected tx with only issuance inputs with empty nonces to fail validation")
 	}
 
@@ -39,7 +40,7 @@ func TestUniqueIssuance(t *testing.T) {
 		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 1, trueProg, nil)},
 		MinTime: bc.Millis(now),
 	})
-	if ValidateTx(tx) == nil {
+	if CheckTxWellFormed(tx) == nil {
 		t.Errorf("expected tx with unbounded time window to fail validation")
 	}
 
@@ -49,7 +50,7 @@ func TestUniqueIssuance(t *testing.T) {
 		Outputs: []*bc.TxOutput{bc.NewTxOutput(assetID, 1, trueProg, nil)},
 		MaxTime: bc.Millis(now.Add(time.Hour)),
 	})
-	if ValidateTx(tx) == nil {
+	if CheckTxWellFormed(tx) == nil {
 		t.Errorf("expected tx with unbounded time window to fail validation")
 	}
 
@@ -61,7 +62,7 @@ func TestUniqueIssuance(t *testing.T) {
 		MinTime: bc.Millis(now),
 		MaxTime: bc.Millis(now.Add(time.Hour)),
 	})
-	if ValidateTx(tx) == nil {
+	if CheckTxWellFormed(tx) == nil {
 		t.Errorf("expected tx with duplicate inputs to fail validation")
 	}
 
@@ -73,7 +74,7 @@ func TestUniqueIssuance(t *testing.T) {
 		MinTime: bc.Millis(now),
 		MaxTime: bc.Millis(now.Add(time.Hour)),
 	})
-	err := ValidateTx(tx)
+	err := CheckTxWellFormed(tx)
 	if err != nil {
 		t.Errorf("expected tx with unique issuance to pass validation, got: %s", err)
 	}
@@ -102,11 +103,19 @@ func TestUniqueIssuance(t *testing.T) {
 			bc.NewTxOutput(asset2ID, 1, trueProg, nil),
 		},
 	})
-	err = ValidateTx(tx)
+	err = CheckTxWellFormed(tx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = ConfirmTx(snapshot, tx, bc.Millis(now))
+
+	block := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			Version:     1,
+			TimestampMS: bc.Millis(now),
+		},
+	}
+
+	err = ConfirmTx(snapshot, block, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,11 +141,11 @@ func TestUniqueIssuance(t *testing.T) {
 		MinTime: bc.Millis(now),
 		MaxTime: bc.Millis(now.Add(time.Hour)),
 	})
-	err = ValidateTx(tx)
+	err = CheckTxWellFormed(tx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = ConfirmTx(snapshot, tx, bc.Millis(now))
+	err = ConfirmTx(snapshot, block, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,156 +161,526 @@ func TestUniqueIssuance(t *testing.T) {
 		t.Errorf("expected input with non-empty nonce to be added to issuance memory")
 	}
 	// Adding it again should fail
-	if ConfirmTx(snapshot, tx, bc.Millis(now)) == nil {
+	if ConfirmTx(snapshot, block, tx) == nil {
 		t.Errorf("expected adding duplicate issuance tx to fail")
 	}
 }
 
-func TestTxIsWellFormed(t *testing.T) {
+func TestTxWellFormed(t *testing.T) {
 	var initialBlockHash bc.Hash
 	issuanceProg := []byte{1}
 	aid1 := bc.ComputeAssetID(issuanceProg, initialBlockHash, 1)
 	aid2 := bc.AssetID([32]byte{2})
 	txhash1 := bc.Hash{10}
 	txhash2 := bc.Hash{11}
+	trueProg := []byte{byte(vm.OP_TRUE)}
 
 	testCases := []struct {
 		badTx  bool
 		detail string
-		tx     bc.Tx
+		tx     bc.TxData
 	}{
 		{
 			badTx:  true,
 			detail: "inputs are missing",
-			tx: bc.Tx{
-				TxData: bc.TxData{
-					Version: 1,
-				},
+			tx: bc.TxData{
+				Version: 1,
 			}, // empty
 		},
 		{
 			badTx:  true,
 			detail: fmt.Sprintf("amounts for asset %s are not balanced on inputs and outputs", aid1),
-			tx: bc.Tx{
-				TxData: bc.TxData{
-					Version: 1,
-					Inputs: []*bc.TxInput{
-						bc.NewSpendInput(txhash1, 0, nil, aid1, 1000, nil, nil),
-					},
-					Outputs: []*bc.TxOutput{
-						bc.NewTxOutput(aid1, 999, nil, nil),
-					},
+			tx: bc.TxData{
+				Version: 1,
+				Inputs: []*bc.TxInput{
+					bc.NewSpendInput(txhash1, 0, nil, aid1, 1000, nil, nil),
+				},
+				Outputs: []*bc.TxOutput{
+					bc.NewTxOutput(aid1, 999, nil, nil),
 				},
 			},
 		},
 		{
 			badTx:  true,
 			detail: fmt.Sprintf("amounts for asset %s are not balanced on inputs and outputs", aid2),
-			tx: bc.Tx{
-				TxData: bc.TxData{
-					Version: 1,
-					Inputs: []*bc.TxInput{
-						bc.NewSpendInput(txhash1, 0, nil, aid1, 500, nil, nil),
-						bc.NewSpendInput(txhash2, 0, nil, aid2, 500, nil, nil),
-					},
-					Outputs: []*bc.TxOutput{
-						bc.NewTxOutput(aid1, 500, nil, nil),
-						bc.NewTxOutput(aid2, 1000, nil, nil),
-					},
+			tx: bc.TxData{
+				Version: 1,
+				Inputs: []*bc.TxInput{
+					bc.NewSpendInput(txhash1, 0, nil, aid1, 500, nil, nil),
+					bc.NewSpendInput(txhash2, 0, nil, aid2, 500, nil, nil),
+				},
+				Outputs: []*bc.TxOutput{
+					bc.NewTxOutput(aid1, 500, nil, nil),
+					bc.NewTxOutput(aid2, 1000, nil, nil),
 				},
 			},
 		},
 		{
 			badTx:  true,
 			detail: "output value must be greater than 0",
-			tx: bc.Tx{
-				TxData: bc.TxData{
-					Version: 1,
-					Inputs: []*bc.TxInput{
-						bc.NewIssuanceInput(nil, 0, nil, initialBlockHash, issuanceProg, nil),
-						bc.NewSpendInput(txhash1, 0, nil, aid2, 0, nil, nil),
-					},
-					Outputs: []*bc.TxOutput{
-						bc.NewTxOutput(aid1, 0, nil, nil),
-						bc.NewTxOutput(aid2, 0, nil, nil),
-					},
+			tx: bc.TxData{
+				Version: 1,
+				Inputs: []*bc.TxInput{
+					bc.NewIssuanceInput(nil, 0, nil, initialBlockHash, issuanceProg, nil),
+					bc.NewSpendInput(txhash1, 0, nil, aid2, 0, nil, nil),
 				},
-			},
-		},
-		{
-			badTx:  true,
-			detail: "unknown transaction version",
-			tx: bc.Tx{
-				TxData: bc.TxData{
-					Inputs: []*bc.TxInput{
-						bc.NewSpendInput(bc.Hash{}, 0, nil, aid1, 1000, nil, nil),
-					},
-					Outputs: []*bc.TxOutput{
-						bc.NewTxOutput(aid1, 1000, nil, nil),
-					},
+				Outputs: []*bc.TxOutput{
+					bc.NewTxOutput(aid1, 0, nil, nil),
+					bc.NewTxOutput(aid2, 0, nil, nil),
 				},
 			},
 		},
 		{
 			badTx: false,
-			tx: bc.Tx{
-				TxData: bc.TxData{
-					Version: 1,
-					Inputs: []*bc.TxInput{
-						bc.NewSpendInput(bc.Hash{}, 0, nil, aid1, 1000, nil, nil),
-					},
-					Outputs: []*bc.TxOutput{
-						bc.NewTxOutput(aid1, 1000, nil, nil),
-					},
+			tx: bc.TxData{
+				Version: 1,
+				Inputs: []*bc.TxInput{
+					bc.NewSpendInput(bc.Hash{}, 0, nil, aid1, 1000, nil, nil),
+				},
+				Outputs: []*bc.TxOutput{
+					bc.NewTxOutput(aid1, 1000, nil, nil),
 				},
 			},
 		},
 		{
 			badTx: false,
-			tx: bc.Tx{
-				TxData: bc.TxData{
-					Version: 1,
-					Inputs: []*bc.TxInput{
-						bc.NewSpendInput(txhash1, 0, nil, aid1, 500, nil, nil),
-						bc.NewSpendInput(txhash2, 0, nil, aid2, 500, nil, nil),
-					},
-					Outputs: []*bc.TxOutput{
-						bc.NewTxOutput(aid1, 500, nil, nil),
-						bc.NewTxOutput(aid2, 100, nil, nil),
-						bc.NewTxOutput(aid2, 200, nil, nil),
-						bc.NewTxOutput(aid2, 200, nil, nil),
-					},
+			tx: bc.TxData{
+				Version: 1,
+				Inputs: []*bc.TxInput{
+					bc.NewSpendInput(txhash1, 0, nil, aid1, 500, nil, nil),
+					bc.NewSpendInput(txhash2, 0, nil, aid2, 500, nil, nil),
+				},
+				Outputs: []*bc.TxOutput{
+					bc.NewTxOutput(aid1, 500, nil, nil),
+					bc.NewTxOutput(aid2, 100, nil, nil),
+					bc.NewTxOutput(aid2, 200, nil, nil),
+					bc.NewTxOutput(aid2, 200, nil, nil),
 				},
 			},
 		},
 		{
 			badTx: false,
-			tx: bc.Tx{
-				TxData: bc.TxData{
-					Version: 1,
-					Inputs: []*bc.TxInput{
-						bc.NewSpendInput(txhash1, 0, nil, aid1, 500, nil, nil),
-						bc.NewSpendInput(txhash2, 0, nil, aid1, 500, nil, nil),
-					},
-					Outputs: []*bc.TxOutput{
-						bc.NewTxOutput(aid1, 1000, nil, nil),
-					},
+			tx: bc.TxData{
+				Version: 1,
+				Inputs: []*bc.TxInput{
+					bc.NewSpendInput(txhash1, 0, nil, aid1, 500, nil, nil),
+					bc.NewSpendInput(txhash2, 0, nil, aid1, 500, nil, nil),
+				},
+				Outputs: []*bc.TxOutput{
+					bc.NewTxOutput(aid1, 1000, nil, nil),
 				},
 			},
 		},
 		{
 			badTx:  true,
 			detail: "positive maxtime must be >= mintime",
-			tx: bc.Tx{
-				TxData: bc.TxData{
-					Version: 1,
-					MinTime: 2,
-					MaxTime: 1,
-					Inputs: []*bc.TxInput{
-						bc.NewSpendInput(bc.Hash{}, 0, nil, aid1, 1000, nil, nil),
+			tx: bc.TxData{
+				Version: 1,
+				MinTime: 2,
+				MaxTime: 1,
+				Inputs: []*bc.TxInput{
+					bc.NewSpendInput(bc.Hash{}, 0, nil, aid1, 1000, nil, nil),
+				},
+				Outputs: []*bc.TxOutput{
+					bc.NewTxOutput(aid1, 1000, nil, nil),
+				},
+			},
+		},
+		{
+			badTx: false,
+			tx: bc.TxData{
+				Version: 1,
+				Inputs: []*bc.TxInput{
+					{
+						AssetVersion: 1,
+						TypedInput: &bc.SpendInput{
+							OutputCommitment: bc.OutputCommitment{
+								AssetAmount: bc.AssetAmount{
+									Amount: 1,
+								},
+								VMVersion:      1,
+								ControlProgram: trueProg,
+							},
+						},
 					},
-					Outputs: []*bc.TxOutput{
-						bc.NewTxOutput(aid1, 1000, nil, nil),
+				},
+				Outputs: []*bc.TxOutput{
+					{
+						AssetVersion: 1,
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: 1,
+							},
+							VMVersion:      1,
+							ControlProgram: trueProg,
+						},
+					},
+				},
+			},
+		},
+		{
+			// unknown tx version is still well-formed
+			badTx: false,
+			tx: bc.TxData{
+				Version: 2,
+				Inputs: []*bc.TxInput{
+					{
+						AssetVersion: 1,
+						TypedInput: &bc.SpendInput{
+							OutputCommitment: bc.OutputCommitment{
+								AssetAmount: bc.AssetAmount{
+									Amount: 1,
+								},
+								VMVersion:      1,
+								ControlProgram: trueProg,
+							},
+						},
+					},
+				},
+				Outputs: []*bc.TxOutput{
+					{
+						AssetVersion: 1,
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: 1,
+							},
+							VMVersion:      1,
+							ControlProgram: trueProg,
+						},
+					},
+				},
+			},
+		},
+		{
+			// unknown asset version in unknown tx version is ok
+			badTx: false,
+			tx: bc.TxData{
+				Version: 2,
+				Inputs: []*bc.TxInput{
+					{
+						AssetVersion: 2,
+						TypedInput: &bc.SpendInput{
+							OutputCommitment: bc.OutputCommitment{
+								AssetAmount: bc.AssetAmount{
+									Amount: 1,
+								},
+								VMVersion:      1,
+								ControlProgram: trueProg,
+							},
+						},
+					},
+				},
+				Outputs: []*bc.TxOutput{
+					{
+						AssetVersion: 1,
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: 1,
+							},
+							VMVersion:      1,
+							ControlProgram: trueProg,
+						},
+					},
+				},
+			},
+		},
+		{
+			// unknown asset version in unknown tx version is ok
+			badTx: false,
+			tx: bc.TxData{
+				Version: 2,
+				Inputs: []*bc.TxInput{
+					{
+						AssetVersion: 1,
+						TypedInput: &bc.SpendInput{
+							OutputCommitment: bc.OutputCommitment{
+								AssetAmount: bc.AssetAmount{
+									Amount: 1,
+								},
+								VMVersion:      1,
+								ControlProgram: trueProg,
+							},
+						},
+					},
+				},
+				Outputs: []*bc.TxOutput{
+					{
+						AssetVersion: 2,
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: 1,
+							},
+							VMVersion:      1,
+							ControlProgram: trueProg,
+						},
+					},
+				},
+			},
+		},
+		{
+			// unknown vm version in unknown tx version is ok
+			badTx: false,
+			tx: bc.TxData{
+				Version: 2,
+				Inputs: []*bc.TxInput{
+					{
+						AssetVersion: 1,
+						TypedInput: &bc.SpendInput{
+							OutputCommitment: bc.OutputCommitment{
+								AssetAmount: bc.AssetAmount{
+									Amount: 1,
+								},
+								VMVersion:      2,
+								ControlProgram: trueProg,
+							},
+						},
+					},
+				},
+				Outputs: []*bc.TxOutput{
+					{
+						AssetVersion: 1,
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: 1,
+							},
+							VMVersion:      1,
+							ControlProgram: trueProg,
+						},
+					},
+				},
+			},
+		},
+		{
+			// unknown vm version in unknown tx version is ok
+			badTx: false,
+			tx: bc.TxData{
+				Version: 2,
+				Inputs: []*bc.TxInput{
+					{
+						AssetVersion: 1,
+						TypedInput: &bc.SpendInput{
+							OutputCommitment: bc.OutputCommitment{
+								AssetAmount: bc.AssetAmount{
+									Amount: 1,
+								},
+								VMVersion:      2,
+								ControlProgram: trueProg,
+							},
+						},
+					},
+				},
+				Outputs: []*bc.TxOutput{
+					{
+						AssetVersion: 1,
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: 1,
+							},
+							VMVersion:      2,
+							ControlProgram: trueProg,
+						},
+					},
+				},
+			},
+		},
+		{
+			// expansion opcodes with unknown tx version are ok
+			badTx: false,
+			tx: bc.TxData{
+				Version: 2,
+				Inputs: []*bc.TxInput{
+					{
+						AssetVersion: 1,
+						TypedInput: &bc.SpendInput{
+							OutputCommitment: bc.OutputCommitment{
+								AssetAmount: bc.AssetAmount{
+									Amount: 1,
+								},
+								VMVersion:      1,
+								ControlProgram: []byte{0x50, byte(vm.OP_TRUE)},
+							},
+						},
+					},
+				},
+				Outputs: []*bc.TxOutput{
+					{
+						AssetVersion: 1,
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: 1,
+							},
+							VMVersion:      1,
+							ControlProgram: trueProg,
+						},
+					},
+				},
+			},
+		},
+		{
+			// unknown asset version in tx version 1 is not ok
+			badTx:  true,
+			detail: "unknown asset version",
+			tx: bc.TxData{
+				Version: 1,
+				Inputs: []*bc.TxInput{
+					{
+						AssetVersion: 2,
+						TypedInput: &bc.SpendInput{
+							OutputCommitment: bc.OutputCommitment{
+								AssetAmount: bc.AssetAmount{
+									Amount: 1,
+								},
+								VMVersion:      1,
+								ControlProgram: trueProg,
+							},
+						},
+					},
+				},
+				Outputs: []*bc.TxOutput{
+					{
+						AssetVersion: 1,
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: 1,
+							},
+							VMVersion:      1,
+							ControlProgram: trueProg,
+						},
+					},
+				},
+			},
+		},
+		{
+			// unknown asset version in tx version 1 is not ok
+			badTx:  true,
+			detail: "unknown asset version",
+			tx: bc.TxData{
+				Version: 1,
+				Inputs: []*bc.TxInput{
+					{
+						AssetVersion: 1,
+						TypedInput: &bc.SpendInput{
+							OutputCommitment: bc.OutputCommitment{
+								AssetAmount: bc.AssetAmount{
+									Amount: 1,
+								},
+								VMVersion:      1,
+								ControlProgram: trueProg,
+							},
+						},
+					},
+				},
+				Outputs: []*bc.TxOutput{
+					{
+						AssetVersion: 2,
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: 1,
+							},
+							VMVersion:      1,
+							ControlProgram: trueProg,
+						},
+					},
+				},
+			},
+		},
+		{
+			// unknown vm version in tx version 1 is not ok
+			badTx:  true,
+			detail: "unknown vm version",
+			tx: bc.TxData{
+				Version: 1,
+				Inputs: []*bc.TxInput{
+					{
+						AssetVersion: 1,
+						TypedInput: &bc.SpendInput{
+							OutputCommitment: bc.OutputCommitment{
+								AssetAmount: bc.AssetAmount{
+									Amount: 1,
+								},
+								VMVersion:      2,
+								ControlProgram: trueProg,
+							},
+						},
+					},
+				},
+				Outputs: []*bc.TxOutput{
+					{
+						AssetVersion: 1,
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: 1,
+							},
+							VMVersion:      1,
+							ControlProgram: trueProg,
+						},
+					},
+				},
+			},
+		},
+		{
+			// unknown vm version in tx version 1 is not ok
+			badTx: true,
+			tx: bc.TxData{
+				Version: 1,
+				Inputs: []*bc.TxInput{
+					{
+						AssetVersion: 1,
+						TypedInput: &bc.SpendInput{
+							OutputCommitment: bc.OutputCommitment{
+								AssetAmount: bc.AssetAmount{
+									Amount: 1,
+								},
+								VMVersion:      1,
+								ControlProgram: trueProg,
+							},
+						},
+					},
+				},
+				Outputs: []*bc.TxOutput{
+					{
+						AssetVersion: 1,
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: 1,
+							},
+							VMVersion:      2,
+							ControlProgram: trueProg,
+						},
+					},
+				},
+			},
+		},
+		{
+			// expansion opcodes in tx version 1 are not ok
+			badTx:  true,
+			detail: "disallowed opcode",
+			tx: bc.TxData{
+				Version: 1,
+				Inputs: []*bc.TxInput{
+					{
+						AssetVersion: 1,
+						TypedInput: &bc.SpendInput{
+							OutputCommitment: bc.OutputCommitment{
+								AssetAmount: bc.AssetAmount{
+									Amount: 1,
+								},
+								VMVersion:      1,
+								ControlProgram: []byte{0x50, byte(vm.OP_TRUE)},
+							},
+						},
+					},
+				},
+				Outputs: []*bc.TxOutput{
+					{
+						AssetVersion: 1,
+						OutputCommitment: bc.OutputCommitment{
+							AssetAmount: bc.AssetAmount{
+								Amount: 1,
+							},
+							VMVersion:      1,
+							ControlProgram: trueProg,
+						},
 					},
 				},
 			},
@@ -309,13 +688,14 @@ func TestTxIsWellFormed(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		err := ValidateTx(&tc.tx)
+		tx := bc.NewTx(tc.tx)
+		err := CheckTxWellFormed(tx)
 		if tc.badTx && errors.Root(err) != ErrBadTx {
 			t.Errorf("test %d: got = %s, want ErrBadTx", i, err)
 			continue
 		}
 
-		if tc.detail != "" && tc.detail != errors.Detail(err) {
+		if tc.detail != "" && !strings.Contains(errors.Detail(err), tc.detail) {
 			t.Errorf("errors.Detail: got = %s, want = %s", errors.Detail(err), tc.detail)
 		}
 	}
@@ -335,6 +715,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 			ok: true,
 			tx: bc.Tx{
 				TxData: bc.TxData{
+					Version: 1,
 					MinTime: bc.Millis(now),
 					MaxTime: bc.Millis(now.Add(time.Hour)),
 					Inputs: []*bc.TxInput{
@@ -351,6 +732,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 			ok: false,
 			tx: bc.Tx{
 				TxData: bc.TxData{
+					Version: 1,
 					MinTime: bc.Millis(now),
 					MaxTime: bc.Millis(now.Add(time.Minute)),
 					Inputs: []*bc.TxInput{
@@ -367,6 +749,7 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 			ok: false,
 			tx: bc.Tx{
 				TxData: bc.TxData{
+					Version: 1,
 					MinTime: bc.Millis(now),
 					MaxTime: bc.Millis(now.Add(time.Minute)),
 					Inputs: []*bc.TxInput{
@@ -382,7 +765,13 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		err := ConfirmTx(state.Empty(), &c.tx, c.timestamp)
+		block := &bc.Block{
+			BlockHeader: bc.BlockHeader{
+				Version:     1,
+				TimestampMS: c.timestamp,
+			},
+		}
+		err := ConfirmTx(state.Empty(), block, &c.tx)
 		if !c.ok && errors.Root(err) != ErrBadTx {
 			t.Errorf("test %d: got = %s, want ErrBadTx", i, err)
 			continue
@@ -397,9 +786,14 @@ func TestValidateInvalidTimestamps(t *testing.T) {
 
 func BenchmarkConfirmTx(b *testing.B) {
 	tx := txFromHex("0000000101341fb89912be0110b527375998810c99ac96a317c63b071ccf33b7514cf0f0a5ffffffff6f00473045022100c561a9b4854742bc36c805513b872b2c0a1a367da24710eadd4f3fbc3b1ab41302207cf9eec4e5db694831fe43cf193f23d869291025ac6062199dd6b8998e93e15825512103623fb1fe38ce7e43cf407ec99b061c6d2da0278e80ce094393875c5b94f1ed9051ae0001df03f294bd08930f542a42b91199a8afe1b45c28eeb058cc5e8c8d600e0dd42f0000000000000001000000000000000000000474782d31")
-	ts := uint64(time.Now().Unix())
+	block := &bc.Block{
+		BlockHeader: bc.BlockHeader{
+			Version:     1,
+			TimestampMS: bc.Millis(time.Now()),
+		},
+	}
 	for i := 0; i < b.N; i++ {
-		ConfirmTx(state.Empty(), tx, ts)
+		ConfirmTx(state.Empty(), block, tx)
 	}
 }
 

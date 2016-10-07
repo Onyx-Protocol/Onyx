@@ -71,7 +71,7 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 			break
 		}
 
-		if validation.ConfirmTx(result, tx, b.TimestampMS) == nil {
+		if validation.ConfirmTx(result, b, tx) == nil {
 			validation.ApplyTx(result, tx)
 			b.Transactions = append(b.Transactions, tx)
 		}
@@ -191,7 +191,7 @@ func (c *Chain) ValidateBlockForSig(ctx context.Context, block *bc.Block) error 
 		}
 	}
 
-	err := validation.ValidateBlockForSig(ctx, snapshot, prev, block, validation.ValidateTx)
+	err := validation.ValidateBlockForSig(ctx, snapshot, prev, block, validation.CheckTxWellFormed)
 	return errors.Wrap(err, "validation")
 }
 

@@ -50,7 +50,7 @@ func (c *Chain) ValidateTxCached(tx *bc.Tx) error {
 		return err
 	}
 
-	err = validation.ValidateTx(tx)
+	err = validation.CheckTxWellFormed(tx)
 	c.prevalidated.cache(tx.Hash, err)
 	return err
 }

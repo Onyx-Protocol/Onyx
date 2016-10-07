@@ -58,7 +58,7 @@ func validateBlock(ctx context.Context, snapshot *state.Snapshot, prevBlock, blo
 		if err != nil {
 			return err
 		}
-		err = ConfirmTx(snapshot, tx, block.TimestampMS)
+		err = ConfirmTx(snapshot, block, tx)
 		if err != nil {
 			return err
 		}

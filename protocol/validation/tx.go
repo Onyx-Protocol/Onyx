@@ -26,15 +26,20 @@ var (
 // before it's added to a block. If tx is invalid, it returns a non-nil
 // error describing why.
 //
-// Tx should have already been validated (with `ValidateTx`) when the tx
-// was added to the pool.
+// Tx must already have undergone the well-formedness check in
+// CheckTxWellFormed. This should have happened when the tx was added
+// to the pool.
 //
-// ConfirmTx should only read the snapshot and have no side effects.
-func ConfirmTx(snapshot *state.Snapshot, tx *bc.Tx, timestampMS uint64) error {
-	if timestampMS < tx.MinTime {
+// ConfirmTx must not mutate the snapshot or the block.
+func ConfirmTx(snapshot *state.Snapshot, block *bc.Block, tx *bc.Tx) error {
+	if block.Version == 1 && tx.Version != 1 {
+		return errors.WithDetailf(ErrBadTx, "unknown transaction version %d for block version 1", tx.Version)
+	}
+
+	if block.TimestampMS < tx.MinTime {
 		return errors.WithDetail(ErrBadTx, "block time is before transaction min time")
 	}
-	if tx.MaxTime > 0 && timestampMS > tx.MaxTime {
+	if tx.MaxTime > 0 && block.TimestampMS > tx.MaxTime {
 		return errors.WithDetail(ErrBadTx, "block time is after transaction max time")
 	}
 
@@ -46,7 +51,7 @@ func ConfirmTx(snapshot *state.Snapshot, tx *bc.Tx, timestampMS uint64) error {
 			if len(ii.Nonce) == 0 {
 				continue
 			}
-			if timestampMS < tx.MinTime || timestampMS > tx.MaxTime {
+			if block.TimestampMS < tx.MinTime || block.TimestampMS > tx.MaxTime {
 				return errors.WithDetail(ErrBadTx, "timestamp outside issuance input's time window")
 			}
 			iHash, err := tx.IssuanceHash(i)
@@ -70,18 +75,15 @@ func ConfirmTx(snapshot *state.Snapshot, tx *bc.Tx, timestampMS uint64) error {
 	return nil
 }
 
-// ValidateTx checks whether tx passes context-free validation:
-//   - inputs and outputs balance
-//   - no duplicate input commitments
-//   - input scripts pass
+// CheckTxWellFormed checks whether tx is "well-formed" (the
+// context-free phase of validation):
+// - inputs and outputs balance
+// - no duplicate input commitments
+// - input scripts pass
 //
-// If tx is well formed and valid, it returns a nil error; otherwise, it
-// returns an error describing why tx is invalid.
-func ValidateTx(tx *bc.Tx) error {
-	if tx.Version != 1 {
-		return errors.WithDetail(ErrBadTx, "unknown transaction version")
-	}
-
+// Result is nil for well-formed transactions, ErrBadTx with
+// supporting detail otherwise.
+func CheckTxWellFormed(tx *bc.Tx) error {
 	if len(tx.Inputs) == 0 {
 		return errors.WithDetail(ErrBadTx, "inputs are missing")
 	}
@@ -123,6 +125,10 @@ func ValidateTx(tx *bc.Tx) error {
 	parity := make(map[bc.AssetID]int64)
 
 	for i, txin := range tx.Inputs {
+		if tx.Version == 1 && txin.AssetVersion != 1 {
+			return errors.WithDetailf(ErrBadTx, "unknown asset version %d in input %d for transaction version 1", txin.AssetVersion, i)
+		}
+
 		assetID := txin.AssetID()
 
 		if txin.Amount() > math.MaxInt64 {
@@ -135,15 +141,23 @@ func ValidateTx(tx *bc.Tx) error {
 		}
 		parity[assetID] = sum
 
-		if ii, ok := txin.TypedInput.(*bc.IssuanceInput); ok {
+		switch x := txin.TypedInput.(type) {
+		case *bc.IssuanceInput:
+			if tx.Version == 1 && x.VMVersion != 1 {
+				return errors.WithDetailf(ErrBadTx, "unknown vm version %d in input %d for transaction version 1", x.VMVersion, i)
+			}
 			if txin.AssetVersion != 1 {
 				continue
 			}
-			if len(ii.Nonce) == 0 {
+			if len(x.Nonce) == 0 {
 				continue
 			}
 			if tx.MinTime == 0 || tx.MaxTime == 0 {
 				return errors.WithDetail(ErrBadTx, "issuance input with unbounded time window")
+			}
+		case *bc.SpendInput:
+			if tx.Version == 1 && x.VMVersion != 1 {
+				return errors.WithDetailf(ErrBadTx, "unknown vm version %d in input %d for transaction version 1", x.VMVersion, i)
 			}
 		}
 
@@ -161,6 +175,15 @@ func ValidateTx(tx *bc.Tx) error {
 
 	// Check that every output has a valid value.
 	for i, txout := range tx.Outputs {
+		if tx.Version == 1 {
+			if txout.AssetVersion != 1 {
+				return errors.WithDetailf(ErrBadTx, "unknown asset version %d in output %d for transaction version 1", txout.AssetVersion, i)
+			}
+			if txout.VMVersion != 1 {
+				return errors.WithDetailf(ErrBadTx, "unknown vm version %d in output %d for transaction version 1", txout.VMVersion, i)
+			}
+		}
+
 		// Transactions cannot have zero-value outputs.
 		// If all inputs have zero value, tx therefore must have no outputs.
 		if txout.Amount == 0 {
