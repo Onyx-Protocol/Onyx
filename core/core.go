@@ -248,6 +248,10 @@ func (a *api) configure(ctx context.Context, x *Config) error {
 		return errAlreadyConfigured
 	}
 
+	if x.IsGenerator && x.MaxIssuanceWindow == 0 {
+		x.MaxIssuanceWindow = 24 * time.Hour
+	}
+
 	err := Configure(ctx, pg.FromContext(ctx), x)
 	if err != nil {
 		return err
