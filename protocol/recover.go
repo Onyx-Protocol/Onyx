@@ -36,8 +36,12 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting blockchain height")
 	}
+
+	var b *bc.Block
+
+	// Bring the snapshot up to date with the latest block
 	for h := snapshotHeight + 1; h <= height; h++ {
-		b, err := c.store.GetBlock(ctx, h)
+		b, err = c.store.GetBlock(ctx, h)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "getting block")
 		}
@@ -49,12 +53,14 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 			return nil, nil, fmt.Errorf("block %d has state root %s; snapshot has root %s",
 				b.Height, b.AssetsMerkleRoot, snapshot.Tree.RootHash())
 		}
-
-		// Commit the block again in case we crashed halfway through
-		// and the block isn't fully committed.
-		// TODO(jackson): Calling CommitBlock() is overboard and performs
-		// a lot of redundant work. Only do what is necessary.
-		err = c.commitBlock(ctx, b, snapshot, h == height)
+	}
+	if b != nil {
+		// All blocks before the latest one have been fully processed
+		// (saved in the db, callbacks invoked). The last one may have
+		// been too, but make sure just in case. Also "finalize" the last
+		// block (notifying other processes of the latest block height)
+		// and maybe persist the snapshot.
+		err = c.CommitBlock(ctx, b, snapshot)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "committing block")
 		}
