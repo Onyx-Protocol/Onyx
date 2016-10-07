@@ -125,7 +125,7 @@ func main() {
 		h = launchConfiguredCore(ctx, db, config, processID)
 	} else {
 		chainlog.Messagef(ctx, "Launching as unconfigured Core.")
-		h = core.Handler(nil, nil, nil, nil, nil, authLoopbackInDev)
+		h = core.Handler(nil, nil, nil, nil, nil, nil, authLoopbackInDev)
 	}
 
 	h = dashboardHandler(h)
@@ -237,7 +237,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		}
 	})
 
-	h := core.Handler(c, signBlockHandler, hsm, indexer, config, authLoopbackInDev)
+	h := core.Handler(c, store, signBlockHandler, hsm, indexer, config, authLoopbackInDev)
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set(rpc.HeaderBlockchainID, config.BlockchainID.String())
 		h.ServeHTTP(w, req)

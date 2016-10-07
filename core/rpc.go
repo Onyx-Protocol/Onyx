@@ -32,3 +32,15 @@ func (a *api) getBlocksRPC(ctx context.Context, afterHeight uint64) ([]json.HexB
 	}
 	return jsonBlocks, nil
 }
+
+type snapshotResp struct {
+	Data   []byte `json:"data"`
+	Height uint64 `json:"height"`
+}
+
+// getSnapshotRPC returns the latest snapshot data.
+// The generator should run this to bootstrap new cores.
+func (a *api) getSnapshotRPC(ctx context.Context) (resp snapshotResp, err error) {
+	resp.Data, resp.Height, err = a.store.LatestFullSnapshot(ctx)
+	return resp, err
+}

@@ -62,6 +62,12 @@ func (s *Store) LatestSnapshot(ctx context.Context) (*state.Snapshot, uint64, er
 	return getStateSnapshot(ctx, s.db)
 }
 
+// LatestFullSnapshot returns the most recent state snapshot stored in
+// the database, raw.
+func (s *Store) LatestFullSnapshot(ctx context.Context) ([]byte, uint64, error) {
+	return getFullSnapshot(ctx, s.db)
+}
+
 // SaveBlock persists a new block in the database.
 func (s *Store) SaveBlock(ctx context.Context, block *bc.Block) error {
 	const q = `

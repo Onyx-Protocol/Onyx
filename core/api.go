@@ -9,6 +9,7 @@ import (
 	"chain/core/leader"
 	"chain/core/mockhsm"
 	"chain/core/query"
+	"chain/core/txdb"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/net/http/authn"
@@ -34,6 +35,7 @@ type BlockSignerFunc func(context.Context, *bc.Block) ([]byte, error)
 // Handler returns a handler that serves the Chain HTTP API.
 func Handler(
 	c *protocol.Chain,
+	store *txdb.Store,
 	signer BlockSignerFunc,
 	hsm *mockhsm.HSM,
 	indexer *query.Indexer,
@@ -42,6 +44,7 @@ func Handler(
 ) http.Handler {
 	a := &api{
 		c:       c,
+		store:   store,
 		hsm:     hsm,
 		indexer: indexer,
 		config:  config,
@@ -82,6 +85,7 @@ func Handler(
 
 	m.Handle(networkRPCPrefix+"submit", needConfig(a.c.AddTx))
 	m.Handle(networkRPCPrefix+"get-blocks", needConfig(a.getBlocksRPC))
+	m.Handle(networkRPCPrefix+"get-snapshot", needConfig(a.getSnapshotRPC))
 	m.Handle(networkRPCPrefix+"signer/sign-block", needConfig(leaderSignHandler(signer)))
 	m.Handle(networkRPCPrefix+"block-height", needConfig(func(ctx context.Context) map[string]uint64 {
 		h := a.c.Height()
@@ -134,6 +138,7 @@ type ConfigSigner struct {
 
 type api struct {
 	c       *protocol.Chain
+	store   *txdb.Store
 	hsm     *mockhsm.HSM
 	indexer *query.Indexer
 	config  *Config

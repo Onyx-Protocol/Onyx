@@ -95,3 +95,21 @@ func getStateSnapshot(ctx context.Context, db pg.DB) (*state.Snapshot, uint64, e
 	}
 	return snapshot, height, nil
 }
+
+// getFullSnapshot returns the full, unmarshalled snapshot data.
+func getFullSnapshot(ctx context.Context, db pg.DB) ([]byte, uint64, error) {
+	const q = `
+		SELECT data, height FROM snapshots ORDER BY height DESC LIMIT 1
+	`
+	var (
+		data   []byte
+		height uint64
+	)
+
+	err := db.QueryRow(ctx, q).Scan(&data, &height)
+	if err == sql.ErrNoRows {
+		return data, 0, nil
+	}
+
+	return data, height, err
+}
