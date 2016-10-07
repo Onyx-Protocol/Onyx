@@ -41,6 +41,7 @@
     "react-redux": "~4.4.5",
     "react-router": "~2.6.0",
     "react-router-redux": "~4.0.5",
+    "react-router-scroll": "^0.3.2",
     "redux": "~3.5.2",
     "redux-form": "~5.3.2",
     "redux-thunk": "~2.1.0",

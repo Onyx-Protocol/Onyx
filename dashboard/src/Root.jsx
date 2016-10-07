@@ -1,8 +1,9 @@
 import React from 'react'
 import { Provider } from 'react-redux'
-import { Router } from 'react-router'
+import { applyRouterMiddleware, Router } from 'react-router'
 import { history } from './utility/environment'
 import { syncHistoryWithStore } from 'react-router-redux'
+import useScroll from 'react-router-scroll/lib/useScroll'
 
 import routes from './routes'
 
@@ -16,7 +17,11 @@ export default class Root extends React.Component {
     const syncedHistory = syncHistoryWithStore(history, store)
     return (
       <Provider store={store}>
-        <Router history={syncedHistory} routes={routes} />
+        <Router
+          history={syncedHistory}
+          routes={routes}
+          render={applyRouterMiddleware(useScroll())}
+        />
       </Provider>
     )
   }
