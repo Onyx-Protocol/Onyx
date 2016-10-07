@@ -6,10 +6,7 @@ import (
 	"expvar"
 	"net/http"
 	"net/url"
-	"os"
-	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 
 	"chain/core/fetch"
@@ -72,7 +69,7 @@ func (a *api) reset(ctx context.Context, req struct {
 	}
 
 	closeConnOK(httpjson.ResponseWriter(ctx), httpjson.Request(ctx))
-	execSelf("RESET=" + dataToReset)
+	execSelf(dataToReset)
 	panic("unreached")
 }
 
@@ -265,7 +262,7 @@ func (a *api) configure(ctx context.Context, x *Config) error {
 	}
 
 	closeConnOK(httpjson.ResponseWriter(ctx), httpjson.Request(ctx))
-	execSelf()
+	execSelf("")
 	panic("unreached")
 }
 
@@ -354,40 +351,6 @@ func closeConnOK(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Messagef(req.Context(), "could not close connection: %s\n", err)
 	}
-}
-
-// execSelf execs Args with environment values replaced
-// by the ones in env.
-func execSelf(env ...string) {
-	binpath, err := exec.LookPath(os.Args[0])
-	if err != nil {
-		panic(err)
-	}
-
-	env = mergeEnvLists(env, os.Environ())
-	err = syscall.Exec(binpath, os.Args, env)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// mergeEnvLists merges the two environment lists such that
-// variables with the same name in "in" replace those in "out".
-// This always returns a newly allocated slice.
-func mergeEnvLists(in, out []string) []string {
-	out = append([]string(nil), out...)
-NextVar:
-	for _, inkv := range in {
-		k := strings.SplitAfterN(inkv, "=", 2)[0]
-		for i, outkv := range out {
-			if strings.HasPrefix(outkv, k) {
-				out[i] = inkv
-				continue NextVar
-			}
-		}
-		out = append(out, inkv)
-	}
-	return out
 }
 
 func obfuscateTokenSecret(token string) string {

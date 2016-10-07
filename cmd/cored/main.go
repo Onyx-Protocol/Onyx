@@ -86,6 +86,8 @@ func init() {
 }
 
 func main() {
+	maybeMonitorIfOnWindows() // special-case windows
+
 	ctx := context.Background()
 	env.Parse()
 
