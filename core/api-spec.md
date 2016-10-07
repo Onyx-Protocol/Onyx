@@ -159,11 +159,9 @@ An array of [transaction template objects](#transaction-template-object) and/or 
   "issuance_program: "...",
   "keys": [
     {
+      "root_xpub": "...", // only available if is_local is yes
       "asset_pubkey": "...",
-
-      // These properties are only available for assets that are local.
-      "root_xpub": "...",
-      "asset_derivation_path": "..."
+      "asset_derivation_path": "..."  // only available if is_local is yes
     },
     ...
   ],
