@@ -78,6 +78,10 @@ func ConfirmTx(snapshot *state.Snapshot, tx *bc.Tx, timestampMS uint64) error {
 // If tx is well formed and valid, it returns a nil error; otherwise, it
 // returns an error describing why tx is invalid.
 func ValidateTx(tx *bc.Tx) error {
+	if tx.Version != 1 {
+		return errors.WithDetail(ErrBadTx, "unknown transaction version")
+	}
+
 	if len(tx.Inputs) == 0 {
 		return errors.WithDetail(ErrBadTx, "inputs are missing")
 	}

@@ -173,13 +173,18 @@ func TestTxIsWellFormed(t *testing.T) {
 		{
 			badTx:  true,
 			detail: "inputs are missing",
-			tx:     bc.Tx{}, // empty
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					Version: 1,
+				},
+			}, // empty
 		},
 		{
 			badTx:  true,
 			detail: fmt.Sprintf("amounts for asset %s are not balanced on inputs and outputs", aid1),
 			tx: bc.Tx{
 				TxData: bc.TxData{
+					Version: 1,
 					Inputs: []*bc.TxInput{
 						bc.NewSpendInput(txhash1, 0, nil, aid1, 1000, nil, nil),
 					},
@@ -194,6 +199,7 @@ func TestTxIsWellFormed(t *testing.T) {
 			detail: fmt.Sprintf("amounts for asset %s are not balanced on inputs and outputs", aid2),
 			tx: bc.Tx{
 				TxData: bc.TxData{
+					Version: 1,
 					Inputs: []*bc.TxInput{
 						bc.NewSpendInput(txhash1, 0, nil, aid1, 500, nil, nil),
 						bc.NewSpendInput(txhash2, 0, nil, aid2, 500, nil, nil),
@@ -210,6 +216,7 @@ func TestTxIsWellFormed(t *testing.T) {
 			detail: "output value must be greater than 0",
 			tx: bc.Tx{
 				TxData: bc.TxData{
+					Version: 1,
 					Inputs: []*bc.TxInput{
 						bc.NewIssuanceInput(nil, 0, nil, initialBlockHash, issuanceProg, nil),
 						bc.NewSpendInput(txhash1, 0, nil, aid2, 0, nil, nil),
@@ -222,7 +229,8 @@ func TestTxIsWellFormed(t *testing.T) {
 			},
 		},
 		{
-			badTx: false,
+			badTx:  true,
+			detail: "unknown transaction version",
 			tx: bc.Tx{
 				TxData: bc.TxData{
 					Inputs: []*bc.TxInput{
@@ -238,6 +246,21 @@ func TestTxIsWellFormed(t *testing.T) {
 			badTx: false,
 			tx: bc.Tx{
 				TxData: bc.TxData{
+					Version: 1,
+					Inputs: []*bc.TxInput{
+						bc.NewSpendInput(bc.Hash{}, 0, nil, aid1, 1000, nil, nil),
+					},
+					Outputs: []*bc.TxOutput{
+						bc.NewTxOutput(aid1, 1000, nil, nil),
+					},
+				},
+			},
+		},
+		{
+			badTx: false,
+			tx: bc.Tx{
+				TxData: bc.TxData{
+					Version: 1,
 					Inputs: []*bc.TxInput{
 						bc.NewSpendInput(txhash1, 0, nil, aid1, 500, nil, nil),
 						bc.NewSpendInput(txhash2, 0, nil, aid2, 500, nil, nil),
@@ -255,6 +278,7 @@ func TestTxIsWellFormed(t *testing.T) {
 			badTx: false,
 			tx: bc.Tx{
 				TxData: bc.TxData{
+					Version: 1,
 					Inputs: []*bc.TxInput{
 						bc.NewSpendInput(txhash1, 0, nil, aid1, 500, nil, nil),
 						bc.NewSpendInput(txhash2, 0, nil, aid1, 500, nil, nil),
@@ -270,6 +294,7 @@ func TestTxIsWellFormed(t *testing.T) {
 			detail: "positive maxtime must be >= mintime",
 			tx: bc.Tx{
 				TxData: bc.TxData{
+					Version: 1,
 					MinTime: 2,
 					MaxTime: 1,
 					Inputs: []*bc.TxInput{
