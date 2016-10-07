@@ -38,7 +38,7 @@ public class TestUtils {
 
   public static URL getCoreURL(String coreURL) throws MalformedURLException {
     if (coreURL == null || coreURL.isEmpty()) {
-      return new URL("http://localhost:8080");
+      return new URL("http://localhost:1999");
     } else {
       return new URL(coreURL);
     }

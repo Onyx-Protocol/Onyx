@@ -55,7 +55,7 @@ var (
 	// config vars
 	tlsCrt     = env.String("TLSCRT", "")
 	tlsKey     = env.String("TLSKEY", "")
-	listenAddr = env.String("LISTEN", ":8080")
+	listenAddr = env.String("LISTEN", ":1999")
 	dbURL      = env.String("DATABASE_URL", "postgres:///core?sslmode=disable")
 	target     = env.String("TARGET", "sandbox")
 	samplePer  = env.Duration("SAMPLEPER", 10*time.Second)

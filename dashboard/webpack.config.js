@@ -48,7 +48,7 @@ var config = getConfig({
     proxy: {
       context: '/api',
       options: {
-        target: process.env.PROXY_API_HOST || 'http://localhost:8080',
+        target: process.env.PROXY_API_HOST || 'http://localhost:1999',
         pathRewrite: {
           '^/api': ''
         }

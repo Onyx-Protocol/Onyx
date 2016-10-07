@@ -50,7 +50,7 @@ Start Chain Core:
 
 Access the dashboard:
 
-	$ open http://localhost:8080/
+	$ open http://localhost:1999/
 
 Run tests:
 

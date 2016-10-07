@@ -1,6 +1,6 @@
 #Chain Core Developer Edition
 ##Introduction
-Chain Core DE is a docker container that runs Chain Core, exposed on port 8080.
+Chain Core DE is a docker container that runs Chain Core, exposed on port 1999.
 
 ##Quickstart
 ####Build the image
@@ -12,11 +12,11 @@ $ sh bin/build-ccde
 >**Note:** The `--name` flag allows you to name the container and refer to that name in subsequent commands.
 
 ```
-$ docker run --rm -p 8080:8080 --name chain chain
+$ docker run --rm -p 1999:1999 --name chain chain
 ```
 
 ####Access core
-A client access token will be printed to your shell. The core and dashboard are listening on `http://localhost:8080`
+A client access token will be printed to your shell. The core and dashboard are listening on `http://localhost:1999`
 
 ####Stop the container
 ```
@@ -27,7 +27,7 @@ $ docker stop chain
 ```
 $ mkdir -p /path/to/store/db
 $ mkdir -p path/to/store/logs
-$ docker run --rm -p 8080:8080 -v /path/to/store/db:/var/lib/postgresql/data -v /path/to/store/logs:/var/log/chain --name chain chain
+$ docker run --rm -p 1999:1999 -v /path/to/store/db:/var/lib/postgresql/data -v /path/to/store/logs:/var/log/chain --name chain chain
 ```
 
 ##Other features

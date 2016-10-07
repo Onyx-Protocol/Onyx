@@ -168,9 +168,9 @@ func main() {
 	}
 
 	log.Println("init client")
-	coreURL := "http://" + strings.TrimSpace(string(token)) + "@" + cored.privAddr + ":8080"
+	coreURL := "http://" + strings.TrimSpace(string(token)) + "@" + cored.privAddr + ":1999"
 	log.Println("core URL:", coreURL)
-	publicCoreURL := "http://" + cored.addr + ":8080"
+	publicCoreURL := "http://" + cored.addr + ":1999"
 	log.Println("public core URL:", publicCoreURL)
 	must(scpPut(client.addr, chainJAR, "chain.jar", 0644))
 	javaClass := strings.TrimSuffix(progName, ".java")

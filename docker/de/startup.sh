@@ -18,7 +18,7 @@ fi
 	/usr/bin/chain/cored
 	echo 'cored' >$psmgr
 ) &
-echo "Listening on: http://localhost:8080"
+echo "Listening on: http://localhost:1999"
 echo "Client access token: `tail /var/log/chain/client-token`"
 echo "Chain Core is online!"
 read exit_process <$psmgr

@@ -27,7 +27,7 @@ with default values to connect to a local Chain Core instance:
 
 ```
 API_URL=http://localhost:3000/api
-PROXY_API_HOST=http://localhost:8080
+PROXY_API_HOST=http://localhost:1999
 ```
 
 #### Style Guide

@@ -12,4 +12,4 @@ COPY startup.sh /usr/bin/chain/startup.sh
 ENV DATABASE_URL=postgres://postgres:@localhost/core?sslmode=disable
 ENV LOGFILE=/var/log/chain/cored.log
 ENTRYPOINT /usr/bin/chain/startup.sh
-EXPOSE 8080
+EXPOSE 1999

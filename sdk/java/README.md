@@ -15,7 +15,7 @@ The shaded jar is named `chain-java-sdk-[version].jar` A jar sans dependencies i
 with prefix `original-`. Docs can be found under `target/apidocs`.
 
 ## Run integration tests
-Run the integration tests against a core listening on `http://localhost:8080`:
+Run the integration tests against a core listening on `http://localhost:1999`:
 ```
 $ mvn integration-test
 ```
