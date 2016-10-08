@@ -31,6 +31,7 @@ class Show extends BaseShow {
             {label: 'Alias', value: item.alias},
             {label: 'Tags', value: item.tags},
             {label: 'Definition', value: item.definition},
+            {label: 'Keys', value: item.keys.length},
             {label: 'Quorum', value: item.quorum},
           ]}
         />

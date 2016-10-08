@@ -35,10 +35,11 @@ class Show extends BaseShow {
       view = <div>
         <PageTitle
           title={title}
-          actions={
+          actions={[
             <button className='btn btn-link' onClick={this.createControlProgram}>
               Create Control Program
-            </button>}
+            </button>
+          ]}
         />
 
         <Table
@@ -51,7 +52,9 @@ class Show extends BaseShow {
             {label: 'ID', value: item.id},
             {label: 'Alias', value: item.alias},
             {label: 'Tags', value: item.tags},
+            {label: 'Keys', value: item.keys.length},
             {label: 'Quorum', value: item.quorum},
+
           ]}
         />
 
