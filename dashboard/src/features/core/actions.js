@@ -1,6 +1,6 @@
 import chain from 'chain'
 import { context } from 'utility/environment'
-import actionCreator from 'actions/actionCreator'
+import { actionCreator } from 'features/shared/actions'
 
 const updateInfo = actionCreator('UPDATE_CORE_INFO', param => ({ param }))
 const setClientToken = actionCreator('SET_CLIENT_TOKEN', token => ({ token }))

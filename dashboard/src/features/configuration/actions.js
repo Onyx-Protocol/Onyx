@@ -1,7 +1,7 @@
 import chain from 'chain'
 import { context } from 'utility/environment'
 import { actions as coreActions } from 'features/core'
-import actionCreator from 'actions/actionCreator'
+import { actionCreator } from 'features/shared/actions'
 import { testNetInfoUrl } from 'utility/environment'
 
 const receivedTestNetConfig = actionCreator('TEST_NET_CONFIG', data => ({ data }))

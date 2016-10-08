@@ -77,8 +77,8 @@ export default connect(
   (dispatch) => ({
     fetchInfo: options => dispatch(actions.core.fetchCoreInfo(options)),
     fetchTestNetInfo: () => dispatch(actions.configuration.fetchTestNetInfo()),
-    showRoot: () => dispatch(actions.routing.showRoot),
-    showConfiguration: () => dispatch(actions.routing.showConfiguration()),
+    showRoot: () => dispatch(actions.app.showRoot),
+    showConfiguration: () => dispatch(actions.app.showConfiguration()),
     clearSession: () => dispatch(actions.core.clearSession()),
   })
 )(Container)

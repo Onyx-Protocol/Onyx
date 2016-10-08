@@ -5,7 +5,7 @@ import { pluralize, humanize } from 'utility/string'
 import { PageTitle, Pagination, SearchBar } from './'
 import { pageSize } from 'utility/environment'
 
-class ItemList extends React.Component {
+export class ItemList extends React.Component {
   constructor(props) {
     super(props)
 
@@ -41,13 +41,17 @@ class ItemList extends React.Component {
   render() {
     const label = this.props.label || pluralize(humanize(this.props.type))
 
+    const actions = [...(this.props.actions || [])]
+    if (!this.props.skipCreate) {
+      actions.push(<button key='showCreate' className='btn btn-link' onClick={this.props.showCreate}>
+        + New
+      </button>)
+    }
+
     let header = <div>
       <PageTitle
         title={label}
-        actions={!this.props.skipCreate &&
-          <button className='btn btn-link' onClick={this.props.showCreate}>
-            New
-          </button>}
+        actions={actions}
       />
 
       {!this.props.skipQuery &&
@@ -92,7 +96,7 @@ class ItemList extends React.Component {
   }
 }
 
-export const mapStateToProps = (type, itemComponent) => (state, ownProps) => {
+export const mapStateToProps = (type, itemComponent, additionalProps = {}) => (state, ownProps) => {
   const currentPage = Math.max(parseInt(ownProps.location.query.page) || 1, 1)
 
   const currentIds = state[type].listView.itemIds
@@ -114,6 +118,7 @@ export const mapStateToProps = (type, itemComponent) => (state, ownProps) => {
       queryString: state[type].listView.query,
       queryTime: state[type].listView.queryTime,
     },
+    ...additionalProps
   }
 }
 

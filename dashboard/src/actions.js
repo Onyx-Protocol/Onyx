@@ -7,8 +7,8 @@ import { actions as configuration } from 'features/configuration'
 import { actions as core } from 'features/core'
 import { actions as mockhsm } from 'features/mockhsm'
 import { actions as transaction } from 'features/transactions'
+import { actions as transactionConsumer } from 'features/transactionConsumers'
 import { actions as unspent } from 'features/unspents'
-import routing from './routing'
 
 const actions = {
   ...accessToken,
@@ -19,8 +19,8 @@ const actions = {
   configuration,
   core,
   mockhsm,
-  routing,
   transaction,
+  transactionConsumer,
   unspent,
 }
 

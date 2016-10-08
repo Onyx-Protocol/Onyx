@@ -7,6 +7,7 @@ import ControlProgram from './controlProgram'
 import Core from './core'
 import MockHsm from './mockHsm'
 import Transaction from './transaction'
+import TransactionConsumer from './transactionConsumer'
 import Unspent from './unspent'
 
 export default {
@@ -19,5 +20,6 @@ export default {
   ControlProgram,
   MockHsm,
   Transaction,
-  Unspent
+  TransactionConsumer,
+  Unspent,
 }

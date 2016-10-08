@@ -1,9 +1,21 @@
 .main {
+  height: $title-height;
+  padding: $gutter-size;
   border-bottom: 1px solid $border-color;
-  display: flex;
+  margin: -$gutter-size;
   margin-bottom: 15px;
+
+  display: flex;
+  align-items: center;
 }
 
 .navigation {
   flex-grow: 1;
+}
+
+.actions {
+  list-style-type: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
 }

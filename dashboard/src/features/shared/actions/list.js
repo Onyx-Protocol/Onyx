@@ -121,6 +121,8 @@ export default function(type, options = {}) {
 
         const fillPageOrLast = () =>
           dispatch(fetchQueryPage()).then((resp) => {
+            if (resp && resp.type == 'ERROR') return
+
             if (resp && resp.last) {
               return Promise.resolve(resp)
             } else if (!fullPage()) {

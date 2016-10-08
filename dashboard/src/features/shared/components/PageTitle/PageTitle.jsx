@@ -14,7 +14,9 @@ class PageTitle extends React.Component {
           <span className='title'>{this.props.title}</span>
         </div>
 
-        {this.props.actions && <div>{this.props.actions}</div>}
+        {this.props.actions && <ul className={styles.actions}>
+          {this.props.actions.map(item => <li key={item.key}>{item}</li>)}
+        </ul>}
       </div>
     )
   }

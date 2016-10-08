@@ -1,17 +1,19 @@
+$sidebar-width: 180px;
+
 .sidebar {
-  width: 180px;
+  width: $sidebar-width;
 }
 
 .content {
   width: 100%;
-  padding: 22px;
-  padding-left: 202px;
+  padding: $gutter-size;
+  padding-left: $sidebar-width + $gutter-size;
 }
 
 .sidebarContent {
   background-color: $background-inverse-color;
   position: fixed;
-  width: 180px;
+  width: $sidebar-width;
   height: 100%;
   padding-bottom: 30px;
   overflow-y: scroll;
@@ -30,10 +32,13 @@
 
 .logo {
   border-bottom: 1px solid $border-inverse-color;
-  padding: 16px;
+  height: $title-height;
+  padding-left: 16px;
+  display: flex;
+  align-items: center;
 
   img {
-    width: 90px;
+    width: 100px;
   }
 }
 

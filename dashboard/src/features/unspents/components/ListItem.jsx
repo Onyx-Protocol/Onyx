@@ -1,6 +1,6 @@
 import React from 'react'
 
-class Item extends React.Component {
+class ListItem extends React.Component {
   render() {
     const item = {...this.props.item}
     delete item.id
@@ -17,4 +17,4 @@ class Item extends React.Component {
   }
 }
 
-export default Item
+export default ListItem
