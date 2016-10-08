@@ -18,12 +18,22 @@ public class Context {
   /**
    * Create a new http Context object
    *
-   * @param url The URL of the Chain Core or HSM. Includes basic authentication
-   *            in the URL string i.e. https://u:p@api.chain.com
+   * @param url The URL of the Chain Core or HSM
    */
   public Context(URL url) {
     this.url = url;
     this.httpClient = new APIClient(url);
+  }
+
+  /**
+   * Create a new http Context object
+   *
+   * @param url The URL of the Chain Core or HSM
+   * @param accessToken A Client API access token.
+   */
+  public Context(URL url, String accessToken) {
+    this.url = url;
+    this.httpClient = new APIClient(url, accessToken);
   }
 
   /**

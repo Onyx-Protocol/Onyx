@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 public class APIClient {
   private URL baseURL;
+  private String credentials;
   private OkHttpClient httpClient;
   public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
   public static final Gson serializer =
@@ -26,6 +27,24 @@ public class APIClient {
     this.baseURL = url;
     this.httpClient = new OkHttpClient();
     this.httpClient.setFollowRedirects(false);
+  }
+
+  public APIClient(URL url, String accessToken) {
+    this(url);
+
+    String user = "";
+    String pass = "";
+    if (accessToken != null) {
+      String[] parts = accessToken.split(":");
+      if (parts.length >= 1) {
+        user = parts[0];
+      }
+      if (parts.length >= 2) {
+        pass = parts[1];
+      }
+    }
+
+    credentials = Credentials.basic(user, pass);
   }
 
   public void pinCertificate(String provider, String subjPubKeyInfoHash) {
@@ -88,8 +107,8 @@ public class APIClient {
               .header("User-Agent", "chain-sdk-java")
               .url(this.url(path))
               .method("POST", requestBody);
-      if (this.baseURL.getUserInfo() != null) {
-        builder = builder.header("Authorization", this.credentials());
+      if (credentials != null) {
+        builder = builder.header("Authorization", credentials);
       }
       req = builder.build();
     } catch (MalformedURLException ex) {
@@ -224,21 +243,5 @@ public class APIClient {
     } catch (URISyntaxException e) {
       throw new MalformedURLException();
     }
-  }
-
-  private String credentials() {
-    String userInfo = this.baseURL.getUserInfo();
-    String user = "";
-    String pass = "";
-    if (userInfo != null) {
-      String[] parts = userInfo.split(":");
-      if (parts.length >= 1) {
-        user = parts[0];
-      }
-      if (parts.length >= 2) {
-        pass = parts[1];
-      }
-    }
-    return Credentials.basic(user, pass);
   }
 }
