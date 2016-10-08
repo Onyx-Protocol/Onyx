@@ -1,6 +1,11 @@
 package com.chain.api;
 
+import com.chain.exception.APIException;
+import com.chain.exception.BadURLException;
 import com.chain.exception.ChainException;
+import com.chain.exception.ConnectivityException;
+import com.chain.exception.HTTPException;
+import com.chain.exception.JSONException;
 import com.chain.http.Context;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
@@ -8,50 +13,96 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.*;
 
+/**
+ * A single asset on a Chain OS blockchain network, capable of being issued and transferred in transactions.
+ */
 public class Asset {
+  /**
+   * Globally unique identifier of the asset.<br>
+   * Asset version 1 specifies the asset id as the hash of:<br>
+   * - the asset version<br>
+   * - the asset's issuance program<br>
+   * - the core's VM version<br>
+   * - the hash of the network's initial block
+   */
   public String id;
+
+  /**
+   * User specified, unique identifier.
+   */
   public String alias;
 
+  /**
+   * A program specifying a predicate to be satisfied when issuing the asset.
+   */
   @SerializedName("issuance_program")
   public String issuanceProgram;
+
   /**
-   * The list of keys associated with the asset.
+   * The list of keys used to create the issuance program for the asset.<br>
+   * Signatures from these keys are required for issuing units of the asset.
    */
   public Key[] keys;
 
   /**
-   * The number of keys required to sign issuances of the asset
+   * The number of keys required to sign an issuance of the asset.
    */
   public int quorum;
 
   /**
-   * The immutable asset definition
+   * User-specified, arbitrary/unstructured data visible across blockchain networks.<br>
+   * Version 1 assets specify the definition in their issuance programs, rendering the definition immutable.
    */
   public Map<String, Object> definition;
 
   /**
-   * User-specified tag structure for the asset
+   * User-specified, arbitrary/unstructured data local to the asset's originating core.
    */
   public Map<String, Object> tags;
 
   /**
-   * Specifies whether the asset was defined on the local core, or externally
+   * Specifies whether the asset was defined on the local core, or externally.
    */
   @SerializedName("is_local")
   public String isLocal;
 
+  /**
+   * A class storing information about the keys associated with the asset.
+   */
   public static class Key {
+    /**
+     * Hex-encoded representation of the root extended public key
+     */
     @SerializedName("root_xpub")
     public String rootXpub;
 
+    /**
+     * The derived public key, used in the asset's issuance program.
+     */
     @SerializedName("asset_pubkey")
     public String assetPubkey;
 
+    /**
+     * The derivation path of the derived key.
+     */
     @SerializedName("asset_derivation_path")
     public String[] derivationPath;
   }
 
+  /**
+   * A paged collection of assets returned from a query.
+   */
   public static class Items extends PagedItems<Asset> {
+    /**
+     * Requests a page of assets based on an underlying query.
+     * @return a page of asset objects
+     * @throws APIException This exception is raised if the api returns errors while retrieving the assets.
+     * @throws BadURLException This exception wraps java.net.MalformedURLException.
+     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+     * @throws HTTPException This exception is raised when errors occur making http requests.
+     * @throws JSONException This exception is raised due to malformed json requests or responses.
+     */
+    @Override
     public Items getPage() throws ChainException {
       Items items = this.context.request("list-assets", this.next, Items.class);
       items.setContext(this.context);
@@ -59,7 +110,20 @@ public class Asset {
     }
   }
 
+  /**
+   * A builder class for generating asset queries.
+   */
   public static class QueryBuilder extends BaseQueryBuilder<QueryBuilder> {
+    /**
+     * Executes a query on the core's assets.
+     * @param ctx context object that makes requests to the core
+     * @return a collection of asset objects
+     * @throws APIException This exception is raised if the api returns errors while retrieving the assets.
+     * @throws BadURLException This exception wraps java.net.MalformedURLException.
+     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+     * @throws HTTPException This exception is raised when errors occur making http requests.
+     * @throws JSONException This exception is raised due to malformed json requests or responses.
+     */
     public Items execute(Context ctx) throws ChainException {
       Items items = new Items();
       items.setContext(ctx);
@@ -68,40 +132,100 @@ public class Asset {
     }
   }
 
+  /**
+   * A builder class for creating asset objects.
+   */
   public static class Builder {
+    /**
+     * User specified, unique identifier.
+     */
     public String alias;
+
+    /**
+     * User-specified, arbitrary/unstructured data visible across blockchain networks.<br>
+     * Version 1 assets specify the definition in their issuance programs, rendering the definition immutable.
+     */
     public Map<String, Object> definition;
+
+    /**
+     * User-specified, arbitrary/unstructured data local to the asset's originating core.
+     */
     public Map<String, Object> tags;
 
+    /**
+     * The list of keys used to create the issuance program for the asset.<br>
+     * Signatures from these keys are required for issuing units of the asset.
+     */
     @SerializedName("root_xpubs")
     public List<String> rootXpubs;
 
+    /**
+     * The number of keys required to sign an issuance of the asset.
+     */
     public int quorum;
 
+    /**
+     * Unique identifier used for request idempotence.
+     */
     @SerializedName("client_token")
     private String clientToken;
 
+    /**
+     * Default constructor initializes the list of keys.
+     */
     public Builder() {
       this.rootXpubs = new ArrayList<>();
     }
 
+    /**
+     * Creates an asset object.
+     * @param ctx context object that makes request to the core
+     * @return an asset object
+     * @throws APIException This exception is raised if the api returns errors while creating the asset.
+     * @throws BadURLException This exception wraps java.net.MalformedURLException.
+     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+     * @throws HTTPException This exception is raised when errors occur making http requests.
+     * @throws JSONException This exception is raised due to malformed json requests or responses.
+     */
     public Asset create(Context ctx) throws ChainException {
       return ctx.singletonBatchRequest("create-asset", this, Asset.class);
     }
 
-    public static List<Asset> createBatch(Context ctx, List<Builder> assets) throws ChainException {
-      for (Builder asset : assets) {
+    /**
+     * Creates a batch of asset objects.<br>
+     * <strong>Note:</strong> this method will not throw an exception APIException. Each builder's response object must be checked for error.
+     * @param ctx context object that makes requests to the core
+     * @param builders list of asset builders
+     * @return a list of asset and/or error objects
+     * @throws BadURLException This exception wraps java.net.MalformedURLException.
+     * @throws ConnectivityException This exception is raised if there are connectivity issues with the server.
+     * @throws HTTPException This exception is raised when errors occur making http requests.
+     * @throws JSONException This exception is raised due to malformed json requests or responses.
+     */
+    public static List<Asset> createBatch(Context ctx, List<Builder> builders) throws ChainException {
+      for (Builder asset : builders) {
         asset.clientToken = UUID.randomUUID().toString();
       }
       Type type = new TypeToken<List<Asset>>() {}.getType();
-      return ctx.request("create-asset", assets, type);
+      return ctx.request("create-asset", builders, type);
     }
 
+    /**
+     * Sets the alias on the builder object.
+     * @param alias alias
+     * @return updated builder object
+     */
     public Builder setAlias(String alias) {
       this.alias = alias;
       return this;
     }
 
+    /**
+     * Adds a field to the existing definition object (initializing the object if it doesn't exist).
+     * @param key key of the definition field
+     * @param value value of the definition field
+     * @return updated builder object
+     */
     public Builder addDefinitionField(String key, Object value) {
       if (this.definition == null) {
         this.definition = new HashMap<>();
@@ -110,11 +234,23 @@ public class Asset {
       return this;
     }
 
+    /**
+     * Sets the asset definition object.<br>
+     * <strong>Note:</strong> any existing asset definition fields will be replaced.
+     * @param definition asset definition object
+     * @return updated builder object
+     */
     public Builder setDefinition(Map<String, Object> definition) {
       this.definition = definition;
       return this;
     }
 
+    /**
+     * Adds a field to the existing asset tags object (initializing the object if it doesn't exist).
+     * @param key key of the tag
+     * @param value value of the tag
+     * @return updated builder object
+     */
     public Builder addTag(String key, Object value) {
       if (this.tags == null) {
         this.tags = new HashMap<>();
@@ -123,21 +259,43 @@ public class Asset {
       return this;
     }
 
+    /**
+     * Sets the asset tags object.<br>
+     * <strong>Note:</strong> any existing asset tag fields will be replaced.
+     * @param tags asset tags object
+     * @return updated builder object
+     */
     public Builder setTags(Map<String, Object> tags) {
       this.tags = tags;
       return this;
     }
 
+    /**
+     * Sets the quorum of the issuance program.
+     * @param quorum proposed quorum
+     * @return updated builder object
+     */
     public Builder setQuorum(int quorum) {
       this.quorum = quorum;
       return this;
     }
 
+    /**
+     * Adds a key to the builder's list.
+     * @param xpub key
+     * @return updated asset object.
+     */
     public Builder addRootXpub(String xpub) {
       this.rootXpubs.add(xpub);
       return this;
     }
 
+    /**
+     * Sets the builder's list of keys.
+     * <strong>Note:</strong> any existing keys will be replaced.
+     * @param xpubs list of xpubs
+     * @return updated builder object
+     */
     public Builder setRootXpubs(List<String> xpubs) {
       this.rootXpubs = new ArrayList<>();
       for (String xpub : xpubs) {
