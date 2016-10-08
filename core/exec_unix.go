@@ -23,9 +23,9 @@ func execSelf(dataToReset string) {
 		panic(err)
 	}
 
-	var env []string
+	env := os.Environ()
 	if dataToReset != "" {
-		env = mergeEnvLists([]string{"RESET=" + dataToReset}, os.Environ())
+		env = mergeEnvLists([]string{"RESET=" + dataToReset}, env)
 	}
 	err = syscall.Exec(binpath, os.Args, env)
 	if err != nil {
