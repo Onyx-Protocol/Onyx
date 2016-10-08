@@ -13,3 +13,8 @@ Here's a link to [another page](other).
 And here's an image:
 
 ![](images/example.png)
+
+Java users, check out the Java SDK:
+
+- [Download](java/chain-sdk-latest.jar)
+- [Javadoc](java/javadoc/index.html)
