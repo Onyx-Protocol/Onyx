@@ -11,7 +11,6 @@ import (
 	_ "net/http/pprof"
 	"net/url"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/kr/secureheader"
@@ -35,12 +34,14 @@ import (
 	"chain/env"
 	"chain/errors"
 	"chain/generated/dashboard"
+	"chain/generated/doc"
 	chainlog "chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
 	"chain/net/http/gzip"
 	"chain/net/http/limit"
 	"chain/net/http/reqid"
+	"chain/net/http/static"
 	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -128,7 +129,7 @@ func main() {
 		h = core.Handler(nil, nil, nil, nil, nil, nil, authLoopbackInDev)
 	}
 
-	h = dashboardHandler(h)
+	h = webAssetsHandler(h)
 	if *reqsPerSec > 0 {
 		h = limit.Handler(h, *reqsPerSec, 100, limit.AuthUserID)
 	}
@@ -269,16 +270,15 @@ func dbContextHandler(handler http.Handler, db pg.DB) http.Handler {
 	})
 }
 
-func dashboardHandler(next http.Handler) http.Handler {
-	lastMod := time.Now() // use start time as a conservative bound for last-modified
+func webAssetsHandler(next http.Handler) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/dashboard/", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		file := strings.TrimPrefix(req.URL.Path, "/dashboard/")
-		output, ok := dashboard.Files[file]
-		if !ok {
-			output = dashboard.Files["index.html"]
-		}
-		http.ServeContent(w, req, file, lastMod, strings.NewReader(output))
+	mux.Handle("/dashboard/", http.StripPrefix("/dashboard/", static.Handler{
+		Assets: dashboard.Files,
+		Index:  "index.html",
+	}))
+	mux.Handle("/doc/", http.StripPrefix("/doc/", static.Handler{
+		Assets: doc.Files,
+		Index:  "index",
 	}))
 	mux.Handle("/", next)
 

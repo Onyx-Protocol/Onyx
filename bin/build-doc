@@ -1,0 +1,10 @@
+#!/bin/sh
+go install chain/cmd/md2html
+mkdir -p $CHAIN/doc/external/compiled
+cd $CHAIN/doc/external/src
+md2html $CHAIN/doc/external/compiled
+
+go install chain/cmd/gobundle
+mkdir -p $CHAIN/generated/doc
+gobundle -package doc $CHAIN/doc/external/compiled > $CHAIN/generated/doc/doc.go
+gofmt -w $CHAIN/generated/doc/doc.go
