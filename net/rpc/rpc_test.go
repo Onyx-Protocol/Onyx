@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"strings"
 	"testing"
@@ -79,5 +80,15 @@ func TestRPCCallError(t *testing.T) {
 	err := client.Call(context.Background(), "/error", nil, nil)
 	if !reflect.DeepEqual(wantErr, err) {
 		t.Errorf("got=%#v; want=%#v", err, wantErr)
+	}
+}
+
+func TestCleanedURLString(t *testing.T) {
+	u, _ := url.Parse("https://user:pass@foobar.com")
+	want := "https://foobar.com"
+
+	got := cleanedURLString(u)
+	if got != want {
+		t.Errorf("clean = %q want %q", got, want)
 	}
 }

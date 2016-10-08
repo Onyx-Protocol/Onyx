@@ -103,7 +103,7 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return errStatusCode{
-			URL:        u.String(),
+			URL:        cleanedURLString(u),
 			StatusCode: resp.StatusCode,
 		}
 	}
@@ -114,4 +114,10 @@ func (c *Client) Call(ctx context.Context, path string, request, response interf
 		}
 	}
 	return nil
+}
+
+func cleanedURLString(u *url.URL) string {
+	var dup url.URL = *u
+	dup.User = nil
+	return dup.String()
 }
