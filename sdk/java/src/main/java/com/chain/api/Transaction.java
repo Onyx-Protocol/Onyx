@@ -1006,18 +1006,18 @@ public class Transaction {
   }
 
   /**
-   * When used in conjunction with /list-transactions, Consumers can be used to
+   * When used in conjunction with /list-transactions, Feeds can be used to
    * receive notifications about transactions.
    */
-  public static class Consumer {
+  public static class Feed {
     /**
-     * Consumer ID, automatically generated when a consumer is created.
+     * Feed ID, automatically generated when a feed is created.
      */
     public String id;
 
     /**
      * An optional, user-supplied alias that can be used to uniquely identify
-     * this consumer.
+     * this feed.
      */
     public String alias;
 
@@ -1027,7 +1027,7 @@ public class Transaction {
     public String filter;
 
     /**
-     * Indicates the last transaction consumed by this consumer.
+     * Indicates the last transaction consumed by this feed.
      */
     public String after;
 
@@ -1035,52 +1035,52 @@ public class Transaction {
     private Transaction lastTx;
 
     /**
-     * Creates a consumer.
+     * Creates a feed.
      *
      * @param ctx context object that makes requests to core
-     * @param alias an alias which uniquely identifies this consumer
-     * @param filter a query filter which identifies which transactions this consumer consumes
-     * @return a consumer object
+     * @param alias an alias which uniquely identifies this feed
+     * @param filter a query filter which identifies which transactions this feed consumes
+     * @return a feed object
      * @throws ChainException
      */
-    public static Consumer create(Context ctx, String alias, String filter) throws ChainException {
+    public static Feed create(Context ctx, String alias, String filter) throws ChainException {
       Map<String, Object> req = new HashMap<>();
       req.put("alias", alias);
       req.put("filter", filter);
       req.put("client_token", UUID.randomUUID().toString());
-      return ctx.request("create-transaction-consumer", req, Consumer.class);
+      return ctx.request("create-transaction-feed", req, Feed.class);
     }
 
     /**
-     * Retrieves a consumer by ID.
+     * Retrieves a feed by ID.
      *
      * @param ctx context object that makes requests to core
-     * @param id the consumer id
-     * @return a consumer object
+     * @param id the feed id
+     * @return a feed object
      * @throws ChainException
      */
-    public static Consumer getByID(Context ctx, String id) throws ChainException {
+    public static Feed getByID(Context ctx, String id) throws ChainException {
       Map<String, Object> req = new HashMap<>();
       req.put("id", id);
-      return ctx.request("get-transaction-consumer", req, Consumer.class);
+      return ctx.request("get-transaction-feed", req, Feed.class);
     }
 
     /**
-     * Retrieves a consumer by alias.
+     * Retrieves a feed by alias.
      *
      * @param ctx context object that makes requests to core
-     * @param alias the consumer alias
-     * @return a consumer object
+     * @param alias the feed alias
+     * @return a feed object
      * @throws ChainException
      */
-    public static Consumer getByAlias(Context ctx, String alias) throws ChainException {
+    public static Feed getByAlias(Context ctx, String alias) throws ChainException {
       Map<String, Object> req = new HashMap<>();
       req.put("alias", alias);
-      return ctx.request("get-transaction-consumer", req, Consumer.class);
+      return ctx.request("get-transaction-feed", req, Feed.class);
     }
 
     /**
-     * Retrieves the next transaction matching the consumer's filter criteria.
+     * Retrieves the next transaction matching the feed's filter criteria.
      * If no such transaction is available, this method will block until a
      * matching transaction arrives in the blockchain, or if the specified
      * timeout is reached. To avoid client-side timeouts, be sure to call
@@ -1110,7 +1110,7 @@ public class Transaction {
     }
 
     /**
-     * Retrieves the next transaction matching the consumer's filter criteria.
+     * Retrieves the next transaction matching the feed's filter criteria.
      * If no such transaction is available, this method will block until a
      * matching transaction arrives in the blockchain. To avoid client-side
      * timeouts, be sure to call {@link Context#setReadTimeout(long, TimeUnit)}
@@ -1125,7 +1125,7 @@ public class Transaction {
     }
 
     /**
-     * Persists the state of the transaction consumer. Be sure to call this
+     * Persists the state of the transaction feed. Be sure to call this
      * periodically when consuming transactions with
      * {@link #next(Context, long)}. The most conservative (albeit least
      * performant) strategy is to call ack() once for every result returned by
@@ -1148,7 +1148,7 @@ public class Transaction {
       req.put("id", this.id);
       req.put("previous_after", this.after);
       req.put("after", newAfter);
-      ctx.request("update-transaction-consumer", req, Consumer.class);
+      ctx.request("update-transaction-feed", req, Feed.class);
 
       this.after = newAfter;
     }

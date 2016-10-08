@@ -8,10 +8,10 @@ const type = 'transaction'
 const actions = [
   <Link
     className='btn btn-link'
-    key='consumers'
-    to='transactions/consumers'
+    key='feeds'
+    to='transactions/feeds'
   >
-    Consumers
+    Feeds
   </Link>
 ]
 

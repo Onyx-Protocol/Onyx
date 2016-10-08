@@ -1,4 +1,4 @@
-package txconsumer
+package txfeed
 
 import (
 	"context"
@@ -11,15 +11,15 @@ import (
 	"chain/errors"
 )
 
-func TestInsertTxConsumer(t *testing.T) {
+func TestInsertTxFeed(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	token := "test_token"
-	alias := "test_txconsumer"
-	consumer := &TxConsumer{
+	alias := "test_txfeed"
+	feed := &TxFeed{
 		Alias: &alias,
 	}
 
-	result, err := insertTxConsumer(ctx, consumer, &token)
+	result, err := insertTxFeed(ctx, feed, &token)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -28,32 +28,32 @@ func TestInsertTxConsumer(t *testing.T) {
 		t.Errorf("expected result.ID to be populated, but was empty")
 	}
 
-	// Verify that the txconsumer was created.
+	// Verify that the txfeed was created.
 	var resultAlias string
-	var checkQ = `SELECT alias FROM txconsumers`
+	var checkQ = `SELECT alias FROM txfeeds`
 	err = pg.QueryRow(ctx, checkQ).Scan(&resultAlias)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
 	if resultAlias != alias {
-		t.Errorf("expected new txconsumer with alias %s, got %s", alias, resultAlias)
+		t.Errorf("expected new txfeed with alias %s, got %s", alias, resultAlias)
 	}
 }
 
-func TestInsertTxConsumerRepeatToken(t *testing.T) {
+func TestInsertTxFeedRepeatToken(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	token := "test_token"
-	alias := "test_txconsumer"
-	consumer := &TxConsumer{
+	alias := "test_txfeed"
+	feed := &TxFeed{
 		Alias: &alias,
 	}
 
-	result0, err := insertTxConsumer(ctx, consumer, &token)
+	result0, err := insertTxFeed(ctx, feed, &token)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
 
-	result1, err := insertTxConsumer(ctx, consumer, &token)
+	result1, err := insertTxFeed(ctx, feed, &token)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -64,30 +64,30 @@ func TestInsertTxConsumerRepeatToken(t *testing.T) {
 	}
 }
 
-func TestInsertTxConsumerDuplicateAlias(t *testing.T) {
+func TestInsertTxFeedDuplicateAlias(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	token0 := "test_token_0"
 	token1 := "test_token_1"
-	alias := "test_txconsumer"
-	consumer := &TxConsumer{
+	alias := "test_txfeed"
+	feed := &TxFeed{
 		Alias: &alias,
 	}
 
-	_, err := insertTxConsumer(ctx, consumer, &token0)
+	_, err := insertTxFeed(ctx, feed, &token0)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
 
-	_, err = insertTxConsumer(ctx, consumer, &token1)
+	_, err = insertTxFeed(ctx, feed, &token1)
 	if err.Error() != "non-unique alias: httpjson: bad request" {
 		t.Errorf("expected ErrBadRequest, got %v", err)
 	}
 }
 
-func TestCreateTxConsumerBadFilter(t *testing.T) {
+func TestCreateTxFeedBadFilter(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	token := "test_token_0"
-	alias := "test_txconsumer"
+	alias := "test_txfeed"
 	fil := "lol i'm not a ~real~ filter"
 	_, err := Create(ctx, alias, fil, "", &token)
 	if errors.Root(err) != filter.ErrBadFilter {

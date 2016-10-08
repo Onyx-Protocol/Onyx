@@ -1,7 +1,7 @@
 import { reducers } from 'features/shared'
 import { combineReducers } from 'redux'
 
-const type = 'transactionConsumer'
+const type = 'transactionFeed'
 
 export default combineReducers({
   items: reducers.itemsReducer(type),

@@ -31,13 +31,13 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
   * [List Transactions](#list-transactions)
   * [List Balances](#list-balances)
   * [List Unspent Outputs](#list-unspent-outputs)
-* [Transaction Consumers](#transaction-consumers)
-  * [Transaction Consumer Object](#transaction-consumer-object)
-  * [Create Transaction Consumer](#create-transaction-consumer)
-  * [Get Transaction Consumer](#get-transaction-consumer)
-  * [List Transaction Consumers](#list-transaction-consumers)
-  * [Update Transaction Consumer](#update-transaction-consumer)
-  * [Delete Transaction Consumer](#delete-transaction-consumer)
+* [Transaction Feeds](#transaction-feeds)
+  * [Transaction Feed Object](#transaction-feed-object)
+  * [Create Transaction Feed](#create-transaction-feed)
+  * [Get Transaction Feed](#get-transaction-feed)
+  * [List Transaction Feeds](#list-transaction-feeds)
+  * [Update Transaction Feed](#update-transaction-feed)
+  * [Delete Transaction Feed](#delete-transaction-feed)
 * [Access Tokens](#access-tokens)
   * [Create Access Token](#create-access-token)
   * [List Access Tokens](#list-access-tokens)
@@ -716,9 +716,9 @@ POST /list-unspent-outputs
 }
 ```
 
-## Transaction Consumers
+## Transaction Feeds
 
-### Transaction Consumer Object
+### Transaction Feed Object
 
 ```
 {
@@ -729,12 +729,12 @@ POST /list-unspent-outputs
 }
 ```
 
-### Create Transaction Consumer
+### Create Transaction Feed
 
 #### Endpoint
 
 ```
-POST /create-transaction-consumer
+POST /create-transaction-feed
 ```
 
 #### Request
@@ -748,14 +748,14 @@ POST /create-transaction-consumer
 
 #### Response
 
-A Transaction Consumer object.
+A Transaction Feed object.
 
-### Get Transaction Consumer
+### Get Transaction Feed
 
 #### Endpoint
 
 ```
-POST /get-transaction-consumer
+POST /get-transaction-feed
 ```
 
 #### Request
@@ -770,14 +770,14 @@ POST /get-transaction-consumer
 
 #### Response
 
-A Transaction Consumer object.
+A Transaction Feed object.
 
-### List Transaction Consumers
+### List Transaction Feeds
 
 #### Endpoint
 
 ```
-POST /list-transaction-consumers
+POST /list-transaction-feeds
 ```
 
 #### Request
@@ -793,7 +793,7 @@ POST /list-transaction-consumers
 ```
 {
   "items": [
-    <Transaction Consumer object>,
+    <Transaction Feed object>,
     ...
   ],
   "next": {
@@ -803,18 +803,18 @@ POST /list-transaction-consumers
 }
 ```
 
-### Update Transaction Consumer
+### Update Transaction Feed
 
-Updates the Transaction Consumer with a new `after`. This is used to acknowledge that the last set of transactions received from `/list-transactions` was processed successfully.
+Updates the Transaction Feed with a new `after`. This is used to acknowledge that the last set of transactions received from `/list-transactions` was processed successfully.
 
-Transaction Consumers can only be updated forwards (i.e., a consumer cannot be updated with a value that is previous to its current value).
+Transaction Feeds can only be updated forwards (i.e., a feed cannot be updated with a value that is previous to its current value).
 
-If present, the `previous_after` field will be used to prevent a race condition where two clients are updating the same consumer at the same time. If the current consumer does not match `previous_after`, it cannot be updated.
+If present, the `previous_after` field will be used to prevent a race condition where two clients are updating the same feed at the same time. If the current feed does not match `previous_after`, it cannot be updated.
 
 #### Endpoint
 
 ```
-POST /update-transaction-consumer
+POST /update-transaction-feed
 ```
 
 #### Request
@@ -832,14 +832,14 @@ POST /update-transaction-consumer
 
 #### Response
 
-The updated Transaction Consumer object.
+The updated Transaction Feed object.
 
-### Delete Transaction Consumer
+### Delete Transaction Feed
 
 #### Endpoint
 
 ```
-POST /delete-transaction-consumer
+POST /delete-transaction-feed
 ```
 
 #### Request

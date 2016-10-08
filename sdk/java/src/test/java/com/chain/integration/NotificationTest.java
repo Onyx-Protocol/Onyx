@@ -33,14 +33,14 @@ public class NotificationTest {
     long amount = 1000;
     String alice = "TransactionTest.testTransactionNotification.alice";
     String asset = "TransactionTest.testTransactionNotification.test";
-    String consumer = "TransactionTest.testTransactionNotification.consumer";
+    String feed = "TransactionTest.testTransactionNotification.feed";
     String filter = "outputs(account_alias='" + alice + "')";
 
     new Account.Builder().setAlias(alice).addRootXpub(key.xpub).setQuorum(1).create(context);
 
     new Asset.Builder().setAlias(asset).addRootXpub(key.xpub).setQuorum(1).create(context);
 
-    Transaction.Consumer cnsmr = Transaction.Consumer.create(context, consumer, filter);
+    Transaction.Feed cnsmr = Transaction.Feed.create(context, feed, filter);
     ExecutorService executor = Executors.newFixedThreadPool(1);
     Callable<Transaction> task =
         () -> {

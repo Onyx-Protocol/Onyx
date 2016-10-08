@@ -50,7 +50,7 @@ func ResetBlockchain(ctx context.Context, db pg.DB) error {
 			signers,
 			snapshots,
 			submitted_txs,
-			txconsumers
+			txfeeds
 			RESTART IDENTITY;
 	`
 	_, err := db.Exec(ctx, q)

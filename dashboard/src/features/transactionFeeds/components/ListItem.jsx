@@ -3,13 +3,13 @@ import React from 'react'
 class ListItem extends React.Component {
   render() {
     const item = {...this.props.item}
-    const label = `Consumer ${item.alias || item.id}`
+    const label = `Feed ${item.alias || item.id}`
 
     const after = item.after.split('-')[0].split(':')
     const blockHeight = after[0]
     const blockPosition = after[1]
 
-    // int max (2147483647) is used to indicate that a consumer
+    // int max (2147483647) is used to indicate that a feed
     // hasn't yet been read from.
     const hasStarted = blockPosition != '2147483647'
 

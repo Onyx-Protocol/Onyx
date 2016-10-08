@@ -1,8 +1,8 @@
 import { BaseList } from 'features/shared/components'
 import ListItem from './ListItem'
-import { actions } from 'features/transactionConsumers'
+import { actions } from 'features/transactionFeeds'
 
-const type = 'transactionConsumer'
+const type = 'transactionFeed'
 
 const dispatch = (dispatch) => ({
   ...BaseList.mapDispatchToProps(type)(dispatch),
@@ -15,7 +15,7 @@ const dispatch = (dispatch) => ({
 export default BaseList.connect(
   BaseList.mapStateToProps(type, ListItem, {
     skipQuery: true,
-    label: 'Transaction Consumers'
+    label: 'Transaction Feeds'
   }),
   dispatch
 )

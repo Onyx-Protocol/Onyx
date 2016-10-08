@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.0
--- Dumped by pg_dump version 9.5.0
+-- Dumped from database version 9.5.3
+-- Dumped by pg_dump version 9.5.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -685,10 +685,10 @@ CREATE TABLE submitted_txs (
 
 
 --
--- Name: txconsumers; Type: TABLE; Schema: public; Owner: -
+-- Name: txfeeds; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE txconsumers (
+CREATE TABLE txfeeds (
     id text DEFAULT next_chain_id('cur'::text) NOT NULL,
     alias text,
     filter text,
@@ -945,27 +945,27 @@ ALTER TABLE ONLY submitted_txs
 
 
 --
--- Name: txconsumers_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: txfeeds_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY txconsumers
-    ADD CONSTRAINT txconsumers_alias_key UNIQUE (alias);
-
-
---
--- Name: txconsumers_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY txconsumers
-    ADD CONSTRAINT txconsumers_client_token_key UNIQUE (client_token);
+ALTER TABLE ONLY txfeeds
+    ADD CONSTRAINT txfeeds_alias_key UNIQUE (alias);
 
 
 --
--- Name: txconsumers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: txfeeds_client_token_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY txconsumers
-    ADD CONSTRAINT txconsumers_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY txfeeds
+    ADD CONSTRAINT txfeeds_client_token_key UNIQUE (client_token);
+
+
+--
+-- Name: txfeeds_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY txfeeds
+    ADD CONSTRAINT txfeeds_pkey PRIMARY KEY (id);
 
 
 --
@@ -1147,3 +1147,4 @@ insert into migrations (filename, hash) values ('2016-10-05.1.core.add-testnet-c
 insert into migrations (filename, hash) values ('2016-10-05.2.core.remove-testnet-config.sql', 'f748d503f055882d3c5af641931c3266a120d7b3ba404424db78a1f075f76b95');
 insert into migrations (filename, hash) values ('2016-10-05.3.account.index-expiry-height.sql', 'a1db582321307ad8fc49c201e95f7380f5f8441d6ab9a11838433666441817d3');
 insert into migrations (filename, hash) values ('2016-10-05.4.config.add-max-issuance-window.sql', 'd8f1a243626db63630238869d0bf1a6c94f6e771558cb831c03f466bb93b2eb7');
+insert into migrations (filename, hash) values ('2016-10-08.0.core.rename-txconsumers-to-txfeeds.sql', 'e187c78524d7009c085b28017a6c801009e82a55d12ac3131bbd589a2b23c5ca');

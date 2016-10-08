@@ -28,7 +28,7 @@ class New extends React.Component {
     return(
       <FormContainer
         error={error}
-        label='New Transaction Consumer'
+        label='New Transaction Feed'
         onSubmit={handleSubmit(this.submitWithErrors)}
         submitting={submitting} >
 
@@ -42,10 +42,10 @@ class New extends React.Component {
 
 const fields = [ 'alias', 'filter' ]
 export default BaseNew.connect(
-  BaseNew.mapStateToProps('transactionConsumer'),
-  BaseNew.mapDispatchToProps('transactionConsumer'),
+  BaseNew.mapStateToProps('transactionFeed'),
+  BaseNew.mapDispatchToProps('transactionFeed'),
   reduxForm({
-    form: 'newTxConsumer',
+    form: 'newTxFeed',
     fields,
   })(New)
 )

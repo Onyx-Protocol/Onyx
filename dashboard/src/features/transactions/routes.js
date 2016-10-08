@@ -1,13 +1,13 @@
 import { RoutingContainer } from 'features/shared/components'
 import { Show, List, New, GeneratedTxHex } from './components'
-import { routes as transactionConsumers } from 'features/transactionConsumers'
+import { routes as transactionFeeds } from 'features/transactionFeeds'
 
 export default {
   path: 'transactions',
   component: RoutingContainer,
   indexRoute: { component: List },
   childRoutes: [
-    transactionConsumers,
+    transactionFeeds,
     {
       path: 'create',
       component: New

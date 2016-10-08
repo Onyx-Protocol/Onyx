@@ -10,7 +10,7 @@ import { reducers as configuration } from 'features/configuration'
 import { reducers as core } from 'features/core'
 import { reducers as mockhsm } from 'features/mockhsm'
 import { reducers as transaction } from 'features/transactions'
-import { reducers as transactionConsumer } from 'features/transactionConsumers'
+import { reducers as transactionFeed } from 'features/transactionFeeds'
 import { reducers as unspent } from 'features/unspents'
 
 const makeRootReducer = () => (state, action) => {
@@ -40,7 +40,7 @@ const makeRootReducer = () => (state, action) => {
     mockhsm,
     routing,
     transaction,
-    transactionConsumer,
+    transactionFeed,
     unspent,
   })(state, action)
 }

@@ -469,23 +469,23 @@ func txAccountFromMap(m map[string]interface{}) *txAccount {
 	}
 }
 
-// listTxConsumers is an http handler for listing txconsumers. It does not take a filter.
+// listTxFeeds is an http handler for listing txfeeds. It does not take a filter.
 //
-// POST /list-transaction-consumers
-func (a *api) listTxConsumers(ctx context.Context, in requestQuery) (page, error) {
+// POST /list-transaction-feeds
+func (a *api) listTxFeeds(ctx context.Context, in requestQuery) (page, error) {
 	limit := defGenericPageSize
 	after := in.After
 
-	txconsumers, after, err := a.indexer.TxConsumers(ctx, after, limit)
+	txfeeds, after, err := a.indexer.TxFeeds(ctx, after, limit)
 	if err != nil {
-		return page{}, errors.Wrap(err, "running txconsumer query")
+		return page{}, errors.Wrap(err, "running txfeed query")
 	}
 
 	out := in
 	out.After = after
 	return page{
-		Items:    httpjson.Array(txconsumers),
-		LastPage: len(txconsumers) < limit,
+		Items:    httpjson.Array(txfeeds),
+		LastPage: len(txfeeds) < limit,
 		Next:     out,
 	}, nil
 }
