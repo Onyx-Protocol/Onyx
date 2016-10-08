@@ -3,13 +3,13 @@ package com.chain.signing;
 import com.chain.api.MockHsm;
 
 import com.chain.api.Transaction;
-import com.chain.exception.APIException;
-import com.chain.exception.ChainException;
+import com.chain.exception.*;
 import com.chain.http.Context;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.net.URL;
+import java.net.MalformedURLException;
 import java.util.*;
 
 public class HsmSigner {
@@ -20,6 +20,14 @@ public class HsmSigner {
       hsmXPubs.put(hsmUrl, new ArrayList<String>());
     }
     hsmXPubs.get(hsmUrl).add(xpub);
+  }
+
+  public static void addKey(String xpub, String hsmUrl) throws BadURLException {
+    try {
+      addKey(xpub, new URL(hsmUrl));
+    } catch (MalformedURLException e) {
+      throw new BadURLException(e.getMessage());
+    }
   }
 
   public static void addKey(MockHsm.Key key) {
