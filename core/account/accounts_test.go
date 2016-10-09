@@ -37,6 +37,23 @@ func TestCreateAccount(t *testing.T) {
 	}
 }
 
+func TestCreateAccountIdempotency(t *testing.T) {
+	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	var clientToken = "a-unique-client-token"
+
+	account1, err := Create(ctx, []string{dummyXPub}, 1, "satoshi", nil, &clientToken)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	account2, err := Create(ctx, []string{dummyXPub}, 1, "satoshi", nil, &clientToken)
+	if err != nil {
+		testutil.FatalErr(t, err)
+	}
+	if !reflect.DeepEqual(account1, account2) {
+		t.Errorf("got=%#v, want=%#v", account2, account1)
+	}
+}
+
 func TestCreateAccountReusedAlias(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)

@@ -20,18 +20,7 @@ const (
 )
 
 func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer dbtx.Rollback(ctx)
-
 	tpl, err := txbuilder.Build(ctx, req.Tx, req.actions())
-	if err != nil {
-		return nil, err
-	}
-
-	err = dbtx.Commit(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +29,6 @@ func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, e
 	if tpl.SigningInstructions == nil {
 		tpl.SigningInstructions = []*txbuilder.SigningInstruction{}
 	}
-
 	return tpl, nil
 }
 

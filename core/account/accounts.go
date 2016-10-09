@@ -37,12 +37,6 @@ var (
 
 // Create creates a new Account.
 func Create(ctx context.Context, xpubs []string, quorum int, alias string, tags map[string]interface{}, clientToken *string) (*Account, error) {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "create signer")
-	}
-	defer dbtx.Rollback(ctx)
-
 	signer, err := signers.Create(ctx, "account", xpubs, quorum, clientToken)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -58,7 +52,10 @@ func Create(ctx context.Context, xpubs []string, quorum int, alias string, tags 
 		Valid:  alias != "",
 	}
 
-	const q = `INSERT INTO accounts (account_id, alias, tags) VALUES ($1, $2, $3)`
+	const q = `
+		INSERT INTO accounts (account_id, alias, tags) VALUES ($1, $2, $3)
+		ON CONFLICT (account_id) DO UPDATE SET alias = $2, tags = $3
+	`
 	_, err = pg.Exec(ctx, q, signer.ID, aliasSQL, tagsParam)
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
@@ -70,11 +67,6 @@ func Create(ctx context.Context, xpubs []string, quorum int, alias string, tags 
 		Signer: signer,
 		Alias:  alias,
 		Tags:   tags,
-	}
-
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "committing create account dbtx")
 	}
 
 	err = indexAnnotatedAccount(ctx, account)

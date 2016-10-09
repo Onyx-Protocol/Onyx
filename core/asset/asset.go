@@ -41,11 +41,7 @@ type Asset struct {
 
 // Define defines a new Asset.
 func Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, initialBlockHash bc.Hash, alias string, tags map[string]interface{}, clientToken *string) (*Asset, error) {
-	dbtx, ctx, err := pg.Begin(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "define asset")
-	}
-	defer dbtx.Rollback(ctx)
+
 	assetSigner, err := signers.Create(ctx, "asset", xpubs, quorum, clientToken)
 	if err != nil {
 		return nil, err
@@ -57,7 +53,6 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 	}
 
 	path := signers.Path(assetSigner, signers.AssetKeySpace)
-
 	derivedXPubs := chainkd.DeriveXPubs(assetSigner.XPubs, path)
 	derivedPKs := chainkd.XPubKeys(derivedXPubs)
 	issuanceProgram, err := programWithDefinition(derivedPKs, assetSigner.Quorum, serializedDef)
@@ -87,14 +82,6 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 		return nil, errors.Wrap(err, "inserting asset tags")
 	}
 
-	err = dbtx.Commit(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "committing define asset dbtx")
-	}
-
-	// Note, this should be okay to do outside of the SQL txn
-	// because each step should be idempotent. Also, we have no
-	// guarantee that the query engine uses the same db handle.
 	err = indexAnnotatedAsset(ctx, asset)
 	if err != nil {
 		return nil, errors.Wrap(err, "indexing annotated asset")
@@ -173,7 +160,6 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 // insertAssetTags inserts a set of tags for the given assetID.
 // It must take place inside a database transaction.
 func insertAssetTags(ctx context.Context, assetID bc.AssetID, tags map[string]interface{}) error {
-	_ = pg.FromContext(ctx).(pg.Tx) // panics if not in a db transaction
 	tagsParam, err := mapToNullString(tags)
 	if err != nil {
 		return errors.Wrap(err)
