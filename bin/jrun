@@ -17,8 +17,7 @@ SRC=$1
 SRC_BASENAME=`basename $SRC`
 CLASS=${SRC_BASENAME%.java}
 
-COMPILE_PATH=/tmp/jrun-$CLASS-$RANDOM$RANDOM$RANDOM
-mkdir -p $COMPILE_PATH
+COMPILE_PATH=`mktemp -d`
 trap "rm -rf $COMPILE_PATH" EXIT
 
 javac -d $COMPILE_PATH $SRC
