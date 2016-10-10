@@ -187,7 +187,7 @@ func signTemplates(ctx context.Context, x struct {
 }
 
 func clientSigner(_ context.Context, _ string, path [][]byte, data [32]byte) ([]byte, error) {
-	return client.Sign(kd, path, data)
+	return client.XSign(kd, path, data)
 }
 
 // TODO(kr): more flexible/secure authentication (e.g. kerberos style)
