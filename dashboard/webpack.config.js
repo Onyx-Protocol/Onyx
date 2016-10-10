@@ -91,14 +91,14 @@ config.resolve = {
 // issues with an AMD configured module.
 config.module.noParse = /node_modules\/json-schema\/lib\/validate\.js/
 
-// Import only specified env vars in packaged source
-config.plugins.push(new webpack.EnvironmentPlugin([
-  'NODE_ENV',
-  'API_URL',
-  'PROXY_API_HOST',
-  'TESTNET_INFO_URL',
-  'TESTNET_GENERATOR_URL'
-]))
+// Import specified env vars in packaged source
+config.plugins.push(new webpack.DefinePlugin({
+  'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+  'process.env.API_URL': JSON.stringify(process.env.API_URL),
+  'process.env.PROXY_API_HOST': JSON.stringify(process.env.PROXY_API_HOST),
+  'process.env.TESTNET_INFO_URL': JSON.stringify(process.env.TESTNET_INFO_URL),
+  'process.env.TESTNET_GENERATOR_URL': JSON.stringify(process.env.TESTNET_GENERATOR_URL),
+}))
 
 config.output.publicPath = publicPath
 
