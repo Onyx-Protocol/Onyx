@@ -49,7 +49,7 @@ public class MockHsm {
      */
     public static Key create(Context ctx) throws ChainException {
       Key key = ctx.request("mockhsm/create-key", null, Key.class);
-      key.hsmUrl = buildMockHsmUrl(ctx.getUrl());
+      key.hsmUrl = buildMockHsmUrl(ctx.getUrlWithBasicAuth());
       return key;
     }
 
@@ -68,7 +68,7 @@ public class MockHsm {
       Map<String, Object> req = new HashMap<>();
       req.put("alias", alias);
       Key key = ctx.request("mockhsm/create-key", req, Key.class);
-      key.hsmUrl = buildMockHsmUrl(ctx.getUrl());
+      key.hsmUrl = buildMockHsmUrl(ctx.getUrlWithBasicAuth());
       return key;
     }
 
@@ -89,7 +89,7 @@ public class MockHsm {
       public Items getPage() throws ChainException {
         Items items = this.context.request("mockhsm/list-keys", this.next, Items.class);
         items.setContext(this.context);
-        URL mockHsmUrl = buildMockHsmUrl(this.context.getUrl());
+        URL mockHsmUrl = buildMockHsmUrl(this.context.getUrlWithBasicAuth());
         for (Key k : items.list) {
           k.hsmUrl = mockHsmUrl;
         }

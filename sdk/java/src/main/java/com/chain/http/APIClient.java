@@ -27,24 +27,15 @@ public class APIClient {
     this.baseURL = url;
     this.httpClient = new OkHttpClient();
     this.httpClient.setFollowRedirects(false);
+    String userinfo = url.getUserInfo();
+    if (userinfo != null && !userinfo.isEmpty()) {
+      credentials = buildCredentials(userinfo);
+    }
   }
 
   public APIClient(URL url, String accessToken) {
     this(url);
-
-    String user = "";
-    String pass = "";
-    if (accessToken != null) {
-      String[] parts = accessToken.split(":");
-      if (parts.length >= 1) {
-        user = parts[0];
-      }
-      if (parts.length >= 2) {
-        pass = parts[1];
-      }
-    }
-
-    credentials = Credentials.basic(user, pass);
+    credentials =  buildCredentials(accessToken);
   }
 
   public void pinCertificate(String provider, String subjPubKeyInfoHash) {
@@ -243,5 +234,20 @@ public class APIClient {
     } catch (URISyntaxException e) {
       throw new MalformedURLException();
     }
+  }
+
+  private static String buildCredentials(String accessToken) {
+    String user = "";
+    String pass = "";
+    if (accessToken != null) {
+      String[] parts = accessToken.split(":");
+      if (parts.length >= 1) {
+        user = parts[0];
+      }
+      if (parts.length >= 2) {
+        pass = parts[1];
+      }
+    }
+    return Credentials.basic(user, pass);
   }
 }

@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 public class Context {
 
   private URL url;
+  private String accessToken;
   private APIClient httpClient;
 
   /**
@@ -33,6 +34,7 @@ public class Context {
    */
   public Context(URL url, String accessToken) {
     this.url = url;
+    this.accessToken = accessToken;
     this.httpClient = new APIClient(url, accessToken);
   }
 
@@ -66,8 +68,15 @@ public class Context {
     return httpClient.post(action, body, tClass, true);
   }
 
-  public URL getUrl() {
-    return this.url;
+  public URL getUrlWithBasicAuth() throws BadURLException {
+    if (this.accessToken == null || this.accessToken.isEmpty()) {
+      return this.url;
+    }
+    try {
+      return new URL(String.format("%s://%s@%s", this.url.getProtocol(), this.accessToken, this.url.getAuthority()));
+    } catch (MalformedURLException e) {
+      throw new BadURLException(e.getMessage());
+    }
   }
 
   public void setConnectTimeout(long timeout, TimeUnit unit) {
