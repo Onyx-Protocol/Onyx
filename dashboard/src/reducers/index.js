@@ -18,7 +18,7 @@ const makeRootReducer = () => (state, action) => {
       !action.param.is_configured) {
     const newState = {
       form: state.form,
-      routing: state.routing
+      routing: state.routing,
     }
 
     if (state.core.blockchainID == (action.param.blockchain_id || 0)) {

@@ -1,5 +1,6 @@
 import React from 'react'
 import styles from './TextField.scss'
+import pick from 'lodash.pick'
 
 const TEXT_FIELD_PROPS = [
   'value',
@@ -15,12 +16,7 @@ class TextField extends React.Component {
   }
 
   render() {
-    // Select only valid props from Redux form field properties to
-    // pass to input component
-    const fieldProps = TEXT_FIELD_PROPS.reduce((mapping, key) => {
-      if (this.props.fieldProps.hasOwnProperty(key)) mapping[key] = this.props.fieldProps[key]
-      return mapping
-    }, {})
+    const fieldProps = pick(this.props.fieldProps, TEXT_FIELD_PROPS)
 
     const inputClasses = ['form-control']
     const error = this.props.fieldProps.error

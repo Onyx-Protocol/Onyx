@@ -1,6 +1,7 @@
 import { reduxForm } from 'redux-form'
 import { TextField } from 'components/Common'
 import { ErrorBanner } from 'features/shared/components'
+import pick from 'lodash.pick'
 import actions from 'actions'
 import InlineSVG from 'svg-inline-react'
 import React from 'react'
@@ -11,10 +12,6 @@ class Index extends React.Component {
     super(props)
 
     this.submitWithValidation = this.submitWithValidation.bind(this)
-  }
-
-  componentDidMount() {
-    this.props.fetchTestNetInfo()
   }
 
   showNewFields() {
@@ -38,7 +35,7 @@ class Index extends React.Component {
 
     return new Promise((resolve, reject) => {
       this.props.submitForm(data)
-        .catch((err) => reject({_error: err.message}))
+        .catch((err) => reject({type: err.message}))
     })
   }
 
@@ -50,41 +47,45 @@ class Index extends React.Component {
         generator_access_token,
         blockchain_id
       },
-      error,
       handleSubmit,
-      submitting
+      submitting,
     } = this.props
 
     const typeChange = (event) => {
       const value = type.onChange(event).value
 
-      if (value == 'testnet') {
-        const testNet = this.props.testNetInfo
-        generator_url.onChange(testNet.generator_url)
-        generator_access_token.onChange(testNet.generator_access_token)
-        blockchain_id.onChange(testNet.blockchain_id)
-      } else {
+      if (value != 'join') {
         generator_url.onChange('')
         generator_access_token.onChange('')
         blockchain_id.onChange('')
       }
     }
 
-    const typeProps = {...type, onChange: typeChange}
+    const typeProps = {
+      ...pick(type, ['name', 'value', 'checked', 'onBlur', 'onFocus']),
+      onChange: typeChange
+    }
 
-    let submitButton = <button type='submit' className={`btn btn-primary btn-lg ${styles.submit}`} disabled={submitting}>
-      <span className='glyphicon glyphicon-arrow-right' />
-      &nbsp;{this.showNewFields() ? 'Create' : 'Join'} network
-    </button>
+    let configSubmit = [
+      (type.error && <ErrorBanner
+        key='configError'
+        title='There was a problem configuring your core:'
+        message={type.error}
+      />),
+      <button
+        key='configSubmit'
+        type='submit'
+        className={`btn btn-primary btn-lg ${styles.submit}`}
+        disabled={submitting}>
+          <span className='glyphicon glyphicon-arrow-right' />
+          &nbsp;{this.showNewFields() ? 'Create' : 'Join'} network
+      </button>
+    ]
 
     return (
       <form onSubmit={handleSubmit(this.submitWithValidation)}>
         <h2 className={styles.title}>Select a blockchain configuration</h2>
         <h3 className={styles.subtitle}>You can reset your Chain Core at any time to change these settings</h3>
-
-        {error && <ErrorBanner
-          title='There was a problem configuring your core:'
-          message={error}/>}
 
         <div className={styles.choices}>
           <div className={styles.choice_wrapper}>
@@ -103,7 +104,7 @@ class Index extends React.Component {
               </div>
             </label>
 
-            {this.showNewFields() && submitButton}
+            {this.showNewFields() && configSubmit}
           </div>
 
           <div className={styles.choice_wrapper}>
@@ -136,16 +137,16 @@ class Index extends React.Component {
                 placeholder='896a800000000000000'
                 fieldProps={blockchain_id} />
 
-              {submitButton}
+              {configSubmit}
             </div>}
           </div>
+
           <div className={styles.choice_wrapper}>
             <label>
               <input className={styles.choice_radio_button}
                     type='radio'
                     {...typeProps}
-                    value='testnet'
-                    disabled={this.props.testNetInfo.loading} />
+                    value='testnet' />
               <div className={styles.choice}>
                 <InlineSVG src={require('!svg-inline!assets/images/config/join-existing.svg')} />
                   <span className={styles.choice_title}>Join the Chain Testnet</span>
@@ -156,7 +157,7 @@ class Index extends React.Component {
               </div>
             </label>
 
-            {this.showTestNetFields() && submitButton}
+            {this.showTestNetFields() && configSubmit}
           </div>
         </div>
       </form>

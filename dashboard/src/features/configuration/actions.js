@@ -19,29 +19,40 @@ const retry = (dispatch, promise, count = 10) => {
   })
 }
 
+const fetchTestNetInfo = () => {
+  return (dispatch) =>
+    fetch(testNetInfoUrl)
+      .then(resp => resp.json())
+      .then(json => {
+        dispatch(receivedTestNetConfig(json))
+        return json
+      })
+}
+
 let actions = {
-  fetchTestNetInfo: () => {
-    return (dispatch) => {
-      fetch(testNetInfoUrl)
-        .then(resp => resp.json())
-        .then(json => dispatch(receivedTestNetConfig(json)))
-    }
-  },
+  fetchTestNetInfo,
   submitConfiguration: (data) => {
-    return (dispatch) => {
-
-      if (data.type == 'new') {
-        data = {
-          is_generator: true,
-          is_signer: true,
-          quorum: 1,
-        }
-      }
-
-      delete data.type
-
-      return chain.Core.configure(context(), data)
+    const configureWithRetry = (dispatch, config) => {
+      return chain.Core.configure(context(), config)
         .then(() => retry(dispatch, coreActions.fetchCoreInfo({throw: true})))
+    }
+
+    return (dispatch) => {
+      if (data.type == 'testnet') {
+        return dispatch(fetchTestNetInfo()).then(testNet =>
+          configureWithRetry(dispatch, testNet))
+      } else {
+        if (data.type == 'new') {
+          data = {
+            is_generator: true,
+            is_signer: true,
+            quorum: 1,
+          }
+        }
+
+        delete data.type
+        return configureWithRetry(dispatch, data)
+      }
     }
   }
 }
