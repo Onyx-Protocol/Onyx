@@ -1,10 +1,74 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <link href="css/example.css" rel="stylesheet" type="text/css">
-    <script type="text/javascript" src="js/example.js"></script>
-  </head>
-  <body>
-    <div class='content'>{{Body}}</div>
-  </body>
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <link rel="shortcut icon" href="images/favicon.ico">
+    <title>Chain Core Quickstart </title>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,700" rel="stylesheet">
+    <link rel="stylesheet" href="/doc/css/style.css">
+    <link rel="stylesheet" href="/doc/css/prettify.css">
+    <script src="/doc/js/jquery.min.js"></script>
+    <script src="/doc/js/layout.js"></script>
+</head>
+<body>
+<div class="wrapper">
+    <header>
+        <div class="container">
+            <a href="/doc/"><img src="/doc/images/chain-brand.png" class="chain-brand"></a>
+            <span class="app-title">Chain Core Documentation</span>
+        </div>
+    </header>
+    <ul class="docs-nav">
+        <li><strong>Getting Started</strong></li>
+        <li><a href="/doc/getting-started/configure">Configure</a></li>
+        <li><a href="/doc/getting-started/fundamentals">Fundamentals</a></li>
+        <li><a href="/doc/getting-started/five-minute-guide">5-Minute Guide</a></li>
+        <li class="separator"></li>
+        <li><strong>Building Applications</strong></li>
+        <li><a href="/doc/learn-more/accounts-guide">Accounts</a></li>
+        <li><a href="/doc/learn-more/assets-guide">Assets</a></li>
+        <li><a href="/doc/learn-more/transactions-guide">Transactions</a></li>
+        <li><a href="/doc/learn-more/unspent-outputs-guide">Unspent Outputs</a></li>
+        <li><a href="/doc/learn-more/balances-guide">Balances</a></li>
+        <li><a href="/doc/learn-more/control-programs">Control Programs</a></li>
+        <li><a href="/doc/learn-more/query-filters">Query Filters</a></li>
+        <li class="separator"></li>
+        <li><strong>Learn More</strong></li>
+        <li><a href="/doc/learn-more/global-vs-local-data">Global vs Local Data</a></li>
+        <li><a href="/doc/learn-more/blockchain-operators">Blockchain Operators</a></li>
+        <li><a href="/doc/learn-more/blockchain-participants">Blockchain Partitipants</a></li>
+        <li class="separator"></li>
+        <li><strong>API Reference</strong></li>
+        <li class="external-link"><a href="https://s3.amazonaws.com/chain-docs/javadoc/index.html" target="_blank"
+               class="cc-active">Java SDK</a></li>
+        <li><a href="/doc/reference/api-objects">API Objects</a></li>
+    </ul>
+    <section>
+        <div class="container">
+            <div class="docs-content">
+                {{Body}}
+            </div>
+        </div>
+    </section>
+</div>
+<script>
+    (function (i, s, o, g, r, a, m) {
+        i['GoogleAnalyticsObject'] = r;
+        i[r] = i[r] || function () {
+                    (i[r].q = i[r].q || []).push(arguments)
+                }, i[r].l = 1 * new Date();
+        a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0];
+        a.async = 1;
+        a.src = g;
+        m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+
+    ga('create', 'UA-50822719-5', 'auto');
+    ga('send', 'pageview');
+</script>
+</body>
 </html>
