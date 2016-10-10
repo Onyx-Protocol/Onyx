@@ -10,7 +10,9 @@ class SearchBar extends React.Component {
     }
     this.state.showClear = this.state.query != '' || this.state.sumBy != ''
 
-    this.handleChange = this.handleChange.bind(this)
+    this.filterKeydown = this.filterKeydown.bind(this)
+    this.filterOnChange = this.filterOnChange.bind(this)
+    this.sumByOnChange = this.sumByOnChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
     this.clearQuery = this.clearQuery.bind(this)
   }
@@ -20,14 +22,60 @@ class SearchBar extends React.Component {
     this.setState({query: nextProps.queryString})
   }
 
-  handleChange() {
-    let newState = {
-      query: this.refs.queryField.value
+  filterKeydown(event) {
+    this.setState({lastKeypress: event.key})
+  }
+
+  filterOnChange(event) {
+    const input = event.target
+    const key = this.state.lastKeypress
+    let value = event.target.value
+    let cursorPosition = input.selectionStart
+
+    switch (key) {
+      case '=':
+        value = value.substr(0, cursorPosition)
+          + "''"
+          + value.substr(cursorPosition)
+
+        cursorPosition += 1
+        break
+      case '"':
+        value = value.substr(0, value.length - 1) + "'"
+        break
+      case "'":
+        if (value[cursorPosition] == "'" &&
+            value[cursorPosition - 1] == "'") {
+          value = value.substr(0, cursorPosition-1)
+            + value.substr(cursorPosition)
+        }
+        break
+      case '(':
+        value = value.substr(0, cursorPosition)
+          + ')'
+          + value.substr(cursorPosition)
+
+        break
+      case ')':
+        if (value[cursorPosition] == ')' &&
+            value[cursorPosition - 1] == ')') {
+          value = value.substr(0, cursorPosition-1)
+            + value.substr(cursorPosition)
+        }
+        break
     }
-    if (this.refs.sumByField) {
-      newState.sumBy = this.refs.sumByField.value
-    }
-    this.setState(newState)
+
+    this.setState({query: value})
+
+    // Setting selection range only works after the onChange
+    // handler has completed
+    setTimeout(() => {
+      input.setSelectionRange(cursorPosition, cursorPosition)
+    }, 0)
+  }
+
+  sumByOnChange(event) {
+    this.setState({sumBy: event.target.value})
   }
 
   handleSubmit(event) {
@@ -66,21 +114,22 @@ class SearchBar extends React.Component {
         <form onSubmit={this.handleSubmit}>
           <span className={searchFieldClass}>
             <label>Filter</label>
-            <input ref='queryField'
-                   value={this.state.query}
-                   onChange={this.handleChange}
-                   className={`form-control ${styles.search_input}`}
-                   type='search'
-                   autoFocus='autofocus'
-                   placeholder='Enter predicate...' />
+            <input
+              value={this.state.query}
+              onKeyDown={this.filterKeydown}
+              onChange={this.filterOnChange}
+              className={`form-control ${styles.search_input}`}
+              type='search'
+              autoFocus='autofocus'
+              placeholder='Enter predicate...' />
           </span>
 
           {showSumBy &&
             <span className={styles.sum_by_field}>
               <label>Sum By</label>
-              <input ref='sumByField'
+              <input
                 value={this.state.sumBy}
-                onChange={this.handleChange}
+                onChange={this.sumByOnChange}
                 className={`form-control ${styles.search_input}`}
                 type='search'
                 placeholder='asset_alias, asset_id' />
