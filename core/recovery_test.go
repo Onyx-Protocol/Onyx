@@ -60,10 +60,10 @@ func TestRecovery(t *testing.T) {
 
 	// Submit a transfer between Alice and Bob but don't publish it in a block.
 	assettest.Transfer(setupCtx, t, c, []txbuilder.Action{
-		assettest.NewAccountControlAction(bc.AssetAmount{AssetID: usd, Amount: 1}, alice, nil),
-		assettest.NewAccountControlAction(bc.AssetAmount{AssetID: apple, Amount: 1}, bob, nil),
-		assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: usd, Amount: 1}, bob, nil, nil, nil),
-		assettest.NewAccountSpendAction(bc.AssetAmount{AssetID: apple, Amount: 1}, alice, nil, nil, nil),
+		account.NewControlAction(bc.AssetAmount{AssetID: usd, Amount: 1}, alice, nil),
+		account.NewControlAction(bc.AssetAmount{AssetID: apple, Amount: 1}, bob, nil),
+		account.NewSpendAction(bc.AssetAmount{AssetID: usd, Amount: 1}, bob, nil, nil, nil, nil),
+		account.NewSpendAction(bc.AssetAmount{AssetID: apple, Amount: 1}, alice, nil, nil, nil, nil),
 	})
 
 	err := db.Close()

@@ -3,12 +3,10 @@ package assettest
 import (
 	"context"
 	"testing"
-	"time"
 
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/txbuilder"
-	"chain/encoding/json"
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -52,11 +50,11 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, c *protocol.Chain, as
 	if accountID == "" {
 		accountID = CreateAccountFixture(ctx, t, nil, 0, "", nil)
 	}
-	dest := NewAccountControlAction(bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil)
+	dest := account.NewControlAction(bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil)
 
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
 
-	src := NewIssueAction(assetAmount, nil) // does not support reference data
+	src := asset.NewIssueAction(assetAmount, nil) // does not support reference data
 	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{dest, src})
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -92,32 +90,4 @@ func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, actions []tx
 	}
 
 	return tx
-}
-
-func NewIssueAction(assetAmount bc.AssetAmount, referenceData json.Map) *asset.IssueAction {
-	return &asset.IssueAction{
-		TTL:           24 * time.Hour,
-		AssetAmount:   assetAmount,
-		ReferenceData: referenceData,
-	}
-}
-
-func NewAccountSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash, txOut *uint32, refData json.Map) *account.SpendAction {
-	return &account.SpendAction{
-		AssetAmount:   amt,
-		AssetAlias:    "",
-		TxHash:        txHash,
-		TxOut:         txOut,
-		AccountID:     accountID,
-		AccountAlias:  "",
-		ReferenceData: refData,
-	}
-}
-
-func NewAccountControlAction(amt bc.AssetAmount, accountID string, refData json.Map) *account.ControlAction {
-	return &account.ControlAction{
-		AssetAmount:   amt,
-		AccountID:     accountID,
-		ReferenceData: refData,
-	}
 }

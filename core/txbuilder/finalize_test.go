@@ -49,8 +49,8 @@ func TestConflictingTxsInPool(t *testing.T) {
 		AssetID: info.asset.AssetID,
 		Amount:  10,
 	}
-	spendAction := assettest.NewAccountSpendAction(assetAmount, info.acctA.ID, nil, nil, nil)
-	dest1 := assettest.NewAccountControlAction(assetAmount, info.acctB.ID, nil)
+	spendAction := account.NewSpendAction(assetAmount, info.acctA.ID, nil, nil, nil, nil)
+	dest1 := account.NewControlAction(assetAmount, info.acctB.ID, nil)
 
 	// Build the first tx
 	firstTemplate, err := Build(ctx, nil, []Action{spendAction, dest1})
@@ -71,7 +71,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	// Build the second tx
-	dest2 := assettest.NewAccountControlAction(assetAmount, info.acctB.ID, nil)
+	dest2 := account.NewControlAction(assetAmount, info.acctB.ID, nil)
 	secondTemplate, err := Build(ctx, nil, []Action{spendAction, dest2})
 	if err != nil {
 		t.Fatal(err)
@@ -295,8 +295,8 @@ func issue(ctx context.Context, t testing.TB, c *protocol.Chain, info *clientInf
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}
-	issueDest := assettest.NewAccountControlAction(assetAmount, destAcctID, nil)
-	issueTx, err := Build(ctx, nil, []Action{assettest.NewIssueAction(assetAmount, nil), issueDest})
+	issueDest := account.NewControlAction(assetAmount, destAcctID, nil)
+	issueTx, err := Build(ctx, nil, []Action{asset.NewIssueAction(assetAmount, nil), issueDest})
 	if err != nil {
 		return nil, err
 	}
@@ -310,8 +310,8 @@ func transfer(ctx context.Context, t testing.TB, c *protocol.Chain, info *client
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}
-	source := assettest.NewAccountSpendAction(assetAmount, srcAcctID, nil, nil, nil)
-	dest := assettest.NewAccountControlAction(assetAmount, destAcctID, nil)
+	source := account.NewSpendAction(assetAmount, srcAcctID, nil, nil, nil, nil)
+	dest := account.NewControlAction(assetAmount, destAcctID, nil)
 
 	xferTx, err := Build(ctx, nil, []Action{source, dest})
 	if err != nil {

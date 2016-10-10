@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 
 	"chain/core/account"
 	"chain/core/asset"
@@ -16,104 +15,40 @@ var (
 	errBadAlias      = errors.New("bad alias")
 )
 
-type action struct {
-	underlying txbuilder.Action
-}
-
-func (a *action) UnmarshalJSON(data []byte) error {
-	var x struct{ Type string }
-	err := json.Unmarshal(data, &x)
-	if err != nil {
-		return err
-	}
-
-	switch x.Type {
-	case "control_program":
-		a.underlying = new(txbuilder.ControlProgramAction)
-	case "spend_account":
-		a.underlying = new(account.SpendAction)
-	case "control_account":
-		a.underlying = new(account.ControlAction)
-	case "issue":
-		a.underlying = new(asset.IssueAction)
-	case "spend_account_unspent_output":
-		a.underlying = new(account.SpendUTXOAction)
-	case "set_transaction_reference_data":
-		a.underlying = new(txbuilder.SetTxRefDataAction)
-	default:
-		return errors.WithDetailf(errBadActionType, "unknown type %s", x.Type)
-	}
-	return json.Unmarshal(data, a.underlying)
+var actionDecoders = map[string]func(data []byte) (txbuilder.Action, error){
+	"control_account":                account.DecodeControlAction,
+	"control_program":                txbuilder.DecodeControlProgramAction,
+	"issue":                          asset.DecodeIssueAction,
+	"spend_account":                  account.DecodeSpendAction,
+	"spend_account_unspent_output":   account.DecodeSpendUTXOAction,
+	"set_transaction_reference_data": txbuilder.DecodeSetTxRefDataAction,
 }
 
 type buildRequest struct {
-	Tx      *bc.TxData `json:"base_transaction"`
-	Actions []*action  `json:"actions"`
-}
-
-func (req *buildRequest) actions() []txbuilder.Action {
-	actions := make([]txbuilder.Action, 0, len(req.Actions))
-	for _, act := range req.Actions {
-		actions = append(actions, act.underlying)
-	}
-
-	return actions
+	Tx      *bc.TxData               `json:"base_transaction"`
+	Actions []map[string]interface{} `json:"actions"`
 }
 
 func filterAliases(ctx context.Context, br *buildRequest) error {
-	for i, aAction := range br.Actions {
-		v := aAction.underlying
-		switch p := v.(type) {
-		case *asset.IssueAction:
-			if (p.AssetID == bc.AssetID{}) && p.AssetAlias != "" {
-				ast, err := asset.FindByAlias(ctx, p.AssetAlias)
-				if err != nil {
-					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.AssetAlias, i)
-				}
-				p.AssetID = ast.AssetID
+	for i, m := range br.Actions {
+		id, _ := m["assset_id"].(string)
+		alias, _ := m["asset_alias"].(string)
+		if id == "" && alias != "" {
+			asset, err := asset.FindByAlias(ctx, alias)
+			if err != nil {
+				return errors.WithDetailf(err, "invalid asset alias %s on action %d", alias, i)
 			}
-			aAction.underlying = p
-		case *account.ControlAction:
-			if (p.AssetID == bc.AssetID{}) && p.AssetAlias != "" {
-				ast, err := asset.FindByAlias(ctx, p.AssetAlias)
-				if err != nil {
-					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.AssetAlias, i)
-				}
-				p.AssetID = ast.AssetID
+			m["asset_id"] = asset.AssetID
+		}
+
+		id, _ = m["account_id"].(string)
+		alias, _ = m["account_alias"].(string)
+		if id == "" && alias != "" {
+			acc, err := account.FindByAlias(ctx, alias)
+			if err != nil {
+				return errors.WithDetailf(err, "invalid account alias %s on action %d", alias, i)
 			}
-			if p.AccountID == "" && p.AccountAlias != "" {
-				acc, err := account.FindByAlias(ctx, p.AccountAlias)
-				if err != nil {
-					return errors.WithDetailf(err, "invalid account alias %s on action %d", p.AccountAlias, i)
-				}
-				p.AccountID = acc.ID
-			}
-			aAction.underlying = p
-		case *account.SpendAction:
-			if (p.AssetID == bc.AssetID{}) && p.AssetAlias != "" {
-				ast, err := asset.FindByAlias(ctx, p.AssetAlias)
-				if err != nil {
-					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.AssetAlias, i)
-				}
-				p.AssetID = ast.AssetID
-			}
-			if p.AccountID == "" && p.AccountAlias != "" {
-				acc, err := account.FindByAlias(ctx, p.AccountAlias)
-				if err != nil {
-					return errors.WithDetailf(err, "invalid account alias %s on action %d", p.AccountAlias, i)
-				}
-				p.AccountID = acc.ID
-			}
-			aAction.underlying = p
-		case *txbuilder.ControlProgramAction:
-			if (p.AssetID == bc.AssetID{}) && p.AssetAlias != "" {
-				ast, err := asset.FindByAlias(ctx, p.AssetAlias)
-				if err != nil {
-					return errors.WithDetailf(err, "invalid asset alias %s on action %d", p.AssetAlias, i)
-				}
-				p.AssetID = ast.AssetID
-			}
-			aAction.underlying = p
+			m["account_id"] = acc.ID
 		}
 	}
 	return nil

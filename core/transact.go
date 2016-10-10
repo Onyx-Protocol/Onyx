@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 	"time"
 
@@ -20,7 +21,35 @@ const (
 )
 
 func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
-	tpl, err := txbuilder.Build(ctx, req.Tx, req.actions())
+	err := filterAliases(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	actions := make([]txbuilder.Action, 0, len(req.Actions))
+	for _, act := range req.Actions {
+		typ, ok := act["type"].(string)
+		if !ok {
+			return nil, errors.WithDetailf(errBadActionType, "no action type provided")
+		}
+		decoder, ok := actionDecoders[typ]
+		if !ok {
+			return nil, errors.WithDetailf(errBadActionType, "unknown action type %q", typ)
+		}
+
+		// Remarshal to JSON, the action may have been modified when we
+		// filtered aliases.
+		b, err := json.Marshal(act)
+		if err != nil {
+			return nil, err
+		}
+		a, err := decoder(b)
+		if err != nil {
+			return nil, err
+		}
+		actions = append(actions, a)
+	}
+
+	tpl, err := txbuilder.Build(ctx, req.Tx, actions)
 	if err != nil {
 		return nil, err
 	}
@@ -41,13 +70,6 @@ func build(ctx context.Context, buildReqs []*buildRequest) (interface{}, error) 
 	for i := 0; i < len(responses); i++ {
 		go func(i int) {
 			defer wg.Done()
-
-			err := filterAliases(ctx, buildReqs[i])
-			if err != nil {
-				logHTTPError(ctx, err)
-				responses[i], _ = errInfo(err)
-				return
-			}
 
 			resp, err := buildSingle(reqid.NewSubContext(ctx, reqid.New()), buildReqs[i])
 			if err != nil {

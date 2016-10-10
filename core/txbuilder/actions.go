@@ -2,33 +2,39 @@ package txbuilder
 
 import (
 	"context"
+	stdjson "encoding/json"
 
 	"chain/encoding/json"
 	"chain/protocol/bc"
 )
 
-type ControlProgramAction struct {
-	bc.AssetAmount
-	Program json.HexBytes `json:"control_program"`
-
-	// This field is only necessary for filtering
-	// aliases on transaction build requests. A wrapper
-	// function reads it to set the ID field. It is
-	// not used anywhere else in the code base.
-	AssetAlias string `json:"asset_alias"`
-
-	ReferenceData json.Map `json:"reference_data"`
+func DecodeControlProgramAction(data []byte) (Action, error) {
+	a := new(controlProgramAction)
+	err := stdjson.Unmarshal(data, a)
+	return a, err
 }
 
-func (c *ControlProgramAction) Build(ctx context.Context) (*BuildResult, error) {
+type controlProgramAction struct {
+	bc.AssetAmount
+	Program       json.HexBytes `json:"control_program"`
+	ReferenceData json.Map      `json:"reference_data"`
+}
+
+func (c *controlProgramAction) Build(ctx context.Context) (*BuildResult, error) {
 	out := bc.NewTxOutput(c.AssetID, c.Amount, c.Program, c.ReferenceData)
 	return &BuildResult{Outputs: []*bc.TxOutput{out}}, nil
 }
 
-type SetTxRefDataAction struct {
+func DecodeSetTxRefDataAction(data []byte) (Action, error) {
+	a := new(setTxRefDataAction)
+	err := stdjson.Unmarshal(data, a)
+	return a, err
+}
+
+type setTxRefDataAction struct {
 	Data json.Map `json:"reference_data"`
 }
 
-func (a *SetTxRefDataAction) Build(ctx context.Context) (*BuildResult, error) {
+func (a *setTxRefDataAction) Build(ctx context.Context) (*BuildResult, error) {
 	return &BuildResult{ReferenceData: a.Data}, nil
 }

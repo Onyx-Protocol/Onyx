@@ -2,35 +2,45 @@ package account
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"chain/core/account/utxodb"
 	"chain/core/signers"
 	"chain/core/txbuilder"
-	"chain/encoding/json"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
 )
 
-type SpendAction struct {
-	bc.AssetAmount
-	AccountID string        `json:"account_id"`
-	TxHash    *bc.Hash      `json:"transaction_id"`
-	TxOut     *uint32       `json:"position"`
-	TTL       time.Duration `json:"reservation_ttl"`
-
-	// These fields are only necessary for filtering
-	// aliases on transaction build requests. A wrapper
-	// function reads them to set the ID fields. They are
-	// not used anywhere else in the code base.
-	AccountAlias string `json:"account_alias"`
-	AssetAlias   string `json:"asset_alias"`
-
-	ReferenceData json.Map `json:"reference_data"`
-	ClientToken   *string  `json:"client_token"`
+func NewSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash, txOut *uint32, refData chainjson.Map, clientToken *string) txbuilder.Action {
+	return &spendAction{
+		AssetAmount:   amt,
+		TxHash:        txHash,
+		TxOut:         txOut,
+		AccountID:     accountID,
+		ReferenceData: refData,
+		ClientToken:   clientToken,
+	}
 }
 
-func (a *SpendAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
+func DecodeSpendAction(data []byte) (txbuilder.Action, error) {
+	a := new(spendAction)
+	err := json.Unmarshal(data, a)
+	return a, err
+}
+
+type spendAction struct {
+	bc.AssetAmount
+	AccountID     string        `json:"account_id"`
+	TxHash        *bc.Hash      `json:"transaction_id"`
+	TxOut         *uint32       `json:"position"`
+	TTL           time.Duration `json:"reservation_ttl"`
+	ReferenceData chainjson.Map `json:"reference_data"`
+	ClientToken   *string       `json:"client_token"`
+}
+
+func (a *spendAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
 	ttl := a.TTL
 	if ttl == 0 {
 		ttl = time.Minute
@@ -87,16 +97,30 @@ func (a *SpendAction) Build(ctx context.Context) (*txbuilder.BuildResult, error)
 	}, nil
 }
 
-type SpendUTXOAction struct {
+func NewSpendUTXOAction(outpoint bc.Outpoint, ttl time.Duration) txbuilder.Action {
+	return &spendUTXOAction{
+		TxHash: outpoint.Hash,
+		TxOut:  outpoint.Index,
+		TTL:    ttl,
+	}
+}
+
+func DecodeSpendUTXOAction(data []byte) (txbuilder.Action, error) {
+	a := new(spendUTXOAction)
+	err := json.Unmarshal(data, a)
+	return a, err
+}
+
+type spendUTXOAction struct {
 	TxHash bc.Hash       `json:"transaction_id"`
 	TxOut  uint32        `json:"position"`
 	TTL    time.Duration `json:"reservation_ttl"`
 
-	ReferenceData json.Map `json:"reference_data"`
-	ClientToken   *string  `json:"client_token"`
+	ReferenceData chainjson.Map `json:"reference_data"`
+	ClientToken   *string       `json:"client_token"`
 }
 
-func (a *SpendUTXOAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
+func (a *spendUTXOAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
 	ttl := a.TTL
 	if ttl == 0 {
 		ttl = time.Minute
@@ -144,21 +168,27 @@ func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxodb.UTXO, 
 	return txInput, sigInst, nil
 }
 
-type ControlAction struct {
-	bc.AssetAmount
-	AccountID string `json:"account_id"`
-
-	// These fields are only necessary for filtering
-	// aliases on transaction build requests. A wrapper
-	// function reads them to set the ID fields. They are
-	// not used anywhere else in the code base.
-	AccountAlias string `json:"account_alias"`
-	AssetAlias   string `json:"asset_alias"`
-
-	ReferenceData json.Map `json:"reference_data"`
+func NewControlAction(amt bc.AssetAmount, accountID string, refData chainjson.Map) txbuilder.Action {
+	return &controlAction{
+		AssetAmount:   amt,
+		AccountID:     accountID,
+		ReferenceData: refData,
+	}
 }
 
-func (a *ControlAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
+func DecodeControlAction(data []byte) (txbuilder.Action, error) {
+	a := new(controlAction)
+	err := json.Unmarshal(data, a)
+	return a, err
+}
+
+type controlAction struct {
+	bc.AssetAmount
+	AccountID     string        `json:"account_id"`
+	ReferenceData chainjson.Map `json:"reference_data"`
+}
+
+func (a *controlAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
 	acp, err := CreateControlProgram(ctx, a.AccountID, false)
 	if err != nil {
 		return nil, err

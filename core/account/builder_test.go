@@ -37,7 +37,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		AssetID: asset,
 		Amount:  1,
 	}
-	source := assettest.NewAccountSpendAction(assetAmount1, accID, nil, nil, nil)
+	source := account.NewSpendAction(assetAmount1, accID, nil, nil, nil, nil)
 
 	buildResult, err := source.Build(ctx)
 	if err != nil {
@@ -78,12 +78,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	// Make a block so that account UTXOs are available to spend.
 	prottest.MakeBlock(ctx, t, c)
 
-	source := &account.SpendUTXOAction{
-		TxHash: out.Hash,
-		TxOut:  out.Index,
-		TTL:    time.Minute,
-	}
-
+	source := account.NewSpendUTXOAction(out.Outpoint, time.Minute)
 	buildResult, err := source.Build(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -117,13 +112,10 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		// An idempotency key that both reservations should use.
 		clientToken1 = "a-unique-idempotency-key"
 		clientToken2 = "another-unique-idempotency-key"
-		wantSrc      = assettest.NewAccountSpendAction(assetAmount1, accID, nil, nil, nil)
-		gotSrc       = assettest.NewAccountSpendAction(assetAmount1, accID, nil, nil, nil)
-		separateSrc  = assettest.NewAccountSpendAction(assetAmount1, accID, nil, nil, nil)
+		wantSrc      = account.NewSpendAction(assetAmount1, accID, nil, nil, nil, &clientToken1)
+		gotSrc       = account.NewSpendAction(assetAmount1, accID, nil, nil, nil, &clientToken1)
+		separateSrc  = account.NewSpendAction(assetAmount1, accID, nil, nil, nil, &clientToken2)
 	)
-	wantSrc.ClientToken = &clientToken1
-	gotSrc.ClientToken = &clientToken1
-	separateSrc.ClientToken = &clientToken2
 
 	// Make a block so that account UTXOs are available to spend.
 	prottest.MakeBlock(ctx, t, c)
@@ -180,7 +172,7 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 
 	for i := 0; i < utxos; i++ {
 		theTxHash := srcTxs[i]
-		source := assettest.NewAccountSpendAction(assetAmt, acc, &theTxHash, nil, nil)
+		source := account.NewSpendAction(assetAmt, acc, &theTxHash, nil, nil, nil)
 
 		buildResult, err := source.Build(ctx)
 		if err != nil {

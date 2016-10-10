@@ -3,30 +3,38 @@ package asset
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"time"
 
 	"chain/core/signers"
 	"chain/core/txbuilder"
 	"chain/database/pg"
-	"chain/encoding/json"
+	chainjson "chain/encoding/json"
 	"chain/errors"
 	"chain/protocol/bc"
 )
 
-type IssueAction struct {
-	bc.AssetAmount
-	TTL time.Duration
-
-	// This field is only necessary for filtering
-	// aliases on transaction build requests. A wrapper
-	// function reads it to set the ID field. It is
-	// not used anywhere else in the code base.
-	AssetAlias string `json:"asset_alias"`
-
-	ReferenceData json.Map `json:"reference_data"`
+func NewIssueAction(assetAmount bc.AssetAmount, referenceData chainjson.Map) txbuilder.Action {
+	return &issueAction{
+		TTL:           24 * time.Hour,
+		AssetAmount:   assetAmount,
+		ReferenceData: referenceData,
+	}
 }
 
-func (a *IssueAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
+func DecodeIssueAction(data []byte) (txbuilder.Action, error) {
+	a := new(issueAction)
+	err := json.Unmarshal(data, a)
+	return a, err
+}
+
+type issueAction struct {
+	bc.AssetAmount
+	TTL           time.Duration
+	ReferenceData chainjson.Map `json:"reference_data"`
+}
+
+func (a *issueAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
 	now := time.Now()
 
 	// Auto-supply a nonzero mintime that allows for some clock skew

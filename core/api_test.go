@@ -39,8 +39,8 @@ func TestBuildFinal(t *testing.T) {
 		Amount:  100,
 	}
 
-	sources := txbuilder.Action(assettest.NewIssueAction(assetAmt, nil))
-	dests := assettest.NewAccountControlAction(assetAmt, acc.ID, nil)
+	sources := txbuilder.Action(asset.NewIssueAction(assetAmt, nil))
+	dests := account.NewControlAction(assetAmt, acc.ID, nil)
 
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
 	if err != nil {
@@ -56,7 +56,7 @@ func TestBuildFinal(t *testing.T) {
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(ctx, t, c)
 
-	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil)
+	sources = account.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
 	if err != nil {
 		t.Fatal(err)
@@ -139,9 +139,8 @@ func TestAccountTransfer(t *testing.T) {
 		Amount:  100,
 	}
 
-	sources := txbuilder.Action(assettest.NewIssueAction(assetAmt, nil))
-	dests := assettest.NewAccountControlAction(assetAmt, acc.ID, nil)
-
+	sources := txbuilder.Action(asset.NewIssueAction(assetAmt, nil))
+	dests := account.NewControlAction(assetAmt, acc.ID, nil)
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
 	if err != nil {
 		t.Fatal(err)
@@ -157,7 +156,7 @@ func TestAccountTransfer(t *testing.T) {
 	prottest.MakeBlock(ctx, t, c)
 
 	// new source
-	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil)
+	sources = account.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
 	if err != nil {
 		t.Fatal(err)
@@ -211,8 +210,8 @@ func TestTransfer(t *testing.T) {
 		AssetID: assetID,
 		Amount:  100,
 	}
-	issueDest := assettest.NewAccountControlAction(issueAssetAmount, account1ID, nil)
-	txTemplate, err := txbuilder.Build(ctx, nil, []txbuilder.Action{assettest.NewIssueAction(issueAssetAmount, nil), issueDest})
+	issueDest := account.NewControlAction(issueAssetAmount, account1ID, nil)
+	txTemplate, err := txbuilder.Build(ctx, nil, []txbuilder.Action{asset.NewIssueAction(issueAssetAmount, nil), issueDest})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

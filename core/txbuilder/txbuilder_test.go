@@ -32,8 +32,8 @@ func (t testAction) Build(ctx context.Context) (*BuildResult, error) {
 	return &BuildResult{Inputs: []*bc.TxInput{in}, Outputs: []*bc.TxOutput{change}, SigningInstructions: []*SigningInstruction{tplIn}}, nil
 }
 
-func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *ControlProgramAction {
-	return &ControlProgramAction{
+func newControlProgramAction(assetAmt bc.AssetAmount, script []byte) *controlProgramAction {
+	return &controlProgramAction{
 		AssetAmount: assetAmt,
 		Program:     script,
 	}
@@ -58,7 +58,7 @@ func TestBuild(t *testing.T) {
 	actions := []Action{
 		newControlProgramAction(bc.AssetAmount{AssetID: [32]byte{2}, Amount: 6}, []byte("dest")),
 		testAction(bc.AssetAmount{AssetID: [32]byte{1}, Amount: 5}),
-		&SetTxRefDataAction{Data: []byte("xyz")},
+		&setTxRefDataAction{Data: []byte("xyz")},
 	}
 	got, err := Build(ctx, nil, actions)
 	if err != nil {
@@ -94,7 +94,7 @@ func TestBuild(t *testing.T) {
 	}
 
 	// setting tx refdata twice should fail
-	actions = append(actions, &SetTxRefDataAction{Data: []byte("lmnop")})
+	actions = append(actions, &setTxRefDataAction{Data: []byte("lmnop")})
 	_, err = Build(ctx, nil, actions)
 	if errors.Root(err) != ErrBadRefData {
 		t.Errorf("got error %v, want ErrBadRefData", err)

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"chain/core/account"
+	"chain/core/asset"
 	"chain/core/asset/assettest"
 	"chain/core/txbuilder"
 	"chain/database/pg"
@@ -31,8 +32,8 @@ func TestLocalAccountTransfer(t *testing.T) {
 		Amount:  100,
 	}
 
-	sources := txbuilder.Action(assettest.NewIssueAction(assetAmt, nil))
-	dests := assettest.NewAccountControlAction(assetAmt, acc.ID, nil)
+	sources := txbuilder.Action(asset.NewIssueAction(assetAmt, nil))
+	dests := account.NewControlAction(assetAmt, acc.ID, nil)
 
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
 	if err != nil {
@@ -46,7 +47,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 	_, _ = submitSingle(ctx, c, submitSingleArg{tpl: tmpl, wait: time.Millisecond})
 
 	// Add a new source, spending the change output produced above.
-	sources = assettest.NewAccountSpendAction(assetAmt, acc.ID, nil, nil, nil)
+	sources = account.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
 	if err != nil {
 		t.Fatal(err)
