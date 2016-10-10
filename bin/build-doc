@@ -3,13 +3,11 @@ set -e
 
 echo "Compiling source documentation..."
 
-COMPILE_DEST_PATH=$CHAIN/doc/external/compiled
-
-rm -rf $COMPILE_DEST_PATH
+COMPILE_DEST_PATH=`mktemp -d`
+trap "rm -rf $COMPILE_DEST_PATH" EXIT
 
 go install chain/cmd/md2html
-mkdir -p $COMPILE_DEST_PATH
-cd $CHAIN/doc/external/src
+cd $CHAIN/doc
 md2html $COMPILE_DEST_PATH
 
 echo "Building Java SDK..."
