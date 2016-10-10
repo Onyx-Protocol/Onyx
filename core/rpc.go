@@ -33,6 +33,9 @@ func (a *api) getBlocksRPC(ctx context.Context, afterHeight uint64) ([]json.HexB
 	return jsonBlocks, nil
 }
 
+// Data is a []byte because it's being funneled from the
+// generator's db to the recipient node's db, and this is
+// the smallest serialization format.
 type snapshotResp struct {
 	Data   []byte `json:"data"`
 	Height uint64 `json:"height"`
@@ -40,6 +43,8 @@ type snapshotResp struct {
 
 // getSnapshotRPC returns the latest snapshot data.
 // The generator should run this to bootstrap new cores.
+// Non-generators can call this endpoint to get raw data
+// that they can use to populate their own snapshot table.
 func (a *api) getSnapshotRPC(ctx context.Context) (resp snapshotResp, err error) {
 	resp.Data, resp.Height, err = a.store.LatestFullSnapshot(ctx)
 	return resp, err

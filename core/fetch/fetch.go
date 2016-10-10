@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"chain/database/sql"
 	"chain/errors"
 	"chain/log"
 	"chain/net/rpc"
@@ -15,6 +16,7 @@ import (
 )
 
 const getBlocksTimeout = 3 * time.Second
+const getSnapshotTimeout = 10 * time.Second
 const heightPollingPeriod = 3 * time.Second
 
 var (
@@ -167,4 +169,57 @@ func getHeight(ctx context.Context, peer *rpc.Client) (uint64, error) {
 	}
 
 	return h, nil
+}
+
+// Snapshot fetches the latest snapshot from the generator and applies it to this
+// core's snapshot set. It should only be called on freshly configured cores--
+// cores that have been operating should replay all transactions so that they can
+// index them properly.
+func Snapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, db *sql.DB) error {
+	ctx, cancel := context.WithTimeout(ctx, getSnapshotTimeout)
+	defer cancel()
+
+	var snapResp struct {
+		Data   []byte
+		Height uint64
+	}
+	err := peer.Call(ctx, "/rpc/get-snapshot", nil, &snapResp)
+	if err != nil {
+		return err
+	}
+
+	const snapQ = `
+		INSERT INTO snapshots (height, data) VALUES ($1, $2)
+		ON CONFLICT DO NOTHING
+	`
+	_, err = db.Exec(ctx, snapQ, snapResp.Height, snapResp.Data)
+	if err != nil {
+		return err
+	}
+
+	// Next, get the genesis block.
+	blocks, err := getBlocks(ctx, peer, 0)
+	if err != nil {
+		return err
+	}
+
+	if len(blocks) < 1 {
+		// Something seriously funny is afoot.
+		return errors.New("could not get initial block from generator")
+	}
+
+	err = s.SaveBlock(ctx, blocks[0])
+
+	// Also get the corresponding block.
+	blocks, err = getBlocks(ctx, peer, snapResp.Height-1) // because we get the NEXT block
+	if err != nil {
+		return err
+	}
+
+	if len(blocks) < 1 {
+		// Something seriously funny is still afoot.
+		return errors.New("generator provided snapshot but could not provide block")
+	}
+
+	return s.SaveBlock(ctx, blocks[0])
 }
