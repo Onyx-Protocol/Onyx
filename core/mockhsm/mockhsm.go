@@ -3,12 +3,10 @@ package mockhsm
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"strconv"
 	"sync"
 
 	"chain/crypto/ed25519/chainkd"
-	"chain/crypto/sha3pool"
 	"chain/database/pg"
 	"chain/errors"
 )
@@ -51,15 +49,13 @@ func (h *HSM) create(ctx context.Context, alias string, get bool) (*XPub, bool, 
 	if err != nil {
 		return nil, false, err
 	}
-	var hash [32]byte
-	sha3pool.Sum256(hash[:], xpub.Bytes())
 	sqlAlias := sql.NullString{String: alias, Valid: alias != ""}
 	var ptrAlias *string
 	if alias != "" {
 		ptrAlias = &alias
 	}
-	const q = `INSERT INTO mockhsm (xpub_hash, xpub, xprv, alias) VALUES ($1, $2, $3, $4)`
-	_, err = h.db.Exec(ctx, q, hex.EncodeToString(hash[:]), xpub.Bytes(), xprv.Bytes(), sqlAlias)
+	const q = `INSERT INTO mockhsm (pub, prv, alias) VALUES ($1, $2, $3)`
+	_, err = h.db.Exec(ctx, q, xpub.Bytes(), xprv.Bytes(), sqlAlias)
 	if err != nil {
 		if pg.IsUniqueViolation(err) {
 			if !get {
@@ -67,7 +63,7 @@ func (h *HSM) create(ctx context.Context, alias string, get bool) (*XPub, bool, 
 			}
 
 			var xpubBytes []byte
-			err = pg.QueryRow(ctx, `SELECT xpub FROM mockhsm WHERE alias = $1`, alias).Scan(&xpubBytes)
+			err = pg.QueryRow(ctx, `SELECT pub FROM mockhsm WHERE alias = $1`, alias).Scan(&xpubBytes)
 			if err != nil {
 				return nil, false, errors.Wrapf(err, "reading existing xpub with alias %s", alias)
 			}
@@ -96,7 +92,7 @@ func (h *HSM) ListKeys(ctx context.Context, after string, limit int) ([]*XPub, s
 
 	var xpubs []*XPub
 	const q = `
-		SELECT xpub, alias, sort_id FROM mockhsm
+		SELECT pub, alias, sort_id FROM mockhsm
 		WHERE ($1=0 OR $1 < sort_id)
 		ORDER BY sort_id DESC LIMIT $2
 	`
@@ -128,7 +124,7 @@ func (h *HSM) load(ctx context.Context, xpub chainkd.XPub) (xprv chainkd.XPrv, e
 	}
 
 	var b []byte
-	err = h.db.QueryRow(ctx, "SELECT xprv FROM mockhsm WHERE xpub = $1", xpub.Bytes()).Scan(&b)
+	err = h.db.QueryRow(ctx, "SELECT prv FROM mockhsm WHERE pub = $1", xpub.Bytes()).Scan(&b)
 	if err == sql.ErrNoRows {
 		return xprv, ErrNoKey
 	}
@@ -158,6 +154,6 @@ func (h *HSM) DelKey(ctx context.Context, xpub chainkd.XPub) error {
 	h.cacheMu.Lock()
 	delete(h.cache, xpub)
 	h.cacheMu.Unlock()
-	_, err := h.db.Exec(ctx, "DELETE FROM mockhsm WHERE xpub = $1", xpub.Bytes())
+	_, err := h.db.Exec(ctx, "DELETE FROM mockhsm WHERE pub = $1", xpub.Bytes())
 	return err
 }

@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.3
--- Dumped by pg_dump version 9.5.3
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -553,11 +553,11 @@ CREATE SEQUENCE mockhsm_sort_id_seq
 --
 
 CREATE TABLE mockhsm (
-    xpub bytea NOT NULL,
-    xprv bytea NOT NULL,
-    xpub_hash text NOT NULL,
+    pub bytea NOT NULL,
+    prv bytea NOT NULL,
     alias text,
-    sort_id bigint DEFAULT nextval('mockhsm_sort_id_seq'::regclass) NOT NULL
+    sort_id bigint DEFAULT nextval('mockhsm_sort_id_seq'::regclass) NOT NULL,
+    key_type text DEFAULT 'chain_kd'::text NOT NULL
 );
 
 
@@ -861,7 +861,7 @@ ALTER TABLE ONLY mockhsm
 --
 
 ALTER TABLE ONLY mockhsm
-    ADD CONSTRAINT mockhsm_pkey PRIMARY KEY (xpub);
+    ADD CONSTRAINT mockhsm_pkey PRIMARY KEY (pub);
 
 
 --
@@ -1148,3 +1148,4 @@ insert into migrations (filename, hash) values ('2016-10-05.2.core.remove-testne
 insert into migrations (filename, hash) values ('2016-10-05.3.account.index-expiry-height.sql', 'a1db582321307ad8fc49c201e95f7380f5f8441d6ab9a11838433666441817d3');
 insert into migrations (filename, hash) values ('2016-10-05.4.config.add-max-issuance-window.sql', 'd8f1a243626db63630238869d0bf1a6c94f6e771558cb831c03f466bb93b2eb7');
 insert into migrations (filename, hash) values ('2016-10-08.0.core.rename-txconsumers-to-txfeeds.sql', 'e187c78524d7009c085b28017a6c801009e82a55d12ac3131bbd589a2b23c5ca');
+insert into migrations (filename, hash) values ('2016-10-10.0.mockhsm.add-key-types.sql', '00ac8143767fe4a44855cab1ec57afd52c44fd4d727055db9e8584c3e9b10983');
