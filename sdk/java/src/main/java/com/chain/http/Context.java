@@ -17,6 +17,21 @@ public class Context {
   private APIClient httpClient;
 
   /**
+   * Create a new http Context object using the default development host URL.
+   */
+  public Context() {
+    URL url;
+    try {
+      url = new URL("http://localhost:1999");
+    } catch (Exception e) {
+      throw new RuntimeException("invalid default development URL");
+    }
+
+    this.url = url;
+    this.httpClient = new APIClient(url);
+  }
+
+  /**
    * Create a new http Context object
    *
    * @param url The URL of the Chain Core or HSM
