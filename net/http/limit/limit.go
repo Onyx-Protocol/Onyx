@@ -8,18 +8,20 @@ import (
 )
 
 type handler struct {
-	next  http.Handler
-	f     func(*http.Request) string
-	freq  rate.Limit
-	burst int
+	next    http.Handler
+	limited http.Handler
+	f       func(*http.Request) string
+	freq    rate.Limit
+	burst   int
 
 	bucketMu sync.Mutex // protects the following
 	buckets  map[string]*rate.Limiter
 }
 
-func Handler(next http.Handler, freq, burst int, f func(*http.Request) string) http.Handler {
+func Handler(next, limited http.Handler, freq, burst int, f func(*http.Request) string) http.Handler {
 	return &handler{
 		next:    next,
+		limited: limited,
 		f:       f,
 		freq:    rate.Limit(freq),
 		burst:   burst,
@@ -30,7 +32,7 @@ func Handler(next http.Handler, freq, burst int, f func(*http.Request) string) h
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id := h.f(r)
 	if !h.bucket(id).Allow() {
-		w.WriteHeader(http.StatusTooManyRequests)
+		h.limited.ServeHTTP(w, r)
 		return
 	}
 	h.next.ServeHTTP(w, r)

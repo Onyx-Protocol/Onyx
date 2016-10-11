@@ -34,7 +34,10 @@ const (
 // TODO(kr): change this to "network" or something.
 const networkRPCPrefix = "/rpc/"
 
-var errNotFound = errors.New("not found")
+var (
+	errNotFound    = errors.New("not found")
+	errRateLimited = errors.New("request limit exceeded")
+)
 
 // Handler serves the Chain HTTP API
 type Handler struct {
@@ -121,7 +124,7 @@ func (h *Handler) init() {
 	}
 	handler = webAssetsHandler(handler)
 	if h.RequestLimit > 0 {
-		handler = limit.Handler(handler, h.RequestLimit, 100, limit.AuthUserID)
+		handler = limit.Handler(handler, alwaysError(errRateLimited), h.RequestLimit, 100, limit.AuthUserID)
 	}
 	handler = gzip.Handler{Handler: handler}
 	handler = dbContextHandler(handler, h.DB)

@@ -52,6 +52,7 @@ var (
 		httpjson.ErrBadRequest:   errorInfo{400, "CH003", "Invalid request body"},
 		errBadReqHeader:          errorInfo{400, "CH004", "Invalid request header"},
 		errNotFound:              errorInfo{404, "CH006", "Not found"},
+		errRateLimited:           errorInfo{429, "CH007", "Request limit exceeded"},
 
 		// Core error namespace
 		errUnconfigured:                errorInfo{400, "CH100", "This core still needs to be configured"},
