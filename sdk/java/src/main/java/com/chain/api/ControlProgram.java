@@ -16,11 +16,6 @@ public class ControlProgram {
   @SerializedName("control_program")
   public String program;
 
-  // Error data
-  public String code;
-  public String message;
-  public String detail;
-
   public static String retireProgram() {
     return "6a";
   }
