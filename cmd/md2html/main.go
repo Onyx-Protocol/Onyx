@@ -9,11 +9,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/russross/blackfriday"
 )
+
+var defaultLayout = []byte("{{Body}}")
 
 func main() {
 	var dest = ":8080"
@@ -94,33 +97,69 @@ func render(f string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	src = interpolateCode(src)
-	layout, err := ioutil.ReadFile("layout.html")
-	if os.IsNotExist(err) {
-		layout = []byte("{{Body}}")
-	} else if err != nil {
+
+	src = interpolateCode(src, path.Dir(f))
+
+	layout, err := layout(f)
+	if err != nil {
 		return nil, err
 	}
 
-	return bytes.Replace(layout, []byte("{{Body}}"), markdown(src), 1), nil
+	return bytes.Replace(layout, defaultLayout, markdown(src), 1), nil
 }
 
-func interpolateCode(md []byte) []byte {
+// Returns the contents of a layout.html file
+// starting in the directory of p and ending at the command's
+// working directory.
+// If no layout.html file is found defaultLayout is returned.
+func layout(p string) ([]byte, error) {
+	// Don't search for layouts beyond the working dir
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		p = path.Dir(p)
+		l, err := ioutil.ReadFile(p + "/layout.html")
+		if err == nil {
+			return l, nil
+		}
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+
+		if wd == p {
+			break
+		}
+	}
+
+	return defaultLayout, nil
+}
+
+func interpolateCode(md []byte, hostPath string) []byte {
 	const pat = `$code `
 	w := new(bytes.Buffer)
 	scanner := bufio.NewScanner(bytes.NewBuffer(md))
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, pat) {
-			var path, snippet string
+			var snippath, snippet string
 			fields := strings.Fields(line)
 			if len(fields) >= 2 {
-				path = fields[1]
+				snippath = fields[1]
 			}
 			if len(fields) >= 3 {
 				snippet = fields[2]
 			}
-			writeCode(w, path, snippet)
+
+			if path.IsAbs(snippath) {
+				snippath = path.Join(os.Getenv("CHAIN"), snippath)
+			} else {
+				snippath = path.Join(hostPath, snippath)
+			}
+
+			writeCode(w, snippath, snippet)
 			continue
 		}
 		fmt.Fprintln(w, line)
