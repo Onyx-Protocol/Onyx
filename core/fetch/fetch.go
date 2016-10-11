@@ -15,7 +15,6 @@ import (
 	"chain/protocol/state"
 )
 
-const getBlocksTimeout = 3 * time.Second
 const getSnapshotTimeout = 10 * time.Second
 const heightPollingPeriod = 3 * time.Second
 
@@ -49,6 +48,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 	// Fetch the generator height periodically.
 	go pollGeneratorHeight(ctx, peer)
 
+	var ntimeouts uint // for backoff
 	var nfailures uint // for backoff
 	for {
 		select {
@@ -61,11 +61,18 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 				height = prevBlock.Height
 			}
 
-			blocks, err := getBlocks(ctx, peer, height)
+			blocks, err := getBlocks(ctx, peer, height, timeoutBackoffDur(ntimeouts))
 			if err != nil {
 				log.Error(ctx, err)
 				nfailures++
 				time.Sleep(backoffDur(nfailures))
+				continue
+			}
+			if len(blocks) == 0 {
+				// Request time out. There might not have been any blocks published,
+				// or there was a network error or it just took too long to process the
+				// request.
+				ntimeouts++
 				continue
 			}
 
@@ -76,7 +83,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 				time.Sleep(backoffDur(nfailures))
 				continue
 			}
-			nfailures = 0
+			nfailures, ntimeouts = 0, 0
 		}
 	}
 }
@@ -141,10 +148,19 @@ func backoffDur(n uint) time.Duration {
 	return time.Duration(d)
 }
 
+func timeoutBackoffDur(n uint) time.Duration {
+	const baseTimeout = 3 * time.Second
+	if n > 4 {
+		n = 4 // cap to extra 16s
+	}
+	d := rand.Int63n(int64(time.Second) * (1 << n))
+	return baseTimeout + time.Duration(d)
+}
+
 // getBlocks sends a get-blocks RPC request to another Core
 // for all blocks since the highest-known one.
-func getBlocks(ctx context.Context, peer *rpc.Client, height uint64) ([]*bc.Block, error) {
-	ctx, cancel := context.WithTimeout(ctx, getBlocksTimeout)
+func getBlocks(ctx context.Context, peer *rpc.Client, height uint64, timeout time.Duration) ([]*bc.Block, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	var blocks []*bc.Block
@@ -198,7 +214,7 @@ func Snapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, db *sql.D
 	}
 
 	// Next, get the genesis block.
-	blocks, err := getBlocks(ctx, peer, 0)
+	blocks, err := getBlocks(ctx, peer, 0, getSnapshotTimeout)
 	if err != nil {
 		return err
 	}
@@ -211,7 +227,7 @@ func Snapshot(ctx context.Context, peer *rpc.Client, s protocol.Store, db *sql.D
 	err = s.SaveBlock(ctx, blocks[0])
 
 	// Also get the corresponding block.
-	blocks, err = getBlocks(ctx, peer, snapResp.Height-1) // because we get the NEXT block
+	blocks, err = getBlocks(ctx, peer, snapResp.Height-1, getSnapshotTimeout) // because we get the NEXT block
 	if err != nil {
 		return err
 	}
