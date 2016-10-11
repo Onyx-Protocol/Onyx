@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"chain/core/account"
+	"chain/core/fetch"
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	"chain/errors"
@@ -168,11 +169,17 @@ func finalizeTxWait(ctx context.Context, c *protocol.Chain, txTemplate *txbuilde
 		return errors.Wrap(txbuilder.ErrMissingRawTx)
 	}
 
-	// Avoid a race condition.  Calling c.Height() here ensures that
-	// when we start waiting for blocks below, we don't begin waiting at
-	// block N+1 when the tx we want is in block N.
+	// Use the current generator height as the lower bound of the block height
+	// that the transaction may appear in.
+	generatorHeight, _ := fetch.GeneratorHeight()
+	localHeight := c.Height()
+	if localHeight > generatorHeight {
+		generatorHeight = localHeight
+	}
+
+	// Remember this height in case we retry this submit call.
 	tx := bc.NewTx(*txTemplate.Transaction)
-	height, err := recordSubmittedTx(ctx, tx.Hash, c.Height())
+	height, err := recordSubmittedTx(ctx, tx.Hash, generatorHeight)
 	if err != nil {
 		return errors.Wrap(err, "saving tx submitted height")
 	}
