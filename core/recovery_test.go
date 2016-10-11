@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lib/pq"
+
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/asset/assettest"
@@ -66,7 +68,16 @@ func TestRecovery(t *testing.T) {
 		account.NewSpendAction(bc.AssetAmount{AssetID: apple, Amount: 1}, alice, nil, nil, nil, nil),
 	})
 
-	err := db.Close()
+	// Save a copy of the pool txs
+	var poolTxs []*bc.TxData
+	err := pg.ForQueryRows(setupCtx, `SELECT data FROM pool_txs`, func(tx bc.TxData) {
+		poolTxs = append(poolTxs, &tx)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = db.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,6 +129,29 @@ func TestRecovery(t *testing.T) {
 			// the total number of queries performed during `generateBlock`.
 			databaseDumps = append(databaseDumps, pgtest.Dump(t, cloneURL, false, "pool_txs", "*_id_seq"))
 			break
+		}
+
+		// At some point, generateBlock deletes the contents of the tx
+		// pool. If it crashes at that point, those txs are lost and
+		// recovery won't produce the same output as on all the other
+		// runs. In a running network this isn't too big a deal because
+		// the submitters of the pool txs will resubmit them if they fail
+		// to appear in a block. We simulate that in this case by
+		// replacing the deleted pool txs before trying to recover.
+
+		hashes := make([]string, 0, len(poolTxs))
+		txstrs := make([][]byte, 0, len(poolTxs))
+		for _, poolTx := range poolTxs {
+			hashes = append(hashes, poolTx.Hash().String())
+			txstr, err := poolTx.Value()
+			if err != nil {
+				t.Fatal(err)
+			}
+			txstrs = append(txstrs, txstr.([]byte))
+		}
+		_, err = wrappedDB.Exec(ctx, `INSERT INTO pool_txs (tx_hash, data) VALUES (unnest($1::text[]), unnest($2::bytea[])) ON CONFLICT (tx_hash) DO NOTHING`, pq.StringArray(hashes), pq.ByteaArray(txstrs))
+		if err != nil {
+			t.Fatal(err)
 		}
 
 		// We crashed at some point during block generation. Do it again,
