@@ -196,9 +196,3 @@ func (a *controlAction) Build(ctx context.Context) (*txbuilder.BuildResult, erro
 	out := bc.NewTxOutput(a.AssetID, a.Amount, acp, a.ReferenceData)
 	return &txbuilder.BuildResult{Outputs: []*bc.TxOutput{out}}, nil
 }
-
-// CancelReservations cancels any existing reservations
-// for the given outpoints.
-func CancelReservations(ctx context.Context, outpoints []bc.Outpoint) error {
-	return utxodb.Cancel(ctx, outpoints)
-}

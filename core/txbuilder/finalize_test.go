@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lib/pq"
+
 	"chain/core/account"
-	"chain/core/account/utxodb"
 	"chain/core/asset"
 	"chain/core/asset/assettest"
 	. "chain/core/txbuilder"
@@ -65,7 +66,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	// Make the utxo available for reserving again
-	err = utxodb.Cancel(ctx, []bc.Outpoint{firstTemplate.Transaction.Inputs[0].TypedInput.(*bc.SpendInput).Outpoint})
+	err = cancel(ctx, []bc.Outpoint{firstTemplate.Transaction.Inputs[0].TypedInput.(*bc.SpendInput).Outpoint})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,4 +324,27 @@ func transfer(ctx context.Context, t testing.TB, c *protocol.Chain, info *client
 	tx := bc.NewTx(*xferTx.Transaction)
 	err = FinalizeTx(ctx, c, tx)
 	return tx, errors.Wrap(err)
+}
+
+// cancel cancels the given reservations, if they still exist.
+// If any do not exist (if they've already been consumed
+// or canceled), it silently ignores them.
+func cancel(ctx context.Context, outpoints []bc.Outpoint) error {
+	txHashes := make([]string, 0, len(outpoints))
+	indexes := make([]uint32, 0, len(outpoints))
+	for _, outpoint := range outpoints {
+		txHashes = append(txHashes, outpoint.Hash.String())
+		indexes = append(indexes, outpoint.Index)
+	}
+
+	const query = `
+		WITH reservation_ids AS (
+		    SELECT DISTINCT reservation_id FROM account_utxos
+		        WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::bigint[]))
+		)
+		SELECT cancel_reservation(reservation_id) FROM reservation_ids
+	`
+
+	_, err := pg.Exec(ctx, query, pq.StringArray(txHashes), pg.Uint32s(indexes))
+	return err
 }

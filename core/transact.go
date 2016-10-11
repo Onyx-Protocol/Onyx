@@ -240,19 +240,6 @@ func waitBlock(ctx context.Context, c *protocol.Chain, height uint64) <-chan str
 	return done
 }
 
-// TODO(bobg): allow caller to specify reservation by (encrypted) id?
-// POST /v3/assets/cancel-reservation
-// Idempotent
-func cancelReservation(ctx context.Context, x struct{ Transaction bc.Tx }) error {
-	var outpoints []bc.Outpoint
-	for _, input := range x.Transaction.Inputs {
-		if !input.IsIssuance() {
-			outpoints = append(outpoints, input.Outpoint())
-		}
-	}
-	return account.CancelReservations(ctx, outpoints)
-}
-
 type submitArg struct {
 	Transactions []*txbuilder.Template
 	wait         time.Duration

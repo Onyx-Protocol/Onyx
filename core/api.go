@@ -87,9 +87,6 @@ func (h *Handler) init() {
 	m.Handle("/list-unspent-outputs", needConfig(h.listUnspentOutputs))
 	m.Handle("/reset", needConfig(h.reset))
 
-	// V3 DEPRECATED
-	m.Handle("/v3/transact/cancel-reservation", needConfig(cancelReservation))
-
 	m.Handle(networkRPCPrefix+"submit", needConfig(h.Chain.AddTx))
 	m.Handle(networkRPCPrefix+"get-blocks", needConfig(h.getBlocksRPC))
 	m.Handle(networkRPCPrefix+"get-snapshot", needConfig(h.getSnapshotRPC))
