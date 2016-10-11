@@ -27,7 +27,7 @@ build:
           go install chain/cmd/vet
           vet .
           go install chain/log # needed before testing ./cmd/vet below
-          go test -cover $(go list ./...|grep -v vendor|egrep -v 'xprvseetool|thales|signerd')
+          go test -cover $(go list ./...|grep -v vendor|egrep -v 'thales|signerd')
           (cd migrations; ./check-names.bash)
           go generate $(go list ./...|grep -v vendor)
           git diff --exit-code # make sure generated files are in sync

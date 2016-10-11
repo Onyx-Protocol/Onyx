@@ -114,7 +114,7 @@ func main() {
 
 		path := argpath(flag.Args()[1 : flag.NArg()-1])
 
-		res, err := client.Sign(kd, path, dummySighash)
+		res, err := client.XSign(kd, path, dummySighash)
 		if err != nil {
 			panic(err)
 		}
