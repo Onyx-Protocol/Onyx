@@ -20,9 +20,8 @@ CLASS=${SRC_BASENAME%.java}
 COMPILE_PATH=`mktemp -d`
 trap "rm -rf $COMPILE_PATH" EXIT
 
-javac -d $COMPILE_PATH $SRC
-
 JARFILE=`echo $CHAIN/sdk/java/target/chain-sdk-java*[[:digit:]].jar`
-export CLASSPATH=".:$JARFILE"
-cd $COMPILE_PATH
+export CLASSPATH=.:$JARFILE:$COMPILE_PATH
+
+javac -d $COMPILE_PATH $SRC
 java $CLASS
