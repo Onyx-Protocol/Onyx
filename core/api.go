@@ -218,8 +218,8 @@ func dbContextHandler(handler http.Handler, db pg.DB) http.Handler {
 func webAssetsHandler(next http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/dashboard/", http.StripPrefix("/dashboard/", static.Handler{
-		Assets: dashboard.Files,
-		Index:  "index.html",
+		Assets:  dashboard.Files,
+		Default: "index.html",
 	}))
 	mux.Handle("/doc/", http.StripPrefix("/doc/", static.Handler{
 		Assets: doc.Files,
