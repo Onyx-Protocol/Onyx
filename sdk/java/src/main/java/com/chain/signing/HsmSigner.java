@@ -44,7 +44,7 @@ public class HsmSigner {
     List<Transaction.Template> templates = signBatch(Arrays.asList(template));
     Transaction.Template response = templates.get(0);
     if (response.code != null) {
-      throw new APIException(template.code, template.message, template.detail, null);
+      throw new APIException(template.code, template.message, template.detail, template.temporary);
     }
     return response;
   }

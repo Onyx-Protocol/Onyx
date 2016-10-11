@@ -55,7 +55,9 @@ As the API crystallizes, we will add more thorough descriptions of behaviour and
 ```
 {
   "code": <string>,
-  "message": <string>
+  "message": <string>,
+  "detail": <string>,
+  "temporary": <boolean>
 }
 ```
 

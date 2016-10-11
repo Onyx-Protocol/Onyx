@@ -161,7 +161,7 @@ public class APIClient {
     // Check for an error in the response
     APIException err = serializer.fromJson(body, APIException.class);
     if (err.code != null) {
-      err.requestID = response.headers().get("Chain-Request-ID");
+      err.requestId = response.headers().get("Chain-Request-ID");
       throw err;
     }
 
@@ -215,7 +215,7 @@ public class APIClient {
       try {
         APIException err = serializer.fromJson(response.body().charStream(), APIException.class);
         if (err.code != null) {
-          err.requestID = rid;
+          err.requestId = rid;
           err.statusCode = response.code();
           throw err;
         }

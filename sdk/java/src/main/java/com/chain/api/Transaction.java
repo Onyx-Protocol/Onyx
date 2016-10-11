@@ -342,6 +342,11 @@ public class Transaction {
     public String detail;
 
     /**
+     * Specifies if the error is temporary, or the request needs to be changed.
+     */
+    public Boolean temporary;
+
+    /**
      * A single signing instruction included in a transaction template.
      */
     public static class SigningInstruction {
@@ -446,6 +451,11 @@ public class Transaction {
      * Additional details about the error.
      */
     public String detail;
+
+    /**
+     * Specifies if the error is temporary, or the request needs to be changed.
+     */
+    public Boolean temporary;
   }
 
   /**
@@ -499,7 +509,7 @@ public class Transaction {
     List<SubmitResponse> responses = submitBatch(ctx, Arrays.asList(template));
     SubmitResponse response = responses.get(0);
     if (response.code != null) {
-      throw new APIException(response.code, response.message, response.detail, null);
+      throw new APIException(response.code, response.message, response.detail, response.temporary);
     }
     return response;
   }

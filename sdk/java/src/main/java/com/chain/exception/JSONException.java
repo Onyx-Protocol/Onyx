@@ -1,14 +1,26 @@
 package com.chain.exception;
 
+/**
+ * JSONException wraps errors due to marshaling/unmarshaling json payloads.
+ */
 public class JSONException extends ChainException {
-  public JSONException(String message, String requestID) {
+
+  /**
+   * Unique indentifier of the request to the server.
+   */
+  public String requestId;
+
+  /**
+   * Initializes exception with its message and requestId attributes.
+   * @param message error message
+   * @param requestId unique identifier of the request
+   */
+  public JSONException(String message, String requestId) {
     super(message);
-    this.requestID = requestID;
+    this.requestId = requestId;
   }
 
-  public String requestID;
-
   public String getMessage() {
-    return "Message: " + super.getMessage() + " Request-ID: " + this.requestID;
+    return "Message: " + super.getMessage() + " Request-ID: " + this.requestId;
   }
 }
