@@ -39,7 +39,7 @@ func New(xpub chainkd.XPub, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Sign
 // the private key in s.  It does not validate the block.
 func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	hash := b.HashForSig()
-	return s.hsm.SignWithChainKDKey(ctx, s.XPub, nil, hash[:]) // TODO(tessr): Should sign with Ed25519 key.
+	return s.hsm.XSign(ctx, s.XPub, nil, hash[:]) // TODO(tessr): Should sign with Ed25519 key.
 }
 
 func (s *Signer) String() string {

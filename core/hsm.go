@@ -11,7 +11,7 @@ import (
 )
 
 func (h *Handler) mockhsmCreateKey(ctx context.Context, in struct{ Alias string }) (result *mockhsm.XPub, err error) {
-	result, err = h.HSM.CreateChainKDKey(ctx, in.Alias)
+	result, err = h.HSM.XCreate(ctx, in.Alias)
 	if err != nil {
 		return result, err
 	}
@@ -65,7 +65,7 @@ func (h *Handler) mockhsmSignTemplate(ctx context.Context, xpubstr string, path 
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing xpub")
 	}
-	sigBytes, err := h.HSM.SignWithChainKDKey(ctx, xpub, path, data[:])
+	sigBytes, err := h.HSM.XSign(ctx, xpub, path, data[:])
 	if err == mockhsm.ErrNoKey {
 		return nil, nil
 	}

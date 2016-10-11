@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 
+	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
 	"chain/errors"
@@ -14,13 +15,16 @@ import (
 var (
 	ErrDuplicateKeyAlias = errors.New("duplicate key alias")
 	ErrInvalidAfter      = errors.New("invalid after")
+	ErrNoKey             = errors.New("key not found")
+	ErrInvalidKeySize    = errors.New("key invalid size")
 )
 
 type HSM struct {
 	db pg.DB
 
-	kdCacheMu sync.Mutex
-	kdCache   map[chainkd.XPub]chainkd.XPrv
+	cacheMu sync.Mutex
+	kdCache map[chainkd.XPub]chainkd.XPrv
+	edCache map[string]ed25519.PrivateKey // ed25519.PublicKeys must be turned into strings before being used as map keys
 }
 
 type XPub struct {
@@ -28,19 +32,28 @@ type XPub struct {
 	XPub  chainkd.XPub `json:"xpub"`
 }
 
-func New(db pg.DB) *HSM {
-	return &HSM{db: db, kdCache: make(map[chainkd.XPub]chainkd.XPrv)}
+type Pub struct {
+	Alias *string           `json:"alias"`
+	Pub   ed25519.PublicKey `json:"pub"`
 }
 
-// CreateChainKDKey produces a new random xprv and stores it in the db.
-func (h *HSM) CreateChainKDKey(ctx context.Context, alias string) (*XPub, error) {
+func New(db pg.DB) *HSM {
+	return &HSM{
+		db:      db,
+		kdCache: make(map[chainkd.XPub]chainkd.XPrv),
+		edCache: make(map[string]ed25519.PrivateKey),
+	}
+}
+
+// XCreate produces a new random xprv and stores it in the db.
+func (h *HSM) XCreate(ctx context.Context, alias string) (*XPub, error) {
 	xpub, _, err := h.createChainKDKey(ctx, alias, false)
 	return xpub, err
 }
 
-// GetOrCreateChainKDKey looks for the ChainKD key with the given alias, generating a
+// XGetOrCreate looks for the ChainKD key with the given alias, generating a
 // new one if it's not found.
-func (h *HSM) GetOrCreateChainKDKey(ctx context.Context, alias string) (xpub *XPub, created bool, err error) {
+func (h *HSM) XGetOrCreate(ctx context.Context, alias string) (xpub *XPub, created bool, err error) {
 	return h.createChainKDKey(ctx, alias, true)
 }
 
@@ -54,7 +67,7 @@ func (h *HSM) createChainKDKey(ctx context.Context, alias string, get bool) (*XP
 	if alias != "" {
 		ptrAlias = &alias
 	}
-	const q = `INSERT INTO mockhsm (pub, prv, alias) VALUES ($1, $2, $3)`
+	const q = `INSERT INTO mockhsm (pub, prv, alias, key_type) VALUES ($1, $2, $3, 'chain_kd')`
 	_, err = h.db.Exec(ctx, q, xpub.Bytes(), xprv.Bytes(), sqlAlias)
 	if err != nil {
 		if pg.IsUniqueViolation(err) {
@@ -76,6 +89,49 @@ func (h *HSM) createChainKDKey(ctx context.Context, alias string, get bool) (*XP
 	return &XPub{XPub: xpub, Alias: ptrAlias}, true, nil
 }
 
+// Create produces a new random prv and stores it in the db.
+func (h *HSM) Create(ctx context.Context, alias string) (*Pub, error) {
+	pub, _, err := h.createEd25519Key(ctx, alias, false)
+	return pub, err
+}
+
+// GetOrCreate looks for the Ed25519 key with the given alias, generating a
+// new one if it's not found.
+func (h *HSM) GetOrCreate(ctx context.Context, alias string, get bool) (*Pub, bool, error) {
+	return h.createEd25519Key(ctx, alias, true)
+}
+
+func (h *HSM) createEd25519Key(ctx context.Context, alias string, get bool) (*Pub, bool, error) {
+	pub, prv, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		return nil, false, err
+	}
+
+	sqlAlias := sql.NullString{String: alias, Valid: alias != ""}
+	var ptrAlias *string
+	if alias != "" {
+		ptrAlias = &alias
+	}
+	const q = `INSERT INTO mockhsm (pub, prv, alias, key_type) VALUES ($1, $2, $3, 'ed25519')`
+	_, err = h.db.Exec(ctx, q, []byte(pub), []byte(prv), sqlAlias)
+	if err != nil {
+		if pg.IsUniqueViolation(err) {
+			if !get {
+				return nil, false, errors.WithDetailf(ErrDuplicateKeyAlias, "value: %q", alias)
+			}
+
+			var pubBytes []byte
+			err = pg.QueryRow(ctx, `SELECT pub FROM mockhsm WHERE alias = $1`, alias).Scan(&pubBytes)
+			if err != nil {
+				return nil, false, errors.Wrapf(err, "reading existing pub with alias %s", alias)
+			}
+			return &Pub{Pub: ed25519.PublicKey(pubBytes), Alias: ptrAlias}, false, nil
+		}
+		return nil, false, errors.Wrap(err, "storing new pub")
+	}
+	return &Pub{Pub: pub, Alias: ptrAlias}, true, nil
+}
+
 // ListKeys returns a list of all xpubs from the db.
 func (h *HSM) ListKeys(ctx context.Context, after string, limit int) ([]*XPub, string, error) {
 	var (
@@ -93,7 +149,7 @@ func (h *HSM) ListKeys(ctx context.Context, after string, limit int) ([]*XPub, s
 	var xpubs []*XPub
 	const q = `
 		SELECT pub, alias, sort_id FROM mockhsm
-		WHERE ($1=0 OR $1 < sort_id)
+		WHERE ($1=0 OR $1 < sort_id) AND key_type='chain_kd'
 		ORDER BY sort_id DESC LIMIT $2
 	`
 	err = pg.ForQueryRows(ctx, q, zafter, limit, func(b []byte, alias sql.NullString, sortID int64) {
@@ -113,18 +169,16 @@ func (h *HSM) ListKeys(ctx context.Context, after string, limit int) ([]*XPub, s
 	return xpubs, strconv.FormatInt(zafter, 10), nil
 }
 
-var ErrNoKey = errors.New("key not found")
-
 func (h *HSM) loadChainKDKey(ctx context.Context, xpub chainkd.XPub) (xprv chainkd.XPrv, err error) {
-	h.kdCacheMu.Lock()
-	defer h.kdCacheMu.Unlock()
+	h.cacheMu.Lock()
+	defer h.cacheMu.Unlock()
 
 	if xprv, ok := h.kdCache[xpub]; ok {
 		return xprv, nil
 	}
 
 	var b []byte
-	err = h.db.QueryRow(ctx, "SELECT prv FROM mockhsm WHERE pub = $1", xpub.Bytes()).Scan(&b)
+	err = h.db.QueryRow(ctx, "SELECT prv FROM mockhsm WHERE pub = $1 AND key_type='chain_kd'", xpub.Bytes()).Scan(&b)
 	if err == sql.ErrNoRows {
 		return xprv, ErrNoKey
 	}
@@ -136,10 +190,10 @@ func (h *HSM) loadChainKDKey(ctx context.Context, xpub chainkd.XPub) (xprv chain
 	return xprv, nil
 }
 
-// SignWithChainKDKey looks up the xprv given the xpub, optionally derives a new
+// XSign looks up the xprv given the xpub, optionally derives a new
 // xprv with the given path (but does not store the new xprv), and
 // signs the given msg.
-func (h *HSM) SignWithChainKDKey(ctx context.Context, xpub chainkd.XPub, path [][]byte, msg []byte) ([]byte, error) {
+func (h *HSM) XSign(ctx context.Context, xpub chainkd.XPub, path [][]byte, msg []byte) ([]byte, error) {
 	xprv, err := h.loadChainKDKey(ctx, xpub)
 	if err != nil {
 		return nil, err
@@ -151,9 +205,44 @@ func (h *HSM) SignWithChainKDKey(ctx context.Context, xpub chainkd.XPub, path []
 }
 
 func (h *HSM) DeleteChainKDKey(ctx context.Context, xpub chainkd.XPub) error {
-	h.kdCacheMu.Lock()
+	h.cacheMu.Lock()
 	delete(h.kdCache, xpub)
-	h.kdCacheMu.Unlock()
-	_, err := h.db.Exec(ctx, "DELETE FROM mockhsm WHERE pub = $1", xpub.Bytes())
+	h.cacheMu.Unlock()
+	_, err := h.db.Exec(ctx, "DELETE FROM mockhsm WHERE pub = $1 AND key_type='chain_kd'", xpub.Bytes())
 	return err
+}
+
+func (h *HSM) loadEd25519Key(ctx context.Context, pub ed25519.PublicKey) (prv ed25519.PrivateKey, err error) {
+	h.cacheMu.Lock()
+	defer h.cacheMu.Unlock()
+
+	pubStr := string(pub)
+
+	if prv, ok := h.edCache[pubStr]; ok {
+		return prv, nil
+	}
+
+	err = h.db.QueryRow(ctx, "SELECT prv FROM mockhsm WHERE pub = $1 AND key_type='ed25519'", []byte(pub)).Scan(&prv)
+	if err == sql.ErrNoRows {
+		return prv, ErrNoKey
+	}
+	if err != nil {
+		return prv, err
+	}
+	h.edCache[pubStr] = prv
+	return prv, nil
+}
+
+// Sign looks up the prv given the pub and signs the given msg.
+func (h *HSM) Sign(ctx context.Context, pub ed25519.PublicKey, msg []byte) ([]byte, error) {
+	prv, err := h.loadEd25519Key(ctx, pub)
+	if err != nil {
+		return nil, err
+	}
+
+	// ed25519.Sign will panic if prv is the wrong size. Protect against that.
+	if len(prv) != ed25519.PrivateKeySize {
+		return nil, ErrInvalidKeySize
+	}
+	return ed25519.Sign(prv, msg), nil
 }

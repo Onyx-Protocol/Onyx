@@ -24,7 +24,7 @@ func TestMockHSM(t *testing.T) {
 	asset.Init(c, nil)
 	account.Init(c, nil)
 	mockhsm := mockhsm.New(dbtx)
-	xpub1, err := mockhsm.CreateChainKDKey(ctx, "")
+	xpub1, err := mockhsm.XCreate(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}

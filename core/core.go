@@ -161,7 +161,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		var blockXPub chainkd.XPub
 		if c.BlockXPub == "" {
 			hsm := mockhsm.New(db)
-			coreXPub, created, err := hsm.GetOrCreateChainKDKey(ctx, autoBlockKeyAlias)
+			coreXPub, created, err := hsm.XGetOrCreate(ctx, autoBlockKeyAlias)
 			if err != nil {
 				return err
 			}
