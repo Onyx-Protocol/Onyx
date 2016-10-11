@@ -156,6 +156,10 @@ func main() {
 	mustRunOn(db.addr, fmt.Sprintf(initdbsh, slowQueryThreshold/time.Millisecond))
 	token, err := scpGet(db.addr, "token.txt")
 	must(err)
+	networkToken, err := scpGet(db.addr, "network-token.txt")
+	must(err)
+	fmt.Println(string(token))
+	fmt.Println(string(networkToken))
 
 	dbURL := "postgres://benchcore:benchcorepass@" + db.privAddr + "/core?sslmode=disable"
 	pubdbURL := "postgres://benchcore:benchcorepass@" + db.addr + "/core?sslmode=disable"
@@ -168,7 +172,8 @@ func main() {
 	}
 
 	log.Println("init client")
-	coreURL := "http://" + strings.TrimSpace(string(token)) + "@" + cored.privAddr + ":1999"
+	accessToken := strings.TrimSpace(string(token))
+	coreURL := "http://" + cored.privAddr + ":1999"
 	log.Println("core URL:", coreURL)
 	publicCoreURL := "http://" + cored.addr + ":1999"
 	log.Println("public core URL:", publicCoreURL)
@@ -180,6 +185,7 @@ func main() {
 	}
 	mustRunOn(client.addr, clientsh,
 		"coreURL", coreURL,
+		"apiToken", accessToken,
 		"coreAddr", cored.privAddr,
 		"javaClass", javaClass,
 	)
@@ -705,6 +711,7 @@ EOFPOSTGRES
 export DATABASE_URL='postgres://benchcore:benchcorepass@localhost/core'
 $HOME/corectl config-generator
 $HOME/corectl create-token benchcore > $HOME/token.txt
+$HOME/corectl create-token -net benchcorenet > $HOME/network-token.txt
 `
 
 const coredsh = `#!/bin/bash
@@ -757,6 +764,7 @@ echo curling "{{coreURL}}/debug/vars"
 curl -si "{{coreURL}}/debug/vars"
 echo curled
 export CHAIN_API_URL='{{coreURL}}/'
+export CHAIN_API_TOKEN='{{apiToken}}'
 echo running test driver
 java {{javaClass}}
 echo all done

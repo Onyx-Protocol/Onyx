@@ -21,16 +21,19 @@ import com.chain.signing.HsmSigner;
 
 public class IouSettlement {
   public static void main(String[] args) throws Exception {
-    Context ctx = new Context(new URL(System.getenv("CHAIN_API_URL")));
+    String coreURL = System.getenv("CHAIN_API_URL");
+    String accessToken = System.getenv("CHAIN_API_TOKEN");
+    System.out.println(coreURL);
+    System.out.println(accessToken);
+    Context ctx = new Context(new URL(coreURL), accessToken);
     ctx.setConnectTimeout(10, TimeUnit.MINUTES);
     ctx.setReadTimeout(10, TimeUnit.MINUTES);
     ctx.setWriteTimeout(10, TimeUnit.MINUTES);
-    setup(ctx);
     bench(ctx);
     System.exit(0);
   }
 
-  static void setup(Context ctx) throws Exception {
+  static void bench(Context ctx) throws Exception {
     MockHsm.Key dealerAccountKey = MockHsm.Key.create(ctx);
     MockHsm.Key dealerIssuerKey = MockHsm.Key.create(ctx);
     MockHsm.Key northBankIssuerKey = MockHsm.Key.create(ctx);
@@ -89,13 +92,15 @@ public class IouSettlement {
 
     // Create enough txs to equal (one day's worth of activity at 10 tx/s).
     //final int ntxTotal = 10 * 60*60*24; // should be multiple of 2*nthread
-    final int ntxTotal = 10 * 60 * 60 * 2; // start with two hour's worth
+    final int ntxTotal = 10 * 60 * 60 * 6; // start with six hour's worth
 
     // # of txs to submit in one request
-    final int batchSize = 5;
+    final int batchSize = 10;
 
     // # of batches per corp
     final int nbatches = ntxTotal / batchSize / 2;
+
+    Instant start = Instant.now();
 
     AtomicInteger processed = new AtomicInteger(0);
     ExecutorService pool = Executors.newFixedThreadPool(2 * nthread);
@@ -105,7 +110,9 @@ public class IouSettlement {
         acme.pay(zzzz, batchSize);
         int v = processed.getAndAdd(batchSize) + batchSize;
         if (v % 1000 == 0) {
-          System.out.printf("%d / %d (%d%%)\ntx", v, ntxTotal, 100 * v / ntxTotal);
+          long elapsed = Duration.between(start, Instant.now()).toMillis();
+          double tps = (double) v / elapsed * 1000.0;
+          System.out.printf("%d / %d (%d%%) %.2f tx/sec\n", v, ntxTotal, 100 * v / ntxTotal, tps);
         }
         return 1;
       });
@@ -115,88 +122,18 @@ public class IouSettlement {
         zzzz.pay(acme, batchSize);
         int v = processed.getAndAdd(batchSize) + batchSize;
         if (v % 1000 == 0) {
-          System.out.printf("%d / %d (%d%%)\ntx", v, ntxTotal, 100 * v / ntxTotal);
+          long elapsed = Duration.between(start, Instant.now()).toMillis();
+          double tps = (double) v / elapsed * 1000.0;
+          System.out.printf("%d / %d (%d%%) %.2f tx/sec\n", v, ntxTotal, 100 * v / ntxTotal, tps);
         }
         return 1;
       });
     }
 
+    Instant tstart = Instant.now();
     List<Future<Integer>> futures = pool.invokeAll(x);
     for (int b = 0; b < 2 * nbatches; b++) {
       futures.get(b).get();
-    }
-  }
-
-  static void bench(Context ctx) throws Exception {
-    loadKeys(ctx);
-
-    Dealer dealer = new Dealer(ctx, getAccount(ctx, "dealer"), getAsset(ctx, "dealerusd"));
-    Bank northBank = new Bank(ctx, dealer, getAsset(ctx, "nbusd"), getAccount(ctx, "nb"));
-    Bank southBank = new Bank(ctx, dealer, getAsset(ctx, "sbusd"), getAccount(ctx, "sb"));
-
-    Corp acme = new Corp("acme", northBank, ctx);
-    Corp zzzz = new Corp("zzzz", southBank, ctx);
-
-    // Target is 20 tx/s total.
-    // We are going to do 10tx/s per corp.
-    // We'll also do 10 threads per corp,
-    // so each thread should do 1 tx/s.
-
-    // Number of threads per corp.
-    final int nthread = 10;
-
-    // Min time (in ms) between attempts to send each transaction in a thread.
-    final long txperiod = 1000;
-
-    //final int ntxTotal = 10 * 60*60*24; // should be multiple of 2*nthread
-    final int ntxTotal = 20 * 60 * 30; // start with a half hour's worth
-
-    // Number of transactions per thread.
-    // nthread * 2 corps * ntx = ntxTotal
-    final int ntx = ntxTotal / 2 / nthread;
-
-    ExecutorService pool = Executors.newFixedThreadPool(2 * nthread);
-    List<Callable<Integer>> x = new ArrayList<>();
-    for (int t = 0; t < nthread; t++) {
-      x.add(
-          () -> {
-            for (int i = 0; i < ntx; i++) {
-              if (i % 10 == 0) {
-                System.out.printf("%d / %d (%d%%)\ntx", i, ntx, 100 * i / ntx);
-              }
-              Instant ti = Instant.now();
-              acme.pay(zzzz, 1);
-              Duration elapsed = Duration.between(ti, Instant.now());
-              long sleep = txperiod - elapsed.toMillis();
-              if (sleep > 0) {
-                Thread.sleep(sleep); // offer at most 1/txperiod calls/sec.
-              }
-            }
-            return 1;
-          });
-    }
-    for (int t = 0; t < nthread; t++) {
-      x.add(
-          () -> {
-            for (int i = 0; i < ntx; i++) {
-              if (i % 10 == 0) {
-                System.out.printf("%d / %d (%d%%)\ntx", i, ntx, 100 * i / ntx);
-              }
-              Instant ti = Instant.now();
-              zzzz.pay(acme, 1);
-              Duration elapsed = Duration.between(ti, Instant.now());
-              long sleep = txperiod - elapsed.toMillis();
-              if (sleep > 0) {
-                Thread.sleep(sleep); // offer at most 1/txperiod calls/sec.
-              }
-            }
-            return 1;
-          });
-    }
-    Instant tstart = Instant.now();
-    List<Future<Integer>> futures = pool.invokeAll(x);
-    for (int t = 0; t < 2 * nthread; t++) {
-      futures.get(t).get();
     }
     Instant tend = Instant.now();
     System.out.println("done transacting.");
