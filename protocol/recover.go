@@ -21,12 +21,13 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting latest snapshot")
 	}
+	var b *bc.Block
 	if snapshotHeight > 0 {
-		snapshotBlock, err := c.store.GetBlock(ctx, snapshotHeight)
+		b, err = c.store.GetBlock(ctx, snapshotHeight)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "getting snapshot block")
 		}
-		c.lastQueuedSnapshot = snapshotBlock.Time()
+		c.lastQueuedSnapshot = b.Time()
 	}
 
 	// The true height of the blockchain might be higher than the
@@ -36,8 +37,6 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting blockchain height")
 	}
-
-	var b *bc.Block
 
 	// Bring the snapshot up to date with the latest block
 	for h := snapshotHeight + 1; h <= height; h++ {
@@ -65,20 +64,5 @@ func (c *Chain) Recover(ctx context.Context) (*bc.Block, *state.Snapshot, error)
 			return nil, nil, errors.Wrap(err, "committing block")
 		}
 	}
-
-	// For clarity, we always retrieve the latest block, even if it's redundant
-	// with an earlier lookup above. It won't always be redundant, for ex, if
-	// height == snapshotHeight.
-	var tip *bc.Block
-	if height > 0 {
-		tip, err = c.store.GetBlock(ctx, height)
-		if err != nil {
-			return nil, nil, err
-		}
-		if tip.AssetsMerkleRoot != snapshot.Tree.RootHash() {
-			return nil, nil, fmt.Errorf("block %d has state root %s; snapshot has root %s",
-				tip.Height, tip.AssetsMerkleRoot, snapshot.Tree.RootHash())
-		}
-	}
-	return tip, snapshot, nil
+	return b, snapshot, nil
 }
