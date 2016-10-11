@@ -19,8 +19,8 @@ var (
 type HSM struct {
 	db pg.DB
 
-	cacheMu sync.Mutex
-	cache   map[chainkd.XPub]chainkd.XPrv
+	kdCacheMu sync.Mutex
+	kdCache   map[chainkd.XPub]chainkd.XPrv
 }
 
 type XPub struct {
@@ -29,22 +29,22 @@ type XPub struct {
 }
 
 func New(db pg.DB) *HSM {
-	return &HSM{db: db, cache: make(map[chainkd.XPub]chainkd.XPrv)}
+	return &HSM{db: db, kdCache: make(map[chainkd.XPub]chainkd.XPrv)}
 }
 
-// CreateKey produces a new random xprv and stores it in the db.
-func (h *HSM) CreateKey(ctx context.Context, alias string) (*XPub, error) {
-	xpub, _, err := h.create(ctx, alias, false)
+// CreateChainKDKey produces a new random xprv and stores it in the db.
+func (h *HSM) CreateChainKDKey(ctx context.Context, alias string) (*XPub, error) {
+	xpub, _, err := h.createChainKDKey(ctx, alias, false)
 	return xpub, err
 }
 
-// GetOrCreateKey looks for the key with the given alias, generating a
+// GetOrCreateChainKDKey looks for the ChainKD key with the given alias, generating a
 // new one if it's not found.
-func (h *HSM) GetOrCreateKey(ctx context.Context, alias string) (xpub *XPub, created bool, err error) {
-	return h.create(ctx, alias, true)
+func (h *HSM) GetOrCreateChainKDKey(ctx context.Context, alias string) (xpub *XPub, created bool, err error) {
+	return h.createChainKDKey(ctx, alias, true)
 }
 
-func (h *HSM) create(ctx context.Context, alias string, get bool) (*XPub, bool, error) {
+func (h *HSM) createChainKDKey(ctx context.Context, alias string, get bool) (*XPub, bool, error) {
 	xprv, xpub, err := chainkd.NewXKeys(nil)
 	if err != nil {
 		return nil, false, err
@@ -115,11 +115,11 @@ func (h *HSM) ListKeys(ctx context.Context, after string, limit int) ([]*XPub, s
 
 var ErrNoKey = errors.New("key not found")
 
-func (h *HSM) load(ctx context.Context, xpub chainkd.XPub) (xprv chainkd.XPrv, err error) {
-	h.cacheMu.Lock()
-	defer h.cacheMu.Unlock()
+func (h *HSM) loadChainKDKey(ctx context.Context, xpub chainkd.XPub) (xprv chainkd.XPrv, err error) {
+	h.kdCacheMu.Lock()
+	defer h.kdCacheMu.Unlock()
 
-	if xprv, ok := h.cache[xpub]; ok {
+	if xprv, ok := h.kdCache[xpub]; ok {
 		return xprv, nil
 	}
 
@@ -132,15 +132,15 @@ func (h *HSM) load(ctx context.Context, xpub chainkd.XPub) (xprv chainkd.XPrv, e
 		return xprv, err
 	}
 	copy(xprv[:], b)
-	h.cache[xpub] = xprv
+	h.kdCache[xpub] = xprv
 	return xprv, nil
 }
 
-// Sign looks up the xprv given the xpub, optionally derives a new
+// SignWithChainKDKey looks up the xprv given the xpub, optionally derives a new
 // xprv with the given path (but does not store the new xprv), and
 // signs the given msg.
-func (h *HSM) Sign(ctx context.Context, xpub chainkd.XPub, path [][]byte, msg []byte) ([]byte, error) {
-	xprv, err := h.load(ctx, xpub)
+func (h *HSM) SignWithChainKDKey(ctx context.Context, xpub chainkd.XPub, path [][]byte, msg []byte) ([]byte, error) {
+	xprv, err := h.loadChainKDKey(ctx, xpub)
 	if err != nil {
 		return nil, err
 	}
@@ -150,10 +150,10 @@ func (h *HSM) Sign(ctx context.Context, xpub chainkd.XPub, path [][]byte, msg []
 	return xprv.Sign(msg), nil
 }
 
-func (h *HSM) DelKey(ctx context.Context, xpub chainkd.XPub) error {
-	h.cacheMu.Lock()
-	delete(h.cache, xpub)
-	h.cacheMu.Unlock()
+func (h *HSM) DeleteChainKDKey(ctx context.Context, xpub chainkd.XPub) error {
+	h.kdCacheMu.Lock()
+	delete(h.kdCache, xpub)
+	h.kdCacheMu.Unlock()
 	_, err := h.db.Exec(ctx, "DELETE FROM mockhsm WHERE pub = $1", xpub.Bytes())
 	return err
 }

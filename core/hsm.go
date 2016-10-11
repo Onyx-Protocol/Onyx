@@ -11,7 +11,7 @@ import (
 )
 
 func (a *api) mockhsmCreateKey(ctx context.Context, in struct{ Alias string }) (result *mockhsm.XPub, err error) {
-	result, err = a.hsm.CreateKey(ctx, in.Alias)
+	result, err = a.hsm.CreateChainKDKey(ctx, in.Alias)
 	if err != nil {
 		return result, err
 	}
@@ -39,7 +39,7 @@ func (a *api) mockhsmListKeys(ctx context.Context, query struct{ After string })
 }
 
 func (a *api) mockhsmDelKey(ctx context.Context, xpub chainkd.XPub) error {
-	return a.hsm.DelKey(ctx, xpub)
+	return a.hsm.DeleteChainKDKey(ctx, xpub)
 }
 
 func (a *api) mockhsmSignTemplates(ctx context.Context, x struct {
@@ -65,7 +65,7 @@ func (a *api) mockhsmSignTemplate(ctx context.Context, xpubstr string, path [][]
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing xpub")
 	}
-	sigBytes, err := a.hsm.Sign(ctx, xpub, path, data[:])
+	sigBytes, err := a.hsm.SignWithChainKDKey(ctx, xpub, path, data[:])
 	if err == mockhsm.ErrNoKey {
 		return nil, nil
 	}
