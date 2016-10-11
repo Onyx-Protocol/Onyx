@@ -270,6 +270,7 @@ func remoteSignerInfo(ctx context.Context, processID, buildTag, blockchainID str
 		}
 		client := &rpc.Client{
 			BaseURL:      u.String(),
+			AccessToken:  signer.AccessToken,
 			Username:     processID,
 			BuildTag:     buildTag,
 			BlockchainID: blockchainID,

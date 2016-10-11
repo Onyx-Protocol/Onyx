@@ -151,8 +151,9 @@ type Config struct {
 }
 
 type ConfigSigner struct {
-	Pubkey json.HexBytes `json:"pubkey"`
-	URL    string        `json:"url"`
+	AccessToken string        `json:"access_token"`
+	Pubkey      json.HexBytes `json:"pubkey"`
+	URL         string        `json:"url"`
 }
 
 // Used as a request object for api queries
