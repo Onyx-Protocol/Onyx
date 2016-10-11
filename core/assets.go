@@ -34,7 +34,7 @@ type assetKey struct {
 }
 
 // POST /create-asset
-func (a *api) createAsset(ctx context.Context, ins []struct {
+func (h *Handler) createAsset(ctx context.Context, ins []struct {
 	Alias      string
 	RootXPubs  []string `json:"root_xpubs"`
 	Quorum     int
@@ -47,7 +47,7 @@ func (a *api) createAsset(ctx context.Context, ins []struct {
 	// with the same client_token will only create one asset.
 	ClientToken *string `json:"client_token"`
 }) ([]assetOrError, error) {
-	initialBlock, err := a.c.GetBlock(ctx, 1)
+	initialBlock, err := h.Chain.GetBlock(ctx, 1)
 	if err != nil {
 		return nil, err
 	}

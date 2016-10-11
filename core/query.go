@@ -66,7 +66,7 @@ type (
 // an index or an ad-hoc filter.
 //
 // POST /list-transactions
-func (a *api) listTransactions(ctx context.Context, in requestQuery) (result page, err error) {
+func (h *Handler) listTransactions(ctx context.Context, in requestQuery) (result page, err error) {
 	var c context.CancelFunc
 	timeout := in.Timeout.Duration
 	if timeout != 0 {
@@ -96,14 +96,14 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 			return result, errors.Wrap(err, "decoding `after`")
 		}
 	} else {
-		after, err = a.indexer.LookupTxAfter(ctx, in.StartTimeMS, in.EndTimeMS)
+		after, err = h.Indexer.LookupTxAfter(ctx, in.StartTimeMS, in.EndTimeMS)
 		if err != nil {
 			return result, err
 		}
 	}
 
 	limit := defGenericPageSize
-	txns, nextAfter, err := a.indexer.Transactions(ctx, p, in.FilterParams, after, limit, in.AscLongPoll)
+	txns, nextAfter, err := h.Indexer.Transactions(ctx, p, in.FilterParams, after, limit, in.AscLongPoll)
 	if err != nil {
 		return result, errors.Wrap(err, "running tx query")
 	}
@@ -215,7 +215,7 @@ func (a *api) listTransactions(ctx context.Context, in requestQuery) (result pag
 // an index or an ad-hoc filter.
 //
 // POST /list-accounts
-func (a *api) listAccounts(ctx context.Context, in requestQuery) (page, error) {
+func (h *Handler) listAccounts(ctx context.Context, in requestQuery) (page, error) {
 	limit := defGenericPageSize
 
 	// Build the filter predicate.
@@ -226,7 +226,7 @@ func (a *api) listAccounts(ctx context.Context, in requestQuery) (page, error) {
 	after := in.After
 
 	// Use the filter engine for querying account tags.
-	accounts, after, err := a.indexer.Accounts(ctx, p, in.FilterParams, after, limit)
+	accounts, after, err := h.Indexer.Accounts(ctx, p, in.FilterParams, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running acc query")
 	}
@@ -269,7 +269,7 @@ func (a *api) listAccounts(ctx context.Context, in requestQuery) (page, error) {
 }
 
 // POST /list-balances
-func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, err error) {
+func (h *Handler) listBalances(ctx context.Context, in requestQuery) (result page, err error) {
 	if in.TimestampMS == 0 {
 		in.TimestampMS = bc.Millis(time.Now())
 	}
@@ -296,7 +296,7 @@ func (a *api) listBalances(ctx context.Context, in requestQuery) (result page, e
 	}
 
 	// TODO(jackson): paginate this endpoint.
-	balances, err := a.indexer.Balances(ctx, p, in.FilterParams, sumBy, in.TimestampMS)
+	balances, err := h.Indexer.Balances(ctx, p, in.FilterParams, sumBy, in.TimestampMS)
 	if err != nil {
 		return result, err
 	}
@@ -328,7 +328,7 @@ type utxoResp struct {
 }
 
 // POST /list-unspent-outputs
-func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result page, err error) {
+func (h *Handler) listUnspentOutputs(ctx context.Context, in requestQuery) (result page, err error) {
 	if in.TimestampMS == 0 {
 		in.TimestampMS = bc.Millis(time.Now())
 	}
@@ -347,7 +347,7 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 	}
 
 	limit := defGenericPageSize
-	outputs, nextAfter, err := a.indexer.Outputs(ctx, p, in.FilterParams, in.TimestampMS, after, limit)
+	outputs, nextAfter, err := h.Indexer.Outputs(ctx, p, in.FilterParams, in.TimestampMS, after, limit)
 	if err != nil {
 		return result, errors.Wrap(err, "querying outputs")
 	}
@@ -400,7 +400,7 @@ func (a *api) listUnspentOutputs(ctx context.Context, in requestQuery) (result p
 // an index or an ad-hoc filter.
 //
 // POST /list-assets
-func (a *api) listAssets(ctx context.Context, in requestQuery) (page, error) {
+func (h *Handler) listAssets(ctx context.Context, in requestQuery) (page, error) {
 	limit := defGenericPageSize
 
 	// Build the filter predicate.
@@ -412,7 +412,7 @@ func (a *api) listAssets(ctx context.Context, in requestQuery) (page, error) {
 
 	// Use the query engine for querying asset tags.
 	var assets []map[string]interface{}
-	assets, after, err = a.indexer.Assets(ctx, p, in.FilterParams, after, limit)
+	assets, after, err = h.Indexer.Assets(ctx, p, in.FilterParams, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running asset query")
 	}
@@ -472,11 +472,11 @@ func txAccountFromMap(m map[string]interface{}) *txAccount {
 // listTxFeeds is an http handler for listing txfeeds. It does not take a filter.
 //
 // POST /list-transaction-feeds
-func (a *api) listTxFeeds(ctx context.Context, in requestQuery) (page, error) {
+func (h *Handler) listTxFeeds(ctx context.Context, in requestQuery) (page, error) {
 	limit := defGenericPageSize
 	after := in.After
 
-	txfeeds, after, err := a.indexer.TxFeeds(ctx, after, limit)
+	txfeeds, after, err := h.Indexer.TxFeeds(ctx, after, limit)
 	if err != nil {
 		return page{}, errors.Wrap(err, "running txfeed query")
 	}

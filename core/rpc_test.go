@@ -17,9 +17,9 @@ func TestGetBlocks(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), db)
 	store, pool := txdb.New(db)
 	chain := prottest.NewChainWithStorage(t, store, pool)
-	a := &api{c: chain}
+	h := &Handler{Chain: chain}
 
-	blocks, err := a.getBlocksRPC(ctx, 0)
+	blocks, err := h.getBlocksRPC(ctx, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +34,7 @@ func TestGetBlocks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	blocks, err = a.getBlocksRPC(ctx, 1)
+	blocks, err = h.getBlocksRPC(ctx, 1)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

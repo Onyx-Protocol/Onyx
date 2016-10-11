@@ -179,7 +179,7 @@ func TestMux(t *testing.T) {
 			t.Fatal("unexpected panic:", err)
 		}
 	}()
-	Handler(nil, nil, nil, nil, nil, &Config{}, nil)
+	(&Handler{Config: &Config{}}).init()
 }
 
 func TestTransfer(t *testing.T) {

@@ -33,15 +33,9 @@ import (
 	"chain/database/sql"
 	"chain/env"
 	"chain/errors"
-	"chain/generated/dashboard"
-	"chain/generated/doc"
 	chainlog "chain/log"
 	"chain/log/rotation"
 	"chain/log/splunk"
-	"chain/net/http/gzip"
-	"chain/net/http/limit"
-	"chain/net/http/reqid"
-	"chain/net/http/static"
 	"chain/net/rpc"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -126,17 +120,9 @@ func main() {
 		h = launchConfiguredCore(ctx, db, config, processID)
 	} else {
 		chainlog.Messagef(ctx, "Launching as unconfigured Core.")
-		h = core.Handler(nil, nil, nil, nil, nil, nil, authLoopbackInDev)
+		h = &core.Handler{DB: db, AltAuth: authLoopbackInDev}
 	}
 
-	h = webAssetsHandler(h)
-	if *reqsPerSec > 0 {
-		h = limit.Handler(h, *reqsPerSec, 100, limit.AuthUserID)
-	}
-	h = gzip.Handler{Handler: h}
-	h = dbContextHandler(h, db)
-	h = reqid.Handler(h)
-	h = timeoutContextHandler(h)
 	http.Handle("/", h)
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 	secureheader.DefaultConfig.PermitClearLoopback = true
@@ -209,7 +195,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 
 	hsm := mockhsm.New(db)
 	var generatorSigners []generator.BlockSigner
-	var signBlockHandler core.BlockSignerFunc
+	var signBlockHandler func(context.Context, *bc.Block) ([]byte, error)
 	if config.IsSigner {
 		var blockXPub chainkd.XPub
 		err = blockXPub.UnmarshalText([]byte(config.BlockXPub))
@@ -248,57 +234,20 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		}
 	})
 
-	h := core.Handler(c, store, signBlockHandler, hsm, indexer, config, authLoopbackInDev)
+	h := &core.Handler{
+		Chain:        c,
+		Store:        store,
+		Signer:       signBlockHandler,
+		HSM:          hsm,
+		Indexer:      indexer,
+		Config:       config,
+		DB:           db,
+		RequestLimit: *reqsPerSec,
+		AltAuth:      authLoopbackInDev,
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set(rpc.HeaderBlockchainID, config.BlockchainID.String())
 		h.ServeHTTP(w, req)
-	})
-}
-
-// timeoutContextHandler propagates the timeout, if any, provided as a header
-// in the http request.
-func timeoutContextHandler(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		timeout, err := time.ParseDuration(req.Header.Get(rpc.HeaderTimeout))
-		if err != nil {
-			handler.ServeHTTP(w, req) // unmodified
-			return
-		}
-
-		ctx := req.Context()
-		ctx, cancel := context.WithTimeout(ctx, timeout)
-		defer cancel()
-		handler.ServeHTTP(w, req.WithContext(ctx))
-	})
-}
-
-func dbContextHandler(handler http.Handler, db pg.DB) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		ctx := req.Context()
-		ctx = pg.NewContext(ctx, db)
-		handler.ServeHTTP(w, req.WithContext(ctx))
-	})
-}
-
-func webAssetsHandler(next http.Handler) http.Handler {
-	mux := http.NewServeMux()
-	mux.Handle("/dashboard/", http.StripPrefix("/dashboard/", static.Handler{
-		Assets: dashboard.Files,
-		Index:  "index.html",
-	}))
-	mux.Handle("/doc/", http.StripPrefix("/doc/", static.Handler{
-		Assets: doc.Files,
-		Index:  "index",
-	}))
-	mux.Handle("/", next)
-
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == "/" {
-			http.Redirect(w, req, "/dashboard/", http.StatusFound)
-			return
-		}
-
-		mux.ServeHTTP(w, req)
 	})
 }
 

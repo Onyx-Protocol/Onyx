@@ -260,13 +260,13 @@ type submitArg struct {
 
 // POST /v3/transact/submit
 // Idempotent
-func (a *api) submit(ctx context.Context, x submitArg) interface{} {
+func (h *Handler) submit(ctx context.Context, x submitArg) interface{} {
 	responses := make([]interface{}, len(x.Transactions))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
 	for i := range responses {
 		go func(i int) {
-			resp, err := submitSingle(reqid.NewSubContext(ctx, reqid.New()), a.c, submitSingleArg{tpl: x.Transactions[i], wait: x.wait})
+			resp, err := submitSingle(reqid.NewSubContext(ctx, reqid.New()), h.Chain, submitSingleArg{tpl: x.Transactions[i], wait: x.wait})
 			if err != nil {
 				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)

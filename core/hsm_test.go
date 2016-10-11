@@ -76,8 +76,8 @@ func TestMockHSM(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	a := &api{hsm: mockhsm}
-	outTmpls := a.mockhsmSignTemplates(ctx, struct {
+	h := &Handler{HSM: mockhsm}
+	outTmpls := h.mockhsmSignTemplates(ctx, struct {
 		Txs   []*txbuilder.Template `json:"transactions"`
 		XPubs []string              `json:"xpubs"`
 	}{[]*txbuilder.Template{tmpl}, []string{xpub1.XPub.String()}})

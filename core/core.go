@@ -56,7 +56,7 @@ func Schema() string {
 	return files["schema.sql"]
 }
 
-func (a *api) reset(ctx context.Context, req struct {
+func (h *Handler) reset(ctx context.Context, req struct {
 	Everything bool `json:"everything"`
 }) error {
 	if isProduction() {
@@ -73,15 +73,15 @@ func (a *api) reset(ctx context.Context, req struct {
 	panic("unreached")
 }
 
-func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
-	if a.config == nil {
+func (h *Handler) info(ctx context.Context) (map[string]interface{}, error) {
+	if h.Config == nil {
 		// never configured
 		return map[string]interface{}{
 			"is_configured": false,
 		}, nil
 	}
 	if leader.IsLeading() {
-		return a.leaderInfo(ctx)
+		return h.leaderInfo(ctx)
 	} else {
 		var resp map[string]interface{}
 		err := callLeader(ctx, "/info", nil, &resp)
@@ -89,13 +89,13 @@ func (a *api) info(ctx context.Context) (map[string]interface{}, error) {
 	}
 }
 
-func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
-	localHeight := a.c.Height()
+func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
+	localHeight := h.Chain.Height()
 	var (
 		generatorHeight  uint64
 		generatorFetched time.Time
 	)
-	if a.config.IsGenerator {
+	if h.Config.IsGenerator {
 		generatorHeight = localHeight
 		generatorFetched = time.Now()
 	} else {
@@ -114,12 +114,12 @@ func (a *api) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 
 	return map[string]interface{}{
 		"is_configured":                     true,
-		"configured_at":                     a.config.ConfiguredAt,
-		"is_signer":                         a.config.IsSigner,
-		"is_generator":                      a.config.IsGenerator,
-		"generator_url":                     a.config.GeneratorURL,
-		"generator_access_token":            obfuscateTokenSecret(a.config.GeneratorAccessToken),
-		"blockchain_id":                     a.config.BlockchainID,
+		"configured_at":                     h.Config.ConfiguredAt,
+		"is_signer":                         h.Config.IsSigner,
+		"is_generator":                      h.Config.IsGenerator,
+		"generator_url":                     h.Config.GeneratorURL,
+		"generator_access_token":            obfuscateTokenSecret(h.Config.GeneratorAccessToken),
+		"blockchain_id":                     h.Config.BlockchainID,
 		"block_height":                      localHeight,
 		"generator_block_height":            generatorHeight,
 		"generator_block_height_fetched_at": generatorFetched,
@@ -247,8 +247,8 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 	return err
 }
 
-func (a *api) configure(ctx context.Context, x *Config) error {
-	if a.config != nil {
+func (h *Handler) configure(ctx context.Context, x *Config) error {
+	if h.Config != nil {
 		return errAlreadyConfigured
 	}
 

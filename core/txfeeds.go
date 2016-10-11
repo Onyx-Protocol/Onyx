@@ -12,7 +12,7 @@ import (
 )
 
 // POST /create-txfeed
-func (a *api) createTxFeed(ctx context.Context, in struct {
+func (h *Handler) createTxFeed(ctx context.Context, in struct {
 	Alias  string
 	Filter string
 
@@ -22,7 +22,7 @@ func (a *api) createTxFeed(ctx context.Context, in struct {
 	// with the same client_token will only create one txfeed.
 	ClientToken *string `json:"client_token"`
 }) (*txfeed.TxFeed, error) {
-	after := fmt.Sprintf("%d:%d-%d", a.c.Height(), math.MaxInt32, uint64(math.MaxInt64))
+	after := fmt.Sprintf("%d:%d-%d", h.Chain.Height(), math.MaxInt32, uint64(math.MaxInt64))
 	return txfeed.Create(ctx, in.Alias, in.Filter, after, in.ClientToken)
 }
 
