@@ -24,7 +24,7 @@ type accountKey struct {
 }
 
 // POST /create-account
-func createAccount(ctx context.Context, ins []struct {
+func (h *Handler) createAccount(ctx context.Context, ins []struct {
 	RootXPubs []string `json:"root_xpubs"`
 	Quorum    int
 	Alias     string

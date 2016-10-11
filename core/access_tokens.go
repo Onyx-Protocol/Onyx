@@ -10,11 +10,11 @@ import (
 
 var errCurrentToken = errors.New("token cannot delete itself")
 
-func createAccessToken(ctx context.Context, x struct{ ID, Type string }) (*accesstoken.Token, error) {
+func (h *Handler) createAccessToken(ctx context.Context, x struct{ ID, Type string }) (*accesstoken.Token, error) {
 	return accesstoken.Create(ctx, x.ID, x.Type)
 }
 
-func listAccessTokens(ctx context.Context, x requestQuery) (*page, error) {
+func (h *Handler) listAccessTokens(ctx context.Context, x requestQuery) (*page, error) {
 	limit := x.PageSize
 	if limit == 0 {
 		limit = defGenericPageSize
@@ -35,7 +35,7 @@ func listAccessTokens(ctx context.Context, x requestQuery) (*page, error) {
 	}, nil
 }
 
-func deleteAccessToken(ctx context.Context, x struct{ ID string }) error {
+func (h *Handler) deleteAccessToken(ctx context.Context, x struct{ ID string }) error {
 	currentID, _, _ := httpjson.Request(ctx).BasicAuth()
 	if currentID == x.ID {
 		return errCurrentToken

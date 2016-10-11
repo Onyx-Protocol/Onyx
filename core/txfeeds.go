@@ -27,7 +27,7 @@ func (h *Handler) createTxFeed(ctx context.Context, in struct {
 }
 
 // POST /get-transaction-feed
-func getTxFeed(ctx context.Context, in struct {
+func (h *Handler) getTxFeed(ctx context.Context, in struct {
 	ID    string `json:"id,omitempty"`
 	Alias string `json:"alias,omitempty"`
 }) (*txfeed.TxFeed, error) {
@@ -35,7 +35,7 @@ func getTxFeed(ctx context.Context, in struct {
 }
 
 // POST /delete-transaction-feed
-func deleteTxFeed(ctx context.Context, in struct {
+func (h *Handler) deleteTxFeed(ctx context.Context, in struct {
 	ID    string `json:"id,omitempty"`
 	Alias string `json:"alias,omitempty"`
 }) error {
@@ -43,7 +43,7 @@ func deleteTxFeed(ctx context.Context, in struct {
 }
 
 // POST /update-transaction-feed
-func updateTxFeed(ctx context.Context, in struct {
+func (h *Handler) updateTxFeed(ctx context.Context, in struct {
 	ID    string `json:"id,omitempty"`
 	Alias string `json:"alias,omitempty"`
 	Prev  string `json:"previous_after"`

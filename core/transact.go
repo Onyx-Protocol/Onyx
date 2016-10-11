@@ -20,7 +20,7 @@ const (
 	defaultTxTTL = 5 * time.Minute
 )
 
-func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
+func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
 	err := filterAliases(ctx, req)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, e
 }
 
 // POST /build-transaction
-func build(ctx context.Context, buildReqs []*buildRequest) (interface{}, error) {
+func (h *Handler) build(ctx context.Context, buildReqs []*buildRequest) (interface{}, error) {
 	responses := make([]interface{}, len(buildReqs))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
@@ -71,7 +71,7 @@ func build(ctx context.Context, buildReqs []*buildRequest) (interface{}, error) 
 		go func(i int) {
 			defer wg.Done()
 
-			resp, err := buildSingle(reqid.NewSubContext(ctx, reqid.New()), buildReqs[i])
+			resp, err := h.buildSingle(reqid.NewSubContext(ctx, reqid.New()), buildReqs[i])
 			if err != nil {
 				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)

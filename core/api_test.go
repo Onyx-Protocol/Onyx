@@ -186,14 +186,15 @@ func TestTransfer(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
-	asset.Init(c, nil)
-	account.Init(c, nil)
-
-	ind := query.NewIndexer(dbtx, c)
-	asset.Init(c, ind)
-	account.Init(c, ind)
-	ind.RegisterAnnotator(account.AnnotateTxs)
-	ind.RegisterAnnotator(asset.AnnotateTxs)
+	handler := &Handler{
+		Chain:   c,
+		Indexer: query.NewIndexer(dbtx, c),
+		DB:      dbtx,
+	}
+	asset.Init(c, handler.Indexer)
+	account.Init(c, handler.Indexer)
+	handler.Indexer.RegisterAnnotator(account.AnnotateTxs)
+	handler.Indexer.RegisterAnnotator(asset.AnnotateTxs)
 
 	assetAlias := "some-asset"
 	account1Alias := "first-account"
@@ -243,7 +244,7 @@ func TestTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	buildResult, err := build(ctx, []*buildRequest{&buildReq})
+	buildResult, err := handler.build(ctx, []*buildRequest{&buildReq})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
@@ -289,7 +290,7 @@ func TestTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	buildResult, err = build(ctx, []*buildRequest{&buildReq})
+	buildResult, err = handler.build(ctx, []*buildRequest{&buildReq})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

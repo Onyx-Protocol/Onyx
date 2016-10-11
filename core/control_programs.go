@@ -12,7 +12,7 @@ import (
 )
 
 // POST /create-control-program
-func createControlProgram(ctx context.Context, ins []struct {
+func (h *Handler) createControlProgram(ctx context.Context, ins []struct {
 	Type   string
 	Params stdjson.RawMessage
 }) interface{} {
