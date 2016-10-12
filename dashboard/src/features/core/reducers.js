@@ -44,6 +44,8 @@ export const blockHeight = (state, action) =>
   coreConfigReducer('block_height', state, 0, action)
 export const generatorBlockHeight = (state, action) =>
   coreConfigReducer('generator_block_height', state, 0, action)
+export const signer = (state, action) =>
+  coreConfigReducer('is_signer', state, false, action)
 export const generator = (state, action) =>
   coreConfigReducer('is_generator', state, false, action)
 export const generatorUrl = (state, action) =>
@@ -54,6 +56,15 @@ export const blockchainID = (state, action) =>
   coreConfigReducer('blockchain_id', state, 0, action)
 export const networkRpcVersion = (state, action) =>
   coreConfigReducer('network_rpc_version', state, 0, action)
+
+export const coreType = (state = '', action) => {
+  if (action.type == 'UPDATE_CORE_INFO') {
+    if (action.param.is_generator) return 'Generator'
+    if (action.param.is_signer) return 'Signer'
+    return 'Participant'
+  }
+  return state
+}
 
 export const replicationLag = (state = null, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
@@ -97,21 +108,23 @@ export const validToken = (state = false, action) => {
 }
 
 export default combineReducers({
-  configured,
-  configuredAt,
-  production,
+  blockchainID,
+  blockHeight,
   buildCommit,
   buildDate,
-  blockHeight,
-  generatorBlockHeight,
-  replicationLag,
-  generator,
-  generatorUrl,
-  generatorAccessToken,
-  blockchainID,
-  requireClientToken,
   clientToken,
-  validToken,
-  onTestNet,
+  configured,
+  configuredAt,
+  coreType,
+  generator,
+  generatorAccessToken,
+  generatorBlockHeight,
+  generatorUrl,
   networkRpcVersion,
+  onTestNet,
+  production,
+  replicationLag,
+  requireClientToken,
+  signer,
+  validToken,
 })

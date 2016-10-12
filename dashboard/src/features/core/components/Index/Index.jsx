@@ -55,7 +55,7 @@ class Index extends React.Component {
             <tbody>
               <tr>
                 <td className={styles.row_label}>Core Type:</td>
-                <td>{this.props.core.generator ? 'Generator' : 'Node'}</td>
+                <td>{this.props.core.coreType}</td>
               </tr>
               <tr>
                 <td className={styles.row_label}>Setup Time:</td>
