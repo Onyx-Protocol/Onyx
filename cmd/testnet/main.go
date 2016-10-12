@@ -54,11 +54,11 @@ func main() {
 	envFile, err := ioutil.ReadFile(srcdir + "/cmd/testnet/chain.env")
 	must(err)
 	coredBin := mustBuildCored()
-	mustRunOn(instanceAddr, stopsh)
+	might(runOn(instanceAddr, stopsh))
 	log.Println("uploading binaries")
 	must(scpPut(instanceAddr, coredBin, "cored", 0755))
 	must(scpPut(instanceAddr, envFile, "chain.env", 0755))
-	mustRunOn(instanceAddr, startsh)
+	must(runOn(instanceAddr, startsh))
 	log.Println("SUCCESS")
 }
 
@@ -119,7 +119,7 @@ func scpPut(host string, data []byte, dest string, mode int) error {
 	return s.Run("/usr/bin/scp -tr .")
 }
 
-func mustRunOn(host, sh string, keyval ...string) {
+func runOn(host, sh string, keyval ...string) error {
 	if len(keyval)%2 != 0 {
 		log.Fatal("odd params", keyval)
 	}
@@ -138,10 +138,7 @@ func mustRunOn(host, sh string, keyval ...string) {
 	for i := 0; i < len(keyval); i += 2 {
 		sh = strings.Replace(sh, "{{"+keyval[i]+"}}", keyval[i+1], -1)
 	}
-	err = s.Run(sh)
-	if err != nil {
-		log.Fatal(err)
-	}
+	return s.Run(sh)
 }
 
 var errRetry = errors.New("retry")
@@ -170,6 +167,12 @@ func retry(f func() error) {
 func must(err error) {
 	if err != nil {
 		panic(err)
+	}
+}
+
+func might(err error) {
+	if err != nil {
+		log.Println(err)
 	}
 }
 
