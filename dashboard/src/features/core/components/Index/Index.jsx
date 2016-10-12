@@ -38,15 +38,6 @@ class Index extends React.Component {
   }
 
   render() {
-    let replicationLagClass
-    if (this.props.core.replicationLag < 5) {
-      replicationLagClass = styles.green
-    } else if (this.props.core.replicationLag < 10) {
-      replicationLagClass = styles.yellow
-    } else {
-      replicationLagClass = styles.red
-    }
-
     let configBlock = (
       <div className={`${styles.left} ${styles.col}`}>
         <div>
@@ -102,13 +93,12 @@ class Index extends React.Component {
                 <td className={styles.row_label}>Local Block:</td>
                 <td>{this.props.core.blockHeight}</td>
               </tr>
-
-              {this.props.core.replicationLag && <tr>
+              <tr>
                 <td className={styles.row_label}>Replication Lag:</td>
-                <td className={`${styles.replication_lag} ${replicationLagClass}`}>
+                <td className={`${styles.replication_lag} ${styles[this.props.core.replicationLagClass]}`}>
                   {this.props.core.replicationLag}
                 </td>
-              </tr>}
+              </tr>
             </tbody>
           </table>
 

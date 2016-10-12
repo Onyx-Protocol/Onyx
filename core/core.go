@@ -93,25 +93,33 @@ func (h *Handler) info(ctx context.Context) (map[string]interface{}, error) {
 func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error) {
 	localHeight := h.Chain.Height()
 	var (
-		generatorHeight  uint64
-		generatorFetched time.Time
+		generatorHeight  *uint64
+		generatorFetched *time.Time
 	)
 	if h.Config.IsGenerator {
-		generatorHeight = localHeight
-		generatorFetched = time.Now()
+		now := time.Now()
+		generatorHeight = &localHeight
+		generatorFetched = &now
 	} else {
-		generatorHeight, generatorFetched = fetch.GeneratorHeight()
+		fetchHeight, fetchTime := fetch.GeneratorHeight()
+
+		// Because everything is asynchronous, it's possible for the localHeight to
+		// be higher than our cached generator height. In that case, display the
+		// local height as the generator height.
+		if localHeight > fetchHeight {
+			fetchHeight = localHeight
+		}
+
+		// fetchTime might be the zero time if we're having trouble connecting
+		// to the remote generator. Only set the height & time if we have it.
+		// The dashboard will handle nulls correctly.
+		if !fetchTime.IsZero() {
+			generatorHeight, generatorFetched = &fetchHeight, &fetchTime
+		}
 	}
 
 	buildCommit := json.RawMessage(expvar.Get("buildcommit").String())
 	buildDate := json.RawMessage(expvar.Get("builddate").String())
-
-	// Because everything is asynchronous, it's possible for the localHeight to
-	// be higher than our cached generator height. In that case, display the
-	// generatorHeight as our height.
-	if localHeight > generatorHeight {
-		generatorHeight = localHeight
-	}
 
 	return map[string]interface{}{
 		"is_configured":                     true,

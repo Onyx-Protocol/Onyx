@@ -42,8 +42,13 @@ export const production = (state, action) =>
   coreConfigReducer('is_production', state, false, action)
 export const blockHeight = (state, action) =>
   coreConfigReducer('block_height', state, 0, action)
-export const generatorBlockHeight = (state, action) =>
-  coreConfigReducer('generator_block_height', state, 0, action)
+export const generatorBlockHeight = (state, action) => {
+  if (action.type == 'UPDATE_CORE_INFO') {
+    if (action.param.generator_block_height == null) return '???'
+  }
+
+  return coreConfigReducer('generator_block_height', state, 0, action)
+}
 export const signer = (state, action) =>
   coreConfigReducer('is_signer', state, false, action)
 export const generator = (state, action) =>
@@ -68,7 +73,29 @@ export const coreType = (state = '', action) => {
 
 export const replicationLag = (state = null, action) => {
   if (action.type == 'UPDATE_CORE_INFO') {
+    if (action.param.generator_block_height == null) {
+      return '???'
+    }
     return action.param.generator_block_height - action.param.block_height + ''
+  }
+
+  return state
+}
+
+export const replicationLagClass = (state = null, action) => {
+  if (action.type == 'UPDATE_CORE_INFO') {
+    if (action.param.generator_block_height == null) {
+      return 'red'
+    } else {
+      let lag = action.param.generator_block_height - action.param.block_height
+      if (lag < 5) {
+        return 'green'
+      } else if (lag < 10) {
+        return 'yellow'
+      } else {
+        return 'red'
+      }
+    }
   }
 
   return state
@@ -124,6 +151,7 @@ export default combineReducers({
   onTestNet,
   production,
   replicationLag,
+  replicationLagClass,
   requireClientToken,
   signer,
   validToken,
