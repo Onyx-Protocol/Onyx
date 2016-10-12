@@ -55,6 +55,18 @@ type Handler struct {
 	handler http.Handler
 }
 
+func maxBytes(h http.Handler) http.Handler {
+	const maxReqSize = 1e5 // 100kB
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		// A block can easily be bigger than maxReqSize, but everything
+		// else should be pretty small.
+		if req.URL.Path != networkRPCPrefix+"signer/sign-block" {
+			req.Body = http.MaxBytesReader(w, req.Body, maxReqSize)
+		}
+		h.ServeHTTP(w, req)
+	})
+}
+
 func (h *Handler) init() {
 	needConfig := jsonHandler
 	if h.Config == nil {
@@ -119,6 +131,7 @@ func (h *Handler) init() {
 		Next:  latencyHandler,
 		Realm: "Chain Core API",
 	}
+	handler = maxBytes(handler)
 	handler = webAssetsHandler(handler)
 	if h.RequestLimit > 0 {
 		handler = limit.Handler(handler, alwaysError(errRateLimited), h.RequestLimit, 100, limit.AuthUserID)

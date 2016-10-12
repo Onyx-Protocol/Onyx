@@ -17,10 +17,6 @@ type ErrorWriter func(context.Context, http.ResponseWriter, error)
 // has no return value.
 var DefaultResponse = json.RawMessage(`{"message":"ok"}`)
 
-// MaxReqSize specifies how many bytes a Handler will read
-// in a single HTTP request body.
-var MaxReqSize int64 = 1e5 // 100kB
-
 // handler is an http.Handler that calls a function for each request.
 // It uses the signature of the function to decide how to interpret
 type handler struct {
@@ -32,8 +28,6 @@ type handler struct {
 
 // Handler returns an HTTP handler for function f.
 // See the package doc for details on allowed signatures for f.
-// The returned handler will read at most MaxReqSize bytes
-// from the request body.
 // If f returns a non-nil error, the handler will call errFunc.
 func Handler(f interface{}, errFunc ErrorWriter) (http.Handler, error) {
 	fv := reflect.ValueOf(f)
@@ -56,8 +50,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	if h.inType != nil {
 		inPtr := reflect.New(h.inType)
-		r := http.MaxBytesReader(w, req.Body, MaxReqSize)
-		err := Read(req.Context(), r, inPtr.Interface())
+		err := Read(req.Context(), req.Body, inPtr.Interface())
 		if err != nil {
 			h.errFunc(req.Context(), w, err)
 			return
