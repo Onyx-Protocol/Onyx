@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/russross/blackfriday"
@@ -168,44 +169,115 @@ func interpolateCode(md []byte, hostPath string) []byte {
 }
 
 func writeCode(w io.Writer, path, snippet string) {
+	s, err := readSnippet(path, snippet)
+	if err != nil {
+		s = err.Error()
+	} else {
+		s = removeCommonIndent(s)
+	}
+
+	fmt.Fprintln(w, "```\n"+s+"\n```")
+}
+
+func readSnippet(path, snippet string) (string, error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Fprintf(w, "`Unable to read source file: %s`\n", path)
-		return
+		return "", fmt.Errorf("Unable to read source file: %s\n", path)
 	}
-	//If the snippet is unset, print the whole file --omitting snippet definitions.
+
+	src := string(b)
+
+	// If the snippet is unset, return everything, omitting snippet definitions.
 	if snippet == "" {
-		fmt.Fprintln(w, "```")
-		for _, line := range strings.Split(string(b), "\n") {
+		var res string
+		for _, line := range strings.SplitAfter(src, "\n") {
 			if strings.Contains(line, "snippet") {
 				continue
 			}
-			fmt.Fprintln(w, line)
+			res += line
 		}
-		fmt.Fprintln(w, "```")
-		return
+		return res, nil
 	}
 
-	if !bytes.Contains(b, []byte("snippet "+snippet)) {
-		fmt.Fprintf(w, "`Snippet %q is not in %q`\n", snippet, path)
-		return
+	if !strings.Contains(src, "snippet "+snippet) {
+		return "", fmt.Errorf("Snippet %q is not in %q", snippet, path)
 	}
-	found := false
-	for _, line := range strings.Split(string(b), "\n") {
-		if strings.Contains(line, "snippet "+snippet) {
-			fmt.Fprintln(w, "```")
+
+	var (
+		res   []string
+		found bool
+	)
+
+	for _, line := range strings.Split(src, "\n") {
+		if !found && strings.Contains(line, "snippet "+snippet) {
 			found = true
 			continue
 		}
+
 		if found && strings.Contains(line, "endsnippet") {
-			fmt.Fprintln(w, "```")
-			found = false
-			continue
+			break
 		}
+
 		if found {
-			fmt.Fprintln(w, line)
+			res = append(res, line)
 		}
 	}
+
+	return strings.Join(res, "\n"), nil
+}
+
+func removeCommonIndent(s string) string {
+	lines := strings.Split(s, "\n")
+	ci := commonIndent(lines)
+
+	for i, line := range lines {
+		lines[i] = strings.TrimPrefix(line, ci)
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+// commonIndent returns the longest indentation shared by all non-empty lines
+// in the input.
+func commonIndent(lines []string) string {
+	var (
+		indent = regexp.MustCompile(`^[ \t]+`)
+		res    string
+		resSet bool
+	)
+
+	for _, line := range lines {
+		// blank lines should not influence the common indentation
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
+		if !resSet {
+			res = indent.FindString(line)
+			resSet = true
+			continue
+		}
+
+		res = commonPrefix(res, indent.FindString(line))
+		if res == "" {
+			break
+		}
+	}
+
+	return res
+}
+
+// commonPrefix returns the longest shared prefix between two strings. It
+// assumes the characters can be represented by a single byte.
+func commonPrefix(a, b string) string {
+	var res []byte
+	for i := range a {
+		if i >= len(b) || a[i] != b[i] {
+			break
+		}
+		res = append(res, a[i])
+	}
+	return string(res)
 }
 
 func markdown(source []byte) []byte {
