@@ -20,7 +20,7 @@ func TestWriteHTTPError(t *testing.T) {
 		{pg.ErrUserInputNotFound, `{"code":"CH002","message":"Not found","temporary":false}`, 400},
 		{errors.Wrap(pg.ErrUserInputNotFound, "foo"), `{"code":"CH002","message":"Not found","temporary":false}`, 400},
 		{errors.WithDetail(pg.ErrUserInputNotFound, "foo"), `{"code":"CH002","message":"Not found","detail":"foo","temporary":false}`, 400},
-		{context.DeadlineExceeded, `{"code":"CH001","message":"Request timed out","temporary":true}`, 504},
+		{context.DeadlineExceeded, `{"code":"CH001","message":"Request timed out","temporary":true}`, 408},
 	}
 
 	for _, test := range cases {

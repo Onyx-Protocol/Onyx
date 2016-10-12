@@ -28,11 +28,17 @@ func writeHTTPError(ctx context.Context, w http.ResponseWriter, err error) {
 }
 
 func logHTTPError(ctx context.Context, err error) {
+	var errorMessage string
+	if err != nil {
+		// strip the stack trace, if there is one
+		errorMessage = err.Error()
+	}
+
 	_, info := errInfo(err)
 	keyvals := []interface{}{
 		"status", info.HTTPStatus,
 		"chaincode", info.ChainCode,
-		log.KeyError, err,
+		log.KeyError, errorMessage,
 	}
 	if info.HTTPStatus == 500 {
 		keyvals = append(keyvals, log.KeyStack, errors.Stack(err))

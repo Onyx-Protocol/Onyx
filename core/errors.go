@@ -47,7 +47,7 @@ var (
 	// See chain.com/docs.
 	errorInfoTab = map[error]errorInfo{
 		// General error namespace (0xx)
-		context.DeadlineExceeded: errorInfo{504, "CH001", "Request timed out"},
+		context.DeadlineExceeded: errorInfo{408, "CH001", "Request timed out"},
 		pg.ErrUserInputNotFound:  errorInfo{400, "CH002", "Not found"},
 		httpjson.ErrBadRequest:   errorInfo{400, "CH003", "Invalid request body"},
 		errBadReqHeader:          errorInfo{400, "CH004", "Invalid request header"},
