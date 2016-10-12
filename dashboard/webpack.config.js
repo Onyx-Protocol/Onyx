@@ -102,7 +102,10 @@ config.plugins.push(new webpack.DefinePlugin({
 
 config.output.publicPath = publicPath
 
-// Support source maps for Babel
-config.devtool = 'source-map'
+
+if (process.env.NODE_ENV !== 'production') {
+  // Support source maps for Babel
+  config.devtool = 'source-map'
+}
 
 module.exports = config
