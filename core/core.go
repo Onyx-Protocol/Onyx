@@ -175,7 +175,10 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 			}
 			c.BlockPub = blockPubStr
 		} else {
-			blockPub = ed25519.PublicKey([]byte(c.BlockPub))
+			blockPub, err = hex.DecodeString(c.BlockPub)
+			if err != nil {
+				return err
+			}
 		}
 		signingKeys = append(signingKeys, blockPub)
 	}

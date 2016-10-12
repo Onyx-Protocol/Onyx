@@ -141,12 +141,12 @@ func createBlockKeyPair(db *sql.DB, args []string) {
 
 	hsm := mockhsm.New(db)
 	ctx := context.Background()
-	xpub, err := hsm.XCreate(ctx, "block_key") // TODO(tessr): This should NOT be a ChainKD key.
+	pub, err := hsm.Create(ctx, "block_key")
 	if err != nil {
 		fatalln("error:", err)
 	}
 
-	fmt.Printf("%x\n", xpub.XPub.PublicKey())
+	fmt.Printf("%x\n", pub.Pub)
 }
 
 func createToken(db *sql.DB, args []string) {
