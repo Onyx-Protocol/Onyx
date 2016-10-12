@@ -196,7 +196,7 @@ func configNongenerator(db *sql.DB, args []string) {
 	config.GeneratorURL = args[1]
 	config.GeneratorAccessToken = *flagT
 	config.IsSigner = *flagK != ""
-	config.BlockXPub = *flagK
+	config.BlockPub = *flagK
 
 	ctx := context.Background()
 	err = core.Configure(ctx, db, &config)

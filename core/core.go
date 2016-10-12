@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"expvar"
 	"net/http"
@@ -30,7 +31,7 @@ var (
 	errAlreadyConfigured = errors.New("core is already configured; must reset first")
 	errUnconfigured      = errors.New("core is not configured")
 	errBadGenerator      = errors.New("generator returned an unsuccessful response")
-	errBadBlockXPub      = errors.New("supplied block xpub is invalid")
+	errBadBlockPub       = errors.New("supplied block pub key is invalid")
 	errNoClientTokens    = errors.New("cannot enable client auth without client access tokens")
 	errBadSignerURL      = errors.New("block signer URL is invalid")
 	errBadSignerPubkey   = errors.New("block signer pubkey is invalid")
@@ -136,7 +137,7 @@ func (h *Handler) leaderInfo(ctx context.Context) (map[string]interface{}, error
 // for example by restarting the process.
 //
 // If c.IsSigner is true, Configure generates a new mockhsm keypair
-// for signing blocks, and assigns it to c.BlockXPub.
+// for signing blocks, and assigns it to c.BlockPub.
 //
 // If c.IsGenerator is true, Configure creates an initial block,
 // saves it, and assigns its hash to c.BlockchainID.
@@ -158,28 +159,25 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 
 	var signingKeys []ed25519.PublicKey
 	if c.IsSigner {
-		var blockXPub chainkd.XPub
-		if c.BlockXPub == "" {
+		var blockPub ed25519.PublicKey
+		if c.BlockPub == "" {
 			hsm := mockhsm.New(db)
-			coreXPub, created, err := hsm.XGetOrCreate(ctx, autoBlockKeyAlias)
+			corePub, created, err := hsm.GetOrCreate(ctx, autoBlockKeyAlias)
 			if err != nil {
 				return err
 			}
-			blockXPub = coreXPub.XPub
+			blockPub = corePub.Pub
+			blockPubStr := hex.EncodeToString(blockPub)
 			if created {
-				log.Messagef(ctx, "Generated new block-signing key %s\n", blockXPub.String())
+				log.Messagef(ctx, "Generated new block-signing key %s\n", blockPubStr)
 			} else {
-				log.Messagef(ctx, "Using block-signing key %s\n", blockXPub.String())
+				log.Messagef(ctx, "Using block-signing key %s\n", blockPubStr)
 			}
-			c.BlockXPub = blockXPub.String()
+			c.BlockPub = blockPubStr
 		} else {
-			var blockXPub chainkd.XPub
-			err = blockXPub.UnmarshalText([]byte(c.BlockXPub))
-			if err != nil {
-				return errors.Wrap(errBadBlockXPub, err.Error())
-			}
+			blockPub = ed25519.PublicKey([]byte(c.BlockPub))
 		}
-		signingKeys = append(signingKeys, blockXPub.PublicKey())
+		signingKeys = append(signingKeys, blockPub)
 	}
 
 	if c.IsGenerator {
@@ -226,6 +224,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		}
 	}
 
+	// TODO(tessr): rename block_xpub column
 	const q = `
 		INSERT INTO config (is_signer, block_xpub, is_generator,
 			blockchain_id, generator_url, generator_access_token,
@@ -236,7 +235,7 @@ func Configure(ctx context.Context, db pg.DB, c *Config) error {
 		ctx,
 		q,
 		c.IsSigner,
-		c.BlockXPub,
+		c.BlockPub,
 		c.IsGenerator,
 		c.BlockchainID,
 		c.GeneratorURL,
@@ -286,7 +285,7 @@ func LoadConfig(ctx context.Context, db pg.DB) (*Config, error) {
 		&c.BlockchainID,
 		&c.GeneratorURL,
 		&c.GeneratorAccessToken,
-		&c.BlockXPub,
+		&c.BlockPub,
 		&blockSignerData,
 		&miw,
 		&c.ConfiguredAt,

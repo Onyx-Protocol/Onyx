@@ -3,9 +3,10 @@ package blocksigner
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"chain/core/mockhsm"
-	"chain/crypto/ed25519/chainkd"
+	"chain/crypto/ed25519"
 	"chain/database/pg"
 	"chain/errors"
 	"chain/protocol"
@@ -18,20 +19,20 @@ var ErrConsensusChange = errors.New("consensus program has changed")
 
 // Signer validates and signs blocks.
 type Signer struct {
-	XPub chainkd.XPub
-	hsm  *mockhsm.HSM
-	db   pg.DB
-	c    *protocol.Chain
+	Pub ed25519.PublicKey
+	hsm *mockhsm.HSM
+	db  pg.DB
+	c   *protocol.Chain
 }
 
 // New returns a new Signer that validates blocks with c and signs
 // them with k.
-func New(xpub chainkd.XPub, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Signer {
+func New(pub ed25519.PublicKey, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Signer {
 	return &Signer{
-		XPub: xpub,
-		hsm:  hsm,
-		db:   db,
-		c:    c,
+		Pub: pub,
+		hsm: hsm,
+		db:  db,
+		c:   c,
 	}
 }
 
@@ -39,11 +40,11 @@ func New(xpub chainkd.XPub, hsm *mockhsm.HSM, db pg.DB, c *protocol.Chain) *Sign
 // the private key in s.  It does not validate the block.
 func (s *Signer) SignBlock(ctx context.Context, b *bc.Block) ([]byte, error) {
 	hash := b.HashForSig()
-	return s.hsm.XSign(ctx, s.XPub, nil, hash[:]) // TODO(tessr): Should sign with Ed25519 key.
+	return s.hsm.Sign(ctx, s.Pub, hash[:])
 }
 
 func (s *Signer) String() string {
-	return "signer for key " + s.XPub.String()
+	return fmt.Sprintf("signer for key %x", s.Pub)
 }
 
 // ValidateAndSignBlock validates the given block against the current blockchain

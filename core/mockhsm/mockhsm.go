@@ -97,7 +97,7 @@ func (h *HSM) Create(ctx context.Context, alias string) (*Pub, error) {
 
 // GetOrCreate looks for the Ed25519 key with the given alias, generating a
 // new one if it's not found.
-func (h *HSM) GetOrCreate(ctx context.Context, alias string, get bool) (*Pub, bool, error) {
+func (h *HSM) GetOrCreate(ctx context.Context, alias string) (*Pub, bool, error) {
 	return h.createEd25519Key(ctx, alias, true)
 }
 

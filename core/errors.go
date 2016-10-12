@@ -58,7 +58,7 @@ var (
 		errUnconfigured:                errorInfo{400, "CH100", "This core still needs to be configured"},
 		errAlreadyConfigured:           errorInfo{400, "CH101", "This core has already been configured"},
 		errBadGenerator:                errorInfo{400, "CH102", "Generator URL returned an invalid response"},
-		errBadBlockXPub:                errorInfo{400, "CH103", "Provided Block XPub is invalid"},
+		errBadBlockPub:                 errorInfo{400, "CH103", "Provided Block XPub is invalid"},
 		rpc.ErrWrongNetwork:            errorInfo{502, "CH104", "A peer core is operating on a different blockchain network"},
 		protocol.ErrTheDistantFuture:   errorInfo{400, "CH105", "Requested height is too far ahead"},
 		errBadSignerURL:                errorInfo{400, "CH106", "Block signer URL is invalid"},

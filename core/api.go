@@ -144,7 +144,7 @@ type Config struct {
 	GeneratorURL         string  `json:"generator_url"`
 	GeneratorAccessToken string  `json:"generator_access_token"`
 	ConfiguredAt         time.Time
-	BlockXPub            string         `json:"block_xpub"`
+	BlockPub             string         `json:"block_pub"`
 	Signers              []ConfigSigner `json:"block_signer_urls"`
 	Quorum               int
 	MaxIssuanceWindow    time.Duration
