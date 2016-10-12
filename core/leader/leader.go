@@ -2,8 +2,6 @@ package leader
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"sync"
 	"time"
 
@@ -39,18 +37,16 @@ func IsLeading() bool {
 // shutdown, during which no process can become the new leader.
 func Run(db *sql.DB, addr string, lead func(context.Context)) {
 	ctx := context.Background()
-	leaderKeyBytes := make([]byte, 32)
-	_, err := rand.Read(leaderKeyBytes)
-	if err != nil {
-		log.Fatal(ctx, log.KeyError, err)
-	}
+	// We use our process's address as the key, because it's unique
+	// among all processes within a Core and it allows a restarted
+	// leader to immediately return to its leadership.
 	l := &leader{
 		db:      db,
-		key:     hex.EncodeToString(leaderKeyBytes),
+		key:     addr,
 		lead:    lead,
 		address: addr,
 	}
-	log.Messagef(ctx, "Chose leaderKey: %s", l.key)
+	log.Messagef(ctx, "Using leaderKey: %q", l.key)
 
 	update(ctx, l)
 	for range time.Tick(5 * time.Second) {

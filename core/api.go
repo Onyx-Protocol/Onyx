@@ -35,8 +35,9 @@ const (
 const networkRPCPrefix = "/rpc/"
 
 var (
-	errNotFound    = errors.New("not found")
-	errRateLimited = errors.New("request limit exceeded")
+	errNotFound       = errors.New("not found")
+	errRateLimited    = errors.New("request limit exceeded")
+	errLeaderElection = errors.New("no leader; pending election")
 )
 
 // Handler serves the Chain HTTP API
@@ -48,6 +49,7 @@ type Handler struct {
 	Indexer      *query.Indexer
 	Config       *Config
 	DB           pg.DB
+	Addr         string
 	AltAuth      func(*http.Request) bool
 	RequestLimit int
 
@@ -102,7 +104,7 @@ func (h *Handler) init() {
 	m.Handle(networkRPCPrefix+"submit", needConfig(h.Chain.AddTx))
 	m.Handle(networkRPCPrefix+"get-blocks", needConfig(h.getBlocksRPC))
 	m.Handle(networkRPCPrefix+"get-snapshot", needConfig(h.getSnapshotRPC))
-	m.Handle(networkRPCPrefix+"signer/sign-block", needConfig(leaderSignHandler(h.Signer)))
+	m.Handle(networkRPCPrefix+"signer/sign-block", needConfig(h.leaderSignHandler(h.Signer)))
 	m.Handle(networkRPCPrefix+"block-height", needConfig(func(ctx context.Context) map[string]uint64 {
 		h := h.Chain.Height()
 		return map[string]uint64{
@@ -250,7 +252,7 @@ func webAssetsHandler(next http.Handler) http.Handler {
 	})
 }
 
-func leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, error)) func(context.Context, *bc.Block) ([]byte, error) {
+func (h *Handler) leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, error)) func(context.Context, *bc.Block) ([]byte, error) {
 	return func(ctx context.Context, b *bc.Block) ([]byte, error) {
 		if f == nil {
 			return nil, errNotFound // TODO(kr): is this really the right error here?
@@ -259,20 +261,27 @@ func leaderSignHandler(f func(context.Context, *bc.Block) ([]byte, error)) func(
 			return f(ctx, b)
 		}
 		var resp []byte
-		err := callLeader(ctx, "/rpc/signer/sign-block", b, &resp)
+		err := h.callLeader(ctx, "/rpc/signer/sign-block", b, &resp)
 		return resp, err
 	}
 }
 
-func callLeader(ctx context.Context, path string, body interface{}, resp interface{}) error {
+func (h *Handler) callLeader(ctx context.Context, path string, body interface{}, resp interface{}) error {
 	addr, err := leader.Address(ctx)
 	if err != nil {
 		return errors.Wrap(err)
 	}
 
+	// Don't infinite loop if the leader's address is our own address.
+	// This is possible if we just became the leader. The client should
+	// just retry.
+	if addr == h.Addr {
+		return errLeaderElection
+	}
+
+	// TODO(jackson): If using TLS, use https:// here.
 	l := &rpc.Client{
-		BaseURL: "https://" + addr,
-		// TODO(tessr): Auth.
+		BaseURL: "http://" + addr,
 	}
 
 	return l.Call(ctx, path, body, &resp)

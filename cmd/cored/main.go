@@ -242,6 +242,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		Indexer:      indexer,
 		Config:       config,
 		DB:           db,
+		Addr:         *listenAddr,
 		RequestLimit: *reqsPerSec,
 		AltAuth:      authLoopbackInDev,
 	}
