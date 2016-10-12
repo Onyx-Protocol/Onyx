@@ -88,7 +88,7 @@ func main() {
 
 	var h http.Handler = m
 	h = gzip.Handler{Handler: h}
-	h = authn.BasicHandler{Auth: auth, Realm: "signerd", Next: h}
+	h = authn.BasicHandler{Auth: auth, Next: h}
 	h = reqid.Handler(h)
 	http.Handle("/", h)
 	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})

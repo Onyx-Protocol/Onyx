@@ -130,8 +130,7 @@ func (h *Handler) init() {
 			tokenMap: make(map[string]tokenResult),
 			alt:      h.AltAuth,
 		}).auth,
-		Next:  latencyHandler,
-		Realm: "Chain Core API",
+		Next: latencyHandler,
 	}
 	handler = maxBytes(handler)
 	handler = webAssetsHandler(handler)

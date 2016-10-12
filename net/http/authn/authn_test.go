@@ -27,7 +27,7 @@ func TestBasicHandler(t *testing.T) {
 }
 
 func TestBasicHandlerNotAuthenticated(t *testing.T) {
-	h := BasicHandler{Auth: alwaysNotAuth, Realm: "test-realm"}
+	h := BasicHandler{Auth: alwaysNotAuth}
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/whatever", nil)
 
@@ -35,11 +35,6 @@ func TestBasicHandlerNotAuthenticated(t *testing.T) {
 
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("status = %v want %v", rec.Code, http.StatusUnauthorized)
-	}
-
-	if rec.Header().Get("WWW-Authenticate") != `Basic realm="test-realm"` {
-		t.Errorf("got WWW-Authenticate header = %#q want %#q",
-			rec.Header().Get("WWW-Authenticate"), `Basic realm="test-realm"`)
 	}
 }
 
