@@ -8,6 +8,7 @@ import (
 	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
+	"chain/protocol/validation"
 )
 
 // A BlockSigner signs blocks.
@@ -58,7 +59,8 @@ func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, period ti
 		log.Fatal(ctx, log.KeyError, err)
 	}
 	if b != nil && (g.latestBlock == nil || b.Height == g.latestBlock.Height+1) {
-		s, err := g.chain.ValidateBlock(ctx, g.latestSnapshot, g.latestBlock, b)
+		s := state.Copy(g.latestSnapshot)
+		err := validation.ApplyBlock(s, b)
 		if err != nil {
 			log.Fatal(ctx, log.KeyError, err)
 		}
