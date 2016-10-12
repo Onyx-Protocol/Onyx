@@ -1,0 +1,99 @@
+package main
+
+import (
+	"context"
+	"log"
+	"os"
+	"time"
+
+	"chain/net/rpc"
+)
+
+type core struct {
+	netTok string
+	pubkey string
+}
+
+func coreEnv(prefix string) (*rpc.Client, core) {
+	var core core
+	core.netTok = os.Getenv(prefix + "_NETWORK_TOKEN")
+	core.pubkey = os.Getenv(prefix + "_PUBKEY")
+	url := os.Getenv(prefix + "_URL")
+	clientTok := os.Getenv(prefix + "_CLIENT_TOKEN")
+
+	if url == "" || clientTok == "" || core.netTok == "" || core.pubkey == "" {
+		log.Fatalf("please set %s_URL %[1]s_CLIENT_TOKEN %[1]s_NETWORK_TOKEN %[1]s_PUBKEY", prefix)
+	}
+
+	client := &rpc.Client{
+		BaseURL:     url,
+		AccessToken: clientTok,
+		Username:    "testnet-resetter", // for user-agent, not auth
+		BuildTag:    "none",
+	}
+
+	return client, core
+}
+
+func main() {
+	log.SetFlags(0)
+	ctx := context.Background()
+
+	gen, genCore := coreEnv("GENERATOR")
+	sig1, sig1Core := coreEnv("SIGNER1")
+	sig2, sig2Core := coreEnv("SIGNER2")
+
+	must(gen.Call(ctx, "/reset", nil, nil))
+	must(sig1.Call(ctx, "/reset", nil, nil))
+	must(sig2.Call(ctx, "/reset", nil, nil))
+
+	time.Sleep(time.Second) // give them time to restart
+
+	// configure generator
+	must(gen.Call(ctx, "/configure", map[string]interface{}{
+		"is_signer":    true,
+		"block_pub":    genCore.pubkey,
+		"is_generator": true,
+		"quorum":       2,
+		"block_signer_urls": []map[string]interface{}{
+			{
+				"pubkey":       sig1Core.pubkey,
+				"url":          sig1.BaseURL,
+				"access_token": sig1Core.netTok,
+			},
+			{
+				"pubkey":       sig2Core.pubkey,
+				"url":          sig2.BaseURL,
+				"access_token": sig2Core.netTok,
+			},
+		},
+	}, nil))
+
+	time.Sleep(time.Second) // give generator time to restart
+
+	var blockchainID string
+	must(gen.Call(ctx, "/info", "", &blockchainID))
+	log.Println("blockchain ID", blockchainID)
+
+	// configure signers
+	must(sig1.Call(ctx, "/configure", map[string]interface{}{
+		"is_signer":              true,
+		"block_pub":              sig1Core.pubkey,
+		"blockchain_id":          blockchainID,
+		"generator_url":          gen.BaseURL,
+		"generator_access_token": genCore.netTok,
+	}, nil))
+	must(sig2.Call(ctx, "/configure", map[string]interface{}{
+		"is_signer":              true,
+		"block_pub":              sig2Core.pubkey,
+		"blockchain_id":          blockchainID,
+		"generator_url":          gen.BaseURL,
+		"generator_access_token": genCore.netTok,
+	}, nil))
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
