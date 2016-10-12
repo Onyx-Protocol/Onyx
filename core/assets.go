@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"chain/core/asset"
 	"chain/core/signers"
 	"chain/encoding/json"
 )
@@ -47,11 +46,6 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 	// with the same client_token will only create one asset.
 	ClientToken *string `json:"client_token"`
 }) ([]assetOrError, error) {
-	initialBlock, err := h.Chain.GetBlock(ctx, 1)
-	if err != nil {
-		return nil, err
-	}
-
 	responses := make([]assetOrError, len(ins))
 	var wg sync.WaitGroup
 	wg.Add(len(responses))
@@ -59,12 +53,11 @@ func (h *Handler) createAsset(ctx context.Context, ins []struct {
 	for i := 0; i < len(responses); i++ {
 		go func(i int) {
 			defer wg.Done()
-			asset, err := asset.Define(
+			asset, err := h.Assets.Define(
 				ctx,
 				ins[i].RootXPubs,
 				ins[i].Quorum,
 				ins[i].Definition,
-				initialBlock.Hash(),
 				ins[i].Alias,
 				ins[i].Tags,
 				ins[i].ClientToken,

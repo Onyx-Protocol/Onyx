@@ -25,7 +25,7 @@ func TestBuildFinal(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
-	asset.Init(c, nil)
+	assets := asset.NewRegistry(c, bc.Hash{})
 	account.Init(c, nil)
 
 	acc, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
@@ -33,13 +33,13 @@ func TestBuildFinal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, "", nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, assets, nil, 1, nil, "", nil)
 	assetAmt := bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
 	}
 
-	sources := txbuilder.Action(asset.NewIssueAction(assetAmt, nil))
+	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
 	dests := account.NewControlAction(assetAmt, acc.ID, nil)
 
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
@@ -125,7 +125,7 @@ func TestAccountTransfer(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
-	asset.Init(c, nil)
+	assets := asset.NewRegistry(c, bc.Hash{})
 	account.Init(c, nil)
 
 	acc, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
@@ -133,13 +133,13 @@ func TestAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, "", nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, assets, nil, 1, nil, "", nil)
 	assetAmt := bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
 	}
 
-	sources := txbuilder.Action(asset.NewIssueAction(assetAmt, nil))
+	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
 	dests := account.NewControlAction(assetAmt, acc.ID, nil)
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
 	if err != nil {
@@ -188,19 +188,21 @@ func TestTransfer(t *testing.T) {
 	c := prottest.NewChain(t)
 	handler := &Handler{
 		Chain:   c,
+		Assets:  asset.NewRegistry(c, bc.Hash{}),
 		Indexer: query.NewIndexer(dbtx, c),
 		DB:      dbtx,
 	}
-	asset.Init(c, handler.Indexer)
+	handler.Assets.IndexAssets(handler.Indexer)
 	account.Init(c, handler.Indexer)
 	handler.Indexer.RegisterAnnotator(account.AnnotateTxs)
-	handler.Indexer.RegisterAnnotator(asset.AnnotateTxs)
+	handler.Indexer.RegisterAnnotator(handler.Assets.AnnotateTxs)
+	handler.init()
 
 	assetAlias := "some-asset"
 	account1Alias := "first-account"
 	account2Alias := "second-account"
 
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, assetAlias, nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, handler.Assets, nil, 1, nil, assetAlias, nil)
 	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, account1Alias, nil)
 	account2ID := assettest.CreateAccountFixture(ctx, t, nil, 0, account2Alias, nil)
 
@@ -211,8 +213,10 @@ func TestTransfer(t *testing.T) {
 		AssetID: assetID,
 		Amount:  100,
 	}
-	issueDest := account.NewControlAction(issueAssetAmount, account1ID, nil)
-	txTemplate, err := txbuilder.Build(ctx, nil, []txbuilder.Action{asset.NewIssueAction(issueAssetAmount, nil), issueDest})
+	txTemplate, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
+		handler.Assets.NewIssueAction(issueAssetAmount, nil),
+		account.NewControlAction(issueAssetAmount, account1ID, nil),
+	})
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

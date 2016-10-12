@@ -21,7 +21,7 @@ func TestMockHSM(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
-	asset.Init(c, nil)
+	assets := asset.NewRegistry(c, bc.Hash{})
 	account.Init(c, nil)
 	mockhsm := mockhsm.New(dbtx)
 	xpub1, err := mockhsm.XCreate(ctx, "")
@@ -47,11 +47,11 @@ func TestMockHSM(t *testing.T) {
 	assetDef1 := map[string]interface{}{"foo": 1}
 	assetDef2 := map[string]interface{}{"foo": 2}
 
-	asset1ID := assettest.CreateAssetFixture(ctx, t, []string{testutil.TestXPub.String()}, 1, assetDef1, "", nil)
-	asset2ID := assettest.CreateAssetFixture(ctx, t, []string{testutil.TestXPub.String()}, 1, assetDef2, "", nil)
+	asset1ID := assettest.CreateAssetFixture(ctx, t, assets, []string{testutil.TestXPub.String()}, 1, assetDef1, "", nil)
+	asset2ID := assettest.CreateAssetFixture(ctx, t, assets, []string{testutil.TestXPub.String()}, 1, assetDef2, "", nil)
 
-	issueSrc1 := txbuilder.Action(asset.NewIssueAction(bc.AssetAmount{AssetID: asset1ID, Amount: 100}, nil))
-	issueSrc2 := txbuilder.Action(asset.NewIssueAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, nil))
+	issueSrc1 := txbuilder.Action(assets.NewIssueAction(bc.AssetAmount{AssetID: asset1ID, Amount: 100}, nil))
+	issueSrc2 := txbuilder.Action(assets.NewIssueAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, nil))
 	issueDest1 := account.NewControlAction(bc.AssetAmount{AssetID: asset1ID, Amount: 100}, acct1.ID, nil)
 	issueDest2 := account.NewControlAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, acct2.ID, nil)
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{issueSrc1, issueSrc2, issueDest1, issueDest2})

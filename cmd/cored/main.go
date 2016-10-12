@@ -191,8 +191,12 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 
 	// Setup the transaction query indexer to index every transaction.
 	indexer := query.NewIndexer(db, c)
+
+	assets := asset.NewRegistry(c, config.BlockchainID)
+	account.Init(c, indexer)
 	indexer.RegisterAnnotator(account.AnnotateTxs)
-	indexer.RegisterAnnotator(asset.AnnotateTxs)
+	indexer.RegisterAnnotator(assets.AnnotateTxs)
+	assets.IndexAssets(indexer)
 
 	hsm := mockhsm.New(db)
 	var generatorSigners []generator.BlockSigner
@@ -206,9 +210,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		generatorSigners = append(generatorSigners, s) // "local" signer
 		signBlockHandler = s.ValidateAndSignBlock
 	}
-
-	asset.Init(c, indexer)
-	account.Init(c, indexer)
 
 	if config.IsGenerator {
 		for _, signer := range remoteSignerInfo(ctx, processID, buildTag, config.BlockchainID.String(), config) {
@@ -237,13 +238,14 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	h := &core.Handler{
 		Chain:        c,
 		Store:        store,
-		Signer:       signBlockHandler,
+		Assets:       assets,
 		HSM:          hsm,
 		Indexer:      indexer,
 		Config:       config,
 		DB:           db,
 		Addr:         *listenAddr,
 		RequestLimit: *reqsPerSec,
+		Signer:       signBlockHandler,
 		AltAuth:      authLoopbackInDev,
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

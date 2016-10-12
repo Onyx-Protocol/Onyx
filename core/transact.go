@@ -22,7 +22,7 @@ const (
 )
 
 func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilder.Template, error) {
-	err := filterAliases(ctx, req)
+	err := h.filterAliases(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func (h *Handler) buildSingle(ctx context.Context, req *buildRequest) (*txbuilde
 		if !ok {
 			return nil, errors.WithDetailf(errBadActionType, "no action type provided")
 		}
-		decoder, ok := actionDecoders[typ]
+		decoder, ok := h.actionDecoders[typ]
 		if !ok {
 			return nil, errors.WithDetailf(errBadActionType, "unknown action type %q", typ)
 		}

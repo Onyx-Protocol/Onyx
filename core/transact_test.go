@@ -20,19 +20,20 @@ func TestLocalAccountTransfer(t *testing.T) {
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
 	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
+	assets := asset.NewRegistry(c, bc.Hash{})
 
 	acc, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assetID := assettest.CreateAssetFixture(ctx, t, nil, 1, nil, "", nil)
+	assetID := assettest.CreateAssetFixture(ctx, t, assets, nil, 1, nil, "", nil)
 	assetAmt := bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
 	}
 
-	sources := txbuilder.Action(asset.NewIssueAction(assetAmt, nil))
+	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
 	dests := account.NewControlAction(assetAmt, acc.ID, nil)
 
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})

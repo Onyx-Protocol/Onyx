@@ -16,6 +16,7 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/httpjson"
+	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/vm"
 	"chain/protocol/vmutil"
@@ -23,10 +24,30 @@ import (
 
 const maxAssetCache = 100
 
-var (
+func NewRegistry(chain *protocol.Chain, initialBlockHash bc.Hash) *Registry {
+	return &Registry{
+		chain:            chain,
+		initialBlockHash: initialBlockHash,
+		cache:            lru.New(maxAssetCache),
+	}
+}
+
+// Registry tracks and stores all known assets on a blockchain.
+type Registry struct {
+	chain            *protocol.Chain
+	indexer          Saver
+	initialBlockHash bc.Hash
+
 	cacheMu sync.Mutex
-	cache   = lru.New(maxAssetCache)
-)
+	cache   *lru.Cache
+
+	// TODO(jackson): store a database handle here
+}
+
+func (reg *Registry) IndexAssets(indexer Saver) {
+	reg.indexer = indexer
+	reg.chain.AddBlockCallback(reg.indexAssets)
+}
 
 type Asset struct {
 	AssetID          bc.AssetID
@@ -40,8 +61,7 @@ type Asset struct {
 }
 
 // Define defines a new Asset.
-func Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, initialBlockHash bc.Hash, alias string, tags map[string]interface{}, clientToken *string) (*Asset, error) {
-
+func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, alias string, tags map[string]interface{}, clientToken *string) (*Asset, error) {
 	assetSigner, err := signers.Create(ctx, "asset", xpubs, quorum, clientToken)
 	if err != nil {
 		return nil, err
@@ -63,8 +83,8 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 	asset := &Asset{
 		Definition:       definition,
 		IssuanceProgram:  issuanceProgram,
-		InitialBlockHash: initialBlockHash,
-		AssetID:          bc.ComputeAssetID(issuanceProgram, initialBlockHash, 1),
+		InitialBlockHash: reg.initialBlockHash,
+		AssetID:          bc.ComputeAssetID(issuanceProgram, reg.initialBlockHash, 1),
 		Signer:           assetSigner,
 		Tags:             tags,
 	}
@@ -72,17 +92,17 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 		asset.Alias = &alias
 	}
 
-	asset, err = insertAsset(ctx, asset, clientToken)
+	asset, err = reg.insertAsset(ctx, asset, clientToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting asset")
 	}
 
-	err = insertAssetTags(ctx, asset.AssetID, tags)
+	err = reg.insertAssetTags(ctx, asset.AssetID, tags)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting asset tags")
 	}
 
-	err = indexAnnotatedAsset(ctx, asset)
+	err = reg.indexAnnotatedAsset(ctx, asset)
 	if err != nil {
 		return nil, errors.Wrap(err, "indexing annotated asset")
 	}
@@ -91,33 +111,33 @@ func Define(ctx context.Context, xpubs []string, quorum int, definition map[stri
 }
 
 // findByID retrieves an Asset record along with its signer, given an assetID.
-func findByID(ctx context.Context, id bc.AssetID) (*Asset, error) {
-	cacheMu.Lock()
-	cached, ok := cache.Get(id)
-	cacheMu.Unlock()
+func (reg *Registry) findByID(ctx context.Context, id bc.AssetID) (*Asset, error) {
+	reg.cacheMu.Lock()
+	cached, ok := reg.cache.Get(id)
+	reg.cacheMu.Unlock()
 	if ok {
 		return cached.(*Asset), nil
 	}
-	asset, err := assetQuery(ctx, "assets.id=$1", id)
+	asset, err := reg.assetQuery(ctx, "assets.id=$1", id)
 	if err != nil {
 		return nil, err
 	}
-	cacheMu.Lock()
-	cache.Add(id, asset)
-	cacheMu.Unlock()
+	reg.cacheMu.Lock()
+	reg.cache.Add(id, asset)
+	reg.cacheMu.Unlock()
 	return asset, nil
 }
 
 // FindByAlias retrieves an Asset record along with its signer,
 // given an asset alias.
-func FindByAlias(ctx context.Context, alias string) (*Asset, error) {
-	return assetQuery(ctx, "assets.alias=$1", alias)
+func (reg *Registry) FindByAlias(ctx context.Context, alias string) (*Asset, error) {
+	return reg.assetQuery(ctx, "assets.alias=$1", alias)
 }
 
 // insertAsset adds the asset to the database. If the asset has a client token,
 // and there already exists an asset with that client token, insertAsset will
 // lookup and return the existing asset instead.
-func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset, error) {
+func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset, error) {
 	const q = `
 		INSERT INTO assets
 			(id, alias, signer_id, initial_block_hash, issuance_program, definition, client_token)
@@ -147,7 +167,7 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 	} else if err == sql.ErrNoRows && clientToken != nil {
 		// There is already an asset with the provided client
 		// token. We should return the existing asset.
-		asset, err = assetByClientToken(ctx, *clientToken)
+		asset, err = reg.assetByClientToken(ctx, *clientToken)
 		if err != nil {
 			return nil, errors.Wrap(err, "retrieving existing asset")
 		}
@@ -159,7 +179,7 @@ func insertAsset(ctx context.Context, asset *Asset, clientToken *string) (*Asset
 
 // insertAssetTags inserts a set of tags for the given assetID.
 // It must take place inside a database transaction.
-func insertAssetTags(ctx context.Context, assetID bc.AssetID, tags map[string]interface{}) error {
+func (reg *Registry) insertAssetTags(ctx context.Context, assetID bc.AssetID, tags map[string]interface{}) error {
 	tagsParam, err := mapToNullString(tags)
 	if err != nil {
 		return errors.Wrap(err)
@@ -178,11 +198,11 @@ func insertAssetTags(ctx context.Context, assetID bc.AssetID, tags map[string]in
 }
 
 // assetByClientToken loads an asset from the database using its client token.
-func assetByClientToken(ctx context.Context, clientToken string) (*Asset, error) {
-	return assetQuery(ctx, "assets.client_token=$1", clientToken)
+func (reg *Registry) assetByClientToken(ctx context.Context, clientToken string) (*Asset, error) {
+	return reg.assetQuery(ctx, "assets.client_token=$1", clientToken)
 }
 
-func assetQuery(ctx context.Context, pred string, args ...interface{}) (*Asset, error) {
+func (reg *Registry) assetQuery(ctx context.Context, pred string, args ...interface{}) (*Asset, error) {
 	const baseQ = `
 		SELECT assets.id, assets.alias, assets.issuance_program, assets.definition,
 			assets.initial_block_hash, assets.sort_id,

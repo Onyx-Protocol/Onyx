@@ -7,9 +7,12 @@ import (
 	"sync"
 	"time"
 
+	"chain/core/account"
+	"chain/core/asset"
 	"chain/core/leader"
 	"chain/core/mockhsm"
 	"chain/core/query"
+	"chain/core/txbuilder"
 	"chain/core/txdb"
 	"chain/database/pg"
 	"chain/encoding/json"
@@ -44,17 +47,19 @@ var (
 type Handler struct {
 	Chain        *protocol.Chain
 	Store        *txdb.Store
-	Signer       func(context.Context, *bc.Block) ([]byte, error)
+	Assets       *asset.Registry
 	HSM          *mockhsm.HSM
 	Indexer      *query.Indexer
 	Config       *Config
 	DB           pg.DB
 	Addr         string
 	AltAuth      func(*http.Request) bool
+	Signer       func(context.Context, *bc.Block) ([]byte, error)
 	RequestLimit int
 
-	once    sync.Once
-	handler http.Handler
+	once           sync.Once
+	handler        http.Handler
+	actionDecoders map[string]func(data []byte) (txbuilder.Action, error)
 }
 
 func maxBytes(h http.Handler) http.Handler {
@@ -70,6 +75,17 @@ func maxBytes(h http.Handler) http.Handler {
 }
 
 func (h *Handler) init() {
+	// Setup the available transact actions.
+	h.actionDecoders = map[string]func(data []byte) (txbuilder.Action, error){
+		"control_account":                account.DecodeControlAction,
+		"control_program":                txbuilder.DecodeControlProgramAction,
+		"issue":                          h.Assets.DecodeIssueAction,
+		"spend_account":                  account.DecodeSpendAction,
+		"spend_account_unspent_output":   account.DecodeSpendUTXOAction,
+		"set_transaction_reference_data": txbuilder.DecodeSetTxRefDataAction,
+	}
+
+	// Setup the muxer.
 	needConfig := jsonHandler
 	if h.Config == nil {
 		needConfig = func(f interface{}) http.Handler {

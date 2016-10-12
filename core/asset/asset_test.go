@@ -8,14 +8,16 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/prottest"
 	"chain/testutil"
 )
 
 func TestDefineAsset(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	r := NewRegistry(prottest.NewChain(t), bc.Hash{})
+
 	keys := []string{testutil.TestXPub.String()}
-	var initialBlockHash bc.Hash
-	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, "", nil, nil)
+	asset, err := r.Define(ctx, keys, 1, nil, "", nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -38,15 +40,14 @@ func TestDefineAsset(t *testing.T) {
 func TestDefineAssetIdempotency(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
+	r := NewRegistry(prottest.NewChain(t), bc.Hash{})
 	token := "test_token"
 	keys := []string{testutil.TestXPub.String()}
-	var initialBlockHash bc.Hash
-	asset0, err := Define(ctx, keys, 1, nil, initialBlockHash, "", nil, &token)
+	asset0, err := r.Define(ctx, keys, 1, nil, "", nil, &token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-
-	asset1, err := Define(ctx, keys, 1, nil, initialBlockHash, "", nil, &token)
+	asset1, err := r.Define(ctx, keys, 1, nil, "", nil, &token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -60,14 +61,13 @@ func TestDefineAssetIdempotency(t *testing.T) {
 func TestFindAssetByID(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
+	r := NewRegistry(prottest.NewChain(t), bc.Hash{})
 	keys := []string{testutil.TestXPub.String()}
-	var initialBlockHash bc.Hash
-	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, "", nil, nil)
+	asset, err := r.Define(ctx, keys, 1, nil, "", nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-
-	found, err := findByID(ctx, asset.AssetID)
+	found, err := r.findByID(ctx, asset.AssetID)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -80,16 +80,15 @@ func TestFindAssetByID(t *testing.T) {
 func TestAssetByClientToken(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
+	r := NewRegistry(prottest.NewChain(t), bc.Hash{})
 	keys := []string{testutil.TestXPub.String()}
 	token := "test_token"
-	var initialBlockHash bc.Hash
 
-	asset, err := Define(ctx, keys, 1, nil, initialBlockHash, "", nil, &token)
+	asset, err := r.Define(ctx, keys, 1, nil, "", nil, &token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-
-	found, err := assetByClientToken(ctx, token)
+	found, err := r.assetByClientToken(ctx, token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

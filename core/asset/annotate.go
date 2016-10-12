@@ -12,7 +12,7 @@ import (
 	"chain/log"
 )
 
-func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
+func (reg *Registry) AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 	assetIDStrMap := make(map[string]bool)
 
 	// Collect all of the asset IDs appearing in the entire block. We only

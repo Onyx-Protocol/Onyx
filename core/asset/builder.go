@@ -14,21 +14,23 @@ import (
 	"chain/protocol/bc"
 )
 
-func NewIssueAction(assetAmount bc.AssetAmount, referenceData chainjson.Map) txbuilder.Action {
+func (reg *Registry) NewIssueAction(assetAmount bc.AssetAmount, referenceData chainjson.Map) txbuilder.Action {
 	return &issueAction{
+		assets:        reg,
 		TTL:           24 * time.Hour,
 		AssetAmount:   assetAmount,
 		ReferenceData: referenceData,
 	}
 }
 
-func DecodeIssueAction(data []byte) (txbuilder.Action, error) {
-	a := new(issueAction)
+func (reg *Registry) DecodeIssueAction(data []byte) (txbuilder.Action, error) {
+	a := &issueAction{assets: reg}
 	err := json.Unmarshal(data, a)
 	return a, err
 }
 
 type issueAction struct {
+	assets *Registry
 	bc.AssetAmount
 	TTL           time.Duration
 	ReferenceData chainjson.Map `json:"reference_data"`
@@ -48,7 +50,7 @@ func (a *issueAction) Build(ctx context.Context) (*txbuilder.BuildResult, error)
 	}
 	maxTime := now.Add(ttl)
 
-	asset, err := findByID(ctx, a.AssetID)
+	asset, err := a.assets.findByID(ctx, a.AssetID)
 	if errors.Root(err) == pg.ErrUserInputNotFound {
 		err = errors.WithDetailf(err, "missing asset with ID %q", a.AssetID)
 	}

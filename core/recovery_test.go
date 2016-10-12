@@ -38,25 +38,26 @@ func TestRecovery(t *testing.T) {
 	store, pool := txdb.New(db)
 	setupCtx := pg.NewContext(ctx, db)
 	c := prottest.NewChainWithStorage(t, store, pool)
-	asset.Init(c, nil)
+	indexer := query.NewIndexer(db, c)
+	assets := asset.NewRegistry(c, bc.Hash{})
+	assets.IndexAssets(indexer)
 	account.Init(c, nil)
 
 	// Setup the transaction query indexer to index every transaction.
-	indexer := query.NewIndexer(db, c)
 	indexer.RegisterAnnotator(account.AnnotateTxs)
-	indexer.RegisterAnnotator(asset.AnnotateTxs)
+	indexer.RegisterAnnotator(assets.AnnotateTxs)
 
 	// Create two assets (USD & apples) and two accounts (Alice & Bob).
 	var (
 		usdTags = map[string]interface{}{"currency": "usd"}
-		usd     = assettest.CreateAssetFixture(setupCtx, t, nil, 0, nil, "usd", usdTags)
-		apple   = assettest.CreateAssetFixture(setupCtx, t, nil, 0, nil, "apple", nil)
+		usd     = assettest.CreateAssetFixture(setupCtx, t, assets, nil, 0, nil, "usd", usdTags)
+		apple   = assettest.CreateAssetFixture(setupCtx, t, assets, nil, 0, nil, "apple", nil)
 		alice   = assettest.CreateAccountFixture(setupCtx, t, nil, 0, "alice", nil)
 		bob     = assettest.CreateAccountFixture(setupCtx, t, nil, 0, "bob", nil)
 	)
 	// Issue some apples to Alice and a dollar to Bob.
-	_ = assettest.IssueAssetsFixture(setupCtx, t, c, apple, 10, alice)
-	_ = assettest.IssueAssetsFixture(setupCtx, t, c, usd, 1, bob)
+	_ = assettest.IssueAssetsFixture(setupCtx, t, c, assets, apple, 10, alice)
+	_ = assettest.IssueAssetsFixture(setupCtx, t, c, assets, usd, 1, bob)
 
 	prottest.MakeBlock(setupCtx, t, c)
 
@@ -186,13 +187,19 @@ func generateBlock(ctx context.Context, db *sql.DB, timestamp time.Time) error {
 	if err != nil {
 		return err
 	}
+	indexer := query.NewIndexer(db, c)
 
-	asset.Init(c, nil)
+	initial, err := c.GetBlock(ctx, 1)
+	if err != nil {
+		return err
+	}
+
+	assets := asset.NewRegistry(c, initial.Hash())
+	assets.IndexAssets(indexer)
 	account.Init(c, nil)
 	// Setup the transaction query indexer to index every transaction.
-	indexer := query.NewIndexer(db, c)
 	indexer.RegisterAnnotator(account.AnnotateTxs)
-	indexer.RegisterAnnotator(asset.AnnotateTxs)
+	indexer.RegisterAnnotator(assets.AnnotateTxs)
 
 	block, snapshot, err := c.Recover(ctx)
 	if err != nil {

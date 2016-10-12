@@ -8,22 +8,24 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/prottest"
 	"chain/testutil"
 )
 
 func TestAnnotateTxs(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	r := NewRegistry(prottest.NewChain(t), bc.Hash{})
 
 	tags1 := map[string]interface{}{"foo": "bar"}
 	def1 := map[string]interface{}{"baz": "bar"}
 
-	asset1, err := Define(ctx, []string{testutil.TestXPub.String()}, 1, def1, bc.Hash{}, "", tags1, nil)
+	asset1, err := r.Define(ctx, []string{testutil.TestXPub.String()}, 1, def1, "", tags1, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	tags2 := map[string]interface{}{"foo": "baz"}
-	asset2, err := Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, bc.Hash{}, "", tags2, nil)
+	asset2, err := r.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", tags2, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +101,7 @@ func TestAnnotateTxs(t *testing.T) {
 		},
 	}
 
-	err = AnnotateTxs(ctx, txs)
+	err = r.AnnotateTxs(ctx, txs)
 	if err != nil {
 		t.Fatal(err)
 	}

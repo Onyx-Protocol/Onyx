@@ -28,7 +28,7 @@ func CreateAccountFixture(ctx context.Context, t testing.TB, keys []string, quor
 	return acc.ID
 }
 
-func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum int, def map[string]interface{}, alias string, tags map[string]interface{}) bc.AssetID {
+func CreateAssetFixture(ctx context.Context, t testing.TB, assets *asset.Registry, keys []string, quorum int, def map[string]interface{}, alias string, tags map[string]interface{}) bc.AssetID {
 	if len(keys) == 0 {
 		keys = []string{testutil.TestXPub.String()}
 	}
@@ -36,9 +36,7 @@ func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum
 	if quorum == 0 {
 		quorum = len(keys)
 	}
-	var initialBlockHash bc.Hash
-
-	asset, err := asset.Define(ctx, keys, quorum, def, initialBlockHash, alias, tags, nil)
+	asset, err := assets.Define(ctx, keys, quorum, def, alias, tags, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -46,7 +44,7 @@ func CreateAssetFixture(ctx context.Context, t testing.TB, keys []string, quorum
 	return asset.AssetID
 }
 
-func IssueAssetsFixture(ctx context.Context, t testing.TB, c *protocol.Chain, assetID bc.AssetID, amount uint64, accountID string) state.Output {
+func IssueAssetsFixture(ctx context.Context, t testing.TB, c *protocol.Chain, assets *asset.Registry, assetID bc.AssetID, amount uint64, accountID string) state.Output {
 	if accountID == "" {
 		accountID = CreateAccountFixture(ctx, t, nil, 0, "", nil)
 	}
@@ -54,7 +52,7 @@ func IssueAssetsFixture(ctx context.Context, t testing.TB, c *protocol.Chain, as
 
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
 
-	src := asset.NewIssueAction(assetAmount, nil) // does not support reference data
+	src := assets.NewIssueAction(assetAmount, nil) // does not support reference data
 	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{dest, src})
 	if err != nil {
 		testutil.FatalErr(t, err)

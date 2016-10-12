@@ -23,12 +23,12 @@ func TestAccountSourceReserve(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
-	asset.Init(c, nil)
+	assets := asset.NewRegistry(c, bc.Hash{})
 	account.Init(c, nil)
 
 	accID := assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
-	asset := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
-	out := assettest.IssueAssetsFixture(ctx, t, c, asset, 2, accID)
+	asset := assettest.CreateAssetFixture(ctx, t, assets, nil, 0, nil, "", nil)
+	out := assettest.IssueAssetsFixture(ctx, t, c, assets, asset, 2, accID)
 
 	// Make a block so that account UTXOs are available to spend.
 	prottest.MakeBlock(ctx, t, c)
@@ -68,12 +68,12 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
-	asset.Init(c, nil)
+	assets := asset.NewRegistry(c, bc.Hash{})
 	account.Init(c, nil)
 
 	accID := assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
-	asset := assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
-	out := assettest.IssueAssetsFixture(ctx, t, c, asset, 2, accID)
+	asset := assettest.CreateAssetFixture(ctx, t, assets, nil, 0, nil, "", nil)
+	out := assettest.IssueAssetsFixture(ctx, t, c, assets, asset, 2, accID)
 
 	// Make a block so that account UTXOs are available to spend.
 	prottest.MakeBlock(ctx, t, c)
@@ -96,14 +96,14 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
-	asset.Init(c, nil)
+	assets := asset.NewRegistry(c, bc.Hash{})
 	account.Init(c, nil)
 
 	var (
 		accID        = assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
-		asset        = assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
-		_            = assettest.IssueAssetsFixture(ctx, t, c, asset, 2, accID)
-		_            = assettest.IssueAssetsFixture(ctx, t, c, asset, 2, accID)
+		asset        = assettest.CreateAssetFixture(ctx, t, assets, nil, 0, nil, "", nil)
+		_            = assettest.IssueAssetsFixture(ctx, t, c, assets, asset, 2, accID)
+		_            = assettest.IssueAssetsFixture(ctx, t, c, assets, asset, 2, accID)
 		assetAmount1 = bc.AssetAmount{
 			AssetID: asset,
 			Amount:  1,
@@ -151,19 +151,19 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
-	asset.Init(c, nil)
+	assets := asset.NewRegistry(c, bc.Hash{})
 	account.Init(c, nil)
 
 	var (
 		acc      = assettest.CreateAccountFixture(ctx, t, nil, 0, "", nil)
-		asset    = assettest.CreateAssetFixture(ctx, t, nil, 0, nil, "", nil)
+		asset    = assettest.CreateAssetFixture(ctx, t, assets, nil, 0, nil, "", nil)
 		assetAmt = bc.AssetAmount{AssetID: asset, Amount: 1}
 		utxos    = 4
 		srcTxs   []bc.Hash
 	)
 
 	for i := 0; i < utxos; i++ {
-		o := assettest.IssueAssetsFixture(ctx, t, c, asset, 1, acc)
+		o := assettest.IssueAssetsFixture(ctx, t, c, assets, asset, 1, acc)
 		srcTxs = append(srcTxs, o.Outpoint.Hash)
 	}
 

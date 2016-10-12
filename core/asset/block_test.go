@@ -24,15 +24,10 @@ func (f fakeSaver) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, o
 func TestIndexNonLocalAssets(t *testing.T) {
 	db := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), db)
-	Init(prottest.NewChain(t), nil)
-
-	initial, err := chain.GetBlock(ctx, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	r := NewRegistry(prottest.NewChain(t), bc.Hash{})
 
 	// Create a local asset which should be unaffected by a block landing.
-	local, err := Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, initial.Hash(), "", nil, nil)
+	local, err := r.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +48,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 						{ // non-local asset
 							AssetVersion: 1,
 							TypedInput: &bc.IssuanceInput{
-								InitialBlock:    initial.Hash(),
+								InitialBlock:    r.initialBlockHash,
 								Amount:          10000,
 								IssuanceProgram: issuanceProgram,
 								VMVersion:       1,
@@ -62,7 +57,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 						{ // local asset
 							AssetVersion: 1,
 							TypedInput: &bc.IssuanceInput{
-								InitialBlock:    initial.Hash(),
+								InitialBlock:    r.initialBlockHash,
 								Amount:          10000,
 								IssuanceProgram: local.IssuanceProgram,
 								VMVersion:       1,
@@ -76,13 +71,13 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	remoteAssetID := b.Transactions[0].Inputs[0].AssetID()
 
 	var assetsSaved []bc.AssetID
-	indexer = fakeSaver(func(ctx context.Context, assetID bc.AssetID, obj map[string]interface{}, sortID string) error {
+	r.indexer = fakeSaver(func(ctx context.Context, assetID bc.AssetID, obj map[string]interface{}, sortID string) error {
 		assetsSaved = append(assetsSaved, assetID)
 		return nil
 	})
 
 	// Call the block callback and index the remote asset.
-	indexAssets(ctx, b)
+	r.indexAssets(ctx, b)
 
 	// Ensure that the annotated asset got saved to the query indexer.
 	if !reflect.DeepEqual(assetsSaved, []bc.AssetID{remoteAssetID}) {
@@ -90,7 +85,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	}
 
 	// Ensure that the asset was saved to the `assets` table.
-	got, err := findByID(ctx, remoteAssetID)
+	got, err := r.findByID(ctx, remoteAssetID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +95,7 @@ func TestIndexNonLocalAssets(t *testing.T) {
 			"currency": "USD",
 		},
 		IssuanceProgram:  issuanceProgram,
-		InitialBlockHash: initial.Hash(),
+		InitialBlockHash: r.initialBlockHash,
 		sortID:           got.sortID,
 	}
 	if !reflect.DeepEqual(got, want) {
