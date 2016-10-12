@@ -1,3 +1,8 @@
+// FIXME: Microsoft Edge has issues returning errors for responses
+// with a 401 status. We should add browser detection to only
+// use the ponyfill for unsupported browsers.
+const { fetch } = require('fetch-ponyfill')()
+
 import chain from 'chain'
 import { context } from 'utility/environment'
 import { actions as coreActions } from 'features/core'

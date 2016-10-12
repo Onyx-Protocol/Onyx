@@ -16,7 +16,10 @@ $sidebar-width: 180px;
   width: $sidebar-width;
   height: 100%;
   padding-bottom: 30px;
+
   overflow-y: scroll;
+  -ms-overflow-style: none; // MS Edge fix
+
   z-index: 10;
 
   a {
