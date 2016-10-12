@@ -53,12 +53,16 @@ class KeyConfiguration extends React.Component {
           min: 0,
           max: 10
         }} />
-        <NumberField title='Quorum' hint='Number of keys required for transfer' fieldProps={{
-          ...this.props.quorum,
-          onChange: quorumChange,
-          min: 0,
-          max: 10
-        }} />
+
+        <NumberField
+          title='Quorum'
+          hint={this.props.quorumHint}
+          fieldProps={{
+            ...this.props.quorum,
+            onChange: quorumChange,
+            min: 0,
+            max: 10
+          }} />
 
         {this.props.xpubs.map((xpub, index) =>
           <XpubField

@@ -38,7 +38,10 @@ class Form extends React.Component {
 
         <TextField title='Alias' placeholder='Alias' fieldProps={alias} />
         <JsonField title='Tags' fieldProps={tags} />
-        <KeyConfiguration xpubs={root_xpubs} quorum={quorum} mockhsmKeys={this.props.mockhsmKeys}/>
+        <KeyConfiguration
+          xpubs={root_xpubs}
+          quorum={quorum}
+          quorumHint='Number of keys required for transfer' />
 
       </FormContainer>
     )
