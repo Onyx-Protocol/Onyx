@@ -1,0 +1,71 @@
+#!/bin/bash
+
+set -eo pipefail
+set -x
+
+# Config vars
+: ${GENERATOR_URL:?must be set}
+: ${GENERATOR_CLIENT_TOKEN:?must be set}
+: ${GENERATOR_NETWORK_TOKEN:?must be set}
+: ${GENERATOR_PUBKEY:?must be set}
+: ${SIGNER1_URL:?must be set}
+: ${SIGNER2_URL:?must be set}
+: ${SIGNER1_CLIENT_TOKEN:?must be set}
+: ${SIGNER2_CLIENT_TOKEN:?must be set}
+: ${SIGNER1_NETWORK_TOKEN:?must be set}
+: ${SIGNER2_NETWORK_TOKEN:?must be set}
+: ${SIGNER1_PUBKEY:?must be set}
+: ${SIGNER2_PUBKEY:?must be set}
+
+rpc() {
+	curl --silent -v --user "$1" --data "$3" "$2"
+}
+
+rpc $GENERATOR_CLIENT_TOKEN $GENERATOR_URL/reset '{}'
+rpc $SIGNER1_CLIENT_TOKEN $SIGNER1_URL/reset '{}'
+rpc $SIGNER2_CLIENT_TOKEN $SIGNER2_URL/reset '{}'
+
+sleep 1 # give them time to restart
+
+# configure generator
+rpc $GENERATOR_CLIENT_TOKEN $GENERATOR_URL/configure '{
+	"is_signer": true,
+	"block_pub": "'$GENERATOR_PUBKEY'",
+
+	"is_generator": true,
+	"quorum": 2,
+	"block_signer_urls": [
+		{
+			"pubkey": "'$SIGNER1_PUBKEY'",
+			"url": "'"$SIGNER1_URL"'",
+			"access_token": "'"$SIGNER1_NETWORK_TOKEN"'"
+		},
+		{
+			"pubkey": "'$SIGNER2_PUBKEY'",
+			"url": "'"$SIGNER2_URL"'",
+			"access_token": "'"$SIGNER2_NETWORK_TOKEN"'"
+		}
+	]
+}'
+
+sleep 1 # give generator time to restart
+
+blockchain_id=`rpc $GENERATOR_CLIENT_TOKEN $GENERATOR_URL/info | jq -r .blockchain_id`
+
+# configure signers
+rpc $SIGNER1_CLIENT_TOKEN $SIGNER1_URL/configure '{
+	"is_signer": true,
+	"block_pub": "'$SIGNER1_PUBKEY'",
+
+	"blockchain_id": "'$blockchain_id'",
+	"generator_url": "'"$GENERATOR_URL"'",
+	"generator_access_token": "'$GENERATOR_NETWORK_TOKEN'"
+}'
+rpc $SIGNER2_CLIENT_TOKEN $SIGNER2_URL/configure '{
+	"is_signer": true,
+	"block_pub": "'$SIGNER2_PUBKEY'",
+
+	"blockchain_id": "'$blockchain_id'",
+	"generator_url": "'"$GENERATOR_URL"'",
+	"generator_access_token": "'$GENERATOR_NETWORK_TOKEN'"
+}'
