@@ -3,10 +3,10 @@
 import { createStore, applyMiddleware, compose } from 'redux'
 import thunkMiddleware from 'redux-thunk'
 import { routerMiddleware as createRouterMiddleware } from 'react-router-redux'
-import { history } from './utility/environment'
+import { history } from 'utility/environment'
 import { exportState, importState } from 'utility/localStorage'
 
-import makeRootReducer from './reducers'
+import makeRootReducer from 'reducers'
 
 const routerMiddleware = createRouterMiddleware(history)
 

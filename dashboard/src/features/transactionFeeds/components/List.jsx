@@ -6,7 +6,6 @@ const type = 'transactionFeed'
 
 const dispatch = (dispatch) => ({
   ...BaseList.mapDispatchToProps(type)(dispatch),
-  updateQuery: null,
   itemActions: {
     delete: (id) => dispatch(actions.deleteItem(id))
   },

@@ -4,7 +4,7 @@ import AceEditor from 'react-ace'
 
 import 'brace/mode/json'
 import 'brace/theme/github'
-import { parseNonblankJSON } from '../../../utility/string'
+import { parseNonblankJSON } from 'utility/string'
 
 class JsonField extends React.Component {
   constructor(props) {

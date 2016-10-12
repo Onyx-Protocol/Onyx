@@ -4,7 +4,6 @@ import { context } from 'utility/environment'
 import { parseNonblankJSON } from 'utility/string'
 import { push } from 'react-router-redux'
 import { baseFormActions, baseListActions } from 'features/shared/actions'
-import { actions as unspentActions } from 'features/unspents'
 
 const type = 'transaction'
 
@@ -71,7 +70,6 @@ form.submitForm = (formParams) => function(dispatch) {
       .then(() => {
         dispatch(push('/transactions'))
         dispatch(form.created())
-        dispatch(unspentActions.updateQuery(''))
       })
   }
 
@@ -95,10 +93,7 @@ form.submitForm = (formParams) => function(dispatch) {
     })
 }
 
-
-let actions = Object.assign({},
-  list,
-  form
-)
-
-export default actions
+export default {
+  ...list,
+  ...form,
+}

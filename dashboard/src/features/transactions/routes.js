@@ -1,24 +1,22 @@
-import { RoutingContainer } from 'features/shared/components'
-import { Show, List, New, GeneratedTxHex } from './components'
+import { List, New, Show, GeneratedTxHex } from './components'
 import { routes as transactionFeeds } from 'features/transactionFeeds'
+import { makeRoutes } from 'features/shared'
 
-export default {
-  path: 'transactions',
-  component: RoutingContainer,
-  indexRoute: { component: List },
-  childRoutes: [
-    transactionFeeds,
+export default (store) => {
+  return makeRoutes(
+    store,
+    'transaction',
+    List,
+    New,
+    Show,
     {
-      path: 'create',
-      component: New
-    },
-    {
-      path: 'generated/:id',
-      component: GeneratedTxHex,
-    },
-    {
-      path: ':id',
-      component: Show
-    },
-  ]
+      childRoutes: [
+        transactionFeeds(store),
+        {
+          path: 'generated/:id',
+          component: GeneratedTxHex,
+        },
+      ]
+    }
+  )
 }

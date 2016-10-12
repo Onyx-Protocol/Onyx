@@ -5,5 +5,5 @@ const type = 'transactionFeed'
 
 export default combineReducers({
   items: reducers.itemsReducer(type),
-  listView: reducers.listViewReducer(type),
+  queries: reducers.queriesReducer(type),
 })

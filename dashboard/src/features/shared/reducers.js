@@ -1,11 +1,11 @@
 import { combineReducers } from 'redux'
 import moment from 'moment'
+import uniq from 'lodash.uniq'
 
 const defaultIdFunc = (item) => item.id
 
 export const itemsReducer = (type, idFunc = defaultIdFunc) => (state = {}, action) => {
-  if ([`APPEND_${type.toUpperCase()}_PAGE`,
-       `RECEIVED_${type.toUpperCase()}_ITEMS`].includes(action.type)) {
+  if (action.type == `RECEIVED_${type.toUpperCase()}_ITEMS`) {
     const newObjects = {}
     action.param.items.forEach(item => {
       if (!item.id) { item.id = idFunc(item) }
@@ -19,13 +19,14 @@ export const itemsReducer = (type, idFunc = defaultIdFunc) => (state = {}, actio
   return state
 }
 
-export const currentListReducer = (type, idFunc = defaultIdFunc) => (state = [], action) => {
-  if ([`CREATED_${type.toUpperCase()}`,
-       `UPDATE_${type.toUpperCase()}_QUERY`].includes(action.type)) {
-    return []
-  } else if (action.type == `APPEND_${type.toUpperCase()}_PAGE`) {
-    const newItemIds = [...state, ...action.param.items.map(item => idFunc(item))]
-    return [...new Set(newItemIds)]
+export const queryItemsReducer = (type, idFunc = defaultIdFunc) => (state = [], action) => {
+  if (action.type == `APPEND_${type.toUpperCase()}_PAGE`) {
+    let newItemIds = action.param.items.map((item, index) => idFunc(item, index))
+
+    if (action.refresh) return newItemIds
+    else {
+      return uniq([...state, ...newItemIds])
+    }
   } else if (action.type == `DELETE_${type.toUpperCase()}`) {
     const index = state.indexOf(action.id)
     if (index >= 0) {
@@ -36,35 +37,15 @@ export const currentListReducer = (type, idFunc = defaultIdFunc) => (state = [],
   return state
 }
 
-export const currentCursorReducer = (type) => (state = {}, action) => {
-  if ([`CREATED_${type.toUpperCase()}`,
-       `UPDATE_${type.toUpperCase()}_QUERY`].includes(action.type)) {
-    return {}
-  } else if (action.type == `APPEND_${type.toUpperCase()}_PAGE`) {
+export const queryCursorReducer = (type) => (state = {}, action) => {
+  if (action.type == `APPEND_${type.toUpperCase()}_PAGE`) {
     return action.param
   }
   return state
 }
 
-export const currentQueryReducer = (type) => (state = '', action) => {
-  if (action.type == `UPDATE_${type.toUpperCase()}_QUERY`) {
-    if (action.param && action.param.query) {
-      return action.param.query
-    } else if (typeof action.param === 'string') {
-      return action.param
-    }
-
-    return ''
-  } else if (action.type == `CREATED_${type.toUpperCase()}`) {
-    return ''
-  }
-
-  return state
-}
-
-export const currentQueryTimeReducer = (type) => (state = '', action) => {
-  if ([`UPDATE_${type.toUpperCase()}_QUERY`,
-       `CREATED_${type.toUpperCase()}`].includes(action.type)){
+export const queryTimeReducer = (type) => (state = '', action) => {
+  if (action.type == `APPEND_${type.toUpperCase()}_PAGE`) {
     return moment().format('h:mm:ss a')
   }
   return state
@@ -79,8 +60,21 @@ export const autocompleteIsLoadedReducer = (type) => (state = false, action) => 
 }
 
 export const listViewReducer = (type, idFunc = defaultIdFunc) => combineReducers({
-  itemIds: currentListReducer(type, idFunc),
-  cursor: currentCursorReducer(type),
-  query: currentQueryReducer(type),
-  queryTime: currentQueryTimeReducer(type)
+  itemIds: queryItemsReducer(type, idFunc),
+  cursor: queryCursorReducer(type),
+  queryTime: queryTimeReducer(type)
 })
+
+export const queriesReducer = (type, idFunc = defaultIdFunc) => (state = {}, action) => {
+  if (action.type == `APPEND_${type.toUpperCase()}_PAGE`) {
+    const query = action.param.next.filter || ''
+    const list = state[query] || {}
+
+    return {
+      ...state,
+      [query]: listViewReducer(type, idFunc)(list, action)
+    }
+  }
+
+  return state
+}

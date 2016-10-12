@@ -1,18 +1,4 @@
-import { RoutingContainer } from 'features/shared/components'
 import { List, New, Show } from './components'
+import { makeRoutes } from 'features/shared'
 
-export default {
-  path: 'accounts',
-  component: RoutingContainer,
-  indexRoute: { component: List },
-  childRoutes: [
-    {
-      path: 'create',
-      component: New
-    },
-    {
-      path: ':id',
-      component: Show
-    }
-  ]
-}
+export default (store) => makeRoutes(store, 'account', List, New, Show)

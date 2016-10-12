@@ -8,7 +8,8 @@ const newStateToProps = (state, ownProps) => {
     ...BaseList.mapStateToProps(type, ListItem)(state, ownProps),
     skipCreate: true,
   }
-  props.searchState.sumBy = state[type].listView.sumBy
+
+  props.searchState.sumBy = ownProps.location.query.sum_by || ''
   return props
 }
 

@@ -6,38 +6,6 @@ import { PageTitle, Pagination, SearchBar } from './'
 import { pageSize } from 'utility/environment'
 
 export class ItemList extends React.Component {
-  constructor(props) {
-    super(props)
-
-    this.state = { fetching: false }
-  }
-
-  componentWillMount() {
-    this.fetchFirstPage(this.props)
-  }
-
-  componentWillReceiveProps(nextProps) {
-    if (this.state.error) {
-      if (this.props.searchState.queryString != nextProps.searchState.queryString) {
-        this.setState({error: false})
-      } else { return }
-    }
-
-    this.fetchFirstPage(nextProps)
-  }
-
-  fetchFirstPage(props) {
-    if (props.items.length === 0 && !this.state.fetching) {
-      this.setState({fetching: true})
-      return this.props.fetchUntilPage(props.currentPage)
-        .then((param) => {
-          if (param && param.type == 'ERROR') {
-            this.setState({error: true})
-          }
-        }).then(() => this.setState({fetching: false}))
-    }
-  }
-
   render() {
     const label = this.props.label || pluralize(humanize(this.props.type))
 
@@ -56,16 +24,18 @@ export class ItemList extends React.Component {
 
       {!this.props.skipQuery &&
         <SearchBar key='search-bar'
-          updateQuery={this.props.updateQuery}
           {...this.props.searchState}
+          pushList={this.props.pushList}
+          queryString={this.props.currentFilter}
         />}
     </div>
 
     if (this.props.items.length > 0) {
       let pagination = <Pagination
           currentPage={this.props.currentPage}
+          currentFilter={this.props.currentFilter}
           isLastPage={this.props.isLastPage}
-          pushPage={this.props.pushPage} />
+          pushList={this.props.pushList} />
 
       return(
         <div>
@@ -98,25 +68,29 @@ export class ItemList extends React.Component {
 
 export const mapStateToProps = (type, itemComponent, additionalProps = {}) => (state, ownProps) => {
   const currentPage = Math.max(parseInt(ownProps.location.query.page) || 1, 1)
+  const currentFilter = ownProps.location.query.filter || ''
+  const currentQuery = state[type].queries[currentFilter] || {}
+  const currentIds = currentQuery.itemIds || []
+  const cursor = currentQuery.cursor || {}
 
-  const currentIds = state[type].listView.itemIds
-  const cursor = state[type].listView.cursor
   const lastPageIndex = Math.ceil(currentIds.length/pageSize) - 1
   const isLastPage = ((currentPage - 1) == lastPageIndex) && cursor && cursor.last_page
   const startIndex = (currentPage - 1) * pageSize
   const items = currentIds.slice(startIndex, startIndex + pageSize).map(
     id => state[type].items[id]
-  )
+  ).filter(item => item != undefined)
 
   return {
-    items: items,
     currentPage: currentPage,
+    currentFilter: currentFilter,
+    items: items,
     isLastPage: isLastPage,
+
     type: type,
     listItemComponent: itemComponent,
     searchState: {
-      queryString: state[type].listView.query,
-      queryTime: state[type].listView.queryTime,
+      // queryString: state[type].listView.query,
+      queryTime: currentQuery.queryTime,
     },
     ...additionalProps
   }
@@ -124,10 +98,8 @@ export const mapStateToProps = (type, itemComponent, additionalProps = {}) => (s
 
 export const mapDispatchToProps = (type) => (dispatch) => {
   return {
-    fetchUntilPage: (page) => dispatch(actions[type].fetchUntilPage(page)),
-    pushPage: (page) => dispatch(actions[type].pushPage(page)),
+    pushList: (query, pageNumber) => dispatch(actions[type].pushList(query, pageNumber)),
     showCreate: () => dispatch(actions[type].showCreate),
-    updateQuery: (query) => dispatch(actions[type].updateQuery(query))
   }
 }
 

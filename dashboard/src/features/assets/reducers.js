@@ -1,14 +1,10 @@
-import {
-  itemsReducer,
-  listViewReducer,
-  autocompleteIsLoadedReducer,
-} from 'reducers/base'
+import { reducers } from 'features/shared'
 import { combineReducers } from 'redux'
 
 const type = 'asset'
 
 export default combineReducers({
-  items: itemsReducer(type),
-  listView: listViewReducer(type),
-  autocompleteIsLoaded: autocompleteIsLoadedReducer(type),
+  items: reducers.itemsReducer(type),
+  queries: reducers.queriesReducer(type),
+  autocompleteIsLoaded: reducers.autocompleteIsLoadedReducer(type),
 })

@@ -55,25 +55,22 @@ class Show extends BaseShow {
 
 // Container
 
-import { actions } from '../'
 import { connect } from 'react-redux'
-import { push } from 'react-router-redux'
-import allActions from '../../../actions'
+import actions from 'actions'
 
 const mapStateToProps = (state, ownProps) => ({
   item: state.asset.items[ownProps.params.id]
 })
 
 const mapDispatchToProps = ( dispatch ) => ({
-  fetchItem: (id) => dispatch(actions.fetchItems({filter: `id='${id}'`})),
+  fetchItem: (id) => dispatch(actions.asset.fetchItems({filter: `id='${id}'`})),
   showCirculation: (item) => {
     let query = `asset_id='${item.id}'`
     if (item.alias) {
       query = `asset_alias='${item.alias}'`
     }
 
-    dispatch(allActions.balance.updateQuery(query))
-    dispatch(push('/balances'))
+    dispatch(actions.balance.pushList({filter: query}))
   },
 })
 

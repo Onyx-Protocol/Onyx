@@ -9,12 +9,7 @@ const state = (state, ownProps) => ({
   label: 'Mock HSM Keys'
 })
 
-const dispatch = (dispatch) => ({
-  ...BaseList.mapDispatchToProps(type)(dispatch),
-  updateQuery: null
-})
-
 export default BaseList.connect(
   state,
-  dispatch
+  BaseList.mapDispatchToProps(type)
 )

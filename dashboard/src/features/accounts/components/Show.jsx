@@ -88,17 +88,14 @@ const mapStateToProps = (state, ownProps) => ({
 const mapDispatchToProps = ( dispatch ) => ({
   fetchItem: (id) => dispatch(actions.account.fetchItems({filter: `id='${id}'`})),
   showTransactions: (id) => {
-    let query = `inputs(account_id='${id}') OR outputs(account_id='${id}')`
-    dispatch(actions.transaction.updateQuery(query))
-    dispatch(push('/transactions'))
+    dispatch(actions.transaction.pushList({
+      filter: `inputs(account_id='${id}') OR outputs(account_id='${id}')`
+    }))
   },
   showBalances: (id) => {
-    let query = `account_id='${id}'`
-    dispatch(actions.balance.updateQuery({
-      query: query,
-      sumBy: 'asset_id'
+    dispatch(actions.balance.pushList({
+      filter: `account_id='${id}'`
     }))
-    dispatch(push('/balances'))
   },
   createControlProgram: (data) => dispatch(actions.account.createControlProgram(data)),
   showControlProgram: (body) => dispatch(actions.app.showModal(

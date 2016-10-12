@@ -10,19 +10,19 @@ import { routes as transactions } from 'features/transactions'
 import { routes as unspents } from 'features/unspents'
 import { routes as mockhsm } from 'features/mockhsm'
 
-export default ({
+export default (store) => ({
   path: '/',
   component: Container,
   childRoutes: [
-    accessTokens,
-    accounts,
-    assets,
-    balances,
+    accessTokens(store),
+    accounts(store),
+    assets(store),
+    balances(store),
     configuration,
     core,
-    transactions,
-    unspents,
-    mockhsm,
+    transactions(store),
+    unspents(store),
+    mockhsm(store),
     {
       path: '*',
       component: NotFound

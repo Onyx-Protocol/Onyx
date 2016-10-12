@@ -5,8 +5,8 @@ class Pagination extends React.Component {
     let prevClass = 'btn btn-default ' + (this.props.currentPage > 1 ? '' : 'disabled')
     let nextClass = 'btn btn-default ' + (this.props.isLastPage ? 'disabled' : '')
 
-    const nextPage = () => this.props.pushPage(this.props.currentPage + 1)
-    const prevPage = () => this.props.pushPage(this.props.currentPage - 1)
+    const nextPage = () => this.props.pushList(this.props.currentFilter, this.props.currentPage + 1)
+    const prevPage = () => this.props.pushList(this.props.currentFilter, this.props.currentPage - 1)
 
     return (
       <ul className='pager'>

@@ -1,24 +1,13 @@
 import chain from 'chain'
 import { context, pageSize } from 'utility/environment'
-import actionCreator from './actionCreator'
 import { push } from 'react-router-redux'
 
 export default function(type, options = {}) {
   const className = options.className || type.charAt(0).toUpperCase() + type.slice(1)
   const listPath  = options.listPath || `/${type}s`
 
-  const receivedItems = actionCreator(`RECEIVED_${type.toUpperCase()}_ITEMS`, param => ({ param }) )
-  const appendPage = actionCreator(`APPEND_${type.toUpperCase()}_PAGE`, param => ({ param }) )
-  const updateQuery = actionCreator(`UPDATE_${type.toUpperCase()}_QUERY`, param => ({ param }) )
-  const didLoadAutocomplete = actionCreator(`DID_LOAD_${type.toUpperCase()}_AUTOCOMPLETE`)
-
-  const deleteItemSuccess = actionCreator(`DELETE_${type.toUpperCase()}`, id => ({ id }))
-  const deleteItem = (id) => {
-    return (dispatch) => chain[className].delete(context(), id)
-      .then(() => dispatch(deleteItemSuccess(id)))
-      .catch(err => dispatch({type: 'ERROR', payload: err}))
-  }
-
+  // Dispatch a single request for the specified query, and persist the
+  // results to the default item store
   const fetchItems = (params) => {
     const requiredParams = options.requiredParams || {}
 
@@ -28,62 +17,92 @@ export default function(type, options = {}) {
       const promise = chain[className].query(context(), params)
 
       promise.then(
-        (param) => dispatch(receivedItems(param))
+        (param) => dispatch({
+          type: `RECEIVED_${type.toUpperCase()}_ITEMS`,
+          param: param,
+        })
       )
 
       return promise
     }
   }
 
-  const fetchAll = function(stepCallback = () => {}) {
-    return function(dispatch) {
-      const fetchUntilLastPage = (next) => {
-        return dispatch(fetchItems(next)).then((resp) => {
-          stepCallback(resp)
+  // Fetch all items up to the specified page, and persist the results to
+  // the filter-specific store
+  const fetchPage = (query, pageNumber = 1, options = {}) => {
+    const getPageSlice = (list, page) => {
+      const pageStart = page * pageSize
+      return (list.itemIds || []).slice(pageStart, pageStart + pageSize)
+    }
 
-          if (resp.last_page) {
-            return resp
-          } else {
-            return fetchUntilLastPage(resp.next)
-          }
-        })
+    const listId =  query.filter || ''
+    pageNumber = parseInt(pageNumber || 1)
+
+    return (dispatch, getState) => {
+      const getFilterStore = () => getState()[type].queries[listId] || {}
+
+      const fullPage = () => {
+        // Return early to load all pages if -1 is passed
+        if (pageNumber == -1) return
+
+        const list = getFilterStore()
+        const currentPage = getPageSlice(list, pageNumber)
+        return currentPage.length == pageSize
       }
 
-      return fetchUntilLastPage({})
+      if (!options.refresh && fullPage()) return Promise.resolve({})
+
+      const fetchNextPage = () =>
+        dispatch(_load(query, getFilterStore(), options)).then((resp) => {
+          if (!resp || resp.type == 'ERROR') return
+
+          if (resp && resp.last) {
+            return Promise.resolve(resp)
+          } else if (!fullPage()) {
+            options.refresh = false
+            return dispatch(fetchNextPage)
+          }
+        })
+
+      return dispatch(fetchNextPage)
     }
   }
 
-  const fetchQueryPage = function() {
-    return function(dispatch, getState) {
-      let latestResponse = getState()[type].listView.cursor
-      let promise
-      let filter = ''
+  // Fetch and persist all records of the current object type
+  const fetchAll = () => {
+    return fetchPage('', -1)
+  }
 
-      if (latestResponse && latestResponse.last_page) {
+  const _load = function(query = {}, list = {}, requestOptions) {
+    return function(dispatch) {
+      let latestResponse = list.cursor || {}
+      let promise
+      let refresh = requestOptions.refresh || false
+
+      if (!refresh && latestResponse && latestResponse.last_page) {
         return Promise.resolve({last: true})
-      } else if (latestResponse.nextPage) {
+      } else if (!refresh && latestResponse.nextPage) {
         promise = latestResponse.nextPage(context())
       } else {
         let params = {}
 
-        if (getState()[type].listView.query) {
-          filter = getState()[type].listView.query
-          params.filter = filter
-        }
-
-        if (getState()[type].listView.sumBy) {
-          params.sum_by = getState()[type].listView.sumBy.split(',')
-        }
+        if (query.filter) params.filter = query.filter
+        if (query.sum_by) params.sum_by = query.sum_by.split(',')
 
         promise = dispatch(fetchItems(params))
       }
 
-      return promise.then(
-        (response) => dispatch(appendPage(response))
-      ).catch(( err ) => {
-        if (options.defaultKey && filter.indexOf('\'') < 0 && filter.indexOf('=') < 0) {
-          dispatch(updateQuery(`${options.defaultKey}='${filter}'`))
-          dispatch(fetchQueryPage())
+      return promise.then((response) => {
+        return dispatch({
+          type: `APPEND_${type.toUpperCase()}_PAGE`,
+          param: response,
+          refresh: refresh,
+        })
+      }).catch(err => {
+        if (options.defaultKey && query.filter.indexOf('\'') < 0 && query.filter.indexOf('=') < 0) {
+          dispatch(pushList({
+            filter: `${options.defaultKey}='${query.filter}'`
+          }))
         } else {
           return dispatch({type: 'ERROR', payload: err})
         }
@@ -91,48 +110,39 @@ export default function(type, options = {}) {
     }
   }
 
-  const pushPage = (pageNumber) => push({
-    pathname: listPath,
-    query: {
-      page: pageNumber
-    }
-  })
+  const deleteItem = (id) => {
+    return (dispatch) => chain[className].delete(context(), id)
+      .then(() => dispatch({
+        type: `DELETE_${type.toUpperCase()}`,
+        id: id,
+      }))
+      .catch(err => dispatch({type: 'ERROR', payload: err}))
+  }
 
-  const getPageSlice = (page, getState) => {
-    const pageStart = page * pageSize
-    return getState()[type].listView.itemIds.slice(pageStart, pageStart + pageSize)
+  const pushList = (query = {}, pageNumber) => {
+    if (pageNumber) {
+      query = {
+        page: pageNumber,
+        ...query,
+      }
+    }
+
+    const location = {
+      pathname: listPath,
+      query
+    }
+
+    return push(location)
   }
 
   return {
-    appendPage,
-    updateQuery,
     fetchItems,
-    deleteItem,
+    fetchPage,
     fetchAll,
-    pushPage,
-    fetchUntilPage: function(pageNumber) {
-      return (dispatch, getState) => {
-        const fullPage = () => {
-          const currentPage = getPageSlice(pageNumber, getState)
-          return currentPage.length == pageSize
-        }
-
-        if (fullPage()) return Promise.resolve({})
-
-        const fillPageOrLast = () =>
-          dispatch(fetchQueryPage()).then((resp) => {
-            if (resp && resp.type == 'ERROR') return
-
-            if (resp && resp.last) {
-              return Promise.resolve(resp)
-            } else if (!fullPage()) {
-              return dispatch(fillPageOrLast)
-            }
-          })
-
-        return dispatch(fillPageOrLast)
-      }
+    deleteItem,
+    pushList,
+    didLoadAutocomplete: {
+      type: `DID_LOAD_${type.toUpperCase()}_AUTOCOMPLETE`
     },
-    didLoadAutocomplete,
   }
 }

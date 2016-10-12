@@ -1,6 +1,6 @@
 /* global process */
 
-import chain from '../chain'
+import chain from 'chain'
 import { store } from 'app'
 
 import { useRouterHistory } from 'react-router'

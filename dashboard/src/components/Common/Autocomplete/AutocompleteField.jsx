@@ -1,7 +1,7 @@
 import React from 'react'
 import styles from './AutocompleteField.scss'
 import Autosuggest from 'react-autosuggest'
-import actions from '../../../actions'
+import actions from 'actions'
 
 class AutocompleteField extends React.Component {
   constructor() {
@@ -89,6 +89,6 @@ export const mapStateToProps = (type) => (state) => ({
 })
 
 export const mapDispatchToProps = (type) => (dispatch) => ({
-  didLoadAutocomplete: () => dispatch(actions[type].didLoadAutocomplete()),
+  didLoadAutocomplete: () => dispatch(actions[type].didLoadAutocomplete),
   fetchAll: (cb) => dispatch(actions[type].fetchAll(cb))
 })

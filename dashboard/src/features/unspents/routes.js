@@ -1,8 +1,4 @@
-import { RoutingContainer } from 'features/shared/components'
 import { List } from './components'
+import { makeRoutes } from 'features/shared'
 
-export default {
-  path: 'unspents',
-  component: RoutingContainer,
-  indexRoute: { component: List }
-}
+export default (store) => makeRoutes(store, 'unspent', List)
