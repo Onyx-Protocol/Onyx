@@ -167,12 +167,17 @@ func buildSigProgram(tpl *Template, index int) []byte {
 	if !inp.IsIssuance() {
 		constraints = append(constraints, outpointConstraint(inp.Outpoint()))
 	}
+
+	// Commitment to the tx-level refdata is conditional on it being
+	// non-empty. Commitment to the input-level refdata is
+	// unconditional. Rationale: no one should be able to change "my"
+	// reference data; anyone should be able to set tx refdata but, once
+	// set, it should be immutable.
 	if len(tpl.Transaction.ReferenceData) > 0 {
 		constraints = append(constraints, refdataConstraint{tpl.Transaction.ReferenceData, true})
 	}
-	if len(inp.ReferenceData) > 0 { // TODO(bobg): I think we're making this one unconditional?
-		constraints = append(constraints, refdataConstraint{inp.ReferenceData, false})
-	}
+	constraints = append(constraints, refdataConstraint{inp.ReferenceData, false})
+
 	for i, out := range tpl.Transaction.Outputs {
 		c := &payConstraint{
 			Index:       i,
