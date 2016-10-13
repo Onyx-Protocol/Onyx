@@ -11,7 +11,6 @@ func NewIndexer(db pg.DB, c *protocol.Chain) *Indexer {
 		db: db,
 		c:  c,
 	}
-	c.AddBlockCallback(indexer.indexBlockCallback)
 	return indexer
 }
 
@@ -20,4 +19,8 @@ type Indexer struct {
 	db         pg.DB
 	c          *protocol.Chain
 	annotators []Annotator
+}
+
+func (ind *Indexer) IndexTransactions() {
+	ind.c.AddBlockCallback(ind.indexBlockCallback)
 }

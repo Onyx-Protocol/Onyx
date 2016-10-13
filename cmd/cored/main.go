@@ -62,6 +62,7 @@ var (
 	logQueries = env.Bool("LOG_QUERIES", false)
 	maxDBConns = env.Int("MAXDBCONNS", 10) // set to 100 in prod
 	reqsPerSec = env.Int("REQUESTS_PER_SECOND", 0)
+	indexTxs   = env.Bool("INDEX_TRANSACTIONS", true)
 
 	// build vars; initialized by the linker
 	buildTag    = "dev"
@@ -194,10 +195,13 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 
 	assets := asset.NewRegistry(c, config.BlockchainID)
 	accounts := account.NewManager(c)
-	indexer.RegisterAnnotator(assets.AnnotateTxs)
-	indexer.RegisterAnnotator(accounts.AnnotateTxs)
-	assets.IndexAssets(indexer)
-	accounts.IndexAccounts(indexer)
+	if *indexTxs {
+		indexer.RegisterAnnotator(assets.AnnotateTxs)
+		indexer.RegisterAnnotator(accounts.AnnotateTxs)
+		assets.IndexAssets(indexer)
+		accounts.IndexAccounts(indexer)
+		indexer.IndexTransactions()
+	}
 
 	hsm := mockhsm.New(db)
 	var generatorSigners []generator.BlockSigner

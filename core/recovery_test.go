@@ -47,6 +47,7 @@ func TestRecovery(t *testing.T) {
 	// Setup the transaction query indexer to index every transaction.
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
+	indexer.IndexTransactions()
 
 	// Create two assets (USD & apples) and two accounts (Alice & Bob).
 	var (
@@ -203,6 +204,7 @@ func generateBlock(ctx context.Context, db *sql.DB, timestamp time.Time) error {
 	accounts.IndexAccounts(indexer)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
+	indexer.IndexTransactions()
 
 	block, snapshot, err := c.Recover(ctx)
 	if err != nil {
