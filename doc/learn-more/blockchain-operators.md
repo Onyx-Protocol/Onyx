@@ -15,6 +15,7 @@ As well as the basic functions of the blockchain operators:
 4. Adding/removing blockchain operators
 
 ## Overview
+
 The operators of a blockchain perform four basic functions:
 
 1. Determine who can participate in the blockchain
@@ -37,11 +38,12 @@ To create a new blockchain, the blockchain operators must coordinate to create t
 5. The block generator creates the initial consensus program (from its public key and the public keys and quorum of the block signers) in Chain Core settings.
 6. The block generator creates the first block, including the initial consensus program, which is automatically distributed to each block signer.
 
-Note: The Chain Core dashboard does not yet support block signer configuration. However, you can use the Chain Core command line tools to configure block generator and block signers manually. See the [block signing guide](./configure-block-signers.md)
+Note: The Chain Core dashboard does not yet support block signer configuration. However, you can use the Chain Core command line tools to configure block generator and block signers manually. See the [block signing guide](./configure-block-signers)
 
 ### Creating blocks
 
 #### Block generator
+
 The block generator is responsible creating blocks at a defined interval through the following steps:
 
 1. Accept transactions from participants
@@ -52,6 +54,7 @@ The block generator is responsible creating blocks at a defined interval through
 6. Distribute the block to participants
 
 #### Block signers
+
 Once the block generator has generated a proposed block, each block signer (up to the quorum) will sign the block through the following steps:
 
 1. Accept a proposed block from the block generator
@@ -61,12 +64,15 @@ Once the block generator has generated a proposed block, each block signer (up t
 5. Return the signed block to the block generator
 
 ### Network permissions
+
 A blockchain can be configured to require network tokens in order to connect to the block generator to submit transactions and receive blocks. The block generator can create a unique network token for each participant that can be revoked at any time.
 
 ### Adding/removing blockchain operators
+
 To adjust the set of blockchain operators, a change must be made to the consensus program. In order to change the consensus program, the block generator must create a block with the new consensus program and then get signatures from the existing quorum of block signers. Once the block with new consensus program has been created and added to the blockchain, the new group of network operators will be required to create the next block.
 
 #### Example
+
 If a blockchain with two block signers wants to add a third block signer, the following steps would be required:
 
 1. The new block signer initializes a Chain Core as a block signer, creating a network token, and creating a private/public keypair (in the MockHSM, for development).

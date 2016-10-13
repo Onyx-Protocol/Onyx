@@ -2,10 +2,12 @@
 
 ### Java
 
-[chain-core-sdk-java-1.0.jar.zip](#)
+[Download](/doc/java/chain-sdk-latest.jar)
 
 ## Ruby
+
 Coming soon. See the [product roadmap](https://chain.com/roadmap) for details.
 
 ## Node.JS
+
 Coming soon. See the [product roadmap](https://chain.com/roadmap) for details.
