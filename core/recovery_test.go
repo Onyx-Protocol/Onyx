@@ -13,7 +13,7 @@ import (
 
 	"chain/core/account"
 	"chain/core/asset"
-	"chain/core/asset/assettest"
+	"chain/core/coretest"
 	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/core/txdb"
@@ -50,19 +50,19 @@ func TestRecovery(t *testing.T) {
 	// Create two assets (USD & apples) and two accounts (Alice & Bob).
 	var (
 		usdTags = map[string]interface{}{"currency": "usd"}
-		usd     = assettest.CreateAssetFixture(setupCtx, t, assets, nil, 0, nil, "usd", usdTags)
-		apple   = assettest.CreateAssetFixture(setupCtx, t, assets, nil, 0, nil, "apple", nil)
-		alice   = assettest.CreateAccountFixture(setupCtx, t, nil, 0, "alice", nil)
-		bob     = assettest.CreateAccountFixture(setupCtx, t, nil, 0, "bob", nil)
+		usd     = coretest.CreateAsset(setupCtx, t, assets, nil, "usd", usdTags)
+		apple   = coretest.CreateAsset(setupCtx, t, assets, nil, "apple", nil)
+		alice   = coretest.CreateAccount(setupCtx, t, "alice", nil)
+		bob     = coretest.CreateAccount(setupCtx, t, "bob", nil)
 	)
 	// Issue some apples to Alice and a dollar to Bob.
-	_ = assettest.IssueAssetsFixture(setupCtx, t, c, assets, apple, 10, alice)
-	_ = assettest.IssueAssetsFixture(setupCtx, t, c, assets, usd, 1, bob)
+	_ = coretest.IssueAssets(setupCtx, t, c, assets, apple, 10, alice)
+	_ = coretest.IssueAssets(setupCtx, t, c, assets, usd, 1, bob)
 
 	prottest.MakeBlock(setupCtx, t, c)
 
 	// Submit a transfer between Alice and Bob but don't publish it in a block.
-	assettest.Transfer(setupCtx, t, c, []txbuilder.Action{
+	coretest.Transfer(setupCtx, t, c, []txbuilder.Action{
 		account.NewControlAction(bc.AssetAmount{AssetID: usd, Amount: 1}, alice, nil),
 		account.NewControlAction(bc.AssetAmount{AssetID: apple, Amount: 1}, bob, nil),
 		account.NewSpendAction(bc.AssetAmount{AssetID: usd, Amount: 1}, bob, nil, nil, nil, nil),

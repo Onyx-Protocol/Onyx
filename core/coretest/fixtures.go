@@ -1,4 +1,4 @@
-package assettest
+package coretest
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/txbuilder"
+	"chain/crypto/ed25519/chainkd"
 	"chain/errors"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -14,39 +15,27 @@ import (
 	"chain/testutil"
 )
 
-func CreateAccountFixture(ctx context.Context, t testing.TB, keys []string, quorum int, alias string, tags map[string]interface{}) string {
-	if keys == nil {
-		keys = []string{testutil.TestXPub.String()}
-	}
-	if quorum == 0 {
-		quorum = len(keys)
-	}
-	acc, err := account.Create(ctx, keys, quorum, alias, tags, nil)
+func CreateAccount(ctx context.Context, t testing.TB, alias string, tags map[string]interface{}) string {
+	keys := []string{testutil.TestXPub.String()}
+	acc, err := account.Create(ctx, keys, 1, alias, tags, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 	return acc.ID
 }
 
-func CreateAssetFixture(ctx context.Context, t testing.TB, assets *asset.Registry, keys []string, quorum int, def map[string]interface{}, alias string, tags map[string]interface{}) bc.AssetID {
-	if len(keys) == 0 {
-		keys = []string{testutil.TestXPub.String()}
-	}
-
-	if quorum == 0 {
-		quorum = len(keys)
-	}
-	asset, err := assets.Define(ctx, keys, quorum, def, alias, tags, nil)
+func CreateAsset(ctx context.Context, t testing.TB, assets *asset.Registry, def map[string]interface{}, alias string, tags map[string]interface{}) bc.AssetID {
+	keys := []string{testutil.TestXPub.String()}
+	asset, err := assets.Define(ctx, keys, 1, def, alias, tags, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-
 	return asset.AssetID
 }
 
-func IssueAssetsFixture(ctx context.Context, t testing.TB, c *protocol.Chain, assets *asset.Registry, assetID bc.AssetID, amount uint64, accountID string) state.Output {
+func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, assets *asset.Registry, assetID bc.AssetID, amount uint64, accountID string) state.Output {
 	if accountID == "" {
-		accountID = CreateAccountFixture(ctx, t, nil, 0, "", nil)
+		accountID = CreateAccount(ctx, t, "", nil)
 	}
 	dest := account.NewControlAction(bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil)
 
@@ -88,4 +77,17 @@ func Transfer(ctx context.Context, t testing.TB, c *protocol.Chain, actions []tx
 	}
 
 	return tx
+}
+
+func SignTxTemplate(t testing.TB, ctx context.Context, template *txbuilder.Template, priv *chainkd.XPrv) {
+	if priv == nil {
+		priv = &testutil.TestXPrv
+	}
+	err := txbuilder.Sign(ctx, template, []string{priv.XPub().String()}, func(_ context.Context, _ string, path [][]byte, data [32]byte) ([]byte, error) {
+		derived := priv.Derive(path)
+		return derived.Sign(data[:]), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 }

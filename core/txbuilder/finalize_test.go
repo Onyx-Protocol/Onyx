@@ -9,7 +9,7 @@ import (
 
 	"chain/core/account"
 	"chain/core/asset"
-	"chain/core/asset/assettest"
+	"chain/core/coretest"
 	. "chain/core/txbuilder"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
@@ -58,7 +58,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	assettest.SignTxTemplate(t, ctx, firstTemplate, &info.privKeyAccounts)
+	coretest.SignTxTemplate(t, ctx, firstTemplate, &info.privKeyAccounts)
 	tx := bc.NewTx(*firstTemplate.Transaction)
 	err = FinalizeTx(ctx, info.Chain, tx)
 	if err != nil {
@@ -77,7 +77,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assettest.SignTxTemplate(t, ctx, secondTemplate, &info.privKeyAccounts)
+	coretest.SignTxTemplate(t, ctx, secondTemplate, &info.privKeyAccounts)
 	err = FinalizeTx(ctx, info.Chain, bc.NewTx(*secondTemplate.Transaction))
 	if err != nil {
 		testutil.FatalErr(t, err)
@@ -296,7 +296,7 @@ func issue(ctx context.Context, t testing.TB, info *testInfo, destAcctID string,
 	if err != nil {
 		return nil, err
 	}
-	assettest.SignTxTemplate(t, ctx, issueTx, &info.privKeyAsset)
+	coretest.SignTxTemplate(t, ctx, issueTx, &info.privKeyAsset)
 	tx := bc.NewTx(*issueTx.Transaction)
 	return tx, FinalizeTx(ctx, info.Chain, tx)
 }
@@ -314,7 +314,7 @@ func transfer(ctx context.Context, t testing.TB, info *testInfo, srcAcctID, dest
 		return nil, errors.Wrap(err)
 	}
 
-	assettest.SignTxTemplate(t, ctx, xferTx, &info.privKeyAccounts)
+	coretest.SignTxTemplate(t, ctx, xferTx, &info.privKeyAccounts)
 
 	tx := bc.NewTx(*xferTx.Transaction)
 	err = FinalizeTx(ctx, info.Chain, tx)

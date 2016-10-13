@@ -7,7 +7,7 @@ import (
 
 	"chain/core/account"
 	"chain/core/asset"
-	"chain/core/asset/assettest"
+	"chain/core/coretest"
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -27,7 +27,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assetID := assettest.CreateAssetFixture(ctx, t, assets, nil, 1, nil, "", nil)
+	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 	assetAmt := bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
@@ -40,7 +40,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assettest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
+	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
 
 	// Submit the transaction but w/o waiting long for confirmation.
 	// The outputs should be indexed because the transaction template
@@ -54,7 +54,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assettest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
+	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
 	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)

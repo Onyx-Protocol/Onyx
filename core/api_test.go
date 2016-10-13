@@ -9,7 +9,7 @@ import (
 
 	"chain/core/account"
 	"chain/core/asset"
-	"chain/core/asset/assettest"
+	"chain/core/coretest"
 	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/database/pg"
@@ -33,7 +33,7 @@ func TestBuildFinal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assetID := assettest.CreateAssetFixture(ctx, t, assets, nil, 1, nil, "", nil)
+	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 	assetAmt := bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
@@ -47,7 +47,7 @@ func TestBuildFinal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assettest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
+	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
 	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
@@ -76,8 +76,8 @@ func TestBuildFinal(t *testing.T) {
 	tmpl.AllowAdditional = true
 	tmpl2.AllowAdditional = false
 
-	assettest.SignTxTemplate(t, ctx, tmpl, nil)
-	assettest.SignTxTemplate(t, ctx, &tmpl2, nil)
+	coretest.SignTxTemplate(t, ctx, tmpl, nil)
+	coretest.SignTxTemplate(t, ctx, &tmpl2, nil)
 
 	prog1 := tmpl.SigningInstructions[0].WitnessComponents[0].(*txbuilder.SignatureWitness).Program
 	insts1, err := vm.ParseProgram(prog1)
@@ -133,7 +133,7 @@ func TestAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assetID := assettest.CreateAssetFixture(ctx, t, assets, nil, 1, nil, "", nil)
+	assetID := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 	assetAmt := bc.AssetAmount{
 		AssetID: assetID,
 		Amount:  100,
@@ -146,7 +146,7 @@ func TestAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assettest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
+	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
 	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
@@ -162,7 +162,7 @@ func TestAccountTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assettest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
+	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
 	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)
@@ -202,9 +202,9 @@ func TestTransfer(t *testing.T) {
 	account1Alias := "first-account"
 	account2Alias := "second-account"
 
-	assetID := assettest.CreateAssetFixture(ctx, t, handler.Assets, nil, 1, nil, assetAlias, nil)
-	account1ID := assettest.CreateAccountFixture(ctx, t, nil, 0, account1Alias, nil)
-	account2ID := assettest.CreateAccountFixture(ctx, t, nil, 0, account2Alias, nil)
+	assetID := coretest.CreateAsset(ctx, t, handler.Assets, nil, assetAlias, nil)
+	account1ID := coretest.CreateAccount(ctx, t, account1Alias, nil)
+	account2ID := coretest.CreateAccount(ctx, t, account2Alias, nil)
 
 	assetIDStr := assetID.String()
 
@@ -222,7 +222,7 @@ func TestTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assettest.SignTxTemplate(t, ctx, txTemplate, nil)
+	coretest.SignTxTemplate(t, ctx, txTemplate, nil)
 
 	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*txTemplate.Transaction))
 	if err != nil {
@@ -274,7 +274,7 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	assettest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
+	coretest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
 	_, err = submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
 	if err != nil && err != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)
@@ -315,7 +315,7 @@ func TestTransfer(t *testing.T) {
 	}
 	toSign = inspectTemplate(t, parsedResult[0], account2ID)
 	txTemplate, err = toTxTemplate(ctx, toSign)
-	assettest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
+	coretest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
 	if err != nil {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)

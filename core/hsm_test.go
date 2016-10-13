@@ -6,7 +6,7 @@ import (
 
 	"chain/core/account"
 	"chain/core/asset"
-	"chain/core/asset/assettest"
+	"chain/core/coretest"
 	"chain/core/mockhsm"
 	"chain/core/txbuilder"
 	"chain/crypto/ed25519/chainkd"
@@ -47,8 +47,8 @@ func TestMockHSM(t *testing.T) {
 	assetDef1 := map[string]interface{}{"foo": 1}
 	assetDef2 := map[string]interface{}{"foo": 2}
 
-	asset1ID := assettest.CreateAssetFixture(ctx, t, assets, []string{testutil.TestXPub.String()}, 1, assetDef1, "", nil)
-	asset2ID := assettest.CreateAssetFixture(ctx, t, assets, []string{testutil.TestXPub.String()}, 1, assetDef2, "", nil)
+	asset1ID := coretest.CreateAsset(ctx, t, assets, assetDef1, "", nil)
+	asset2ID := coretest.CreateAsset(ctx, t, assets, assetDef2, "", nil)
 
 	issueSrc1 := txbuilder.Action(assets.NewIssueAction(bc.AssetAmount{AssetID: asset1ID, Amount: 100}, nil))
 	issueSrc2 := txbuilder.Action(assets.NewIssueAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, nil))
@@ -58,7 +58,7 @@ func TestMockHSM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assettest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
+	coretest.SignTxTemplate(t, ctx, tmpl, &testutil.TestXPrv)
 	err = txbuilder.FinalizeTx(ctx, c, bc.NewTx(*tmpl.Transaction))
 	if err != nil {
 		t.Fatal(err)

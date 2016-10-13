@@ -7,7 +7,7 @@ import (
 
 	"chain/core/account"
 	"chain/core/asset"
-	"chain/core/asset/assettest"
+	"chain/core/coretest"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/prottest"
@@ -51,8 +51,8 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 		t.Fatal(err)
 	}
 
-	assettest.IssueAssetsFixture(ctx, t, c, assets, asset1.AssetID, 867, acct1.ID)
-	assettest.IssueAssetsFixture(ctx, t, c, assets, asset2.AssetID, 100, acct1.ID)
+	coretest.IssueAssets(ctx, t, c, assets, asset1.AssetID, 867, acct1.ID)
+	coretest.IssueAssets(ctx, t, c, assets, asset2.AssetID, 100, acct1.ID)
 
 	prottest.MakeBlock(ctx, t, c)
 
