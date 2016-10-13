@@ -26,7 +26,7 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 		testutil.FatalErr(t, err)
 	}
 	accounts := account.NewManager(c)
-	assets := asset.NewRegistry(c, b1.Hash())
+	assets := asset.NewRegistry(db, c, b1.Hash())
 	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
 	indexer.IndexTransactions()

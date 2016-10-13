@@ -192,7 +192,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	// Setup the transaction query indexer to index every transaction.
 	indexer := query.NewIndexer(db, c)
 
-	assets := asset.NewRegistry(c, config.BlockchainID)
+	assets := asset.NewRegistry(db, c, config.BlockchainID)
 	accounts := account.NewManager(c)
 	if *indexTxs {
 		indexer.RegisterAnnotator(assets.AnnotateTxs)

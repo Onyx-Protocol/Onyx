@@ -58,6 +58,7 @@ func (reg *Registry) AnnotateTxs(ctx context.Context, txs []map[string]interface
 		LEFT JOIN asset_tags ON asset_id=id
 		WHERE id IN (SELECT unnest($1::text[]))
 	`
+	ctx = pg.NewContext(ctx, reg.db)
 	err := pg.ForQueryRows(ctx, q, pq.StringArray(assetIDStrs),
 		func(assetIDStr, alias string, local bool, tagsBlob []byte, defBlob []byte) error {
 			if alias != "" {

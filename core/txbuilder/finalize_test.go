@@ -250,7 +250,7 @@ func bootdb(ctx context.Context, t testing.TB) (*testInfo, error) {
 	c := prottest.NewChain(t)
 	indexer := query.NewIndexer(pg.FromContext(ctx), c)
 
-	assets := asset.NewRegistry(c, bc.Hash{})
+	assets := asset.NewRegistry(pg.FromContext(ctx), c, bc.Hash{})
 	accounts := account.NewManager(c)
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)

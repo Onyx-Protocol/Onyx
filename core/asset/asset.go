@@ -24,8 +24,9 @@ import (
 
 const maxAssetCache = 100
 
-func NewRegistry(chain *protocol.Chain, initialBlockHash bc.Hash) *Registry {
+func NewRegistry(db pg.DB, chain *protocol.Chain, initialBlockHash bc.Hash) *Registry {
 	return &Registry{
+		db:               db,
 		chain:            chain,
 		initialBlockHash: initialBlockHash,
 		cache:            lru.New(maxAssetCache),
@@ -34,14 +35,13 @@ func NewRegistry(chain *protocol.Chain, initialBlockHash bc.Hash) *Registry {
 
 // Registry tracks and stores all known assets on a blockchain.
 type Registry struct {
+	db               pg.DB
 	chain            *protocol.Chain
 	indexer          Saver
 	initialBlockHash bc.Hash
 
 	cacheMu sync.Mutex
 	cache   *lru.Cache
-
-	// TODO(jackson): store a database handle here
 }
 
 func (reg *Registry) IndexAssets(indexer Saver) {
@@ -62,7 +62,9 @@ type Asset struct {
 
 // Define defines a new Asset.
 func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, definition map[string]interface{}, alias string, tags map[string]interface{}, clientToken *string) (*Asset, error) {
-	assetSigner, err := signers.Create(ctx, "asset", xpubs, quorum, clientToken)
+	// TODO(jackson): remove the dbctx when the signers package doesn't need it
+	dbctx := pg.NewContext(ctx, reg.db)
+	assetSigner, err := signers.Create(dbctx, "asset", xpubs, quorum, clientToken)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +99,7 @@ func (reg *Registry) Define(ctx context.Context, xpubs []string, quorum int, def
 		return nil, errors.Wrap(err, "inserting asset")
 	}
 
-	err = reg.insertAssetTags(ctx, asset.AssetID, tags)
+	err = insertAssetTags(ctx, reg.db, asset.AssetID, tags)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting asset tags")
 	}
@@ -118,7 +120,7 @@ func (reg *Registry) findByID(ctx context.Context, id bc.AssetID) (*Asset, error
 	if ok {
 		return cached.(*Asset), nil
 	}
-	asset, err := reg.assetQuery(ctx, "assets.id=$1", id)
+	asset, err := assetQuery(ctx, reg.db, "assets.id=$1", id)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +133,7 @@ func (reg *Registry) findByID(ctx context.Context, id bc.AssetID) (*Asset, error
 // FindByAlias retrieves an Asset record along with its signer,
 // given an asset alias.
 func (reg *Registry) FindByAlias(ctx context.Context, alias string) (*Asset, error) {
-	return reg.assetQuery(ctx, "assets.alias=$1", alias)
+	return assetQuery(ctx, reg.db, "assets.alias=$1", alias)
 }
 
 // insertAsset adds the asset to the database. If the asset has a client token,
@@ -155,7 +157,7 @@ func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken 
 		signerID = sql.NullString{Valid: true, String: asset.Signer.ID}
 	}
 
-	err = pg.QueryRow(
+	err = reg.db.QueryRow(
 		ctx, q,
 		asset.AssetID, asset.Alias, signerID,
 		asset.InitialBlockHash, asset.IssuanceProgram,
@@ -167,7 +169,7 @@ func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken 
 	} else if err == sql.ErrNoRows && clientToken != nil {
 		// There is already an asset with the provided client
 		// token. We should return the existing asset.
-		asset, err = reg.assetByClientToken(ctx, *clientToken)
+		asset, err = assetByClientToken(ctx, reg.db, *clientToken)
 		if err != nil {
 			return nil, errors.Wrap(err, "retrieving existing asset")
 		}
@@ -179,7 +181,7 @@ func (reg *Registry) insertAsset(ctx context.Context, asset *Asset, clientToken 
 
 // insertAssetTags inserts a set of tags for the given assetID.
 // It must take place inside a database transaction.
-func (reg *Registry) insertAssetTags(ctx context.Context, assetID bc.AssetID, tags map[string]interface{}) error {
+func insertAssetTags(ctx context.Context, db pg.DB, assetID bc.AssetID, tags map[string]interface{}) error {
 	tagsParam, err := mapToNullString(tags)
 	if err != nil {
 		return errors.Wrap(err)
@@ -189,7 +191,7 @@ func (reg *Registry) insertAssetTags(ctx context.Context, assetID bc.AssetID, ta
 		INSERT INTO asset_tags (asset_id, tags) VALUES ($1, $2)
 		ON CONFLICT (asset_id) DO UPDATE SET tags = $2
 	`
-	_, err = pg.Exec(ctx, q, assetID.String(), tagsParam)
+	_, err = db.Exec(ctx, q, assetID.String(), tagsParam)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -198,11 +200,11 @@ func (reg *Registry) insertAssetTags(ctx context.Context, assetID bc.AssetID, ta
 }
 
 // assetByClientToken loads an asset from the database using its client token.
-func (reg *Registry) assetByClientToken(ctx context.Context, clientToken string) (*Asset, error) {
-	return reg.assetQuery(ctx, "assets.client_token=$1", clientToken)
+func assetByClientToken(ctx context.Context, db pg.DB, clientToken string) (*Asset, error) {
+	return assetQuery(ctx, db, "assets.client_token=$1", clientToken)
 }
 
-func (reg *Registry) assetQuery(ctx context.Context, pred string, args ...interface{}) (*Asset, error) {
+func assetQuery(ctx context.Context, db pg.DB, pred string, args ...interface{}) (*Asset, error) {
 	const baseQ = `
 		SELECT assets.id, assets.alias, assets.issuance_program, assets.definition,
 			assets.initial_block_hash, assets.sort_id,
@@ -226,7 +228,7 @@ func (reg *Registry) assetQuery(ctx context.Context, pred string, args ...interf
 		xpubs      []string
 		tags       []byte
 	)
-	err := pg.QueryRow(ctx, fmt.Sprintf(baseQ, pred), args...).Scan(
+	err := db.QueryRow(ctx, fmt.Sprintf(baseQ, pred), args...).Scan(
 		&a.AssetID,
 		&a.Alias,
 		&a.IssuanceProgram,

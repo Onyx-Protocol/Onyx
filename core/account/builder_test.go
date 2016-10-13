@@ -26,7 +26,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		ctx      = pg.NewContext(context.Background(), dbtx)
 		c        = prottest.NewChain(t)
 		accounts = account.NewManager(c)
-		assets   = asset.NewRegistry(c, bc.Hash{})
+		assets   = asset.NewRegistry(dbtx, c, bc.Hash{})
 		indexer  = query.NewIndexer(dbtx, c)
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
@@ -75,7 +75,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		dbtx     = pgtest.NewTx(t)
 		ctx      = pg.NewContext(context.Background(), dbtx)
 		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(c, bc.Hash{})
+		assets   = asset.NewRegistry(dbtx, c, bc.Hash{})
 		accounts = account.NewManager(c)
 		indexer  = query.NewIndexer(dbtx, c)
 
@@ -108,7 +108,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		dbtx     = pgtest.NewTx(t)
 		ctx      = pg.NewContext(context.Background(), dbtx)
 		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(c, bc.Hash{})
+		assets   = asset.NewRegistry(dbtx, c, bc.Hash{})
 		accounts = account.NewManager(c)
 		indexer  = query.NewIndexer(dbtx, c)
 
@@ -166,7 +166,7 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 		dbtx     = pgtest.NewTx(t)
 		ctx      = pg.NewContext(context.Background(), dbtx)
 		c        = prottest.NewChain(t)
-		assets   = asset.NewRegistry(c, bc.Hash{})
+		assets   = asset.NewRegistry(dbtx, c, bc.Hash{})
 		accounts = account.NewManager(c)
 		indexer  = query.NewIndexer(dbtx, c)
 

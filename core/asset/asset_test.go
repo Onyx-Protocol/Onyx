@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
@@ -13,8 +12,8 @@ import (
 )
 
 func TestDefineAsset(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	r := NewRegistry(prottest.NewChain(t), bc.Hash{})
+	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), bc.Hash{})
+	ctx := context.Background()
 
 	keys := []string{testutil.TestXPub.String()}
 	asset, err := r.Define(ctx, keys, 1, nil, "", nil, nil)
@@ -28,7 +27,7 @@ func TestDefineAsset(t *testing.T) {
 	// Verify that the asset was defined.
 	var id string
 	var checkQ = `SELECT id FROM assets`
-	err = pg.QueryRow(ctx, checkQ).Scan(&id)
+	err = r.db.QueryRow(ctx, checkQ).Scan(&id)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -38,9 +37,8 @@ func TestDefineAsset(t *testing.T) {
 }
 
 func TestDefineAssetIdempotency(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	r := NewRegistry(prottest.NewChain(t), bc.Hash{})
+	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), bc.Hash{})
+	ctx := context.Background()
 	token := "test_token"
 	keys := []string{testutil.TestXPub.String()}
 	asset0, err := r.Define(ctx, keys, 1, nil, "", nil, &token)
@@ -59,9 +57,8 @@ func TestDefineAssetIdempotency(t *testing.T) {
 }
 
 func TestFindAssetByID(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	r := NewRegistry(prottest.NewChain(t), bc.Hash{})
+	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), bc.Hash{})
+	ctx := context.Background()
 	keys := []string{testutil.TestXPub.String()}
 	asset, err := r.Define(ctx, keys, 1, nil, "", nil, nil)
 	if err != nil {
@@ -78,9 +75,8 @@ func TestFindAssetByID(t *testing.T) {
 }
 
 func TestAssetByClientToken(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	r := NewRegistry(prottest.NewChain(t), bc.Hash{})
+	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), bc.Hash{})
+	ctx := context.Background()
 	keys := []string{testutil.TestXPub.String()}
 	token := "test_token"
 
@@ -88,7 +84,7 @@ func TestAssetByClientToken(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	found, err := r.assetByClientToken(ctx, token)
+	found, err := assetByClientToken(ctx, r.db, token)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

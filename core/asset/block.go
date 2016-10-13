@@ -112,6 +112,7 @@ func (reg *Registry) indexAssets(ctx context.Context, b *bc.Block) error {
 		SELECT id FROM assets WHERE first_block_height = $6
 	`
 	var newAssetIDs []bc.AssetID
+	ctx = pg.NewContext(ctx, reg.db)
 	err := pg.ForQueryRows(ctx, q, assetIDs, issuancePrograms, definitions, b.Time(), reg.initialBlockHash, b.Height,
 		func(assetID bc.AssetID) { newAssetIDs = append(newAssetIDs, assetID) })
 	if err != nil {

@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
@@ -13,19 +12,19 @@ import (
 )
 
 func TestAnnotateTxs(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	r := NewRegistry(prottest.NewChain(t), bc.Hash{})
+	reg := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), bc.Hash{})
+	ctx := context.Background()
 
 	tags1 := map[string]interface{}{"foo": "bar"}
 	def1 := map[string]interface{}{"baz": "bar"}
 
-	asset1, err := r.Define(ctx, []string{testutil.TestXPub.String()}, 1, def1, "", tags1, nil)
+	asset1, err := reg.Define(ctx, []string{testutil.TestXPub.String()}, 1, def1, "", tags1, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	tags2 := map[string]interface{}{"foo": "baz"}
-	asset2, err := r.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", tags2, nil)
+	asset2, err := reg.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", tags2, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,11 +100,10 @@ func TestAnnotateTxs(t *testing.T) {
 		},
 	}
 
-	err = r.AnnotateTxs(ctx, txs)
+	err = reg.AnnotateTxs(ctx, txs)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	if !reflect.DeepEqual(txs, want) {
 		t.Errorf("got:\n%+v\nwant:\n%+v", txs, want)
 	}

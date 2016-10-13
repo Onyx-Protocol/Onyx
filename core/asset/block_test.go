@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"chain/crypto/ed25519"
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
@@ -22,9 +21,8 @@ func (f fakeSaver) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, o
 }
 
 func TestIndexNonLocalAssets(t *testing.T) {
-	db := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), db)
-	r := NewRegistry(prottest.NewChain(t), bc.Hash{})
+	r := NewRegistry(pgtest.NewTx(t), prottest.NewChain(t), bc.Hash{})
+	ctx := context.Background()
 
 	// Create a local asset which should be unaffected by a block landing.
 	local, err := r.Define(ctx, []string{testutil.TestXPub.String()}, 1, nil, "", nil, nil)
