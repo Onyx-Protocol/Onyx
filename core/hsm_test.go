@@ -23,7 +23,7 @@ func TestMockHSM(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(dbtx, c, bc.Hash{})
-	accounts := account.NewManager(c)
+	accounts := account.NewManager(dbtx, c)
 	accounts.IndexAccounts(query.NewIndexer(dbtx, c))
 	mockhsm := mockhsm.New(dbtx)
 

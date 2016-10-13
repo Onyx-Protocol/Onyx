@@ -21,7 +21,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(db, c, bc.Hash{})
-	accounts := account.NewManager(c)
+	accounts := account.NewManager(db, c)
 	h := &Handler{Assets: assets, Accounts: accounts, Chain: c}
 
 	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)

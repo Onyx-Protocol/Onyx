@@ -7,15 +7,14 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/prottest"
 	"chain/testutil"
 )
 
 func TestAnnotateTxs(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	m := NewManager(prottest.NewChain(t))
+	m := NewManager(pgtest.NewTx(t), prottest.NewChain(t))
+	ctx := context.Background()
 	acc1 := m.createTestAccount(ctx, t, "", nil)
 	acc2 := m.createTestAccount(ctx, t, "", map[string]interface{}{"one": "foo", "two": "bar"})
 	acp1 := m.createTestControlProgram(ctx, t, acc1.ID)

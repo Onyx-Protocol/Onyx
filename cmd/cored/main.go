@@ -193,7 +193,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	indexer := query.NewIndexer(db, c)
 
 	assets := asset.NewRegistry(db, c, config.BlockchainID)
-	accounts := account.NewManager(c)
+	accounts := account.NewManager(db, c)
 	if *indexTxs {
 		indexer.RegisterAnnotator(assets.AnnotateTxs)
 		indexer.RegisterAnnotator(accounts.AnnotateTxs)

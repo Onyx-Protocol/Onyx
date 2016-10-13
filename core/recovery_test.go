@@ -40,7 +40,7 @@ func TestRecovery(t *testing.T) {
 	c := prottest.NewChainWithStorage(t, store, pool)
 	indexer := query.NewIndexer(db, c)
 	assets := asset.NewRegistry(db, c, bc.Hash{})
-	accounts := account.NewManager(c)
+	accounts := account.NewManager(db, c)
 	assets.IndexAssets(indexer)
 	accounts.IndexAccounts(indexer)
 
@@ -197,7 +197,7 @@ func generateBlock(ctx context.Context, db *sql.DB, timestamp time.Time) error {
 	}
 
 	assets := asset.NewRegistry(db, c, initial.Hash())
-	accounts := account.NewManager(c)
+	accounts := account.NewManager(db, c)
 
 	// Setup the transaction query indexer to index every transaction.
 	assets.IndexAssets(indexer)

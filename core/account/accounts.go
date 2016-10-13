@@ -19,8 +19,9 @@ import (
 
 const maxAccountCache = 100
 
-func NewManager(chain *protocol.Chain) *Manager {
+func NewManager(db pg.DB, chain *protocol.Chain) *Manager {
 	return &Manager{
+		db:    db,
 		chain: chain,
 		cache: lru.New(maxAccountCache),
 	}
@@ -28,6 +29,7 @@ func NewManager(chain *protocol.Chain) *Manager {
 
 // Manager stores accounts and their associated control programs.
 type Manager struct {
+	db      pg.DB
 	chain   *protocol.Chain
 	indexer Saver
 
@@ -37,8 +39,6 @@ type Manager struct {
 	acpMu        sync.Mutex
 	acpIndexNext uint64 // next acp index in our block
 	acpIndexCap  uint64 // points to end of block
-
-	// TODO(jackson): store a database handle here
 }
 
 func (m *Manager) IndexAccounts(indexer Saver) {
@@ -54,7 +54,9 @@ type Account struct {
 
 // Create creates a new Account.
 func (m *Manager) Create(ctx context.Context, xpubs []string, quorum int, alias string, tags map[string]interface{}, clientToken *string) (*Account, error) {
-	signer, err := signers.Create(ctx, "account", xpubs, quorum, clientToken)
+	// TODO(jackson): remove dbctx when the signers package doesn't need it
+	dbctx := pg.NewContext(ctx, m.db)
+	signer, err := signers.Create(dbctx, "account", xpubs, quorum, clientToken)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -73,7 +75,7 @@ func (m *Manager) Create(ctx context.Context, xpubs []string, quorum int, alias 
 		INSERT INTO accounts (account_id, alias, tags) VALUES ($1, $2, $3)
 		ON CONFLICT (account_id) DO UPDATE SET alias = $2, tags = $3
 	`
-	_, err = pg.Exec(ctx, q, signer.ID, aliasSQL, tagsParam)
+	_, err = m.db.Exec(ctx, q, signer.ID, aliasSQL, tagsParam)
 	if pg.IsUniqueViolation(err) {
 		return nil, errors.WithDetail(httpjson.ErrBadRequest, "non-unique alias")
 	} else if err != nil {
@@ -98,15 +100,14 @@ func (m *Manager) Create(ctx context.Context, xpubs []string, quorum int, alias 
 func (m *Manager) FindByAlias(ctx context.Context, alias string) (*signers.Signer, error) {
 	const q = `SELECT account_id FROM accounts WHERE alias=$1`
 	var accountID string
-	err := pg.QueryRow(ctx, q, alias).Scan(&accountID)
+	err := m.db.QueryRow(ctx, q, alias).Scan(&accountID)
 	if err == sql.ErrNoRows {
 		return nil, errors.WithDetailf(pg.ErrUserInputNotFound, "alias: %s", alias)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-
-	return signers.Find(ctx, "account", accountID)
+	return m.findByID(ctx, accountID)
 }
 
 // findByID returns an account's Signer record by its ID.
@@ -117,7 +118,9 @@ func (m *Manager) findByID(ctx context.Context, id string) (*signers.Signer, err
 	if ok {
 		return cached.(*signers.Signer), nil
 	}
-	account, err := signers.Find(ctx, "account", id)
+	// TODO(jackson): remove dbctx when the signers package doesn't need it
+	dbctx := pg.NewContext(ctx, m.db)
+	account, err := signers.Find(dbctx, "account", id)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +150,7 @@ func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, ch
 	if err != nil {
 		return nil, err
 	}
-	err = insertAccountControlProgram(ctx, account.ID, idx, control, change)
+	err = m.insertAccountControlProgram(ctx, account.ID, idx, control, change)
 	if err != nil {
 		return nil, err
 	}
@@ -155,13 +158,12 @@ func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, ch
 	return control, nil
 }
 
-func insertAccountControlProgram(ctx context.Context, accountID string, idx uint64, control []byte, change bool) error {
+func (m *Manager) insertAccountControlProgram(ctx context.Context, accountID string, idx uint64, control []byte, change bool) error {
 	const q = `
 		INSERT INTO account_control_programs (signer_id, key_index, control_program, change)
 		VALUES($1, $2, $3, $4)
 	`
-
-	_, err := pg.Exec(ctx, q, accountID, idx, control, change)
+	_, err := m.db.Exec(ctx, q, accountID, idx, control, change)
 	return errors.Wrap(err)
 }
 
@@ -173,7 +175,7 @@ func (m *Manager) nextIndex(ctx context.Context) (uint64, error) {
 		var cap uint64
 		const incrby = 10000 // account_control_program_seq increments by 10,000
 		const q = `SELECT nextval('account_control_program_seq')`
-		err := pg.QueryRow(ctx, q).Scan(&cap)
+		err := m.db.QueryRow(ctx, q).Scan(&cap)
 		if err != nil {
 			return 0, errors.Wrap(err, "scan")
 		}

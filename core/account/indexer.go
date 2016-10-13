@@ -68,11 +68,11 @@ func (m *Manager) IndexUnconfirmedUTXOs(ctx context.Context, tx *bc.Tx) error {
 		}
 		stateOuts = append(stateOuts, stateOutput)
 	}
-	accOuts, err := loadAccountInfo(ctx, stateOuts)
+	accOuts, err := m.loadAccountInfo(ctx, stateOuts)
 	if err != nil {
 		return errors.Wrap(err, "loading account info")
 	}
-	err = upsertUnconfirmedAccountOutputs(ctx, accOuts, m.chain.Height()+unconfirmedExpiration)
+	err = m.upsertUnconfirmedAccountOutputs(ctx, accOuts, m.chain.Height()+unconfirmedExpiration)
 	return errors.Wrap(err, "upserting confirmed account utxos")
 }
 
@@ -90,11 +90,11 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 			outs = append(outs, stateOutput)
 		}
 	}
-	accOuts, err := loadAccountInfo(ctx, outs)
+	accOuts, err := m.loadAccountInfo(ctx, outs)
 	if err != nil {
 		return errors.Wrap(err, "loading account info from control programs")
 	}
-	err = upsertConfirmedAccountOutputs(ctx, accOuts, blockPositions, b)
+	err = m.upsertConfirmedAccountOutputs(ctx, accOuts, blockPositions, b)
 	if err != nil {
 		return errors.Wrap(err, "upserting confirmed account utxos")
 	}
@@ -105,7 +105,7 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 		DELETE FROM account_utxos
 		WHERE (tx_hash, index) IN (SELECT unnest($1::text[]), unnest($2::integer[]))
 	`
-	_, err = pg.Exec(ctx, delQ, deltxhash, delindex)
+	_, err = m.db.Exec(ctx, delQ, deltxhash, delindex)
 	if err != nil {
 		return errors.Wrap(err, "deleting spent account utxos")
 	}
@@ -115,7 +115,7 @@ func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	const expiryQ = `
 		DELETE FROM account_utxos WHERE expiry_height <= $1 AND confirmed_in IS NULL
 	`
-	_, err = pg.Exec(ctx, expiryQ, b.Height)
+	_, err = m.db.Exec(ctx, expiryQ, b.Height)
 	return errors.Wrap(err, "deleting expired account utxos")
 }
 
@@ -136,7 +136,7 @@ func prevoutDBKeys(txs ...*bc.Tx) (txhash pq.StringArray, index pg.Uint32s) {
 // loadAccountInfo turns a set of state.Outputs into a set of
 // outputs by adding account annotations.  Outputs that can't be
 // annotated are excluded from the result.
-func loadAccountInfo(ctx context.Context, outs []*state.Output) ([]*output, error) {
+func (m *Manager) loadAccountInfo(ctx context.Context, outs []*state.Output) ([]*output, error) {
 	outsByScript := make(map[string][]*state.Output, len(outs))
 	for _, out := range outs {
 		scriptStr := string(out.ControlProgram)
@@ -155,7 +155,8 @@ func loadAccountInfo(ctx context.Context, outs []*state.Output) ([]*output, erro
 		FROM account_control_programs
 		WHERE control_program IN (SELECT unnest($1::bytea[]))
 	`
-	err := pg.ForQueryRows(ctx, q, scripts, func(accountID string, keyIndex uint64, program []byte) {
+	dbctx := pg.NewContext(ctx, m.db)
+	err := pg.ForQueryRows(dbctx, q, scripts, func(accountID string, keyIndex uint64, program []byte) {
 		for _, out := range outsByScript[string(program)] {
 			newOut := &output{
 				Output:    *out,
@@ -174,7 +175,7 @@ func loadAccountInfo(ctx context.Context, outs []*state.Output) ([]*output, erro
 
 // upsertUnconfirmedAccountOutputs records the account data for unconfirmed
 // account utxos.
-func upsertUnconfirmedAccountOutputs(ctx context.Context, outs []*output, expiryHeight uint64) error {
+func (m *Manager) upsertUnconfirmedAccountOutputs(ctx context.Context, outs []*output, expiryHeight uint64) error {
 	var (
 		txHash    pq.StringArray
 		index     pg.Uint32s
@@ -203,7 +204,7 @@ func upsertUnconfirmedAccountOutputs(ctx context.Context, outs []*output, expiry
 			   unnest($5::text[]), unnest($6::bigint[]), unnest($7::bytea[]), unnest($8::bytea[]), $9
 		ON CONFLICT (tx_hash, index) DO NOTHING;
 	`
-	_, err := pg.Exec(ctx, q,
+	_, err := m.db.Exec(ctx, q,
 		txHash,
 		index,
 		assetID,
@@ -220,7 +221,7 @@ func upsertUnconfirmedAccountOutputs(ctx context.Context, outs []*output, expiry
 // upsertConfirmedAccountOutputs records the account data for confirmed utxos.
 // If the account utxo already exists (because it's from a local tx), the
 // block confirmation data will in the row will be updated.
-func upsertConfirmedAccountOutputs(ctx context.Context, outs []*output, pos map[bc.Hash]uint32, block *bc.Block) error {
+func (m *Manager) upsertConfirmedAccountOutputs(ctx context.Context, outs []*output, pos map[bc.Hash]uint32, block *bc.Block) error {
 	var (
 		txHash    pq.StringArray
 		index     pg.Uint32s
@@ -256,7 +257,7 @@ func upsertConfirmedAccountOutputs(ctx context.Context, outs []*output, pos map[
 			block_timestamp = excluded.block_timestamp,
 			expiry_height   = excluded.expiry_height;
 	`
-	_, err := pg.Exec(ctx, q,
+	_, err := m.db.Exec(ctx, q,
 		txHash,
 		index,
 		assetID,
@@ -269,7 +270,6 @@ func upsertConfirmedAccountOutputs(ctx context.Context, outs []*output, pos map[
 		blockPos,
 		block.TimestampMS,
 	)
-
 	return errors.Wrap(err)
 }
 

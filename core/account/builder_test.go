@@ -25,7 +25,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		dbtx     = pgtest.NewTx(t)
 		ctx      = pg.NewContext(context.Background(), dbtx)
 		c        = prottest.NewChain(t)
-		accounts = account.NewManager(c)
+		accounts = account.NewManager(dbtx, c)
 		assets   = asset.NewRegistry(dbtx, c, bc.Hash{})
 		indexer  = query.NewIndexer(dbtx, c)
 
@@ -65,7 +65,7 @@ func TestAccountSourceReserve(t *testing.T) {
 		t.Errorf("expected change amount to be 1")
 	}
 
-	if !programInAccount(ctx, t, buildResult.Outputs[0].ControlProgram, accID) {
+	if !programInAccount(ctx, t, dbtx, buildResult.Outputs[0].ControlProgram, accID) {
 		t.Errorf("expected change control program to belong to account")
 	}
 }
@@ -76,7 +76,7 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 		ctx      = pg.NewContext(context.Background(), dbtx)
 		c        = prottest.NewChain(t)
 		assets   = asset.NewRegistry(dbtx, c, bc.Hash{})
-		accounts = account.NewManager(c)
+		accounts = account.NewManager(dbtx, c)
 		indexer  = query.NewIndexer(dbtx, c)
 
 		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
@@ -109,7 +109,7 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		ctx      = pg.NewContext(context.Background(), dbtx)
 		c        = prottest.NewChain(t)
 		assets   = asset.NewRegistry(dbtx, c, bc.Hash{})
-		accounts = account.NewManager(c)
+		accounts = account.NewManager(dbtx, c)
 		indexer  = query.NewIndexer(dbtx, c)
 
 		accID        = coretest.CreateAccount(ctx, t, accounts, "", nil)
@@ -167,7 +167,7 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 		ctx      = pg.NewContext(context.Background(), dbtx)
 		c        = prottest.NewChain(t)
 		assets   = asset.NewRegistry(dbtx, c, bc.Hash{})
-		accounts = account.NewManager(c)
+		accounts = account.NewManager(dbtx, c)
 		indexer  = query.NewIndexer(dbtx, c)
 
 		acc      = coretest.CreateAccount(ctx, t, accounts, "", nil)
@@ -209,10 +209,10 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 	}
 }
 
-func programInAccount(ctx context.Context, t testing.TB, program []byte, account string) bool {
+func programInAccount(ctx context.Context, t testing.TB, db pg.DB, program []byte, account string) bool {
 	const q = `SELECT signer_id=$1 FROM account_control_programs WHERE control_program=$2`
 	var in bool
-	err := pg.QueryRow(ctx, q, account, program).Scan(&in)
+	err := db.QueryRow(ctx, q, account, program).Scan(&in)
 	if err == sql.ErrNoRows {
 		return false
 	}

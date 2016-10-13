@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
 	"chain/protocol/prottest"
@@ -14,8 +13,8 @@ import (
 )
 
 func TestLoadAccountInfo(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	m := NewManager(prottest.NewChain(t))
+	m := NewManager(pgtest.NewTx(t), prottest.NewChain(t))
+	ctx := context.Background()
 
 	acc := m.createTestAccount(ctx, t, "", nil)
 	acp := m.createTestControlProgram(ctx, t, acc.ID)
@@ -29,7 +28,7 @@ func TestLoadAccountInfo(t *testing.T) {
 		TxOutput: *to2,
 	}}
 
-	got, err := loadAccountInfo(ctx, outs)
+	got, err := m.loadAccountInfo(ctx, outs)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -40,8 +39,8 @@ func TestLoadAccountInfo(t *testing.T) {
 }
 
 func TestDeleteUTXOs(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	m := NewManager(prottest.NewChain(t))
+	m := NewManager(pgtest.NewTx(t), prottest.NewChain(t))
+	ctx := context.Background()
 
 	assetID := bc.AssetID{}
 	acp := m.createTestControlProgram(ctx, t, "")
@@ -71,7 +70,7 @@ func TestDeleteUTXOs(t *testing.T) {
 	}
 
 	var n int
-	err = pg.QueryRow(ctx, `SELECT count(*) FROM account_utxos`).Scan(&n)
+	err = m.db.QueryRow(ctx, `SELECT count(*) FROM account_utxos`).Scan(&n)
 	if err != nil {
 		t.Fatal(err)
 	}

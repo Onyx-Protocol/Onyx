@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"testing"
 
-	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/net/http/httpjson"
@@ -18,9 +17,8 @@ import (
 var dummyXPub = testutil.TestXPub.String()
 
 func TestCreateAccount(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	m := NewManager(prottest.NewChain(t))
+	m := NewManager(pgtest.NewTx(t), prottest.NewChain(t))
+	ctx := context.Background()
 
 	account, err := m.Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
 	if err != nil {
@@ -30,7 +28,7 @@ func TestCreateAccount(t *testing.T) {
 	// Verify that the account was defined.
 	var id string
 	var checkQ = `SELECT id FROM signers`
-	err = pg.QueryRow(ctx, checkQ).Scan(&id)
+	err = m.db.QueryRow(ctx, checkQ).Scan(&id)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -40,9 +38,9 @@ func TestCreateAccount(t *testing.T) {
 }
 
 func TestCreateAccountIdempotency(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	m := NewManager(pgtest.NewTx(t), prottest.NewChain(t))
+	ctx := context.Background()
 	var clientToken = "a-unique-client-token"
-	m := NewManager(prottest.NewChain(t))
 
 	account1, err := m.Create(ctx, []string{dummyXPub}, 1, "satoshi", nil, &clientToken)
 	if err != nil {
@@ -58,9 +56,8 @@ func TestCreateAccountIdempotency(t *testing.T) {
 }
 
 func TestCreateAccountReusedAlias(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	m := NewManager(prottest.NewChain(t))
+	m := NewManager(pgtest.NewTx(t), prottest.NewChain(t))
+	ctx := context.Background()
 	m.createTestAccount(ctx, t, "some-account", nil)
 
 	_, err := m.Create(ctx, []string{dummyXPub}, 1, "some-account", nil, nil)
@@ -72,8 +69,8 @@ func TestCreateAccountReusedAlias(t *testing.T) {
 func TestCreateControlProgram(t *testing.T) {
 	// use pgtest.NewDB for deterministic postgres sequences
 	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
-	ctx := pg.NewContext(context.Background(), db)
-	m := NewManager(prottest.NewChain(t))
+	m := NewManager(db, prottest.NewChain(t))
+	ctx := context.Background()
 
 	account, err := m.Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
 	if err != nil {
@@ -118,9 +115,8 @@ func (m *Manager) createTestControlProgram(ctx context.Context, t testing.TB, ac
 }
 
 func TestFindByID(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	m := NewManager(prottest.NewChain(t))
+	m := NewManager(pgtest.NewTx(t), prottest.NewChain(t))
+	ctx := context.Background()
 	account := m.createTestAccount(ctx, t, "", nil)
 
 	found, err := m.findByID(ctx, account.ID)
@@ -134,9 +130,8 @@ func TestFindByID(t *testing.T) {
 }
 
 func TestFindByAlias(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	m := NewManager(prottest.NewChain(t))
+	m := NewManager(pgtest.NewTx(t), prottest.NewChain(t))
+	ctx := context.Background()
 	account := m.createTestAccount(ctx, t, "some-alias", nil)
 
 	found, err := m.FindByAlias(ctx, "some-alias")
