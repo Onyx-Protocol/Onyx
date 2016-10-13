@@ -126,7 +126,6 @@ func main() {
 	}
 
 	http.Handle("/", h)
-	http.HandleFunc("/health", func(http.ResponseWriter, *http.Request) {})
 	secureheader.DefaultConfig.PermitClearLoopback = true
 	secureheader.DefaultConfig.HTTPSRedirect = httpsRedirect
 

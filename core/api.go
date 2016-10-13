@@ -61,6 +61,9 @@ type Handler struct {
 	once           sync.Once
 	handler        http.Handler
 	actionDecoders map[string]func(data []byte) (txbuilder.Action, error)
+
+	healthMu     sync.Mutex
+	healthErrors map[string]interface{}
 }
 
 func maxBytes(h http.Handler) http.Handler {
@@ -96,6 +99,7 @@ func (h *Handler) init() {
 
 	m := http.NewServeMux()
 	m.Handle("/", alwaysError(errNotFound))
+	m.Handle("/health", jsonHandler(h.health))
 
 	m.Handle("/create-account", needConfig(h.createAccount))
 	m.Handle("/create-asset", needConfig(h.createAsset))
