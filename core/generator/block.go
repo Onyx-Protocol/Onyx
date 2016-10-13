@@ -22,35 +22,35 @@ var errTooFewSigners = errors.New("too few signers")
 
 // makeBlock generates a new bc.Block, collects the required signatures
 // and commits the block to the blockchain.
-func (g *generator) makeBlock(ctx context.Context) (*bc.Block, error) {
+func (g *generator) makeBlock(ctx context.Context) error {
 	b, s, err := g.chain.GenerateBlock(ctx, g.latestBlock, g.latestSnapshot, time.Now())
 	if err != nil {
-		return nil, errors.Wrap(err, "generate")
+		return errors.Wrap(err, "generate")
 	}
 	if len(b.Transactions) == 0 {
-		return nil, nil // don't bother making an empty block
+		return nil // don't bother making an empty block
 	}
 	err = savePendingBlock(ctx, g.db, b)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	return g.commitBlock(ctx, b, s)
 }
 
-func (g *generator) commitBlock(ctx context.Context, b *bc.Block, s *state.Snapshot) (*bc.Block, error) {
+func (g *generator) commitBlock(ctx context.Context, b *bc.Block, s *state.Snapshot) error {
 	err := g.getAndAddBlockSignatures(ctx, b, g.latestBlock)
 	if err != nil {
-		return nil, errors.Wrap(err, "sign")
+		return errors.Wrap(err, "sign")
 	}
 
 	err = g.chain.CommitBlock(ctx, b, s)
 	if err != nil {
-		return nil, errors.Wrap(err, "commit")
+		return errors.Wrap(err, "commit")
 	}
 
 	g.latestBlock = b
 	g.latestSnapshot = s
-	return b, nil
+	return nil
 }
 
 func (g *generator) getAndAddBlockSignatures(ctx context.Context, b, prevBlock *bc.Block) error {

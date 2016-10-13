@@ -69,7 +69,7 @@ func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, db pg.DB,
 		}
 
 		// g.commitBlock will update g.latestBlock and g.latestSnapshot.
-		_, err = g.commitBlock(ctx, b, s)
+		err = g.commitBlock(ctx, b, s)
 		if err != nil {
 			log.Fatal(ctx, log.KeyError, err)
 		}
@@ -82,7 +82,7 @@ func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, db pg.DB,
 			log.Messagef(ctx, "Deposed, Generate exiting")
 			return
 		case <-ticks:
-			_, err := g.makeBlock(ctx)
+			err := g.makeBlock(ctx)
 			if err != nil {
 				log.Error(ctx, err)
 			}
