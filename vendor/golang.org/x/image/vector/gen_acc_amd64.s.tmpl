@@ -1,0 +1,160 @@
+// Copyright 2016 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// +build !appengine
+// +build gc
+// +build !noasm
+
+#include "textflag.h"
+
+// fl is short for floating point math. fx is short for fixed point math.
+
+DATA flAlmost256<>+0x00(SB)/8, $0x437fffff437fffff
+DATA flAlmost256<>+0x08(SB)/8, $0x437fffff437fffff
+DATA flOne<>+0x00(SB)/8, $0x3f8000003f800000
+DATA flOne<>+0x08(SB)/8, $0x3f8000003f800000
+DATA flSignMask<>+0x00(SB)/8, $0x7fffffff7fffffff
+DATA flSignMask<>+0x08(SB)/8, $0x7fffffff7fffffff
+DATA shuffleMask<>+0x00(SB)/8, $0x0c0804000c080400
+DATA shuffleMask<>+0x08(SB)/8, $0x0c0804000c080400
+DATA fxAlmost256<>+0x00(SB)/8, $0x000000ff000000ff
+DATA fxAlmost256<>+0x08(SB)/8, $0x000000ff000000ff
+
+GLOBL flAlmost256<>(SB), (NOPTR+RODATA), $16
+GLOBL flOne<>(SB), (NOPTR+RODATA), $16
+GLOBL flSignMask<>(SB), (NOPTR+RODATA), $16
+GLOBL shuffleMask<>(SB), (NOPTR+RODATA), $16
+GLOBL fxAlmost256<>(SB), (NOPTR+RODATA), $16
+
+// func haveSSE4_1() bool
+TEXT ·haveSSE4_1(SB), NOSPLIT, $0
+	MOVQ $1, AX
+	CPUID
+	SHRQ $19, CX
+	ANDQ $1, CX
+	MOVB CX, ret+0(FP)
+	RET
+
+// ----------------------------------------------------------------------------
+
+// func {{.LongName}}SIMD(dst []uint8, src {{.SrcType}})
+//
+// XMM registers. Variable names are per
+// https://github.com/google/font-rs/blob/master/src/accumulate.c
+//
+//	xmm0	scratch
+//	xmm1	x
+//	xmm2	y, z
+//	xmm3	{{.XMM3}}
+//	xmm4	{{.XMM4}}
+//	xmm5	{{.XMM5}}
+//	xmm6	shuffleMask
+//	xmm7	offset
+TEXT ·{{.LongName}}SIMD(SB), NOSPLIT, ${{.FrameSize}}-48
+	MOVQ dst_base+0(FP), DI
+	MOVQ dst_len+8(FP), BX
+	MOVQ src_base+24(FP), SI
+	MOVQ src_len+32(FP), CX
+
+	// Sanity check that len(dst) >= len(src).
+	CMPQ BX, CX
+	JLT  {{.ShortName}}End
+
+	// CX = len(src) &^ 3
+	// DX = len(src)
+	MOVQ CX, DX
+	ANDQ $-4, CX
+
+	{{.Setup}}
+
+	// shuffleMask := XMM(0x0c080400 repeated four times) // PSHUFB shuffle mask.
+	// offset      := XMM(0x00000000 repeated four times) // Cumulative sum.
+	MOVOU shuffleMask<>(SB), X6
+	XORPS X7, X7
+
+	// i := 0
+	MOVQ $0, AX
+
+{{.ShortName}}Loop4:
+	// for i < (len(src) &^ 3)
+	CMPQ AX, CX
+	JAE  {{.ShortName}}Loop1
+
+	// x = XMM(s0, s1, s2, s3)
+	//
+	// Where s0 is src[i+0], s1 is src[i+1], etc.
+	MOVOU (SI), X1
+
+	// scratch = XMM(0, s0, s1, s2)
+	// x += scratch                                  // yields x == XMM(s0, s0+s1, s1+s2, s2+s3)
+	MOVOU    X1, X0
+	PSLLO    $4, X0
+	{{.Add}} X0, X1
+
+	// scratch = XMM(0, 0, 0, 0)
+	// scratch = XMM(scratch@0, scratch@0, x@0, x@1) // yields scratch == XMM(0, 0, s0, s0+s1)
+	// x += scratch                                  // yields x == XMM(s0, s0+s1, s0+s1+s2, s0+s1+s2+s3)
+	XORPS    X0, X0
+	SHUFPS   $0x40, X1, X0
+	{{.Add}} X0, X1
+
+	// x += offset
+	{{.Add}} X7, X1
+
+	{{.ClampAndScale}}
+
+	// z = convertToInt32(y)
+	{{.ConvertToInt32}}
+
+	// z = shuffleTheLowBytesOfEach4ByteElement(z)
+	// copy(dst[:4], low4BytesOf(z))
+	PSHUFB X6, X2
+	MOVL   X2, (DI)
+
+	// offset = XMM(x@3, x@3, x@3, x@3)
+	MOVOU  X1, X7
+	SHUFPS $0xff, X1, X7
+
+	// i += 4
+	// dst = dst[4:]
+	// src = src[4:]
+	ADDQ $4, AX
+	ADDQ $4, DI
+	ADDQ $16, SI
+	JMP  {{.ShortName}}Loop4
+
+{{.ShortName}}Loop1:
+	// for i < len(src)
+	CMPQ AX, DX
+	JAE  {{.ShortName}}Cleanup
+
+	// x = src[i] + offset
+	MOVL     (SI), X1
+	{{.Add}} X7, X1
+
+	{{.ClampAndScale}}
+
+	// z = convertToInt32(y)
+	{{.ConvertToInt32}}
+
+	// dst[0] = uint8(z)
+	MOVL X2, BX
+	MOVB BX, (DI)
+
+	// offset = x
+	MOVOU X1, X7
+
+	// i += 1
+	// dst = dst[1:]
+	// src = src[1:]
+	ADDQ $1, AX
+	ADDQ $1, DI
+	ADDQ $4, SI
+	JMP  {{.ShortName}}Loop1
+
+{{.ShortName}}Cleanup:
+	{{.Cleanup}}
+
+{{.ShortName}}End:
+	RET
