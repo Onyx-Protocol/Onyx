@@ -57,7 +57,7 @@ func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, db pg.DB,
 	// Check to see if we already have a pending, generated block.
 	// This can happen if the leader process exits between generating
 	// the block and committing the signed block to the blockchain.
-	b, err := g.getPendingBlock(ctx)
+	b, err := getPendingBlock(ctx, g.db)
 	if err != nil {
 		log.Fatal(ctx, log.KeyError, err)
 	}

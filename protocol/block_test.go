@@ -18,19 +18,20 @@ import (
 func TestGetBlock(t *testing.T) {
 	ctx := context.Background()
 
+	b1 := &bc.Block{BlockHeader: bc.BlockHeader{Height: 1}}
 	emptyPool := mempool.New()
 	noBlocks := memstore.New()
 	oneBlock := memstore.New()
-	oneBlock.SaveBlock(ctx, &bc.Block{})
+	oneBlock.SaveBlock(ctx, b1)
 	oneBlock.SaveSnapshot(ctx, 1, state.Empty())
 
 	cases := []struct {
 		store   Store
 		want    *bc.Block
-		wantErr error
+		wantErr bool
 	}{
-		{noBlocks, nil, nil},
-		{oneBlock, &bc.Block{}, nil},
+		{noBlocks, nil, true},
+		{oneBlock, b1, false},
 	}
 
 	for _, test := range cases {
@@ -39,13 +40,11 @@ func TestGetBlock(t *testing.T) {
 			testutil.FatalErr(t, err)
 		}
 		got, gotErr := c.GetBlock(ctx, c.Height())
-
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("got latest = %+v want %+v", got, test.want)
 		}
-
-		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("got latest err = %q want %q", gotErr, test.wantErr)
+		if (gotErr != nil) != test.wantErr {
+			t.Errorf("got latest err = %q want err?: %t", gotErr, test.wantErr)
 		}
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"chain/crypto/ed25519"
+	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
 	"chain/protocol/bc"
@@ -29,7 +30,7 @@ func (g *generator) makeBlock(ctx context.Context) (*bc.Block, error) {
 	if len(b.Transactions) == 0 {
 		return nil, nil // don't bother making an empty block
 	}
-	err = g.savePendingBlock(ctx, b)
+	err = savePendingBlock(ctx, g.db, b)
 	if err != nil {
 		return nil, err
 	}
@@ -127,10 +128,10 @@ func nonNilSigs(a [][]byte) (b [][]byte) {
 }
 
 // getPendingBlock retrieves the generated, uncomitted block if it exists.
-func (g *generator) getPendingBlock(ctx context.Context) (*bc.Block, error) {
+func getPendingBlock(ctx context.Context, db pg.DB) (*bc.Block, error) {
 	const q = `SELECT data FROM generator_pending_block`
 	var block bc.Block
-	err := g.db.QueryRow(ctx, q).Scan(&block)
+	err := db.QueryRow(ctx, q).Scan(&block)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -142,11 +143,11 @@ func (g *generator) getPendingBlock(ctx context.Context) (*bc.Block, error) {
 // savePendingBlock persists a pending, uncommitted block to the database.
 // The generator should save a pending block *before* asking signers to
 // sign the block.
-func (g *generator) savePendingBlock(ctx context.Context, b *bc.Block) error {
+func savePendingBlock(ctx context.Context, db pg.DB, b *bc.Block) error {
 	const q = `
 		INSERT INTO generator_pending_block (data) VALUES($1)
 		ON CONFLICT (singleton) DO UPDATE SET data = $1;
 	`
-	_, err := g.db.Exec(ctx, q, b)
+	_, err := db.Exec(ctx, q, b)
 	return errors.Wrap(err, "generator_pending_block insert query")
 }

@@ -6,6 +6,7 @@ package memstore
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"chain/protocol/bc"
@@ -15,14 +16,14 @@ import (
 // MemStore satisfies the protocol.Store interface.
 type MemStore struct {
 	mu          sync.Mutex
-	Blocks      []*bc.Block
+	Blocks      map[uint64]*bc.Block
 	State       *state.Snapshot
 	StateHeight uint64
 }
 
 // New returns a new MemStore
 func New() *MemStore {
-	return new(MemStore)
+	return &MemStore{Blocks: make(map[uint64]*bc.Block)}
 }
 
 func (m *MemStore) Height(context.Context) (uint64, error) {
@@ -36,7 +37,11 @@ func (m *MemStore) SaveBlock(ctx context.Context, b *bc.Block) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.Blocks = append(m.Blocks, b)
+	existing, ok := m.Blocks[b.Height]
+	if ok && existing.Hash() != b.Hash() {
+		return fmt.Errorf("already have a block at height %d", b.Height)
+	}
+	m.Blocks[b.Height] = b
 	return nil
 }
 
@@ -52,12 +57,11 @@ func (m *MemStore) SaveSnapshot(ctx context.Context, height uint64, snapshot *st
 func (m *MemStore) GetBlock(ctx context.Context, height uint64) (*bc.Block, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-
-	index := height - 1
-	if index < 0 || index >= uint64(len(m.Blocks)) {
-		return nil, nil
+	b, ok := m.Blocks[height]
+	if !ok {
+		return nil, fmt.Errorf("memstore: no block at height %d", height)
 	}
-	return m.Blocks[index], nil
+	return b, nil
 }
 
 func (m *MemStore) LatestSnapshot(context.Context) (*state.Snapshot, uint64, error) {
