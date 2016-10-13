@@ -1,14 +1,17 @@
 import React from 'react'
 import {
-  NumberField,
   XpubField,
+  SelectField,
 } from '../Common'
+
+const rangeOptions = [1,2,3,4,5,6].map(val => ({label: val, value: val}))
 
 class KeyConfiguration extends React.Component {
   constructor(props) {
     super(props)
 
-    this.state = { keys: '' }
+    this.state = { keys: 1 }
+    this.props.xpubs.addField()
   }
 
   render() {
@@ -28,7 +31,7 @@ class KeyConfiguration extends React.Component {
     }
 
     const keyCountChange = event => {
-      let maxKeys = Math.min(event.target.value, 10)
+      let maxKeys = parseInt(event.target.value) || 0
       let existing = this.state.keys || 0
 
       if (maxKeys > existing) {
@@ -45,23 +48,25 @@ class KeyConfiguration extends React.Component {
       quorumChange(this.props.quorum.value, maxKeys)
     }
 
+    const quorumOptions = rangeOptions.slice(0, this.state.keys)
+
     return(
       <div>
-        <NumberField title='Keys' fieldProps={{
-          value: this.state.keys,
-          onChange: keyCountChange,
-          min: 0,
-          max: 10
-        }} />
+        <SelectField options={rangeOptions}
+          title='Keys'
+          skipEmpty={true}
+          fieldProps={{
+            value: this.state.keys,
+            onChange: keyCountChange,
+          }} />
 
-        <NumberField
+        <SelectField options={quorumOptions}
           title='Quorum'
+          skipEmpty={true}
           hint={this.props.quorumHint}
           fieldProps={{
             ...this.props.quorum,
             onChange: quorumChange,
-            min: 0,
-            max: 10
           }} />
 
         {this.props.xpubs.map((xpub, index) =>
