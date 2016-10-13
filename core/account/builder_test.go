@@ -10,6 +10,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
+	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
@@ -20,24 +21,29 @@ import (
 )
 
 func TestAccountSourceReserve(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	c := prottest.NewChain(t)
-	assets := asset.NewRegistry(c, bc.Hash{})
-	account.Init(c, nil)
+	var (
+		dbtx     = pgtest.NewTx(t)
+		ctx      = pg.NewContext(context.Background(), dbtx)
+		c        = prottest.NewChain(t)
+		accounts = account.NewManager(c)
+		assets   = asset.NewRegistry(c, bc.Hash{})
+		indexer  = query.NewIndexer(dbtx, c)
 
-	accID := coretest.CreateAccount(ctx, t, "", nil)
-	asset := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-	out := coretest.IssueAssets(ctx, t, c, assets, asset, 2, accID)
+		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
+		asset = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
+		out   = coretest.IssueAssets(ctx, t, c, assets, accounts, asset, 2, accID)
+	)
 
 	// Make a block so that account UTXOs are available to spend.
+	assets.IndexAssets(indexer)
+	accounts.IndexAccounts(indexer)
 	prottest.MakeBlock(ctx, t, c)
 
 	assetAmount1 := bc.AssetAmount{
 		AssetID: asset,
 		Amount:  1,
 	}
-	source := account.NewSpendAction(assetAmount1, accID, nil, nil, nil, nil)
+	source := accounts.NewSpendAction(assetAmount1, accID, nil, nil, nil, nil)
 
 	buildResult, err := source.Build(ctx)
 	if err != nil {
@@ -65,20 +71,25 @@ func TestAccountSourceReserve(t *testing.T) {
 }
 
 func TestAccountSourceUTXOReserve(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	c := prottest.NewChain(t)
-	assets := asset.NewRegistry(c, bc.Hash{})
-	account.Init(c, nil)
+	var (
+		dbtx     = pgtest.NewTx(t)
+		ctx      = pg.NewContext(context.Background(), dbtx)
+		c        = prottest.NewChain(t)
+		assets   = asset.NewRegistry(c, bc.Hash{})
+		accounts = account.NewManager(c)
+		indexer  = query.NewIndexer(dbtx, c)
 
-	accID := coretest.CreateAccount(ctx, t, "", nil)
-	asset := coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-	out := coretest.IssueAssets(ctx, t, c, assets, asset, 2, accID)
+		accID = coretest.CreateAccount(ctx, t, accounts, "", nil)
+		asset = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
+		out   = coretest.IssueAssets(ctx, t, c, assets, accounts, asset, 2, accID)
+	)
 
 	// Make a block so that account UTXOs are available to spend.
+	assets.IndexAssets(indexer)
+	accounts.IndexAccounts(indexer)
 	prottest.MakeBlock(ctx, t, c)
 
-	source := account.NewSpendUTXOAction(out.Outpoint, time.Minute)
+	source := accounts.NewSpendUTXOAction(out.Outpoint, time.Minute)
 	buildResult, err := source.Build(ctx)
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -93,17 +104,18 @@ func TestAccountSourceUTXOReserve(t *testing.T) {
 }
 
 func TestAccountSourceReserveIdempotency(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	c := prottest.NewChain(t)
-	assets := asset.NewRegistry(c, bc.Hash{})
-	account.Init(c, nil)
-
 	var (
-		accID        = coretest.CreateAccount(ctx, t, "", nil)
+		dbtx     = pgtest.NewTx(t)
+		ctx      = pg.NewContext(context.Background(), dbtx)
+		c        = prottest.NewChain(t)
+		assets   = asset.NewRegistry(c, bc.Hash{})
+		accounts = account.NewManager(c)
+		indexer  = query.NewIndexer(dbtx, c)
+
+		accID        = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset        = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
-		_            = coretest.IssueAssets(ctx, t, c, assets, asset, 2, accID)
-		_            = coretest.IssueAssets(ctx, t, c, assets, asset, 2, accID)
+		_            = coretest.IssueAssets(ctx, t, c, assets, accounts, asset, 2, accID)
+		_            = coretest.IssueAssets(ctx, t, c, assets, accounts, asset, 2, accID)
 		assetAmount1 = bc.AssetAmount{
 			AssetID: asset,
 			Amount:  1,
@@ -112,12 +124,14 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 		// An idempotency key that both reservations should use.
 		clientToken1 = "a-unique-idempotency-key"
 		clientToken2 = "another-unique-idempotency-key"
-		wantSrc      = account.NewSpendAction(assetAmount1, accID, nil, nil, nil, &clientToken1)
-		gotSrc       = account.NewSpendAction(assetAmount1, accID, nil, nil, nil, &clientToken1)
-		separateSrc  = account.NewSpendAction(assetAmount1, accID, nil, nil, nil, &clientToken2)
+		wantSrc      = accounts.NewSpendAction(assetAmount1, accID, nil, nil, nil, &clientToken1)
+		gotSrc       = accounts.NewSpendAction(assetAmount1, accID, nil, nil, nil, &clientToken1)
+		separateSrc  = accounts.NewSpendAction(assetAmount1, accID, nil, nil, nil, &clientToken2)
 	)
 
 	// Make a block so that account UTXOs are available to spend.
+	assets.IndexAssets(indexer)
+	accounts.IndexAccounts(indexer)
 	prottest.MakeBlock(ctx, t, c)
 
 	reserveFunc := func(source txbuilder.Action) []*bc.TxInput {
@@ -148,14 +162,15 @@ func TestAccountSourceReserveIdempotency(t *testing.T) {
 }
 
 func TestAccountSourceWithTxHash(t *testing.T) {
-	dbtx := pgtest.NewTx(t)
-	ctx := pg.NewContext(context.Background(), dbtx)
-	c := prottest.NewChain(t)
-	assets := asset.NewRegistry(c, bc.Hash{})
-	account.Init(c, nil)
-
 	var (
-		acc      = coretest.CreateAccount(ctx, t, "", nil)
+		dbtx     = pgtest.NewTx(t)
+		ctx      = pg.NewContext(context.Background(), dbtx)
+		c        = prottest.NewChain(t)
+		assets   = asset.NewRegistry(c, bc.Hash{})
+		accounts = account.NewManager(c)
+		indexer  = query.NewIndexer(dbtx, c)
+
+		acc      = coretest.CreateAccount(ctx, t, accounts, "", nil)
 		asset    = coretest.CreateAsset(ctx, t, assets, nil, "", nil)
 		assetAmt = bc.AssetAmount{AssetID: asset, Amount: 1}
 		utxos    = 4
@@ -163,16 +178,18 @@ func TestAccountSourceWithTxHash(t *testing.T) {
 	)
 
 	for i := 0; i < utxos; i++ {
-		o := coretest.IssueAssets(ctx, t, c, assets, asset, 1, acc)
+		o := coretest.IssueAssets(ctx, t, c, assets, accounts, asset, 1, acc)
 		srcTxs = append(srcTxs, o.Outpoint.Hash)
 	}
 
 	// Make a block so that account UTXOs are available to spend.
+	assets.IndexAssets(indexer)
+	accounts.IndexAccounts(indexer)
 	prottest.MakeBlock(ctx, t, c)
 
 	for i := 0; i < utxos; i++ {
 		theTxHash := srcTxs[i]
-		source := account.NewSpendAction(assetAmt, acc, &theTxHash, nil, nil, nil)
+		source := accounts.NewSpendAction(assetAmt, acc, &theTxHash, nil, nil, nil)
 
 		buildResult, err := source.Build(ctx)
 		if err != nil {

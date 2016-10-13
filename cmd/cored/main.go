@@ -193,10 +193,11 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	indexer := query.NewIndexer(db, c)
 
 	assets := asset.NewRegistry(c, config.BlockchainID)
-	account.Init(c, indexer)
-	indexer.RegisterAnnotator(account.AnnotateTxs)
+	accounts := account.NewManager(c)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
+	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	assets.IndexAssets(indexer)
+	accounts.IndexAccounts(indexer)
 
 	hsm := mockhsm.New(db)
 	var generatorSigners []generator.BlockSigner
@@ -239,6 +240,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		Chain:        c,
 		Store:        store,
 		Assets:       assets,
+		Accounts:     accounts,
 		HSM:          hsm,
 		Indexer:      indexer,
 		Config:       config,

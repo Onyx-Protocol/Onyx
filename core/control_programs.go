@@ -5,7 +5,6 @@ import (
 	stdjson "encoding/json"
 	"sync"
 
-	"chain/core/account"
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/net/http/httpjson"
@@ -30,7 +29,7 @@ func (h *Handler) createControlProgram(ctx context.Context, ins []struct {
 			)
 			switch ins[i].Type {
 			case "account":
-				prog, err = createAccountControlProgram(ctx, ins[i].Params)
+				prog, err = h.createAccountControlProgram(ctx, ins[i].Params)
 			default:
 				err = errors.WithDetailf(httpjson.ErrBadRequest, "unknown control program type %q", ins[i].Type)
 			}
@@ -47,7 +46,7 @@ func (h *Handler) createControlProgram(ctx context.Context, ins []struct {
 	return responses
 }
 
-func createAccountControlProgram(ctx context.Context, input []byte) (interface{}, error) {
+func (h *Handler) createAccountControlProgram(ctx context.Context, input []byte) (interface{}, error) {
 	var parsed struct {
 		AccountAlias string `json:"account_alias"`
 		AccountID    string `json:"account_id"`
@@ -59,14 +58,14 @@ func createAccountControlProgram(ctx context.Context, input []byte) (interface{}
 
 	accountID := parsed.AccountID
 	if accountID == "" {
-		acc, err := account.FindByAlias(ctx, parsed.AccountAlias)
+		acc, err := h.Accounts.FindByAlias(ctx, parsed.AccountAlias)
 		if err != nil {
 			return nil, err
 		}
 		accountID = acc.ID
 	}
 
-	controlProgram, err := account.CreateControlProgram(ctx, accountID, false)
+	controlProgram, err := h.Accounts.CreateControlProgram(ctx, accountID, false)
 	if err != nil {
 		return nil, err
 	}

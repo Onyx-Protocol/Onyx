@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"chain/core/account"
 	"chain/core/fetch"
 	"chain/core/txbuilder"
 	"chain/database/pg"
@@ -91,7 +90,7 @@ type submitSingleArg struct {
 	wait time.Duration
 }
 
-func submitSingle(ctx context.Context, c *protocol.Chain, x submitSingleArg) (interface{}, error) {
+func (h *Handler) submitSingle(ctx context.Context, c *protocol.Chain, x submitSingleArg) (interface{}, error) {
 	// TODO(bobg): Set up an expiring context object outside this
 	// function, perhaps in handler.ServeHTTPContext, and perhaps
 	// initialize the timeout from the HTTP Timeout field.  (Or just
@@ -103,7 +102,7 @@ func submitSingle(ctx context.Context, c *protocol.Chain, x submitSingleArg) (in
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	err := finalizeTxWait(ctx, c, x.tpl)
+	err := h.finalizeTxWait(ctx, c, x.tpl)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +163,7 @@ func CleanupSubmittedTxs(ctx context.Context, db pg.DB) {
 // confirmed on the blockchain.  ErrRejected means a conflicting tx is
 // on the blockchain.  context.DeadlineExceeded means ctx is an
 // expiring context that timed out.
-func finalizeTxWait(ctx context.Context, c *protocol.Chain, txTemplate *txbuilder.Template) error {
+func (h *Handler) finalizeTxWait(ctx context.Context, c *protocol.Chain, txTemplate *txbuilder.Template) error {
 	if txTemplate.Transaction == nil {
 		return errors.Wrap(txbuilder.ErrMissingRawTx)
 	}
@@ -195,7 +194,7 @@ func finalizeTxWait(ctx context.Context, c *protocol.Chain, txTemplate *txbuilde
 	// case, we're confident that this tx will be confirmed, so we relax
 	// that constraint to allow use of unconfirmed change, etc.
 	if txTemplate.Local {
-		err := account.IndexUnconfirmedUTXOs(ctx, tx)
+		err := h.Accounts.IndexUnconfirmedUTXOs(ctx, tx)
 		if err != nil {
 			return errors.Wrap(err, "indexing unconfirmed account utxos")
 		}
@@ -260,7 +259,7 @@ func (h *Handler) submit(ctx context.Context, x submitArg) interface{} {
 	wg.Add(len(responses))
 	for i := range responses {
 		go func(i int) {
-			resp, err := submitSingle(reqid.NewSubContext(ctx, reqid.New()), h.Chain, submitSingleArg{tpl: x.Transactions[i], wait: x.wait})
+			resp, err := h.submitSingle(reqid.NewSubContext(ctx, reqid.New()), h.Chain, submitSingleArg{tpl: x.Transactions[i], wait: x.wait})
 			if err != nil {
 				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)

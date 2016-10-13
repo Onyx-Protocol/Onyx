@@ -8,6 +8,7 @@ import (
 	"chain/core/asset"
 	"chain/core/coretest"
 	"chain/core/mockhsm"
+	"chain/core/query"
 	"chain/core/txbuilder"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
@@ -22,14 +23,15 @@ func TestMockHSM(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(c, bc.Hash{})
-	account.Init(c, nil)
+	accounts := account.NewManager(c)
+	accounts.IndexAccounts(query.NewIndexer(dbtx, c))
 	mockhsm := mockhsm.New(dbtx)
+
 	xpub1, err := mockhsm.XCreate(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	acct1, err := account.Create(ctx, []string{xpub1.XPub.String()}, 1, "", nil, nil)
+	acct1, err := accounts.Create(ctx, []string{xpub1.XPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,8 +40,7 @@ func TestMockHSM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	acct2, err := account.Create(ctx, []string{xpub2.String()}, 1, "", nil, nil)
+	acct2, err := accounts.Create(ctx, []string{xpub2.String()}, 1, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,8 +53,8 @@ func TestMockHSM(t *testing.T) {
 
 	issueSrc1 := txbuilder.Action(assets.NewIssueAction(bc.AssetAmount{AssetID: asset1ID, Amount: 100}, nil))
 	issueSrc2 := txbuilder.Action(assets.NewIssueAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, nil))
-	issueDest1 := account.NewControlAction(bc.AssetAmount{AssetID: asset1ID, Amount: 100}, acct1.ID, nil)
-	issueDest2 := account.NewControlAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, acct2.ID, nil)
+	issueDest1 := accounts.NewControlAction(bc.AssetAmount{AssetID: asset1ID, Amount: 100}, acct1.ID, nil)
+	issueDest2 := accounts.NewControlAction(bc.AssetAmount{AssetID: asset2ID, Amount: 200}, acct2.ID, nil)
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{issueSrc1, issueSrc2, issueDest1, issueDest2})
 	if err != nil {
 		t.Fatal(err)
@@ -67,10 +68,10 @@ func TestMockHSM(t *testing.T) {
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(ctx, t, c)
 
-	xferSrc1 := account.NewSpendAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct1.ID, nil, nil, nil, nil)
-	xferSrc2 := account.NewSpendAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct2.ID, nil, nil, nil, nil)
-	xferDest1 := account.NewControlAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct1.ID, nil)
-	xferDest2 := account.NewControlAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct2.ID, nil)
+	xferSrc1 := accounts.NewSpendAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct1.ID, nil, nil, nil, nil)
+	xferSrc2 := accounts.NewSpendAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct2.ID, nil, nil, nil, nil)
+	xferDest1 := accounts.NewControlAction(bc.AssetAmount{AssetID: asset2ID, Amount: 20}, acct1.ID, nil)
+	xferDest2 := accounts.NewControlAction(bc.AssetAmount{AssetID: asset1ID, Amount: 10}, acct2.ID, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{xferSrc1, xferSrc2, xferDest1, xferDest2})
 	if err != nil {
 		t.Fatal(err)

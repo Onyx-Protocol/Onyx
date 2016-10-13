@@ -10,6 +10,7 @@ import (
 	"chain/database/pg/pgtest"
 	"chain/errors"
 	"chain/net/http/httpjson"
+	"chain/protocol/prottest"
 	"chain/protocol/vm"
 	"chain/testutil"
 )
@@ -19,8 +20,9 @@ var dummyXPub = testutil.TestXPub.String()
 func TestCreateAccount(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
+	m := NewManager(prottest.NewChain(t))
 
-	account, err := Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
+	account, err := m.Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -40,12 +42,13 @@ func TestCreateAccount(t *testing.T) {
 func TestCreateAccountIdempotency(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
 	var clientToken = "a-unique-client-token"
+	m := NewManager(prottest.NewChain(t))
 
-	account1, err := Create(ctx, []string{dummyXPub}, 1, "satoshi", nil, &clientToken)
+	account1, err := m.Create(ctx, []string{dummyXPub}, 1, "satoshi", nil, &clientToken)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	account2, err := Create(ctx, []string{dummyXPub}, 1, "satoshi", nil, &clientToken)
+	account2, err := m.Create(ctx, []string{dummyXPub}, 1, "satoshi", nil, &clientToken)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -57,30 +60,27 @@ func TestCreateAccountIdempotency(t *testing.T) {
 func TestCreateAccountReusedAlias(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
-	createTestAccount(ctx, t, "some-account", nil)
+	m := NewManager(prottest.NewChain(t))
+	m.createTestAccount(ctx, t, "some-account", nil)
 
-	_, err := Create(ctx, []string{dummyXPub}, 1, "some-account", nil, nil)
+	_, err := m.Create(ctx, []string{dummyXPub}, 1, "some-account", nil, nil)
 	if errors.Root(err) != httpjson.ErrBadRequest {
 		t.Errorf("Expected %s when reusing an alias, got %v", httpjson.ErrBadRequest, err)
 	}
 }
 
-func resetSeqs(ctx context.Context, t testing.TB) {
-	acpIndexNext, acpIndexCap = 1, 100
-	pgtest.Exec(ctx, t, `ALTER SEQUENCE account_control_program_seq RESTART`)
-	pgtest.Exec(ctx, t, `ALTER SEQUENCE signers_key_index_seq RESTART`)
-}
-
 func TestCreateControlProgram(t *testing.T) {
-	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	resetSeqs(ctx, t)
+	// use pgtest.NewDB for deterministic postgres sequences
+	_, db := pgtest.NewDB(t, pgtest.SchemaPath)
+	ctx := pg.NewContext(context.Background(), db)
+	m := NewManager(prottest.NewChain(t))
 
-	account, err := Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
+	account, err := m.Create(ctx, []string{dummyXPub}, 1, "", nil, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
 
-	got, err := CreateControlProgram(ctx, account.ID, false)
+	got, err := m.CreateControlProgram(ctx, account.ID, false)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -95,8 +95,8 @@ func TestCreateControlProgram(t *testing.T) {
 	}
 }
 
-func createTestAccount(ctx context.Context, t testing.TB, alias string, tags map[string]interface{}) *Account {
-	account, err := Create(ctx, []string{dummyXPub}, 1, alias, tags, nil)
+func (m *Manager) createTestAccount(ctx context.Context, t testing.TB, alias string, tags map[string]interface{}) *Account {
+	account, err := m.Create(ctx, []string{dummyXPub}, 1, alias, tags, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -104,13 +104,13 @@ func createTestAccount(ctx context.Context, t testing.TB, alias string, tags map
 	return account
 }
 
-func createTestControlProgram(ctx context.Context, t testing.TB, accountID string) []byte {
+func (m *Manager) createTestControlProgram(ctx context.Context, t testing.TB, accountID string) []byte {
 	if accountID == "" {
-		account := createTestAccount(ctx, t, "", nil)
+		account := m.createTestAccount(ctx, t, "", nil)
 		accountID = account.ID
 	}
 
-	acp, err := CreateControlProgram(ctx, accountID, false)
+	acp, err := m.CreateControlProgram(ctx, accountID, false)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -120,9 +120,10 @@ func createTestControlProgram(ctx context.Context, t testing.TB, accountID strin
 func TestFindByID(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
-	account := createTestAccount(ctx, t, "", nil)
+	m := NewManager(prottest.NewChain(t))
+	account := m.createTestAccount(ctx, t, "", nil)
 
-	found, err := findByID(ctx, account.ID)
+	found, err := m.findByID(ctx, account.ID)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -135,9 +136,10 @@ func TestFindByID(t *testing.T) {
 func TestFindByAlias(t *testing.T) {
 	dbtx := pgtest.NewTx(t)
 	ctx := pg.NewContext(context.Background(), dbtx)
-	account := createTestAccount(ctx, t, "some-alias", nil)
+	m := NewManager(prottest.NewChain(t))
+	account := m.createTestAccount(ctx, t, "some-alias", nil)
 
-	found, err := FindByAlias(ctx, "some-alias")
+	found, err := m.FindByAlias(ctx, "some-alias")
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

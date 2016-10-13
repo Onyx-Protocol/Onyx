@@ -8,7 +8,6 @@ import (
 	"chain/core/signers"
 	"chain/database/pg"
 	"chain/errors"
-	"chain/protocol"
 	"chain/protocol/bc"
 	"chain/protocol/state"
 )
@@ -20,9 +19,6 @@ const (
 	unconfirmedExpiration = 5
 )
 
-var chain *protocol.Chain
-var indexer Saver
-
 // A Saver is responsible for saving an annotated account object.
 // for indexing and retrieval.
 // If the Core is configured not to provide search services,
@@ -31,22 +27,8 @@ type Saver interface {
 	SaveAnnotatedAccount(context.Context, string, map[string]interface{}) error
 }
 
-// Init sets the package level Chain and query indexer.
-// Init registers all necessary callbacks for updating
-// application state with the Chain.
-func Init(c *protocol.Chain, ind Saver) {
-	indexer = ind
-	if chain == c {
-		// Silently ignore duplicate calls.
-		return
-	}
-
-	chain = c
-	chain.AddBlockCallback(indexAccountUTXOs)
-}
-
-func indexAnnotatedAccount(ctx context.Context, a *Account) error {
-	if indexer == nil {
+func (m *Manager) indexAnnotatedAccount(ctx context.Context, a *Account) error {
+	if m.indexer == nil {
 		return nil
 	}
 	var keys []map[string]interface{}
@@ -58,14 +40,13 @@ func indexAnnotatedAccount(ctx context.Context, a *Account) error {
 			"account_derivation_path": path,
 		})
 	}
-	m := map[string]interface{}{
+	return m.indexer.SaveAnnotatedAccount(ctx, a.ID, map[string]interface{}{
 		"id":     a.ID,
 		"alias":  a.Alias,
 		"keys":   keys,
 		"tags":   a.Tags,
 		"quorum": a.Quorum,
-	}
-	return indexer.SaveAnnotatedAccount(ctx, a.ID, m)
+	})
 }
 
 type output struct {
@@ -78,7 +59,7 @@ type output struct {
 // account control programs. If any control programs match, the unconfirmed
 // UTXOs are inserted into account_utxos with an expiry_height. If not confirmed
 // by the expiry_height, the UTXOs will be deleted (and assumed rejected).
-func IndexUnconfirmedUTXOs(ctx context.Context, tx *bc.Tx) error {
+func (m *Manager) IndexUnconfirmedUTXOs(ctx context.Context, tx *bc.Tx) error {
 	stateOuts := make([]*state.Output, 0, len(tx.Outputs))
 	for i, out := range tx.Outputs {
 		stateOutput := &state.Output{
@@ -91,11 +72,11 @@ func IndexUnconfirmedUTXOs(ctx context.Context, tx *bc.Tx) error {
 	if err != nil {
 		return errors.Wrap(err, "loading account info")
 	}
-	err = upsertUnconfirmedAccountOutputs(ctx, accOuts, chain.Height()+unconfirmedExpiration)
+	err = upsertUnconfirmedAccountOutputs(ctx, accOuts, m.chain.Height()+unconfirmedExpiration)
 	return errors.Wrap(err, "upserting confirmed account utxos")
 }
 
-func indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
+func (m *Manager) indexAccountUTXOs(ctx context.Context, b *bc.Block) error {
 	// Upsert any UTXOs belonging to accounts managed by this Core.
 	outs := make([]*state.Output, 0, len(b.Transactions))
 	blockPositions := make(map[bc.Hash]uint32, len(b.Transactions))

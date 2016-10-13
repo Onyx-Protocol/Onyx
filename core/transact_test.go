@@ -21,8 +21,10 @@ func TestLocalAccountTransfer(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), db)
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(c, bc.Hash{})
+	accounts := account.NewManager(c)
+	h := &Handler{Assets: assets, Accounts: accounts, Chain: c}
 
-	acc, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
+	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +36,7 @@ func TestLocalAccountTransfer(t *testing.T) {
 	}
 
 	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
-	dests := account.NewControlAction(assetAmt, acc.ID, nil)
+	dests := accounts.NewControlAction(assetAmt, acc.ID, nil)
 
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
 	if err != nil {
@@ -45,10 +47,10 @@ func TestLocalAccountTransfer(t *testing.T) {
 	// Submit the transaction but w/o waiting long for confirmation.
 	// The outputs should be indexed because the transaction template
 	// indicates that the transaction is completely local to this Core.
-	_, _ = submitSingle(ctx, c, submitSingleArg{tpl: tmpl, wait: time.Millisecond})
+	_, _ = h.submitSingle(ctx, c, submitSingleArg{tpl: tmpl, wait: time.Millisecond})
 
 	// Add a new source, spending the change output produced above.
-	sources = account.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
+	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
 	if err != nil {
 		t.Fatal(err)

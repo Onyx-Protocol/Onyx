@@ -40,11 +40,12 @@ func TestRecovery(t *testing.T) {
 	c := prottest.NewChainWithStorage(t, store, pool)
 	indexer := query.NewIndexer(db, c)
 	assets := asset.NewRegistry(c, bc.Hash{})
+	accounts := account.NewManager(c)
 	assets.IndexAssets(indexer)
-	account.Init(c, nil)
+	accounts.IndexAccounts(indexer)
 
 	// Setup the transaction query indexer to index every transaction.
-	indexer.RegisterAnnotator(account.AnnotateTxs)
+	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
 
 	// Create two assets (USD & apples) and two accounts (Alice & Bob).
@@ -52,21 +53,21 @@ func TestRecovery(t *testing.T) {
 		usdTags = map[string]interface{}{"currency": "usd"}
 		usd     = coretest.CreateAsset(setupCtx, t, assets, nil, "usd", usdTags)
 		apple   = coretest.CreateAsset(setupCtx, t, assets, nil, "apple", nil)
-		alice   = coretest.CreateAccount(setupCtx, t, "alice", nil)
-		bob     = coretest.CreateAccount(setupCtx, t, "bob", nil)
+		alice   = coretest.CreateAccount(setupCtx, t, accounts, "alice", nil)
+		bob     = coretest.CreateAccount(setupCtx, t, accounts, "bob", nil)
 	)
 	// Issue some apples to Alice and a dollar to Bob.
-	_ = coretest.IssueAssets(setupCtx, t, c, assets, apple, 10, alice)
-	_ = coretest.IssueAssets(setupCtx, t, c, assets, usd, 1, bob)
+	_ = coretest.IssueAssets(setupCtx, t, c, assets, accounts, apple, 10, alice)
+	_ = coretest.IssueAssets(setupCtx, t, c, assets, accounts, usd, 1, bob)
 
 	prottest.MakeBlock(setupCtx, t, c)
 
 	// Submit a transfer between Alice and Bob but don't publish it in a block.
 	coretest.Transfer(setupCtx, t, c, []txbuilder.Action{
-		account.NewControlAction(bc.AssetAmount{AssetID: usd, Amount: 1}, alice, nil),
-		account.NewControlAction(bc.AssetAmount{AssetID: apple, Amount: 1}, bob, nil),
-		account.NewSpendAction(bc.AssetAmount{AssetID: usd, Amount: 1}, bob, nil, nil, nil, nil),
-		account.NewSpendAction(bc.AssetAmount{AssetID: apple, Amount: 1}, alice, nil, nil, nil, nil),
+		accounts.NewControlAction(bc.AssetAmount{AssetID: usd, Amount: 1}, alice, nil),
+		accounts.NewControlAction(bc.AssetAmount{AssetID: apple, Amount: 1}, bob, nil),
+		accounts.NewSpendAction(bc.AssetAmount{AssetID: usd, Amount: 1}, bob, nil, nil, nil, nil),
+		accounts.NewSpendAction(bc.AssetAmount{AssetID: apple, Amount: 1}, alice, nil, nil, nil, nil),
 	})
 
 	// Save a copy of the pool txs
@@ -195,11 +196,13 @@ func generateBlock(ctx context.Context, db *sql.DB, timestamp time.Time) error {
 	}
 
 	assets := asset.NewRegistry(c, initial.Hash())
-	assets.IndexAssets(indexer)
-	account.Init(c, nil)
+	accounts := account.NewManager(c)
+
 	// Setup the transaction query indexer to index every transaction.
-	indexer.RegisterAnnotator(account.AnnotateTxs)
+	assets.IndexAssets(indexer)
+	accounts.IndexAccounts(indexer)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
+	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 
 	block, snapshot, err := c.Recover(ctx)
 	if err != nil {

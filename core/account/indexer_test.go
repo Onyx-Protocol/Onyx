@@ -8,15 +8,17 @@ import (
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
 	"chain/protocol/bc"
+	"chain/protocol/prottest"
 	"chain/protocol/state"
 	"chain/testutil"
 )
 
 func TestLoadAccountInfo(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	m := NewManager(prottest.NewChain(t))
 
-	acc := createTestAccount(ctx, t, "", nil)
-	acp := createTestControlProgram(ctx, t, acc.ID)
+	acc := m.createTestAccount(ctx, t, "", nil)
+	acp := m.createTestControlProgram(ctx, t, acc.ID)
 
 	to1 := bc.NewTxOutput(bc.AssetID{}, 0, acp, nil)
 	to2 := bc.NewTxOutput(bc.AssetID{}, 0, []byte("notfound"), nil)
@@ -39,9 +41,10 @@ func TestLoadAccountInfo(t *testing.T) {
 
 func TestDeleteUTXOs(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
+	m := NewManager(prottest.NewChain(t))
 
 	assetID := bc.AssetID{}
-	acp := createTestControlProgram(ctx, t, "")
+	acp := m.createTestControlProgram(ctx, t, "")
 
 	block1 := &bc.Block{Transactions: []*bc.Tx{
 		bc.NewTx(bc.TxData{
@@ -50,7 +53,7 @@ func TestDeleteUTXOs(t *testing.T) {
 			},
 		}),
 	}}
-	err := indexAccountUTXOs(ctx, block1)
+	err := m.indexAccountUTXOs(ctx, block1)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -62,7 +65,7 @@ func TestDeleteUTXOs(t *testing.T) {
 			},
 		}),
 	}}
-	err = indexAccountUTXOs(ctx, block2)
+	err = m.indexAccountUTXOs(ctx, block2)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

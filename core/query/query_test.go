@@ -25,17 +25,17 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
+	accounts := account.NewManager(c)
 	assets := asset.NewRegistry(c, b1.Hash())
-	account.Init(c, indexer)
-	indexer.RegisterAnnotator(account.AnnotateTxs)
+	indexer.RegisterAnnotator(accounts.AnnotateTxs)
 	indexer.RegisterAnnotator(assets.AnnotateTxs)
 
-	acct1, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
+	acct1, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	acct2, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
+	acct2, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,8 +51,8 @@ func setupQueryTest(t *testing.T) (context.Context, *Indexer, time.Time, time.Ti
 		t.Fatal(err)
 	}
 
-	coretest.IssueAssets(ctx, t, c, assets, asset1.AssetID, 867, acct1.ID)
-	coretest.IssueAssets(ctx, t, c, assets, asset2.AssetID, 100, acct1.ID)
+	coretest.IssueAssets(ctx, t, c, assets, accounts, asset1.AssetID, 867, acct1.ID)
+	coretest.IssueAssets(ctx, t, c, assets, accounts, asset2.AssetID, 100, acct1.ID)
 
 	prottest.MakeBlock(ctx, t, c)
 

@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 
-	"chain/core/account"
 	"chain/errors"
 	"chain/protocol/bc"
 )
@@ -33,7 +32,7 @@ func (h *Handler) filterAliases(ctx context.Context, br *buildRequest) error {
 		id, _ = m["account_id"].(string)
 		alias, _ = m["account_alias"].(string)
 		if id == "" && alias != "" {
-			acc, err := account.FindByAlias(ctx, alias)
+			acc, err := h.Accounts.FindByAlias(ctx, alias)
 			if err != nil {
 				return errors.WithDetailf(err, "invalid account alias %s on action %d", alias, i)
 			}

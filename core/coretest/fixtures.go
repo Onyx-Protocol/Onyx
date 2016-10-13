@@ -15,9 +15,9 @@ import (
 	"chain/testutil"
 )
 
-func CreateAccount(ctx context.Context, t testing.TB, alias string, tags map[string]interface{}) string {
+func CreateAccount(ctx context.Context, t testing.TB, accounts *account.Manager, alias string, tags map[string]interface{}) string {
 	keys := []string{testutil.TestXPub.String()}
-	acc, err := account.Create(ctx, keys, 1, alias, tags, nil)
+	acc, err := accounts.Create(ctx, keys, 1, alias, tags, nil)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -33,16 +33,13 @@ func CreateAsset(ctx context.Context, t testing.TB, assets *asset.Registry, def 
 	return asset.AssetID
 }
 
-func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, assets *asset.Registry, assetID bc.AssetID, amount uint64, accountID string) state.Output {
-	if accountID == "" {
-		accountID = CreateAccount(ctx, t, "", nil)
-	}
-	dest := account.NewControlAction(bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil)
-
+func IssueAssets(ctx context.Context, t testing.TB, c *protocol.Chain, assets *asset.Registry, accounts *account.Manager, assetID bc.AssetID, amount uint64, accountID string) state.Output {
 	assetAmount := bc.AssetAmount{AssetID: assetID, Amount: amount}
 
-	src := assets.NewIssueAction(assetAmount, nil) // does not support reference data
-	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{dest, src})
+	tpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
+		assets.NewIssueAction(assetAmount, nil), // does not support reference data
+		accounts.NewControlAction(bc.AssetAmount{AssetID: assetID, Amount: amount}, accountID, nil),
+	})
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

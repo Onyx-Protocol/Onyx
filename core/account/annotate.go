@@ -15,7 +15,7 @@ import (
 )
 
 // AnnotateTxs adds account data to transactions
-func AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
+func (m *Manager) AnnotateTxs(ctx context.Context, txs []map[string]interface{}) error {
 	controlMaps := make(map[string][]map[string]interface{})
 	outputMaps := make(map[string][]map[string]interface{})
 	var controlPrograms [][]byte

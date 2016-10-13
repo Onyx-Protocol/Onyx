@@ -48,6 +48,7 @@ type Handler struct {
 	Chain        *protocol.Chain
 	Store        *txdb.Store
 	Assets       *asset.Registry
+	Accounts     *account.Manager
 	HSM          *mockhsm.HSM
 	Indexer      *query.Indexer
 	Config       *Config
@@ -77,11 +78,11 @@ func maxBytes(h http.Handler) http.Handler {
 func (h *Handler) init() {
 	// Setup the available transact actions.
 	h.actionDecoders = map[string]func(data []byte) (txbuilder.Action, error){
-		"control_account":                account.DecodeControlAction,
+		"control_account":                h.Accounts.DecodeControlAction,
 		"control_program":                txbuilder.DecodeControlProgramAction,
 		"issue":                          h.Assets.DecodeIssueAction,
-		"spend_account":                  account.DecodeSpendAction,
-		"spend_account_unspent_output":   account.DecodeSpendUTXOAction,
+		"spend_account":                  h.Accounts.DecodeSpendAction,
+		"spend_account_unspent_output":   h.Accounts.DecodeSpendUTXOAction,
 		"set_transaction_reference_data": txbuilder.DecodeSetTxRefDataAction,
 	}
 

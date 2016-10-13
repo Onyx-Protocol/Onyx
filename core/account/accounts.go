@@ -13,15 +13,38 @@ import (
 	"chain/database/pg"
 	"chain/errors"
 	"chain/net/http/httpjson"
+	"chain/protocol"
 	"chain/protocol/vmutil"
 )
 
 const maxAccountCache = 100
 
-var (
+func NewManager(chain *protocol.Chain) *Manager {
+	return &Manager{
+		chain: chain,
+		cache: lru.New(maxAccountCache),
+	}
+}
+
+// Manager stores accounts and their associated control programs.
+type Manager struct {
+	chain   *protocol.Chain
+	indexer Saver
+
 	cacheMu sync.Mutex
-	cache   = lru.New(maxAccountCache)
-)
+	cache   *lru.Cache
+
+	acpMu        sync.Mutex
+	acpIndexNext uint64 // next acp index in our block
+	acpIndexCap  uint64 // points to end of block
+
+	// TODO(jackson): store a database handle here
+}
+
+func (m *Manager) IndexAccounts(indexer Saver) {
+	m.indexer = indexer
+	m.chain.AddBlockCallback(m.indexAccountUTXOs)
+}
 
 type Account struct {
 	*signers.Signer
@@ -29,14 +52,8 @@ type Account struct {
 	Tags  map[string]interface{}
 }
 
-var (
-	acpIndexNext uint64 // next acp index in our block
-	acpIndexCap  uint64 // points to end of block
-	acpMu        sync.Mutex
-)
-
 // Create creates a new Account.
-func Create(ctx context.Context, xpubs []string, quorum int, alias string, tags map[string]interface{}, clientToken *string) (*Account, error) {
+func (m *Manager) Create(ctx context.Context, xpubs []string, quorum int, alias string, tags map[string]interface{}, clientToken *string) (*Account, error) {
 	signer, err := signers.Create(ctx, "account", xpubs, quorum, clientToken)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -69,7 +86,7 @@ func Create(ctx context.Context, xpubs []string, quorum int, alias string, tags 
 		Tags:   tags,
 	}
 
-	err = indexAnnotatedAccount(ctx, account)
+	err = m.indexAnnotatedAccount(ctx, account)
 	if err != nil {
 		return nil, errors.Wrap(err, "indexing annotated account")
 	}
@@ -78,7 +95,7 @@ func Create(ctx context.Context, xpubs []string, quorum int, alias string, tags 
 }
 
 // FindByAlias retrieves an account's Signer record by its alias
-func FindByAlias(ctx context.Context, alias string) (*signers.Signer, error) {
+func (m *Manager) FindByAlias(ctx context.Context, alias string) (*signers.Signer, error) {
 	const q = `SELECT account_id FROM accounts WHERE alias=$1`
 	var accountID string
 	err := pg.QueryRow(ctx, q, alias).Scan(&accountID)
@@ -93,10 +110,10 @@ func FindByAlias(ctx context.Context, alias string) (*signers.Signer, error) {
 }
 
 // findByID returns an account's Signer record by its ID.
-func findByID(ctx context.Context, id string) (*signers.Signer, error) {
-	cacheMu.Lock()
-	cached, ok := cache.Get(id)
-	cacheMu.Unlock()
+func (m *Manager) findByID(ctx context.Context, id string) (*signers.Signer, error) {
+	m.cacheMu.Lock()
+	cached, ok := m.cache.Get(id)
+	m.cacheMu.Unlock()
 	if ok {
 		return cached.(*signers.Signer), nil
 	}
@@ -104,21 +121,21 @@ func findByID(ctx context.Context, id string) (*signers.Signer, error) {
 	if err != nil {
 		return nil, err
 	}
-	cacheMu.Lock()
-	cache.Add(id, account)
-	cacheMu.Unlock()
+	m.cacheMu.Lock()
+	m.cache.Add(id, account)
+	m.cacheMu.Unlock()
 	return account, nil
 }
 
 // CreateControlProgram creates a control program
 // that is tied to the Account and stores it in the database.
-func CreateControlProgram(ctx context.Context, accountID string, change bool) ([]byte, error) {
-	account, err := findByID(ctx, accountID)
+func (m *Manager) CreateControlProgram(ctx context.Context, accountID string, change bool) ([]byte, error) {
+	account, err := m.findByID(ctx, accountID)
 	if err != nil {
 		return nil, err
 	}
 
-	idx, err := nextIndex(ctx)
+	idx, err := m.nextIndex(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -148,11 +165,11 @@ func insertAccountControlProgram(ctx context.Context, accountID string, idx uint
 	return errors.Wrap(err)
 }
 
-func nextIndex(ctx context.Context) (uint64, error) {
-	acpMu.Lock()
-	defer acpMu.Unlock()
+func (m *Manager) nextIndex(ctx context.Context) (uint64, error) {
+	m.acpMu.Lock()
+	defer m.acpMu.Unlock()
 
-	if acpIndexNext >= acpIndexCap {
+	if m.acpIndexNext >= m.acpIndexCap {
 		var cap uint64
 		const incrby = 10000 // account_control_program_seq increments by 10,000
 		const q = `SELECT nextval('account_control_program_seq')`
@@ -160,12 +177,12 @@ func nextIndex(ctx context.Context) (uint64, error) {
 		if err != nil {
 			return 0, errors.Wrap(err, "scan")
 		}
-		acpIndexCap = cap
-		acpIndexNext = cap - incrby
+		m.acpIndexCap = cap
+		m.acpIndexNext = cap - incrby
 	}
 
-	n := acpIndexNext
-	acpIndexNext++
+	n := m.acpIndexNext
+	m.acpIndexNext++
 	return n, nil
 }
 

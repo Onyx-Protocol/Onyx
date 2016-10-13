@@ -13,8 +13,9 @@ import (
 	"chain/protocol/bc"
 )
 
-func NewSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash, txOut *uint32, refData chainjson.Map, clientToken *string) txbuilder.Action {
+func (m *Manager) NewSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash, txOut *uint32, refData chainjson.Map, clientToken *string) txbuilder.Action {
 	return &spendAction{
+		accounts:      m,
 		AssetAmount:   amt,
 		TxHash:        txHash,
 		TxOut:         txOut,
@@ -24,13 +25,14 @@ func NewSpendAction(amt bc.AssetAmount, accountID string, txHash *bc.Hash, txOut
 	}
 }
 
-func DecodeSpendAction(data []byte) (txbuilder.Action, error) {
-	a := new(spendAction)
+func (m *Manager) DecodeSpendAction(data []byte) (txbuilder.Action, error) {
+	a := &spendAction{accounts: m}
 	err := json.Unmarshal(data, a)
 	return a, err
 }
 
 type spendAction struct {
+	accounts *Manager
 	bc.AssetAmount
 	AccountID     string        `json:"account_id"`
 	TxHash        *bc.Hash      `json:"transaction_id"`
@@ -47,7 +49,7 @@ func (a *spendAction) Build(ctx context.Context) (*txbuilder.BuildResult, error)
 	}
 	maxTime := time.Now().Add(ttl)
 
-	acct, err := findByID(ctx, a.AccountID)
+	acct, err := a.accounts.findByID(ctx, a.AccountID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get account info")
 	}
@@ -82,7 +84,7 @@ func (a *spendAction) Build(ctx context.Context) (*txbuilder.BuildResult, error)
 		tplInsts = append(tplInsts, sigInst)
 	}
 	if len(change) > 0 {
-		acp, err := CreateControlProgram(ctx, a.AccountID, true)
+		acp, err := a.accounts.CreateControlProgram(ctx, a.AccountID, true)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating control program")
 		}
@@ -97,24 +99,26 @@ func (a *spendAction) Build(ctx context.Context) (*txbuilder.BuildResult, error)
 	}, nil
 }
 
-func NewSpendUTXOAction(outpoint bc.Outpoint, ttl time.Duration) txbuilder.Action {
+func (m *Manager) NewSpendUTXOAction(outpoint bc.Outpoint, ttl time.Duration) txbuilder.Action {
 	return &spendUTXOAction{
-		TxHash: outpoint.Hash,
-		TxOut:  outpoint.Index,
-		TTL:    ttl,
+		accounts: m,
+		TxHash:   outpoint.Hash,
+		TxOut:    outpoint.Index,
+		TTL:      ttl,
 	}
 }
 
-func DecodeSpendUTXOAction(data []byte) (txbuilder.Action, error) {
-	a := new(spendUTXOAction)
+func (m *Manager) DecodeSpendUTXOAction(data []byte) (txbuilder.Action, error) {
+	a := &spendUTXOAction{accounts: m}
 	err := json.Unmarshal(data, a)
 	return a, err
 }
 
 type spendUTXOAction struct {
-	TxHash bc.Hash       `json:"transaction_id"`
-	TxOut  uint32        `json:"position"`
-	TTL    time.Duration `json:"reservation_ttl"`
+	accounts *Manager
+	TxHash   bc.Hash       `json:"transaction_id"`
+	TxOut    uint32        `json:"position"`
+	TTL      time.Duration `json:"reservation_ttl"`
 
 	ReferenceData chainjson.Map `json:"reference_data"`
 	ClientToken   *string       `json:"client_token"`
@@ -132,7 +136,7 @@ func (a *spendUTXOAction) Build(ctx context.Context) (*txbuilder.BuildResult, er
 		return nil, err
 	}
 
-	acct, err := findByID(ctx, r.AccountID)
+	acct, err := a.accounts.findByID(ctx, r.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -168,28 +172,30 @@ func utxoToInputs(ctx context.Context, account *signers.Signer, u *utxodb.UTXO, 
 	return txInput, sigInst, nil
 }
 
-func NewControlAction(amt bc.AssetAmount, accountID string, refData chainjson.Map) txbuilder.Action {
+func (m *Manager) NewControlAction(amt bc.AssetAmount, accountID string, refData chainjson.Map) txbuilder.Action {
 	return &controlAction{
+		accounts:      m,
 		AssetAmount:   amt,
 		AccountID:     accountID,
 		ReferenceData: refData,
 	}
 }
 
-func DecodeControlAction(data []byte) (txbuilder.Action, error) {
-	a := new(controlAction)
+func (m *Manager) DecodeControlAction(data []byte) (txbuilder.Action, error) {
+	a := &controlAction{accounts: m}
 	err := json.Unmarshal(data, a)
 	return a, err
 }
 
 type controlAction struct {
+	accounts *Manager
 	bc.AssetAmount
 	AccountID     string        `json:"account_id"`
 	ReferenceData chainjson.Map `json:"reference_data"`
 }
 
 func (a *controlAction) Build(ctx context.Context) (*txbuilder.BuildResult, error) {
-	acp, err := CreateControlProgram(ctx, a.AccountID, false)
+	acp, err := a.accounts.CreateControlProgram(ctx, a.AccountID, false)
 	if err != nil {
 		return nil, err
 	}

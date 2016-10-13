@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"chain/core/account"
 	"chain/core/signers"
 )
 
@@ -43,7 +42,7 @@ func (h *Handler) createAccount(ctx context.Context, ins []struct {
 	for i := 0; i < len(responses); i++ {
 		go func(i int) {
 			defer wg.Done()
-			acc, err := account.Create(ctx, ins[i].RootXPubs, ins[i].Quorum, ins[i].Alias, ins[i].Tags, ins[i].ClientToken)
+			acc, err := h.Accounts.Create(ctx, ins[i].RootXPubs, ins[i].Quorum, ins[i].Alias, ins[i].Tags, ins[i].ClientToken)
 			if err != nil {
 				logHTTPError(ctx, err)
 				responses[i], _ = errInfo(err)

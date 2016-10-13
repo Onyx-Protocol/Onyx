@@ -9,15 +9,17 @@ import (
 
 	"chain/database/pg"
 	"chain/database/pg/pgtest"
+	"chain/protocol/prottest"
 	"chain/testutil"
 )
 
 func TestAnnotateTxs(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), pgtest.NewTx(t))
-	acc1 := createTestAccount(ctx, t, "", nil)
-	acc2 := createTestAccount(ctx, t, "", map[string]interface{}{"one": "foo", "two": "bar"})
-	acp1 := createTestControlProgram(ctx, t, acc1.ID)
-	acp2 := createTestControlProgram(ctx, t, acc2.ID)
+	m := NewManager(prottest.NewChain(t))
+	acc1 := m.createTestAccount(ctx, t, "", nil)
+	acc2 := m.createTestAccount(ctx, t, "", map[string]interface{}{"one": "foo", "two": "bar"})
+	acp1 := m.createTestControlProgram(ctx, t, acc1.ID)
+	acp2 := m.createTestControlProgram(ctx, t, acc2.ID)
 
 	txs := []map[string]interface{}{{
 		"inputs": []interface{}{},
@@ -50,7 +52,7 @@ func TestAnnotateTxs(t *testing.T) {
 		},
 	}}
 
-	err := AnnotateTxs(ctx, txs)
+	err := m.AnnotateTxs(ctx, txs)
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

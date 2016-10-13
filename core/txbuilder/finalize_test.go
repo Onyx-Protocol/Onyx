@@ -10,6 +10,7 @@ import (
 	"chain/core/account"
 	"chain/core/asset"
 	"chain/core/coretest"
+	"chain/core/query"
 	. "chain/core/txbuilder"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg"
@@ -50,8 +51,8 @@ func TestConflictingTxsInPool(t *testing.T) {
 		AssetID: info.asset.AssetID,
 		Amount:  10,
 	}
-	spendAction := account.NewSpendAction(assetAmount, info.acctA.ID, nil, nil, nil, nil)
-	dest1 := account.NewControlAction(assetAmount, info.acctB.ID, nil)
+	spendAction := info.NewSpendAction(assetAmount, info.acctA.ID, nil, nil, nil, nil)
+	dest1 := info.NewControlAction(assetAmount, info.acctB.ID, nil)
 
 	// Build the first tx
 	firstTemplate, err := Build(ctx, nil, []Action{spendAction, dest1})
@@ -72,7 +73,7 @@ func TestConflictingTxsInPool(t *testing.T) {
 	}
 
 	// Build the second tx
-	dest2 := account.NewControlAction(assetAmount, info.acctB.ID, nil)
+	dest2 := info.NewControlAction(assetAmount, info.acctB.ID, nil)
 	secondTemplate, err := Build(ctx, nil, []Action{spendAction, dest2})
 	if err != nil {
 		t.Fatal(err)
@@ -234,6 +235,7 @@ func benchGenBlock(b *testing.B) {
 
 type testInfo struct {
 	*asset.Registry
+	*account.Manager
 	*protocol.Chain
 	asset           *asset.Asset
 	acctA           *account.Account
@@ -246,20 +248,23 @@ type testInfo struct {
 // and consume it from cmd/corectl.
 func bootdb(ctx context.Context, t testing.TB) (*testInfo, error) {
 	c := prottest.NewChain(t)
+	indexer := query.NewIndexer(pg.FromContext(ctx), c)
+
 	assets := asset.NewRegistry(c, bc.Hash{})
-	account.Init(c, nil)
+	accounts := account.NewManager(c)
+	assets.IndexAssets(indexer)
+	accounts.IndexAccounts(indexer)
 
 	accPriv, accPub, err := chainkd.NewXKeys(nil)
 	if err != nil {
 		return nil, err
 	}
 
-	acctA, err := account.Create(ctx, []string{accPub.String()}, 1, "", nil, nil)
+	acctA, err := accounts.Create(ctx, []string{accPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	acctB, err := account.Create(ctx, []string{accPub.String()}, 1, "", nil, nil)
+	acctB, err := accounts.Create(ctx, []string{accPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +273,6 @@ func bootdb(ctx context.Context, t testing.TB) (*testInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	asset, err := assets.Define(ctx, []string{assetPub.String()}, 1, nil, "", nil, nil)
 	if err != nil {
 		return nil, err
@@ -277,6 +281,7 @@ func bootdb(ctx context.Context, t testing.TB) (*testInfo, error) {
 	info := &testInfo{
 		Chain:           c,
 		Registry:        assets,
+		Manager:         accounts,
 		asset:           asset,
 		acctA:           acctA,
 		acctB:           acctB,
@@ -291,8 +296,10 @@ func issue(ctx context.Context, t testing.TB, info *testInfo, destAcctID string,
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}
-	issueDest := account.NewControlAction(assetAmount, destAcctID, nil)
-	issueTx, err := Build(ctx, nil, []Action{info.Registry.NewIssueAction(assetAmount, nil), issueDest})
+	issueTx, err := Build(ctx, nil, []Action{
+		info.Registry.NewIssueAction(assetAmount, nil),
+		info.Manager.NewControlAction(assetAmount, destAcctID, nil),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -306,8 +313,8 @@ func transfer(ctx context.Context, t testing.TB, info *testInfo, srcAcctID, dest
 		AssetID: info.asset.AssetID,
 		Amount:  amount,
 	}
-	source := account.NewSpendAction(assetAmount, srcAcctID, nil, nil, nil, nil)
-	dest := account.NewControlAction(assetAmount, destAcctID, nil)
+	source := info.NewSpendAction(assetAmount, srcAcctID, nil, nil, nil, nil)
+	dest := info.NewControlAction(assetAmount, destAcctID, nil)
 
 	xferTx, err := Build(ctx, nil, []Action{source, dest})
 	if err != nil {

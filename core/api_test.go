@@ -26,9 +26,10 @@ func TestBuildFinal(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(c, bc.Hash{})
-	account.Init(c, nil)
+	accounts := account.NewManager(c)
+	accounts.IndexAccounts(query.NewIndexer(dbtx, c))
 
-	acc, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
+	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +41,7 @@ func TestBuildFinal(t *testing.T) {
 	}
 
 	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
-	dests := account.NewControlAction(assetAmt, acc.ID, nil)
+	dests := accounts.NewControlAction(assetAmt, acc.ID, nil)
 
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
 	if err != nil {
@@ -56,7 +57,7 @@ func TestBuildFinal(t *testing.T) {
 	// Make a block so that UTXOs from the above tx are available to spend.
 	prottest.MakeBlock(ctx, t, c)
 
-	sources = account.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
+	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
 	if err != nil {
 		t.Fatal(err)
@@ -126,9 +127,10 @@ func TestAccountTransfer(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
 	assets := asset.NewRegistry(c, bc.Hash{})
-	account.Init(c, nil)
+	accounts := account.NewManager(c)
+	accounts.IndexAccounts(query.NewIndexer(dbtx, c))
 
-	acc, err := account.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
+	acc, err := accounts.Create(ctx, []string{testutil.TestXPub.String()}, 1, "", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +142,7 @@ func TestAccountTransfer(t *testing.T) {
 	}
 
 	sources := txbuilder.Action(assets.NewIssueAction(assetAmt, nil))
-	dests := account.NewControlAction(assetAmt, acc.ID, nil)
+	dests := accounts.NewControlAction(assetAmt, acc.ID, nil)
 	tmpl, err := txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
 	if err != nil {
 		t.Fatal(err)
@@ -156,7 +158,7 @@ func TestAccountTransfer(t *testing.T) {
 	prottest.MakeBlock(ctx, t, c)
 
 	// new source
-	sources = account.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
+	sources = accounts.NewSpendAction(assetAmt, acc.ID, nil, nil, nil, nil)
 	tmpl, err = txbuilder.Build(ctx, nil, []txbuilder.Action{sources, dests})
 	if err != nil {
 		t.Fatal(err)
@@ -187,14 +189,15 @@ func TestTransfer(t *testing.T) {
 	ctx := pg.NewContext(context.Background(), dbtx)
 	c := prottest.NewChain(t)
 	handler := &Handler{
-		Chain:   c,
-		Assets:  asset.NewRegistry(c, bc.Hash{}),
-		Indexer: query.NewIndexer(dbtx, c),
-		DB:      dbtx,
+		Chain:    c,
+		Assets:   asset.NewRegistry(c, bc.Hash{}),
+		Accounts: account.NewManager(c),
+		Indexer:  query.NewIndexer(dbtx, c),
+		DB:       dbtx,
 	}
 	handler.Assets.IndexAssets(handler.Indexer)
-	account.Init(c, handler.Indexer)
-	handler.Indexer.RegisterAnnotator(account.AnnotateTxs)
+	handler.Accounts.IndexAccounts(handler.Indexer)
+	handler.Indexer.RegisterAnnotator(handler.Accounts.AnnotateTxs)
 	handler.Indexer.RegisterAnnotator(handler.Assets.AnnotateTxs)
 	handler.init()
 
@@ -203,8 +206,8 @@ func TestTransfer(t *testing.T) {
 	account2Alias := "second-account"
 
 	assetID := coretest.CreateAsset(ctx, t, handler.Assets, nil, assetAlias, nil)
-	account1ID := coretest.CreateAccount(ctx, t, account1Alias, nil)
-	account2ID := coretest.CreateAccount(ctx, t, account2Alias, nil)
+	account1ID := coretest.CreateAccount(ctx, t, handler.Accounts, account1Alias, nil)
+	account2ID := coretest.CreateAccount(ctx, t, handler.Accounts, account2Alias, nil)
 
 	assetIDStr := assetID.String()
 
@@ -215,7 +218,7 @@ func TestTransfer(t *testing.T) {
 	}
 	txTemplate, err := txbuilder.Build(ctx, nil, []txbuilder.Action{
 		handler.Assets.NewIssueAction(issueAssetAmount, nil),
-		account.NewControlAction(issueAssetAmount, account1ID, nil),
+		handler.Accounts.NewControlAction(issueAssetAmount, account1ID, nil),
 	})
 	if err != nil {
 		t.Log(errors.Stack(err))
@@ -275,7 +278,7 @@ func TestTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 	coretest.SignTxTemplate(t, ctx, txTemplate, &testutil.TestXPrv)
-	_, err = submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
+	_, err = handler.submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
 	if err != nil && err != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)
 	}
@@ -320,7 +323,7 @@ func TestTransfer(t *testing.T) {
 		t.Log(errors.Stack(err))
 		t.Fatal(err)
 	}
-	_, err = submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
+	_, err = handler.submitSingle(ctx, c, submitSingleArg{tpl: txTemplate, wait: time.Millisecond})
 	if err != nil && err != context.DeadlineExceeded {
 		testutil.FatalErr(t, err)
 	}
