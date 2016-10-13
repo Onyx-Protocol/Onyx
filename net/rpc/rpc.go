@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -54,18 +55,22 @@ func (e errStatusCode) Error() string {
 
 // Call calls a remote procedure on another node, specified by the path.
 func (c *Client) Call(ctx context.Context, path string, request, response interface{}) error {
-	var jsonBody bytes.Buffer
-	if err := json.NewEncoder(&jsonBody).Encode(request); err != nil {
-		return err
-	}
-
 	u, err := url.Parse(c.BaseURL)
 	if err != nil {
 		return err
 	}
 	u.Path = path
 
-	req, err := http.NewRequest("POST", u.String(), &jsonBody)
+	var bodyReader io.Reader
+	if request != nil {
+		var jsonBody bytes.Buffer
+		if err := json.NewEncoder(&jsonBody).Encode(request); err != nil {
+			return err
+		}
+		bodyReader = &jsonBody
+	}
+
+	req, err := http.NewRequest("POST", u.String(), bodyReader)
 	if err != nil {
 		return err
 	}
