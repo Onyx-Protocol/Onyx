@@ -87,6 +87,11 @@ class Summary extends React.Component {
       })
     })
 
+    const ordering = ['issue', 'spend', 'receive', 'retire']
+    items.sort((a,b) => {
+      return ordering.indexOf(a.rawAction) - ordering.indexOf(b.rawAction)
+    })
+
     return(<table className={styles.main}>
       <thead>
         <tr>
