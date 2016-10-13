@@ -240,7 +240,10 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		AltAuth:      authLoopbackInDev,
 	}
 
-	genhealth := h.HealthSetter("generator")
+	var (
+		genhealth   = h.HealthSetter("generator")
+		fetchhealth = h.HealthSetter("fetch")
+	)
 
 	// Note, it's important for any services that will install blockchain
 	// callbacks to be initialized before leader.Run() and the http server,
@@ -252,7 +255,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		if config.IsGenerator {
 			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth)
 		} else {
-			go fetch.Fetch(ctx, c, remoteGenerator)
+			go fetch.Fetch(ctx, c, remoteGenerator, fetchhealth)
 		}
 	})
 

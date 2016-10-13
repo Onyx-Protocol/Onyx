@@ -37,7 +37,9 @@ func GeneratorHeight() (uint64, time.Time) {
 // Chain.
 //
 // It returns when its context is canceled.
-func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
+// After each attempt to fetch and apply a block, it calls health
+// to report either an error or nil to indicate success.
+func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client, health func(error)) {
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
 	prevBlock, prevSnapshot, err := c.Recover(ctx)
@@ -63,6 +65,7 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 
 			blocks, err := getBlocks(ctx, peer, height, timeoutBackoffDur(ntimeouts))
 			if err != nil {
+				health(err)
 				log.Error(ctx, err)
 				nfailures++
 				time.Sleep(backoffDur(nfailures))
@@ -78,11 +81,13 @@ func Fetch(ctx context.Context, c *protocol.Chain, peer *rpc.Client) {
 
 			prevSnapshot, prevBlock, err = applyBlocks(ctx, c, prevSnapshot, prevBlock, blocks)
 			if err != nil {
+				health(err)
 				log.Error(ctx, err)
 				nfailures++
 				time.Sleep(backoffDur(nfailures))
 				continue
 			}
+			health(nil)
 			nfailures, ntimeouts = 0, 0
 		}
 	}
