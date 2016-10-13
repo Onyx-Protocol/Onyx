@@ -72,6 +72,7 @@ export default BaseNew.connect(
     initialValues: {
       tags: '{\n\t\n}',
       definition: '{\n\t\n}',
+      quorum: 1,
     }
   })(Form)
 )

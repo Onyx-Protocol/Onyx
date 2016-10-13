@@ -78,8 +78,6 @@ class KeyConfiguration extends React.Component {
       </div>
     )
   }
-
-
 }
 
 export default KeyConfiguration

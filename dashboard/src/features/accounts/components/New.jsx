@@ -68,6 +68,7 @@ export default BaseNew.connect(
     validate,
     initialValues: {
       tags: '{\n\t\n}',
+      quorum: 1,
     }
   })(Form)
 )
