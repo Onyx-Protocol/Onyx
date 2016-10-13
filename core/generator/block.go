@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"chain/crypto/ed25519"
-	"chain/database/pg"
 	"chain/errors"
 	"chain/log"
 	"chain/protocol/bc"
@@ -131,7 +130,7 @@ func nonNilSigs(a [][]byte) (b [][]byte) {
 func (g *generator) getPendingBlock(ctx context.Context) (*bc.Block, error) {
 	const q = `SELECT data FROM generator_pending_block`
 	var block bc.Block
-	err := pg.QueryRow(ctx, q).Scan(&block)
+	err := g.db.QueryRow(ctx, q).Scan(&block)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -148,6 +147,6 @@ func (g *generator) savePendingBlock(ctx context.Context, b *bc.Block) error {
 		INSERT INTO generator_pending_block (data) VALUES($1)
 		ON CONFLICT (singleton) DO UPDATE SET data = $1;
 	`
-	_, err := pg.Exec(ctx, q, b)
+	_, err := g.db.Exec(ctx, q, b)
 	return errors.Wrap(err, "generator_pending_block insert query")
 }

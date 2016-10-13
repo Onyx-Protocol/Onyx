@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"chain/database/pg"
 	"chain/log"
 	"chain/protocol"
 	"chain/protocol/bc"
@@ -22,6 +23,7 @@ type BlockSigner interface {
 // generator produces new blocks on an interval.
 type generator struct {
 	// config
+	db      pg.DB
 	chain   *protocol.Chain
 	signers []BlockSigner
 
@@ -36,7 +38,7 @@ type generator struct {
 // Generate runs in a loop, making one new block
 // every block period. It returns when its context
 // is canceled.
-func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, period time.Duration) {
+func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, db pg.DB, period time.Duration) {
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
 	recoveredBlock, recoveredSnapshot, err := c.Recover(ctx)
@@ -45,6 +47,7 @@ func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, period ti
 	}
 
 	g := &generator{
+		db:             db,
 		chain:          c,
 		signers:        s,
 		latestBlock:    recoveredBlock,

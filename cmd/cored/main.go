@@ -234,7 +234,7 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 
 		go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
 		if config.IsGenerator {
-			go generator.Generate(ctx, c, generatorSigners, blockPeriod)
+			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod)
 		} else {
 			go fetch.Fetch(ctx, c, remoteGenerator)
 		}
