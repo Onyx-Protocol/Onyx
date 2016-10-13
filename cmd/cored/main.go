@@ -225,20 +225,6 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 	// GC old submitted txs periodically.
 	go core.CleanupSubmittedTxs(ctx, db)
 
-	// Note, it's important for any services that will install blockchain
-	// callbacks to be initialized before leader.Run() and the http server,
-	// otherwise there's a data race within protocol.Chain.
-	go leader.Run(db, *listenAddr, func(ctx context.Context) {
-		ctx = pg.NewContext(ctx, db)
-
-		go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
-		if config.IsGenerator {
-			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod)
-		} else {
-			go fetch.Fetch(ctx, c, remoteGenerator)
-		}
-	})
-
 	h := &core.Handler{
 		Chain:        c,
 		Store:        store,
@@ -253,6 +239,23 @@ func launchConfiguredCore(ctx context.Context, db *sql.DB, config *core.Config, 
 		Signer:       signBlockHandler,
 		AltAuth:      authLoopbackInDev,
 	}
+
+	genhealth := h.HealthSetter("generator")
+
+	// Note, it's important for any services that will install blockchain
+	// callbacks to be initialized before leader.Run() and the http server,
+	// otherwise there's a data race within protocol.Chain.
+	go leader.Run(db, *listenAddr, func(ctx context.Context) {
+		ctx = pg.NewContext(ctx, db)
+
+		go utxodb.ExpireReservations(ctx, expireReservationsPeriod)
+		if config.IsGenerator {
+			go generator.Generate(ctx, c, generatorSigners, db, blockPeriod, genhealth)
+		} else {
+			go fetch.Fetch(ctx, c, remoteGenerator)
+		}
+	})
+
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set(rpc.HeaderBlockchainID, config.BlockchainID.String())
 		h.ServeHTTP(w, req)

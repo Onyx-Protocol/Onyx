@@ -38,7 +38,16 @@ type generator struct {
 // Generate runs in a loop, making one new block
 // every block period. It returns when its context
 // is canceled.
-func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, db pg.DB, period time.Duration) {
+// After each attempt to make a block, it calls health
+// to report either an error or nil to indicate success.
+func Generate(
+	ctx context.Context,
+	c *protocol.Chain,
+	s []BlockSigner,
+	db pg.DB,
+	period time.Duration,
+	health func(error),
+) {
 	// This process just became leader, so it's responsible
 	// for recovering after the previous leader's exit.
 	recoveredBlock, recoveredSnapshot, err := c.Recover(ctx)
@@ -83,6 +92,7 @@ func Generate(ctx context.Context, c *protocol.Chain, s []BlockSigner, db pg.DB,
 			return
 		case <-ticks:
 			err := g.makeBlock(ctx)
+			health(err)
 			if err != nil {
 				log.Error(ctx, err)
 			}
