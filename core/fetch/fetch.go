@@ -126,12 +126,6 @@ func applyBlocks(ctx context.Context, c *protocol.Chain, snap *state.Snapshot, b
 	for _, b := range blocks {
 		ss, err := c.ValidateBlock(ctx, snap, block, b)
 		if err != nil {
-			// TODO(kr): this is a validation failure.
-			// It's either a serious bug or an attack.
-			// Do something better than just log the error
-			// (in the caller above). Alert a human,
-			// the security team, the legal team, the A-team,
-			// somebody.
 			return snap, block, err
 		}
 
